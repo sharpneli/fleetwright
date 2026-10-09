@@ -10,6 +10,8 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design shipgen/de
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design x.json --no-limits    # skip the input ranges
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design x.json --no-sprites   # report and hitboxes only
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design x.json --previews     # plus the shaded previews
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- verify out_designs/battleship  # sprites vs hitboxes
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- fuzz shipgen/designs/*.json    # robustness (--cases 1600)
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/bismarck.json                  # the viewer
 ```
 
@@ -56,7 +58,7 @@ design JSON (player input: counts, calibres, armour, speed, look)
 | `render.py` | `Render/Sprite.cs` (`ShipSprites.Build`: sprite.json), `Render/Bake/` (the GPU bake, PNGs, mips, previews) |
 | `shadow.py` | `Render/Sprite.cs` (`HeightMap`), `Bake/Preview.cs` (`ShadowMask`), `Content/Shaders/Source/shipview_shadow.frag.glsl` |
 | `design.py` | `shipgen design` (`src/Fleetwright.Shipgen.Cli`) |
-| `fuzz.py`, `verify.py` | not yet: PORTING.md Step 8 |
+| `fuzz.py`, `verify.py` | `shipgen fuzz` (`Tools/Fuzz.cs`), `shipgen verify` (`Render/Bake/Verify.cs`) |
 | `hitview.py`, `sinking.py`, `vidgen/`, `lookgrid.py`, `fleet.py`, `calibrate.py`, `*_templates.py` | not ported |
 
 Names in the sections below (functions, constants, `TUNING` keys) are the Python ones; the C# port keeps them in

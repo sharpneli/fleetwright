@@ -9,6 +9,7 @@ namespace Fleetwright.Shipgen.Tests;
 /// dazzle differ from ours, which barely moves coverage). Needs a GPU (SDL_GPU, Vulkan); `shipgen png-check` runs
 /// every design.</summary>
 [Trait("Category", "Gpu")]
+[Collection("Gpu")]   // one GPU device at a time
 public class BakeTests
 {
     static readonly string Root = Paths.Shipgen();

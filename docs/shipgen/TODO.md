@@ -3,7 +3,6 @@
 Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's HANDOFF.md). Keep this in sync: tick off or delete what's done, add what's found.
 
 ## After the port
-- [ ] PORTING.md Step 8: `fuzz` (mutator with time and memory guards) and `verify` (sprite-vs-hitbox pixel check)
 - [ ] The bug fixes held back by "port as is" (Generator bugs, Hidden thresholds below), one per commit, goldens updated
 - [ ] Group opacity, nested: the bake draws opacity groups topmost-first in the stencil, which needs opaque children
 - [ ] Viewer: turret and height-map shadows darken twice where they overlap (Python takes the max)

@@ -434,6 +434,21 @@ here. The regression workflow: `shipgen golden-check` (design side), `svg-check`
 
 Then start the bug fixes held back by "port as is".
 
+Done 2026-10-09:
+
+- **`shipgen fuzz`** (`Tools/Fuzz.cs`, the mutator, in the library): fuzz.py's numbers/choices/structure mutations
+  with .NET's seeded `Random`. Each mutant is built in a child process (`shipgen fuzz-one`), killed past `--timeout`
+  or `--mem-gb` (peak working set), and every crash, hang, memory blow-up, NaN or slow build is saved as
+  `<id>_<case>.json` and `.txt`. 1,600 mutants with limits and 1,600 without (16 jobs, about 90 s each): no crash,
+  hang, memory blow-up or NaN (outcomes ok 1144 / 1166, built with errors 67 / 23, invalid 389 / 411).
+- **`shipgen verify DIR...`** (`Bake/Verify.cs`): verify.py's checks on `shipgen design` output. Calibrated against
+  verify.py on the same 70 designs' C# output: turret IoU within ±0.04 of Python's either way (worst 0.858 vs 0.856),
+  so the 0.85 pass mark carries over. Two details mattered: the hitbox mask includes the pixels its outline runs
+  through (PIL's polygon draws one; the sprites' outlines straddle the hitbox edge), and it samples pixel centres
+  (PIL's integer-coordinate sampling shifts half a pixel, which made starboard and port mounts score differently).
+  Turrets are turned bicubic as PIL did (the previews now too). All 70 designs pass.
+- Tests: `ToolTests` (a mutant sample in process, reproducible mutation, verify on two baked designs).
+
 ## Out of scope for the port
 
 - Texture compression (KTX2, BC7/BC4) and the game's sprite batcher and asset pipeline: tech-stack plan, Phase 3.
@@ -454,4 +469,4 @@ Then start the bug fixes held back by "port as is".
 - [x] Step 5: SDL_GPU backend (the user's sign-off waits for the viewer)
 - [x] Step 6: viewer + full CLI (the look check in the viewer is the user's)
 - [x] Step 7: Python retired, docs moved
-- [ ] Step 8: fuzz and verify ported
+- [x] Step 8: fuzz and verify ported

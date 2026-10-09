@@ -415,7 +415,7 @@ public sealed unsafe class GpuBaker : IDisposable
         if (ownsSdl)
         {
             SDL_DestroyGPUDevice(dev);
-            SDL_Quit();
+            SDL_QuitSubSystem(SDL_InitFlags.SDL_INIT_VIDEO);   // reference-counted: another baker may still use it
         }
     }
 }

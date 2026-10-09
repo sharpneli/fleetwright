@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Fleetwright.Shipgen;
 using Fleetwright.Shipgen.Golden;
+using Fleetwright.Shipgen.Tools;
 using Fleetwright.Shipgen.Render;
 using Fleetwright.Shipgen.Render.Bake;
 using Fleetwright.Shipgen.Render.Golden;
@@ -36,6 +37,14 @@ public static class Program
         shipgen png-check [--root DIR] [--out DIR] [CASE|PREFIX*...]
             bake every design with a sprite golden and compare its PNGs' coverage (IoU) with Python's; --out keeps
             the PNGs
+        shipgen fuzz DESIGN.json... [--cases 150] [--seed 1] [--jobs N] [--mem-gb 3] [--timeout 120] [--slow 30]
+                     [--mode all|numbers|choices|structure] [--no-limits] [--out fuzz_out]
+            mutate the designs and build every mutant in its own process with a time and memory cap: any valid
+            design must build (errors are fine), never crash, hang, blow up memory or publish a NaN. Failures
+            (and builds slower than --slow s) are saved to --out as <id>_<case>.json and .txt
+        shipgen verify DIR...
+            check `design` output: turret sprites against their hitboxes at four angles, raised blocks and funnels
+            opaque inside their hitboxes, the hull image against the hull outline, the subdivision and traverses
         shipgen svg-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
             every case's SVGs against golden/svg (Python's drawing with the port's RNG)
         shipgen sprite-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
@@ -62,6 +71,9 @@ public static class Program
                 "golden-check" => GoldenCheck(a),
                 "bench" => Bench(a),
                 "draw" => Draw(a),
+                "fuzz" => FuzzCmd(a),
+                "fuzz-one" => FuzzOne(a),
+                "verify" => VerifyCmd(a),
                 "bake" => BakeCmd(a),
                 "png-check" => PngCheck(a),
                 "svg-check" => Check(a, RenderGolden.CheckSvgs),
@@ -477,5 +489,131 @@ public static class Program
         }
         Console.WriteLine($"worst IoU {worst:F4} over {cases.Count} designs (bake {sw.Elapsed.TotalSeconds:F1} s)");
         return worst >= 0.98 ? 0 : 1;
+    }
+
+    /// <summary>The child of `fuzz`: build one mutant (IN.json) and write the outcome to OUT.txt, its first line the
+    /// outcome and the rest the detail.</summary>
+    static int FuzzOne(Args a)
+    {
+        var (outcome, detail) = Fuzz.Check(LoadDesign(a.Positional[0]), !a.Has("no-limits"));
+        File.WriteAllText(a.Positional[1], outcome + "\n" + detail);
+        return 0;
+    }
+
+    static int FuzzCmd(Args a)
+    {
+        int cases = a.Int("cases", 150), jobs = a.Int("jobs", Environment.ProcessorCount);
+        int timeout = a.Int("timeout", 120);
+        double memGb = double.Parse(a.Get("mem-gb", "3")!, System.Globalization.CultureInfo.InvariantCulture);
+        double slowS = double.Parse(a.Get("slow", "30")!, System.Globalization.CultureInfo.InvariantCulture);
+        bool limits = !a.Has("no-limits");
+        string mode = a.Get("mode", "all")!, outDir = a.Get("out", "fuzz_out")!;
+        var rng = new Random(a.Int("seed", 1));
+        var bases = a.Positional.Select(p => (Path: p, D: LoadDesign(p))).ToList();
+        if (bases.Count == 0)
+            throw new ArgumentException("fuzz DESIGN.json...");
+        var choices = Fuzz.CorpusChoices(bases.Select(b => b.D));
+        var work = Directory.CreateTempSubdirectory("shipgen_fuzz_").FullName;
+        var muts = Enumerable.Range(0, cases).Select(i =>
+        {
+            var (src, b) = bases[i % bases.Count];
+            var (d, ch) = Fuzz.Mutate(b, rng, limits, choices, mode);
+            return (Case: i, Src: src, D: d, Changes: ch);
+        }).ToList();
+        var counts = new System.Collections.Concurrent.ConcurrentDictionary<string, int>();
+        var slow = new System.Collections.Concurrent.ConcurrentBag<(double S, int Case, string Src)>();
+        int bad = 0;
+        object print = new();
+        string self = Environment.ProcessPath!;
+        bool viaDotnet = Path.GetFileNameWithoutExtension(self).Equals("dotnet", StringComparison.OrdinalIgnoreCase);
+        Parallel.ForEach(muts, new ParallelOptions { MaxDegreeOfParallelism = jobs }, m =>
+        {
+            string inPath = Path.Combine(work, $"{m.Case}.json"), resPath = Path.Combine(work, $"{m.Case}.txt");
+            PyJson.Save(inPath, m.D, 1);
+            var psi = new ProcessStartInfo(self) { RedirectStandardError = true, RedirectStandardOutput = true, UseShellExecute = false };
+            if (viaDotnet)
+                psi.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, "shipgen.dll"));
+            foreach (var x in new[] { "fuzz-one", inPath, resPath })
+                psi.ArgumentList.Add(x);
+            if (!limits)
+                psi.ArgumentList.Add("--no-limits");
+            var sw = Stopwatch.StartNew();
+            using var p = Process.Start(psi)!;
+            var err = p.StandardError.ReadToEndAsync();
+            string outcome, detail;
+            long cap = (long)(memGb * (1L << 30)), peak = 0;
+            while (true)
+            {
+                if (p.WaitForExit(100))
+                    break;
+                try
+                {
+                    p.Refresh();
+                    peak = Math.Max(peak, p.PeakWorkingSet64);
+                }
+                catch (InvalidOperationException)   // it exited just now
+                {
+                }
+                if (peak > cap || sw.Elapsed.TotalSeconds > timeout)
+                {
+                    try { p.Kill(true); } catch (InvalidOperationException) { }
+                    p.WaitForExit();
+                    break;
+                }
+            }
+            double dt = sw.Elapsed.TotalSeconds;
+            if (File.Exists(resPath))
+            {
+                var t = File.ReadAllText(resPath);
+                int nl = t.IndexOf('\n');
+                (outcome, detail) = (t[..nl], t[(nl + 1)..]);
+            }
+            else if (dt > timeout)
+                (outcome, detail) = ("hang", $"no result after {timeout} s");
+            else if (peak > cap)
+                (outcome, detail) = ("memory", $"over {memGb} GB");
+            else
+                (outcome, detail) = ("crash", $"exit {p.ExitCode}: {err.Result}");
+            counts.AddOrUpdate(outcome, 1, (_, n) => n + 1);
+            bool fail = outcome is "crash" or "memory" or "hang";
+            if (!fail && dt > slowS)
+            {
+                slow.Add((dt, m.Case, m.Src));
+                detail = $"{dt:F0} s ({outcome})";
+                outcome = "slow";
+            }
+            if (fail || outcome == "slow")
+            {
+                Directory.CreateDirectory(outDir);
+                string stem = Path.Combine(outDir, $"{m.D.S("id")}_{m.Case}");
+                PyJson.Save(stem + ".json", m.D, 1);
+                File.WriteAllText(stem + ".txt", $"{m.Src}, changed: {string.Join("; ", m.Changes)}\n\n{outcome}: {detail}\n");
+            }
+            if (fail)
+            {
+                Interlocked.Increment(ref bad);
+                lock (print)
+                    Console.WriteLine($"{outcome.ToUpperInvariant(),7} {m.D.S("id")}_{m.Case}.json  ({string.Join("; ", m.Changes)})\n" +
+                                      $"        {detail.Split('\n')[0]}");
+            }
+        });
+        Directory.Delete(work, true);
+        Console.WriteLine("outcomes: " + string.Join(", ", counts.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => $"{kv.Key} {kv.Value}")));
+        foreach (var (sec, c, src) in slow.OrderByDescending(x => x.S).Take(10))
+            Console.WriteLine($"   slow: case {c} ({src}) {sec:F0} s");
+        return bad > 0 ? 1 : 0;
+    }
+
+    static int VerifyCmd(Args a)
+    {
+        double worst = 1;
+        foreach (var dir in a.Positional)
+        {
+            var r = Verify.Check(dir);
+            Console.WriteLine(r.Text);
+            worst = Math.Min(worst, r.Worst);
+        }
+        Console.WriteLine(worst > 0.85 ? "\nALL OK" : "\nSOME MISMATCH");
+        return worst > 0.85 ? 0 : 1;
     }
 }

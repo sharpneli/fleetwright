@@ -67,6 +67,8 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- draw shipgen/desi
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- bake shipgen/designs/bismarck.json --out out   # PNGs on the GPU
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- png-check             # bake all, IoU vs Python's PNGs
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- svg-check             # every case's SVGs, ~20 s
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- fuzz shipgen/designs/*.json --cases 1600   # robustness
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- verify out_designs/*  # sprites vs hitboxes
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check          # every design's sprite.json
 ```
 
@@ -98,6 +100,7 @@ src/
     Layout/                   #   layout.py: the Layout object, parts, superstructure levels, the warship layout
     Styles/                   #   the style hooks and the warship, carrier, merchant and planing styles
     Golden/                   #   the golden comparer and case runner
+    Tools/                    #   the fuzz mutator
   Fleetwright.Shipgen.Render/ # the drawing side: reads only the built ship dict
     Data/looks.jsonc          #   every navy and era's colours and shapes (the documented table)
     Looks.cs                  #   resolving a design's look: from-chains, adjust, era muting

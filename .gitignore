@@ -8,3 +8,4 @@ screenshot.png
 # shipgen CLI output
 out_designs/
 out_sprites/
+fuzz_out/

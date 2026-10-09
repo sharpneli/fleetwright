@@ -124,14 +124,28 @@ public static class Preview
             }
     }
 
-    /// <summary>The image turned clockwise by deg about its centre, the same size (premultiplied, bilinear).</summary>
-    static double[] Rotate(Image8 im, double deg)
+    /// <summary>The cubic convolution kernel PIL's BICUBIC uses (a = -0.5).</summary>
+    static double Cubic(double x)
+    {
+        const double A = -0.5;
+        x = Math.Abs(x);
+        if (x < 1)
+            return ((A + 2) * x - (A + 3)) * x * x + 1;
+        if (x < 2)
+            return (((x - 5) * x + 8) * x - 4) * A;
+        return 0;
+    }
+
+    /// <summary>The image turned clockwise by deg about its centre, the same size (premultiplied, bicubic as PIL's
+    /// rotate with BICUBIC, which render.composite and verify.py used).</summary>
+    internal static double[] Rotate(Image8 im, double deg)
     {
         var src = Premul(im);
         int w = im.Width, h = im.Height;
         var o = new double[w * h * 4];
         double a = deg * Math.PI / 180, ca = Math.Cos(a), sa = Math.Sin(a);
         double cx = w / 2.0, cy = h / 2.0;
+        Span<double> kx = stackalloc double[4], ky = stackalloc double[4];
         for (int y = 0; y < h; y++)
             for (int x = 0; x < w; x++)
             {
@@ -139,20 +153,35 @@ public static class Preview
                 double dx = x + 0.5 - cx, dy = y + 0.5 - cy;
                 double sx = ca * dx + sa * dy + cx - 0.5, sy = -sa * dx + ca * dy + cy - 0.5;
                 int ix = (int)Math.Floor(sx), iy = (int)Math.Floor(sy);
+                if (ix < -2 || iy < -2 || ix > w + 1 || iy > h + 1)
+                    continue;
                 double fx = sx - ix, fy = sy - iy;
-                for (int c = 0; c < 4; c++)
+                for (int k = 0; k < 4; k++)
                 {
-                    double v = 0;
-                    for (int j = 0; j < 2; j++)
-                        for (int i = 0; i < 2; i++)
-                        {
-                            int X = ix + i, Y = iy + j;
-                            if (X < 0 || Y < 0 || X >= w || Y >= h)
-                                continue;
-                            v += src[(Y * w + X) * 4 + c] * (i == 0 ? 1 - fx : fx) * (j == 0 ? 1 - fy : fy);
-                        }
-                    o[(y * w + x) * 4 + c] = v;
+                    kx[k] = Cubic(fx - (k - 1));
+                    ky[k] = Cubic(fy - (k - 1));
                 }
+                int oi = (y * w + x) * 4;
+                for (int j = 0; j < 4; j++)
+                {
+                    int Y = iy + j - 1;
+                    if (Y < 0 || Y >= h)
+                        continue;
+                    for (int i = 0; i < 4; i++)
+                    {
+                        int X = ix + i - 1;
+                        if (X < 0 || X >= w)
+                            continue;
+                        double k = kx[i] * ky[j];
+                        int si = (Y * w + X) * 4;
+                        for (int c = 0; c < 4; c++)
+                            o[oi + c] += src[si + c] * k;
+                    }
+                }
+                double al = Math.Clamp(o[oi + 3], 0, 1);
+                o[oi + 3] = al;
+                for (int c = 0; c < 3; c++)
+                    o[oi + c] = Math.Clamp(o[oi + c], 0, al);
             }
         return o;
     }
