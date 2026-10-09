@@ -1,0 +1,8 @@
+* text=auto
+
+*.cs   text diff=csharp
+*.bat  text eol=crlf
+
+*.spv  binary
+*.glb  binary
+*.png  binary
