@@ -43,6 +43,16 @@ The application exits after capturing the screenshot.
 - **Left Mouse + Drag** - Look around
 - **Escape** - Exit
 
+## Ship viewer
+
+```bash
+dotnet run --project src/Fleetwright -- -ship=shipgen/designs/bismarck.json [-navy=kure] [-era=wwii]
+dotnet run --project src/Fleetwright -- -ship=shipgen/designs/bismarck.json -screenshot=30 -output=ship.png
+```
+
+Builds, bakes and shows a design from the baked textures (mips, turrets through their arcs, height-map shadows);
+the "Ship" panel switches design, look, mip level, turrets and sun. Wheel zooms, left drag pans.
+
 ## Shipgen CLI
 
 The ship generator's command line, the port's test harness (`PORTING.md`):
@@ -50,7 +60,7 @@ The ship generator's command line, the port's test harness (`PORTING.md`):
 ```bash
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- golden-check          # every golden case, ~25 s
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- golden-check bismarck fuzz_lim_*
-dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design shipgen/designs/bismarck.json --out out
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design shipgen/designs/bismarck.json --out out --previews
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- validate shipgen/designs/*.json
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- bench bismarck yamato
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- draw shipgen/designs/bismarck.json --out out   # sprite.json + SVGs
@@ -77,6 +87,7 @@ src/
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF)
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
     Camera.cs                 #   FPS camera
+    ShipViewer.cs             #   the ship viewer (-ship=), a test tool for Shipgen
   Fleetwright.Gpu/            # GPU helpers shared by the game and the Shipgen renderer
     GpuTypes.cs               #   buffers, textures, samplers, DrawContext, SceneNode, MeshNode, materials
     GpuPipelineBuilder.cs     #   fluent pipeline builder

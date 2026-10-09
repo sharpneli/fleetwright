@@ -8,6 +8,7 @@ public static class Program
         string? modelPath = null;
         int screenshotFrame = -1;
         string screenshotPath = "screenshot.png";
+        string? shipPath = null, navy = null, era = null;
 
         foreach (string arg in args)
         {
@@ -22,6 +23,18 @@ public static class Program
                 {
                     screenshotFrame = frame;
                 }
+            }
+            else if (arg.StartsWith("-ship="))
+            {
+                shipPath = arg.Substring("-ship=".Length);
+            }
+            else if (arg.StartsWith("-navy="))
+            {
+                navy = arg.Substring("-navy=".Length);
+            }
+            else if (arg.StartsWith("-era="))
+            {
+                era = arg.Substring("-era=".Length);
             }
             else if (arg.StartsWith("-output="))
             {
@@ -42,6 +55,12 @@ public static class Program
             if (screenshotFrame >= 0)
             {
                 engine.SetScreenshotCapture(screenshotFrame, screenshotPath);
+            }
+
+            // The ship viewer: build, bake and show a Shipgen design instead of the 3D scene
+            if (!string.IsNullOrEmpty(shipPath))
+            {
+                engine.Viewer = new ShipViewer(engine, shipPath, navy, era);
             }
 
             // Load model if specified

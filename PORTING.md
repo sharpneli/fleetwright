@@ -393,6 +393,25 @@ The viewer is a test tool. How the game itself uses Shipgen (the API, the asset 
   hull.png, turrets/*.png, height.png, `*_mips.png`, preview_rest). The other debug images only if they're
   missed.
 
+Done 2026-10-09 (the user's look check in the viewer is still open):
+
+- **Viewer:** `dotnet run --project src/Fleetwright -- -ship=shipgen/designs/bismarck.json [-navy=kure] [-era=wwii]
+  [-screenshot=N -output=x.png]`. `ShipViewer` builds, draws and bakes on the engine's device (a non-owning
+  `GpuBaker`), uploads each layer with its mip chain (premultiplied, the height map's max mips), and draws hull,
+  turret shadows, turrets (by z) and the sun's shadow (`shipview_shadow.frag`, the height-map march of shadow.py) in
+  one pass. The ImGui "Ship" panel picks the design (every JSON beside the given one), navy, era, mip level (auto or
+  forced), turrets (rest, sweep: a bearing circling the ship, stopping at each mount's arcs, or starboard), shadows
+  and sun, and rebuilds on change (bismarck: build 1.0 s, draw 0.15 s, bake 0.03 s). Wheel zooms, left drag pans.
+  First-version shortcut: where a turret's shadow and the height map's overlap they darken twice (Python takes the
+  max).
+- **An engine fix on the way (new):** the engine's blit shader mapped uv (0, 0) to the bottom of the screen
+  (SDL_GPU's NDC is y-up, its textures top-down), so the window showed every frame upside down compared with
+  `-screenshot`, the 3D scene included. A desktop capture of the viewer showed it; `blit.vert.glsl` now flips v.
+  Worth a look by the user that the 3D scene is the right way up now.
+- **CLI:** `shipgen design` builds, then draws and bakes (`--scale`, `--mips`, `--no-sprites`), and `--previews` adds
+  preview_rest.png and preview_starboard.png (`Bake/Preview.cs`: render.composite and shadow.shadow_mask on the CPU).
+  debug_hitboxes.png, sheet.png and hitview weren't missed so far and aren't ported.
+
 ### Step 7: retire Python
 
 - Fold what the game needs from shipgen's README (design input, outputs, conventions) and HANDOFF (decisions)
@@ -427,6 +446,6 @@ Then start the bug fixes held back by "port as is".
 - [x] Step 3: Fleetwright.Shipgen matches the goldens
 - [x] Step 4: display list, SVG writer, sprite.json matches
 - [x] Step 5: SDL_GPU backend (the user's sign-off waits for the viewer)
-- [ ] Step 6: viewer + full CLI
+- [x] Step 6: viewer + full CLI (the look check in the viewer is the user's)
 - [ ] Step 7: Python retired, docs moved
 - [ ] Step 8: fuzz and verify ported

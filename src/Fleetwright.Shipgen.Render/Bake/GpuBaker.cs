@@ -20,7 +20,7 @@ public sealed unsafe class GpuBaker : IDisposable
     public const int Tile = 2048;
 
     readonly SDL_GPUDevice* dev;
-    readonly bool ownsSdl;
+    readonly bool ownsSdl;   // the device and SDL are ours to close
     public readonly SDL_GPUSampleCount Samples;
     readonly SDL_GPUTextureFormat dsFormat;
     readonly SDL_GPUShader* vs, fs;
@@ -39,7 +39,16 @@ public sealed unsafe class GpuBaker : IDisposable
     public string Driver => SDL_GetGPUDeviceDriver(dev) ?? "?";
 
     /// <summary>A device of its own (SDL video initialised here, the offscreen driver if there is no display).</summary>
-    public GpuBaker()
+    public GpuBaker() : this(OwnDevice(), owns: true)
+    {
+    }
+
+    /// <summary>Bake on a device someone else owns (the game's or the viewer's); Dispose leaves it alone.</summary>
+    public GpuBaker(SDL_GPUDevice* device) : this(device, owns: false)
+    {
+    }
+
+    static SDL_GPUDevice* OwnDevice()
     {
         if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO))
         {
@@ -47,11 +56,16 @@ public sealed unsafe class GpuBaker : IDisposable
             if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO))
                 throw new InvalidOperationException($"SDL_Init: {SDL_GetError()}");
         }
-        ownsSdl = true;
-        dev = SDL_CreateGPUDevice(SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_SPIRV, false, (byte*)null);
-        if (dev == null)
+        var d = SDL_CreateGPUDevice(SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_SPIRV, false, (byte*)null);
+        if (d == null)
             throw new InvalidOperationException($"SDL_CreateGPUDevice: {SDL_GetError()}");
+        return d;
+    }
 
+    GpuBaker(SDL_GPUDevice* device, bool owns)
+    {
+        dev = device;
+        ownsSdl = owns;
         Samples = SDL_GPUTextureSupportsSampleCount(dev, SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM, SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_8)
             ? SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_8 : SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_4;
         dsFormat = SDL_GPUTextureSupportsFormat(dev, SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT,
@@ -398,8 +412,10 @@ public sealed unsafe class GpuBaker : IDisposable
         SDL_ReleaseGPUTransferBuffer(dev, down);
         SDL_ReleaseGPUShader(dev, vs);
         SDL_ReleaseGPUShader(dev, fs);
-        SDL_DestroyGPUDevice(dev);
         if (ownsSdl)
+        {
+            SDL_DestroyGPUDevice(dev);
             SDL_Quit();
+        }
     }
 }

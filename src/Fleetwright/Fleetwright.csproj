@@ -17,6 +17,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fleetwright.Gpu\Fleetwright.Gpu.csproj" />
+    <!-- the ship viewer (-ship=...), a test tool for the Shipgen port -->
+    <ProjectReference Include="..\Fleetwright.Shipgen\Fleetwright.Shipgen.csproj" />
+    <ProjectReference Include="..\Fleetwright.Shipgen.Render\Fleetwright.Shipgen.Render.csproj" />
   </ItemGroup>
 
   <!-- Content/ lives at the repo root and is shared with the Shipgen renderer. -->

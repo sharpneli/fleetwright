@@ -210,6 +210,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
     private GpuTexture _screenshotTexture;
     private SDL_GPUTransferBuffer* _screenshotTransferBuffer;
 
+    // The ship viewer (-ship=...), drawn instead of the 3D scene
+    public ShipViewer? Viewer { get; set; }
+
     // ImGui
     private ImGuiRenderer? _imguiRenderer;
     private bool _showDemoWindow = true;
@@ -1115,11 +1118,14 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     break;
             }
 
-            // Forward to camera (only if ImGui doesn't want input)
+            // Forward to the viewer or the camera (only if ImGui doesn't want input)
             ImGuiIOPtr io = ImGui.GetIO();
             if (!io.WantCaptureMouse && !io.WantCaptureKeyboard)
             {
-                _mainCamera.ProcessSdlEvent(&evt);
+                if (Viewer != null)
+                    Viewer.ProcessEvent(&evt, _windowWidth, _windowHeight);
+                else
+                    _mainCamera.ProcessSdlEvent(&evt);
             }
         }
     }
@@ -1210,7 +1216,10 @@ public unsafe class Sdl3GpuEngine : IDisposable
         using (new ProfileScope("DrawGeometry", ZoneC.ORANGE))
         {
             _drawGeometryTimer.Restart();
-            DrawGeometry(commandBuffer);
+            if (Viewer != null)
+                Viewer.Draw(commandBuffer, _drawTextureMsaa.Texture, _drawTexture.Texture, _windowWidth, _windowHeight, DeltaTime);
+            else
+                DrawGeometry(commandBuffer);
             _drawGeometryTimer.Stop();
             DrawGeometryTimeMs = (float)_drawGeometryTimer.Elapsed.TotalMilliseconds;
         }
@@ -1244,6 +1253,12 @@ public unsafe class Sdl3GpuEngine : IDisposable
         ImGui.Separator();
         ImGui.Text($"DrawGeometry: {DrawGeometryTimeMs:F3} ms");
         ImGui.End();
+
+        if (Viewer != null)
+        {
+            Viewer.BuildUi();
+            return;
+        }
 
         // Demo window
         if (_showDemoWindow)
@@ -1615,6 +1630,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
         // Wait for GPU to finish
         SDL_WaitForGPUIdle(_device);
+
+        Viewer?.Dispose();
+        Viewer = null;
 
         // Dispose ImGui
         _imguiRenderer?.Dispose();

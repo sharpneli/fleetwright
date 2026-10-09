@@ -14,8 +14,10 @@ public static class Program
     const string Usage = """
         shipgen validate DESIGN.json... [--no-limits]
             print the validation strings (shipdesign.validate + looks.validate)
-        shipgen design DESIGN.json... [--no-limits] [--out DIR]
-            build each design: DIR/<id>/report.json, hitboxes.json and ship.json, and design.py's summary line
+        shipgen design DESIGN.json... [--no-limits] [--out DIR] [--scale S] [--mips N] [--no-sprites] [--previews]
+            build each design (design.py): DIR/<id>/report.json, hitboxes.json, ship.json and the summary line; then
+            draw and bake it on the GPU (default 10 px/m, 5 mips): sprite.json, hull.png, height.png,
+            turrets/<type>.png, each layer's _mips.png; --previews adds preview_rest.png and preview_starboard.png
         shipgen capture [--root DIR] [--out DIR] [--jobs N] [CASE...]
             golden.py's design capture from our side: DIR/<case>.json.gz for each golden case (default all)
         shipgen golden-diff GOLDEN OUT [--show N]
@@ -98,7 +100,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits")
+                else if (s is "--no-limits" or "--no-sprites" or "--previews")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];
@@ -143,6 +145,9 @@ public static class Program
     {
         bool limits = !a.Has("no-limits");
         string outDir = a.Get("out", "out_designs")!;
+        double scale = double.Parse(a.Get("scale", "10")!, System.Globalization.CultureInfo.InvariantCulture);
+        int mips = a.Int("mips", 5);
+        GpuBaker? gpu = null;
         int crashed = 0;
         foreach (var p in a.Positional)
         {
@@ -179,7 +184,19 @@ public static class Program
                 Console.WriteLine("      ERROR: " + e);
             foreach (var w in rep.L("warnings"))
                 Console.WriteLine("      warn:  " + w);
+            if (a.Has("no-sprites"))
+                continue;
+            gpu ??= new GpuBaker();
+            var sp = ShipSprites.Build(ship, scale, mips);
+            var baked = ShipBake.Bake(sp, gpu);
+            ShipBake.Save(sp, baked, dir);
+            if (a.Has("previews"))
+            {
+                Png.Save(Path.Combine(dir, "preview_rest.png"), Preview.Rest(sp, baked));
+                Png.Save(Path.Combine(dir, "preview_starboard.png"), Preview.Starboard(sp, baked));
+            }
         }
+        gpu?.Dispose();
         return crashed > 0 ? 1 : 0;
     }
 
