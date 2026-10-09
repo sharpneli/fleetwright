@@ -245,7 +245,8 @@ public static class HullArt
         return out_;
     }
 
-    static uint Crc32(byte[] data)
+    /// <summary>zlib.crc32.</summary>
+    internal static uint Crc32(byte[] data)
     {
         uint c = 0xFFFFFFFF;
         foreach (byte b in data)

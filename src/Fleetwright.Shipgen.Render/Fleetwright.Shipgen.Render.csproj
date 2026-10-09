@@ -5,7 +5,12 @@
   <PropertyGroup>
     <RootNamespace>Fleetwright.Shipgen.Render</RootNamespace>
     <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ppy.SDL3-CS" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Fleetwright.Shipgen\Fleetwright.Shipgen.csproj" />
@@ -13,6 +18,9 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Data\looks.jsonc" LogicalName="looks.jsonc" />
+    <EmbeddedResource Include="Data\dejavu-sans-bold.glyphs.json" LogicalName="dejavu-sans-bold.glyphs.json" />
+    <EmbeddedResource Include="$(ContentRoot)Shaders\Compiled\shipbake.vert.spv" LogicalName="shipbake.vert.spv" />
+    <EmbeddedResource Include="$(ContentRoot)Shaders\Compiled\shipbake.frag.spv" LogicalName="shipbake.frag.spv" />
   </ItemGroup>
 
 </Project>

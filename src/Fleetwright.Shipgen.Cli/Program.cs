@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Fleetwright.Shipgen;
 using Fleetwright.Shipgen.Golden;
 using Fleetwright.Shipgen.Render;
+using Fleetwright.Shipgen.Render.Bake;
 using Fleetwright.Shipgen.Render.Golden;
 
 namespace Fleetwright.Shipgen.Cli;
@@ -27,6 +28,12 @@ public static class Program
         shipgen draw DESIGN.json... [--out DIR] [--scale S] [--mips N]
             draw each design (default 10 px/m, 5 mips): DIR/<id>/sprite.json and the display lists as SVG (hull.svg,
             height.svg, turrets/<type>.svg)
+        shipgen bake DESIGN.json... [--out DIR] [--scale S] [--mips N]
+            draw and bake each design on the GPU: DIR/<id>/sprite.json, hull.png, height.png, turrets/<type>.png
+            and each layer's _mips.png
+        shipgen png-check [--root DIR] [--out DIR] [CASE|PREFIX*...]
+            bake every design with a sprite golden and compare its PNGs' coverage (IoU) with Python's; --out keeps
+            the PNGs
         shipgen svg-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
             every case's SVGs against golden/svg (Python's drawing with the port's RNG)
         shipgen sprite-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
@@ -53,6 +60,8 @@ public static class Program
                 "golden-check" => GoldenCheck(a),
                 "bench" => Bench(a),
                 "draw" => Draw(a),
+                "bake" => BakeCmd(a),
+                "png-check" => PngCheck(a),
                 "svg-check" => Check(a, RenderGolden.CheckSvgs),
                 "sprite-check" => Check(a, RenderGolden.CheckSprite),
                 _ => Fail($"unknown command {args[0]}\n\n{Usage}"),
@@ -395,5 +404,61 @@ public static class Program
         }
         Console.WriteLine($"{ok} of {cases.Count} cases match ({sw.Elapsed.TotalSeconds:F1} s)");
         return ok == cases.Count ? 0 : 1;
+    }
+
+    static int BakeCmd(Args a)
+    {
+        string outDir = a.Get("out", "out_sprites")!;
+        double scale = double.Parse(a.Get("scale", "10")!, System.Globalization.CultureInfo.InvariantCulture);
+        int mips = a.Int("mips", 5);
+        using var gpu = new GpuBaker();
+        Console.WriteLine($"GPU: {gpu.Driver}, {gpu.Samples}");
+        foreach (var path in a.Positional)
+        {
+            var design = LoadDesign(path);
+            var sw = Stopwatch.StartNew();
+            var sp = ShipSprites.Build(ShipDesign.Build(design), scale, mips);
+            double tBuild = sw.Elapsed.TotalSeconds;
+            var baked = ShipBake.Bake(sp, gpu);
+            double tBake = sw.Elapsed.TotalSeconds - tBuild;
+            string dir = Path.Combine(outDir, design.S("id"));
+            ShipBake.Save(sp, baked, dir);
+            Console.WriteLine($"baked {design.S("id")}: {baked.Hull.Width}x{baked.Hull.Height} px, {sp.Turrets.Count} turret types " +
+                              $"(build+draw {tBuild:F2} s, bake {tBake:F2} s, save {sw.Elapsed.TotalSeconds - tBuild - tBake:F2} s) -> {dir}");
+        }
+        return 0;
+    }
+
+    static int PngCheck(Args a)
+    {
+        string root = Root(a);
+        string? keep = a.Get("out");
+        var cases = SelectCases(root, a.Positional)
+            .Where(c => RenderGolden.State(root, "sprite", c.Name) as string == "ok").ToList();
+        using var gpu = new GpuBaker();
+        Console.WriteLine($"GPU: {gpu.Driver}, {gpu.Samples}; {cases.Count} designs");
+        // build and draw in parallel, bake one at a time on the one device
+        var sprites = new ShipSprites[cases.Count];
+        Parallel.For(0, cases.Count, i => sprites[i] = RenderGolden.Draw(cases[i]));
+        double worst = 1;
+        var sw = Stopwatch.StartNew();
+        Console.WriteLine($"{"case",-22} {"hull",7} {"height",7} {"turret",7} {"colour",7}");
+        for (int i = 0; i < cases.Count; i++)
+        {
+            var c = cases[i];
+            var b = ShipBake.Bake(sprites[i], gpu);
+            if (keep != null)
+                ShipBake.Save(sprites[i], b, Path.Combine(keep, c.Name));
+            string gdir = Path.Combine(root, "golden", "sprite", c.Name);
+            double hull = ShipBake.CoverageIoU(Png.Load(Path.Combine(gdir, "hull.png")), b.Hull);
+            double height = ShipBake.CoverageIoU(Png.Load(Path.Combine(gdir, "height.png")), b.Height);
+            double tur = b.Turrets.Count == 0 ? 1 : b.Turrets.Min(t => ShipBake.CoverageIoU(Png.Load(Path.Combine(gdir, "turrets", t.Key + ".png")), t.Value));
+            double col = ShipBake.ColourDiff(Png.Load(Path.Combine(gdir, "hull.png")), b.Hull);
+            double m = Math.Min(hull, Math.Min(height, tur));
+            worst = Math.Min(worst, m);
+            Console.WriteLine($"{c.Name,-22} {hull,7:F4} {height,7:F4} {tur,7:F4} {col,7:F2}{(m < 0.98 ? "  LOW" : "")}");
+        }
+        Console.WriteLine($"worst IoU {worst:F4} over {cases.Count} designs (bake {sw.Elapsed.TotalSeconds:F1} s)");
+        return worst >= 0.98 ? 0 : 1;
     }
 }

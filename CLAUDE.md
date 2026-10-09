@@ -54,6 +54,8 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design shipgen/de
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- validate shipgen/designs/*.json
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- bench bismarck yamato
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- draw shipgen/designs/bismarck.json --out out   # sprite.json + SVGs
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- bake shipgen/designs/bismarck.json --out out   # PNGs on the GPU
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- png-check             # bake all, IoU vs Python's PNGs
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- svg-check             # every case's SVGs, ~20 s
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check          # every design's sprite.json
 ```
@@ -92,10 +94,12 @@ src/
     Painter.cs, HullArt.cs, TurretArt.cs, Clutter.cs   # shipgen.py's drawing and clutter.py
     Sprite.cs                 #   the height map and sprite.json (ShipSprites.Build)
     ShipRng.cs                #   the drawing's seeded RNG (per feature)
+    Bake/                     #   the GPU bake: Lower (scene -> triangles), Stroker, Glyphs, GpuBaker (SDL_GPU), PNG, mips
     Golden/                   #   the SVG comparer and the drawing's golden checks
   Fleetwright.Shipgen.Cli/    # `shipgen` command, the port's test harness
 tests/
-  Fleetwright.Shipgen.Tests/  # xUnit: Py helpers vs CPython, every golden case, concurrent builds, the drawing
+  Fleetwright.Shipgen.Tests/  # xUnit: Py helpers vs CPython, every golden case, concurrent builds, the drawing, the
+                              #   bake (trait Gpu: needs a GPU)
 shipgen/                      # the port's test data
   designs/                    #   the 71 designs, and fuzz/ (300 mutants)
   golden/                     #   Python's output (README.md there)

@@ -351,6 +351,34 @@ Vulkan):
 - The per-layer alpha-coverage IoU against the golden PNGs is above about 0.98.
 - The user signs off the look in the viewer, next to the old PNGs.
 
+Done 2026-10-09, apart from the user's sign-off, which waits for Step 6's viewer. `shipgen png-check` bakes all 70
+designs in about 17 s on the dev GPU (Vulkan, 8x MSAA). Coverage IoU against Python's PNGs: hulls 0.998-0.9999,
+height maps 0.976-0.999 (Python's is antialiased, ours deliberately not), turrets 0.971-1.0 (the low ones are the
+smallest sprites, mostly edge). Colours differ from Python's PNGs only where its RNG put other clutter and dazzle;
+against cairosvg's rendering of the same-RNG SVGs (golden/svg) the hull colours differ by at most 1.2/255 on
+average. How it went, and where it left the plan:
+
+- **Lowering on the CPU (`Bake/Lower.cs`):** the Scene becomes one triangle list and a list of ops, in canvas
+  pixels. Arcs, curves, circles and rounded rects are flattened to 0.05 px. Strokes are expanded by `Stroker` with
+  SVG's miter (limit 4) and round joins, butt, round and square caps, and dashes. Fills are fanned per contour.
+- **Stencil, as planned plus one bit:** bits 0-3 count the winding (a stroke sets 1 instead, so its overlapping
+  pieces never cancel), bits 5-7 hold the clip depth (nested clips), and bit 4 marks opacity groups.
+- **Group opacity without an offscreen texture (a deviation):** a group's children are drawn topmost first, each
+  pixel by the first that reaches it (bit 4), at the group's opacity. For opaque children that is exactly the
+  composited group, and the only groups with opacity are dazzle panels. Nested opacity groups throw.
+- **Text from outlines, not SDL3_ttf (a deviation):** DejaVu Sans Bold's glyphs for printable ASCII are data
+  (`Data/dejavu-sans-bold.glyphs.json`, extracted with fontTools, licence alongside), placed as cairosvg placed them
+  (ink-centred, "central" baseline). Text then goes through the same fills and MSAA as everything else, with no
+  extra native library or texture path.
+- **Mips on the CPU after readback (a deviation):** a premultiplied 2x2 box for colour, 2x2 max for the height map
+  (`Bake/Png.cs`, `Mips`). The CLI needs the pixels anyway; the game can upload the same levels.
+- **Tiles of 2048 px** keep 8x MSAA targets small and handle gangut (9152 px wide).
+- **PNG I/O in C#** (a small codec, filters on read, "up" on write), so the CLI and tests need no SDL_image.
+- **Shaders:** `Content/Shaders/Source/shipbake.{vert,frag}.glsl`, compiled like the game's and embedded in the Render
+  assembly.
+- **Tests:** `BakeTests` (trait `Gpu`) bakes four designs, the widest included, and checks IoU, the mip atlas, the PNG
+  round trip and the height map's max mips.
+
 ### Step 6: viewer and full CLI
 
 The viewer is a test tool. How the game itself uses Shipgen (the API, the asset path) is designed after the port.
@@ -398,7 +426,7 @@ Then start the bug fixes held back by "port as is".
 - [x] Step 2: CLI harness: design, validate, golden-diff
 - [x] Step 3: Fleetwright.Shipgen matches the goldens
 - [x] Step 4: display list, SVG writer, sprite.json matches
-- [ ] Step 5: SDL_GPU backend
+- [x] Step 5: SDL_GPU backend (the user's sign-off waits for the viewer)
 - [ ] Step 6: viewer + full CLI
 - [ ] Step 7: Python retired, docs moved
 - [ ] Step 8: fuzz and verify ported
