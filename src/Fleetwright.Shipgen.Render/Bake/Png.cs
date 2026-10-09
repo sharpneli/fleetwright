@@ -180,20 +180,20 @@ public static class Mips
     }
 
     /// <summary>Level 0 and its halvings packed at rects ([x, y, w, h] each, level 0 first).</summary>
-    public static Image8 Atlas(Image8 im, IReadOnlyList<object?> rects, bool max)
+    public static Image8 Atlas(Image8 im, IReadOnlyList<long[]> rects, bool max)
     {
-        var r1 = rects.Count > 1 ? (List<object?>)rects[1]! : null;
-        int w = r1 != null ? (int)Py.ToLong(r1[0]) + (int)Py.ToLong(r1[2]) : im.Width;
+        var r1 = rects.Count > 1 ? rects[1] : null;
+        int w = r1 != null ? (int)(r1[0] + r1[2]) : im.Width;
         var atlas = new Image8(w, im.Height, im.Channels);
         var level = im;
         for (int k = 0; k < rects.Count; k++)
         {
-            var r = (List<object?>)rects[k]!;
+            var r = rects[k];
             if (k > 0)
                 level = Half(level, max);
-            int x0 = (int)Py.ToLong(r[0]), y0 = (int)Py.ToLong(r[1]);
-            if (level.Width != Py.ToLong(r[2]) || level.Height != Py.ToLong(r[3]))
-                throw new InvalidOperationException($"mip {k}: {level.Width}x{level.Height} vs rect {Py.Repr(r)}");
+            int x0 = (int)r[0], y0 = (int)r[1];
+            if (level.Width != r[2] || level.Height != r[3])
+                throw new InvalidOperationException($"mip {k}: {level.Width}x{level.Height} vs rect [{string.Join(", ", r)}]");
             int c = im.Channels;
             for (int y = 0; y < level.Height; y++)
                 Buffer.BlockCopy(level.Data, y * level.Width * c, atlas.Data, ((y0 + y) * atlas.Width + x0) * c, level.Width * c);

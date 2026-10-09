@@ -30,7 +30,7 @@ public class BakeTests
             Assert.True(ShipBake.CoverageIoU(Png.Load(Path.Combine(g, "height.png")), b.Height) >= 0.97, $"{c.Name} height");
             foreach (var (tid, im) in b.Turrets)
                 Assert.True(ShipBake.CoverageIoU(Png.Load(Path.Combine(g, "turrets", tid + ".png")), im) >= 0.965, $"{c.Name} {tid}");
-            var rects = sp.Meta.L("mip_rects");
+            var rects = sp.Meta.MipRects;
             var atlas = Mips.Atlas(b.Hull, rects, max: false);
             Assert.Equal(b.Hull.Width * 3 / 2, atlas.Width);
         }

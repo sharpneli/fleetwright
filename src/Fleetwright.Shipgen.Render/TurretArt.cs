@@ -10,9 +10,9 @@ public static class TurretArt
 
     /// <summary>Half the canvas in metres. With a scale, snapped so the canvas is a multiple of align px (even at
     /// least) and the pivot lands exactly at the image centre.</summary>
-    public static double Extent(PyDict t, double? scale = null, int align = 2)
+    public static double Extent(TurretType t, double? scale = null, int align = 2)
     {
-        double half = Math.Max(t.F("r") * 1.15, Geometry.TurretReach(t)) + 1.0;
+        double half = Math.Max(t.R * 1.15, Geometry.TurretReach(t)) + 1.0;
         if (scale is double s && s != 0)
         {
             double a = align / 2.0;
@@ -73,24 +73,24 @@ public static class TurretArt
                 return (Mirror([(0.86, -0.68), (0.7, -0.86), (-0.5, -0.86), (-0.95, -0.45), (-0.95, 0.0)]),
                     Ears(-0.62, -0.46, -1.02, -0.84), 0.86 * r, 0.68 * r);
         }
-        throw new PyValueError($"unknown turret look {Py.Repr(look)}");
+        throw new ArgumentException($"unknown turret look '{look}'");
     }
 
     /// <summary>A turret sprite. Outlines come from Geometry.TurretShapesOf, the same polygons used for hitboxes; a
     /// look other than "standard" redraws armoured turrets in its own style (LookTurretBody). shapes: the look's
     /// drawing variations (turret_bands: recognition bands painted across armoured turret roofs).</summary>
-    public static Scene Build(PyDict t, PyDict palette, double scale, int align = 2, string look = "standard",
-        PyDict? shapes = null)
+    public static Scene Build(TurretType t, Palette palette, double scale, int align = 2, string look = "standard",
+        Shapes? shapes = null)
     {
         var P = new Painter(palette, scale, shapes);
         var p = palette;
-        double r = t.F("r");
-        long n = t.I("barrels");
-        double bl = t.F("barrel_len"), bw = t.F("barrel_w"), sp = t.F("spacing");
+        double r = t.R;
+        long n = t.Barrels;
+        double bl = t.BarrelLen, bw = t.BarrelW, sp = t.Spacing;
         double half = Extent(t, scale, align);
         var scene = new Scene(-half, -half, 2 * half, 2 * half, scale);
         var s = scene.Root.Items;
-        string bodyCol = t.S("color", P.C("turret"))!;
+        string bodyCol = P.C("turret");
         var G = Geometry.TurretShapesOf(t);
         string Shade(string c, double k) => Painter.Shade(c, k);
         double Gy(int i) => (i - (n - 1) / 2.0) * sp;
@@ -107,7 +107,7 @@ public static class TurretArt
             }
         }
 
-        string shape = t.S("shape", "bb")!;
+        string shape = t.Shape;
         if (shape == "bb" && look != "standard")
         {
             var (pts, parts, xf, hf) = LookTurretBody(look, r);
@@ -161,7 +161,7 @@ public static class TurretArt
                         double hw = Math.Min(0.6 * r, (n - 1) / 2.0 * sp + 0.35 * r);
                         List<Pt> pear = [new(0.62 * r, -hw * 0.8), new(0.72 * r, 0.0), new(0.62 * r, hw * 0.8), new(0.2 * r, hw),
                             new(-0.45 * r, hw * 0.55), new(-0.6 * r, 0.0), new(-0.45 * r, -hw * 0.55), new(0.2 * r, -hw)];
-                        string hoodCol = p.TryGet("turret_hood", out var hc) ? (string)hc! : Shade(bodyCol, 1.35);
+                        string hoodCol = p.Or("turret_hood", Shade(bodyCol, 1.35));
                         s.Add(P.Ln(new PathNode(Painter.Poly(pear)).Fill(hoodCol), 0.8));
                         s.Add(new PathNode(Painter.Poly(pear)).Fill(Shade(hoodCol, 1.15)).Tr(new Translate(0.04 * r, 0), new Scale(0.7)));
                         s.Add(H(new CircleNode(-0.2 * r, 0, 0.1 * r).Fill(Shade(hoodCol, 0.85))));
@@ -189,13 +189,13 @@ public static class TurretArt
                     s.Add(H(new RectNode(-0.85 * r, -0.2 * r, 0.18 * r, 0.4 * r, 0.04 * r).Fill(hood)));
                     break;
             }
-            var bands = P.Shapes.Get("turret_bands") as List<object?> ?? [];
+            var bands = P.Shapes.TurretBands ?? [];
             for (int i = 0; i < bands.Count; i++)   // recognition bands across the roof
             {
-                string key = (string)bands[i]!;
+                string key = bands[i];
                 double bx = (-0.1 - 0.26 * i) * r;
                 var g = new Group { Clip = [new PathNode(body)] };
-                g.Items.Add(new RectNode(bx - 0.1 * r, -1.2 * r, 0.2 * r, 2.4 * r).Fill(p.TryGet(key, out var bc) ? (string)bc! : key).FillOp(0.92));
+                g.Items.Add(new RectNode(bx - 0.1 * r, -1.2 * r, 0.2 * r, 2.4 * r).Fill(p.Or(key, key)).FillOp(0.92));
                 s.Add(g);
             }
         }
@@ -268,7 +268,7 @@ public static class TurretArt
             }
         }
         else
-            throw new PyValueError($"unknown turret shape {shape}");
+            throw new ArgumentException($"unknown turret shape {shape}");
         return scene;
     }
 }

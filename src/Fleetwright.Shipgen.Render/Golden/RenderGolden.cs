@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Fleetwright.Shipgen.Golden;
 
@@ -45,7 +46,7 @@ public static class RenderGolden
             out_.Add($"turret types {string.Join(" ", golden)} vs ours {string.Join(" ", ours)}");
         foreach (var t in golden.Intersect(ours))
             One($"turrets/{t}.svg.gz", sp.Turrets[t]);
-        double gMax = Math.Round((double)st["max_height_m"]!, 2), oMax = sp.Meta.D("shadow").F("max_height_m");
+        double gMax = Math.Round((double)st["max_height_m"]!, 2), oMax = sp.Meta.Shadow.MaxHeightM;
         if (gMax != oMax)
             out_.Add($"max_height_m {gMax} vs ours {oMax}");
         return out_;
@@ -81,12 +82,12 @@ public static class RenderGolden
                 WriteGz(Path.Combine(dir, "height.svg.gz"), SvgWriter.Write(sp.Height));
                 foreach (var (tid, sc) in sp.Turrets)
                     WriteGz(Path.Combine(dir, "turrets", tid + ".svg.gz"), SvgWriter.Write(sc));
-                svg.Add((c.Name, sp.Meta.D("shadow").F("max_height_m"), sp.Clutter.Count));
+                svg.Add((c.Name, sp.Meta.Shadow.MaxHeightM, sp.Clutter.Count));
             }
             if (CheckSprite(root, c, 1).Count > 0)
             {
                 var meta = ShipSprites.Build(ShipDesign.Build(Design.Load(c.DesignPath)), Scale, Mips).Meta;
-                JsonFile.Save(Path.Combine(root, "golden", "sprite", c.Name, "sprite.json.gz"), JsonFile.FromPy(meta));
+                JsonFile.Save(Path.Combine(root, "golden", "sprite", c.Name, "sprite.json.gz"), meta, RenderJson.Default.SpriteMeta);
                 sprite.Add(c.Name);
             }
         });
@@ -106,7 +107,7 @@ public static class RenderGolden
             return [];
         var g = JsonFile.Load(Path.Combine(root, "golden", "sprite", c.Name, "sprite.json.gz"))!;
         var ship = ShipDesign.Build(Design.Load(c.DesignPath));
-        var o = JsonFile.FromPy(ShipSprites.Build(ship, Scale, Mips).Meta)!;
+        var o = JsonSerializer.SerializeToNode(ShipSprites.Build(ship, Scale, Mips).Meta, RenderJson.Default.SpriteMeta)!;
         var (gs, os) = (g["shadow"]!.AsObject(), o["shadow"]!.AsObject());
         double gh = (double)gs["max_height_m"]!, oh = (double)os["max_height_m"]!;
         gs.Remove("max_height_m");

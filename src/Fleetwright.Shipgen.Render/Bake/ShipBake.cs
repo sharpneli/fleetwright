@@ -23,19 +23,18 @@ public static class ShipBake
     public static void Save(ShipSprites sp, Baked b, string dir)
     {
         var meta = sp.Meta;
-        var rects = meta.L("mip_rects");
+        var rects = meta.MipRects;
         Directory.CreateDirectory(Path.Combine(dir, "turrets"));
         Png.Save(Path.Combine(dir, "hull.png"), b.Hull);
-        Png.Save(Path.Combine(dir, meta.D("layers").S("hull_mips")), Mips.Atlas(b.Hull, rects, max: false));
+        Png.Save(Path.Combine(dir, meta.Layers.HullMips), Mips.Atlas(b.Hull, rects, max: false));
         Png.Save(Path.Combine(dir, "height.png"), b.Height);
-        Png.Save(Path.Combine(dir, meta.D("shadow").S("height_map_mips")), Mips.Atlas(b.Height, rects, max: true));
-        foreach (var (tid, tv) in meta.D("turret_types"))
+        Png.Save(Path.Combine(dir, meta.Shadow.HeightMapMips), Mips.Atlas(b.Height, rects, max: true));
+        foreach (var (tid, tm) in meta.TurretTypes)
         {
-            var tm = (PyDict)tv!;
-            Png.Save(Path.Combine(dir, tm.S("file")), b.Turrets[tid]);
-            Png.Save(Path.Combine(dir, tm.S("mips_file")), Mips.Atlas(b.Turrets[tid], tm.L("mip_rects"), max: false));
+            Png.Save(Path.Combine(dir, tm.File), b.Turrets[tid]);
+            Png.Save(Path.Combine(dir, tm.MipsFile), Mips.Atlas(b.Turrets[tid], tm.MipRects, max: false));
         }
-        PyJson.Save(Path.Combine(dir, "sprite.json"), meta, 2);
+        JsonFile.Save(Path.Combine(dir, "sprite.json"), meta, RenderJson.Default.SpriteMeta, 2);
     }
 
     /// <summary>Intersection over union of two layers' coverage, both the same size. RGBA layers compare alpha as a

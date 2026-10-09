@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 
 namespace Fleetwright.Shipgen.Render.Bake;
 
@@ -70,31 +71,27 @@ public static class Verify
         return uni == 0 ? 1.0 : (double)inter / uni;
     }
 
-    static List<Pt> P(object? v) => Geometry.Pts(v);
-
     public static Result Check(string dir)
     {
-        var hb = (PyDict)PyJson.Load(Path.Combine(dir, "hitboxes.json"))!;
-        var sp = (PyDict)PyJson.Load(Path.Combine(dir, "sprite.json"))!;
-        double S = sp.F("scale_px_per_m");
-        var size = sp.L("size_px");
-        int W = (int)Py.ToLong(size[0]), H = (int)Py.ToLong(size[1]);
-        var origin = sp.L("origin_px");
-        double ox = Py.ToDouble(origin[0]), oy = Py.ToDouble(origin[1]);
-        var comps = hb.L("components").Cast<PyDict>().ToList();
+        var hb = JsonSerializer.Deserialize(JsonFile.ReadText(Path.Combine(dir, "hitboxes.json")), ShipgenJson.Default.Hitboxes)!;
+        var sp = JsonSerializer.Deserialize(JsonFile.ReadText(Path.Combine(dir, "sprite.json")), RenderJson.Default.SpriteMeta)!;
+        double S = sp.ScalePxPerM;
+        int W = (int)sp.SizePx[0], H = (int)sp.SizePx[1];
+        double ox = sp.OriginPx[0], oy = sp.OriginPx[1];
+        var comps = hb.Components;
         var rows = new List<(string Id, string Kind, double V)>();
         double worst = 1.0;
-        foreach (var c in comps.Where(c => c.Has("local")))
+        foreach (var c in comps.Where(c => c.Local != null))
         {
-            var tm = sp.D("turret_types").D(c.S("type"));
-            var timg = Png.Load(Path.Combine(dir, tm.S("file")));
-            var local = c.D("local");
-            var shapes = new[] { P(local["body"]) }.Concat(local.L("parts").Select(P)).Concat(local.L("barrels").Select(P)).ToList();
-            double rest = c.F("rest_deg"), best = 1.0;
+            var tm = sp.TurretTypes[c.Type!];
+            var timg = Png.Load(Path.Combine(dir, tm.File));
+            var local = c.Local!;
+            var shapes = new[] { local.Body }.Concat(local.Parts).Concat(local.Barrels).ToList();
+            double x = c.X!.Value, y = c.Y!.Value, rest = c.RestDeg!.Value, best = 1.0;
             foreach (double ang in new[] { rest, rest + 37, rest + 90, rest + 180 })
             {
                 var rot = Preview.Rotate(timg, ang);
-                double cx = ox + c.F("x") * S, cy = oy + c.F("y") * S;
+                double cx = ox + x * S, cy = oy + y * S;
                 int px0 = (int)Math.Round(cx - timg.Width / 2.0, MidpointRounding.ToEven);
                 int py0 = (int)Math.Round(cy - timg.Height / 2.0, MidpointRounding.ToEven);
                 int r = Math.Max(timg.Width, timg.Height) / 2 + 2;
@@ -105,17 +102,17 @@ public static class Verify
                     continue;
                 }
                 var sprite = new bool[(bx1 - bx0) * (by1 - by0)];
-                for (int y = by0; y < by1; y++)
-                    for (int x = bx0; x < bx1; x++)
+                for (int yy = by0; yy < by1; yy++)
+                    for (int xx = bx0; xx < bx1; xx++)
                     {
-                        int tx = x - px0, ty = y - py0;
+                        int tx = xx - px0, ty = yy - py0;
                         if (tx >= 0 && ty >= 0 && tx < timg.Width && ty < timg.Height)
-                            sprite[(y - by0) * (bx1 - bx0) + (x - bx0)] = rot[(ty * timg.Width + tx) * 4 + 3] * 255 > 127;
+                            sprite[(yy - by0) * (bx1 - bx0) + (xx - bx0)] = rot[(ty * timg.Width + tx) * 4 + 3] * 255 > 127;
                     }
-                var hit = Mask(shapes.Select(s => Geometry.RotateTranslate(s, ang, c.F("x"), c.F("y"))), S, ox, oy, bx0, by0, bx1, by1);
+                var hit = Mask(shapes.Select(s => Geometry.RotateTranslate(s, ang, x, y)), S, ox, oy, bx0, by0, bx1, by1);
                 best = Math.Min(best, IoU(sprite, hit));
             }
-            rows.Add((c.S("id"), c.S("kind"), best));
+            rows.Add((c.Id, c.Kind, best));
             worst = Math.Min(worst, best);
         }
 
@@ -124,9 +121,9 @@ public static class Verify
         double fixedWorst = 1.0;
         foreach (var c in comps)
         {
-            if (!(c.S("kind") == "funnel" || (c.S("kind") == "superstructure" && c.F("base", 0) > 0)))
+            if (!(c.Kind == "funnel" || (c.Kind == "superstructure" && c.Base > 0)))
                 continue;
-            var m = Mask([P(c["points"])], S, ox, oy, 0, 0, W, H);
+            var m = Mask([c.Points!], S, ox, oy, 0, 0, W, H);
             int n = 0, ok = 0;
             for (int i = 0; i < m.Length; i++)
                 if (m[i])
@@ -136,10 +133,10 @@ public static class Verify
                 }
             double cov = n > 0 ? (double)ok / n : 1.0;
             fixedWorst = Math.Min(fixedWorst, cov);
-            rows.Add((c.S("id"), c.S("kind"), cov));
+            rows.Add((c.Id, c.Kind, cov));
         }
         // the hull image is the hull plus whatever overhangs it: flight decks, sponsons, deck-edge elevators
-        var outline = new[] { P(hb["hull"]) }.Concat(comps.Where(c => c.S("kind", null) is "flight_deck" or "sponson").Select(c => P(c["points"])));
+        var outline = new[] { hb.Hull }.Concat(comps.Where(c => c.Kind is "flight_deck" or "sponson").Select(c => c.Points!));
         var hm = Mask(outline, S, ox, oy, 0, 0, W, H);
         var ha = new bool[W * H];
         for (int i = 0; i < ha.Length; i++)
@@ -152,86 +149,81 @@ public static class Verify
         foreach (var (id, kind, v) in rows)
             sb.AppendLine($"   {id,16} {kind,15}  {v:F3}{(v > 0.85 ? "" : "   <-- check")}");
         var probs = Subdivision(hb).Concat(Traverse(hb, sp)).ToList();
-        var shared = hb.L("rooms").Cast<PyDict>().Where(r => r.B("shared")).Select(r => r.S("id")).ToList();
-        sb.AppendLine($"   subdivision: {hb.L("sections").Count} sections, {hb.L("cells").Count} cells, {hb.L("rooms").Count} rooms" +
+        var shared = hb.Rooms.Where(r => r.Shared == true).Select(r => r.Id).ToList();
+        sb.AppendLine($"   subdivision: {hb.Sections.Count} sections, {hb.Cells.Count} cells, {hb.Rooms.Count} rooms" +
                       (shared.Count > 0 ? ", sharing a cell: " + string.Join(", ", shared) : ""));
         foreach (var p in probs.Take(20))
             sb.AppendLine($"   <-- {p}");
         return new Result(Math.Min(Math.Min(worst, fixedWorst), Math.Min(hullIoU, probs.Count > 0 ? 0.0 : 1.0)), sb.ToString().TrimEnd());
     }
 
-    /// <summary>geometry.table_half_width over the exported hull_form stations (or the deck outline without one).</summary>
-    static double FormHalfWidth(PyDict hb, double x, double z)
+    /// <summary>geometry.table_half_width over the exported hull_form stations.</summary>
+    static double FormHalfWidth(Hitboxes hb, double x, double z)
     {
-        if (hb.Get("hull_form") is not PyDict hf || !Py.Truthy(hf))
+        var st = hb.HullForm.Stations;
+        if (st.Count == 0)
         {
-            var span = Geometry.PolygonYSpan(P(hb["hull"]), x);
+            var span = Geometry.PolygonYSpan(hb.Hull, x);
             return span is { } s ? Math.Max(-s.Lo, s.Hi) : 0.0;
         }
-        var st = hf.L("stations").Cast<PyDict>().ToList();
-        var xs = st.Select(s => s.F("x")).ToList();
-        if (x <= xs[0] || x >= xs[^1])
+        if (x <= st[0].X || x >= st[^1].X)
             return 0.0;
-        int i = Math.Max(0, Math.Min(xs.Count - 2, Enumerable.Range(0, xs.Count - 1).First(k => xs[k + 1] >= x)));
-        double At(PyDict s)
+        int i = Math.Max(0, Math.Min(st.Count - 2, Enumerable.Range(0, st.Count - 1).First(k => st[k + 1].X >= x)));
+        double At(StationReport s)
         {
-            var zs = ((System.Collections.IEnumerable)s["z"]!).Cast<object?>().Select(Py.ToDouble).ToList();
-            var ys = ((System.Collections.IEnumerable)s["y"]!).Cast<object?>().Select(Py.ToDouble).ToList();
+            var (zs, ys) = (s.Z, s.Y);
             if (z >= zs[^1])
                 return ys[^1];
             if (z < zs[0])
                 return 0.0;
-            int j = Enumerable.Range(0, zs.Count - 1).First(k => zs[k + 1] >= z);
+            int j = Enumerable.Range(0, zs.Length - 1).First(k => zs[k + 1] >= z);
             double f = zs[j + 1] > zs[j] ? (z - zs[j]) / (zs[j + 1] - zs[j]) : 0.0;
             return ys[j] + (ys[j + 1] - ys[j]) * f;
         }
-        PyDict a = st[i], b = st[i + 1];
-        double fx = b.F("x") > a.F("x") ? (x - a.F("x")) / (b.F("x") - a.F("x")) : 0.0;
+        var (a, b) = (st[i], st[i + 1]);
+        double fx = b.X > a.X ? (x - a.X) / (b.X - a.X) : 0.0;
         return At(a) + (At(b) - At(a)) * fx;
     }
 
-    static IEnumerable<string> Subdivision(PyDict hb, int samples = 3000)
+    static IEnumerable<string> Subdivision(Hitboxes hb, int samples = 3000)
     {
         var probs = new List<string>();
-        var cells = hb.L("cells").Cast<PyDict>().ToDictionary(c => c.S("id"), StringComparer.Ordinal);
-        var rooms = hb.L("rooms").Cast<PyDict>().ToDictionary(r => r.S("id"), StringComparer.Ordinal);
-        var neigh = cells.ToDictionary(kv => kv.Key, kv => ((System.Collections.IEnumerable)kv.Value["neighbours"]!)
-            .Cast<System.Collections.IList>().Select(n => (string)n[0]!).ToList(), StringComparer.Ordinal);
+        var cells = hb.Cells.ToDictionary(c => c.Id, StringComparer.Ordinal);
+        var rooms = hb.Rooms.ToDictionary(r => r.Id, StringComparer.Ordinal);
+        var neigh = cells.ToDictionary(kv => kv.Key, kv => kv.Value.Neighbours.Select(n => n[0]).ToList(), StringComparer.Ordinal);
         foreach (var r in rooms.Values)
         {
-            var rc = r.L("cells").Cast<string>().ToList();
-            if (rc.Count == 0)
-                probs.Add($"room {r.S("id")} has no cell");
-            foreach (var cid in rc.Where(cid => !cells.ContainsKey(cid)))
-                probs.Add($"room {r.S("id")} lists unknown cell {cid}");
+            if (r.Cells.Count == 0)
+                probs.Add($"room {r.Id} has no cell");
+            foreach (var cid in r.Cells.Where(cid => !cells.ContainsKey(cid)))
+                probs.Add($"room {r.Id} lists unknown cell {cid}");
         }
         foreach (var c in cells.Values)
         {
-            string id = c.S("id"), room = c.S("room");
-            if (!rooms.TryGetValue(room, out var rr) || !rr.L("cells").Cast<string>().Contains(id))
-                probs.Add($"cell {id}: owner {room} doesn't list it");
-            foreach (var nid in neigh[id])
-                if (!cells.ContainsKey(nid) || !neigh[nid].Contains(id))
-                    probs.Add($"cell {id}: neighbour {nid} isn't mutual");
+            if (!rooms.TryGetValue(c.Room, out var rr) || !rr.Cells.Contains(c.Id))
+                probs.Add($"cell {c.Id}: owner {c.Room} doesn't list it");
+            foreach (var nid in neigh[c.Id])
+                if (!cells.ContainsKey(nid) || !neigh[nid].Contains(c.Id))
+                    probs.Add($"cell {c.Id}: neighbour {nid} isn't mutual");
         }
-        foreach (var comp in hb.L("components").Cast<PyDict>())
-            if (comp.Get("magazine") is string mag && mag != "" && !rooms.ContainsKey(mag))
-                probs.Add($"{comp.S("id")}: magazine {mag} isn't a room");
-        double L = hb.F("length"), keel = hb.D("vertical").F("keel");
-        var raised = (hb.D("vertical").Get("raised") as List<object?> ?? []).Cast<PyDict>().ToList();
+        foreach (var comp in hb.Components)
+            if (!string.IsNullOrEmpty(comp.Magazine) && !rooms.ContainsKey(comp.Magazine))
+                probs.Add($"{comp.Id}: magazine {comp.Magazine} isn't a room");
+        double L = hb.Length, keel = hb.Vertical.Keel;
+        var raised = hb.Vertical.Raised ?? [];
         var rng = new Random(1);
         int bad = 0;
         var cl = cells.Values.ToList();
         for (int k = 0; k < samples; k++)
         {
             double x = -L / 2 + L * rng.NextDouble();
-            double top = raised.Where(r => r.F("x0") <= x && x <= r.F("x1")).Select(r => r.F("top")).Append(0.0).Max();
+            double top = raised.Where(r => r.X0 <= x && x <= r.X1).Select(r => r.Top).Append(0.0).Max();
             double z = keel + (top - keel) * rng.NextDouble();
             double hw = FormHalfWidth(hb, x, z);      // the sections narrow toward the keel
             if (hw <= 0)                               // under a forefoot, a cut-up or a counter: outside the hull
                 continue;
             double y = -hw + 2 * hw * rng.NextDouble();
-            int n = cl.Count(c => c.F("x0") <= x && x < c.F("x1") && c.F("y0") <= y && y < c.F("y1") && c.F("base") <= z && z < c.F("top"));
+            int n = cl.Count(c => c.X0 <= x && x < c.X1 && c.Y0 <= y && y < c.Y1 && c.Base <= z && z < c.Top);
             bad += n != 1 ? 1 : 0;
         }
         if (bad > samples * 0.002)      // points right at the bow tip may miss a zero-volume cell
@@ -239,79 +231,68 @@ public static class Verify
         return probs;
     }
 
-    static (double, double) Pair(object? v)
-    {
-        var l = (System.Collections.IList)v!;
-        return (Py.ToDouble(l[0]), Py.ToDouble(l[1]));
-    }
+    static bool InPolygonOf(Component o, double px, double py) =>
+        o.Points is { Count: > 0 }
+            ? Geometry.PointInPolygon(px, py, o.Points)
+            : Geometry.PointInPolygon(px, py, Geometry.RotateTranslate(o.Local!.Body, o.RestDeg!.Value, o.X!.Value, o.Y!.Value));
 
-    static bool InPolygonOf(PyDict o, double px, double py) =>
-        o.Has("points") && Py.Truthy(o["points"])
-            ? Geometry.PointInPolygon(px, py, P(o["points"]))
-            : Geometry.PointInPolygon(px, py, Geometry.RotateTranslate(P(o.D("local")["body"]), o.F("rest_deg"), o.F("x"), o.F("y")));
+    static string Show(double[]? v) => v is null ? "None" : $"[{string.Join(", ", v)}]";
 
-    static IEnumerable<string> Traverse(PyDict hb, PyDict sp)
+    static IEnumerable<string> Traverse(Hitboxes hb, SpriteMeta sp)
     {
         static bool Inside(double lo, double hi, double a) => (lo - 1e-6 <= a && a <= hi + 1e-6) || (lo - 1e-6 <= a + 360 && a + 360 <= hi + 1e-6);
-        var spTr = sp.L("mounts").Cast<PyDict>().ToDictionary(m => m.S("id"), m => m.Get("traverse_deg"), StringComparer.Ordinal);
-        var comps = hb.L("components").Cast<PyDict>().ToList();
+        var spTr = sp.Mounts.ToDictionary(m => m.Id, m => m.TraverseDeg, StringComparer.Ordinal);
+        var comps = hb.Components;
         var probs = new List<string>();
         foreach (var c in comps)
         {
-            if (!c.Has("arcs_deg"))
+            if (c.ArcsDeg is not { } arcsDeg)
                 continue;
-            var (lo, hi) = Py.Truthy(c.Get("traverse_deg")) ? Pair(c["traverse_deg"]) : (0.0, -1.0);
-            var arcs = ((System.Collections.IEnumerable)c["arcs_deg"]!).Cast<object?>().Select(Pair).ToList();
-            double rest = c.F("rest_deg");
+            var (lo, hi) = c.TraverseDeg is { Length: > 0 } tr ? (tr[0], tr[1]) : (0.0, -1.0);
+            var arcs = arcsDeg.Select(a => (a[0], a[1])).ToList();
+            double rest = c.RestDeg!.Value, x = c.X!.Value, y = c.Y!.Value;
             if (!(0 <= hi - lo && hi - lo < 360 && Inside(lo, hi, Geometry.Normalize360(rest))
                   && arcs.All(a => Inside(lo, hi, Geometry.Normalize360(a.Item1)) && Inside(lo, hi, Geometry.Normalize360(a.Item2)) && a.Item2 - a.Item1 <= hi - lo)))
-                probs.Add($"{c.S("id")}: traverse {Py.Repr(PyJson.Plain(c.Get("traverse_deg")))} doesn't hold rest {Py.Repr(c["rest_deg"])} and arcs");
-            spTr.TryGetValue(c.S("id"), out var st);
-            if (!Py.Eq(PyJson.Plain(st), PyJson.Plain(c.Get("traverse_deg"))))
-                probs.Add($"{c.S("id")}: sprite.json traverse {Py.Repr(PyJson.Plain(st))} differs");
-            var barrels = c.Has("local") ? c.D("local").L("barrels").Select(P).ToList() : [];
-            double axis = c.F("base") + 0.55 * (c.F("top") - c.F("base"));
-            if (c.S("kind") == "secondary" && Py.Truthy(c.Get("rotating", true)))
+                probs.Add($"{c.Id}: traverse {Show(c.TraverseDeg)} doesn't hold rest {rest} and arcs");
+            spTr.TryGetValue(c.Id, out var st);
+            if (!(st ?? []).SequenceEqual(c.TraverseDeg ?? []))
+                probs.Add($"{c.Id}: sprite.json traverse {Show(st)} differs");
+            var barrels = c.Local?.Barrels ?? [];
+            double axis = c.Base + 0.55 * (c.Top - c.Base);
+            bool Tall(Component o) => !ReferenceEquals(o, c) && o.Top > axis + 1e-6 && o.Base < axis && (o.Points is { Count: > 0 } || o.Local != null);
+            if (c.Kind == "secondary" && c.Rotating != false)
             {
                 // stowed barrels lie clear of everything around them at their axis height
                 var hits = new SortedSet<string>(StringComparer.Ordinal);
-                foreach (var o in comps)
-                {
-                    if (ReferenceEquals(o, c) || !(o.F("top", 0) > axis + 1e-6 && o.F("base", 0) < axis))
-                        continue;
-                    if (!(o.Has("points") && Py.Truthy(o["points"])) && !o.Has("local"))
-                        continue;
+                foreach (var o in comps.Where(Tall))
                     foreach (var b in barrels)   // past the root, which sits in the gun house or casemate face
                     {
                         double bmax = b.Max(p => p.X);
-                        var out_ = b.Where(p => p.X > 0.25 * bmax);
-                        foreach (var (px, py) in Geometry.RotateTranslate(out_, rest, c.F("x"), c.F("y")))
+                        foreach (var (px, py) in Geometry.RotateTranslate(b.Where(p => p.X > 0.25 * bmax), rest, x, y))
                             if (InPolygonOf(o, px, py))
-                                hits.Add(o.S("id"));
+                                hits.Add(o.Id);
                     }
-                }
                 if (hits.Count > 0)
-                    probs.Add($"{c.S("id")}: stowed barrels at {Py.Repr(c["rest_deg"])} hit {string.Join(", ", hits)}");
+                    probs.Add($"{c.Id}: stowed barrels at {rest} hit {string.Join(", ", hits)}");
             }
-            if (c.S("kind") != "main")
+            if (c.Kind != "main")
                 continue;
             double R = barrels.SelectMany(b => b).Max(p => p.X);
-            var tall = comps.Where(o => !ReferenceEquals(o, c) && o.F("top", 0) > axis + 1e-6 && o.F("base", 0) < axis
-                                        && ((o.Has("points") && Py.Truthy(o["points"])) || o.Has("local"))).ToList();
+            var tall = comps.Where(Tall).ToList();
             var hit2 = new SortedSet<string>(StringComparer.Ordinal);
             for (int k = 0; k <= (int)(hi - lo); k++)
             {
                 double a = double.DegreesToRadians(lo + k);
                 foreach (double f in new[] { 0.5, 0.75, 1.0 })
                 {
-                    double px = c.F("x") + f * R * Math.Cos(a), py = c.F("y") + f * R * Math.Sin(a);
+                    double px = x + f * R * Math.Cos(a), py = y + f * R * Math.Sin(a);
                     foreach (var o in tall)
                         if (InPolygonOf(o, px, py))
-                            hit2.Add(o.S("id"));
+                            hit2.Add(o.Id);
                 }
             }
             if (hit2.Count > 0)
-                probs.Add($"{c.S("id")}: barrels swung through its traverse hit {string.Join(", ", hit2)}");
+                probs.Add($"{c.Id}: barrels swung through its traverse hit {string.Join(", ", hit2)}");
         }
         return probs;
     }

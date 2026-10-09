@@ -75,20 +75,25 @@ public class RenderTests
         Assert.NotEmpty(SvgDiff.Compare(g, reclipped));
     }
 
-    /// <summary>Every look resolves (its "from" chain), and the design side's list of navies and eras is the looks
-    /// table's.</summary>
+    /// <summary>Every look resolves (its "from" chain) into a palette and shapes the renderer knows every key of, and
+    /// the design side's list of navies and eras is the looks table's.</summary>
     [Fact]
     public void EveryLookResolves()
     {
-        foreach (var (navy, nv) in Render.Looks.NAVIES)
-            foreach (var (era, _) in ((PyDict)nv!).D("eras"))
+        foreach (var navy in Render.Looks.Navies)
+            foreach (var era in Render.Looks.ErasOf(navy))
             {
                 Assert.Contains(era, Render.Looks.ERAS);
-                Assert.NotNull(Render.Looks.Look(navy, era));
+                foreach (var style in new[] { "warship", "carrier", "merchant", "planing" })
+                {
+                    var d = new Design { Style = style, Look = new LookInput { Navy = navy, Era = era } };
+                    Assert.True(Render.Looks.Palette(d).Has("hull"));
+                    Assert.NotNull(Render.Looks.Shapes(d));
+                }
             }
         var bad = new Design { Look = new LookInput { Navy = "nowhere", Era = "wwii" } };
         var msg = Assert.Single(Shipgen.Looks.Validate(bad));
-        Assert.Contains(string.Join(", ", Render.Looks.NAVIES.Keys), msg);
+        Assert.Contains(string.Join(", ", Render.Looks.Navies), msg);
     }
 
     /// <summary>Drawing shares nothing mutable between threads: the same ships drawn at once come out identical.</summary>
@@ -101,7 +106,7 @@ public class RenderTests
         {
             var sp = ShipSprites.Build(ship, 10.0, 5);
             return SvgWriter.Write(sp.Hull) + SvgWriter.Write(sp.Height) + string.Concat(sp.Turrets.Values.Select(SvgWriter.Write))
-                   + PyJson.Dumps(sp.Meta, null);
+                   + System.Text.Json.JsonSerializer.Serialize(sp.Meta, RenderJson.Default.SpriteMeta);
         }
         var serial = ships.Select(Draw).ToList();
         var jobs = Enumerable.Range(0, 4).SelectMany(_ => Enumerable.Range(0, ships.Count)).ToList();

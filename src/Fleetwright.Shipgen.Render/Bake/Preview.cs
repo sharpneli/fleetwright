@@ -9,15 +9,14 @@ public static class Preview
     const double ShadowOpacity = 0.4;
 
     /// <summary>preview_rest.png: turrets at rest.</summary>
-    public static Image8 Rest(ShipSprites sp, Baked b) => Compose(sp, b, m => m.F("rest_deg"));
+    public static Image8 Rest(ShipSprites sp, Baked b) => Compose(sp, b, m => m.RestDeg);
 
     /// <summary>preview_starboard.png: turrets trained to starboard, as near as their arcs allow.</summary>
     public static Image8 Starboard(ShipSprites sp, Baked b) => Compose(sp, b, m => NearestAllowed(m, 90.0));
 
-    static double NearestAllowed(PyDict m, double a)
+    static double NearestAllowed(SpriteMount m, double a)
     {
-        var arcs = ((System.Collections.IEnumerable)m["arcs_deg"]!).Cast<System.Collections.IList>()
-            .Select(x => (Lo: Py.ToDouble(x[0]), Hi: Py.ToDouble(x[1]))).ToList();
+        var arcs = m.ArcsDeg.Select(x => (Lo: x[0], Hi: x[1])).ToList();
         if (arcs.Count == 0 || Geometry.AngleAllowed(arcs, a))
             return a;
         double best = a, bd = 1e9;
@@ -31,13 +30,13 @@ public static class Preview
         return best;
     }
 
-    public static Image8 Compose(ShipSprites sp, Baked b, Func<PyDict, double> angle)
+    public static Image8 Compose(ShipSprites sp, Baked b, Func<SpriteMount, double> angle)
     {
         var meta = sp.Meta;
-        double S = meta.F("scale_px_per_m");
-        var sh = meta.D("shadow");
+        double S = meta.ScalePxPerM;
+        var sh = meta.Shadow;
         double k = Math.Tan(Sun.El * Math.PI / 180);
-        int pad = Math.Max(0, (int)Math.Ceiling(sh.F("max_height_m") / k * S));
+        int pad = Math.Max(0, (int)Math.Ceiling(sh.MaxHeightM / k * S));
         int W = b.Hull.Width + 2 * pad, H = b.Hull.Height + 2 * pad;
         var canvas = new double[W * H * 4];          // premultiplied
         Over(canvas, W, H, Premul(b.Hull), b.Hull.Width, b.Hull.Height, pad, pad);
@@ -45,19 +44,18 @@ public static class Preview
         var tShadow = new double[W * H];
         var height = PadHeight(b.Height, pad);
         double az = Sun.Az * Math.PI / 180;
-        foreach (var m in meta.L("mounts").Cast<PyDict>().OrderBy(m => m.F("z")))
+        foreach (var m in meta.Mounts.OrderBy(m => m.Z))
         {
-            var img = b.Turrets[m.S("type")];
+            var img = b.Turrets[m.Type];
             var rot = Rotate(img, angle(m));
-            var px = m.L("px");
-            double cx = Py.ToDouble(px[0]) + pad, cy = Py.ToDouble(px[1]) + pad;
+            double cx = m.Px[0] + pad, cy = m.Px[1] + pad;
             int x0 = (int)Math.Round(cx - img.Width / 2.0, MidpointRounding.ToEven);
             int y0 = (int)Math.Round(cy - img.Height / 2.0, MidpointRounding.ToEven);
             Over(turrets, W, H, rot, img.Width, img.Height, x0, y0);
-            double L = (m.F("top_m") - sh.F("deck_m")) / k * S;   // shadow.sun_offset_px
+            double L = (m.TopM - sh.DeckM) / k * S;   // shadow.sun_offset_px
             int sx = (int)Math.Round(cx - L * Math.Cos(az) - img.Width / 2.0, MidpointRounding.ToEven);
             int sy = (int)Math.Round(cy - L * Math.Sin(az) - img.Height / 2.0, MidpointRounding.ToEven);
-            double top = m.F("top_m");
+            double top = m.TopM;
             for (int y = 0; y < img.Height; y++)
                 for (int x = 0; x < img.Width; x++)
                 {

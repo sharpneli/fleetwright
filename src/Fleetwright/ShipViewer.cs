@@ -55,7 +55,7 @@ public sealed unsafe class ShipViewer : IDisposable
         designIndex = Math.Max(0, designs.FindIndex(p => Path.GetFullPath(p) == Path.GetFullPath(designPath)));
         if (designs.Count == 0)
             designs.Add(designPath);
-        navies = ["(design)", .. Shipgen.Render.Looks.NAVIES.Keys];
+        navies = ["(design)", .. Shipgen.Render.Looks.Navies];
         eras = ["(design)", .. Shipgen.Render.Looks.ERAS];
         navyIndex = navy != null ? Math.Max(0, Array.IndexOf(navies, navy)) : 0;
         eraIndex = era != null ? Math.Max(0, Array.IndexOf(eras, era)) : 0;
@@ -160,8 +160,8 @@ public sealed unsafe class ShipViewer : IDisposable
             foreach (var (tid, im) in baked.Turrets)
                 turretTex[tid] = (nint)Upload(im, height: false);
             sprites = sp;
-            var size = sp.Meta.L("size_px");
-            status = $"{sp.Meta["name"]}\n{size[0]} x {size[1]} px, {sp.Turrets.Count} turret types, {sp.Clutter.Count} clutter items\n" +
+            var size = sp.Meta.SizePx;
+            status = $"{sp.Meta.Name}\n{size[0]} x {size[1]} px, {sp.Turrets.Count} turret types, {sp.Clutter.Count} clutter items\n" +
                      $"build {tBuild:F2} s, draw {tDraw:F2} s, bake {tBake:F2} s";
             Console.WriteLine($"viewer: {design.Id}: {status.Replace('\n', ';')}");
         }
@@ -260,13 +260,12 @@ public sealed unsafe class ShipViewer : IDisposable
 
     /// <summary>The turret's bearing now: its rest angle, a bearing circling the ship (stopping at the arcs' ends),
     /// or the nearest allowed to starboard.</summary>
-    double Bearing(PyDict m)
+    double Bearing(SpriteMount m)
     {
-        var arcs = ((System.Collections.IEnumerable)m["arcs_deg"]!).Cast<System.Collections.IList>()
-            .Select(a => (Lo: Py.ToDouble(a[0]), Hi: Py.ToDouble(a[1]))).ToList();
+        var arcs = m.ArcsDeg.Select(a => (Lo: a[0], Hi: a[1])).ToList();
         double target = turretMode switch
         {
-            0 => m.F("rest_deg"),
+            0 => m.RestDeg,
             1 => Geometry.Wrap180(clock * 24.0),
             _ => 90.0,
         };
@@ -307,8 +306,8 @@ public sealed unsafe class ShipViewer : IDisposable
     void DrawShip(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, uint w, uint h)
     {
         var meta = sprites!.Meta;
-        var size = meta.L("size_px");
-        float cw = (float)(Py.ToDouble(size[0]) / Scale), ch = (float)(Py.ToDouble(size[1]) / Scale);   // canvas, metres
+        var size = meta.SizePx;
+        float cw = (float)(size[0] / Scale), ch = (float)(size[1] / Scale);   // canvas, metres
         if (fit)
         {
             zoom = Math.Min(w * 0.92f / cw, h * 0.8f / ch);
@@ -323,9 +322,9 @@ public sealed unsafe class ShipViewer : IDisposable
             var nv = Ndc(o + v) - no;
             return new Quad { O = new(no, o.X, o.Y), U = new(nu, u.X, u.Y), V = new(nv, v.X, v.Y) };
         }
-        var hmap = new Vector4((float)(Scale / Py.ToDouble(size[0])), (float)(Scale / Py.ToDouble(size[1])), 0.5f, 0.5f);
-        var sh = meta.D("shadow");
-        float deckM = (float)sh.F("deck_m"), maxH = (float)sh.F("max_height_m");
+        var hmap = new Vector4((float)(Scale / size[0]), (float)(Scale / size[1]), 0.5f, 0.5f);
+        var sh = meta.Shadow;
+        float deckM = (float)sh.DeckM, maxH = (float)sh.MaxHeightM;
         float k = MathF.Tan(sunEl * MathF.PI / 180);
         var toSun = new Vector2(MathF.Cos(sunAz * MathF.PI / 180), MathF.Sin(sunAz * MathF.PI / 180));
 
@@ -345,27 +344,25 @@ public sealed unsafe class ShipViewer : IDisposable
         Sprite(hullTex, Q(new(-cw / 2, -ch / 2), new(cw, 0), new(0, ch)), new SpriteParams { P = new(mip, 0, 1, 0), HMap = hmap });
 
         // the turrets, their shadows first (only where the hull is lower than the turret's roof)
-        var types = meta.D("turret_types");
-        var mounts = meta.L("mounts").Cast<PyDict>().OrderBy(m => m.F("z")).ToList();
+        var types = meta.TurretTypes;
+        var mounts = meta.Mounts.OrderBy(m => m.Z).ToList();
         foreach (var pass2 in new[] { 0, 1 })
         {
             if (pass2 == 0 && !shadows)
                 continue;
             foreach (var m in mounts)
             {
-                var tm = types.D(m.S("type"));
-                var tsz = tm.L("size_px");
-                float e = (float)(Py.ToDouble(tsz[0]) / Scale / 2);
-                var pos = m.L("pos_m");
-                var c = new Vector2((float)Py.ToDouble(pos[0]), (float)Py.ToDouble(pos[1]));
+                var tm = types[m.Type];
+                float e = (float)(tm.SizePx[0] / Scale / 2);
+                var c = new Vector2((float)m.PosM[0], (float)m.PosM[1]);
                 float a = (float)(Bearing(m) * Math.PI / 180);
                 var ax = new Vector2(MathF.Cos(a), MathF.Sin(a)) * 2 * e;
                 var ay = new Vector2(-MathF.Sin(a), MathF.Cos(a)) * 2 * e;
                 var o = c - ax / 2 - ay / 2;
-                var tex = (SDL_GPUTexture*)turretTex[m.S("type")];
+                var tex = (SDL_GPUTexture*)turretTex[m.Type];
                 if (pass2 == 0)
                 {
-                    float top = (float)m.F("top_m");
+                    float top = (float)m.TopM;
                     var off = -toSun * ((top - deckM) / k);   // shadow.sun_offset_px, in metres
                     Sprite(tex, Q(o + off, ax, ay), new SpriteParams { P = new(mip, 1, 0.4f, top), HMap = hmap });
                 }

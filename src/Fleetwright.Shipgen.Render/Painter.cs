@@ -4,28 +4,25 @@ namespace Fleetwright.Shipgen.Render;
 /// drew with shadows off (the game casts them from the height map), so the baked drop shadows aren't ported.</summary>
 public sealed class Painter
 {
-    public readonly PyDict P;          // the palette (DEFAULT_PALETTE merged with the look's)
-    public readonly PyDict Shapes;     // the look's drawing variations (Looks.Shapes)
+    public readonly Palette P;         // the palette (DEFAULT_PALETTE under the look's)
+    public readonly Shapes Shapes;     // the look's drawing variations (Looks.Shapes)
     public List<(List<Pt> Pts, string Col)> Dazzle = [];   // dazzle camouflage panels, set by HullArt
     public readonly double Sw;         // outline width: at least ~0.6 px whatever the scale
 
-    public Painter(PyDict palette, double scale, PyDict? shapes)
+    public Painter(Palette palette, double scale, Shapes? shapes)
     {
         P = palette;
-        Shapes = shapes ?? new PyDict();
+        Shapes = shapes ?? new Shapes();
         Sw = Math.Max(0.12, 0.6 / scale);
     }
 
     // ------------------------------------------------------------------ helpers
 
     /// <summary>Palette colour by key.</summary>
-    public string C(string key) => (string)P[key]!;
+    public string C(string key) => P[key];
 
     /// <summary>The outline: palette "line", sw * k wide, round joins (Painter.stroke).</summary>
     public T Ln<T>(T n, double k = 1.0) where T : Node => n.Stroke(C("line"), Sw * k).Join("round");
-
-    /// <summary>shapes.get(key, def) for a number.</summary>
-    public double ShF(string key, double def) => Shapes.TryGet(key, out var v) ? Py.ToDouble(v) : def;
 
     /// <summary>k &lt; 1 darkens, k &gt; 1 lightens toward white.</summary>
     public static string Shade(string hex, double k)
@@ -88,10 +85,10 @@ public sealed class Painter
     // ------------------------------------------------------------------ parts
 
     /// <summary>AA guns (baked into the hull layers; too small to rotate usefully).</summary>
-    public void Aa(List<Node> o, PyDict a)
+    public void Aa(List<Node> o, AaMount a)
     {
-        var cfg = Geometry.AA_CFG[a.S("type", "quad40")!];
-        double x = a.F("x"), y = a.F("y"), d = a.F("dir", 0);
+        var cfg = Geometry.AA_CFG[a.Type];
+        double x = a.X, y = a.Y, d = a.Dir;
         double r = cfg.R, ln = cfg.BarrelLen, bw = cfg.BarrelW, sp = cfg.Spacing;
         long n = cfg.Barrels;
         var g = new Group().Tr(new Translate(x, y), new Rotate(d));
@@ -106,37 +103,38 @@ public sealed class Painter
         o.Add(g);
     }
 
-    public void Boat(List<Node> o, PyDict b)
+    public void Boat(List<Node> o, Boat b)
     {
-        double x = b.F("x"), y = b.F("y"), l = b.F("l", 7), w = b.F("w", 2.2);
+        double x = b.X, y = b.Y, l = b.L, w = b.W;
         o.Add(Ln(new EllipseNode(x, y, l / 2, w / 2).Fill(C("boat"))));
         o.Add(new EllipseNode(x, y, l / 2 - 0.5, w / 2 - 0.35).Fill(Shade(C("boat"), 0.82)));
     }
 
-    public void Fitting(List<Node> o, PyDict ft)
+    public void Fitting(List<Node> o, Fitting ft) => Fitting(o, ft.X, ft.Y, ft.L, ft.W, ft.Color, ft.R);
+
+    /// <summary>A coloured box: colour a palette key or a colour, its corners rounded r (by default a fifth of its
+    /// shorter side).</summary>
+    public void Fitting(List<Node> o, double x, double y, double l, double w, string colour, double? r = null)
     {
-        double x = ft.F("x"), y = ft.F("y"), l = ft.F("l"), w = ft.F("w");
-        double r = ft.F("r", Math.Min(l, w) * 0.2);
-        string key = ft.S("color", "fitting")!;
-        string col = P.TryGet(key, out var pc) ? (string)pc! : ft.S("color", C("fitting"))!;
-        o.Add(Ln(new PathNode(RrectPath(x - l / 2, y - w / 2, x + l / 2, y + w / 2, r, r)).Fill(col), 0.8));
+        double rr = r ?? Math.Min(l, w) * 0.2;
+        o.Add(Ln(new PathNode(RrectPath(x - l / 2, y - w / 2, x + l / 2, y + w / 2, rr, rr)).Fill(P.Or(colour, colour)), 0.8));
     }
 
     /// <summary>Superstructure block; higher "level" =&gt; lighter.</summary>
-    public void Block(List<Node> o, PyDict b)
+    public void Block(List<Node> o, Block b)
     {
-        if (b.B("director"))
+        if (b.Director != null)
         {
             Director(o, b);
             return;
         }
-        long lvl = b.I("level", 1);
-        double x0 = b.F("x0"), x1 = b.F("x1"), y = b.F("y", 0), w = b.F("w");
-        double rf = b.F("rf", 0.8), rb = b.F("rb", 0.8);
-        var mode = Shapes.Get("blocks") as string;
+        long lvl = b.Level;
+        double x0 = b.X0, x1 = b.X1, y = b.Y, w = b.W;
+        double rf = b.Rf, rb = b.Rb;
+        var mode = Shapes.Blocks;
         PathData d;
-        if (b.B("points"))       // the layout's own outline, sharp-cornered
-            d = Poly(Geometry.Pts(b["points"]));
+        if (b.Points is { Count: > 0 })       // the layout's own outline, sharp-cornered
+            d = Poly(b.Points);
         else if (mode == "chamfer")     // cut corners instead of round ones
         {
             double h = w / 2;
@@ -144,16 +142,13 @@ public sealed class Painter
             d = Poly([new(x0 + cb, y - h), new(x1 - cf, y - h), new(x1, y - h + cf), new(x1, y + h - cf), new(x1 - cf, y + h),
                       new(x0 + cb, y + h), new(x0, y + h - cb), new(x0, y - h + cb)]);
         }
-        else if (mode == "tower" && lvl >= ShF("tower_level", 3))   // a round-fronted tower bridge
+        else if (mode == "tower" && lvl >= (Shapes.TowerLevel ?? 3))   // a round-fronted tower bridge
             d = RrectPath(x0, y - w / 2, x1, y + w / 2, Math.Min(w / 2, (x1 - x0) * 0.6), rb * 0.4);
         else
         {
             double kf, kb;
-            if (Py.Truthy(Shapes.Get("block_round")))
-            {
-                var br = Shapes.L("block_round");
-                (kf, kb) = (Py.ToDouble(br[0]), Py.ToDouble(br[1]));
-            }
+            if (Shapes.BlockRound is { Length: > 0 } br)
+                (kf, kb) = (br[0], br[1]);
             else
                 (kf, kb) = mode switch
                 {
@@ -162,10 +157,10 @@ public sealed class Painter
                 };
             d = RrectPath(x0, y - w / 2, x1, y + w / 2, rf * kf, rb * kb);
         }
-        var cols = P.L("levels");
-        string col = (string)At(cols, Math.Min(lvl, cols.Count) - 1)!;
+        var cols = P.Colours("levels");
+        string col = At(cols, Math.Min(lvl, cols.Count) - 1);
         o.Add(Ln(new PathNode(d).Fill(col)));
-        Add(o, Dazzled(d, ShF("dazzle_upperworks", 1.0)));
+        Add(o, Dazzled(d, Shapes.DazzleUpperworks ?? 1.0));
         // a thin lighter rim on the port/fwd edge suggests light from the upper-left
         o.Add(new PathNode(d).Fill("none").Stroke(Shade(col, 1.25), Sw * 0.9)
             .Tr(new Translate(-Sw * 0.6, -Sw * 0.6)).StrokeOp(0.7));
@@ -174,15 +169,15 @@ public sealed class Painter
     /// <summary>A fire-control director on its roof, facing ahead, drawn from Geometry.DirectorParts (the same shape
     /// as its hitbox): the hood, the rangefinder's tube and end hoods sticking out each side, and a radar aerial on
     /// the hood's roof when it has one. Without a rangefinder (a gyro sight): a round tub with the sight in it.</summary>
-    public void Director(List<Node> o, PyDict b)
+    public void Director(List<Node> o, Block b)
     {
-        var dr = b.D("director");
-        double x0 = b.F("x0"), x1 = b.F("x1"), y = b.F("y", 0), w = b.F("w");
+        var dr = b.Director!;
+        double x0 = b.X0, x1 = b.X1, y = b.Y, w = b.W;
         double l = x1 - x0, xc = (x0 + x1) / 2;
-        double rf = dr.F("rangefinder_m", 0);
+        double rf = dr.RangefinderM;
         var parts = Geometry.DirectorParts(xc, y, l, w, rf);
-        var cols = P.L("levels");
-        string col = (string)At(cols, Math.Min(dr.I("on", 0) + 1, cols.Count) - 1)!;   // a shade lighter than the roof it stands on
+        var cols = P.Colours("levels");
+        string col = At(cols, Math.Min(dr.On + 1, cols.Count) - 1);   // a shade lighter than the roof it stands on
         var hood = Poly(parts.Hood);
         if (rf != 0)
         {
@@ -191,12 +186,12 @@ public sealed class Painter
             foreach (var e in parts.Ends)
                 o.Add(Ln(new PathNode(Poly(e)).Fill(Shade(col, 0.85))));
             o.Add(Ln(new PathNode(hood).Fill(col)));
-            Add(o, Dazzled(hood, ShF("dazzle_upperworks", 1.0)));
+            Add(o, Dazzled(hood, Shapes.DazzleUpperworks ?? 1.0));
             // the hood's roof: a sighting hatch aft, and the radar aerial (a flat dish seen edge-on) forward
             double hw = parts.Hood.Select(p => p.Y).Max() - y;
             o.Add(Ln(new PathNode(RrectPath(x0 + 0.12 * l, y - 0.4 * hw, x0 + 0.32 * l, y + 0.4 * hw, 0.1, 0.1))
                 .Fill(Shade(col, 0.88)), 0.6));
-            if (dr.B("radar"))
+            if (dr.Radar)
             {
                 double ax = xc + 0.22 * l, aw = 1.5 * hw;
                 o.Add(new LineNode(xc, y, ax, y).Stroke(C("mast"), Math.Max(Sw * 1.2, 0.18)));
@@ -215,17 +210,17 @@ public sealed class Painter
             .Tr(new Translate(-Sw * 0.6, -Sw * 0.6)).StrokeOp(0.7));
     }
 
-    public void Funnel(List<Node> o, PyDict fn)
+    public void Funnel(List<Node> o, Funnel fn)
     {
-        double x = fn.F("x"), y = fn.F("y", 0), l = fn.F("l"), w = fn.F("w");
-        var mode = Shapes.Get("funnel") as string;
-        double r = w / 2 * ShF("funnel_round", mode == "box" ? 0.44 : 1.0);
+        double x = fn.X, y = fn.Y, l = fn.L, w = fn.W;
+        var mode = Shapes.Funnel;
+        double r = w / 2 * (Shapes.FunnelRound ?? (mode == "box" ? 0.44 : 1.0));
         var d = RrectPath(x - l / 2, y - w / 2, x + l / 2, y + w / 2, r, r);
         var inner = RrectPath(x - l / 2 + 0.6, y - w / 2 + 0.6, x + l / 2 - 0.6, y + w / 2 - 0.6, Math.Max(0.0, r - 0.6),
             Math.Max(0.0, r - 0.6));
         if (mode == "oval")       // a smooth superellipse, fuller than an ellipse
         {
-            double n = ShF("funnel_squareness", 2.6);
+            double n = Shapes.FunnelSquareness ?? 2.6;
             const int k = 48;
             PathData Sup(double a, double b_) => Poly(Enumerable.Range(0, k).Select(i =>
             {
@@ -235,7 +230,7 @@ public sealed class Painter
             }));
             (d, inner) = (Sup(l / 2, w / 2), Sup(l / 2 - 0.6, w / 2 - 0.6));
         }
-        double rake = ShF("funnel_rake", 0.0);   // a raked funnel: the top seen displaced aft of its foot
+        double rake = Shapes.FunnelRake ?? 0.0;   // a raked funnel: the top seen displaced aft of its foot
         var top = o;
         if (rake != 0)   // the foot, then the casing's forward face sloping back to the top
         {
@@ -248,14 +243,14 @@ public sealed class Painter
             top = g.Items;
         }
         top.Add(Ln(new PathNode(d).Fill(C("funnel"))));
-        Add(top, Dazzled(d, ShF("dazzle_upperworks", 1.0)));
+        Add(top, Dazzled(d, Shapes.DazzleUpperworks ?? 1.0));
         top.Add(new PathNode(inner).Fill(C("funnel_cap")));
-        if (Py.Truthy(P.Get("funnel_band")))   // a painted top band (a look's funnel marking), seen from above as a rim
+        if (P.Has("funnel_band"))   // a painted top band (a look's funnel marking), seen from above as a rim
         {
             var band = RrectPath(x - l / 2 + 0.2, y - w / 2 + 0.2, x + l / 2 - 0.2, y + w / 2 - 0.2, r - 0.2, r - 0.2);
-            top.Add(new PathNode(band).Fill("none").Stroke(C("funnel_band"), ShF("funnel_band_w", 0.25)));
+            top.Add(new PathNode(band).Fill("none").Stroke(C("funnel_band"), Shapes.FunnelBandW ?? 0.25));
         }
-        long pipes = fn.I("pipes", 2);   // uptake openings
+        long pipes = fn.Pipes;   // uptake openings
         for (int i = 0; i < pipes; i++)
         {
             double cx = x - l / 2 + 0.6 + (l - 1.2) * (i + 0.5) / pipes;
@@ -266,7 +261,7 @@ public sealed class Painter
             var cap = RrectPath(x - l / 2 + 0.35, y - w / 2 + 0.35, x + l / 2 - 0.35, y + w / 2 - 0.35, r - 0.35, r - 0.35);
             top.Add(new PathNode(cap).Fill("none").Stroke(Shade(C("funnel"), 1.25), 0.45));
         }
-        var capMode = Shapes.Get("funnel_cap") as string;
+        var capMode = Shapes.FunnelCap;
         if (capMode == "pan")         // an Italian "frying pan": a flat plate over the top, overhanging aft, open forward
         {
             double pl = l * 0.8, pw = w * 1.08, px = x - l * 0.22;
@@ -297,22 +292,22 @@ public sealed class Painter
             .StrokeOp(0.6));
     }
 
-    public void Mast(List<Node> o, PyDict m)
+    public void Mast(List<Node> o, Mast m)
     {
-        double x = m.F("x"), y = m.F("y", 0);
-        double span = m.F("yard", 6);
+        double x = m.X, y = m.Y ?? 0;
+        double span = m.Yard;
         string mast = C("mast");
         if (span != 0)
             o.Add(new LineNode(x, y - span / 2, x, y + span / 2).Stroke(mast, Math.Max(Sw * 1.6, 0.35)).Cap("round"));
-        foreach (var bo in m.Get("booms") as List<object?> ?? [])   // cargo derricks, heel at the mast
+        foreach (var bo in m.Booms ?? [])   // cargo derricks, heel at the mast
         {
-            var (bx, by) = Geometry.AsPt(bo);
+            var (bx, by) = (bo[0], bo[1]);
             o.Add(new LineNode(x, y, bx, by).Stroke(mast, Math.Max(Sw * 1.4, 0.3)).Cap("round"));
             o.Add(new CircleNode(bx, by, 0.3).Fill(mast));
         }
-        var mode = Shapes.Get("mast") as string;
-        bool tripod = Py.Truthy(m.Get("tripod", true));
-        double legs = ShF("tripod", mode is "pole" or "fighting_top" or "cage" or "lattice" ? 0.0 : 1.0);   // 0: every mast a pole
+        var mode = Shapes.Mast;
+        bool tripod = m.Tripod;
+        double legs = Shapes.Tripod ?? (mode is "pole" or "fighting_top" or "cage" or "lattice" ? 0.0 : 1.0);   // 0: every mast a pole
         if (tripod && legs != 0)
             foreach (int ang in new[] { 150, 210 })
             {
@@ -320,7 +315,7 @@ public sealed class Painter
                 double ly = y + 3.0 * legs * (ang == 150 ? 1 : -1);
                 o.Add(new LineNode(x, y, lx, ly).Stroke(mast, Math.Max(Sw * 1.3, 0.3)).Cap("round"));
             }
-        double cage = ShF("cage_r", mode == "cage" ? 3.0 : 0.0);
+        double cage = Shapes.CageR ?? (mode == "cage" ? 3.0 : 0.0);
         if (cage != 0 && tripod)   // a US cage mast from above: twisted struts from a wide foot to a narrow head
         {
             for (int i = 0; i < 12; i++)
@@ -332,7 +327,7 @@ public sealed class Painter
             o.Add(new CircleNode(x, y, cage).Fill("none").Stroke(mast, Math.Max(Sw * 0.8, 0.15)));
             o.Add(Ln(new CircleNode(x, y, 0.45 * cage).Fill(Shade(mast, 0.85)), 0.6));
         }
-        double lat = ShF("lattice_r", mode == "lattice" ? 2.2 : 0.0);
+        double lat = Shapes.LatticeR ?? (mode == "lattice" ? 2.2 : 0.0);
         if (lat != 0 && tripod)   // a lattice mast: a square braced truss narrowing to a radar platform
         {
             foreach (double k in new[] { 1.0, 0.55 })
@@ -346,8 +341,8 @@ public sealed class Painter
             o.Add(Ln(new RectNode(x - 0.4 * lat, y - 0.4 * lat, 0.8 * lat, 0.8 * lat).Fill(Shade(mast, 1.3)), 0.6));
             o.Add(new LineNode(x, y - 1.3 * lat, x, y + 1.3 * lat).Stroke(Shade(mast, 0.8), Math.Max(Sw * 1.6, 0.35)));
         }
-        double top = ShF("top_r", mode == "fighting_top" ? 1.6 : 0.0);
-        long tiers = top != 0 ? Shapes.I("top_tiers", 1) : 0;
+        double top = Shapes.TopR ?? (mode == "fighting_top" ? 1.6 : 0.0);
+        long tiers = top != 0 ? Shapes.TopTiers ?? 1 : 0;
         for (int i = 0; i < tiers; i++)   // a fighting top; tiers stack a pagoda
         {
             double r = top * (1 - 0.3 * i);
@@ -358,11 +353,11 @@ public sealed class Painter
     }
 
     /// <summary>Revolving crane: pedestal and cab, jib pointing along dir (degrees, 0 = ahead).</summary>
-    public void Crane(List<Node> o, PyDict c)
+    public void Crane(List<Node> o, Crane c)
     {
-        double x = c.F("x"), y = c.F("y"), r = c.F("r", 1.2);
-        double a = double.DegreesToRadians(c.F("dir", 0));
-        double jx = x + c.F("jib") * Math.Cos(a), jy = y + c.F("jib") * Math.Sin(a);
+        double x = c.X, y = c.Y, r = c.R;
+        double a = double.DegreesToRadians(c.Dir);
+        double jx = x + c.Jib * Math.Cos(a), jy = y + c.Jib * Math.Sin(a);
         string col = C("crane");
         o.Add(Ln(new CircleNode(x, y, r).Fill(Shade(col, 1.3))));
         o.Add(new LineNode(x, y, jx, jy).Stroke(col, Math.Max(0.45, r * 0.4)).Cap("round"));
@@ -371,9 +366,9 @@ public sealed class Painter
     }
 
     /// <summary>Cargo hatch: coaming, tarpaulin cover and the battens across it.</summary>
-    public void Hatch(List<Node> o, PyDict h)
+    public void Hatch(List<Node> o, Hatch h)
     {
-        double x = h.F("x"), y = h.F("y"), l = h.F("l"), w = h.F("w");
+        double x = h.X, y = h.Y, l = h.L, w = h.W;
         o.Add(Ln(new RectNode(x - l / 2, y - w / 2, l, w, 0.25).Fill(C("hatch_coaming"))));
         o.Add(new RectNode(x - l / 2 + 0.35, y - w / 2 + 0.35, l - 0.7, w - 0.7).Fill(C("hatch")));
         long n = Math.Max(1L, (long)(l / 1.6));

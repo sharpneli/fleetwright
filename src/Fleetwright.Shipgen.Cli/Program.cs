@@ -406,12 +406,12 @@ public static class Program
             var sp = ShipSprites.Build(ShipDesign.Build(design), scale, mips);
             string dir = Path.Combine(outDir, design.Id!);
             Directory.CreateDirectory(Path.Combine(dir, "turrets"));
-            PyJson.Save(Path.Combine(dir, "sprite.json"), sp.Meta, 2);
+            JsonFile.Save(Path.Combine(dir, "sprite.json"), sp.Meta, RenderJson.Default.SpriteMeta, 2);
             File.WriteAllText(Path.Combine(dir, "hull.svg"), SvgWriter.Write(sp.Hull));
             File.WriteAllText(Path.Combine(dir, "height.svg"), SvgWriter.Write(sp.Height));
             foreach (var (tid, sc) in sp.Turrets)
                 File.WriteAllText(Path.Combine(dir, "turrets", tid + ".svg"), SvgWriter.Write(sc));
-            var size = sp.Meta.L("size_px");
+            var size = sp.Meta.SizePx;
             Console.WriteLine($"drew {design.Id}: {size[0]}x{size[1]} px, {sp.Turrets.Count} turret types, " +
                               $"{sp.Clutter.Count} clutter items -> {dir}");
         }

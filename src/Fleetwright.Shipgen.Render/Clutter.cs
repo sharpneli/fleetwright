@@ -241,7 +241,7 @@ public static class Clutter
 
     sealed class Placer
     {
-        public readonly PyDict Spec;
+        public readonly RenderSpec Spec;
         public readonly Hull Hull;
         public readonly List<(long Level, List<Pt> Poly, Box Box)> BlockPolys = [];
         public readonly List<(List<Pt> Poly, Box Box)> Directors = [];
@@ -250,47 +250,48 @@ public static class Clutter
         public readonly List<(double X, double L)> Funnels = [];
         public readonly List<Box> Taken = [];
 
-        public Placer(PyDict spec, Hull hull, PyDict turretTypes)
+        public Placer(RenderSpec spec, Hull hull)
         {
             Spec = spec;
             Hull = hull;
-            foreach (var b in L(spec, "superstructure"))
+            foreach (var b in spec.Superstructure)
             {
                 var poly = Geometry.BlockOutline(b);
-                if (b.B("director"))
+                if (b.Director != null)
                     Directors.Add((poly, BBox(poly)));
                 else
-                    BlockPolys.Add((b.I("level", 1), poly, BBox(poly)));
+                    BlockPolys.Add((b.Level, poly, BBox(poly)));
             }
-            foreach (var m in L(spec, "turrets"))
-                Circles.Add((m.F("x"), m.F("y", 0), turretTypes.D(m.S("type")).F("r") * 1.2));
-            foreach (var a in L(spec, "aa"))
-                Circles.Add((a.F("x"), a.F("y"), 2.4));
-            foreach (var fn in L(spec, "funnels"))
-                Funnels.Add((fn.F("x"), fn.F("l")));
-            foreach (var fn in L(spec, "funnels"))
-                Rects.Add(Rect(fn.F("x"), fn.F("y", 0), fn.F("l") + 1.6, fn.F("w") + 1.6));
-            foreach (var m in L(spec, "masts"))
+            foreach (var m in spec.Turrets)
+                Circles.Add((m.X, m.Y, spec.TurretTypes[m.Type].R * 1.2));
+            foreach (var a in spec.Aa)
+                Circles.Add((a.X, a.Y, 2.4));
+            foreach (var fn in spec.Funnels)
+                Funnels.Add((fn.X, fn.L));
+            foreach (var fn in spec.Funnels)
+                Rects.Add(Rect(fn.X, fn.Y, fn.L + 1.6, fn.W + 1.6));
+            foreach (var m in spec.Masts)
             {
-                Circles.Add((m.F("x"), m.F("y", 0), 1.4));
-                if (Py.Truthy(m.Get("tripod", true)))   // the legs run aft; keep them clear whichever look draws them
-                    Rects.Add(new(m.F("x") - 5.5, m.F("y", 0) - 4.0, m.F("x") + 0.5, m.F("y", 0) + 4.0));
+                double y = m.Y ?? 0;
+                Circles.Add((m.X, y, 1.4));
+                if (m.Tripod)   // the legs run aft; keep them clear whichever look draws them
+                    Rects.Add(new(m.X - 5.5, y - 4.0, m.X + 0.5, y + 4.0));
             }
-            foreach (var b in L(spec, "boats").Concat(L(spec, "fittings")).Concat(L(spec, "hatches")))
-                Rects.Add(Rect(b.F("x"), b.F("y"), b.F("l", 7) + 0.8, b.F("w", 2.2) + 0.8));
-            foreach (var c in L(spec, "cranes"))
-                Circles.Add((c.F("x"), c.F("y", 0), 2.0));
-            foreach (var bo in spec.Get("bollards") as List<object?> ?? [])   // a pair of bitts each side by the deck edge
+            foreach (var (x, y, l, w) in (spec.Boats ?? []).Select(b => (b.X, b.Y, b.L, b.W)).Concat((spec.Fittings ?? []).Select(f => (f.X, f.Y, f.L, f.W)))
+                         .Concat((spec.Hatches ?? []).Select(h => (h.X, h.Y, h.L, h.W))))
+                Rects.Add(Rect(x, y, l + 0.8, w + 0.8));
+            foreach (var c in spec.Cranes ?? [])
+                Circles.Add((c.X, c.Y, 2.0));
+            foreach (double bx in spec.Bollards ?? [])   // a pair of bitts each side by the deck edge
             {
-                double bx = Py.ToDouble(bo);
                 double by = hull.HalfWidth(bx) - 1.1;
                 foreach (int s in new[] { -1, 1 })
                     Rects.Add(new(bx - 0.6, s * by - 0.6, bx + 1.5, s * by + 0.6));
             }
-            if (Py.Truthy(spec.Get("chain_x")))
-                Rects.Add(new(spec.F("chain_x") - 1.5, -hull.B, hull.L, hull.B));
-            if (Py.Truthy(spec.Get("breakwater_x")))
-                Rects.Add(new(spec.F("breakwater_x") - hull.B * 0.4, -hull.B, spec.F("breakwater_x") + 1.0, hull.B));
+            if (spec.ChainX is double cx && cx != 0)
+                Rects.Add(new(cx - 1.5, -hull.B, hull.L, hull.B));
+            if (spec.BreakwaterX is double bw && bw != 0)
+                Rects.Add(new(bw - hull.B * 0.4, -hull.B, bw + 1.0, hull.B));
         }
 
         public bool Free(Surface surf, Box r)
@@ -320,22 +321,14 @@ public static class Clutter
         }
 
         long DeckLevel(double x) =>
-            L(Spec, "raised_decks").Where(rd => rd.F("x0") <= x && x <= rd.F("x1")).Select(rd => rd.I("levels", 1)).DefaultIfEmpty(0L).Max();
+            (Spec.RaisedDecks ?? []).Where(rd => rd.X0 <= x && x <= rd.X1).Select(rd => rd.Levels).DefaultIfEmpty(0L).Max();
     }
-
-    static IEnumerable<PyDict> L(PyDict spec, string key) => (spec.Get(key) as List<object?> ?? []).Cast<PyDict>();
 
     // ------------------------------------------------------------------ placement
 
-    static List<Surface> Surfaces(PyDict spec, Hull hull)
+    static List<Surface> Surfaces(RenderSpec spec, Hull hull)
     {
-        var out_ = new List<Surface>();
-        foreach (var b in L(spec, "superstructure"))
-        {
-            if (b.B("director") || b.Get("vents", null) is false)
-                continue;
-            out_.Add(new Surface(Geometry.BlockOutline(b), b.I("level", 1), "roof"));
-        }
+        var out_ = spec.Superstructure.Where(b => b.Director == null).Select(b => new Surface(Geometry.BlockOutline(b), b.Level, "roof")).ToList();
         // the deck as a polygon a little inside its edge
         const int n = 80;
         var xs = Enumerable.Range(0, n).Select(i => -hull.L / 2 + hull.L * (i + 0.5) / n).ToList();
@@ -524,18 +517,18 @@ public static class Clutter
     }
 
     /// <summary>Every clutter item for the ship. Repeatable.</summary>
-    public static List<Item> Plan(PyDict spec, Hull hull, PyDict turretTypes, PyDict shapes)
+    public static List<Item> Plan(RenderSpec spec, Hull hull, Shapes shapes)
     {
-        var kitName = shapes.Get("clutter") as string;
+        var kitName = shapes.Clutter;
         var kit = Kit(kitName ?? "");
         if (kit == null)
             return [];
-        double density = shapes.F("clutter_density", 1.0);
-        var rng = new ShipRng($"{spec.S("id")}/clutter/{kitName}");
-        var P = new Placer(spec, hull, turretTypes);
+        double density = shapes.ClutterDensity ?? 1.0;
+        var rng = new ShipRng($"{spec.Id}/clutter/{kitName}");
+        var P = new Placer(spec, hull);
         var items = new List<Item>();
         var surfs = Surfaces(spec, hull);
-        bool flight = Py.Truthy(spec.Get("flight_deck"));
+        bool flight = spec.FlightDeck != null;
         foreach (var s in surfs)   // what's left open once the blocks above are drawn over it
         {
             var (x0, y0, x1, y1) = (s.BBox.X0, s.BBox.Y0, s.BBox.X1, s.BBox.Y1);     // a 1 m grid, a row at a time
@@ -633,7 +626,7 @@ public static class Clutter
         const string dark = "#1d2125";
         string fitting = P.C("fitting");
         T St<T>(T n) where T : Node => P.Ln(n, 0.6);
-        string Pal(string key, string def) => p.TryGet(key, out var v) ? (string)v! : def;
+        string Pal(string key, string def) => p.Or(key, def);
         switch (k)
         {
             case "cowl" or "cowl_small" or "boiler_cowl":   // a cowl ventilator: the round trunk and its bell mouth turned to the wind
@@ -794,7 +787,7 @@ public static class Clutter
             {
                 o.Add(P.Ln(new RectNode(x - 0.35 * l, y - 0.3 * w, 0.3 * l, 0.6 * w, 0.2).Fill(Painter.Shade(col, 1.05)), 0.6));
                 o.Add(P.Ln(new CircleNode(x + 0.05 * l, y, 0.16 * w).Fill(P.C("funnel")), 0.6));
-                o.Add(new CircleNode(x + 0.05 * l, y, 0.09 * w).Fill(P.P.TryGet("funnel_cap", out var fc) ? (string)fc! : "#222"));
+                o.Add(new CircleNode(x + 0.05 * l, y, 0.09 * w).Fill(P.P.Or("funnel_cap", "#222")));
             }
             else if (kind == "launch")
                 o.Add(P.Ln(new RectNode(x - 0.05 * l, y - 0.3 * w, 0.32 * l, 0.6 * w, 0.25).Fill(Painter.Shade(col, 1.06)), 0.6));
@@ -818,12 +811,12 @@ public static class Clutter
 
     /// <summary>A block's roof: planked like a deck (Victorian boat decks and the like) inside a steel waterway, and a
     /// guardrail round its edge. Drawn over the block, under whatever stands on it.</summary>
-    public static void RoofFinish(List<Node> o, PyDict b, Painter P, double areaMin, bool rails, string wood)
+    public static void RoofFinish(List<Node> o, Block b, Painter P, double areaMin, bool rails, string wood)
     {
         var pts = Geometry.BlockOutline(b);
         if (pts.Count < 3)
             return;
-        long lvl = b.I("level", 1);
+        long lvl = b.Level;
         if (areaMin != 0 && Geometry.PolygonArea(pts) >= areaMin)
         {
             var inner = InsetPolygon(pts, 0.7);
@@ -855,40 +848,39 @@ public static class Clutter
     }
 
     /// <summary>Height-map columns for the items, each standing on whatever column is tallest under its centre.</summary>
-    public static List<PyDict> HeightColumns(List<Item> items, IReadOnlyList<PyDict> columns, Hull hull)
+    public static List<HeightColumn> HeightColumns(List<Item> items, IReadOnlyList<HeightColumn> columns, Hull hull)
     {
         double Under(double x, double y)
         {
             double best = 0.0;
             foreach (var c in columns)
             {
-                bool inside = c.S("shape") switch
+                bool inside = c.Shape switch
                 {
                     "hull" => Math.Abs(y) <= hull.HalfWidth(x),
-                    "polygon" => Geometry.PointInPolygon(x, y, Geometry.Pts(c["points"])),
-                    "rect" => c.F("x") <= x && x <= c.F("x") + c.F("w") && c.F("y") <= y && y <= c.F("y") + c.F("h"),
-                    "circle" => Math.Pow(x - c.F("cx"), 2) + Math.Pow(y - c.F("cy"), 2) <= Math.Pow(c.F("r"), 2),
-                    "ellipse" => Math.Pow((x - c.F("cx")) / c.F("rx"), 2) + Math.Pow((y - c.F("cy")) / c.F("ry"), 2) <= 1,
+                    "polygon" => Geometry.PointInPolygon(x, y, c.Points!),
+                    "rect" => c.X <= x && x <= c.X + c.W && c.Y <= y && y <= c.Y + c.H,
+                    "circle" => Math.Pow(x - c.Cx!.Value, 2) + Math.Pow(y - c.Cy!.Value, 2) <= Math.Pow(c.R!.Value, 2),
+                    "ellipse" => Math.Pow((x - c.Cx!.Value) / c.Rx!.Value, 2) + Math.Pow((y - c.Cy!.Value) / c.Ry!.Value, 2) <= 1,
                     _ => false,
                 };
                 if (inside)
-                    best = Math.Max(best, c.F("top"));
+                    best = Math.Max(best, c.Top);
             }
             return best;
         }
-        var out_ = new List<PyDict>();
+        var out_ = new List<HeightColumn>();
         foreach (var it in items)
         {
             if (it.H <= 0)
                 continue;
-            double b = Under(it.X, it.Y);
+            double top = Under(it.X, it.Y) + it.H;
             if (it.Kind is "cowl" or "cowl_small" or "boiler_cowl" or "mushroom" or "searchlight" or "searchlight_tower")
-                out_.Add(PyDict.Of(("top", b + it.H), ("shape", "circle"), ("cx", it.X), ("cy", it.Y), ("r", it.L / 2)));
+                out_.Add(new(top, "circle") { Cx = it.X, Cy = it.Y, R = it.L / 2 });
             else if (it.Kind == "boat")
-                out_.Add(PyDict.Of(("top", b + it.H), ("shape", "ellipse"), ("cx", it.X), ("cy", it.Y), ("rx", it.L / 2), ("ry", it.W / 2)));
+                out_.Add(new(top, "ellipse") { Cx = it.X, Cy = it.Y, Rx = it.L / 2, Ry = it.W / 2 });
             else
-                out_.Add(PyDict.Of(("top", b + it.H), ("shape", "rect"), ("x", it.X - it.L / 2), ("y", it.Y - it.W / 2), ("w", it.L),
-                    ("h", it.W)));
+                out_.Add(new(top, "rect") { X = it.X - it.L / 2, Y = it.Y - it.W / 2, W = it.L, H = it.W });
         }
         return out_;
     }

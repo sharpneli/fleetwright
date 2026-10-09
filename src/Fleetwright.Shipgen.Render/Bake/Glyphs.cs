@@ -9,7 +9,8 @@ namespace Fleetwright.Shipgen.Render.Bake;
 /// width.</summary>
 public static class Glyphs
 {
-    sealed record Glyph(double Adv, double XMin, double XMax, List<object?> Path);
+    /// <summary>A glyph: its advance, its ink's x extent and its outline as path operations (M x y, L x y, Q qx qy x y).</summary>
+    sealed record Glyph(double Adv, double XMin, double XMax, List<(string Op, double[] Args)> Path);
 
     static readonly (double Upem, double Ascent, double Descent, Dictionary<char, Glyph> Map) Font = Load();
 
@@ -17,14 +18,15 @@ public static class Glyphs
     {
         using var s = Assembly.GetExecutingAssembly().GetManifestResourceStream("dejavu-sans-bold.glyphs.json")
                       ?? throw new InvalidOperationException("the glyphs are not embedded");
-        var d = (PyDict)PyJson.Parse(new StreamReader(s).ReadToEnd())!;
+        var d = JsonFile.Parse(new StreamReader(s).ReadToEnd())!;
         var map = new Dictionary<char, Glyph>();
-        foreach (var (k, v) in d.D("glyphs"))
+        foreach (var (k, g) in d["glyphs"]!.AsObject())
         {
-            var g = (PyDict)v!;
-            map[k[0]] = new Glyph(g.F("adv"), g.F("xmin"), g.F("xmax"), g.L("path"));
+            var path = g!["path"]!.AsArray().Select(op => op!.AsArray())
+                .Select(op => ((string)op[0]!, op.Skip(1).Select(v => (double)v!).ToArray())).ToList();
+            map[k[0]] = new Glyph((double)g["adv"]!, (double)g["xmin"]!, (double)g["xmax"]!, path);
         }
-        return (d.F("units_per_em"), d.F("ascent"), d.F("descent"), map);
+        return ((double)d["units_per_em"]!, (double)d["ascent"]!, (double)d["descent"]!, map);
     }
 
     /// <summary>The text's outlines, as closed contours through apply (user space to pixels); pxPerUnit sets the
@@ -56,23 +58,23 @@ public static class Glyphs
             List<Vector2>? cur = null;
             double cx = 0, cy = 0;
             Vector2 P(double fx, double fy) => apply(pen + fx * k, y0 - fy * k);
-            foreach (var op in g.Path.Cast<List<object?>>())
+            foreach (var (op, a) in g.Path)
             {
-                switch ((string)op[0]!)
+                switch (op)
                 {
                     case "M":
                         if (cur is { Count: >= 3 })
                             out_.Add(cur);
-                        (cx, cy) = (Py.ToDouble(op[1]), Py.ToDouble(op[2]));
+                        (cx, cy) = (a[0], a[1]);
                         cur = [P(cx, cy)];
                         break;
                     case "L":
-                        (cx, cy) = (Py.ToDouble(op[1]), Py.ToDouble(op[2]));
+                        (cx, cy) = (a[0], a[1]);
                         cur!.Add(P(cx, cy));
                         break;
                     case "Q":
                         {
-                            double qx = Py.ToDouble(op[1]), qy = Py.ToDouble(op[2]), ex = Py.ToDouble(op[3]), ey = Py.ToDouble(op[4]);
+                            double qx = a[0], qy = a[1], ex = a[2], ey = a[3];
                             double dev = Math.Sqrt(Math.Pow((cx + ex) / 2 - qx, 2) + Math.Pow((cy + ey) / 2 - qy, 2)) / 2;
                             int n = Math.Clamp((int)Math.Ceiling(Math.Sqrt(dev / tolUnits)), 1, 64);
                             for (int i = 1; i <= n; i++)
