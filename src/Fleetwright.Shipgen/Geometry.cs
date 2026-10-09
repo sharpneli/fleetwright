@@ -2,9 +2,8 @@ namespace Fleetwright.Shipgen;
 
 /// <summary>A point in ship-local metres; written as [x, y].</summary>
 [System.Text.Json.Serialization.JsonConverter(typeof(PtConverter))]
-public readonly record struct Pt(double X, double Y) : IPyValue
+public readonly record struct Pt(double X, double Y)
 {
-    public object? ToPy() => new List<object?> { X, Y };
     public static implicit operator Pt((double X, double Y) t) => new(t.X, t.Y);
 }
 
@@ -66,31 +65,6 @@ public static class Geometry
     /// <summary>A superstructure block's outline: its own polygon when it has one, else its rounded rectangle.</summary>
     public static List<Pt> BlockOutline(Block b) =>
         b.Points is { Count: > 0 } pts ? [.. pts] : RrectPolygon(b.X0, b.Y - b.W / 2, b.X1, b.Y + b.W / 2, b.Rf, b.Rb);
-
-    /// <summary>BlockOutline for a block the renderer reads as a dict (until it reads the typed spec).</summary>
-    public static List<Pt> BlockOutline(PyDict b)
-    {
-        if (b.B("points"))
-            return [.. Pts(b["points"])];
-        double y = b.F("y", 0.0);
-        return RrectPolygon(b.F("x0"), y - b.F("w") / 2, b.F("x1"), y + b.F("w") / 2, b.F("rf", 0.0), b.F("rb", 0.0));
-    }
-
-    /// <summary>A polygon stored in a dict (a list of Pt, or Python-style [[x, y], ...]) as points.</summary>
-    public static List<Pt> Pts(object? v) => v switch
-    {
-        List<Pt> l => l,
-        System.Collections.IEnumerable e => e.Cast<object?>().Select(AsPt).ToList(),
-        _ => throw new PyTypeError("not a polygon"),
-    };
-
-    public static Pt AsPt(object? p) => p switch
-    {
-        Pt q => q,
-        List<object?> l => new Pt(Py.ToDouble(l[0]), Py.ToDouble(l[1])),
-        object?[] t => new Pt(Py.ToDouble(t[0]), Py.ToDouble(t[1])),
-        _ => throw new PyTypeError("not a point"),
-    };
 
     /// <summary>Area and centroid x of a simple polygon.</summary>
     public static (double Area, double Cx) PolygonCentroid(IReadOnlyList<Pt> pts)
@@ -263,29 +237,6 @@ public static class Geometry
 
     // ------------------------------------------------------------------ turret types
 
-    /// <summary>A turret type the renderer reads as a dict (until it reads the typed spec).</summary>
-    public static TurretType Typed(PyDict t) =>
-        System.Text.Json.JsonSerializer.Deserialize(PyJson.Dumps(t, null), ShipgenJson.Default.TurretType)!;
-
-    /// <summary>The gun of turret type t, as exported: calibre_mm and calibre_length, those it has.</summary>
-    public static PyDict GunOf(TurretType t)
-    {
-        var o = PyDict.Of(("calibre_mm", t.CalibreMm));
-        if (t.CalibreLength is double cl)
-            o["calibre_length"] = cl;
-        return o;
-    }
-
-    public static PyDict GunOf(PyDict t)
-    {
-        var o = new PyDict();
-        foreach (var k in new[] { "calibre_mm", "calibre_length" })
-            if (t.Has(k))
-                o[k] = t[k];
-        return o;
-    }
-
-    /// <summary>Size a turret from its guns: (type id, type dict).</summary>
     /// <summary>Size a turret from its guns: (type id, type).</summary>
     public static (string Id, TurretType T) MakeTurretType(double calMm, double calLen, int n, string kind = "auto")
     {
@@ -330,12 +281,7 @@ public static class Geometry
     public const double CASEMATE_SHIELD = 0.55;
     static readonly Dictionary<string, double> BarrelShownK = new() { ["bb"] = 0.8, ["dp"] = 0.8, ["casemate"] = 0.5 };
 
-    /// <summary>Does a mount of turret type t stand on a barbette?</summary>
-    public static bool HasBarbette(PyDict t) => Typed(t).HasBarbette;
-
     public static double BarrelShown(TurretType t) => t.BarrelLen * (BarrelShownK.TryGetValue(t.Shape, out var k) ? k : 1.0);
-
-    public static double BarrelShown(PyDict t) => BarrelShown(Typed(t));
 
     // turret_shapes is a pure function of these values; each thread memoises its own (no shared mutable state)
     [ThreadStatic] static Dictionary<(string, double, long, double, double, double), (TurretShapes Shapes, double Reach)>? shapeCache;
@@ -357,7 +303,7 @@ public static class Geometry
                 first = false;
             }
             if (first)
-                throw new PyValueError("max() iterable argument is empty");
+                throw new InvalidOperationException("a turret with no outline");
             shapeCache[key] = v = (sh, reach);
         }
         return v;
@@ -365,8 +311,6 @@ public static class Geometry
 
     /// <summary>Polygons (turret-local) for the turret body, extra parts and each barrel. Shared: don't modify.</summary>
     public static TurretShapes TurretShapesOf(TurretType t) => ShapesAndReach(t).Shapes;
-
-    public static TurretShapes TurretShapesOf(PyDict t) => TurretShapesOf(Typed(t));
 
     static TurretShapes MakeShapes(string shape, double r, long n, double bl, double bw, double sp)
     {
@@ -446,15 +390,13 @@ public static class Geometry
                     break;
                 }
             default:
-                throw new PyValueError(shape);
+                throw new ArgumentException($"unknown turret shape {shape}");
         }
         return out_;
     }
 
     /// <summary>Max distance of any part of the turret from its pivot (barrel_len: a stand-in, as {**t, "barrel_len": 0}).</summary>
     public static double TurretReach(TurretType t, double? barrelLen = null) => ShapesAndReach(t, barrelLen).Reach;
-
-    public static double TurretReach(PyDict t, double? barrelLen = null) => TurretReach(Typed(t), barrelLen);
 
     static readonly Dictionary<string, double> HeightK = new()
         { ["bb"] = 0.42, ["dp"] = 0.55, ["open"] = 0.9, ["torp"] = 0.5, ["tube"] = 1.6, ["casemate"] = 0.42 };
@@ -517,7 +459,7 @@ public static class Geometry
     public static (double X0, double Y0, double X1, double Y1) Bounds(IReadOnlyList<Pt> pts)
     {
         if (pts.Count == 0)
-            throw new PyValueError("min() iterable argument is empty");
+            throw new ArgumentException("no points");
         double x0 = pts[0].X, y0 = pts[0].Y, x1 = x0, y1 = y0;
         for (int i = 1; i < pts.Count; i++)
         {

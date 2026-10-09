@@ -34,7 +34,7 @@ public sealed record CrewSpec(double? EnduranceDays, bool Distiller, double Buff
     double? OfficerFraction, CrewStandard Standard);
 
 /// <summary>The ship's crew for the report: the complement, where it lives and the space it needs.</summary>
-public sealed class CrewReport : IPyValue
+public sealed class CrewReport
 {
     public long Complement { get; set; }
     public long QuarteredInSuperstructure { get; set; }
@@ -64,8 +64,6 @@ public sealed class CrewReport : IPyValue
     public double ToleranceDays { get; set; }
     /// <summary>Where the complement stands at battle stations, by station.</summary>
     public OrderedDictionary<string, long>? BattleStations { get; set; }
-
-    public object? ToPy() => JsonBridge.ToPy(this, ShipgenJson.Default.CrewReport);
 }
 
 /// <summary>The complement and the volume it needs (research/crew-space-model.md), and battle stations.</summary>

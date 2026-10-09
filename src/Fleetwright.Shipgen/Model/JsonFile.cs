@@ -58,7 +58,4 @@ public static class JsonFile
     /// <summary>A typed value written as JSON (the shipgen context's options).</summary>
     public static void Save<T>(string path, T value, JsonTypeInfo<T> info, int indent = 1) =>
         Save(path, JsonSerializer.SerializeToNode(value, info), indent);
-
-    /// <summary>Temporary: a port value (PyDict tree) as a JSON tree, until the output is typed.</summary>
-    public static JsonNode? FromPy(object? v) => Parse(PyJson.Dumps(PyJson.Plain(v), null));
 }

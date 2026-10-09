@@ -20,7 +20,7 @@ public static class Fuzz
 {
     static readonly string[] LABELS = ["id", "name", "look", "material", "materials", "type"];   // free text, not choices
 
-    /// <summary>A step on a path into a design: a dict key or a list index.</summary>
+    /// <summary>A step on a path into a design: an object key or an array index.</summary>
     public readonly record struct Step(string? Key, int Index)
     {
         public override string ToString() => Key ?? Index.ToString();
@@ -31,38 +31,40 @@ public static class Fuzz
         public override string ToString() => $"{Path} {Was} -> {Now}";
     }
 
-    static IEnumerable<(Step S, object? V)> Items(object? c) => c switch
+    static IEnumerable<(Step S, JsonNode? V)> Items(JsonNode? c) => c switch
     {
-        PyDict d => d.Select(kv => (new Step(kv.Key, 0), kv.Value)),
-        List<object?> l => l.Select((v, i) => (new Step(null, i), v)),
+        JsonObject o => o.Select(kv => (new Step(kv.Key, 0), kv.Value)),
+        JsonArray a => a.Select((v, i) => (new Step(null, i), v)),
         _ => [],
     };
 
     static bool Label(Step s) => s.Key != null && LABELS.Contains(s.Key);
 
-    /// <summary>Every leaf passing keep, list entries by index, labels left out.</summary>
-    static List<(Step[] Path, object? V)> Leaves(object? d, Func<object?, bool> keep, Step[]? path = null)
+    static JsonValueKind Kind(JsonNode? v) => v?.GetValueKind() ?? JsonValueKind.Null;
+
+    /// <summary>Every leaf passing keep, array entries by index, labels left out.</summary>
+    static List<(Step[] Path, JsonValue V)> Leaves(JsonNode? d, Func<JsonValueKind, bool> keep, Step[]? path = null)
     {
         path ??= [];
-        var out_ = new List<(Step[], object?)>();
+        var out_ = new List<(Step[], JsonValue)>();
         foreach (var (s, v) in Items(d))
         {
             if (Label(s))
                 continue;
-            if (v is PyDict or List<object?>)
+            if (v is JsonObject or JsonArray)
                 out_.AddRange(Leaves(v, keep, [.. path, s]));
-            else if (keep(v))
-                out_.Add(([.. path, s], v));
+            else if (v is JsonValue jv && keep(Kind(jv)))
+                out_.Add(([.. path, s], jv));
         }
         return out_;
     }
 
-    static List<(Step[] Path, object C)> Containers(object? d, Step[]? path = null)
+    static List<(Step[] Path, JsonNode C)> Containers(JsonNode? d, Step[]? path = null)
     {
         path ??= [];
-        var out_ = new List<(Step[], object)>();
+        var out_ = new List<(Step[], JsonNode)>();
         foreach (var (s, v) in Items(d))
-            if (!Label(s) && v is PyDict or List<object?>)
+            if (!Label(s) && v is JsonObject or JsonArray)
             {
                 out_.Add(([.. path, s], v!));
                 out_.AddRange(Containers(v, [.. path, s]));
@@ -74,23 +76,27 @@ public static class Fuzz
 
     static string Show(Step[] path) => string.Join(".", path.Select(s => s.ToString()));
 
-    static void SetAt(object d, Step[] path, object? v)
+    static void SetAt(JsonNode d, Step[] path, JsonNode v)
     {
         foreach (var s in path[..^1])
-            d = s.Key != null ? ((PyDict)d)[s.Key]! : ((List<object?>)d)[s.Index]!;
+            d = s.Key != null ? d[s.Key]! : d[s.Index]!;
         var last = path[^1];
         if (last.Key != null)
-            ((PyDict)d)[last.Key] = v;
+            d[last.Key] = v;
         else
-            ((List<object?>)d)[last.Index] = v;
+            d[last.Index] = v;
     }
 
+    static bool IsNumber(JsonValueKind k) => k == JsonValueKind.Number;
+    static bool IsString(JsonValueKind k) => k == JsonValueKind.String;
+    static bool IsBool(JsonValueKind k) => k is JsonValueKind.True or JsonValueKind.False;
+
     /// <summary>{key: the string values the designs give it}: the options a mutant may swap in.</summary>
-    public static Dictionary<string, List<string>> CorpusChoices(IEnumerable<PyDict> designs)
+    public static Dictionary<string, List<string>> CorpusChoices(IEnumerable<JsonObject> designs)
     {
         var seen = new Dictionary<string, SortedSet<string>>(StringComparer.Ordinal);
         foreach (var d in designs)
-            foreach (var (path, v) in Leaves(d, v => v is string))
+            foreach (var (path, v) in Leaves(d, IsString))
             {
                 var k = Key(path);
                 if (!seen.TryGetValue(k, out var set))
@@ -105,13 +111,13 @@ public static class Fuzz
         var keys = path.Where(s => s.Key != null).Select(s => s.Key!).ToArray();
         foreach (var l in limits)
             if (l.Path.SequenceEqual(keys))
-                return (Py.ToDouble(l.Lo), Py.ToDouble(l.Hi));
+                return (l.Lo, l.Hi);
         return null;
     }
 
-    static Change? MutateNumber(PyDict d, Random rng, List<Limit> limits)
+    static Change? MutateNumber(JsonObject d, Random rng, List<Limit> limits)
     {
-        var nums = Leaves(d, v => v is long or double);
+        var nums = Leaves(d, IsNumber);
         if (nums.Count == 0)
             return null;
         var (path, v) = nums[rng.Next(nums.Count)];
@@ -128,61 +134,62 @@ public static class Fuzz
         else if (rng.NextDouble() < 0.1)
             nv = 0;
         else
-            nv = Py.ToDouble(v) * Math.Exp(Math.Log(0.25) + (Math.Log(4) - Math.Log(0.25)) * rng.NextDouble());
-        object nvo = v is long ? (long)Math.Round(nv) : Math.Round(nv, 3);
+            nv = (double)v * Math.Exp(Math.Log(0.25) + (Math.Log(4) - Math.Log(0.25)) * rng.NextDouble());
+        JsonValue nvo = JsonFile.IsInteger(v, out _) ? JsonValue.Create((long)Math.Round(nv)) : JsonValue.Create(Math.Round(nv, 3));
+        string was = v.ToJsonString();
         SetAt(d, path, nvo);
-        return new Change(Show(path), Py.Repr(v), Py.Repr(nvo));
+        return new Change(Show(path), was, nvo.ToJsonString());
     }
 
-    static Change? MutateChoice(PyDict d, Random rng, Dictionary<string, List<string>> choices)
+    static Change? MutateChoice(JsonObject d, Random rng, Dictionary<string, List<string>> choices)
     {
-        var opts = Leaves(d, v => v is bool)
-            .Concat(Leaves(d, v => v is string).Where(p => choices.TryGetValue(Key(p.Path), out var c) && c.Count > 1)).ToList();
+        var opts = Leaves(d, IsBool)
+            .Concat(Leaves(d, IsString).Where(p => choices.TryGetValue(Key(p.Path), out var c) && c.Count > 1)).ToList();
         if (opts.Count == 0)
             return null;
         var (path, v) = opts[rng.Next(opts.Count)];
-        object nv;
-        if (v is bool b)
-            nv = !b;
+        JsonValue nv;
+        if (IsBool(Kind(v)))
+            nv = JsonValue.Create(!(bool)v);
         else
         {
             var others = choices[Key(path)].Where(c => c != (string)v!).ToList();
-            nv = others[rng.Next(others.Count)];
+            nv = JsonValue.Create(others[rng.Next(others.Count)]);
         }
+        string was = v.ToJsonString();
         SetAt(d, path, nv);
-        return new Change(Show(path), Py.Repr(v), Py.Repr(nv));
+        return new Change(Show(path), was, nv.ToJsonString());
     }
 
-    static Change? MutateStructure(PyDict d, Random rng)
+    static Change? MutateStructure(JsonObject d, Random rng)
     {
-        var conts = Containers(d).Where(c => c.C is PyDict { Count: > 0 } or List<object?> { Count: > 0 }).ToList();
+        var conts = Containers(d).Where(c => c.C is JsonObject { Count: > 0 } or JsonArray { Count: > 0 }).ToList();
         if (conts.Count == 0)
             return null;
         var (path, c) = conts[rng.Next(conts.Count)];
-        if (c is List<object?> l)
+        if (c is JsonArray l)
         {
             int i = rng.Next(l.Count);
-            if (l[0] is PyDict && rng.NextDouble() < 0.5)
+            if (l[0] is JsonObject && rng.NextDouble() < 0.5)
             {
-                l.Insert(i, PyJson.Parse(PyJson.Dumps(l[i], null)));
+                l.Insert(i, l[i]!.DeepClone());
                 return new Change(Show(path), $"{l.Count - 1} entries", $"{l.Count} (entry {i} twice)");
             }
             l.RemoveAt(i);
             return new Change(Show(path), $"{l.Count + 1} entries", $"{l.Count} (entry {i} dropped)");
         }
-        var dict = (PyDict)c;
-        var keys = dict.Keys.ToList();
-        var k = keys[rng.Next(keys.Count)];
-        var was = PyJson.Dumps(dict[k], null);
-        dict.Remove(k);
+        var obj = (JsonObject)c;
+        var k = obj.ElementAt(rng.Next(obj.Count)).Key;
+        var was = obj[k]?.ToJsonString() ?? "null";
+        obj.Remove(k);
         return new Change(Show([.. path, new Step(k, 0)]), was.Length > 40 ? was[..40] : was, "(deleted)");
     }
 
     /// <summary>A mutant of design: 1-4 changes as mode asks ("all": numbers 60%, choices 25%, structure 15%).</summary>
-    public static (PyDict Design, List<Change> Changes) Mutate(PyDict design, Random rng, bool useLimits,
+    public static (JsonObject Design, List<Change> Changes) Mutate(JsonObject design, Random rng, bool useLimits,
         Dictionary<string, List<string>> choices, string mode = "all")
     {
-        var d = (PyDict)PyJson.Parse(PyJson.Dumps(design, null))!;
+        var d = design.DeepClone().AsObject();
         var changes = new List<Change>();
         int n = rng.Next(1, 5);
         for (int i = 0; i < n; i++)
@@ -196,7 +203,8 @@ public static class Fuzz
             List<Limit> limits;
             try
             {
-                limits = useLimits ? Styles.Get(d.Get("style", "warship") as string ?? "").Limits() : [];
+                string style = d["style"] is JsonValue sv && sv.TryGetValue(out string? s) ? s : d.ContainsKey("style") ? "" : "warship";
+                limits = useLimits ? Styles.Get(style).Limits() : [];
             }
             catch (Exception)   // the style itself was swapped for one that doesn't exist: validate says so
             {
@@ -214,7 +222,6 @@ public static class Fuzz
         return (d, changes);
     }
 
-    /// <summary>Is every number in a JSON-like value finite?</summary>
     /// <summary>No NaN or infinity in the tree (the serializer writes them as the strings "NaN", "Infinity").</summary>
     public static bool Finite(JsonNode? n) => n switch
     {
@@ -226,12 +233,12 @@ public static class Fuzz
 
     /// <summary>One mutant built: "invalid" (validate refused it: fine), "ok", "errors" (built with errors: fine),
     /// or "crash" with what broke. The caller enforces the time and memory caps.</summary>
-    public static (string Outcome, string Detail) Check(PyDict mutant, bool useLimits)
+    public static (string Outcome, string Detail) Check(JsonObject mutant, bool useLimits)
     {
         Design d;
         try
         {
-            d = Design.Parse(PyJson.Dumps(mutant, null));
+            d = Design.Parse(mutant.ToJsonString());
         }
         catch (System.Text.Json.JsonException e)
         {

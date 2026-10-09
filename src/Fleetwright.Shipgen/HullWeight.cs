@@ -33,11 +33,7 @@ public sealed record HullStructure(double T, double ShellT)
 public sealed record HullPlates(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.Never)] string? Material,
     double ShellMm, double ShellEndMm, double StrengthDeckMm, double StrengthDeckEndMm, double MidX0, double MidX1,
-    double DeckMm, double BulkheadMm, double InnerBottomMm, double SuperstructureMm, double ControlMm, double DeckWoodMm)
-    : IPyValue
-{
-    public object? ToPy() => JsonBridge.ToPy(this, ShipgenJson.Default.HullPlates);
-}
+    double DeckMm, double BulkheadMm, double InnerBottomMm, double SuperstructureMm, double ControlMm, double DeckWoodMm);
 
 /// <summary>Hull structure weight, by plate area x thickness (research/hull-weight-model.md, "Tier 2").</summary>
 public static class HullWeight

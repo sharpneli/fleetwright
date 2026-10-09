@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Fleetwright.Shipgen.Render;
 using Fleetwright.Shipgen.Render.Bake;
 using Fleetwright.Shipgen.Tools;
@@ -9,9 +10,9 @@ namespace Fleetwright.Shipgen.Tests;
 [Collection("Gpu")]   // one GPU device at a time
 public class ToolTests
 {
-    static List<PyDict> Designs() =>
+    static List<JsonObject> Designs() =>
         Directory.GetFiles(Paths.Shipgen("designs"), "*.json").Order(StringComparer.Ordinal)
-            .Select(p => (PyDict)PyJson.Load(p)!).ToList();
+            .Select(p => JsonFile.Load(p)!.AsObject()).ToList();
 
     [Fact]
     public void MutantsBuildWithoutCrashing()
@@ -25,7 +26,7 @@ public class ToolTests
         {
             var (outcome, detail) = Fuzz.Check(muts[i].Design, i % 2 == 0);
             if (outcome == "crash")
-                bad.Add($"{muts[i].Design.S("id")}_{i} ({string.Join("; ", muts[i].Changes)}): {detail.Split('\n')[0]}");
+                bad.Add($"{(string?)muts[i].Design["id"]}_{i} ({string.Join("; ", muts[i].Changes)}): {detail.Split('\n')[0]}");
         });
         Assert.True(bad.IsEmpty, string.Join("\n", bad));
     }
@@ -38,7 +39,7 @@ public class ToolTests
         string Run() => string.Join("|", Enumerable.Range(0, 20).Select(i =>
         {
             var rng = new Random(i);
-            return PyJson.Dumps(Fuzz.Mutate(bases[i % bases.Count], rng, true, choices).Design, null);
+            return Fuzz.Mutate(bases[i % bases.Count], rng, true, choices).Design.ToJsonString();
         }));
         Assert.Equal(Run(), Run());
     }

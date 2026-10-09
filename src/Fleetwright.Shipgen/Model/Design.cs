@@ -6,7 +6,7 @@ namespace Fleetwright.Shipgen;
 /// <summary>A player's design, as its JSON gives it: everything optional (the designer fills in the defaults, many of
 /// them per style), unknown keys kept in Extra so validation can name them and the design echoes back as given. The
 /// keys are the properties in snake_case. docs/shipgen/README.md documents them.</summary>
-public sealed record Design : IPyValue
+public sealed record Design
 {
     public string? Id { get; init; }
     public string? Name { get; init; }
@@ -55,8 +55,6 @@ public sealed record Design : IPyValue
 
     public string ToJson(bool indented = false) =>
         JsonSerializer.Serialize(this, indented ? ShipgenJson.Indented.Design : ShipgenJson.Default.Design);
-
-    public object? ToPy() => JsonBridge.ToPy(this, ShipgenJson.Default.Design);
 }
 
 public sealed record HullInput

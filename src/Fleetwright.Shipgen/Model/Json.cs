@@ -13,18 +13,8 @@ namespace Fleetwright.Shipgen;
 [JsonSerializable(typeof(List<BatteryInput>))]
 [JsonSerializable(typeof(BatteryInput))]
 [JsonSerializable(typeof(List<string>))]
-[JsonSerializable(typeof(HullPlates))]
-[JsonSerializable(typeof(TurretType))]
-[JsonSerializable(typeof(Block))]
-[JsonSerializable(typeof(Funnel))]
-[JsonSerializable(typeof(AaMount))]
-[JsonSerializable(typeof(Mast))]
-[JsonSerializable(typeof(RenderSpec))]
-[JsonSerializable(typeof(HullEnd))]
-[JsonSerializable(typeof(CrewReport))]
 [JsonSerializable(typeof(Ship))]
 [JsonSerializable(typeof(List<HeightColumn>))]
-[JsonSerializable(typeof(RenderData))]
 public sealed partial class ShipgenJson : JsonSerializerContext
 {
     /// <summary>The same, indented one space per level.</summary>
@@ -169,10 +159,4 @@ public sealed class PaintConverter : JsonConverter<Paint>
             writer.WriteStringValue(c);
         writer.WriteEndArray();
     }
-}
-
-/// <summary>While the output is still built as PyDicts: a typed value as the dict tree its JSON makes.</summary>
-public static class JsonBridge
-{
-    public static object? ToPy<T>(T value, JsonTypeInfo<T> info) => PyJson.Parse(JsonSerializer.Serialize(value, info));
 }

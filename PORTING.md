@@ -253,6 +253,10 @@ keep a design's int (`control_mm: 25` vs `25.0`), which the golden rules accept.
   `HullForm`, `Layout`, `Navarch.Result`, `Geo`, `Weight`, footprints). Typed records for every dict would have been
   a rewrite with key-set mismatches at every step, and validation prints the design's raw values (`76` vs `76.0`).
   The typed `Ship` contract comes with the API design (after the port), as a mapping over this.
+  *(Superseded in the cleanup after the port: `Py/` is gone. The design, the layout's objects, the ship and
+  sprite.json are typed records serialized by System.Text.Json source generation, and the goldens compare as
+  `JsonNode` trees. Small output differences from Python were accepted along the way: last-digit float ties in the
+  numerics, a few messages.)*
 - **Exact numerics:** .NET's `Math` (sin, pow, exp, ...) is the UCRT's, bit for bit with Windows CPython (checked on
   4,000 inputs each: `PyTests`, `tests/.../Data/pyref.py`). CPython's own algorithms are ported: `sum()` (Neumaier,
   3.12+), `hypot`/`dist` (`vector_norm`), `gamma` (Lanczos), `round(x, n)` (correctly rounded via BigInteger), float
@@ -302,7 +306,7 @@ hull, height map, each turret type) matches Python's drawing element for element
   a `Style` (fill, stroke, width, join, cap, dash, opacities; unset means inherited). It is SVG's model on purpose:
   `SvgWriter` is a straight walk, and the comparison above needs the structure. Flattening arcs and curves, stroking
   and clip/opacity stacks become Step 5's lowering pass over this tree, where the pixel tolerance is known.
-- **Looks are data:** `Data/looks.jsonc` (an embedded resource; `PyJson` now skips `//` comments) holds
+- **Looks are data:** `Data/looks.jsonc` (an embedded resource; read with comments skipped) holds
   DEFAULT_PALETTE, STYLE_PALETTES and NAVIES with looks.py's comments carried over; `Looks.cs` is the logic.
 - **Not ported:** the baked drop shadows (`shadows=True`), which `render_ship` never used (the game casts shadows from
   the height map), and the preview/sheet/debug images (`composite`, `sheet`, `debug_overlay`, hitview), which need a

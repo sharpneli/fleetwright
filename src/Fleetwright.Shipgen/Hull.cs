@@ -30,18 +30,6 @@ public sealed class Hull
         transom = Stern.Transom!.Value;
     }
 
-    /// <summary>A hull from a spec the renderer reads as a dict (until it reads the typed spec).</summary>
-    public Hull(PyDict spec) : this(new HullSpec(spec.F("length"), spec.F("beam"), EndOf(spec.Get("bow") as PyDict),
-        EndOf(spec.Get("stern") as PyDict)))
-    {
-    }
-
-    static HullEnd EndOf(PyDict? d)
-    {
-        double? N(string k) => d != null && d.Has(k) ? d.F(k) : null;
-        return new HullEnd { Taper = N("taper"), Power = N("power"), Shape = d?.Get("shape") as string, Transom = N("transom"), Flare = N("flare") };
-    }
-
     static double End(double t, double power, string shape)
     {
         double b = Math.Max(0.0, 1.0 - Math.Pow(t, power));

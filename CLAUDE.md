@@ -97,12 +97,12 @@ src/
     GpuMath.cs                #   math helpers (perspective, lookAt)
     ShaderTypes.cs            #   vertex layout, uniforms, scene data
   Fleetwright.Shipgen/        # ship design library (ported, see below). No package references.
-    Py/                       #   the Python runtime the port stands on: PyDict, Py (numerics, repr, formats), PyJson
+    Model/                    #   the typed data: Design (the input), Ship (the output), the JSON context and JsonFile
     Layout/                   #   layout.py: the Layout object, parts, superstructure levels, the warship layout
     Styles/                   #   the style hooks and the warship, carrier, merchant and planing styles
     Golden/                   #   the golden comparer and case runner
     Tools/                    #   the fuzz mutator
-  Fleetwright.Shipgen.Render/ # the drawing side: reads only the built ship dict
+  Fleetwright.Shipgen.Render/ # the drawing side: reads only the built Ship (its render data)
     Data/looks.jsonc          #   every navy and era's colours and shapes (the documented table)
     Looks.cs                  #   resolving a design's look: from-chains, adjust, era muting
     Scene.cs                  #   the display list (paths, circles, rects, lines, text, clipped groups) and SvgWriter
@@ -113,7 +113,7 @@ src/
     Golden/                   #   the SVG comparer and the drawing's golden checks
   Fleetwright.Shipgen.Cli/    # `shipgen` command, the port's test harness
 tests/
-  Fleetwright.Shipgen.Tests/  # xUnit: Py helpers vs CPython, every golden case, concurrent builds, the drawing, the
+  Fleetwright.Shipgen.Tests/  # xUnit: design input, every golden case, concurrent builds, the drawing, the
                               #   bake (trait Gpu: needs a GPU)
 shipgen/                      # the port's test data
   designs/                    #   the 71 designs, and fuzz/ (300 mutants)

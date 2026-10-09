@@ -5,7 +5,7 @@ namespace Fleetwright.Shipgen;
 /// <summary>A turret (or torpedo mount) type: its look and size, the guns it carries and how many rounds each.
 /// Shape: "bb" (armoured turret), "dp" (dual purpose), "open", "casemate", "torp" (trainable tubes) or "tube" (a fixed
 /// tube).</summary>
-public sealed record TurretType : IPyValue
+public sealed record TurretType
 {
     public required string Desc { get; init; }
     public required string Shape { get; init; }
@@ -25,8 +25,6 @@ public sealed record TurretType : IPyValue
     [JsonIgnore] public bool HasBarbette => Barbette ?? true;
 
     [JsonIgnore] public bool IsFixedTube => FixedTube ?? false;
-
-    public object? ToPy() => JsonBridge.ToPy(this, ShipgenJson.Default.TurretType);
 }
 
 /// <summary>A gun or torpedo mount as the layout places it. Base and Top are its heights above the main deck; Rest its
@@ -63,7 +61,7 @@ public sealed class Mount
 /// <summary>A superstructure block (or a director standing on a roof as a block of its own): a rounded rectangle from X0
 /// to X1, W wide about Y, or its own outline (Points, then X0..X1 and W are its box). It stands Level levels up from Z0
 /// above the main deck.</summary>
-public sealed class Block : IPyValue
+public sealed class Block
 {
     [JsonIgnore] public required string Id;
     /// <summary>"superstructure" or "director".</summary>
@@ -94,8 +92,6 @@ public sealed class Block : IPyValue
 
     [JsonIgnore] public double Base => (Z0 ?? 0) + Layout.LEVEL_H * (Level - 1);
     [JsonIgnore] public double TopZ => (Z0 ?? 0) + Layout.LEVEL_H * Level;
-
-    public object? ToPy() => JsonBridge.ToPy(this, ShipgenJson.Default.Block);
 }
 
 /// <summary>A director's block: its battery, the rangefinder's base, whether it carries radar, and the level it
@@ -104,7 +100,7 @@ public sealed record BlockDirector(string Battery, double RangefinderM, bool Rad
 
 /// <summary>A funnel: L long and W wide at X, Y, its foot Z0 above the main deck (null: on the deck), its top, and the
 /// boiler rooms it serves (Seg: the machinery segment while they are laid out).</summary>
-public sealed class Funnel : IPyValue
+public sealed class Funnel
 {
     [JsonIgnore] public required string Id;
     public double X { get; set; }
@@ -116,13 +112,11 @@ public sealed class Funnel : IPyValue
     public double Top { get; set; }
     [JsonIgnore] public long? Seg;
     [JsonIgnore] public List<string>? Serves;
-
-    public object? ToPy() => JsonBridge.ToPy(this, ShipgenJson.Default.Funnel);
 }
 
 /// <summary>An AA mount: its type (Geometry.AA_CFG), where it stands, its rest bearing, its base above the main deck and
 /// its drawing layer.</summary>
-public sealed class AaMount : IPyValue
+public sealed class AaMount
 {
     [JsonIgnore] public required string Id;
     public required string Type { get; init; }
@@ -131,13 +125,11 @@ public sealed class AaMount : IPyValue
     public long Dir { get; init; }
     [JsonIgnore] public double Base;
     public required string Layer { get; init; }
-
-    public object? ToPy() => JsonBridge.ToPy(this, ShipgenJson.Default.AaMount);
 }
 
 /// <summary>A mast: where it stands, its yard, tripod legs, its top above the main deck (null: the layout's default)
 /// and a merchant's cargo booms ([x, y] of each boom's head).</summary>
-public sealed record Mast : IPyValue
+public sealed record Mast
 {
     public double X { get; init; }
     public double? Y { get; init; }
@@ -145,8 +137,6 @@ public sealed record Mast : IPyValue
     public bool Tripod { get; init; }
     public double? Top { get; set; }
     public List<double[]>? Booms { get; init; }
-
-    public object? ToPy() => JsonBridge.ToPy(this, ShipgenJson.Default.Mast);
 }
 
 /// <summary>A deck the layout adds over the main deck: a raised stretch of hull ("deck"), a flight deck, or a sponson,
@@ -221,15 +211,13 @@ public sealed record HullSpec(double Length, double Beam, HullEnd Bow, HullEnd S
 
 /// <summary>One end's taper: how far it runs (fraction of L), its curve's power, its shape ("pointed", "round"), a
 /// stern's transom (fraction of the beam) and a bow's flare.</summary>
-public sealed record HullEnd : IPyValue
+public sealed record HullEnd
 {
     public double? Taper { get; init; }
     public double? Power { get; init; }
     public string? Shape { get; init; }
     public double? Transom { get; init; }
     public double? Flare { get; init; }
-
-    public object? ToPy() => JsonBridge.ToPy(this, ShipgenJson.Default.HullEnd);
 }
 
 /// <summary>A mount as the renderer draws it: its type, where it stands, its draw order and its rest bearing.</summary>
@@ -248,7 +236,7 @@ public sealed record RaisedDeckSpec(double X0, double X1, long Levels);
 
 /// <summary>What the renderer draws (lay.Spec): the hull, the turret types and mounts, the superstructure, funnels,
 /// masts and AA, and each style's deck furniture.</summary>
-public sealed class RenderSpec : IPyValue
+public sealed class RenderSpec
 {
     public required string Id { get; init; }
     public required string Name { get; init; }
@@ -279,8 +267,6 @@ public sealed class RenderSpec : IPyValue
     public List<Crane>? Cranes { get; set; }
     public List<SponsonDrawing>? Sponsons { get; set; }
     public FlightDeckDrawing? FlightDeck { get; set; }
-
-    public object? ToPy() => JsonBridge.ToPy(this, ShipgenJson.Default.RenderSpec);
 }
 
 /// <summary>A carrier's flight deck as drawn: its outline, the planks' box and pitch, the elevators, the arrester

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json.Nodes;
 using Fleetwright.Shipgen;
 using Fleetwright.Shipgen.Golden;
 using Fleetwright.Shipgen.Tools;
@@ -144,7 +145,7 @@ public static class Program
     static Shipgen.Design LoadDesign(string path) => Shipgen.Design.Load(path);
 
     /// <summary>A design file as plain JSON data, for the fuzzer to mutate.</summary>
-    static PyDict LoadRaw(string path) => (PyDict)PyJson.Load(path)!;
+    static JsonObject LoadRaw(string path) => JsonFile.Load(path)!.AsObject();
 
     static int Validate(Args a)
     {
@@ -303,8 +304,7 @@ public static class Program
         string root = Root(a);
         var cases = SelectCases(root, a.Positional);
         int repeat = a.Int("repeat", 3);
-        var py = (PyDict)PyJson.Load(Path.Combine(root, "golden", "design", "capture.json"))!;
-        var pyTimes = py.D("build_s");
+        var pyTimes = JsonFile.Load(Path.Combine(root, "golden", "design", "capture.json"))!["build_s"]!.AsObject();
         double totC = 0, totP = 0;
         foreach (var c in cases)
         {
@@ -326,7 +326,7 @@ public static class Program
                 ShipDesign.Build(design, length);
                 bestHinted = Math.Min(bestHinted, sw.Elapsed.TotalSeconds);
             }
-            double p = pyTimes.Get(c.Name) is object o && o is not null ? Py.ToDouble(o) : double.NaN;
+            double p = (double?)pyTimes[c.Name] ?? double.NaN;
             totC += best;
             if (!double.IsNaN(p))
                 totP += p;
@@ -553,7 +553,7 @@ public static class Program
         Parallel.ForEach(muts, new ParallelOptions { MaxDegreeOfParallelism = jobs }, m =>
         {
             string inPath = Path.Combine(work, $"{m.Case}.json"), resPath = Path.Combine(work, $"{m.Case}.txt");
-            PyJson.Save(inPath, m.D, 1);
+            JsonFile.Save(inPath, m.D);
             var psi = new ProcessStartInfo(self) { RedirectStandardError = true, RedirectStandardOutput = true, UseShellExecute = false };
             if (viaDotnet)
                 psi.ArgumentList.Add(Path.Combine(AppContext.BaseDirectory, "shipgen.dll"));
@@ -609,15 +609,15 @@ public static class Program
             if (fail || outcome == "slow")
             {
                 Directory.CreateDirectory(outDir);
-                string stem = Path.Combine(outDir, $"{m.D.S("id")}_{m.Case}");
-                PyJson.Save(stem + ".json", m.D, 1);
+                string stem = Path.Combine(outDir, $"{(string?)m.D["id"]}_{m.Case}");
+                JsonFile.Save(stem + ".json", m.D);
                 File.WriteAllText(stem + ".txt", $"{m.Src}, changed: {string.Join("; ", m.Changes)}\n\n{outcome}: {detail}\n");
             }
             if (fail)
             {
                 Interlocked.Increment(ref bad);
                 lock (print)
-                    Console.WriteLine($"{outcome.ToUpperInvariant(),7} {m.D.S("id")}_{m.Case}.json  ({string.Join("; ", m.Changes)})\n" +
+                    Console.WriteLine($"{outcome.ToUpperInvariant(),7} {(string?)m.D["id"]}_{m.Case}.json  ({string.Join("; ", m.Changes)})\n" +
                                       $"        {detail.Split('\n')[0]}");
             }
         });
