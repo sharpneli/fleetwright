@@ -19,6 +19,9 @@ public static class Program
             compare two captures (directories of <case>.json.gz, or two files) by the golden rules
         shipgen golden-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
             capture and compare against the goldens in one go, printing each failing case's first differences
+        shipgen bench [--root DIR] [--repeat N] [CASE|PREFIX*...]
+            single-threaded build time per case (best of N), next to Python's from the golden capture, and the
+            designer's per-knob rebuild (the same design with the length hint)
         --root defaults to the repo's shipgen folder (found from the current directory up).
         """;
 
@@ -39,6 +42,7 @@ public static class Program
                 "capture" => Capture(a),
                 "golden-diff" => GoldenDiffCmd(a),
                 "golden-check" => GoldenCheck(a),
+                "bench" => Bench(a),
                 _ => Fail($"unknown command {args[0]}\n\n{Usage}"),
             };
         }
@@ -235,6 +239,46 @@ public static class Program
         }
         Console.WriteLine($"{bad} of {pairs.Count} cases differ");
         return bad > 0 ? 1 : 0;
+    }
+
+    static int Bench(Args a)
+    {
+        string root = Root(a);
+        var cases = SelectCases(root, a.Positional);
+        int repeat = a.Int("repeat", 3);
+        var py = (PyDict)PyJson.Load(Path.Combine(root, "golden", "design", "capture.json"))!;
+        var pyTimes = py.D("build_s");
+        double totC = 0, totP = 0;
+        foreach (var c in cases)
+        {
+            var design = LoadDesign(c.DesignPath);
+            if (ShipDesign.Validate((PyDict)PyJson.Plain(design)!, false).Count > 0)
+                continue;
+            double best = double.MaxValue, bestHinted = double.MaxValue;
+            long alloc = 0;
+            for (int i = 0; i < repeat; i++)
+            {
+                var copy = (PyDict)PyJson.Plain(design)!;
+                long a0 = GC.GetAllocatedBytesForCurrentThread();
+                var sw = Stopwatch.StartNew();
+                var ship = ShipDesign.Build(copy);
+                best = Math.Min(best, sw.Elapsed.TotalSeconds);
+                alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
+                // the designer's per-knob rebuild: the same design again, starting from the length it had
+                double length = ship.D("report").D("results").F("length_m");
+                sw.Restart();
+                ShipDesign.Build((PyDict)PyJson.Plain(design)!, length);
+                bestHinted = Math.Min(bestHinted, sw.Elapsed.TotalSeconds);
+            }
+            double p = pyTimes.Get(c.Name) is object o && o is not null ? Py.ToDouble(o) : double.NaN;
+            totC += best;
+            if (!double.IsNaN(p))
+                totP += p;
+            Console.WriteLine($"{c.Name,-24} {best,8:F3} s   python {p,8:F3} s   x{p / best,6:F1}   rebuild {bestHinted,7:F3} s" +
+                              $"   {alloc / 1e6,6:F0} MB allocated");
+        }
+        Console.WriteLine($"total {totC:F2} s, python {totP:F2} s (x{totP / totC:F1})");
+        return 0;
     }
 
     static int GoldenCheck(Args a)

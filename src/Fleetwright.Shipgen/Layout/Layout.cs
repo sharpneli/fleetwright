@@ -25,8 +25,8 @@ public sealed class Footprint
     public static Footprint Poly(IEnumerable<Pt> pts)
     {
         var p = pts.ToList();
-        return new('p', Py.Min(p.Select(q => q.X)), Py.Min(p.Select(q => q.Y)), Py.Max(p.Select(q => q.X)),
-            Py.Max(p.Select(q => q.Y)), p);
+        var (x0, y0, x1, y1) = Geometry.Bounds(p);
+        return new('p', x0, y0, x1, y1, p);
     }
 
     public double X => A;
@@ -137,9 +137,9 @@ public sealed partial class Layout
 
     static long Cell(double x) => Py.Floor(x / FP_CELL);
 
-    /// <summary>The footprints whose bounding box may reach x0 .. x1, each once, from an index of x cells kept up with
-    /// Footprints as it grows (rebuilt when the list is replaced).</summary>
-    IEnumerable<((double X0, double Y0, double X1, double Y1) B, Placed O)> Near(double x0, double x1)
+    /// <summary>The x-cell index of the footprints, kept up with Footprints as it grows (rebuilt when the list is
+    /// replaced): free and free_at look only at the footprints whose box may reach them.</summary>
+    Dictionary<long, List<((double X0, double Y0, double X1, double Y1) B, Placed O)>> Cells()
     {
         var fps = Footprints;
         if (fpIndex is not { } idx || !ReferenceEquals(idx.List, fps) || idx.Count > fps.Count)
@@ -157,12 +157,15 @@ public sealed partial class Layout
             }
         }
         fpIndex = (fps, fps.Count, cells);
-        long c0 = Cell(x0);
-        for (long c = c0; c <= Cell(x1); c++)
-            if (cells.TryGetValue(c, out var l))
-                foreach (var (b, o) in l)
-                    if (c == Math.Max(c0, Cell(b.X0)))
-                        yield return (b, o);
+        return cells;
+    }
+
+    bool IsRaised(string owner)
+    {
+        foreach (var s in Raised)
+            if (string.Equals(s.S("id"), owner, StringComparison.Ordinal))
+                return true;
+        return false;
     }
 
     /// <summary>Is the deck under a footprint free of everything placed, whatever its height? Raised stretches of hull
@@ -171,11 +174,17 @@ public sealed partial class Layout
     {
         var (x0, y0, x1, y1) = fp.BBox;
         (x0, y0, x1, y1) = (x0 - margin, y0 - margin, x1 + margin, y1 + margin);
-        var raised = new HashSet<string>(Raised.Select(s => s.S("id")), StringComparer.Ordinal);
-        foreach (var (b, o) in Near(x0, x1))
-            if (b.X0 < x1 && x0 < b.X1 && b.Y0 < y1 && y0 < b.Y1 && !(ignore?.Contains(o.Owner) ?? false)
-                && !raised.Contains(o.Owner) && Overlap(fp, o.Fp, margin))
-                return false;
+        var cells = Cells();
+        long c0 = Cell(x0);
+        for (long c = c0; c <= Cell(x1); c++)
+        {
+            if (!cells.TryGetValue(c, out var l))
+                continue;
+            foreach (var (b, o) in l)
+                if (c == Math.Max(c0, Cell(b.X0)) && b.X0 < x1 && x0 < b.X1 && b.Y0 < y1 && y0 < b.Y1
+                    && !(ignore?.Contains(o.Owner) ?? false) && !IsRaised(o.Owner) && Overlap(fp, o.Fp, margin))
+                    return false;
+        }
         return true;
     }
 
@@ -184,12 +193,21 @@ public sealed partial class Layout
     {
         var (x0, y0, x1, y1) = fp.BBox;
         (x0, y0, x1, y1) = (x0 - margin, y0 - margin, x1 + margin, y1 + margin);
-        foreach (var (b, o) in Near(x0, x1))
+        var cells = Cells();
+        long c0 = Cell(x0);
+        for (long c = c0; c <= Cell(x1); c++)
         {
-            if (o.Top <= bse + 1e-6 || o.Base >= top - 1e-6 || (ignore?.Contains(o.Owner) ?? false))
+            if (!cells.TryGetValue(c, out var l))
                 continue;
-            if (b.X0 < x1 && x0 < b.X1 && b.Y0 < y1 && y0 < b.Y1 && Overlap(fp, o.Fp, margin))
-                return false;
+            foreach (var (b, o) in l)
+            {
+                if (c != Math.Max(c0, Cell(b.X0)))
+                    continue;
+                if (o.Top <= bse + 1e-6 || o.Base >= top - 1e-6 || (ignore?.Contains(o.Owner) ?? false))
+                    continue;
+                if (b.X0 < x1 && x0 < b.X1 && b.Y0 < y1 && y0 < b.Y1 && Overlap(fp, o.Fp, margin))
+                    return false;
+            }
         }
         return true;
     }
@@ -206,7 +224,7 @@ public sealed partial class Layout
         {
             Owner = m.S("id"),
             Polys = [poly],
-            Boxes = [(Py.Min(poly.Select(p => p.X)), Py.Min(poly.Select(p => p.Y)), Py.Max(poly.Select(p => p.X)), Py.Max(poly.Select(p => p.Y)))],
+            Boxes = [Geometry.Bounds(poly)],
             Sectors = [(m.F("x"), m.F("y"), R, tr[0], tr[1])],
             Axis = m.F("base") + 0.55 * (m.F("top") - m.F("base")),
         });
@@ -222,8 +240,7 @@ public sealed partial class Layout
 
     public bool Clear(List<Pt> poly, double top, (double X, double Y, double R)? circle = null)
     {
-        double x0 = Py.Min(poly.Select(p => p.X)), x1 = Py.Max(poly.Select(p => p.X));
-        double y0 = Py.Min(poly.Select(p => p.Y)), y1 = Py.Max(poly.Select(p => p.Y));
+        var (x0, y0, x1, y1) = Geometry.Bounds(poly);
         foreach (var sw in Sweeps)
         {
             if (sw.Axis >= top)

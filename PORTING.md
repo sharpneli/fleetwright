@@ -185,6 +185,11 @@ Build the command line first, so every module ported in Step 3 can be checked ag
 - `shipgen validate` prints the validation strings, which are the first thing to match.
 - Arguments are parsed by hand like `Program.cs`: there are only a few flags, and a hand parser stays AOT-safe.
 
+Done 2026-10-09. Beyond the plan: `shipgen capture` (golden.py's design capture from the C# side, for
+`golden-diff`), `shipgen golden-check` (capture and compare in one go, the everyday command) and `shipgen bench`
+(single-threaded build and per-knob rebuild times next to Python's). The comparer (`GoldenDiff`) and the case runner
+(`GoldenCases`) live in the library, so the tests use the same code. The CLI uses server GC: it builds in parallel.
+
 ### Step 3: Fleetwright.Shipgen (the design side)
 
 About 10k lines of Python. Port bottom-up along the imports, with each module tested against the goldens as soon as
@@ -237,6 +242,30 @@ New traps: 6–8 in "What the earlier plan missed" (formatting, culture, ordinal
 
 With Step 3 done, **ship generation is ported**. `shipgen design` reproduces design.py's data output for every
 design.
+
+Done 2026-10-09: all 371 cases match, and every float in them is **bit-identical** to the Windows capture (the
+`fuzz_free_057` crew tie included). The only differences are JSON int-vs-float types where Python's `max()`/`round()`
+keep a design's int (`control_mm: 25` vs `25.0`), which the golden rules accept. What it took:
+
+- **Data model (a deviation):** the port keeps Python's data model rather than typed records: a small Python runtime
+  (`Py/`: an insertion-ordered `PyDict`, Python ints as `long` and floats as `double` kept apart, lists, `object?[]`
+  tuples) carries the design, the specs and the ship dict, and real classes stand where Python has them (`Hull`,
+  `HullForm`, `Layout`, `Navarch.Result`, `Geo`, `Weight`, footprints). Typed records for every dict would have been
+  a rewrite with key-set mismatches at every step, and validation prints the design's raw values (`76` vs `76.0`).
+  The typed `Ship` contract comes with the API design (after the port), as a mapping over this.
+- **Exact numerics:** .NET's `Math` (sin, pow, exp, ...) is the UCRT's, bit for bit with Windows CPython (checked on
+  4,000 inputs each: `PyTests`, `tests/.../Data/pyref.py`). CPython's own algorithms are ported: `sum()` (Neumaier,
+  3.12+), `hypot`/`dist` (`vector_norm`), `gamma` (Lanczos), `round(x, n)` (correctly rounded via BigInteger), float
+  `//` and `%`, repr and the `.Nf`/`g`/`,`/`+` formats (half-even on the exact value), and `min`/`max`/`sorted` with
+  Python's first-of-equals and stability.
+- **Thread safety:** no mutable statics. Python's caches became per-object (`PreparedPolygon` on the footprint,
+  `level_outline`'s scanlines and `section_exponents` per layout or hull form) or a `[ThreadStatic]` memo of a pure
+  function (turret shapes). `GoldenTests.ConcurrentBuildsAreIdentical` builds the same designs on many threads.
+- **Speed:** a single-threaded build is 6-14x Python's (`shipgen bench`: bismarck 0.32 s vs 2.5 s, the slowest
+  mutant 1.0 s vs 18 s); the designer's per-knob rebuild (the length hint) takes 0.02-0.17 s. Most of what is left
+  is allocation (about 300 MB per battleship build: dicts, LINQ, point lists), for the post-port refactor.
+- **Tests:** `dotnet test` runs the Py helpers against CPython, every golden case (about 40 s) and the concurrency
+  check.
 
 ### Step 4: display list and sprite layout (Fleetwright.Shipgen.Render, CPU only)
 
@@ -341,8 +370,8 @@ Then start the bug fixes held back by "port as is".
 
 - [x] Step 0: repo restructure (solution, src/, Fleetwright.Gpu, props files)
 - [x] Step 1: goldens captured, shipgen tagged
-- [ ] Step 2: CLI harness: design, validate, golden-diff
-- [ ] Step 3: Fleetwright.Shipgen matches the goldens
+- [x] Step 2: CLI harness: design, validate, golden-diff
+- [x] Step 3: Fleetwright.Shipgen matches the goldens
 - [ ] Step 4: display list, SVG writer, sprite.json matches
 - [ ] Step 5: SDL_GPU backend
 - [ ] Step 6: viewer + full CLI

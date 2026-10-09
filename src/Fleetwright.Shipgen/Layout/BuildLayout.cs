@@ -899,9 +899,7 @@ public sealed partial class Layout
             var (tsId, ts) = Geometry.BatteryType(sec);
             turretTypes[tsId] = ts;
             double rs = ts.F("r");
-            var ts0 = ts.Copy();
-            ts0["barrel_len"] = 0L;
-            double rsReach = Py.Max(rs, Geometry.TurretReach(ts0));
+            double rsReach = Py.Max(rs, Geometry.TurretReach(ts, 0.0));
             double ths = Geometry.TurretHeight(ts);
 
             double SecBase(double x) => raised ? Py.Max(lay.DeckZ(x, rsReach), LEVEL_H) : lay.DeckZ(x, rsReach);

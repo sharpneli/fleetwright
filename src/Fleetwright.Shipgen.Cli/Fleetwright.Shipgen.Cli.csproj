@@ -5,6 +5,8 @@
     <RootNamespace>Fleetwright.Shipgen.Cli</RootNamespace>
     <AssemblyName>shipgen</AssemblyName>
     <PublishAot>true</PublishAot>
+    <!-- capture and golden-check build many ships in parallel: one heap per core keeps them from queueing on the GC -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>

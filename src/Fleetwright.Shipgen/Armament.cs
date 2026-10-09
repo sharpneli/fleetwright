@@ -7,9 +7,7 @@ public static class Armament
     /// <summary>Radius of the turret body and its ears (not the barrels): its footprint on deck.</summary>
     public static double BodyReach(PyDict t)
     {
-        var t0 = t.Copy();
-        t0["barrel_len"] = 0L;
-        return Py.Max(t.F("r"), Geometry.TurretReach(t0));
+        return Py.Max(t.F("r"), Geometry.TurretReach(t, 0.0));
     }
 
     /// <summary>Rest bearing of a side mount at x on `side` (+1 starboard), whose arc is +-half about its own beam.</summary>
@@ -18,9 +16,31 @@ public static class Armament
     /// <summary>Axis-aligned box around a mount's barrels (as shown) trained to `bearing`.</summary>
     public static Footprint BarrelFootprint(PyDict t, double x, double y, double bearing)
     {
-        var pts = Geometry.TurretShapesOf(t).Barrels.SelectMany(poly => Geometry.RotateTranslate(poly, bearing, x, y)).ToList();
-        return Footprint.Rect(Py.Min(pts.Select(p => p.X)), Py.Min(pts.Select(p => p.Y)), Py.Max(pts.Select(p => p.X)),
-            Py.Max(pts.Select(p => p.Y)));
+        double c = Math.Cos(Py.Radians(bearing)), s = Math.Sin(Py.Radians(bearing));
+        double x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+        bool first = true;
+        foreach (var poly in Geometry.TurretShapesOf(t).Barrels)
+            foreach (var p in poly)
+            {
+                double px = x + p.X * c - p.Y * s, py = y + p.X * s + p.Y * c;
+                if (first)
+                {
+                    (x0, y0, x1, y1) = (px, py, px, py);
+                    first = false;
+                    continue;
+                }
+                if (px < x0)
+                    x0 = px;
+                if (px > x1)
+                    x1 = px;
+                if (py < y0)
+                    y0 = py;
+                if (py > y1)
+                    y1 = py;
+            }
+        if (first)
+            throw new PyValueError("min() iterable argument is empty");
+        return Footprint.Rect(x0, y0, x1, y1);
     }
 
     /// <summary>The heights (lo, hi) above the main deck that a mount's barrels take, about their axis.</summary>

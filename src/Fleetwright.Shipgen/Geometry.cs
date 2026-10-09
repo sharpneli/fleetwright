@@ -326,14 +326,39 @@ public static class Geometry
     public static double BarrelShown(PyDict t) =>
         t.F("barrel_len") * (BarrelShownK.TryGetValue(t.S("shape", "bb")!, out var k) ? k : 1.0);
 
-    /// <summary>Polygons (turret-local) for the turret body, extra parts and each barrel.</summary>
-    public static TurretShapes TurretShapesOf(PyDict t)
+    // turret_shapes is a pure function of these values; each thread memoises its own (no shared mutable state)
+    [ThreadStatic] static Dictionary<(string, double, long, double, double, double), (TurretShapes Shapes, double Reach)>? shapeCache;
+
+    static (TurretShapes Shapes, double Reach) ShapesAndReach(PyDict t, double? barrelLen = null)
     {
-        double r = t.F("r");
-        long n = t.I("barrels");
-        double bl = t.F("barrel_len"), bw = t.F("barrel_w"), sp = t.F("spacing");
-        string shape = t.S("shape", "bb")!;
+        var key = (t.S("shape", "bb")!, t.F("r"), t.I("barrels"), barrelLen ?? t.F("barrel_len"), t.F("barrel_w"), t.F("spacing"));
+        shapeCache ??= [];
+        if (!shapeCache.TryGetValue(key, out var v))
+        {
+            var sh = MakeShapes(key.Item1, key.Item2, key.Item3, key.Item4, key.Item5, key.Item6);
+            double reach = double.NaN;
+            bool first = true;
+            foreach (var p in sh.Body.Concat(sh.Parts.Concat(sh.Barrels).SelectMany(q => q)))
+            {
+                double d = Py.Hypot(p.X, p.Y);
+                if (first || d > reach)
+                    reach = d;
+                first = false;
+            }
+            if (first)
+                throw new PyValueError("max() iterable argument is empty");
+            shapeCache[key] = v = (sh, reach);
+        }
+        return v;
+    }
+
+    /// <summary>Polygons (turret-local) for the turret body, extra parts and each barrel. Shared: don't modify.</summary>
+    public static TurretShapes TurretShapesOf(PyDict t) => ShapesAndReach(t).Shapes;
+
+    static TurretShapes MakeShapes(string shape, double r, long n, double bl, double bw, double sp)
+    {
         var out_ = new TurretShapes();
+        double shown = bl * (BarrelShownK.TryGetValue(shape, out var kk) ? kk : 1.0);
 
         List<List<Pt>> BarrelPolys(double x0)
         {
@@ -341,7 +366,7 @@ public static class Geometry
             for (long i = 0; i < n; i++)
             {
                 double y = (i - (n - 1) / 2.0) * sp;
-                double xe = x0 + BarrelShown(t);
+                double xe = x0 + shown;
                 res.Add([new(x0, y - bw * 0.62), new(xe, y - bw / 2), new(xe, y + bw / 2), new(x0, y + bw * 0.62)]);
             }
             return res;
@@ -413,13 +438,8 @@ public static class Geometry
         return out_;
     }
 
-    /// <summary>Max distance of any part of the turret from its pivot.</summary>
-    public static double TurretReach(PyDict t)
-    {
-        var sh = TurretShapesOf(t);
-        var pts = sh.Body.Concat(sh.Parts.Concat(sh.Barrels).SelectMany(p => p));
-        return Py.Max(pts.Select(p => Py.Hypot(p.X, p.Y)));
-    }
+    /// <summary>Max distance of any part of the turret from its pivot (barrel_len: a stand-in, as {**t, "barrel_len": 0}).</summary>
+    public static double TurretReach(PyDict t, double? barrelLen = null) => ShapesAndReach(t, barrelLen).Reach;
 
     static readonly Dictionary<string, double> HeightK = new()
         { ["bb"] = 0.42, ["dp"] = 0.55, ["open"] = 0.9, ["torp"] = 0.5, ["tube"] = 1.6, ["casemate"] = 0.42 };
@@ -478,35 +498,72 @@ public static class Geometry
         return (d1 > 0) != (d2 > 0) && (d3 > 0) != (d4 > 0);
     }
 
+    /// <summary>(min x, min y, max x, max y) of the points, as Python's min/max (the first of equals).</summary>
+    public static (double X0, double Y0, double X1, double Y1) Bounds(IReadOnlyList<Pt> pts)
+    {
+        if (pts.Count == 0)
+            throw new PyValueError("min() iterable argument is empty");
+        double x0 = pts[0].X, y0 = pts[0].Y, x1 = x0, y1 = y0;
+        for (int i = 1; i < pts.Count; i++)
+        {
+            var p = pts[i];
+            if (p.X < x0)
+                x0 = p.X;
+            if (p.X > x1)
+                x1 = p.X;
+            if (p.Y < y0)
+                y0 = p.Y;
+            if (p.Y > y1)
+                y1 = p.Y;
+        }
+        return (x0, y0, x1, y1);
+    }
+
+    static bool Reaches(Pt s, Pt e, double x0, double y0, double x1, double y1) =>
+        (s.X <= x1 || e.X <= x1) && (s.X >= x0 || e.X >= x0) && (s.Y <= y1 || e.Y <= y1) && (s.Y >= y0 || e.Y >= y0);
+
     /// <summary>True if two simple polygons overlap (edges cross, or one lies inside the other).</summary>
     public static bool PolygonsIntersect(IReadOnlyList<Pt> a, IReadOnlyList<Pt> b)
     {
-        double x0 = Py.Max(Py.Min(a.Select(p => p.X)), Py.Min(b.Select(p => p.X)));
-        double x1 = Py.Min(Py.Max(a.Select(p => p.X)), Py.Max(b.Select(p => p.X)));
-        double y0 = Py.Max(Py.Min(a.Select(p => p.Y)), Py.Min(b.Select(p => p.Y)));
-        double y1 = Py.Min(Py.Max(a.Select(p => p.Y)), Py.Max(b.Select(p => p.Y)));
+        var ba = Bounds(a);
+        var bb = Bounds(b);
+        double x0 = Py.Max(ba.X0, bb.X0);
+        double x1 = Py.Min(ba.X1, bb.X1);
+        double y0 = Py.Max(ba.Y0, bb.Y0);
+        double y1 = Py.Min(ba.Y1, bb.Y1);
         if (x1 < x0 || y1 < y0)
             return false;
-
-        List<(Pt S, Pt E)> Near(IReadOnlyList<Pt> p)
+        // edges can only cross inside both boxes: the edges reaching into the overlap, in order
+        Span<int> eb = b.Count <= 256 ? stackalloc int[b.Count] : new int[b.Count];
+        int nb = 0;
+        var sb = b[^1];
+        for (int i = 0; i < b.Count; i++)
         {
-            var out_ = new List<(Pt, Pt)>();
-            var s = p[^1];
-            foreach (var e in p)
-            {
-                if ((s.X <= x1 || e.X <= x1) && (s.X >= x0 || e.X >= x0) && (s.Y <= y1 || e.Y <= y1) && (s.Y >= y0 || e.Y >= y0))
-                    out_.Add((s, e));
-                s = e;
-            }
-            return out_;
+            var e = b[i];
+            if (Reaches(sb, e, x0, y0, x1, y1))
+                eb[nb++] = i;
+            sb = e;
         }
-
-        var eb = Near(b);
-        if (eb.Count > 0)
-            foreach (var (p, q) in Near(a))
-                foreach (var (r, s) in eb)
+        if (nb > 0)
+        {
+            var sa = a[^1];
+            for (int i = 0; i < a.Count; i++)
+            {
+                var p = sa;
+                var q = a[i];
+                sa = q;
+                if (!Reaches(p, q, x0, y0, x1, y1))
+                    continue;
+                for (int k = 0; k < nb; k++)
+                {
+                    int j = eb[k];
+                    var r = b[(j - 1 + b.Count) % b.Count];
+                    var s = b[j];
                     if (SegmentsCross(p, q, r, s))
                         return true;
+                }
+            }
+        }
         return PointInPolygon(a[0].X, a[0].Y, b) || PointInPolygon(b[0].X, b[0].Y, a);
     }
 
@@ -536,10 +593,7 @@ public sealed class PreparedPolygon
     public PreparedPolygon(IReadOnlyList<Pt> pts)
     {
         this.pts = pts;
-        bx0 = Py.Min(pts.Select(p => p.X));
-        by0 = Py.Min(pts.Select(p => p.Y));
-        bx1 = Py.Max(pts.Select(p => p.X));
-        by1 = Py.Max(pts.Select(p => p.Y));
+        (bx0, by0, bx1, by1) = Geometry.Bounds(pts);
         int n = pts.Count;
         k = Math.Max(1, Math.Min(CELLS, n / 4));
         dx = (bx1 - bx0) / k;
@@ -584,8 +638,9 @@ public sealed class PreparedPolygon
     /// <summary>polygons_intersect(pts, b).</summary>
     public bool Intersects(IReadOnlyList<Pt> b)
     {
-        double x0 = Py.Max(bx0, Py.Min(b.Select(p => p.X))), x1 = Py.Min(bx1, Py.Max(b.Select(p => p.X)));
-        double y0 = Py.Max(by0, Py.Min(b.Select(p => p.Y))), y1 = Py.Min(by1, Py.Max(b.Select(p => p.Y)));
+        var bb = Geometry.Bounds(b);
+        double x0 = Py.Max(bx0, bb.X0), x1 = Py.Min(bx1, bb.X1);
+        double y0 = Py.Max(by0, bb.Y0), y1 = Py.Min(by1, bb.Y1);
         if (x1 < x0 || y1 < y0)
             return false;
 

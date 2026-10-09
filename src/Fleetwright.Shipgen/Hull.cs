@@ -124,7 +124,10 @@ public sealed class HullForm
     readonly Dictionary<(double, double), (double P, double Q)> sectionCache = [];
 
     sealed record StaticVal(List<(int I, int End, double R2, double E, double Dk, double W, double Pw)> Ends,
-        List<int> Fore, List<int> Aft, double[] Us, double[] Cs, double[] Area);
+        List<int> Fore, List<int> Aft, double[] Us, double[] Cs, double[] Area)
+    {
+        public readonly List<int>[] ForeAft = [Fore, Aft];
+    }
 
     /// <summary>x in lo..hi where the increasing f(x) meets target (an end when it doesn't): Illinois regula falsi.</summary>
     static double Solve(Func<double, double> f, double lo, double hi, double target)
@@ -224,7 +227,11 @@ public sealed class HullForm
     double WaterplaneCoef(double l)
     {
         var u = Stations(Nexp, Split, l).Us;
-        return Py.Sum(Enumerable.Range(0, N).Where(i => ds[i] > 0).Select(i => u[i])) / N;
+        int k = 0;
+        for (int i = 0; i < N; i++)
+            if (ds[i] > 0)
+                bufSel[k++] = u[i];
+        return Py.Sum(bufSel.AsSpan(0, k)) / N;
     }
 
     void Fit(double? cmArg = null)
@@ -238,23 +245,34 @@ public sealed class HullForm
 
         (double[] Us, double[] Cs, double[] Area) St(double n, double d) => Stations(n, d, lam, cm, xa, xf);
 
-        double Vol(double n, double d) => Py.Sum(St(n, d).Area) / N;
+        double Vol(double n, double d) => Py.Sum(St(n, d).Area.AsSpan()) / N;
 
         (double C, double N) Centre(double d)
         {
             double n = Solve(nn => Vol(nn, d), 0.3, 20.0, Cb);
             var a = St(n, d).Area;
-            double tot = Py.Sum(a);
-            return (tot > 0 ? Py.Sum(Enumerable.Range(0, N).Select(i => xs[i] * a[i])) / tot : 0.0, n);
+            double tot = Py.Sum(a.AsSpan());
+            for (int i = 0; i < N; i++)
+                bufSel[i] = xs[i] * a[i];
+            return (tot > 0 ? Py.Sum(bufSel.AsSpan()) / tot : 0.0, n);
         }
 
         Split = Solve(d => Centre(d).C, -2.0, 2.0, Lcb);
         (ReachedLcb, Nexp) = Centre(Split);
-        double[] area;
-        (us, cs, area) = St(Nexp, Split);
-        Volume = Py.Sum(area) / N;
+        var fin = St(Nexp, Split);
+        us = (double[])fin.Us.Clone();
+        cs = (double[])fin.Cs.Clone();
+        Volume = Py.Sum(fin.Area.AsSpan()) / N;
     }
 
+    // Stations' scratch: valid until the next call (the callers sum them or copy them out). The midbody and dry
+    // stations come from the _static arrays and never change for a static key; each call rewrites the same end
+    // stations, so the buffers are refilled from _static only when its key changes.
+    readonly double[] bufUs = new double[N], bufCs = new double[N], bufArea = new double[N];
+    readonly double[] bufS = new double[N], bufU = new double[N], bufRaw = new double[N], bufSel = new double[N];
+    StaticVal? bufFrom;
+
+    /// <summary>The stations' waterlines, fullness and areas (shared scratch arrays, see above).</summary>
     (double[] Us, double[] Cs, double[] Area) Stations(double n, double d, double lam0, double? cmArg = null,
         double? xaArg = null, double? xfArg = null)
     {
@@ -265,38 +283,44 @@ public sealed class HullForm
         else
             (xa, xf) = (xaArg.Value, xfArg!.Value);
         var st = Static(lam0, cm, xa, xf);
+        if (!ReferenceEquals(bufFrom, st))
+        {
+            Array.Copy(st.Us, bufUs, N);
+            Array.Copy(st.Cs, bufCs, N);
+            Array.Copy(st.Area, bufArea, N);
+            bufFrom = st;
+        }
         double inv0 = 1 / (n * Math.Exp(d)), inv1 = 1 / (n * Math.Exp(-d));
-        var rawS = new Dictionary<int, double>();
-        var rawU = new Dictionary<int, double>();
+        var rawS = bufS;
+        var uOf = bufU;
         foreach (var (i, end, rr, e, dk, w, pw) in st.Ends)
         {
             double s = e + (1 - e) * Py.Pow(1 - rr, end == 0 ? inv0 : inv1);
             double rho = dk > 0 ? s / dk : 0.0;
             rawS[i] = s;
-            rawU[i] = rho > 0 ? Py.Min(w, Py.Pow(rho, pw)) : 0.0;
+            uOf[i] = rho > 0 ? Py.Min(w, Py.Pow(rho, pw)) : 0.0;
         }
         int h = SMOOTH;
-        var uOf = new Dictionary<int, double>(rawU);
-        foreach (var endList in new[] { st.Fore, st.Aft })
+        var raw = bufRaw;
+        foreach (var endList in st.ForeAft)
         {
             double uMax = 0.0;
-            var raw = new List<double>(endList.Count);
-            foreach (int i in endList)
+            for (int j = 0; j < endList.Count; j++)
             {
+                int i = endList[j];
                 uMax = Py.Min(ws[i], Py.Max(uMax, uOf[i]));
-                raw.Add(uMax);
+                raw[j] = uMax;
             }
             for (int j = 0; j < endList.Count; j++)
             {
                 int i = endList[j];
-                int a = Math.Max(0, j - h), b = Math.Min(raw.Count, j + h + 1);
-                var win = raw.GetRange(a, b - a);
-                uOf[i] = Py.Min(ws[i], Py.Sum(win) / win.Count);
+                int a = Math.Max(0, j - h), b = Math.Min(endList.Count, j + h + 1);
+                uOf[i] = Py.Min(ws[i], Py.Sum(raw.AsSpan(a, b - a)) / (b - a));
             }
         }
-        var usOut = (double[])st.Us.Clone();
-        var csOut = (double[])st.Cs.Clone();
-        var areaOut = (double[])st.Area.Clone();
+        var usOut = bufUs;
+        var csOut = bufCs;
+        var areaOut = bufArea;
         foreach (var (i, end, rr, e, dk, w, pw) in st.Ends)
         {
             if (dk <= 0 || w <= 0)

@@ -43,6 +43,21 @@ The application exits after capturing the screenshot.
 - **Left Mouse + Drag** - Look around
 - **Escape** - Exit
 
+## Shipgen CLI
+
+The ship generator's command line, the port's test harness (`PORTING.md`):
+
+```bash
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- golden-check          # every golden case, ~25 s
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- golden-check bismarck fuzz_lim_*
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design shipgen/designs/bismarck.json --out out
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- validate shipgen/designs/*.json
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- bench bismarck yamato
+```
+
+`golden-check` must stay at 371 of 371 for any change to `Fleetwright.Shipgen` that isn't a deliberate fix (fixes
+update the goldens on purpose, one per commit).
+
 ## Project Structure
 
 ```
@@ -61,10 +76,17 @@ src/
     GpuPipelineBuilder.cs     #   fluent pipeline builder
     GpuMath.cs                #   math helpers (perspective, lookAt)
     ShaderTypes.cs            #   vertex layout, uniforms, scene data
-  Fleetwright.Shipgen/        # ship design library (being ported, see below). No package references.
+  Fleetwright.Shipgen/        # ship design library (ported, see below). No package references.
+    Py/                       #   the Python runtime the port stands on: PyDict, Py (numerics, repr, formats), PyJson
+    Layout/                   #   layout.py: the Layout object, parts, superstructure levels, the warship layout
+    Styles/                   #   the style hooks and the warship, carrier, merchant and planing styles
+    Golden/                   #   the golden comparer and case runner
   Fleetwright.Shipgen.Cli/    # `shipgen` command, the port's test harness
 tests/
-  Fleetwright.Shipgen.Tests/  # xUnit
+  Fleetwright.Shipgen.Tests/  # xUnit: Py helpers vs CPython, every golden case, concurrent builds
+shipgen/                      # the port's test data
+  designs/                    #   the 71 designs, and fuzz/ (300 mutants)
+  golden/                     #   Python's output (README.md there)
 Content/                      # shared by all exes, copied into each exe's output folder
   Shaders/Source/             #   GLSL sources
   Shaders/Compiled/           #   SPIR-V binaries (checked in)

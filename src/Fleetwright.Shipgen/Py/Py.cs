@@ -352,6 +352,8 @@ public static class Py
         if (x == 0)
             return sign + "0";
         double ax = Math.Abs(x);
+        if (p == 6 && ax < 1e6 && ax == Math.Floor(ax))     // an integral value under 1e6 prints as itself
+            return sign + ((long)ax).ToString(CultureInfo.InvariantCulture);
         int e = (int)Math.Floor(Math.Log10(ax));
         // exact: 10^e <= ax < 10^(e+1)
         while (CompareToPow10(ax, e) < 0)
@@ -724,6 +726,31 @@ public static class Py
     }
 
     public static double Sum<T>(IEnumerable<T> seq, Func<T, double> f) => Sum(seq.Select(f));
+
+    /// <summary>sum() of a span of floats, as CPython (see Sum(IEnumerable)).</summary>
+    public static double Sum(ReadOnlySpan<double> xs)
+    {
+        if (xs.Length == 0)
+            return 0.0;
+        double hi = 0.0 + xs[0], lo = 0.0;
+        for (int i = 1; i < xs.Length; i++)
+        {
+            double x = xs[i];
+            double t = hi + x;
+            if (Math.Abs(hi) >= Math.Abs(x))
+                lo += (hi - t) + x;
+            else
+                lo += (x - t) + hi;
+            hi = t;
+        }
+        if (lo != 0 && double.IsFinite(lo))
+            return hi + lo;
+        return hi;
+    }
+
+    public static double Sum(Span<double> xs) => Sum((ReadOnlySpan<double>)xs);
+    public static double Sum(double[] xs) => Sum((ReadOnlySpan<double>)xs);
+    public static double Sum(List<double> xs) => Sum(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(xs));
 
     /// <summary>sum(ints).</summary>
     public static long Sum(IEnumerable<long> seq)

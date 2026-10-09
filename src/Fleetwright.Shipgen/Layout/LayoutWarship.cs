@@ -19,9 +19,7 @@ public sealed class Gun
         (Tid, T) = Geometry.BatteryType(spec);
         Cal = $"{Py.G(spec.F("calibre_mm"))} mm";
         R = T.F("r");
-        var t0 = T.Copy();
-        t0["barrel_len"] = 0L;
-        Reach = Py.Max(R, Geometry.TurretReach(t0));
+        Reach = Py.Max(R, Geometry.TurretReach(T, 0.0));
         Th = Geometry.TurretHeight(T);
         RR = Geometry.TurretReach(T) + 0.5;
         Gap = 2.0 + 0.5 * R;

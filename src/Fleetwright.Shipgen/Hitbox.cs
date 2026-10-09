@@ -85,12 +85,10 @@ public static class Hitbox
             var t = m.D("t");
             var sh = Geometry.TurretShapesOf(t);
             var arm = m.Get("armour_mm", 0L);
-            var t0 = t.Copy();
-            t0["barrel_len"] = 0L;
             var c = PyDict.Of(("id", m["id"]), ("kind", m["kind"]), ("type", m["type"]));
             c.Update(Geometry.GunOf(t));
             c.Update(("x", Py.Round(m.F("x"), 3)), ("y", Py.Round(m.F("y"), 3)), ("base", Py.Round(m.F("base"), 2)),
-                ("top", Py.Round(m.F("top"), 2)), ("armour_mm", arm), ("broadphase_r", Py.Round(Py.Max(t.F("r"), Geometry.TurretReach(t0)), 3)),
+                ("top", Py.Round(m.F("top"), 2)), ("armour_mm", arm), ("broadphase_r", Py.Round(Py.Max(t.F("r"), Geometry.TurretReach(t, 0.0)), 3)),
                 ("rotating", m.Get("fixed") is null), ("rest_deg", m["rest"]), ("arcs_deg", m["arcs"]), ("traverse_deg", m["traverse"]),
                 ("local", PyDict.Of(("body", R3(sh.Body)), ("parts", sh.Parts.Select(p => (object?)R3(p)).ToList()),
                     ("barrels", sh.Barrels.Select(p => (object?)R3(p)).ToList()))));

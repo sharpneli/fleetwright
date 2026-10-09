@@ -216,41 +216,44 @@ public sealed partial class Layout
             if (b.B("points") && !b.Has("_slabs"))
                 b["_slabs"] = new Slabs(Geometry.Pts(b["points"]));
             var slabs = b.Get("_slabs") as Slabs;
+            double hwR = w < bw ? w / 2 - 0.3 : 0.0;
+            var sp0 = new List<(double Lo, double Hi)>();
+            var sp1 = new List<(double Lo, double Hi)>();
             foreach (var x in xs)
             {
-                var spans = slabs != null ? new[] { slabs.At(x + -l / 2), slabs.At(x + l / 2) } : null;
-
-                bool OnRoof(double y)
+                if (slabs != null)
                 {
-                    if (spans is null || spans.Length == 0)
-                        return true;
-                    double hw_ = w < bw ? w / 2 - 0.3 : 0.0;
-                    foreach (var s in y != 0 ? new[] { 1, -1 } : new[] { 1 })
-                    {
-                        double a = s * y - hw_, b_ = s * y + hw_;
-                        foreach (var sp in spans)
-                        {
-                            bool ok = false;
-                            foreach (var (lo, hi) in sp)
-                                if (lo <= a && b_ <= hi)
-                                {
-                                    ok = true;
-                                    break;
-                                }
-                            if (!ok)
-                                return false;
-                        }
-                    }
-                    return true;
+                    slabs.At(x + -l / 2, sp0);
+                    slabs.At(x + l / 2, sp1);
                 }
-
-                if (OnRoof(by))
+                if (slabs is null || OnRoof(sp0, sp1, by, hwR))
                     out_.Add((x, by, z0, false));
-                if (Math.Abs(by) < 1e-6 && ye > w / 2 + 0.1 && OnRoof(ye))
+                if (Math.Abs(by) < 1e-6 && ye > w / 2 + 0.1 && (slabs is null || OnRoof(sp0, sp1, ye, hwR)))
                     out_.Add((x, ye, z0, true));
             }
         }
         return out_;
+    }
+
+    /// <summary>Is a spot of half-width hw at y (and -y, for a pair) inside a polygon roof's spans at both its ends?</summary>
+    static bool OnRoof(List<(double Lo, double Hi)> sp0, List<(double Lo, double Hi)> sp1, double y, double hw)
+    {
+        for (int k = 0; k < (y != 0 ? 2 : 1); k++)
+        {
+            double s = k == 0 ? 1 : -1;
+            double a = s * y - hw, b = s * y + hw;
+            if (!Inside(sp0, a, b) || !Inside(sp1, a, b))
+                return false;
+        }
+        return true;
+    }
+
+    static bool Inside(List<(double Lo, double Hi)> spans, double a, double b)
+    {
+        foreach (var (lo, hi) in spans)
+            if (lo <= a && b <= hi)
+                return true;
+        return false;
     }
 
     /// <summary>Douglas-Peucker: the polyline's points that keep it within tol of the original.</summary>
@@ -308,14 +311,25 @@ public sealed partial class Layout
         /// <summary>The stretches of y inside the polygon at x.</summary>
         public List<(double Lo, double Hi)> At(double x)
         {
+            var out_ = new List<(double, double)>();
+            At(x, out_);
+            return out_;
+        }
+
+        /// <summary>At(x) into a list the caller keeps (cleared first).</summary>
+        public void At(double x, List<(double Lo, double Hi)> out_)
+        {
+            out_.Clear();
             int i = Py.BisectRight(xs, x) - 1;
             if (i < 0 || i >= slabs.Count)
-                return [];
-            var ys = slabs[i].Select(e => e.Y0 + (x - e.X0) * (e.Y1 - e.Y0) / (e.X1 - e.X0)).ToList();
-            var out_ = new List<(double, double)>();
-            for (int k = 0; k < ys.Count - 1; k += 2)
-                out_.Add((ys[k], ys[k + 1]));
-            return out_;
+                return;
+            var es = slabs[i];
+            for (int k = 0; k + 1 < es.Count; k += 2)
+            {
+                var e = es[k];
+                var f = es[k + 1];
+                out_.Add((e.Y0 + (x - e.X0) * (e.Y1 - e.Y0) / (e.X1 - e.X0), f.Y0 + (x - f.X0) * (f.Y1 - f.Y0) / (f.X1 - f.X0)));
+            }
         }
     }
 
