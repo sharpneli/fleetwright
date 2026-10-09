@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ship designer — focus follows</title>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<script src="dc-lite.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans+Condensed:wght@400;500;600&amp;family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#141D24}
+a{color:#E0AE4F}a:hover{color:#F3C46A}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="position:relative;width:1600px;height:960px;overflow:hidden;background:#141D24;color:#E3E9EC;font-family:'IBM Plex Sans Condensed',sans-serif;font-size:14px">
+
+  <!-- TOP BAR -->
+  <div style="position:absolute;left:0;top:0;width:1600px;height:52px;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:0 16px;background:#1B2730;border-bottom:1px solid #304350">
+    <div style="display:flex;flex-direction:column">
+      <div style="font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:#93A6B0">Design study · 1905</div>
+      <div style="font-size:17px;font-weight:600">Battleship 1905 · Sketch A</div>
+    </div>
+    <div style="display:flex;gap:4px"><span style="height:30px;width:32px;border-radius:4px;border:1px solid #E0AE4F;background:#2C2A1F;color:#E0AE4F;display:flex;align-items:center;justify-content:center">A</span><span style="height:30px;width:32px;border-radius:4px;border:1px solid #304350;background:#22313B;color:#93A6B0;display:flex;align-items:center;justify-content:center">B</span><span style="height:30px;width:32px;border-radius:4px;border:1px dashed #304350;color:#93A6B0;display:flex;align-items:center;justify-content:center">+</span></div>
+    <span style="height:30px;display:flex;align-items:center;padding:0 12px;border-radius:15px;font-size:12.5px;border:1px solid #3B5160;color:#C9D4DA">⇆ Compare</span>
+    <div style="flex:1"></div>
+    <span style="{{reqBadge}}">{{reqText}}</span>
+    <span style="height:28px;display:flex;align-items:center;padding:0 10px;border-radius:14px;font-size:12px;border:1px solid #E0AE4F;background:#2C2A1F;color:#E0AE4F">Classified: Line of battle {{lineScore}}</span>
+  </div>
+
+  <!-- LEFT RAIL -->
+  <div style="position:absolute;left:0;top:52px;width:330px;height:864px;box-sizing:border-box;border-right:1px solid #304350;background:#17222A;display:flex;flex-direction:column;overflow:hidden">
+    <sc-for list="{{sections}}" as="s" hint-placeholder-count="8">
+      <div style="{{s.wrap}}">
+        <button onClick="{{s.open}}" style="width:100%;height:40px;display:flex;align-items:center;gap:10px;padding:0 14px;border:none;background:transparent;color:#E3E9EC;text-align:left">
+          <span style="{{s.key}}">{{s.n}}</span>
+          <span style="{{s.nameStyle}}">{{s.name}}</span>
+          <span style="flex:1"></span>
+          <span style="font-size:12px;color:#93A6B0;white-space:nowrap">{{s.summary}}</span>
+        </button>
+        <div style="{{s.body}}">
+          <sc-for list="{{s.controls}}" as="c" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px">
+              <span style="width:92px;flex:none;color:#93A6B0">{{c.k}}</span>
+              <span style="flex:1;height:28px;display:flex;align-items:center;padding:0 8px;border:1px solid #3B5160;border-radius:4px;background:#1B2730;font-family:'IBM Plex Mono',monospace;font-size:12.5px">{{c.v}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+    <div style="margin-top:auto;padding:10px 14px;font-size:11.5px;color:#6E828D;border-top:1px solid #263640">1–8 or click a part of the ship · the space under the ship rearranges for the section</div>
+  </div>
+
+  <!-- CENTRE BACKGROUND -->
+  <div style="position:absolute;left:330px;top:52px;width:890px;height:864px;background:#1A2E3A"></div>
+
+  <!-- SHIP (always on top of the centre) -->
+  <img src="assets/dreadnought.png" alt="Top-down render of the design, bow to the right" style="position:absolute;left:385px;top:76px;width:780px;height:auto">
+  <sc-for list="{{hot}}" as="h" hint-placeholder-count="5">
+    <button onClick="{{h.go}}" aria-label="{{h.aria}}" title="{{h.aria}}" style="{{h.style}}"></button>
+  </sc-for>
+  <div style="position:absolute;left:342px;top:58px;font-size:11px;color:#8FB0C0">click a part of the ship to edit it</div>
+  <div style="position:absolute;left:330px;top:229px;width:890px;border-top:1px solid #26404D"></div>
+
+  <!-- DOCK captions and slots -->
+  <sc-for list="{{docks}}" as="d" hint-placeholder-count="4">
+    <div style="{{d.slot}}"></div>
+    <div style="{{d.cap}}">{{d.label}}</div>
+  </sc-for>
+
+  <!-- ============ WIDGET: side profile / armour ============ -->
+  <div onClick="{{goProt}}" style="{{w.profile}}">
+    <div style="position:absolute;left:0;top:30%;width:100%;height:62%;background:#2B3A44;border:1px solid #4A5F6C;box-sizing:border-box;border-radius:0 0 4% 9% / 0 0 30% 40%"></div>
+    <div style="{{fcsl}}"></div>
+    <div style="position:absolute;left:0;right:0;top:58%;border-top:1px dashed #7FC3E8"></div>
+    <sc-for list="{{plates}}" as="p" hint-placeholder-count="10">
+      <div style="{{p.style}}"><span style="{{p.lab}}">{{p.mm}}</span></div>
+    </sc-for>
+    <div style="position:absolute;left:49%;width:2.4%;top:4%;height:26%;background:#3A3A3A"></div>
+    <div style="position:absolute;left:54%;width:2.4%;top:4%;height:26%;background:#3A3A3A"></div>
+    <div style="position:absolute;left:66.5%;width:6%;top:0;height:30%;background:#6E7F6A"></div>
+    <div style="{{profLabels}}">
+      <span style="position:absolute;left:16%;top:-2%;font-size:12px;color:#E0AE4F;white-space:nowrap">citadel 117.5 m · machinery and magazines inside</span>
+      <span style="position:absolute;right:0.5%;top:53%;font-size:11px;color:#7FC3E8">WL</span>
+      <span style="position:absolute;left:0.5%;bottom:1%;font-size:11px;color:#8FB0C0">◄ stern · vertical ×2.4 · click a plate, scroll to change, drag edges</span>
+    </div>
+    <div style="{{hullLabels}}">
+      <span style="position:absolute;left:51%;top:12%;font-size:12px;color:#E0AE4F;white-space:nowrap">forecastle to the funnels · drag its end</span>
+      <span style="position:absolute;left:73%;top:-1%;font-size:12px;color:#E0AE4F;white-space:nowrap">tower 5 levels</span>
+    </div>
+  </div>
+
+  <!-- ============ WIDGET: arrangement strip ============ -->
+  <div onClick="{{goMain}}" style="{{w.strip}}">
+    <div style="position:absolute;inset:0;border:1px solid #33505F;border-radius:8px;background:#15242E"></div>
+    <div style="position:absolute;left:14px;top:10px;font-size:11px;letter-spacing:0.12em;color:#93A6B0">ARRANGEMENT STRIP · click a turret to step it up</div>
+    <div style="position:absolute;left:14px;top:34px;width:230px;height:130px;border:1px solid #33505F;border-radius:6px;display:flex;gap:8px;align-items:flex-end;padding:0 10px 18px;box-sizing:border-box"><span style="width:56px;height:52px;border-radius:6px;background:#5B9BE0;color:#0E1A22;font-weight:600;font-size:18px;display:flex;align-items:center;justify-content:center">Y</span><span style="width:56px;height:52px;border-radius:6px;background:#5B9BE0;color:#0E1A22;font-weight:600;font-size:18px;display:flex;align-items:center;justify-content:center">X</span><span style="width:40px;height:40px;border-radius:6px;border:1px dashed #3B5160;color:#93A6B0;font-size:20px;display:flex;align-items:center;justify-content:center">+</span></div>
+    <div style="position:absolute;left:254px;top:34px;width:390px;height:130px;border:1px solid #33505F;border-radius:6px;display:flex;gap:6px;align-items:flex-end;padding:0 10px 18px;box-sizing:border-box"><span style="height:40px;padding:0 14px;border-radius:4px;background:#3A4650;display:flex;align-items:center">ENG</span><span style="height:40px;padding:0 14px;border-radius:4px;background:#5A4635;color:#F2D9BC;display:flex;align-items:center">BOIL</span><span style="height:40px;width:28px;border-radius:4px;border:2px dashed #E0AE4F;color:#E0AE4F;display:flex;align-items:center;justify-content:center">Q</span><span style="height:40px;padding:0 14px;border-radius:4px;background:#5A4635;color:#F2D9BC;display:flex;align-items:center">BOIL</span><span style="height:52px;padding:0 12px;border-radius:6px;border:1px dashed #2F6AA8;background:rgba(91,155,224,0.25);font-weight:600;display:flex;align-items:center">W1 pair</span></div>
+    <div style="position:absolute;left:654px;top:34px;width:198px;height:130px;border:1px solid #33505F;border-radius:6px;display:flex;gap:8px;align-items:flex-end;justify-content:flex-end;padding:0 10px 18px;box-sizing:border-box"><span style="width:40px;height:40px;border-radius:6px;border:1px dashed #3B5160;color:#93A6B0;font-size:20px;display:flex;align-items:center;justify-content:center">+</span><span style="width:56px;height:52px;border-radius:6px;background:#5B9BE0;color:#0E1A22;font-weight:600;font-size:18px;display:flex;align-items:center;justify-content:center">A</span></div>
+  </div>
+
+  <!-- ============ WIDGET: speed curve ============ -->
+  <div onClick="{{goMach}}" style="{{w.curve}}">
+    <div style="position:absolute;inset:0;border:1px solid #33505F;border-radius:8px;background:#15242E"></div>
+    <div style="position:absolute;left:14px;top:10px;font-size:11px;letter-spacing:0.12em;color:#93A6B0">STANDARD DISPLACEMENT AGAINST SPEED · drag the point</div>
+    <svg width="866" height="300" viewBox="0 0 866 300" style="position:absolute;left:0;top:0" role="img" aria-label="Standard displacement rises from 19,229 t at 17 knots to 42,033 t at 25 knots; current 24,970 t at 21 knots; the 24,000 t request is met at 20.47 knots.">
+      <line x1="40" x2="840" y1="{{reqY}}" y2="{{reqY}}" stroke="#E0AE4F" stroke-width="1.5" stroke-dasharray="6 4"></line>
+      <polyline points="{{curve}}" fill="none" stroke="#5B9BE0" stroke-width="3"></polyline>
+      <circle cx="{{cur.x}}" cy="{{cur.y}}" r="9" fill="#15242E" stroke="#E0AE4F" stroke-width="3"></circle>
+      <text x="{{cur.lx}}" y="{{cur.ly}}" font-family="IBM Plex Sans Condensed, sans-serif" font-size="13" fill="#E0AE4F">21 kn · 24,970 t</text>
+      <text x="836" y="{{reqTY}}" text-anchor="end" font-family="IBM Plex Sans Condensed, sans-serif" font-size="12" fill="#F1D79C">request ≤ 24,000 t → 20.47 kn</text>
+      <sc-for list="{{xt}}" as="t" hint-placeholder-count="9"><text x="{{t.x}}" y="290" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#93A6B0">{{t.l}}</text></sc-for>
+    </svg>
+  </div>
+
+  <!-- ============ WIDGET: fire control ============ -->
+  <div onClick="{{goFc}}" style="{{w.fc}}">
+    <div style="position:absolute;inset:0;border:1px solid #33505F;border-radius:8px;background:#15242E"></div>
+    <div style="position:absolute;left:14px;top:10px;font-size:11px;letter-spacing:0.12em;color:#93A6B0">DIRECTOR HORIZON · eye 26 m · horizon 18.9 km</div>
+    <div style="position:absolute;left:60px;top:150px;width:746px;height:90px;border-radius:50% 50% 0 0;border:2px dashed #8FB0C0;border-bottom:none;box-sizing:border-box"></div>
+    <div style="position:absolute;left:330px;top:180px;width:206px;height:40px;background:#2B3A44;border-radius:0 0 10px 30px"></div>
+    <div style="position:absolute;left:420px;top:120px;width:24px;height:60px;background:#6E7F6A"></div>
+    <div style="position:absolute;left:404px;top:110px;width:56px;height:14px;background:#C9D4DA;border-radius:3px"></div>
+    <div style="position:absolute;left:600px;top:60px;font-size:13px;color:#C9D4DA">1 main director · 2.7 m rangefinder<br><span style="color:#E0AE4F">adequate to 10 kyd · 4.6 m for 15 kyd</span></div>
+  </div>
+
+  <!-- ============ WIDGET: crew ============ -->
+  <div onClick="{{goCrew}}" style="{{w.crew}}">
+    <div style="position:absolute;inset:0;border:1px solid #33505F;border-radius:8px;background:#15242E"></div>
+    <div style="position:absolute;left:14px;top:10px;font-size:11px;letter-spacing:0.12em;color:#93A6B0">HABITABILITY · sleep at station ↔ single cabins</div>
+    <div style="position:absolute;left:40px;top:70px;width:786px;height:16px;border-radius:8px;background:#304350"></div>
+    <div style="position:absolute;left:40px;top:70px;width:240px;height:16px;border-radius:8px;background:#E0AE4F"></div>
+    <div style="position:absolute;left:268px;top:62px;width:32px;height:32px;border-radius:50%;background:#E0AE4F;border:4px solid #15242E;box-sizing:border-box"></div>
+    <div style="position:absolute;left:40px;top:120px;display:flex;gap:10px;align-items:flex-end;height:110px">
+      <span style="width:120px;height:80px;background:#C58A2E"></span><span style="width:120px;height:95px;background:#5B9BE0"></span><span style="width:120px;height:30px;background:#6E7F6A"></span><span style="width:120px;height:12px;background:#9A9A8A"></span>
+    </div>
+    <div style="position:absolute;left:40px;top:236px;font-size:12px;color:#93A6B0">engineering 337 · weapons 399 · deck &amp; command 126 · hotel 46</div>
+  </div>
+
+  <!-- ============ WIDGET: catches · escapes · beats ============ -->
+  <div onClick="{{goRole}}" style="{{w.match}}">
+    <div style="position:absolute;inset:0;border:1px solid #CDBFA4;border-radius:6px;background:{{matchBg}};transition:background 0.5s"></div>
+    <div style="position:absolute;left:0;top:13%;width:44%;height:40%;background:rgba(108,193,143,0.16)"></div>
+    <div style="position:absolute;left:44%;top:53%;width:56%;height:40%;background:rgba(240,122,106,0.14)"></div>
+    <div style="position:absolute;left:0;top:53%;width:44%;height:40%;background:rgba(224,174,79,0.10)"></div>
+    <div style="position:absolute;left:44%;top:13%;height:80%;border-left:1px dashed #B07A1E"></div>
+    <div style="position:absolute;left:0;right:0;top:53%;border-top:1px dashed #7A8A92"></div>
+    <div style="{{matchTitle}}">Catches · escapes · beats</div>
+    <sc-for list="{{dots}}" as="d" hint-placeholder-count="8">
+      <div style="{{d.dot}}"></div><div style="{{d.lab}}">{{d.name}}</div>
+    </sc-for>
+    <div style="position:absolute;left:calc(50% - 10px);top:calc(53% - 10px);width:20px;height:20px;transform:rotate(45deg);background:#E0AE4F"></div>
+    <div style="{{quadLabels}}">
+      <span style="position:absolute;left:10px;top:15%;font-size:12px;color:#9FDDB7;font-weight:600">PREY · catch and beat</span>
+      <span style="position:absolute;right:10px;top:46%;font-size:12px;color:#9FB6C3;font-weight:600">TOO FAST</span>
+      <span style="position:absolute;left:10px;bottom:9%;font-size:12px;color:#F1D79C;font-weight:600">ESCAPE</span>
+      <span style="position:absolute;right:10px;bottom:9%;font-size:12px;color:#F6A89F;font-weight:600">DANGER</span>
+    </div>
+    <div style="{{matchCount}}">Prey 3 · Too fast 5 · Danger 0</div>
+  </div>
+
+  <!-- ============ SECTION PANEL ============ -->
+  <div style="{{panel}}">
+    <sc-if value="{{is.over}}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:12px;height:100%">
+        <div style="flex:1;border:1px solid #33505F;border-radius:8px;padding:10px 14px;background:#15242E;display:flex;flex-direction:column;gap:2px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:4px"><span style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#E0AE4F;font-weight:600">Trim sheet · main parameters</span><span style="font-size:11.5px;color:#8FB0C0">each row shows what one step buys back</span></div>
+          <sc-for list="{{levers}}" as="l" hint-placeholder-count="7">
+            <div style="display:grid;grid-template-columns:112px 30px 84px 30px minmax(0, 1fr) 128px;gap:8px;align-items:center;height:40px;border-top:1px solid #22343F">
+              <span style="color:#C9D4DA;font-size:13px">{{l.name}}</span>
+              <button aria-label="{{l.minusAria}}" onClick="{{l.minus}}" style="width:30px;height:30px;border-radius:4px;border:1px solid #3B5160;background:#22313B;color:#E3E9EC;font-size:16px">−</button>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;text-align:center">{{l.value}}</span>
+              <button aria-label="{{l.plusAria}}" onClick="{{l.plus}}" style="width:30px;height:30px;border-radius:4px;border:1px solid #3B5160;background:#22313B;color:#E3E9EC;font-size:16px">+</button>
+              <span style="position:relative;height:6px;border-radius:3px;background:#22343F"><span style="{{l.fill}}"></span><span style="{{l.mark}}"></span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#E0AE4F;text-align:right">{{l.chip}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="width:300px;border:1px solid #33505F;border-radius:8px;padding:12px 14px;background:#15242E;display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#93A6B0">Standard vs request</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:26px;line-height:1">{{stdText}} t</span>
+          <span style="position:relative;height:12px;border-radius:6px;background:#22343F;overflow:hidden"><span style="{{meterFill}}"></span><span style="position:absolute;left:80%;top:0;bottom:0;width:2px;background:#E3E9EC"></span></span>
+          <span style="{{marginStyle}}">{{marginText}}</span>
+          <span style="font-size:12px;color:#93A6B0">since opened: <span style="font-family:'IBM Plex Mono',monospace;color:#E3E9EC">{{sinceText}}</span></span>
+          <div style="border-top:1px solid #22343F;padding-top:8px;display:flex;flex-direction:column;gap:5px;font-size:12.5px">
+            <sc-for list="{{reads}}" as="r" hint-placeholder-count="4">
+              <div style="display:flex;justify-content:space-between"><span style="color:#93A6B0">{{r.k}}</span><span style="font-family:'IBM Plex Mono',monospace">{{r.v}}</span></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:auto">
+            <button onClick="{{reset}}" style="flex:1;height:30px;border-radius:4px;border:1px solid #3B5160;background:transparent;color:#C9D4DA;font-size:12.5px">Reset</button>
+            <button onClick="{{fitSpeed}}" style="flex:1;height:30px;border-radius:4px;border:1px solid #E0AE4F;background:#2C2A1F;color:#E0AE4F;font-size:12.5px">⌖ Fit with speed</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{is.main}}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;gap:12px;height:100%">
+        <div style="flex:1;border:1px solid #33505F;border-radius:8px;padding:12px;background:#15242E;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:6px"><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #E0AE4F;background:#2C2A1F;color:#E0AE4F;font-size:12px">Dreadnought H</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">A-B-X-Y</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">Hexagonal</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">Echelon</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">All forward</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:12px;height:12px;border-radius:3px;background:#5B9BE0"></span><b>Battery 1</b><span style="color:#93A6B0;font-size:12.5px">12 in / 45 Mk X · twin · 10 guns · 100 rpg</span></div>
+          <span style="font-size:12.5px;color:#93A6B0">+ Add battery · Details ▾ (echelon, cross-deck, stands on)</span>
+        </div>
+        <div style="width:330px;border:1px solid #33505F;border-radius:8px;padding:12px;background:#15242E;display:flex;flex-direction:column;gap:6px;font-size:13px">
+          <span style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#93A6B0">Guns bearing</span>
+          <span>Ahead <b>6</b> · Broadside <b>8</b> · Astern <b>4</b></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0AE4F">+1 end turret: +1,150 t · +0.0 m (12.5 m slack)</span>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{is.prot}}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;gap:12px;height:100%">
+        <div style="flex:1;border:1px solid #33505F;border-radius:8px;padding:12px;background:#15242E;display:flex;flex-direction:column;gap:10px;font-size:12.5px">
+          <div style="display:flex;gap:6px"><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">Protected cruiser</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">Pre-dreadnought</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #E0AE4F;background:#2C2A1F;color:#E0AE4F;font-size:12px">Incremental</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">All-or-nothing</span></div>
+          <div style="display:flex;gap:28px"><span><span style="color:#93A6B0">Belt band</span><br><span style="font-size:10.5px;padding:1px 6px;border-radius:8px;background:#304350">Auto</span> 2.7 m below · above</span><span><span style="color:#93A6B0">End belts reach</span><br>fore 1.0 · aft 1.0</span><span><span style="color:#93A6B0">Steering box</span><br>none <a href="#">add</a></span><span><span style="color:#93A6B0">Torpedo protection</span><br>0 m</span></div>
+        </div>
+        <div style="width:330px;border:1px solid #33505F;border-radius:8px;padding:12px;background:#15242E;display:flex;flex-direction:column;gap:6px;font-size:12.5px">
+          <span style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#93A6B0">Costs</span>
+          <span style="font-family:'IBM Plex Mono',monospace;color:#E0AE4F">+1 in belt: +310 t</span>
+          <span>Armour 10,087 t · 40 % of standard</span>
+          <span style="color:#93A6B0">Immune zone vs 12 in: placeholder</span>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{is.hull}}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #33505F;border-radius:8px;padding:12px;background:#15242E;display:flex;flex-direction:column;gap:10px;font-size:12.5px;height:100%;box-sizing:border-box">
+        <div style="display:flex;gap:6px"><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">Flush</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">Forecastle to bridge</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #E0AE4F;background:#2C2A1F;color:#E0AE4F;font-size:12px">Forecastle to funnels</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">Forecastle + poop</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">Breastwork</span></div>
+        <div style="display:flex;gap:28px"><span><span style="color:#93A6B0">Form</span><br>Full ◀ Cb 0.60 ▶ Fine</span><span><span style="color:#93A6B0">Freeboard</span><br>Sheltered ◀ Ocean ▶ High</span><span><span style="color:#93A6B0">Tower</span><br>5 levels · bridge horizon 14.6 km · GM −0.03 per level</span></div>
+      </div>
+    </sc-if>
+    <sc-if value="{{is.role}}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #33505F;border-radius:8px;padding:12px;background:#15242E;display:flex;flex-direction:column;gap:8px;font-size:13px;height:100%;box-sizing:border-box">
+        <span style="color:#93A6B0">Your role (an order; the enemy ignores it)</span>
+        <div style="display:flex;gap:5px;flex-wrap:wrap"><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #E0AE4F;background:#2C2A1F;color:#E0AE4F;font-size:12px">Line of battle</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">Trade protection</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">Scout</span><span style="height:26px;display:flex;align-items:center;padding:0 9px;border-radius:4px;border:1px solid #3B5160;font-size:12px">Station</span></div>
+        <span style="color:#93A6B0;margin-top:4px">Fitness</span>
+        <sc-for list="{{fit}}" as="f" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:8px;font-size:12.5px"><span style="width:110px">{{f.name}}</span><span style="flex:1;height:8px;background:#22343F;position:relative"><span style="{{f.bar}}"></span></span><span style="font-family:'IBM Plex Mono',monospace;width:34px;text-align:right">{{f.v}}</span></div>
+        </sc-for>
+        <span style="color:#93A6B0;margin-top:4px">Theatre: <b style="color:#E3E9EC">North Sea</b> · Med · Atlantic</span>
+        <span style="color:#93A6B0">Matchup table ▾</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{is.mach}}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #33505F;border-radius:8px;padding:12px;background:#15242E;display:flex;gap:28px;font-size:12.5px;height:100%;box-sizing:border-box">
+        <span><span style="color:#93A6B0">Plant</span><br>Direct-drive turbines, coal<br><span style="color:#93A6B0">120 kg/kW · 950 g/kWh</span></span>
+        <span><span style="color:#93A6B0">Rating</span><br>Conservative ◀ 0.2 ▶ Forced</span>
+        <span><span style="color:#93A6B0">Range</span><br>6,600 nm · 22 days</span>
+        <span style="font-family:'IBM Plex Mono',monospace;color:#E0AE4F">+1 kn: +2,140 t · +8.5 m</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{is.plain}}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px dashed #33505F;border-radius:8px;padding:16px;height:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:#8FB0C0;text-align:center">{{plainText}}</div>
+    </sc-if>
+  </div>
+
+  <!-- LEGEND -->
+  <div style="position:absolute;left:1220px;top:52px;width:380px;height:864px;box-sizing:border-box;background:#EFE7D6;color:#26221C;padding:12px 16px;display:flex;flex-direction:column;gap:6px">
+    <div style="font-family:'Libre Caslon Text',serif;font-size:19px;font-weight:700">Legend</div>
+    <sc-for list="{{legend}}" as="p" hint-placeholder-count="6">
+      <button onClick="{{p.go}}" style="display:flex;gap:8px;border:none;border-bottom:1px dotted #CDBFA4;padding:2px 0;background:transparent;text-align:left;color:#26221C;font-size:12.5px">
+        <span style="width:92px;flex:none;color:#6B6253;font-family:'Libre Caslon Text',serif">{{p.k}}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px">{{p.v}}</span>
+      </button>
+    </sc-for>
+    <div style="display:flex;height:14px;border:1px solid #9E9381;position:relative;margin-top:4px;background:#E4DAC5"><sc-for list="{{segs}}" as="g" hint-placeholder-count="6"><span style="{{g}}"></span></sc-for><span style="{{reqLine}}"></span></div>
+    <div style="height:252px;flex:none;margin-top:6px;position:relative">
+      <div style="{{matchSlot}}">shown in the centre ↙</div>
+    </div>
+    <div style="font-family:'Libre Caslon Text',serif;font-weight:700;font-size:13px">Remarks ({{remarkCount}})</div>
+    <sc-if value="{{overReq}}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{goOver}}" style="text-align:left;border:none;border-top:1px solid #CDBFA4;background:transparent;padding:4px 0;font-size:12px;color:#26221C"><b style="color:#8A5A10">Over</b> request by {{overBy}} t. <u style="color:#7A4E12">Trim…</u></button>
+    </sc-if>
+    <button onClick="{{goMach}}" style="text-align:left;border:none;border-top:1px solid #CDBFA4;background:transparent;padding:4px 0;font-size:12px;color:#26221C"><b style="color:#8A5A10">Warn</b> Aft control in the funnel smoke. <u style="color:#7A4E12">Show</u></button>
+  </div>
+
+  <!-- BOTTOM -->
+  <div style="position:absolute;left:0;top:916px;width:1600px;height:44px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 16px;background:#1B2730;border-top:1px solid #304350;font-size:12px;color:#C9D4DA">
+    <span style="font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:#93A6B0">History</span>
+    <span>○ Bare hull</span><span>○ Preset: Dreadnought H</span><span>○ 21 kn</span><span>○ Incremental armour</span><span style="color:#E0AE4F">● Forecastle to funnels</span>
+    <span style="flex:1"></span>
+    <button style="height:30px;padding:0 12px;border-radius:4px;border:1px solid #E0AE4F;background:#2C2A1F;color:#E0AE4F;font-size:12.5px">Accept design</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":960}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = Object.assign({ section: 'over', panelVis: true }, this.base()); }
+  base() { return { speed: 21, range: 6600, belt: 11, deck: 3, turret: 11, rpg: 100, sec: 5 }; }
+  model(v) {
+    const D = [[17, 19229, 154], [18, 20235, 159.5], [19, 21756, 169], [20, 23326, 177], [21, 24970, 183.5], [22, 27110, 192], [23, 31127, 211.5], [24, 35101, 225], [25, 42033, 251.5]];
+    const k = Math.max(0, Math.min(7.999, v.speed - 17)), i = Math.floor(k), f = k - i;
+    const cs = D[i][1] + (D[i + 1][1] - D[i][1]) * f, cl = D[i][2] + (D[i + 1][2] - D[i][2]) * f;
+    const armour = 10087 + 310 * (v.belt - 11) + 720 * (v.deck - 3) + 94 * (v.turret - 11);
+    const arm = 3337 + 7 * (v.rpg - 100) + 12 * (v.sec - 5);
+    const std = Math.round(cs + (armour - 10087) + (arm - 3337) + 0.12 * (v.range - 6600));
+    const L = cl + 0.004 * (std - cs);
+    const shp = Math.round(33800 * Math.pow(v.speed / 21, 3) * Math.pow(std / 24970, 2 / 3) / 100) * 100;
+    const fuel = Math.round(4561 * (v.range / 6600) * Math.pow(std / 24970, 2 / 3));
+    const mach = Math.round(2783 * Math.pow(shp / 33800, 0.9));
+    const gm = 1.51 + 0.16 * (v.speed - 21) - 0.02 * (v.belt - 11);
+    const line = Math.max(0, Math.min(1, 0.84 + 0.04 * (v.belt - 11) + 0.06 * (v.deck - 3) + 0.02 * (v.turret - 11) + 0.02 * (v.speed - 21)));
+    const tp = Math.max(0, Math.min(1, 0.31 + 0.07 * (v.speed - 21)));
+    return { std, L, shp, fuel, full: std + fuel, armour, arm, mach, gm, line, tp };
+  }
+  componentWillUnmount() { clearTimeout(this._t); }
+  go(id) {
+    return () => {
+      if (id === this.state.section) return;
+      clearTimeout(this._t);
+      this.setState({ section: id, panelVis: false });
+      this._t = setTimeout(() => this.setState({ panelVis: true }), 330);
+    };
+  }
+  trim() {
+    const s = this.state, M = this.model(s), M0 = this.model(this.base()), REQ = 24000;
+    const nf = (x) => Math.round(x).toLocaleString('en-GB');
+    const sg = (x) => (x > 0 ? '+' : x < 0 ? '−' : '±') + nf(Math.abs(x));
+    const L = [
+      ['speed', 'Speed', 0.5, 16, 26, (v) => v.toFixed(1) + ' kn', 'kn'], ['range', 'Range', 500, 2000, 12000, (v) => nf(v) + ' nm', 'nm'],
+      ['belt', 'Belt', 0.5, 4, 14, (v) => v.toFixed(1) + ' in', 'in'], ['deck', 'Armour deck', 0.25, 1, 5, (v) => v.toFixed(2) + ' in', 'in'],
+      ['turret', 'Turret faces', 0.5, 6, 14, (v) => v.toFixed(1) + ' in', 'in'], ['rpg', 'Rounds per gun', 10, 50, 150, (v) => String(v), ''],
+      ['sec', '3 in guns, per side', 1, 0, 10, (v) => String(v), '']
+    ];
+    const levers = L.map(l => {
+      const key = l[0], st = l[2], lo = l[3], hi = l[4], v = s[key], v0 = this.base()[key];
+      const down = Object.assign({}, s, { [key]: Math.max(lo, v - st) });
+      const dStd = this.model(down).std - M.std;
+      const pos = (x) => (100 * (x - lo) / (hi - lo)).toFixed(1);
+      return { name: l[1], value: l[5](v),
+        minus: () => this.setState({ [key]: Math.max(lo, +(v - st).toFixed(2)) }), plus: () => this.setState({ [key]: Math.min(hi, +(v + st).toFixed(2)) }),
+        minusAria: 'Less ' + l[1], plusAria: 'More ' + l[1],
+        fill: 'position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#5B9BE0;width:' + pos(v) + '%;transition:width 0.35s ease',
+        mark: 'position:absolute;top:-4px;width:2px;height:14px;background:#93A6B0;left:' + pos(v0) + '%',
+        chip: '−' + st + (l[6] ? ' ' + l[6] : '') + ': ' + sg(dStd) + ' t' };
+    });
+    const over = M.std - REQ;
+    const scale = Math.max(M.std, REQ) * 1.04;
+    const segDefs = [[M.armour, '#6E5A86'], [M.std - M.armour - M.arm - M.mach - 1668 - 557, '#8C7B62'], [M.arm, '#A3473A'], [M.mach, '#C58A2E'], [1668, '#9A9A8A'], [557, '#5E7F62']];
+    return {
+      levers,
+      stdText: nf(M.std),
+      meterFill: 'position:absolute;left:0;top:0;bottom:0;border-radius:6px;transition:width 0.4s ease, background 0.4s;width:' + Math.min(100, 80 * M.std / REQ).toFixed(1) + '%;background:' + (over > 0 ? '#E0AE4F' : '#6CC18F'),
+      marginText: over > 0 ? 'over the request by ' + nf(over) + ' t' : 'under the request by ' + nf(-over) + ' t ✓',
+      marginStyle: 'font-size:13px;font-weight:600;transition:color 0.3s;color:' + (over > 0 ? '#F1D79C' : '#9FDDB7'),
+      sinceText: sg(M.std - M0.std) + ' t · ' + (M.L - M0.L >= 0 ? '+' : '−') + Math.abs(M.L - M0.L).toFixed(1) + ' m',
+      reads: [{ k: 'Full load', v: nf(M.full) + ' t' }, { k: 'Length', v: M.L.toFixed(1) + ' m' }, { k: 'GM', v: M.gm.toFixed(2) + ' m' }, { k: 'Line of battle', v: M.line.toFixed(2) + (M.line < M0.line ? ' ▼' : M.line > M0.line ? ' ▲' : '') }, { k: 'Trade protection', v: M.tp.toFixed(2) }],
+      reset: () => this.setState(this.base()),
+      fitSpeed: () => { let lo = 16, hi = s.speed; for (let i = 0; i < 20; i++) { const m = (lo + hi) / 2; if (this.model(Object.assign({}, s, { speed: m })).std <= REQ) lo = m; else hi = m; } this.setState({ speed: Math.floor(lo * 100) / 100 }); },
+      reqBadge: 'height:28px;display:flex;align-items:center;padding:0 9px;border-radius:14px;font-size:12px;transition:all 0.3s;' + (over > 0 ? 'border:1px solid #8A6A2E;background:#2E2717;color:#F1D79C' : 'border:1px solid #3E6B52;background:#1C3329;color:#9FDDB7'),
+      reqText: (over > 0 ? '! ' : '✓ ') + nf(M.std) + ' t · request ≤ 24,000 t',
+      lineScore: M.line.toFixed(2), overReq: over > 0, overBy: nf(over), remarkCount: over > 0 ? 2 : 1, goOver: this.go('over'),
+      segs: segDefs.map(g => 'height:100%;flex:none;box-sizing:border-box;border-right:1px solid #EFE7D6;transition:width 0.4s ease;background:' + g[1] + ';width:' + (100 * g[0] / scale).toFixed(2) + '%'),
+      reqLine: 'position:absolute;top:-3px;bottom:-3px;width:2px;background:#26221C;left:' + (100 * REQ / scale).toFixed(2) + '%;transition:left 0.4s ease'
+    };
+  }
+  renderVals() {
+    const s = this.state, sec = s.section;
+    const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+    const T = 'transition:transform 0.55s ' + EASE + ', opacity 0.35s ease, box-shadow 0.4s;';
+    // place a widget whose natural (big) rect is B, shown at rect R
+    const place = (B, R, z, focused, clickable) => {
+      const sx = R.w / B.w, sy = R.h / B.h;
+      return 'position:absolute;left:' + B.x + 'px;top:' + B.y + 'px;width:' + B.w + 'px;height:' + B.h + 'px;transform-origin:0 0;transform:translate(' + (R.x - B.x) + 'px,' + (R.y - B.y) + 'px) scale(' + sx.toFixed(4) + ',' + sy.toFixed(4) + ');' + T + 'z-index:' + z + ';' + (clickable ? 'cursor:pointer;' : '') + (focused ? 'box-shadow:0 10px 30px rgba(0,0,0,0.35);' : '');
+    };
+    // dock slots (bottom of the centre)
+    const DOCK = { strip: { x: 342, y: 834, w: 205 }, curve: { x: 559, y: 834, w: 205 }, fc: { x: 776, y: 834, w: 205 }, crew: { x: 993, y: 834, w: 205 } };
+    const dockRect = (k, B) => { const sc = DOCK[k].w / B.w; return { x: DOCK[k].x, y: DOCK[k].y, w: B.w * sc, h: B.h * sc }; };
+    const STAGE = { x: 342, y: 340 };
+    const Bstrip = { x: 342, y: 340, w: 866, h: 180 }, Bcurve = { x: 342, y: 340, w: 866, h: 300 }, Bfc = { x: 342, y: 340, w: 866, h: 260 }, Bcrew = { x: 342, y: 340, w: 866, h: 260 };
+    const Bprof = { x: 345, y: 240, w: 860, h: 340 };
+    const profRect = sec === 'prot' ? Bprof : sec === 'hull' ? { x: 345, y: 240, w: 860, h: 200 } : sec === 'over' ? { x: 385, y: 240, w: 780, h: 170 } : { x: 385, y: 238, w: 780, h: 90 };
+    const Bmatch = { x: 342, y: 340, w: 532, h: 380 };
+    const matchDock = { x: 1236, y: 282, w: 348, h: 348 * 380 / 532 };
+    const w = {
+      profile: place(Bprof, profRect, sec === 'prot' || sec === 'hull' ? 6 : 2, sec === 'prot', sec !== 'prot'),
+      strip: place(Bstrip, sec === 'main' ? Bstrip : dockRect('strip', Bstrip), sec === 'main' ? 6 : 3, sec === 'main', sec !== 'main'),
+      curve: place(Bcurve, sec === 'mach' ? Bcurve : dockRect('curve', Bcurve), sec === 'mach' ? 6 : 3, sec === 'mach', sec !== 'mach'),
+      fc: place(Bfc, sec === 'fc' ? Bfc : dockRect('fc', Bfc), sec === 'fc' ? 6 : 3, sec === 'fc', sec !== 'fc'),
+      crew: place(Bcrew, sec === 'crew' ? Bcrew : dockRect('crew', Bcrew), sec === 'crew' ? 6 : 3, sec === 'crew', sec !== 'crew'),
+      match: place(Bmatch, sec === 'role' ? Bmatch : matchDock, sec === 'role' ? 8 : 9, sec === 'role', sec !== 'role')
+    };
+    const big = { prot: sec === 'prot', hull: sec === 'hull', role: sec === 'role', over: sec === 'over' };
+    const psx = profRect.w / Bprof.w, psy = profRect.h / Bprof.h;
+    const inv = 'transform:scale(' + (1 / psx).toFixed(3) + ',' + (1 / psy).toFixed(3) + ');transition:opacity 0.3s ease, transform 0.55s ' + EASE + ';';
+    const fade = (on, extra) => 'opacity:' + (on ? 1 : 0) + ';transition:opacity 0.3s ease ' + (on ? '0.3s' : '0s') + ';' + (extra || '');
+
+    // armour plates in % of the profile
+    const col = (mm) => mm >= 260 ? '#8E3328' : mm >= 190 ? '#B24E36' : mm >= 140 ? '#CC6F43' : mm >= 95 ? '#DE9455' : mm >= 60 ? '#E9B66B' : '#F3E3A1';
+    const P = (l, wd, t, h, mm, txt, dark, hl) => ({ mm: txt, style: 'position:absolute;left:' + l + '%;width:' + wd + '%;top:' + t + '%;height:' + h + '%;background:' + col(mm) + ';border:1px solid rgba(0,0,0,0.3);box-sizing:border-box;display:flex;align-items:center;justify-content:center;' + (hl && big.prot ? 'outline:2px solid #E0AE4F;outline-offset:1px;' : ''),
+      lab: 'opacity:' + (big.prot || (big.over && h >= 6) ? 1 : 0) + ';' + inv + 'font-family:IBM Plex Mono,monospace;font-size:12px;white-space:nowrap;color:' + (dark ? '#F6EFE2' : '#26221C') + ';' + (h < 6 ? 'background:rgba(239,231,214,0.9);padding:0 4px;border-radius:2px;' : '') });
+    const plates = [
+      P(15.6, 68.5, 46, 22, 279, s.belt + ' → ' + (s.belt - 2) + ' in', true, true), P(15.6, 68.5, 33, 13, 203, '8 in', true), P(84.1, 15, 46, 22, 152, '6 in', true), P(1, 14.6, 46, 22, 102, '4 in', false),
+      P(15.6, 68.5, 44, 3, 76, s.deck + ' in deck', false), P(84.1, 14.5, 72, 2.4, 38, '1.5 in', false), P(1.2, 14.4, 72, 2.4, 76, '3 in', false),
+      P(10.5, 6, 14, 16, 279, s.turret + ' in', true), P(17.5, 6, 14, 16, 279, s.turret + ' in', true), P(79, 6, 4, 18, 279, s.turret + ' in', true)
+    ];
+    const fcsl = 'position:absolute;left:50%;width:50%;top:' + (sec === 'hull' ? 18 : 22) + '%;height:' + (sec === 'hull' ? 13 : 9) + '%;background:' + (sec === 'hull' ? '#3E5260' : '#2B3A44') + ';border:1px solid ' + (sec === 'hull' ? '#E0AE4F' : '#4A5F6C') + ';border-bottom:none;box-sizing:border-box;transition:all 0.5s ' + EASE;
+
+    // matchup
+    const E = [['Dupuy de Lôme', 26, 20], ['Gloire', 52, 32], ['Léon Gambetta', 62, 42], ['République', 34, 44], ['Charlemagne', 18, 38], ['Châteaurenault', 82, 24], ['Guichen', 72, 30], ['Branlebas', 90, 16]];
+    const dots = E.map(e => ({ name: e[0], dot: 'position:absolute;left:calc(' + e[1] + '% - 8px);top:calc(' + e[2] + '% - 8px);width:16px;height:16px;border-radius:50%;background:' + (e[1] < 44 ? '#4E9B6C' : '#5E8396'),
+      lab: fade(big.role, 'position:absolute;left:calc(' + e[1] + '% + 11px);top:calc(' + e[2] + '% - 8px);font-size:12px;color:#E3E9EC;white-space:nowrap') }));
+    const matchTitle = 'position:absolute;left:12px;top:10px;font-family:Libre Caslon Text,serif;font-weight:700;font-size:' + (big.role ? 15 : 19) + 'px;color:' + (big.role ? '#E3E9EC' : '#26221C') + ';transition:color 0.5s';
+    const quadLabels = fade(big.role, 'position:absolute;inset:0;pointer-events:none');
+    const matchCount = 'position:absolute;left:12px;bottom:6px;font-size:' + (big.role ? 12 : 17) + 'px;color:' + (big.role ? '#93A6B0' : '#4A4339') + ';transition:color 0.5s';
+    const matchSlot = 'position:absolute;inset:0;border:1.5px dashed #B9A988;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#6B6253;font-style:italic;' + fade(big.role);
+
+    // curve
+    const data = [[17, 19229], [18, 20235], [19, 21756], [20, 23326], [21, 24970], [22, 27110], [23, 31127], [24, 35101], [25, 42033]];
+    const X = (v) => 50 + (v - 17) / 8 * 780, Y = (t) => 270 - (t - 18000) / 25000 * 230;
+    const curve = data.map(d => X(d[0]).toFixed(1) + ',' + Y(d[1]).toFixed(1)).join(' ');
+    const xt = data.map(d => ({ x: X(d[0]).toFixed(1), l: d[0] + ' kn' }));
+
+    // docks
+    const dk = [['strip', 'Battery strip', 'main'], ['curve', 'Speed curve', 'mach'], ['fc', 'Fire control', 'fc'], ['crew', 'Crew', 'crew']];
+    const docks = dk.map(d => ({ label: d[1],
+      slot: 'position:absolute;left:' + DOCK[d[0]].x + 'px;top:' + DOCK[d[0]].y + 'px;width:205px;height:72px;border:1px dashed #33505F;border-radius:6px;box-sizing:border-box;' + fade(sec === d[2]),
+      cap: 'position:absolute;left:' + DOCK[d[0]].x + 'px;top:' + (DOCK[d[0]].y - 18) + 'px;font-size:11px;letter-spacing:0.06em;color:' + (sec === d[2] ? '#E0AE4F' : '#8FB0C0') + ';transition:color 0.3s' }));
+
+    // panel per section
+    const PR = { over: { x: 342, y: 422, w: 866, h: 384 }, main: { x: 342, y: 532, w: 866, h: 262 }, prot: { x: 342, y: 592, w: 866, h: 200 }, hull: { x: 342, y: 452, w: 866, h: 150 }, role: { x: 886, y: 340, w: 322, h: 454 }, mach: { x: 342, y: 652, w: 866, h: 142 }, fc: { x: 342, y: 612, w: 866, h: 182 }, crew: { x: 342, y: 612, w: 866, h: 182 }, sec: { x: 342, y: 340, w: 866, h: 454 } }[sec];
+    const panel = 'position:absolute;left:' + PR.x + 'px;top:' + PR.y + 'px;width:' + PR.w + 'px;height:' + PR.h + 'px;z-index:5;opacity:' + (s.panelVis ? 1 : 0) + ';transform:translateY(' + (s.panelVis ? 0 : 10) + 'px);transition:opacity 0.3s ease, transform 0.3s ease';
+    const plainText = { sec: 'Secondary · AA · torpedoes: the casemate band and deck spots light up on the ship above; this space holds the battery cards and “fill free roofs”.', fc: 'Directors per battery; rangefinder base against the design range (from fire-control-designer.md).', crew: 'Habitability, complement by department, where they sleep.' }[sec] || '';
+
+    // rail
+    const SEC = [
+      { id: 'over', n: 0, name: 'Overview', summary: 'trim sheet', controls: [] },
+      { id: 'role', n: 1, name: 'Role', summary: 'Line of battle', controls: [{ k: 'Your role', v: 'Line of battle' }, { k: 'Theatre', v: 'North Sea' }] },
+      { id: 'main', n: 2, name: 'Main battery', summary: '5 × twin 12 in', controls: [{ k: 'Gun', v: '12 in / 45 Mk X' }, { k: 'Barrels', v: '2' }, { k: 'Turret face', v: '11.0 in' }] },
+      { id: 'sec', n: 3, name: 'Secondary · AA · TT', summary: '10 × 3 in', controls: [{ k: 'Gun', v: '3 in / 50' }, { k: 'Per side', v: '5' }] },
+      { id: 'prot', n: 4, name: 'Protection', summary: 'belt ' + s.belt + ' · deck ' + s.deck, controls: [{ k: 'Belt', v: s.belt.toFixed(1) + ' in' }, { k: 'Deck', v: s.deck.toFixed(2) + ' in' }, { k: 'Turrets', v: s.turret.toFixed(1) + ' in' }] },
+      { id: 'mach', n: 5, name: 'Speed & machinery', summary: s.speed + ' kn · ' + s.range.toLocaleString('en-GB') + ' nm', controls: [{ k: 'Speed', v: s.speed.toFixed(1) + ' kn' }, { k: 'Range', v: s.range.toLocaleString('en-GB') + ' nm' }] },
+      { id: 'hull', n: 6, name: 'Hull & upperworks', summary: 'forecastle · tower 5', controls: [{ k: 'Forecastle', v: 'to funnels' }, { k: 'Tower', v: '5 levels' }] },
+      { id: 'fc', n: 7, name: 'Fire control', summary: '1 director', controls: [{ k: 'Main', v: '1 × 2.7 m' }] },
+      { id: 'crew', n: 8, name: 'Crew & endurance', summary: '908 · hammocks', controls: [{ k: 'Habitability', v: 'Hammocks' }] }
+    ];
+    const sections = SEC.map(x => {
+      const open = x.id === sec;
+      return { n: x.n, name: x.name, summary: x.summary, controls: x.controls, open: this.go(x.id),
+        wrap: 'border-bottom:1px solid #263640;transition:background 0.3s;background:' + (open ? '#1B2730' : 'transparent'),
+        key: 'width:20px;height:20px;border-radius:4px;flex:none;display:flex;align-items:center;justify-content:center;font-family:IBM Plex Mono,monospace;font-size:11px;transition:all 0.3s;' + (open ? 'background:#E0AE4F;color:#1B1A12;border:1px solid #E0AE4F' : 'border:1px solid #3B5160;color:#93A6B0;background:transparent'),
+        nameStyle: 'font-size:13px;transition:color 0.3s;' + (open ? 'color:#E0AE4F;font-weight:600' : 'color:#E3E9EC'),
+        body: 'overflow:hidden;display:flex;flex-direction:column;gap:7px;padding:' + (open && x.controls.length ? '2px 14px 12px 44px' : '0 14px 0 44px') + ';max-height:' + (open && x.controls.length ? 40 * x.controls.length + 14 : 0) + 'px;opacity:' + (open ? 1 : 0) + ';transition:max-height 0.4s ' + EASE + ', opacity 0.3s, padding 0.4s' };
+    });
+
+    // hotspots on the ship
+    const hs = (id, l, wd, aria) => ({ go: this.go(id), aria, style: 'position:absolute;left:' + (385 + l * 7.8) + 'px;width:' + (wd * 7.8) + 'px;top:92px;height:118px;border-radius:6px;transition:all 0.35s;background:' + (sec === id ? 'rgba(224,174,79,0.16)' : 'transparent') + ';border:' + (sec === id ? '2px solid #E0AE4F' : '1px dashed rgba(143,176,192,0.3)') });
+    const hot = [hs('main', 6, 18, 'Main battery: Y and X'), hs('main', 74, 10, 'Main battery: A'), hs('main', 58, 9, 'Main battery: wing pair'), hs('mach', 45, 11, 'Machinery: funnels'), hs('hull', 66, 8, 'Hull and upperworks: bridge')];
+
+    const fit = [['Line of battle', 0.84], ['Station', 0.62], ['Trade protection', 0.31], ['Scout', 0.12], ['Raider', 0.05]].map(f => ({ name: f[0], v: f[1].toFixed(2), bar: 'position:absolute;left:0;top:0;bottom:0;width:' + (f[1] * 100) + '%;background:' + (f[1] > 0.8 ? '#E0AE4F' : '#5B9BE0') }));
+    const M = this.model(s), nf = (x) => Math.round(x).toLocaleString('en-GB');
+    const legend = [
+      { k: 'Dimensions', v: M.L.toFixed(1) + ' × 27.2 × 9.6 m', go: this.go('hull') }, { k: 'Displacement', v: nf(M.std) + ' t std · ' + nf(M.full) + ' full', go: this.go('hull') },
+      { k: 'Machinery', v: nf(M.shp) + ' shp · ' + s.speed + ' kn', go: this.go('mach') }, { k: 'Armament', v: '10 × 12 in · ' + (2 * s.sec) + ' × 3 in', go: this.go('main') },
+      { k: 'Protection', v: 'belt ' + s.belt + ' · deck ' + s.deck + ' in', go: this.go('prot') }, { k: 'Complement', v: '908', go: this.go('crew') }
+    ];
+    return {
+      sections, hot, docks, w, plates, fcsl, dots, matchTitle, quadLabels, matchCount, matchSlot, curve, xt, panel, plainText, fit, legend,
+      matchBg: big.role ? '#15242E' : '#F6F0E3',
+      profLabels: fade(big.prot, 'position:absolute;inset:0;pointer-events:none'),
+      hullLabels: fade(big.hull, 'position:absolute;inset:0;pointer-events:none'),
+      reqY: Y(24000).toFixed(1), reqTY: (Y(24000) - 8).toFixed(1),
+      cur: { x: X(21).toFixed(1), y: Y(24970).toFixed(1), lx: (X(21) + 14).toFixed(1), ly: (Y(24970) + 22).toFixed(1) },
+      is: { over: sec === 'over', main: sec === 'main', prot: sec === 'prot', hull: sec === 'hull', role: sec === 'role', mach: sec === 'mach', plain: ['sec', 'fc', 'crew'].indexOf(sec) >= 0 },
+      ...this.trim(), goProt: this.go('prot'), goMain: this.go('main'), goMach: this.go('mach'), goFc: this.go('fc'), goCrew: this.go('crew'), goRole: this.go('role')
+    };
+  }
+}
+</script>
+</body>
+</html>
