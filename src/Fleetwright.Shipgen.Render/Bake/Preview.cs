@@ -44,10 +44,13 @@ public static class Preview
         var tShadow = new double[W * H];
         var height = PadHeight(b.Height, pad);
         double az = Sun.Az * Math.PI / 180;
+        var rotated = new Dictionary<(string, double), double[]>();   // mounts of one type mostly share an angle
         foreach (var m in meta.Mounts.OrderBy(m => m.Z))
         {
             var img = b.Turrets[m.Type];
-            var rot = Rotate(img, angle(m));
+            double deg = angle(m);
+            if (!rotated.TryGetValue((m.Type, deg), out var rot))
+                rotated[(m.Type, deg)] = rot = Rotate(img, deg);
             double cx = m.Px[0] + pad, cy = m.Px[1] + pad;
             int x0 = (int)Math.Round(cx - img.Width / 2.0, MidpointRounding.ToEven);
             int y0 = (int)Math.Round(cy - img.Height / 2.0, MidpointRounding.ToEven);
@@ -214,16 +217,38 @@ public static class Preview
             last = (ox, oy);
             steps.Add((ox, oy, Math.Sqrt(ox * ox + oy * oy) / S * k));
         }
+        int n = steps.Count;
+        var sox = new int[n];
+        var soy = new int[n];
+        var rises = new double[n];
+        var minRise = new double[n];   // the lowest rise from each step on: no column beyond it can beat hmax over that
+        for (int i = n - 1; i >= 0; i--)
+        {
+            (sox[i], soy[i], rises[i]) = steps[i];
+            minRise[i] = i == n - 1 ? rises[i] : Math.Min(rises[i], minRise[i + 1]);
+        }
+        // Only columns above the sea can shade (heights are >= 0, so a sea column's s is <= 0), and they lie in the
+        // height map's bounding box. Each offset moves one way along the ray, so the steps landing in the box are one run.
+        int bx0 = W, by0 = H, bx1 = -1, by1 = -1;
+        for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++)
+                if (Hm[y * W + x] > 0)
+                    (bx0, by0, bx1, by1) = (Math.Min(bx0, x), Math.Min(by0, y), Math.Max(bx1, x), Math.Max(by1, y));
+        if (bx1 < 0)
+            return shade;
         Parallel.For(0, H, y =>
         {
+            var (ya, yb) = Run(soy, by0 - y, by1 - y);
             for (int x = 0; x < W; x++)
             {
+                var (xa, xb) = Run(sox, bx0 - x, bx1 - x);
                 double hp = Hm[y * W + x], best = 0;
-                foreach (var (ox, oy, rise) in steps)
+                for (int i = Math.Max(xa, ya), end = Math.Min(xb, yb); i < end && best < 1; i++)
                 {
-                    int X = x + ox, Y = y + oy;
-                    double occ = X < 0 || Y < 0 || X >= W || Y >= H ? 0 : Hm[Y * W + X];
-                    double s = (occ - (hp + rise)) / softM;
+                    // the same arithmetic as s with occ = hmax, so the cut-off is exact
+                    if ((hmax - (hp + minRise[i])) / softM <= best)
+                        break;
+                    double s = (Hm[(y + soy[i]) * W + x + sox[i]] - (hp + rises[i])) / softM;
                     if (s > best)
                         best = Math.Min(1, s);
                 }
@@ -231,5 +256,31 @@ public static class Preview
             }
         });
         return shade;
+    }
+
+    /// <summary>The steps [a, b) whose offset is in [lo, hi], for offsets that only grow or only shrink.</summary>
+    static (int, int) Run(int[] off, int lo, int hi)
+    {
+        int n = off.Length;
+        if (n == 0)
+            return (0, 0);
+        return off[n - 1] >= off[0]
+            ? (First(off, lo, true), First(off, hi + 1, true))
+            : (First(off, hi, false), First(off, lo - 1, false));
+    }
+
+    /// <summary>The first index whose offset is past v: >= v along growing offsets, <= v along shrinking ones.</summary>
+    static int First(int[] off, int v, bool growing)
+    {
+        int a = 0, b = off.Length;
+        while (a < b)
+        {
+            int m = (a + b) >> 1;
+            if (growing ? off[m] >= v : off[m] <= v)
+                b = m;
+            else
+                a = m + 1;
+        }
+        return a;
     }
 }
