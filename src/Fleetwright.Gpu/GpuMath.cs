@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace Fleetwright.Shared;
+namespace Fleetwright.Gpu;
 
 /// <summary>
 /// Math utilities for GPU rendering, providing GLM-equivalent functions.

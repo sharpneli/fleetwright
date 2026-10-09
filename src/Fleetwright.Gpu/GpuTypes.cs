@@ -1,7 +1,7 @@
 using System.Numerics;
 using SDL;
 
-namespace Fleetwright.Shared;
+namespace Fleetwright.Gpu;
 
 /// <summary>
 /// Wrapper for SDL_GPUBuffer with metadata.

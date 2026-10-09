@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The design side. No package references: pure, deterministic, thread-safe (PORTING.md). -->
+  <PropertyGroup>
+    <RootNamespace>Fleetwright.Shipgen</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+</Project>

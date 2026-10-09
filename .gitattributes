@@ -6,3 +6,4 @@
 *.spv  binary
 *.glb  binary
 *.png  binary
+*.json.gz binary

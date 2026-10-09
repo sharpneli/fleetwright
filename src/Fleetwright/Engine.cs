@@ -3,7 +3,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using ImGuiNET;
 using SDL;
-using Fleetwright.Shared;
+using Fleetwright.Gpu;
 using TracyWrapper;
 using static SDL.SDL3;
 using static SDL.SDL3_image;
@@ -909,6 +909,8 @@ public unsafe class Sdl3GpuEngine : IDisposable
     public SDL_GPUShader* LoadShader(string path, SDL_GPUShaderStage stage,
         uint numSamplers, uint numStorageBuffers, uint numStorageTextures, uint numUniformBuffers)
     {
+        // Content is copied next to the exe, so resolve against it rather than the working directory.
+        path = Path.Combine(AppContext.BaseDirectory, path);
         if (!File.Exists(path))
         {
             Console.Error.WriteLine($"Shader file not found: {path}");

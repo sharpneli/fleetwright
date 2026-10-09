@@ -51,6 +51,7 @@ public unsafe class ImGuiRenderer : IDisposable
 
     private SDL_GPUShader* LoadShader(string path, SDL_GPUShaderStage stage, uint numSamplers, uint numUniformBuffers)
     {
+        path = System.IO.Path.Combine(AppContext.BaseDirectory, path);
         if (!System.IO.File.Exists(path))
         {
             Console.WriteLine($"Shader file not found: {path}");

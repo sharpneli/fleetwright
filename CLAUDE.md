@@ -2,20 +2,21 @@
 
 Fleetwright is a naval game written in C# on .NET 10, rendered with the SDL3 GPU API (via ppy.SDL3-CS). The renderer currently does PBR materials, glTF loading, a scene graph and a Dear ImGui overlay; game code builds on top of it.
 
-## Build
+## Build and test
 
 ```bash
-dotnet build
+dotnet build          # whole solution (Fleetwright.slnx)
+dotnet test
 ```
 
 ## Run
 
 ```bash
-dotnet run
+dotnet run --project src/Fleetwright
 
 # Load a glTF/GLB model
-dotnet run -- -model=path/to/model.glb
-dotnet run -- path/to/model.gltf
+dotnet run --project src/Fleetwright -- -model=path/to/model.glb
+dotnet run --project src/Fleetwright -- path/to/model.gltf
 ```
 
 With no model loaded, the engine draws a placeholder cube at the origin.
@@ -26,10 +27,10 @@ Capture a specific frame as a PNG image:
 
 ```bash
 # Capture frame 5 to screenshot.png
-dotnet run -- -screenshot=5
+dotnet run --project src/Fleetwright -- -screenshot=5
 
 # With a model and custom output path
-dotnet run -- path/to/model.glb -screenshot=10 -output=my_screenshot.png
+dotnet run --project src/Fleetwright -- path/to/model.glb -screenshot=10 -output=my_screenshot.png
 ```
 
 The application exits after capturing the screenshot.
@@ -45,26 +46,35 @@ The application exits after capturing the screenshot.
 ## Project Structure
 
 ```
-Fleetwright.csproj
-Program.cs                  # Entry point, command-line parsing
-Engine.cs                   # Sdl3GpuEngine: init, resources, render loop, PbrMaterial
-GltfLoader.cs               # glTF/GLB loader (SharpGLTF)
-ImGuiRenderer.cs            # Dear ImGui backend on SDL3 GPU
-Shared/
-  GpuTypes.cs               # GPU types (buffers, textures, samplers),
-                            #   DrawContext, SceneNode, MeshNode, materials
-  GpuPipelineBuilder.cs     # Fluent pipeline builder
-  GpuMath.cs                # Math helpers (perspective, lookAt)
-  ShaderTypes.cs            # Vertex layout, uniforms, scene data
-  Camera.cs                 # FPS camera
-Content/
-  Shaders/Source/           # GLSL sources
-  Shaders/Compiled/         # SPIR-V binaries (checked in)
-  Models/                   # glTF/GLB assets (copied to output)
-research/                   # Research notes, see below
+Fleetwright.slnx
+Directory.Build.props         # net10.0, nullable, InvariantGlobalization; warnings as errors in Fleetwright.Shipgen*
+Directory.Packages.props      # central package versions (PackageReference has no Version)
+src/
+  Fleetwright/                # the game exe
+    Program.cs                #   entry point, command-line parsing
+    Engine.cs                 #   Sdl3GpuEngine: init, resources, render loop, PbrMaterial
+    GltfLoader.cs             #   glTF/GLB loader (SharpGLTF)
+    ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
+    Camera.cs                 #   FPS camera
+  Fleetwright.Gpu/            # GPU helpers shared by the game and the Shipgen renderer
+    GpuTypes.cs               #   buffers, textures, samplers, DrawContext, SceneNode, MeshNode, materials
+    GpuPipelineBuilder.cs     #   fluent pipeline builder
+    GpuMath.cs                #   math helpers (perspective, lookAt)
+    ShaderTypes.cs            #   vertex layout, uniforms, scene data
+  Fleetwright.Shipgen/        # ship design library (being ported, see below). No package references.
+  Fleetwright.Shipgen.Cli/    # `shipgen` command, the port's test harness
+tests/
+  Fleetwright.Shipgen.Tests/  # xUnit
+Content/                      # shared by all exes, copied into each exe's output folder
+  Shaders/Source/             #   GLSL sources
+  Shaders/Compiled/           #   SPIR-V binaries (checked in)
+  Models/                     #   glTF/GLB assets
+research/                     # research notes, see below
 ```
 
-Namespaces: `Fleetwright` for root files, `Fleetwright.Shared` for `Shared/`.
+Namespaces follow the project names: `Fleetwright`, `Fleetwright.Gpu`, `Fleetwright.Shipgen`, ...
+
+Content paths in code (`"Content/Shaders/Compiled/..."`) resolve against `AppContext.BaseDirectory`, not the working directory.
 
 ## Renderer features
 

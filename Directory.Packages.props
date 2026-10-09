@@ -1,0 +1,15 @@
+<Project>
+
+  <ItemGroup>
+    <PackageVersion Include="ppy.SDL3-CS" Version="2026.1002.1" />
+    <PackageVersion Include="ppy.SDL3_image-CS" Version="2025.1205.0" />
+    <PackageVersion Include="SharpGLTF.Toolkit" Version="1.0.2" />
+    <PackageVersion Include="ImGui.NET" Version="1.91.0.1" />
+    <PackageVersion Include="TracyWrapper" Version="0.20.2" />
+
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+</Project>

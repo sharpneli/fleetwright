@@ -1,0 +1,17 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Number formatting must not follow the player's culture (PORTING.md, "What the earlier plan missed" 6). -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <ContentRoot>$(MSBuildThisFileDirectory)Content\</ContentRoot>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Fleetwright.Shipgen'))">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>

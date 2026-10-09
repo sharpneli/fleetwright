@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Fleetwright</RootNamespace>
+    <AssemblyName>Fleetwright</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ppy.SDL3-CS" />
+    <PackageReference Include="ppy.SDL3_image-CS" />
+    <PackageReference Include="SharpGLTF.Toolkit" />
+    <PackageReference Include="ImGui.NET" />
+    <PackageReference Include="TracyWrapper" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fleetwright.Gpu\Fleetwright.Gpu.csproj" />
+  </ItemGroup>
+
+  <!-- Content/ lives at the repo root and is shared with the Shipgen renderer. -->
+  <ItemGroup>
+    <None Include="$(ContentRoot)Shaders\Compiled\**\*"
+          Link="Content\Shaders\Compiled\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(ContentRoot)Models\**\*"
+          Link="Content\Models\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

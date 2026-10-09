@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using SDL;
 using static SDL.SDL3;
 
-namespace Fleetwright.Shared;
+namespace Fleetwright.Gpu;
 
 /// <summary>
 /// Fluent builder for creating SDL GPU graphics pipelines.

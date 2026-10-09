@@ -88,7 +88,7 @@ src/Fleetwright.Shipgen.Cli/      `shipgen` command: the design.py equivalent, p
 tests/Fleetwright.Shipgen.Tests/  xUnit: golden tests, helper tests
 shipgen/designs/              the 71 design JSONs, copied from ../shipgen/designs
 shipgen/golden/               captured Python output (gzipped), see Step 1
-Content/                      stays where the game exe finds it (or moves with it; decide in Step 0)
+Content/                      stays at the root, shared; each exe copies it to its output (decided in Step 0)
 ```
 
 Rules, enforced by project references:
@@ -117,6 +117,16 @@ The layout is kept apart from the bake so `sprite.json` can be tested without a 
 - `dotnet build` and `dotnet run --project src/Fleetwright` still work. The `-screenshot` capture still works.
 - Update CLAUDE.md and README for the new paths and `dotnet test`.
 - Add `*.json.gz binary` to `.gitattributes`.
+
+Done 2026-10-09. Notes:
+- `Content/` stays at the repo root, since the game and Shipgen.Render share the shaders and `compile_shaders.bat`.
+  Each exe links it into its output folder, and shader loads now resolve against `AppContext.BaseDirectory`
+  instead of the working directory.
+- `Camera.cs` stayed in the game (it's input + Tracy, not GPU). The extracted helpers' namespace is now
+  `Fleetwright.Gpu`.
+- `Fleetwright.Shipgen` is `IsAotCompatible` and the CLI (assembly `shipgen`) is `PublishAot`, so the trimming/AOT
+  analysers catch reflection early (trap 9).
+- Tests are xUnit 2.9.3 (the SDK template's versions). `SetupTests` checks the invariant culture is in effect.
 
 ### Step 1: capture the goldens (Python, the last Python commit in ../shipgen)
 
@@ -317,7 +327,7 @@ Then start the bug fixes held back by "port as is".
 
 ## Progress
 
-- [ ] Step 0: repo restructure (solution, src/, Fleetwright.Gpu, props files)
+- [x] Step 0: repo restructure (solution, src/, Fleetwright.Gpu, props files)
 - [ ] Step 1: goldens captured, shipgen tagged
 - [ ] Step 2: CLI harness: design, validate, golden-diff
 - [ ] Step 3: Fleetwright.Shipgen matches the goldens

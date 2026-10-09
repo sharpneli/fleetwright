@@ -1,7 +1,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace Fleetwright.Shared;
+namespace Fleetwright.Gpu;
 
 /// <summary>
 /// Standard vertex format for mesh rendering.

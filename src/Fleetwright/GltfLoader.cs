@@ -1,6 +1,6 @@
 using System.Numerics;
 using SDL;
-using Fleetwright.Shared;
+using Fleetwright.Gpu;
 using SharpGLTF.Schema2;
 using TracyWrapper;
 using static SDL.SDL3;
