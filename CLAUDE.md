@@ -101,3 +101,7 @@ Research lives in `research/` and is produced by a separate research companion (
 - To ask for research, add an entry to `research/REQUESTS.md` (template inside) and tell the user. Don't block on it; continue with other work.
 - Research notes are advisory: verify against the actual code before applying. Builds, tests, and git stay with Claude Code.
 - Imported research from other projects lives in subfolders (e.g. `research/naval/`).
+
+## Porting shipgen
+
+The Python ship generator in `../shipgen` (frozen) is being ported here as `Fleetwright.Shipgen`. `PORTING.md` holds the plan, the decisions and the progress checklist: read it before working on the port, and tick off steps as they're done.
