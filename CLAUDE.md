@@ -167,4 +167,4 @@ Research lives in `research/` and is produced by a separate research companion (
 
 ## Porting shipgen
 
-The Python ship generator in `../shipgen` (frozen) is being ported here as `Fleetwright.Shipgen`. `PORTING.md` holds the plan, the decisions and the progress checklist: read it before working on the port, and tick off steps as they're done.
+The Python ship generator in `../shipgen` (frozen) has been ported here as `Fleetwright.Shipgen` (done 2026-10-09). `PORTING.md` holds the plan, the decisions and how each step went. `HANDOFF.md` has the latest session's notes and next steps: read it first. The shipgen docs live in `docs/shipgen/`.
