@@ -152,6 +152,18 @@ difference. Run with `PYTHONHASHSEED=0`. A grep shows the design side uses no `h
 
 Tag the shipgen commit (`golden-capture`).
 
+Done 2026-10-09 at shipgen `b867f6bf` (tag `golden-capture`). `shipgen/golden/README.md` has the layout and
+findings. In short:
+- 371 cases: 71 designs plus 300 mutants. 325 build, 46 fail validation, none raise. The mutants are generated
+  once on Windows and saved in `shipgen/designs/fuzz/`, since mutation draws through libm.
+- 13 cases differ when built with the length hint (allowed by `build()`'s contract); C# should match those too.
+- Hash seed 0 vs 1: identical. Windows vs WSL: floats within 1e-13, plus **one discrete flip**
+  (`fuzz_free_057`, a `crew.spread()` remainder tie between two identical bridge towers, broken by an ulp of
+  `block_outline` trig). That's the threshold item 10 predicted. The Windows capture is the golden.
+- `murica` fails validate with limits, so it has no sprite golden (design.py skips it too).
+- Baseline: median 1.1 s per design build in Python, max 18 s for a mutant.
+- 25 MB in all, gzipped JSON plus reference PNGs.
+
 **Golden comparison rules** (implemented in the tests and in `shipgen golden-diff`):
 - Compare JSON trees, not bytes. The key sets must be equal, list lengths equal, strings and booleans exact, and
   integers exact.
@@ -328,7 +340,7 @@ Then start the bug fixes held back by "port as is".
 ## Progress
 
 - [x] Step 0: repo restructure (solution, src/, Fleetwright.Gpu, props files)
-- [ ] Step 1: goldens captured, shipgen tagged
+- [x] Step 1: goldens captured, shipgen tagged
 - [ ] Step 2: CLI harness: design, validate, golden-diff
 - [ ] Step 3: Fleetwright.Shipgen matches the goldens
 - [ ] Step 4: display list, SVG writer, sprite.json matches

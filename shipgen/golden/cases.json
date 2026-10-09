@@ -1,0 +1,3674 @@
+{
+ "shipgen_commit": "b867f6bf07ceae942ccef2e61f145d6569ca54f2",
+ "python": "3.14.8",
+ "platform": "Windows-11-10.0.26300-SP0",
+ "note": "designs/*.json are ../shipgen/designs; fuzz mutants from fuzz.mutate, mode all, 150 with limits (seed 1) and 150 without (seed 2), base = case % designs",
+ "cases": [
+  {
+   "case": "akizuki_1960",
+   "design": "designs/akizuki_1960.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "all_forward",
+   "design": "designs/all_forward.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "all_forward_flush",
+   "design": "designs/all_forward_flush.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "armoured_cruiser",
+   "design": "designs/armoured_cruiser.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "babel",
+   "design": "designs/babel.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "battlecruiser",
+   "design": "designs/battlecruiser.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "battleship",
+   "design": "designs/battleship.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "battleship_layered",
+   "design": "designs/battleship_layered.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "bismarck",
+   "design": "designs/bismarck.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "bouvet",
+   "design": "designs/bouvet.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "brennus",
+   "design": "designs/brennus.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "colbert",
+   "design": "designs/colbert.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "colorado",
+   "design": "designs/colorado.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "connecticut",
+   "design": "designs/connecticut.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "courbet",
+   "design": "designs/courbet.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "dante",
+   "design": "designs/dante.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "danton",
+   "design": "designs/danton.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "daring",
+   "design": "designs/daring.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "des_moines",
+   "design": "designs/des_moines.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "destroyer",
+   "design": "designs/destroyer.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "deutschland",
+   "design": "designs/deutschland.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "devastation",
+   "design": "designs/devastation.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "doom",
+   "design": "designs/doom.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "dreadnought",
+   "design": "designs/dreadnought.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "duilio",
+   "design": "designs/duilio.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "dunkerque",
+   "design": "designs/dunkerque.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "erebus",
+   "design": "designs/erebus.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "escort_carrier",
+   "design": "designs/escort_carrier.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "fleet_carrier",
+   "design": "designs/fleet_carrier.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "fubuki",
+   "design": "designs/fubuki.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "gangut",
+   "design": "designs/gangut.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "hamburg",
+   "design": "designs/hamburg.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "heavy_cruiser",
+   "design": "designs/heavy_cruiser.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "impetuoso",
+   "design": "designs/impetuoso.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "inflexible",
+   "design": "designs/inflexible.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "invincible",
+   "design": "designs/invincible.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "karlsruhe",
+   "design": "designs/karlsruhe.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "kent",
+   "design": "designs/kent.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "kgv",
+   "design": "designs/kgv.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "kongo",
+   "design": "designs/kongo.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "liberty",
+   "design": "designs/liberty.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "light_cruiser",
+   "design": "designs/light_cruiser.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "lion",
+   "design": "designs/lion.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "littorio",
+   "design": "designs/littorio.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "lord_nelson",
+   "design": "designs/lord_nelson.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "mikasa",
+   "design": "designs/mikasa.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "mtb",
+   "design": "designs/mtb.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "murica",
+   "design": "designs/murica.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "nagato",
+   "design": "designs/nagato.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "nassau",
+   "design": "designs/nassau.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "nassau_casemates",
+   "design": "designs/nassau_casemates.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "nelson",
+   "design": "designs/nelson.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "overloaded",
+   "design": "designs/overloaded.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "pennsylvania",
+   "design": "designs/pennsylvania.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "pt_boat",
+   "design": "designs/pt_boat.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "q_ship",
+   "design": "designs/q_ship.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "richelieu",
+   "design": "designs/richelieu.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "seaplane_carrier",
+   "design": "designs/seaplane_carrier.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "seydlitz",
+   "design": "designs/seydlitz.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "super_dreadnought",
+   "design": "designs/super_dreadnought.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "supercarrier",
+   "design": "designs/supercarrier.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "sverdlov",
+   "design": "designs/sverdlov.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "tanker",
+   "design": "designs/tanker.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "tb_destroyer",
+   "design": "designs/tb_destroyer.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "tegetthoff",
+   "design": "designs/tegetthoff.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "tiger",
+   "design": "designs/tiger.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "tiger_1914",
+   "design": "designs/tiger_1914.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "tramp_1914",
+   "design": "designs/tramp_1914.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "victory_1944",
+   "design": "designs/victory_1944.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "yamato",
+   "design": "designs/yamato.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "zara",
+   "design": "designs/zara.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "fuzz_lim_000",
+   "design": "designs/fuzz/fuzz_lim_000.json",
+   "source": "designs/akizuki_1960.json",
+   "limits": true,
+   "changes": [
+    "aa.light 0 -> 128",
+    "machinery.tech.sfc_g_per_kwh 311 -> 223"
+   ]
+  },
+  {
+   "case": "fuzz_lim_001",
+   "design": "designs/fuzz/fuzz_lim_001.json",
+   "source": "designs/all_forward.json",
+   "limits": true,
+   "changes": [
+    "hull.construction.standard 1.0 -> 1.085",
+    "crew.distiller True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_lim_002",
+   "design": "designs/fuzz/fuzz_lim_002.json",
+   "source": "designs/all_forward_flush.json",
+   "limits": true,
+   "changes": [
+    "fire_control.secondary.computer_t 4.0 -> 0",
+    "hull.block_coefficient 0.6 -> (deleted)",
+    "armour.decks.0.mm 160 -> 0",
+    "aa.heavy 6 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_003",
+   "design": "designs/fuzz/fuzz_lim_003.json",
+   "source": "designs/armoured_cruiser.json",
+   "limits": true,
+   "changes": [
+    "machinery.bunkers wing -> ends",
+    "armour.decks 1 entries -> 2 (entry 0 twice)",
+    "main.0.amidships_stands_on deck -> deckhouse",
+    "armour.end_belts.fore {\"mm\": 80, \"tip_mm\": 80, \"reach\": 1.0, \" -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_004",
+   "design": "designs/fuzz/fuzz_lim_004.json",
+   "source": "designs/babel.json",
+   "limits": true,
+   "changes": [
+    "secondary.2.tier upper -> lower",
+    "main.2.calibre_mm 274 -> 1632"
+   ]
+  },
+  {
+   "case": "fuzz_lim_005",
+   "design": "designs/fuzz/fuzz_lim_005.json",
+   "source": "designs/battlecruiser.json",
+   "limits": true,
+   "changes": [
+    "funnels 3 -> 60",
+    "armour.end_belts.aft.tip_mm 0 -> 1011",
+    "hull.plating.shell_mm 0 -> 149",
+    "funnels 60 -> 60"
+   ]
+  },
+  {
+   "case": "fuzz_lim_006",
+   "design": "designs/fuzz/fuzz_lim_006.json",
+   "source": "designs/battleship.json",
+   "limits": true,
+   "changes": [
+    "armour.end_belts.aft.reach 1.0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_lim_007",
+   "design": "designs/fuzz/fuzz_lim_007.json",
+   "source": "designs/battleship_layered.json",
+   "limits": true,
+   "changes": [
+    "superstructure.control_mm 25 -> 0",
+    "fire_control.aa.rangefinder_m 0.0 -> 29.659",
+    "crew.standard.provisions_m3_per_day 0.009 -> 0.004",
+    "crew.standard.tolerance_days 60 -> 163"
+   ]
+  },
+  {
+   "case": "fuzz_lim_008",
+   "design": "designs/fuzz/fuzz_lim_008.json",
+   "source": "designs/bismarck.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.unit.length_m 8 -> 10",
+    "machinery.wing_bunker_m 2.0 -> 2.705"
+   ]
+  },
+  {
+   "case": "fuzz_lim_009",
+   "design": "designs/fuzz/fuzz_lim_009.json",
+   "source": "designs/bouvet.json",
+   "limits": true,
+   "changes": [
+    "fire_control.secondary.directors 0 -> 89"
+   ]
+  },
+  {
+   "case": "fuzz_lim_010",
+   "design": "designs/fuzz/fuzz_lim_010.json",
+   "source": "designs/brennus.json",
+   "limits": true,
+   "changes": [
+    "armour.decks.0.mm 60 -> 209",
+    "machinery.tech.crew_k 34 -> 15"
+   ]
+  },
+  {
+   "case": "fuzz_lim_011",
+   "design": "designs/fuzz/fuzz_lim_011.json",
+   "source": "designs/colbert.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.unit.length_m 8 -> 2",
+    "fire_control.search_radar_t 5.0 -> 229.073",
+    "crew.water_l_per_day 60 -> 69",
+    "crew.standard.sleep_cpo_m2 2.5 -> 5.697"
+   ]
+  },
+  {
+   "case": "fuzz_lim_012",
+   "design": "designs/fuzz/fuzz_lim_012.json",
+   "source": "designs/colorado.json",
+   "limits": true,
+   "changes": [
+    "fire_control.main.rangefinder_m 6.1 -> 0",
+    "fire_control.aa.rangefinder_m 0.0 -> 12.478",
+    "superstructure.t_per_m2 0.32 -> 5"
+   ]
+  },
+  {
+   "case": "fuzz_lim_013",
+   "design": "designs/fuzz/fuzz_lim_013.json",
+   "source": "designs/connecticut.json",
+   "limits": true,
+   "changes": [
+    "machinery.shafts 2 -> 1"
+   ]
+  },
+  {
+   "case": "fuzz_lim_014",
+   "design": "designs/fuzz/fuzz_lim_014.json",
+   "source": "designs/courbet.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.part_load DT -> GTB",
+    "secondary.0.mount casemate -> deck",
+    "machinery.tech.sfc_g_per_kwh 857 -> 688"
+   ]
+  },
+  {
+   "case": "fuzz_lim_015",
+   "design": "designs/fuzz/fuzz_lim_015.json",
+   "source": "designs/dante.json",
+   "limits": true,
+   "changes": [
+    "machinery.shafts 4 -> 4",
+    "main.0.armour_mm 250 -> 1951"
+   ]
+  },
+  {
+   "case": "fuzz_lim_016",
+   "design": "designs/fuzz/fuzz_lim_016.json",
+   "source": "designs/danton.json",
+   "limits": true,
+   "changes": [
+    "crew.standard.welfare_m2 0.0 -> 0",
+    "armour.end_belts.fore.bulkhead_mm 0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_017",
+   "design": "designs/fuzz/fuzz_lim_017.json",
+   "source": "designs/daring.json",
+   "limits": true,
+   "changes": [
+    "fire_control.secondary.computer_t 0.0 -> (deleted)",
+    "machinery.tech.draught.gas_temp_k 450 -> 971"
+   ]
+  },
+  {
+   "case": "fuzz_lim_018",
+   "design": "designs/fuzz/fuzz_lim_018.json",
+   "source": "designs/des_moines.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.fuel oil -> coal",
+    "superstructure.aft_control True -> False",
+    "hull.construction.join_factor 1.0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_019",
+   "design": "designs/fuzz/fuzz_lim_019.json",
+   "source": "designs/destroyer.json",
+   "limits": true,
+   "changes": [
+    "crew.distiller true -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_020",
+   "design": "designs/fuzz/fuzz_lim_020.json",
+   "source": "designs/deutschland.json",
+   "limits": true,
+   "changes": [
+    "machinery.stress 0.8 -> 0.947",
+    "armour.decks.0.deck 1 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_021",
+   "design": "designs/fuzz/fuzz_lim_021.json",
+   "source": "designs/devastation.json",
+   "limits": true,
+   "changes": [
+    "fire_control.aa.directors 0 -> 51",
+    "machinery.tech.unit.width_m 4.5 -> 0",
+    "armour.belt_height_m 1.6 -> 14.771",
+    "armour.upper_belt.to_deck -1 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_022",
+   "design": "designs/fuzz/fuzz_lim_022.json",
+   "source": "designs/doom.json",
+   "limits": true,
+   "changes": [
+    "secondary.3.barrels 1 -> 1",
+    "secondary.0.calibre_length 40 -> 20",
+    "secondary.4.rounds_per_gun 350 -> 0",
+    "armour.decks.1.extent ends -> fore"
+   ]
+  },
+  {
+   "case": "fuzz_lim_023",
+   "design": "designs/fuzz/fuzz_lim_023.json",
+   "source": "designs/dreadnought.json",
+   "limits": true,
+   "changes": [
+    "secondary.stands_on deck -> deckhouse",
+    "hull.plating.deck_wood_mm 76 -> 0",
+    "armour.steering_box.deck_mm 0 -> 2000",
+    "machinery.bunkers wing -> ends"
+   ]
+  },
+  {
+   "case": "fuzz_lim_024",
+   "design": "designs/fuzz/fuzz_lim_024.json",
+   "source": "designs/duilio.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.weight_kg_per_kw 203.8 -> 697.955",
+    "armour.upper_belt.extent citadel -> ends",
+    "fire_control.secondary.radar_t 0.0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_lim_025",
+   "design": "designs/fuzz/fuzz_lim_025.json",
+   "source": "designs/dunkerque.json",
+   "limits": true,
+   "changes": [
+    "fire_control.search_radar_t 0.0 -> 0",
+    "main.0.aft 0 -> 37",
+    "armour.decks.0.deck 1 -> 0",
+    "machinery.tech.weight_kg_per_kw 38.9 -> 126.41"
+   ]
+  },
+  {
+   "case": "fuzz_lim_026",
+   "design": "designs/fuzz/fuzz_lim_026.json",
+   "source": "designs/erebus.json",
+   "limits": true,
+   "changes": [
+    "hull.raised 1 entries -> 0 (entry 0 dropped)",
+    "fire_control.main.rangefinder_m 4.6 -> 50",
+    "secondary.0.calibre_length 45 -> 1",
+    "armour.upper_belt.extent citadel -> full"
+   ]
+  },
+  {
+   "case": "fuzz_lim_027",
+   "design": "designs/fuzz/fuzz_lim_027.json",
+   "source": "designs/escort_carrier.json",
+   "limits": true,
+   "changes": [
+    "armour.end_belts.aft.bulkhead_mm 0 -> 318",
+    "machinery.bunkers ends -> wing"
+   ]
+  },
+  {
+   "case": "fuzz_lim_028",
+   "design": "designs/fuzz/fuzz_lim_028.json",
+   "source": "designs/fleet_carrier.json",
+   "limits": true,
+   "changes": [
+    "superstructure.t_per_m2 0.32 -> 0.501",
+    "crew.distiller True -> False",
+    "fire_control.secondary.directors 2 -> 30"
+   ]
+  },
+  {
+   "case": "fuzz_lim_029",
+   "design": "designs/fuzz/fuzz_lim_029.json",
+   "source": "designs/fubuki.json",
+   "limits": true,
+   "changes": [
+    "crew.standard.provisions_m3_per_day 0.009 -> 0.003",
+    "main.0.aft 2 -> 4",
+    "superstructure.control_mm 0 -> 446"
+   ]
+  },
+  {
+   "case": "fuzz_lim_030",
+   "design": "designs/fuzz/fuzz_lim_030.json",
+   "source": "designs/gangut.json",
+   "limits": true,
+   "changes": [
+    "machinery.arrangement grouped -> boiler",
+    "machinery.tech.density_t_per_m3 0.3 -> 0.204",
+    "machinery.centreline_bulkhead False -> True",
+    "armour.steering_box.mm 0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_031",
+   "design": "designs/fuzz/fuzz_lim_031.json",
+   "source": "designs/hamburg.json",
+   "limits": true,
+   "changes": [
+    "crew.standard.welfare_m2 0.03 -> (deleted)",
+    "armour.steering_box.mm 0 -> 2000",
+    "armour.bulkhead_mm 0 -> 1158"
+   ]
+  },
+  {
+   "case": "fuzz_lim_032",
+   "design": "designs/fuzz/fuzz_lim_032.json",
+   "source": "designs/heavy_cruiser.json",
+   "limits": true,
+   "changes": [
+    "hull.construction.join_factor 1.04 -> 1.081"
+   ]
+  },
+  {
+   "case": "fuzz_lim_033",
+   "design": "designs/fuzz/fuzz_lim_033.json",
+   "source": "designs/impetuoso.json",
+   "limits": true,
+   "changes": [
+    "armour.belt_height_m 1.8 -> 0.645",
+    "fire_control.aa.computer_t 0.0 -> 246.631",
+    "armour.upper_belt.mm 0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_034",
+   "design": "designs/fuzz/fuzz_lim_034.json",
+   "source": "designs/inflexible.json",
+   "limits": true,
+   "changes": [
+    "superstructure.plating_mm 0 -> 0",
+    "fire_control.secondary.armour_mm 0 -> (deleted)",
+    "fire_control.main.directors 0 -> 92"
+   ]
+  },
+  {
+   "case": "fuzz_lim_035",
+   "design": "designs/fuzz/fuzz_lim_035.json",
+   "source": "designs/invincible.json",
+   "limits": true,
+   "changes": [
+    "crew.endurance_days 9 -> 28",
+    "machinery.tech.unit_max_mw 8.0 -> 11.268",
+    "machinery.arrangement grouped -> boiler"
+   ]
+  },
+  {
+   "case": "fuzz_lim_036",
+   "design": "designs/fuzz/fuzz_lim_036.json",
+   "source": "designs/karlsruhe.json",
+   "limits": true,
+   "changes": [
+    "crew.standard.passage_factor 1.15 -> 0",
+    "machinery.arrangement \"grouped\" -> (deleted)",
+    "machinery.tech.draught.system forced -> forced_boost"
+   ]
+  },
+  {
+   "case": "fuzz_lim_037",
+   "design": "designs/fuzz/fuzz_lim_037.json",
+   "source": "designs/kent.json",
+   "limits": true,
+   "changes": [
+    "armour.decks.0.deck 1 -> 1",
+    "torpedoes.tubes 4 -> 6",
+    "superstructure.deckhouse_levels 1 -> 28",
+    "fire_control.main.computer_t 3.0 -> 69.142"
+   ]
+  },
+  {
+   "case": "fuzz_lim_038",
+   "design": "designs/fuzz/fuzz_lim_038.json",
+   "source": "designs/kgv.json",
+   "limits": true,
+   "changes": [
+    "fire_control.aa.computer_t 0.2 -> 500",
+    "crew.standard.sleep_cpo_m2 2.5 -> 0.638"
+   ]
+  },
+  {
+   "case": "fuzz_lim_039",
+   "design": "designs/fuzz/fuzz_lim_039.json",
+   "source": "designs/kongo.json",
+   "limits": true,
+   "changes": [
+    "secondary.0.per_side 8 -> 93",
+    "machinery.transmission mechanical -> electric",
+    "secondary.1.barrels 1 -> 5"
+   ]
+  },
+  {
+   "case": "fuzz_lim_040",
+   "design": "designs/fuzz/fuzz_lim_040.json",
+   "source": "designs/liberty.json",
+   "limits": true,
+   "changes": [
+    "superstructure.plating_mm 0 -> 184",
+    "fire_control.main.armour_mm 0 -> 0",
+    "machinery.tech.part_load REC -> DT",
+    "range_nm 17000 -> 25000"
+   ]
+  },
+  {
+   "case": "fuzz_lim_041",
+   "design": "designs/fuzz/fuzz_lim_041.json",
+   "source": "designs/light_cruiser.json",
+   "limits": true,
+   "changes": [
+    "superstructure.levels_over_bridge 1 -> 18",
+    "main 1 entries -> 0 (entry 0 dropped)",
+    "machinery.stress 0.7 -> 2.382"
+   ]
+  },
+  {
+   "case": "fuzz_lim_042",
+   "design": "designs/fuzz/fuzz_lim_042.json",
+   "source": "designs/lion.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.draught.gas_temp_k 600 -> 892"
+   ]
+  },
+  {
+   "case": "fuzz_lim_043",
+   "design": "designs/fuzz/fuzz_lim_043.json",
+   "source": "designs/littorio.json",
+   "limits": true,
+   "changes": [
+    "hull.plating.deck_wood_mm 64 -> 27",
+    "crew.standard.sleep_officer_m2 6.0 -> 18.849"
+   ]
+  },
+  {
+   "case": "fuzz_lim_044",
+   "design": "designs/fuzz/fuzz_lim_044.json",
+   "source": "designs/lord_nelson.json",
+   "limits": true,
+   "changes": [
+    "main.0.aft 1 -> (deleted)",
+    "main.2.calibre_length 50 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_045",
+   "design": "designs/fuzz/fuzz_lim_045.json",
+   "source": "designs/mikasa.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.unit.length_m 9 -> (deleted)",
+    "fire_control.secondary.radar_t 0.0 -> (deleted)",
+    "fire_control.secondary.rangefinder_m 0.0 -> 0",
+    "secondary.2.mount casemate -> deck"
+   ]
+  },
+  {
+   "case": "fuzz_lim_046",
+   "design": "designs/fuzz/fuzz_lim_046.json",
+   "source": "designs/mtb.json",
+   "limits": true,
+   "changes": [
+    "main.0.calibre_mm 20 -> 2"
+   ]
+  },
+  {
+   "case": "fuzz_lim_047",
+   "design": "designs/fuzz/fuzz_lim_047.json",
+   "source": "designs/murica.json",
+   "limits": true,
+   "changes": [
+    "crew.officer_fraction 0.08 -> 0.02",
+    "machinery.tech.stress_floor 0.45 -> 0.123",
+    "armour.end_belts.aft.reach 1.0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_048",
+   "design": "designs/fuzz/fuzz_lim_048.json",
+   "source": "designs/nagato.json",
+   "limits": true,
+   "changes": [
+    "crew.standard.welfare_m2 0.0 -> 0.0",
+    "machinery.stress 0.5 -> 0.431"
+   ]
+  },
+  {
+   "case": "fuzz_lim_049",
+   "design": "designs/fuzz/fuzz_lim_049.json",
+   "source": "designs/nassau.json",
+   "limits": true,
+   "changes": [
+    "armour.end_belts.aft.mm 100 -> 244",
+    "machinery.tech.draught.gas_temp_k 600 -> 300"
+   ]
+  },
+  {
+   "case": "fuzz_lim_050",
+   "design": "designs/fuzz/fuzz_lim_050.json",
+   "source": "designs/nassau_casemates.json",
+   "limits": true,
+   "changes": [
+    "superstructure.plating_mm 0 -> 200"
+   ]
+  },
+  {
+   "case": "fuzz_lim_051",
+   "design": "designs/fuzz/fuzz_lim_051.json",
+   "source": "designs/nelson.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.draught.velocity_m_s 13.8 -> 4.193",
+    "machinery.tech.boiler_fraction 0.55 -> 0.337"
+   ]
+  },
+  {
+   "case": "fuzz_lim_052",
+   "design": "designs/fuzz/fuzz_lim_052.json",
+   "source": "designs/overloaded.json",
+   "limits": true,
+   "changes": [
+    "armour.upper_belt.to_deck 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_lim_053",
+   "design": "designs/fuzz/fuzz_lim_053.json",
+   "source": "designs/pennsylvania.json",
+   "limits": true,
+   "changes": [
+    "secondary.0.tier upper -> lower",
+    "armour.decks.0.extent citadel -> full",
+    "hull.block_coefficient 0.6 -> 0.585"
+   ]
+  },
+  {
+   "case": "fuzz_lim_054",
+   "design": "designs/fuzz/fuzz_lim_054.json",
+   "source": "designs/pt_boat.json",
+   "limits": true,
+   "changes": [
+    "torpedoes.tubes 1 -> (deleted)",
+    "fire_control.aa.armour_mm 0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_055",
+   "design": "designs/fuzz/fuzz_lim_055.json",
+   "source": "designs/q_ship.json",
+   "limits": true,
+   "changes": [
+    "superstructure.control_mm 0 -> 180",
+    "cargo.deadweight_t 2500 -> 77625"
+   ]
+  },
+  {
+   "case": "fuzz_lim_056",
+   "design": "designs/fuzz/fuzz_lim_056.json",
+   "source": "designs/richelieu.json",
+   "limits": true,
+   "changes": [
+    "armour.decks.0.extent \"citadel\" -> (deleted)",
+    "armour.upper_belt.extent citadel -> aft",
+    "fire_control.secondary.computer_t 2.0 -> 500"
+   ]
+  },
+  {
+   "case": "fuzz_lim_057",
+   "design": "designs/fuzz/fuzz_lim_057.json",
+   "source": "designs/seaplane_carrier.json",
+   "limits": true,
+   "changes": [
+    "superstructure.t_per_m2 0.32 -> 5"
+   ]
+  },
+  {
+   "case": "fuzz_lim_058",
+   "design": "designs/fuzz/fuzz_lim_058.json",
+   "source": "designs/seydlitz.json",
+   "limits": true,
+   "changes": [
+    "main.0.echelon True -> False",
+    "secondary.0.mount casemate -> deck",
+    "machinery.stress 0.5 -> 0.391"
+   ]
+  },
+  {
+   "case": "fuzz_lim_059",
+   "design": "designs/fuzz/fuzz_lim_059.json",
+   "source": "designs/super_dreadnought.json",
+   "limits": true,
+   "changes": [
+    "fire_control.aa.rangefinder_m 0.0 -> 0",
+    "hull.plating.deck_wood_mm 76 -> 0",
+    "armour.decks.1.extent aft -> citadel"
+   ]
+  },
+  {
+   "case": "fuzz_lim_060",
+   "design": "designs/fuzz/fuzz_lim_060.json",
+   "source": "designs/supercarrier.json",
+   "limits": true,
+   "changes": [
+    "armour.bulkhead_mm 46 -> 0",
+    "machinery.tech.fuel oil -> petrol",
+    "armour.upper_belt.extent citadel -> fore"
+   ]
+  },
+  {
+   "case": "fuzz_lim_061",
+   "design": "designs/fuzz/fuzz_lim_061.json",
+   "source": "designs/sverdlov.json",
+   "limits": true,
+   "changes": [
+    "crew.berth_ratio 1.0 -> 0.527",
+    "secondary.per_side 3 -> 66"
+   ]
+  },
+  {
+   "case": "fuzz_lim_062",
+   "design": "designs/fuzz/fuzz_lim_062.json",
+   "source": "designs/tanker.json",
+   "limits": true,
+   "changes": [
+    "hull.freeboard 1.0 -> 2.0",
+    "crew.standard.sleep_officer_m2 7.5 -> 5.679",
+    "crew.standard.sanitary_m2 0.35 -> 0.218",
+    "fire_control.secondary.directors 0 -> 84"
+   ]
+  },
+  {
+   "case": "fuzz_lim_063",
+   "design": "designs/fuzz/fuzz_lim_063.json",
+   "source": "designs/tb_destroyer.json",
+   "limits": true,
+   "changes": [
+    "torpedoes.tubes 3 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_064",
+   "design": "designs/fuzz/fuzz_lim_064.json",
+   "source": "designs/tegetthoff.json",
+   "limits": true,
+   "changes": [
+    "fire_control.aa.rangefinder_m 0.0 -> (deleted)",
+    "machinery.transmission mechanical -> electric",
+    "superstructure.aft_control True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_lim_065",
+   "design": "designs/fuzz/fuzz_lim_065.json",
+   "source": "designs/tiger.json",
+   "limits": true,
+   "changes": [
+    "fire_control.secondary.computer_t 2.0 -> 500",
+    "crew.standard.deck_height_m 2.4 -> 0.88",
+    "machinery.bunkers ends -> wing",
+    "machinery.transmission mechanical -> electric"
+   ]
+  },
+  {
+   "case": "fuzz_lim_066",
+   "design": "designs/fuzz/fuzz_lim_066.json",
+   "source": "designs/tiger_1914.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.part_load DT -> DSL",
+    "machinery.tech.draught.gas_temp_k 600 -> 300"
+   ]
+  },
+  {
+   "case": "fuzz_lim_067",
+   "design": "designs/fuzz/fuzz_lim_067.json",
+   "source": "designs/tramp_1914.json",
+   "limits": true,
+   "changes": [
+    "secondary.count 1 -> 0",
+    "machinery.arrangement grouped -> engine"
+   ]
+  },
+  {
+   "case": "fuzz_lim_068",
+   "design": "designs/fuzz/fuzz_lim_068.json",
+   "source": "designs/victory_1944.json",
+   "limits": true,
+   "changes": [
+    "machinery.arrangement grouped -> boiler",
+    "superstructure.aft_control False -> True",
+    "armour.belt_mm 76 -> 2000"
+   ]
+  },
+  {
+   "case": "fuzz_lim_069",
+   "design": "designs/fuzz/fuzz_lim_069.json",
+   "source": "designs/yamato.json",
+   "limits": true,
+   "changes": [
+    "machinery.transmission mechanical -> electric",
+    "machinery.tech.part_load GTB -> REC",
+    "crew.buffer_days 5 -> 3",
+    "crew.standard.galley_min_m2 5.0 -> 19.692"
+   ]
+  },
+  {
+   "case": "fuzz_lim_070",
+   "design": "designs/fuzz/fuzz_lim_070.json",
+   "source": "designs/zara.json",
+   "limits": true,
+   "changes": [
+    "hull.block_coefficient 0.52 -> 0.503"
+   ]
+  },
+  {
+   "case": "fuzz_lim_071",
+   "design": "designs/fuzz/fuzz_lim_071.json",
+   "source": "designs/akizuki_1960.json",
+   "limits": true,
+   "changes": [
+    "hull.raised.0.to bridge -> aft_group",
+    "fire_control.aa.computer_t 0.3 -> 396.866",
+    "crew.officer_fraction 0.08 -> 0.126",
+    "crew.berth_ratio 1.0 -> 0.312"
+   ]
+  },
+  {
+   "case": "fuzz_lim_072",
+   "design": "designs/fuzz/fuzz_lim_072.json",
+   "source": "designs/all_forward.json",
+   "limits": true,
+   "changes": [
+    "hull.construction.name \"High-tensile steel (D, Ducol, HTS), riv -> (deleted)",
+    "crew.standard.sickbay_beds_per_man 0.01 -> 0",
+    "crew.standard.sanitary_m2 0.2 -> 0.085"
+   ]
+  },
+  {
+   "case": "fuzz_lim_073",
+   "design": "designs/fuzz/fuzz_lim_073.json",
+   "source": "designs/all_forward_flush.json",
+   "limits": true,
+   "changes": [
+    "secondary.stands_on deckhouse -> deck",
+    "machinery.transmission mechanical -> electric",
+    "secondary.calibre_length 50 -> 200",
+    "machinery.transmission electric -> mechanical"
+   ]
+  },
+  {
+   "case": "fuzz_lim_074",
+   "design": "designs/fuzz/fuzz_lim_074.json",
+   "source": "designs/armoured_cruiser.json",
+   "limits": true,
+   "changes": [
+    "fire_control.main.rangefinder_m 2.0 -> 17.481"
+   ]
+  },
+  {
+   "case": "fuzz_lim_075",
+   "design": "designs/fuzz/fuzz_lim_075.json",
+   "source": "designs/babel.json",
+   "limits": true,
+   "changes": [
+    "secondary.2.rounds_per_gun 350 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_076",
+   "design": "designs/fuzz/fuzz_lim_076.json",
+   "source": "designs/battlecruiser.json",
+   "limits": true,
+   "changes": [
+    "hull.plating.deck_wood_mm 76 -> (deleted)",
+    "secondary.calibre_mm 102 -> 304",
+    "crew.standard.galley_k 0.3 -> 0.958",
+    "hull.construction.name \"Mild steel hull, high-tensile strength  -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_077",
+   "design": "designs/fuzz/fuzz_lim_077.json",
+   "source": "designs/battleship.json",
+   "limits": true,
+   "changes": [
+    "armour.decks.0.mm 152 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_078",
+   "design": "designs/fuzz/fuzz_lim_078.json",
+   "source": "designs/battleship_layered.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.unit_max_mw 42.8 -> 0",
+    "armour.bulkhead_mm 287 -> 1791",
+    "machinery.tech.part_load GTB -> DSL"
+   ]
+  },
+  {
+   "case": "fuzz_lim_079",
+   "design": "designs/fuzz/fuzz_lim_079.json",
+   "source": "designs/bismarck.json",
+   "limits": true,
+   "changes": [
+    "fire_control.main.rangefinder_m 10.5 -> 50",
+    "machinery.tech.draught.gas_temp_k 450 -> 2000",
+    "crew.standard.sickbay_beds_per_man 0.01 -> 0.007"
+   ]
+  },
+  {
+   "case": "fuzz_lim_080",
+   "design": "designs/fuzz/fuzz_lim_080.json",
+   "source": "designs/bouvet.json",
+   "limits": true,
+   "changes": [
+    "armour.belt_depth_m 1.6 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_081",
+   "design": "designs/fuzz/fuzz_lim_081.json",
+   "source": "designs/brennus.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.draught.system forced_boost -> natural",
+    "machinery.tech.unit.width_m 4.5 -> 3.327",
+    "armour.decks 1 entries -> 2 (entry 0 twice)",
+    "armour.decks.0.mm 60 -> 152"
+   ]
+  },
+  {
+   "case": "fuzz_lim_082",
+   "design": "designs/fuzz/fuzz_lim_082.json",
+   "source": "designs/colbert.json",
+   "limits": true,
+   "changes": [
+    "secondary.barrels 2 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_083",
+   "design": "designs/fuzz/fuzz_lim_083.json",
+   "source": "designs/colorado.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.draught.reach_m 19.5 -> 6.386",
+    "main.0.calibre_length 45 -> 200"
+   ]
+  },
+  {
+   "case": "fuzz_lim_084",
+   "design": "designs/fuzz/fuzz_lim_084.json",
+   "source": "designs/connecticut.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.unit_max_mw 11.5 -> 7.085",
+    "secondary.1.mount casemate -> deck",
+    "crew.standard.passage_factor 1.15 -> 2.157"
+   ]
+  },
+  {
+   "case": "fuzz_lim_085",
+   "design": "designs/fuzz/fuzz_lim_085.json",
+   "source": "designs/courbet.json",
+   "limits": true,
+   "changes": [
+    "armour.upper_belt.mm 180 -> 959",
+    "aa.light 0 -> (deleted)",
+    "superstructure.aft_control True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_lim_086",
+   "design": "designs/fuzz/fuzz_lim_086.json",
+   "source": "designs/dante.json",
+   "limits": true,
+   "changes": [
+    "armour.steering_box.deck_mm 0 -> 1706"
+   ]
+  },
+  {
+   "case": "fuzz_lim_087",
+   "design": "designs/fuzz/fuzz_lim_087.json",
+   "source": "designs/danton.json",
+   "limits": true,
+   "changes": [
+    "secondary.0.tier lower -> upper",
+    "fire_control.main.radar_t 0 -> 201",
+    "machinery.tech.unit.height_m 4.5 -> 1.791"
+   ]
+  },
+  {
+   "case": "fuzz_lim_088",
+   "design": "designs/fuzz/fuzz_lim_088.json",
+   "source": "designs/daring.json",
+   "limits": true,
+   "changes": [
+    "crew.standard.sleep_cpo_m2 2.5 -> 7.723",
+    "machinery.wing_bunker_m 2.0 -> 2.787"
+   ]
+  },
+  {
+   "case": "fuzz_lim_089",
+   "design": "designs/fuzz/fuzz_lim_089.json",
+   "source": "designs/des_moines.json",
+   "limits": true,
+   "changes": [
+    "fire_control.main.armour_mm 13 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_090",
+   "design": "designs/fuzz/fuzz_lim_090.json",
+   "source": "designs/destroyer.json",
+   "limits": true,
+   "changes": [
+    "armour.belt_depth_m 1.8 -> 15.791"
+   ]
+  },
+  {
+   "case": "fuzz_lim_091",
+   "design": "designs/fuzz/fuzz_lim_091.json",
+   "source": "designs/deutschland.json",
+   "limits": true,
+   "changes": [
+    "fire_control.aa.rangefinder_m 0.0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_092",
+   "design": "designs/fuzz/fuzz_lim_092.json",
+   "source": "designs/devastation.json",
+   "limits": true,
+   "changes": [
+    "armour.belt_height_m 1.6 -> 30",
+    "armour.end_belts.aft.reach 1.0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_093",
+   "design": "designs/fuzz/fuzz_lim_093.json",
+   "source": "designs/doom.json",
+   "limits": true,
+   "changes": [
+    "fire_control.main.rangefinder_m 0.0 -> (deleted)",
+    "secondary.1.armour_mm 51 -> 175"
+   ]
+  },
+  {
+   "case": "fuzz_lim_094",
+   "design": "designs/fuzz/fuzz_lim_094.json",
+   "source": "designs/dreadnought.json",
+   "limits": true,
+   "changes": [
+    "machinery.bunkers wing -> ends",
+    "superstructure.deckhouse_levels 2 -> 4",
+    "hull.plating.material \"steel\" -> (deleted)",
+    "main.0.amidships_stands_on deck -> deckhouse"
+   ]
+  },
+  {
+   "case": "fuzz_lim_095",
+   "design": "designs/fuzz/fuzz_lim_095.json",
+   "source": "designs/duilio.json",
+   "limits": true,
+   "changes": [
+    "armour.upper_belt.mm 432 -> 2000"
+   ]
+  },
+  {
+   "case": "fuzz_lim_096",
+   "design": "designs/fuzz/fuzz_lim_096.json",
+   "source": "designs/dunkerque.json",
+   "limits": true,
+   "changes": [
+    "secondary.0.armour_mm 25 -> 73"
+   ]
+  },
+  {
+   "case": "fuzz_lim_097",
+   "design": "designs/fuzz/fuzz_lim_097.json",
+   "source": "designs/erebus.json",
+   "limits": true,
+   "changes": [
+    "armour.decks 1 entries -> 0 (entry 0 dropped)",
+    "armour.steering_box.bulkhead_mm 0 -> 1854",
+    "superstructure.t_per_m2 0.32 -> 1.539"
+   ]
+  },
+  {
+   "case": "fuzz_lim_098",
+   "design": "designs/fuzz/fuzz_lim_098.json",
+   "source": "designs/escort_carrier.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.sfc_g_per_kwh 660 -> 758",
+    "armour.end_belts.aft {\"mm\": 0, \"tip_mm\": 0, \"reach\": 1.0, \"bu -> (deleted)",
+    "machinery.bunkers ends -> wing"
+   ]
+  },
+  {
+   "case": "fuzz_lim_099",
+   "design": "designs/fuzz/fuzz_lim_099.json",
+   "source": "designs/fleet_carrier.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.weight_kg_per_kw 35.2 -> 105.334",
+    "machinery.centreline_bulkhead False -> True",
+    "hull.freeboard 1.0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_100",
+   "design": "designs/fuzz/fuzz_lim_100.json",
+   "source": "designs/fubuki.json",
+   "limits": true,
+   "changes": [
+    "aa.heavy 0 -> 318",
+    "torpedoes.tubes 4 -> (deleted)",
+    "armour.upper_belt.to_deck 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_lim_101",
+   "design": "designs/fuzz/fuzz_lim_101.json",
+   "source": "designs/gangut.json",
+   "limits": true,
+   "changes": [
+    "crew.standard.water_l_per_day 15 -> 10",
+    "fire_control.secondary.radar_t 0.0 -> 500"
+   ]
+  },
+  {
+   "case": "fuzz_lim_102",
+   "design": "designs/fuzz/fuzz_lim_102.json",
+   "source": "designs/hamburg.json",
+   "limits": true,
+   "changes": [
+    "armour.end_belts.aft.bulkhead_mm 0 -> (deleted)",
+    "machinery.transmission mechanical -> electric",
+    "machinery.arrangement grouped -> boiler"
+   ]
+  },
+  {
+   "case": "fuzz_lim_103",
+   "design": "designs/fuzz/fuzz_lim_103.json",
+   "source": "designs/heavy_cruiser.json",
+   "limits": true,
+   "changes": [
+    "armour.end_belts.fore.bulkhead_mm 0 -> (deleted)",
+    "crew.standard.sickbay_beds_per_man 0.01 -> 0.004",
+    "machinery.centreline_bulkhead False -> True",
+    "armour.end_belts.aft.mm 0 -> 198"
+   ]
+  },
+  {
+   "case": "fuzz_lim_104",
+   "design": "designs/fuzz/fuzz_lim_104.json",
+   "source": "designs/impetuoso.json",
+   "limits": true,
+   "changes": [
+    "machinery.centreline_bulkhead False -> True",
+    "hull.freeboard 1.0 -> 1.209"
+   ]
+  },
+  {
+   "case": "fuzz_lim_105",
+   "design": "designs/fuzz/fuzz_lim_105.json",
+   "source": "designs/inflexible.json",
+   "limits": true,
+   "changes": [
+    "funnels 2 -> 6",
+    "armour.belt_mm 610 -> 1482",
+    "main 1 entries -> 2 (entry 0 twice)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_106",
+   "design": "designs/fuzz/fuzz_lim_106.json",
+   "source": "designs/invincible.json",
+   "limits": true,
+   "changes": [
+    "main.0.echelon True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_lim_107",
+   "design": "designs/fuzz/fuzz_lim_107.json",
+   "source": "designs/karlsruhe.json",
+   "limits": true,
+   "changes": [
+    "armour.upper_belt.mm 0 -> 2000",
+    "hull.raised 1 entries -> 0 (entry 0 dropped)",
+    "machinery.tech.draught.gas_temp_k 600 -> 1494",
+    "machinery.shafts 2 -> 6"
+   ]
+  },
+  {
+   "case": "fuzz_lim_108",
+   "design": "designs/fuzz/fuzz_lim_108.json",
+   "source": "designs/kent.json",
+   "limits": true,
+   "changes": [
+    "fire_control.secondary {\"directors\": 1, \"rangefinder_m\": 2.7, \" -> (deleted)",
+    "armour.upper_belt.extent citadel -> fore",
+    "crew.standard {\"name\": \"Tiered bunks and separate mess -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_109",
+   "design": "designs/fuzz/fuzz_lim_109.json",
+   "source": "designs/kgv.json",
+   "limits": true,
+   "changes": [
+    "superstructure.tower_levels 7 -> (deleted)",
+    "main.1.calibre_mm 356 -> 322",
+    "hull.raised.0.from bow -> fore_group"
+   ]
+  },
+  {
+   "case": "fuzz_lim_110",
+   "design": "designs/fuzz/fuzz_lim_110.json",
+   "source": "designs/kongo.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.fuel coal -> diesel",
+    "crew.standard.cpo_fraction 0.08 -> 0.115",
+    "hull.construction.yield_mpa 290 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_111",
+   "design": "designs/fuzz/fuzz_lim_111.json",
+   "source": "designs/liberty.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.unit.height_m 7.5 -> 3.932",
+    "crew.berth_ratio 1.0 -> 0.489",
+    "armour.steering_box.deck_mm 0 -> 1161",
+    "armour.end_belts.aft.tip_mm 0 -> 2000"
+   ]
+  },
+  {
+   "case": "fuzz_lim_112",
+   "design": "designs/fuzz/fuzz_lim_112.json",
+   "source": "designs/light_cruiser.json",
+   "limits": true,
+   "changes": [
+    "armour.decks.0.extent full -> citadel",
+    "armour.end_belts.aft.mm 51 -> 237"
+   ]
+  },
+  {
+   "case": "fuzz_lim_113",
+   "design": "designs/fuzz/fuzz_lim_113.json",
+   "source": "designs/lion.json",
+   "limits": true,
+   "changes": [
+    "machinery.arrangement.1 boiler -> engine",
+    "machinery.centreline_bulkhead False -> True"
+   ]
+  },
+  {
+   "case": "fuzz_lim_114",
+   "design": "designs/fuzz/fuzz_lim_114.json",
+   "source": "designs/littorio.json",
+   "limits": true,
+   "changes": [
+    "hull.raised.0.from bow -> bridge",
+    "superstructure.deckhouse_levels 3 -> 4"
+   ]
+  },
+  {
+   "case": "fuzz_lim_115",
+   "design": "designs/fuzz/fuzz_lim_115.json",
+   "source": "designs/lord_nelson.json",
+   "limits": true,
+   "changes": [
+    "machinery.bunkers wing -> ends"
+   ]
+  },
+  {
+   "case": "fuzz_lim_116",
+   "design": "designs/fuzz/fuzz_lim_116.json",
+   "source": "designs/mikasa.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.draught.system forced -> natural"
+   ]
+  },
+  {
+   "case": "fuzz_lim_117",
+   "design": "designs/fuzz/fuzz_lim_117.json",
+   "source": "designs/mtb.json",
+   "limits": true,
+   "changes": [
+    "fire_control.aa.radar_t 0.0 -> 11.562",
+    "armour.end_belts.aft.reach 1.0 -> 0",
+    "crew.distiller True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_lim_118",
+   "design": "designs/fuzz/fuzz_lim_118.json",
+   "source": "designs/murica.json",
+   "limits": true,
+   "changes": [
+    "fire_control.aa.rangefinder_m 0.0 -> 14.999",
+    "machinery.tech.draught.reach_m 20.0 -> 0",
+    "armour.end_belts.fore.bulkhead_mm 0 -> 744"
+   ]
+  },
+  {
+   "case": "fuzz_lim_119",
+   "design": "designs/fuzz/fuzz_lim_119.json",
+   "source": "designs/nagato.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.unit.mw 15 -> 16",
+    "crew.standard.galley_k 0.3 -> 0.696"
+   ]
+  },
+  {
+   "case": "fuzz_lim_120",
+   "design": "designs/fuzz/fuzz_lim_120.json",
+   "source": "designs/nassau.json",
+   "limits": true,
+   "changes": [
+    "secondary.stands_on deckhouse -> deck",
+    "secondary.per_side 3 -> 73"
+   ]
+  },
+  {
+   "case": "fuzz_lim_121",
+   "design": "designs/fuzz/fuzz_lim_121.json",
+   "source": "designs/nassau_casemates.json",
+   "limits": true,
+   "changes": [
+    "armour.steering_box.bulkhead_mm 0 -> 602",
+    "machinery.tech.sfc_g_per_kwh 940 -> 273",
+    "crew.standard.water_l_per_day 15 -> 45",
+    "hull.construction.join_factor 1.1 -> 1.5"
+   ]
+  },
+  {
+   "case": "fuzz_lim_122",
+   "design": "designs/fuzz/fuzz_lim_122.json",
+   "source": "designs/nelson.json",
+   "limits": true,
+   "changes": [
+    "armour.belt_mm 356 -> 1490",
+    "armour.decks.0.deck 1 -> 1",
+    "machinery.tech.draught.system forced -> natural"
+   ]
+  },
+  {
+   "case": "fuzz_lim_123",
+   "design": "designs/fuzz/fuzz_lim_123.json",
+   "source": "designs/overloaded.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.part_load GTB -> REC"
+   ]
+  },
+  {
+   "case": "fuzz_lim_124",
+   "design": "designs/fuzz/fuzz_lim_124.json",
+   "source": "designs/pennsylvania.json",
+   "limits": true,
+   "changes": [
+    "main.0.calibre_mm 356 -> 1",
+    "fire_control.search_radar_t 0.0 -> 167.732"
+   ]
+  },
+  {
+   "case": "fuzz_lim_125",
+   "design": "designs/fuzz/fuzz_lim_125.json",
+   "source": "designs/pt_boat.json",
+   "limits": true,
+   "changes": [
+    "machinery.units_per_shaft 1 -> 1",
+    "armour.end_belts.aft {\"mm\": 0, \"tip_mm\": 0, \"reach\": 1.0, \"bu -> (deleted)",
+    "fire_control.aa.armour_mm 0 -> 1207"
+   ]
+  },
+  {
+   "case": "fuzz_lim_126",
+   "design": "designs/fuzz/fuzz_lim_126.json",
+   "source": "designs/q_ship.json",
+   "limits": true,
+   "changes": [
+    "hull.construction.yield_mpa 235 -> 1000"
+   ]
+  },
+  {
+   "case": "fuzz_lim_127",
+   "design": "designs/fuzz/fuzz_lim_127.json",
+   "source": "designs/richelieu.json",
+   "limits": true,
+   "changes": [
+    "secondary.1.stands_on deckhouse -> deck",
+    "fire_control.aa.radar_t 0.0 -> 339.625",
+    "machinery.tech.crew_k 10 -> 13",
+    "armour.end_belts.fore.mm 0 -> 1292"
+   ]
+  },
+  {
+   "case": "fuzz_lim_128",
+   "design": "designs/fuzz/fuzz_lim_128.json",
+   "source": "designs/seaplane_carrier.json",
+   "limits": true,
+   "changes": [
+    "machinery.centreline_bulkhead False -> True"
+   ]
+  },
+  {
+   "case": "fuzz_lim_129",
+   "design": "designs/fuzz/fuzz_lim_129.json",
+   "source": "designs/seydlitz.json",
+   "limits": true,
+   "changes": [
+    "superstructure.plating_mm 0 -> 54",
+    "fire_control.secondary.armour_mm 0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_130",
+   "design": "designs/fuzz/fuzz_lim_130.json",
+   "source": "designs/super_dreadnought.json",
+   "limits": true,
+   "changes": [
+    "machinery.bunkers ends -> wing",
+    "machinery.tech.unit.length_m 7 -> 2",
+    "superstructure.plating_mm 0 -> 200",
+    "main.0.aft 2 -> 31"
+   ]
+  },
+  {
+   "case": "fuzz_lim_131",
+   "design": "designs/fuzz/fuzz_lim_131.json",
+   "source": "designs/supercarrier.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.fuel oil -> diesel"
+   ]
+  },
+  {
+   "case": "fuzz_lim_132",
+   "design": "designs/fuzz/fuzz_lim_132.json",
+   "source": "designs/sverdlov.json",
+   "limits": true,
+   "changes": [
+    "secondary.rounds_per_gun 350 -> 798",
+    "main.0.aft 2 -> 2",
+    "machinery.tech.fuel oil -> coal"
+   ]
+  },
+  {
+   "case": "fuzz_lim_133",
+   "design": "designs/fuzz/fuzz_lim_133.json",
+   "source": "designs/tanker.json",
+   "limits": true,
+   "changes": [
+    "armour.materials {\"belt\": \"mild steel\", \"upper_belt\": \"mi -> (deleted)",
+    "range_nm 12600 -> 14644",
+    "crew.standard.sleep_officer_m2 7.5 -> 0",
+    "crew.standard.cpo_fraction 0.08 -> 0.176"
+   ]
+  },
+  {
+   "case": "fuzz_lim_134",
+   "design": "designs/fuzz/fuzz_lim_134.json",
+   "source": "designs/tb_destroyer.json",
+   "limits": true,
+   "changes": [
+    "machinery.transmission mechanical -> electric",
+    "machinery.tech.draught.system forced -> natural",
+    "armour.end_belts.aft {\"mm\": 0, \"tip_mm\": 0, \"reach\": 1.0, \"bu -> (deleted)",
+    "crew.standard.galley_min_m2 4.0 -> 13.06"
+   ]
+  },
+  {
+   "case": "fuzz_lim_135",
+   "design": "designs/fuzz/fuzz_lim_135.json",
+   "source": "designs/tegetthoff.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.draught.reach_m 9.8 -> 22.453",
+    "superstructure.aft_control True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_lim_136",
+   "design": "designs/fuzz/fuzz_lim_136.json",
+   "source": "designs/tiger.json",
+   "limits": true,
+   "changes": [
+    "armour.decks.0.extent citadel -> fore",
+    "crew.standard.cpo_fraction 0.08 -> (deleted)",
+    "machinery.arrangement grouped -> boiler",
+    "secondary.armour_mm 25 -> 48"
+   ]
+  },
+  {
+   "case": "fuzz_lim_137",
+   "design": "designs/fuzz/fuzz_lim_137.json",
+   "source": "designs/tiger_1914.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.draught.gas_temp_k 600 -> 1225",
+    "armour.belt_height_m 2.7 -> 19.868"
+   ]
+  },
+  {
+   "case": "fuzz_lim_138",
+   "design": "designs/fuzz/fuzz_lim_138.json",
+   "source": "designs/tramp_1914.json",
+   "limits": true,
+   "changes": [
+    "machinery.centreline_bulkhead False -> True",
+    "machinery.bunkers ends -> wing",
+    "secondary.rounds_per_gun 350 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_lim_139",
+   "design": "designs/fuzz/fuzz_lim_139.json",
+   "source": "designs/victory_1944.json",
+   "limits": true,
+   "changes": [
+    "hull.plating.deck_wood_mm 100 -> 217",
+    "secondary.0.mount casemate -> deck",
+    "fire_control.secondary.computer_t 1.0 -> 283.506",
+    "crew.standard.sleep_officer_m2 5.0 -> 7.401"
+   ]
+  },
+  {
+   "case": "fuzz_lim_140",
+   "design": "designs/fuzz/fuzz_lim_140.json",
+   "source": "designs/yamato.json",
+   "limits": true,
+   "changes": [
+    "armour.end_belts.aft.bulkhead_mm 0 -> 0",
+    "secondary.1.barrels 2 -> 20",
+    "superstructure.aft_control True -> False",
+    "armour.decks.0.mm 200 -> 121"
+   ]
+  },
+  {
+   "case": "fuzz_lim_141",
+   "design": "designs/fuzz/fuzz_lim_141.json",
+   "source": "designs/zara.json",
+   "limits": true,
+   "changes": [
+    "fire_control.aa.radar_t 0.0 -> (deleted)",
+    "fire_control.main.computer_t 4.0 -> 194.545",
+    "secondary.0.armour_mm 25 -> 82",
+    "machinery.wing_bunker_m 2.0 -> 4.354"
+   ]
+  },
+  {
+   "case": "fuzz_lim_142",
+   "design": "designs/fuzz/fuzz_lim_142.json",
+   "source": "designs/akizuki_1960.json",
+   "limits": true,
+   "changes": [
+    "armour.upper_belt.extent citadel -> ends"
+   ]
+  },
+  {
+   "case": "fuzz_lim_143",
+   "design": "designs/fuzz/fuzz_lim_143.json",
+   "source": "designs/all_forward.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.unit.length_m 8 -> 10",
+    "crew.standard.sickbay_beds_per_man 0.01 -> 0.005",
+    "main.0.rounds_per_gun 100 -> 198"
+   ]
+  },
+  {
+   "case": "fuzz_lim_144",
+   "design": "designs/fuzz/fuzz_lim_144.json",
+   "source": "designs/all_forward_flush.json",
+   "limits": true,
+   "changes": [
+    "machinery.transmission mechanical -> electric",
+    "machinery.tech.draught.air_fuel_ratio 15 -> 5",
+    "crew.standard.sleep_rating_m2 1.3 -> (deleted)",
+    "armour.belt_depth_m 2.8 -> 20.472"
+   ]
+  },
+  {
+   "case": "fuzz_lim_145",
+   "design": "designs/fuzz/fuzz_lim_145.json",
+   "source": "designs/armoured_cruiser.json",
+   "limits": true,
+   "changes": [
+    "superstructure.aft_control True -> False",
+    "fire_control.secondary.radar_t 0.0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_lim_146",
+   "design": "designs/fuzz/fuzz_lim_146.json",
+   "source": "designs/babel.json",
+   "limits": true,
+   "changes": [
+    "main.4.armour_mm 150 -> 1677",
+    "machinery.tech.weight_kg_per_kw 150.0 -> 165.452"
+   ]
+  },
+  {
+   "case": "fuzz_lim_147",
+   "design": "designs/fuzz/fuzz_lim_147.json",
+   "source": "designs/battlecruiser.json",
+   "limits": true,
+   "changes": [
+    "machinery.tech.sfc_g_per_kwh 857 -> 774"
+   ]
+  },
+  {
+   "case": "fuzz_lim_148",
+   "design": "designs/fuzz/fuzz_lim_148.json",
+   "source": "designs/battleship.json",
+   "limits": true,
+   "changes": [
+    "armour.upper_belt.extent citadel -> aft",
+    "machinery.tech.part_load GTB -> DT",
+    "crew.distiller True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_lim_149",
+   "design": "designs/fuzz/fuzz_lim_149.json",
+   "source": "designs/battleship_layered.json",
+   "limits": true,
+   "changes": [
+    "crew.standard.sickbay_beds_per_man 0.01 -> 0.014",
+    "fire_control.aa.armour_mm 0 -> 1173",
+    "machinery.tech.draught.system forced -> natural"
+   ]
+  },
+  {
+   "case": "fuzz_free_000",
+   "design": "designs/fuzz/fuzz_free_000.json",
+   "source": "designs/akizuki_1960.json",
+   "limits": false,
+   "changes": [
+    "crew.buffer_days 5 -> 10"
+   ]
+  },
+  {
+   "case": "fuzz_free_001",
+   "design": "designs/fuzz/fuzz_free_001.json",
+   "source": "designs/all_forward.json",
+   "limits": false,
+   "changes": [
+    "crew.buffer_days 5 -> 6",
+    "armour.bulkhead_mm 305 -> 708",
+    "armour.decks.0.mm 160 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_002",
+   "design": "designs/fuzz/fuzz_free_002.json",
+   "source": "designs/all_forward_flush.json",
+   "limits": false,
+   "changes": [
+    "hull.plating.shell_mm 0 -> 0",
+    "armour.end_belts.fore.bulkhead_mm 0 -> (deleted)",
+    "armour.decks.0.deck 1 -> (deleted)",
+    "crew.officer_fraction 0.08 -> 0.033"
+   ]
+  },
+  {
+   "case": "fuzz_free_003",
+   "design": "designs/fuzz/fuzz_free_003.json",
+   "source": "designs/armoured_cruiser.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.aft.reach 1.0 -> 1.039",
+    "fire_control.search_radar_t 0.0 -> 0.0"
+   ]
+  },
+  {
+   "case": "fuzz_free_004",
+   "design": "designs/fuzz/fuzz_free_004.json",
+   "source": "designs/babel.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.part_load REC -> DT",
+    "secondary.4.barrels 1 -> (deleted)",
+    "secondary.1.armour_mm 76 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_005",
+   "design": "designs/fuzz/fuzz_free_005.json",
+   "source": "designs/battlecruiser.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.aft.tip_mm 0 -> 0",
+    "armour.end_belts.fore.mm 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_006",
+   "design": "designs/fuzz/fuzz_free_006.json",
+   "source": "designs/battleship.json",
+   "limits": false,
+   "changes": [
+    "crew.water_l_per_day 60 -> 144",
+    "armour.upper_belt.extent citadel -> fore",
+    "machinery.tech.part_load GTB -> DT",
+    "fire_control.secondary.computer_t 3.0 -> 3.036"
+   ]
+  },
+  {
+   "case": "fuzz_free_007",
+   "design": "designs/fuzz/fuzz_free_007.json",
+   "source": "designs/battleship_layered.json",
+   "limits": false,
+   "changes": [
+    "crew.endurance_days 42 -> 29",
+    "machinery.centreline_bulkhead False -> True",
+    "machinery.bunkers ends -> wing",
+    "machinery.tech.draught {\"system\": \"forced\", \"velocity_m_s\": 14. -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_008",
+   "design": "designs/fuzz/fuzz_free_008.json",
+   "source": "designs/bismarck.json",
+   "limits": false,
+   "changes": [
+    "secondary.0.barrels 2 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_009",
+   "design": "designs/fuzz/fuzz_free_009.json",
+   "source": "designs/bouvet.json",
+   "limits": false,
+   "changes": [
+    "main.1.cross_deck False -> True",
+    "superstructure.aft_control True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_free_010",
+   "design": "designs/fuzz/fuzz_free_010.json",
+   "source": "designs/brennus.json",
+   "limits": false,
+   "changes": [
+    "crew.endurance_days 20 -> 6",
+    "fire_control.main.directors 2 -> (deleted)",
+    "machinery.tech.crew_k 34 -> 55"
+   ]
+  },
+  {
+   "case": "fuzz_free_011",
+   "design": "designs/fuzz/fuzz_free_011.json",
+   "source": "designs/colbert.json",
+   "limits": false,
+   "changes": [
+    "speed_kn 32 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_012",
+   "design": "designs/fuzz/fuzz_free_012.json",
+   "source": "designs/colorado.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.sanitary_m2 0.1 -> 0.039"
+   ]
+  },
+  {
+   "case": "fuzz_free_013",
+   "design": "designs/fuzz/fuzz_free_013.json",
+   "source": "designs/connecticut.json",
+   "limits": false,
+   "changes": [
+    "hull.block_coefficient 0.62 -> 0.175",
+    "crew.standard.sleep_rating_m2 1.1 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_014",
+   "design": "designs/fuzz/fuzz_free_014.json",
+   "source": "designs/courbet.json",
+   "limits": false,
+   "changes": [
+    "main.0.armour_mm 290 -> 576"
+   ]
+  },
+  {
+   "case": "fuzz_free_015",
+   "design": "designs/fuzz/fuzz_free_015.json",
+   "source": "designs/dante.json",
+   "limits": false,
+   "changes": [
+    "hull.construction.standard 1.0 -> 1.153",
+    "machinery.centreline_bulkhead False -> True",
+    "fire_control.aa.radar_t 0.0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_016",
+   "design": "designs/fuzz/fuzz_free_016.json",
+   "source": "designs/danton.json",
+   "limits": false,
+   "changes": [
+    "crew.buffer_days 5 -> 0",
+    "main.1.cross_deck False -> True"
+   ]
+  },
+  {
+   "case": "fuzz_free_017",
+   "design": "designs/fuzz/fuzz_free_017.json",
+   "source": "designs/daring.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.fore.reach 1.0 -> 2.18"
+   ]
+  },
+  {
+   "case": "fuzz_free_018",
+   "design": "designs/fuzz/fuzz_free_018.json",
+   "source": "designs/des_moines.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.services_k 0.05 -> 0.032",
+    "armour.belt_height_m 2.4 -> 4.173",
+    "fire_control.main.directors 2 -> (deleted)",
+    "crew.standard.sickbay_beds_per_man 0.01 -> 0.003"
+   ]
+  },
+  {
+   "case": "fuzz_free_019",
+   "design": "designs/fuzz/fuzz_free_019.json",
+   "source": "designs/destroyer.json",
+   "limits": false,
+   "changes": [
+    "fire_control.main.computer_t 3.0 -> 11.819",
+    "machinery.tech.sfc_g_per_kwh 349 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_020",
+   "design": "designs/fuzz/fuzz_free_020.json",
+   "source": "designs/deutschland.json",
+   "limits": false,
+   "changes": [
+    "superstructure.t_per_m2 0.32 -> 0.451"
+   ]
+  },
+  {
+   "case": "fuzz_free_021",
+   "design": "designs/fuzz/fuzz_free_021.json",
+   "source": "designs/devastation.json",
+   "limits": false,
+   "changes": [
+    "armour.belt_depth_m 1.6 -> 3.206",
+    "machinery.tech.draught.reach_m 7.0 -> 2.382",
+    "hull.raised.0.from fore_group -> bow"
+   ]
+  },
+  {
+   "case": "fuzz_free_022",
+   "design": "designs/fuzz/fuzz_free_022.json",
+   "source": "designs/doom.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.fore.mm 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_023",
+   "design": "designs/fuzz/fuzz_free_023.json",
+   "source": "designs/dreadnought.json",
+   "limits": false,
+   "changes": [
+    "armour.steering_box.deck_mm 0 -> 0",
+    "crew.standard.provisions_m3_per_day 0.007 -> (deleted)",
+    "hull.construction.join_factor 1.1 -> 0.317",
+    "armour.steering_box.deck_mm 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_024",
+   "design": "designs/fuzz/fuzz_free_024.json",
+   "source": "designs/duilio.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.aft.reach 1.0 -> 0.347",
+    "superstructure.deckhouse_levels 1 -> 1",
+    "superstructure.tower_levels 3 -> 1",
+    "fire_control.secondary.computer_t 0.0 -> 0.0"
+   ]
+  },
+  {
+   "case": "fuzz_free_025",
+   "design": "designs/fuzz/fuzz_free_025.json",
+   "source": "designs/dunkerque.json",
+   "limits": false,
+   "changes": [
+    "superstructure.control_mm 20 -> 9",
+    "range_nm 7500 -> 0",
+    "machinery.tech.sfc_g_per_kwh 376 -> 116",
+    "hull.raised.0.from bow -> bridge"
+   ]
+  },
+  {
+   "case": "fuzz_free_026",
+   "design": "designs/fuzz/fuzz_free_026.json",
+   "source": "designs/erebus.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.fore.mm 0 -> 0",
+    "machinery.tech.fuel \"coal\" -> (deleted)",
+    "main.0.aft 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_027",
+   "design": "designs/fuzz/fuzz_free_027.json",
+   "source": "designs/escort_carrier.json",
+   "limits": false,
+   "changes": [
+    "crew.distiller True -> False",
+    "machinery.tech.fuel oil -> coal"
+   ]
+  },
+  {
+   "case": "fuzz_free_028",
+   "design": "designs/fuzz/fuzz_free_028.json",
+   "source": "designs/fleet_carrier.json",
+   "limits": false,
+   "changes": [
+    "armour.upper_belt.to_deck 0 -> 0",
+    "fire_control.search_radar_t 4.0 -> 14.111",
+    "machinery.tech.part_load GTB -> REC",
+    "crew.berth_ratio 1.0 -> 1.307"
+   ]
+  },
+  {
+   "case": "fuzz_free_029",
+   "design": "designs/fuzz/fuzz_free_029.json",
+   "source": "designs/fubuki.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.draught.system forced -> exhaust",
+    "main.0.rounds_per_gun 350 -> 0",
+    "machinery.tech.draught.air_fuel_ratio 15 -> 12",
+    "armour.belt_bottom_mm 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_030",
+   "design": "designs/fuzz/fuzz_free_030.json",
+   "source": "designs/gangut.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.stress_floor 0.35 -> 0.624"
+   ]
+  },
+  {
+   "case": "fuzz_free_031",
+   "design": "designs/fuzz/fuzz_free_031.json",
+   "source": "designs/hamburg.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.draught.reach_m 30.0 -> 11.559",
+    "torpedoes.tubes 2 -> (deleted)",
+    "machinery.tech.draught.velocity_m_s 15.0 -> 15.601"
+   ]
+  },
+  {
+   "case": "fuzz_free_032",
+   "design": "designs/fuzz/fuzz_free_032.json",
+   "source": "designs/heavy_cruiser.json",
+   "limits": false,
+   "changes": [
+    "armour.steering_box.bulkhead_mm 0 -> (deleted)",
+    "machinery.tech.boiler_fraction 0.5 -> 0.613"
+   ]
+  },
+  {
+   "case": "fuzz_free_033",
+   "design": "designs/fuzz/fuzz_free_033.json",
+   "source": "designs/impetuoso.json",
+   "limits": false,
+   "changes": [
+    "fire_control.aa.directors 0 -> 0",
+    "fire_control.aa.armour_mm 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_034",
+   "design": "designs/fuzz/fuzz_free_034.json",
+   "source": "designs/inflexible.json",
+   "limits": false,
+   "changes": [
+    "machinery.stress 0.1 -> 0.336",
+    "armour.upper_belt.extent citadel -> fore",
+    "machinery.tech.unit.mw 3 -> (deleted)",
+    "machinery.transmission mechanical -> electric"
+   ]
+  },
+  {
+   "case": "fuzz_free_035",
+   "design": "designs/fuzz/fuzz_free_035.json",
+   "source": "designs/invincible.json",
+   "limits": false,
+   "changes": [
+    "armour.decks.0.extent citadel -> aft",
+    "armour.steering_box.deck_mm 0 -> 0",
+    "main.0.cross_deck True -> False",
+    "crew.buffer_days 5 -> 7"
+   ]
+  },
+  {
+   "case": "fuzz_free_036",
+   "design": "designs/fuzz/fuzz_free_036.json",
+   "source": "designs/karlsruhe.json",
+   "limits": false,
+   "changes": [
+    "hull.raised 1 entries -> 2 (entry 0 twice)",
+    "main.0.barrels 1 -> 1"
+   ]
+  },
+  {
+   "case": "fuzz_free_037",
+   "design": "designs/fuzz/fuzz_free_037.json",
+   "source": "designs/kent.json",
+   "limits": false,
+   "changes": [
+    "fire_control.main.armour_mm 0 -> 0",
+    "armour.end_belts.fore.tip_mm 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_038",
+   "design": "designs/fuzz/fuzz_free_038.json",
+   "source": "designs/kgv.json",
+   "limits": false,
+   "changes": [
+    "aa.light 8 -> 20"
+   ]
+  },
+  {
+   "case": "fuzz_free_039",
+   "design": "designs/fuzz/fuzz_free_039.json",
+   "source": "designs/kongo.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.part_load DT -> REC"
+   ]
+  },
+  {
+   "case": "fuzz_free_040",
+   "design": "designs/fuzz/fuzz_free_040.json",
+   "source": "designs/liberty.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.boiler_fraction 0.55 -> 2.123",
+    "machinery.position amidships -> aft",
+    "machinery.transmission mechanical -> electric"
+   ]
+  },
+  {
+   "case": "fuzz_free_041",
+   "design": "designs/fuzz/fuzz_free_041.json",
+   "source": "designs/light_cruiser.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.aft.mm 51 -> 46",
+    "hull.construction.yield_mpa 290 -> 265"
+   ]
+  },
+  {
+   "case": "fuzz_free_042",
+   "design": "designs/fuzz/fuzz_free_042.json",
+   "source": "designs/lion.json",
+   "limits": false,
+   "changes": [
+    "armour.steering_box.deck_mm 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_043",
+   "design": "designs/fuzz/fuzz_free_043.json",
+   "source": "designs/littorio.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.unit.length_m 8 -> (deleted)",
+    "machinery.bunkers ends -> wing"
+   ]
+  },
+  {
+   "case": "fuzz_free_044",
+   "design": "designs/fuzz/fuzz_free_044.json",
+   "source": "designs/lord_nelson.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.unit_max_mw 11.5 -> 17.253"
+   ]
+  },
+  {
+   "case": "fuzz_free_045",
+   "design": "designs/fuzz/fuzz_free_045.json",
+   "source": "designs/mikasa.json",
+   "limits": false,
+   "changes": [
+    "secondary.0.mount casemate -> deck",
+    "crew.endurance_days 28 -> 30",
+    "superstructure.material \"mild steel\" -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_046",
+   "design": "designs/fuzz/fuzz_free_046.json",
+   "source": "designs/mtb.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.unit.width_m 1.1 -> 1.171",
+    "armour.end_belts.fore.bulkhead_mm 0 -> 0",
+    "machinery.stress 1.0 -> 0.671"
+   ]
+  },
+  {
+   "case": "fuzz_free_047",
+   "design": "designs/fuzz/fuzz_free_047.json",
+   "source": "designs/murica.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.aft.bulkhead_mm 0 -> 0",
+    "armour.end_belts.fore.bulkhead_mm 0 -> 0",
+    "cargo.kind dry -> tanker"
+   ]
+  },
+  {
+   "case": "fuzz_free_048",
+   "design": "designs/fuzz/fuzz_free_048.json",
+   "source": "designs/nagato.json",
+   "limits": false,
+   "changes": [
+    "crew.berth_ratio 1.0 -> 2.013",
+    "superstructure.aft_control True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_free_049",
+   "design": "designs/fuzz/fuzz_free_049.json",
+   "source": "designs/nassau.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.welfare_m2 0.0 -> 0.0",
+    "machinery.tech.fuel coal -> petrol",
+    "superstructure.deckhouse_levels 1 -> 1"
+   ]
+  },
+  {
+   "case": "fuzz_free_050",
+   "design": "designs/fuzz/fuzz_free_050.json",
+   "source": "designs/nassau_casemates.json",
+   "limits": false,
+   "changes": [
+    "main.0.amidships_stands_on deckhouse -> deck",
+    "secondary.0.calibre_mm 150 -> 104",
+    "crew.standard.water_l_per_day 15 -> 46"
+   ]
+  },
+  {
+   "case": "fuzz_free_051",
+   "design": "designs/fuzz/fuzz_free_051.json",
+   "source": "designs/nelson.json",
+   "limits": false,
+   "changes": [
+    "aa.light 4 -> 2",
+    "hull.construction.standard 1.0 -> 0.397",
+    "secondary.1.per_side 3 -> 6",
+    "armour.decks.0.deck 1 -> 2"
+   ]
+  },
+  {
+   "case": "fuzz_free_052",
+   "design": "designs/fuzz/fuzz_free_052.json",
+   "source": "designs/overloaded.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.fore.reach 1.0 -> 0.38",
+    "armour.end_belts.aft.tip_mm 0 -> 0",
+    "crew.endurance_days 23 -> 9",
+    "crew.standard.sleep_officer_m2 6.0 -> 2.971"
+   ]
+  },
+  {
+   "case": "fuzz_free_053",
+   "design": "designs/fuzz/fuzz_free_053.json",
+   "source": "designs/pennsylvania.json",
+   "limits": false,
+   "changes": [
+    "machinery.centreline_bulkhead False -> True",
+    "machinery.tech.crew_k 13.5 -> 18.388"
+   ]
+  },
+  {
+   "case": "fuzz_free_054",
+   "design": "designs/fuzz/fuzz_free_054.json",
+   "source": "designs/pt_boat.json",
+   "limits": false,
+   "changes": [
+    "armour.bulkhead_mm 0 -> 0",
+    "torpedoes.mounts 4 -> 1"
+   ]
+  },
+  {
+   "case": "fuzz_free_055",
+   "design": "designs/fuzz/fuzz_free_055.json",
+   "source": "designs/q_ship.json",
+   "limits": false,
+   "changes": [
+    "hull.freeboard 1.0 -> 0.93",
+    "machinery.position amidships -> aft",
+    "machinery.tech.draught.gas_temp_k 600 -> 593",
+    "fire_control.main.armour_mm 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_056",
+   "design": "designs/fuzz/fuzz_free_056.json",
+   "source": "designs/richelieu.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.mess_seats_per_man 0.33 -> 0.425",
+    "fire_control.main.rangefinder_m 14.0 -> 5.687",
+    "armour.upper_belt.mm 0 -> 0",
+    "machinery.tech.unit.width_m 5.0 -> 1.339"
+   ]
+  },
+  {
+   "case": "fuzz_free_057",
+   "design": "designs/fuzz/fuzz_free_057.json",
+   "source": "designs/seaplane_carrier.json",
+   "limits": false,
+   "changes": [
+    "machinery.centreline_bulkhead False -> True",
+    "superstructure.tower_levels 3 -> 8",
+    "armour.belt_depth_m 1.7 -> 2.001",
+    "machinery.tech.crew_k 12 -> 3"
+   ]
+  },
+  {
+   "case": "fuzz_free_058",
+   "design": "designs/fuzz/fuzz_free_058.json",
+   "source": "designs/seydlitz.json",
+   "limits": false,
+   "changes": [
+    "armour.decks.0.extent citadel -> fore"
+   ]
+  },
+  {
+   "case": "fuzz_free_059",
+   "design": "designs/fuzz/fuzz_free_059.json",
+   "source": "designs/super_dreadnought.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.fore.bulkhead_mm 0 -> 0",
+    "crew.officer_fraction 0.08 -> 0.036"
+   ]
+  },
+  {
+   "case": "fuzz_free_060",
+   "design": "designs/fuzz/fuzz_free_060.json",
+   "source": "designs/supercarrier.json",
+   "limits": false,
+   "changes": [
+    "armour.decks.0.extent citadel -> full"
+   ]
+  },
+  {
+   "case": "fuzz_free_061",
+   "design": "designs/fuzz/fuzz_free_061.json",
+   "source": "designs/sverdlov.json",
+   "limits": false,
+   "changes": [
+    "secondary.stands_on deckhouse -> deck",
+    "fire_control.secondary {\"directors\": 2, \"rangefinder_m\": 4.0, \" -> (deleted)",
+    "funnels 2 -> 7"
+   ]
+  },
+  {
+   "case": "fuzz_free_062",
+   "design": "designs/fuzz/fuzz_free_062.json",
+   "source": "designs/tanker.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.deck_height_m 2.6 -> 0.968",
+    "crew.standard.water_l_per_day 120 -> 285"
+   ]
+  },
+  {
+   "case": "fuzz_free_063",
+   "design": "designs/fuzz/fuzz_free_063.json",
+   "source": "designs/tb_destroyer.json",
+   "limits": false,
+   "changes": [
+    "machinery.rudders 1 -> 1"
+   ]
+  },
+  {
+   "case": "fuzz_free_064",
+   "design": "designs/fuzz/fuzz_free_064.json",
+   "source": "designs/tegetthoff.json",
+   "limits": false,
+   "changes": [
+    "fire_control.main.radar_t 0 -> 0",
+    "main.0.armour_mm 280 -> 123",
+    "main.0.calibre_length 45 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_065",
+   "design": "designs/fuzz/fuzz_free_065.json",
+   "source": "designs/tiger.json",
+   "limits": false,
+   "changes": [
+    "secondary.stands_on deckhouse -> deck",
+    "machinery.tech.part_load GTB -> REC"
+   ]
+  },
+  {
+   "case": "fuzz_free_066",
+   "design": "designs/fuzz/fuzz_free_066.json",
+   "source": "designs/tiger_1914.json",
+   "limits": false,
+   "changes": [
+    "machinery.bunkers wing -> ends"
+   ]
+  },
+  {
+   "case": "fuzz_free_067",
+   "design": "designs/fuzz/fuzz_free_067.json",
+   "source": "designs/tramp_1914.json",
+   "limits": false,
+   "changes": [
+    "speed_kn 9 -> 3",
+    "style merchant -> carrier",
+    "machinery.tech.unit.width_m 4.5 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_068",
+   "design": "designs/fuzz/fuzz_free_068.json",
+   "source": "designs/victory_1944.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.unit.mw 5 -> 3",
+    "secondary.0.calibre_mm 152 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_069",
+   "design": "designs/fuzz/fuzz_free_069.json",
+   "source": "designs/yamato.json",
+   "limits": false,
+   "changes": [
+    "fire_control.main.directors 2 -> (deleted)",
+    "superstructure.levels_over_bridge 2 -> 3",
+    "crew.distiller True -> False",
+    "machinery.tech.unit.height_m 5.0 -> 9.405"
+   ]
+  },
+  {
+   "case": "fuzz_free_070",
+   "design": "designs/fuzz/fuzz_free_070.json",
+   "source": "designs/zara.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.sanitary_m2 0.2 -> 0.442",
+    "armour.upper_belt.to_deck 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_071",
+   "design": "designs/fuzz/fuzz_free_071.json",
+   "source": "designs/akizuki_1960.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.fuel oil -> diesel",
+    "fire_control.aa.radar_t 0.5 -> 0.613",
+    "armour.end_belts.aft.reach 1.0 -> 1.419"
+   ]
+  },
+  {
+   "case": "fuzz_free_072",
+   "design": "designs/fuzz/fuzz_free_072.json",
+   "source": "designs/all_forward.json",
+   "limits": false,
+   "changes": [
+    "secondary.calibre_mm 152 -> 188",
+    "machinery.tech.density_t_per_m3 0.32 -> 0.353",
+    "machinery.centreline_bulkhead False -> True",
+    "hull.construction.standard 1.0 -> 0.596"
+   ]
+  },
+  {
+   "case": "fuzz_free_073",
+   "design": "designs/fuzz/fuzz_free_073.json",
+   "source": "designs/all_forward_flush.json",
+   "limits": false,
+   "changes": [
+    "fire_control.secondary.radar_t 0 -> 0",
+    "armour.belt_height_m 2.8 -> 5.036",
+    "main.0.barrels 3 -> 1"
+   ]
+  },
+  {
+   "case": "fuzz_free_074",
+   "design": "designs/fuzz/fuzz_free_074.json",
+   "source": "designs/armoured_cruiser.json",
+   "limits": false,
+   "changes": [
+    "secondary.0.mount casemate -> deck",
+    "secondary.1.stands_on deck -> deckhouse",
+    "machinery.bunkers wing -> ends",
+    "fire_control.secondary.computer_t 0.0 -> 0.0"
+   ]
+  },
+  {
+   "case": "fuzz_free_075",
+   "design": "designs/fuzz/fuzz_free_075.json",
+   "source": "designs/babel.json",
+   "limits": false,
+   "changes": [
+    "secondary.4.stands_on deckhouse -> deck",
+    "main.4.rounds_per_gun 111 -> 53"
+   ]
+  },
+  {
+   "case": "fuzz_free_076",
+   "design": "designs/fuzz/fuzz_free_076.json",
+   "source": "designs/battlecruiser.json",
+   "limits": false,
+   "changes": [
+    "machinery.units_per_shaft 1 -> 0",
+    "machinery.tech.fuel coal -> oil"
+   ]
+  },
+  {
+   "case": "fuzz_free_077",
+   "design": "designs/fuzz/fuzz_free_077.json",
+   "source": "designs/battleship.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.fore.bulkhead_mm 0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_078",
+   "design": "designs/fuzz/fuzz_free_078.json",
+   "source": "designs/battleship_layered.json",
+   "limits": false,
+   "changes": [
+    "armour.belt_height_m 3.0 -> (deleted)",
+    "speed_kn 33 -> 80",
+    "armour.decks.0.deck 0 -> 0",
+    "machinery.tech.fuel oil -> coal"
+   ]
+  },
+  {
+   "case": "fuzz_free_079",
+   "design": "designs/fuzz/fuzz_free_079.json",
+   "source": "designs/bismarck.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.aft.reach 1.0 -> 3.406",
+    "range_nm 9000 -> 17245",
+    "hull.construction.standard 1.0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_080",
+   "design": "designs/fuzz/fuzz_free_080.json",
+   "source": "designs/bouvet.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.services_k 0.03 -> 0.015"
+   ]
+  },
+  {
+   "case": "fuzz_free_081",
+   "design": "designs/fuzz/fuzz_free_081.json",
+   "source": "designs/brennus.json",
+   "limits": false,
+   "changes": [
+    "armour.decks.0.extent full -> ends"
+   ]
+  },
+  {
+   "case": "fuzz_free_082",
+   "design": "designs/fuzz/fuzz_free_082.json",
+   "source": "designs/colbert.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.fuel oil -> coal"
+   ]
+  },
+  {
+   "case": "fuzz_free_083",
+   "design": "designs/fuzz/fuzz_free_083.json",
+   "source": "designs/colorado.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.sickbay_beds_per_man 0.01 -> 0",
+    "machinery.units_per_shaft 1 -> 3"
+   ]
+  },
+  {
+   "case": "fuzz_free_084",
+   "design": "designs/fuzz/fuzz_free_084.json",
+   "source": "designs/connecticut.json",
+   "limits": false,
+   "changes": [
+    "main.1.cross_deck False -> True",
+    "main.1.cross_deck True -> False",
+    "armour.upper_belt.extent citadel -> fore"
+   ]
+  },
+  {
+   "case": "fuzz_free_085",
+   "design": "designs/fuzz/fuzz_free_085.json",
+   "source": "designs/courbet.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.part_load DT -> REC",
+    "hull.raised.0.to bridge -> aft_control",
+    "armour.belt_bottom_mm 150 -> 38"
+   ]
+  },
+  {
+   "case": "fuzz_free_086",
+   "design": "designs/fuzz/fuzz_free_086.json",
+   "source": "designs/dante.json",
+   "limits": false,
+   "changes": [
+    "hull.plating.deck_wood_mm 76 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_087",
+   "design": "designs/fuzz/fuzz_free_087.json",
+   "source": "designs/danton.json",
+   "limits": false,
+   "changes": [
+    "crew.berth_ratio 1.0 -> 0.392",
+    "main.0.calibre_length 45 -> 83",
+    "crew.standard.water_l_per_day 15 -> 46",
+    "crew.officer_fraction 0.08 -> 0.266"
+   ]
+  },
+  {
+   "case": "fuzz_free_088",
+   "design": "designs/fuzz/fuzz_free_088.json",
+   "source": "designs/daring.json",
+   "limits": false,
+   "changes": [
+    "crew.water_l_per_day 60 -> 79",
+    "crew.standard.sleep_officer_m2 6.0 -> 1.995"
+   ]
+  },
+  {
+   "case": "fuzz_free_089",
+   "design": "designs/fuzz/fuzz_free_089.json",
+   "source": "designs/des_moines.json",
+   "limits": false,
+   "changes": [
+    "machinery.rudders 1 -> 0",
+    "armour.steering_box.deck_mm 0 -> 0",
+    "superstructure.aft_control True -> False",
+    "armour.end_belts.fore.mm 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_090",
+   "design": "designs/fuzz/fuzz_free_090.json",
+   "source": "designs/destroyer.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.sfc_g_per_kwh 349 -> 460",
+    "machinery.tech.fuel oil -> coal"
+   ]
+  },
+  {
+   "case": "fuzz_free_091",
+   "design": "designs/fuzz/fuzz_free_091.json",
+   "source": "designs/deutschland.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.sanitary_m2 0.2 -> 0.075",
+    "crew.standard.water_l_per_day 60 -> 88",
+    "machinery.stress 0.8 -> 0.736",
+    "armour.belt_bottom_mm 48 -> 22"
+   ]
+  },
+  {
+   "case": "fuzz_free_092",
+   "design": "designs/fuzz/fuzz_free_092.json",
+   "source": "designs/devastation.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.part_load REC -> DSL"
+   ]
+  },
+  {
+   "case": "fuzz_free_093",
+   "design": "designs/fuzz/fuzz_free_093.json",
+   "source": "designs/doom.json",
+   "limits": false,
+   "changes": [
+    "hull.freeboard 0.6 -> 0.685",
+    "armour.steering_box.bulkhead_mm 0 -> 0",
+    "superstructure.levels_over_bridge 1 -> 0",
+    "hull.raised.0.from bridge -> fore_group"
+   ]
+  },
+  {
+   "case": "fuzz_free_094",
+   "design": "designs/fuzz/fuzz_free_094.json",
+   "source": "designs/dreadnought.json",
+   "limits": false,
+   "changes": [
+    "superstructure.deckhouse_levels 2 -> (deleted)",
+    "armour.end_belts.aft.tip_mm 102 -> 50",
+    "main 1 entries -> 0 (entry 0 dropped)"
+   ]
+  },
+  {
+   "case": "fuzz_free_095",
+   "design": "designs/fuzz/fuzz_free_095.json",
+   "source": "designs/duilio.json",
+   "limits": false,
+   "changes": [
+    "main.0.armour_mm 432 -> 139",
+    "machinery.tech.fuel coal -> oil",
+    "machinery.bunkers wing -> ends",
+    "crew.water_l_per_day 15 -> 23"
+   ]
+  },
+  {
+   "case": "fuzz_free_096",
+   "design": "designs/fuzz/fuzz_free_096.json",
+   "source": "designs/dunkerque.json",
+   "limits": false,
+   "changes": [
+    "fire_control.secondary.directors 2 -> 5",
+    "machinery.tech.density_t_per_m3 0.34 -> 0.261",
+    "armour.decks.0.extent citadel -> fore",
+    "machinery.tech.draught.system forced -> exhaust"
+   ]
+  },
+  {
+   "case": "fuzz_free_097",
+   "design": "designs/fuzz/fuzz_free_097.json",
+   "source": "designs/erebus.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.tolerance_days 30 -> 10",
+    "armour.upper_belt {\"mm\": 0, \"to_deck\": 0, \"extent\": \"citad -> (deleted)",
+    "armour.decks.0.extent citadel -> full",
+    "aa.light 2 -> 4"
+   ]
+  },
+  {
+   "case": "fuzz_free_098",
+   "design": "designs/fuzz/fuzz_free_098.json",
+   "source": "designs/escort_carrier.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.mess_seats_per_man 0.33 -> 0.107",
+    "hull.construction.standard 1.0 -> 0.369",
+    "crew.distiller True -> False",
+    "machinery.tech.unit.width_m 4.5 -> 6.163"
+   ]
+  },
+  {
+   "case": "fuzz_free_099",
+   "design": "designs/fuzz/fuzz_free_099.json",
+   "source": "designs/fleet_carrier.json",
+   "limits": false,
+   "changes": [
+    "secondary.1.armour_mm 25 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_100",
+   "design": "designs/fuzz/fuzz_free_100.json",
+   "source": "designs/fubuki.json",
+   "limits": false,
+   "changes": [
+    "superstructure.plating_mm 0 -> 0",
+    "machinery.transmission mechanical -> electric"
+   ]
+  },
+  {
+   "case": "fuzz_free_101",
+   "design": "designs/fuzz/fuzz_free_101.json",
+   "source": "designs/gangut.json",
+   "limits": false,
+   "changes": [
+    "machinery.centreline_bulkhead False -> True",
+    "main.0.barrels 3 -> 2",
+    "fire_control.aa.directors 0 -> 0",
+    "main.0.amidships_stands_on deckhouse -> deck"
+   ]
+  },
+  {
+   "case": "fuzz_free_102",
+   "design": "designs/fuzz/fuzz_free_102.json",
+   "source": "designs/hamburg.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.sleep_officer_m2 6.0 -> 3.134",
+    "armour.end_belts.aft.tip_mm 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_103",
+   "design": "designs/fuzz/fuzz_free_103.json",
+   "source": "designs/heavy_cruiser.json",
+   "limits": false,
+   "changes": [
+    "armour.decks.0.extent citadel -> ends",
+    "secondary.stands_on deckhouse -> deck",
+    "armour.upper_belt.extent citadel -> aft",
+    "superstructure.aft_control True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_free_104",
+   "design": "designs/fuzz/fuzz_free_104.json",
+   "source": "designs/impetuoso.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.fore.mm 0 -> (deleted)",
+    "machinery.tech.fuel oil -> petrol"
+   ]
+  },
+  {
+   "case": "fuzz_free_105",
+   "design": "designs/fuzz/fuzz_free_105.json",
+   "source": "designs/inflexible.json",
+   "limits": false,
+   "changes": [
+    "machinery.arrangement.0 boiler -> grouped",
+    "crew.distiller True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_free_106",
+   "design": "designs/fuzz/fuzz_free_106.json",
+   "source": "designs/invincible.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.galley_min_m2 4.0 -> 4.871"
+   ]
+  },
+  {
+   "case": "fuzz_free_107",
+   "design": "designs/fuzz/fuzz_free_107.json",
+   "source": "designs/karlsruhe.json",
+   "limits": false,
+   "changes": [
+    "range_nm 5000 -> 2035",
+    "secondary.0.stands_on deck -> deckhouse",
+    "main.0.calibre_length 45 -> (deleted)",
+    "armour.end_belts.fore.reach 1.0 -> 3.133"
+   ]
+  },
+  {
+   "case": "fuzz_free_108",
+   "design": "designs/fuzz/fuzz_free_108.json",
+   "source": "designs/kent.json",
+   "limits": false,
+   "changes": [
+    "hull.construction.standard 1.0 -> 1.182",
+    "crew.standard.sickbay_beds_per_man 0.01 -> 0.006",
+    "aa.heavy 0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_109",
+   "design": "designs/fuzz/fuzz_free_109.json",
+   "source": "designs/kgv.json",
+   "limits": false,
+   "changes": [
+    "hull.raised.0.decks 1 -> 0",
+    "machinery.tech.draught.system forced -> forced_boost",
+    "machinery.tech.draught.system forced_boost -> exhaust"
+   ]
+  },
+  {
+   "case": "fuzz_free_110",
+   "design": "designs/fuzz/fuzz_free_110.json",
+   "source": "designs/kongo.json",
+   "limits": false,
+   "changes": [
+    "crew.water_l_per_day 15 -> 0",
+    "crew.standard.galley_k 0.3 -> 0.091"
+   ]
+  },
+  {
+   "case": "fuzz_free_111",
+   "design": "designs/fuzz/fuzz_free_111.json",
+   "source": "designs/liberty.json",
+   "limits": false,
+   "changes": [
+    "machinery.rudders 1 -> 0",
+    "hull.construction.join_factor 1.0 -> 0.643"
+   ]
+  },
+  {
+   "case": "fuzz_free_112",
+   "design": "designs/fuzz/fuzz_free_112.json",
+   "source": "designs/light_cruiser.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.fuel oil -> coal",
+    "fire_control.main.computer_t 0.5 -> 0.397"
+   ]
+  },
+  {
+   "case": "fuzz_free_113",
+   "design": "designs/fuzz/fuzz_free_113.json",
+   "source": "designs/lion.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.weight_kg_per_kw 104.5 -> 308.567",
+    "fire_control.main.rangefinder_m 2.7 -> 6.572",
+    "machinery.tech.draught.velocity_m_s 9.8 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_114",
+   "design": "designs/fuzz/fuzz_free_114.json",
+   "source": "designs/littorio.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.draught.system forced -> natural",
+    "crew.water_l_per_day 60 -> 130",
+    "machinery.tech.unit.mw 30 -> 85"
+   ]
+  },
+  {
+   "case": "fuzz_free_115",
+   "design": "designs/fuzz/fuzz_free_115.json",
+   "source": "designs/lord_nelson.json",
+   "limits": false,
+   "changes": [
+    "main.1.rounds_per_gun 100 -> 252",
+    "fire_control.aa.radar_t 0.0 -> 0.0",
+    "armour.decks.0.deck 1 -> (deleted)",
+    "machinery.centreline_bulkhead False -> True"
+   ]
+  },
+  {
+   "case": "fuzz_free_116",
+   "design": "designs/fuzz/fuzz_free_116.json",
+   "source": "designs/mikasa.json",
+   "limits": false,
+   "changes": [
+    "secondary.0.mount casemate -> deck",
+    "secondary.2.armour_mm 51 -> 74"
+   ]
+  },
+  {
+   "case": "fuzz_free_117",
+   "design": "designs/fuzz/fuzz_free_117.json",
+   "source": "designs/mtb.json",
+   "limits": false,
+   "changes": [
+    "main.0.fore 0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_118",
+   "design": "designs/fuzz/fuzz_free_118.json",
+   "source": "designs/murica.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.water_l_per_day 120 -> 58"
+   ]
+  },
+  {
+   "case": "fuzz_free_119",
+   "design": "designs/fuzz/fuzz_free_119.json",
+   "source": "designs/nagato.json",
+   "limits": false,
+   "changes": [
+    "machinery.bunkers ends -> wing",
+    "hull.freeboard 1.0 -> 0.745",
+    "fire_control.aa.directors 0 -> 0",
+    "armour.belt_height_m 2.8 -> 1.031"
+   ]
+  },
+  {
+   "case": "fuzz_free_120",
+   "design": "designs/fuzz/fuzz_free_120.json",
+   "source": "designs/nassau.json",
+   "limits": false,
+   "changes": [
+    "machinery.bunkers \"wing\" -> (deleted)",
+    "crew.standard.galley_k 0.3 -> 0.624"
+   ]
+  },
+  {
+   "case": "fuzz_free_121",
+   "design": "designs/fuzz/fuzz_free_121.json",
+   "source": "designs/nassau_casemates.json",
+   "limits": false,
+   "changes": [
+    "armour.belt_bottom_mm 170 -> 0",
+    "hull.plating.shell_mm 0 -> 0",
+    "machinery.tech.fuel coal -> oil",
+    "superstructure.aft_control True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_free_122",
+   "design": "designs/fuzz/fuzz_free_122.json",
+   "source": "designs/nelson.json",
+   "limits": false,
+   "changes": [
+    "secondary 2 entries -> 3 (entry 0 twice)",
+    "secondary.0.barrels 2 -> (deleted)",
+    "armour.belt_height_m 2.8 -> 7.683"
+   ]
+  },
+  {
+   "case": "fuzz_free_123",
+   "design": "designs/fuzz/fuzz_free_123.json",
+   "source": "designs/overloaded.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.fuel oil -> coal",
+    "machinery.tech.fuel coal -> oil",
+    "machinery.tech.part_load GTB -> REC",
+    "superstructure.control_mm 13 -> 4"
+   ]
+  },
+  {
+   "case": "fuzz_free_124",
+   "design": "designs/fuzz/fuzz_free_124.json",
+   "source": "designs/pennsylvania.json",
+   "limits": false,
+   "changes": [
+    "armour.belt_mm 343 -> 307"
+   ]
+  },
+  {
+   "case": "fuzz_free_125",
+   "design": "designs/fuzz/fuzz_free_125.json",
+   "source": "designs/pt_boat.json",
+   "limits": false,
+   "changes": [
+    "main.0.armour_mm 0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_126",
+   "design": "designs/fuzz/fuzz_free_126.json",
+   "source": "designs/q_ship.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.welfare_m2 0.0 -> 0.0",
+    "machinery.tech.draught.system forced -> exhaust",
+    "machinery.tech.weight_kg_per_kw 115.0 -> (deleted)",
+    "armour.end_belts.fore.bulkhead_mm 0 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_127",
+   "design": "designs/fuzz/fuzz_free_127.json",
+   "source": "designs/richelieu.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.unit.length_m 8 -> (deleted)",
+    "armour.end_belts.aft.reach 1.0 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_128",
+   "design": "designs/fuzz/fuzz_free_128.json",
+   "source": "designs/seaplane_carrier.json",
+   "limits": false,
+   "changes": [
+    "armour.upper_belt.extent citadel -> aft",
+    "hull.plating.shell_mm 0 -> 0",
+    "armour.end_belts.aft.reach 1.0 -> 2.244"
+   ]
+  },
+  {
+   "case": "fuzz_free_129",
+   "design": "designs/fuzz/fuzz_free_129.json",
+   "source": "designs/seydlitz.json",
+   "limits": false,
+   "changes": [
+    "fire_control.main.radar_t 0 -> 0",
+    "main.0.barrels 2 -> 1"
+   ]
+  },
+  {
+   "case": "fuzz_free_130",
+   "design": "designs/fuzz/fuzz_free_130.json",
+   "source": "designs/super_dreadnought.json",
+   "limits": false,
+   "changes": [
+    "superstructure.control_mm 0 -> 0",
+    "machinery.arrangement grouped -> engine",
+    "secondary.0.calibre_mm 152 -> (deleted)",
+    "crew.standard.water_l_per_day 15 -> 7"
+   ]
+  },
+  {
+   "case": "fuzz_free_131",
+   "design": "designs/fuzz/fuzz_free_131.json",
+   "source": "designs/supercarrier.json",
+   "limits": false,
+   "changes": [
+    "armour.steering_box.deck_mm 0 -> (deleted)",
+    "machinery.arrangement grouped -> boiler",
+    "crew.distiller True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_free_132",
+   "design": "designs/fuzz/fuzz_free_132.json",
+   "source": "designs/sverdlov.json",
+   "limits": false,
+   "changes": [
+    "superstructure.aft_control True -> False",
+    "fire_control.main.armour_mm 13 -> 10",
+    "hull.plating.deck_wood_mm 50 -> (deleted)",
+    "fire_control.secondary.directors 2 -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_133",
+   "design": "designs/fuzz/fuzz_free_133.json",
+   "source": "designs/tanker.json",
+   "limits": false,
+   "changes": [
+    "hull.plating.deck_wood_mm 0 -> (deleted)",
+    "hull.construction.join_factor 1.0 -> 0",
+    "fire_control.search_radar_t 0.0 -> 0.0",
+    "fire_control.aa.radar_t 0.0 -> 0.0"
+   ]
+  },
+  {
+   "case": "fuzz_free_134",
+   "design": "designs/fuzz/fuzz_free_134.json",
+   "source": "designs/tb_destroyer.json",
+   "limits": false,
+   "changes": [
+    "hull.block_coefficient 0.48 -> 0",
+    "armour.steering_box.mm 0 -> 0",
+    "hull.construction {\"name\": \"Mild steel hull, high-tensile  -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_135",
+   "design": "designs/fuzz/fuzz_free_135.json",
+   "source": "designs/tegetthoff.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.sanitary_m2 0.1 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_136",
+   "design": "designs/fuzz/fuzz_free_136.json",
+   "source": "designs/tiger.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.draught.system \"forced\" -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_137",
+   "design": "designs/fuzz/fuzz_free_137.json",
+   "source": "designs/tiger_1914.json",
+   "limits": false,
+   "changes": [
+    "machinery.transmission mechanical -> electric",
+    "crew.endurance_days 16 -> 49",
+    "machinery.centreline_bulkhead False -> True",
+    "crew.standard.mess_seats_per_man 0.0 -> 0.0"
+   ]
+  },
+  {
+   "case": "fuzz_free_138",
+   "design": "designs/fuzz/fuzz_free_138.json",
+   "source": "designs/tramp_1914.json",
+   "limits": false,
+   "changes": [
+    "armour.upper_belt.extent citadel -> ends",
+    "crew.distiller True -> False"
+   ]
+  },
+  {
+   "case": "fuzz_free_139",
+   "design": "designs/fuzz/fuzz_free_139.json",
+   "source": "designs/victory_1944.json",
+   "limits": false,
+   "changes": [
+    "secondary.0.calibre_length 50 -> (deleted)",
+    "machinery.arrangement grouped -> engine"
+   ]
+  },
+  {
+   "case": "fuzz_free_140",
+   "design": "designs/fuzz/fuzz_free_140.json",
+   "source": "designs/yamato.json",
+   "limits": false,
+   "changes": [
+    "machinery.tech.part_load \"GTB\" -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_141",
+   "design": "designs/fuzz/fuzz_free_141.json",
+   "source": "designs/zara.json",
+   "limits": false,
+   "changes": [
+    "crew.officer_fraction 0.08 -> 0.054",
+    "hull.raised.0.from bow -> bridge"
+   ]
+  },
+  {
+   "case": "fuzz_free_142",
+   "design": "designs/fuzz/fuzz_free_142.json",
+   "source": "designs/akizuki_1960.json",
+   "limits": false,
+   "changes": [
+    "armour.belt_height_m 1.8 -> 7.086",
+    "crew.water_l_per_day 60 -> 129",
+    "fire_control.main.directors 1 -> (deleted)",
+    "machinery.centreline_bulkhead False -> True"
+   ]
+  },
+  {
+   "case": "fuzz_free_143",
+   "design": "designs/fuzz/fuzz_free_143.json",
+   "source": "designs/all_forward.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.welfare_m2 0.03 -> 0.02",
+    "secondary.rounds_per_gun 200 -> (deleted)",
+    "armour.end_belts.aft.mm 0 -> (deleted)",
+    "machinery.tech {\"name\": \"Geared turbines, oil-fired sma -> (deleted)"
+   ]
+  },
+  {
+   "case": "fuzz_free_144",
+   "design": "designs/fuzz/fuzz_free_144.json",
+   "source": "designs/all_forward_flush.json",
+   "limits": false,
+   "changes": [
+    "secondary.calibre_length 50 -> (deleted)",
+    "crew.standard.sleep_cpo_m2 2.5 -> 2.364"
+   ]
+  },
+  {
+   "case": "fuzz_free_145",
+   "design": "designs/fuzz/fuzz_free_145.json",
+   "source": "designs/armoured_cruiser.json",
+   "limits": false,
+   "changes": [
+    "armour.end_belts.fore.reach 1.0 -> 1.524",
+    "crew.standard.cpo_fraction 0.08 -> 0.051"
+   ]
+  },
+  {
+   "case": "fuzz_free_146",
+   "design": "designs/fuzz/fuzz_free_146.json",
+   "source": "designs/babel.json",
+   "limits": false,
+   "changes": [
+    "fire_control.aa.directors 0 -> 0",
+    "hull.plating.shell_mm 0 -> (deleted)",
+    "main.0.armour_mm 455 -> 0",
+    "secondary.4.barrels 1 -> 0"
+   ]
+  },
+  {
+   "case": "fuzz_free_147",
+   "design": "designs/fuzz/fuzz_free_147.json",
+   "source": "designs/battlecruiser.json",
+   "limits": false,
+   "changes": [
+    "crew.standard.galley_min_m2 4.0 -> 3.167"
+   ]
+  },
+  {
+   "case": "fuzz_free_148",
+   "design": "designs/fuzz/fuzz_free_148.json",
+   "source": "designs/battleship.json",
+   "limits": false,
+   "changes": [
+    "crew.distiller True -> False",
+    "secondary.stands_on deckhouse -> deck",
+    "crew.standard.tolerance_days 60 -> 19",
+    "machinery.tech.draught.system forced -> natural"
+   ]
+  },
+  {
+   "case": "fuzz_free_149",
+   "design": "designs/fuzz/fuzz_free_149.json",
+   "source": "designs/battleship_layered.json",
+   "limits": false,
+   "changes": [
+    "fire_control.secondary.rangefinder_m 4.6 -> 6.008",
+    "main.0.calibre_length 50 -> 0",
+    "crew.distiller True -> False"
+   ]
+  }
+ ]
+}
