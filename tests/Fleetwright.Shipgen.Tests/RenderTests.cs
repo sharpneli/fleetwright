@@ -97,7 +97,7 @@ public class RenderTests
     {
         string[] names = ["bismarck", "fleet_carrier", "dante", "pt_boat", "tanker"];
         var ships = names.Select(n => ShipDesign.Build(Design.Load(Paths.Shipgen("designs", n + ".json")))).ToList();
-        string Draw(PyDict ship)
+        string Draw(Ship ship)
         {
             var sp = ShipSprites.Build(ship, 10.0, 5);
             return SvgWriter.Write(sp.Hull) + SvgWriter.Write(sp.Height) + string.Concat(sp.Turrets.Values.Select(SvgWriter.Write))

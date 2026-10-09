@@ -220,16 +220,11 @@ public static class FireControl
     }
 
     /// <summary>The directors for the report.</summary>
-    public static List<object?> Report(Layout lay, double deckM)
-    {
-        var out_ = new List<object?>();
-        foreach (var d in lay.Directors)
+    public static List<DirectorReport> Report(Layout lay, double deckM) =>
+        lay.Directors.Select(d =>
         {
             double eye = deckM + d.Eye;
-            out_.Add(PyDict.Of(("id", d.Id), ("battery", d.Battery), ("x", Math.Round(d.X, 2)), ("y", Math.Round(d.Y, 2)),
-                ("eye_height_m", Math.Round(eye, 2)), ("horizon_km", Math.Round(HorizonKm(eye), 1)), ("rangefinder_m", d.Spec.RangefinderM),
-                ("armour_mm", d.Spec.ArmourMm), ("radar_t", d.Spec.RadarT), ("weight_t", Math.Round(d.WeightT, 1))));
-        }
-        return out_;
-    }
+            return new DirectorReport(d.Id, d.Battery, Math.Round(d.X, 2), Math.Round(d.Y, 2), Math.Round(eye, 2), Math.Round(HorizonKm(eye), 1),
+                d.Spec.RangefinderM, d.Spec.ArmourMm, d.Spec.RadarT, Math.Round(d.WeightT, 1));
+        }).ToList();
 }

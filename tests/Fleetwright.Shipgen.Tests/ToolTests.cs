@@ -56,7 +56,7 @@ public class ToolTests
                 var design = Design.Load(Paths.Shipgen("designs", name + ".json"));
                 var ship = ShipDesign.Build(design);
                 var d = Path.Combine(dir, name);
-                PyJson.Save(Path.Combine(d, "hitboxes.json"), ship["hitboxes"], 1);
+                JsonFile.Save(Path.Combine(d, "hitboxes.json"), ship.Hitboxes, ShipgenJson.Default.Hitboxes);
                 var sp = ShipSprites.Build(ship, 10.0, 5);
                 ShipBake.Save(sp, ShipBake.Bake(sp, gpu), d);
                 var r = Verify.Check(d);

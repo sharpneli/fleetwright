@@ -36,9 +36,8 @@ public static class Propulsion
         return rooms.OrderBy(r => -r.Item2).ToList();
     }
 
-    /// <summary>The stern gear, which the hull's lines must make room for: dict(screws, planing, propellers, rudders,
-    /// shafts), heights above the keel.</summary>
-    public static PyDict Gear(Layout lay, Design design, Navarch.Result res)
+    /// <summary>The stern gear, which the hull's lines must make room for; heights above the keel.</summary>
+    public static Gear Gear(Layout lay, Design design, Navarch.Result res)
     {
         double L = lay.Hull.L, B = lay.Hull.B;
         double D = res.Depth, T = res.Draught;
@@ -60,23 +59,16 @@ public static class Propulsion
         double inner = shaftYs.Select(s => Math.Abs(s.Y)).Where(a => a > 1e-6).DefaultIfEmpty(0.1 * B).Min();
         var rYs = Spread(nR, inner).Select(s => s.Y).ToList();
         double rTop = (planing ? 0.15 : 0.85) * T;
-        var rudders = new List<object?>();
-        for (int k = 0; k < rYs.Count; k++)
-        {
-            string rid = nR == 1 ? "Rudder" : $"Rudder {k + 1}";
-            rudders.Add(PyDict.Of(("id", rid), ("x", xR), ("y", rYs[k]), ("chord", chord),
-                ("x0", xR - (1 - RUDDER_BALANCE) * chord), ("x1", xR + RUDDER_BALANCE * chord),
-                ("thick", Math.Max(0.1, RUDDER_THICK * chord)), ("base", rTop - hR - (planing ? 0.3 * T : 0.0)),
-                ("top", rTop), ("area_m2", area)));
-        }
+        var rudders = rYs.Select((y, k) => new Rudder(nR == 1 ? "Rudder" : $"Rudder {k + 1}", xR, y, chord, xR - (1 - RUDDER_BALANCE) * chord,
+            xR + RUDDER_BALANCE * chord, Math.Max(0.1, RUDDER_THICK * chord), rTop - hR - (planing ? 0.3 * T : 0.0), rTop, area)).ToList();
 
         double xP0 = xR + RUDDER_BALANCE * chord + 0.25 * dp + 0.3;
         double zP = planing ? -0.55 * dp : Math.Min(0.05 * T + 0.5 * dp, T - 0.6 * dp);
         var rooms = EngineRooms(lay);
         long pairs = n / 2;
         long groups = pairs + n % 2;
-        var shafts = new List<object?>();
-        var props = new List<object?>();
+        var shafts = new List<Shaft>();
+        var props = new List<Propeller>();
         var mach = lay.Geo.Machinery;
         for (int k = 0; k < shaftYs.Count; k++)
         {
@@ -87,36 +79,26 @@ public static class Propulsion
                 ? rooms[(int)Math.Min(rooms.Count - 1, g * rooms.Count / groups)] : null;
             double xs = room is { } rm ? (rm.X0 + rm.X1) / 2 : (mach is { } mm ? mm.X0 : -0.2 * L);
             double zs = ib + SHAFT_ABOVE_IB;
-            double xp = xP0 + STAGGER * L * (rank - (n % 2 == 0 ? 1 : 0));
-            xp = Math.Min(xp, xs - 1.0);
+            double xp = Math.Min(xP0 + STAGGER * L * (rank - (n % 2 == 0 ? 1 : 0)), xs - 1.0);
             string pos = Math.Abs(y) < 1e-6 ? "centre" : pairs == 1 ? "wing" : rank == pairs ? "outer" : "inner";
-            shafts.Add(PyDict.Of(("id", sid), ("y", y), ("position", pos), ("engine_room", room?.Id), ("propeller", pid),
-                ("p0", new object?[] { xs, y, zs }), ("p1", new object?[] { xp, y, zP })));
-            props.Add(PyDict.Of(("id", pid), ("x", xp), ("y", y), ("z", zP), ("diameter", dp), ("shaft", sid), ("position", pos)));
+            shafts.Add(new Shaft(sid, y, pos, room?.Id, pid, (xs, y, zs), (xp, y, zP)));
+            props.Add(new Propeller(pid, xp, y, zP, dp, sid, pos));
         }
-        return PyDict.Of(("screws", n), ("planing", planing), ("ib", ib), ("shafts", shafts), ("propellers", props),
-            ("rudders", rudders), ("rated_mw_per_shaft", mw));
+        return new Gear(n, planing, ib, shafts, props, rudders, mw);
     }
 
-    static (double X, double Y, double Z) P3(object? v)
-    {
-        var a = (object?[])v!;
-        return (Py.ToDouble(a[0]), Py.ToDouble(a[1]), Py.ToDouble(a[2]));
-    }
-
-    /// <summary>The propulsion train: dict(shafts, propellers, rudders, alleys) and the steering gear's room id.</summary>
-    public static PyDict Build(Layout lay, Design design, Navarch.Result res, HullForm form, PyDict? gr = null)
+    /// <summary>The propulsion train: the gear's shafts (now with where each leaves the hull), the shaft alleys, and the
+    /// steering gear's room id.</summary>
+    public static Train Build(Layout lay, Design design, Navarch.Result res, HullForm form, Gear? gr = null)
     {
         gr ??= Gear(lay, design, res);
         var mach = lay.Geo.Machinery;
-        var shafts = new List<object?>();
-        var alleys = new List<object?>();
-        var grShafts = gr.L("shafts").Cast<PyDict>().ToList();
-        for (int k = 0; k < grShafts.Count; k++)
+        var shafts = new List<Shaft>();
+        var alleys = new List<Alley>();
+        for (int k = 0; k < gr.Shafts.Count; k++)
         {
-            var sh = grShafts[k];
-            var (xs, y, zs) = P3(sh["p0"]);
-            var (xp, _, zP) = P3(sh["p1"]);
+            var sh = gr.Shafts[k];
+            var ((xs, y, zs), (xp, _, zP)) = (sh.P0, sh.P1);
             double ZAt(double x) => xs != xp ? zs + (zP - zs) * (xs - x) / (xs - xp) : zs;
             double exitX = xp + 0.3;
             long steps = Math.Max(2L, (long)((xs - xp) / 0.5));
@@ -129,68 +111,81 @@ public static class Propulsion
                     break;
                 }
             }
-            var shOut = sh.Copy();
-            shOut["exit_x"] = exitX;
-            shafts.Add(shOut);
             double a0 = mach is { } mm ? mm.X0 : xs;
+            string? alley = null;
             if (exitX < a0 - 0.5)
             {
                 double zt0 = ZAt(a0), zt1 = ZAt(exitX);
-                alleys.Add(PyDict.Of(("id", $"Shaft alley {k + 1}"), ("shaft", sh["id"]), ("x0", exitX), ("x1", a0),
-                    ("y", y), ("base", Math.Max(gr.F("ib"), Math.Min(zt0, zt1) - ALLEY_H / 2)), ("top", Math.Max(zt0, zt1) + ALLEY_H / 2)));
-                shOut["alley"] = ((PyDict)alleys[^1]!)["id"];
+                alley = $"Shaft alley {k + 1}";
+                alleys.Add(new Alley(alley, sh.Id, exitX, a0, y, Math.Max(gr.Ib, Math.Min(zt0, zt1) - ALLEY_H / 2), Math.Max(zt0, zt1) + ALLEY_H / 2));
             }
+            shafts.Add(sh with { ExitX = exitX, Alley = alley });
         }
         var steering = lay.Compartments.FirstOrDefault(c => c.Kind == "steering")?.Id;
-        return PyDict.Of(("shafts", shafts), ("propellers", gr["propellers"]), ("rudders", gr["rudders"]),
-            ("alleys", alleys), ("rated_mw_per_shaft", gr["rated_mw_per_shaft"]), ("steering", steering));
+        return new Train(shafts, gr.Propellers, gr.Rudders, alleys, gr.RatedMwPerShaft, steering);
     }
 
     /// <summary>Link the train into the subdivision: each engine room lists its shafts, the steering gear its rudders,
-    /// and every cell a shaft or alley passes through lists it in "through". D: the hull's depth.</summary>
-    public static void Link(PyDict tr, PyDict sub, double D)
+    /// and every cell a shaft or alley passes through lists it in Through. D: the hull's depth.</summary>
+    public static void Link(Train tr, SubdivisionData sub, double D)
     {
-        var rooms = new Dictionary<string, PyDict>(StringComparer.Ordinal);
-        foreach (PyDict r in sub.L("rooms").Cast<PyDict>())
-            rooms[r.S("id")] = r;
-        foreach (PyDict sh in tr.L("shafts").Cast<PyDict>())
-            if (sh["engine_room"] is string er && rooms.TryGetValue(er, out var room))
-                ((List<object?>)room.SetDefault("shafts", new List<object?>())!).Add(sh["id"]);
-        if (tr["steering"] is string st && rooms.TryGetValue(st, out var sr))
-            sr["rudders"] = tr.L("rudders").Cast<PyDict>().Select(rd => rd["id"]).ToList();
-        foreach (PyDict c in sub.L("cells").Cast<PyDict>())
+        var rooms = new Dictionary<string, Room>(StringComparer.Ordinal);
+        foreach (var r in sub.Rooms)
+            rooms[r.Id] = r;
+        foreach (var sh in tr.Shafts)
+            if (sh.EngineRoom is { } er && rooms.TryGetValue(er, out var room))
+                (room.Shafts ??= []).Add(sh.Id);
+        if (tr.Steering is { } st && rooms.TryGetValue(st, out var sr))
+            sr.Rudders = tr.Rudders.Select(rd => rd.Id).ToList();
+        foreach (var c in sub.Cells)
         {
-            double cx0 = c.F("x0"), cx1 = c.F("x1"), cy0 = c.F("y0"), cy1 = c.F("y1"), cb = c.F("base"), ct = c.F("top");
-            bool Inside(double x, double y, double zz) => cx0 <= x && x < cx1 && cy0 <= y && y < cy1 && cb <= zz && zz < ct;
-            foreach (PyDict sh in tr.L("shafts").Cast<PyDict>())
+            bool Inside(double x, double y, double zz) => c.X0 <= x && x < c.X1 && c.Y0 <= y && y < c.Y1 && c.Base <= zz && zz < c.Top;
+            foreach (var sh in tr.Shafts)
             {
-                var (x0, y, z0) = P3(sh["p0"]);
-                var (x1, _, z1) = P3(sh["p1"]);
-                double exitX = sh.F("exit_x");
-                if (!(cy0 <= y && y < cy1 && cx0 < x0 && cx1 > exitX))
+                var ((x0, y, z0), (x1, _, z1)) = (sh.P0, sh.P1);
+                double exitX = sh.ExitX;
+                if (!(c.Y0 <= y && y < c.Y1 && c.X0 < x0 && c.X1 > exitX))
                     continue;
                 long n = Math.Max(2L, (long)((x0 - exitX) / 0.5));
                 bool any = false;
-                for (long k = 0; k <= n; k++)
+                for (long k = 0; k <= n && !any; k++)
                 {
                     double x = x0 - (x0 - exitX) * k / n;
-                    if (Inside(x, y, z0 + (z1 - z0) * (x0 - x) / (x0 - x1) - D))
-                    {
-                        any = true;
-                        break;
-                    }
+                    any = Inside(x, y, z0 + (z1 - z0) * (x0 - x) / (x0 - x1) - D);
                 }
                 if (any)
-                    ((List<object?>)c.SetDefault("through", new List<object?>())!).Add(sh["id"]);
+                    (c.Through ??= []).Add(sh.Id);
             }
-            foreach (PyDict a in tr.L("alleys").Cast<PyDict>())
+            foreach (var a in tr.Alleys)
             {
                 double hw = ALLEY_W / 2;
-                if (Math.Min(cx1, a.F("x1")) - Math.Max(cx0, a.F("x0")) > 0.05 &&
-                    Math.Min(cy1, a.F("y") + hw) - Math.Max(cy0, a.F("y") - hw) > 0.05 &&
-                    Math.Min(ct, a.F("top") - D) - Math.Max(cb, a.F("base") - D) > 0.05)
-                    ((List<object?>)c.SetDefault("through", new List<object?>())!).Add(a["id"]);
+                if (Math.Min(c.X1, a.X1) - Math.Max(c.X0, a.X0) > 0.05 && Math.Min(c.Y1, a.Y + hw) - Math.Max(c.Y0, a.Y - hw) > 0.05 &&
+                    Math.Min(c.Top, a.Top - D) - Math.Max(c.Base, a.Base - D) > 0.05)
+                    (c.Through ??= []).Add(a.Id);
             }
         }
     }
 }
+
+/// <summary>A rudder: its stock at X, Chord long from X0 to X1, Thick, from Base to Top above the keel.</summary>
+public sealed record Rudder(string Id, double X, double Y, double Chord, double X0, double X1, double Thick, double Base, double Top, double AreaM2);
+
+/// <summary>A shaft from P0 (in its engine room) to P1 (its propeller), heights above the keel; ExitX where it leaves
+/// the hull, and its alley (once the train is built).</summary>
+public sealed record Shaft(string Id, double Y, string Position, string? EngineRoom, string Propeller, (double X, double Y, double Z) P0,
+    (double X, double Y, double Z) P1)
+{
+    public double ExitX { get; init; }
+    public string? Alley { get; init; }
+}
+
+public sealed record Propeller(string Id, double X, double Y, double Z, double Diameter, string Shaft, string Position);
+
+/// <summary>The stern gear: Screws shafts (Ib: the inner bottom's height), their propellers, the rudders.</summary>
+public sealed record Gear(long Screws, bool Planing, double Ib, List<Shaft> Shafts, List<Propeller> Propellers, List<Rudder> Rudders,
+    double RatedMwPerShaft);
+
+public sealed record Alley(string Id, string Shaft, double X0, double X1, double Y, double Base, double Top);
+
+public sealed record Train(List<Shaft> Shafts, List<Propeller> Propellers, List<Rudder> Rudders, List<Alley> Alleys, double RatedMwPerShaft,
+    string? Steering);

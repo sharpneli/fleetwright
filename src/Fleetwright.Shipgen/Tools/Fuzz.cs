@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
 namespace Fleetwright.Shipgen.Tools;
 
 /// <summary>fuzz: the design side's robustness test (shipgen's fuzz.py). Mutants of the designs must build: with
@@ -212,13 +215,12 @@ public static class Fuzz
     }
 
     /// <summary>Is every number in a JSON-like value finite?</summary>
-    public static bool Finite(object? x) => x switch
+    /// <summary>No NaN or infinity in the tree (the serializer writes them as the strings "NaN", "Infinity").</summary>
+    public static bool Finite(JsonNode? n) => n switch
     {
-        double d => double.IsFinite(d),
-        PyDict d => d.Values.All(Finite),
-        System.Collections.IEnumerable e and not string => e.Cast<object?>().All(Finite),
-        Pt p => double.IsFinite(p.X) && double.IsFinite(p.Y),
-        IPyValue v => Finite(v.ToPy()),
+        JsonObject o => o.All(kv => Finite(kv.Value)),
+        JsonArray a => a.All(Finite),
+        JsonValue v => v.GetValueKind() != JsonValueKind.String || v.GetValue<string>() is not ("NaN" or "Infinity" or "-Infinity"),
         _ => true,
     };
 
@@ -241,12 +243,15 @@ public static class Fuzz
         try
         {
             var ship = ShipDesign.Build(d);
-            if (!Finite(PyJson.Plain(ship.D("report"))))
+            var json = ShipgenJson.Default;
+            var report = JsonSerializer.SerializeToNode(ship.Report, json.Report)!.AsObject();
+            report.Remove("inputs");
+            if (!Finite(report))
                 return ("crash", "a NaN or infinity in the report");
-            if (!Finite(PyJson.Plain(ship["hitboxes"])) || !Finite(PyJson.Plain(ship.D("render")["columns"])))
+            if (!Finite(JsonSerializer.SerializeToNode(ship.Hitboxes, json.Hitboxes)) ||
+                !Finite(JsonSerializer.SerializeToNode(ship.Render.Columns, json.ListHeightColumn)))
                 return ("crash", "a NaN or infinity in the hitboxes or height columns");
-            var rep = ship.D("report");
-            return Py.Truthy(rep["valid"]) ? ("ok", "") : ("errors", (string)rep.L("errors")[0]!);
+            return ship.Report.Valid ? ("ok", "") : ("errors", ship.Report.Errors[0]);
         }
         catch (Exception e)
         {

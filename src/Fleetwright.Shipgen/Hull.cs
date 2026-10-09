@@ -187,7 +187,7 @@ public sealed class HullForm
 
     /// <summary>cwp: the waterplane coefficient to aim for; fn: the Froude number at the design speed; gear:
     /// propulsion.gear (null: a flat keel aft); lcb: the centre of buoyancy's x.</summary>
-    public HullForm(Hull hull, double cb, double cwp, double T, double D, double fn = 0.0, PyDict? gear = null, double lcb = 0.0)
+    public HullForm(Hull hull, double cb, double cwp, double T, double D, double fn = 0.0, Gear? gear = null, double lcb = 0.0)
     {
         Hull = hull;
         Cb = cb;
@@ -196,19 +196,18 @@ public sealed class HullForm
         Fn = fn;
         CwpTarget = cwp;
         double L = hull.L, B = hull.B;
-        gear ??= new PyDict();
-        planing = gear.B("planing");
-        screws = gear.I("screws", 0);
+        planing = gear?.Planing ?? false;
+        screws = gear?.Screws ?? 0;
         kFore = FORE_V + (FORE_U - FORE_V) * Math.Exp(-Math.Pow((fn - FORE_FN) / FORE_FN_W, 2));
         kAft = screws == 1 ? AFT_K : screws != 0 ? -AFT_K : 0.0;
         forefoot = L * (planing ? ROCKER : Math.Min(FOREFOOT_MAX, FOREFOOT + FOREFOOT_K * Math.Max(0.0, fn - FOREFOOT_FN)));
-        var props = gear.Or("propellers", null) is List<object?> pl ? pl.Cast<PyDict>().ToList() : [];
-        if (!planing && screws == 1 && gear.B("rudders"))
-            post = (gear.L("rudders").Cast<PyDict>().Select(r => r.F("x0"))).Min();
+        var props = gear?.Propellers ?? [];
+        if (!planing && screws == 1 && gear!.Rudders.Count > 0)
+            post = gear.Rudders.Min(r => r.X0);
         else if (!planing && props.Count > 0)
         {
-            double rise = Math.Min(0.95 * T, props.Select(p => p.F("z") + p.F("diameter") * (0.5 + CUT_CLEAR)).Max());
-            double xC = props.Select(p => p.F("x") + 0.5 * p.F("diameter")).Max();
+            double rise = Math.Min(0.95 * T, props.Max(p => p.Z + p.Diameter * (0.5 + CUT_CLEAR)));
+            double xC = props.Max(p => p.X + 0.5 * p.Diameter);
             double end = Math.Max(rise, T * (1.0 - TRANSOM_DEEP * Math.Min(1.0, hull.HalfWidth(-L / 2) / (B / 2))));
             cut = (xC, xC + CUT_RUN * rise, rise, end);
         }

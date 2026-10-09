@@ -22,25 +22,35 @@ public static class Subdivision
 
     static double Ov(double a0, double a1, double b0, double b1) => Math.Min(a1, b1) - Math.Max(a0, b0);
 
-    static readonly (string K0, string K1)[] Axes = [("x0", "x1"), ("y0", "y1"), ("base", "top")];
+    /// <summary>A compartment of the layout as the box it asks for.</summary>
+    sealed record RoomBox(Compartment Src, double X0, double X1, double Y0, double Y1, double Base, double Top)
+    {
+        public string Id => Src.Id;
+        public string Kind => Src.Kind;
+    }
+
+    static (double Lo, double Hi)[] Box(RoomBox r) => [(r.X0, r.X1), (r.Y0, r.Y1), (r.Base, r.Top)];
+    static (double Lo, double Hi)[] Box(Cell c) => [(c.X0, c.X1), (c.Y0, c.Y1), (c.Base, c.Top)];
 
     /// <summary>Does the room's box take the cell: on every axis an overlap of at least half the shorter of the two?</summary>
-    static bool Claims(PyDict room, PyDict cell)
+    static bool Claims(RoomBox room, Cell cell)
     {
-        foreach (var (k0, k1) in Axes)
+        var (a, b) = (Box(room), Box(cell));
+        for (int k = 0; k < 3; k++)
         {
-            double o = Ov(room.F(k0), room.F(k1), cell.F(k0), cell.F(k1));
-            if (o <= 1e-6 || o < 0.5 * Math.Min(room.F(k1) - room.F(k0), cell.F(k1) - cell.F(k0)) - 1e-6)
+            double o = Ov(a[k].Lo, a[k].Hi, b[k].Lo, b[k].Hi);
+            if (o <= 1e-6 || o < 0.5 * Math.Min(a[k].Hi - a[k].Lo, b[k].Hi - b[k].Lo) - 1e-6)
                 return false;
         }
         return true;
     }
 
-    static double BoxOverlap(PyDict room, PyDict cell)
+    static double BoxOverlap(RoomBox room, Cell cell)
     {
+        var (a, b) = (Box(room), Box(cell));
         double v = 1.0;
-        foreach (var (k0, k1) in Axes)
-            v *= Math.Max(0.0, Ov(room.F(k0), room.F(k1), cell.F(k0), cell.F(k1)));
+        for (int k = 0; k < 3; k++)
+            v *= Math.Max(0.0, Ov(a[k].Lo, a[k].Hi, b[k].Lo, b[k].Hi));
         return v;
     }
 
@@ -48,9 +58,7 @@ public static class Subdivision
     static List<double[]> RaisedSpans(IReadOnlyList<RaisedStretch> raised, long k)
     {
         var out_ = new List<double[]>();
-        var spans = raised.Where(s => s.Levels >= k).Select(s => (s.X0, s.X1)).ToList();
-        spans.Sort();
-        foreach (var (x0, x1) in spans)
+        foreach (var (x0, x1) in raised.Where(s => s.Levels >= k).Select(s => (s.X0, s.X1)).Order())
         {
             if (out_.Count > 0 && x0 <= out_[^1][1] + 1e-6)
                 out_[^1][1] = Math.Max(out_[^1][1], x1);
@@ -60,66 +68,61 @@ public static class Subdivision
         return out_;
     }
 
-    static object? R(object? v, int n) => v is double d ? Math.Round(d, n) : v;
-
     /// <summary>The decks, keel up, as heights above the main deck.</summary>
-    static List<PyDict> DecksOf(Design design, double D, ArmourLayout ag, IReadOnlyList<RaisedStretch> raised)
+    static List<SubDeck> DecksOf(Design design, double D, ArmourLayout ag, IReadOnlyList<RaisedStretch> raised)
     {
-        var out_ = new List<PyDict> { PyDict.Of(("id", "Keel"), ("kind", "keel"), ("z", -D)) };
+        var out_ = new List<SubDeck> { new() { Id = "Keel", Kind = "keel", Z = -D } };
         if (design.StyleName != "planing")
-            out_.Add(PyDict.Of(("id", "Inner bottom"), ("kind", "inner_bottom"), ("z", -D + Powerplant.DoubleBottom(D))));
-        var arm = new OrderedDictionary<long, List<PyDict>>();
-        foreach (var d in ag.Decks)
+            out_.Add(new SubDeck { Id = "Inner bottom", Kind = "inner_bottom", Z = -D + Powerplant.DoubleBottom(D) });
+        var armour = ag.Decks.GroupBy(d => d.Deck).ToDictionary(g => g.Key, g => g.ToList());
+
+        void Armour(SubDeck d, long n)
         {
-            var p = PyDict.Of(("armour_mm", d.Mm), ("x0", d.X0), ("x1", d.X1));
-            if (!string.IsNullOrEmpty(d.Material))
-                p["material"] = d.Material;
-            long n = d.Deck;
-            if (!arm.TryGetValue(n, out var l))
-                arm[n] = l = [];
-            l.Add(p);
-        }
-        var armD = new Dictionary<long, PyDict>();
-        foreach (var (n, ps) in arm)
-            armD[n] = ps.Count == 1 ? ps[0] : PyDict.Of(("plates", ps.Select(p =>
+            if (!armour.TryGetValue(n, out var ps))
+                return;
+            if (ps.Count == 1)
             {
-                var o = new PyDict();
-                foreach (var kv in p)
-                    o[kv.Key] = R(kv.Value, 3);
-                return (object?)o;
-            }).ToList()));
+                (d.ArmourMm, d.X0, d.X1) = (ps[0].Mm, ps[0].X0, ps[0].X1);
+                d.Material = string.IsNullOrEmpty(ps[0].Material) ? null : ps[0].Material;
+            }
+            else
+                d.Plates = ps.Select(p => new SubDeck.DeckPlate(Math.Round(p.Mm, 3), Math.Round(p.X0, 3), Math.Round(p.X1, 3))
+                    { Material = string.IsNullOrEmpty(p.Material) ? null : p.Material }).ToList();
+        }
+
         foreach (var (n, z) in Enumerable.Reverse(Decks.DeckStack(design, D)))
         {
-            var d = PyDict.Of(("id", Decks.DeckName(n)), ("kind", n == 0 ? "main" : "deck"), ("deck", n), ("z", z - D));
-            if (armD.TryGetValue(n, out var a))
-                d.Update(a);
+            var d = new SubDeck { Id = Decks.DeckName(n), Kind = n == 0 ? "main" : "deck", Deck = n, Z = z - D };
+            Armour(d, n);
             out_.Add(d);
         }
         long top = raised.Select(s => s.Levels).DefaultIfEmpty(0L).Max();
         for (long k = 1; k <= top; k++)
         {
-            var d = PyDict.Of(("id", Decks.DeckName(-k)), ("kind", "raised"), ("deck", -k), ("z", k * Geometry.DECK_PITCH),
-                ("spans", RaisedSpans(raised, k).Select(s => (object?)new List<object?> { Math.Round(s[0], 3), Math.Round(s[1], 3) }).ToList()));
-            if (armD.TryGetValue(-k, out var a))
-                d.Update(a);
+            var d = new SubDeck
+            {
+                Id = Decks.DeckName(-k), Kind = "raised", Deck = -k, Z = k * Geometry.DECK_PITCH,
+                Spans = RaisedSpans(raised, k).Select(s => new[] { Math.Round(s[0], 3), Math.Round(s[1], 3) }).ToList(),
+            };
+            Armour(d, -k);
             out_.Add(d);
         }
         return out_;
     }
 
     /// <summary>A tier is named after the deck it stands on: bottom, hold, then second, third, ...</summary>
-    static string TierName(PyDict floor)
+    static string TierName(SubDeck floor)
     {
-        if (Py.In(floor["kind"], "keel", "inner_bottom"))
-            return Py.Eq(floor["kind"], "keel") ? "bottom" : "hold";
-        string id = floor.S("id").ToLowerInvariant();
+        if (floor.Kind is "keel" or "inner_bottom")
+            return floor.Kind == "keel" ? "bottom" : "hold";
+        string id = floor.Id.ToLowerInvariant();
         return id.EndsWith(" deck", StringComparison.Ordinal) ? id[..^5] : id;
     }
 
     const int BREAK_PRIORITY = 8;
 
     /// <summary>Transverse bulkhead positions, bow to stern: [(x, kind)], with the hull's ends.</summary>
-    static List<(double X, string Kind)> Stations(double L, List<PyDict> rooms, (double X0, double X1, string Kind)? cit, double minGap,
+    static List<(double X, string Kind)> Stations(double L, List<RoomBox> rooms, (double X0, double X1, string Kind)? cit, double minGap,
         double maxGap, IEnumerable<double> breaks, IEnumerable<double> armoured)
     {
         var cands = new List<(double X, int P, string Kind)> { (L / 2 - COLLISION * L, 9, "collision") };
@@ -132,12 +135,11 @@ public static class Subdivision
         }
         foreach (var r in rooms)
         {
-            int p = ROOM_PRIORITY.TryGetValue(r.S("kind"), out var pp) ? pp : 4;
-            cands.Add((r.F("x0"), p, "main"));
-            cands.Add((r.F("x1"), p, "main"));
+            int p = ROOM_PRIORITY.GetValueOrDefault(r.Kind, 4);
+            cands.Add((r.X0, p, "main"));
+            cands.Add((r.X1, p, "main"));
         }
-        cands = cands.Where(c2 => -L / 2 + minGap <= c2.X && c2.X <= L / 2 - minGap).ToList();
-        cands = cands.OrderBy(c2 => -c2.X).ToList();
+        cands = cands.Where(c2 => -L / 2 + minGap <= c2.X && c2.X <= L / 2 - minGap).OrderBy(c2 => -c2.X).ToList();
         var merged = new List<(double X, int P, string Kind)>();
         foreach (var c2 in cands)
         {
@@ -170,7 +172,7 @@ public static class Subdivision
             double xa = pts[k].X;
             var (xb, _, kb) = pts[k + 1];
             double gap = xa - xb;
-            bool inside = rooms.Any(r => r.F("x0") <= xb + 1e-6 && r.F("x1") >= xa - 1e-6);
+            bool inside = rooms.Any(r => r.X0 <= xb + 1e-6 && r.X1 >= xa - 1e-6);
             if (gap > maxGap && !inside)
             {
                 long n = (long)Math.Ceiling(gap / maxGap - 1e-9);
@@ -182,8 +184,8 @@ public static class Subdivision
         return out_;
     }
 
-    /// <summary>The subdivision of the laid-out ship: dict(decks, tiers, sections, bulkheads, cells, rooms).</summary>
-    public static PyDict Build(Layout lay, Design design, Navarch.Result res, ArmourLayout ag, bool armoured, HullForm form)
+    /// <summary>The subdivision of the laid-out ship.</summary>
+    public static SubdivisionData Build(Layout lay, Design design, Navarch.Result res, ArmourLayout ag, bool armoured, HullForm form)
     {
         var hull = lay.Hull;
         double L = hull.L, B = hull.B;
@@ -195,33 +197,24 @@ public static class Subdivision
         double Rz(double z) => z - D;
 
         var dks = DecksOf(design, D, ag, lay.Raised);
-        bool hasBottom = Py.Eq(dks[1]["kind"], "inner_bottom");
-        var tiers = new List<PyDict>();
+        bool hasBottom = dks[1].Kind == "inner_bottom";
+        var tiers = new List<Tier>();
         for (int i = 0; i < dks.Count - 1; i++)
         {
-            var lo = dks[i];
-            var hi = dks[i + 1];
-            string name = Py.Eq(lo["kind"], "keel") && !hasBottom ? "hold" : TierName(lo);
-            double sub_ = Math.Min(1.0, Math.Max(0.0, (wl - lo.F("z")) / (hi.F("z") - lo.F("z"))));
-            var t = PyDict.Of(("id", name), ("base", lo["z"]), ("top", hi["z"]), ("below_waterline", sub_ >= 1.0 - 1e-6),
-                ("submerged", sub_), ("floor", lo["id"]), ("ceiling", hi["id"]));
-            if (hi.Has("spans"))
-                t["spans"] = hi["spans"];
-            tiers.Add(t);
+            var (lo, hi) = (dks[i], dks[i + 1]);
+            double sub_ = Math.Clamp((wl - lo.Z) / (hi.Z - lo.Z), 0.0, 1.0);
+            tiers.Add(new Tier
+            {
+                Id = lo.Kind == "keel" && !hasBottom ? "hold" : TierName(lo), Base = lo.Z, Top = hi.Z, BelowWaterline = sub_ >= 1.0 - 1e-6,
+                Submerged = sub_, Floor = lo.Id, Ceiling = hi.Id, Spans = hi.Spans,
+            });
         }
-        double ib = hasBottom ? dks[1].F("z") : -D;
+        double ib = hasBottom ? dks[1].Z : -D;
         double under = ag.RoofZ is double roofZ ? roofZ - D : 0.0;
         var adecks = ag.Decks.Select(d => (Z: Rz(d.Z), d.X0, d.X1, d.Mm, d.Material)).ToList();
 
-        var rooms = new List<PyDict>();
-        foreach (var c in lay.Compartments)
-        {
-            if (c.Kind is "citadel" or "hangar")
-                continue;
-            double y = c.Y ?? 0.0;
-            rooms.Add(PyDict.Of(("src", c), ("id", c.Id), ("kind", c.Kind), ("x0", c.X0), ("x1", c.X1), ("y0", y - c.HalfWidth),
-                ("y1", y + c.HalfWidth), ("base", c.Base ?? ib), ("top", c.Top ?? under)));
-        }
+        var rooms = lay.Compartments.Where(c => c.Kind is not ("citadel" or "hangar")).Select(c =>
+            new RoomBox(c, c.X0, c.X1, (c.Y ?? 0.0) - c.HalfWidth, (c.Y ?? 0.0) + c.HalfWidth, c.Base ?? ib, c.Top ?? under)).ToList();
 
         (double X0, double X1, string Kind)? cit = null;
         if (armoured)
@@ -235,29 +228,27 @@ public static class Subdivision
             foreach (var x in new[] { ag.X0, ag.X1 })
                 armBh.Add(new ArmourBulkhead("", x, ag.BulkheadMm, ag.BulkheadBottom, ag.BulkheadTop, null, ag.BulkheadMaterial));
         armBh.AddRange(ag.EndBulkheads);
-        var sections = new List<PyDict>();
-        for (int i = 0; i < st.Count - 1; i++)
-            sections.Add(PyDict.Of(("id", (i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)), ("x0", st[i + 1].X), ("x1", st[i].X)));
-        int nbh = st.Count - 2;
-        var tb = new List<PyDict>();
-        long SecLevel(PyDict sec) => lay.DeckLevel((sec.F("x0") + sec.F("x1")) / 2);
+        var sections = Enumerable.Range(0, st.Count - 1)
+            .Select(i => new Section((i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), st[i + 1].X, st[i].X)).ToList();
+        var tb = new List<Bulkhead>();
+        long SecLevel(Section sec) => lay.DeckLevel((sec.X0 + sec.X1) / 2);
         for (int k = 0; k < st.Count - 2; k++)
         {
             var s = st[k + 1];
             double top = Math.Min(SecLevel(sections[k]), SecLevel(sections[k + 1])) * Geometry.DECK_PITCH;
-            var d = PyDict.Of(("id", $"Bulkhead {k + 1}"), ("kind", s.Kind is "collision" or "armoured" ? s.Kind : "main"),
-                ("x", Math.Round(s.X, 3)), ("base", Math.Round(-D, 2)), ("top", top != 0 ? Math.Round(top, 2) : 0.0));
+            var d = new Bulkhead
+            {
+                Id = $"Bulkhead {k + 1}", Kind = s.Kind is "collision" or "armoured" ? s.Kind : "main", X = Math.Round(s.X, 3),
+                Base = Math.Round(-D, 2), Top = Math.Round(top, 2),
+            };
             if (s.Kind == "armoured")
             {
                 var a = armBh.MinBy(b => Math.Abs(b.X - s.X))!;
-                d.Update(("armour_mm", Math.Round(a.Mm)), ("armour_bottom", Math.Round(Rz(a.Bottom), 2)), ("armour_top", Math.Round(Rz(a.Top), 2)));
-                if (!string.IsNullOrEmpty(a.Material))
-                    d["armour_material"] = a.Material;
+                (d.ArmourMm, d.ArmourBottom, d.ArmourTop) = (Math.Round(a.Mm), Math.Round(Rz(a.Bottom), 2), Math.Round(Rz(a.Top), 2));
+                d.ArmourMaterial = string.IsNullOrEmpty(a.Material) ? null : a.Material;
             }
             tb.Add(d);
         }
-        if (tb.Count != nbh)
-            throw new InvalidOperationException("bulkhead count");
 
         double tds = plan?.Tds ?? 0.0;
         double wingM = plan?.WingM ?? 0.0;
@@ -265,10 +256,10 @@ public static class Subdivision
 
         List<double> XsIn(double x0, double x1, int n = 8) => Enumerable.Range(0, n).Select(j => x0 + (x1 - x0) * (j + 0.5) / n).ToList();
         List<double> HwSamples(double x0, double x1, int n = 8) => XsIn(x0, x1, n).Select(hull.HalfWidth).ToList();
-        double Widest(double x0, double x1, double z) => (new[] { x0, x1 }.Concat(XsIn(x0, x1)).Select(x => form.HalfWidth(x, z + D))).Max();
+        double Widest(double x0, double x1, double z) => new[] { x0, x1 }.Concat(XsIn(x0, x1)).Max(x => form.HalfWidth(x, z + D));
 
-        var cells = new List<PyDict>();
-        var longi = new List<PyDict>();
+        var cells = new List<Cell>();
+        var longi = new List<Bulkhead>();
         var loBase = new Dictionary<string, double>(StringComparer.Ordinal);
         var belts = new List<Strake>();
         if (ag.BeltMm > 0)
@@ -279,14 +270,13 @@ public static class Subdivision
         for (int si = 0; si < sections.Count; si++)
         {
             var sec = sections[si];
-            double sx0 = sec.F("x0"), sx1 = sec.F("x1");
+            double sx0 = sec.X0, sx1 = sec.X1;
             double xm = (sx0 + sx1) / 2;
-            var hwsSec = HwSamples(sx0, sx1);
-            double hwmax = (new[] { hull.HalfWidth(sx0), hull.HalfWidth(sx1) }.Concat(hwsSec)).Max();
+            double hwmax = new[] { hull.HalfWidth(sx0), hull.HalfWidth(sx1) }.Concat(HwSamples(sx0, sx1)).Max();
             bool inMach = mach is { } mc && mc.X0 - 1e-6 <= xm && xm <= mc.X1 + 1e-6;
             bool inCit = cit is { } cc && cc.X0 - 1e-6 <= xm && xm <= cc.X1 + 1e-6;
             double? split = null;
-            string? sKind = null;
+            string sKind = "";
             double sTop = 0;
             if (wingM > 0 && inMach)
                 (split, sKind, sTop) = (plan!.Width / 2, "wing", 0.0);
@@ -295,36 +285,41 @@ public static class Subdivision
                 split = Math.Max(0.5, STEEL_FRAME * XsIn(sx0, sx1).Select(form.Waterline).Min() - tds);
                 (sKind, sTop) = ("tds", under);
             }
-            if (split is double sp && sp >= hwmax - 0.3)
+            if (split >= hwmax - 0.3)
                 split = null;
-            foreach (var (side, sgn) in new[] { ("S", 1), ("P", -1) })
-                if (split is double sp2)
-                    longi.Add(PyDict.Of(("id", $"{(sKind == "wing" ? "Wing" : "Torpedo")} bulkhead {sec.S("id")} {side}"), ("kind", sKind),
-                        ("section", sec["id"]), ("side", side), ("y", Math.Round(sgn * sp2, 3)), ("x0", Math.Round(sx0, 3)),
-                        ("x1", Math.Round(sx1, 3)), ("base", Math.Round(ib, 2)), ("top", Math.Round(sTop, 2))));
+            if (split is double sp)
+                foreach (var (side, sgn) in new[] { ("S", 1), ("P", -1) })
+                    longi.Add(new Bulkhead
+                    {
+                        Id = $"{(sKind == "wing" ? "Wing" : "Torpedo")} bulkhead {sec.Id} {side}", Kind = sKind, Section = sec.Id, Side = side,
+                        Y = Math.Round(sgn * sp, 3), X0 = Math.Round(sx0, 3), X1 = Math.Round(sx1, 3), Base = Math.Round(ib, 2),
+                        Top = Math.Round(sTop, 2),
+                    });
             bool cl = centreline && inMach;
             if (cl)
-                longi.Add(PyDict.Of(("id", $"Centreline bulkhead {sec.S("id")}"), ("kind", "centreline"), ("section", sec["id"]),
-                    ("side", "C"), ("y", 0.0), ("x0", Math.Round(sx0, 3)), ("x1", Math.Round(sx1, 3)), ("base", Math.Round(ib, 2)),
-                    ("top", Math.Round(under, 2))));
+                longi.Add(new Bulkhead
+                {
+                    Id = $"Centreline bulkhead {sec.Id}", Kind = "centreline", Section = sec.Id, Side = "C", Y = 0.0, X0 = Math.Round(sx0, 3),
+                    X1 = Math.Round(sx1, 3), Base = Math.Round(ib, 2), Top = Math.Round(under, 2),
+                });
             for (int ti = 0; ti < tiers.Count; ti++)
             {
                 var tr = tiers[ti];
                 double x0 = sx0, x1 = sx1;
-                if (tr.Has("spans"))
+                if (tr.Spans != null)
                 {
-                    var best = (tr.L("spans").Cast<List<object?>>().Select(s => (A: Math.Max(x0, Py.ToDouble(s[0])), B: Math.Min(x1, Py.ToDouble(s[1]))))).MaxBy(v => v.B - v.A);
+                    var best = tr.Spans.Select(s => (A: Math.Max(x0, s[0]), B: Math.Min(x1, s[1]))).MaxBy(v => v.B - v.A);
                     if (best.B - best.A < 1e-3)
                         continue;
                     (x0, x1) = (best.A, best.B);
                 }
                 bool bottom = hasBottom && ti == 0;
-                double trTop = tr.F("top"), trBase = tr.F("base");
+                double trTop = tr.Top, trBase = tr.Base;
                 bool centreSplit = cl && !bottom && trTop <= under + 1e-6;
                 double hwT = Math.Min(hwmax, Widest(x0, x1, trTop));
                 bool banded = split is not null && !bottom && trTop <= sTop + 1e-6 && split.Value < hwT - 0.3;
                 if (banded)
-                    loBase[sec.S("id")] = Math.Min(loBase.TryGetValue(sec.S("id"), out var lb) ? lb : trBase, trBase);
+                    loBase[sec.Id] = Math.Min(loBase.GetValueOrDefault(sec.Id, trBase), trBase);
                 List<(string Band, double Y0, double Y1)> ys;
                 if (banded)
                 {
@@ -350,7 +345,7 @@ public static class Subdivision
                     for (int zi = 0; zi < zs.Count; zi++)
                     {
                         var hs = hwz[zi];
-                        double v = hs.Select(h => Math.Max(0.0, Math.Min(h, y1) - Math.Max(-h, y0))).Sum() * (x1 - x0) / hs.Count * dz;
+                        double v = hs.Sum(h => Math.Max(0.0, Math.Min(h, y1) - Math.Max(-h, y0))) * (x1 - x0) / hs.Count * dz;
                         if (zs[zi] < wl)
                             vUnder += v;
                         else
@@ -358,17 +353,19 @@ public static class Subdivision
                     }
                     if (vUnder + vOver < 0.01 && hwT < 0.05)
                         continue;
-                    var c = PyDict.Of(("id", $"{sec.S("id")} {tr.S("id")} {band}"), ("section", sec["id"]), ("tier", tr["id"]), ("band", band),
-                        ("x0", x0), ("x1", x1), ("y0", y0), ("y1", y1), ("base", tr["base"]), ("top", tr["top"]), ("v_under", vUnder),
-                        ("v_over", vOver), ("below_waterline", tr["below_waterline"]), ("si", (long)si), ("ti", (long)ti), ("t0", (long)ti));
+                    var c = new Cell
+                    {
+                        Id = $"{sec.Id} {tr.Id} {band}", Section = sec.Id, Tier = tr.Id, Band = band, X0 = x0, X1 = x1, Y0 = y0, Y1 = y1,
+                        Base = tr.Base, Top = tr.Top, BelowWaterline = tr.BelowWaterline, VUnder = vUnder, VOver = vOver, Si = si, Ti = ti, T0 = ti,
+                    };
                     if (inCit && armoured)
-                        c["citadel"] = true;
+                        c.Citadel = true;
                     var above = adecks.Where(d => trTop <= d.Z + 1e-6 && d.X0 <= xm && xm <= d.X1).ToList();
                     if (above.Count > 0)
                     {
-                        c["armour_above_mm"] = above.Select(d => (object?)d.Mm).ToList();
+                        c.ArmourAboveMm = above.Select(d => d.Mm).ToList();
                         if (above.Any(d => !string.IsNullOrEmpty(d.Material)))
-                            c["armour_above_material"] = above.Select(d => (object?)d.Material).ToList();
+                            c.ArmourAboveMaterial = above.Select(d => d.Material).ToList();
                     }
                     bool outer = band is "P" or "S" or "C" || (band is "CP" or "CS" && !banded);
                     var side = belts.Where(b => outer && b.X0 <= xm && xm <= b.X1 && Ov(b.Bottom, b.Top, trBase, trTop) > 0)
@@ -376,294 +373,260 @@ public static class Subdivision
                     if (side.Count > 0)
                     {
                         var (mm, b) = side.MaxBy(v => v.Mm);
-                        c["belt_mm"] = (long)Math.Round(mm);
-                        if (!string.IsNullOrEmpty(b.Material))
-                            c["belt_material"] = b.Material;
+                        c.BeltMm = (long)Math.Round(mm);
+                        c.BeltMaterial = string.IsNullOrEmpty(b.Material) ? null : b.Material;
                     }
                     if (banded && band is "P" or "S" && inCit && tds > 0)
                     {
                         double zm = (trBase + trTop) / 2 + D;
-                        c["tds_m"] = Math.Round(Math.Max(0.0, STEEL_FRAME * xsI.Select(x => form.HalfWidth(x, zm)).Min() - split!.Value), 2);
+                        c.TdsM = Math.Round(Math.Max(0.0, STEEL_FRAME * xsI.Min(x => form.HalfWidth(x, zm)) - split!.Value), 2);
                     }
                     cells.Add(c);
                 }
             }
         }
-        double vU = cells.Select(c => c.F("v_under")).Sum();
+        double vU = cells.Sum(c => c.VUnder);
         double underK = vU > 0 ? cb * L * B * T / vU : 1.0;
         foreach (var c in cells)
-        {
-            double vu = c.F("v_under"), vo = c.F("v_over");
-            c.Remove("v_under");
-            c.Remove("v_over");
-            c["volume_m3"] = vu * underK + vo;
-        }
+            c.VolumeM3 = c.VUnder * underK + c.VOver;
         foreach (var l_ in longi)
-            if (loBase.TryGetValue(l_.S("section"), out var lb) && !Py.Eq(l_["kind"], "centreline"))
-                l_["base"] = Math.Round(lb, 2);
-        longi = longi.Where(l_ => Py.Eq(l_["kind"], "centreline") || loBase.ContainsKey(l_.S("section"))).ToList();
+            if (loBase.TryGetValue(l_.Section!, out var lb) && l_.Kind != "centreline")
+                l_.Base = Math.Round(lb, 2);
+        longi = longi.Where(l_ => l_.Kind == "centreline" || loBase.ContainsKey(l_.Section!)).ToList();
 
         // ---------------- slivers join the cell above (or below) ----------------
-        bool Flat(long t) => !tiers[(int)t].Has("spans");
-        foreach (var c in cells.OrderBy(c => c.I("ti")).ToList())
+        bool Flat(int t) => tiers[t].Spans == null;
+        foreach (var c in cells.OrderBy(c => c.Ti).ToList())
         {
-            double box = (c.F("x1") - c.F("x0")) * (c.F("y1") - c.F("y0")) * (c.F("top") - c.F("base"));
-            if (c.B("merged") || c.F("volume_m3") >= Math.Max(SLIVER_M3, SLIVER_FRAC * box) || !Flat(c.I("ti")))
+            double box = (c.X1 - c.X0) * (c.Y1 - c.Y0) * (c.Top - c.Base);
+            if (c.Merged || c.VolumeM3 >= Math.Max(SLIVER_M3, SLIVER_FRAC * box) || !Flat(c.Ti))
                 continue;
             foreach (int dt in new[] { 1, -1 })
             {
-                var into = cells.Where(d => d.I("si") == c.I("si") && !d.B("merged") && Flat(d.I("ti")) &&
-                                            (dt > 0 ? d.I("t0") == c.I("ti") + 1 : d.I("ti") == c.I("t0") - 1) &&
-                                            d.F("y0") <= c.F("y0") + 1e-6 && d.F("y1") >= c.F("y1") - 1e-6).ToList();
-                if (into.Count > 0)
-                {
-                    var d = into[0];
-                    d["volume_m3"] = d.F("volume_m3") + c.F("volume_m3");
-                    if (dt > 0)
-                        d.Update(("base", c["base"]), ("t0", c["t0"]));
-                    else
-                        d.Update(("top", c["top"]), ("ti", c["ti"]));
-                    c["merged"] = true;
-                    break;
-                }
+                var d = cells.FirstOrDefault(d => d.Si == c.Si && !d.Merged && Flat(d.Ti) && (dt > 0 ? d.T0 == c.Ti + 1 : d.Ti == c.T0 - 1) &&
+                                                  d.Y0 <= c.Y0 + 1e-6 && d.Y1 >= c.Y1 - 1e-6);
+                if (d is null)
+                    continue;
+                d.VolumeM3 += c.VolumeM3;
+                if (dt > 0)
+                    (d.Base, d.T0) = (c.Base, c.T0);
+                else
+                    (d.Top, d.Ti) = (c.Top, c.Ti);
+                c.Merged = true;
+                break;
             }
         }
-        cells = cells.Where(c => !c.B("merged")).ToList();
+        cells = cells.Where(c => !c.Merged).ToList();
 
         // ---------------- rooms take cells ----------------
         var owner = new OrderedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var c in cells)
         {
-            ((int, double) Key, PyDict R)? best = null;
+            ((int, double) Key, RoomBox R)? best = null;
             foreach (var r in rooms)
             {
-                if (Claims(r, c))
-                {
-                    var key = (ROOM_PRIORITY.TryGetValue(r.S("kind"), out var p) ? p : 4, BoxOverlap(r, c));
-                    if (best is null || key.CompareTo(best.Value.Key) > 0)
-                        best = (key, r);
-                }
+                if (!Claims(r, c))
+                    continue;
+                var key = (ROOM_PRIORITY.GetValueOrDefault(r.Kind, 4), BoxOverlap(r, c));
+                if (best is null || key.CompareTo(best.Value.Key) > 0)
+                    best = (key, r);
             }
             if (best is { } bb)
-                owner[c.S("id")] = bb.R.S("id");
+                owner[c.Id] = bb.R.Id;
         }
-        var byId = new Dictionary<string, PyDict>(StringComparer.Ordinal);
-        foreach (var c in cells)
-            byId[c.S("id")] = c;
-        var roomOut = new OrderedDictionary<string, PyDict>(StringComparer.Ordinal);
+        var byId = cells.ToDictionary(c => c.Id, StringComparer.Ordinal);
+        var roomOut = new OrderedDictionary<string, Room>(StringComparer.Ordinal);
         foreach (var r in rooms)
-            roomOut[r.S("id")] = PyDict.Of(("id", r["id"]), ("kind", r["kind"]), ("cells", new List<object?>()));
-        foreach (var r in rooms)
-            foreach (var (key, value) in ((Compartment)r["src"]!).Extras())
-                roomOut[r.S("id")][key] = value;
+            roomOut[r.Id] = new Room { Id = r.Id, Kind = r.Kind, Fuel = r.Src.Fuel, Tonnes = r.Src.Tonnes, Mount = r.Src.Mount, Mounts = r.Src.Mounts };
         foreach (var (cid, rid) in owner)
-            roomOut[rid].L("cells").Add(cid);
+            roomOut[rid].Cells.Add(cid);
         foreach (var r in rooms)
         {
-            var fmt = ((Compartment)r["src"]!).PerSection;
-            if (!roomOut.TryGetValue(r.S("id"), out var out_))
+            var fmt = r.Src.PerSection;
+            if (!roomOut.TryGetValue(r.Id, out var whole))
                 continue;
-            var secs = (new HashSet<long>(out_.L("cells").Cast<string>().Select(cid => byId[cid].I("si")))).OrderBy(s => s).ToList();
+            var secs = whole.Cells.Select(cid => byId[cid].Si).Distinct().Order().ToList();
             if (string.IsNullOrEmpty(fmt) || secs.Count < 2)
-            {
-                out_.Pop("per_section", null);
                 continue;
-            }
-            roomOut.Remove(r.S("id"));
-            double vol = (out_.L("cells").Cast<string>().Select(cid => byId[cid].F("volume_m3"))).Sum();
+            roomOut.Remove(r.Id);
+            double vol = whole.Cells.Sum(cid => byId[cid].VolumeM3);
             if (vol == 0)
                 vol = 1.0;
             foreach (var si in secs)
             {
-                var own = out_.L("cells").Cast<string>().Where(cid => byId[cid].I("si") == si).ToList();
-                var part = out_.Where(k => k != "per_section");
-                part.Update(("id", fmt.Replace("{}", sections[(int)si].S("id"))), ("cells", own.Cast<object?>().ToList()));
-                if (out_.Has("tonnes"))
-                    part["tonnes"] = Math.Round(out_.F("tonnes") * own.Select(cid => byId[cid].F("volume_m3")).Sum() / vol, 1);
-                roomOut[part.S("id")] = part;
+                var own = whole.Cells.Where(cid => byId[cid].Si == si).ToList();
+                var part = whole with { Id = fmt.Replace("{}", sections[si].Id), Cells = own };
+                if (whole.Tonnes is double t)
+                    part.Tonnes = Math.Round(t * own.Sum(cid => byId[cid].VolumeM3) / vol, 1);
+                roomOut[part.Id] = part;
                 foreach (var cid in own)
-                    owner[cid] = part.S("id");
+                    owner[cid] = part.Id;
             }
         }
-        var also = new OrderedDictionary<string, List<object?>>(StringComparer.Ordinal);
+        var also = new OrderedDictionary<string, List<string>>(StringComparer.Ordinal);
         foreach (var r in rooms)
         {
-            if (!roomOut.TryGetValue(r.S("id"), out var ro) || ro.L("cells").Count > 0)
+            if (!roomOut.TryGetValue(r.Id, out var ro) || ro.Cells.Count > 0)
                 continue;
-            var rc = ((r.F("x0") + r.F("x1")) / 2, (r.F("y0") + r.F("y1")) / 2, (r.F("base") + r.F("top")) / 2);
-            var cand = cells.OrderBy(c => (-BoxOverlap(r, c), Math.Sqrt((rc.Item1 - (c.F("x0") + c.F("x1")) / 2) * (rc.Item1 - (c.F("x0") + c.F("x1")) / 2) + (rc.Item2 - (c.F("y0") + c.F("y1")) / 2) * (rc.Item2 - (c.F("y0") + c.F("y1")) / 2) + (rc.Item3 - (c.F("base") + c.F("top")) / 2) * (rc.Item3 - (c.F("base") + c.F("top")) / 2)))).ToList();
-            if (cand.Count > 0)
+            var (rx, ry, rz) = ((r.X0 + r.X1) / 2, (r.Y0 + r.Y1) / 2, (r.Base + r.Top) / 2);
+            double Distance(Cell c)
             {
-                string cid = cand[0].S("id");
-                if (!also.TryGetValue(cid, out var al))
-                    also[cid] = al = [];
-                al.Add(r["id"]);
-                ro.L("cells").Add(cid);
-                ro["shared"] = true;
+                var (dx, dy, dz2) = (rx - (c.X0 + c.X1) / 2, ry - (c.Y0 + c.Y1) / 2, rz - (c.Base + c.Top) / 2);
+                return Math.Sqrt(dx * dx + dy * dy + dz2 * dz2);
             }
+            var nearest = cells.OrderBy(c => -BoxOverlap(r, c)).ThenBy(Distance).FirstOrDefault();
+            if (nearest is null)
+                continue;
+            if (!also.TryGetValue(nearest.Id, out var al))
+                also[nearest.Id] = al = [];
+            al.Add(r.Id);
+            ro.Cells.Add(nearest.Id);
+            ro.Shared = true;
         }
 
         foreach (var c in cells)
         {
-            if (owner.ContainsKey(c.S("id")))
+            if (owner.ContainsKey(c.Id))
                 continue;
             string use, name;
-            if (hasBottom && c.I("ti") == 0)
+            if (hasBottom && c.Ti == 0)
                 (use, name) = ("double_bottom", "Double bottom");
-            else if (c.Has("tds_m") && c.S("band") is "P" or "S")
+            else if (c.TdsM != null && c.Band is "P" or "S")
                 (use, name) = ("tds", "Torpedo protection");
-            else if (tiers[(int)c.I("ti")].F("submerged") >= 0.5)
+            else if (tiers[c.Ti].Submerged >= 0.5)
                 (use, name) = ("stores", "Stores");
             else
                 (use, name) = ("accommodation", "Quarters");
-            string rid = $"{name} {c.S("section")}" + (use == "tds" ? $" {c.S("band")}" : "");
+            string rid = $"{name} {c.Section}" + (use == "tds" ? $" {c.Band}" : "");
             if (!roomOut.TryGetValue(rid, out var ro))
-                roomOut[rid] = ro = PyDict.Of(("id", rid), ("kind", use), ("cells", new List<object?>()));
-            ro.L("cells").Add(c["id"]);
-            owner[c.S("id")] = rid;
+                roomOut[rid] = ro = new Room { Id = rid, Kind = use };
+            ro.Cells.Add(c.Id);
+            owner[c.Id] = rid;
         }
 
         // ---------------- crew over the quarters, by volume ----------------
         long nCrew = (lay.Crew?.Complement ?? 0) - (lay.Crew?.QuarteredInSuperstructure ?? 0);
-        var quarters = cells.Where(c => Py.Eq(roomOut[owner[c.S("id")]]["kind"], "accommodation")).ToList();
-        double qv = quarters.Select(c => c.F("volume_m3")).Sum();
+        var quarters = cells.Where(c => roomOut[owner[c.Id]].Kind == "accommodation").ToList();
+        double qv = quarters.Sum(c => c.VolumeM3);
         if (nCrew != 0 && qv > 0)
         {
-            var shares = quarters.Select(c => nCrew * c.F("volume_m3") / qv).ToList();
+            var shares = quarters.Select(c => nCrew * c.VolumeM3 / qv).ToList();
             var men = shares.Select(s => (long)s).ToList();
-            foreach (var k in Enumerable.Range(0, quarters.Count).OrderBy(k => men[k] - shares[k]).ToList().Take((int)Math.Max(0, nCrew - men.Sum())))
+            foreach (var k in Enumerable.Range(0, quarters.Count).OrderBy(k => men[k] - shares[k]).Take((int)Math.Max(0, nCrew - men.Sum())).ToList())
                 men[k] += 1;
             for (int i = 0; i < quarters.Count; i++)
                 if (men[i] != 0)
-                    quarters[i]["crew"] = men[i];
+                    quarters[i].Crew = men[i];
         }
         foreach (var r in roomOut.Values)
         {
-            r.Pop("crew", null);
-            long crew = r.L("cells").Cast<string>().Where(cid => owner[cid] == r.S("id")).Sum(cid => Py.ToLong(byId[cid].Get("crew", 0L)));
-            if (crew != 0)
-                r["crew"] = crew;
+            long crew = r.Cells.Where(cid => owner[cid] == r.Id).Sum(cid => byId[cid].Crew ?? 0);
+            r.Crew = crew != 0 ? crew : null;
         }
 
         // ---------------- per-cell finish: room, permeability, neighbours ----------------
         var fuel = plan?.Fuel;
         foreach (var c in cells)
         {
-            var r = roomOut[owner[c.S("id")]];
-            c["room"] = r["id"];
-            if (also.TryGetValue(c.S("id"), out var al))
-                c["also"] = al;
-            double p = PERMEABILITY.TryGetValue(r.S("kind"), out var pp) ? pp : 0.9;
-            if (Py.Eq(r["kind"], "bunker") && Py.Eq(r.Get("fuel", fuel), "coal"))
+            var r = roomOut[owner[c.Id]];
+            c.Room = r.Id;
+            c.Also = also.GetValueOrDefault(c.Id);
+            double p = PERMEABILITY.GetValueOrDefault(r.Kind, 0.9);
+            if (r.Kind == "bunker" && (r.Fuel ?? fuel) == "coal")
                 p = COAL_PERMEABILITY;
-            c["permeability"] = p;
+            c.Permeability = p;
         }
-        var grid = new Dictionary<long, List<PyDict>>();
+        var grid = cells.GroupBy(c => c.Si).ToDictionary(g => g.Key, g => g.ToList());
+        static bool Meets(Cell c, Cell d) => d.T0 <= c.Ti && c.T0 <= d.Ti;
+        var lon = longi.ToDictionary(l_ => (l_.Section!, l_.Side!), l_ => l_.Id);
         foreach (var c in cells)
         {
-            if (!grid.TryGetValue(c.I("si"), out var l))
-                grid[c.I("si")] = l = [];
-            l.Add(c);
-        }
-        bool Meets(PyDict c, PyDict d) => d.I("t0") <= c.I("ti") && c.I("t0") <= d.I("ti");
-        var lon = new Dictionary<(string, string), string>();
-        foreach (var l_ in longi)
-            lon[(l_.S("section"), l_.S("side"))] = l_.S("id");
-        foreach (var c in cells)
-        {
-            var nb = new List<(PyDict D, string Via)>();
-            foreach (var d in grid[c.I("si")])
+            var nb = new List<(Cell D, string Via)>();
+            foreach (var d in grid[c.Si])
             {
                 if (ReferenceEquals(d, c) || !Meets(c, d))
                     continue;
                 double y;
-                if (Math.Abs(d.F("y0") - c.F("y1")) < 1e-6)
-                    y = c.F("y1");
-                else if (Math.Abs(d.F("y1") - c.F("y0")) < 1e-6)
-                    y = c.F("y0");
+                if (Math.Abs(d.Y0 - c.Y1) < 1e-6)
+                    y = c.Y1;
+                else if (Math.Abs(d.Y1 - c.Y0) < 1e-6)
+                    y = c.Y0;
                 else
                     continue;
-                nb.Add((d, lon[(c.S("section"), Math.Abs(y) < 1e-6 ? "C" : y > 0 ? "S" : "P")]));
+                nb.Add((d, lon[(c.Section, Math.Abs(y) < 1e-6 ? "C" : y > 0 ? "S" : "P")]));
             }
-            foreach (var (dt, dk) in new[] { (-1, tiers[(int)c.I("t0")].S("floor")), (1, tiers[(int)c.I("ti")].S("ceiling")) })
-                foreach (var d in grid[c.I("si")])
-                    if ((dt < 0 ? d.I("ti") == c.I("t0") - 1 : d.I("t0") == c.I("ti") + 1) && Ov(c.F("y0"), c.F("y1"), d.F("y0"), d.F("y1")) > 1e-6)
+            foreach (var (dt, dk) in new[] { (-1, tiers[c.T0].Floor), (1, tiers[c.Ti].Ceiling) })
+                foreach (var d in grid[c.Si])
+                    if ((dt < 0 ? d.Ti == c.T0 - 1 : d.T0 == c.Ti + 1) && Ov(c.Y0, c.Y1, d.Y0, d.Y1) > 1e-6)
                         nb.Add((d, dk));
             foreach (int ds in new[] { -1, 1 })
-                if (grid.TryGetValue(c.I("si") + ds, out var gl))
+                if (grid.TryGetValue(c.Si + ds, out var gl))
                     foreach (var d in gl)
-                        if (Meets(c, d) && Ov(c.F("y0"), c.F("y1"), d.F("y0"), d.F("y1")) > 1e-6)
-                            nb.Add((d, tb[(int)Math.Min(c.I("si"), d.I("si"))].S("id")));
-            c["neighbours"] = nb.Select(t => (object?)new List<object?> { t.D["id"], Py.Eq(t.D["room"], c["room"]) ? "open" : t.Via }).ToList();
+                        if (Meets(c, d) && Ov(c.Y0, c.Y1, d.Y0, d.Y1) > 1e-6)
+                            nb.Add((d, tb[Math.Min(c.Si, d.Si)].Id));
+            c.Neighbours = nb.Select(t => new[] { t.D.Id, t.D.Room == c.Room ? "open" : t.Via }).ToList();
         }
 
         foreach (var r in roomOut.Values)
         {
-            var own = r.L("cells").Cast<string>().Select(cid => byId[cid]).ToList();
-            r["volume_m3"] = Math.Round(own.Where(c => owner[c.S("id")] == r.S("id")).Select(c => c.F("volume_m3")).Sum(), 1);
-            r["x0"] = Math.Round(own.Select(c => c.F("x0")).Min(), 3);
-            r["x1"] = Math.Round(own.Select(c => c.F("x1")).Max(), 3);
-            r["base"] = Math.Round(own.Select(c => c.F("base")).Min(), 2);
-            r["top"] = Math.Round(own.Select(c => c.F("top")).Max(), 2);
+            var own = r.Cells.Select(cid => byId[cid]).ToList();
+            r.VolumeM3 = Math.Round(own.Where(c => owner[c.Id] == r.Id).Sum(c => c.VolumeM3), 1);
+            r.X0 = Math.Round(own.Min(c => c.X0), 3);
+            r.X1 = Math.Round(own.Max(c => c.X1), 3);
+            r.Base = Math.Round(own.Min(c => c.Base), 2);
+            r.Top = Math.Round(own.Max(c => c.Top), 2);
         }
 
-        PyDict Rnd(PyDict c)
+        // ---------------- published precision ----------------
+        foreach (var c in cells)
         {
-            var o = new PyDict();
-            foreach (var kv in c)
-                if (!(kv.Key is "si" or "ti" or "t0"))
-                    o[kv.Key] = R(kv.Value, 3);
-            o["volume_m3"] = Math.Round(c.F("volume_m3"), 1);
-            o["base"] = Math.Round(c.F("base"), 2);
-            o["top"] = Math.Round(c.F("top"), 2);
-            return o;
+            (c.X0, c.X1, c.Y0, c.Y1) = (Math.Round(c.X0, 3), Math.Round(c.X1, 3), Math.Round(c.Y0, 3), Math.Round(c.Y1, 3));
+            (c.Base, c.Top, c.VolumeM3, c.Permeability) = (Math.Round(c.Base, 2), Math.Round(c.Top, 2), Math.Round(c.VolumeM3, 1), Math.Round(c.Permeability, 3));
         }
-
-        PyDict RoundDict(PyDict d, int n)
+        foreach (var d in dks)
         {
-            var o = new PyDict();
-            foreach (var kv in d)
-                o[kv.Key] = R(kv.Value, n);
-            return o;
+            d.Z = Math.Round(d.Z, 3);
+            (d.ArmourMm, d.X0, d.X1) = (Round(d.ArmourMm, 3), Round(d.X0, 3), Round(d.X1, 3));
         }
-
-        return PyDict.Of(
-            ("decks", dks.Skip(1).Select(d => (object?)RoundDict(d, 3)).ToList()),
-            ("tiers", tiers.Select(t => (object?)RoundDict(t, 2)).ToList()),
-            ("sections", sections.Select(s => (object?)PyDict.Of(("id", s["id"]), ("x0", Math.Round(s.F("x0"), 3)), ("x1", Math.Round(s.F("x1"), 3)))).ToList()),
-            ("bulkheads", tb.Concat(longi).Cast<object?>().ToList()),
-            ("cells", cells.Select(c => (object?)Rnd(c)).ToList()),
-            ("rooms", roomOut.Values.OrderBy(r => -r.F("x1")).ToList().Cast<object?>().ToList()));
+        foreach (var t in tiers)
+            (t.Base, t.Top, t.Submerged) = (Math.Round(t.Base, 2), Math.Round(t.Top, 2), Math.Round(t.Submerged, 2));
+        return new SubdivisionData(dks.Skip(1).ToList(), tiers,
+            sections.Select(s => s with { X0 = Math.Round(s.X0, 3), X1 = Math.Round(s.X1, 3) }).ToList(), tb.Concat(longi).ToList(), cells,
+            roomOut.Values.OrderBy(r => -r.X1).ToList());
     }
+
+    static double? Round(double? v, int n) => v is double d ? Math.Round(d, n) : null;
 
     /// <summary>plate_mm on the subdivision's decks and unarmoured bulkheads, and deck planking. Returns the ids of the
     /// layout's decks (a flight deck) that take the planking.</summary>
-    public static List<string> DeckPlates(PyDict sub, HullPlates plating, Design design, Layout lay)
+    public static List<string> DeckPlates(SubdivisionData sub, HullPlates plating, Design design, Layout lay)
     {
         double tds = design.Armour?.TdsM ?? 0.0;
-        foreach (PyDict d in sub.L("decks").Cast<PyDict>())
+        foreach (var d in sub.Decks)
         {
-            string kind = d.S("kind");
-            if (kind == "inner_bottom")
-                d["plate_mm"] = plating.InnerBottomMm;
-            else if (kind == "main")
+            switch (d.Kind)
             {
-                d["plate_mm"] = plating.StrengthDeckMm;
-                d["plate_end_mm"] = plating.StrengthDeckEndMm;
+                case "inner_bottom":
+                    d.PlateMm = plating.InnerBottomMm;
+                    break;
+                case "main":
+                    (d.PlateMm, d.PlateEndMm) = (plating.StrengthDeckMm, plating.StrengthDeckEndMm);
+                    break;
+                case "raised":
+                    d.PlateMm = plating.StrengthDeckEndMm;
+                    break;
+                default:
+                    d.PlateMm = plating.DeckMm;
+                    break;
             }
-            else if (kind == "raised")
-                d["plate_mm"] = plating.StrengthDeckEndMm;
-            else
-                d["plate_mm"] = plating.DeckMm;
         }
         double wood = plating.DeckWoodMm;
         var planked = wood != 0 ? lay.Decks.Where(dk => dk.Kind == "flight_deck").Select(dk => dk.Id).ToList() : [];
         if (wood != 0 && planked.Count == 0)
-            foreach (PyDict d in sub.L("decks").Cast<PyDict>())
-                if (Py.In(d["kind"], "main", "raised"))
-                    d["wood_mm"] = plating.DeckWoodMm;
-        foreach (PyDict b in sub.L("bulkheads").Cast<PyDict>())
-            b["plate_mm"] = Py.Eq(b.Get("kind"), "tds") ? Math.Round(Armour.TDS_MM_PER_M * tds, 1) : plating.BulkheadMm;
+            foreach (var d in sub.Decks.Where(d => d.Kind is "main" or "raised"))
+                d.WoodMm = plating.DeckWoodMm;
+        foreach (var b in sub.Bulkheads)
+            b.PlateMm = b.Kind == "tds" ? Math.Round(Armour.TDS_MM_PER_M * tds, 1) : plating.BulkheadMm;
         return planked;
     }
 }

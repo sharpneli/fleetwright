@@ -299,7 +299,7 @@ public static class Crew
 
     /// <summary>Where the complement stands at battle stations: (components {(kind, id): men}, rooms {id: men}, summary).</summary>
     static (List<((string Kind, string Id) Key, long Men)> Comps, OrderedDictionary<string, long> Rooms, OrderedDictionary<string, long> Summary)
-        BattleStations(Layout lay, PyDict sub)
+        BattleStations(Layout lay, SubdivisionData sub)
     {
         var deps = lay.Crew?.Departments ?? new OrderedDictionary<string, long>();
         var onComp = new OrderedDictionary<(string, string), long>();
@@ -338,8 +338,8 @@ public static class Crew
             Put(onComp, [(("barbette", $"{k} barbette"), below)], "handling");
         }
         long rest = deps.Where(kv => !(kv.Key is "weapons" or "engineering")).Sum(kv => kv.Value);
-        var rooms = sub.L("rooms").Cast<PyDict>().ToList();
-        var mach = rooms.Where(r => Py.In(r["kind"], "boiler_room", "engine_room") && !r.B("shared")).Select(r => (r.S("id"), r.F("volume_m3"))).ToList();
+        var rooms = sub.Rooms.Where(r => r.Shared != true).ToList();
+        var mach = rooms.Where(r => r.Kind is "boiler_room" or "engine_room").Select(r => (r.Id, r.VolumeM3)).ToList();
         if (mach.Count > 0)
             Put(onRoom, Spread(Dep("engineering"), mach), "machinery");
         else
@@ -377,7 +377,7 @@ public static class Crew
             Put(onComp, [(("superstructure", d.Id), n)], "directors");
             rest -= n;
         }
-        var steer = rooms.Where(r => Py.Eq(r["kind"], "steering") && !r.B("shared")).Select(r => r.S("id")).ToList();
+        var steer = rooms.Where(r => r.Kind == "steering").Select(r => r.Id).ToList();
         if (steer.Count > 0)
         {
             long n = Take(STEERING_PARTY, rest);
@@ -397,7 +397,7 @@ public static class Crew
                 rest -= air;
             }
         }
-        var free = rooms.Where(r => Py.In(r["kind"], "accommodation", "stores") && !r.B("shared")).Select(r => (r.S("id"), r.F("volume_m3"))).ToList();
+        var free = rooms.Where(r => r.Kind is "accommodation" or "stores").Select(r => (r.Id, r.VolumeM3)).ToList();
         if (free.Count > 0)
             Put(onRoom, Spread(rest, free), "repair");
         else if (vol.Count > 0)
@@ -410,22 +410,18 @@ public static class Crew
 
     /// <summary>battle_crew on the rooms and cells where the complement stands at battle stations, and its summary in the
     /// report's crew. Returns the men on the components: {(kind, id): men}, for the hitboxes.</summary>
-    public static Dictionary<(string Kind, string Id), long> AssignBattleCrew(Layout lay, PyDict sub)
+    public static Dictionary<(string Kind, string Id), long> AssignBattleCrew(Layout lay, SubdivisionData sub)
     {
         var (comps, roomsSt, summary) = BattleStations(lay, sub);
-        var cells = new Dictionary<string, PyDict>(StringComparer.Ordinal);
-        foreach (PyDict cell in sub.L("cells").Cast<PyDict>())
-            cells[cell.S("id")] = cell;
-        foreach (PyDict r in sub.L("rooms").Cast<PyDict>())
+        var cells = sub.Cells.ToDictionary(c => c.Id, StringComparer.Ordinal);
+        foreach (var r in sub.Rooms)
         {
-            if (roomsSt.TryGetValue(r.S("id"), out var men) && men != 0)
-            {
-                r["battle_crew"] = men;
-                var own = r.L("cells").Cast<string>().Where(cid => Py.Eq(cells[cid]["room"], r["id"]))
-                    .Select(cid => (cid, cells[cid].F("volume_m3"))).ToList();
-                foreach (var (cid, m) in Spread(men, own))
-                    cells[cid]["battle_crew"] = m;
-            }
+            if (!roomsSt.TryGetValue(r.Id, out var men) || men == 0)
+                continue;
+            r.BattleCrew = men;
+            var own = r.Cells.Where(cid => cells[cid].Room == r.Id).Select(cid => (cid, cells[cid].VolumeM3)).ToList();
+            foreach (var (cid, m) in Spread(men, own))
+                cells[cid].BattleCrew = m;
         }
         if (lay.Crew != null && summary.Count > 0)
             lay.Crew.BattleStations = summary;

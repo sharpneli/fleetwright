@@ -358,7 +358,9 @@ public abstract class Style
     public virtual List<(string Name, long Men)> CrewExtra(Design design) => [];
 
     /// <summary>Extra report values.</summary>
-    public virtual PyDict Results(Design design, Layout lay, Navarch.Result r) => new();
+    public virtual void AddResults(Results results, Design design, Layout lay, Navarch.Result r)
+    {
+    }
 
     /// <summary>Extra lines for the summary sheet.</summary>
     public virtual List<string> Summary(Design design, Layout lay, Navarch.Result r) => [];

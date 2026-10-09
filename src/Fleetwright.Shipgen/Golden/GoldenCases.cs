@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Fleetwright.Shipgen.Golden;
@@ -52,13 +53,13 @@ public static class GoldenCases
         if (rec["validate_no_limits"] is JsonArray { Count: 0 })
         {
             var sw = Stopwatch.StartNew();
-            var build = Try(() => JsonFile.FromPy(ShipDesign.Build(design)));
+            var build = Try(() => JsonSerializer.SerializeToNode(ShipDesign.Build(design), ShipgenJson.Default.Ship));
             rec["build_s"] = Math.Round(sw.Elapsed.TotalSeconds, 3);
             rec["build"] = build;
             if (build is JsonObject b && !b.ContainsKey("raised"))
             {
                 double L = (double)b["report"]!["results"]!["length_m"]!;
-                var hinted = Try(() => JsonFile.FromPy(ShipDesign.Build(design, L)));
+                var hinted = Try(() => JsonSerializer.SerializeToNode(ShipDesign.Build(design, L), ShipgenJson.Default.Ship));
                 var hint = new JsonObject { ["length_m"] = L };
                 if (hinted is JsonObject h && h.ContainsKey("raised"))
                     hint["raised"] = h["raised"]!.DeepClone();

@@ -310,19 +310,19 @@ public sealed class CarrierStyle : Style
         return [("air_group", (long)Math.Round(av.Aircraft * (6 + 0.75 * av.AircraftT)))];
     }
 
-    public override PyDict Results(Design design, Layout lay, Navarch.Result r)
+    public override void AddResults(Results results, Design design, Layout lay, Navarch.Result r)
     {
         var av = Aviation(design);
         var dp = DeckPlan(design);
-        var out_ = PyDict.Of(("aircraft", av.Aircraft), ("aircraft_capacity", dp.Capacity), ("hangar_area_m2", (long)Math.Round(dp.HangarArea)),
-            ("flight_deck", dp.Kind));
-        if (dp.Kind != "none")
-        {
-            var ys = dp.Points!.Select(p => p.Y).ToList();
-            out_.Update(("flight_deck_m", new List<object?> { Math.Round(dp.X1 - dp.X0, 1), Math.Round(ys.Max() - ys.Min(), 1) }),
-                ("flight_deck_height_m", Math.Round(r.Freeboard + dp.FdH, 2)));
-        }
-        return out_;
+        results.Aircraft = av.Aircraft;
+        results.AircraftCapacity = dp.Capacity;
+        results.HangarAreaM2 = (long)Math.Round(dp.HangarArea);
+        results.FlightDeck = dp.Kind;
+        if (dp.Kind == "none")
+            return;
+        var ys = dp.Points!.Select(p => p.Y).ToList();
+        results.FlightDeckM = [Math.Round(dp.X1 - dp.X0, 1), Math.Round(ys.Max() - ys.Min(), 1)];
+        results.FlightDeckHeightM = Math.Round(r.Freeboard + dp.FdH, 2);
     }
 
     public override List<string> Summary(Design design, Layout lay, Navarch.Result r)

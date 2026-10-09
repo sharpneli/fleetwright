@@ -145,7 +145,7 @@ public static class Stability
     }
 
     /// <summary>The full-load hydrostatics a game needs to settle, trim and heel a flooded ship by added weight.</summary>
-    public static PyDict Hydrostatics(HullForm form, Navarch.Result res)
+    public static Hydrostatics Hydrostatics(HullForm form, Navarch.Result res)
     {
         double L = form.Hull.L, D = res.Depth, T = res.Draught, disp = res.Full;
         var (area, lcf, iL, iT) = form.Waterplane();
@@ -153,11 +153,13 @@ public static class Stability
         double kg = res.Weights.Select(w => w.W * w.Z!.Value).Sum() / res.Weights.Select(w => w.W).Sum();
         double kb = 0.53 * T;
         double gmL = kb + iL / vol - kg;
-        return PyDict.Of(("displacement_t", (long)Math.Round(disp)), ("volume_m3", (long)Math.Round(vol)), ("waterplane_m2", Math.Round(area, 1)),
-            ("lcf", Math.Round(lcf, 3)), ("lcg", Math.Round(res.Lcg, 3)), ("lcb", Math.Round(res.Lcb, 3)), ("kg", Math.Round(kg - D, 2)),
-            ("kb", Math.Round(kb - D, 2)), ("gm_t", Math.Round(res.GmFull, 3)), ("gm_l", Math.Round(gmL, 1)),
-            ("i_t_m4", (long)Math.Round(iT)), ("i_l_m4", (long)Math.Round(iL)), ("tpc_t", Math.Round(Weight.SEAWATER * area / 100, 2)),
-            ("mct_tm", Math.Round(disp * gmL / (100 * L), 1)));
+        return new Hydrostatics
+        {
+            DisplacementT = (long)Math.Round(disp), VolumeM3 = (long)Math.Round(vol), WaterplaneM2 = Math.Round(area, 1), Lcf = Math.Round(lcf, 3),
+            Lcg = Math.Round(res.Lcg, 3), Lcb = Math.Round(res.Lcb, 3), Kg = Math.Round(kg - D, 2), Kb = Math.Round(kb - D, 2),
+            GmT = Math.Round(res.GmFull, 3), GmL = Math.Round(gmL, 1), ITM4 = (long)Math.Round(iT), ILM4 = (long)Math.Round(iL),
+            TpcT = Math.Round(Weight.SEAWATER * area / 100, 2), MctTm = Math.Round(disp * gmL / (100 * L), 1),
+        };
     }
 
     /// <summary>GM (full load, and light), roll period, wind heel and trim of the solved ship, set on res.</summary>

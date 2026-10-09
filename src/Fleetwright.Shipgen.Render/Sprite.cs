@@ -71,10 +71,10 @@ public sealed class ShipSprites
     /// <summary>Draw a designed ship (ShipDesign.Build's dict) at S px/m with the given mip levels. look ({"navy",
     /// "era"}, either may be left out) overrides the design's own look key by key, so the game can repaint a design
     /// into a later era without touching it.</summary>
-    public static ShipSprites Build(PyDict ship, double S, int mips = 0, LookInput? look = null)
+    public static ShipSprites Build(Ship ship, double S, int mips = 0, LookInput? look = null)
     {
-        var design = (Design)ship["design"]!;
-        var rd = ship.D("render");
+        var design = ship.Design;
+        var rd = (PyDict)JsonBridge.ToPy(ship.Render, ShipgenJson.Default.RenderData)!;
         if (look != null)
         {
             var own = Looks.LookOf(design);

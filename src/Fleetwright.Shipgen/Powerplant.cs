@@ -424,23 +424,18 @@ public static class Powerplant
     }
 
     /// <summary>The plant's static numbers for the game (report "plant").</summary>
-    public static PyDict Published(PlantSpec p, double shp, PyDict? extra = null)
+    public static PlantReport Published(PlantSpec p, double shp)
     {
         var t = p.Tech;
         var r = Rated(p, shp);
-        var o = PyDict.Of(("name", t.Name), ("fuel", t.Fuel), ("rated_kw", (long)Math.Round(r.Kw)),
-            ("rated_shp", Math.Round(shp / 10.0) * 10), ("continuous_kw", (long)Math.Round(r.ContinuousKw)),
-            ("overload_max", Math.Round(r.Overload, 3)), ("shafts", r.Shafts), ("units", r.Units),
-            ("unit_mw", Math.Round(r.UnitMw, 2)), ("weight_t", Math.Round(r.WeightT, 1)),
-            ("sfc_g_per_kwh", Math.Round(r.Sfc, 1)),
-            ("part_load", PyDict.Of(("curve", t.PartLoad), ("loads", CURVE_LOADS.Cast<object?>().ToList()),
-                ("multipliers", CURVES[t.PartLoad].Pts.Cast<object?>().ToList()), ("overload_per_tenth", CURVES[t.PartLoad].Over))),
-            ("draught", t.Draught.System), ("stress", p.Stress), ("transmission", p.Transmission),
-            ("arrangement", p.Arrangement.Name ?? (object)p.Arrangement.Rooms!.Cast<object?>().ToList()), ("crew", r.Crew));
-        if (t.Draught.System == "forced_boost")
-            o["natural_fraction"] = t.Draught.NaturalFraction ?? 0.6;
-        if (extra != null)
-            o.Update(extra);
-        return o;
+        return new PlantReport
+        {
+            Name = t.Name, Fuel = t.Fuel, RatedKw = (long)Math.Round(r.Kw), RatedShp = Math.Round(shp / 10.0) * 10,
+            ContinuousKw = (long)Math.Round(r.ContinuousKw), OverloadMax = Math.Round(r.Overload, 3), Shafts = r.Shafts, Units = r.Units,
+            UnitMw = Math.Round(r.UnitMw, 2), WeightT = Math.Round(r.WeightT, 1), SfcGPerKwh = Math.Round(r.Sfc, 1),
+            PartLoad = new PartLoad(t.PartLoad, CURVE_LOADS, CURVES[t.PartLoad].Pts, CURVES[t.PartLoad].Over),
+            Draught = t.Draught.System, NaturalFraction = t.Draught.System == "forced_boost" ? t.Draught.NaturalFraction ?? 0.6 : null,
+            Stress = p.Stress, Transmission = p.Transmission, Arrangement = p.Arrangement, Crew = r.Crew,
+        };
     }
 }

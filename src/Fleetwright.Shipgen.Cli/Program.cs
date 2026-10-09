@@ -177,7 +177,7 @@ public static class Program
                 Console.WriteLine($"{p}: invalid input:\n  " + string.Join("\n  ", errs));
                 continue;
             }
-            PyDict ship;
+            Ship ship;
             try
             {
                 ship = ShipDesign.Build(design);
@@ -194,14 +194,15 @@ public static class Program
                 continue;
             }
             string dir = Path.Combine(outDir, design.Id!);
-            var rep = ship.D("report");
-            PyJson.Save(Path.Combine(dir, "report.json"), rep, 2);
-            PyJson.Save(Path.Combine(dir, "hitboxes.json"), ship["hitboxes"], 1);
-            PyJson.Save(Path.Combine(dir, "ship.json"), ship, 1);
+            var rep = ship.Report;
+            var json = ShipgenJson.Default;
+            JsonFile.Save(Path.Combine(dir, "report.json"), rep, json.Report, 2);
+            JsonFile.Save(Path.Combine(dir, "hitboxes.json"), ship.Hitboxes, json.Hitboxes);
+            JsonFile.Save(Path.Combine(dir, "ship.json"), ship, json.Ship);
             Console.WriteLine(Summary(design, rep));
-            foreach (var e in rep.L("errors"))
+            foreach (var e in rep.Errors)
                 Console.WriteLine("      ERROR: " + e);
-            foreach (var w in rep.L("warnings"))
+            foreach (var w in rep.Warnings)
                 Console.WriteLine("      warn:  " + w);
             if (a.Has("no-sprites"))
                 continue;
@@ -220,16 +221,16 @@ public static class Program
     }
 
     /// <summary>design.py's one-line summary.</summary>
-    static string Summary(Shipgen.Design design, PyDict rep)
+    static string Summary(Shipgen.Design design, Report rep)
     {
-        var res = rep.D("results");
-        return $"{design.Id,14}: {(Py.Truthy(rep["valid"]) ? "OK " : "BAD")} " +
-               $"{res["length_m"],5:F1} x {res["beam_m"],4:F1} m  " +
-               $"std {res["standard_displacement_t"],6:N0} t " +
-               $"full {res["full_displacement_t"],6:N0} t  T {res["draught_m"],5} m  " +
-               $"{res["power_shp"],9:N0} shp  " +
-               $"GM {res["gm_full_m"],5}  trim {res["trim_m"]:+0.00;-0.00}  " +
-               $"shift {res["layout_shift_m"]:+0.0;-0.0}";
+        var res = rep.Results;
+        return $"{design.Id,14}: {(rep.Valid ? "OK " : "BAD")} " +
+               $"{res.LengthM,5:F1} x {res.BeamM,4:F1} m  " +
+               $"std {res.StandardDisplacementT,6:N0} t " +
+               $"full {res.FullDisplacementT,6:N0} t  T {res.DraughtM,5} m  " +
+               $"{res.PowerShp,9:N0} shp  " +
+               $"GM {res.GmFullM,5}  trim {res.TrimM:+0.00;-0.00}  " +
+               $"shift {res.LayoutShiftM:+0.0;-0.0}";
     }
 
     static List<GoldenCase> SelectCases(string root, IReadOnlyList<string> pats)
@@ -320,7 +321,7 @@ public static class Program
                 best = Math.Min(best, sw.Elapsed.TotalSeconds);
                 alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
                 // the designer's per-knob rebuild: the same design again, starting from the length it had
-                double length = ship.D("report").D("results").F("length_m");
+                double length = ship.Report.Results.LengthM;
                 sw.Restart();
                 ShipDesign.Build(design, length);
                 bestHinted = Math.Min(bestHinted, sw.Elapsed.TotalSeconds);

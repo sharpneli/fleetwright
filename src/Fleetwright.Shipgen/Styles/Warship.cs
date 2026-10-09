@@ -62,9 +62,12 @@ public sealed class PlaningStyle : Style
 
     public override string CrewStandard => "H0";
 
-    public override PyDict Results(Design design, Layout lay, Navarch.Result r) =>
-        PyDict.Of(("volumetric_froude", Math.Round(Navarch.VolumetricFroude(r.Full, design.SpeedKn!.Value), 2)),
-            ("power_to_weight_hp_per_t", Math.Round(r.PowerShp / r.Full, 1)), ("power_model", "planing placeholder"));
+    public override void AddResults(Results results, Design design, Layout lay, Navarch.Result r)
+    {
+        results.VolumetricFroude = Math.Round(Navarch.VolumetricFroude(r.Full, design.SpeedKn!.Value), 2);
+        results.PowerToWeightHpPerT = Math.Round(r.PowerShp / r.Full, 1);
+        results.PowerModel = "planing placeholder";
+    }
 
     public override List<string> Summary(Design design, Layout lay, Navarch.Result r) =>
         [$"planing: Fn∇ {Navarch.VolumetricFroude(r.Full, design.SpeedKn!.Value):F2}   " +

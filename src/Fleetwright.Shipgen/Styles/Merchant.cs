@@ -124,11 +124,14 @@ public sealed class MerchantStyle : Style
     public override string CrewStandard => "H3";
     public override double CrewDeckK => 0.3;
 
-    public override PyDict Results(Design design, Layout lay, Navarch.Result r)
+    public override void AddResults(Results results, Design design, Layout lay, Navarch.Result r)
     {
         var cg = Cargo(design);
-        return PyDict.Of(("cargo_t", Math.Round(cg.DeadweightT)), ("deadweight_t", (long)Math.Round(r.Full - r.Std)), ("cargo_kind", cg.Kind),
-            ("holds", (long)(lay.Geo.Holds?.Count ?? 0)), ("machinery_position", MachineryPosition(design)));
+        results.CargoT = Math.Round(cg.DeadweightT);
+        results.DeadweightT = (long)Math.Round(r.Full - r.Std);
+        results.CargoKind = cg.Kind;
+        results.Holds = lay.Geo.Holds?.Count ?? 0;
+        results.MachineryPosition = MachineryPosition(design);
     }
 
     public override List<string> Summary(Design design, Layout lay, Navarch.Result r)

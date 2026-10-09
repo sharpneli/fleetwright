@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Fleetwright.Shipgen;
 
@@ -10,9 +11,9 @@ namespace Fleetwright.Shipgen;
 public static class JsonFile
 {
     static readonly JsonDocumentOptions Reading = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
-    static readonly JsonSerializerOptions Writing = new()
+    static JsonSerializerOptions Writing(int indent) => new()
     {
-        WriteIndented = true, IndentSize = 1, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        WriteIndented = true, IndentSize = indent, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
     public static JsonNode? Parse(string text) => JsonNode.Parse(text, documentOptions: Reading);
@@ -30,13 +31,13 @@ public static class JsonFile
         return sr.ReadToEnd();
     }
 
-    public static string Write(JsonNode? node) => node?.ToJsonString(Writing) ?? "null";
+    public static string Write(JsonNode? node, int indent = 1) => node?.ToJsonString(Writing(indent)) ?? "null";
 
-    public static void Save(string path, JsonNode? node)
+    public static void Save(string path, JsonNode? node, int indent = 1)
     {
         if (Path.GetDirectoryName(path) is { Length: > 0 } dir)
             Directory.CreateDirectory(dir);
-        var bytes = Encoding.UTF8.GetBytes(Write(node) + "\n");
+        var bytes = Encoding.UTF8.GetBytes(Write(node, indent) + "\n");
         if (!path.EndsWith(".gz", StringComparison.OrdinalIgnoreCase))
         {
             File.WriteAllBytes(path, bytes);
@@ -53,6 +54,10 @@ public static class JsonFile
         n = 0;
         return v.GetValueKind() == JsonValueKind.Number && v.TryGetValue(out JsonElement e) ? e.TryGetInt64(out n) : v.TryGetValue(out n);
     }
+
+    /// <summary>A typed value written as JSON (the shipgen context's options).</summary>
+    public static void Save<T>(string path, T value, JsonTypeInfo<T> info, int indent = 1) =>
+        Save(path, JsonSerializer.SerializeToNode(value, info), indent);
 
     /// <summary>Temporary: a port value (PyDict tree) as a JSON tree, until the output is typed.</summary>
     public static JsonNode? FromPy(object? v) => Parse(PyJson.Dumps(PyJson.Plain(v), null));
