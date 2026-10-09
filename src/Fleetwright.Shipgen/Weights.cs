@@ -11,8 +11,8 @@ public readonly record struct ZRel(string Kind, double V)
 /// densities they are weighed with.</summary>
 public sealed class Weight
 {
-    public const double STEEL = 7.85;      // t/m^3
-    public const double SEAWATER = 1.025;  // t/m^3
+    public const double Steel = 7.85;      // t/m^3
+    public const double Seawater = 1.025;  // t/m^3
 
     public string Name;
     public string Group;

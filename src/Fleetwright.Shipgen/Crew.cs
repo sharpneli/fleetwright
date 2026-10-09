@@ -69,7 +69,7 @@ public sealed class CrewReport
 /// <summary>The complement and the volume it needs (research/crew-space-model.md), and battle stations.</summary>
 public static class Crew
 {
-    const double USABLE = 0.65, CREW_T = 0.12, PROVISIONS_T_PER_M3 = 0.6;
+    const double Usable = 0.65, CrewT = 0.12, ProvisionsTPerM3 = 0.6;
 
     static readonly Dictionary<string, CrewStandard> Standards = new(StringComparer.Ordinal)
     {
@@ -130,7 +130,7 @@ public static class Crew
         }
         foreach (var a in lay.Aa)
         {
-            var cfg = Geometry.AA_CFG[a.Type];
+            var cfg = Geometry.AaCfg[a.Type];
             guns += GunCrew(cfg.CalibreMm, cfg.Barrels);
         }
         var deps = new OrderedDictionary<string, long>(StringComparer.Ordinal)
@@ -176,7 +176,7 @@ public static class Crew
         return new Needs(live, prov, water, qDist, 0.06 * qDist, aNet, aSleep / Math.Max(1, n), hEff, beds, nr, nc);
     }
 
-    static readonly string[] TAKEN = ["magazine", "boiler_room", "engine_room", "bunker", "hold", "cargo_tank", "fuel_tank", "steering"];
+    static readonly string[] Taken = ["magazine", "boiler_room", "engine_room", "bunker", "hold", "cargo_tank", "fuel_tank", "steering"];
 
     /// <summary>The ship's volume and what of it is free for the crew, m3; the superstructure's by block.</summary>
     sealed record Space(double HullM3, double TakenM3, double SuperstructureM3, double FreeM3, double UsableM3, double HullUsableM3,
@@ -196,7 +196,7 @@ public static class Crew
         double taken = 0.0;
         foreach (var c in lay.Compartments)
         {
-            if (!TAKEN.Contains(c.Kind))
+            if (!Taken.Contains(c.Kind))
                 continue;
             double h = c.Top is double top && c.Base is double bse ? top - bse : c.Kind is "hold" or "cargo_tank" ? D - db : low;
             taken += (c.X1 - c.X0) * 2 * c.HalfWidth * h;
@@ -207,10 +207,10 @@ public static class Crew
         var rooms = new OrderedDictionary<string, double>(StringComparer.Ordinal);
         foreach (var b in lay.Blocks)
             if (b.Kind != "director" && b.Role is not ("hangar" or "director" or "casemate"))
-                rooms[b.Id] = (b.Area ?? (b.X1 - b.X0) * b.W) * Layout.LEVEL_H * 0.9;
+                rooms[b.Id] = (b.Area ?? (b.X1 - b.X0) * b.W) * Layout.LevelH * 0.9;
         double sup = rooms.Values.Sum();
         double free = Math.Max(0.0, hullV - taken) + raised + sup;
-        return new Space(hullV + raised, taken, sup, free, USABLE * free, USABLE * (Math.Max(0.0, hullV - taken) + raised),
+        return new Space(hullV + raised, taken, sup, free, Usable * free, Usable * (Math.Max(0.0, hullV - taken) + raised),
             rooms.Select(kv => (kv.Key, kv.Value)).ToList());
     }
 
@@ -234,7 +234,7 @@ public static class Crew
     static double TankRoom(Layout lay, Design design, Navarch.Result res)
     {
         string fuel = res.Plant.Tech.Fuel;
-        double oil = fuel == "coal" ? 0.0 : res.Fuel * Powerplant.FUELS[fuel].Stowage;
+        double oil = fuel == "coal" ? 0.0 : res.Fuel * Powerplant.Fuels[fuel].Stowage;
         double tank = Powerplant.DoubleBottom(res.Depth) * lay.Hull.L * lay.Hull.B * design.BlockCoefficient * 0.6;
         return Math.Max(0.0, tank - oil);
     }
@@ -270,10 +270,10 @@ public static class Crew
         foreach (var (bid, m) in upBlocks)
         {
             var b = byId[bid];
-            lay.Weights.Add(new Weight($"Crew and effects ({bid})", "misc", m * CREW_T, (b.X0 + b.X1) / 2, ZRel.Deck(b.Base + 1.3)));
+            lay.Weights.Add(new Weight($"Crew and effects ({bid})", "misc", m * CrewT, (b.X0 + b.X1) / 2, ZRel.Deck(b.Base + 1.3)));
         }
-        lay.Weights.Add(new Weight("Crew and effects", "misc", (n - up) * CREW_T, 0.0, ZRel.Deck(-1.5)));
-        lay.Weights.Add(new Weight("Provisions", "misc", nd.ProvisionsM3 * PROVISIONS_T_PER_M3, 0.0, ZRel.Frac(0.4)));
+        lay.Weights.Add(new Weight("Crew and effects", "misc", (n - up) * CrewT, 0.0, ZRel.Deck(-1.5)));
+        lay.Weights.Add(new Weight("Provisions", "misc", nd.ProvisionsM3 * ProvisionsTPerM3, 0.0, ZRel.Frac(0.4)));
         lay.Weights.Add(new Weight("Fresh water", "misc", nd.WaterM3, xMid, ZRel.Frac(0.05)));
         var quarters = new OrderedDictionary<string, long>(StringComparer.Ordinal);
         foreach (var (bid, m) in upBlocks)
@@ -290,10 +290,10 @@ public static class Crew
         };
     }
 
-    const double HANDLING = 0.4;
-    static readonly (double A, double B) COMMAND_K = (4, 0.2);
-    const double AFT_CONTROL = 0.25;
-    const long DIRECTOR_K = 2, STEERING_PARTY = 2;
+    const double Handling = 0.4;
+    static readonly (double A, double B) CommandK = (4, 0.2);
+    const double AftControl = 0.25;
+    const long DirectorK = 2, SteeringParty = 2;
 
     /// <summary>Where the complement stands at battle stations: (components {(kind, id): men}, rooms {id: men}, summary).</summary>
     static (List<((string Kind, string Id) Key, long Men)> Comps, OrderedDictionary<string, long> Rooms, OrderedDictionary<string, long> Summary)
@@ -326,12 +326,12 @@ public static class Crew
             need.Add(((m.Kind, m.Id), m.Kind == "torpedo" ? TorpedoCrew(m.T) : GunCrew(m.T.CalibreMm, m.T.Barrels)));
         foreach (var a in lay.Aa)
         {
-            var cfg = Geometry.AA_CFG[a.Type];
+            var cfg = Geometry.AaCfg[a.Type];
             need.Add((("aa", a.Id), GunCrew(cfg.CalibreMm, cfg.Barrels)));
         }
         foreach (var ((kind, k), men) in Spread(Dep("weapons"), need))
         {
-            long below = kind != "aa" && barbettes.Contains(k) ? (long)Math.Round(HANDLING * men) : 0;
+            long below = kind != "aa" && barbettes.Contains(k) ? (long)Math.Round(Handling * men) : 0;
             Put(onComp, [((kind, k), men - below)], kind == "aa" ? "aa" : kind == "torpedo" ? "torpedoes" : "guns");
             Put(onComp, [(("barbette", $"{k} barbette"), below)], "handling");
         }
@@ -363,22 +363,22 @@ public static class Crew
             bridge = vol.Where(v => Role(v.Key) != "director").ToList();
         if (bridge.Count > 0)
         {
-            long n = Take((long)Math.Round(COMMAND_K.A + COMMAND_K.B * Dep("deck_and_command")), rest);
-            long nAft = aft.Count > 0 ? (long)Math.Round(AFT_CONTROL * n) : 0;
+            long n = Take((long)Math.Round(CommandK.A + CommandK.B * Dep("deck_and_command")), rest);
+            long nAft = aft.Count > 0 ? (long)Math.Round(AftControl * n) : 0;
             Put(onComp, Spread(n - nAft, bridge), "command");
             Put(onComp, Spread(nAft, aft), "command");
             rest -= n;
         }
         foreach (var d in lay.Directors)
         {
-            long n = Take(DIRECTOR_K + (long)Math.Round(d.Spec.RangefinderM), rest);
+            long n = Take(DirectorK + (long)Math.Round(d.Spec.RangefinderM), rest);
             Put(onComp, [(("superstructure", d.Id), n)], "directors");
             rest -= n;
         }
         var steer = rooms.Where(r => r.Kind == "steering").Select(r => r.Id).ToList();
         if (steer.Count > 0)
         {
-            long n = Take(STEERING_PARTY, rest);
+            long n = Take(SteeringParty, rest);
             Put(onRoom, [(steer[0], n)], "steering");
             rest -= n;
         }

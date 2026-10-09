@@ -4,27 +4,27 @@ namespace Fleetwright.Shipgen;
 /// and a torpedo mount weigh, rounds per gun, and the first-pass armament estimate.</summary>
 public static class Batteries
 {
-    public const double GUN_K = 1.9e-6, MOUNT_K = 2.2, TURRET_T_AVG = 0.65, SHELL_K = 1.83e-5, AMMO_MULT = 1.6;
-    static readonly (double Cal, double Rounds)[] ROUNDS = [(127, 350), (152, 200), (203, 100)];
-    const double MOUNT_FIXED_T = 4.0, TORP_MOUNT_T = 5.0, TORP_TUBE_T = 3.0, TORP_T = 1.6, TORP_FIXED_TUBE_T = 1.0;
-    public static readonly IReadOnlyDictionary<string, double> AA_T =
+    public const double GunK = 1.9e-6, MountK = 2.2, TurretTAvg = 0.65, ShellK = 1.83e-5, AmmoMult = 1.6;
+    static readonly (double Cal, double Rounds)[] Rounds = [(127, 350), (152, 200), (203, 100)];
+    const double MountFixedT = 4.0, TorpMountT = 5.0, TorpTubeT = 3.0, TorpT = 1.6, TorpFixedTubeT = 1.0;
+    public static readonly IReadOnlyDictionary<string, double> AaT =
         new Dictionary<string, double>(StringComparer.Ordinal) { ["quad40"] = 15.0, ["twin40"] = 7.0, ["single20"] = 1.0 };
 
-    public static double GunTubeT(double calMm, double calLen) => GUN_K * Math.Pow(calMm, 3) * (calLen / 50.0);
+    public static double GunTubeT(double calMm, double calLen) => GunK * Math.Pow(calMm, 3) * (calLen / 50.0);
 
     /// <summary>Rounds carried per gun: one curve, log-log between the points, flat beyond the ends.</summary>
     public static double RoundsPerGun(double calMm)
     {
-        if (calMm <= ROUNDS[0].Cal)
-            return ROUNDS[0].Rounds;
-        for (int i = 0; i < ROUNDS.Length - 1; i++)
+        if (calMm <= Rounds[0].Cal)
+            return Rounds[0].Rounds;
+        for (int i = 0; i < Rounds.Length - 1; i++)
         {
-            var (c0, r0) = ROUNDS[i];
-            var (c1, r1) = ROUNDS[i + 1];
+            var (c0, r0) = Rounds[i];
+            var (c1, r1) = Rounds[i + 1];
             if (calMm <= c1)
                 return r0 * Math.Pow(r1 / r0, Math.Log(calMm / c0) / Math.Log(c1 / c0));
         }
-        return ROUNDS[^1].Rounds;
+        return Rounds[^1].Rounds;
     }
 
     /// <summary>Rounds per gun in the magazines for turret type t: the battery's rounds_per_gun, else the curve.</summary>
@@ -36,32 +36,32 @@ public static class Batteries
     {
         double cal = t.CalibreMm, cl = t.CalibreLength!.Value, n = t.Barrels, r = t.R;
         double guns = n * GunTubeT(cal, cl);
-        double mech = MOUNT_K * guns + MOUNT_FIXED_T * Math.Min(1.0, Math.Pow(cal / 76.0, 3));
+        double mech = MountK * guns + MountFixedT * Math.Min(1.0, Math.Pow(cal / 76.0, 3));
         double th = 0.42 * r;
         double area = 2 * Math.PI * 0.9 * r * th + 0.85 * Math.PI * r * r;
-        double tAvg = TURRET_T_AVG * armourMm / 1000.0;
-        double turret = guns + mech + area * tAvg * Weight.STEEL;
+        double tAvg = TurretTAvg * armourMm / 1000.0;
+        double turret = guns + mech + area * tAvg * Weight.Steel;
         double bh = 0.45 * depth + deck + level * Geometry.SuperfireStep(th);
-        double barbette = t.HasBarbette ? 2 * Math.PI * 0.95 * r * bh * (0.8 * armourMm / 1000.0) * Weight.STEEL : 0.0;
-        double ammo = n * GunRounds(t) * SHELL_K * Math.Pow(cal, 3) / 1000.0 * AMMO_MULT;
+        double barbette = t.HasBarbette ? 2 * Math.PI * 0.95 * r * bh * (0.8 * armourMm / 1000.0) * Weight.Steel : 0.0;
+        double ammo = n * GunRounds(t) * ShellK * Math.Pow(cal, 3) / 1000.0 * AmmoMult;
         return (turret, barbette, ammo);
     }
 
     public static double TorpedoWeight(double tubes, bool fixed_ = false)
     {
         if (fixed_)
-            return tubes * (TORP_FIXED_TUBE_T + TORP_T);
-        return TORP_MOUNT_T + tubes * (TORP_TUBE_T + TORP_T);
+            return tubes * (TorpFixedTubeT + TorpT);
+        return TorpMountT + tubes * (TorpTubeT + TorpT);
     }
 
-    public const double SECONDARY_ARMOUR_MM = 25;
+    public const double SecondaryArmourMm = 25;
 
     /// <summary>The main batteries, in the design's order.</summary>
     public static List<BatteryInput> MainBatteries(Design design) => [.. design.MainBatteries];
 
     /// <summary>The secondary batteries, in the design's order, with count, per_side and armour_mm filled in.</summary>
     public static List<BatteryInput> SecondaryBatteries(Design design) =>
-        (design.Secondary ?? []).Select(b => b with { Count = b.MountCount, PerSide = b.MountsPerSide, ArmourMm = b.ArmourMm ?? SECONDARY_ARMOUR_MM })
+        (design.Secondary ?? []).Select(b => b with { Count = b.MountCount, PerSide = b.MountsPerSide, ArmourMm = b.ArmourMm ?? SecondaryArmourMm })
             .ToList();
 
     /// <summary>The k-th secondary battery's name: S, SB, SC, ...</summary>
@@ -70,7 +70,7 @@ public static class Batteries
     /// <summary>First-pass armament estimate before the layout exists (all at x=0).</summary>
     public static List<Weight> RoughArmament(Design design, double D)
     {
-        var out_ = new List<Weight>();
+        var result = new List<Weight>();
         var mains = MainBatteries(design);
         for (int k = 0; k < mains.Count; k++)
         {
@@ -79,9 +79,9 @@ public static class Batteries
             double n = m.Turrets;
             var (tw, bw, aw) = MountWeights(t, m.ArmourMm ?? 0, D, 0);
             string sfx = k != 0 ? $" {k + 1}" : "";
-            out_.Add(new Weight("Main battery" + sfx, "armament", n * tw, zRel: ZRel.Deck(2)));
-            out_.Add(new Weight("Main barbettes" + sfx, "armour", n * bw, zRel: ZRel.Frac(0.75)));
-            out_.Add(new Weight("Main magazines" + sfx, "armament", n * aw, zRel: ZRel.Frac(0.25)));
+            result.Add(new Weight("Main battery" + sfx, "armament", n * tw, zRel: ZRel.Deck(2)));
+            result.Add(new Weight("Main barbettes" + sfx, "armour", n * bw, zRel: ZRel.Frac(0.75)));
+            result.Add(new Weight("Main magazines" + sfx, "armament", n * aw, zRel: ZRel.Frac(0.25)));
         }
         foreach (var s in SecondaryBatteries(design))
         {
@@ -90,14 +90,14 @@ public static class Batteries
                 continue;
             var (_, t) = Geometry.BatteryType(s);
             var (tw, _, aw) = MountWeights(t, s.ArmourMm!.Value, D, 0);
-            out_.Add(new Weight("Secondary battery", "armament", n * (tw + aw), zRel: ZRel.Deck(2)));
+            result.Add(new Weight("Secondary battery", "armament", n * (tw + aw), zRel: ZRel.Deck(2)));
         }
         if (design.Torpedoes is { Mounts: > 0 } tp)
-            out_.Add(new Weight("Torpedoes", "armament", tp.Mounts.Value * TorpedoWeight(tp.Tubes ?? 4), zRel: ZRel.Deck(1)));
-        double w = (design.Aa?.Heavy ?? 0) * AA_T["quad40"] + (design.Aa?.Light ?? 0) * AA_T["single20"];
+            result.Add(new Weight("Torpedoes", "armament", tp.Mounts.Value * TorpedoWeight(tp.Tubes ?? 4), zRel: ZRel.Deck(1)));
+        double w = (design.Aa?.Heavy ?? 0) * AaT["quad40"] + (design.Aa?.Light ?? 0) * AaT["single20"];
         if (w != 0)
-            out_.Add(new Weight("AA guns", "armament", w, zRel: ZRel.Deck(2)));
-        return out_;
+            result.Add(new Weight("AA guns", "armament", w, zRel: ZRel.Deck(2)));
+        return result;
     }
 }
 
@@ -109,7 +109,7 @@ public sealed record WindHeel(string Condition, double HeelDeg, double DeckEdgeD
 /// and the warnings on all of them.</summary>
 public static class Stability
 {
-    public const double WIND_REF_MS = 26.0, WIND_PA_K = 0.746, WIND_HEEL_WARN = 16.0;
+    public const double WindRefMs = 26.0, WindPaK = 0.746, WindHeelWarn = 16.0;
 
     public static double RollPeriod(double L, double B, double T, double gm)
     {
@@ -125,23 +125,23 @@ public static class Stability
     {
         if (windage is null)
             return null;
-        WindHeel? out_ = null;
+        WindHeel? result = null;
         foreach (var (cond, disp, gm) in new[] { ("full load", full, gmFull), ("light", std, gmLight) })
         {
-            double T = disp / (Weight.SEAWATER * L * B * cb);
+            double T = disp / (Weight.Seawater * L * B * cb);
             double fb = Math.Max(0.0, D - T);
             double aHull = 0.95 * L * fb;
             double area = aHull + windage.AreaM2;
             double z = area != 0 ? (aHull * (T + fb / 2) + windage.AreaM2 * (D + windage.ZM)) / area : T;
             double arm = area * (z - T / 2) / (9.81 * disp * 1000.0);
             double edge = double.RadiansToDegrees(Math.Atan2(fb, B / 2));
-            double heel = gm > 0 ? double.RadiansToDegrees(Math.Atan(WIND_PA_K * Math.Pow(WIND_REF_MS, 2) * arm / gm)) : 90.0;
+            double heel = gm > 0 ? double.RadiansToDegrees(Math.Atan(WindPaK * Math.Pow(WindRefMs, 2) * arm / gm)) : 90.0;
             double pEdge = gm > 0 && arm > 0 ? Math.Tan(double.DegreesToRadians(edge)) * gm / arm : 0.0;
-            var r = new WindHeel(cond, heel, edge, Math.Sqrt(pEdge / WIND_PA_K) / 0.5144, area);
-            if (out_ is null || heel > out_.HeelDeg)
-                out_ = r;
+            var r = new WindHeel(cond, heel, edge, Math.Sqrt(pEdge / WindPaK) / 0.5144, area);
+            if (result is null || heel > result.HeelDeg)
+                result = r;
         }
-        return out_!;
+        return result!;
     }
 
     /// <summary>The full-load hydrostatics a game needs to settle, trim and heel a flooded ship by added weight.</summary>
@@ -149,7 +149,7 @@ public static class Stability
     {
         double L = form.Hull.L, D = res.Depth, T = res.Draught, disp = res.Full;
         var (area, lcf, iL, iT) = form.Waterplane();
-        double vol = disp / Weight.SEAWATER;
+        double vol = disp / Weight.Seawater;
         double kg = res.Weights.Select(w => w.W * w.Z!.Value).Sum() / res.Weights.Select(w => w.W).Sum();
         double kb = 0.53 * T;
         double gmL = kb + iL / vol - kg;
@@ -158,7 +158,7 @@ public static class Stability
             DisplacementT = (long)Math.Round(disp), VolumeM3 = (long)Math.Round(vol), WaterplaneM2 = Math.Round(area, 1), Lcf = Math.Round(lcf, 3),
             Lcg = Math.Round(res.Lcg, 3), Lcb = Math.Round(res.Lcb, 3), Kg = Math.Round(kg - D, 2), Kb = Math.Round(kb - D, 2),
             GmT = Math.Round(res.GmFull, 3), GmL = Math.Round(gmL, 1), ITM4 = (long)Math.Round(iT), ILM4 = (long)Math.Round(iL),
-            TpcT = Math.Round(Weight.SEAWATER * area / 100, 2), MctTm = Math.Round(disp * gmL / (100 * L), 1),
+            TpcT = Math.Round(Weight.Seawater * area / 100, 2), MctTm = Math.Round(disp * gmL / (100 * L), 1),
         };
     }
 
@@ -167,13 +167,13 @@ public static class Stability
     {
         double Gm(double dispCase, bool includeFuel)
         {
-            double T_ = dispCase / (Weight.SEAWATER * L * B * cb);
+            double T_ = dispCase / (Weight.Seawater * L * B * cb);
             var ws = res.Weights.Where(w => includeFuel || !(w.Group is "fuel" or "cargo")).ToList();
             double kg = ws.Select(w => w.W * w.Z!.Value).Sum() / ws.Select(w => w.W).Sum();
             double kb = 0.53 * T_;
             double cw = Geometry.Cwp(cb);
             double it = 0.0372 * Math.Pow(2 * cw + 1, 3) * L * Math.Pow(B, 3) / 12;
-            double bm = it / (dispCase / Weight.SEAWATER);
+            double bm = it / (dispCase / Weight.Seawater);
             return kb + bm - kg;
         }
 
@@ -207,8 +207,8 @@ public static class Stability
         else if (Math.Abs(res.TrimM) > tun.TrimWarnFrac * L)
             res.Warnings.Add($"Trimmed {Math.Abs(res.TrimM):F1} m by the {end}.");
         var w = res.Wind;
-        if (w != null && w.HeelDeg > Math.Min(WIND_HEEL_WARN, 0.8 * w.DeckEdgeDeg))
-            res.Warnings.Add($"Heels {w.HeelDeg:F0}° in a beam gale ({WIND_REF_MS:F0} m/s, {w.Condition}): too " +
+        if (w != null && w.HeelDeg > Math.Min(WindHeelWarn, 0.8 * w.DeckEdgeDeg))
+            res.Warnings.Add($"Heels {w.HeelDeg:F0}° in a beam gale ({WindRefMs:F0} m/s, {w.Condition}): too " +
                              $"much windage for its stability. The deck edge goes under at {w.DeckEdgeDeg:F0}°, " +
                              $"in a {w.DeckEdgeWindKn:F0} kn wind.");
     }

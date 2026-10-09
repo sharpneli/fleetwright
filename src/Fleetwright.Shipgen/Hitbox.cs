@@ -3,7 +3,7 @@ namespace Fleetwright.Shipgen;
 /// <summary>hitbox: hitbox export. Components with exact shapes in ship-local metres and heights above the main deck.</summary>
 public static class Hitbox
 {
-    const double TURRET_SIDE = 0.55, TURRET_REAR = 0.5, TURRET_ROOF = 0.4, BARBETTE = 0.8;
+    const double TurretSide = 0.55, TurretRear = 0.5, TurretRoof = 0.4, Barbette = 0.8;
 
     static List<Pt> R3(IEnumerable<Pt> pts) => pts.Select(p => new Pt(Math.Round(p.X, 3), Math.Round(p.Y, 3))).ToList();
 
@@ -21,15 +21,15 @@ public static class Hitbox
             {
                 Id = sh.Id, Kind = "shaft", Shape = "segment", Position = sh.Position,
                 P0 = [Math.Round(p0.X, 3), Math.Round(p0.Y, 3), Z(p0.Z)], P1 = [Math.Round(p1.X, 3), Math.Round(p1.Y, 3), Z(p1.Z)],
-                R = Propulsion.SHAFT_R, Points = Rect(p1.X, p0.X, p0.Y, Propulsion.SHAFT_R), Base = Z(Math.Min(p0.Z, p1.Z) - Propulsion.SHAFT_R),
-                Top = Z(Math.Max(p0.Z, p1.Z) + Propulsion.SHAFT_R), LeavesHullX = Math.Round(sh.ExitX, 3), Propeller = sh.Propeller,
+                R = Propulsion.ShaftR, Points = Rect(p1.X, p0.X, p0.Y, Propulsion.ShaftR), Base = Z(Math.Min(p0.Z, p1.Z) - Propulsion.ShaftR),
+                Top = Z(Math.Max(p0.Z, p1.Z) + Propulsion.ShaftR), LeavesHullX = Math.Round(sh.ExitX, 3), Propeller = sh.Propeller,
                 EngineRoom = NonEmpty(sh.EngineRoom), Alley = NonEmpty(sh.Alley),
             };
         }
         foreach (var a in tr.Alleys)
             yield return new Component
             {
-                Id = a.Id, Kind = "shaft_alley", Shape = "polygon", Shaft = a.Shaft, Points = Rect(a.X0, a.X1, a.Y, Propulsion.ALLEY_W / 2),
+                Id = a.Id, Kind = "shaft_alley", Shape = "polygon", Shaft = a.Shaft, Points = Rect(a.X0, a.X1, a.Y, Propulsion.AlleyW / 2),
                 Base = Z(a.Base), Top = Z(a.Top),
             };
         foreach (var p in tr.Propellers)
@@ -53,7 +53,7 @@ public static class Hitbox
     /// <summary>The mounts, and the barbettes under those that have one.</summary>
     static IEnumerable<Component> MountComponents(Layout lay, Design design, ArmourLayout ag, double D, double T)
     {
-        double barbetteZ = ag.MainZ ?? (ag.BeltMm > 0 ? ag.BeltTop : Math.Max(T, D - Geometry.DECK_PITCH));
+        double barbetteZ = ag.MainZ ?? (ag.BeltMm > 0 ? ag.BeltTop : Math.Max(T, D - Geometry.DeckPitch));
         double fdBase = lay.Decks.Where(dk => dk.Kind == "flight_deck").Select(dk => dk.Base).Append(1e9).Min();
         foreach (var m in lay.Mounts)
         {
@@ -73,7 +73,7 @@ public static class Hitbox
             };
             if (m.Kind is "main" or "secondary")
             {
-                c.Armour = new TurretArmour(arm, (long)Math.Round(TURRET_SIDE * arm), (long)Math.Round(TURRET_REAR * arm), (long)Math.Round(TURRET_ROOF * arm));
+                c.Armour = new TurretArmour(arm, (long)Math.Round(TurretSide * arm), (long)Math.Round(TurretRear * arm), (long)Math.Round(TurretRoof * arm));
                 c.Material = NonEmpty(mat);
             }
             if (m.Kind == "torpedo")
@@ -93,7 +93,7 @@ public static class Hitbox
             {
                 Id = c.Barbette, Kind = "barbette", Mount = m.Id, Shape = "circle", X = Math.Round(m.X, 3), Y = Math.Round(m.Y, 3),
                 R = Math.Round(t.R * 0.95, 3), Base = inHull ? Math.Min(Math.Round(barbetteZ - D, 2), Math.Round(m.Base, 2)) : Math.Round(m.Base - 1.0, 2),
-                Top = Math.Round(m.Base, 2), ArmourMm = (long)Math.Round(BARBETTE * arm), Material = NonEmpty(m.Kind == "main" ? Own("barbettes") : mat),
+                Top = Math.Round(m.Base, 2), ArmourMm = (long)Math.Round(Barbette * arm), Material = NonEmpty(m.Kind == "main" ? Own("barbettes") : mat),
             };
         }
     }
@@ -169,7 +169,7 @@ public static class Hitbox
         }
         foreach (var a in lay.Aa)
         {
-            var cfg = Geometry.AA_CFG[a.Type];
+            var cfg = Geometry.AaCfg[a.Type];
             var (n, w) = Ordnance.ReadyUse(cfg.CalibreMm, cfg.Barrels);
             comps.Add(new Component
             {
@@ -221,7 +221,7 @@ public static class Hitbox
                 Keel = -Math.Round(D, 2), Waterline = -Math.Round(D - T, 2), ArmourDeck = ag.MainZ is double mz ? Rz(mz) : null,
                 Draught = Math.Round(T, 2), Depth = Math.Round(D, 2), Freeboard = Math.Round(D - T, 2),
                 Raised = lay.Raised.Count > 0
-                    ? lay.Raised.Select(st => new RaisedReport(st.Id, Math.Round(st.X0, 3), Math.Round(st.X1, 3), Math.Round(st.Levels * Geometry.DECK_PITCH, 2))).ToList()
+                    ? lay.Raised.Select(st => new RaisedReport(st.Id, Math.Round(st.X0, 3), Math.Round(st.X1, 3), Math.Round(st.Levels * Geometry.DeckPitch, 2))).ToList()
                     : null,
             },
             Hull = R3(lay.Hull.Points()), Hydrostatics = inner.Hydrostatics,

@@ -18,7 +18,7 @@ namespace Fleetwright.Shipgen.Tools;
 /// mutant in a child process with a time and memory cap (`shipgen fuzz`).</summary>
 public static class Fuzz
 {
-    static readonly string[] LABELS = ["id", "name", "look", "material", "materials", "type"];   // free text, not choices
+    static readonly string[] Labels = ["id", "name", "look", "material", "materials", "type"];   // free text, not choices
 
     /// <summary>A step on a path into a design: an object key or an array index.</summary>
     public readonly record struct Step(string? Key, int Index)
@@ -38,7 +38,7 @@ public static class Fuzz
         _ => [],
     };
 
-    static bool Label(Step s) => s.Key != null && LABELS.Contains(s.Key);
+    static bool Label(Step s) => s.Key != null && Labels.Contains(s.Key);
 
     static JsonValueKind Kind(JsonNode? v) => v?.GetValueKind() ?? JsonValueKind.Null;
 
@@ -46,30 +46,30 @@ public static class Fuzz
     static List<(Step[] Path, JsonValue V)> Leaves(JsonNode? d, Func<JsonValueKind, bool> keep, Step[]? path = null)
     {
         path ??= [];
-        var out_ = new List<(Step[], JsonValue)>();
+        var result = new List<(Step[], JsonValue)>();
         foreach (var (s, v) in Items(d))
         {
             if (Label(s))
                 continue;
             if (v is JsonObject or JsonArray)
-                out_.AddRange(Leaves(v, keep, [.. path, s]));
+                result.AddRange(Leaves(v, keep, [.. path, s]));
             else if (v is JsonValue jv && keep(Kind(jv)))
-                out_.Add(([.. path, s], jv));
+                result.Add(([.. path, s], jv));
         }
-        return out_;
+        return result;
     }
 
     static List<(Step[] Path, JsonNode C)> Containers(JsonNode? d, Step[]? path = null)
     {
         path ??= [];
-        var out_ = new List<(Step[], JsonNode)>();
+        var result = new List<(Step[], JsonNode)>();
         foreach (var (s, v) in Items(d))
             if (!Label(s) && v is JsonObject or JsonArray)
             {
-                out_.Add(([.. path, s], v!));
-                out_.AddRange(Containers(v, [.. path, s]));
+                result.Add(([.. path, s], v!));
+                result.AddRange(Containers(v, [.. path, s]));
             }
-        return out_;
+        return result;
     }
 
     static string Key(Step[] path) => path.Reverse().First(s => s.Key != null).Key!;

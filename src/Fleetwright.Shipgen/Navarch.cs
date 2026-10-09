@@ -78,7 +78,7 @@ public static class Navarch
 
     /// <summary>Fn∇ = V / sqrt(g ∇^(1/3)).</summary>
     public static double VolumetricFroude(double disp, double vKn) =>
-        vKn * 0.5144 / Math.Sqrt(9.81 * Math.Pow(disp / Weight.SEAWATER, 1.0 / 3));
+        vKn * 0.5144 / Math.Sqrt(9.81 * Math.Pow(disp / Weight.Seawater, 1.0 / 3));
 
     /// <summary>PLACEHOLDER planing-hull power model.</summary>
     public static double PlaningPower(double disp, double vKn, Tuning tun)
@@ -117,7 +117,7 @@ public static class Navarch
         bool settled = false;
         for (int it = 0; it < 60; it++)
         {
-            T = disp / (Weight.SEAWATER * L * B * cb);
+            T = disp / (Weight.Seawater * L * B * cb);
             D = T + DesignFreeboard(L, tun) * (design.Hull?.Freeboard ?? 1.0);
             items = [];
             var arm = Armour.ArmourGeometry(design, L, T, D, geo);
@@ -141,7 +141,7 @@ public static class Navarch
             if (wood != 0)
             {
                 var (area, wx, wz) = style.WeatherDeck(design, L, B);
-                items.Add(new Weight("Deck planking", "hull", area * wood * HullWeight.RHO_WOOD, wx, ZRel.Deck(wz)));
+                items.Add(new Weight("Deck planking", "hull", area * wood * HullWeight.RhoWood, wx, ZRel.Deck(wz)));
             }
             double stdWoMisc = items.Sum(w => w.W);
             std = stdWoMisc / (1 - tun.MiscFrac);
@@ -159,7 +159,7 @@ public static class Navarch
                 settled = true;
                 break;
             }
-            if (!double.IsFinite(full) || full > disp && full / (Weight.SEAWATER * L * B * cb) > OverloadTb * B)
+            if (!double.IsFinite(full) || full > disp && full / (Weight.Seawater * L * B * cb) > OverloadTb * B)
             {
                 res.Errors.Add($"The weights never settle on a {B:F1} m beam: the ship sinks deeper with every " +
                                "tonne it carries. A wider hull, or less armour or armament, would help.");
@@ -182,9 +182,9 @@ public static class Navarch
         res.Std = std;
         res.Full = full;
         res.Fuel = fuel;
-        res.Draught = full / (Weight.SEAWATER * L * B * cb);
+        res.Draught = full / (Weight.Seawater * L * B * cb);
         res.Depth = D;
-        res.Freeboard = D - full / (Weight.SEAWATER * L * B * cb);
+        res.Freeboard = D - full / (Weight.Seawater * L * B * cb);
         res.PowerShp = shp;
         res.CruiseKn = vc;
         res.Plant = plant;
@@ -219,8 +219,8 @@ public static class Navarch
     /// <summary>First-pass armament and superstructure estimate before the layout exists (all at x=0).</summary>
     public static List<Weight> RoughPayload(Design design, double D)
     {
-        var out_ = Batteries.RoughArmament(design, D);
-        out_.Add(new Weight("Superstructure", "superstructure", 0.012 * Math.Pow(design.HullLength, 2), zRel: ZRel.Deck(4)));
-        return out_;
+        var result = Batteries.RoughArmament(design, D);
+        result.Add(new Weight("Superstructure", "superstructure", 0.012 * Math.Pow(design.HullLength, 2), zRel: ZRel.Deck(4)));
+        return result;
     }
 }

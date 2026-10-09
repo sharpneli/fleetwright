@@ -164,7 +164,7 @@ public sealed record ArmourInput
     public UpperBeltInput? UpperBelt { get; init; }
     public EndBeltsInput? EndBelts { get; init; }
     public SteeringBoxInput? SteeringBox { get; init; }
-    /// <summary>The armour material per part (Armour.ARMOUR_PARTS).</summary>
+    /// <summary>The armour material per part (Armour.ArmourParts).</summary>
     public Dictionary<string, string>? Materials { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }

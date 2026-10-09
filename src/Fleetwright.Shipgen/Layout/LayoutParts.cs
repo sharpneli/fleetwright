@@ -3,7 +3,7 @@ namespace Fleetwright.Shipgen;
 public sealed partial class Layout
 {
     /// <summary>What a superstructure block is for (add_block's role).</summary>
-    public static readonly string[] BLOCK_ROLES = ["deckhouse", "bridge", "aft_control", "director", "island", "hangar", "casemate"];
+    public static readonly string[] BlockRoles = ["deckhouse", "bridge", "aft_control", "director", "island", "hangar", "casemate"];
 
     public static double Clamp(double v, double lo, double hi) => Math.Max(lo, Math.Min(hi, v));
 
@@ -13,7 +13,7 @@ public sealed partial class Layout
         double rf, double rb, double y = 0.0, double z0 = 0.0, string? layer = null, string kind = "superstructure",
         double? tPerM2 = null, IReadOnlyList<Pt>? points = null, string role = "deckhouse", bool office = false)
     {
-        if (!BLOCK_ROLES.Contains(role))
+        if (!BlockRoles.Contains(role))
             throw new InvalidOperationException(role);
         List<Pt>? pts = null;
         if (points != null && points.Count > 0)
@@ -55,7 +55,7 @@ public sealed partial class Layout
     /// <summary>A block's wall plating: records its PlateMm and returns the weight of plate beyond the own gauge.</summary>
     public static double BlockPlating(Layout lay, Block b)
     {
-        double own = HullWeight.SUP_PLATE_K * OwnPlateMm(lay);
+        double own = HullWeight.SupPlateK * OwnPlateMm(lay);
         double mm = Math.Max(own, lay.SupPlate.Plating);
         if (b.Role is "bridge" or "aft_control")
             mm = Math.Max(mm, lay.SupPlate.Control);
@@ -66,7 +66,7 @@ public sealed partial class Layout
         return HullWeight.ExtraPlateT(perim * (b.TopZ - b.Base), mm, own);
     }
 
-    const double RAISED_INSET = 0.3;
+    const double RaisedInset = 0.3;
 
     /// <summary>A raised stretch of hull: the weather deck `levels` decks above the main deck from x0 to x1.</summary>
     public static RaisedStretch AddRaised(Layout lay, Design design, string rid, double x0, double x1, long levels = 1,
@@ -74,8 +74,8 @@ public sealed partial class Layout
     {
         var hull = lay.Hull;
         double L = hull.L;
-        double h = levels * LEVEL_H;
-        var pts = hull.Points(inset: RAISED_INSET, xMin: x0, xMax: x1);
+        double h = levels * LevelH;
+        var pts = hull.Points(inset: RaisedInset, xMin: x0, xMax: x1);
         var stretch = new RaisedStretch(rid, x0, x1, levels);
         lay.Raised.Add(stretch);
         lay.Geo.Raised = lay.Raised;
@@ -84,7 +84,7 @@ public sealed partial class Layout
         var (area, xc) = Geometry.PolygonCentroid(pts);
         var brk = breaks ?? (levels, levels);
         double endM2 = new[] { (x0, brk.Aft), (x1, brk.Fwd) }.Where(t => -L / 2 + 0.5 < t.Item1 && t.Item1 < L / 2 - 0.5)
-            .Sum(t => 2 * hull.HalfWidth(t.Item1) * t.Item2 * LEVEL_H);
+            .Sum(t => 2 * hull.HalfWidth(t.Item1) * t.Item2 * LevelH);
         double sideM2 = 2 * (x1 - x0) * h;
         var c = HullWeight.ConstructionOf(design);
         double t = HullWeight.RaisedT(L, c, area, sideM2, endM2, HullWeight.PlatingOf(design).ShellMm);
@@ -92,14 +92,14 @@ public sealed partial class Layout
         return stretch;
     }
 
-    public static readonly string[] RAISED_ANCHORS = Style.RaisedAnchors;
+    public static readonly string[] RaisedAnchors = Style.RaisedAnchors;
 
     /// <summary>Does the hull.raised entry q run over the feature?</summary>
     public static bool RaisedCovers(RaisedInput q, string feature)
     {
-        int a = Array.IndexOf(RAISED_ANCHORS, q.From), b = Array.IndexOf(RAISED_ANCHORS, q.To);
+        int a = Array.IndexOf(RaisedAnchors, q.From), b = Array.IndexOf(RaisedAnchors, q.To);
         int i = Math.Min(a, b), j = Math.Max(a, b);
-        int f = Array.IndexOf(RAISED_ANCHORS, feature);
+        int f = Array.IndexOf(RaisedAnchors, feature);
         return i <= f && f <= j;
     }
 
@@ -126,7 +126,7 @@ public sealed partial class Layout
             else
                 segs.Add((a, b, lv));
         }
-        var out_ = new List<(double, double, long, (long, long))>();
+        var result = new List<(double, double, long, (long, long))>();
         for (int i = 0; i < segs.Count; i++)
         {
             var (a, b, lv) = segs[i];
@@ -134,17 +134,17 @@ public sealed partial class Layout
             {
                 long d0 = lv - (0 <= i - 1 && i - 1 < segs.Count ? segs[i - 1].Lv : 0);
                 long d1 = lv - (0 <= i + 1 && i + 1 < segs.Count ? segs[i + 1].Lv : 0);
-                out_.Add((a, b, lv, (Math.Max(0, d0), Math.Max(0, d1))));
+                result.Add((a, b, lv, (Math.Max(0, d0), Math.Max(0, d1))));
             }
         }
-        return out_;
+        return result;
     }
 
     /// <summary>raised_profile's stretches with ids: Forecastle, Poop, Raised deck.</summary>
     public static List<(string Id, double X0, double X1, long Lv, (long, long) Brk)> RaisedNames(
         List<(double X0, double X1, long Lv, (long Aft, long Fwd) Brk)> prof, double L)
     {
-        var out_ = new List<(string? Id, double X0, double X1, long Lv, (long, long) Brk)>();
+        var result = new List<(string? Id, double X0, double X1, long Lv, (long, long) Brk)>();
         for (int k = 0; k < prof.Count; k++)
         {
             var (x0, x1, lv, brk) = prof[k];
@@ -153,19 +153,19 @@ public sealed partial class Layout
             bool stern = Enumerable.Range(0, k).All(j => prof[j].X1 >= prof[j + 1].X0 - 1e-6) && prof[0].X0 <= -L / 2 + 1e-6;
             int n = bow ? prof.Count - k : k + 1;
             string? rid = bow || stern ? (bow ? "Forecastle" : "Poop") + (n > 1 ? $" {n}" : "") : null;
-            out_.Add((rid, x0, x1, lv, brk));
+            result.Add((rid, x0, x1, lv, brk));
         }
-        var mids = Enumerable.Range(0, out_.Count).Where(i => out_[i].Id is null).ToList();
+        var mids = Enumerable.Range(0, result.Count).Where(i => result[i].Id is null).ToList();
         for (int k = 0; k < mids.Count; k++)
         {
-            var o = out_[mids[k]];
-            out_[mids[k]] = ("Raised deck" + (mids.Count > 1 ? $" {k + 1}" : ""), o.X0, o.X1, o.Lv, o.Brk);
+            var o = result[mids[k]];
+            result[mids[k]] = ("Raised deck" + (mids.Count > 1 ? $" {k + 1}" : ""), o.X0, o.X1, o.Lv, o.Brk);
         }
-        return out_.Select(o => (o.Id!, o.X0, o.X1, o.Lv, o.Brk)).ToList();
+        return result.Select(o => (o.Id!, o.X0, o.X1, o.Lv, o.Brk)).ToList();
     }
 
-    const double DH_SLIVER = 3.0;
-    const double RAISED_CLEAR = 1.1;
+    const double DhSliver = 3.0;
+    const double RaisedClear = 1.1;
 
     /// <summary>How much higher a main mount must stand for its barrels to clear the raised stretches they sweep over.</summary>
     public static double RaisedLift(Layout lay, Mount m)
@@ -178,11 +178,11 @@ public sealed partial class Layout
         double need = 0.0;
         foreach (var dk in lay.Decks)
         {
-            if (dk.Kind != "deck" || dk.Top + RAISED_CLEAR <= axis + need)
+            if (dk.Kind != "deck" || dk.Top + RaisedClear <= axis + need)
                 continue;
             sweep ??= Geometry.SectorPolygon(m.X, m.Y, Geometry.TurretReach(m.T) + 0.5, tr[0], tr[1]);
             if (Geometry.PolygonsIntersect(sweep, dk.Points))
-                need = dk.Top + RAISED_CLEAR - axis;
+                need = dk.Top + RaisedClear - axis;
         }
         return need;
     }
@@ -191,7 +191,7 @@ public sealed partial class Layout
     public static List<(double X, double Y, double Z0, bool Pair)> RoofSpots(IEnumerable<Block> blocks, double l, double w,
         double step = 0.5)
     {
-        var out_ = new List<(double, double, double, bool)>();
+        var result = new List<(double, double, double, bool)>();
         foreach (var b in blocks)
         {
             if (b.Kind == "director")
@@ -222,12 +222,12 @@ public sealed partial class Layout
                     slabs.At(x + l / 2, sp1);
                 }
                 if (slabs is null || OnRoof(sp0, sp1, by, hwR))
-                    out_.Add((x, by, z0, false));
+                    result.Add((x, by, z0, false));
                 if (Math.Abs(by) < 1e-6 && ye > w / 2 + 0.1 && (slabs is null || OnRoof(sp0, sp1, ye, hwR)))
-                    out_.Add((x, ye, z0, true));
+                    result.Add((x, ye, z0, true));
             }
         }
-        return out_;
+        return result;
     }
 
     /// <summary>Is a spot of half-width hw at y (and -y, for a pair) inside a polygon roof's spans at both its ends?</summary>
@@ -305,15 +305,15 @@ public sealed partial class Layout
         /// <summary>The stretches of y inside the polygon at x.</summary>
         public List<(double Lo, double Hi)> At(double x)
         {
-            var out_ = new List<(double, double)>();
-            At(x, out_);
-            return out_;
+            var result = new List<(double, double)>();
+            At(x, result);
+            return result;
         }
 
         /// <summary>At(x) into a list the caller keeps (cleared first).</summary>
-        public void At(double x, List<(double Lo, double Hi)> out_)
+        public void At(double x, List<(double Lo, double Hi)> result)
         {
-            out_.Clear();
+            result.Clear();
             int i = xs.UpperBound(x) - 1;
             if (i < 0 || i >= slabs.Count)
                 return;
@@ -322,31 +322,31 @@ public sealed partial class Layout
             {
                 var e = es[k];
                 var f = es[k + 1];
-                out_.Add((e.Y0 + (x - e.X0) * (e.Y1 - e.Y0) / (e.X1 - e.X0), f.Y0 + (x - f.X0) * (f.Y1 - f.Y0) / (f.X1 - f.X0)));
+                result.Add((e.Y0 + (x - e.X0) * (e.Y1 - e.Y0) / (e.X1 - e.X0), f.Y0 + (x - f.X0) * (f.Y1 - f.Y0) / (f.X1 - f.X0)));
             }
         }
     }
 
-    const double MAST_T_K = 0.012;
+    const double MastTK = 0.012;
 
     /// <summary>A mast's weight at half its height: tripod legs or a pole.</summary>
     public static void MastWeight(Layout lay, Mast m, double top, string name, double bse = 0.0)
     {
         int legs = m.Tripod ? 3 : 1;
         double h = top - bse;
-        lay.Weights.Add(new Weight(name, "superstructure", legs * MAST_T_K * Math.Pow(h, 2), m.X, ZRel.Deck(bse + h / 2)));
+        lay.Weights.Add(new Weight(name, "superstructure", legs * MastTK * Math.Pow(h, 2), m.X, ZRel.Deck(bse + h / 2)));
     }
 
-    static readonly double[] AA_ROOF_PEN = [0.05, 0.05, 0.0, 0.0, 0.03];
-    const double AA_SINGLE_PEN = 0.1, AA_DECK_PEN = 0.3;
+    static readonly double[] AaRoofPen = [0.05, 0.05, 0.0, 0.0, 0.03];
+    const double AaSinglePen = 0.1, AaDeckPen = 0.3;
 
     /// <summary>The magazines grouped fore and aft of the machinery (warships): (battery, mounts, m3 per mount).</summary>
     public static Dictionary<string, List<(string Bat, long N, double V)>> MagazinePlan(Design design,
         IEnumerable<(string Id, string Grp, Gun G)> wings)
     {
-        var out_ = new Dictionary<string, List<(string, long, double)>> { ["fore"] = [], ["aft"] = [] };
+        var result = new Dictionary<string, List<(string, long, double)>> { ["fore"] = [], ["aft"] = [] };
         foreach (var (wid, grp, g) in wings)
-            out_[grp].Add((wid, 2, Ordnance.AmmoM3(g.T)));
+            result[grp].Add((wid, 2, Ordnance.AmmoM3(g.T)));
         var secs = Batteries.SecondaryBatteries(design);
         for (int k = 0; k < secs.Count; k++)
         {
@@ -358,9 +358,9 @@ public sealed partial class Layout
             var t = Geometry.BatteryType(s, kind).T;
             foreach (var (grp, pairs) in new[] { ("fore", (n + 1) / 2), ("aft", n / 2) })
                 if (pairs != 0)
-                    out_[grp].Add((Batteries.BatteryPrefix(k), 2 * pairs, Ordnance.AmmoM3(t)));
+                    result[grp].Add((Batteries.BatteryPrefix(k), 2 * pairs, Ordnance.AmmoM3(t)));
         }
-        return out_;
+        return result;
     }
 
     /// <summary>The warship's magazines (ordnance.stow), linked both ways.</summary>
@@ -416,7 +416,7 @@ public sealed partial class Layout
         double D = res.Depth, T = res.Draught;
         double tds = design.Armour?.TdsM ?? 0.0;
         double wing = p.Tech.Fuel == "coal" && p.Bunkers == "wing" ? p.WingBunkerM : 0.0;
-        double w = Powerplant.STEEL_FRAME * 2 * hull.HalfWidth(x) - 2 * tds - 2 * wing;
+        double w = Powerplant.SteelFrame * 2 * hull.HalfWidth(x) - 2 * tds - 2 * wing;
         var ag = Armour.ArmourGeometry(design, hull.L, T, D, lay.Geo);
         double top = ag.RoofZ ?? D;
         double db = Powerplant.DoubleBottom(D);
@@ -444,14 +444,14 @@ public sealed partial class Layout
     /// <summary>Place machinery segments one after another, aft from x_front: [(kind, x0, x1)].</summary>
     public static List<(string Kind, double X0, double X1)> StackMachinery(IEnumerable<(string Kind, double Len)> segs, double xFront)
     {
-        var out_ = new List<(string, double, double)>();
+        var result = new List<(string, double, double)>();
         double x = xFront;
         foreach (var (kind, l) in segs)
         {
-            out_.Add((kind, x - l, x));
+            result.Add((kind, x - l, x));
             x -= l;
         }
-        return out_;
+        return result;
     }
 
     /// <summary>Compartments for the placed machinery segments: boiler rooms, engine rooms and bunkers, wing bunkers and
@@ -522,20 +522,20 @@ public sealed partial class Layout
             f.Serves = f.Seg is long seg && segRooms.TryGetValue(seg, out var l) ? l : [];
     }
 
-    public const double FUNNEL_ABOVE = 3.0;
-    const double STACK_NATURAL = 25.0;
-    const double BRIDGE_OVER_BOILERS = 0.85;
-    const double BRIDGE_CLEAR = 1.0;
-    const int TOWER_TAPER_FROM = 6;
-    const double TOWER_TAPER_W = 0.07, TOWER_TAPER_L = 0.04, TOWER_MIN_W = 0.45, TOWER_MIN_L = 0.6;
+    public const double FunnelAbove = 3.0;
+    const double StackNatural = 25.0;
+    const double BridgeOverBoilers = 0.85;
+    const double BridgeClear = 1.0;
+    const int TowerTaperFrom = 6;
+    const double TowerTaperW = 0.07, TowerTaperL = 0.04, TowerMinW = 0.45, TowerMinL = 0.6;
 
     /// <summary>(width, length) of the bridge tower's level k as fractions of the bridge's footprint.</summary>
     static (double W, double L) TowerTaper(long k)
     {
-        long n = Math.Max(0, k - TOWER_TAPER_FROM);
+        long n = Math.Max(0, k - TowerTaperFrom);
         if (n == 0)
             return (1.0, 1.0);
-        return (Math.Max(TOWER_MIN_W, Math.Pow(1 - TOWER_TAPER_W, n)), Math.Max(TOWER_MIN_L, Math.Pow(1 - TOWER_TAPER_L, n)));
+        return (Math.Max(TowerMinW, Math.Pow(1 - TowerTaperW, n)), Math.Max(TowerMinL, Math.Pow(1 - TowerTaperL, n)));
     }
 
     /// <summary>The lowest level the navigating bridge can stand at (2 at least) to see over a turret roof this high.</summary>
@@ -543,7 +543,7 @@ public sealed partial class Layout
     {
         if (roof is null)
             return 2;
-        return Math.Max(2L, (long)Math.Ceiling((roof.Value + BRIDGE_CLEAR) / LEVEL_H - 1e-9) + 1);
+        return Math.Max(2L, (long)Math.Ceiling((roof.Value + BridgeClear) / LevelH - 1e-9) + 1);
     }
 
     /// <summary>Funnel count and size for the planned machinery, with funnel tops `top` above the main deck.</summary>
@@ -608,7 +608,7 @@ public sealed partial class Layout
         lay.FunnelsPlanned.Add(f);
     }
 
-    /// <summary>The funnel top raised to FUNNEL_ABOVE over the highest block any funnel passes through.</summary>
+    /// <summary>The funnel top raised to FunnelAbove over the highest block any funnel passes through.</summary>
     public static double RaiseFunnels(Layout lay, List<Funnel> funnels, List<Block> blocks, double top)
     {
         double nw = top;
@@ -617,7 +617,7 @@ public sealed partial class Layout
             var pts = Footprint.Rect(f.X - f.L / 2, f.Y - f.W / 2, f.X + f.L / 2, f.Y + f.W / 2).Points();
             foreach (var b in blocks)
                 if (b.Points is { Count: > 0 } bp && Geometry.PolygonsIntersect(bp, pts))
-                    nw = Math.Max(nw, b.TopZ + FUNNEL_ABOVE);
+                    nw = Math.Max(nw, b.TopZ + FunnelAbove);
         }
         if (nw <= top + 1e-6)
             return top;
@@ -638,17 +638,17 @@ public sealed partial class Layout
     }
 
     // Warship and carrier planform
-    static readonly Dictionary<string, double> LARGE = new() { ["flare"] = 0.08, ["bow_share"] = 0.5, ["transom"] = 0.1 };
-    static readonly (string K, double V)[] SMALL = [("flare", 0.22), ("mid", 0.25), ("bow_share", 0.53), ("transom", 0.75)];
-    const double MIDBODY_K = 1.5;
-    static readonly (double Lo, double Hi) PLAN_SIZE = (1500.0, 4000.0);
+    static readonly Dictionary<string, double> Large = new() { ["flare"] = 0.08, ["bow_share"] = 0.5, ["transom"] = 0.1 };
+    static readonly (string K, double V)[] Small = [("flare", 0.22), ("mid", 0.25), ("bow_share", 0.53), ("transom", 0.75)];
+    const double MidbodyK = 1.5;
+    static readonly (double Lo, double Hi) PlanSize = (1500.0, 4000.0);
 
     /// <summary>Bow and stern tapers for a deck of size_m2 (L x B) whose plan fills cwp(cb) + flare of its box.</summary>
     public static (HullEnd Bow, HullEnd Stern) Planform(double cb, double sizeM2)
     {
-        double s = Math.Min(1.0, Math.Max(0.0, (sizeM2 - PLAN_SIZE.Lo) / (PLAN_SIZE.Hi - PLAN_SIZE.Lo)));
-        var large = new Dictionary<string, double>(LARGE) { ["mid"] = Math.Min(0.4, Math.Max(0.0, (cb - 0.5) * MIDBODY_K)) };
-        var k = SMALL.ToDictionary(kv => kv.K, kv => kv.V + (large[kv.K] - kv.V) * s);
+        double s = Math.Min(1.0, Math.Max(0.0, (sizeM2 - PlanSize.Lo) / (PlanSize.Hi - PlanSize.Lo)));
+        var large = new Dictionary<string, double>(Large) { ["mid"] = Math.Min(0.4, Math.Max(0.0, (cb - 0.5) * MidbodyK)) };
+        var k = Small.ToDictionary(kv => kv.K, kv => kv.V + (large[kv.K] - kv.V) * s);
         double mid = k["mid"], transom = k["transom"];
         double bt = (1 - mid) * k["bow_share"], st = (1 - mid) * (1 - k["bow_share"]);
         double target = Math.Min(0.97, Geometry.Cwp(cb) + k["flare"]);
@@ -677,12 +677,12 @@ public sealed partial class Layout
         string name = "Steering gear")
     {
         double L = lay.Hull.L, B = lay.Hull.B;
-        double a = x0 ?? -L / 2 + Propulsion.STEERING.X0 * L;
-        double b = x1 ?? -L / 2 + Propulsion.STEERING.X1 * L;
+        double a = x0 ?? -L / 2 + Propulsion.Steering.X0 * L;
+        double b = x1 ?? -L / 2 + Propulsion.Steering.X1 * L;
         var (bse, top) = Ordnance.Span(lay.Geo.Plant!);
         var room = new Compartment
         {
-            Id = name, Kind = "steering", X0 = a, X1 = b, Base = bse, Top = top, HalfWidth = halfWidth ?? Propulsion.STEERING.Hw * B,
+            Id = name, Kind = "steering", X0 = a, X1 = b, Base = bse, Top = top, HalfWidth = halfWidth ?? Propulsion.Steering.Hw * B,
         };
         lay.Compartments.Add(room);
         lay.Geo.Steering = (a, b);
@@ -690,12 +690,12 @@ public sealed partial class Layout
         return room;
     }
 
-    static readonly Dictionary<string, int> DRAW_KIND = new() { ["main"] = 2, ["secondary"] = 1 };
+    static readonly Dictionary<string, int> DrawKind = new() { ["main"] = 2, ["secondary"] = 1 };
 
     /// <summary>Each mount's z, the draw order: its rank by base height (equal keys share a z).</summary>
     static void DrawOrder(List<Mount> mounts)
     {
-        (double, int) Key(Mount m) => (Math.Round(m.Base, 3), DRAW_KIND.TryGetValue(m.Kind, out var k) ? k : 0);
+        (double, int) Key(Mount m) => (Math.Round(m.Base, 3), DrawKind.TryGetValue(m.Kind, out var k) ? k : 0);
         var keys = mounts.Select(Key).Distinct().ToList();
         keys.Sort();
         var rank = keys.Select((k, i) => (k, i)).ToDictionary(t => t.k, t => (long)t.i);
@@ -729,7 +729,7 @@ public sealed partial class Layout
         return lay;
     }
 
-    const double WIND_COL = 1.0;
+    const double WindCol = 1.0;
 
     /// <summary>What the wind sees from abeam above the main deck.</summary>
     static Windage LateralProfile(Layout lay, List<Block> blocks, List<Funnel> funnels, List<Mast> masts, List<Mount> mounts,
@@ -741,9 +741,9 @@ public sealed partial class Layout
         {
             if (z1 <= z0 || x1 <= x0)
                 return;
-            for (long i = (long)(Math.Floor(x0 / WIND_COL)); i < (long)(Math.Ceiling(x1 / WIND_COL)); i++)
+            for (long i = (long)(Math.Floor(x0 / WindCol)); i < (long)(Math.Ceiling(x1 / WindCol)); i++)
             {
-                double f = (Math.Min(x1, (i + 1) * WIND_COL) - Math.Max(x0, i * WIND_COL)) / WIND_COL;
+                double f = (Math.Min(x1, (i + 1) * WindCol) - Math.Max(x0, i * WindCol)) / WindCol;
                 if (!cols.TryGetValue(i, out var l))
                     cols[i] = l = [];
                 l.Add((z0, z1, f));
@@ -773,7 +773,7 @@ public sealed partial class Layout
         }
         foreach (var a in aa)
         {
-            double r = Geometry.AA_CFG[a.Type].R;
+            double r = Geometry.AaCfg[a.Type].R;
             Add(a.X - r, a.X + r, a.Base, a.Base + 2.0);
         }
         double area = 0.0, mom = 0.0;
@@ -787,15 +787,15 @@ public sealed partial class Layout
                 {
                     if (z1 > c.B)
                     {
-                        area += (z1 - c.B) * f * WIND_COL;
-                        mom += (z1 - c.B) * f * WIND_COL * (c.B + z1) / 2;
+                        area += (z1 - c.B) * f * WindCol;
+                        mom += (z1 - c.B) * f * WindCol * (c.B + z1) / 2;
                         cur = (c.A, z1);
                     }
                     continue;
                 }
                 cur = (z0, z1);
-                area += (z1 - z0) * f * WIND_COL;
-                mom += (z1 - z0) * f * WIND_COL * (z0 + z1) / 2;
+                area += (z1 - z0) * f * WindCol;
+                mom += (z1 - z0) * f * WindCol * (z0 + z1) / 2;
             }
         }
         return new Windage(area, area != 0 ? mom / area : 0.0);

@@ -1,12 +1,12 @@
 namespace Fleetwright.Shipgen;
 
 /// <summary>decks: the hull's deck stack (deck 0 the main deck, 1 the second, ... down to the inner bottom, every
-/// DECK_PITCH) and raised stretches of hull (-1, -2, ... over their spans).</summary>
+/// DeckPitch) and raised stretches of hull (-1, -2, ... over their spans).</summary>
 public static class Decks
 {
-    public const double MIN_TIER = 1.0;
-    const int MAX_DECKS = 60;
-    static readonly string[] DECK_NAMES = ["Main deck", "Second deck", "Third deck", "Fourth deck", "Fifth deck",
+    public const double MinTier = 1.0;
+    const int MaxDecks = 60;
+    static readonly string[] DeckNames = ["Main deck", "Second deck", "Third deck", "Fourth deck", "Fifth deck",
         "Sixth deck", "Seventh deck", "Eighth deck", "Ninth deck", "Tenth deck"];
 
     /// <summary>A deck's name by its number: 0 the main deck, 1, 2, ... down the stack; -1, -2, ... raised decks.</summary>
@@ -14,17 +14,17 @@ public static class Decks
     {
         if (n < 0)
             return $"Raised deck {-n}";
-        return n < DECK_NAMES.Length ? DECK_NAMES[n] : $"Deck {n + 1}";
+        return n < DeckNames.Length ? DeckNames[n] : $"Deck {n + 1}";
     }
 
-    /// <summary>The hull's decks, every DECK_PITCH down from the main deck, as heights above the keel, top down.</summary>
+    /// <summary>The hull's decks, every DeckPitch down from the main deck, as heights above the keel, top down.</summary>
     public static List<(long N, double Z)> DeckStack(Design design, double D)
     {
         double floor = design.StyleName == "planing" ? 0.0 : Powerplant.DoubleBottom(D);
-        var out_ = new List<(long, double)> { (0, D) };
-        while (D - out_.Count * Geometry.DECK_PITCH >= floor + MIN_TIER - 1e-9 && out_.Count <= MAX_DECKS)
-            out_.Add((out_.Count, D - out_.Count * Geometry.DECK_PITCH));
-        return out_;
+        var result = new List<(long, double)> { (0, D) };
+        while (D - result.Count * Geometry.DeckPitch >= floor + MinTier - 1e-9 && result.Count <= MaxDecks)
+            result.Add((result.Count, D - result.Count * Geometry.DeckPitch));
+        return result;
     }
 
     /// <summary>The stretch s0..s1 split where raised stretches step: [(x0, x1, levels)], each with the raised decks
@@ -37,18 +37,18 @@ public static class Decks
                 if (s0 < x && x < s1)
                     set.Add(x);
         var xs = set.Order().ToList();
-        var out_ = new List<(double, double, long)>();
+        var result = new List<(double, double, long)>();
         for (int i = 0; i < xs.Count - 1; i++)
         {
             double a = xs[i], b = xs[i + 1];
             double m = (a + b) / 2;
             long lv = Math.Min(k, raised.Where(r => r.X0 <= m && m <= r.X1).Select(r => r.Levels).DefaultIfEmpty(0L).Max());
-            if (out_.Count > 0 && out_[^1].Item3 == lv)
-                out_[^1] = (out_[^1].Item1, b, lv);
+            if (result.Count > 0 && result[^1].Item3 == lv)
+                result[^1] = (result[^1].Item1, b, lv);
             else
-                out_.Add((a, b, lv));
+                result.Add((a, b, lv));
         }
-        return out_;
+        return result;
     }
 }
 
@@ -104,8 +104,8 @@ public sealed class Geo
 /// <summary>Fixed firing arcs by mount kind, and the one interval each mount turns within (its traverse).</summary>
 public static class Arcs
 {
-    public const double ARC_END = 135.0, ARC_SIDE = 90.0, ARC_BEAM = 65.0, ARC_CROSS = 30.0, ARC_CASEMATE = 60.0;
-    public const double ARC_TORPEDO = 60.0, ARC_FIXED = 1.0;
+    public const double ArcEnd = 135.0, ArcSide = 90.0, ArcBeam = 65.0, ArcCross = 30.0, ArcCasemate = 60.0;
+    public const double ArcTorpedo = 60.0, ArcFixed = 1.0;
 
     /// <summary>[start, end] clockwise with 0 &lt;= start &lt; 360; end may exceed 360.</summary>
     static double[] Arc(double centre, double half)
@@ -117,25 +117,25 @@ public static class Arcs
     public static List<double[]> MountArcs(Mount m)
     {
         if (m.Fixed is double fixedBearing)
-            return [Arc(fixedBearing, ARC_FIXED)];
+            return [Arc(fixedBearing, ArcFixed)];
         double own = m.Y > 0 ? 90.0 : 270.0;
         if (m.Casemate)
-            return [Arc(own, ARC_CASEMATE)];
+            return [Arc(own, ArcCasemate)];
         if (m.SideMount)
-            return [Arc(own, ARC_SIDE)];
+            return [Arc(own, ArcSide)];
         if (m.Wing)
         {
             if (m.CrossDeck)
-                return [Arc(own, ARC_SIDE), Arc(own + 180.0, ARC_CROSS)];
-            return [Arc(own, ARC_SIDE)];
+                return [Arc(own, ArcSide), Arc(own + 180.0, ArcCross)];
+            return [Arc(own, ArcSide)];
         }
         if (m.ArcRole == "beam")
-            return [Arc(90.0, ARC_BEAM), Arc(270.0, ARC_BEAM)];
+            return [Arc(90.0, ArcBeam), Arc(270.0, ArcBeam)];
         if (m.Kind == "torpedo" && Math.Abs(m.Y) < 0.5)
-            return [Arc(90.0, ARC_TORPEDO), Arc(270.0, ARC_TORPEDO)];
+            return [Arc(90.0, ArcTorpedo), Arc(270.0, ArcTorpedo)];
         if (Math.Abs(Math.Abs(Geometry.Wrap180(m.Rest)) - 90.0) < 1e-6)
-            return [Arc(m.Rest, ARC_SIDE)];
-        return [Arc(m.Rest, ARC_END)];
+            return [Arc(m.Rest, ArcSide)];
+        return [Arc(m.Rest, ArcEnd)];
     }
 
     /// <summary>A cross-deck wing turret's whole swing [start, end].</summary>

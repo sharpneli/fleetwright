@@ -39,7 +39,7 @@ public sealed class Palette
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record Shapes
 {
-    /// <summary>The clutter kit (Clutter.KITS), by default the era's.</summary>
+    /// <summary>The clutter kit (Clutter.Kits), by default the era's.</summary>
     public string? Clutter { get; init; }
     public double? ClutterDensity { get; init; }
     public double? RoofPlanks { get; init; }
@@ -99,7 +99,7 @@ public sealed class SpriteMeta
     public double ScalePxPerM { get; init; }
     public required long[] SizePx { get; init; }
     public required double[] OriginPx { get; init; }
-    public string Orientation { get; init; } = ShipSprites.ORIENTATION;
+    public string Orientation { get; init; } = ShipSprites.Orientation;
     public string[] LayerOrder { get; init; } = ["hull", "turrets (ascending z)"];
     public required SpriteLayers Layers { get; init; }
     public required OrderedDictionary<string, TurretSprite> TurretTypes { get; init; }

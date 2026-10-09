@@ -56,7 +56,7 @@ public sealed unsafe class ShipViewer : IDisposable
         if (designs.Count == 0)
             designs.Add(designPath);
         navies = ["(design)", .. Shipgen.Render.Looks.Navies];
-        eras = ["(design)", .. Shipgen.Render.Looks.ERAS];
+        eras = ["(design)", .. Shipgen.Render.Looks.Eras];
         navyIndex = navy != null ? Math.Max(0, Array.IndexOf(navies, navy)) : 0;
         eraIndex = era != null ? Math.Max(0, Array.IndexOf(eras, era)) : 0;
 

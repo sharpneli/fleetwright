@@ -4,7 +4,7 @@ namespace Fleetwright.Shipgen.Render;
 /// drew with shadows off (the game casts them from the height map), so the baked drop shadows aren't ported.</summary>
 public sealed class Painter
 {
-    public readonly Palette P;         // the palette (DEFAULT_PALETTE under the look's)
+    public readonly Palette P;         // the palette (DefaultPalette under the look's)
     public readonly Shapes Shapes;     // the look's drawing variations (Looks.Shapes)
     public List<(List<Pt> Pts, string Col)> Dazzle = [];   // dazzle camouflage panels, set by HullArt
     public readonly double Sw;         // outline width: at least ~0.6 px whatever the scale
@@ -87,7 +87,7 @@ public sealed class Painter
     /// <summary>AA guns (baked into the hull layers; too small to rotate usefully).</summary>
     public void Aa(List<Node> o, AaMount a)
     {
-        var cfg = Geometry.AA_CFG[a.Type];
+        var cfg = Geometry.AaCfg[a.Type];
         double x = a.X, y = a.Y, d = a.Dir;
         double r = cfg.R, ln = cfg.BarrelLen, bw = cfg.BarrelW, sp = cfg.Spacing;
         long n = cfg.Barrels;

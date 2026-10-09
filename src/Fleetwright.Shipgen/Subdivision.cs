@@ -3,22 +3,22 @@ namespace Fleetwright.Shipgen;
 /// <summary>subdivision: the hull below the main deck as a grid of watertight cells, and the rooms that own them.</summary>
 public static class Subdivision
 {
-    const double MIN_SECTION = 0.03, MIN_SECTION_M = 1.0, MIN_SECTION_MAX_M = 8.0, MAX_SECTION = 0.07, MAX_SECTION_M = 2.5;
-    const double COLLISION = 0.05, STEEL_FRAME = 0.92;
-    const int Z_SAMPLES = 6;
-    const double SLIVER_M3 = 1.0, SLIVER_FRAC = 0.05;
-    static readonly Dictionary<string, int> ROOM_PRIORITY = new()
+    const double MinSection = 0.03, MinSectionM = 1.0, MinSectionMaxM = 8.0, MaxSection = 0.07, MaxSectionM = 2.5;
+    const double Collision = 0.05, SteelFrame = 0.92;
+    const int ZSamples = 6;
+    const double SliverM3 = 1.0, SliverFrac = 0.05;
+    static readonly Dictionary<string, int> RoomPriority = new()
     {
         ["magazine"] = 9, ["steering"] = 6, ["boiler_room"] = 7, ["engine_room"] = 7, ["fuel_tank"] = 7, ["bunker"] = 6,
         ["cargo_tank"] = 5, ["hold"] = 5, ["accommodation"] = 2,
     };
-    static readonly Dictionary<string, double> PERMEABILITY = new()
+    static readonly Dictionary<string, double> Permeability = new()
     {
         ["magazine"] = 0.6, ["steering"] = 0.85, ["boiler_room"] = 0.85, ["engine_room"] = 0.85, ["fuel_tank"] = 0.95,
         ["bunker"] = 0.95, ["cargo_tank"] = 0.95, ["hold"] = 0.6, ["accommodation"] = 0.95, ["stores"] = 0.6,
         ["double_bottom"] = 0.95, ["tds"] = 0.95,
     };
-    const double COAL_PERMEABILITY = 0.4;
+    const double CoalPermeability = 0.4;
 
     static double Ov(double a0, double a1, double b0, double b1) => Math.Min(a1, b1) - Math.Max(a0, b0);
 
@@ -57,23 +57,23 @@ public static class Subdivision
     /// <summary>Where the hull reaches raised deck k: merged [[x0, x1]], aft to forward.</summary>
     static List<double[]> RaisedSpans(IReadOnlyList<RaisedStretch> raised, long k)
     {
-        var out_ = new List<double[]>();
+        var result = new List<double[]>();
         foreach (var (x0, x1) in raised.Where(s => s.Levels >= k).Select(s => (s.X0, s.X1)).Order())
         {
-            if (out_.Count > 0 && x0 <= out_[^1][1] + 1e-6)
-                out_[^1][1] = Math.Max(out_[^1][1], x1);
+            if (result.Count > 0 && x0 <= result[^1][1] + 1e-6)
+                result[^1][1] = Math.Max(result[^1][1], x1);
             else
-                out_.Add([x0, x1]);
+                result.Add([x0, x1]);
         }
-        return out_;
+        return result;
     }
 
     /// <summary>The decks, keel up, as heights above the main deck.</summary>
     static List<SubDeck> DecksOf(Design design, double D, ArmourLayout ag, IReadOnlyList<RaisedStretch> raised)
     {
-        var out_ = new List<SubDeck> { new() { Id = "Keel", Kind = "keel", Z = -D } };
+        var result = new List<SubDeck> { new() { Id = "Keel", Kind = "keel", Z = -D } };
         if (design.StyleName != "planing")
-            out_.Add(new SubDeck { Id = "Inner bottom", Kind = "inner_bottom", Z = -D + Powerplant.DoubleBottom(D) });
+            result.Add(new SubDeck { Id = "Inner bottom", Kind = "inner_bottom", Z = -D + Powerplant.DoubleBottom(D) });
         var armour = ag.Decks.GroupBy(d => d.Deck).ToDictionary(g => g.Key, g => g.ToList());
 
         void Armour(SubDeck d, long n)
@@ -94,20 +94,20 @@ public static class Subdivision
         {
             var d = new SubDeck { Id = Decks.DeckName(n), Kind = n == 0 ? "main" : "deck", Deck = n, Z = z - D };
             Armour(d, n);
-            out_.Add(d);
+            result.Add(d);
         }
         long top = raised.Select(s => s.Levels).DefaultIfEmpty(0L).Max();
         for (long k = 1; k <= top; k++)
         {
             var d = new SubDeck
             {
-                Id = Decks.DeckName(-k), Kind = "raised", Deck = -k, Z = k * Geometry.DECK_PITCH,
+                Id = Decks.DeckName(-k), Kind = "raised", Deck = -k, Z = k * Geometry.DeckPitch,
                 Spans = RaisedSpans(raised, k).Select(s => new[] { Math.Round(s[0], 3), Math.Round(s[1], 3) }).ToList(),
             };
             Armour(d, -k);
-            out_.Add(d);
+            result.Add(d);
         }
-        return out_;
+        return result;
     }
 
     /// <summary>A tier is named after the deck it stands on: bottom, hold, then second, third, ...</summary>
@@ -119,14 +119,14 @@ public static class Subdivision
         return id.EndsWith(" deck", StringComparison.Ordinal) ? id[..^5] : id;
     }
 
-    const int BREAK_PRIORITY = 8;
+    const int BreakPriority = 8;
 
     /// <summary>Transverse bulkhead positions, bow to stern: [(x, kind)], with the hull's ends.</summary>
     static List<(double X, string Kind)> Stations(double L, List<RoomBox> rooms, (double X0, double X1, string Kind)? cit, double minGap,
         double maxGap, IEnumerable<double> breaks, IEnumerable<double> armoured)
     {
-        var cands = new List<(double X, int P, string Kind)> { (L / 2 - COLLISION * L, 9, "collision") };
-        cands.AddRange(breaks.Select(x => (x, BREAK_PRIORITY, "main")));
+        var cands = new List<(double X, int P, string Kind)> { (L / 2 - Collision * L, 9, "collision") };
+        cands.AddRange(breaks.Select(x => (x, BreakPriority, "main")));
         cands.AddRange(armoured.Select(x => (x, 10, "armoured")));
         if (cit is { } c)
         {
@@ -135,7 +135,7 @@ public static class Subdivision
         }
         foreach (var r in rooms)
         {
-            int p = ROOM_PRIORITY.GetValueOrDefault(r.Kind, 4);
+            int p = RoomPriority.GetValueOrDefault(r.Kind, 4);
             cands.Add((r.X0, p, "main"));
             cands.Add((r.X1, p, "main"));
         }
@@ -166,7 +166,7 @@ public static class Subdivision
             else
                 pts.RemoveAt(i);
         }
-        var out_ = new List<(double, string)> { (pts[0].X, "end") };
+        var result = new List<(double, string)> { (pts[0].X, "end") };
         for (int k = 0; k < pts.Count - 1; k++)
         {
             double xa = pts[k].X;
@@ -177,11 +177,11 @@ public static class Subdivision
             {
                 long n = (long)Math.Ceiling(gap / maxGap - 1e-9);
                 for (long j = 1; j < n; j++)
-                    out_.Add((xa - gap * j / n, "main"));
+                    result.Add((xa - gap * j / n, "main"));
             }
-            out_.Add((xb, kb));
+            result.Add((xb, kb));
         }
-        return out_;
+        return result;
     }
 
     /// <summary>The subdivision of the laid-out ship.</summary>
@@ -221,7 +221,7 @@ public static class Subdivision
             cit = (ag.X0, ag.X1, ag.BulkheadMm > 0 ? "armoured" : "citadel");
         else if (lay.Geo.Citadel is { } gc && design.StyleName is "warship" or "carrier")
             cit = (gc.X0, gc.X1, "citadel");
-        var st = Stations(L, rooms, cit, Math.Min(MIN_SECTION_MAX_M, Math.Max(MIN_SECTION_M, MIN_SECTION * L)), Math.Max(MAX_SECTION_M, MAX_SECTION * L),
+        var st = Stations(L, rooms, cit, Math.Min(MinSectionMaxM, Math.Max(MinSectionM, MinSection * L)), Math.Max(MaxSectionM, MaxSection * L),
             lay.Raised.SelectMany(s => new[] { s.X0, s.X1 }), ag.EndBulkheads.Select(b => b.X));
         var armBh = new List<ArmourBulkhead>();
         if (cit is { Kind: "armoured" })
@@ -235,7 +235,7 @@ public static class Subdivision
         for (int k = 0; k < st.Count - 2; k++)
         {
             var s = st[k + 1];
-            double top = Math.Min(SecLevel(sections[k]), SecLevel(sections[k + 1])) * Geometry.DECK_PITCH;
+            double top = Math.Min(SecLevel(sections[k]), SecLevel(sections[k + 1])) * Geometry.DeckPitch;
             var d = new Bulkhead
             {
                 Id = $"Bulkhead {k + 1}", Kind = s.Kind is "collision" or "armoured" ? s.Kind : "main", X = Math.Round(s.X, 3),
@@ -282,7 +282,7 @@ public static class Subdivision
                 (split, sKind, sTop) = (plan!.Width / 2, "wing", 0.0);
             else if (tds > 0 && inCit)
             {
-                split = Math.Max(0.5, STEEL_FRAME * XsIn(sx0, sx1).Select(form.Waterline).Min() - tds);
+                split = Math.Max(0.5, SteelFrame * XsIn(sx0, sx1).Select(form.Waterline).Min() - tds);
                 (sKind, sTop) = ("tds", under);
             }
             if (split >= hwmax - 0.3)
@@ -333,10 +333,10 @@ public static class Subdivision
                 }
                 else
                     ys = centreSplit ? [("CP", -hwT, 0.0), ("CS", 0.0, hwT)] : [("C", -hwT, hwT)];
-                var zs = Enumerable.Range(0, Z_SAMPLES).Select(k => trBase + (trTop - trBase) * (k + 0.5) / Z_SAMPLES).ToList();
+                var zs = Enumerable.Range(0, ZSamples).Select(k => trBase + (trTop - trBase) * (k + 0.5) / ZSamples).ToList();
                 var xsI = XsIn(x0, x1);
                 var hwz = zs.Select(z => xsI.Select(x => form.HalfWidth(x, z + D)).ToList()).ToList();
-                double dz = (trTop - trBase) / Z_SAMPLES;
+                double dz = (trTop - trBase) / ZSamples;
                 foreach (var (band, y0, y1) in ys)
                 {
                     if (y1 - y0 < 1e-6)
@@ -379,7 +379,7 @@ public static class Subdivision
                     if (banded && band is "P" or "S" && inCit && tds > 0)
                     {
                         double zm = (trBase + trTop) / 2 + D;
-                        c.TdsM = Math.Round(Math.Max(0.0, STEEL_FRAME * xsI.Min(x => form.HalfWidth(x, zm)) - split!.Value), 2);
+                        c.TdsM = Math.Round(Math.Max(0.0, SteelFrame * xsI.Min(x => form.HalfWidth(x, zm)) - split!.Value), 2);
                     }
                     cells.Add(c);
                 }
@@ -399,7 +399,7 @@ public static class Subdivision
         foreach (var c in cells.OrderBy(c => c.Ti).ToList())
         {
             double box = (c.X1 - c.X0) * (c.Y1 - c.Y0) * (c.Top - c.Base);
-            if (c.Merged || c.VolumeM3 >= Math.Max(SLIVER_M3, SLIVER_FRAC * box) || !Flat(c.Ti))
+            if (c.Merged || c.VolumeM3 >= Math.Max(SliverM3, SliverFrac * box) || !Flat(c.Ti))
                 continue;
             foreach (int dt in new[] { 1, -1 })
             {
@@ -427,7 +427,7 @@ public static class Subdivision
             {
                 if (!Claims(r, c))
                     continue;
-                var key = (ROOM_PRIORITY.GetValueOrDefault(r.Kind, 4), BoxOverlap(r, c));
+                var key = (RoomPriority.GetValueOrDefault(r.Kind, 4), BoxOverlap(r, c));
                 if (best is null || key.CompareTo(best.Value.Key) > 0)
                     best = (key, r);
             }
@@ -531,9 +531,9 @@ public static class Subdivision
             var r = roomOut[owner[c.Id]];
             c.Room = r.Id;
             c.Also = also.GetValueOrDefault(c.Id);
-            double p = PERMEABILITY.GetValueOrDefault(r.Kind, 0.9);
+            double p = Permeability.GetValueOrDefault(r.Kind, 0.9);
             if (r.Kind == "bunker" && (r.Fuel ?? fuel) == "coal")
-                p = COAL_PERMEABILITY;
+                p = CoalPermeability;
             c.Permeability = p;
         }
         var grid = cells.GroupBy(c => c.Si).ToDictionary(g => g.Key, g => g.ToList());
@@ -626,7 +626,7 @@ public static class Subdivision
             foreach (var d in sub.Decks.Where(d => d.Kind is "main" or "raised"))
                 d.WoodMm = plating.DeckWoodMm;
         foreach (var b in sub.Bulkheads)
-            b.PlateMm = b.Kind == "tds" ? Math.Round(Armour.TDS_MM_PER_M * tds, 1) : plating.BulkheadMm;
+            b.PlateMm = b.Kind == "tds" ? Math.Round(Armour.TdsMmPerM * tds, 1) : plating.BulkheadMm;
         return planked;
     }
 }

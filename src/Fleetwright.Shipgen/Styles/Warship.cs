@@ -22,7 +22,7 @@ public sealed class WarshipStyle : Style
 /// <summary>Planing-hull fast craft (motor torpedo boats, PT boats, motor gunboats).</summary>
 public sealed class PlaningStyle : Style
 {
-    const double WOOD_T_PER_M2 = 0.10, PLANK_MM = 25.0;
+    const double WoodTPerM2 = 0.10, PlankMm = 25.0;
 
     public override string Name => "planing";
 
@@ -43,7 +43,7 @@ public sealed class PlaningStyle : Style
 
     public override Tuning Tuning(Design design) => new()
     {
-        PlaningPower = true, BoxHull = true, HullK = 0.06, PlateOwnMm = PLANK_MM, FreeboardA = 0.04, FreeboardB = 0.8,
+        PlaningPower = true, BoxHull = true, HullK = 0.06, PlateOwnMm = PlankMm, FreeboardA = 0.04, FreeboardB = 0.8,
         MiscFrac = 0.07, CruiseKn = 25.0, LcbFrac = -0.11, GmStiffFrac = 0.5, FnWarn = 99.0, LbWarn = 2.8, TrimTolFrac = 0.025,
         TrimWarnFrac = 0.01,
     };
@@ -80,7 +80,7 @@ public sealed class PlaningStyle : Style
     static Layout PlaningLayout(Design design, Navarch.Result res, double shift)
     {
         double depth = res.Depth;
-        var lay = new Layout(design, WOOD_T_PER_M2, PLANK_MM);
+        var lay = new Layout(design, WoodTPerM2, PlankMm);
         var hs = PlaningHullSpec(design);
         var hull = new Hull(hs);
         lay.Hull = hull;
@@ -93,7 +93,7 @@ public sealed class PlaningStyle : Style
         double cx0 = 0.0 + shift, cx1 = 0.22 * L + shift;
         double wc = 0.42 * B;
         Layout.AddBlock(lay, blocks, "Charthouse", cx0, cx1, wc, 1, 0.45 * wc, 0.2, role: "bridge");
-        var masts = new List<Mast> { new() { X = cx0 + 0.25 * (cx1 - cx0), Yard = Math.Min(0.5 * B, 2.4), Tripod = false, Top = Layout.LEVEL_H + 3.5 } };
+        var masts = new List<Mast> { new() { X = cx0 + 0.25 * (cx1 - cx0), Yard = Math.Min(0.5 * B, 2.4), Tripod = false, Top = Layout.LevelH + 3.5 } };
 
         double m0 = -0.42 * L, m1 = -0.08 * L;
         double lMach = Layout.PlanMachinery(lay, design, res, hull, (m0 + m1) / 2);
@@ -141,7 +141,7 @@ public sealed class PlaningStyle : Style
         var aaOut = new List<AaMount>();
         foreach (var (kind, count) in new[] { ("quad40", design.Aa?.Heavy ?? 0), ("single20", design.Aa?.Light ?? 0) })
         {
-            double rr = Geometry.AA_CFG[kind].R;
+            double rr = Geometry.AaCfg[kind].R;
             var cands = new List<Slot> { new(cx0 - rr - 0.3, rr + 0.15, 0.2), new(cx0 - rr - 0.3, 0.0, 0.2) };
             cands.AddRange(xs2.Select(x => new Slot(x, hull.HalfWidth(x) - rr - 0.3, 0.2)));
             cands.AddRange(xs2.Select(x => new Slot(x, 0.0, 0.2)));

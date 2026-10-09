@@ -4,7 +4,7 @@ namespace Fleetwright.Shipgen;
 /// the input errors (none: Build can run); Build returns the ship (design, report, hitboxes, render).</summary>
 public static class ShipDesign
 {
-    const double MAST_ABOVE_FUNNEL = 6.0;
+    const double MastAboveFunnel = 6.0;
 
     /// <summary>Input errors. limits false skips the numeric ranges (--no-limits); structural checks stay.</summary>
     public static List<string> Validate(Design design, bool limits = true)
@@ -30,7 +30,7 @@ public static class ShipDesign
     /// <summary>The shortest hull a displacement ship of disp_t tonnes gets for v_kn knots.</summary>
     static double MinLength(double dispT, double vKn)
     {
-        double root = Math.Pow(dispT / Weight.SEAWATER, 1.0 / 3);
+        double root = Math.Pow(dispT / Weight.Seawater, 1.0 / 3);
         double fnv = Navarch.VolumetricFroude(dispT, vKn);
         return Math.Max(5.25, Math.Min(8.2, 5.25 + 5.0 * (fnv - 0.55))) * root;
     }
@@ -388,13 +388,13 @@ public static class ShipDesign
         return new Interior(ag, form, sub, plating, planked, hydro, train, Crew.AssignBattleCrew(lay, sub));
     }
 
-    const double BRIDGE_EYE = 1.7;
+    const double BridgeEye = 1.7;
 
     /// <summary>The navigating bridge's view (warships).</summary>
     static BridgeReport BridgeReport(Layout lay, double deckM)
     {
         var b = lay.Geo.Bridge!;
-        double eye = deckM + b.Floor + BRIDGE_EYE;
+        double eye = deckM + b.Floor + BridgeEye;
         return new BridgeReport(b.Level, b.Tower, Math.Round(eye, 2), Math.Round(FireControl.HorizonKm(eye), 1), b.Level >= b.Need, b.Need);
     }
 
@@ -413,16 +413,16 @@ public static class ShipDesign
         foreach (var b in lay.Blocks)
             items.Add(new(deckM + b.TopZ, "polygon") { Points = Geometry.BlockOutline(b) });
         foreach (var a in lay.Aa)
-            items.Add(new(deckM + a.Base + 2.0, "circle") { Cx = a.X, Cy = a.Y, R = Geometry.AA_CFG[a.Type].R * 0.8 });
+            items.Add(new(deckM + a.Base + 2.0, "circle") { Cx = a.X, Cy = a.Y, R = Geometry.AaCfg[a.Type].R * 0.8 });
         foreach (var bt in lay.Spec.Boats ?? [])
-            items.Add(new(deckM + (bt.Top ?? Layout.LEVEL_H + 1.5), "ellipse") { Cx = bt.X, Cy = bt.Y, Rx = bt.L / 2, Ry = bt.W / 2 });
+            items.Add(new(deckM + (bt.Top ?? Layout.LevelH + 1.5), "ellipse") { Cx = bt.X, Cy = bt.Y, Rx = bt.L / 2, Ry = bt.W / 2 });
         foreach (var fn in lay.Funnels)
             items.Add(new(deckM + lay.FunTop, "polygon")
             {
                 Points = Geometry.RrectPolygon(fn.X - fn.L / 2, fn.Y - fn.W / 2, fn.X + fn.L / 2, fn.Y + fn.W / 2, fn.W / 2, fn.W / 2),
             });
         foreach (var m in lay.Spec.Masts)
-            items.Add(new(deckM + (m.Top ?? lay.FunTop + MAST_ABOVE_FUNNEL), "circle") { Cx = m.X, Cy = m.Y ?? 0.0, R = 0.7 });
+            items.Add(new(deckM + (m.Top ?? lay.FunTop + MastAboveFunnel), "circle") { Cx = m.X, Cy = m.Y ?? 0.0, R = 0.7 });
         return items.OrderBy(it => it.Top).ToList();
     }
 
@@ -442,8 +442,8 @@ public static class ShipDesign
 /// <summary>looks.validate: the design's look (navy, era). The rest of looks.py is the renderer's (Step 4).</summary>
 public static class Looks
 {
-    static readonly string[] NAVIES = ["generic", "brooklyn", "kure", "portsmouth", "kiel", "la_spezia", "toulon"];
-    static readonly string[] ERAS = ["victorian", "great_war", "treaty", "wwii", "cold_war"];
+    static readonly string[] Navies = ["generic", "brooklyn", "kure", "portsmouth", "kiel", "la_spezia", "toulon"];
+    static readonly string[] Eras = ["victorian", "great_war", "treaty", "wwii", "cold_war"];
 
     public static List<string> Validate(Design design)
     {
@@ -451,10 +451,10 @@ public static class Looks
         var extra = lk.Extra.KeysOrEmpty().Order(StringComparer.Ordinal).ToList();
         var errs = extra.Count > 0 ? new List<string> { $"look has unknown keys: {string.Join(", ", extra)}" } : [];
         string navy = lk.Navy ?? "generic", era = lk.Era ?? "wwii";
-        if (!NAVIES.Contains(navy))
-            errs.Add($"look.navy = {Style.Quote(navy)}: use {string.Join(", ", NAVIES)}");
-        if (!ERAS.Contains(era))
-            errs.Add($"look.era = {Style.Quote(era)}: use {string.Join(", ", ERAS)}");
+        if (!Navies.Contains(navy))
+            errs.Add($"look.navy = {Style.Quote(navy)}: use {string.Join(", ", Navies)}");
+        if (!Eras.Contains(era))
+            errs.Add($"look.era = {Style.Quote(era)}: use {string.Join(", ", Eras)}");
         return errs;
     }
 }

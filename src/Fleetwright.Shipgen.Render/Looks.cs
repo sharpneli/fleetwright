@@ -26,18 +26,18 @@ public static class Looks
     static Dictionary<string, Paint> Paints(JsonNode? n) =>
         n is JsonObject o ? JsonSerializer.Deserialize(o, RenderJson.Default.DictionaryStringPaint)! : [];
 
-    public static readonly Palette DEFAULT_PALETTE = new(Paints(Data["default_palette"]));
-    static readonly JsonObject STYLE_PALETTES = Obj(Data["style_palettes"]);
-    static readonly JsonObject NAVIES = Obj(Data["navies"]);
+    public static readonly Palette DefaultPalette = new(Paints(Data["default_palette"]));
+    static readonly JsonObject StylePalettes = Obj(Data["style_palettes"]);
+    static readonly JsonObject NavyTable = Obj(Data["navies"]);
 
     /// <summary>The navies that have looks, as looks.jsonc lists them.</summary>
-    public static IEnumerable<string> Navies => NAVIES.Select(kv => kv.Key);
+    public static IEnumerable<string> Navies => NavyTable.Select(kv => kv.Key);
 
     /// <summary>The eras a navy has a look for.</summary>
-    public static IEnumerable<string> ErasOf(string navy) => Eras(navy).Select(kv => kv.Key);
+    public static IEnumerable<string> ErasOf(string navy) => LooksOf(navy).Select(kv => kv.Key);
 
     /// <summary>Colour groups an adjust operation can name (any palette key works too).</summary>
-    static readonly Dictionary<string, string[]> GROUPS = new(StringComparer.Ordinal)
+    static readonly Dictionary<string, string[]> Groups = new(StringComparer.Ordinal)
     {
         ["hull"] = ["hull"],
         ["decks"] = ["deck", "wood", "deck_line", "steel_line", "flight_deck"],
@@ -51,16 +51,16 @@ public static class Looks
         ["canvas"] = ["awning"],
     };
 
-    /// <summary>The styles that wear navy paint; an adjust with "styles": NAVAL leaves merchants their own colours.</summary>
-    static readonly string[] NAVAL = ["warship", "carrier", "planing"];
+    /// <summary>The styles that wear navy paint; an adjust with "styles": Naval leaves merchants their own colours.</summary>
+    static readonly string[] Naval = ["warship", "carrier", "planing"];
 
     /// <summary>The eras a look can be drawn in, oldest first.</summary>
-    public static readonly string[] ERAS = ["victorian", "great_war", "treaty", "wwii", "cold_war"];
+    public static readonly string[] Eras = ["victorian", "great_war", "treaty", "wwii", "cold_war"];
 
     // How muted each era's national looks are drawn (user, 2026-10-05: "a slowly diminishing wildness factor", from
     // the Great War, still the wildest, to the Cold War, which is muted by hand and gets none). 0 = as written; m takes
-    // m of the saturation from the paint (MUTE_PAINT: decks, turret roofs, funnels) and m/2 from the hull and
-    // upperworks (MUTE_BODY, teak included), keeping each navy's own hue and lightness. Markings (MUTE_MARKS: stripes,
+    // m of the saturation from the paint (MutePaint: decks, turret roofs, funnels) and m/2 from the hull and
+    // upperworks (MuteBody, teak included), keeping each navy's own hue and lightness. Markings (MuteMarks: stripes,
     // camouflage, numbers, turret bands) also lose contrast, pulled m toward the look's own upperworks grey
     // (desaturating alone barely quietens a red and white pattern), and painted decks (dazzle_decks) fade by m. The
     // values were set by measuring the sprites' 90th-percentile chroma over every navy (heavy cruiser, Dreadnought,
@@ -68,14 +68,14 @@ public static class Looks
     // an even step down. Naval styles only, except camouflage, which is navy paint on a merchant too. Every navy,
     // generic included; the Victorian liveries stay as written. (Pulling toward the generic look instead was tried:
     // blue decks mixed with generic teak turned a muddy brown and the navies lost their identity.)
-    static readonly Dictionary<string, double> ERA_MUTE = new(StringComparer.Ordinal)
+    static readonly Dictionary<string, double> EraMute = new(StringComparer.Ordinal)
     {
         ["victorian"] = 0.0, ["great_war"] = 0.12, ["treaty"] = 0.27, ["wwii"] = 0.43, ["cold_war"] = 0.0,
     };
-    static readonly string[] MUTE_PAINT = ["deck", "deck_line", "steel_line", "flight_deck", "turret", "barbette",
+    static readonly string[] MutePaint = ["deck", "deck_line", "steel_line", "flight_deck", "turret", "barbette",
         "funnel", "funnel_band", "funnel_cap", "awning", "stripe"];
-    static readonly string[] MUTE_BODY = ["hull", "levels", "boat", "fitting", "tub", "wood"];   // teak is a material more than paint
-    static readonly string[] MUTE_MARKS = ["camo", "recog_a", "recog_b", "number"];
+    static readonly string[] MuteBody = ["hull", "levels", "boat", "fitting", "tub", "wood"];   // teak is a material more than paint
+    static readonly string[] MuteMarks = ["camo", "recog_a", "recog_b", "number"];
 
 
     // ------------------------------------------------------------------ colours
@@ -103,7 +103,7 @@ public static class Looks
             {
                 var names = Strings(k);
                 if (!names.Contains("all"))
-                    keys = [.. names.SelectMany(n => GROUPS.TryGetValue(n, out var g) ? g : [n])];
+                    keys = [.. names.SelectMany(n => Groups.TryGetValue(n, out var g) ? g : [n])];
             }
             var tint = o["tint"] is JsonArray { Count: 2 } t ? ((string)t[0]!, (double)t[1]!) : ((string, double)?)null;
             return new Adjust((double?)o["lighten"] ?? 0, (double?)o["saturate"] ?? 0, tint)
@@ -149,14 +149,14 @@ public static class Looks
     public static LookInput LookOf(Design design) =>
         new() { Navy = design.Look?.Navy ?? "generic", Era = design.Look?.Era ?? "wwii", Number = design.Look?.Number };
 
-    static JsonObject Eras(string navy) => Obj(Obj(NAVIES[navy])["eras"]);
+    static JsonObject LooksOf(string navy) => Obj(Obj(NavyTable[navy])["eras"]);
 
     /// <summary>The (navy, era) actually drawn: the design's navy, or "generic" if that navy has no entry for the era.</summary>
     public static (string Navy, string Era) Resolve(Design design)
     {
         var lk = LookOf(design);
         string navy = lk.Navy!, era = lk.Era!;
-        return (Eras(navy).ContainsKey(era) ? navy : "generic", era);
+        return (LooksOf(navy).ContainsKey(era) ? navy : "generic", era);
     }
 
     /// <summary>The look as text for the preview sheet, e.g. "kure / wwii" ("" for the default look).</summary>
@@ -172,21 +172,21 @@ public static class Looks
     /// <summary>The objects merged key by key, later ones winning (a copy: the inputs are left alone).</summary>
     static JsonObject Merge(params JsonNode?[] objs)
     {
-        var out_ = new JsonObject();
+        var result = new JsonObject();
         foreach (var o in objs.OfType<JsonObject>())
             foreach (var (k, v) in o)
-                out_[k] = v?.DeepClone();
-        return out_;
+                result[k] = v?.DeepClone();
+        return result;
     }
 
     /// <summary>{style: {...}} merged style by style.</summary>
     static JsonObject ByStyleMerge(JsonNode? a, JsonNode? b)
     {
         var (oa, ob) = (Obj(a), Obj(b));
-        var out_ = new JsonObject();
+        var result = new JsonObject();
         foreach (var s in oa.Select(kv => kv.Key).Concat(ob.Select(kv => kv.Key)).Distinct())
-            out_[s] = Merge(oa[s], ob[s]);
-        return out_;
+            result[s] = Merge(oa[s], ob[s]);
+        return result;
     }
 
     static JsonArray Cat(JsonNode? a, JsonNode? b) =>
@@ -198,7 +198,7 @@ public static class Looks
         seen ??= [];
         if (seen.Contains((navy, era)))
             throw new InvalidOperationException($"look {navy}/{era}: 'from' loops back on itself");
-        var lk = Obj(Eras(navy)[era]);
+        var lk = Obj(LooksOf(navy)[era]);
         if (lk["from"] is not { } from)
             return Merge(new JsonObject { ["palette"] = new JsonObject(), ["by_style"] = new JsonObject(), ["turrets"] = "standard",
                 ["shapes"] = new JsonObject() }, lk);
@@ -207,18 +207,18 @@ public static class Looks
         var base_ = Look(pn, pe, [.. seen, (navy, era)]);
         var own = Merge(lk);
         own.Remove("from");
-        var out_ = Merge(base_, own);
+        var result = Merge(base_, own);
         foreach (var k in new[] { "palette", "shapes" })
-            out_[k] = Merge(base_[k], lk[k]);
+            result[k] = Merge(base_[k], lk[k]);
         foreach (var k in new[] { "by_style", "shapes_by_style" })
-            out_[k] = ByStyleMerge(base_[k], lk[k]);
-        out_["adjust"] = Cat(base_["adjust"], lk["adjust"]);
+            result[k] = ByStyleMerge(base_[k], lk[k]);
+        result["adjust"] = Cat(base_["adjust"], lk["adjust"]);
         var (ab, al) = (Obj(base_["adjust_by_style"]), Obj(lk["adjust_by_style"]));
         var abs = new JsonObject();
         foreach (var s in ab.Select(kv => kv.Key).Concat(al.Select(kv => kv.Key)).Distinct())
             abs[s] = Cat(ab[s], al[s]);
-        out_["adjust_by_style"] = abs;
-        return out_;
+        result["adjust_by_style"] = abs;
+        return result;
     }
 
     static JsonObject Get(Design design)
@@ -230,13 +230,13 @@ public static class Looks
     /// <summary>How the look draws armoured turrets ("standard" or TurretArt.LookTurretBody's).</summary>
     public static string TurretLook(Design design) => (string)Get(design)["turrets"]!;
 
-    /// <summary>ERA_MUTE for the design's look, or 0 where muting doesn't apply (merchants, but for their marks).</summary>
+    /// <summary>EraMute for the design's look, or 0 where muting doesn't apply (merchants, but for their marks).</summary>
     static double MuteAmount(Design design, bool marks = false)
     {
         var (_, era) = Resolve(design);
-        if (!NAVAL.Contains(design.StyleName) && !marks)
+        if (!Naval.Contains(design.StyleName) && !marks)
             return 0.0;
-        return ERA_MUTE.GetValueOrDefault(era, 0.0);
+        return EraMute.GetValueOrDefault(era, 0.0);
     }
 
     /// <summary>c with m of its saturation taken away, and with a ref (a mark's background) pulled m toward it.</summary>
@@ -246,42 +246,42 @@ public static class Looks
         return ref_ != null ? AdjustColour(c, new Adjust(Tint: (ref_, m))) : c;
     }
 
-    static string MarksRef(Design design) => DEFAULT_PALETTE.Over(Overrides(design with { Palette = null }, mute: false)).Colours("levels")[1];
+    static string MarksRef(Design design) => DefaultPalette.Over(Overrides(design with { Palette = null }, mute: false)).Colours("levels")[1];
 
     /// <summary>The look's drawing shapes for the design (Data/looks.jsonc, "shapes").</summary>
     public static Shapes Shapes(Design design)
     {
         var lk = Get(design);
         var merged = Merge(new JsonObject { ["clutter"] = LookOf(design).Era }, lk["shapes"], Obj(lk["shapes_by_style"])[design.StyleName]);
-        var out_ = JsonSerializer.Deserialize(merged, RenderJson.Default.Shapes)!;
+        var result = JsonSerializer.Deserialize(merged, RenderJson.Default.Shapes)!;
         if (!string.IsNullOrEmpty(design.Look?.Number))
-            out_ = out_ with { Number = design.Look.Number };
+            result = result with { Number = design.Look.Number };
         double m = MuteAmount(design, marks: true);
         if (m == 0)
-            return out_;
-        if (out_.DazzleDecks is double dd && dd != 0)
-            out_ = out_ with { DazzleDecks = dd * (1 - m) };
-        if (out_.TurretBands is { Count: > 0 } bands)   // literal colours here; palette keys are muted in Palette()
+            return result;
+        if (result.DazzleDecks is double dd && dd != 0)
+            result = result with { DazzleDecks = dd * (1 - m) };
+        if (result.TurretBands is { Count: > 0 } bands)   // literal colours here; palette keys are muted in Palette()
         {
             string ref_ = MarksRef(design);
-            out_ = out_ with { TurretBands = [.. bands.Select(c => c.StartsWith('#') ? MuteColour(c, m, ref_) : c)] };
+            result = result with { TurretBands = [.. bands.Select(c => c.StartsWith('#') ? MuteColour(c, m, ref_) : c)] };
         }
-        return out_;
+        return result;
     }
 
-    /// <summary>The design's palette: DEFAULT_PALETTE under the look's own colours, muted by ERA_MUTE.</summary>
-    public static Palette Palette(Design design) => DEFAULT_PALETTE.Over(Overrides(design));
+    /// <summary>The design's palette: DefaultPalette under the look's own colours, muted by EraMute.</summary>
+    public static Palette Palette(Design design) => DefaultPalette.Over(Overrides(design));
 
-    /// <summary>The look's colours over DEFAULT_PALETTE (and the design's own on top), muted by ERA_MUTE.</summary>
+    /// <summary>The look's colours over DefaultPalette (and the design's own on top), muted by EraMute.</summary>
     static Dictionary<string, Paint> Overrides(Design design, bool mute = true)
     {
         var lk = Get(design);
         string st = design.StyleName;
-        var pal = Paints(Merge(lk["palette"], STYLE_PALETTES[st], Obj(lk["by_style"])[st]));
+        var pal = Paints(Merge(lk["palette"], StylePalettes[st], Obj(lk["by_style"])[st]));
         var ops = Cat(lk["adjust"], Obj(lk["adjust_by_style"])[st]).Select(op => Adjust.From(op!.AsObject()))
             .Where(op => op.Styles is null || op.Styles.Contains(st)).ToList();
         Dictionary<string, Paint> WithDefaults() =>
-            new(DEFAULT_PALETTE.Over(pal).Paints, StringComparer.Ordinal);
+            new(DefaultPalette.Over(pal).Paints, StringComparer.Ordinal);
         if (ops.Count > 0)
             pal = AdjustPalette(WithDefaults(), ops);
         double m = mute ? MuteAmount(design) : 0.0, mm = mute ? MuteAmount(design, marks: true) : 0.0;
@@ -289,7 +289,7 @@ public static class Looks
         {
             pal = WithDefaults();
             string ref_ = pal["levels"].Colours[1];
-            foreach (var (keys, mk, r) in new (string[], double, string?)[] { (MUTE_PAINT, m, null), (MUTE_BODY, m / 2, null), (MUTE_MARKS, mm, ref_) })
+            foreach (var (keys, mk, r) in new (string[], double, string?)[] { (MutePaint, m, null), (MuteBody, m / 2, null), (MuteMarks, mm, ref_) })
                 foreach (var k in keys)
                     if (pal.TryGetValue(k, out var v) && mk != 0)
                         pal[k] = v.Select(c => MuteColour(c, mk, r));

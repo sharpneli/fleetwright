@@ -26,7 +26,7 @@ public static partial class SvgDiff
     static List<object> PathTokens(string d)
     {
         var t = Tok().Matches(d).Select(m => m.Value).ToList();
-        var out_ = new List<object>();
+        var result = new List<object>();
         double cx = 0, cy = 0, sx = 0, sy = 0;
         int i = 0;
         string cmd = "";
@@ -41,38 +41,38 @@ public static partial class SvgDiff
                     (cx, cy) = (N(), N());
                     if (cmd == "M")
                         (sx, sy) = (cx, cy);
-                    out_.AddRange([cmd, cx, cy]);
+                    result.AddRange([cmd, cx, cy]);
                     if (cmd == "M")
                         cmd = "L";
                     break;
                 case "l":
                     cx += N();
                     cy += N();
-                    out_.AddRange(["L", cx, cy]);
+                    result.AddRange(["L", cx, cy]);
                     break;
                 case "A":
                     {
                         double rx = N(), ry = N(), rot = N(), large = N(), sweep = N();
                         (cx, cy) = (N(), N());
-                        out_.AddRange(["A", rx, ry, rot, large, sweep, cx, cy]);
+                        result.AddRange(["A", rx, ry, rot, large, sweep, cx, cy]);
                         break;
                     }
                 case "C":
                     {
                         double x1 = N(), y1 = N(), x2 = N(), y2 = N();
                         (cx, cy) = (N(), N());
-                        out_.AddRange(["C", x1, y1, x2, y2, cx, cy]);
+                        result.AddRange(["C", x1, y1, x2, y2, cx, cy]);
                         break;
                     }
                 case "Z" or "z":
                     (cx, cy) = (sx, sy);
-                    out_.Add("Z");
+                    result.Add("Z");
                     break;
                 default:
                     throw new FormatException($"path command {cmd} in {d}");
             }
         }
-        return out_;
+        return result;
     }
 
     static string Colour(string v)
@@ -136,9 +136,9 @@ public static partial class SvgDiff
     /// <summary>Up to max differences between the golden SVG and ours, each naming the element path.</summary>
     public static List<string> Compare(string golden, string ours, int max = 10)
     {
-        var out_ = new List<string>();
-        Walk(Load(golden), Load(ours), "svg", out_, max);
-        return out_;
+        var result = new List<string>();
+        Walk(Load(golden), Load(ours), "svg", result, max);
+        return result;
     }
 
     static bool Same(List<object> a, List<object> b, bool clipped = false)
@@ -166,13 +166,13 @@ public static partial class SvgDiff
     /// <summary>Clip contents compare token by token: words exactly, numbers with the tolerance.</summary>
     static bool SameClip(string a, string b) => Same(Tokens(a), Tokens(b), clipped: true);
 
-    static void Walk(El g, El o, string path, List<string> out_, int max)
+    static void Walk(El g, El o, string path, List<string> result, int max)
     {
-        if (out_.Count >= max)
+        if (result.Count >= max)
             return;
         if (g.Tag != o.Tag)
         {
-            out_.Add($"{path}: element {g.Tag} vs ours {o.Tag}\n    golden {Clip(Show(g))}\n    ours   {Clip(Show(o))}");
+            result.Add($"{path}: element {g.Tag} vs ours {o.Tag}\n    golden {Clip(Show(g))}\n    ours   {Clip(Show(o))}");
             return;
         }
         foreach (var k in g.Attrs.Keys.Union(o.Attrs.Keys).Order(StringComparer.Ordinal))
@@ -180,20 +180,20 @@ public static partial class SvgDiff
             bool hg = g.Attrs.TryGetValue(k, out var a), ho = o.Attrs.TryGetValue(k, out var b);
             if (!hg || !ho || !Same(a!, b!))
             {
-                out_.Add($"{path}@{k}: {(hg ? "" : "missing in golden")}{(ho ? "" : "missing in ours")}\n    golden {Clip(Show(g))}\n    ours   {Clip(Show(o))}");
-                if (out_.Count >= max)
+                result.Add($"{path}@{k}: {(hg ? "" : "missing in golden")}{(ho ? "" : "missing in ours")}\n    golden {Clip(Show(g))}\n    ours   {Clip(Show(o))}");
+                if (result.Count >= max)
                     return;
             }
         }
         if (g.Text.Trim() != o.Text.Trim())
-            out_.Add($"{path}: text {g.Text} vs ours {o.Text}");
+            result.Add($"{path}: text {g.Text} vs ours {o.Text}");
         int n = Math.Min(g.Kids.Count, o.Kids.Count);
-        for (int i = 0; i < n && out_.Count < max; i++)
-            Walk(g.Kids[i], o.Kids[i], $"{path}/{g.Kids[i].Tag}[{i}]", out_, max);
-        if (g.Kids.Count != o.Kids.Count && out_.Count < max)
+        for (int i = 0; i < n && result.Count < max; i++)
+            Walk(g.Kids[i], o.Kids[i], $"{path}/{g.Kids[i].Tag}[{i}]", result, max);
+        if (g.Kids.Count != o.Kids.Count && result.Count < max)
         {
             var extra = g.Kids.Count > n ? g.Kids[n] : o.Kids[n];
-            out_.Add($"{path}: {g.Kids.Count} children vs ours {o.Kids.Count}; first unmatched ({(g.Kids.Count > n ? "golden" : "ours")}): {Clip(Show(extra))}");
+            result.Add($"{path}: {g.Kids.Count} children vs ours {o.Kids.Count}; first unmatched ({(g.Kids.Count > n ? "golden" : "ours")}): {Clip(Show(extra))}");
         }
     }
 

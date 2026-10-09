@@ -5,7 +5,7 @@ namespace Fleetwright.Shipgen.Render;
 /// <summary>The hull image: everything that doesn't rotate (shipgen.build_hull and its helpers).</summary>
 public static class HullArt
 {
-    public const double PAD_M = 3.0;  // empty margin around each hull sprite, metres
+    public const double PadM = 3.0;  // empty margin around each hull sprite, metres
 
     /// <summary>The layout's hull.</summary>
     public static HullSpec HullSpecOf(RenderSpec spec) => new(spec.Length, spec.Beam, spec.Bow, spec.Stern);
@@ -26,7 +26,7 @@ public static class HullArt
             if (t.Shape == "casemate")
                 hw = Math.Max(hw, Math.Abs(m.Y) + Geometry.TurretReach(t));
         }
-        double hx = hull.L / 2 + PAD_M, hy = hw + PAD_M;
+        double hx = hull.L / 2 + PadM, hy = hw + PadM;
         if (scale is double s && s != 0)
         {
             double a = align / 2.0;
@@ -88,26 +88,26 @@ public static class HullArt
     /// also AA, boats, masts and fittings. The look features that paint the open deck keep clear of them.</summary>
     static List<(double X0, double X1, double Y0, double Y1)> DeckObstacles(RenderSpec spec, bool small = false)
     {
-        var out_ = new List<(double, double, double, double)>();
+        var result = new List<(double, double, double, double)>();
         foreach (var m in spec.Turrets)
         {
             double r = spec.TurretTypes[m.Type].R * 1.15;
-            out_.Add((m.X - r, m.X + r, m.Y - r, m.Y + r));
+            result.Add((m.X - r, m.X + r, m.Y - r, m.Y + r));
         }
         foreach (var b in spec.Superstructure)
-            out_.Add((b.X0, b.X1, b.Y - b.W / 2, b.Y + b.W / 2));
+            result.Add((b.X0, b.X1, b.Y - b.W / 2, b.Y + b.W / 2));
         foreach (var fn in spec.Funnels)
-            out_.Add((fn.X - fn.L / 2, fn.X + fn.L / 2, fn.Y - fn.W / 2, fn.Y + fn.W / 2));
+            result.Add((fn.X - fn.L / 2, fn.X + fn.L / 2, fn.Y - fn.W / 2, fn.Y + fn.W / 2));
         if (small)
         {
             foreach (var a in spec.Aa)
-                out_.Add((a.X - 2.0, a.X + 2.0, a.Y - 2.0, a.Y + 2.0));
+                result.Add((a.X - 2.0, a.X + 2.0, a.Y - 2.0, a.Y + 2.0));
             foreach (var (x, y, l, w) in (spec.Boats ?? []).Select(b => (b.X, b.Y, b.L, b.W)).Concat((spec.Fittings ?? []).Select(f => (f.X, f.Y, f.L, f.W))))
-                out_.Add((x - l / 2, x + l / 2, y - w / 2, y + w / 2));
+                result.Add((x - l / 2, x + l / 2, y - w / 2, y + w / 2));
             foreach (var m in spec.Masts)
-                out_.Add((m.X - 1.0, m.X + 1.0, (m.Y ?? 0) - 1.0, (m.Y ?? 0) + 1.0));
+                result.Add((m.X - 1.0, m.X + 1.0, (m.Y ?? 0) - 1.0, (m.Y ?? 0) + 1.0));
         }
-        return out_;
+        return result;
     }
 
     /// <summary>The open foredeck and quarterdeck: (front of the foremost obstacle, back of the aftmost), counting
@@ -135,7 +135,7 @@ public static class HullArt
             cuts.Add((c, rng.Uniform(-0.45, 0.45) * step / Y));
         }
         cuts.Add((L / 2 + 2.0, 0.0));
-        var out_ = new List<(List<Pt>, string)>();
+        var result = new List<(List<Pt>, string)>();
         string? last = null;
         for (int i = 0; i + 1 < cuts.Count; i++)
         {
@@ -145,7 +145,7 @@ public static class HullArt
             var col = rng.Choice(opts.Where(c => c != last).ToList());
             last = col;
             if (col != null)
-                out_.Add(([new(c0 - k0 * Y, -Y), new(c1 - k1 * Y, -Y), new(c1 + k1 * Y, Y), new(c0 + k0 * Y, Y)], col));
+                result.Add(([new(c0 - k0 * Y, -Y), new(c1 - k1 * Y, -Y), new(c1 + k1 * Y, Y), new(c0 + k0 * Y, Y)], col));
             if (rng.Random() < 0.5)   // a wedge from one side into the panel, in another colour
             {
                 int side = rng.Choice([-1, 1]);
@@ -153,10 +153,10 @@ public static class HullArt
                 var wcol = rng.Choice(colours.Where(c => c != col).ToList());
                 double tx = mid + rng.Uniform(-0.3, 0.3) * step;
                 double ty = side * Y * rng.Uniform(-0.2, 0.4);
-                out_.Add(([new(mid - 0.35 * step, side * Y), new(mid + 0.35 * step, side * Y), new(tx, ty)], wcol));
+                result.Add(([new(mid - 0.35 * step, side * Y), new(mid + 0.35 * step, side * Y), new(tx, ty)], wcol));
             }
         }
-        return out_;
+        return result;
     }
 
     /// <summary>zlib.crc32.</summary>
@@ -179,7 +179,7 @@ public static class HullArt
     {
         var sh = P.Shapes;
         double L = hull.L;
-        var out_ = new List<Node>();
+        var result = new List<Node>();
         double tip = L / 2 - 0.04 * L;
         bool flight = spec.FlightDeck != null;
         if (sh.DeckStripes is { } st && !flight)   // alternating bands, chevrons pointing ahead by default
@@ -210,7 +210,7 @@ public static class HullArt
                 }
                 var outer = new Group { Clip = [new PathNode(deckD)] };
                 outer.Items.Add(inner);
-                out_.Add(outer);
+                result.Add(outer);
             }
         }
         if (sh.Awnings == true && !flight)   // canvas on stanchions over the quarterdeck, ridged along the centreline
@@ -221,7 +221,7 @@ public static class HullArt
             {
                 var d = Painter.HullPath(hull, inset: 1.1, xMin: x0, xMax: x1);
                 string col = P.P.Or("awning", "#ece7d6");
-                out_.Add(P.Ln(new PathNode(d).Fill(col), 0.9));
+                result.Add(P.Ln(new PathNode(d).Fill(col), 0.9));
                 var g = new Group { Clip = [new PathNode(d)] };
                 g.Items.Add(new RectNode(x0, 0, x1 - x0, hull.B).Fill("#000").FillOp(0.1));
                 var ribs = new Group().Stroke(Painter.Shade(col, 0.72), P.Sw * 0.8);
@@ -232,7 +232,7 @@ public static class HullArt
                 }
                 g.Items.Add(ribs);
                 g.Items.Add(new LineNode(x0, 0, x1, 0).Stroke(Painter.Shade(col, 0.65), P.Sw * 1.2));
-                out_.Add(g);
+                result.Add(g);
             }
         }
         var num = new List<Node>();
@@ -251,7 +251,7 @@ public static class HullArt
                 num.Add(new TextNode(nx, 0, size, text).Fill(col).FillOp(0.92).Tr(new Rotate(90, nx, 0, About: true)));
             }
         }
-        return (out_, num);
+        return (result, num);
     }
 
     /// <summary>The hull as a look draws it (shapes: bow_power and transom added, bow_flare). Drawing only, and only

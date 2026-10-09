@@ -37,7 +37,7 @@ public sealed partial class Layout
     /// <summary>An end group: every battery's turrets there in list order, outermost first, and how many step up.</summary>
     static (List<Gun> Out, int Run) EndGroup(List<Gun> guns, string key)
     {
-        var out_ = new List<Gun>();
+        var result = new List<Gun>();
         int run = 0;
         foreach (var g in guns)
         {
@@ -46,12 +46,12 @@ public sealed partial class Layout
             double k = sf is null or { All: true } ? n : sf.All is false ? 0 : (key == "fore" ? sf.Fore : sf.Aft) ?? n;
             for (long i = 0; i < n; i++)
             {
-                if (run == out_.Count && (out_.Count == 0 || i < k))
+                if (run == result.Count && (result.Count == 0 || i < k))
                     run += 1;
-                out_.Add(g);
+                result.Add(g);
             }
         }
-        return (out_, run);
+        return (result, run);
     }
 
     /// <summary>How far an end group's tier `level` stands above the outermost turret.</summary>
@@ -60,15 +60,15 @@ public sealed partial class Layout
     /// <summary>Each turret's distance inboard of its end group's outermost.</summary>
     static List<double> GroupOffsets(List<Gun> gs)
     {
-        var out_ = new List<double>();
+        var result = new List<double>();
         double o = 0.0;
         for (int i = 0; i < gs.Count; i++)
         {
             if (i != 0)
                 o += 1.1 * (gs[i - 1].R + gs[i].R) + 3.0;
-            out_.Add(o);
+            result.Add(o);
         }
-        return out_;
+        return result;
     }
 
     /// <summary>The casemate batteries: single guns at the hull side, in two tiers (lower in the hull side, upper in
@@ -96,7 +96,7 @@ public sealed partial class Layout
         bool LowerOk(double x, double rc)
         {
             double hw = hull.HalfWidth(x);
-            if (hw < CASEMATE_BEAM * B / 2 || hw - 2 * rc < 0.5)
+            if (hw < CasemateBeam * B / 2 || hw - 2 * rc < 0.5)
                 return false;
             var boxes = new[] { Footprint.Rect(x - rc, hw - 2 * rc, x + rc, hw), Footprint.Rect(x - rc, -hw, x + rc, -hw + 2 * rc) };
             return !boxes.Any(bx => barbettes.Any(m => Overlap(bx, Footprint.Circle(m.X, m.Y, 0.95 * m.T.R), 0.3)));
@@ -112,7 +112,7 @@ public sealed partial class Layout
 
         bool UpperOk(double x, double rc)
         {
-            if (hull.HalfWidth(x) < CASEMATE_BEAM * B / 2)
+            if (hull.HalfWidth(x) < CasemateBeam * B / 2)
                 return false;
             if (InRaised(x, rc))
                 return LowerOk(x, rc);
@@ -123,16 +123,16 @@ public sealed partial class Layout
             foreach (int side in new[] { 1, -1 })
             {
                 var fp = side > 0 ? Footprint.Rect(x0, yo - d, x1, yo) : Footprint.Rect(x0, -yo, x1, -yo + d);
-                if (lay.Footprints.Any(o => o.Owner != "Deckhouse" && o.Base < LEVEL_H - 0.01 && o.Top > 0.01 && Overlap(fp, o.Fp, 0.3)))
+                if (lay.Footprints.Any(o => o.Owner != "Deckhouse" && o.Base < LevelH - 0.01 && o.Top > 0.01 && Overlap(fp, o.Fp, 0.3)))
                     return false;
-                if (!lay.Clear(fp, LEVEL_H))
+                if (!lay.Clear(fp, LevelH))
                     return false;
             }
             return true;
         }
 
         var xs = Enumerable.Range((int)-hull.L, 2 * (int)hull.L + 1).Select(k => 0.5 * k).ToList();
-        var elig = xs.Where(x => hull.HalfWidth(x) >= CASEMATE_BEAM * B / 2).ToList();
+        var elig = xs.Where(x => hull.HalfWidth(x) >= CasemateBeam * B / 2).ToList();
         double c = (elig.Count > 0 ? (elig.Min() + elig.Max()) / 2 : 0.0) + lay.Geo.Shift;
         xs = xs.OrderBy(x => Math.Abs(x - c)).ToList();
         var okCache = new Dictionary<(double, double, bool), bool>();
@@ -153,12 +153,12 @@ public sealed partial class Layout
                 if (mode == "pref")
                     return 1.1 * r + 2.0;
                 if (mode == "stagger" && !upper)
-                    return Math.Max(1.05 * r + 0.5, 1.05 * rUp + Geometry.CASEMATE_SHIELD * r + 0.3);
+                    return Math.Max(1.05 * r + 0.5, 1.05 * rUp + Geometry.CasemateShield * r + 0.3);
                 return 1.05 * r + 0.5;
             }
             var taken = new Dictionary<bool, List<(double X, double H)>> { [false] = [], [true] = [] };
             var shields = new List<(double X, double R)>();
-            var out_ = new List<List<double>>();
+            var result = new List<List<double>>();
             foreach (var (sec, n, tId, t, upper) in bats)
             {
                 double rc = t.R;
@@ -179,10 +179,10 @@ public sealed partial class Layout
                     }
                 }
                 if (!upper)
-                    shields.AddRange(got.Select(x => (x, Geometry.CASEMATE_SHIELD * rc)));
-                out_.Add(got.Order().ToList());
+                    shields.AddRange(got.Select(x => (x, Geometry.CasemateShield * rc)));
+                result.Add(got.Order().ToList());
             }
-            return out_;
+            return result;
         }
 
         List<List<double>>? best = null;
@@ -246,13 +246,13 @@ public sealed partial class Layout
                 }
                 else
                     yo = hull.HalfWidth(x);
-                var (bse, top) = upper ? (0.0, LEVEL_H) : (-LEVEL_H, 0.0);
+                var (bse, top) = upper ? (0.0, LevelH) : (-LevelH, 0.0);
                 foreach (int side in new[] { 1, -1 })
                 {
                     string mid = $"{sec.Prefix}{i + 1}{(side > 0 ? "S" : "P")}";
                     var m = Armament.AddMount(lay, mounts, "secondary", tId, t, mid, x, side * yo, bse,
-                        Armament.StowBearing(x, side, Arcs.ARC_CASEMATE), armourMm: arm, depth: depth, top: top,
-                        footprintR: Geometry.CASEMATE_SHIELD * rc);
+                        Armament.StowBearing(x, side, Arcs.ArcCasemate), armourMm: arm, depth: depth, top: top,
+                        footprintR: Geometry.CasemateShield * rc);
                     (m.Battery, m.Casemate, m.Material) = (sec.Prefix, true, sec.Sec.Material);
                 }
             }

@@ -50,7 +50,7 @@ public static class Glyphs
             return [];
         double x0 = t.X - ((ink1 - ink0) / 2 + ink0);          // text-anchor middle: x_align = -(width / 2 + x_bearing)
         double y0 = t.Y + (Font.Ascent - Font.Descent) / 2 * k;   // dominant-baseline central
-        var out_ = new List<List<Vector2>>();
+        var result = new List<List<Vector2>>();
         double tolUnits = Lower.TolPx / Math.Max(1e-9, pxPerUnit * k);
         pen = x0;
         foreach (var g in glyphs)
@@ -64,7 +64,7 @@ public static class Glyphs
                 {
                     case "M":
                         if (cur is { Count: >= 3 })
-                            out_.Add(cur);
+                            result.Add(cur);
                         (cx, cy) = (a[0], a[1]);
                         cur = [P(cx, cy)];
                         break;
@@ -87,15 +87,15 @@ public static class Glyphs
                         }
                     case "Z":
                         if (cur is { Count: >= 3 })
-                            out_.Add(cur);
+                            result.Add(cur);
                         cur = null;
                         break;
                 }
             }
             if (cur is { Count: >= 3 })
-                out_.Add(cur);
+                result.Add(cur);
             pen += g.Adv * k;
         }
-        return out_;
+        return result;
     }
 }

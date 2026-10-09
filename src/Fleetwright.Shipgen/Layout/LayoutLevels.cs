@@ -2,12 +2,12 @@ namespace Fleetwright.Shipgen;
 
 public sealed partial class Layout
 {
-    public const double DH_INSET = 0.6;
-    const double DH_TURRET_CLEAR = 1.0, DH_FIT = 0.375, DH_STEP_COST = 3.0, DH_MIN_FACE = 1.5, DH_MIN_DROP = 0.75;
-    public const double FP_MARGIN = 0.3;
-    static readonly (double Cap, double Frac) BEVEL_OUTER = (3.0, 0.22), BEVEL_INNER = (0.8, 0.07), BEVEL_UPPER = (2.0, 0.15);
-    const double DH_CELL = 0.5, DH_MIN_RUN = 3.0, DH_MIN_W = 3.0, DH_NOTCH_MIN = 0.5, DH_NOTCH_STEP = 0.25, DH_JOIN = 1.5;
-    const double DH_SHOULDER = 2.0, DH_SHOULDER_MIN = 0.5, DH_KEEP = 0.7;
+    public const double DhInset = 0.6;
+    const double DhTurretClear = 1.0, DhFit = 0.375, DhStepCost = 3.0, DhMinFace = 1.5, DhMinDrop = 0.75;
+    public const double FpMargin = 0.3;
+    static readonly (double Cap, double Frac) BevelOuter = (3.0, 0.22), BevelInner = (0.8, 0.07), BevelUpper = (2.0, 0.15);
+    const double DhCell = 0.5, DhMinRun = 3.0, DhMinW = 3.0, DhNotchMin = 0.5, DhNotchStep = 0.25, DhJoin = 1.5;
+    const double DhShoulder = 2.0, DhShoulderMin = 0.5, DhKeep = 0.7;
 
     /// <summary>Andrew's monotone chain: the convex hull of the points, counter-clockwise.</summary>
     public static List<Pt> ConvexHull(IEnumerable<Pt> pts)
@@ -19,15 +19,15 @@ public sealed partial class Layout
 
         List<Pt> Half(IEnumerable<Pt> seq)
         {
-            var out_ = new List<Pt>();
+            var result = new List<Pt>();
             foreach (var q in seq)
             {
-                while (out_.Count >= 2 && ((out_[^1].X - out_[^2].X) * (q.Y - out_[^2].Y) -
-                                           (out_[^1].Y - out_[^2].Y) * (q.X - out_[^2].X)) <= 0)
-                    out_.RemoveAt(out_.Count - 1);
-                out_.Add(q);
+                while (result.Count >= 2 && ((result[^1].X - result[^2].X) * (q.Y - result[^2].Y) -
+                                           (result[^1].Y - result[^2].Y) * (q.X - result[^2].X)) <= 0)
+                    result.RemoveAt(result.Count - 1);
+                result.Add(q);
             }
-            return out_;
+            return result;
         }
 
         var lower = Half(p);
@@ -74,7 +74,7 @@ public sealed partial class Layout
         support ??= lay.DeckBand();
         var sup = new Slabs(support);
         double H = w / 2;
-        double st = DH_FIT;
+        double st = DhFit;
         int n = (int)Math.Max(1L, (long)(Math.Ceiling(H / st - 1e-6)));
         var ys = Enumerable.Range(0, n + 1).Select(j => Math.Min(H, j * st)).ToList();
         double floor = -0.3 * (x1 - x0);
@@ -88,7 +88,7 @@ public sealed partial class Layout
         {
             double uc = e * xc;
             var ms = ends.Where(m => e * (m.X - xc) > 0).ToList();
-            var rad = ms.ToDictionary(m => m.Id, m => Armament.BodyReach(m.T) + DH_TURRET_CLEAR);
+            var rad = ms.ToDictionary(m => m.Id, m => Armament.BodyReach(m.T) + DhTurretClear);
             double cap = 0.0;
             var req = Enumerable.Repeat(floor, n + 1).ToList();
             foreach (var (bx0, by0, bx1, by1) in keep)
@@ -102,7 +102,7 @@ public sealed partial class Layout
                 }
             }
             cap = Math.Max(cap, req.Max());
-            double loU = uc + floor, hiU = uc + cap + FP_MARGIN;
+            double loU = uc + floor, hiU = uc + cap + FpMargin;
 
             bool NearZ(double xa, double xb)
             {
@@ -119,7 +119,7 @@ public sealed partial class Layout
                             polys.Add((sw.Polys[i], sw.Boxes[i]));
             var circles = ms.Where(m => NearZ(m.X - rad[m.Id], m.X + rad[m.Id]))
                 .Select(m => (Cx: m.X, Cy: m.Y, R: rad[m.Id])).ToList();
-            var nearFps = fps.Where(fp => NearZ(fp.BBox.X0 - FP_MARGIN, fp.BBox.X1 + FP_MARGIN)).ToList();
+            var nearFps = fps.Where(fp => NearZ(fp.BBox.X0 - FpMargin, fp.BBox.X1 + FpMargin)).ToList();
             if (polys.Count == 0 && circles.Count == 0 && nearFps.Count == 0 && req.Max() <= cap)
             {
                 prof[e] = [new(e * (uc + cap), 0.0), new(e * (uc + cap), H)];
@@ -162,7 +162,7 @@ public sealed partial class Layout
                     }
                 }
                 foreach (var fp in nearFps)
-                    ivs.AddRange(FpIntervals(fp, y, FP_MARGIN));
+                    ivs.AddRange(FpIntervals(fp, y, FpMargin));
                 double d = cap;
                 foreach (var (xa, xb) in ivs)
                 {
@@ -194,7 +194,7 @@ public sealed partial class Layout
             }).ToList();
             var Aeff = A.Zip(E).Select(t => Math.Min(cap, t.Second <= t.First ? cap : t.First)).ToList();
             (double Score, List<(double Y, double D)> Pts)? best = null;
-            int faceMin = (int)(long)(Math.Ceiling(DH_MIN_FACE / 2 / st - 1e-9));
+            int faceMin = (int)(long)(Math.Ceiling(DhMinFace / 2 / st - 1e-9));
             var iList = new List<int> { 0 };
             for (int i = Math.Max(1, faceMin); i <= n; i++)
                 iList.Add(i);
@@ -214,11 +214,11 @@ public sealed partial class Layout
                 }
                 if (d1 < lo - 1e-9 || d1 < floor)
                     continue;
-                if (d0 - d1 < DH_MIN_DROP && i < n)
+                if (d0 - d1 < DhMinDrop && i < n)
                     continue;
                 var f = Enumerable.Range(0, n + 1).Select(k => k <= i ? d0 : d0 - (d0 - d1) * (ys[k] - ya) / (H - ya)).ToList();
                 double area = Enumerable.Range(0, n + 1).Select(k => Math.Min(f[k], E[k]) * (0 < k && k < n ? st : st / 2)).Sum();
-                double score = area - (i < n ? DH_STEP_COST : 0.0);
+                double score = area - (i < n ? DhStepCost : 0.0);
                 if (best is null || score > best.Value.Score + 1e-6)
                 {
                     List<(double, double)> pts = i == n
@@ -246,7 +246,7 @@ public sealed partial class Layout
             return pts;
         double w = pts.Select(p => p.Y).Max() - pts.Select(p => p.Y).Min();
         double xm = (pts.Select(p => p.X).Min() + pts.Select(p => p.X).Max()) / 2;
-        var out_ = new List<Pt>();
+        var result = new List<Pt>();
         int n = pts.Count;
         for (int i = 0; i < n; i++)
         {
@@ -259,21 +259,21 @@ public sealed partial class Layout
             if (la < 1e-6 || lc < 1e-6 || Math.Abs(ua.X * uc.X + ua.Y * uc.Y) > 0.5 * la * lc ||
                 flush.Any(xf => Math.Abs(b.X - xf) < 1e-3))
             {
-                out_.Add(b);
+                result.Add(b);
                 continue;
             }
             bool outer = (b.X - xm) * (xm >= 0 ? 1 : -1) > 0;
-            var (cap, frac) = outer ? BEVEL_OUTER : (inner ?? BEVEL_INNER);
+            var (cap, frac) = outer ? BevelOuter : (inner ?? BevelInner);
             double size = Math.Min(cap, Math.Min(frac * w, Math.Min(0.4 * la, 0.4 * lc)));
             if (size < 0.25 || keep.Any(k => k.X0 - size < b.X && b.X < k.X1 + size && k.Y0 - size < b.Y && b.Y < k.Y1 + size))
             {
-                out_.Add(b);
+                result.Add(b);
                 continue;
             }
-            out_.Add(new Pt(b.X + ua.X / la * size, b.Y + ua.Y / la * size));
-            out_.Add(new Pt(b.X + uc.X / lc * size, b.Y + uc.Y / lc * size));
+            result.Add(new Pt(b.X + ua.X / la * size, b.Y + ua.Y / la * size));
+            result.Add(new Pt(b.X + uc.X / lc * size, b.Y + uc.Y / lc * size));
         }
-        return out_;
+        return result;
     }
 
     /// <summary>One superstructure level as a block, shaped by level_outline, bevelled and notched. Returns the block, or
@@ -287,7 +287,7 @@ public sealed partial class Layout
         notches ??= [];
         if (level <= lay.DeckLevels((x0 + x1) / 2, Math.Max(0.0, (x1 - x0) / 2 - 0.75)).Lo)
             return null;
-        double bse = LEVEL_H * (level - 1), top = LEVEL_H * level;
+        double bse = LevelH * (level - 1), top = LevelH * level;
         var ign = (ignore ?? []).ToList();
         foreach (var j in new[] { joins.Aft, joins.Fwd })
             if (j != null)
@@ -330,9 +330,9 @@ public sealed partial class Layout
         {
             double face = sp.SelectMany(t => new[] { s * t.Lo, s * t.Hi }).Max();
             double side = own.SelectMany(t => new[] { s * t.Lo, s * t.Hi }).Max();
-            if (side - face < DH_SHOULDER_MIN)
+            if (side - face < DhShoulderMin)
                 continue;
-            double run = Math.Min(DH_SHOULDER * (side - face), 0.25 * (xs.Max() - xs.Min()));
+            double run = Math.Min(DhShoulder * (side - face), 0.25 * (xs.Max() - xs.Min()));
             var A = (X: xf, Y: s * face);
             var B = (X: xf - e * run, Y: s * side);
             var d = (X: B.X - A.X, Y: B.Y - A.Y);
@@ -405,23 +405,23 @@ public sealed partial class Layout
         if (n <= 1)
             return [];
         var hull = lay.Hull;
-        var cells = Enumerable.Range(0, Math.Max(0, (int)((x1 - x0) / DH_CELL))).Select(i => x0 + DH_CELL * i).ToList();
+        var cells = Enumerable.Range(0, Math.Max(0, (int)((x1 - x0) / DhCell))).Select(i => x0 + DhCell * i).ToList();
         var made = new List<Block>();
 
         bool Ok(double x, double w, double bse, double top, Func<double, bool>? support)
         {
             if (support != null && !support(x))
                 return false;
-            double hw = Math.Min(hull.HalfWidth(x), hull.HalfWidth(x + DH_CELL)) - 0.6;
+            double hw = Math.Min(hull.HalfWidth(x), hull.HalfWidth(x + DhCell)) - 0.6;
             if (w / 2 > hw)
                 return false;
-            var fp = Footprint.Rect(x, -w / 2, x + DH_CELL, w / 2);
+            var fp = Footprint.Rect(x, -w / 2, x + DhCell, w / 2);
             return lay.FreeAt(fp, bse, top, 0.3, through) && lay.Clear(fp, top);
         }
 
         List<(double, double)> Runs(double w, double bse, double top, Func<double, bool>? support)
         {
-            var out_ = new List<(double, double)>();
+            var result = new List<(double, double)>();
             double? start = null;
             foreach (var xo in cells.Select(c => (double?)c).Append(null))
             {
@@ -432,36 +432,36 @@ public sealed partial class Layout
                 }
                 if (start is double s)
                 {
-                    double end = xo ?? cells[^1] + DH_CELL;
-                    if (end - s >= DH_MIN_RUN - 1e-6)
-                        out_.Add((s, end));
+                    double end = xo ?? cells[^1] + DhCell;
+                    if (end - s >= DhMinRun - 1e-6)
+                        result.Add((s, end));
                     start = null;
                 }
             }
-            return out_;
+            return result;
         }
 
         (List<Block> Out, double Lo) Level(long k, double wMax, Func<double, bool> support, Func<double, bool>? skip = null,
             List<Block>? under = null)
         {
             under ??= [];
-            double bse = LEVEL_H * (k - 1), top = LEVEL_H * k;
+            double bse = LevelH * (k - 1), top = LevelH * k;
             Func<double, bool> sup = skip != null ? x => support(x) && !skip(x) : support;
-            if (wMax < DH_MIN_W)
+            if (wMax < DhMinW)
                 return ([], 0.0);
             double Total(List<(double A, double B)> rr) => rr.Select(r => r.B - r.A).Sum();
-            double floor = Total(Runs(DH_MIN_W, bse, top, sup));
+            double floor = Total(Runs(DhMinW, bse, top, sup));
             if (floor <= 0)
                 return ([], 0.0);
-            double lo = DH_MIN_W, hi = wMax;
-            if (Total(Runs(hi, bse, top, sup)) >= DH_KEEP * floor)
+            double lo = DhMinW, hi = wMax;
+            if (Total(Runs(hi, bse, top, sup)) >= DhKeep * floor)
                 lo = hi;
             while (hi - lo > 0.25)
             {
                 double mid = (lo + hi) / 2;
-                (lo, hi) = Total(Runs(mid, bse, top, sup)) >= DH_KEEP * floor ? (mid, hi) : (lo, mid);
+                (lo, hi) = Total(Runs(mid, bse, top, sup)) >= DhKeep * floor ? (mid, hi) : (lo, mid);
             }
-            var out_ = new List<Block>();
+            var result = new List<Block>();
 
             (List<double[]> Pieces, List<(double, double, double)> Notches) Pieced(double lo_)
             {
@@ -473,10 +473,10 @@ public sealed partial class Layout
                     {
                         double g0 = pieces[^1][1];
                         var gap = cells.Where(x => g0 - 1e-6 <= x && x < a - 1e-6).ToList();
-                        double wn = lo_ - DH_NOTCH_STEP;
-                        while (wn >= Math.Max(DH_MIN_W, DH_NOTCH_MIN * lo_) && !gap.All(x => Ok(x, wn, bse, top, sup)))
-                            wn -= DH_NOTCH_STEP;
-                        if (wn >= Math.Max(DH_MIN_W, DH_NOTCH_MIN * lo_))
+                        double wn = lo_ - DhNotchStep;
+                        while (wn >= Math.Max(DhMinW, DhNotchMin * lo_) && !gap.All(x => Ok(x, wn, bse, top, sup)))
+                            wn -= DhNotchStep;
+                        if (wn >= Math.Max(DhMinW, DhNotchMin * lo_))
                         {
                             pieces[^1][1] = b;
                             notches.Add((g0, a, wn / 2));
@@ -491,7 +491,7 @@ public sealed partial class Layout
             var (pieces, notches) = Pieced(lo);
             for (int it = 0; it < 8; it++)
             {
-                var shallow = notches.Where(nt => lo / 2 - nt.Item3 < DH_MIN_DROP).Select(nt => 2 * nt.Item3).ToList();
+                var shallow = notches.Where(nt => lo / 2 - nt.Item3 < DhMinDrop).Select(nt => 2 * nt.Item3).ToList();
                 if (shallow.Count == 0)
                     break;
                 lo = shallow.Min();
@@ -502,8 +502,8 @@ public sealed partial class Layout
             foreach (var piece in pieces)
             {
                 double a = piece[0], b = piece[1];
-                var jAft = towers.FirstOrDefault(t => a - DH_JOIN <= t.X1 && t.X1 <= a + 1e-6);
-                var jFwd = towers.FirstOrDefault(t => b - 1e-6 <= t.X0 && t.X0 <= b + DH_JOIN);
+                var jAft = towers.FirstOrDefault(t => a - DhJoin <= t.X1 && t.X1 <= a + 1e-6);
+                var jFwd = towers.FirstOrDefault(t => b - 1e-6 <= t.X0 && t.X0 <= b + DhJoin);
                 (a, b) = (jAft != null ? jAft.X1 : a, jFwd != null ? jFwd.X0 : b);
                 var on_ = under.MaxBy(u => Math.Min(b, u.X1) - Math.Max(a, u.X0));
                 var mine = notches.Where(nt => a <= nt.Item1 && nt.Item2 <= b).ToList();
@@ -512,18 +512,18 @@ public sealed partial class Layout
                         mine.AddRange(un.Where(nt => nt.Item2 > a && nt.Item1 < b));
                 List<Pt>? support_ = on_ is null ? null
                     : (on_.Support is { Count: > 0 } s_ ? s_ : on_.Points);
-                var blk = AddLevel(lay, blocks, $"Deckhouse {k}" + (out_.Count == 0 ? "" : $"-{out_.Count + 1}"), k, a, b, lo,
-                    support: support_, ignore: through, notches: mine, joins: (jAft, jFwd), bevel: BEVEL_UPPER);
+                var blk = AddLevel(lay, blocks, $"Deckhouse {k}" + (result.Count == 0 ? "" : $"-{result.Count + 1}"), k, a, b, lo,
+                    support: support_, ignore: through, notches: mine, joins: (jAft, jFwd), bevel: BevelUpper);
                 if (blk != null)
                 {
                     made.Add(blk);
-                    out_.Add(blk);
+                    result.Add(blk);
                 }
             }
-            return (out_, lo);
+            return (result, lo);
         }
 
-        Func<double, bool> On(List<Block> bb) => x => bb.Any(b => b.X0 <= x && x + DH_CELL <= b.X1 + 1e-6);
+        Func<double, bool> On(List<Block> bb) => x => bb.Any(b => b.X0 <= x && x + DhCell <= b.X1 + 1e-6);
         var below = baseBlocks.ToList();
         double w = dhW;
         if (below.Select(b => b.X1 - b.X0).Sum() < 0.5 * (x1 - x0))

@@ -191,7 +191,7 @@ public static class Preview
         var o = new double[W * H];
         for (int y = 0; y < h.Height; y++)
             for (int x = 0; x < h.Width; x++)
-                o[(y + pad) * W + x + pad] = h.Data[y * h.Width + x] * HeightMap.HEIGHT_STEP_M;
+                o[(y + pad) * W + x + pad] = h.Data[y * h.Width + x] * HeightMap.HeightStepM;
         return o;
     }
 

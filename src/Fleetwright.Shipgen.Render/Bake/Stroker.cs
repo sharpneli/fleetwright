@@ -27,13 +27,13 @@ public static class Stroker
 
     static List<Vector2> Dedup(List<Vector2> pts, bool closed)
     {
-        var out_ = new List<Vector2>(pts.Count);
+        var result = new List<Vector2>(pts.Count);
         foreach (var p in pts)
-            if (out_.Count == 0 || Vector2.DistanceSquared(out_[^1], p) > 1e-10f)
-                out_.Add(p);
-        if (closed && out_.Count > 1 && Vector2.DistanceSquared(out_[0], out_[^1]) <= 1e-10f)
-            out_.RemoveAt(out_.Count - 1);
-        return out_;
+            if (result.Count == 0 || Vector2.DistanceSquared(result[^1], p) > 1e-10f)
+                result.Add(p);
+        if (closed && result.Count > 1 && Vector2.DistanceSquared(result[0], result[^1]) <= 1e-10f)
+            result.RemoveAt(result.Count - 1);
+        return result;
     }
 
     /// <summary>The dash pieces of a polyline (closed: running on round the closing segment).</summary>
@@ -43,7 +43,7 @@ public static class Stroker
             pattern = [.. pattern, .. pattern];
         double total = pattern.Sum();
         var path = closed ? [.. pts, pts[0]] : pts;
-        var out_ = new List<List<Vector2>>();
+        var result = new List<List<Vector2>>();
         // where in the pattern the path starts
         double ph = ((offset % total) + total) % total;
         int idx = 0;
@@ -66,7 +66,7 @@ public static class Stroker
                 if (on)
                 {
                     cur!.Add(p);
-                    out_.Add(cur);
+                    result.Add(cur);
                     cur = null;
                 }
                 else
@@ -80,8 +80,8 @@ public static class Stroker
                 cur!.Add(b);
         }
         if (on && cur != null && cur.Count > 1)
-            out_.Add(cur);
-        return out_;
+            result.Add(cur);
+        return result;
     }
 
     static void Tri(List<Vector2> o, Vector2 a, Vector2 b, Vector2 c)

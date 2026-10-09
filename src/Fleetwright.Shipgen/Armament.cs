@@ -269,22 +269,22 @@ public static class Armament
         return placed;
     }
 
-    const double AA_CELL = 8.0;
-    static readonly Dictionary<string, double> AA_TUB_T = new() { ["quad40"] = 3.0, ["twin40"] = 1.5, ["single20"] = 0.3 };
+    const double AaCell = 8.0;
+    static readonly Dictionary<string, double> AaTubT = new() { ["quad40"] = 3.0, ["twin40"] = 1.5, ["single20"] = 0.3 };
 
     /// <summary>AA mounts in pairs from slots in order of preference (a single slot takes one). ignore: ids to
     /// disregard, as a function of the slot's base; layerOf: the drawing layer for a base.</summary>
     public static long PlaceAa(Layout lay, List<AaMount> aaOut, string kind, long count, IReadOnlyList<Slot> cands,
         double? spacing = null, Func<double, IReadOnlyCollection<string>>? ignore = null, Func<double, string>? layerOf = null)
     {
-        double rr = Geometry.AA_CFG[kind].R;
+        double rr = Geometry.AaCfg[kind].R;
         double sp = spacing ?? (kind == "quad40" ? 3.0 : 2.2);
         var grid = new Dictionary<long, List<Footprint>>();
         double rMax = 0.0;
 
         void File(Footprint fp)
         {
-            long c = (long)Math.Floor(fp.X / AA_CELL);
+            long c = (long)Math.Floor(fp.X / AaCell);
             if (!grid.TryGetValue(c, out var l))
                 grid[c] = l = [];
             l.Add(fp);
@@ -292,12 +292,12 @@ public static class Armament
         }
 
         foreach (var a in aaOut)
-            File(Footprint.Circle(a.X, a.Y, Geometry.AA_CFG[a.Type].R));
+            File(Footprint.Circle(a.X, a.Y, Geometry.AaCfg[a.Type].R));
 
         IEnumerable<Footprint> Near(Footprint fp)
         {
             double reach = fp.R + rMax + sp;
-            for (long c = (long)Math.Floor((fp.X - reach) / AA_CELL); c <= (long)Math.Floor((fp.X + reach) / AA_CELL); c++)
+            for (long c = (long)Math.Floor((fp.X - reach) / AaCell); c <= (long)Math.Floor((fp.X + reach) / AaCell); c++)
                 if (grid.TryGetValue(c, out var l))
                     foreach (var o in l)
                         yield return o;
@@ -330,7 +330,7 @@ public static class Armament
                 long d = y == 0 && cx < 0 ? 180 : y > 0 ? 90 : y < 0 ? -90 : 0;
                 aaOut.Add(new AaMount { Id = aid, Type = kind, X = fp.X, Y = y, Dir = d, Base = bse, Layer = layerOf != null ? layerOf(bse) : "base" });
                 lay.Occupy(fp, bse, bse + 2.0, aid);
-                lay.Weights.Add(new Weight(aid, "armament", Batteries.AA_T[kind] + (bse > 0.5 ? AA_TUB_T[kind] : 0.0), fp.X,
+                lay.Weights.Add(new Weight(aid, "armament", Batteries.AaT[kind] + (bse > 0.5 ? AaTubT[kind] : 0.0), fp.X,
                     ZRel.Deck(bse + 1.0)));
             }
         }

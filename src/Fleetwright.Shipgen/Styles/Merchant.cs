@@ -3,16 +3,16 @@ namespace Fleetwright.Shipgen;
 /// <summary>merchant: cargo ships and tankers (a "three-island" ship).</summary>
 public sealed class MerchantStyle : Style
 {
-    const double RAISED_H = Layout.LEVEL_H;
-    static readonly Dictionary<string, double> STOWAGE = new() { ["dry"] = 1.4, ["tanker"] = 1.25 };
-    const double DOUBLE_BOTTOM = 1.2;
+    const double RaisedH = Layout.LevelH;
+    static readonly Dictionary<string, double> Stowage = new() { ["dry"] = 1.4, ["tanker"] = 1.25 };
+    const double DoubleBottom = 1.2;
 
     /// <summary>Volume of the holds below the main deck.</summary>
     static double HoldVolume(Hull hull, List<(double H0, double H1)> holds, double depth)
     {
         double area = holds.Select(h => (h.H1 - h.H0) / 8 *
             Enumerable.Range(0, 8).Select(k => 2 * hull.HalfWidth(h.H0 + (h.H1 - h.H0) * (k + 0.5) / 8)).Sum()).Sum();
-        return 0.9 * area * Math.Max(0.0, depth - DOUBLE_BOTTOM);
+        return 0.9 * area * Math.Max(0.0, depth - DoubleBottom);
     }
 
     /// <summary>The cargo: "dry" or "tanker", and its tonnes.</summary>
@@ -36,14 +36,14 @@ public sealed class MerchantStyle : Style
 
         List<double> Packed(IEnumerable<int> order)
         {
-            var out_ = Enumerable.Repeat(0.0, holds.Count).ToList();
+            var result = Enumerable.Repeat(0.0, holds.Count).ToList();
             double left = C;
             foreach (int i in order)
             {
-                out_[i] = Math.Min(caps[i], left);
-                left -= out_[i];
+                result[i] = Math.Min(caps[i], left);
+                left -= result[i];
             }
-            return out_;
+            return result;
         }
 
         double Centre(List<double> ws) => ws.Zip(xs).Select(t => t.First * t.Second).Sum() / C;
@@ -173,7 +173,7 @@ public sealed class MerchantStyle : Style
         }
         var islands = new[] { ("Forecastle", L / 2 - fcLen, L / 2), ("Bridge deck", bxc - bdLen / 2, bxc + bdLen / 2), ("Poop", -L / 2, -L / 2 + poopLen) };
         foreach (var (name, x0, x1) in islands)
-            Layout.AddRaised(lay, design, name, x0, x1, (long)Math.Round(RAISED_H / Layout.LEVEL_H));
+            Layout.AddRaised(lay, design, name, x0, x1, (long)Math.Round(RaisedH / Layout.LevelH));
         double DeckH(double x) => lay.DeckZ(x);
 
         var blocks = new List<Block>();
@@ -184,7 +184,7 @@ public sealed class MerchantStyle : Style
         double wh = Math.Min(0.62 * B, 2 * (hwMid - 1.5));
         var houseIds = new List<string>();
 
-        Block House(string bid, double x0, double x1, double w, long level, double rf, double rb, double z0 = RAISED_H, string role = "deckhouse")
+        Block House(string bid, double x0, double x1, double w, long level, double rf, double rb, double z0 = RaisedH, string role = "deckhouse")
         {
             houseIds.Add(bid);
             return Layout.AddBlock(lay, blocks, bid, x0, x1, w, level, rf, rb, z0: z0, role: role);
@@ -194,7 +194,7 @@ public sealed class MerchantStyle : Style
         if (!aftEngines)
             House("Boat deck house", bx0 + 0.25 * bdLen, bx1 - 0.08 * bdLen, 0.5 * B, 2, 1.0, 0.8);
         House("Bridge", bx1 - 0.3 * bdLen, bx1 - 0.08 * bdLen, Math.Min(0.92 * B, 2 * (hwMid - 0.4)), !aftEngines ? 3 : 2, 0.6, 0.6, role: "bridge");
-        double funTop = RAISED_H + Layout.LEVEL_H * 3 + 2.0;
+        double funTop = RaisedH + Layout.LevelH * 3 + 2.0;
         double fx, mx, boatX, boatY;
         if (aftEngines)
         {
@@ -204,7 +204,7 @@ public sealed class MerchantStyle : Style
             fx = (ex0 + ex1) / 2 - 0.1 * (ex1 - ex0);
             mx = (-L / 2 + 0.02 * L + -L / 2 + poopLen) / 2;
             (boatX, boatY) = (ex0 + 0.35 * (ex1 - ex0), 0.35 * B);
-            funTop = RAISED_H + Layout.LEVEL_H * 2 + 3.0;
+            funTop = RaisedH + Layout.LevelH * 2 + 3.0;
         }
         else
         {
@@ -217,8 +217,8 @@ public sealed class MerchantStyle : Style
         for (int i = 0; i < nfun; i++)
         {
             double x = aftEngines ? fx - i * (fl + 1.5) : fx + (i - (nfun - 1) / 2.0) * (fl + 1.5);
-            funnels.Add(new Funnel { Id = $"Funnel {i + 1}", X = x, Y = 0.0, L = fl, W = fw, Pipes = 1, Z0 = RAISED_H, Seg = Layout.FunnelSeg(lay, i) });
-            lay.Occupy(Footprint.Rect(x - fl / 2, -fw / 2, x + fl / 2, fw / 2), RAISED_H, funTop, $"Funnel {i + 1}");
+            funnels.Add(new Funnel { Id = $"Funnel {i + 1}", X = x, Y = 0.0, L = fl, W = fw, Pipes = 1, Z0 = RaisedH, Seg = Layout.FunnelSeg(lay, i) });
+            lay.Occupy(Footprint.Rect(x - fl / 2, -fw / 2, x + fl / 2, fw / 2), RaisedH, funTop, $"Funnel {i + 1}");
             Layout.AddFunnelWeights(lay, funnels[^1], funTop, mx, depth);
         }
         double bl_ = Layout.Clamp(0.045 * L, 5, 9);
@@ -226,9 +226,9 @@ public sealed class MerchantStyle : Style
             foreach (int s in new[] { 1, -1 })
             {
                 double x = dx < 0 ? boatX + dx - 0.5 * fl - 1.0 : boatX + dx + 0.5 * fl + 1.0;
-                boats.Add(new Boat(x, s * boatY, bl_, 0.3 * bl_, RAISED_H + Layout.LEVEL_H + 1.5));
-                lay.Occupy(Footprint.Rect(x - bl_ / 2, s * boatY - 0.15 * bl_, x + bl_ / 2, s * boatY + 0.15 * bl_), RAISED_H + Layout.LEVEL_H,
-                    RAISED_H + Layout.LEVEL_H + 1.5, $"Boat{boats.Count}");
+                boats.Add(new Boat(x, s * boatY, bl_, 0.3 * bl_, RaisedH + Layout.LevelH + 1.5));
+                lay.Occupy(Footprint.Rect(x - bl_ / 2, s * boatY - 0.15 * bl_, x + bl_ / 2, s * boatY + 0.15 * bl_), RaisedH + Layout.LevelH,
+                    RaisedH + Layout.LevelH + 1.5, $"Boat{boats.Count}");
             }
         lay.Geo.Machinery = (mx - lMach / 2, mx + lMach / 2);
         lay.Geo.MachineryX = mx;
@@ -329,7 +329,7 @@ public sealed class MerchantStyle : Style
         else if (cg.DeadweightT != 0)
         {
             double vol = HoldVolume(hull, holds, depth);
-            double need = cg.DeadweightT * STOWAGE[cg.Kind];
+            double need = cg.DeadweightT * Stowage[cg.Kind];
             if (vol < need)
                 lay.Fail("length", $"The {(tanker ? "tanks" : "holds")} take about {vol:N0} m3, but " +
                                    $"{cg.DeadweightT:N0} t of cargo needs about {need:N0} m3. Carry less cargo.");
@@ -350,11 +350,11 @@ public sealed class MerchantStyle : Style
         var aaOut = new List<AaMount>();
         foreach (var (kind, count) in new[] { ("quad40", design.Aa?.Heavy ?? 0), ("single20", design.Aa?.Light ?? 0) })
         {
-            double rr = Geometry.AA_CFG[kind].R;
-            double roof = RAISED_H + Layout.LEVEL_H;
+            double rr = Geometry.AaCfg[kind].R;
+            double roof = RaisedH + Layout.LevelH;
             var cands = new List<Slot>
             {
-                new(bx1 - 0.12 * bdLen, Math.Min(0.46 * B, hwMid - 0.4) - rr - 0.2, RAISED_H + Layout.LEVEL_H * 2),
+                new(bx1 - 0.12 * bdLen, Math.Min(0.46 * B, hwMid - 0.4) - rr - 0.2, RaisedH + Layout.LevelH * 2),
                 new(bx0 + 0.1 * bdLen, wh / 2 - rr - 0.3, roof),
             };
             cands.AddRange(xs.Select(x => new Slot(x, hull.HalfWidth(x) - rr - 0.6, DeckH(x))));

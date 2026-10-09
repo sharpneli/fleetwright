@@ -3,7 +3,7 @@ namespace Fleetwright.Shipgen.Render;
 /// <summary>clutter: the small gear on a warship's roofs and open decks, drawn only (the design never sees it).
 ///
 /// Ventilators, skylights, hatches, boats on their chocks, Carley floats, ready-use lockers, searchlights, coal
-/// scuttles, paravanes and so on, picked by era: a look's shapes key "clutter" names a kit in KITS (Looks.Shapes
+/// scuttles, paravanes and so on, picked by era: a look's shapes key "clutter" names a kit in Kits (Looks.Shapes
 /// defaults it to the look's era). Placement is repeatable (seeded by the design's id) and keeps to open roof and
 /// deck: never under a higher block, a funnel, a mast, a turret, an AA mount or another item. Most items come in
 /// mirrored pairs, as on real ships, so the result reads as fitted out rather than strewn about.
@@ -11,7 +11,7 @@ namespace Fleetwright.Shipgen.Render;
 /// Nothing here changes the layout, hitboxes, sprite.json or the report. Each item also gives the height map a low
 /// column (HeightColumns), so it casts its own small shadow.
 ///
-/// Shapes keys read here: clutter (a KITS name, or null / "" for none), clutter_density (a factor on every kit's
+/// Shapes keys read here: clutter (a Kits name, or null / "" for none), clutter_density (a factor on every kit's
 /// counts, 1), roof_planks (0 = steel roofs; otherwise the smallest block area, m^2, whose roof is planked like a
 /// deck; the kit's default) and roof_rails (guardrails round open roofs; the kit's default).</summary>
 public static class Clutter
@@ -21,12 +21,12 @@ public static class Clutter
     /// centre (on the centreline), edge (mirrored, just inboard of the roof's or deck's edge) or row (2-4 side by
     /// side, along the edge or, half the time, anywhere across like pair). CentreP: a pair item's chance of one on
     /// the centreline instead. Ends / DeckEnds: kept beyond that fraction of L from amidships (everywhere / on the
-    /// open deck only). Near "funnel": within NEAR_FUNNEL m (along the ship) of a funnel, where the boiler rooms
+    /// open deck only). Near "funnel": within NearFunnel m (along the ship) of a funnel, where the boiler rooms
     /// breathe.</summary>
     sealed record ItemSpec(double L, double W, double H, string Place, double CentreP = 0.0, double Ends = 0.0,
         double DeckEnds = 0.0, string? Near = null);
 
-    static readonly Dictionary<string, ItemSpec> ITEMS = new(StringComparer.Ordinal)
+    static readonly Dictionary<string, ItemSpec> Items = new(StringComparer.Ordinal)
     {
         ["cowl"] = new(1.3, 1.3, 1.8, "pair"),
         ["cowl_small"] = new(0.9, 0.9, 1.2, "pair"),
@@ -51,7 +51,7 @@ public static class Clutter
     };
 
     /// <summary>Boats: length and beam, m. Nested boats ride inside a bigger one (Victorian and Great War practice).</summary>
-    static readonly Dictionary<string, (double L, double W)> BOATS = new(StringComparer.Ordinal)
+    static readonly Dictionary<string, (double L, double W)> Boats = new(StringComparer.Ordinal)
     {
         ["cutter"] = (8.5, 2.2),
         ["whaler"] = (7.5, 1.9),
@@ -63,13 +63,13 @@ public static class Clutter
     };
 
     /// <summary>A kit. Roof / Deck: (item, items per 100 m^2 of open surface); Big: (item, items per 100 m^2 of a
-    /// roof's area beyond what the small items count, ROOF_SAT); Boats: the boats on big roofs, biggest first;
+    /// roof's area beyond what the small items count, RoofSat); Boats: the boats on big roofs, biggest first;
     /// Nest: a dinghy rides in each cutter; Scuttles: coal scuttles along the deck edges amidships.</summary>
     public sealed record KitSpec((string Item, double Per100)[] Roof, (string Item, double Per100)[] Big,
         (string Item, double Per100)[] Deck, string[] Boats, bool Nest, bool Scuttles, double RoofPlanks, bool RoofRails,
         int MaxBoats = 8);
 
-    static readonly Dictionary<string, KitSpec> KITS = new(StringComparer.Ordinal)
+    static readonly Dictionary<string, KitSpec> Kits = new(StringComparer.Ordinal)
     {
         ["victorian"] = new(
             Roof: [("cowl", 1.6), ("skylight", 0.7), ("hatch", 0.6), ("cowl_small", 1.0)],
@@ -101,21 +101,21 @@ public static class Clutter
             Boats: ["whaleboat"], MaxBoats: 2, Nest: false, Scuttles: false, RoofPlanks: 0.0, RoofRails: true),
     };
 
-    public static KitSpec? Kit(string? name) => name != null && KITS.TryGetValue(name, out var k) ? k : null;
+    public static KitSpec? Kit(string? name) => name != null && Kits.TryGetValue(name, out var k) ? k : null;
 
-    const double MARGIN = 0.45;      // clear space round every item and from a roof's edge, m
-    const double BOAT_ROOF_W = 8.0;  // a roof this wide (and wider) carries boats
-    // Roof counts grow with area only up to about ROOF_SAT m^2, then with its square root: a long boat deck between
+    const double Margin = 0.45;      // clear space round every item and from a roof's edge, m
+    const double BoatRoofW = 8.0;  // a roof this wide (and wider) carries boats
+    // Roof counts grow with area only up to about RoofSat m^2, then with its square root: a long boat deck between
     // the funnels (Kongo, Dante) held boats and a few vents, not gear strewn end to end at the small-roof density.
-    // Roofs at level 3 and up (bridge and fire-control platforms) carry HIGH_ROOF of the count. Decks keep the
+    // Roofs at level 3 and up (bridge and fire-control platforms) carry HighRoof of the count. Decks keep the
     // plain per-area count.
-    const double ROOF_SAT = 600.0;
-    const double HIGH_ROOF = 0.6;
-    // The rest of a big roof's area goes to the kit's big gear, and each m^2 the big gear covers takes BIG_SHARE m^2
+    const double RoofSat = 600.0;
+    const double HighRoof = 0.6;
+    // The rest of a big roof's area goes to the kit's big gear, and each m^2 the big gear covers takes BigShare m^2
     // from the area the small items count (the clear space round a fan house or a skylight is part of it).
-    const double BIG_SHARE = 5.0;
-    const double NEAR_FUNNEL = 7.0;
-    const int CANDIDATES = 8;   // valid spots tried per item; the emptiest wins (best-candidate sampling: an even spread)
+    const double BigShare = 5.0;
+    const double NearFunnel = 7.0;
+    const int Candidates = 8;   // valid spots tried per item; the emptiest wins (best-candidate sampling: an even spread)
 
     /// <summary>One placed item. Boats have Boat (the kind) and Nest; Face turns a cowl's mouth (1 ahead, -1 aft, 0
     /// outboard).</summary>
@@ -147,11 +147,11 @@ public static class Clutter
     {
         long nx = Math.Max(1L, (long)Math.Ceiling((r.X1 - r.X0) / step));
         long ny = Math.Max(1L, (long)Math.Ceiling((r.Y1 - r.Y0) / step));
-        var out_ = new List<Pt>((int)((nx + 1) * (ny + 1)));
+        var result = new List<Pt>((int)((nx + 1) * (ny + 1)));
         for (long i = 0; i <= nx; i++)
             for (long j = 0; j <= ny; j++)
-                out_.Add(new(r.X0 + (r.X1 - r.X0) * i / nx, r.Y0 + (r.Y1 - r.Y0) * j / ny));
-        return out_;
+                result.Add(new(r.X0 + (r.X1 - r.X0) * i / nx, r.Y0 + (r.Y1 - r.Y0) * j / ny));
+        return result;
     }
 
     /// <summary>The polygon moved inward by d (each edge offset, neighbours intersected); fine for the gentle outlines
@@ -173,7 +173,7 @@ public static class Clutter
             double nx = -dy / ln * sgn, ny = dx / ln * sgn;     // inward normal
             lines.Add((new(x0 + nx * d, y0 + ny * d), new(dx, dy)));
         }
-        var out_ = new List<Pt>(n);
+        var result = new List<Pt>(n);
         for (int i = 0; i < n; i++)
         {
             var (p, r) = lines[(i - 1 + n) % n];
@@ -181,30 +181,30 @@ public static class Clutter
             double den = r.X * s.Y - r.Y * s.X;
             if (Math.Abs(den) < 1e-9)
             {
-                out_.Add(q);
+                result.Add(q);
                 continue;
             }
             double t = ((q.X - p.X) * s.Y - (q.Y - p.Y) * s.X) / den;
-            out_.Add(new(p.X + t * r.X, p.Y + t * r.Y));
+            result.Add(new(p.X + t * r.X, p.Y + t * r.Y));
         }
-        return out_;
+        return result;
     }
 
     /// <summary>Where the line at y crosses the polygon's edges, sorted: PointInPolygon(x, y, pts) is an odd count of
     /// them past x (RowInside), with the same arithmetic, for testing many points on one row.</summary>
     static List<double> RowCrossings(double y, IReadOnlyList<Pt> pts)
     {
-        var out_ = new List<double>();
+        var result = new List<double>();
         int n = pts.Count;
         for (int i = 0; i < n; i++)
         {
             var (x1, y1) = pts[i];
             var (x2, y2) = pts[(i + 1) % n];
             if ((y1 > y) != (y2 > y))
-                out_.Add(x1 + (y - y1) * (x2 - x1) / (y2 - y1));
+                result.Add(x1 + (y - y1) * (x2 - x1) / (y2 - y1));
         }
-        out_.Sort();
-        return out_;
+        result.Sort();
+        return result;
     }
 
     static bool RowInside(double x, List<double> crossings) => (crossings.Count - crossings.UpperBound(x)) % 2 == 1;
@@ -227,7 +227,7 @@ public static class Clutter
             Kind = kind;
             BBox = Clutter.BBox(pts);
             Area = Geometry.PolygonArea(pts);
-            Inner = pts.Count >= 3 ? InsetPolygon(pts, MARGIN) : pts;
+            Inner = pts.Count >= 3 ? InsetPolygon(pts, Margin) : pts;
             InnerBox = Inner.Count > 0 ? Clutter.BBox(Inner) : null;
         }
 
@@ -298,7 +298,7 @@ public static class Clutter
         {
             if (!surf.Holds(r))
                 return false;
-            var g = new Box(r.X0 - MARGIN, r.Y0 - MARGIN, r.X1 + MARGIN, r.Y1 + MARGIN);
+            var g = new Box(r.X0 - Margin, r.Y0 - Margin, r.X1 + Margin, r.Y1 + Margin);
             if (Taken.Any(t => Overlap(g, t)) || Rects.Any(t => Overlap(g, t)))
                 return false;
             foreach (var (cx, cy, cr) in Circles)
@@ -328,14 +328,14 @@ public static class Clutter
 
     static List<Surface> Surfaces(RenderSpec spec, Hull hull)
     {
-        var out_ = spec.Superstructure.Where(b => b.Director == null).Select(b => new Surface(Geometry.BlockOutline(b), b.Level, "roof")).ToList();
+        var result = spec.Superstructure.Where(b => b.Director == null).Select(b => new Surface(Geometry.BlockOutline(b), b.Level, "roof")).ToList();
         // the deck as a polygon a little inside its edge
         const int n = 80;
         var xs = Enumerable.Range(0, n).Select(i => -hull.L / 2 + hull.L * (i + 0.5) / n).ToList();
         var pts = xs.Select(x => new Pt(x, -Math.Max(0.0, hull.HalfWidth(x) - 0.6))).ToList();
         pts.AddRange(Enumerable.Reverse(xs).Select(x => new Pt(x, Math.Max(0.0, hull.HalfWidth(x) - 0.6))));
-        out_.Add(new Surface(pts, 0, "deck"));
-        return out_;
+        result.Add(new Surface(pts, 0, "deck"));
+        return result;
     }
 
     /// <summary>Candidate y positions (each a set placed together) for an item at x.</summary>
@@ -358,9 +358,9 @@ public static class Clutter
         double edge = Math.Min(-lo, hi) - w / 2 - 0.05;
         if (place == "edge" || (place == "row" && rng.Random() < 0.5))
             return edge > w / 2 ? [-edge, edge] : null;
-        if (edge > w / 2 + MARGIN)   // anywhere across, mirrored
+        if (edge > w / 2 + Margin)   // anywhere across, mirrored
         {
-            double y = rng.Uniform(w / 2 + MARGIN, edge);
+            double y = rng.Uniform(w / 2 + Margin, edge);
             return [-y, y];
         }
         return onCentre ? [0.0] : null;   // too narrow for a pair: one on the centreline
@@ -386,21 +386,21 @@ public static class Clutter
         return best;
     }
 
-    /// <summary>The area the kit's small counts scale with (ROOF_SAT, HIGH_ROOF).</summary>
+    /// <summary>The area the kit's small counts scale with (RoofSat, HighRoof).</summary>
     static double OpenArea(Surface surf)
     {
         if (surf.Kind == "deck")
             return surf.Area;
-        double a = surf.Area <= ROOF_SAT ? surf.Area : Math.Sqrt(surf.Area * ROOF_SAT);
-        return a * (surf.Level >= 3 ? HIGH_ROOF : 1.0);
+        double a = surf.Area <= RoofSat ? surf.Area : Math.Sqrt(surf.Area * RoofSat);
+        return a * (surf.Level >= 3 ? HighRoof : 1.0);
     }
 
-    /// <summary>The area the kit's big counts scale with: what ROOF_SAT left out of the small count.</summary>
+    /// <summary>The area the kit's big counts scale with: what RoofSat left out of the small count.</summary>
     static double BigArea(Surface surf)
     {
-        if (surf.Kind == "deck" || surf.Area <= ROOF_SAT)
+        if (surf.Kind == "deck" || surf.Area <= RoofSat)
             return 0.0;
-        return (surf.Area - Math.Sqrt(surf.Area * ROOF_SAT)) * (surf.Level >= 3 ? HIGH_ROOF : 1.0);
+        return (surf.Area - Math.Sqrt(surf.Area * RoofSat)) * (surf.Level >= 3 ? HighRoof : 1.0);
     }
 
     /// <summary>Scatter the kit's items over one surface: (kind, x, y), spread evenly over the open area. Counts are
@@ -408,15 +408,15 @@ public static class Clutter
     static List<(string Kind, double X, double Y)> PlaceItems(Placer P, Surface surf, (string Item, double Per100)[] kitItems,
         double density, ShipRng rng, double area)
     {
-        var out_ = new List<(string, double, double)>();
+        var result = new List<(string, double, double)>();
         double x0 = surf.BBox.X0, x1 = surf.BBox.X1;
         double L = P.Hull.L;
         foreach (var (kind, per100) in kitItems)
         {
-            var it = ITEMS[kind];
+            var it = Items[kind];
             var near = it.Near != null
-                ? P.Funnels.Where(f => f.X + f.L / 2 + NEAR_FUNNEL > x0 && f.X - f.L / 2 - NEAR_FUNNEL < x1)
-                    .Select(f => (A: f.X - f.L / 2 - NEAR_FUNNEL, B: f.X + f.L / 2 + NEAR_FUNNEL)).ToList()
+                ? P.Funnels.Where(f => f.X + f.L / 2 + NearFunnel > x0 && f.X - f.L / 2 - NearFunnel < x1)
+                    .Select(f => (A: f.X - f.L / 2 - NearFunnel, B: f.X + f.L / 2 + NearFunnel)).ToList()
                 : [];
             if (it.Near != null && near.Count == 0)
                 continue;
@@ -428,7 +428,7 @@ public static class Clutter
                 var cands = new List<(double Spread, double[] Xs, double[] Ys, List<Box> Rs)>();
                 for (int tries = 0; tries < 40; tries++)
                 {
-                    if (cands.Count >= CANDIDATES)
+                    if (cands.Count >= Candidates)
                         break;
                     double x;
                     if (near.Count > 0)
@@ -458,31 +458,31 @@ public static class Clutter
                 P.Taken.AddRange(best.Rs);
                 foreach (var xx in best.Xs)
                     foreach (var y in best.Ys)
-                        out_.Add((kind, xx, y));
+                        result.Add((kind, xx, y));
                 n -= best.Rs.Count;   // every item counts, a row of four as four
             }
         }
-        return out_;
+        return result;
     }
 
     /// <summary>Boats in rows along a wide roof (the boat deck): an outboard pair of rows, then the centreline, each
     /// filled from aft to fore with the kit's boats in turn, as many as fit (up to the kit's MaxBoats).</summary>
     static List<(string Name, double X, double Y)> PlaceBoats(Placer P, Surface surf, KitSpec kit, ShipRng rng)
     {
-        var out_ = new List<(string, double, double)>();
+        var result = new List<(string, double, double)>();
         double x0 = surf.BBox.X0, x1 = surf.BBox.X1;
         var pool = kit.Boats;
         int k = rng.RandRange(pool.Length);
         foreach (var row in new[] { "outboard", "centre" })
         {
             double x = x0;
-            while (x < x1 && out_.Count < kit.MaxBoats)
+            while (x < x1 && result.Count < kit.MaxBoats)
             {
                 bool placed = false;
                 for (int j = 0; j < pool.Length; j++)
                 {
                     string name = pool[(k + j) % pool.Length];
-                    var (l, w) = BOATS[name];
+                    var (l, w) = Boats[name];
                     double cx = x + l / 2;
                     var sp = new[] { cx - l / 2, cx, cx + l / 2 }.Select(xx => Geometry.PolygonYSpan(surf.Inner, xx)).ToList();
                     if (sp.Any(s => s == null))
@@ -502,7 +502,7 @@ public static class Clutter
                     {
                         P.Taken.AddRange(rs);
                         foreach (var y in ys)
-                            out_.Add((name, cx, y));
+                            result.Add((name, cx, y));
                         k += j + 1;
                         x += l + 0.6;
                         placed = true;
@@ -513,7 +513,7 @@ public static class Clutter
                     x += 0.5;
             }
         }
-        return out_;
+        return result;
     }
 
     /// <summary>Every clutter item for the ship. Repeatable.</summary>
@@ -551,11 +551,11 @@ public static class Clutter
         // boats first, on the widest open roofs (the boat deck)
         if (kit.Boats.Length > 0 && !flight)
         {
-            var roofs = surfs.Where(s => s.Kind == "roof" && s.BBox.Y1 - s.BBox.Y0 >= BOAT_ROOF_W && s.Area >= 60).OrderBy(s => -s.Area).ToList();
+            var roofs = surfs.Where(s => s.Kind == "roof" && s.BBox.Y1 - s.BBox.Y0 >= BoatRoofW && s.Area >= 60).OrderBy(s => -s.Area).ToList();
             foreach (var s in roofs.Take(1))
                 foreach (var (name, x, y) in PlaceBoats(P, s, kit, rng))
                 {
-                    var (l, w) = BOATS[name];
+                    var (l, w) = Boats[name];
                     items.Add(new Item("boat", x, y, l, w, 1.4, s.Level, Boat: name, Nest: kit.Nest));
                 }
         }
@@ -568,14 +568,14 @@ public static class Clutter
             if (s.Kind == "roof" && kit.Big.Length > 0 && BigArea(s) > 0)   // the big gear first, then less small gear
             {
                 big = PlaceItems(P, s, kit.Big, density, rng, BigArea(s));
-                area = Math.Max(0.0, area - BIG_SHARE * big.Select(b => ITEMS[b.Kind].L * ITEMS[b.Kind].W).Sum());
+                area = Math.Max(0.0, area - BigShare * big.Select(b => Items[b.Kind].L * Items[b.Kind].W).Sum());
             }
             else
                 big = [];
             var small = PlaceItems(P, s, s.Kind == "roof" ? kit.Roof : kit.Deck, density, rng, area);
             foreach (var (kind, x, y) in big.Concat(small))
             {
-                var it = ITEMS[kind];
+                var it = Items[kind];
                 items.Add(new Item(kind, x, y, it.L, it.W, it.H, s.Level, Face: rng.Choice([1, 1, -1, 0])));
             }
         }
@@ -869,19 +869,19 @@ public static class Clutter
             }
             return best;
         }
-        var out_ = new List<HeightColumn>();
+        var result = new List<HeightColumn>();
         foreach (var it in items)
         {
             if (it.H <= 0)
                 continue;
             double top = Under(it.X, it.Y) + it.H;
             if (it.Kind is "cowl" or "cowl_small" or "boiler_cowl" or "mushroom" or "searchlight" or "searchlight_tower")
-                out_.Add(new(top, "circle") { Cx = it.X, Cy = it.Y, R = it.L / 2 });
+                result.Add(new(top, "circle") { Cx = it.X, Cy = it.Y, R = it.L / 2 });
             else if (it.Kind == "boat")
-                out_.Add(new(top, "ellipse") { Cx = it.X, Cy = it.Y, Rx = it.L / 2, Ry = it.W / 2 });
+                result.Add(new(top, "ellipse") { Cx = it.X, Cy = it.Y, Rx = it.L / 2, Ry = it.W / 2 });
             else
-                out_.Add(new(top, "rect") { X = it.X - it.L / 2, Y = it.Y - it.W / 2, W = it.L, H = it.W });
+                result.Add(new(top, "rect") { X = it.X - it.L / 2, Y = it.Y - it.W / 2, W = it.L, H = it.W });
         }
-        return out_;
+        return result;
     }
 }

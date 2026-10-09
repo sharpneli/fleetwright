@@ -80,12 +80,12 @@ public sealed class Hull
             if (w > 0.01)
                 pts.Add((x, w));
         }
-        var out_ = new List<Pt>(2 * pts.Count);
+        var result = new List<Pt>(2 * pts.Count);
         foreach (var (x, w) in pts)
-            out_.Add(new Pt(x, -w));
+            result.Add(new Pt(x, -w));
         for (int i = pts.Count - 1; i >= 0; i--)
-            out_.Add(new Pt(pts[i].X, pts[i].W));
-        return out_;
+            result.Add(new Pt(pts[i].X, pts[i].W));
+        return result;
     }
 }
 
@@ -94,18 +94,18 @@ public sealed class Hull
 public sealed class HullForm
 {
     const int N = 400;
-    const double C_MIN = 0.35, C_MAX = 0.995, KAPPA = 1.2;
-    const double FOREFOOT = 0.10, FOREFOOT_FN = 0.2, FOREFOOT_K = 0.25, FOREFOOT_MAX = 0.16;
-    const double ROCKER = 0.45, PLANING_CM = 0.6, CUT_CLEAR = 0.1, CUT_RUN = 7.0, TRANSOM_DEEP = 0.2;
-    const double FORE_V = -0.6, FORE_U = 0.8, FORE_FN = 0.225, FORE_FN_W = 0.04;
-    const double AFT_K = 0.8, CHAR_RUN = 0.3;
-    const double PMB_K = 1.8, PMB_CP = 0.54, PMB_MAX = 0.5;
-    const double LAMBDA = 0.5, LAMBDA_K = 0.2, LAM_MIN = 0.35, LAM_MAX = 0.75;
-    const int ROUNDS = 3;
-    const double TRANSOM_C = 0.75;
-    const int SMOOTH = 6;
-    const double C_END = 0.75, C_END_POW = 2.0, KEEL_K = 0.06, KEEL_SHARE = 0.5;
-    static readonly double[] HEIGHTS = [0.0, 0.01, 0.03, 0.08, 0.15, 0.25, 0.4, 0.55, 0.7, 0.85, 1.0];
+    const double CMin = 0.35, CMax = 0.995, Kappa = 1.2;
+    const double Forefoot = 0.10, ForefootFn = 0.2, ForefootK = 0.25, ForefootMax = 0.16;
+    const double Rocker = 0.45, PlaningCm = 0.6, CutClear = 0.1, CutRun = 7.0, TransomDeep = 0.2;
+    const double ForeV = -0.6, ForeU = 0.8, ForeFn = 0.225, ForeFnW = 0.04;
+    const double AftK = 0.8, CharRun = 0.3;
+    const double PmbK = 1.8, PmbCp = 0.54, PmbMax = 0.5;
+    const double Lambda = 0.5, LambdaK = 0.2, LamMin = 0.35, LamMax = 0.75;
+    const int Rounds = 3;
+    const double TransomC = 0.75;
+    const int Smooth = 6;
+    const double CEnd = 0.75, CEndPow = 2.0, KeelK = 0.06, KeelShare = 0.5;
+    static readonly double[] Heights = [0.0, 0.01, 0.03, 0.08, 0.15, 0.25, 0.4, 0.55, 0.7, 0.85, 1.0];
 
     public readonly Hull Hull;
     public readonly double Cb, T, D, Fn, CwpTarget;
@@ -186,18 +186,18 @@ public sealed class HullForm
         double L = hull.L, B = hull.B;
         planing = gear?.Planing ?? false;
         screws = gear?.Screws ?? 0;
-        kFore = FORE_V + (FORE_U - FORE_V) * Math.Exp(-Math.Pow((fn - FORE_FN) / FORE_FN_W, 2));
-        kAft = screws == 1 ? AFT_K : screws != 0 ? -AFT_K : 0.0;
-        forefoot = L * (planing ? ROCKER : Math.Min(FOREFOOT_MAX, FOREFOOT + FOREFOOT_K * Math.Max(0.0, fn - FOREFOOT_FN)));
+        kFore = ForeV + (ForeU - ForeV) * Math.Exp(-Math.Pow((fn - ForeFn) / ForeFnW, 2));
+        kAft = screws == 1 ? AftK : screws != 0 ? -AftK : 0.0;
+        forefoot = L * (planing ? Rocker : Math.Min(ForefootMax, Forefoot + ForefootK * Math.Max(0.0, fn - ForefootFn)));
         var props = gear?.Propellers ?? [];
         if (!planing && screws == 1 && gear!.Rudders.Count > 0)
             post = gear.Rudders.Min(r => r.X0);
         else if (!planing && props.Count > 0)
         {
-            double rise = Math.Min(0.95 * T, props.Max(p => p.Z + p.Diameter * (0.5 + CUT_CLEAR)));
+            double rise = Math.Min(0.95 * T, props.Max(p => p.Z + p.Diameter * (0.5 + CutClear)));
             double xC = props.Max(p => p.X + 0.5 * p.Diameter);
-            double end = Math.Max(rise, T * (1.0 - TRANSOM_DEEP * Math.Min(1.0, hull.HalfWidth(-L / 2) / (B / 2))));
-            cut = (xC, xC + CUT_RUN * rise, rise, end);
+            double end = Math.Max(rise, T * (1.0 - TransomDeep * Math.Min(1.0, hull.HalfWidth(-L / 2) / (B / 2))));
+            cut = (xC, xC + CutRun * rise, rise, end);
         }
         xs = new double[N];
         ws = new double[N];
@@ -208,20 +208,20 @@ public sealed class HullForm
             ws[k] = Math.Min(1.0, hull.HalfWidth(xs[k]) / (B / 2));
         for (int k = 0; k < N; k++)
             ds[k] = Math.Max(0.0, T - Keel(xs[k])) / T;
-        Cm = planing ? PLANING_CM : Geometry.MidshipCoefficient(cb);
+        Cm = planing ? PlaningCm : Geometry.MidshipCoefficient(cb);
         Lcb = Math.Max(-0.2 * L, Math.Min(0.2 * L, lcb));
-        double loEnd = Math.Min(0.99, ws[0] * ds[0] * TRANSOM_C / Cm);
+        double loEnd = Math.Min(0.99, ws[0] * ds[0] * TransomC / Cm);
         endsE = (loEnd, 0.0);
-        lam = LAMBDA;
-        for (int r = 0; r < ROUNDS; r++)
+        lam = Lambda;
+        for (int r = 0; r < Rounds; r++)
         {
             Fit();
-            lam = Solve(l => -WaterplaneCoef(l), LAM_MIN, LAM_MAX, -cwp);
+            lam = Solve(l => -WaterplaneCoef(l), LamMin, LamMax, -cwp);
         }
         Fit();
         if (Math.Abs(Volume - cb) > 1e-4)
         {
-            Cm = Solve(cm => { Fit(cm); return Volume; }, C_MIN, C_MAX, cb);
+            Cm = Solve(cm => { Fit(cm); return Volume; }, CMin, CMax, cb);
             Fit(Cm);
         }
         Cwp = WaterplaneCoef(lam);
@@ -241,7 +241,7 @@ public sealed class HullForm
     {
         double cm = cmArg ?? Cm;
         double L = Hull.L;
-        Pmb = Math.Max(0.0, Math.Min(PMB_MAX, PMB_K * (Cb / cm - PMB_CP))) * L;
+        Pmb = Math.Max(0.0, Math.Min(PmbMax, PmbK * (Cb / cm - PmbCp))) * L;
         double xa = Lcb - Pmb / 2, xf = Lcb + Pmb / 2;
         (xa, xf) = (Math.Max(xa, -0.45 * L), Math.Min(xf, 0.45 * L));
         mid = (xa, xf);
@@ -303,7 +303,7 @@ public sealed class HullForm
             rawS[i] = s;
             uOf[i] = rho > 0 ? Math.Min(w, Math.Pow(rho, pw)) : 0.0;
         }
-        int h = SMOOTH;
+        int h = Smooth;
         var raw = bufRaw;
         foreach (var endList in st.ForeAft)
         {
@@ -330,11 +330,11 @@ public sealed class HullForm
                 continue;
             double s = rawS[i], u = uOf[i];
             double chi = cHi[i];
-            double c = u > 0 ? cm * s / (u * dk) : C_MIN;
+            double c = u > 0 ? cm * s / (u * dk) : CMin;
             if (c > chi)
                 (c, u) = (chi, Math.Min(u, cm * s / (dk * chi)));
-            else if (c < C_MIN)
-                (c, u) = (C_MIN, Math.Min(u, cm * s / (dk * C_MIN)));
+            else if (c < CMin)
+                (c, u) = (CMin, Math.Min(u, cm * s / (dk * CMin)));
             usOut[i] = u;
             csOut[i] = c;
             areaOut[i] = u * dk * c;
@@ -365,9 +365,9 @@ public sealed class HullForm
             else
                 (r, end, e, kk) = (0.0, -1, 1.0, 0.0);
             r = Math.Min(1.0, r);
-            double chi = Math.Min(C_MAX, cm - Math.Max(0.0, cm - C_END) * Math.Pow(r, C_END_POW));
+            double chi = Math.Min(CMax, cm - Math.Max(0.0, cm - CEnd) * Math.Pow(r, CEndPow));
             chis[i] = chi;
-            double pw = Math.Max(0.05, lam0 + LAMBDA_K * kk);
+            double pw = Math.Max(0.05, lam0 + LambdaK * kk);
             double u = double.NaN, c = double.NaN, a = double.NaN;
             if (dk <= 0 || w <= 0)
                 (u, c, a) = (w, cm, 0.0);
@@ -376,11 +376,11 @@ public sealed class HullForm
                 double s = e + (1 - e) * Math.Pow(1 - r * r, 1.0);
                 double rho = s / dk;
                 u = rho > 0 ? Math.Min(w, Math.Pow(rho, pw)) : 0.0;
-                c = u > 0 ? cm * s / (u * dk) : C_MIN;
+                c = u > 0 ? cm * s / (u * dk) : CMin;
                 if (c > chi)
                     (c, u) = (chi, Math.Min(u, cm * s / (dk * chi)));
-                else if (c < C_MIN)
-                    (c, u) = (C_MIN, Math.Min(u, cm * s / (dk * C_MIN)));
+                else if (c < CMin)
+                    (c, u) = (CMin, Math.Min(u, cm * s / (dk * CMin)));
                 a = u * dk * c;
             }
             if (end != -1)
@@ -443,13 +443,13 @@ public sealed class HullForm
     public double Waterline(double x) => Math.Min(Hull.HalfWidth(x), Hull.B / 2 * At(us, x));
 
     /// <summary>The section's fullness below the waterline at x.</summary>
-    public double Fullness(double x) => Math.Max(C_MIN, Math.Min(C_MAX, At(cs, x)));
+    public double Fullness(double x) => Math.Max(CMin, Math.Min(CMax, At(cs, x)));
 
     /// <summary>The section's character, -1 (V) .. 1 (U), at x for its fullness c.</summary>
     public double Character(double x, double c)
     {
         double k = x > 0 ? kFore : kAft;
-        return k * Math.Min(1.0, Math.Abs(x) / (CHAR_RUN * Hull.L)) * Math.Max(0.0, Math.Min(1.0, (c - 0.5) / 0.15));
+        return k * Math.Min(1.0, Math.Abs(x) / (CharRun * Hull.L)) * Math.Max(0.0, Math.Min(1.0, (c - 0.5) / 0.15));
     }
 
     static double Sum(ReadOnlySpan<double> xs)
@@ -467,7 +467,7 @@ public sealed class HullForm
     {
         if (sectionCache.TryGetValue((c, k), out var v))
             return v;
-        double e = Math.Exp(k * KAPPA);
+        double e = Math.Exp(k * Kappa);
         double lo = 0.1, hi = 500.0;
         for (int i = 0; i < 60; i++)
         {
@@ -499,10 +499,10 @@ public sealed class HullForm
             double chine = 2.0 * d * (1.0 - c);
             return Math.Min(deck, chine > 1e-9 ? wl * Math.Min(1.0, (z - zk) / chine) : wl);
         }
-        double kw = planing ? 0.0 : Math.Min(KEEL_K * Hull.B, KEEL_SHARE * wl * c);
+        double kw = planing ? 0.0 : Math.Min(KeelK * Hull.B, KeelShare * wl * c);
         if (wl - kw < 1e-6)
             return Math.Min(deck, wl);
-        double cCurve = Math.Max(0.2, Math.Min(C_MAX, (wl * c - kw) / (wl - kw)));
+        double cCurve = Math.Max(0.2, Math.Min(CMax, (wl * c - kw) / (wl - kw)));
         var (p, q) = SectionExponents(Math.Round(cCurve, 3), Math.Round(planing ? 0.0 : Character(x, c), 3));
         return Math.Min(deck, kw + (wl - kw) * Math.Pow(Math.Max(0.0, 1.0 - Math.Pow((T - z) / d, q)), 1.0 / p));
     }
@@ -531,19 +531,19 @@ public sealed class HullForm
     {
         double L = Hull.L;
         double top = Math.Min(T, D);
-        var out_ = new List<(double, List<double>, List<double>)>();
+        var result = new List<(double, List<double>, List<double>)>();
         for (int k = 0; k <= stations; k++)
         {
             double x = -L / 2 + L * (1 - Math.Cos(Math.PI * k / stations)) / 2;
             double zk = Math.Min(Keel(x), top);
             var set = new HashSet<double>();
-            foreach (var f in HEIGHTS)
+            foreach (var f in Heights)
                 set.Add(zk + (top - zk) * f);
             set.Add(D);
             var zs = set.ToList();
             zs.Sort();
-            out_.Add((x, zs, zs.Select(z => HalfWidth(x, z)).ToList()));
+            result.Add((x, zs, zs.Select(z => HalfWidth(x, z)).ToList()));
         }
-        return out_;
+        return result;
     }
 }

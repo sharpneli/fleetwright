@@ -9,8 +9,8 @@ public sealed record AviationSpec(string FlightDeck, double Aircraft, double Air
 /// <summary>Aircraft carriers, from seaplane carriers to angled-deck fleet carriers.</summary>
 public sealed class CarrierStyle : Style
 {
-    const double HANGAR_H = 5.6, GALLERY_H = 2.0, SPOT_K = 20.0, ANGLE_DEG = 9.0;
-    const double ORDNANCE_K = 0.6, AVGAS_K = 1.2, AVGAS_T_PER_M3 = 0.5;
+    const double HangarH = 5.6, GalleryH = 2.0, SpotK = 20.0, AngleDeg = 9.0;
+    const double OrdnanceK = 0.6, AvgasK = 1.2, AvgasTPerM3 = 0.5;
     static readonly string[] FlightDecks = ["axial", "angled", "none"];
 
     /// <summary>The elevators, deck-edge elevators, catapults and cranes a flight deck kind comes with.</summary>
@@ -38,12 +38,12 @@ public sealed class CarrierStyle : Style
         return av.Hangar == "closed" && av.FlightDeck != "none";
     }
 
-    static double SpotM2(AviationSpec av) => SPOT_K * Math.Pow(av.AircraftT, 2.0 / 3);
+    static double SpotM2(AviationSpec av) => SpotK * Math.Pow(av.AircraftT, 2.0 / 3);
 
     /// <summary>0, 1/2, 1/4, 3/4, 1/8, ...: positions that spread evenly however many get used.</summary>
     public static List<double> Vdc(int n)
     {
-        var out_ = new List<double>();
+        var result = new List<double>();
         for (int i = 0; i < n; i++)
         {
             int k = i;
@@ -55,9 +55,9 @@ public sealed class CarrierStyle : Style
                 k >>= 1;
                 d *= 2;
             }
-            out_.Add(v);
+            result.Add(v);
         }
-        return out_;
+        return result;
     }
 
     /// <summary>Flight deck and hangar geometry, from the design alone (so navarch and the layout agree).</summary>
@@ -81,14 +81,14 @@ public sealed class CarrierStyle : Style
             return new DeckPlanData(kind, 0.0, (hx0n, hx1n, hhwn), hangarAreaN, 0.0,
                 (long)((hangarAreaN * 0.85 + parkArea * 0.5) / SpotM2(av)), Park: (deckX0, hx0n));
         }
-        double fdH = HANGAR_H * av.HangarDecks + GALLERY_H;
+        double fdH = HangarH * av.HangarDecks + GalleryH;
         double x0 = -L / 2 - 0.02 * L, x1 = L / 2 - 0.03 * L;
         double tap = 0.06 * L, hw = 0.6 * B;
         var port = new List<Pt> { new(x0, -0.9 * hw), new(x0 + 3, -hw) };
         Land? land = null;
         if (kind == "angled")
         {
-            double th = double.DegreesToRadians(ANGLE_DEG);
+            double th = double.DegreesToRadians(AngleDeg);
             double c = Math.Cos(th), s = Math.Sin(th);
             double wl = 1.4 * hw;
             var p0 = new Pt(x0, 0.1 * hw);
@@ -254,7 +254,7 @@ public sealed class CarrierStyle : Style
         var av = Aviation(design);
         double m = av.AircraftT;
         var (hx0, hx1, _) = dp.Hangar;
-        var out_ = new List<Weight>();
+        var result = new List<Weight>();
         if (dp.Kind != "none")
         {
             double fdx = (dp.X0 + dp.X1) / 2;
@@ -262,27 +262,27 @@ public sealed class CarrierStyle : Style
             if (Closed(design))
                 fdT = Math.Max(0.0, fdT - HullWeight.DeckArea(L, B, design.BlockCoefficient)
                     * HullWeight.DeckTPerM2(L, HullWeight.ConstructionOf(design)));
-            out_.Add(new Weight("Flight deck", "hull", fdT, fdx, ZRel.Deck(dp.FdH)));
+            result.Add(new Weight("Flight deck", "hull", fdT, fdx, ZRel.Deck(dp.FdH)));
             double mm = design.Armour?.FlightDeckMm ?? 0;
             if (mm != 0)
-                out_.Add(new Weight("Flight deck armour", "armour", dp.FdArea * 0.85 * mm / 1000 * Weight.STEEL, fdx, ZRel.Deck(dp.FdH)));
-            out_.Add(new Weight("Hangar structure", "hull", dp.HangarArea * av.HangarDecks * tun.HangarTPerM2, (hx0 + hx1) / 2,
+                result.Add(new Weight("Flight deck armour", "armour", dp.FdArea * 0.85 * mm / 1000 * Weight.Steel, fdx, ZRel.Deck(dp.FdH)));
+            result.Add(new Weight("Hangar structure", "hull", dp.HangarArea * av.HangarDecks * tun.HangarTPerM2, (hx0 + hx1) / 2,
                 ZRel.Deck(dp.FdH / 2)));
             double nEl = av.Elevators + av.DeckEdgeElevators;
             if (nEl != 0)
-                out_.Add(new Weight("Elevators", "aviation", nEl * (8 + 3 * m), (hx0 + hx1) / 2, ZRel.Deck(dp.FdH - 1)));
-            out_.Add(new Weight("Arresting gear", "aviation", 30 + 2 * m, dp.X0 + 0.15 * (dp.X1 - dp.X0), ZRel.Deck(dp.FdH - 1)));
+                result.Add(new Weight("Elevators", "aviation", nEl * (8 + 3 * m), (hx0 + hx1) / 2, ZRel.Deck(dp.FdH - 1)));
+            result.Add(new Weight("Arresting gear", "aviation", 30 + 2 * m, dp.X0 + 0.15 * (dp.X1 - dp.X0), ZRel.Deck(dp.FdH - 1)));
             if (av.Catapults != 0)
-                out_.Add(new Weight("Catapults", "aviation", av.Catapults * (15 + 3 * m), 0.3 * L, ZRel.Deck(dp.FdH - 1)));
+                result.Add(new Weight("Catapults", "aviation", av.Catapults * (15 + 3 * m), 0.3 * L, ZRel.Deck(dp.FdH - 1)));
         }
         else
         {
             if (av.Cranes != 0)
-                out_.Add(new Weight("Aircraft cranes", "aviation", av.Cranes * (15 + 2 * m), hx0, ZRel.Deck(4)));
+                result.Add(new Weight("Aircraft cranes", "aviation", av.Cranes * (15 + 2 * m), hx0, ZRel.Deck(4)));
             if (av.Catapults != 0)
-                out_.Add(new Weight("Catapults", "aviation", av.Catapults * (10 + 2 * m), (dp.Park!.Value.A + hx0) / 2, ZRel.Deck(1)));
+                result.Add(new Weight("Catapults", "aviation", av.Catapults * (10 + 2 * m), (dp.Park!.Value.A + hx0) / 2, ZRel.Deck(1)));
         }
-        return out_;
+        return result;
     }
 
     public override (List<Weight> Std, List<Weight> Full) PayloadWeights(Design design, double L, double D, Geo geo, Tuning tun,
@@ -296,10 +296,10 @@ public sealed class CarrierStyle : Style
         var (hx0, hx1, _) = dp.Hangar;
         return ([
             new Weight("Air group", "aviation", n * m, (hx0 + hx1) / 2, ZRel.Deck(Math.Max(dp.FdH - 3, 2))),
-            new Weight("Aviation ordnance", "aviation", ORDNANCE_K * n * m, geo.Magazine is { } mg ? mg.X : 0.2 * L,
+            new Weight("Aviation ordnance", "aviation", OrdnanceK * n * m, geo.Magazine is { } mg ? mg.X : 0.2 * L,
                 geo.Magazine is { } mg2 ? ZRel.Deck(mg2.Z) : ZRel.Frac(0.25)),
         ], [
-            new Weight("Aviation fuel", "fuel", AVGAS_K * n * m, geo.Avgas is { } ag ? ag.X : -0.25 * L,
+            new Weight("Aviation fuel", "fuel", AvgasK * n * m, geo.Avgas is { } ag ? ag.X : -0.25 * L,
                 geo.Avgas is { } ag2 ? ZRel.Deck(ag2.Z) : ZRel.Frac(0.15)),
         ]);
     }
@@ -388,9 +388,9 @@ public sealed class CarrierStyle : Style
         var (hx0, hx1, hhw) = hangar;
         double airT = av.Aircraft * av.AircraftT;
         var st = Ordnance.Stow(lay, mounts, [
-            new Zone(m1, cit.Item2, innerHw, [new ZoneRoom("Aviation magazines", Tonnes: ORDNANCE_K * airT),
+            new Zone(m1, cit.Item2, innerHw, [new ZoneRoom("Aviation magazines", Tonnes: OrdnanceK * airT),
                 new ZoneRoom("Gun magazines", Ordnance.Guns(mounts))]),
-            new Zone(cit.Item1, m0, innerHw, [new ZoneRoom("Aviation fuel", Tonnes: AVGAS_K * airT, Kind: "fuel_tank", TPerM3: AVGAS_T_PER_M3)]),
+            new Zone(cit.Item1, m0, innerHw, [new ZoneRoom("Aviation fuel", Tonnes: AvgasK * airT, Kind: "fuel_tank", TPerM3: AvgasTPerM3)]),
         ]);
         if (st.TryGetValue("Aviation magazines", out var am))
             lay.Geo.Magazine = ((am.X0 + am.X1) / 2, (am.Base + am.Top) / 2);
@@ -399,7 +399,7 @@ public sealed class CarrierStyle : Style
         lay.Compartments.Add(new Compartment
         {
             Id = "Hangar", Kind = "hangar", X0 = hx0, X1 = hx1, HalfWidth = hhw, Base = 0.0,
-            Top = av.FlightDeck == "none" ? 2 * Layout.LEVEL_H : HANGAR_H * av.HangarDecks,
+            Top = av.FlightDeck == "none" ? 2 * Layout.LevelH : HangarH * av.HangarDecks,
         });
         Layout.AddSteering(lay);
     }
@@ -420,7 +420,7 @@ public sealed class CarrierStyle : Style
         Machinery(lay, design, res, hull, mc);
         double li = Layout.Clamp(0.11 * L, 8, 36);
         double wi = Layout.Clamp(0.3 * B, 4, 10);
-        var (nfun, fw, fl) = Layout.PlanFunnels(lay, design, res, B, fdH + Layout.LEVEL_H * 4 + 3.0);
+        var (nfun, fw, fl) = Layout.PlanFunnels(lay, design, res, B, fdH + Layout.LevelH * 4 + 3.0);
         fw = Math.Min(fw, wi - 1.0);
         fl = Math.Min(fl, 0.45 * li / nfun);
         wi = Math.Max(wi, fw + 1.2);
@@ -441,7 +441,7 @@ public sealed class CarrierStyle : Style
                 Math.Max(fwd0 + (0.4 + f) * (ix1 - fwd0) + 3.0, ix1 - (0.25 + f) * (ix1 - fwd0)),
                 Math.Max(3.0, 0.45 * wi * Math.Pow(0.9, k - 4)), k, 0.2 * wi, 0.2 * wi, y: yi, z0: fdH, role: "island");
         }
-        double funTop = fdH + Layout.LEVEL_H * Math.Min(topLevel, 4) + 3.0;
+        double funTop = fdH + Layout.LevelH * Math.Min(topLevel, 4) + 3.0;
         for (int i = 0; i < nfun; i++)
         {
             double fx = ix0 + 1.0 + (i + 0.5) * (fl + 1.0);
@@ -452,7 +452,7 @@ public sealed class CarrierStyle : Style
         var masts = new List<Mast>
         {
             new() { X = fwd0 - 0.5, Y = yi, Yard = Math.Min(0.6 * wi, 6), Tripod = false,
-                Top = Math.Max(funTop + 5.0, fdH + Layout.LEVEL_H * topLevel + FireControl.HOOD_H + 2.0) },
+                Top = Math.Max(funTop + 5.0, fdH + Layout.LevelH * topLevel + FireControl.HoodH + 2.0) },
         };
         Layout.MastWeight(lay, masts[0], masts[0].Top!.Value, "Mast");
 
@@ -501,13 +501,13 @@ public sealed class CarrierStyle : Style
 
         List<Slot> SponsonSlots(double reach, double bse)
         {
-            var out_ = new List<Slot>();
+            var result = new List<Slot>();
             foreach (var x in xs)
             {
                 var (pe, se) = Edges(dp, x);
-                out_.Add(new Slot(x, se + reach + 0.3, bse, pe - reach - 0.3));
+                result.Add(new Slot(x, se + reach + 0.3, bse, pe - reach - 0.3));
             }
-            return out_;
+            return result;
         }
 
         Armament.PlaceBatteries(lay, mounts, turretTypes, design,
@@ -524,7 +524,7 @@ public sealed class CarrierStyle : Style
         var aaOut = new List<AaMount>();
         foreach (var (kind, count) in new[] { ("quad40", design.Aa?.Heavy ?? 0), ("single20", design.Aa?.Light ?? 0) })
         {
-            double rr = Geometry.AA_CFG[kind].R;
+            double rr = Geometry.AaCfg[kind].R;
             var island = Layout.RoofSpots(blocks, 2 * rr, 2 * rr).OrderBy(s => (s.Z0, Math.Abs(s.X - xi))).ToList()
                 .Where(s => !s.Pair).Select(s => new Slot(s.X, s.Y, s.Z0, Lone: true)).ToList();
             Armament.PlaceAa(lay, aaOut, kind, count, island.Concat(SponsonSlots(rr, fdH - 2.4)).ToList(),
@@ -533,7 +533,7 @@ public sealed class CarrierStyle : Style
         var sponsons = new List<SponsonDrawing>();
         var below = mounts.Where(m => m.Base < fdH - 0.5)
             .Select(m => (m.Id, m.X, m.Y, m.Base, Reach: m.Kind != "torpedo" ? Armament.BodyReach(m.T) : m.T.BarrelLen / 2 + 0.3))
-            .Concat(aaOut.Select(a => (a.Id, a.X, a.Y, a.Base, Reach: Geometry.AA_CFG[a.Type].R)));
+            .Concat(aaOut.Select(a => (a.Id, a.X, a.Y, a.Base, Reach: Geometry.AaCfg[a.Type].R)));
         foreach (var (id, x, y, bse, reach) in below)
         {
             var (pe, se) = Edges(dp, x);
@@ -570,7 +570,7 @@ public sealed class CarrierStyle : Style
         Layout.AddBlock(lay, blocks, "Hangar", hx0, hx1, 2 * hhw, 1, 1.0, 0.5, role: "hangar");
         Layout.AddBlock(lay, blocks, "Hangar roof", hx0, hx1, 2 * hhw, 2, 1.0, 0.5, role: "hangar");
         string[] hangarIds = ["Hangar", "Hangar roof"];
-        double roof = 2 * Layout.LEVEL_H;
+        double roof = 2 * Layout.LevelH;
 
         double bx1 = 0.24 * L + shift;
         double lb = Layout.Clamp(0.07 * L, 7, 16);
@@ -586,7 +586,7 @@ public sealed class CarrierStyle : Style
             Layout.AddBlock(lay, blocks, $"Tower {k}", bx0 + (0.45 + f) * lb, Math.Max(bx0 + (0.45 + f) * lb + 3.0, bx1 - (0.15 + f) * lb), tw, k,
                 0.5 * tw, 0.5 * tw, role: "bridge");
         }
-        double funTop = Layout.LEVEL_H * Math.Min(nTower, 4) + 3.0;
+        double funTop = Layout.LevelH * Math.Min(nTower, 4) + 3.0;
         double mc = (hx1 + bx0) / 2;
         Machinery(lay, design, res, hull, mc);
         var (nfun, fw, fl) = Layout.PlanFunnels(lay, design, res, B, funTop);
@@ -602,8 +602,8 @@ public sealed class CarrierStyle : Style
             Layout.AddFunnelWeights(lay, funnels[^1], funTop, mc, res.Depth);
         }
         var masts = new List<Mast> { new() { X = bx0 - 1.0, Yard = Math.Min(0.3 * B, 8), Tripod = false } };
-        if (Layout.LEVEL_H * nTower + FireControl.HOOD_H + 2.0 > funTop + 6.0)
-            masts[0].Top = Layout.LEVEL_H * nTower + FireControl.HOOD_H + 2.0;
+        if (Layout.LevelH * nTower + FireControl.HoodH + 2.0 > funTop + 6.0)
+            masts[0].Top = Layout.LevelH * nTower + FireControl.HoodH + 2.0;
         Layout.MastWeight(lay, masts[0], masts[0].Top ?? funTop + 6.0, "Mast");
 
         double park0 = dp.Park!.Value.A;
@@ -642,7 +642,7 @@ public sealed class CarrierStyle : Style
         var aaOut = new List<AaMount>();
         foreach (var (kind, count) in new[] { ("quad40", design.Aa?.Heavy ?? 0), ("single20", design.Aa?.Light ?? 0) })
         {
-            double rr = Geometry.AA_CFG[kind].R;
+            double rr = Geometry.AaCfg[kind].R;
             var cands = Vdc(24).Select(v => new Slot(hx0 + v * (hx1 - hx0), hhw - rr - 0.3, roof)).ToList();
             cands.AddRange(xs.Select(x => new Slot(x, hull.HalfWidth(x) - rr - 0.5, 0.0)));
             Armament.PlaceAa(lay, aaOut, kind, count, cands, ignore: _ => hangarIds);
@@ -659,7 +659,7 @@ public sealed class CarrierStyle : Style
                 foreach (var (s, fp) in new[] { (1, fps[0]), (-1, fps[1]) })
                 {
                     boats.Add(new Boat(x, s * y, bl_, 0.3 * bl_));
-                    lay.Occupy(fp, Layout.LEVEL_H, Layout.LEVEL_H + 1.5, $"Boat{boats.Count}");
+                    lay.Occupy(fp, Layout.LevelH, Layout.LevelH + 1.5, $"Boat{boats.Count}");
                 }
                 break;
             }

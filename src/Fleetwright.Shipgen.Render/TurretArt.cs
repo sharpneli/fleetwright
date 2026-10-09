@@ -3,7 +3,7 @@ namespace Fleetwright.Shipgen.Render;
 /// <summary>Turret sprites (shipgen.build_turret): one per turret type, pivot at the image centre, barrels along +x.</summary>
 public static class TurretArt
 {
-    static readonly Dictionary<string, double> BARREL_ROOT = new(StringComparer.Ordinal)
+    static readonly Dictionary<string, double> BarrelRoot = new(StringComparer.Ordinal)
     {
         ["bb"] = 0.5, ["dp"] = 0.3, ["open"] = -0.3, ["casemate"] = 0.0,
     };
@@ -112,7 +112,7 @@ public static class TurretArt
         {
             var (pts, parts, xf, hf) = LookTurretBody(look, r);
             var body = Painter.Poly(pts);
-            Barrels(BARREL_ROOT["bb"] * r);
+            Barrels(BarrelRoot["bb"] * r);
             for (int i = 0; i < n; i++)   // gun ports
                 s.Add(P.Ln(new RectNode(xf - 0.1 * r, Gy(i) - bw * 0.85, 0.2 * r, bw * 1.7, bw * 0.3).Fill(Shade(bodyCol, 0.55)), 0.6));
             s.Add(P.Ln(new PathNode(body).Fill(bodyCol), 1.2));
@@ -202,7 +202,7 @@ public static class TurretArt
         else if (shape == "bb")
         {
             var body = Painter.Poly(G.Body);
-            Barrels(BARREL_ROOT["bb"] * r);
+            Barrels(BarrelRoot["bb"] * r);
             for (int i = 0; i < n; i++)   // blast bags / gun ports
                 s.Add(P.Ln(new RectNode(0.75 * r, Gy(i) - bw * 0.85, 0.2 * r, bw * 1.7, bw * 0.3).Fill(Shade(bodyCol, 0.55)), 0.6));
             s.Add(P.Ln(new PathNode(body).Fill(bodyCol), 1.2));
@@ -219,7 +219,7 @@ public static class TurretArt
         else if (shape == "dp")
         {
             var body = Painter.Poly(G.Body);
-            Barrels(BARREL_ROOT["dp"] * r);
+            Barrels(BarrelRoot["dp"] * r);
             s.Add(P.Ln(new PathNode(body).Fill(bodyCol), 1.1));
             s.Add(new PathNode(body).Fill(Shade(bodyCol, 1.12)).Tr(new Translate(-0.05 * r, 0), new Scale(0.78)));
             s.Add(P.Ln(new RectNode(-0.55 * r, -0.18 * r, 0.3 * r, 0.36 * r, 0.06 * r).Fill(Shade(bodyCol, 0.8)), 0.5));
@@ -227,15 +227,15 @@ public static class TurretArt
         else if (shape == "open")
         {
             s.Add(P.Ln(new CircleNode(0, 0, r).Fill(P.C("tub"))));
-            Barrels(BARREL_ROOT["open"] * r);
+            Barrels(BarrelRoot["open"] * r);
             s.Add(new PathNode(new PathData().M(0.25 * r, -0.85 * r).A(0.9 * r, 0.9 * r, 0, false, true, 0.25 * r, 0.85 * r))
                 .Fill("none").Stroke(bodyCol, 0.28 * r).Cap("round"));
             s.Add(P.Ln(new RectNode(-0.5 * r, -0.25 * r, 0.6 * r, 0.5 * r).Fill(bodyCol), 0.6));
         }
         else if (shape == "casemate")   // the port shield on the hull side and the barrels run out through it
         {
-            double rc = Geometry.CASEMATE_SHIELD * r;
-            Barrels(BARREL_ROOT["casemate"] * r);
+            double rc = Geometry.CasemateShield * r;
+            Barrels(BarrelRoot["casemate"] * r);
             s.Add(P.Ln(new CircleNode(0, 0, rc).Fill(P.C("hull")), 1.1));
             s.Add(new CircleNode(0, 0, rc * 0.72).Fill(Shade(P.C("hull"), 1.25)));
             s.Add(new RectNode(0.2 * rc, -(n - 1) / 2.0 * sp - bw * 0.8, 0.8 * rc, (n - 1) * sp + bw * 1.6).Fill(Shade(P.C("hull"), 0.45)));

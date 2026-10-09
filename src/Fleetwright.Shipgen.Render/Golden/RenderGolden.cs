@@ -29,13 +29,13 @@ public static class RenderGolden
             return [];
         var dir = Path.Combine(root, "golden", "svg", c.Name);
         var sp = Draw(c);
-        var out_ = new List<string>();
+        var result = new List<string>();
         void One(string rel, Scene sc)
         {
-            if (out_.Count >= max)
+            if (result.Count >= max)
                 return;
-            foreach (var d in SvgDiff.Compare(JsonFile.ReadText(Path.Combine(dir, rel)), SvgWriter.Write(sc), max - out_.Count))
-                out_.Add($"{rel}: {d}");
+            foreach (var d in SvgDiff.Compare(JsonFile.ReadText(Path.Combine(dir, rel)), SvgWriter.Write(sc), max - result.Count))
+                result.Add($"{rel}: {d}");
         }
         One("hull.svg.gz", sp.Hull);
         One("height.svg.gz", sp.Height);
@@ -43,13 +43,13 @@ public static class RenderGolden
             .Order(StringComparer.Ordinal).ToList();
         var ours = sp.Turrets.Keys.Order(StringComparer.Ordinal).ToList();
         if (!golden.SequenceEqual(ours))
-            out_.Add($"turret types {string.Join(" ", golden)} vs ours {string.Join(" ", ours)}");
+            result.Add($"turret types {string.Join(" ", golden)} vs ours {string.Join(" ", ours)}");
         foreach (var t in golden.Intersect(ours))
             One($"turrets/{t}.svg.gz", sp.Turrets[t]);
         double gMax = Math.Round((double)st["max_height_m"]!, 2), oMax = sp.Meta.Shadow.MaxHeightM;
         if (gMax != oMax)
-            out_.Add($"max_height_m {gMax} vs ours {oMax}");
-        return out_;
+            result.Add($"max_height_m {gMax} vs ours {oMax}");
+        return result;
     }
 
     static void WriteGz(string path, string text)
@@ -112,12 +112,12 @@ public static class RenderGolden
         double gh = (double)gs["max_height_m"]!, oh = (double)os["max_height_m"]!;
         gs.Remove("max_height_m");
         os.Remove("max_height_m");
-        var out_ = GoldenDiff.Compare(g, o, max).Select(d => d.ToString()).ToList();
+        var result = GoldenDiff.Compare(g, o, max).Select(d => d.ToString()).ToList();
         double lo = Math.Round(ship.Render.Columns.Max(col => col.Top), 2);
         const double tallest = 3.2;   // the boiler cowl
         foreach (var (who, h) in new[] { ("golden", gh), ("ours", oh) })
             if (h < lo - 0.005 || h > lo + tallest + 0.005)
-                out_.Add($"shadow.max_height_m: {who} {h} outside [{lo}, {lo + tallest}]");
-        return out_;
+                result.Add($"shadow.max_height_m: {who} {h} outside [{lo}, {lo + tallest}]");
+        return result;
     }
 }

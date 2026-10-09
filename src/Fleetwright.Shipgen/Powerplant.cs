@@ -41,28 +41,28 @@ public sealed record FunnelPlan(List<long> Counts, double Width, double Length, 
 /// power in kW inside this class (the rest uses shp), weights in tonnes, metres.</summary>
 public static class Powerplant
 {
-    public const double KW_PER_SHP = 0.7457;
-    const double CASING = 3.0;
-    const int MAX_FUNNELS = 60;
-    static readonly Dictionary<string, string[]> ARRANGEMENTS = new(StringComparer.Ordinal)
+    public const double KwPerShp = 0.7457;
+    const double CasingK = 3.0;
+    const int MaxFunnels = 60;
+    static readonly Dictionary<string, string[]> Arrangements = new(StringComparer.Ordinal)
     {
         ["grouped"] = ["boiler", "engine"],
         ["unit"] = ["boiler", "engine", "boiler", "engine"],
     };
-    const int MAX_GROUPS = 8;
-    const double GROUP_K = 0.05;
-    const double ROOM_GANGWAY = 2.0;
-    public const double STEEL_FRAME = 0.92;
-    const double DOUBLE_BOTTOM_FRAC = 0.07;
-    const double DOUBLE_BOTTOM_MIN = 1.0;
+    const int MaxGroups = 8;
+    const double GroupK = 0.05;
+    const double RoomGangway = 2.0;
+    public const double SteelFrame = 0.92;
+    const double DoubleBottomFrac = 0.07;
+    const double DoubleBottomMin = 1.0;
 
-    public static readonly IReadOnlyDictionary<string, (double Lhv, double Stowage)> FUELS =
+    public static readonly IReadOnlyDictionary<string, (double Lhv, double Stowage)> Fuels =
         new Dictionary<string, (double, double)>(StringComparer.Ordinal)
         {
             ["coal"] = (30.0, 1.30), ["oil"] = (41.0, 1.07), ["diesel"] = (42.8, 1.19), ["petrol"] = (44.0, 1.37),
         };
 
-    public static readonly IReadOnlyDictionary<string, (double[] Pts, double Over)> CURVES =
+    public static readonly IReadOnlyDictionary<string, (double[] Pts, double Over)> Curves =
         new Dictionary<string, (double[], double)>(StringComparer.Ordinal)
         {
             ["REC"] = ([1.45, 1.20, 1.07, 1.02, 1.00], 0.5),
@@ -72,12 +72,12 @@ public static class Powerplant
             ["GTS"] = ([2.80, 1.85, 1.35, 1.12, 1.00], 0.2),
             ["ICR"] = ([1.35, 1.12, 1.03, 1.00, 1.00], 0.2),
         };
-    public static readonly double[] CURVE_LOADS = [0.10, 0.25, 0.50, 0.75, 1.00];
-    static readonly string[] STEAM_CURVES = ["REC", "DT", "GTB"];
+    public static readonly double[] CurveLoads = [0.10, 0.25, 0.50, 0.75, 1.00];
+    static readonly string[] SteamCurves = ["REC", "DT", "GTB"];
 
-    static readonly string[] DRAUGHT_SYSTEMS = ["natural", "forced_boost", "forced", "exhaust"];
-    public const double AMBIENT_K = 288.0;
-    static readonly Dictionary<string, double> SMOKE_K = new(StringComparer.Ordinal)
+    static readonly string[] DraughtSystems = ["natural", "forced_boost", "forced", "exhaust"];
+    public const double AmbientK = 288.0;
+    static readonly Dictionary<string, double> SmokeK = new(StringComparer.Ordinal)
         { ["coal_natural"] = 4.0, ["coal"] = 3.0, ["oil"] = 1.5, ["oil_heated"] = 1.0, ["diesel"] = 0.5, ["petrol"] = 0.5 };
 
     /// <summary>A mature-ish 1940 high-pressure geared turbine plant: the default tech.</summary>
@@ -120,13 +120,13 @@ public static class Powerplant
         var p = Spec(design, defaultTech);
         var t = p.Tech;
         var errs = new List<string>();
-        if (!FUELS.ContainsKey(t.Fuel))
-            errs.Add($"machinery.tech.fuel = {Style.Quote(t.Fuel)}: use {string.Join(", ", FUELS.Keys)}");
-        if (!CURVES.ContainsKey(t.PartLoad))
-            errs.Add($"machinery.tech.part_load = {Style.Quote(t.PartLoad)}: use {string.Join(", ", CURVES.Keys)}");
+        if (!Fuels.ContainsKey(t.Fuel))
+            errs.Add($"machinery.tech.fuel = {Style.Quote(t.Fuel)}: use {string.Join(", ", Fuels.Keys)}");
+        if (!Curves.ContainsKey(t.PartLoad))
+            errs.Add($"machinery.tech.part_load = {Style.Quote(t.PartLoad)}: use {string.Join(", ", Curves.Keys)}");
         var dr = t.Draught;
-        if (!DRAUGHT_SYSTEMS.Contains(dr.System))
-            errs.Add($"machinery.tech.draught.system = {Style.Quote(dr.System)}: use {string.Join(", ", DRAUGHT_SYSTEMS)}");
+        if (!DraughtSystems.Contains(dr.System))
+            errs.Add($"machinery.tech.draught.system = {Style.Quote(dr.System)}: use {string.Join(", ", DraughtSystems)}");
         foreach (var (k, v) in new[] { ("weight_kg_per_kw", t.WeightKgPerKw), ("sfc_g_per_kwh", t.SfcGPerKwh),
                      ("density_t_per_m3", t.DensityTPerM3), ("unit_max_mw", t.UnitMaxMw), ("crew_k", t.CrewK) })
             if (!(v > 0))
@@ -137,7 +137,7 @@ public static class Powerplant
         foreach (var (k, v, lo, why) in new[]
                  {
                      ("velocity_m_s", dr.VelocityMS, 0.0, "the funnel gas must move"),
-                     ("gas_temp_k", dr.GasTempK, AMBIENT_K, $"funnel gas no hotter than the air ({AMBIENT_K:F0} K) draws no air"),
+                     ("gas_temp_k", dr.GasTempK, AmbientK, $"funnel gas no hotter than the air ({AmbientK:F0} K) draws no air"),
                      ("reach_m", dr.ReachM, -1e-9, "an uptake can't lead a negative distance"),
                      ("air_fuel_ratio", dr.AirFuelRatio, -1e-9, "the boilers can't burn a negative amount of air"),
                  })
@@ -154,12 +154,12 @@ public static class Powerplant
         var a = p.Arrangement;
         if (a.Rooms is { } rooms)
         {
-            if (!(1 <= rooms.Count && rooms.Count <= MAX_GROUPS) || rooms.Any(k => k is not ("boiler" or "engine")))
-                errs.Add($"machinery.arrangement = {a}: a list of 1..{MAX_GROUPS} \"boiler\" and \"engine\" groups, " +
+            if (!(1 <= rooms.Count && rooms.Count <= MaxGroups) || rooms.Any(k => k is not ("boiler" or "engine")))
+                errs.Add($"machinery.arrangement = {a}: a list of 1..{MaxGroups} \"boiler\" and \"engine\" groups, " +
                          "forward to aft");
         }
-        else if (!ARRANGEMENTS.ContainsKey(a.Name!))
-            errs.Add($"machinery.arrangement = {Style.Quote(a.Name)}: use {string.Join(", ", ARRANGEMENTS.Keys)} or a list of rooms");
+        else if (!Arrangements.ContainsKey(a.Name!))
+            errs.Add($"machinery.arrangement = {Style.Quote(a.Name)}: use {string.Join(", ", Arrangements.Keys)} or a list of rooms");
         if (p.Bunkers is not ("wing" or "ends"))
             errs.Add($"machinery.bunkers = {Style.Quote(p.Bunkers)}: use wing or ends");
         if (p.Shafts is int s && !(1 <= s && s <= 8))
@@ -174,7 +174,7 @@ public static class Powerplant
     {
         var t = p.Tech;
         double s = p.Stress;
-        double kw = Math.Max(shp, 1.0) * KW_PER_SHP;
+        double kw = Math.Max(shp, 1.0) * KwPerShp;
         double mw = kw / 1000.0;
         long shafts = p.Shafts is int n && n != 0 ? n : Math.Max(1L, Math.Min(4L, (long)Math.Ceiling(mw / t.UnitMaxMw)));
         long perShaft = Math.Max(p.UnitsPerShaft, (long)Math.Ceiling(mw / shafts / t.UnitMaxMw));
@@ -188,14 +188,14 @@ public static class Powerplant
 
     public static double CurveMult(string name, double f)
     {
-        var (pts, over) = CURVES[name];
+        var (pts, over) = Curves[name];
         if (f >= 1.0)
             return pts[^1] + over * (f - 1.0) / 0.1;
-        if (f <= CURVE_LOADS[0])
-            return pts[0] * Math.Pow(CURVE_LOADS[0] / Math.Max(f, 0.02), 0.25);
+        if (f <= CurveLoads[0])
+            return pts[0] * Math.Pow(CurveLoads[0] / Math.Max(f, 0.02), 0.25);
         for (int i = 0; i < pts.Length - 1; i++)
         {
-            double f0 = CURVE_LOADS[i], m0 = pts[i], f1 = CURVE_LOADS[i + 1], m1 = pts[i + 1];
+            double f0 = CurveLoads[i], m0 = pts[i], f1 = CurveLoads[i + 1], m1 = pts[i + 1];
             if (f <= f1)
                 return m0 + (m1 - m0) * (f - f0) / (f1 - f0);
         }
@@ -206,10 +206,10 @@ public static class Powerplant
     public static double FuelRate(PlantSpec p, double shpRated, double shpLoad)
     {
         var r = Rated(p, shpRated);
-        double kw = shpLoad * KW_PER_SHP;
+        double kw = shpLoad * KwPerShp;
         string curve = p.Tech.PartLoad;
         double f;
-        if (STEAM_CURVES.Contains(curve))
+        if (SteamCurves.Contains(curve))
             f = kw / r.Kw;
         else
         {
@@ -220,7 +220,7 @@ public static class Powerplant
         return kw * r.Sfc * CurveMult(curve, f) / 1000.0;
     }
 
-    public static double DoubleBottom(double depth) => Math.Max(DOUBLE_BOTTOM_MIN, DOUBLE_BOTTOM_FRAC * depth);
+    public static double DoubleBottom(double depth) => Math.Max(DoubleBottomMin, DoubleBottomFrac * depth);
 
     /// <summary>The machinery space for an inside width w_avail and a height h_avail.</summary>
     public static MachinerySpace Space(PlantSpec p, double shp, double wAvail, double hAvail)
@@ -242,8 +242,8 @@ public static class Powerplant
         double hBoil = Math.Max(1.0, Math.Max(hAvail, hU));
         var order = Groups(p).Order;
         int nB = order.Count(x => x == "boiler"), nE = order.Count(x => x == "engine");
-        double groupK = 1 + GROUP_K * Math.Max(0, order.Count - 2);
-        double roomMin = lU + ROOM_GANGWAY;
+        double groupK = 1 + GroupK * Math.Max(0, order.Count - 2);
+        double roomMin = lU + RoomGangway;
         double boilers = bf * volume / Math.Max(wEff, 0.5) / hBoil * groupK;
         double engines = Math.Max((1 - bf) * volume / Math.Max(wEff, 0.5) / hEff * groupK, roomMin);
         double bEach = nB != 0 ? Math.Max(boilers / nB, nB > 1 ? roomMin : 0.0) : 0.0;
@@ -258,7 +258,7 @@ public static class Powerplant
         double shipL, double shipB, double cb, double depth, double draught = 0.0, double tds = 0.0)
     {
         string fuel = p.Tech.Fuel;
-        double stow = FUELS[fuel].Stowage;
+        double stow = Fuels[fuel].Stowage;
         double left = fuelT, wing = 0.0, wEnd;
         if (fuel == "coal")
         {
@@ -284,7 +284,7 @@ public static class Powerplant
     public static (List<string> Order, List<string> Warns) Groups(PlantSpec p)
     {
         var a = p.Arrangement;
-        var order = a.Name is string s ? ARRANGEMENTS[s].ToList() : a.Rooms!.ToList();
+        var order = a.Name is string s ? Arrangements[s].ToList() : a.Rooms!.ToList();
         var warns = new List<string>();
         if (!p.IsSteam && order.Contains("boiler"))
         {
@@ -310,22 +310,22 @@ public static class Powerplant
     {
         double half = endLen / 2;
         var groups = sp.Order.Zip(sp.Lengths).ToList();
-        var out_ = new List<(string, double)>();
+        var result = new List<(string, double)>();
         if (half > 0.05)
-            out_.Add(("bunker", half));
+            result.Add(("bunker", half));
         if (sp.Boilers <= 0.05)
         {
-            out_.AddRange(groups.Where(g => g.First == "engine"));
+            result.AddRange(groups.Where(g => g.First == "engine"));
             if (half > 0.05)
-                out_.Add(("bunker", half));
-            return out_;
+                result.Add(("bunker", half));
+            return result;
         }
         int mid = groups.Count / 2;
-        out_.AddRange(groups.Take(mid));
+        result.AddRange(groups.Take(mid));
         if (half > 0.05)
-            out_.Add(("bunker", half));
-        out_.AddRange(groups.Skip(mid));
-        return out_;
+            result.Add(("bunker", half));
+        result.AddRange(groups.Skip(mid));
+        return result;
     }
 
     // ------------------------------------------------------------------ funnels
@@ -341,7 +341,7 @@ public static class Powerplant
     public static double NaturalVelocity(PlantSpec p, double stackM, double trunkM = 0.0)
     {
         double t = p.Tech.Draught.GasTempK;
-        return 0.3 * Math.Sqrt(2 * 9.81 * Math.Max(stackM, 1.0) * (1 - AMBIENT_K / t)) * Math.Max(0.5, 1 - 0.02 * trunkM);
+        return 0.3 * Math.Sqrt(2 * 9.81 * Math.Max(stackM, 1.0) * (1 - AmbientK / t)) * Math.Max(0.5, 1 - 0.02 * trunkM);
     }
 
     /// <summary>Funnels for boiler groups of the given lengths: counts per group, width, length, gas velocity, area.</summary>
@@ -379,9 +379,9 @@ public static class Powerplant
             counts = [1];
         long want = Math.Max(nArea, counts.Sum()) + extra;
         long needed = want;
-        if (want > MAX_FUNNELS)
+        if (want > MaxFunnels)
         {
-            want = Math.Max(MAX_FUNNELS, counts.Count);
+            want = Math.Max(MaxFunnels, counts.Count);
             while (counts.Sum() > want)
             {
                 long mx = counts.Max();
@@ -394,10 +394,10 @@ public static class Powerplant
             counts[j] += 1;
         }
         long n = counts.Sum();
-        double w = Math.Min(wMax, Math.Sqrt(CASING * area / n / (0.785 * 1.5)));
+        double w = Math.Min(wMax, Math.Sqrt(CasingK * area / n / (0.785 * 1.5)));
         w = Math.Max(w, sysname != "exhaust" ? 2.2 : 1.0);
         if (needed > n)
-            v *= Math.Max(1.0, area / (n * 0.785 * w * 1.5 * w / CASING));
+            v *= Math.Max(1.0, area / (n * 0.785 * w * 1.5 * w / CasingK));
         return new FunnelPlan(counts, w, 1.5 * w, v, area, q, reach, needed > n ? needed : null);
     }
 
@@ -408,9 +408,9 @@ public static class Powerplant
         var d = t.Draught;
         double k = t.Fuel switch
         {
-            "coal" => SMOKE_K[d.System == "natural" ? "coal_natural" : "coal"],
-            "oil" => SMOKE_K[d.GasTempK <= 480 ? "oil_heated" : "oil"],
-            var f => SMOKE_K[f],
+            "coal" => SmokeK[d.System == "natural" ? "coal_natural" : "coal"],
+            "oil" => SmokeK[d.GasTempK <= 480 ? "oil_heated" : "oil"],
+            var f => SmokeK[f],
         };
         return k * Math.Sqrt(Rated(p, shp).Kw / 1000.0 * GasFlow(p));
     }
@@ -433,7 +433,7 @@ public static class Powerplant
             Name = t.Name, Fuel = t.Fuel, RatedKw = (long)Math.Round(r.Kw), RatedShp = Math.Round(shp / 10.0) * 10,
             ContinuousKw = (long)Math.Round(r.ContinuousKw), OverloadMax = Math.Round(r.Overload, 3), Shafts = r.Shafts, Units = r.Units,
             UnitMw = Math.Round(r.UnitMw, 2), WeightT = Math.Round(r.WeightT, 1), SfcGPerKwh = Math.Round(r.Sfc, 1),
-            PartLoad = new PartLoad(t.PartLoad, CURVE_LOADS, CURVES[t.PartLoad].Pts, CURVES[t.PartLoad].Over),
+            PartLoad = new PartLoad(t.PartLoad, CurveLoads, Curves[t.PartLoad].Pts, Curves[t.PartLoad].Over),
             Draught = t.Draught.System, NaturalFraction = t.Draught.System == "forced_boost" ? t.Draught.NaturalFraction ?? 0.6 : null,
             Stress = p.Stress, Transmission = p.Transmission, Arrangement = p.Arrangement, Crew = r.Crew,
         };

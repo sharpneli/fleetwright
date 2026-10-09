@@ -12,13 +12,13 @@ public sealed record Director(string Id, string Battery, double X, double Y, dou
 /// <summary>firecontrol: directors, the plotting rooms that turn their readings into gun orders, and the search radar.</summary>
 public static class FireControl
 {
-    static readonly string[] BATTERIES = ["main", "secondary", "aa"];
-    static readonly string[] FIELDS = ["directors", "rangefinder_m", "armour_mm", "radar_t", "computer_t"];
-    static readonly Dictionary<string, string> LABEL = new() { ["main"] = "Main director", ["secondary"] = "Secondary director", ["aa"] = "AA director" };
-    public const double HOOD_H = 2.2;
-    const double EYE_H = 1.5, HOOD_PLATE_T = 0.047, RF_T_K = 0.03;
-    static readonly (double A, double B) GEAR_T = (1.0, 1.2);
-    const double COMPUTER_Z = 0.3, MAIN_SPREAD = 0.25, REFRACTION = 1.17;
+    static readonly string[] BatteryNames = ["main", "secondary", "aa"];
+    static readonly string[] Fields = ["directors", "rangefinder_m", "armour_mm", "radar_t", "computer_t"];
+    static readonly Dictionary<string, string> Label = new() { ["main"] = "Main director", ["secondary"] = "Secondary director", ["aa"] = "AA director" };
+    public const double HoodH = 2.2;
+    const double EyeH = 1.5, HoodPlateT = 0.047, RfTK = 0.03;
+    static readonly (double A, double B) GearT = (1.0, 1.2);
+    const double ComputerZ = 0.3, MainSpread = 0.25, Refraction = 1.17;
 
     /// <summary>The design's fire control for a battery, every field (0 where it gives none).</summary>
     public static DirectorSpec Spec(Design design, string battery)
@@ -31,15 +31,15 @@ public static class FireControl
     {
         if (design.FireControl is not { } fc)
             return [];
-        var errs = fc.Extra.KeysOrEmpty().Select(k => $"fire_control.{k}: not a battery ({string.Join(", ", BATTERIES)}) or search_radar_t")
+        var errs = fc.Extra.KeysOrEmpty().Select(k => $"fire_control.{k}: not a battery ({string.Join(", ", BatteryNames)}) or search_radar_t")
             .ToList();
-        foreach (var b in BATTERIES)
+        foreach (var b in BatteryNames)
         {
             if (fc.Of(b) is not { } d)
                 continue;
-            errs.AddRange(d.Extra.KeysOrEmpty().Select(k => $"fire_control.{b}.{k}: not a director setting ({string.Join(", ", FIELDS)})"));
+            errs.AddRange(d.Extra.KeysOrEmpty().Select(k => $"fire_control.{b}.{k}: not a director setting ({string.Join(", ", Fields)})"));
             var given = new[] { d.Directors, d.RangefinderM, d.ArmourMm, d.RadarT, d.ComputerT };
-            errs.AddRange(FIELDS.Where((_, i) => given[i] < 0).Select(k => $"fire_control.{b}.{k} must be a number, 0 or more"));
+            errs.AddRange(Fields.Where((_, i) => given[i] < 0).Select(k => $"fire_control.{b}.{k} must be a number, 0 or more"));
             if (d.Directors is double n && n != Math.Floor(n))
                 errs.Add($"fire_control.{b}.directors: use a whole number");
         }
@@ -61,14 +61,14 @@ public static class FireControl
     {
         double bse = d.RangefinderM;
         var (l, w) = Size(d);
-        double area = 2 * (l + w) * HOOD_H + l * w;
-        return (area * HOOD_PLATE_T, GEAR_T.A + GEAR_T.B * bse, RF_T_K * Math.Pow(bse, 2), area * d.ArmourMm / 1000.0 * 7.85, d.RadarT,
+        double area = 2 * (l + w) * HoodH + l * w;
+        return (area * HoodPlateT, GearT.A + GearT.B * bse, RfTK * Math.Pow(bse, 2), area * d.ArmourMm / 1000.0 * 7.85, d.RadarT,
             d.ComputerT);
     }
 
-    public static double HorizonKm(double eyeM) => 3.57 * Math.Sqrt(REFRACTION * Math.Max(0.0, eyeM));
+    public static double HorizonKm(double eyeM) => 3.57 * Math.Sqrt(Refraction * Math.Max(0.0, eyeM));
 
-    static readonly string[] CONTROL_ROLES = ["bridge", "director", "aft_control"];
+    static readonly string[] ControlRoles = ["bridge", "director", "aft_control"];
 
     /// <summary>Control positions in a funnel's smoke: sets lay.smoke and warns about each.</summary>
     public static void AssignSmoke(Layout lay, Navarch.Result res)
@@ -79,7 +79,7 @@ public static class FireControl
         double reach = Powerplant.SmokeReach(res.Plant, res.PowerShp);
         foreach (var b in lay.Blocks)
         {
-            if (!CONTROL_ROLES.Contains(b.Role) || b.Office)
+            if (!ControlRoles.Contains(b.Role) || b.Office)
                 continue;
             var hit = SmokeFrom(lay.Funnels, lay.FunTop, reach, b.X1, b.TopZ, b.Y, b.W);
             if (hit.Count > 0)
@@ -107,7 +107,7 @@ public static class FireControl
     public static void Place(Layout lay, Design design, List<Block> blocks)
     {
         double L = lay.Hull.L;
-        foreach (var bat in BATTERIES)
+        foreach (var bat in BatteryNames)
         {
             var d = Spec(design, bat);
             long n = d.Directors;
@@ -121,30 +121,30 @@ public static class FireControl
             bool Ok(double x, double y, double z0)
             {
                 var fp = Footprint.Rect(x - hl, y - hw, x + hl, y + hw);
-                return lay.FreeAt(fp, z0, z0 + HOOD_H, 0.2) && lay.Clear(fp, z0 + HOOD_H);
+                return lay.FreeAt(fp, z0, z0 + HoodH, 0.2) && lay.Clear(fp, z0 + HoodH);
             }
 
             void Put(double x, double y, double z0, bool pair = false, long? unit = null)
             {
                 int k = mine.Count;
-                string bid = bat == "main" ? LABEL[bat] + (k == 0 ? "" : $" {k + 1}")
-                    : $"{LABEL[bat]} {(unit is null ? "None" : unit.ToString())}" + (pair ? (y > 0 ? "S" : "P") : "");
+                string bid = bat == "main" ? Label[bat] + (k == 0 ? "" : $" {k + 1}")
+                    : $"{Label[bat]} {(unit is null ? "None" : unit.ToString())}" + (pair ? (y > 0 ? "S" : "P") : "");
                 var pts = Geometry.DirectorParts(x, y, l, w, d.RangefinderM).Outline;
                 var b = Layout.AddBlock(lay, blocks, bid, x - hl, x + hl, w, 1, 0.0, 0.0, y: y, z0: z0, kind: "director", tPerM2: 0.0,
                     points: pts, role: "director");
-                b.Director = new BlockDirector(bat, d.RangefinderM, d.RadarT > 0, (long)Math.Round(z0 / Layout.LEVEL_H));
+                b.Director = new BlockDirector(bat, d.RangefinderM, d.RadarT > 0, (long)Math.Round(z0 / Layout.LevelH));
                 double aloft = wt.Hood + wt.Gear + wt.Rangefinder + wt.Armour + wt.Radar;
-                lay.Weights.Add(new Weight(bid, "fire_control", aloft, x, ZRel.Deck(z0 + 0.5 * HOOD_H)));
+                lay.Weights.Add(new Weight(bid, "fire_control", aloft, x, ZRel.Deck(z0 + 0.5 * HoodH)));
                 if (wt.Computer != 0)
-                    lay.Weights.Add(new Weight($"Plotting room ({bid})", "fire_control", wt.Computer, x, ZRel.Frac(COMPUTER_Z)));
-                var rec = new Director(bid, bat, x, y, z0, z0 + HOOD_H, z0 + EYE_H, d, aloft + wt.Computer, unit);
+                    lay.Weights.Add(new Weight($"Plotting room ({bid})", "fire_control", wt.Computer, x, ZRel.Frac(ComputerZ)));
+                var rec = new Director(bid, bat, x, y, z0, z0 + HoodH, z0 + EyeH, d, aloft + wt.Computer, unit);
                 lay.Directors.Add(rec);
                 mine.Add(rec);
             }
 
             bool Smoky(double x, double y, double z0) =>
                 SmokeFrom(lay.FunnelsPlanned, lay.FunnelsPlanned.Select(f => f.Top).DefaultIfEmpty(0.0).Max(), lay.Geo.SmokeReach,
-                    x + hl, z0 + Layout.LEVEL_H, y, w).Count > 0;
+                    x + hl, z0 + Layout.LevelH, y, w).Count > 0;
 
             foreach (var spots in new Func<List<(double X, double Y, double Z0, bool Pair)>>[]
                      { () => Layout.RoofSpots(blocks, l, w), () => Layout.RoofSpots(RaisedRoofs(lay), l, w) })
@@ -155,7 +155,7 @@ public static class FireControl
                 if (bat == "main")
                 {
                     var cands = sp.Where(s => !s.Pair).Select(s => (s.X, s.Y, s.Z0)).OrderBy(s => (-s.Z0, -s.X)).ToList();
-                    foreach (var spread in new[] { MAIN_SPREAD * L, 0.0 })
+                    foreach (var spread in new[] { MainSpread * L, 0.0 })
                         foreach (var (x, y, z0) in cands)
                         {
                             if (mine.Count >= n)
@@ -198,7 +198,7 @@ public static class FireControl
         lay.Decks.Where(dk => dk.Kind == "deck").Select(dk => new Block
         {
             Id = dk.Id, Kind = "raised", Role = "deckhouse", X0 = dk.Points.Min(p => p.X), X1 = dk.Points.Max(p => p.X),
-            W = dk.Points.Max(p => p.Y) - dk.Points.Min(p => p.Y), Y = 0.0, Level = (long)Math.Round(dk.Top / Geometry.DECK_PITCH),
+            W = dk.Points.Max(p => p.Y) - dk.Points.Min(p => p.Y), Y = 0.0, Level = (long)Math.Round(dk.Top / Geometry.DeckPitch),
             Points = dk.Points,
         }).ToList();
 

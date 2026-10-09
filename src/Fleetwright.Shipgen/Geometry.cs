@@ -88,16 +88,16 @@ public static class Geometry
         int m = clip.Count;
         double sgn = Enumerable.Range(0, m).Select(i => clip[i].X * clip[(i + 1) % m].Y - clip[(i + 1) % m].X * clip[i].Y).Sum() > 0
             ? 1.0 : -1.0;
-        var out_ = new List<Pt>(pts);
+        var result = new List<Pt>(pts);
         for (int ci = 0; ci < m; ci++)
         {
-            if (out_.Count == 0)
+            if (result.Count == 0)
                 break;
             var (ax, ay) = clip[ci];
             var (bx, by) = clip[(ci + 1) % m];
             double Side(Pt p) => sgn * ((bx - ax) * (p.Y - ay) - (by - ay) * (p.X - ax));
-            var src = out_;
-            out_ = [];
+            var src = result;
+            result = [];
             int n = src.Count;
             for (int i = 0; i < n; i++)
             {
@@ -105,46 +105,46 @@ public static class Geometry
                 var q = src[(i + 1) % n];
                 double sp = Side(p), sq = Side(q);
                 if (sp >= 0)
-                    out_.Add(p);
+                    result.Add(p);
                 if ((sp >= 0) != (sq >= 0))
                 {
                     double t = sp / (sp - sq);
-                    out_.Add(new Pt(p.X + t * (q.X - p.X), p.Y + t * (q.Y - p.Y)));
+                    result.Add(new Pt(p.X + t * (q.X - p.X), p.Y + t * (q.Y - p.Y)));
                 }
             }
         }
-        return SimplifyPolygon(out_);
+        return SimplifyPolygon(result);
     }
 
     /// <summary>Drop repeated and collinear vertices.</summary>
     public static List<Pt> SimplifyPolygon(IReadOnlyList<Pt> pts, double tol = 1e-3)
     {
-        var out_ = new List<Pt>();
+        var result = new List<Pt>();
         foreach (var p in pts)
-            if (out_.Count == 0 || Math.Abs(p.X - out_[^1].X) > tol || Math.Abs(p.Y - out_[^1].Y) > tol)
-                out_.Add(p);
-        if (out_.Count > 1 && Math.Abs(out_[0].X - out_[^1].X) <= tol && Math.Abs(out_[0].Y - out_[^1].Y) <= tol)
-            out_.RemoveAt(out_.Count - 1);
+            if (result.Count == 0 || Math.Abs(p.X - result[^1].X) > tol || Math.Abs(p.Y - result[^1].Y) > tol)
+                result.Add(p);
+        if (result.Count > 1 && Math.Abs(result[0].X - result[^1].X) <= tol && Math.Abs(result[0].Y - result[^1].Y) <= tol)
+            result.RemoveAt(result.Count - 1);
         bool changed = true;
-        while (changed && out_.Count > 3)
+        while (changed && result.Count > 3)
         {
             changed = false;
-            for (int i = 0; i < out_.Count; i++)
+            for (int i = 0; i < result.Count; i++)
             {
-                int n = out_.Count;
-                var a = out_[(i - 1 + n) % n];
-                var b = out_[i];
-                var c = out_[(i + 1) % n];
+                int n = result.Count;
+                var a = result[(i - 1 + n) % n];
+                var b = result[i];
+                var c = result[(i + 1) % n];
                 if (Math.Abs((b.X - a.X) * (c.Y - a.Y) - (b.Y - a.Y) * (c.X - a.X)) <=
                     tol * Math.Max(1.0, double.Hypot(c.X - a.X, c.Y - a.Y)))
                 {
-                    out_.RemoveAt(i);
+                    result.RemoveAt(i);
                     changed = true;
                     break;
                 }
             }
         }
-        return out_;
+        return result;
     }
 
     /// <summary>A fire-control director facing ahead: its outline (the hitbox) and the parts it is drawn from.</summary>
@@ -221,7 +221,7 @@ public static class Geometry
         return inside;
     }
 
-    public static readonly IReadOnlyDictionary<string, AAMount> AA_CFG = new Dictionary<string, AAMount>(StringComparer.Ordinal)
+    public static readonly IReadOnlyDictionary<string, AAMount> AaCfg = new Dictionary<string, AAMount>(StringComparer.Ordinal)
     {
         ["quad40"] = new(2.0, 4, 2.8, 0.17, 0.42, 40.0, 56.0),
         ["twin40"] = new(1.5, 2, 2.6, 0.17, 0.5, 40.0, 56.0),
@@ -278,7 +278,7 @@ public static class Geometry
     }
 
     static readonly Dictionary<string, double> BarrelRoot = new() { ["bb"] = 0.5, ["dp"] = 0.3, ["open"] = -0.3, ["casemate"] = 0.0 };
-    public const double CASEMATE_SHIELD = 0.55;
+    public const double CasemateShield = 0.55;
     static readonly Dictionary<string, double> BarrelShownK = new() { ["bb"] = 0.8, ["dp"] = 0.8, ["casemate"] = 0.5 };
 
     public static double BarrelShown(TurretType t) => t.BarrelLen * (BarrelShownK.TryGetValue(t.Shape, out var k) ? k : 1.0);
@@ -314,7 +314,7 @@ public static class Geometry
 
     static TurretShapes MakeShapes(string shape, double r, long n, double bl, double bw, double sp)
     {
-        var out_ = new TurretShapes();
+        var result = new TurretShapes();
         double shown = bl * (BarrelShownK.TryGetValue(shape, out var kk) ? kk : 1.0);
 
         List<List<Pt>> BarrelPolys(double x0)
@@ -345,33 +345,33 @@ public static class Geometry
                         pts.Add(new Pt(cx + R * Math.Cos(a), R * Math.Sin(a)));
                     }
                     pts.Add(new Pt(0.4 * r, -0.85 * r));
-                    out_.Body = pts;
-                    out_.Parts = [[new(-0.66 * r, -1.02 * r), new(-0.48 * r, -1.02 * r), new(-0.48 * r, 1.02 * r), new(-0.66 * r, 1.02 * r)]];
-                    out_.Barrels = BarrelPolys(BarrelRoot["bb"] * r);
+                    result.Body = pts;
+                    result.Parts = [[new(-0.66 * r, -1.02 * r), new(-0.48 * r, -1.02 * r), new(-0.48 * r, 1.02 * r), new(-0.66 * r, 1.02 * r)]];
+                    result.Barrels = BarrelPolys(BarrelRoot["bb"] * r);
                     break;
                 }
             case "dp":
-                out_.Body = RrectPolygon(-0.95 * r, -0.72 * r, 0.75 * r, 0.72 * r, 0.42 * r, 0.6 * r);
-                out_.Barrels = BarrelPolys(BarrelRoot["dp"] * r);
+                result.Body = RrectPolygon(-0.95 * r, -0.72 * r, 0.75 * r, 0.72 * r, 0.42 * r, 0.6 * r);
+                result.Barrels = BarrelPolys(BarrelRoot["dp"] * r);
                 break;
             case "open":
-                out_.Body = CirclePolygon(0, 0, r);
-                out_.Barrels = BarrelPolys(BarrelRoot["open"] * r);
+                result.Body = CirclePolygon(0, 0, r);
+                result.Barrels = BarrelPolys(BarrelRoot["open"] * r);
                 break;
             case "casemate":
-                out_.Body = CirclePolygon(0, 0, CASEMATE_SHIELD * r);
-                out_.Barrels = BarrelPolys(BarrelRoot["casemate"] * r);
+                result.Body = CirclePolygon(0, 0, CasemateShield * r);
+                result.Barrels = BarrelPolys(BarrelRoot["casemate"] * r);
                 break;
             case "torp":
                 {
-                    out_.Body = CirclePolygon(0, 0, r);
+                    result.Body = CirclePolygon(0, 0, r);
                     for (long i = 0; i < n; i++)
                     {
                         double y = (i - (n - 1) / 2.0) * sp;
-                        out_.Barrels.Add(RrectPolygon(-bl / 2, y - bw / 2, bl / 2, y + bw / 2, bw / 2, bw / 2, seg: 4));
+                        result.Barrels.Add(RrectPolygon(-bl / 2, y - bw / 2, bl / 2, y + bw / 2, bw / 2, bw / 2, seg: 4));
                     }
                     double ty = (n - 1) / 2.0 * sp + bw / 2;
-                    out_.Parts =
+                    result.Parts =
                     [
                         [new(-bl / 2 - 0.2, -ty - 0.2), new(-bl / 2 + 0.7, -ty - 0.2), new(-bl / 2 + 0.7, ty + 0.2), new(-bl / 2 - 0.2, ty + 0.2)],
                         RrectPolygon(-r * 0.4, -ty - 0.9, r * 0.4, -ty + 0.1, 0.25, 0.25, seg: 3),
@@ -381,18 +381,18 @@ public static class Geometry
             case "tube":
                 {
                     double w = (n - 1) * sp + bw;
-                    out_.Body = RrectPolygon(-bl / 2 + 0.6, -w / 2 - 0.15, bl / 2 - 1.2, w / 2 + 0.15, 0.1, 0.1, seg: 2);
+                    result.Body = RrectPolygon(-bl / 2 + 0.6, -w / 2 - 0.15, bl / 2 - 1.2, w / 2 + 0.15, 0.1, 0.1, seg: 2);
                     for (long i = 0; i < n; i++)
                     {
                         double y = (i - (n - 1) / 2.0) * sp;
-                        out_.Barrels.Add(RrectPolygon(-bl / 2, y - bw / 2, bl / 2, y + bw / 2, bw / 2, 0.05, seg: 4));
+                        result.Barrels.Add(RrectPolygon(-bl / 2, y - bw / 2, bl / 2, y + bw / 2, bw / 2, 0.05, seg: 4));
                     }
                     break;
                 }
             default:
                 throw new ArgumentException($"unknown turret shape {shape}");
         }
-        return out_;
+        return result;
     }
 
     /// <summary>Max distance of any part of the turret from its pivot (barrel_len: a stand-in, as {**t, "barrel_len": 0}).</summary>
@@ -408,7 +408,7 @@ public static class Geometry
     public static double Cwp(double cb) => 0.18 + 0.86 * cb;
 
     /// <summary>m between decks: the deck stack, raised stretches of hull and superstructure levels share it.</summary>
-    public const double DECK_PITCH = 2.6;
+    public const double DeckPitch = 2.6;
 
     /// <summary>How much higher each superfiring tier stands than the one it fires over, for a turret th tall.</summary>
     public static double SuperfireStep(double th) => 2.0 + 0.2 * th;
@@ -546,7 +546,7 @@ public static class Geometry
 /// arithmetic on the same edges, looking only at the edges in the x cells or y slab they need. pts must not change.</summary>
 public sealed class PreparedPolygon
 {
-    const int CELLS = 64;
+    const int Cells = 64;
     readonly IReadOnlyList<Pt> pts;
     readonly double bx0, by0, bx1, by1;
     readonly int k;
@@ -559,7 +559,7 @@ public sealed class PreparedPolygon
         this.pts = pts;
         (bx0, by0, bx1, by1) = Geometry.Bounds(pts);
         int n = pts.Count;
-        k = Math.Max(1, Math.Min(CELLS, n / 4));
+        k = Math.Max(1, Math.Min(Cells, n / 4));
         dx = (bx1 - bx0) / k;
         if (dx == 0)
             dx = 1.0;

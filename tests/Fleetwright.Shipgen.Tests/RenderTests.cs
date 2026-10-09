@@ -83,7 +83,7 @@ public class RenderTests
         foreach (var navy in Render.Looks.Navies)
             foreach (var era in Render.Looks.ErasOf(navy))
             {
-                Assert.Contains(era, Render.Looks.ERAS);
+                Assert.Contains(era, Render.Looks.Eras);
                 foreach (var style in new[] { "warship", "carrier", "merchant", "planing" })
                 {
                     var d = new Design { Style = style, Look = new LookInput { Navy = navy, Era = era } };

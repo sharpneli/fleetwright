@@ -38,14 +38,14 @@ public sealed record HullPlates(
 /// <summary>Hull structure weight, by plate area x thickness (research/hull-weight-model.md, "Tier 2").</summary>
 public static class HullWeight
 {
-    public const double RHO = 7.85e-3, RHO_WOOD = 0.7e-3;
-    const double K_S = 2.5, C_M = 40.0, F_FIT = 0.10, SF = 2.1, SIG_CAP = 185.0;
-    static readonly (double A, double B) T_MIN = (4.0, 0.03);
-    const double LONG = 350.0;
-    const double SHELL_SIDE = 0.90, SHELL_BOTTOM = 0.95, INT_DECK = 0.85, INT_DECK_T = 0.60;
-    const double BULKHEADS = 1 + 1 / 0.06, BHD_AREA = 0.75 * 0.80, BHD_T = 0.70, DB_AREA = 0.80 * 1.60;
-    const double GIRDER_TAPER = 0.75, NEUTRAL_AXIS = 0.45, ARM_DECK_WIDTH = 0.85;
-    public const double SUP_PLATE_K = 0.8;
+    public const double Rho = 7.85e-3, RhoWood = 0.7e-3;
+    const double KS = 2.5, CM = 40.0, FFit = 0.10, SF = 2.1, SigCap = 185.0;
+    static readonly (double A, double B) TMin = (4.0, 0.03);
+    const double Long = 350.0;
+    const double ShellSide = 0.90, ShellBottom = 0.95, IntDeck = 0.85, IntDeckT = 0.60;
+    const double Bulkheads = 1 + 1 / 0.06, BhdArea = 0.75 * 0.80, BhdT = 0.70, DbArea = 0.80 * 1.60;
+    const double GirderTaper = 0.75, NeutralAxis = 0.45, ArmDeckWidth = 0.85;
+    public const double SupPlateK = 0.8;
 
     /// <summary>hull.construction with its defaults filled in.</summary>
     public static Construction ConstructionOf(Design design)
@@ -63,10 +63,10 @@ public static class HullWeight
     }
 
     /// <summary>The minimum gauge, mm: the thinnest plate the hull is built of.</summary>
-    public static double TMinMm(double L, Construction c) => (T_MIN.A + T_MIN.B * Math.Min(L, LONG)) * c.Standard;
+    public static double TMinMm(double L, Construction c) => (TMin.A + TMin.B * Math.Min(L, Long)) * c.Standard;
 
     /// <summary>Plate thicker than the structure's own, t: plain steel plate over the area.</summary>
-    public static double ExtraPlateT(double areaM2, double mm, double ownMm) => RHO * areaM2 * Math.Max(0.0, mm - ownMm);
+    public static double ExtraPlateT(double areaM2, double mm, double ownMm) => Rho * areaM2 * Math.Max(0.0, mm - ownMm);
 
     /// <summary>The plating the game's damage model sees, from the structure h: mm of each kind of plate, unarmoured.
     /// ownMm: the hull's own gauge where the structure has no plate model.</summary>
@@ -76,50 +76,50 @@ public static class HullWeight
         double tMin = h.TMinMm ?? ownMm;
         double tStr = h.TStrMm ?? 0.0;
         static double R(double v) => Math.Round(v, 1);
-        double ownSup = SUP_PLATE_K * tMin;
+        double ownSup = SupPlateK * tMin;
         return new HullPlates(material, R(Math.Max(tMin, Math.Max(tStr, shellMm))), R(Math.Max(tMin, shellMm)),
-            R(Math.Max(tMin, tStr)), R(tMin), R(-GIRDER_TAPER * L / 2), R(GIRDER_TAPER * L / 2), R(INT_DECK_T * tMin),
-            R(BHD_T * tMin), R(tMin), R(Math.Max(ownSup, supMm)), R(Math.Max(ownSup, Math.Max(supMm, controlMm))), R(deckWoodMm));
+            R(Math.Max(tMin, tStr)), R(tMin), R(-GirderTaper * L / 2), R(GirderTaper * L / 2), R(IntDeckT * tMin),
+            R(BhdT * tMin), R(tMin), R(Math.Max(ownSup, supMm)), R(Math.Max(ownSup, Math.Max(supMm, controlMm))), R(deckWoodMm));
     }
 
-    public static double AllowableStress(Construction c) => Math.Min(c.YieldMpa / SF, SIG_CAP);
+    public static double AllowableStress(Construction c) => Math.Min(c.YieldMpa / SF, SigCap);
 
     /// <summary>The strength deck's area, as the model takes it.</summary>
     public static double DeckArea(double L, double B, double cb) => B * L * (0.66 + 0.33 * cb);
 
     /// <summary>What the model weighs per m^2 of strength deck at minimum gauge.</summary>
     public static double DeckTPerM2(double L, Construction c) =>
-        RHO * K_S * (T_MIN.A + T_MIN.B * Math.Min(L, LONG)) * c.Standard * (1 + F_FIT) * c.JoinFactor;
+        Rho * KS * (TMin.A + TMin.B * Math.Min(L, Long)) * c.Standard * (1 + FFit) * c.JoinFactor;
 
     /// <summary>A raised stretch of hull (forecastle, poop) at minimum gauge.</summary>
     public static double RaisedT(double L, Construction c, double deckM2, double sideM2, double endM2, double shellMm = 0.0) =>
-        DeckTPerM2(L, c) * (deckM2 + SHELL_SIDE * sideM2 + BHD_T * endM2)
-        + ExtraPlateT(SHELL_SIDE * sideM2, shellMm, TMinMm(L, c)) * c.JoinFactor;
+        DeckTPerM2(L, c) * (deckM2 + ShellSide * sideM2 + BhdT * endM2)
+        + ExtraPlateT(ShellSide * sideM2, shellMm, TMinMm(L, c)) * c.JoinFactor;
 
     /// <summary>The hull structure: its weight, what it is made of and its girder.</summary>
     public static HullStructure WeightOf(double L, double B, double D, double cb, double full, Construction c, double nInt,
         double doubleBottom, IReadOnlyList<(double Mm, double Z)> armourDecks, double? bulkheadDepth = null,
         double? girderDepth = null, double shellMm = 0.0, double armouredSideM2 = 0.0)
     {
-        double aShell = 2 * SHELL_SIDE * D * L + SHELL_BOTTOM * B * L * Math.Sqrt(cb);
+        double aShell = 2 * ShellSide * D * L + ShellBottom * B * L * Math.Sqrt(cb);
         double aDeck = DeckArea(L, B, cb);
-        double aInt = nInt * INT_DECK * aDeck;
-        double aBhd = BULKHEADS * BHD_AREA * B * (bulkheadDepth ?? D);
-        double aDb = doubleBottom * B * L * cb * DB_AREA;
+        double aInt = nInt * IntDeck * aDeck;
+        double aBhd = Bulkheads * BhdArea * B * (bulkheadDepth ?? D);
+        double aDb = doubleBottom * B * L * cb * DbArea;
         double tMin = TMinMm(L, c);
         double sig = AllowableStress(c);
-        double m = full * 9.81 * L / C_M * Math.Pow(Math.Min(1.0, LONG / L), 2);
+        double m = full * 9.81 * L / CM * Math.Pow(Math.Min(1.0, Long / L), 2);
         double G = girderDepth ?? D;
         double iReq = m / (sig * 1000) * (G / 2);
-        double iArm = armourDecks.Sum(a => ARM_DECK_WIDTH * B * a.Mm / 1000 * Math.Pow(a.Z - NEUTRAL_AXIS * G, 2));
+        double iArm = armourDecks.Sum(a => ArmDeckWidth * B * a.Mm / 1000 * Math.Pow(a.Z - NeutralAxis * G, 2));
         double zPerMm = G * (B + G / 3) / 1000;
         double tStr = Math.Max(0.0, iReq - iArm) / (G / 2) / zPerMm;
-        double wMin = RHO * K_S * tMin * (aShell + aDeck + aInt * INT_DECK_T + aBhd * BHD_T + aDb);
-        double wStr = RHO * GIRDER_TAPER * (aShell + aDeck) * Math.Max(0.0, tStr - tMin);
-        double k = (1 + F_FIT) * c.JoinFactor;
-        double aSide = Math.Max(0.0, 2 * SHELL_SIDE * D * L - armouredSideM2);
-        double wShell = (ExtraPlateT((1 - GIRDER_TAPER) * aSide, shellMm, tMin)
-                         + ExtraPlateT(GIRDER_TAPER * aSide, shellMm, Math.Max(tMin, tStr))) * c.JoinFactor;
+        double wMin = Rho * KS * tMin * (aShell + aDeck + aInt * IntDeckT + aBhd * BhdT + aDb);
+        double wStr = Rho * GirderTaper * (aShell + aDeck) * Math.Max(0.0, tStr - tMin);
+        double k = (1 + FFit) * c.JoinFactor;
+        double aSide = Math.Max(0.0, 2 * ShellSide * D * L - armouredSideM2);
+        double wShell = (ExtraPlateT((1 - GirderTaper) * aSide, shellMm, tMin)
+                         + ExtraPlateT(GirderTaper * aSide, shellMm, Math.Max(tMin, tStr))) * c.JoinFactor;
         return new HullStructure((wMin + wStr) * k + wShell, wShell)
         {
             MinGaugeT = wMin * k, StrengthT = wStr * k, TMinMm = tMin, TStrMm = tStr, StressMpa = sig, IReqM4 = iReq,
@@ -127,17 +127,17 @@ public static class HullWeight
         };
     }
 
-    const double STACK_DECK = 0.6;
-    static readonly (double Lo, double Hi) INNER_BOTTOM_T = (4000.0, 10000.0);
-    const double GIRDER_MID = 0.2;
+    const double StackDeck = 0.6;
+    static readonly (double Lo, double Hi) InnerBottomT = (4000.0, 10000.0);
+    const double GirderMid = 0.2;
 
-    /// <summary>The mean height of raised stretches of hull over the midbody, |x| &lt;= GIRDER_MID L.</summary>
+    /// <summary>The mean height of raised stretches of hull over the midbody, |x| &lt;= GirderMid L.</summary>
     public static double RaisedGirderH(IReadOnlyList<RaisedStretch> raised, double L)
     {
-        double a = -GIRDER_MID * L, b = GIRDER_MID * L;
+        double a = -GirderMid * L, b = GirderMid * L;
         double tot = 0.0;
         foreach (var s in raised)
-            tot += Math.Max(0.0, Math.Min(b, s.X1) - Math.Max(a, s.X0)) * s.Levels * Geometry.DECK_PITCH;
+            tot += Math.Max(0.0, Math.Min(b, s.X1) - Math.Max(a, s.X0)) * s.Levels * Geometry.DeckPitch;
         return tot / (b - a);
     }
 
@@ -146,8 +146,8 @@ public static class HullWeight
     public static HullStructure HullStructure(Design design, double L, double B, double cb, double D, double full, ArmourLayout arm,
         StrengthDeck? above, IReadOnlyList<RaisedStretch> raised)
     {
-        double nInt = STACK_DECK * Math.Max(0.0, (D - Powerplant.DoubleBottom(D) - Decks.MIN_TIER) / Geometry.DECK_PITCH);
-        var (lo, hi) = INNER_BOTTOM_T;
+        double nInt = StackDeck * Math.Max(0.0, (D - Powerplant.DoubleBottom(D) - Decks.MinTier) / Geometry.DeckPitch);
+        var (lo, hi) = InnerBottomT;
         double inner = Math.Min(1.0, Math.Max(0.0, (full - lo) / (hi - lo)));
         var plates = arm.Decks.Where(d => d.X0 <= 0.0 && 0.0 <= d.X1).Select(d => (d.Mm, d.Z)).ToList();
         double depth = D;
@@ -172,19 +172,19 @@ public static class HullWeight
     public static HullStructure BoxStructure(Design design, double L, double B, double D, Tuning tun)
     {
         double plank = tun.PlateOwnMm;
-        double shellT = ExtraPlateT(2 * SHELL_SIDE * D * L, PlatingOf(design).ShellMm, plank);
+        double shellT = ExtraPlateT(2 * ShellSide * D * L, PlatingOf(design).ShellMm, plank);
         return new HullStructure(tun.HullK * Math.Pow(L * B * D, tun.HullExp) + shellT, shellT) { PlateOwnMm = plank };
     }
 
     /// <summary>Warnings on a solved hull's structure.</summary>
     public static List<string> StructureChecks(HullStructure h)
     {
-        var out_ = new List<string>();
+        var result = new List<string>();
         if ((h.StrengthT ?? 0.0) > (h.MinGaugeT ?? double.PositiveInfinity))
-            out_.Add($"The hull is very long for its depth: {h.StrengthT:N0} t of its plating (strength " +
+            result.Add($"The hull is very long for its depth: {h.StrengthT:N0} t of its plating (strength " +
                      $"deck and shell {h.TStrMm:F0} mm, where {h.TMinMm:F0} mm would do) only " +
                      "keeps it from breaking in two. A shorter hull or an armour deck high in it would help.");
-        return out_;
+        return result;
     }
 
     public static List<string> Validate(Design design)
@@ -216,16 +216,16 @@ public static class HullWeight
 /// ammunition, and a carrier's aviation ordnance and fuel.</summary>
 public static class Ordnance
 {
-    public const double T_PER_M3 = 0.6;
-    public const int TIERS = 2;
-    public const double MIN_ROOM = 1.5;
-    const double READY_K = 17000.0, READY_P = 1.4, WARHEAD_K = 2.0e-6;
-    const double TORPEDO_MM = 533;
+    public const double TPerM3 = 0.6;
+    public const int Tiers = 2;
+    public const double MinRoom = 1.5;
+    const double ReadyK = 17000.0, ReadyP = 1.4, WarheadK = 2.0e-6;
+    const double TorpedoMm = 533;
 
     /// <summary>(base, top) above the main deck of a room standing on the inner bottom, top on a deck of the stack
     /// (decks: heights above the keel, the main deck first) and never above the roof.</summary>
     public static (double Base, double Top) Span(IReadOnlyList<double> decks, double innerBottom, double roof, double? needH = null,
-        int tiers = TIERS)
+        int tiers = Tiers)
     {
         double D = decks[0], ib = innerBottom;
         var ups = decks.Where(z => ib + 1e-6 < z && z <= roof + 1e-6).Order().ToList();
@@ -242,11 +242,11 @@ public static class Ordnance
         return (ib - D, top - D);
     }
 
-    public static (double Base, double Top) Span(PlantPlan plan, double? needH = null, int tiers = TIERS) =>
+    public static (double Base, double Top) Span(PlantPlan plan, double? needH = null, int tiers = Tiers) =>
         Span(plan.Decks, plan.InnerBottom, plan.Top, needH, tiers);
 
     /// <summary>The height of a room given `tiers` deck spaces.</summary>
-    public static double Height(PlantPlan plan, int tiers = TIERS)
+    public static double Height(PlantPlan plan, int tiers = Tiers)
     {
         var (b, t) = Span(plan, tiers: tiers);
         return t - b;
@@ -257,15 +257,15 @@ public static class Ordnance
     /// <summary>Ready-use ammunition at a gun mount at action stations: (rounds, tonnes).</summary>
     public static (long N, double T) ReadyUse(double calibreMm, double barrels, double? cap = null)
     {
-        double n = barrels * Math.Max(1L, (long)Math.Round(READY_K * Math.Pow(calibreMm, -READY_P)));
+        double n = barrels * Math.Max(1L, (long)Math.Round(ReadyK * Math.Pow(calibreMm, -ReadyP)));
         if (cap is double c)
             n = Math.Min(n, c);
-        return ((long)n, n * Batteries.SHELL_K * Math.Pow(calibreMm, 3) / 1000.0 * Batteries.AMMO_MULT);
+        return ((long)n, n * Batteries.ShellK * Math.Pow(calibreMm, 3) / 1000.0 * Batteries.AmmoMult);
     }
 
-    public static double WarheadKg(double diameterMm = TORPEDO_MM) => WARHEAD_K * Math.Pow(diameterMm, 3);
+    public static double WarheadKg(double diameterMm = TorpedoMm) => WarheadK * Math.Pow(diameterMm, 3);
 
-    public static double AmmoM3(TurretType t) => AmmoT(t) / T_PER_M3;
+    public static double AmmoM3(TurretType t) => AmmoT(t) / TPerM3;
 
     /// <summary>The ids of the mounts that carry ammunition (guns, not torpedo tubes).</summary>
     public static List<string> Guns(IEnumerable<Mount> mounts) => mounts.Where(m => m.Kind is "main" or "secondary").Select(m => m.Id).ToList();
@@ -274,11 +274,11 @@ public static class Ordnance
     public static double BookedM3(Layout lay, IEnumerable<string> mids)
     {
         var names = new HashSet<string>(mids.Select(m => $"Magazine {m}"), StringComparer.Ordinal);
-        return lay.Weights.Where(w => names.Contains(w.Name)).Select(w => w.W).Sum() / T_PER_M3;
+        return lay.Weights.Where(w => names.Contains(w.Name)).Select(w => w.W).Sum() / TPerM3;
     }
 
     /// <summary>The length a zone `width` across needs for volume_m3 at `tiers` deck spaces tall.</summary>
-    public static double ZoneLength(double volumeM3, double width, PlantPlan plan, int tiers = TIERS, double least = MIN_ROOM) =>
+    public static double ZoneLength(double volumeM3, double width, PlantPlan plan, int tiers = Tiers, double least = MinRoom) =>
         Math.Max(least, volumeM3 / Math.Max(width * Height(plan, tiers), 1.0));
 
     /// <summary>Stow the ordnance in zones. Adds the compartments, sets each mount's Magazine, and moves its
@@ -294,7 +294,7 @@ public static class Ordnance
         foreach (var w in lay.Weights)
             if (w.Name.StartsWith("Magazine ", StringComparison.Ordinal))
                 ammo[w.Name] = w;
-        var out_ = new Dictionary<string, (double, double, double, double)>(StringComparer.Ordinal);
+        var result = new Dictionary<string, (double, double, double, double)>(StringComparer.Ordinal);
         foreach (var z in zones)
         {
             var rooms = new List<(ZoneRoom R, List<Mount> Ms, double T, double V)>();
@@ -302,7 +302,7 @@ public static class Ordnance
             {
                 var ms = (r.Mounts ?? []).Where(mid => ammo.ContainsKey($"Magazine {mid}")).Select(mid => byId[mid]).ToList();
                 double t = r.Tonnes + ms.Select(m => ammo[$"Magazine {m.Id}"].W).Sum();
-                rooms.Add((r, ms, t, t / (r.TPerM3 ?? T_PER_M3)));
+                rooms.Add((r, ms, t, t / (r.TPerM3 ?? TPerM3)));
             }
             double vol = rooms.Select(r => r.V).Sum();
             if (vol <= 0)
@@ -332,11 +332,11 @@ public static class Ordnance
                     w.X = x - l / 2;
                     w.ZRel = ZRel.Deck((bse + top) / 2);
                 }
-                out_[r.Id] = (x - l, x, bse, top);
+                result[r.Id] = (x - l, x, bse, top);
                 x -= l;
             }
         }
-        return out_;
+        return result;
     }
 
     /// <summary>A zone for one mount's own magazine: under it on the centreline, its diameter long.</summary>

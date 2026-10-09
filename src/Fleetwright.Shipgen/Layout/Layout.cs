@@ -69,10 +69,10 @@ public sealed class Sweep
 /// what the layout places; its static methods are the module's functions.</summary>
 public sealed partial class Layout
 {
-    public const double LEVEL_H = Geometry.DECK_PITCH;
-    public const double CASEMATE_BEAM = 0.7;
-    const double FP_CELL = 8.0;
-    const int PREP_MIN = 24;
+    public const double LevelH = Geometry.DeckPitch;
+    public const double CasemateBeam = 0.7;
+    const double FpCell = 8.0;
+    const int PrepMin = 24;
 
     public readonly double SupT;
     public readonly (double Plating, double Control) SupPlate;
@@ -136,7 +136,7 @@ public sealed partial class Layout
             Short.Add(need);
     }
 
-    static long Cell(double x) => (long)Math.Floor(x / FP_CELL);
+    static long Cell(double x) => (long)Math.Floor(x / FpCell);
 
     /// <summary>The x-cell index of the footprints, kept up with Footprints as it grows (rebuilt when the list is
     /// replaced): free and free_at look only at the footprints whose box may reach them.</summary>
@@ -286,13 +286,13 @@ public sealed partial class Layout
     }
 
     /// <summary>Height of the weather deck at x (m above the main deck).</summary>
-    public double DeckZ(double x, double r = 0.0) => DeckLevel(x, r) * LEVEL_H;
+    public double DeckZ(double x, double r = 0.0) => DeckLevel(x, r) * LevelH;
 
     /// <summary>Is (x, y) on a deck that overhangs the hull (a flight deck)?</summary>
     public bool OnDeck(double x, double y) =>
         Decks.Any(dk => dk.Kind == "flight_deck" && Geometry.PointInPolygon(x, y, dk.Points));
 
-    /// <summary>The main deck less DH_INSET at the sides, as a convex polygon (cached).</summary>
+    /// <summary>The main deck less DhInset at the sides, as a convex polygon (cached).</summary>
     public List<Pt> DeckBand()
     {
         if (deckBand is null)
@@ -300,7 +300,7 @@ public sealed partial class Layout
             double xa = -Hull.L / 2, xb = Hull.L / 2;
             long k = Math.Max(2L, (long)(xb - xa));
             var xs = Enumerable.Range(0, (int)k + 1).Select(i => xa + (xb - xa) * i / k);
-            var band = Thin(xs.Where(x => Hull.HalfWidth(x) - DH_INSET > 0.1).Select(x => new Pt(x, Hull.HalfWidth(x) - DH_INSET)).ToList(), 0.05);
+            var band = Thin(xs.Where(x => Hull.HalfWidth(x) - DhInset > 0.1).Select(x => new Pt(x, Hull.HalfWidth(x) - DhInset)).ToList(), 0.05);
             var all = band.Concat(Enumerable.Reverse(band).Select(p => new Pt(p.X, -p.Y))).ToList();
             deckBand = ConvexHull(all);
         }
@@ -364,7 +364,7 @@ public sealed partial class Layout
                 }
                 return best < o.R + margin;
             }
-            if (p.Pts!.Count >= PREP_MIN)
+            if (p.Pts!.Count >= PrepMin)
                 return p.Prepared.Intersects(o.Points(margin));
             return Geometry.PolygonsIntersect(p.Pts, o.Points(margin));
         }
@@ -417,12 +417,12 @@ public sealed partial class Layout
         int jb = Enumerable.Range(0, xs.Count).MinBy(k => cost[k]);
         if (double.IsPositiveInfinity(cost[jb]))
             return null;
-        var out_ = new List<double> { xs[jb] };
+        var result = new List<double> { xs[jb] };
         for (int b = back.Count - 1; b >= 0; b--)
         {
             jb = back[b][jb];
-            out_.Add(xs[jb]);
+            result.Add(xs[jb]);
         }
-        return out_.Order().ToList();
+        return result.Order().ToList();
     }
 }

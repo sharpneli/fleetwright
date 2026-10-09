@@ -66,7 +66,7 @@ public sealed class Block
     [JsonIgnore] public required string Id;
     /// <summary>"superstructure" or "director".</summary>
     [JsonIgnore] public required string Kind;
-    /// <summary>One of Layout.BLOCK_ROLES.</summary>
+    /// <summary>One of Layout.BlockRoles.</summary>
     [JsonIgnore] public required string Role;
     [JsonIgnore] public bool Office;
     public double X0 { get; set; }
@@ -90,8 +90,8 @@ public sealed class Block
     [JsonIgnore] public List<(double N0, double N1, double H)>? Notches;
     [JsonIgnore] internal Layout.Slabs? Slabs;
 
-    [JsonIgnore] public double Base => (Z0 ?? 0) + Layout.LEVEL_H * (Level - 1);
-    [JsonIgnore] public double TopZ => (Z0 ?? 0) + Layout.LEVEL_H * Level;
+    [JsonIgnore] public double Base => (Z0 ?? 0) + Layout.LevelH * (Level - 1);
+    [JsonIgnore] public double TopZ => (Z0 ?? 0) + Layout.LevelH * Level;
 }
 
 /// <summary>A director's block: its battery, the rangefinder's base, whether it carries radar, and the level it
@@ -114,7 +114,7 @@ public sealed class Funnel
     [JsonIgnore] public List<string>? Serves;
 }
 
-/// <summary>An AA mount: its type (Geometry.AA_CFG), where it stands, its rest bearing, its base above the main deck and
+/// <summary>An AA mount: its type (Geometry.AaCfg), where it stands, its rest bearing, its base above the main deck and
 /// its drawing layer.</summary>
 public sealed class AaMount
 {

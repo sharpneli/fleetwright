@@ -27,9 +27,9 @@ public static class GoldenDiff
     /// <summary>Every difference (up to max) between golden and ours.</summary>
     public static List<Difference> Compare(JsonNode? golden, JsonNode? ours, int max = 50, string path = "$")
     {
-        var out_ = new List<Difference>();
-        Walk(golden, ours, path, out_, max);
-        return out_;
+        var result = new List<Difference>();
+        Walk(golden, ours, path, result, max);
+        return result;
     }
 
     public static bool NumbersMatch(double a, double b)
@@ -44,14 +44,14 @@ public static class GoldenDiff
 
     static JsonValueKind Kind(JsonNode? n) => n?.GetValueKind() ?? JsonValueKind.Null;
 
-    static void Walk(JsonNode? g, JsonNode? o, string path, List<Difference> out_, int max)
+    static void Walk(JsonNode? g, JsonNode? o, string path, List<Difference> result, int max)
     {
-        if (out_.Count >= max)
+        if (result.Count >= max)
             return;
         var (gk, ok) = (Kind(g), Kind(o));
         if (gk != ok && !(gk is JsonValueKind.True or JsonValueKind.False && ok is JsonValueKind.True or JsonValueKind.False))
         {
-            out_.Add(new Difference(path, g, o, "type"));
+            result.Add(new Difference(path, g, o, "type"));
             return;
         }
         switch (gk)
@@ -62,19 +62,19 @@ public static class GoldenDiff
                     if (JsonFile.IsInteger(gv, out long gi) && JsonFile.IsInteger(ov, out long oi))
                     {
                         if (gi != oi)
-                            out_.Add(new Difference(path, g, o, "integer"));
+                            result.Add(new Difference(path, g, o, "integer"));
                     }
                     else if (!NumbersMatch(gv.GetValue<double>(), ov.GetValue<double>()))
-                        out_.Add(new Difference(path, g, o, "number"));
+                        result.Add(new Difference(path, g, o, "number"));
                     return;
                 }
             case JsonValueKind.True or JsonValueKind.False:
                 if (gk != ok)
-                    out_.Add(new Difference(path, g, o, "boolean"));
+                    result.Add(new Difference(path, g, o, "boolean"));
                 return;
             case JsonValueKind.String:
                 if (!string.Equals(g!.GetValue<string>(), o!.GetValue<string>(), StringComparison.Ordinal))
-                    out_.Add(new Difference(path, g, o, "string"));
+                    result.Add(new Difference(path, g, o, "string"));
                 return;
             case JsonValueKind.Object:
                 {
@@ -82,11 +82,11 @@ public static class GoldenDiff
                     var missing = gd.Select(kv => kv.Key).Where(k => !od.ContainsKey(k)).ToList();
                     var extra = od.Select(kv => kv.Key).Where(k => !gd.ContainsKey(k)).ToList();
                     if (missing.Count > 0 || extra.Count > 0)
-                        out_.Add(new Difference(path, missing.Count > 0 ? string.Join(", ", missing) : "-",
+                        result.Add(new Difference(path, missing.Count > 0 ? string.Join(", ", missing) : "-",
                             extra.Count > 0 ? string.Join(", ", extra) : "-", "keys (golden only / ours only)"));
                     foreach (var (k, v) in gd)
                         if (od.TryGetPropertyValue(k, out var ov))
-                            Walk(v, ov, $"{path}.{k}", out_, max);
+                            Walk(v, ov, $"{path}.{k}", result, max);
                     return;
                 }
             case JsonValueKind.Array:
@@ -94,11 +94,11 @@ public static class GoldenDiff
                     var (gl, ol) = (g!.AsArray(), o!.AsArray());
                     if (gl.Count != ol.Count)
                     {
-                        out_.Add(new Difference(path, gl.Count.ToString(), ol.Count.ToString(), "list length"));
+                        result.Add(new Difference(path, gl.Count.ToString(), ol.Count.ToString(), "list length"));
                         return;
                     }
                     for (int i = 0; i < gl.Count; i++)
-                        Walk(gl[i], ol[i], $"{path}[{i}]", out_, max);
+                        Walk(gl[i], ol[i], $"{path}[{i}]", result, max);
                     return;
                 }
         }

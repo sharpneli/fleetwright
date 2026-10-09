@@ -280,14 +280,14 @@ public static class Lower
 
     static List<(List<Vector2>, bool)> FlattenPath(PathData d, Affine m)
     {
-        var out_ = new List<(List<Vector2>, bool)>();
+        var result = new List<(List<Vector2>, bool)>();
         List<Vector2>? cur = null;
         double x = 0, y = 0, sx = 0, sy = 0;
         double k = m.Scale;
         void End(bool closed)
         {
             if (cur != null && cur.Count > 0)
-                out_.Add((cur, closed));
+                result.Add((cur, closed));
             cur = null;
         }
         foreach (var s in d.Segs)
@@ -331,7 +331,7 @@ public static class Lower
             }
         }
         End(false);
-        return out_;
+        return result;
     }
 
     static double Sq(double a, double b) => a * a + b * b;

@@ -1,14 +1,14 @@
 namespace Fleetwright.Shipgen.Render;
 
 /// <summary>The height map: the static part of the ship (hull, superstructure, funnels, masts, AA, boats, barbettes and
-/// the clutter) as columns, grey = metres above the waterline / HEIGHT_STEP_M (0 = sea). Every pixel is a solid
+/// the clutter) as columns, grey = metres above the waterline / HeightStepM (0 = sea). Every pixel is a solid
 /// column from the sea up to its height; the game casts shadows from it (see ../shipgen/shadow.py for the reference
 /// shadow march until it moves here).</summary>
 public static class HeightMap
 {
-    public const double HEIGHT_STEP_M = 0.25;      // one grey level = 0.25 m; 255 = 63.75 m above the waterline
+    public const double HeightStepM = 0.25;      // one grey level = 0.25 m; 255 = 63.75 m above the waterline
 
-    public static Rgb Grey(double hM) => Rgb.Grey((int)Math.Max(0L, Math.Min(255L, (long)Math.Round(hM / HEIGHT_STEP_M))));
+    public static Rgb Grey(double hM) => Rgb.Grey((int)Math.Max(0L, Math.Min(255L, (long)Math.Round(hM / HeightStepM))));
 
     /// <summary>The height map from the columns (lowest first, so the taller one wins where they overlap), on the
     /// hull's canvas; hull: the hull as drawn (a look may fill it out). Also returns the tallest column.</summary>
@@ -45,7 +45,7 @@ public sealed class ShipSprites
     public required Scene Height;
     public required List<Clutter.Item> Clutter;
 
-    public const string ORIENTATION = "bow points +x (right); angles clockwise, 0 = ahead";
+    public const string Orientation = "bow points +x (right); angles clockwise, 0 = ahead";
 
     /// <summary>[x, y, w, h] of each mip level in the packed image: level 0 on the left, level 1 to its right at the
     /// top, then each next level alternately below and to the right of the previous one. The whole chain fits in
@@ -118,7 +118,7 @@ public sealed class ShipSprites
             Mips = new SpriteMips(mips, [.. Enumerable.Range(0, mips + 1).Select(k => S / (1L << k))],
                 "each layer has <name>_mips.png with level k at mip_rects[k] = [x, y, w, h]; " +
                 "within level k, size, origin_px, pivot_px and mount px are the level-0 values / 2^k"),
-            Shadow = new SpriteShadow("height.png", HeightMap.HEIGHT_STEP_M, Math.Round(deckM, 2), Math.Round(maxH, 2),
+            Shadow = new SpriteShadow("height.png", HeightMap.HeightStepM, Math.Round(deckM, 2), Math.Round(maxH, 2),
                 "height map grey value x height_step_m = metres above the waterline (0 = sea); " +
                 "mount top_m is the turret roof above the waterline; see shadow.py", MipsFile("height.png")),
             Mounts = mounts, MipRects = MipRects(W, H, mips),
