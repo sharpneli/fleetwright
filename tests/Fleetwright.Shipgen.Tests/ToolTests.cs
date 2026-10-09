@@ -53,7 +53,7 @@ public class ToolTests
             using var gpu = new GpuBaker();
             foreach (var name in new[] { "bismarck", "fleet_carrier" })
             {
-                var design = (PyDict)PyJson.Load(Paths.Shipgen("designs", name + ".json"))!;
+                var design = Design.Load(Paths.Shipgen("designs", name + ".json"));
                 var ship = ShipDesign.Build(design);
                 var d = Path.Combine(dir, name);
                 PyJson.Save(Path.Combine(d, "hitboxes.json"), ship["hitboxes"], 1);

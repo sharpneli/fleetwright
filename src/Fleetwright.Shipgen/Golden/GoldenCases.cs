@@ -52,23 +52,22 @@ public static class GoldenCases
 
     /// <summary>golden.py's capture_case: validation strings, the build (when validate(limits=False) passes), the
     /// hint check and the build time.</summary>
-    public static PyDict Capture(PyDict design)
+    public static PyDict Capture(Design design)
     {
-        var copy = () => (PyDict)PyJson.Plain(design)!;
         var rec = new PyDict();
-        rec["validate_limits"] = Try(() => ShipDesign.Validate(copy(), limits: true));
-        rec["validate_no_limits"] = Try(() => ShipDesign.Validate(copy(), limits: false));
-        rec["looks_validate"] = Try(() => Looks.Validate(copy()));
+        rec["validate_limits"] = Try(() => ShipDesign.Validate(design, limits: true));
+        rec["validate_no_limits"] = Try(() => ShipDesign.Validate(design, limits: false));
+        rec["looks_validate"] = Try(() => Looks.Validate(design));
         if (rec["validate_no_limits"] is List<object?> errs && errs.Count == 0)
         {
             var sw = Stopwatch.StartNew();
-            object? build = Try(() => ShipDesign.Build(copy()));
+            object? build = Try(() => ShipDesign.Build(design));
             rec["build_s"] = Math.Round(sw.Elapsed.TotalSeconds, 3);
             rec["build"] = build;
             if (build is PyDict b && !b.Has("raised"))
             {
                 object? L = b.D("report").D("results")["length_m"];
-                object? hinted = Try(() => ShipDesign.Build(copy(), Py.ToDouble(L)));
+                object? hinted = Try(() => ShipDesign.Build(design, Py.ToDouble(L)));
                 rec["hint"] = hinted is PyDict h && h.Has("raised")
                     ? PyDict.Merge(PyDict.Of(("length_m", L)), h)
                     : PyDict.Of(("length_m", L), ("equal", GoldenDiff.Compare(build, hinted, 1, "$").Count == 0
@@ -86,7 +85,7 @@ public static class GoldenCases
     public static bool Update(string root, GoldenCase c)
     {
         var golden = (PyDict)PyJson.Load(GoldenFile(root, c.Name))!;
-        var ours = Capture((PyDict)PyJson.Load(c.DesignPath)!);
+        var ours = Capture(Design.Load(c.DesignPath));
         golden.Remove("build_s");
         ours.Remove("build_s");
         if (GoldenDiff.Compare(golden, ours, 1).Count == 0)
@@ -99,8 +98,7 @@ public static class GoldenCases
     public static List<Difference> Check(string root, GoldenCase c, int max = 20)
     {
         var golden = (PyDict)PyJson.Load(GoldenFile(root, c.Name))!;
-        var design = (PyDict)PyJson.Load(c.DesignPath)!;
-        var ours = Capture(design);
+        var ours = Capture(Design.Load(c.DesignPath));
         golden.Remove("build_s");
         ours.Remove("build_s");
         return GoldenDiff.Compare(golden, ours, max);

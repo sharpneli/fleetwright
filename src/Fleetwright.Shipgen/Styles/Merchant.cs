@@ -15,9 +15,11 @@ public sealed class MerchantStyle : Style
         return 0.9 * area * Math.Max(0.0, depth - DOUBLE_BOTTOM);
     }
 
-    static PyDict Cargo(PyDict design) => PyDict.Merge(PyDict.Of(("kind", "dry"), ("deadweight_t", 0.0)), design.Or("cargo", null) as PyDict);
+    /// <summary>The cargo: "dry" or "tanker", and its tonnes.</summary>
+    static (string Kind, double DeadweightT) Cargo(Design design) => (design.Cargo?.Kind ?? "dry", design.Cargo?.DeadweightT ?? 0.0);
 
-    static PyDict Machinery(PyDict design) => PyDict.Merge(PyDict.Of(("position", "amidships")), design.Or("machinery", null) as PyDict);
+    /// <summary>Where the machinery stands: "amidships" or "aft".</summary>
+    static string MachineryPosition(Design design) => design.Machinery?.Position ?? "amidships";
 
     /// <summary>Spread C tonnes of cargo over the holds so the loaded ship floats level, as far as the holds allow.</summary>
     static List<double> Stow(double C, List<(double X0, double X1)> holds, Navarch.PayloadContext ctx, double fill = 1.5)
@@ -52,93 +54,93 @@ public sealed class MerchantStyle : Style
         return prop.Zip(end).Select(t => (1 - a) * t.First + a * t.Second).ToList();
     }
 
-    static PyDict MerchantHullSpec(PyDict design)
+    static PyDict MerchantHullSpec(Design design)
     {
-        var h = design.D("hull");
-        double cb = h.F("block_coefficient");
-        return PyDict.Of(("length", h["length"]), ("beam", h["beam"]),
+        double cb = design.BlockCoefficient;
+        return PyDict.Of(("length", design.HullLength), ("beam", design.HullBeam),
             ("bow", PyDict.Of(("taper", Layout.Clamp(0.42 - 0.3 * cb, 0.15, 0.3)), ("power", 2.0))),
             ("stern", PyDict.Of(("taper", 0.15), ("transom", 0.3))));
     }
 
     public override string Name => "merchant";
-    public override bool SECONDARY_LIST => true;
+    public override bool TakesSecondaryList => true;
 
     protected override IEnumerable<Limit> StyleLimits =>
     [
-        new(["hull", "block_coefficient"], 0.55, 0.85), new(["speed_kn"], 6L, 30L), new(["cargo", "deadweight_t"], 0L, 80000L),
+        new(["hull", "block_coefficient"], 0.55, 0.85), new(["speed_kn"], 6, 30), new(["cargo", "deadweight_t"], 0, 80000),
     ];
 
-    public override PyDict? DefaultTech => PyDict.Of(("name", "Triple expansion, large-tube water-tube boilers, oil-fired (1940)"),
-        ("fuel", "oil"), ("weight_kg_per_kw", 103.5), ("stress_floor", 0.45), ("sfc_g_per_kwh", 660L), ("density_t_per_m3", 0.28),
-        ("unit_max_mw", 12.0), ("unit", PyDict.Of(("mw", 5L), ("height_m", 7.5), ("width_m", 4.5), ("length_m", 9L))),
-        ("boiler_fraction", 0.55), ("crew_k", 15.3), ("part_load", "REC"),
-        ("draught", PyDict.Of(("system", "forced"), ("velocity_m_s", 14.0), ("reach_m", 20.0), ("gas_temp_k", 570L), ("air_fuel_ratio", 15L))));
+    public override TechInput DefaultTech { get; } = new()
+    {
+        Name = "Triple expansion, large-tube water-tube boilers, oil-fired (1940)", Fuel = "oil", WeightKgPerKw = 103.5,
+        StressFloor = 0.45, SfcGPerKwh = 660, DensityTPerM3 = 0.28, UnitMaxMw = 12.0,
+        Unit = new() { Mw = 5, HeightM = 7.5, WidthM = 4.5, LengthM = 9 }, BoilerFraction = 0.55, CrewK = 15.3, PartLoad = "REC",
+        Draught = new() { System = "forced", VelocityMS = 14.0, ReachM = 20.0, GasTempK = 570, AirFuelRatio = 15 },
+    };
 
-    public override double DEFAULT_CB => 0.72;
-    public override SizeRules SIZE => base.SIZE with { GmFrac = 0.04, Tb = 0.46, LbMax = 8.0 };
+    public override double DefaultBlockCoefficient => 0.72;
+    public override SizeRules Sizing => base.Sizing with { GmFrac = 0.04, Tb = 0.46, LbMax = 8.0 };
 
-    public override List<string> Validate(PyDict design)
+    public override List<string> Validate(Design design)
     {
         var errs = base.Validate(design);
         errs.AddRange(CarrierStyle.GunsAreSecondaries(this, design));
-        if (!Py.In(Cargo(design)["kind"], "dry", "tanker"))
-            errs.Add($"cargo.kind = {Py.Repr(Cargo(design)["kind"])}: use dry or tanker");
-        var m = Machinery(design);
-        if (!Py.In(m["position"], "amidships", "aft"))
-            errs.Add($"machinery.position = {Py.Repr(m["position"])}: use amidships or aft");
+        if (Cargo(design).Kind is not ("dry" or "tanker"))
+            errs.Add($"cargo.kind = {Quote(Cargo(design).Kind)}: use dry or tanker");
+        if (MachineryPosition(design) is not ("amidships" or "aft"))
+            errs.Add($"machinery.position = {Quote(MachineryPosition(design))}: use amidships or aft");
         return errs;
     }
 
-    public override PyDict Tuning(PyDict design) => PyDict.Merge(base.Tuning(design), PyDict.Of(("freeboard_a", 0.011), ("freeboard_b", 1.0),
-        ("misc_frac", 0.03), ("cruise_at_service", true), ("tb_max", 0.62), ("lcb_frac", 0.012), ("gm_stiff_frac", 0.2)));
+    public override Tuning Tuning(Design design) => new()
+    {
+        FreeboardA = 0.011, FreeboardB = 1.0, MiscFrac = 0.03, CruiseAtService = true, TbMax = 0.62, LcbFrac = 0.012, GmStiffFrac = 0.2,
+    };
 
-    public override Layout BuildLayout(PyDict design, Navarch.Result res, double shift = 0.0, double spread = 0.0) =>
+    public override Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double spread = 0.0) =>
         MerchantLayout(design, res, shift);
 
-    public override List<Weight> RoughPayload(PyDict design, double D)
+    public override List<Weight> RoughPayload(Design design, double D)
     {
-        double L = design.D("hull").F("length");
+        double L = design.HullLength;
         return [new Weight("Cargo gear", "superstructure", 0.01 * Math.Pow(L, 2), zRel: ZRel.Deck(3))];
     }
 
-    public override (List<Weight> Std, List<Weight> Full) PayloadWeights(PyDict design, double L, double D, Geo geo, PyDict tun,
+    public override (List<Weight> Std, List<Weight> Full) PayloadWeights(Design design, double L, double D, Geo geo, Tuning tun,
         Navarch.PayloadContext ctx)
     {
         var cg = Cargo(design);
         var holds = geo.Holds is { Count: > 0 } h ? h : [(-0.3 * L, 0.3 * L)];
-        if (!Py.Truthy(cg["deadweight_t"]))
+        if (cg.DeadweightT == 0)
             return ([], []);
-        var loads = Stow(cg.F("deadweight_t"), holds, ctx);
+        var loads = Stow(cg.DeadweightT, holds, ctx);
         var full = new List<Weight>();
         for (int i = 0; i < holds.Count; i++)
             if (loads[i] > 0)
-                full.Add(new Weight($"Cargo, {(Py.Eq(cg["kind"], "tanker") ? "tank" : "hold")} {i + 1}", "cargo", loads[i],
+                full.Add(new Weight($"Cargo, {(cg.Kind == "tanker" ? "tank" : "hold")} {i + 1}", "cargo", loads[i],
                     (holds[i].X0 + holds[i].X1) / 2, ZRel.Frac(0.45)));
         return ([], full);
     }
 
-    public override string CREW_STANDARD => "H3";
-    public override double CREW_DECK_K => 0.3;
+    public override string CrewStandard => "H3";
+    public override double CrewDeckK => 0.3;
 
-    public override PyDict Results(PyDict design, Layout lay, Navarch.Result r)
+    public override PyDict Results(Design design, Layout lay, Navarch.Result r)
     {
         var cg = Cargo(design);
-        var m = Machinery(design);
-        return PyDict.Of(("cargo_t", Py.RoundObj(cg["deadweight_t"])), ("deadweight_t", (long)Math.Round(r.Full - r.Std)), ("cargo_kind", cg["kind"]),
-            ("holds", (long)(lay.Geo.Holds?.Count ?? 0)), ("machinery_position", m["position"]));
+        return PyDict.Of(("cargo_t", Math.Round(cg.DeadweightT)), ("deadweight_t", (long)Math.Round(r.Full - r.Std)), ("cargo_kind", cg.Kind),
+            ("holds", (long)(lay.Geo.Holds?.Count ?? 0)), ("machinery_position", MachineryPosition(design)));
     }
 
-    public override List<object?> Summary(PyDict design, Layout lay, Navarch.Result r)
+    public override List<string> Summary(Design design, Layout lay, Navarch.Result r)
     {
         var cg = Cargo(design);
-        var m = Machinery(design);
-        return [$"cargo: {cg["deadweight_t"]:N0} t {Py.Str(cg["kind"])} in {lay.Geo.Holds?.Count ?? 0} " +
-                $"{(Py.Eq(cg["kind"], "tanker") ? "tanks" : "holds")}   deadweight {r.Full - r.Std:N0} t   " +
-                $"machinery {Py.Str(m["position"])}"];
+        return [$"cargo: {cg.DeadweightT:N0} t {cg.Kind} in {lay.Geo.Holds?.Count ?? 0} " +
+                $"{(cg.Kind == "tanker" ? "tanks" : "holds")}   deadweight {r.Full - r.Std:N0} t   " +
+                $"machinery {MachineryPosition(design)}"];
     }
 
-    static Layout MerchantLayout(PyDict design, Navarch.Result res, double shift)
+    static Layout MerchantLayout(Design design, Navarch.Result res, double shift)
     {
         double depth = res.Depth;
         var lay = new Layout(design);
@@ -147,9 +149,8 @@ public sealed class MerchantStyle : Style
         lay.Hull = hull;
         double L = hull.L, B = hull.B;
         var cg = Cargo(design);
-        var mach = Machinery(design);
-        bool tanker = Py.Eq(cg["kind"], "tanker");
-        bool aftEngines = Py.Eq(mach["position"], "aft");
+        bool tanker = cg.Kind == "tanker";
+        bool aftEngines = MachineryPosition(design) == "aft";
         lay.ShiftRange = (-0.05 * L, 0.05 * L);
         shift = Layout.Clamp(shift, lay.ShiftRange.Lo, lay.ShiftRange.Hi);
         lay.Geo.Shift = shift;
@@ -325,31 +326,29 @@ public sealed class MerchantStyle : Style
         }
         if (holds.Count == 0)
             lay.Fail("length", "No room for cargo: the forecastle, midships house and poop fill the hull.");
-        else if (Py.Truthy(cg["deadweight_t"]))
+        else if (cg.DeadweightT != 0)
         {
             double vol = HoldVolume(hull, holds, depth);
-            double need = cg.F("deadweight_t") * STOWAGE[cg.S("kind")];
+            double need = cg.DeadweightT * STOWAGE[cg.Kind];
             if (vol < need)
                 lay.Fail("length", $"The {(tanker ? "tanks" : "holds")} take about {vol:N0} m3, but " +
-                                   $"{cg["deadweight_t"]:N0} t of cargo needs about {need:N0} m3. Carry less cargo.");
+                                   $"{cg.DeadweightT:N0} t of cargo needs about {need:N0} m3. Carry less cargo.");
         }
         double hatchT = hatches.Select(h => h.F("l") * h.F("w")).Sum() * 0.12;
         if (hatchT != 0)
             lay.Weights.Add(new Weight("Hatch covers", "superstructure", hatchT, 0.0, ZRel.Deck(1.0)));
         lay.Geo.Holds = holds;
 
-        var tp = design.Or("torpedoes", null) as PyDict ?? new PyDict();
-        if (Py.Truthy(tp.Get("mounts")))
+        if (design.Torpedoes is { Mounts: > 0 } tp)
         {
             var (ttId, tt) = Armament.TorpedoType(tp);
             double r = tt.F("barrel_len") / 2 + 0.3;
-            Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, (Py.ToLong(tp["mounts"]) + 1) / 2,
+            Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, (tp.Mounts.Value + 1) / 2,
                 xs.Select(x => new object?[] { x, hull.HalfWidth(x) - r - 0.4, DeckH(x) + 0.3 }), "T", label: "Torpedo");
         }
         FireControl.Place(lay, design, blocks);
         var aaOut = new List<PyDict>();
-        var aaReq = design.Or("aa", null) as PyDict ?? new PyDict();
-        foreach (var (kind, count) in new[] { ("quad40", aaReq.Get("heavy", 0L)), ("single20", aaReq.Get("light", 0L)) })
+        foreach (var (kind, count) in new[] { ("quad40", design.Aa?.Heavy ?? 0), ("single20", design.Aa?.Light ?? 0) })
         {
             double rr = Geometry.AA_CFG[kind].R;
             double roof = RAISED_H + Layout.LEVEL_H;
@@ -360,7 +359,7 @@ public sealed class MerchantStyle : Style
             };
             cands.AddRange(xs.Select(x => new object?[] { x, hull.HalfWidth(x) - rr - 0.6, DeckH(x) }));
             var ign = houseIds.ToList();
-            Armament.PlaceAa(lay, aaOut, kind, Py.ToLong(count), cands, ignore: _ => ign);
+            Armament.PlaceAa(lay, aaOut, kind, count, cands, ignore: _ => ign);
         }
 
         double innerHw = 0.85 * B / 2;

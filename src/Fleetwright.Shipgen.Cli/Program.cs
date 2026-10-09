@@ -141,7 +141,10 @@ public static class Program
             : throw new ArgumentException("no shipgen/golden folder above the current directory: give --root");
     }
 
-    static PyDict LoadDesign(string path) => (PyDict)PyJson.Load(path)!;
+    static Shipgen.Design LoadDesign(string path) => Shipgen.Design.Load(path);
+
+    /// <summary>A design file as plain JSON data, for the fuzzer to mutate.</summary>
+    static PyDict LoadRaw(string path) => (PyDict)PyJson.Load(path)!;
 
     static int Validate(Args a)
     {
@@ -190,7 +193,7 @@ public static class Program
                 crashed++;
                 continue;
             }
-            string dir = Path.Combine(outDir, design.S("id"));
+            string dir = Path.Combine(outDir, design.Id!);
             var rep = ship.D("report");
             PyJson.Save(Path.Combine(dir, "report.json"), rep, 2);
             PyJson.Save(Path.Combine(dir, "hitboxes.json"), ship["hitboxes"], 1);
@@ -217,10 +220,10 @@ public static class Program
     }
 
     /// <summary>design.py's one-line summary.</summary>
-    static string Summary(PyDict design, PyDict rep)
+    static string Summary(Shipgen.Design design, PyDict rep)
     {
         var res = rep.D("results");
-        return $"{design.S("id"),14}: {(Py.Truthy(rep["valid"]) ? "OK " : "BAD")} " +
+        return $"{design.Id,14}: {(Py.Truthy(rep["valid"]) ? "OK " : "BAD")} " +
                $"{res["length_m"],5:F1} x {res["beam_m"],4:F1} m  " +
                $"std {res["standard_displacement_t"],6:N0} t " +
                $"full {res["full_displacement_t"],6:N0} t  T {res["draught_m"],5} m  " +
@@ -305,22 +308,21 @@ public static class Program
         foreach (var c in cases)
         {
             var design = LoadDesign(c.DesignPath);
-            if (ShipDesign.Validate((PyDict)PyJson.Plain(design)!, false).Count > 0)
+            if (ShipDesign.Validate(design, false).Count > 0)
                 continue;
             double best = double.MaxValue, bestHinted = double.MaxValue;
             long alloc = 0;
             for (int i = 0; i < repeat; i++)
             {
-                var copy = (PyDict)PyJson.Plain(design)!;
                 long a0 = GC.GetAllocatedBytesForCurrentThread();
                 var sw = Stopwatch.StartNew();
-                var ship = ShipDesign.Build(copy);
+                var ship = ShipDesign.Build(design);
                 best = Math.Min(best, sw.Elapsed.TotalSeconds);
                 alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
                 // the designer's per-knob rebuild: the same design again, starting from the length it had
                 double length = ship.D("report").D("results").F("length_m");
                 sw.Restart();
-                ShipDesign.Build((PyDict)PyJson.Plain(design)!, length);
+                ShipDesign.Build(design, length);
                 bestHinted = Math.Min(bestHinted, sw.Elapsed.TotalSeconds);
             }
             double p = pyTimes.Get(c.Name) is object o && o is not null ? Py.ToDouble(o) : double.NaN;
@@ -401,7 +403,7 @@ public static class Program
         {
             var design = LoadDesign(path);
             var sp = ShipSprites.Build(ShipDesign.Build(design), scale, mips);
-            string dir = Path.Combine(outDir, design.S("id"));
+            string dir = Path.Combine(outDir, design.Id!);
             Directory.CreateDirectory(Path.Combine(dir, "turrets"));
             PyJson.Save(Path.Combine(dir, "sprite.json"), sp.Meta, 2);
             File.WriteAllText(Path.Combine(dir, "hull.svg"), SvgWriter.Write(sp.Hull));
@@ -409,7 +411,7 @@ public static class Program
             foreach (var (tid, sc) in sp.Turrets)
                 File.WriteAllText(Path.Combine(dir, "turrets", tid + ".svg"), SvgWriter.Write(sc));
             var size = sp.Meta.L("size_px");
-            Console.WriteLine($"drew {design.S("id")}: {size[0]}x{size[1]} px, {sp.Turrets.Count} turret types, " +
+            Console.WriteLine($"drew {design.Id}: {size[0]}x{size[1]} px, {sp.Turrets.Count} turret types, " +
                               $"{sp.Clutter.Count} clutter items -> {dir}");
         }
         return 0;
@@ -471,9 +473,9 @@ public static class Program
             double tBuild = sw.Elapsed.TotalSeconds;
             var baked = ShipBake.Bake(sp, gpu);
             double tBake = sw.Elapsed.TotalSeconds - tBuild;
-            string dir = Path.Combine(outDir, design.S("id"));
+            string dir = Path.Combine(outDir, design.Id!);
             ShipBake.Save(sp, baked, dir);
-            Console.WriteLine($"baked {design.S("id")}: {baked.Hull.Width}x{baked.Hull.Height} px, {sp.Turrets.Count} turret types " +
+            Console.WriteLine($"baked {design.Id}: {baked.Hull.Width}x{baked.Hull.Height} px, {sp.Turrets.Count} turret types " +
                               $"(build+draw {tBuild:F2} s, bake {tBake:F2} s, save {sw.Elapsed.TotalSeconds - tBuild - tBake:F2} s) -> {dir}");
         }
         return 0;
@@ -516,7 +518,7 @@ public static class Program
     /// outcome and the rest the detail.</summary>
     static int FuzzOne(Args a)
     {
-        var (outcome, detail) = Fuzz.Check(LoadDesign(a.Positional[0]), !a.Has("no-limits"));
+        var (outcome, detail) = Fuzz.Check(LoadRaw(a.Positional[0]), !a.Has("no-limits"));
         File.WriteAllText(a.Positional[1], outcome + "\n" + detail);
         return 0;
     }
@@ -530,7 +532,7 @@ public static class Program
         bool limits = !a.Has("no-limits");
         string mode = a.Get("mode", "all")!, outDir = a.Get("out", "fuzz_out")!;
         var rng = new Random(a.Int("seed", 1));
-        var bases = a.Positional.Select(p => (Path: p, D: LoadDesign(p))).ToList();
+        var bases = a.Positional.Select(p => (Path: p, D: LoadRaw(p))).ToList();
         if (bases.Count == 0)
             throw new ArgumentException("fuzz DESIGN.json...");
         var choices = Fuzz.CorpusChoices(bases.Select(b => b.D));

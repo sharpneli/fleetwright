@@ -25,7 +25,7 @@ public static class RenderGolden
         ((PyDict)PyJson.Load(Path.Combine(root, "golden", kind, "capture.json"))!).D("cases").Get(name);
 
     public static ShipSprites Draw(GoldenCase c) =>
-        ShipSprites.Build(ShipDesign.Build((PyDict)PyJson.Load(c.DesignPath)!), Scale, Mips);
+        ShipSprites.Build(ShipDesign.Build(Design.Load(c.DesignPath)), Scale, Mips);
 
     /// <summary>Every SVG of the case against golden/svg: hull, height map and each turret type. Empty when it
     /// matches or the case isn't drawn (it doesn't build).</summary>
@@ -92,7 +92,7 @@ public static class RenderGolden
             }
             if (CheckSprite(root, c, 1).Count > 0)
             {
-                var meta = ShipSprites.Build(ShipDesign.Build((PyDict)PyJson.Load(c.DesignPath)!), Scale, Mips).Meta;
+                var meta = ShipSprites.Build(ShipDesign.Build(Design.Load(c.DesignPath)), Scale, Mips).Meta;
                 PyJson.Save(Path.Combine(root, "golden", "sprite", c.Name, "sprite.json.gz"), PyJson.Plain(meta), 1);
                 sprite.Add(c.Name);
             }
@@ -112,7 +112,7 @@ public static class RenderGolden
         if (State(root, "sprite", c.Name) as string != "ok")
             return [];
         var golden = (PyDict)PyJson.Load(Path.Combine(root, "golden", "sprite", c.Name, "sprite.json.gz"))!;
-        var ship = ShipDesign.Build((PyDict)PyJson.Load(c.DesignPath)!);
+        var ship = ShipDesign.Build(Design.Load(c.DesignPath));
         var ours = ShipSprites.Build(ship, Scale, Mips).Meta;
         var g = golden.Copy();
         var o = (PyDict)PyJson.Plain(ours)!;

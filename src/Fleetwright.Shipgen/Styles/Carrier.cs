@@ -1,35 +1,44 @@
 namespace Fleetwright.Shipgen;
 
-/// <summary>carrier: aircraft carriers, from seaplane carriers to angled-deck fleet carriers.</summary>
+/// <summary>A carrier's aviation, defaults filled in: the flight deck ("axial", "angled" or "none" for a seaplane
+/// carrier), the air group and its aircraft's weight, the hangar decks and whether the hangar is closed, the elevators,
+/// catapults and cranes, and a number painted on the deck.</summary>
+public sealed record AviationSpec(string FlightDeck, double Aircraft, double AircraftT, int HangarDecks, string Hangar,
+    int Elevators, int DeckEdgeElevators, int Catapults, int Cranes, string? Number);
+
+/// <summary>Aircraft carriers, from seaplane carriers to angled-deck fleet carriers.</summary>
 public sealed class CarrierStyle : Style
 {
     const double HANGAR_H = 5.6, GALLERY_H = 2.0, SPOT_K = 20.0, ANGLE_DEG = 9.0;
     const double ORDNANCE_K = 0.6, AVGAS_K = 1.2, AVGAS_T_PER_M3 = 0.5;
+    static readonly string[] FlightDecks = ["axial", "angled", "none"];
 
-    static PyDict? Defaults(object? kind) => kind switch
+    /// <summary>The elevators, deck-edge elevators, catapults and cranes a flight deck kind comes with.</summary>
+    static (int Elevators, int DeckEdge, int Catapults, int Cranes) Defaults(string kind) => kind switch
     {
-        "axial" => PyDict.Of(("elevators", 2L), ("deck_edge_elevators", 1L), ("catapults", 1L), ("cranes", 0L)),
-        "angled" => PyDict.Of(("elevators", 0L), ("deck_edge_elevators", 4L), ("catapults", 4L), ("cranes", 0L)),
-        "none" => PyDict.Of(("elevators", 0L), ("deck_edge_elevators", 0L), ("catapults", 1L), ("cranes", 2L)),
-        _ => null,
+        "axial" => (2, 1, 1, 0),
+        "angled" => (0, 4, 4, 0),
+        "none" => (0, 0, 1, 2),
+        _ => (0, 0, 0, 0),
     };
 
-    public static PyDict Aviation(PyDict design)
+    public static AviationSpec Aviation(Design design)
     {
-        var a = design.DOr("aviation");
-        var kind = a.Get("flight_deck", "axial");
-        return PyDict.Merge(PyDict.Of(("flight_deck", kind), ("aircraft", 0L), ("aircraft_t", 5.0), ("hangar_decks", 1L), ("hangar", "open")),
-            Defaults(kind), a);
+        var a = design.Aviation;
+        string kind = a?.FlightDeck ?? "axial";
+        var d = Defaults(kind);
+        return new AviationSpec(kind, a?.Aircraft ?? 0, a?.AircraftT ?? 5.0, a?.HangarDecks ?? 1, a?.Hangar ?? "open",
+            a?.Elevators ?? d.Elevators, a?.DeckEdgeElevators ?? d.DeckEdge, a?.Catapults ?? d.Catapults, a?.Cranes ?? d.Cranes, a?.Number);
     }
 
     /// <summary>A closed hangar: the flight deck is the hull's strength deck.</summary>
-    static bool Closed(PyDict design)
+    static bool Closed(Design design)
     {
         var av = Aviation(design);
-        return Py.Eq(av["hangar"], "closed") && !Py.Eq(av["flight_deck"], "none");
+        return av.Hangar == "closed" && av.FlightDeck != "none";
     }
 
-    static double SpotM2(PyDict av) => SPOT_K * Math.Pow(av.F("aircraft_t"), 2.0 / 3);
+    static double SpotM2(AviationSpec av) => SPOT_K * Math.Pow(av.AircraftT, 2.0 / 3);
 
     /// <summary>0, 1/2, 1/4, 3/4, 1/8, ...: positions that spread evenly however many get used.</summary>
     public static List<double> Vdc(int n)
@@ -58,11 +67,11 @@ public sealed class CarrierStyle : Style
 
     public sealed record Land(Pt P0, (double X, double Y) D, (double X, double Y) N, double Length, double Width, Pt End, Pt Corner);
 
-    public static DeckPlanData DeckPlan(PyDict design)
+    public static DeckPlanData DeckPlan(Design design)
     {
         var av = Aviation(design);
-        double L = design.D("hull").F("length"), B = design.D("hull").F("beam");
-        string kind = av.S("flight_deck");
+        double L = design.HullLength, B = design.HullBeam;
+        string kind = av.FlightDeck;
         if (kind == "none")
         {
             double hx0n = -0.30 * L, hx1n = -0.02 * L, hhwn = 0.36 * B;
@@ -72,7 +81,7 @@ public sealed class CarrierStyle : Style
             return new DeckPlanData(kind, 0.0, (hx0n, hx1n, hhwn), hangarAreaN, 0.0,
                 (long)((hangarAreaN * 0.85 + parkArea * 0.5) / SpotM2(av)), Park: (deckX0, hx0n));
         }
-        double fdH = HANGAR_H * av.F("hangar_decks") + GALLERY_H;
+        double fdH = HANGAR_H * av.HangarDecks + GALLERY_H;
         double x0 = -L / 2 - 0.02 * L, x1 = L / 2 - 0.03 * L;
         double tap = 0.06 * L, hw = 0.6 * B;
         var port = new List<Pt> { new(x0, -0.9 * hw), new(x0 + 3, -hw) };
@@ -99,7 +108,7 @@ public sealed class CarrierStyle : Style
         double hx0 = -0.40 * L, hx1 = 0.32 * L, hhw = 0.4 * B;
         double hangarArea = (hx1 - hx0) * 2 * hhw;
         double fdArea = Geometry.PolygonArea(pts);
-        long cap = (long)((hangarArea * 0.85 * av.F("hangar_decks") + fdArea * 0.30) / SpotM2(av));
+        long cap = (long)((hangarArea * 0.85 * av.HangarDecks + fdArea * 0.30) / SpotM2(av));
         return new DeckPlanData(kind, fdH, (hx0, hx1, hhw), hangarArea, fdArea, cap, x0, x1, tap, hw, pts, land);
     }
 
@@ -107,13 +116,13 @@ public sealed class CarrierStyle : Style
         Geometry.PolygonYSpan(dp.Points!, x) ?? (-dp.Hw, dp.Hw);
 
     /// <summary>Renderer spec for the flight deck.</summary>
-    static PyDict FlightDeckDrawing(DeckPlanData dp, PyDict av, double L)
+    static PyDict FlightDeckDrawing(DeckPlanData dp, AviationSpec av, double L)
     {
         double x0 = dp.X0, x1 = dp.X1, tap = dp.Tap, hw = dp.Hw;
         var marks = new List<object?>();
         var wires = new List<object?>();
         var ys = dp.Points!.Select(p => p.Y).ToList();
-        double lc = Layout.Clamp(12 + 2.8 * av.F("aircraft_t"), 20, 85);
+        double lc = Layout.Clamp(12 + 2.8 * av.AircraftT, 20, 85);
         var land = dp.Land;
         (double, double) At(double t, double off = 0.0) =>
             (land!.P0.X + off * land.N.X + t * land.D.X, land.P0.Y + off * land.N.Y + t * land.D.Y);
@@ -159,7 +168,7 @@ public sealed class CarrierStyle : Style
             marks.Add(PyDict.Of(("x1", sx), ("y1", -0.9 * hw + 1.5), ("x2", sx), ("y2", 0.9 * hw - 1.5), ("color", "stripe"), ("width", 0.7),
                 ("opacity", i % 2 == 0 ? 0.9 : (object)0L)));
         }
-        for (int k = 0; k < Math.Min(av.I("catapults"), land != null ? 4 : 2); k++)
+        for (int k = 0; k < Math.Min(av.Catapults, land != null ? 4 : 2); k++)
         {
             if (k < 2)
             {
@@ -176,73 +185,72 @@ public sealed class CarrierStyle : Style
         }
         return PyDict.Of(("points", dp.Points), ("planks", PyDict.Of(("x0", x0), ("x1", x1), ("y0", ys.Min()), ("y1", ys.Max()), ("step", 1.4))),
             ("elevators", new List<object?>()), ("edge_elevators", new List<object?>()), ("wires", wires), ("marks", marks),
-            ("number", av.B("number") ? PyDict.Of(("x", x1 - 0.6 * tap - lc - 0.04 * L), ("y", 0L), ("text", Py.Str(av.Get("number", ""))),
+            ("number", !string.IsNullOrEmpty(av.Number) ? PyDict.Of(("x", x1 - 0.6 * tap - lc - 0.04 * L), ("y", 0L), ("text", av.Number),
                 ("size", 0.035 * L)) : null));
     }
 
     /// <summary>Carriers and merchants are built around something else; guns are fitted where they suit.</summary>
-    public static List<string> GunsAreSecondaries(Style style, PyDict design)
+    public static List<string> GunsAreSecondaries(Style style, Design design)
     {
         var errs = new List<string>();
-        if (Py.Truthy(design.Get("main")))
+        if (design.Main is { Count: > 0 })
             errs.Add($"The {style.Name} style has no main battery: its guns are secondaries fitted where they suit. " +
                      "Give them as \"secondary\": a battery or a list of batteries, each with \"count\" (or " +
                      "\"per_side\") and \"where\": \"ends\" or \"sides\".");
-        errs.AddRange(Armament.BatteriesOf(design).Where(b => !Py.In(b["where"], "ends", "sides"))
-            .Select(b => $"secondary.where = {Py.Repr(b["where"])}: use ends or sides"));
+        errs.AddRange(Armament.BatteriesOf(design).Where(b => b.Where is not ("ends" or "sides"))
+            .Select(b => $"secondary.where = {Quote(b.Where)}: use ends or sides"));
         return errs;
     }
 
     public override string Name => "carrier";
-    public override bool SECONDARY_LIST => true;
-    public override long MIN_TOWER => 3;
+    public override bool TakesSecondaryList => true;
+    public override int MinTowerLevels => 3;
 
     protected override IEnumerable<Limit> StyleLimits =>
     [
-        new(["hull", "block_coefficient"], 0.45, 0.76), new(["aviation", "aircraft"], 0L, 160L), new(["aviation", "aircraft_t"], 0.5, 35L),
-        new(["aviation", "hangar_decks"], 1L, 2L), new(["aviation", "elevators"], 0L, 4L), new(["aviation", "deck_edge_elevators"], 0L, 4L),
-        new(["aviation", "catapults"], 0L, 4L), new(["aviation", "cranes"], 0L, 4L), new(["armour", "flight_deck_mm"], 0L, 100L),
+        new(["hull", "block_coefficient"], 0.45, 0.76), new(["aviation", "aircraft"], 0, 160), new(["aviation", "aircraft_t"], 0.5, 35),
+        new(["aviation", "hangar_decks"], 1, 2), new(["aviation", "elevators"], 0, 4), new(["aviation", "deck_edge_elevators"], 0, 4),
+        new(["aviation", "catapults"], 0, 4), new(["aviation", "cranes"], 0, 4), new(["armour", "flight_deck_mm"], 0, 100),
     ];
 
-    public override SizeRules SIZE => base.SIZE with { LbMax = 9.5 };
+    public override SizeRules Sizing => base.Sizing with { LbMax = 9.5 };
 
-    public override List<string> Validate(PyDict design)
+    public override List<string> Validate(Design design)
     {
         var av = Aviation(design);
-        var kind = av["flight_deck"];
-        var hangar = av["hangar"];
         var errs = base.Validate(design);
         errs.AddRange(GunsAreSecondaries(this, design));
-        if (Defaults(kind) is null)
-            errs.Add($"aviation.flight_deck = {Py.Repr(kind)}: use axial, angled or none");
-        if (!Py.In(hangar, "open", "closed"))
-            errs.Add($"aviation.hangar = {Py.Repr(hangar)}: use open or closed");
+        if (!FlightDecks.Contains(av.FlightDeck))
+            errs.Add($"aviation.flight_deck = {Quote(av.FlightDeck)}: use axial, angled or none");
+        if (av.Hangar is not ("open" or "closed"))
+            errs.Add($"aviation.hangar = {Quote(av.Hangar)}: use open or closed");
         return errs;
     }
 
-    public override PyDict? StrengthDeck(PyDict design, double D)
+    public override StrengthDeck? StrengthDeckOf(Design design, double D)
     {
         if (!Closed(design))
             return null;
         double fdH = DeckPlan(design).FdH;
-        var mm = design.DOr("armour").Get("flight_deck_mm", 0L);
-        return PyDict.Of(("h", fdH), ("decks", Aviation(design)["hangar_decks"]),
-            ("plates", Py.Truthy(mm) ? new List<(double, double)> { (Py.ToDouble(mm), D + fdH) } : new List<(double, double)>()));
+        double mm = design.Armour?.FlightDeckMm ?? 0;
+        return new StrengthDeck(fdH, Aviation(design).HangarDecks, mm != 0 ? [(mm, D + fdH)] : []);
     }
 
-    public override PyDict Tuning(PyDict design) => PyDict.Merge(base.Tuning(design), PyDict.Of(("freeboard_a", 0.024), ("freeboard_b", 2.5),
-        ("misc_frac", 0.075), ("hull_z_frac", 0.5), ("flight_deck_t_per_m2", 0.34), ("hangar_t_per_m2", 0.32)));
-
-    public override Layout BuildLayout(PyDict design, Navarch.Result res, double shift = 0.0, double spread = 0.0) =>
-        Py.Eq(Aviation(design)["flight_deck"], "none") ? SeaplaneLayout(design, res, shift) : FlightDeckLayout(design, res, shift);
-
-    public override List<Weight> RoughPayload(PyDict design, double D)
+    public override Tuning Tuning(Design design) => new()
     {
-        double L = design.D("hull").F("length");
+        FreeboardA = 0.024, FreeboardB = 2.5, MiscFrac = 0.075, HullZFrac = 0.5, FlightDeckTPerM2 = 0.34, HangarTPerM2 = 0.32,
+    };
+
+    public override Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double spread = 0.0) =>
+        Aviation(design).FlightDeck == "none" ? SeaplaneLayout(design, res, shift) : FlightDeckLayout(design, res, shift);
+
+    public override List<Weight> RoughPayload(Design design, double D)
+    {
+        double L = design.HullLength;
         return [new Weight("Island", "superstructure", 0.006 * Math.Pow(L, 2), zRel: ZRel.Deck(DeckPlan(design).FdH + 4))];
     }
 
-    public override (double Area, double X, double Z) WeatherDeck(PyDict design, double L, double B)
+    public override (double Area, double X, double Z) WeatherDeck(Design design, double L, double B)
     {
         var dp = DeckPlan(design);
         if (dp.Kind == "none")
@@ -250,49 +258,49 @@ public sealed class CarrierStyle : Style
         return (dp.FdArea, (dp.X0 + dp.X1) / 2, dp.FdH);
     }
 
-    public override List<Weight> StructureWeights(PyDict design, double L, double B, double T, double D, Geo geo, PyDict tun)
+    public override List<Weight> StructureWeights(Design design, double L, double B, double T, double D, Geo geo, Tuning tun)
     {
         var dp = DeckPlan(design);
         var av = Aviation(design);
-        double m = av.F("aircraft_t");
+        double m = av.AircraftT;
         var (hx0, hx1, _) = dp.Hangar;
         var out_ = new List<Weight>();
         if (dp.Kind != "none")
         {
             double fdx = (dp.X0 + dp.X1) / 2;
-            double fdT = dp.FdArea * tun.F("flight_deck_t_per_m2");
+            double fdT = dp.FdArea * tun.FlightDeckTPerM2;
             if (Closed(design))
-                fdT = Math.Max(0.0, fdT - HullWeight.DeckArea(L, B, design.D("hull").F("block_coefficient"))
-                    * HullWeight.DeckTPerM2(L, HullWeight.Construction(design)));
+                fdT = Math.Max(0.0, fdT - HullWeight.DeckArea(L, B, design.BlockCoefficient)
+                    * HullWeight.DeckTPerM2(L, HullWeight.ConstructionOf(design)));
             out_.Add(new Weight("Flight deck", "hull", fdT, fdx, ZRel.Deck(dp.FdH)));
-            var mm = design.DOr("armour").Get("flight_deck_mm", 0L);
-            if (Py.Truthy(mm))
-                out_.Add(new Weight("Flight deck armour", "armour", dp.FdArea * 0.85 * Py.ToDouble(mm) / 1000 * Weight.STEEL, fdx, ZRel.Deck(dp.FdH)));
-            out_.Add(new Weight("Hangar structure", "hull", dp.HangarArea * av.F("hangar_decks") * tun.F("hangar_t_per_m2"), (hx0 + hx1) / 2,
+            double mm = design.Armour?.FlightDeckMm ?? 0;
+            if (mm != 0)
+                out_.Add(new Weight("Flight deck armour", "armour", dp.FdArea * 0.85 * mm / 1000 * Weight.STEEL, fdx, ZRel.Deck(dp.FdH)));
+            out_.Add(new Weight("Hangar structure", "hull", dp.HangarArea * av.HangarDecks * tun.HangarTPerM2, (hx0 + hx1) / 2,
                 ZRel.Deck(dp.FdH / 2)));
-            double nEl = av.F("elevators") + av.F("deck_edge_elevators");
+            double nEl = av.Elevators + av.DeckEdgeElevators;
             if (nEl != 0)
                 out_.Add(new Weight("Elevators", "aviation", nEl * (8 + 3 * m), (hx0 + hx1) / 2, ZRel.Deck(dp.FdH - 1)));
             out_.Add(new Weight("Arresting gear", "aviation", 30 + 2 * m, dp.X0 + 0.15 * (dp.X1 - dp.X0), ZRel.Deck(dp.FdH - 1)));
-            if (av.F("catapults") != 0)
-                out_.Add(new Weight("Catapults", "aviation", av.F("catapults") * (15 + 3 * m), 0.3 * L, ZRel.Deck(dp.FdH - 1)));
+            if (av.Catapults != 0)
+                out_.Add(new Weight("Catapults", "aviation", av.Catapults * (15 + 3 * m), 0.3 * L, ZRel.Deck(dp.FdH - 1)));
         }
         else
         {
-            if (av.F("cranes") != 0)
-                out_.Add(new Weight("Aircraft cranes", "aviation", av.F("cranes") * (15 + 2 * m), hx0, ZRel.Deck(4)));
-            if (av.F("catapults") != 0)
-                out_.Add(new Weight("Catapults", "aviation", av.F("catapults") * (10 + 2 * m), (dp.Park!.Value.A + hx0) / 2, ZRel.Deck(1)));
+            if (av.Cranes != 0)
+                out_.Add(new Weight("Aircraft cranes", "aviation", av.Cranes * (15 + 2 * m), hx0, ZRel.Deck(4)));
+            if (av.Catapults != 0)
+                out_.Add(new Weight("Catapults", "aviation", av.Catapults * (10 + 2 * m), (dp.Park!.Value.A + hx0) / 2, ZRel.Deck(1)));
         }
         return out_;
     }
 
-    public override (List<Weight> Std, List<Weight> Full) PayloadWeights(PyDict design, double L, double D, Geo geo, PyDict tun,
+    public override (List<Weight> Std, List<Weight> Full) PayloadWeights(Design design, double L, double D, Geo geo, Tuning tun,
         Navarch.PayloadContext ctx)
     {
         var av = Aviation(design);
         var dp = DeckPlan(design);
-        double n = av.F("aircraft"), m = av.F("aircraft_t");
+        double n = av.Aircraft, m = av.AircraftT;
         if (n == 0)
             return ([], []);
         var (hx0, hx1, _) = dp.Hangar;
@@ -306,17 +314,17 @@ public sealed class CarrierStyle : Style
         ]);
     }
 
-    public override PyDict CrewExtra(PyDict design)
+    public override List<(string Name, long Men)> CrewExtra(Design design)
     {
         var av = Aviation(design);
-        return PyDict.Of(("air_group", (long)Math.Round(av.F("aircraft") * (6 + 0.75 * av.F("aircraft_t")))));
+        return [("air_group", (long)Math.Round(av.Aircraft * (6 + 0.75 * av.AircraftT)))];
     }
 
-    public override PyDict Results(PyDict design, Layout lay, Navarch.Result r)
+    public override PyDict Results(Design design, Layout lay, Navarch.Result r)
     {
         var av = Aviation(design);
         var dp = DeckPlan(design);
-        var out_ = PyDict.Of(("aircraft", av["aircraft"]), ("aircraft_capacity", dp.Capacity), ("hangar_area_m2", (long)Math.Round(dp.HangarArea)),
+        var out_ = PyDict.Of(("aircraft", av.Aircraft), ("aircraft_capacity", dp.Capacity), ("hangar_area_m2", (long)Math.Round(dp.HangarArea)),
             ("flight_deck", dp.Kind));
         if (dp.Kind != "none")
         {
@@ -327,21 +335,21 @@ public sealed class CarrierStyle : Style
         return out_;
     }
 
-    public override List<object?> Summary(PyDict design, Layout lay, Navarch.Result r)
+    public override List<string> Summary(Design design, Layout lay, Navarch.Result r)
     {
         var av = Aviation(design);
         var dp = DeckPlan(design);
-        string line = $"aviation: {Py.Str(av["aircraft"])} aircraft of {av.F("aircraft_t")} t (capacity {dp.Capacity})   ";
+        string line = $"aviation: {av.Aircraft} aircraft of {av.AircraftT} t (capacity {dp.Capacity})   ";
         if (dp.Kind == "none")
-            return [line + $"seaplane carrier, {Py.Str(av["cranes"])} cranes, {Py.Str(av["catapults"])} catapults"];
+            return [line + $"seaplane carrier, {av.Cranes} cranes, {av.Catapults} catapults"];
         var ys = dp.Points!.Select(p => p.Y).ToList();
         return [line + $"{dp.Kind} flight deck {dp.X1 - dp.X0:F0} x {ys.Max() - ys.Min():F0} m, " +
-                $"{Py.Str(av["elevators"])} + {Py.Str(av["deck_edge_elevators"])} deck-edge elevators, {Py.Str(av["catapults"])} catapults"];
+                $"{av.Elevators} + {av.DeckEdgeElevators} deck-edge elevators, {av.Catapults} catapults"];
     }
 
     // ------------------------------------------------------------------ layouts
 
-    static (Layout Lay, PyDict Hs, Hull Hull, double Shift) Common(PyDict design, double shift)
+    static (Layout Lay, PyDict Hs, Hull Hull, double Shift) Common(Design design, double shift)
     {
         var lay = new Layout(design);
         var hs = Layout.HullSpec(design);
@@ -353,15 +361,15 @@ public sealed class CarrierStyle : Style
         return (lay, hs, hull, shift);
     }
 
-    static void CheckCapacity(Layout lay, PyDict av, DeckPlanData dp)
+    static void CheckCapacity(Layout lay, AviationSpec av, DeckPlanData dp)
     {
-        if (av.F("aircraft") > dp.Capacity)
-            lay.Fail("length", $"Air group of {Py.Str(av["aircraft"])} does not fit: the hangar and deck park hold about " +
-                               $"{dp.Capacity} aircraft of {av.F("aircraft_t")} t. Add a hangar deck, or carry fewer or " +
+        if (av.Aircraft > dp.Capacity)
+            lay.Fail("length", $"Air group of {av.Aircraft} does not fit: the hangar and deck park hold about " +
+                               $"{dp.Capacity} aircraft of {av.AircraftT} t. Add a hangar deck, or carry fewer or " +
                                "smaller aircraft.");
     }
 
-    static double Machinery(Layout lay, PyDict design, Navarch.Result res, Hull hull, double mc)
+    static double Machinery(Layout lay, Design design, Navarch.Result res, Hull hull, double mc)
     {
         double lMach = Layout.PlanMachinery(lay, design, res, hull, mc);
         if (lMach > 0.5 * hull.L)
@@ -378,7 +386,7 @@ public sealed class CarrierStyle : Style
         Layout.AddMachineryRooms(lay, Layout.StackMachinery(Layout.PlanSegments(lay.Geo.Plant!), m1), 0.8 * hull.B / 2, res.Depth);
     }
 
-    static void Compartments(Layout lay, PyDict design, Hull hull, (double X0, double X1) mach, (double X0, double X1, double Hhw) hangar,
+    static void Compartments(Layout lay, Design design, Hull hull, (double X0, double X1) mach, (double X0, double X1, double Hhw) hangar,
         List<PyDict> mounts)
     {
         var av = Aviation(design);
@@ -388,7 +396,7 @@ public sealed class CarrierStyle : Style
         Layout.SetCitadel(lay, cit.Item1, cit.Item2);
         double innerHw = 0.8 * B / 2;
         var (hx0, hx1, hhw) = hangar;
-        double airT = av.F("aircraft") * av.F("aircraft_t");
+        double airT = av.Aircraft * av.AircraftT;
         var st = Ordnance.Stow(lay, mounts, [
             PyDict.Of(("x0", m1), ("x1", cit.Item2), ("half_width", innerHw), ("rooms", new List<object?> {
                 PyDict.Of(("id", "Aviation magazines"), ("tonnes", ORDNANCE_K * airT)),
@@ -401,11 +409,11 @@ public sealed class CarrierStyle : Style
         if (st.TryGetValue("Aviation fuel", out var af))
             lay.Geo.Avgas = ((af.X0 + af.X1) / 2, (af.Base + af.Top) / 2);
         lay.Compartments.Add(PyDict.Of(("id", "Hangar"), ("kind", "hangar"), ("x0", hx0), ("x1", hx1), ("half_width", hhw), ("base", 0.0),
-            ("top", Py.Eq(av["flight_deck"], "none") ? 2 * Layout.LEVEL_H : HANGAR_H * av.F("hangar_decks"))));
+            ("top", av.FlightDeck == "none" ? 2 * Layout.LEVEL_H : HANGAR_H * av.HangarDecks)));
         Layout.AddSteering(lay);
     }
 
-    static Layout FlightDeckLayout(PyDict design, Navarch.Result res, double shift0)
+    static Layout FlightDeckLayout(Design design, Navarch.Result res, double shift0)
     {
         double depth = res.Depth;
         var (lay, hs, hull, shift) = Common(design, shift0);
@@ -457,14 +465,14 @@ public sealed class CarrierStyle : Style
 
         var mounts = new List<PyDict>();
         var turretTypes = new PyDict();
-        bool islandGuns = Armament.BatteriesOf(design).Any(b => Py.Eq(b["where"], "ends") || Py.ToLong(b["count"]) % 2 != 0);
+        bool islandGuns = Armament.BatteriesOf(design).Any(b => b.Where == "ends" || b.MountCount % 2 != 0);
 
         var (hx0, hx1, _) = dp.Hangar;
         double le = Layout.Clamp(0.055 * L, 10, 18), ew = Math.Min(Layout.Clamp(0.45 * 2 * hw, 10, 18), 0.9 * hw);
         var fdElev = fd.L("elevators");
-        for (long k = 0; k < av.I("elevators"); k++)
+        for (long k = 0; k < av.Elevators; k++)
         {
-            double ex = hx1 - le / 2 - 2 - k * (hx1 - hx0 - le - 4) / Math.Max(av.I("elevators") - 1, 1);
+            double ex = hx1 - le / 2 - 2 - k * (hx1 - hx0 - le - 4) / Math.Max(av.Elevators - 1, 1);
             fdElev.Add(PyDict.Of(("x", ex), ("y", -0.1 * hw), ("l", le), ("w", ew)));
         }
         double lee = Layout.Clamp(0.06 * L, 10, 20), wee = Layout.Clamp(0.045 * L, 6, 16);
@@ -477,7 +485,7 @@ public sealed class CarrierStyle : Style
         var fdEdge = fd.L("edge_elevators");
         foreach (var (ex, side) in slots)
         {
-            if (placed >= av.I("deck_edge_elevators"))
+            if (placed >= av.DeckEdgeElevators)
                 break;
             var ed = Edges(dp, ex);
             double edge = side < 0 ? ed.Lo : ed.Hi;
@@ -493,8 +501,8 @@ public sealed class CarrierStyle : Style
                 new(ex - lee / 2, yOut) }), ("base", fdH - 1.0), ("top", fdH)));
             placed++;
         }
-        if (placed < av.I("deck_edge_elevators"))
-            lay.Fail("length", $"Only {placed} of {Py.Str(av["deck_edge_elevators"])} deck-edge elevators fit.");
+        if (placed < av.DeckEdgeElevators)
+            lay.Fail("length", $"Only {placed} of {av.DeckEdgeElevators} deck-edge elevators fit.");
 
         var xs = Vdc(64).Select(v => dp.X0 + 6 + v * (dp.X1 - dp.Tap - 10 - dp.X0)).ToList();
 
@@ -512,23 +520,21 @@ public sealed class CarrierStyle : Style
         Armament.PlaceBatteries(lay, mounts, turretTypes, design,
             [new Armament.EndLine(ix1 + 1.0, +1, yi, 0, x => fdH, []), new Armament.EndLine(ix0 - 1.0, -1, yi, 180, x => fdH, [])],
             t => SponsonSlots(Armament.BodyReach(t), fdH - Geometry.TurretHeight(t) - 0.3), depth);
-        var tp = design.Or("torpedoes", null) as PyDict ?? new PyDict();
-        if (Py.Truthy(tp.Get("mounts")))
+        if (design.Torpedoes is { Mounts: > 0 } tp)
         {
             var (ttId, tt) = Armament.TorpedoType(tp);
-            long n = (Py.ToLong(tp["mounts"]) + 1) / 2;
+            long n = (tp.Mounts.Value + 1) / 2;
             Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, n, SponsonSlots(tt.F("barrel_len") / 2 + 0.3, fdH - 2.5), "T",
                 label: "Torpedo");
         }
         FireControl.Place(lay, design, blocks);
         var aaOut = new List<PyDict>();
-        var aaReq = design.Or("aa", null) as PyDict ?? new PyDict();
-        foreach (var (kind, count) in new[] { ("quad40", aaReq.Get("heavy", 0L)), ("single20", aaReq.Get("light", 0L)) })
+        foreach (var (kind, count) in new[] { ("quad40", design.Aa?.Heavy ?? 0), ("single20", design.Aa?.Light ?? 0) })
         {
             double rr = Geometry.AA_CFG[kind].R;
             var island = Layout.RoofSpots(blocks, 2 * rr, 2 * rr).OrderBy(s => (s.Z0, Math.Abs(s.X - xi))).ToList()
                 .Where(s => !s.Pair).Select(s => new object?[] { s.X, s.Y, s.Z0, null }).ToList();
-            Armament.PlaceAa(lay, aaOut, kind, Py.ToLong(count), island.Concat(SponsonSlots(rr, fdH - 2.4)).ToList(),
+            Armament.PlaceAa(lay, aaOut, kind, count, island.Concat(SponsonSlots(rr, fdH - 2.4)).ToList(),
                 layerOf: bse => bse > fdH + 0.01 ? "upper" : "base");
         }
         var sponsons = new List<object?>();
@@ -553,7 +559,7 @@ public sealed class CarrierStyle : Style
             ("flight_deck", fd), ("sponsons", sponsons), ("boats", new List<object?>()));
     }
 
-    static Layout SeaplaneLayout(PyDict design, Navarch.Result res, double shift0)
+    static Layout SeaplaneLayout(Design design, Navarch.Result res, double shift0)
     {
         double depth = res.Depth;
         var (lay, hs, hull, shift) = Common(design, shift0);
@@ -611,7 +617,7 @@ public sealed class CarrierStyle : Style
         var fittings = new List<object?>();
         var cranes = new List<object?>();
         double lc = Layout.Clamp(0.5 * (hx0 - park0), 8, 25);
-        long ncat = av.I("catapults");
+        long ncat = av.Catapults;
         for (long k = 0; k < ncat; k++)
         {
             double y = ncat == 1 ? 0.0 : ((double)k / (ncat - 1) - 0.5) * 0.5 * B;
@@ -621,7 +627,7 @@ public sealed class CarrierStyle : Style
         }
         double jib = Layout.Clamp(0.09 * L, 8, 16);
         var craneSlots = new[] { (hx0 - 2.5, hhw - 1.0, 135L), (hx0 - 2.5, -(hhw - 1.0), -135L), (park0 + 3, 0.0, 180L), (hx1 + 2.0, hhw, 45L) };
-        for (int k = 0; k < Math.Min(av.I("cranes"), 4); k++)
+        for (int k = 0; k < Math.Min(av.Cranes, 4); k++)
         {
             var (cx, cy, d) = craneSlots[k];
             cranes.Add(PyDict.Of(("x", cx), ("y", cy), ("r", 1.4), ("dir", d), ("jib", jib), ("top", roof + 6.0)));
@@ -632,23 +638,21 @@ public sealed class CarrierStyle : Style
         Armament.PlaceBatteries(lay, mounts, turretTypes, design,
             [new Armament.EndLine(L / 2 - 0.08 * L, -1, 0.0, 0, x => 0.3, []), new Armament.EndLine(hx0 + 0.5, +1, 0.0, 180, x => roof, hangarIds)],
             t => xs.Select(x => new object?[] { x, hull.HalfWidth(x) - Armament.BodyReach(t) - 0.6, 0.0 }), depth);
-        var tp = design.Or("torpedoes", null) as PyDict ?? new PyDict();
-        if (Py.Truthy(tp.Get("mounts")))
+        if (design.Torpedoes is { Mounts: > 0 } tp)
         {
             var (ttId, tt) = Armament.TorpedoType(tp);
             double r = tt.F("barrel_len") / 2 + 0.3;
-            Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, (Py.ToLong(tp["mounts"]) + 1) / 2,
+            Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, (tp.Mounts.Value + 1) / 2,
                 xs.Select(x => new object?[] { x, hull.HalfWidth(x) - r - 0.4, 0.3 }), "T", label: "Torpedo");
         }
         FireControl.Place(lay, design, blocks);
         var aaOut = new List<PyDict>();
-        var aaReq = design.Or("aa", null) as PyDict ?? new PyDict();
-        foreach (var (kind, count) in new[] { ("quad40", aaReq.Get("heavy", 0L)), ("single20", aaReq.Get("light", 0L)) })
+        foreach (var (kind, count) in new[] { ("quad40", design.Aa?.Heavy ?? 0), ("single20", design.Aa?.Light ?? 0) })
         {
             double rr = Geometry.AA_CFG[kind].R;
             var cands = Vdc(24).Select(v => new object?[] { hx0 + v * (hx1 - hx0), hhw - rr - 0.3, roof }).ToList();
             cands.AddRange(xs.Select(x => new object?[] { x, hull.HalfWidth(x) - rr - 0.5, 0.0 }));
-            Armament.PlaceAa(lay, aaOut, kind, Py.ToLong(count), cands, ignore: _ => hangarIds);
+            Armament.PlaceAa(lay, aaOut, kind, count, cands, ignore: _ => hangarIds);
         }
 
         var boats = new List<object?>();

@@ -11,6 +11,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   `round(x, n)`) gave way to .NET's (`Enumerable.Sum`, `double.Hypot`, `Math.Round`). Last-digit drift in most
   cases, rounding ties going .NET's way, and a few ties among equal values (crew remainders, the order of equal
   height columns) settling differently.
+- 2026-10-09, typed design input (System.Text.Json): a lone secondary battery is echoed back as a list of one, and a
+  few validation messages read differently (numbers as C# prints them, `null` for Python's `None`, the battery index
+  on a lone secondary's missing keys).
 
 ## Layout
 

@@ -39,14 +39,13 @@ public static class Propulsion
 
     /// <summary>The stern gear, which the hull's lines must make room for: dict(screws, planing, propellers, rudders,
     /// shafts), heights above the keel.</summary>
-    public static PyDict Gear(Layout lay, PyDict design, Navarch.Result res)
+    public static PyDict Gear(Layout lay, Design design, Navarch.Result res)
     {
         double L = lay.Hull.L, B = lay.Hull.B;
         double D = res.Depth, T = res.Draught;
-        var rated = res.PlantRated ?? new PyDict();
-        long n = Math.Max(1L, Py.ToLong(rated.Get("shafts", 1L)));
-        long nR = Math.Max(1L, Py.ToLong(design.DOr("machinery").Get("rudders", 1L)));
-        bool planing = Py.Eq(design.Get("style"), "planing");
+        long n = Math.Max(1L, res.PlantRated.Shafts);
+        long nR = Math.Max(1L, design.Machinery?.Rudders ?? 1);
+        bool planing = design.StyleName == "planing";
         double ib = planing ? 0.0 : Powerplant.DoubleBottom(D);
         double mw = res.PowerShp * 0.7457 / 1000.0 / n;
         double dp = Math.Max(DP_MIN, (planing ? DP_K_PLANING : DP_K) * Math.Pow(mw, 0.4));
@@ -107,7 +106,7 @@ public static class Propulsion
     }
 
     /// <summary>The propulsion train: dict(shafts, propellers, rudders, alleys) and the steering gear's room id.</summary>
-    public static PyDict Build(Layout lay, PyDict design, Navarch.Result res, HullForm form, PyDict? gr = null)
+    public static PyDict Build(Layout lay, Design design, Navarch.Result res, HullForm form, PyDict? gr = null)
     {
         gr ??= Gear(lay, design, res);
         var mach = lay.Geo.Machinery;

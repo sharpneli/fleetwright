@@ -3,32 +3,32 @@ namespace Fleetwright.Shipgen;
 /// <summary>One main battery's turret, with the sizes the warship layout keeps clear for it. K: its index in "main".</summary>
 public sealed class Gun
 {
-    public readonly PyDict Spec;
+    public readonly BatteryInput Spec;
     public readonly int K;
     public readonly string Tid;
     public readonly PyDict T;
     public readonly string Cal;
     public readonly double R, Reach, Th, RR, Gap;
-    public readonly PyDict Arm;
+    public readonly double ArmourMm;
+    public readonly string? Material;
     public readonly bool Raised, Echelon, Cross;
 
-    public Gun(PyDict spec, int k = 0)
+    public Gun(BatteryInput spec, int k = 0)
     {
         Spec = spec;
         K = k;
         (Tid, T) = Geometry.BatteryType(spec);
-        Cal = $"{spec.F("calibre_mm")} mm";
+        Cal = $"{spec.CalibreMm} mm";
         R = T.F("r");
         Reach = Math.Max(R, Geometry.TurretReach(T, 0.0));
         Th = Geometry.TurretHeight(T);
         RR = Geometry.TurretReach(T) + 0.5;
         Gap = 2.0 + 0.5 * R;
-        Arm = PyDict.Of(("armour_mm", spec.Get("armour_mm", 0L)));
-        if (spec.B("material"))
-            Arm["material"] = spec["material"];
-        Raised = Py.Eq(Layout.StandsOn(spec, "amidships_stands_on"), "deckhouse");
-        Echelon = Py.Truthy(spec.Get("echelon", false));
-        Cross = Echelon && Py.Truthy(spec.Get("cross_deck", false));
+        ArmourMm = spec.ArmourMm ?? 0;
+        Material = string.IsNullOrEmpty(spec.Material) ? null : spec.Material;
+        Raised = spec.AmidshipsStandsOn == "deckhouse";
+        Echelon = spec.Echelon ?? false;
+        Cross = Echelon && (spec.CrossDeck ?? false);
     }
 }
 
@@ -41,9 +41,9 @@ public sealed partial class Layout
         int run = 0;
         foreach (var g in guns)
         {
-            long n = Py.ToLong(g.Spec.Get(key, 0L));
-            var sf = g.Spec.Get("superfire", true);
-            double k = sf is true ? n : sf is false ? 0 : ((PyDict)sf!).F(key, n);
+            long n = (key == "fore" ? g.Spec.Fore : g.Spec.Aft) ?? 0;
+            var sf = g.Spec.Superfire;
+            double k = sf is null or { All: true } ? n : sf.All is false ? 0 : (key == "fore" ? sf.Fore : sf.Aft) ?? n;
             for (long i = 0; i < n; i++)
             {
                 if (run == out_.Count && (out_.Count == 0 || i < k))
@@ -73,18 +73,18 @@ public sealed partial class Layout
 
     /// <summary>The casemate batteries: single guns at the hull side, in two tiers (lower in the hull side, upper in
     /// housings on the main deck).</summary>
-    static void PlaceCasemates(Layout lay, List<PyDict> mounts, PyDict turretTypes, List<PyDict> blocks, List<PyDict> secs, Hull hull,
-        double depth)
+    static void PlaceCasemates(Layout lay, List<PyDict> mounts, PyDict turretTypes, List<PyDict> blocks,
+        List<(BatteryInput Sec, string Prefix)> secs, Hull hull, double depth)
     {
-        var bats = new List<(PyDict Sec, long N, string TId, PyDict T, bool Upper)>();
+        var bats = new List<((BatteryInput Sec, string Prefix) Sec, long N, string TId, PyDict T, bool Upper)>();
         foreach (var sec in secs)
         {
-            long n = Py.ToLong(sec["per_side"]);
-            if (Py.Eq(sec.Get("mount"), "casemate") && n != 0)
+            long n = sec.Sec.MountsPerSide;
+            if (sec.Sec.Mount == "casemate" && n != 0)
             {
-                var (tId, t) = Geometry.BatteryType(sec, "casemate");
+                var (tId, t) = Geometry.BatteryType(sec.Sec, "casemate");
                 turretTypes[tId] = t;
-                bats.Add((sec, n, tId, t, Py.Eq(sec.Get("tier", "lower"), "upper")));
+                bats.Add((sec, n, tId, t, sec.Sec.Tier == "upper"));
             }
         }
         if (bats.Count == 0)
@@ -229,10 +229,10 @@ public sealed partial class Layout
         foreach (var (got, (sec, n, tId, t, upper)) in placed.Zip(bats))
         {
             if (got.Count < n)
-                lay.Fail("length", $"Only {got.Count} of {n} {sec.F("calibre_mm")} mm {(upper ? "upper " : "")}casemates " +
+                lay.Fail("length", $"Only {got.Count} of {n} {sec.Sec.CalibreMm} mm {(upper ? "upper " : "")}casemates " +
                                    $"per side fit {(upper ? "on deck" : "in the hull sides")}. " +
                                    "Use fewer or smaller guns.");
-            var arm = sec["armour_mm"];
+            var arm = sec.Sec.ArmourMm!.Value;
             double rc = t.F("r");
             for (int i = 0; i < got.Count; i++)
             {
@@ -249,11 +249,11 @@ public sealed partial class Layout
                 var (bse, top) = upper ? (0.0, LEVEL_H) : (-LEVEL_H, 0.0);
                 foreach (int side in new[] { 1, -1 })
                 {
-                    string mid = $"{sec.S("prefix")}{i + 1}{(side > 0 ? "S" : "P")}";
+                    string mid = $"{sec.Prefix}{i + 1}{(side > 0 ? "S" : "P")}";
                     Armament.AddMount(lay, mounts, "secondary", tId, t, mid, x, side * yo, bse,
                         Armament.StowBearing(x, side, Arcs.ARC_CASEMATE), armourMm: arm, depth: depth, top: top,
                         footprintR: Geometry.CASEMATE_SHIELD * rc,
-                        extra: [("battery", sec["prefix"]), ("casemate", true), ("material", sec.Get("material"))]);
+                        extra: [("battery", sec.Prefix), ("casemate", true), ("material", sec.Sec.Material)]);
                 }
             }
         }

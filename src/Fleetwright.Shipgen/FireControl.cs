@@ -1,5 +1,14 @@
 namespace Fleetwright.Shipgen;
 
+/// <summary>One battery's fire control: how many directors, the rangefinder's base, the hood's armour, and the radar's
+/// and the plotting room computer's weight.</summary>
+public sealed record DirectorSpec(long Directors, double RangefinderM, double ArmourMm, double RadarT, double ComputerT);
+
+/// <summary>A placed director: its battery, where it stands (base and top above the main deck, and its eye), its
+/// settings, its weight, and (secondary and AA directors) the unit of a pair it belongs to.</summary>
+public sealed record Director(string Id, string Battery, double X, double Y, double Base, double Top, double Eye, DirectorSpec Spec,
+    double WeightT, long? Unit);
+
 /// <summary>firecontrol: directors, the plotting rooms that turn their readings into gun orders, and the search radar.</summary>
 public static class FireControl
 {
@@ -11,67 +20,50 @@ public static class FireControl
     static readonly (double A, double B) GEAR_T = (1.0, 1.2);
     const double COMPUTER_Z = 0.3, MAIN_SPREAD = 0.25, REFRACTION = 1.17;
 
-    /// <summary>The design's fire control, every battery with every field (0 where it gives none).</summary>
-    public static PyDict Spec(PyDict design)
+    /// <summary>The design's fire control for a battery, every field (0 where it gives none).</summary>
+    public static DirectorSpec Spec(Design design, string battery)
     {
-        var fc = design.DOr("fire_control");
-        var out_ = new PyDict();
-        foreach (var b in BATTERIES)
-        {
-            var bd = fc.DOr(b);
-            out_[b] = PyDict.Of(FIELDS.Select(k => (k, bd.Get(k, 0L))).ToArray());
-        }
-        out_["search_radar_t"] = fc.Get("search_radar_t", 0.0);
-        return out_;
+        var d = design.FireControl?.Of(battery);
+        return new DirectorSpec((long)(d?.Directors ?? 0), d?.RangefinderM ?? 0, d?.ArmourMm ?? 0, d?.RadarT ?? 0, d?.ComputerT ?? 0);
     }
 
-    public static List<string> Validate(PyDict design)
+    public static List<string> Validate(Design design)
     {
-        var fcV = design.Get("fire_control");
-        if (fcV is null)
+        if (design.FireControl is not { } fc)
             return [];
-        if (fcV is not PyDict fc)
-            return ["fire_control: use {\"main\": {...}, \"secondary\": {...}, \"aa\": {...}, \"search_radar_t\": t}"];
-        var errs = fc.Keys.Where(k => !BATTERIES.Contains(k) && k != "search_radar_t")
-            .Select(k => $"fire_control.{k}: not a battery ({string.Join(", ", BATTERIES)}) or search_radar_t").ToList();
+        var errs = fc.Extra.KeysOrEmpty().Select(k => $"fire_control.{k}: not a battery ({string.Join(", ", BATTERIES)}) or search_radar_t")
+            .ToList();
         foreach (var b in BATTERIES)
         {
-            var v = fc.Get(b);
-            if (v is null)
+            if (fc.Of(b) is not { } d)
                 continue;
-            if (v is not PyDict vd)
-            {
-                errs.Add($"fire_control.{b}: use {{{string.Join(", ", FIELDS)}}}");
-                continue;
-            }
-            errs.AddRange(vd.Keys.Where(k => !FIELDS.Contains(k))
-                .Select(k => $"fire_control.{b}.{k}: not a director setting ({string.Join(", ", FIELDS)})"));
-            errs.AddRange(FIELDS.Where(k => vd.Has(k) && !(Py.IsNumber(vd[k]) && Py.ToDouble(vd[k]) >= 0))
-                .Select(k => $"fire_control.{b}.{k} must be a number, 0 or more"));
-            if (!Py.IsInt(vd.Get("directors", 0L)))
+            errs.AddRange(d.Extra.KeysOrEmpty().Select(k => $"fire_control.{b}.{k}: not a director setting ({string.Join(", ", FIELDS)})"));
+            var given = new[] { d.Directors, d.RangefinderM, d.ArmourMm, d.RadarT, d.ComputerT };
+            errs.AddRange(FIELDS.Where((_, i) => given[i] < 0).Select(k => $"fire_control.{b}.{k} must be a number, 0 or more"));
+            if (d.Directors is double n && n != Math.Floor(n))
                 errs.Add($"fire_control.{b}.directors: use a whole number");
         }
-        var s = fc.Get("search_radar_t", 0L);
-        if (!(Py.IsNumber(s) && Py.ToDouble(s) >= 0))
+        if (fc.SearchRadarT < 0)
             errs.Add("fire_control.search_radar_t must be a number, 0 or more");
         return errs;
     }
 
     /// <summary>A director's footprint: (fore-and-aft, athwartships) m.</summary>
-    static (double L, double W) Size(PyDict d)
+    static (double L, double W) Size(DirectorSpec d)
     {
-        double bse = d.F("rangefinder_m");
+        double bse = d.RangefinderM;
         return (0.25 * bse + 1.8, Math.Max(bse + 1.0, 1.8));
     }
 
-    /// <summary>One director's weights, t.</summary>
-    static PyDict Weights(PyDict d)
+    /// <summary>One director's weights, t: the hood, the rangefinder and its gear, the armour, the radar and the plotting
+    /// room's computer.</summary>
+    static (double Hood, double Gear, double Rangefinder, double Armour, double Radar, double Computer) Weights(DirectorSpec d)
     {
-        double bse = d.F("rangefinder_m");
+        double bse = d.RangefinderM;
         var (l, w) = Size(d);
         double area = 2 * (l + w) * HOOD_H + l * w;
-        return PyDict.Of(("hood", area * HOOD_PLATE_T), ("gear", GEAR_T.A + GEAR_T.B * bse), ("rangefinder", RF_T_K * Math.Pow(bse, 2)),
-            ("armour", area * d.F("armour_mm") / 1000.0 * 7.85), ("radar", d["radar_t"]), ("computer", d["computer_t"]));
+        return (area * HOOD_PLATE_T, GEAR_T.A + GEAR_T.B * bse, RF_T_K * Math.Pow(bse, 2), area * d.ArmourMm / 1000.0 * 7.85, d.RadarT,
+            d.ComputerT);
     }
 
     public static double HorizonKm(double eyeM) => 3.57 * Math.Sqrt(REFRACTION * Math.Max(0.0, eyeM));
@@ -112,20 +104,19 @@ public static class FireControl
     }
 
     /// <summary>Stand the design's directors on the superstructure's roofs as blocks of their own, with their weights.</summary>
-    public static void Place(Layout lay, PyDict design, List<PyDict> blocks)
+    public static void Place(Layout lay, Design design, List<PyDict> blocks)
     {
-        var fc = Spec(design);
         double L = lay.Hull.L;
         foreach (var bat in BATTERIES)
         {
-            var d = fc.D(bat);
-            long n = Py.ToLong(d["directors"]);
+            var d = Spec(design, bat);
+            long n = d.Directors;
             if (n == 0)
                 continue;
             var (l, w) = Size(d);
             double hl = l / 2, hw = w / 2;
             var wt = Weights(d);
-            var mine = new List<PyDict>();
+            var mine = new List<Director>();
 
             bool Ok(double x, double y, double z0)
             {
@@ -138,19 +129,16 @@ public static class FireControl
                 int k = mine.Count;
                 string bid = bat == "main" ? LABEL[bat] + (k == 0 ? "" : $" {k + 1}")
                     : $"{LABEL[bat]} {(unit is null ? "None" : unit.ToString())}" + (pair ? (y > 0 ? "S" : "P") : "");
-                var pts = Geometry.DirectorParts(x, y, l, w, d.F("rangefinder_m")).Outline;
+                var pts = Geometry.DirectorParts(x, y, l, w, d.RangefinderM).Outline;
                 var b = Layout.AddBlock(lay, blocks, bid, x - hl, x + hl, w, 1, 0.0, 0.0, y: y, z0: z0, kind: "director", tPerM2: 0.0,
                     points: pts, role: "director");
-                b["director"] = PyDict.Of(("battery", bat), ("rangefinder_m", d["rangefinder_m"]), ("radar", d.F("radar_t") > 0),
+                b["director"] = PyDict.Of(("battery", bat), ("rangefinder_m", d.RangefinderM), ("radar", d.RadarT > 0),
                     ("on", (long)Math.Round(z0 / Layout.LEVEL_H)));
-                lay.Weights.Add(new Weight(bid, "fire_control", Py.ToDouble(Py.SumObj(wt.Where(kk => kk != "computer").Values)), x,
-                    ZRel.Deck(z0 + 0.5 * HOOD_H)));
-                if (Py.Truthy(wt["computer"]))
-                    lay.Weights.Add(new Weight($"Plotting room ({bid})", "fire_control", wt.F("computer"), x, ZRel.Frac(COMPUTER_Z)));
-                var rec = PyDict.Of(("id", bid), ("battery", bat), ("x", x), ("y", y), ("base", z0), ("top", z0 + HOOD_H), ("eye", z0 + EYE_H));
-                rec.Update(d);
-                rec["weight_t"] = Py.SumObj(wt.Values);
-                rec["unit"] = unit;
+                double aloft = wt.Hood + wt.Gear + wt.Rangefinder + wt.Armour + wt.Radar;
+                lay.Weights.Add(new Weight(bid, "fire_control", aloft, x, ZRel.Deck(z0 + 0.5 * HOOD_H)));
+                if (wt.Computer != 0)
+                    lay.Weights.Add(new Weight($"Plotting room ({bid})", "fire_control", wt.Computer, x, ZRel.Frac(COMPUTER_Z)));
+                var rec = new Director(bid, bat, x, y, z0, z0 + HOOD_H, z0 + EYE_H, d, aloft + wt.Computer, unit);
                 lay.Directors.Add(rec);
                 mine.Add(rec);
             }
@@ -173,7 +161,7 @@ public static class FireControl
                         {
                             if (mine.Count >= n)
                                 break;
-                            if (mine.Any(m => Math.Abs(x - m.F("x")) < Math.Max(mine.Count < 2 ? spread : 0.0, l + 0.4)))
+                            if (mine.Any(m => Math.Abs(x - m.X) < Math.Max(mine.Count < 2 ? spread : 0.0, l + 0.4)))
                                 continue;
                             if (Ok(x, y, z0))
                                 Put(x, y, z0);
@@ -191,7 +179,7 @@ public static class FireControl
                         var pts = pair ? new[] { (x, y), (x, -y) } : [(x, y)];
                         if (pts.All(p => Ok(p.Item1, p.Item2, z0)))
                         {
-                            long unit = mine.Select(m => m["unit"]).Distinct(new PyEq()).Count() + 1;
+                            long unit = mine.Select(m => m.Unit).Distinct().Count() + 1;
                             foreach (var (px, py) in pts)
                                 Put(px, py, z0, pair, unit);
                         }
@@ -202,14 +190,8 @@ public static class FireControl
                 lay.Fail("beam", $"Only {mine.Count} of {n} {(bat == "aa" ? "AA" : bat)} directors find a roof to stand on " +
                                  $"({w:F1} m across with the rangefinder).");
         }
-        if (Batteries.MainBatteries(design).Any(b => Batteries.BatteryTurrets(b) != 0) && Py.ToDouble(fc.D("main")["directors"]) == 0)
+        if (design.MainBatteries.Any(b => b.Turrets != 0) && Spec(design, "main").Directors == 0)
             lay.Warnings.Add("The main battery has no director: each turret fires under local control.");
-    }
-
-    sealed class PyEq : IEqualityComparer<object?>
-    {
-        public new bool Equals(object? a, object? b) => Py.Eq(a, b);
-        public int GetHashCode(object? o) => o is null ? 0 : Py.ToDouble(o).GetHashCode();
     }
 
     /// <summary>The raised stretches' decks as roofs for roof_spots.</summary>
@@ -229,9 +211,9 @@ public static class FireControl
     }
 
     /// <summary>The search radar's weight on the foremast's top, or 1 m over the highest roof on a ship without masts.</summary>
-    public static void SearchRadar(Layout lay, PyDict design, List<PyDict> blocks, List<PyDict> masts, double funTop)
+    public static void SearchRadar(Layout lay, Design design, List<PyDict> blocks, List<PyDict> masts, double funTop)
     {
-        double t = Py.ToDouble(Spec(design)["search_radar_t"]);
+        double t = design.FireControl?.SearchRadarT ?? 0.0;
         if (t == 0)
             return;
         if (masts.Count > 0)
@@ -251,10 +233,10 @@ public static class FireControl
         var out_ = new List<object?>();
         foreach (var d in lay.Directors)
         {
-            double eye = deckM + d.F("eye");
-            out_.Add(PyDict.Of(("id", d["id"]), ("battery", d["battery"]), ("x", Math.Round(d.F("x"), 2)), ("y", Math.Round(d.F("y"), 2)),
-                ("eye_height_m", Math.Round(eye, 2)), ("horizon_km", Math.Round(HorizonKm(eye), 1)), ("rangefinder_m", d["rangefinder_m"]),
-                ("armour_mm", d["armour_mm"]), ("radar_t", d["radar_t"]), ("weight_t", Py.RoundObj(d["weight_t"], 1))));
+            double eye = deckM + d.Eye;
+            out_.Add(PyDict.Of(("id", d.Id), ("battery", d.Battery), ("x", Math.Round(d.X, 2)), ("y", Math.Round(d.Y, 2)),
+                ("eye_height_m", Math.Round(eye, 2)), ("horizon_km", Math.Round(HorizonKm(eye), 1)), ("rangefinder_m", d.Spec.RangefinderM),
+                ("armour_mm", d.Spec.ArmourMm), ("radar_t", d.Spec.RadarT), ("weight_t", Math.Round(d.WeightT, 1))));
         }
         return out_;
     }

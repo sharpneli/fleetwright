@@ -1,60 +1,110 @@
 namespace Fleetwright.Shipgen;
 
-/// <summary>crew: the complement and the volume it needs (research/crew-space-model.md), and battle stations.</summary>
+/// <summary>A habitability standard: berth and mess space per man, galley, sanitary, sickbay, welfare and service space,
+/// how much passages add, the deck height, provisions and water per day, the hotel and CPO shares, and how many days at
+/// sea the crew tolerates it.</summary>
+public sealed record CrewStandard(string Name, double SleepRatingM2, double SleepCpoM2, double SleepOfficerM2,
+    double MessSeatsPerMan, double GalleyK, double GalleyMinM2, double SanitaryM2, double SickbayBedsPerMan, double WelfareM2,
+    double ServicesK, double PassageFactor, double DeckHeightM, double ProvisionsM3PerDay, double WaterLPerDay,
+    double HotelFraction, double CpoFraction, double ToleranceDays)
+{
+    /// <summary>The numbers by their JSON key, for validation.</summary>
+    public IEnumerable<(string Key, double Value)> Numbers() =>
+    [
+        ("sleep_rating_m2", SleepRatingM2), ("sleep_cpo_m2", SleepCpoM2), ("sleep_officer_m2", SleepOfficerM2),
+        ("mess_seats_per_man", MessSeatsPerMan), ("galley_k", GalleyK), ("galley_min_m2", GalleyMinM2), ("sanitary_m2", SanitaryM2),
+        ("sickbay_beds_per_man", SickbayBedsPerMan), ("welfare_m2", WelfareM2), ("services_k", ServicesK),
+        ("passage_factor", PassageFactor), ("deck_height_m", DeckHeightM), ("provisions_m3_per_day", ProvisionsM3PerDay),
+        ("water_l_per_day", WaterLPerDay), ("hotel_fraction", HotelFraction), ("cpo_fraction", CpoFraction),
+        ("tolerance_days", ToleranceDays),
+    ];
+
+    /// <summary>The design's standard over this one, key by key.</summary>
+    public CrewStandard Over(CrewStandardInput? s) => s is null ? this : new(s.Name ?? Name, s.SleepRatingM2 ?? SleepRatingM2,
+        s.SleepCpoM2 ?? SleepCpoM2, s.SleepOfficerM2 ?? SleepOfficerM2, s.MessSeatsPerMan ?? MessSeatsPerMan, s.GalleyK ?? GalleyK,
+        s.GalleyMinM2 ?? GalleyMinM2, s.SanitaryM2 ?? SanitaryM2, s.SickbayBedsPerMan ?? SickbayBedsPerMan, s.WelfareM2 ?? WelfareM2,
+        s.ServicesK ?? ServicesK, s.PassageFactor ?? PassageFactor, s.DeckHeightM ?? DeckHeightM,
+        s.ProvisionsM3PerDay ?? ProvisionsM3PerDay, s.WaterLPerDay ?? WaterLPerDay, s.HotelFraction ?? HotelFraction,
+        s.CpoFraction ?? CpoFraction, s.ToleranceDays ?? ToleranceDays);
+}
+
+/// <summary>The design's crew settings, defaults filled in (EnduranceDays and OfficerFraction may still be left to the
+/// designer).</summary>
+public sealed record CrewSpec(double? EnduranceDays, bool Distiller, double BufferDays, double WaterLPerDay, double BerthRatio,
+    double? OfficerFraction, CrewStandard Standard);
+
+/// <summary>The ship's crew for the report: the complement, where it lives and the space it needs.</summary>
+public sealed class CrewReport : IPyValue
+{
+    public long Complement { get; set; }
+    public long QuarteredInSuperstructure { get; set; }
+    public OrderedDictionary<string, long> SuperstructureQuarters { get; set; } = new(StringComparer.Ordinal);
+    public long Officers { get; set; }
+    public long Cpos { get; set; }
+    public long Ratings { get; set; }
+    public OrderedDictionary<string, long> Departments { get; set; } = new(StringComparer.Ordinal);
+    public string Standard { get; set; } = "";
+    public double EnduranceDays { get; set; }
+    public long RangeDays { get; set; }
+    public bool Distiller { get; set; }
+    public double BerthRatio { get; set; }
+    public double LivingM3 { get; set; }
+    public double ProvisionsM3 { get; set; }
+    public double WaterM3 { get; set; }
+    public double WaterInDoubleBottomM3 { get; set; }
+    public double DistillerM3PerDay { get; set; }
+    public double SpaceNeededM3 { get; set; }
+    public double SpaceUsableM3 { get; set; }
+    public double SpaceFreeM3 { get; set; }
+    public double SleepM2PerMan { get; set; }
+    public double SleepStandardM2 { get; set; }
+    public double HeadroomM { get; set; }
+    public double DeckHeightM { get; set; }
+    public long SickbayBeds { get; set; }
+    public double ToleranceDays { get; set; }
+    /// <summary>Where the complement stands at battle stations, by station.</summary>
+    public OrderedDictionary<string, long>? BattleStations { get; set; }
+
+    public object? ToPy() => JsonBridge.ToPy(this, ShipgenJson.Default.CrewReport);
+}
+
+/// <summary>The complement and the volume it needs (research/crew-space-model.md), and battle stations.</summary>
 public static class Crew
 {
     const double USABLE = 0.65, CREW_T = 0.12, PROVISIONS_T_PER_M3 = 0.6;
 
-    static PyDict Std(string name, double sr, double sc, double so, double mess, double gk, double gmin, double san, double sick,
-        double welfare, double serv, double passage, double deck, double prov, object water, double hotel, double cpo, long tol) =>
-        PyDict.Of(("name", name), ("sleep_rating_m2", sr), ("sleep_cpo_m2", sc), ("sleep_officer_m2", so), ("mess_seats_per_man", mess),
-            ("galley_k", gk), ("galley_min_m2", gmin), ("sanitary_m2", san), ("sickbay_beds_per_man", sick), ("welfare_m2", welfare),
-            ("services_k", serv), ("passage_factor", passage), ("deck_height_m", deck), ("provisions_m3_per_day", prov),
-            ("water_l_per_day", water), ("hotel_fraction", hotel), ("cpo_fraction", cpo), ("tolerance_days", tol));
-
-    static PyDict Standard(string key) => key switch
+    static readonly Dictionary<string, CrewStandard> Standards = new(StringComparer.Ordinal)
     {
-        "H0" => Std("Sleep at station (MTB, PT boat)", 0.6, 0.8, 1.5, 0.0, 0.25, 1.0, 0.06, 0.0, 0.0, 0.0, 1.10, 1.9, 0.006, 8L, 0.0, 0.0, 2),
-        "H1" => Std("Hammocks over mess tables", 1.1, 1.8, 5.0, 0.0, 0.30, 4.0, 0.10, 0.010, 0.0, 0.03, 1.15, 2.3, 0.007, 15L, 0.05, 0.08, 30),
-        "H2" => Std("Tiered bunks and separate messdecks", 1.3, 2.5, 6.0, 0.33, 0.30, 5.0, 0.20, 0.010, 0.03, 0.05, 1.20, 2.4, 0.009, 60L,
+        ["H0"] = new("Sleep at station (MTB, PT boat)", 0.6, 0.8, 1.5, 0.0, 0.25, 1.0, 0.06, 0.0, 0.0, 0.0, 1.10, 1.9, 0.006, 8, 0.0, 0.0, 2),
+        ["H1"] = new("Hammocks over mess tables", 1.1, 1.8, 5.0, 0.0, 0.30, 4.0, 0.10, 0.010, 0.0, 0.03, 1.15, 2.3, 0.007, 15, 0.05, 0.08, 30),
+        ["H2"] = new("Tiered bunks and separate messdecks", 1.3, 2.5, 6.0, 0.33, 0.30, 5.0, 0.20, 0.010, 0.03, 0.05, 1.20, 2.4, 0.009, 60,
             0.06, 0.08, 60),
-        "H3" => Std("Cold-war bunks with lockers and lounges", 1.9, 3.5, 7.5, 0.30, 0.35, 6.0, 0.35, 0.012, 0.15, 0.08, 1.25, 2.6, 0.010,
-            120L, 0.07, 0.08, 120),
-        "H4" => Std("Modern small messes", 2.8, 5.0, 9.0, 0.30, 0.40, 8.0, 0.45, 0.015, 0.30, 0.10, 1.28, 2.8, 0.011, 180L, 0.07, 0.08, 180),
-        "H5" => Std("Single cabins (merchant)", 5.0, 7.0, 10.0, 0.50, 0.40, 8.0, 0.60, 0.015, 0.50, 0.12, 1.30, 2.8, 0.011, 200L, 0.08, 0.08,
+        ["H3"] = new("Cold-war bunks with lockers and lounges", 1.9, 3.5, 7.5, 0.30, 0.35, 6.0, 0.35, 0.012, 0.15, 0.08, 1.25, 2.6, 0.010,
+            120, 0.07, 0.08, 120),
+        ["H4"] = new("Modern small messes", 2.8, 5.0, 9.0, 0.30, 0.40, 8.0, 0.45, 0.015, 0.30, 0.10, 1.28, 2.8, 0.011, 180, 0.07, 0.08, 180),
+        ["H5"] = new("Single cabins (merchant)", 5.0, 7.0, 10.0, 0.50, 0.40, 8.0, 0.60, 0.015, 0.50, 0.12, 1.30, 2.8, 0.011, 200, 0.08, 0.08,
             365),
-        _ => throw new PyKeyError(key),
     };
 
-    static PyDict Choices() => PyDict.Of(("endurance_days", null), ("distiller", true), ("buffer_days", 5L), ("water_l_per_day", null),
-        ("berth_ratio", 1.0), ("officer_fraction", null));
-
-    /// <summary>The design's crew settings over the defaults (the standard over the style's default standard block).</summary>
-    public static PyDict Spec(PyDict design, string defaultStandard = "H2")
+    /// <summary>The design's crew settings over the defaults (its standard over the style's default standard).</summary>
+    public static CrewSpec Spec(Design design, string defaultStandard = "H2")
     {
-        var c = design.DOr("crew");
-        var std = PyDict.Merge(Standard(defaultStandard), c.Or("standard", null) as PyDict);
-        var choices = Choices();
-        var out_ = PyDict.Merge(choices, c.Where(choices.Has));
-        out_["standard"] = std;
-        if (out_["water_l_per_day"] is null)
-            out_["water_l_per_day"] = std["water_l_per_day"];
-        return out_;
+        var c = design.Crew;
+        var std = Standards[defaultStandard].Over(c?.Standard);
+        return new CrewSpec(c?.EnduranceDays, c?.Distiller ?? true, c?.BufferDays ?? 5, c?.WaterLPerDay ?? std.WaterLPerDay,
+            c?.BerthRatio ?? 1.0, c?.OfficerFraction, std);
     }
 
-    public static List<string> Validate(PyDict design, string defaultStandard = "H2")
+    public static List<string> Validate(Design design, string defaultStandard = "H2")
     {
         var s = Spec(design, defaultStandard);
-        var errs = new List<string>();
-        foreach (var kv in s.D("standard"))
-            if (kv.Key != "name" && !(Py.IsNumber(kv.Value) && Py.ToDouble(kv.Value) >= 0))
-                errs.Add($"crew.standard.{kv.Key} must be a number, 0 or more");
-        double hf = s.D("standard").F("hotel_fraction");
+        var errs = s.Standard.Numbers().Where(kv => !(kv.Value >= 0)).Select(kv => $"crew.standard.{kv.Key} must be a number, 0 or more").ToList();
+        double hf = s.Standard.HotelFraction;
         if (!(0 <= hf && hf < 0.9))
             errs.Add("crew.standard.hotel_fraction must be 0..0.9");
-        if (s["endurance_days"] is not null && !(Py.ToDouble(s["endurance_days"]) > 0))
+        if (s.EnduranceDays is double e && !(e > 0))
             errs.Add("crew.endurance_days must be above 0");
-        if (!(Py.ToDouble(s["berth_ratio"]) > 0))
+        if (!(s.BerthRatio > 0))
             errs.Add("crew.berth_ratio must be above 0");
         return errs;
     }
@@ -68,8 +118,9 @@ public static class Crew
     static double DeckCrew(double stdT, double k = 0.8) =>
         k * Math.Pow(Math.Max(stdT, 1.0), 0.5) * Math.Pow(Math.Min(1.0, stdT / 1000.0), 0.3);
 
-    /// <summary>The complement by department: {department: men}, with totals.</summary>
-    static PyDict Complement(Layout lay, Navarch.Result res, PyDict? extra, double deckK, object? officerFraction, double hotelFraction)
+    /// <summary>The complement by department (with the hotel staff), the total and the officers.</summary>
+    static (OrderedDictionary<string, long> Departments, long Total, long Officers) Complement(Layout lay, Navarch.Result res,
+        List<(string Name, long Men)> extra, double deckK, double? officerFraction, double hotelFraction)
     {
         double guns = 0.0, torps = 0.0;
         foreach (var m in lay.Mounts)
@@ -85,62 +136,67 @@ public static class Crew
             var cfg = Geometry.AA_CFG[a.S("type")];
             guns += GunCrew(cfg.CalibreMm, cfg.Barrels);
         }
-        var deps = PyDict.Of(("engineering", res.PlantRated.Get("crew", 0L)), ("weapons", (long)Math.Round(guns + torps)),
-            ("deck_and_command", (long)Math.Round(DeckCrew(res.Std, deckK))));
-        if (extra != null)
-            deps.Update(extra);
-        long ops = Py.ToLong(Py.SumObj(deps.Values));
+        var deps = new OrderedDictionary<string, long>(StringComparer.Ordinal)
+        {
+            ["engineering"] = res.PlantRated.Crew, ["weapons"] = (long)Math.Round(guns + torps),
+            ["deck_and_command"] = (long)Math.Round(DeckCrew(res.Std, deckK)),
+        };
+        foreach (var (name, men) in extra)
+            deps[name] = men;
+        long ops = deps.Values.Sum();
         long total = (long)Math.Ceiling(ops / (1 - hotelFraction));
         deps["hotel"] = total - ops;
-        double fo = officerFraction is not null ? Py.ToDouble(officerFraction) : (total < 30 ? 0.15 : 0.08);
-        return PyDict.Of(("departments", deps), ("total", total), ("officers", Math.Max(1L, (long)Math.Round(fo * total))));
+        double fo = officerFraction ?? (total < 30 ? 0.15 : 0.08);
+        return (deps, total, Math.Max(1L, (long)Math.Round(fo * total)));
     }
 
-    /// <summary>Volumes the crew needs: living space, provisions, water tankage and the distiller, and comfort inputs.</summary>
-    static PyDict Needs(PyDict c, long n, long officers, double hAvail)
+    /// <summary>What the crew needs: living space, provisions, water tankage and the distiller, and comfort figures.</summary>
+    sealed record Needs(double LivingM3, double ProvisionsM3, double WaterM3, double DistillerM3PerDay, double DistillerVolumeM3,
+        double NetAreaM2, double SleepM2PerMan, double HeadroomM, long SickbayBeds, long Ratings, long Cpos);
+
+    static Needs NeedsOf(CrewSpec c, double enduranceDays, long n, long officers, double hAvail)
     {
-        var s = c.D("standard");
-        long nc = (long)Math.Round(s.F("cpo_fraction") * n);
+        var s = c.Standard;
+        long nc = (long)Math.Round(s.CpoFraction * n);
         long nr = Math.Max(0, n - officers - nc);
-        double b = c.F("berth_ratio");
-        double tEnd = c.F("endurance_days");
-        double aSleep = nr * b * s.F("sleep_rating_m2") + nc * s.F("sleep_cpo_m2") + officers * s.F("sleep_officer_m2");
-        double aMess = s.F("mess_seats_per_man") * (nr + nc) * 1.1 + (s.F("mess_seats_per_man") != 0 ? 0.8 * officers * 1.6 : 0.0);
-        double aGalley = Math.Max(s.F("galley_min_m2"), s.F("galley_k") * Math.Pow(n, 0.8));
-        double aSan = Math.Max(1.0, s.F("sanitary_m2") * n);
-        long beds = n >= 15 && tEnd > 3 ? (long)Math.Ceiling(s.F("sickbay_beds_per_man") * n) : 0;
-        double aMed = (beds != 0 ? 6 + 4 * beds : 0) + (n > 1000 && s.F("sickbay_beds_per_man") >= 0.01 ? 40 : 0);
-        double aWelfare = s.F("welfare_m2") * n;
-        double aServ = s.F("services_k") * Math.Pow(n, 0.85) * (tEnd > 7 ? 1 : 0.5);
+        double b = c.BerthRatio;
+        double tEnd = enduranceDays;
+        double aSleep = nr * b * s.SleepRatingM2 + nc * s.SleepCpoM2 + officers * s.SleepOfficerM2;
+        double aMess = s.MessSeatsPerMan * (nr + nc) * 1.1 + (s.MessSeatsPerMan != 0 ? 0.8 * officers * 1.6 : 0.0);
+        double aGalley = Math.Max(s.GalleyMinM2, s.GalleyK * Math.Pow(n, 0.8));
+        double aSan = Math.Max(1.0, s.SanitaryM2 * n);
+        long beds = n >= 15 && tEnd > 3 ? (long)Math.Ceiling(s.SickbayBedsPerMan * n) : 0;
+        double aMed = (beds != 0 ? 6 + 4 * beds : 0) + (n > 1000 && s.SickbayBedsPerMan >= 0.01 ? 40 : 0);
+        double aWelfare = s.WelfareM2 * n;
+        double aServ = s.ServicesK * Math.Pow(n, 0.85) * (tEnd > 7 ? 1 : 0.5);
         double aNet = aSleep + aMess + aGalley + aSan + aMed + aWelfare + aServ;
-        double hEff = Math.Min(s.F("deck_height_m"), hAvail);
-        double live = aNet * s.F("passage_factor") * hEff;
-        double prov = n * tEnd * s.F("provisions_m3_per_day") * 1.4;
-        double wDay = c.F("water_l_per_day");
-        bool dist = Py.Truthy(c["distiller"]);
-        double water = n * wDay * (dist ? Math.Min(c.F("buffer_days"), tEnd) : tEnd) / 1000.0;
-        double qDist = dist ? 1.2 * n * wDay / 1000.0 : 0.0;
-        return PyDict.Of(("living_m3", live), ("provisions_m3", prov), ("water_m3", water), ("distiller_m3_per_day", qDist),
-            ("distiller_volume_m3", 0.06 * qDist), ("net_area_m2", aNet), ("sleep_m2_per_man", aSleep / Math.Max(1, n)),
-            ("headroom_m", hEff), ("sickbay_beds", beds), ("ratings", nr), ("cpos", nc));
+        double hEff = Math.Min(s.DeckHeightM, hAvail);
+        double live = aNet * s.PassageFactor * hEff;
+        double prov = n * tEnd * s.ProvisionsM3PerDay * 1.4;
+        double wDay = c.WaterLPerDay;
+        double water = n * wDay * (c.Distiller ? Math.Min(c.BufferDays, tEnd) : tEnd) / 1000.0;
+        double qDist = c.Distiller ? 1.2 * n * wDay / 1000.0 : 0.0;
+        return new Needs(live, prov, water, qDist, 0.06 * qDist, aNet, aSleep / Math.Max(1, n), hEff, beds, nr, nc);
     }
 
     static readonly string[] TAKEN = ["magazine", "boiler_room", "engine_room", "bunker", "hold", "cargo_tank", "fuel_tank", "steering"];
 
-    /// <summary>The ship's empty volume, m3.</summary>
-    static PyDict CrewSpace(Layout lay, PyDict design, Navarch.Result res)
+    /// <summary>The ship's volume and what of it is free for the crew, m3; the superstructure's by block.</summary>
+    sealed record Space(double HullM3, double TakenM3, double SuperstructureM3, double FreeM3, double UsableM3, double HullUsableM3,
+        List<(string Id, double M3)> BlocksM3);
+
+    static Space SpaceOf(Layout lay, Design design, Navarch.Result res)
     {
         var hull = lay.Hull;
         double L = hull.L, B = hull.B;
-        double cb = design.D("hull").F("block_coefficient");
+        double cb = design.BlockCoefficient;
         double D = res.Depth, T = res.Draught;
         double db = Powerplant.DoubleBottom(D);
-        var plan = lay.Geo.Plant ?? new PyDict();
-        double low = (plan.B("armoured") ? plan.F("top", D) : D) - db;
+        var plan = lay.Geo.Plant;
+        double low = (plan is { Armoured: true } ? plan.Top : D) - db;
         double hullV = L * B * (T * cb + Math.Max(0.0, D - T) * Geometry.Cwp(cb)) - db * L * B * Geometry.Cwp(cb) * 0.9;
-        object raisedObj = Py.SumObj(lay.Decks.Where(dk => Py.Eq(dk["kind"], "deck"))
-            .Select(dk => (object?)(Area(Geometry.Pts(dk["points"])) * (dk.F("top") - dk.F("base")))));
-        double raised = Py.ToDouble(raisedObj);
+        double raised = lay.Decks.Where(dk => Py.Eq(dk["kind"], "deck"))
+            .Sum(dk => Geometry.PolygonArea(Geometry.Pts(dk["points"])) * (dk.F("top") - dk.F("base")));
         double taken = 0.0;
         foreach (var c in lay.Compartments)
         {
@@ -151,20 +207,20 @@ public static class Crew
             taken += (c.F("x1") - c.F("x0")) * 2 * c.F("half_width") * h;
         }
         var cit = lay.Geo.Citadel;
-        if (plan.B("tds") && cit is { } ct)
-            taken += 2 * plan.F("tds") * (ct.X1 - ct.X0) * low;
-        var rooms = new PyDict();
+        if (plan is { Tds: > 0 } && cit is { } ct)
+            taken += 2 * plan.Tds * (ct.X1 - ct.X0) * low;
+        var rooms = new OrderedDictionary<string, double>(StringComparer.Ordinal);
         foreach (var b in lay.Blocks)
             if (!Py.Eq(b["kind"], "director") && !Py.In(b["role"], "hangar", "director", "casemate"))
                 rooms[b.S("id")] = (b.Has("area") ? b.F("area") : (b.F("x1") - b.F("x0")) * b.F("w")) * Layout.LEVEL_H * 0.9;
-        double sup = Py.ToDouble(Py.SumObj(rooms.Values));
+        double sup = rooms.Values.Sum();
         double free = Math.Max(0.0, hullV - taken) + raised + sup;
-        return PyDict.Of(("hull_m3", hullV + raised), ("taken_m3", taken), ("superstructure_m3", sup), ("free_m3", free),
-            ("usable_m3", USABLE * free), ("hull_usable_m3", USABLE * (Math.Max(0.0, hullV - taken) + raised)), ("blocks_m3", rooms));
+        return new Space(hullV + raised, taken, sup, free, USABLE * free, USABLE * (Math.Max(0.0, hullV - taken) + raised),
+            rooms.Select(kv => (kv.Key, kv.Value)).ToList());
     }
 
-    /// <summary>n men over rooms by volume ({id: m3}): whole men, the remainders to the largest fractions, {id: men} for
-    /// the rooms that get any.</summary>
+    /// <summary>n men over rooms by volume: whole men, the remainders to the largest fractions, (key, men) for the rooms
+    /// that get any.</summary>
     public static List<(K Key, long Men)> Spread<K>(long n, IReadOnlyList<(K Key, double V)> vols)
     {
         double total = vols.Select(v => v.V).Sum();
@@ -179,51 +235,39 @@ public static class Crew
         return Enumerable.Range(0, vols.Count).Where(i => men[i] != 0).Select(i => (vols[i].Key, men[i])).ToList();
     }
 
-    static double Area(IReadOnlyList<Pt> pts)
-    {
-        int n = pts.Count;
-        return Math.Abs(Enumerable.Range(0, n).Select(i => pts[i].X * pts[(i + 1) % n].Y - pts[(i + 1) % n].X * pts[i].Y).Sum()) / 2;
-    }
-
     /// <summary>Double-bottom tankage left for fresh water after the fuel, m3.</summary>
-    static double TankRoom(Layout lay, PyDict design, Navarch.Result res)
+    static double TankRoom(Layout lay, Design design, Navarch.Result res)
     {
-        var p = res.Plant;
-        string fuel = p.D("tech").S("fuel");
+        string fuel = res.Plant.Tech.Fuel;
         double oil = fuel == "coal" ? 0.0 : res.Fuel * Powerplant.FUELS[fuel].Stowage;
-        double D = res.Depth;
-        double tank = Powerplant.DoubleBottom(D) * lay.Hull.L * lay.Hull.B * design.D("hull").F("block_coefficient") * 0.6;
+        double tank = Powerplant.DoubleBottom(res.Depth) * lay.Hull.L * lay.Hull.B * design.BlockCoefficient * 0.6;
         return Math.Max(0.0, tank - oil);
     }
 
     /// <summary>Crew the laid-out ship: its complement, the volume the crew needs against the volume the ship has, and the
-    /// weights of crew, provisions and water. Sets lay.crew.</summary>
-    public static void Apply(Layout lay, PyDict design, Navarch.Result res, Style style)
+    /// weights of crew, provisions and water. Sets lay.Crew.</summary>
+    public static void Apply(Layout lay, Design design, Navarch.Result res, Style style)
     {
-        var c = Spec(design, style.CREW_STANDARD);
-        long rangeDays = (long)Math.Ceiling(design.F("range_nm", 6000) / Math.Max(res.CruiseKn, 1.0) / 24.0 - 1e-9);
-        if (c["endurance_days"] is null)
-            c["endurance_days"] = Math.Max(1L, rangeDays);
-        var s = c.D("standard");
-        var comp = Complement(lay, res, style.CrewExtra(design), style.CREW_DECK_K, c["officer_fraction"], s.F("hotel_fraction"));
-        long n = comp.I("total");
+        var c = Spec(design, style.CrewStandard);
+        long rangeDays = (long)Math.Ceiling((design.RangeNm ?? 6000) / Math.Max(res.CruiseKn, 1.0) / 24.0 - 1e-9);
+        double endurance = c.EnduranceDays ?? Math.Max(1L, rangeDays);
+        var s = c.Standard;
+        var (deps, n, officers) = Complement(lay, res, style.CrewExtra(design), style.CrewDeckK, c.OfficerFraction, s.HotelFraction);
         double hAvail = res.Depth - Powerplant.DoubleBottom(res.Depth);
-        var nd = Needs(c, n, comp.I("officers"), hAvail);
-        var room = CrewSpace(lay, design, res);
+        var nd = NeedsOf(c, endurance, n, officers, hAvail);
+        var room = SpaceOf(lay, design, res);
         double waterTanks = TankRoom(lay, design, res);
-        double waterFree = Math.Max(0.0, nd.F("water_m3") - waterTanks);
-        double need = nd.F("living_m3") + nd.F("provisions_m3") + waterFree + nd.F("distiller_volume_m3");
-        if (need > room.F("usable_m3"))
+        double waterFree = Math.Max(0.0, nd.WaterM3 - waterTanks);
+        double need = nd.LivingM3 + nd.ProvisionsM3 + waterFree + nd.DistillerVolumeM3;
+        if (need > room.UsableM3)
             lay.Fail("length", $"No room for the crew: {n} men need about {need:N0} m3 for quarters, provisions and " +
-                               $"water, but the ship has about {room.F("usable_m3"):N0} m3 to spare. Use a lower " +
+                               $"water, but the ship has about {room.UsableM3:N0} m3 to spare. Use a lower " +
                                "habitability standard, a shorter endurance, a distiller, or fewer men (guns, power).");
-        if (Py.ToDouble(c["endurance_days"]) < rangeDays)
-            lay.Warnings.Add($"Provisions for {Py.Str(c["endurance_days"])} days, but the fuel lasts {rangeDays} days at " +
-                             "cruising speed.");
-        double frac = need > 0 ? Math.Min(1.0, Math.Max(0.0, (need - room.F("hull_usable_m3")) / need)) : 0.0;
+        if (endurance < rangeDays)
+            lay.Warnings.Add($"Provisions for {endurance} days, but the fuel lasts {rangeDays} days at cruising speed.");
+        double frac = need > 0 ? Math.Min(1.0, Math.Max(0.0, (need - room.HullUsableM3) / need)) : 0.0;
         long up = (long)Math.Round(n * frac);
-        var blocksM3 = room.D("blocks_m3").Select(kv => (kv.Key, Py.ToDouble(kv.Value))).ToList();
-        var upBlocks = Spread(up, blocksM3);
+        var upBlocks = Spread(up, room.BlocksM3);
         double xMid = lay.Geo.MachineryMid(lay.Hull.L);
         var byId = new Dictionary<string, PyDict>(StringComparer.Ordinal);
         foreach (var b in lay.Blocks)
@@ -235,20 +279,21 @@ public static class Crew
                 ZRel.Deck(Layout.BlockBase(b) + 1.3)));
         }
         lay.Weights.Add(new Weight("Crew and effects", "misc", (n - up) * CREW_T, 0.0, ZRel.Deck(-1.5)));
-        lay.Weights.Add(new Weight("Provisions", "misc", nd.F("provisions_m3") * PROVISIONS_T_PER_M3, 0.0, ZRel.Frac(0.4)));
-        lay.Weights.Add(new Weight("Fresh water", "misc", nd.F("water_m3"), xMid, ZRel.Frac(0.05)));
-        lay.Crew = PyDict.Of(("complement", n), ("quartered_in_superstructure", up),
-            ("superstructure_quarters", PyDict.Of(upBlocks.Select(t => (t.Key, (object?)t.Men)).ToArray())),
-            ("officers", comp["officers"]), ("cpos", nd["cpos"]), ("ratings", nd["ratings"]), ("departments", comp["departments"]),
-            ("standard", s.Get("name", "")), ("endurance_days", c["endurance_days"]), ("range_days", rangeDays),
-            ("distiller", c["distiller"]), ("berth_ratio", c["berth_ratio"]), ("living_m3", (long)Math.Round(nd.F("living_m3"))),
-            ("provisions_m3", (long)Math.Round(nd.F("provisions_m3"))), ("water_m3", (long)Math.Round(nd.F("water_m3"))),
-            ("water_in_double_bottom_m3", (long)Math.Round(nd.F("water_m3") - waterFree)),
-            ("distiller_m3_per_day", Math.Round(nd.F("distiller_m3_per_day"), 1)), ("space_needed_m3", (long)Math.Round(need)),
-            ("space_usable_m3", (long)Math.Round(room.F("usable_m3"))), ("space_free_m3", (long)Math.Round(room.F("free_m3"))),
-            ("sleep_m2_per_man", Math.Round(nd.F("sleep_m2_per_man"), 2)), ("sleep_standard_m2", s["sleep_rating_m2"]),
-            ("headroom_m", Math.Round(nd.F("headroom_m"), 2)), ("deck_height_m", s["deck_height_m"]), ("sickbay_beds", nd["sickbay_beds"]),
-            ("tolerance_days", s["tolerance_days"]));
+        lay.Weights.Add(new Weight("Provisions", "misc", nd.ProvisionsM3 * PROVISIONS_T_PER_M3, 0.0, ZRel.Frac(0.4)));
+        lay.Weights.Add(new Weight("Fresh water", "misc", nd.WaterM3, xMid, ZRel.Frac(0.05)));
+        var quarters = new OrderedDictionary<string, long>(StringComparer.Ordinal);
+        foreach (var (bid, m) in upBlocks)
+            quarters[bid] = m;
+        lay.Crew = new CrewReport
+        {
+            Complement = n, QuarteredInSuperstructure = up, SuperstructureQuarters = quarters, Officers = officers, Cpos = nd.Cpos,
+            Ratings = nd.Ratings, Departments = deps, Standard = s.Name, EnduranceDays = endurance, RangeDays = rangeDays,
+            Distiller = c.Distiller, BerthRatio = c.BerthRatio, LivingM3 = Math.Round(nd.LivingM3), ProvisionsM3 = Math.Round(nd.ProvisionsM3),
+            WaterM3 = Math.Round(nd.WaterM3), WaterInDoubleBottomM3 = Math.Round(nd.WaterM3 - waterFree),
+            DistillerM3PerDay = Math.Round(nd.DistillerM3PerDay, 1), SpaceNeededM3 = Math.Round(need), SpaceUsableM3 = Math.Round(room.UsableM3),
+            SpaceFreeM3 = Math.Round(room.FreeM3), SleepM2PerMan = Math.Round(nd.SleepM2PerMan, 2), SleepStandardM2 = s.SleepRatingM2,
+            HeadroomM = Math.Round(nd.HeadroomM, 2), DeckHeightM = s.DeckHeightM, SickbayBeds = nd.SickbayBeds, ToleranceDays = s.ToleranceDays,
+        };
     }
 
     const double HANDLING = 0.4;
@@ -257,16 +302,16 @@ public static class Crew
     const long DIRECTOR_K = 2, STEERING_PARTY = 2;
 
     /// <summary>Where the complement stands at battle stations: (components {(kind, id): men}, rooms {id: men}, summary).</summary>
-    static (List<((string Kind, string Id) Key, long Men)> Comps, OrderedDictionary<string, long> Rooms, PyDict Summary)
+    static (List<((string Kind, string Id) Key, long Men)> Comps, OrderedDictionary<string, long> Rooms, OrderedDictionary<string, long> Summary)
         BattleStations(Layout lay, PyDict sub)
     {
-        var c = lay.Crew ?? new PyDict();
-        var deps = (c.Or("departments", null) as PyDict)?.Copy() ?? new PyDict();
+        var deps = lay.Crew?.Departments ?? new OrderedDictionary<string, long>();
         var onComp = new OrderedDictionary<(string, string), long>();
         var onRoom = new OrderedDictionary<string, long>(StringComparer.Ordinal);
-        var summary = new PyDict();
+        var summary = new OrderedDictionary<string, long>(StringComparer.Ordinal);
         if (deps.Count == 0)
             return ([], onRoom, summary);
+        long Dep(string k) => deps.TryGetValue(k, out var v) ? v : 0;
         var barbettes = new HashSet<string>(lay.Mounts.Where(m => Geometry.HasBarbette(m.D("t"))).Select(m => m.S("id")), StringComparer.Ordinal);
 
         void Put<K>(OrderedDictionary<K, long> where, IEnumerable<(K Key, long Men)> men, string station) where K : notnull
@@ -276,7 +321,7 @@ public static class Crew
                 if (m == 0)
                     continue;
                 where[k] = (where.TryGetValue(k, out var v) ? v : 0) + m;
-                summary[station] = Py.ToLong(summary.Get(station, 0L)) + m;
+                summary[station] = (summary.TryGetValue(station, out var sv) ? sv : 0) + m;
             }
         }
 
@@ -293,19 +338,19 @@ public static class Crew
             var cfg = Geometry.AA_CFG[a.S("type")];
             need.Add((("aa", a.S("id")), GunCrew(cfg.CalibreMm, cfg.Barrels)));
         }
-        foreach (var ((kind, k), men) in Spread(Py.ToLong(deps.Get("weapons", 0L)), need))
+        foreach (var ((kind, k), men) in Spread(Dep("weapons"), need))
         {
             long below = kind != "aa" && barbettes.Contains(k) ? (long)Math.Round(HANDLING * men) : 0;
             Put(onComp, [((kind, k), men - below)], kind == "aa" ? "aa" : kind == "torpedo" ? "torpedoes" : "guns");
             Put(onComp, [(("barbette", $"{k} barbette"), below)], "handling");
         }
-        long rest = deps.Where(kv => !(kv.Key is "weapons" or "engineering")).Sum(kv => Py.ToLong(kv.Value));
+        long rest = deps.Where(kv => !(kv.Key is "weapons" or "engineering")).Sum(kv => kv.Value);
         var rooms = sub.L("rooms").Cast<PyDict>().ToList();
         var mach = rooms.Where(r => Py.In(r["kind"], "boiler_room", "engine_room") && !r.B("shared")).Select(r => (r.S("id"), r.F("volume_m3"))).ToList();
         if (mach.Count > 0)
-            Put(onRoom, Spread(Py.ToLong(deps.Get("engineering", 0L)), mach), "machinery");
+            Put(onRoom, Spread(Dep("engineering"), mach), "machinery");
         else
-            rest += Py.ToLong(deps.Get("engineering", 0L));
+            rest += Dep("engineering");
         var vol = new List<((string, string) Key, double V)>();
         var roles = new Dictionary<(string, string), string>();
         foreach (var b in lay.Blocks)
@@ -327,7 +372,7 @@ public static class Crew
             bridge = vol.Where(v => Role(v.Key) != "director").ToList();
         if (bridge.Count > 0)
         {
-            long n = Take((long)Math.Round(COMMAND_K.A + COMMAND_K.B * Py.ToDouble(deps.Get("deck_and_command", 0L))), rest);
+            long n = Take((long)Math.Round(COMMAND_K.A + COMMAND_K.B * Dep("deck_and_command")), rest);
             long nAft = aft.Count > 0 ? (long)Math.Round(AFT_CONTROL * n) : 0;
             Put(onComp, Spread(n - nAft, bridge), "command");
             Put(onComp, Spread(nAft, aft), "command");
@@ -335,8 +380,8 @@ public static class Crew
         }
         foreach (var d in lay.Directors)
         {
-            long n = Take(DIRECTOR_K + (long)Math.Round(d.F("rangefinder_m")), rest);
-            Put(onComp, [(("superstructure", d.S("id")), n)], "directors");
+            long n = Take(DIRECTOR_K + (long)Math.Round(d.Spec.RangefinderM), rest);
+            Put(onComp, [(("superstructure", d.Id), n)], "directors");
             rest -= n;
         }
         var steer = rooms.Where(r => Py.Eq(r["kind"], "steering") && !r.B("shared")).Select(r => r.S("id")).ToList();
@@ -346,7 +391,7 @@ public static class Crew
             Put(onRoom, [(steer[0], n)], "steering");
             rest -= n;
         }
-        long air = Take(Py.ToLong(deps.Get("air_group", 0L)), rest);
+        long air = Take(Dep("air_group"), rest);
         if (air != 0)
         {
             var bays = lay.Compartments.Where(cc => Py.Eq(cc["kind"], "hangar")).Select(cc => (("hangar_bay", cc.S("id")), 1.0)).ToList();
@@ -390,7 +435,7 @@ public static class Crew
             }
         }
         if (lay.Crew != null && summary.Count > 0)
-            lay.Crew["battle_stations"] = summary;
+            lay.Crew.BattleStations = summary;
         return comps.ToDictionary(t => t.Key, t => t.Men);
     }
 }

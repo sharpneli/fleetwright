@@ -270,23 +270,19 @@ public static class Geometry
     }
 
     /// <summary>Size a turret from its guns: (type id, type dict).</summary>
-    public static (string Id, PyDict T) MakeTurretType(object? calibreMm, object? calibreLength, object? barrels,
-        string kind = "auto")
+    public static (string Id, PyDict T) MakeTurretType(double calMm, double calLen, int n, string kind = "auto")
     {
-        double calMm = Py.ToDouble(calibreMm), calLen = Py.ToDouble(calibreLength);
-        long n = Py.ToLong(barrels);
         double cal = calMm / 1000.0;
         double spacing = n > 1 ? Math.Max(cal * 6.5, 0.9 + cal * 3.0) : 0.0;
         double width = (n - 1) * spacing + cal * 15.0 + 1.5;
         double r = width / 1.7;
         if (kind == "auto")
             kind = calMm >= 150 ? "bb" : calMm >= 76 ? "dp" : "open";
-        string tid = $"t{Py.Str(barrels)}x{Py.RoundObj(calibreMm)}L{Py.RoundObj(calibreLength)}" +
-                     (kind is "bb" or "dp" ? "" : "_" + kind);
-        var t = PyDict.Of(("desc", $"{Py.Str(barrels)} x {calMm}mm/{calLen}"), ("shape", kind),
-            ("r", Math.Round(r, 3)), ("barrels", barrels), ("barrel_len", Math.Round(cal * calLen, 3)),
+        string tid = $"t{n}x{Math.Round(calMm)}L{Math.Round(calLen)}" + (kind is "bb" or "dp" ? "" : "_" + kind);
+        var t = PyDict.Of(("desc", $"{n} x {calMm}mm/{calLen}"), ("shape", kind),
+            ("r", Math.Round(r, 3)), ("barrels", (long)n), ("barrel_len", Math.Round(cal * calLen, 3)),
             ("barrel_w", Math.Round(Math.Max(cal * 2.3, 0.18), 3)), ("spacing", Math.Round(spacing, 3)),
-            ("calibre_mm", calibreMm), ("calibre_length", calibreLength));
+            ("calibre_mm", calMm), ("calibre_length", calLen));
         if (kind == "torp")
             t.Update(("centered", true), ("barbette", false));
         if (kind is "open" or "casemate")
@@ -295,24 +291,23 @@ public static class Geometry
     }
 
     /// <summary>make_turret_type for a battery, carrying its rounds_per_gun when it gives one.</summary>
-    public static (string Id, PyDict T) BatteryType(PyDict b, string kind = "auto")
+    public static (string Id, PyDict T) BatteryType(BatteryInput b, string kind = "auto")
     {
-        var (tid, t) = MakeTurretType(b["calibre_mm"], b["calibre_length"], b["barrels"], kind);
-        if (b.Has("rounds_per_gun"))
-            t["rounds_per_gun"] = b["rounds_per_gun"];
+        var (tid, t) = MakeTurretType(b.CalibreMm!.Value, b.CalibreLength!.Value, b.Barrels!.Value, kind);
+        if (b.RoundsPerGun is double rpg)
+            t["rounds_per_gun"] = rpg;
         return (tid, t);
     }
 
-    public static (string Id, PyDict T) MakeTorpedoType(object? tubes, bool fixed_ = false)
+    public static (string Id, PyDict T) MakeTorpedoType(int n, bool fixed_ = false)
     {
-        long n = Py.ToLong(tubes);
-        string ts = Py.Str(tubes);
+        string ts = n.ToString();
         if (fixed_)
             return ($"tube{ts}x533", PyDict.Of(("desc", $"{ts} x 533mm fixed torpedo tube{(n > 1 ? "s" : "")}"),
-                ("shape", "tube"), ("r", 0.55), ("barrels", tubes), ("barrel_len", 7.2), ("barrel_w", 0.55),
+                ("shape", "tube"), ("r", 0.55), ("barrels", (long)n), ("barrel_len", 7.2), ("barrel_w", 0.55),
                 ("spacing", 0.75), ("centered", true), ("barbette", false), ("fixed_tube", true), ("calibre_mm", 533.0)));
         return ($"torp{ts}x533", PyDict.Of(("desc", $"{ts} x 533mm torpedo tubes"), ("shape", "torp"), ("r", 1.9),
-            ("barrels", tubes), ("barrel_len", 7.6), ("barrel_w", 0.55), ("spacing", 0.66), ("centered", true),
+            ("barrels", (long)n), ("barrel_len", 7.6), ("barrel_w", 0.55), ("spacing", 0.66), ("centered", true),
             ("barbette", false), ("calibre_mm", 533.0)));
     }
 

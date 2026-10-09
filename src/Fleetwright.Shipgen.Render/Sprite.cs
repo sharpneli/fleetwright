@@ -71,14 +71,14 @@ public sealed class ShipSprites
     /// <summary>Draw a designed ship (ShipDesign.Build's dict) at S px/m with the given mip levels. look ({"navy",
     /// "era"}, either may be left out) overrides the design's own look key by key, so the game can repaint a design
     /// into a later era without touching it.</summary>
-    public static ShipSprites Build(PyDict ship, double S, int mips = 0, PyDict? look = null)
+    public static ShipSprites Build(PyDict ship, double S, int mips = 0, LookInput? look = null)
     {
-        var design = ship.D("design");
+        var design = (Design)ship["design"]!;
         var rd = ship.D("render");
         if (look != null)
         {
-            design = design.Copy();
-            design["look"] = PyDict.Merge(Looks.LookOf(ship.D("design")), look);
+            var own = Looks.LookOf(design);
+            design = design with { Look = own with { Navy = look.Navy ?? own.Navy, Era = look.Era ?? own.Era } };
         }
         int align = 1 << (mips + 1);
         var spec = (PyDict)PyJson.Plain(rd["spec"])!;   // a deep copy
@@ -107,7 +107,7 @@ public sealed class ShipSprites
         long W = hr.Scene.WidthPx, H = hr.Scene.HeightPx;
         double ox = W / 2.0, oy = H / 2.0;
         var byId = rd.L("mounts").Cast<PyDict>().ToDictionary(m => m.S("id"), StringComparer.Ordinal);
-        var meta = PyDict.Of(("id", design["id"]), ("name", design.Get("name", design["id"])), ("scale_px_per_m", S),
+        var meta = PyDict.Of(("id", design.Id), ("name", design.Name ?? design.Id), ("scale_px_per_m", S),
             ("size_px", Py.List(W, H)), ("origin_px", Py.List(ox, oy)),
             ("orientation", ORIENTATION),
             ("layer_order", Py.List("hull", "turrets (ascending z)")),

@@ -63,7 +63,6 @@ public static class Looks
     static readonly string[] MUTE_BODY = ["hull", "levels", "boat", "fitting", "tub", "wood"];   // teak is a material more than paint
     static readonly string[] MUTE_MARKS = ["camo", "recog_a", "recog_b", "number"];
 
-    static readonly PyDict DEFAULT_LOOK = PyDict.Of(("navy", "generic"), ("era", "wwii"));
 
     // ------------------------------------------------------------------ colours
 
@@ -132,27 +131,26 @@ public static class Looks
 
     // ------------------------------------------------------------------ looks
 
-    public static string StyleName(PyDict design) => design.S("style", "warship")!;
-
-    /// <summary>The design's look, {"navy", "era"}, with defaults filled in.</summary>
-    public static PyDict LookOf(PyDict design) => PyDict.Merge(DEFAULT_LOOK, design.Get("look") as PyDict);
+    /// <summary>The design's look with the defaults filled in (generic, wwii).</summary>
+    public static LookInput LookOf(Design design) =>
+        new() { Navy = design.Look?.Navy ?? "generic", Era = design.Look?.Era ?? "wwii", Number = design.Look?.Number };
 
     /// <summary>The (navy, era) actually drawn: the design's navy, or "generic" if that navy has no entry for the era.</summary>
-    public static (string Navy, string Era) Resolve(PyDict design)
+    public static (string Navy, string Era) Resolve(Design design)
     {
         var lk = LookOf(design);
-        string navy = lk.S("navy"), era = lk.S("era");
+        string navy = lk.Navy!, era = lk.Era!;
         return (NAVIES.D(navy).D("eras").Has(era) ? navy : "generic", era);
     }
 
     /// <summary>The look as text for the preview sheet, e.g. "kure / wwii" ("" for the default look).</summary>
-    public static string LookLabel(PyDict design)
+    public static string LookLabel(Design design)
     {
         var lk = LookOf(design);
-        if (Py.Eq(lk["navy"], DEFAULT_LOOK["navy"]) && Py.Eq(lk["era"], DEFAULT_LOOK["era"]))
+        if (lk.Navy == "generic" && lk.Era == "wwii")
             return "";
         var (navy, _) = Resolve(design);
-        return $"{lk["navy"]} / {lk["era"]}" + (navy != lk.S("navy") ? " (drawn as generic)" : "");
+        return $"{lk.Navy} / {lk.Era}" + (navy != lk.Navy ? " (drawn as generic)" : "");
     }
 
     static PyDict ByStyleMerge(PyDict a, PyDict b)
@@ -193,17 +191,17 @@ public static class Looks
         return out_;
     }
 
-    public static PyDict Get(PyDict design)
+    public static PyDict Get(Design design)
     {
         var (navy, era) = Resolve(design);
         return Look(navy, era);
     }
 
     /// <summary>ERA_MUTE for the design's look, or 0 where muting doesn't apply (merchants, but for their marks).</summary>
-    static double MuteAmount(PyDict design, bool marks = false)
+    static double MuteAmount(Design design, bool marks = false)
     {
         var (_, era) = Resolve(design);
-        if (!NAVAL.Contains(StyleName(design)) && !marks)
+        if (!NAVAL.Contains(design.StyleName) && !marks)
             return 0.0;
         return ERA_MUTE.TryGetValue(era, out var m) ? m : 0.0;
     }
@@ -215,21 +213,17 @@ public static class Looks
         return ref_ != null ? AdjustColour(c, PyDict.Of(("tint", Py.List(ref_, m)))) : c;
     }
 
-    static string MarksRef(PyDict design)
-    {
-        var d = design.Copy();
-        d["palette"] = new PyDict();
-        return (string)PyDict.Merge(DEFAULT_PALETTE, Palette(d, mute: false)).L("levels")[1]!;
-    }
+    static string MarksRef(Design design) =>
+        (string)PyDict.Merge(DEFAULT_PALETTE, Palette(design with { Palette = null }, mute: false)).L("levels")[1]!;
 
     /// <summary>The look's drawing shapes for the design (Data/looks.jsonc, "shapes").</summary>
-    public static PyDict Shapes(PyDict design)
+    public static PyDict Shapes(Design design)
     {
         var lk = Get(design);
-        var out_ = PyDict.Merge(PyDict.Of(("clutter", LookOf(design)["era"])), lk.D("shapes"),
-            lk.Get("shapes_by_style") is PyDict sbs ? sbs.Get(StyleName(design)) as PyDict : null);
-        if (Py.Truthy(LookOf(design).Get("number")))
-            out_["number"] = Py.Str(LookOf(design)["number"]);
+        var out_ = PyDict.Merge(PyDict.Of(("clutter", LookOf(design).Era)), lk.D("shapes"),
+            lk.Get("shapes_by_style") is PyDict sbs ? sbs.Get(design.StyleName) as PyDict : null);
+        if (!string.IsNullOrEmpty(design.Look?.Number))
+            out_["number"] = design.Look.Number;
         double m = MuteAmount(design, marks: true);
         if (m != 0)
         {
@@ -246,10 +240,10 @@ public static class Looks
     }
 
     /// <summary>The design's palette overrides (merged over DEFAULT_PALETTE by the renderer), muted by ERA_MUTE.</summary>
-    public static PyDict Palette(PyDict design, bool mute = true)
+    public static PyDict Palette(Design design, bool mute = true)
     {
         var lk = Get(design);
-        string st = StyleName(design);
+        string st = design.StyleName;
         var pal = PyDict.Merge(lk.D("palette"), STYLE_PALETTES.Get(st) as PyDict, lk.D("by_style").Get(st) as PyDict);
         var ops = Cat(lk.Get("adjust"), (lk.Get("adjust_by_style") as PyDict)?.Get(st)).Cast<PyDict>()
             .Where(op => op.Get("styles") is not List<object?> styles || styles.Contains(st)).ToList();
@@ -268,6 +262,9 @@ public static class Looks
                         pal[k] = AdjustValue(v, c => MuteColour(c, mk, r));
                 }
         }
-        return PyDict.Merge(pal, design.Get("palette") as PyDict);
+        var own = new PyDict();
+        foreach (var (k, paint) in design.Palette ?? [])
+            own[k] = paint.IsList ? paint.Colours.Cast<object?>().ToList() : paint.Colour;
+        return PyDict.Merge(pal, own);
     }
 }

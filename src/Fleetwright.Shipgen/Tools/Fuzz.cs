@@ -193,7 +193,7 @@ public static class Fuzz
             List<Limit> limits;
             try
             {
-                limits = useLimits ? Styles.Get(d).Limits() : [];
+                limits = useLimits ? Styles.Get(d.Get("style", "warship") as string ?? "").Limits() : [];
             }
             catch (Exception)   // the style itself was swapped for one that doesn't exist: validate says so
             {
@@ -224,8 +224,17 @@ public static class Fuzz
 
     /// <summary>One mutant built: "invalid" (validate refused it: fine), "ok", "errors" (built with errors: fine),
     /// or "crash" with what broke. The caller enforces the time and memory caps.</summary>
-    public static (string Outcome, string Detail) Check(PyDict d, bool useLimits)
+    public static (string Outcome, string Detail) Check(PyDict mutant, bool useLimits)
     {
+        Design d;
+        try
+        {
+            d = Design.Parse(PyJson.Dumps(mutant, null));
+        }
+        catch (System.Text.Json.JsonException e)
+        {
+            return ("invalid", e.Message);
+        }
         var errs = ShipDesign.Validate(d, useLimits);
         if (errs.Count > 0)
             return ("invalid", errs[0]);

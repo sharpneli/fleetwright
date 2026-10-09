@@ -54,45 +54,21 @@ public static class Batteries
         return TORP_MOUNT_T + tubes * (TORP_TUBE_T + TORP_T);
     }
 
-    public const long SECONDARY_ARMOUR_MM = 25;
-
-    /// <summary>A battery input as a list: one object or a list (anything tolerated, for the validators).</summary>
-    public static List<object?> AsList(object? v) =>
-        v is List<object?> l ? l : Py.Truthy(v) ? [v] : [];
+    public const double SECONDARY_ARMOUR_MM = 25;
 
     /// <summary>The main batteries, in the design's order.</summary>
-    public static List<PyDict> MainBatteries(PyDict design) =>
-        AsList(design.Get("main")).OfType<PyDict>().Where(b => b.Count > 0).ToList();
+    public static List<BatteryInput> MainBatteries(Design design) => [.. design.MainBatteries];
 
     /// <summary>The secondary batteries, in the design's order, with count, per_side and armour_mm filled in.</summary>
-    public static List<PyDict> SecondaryBatteries(PyDict design)
-    {
-        var out_ = new List<PyDict>();
-        foreach (var o in AsList(design.Get("secondary")))
-        {
-            var b = (PyDict)o!;
-            object n = b.Has("count") ? b["count"]! : Mul2(b.Get("per_side", 0L));
-            var nb = b.Copy();
-            nb["count"] = n;
-            nb["per_side"] = b.Has("per_side") ? b["per_side"] : FloorDiv2(n);
-            nb["armour_mm"] = b.Has("armour_mm") ? b["armour_mm"] : SECONDARY_ARMOUR_MM;
-            out_.Add(nb);
-        }
-        return out_;
-    }
-
-    static object Mul2(object? v) => v is double d ? 2 * d : (object)(2 * Py.ToLong(v));
-    static object FloorDiv2(object? v) => v is double d ? Math.Floor(d / 2) : (object)(Py.ToLong(v) / 2);
+    public static List<BatteryInput> SecondaryBatteries(Design design) =>
+        (design.Secondary ?? []).Select(b => b with { Count = b.MountCount, PerSide = b.MountsPerSide, ArmourMm = b.ArmourMm ?? SECONDARY_ARMOUR_MM })
+            .ToList();
 
     /// <summary>The k-th secondary battery's name: S, SB, SC, ...</summary>
     public static string BatteryPrefix(int k) => k == 0 ? "S" : k < 26 ? $"S{(char)('A' + k)}" : $"S{k + 1}-";
 
-    /// <summary>How many turrets a main battery has: its end, midships and wing turrets (two to a pair).</summary>
-    public static double BatteryTurrets(PyDict b) =>
-        b.F("fore", 0) + b.F("aft", 0) + b.F("mid", 0) + 2 * b.F("wing", 0);
-
     /// <summary>First-pass armament estimate before the layout exists (all at x=0).</summary>
-    public static List<Weight> RoughArmament(PyDict design, double D)
+    public static List<Weight> RoughArmament(Design design, double D)
     {
         var out_ = new List<Weight>();
         var mains = MainBatteries(design);
@@ -100,8 +76,8 @@ public static class Batteries
         {
             var m = mains[k];
             var (_, t) = Geometry.BatteryType(m);
-            double n = BatteryTurrets(m);
-            var (tw, bw, aw) = MountWeights(t, m.F("armour_mm", 0), D, 0);
+            double n = m.Turrets;
+            var (tw, bw, aw) = MountWeights(t, m.ArmourMm ?? 0, D, 0);
             string sfx = k != 0 ? $" {k + 1}" : "";
             out_.Add(new Weight("Main battery" + sfx, "armament", n * tw, zRel: ZRel.Deck(2)));
             out_.Add(new Weight("Main barbettes" + sfx, "armour", n * bw, zRel: ZRel.Frac(0.75)));
@@ -109,23 +85,25 @@ public static class Batteries
         }
         foreach (var s in SecondaryBatteries(design))
         {
-            double n = s.F("count");
+            double n = s.MountCount;
             if (n == 0)
                 continue;
             var (_, t) = Geometry.BatteryType(s);
-            var (tw, _, aw) = MountWeights(t, s.F("armour_mm"), D, 0);
+            var (tw, _, aw) = MountWeights(t, s.ArmourMm!.Value, D, 0);
             out_.Add(new Weight("Secondary battery", "armament", n * (tw + aw), zRel: ZRel.Deck(2)));
         }
-        var tp = design.Get("torpedoes") as PyDict;
-        if (tp != null && tp.Count > 0 && Py.Truthy(tp.Get("mounts", 0L)))
-            out_.Add(new Weight("Torpedoes", "armament", tp.F("mounts") * TorpedoWeight(tp.F("tubes")), zRel: ZRel.Deck(1)));
-        var aa = design.Get("aa", new PyDict()) as PyDict ?? new PyDict();
-        double w = aa.F("heavy", 0) * AA_T["quad40"] + aa.F("light", 0) * AA_T["single20"];
+        if (design.Torpedoes is { Mounts: > 0 } tp)
+            out_.Add(new Weight("Torpedoes", "armament", tp.Mounts.Value * TorpedoWeight(tp.Tubes ?? 4), zRel: ZRel.Deck(1)));
+        double w = (design.Aa?.Heavy ?? 0) * AA_T["quad40"] + (design.Aa?.Light ?? 0) * AA_T["single20"];
         if (w != 0)
             out_.Add(new Weight("AA guns", "armament", w, zRel: ZRel.Deck(2)));
         return out_;
     }
 }
+
+/// <summary>The steady heel a beam gale gives in the worse of the full-load and light conditions, the heel that puts
+/// the deck edge under and the wind that does it, and the area the wind sees.</summary>
+public sealed record WindHeel(string Condition, double HeelDeg, double DeckEdgeDeg, double DeckEdgeWindKn, double AreaM2);
 
 /// <summary>stability: GM at full load and light, roll period, heel in a beam gale, trim, the full-load hydrostatics,
 /// and the warnings on all of them.</summary>
@@ -142,26 +120,25 @@ public static class Stability
     }
 
     /// <summary>The steady heel a beam gale gives, at full load and light, the worse of the two (empty without windage).</summary>
-    public static PyDict WindHeel(double L, double B, double D, double cb, double full, double std, double gmFull,
-        double gmLight, PyDict? windage)
+    public static WindHeel? WindHeelOf(double L, double B, double D, double cb, double full, double std, double gmFull,
+        double gmLight, Windage? windage)
     {
         if (windage is null)
-            return new PyDict();
-        PyDict? out_ = null;
+            return null;
+        WindHeel? out_ = null;
         foreach (var (cond, disp, gm) in new[] { ("full load", full, gmFull), ("light", std, gmLight) })
         {
             double T = disp / (Weight.SEAWATER * L * B * cb);
             double fb = Math.Max(0.0, D - T);
             double aHull = 0.95 * L * fb;
-            double area = aHull + windage.F("area_m2");
-            double z = area != 0 ? (aHull * (T + fb / 2) + windage.F("area_m2") * (D + windage.F("z_m"))) / area : T;
+            double area = aHull + windage.AreaM2;
+            double z = area != 0 ? (aHull * (T + fb / 2) + windage.AreaM2 * (D + windage.ZM)) / area : T;
             double arm = area * (z - T / 2) / (9.81 * disp * 1000.0);
             double edge = double.RadiansToDegrees(Math.Atan2(fb, B / 2));
             double heel = gm > 0 ? double.RadiansToDegrees(Math.Atan(WIND_PA_K * Math.Pow(WIND_REF_MS, 2) * arm / gm)) : 90.0;
             double pEdge = gm > 0 && arm > 0 ? Math.Tan(double.DegreesToRadians(edge)) * gm / arm : 0.0;
-            var r = PyDict.Of(("condition", cond), ("heel_deg", heel), ("deck_edge_deg", edge),
-                ("deck_edge_wind_kn", Math.Sqrt(pEdge / WIND_PA_K) / 0.5144), ("area_m2", area));
-            if (out_ is null || heel > out_.F("heel_deg"))
+            var r = new WindHeel(cond, heel, edge, Math.Sqrt(pEdge / WIND_PA_K) / 0.5144, area);
+            if (out_ is null || heel > out_.HeelDeg)
                 out_ = r;
         }
         return out_!;
@@ -184,7 +161,7 @@ public static class Stability
     }
 
     /// <summary>GM (full load, and light), roll period, wind heel and trim of the solved ship, set on res.</summary>
-    public static void Evaluate(Navarch.Result res, double L, double B, double cb, PyDict tun, PyDict? windage)
+    public static void Evaluate(Navarch.Result res, double L, double B, double cb, Tuning tun, Windage? windage)
     {
         double Gm(double dispCase, bool includeFuel)
         {
@@ -201,16 +178,16 @@ public static class Stability
         res.GmFull = Gm(res.Full, true);
         res.GmLight = Gm(res.Std, false);
         res.RollS = RollPeriod(L, B, res.Draught, res.GmFull);
-        res.Wind = WindHeel(L, B, res.Depth, cb, res.Full, res.Std, res.GmFull, res.GmLight, windage);
+        res.Wind = WindHeelOf(L, B, res.Depth, cb, res.Full, res.Std, res.GmFull, res.GmLight, windage);
         res.Lcg = res.Weights.Select(w => w.W * w.X).Sum() / res.Full;
-        res.Lcb = tun.F("lcb_frac") * L;
+        res.Lcb = tun.LcbFrac * L;
         double cw2 = Geometry.Cwp(cb);
         double bml = 0.0743 * Math.Pow(cw2, 2) * Math.Pow(L, 2) / (cb * res.Draught);
         res.TrimM = (res.Lcg - res.Lcb) * L / bml;
     }
 
     /// <summary>Stability and trim errors and warnings, appended to res.errors and res.warnings.</summary>
-    public static void Checks(Navarch.Result res, double L, double B, PyDict tun)
+    public static void Checks(Navarch.Result res, double L, double B, Tuning tun)
     {
         double gmin = res.GmFull;
         if (gmin <= 0)
@@ -219,18 +196,18 @@ public static class Stability
             res.Warnings.Add($"Top-heavy: GM {gmin:F2} m (want at least {0.035 * B:F2} m).");
         if (res.GmLight <= 0 && 0 < gmin)
             res.Warnings.Add($"Needs water ballast when low on fuel (light-condition GM {res.GmLight:F2} m).");
-        if (res.GmFull > tun.F("gm_stiff_frac", 0.15) * B)
+        if (res.GmFull > tun.GmStiffFrac * B)
             res.Warnings.Add($"Very stiff: GM {res.GmFull:F2} m. Snappy roll, poor gun platform.");
-        double trimTol = tun.F("trim_tol_frac", 0.01);
+        double trimTol = tun.TrimTolFrac;
         string end = res.TrimM > 0 ? "bow" : "stern";
         if (Math.Abs(res.TrimM) > trimTol * L)
             res.Errors.Add($"Badly out of trim: {Math.Abs(res.TrimM):F1} m by the {end}.");
-        else if (Math.Abs(res.TrimM) > tun.F("trim_warn_frac", 0.004) * L)
+        else if (Math.Abs(res.TrimM) > tun.TrimWarnFrac * L)
             res.Warnings.Add($"Trimmed {Math.Abs(res.TrimM):F1} m by the {end}.");
         var w = res.Wind;
-        if (w.Count > 0 && w.F("heel_deg") > Math.Min(WIND_HEEL_WARN, 0.8 * w.F("deck_edge_deg")))
-            res.Warnings.Add($"Heels {w.F("heel_deg"):F0}° in a beam gale ({WIND_REF_MS:F0} m/s, {Py.Str(w["condition"])}): too " +
-                             $"much windage for its stability. The deck edge goes under at {w.F("deck_edge_deg"):F0}°, " +
-                             $"in a {w.F("deck_edge_wind_kn"):F0} kn wind.");
+        if (w != null && w.HeelDeg > Math.Min(WIND_HEEL_WARN, 0.8 * w.DeckEdgeDeg))
+            res.Warnings.Add($"Heels {w.HeelDeg:F0}° in a beam gale ({WIND_REF_MS:F0} m/s, {w.Condition}): too " +
+                             $"much windage for its stability. The deck edge goes under at {w.DeckEdgeDeg:F0}°, " +
+                             $"in a {w.DeckEdgeWindKn:F0} kn wind.");
     }
 }

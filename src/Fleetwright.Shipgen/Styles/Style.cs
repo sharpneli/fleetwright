@@ -1,388 +1,374 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
 namespace Fleetwright.Shipgen;
 
-/// <summary>An input limit: the dotted path's numbers must lie in lo..hi (lo, hi kept as Python ints or floats, since
-/// the message prints them).</summary>
-public sealed record Limit(string[] Path, object Lo, object Hi);
+/// <summary>An input limit: the numbers at the dotted path (a list on the way checks every entry) must lie in
+/// lo..hi.</summary>
+public sealed record Limit(string[] Path, double Lo, double Hi);
 
-/// <summary>styles.base.Style: style hooks with neutral defaults. A style overrides what it needs.</summary>
+/// <summary>A design style's hooks, with neutral defaults. A style overrides what it needs.</summary>
 public abstract class Style
 {
     public abstract string Name { get; }
 
-    /// <summary>The style's own limits, merged over COMMON_LIMITS (a path in both keeps its place there).</summary>
+    /// <summary>The style's own limits, merged over CommonLimits (a path in both keeps its place there).</summary>
     protected virtual IEnumerable<Limit> StyleLimits => [];
 
-    public virtual double DEFAULT_CB => 0.55;
+    public virtual double DefaultBlockCoefficient => 0.55;
 
-    /// <summary>Sizing (shipdesign.size): length (min, max), beam_max, gm_frac, tb, lb_max, slender.</summary>
-    public virtual SizeRules SIZE => new((30.0, 1000.0), 100.0, 0.06, 0.36, 10.5, true);
+    /// <summary>How ShipDesign sizes the hull.</summary>
+    public virtual SizeRules Sizing => new((30.0, 1000.0), 100.0, 0.06, 0.36, 10.5, true);
 
+    /// <summary>Hull length range, the widest beam, GM (fraction of beam) and draught (fraction of beam) the beam must
+    /// give, the most slender L/B, and whether a displacement hull's minimum length applies.</summary>
     public sealed record SizeRules((double Min, double Max) Length, double BeamMax, double GmFrac, double Tb, double LbMax,
         bool Slender);
 
-    static Limit Lim(object lo, object hi, params string[] path) => new(path, lo, hi);
+    static Limit Lim(double lo, double hi, params string[] path) => new(path, lo, hi);
 
     /// <summary>Input limits shared by every style: sanity bounds for the generator, not gameplay rules.</summary>
-    public static IReadOnlyList<Limit> COMMON_LIMITS { get; } = BuildCommon();
+    public static IReadOnlyList<Limit> CommonLimits { get; } = BuildCommon();
 
     static List<Limit> BuildCommon()
     {
         var l = new List<Limit>
         {
             Lim(0.42, 0.68, "hull", "block_coefficient"),
-            Lim(100L, 1500L, "hull", "construction", "yield_mpa"), Lim(0.8, 1.5, "hull", "construction", "join_factor"),
+            Lim(100, 1500, "hull", "construction", "yield_mpa"), Lim(0.8, 1.5, "hull", "construction", "join_factor"),
             Lim(0.5, 2.0, "hull", "construction", "standard"), Lim(0.3, 2.0, "hull", "freeboard"),
-            Lim(1L, 2L, "hull", "raised", "decks"), Lim(0L, 200L, "hull", "plating", "shell_mm"),
-            Lim(0L, 300L, "hull", "plating", "deck_wood_mm"),
-            Lim(8L, 42L, "speed_kn"), Lim(1000L, 25000L, "range_nm"),
-            Lim(1L, 2000L, "main", "calibre_mm"), Lim(1L, 200L, "main", "calibre_length"), Lim(1L, 20L, "main", "barrels"),
-            Lim(0L, 40L, "main", "fore"), Lim(0L, 40L, "main", "aft"), Lim(0L, 40L, "main", "mid"),
-            Lim(0L, 20L, "main", "wing"), Lim(0L, 2000L, "main", "armour_mm"),
-            Lim(1L, 2000L, "secondary", "calibre_mm"), Lim(1L, 200L, "secondary", "calibre_length"),
-            Lim(1L, 20L, "secondary", "barrels"), Lim(0L, 100L, "secondary", "per_side"), Lim(0L, 200L, "secondary", "count"),
-            Lim(0L, 1000L, "main", "rounds_per_gun"), Lim(0L, 1000L, "secondary", "rounds_per_gun"),
-            Lim(0L, 40L, "torpedoes", "mounts"), Lim(1L, 20L, "torpedoes", "tubes"),
-            Lim(0L, 500L, "aa", "heavy"), Lim(0L, 500L, "aa", "light"),
-            Lim(0L, 2000L, "armour", "belt_mm"),
-            Lim(0L, 20L, "armour", "tds_m"), Lim(0L, 2000L, "armour", "bulkhead_mm"),
-            Lim(0L, 2000L, "armour", "belt_bottom_mm"), Lim(0L, 30L, "armour", "belt_depth_m"), Lim(0L, 30L, "armour", "belt_height_m"),
-            Lim(0L, 2000L, "armour", "upper_belt", "mm"),
-            Lim(0L, 2000L, "armour", "end_belts", "fore", "mm"), Lim(0L, 2000L, "armour", "end_belts", "fore", "tip_mm"),
-            Lim(0L, 2000L, "armour", "end_belts", "aft", "mm"), Lim(0L, 2000L, "armour", "end_belts", "aft", "tip_mm"),
+            Lim(1, 2, "hull", "raised", "decks"), Lim(0, 200, "hull", "plating", "shell_mm"),
+            Lim(0, 300, "hull", "plating", "deck_wood_mm"),
+            Lim(8, 42, "speed_kn"), Lim(1000, 25000, "range_nm"),
+            Lim(1, 2000, "main", "calibre_mm"), Lim(1, 200, "main", "calibre_length"), Lim(1, 20, "main", "barrels"),
+            Lim(0, 40, "main", "fore"), Lim(0, 40, "main", "aft"), Lim(0, 40, "main", "mid"),
+            Lim(0, 20, "main", "wing"), Lim(0, 2000, "main", "armour_mm"),
+            Lim(1, 2000, "secondary", "calibre_mm"), Lim(1, 200, "secondary", "calibre_length"),
+            Lim(1, 20, "secondary", "barrels"), Lim(0, 100, "secondary", "per_side"), Lim(0, 200, "secondary", "count"),
+            Lim(0, 1000, "main", "rounds_per_gun"), Lim(0, 1000, "secondary", "rounds_per_gun"),
+            Lim(0, 40, "torpedoes", "mounts"), Lim(1, 20, "torpedoes", "tubes"),
+            Lim(0, 500, "aa", "heavy"), Lim(0, 500, "aa", "light"),
+            Lim(0, 2000, "armour", "belt_mm"),
+            Lim(0, 20, "armour", "tds_m"), Lim(0, 2000, "armour", "bulkhead_mm"),
+            Lim(0, 2000, "armour", "belt_bottom_mm"), Lim(0, 30, "armour", "belt_depth_m"), Lim(0, 30, "armour", "belt_height_m"),
+            Lim(0, 2000, "armour", "upper_belt", "mm"),
+            Lim(0, 2000, "armour", "end_belts", "fore", "mm"), Lim(0, 2000, "armour", "end_belts", "fore", "tip_mm"),
+            Lim(0, 2000, "armour", "end_belts", "aft", "mm"), Lim(0, 2000, "armour", "end_belts", "aft", "tip_mm"),
         };
         foreach (var e in new[] { "fore", "aft" })
         {
-            l.Add(Lim(0L, 1L, "armour", "end_belts", e, "reach"));
-            l.Add(Lim(0L, 2000L, "armour", "end_belts", e, "bulkhead_mm"));
+            l.Add(Lim(0, 1, "armour", "end_belts", e, "reach"));
+            l.Add(Lim(0, 2000, "armour", "end_belts", e, "bulkhead_mm"));
         }
         foreach (var k in new[] { "mm", "deck_mm", "bulkhead_mm" })
-            l.Add(Lim(0L, 2000L, "armour", "steering_box", k));
-        l.Add(Lim(0L, 5L, "superstructure", "t_per_m2"));
-        l.Add(Lim(1L, 30L, "superstructure", "tower_levels"));
-        l.Add(Lim(0L, 30L, "superstructure", "levels_over_bridge"));
-        l.Add(Lim(1L, 30L, "superstructure", "deckhouse_levels"));
-        l.Add(Lim(0L, 200L, "superstructure", "plating_mm"));
-        l.Add(Lim(0L, 500L, "superstructure", "control_mm"));
+            l.Add(Lim(0, 2000, "armour", "steering_box", k));
+        l.Add(Lim(0, 5, "superstructure", "t_per_m2"));
+        l.Add(Lim(1, 30, "superstructure", "tower_levels"));
+        l.Add(Lim(0, 30, "superstructure", "levels_over_bridge"));
+        l.Add(Lim(1, 30, "superstructure", "deckhouse_levels"));
+        l.Add(Lim(0, 200, "superstructure", "plating_mm"));
+        l.Add(Lim(0, 500, "superstructure", "control_mm"));
         foreach (var b in new[] { "main", "secondary", "aa" })
         {
-            l.Add(Lim(0L, 100L, "fire_control", b, "directors"));
-            l.Add(Lim(0L, 50L, "fire_control", b, "rangefinder_m"));
-            l.Add(Lim(0L, 2000L, "fire_control", b, "armour_mm"));
-            l.Add(Lim(0L, 500L, "fire_control", b, "radar_t"));
-            l.Add(Lim(0L, 500L, "fire_control", b, "computer_t"));
+            l.Add(Lim(0, 100, "fire_control", b, "directors"));
+            l.Add(Lim(0, 50, "fire_control", b, "rangefinder_m"));
+            l.Add(Lim(0, 2000, "fire_control", b, "armour_mm"));
+            l.Add(Lim(0, 500, "fire_control", b, "radar_t"));
+            l.Add(Lim(0, 500, "fire_control", b, "computer_t"));
         }
-        l.Add(Lim(0L, 500L, "fire_control", "search_radar_t"));
-        l.Add(Lim(0L, 60L, "funnels"));
-        l.Add(Lim(1L, 100L, "machinery", "tech", "draught", "velocity_m_s"));
-        l.Add(Lim(300L, 2000L, "machinery", "tech", "draught", "gas_temp_k"));
+        l.Add(Lim(0, 500, "fire_control", "search_radar_t"));
+        l.Add(Lim(0, 60, "funnels"));
+        l.Add(Lim(1, 100, "machinery", "tech", "draught", "velocity_m_s"));
+        l.Add(Lim(300, 2000, "machinery", "tech", "draught", "gas_temp_k"));
         return l;
     }
 
-    /// <summary>{**COMMON_LIMITS, **self.LIMITS}.</summary>
+    /// <summary>CommonLimits with the style's own merged over them.</summary>
     public List<Limit> Limits()
     {
-        var out_ = COMMON_LIMITS.ToList();
+        var all = CommonLimits.ToList();
         foreach (var s in StyleLimits)
         {
-            int i = out_.FindIndex(x => x.Path.SequenceEqual(s.Path));
+            int i = all.FindIndex(x => x.Path.SequenceEqual(s.Path));
             if (i >= 0)
-                out_[i] = s;
+                all[i] = s;
             else
-                out_.Add(s);
+                all.Add(s);
         }
-        return out_;
+        return all;
     }
 
-    // numbers the physics divides by or takes as counts: (path, low, low_inclusive, high or null)
-    static readonly (string[] Path, object Lo, bool Incl, object? Hi)[] DEFINED =
+    // numbers the physics divides by or takes as counts: (path, low, low inclusive, high or none)
+    static readonly (string[] Path, double Lo, bool Incl, double? Hi)[] Defined =
     [
         (["hull", "block_coefficient"], 0.0, false, 1.0), (["speed_kn"], 0.0, false, null),
-        (["main", "barrels"], 1L, true, null), (["main", "calibre_mm"], 0.0, false, null),
-        (["main", "calibre_length"], 0.0, false, null), (["secondary", "barrels"], 1L, true, null),
+        (["main", "barrels"], 1, true, null), (["main", "calibre_mm"], 0.0, false, null),
+        (["main", "calibre_length"], 0.0, false, null), (["secondary", "barrels"], 1, true, null),
         (["secondary", "calibre_mm"], 0.0, false, null), (["secondary", "calibre_length"], 0.0, false, null),
-        (["main", "rounds_per_gun"], 0L, true, null), (["secondary", "rounds_per_gun"], 0L, true, null),
+        (["main", "rounds_per_gun"], 0, true, null), (["secondary", "rounds_per_gun"], 0, true, null),
     ];
 
-    static readonly (string Group, string[] Keys)[] REQUIRED =
-    [
-        ("main", ["calibre_mm", "calibre_length", "barrels"]),
-        ("secondary", ["calibre_mm", "calibre_length", "barrels"]),
-        ("torpedoes", ["mounts", "tubes"]),
-    ];
-
-    /// <summary>The dicts a dotted path's parent reaches: a list on the way checks every entry.</summary>
-    public static List<PyDict> Walk(PyDict design, string[] path)
+    /// <summary>The objects a dotted path's parent reaches in the design's JSON: a list on the way checks every
+    /// entry.</summary>
+    static List<JsonObject> Walk(JsonObject design, string[] path)
     {
-        var ds = new List<object?> { design };
+        var ds = new List<JsonObject> { design };
         foreach (var k in path[..^1])
-        {
-            var next = new List<object?>();
-            foreach (var d in ds)
+            ds = ds.SelectMany(d => d[k] switch
             {
-                var v = ((PyDict)d!).Get(k);
-                if (v is List<object?> l)
-                    next.AddRange(l);
-                else
-                    next.Add(Py.Truthy(v) ? v : new PyDict());
-            }
-            ds = next;
-        }
-        return ds.Select(d => d as PyDict ?? throw new PyTypeError($"argument of type '{d?.GetType().Name}' is not iterable"))
-            .ToList();
+                JsonArray a => a.OfType<JsonObject>(),
+                JsonObject o => [o],
+                _ => [new JsonObject()],
+            }).ToList();
+        return ds;
     }
 
-    /// <summary>Missing gun and torpedo data (REQUIRED), and numbers outside the range where the physics means
-    /// anything at all (DEFINED).</summary>
-    public static List<string> UndefinedErrors(PyDict design)
+    /// <summary>The numbers at a dotted path ("give a number" for anything else there).</summary>
+    static IEnumerable<(string Path, JsonNode V)> At(JsonObject design, string[] path) =>
+        Walk(design, path).Where(d => d[path[^1]] != null).Select(d => (string.Join('.', path), d[path[^1]]!));
+
+    static bool IsNumber(JsonNode v) => v.GetValueKind() == JsonValueKind.Number;
+
+    /// <summary>Numbers outside the limits.</summary>
+    public static List<string> LimitErrors(Design design, IEnumerable<Limit> limits)
     {
+        var root = JsonSerializer.SerializeToNode(design, ShipgenJson.Default.Design)!.AsObject();
         var errs = new List<string>();
-        foreach (var (group, keys) in REQUIRED)
-        {
-            var v = design.Get(group);
-            var items = Batteries.AsList(v);
-            for (int i = 0; i < items.Count; i++)
+        foreach (var lim in limits)
+            foreach (var (path, v) in At(root, lim.Path))
             {
-                string where = v is List<object?> ? $"{group}[{i}]" : group;
-                if (items[i] is not PyDict b)
-                {
-                    errs.Add($"{where}: give an object with {string.Join(", ", keys)}");
-                    continue;
-                }
-                errs.AddRange(keys.Where(k => !b.Has(k)).Select(k => $"{where}.{k} is missing"));
-            }
-        }
-        foreach (var (path, lo, incl, hi) in DEFINED)
-            foreach (var d in Walk(design, path))
-            {
-                if (!d.Has(path[^1]))
-                    continue;
-                var v = d[path[^1]];
-                bool bad = !Py.IsNumber(v) || v is bool || !double.IsFinite(Py.ToDouble(v)) ||
-                           (incl ? Py.ToDouble(v) < Py.ToDouble(lo) : Py.ToDouble(v) <= Py.ToDouble(lo)) ||
-                           (hi is not null && Py.ToDouble(v) > Py.ToDouble(hi));
-                if (bad)
-                    errs.Add($"{string.Join('.', path)} = {Py.Repr(v)}: must be {(incl ? "at least" : "above")} {Py.Str(lo)}" +
-                             (hi is not null ? $" and at most {Py.Str(hi)}" : ""));
+                if (!IsNumber(v))
+                    errs.Add($"{path} = {v.ToJsonString()}: give a number, {lim.Lo}..{lim.Hi}");
+                else if (v.GetValue<double>() is var x && !(lim.Lo <= x && x <= lim.Hi))
+                    errs.Add($"{path} = {x} is outside {lim.Lo}..{lim.Hi}");
             }
         return errs;
     }
 
-    static readonly string[] SUPERSTRUCTURE_KEYS = ["t_per_m2", "material", "plating_mm", "control_mm", "tower_levels",
+    /// <summary>Missing gun and torpedo data, and numbers outside the range where the physics means anything at
+    /// all.</summary>
+    public static List<string> UndefinedErrors(Design design)
+    {
+        var errs = new List<string>();
+        void Required(string group, IReadOnlyList<(string Key, bool Given)>[] items)
+        {
+            for (int i = 0; i < items.Length; i++)
+                errs.AddRange(items[i].Where(k => !k.Given).Select(k => $"{group}[{i}].{k.Key} is missing"));
+        }
+        static (string, bool)[] Gun(BatteryInput b) =>
+            [("calibre_mm", b.CalibreMm != null), ("calibre_length", b.CalibreLength != null), ("barrels", b.Barrels != null)];
+        Required("main", [.. design.MainBatteries.Select(Gun)]);
+        Required("secondary", [.. (design.Secondary ?? []).Select(Gun)]);
+        if (design.Torpedoes is { } tp)
+            errs.AddRange(new[] { ("mounts", tp.Mounts != null), ("tubes", tp.Tubes != null) }.Where(k => !k.Item2)
+                .Select(k => $"torpedoes.{k.Item1} is missing"));
+        var root = JsonSerializer.SerializeToNode(design, ShipgenJson.Default.Design)!.AsObject();
+        foreach (var (path, lo, incl, hi) in Defined)
+            foreach (var (p, v) in At(root, path))
+            {
+                double x = IsNumber(v) ? v.GetValue<double>() : double.NaN;
+                if (!double.IsFinite(x) || (incl ? x < lo : x <= lo) || (hi is double h && x > h))
+                    errs.Add($"{p} = {v.ToJsonString()}: must be {(incl ? "at least" : "above")} {lo}" +
+                             (hi is double h2 ? $" and at most {h2}" : ""));
+            }
+        return errs;
+    }
+
+    static readonly string[] SuperstructureKeys = ["t_per_m2", "material", "plating_mm", "control_mm", "tower_levels",
         "deckhouse_levels", "aft_control", "levels_over_bridge"];
-    public static readonly string[] RAISED_ANCHORS = ["bow", "fore_group", "bridge", "funnels", "aft_control", "aft_group", "stern"];
-    static readonly string[] STANDS_ON = ["deck", "deckhouse"];
+    public static readonly string[] RaisedAnchors = ["bow", "fore_group", "bridge", "funnels", "aft_control", "aft_group", "stern"];
+    static readonly string[] StandsOnChoices = ["deck", "deckhouse"];
 
     /// <summary>hull.raised: [{"from": an anchor, "to": an anchor, "decks": n}].</summary>
-    public static List<string> RaisedErrors(PyDict design, Style style)
+    public static List<string> RaisedErrors(Design design, Style style)
     {
-        var rsV = design.DOr("hull").Get("raised", new List<object?>());
-        if (rsV is not List<object?> rs)
-            return ["hull.raised: use a list of raised stretches, e.g. [{\"from\": \"bow\", \"to\": \"bridge\", " +
-                    "\"decks\": 1}]"];
-        if (rs.Count > 0 && !style.RAISED_HULL)
+        var rs = design.Hull?.Raised ?? [];
+        if (rs.Count > 0 && !style.RaisedHull)
             return [$"hull.raised: the {style.Name} style lays out its own raised decks"];
         var errs = new List<string>();
         for (int k = 0; k < rs.Count; k++)
         {
-            if (rs[k] is not PyDict r)
-            {
-                errs.Add($"hull.raised[{k}]: use {{\"from\", \"to\", \"decks\"}}");
-                continue;
-            }
-            foreach (var key in new[] { "from", "to" })
-                if (!RAISED_ANCHORS.Any(a => Py.Eq(r.Get(key), a)))
-                    errs.Add($"hull.raised[{k}].{key} = {Py.Repr(r.Get(key))}: use one of {string.Join(", ", RAISED_ANCHORS)}");
-            if (!(Py.IsIntNotBool(r.Get("decks")) && Py.ToLong(r["decks"]) >= 1))
+            var r = rs[k];
+            foreach (var (key, v) in new[] { ("from", r.From), ("to", r.To) })
+                if (!RaisedAnchors.Contains(v))
+                    errs.Add($"hull.raised[{k}].{key} = {Quote(v)}: use one of {string.Join(", ", RaisedAnchors)}");
+            if (!(r.Decks >= 1))
                 errs.Add($"hull.raised[{k}].decks: use a whole number of decks, 1 or more");
         }
         return errs;
     }
 
-    /// <summary>superstructure: {"t_per_m2", "material", "tower_levels"} (the tower only on styles with one).</summary>
-    public static List<string> SuperstructureErrors(PyDict design, Style style)
+    /// <summary>superstructure: {"t_per_m2", "material", "tower_levels", ...} (the tower only on styles with one).</summary>
+    public static List<string> SuperstructureErrors(Design design, Style style)
     {
-        var sV = design.Get("superstructure");
-        if (sV is null)
+        if (design.Superstructure is not { } s)
             return [];
-        if (sV is not PyDict s)
-            return ["superstructure: use {\"t_per_m2\", \"material\", \"tower_levels\"}"];
-        var errs = s.Keys.Where(k => !SUPERSTRUCTURE_KEYS.Contains(k))
-            .Select(k => $"superstructure.{k}: not a superstructure setting ({string.Join(", ", SUPERSTRUCTURE_KEYS)})").ToList();
-        if (s.Has("t_per_m2") && !(Py.IsNumber(s["t_per_m2"]) && Py.ToDouble(s["t_per_m2"]) >= 0))
+        var extra = s.Extra.KeysOrEmpty().ToList();
+        var errs = extra.Select(k => $"superstructure.{k}: not a superstructure setting ({string.Join(", ", SuperstructureKeys)})").ToList();
+        if (s.TPerM2 < 0)
             errs.Add("superstructure.t_per_m2 must be a number, 0 or more");
-        foreach (var k in new[] { "plating_mm", "control_mm" })
-            if (s.Has(k) && !(Py.IsNumber(s[k]) && Py.ToDouble(s[k]) >= 0))
+        foreach (var (k, v) in new[] { ("plating_mm", s.PlatingMm), ("control_mm", s.ControlMm) })
+            if (v < 0)
                 errs.Add($"superstructure.{k}: a number, 0 or more (0: the structure's own gauge)");
-        if (s.Has("material") && !(s["material"] is string ms && ms.Length > 0))
+        if (s.Material is "")
             errs.Add("superstructure.material: name the material as a string");
-        if (s.Has("deckhouse_levels"))
+        if (s.DeckhouseLevels is int dl)
         {
-            if (!style.DECKHOUSE_LEVELS)
+            if (!style.HasDeckhouseLevels)
                 errs.Add($"superstructure.deckhouse_levels: the {style.Name} style has no deckhouse levels yet");
-            else if (!Py.IsInt(s["deckhouse_levels"]) || Py.ToLong(s["deckhouse_levels"]) < 1)
+            else if (dl < 1)
                 errs.Add("superstructure.deckhouse_levels: use a whole number, 1 or more");
         }
-        if (s.Has("deckhouse"))
+        if (extra.Contains("deckhouse"))
             errs.Add("superstructure.deckhouse is gone: say what each battery stands on instead (secondary.stands_on, " +
                      "main.amidships_stands_on: \"deck\" or \"deckhouse\"); level 1 is built under what needs it");
-        if (s.Has("tower_levels"))
+        if (s.TowerLevels is int tl)
         {
-            if (style.MIN_TOWER == 0)
+            if (style.MinTowerLevels == 0)
                 errs.Add($"superstructure.tower_levels: the {style.Name} style has no bridge tower");
-            else if (!Py.IsInt(s["tower_levels"]) || Py.ToLong(s["tower_levels"]) < style.MIN_TOWER)
-                errs.Add($"superstructure.tower_levels: use a whole number, {style.MIN_TOWER} or more");
+            else if (tl < style.MinTowerLevels)
+                errs.Add($"superstructure.tower_levels: use a whole number, {style.MinTowerLevels} or more");
         }
-        if (s.Has("aft_control"))
+        if (s.AftControl != null && !style.HasControlTowers)
+            errs.Add($"superstructure.aft_control: the {style.Name} style has no aft control");
+        if (s.LevelsOverBridge is int lob)
         {
-            if (!style.CONTROL_TOWERS)
-                errs.Add($"superstructure.aft_control: the {style.Name} style has no aft control");
-            else if (s["aft_control"] is not bool)
-                errs.Add("superstructure.aft_control: true or false");
-        }
-        if (s.Has("levels_over_bridge"))
-        {
-            if (!style.CONTROL_TOWERS)
+            if (!style.HasControlTowers)
                 errs.Add($"superstructure.levels_over_bridge: the {style.Name} style has no bridge tower of levels");
-            else if (!Py.IsIntNotBool(s["levels_over_bridge"]) || Py.ToLong(s["levels_over_bridge"]) < 0)
+            else if (lob < 0)
                 errs.Add("superstructure.levels_over_bridge: use a whole number, 0 or more");
         }
         return errs;
     }
 
+    /// <summary>A string as validation messages quote it.</summary>
+    public static string Quote(string? s) => s is null ? "null" : $"'{s}'";
+
     /// <summary>Checks beyond the numeric limits.</summary>
-    public virtual List<string> Validate(PyDict design)
+    public virtual List<string> Validate(Design design)
     {
         var errs = Powerplant.Validate(design, DefaultTech);
-        errs.AddRange(Crew.Validate(design, CREW_STANDARD));
-        if (design.DOr("machinery").Has("type"))
+        errs.AddRange(Crew.Validate(design, CrewStandard));
+        if (design.Machinery?.Extra?.ContainsKey("type") == true)
             errs.Add("machinery.type is gone: give the plant's technology as machinery.tech " +
                      "(plant-templates.md has examples by year)");
-        errs.AddRange(new[] { "length", "beam" }.Where(k => design.DOr("hull").Has(k))
-            .Select(k => $"hull.{k}: the designer works out the hull's size from what it carries; remove it"));
+        foreach (var (k, v) in new[] { ("length", design.Hull?.Length), ("beam", design.Hull?.Beam) })
+            if (v != null)
+                errs.Add($"hull.{k}: the designer works out the hull's size from what it carries; remove it");
         errs.AddRange(HullWeight.Validate(design));
         errs.AddRange(Armour.ArmourErrors(design));
         errs.AddRange(FireControl.Validate(design));
         errs.AddRange(SuperstructureErrors(design, this));
         errs.AddRange(RaisedErrors(design, this));
-        if (design.Get("secondary") is List<object?> && !SECONDARY_LIST)
+        var secondary = design.Secondary ?? [];
+        if (secondary.Count > 1 && !TakesSecondaryList)
             errs.Add($"secondary: the {Name} style takes one secondary battery, not a list");
-        foreach (var o in Batteries.AsList(design.Get("secondary")))
+        foreach (var b in secondary)
         {
-            if (o is not PyDict b)
-                continue;
-            if (b.Has("count") && b.Has("per_side"))
+            if (b.Count != null && b.PerSide != null)
                 errs.Add("secondary: give count (total mounts) or per_side (pairs), not both");
-            var mount = b.Get("mount", "deck");
-            if (!Py.In(mount, "deck", "casemate"))
-                errs.Add($"secondary.mount = {Py.Repr(mount)}: use deck or casemate");
-            else if (Py.Eq(mount, "casemate") && !CASEMATES)
+            var mount = b.Mount ?? "deck";
+            if (mount is not ("deck" or "casemate"))
+                errs.Add($"secondary.mount = {Quote(mount)}: use deck or casemate");
+            else if (mount == "casemate" && !HasCasemates)
                 errs.Add($"secondary.mount: the {Name} style has no casemates");
-            if (!Py.In(b.Get("tier", "lower"), "lower", "upper"))
-                errs.Add($"secondary.tier = {Py.Repr(b["tier"])}: use lower or upper (casemates only)");
-            if (b.Has("stands_on"))
+            if ((b.Tier ?? "lower") is not ("lower" or "upper"))
+                errs.Add($"secondary.tier = {Quote(b.Tier)}: use lower or upper (casemates only)");
+            if (b.StandsOn != null)
             {
-                if (!RAISED_MOUNTS)
+                if (!HasRaisedMounts)
                     errs.Add($"secondary.stands_on: the {Name} style has no deckhouse to raise guns on");
-                else if (!Py.Eq(mount, "deck"))
+                else if (mount != "deck")
                     errs.Add("secondary.stands_on: deck batteries only (casemates use tier)");
-                else if (!STANDS_ON.Any(x => Py.Eq(b["stands_on"], x)))
-                    errs.Add($"secondary.stands_on = {Py.Repr(b["stands_on"])}: use {string.Join(" or ", STANDS_ON)}");
+                else if (!StandsOnChoices.Contains(b.StandsOn))
+                    errs.Add($"secondary.stands_on = {Quote(b.StandsOn)}: use {string.Join(" or ", StandsOnChoices)}");
             }
         }
-        var mains = design.Get("main");
-        if (mains is not null && !(mains is List<object?> || mains is PyDict))
-        {
-            errs.Add("main: use a list of batteries, each {\"calibre_mm\", \"calibre_length\", \"barrels\", " +
-                     "\"armour_mm\", \"fore\", \"aft\", ...}");
-            mains = new List<object?>();
-        }
-        var ml = Batteries.AsList(mains);
-        if (ml.Count > 1 && !MAIN_LIST)
+        var mains = design.Main ?? [];
+        if (mains.Count > 1 && !TakesMainList)
             errs.Add($"main: the {Name} style takes one main battery, not a list of several");
-        for (int k = 0; k < ml.Count; k++)
+        for (int k = 0; k < mains.Count; k++)
         {
-            if (ml[k] is not PyDict main)
-                continue;
+            var main = mains[k];
             string w = $"main[{k}]";
-            if (main.B("mid") && !MIDSHIPS_TURRETS)
+            if (main.Mid > 0 && !HasMidshipsTurrets)
                 errs.Add($"{w}.mid: the {Name} style has no midships turrets");
-            if (main.B("wing") && !WING_TURRETS)
+            if (main.Wing > 0 && !HasWingTurrets)
                 errs.Add($"{w}.wing: the {Name} style has no wing turrets");
-            if (main.Has("amidships_stands_on"))
+            if (main.AmidshipsStandsOn != null)
             {
-                if (!RAISED_MOUNTS)
+                if (!HasRaisedMounts)
                     errs.Add($"{w}.amidships_stands_on: the {Name} style has no deckhouse to raise guns on");
-                else if (!STANDS_ON.Any(x => Py.Eq(main["amidships_stands_on"], x)))
-                    errs.Add($"{w}.amidships_stands_on = {Py.Repr(main["amidships_stands_on"])}: use " +
-                             $"{string.Join(" or ", STANDS_ON)}");
+                else if (!StandsOnChoices.Contains(main.AmidshipsStandsOn))
+                    errs.Add($"{w}.amidships_stands_on = {Quote(main.AmidshipsStandsOn)}: use " +
+                             $"{string.Join(" or ", StandsOnChoices)}");
             }
-            if (main.Get("echelon", false) is not bool)
-                errs.Add($"{w}.echelon: use true or false");
-            if (main.Get("cross_deck", false) is not bool)
-                errs.Add($"{w}.cross_deck: use true or false");
-            var sf = main.Get("superfire", true);
-            bool sfOk = sf is bool || sf is PyDict sfd && sfd.Where(kv => kv.Key is "fore" or "aft")
-                .All(kv => Py.IsInt(kv.Value) && 0 <= Py.ToLong(kv.Value) && Py.ToDouble(kv.Value) <= main.F(kv.Key, 0));
-            if (!sfOk)
+            if (main.Superfire is { All: null } sf
+                && !((sf.Fore is null || 0 <= sf.Fore && sf.Fore <= (main.Fore ?? 0)) && (sf.Aft is null || 0 <= sf.Aft && sf.Aft <= (main.Aft ?? 0))))
                 errs.Add($"{w}.superfire: use true, false, or {{\"fore\": n, \"aft\": n}} within the group sizes");
         }
         errs.AddRange(UndefinedErrors(design));
         return errs;
     }
 
-    /// <summary>machinery.tech when the design gives none (null: powerplant.DEFAULT_TECH).</summary>
-    public virtual PyDict? DefaultTech => null;
-    public virtual bool MAIN_LIST => false;
-    public virtual bool MIDSHIPS_TURRETS => false;
-    public virtual bool WING_TURRETS => false;
-    public virtual bool SECONDARY_LIST => false;
-    public virtual bool CASEMATES => false;
-    public virtual long MIN_TOWER => 0;
-    public virtual bool DECKHOUSE_LEVELS => false;
-    public virtual bool CONTROL_TOWERS => false;
-    public virtual bool RAISED_MOUNTS => false;
-    public virtual bool RAISED_HULL => false;
+    /// <summary>machinery.tech when the design gives none (null: Powerplant.DefaultTech).</summary>
+    public virtual TechInput? DefaultTech => null;
+    public virtual bool TakesMainList => false;
+    public virtual bool HasMidshipsTurrets => false;
+    public virtual bool HasWingTurrets => false;
+    public virtual bool TakesSecondaryList => false;
+    public virtual bool HasCasemates => false;
+    /// <summary>The lowest superstructure.tower_levels the style takes (0: it has no bridge tower).</summary>
+    public virtual int MinTowerLevels => 0;
+    public virtual bool HasDeckhouseLevels => false;
+    public virtual bool HasControlTowers => false;
+    public virtual bool HasRaisedMounts => false;
+    public virtual bool RaisedHull => false;
 
-    /// <summary>Overrides of navarch.TUNING for this design.</summary>
-    public virtual PyDict Tuning(PyDict design) => new();
+    /// <summary>The style's changes to Navarch's tuning.</summary>
+    public virtual Tuning Tuning(Design design) => new();
 
     /// <summary>Lay the ship out for the solved weights res.</summary>
-    public abstract Layout BuildLayout(PyDict design, Navarch.Result res, double shift = 0.0, double spread = 0.0);
+    public abstract Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double spread = 0.0);
 
     /// <summary>First-pass weights of style-specific items, before the layout exists.</summary>
-    public virtual List<Weight> RoughPayload(PyDict design, double D) => [];
+    public virtual List<Weight> RoughPayload(Design design, double D) => [];
 
-    /// <summary>A strength deck above the main deck: dict(h, decks, plates) or null.</summary>
-    public virtual PyDict? StrengthDeck(PyDict design, double D) => null;
+    /// <summary>A strength deck above the main deck, or null.</summary>
+    public virtual StrengthDeck? StrengthDeckOf(Design design, double D) => null;
 
     /// <summary>Style structure that depends on the hull.</summary>
-    public virtual List<Weight> StructureWeights(PyDict design, double L, double B, double T, double D, Geo geo, PyDict tun) => [];
+    public virtual List<Weight> StructureWeights(Design design, double L, double B, double T, double D, Geo geo, Tuning tun) => [];
 
     /// <summary>The weather deck the planking is laid on: (area m2, x, height above the main deck).</summary>
-    public virtual (double Area, double X, double Z) WeatherDeck(PyDict design, double L, double B) =>
-        (HullWeight.DeckArea(L, B, design.D("hull").F("block_coefficient")), 0.0, 0.0);
+    public virtual (double Area, double X, double Z) WeatherDeck(Design design, double L, double B) =>
+        (HullWeight.DeckArea(L, B, design.BlockCoefficient), 0.0, 0.0);
 
     /// <summary>(standard-load items, full-load-only items).</summary>
-    public virtual (List<Weight> Std, List<Weight> Full) PayloadWeights(PyDict design, double L, double D, Geo geo, PyDict tun,
+    public virtual (List<Weight> Std, List<Weight> Full) PayloadWeights(Design design, double L, double D, Geo geo, Tuning tun,
         Navarch.PayloadContext ctx) => ([], []);
 
     /// <summary>Extra warnings once the weights are solved.</summary>
-    public virtual List<string> Checks(PyDict design, Navarch.Result r, PyDict tun) => [];
+    public virtual List<string> Checks(Design design, Navarch.Result r, Tuning tun) => [];
 
-    public virtual string CREW_STANDARD => "H2";
-    public virtual double CREW_DECK_K => 0.8;
+    public virtual string CrewStandard => "H2";
+    public virtual double CrewDeckK => 0.8;
 
-    /// <summary>Departments beyond engineering, weapons and deck: {name: men}.</summary>
-    public virtual PyDict CrewExtra(PyDict design) => new();
+    /// <summary>Departments beyond engineering, weapons and deck: (name, men).</summary>
+    public virtual List<(string Name, long Men)> CrewExtra(Design design) => [];
 
     /// <summary>Extra report values.</summary>
-    public virtual PyDict Results(PyDict design, Layout lay, Navarch.Result r) => new();
+    public virtual PyDict Results(Design design, Layout lay, Navarch.Result r) => new();
 
     /// <summary>Extra lines for the summary sheet.</summary>
-    public virtual List<object?> Summary(PyDict design, Layout lay, Navarch.Result r) => [];
+    public virtual List<string> Summary(Design design, Layout lay, Navarch.Result r) => [];
 }
 
-/// <summary>styles: ship design styles (warship, carrier, merchant, planing). A design picks its style with "style".</summary>
+/// <summary>A strength deck a style builds above the main deck (a carrier's closed hangar): its height, how many
+/// decks it adds to the girder, and its armour plates (mm, height above the keel).</summary>
+public sealed record StrengthDeck(double H, double Decks, List<(double Mm, double Z)> Plates);
+
+/// <summary>The ship design styles (warship, carrier, merchant, planing). A design picks its style with "style".</summary>
 public static class Styles
 {
     static readonly string[] Names = ["warship", "carrier", "merchant", "planing"];
@@ -392,15 +378,11 @@ public static class Styles
         ["planing"] = new PlaningStyle(),
     };
 
-    public static Style Get(PyDict design) => Get(design.Get("style", "warship"));
+    public static Style Get(Design design) => Get(design.StyleName);
 
-    public static Style Get(object? name)
-    {
-        if (name is string s && All.TryGetValue(s, out var st))
-            return st;
-        throw new StyleError($"unknown style {Py.Repr(name)} (known: {string.Join(", ", Names)})");
-    }
+    public static Style Get(string name) =>
+        All.TryGetValue(name, out var st) ? st : throw new StyleError($"unknown style '{name}' (known: {string.Join(", ", Names)})");
 }
 
-/// <summary>styles.get's KeyError: validate() returns its message.</summary>
+/// <summary>An unknown style: Validate returns its message.</summary>
 public sealed class StyleError(string message) : Exception(message);

@@ -76,9 +76,9 @@ public sealed partial class Layout
 
     public readonly double SupT;
     public readonly (double Plating, double Control) SupPlate;
-    public readonly PyDict Construction;
+    public readonly Construction Construction;
     public readonly double? OwnPlateMmValue;
-    public readonly List<PyDict> Directors = [];
+    public readonly List<Director> Directors = [];
     public List<Placed> Footprints = [];
     (List<Placed> List, int Count, Dictionary<long, List<((double X0, double Y0, double X1, double Y1) B, Placed O)>> Cells)? fpIndex;
     public readonly HashSet<Footprint> Overhangs = new(ReferenceEqualityComparer.Instance);
@@ -89,7 +89,7 @@ public sealed partial class Layout
     public (double Lo, double Hi) ShiftRange = (0.0, 0.0);
     public List<PyDict> Compartments = [];
     public List<PyDict> Decks = [];
-    public List<PyDict> Raised = [];
+    public List<RaisedStretch> Raised = [];
     public List<PyDict> Sponsons = [];
     public List<Sweep> Sweeps = [];
     public List<PyDict> FunnelsPlanned = [];
@@ -98,7 +98,7 @@ public sealed partial class Layout
     public HashSet<string> Short = new(StringComparer.Ordinal);
     public List<PyDict> EndMounts = [];
     public OrderedDictionary<string, List<string>> Smoke = new(StringComparer.Ordinal);
-    public PyDict? Crew;
+    public CrewReport? Crew;
     List<Pt>? deckBand;
     public readonly Dictionary<(List<Pt> Poly, double Y), List<(double, double)>> Scan = new(ScanKeyComparer.Instance);
 
@@ -118,12 +118,12 @@ public sealed partial class Layout
             HashCode.Combine(System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(k.Poly), k.Y);
     }
 
-    public Layout(PyDict? design = null, double? supT = null, double? ownPlateMm = null)
+    public Layout(Design design, double? supT = null, double? ownPlateMm = null)
     {
-        var sup = (design ?? new PyDict()).DOr("superstructure");
-        SupT = sup.F("t_per_m2", supT ?? Navarch.SUPERSTRUCTURE_T_PER_M2);
-        SupPlate = (sup.F("plating_mm", 0.0), sup.F("control_mm", 0.0));
-        Construction = HullWeight.Construction(design ?? new PyDict());
+        var sup = design.Superstructure;
+        SupT = sup?.TPerM2 ?? supT ?? Navarch.SuperstructureTPerM2;
+        SupPlate = (sup?.PlatingMm ?? 0.0, sup?.ControlMm ?? 0.0);
+        Construction = HullWeight.ConstructionOf(design);
         OwnPlateMmValue = ownPlateMm;
     }
 
@@ -163,7 +163,7 @@ public sealed partial class Layout
     bool IsRaised(string owner)
     {
         foreach (var s in Raised)
-            if (string.Equals(s.S("id"), owner, StringComparison.Ordinal))
+            if (s.Id == owner)
                 return true;
         return false;
     }
@@ -269,18 +269,18 @@ public sealed partial class Layout
 
     /// <summary>How many decks the weather deck stands above the main deck at x (the highest under x - r .. x + r).</summary>
     public long DeckLevel(double x, double r = 0.0) =>
-        Raised.Where(s => s.F("x0") - r <= x && x <= s.F("x1") + r).Select(s => s.I("levels")).DefaultIfEmpty(0L).Max();
+        Raised.Where(s => s.X0 - r <= x && x <= s.X1 + r).Select(s => s.Levels).DefaultIfEmpty(0L).Max();
 
     /// <summary>(lowest, highest) deck_level under a footprint reaching x - r .. x + r.</summary>
     public (long Lo, long Hi) DeckLevels(double x, double r = 0.0)
     {
         var pts = new List<double> { x - r, x + r };
         foreach (var s in Raised)
-            foreach (var e in new[] { s.F("x0"), s.F("x1") })
+            foreach (var e in new[] { s.X0, s.X1 })
                 foreach (var d in new[] { -1e-6, 1e-6 })
                     if (x - r < e + d && e + d < x + r)
                         pts.Add(e + d);
-        var lv = pts.Select(p => Raised.Where(s => s.F("x0") <= p && p <= s.F("x1")).Select(s => s.I("levels")).DefaultIfEmpty(0L).Max()).ToList();
+        var lv = pts.Select(p => Raised.Where(s => s.X0 <= p && p <= s.X1).Select(s => s.Levels).DefaultIfEmpty(0L).Max()).ToList();
         return (lv.Min(), lv.Max());
     }
 

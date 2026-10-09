@@ -86,7 +86,7 @@ public class RenderTests
                 Assert.Contains(era, Render.Looks.ERAS);
                 Assert.NotNull(Render.Looks.Look(navy, era));
             }
-        var bad = PyDict.Of(("look", PyDict.Of(("navy", "nowhere"), ("era", "wwii"))));
+        var bad = new Design { Look = new LookInput { Navy = "nowhere", Era = "wwii" } };
         var msg = Assert.Single(Shipgen.Looks.Validate(bad));
         Assert.Contains(string.Join(", ", Render.Looks.NAVIES.Keys), msg);
     }
@@ -96,10 +96,10 @@ public class RenderTests
     public void ConcurrentDrawingIsIdentical()
     {
         string[] names = ["bismarck", "fleet_carrier", "dante", "pt_boat", "tanker"];
-        var ships = names.Select(n => ShipDesign.Build((PyDict)PyJson.Load(Paths.Shipgen("designs", n + ".json"))!)).ToList();
+        var ships = names.Select(n => ShipDesign.Build(Design.Load(Paths.Shipgen("designs", n + ".json")))).ToList();
         string Draw(PyDict ship)
         {
-            var sp = ShipSprites.Build((PyDict)PyJson.Plain(ship)!, 10.0, 5);
+            var sp = ShipSprites.Build(ship, 10.0, 5);
             return SvgWriter.Write(sp.Hull) + SvgWriter.Write(sp.Height) + string.Concat(sp.Turrets.Values.Select(SvgWriter.Write))
                    + PyJson.Dumps(sp.Meta, null);
         }

@@ -18,22 +18,22 @@ public static class Decks
     }
 
     /// <summary>The hull's decks, every DECK_PITCH down from the main deck, as heights above the keel, top down.</summary>
-    public static List<(long N, double Z)> DeckStack(PyDict design, double D)
+    public static List<(long N, double Z)> DeckStack(Design design, double D)
     {
-        double floor = Py.Eq(design.Get("style"), "planing") ? 0.0 : Powerplant.DoubleBottom(D);
+        double floor = design.StyleName == "planing" ? 0.0 : Powerplant.DoubleBottom(D);
         var out_ = new List<(long, double)> { (0, D) };
         while (D - out_.Count * Geometry.DECK_PITCH >= floor + MIN_TIER - 1e-9 && out_.Count <= MAX_DECKS)
             out_.Add((out_.Count, D - out_.Count * Geometry.DECK_PITCH));
         return out_;
     }
 
-    /// <summary>The stretch s0..s1 split where raised stretches (dicts x0, x1, levels) step: [(x0, x1, levels)], each
-    /// with the raised decks over it, at most k.</summary>
-    public static List<(double X0, double X1, long Lv)> RaisedPieces(IReadOnlyList<PyDict> raised, double s0, double s1, long k)
+    /// <summary>The stretch s0..s1 split where raised stretches step: [(x0, x1, levels)], each with the raised decks
+    /// over it, at most k.</summary>
+    public static List<(double X0, double X1, long Lv)> RaisedPieces(IReadOnlyList<RaisedStretch> raised, double s0, double s1, long k)
     {
         var set = new HashSet<double> { s0, s1 };
         foreach (var r in raised)
-            foreach (var x in new[] { r.F("x0"), r.F("x1") })
+            foreach (var x in new[] { r.X0, r.X1 })
                 if (s0 < x && x < s1)
                     set.Add(x);
         var xs = set.Order().ToList();
@@ -42,7 +42,7 @@ public static class Decks
         {
             double a = xs[i], b = xs[i + 1];
             double m = (a + b) / 2;
-            long lv = Math.Min(k, raised.Where(r => r.F("x0") <= m && m <= r.F("x1")).Select(r => r.I("levels")).DefaultIfEmpty(0L).Max());
+            long lv = Math.Min(k, raised.Where(r => r.X0 <= m && m <= r.X1).Select(r => r.Levels).DefaultIfEmpty(0L).Max());
             if (out_.Count > 0 && out_[^1].Item3 == lv)
                 out_[^1] = (out_[^1].Item1, b, lv);
             else
@@ -52,22 +52,41 @@ public static class Decks
     }
 }
 
-/// <summary>Layout facts: what the layout found that the physics and the later passes need (Layout.geo). Before a
-/// layout exists navarch gets a bare Geo(), so the before-layout defaults live here.</summary>
+/// <summary>A raised stretch of hull (forecastle, poop, raised deck): the weather deck `Levels` decks above the main
+/// deck from X0 to X1.</summary>
+public sealed record RaisedStretch(string Id, double X0, double X1, long Levels);
+
+/// <summary>The machinery space as the layout planned it: the fuel, the space, its segments forward to aft (boiler,
+/// engine, bunker), the wing bunkers' tonnes and width, the end bunkers' length, the space's width and height, the inner
+/// bottom and roof (above the keel), whether an armour deck roofs it and how thick, the side protection, and the deck
+/// stack (heights above the keel, the main deck first).</summary>
+public sealed record PlantPlan(string Fuel, MachinerySpace Space, List<(string Kind, double Len)> Segments, double WingT,
+    double WingM, double EndM, double Width, double Height, double InnerBottom, double Top, bool Armoured, double DeckMm,
+    double Tds, List<double> Decks);
+
+/// <summary>The navigating bridge: its level and floor (m above the main deck), the level it needs to see over the
+/// forward turrets, the tower's top level and that turret roof's height.</summary>
+public sealed record BridgePlan(long Level, double Floor, long Need, long Tower, double? TurretRoof);
+
+/// <summary>What the wind sees from abeam above the main deck: its area and the height of its centre.</summary>
+public sealed record Windage(double AreaM2, double ZM);
+
+/// <summary>Layout facts: what the layout found that the physics and the later passes need (Layout.Geo). Before a
+/// layout exists navarch gets a bare Geo, so the before-layout defaults live here.</summary>
 public sealed class Geo
 {
     public double Shift;
     public (double X0, double X1)? Machinery;
     public double? MachineryX;
-    public PyDict? Plant;
-    public PyDict? FunnelPlan;
+    public PlantPlan? Plant;
+    public FunnelPlan? FunnelPlan;
     public double SmokeReach;
     public (double X0, double X1)? Citadel;
     public (double X0, double X1)? Steering;
     public double? SteeringBeam;
-    public List<PyDict> Raised = [];
-    public PyDict? Windage;
-    public PyDict? Bridge;
+    public List<RaisedStretch> Raised = [];
+    public Windage? Windage;
+    public BridgePlan? Bridge;
     public List<(double X0, double X1)>? Holds;
     public (double X, double Z)? Magazine;
     public (double X, double Z)? Avgas;

@@ -138,7 +138,7 @@ public sealed unsafe class ShipViewer : IDisposable
         var sw = Stopwatch.StartNew();
         try
         {
-            var design = (PyDict)PyJson.Load(designs[designIndex])!;
+            var design = Design.Load(designs[designIndex]);
             var errs = ShipDesign.Validate(design, limits: false).Concat(Shipgen.Looks.Validate(design)).ToList();
             if (errs.Count > 0)
             {
@@ -147,15 +147,9 @@ public sealed unsafe class ShipViewer : IDisposable
             }
             var ship = ShipDesign.Build(design);
             double tBuild = sw.Elapsed.TotalSeconds;
-            PyDict? look = null;
+            LookInput? look = null;
             if (navyIndex > 0 || eraIndex > 0)
-            {
-                look = new PyDict();
-                if (navyIndex > 0)
-                    look["navy"] = navies[navyIndex];
-                if (eraIndex > 0)
-                    look["era"] = eras[eraIndex];
-            }
+                look = new LookInput { Navy = navyIndex > 0 ? navies[navyIndex] : null, Era = eraIndex > 0 ? eras[eraIndex] : null };
             var sp = ShipSprites.Build(ship, Scale, MipLevels, look);
             double tDraw = sw.Elapsed.TotalSeconds - tBuild;
             var baked = ShipBake.Bake(sp, baker);
@@ -169,7 +163,7 @@ public sealed unsafe class ShipViewer : IDisposable
             var size = sp.Meta.L("size_px");
             status = $"{sp.Meta["name"]}\n{size[0]} x {size[1]} px, {sp.Turrets.Count} turret types, {sp.Clutter.Count} clutter items\n" +
                      $"build {tBuild:F2} s, draw {tDraw:F2} s, bake {tBake:F2} s";
-            Console.WriteLine($"viewer: {design.S("id")}: {status.Replace('\n', ';')}");
+            Console.WriteLine($"viewer: {design.Id}: {status.Replace('\n', ';')}");
         }
         catch (Exception e)
         {

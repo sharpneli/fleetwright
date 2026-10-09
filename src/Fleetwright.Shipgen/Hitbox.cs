@@ -63,19 +63,19 @@ public static class Hitbox
     }
 
     /// <summary>hitboxes.json. inner: the ship's interior (shipdesign.interior).</summary>
-    public static PyDict ExportHitboxes(Layout lay, PyDict design, Navarch.Result res, ShipDesign.Interior inner)
+    public static PyDict ExportHitboxes(Layout lay, Design design, Navarch.Result res, ShipDesign.Interior inner)
     {
         double D = res.Depth, T = res.Draught;
         double Rz(double z) => Math.Round(z - D, 2);
         var ag = inner.Armour;
-        bool armoured = Py.Truthy(ag["armoured"]);
-        double barbetteZ = ag["main_z"] is not null ? ag.F("main_z") : ag.F("belt_mm") > 0 ? ag.F("belt_top") : Math.Max(T, D - Geometry.DECK_PITCH);
+        bool armoured = ag.Armoured;
+        double barbetteZ = ag.MainZ ?? (ag.BeltMm > 0 ? ag.BeltTop : Math.Max(T, D - Geometry.DECK_PITCH));
         double fdBase = lay.Decks.Where(dk => Py.Eq(dk["kind"], "flight_deck")).Select(dk => dk.F("base")).Append(1e9).Min();
         var comps = new List<PyDict>();
 
-        PyDict WithMaterial(PyDict d, object? m)
+        PyDict WithMaterial(PyDict d, string? m)
         {
-            if (Py.Truthy(m))
+            if (!string.IsNullOrEmpty(m))
                 d["material"] = m;
             return d;
         }
@@ -93,8 +93,8 @@ public static class Hitbox
                 ("local", PyDict.Of(("body", R3(sh.Body)), ("parts", sh.Parts.Select(p => (object?)R3(p)).ToList()),
                     ("barrels", sh.Barrels.Select(p => (object?)R3(p)).ToList()))));
             comps.Add(c);
-            object? mat = Py.Eq(m["kind"], "main") ? Py.Or(m.Get("material"), Armour.ArmourMaterial(design, "turrets"))
-                : Py.Eq(m["kind"], "secondary") ? Py.Or(m.Get("material"), Armour.ArmourMaterial(design, "secondary")) : null;
+            string? Own(string part) => m.Get("material") is string { Length: > 0 } own ? own : Armour.ArmourMaterial(design, part);
+            string? mat = Py.Eq(m["kind"], "main") ? Own("turrets") : Py.Eq(m["kind"], "secondary") ? Own("secondary") : null;
             if (Py.In(m["kind"], "main", "secondary"))
             {
                 double a = Py.ToDouble(arm);
@@ -123,14 +123,12 @@ public static class Hitbox
                     ("base", inHull ? Math.Min(Rz(barbetteZ), Math.Round(m.F("base"), 2)) : Math.Round(m.F("base") - 1.0, 2)),
                     ("top", Math.Round(m.F("base"), 2)), ("armour_mm", (long)Math.Round(BARBETTE * Py.ToDouble(arm))));
                 comps.Add(bb);
-                WithMaterial(bb, Py.Eq(m["kind"], "main") ? Py.Or(m.Get("material"), Armour.ArmourMaterial(design, "barbettes")) : mat);
+                WithMaterial(bb, Py.Eq(m["kind"], "main") ? Own("barbettes") : mat);
             }
         }
-        var directors = new Dictionary<string, PyDict>(StringComparer.Ordinal);
-        foreach (var d in lay.Directors)
-            directors[d.S("id")] = d;
-        var supMaterial = design.DOr("superstructure").Get("material");
-        var quarters = (lay.Crew ?? new PyDict()).Get("superstructure_quarters", new PyDict()) as PyDict ?? new PyDict();
+        var directors = lay.Directors.ToDictionary(d => d.Id, StringComparer.Ordinal);
+        var supMaterial = design.Superstructure?.Material;
+        var quarters = lay.Crew?.SuperstructureQuarters ?? new OrderedDictionary<string, long>();
         foreach (var b in lay.Blocks)
         {
             var pts = Geometry.BlockOutline(b);
@@ -142,14 +140,14 @@ public static class Hitbox
             c.Update(("base", Math.Round(Layout.BlockBase(b), 2)), ("top", Math.Round(Layout.BlockTop(b), 2)));
             comps.Add(c);
             if (directors.TryGetValue(b.S("id"), out var d))
-                c.Update(("battery", d["battery"]), ("rangefinder_m", d["rangefinder_m"]), ("armour_mm", d["armour_mm"]),
-                    ("radar", d.F("radar_t") > 0));
+                c.Update(("battery", d.Battery), ("rangefinder_m", d.Spec.RangefinderM), ("armour_mm", d.Spec.ArmourMm),
+                    ("radar", d.Spec.RadarT > 0));
             else
                 WithMaterial(c, supMaterial);
             if (b.Has("_plate_mm"))
                 c["plate_mm"] = b["_plate_mm"];
-            if (quarters.B(b.S("id")))
-                c["crew"] = quarters[b.S("id")];
+            if (quarters.TryGetValue(b.S("id"), out var men) && men != 0)
+                c["crew"] = men;
             if (smoke is { Count: > 0 })
                 c["smoke"] = smoke.ToList();
         }
@@ -158,7 +156,7 @@ public static class Hitbox
         {
             var c = PyDict.Of(("id", "Conning tower"), ("kind", "conning_tower"), ("shape", "circle"), ("x", Math.Round(ct.F("x"), 3)),
                 ("y", Math.Round(ct.F("y"), 3)), ("r", Math.Round(ct.F("r"), 3)), ("base", 0.0), ("top", Math.Round(ct.F("top"), 2)),
-                ("armour_mm", ag["belt_mm"]));
+                ("armour_mm", ag.BeltMm));
             comps.Add(c);
             WithMaterial(c, Armour.ArmourMaterial(design, "conning_tower"));
         }
@@ -171,7 +169,7 @@ public static class Hitbox
                 ("top", Math.Round(lay.FunTop, 2)), ("boiler_rooms", f.Get("serves", new List<object?>()))));
             if (plan != null && f.Get("serves") is not null)
                 comps.Add(PyDict.Of(("id", $"{f.S("id")} uptakes"), ("kind", "uptake"), ("funnel", f["id"]), ("shape", "polygon"),
-                    ("points", pts), ("base", Math.Round(plan.F("inner_bottom") + Py.ToDouble(((object?[])plan.D("space")["unit"]!)[2]) - D, 2)),
+                    ("points", pts), ("base", Math.Round(plan.InnerBottom + plan.Space.Unit.H - D, 2)),
                     ("top", f.Get("z0", 0.0)), ("boiler_rooms", f.Get("serves", new List<object?>()))));
         }
         foreach (var c in lay.Casings)
@@ -181,7 +179,7 @@ public static class Hitbox
                 ("base", Math.Round(c.F("base"), 2)), ("top", Math.Round(c.F("top"), 2)), ("armour_mm", c["armour_mm"]));
             comps.Add(cc);
             if (Py.Truthy(c["armour_mm"]))
-                WithMaterial(cc, ag["roof_material"]);
+                WithMaterial(cc, ag.RoofMaterial);
         }
         var dks = lay.Decks.Where(d => !Py.Eq(d["kind"], "deck")).Concat(lay.Sponsons.Select(sp =>
         {
@@ -194,14 +192,14 @@ public static class Hitbox
             var c = PyDict.Of(("id", dk["id"]), ("kind", dk["kind"]), ("shape", "polygon"), ("points", R3(Geometry.Pts(dk["points"]))),
                 ("base", Math.Round(dk.F("base"), 2)), ("top", Math.Round(dk.F("top"), 2)));
             comps.Add(c);
-            var fdMm = design.DOr("armour").Get("flight_deck_mm", 0L);
-            if (Py.Eq(dk["kind"], "flight_deck") && Py.Truthy(fdMm))
+            double fdMm = design.Armour?.FlightDeckMm ?? 0;
+            if (Py.Eq(dk["kind"], "flight_deck") && fdMm != 0)
             {
                 c["armour_mm"] = fdMm;
                 WithMaterial(c, Armour.ArmourMaterial(design, "flight_deck"));
             }
             if (inner.Planked.Contains(dk.S("id")))
-                c["wood_mm"] = inner.Plating["deck_wood_mm"];
+                c["wood_mm"] = inner.Plating.DeckWoodMm;
         }
         foreach (var a in lay.Aa)
         {
@@ -225,46 +223,43 @@ public static class Hitbox
         var form = inner.Form;
         var sub = inner.Subdivision;
         var armOut = new PyDict();
-        if (ag.F("belt_mm") > 0)
+        if (ag.BeltMm > 0)
         {
-            armOut["belt"] = WithMaterial(PyDict.Of(("thickness_mm", ag["belt_mm"]), ("x0", Math.Round(ag.F("x0"), 3)), ("x1", Math.Round(ag.F("x1"), 3)),
-                ("bottom", Rz(ag.F("belt_bottom"))), ("top", Rz(ag.F("belt_top")))), ag["belt_material"]);
-            if (!Py.Eq(ag["belt_bottom_mm"], ag["belt_mm"]))
-                armOut.D("belt").Update(("bottom_mm", ag["belt_bottom_mm"]), ("taper_from", Rz(Math.Min(ag.F("belt_top"), ag.F("waterline")))));
+            armOut["belt"] = WithMaterial(PyDict.Of(("thickness_mm", ag.BeltMm), ("x0", Math.Round(ag.X0, 3)), ("x1", Math.Round(ag.X1, 3)),
+                ("bottom", Rz(ag.BeltBottom)), ("top", Rz(ag.BeltTop))), ag.BeltMaterial);
+            if (ag.BeltBottomMm != ag.BeltMm)
+                armOut.D("belt").Update(("bottom_mm", ag.BeltBottomMm), ("taper_from", Rz(Math.Min(ag.BeltTop, ag.Waterline))));
         }
-        var strakes = ag.L("strakes").Cast<PyDict>().ToList();
-        if (strakes.Count > 0)
-            armOut["strakes"] = strakes.Select(st =>
+        if (ag.Strakes.Count > 0)
+            armOut["strakes"] = ag.Strakes.Select(st =>
             {
-                var d = PyDict.Of(("id", st["id"]), ("kind", st["kind"]), ("extent", st["extent"]), ("thickness_mm", st["mm"]));
-                if (!Py.Eq(st["tip_mm"], st["mm"]))
-                    d["tip_mm"] = st["tip_mm"];
-                d.Update(("x0", Math.Round(st.F("x0"), 3)), ("x1", Math.Round(st.F("x1"), 3)), ("bottom", Rz(st.F("bottom"))), ("top", Rz(st.F("top"))));
-                return (object?)WithMaterial(d, st["material"]);
+                var d = PyDict.Of(("id", st.Id), ("kind", st.Kind), ("extent", st.Extent), ("thickness_mm", st.Mm));
+                if (st.TipMm != st.Mm)
+                    d["tip_mm"] = st.TipMm;
+                d.Update(("x0", Math.Round(st.X0, 3)), ("x1", Math.Round(st.X1, 3)), ("bottom", Rz(st.Bottom)), ("top", Rz(st.Top)));
+                return (object?)WithMaterial(d, st.Material);
             }).ToList();
-        if (armoured && ag.F("bulkhead_mm") > 0)
-            armOut["bulkheads"] = new[] { ("Forward", ag.F("x1")), ("Aft", ag.F("x0")) }.Select(t =>
+        if (armoured && ag.BulkheadMm > 0)
+            armOut["bulkheads"] = new[] { ("Forward", ag.X1), ("Aft", ag.X0) }.Select(t =>
                 (object?)WithMaterial(PyDict.Of(("id", $"{t.Item1} bulkhead"), ("x", Math.Round(t.Item2, 3)),
-                    ("thickness_mm", Py.RoundObj(ag["bulkhead_mm"])), ("bottom", Rz(ag.F("bulkhead_bottom"))), ("top", Rz(ag.F("bulkhead_top")))),
-                    ag["bulkhead_material"])).ToList();
-        var endBhs = ag.L("end_bulkheads").Cast<PyDict>().ToList();
-        if (endBhs.Count > 0)
+                    ("thickness_mm", Math.Round(ag.BulkheadMm)), ("bottom", Rz(ag.BulkheadBottom)), ("top", Rz(ag.BulkheadTop))),
+                    ag.BulkheadMaterial)).ToList();
+        if (ag.EndBulkheads.Count > 0)
         {
             var l = armOut.SetDefault("bulkheads", new List<object?>()) as List<object?>;
-            l!.AddRange(endBhs.Select(b => (object?)WithMaterial(PyDict.Of(("id", b["id"]), ("x", Math.Round(b.F("x"), 3)),
-                ("thickness_mm", Py.RoundObj(b["mm"])), ("bottom", Rz(b.F("bottom"))), ("top", Rz(b.F("top")))), b["material"])));
+            l!.AddRange(ag.EndBulkheads.Select(b => (object?)WithMaterial(PyDict.Of(("id", b.Id), ("x", Math.Round(b.X, 3)),
+                ("thickness_mm", Math.Round(b.Mm)), ("bottom", Rz(b.Bottom)), ("top", Rz(b.Top))), b.Material)));
         }
-        var adecks = ag.L("decks").Cast<PyDict>().ToList();
-        if (adecks.Count > 0)
-            armOut["decks"] = adecks.Select(d => (object?)WithMaterial(PyDict.Of(("deck", Decks.DeckName(d.I("deck"))), ("thickness_mm", d["mm"]),
-                ("extent", d["extent"]), ("x0", Math.Round(d.F("x0"), 3)), ("x1", Math.Round(d.F("x1"), 3)), ("z", Rz(d.F("z"))),
-                ("main", Py.Eq(d["z"], ag["main_z"])), ("roof", Py.Eq(d["z"], ag["roof_z"]))), d["material"])).ToList();
+        if (ag.Decks.Count > 0)
+            armOut["decks"] = ag.Decks.Select(d => (object?)WithMaterial(PyDict.Of(("deck", Decks.DeckName(d.Deck)), ("thickness_mm", d.Mm),
+                ("extent", d.Extent), ("x0", Math.Round(d.X0, 3)), ("x1", Math.Round(d.X1, 3)), ("z", Rz(d.Z)),
+                ("main", d.Z == ag.MainZ), ("roof", d.Z == ag.RoofZ)), d.Material)).ToList();
         var vertical = PyDict.Of(("keel", -Math.Round(D, 2)), ("waterline", -Math.Round(D - T, 2)),
-            ("armour_deck", ag["main_z"] is not null ? Rz(ag.F("main_z")) : null), ("draught", Math.Round(T, 2)), ("depth", Math.Round(D, 2)),
+            ("armour_deck", ag.MainZ is double mz ? Rz(mz) : null), ("draught", Math.Round(T, 2)), ("depth", Math.Round(D, 2)),
             ("freeboard", Math.Round(D - T, 2)));
         if (lay.Raised.Count > 0)
-            vertical["raised"] = lay.Raised.Select(st => (object?)PyDict.Of(("id", st["id"]), ("x0", Math.Round(st.F("x0"), 3)),
-                ("x1", Math.Round(st.F("x1"), 3)), ("top", Math.Round(st.F("levels") * Geometry.DECK_PITCH, 2)))).ToList();
+            vertical["raised"] = lay.Raised.Select(st => (object?)PyDict.Of(("id", st.Id), ("x0", Math.Round(st.X0, 3)),
+                ("x1", Math.Round(st.X1, 3)), ("top", Math.Round(st.Levels * Geometry.DECK_PITCH, 2)))).ToList();
         var out_ = PyDict.Of(("units", "metres"),
             ("frame", "ship-local: origin = ship centre = sprite centre, +x toward bow, +y toward starboard; " +
                       "angles clockwise from dead ahead"),

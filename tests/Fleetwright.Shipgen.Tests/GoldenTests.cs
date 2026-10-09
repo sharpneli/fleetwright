@@ -38,12 +38,12 @@ public class GoldenTests
     {
         string[] names = ["bismarck", "fleet_carrier", "tanker", "pt_boat", "destroyer", "fuzz_free_057"];
         var cases = GoldenCases.Load(Root).Where(c => names.Contains(c.Name)).ToList();
-        var designs = cases.Select(c => (PyDict)PyJson.Load(c.DesignPath)!).ToList();
-        var serial = designs.Select(d => PyJson.Dumps(ShipDesign.Build((PyDict)PyJson.Plain(d)!), null)).ToList();
+        var designs = cases.Select(c => Design.Load(c.DesignPath)).ToList();
+        var serial = designs.Select(d => PyJson.Dumps(ShipDesign.Build(d), null)).ToList();
         var jobs = Enumerable.Range(0, 4).SelectMany(_ => Enumerable.Range(0, designs.Count)).ToList();
         var parallel = new string[jobs.Count];
         Parallel.For(0, jobs.Count, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, i =>
-            parallel[i] = PyJson.Dumps(ShipDesign.Build((PyDict)PyJson.Plain(designs[jobs[i]])!), null));
+            parallel[i] = PyJson.Dumps(ShipDesign.Build(designs[jobs[i]]), null));
         for (int i = 0; i < jobs.Count; i++)
             Assert.True(serial[jobs[i]] == parallel[i], $"{cases[jobs[i]].Name} differs when built concurrently");
     }

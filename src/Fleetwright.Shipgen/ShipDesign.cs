@@ -1,14 +1,13 @@
 namespace Fleetwright.Shipgen;
 
-/// <summary>shipdesign: the design side. A player's design (JSON) in, the designed ship out as plain data. No drawing.
-/// validate() lists the input errors ([] means build() can run); build() returns the ship dict (design, report,
-/// hitboxes, render).</summary>
+/// <summary>The design side: a player's design in, the designed ship out as plain data. No drawing. Validate lists
+/// the input errors (none: Build can run); Build returns the ship (design, report, hitboxes, render).</summary>
 public static class ShipDesign
 {
     const double MAST_ABOVE_FUNNEL = 6.0;
 
-    /// <summary>Input errors. limits=false skips the numeric ranges (--no-limits); structural checks stay.</summary>
-    public static List<string> Validate(PyDict design, bool limits = true)
+    /// <summary>Input errors. limits false skips the numeric ranges (--no-limits); structural checks stay.</summary>
+    public static List<string> Validate(Design design, bool limits = true)
     {
         Style style;
         try
@@ -19,24 +18,11 @@ public static class ShipDesign
         {
             return [e.Message];
         }
-        var errs = new List<string>();
-        foreach (var lim in limits ? style.Limits() : [])
-        {
-            foreach (var d in Style.Walk(design, lim.Path))
-            {
-                string key = lim.Path[^1];
-                if (!d.Has(key))
-                    continue;
-                var v = d[key];
-                string path = string.Join('.', lim.Path);
-                if (!Py.IsNumber(v) || v is bool)
-                    errs.Add($"{path} = {Py.Repr(v)}: give a number, {Py.Str(lim.Lo)}..{Py.Str(lim.Hi)}");
-                else if (!(Py.ToDouble(lim.Lo) <= Py.ToDouble(v) && Py.ToDouble(v) <= Py.ToDouble(lim.Hi)))
-                    errs.Add($"{path} = {Py.Str(v)} is outside {Py.Str(lim.Lo)}..{Py.Str(lim.Hi)}");
-            }
-        }
-        if (!design.Has("id"))
+        var errs = limits ? Style.LimitErrors(design, style.Limits()) : [];
+        if (design.Id is null)
             errs.Add("design needs an 'id'");
+        if (design.SpeedKn is null)
+            errs.Add("design needs a 'speed_kn'");
         errs.AddRange(style.Validate(design));
         return errs;
     }
@@ -50,21 +36,19 @@ public static class ShipDesign
     }
 
     /// <summary>The design with a hull of L x B metres (and the style's block coefficient if it gives none).</summary>
-    static PyDict WithHull(PyDict design, double L, double B)
+    static Design WithHull(Design design, double L, double B)
     {
-        var hull = design.DOr("hull");
-        var cb = hull.Has("block_coefficient") ? hull["block_coefficient"] : Styles.Get(design).DEFAULT_CB;
-        var nh = hull.Copy();
-        nh.Update(("length", L), ("beam", B), ("block_coefficient", cb));
-        var d = design.Copy();
-        d["hull"] = nh;
-        return d;
+        var hull = design.Hull ?? new HullInput();
+        return design with
+        {
+            Hull = hull with { Length = L, Beam = B, BlockCoefficient = hull.BlockCoefficient ?? Styles.Get(design).DefaultBlockCoefficient },
+        };
     }
 
     /// <summary>The narrowest beam (at least B) for a hull of length L carrying `weights` (placed, from a layout).</summary>
-    static double BeamNeeded(PyDict design, double L, double B, List<Weight> weights, Geo geo)
+    static double BeamNeeded(Design design, double L, double B, List<Weight> weights, Geo geo)
     {
-        var size = Styles.Get(design).SIZE;
+        var size = Styles.Get(design).Sizing;
         double bMax = size.BeamMax;
         double lo = Math.Max(B, L / size.LbMax);
 
@@ -98,7 +82,7 @@ public static class ShipDesign
     }
 
     /// <summary>The style's layout for the solved weights r, then crewed.</summary>
-    static Layout LayOut(PyDict design, Navarch.Result r, double shift = 0.0, double spread = 0.0)
+    static Layout LayOut(Design design, Navarch.Result r, double shift = 0.0, double spread = 0.0)
     {
         var style = Styles.Get(design);
         var lay = style.BuildLayout(design, r, shift, spread);
@@ -107,9 +91,9 @@ public static class ShipDesign
     }
 
     /// <summary>Does everything fit on a hull of length L? (fits, beam).</summary>
-    static (bool Fits, double B) Fit(PyDict design, double L, double B = 0.0)
+    static (bool Fits, double B) Fit(Design design, double L, double B = 0.0)
     {
-        var size = Styles.Get(design).SIZE;
+        var size = Styles.Get(design).Sizing;
         double bMax = size.BeamMax;
         B = Math.Max(B, L / size.LbMax);
         bool slender = size.Slender;
@@ -127,15 +111,15 @@ public static class ShipDesign
                 break;
             B = Math.Min(B2, bMax);
         }
-        bool longEnough = !slender || L >= MinLength(r.Full, design.F("speed_kn"));
+        bool longEnough = !slender || L >= MinLength(r.Full, design.SpeedKn!.Value);
         return (!lay.Short.Contains("length") && longEnough, B);
     }
 
     /// <summary>The hull for a design that gives none: the shortest that fits everything, and the narrowest beam that
     /// carries it. hint: the length of a similar design to start the search from.</summary>
-    static (double L, double B) Size(PyDict design, double? hint = null)
+    static (double L, double B) Size(Design design, double? hint = null)
     {
-        var (lMin, lMax) = Styles.Get(design).SIZE.Length;
+        var (lMin, lMax) = Styles.Get(design).Sizing.Length;
         double Snap(double v) => Math.Max(lMin, Math.Min(lMax, (long)Math.Round(v * 2) / 2.0));
         double L, step;
         if (hint is double h && h != 0)
@@ -203,13 +187,13 @@ public static class ShipDesign
     }
 
     /// <summary>Size the hull, then lay it out and balance it. Returns the internal (layout, result, sized design).</summary>
-    static (Layout Lay, Navarch.Result R, PyDict Sized) Solve(PyDict design, int iterations = 6, double? hint = null)
+    static (Layout Lay, Navarch.Result R, Design Sized) Solve(Design design, int iterations = 6, double? hint = null)
     {
         var (L, B) = Size(design, hint);
-        double lMax = Styles.Get(design).SIZE.Length.Max, bMax = Styles.Get(design).SIZE.BeamMax;
+        double lMax = Styles.Get(design).Sizing.Length.Max, bMax = Styles.Get(design).Sizing.BeamMax;
         Layout lay = null!;
         Navarch.Result r = null!;
-        PyDict sized = null!;
+        Design sized = null!;
         for (int i = 0; i < 6; i++)
         {
             (lay, r, sized) = Balance(WithHull(design, L, B), iterations);
@@ -228,7 +212,7 @@ public static class ShipDesign
     }
 
     /// <summary>Give the ends as much of the spare length as they take without the layout faring worse.</summary>
-    static (Layout, Navarch.Result, PyDict) SpreadEnds(PyDict design, Layout lay, Navarch.Result r, int iterations = 6)
+    static (Layout, Navarch.Result, Design) SpreadEnds(Design design, Layout lay, Navarch.Result r, int iterations = 6)
     {
         double shift = lay.Geo.Shift;
 
@@ -270,7 +254,7 @@ public static class ShipDesign
     }
 
     /// <summary>Rough solve -&gt; layout -&gt; solve -&gt; shift to balance; repeat until stable.</summary>
-    public static (Layout Lay, Navarch.Result R, PyDict Design) Balance(PyDict design, int iterations = 6, double spread = 0.0)
+    public static (Layout Lay, Navarch.Result R, Design Design) Balance(Design design, int iterations = 6, double spread = 0.0)
     {
         var r = Navarch.Solve(design);
         double shift = 0.0;
@@ -307,54 +291,51 @@ public static class ShipDesign
     /// <summary>The plant's static numbers for the game and how it sits in the hull.</summary>
     static PyDict PlantReport(Layout lay, Navarch.Result r)
     {
-        var plan = lay.Geo.Plant ?? new PyDict();
-        var sp = plan.Get("space", new PyDict()) as PyDict ?? new PyDict();
-        var fp = lay.Geo.FunnelPlan ?? new PyDict();
-        var segs = plan.Has("segments") ? Layout.PlanSegments(plan) : [];
+        var plan = lay.Geo.Plant;
+        var fp = lay.Geo.FunnelPlan;
         var extra = PyDict.Of(
-            ("machinery_length_m", Math.Round(segs.Select(s => s.Len).Sum(), 1)),
+            ("machinery_length_m", Math.Round(plan?.Segments.Sum(s => s.Len) ?? 0.0, 1)),
             ("boiler_rooms", (long)lay.Compartments.Count(c => Py.Eq(c["kind"], "boiler_room"))),
             ("engine_rooms", (long)lay.Compartments.Count(c => Py.Eq(c["kind"], "engine_room"))),
-            ("rows", sp.Get("rows")), ("protrusion_m", Math.Round(sp.F("protrusion", 0.0), 2)),
-            ("space_m", PyDict.Of(("width", Math.Round(plan.F("width", 0.0), 2)), ("height", Math.Round(plan.F("height", 0.0), 2)))),
-            ("wing_bunkers_t", (long)Math.Round(plan.F("wing_t", 0.0))), ("end_bunkers_m", Math.Round(plan.F("end_m", 0.0), 1)),
-            ("funnels", (long)lay.Funnels.Count), ("funnel_gas_area_m2", Math.Round(fp.F("area", 0.0), 1)),
-            ("funnel_gas_velocity_m_s", Math.Round(fp.F("velocity", 0.0), 1)),
+            ("rows", plan?.Space.Rows), ("protrusion_m", Math.Round(plan?.Space.Protrusion ?? 0.0, 2)),
+            ("space_m", PyDict.Of(("width", Math.Round(plan?.Width ?? 0.0, 2)), ("height", Math.Round(plan?.Height ?? 0.0, 2)))),
+            ("wing_bunkers_t", (long)Math.Round(plan?.WingT ?? 0.0)), ("end_bunkers_m", Math.Round(plan?.EndM ?? 0.0, 1)),
+            ("funnels", (long)lay.Funnels.Count), ("funnel_gas_area_m2", Math.Round(fp?.Area ?? 0.0, 1)),
+            ("funnel_gas_velocity_m_s", Math.Round(fp?.Velocity ?? 0.0, 1)),
             ("smoke_reach_m", lay.Funnels.Count > 0 ? Math.Round(Powerplant.SmokeReach(r.Plant, r.PowerShp), 1) : 0.0));
         return Powerplant.Published(r.Plant, r.PowerShp, extra);
     }
 
     /// <summary>The hull structure and its girder amidships, for the damage model.</summary>
-    static PyDict HullReport(PyDict design, Navarch.Result r)
+    static PyDict HullReport(Design design, Navarch.Result r)
     {
         var h = r.Hull;
-        if (!h.Has("t_min_mm"))
-            return PyDict.Of(("structure_t", (long)Math.Round(h.F("t"))));
-        return PyDict.Of(("construction", HullWeight.Construction(design).Get("name")), ("structure_t", (long)Math.Round(h.F("t"))),
-            ("min_gauge_t", (long)Math.Round(h.F("min_gauge_t"))), ("strength_t", (long)Math.Round(h.F("strength_t"))),
-            ("plate_min_mm", Math.Round(h.F("t_min_mm"), 1)), ("plate_strength_mm", Math.Round(h.F("t_str_mm"), 1)),
-            ("shell_plating_t", (long)Math.Round(h.F("shell_t"))),
-            ("girder", PyDict.Of(("allowable_stress_mpa", Math.Round(h.F("stress_mpa"), 1)), ("required_m4", Math.Round(h.F("i_req_m4"), 2)),
-                ("plating_m4", Math.Round(h.F("i_plating_m4"), 2)), ("armour_decks_m4", Py.RoundObj(h["i_armour_m4"], 2)))));
+        if (!h.PlateModel)
+            return PyDict.Of(("structure_t", Math.Round(h.T)));
+        return PyDict.Of(("construction", HullWeight.ConstructionOf(design).Name), ("structure_t", Math.Round(h.T)),
+            ("min_gauge_t", Math.Round(h.MinGaugeT!.Value)), ("strength_t", Math.Round(h.StrengthT!.Value)),
+            ("plate_min_mm", Math.Round(h.TMinMm!.Value, 1)), ("plate_strength_mm", Math.Round(h.TStrMm!.Value, 1)),
+            ("shell_plating_t", Math.Round(h.ShellT)),
+            ("girder", PyDict.Of(("allowable_stress_mpa", Math.Round(h.StressMpa!.Value, 1)), ("required_m4", Math.Round(h.IReqM4!.Value, 2)),
+                ("plating_m4", Math.Round(h.IPlatingM4!.Value, 2)), ("armour_decks_m4", Math.Round(h.IArmourM4!.Value, 2)))));
     }
 
     /// <summary>design: the player's input (echoed in "inputs"); sized: the same with the hull the designer chose.</summary>
-    static PyDict ReportDict(PyDict design, Layout lay, Navarch.Result r, PyDict sized)
+    static PyDict ReportDict(Design design, Layout lay, Navarch.Result r, Design sized)
     {
-        var h = sized.D("hull");
-        var results = PyDict.Of(("length_m", h["length"]), ("beam_m", h["beam"]), ("block_coefficient", h["block_coefficient"]),
+        var results = PyDict.Of(("length_m", sized.HullLength), ("beam_m", sized.HullBeam), ("block_coefficient", sized.BlockCoefficient),
             ("standard_displacement_t", (long)Math.Round(r.Std)), ("full_displacement_t", (long)Math.Round(r.Full)), ("draught_m", Math.Round(r.Draught, 2)),
             ("depth_m", Math.Round(r.Depth, 2)), ("freeboard_m", Math.Round(r.Freeboard, 2)), ("power_shp", Math.Round(r.PowerShp / 100.0) * 100),
-            ("fuel_t", (long)Math.Round(r.Fuel)), ("crew", lay.Crew!["complement"]), ("gm_full_m", Math.Round(r.GmFull, 2)),
+            ("fuel_t", (long)Math.Round(r.Fuel)), ("crew", lay.Crew!.Complement), ("gm_full_m", Math.Round(r.GmFull, 2)),
             ("gm_light_m", Math.Round(r.GmLight, 2)), ("roll_period_s", Math.Round(r.RollS, 1)));
-        if (r.Wind.Count > 0)
-            results.Update(("windage_m2", (long)Math.Round(r.Wind.F("area_m2"))), ("gale_heel_deg", Math.Round(r.Wind.F("heel_deg"), 1)),
-                ("gale_heel_condition", r.Wind["condition"]), ("deck_edge_deg", Math.Round(r.Wind.F("deck_edge_deg"), 1)),
-                ("deck_edge_wind_kn", (long)Math.Round(r.Wind.F("deck_edge_wind_kn"))));
+        if (r.Wind is { } wind)
+            results.Update(("windage_m2", (long)Math.Round(wind.AreaM2)), ("gale_heel_deg", Math.Round(wind.HeelDeg, 1)),
+                ("gale_heel_condition", wind.Condition), ("deck_edge_deg", Math.Round(wind.DeckEdgeDeg, 1)),
+                ("deck_edge_wind_kn", (long)Math.Round(wind.DeckEdgeWindKn)));
         results.Update(("trim_m", Math.Round(r.TrimM, 2)), ("lcg_m", Math.Round(r.Lcg, 2)), ("lcb_m", Math.Round(r.Lcb, 2)),
             ("layout_shift_m", Math.Round(lay.Geo.Shift, 2)));
         results.Update(Styles.Get(design).Results(sized, lay, r));
-        var report = PyDict.Of(("id", design["id"]), ("name", design.Get("name", design["id"])), ("valid", lay.Errors.Count == 0 && r.Errors.Count == 0),
+        var report = PyDict.Of(("id", design.Id), ("name", design.Name ?? design.Id), ("valid", lay.Errors.Count == 0 && r.Errors.Count == 0),
             ("errors", lay.Errors.Concat(r.Errors).Cast<object?>().ToList()), ("warnings", lay.Warnings.Concat(r.Warnings).Cast<object?>().ToList()),
             ("inputs", design), ("results", results), ("plant", PlantReport(lay, r)), ("hull", HullReport(design, r)), ("crew", lay.Crew),
             ("fire_control", FireControl.Report(lay, r.Freeboard)));
@@ -368,27 +349,26 @@ public static class ShipDesign
     }
 
     /// <summary>The unarmoured plating: the hull's from its structure, the superstructure's from the design.</summary>
-    static PyDict HullPlating(Layout lay, PyDict design, Navarch.Result res)
+    static HullPlates HullPlating(Layout lay, Design design, Navarch.Result res)
     {
-        var sup = design.DOr("superstructure");
-        var hp = HullWeight.Plating(design);
-        var h = res.Hull.Has("t_min_mm") ? res.Hull : PyDict.Merge(res.Hull, PyDict.Of(("plate_own_mm", Layout.OwnPlateMm(lay))));
-        return HullWeight.Plates(h, lay.Hull.L, hp.F("shell_mm"), hp["material"], sup.F("plating_mm", 0.0), sup.F("control_mm", 0.0),
-            hp.F("deck_wood_mm"));
+        var sup = design.Superstructure;
+        var hp = HullWeight.PlatingOf(design);
+        return HullWeight.Plates(res.Hull, Layout.OwnPlateMm(lay), lay.Hull.L, hp.ShellMm, hp.Material, sup?.PlatingMm ?? 0.0,
+            sup?.ControlMm ?? 0.0, hp.DeckWoodMm);
     }
 
     /// <summary>What the solved, laid-out ship is inside, beyond the layout.</summary>
-    public sealed record Interior(PyDict Armour, HullForm Form, PyDict Subdivision, PyDict Plating, List<string> Planked,
+    public sealed record Interior(ArmourLayout Armour, HullForm Form, PyDict Subdivision, HullPlates Plating, List<string> Planked,
         PyDict Hydrostatics, PyDict Propulsion, Dictionary<(string Kind, string Id), long> BattleCrew);
 
-    static Interior InteriorOf(Layout lay, PyDict design, Navarch.Result r)
+    static Interior InteriorOf(Layout lay, Design design, Navarch.Result r)
     {
         double D = r.Depth, T = r.Draught;
         var ag = r.Armour;
-        double cb = design.D("hull").F("block_coefficient");
+        double cb = design.BlockCoefficient;
         var gear = Propulsion.Gear(lay, design, r);
-        var form = new HullForm(lay.Hull, cb, Geometry.Cwp(cb), T, D, Navarch.Froude(design.F("speed_kn"), lay.Hull.L), gear, r.Lcb);
-        var sub = Subdivision.Build(lay, design, r, ag, Py.Truthy(ag["armoured"]), form);
+        var form = new HullForm(lay.Hull, cb, Geometry.Cwp(cb), T, D, Navarch.Froude(design.SpeedKn!.Value, lay.Hull.L), gear, r.Lcb);
+        var sub = Subdivision.Build(lay, design, r, ag, ag.Armoured, form);
         var plating = HullPlating(lay, design, r);
         var planked = Subdivision.DeckPlates(sub, plating, design, lay);
         var hydro = Stability.Hydrostatics(form, r);
@@ -403,10 +383,10 @@ public static class ShipDesign
     static PyDict BridgeReport(Layout lay, double deckM)
     {
         var b = lay.Geo.Bridge!;
-        double eye = deckM + b.F("floor") + BRIDGE_EYE;
-        return PyDict.Of(("level", b["level"]), ("tower_levels", b["tower"]), ("eye_height_m", Math.Round(eye, 2)),
-            ("horizon_km", Math.Round(FireControl.HorizonKm(eye), 1)), ("sees_over_turrets", b.F("level") >= b.F("need")),
-            ("level_to_see_over_turrets", b["need"]));
+        double eye = deckM + b.Floor + BRIDGE_EYE;
+        return PyDict.Of(("level", b.Level), ("tower_levels", b.Tower), ("eye_height_m", Math.Round(eye, 2)),
+            ("horizon_km", Math.Round(FireControl.HorizonKm(eye), 1)), ("sees_over_turrets", b.Level >= b.Need),
+            ("level_to_see_over_turrets", b.Need));
     }
 
     /// <summary>The static height-map columns, lowest first.</summary>
@@ -449,7 +429,7 @@ public static class ShipDesign
     }
 
     /// <summary>Design the ship: the published, plain-data result. hint: the hull length of a similar earlier build.</summary>
-    public static PyDict Build(PyDict design, double? hint = null)
+    public static PyDict Build(Design design, double? hint = null)
     {
         var (lay, r, sized) = Solve(design, hint: hint);
         double deckM = Math.Max(r.Freeboard, 0.1);
@@ -471,7 +451,7 @@ public static class ShipDesign
                     return (object?)o;
                 }).ToList()),
                 ("columns", HeightColumns(lay, deckM).Cast<object?>().ToList()),
-                ("summary", Styles.Get(design).Summary(sized, lay, r)))));
+                ("summary", Styles.Get(design).Summary(sized, lay, r).Cast<object?>().ToList()))));
     }
 }
 
@@ -481,18 +461,16 @@ public static class Looks
     static readonly string[] NAVIES = ["generic", "brooklyn", "kure", "portsmouth", "kiel", "la_spezia", "toulon"];
     static readonly string[] ERAS = ["victorian", "great_war", "treaty", "wwii", "cold_war"];
 
-    public static List<string> Validate(PyDict design)
+    public static List<string> Validate(Design design)
     {
-        var lkV = design.Get("look", new PyDict());
-        if (lkV is not PyDict lk)
-            return [$"look = {Py.Repr(lkV)}: give {{\"navy\": ..., \"era\": ...}}"];
-        var extra = lk.Keys.Where(k => !(k is "navy" or "era" or "number")).Distinct().Order().ToList();
+        var lk = design.Look ?? new LookInput();
+        var extra = lk.Extra.KeysOrEmpty().Order(StringComparer.Ordinal).ToList();
         var errs = extra.Count > 0 ? new List<string> { $"look has unknown keys: {string.Join(", ", extra)}" } : [];
-        var look = PyDict.Merge(PyDict.Of(("navy", "generic"), ("era", "wwii")), lk);
-        if (!(look["navy"] is string n && NAVIES.Contains(n)))
-            errs.Add($"look.navy = {Py.Repr(look["navy"])}: use {string.Join(", ", NAVIES)}");
-        if (!(look["era"] is string e && ERAS.Contains(e)))
-            errs.Add($"look.era = {Py.Repr(look["era"])}: use {string.Join(", ", ERAS)}");
+        string navy = lk.Navy ?? "generic", era = lk.Era ?? "wwii";
+        if (!NAVIES.Contains(navy))
+            errs.Add($"look.navy = {Style.Quote(navy)}: use {string.Join(", ", NAVIES)}");
+        if (!ERAS.Contains(era))
+            errs.Add($"look.era = {Style.Quote(era)}: use {string.Join(", ", ERAS)}");
         return errs;
     }
 }
