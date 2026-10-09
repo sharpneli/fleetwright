@@ -45,6 +45,8 @@ public sealed unsafe class ShipViewer : IDisposable
     float sunAz = 300, sunEl = 50;
     bool shadows = true;
     double clock;
+    double[]? bearings;   // each mount's bearing now, slewing towards its target
+    const double TraverseDegPerS = 45;   // faster than the sweep, so a turret catches up after a blind arc
     bool dragging;
 
     public ShipViewer(Sdl3GpuEngine engine, string designPath, string? navy = null, string? era = null)
@@ -155,6 +157,7 @@ public sealed unsafe class ShipViewer : IDisposable
             var baked = ShipBake.Bake(sp, baker);
             double tBake = sw.Elapsed.TotalSeconds - tBuild - tDraw;
             ReleaseTextures();
+            bearings = null;
             hullTex = Upload(baked.Hull, height: false);
             heightTex = Upload(baked.Height, height: true);
             foreach (var (tid, im) in baked.Turrets)
@@ -258,9 +261,48 @@ public sealed unsafe class ShipViewer : IDisposable
         public Vector4 Sun, HMap, March;
     }
 
-    /// <summary>The turret's bearing now: its rest angle, a bearing circling the ship (stopping at the arcs' ends),
+    /// <summary>Turns each turret towards its target at the traverse rate, the way round that stays inside its arcs
+    /// (a turret never swings through the superstructure). A new ship starts with every turret on its target.</summary>
+    void Traverse(float dt)
+    {
+        var mounts = sprites!.Meta.Mounts;
+        bool first = bearings == null;
+        bearings ??= new double[mounts.Count];
+        for (int i = 0; i < mounts.Count; i++)
+        {
+            var m = mounts[i];
+            double target = Target(m);
+            if (first)
+            {
+                bearings[i] = target;
+                continue;
+            }
+            var arcs = m.ArcsDeg.Select(a => (Lo: a[0], Hi: a[1])).ToList();
+            double now = bearings[i];
+            double ccw = Geometry.Normalize360(target - now), cw = ccw - 360;
+            if (ccw == 0)
+                continue;
+            // the shorter way, unless it crosses a blind arc (only the path's inside is tested: both ends are allowed)
+            bool Clear(double d)
+            {
+                if (arcs.Count == 0)
+                    return true;
+                int n = (int)Math.Ceiling(Math.Abs(d));
+                for (int s = 1; s < n; s++)
+                    if (!Geometry.AngleAllowed(arcs, now + d * s / n))
+                        return false;
+                return true;
+            }
+            var (a, b) = ccw <= -cw ? (ccw, cw) : (cw, ccw);
+            double delta = Clear(a) || !Clear(b) ? a : b;
+            double step = TraverseDegPerS * dt;
+            bearings[i] = Math.Abs(delta) <= step ? target : Geometry.Normalize360(now + Math.Sign(delta) * step);
+        }
+    }
+
+    /// <summary>Where the turret is heading: its rest angle, a bearing circling the ship (stopping at the arcs' ends),
     /// or the nearest allowed to starboard.</summary>
-    double Bearing(SpriteMount m)
+    double Target(SpriteMount m)
     {
         var arcs = m.ArcsDeg.Select(a => (Lo: a[0], Hi: a[1])).ToList();
         double target = turretMode switch
@@ -287,6 +329,8 @@ public sealed unsafe class ShipViewer : IDisposable
         if (dirty)
             Rebuild();
         clock += dt;
+        if (sprites != null)
+            Traverse(dt);
         var cti = new SDL_GPUColorTargetInfo
         {
             texture = msaa,
@@ -345,17 +389,18 @@ public sealed unsafe class ShipViewer : IDisposable
 
         // the turrets, their shadows first (only where the hull is lower than the turret's roof)
         var types = meta.TurretTypes;
-        var mounts = meta.Mounts.OrderBy(m => m.Z).ToList();
+        var order = Enumerable.Range(0, meta.Mounts.Count).OrderBy(i => meta.Mounts[i].Z).ToList();
         foreach (var pass2 in new[] { 0, 1 })
         {
             if (pass2 == 0 && !shadows)
                 continue;
-            foreach (var m in mounts)
+            foreach (int i in order)
             {
+                var m = meta.Mounts[i];
                 var tm = types[m.Type];
                 float e = (float)(tm.SizePx[0] / Scale / 2);
                 var c = new Vector2((float)m.PosM[0], (float)m.PosM[1]);
-                float a = (float)(Bearing(m) * Math.PI / 180);
+                float a = (float)(bearings![i] * Math.PI / 180);
                 var ax = new Vector2(MathF.Cos(a), MathF.Sin(a)) * 2 * e;
                 var ay = new Vector2(-MathF.Sin(a), MathF.Cos(a)) * 2 * e;
                 var o = c - ax / 2 - ay / 2;
