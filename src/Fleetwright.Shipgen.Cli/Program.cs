@@ -189,7 +189,7 @@ public static class Program
             }
             catch (Exception e)
             {
-                Console.WriteLine($"{p}: the generator broke on this design: {GoldenCases.PyName(e)}: {e.Message}");
+                Console.WriteLine($"{p}: the generator broke on this design: {e.GetType().Name}: {e.Message}");
                 crashed++;
                 continue;
             }
@@ -252,7 +252,7 @@ public static class Program
             c =>
             {
                 var rec = GoldenCases.Capture(LoadDesign(c.DesignPath));
-                PyJson.Save(Path.Combine(outDir, c.Name + ".json.gz"), rec, 1);
+                JsonFile.Save(Path.Combine(outDir, c.Name + ".json.gz"), rec);
                 Console.WriteLine($"[{Interlocked.Increment(ref n),3}/{cases.Count}] {c.Name}");
             });
         Console.WriteLine($"{cases.Count} cases in {sw.Elapsed.TotalSeconds:F1} s -> {outDir}");
@@ -280,8 +280,8 @@ public static class Program
                 bad++;
                 continue;
             }
-            var gr = (PyDict)PyJson.Load(gf)!;
-            var orr = (PyDict)PyJson.Load(of)!;
+            var gr = JsonFile.Load(gf)!.AsObject();
+            var orr = JsonFile.Load(of)!.AsObject();
             gr.Remove("build_s");
             orr.Remove("build_s");
             var diffs = Shipgen.Golden.GoldenDiff.Compare(gr, orr, show);
@@ -486,7 +486,7 @@ public static class Program
         string root = Root(a);
         string? keep = a.Get("out");
         var cases = SelectCases(root, a.Positional)
-            .Where(c => RenderGolden.State(root, "sprite", c.Name) as string == "ok").ToList();
+            .Where(c => (string?)RenderGolden.State(root, "sprite", c.Name) == "ok").ToList();
         using var gpu = new GpuBaker();
         Console.WriteLine($"GPU: {gpu.Driver}, {gpu.Samples}; {cases.Count} designs");
         // build and draw in parallel, bake one at a time on the one device

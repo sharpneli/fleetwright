@@ -1,12 +1,16 @@
-
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Fleetwright.Shipgen.Golden;
 
 /// <summary>One difference between a golden tree and ours, at a JSON path like $.build.report.results.length_m.</summary>
-public sealed record Difference(string Path, object? Golden, object? Ours, string Why)
+public sealed record Difference(string Path, string Golden, string Ours, string Why)
 {
-    public override string ToString() =>
-        $"{Path}: {Why}\n    golden {Clip(Py.Repr(Golden))}\n    ours   {Clip(Py.Repr(Ours))}";
+    public Difference(string path, JsonNode? golden, JsonNode? ours, string why) : this(path, Text(golden), Text(ours), why) { }
+
+    static string Text(JsonNode? n) => n?.ToJsonString() ?? "null";
+
+    public override string ToString() => $"{Path}: {Why}\n    golden {Clip(Golden)}\n    ours   {Clip(Ours)}";
 
     static string Clip(string s) => s.Length > 200 ? s[..200] + "..." : s;
 }
@@ -21,14 +25,12 @@ public static class GoldenDiff
     public const double AbsTol = 1e-12;
 
     /// <summary>Every difference (up to max) between golden and ours.</summary>
-    public static List<Difference> Compare(object? golden, object? ours, int max = 50, string path = "$")
+    public static List<Difference> Compare(JsonNode? golden, JsonNode? ours, int max = 50, string path = "$")
     {
         var out_ = new List<Difference>();
         Walk(golden, ours, path, out_, max);
         return out_;
     }
-
-    static bool IsNum(object? v) => v is long or int or double;
 
     public static bool NumbersMatch(double a, double b)
     {
@@ -40,71 +42,65 @@ public static class GoldenDiff
         return d <= AbsTol || d <= RelTol * Math.Max(Math.Abs(a), Math.Abs(b));
     }
 
-    static void Walk(object? g, object? o, string path, List<Difference> out_, int max)
+    static JsonValueKind Kind(JsonNode? n) => n?.GetValueKind() ?? JsonValueKind.Null;
+
+    static void Walk(JsonNode? g, JsonNode? o, string path, List<Difference> out_, int max)
     {
         if (out_.Count >= max)
             return;
-        if (IsNum(g) && IsNum(o))
+        var (gk, ok) = (Kind(g), Kind(o));
+        if (gk != ok && !(gk is JsonValueKind.True or JsonValueKind.False && ok is JsonValueKind.True or JsonValueKind.False))
         {
-            if (g is double || o is double)
-            {
-                if (!NumbersMatch(Py.ToDouble(g), Py.ToDouble(o)))
-                    out_.Add(new Difference(path, g, o, "number"));
-            }
-            else if (Py.ToLong(g) != Py.ToLong(o))
-                out_.Add(new Difference(path, g, o, "integer"));
+            out_.Add(new Difference(path, g, o, "type"));
             return;
         }
-        switch (g)
+        switch (gk)
         {
-            case null:
-                if (o is not null)
-                    out_.Add(new Difference(path, g, o, "type"));
-                return;
-            case bool gb:
-                if (o is not bool ob || ob != gb)
-                    out_.Add(new Difference(path, g, o, o is bool ? "boolean" : "type"));
-                return;
-            case string gs:
-                if (o is not string os || !string.Equals(gs, os, StringComparison.Ordinal))
-                    out_.Add(new Difference(path, g, o, o is string ? "string" : "type"));
-                return;
-            case PyDict gd:
+            case JsonValueKind.Number:
                 {
-                    if (o is not PyDict od)
+                    var (gv, ov) = (g!.AsValue(), o!.AsValue());
+                    if (JsonFile.IsInteger(gv, out long gi) && JsonFile.IsInteger(ov, out long oi))
                     {
-                        out_.Add(new Difference(path, g, o, "type"));
-                        return;
+                        if (gi != oi)
+                            out_.Add(new Difference(path, g, o, "integer"));
                     }
-                    var missing = gd.Keys.Where(k => !od.Has(k)).ToList();
-                    var extra = od.Keys.Where(k => !gd.Has(k)).ToList();
-                    if (missing.Count > 0 || extra.Count > 0)
-                        out_.Add(new Difference(path, missing.Count > 0 ? string.Join(", ", missing) : null,
-                            extra.Count > 0 ? string.Join(", ", extra) : null, "keys (golden only / ours only)"));
-                    foreach (var kv in gd)
-                        if (od.Has(kv.Key))
-                            Walk(kv.Value, od[kv.Key], $"{path}.{kv.Key}", out_, max);
+                    else if (!NumbersMatch(gv.GetValue<double>(), ov.GetValue<double>()))
+                        out_.Add(new Difference(path, g, o, "number"));
                     return;
                 }
-            case List<object?> gl:
+            case JsonValueKind.True or JsonValueKind.False:
+                if (gk != ok)
+                    out_.Add(new Difference(path, g, o, "boolean"));
+                return;
+            case JsonValueKind.String:
+                if (!string.Equals(g!.GetValue<string>(), o!.GetValue<string>(), StringComparison.Ordinal))
+                    out_.Add(new Difference(path, g, o, "string"));
+                return;
+            case JsonValueKind.Object:
                 {
-                    if (o is not List<object?> ol)
-                    {
-                        out_.Add(new Difference(path, g, o, "type"));
-                        return;
-                    }
+                    var (gd, od) = (g!.AsObject(), o!.AsObject());
+                    var missing = gd.Select(kv => kv.Key).Where(k => !od.ContainsKey(k)).ToList();
+                    var extra = od.Select(kv => kv.Key).Where(k => !gd.ContainsKey(k)).ToList();
+                    if (missing.Count > 0 || extra.Count > 0)
+                        out_.Add(new Difference(path, missing.Count > 0 ? string.Join(", ", missing) : "-",
+                            extra.Count > 0 ? string.Join(", ", extra) : "-", "keys (golden only / ours only)"));
+                    foreach (var (k, v) in gd)
+                        if (od.TryGetPropertyValue(k, out var ov))
+                            Walk(v, ov, $"{path}.{k}", out_, max);
+                    return;
+                }
+            case JsonValueKind.Array:
+                {
+                    var (gl, ol) = (g!.AsArray(), o!.AsArray());
                     if (gl.Count != ol.Count)
                     {
-                        out_.Add(new Difference(path, gl.Count, ol.Count, "list length"));
+                        out_.Add(new Difference(path, gl.Count.ToString(), ol.Count.ToString(), "list length"));
                         return;
                     }
                     for (int i = 0; i < gl.Count; i++)
                         Walk(gl[i], ol[i], $"{path}[{i}]", out_, max);
                     return;
                 }
-            default:
-                out_.Add(new Difference(path, g, o, "type"));
-                return;
         }
     }
 }

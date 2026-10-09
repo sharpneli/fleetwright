@@ -19,7 +19,7 @@ public class RenderTests
         Parallel.ForEach(cases, new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2) }, c =>
         {
             var st = RenderGolden.State(Root, kind, c.Name);
-            if (st is PyDict || st as string == "ok")
+            if (st is System.Text.Json.Nodes.JsonObject || (string?)st == "ok")
                 Interlocked.Increment(ref checkedN);
             try
             {

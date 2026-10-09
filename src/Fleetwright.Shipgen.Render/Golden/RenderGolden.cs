@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text;
+using System.Text.Json.Nodes;
 using Fleetwright.Shipgen.Golden;
 
 namespace Fleetwright.Shipgen.Render.Golden;
@@ -12,17 +13,9 @@ public static class RenderGolden
     public const double Scale = 10.0;
     public const int Mips = 5;
 
-    static string ReadGz(string path)
-    {
-        using var fs = File.OpenRead(path);
-        using var gz = new GZipStream(fs, CompressionMode.Decompress);
-        using var sr = new StreamReader(gz, Encoding.UTF8);
-        return sr.ReadToEnd();
-    }
-
     /// <summary>The case's state in a capture.json: "ok", "invalid", or (svg capture) a dict for a drawn case.</summary>
-    public static object? State(string root, string kind, string name) =>
-        ((PyDict)PyJson.Load(Path.Combine(root, "golden", kind, "capture.json"))!).D("cases").Get(name);
+    public static JsonNode? State(string root, string kind, string name) =>
+        JsonFile.Load(Path.Combine(root, "golden", kind, "capture.json"))!["cases"]![name];
 
     public static ShipSprites Draw(GoldenCase c) =>
         ShipSprites.Build(ShipDesign.Build(Design.Load(c.DesignPath)), Scale, Mips);
@@ -31,7 +24,7 @@ public static class RenderGolden
     /// matches or the case isn't drawn (it doesn't build).</summary>
     public static List<string> CheckSvgs(string root, GoldenCase c, int max = 10)
     {
-        if (State(root, "svg", c.Name) is not PyDict st)
+        if (State(root, "svg", c.Name) is not JsonObject st)
             return [];
         var dir = Path.Combine(root, "golden", "svg", c.Name);
         var sp = Draw(c);
@@ -40,7 +33,7 @@ public static class RenderGolden
         {
             if (out_.Count >= max)
                 return;
-            foreach (var d in SvgDiff.Compare(ReadGz(Path.Combine(dir, rel)), SvgWriter.Write(sc), max - out_.Count))
+            foreach (var d in SvgDiff.Compare(JsonFile.ReadText(Path.Combine(dir, rel)), SvgWriter.Write(sc), max - out_.Count))
                 out_.Add($"{rel}: {d}");
         }
         One("hull.svg.gz", sp.Hull);
@@ -52,7 +45,7 @@ public static class RenderGolden
             out_.Add($"turret types {string.Join(" ", golden)} vs ours {string.Join(" ", ours)}");
         foreach (var t in golden.Intersect(ours))
             One($"turrets/{t}.svg.gz", sp.Turrets[t]);
-        double gMax = Math.Round(st.F("max_height_m"), 2), oMax = sp.Meta.D("shadow").F("max_height_m");
+        double gMax = Math.Round((double)st["max_height_m"]!, 2), oMax = sp.Meta.D("shadow").F("max_height_m");
         if (gMax != oMax)
             out_.Add($"max_height_m {gMax} vs ours {oMax}");
         return out_;
@@ -73,8 +66,8 @@ public static class RenderGolden
     public static (List<string> Svg, List<string> Sprite) Update(string root, IReadOnlyList<GoldenCase> cases)
     {
         var svgCapturePath = Path.Combine(root, "golden", "svg", "capture.json");
-        var svgCapture = (PyDict)PyJson.Load(svgCapturePath)!;
-        var svgCases = svgCapture.D("cases");
+        var svgCapture = JsonFile.Load(svgCapturePath)!;
+        var svgCases = svgCapture["cases"]!.AsObject();
         var svg = new System.Collections.Concurrent.ConcurrentBag<(string Name, double MaxH, long Clutter)>();
         var sprite = new System.Collections.Concurrent.ConcurrentBag<string>();
         Parallel.ForEach(cases, new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2) }, c =>
@@ -93,14 +86,14 @@ public static class RenderGolden
             if (CheckSprite(root, c, 1).Count > 0)
             {
                 var meta = ShipSprites.Build(ShipDesign.Build(Design.Load(c.DesignPath)), Scale, Mips).Meta;
-                PyJson.Save(Path.Combine(root, "golden", "sprite", c.Name, "sprite.json.gz"), PyJson.Plain(meta), 1);
+                JsonFile.Save(Path.Combine(root, "golden", "sprite", c.Name, "sprite.json.gz"), JsonFile.FromPy(meta));
                 sprite.Add(c.Name);
             }
         });
         foreach (var (name, maxH, clutter) in svg)
-            svgCases[name] = PyDict.Of(("max_height_m", maxH), ("clutter", clutter));
+            svgCases[name] = new JsonObject { ["max_height_m"] = maxH, ["clutter"] = clutter };
         if (!svg.IsEmpty)
-            PyJson.Save(svgCapturePath, svgCapture, 1);
+            JsonFile.Save(svgCapturePath, svgCapture);
         return (svg.Select(s => s.Name).Order(StringComparer.Ordinal).ToList(), sprite.Order(StringComparer.Ordinal).ToList());
     }
 
@@ -109,20 +102,15 @@ public static class RenderGolden
     /// item, on both sides. Empty when it matches or the case has no sprite golden.</summary>
     public static List<string> CheckSprite(string root, GoldenCase c, int max = 10)
     {
-        if (State(root, "sprite", c.Name) as string != "ok")
+        if ((string?)State(root, "sprite", c.Name) != "ok")
             return [];
-        var golden = (PyDict)PyJson.Load(Path.Combine(root, "golden", "sprite", c.Name, "sprite.json.gz"))!;
+        var g = JsonFile.Load(Path.Combine(root, "golden", "sprite", c.Name, "sprite.json.gz"))!;
         var ship = ShipDesign.Build(Design.Load(c.DesignPath));
-        var ours = ShipSprites.Build(ship, Scale, Mips).Meta;
-        var g = golden.Copy();
-        var o = (PyDict)PyJson.Plain(ours)!;
-        var gs = g.D("shadow").Copy();
-        var os = o.D("shadow").Copy();
-        double gh = gs.F("max_height_m"), oh = os.F("max_height_m");
+        var o = JsonFile.FromPy(ShipSprites.Build(ship, Scale, Mips).Meta)!;
+        var (gs, os) = (g["shadow"]!.AsObject(), o["shadow"]!.AsObject());
+        double gh = (double)gs["max_height_m"]!, oh = (double)os["max_height_m"]!;
         gs.Remove("max_height_m");
         os.Remove("max_height_m");
-        g["shadow"] = gs;
-        o["shadow"] = os;
         var out_ = GoldenDiff.Compare(g, o, max).Select(d => d.ToString()).ToList();
         double lo = Math.Round((ship.D("render").L("columns").Cast<PyDict>().Select(col => col.F("top"))).Max(), 2);
         const double tallest = 3.2;   // the boiler cowl
