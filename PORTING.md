@@ -421,6 +421,12 @@ Done 2026-10-09 (the user's look check in the viewer is still open):
 - The shipgen repo stays as the frozen reference at the `golden-capture` tag.
 - Regression workflow from here on: `shipgen design --out new/` then `shipgen golden-diff`.
 
+Done 2026-10-09. `docs/shipgen/`: `README.md` (shipgen's README minus the Python commands, the sinking demo and
+vidgen, with a Python-to-C# file map), `DECISIONS.md` (HANDOFF.md, the user's decisions and the history),
+`TODO.md` (the open items, vidgen and Python-only ones dropped, the port's leftovers added), the three template
+pages (now edited by hand) and `research/` (shipgen's research notes, which the docs cite). shipgen's README points
+here. The regression workflow: `shipgen golden-check` (design side), `svg-check`, `sprite-check`, `png-check`.
+
 ### Step 8: fuzz and verify in C#
 
 - `fuzz`: a mutator plus time and memory guards, as a test or a CLI command.
@@ -447,5 +453,5 @@ Then start the bug fixes held back by "port as is".
 - [x] Step 4: display list, SVG writer, sprite.json matches
 - [x] Step 5: SDL_GPU backend (the user's sign-off waits for the viewer)
 - [x] Step 6: viewer + full CLI (the look check in the viewer is the user's)
-- [ ] Step 7: Python retired, docs moved
+- [x] Step 7: Python retired, docs moved
 - [ ] Step 8: fuzz and verify ported

@@ -118,6 +118,7 @@ Content/                      # shared by all exes, copied into each exe's outpu
   Shaders/Source/             #   GLSL sources
   Shaders/Compiled/           #   SPIR-V binaries (checked in)
   Models/                     #   glTF/GLB assets
+docs/shipgen/                 # the ship designer: inputs, outputs, conventions, decisions, TODO, its research notes
 research/                     # research notes, see below
 ```
 
