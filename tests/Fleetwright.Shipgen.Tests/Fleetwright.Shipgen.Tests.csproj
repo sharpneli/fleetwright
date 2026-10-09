@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Fleetwright.Shipgen\Fleetwright.Shipgen.csproj" />
+    <ProjectReference Include="..\..\src\Fleetwright.Shipgen.Render\Fleetwright.Shipgen.Render.csproj" />
   </ItemGroup>
 
   <ItemGroup>

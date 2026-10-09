@@ -18,6 +18,12 @@ sprite/<design>/              WSL (cairosvg), scale 10 px/m, mips 5, no previews
                                 clutter bound (clutter RNG isn't ported)
   hull.png, height.png, turrets/*.png, hull.svg.gz    visual references only, never compared pixel by pixel
 sprite/capture.json           which designs rendered (murica fails validate with limits, so design.py skips it)
+svg/<case>/                   WSL, every case that builds (325), 10 px/m, mips 5, drawn with PortRandom, the
+                              C# port's RNG (ShipRng), so clutter, dazzle and vents come out the same on both sides:
+  hull.svg.gz, height.svg.gz, turrets/<type>.svg.gz   compared as drawings (SvgDiff): element trees in order,
+                                clip paths resolved, colours canonical, numbers within 1.5e-3 (f()'s 3 decimals)
+svg/capture.json              which cases were drawn, with max_height_m and the clutter count (shipgen tag
+                              golden-svg-capture, commit 2b168877)
 ```
 
 A design case file holds `validate_limits`, `validate_no_limits` and `looks_validate` (exact strings), then,
@@ -52,6 +58,7 @@ From `../shipgen` at the tag, with `PYTHONHASHSEED=0`:
 python tools/golden.py mutants                              # Windows; libm draws the mutant numbers
 python tools/golden.py design --platform windows            # Windows
 ~/.venv/bin/python tools/golden.py sprites                  # WSL
+~/.venv/bin/python tools/golden.py svgs                     # WSL, at golden-svg-capture
 ~/.venv/bin/python tools/golden.py design --platform wsl --golden /tmp/wsl
 python tools/golden.py diff --tolerant design /tmp/wsl      # the platform check above
 ```

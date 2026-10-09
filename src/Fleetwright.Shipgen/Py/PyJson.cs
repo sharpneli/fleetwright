@@ -45,8 +45,16 @@ public static class PyJson
 
         public void Ws()
         {
-            while (Pos < s.Length && (s[Pos] == ' ' || s[Pos] == '\t' || s[Pos] == '\n' || s[Pos] == '\r'))
-                Pos++;
+            while (Pos < s.Length)
+            {
+                if (s[Pos] == ' ' || s[Pos] == '\t' || s[Pos] == '\n' || s[Pos] == '\r')
+                    Pos++;
+                else if (s[Pos] == '/' && Pos + 1 < s.Length && s[Pos + 1] == '/')    // JSONC line comments (looks.jsonc)
+                    while (Pos < s.Length && s[Pos] != '\n')
+                        Pos++;
+                else
+                    break;
+            }
         }
 
         public object? Value()

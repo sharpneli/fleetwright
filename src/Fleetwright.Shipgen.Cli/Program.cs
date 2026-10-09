@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using Fleetwright.Shipgen;
 using Fleetwright.Shipgen.Golden;
+using Fleetwright.Shipgen.Render;
+using Fleetwright.Shipgen.Render.Golden;
 
 namespace Fleetwright.Shipgen.Cli;
 
@@ -22,6 +24,13 @@ public static class Program
         shipgen bench [--root DIR] [--repeat N] [CASE|PREFIX*...]
             single-threaded build time per case (best of N), next to Python's from the golden capture, and the
             designer's per-knob rebuild (the same design with the length hint)
+        shipgen draw DESIGN.json... [--out DIR] [--scale S] [--mips N]
+            draw each design (default 10 px/m, 5 mips): DIR/<id>/sprite.json and the display lists as SVG (hull.svg,
+            height.svg, turrets/<type>.svg)
+        shipgen svg-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
+            every case's SVGs against golden/svg (Python's drawing with the port's RNG)
+        shipgen sprite-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
+            every design's sprite.json against golden/sprite
         --root defaults to the repo's shipgen folder (found from the current directory up).
         """;
 
@@ -43,6 +52,9 @@ public static class Program
                 "golden-diff" => GoldenDiffCmd(a),
                 "golden-check" => GoldenCheck(a),
                 "bench" => Bench(a),
+                "draw" => Draw(a),
+                "svg-check" => Check(a, RenderGolden.CheckSvgs),
+                "sprite-check" => Check(a, RenderGolden.CheckSprite),
                 _ => Fail($"unknown command {args[0]}\n\n{Usage}"),
             };
         }
@@ -316,6 +328,70 @@ public static class Program
             Console.WriteLine($"DIFF {c.Name}");
             foreach (var x in d)
                 Console.WriteLine("     " + x.ToString().Replace("\n", "\n     "));
+        }
+        Console.WriteLine($"{ok} of {cases.Count} cases match ({sw.Elapsed.TotalSeconds:F1} s)");
+        return ok == cases.Count ? 0 : 1;
+    }
+
+    static int Draw(Args a)
+    {
+        string outDir = a.Get("out", "out_sprites")!;
+        double scale = double.Parse(a.Get("scale", "10")!, System.Globalization.CultureInfo.InvariantCulture);
+        int mips = a.Int("mips", 5);
+        foreach (var path in a.Positional)
+        {
+            var design = LoadDesign(path);
+            var sp = ShipSprites.Build(ShipDesign.Build(design), scale, mips);
+            string dir = Path.Combine(outDir, design.S("id"));
+            Directory.CreateDirectory(Path.Combine(dir, "turrets"));
+            PyJson.Save(Path.Combine(dir, "sprite.json"), sp.Meta, 2);
+            File.WriteAllText(Path.Combine(dir, "hull.svg"), SvgWriter.Write(sp.Hull));
+            File.WriteAllText(Path.Combine(dir, "height.svg"), SvgWriter.Write(sp.Height));
+            foreach (var (tid, sc) in sp.Turrets)
+                File.WriteAllText(Path.Combine(dir, "turrets", tid + ".svg"), SvgWriter.Write(sc));
+            var size = sp.Meta.L("size_px");
+            Console.WriteLine($"drew {design.S("id")}: {size[0]}x{size[1]} px, {sp.Turrets.Count} turret types, " +
+                              $"{sp.Clutter.Count} clutter items -> {dir}");
+        }
+        return 0;
+    }
+
+    /// <summary>Run a per-case check over the selected cases in parallel and print each failing case.</summary>
+    static int Check(Args a, Func<string, GoldenCase, int, List<string>> check)
+    {
+        string root = Root(a);
+        var cases = SelectCases(root, a.Positional);
+        int show = a.Int("show", 3);
+        var sw = Stopwatch.StartNew();
+        var results = new (GoldenCase C, List<string>? D, string? Err)[cases.Count];
+        Parallel.For(0, cases.Count, new ParallelOptions { MaxDegreeOfParallelism = a.Int("jobs", Environment.ProcessorCount / 2) },
+            i =>
+            {
+                try
+                {
+                    results[i] = (cases[i], check(root, cases[i], show), null);
+                }
+                catch (Exception e)
+                {
+                    results[i] = (cases[i], null, $"{e.GetType().Name}: {e.Message}\n{e.StackTrace}");
+                }
+            });
+        int ok = 0;
+        foreach (var (c, d, err) in results)
+        {
+            if (err != null)
+            {
+                Console.WriteLine($"FAIL {c.Name}: {err.Split('\n').Take(8).Aggregate((x, y) => x + "\n     " + y)}");
+                continue;
+            }
+            if (d!.Count == 0)
+            {
+                ok++;
+                continue;
+            }
+            Console.WriteLine($"DIFF {c.Name}");
+            foreach (var x in d)
+                Console.WriteLine("     " + x.Replace("\n", "\n     "));
         }
         Console.WriteLine($"{ok} of {cases.Count} cases match ({sw.Elapsed.TotalSeconds:F1} s)");
         return ok == cases.Count ? 0 : 1;

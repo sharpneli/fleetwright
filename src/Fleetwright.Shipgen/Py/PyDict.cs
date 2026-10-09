@@ -120,7 +120,7 @@ public sealed class PyDict : IEnumerable<KeyValuePair<string, object?>>
 
     public bool Has(string key) => Find(key) >= 0;
 
-    bool TryGet(string key, out object? v)
+    public bool TryGet(string key, out object? v)
     {
         int i = Find(key);
         v = i >= 0 ? values[i] : null;

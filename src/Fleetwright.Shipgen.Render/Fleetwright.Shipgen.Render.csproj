@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The drawing side: looks, the display list and the sprite layout (PORTING.md Step 4). Reads only the built
+       ship dict; the design side never draws. -->
+  <PropertyGroup>
+    <RootNamespace>Fleetwright.Shipgen.Render</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fleetwright.Shipgen\Fleetwright.Shipgen.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data\looks.jsonc" LogicalName="looks.jsonc" />
+  </ItemGroup>
+
+</Project>

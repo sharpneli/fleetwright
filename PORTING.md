@@ -286,6 +286,31 @@ Port the drawing in `shipgen.py` (`build_hull`, `build_turret`, `dazzle`, the SV
 **Done when** `sprite.json` matches the goldens for every design (exact apart from `max_height_m`), and every
 design produces a display list and an SVG without errors.
 
+Done 2026-10-09: `sprite.json` matches for all 70 rendered designs, and every SVG of every case that builds (325:
+hull, height map, each turret type) matches Python's drawing element for element. What it took:
+
+- **A stronger golden than planned (new):** clutter, dazzle and vents draw random numbers, so Python's own SVGs
+  couldn't be compared. The port's RNG (`ShipRng`: FNV-1a 64 of the seed text, then SplitMix64, seeded per feature as
+  decided) was also written into `tools/golden.py` as `PortRandom`, and `golden.py svgs` drew every case with it
+  (`golden/svg`, 12 MB, shipgen tag `golden-svg-capture`). `SvgDiff` compares two SVGs as drawings: the element trees
+  in order, clip-path references resolved to what they clip, path data made absolute, colours canonical, numbers
+  within 1.5e-3 (Python's `f()` keeps 3 decimals). All 325 match, clutter placement included; a tamper test checks
+  the comparer sees a changed colour, point, element or clip. Once the drawing changes on purpose, these goldens
+  retire and the reference PNGs are what's left.
+- **The display list is a typed scene, not flattened commands (a deviation):** `Scene` holds paths (M/L/A/C/Z),
+  circles, ellipses, rects (with rx), lines, text and groups (transform, clip as a union of shapes, opacity), each with
+  a `Style` (fill, stroke, width, join, cap, dash, opacities; unset means inherited). It is SVG's model on purpose:
+  `SvgWriter` is a straight walk, and the comparison above needs the structure. Flattening arcs and curves, stroking
+  and clip/opacity stacks become Step 5's lowering pass over this tree, where the pixel tolerance is known.
+- **Looks are data:** `Data/looks.jsonc` (an embedded resource; `PyJson` now skips `//` comments) holds
+  DEFAULT_PALETTE, STYLE_PALETTES and NAVIES with looks.py's comments carried over; `Looks.cs` is the logic.
+- **Not ported:** the baked drop shadows (`shadows=True`), which `render_ship` never used (the game casts shadows from
+  the height map), and the preview/sheet/debug images (`composite`, `sheet`, `debug_overlay`, hitview), which need a
+  rasteriser: Step 6.
+- **Thread safety:** the drawing shares nothing mutable (the looks table is read-only); `RenderTests.
+  ConcurrentDrawingIsIdentical` checks it.
+- **CLI:** `shipgen draw` writes sprite.json and the SVGs; `shipgen svg-check` and `sprite-check` run the goldens.
+
 ### Step 5: SDL_GPU backend
 
 In this order, with a test rendering after each item (Step 6's viewer, or CLI PNGs):
@@ -372,7 +397,7 @@ Then start the bug fixes held back by "port as is".
 - [x] Step 1: goldens captured, shipgen tagged
 - [x] Step 2: CLI harness: design, validate, golden-diff
 - [x] Step 3: Fleetwright.Shipgen matches the goldens
-- [ ] Step 4: display list, SVG writer, sprite.json matches
+- [x] Step 4: display list, SVG writer, sprite.json matches
 - [ ] Step 5: SDL_GPU backend
 - [ ] Step 6: viewer + full CLI
 - [ ] Step 7: Python retired, docs moved

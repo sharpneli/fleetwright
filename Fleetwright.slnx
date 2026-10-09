@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Fleetwright.Gpu/Fleetwright.Gpu.csproj" />
     <Project Path="src/Fleetwright.Shipgen.Cli/Fleetwright.Shipgen.Cli.csproj" />
+    <Project Path="src/Fleetwright.Shipgen.Render/Fleetwright.Shipgen.Render.csproj" />
     <Project Path="src/Fleetwright.Shipgen/Fleetwright.Shipgen.csproj" />
     <Project Path="src/Fleetwright/Fleetwright.csproj" />
   </Folder>

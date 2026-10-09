@@ -53,10 +53,14 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- golden-check bism
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design shipgen/designs/bismarck.json --out out
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- validate shipgen/designs/*.json
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- bench bismarck yamato
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- draw shipgen/designs/bismarck.json --out out   # sprite.json + SVGs
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- svg-check             # every case's SVGs, ~20 s
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check          # every design's sprite.json
 ```
 
 `golden-check` must stay at 371 of 371 for any change to `Fleetwright.Shipgen` that isn't a deliberate fix (fixes
-update the goldens on purpose, one per commit).
+update the goldens on purpose, one per commit). `svg-check` and `sprite-check` do the same for
+`Fleetwright.Shipgen.Render`, until the drawing is changed on purpose (then the SVG goldens retire).
 
 ## Project Structure
 
@@ -81,9 +85,17 @@ src/
     Layout/                   #   layout.py: the Layout object, parts, superstructure levels, the warship layout
     Styles/                   #   the style hooks and the warship, carrier, merchant and planing styles
     Golden/                   #   the golden comparer and case runner
+  Fleetwright.Shipgen.Render/ # the drawing side: reads only the built ship dict
+    Data/looks.jsonc          #   every navy and era's colours and shapes (the documented table)
+    Looks.cs                  #   resolving a design's look: from-chains, adjust, era muting
+    Scene.cs                  #   the display list (paths, circles, rects, lines, text, clipped groups) and SvgWriter
+    Painter.cs, HullArt.cs, TurretArt.cs, Clutter.cs   # shipgen.py's drawing and clutter.py
+    Sprite.cs                 #   the height map and sprite.json (ShipSprites.Build)
+    ShipRng.cs                #   the drawing's seeded RNG (per feature)
+    Golden/                   #   the SVG comparer and the drawing's golden checks
   Fleetwright.Shipgen.Cli/    # `shipgen` command, the port's test harness
 tests/
-  Fleetwright.Shipgen.Tests/  # xUnit: Py helpers vs CPython, every golden case, concurrent builds
+  Fleetwright.Shipgen.Tests/  # xUnit: Py helpers vs CPython, every golden case, concurrent builds, the drawing
 shipgen/                      # the port's test data
   designs/                    #   the 71 designs, and fuzz/ (300 mutants)
   golden/                     #   Python's output (README.md there)
