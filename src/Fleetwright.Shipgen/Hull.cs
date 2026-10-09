@@ -28,7 +28,7 @@ public sealed class Hull
 
     static double End(double t, double power, string shape)
     {
-        double b = Py.Max(0.0, 1.0 - Py.Pow(t, power));
+        double b = Math.Max(0.0, 1.0 - Math.Pow(t, power));
         return shape == "round" ? Math.Sqrt(b) : b;
     }
 
@@ -36,7 +36,7 @@ public sealed class Hull
     public static double EndFill(double power, string shape)
     {
         if (shape == "round")
-            return Py.Gamma(1 + 1 / power) * Py.Gamma(1.5) / Py.Gamma(1 / power + 1.5);
+            return SpecialFunctions.Gamma(1 + 1 / power) * SpecialFunctions.Gamma(1.5) / SpecialFunctions.Gamma(1 / power + 1.5);
         return power / (power + 1);
     }
 
@@ -46,14 +46,14 @@ public sealed class Hull
         double w;
         if (u >= 1 - bowTaper)
         {
-            double t = Py.Min(1.0, (u - (1 - bowTaper)) / bowTaper);
+            double t = Math.Min(1.0, (u - (1 - bowTaper)) / bowTaper);
             w = End(t, bowPower, bowShape);
             if (flare is double f)
-                w = Py.Min(1.0, w + f * Math.Sin(Math.PI * t) * (1 - t));
+                w = Math.Min(1.0, w + f * Math.Sin(Math.PI * t) * (1 - t));
         }
         else if (u <= sternTaper)
         {
-            double t = Py.Min(1.0, Py.Max(0.0, 1 - u / sternTaper));
+            double t = Math.Min(1.0, Math.Max(0.0, 1 - u / sternTaper));
             w = transom + (1 - transom) * End(t, sternPower, sternShape);
         }
         else
@@ -72,7 +72,7 @@ public sealed class Hull
             double x = lo + (hi - lo) * (1 - Math.Cos(Math.PI * i / n)) / 2;
             double w = HalfWidth(x) - inset;
             if (maxHw is double m)
-                w = Py.Min(w, m);
+                w = Math.Min(w, m);
             if (w > 0.01)
                 pts.Add((x, w));
         }
@@ -183,17 +183,17 @@ public sealed class HullForm
         gear ??= new PyDict();
         planing = gear.B("planing");
         screws = gear.I("screws", 0);
-        kFore = FORE_V + (FORE_U - FORE_V) * Math.Exp(-Py.Pow((fn - FORE_FN) / FORE_FN_W, 2));
+        kFore = FORE_V + (FORE_U - FORE_V) * Math.Exp(-Math.Pow((fn - FORE_FN) / FORE_FN_W, 2));
         kAft = screws == 1 ? AFT_K : screws != 0 ? -AFT_K : 0.0;
-        forefoot = L * (planing ? ROCKER : Py.Min(FOREFOOT_MAX, FOREFOOT + FOREFOOT_K * Py.Max(0.0, fn - FOREFOOT_FN)));
+        forefoot = L * (planing ? ROCKER : Math.Min(FOREFOOT_MAX, FOREFOOT + FOREFOOT_K * Math.Max(0.0, fn - FOREFOOT_FN)));
         var props = gear.Or("propellers", null) is List<object?> pl ? pl.Cast<PyDict>().ToList() : [];
         if (!planing && screws == 1 && gear.B("rudders"))
-            post = Py.Min(gear.L("rudders").Cast<PyDict>().Select(r => r.F("x0")));
+            post = (gear.L("rudders").Cast<PyDict>().Select(r => r.F("x0"))).Min();
         else if (!planing && props.Count > 0)
         {
-            double rise = Py.Min(0.95 * T, Py.Max(props.Select(p => p.F("z") + p.F("diameter") * (0.5 + CUT_CLEAR))));
-            double xC = Py.Max(props.Select(p => p.F("x") + 0.5 * p.F("diameter")));
-            double end = Py.Max(rise, T * (1.0 - TRANSOM_DEEP * Py.Min(1.0, hull.HalfWidth(-L / 2) / (B / 2))));
+            double rise = Math.Min(0.95 * T, props.Select(p => p.F("z") + p.F("diameter") * (0.5 + CUT_CLEAR)).Max());
+            double xC = props.Select(p => p.F("x") + 0.5 * p.F("diameter")).Max();
+            double end = Math.Max(rise, T * (1.0 - TRANSOM_DEEP * Math.Min(1.0, hull.HalfWidth(-L / 2) / (B / 2))));
             cut = (xC, xC + CUT_RUN * rise, rise, end);
         }
         xs = new double[N];
@@ -202,12 +202,12 @@ public sealed class HullForm
         for (int k = 0; k < N; k++)
             xs[k] = -L / 2 + L * (k + 0.5) / N;
         for (int k = 0; k < N; k++)
-            ws[k] = Py.Min(1.0, hull.HalfWidth(xs[k]) / (B / 2));
+            ws[k] = Math.Min(1.0, hull.HalfWidth(xs[k]) / (B / 2));
         for (int k = 0; k < N; k++)
-            ds[k] = Py.Max(0.0, T - Keel(xs[k])) / T;
+            ds[k] = Math.Max(0.0, T - Keel(xs[k])) / T;
         Cm = planing ? PLANING_CM : Geometry.MidshipCoefficient(cb);
-        Lcb = Py.Max(-0.2 * L, Py.Min(0.2 * L, lcb));
-        double loEnd = Py.Min(0.99, ws[0] * ds[0] * TRANSOM_C / Cm);
+        Lcb = Math.Max(-0.2 * L, Math.Min(0.2 * L, lcb));
+        double loEnd = Math.Min(0.99, ws[0] * ds[0] * TRANSOM_C / Cm);
         endsE = (loEnd, 0.0);
         lam = LAMBDA;
         for (int r = 0; r < ROUNDS; r++)
@@ -231,30 +231,30 @@ public sealed class HullForm
         for (int i = 0; i < N; i++)
             if (ds[i] > 0)
                 bufSel[k++] = u[i];
-        return Py.Sum(bufSel.AsSpan(0, k)) / N;
+        return Sum(bufSel.AsSpan(0, k)) / N;
     }
 
     void Fit(double? cmArg = null)
     {
         double cm = cmArg ?? Cm;
         double L = Hull.L;
-        Pmb = Py.Max(0.0, Py.Min(PMB_MAX, PMB_K * (Cb / cm - PMB_CP))) * L;
+        Pmb = Math.Max(0.0, Math.Min(PMB_MAX, PMB_K * (Cb / cm - PMB_CP))) * L;
         double xa = Lcb - Pmb / 2, xf = Lcb + Pmb / 2;
-        (xa, xf) = (Py.Max(xa, -0.45 * L), Py.Min(xf, 0.45 * L));
+        (xa, xf) = (Math.Max(xa, -0.45 * L), Math.Min(xf, 0.45 * L));
         mid = (xa, xf);
 
         (double[] Us, double[] Cs, double[] Area) St(double n, double d) => Stations(n, d, lam, cm, xa, xf);
 
-        double Vol(double n, double d) => Py.Sum(St(n, d).Area.AsSpan()) / N;
+        double Vol(double n, double d) => Sum(St(n, d).Area.AsSpan()) / N;
 
         (double C, double N) Centre(double d)
         {
             double n = Solve(nn => Vol(nn, d), 0.3, 20.0, Cb);
             var a = St(n, d).Area;
-            double tot = Py.Sum(a.AsSpan());
+            double tot = Sum(a.AsSpan());
             for (int i = 0; i < N; i++)
                 bufSel[i] = xs[i] * a[i];
-            return (tot > 0 ? Py.Sum(bufSel.AsSpan()) / tot : 0.0, n);
+            return (tot > 0 ? Sum(bufSel.AsSpan()) / tot : 0.0, n);
         }
 
         Split = Solve(d => Centre(d).C, -2.0, 2.0, Lcb);
@@ -262,7 +262,7 @@ public sealed class HullForm
         var fin = St(Nexp, Split);
         us = (double[])fin.Us.Clone();
         cs = (double[])fin.Cs.Clone();
-        Volume = Py.Sum(fin.Area.AsSpan()) / N;
+        Volume = Sum(fin.Area.AsSpan()) / N;
     }
 
     // Stations' scratch: valid until the next call (the callers sum them or copy them out). The midbody and dry
@@ -295,10 +295,10 @@ public sealed class HullForm
         var uOf = bufU;
         foreach (var (i, end, rr, e, dk, w, pw) in st.Ends)
         {
-            double s = e + (1 - e) * Py.Pow(1 - rr, end == 0 ? inv0 : inv1);
+            double s = e + (1 - e) * Math.Pow(1 - rr, end == 0 ? inv0 : inv1);
             double rho = dk > 0 ? s / dk : 0.0;
             rawS[i] = s;
-            uOf[i] = rho > 0 ? Py.Min(w, Py.Pow(rho, pw)) : 0.0;
+            uOf[i] = rho > 0 ? Math.Min(w, Math.Pow(rho, pw)) : 0.0;
         }
         int h = SMOOTH;
         var raw = bufRaw;
@@ -308,14 +308,14 @@ public sealed class HullForm
             for (int j = 0; j < endList.Count; j++)
             {
                 int i = endList[j];
-                uMax = Py.Min(ws[i], Py.Max(uMax, uOf[i]));
+                uMax = Math.Min(ws[i], Math.Max(uMax, uOf[i]));
                 raw[j] = uMax;
             }
             for (int j = 0; j < endList.Count; j++)
             {
                 int i = endList[j];
                 int a = Math.Max(0, j - h), b = Math.Min(endList.Count, j + h + 1);
-                uOf[i] = Py.Min(ws[i], Py.Sum(raw.AsSpan(a, b - a)) / (b - a));
+                uOf[i] = Math.Min(ws[i], Sum(raw.AsSpan(a, b - a)) / (b - a));
             }
         }
         var usOut = bufUs;
@@ -329,9 +329,9 @@ public sealed class HullForm
             double chi = cHi[i];
             double c = u > 0 ? cm * s / (u * dk) : C_MIN;
             if (c > chi)
-                (c, u) = (chi, Py.Min(u, cm * s / (dk * chi)));
+                (c, u) = (chi, Math.Min(u, cm * s / (dk * chi)));
             else if (c < C_MIN)
-                (c, u) = (C_MIN, Py.Min(u, cm * s / (dk * C_MIN)));
+                (c, u) = (C_MIN, Math.Min(u, cm * s / (dk * C_MIN)));
             usOut[i] = u;
             csOut[i] = c;
             areaOut[i] = u * dk * c;
@@ -361,23 +361,23 @@ public sealed class HullForm
                 (r, end, e, kk) = ((xa - x) / (xa + L / 2), 1, endsE.Aft, kAft);
             else
                 (r, end, e, kk) = (0.0, -1, 1.0, 0.0);
-            r = Py.Min(1.0, r);
-            double chi = Py.Min(C_MAX, cm - Py.Max(0.0, cm - C_END) * Py.Pow(r, C_END_POW));
+            r = Math.Min(1.0, r);
+            double chi = Math.Min(C_MAX, cm - Math.Max(0.0, cm - C_END) * Math.Pow(r, C_END_POW));
             chis[i] = chi;
-            double pw = Py.Max(0.05, lam0 + LAMBDA_K * kk);
+            double pw = Math.Max(0.05, lam0 + LAMBDA_K * kk);
             double u = double.NaN, c = double.NaN, a = double.NaN;
             if (dk <= 0 || w <= 0)
                 (u, c, a) = (w, cm, 0.0);
             else if (end == -1)
             {
-                double s = e + (1 - e) * Py.Pow(1 - r * r, 1.0);
+                double s = e + (1 - e) * Math.Pow(1 - r * r, 1.0);
                 double rho = s / dk;
-                u = rho > 0 ? Py.Min(w, Py.Pow(rho, pw)) : 0.0;
+                u = rho > 0 ? Math.Min(w, Math.Pow(rho, pw)) : 0.0;
                 c = u > 0 ? cm * s / (u * dk) : C_MIN;
                 if (c > chi)
-                    (c, u) = (chi, Py.Min(u, cm * s / (dk * chi)));
+                    (c, u) = (chi, Math.Min(u, cm * s / (dk * chi)));
                 else if (c < C_MIN)
-                    (c, u) = (C_MIN, Py.Min(u, cm * s / (dk * C_MIN)));
+                    (c, u) = (C_MIN, Math.Min(u, cm * s / (dk * C_MIN)));
                 a = u * dk * c;
             }
             if (end != -1)
@@ -404,8 +404,8 @@ public sealed class HullForm
     double At(double[] vals, double x)
     {
         double f = (x + Hull.L / 2) / Hull.L * N - 0.5;
-        int i = (int)Math.Max(0, Math.Min(N - 2, Py.Floor(f)));
-        double t = Py.Max(0.0, Py.Min(1.0, f - i));
+        int i = (int)Math.Max(0, Math.Min(N - 2, (long)Math.Floor(f)));
+        double t = Math.Max(0.0, Math.Min(1.0, f - i));
         return vals[i] + (vals[i + 1] - vals[i]) * t;
     }
 
@@ -418,35 +418,43 @@ public sealed class HullForm
         if (run < forefoot)
         {
             double r = 1.0 - run / forefoot;
-            z = planing ? T * r * r : T * (1.0 - Math.Sqrt(Py.Max(0.0, 1.0 - r * r)));
+            z = planing ? T * r * r : T * (1.0 - Math.Sqrt(Math.Max(0.0, 1.0 - r * r)));
         }
         if (post is double p && x < p)
             z = T;
         else if (cut is var (xC, xS, rise, end))
         {
             if (xC <= x && x < xS)
-                z = Py.Max(z, rise * Py.Pow((xS - x) / (xS - xC), 2));
+                z = Math.Max(z, rise * Math.Pow((xS - x) / (xS - xC), 2));
             else if (x < xC)
             {
                 double run2 = xC + L / 2;
-                double k = end > rise + 1e-6 ? Py.Max(1.0, 2.0 * rise / (xS - xC) * run2 / (end - rise)) : 1.0;
-                z = Py.Max(z, rise + (end - rise) * (1.0 - Py.Pow(1.0 - Py.Min(1.0, (xC - x) / run2), k)));
+                double k = end > rise + 1e-6 ? Math.Max(1.0, 2.0 * rise / (xS - xC) * run2 / (end - rise)) : 1.0;
+                z = Math.Max(z, rise + (end - rise) * (1.0 - Math.Pow(1.0 - Math.Min(1.0, (xC - x) / run2), k)));
             }
         }
-        return Py.Min(T, z);
+        return Math.Min(T, z);
     }
 
     /// <summary>The waterplane's half-breadth at x.</summary>
-    public double Waterline(double x) => Py.Min(Hull.HalfWidth(x), Hull.B / 2 * At(us, x));
+    public double Waterline(double x) => Math.Min(Hull.HalfWidth(x), Hull.B / 2 * At(us, x));
 
     /// <summary>The section's fullness below the waterline at x.</summary>
-    public double Fullness(double x) => Py.Max(C_MIN, Py.Min(C_MAX, At(cs, x)));
+    public double Fullness(double x) => Math.Max(C_MIN, Math.Min(C_MAX, At(cs, x)));
 
     /// <summary>The section's character, -1 (V) .. 1 (U), at x for its fullness c.</summary>
     public double Character(double x, double c)
     {
         double k = x > 0 ? kFore : kAft;
-        return k * Py.Min(1.0, Math.Abs(x) / (CHAR_RUN * Hull.L)) * Py.Max(0.0, Py.Min(1.0, (c - 0.5) / 0.15));
+        return k * Math.Min(1.0, Math.Abs(x) / (CHAR_RUN * Hull.L)) * Math.Max(0.0, Math.Min(1.0, (c - 0.5) / 0.15));
+    }
+
+    static double Sum(ReadOnlySpan<double> xs)
+    {
+        double s = 0.0;
+        foreach (var x in xs)
+            s += x;
+        return s;
     }
 
     static double SuperellipseFillStatic(double p, double q) => Geometry.SuperellipseFill(p, q);
@@ -461,10 +469,10 @@ public sealed class HullForm
         for (int i = 0; i < 60; i++)
         {
             double nn = Math.Sqrt(lo * hi);
-            (lo, hi) = SuperellipseFillStatic(nn / e, Py.Max(1.0, nn * e)) > c ? (lo, nn) : (nn, hi);
+            (lo, hi) = SuperellipseFillStatic(nn / e, Math.Max(1.0, nn * e)) > c ? (lo, nn) : (nn, hi);
         }
         double n = Math.Sqrt(lo * hi);
-        v = (n / e, Py.Max(1.0, n * e));
+        v = (n / e, Math.Max(1.0, n * e));
         sectionCache[(c, k)] = v;
         return v;
     }
@@ -486,14 +494,14 @@ public sealed class HullForm
         if (planing && c >= 0.5)
         {
             double chine = 2.0 * d * (1.0 - c);
-            return Py.Min(deck, chine > 1e-9 ? wl * Py.Min(1.0, (z - zk) / chine) : wl);
+            return Math.Min(deck, chine > 1e-9 ? wl * Math.Min(1.0, (z - zk) / chine) : wl);
         }
-        double kw = planing ? 0.0 : Py.Min(KEEL_K * Hull.B, KEEL_SHARE * wl * c);
+        double kw = planing ? 0.0 : Math.Min(KEEL_K * Hull.B, KEEL_SHARE * wl * c);
         if (wl - kw < 1e-6)
-            return Py.Min(deck, wl);
-        double cCurve = Py.Max(0.2, Py.Min(C_MAX, (wl * c - kw) / (wl - kw)));
-        var (p, q) = SectionExponents(Py.Round(cCurve, 3), Py.Round(planing ? 0.0 : Character(x, c), 3));
-        return Py.Min(deck, kw + (wl - kw) * Py.Pow(Py.Max(0.0, 1.0 - Py.Pow((T - z) / d, q)), 1.0 / p));
+            return Math.Min(deck, wl);
+        double cCurve = Math.Max(0.2, Math.Min(C_MAX, (wl * c - kw) / (wl - kw)));
+        var (p, q) = SectionExponents(Math.Round(cCurve, 3), Math.Round(planing ? 0.0 : Character(x, c), 3));
+        return Math.Min(deck, kw + (wl - kw) * Math.Pow(Math.Max(0.0, 1.0 - Math.Pow((T - z) / d, q)), 1.0 / p));
     }
 
     /// <summary>The design waterplane: (area m², lcf, i_l, i_t m⁴), by the midpoint rule.</summary>
@@ -508,10 +516,10 @@ public sealed class HullForm
             xsW[i] = -L / 2 + (i + 0.5) * dx;
             hw[i] = Waterline(xsW[i]);
         }
-        double area = Py.Sum(hw.Select(y => 2 * y)) * dx;
-        double lcf = Py.Sum(Enumerable.Range(0, n).Select(i => 2 * hw[i] * xsW[i])) * dx / area;
-        double iL = Py.Sum(Enumerable.Range(0, n).Select(i => 2 * hw[i] * Py.Pow(xsW[i] - lcf, 2))) * dx;
-        double iT = Py.Sum(hw.Select(y => 2.0 / 3 * Py.Pow(y, 3))) * dx;
+        double area = hw.Select(y => 2 * y).Sum() * dx;
+        double lcf = Enumerable.Range(0, n).Select(i => 2 * hw[i] * xsW[i]).Sum() * dx / area;
+        double iL = Enumerable.Range(0, n).Select(i => 2 * hw[i] * Math.Pow(xsW[i] - lcf, 2)).Sum() * dx;
+        double iT = hw.Select(y => 2.0 / 3 * Math.Pow(y, 3)).Sum() * dx;
         return (area, lcf, iL, iT);
     }
 
@@ -519,12 +527,12 @@ public sealed class HullForm
     public List<(double X, List<double> Z, List<double> Y)> Table(int stations = 48)
     {
         double L = Hull.L;
-        double top = Py.Min(T, D);
+        double top = Math.Min(T, D);
         var out_ = new List<(double, List<double>, List<double>)>();
         for (int k = 0; k <= stations; k++)
         {
             double x = -L / 2 + L * (1 - Math.Cos(Math.PI * k / stations)) / 2;
-            double zk = Py.Min(Keel(x), top);
+            double zk = Math.Min(Keel(x), top);
             var set = new HashSet<double>();
             foreach (var f in HEIGHTS)
                 set.Add(zk + (top - zk) * f);

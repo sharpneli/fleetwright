@@ -17,9 +17,9 @@ public sealed class Gun
         Spec = spec;
         K = k;
         (Tid, T) = Geometry.BatteryType(spec);
-        Cal = $"{Py.G(spec.F("calibre_mm"))} mm";
+        Cal = $"{spec.F("calibre_mm")} mm";
         R = T.F("r");
-        Reach = Py.Max(R, Geometry.TurretReach(T, 0.0));
+        Reach = Math.Max(R, Geometry.TurretReach(T, 0.0));
         Th = Geometry.TurretHeight(T);
         RR = Geometry.TurretReach(T) + 0.5;
         Gap = 2.0 + 0.5 * R;
@@ -55,7 +55,7 @@ public sealed partial class Layout
     }
 
     /// <summary>How far an end group's tier `level` stands above the outermost turret.</summary>
-    static double TierSteps(List<Gun> gs, int level) => Py.Sum(Enumerable.Range(0, level).Select(j => Geometry.SuperfireStep(gs[j].Th)));
+    static double TierSteps(List<Gun> gs, int level) => Enumerable.Range(0, level).Select(j => Geometry.SuperfireStep(gs[j].Th)).Sum();
 
     /// <summary>Each turret's distance inboard of its end group's outermost.</summary>
     static List<double> GroupOffsets(List<Gun> gs)
@@ -89,7 +89,7 @@ public sealed partial class Layout
         }
         if (bats.Count == 0)
             return;
-        bats = Py.Sorted(bats, bt => bt.Upper ? 1 : 0);
+        bats = bats.OrderBy(bt => bt.Upper ? 1 : 0).ToList();
         double B = hull.B;
         var barbettes = mounts.Where(m => Py.Eq(m["kind"], "main") && Geometry.HasBarbette(m.D("t"))).ToList();
 
@@ -104,7 +104,7 @@ public sealed partial class Layout
 
         (double Yo, double D) Housing(double x0, double x1, double rc)
         {
-            double yo = Py.Min(Enumerable.Range(0, 9).Select(k => hull.HalfWidth(x0 + (x1 - x0) * k / 8))) - 0.3;
+            double yo = Enumerable.Range(0, 9).Select(k => hull.HalfWidth(x0 + (x1 - x0) * k / 8)).Min() - 0.3;
             return (yo, 1.6 * rc);
         }
 
@@ -131,12 +131,12 @@ public sealed partial class Layout
             return true;
         }
 
-        var xs = Py.Range(Py.Int(-hull.L), Py.Int(hull.L) + 1).Select(k => 0.5 * k).ToList();
+        var xs = Enumerable.Range((int)-hull.L, 2 * (int)hull.L + 1).Select(k => 0.5 * k).ToList();
         var elig = xs.Where(x => hull.HalfWidth(x) >= CASEMATE_BEAM * B / 2).ToList();
-        double c = (elig.Count > 0 ? (Py.Min(elig) + Py.Max(elig)) / 2 : 0.0) + lay.Geo.Shift;
-        xs = Py.Sorted(xs, x => Math.Abs(x - c));
+        double c = (elig.Count > 0 ? (elig.Min() + elig.Max()) / 2 : 0.0) + lay.Geo.Shift;
+        xs = xs.OrderBy(x => Math.Abs(x - c)).ToList();
         var okCache = new Dictionary<(double, double, bool), bool>();
-        double rUp = Py.Max(bats.Where(b => b.Upper).Select(b => b.T.F("r")), 0.0);
+        double rUp = bats.Where(b => b.Upper).Select(b => b.T.F("r")).DefaultIfEmpty(0.0).Max();
 
         bool Cached(double x, double rc, bool upper)
         {
@@ -153,7 +153,7 @@ public sealed partial class Layout
                 if (mode == "pref")
                     return 1.1 * r + 2.0;
                 if (mode == "stagger" && !upper)
-                    return Py.Max(1.05 * r + 0.5, 1.05 * rUp + Geometry.CASEMATE_SHIELD * r + 0.3);
+                    return Math.Max(1.05 * r + 0.5, 1.05 * rUp + Geometry.CASEMATE_SHIELD * r + 0.3);
                 return 1.05 * r + 0.5;
             }
             var taken = new Dictionary<bool, List<(double X, double H)>> { [false] = [], [true] = [] };
@@ -180,7 +180,7 @@ public sealed partial class Layout
                 }
                 if (!upper)
                     shields.AddRange(got.Select(x => (x, Geometry.CASEMATE_SHIELD * rc)));
-                out_.Add(Py.Sorted(got));
+                out_.Add(got.Order().ToList());
             }
             return out_;
         }
@@ -204,8 +204,8 @@ public sealed partial class Layout
         var every = placed.Zip(bats).SelectMany(t => t.First.Select(x => (X: x, Bt: t.Second))).ToList();
         if (every.Count > 0)
         {
-            double mean = (Py.Min(every.Select(e => e.X)) + Py.Max(every.Select(e => e.X))) / 2;
-            var ds = Py.Sorted(Enumerable.Range(-40, 81).Select(k => 0.5 * k), d => (Math.Abs(mean + d - c), d));
+            double mean = (every.Select(e => e.X).Min() + every.Select(e => e.X).Max()) / 2;
+            var ds = Enumerable.Range(-40, 81).Select(k => 0.5 * k).OrderBy(d => (Math.Abs(mean + d - c), d)).ToList();
             foreach (var d in ds)
             {
                 if (Math.Abs(mean + d - c) >= Math.Abs(mean - c))
@@ -229,7 +229,7 @@ public sealed partial class Layout
         foreach (var (got, (sec, n, tId, t, upper)) in placed.Zip(bats))
         {
             if (got.Count < n)
-                lay.Fail("length", $"Only {got.Count} of {n} {Py.G(sec.F("calibre_mm"))} mm {(upper ? "upper " : "")}casemates " +
+                lay.Fail("length", $"Only {got.Count} of {n} {sec.F("calibre_mm")} mm {(upper ? "upper " : "")}casemates " +
                                    $"per side fit {(upper ? "on deck" : "in the hull sides")}. " +
                                    "Use fewer or smaller guns.");
             var arm = sec["armour_mm"];
@@ -273,7 +273,7 @@ public sealed partial class Layout
             if (merged.Count > 0 && g[0] - merged[^1][1] < 1.5 && !lowerX.Any(x => merged[^1][1] <= x && x <= g[0]))
             {
                 var m = merged[^1];
-                (m[1], m[2], m[3]) = (Py.Max(m[1], g[1]), Py.Min(m[2], g[2]), Py.Max(m[3], g[3]));
+                (m[1], m[2], m[3]) = (Math.Max(m[1], g[1]), Math.Min(m[2], g[2]), Math.Max(m[3], g[3]));
             }
             else
                 merged.Add([.. g]);

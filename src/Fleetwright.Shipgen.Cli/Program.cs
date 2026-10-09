@@ -25,6 +25,9 @@ public static class Program
             compare two captures (directories of <case>.json.gz, or two files) by the golden rules
         shipgen golden-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
             capture and compare against the goldens in one go, printing each failing case's first differences
+        shipgen golden-update [--root DIR] [CASE|PREFIX*...]
+            after a deliberate change to the output: rewrite the design, SVG and sprite.json goldens of the cases
+            that no longer match from ours (the PNGs stay; png-check compares them by coverage)
         shipgen bench [--root DIR] [--repeat N] [CASE|PREFIX*...]
             single-threaded build time per case (best of N), next to Python's from the golden capture, and the
             designer's per-knob rebuild (the same design with the length hint)
@@ -69,6 +72,7 @@ public static class Program
                 "capture" => Capture(a),
                 "golden-diff" => GoldenDiffCmd(a),
                 "golden-check" => GoldenCheck(a),
+                "golden-update" => GoldenUpdate(a),
                 "bench" => Bench(a),
                 "draw" => Draw(a),
                 "fuzz" => FuzzCmd(a),
@@ -216,14 +220,13 @@ public static class Program
     static string Summary(PyDict design, PyDict rep)
     {
         var res = rep.D("results");
-        string R(string k, string s, int w) => s.PadLeft(w);
         return $"{design.S("id"),14}: {(Py.Truthy(rep["valid"]) ? "OK " : "BAD")} " +
-               $"{R("", Py.F(res["length_m"], 1), 5)} x {R("", Py.F(res["beam_m"], 1), 4)} m  " +
-               $"std {Py.Comma(Py.ToLong(res["standard_displacement_t"])),6} t " +
-               $"full {Py.Comma(Py.ToLong(res["full_displacement_t"])),6} t  T {Py.Str(res["draught_m"]),5} m  " +
-               $"{Py.F(res["power_shp"], 0, comma: true),9} shp  " +
-               $"GM {Py.Str(res["gm_full_m"]),5}  trim {Py.F(res["trim_m"], 2, plus: true)}  " +
-               $"shift {Py.F(res["layout_shift_m"], 1, plus: true)}";
+               $"{res["length_m"],5:F1} x {res["beam_m"],4:F1} m  " +
+               $"std {res["standard_displacement_t"],6:N0} t " +
+               $"full {res["full_displacement_t"],6:N0} t  T {res["draught_m"],5} m  " +
+               $"{res["power_shp"],9:N0} shp  " +
+               $"GM {res["gm_full_m"],5}  trim {res["trim_m"]:+0.00;-0.00}  " +
+               $"shift {res["layout_shift_m"]:+0.0;-0.0}";
     }
 
     static List<GoldenCase> SelectCases(string root, IReadOnlyList<string> pats)
@@ -369,6 +372,24 @@ public static class Program
         }
         Console.WriteLine($"{ok} of {cases.Count} cases match ({sw.Elapsed.TotalSeconds:F1} s)");
         return ok == cases.Count ? 0 : 1;
+    }
+
+    static int GoldenUpdate(Args a)
+    {
+        string root = Root(a);
+        var cases = SelectCases(root, a.Positional);
+        var design = new System.Collections.Concurrent.ConcurrentBag<string>();
+        Parallel.ForEach(cases, new ParallelOptions { MaxDegreeOfParallelism = a.Int("jobs", Environment.ProcessorCount / 2) }, c =>
+        {
+            if (GoldenCases.Update(root, c))
+                design.Add(c.Name);
+        });
+        var (svg, sprite) = RenderGolden.Update(root, cases);
+        Console.WriteLine($"rewritten: {design.Count} design, {svg.Count} svg, {sprite.Count} sprite.json of {cases.Count} cases");
+        foreach (var (kind, names) in new[] { ("design", design.Order(StringComparer.Ordinal).ToList()), ("svg", svg), ("sprite", sprite) })
+            if (names.Count > 0)
+                Console.WriteLine($"  {kind}: {string.Join(" ", names)}");
+        return 0;
     }
 
     static int Draw(Args a)

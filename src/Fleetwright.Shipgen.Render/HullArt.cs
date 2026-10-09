@@ -92,16 +92,16 @@ public static class HullArt
     {
         double hw = hull.B / 2;
         if (spec.Get("flight_deck") is PyDict fd && Py.Truthy(fd))
-            hw = Py.Max(hw, Py.Max(Geometry.Pts(FlightDeckSpec(fd)["points"]).Select(p => Math.Abs(p.Y))));
+            hw = Math.Max(hw, Geometry.Pts(FlightDeckSpec(fd)["points"]).Select(p => Math.Abs(p.Y)).Max());
         foreach (var key in new[] { "sponsons", "superstructure", "fittings" })
             foreach (var it in Expand(spec, key, hull))
-                hw = Py.Max(hw, Math.Abs(it.F("y", 0)) + it.F("w", 0) / 2);
+                hw = Math.Max(hw, Math.Abs(it.F("y", 0)) + it.F("w", 0) / 2);
         var types = TurretTypes(spec);
         foreach (var m in Items(spec, "turrets"))   // casemate guns stand on the hull side: keep their barrels on the canvas
         {
             var t = types.D(m.S("type"));
             if (t.S("shape", null) == "casemate")
-                hw = Py.Max(hw, Math.Abs(m.F("y", 0)) + Geometry.TurretReach(t));
+                hw = Math.Max(hw, Math.Abs(m.F("y", 0)) + Geometry.TurretReach(t));
         }
         double hx = hull.L / 2 + PAD_M, hy = hw + PAD_M;
         if (scale is double s && s != 0)
@@ -135,15 +135,15 @@ public static class HullArt
             if (blk.I("level", 1) != 1 || !Py.Truthy(blk.Get("vents", true)))
                 continue;
             double y0 = blk.F("y", 0) - blk.F("w") / 2 + 1.2, y1 = blk.F("y", 0) + blk.F("w") / 2 - 1.2;
-            double x0 = blk.F("x0") + Py.Max(1.2, blk.F("rb", 0)), x1 = blk.F("x1") - Py.Max(1.2, blk.F("rf", 0));
-            long n = Py.Int((x1 - x0) * (y1 - y0) / 35);
+            double x0 = blk.F("x0") + Math.Max(1.2, blk.F("rb", 0)), x1 = blk.F("x1") - Math.Max(1.2, blk.F("rf", 0));
+            long n = (long)((x1 - x0) * (y1 - y0) / 35);
             var pts = blk.B("points") ? Geometry.Pts(blk["points"]) : null;
             for (long it = 0; it < n * 4; it++)
             {
                 if (n <= 0)
                     break;
                 double x = rng.Uniform(x0, x1), y = rng.Uniform(y0, y1);
-                if (obstacles.Any(ob => Py.Hypot(x - ob.X, y - ob.Y) < ob.R))
+                if (obstacles.Any(ob => double.Hypot(x - ob.X, y - ob.Y) < ob.R))
                     continue;
                 if (rects.Any(r => r.Item1 <= x && x <= r.Item3 && r.Item2 <= y && y <= r.Item4))
                     continue;
@@ -203,7 +203,7 @@ public static class HullArt
         var obs = DeckObstacles(spec, hull, small).Where(o => halfY is not double h || (o.Y0 < h && o.Y1 > -h)).ToList();
         if (obs.Count == 0)
             return (0.0, 0.0);
-        return (Py.Max(obs.Select(o => o.X1)), Py.Min(obs.Select(o => o.X0)));
+        return (obs.Select(o => o.X1).Max(), obs.Select(o => o.X0).Min());
     }
 
     /// <summary>Dazzle camouflage: slanted panels cut across the whole ship, in a repeatable pattern per design.
@@ -212,7 +212,7 @@ public static class HullArt
     {
         var rng = new ShipRng($"{spec.S("id")}/dazzle");
         double L = hull.L, Y = hull.B / 2 + 2.0;
-        long n = Py.Max(5L, Py.Round(L / 18));
+        long n = Math.Max(5L, (long)Math.Round(L / 18));
         double step = L / n;
         var cuts = new List<(double C, double K)> { (-L / 2 - 2.0, 0.0) };
         for (int i = 1; i < n; i++)
@@ -285,7 +285,7 @@ public static class HullArt
                     continue;
                 double band = (x1 - x0) / (2 * n);
                 var inner = new Group { Clip = [new RectNode(x0, -Y, x1 - x0, 2 * Y)] };
-                long count = Py.Int((x1 - x0 + k * Y) / band) + 4;
+                long count = (long)((x1 - x0 + k * Y) / band) + 4;
                 for (long j = 0; j < count; j++)
                 {
                     double u0 = (dirn > 0 ? x0 : x1) + dirn * band * (j - 1);
@@ -312,7 +312,7 @@ public static class HullArt
                 var g = new Group { Clip = [new PathNode(d)] };
                 g.Items.Add(new RectNode(x0, 0, x1 - x0, hull.B).Fill("#000").FillOp(0.1));
                 var ribs = new Group().Stroke(Painter.Shade(col, 0.72), P.Sw * 0.8);
-                for (long i = 1; i < Py.Int((x1 - x0) / 2.5) + 1; i++)
+                for (long i = 1; i < (long)((x1 - x0) / 2.5) + 1; i++)
                 {
                     double x = x0 + 2.5 * i;
                     ribs.Items.Add(new LineNode(x, -hull.B, x, hull.B));
@@ -331,7 +331,7 @@ public static class HullArt
             double size = 0.75 * 2 * hw / (0.62 * text.Length);
             var (fwd, _) = OpenEnds(spec, hull, halfY: 0.62 * text.Length * size / 2, small: true);
             double x1 = L / 2 - 0.12 * L;
-            size = Py.Min(size, (x1 - fwd) * 0.8, 0.05 * L);
+            size = Math.Min(size, Math.Min((x1 - fwd) * 0.8, 0.05 * L));
             if (size > 1.2)
             {
                 double nx = x1 - size * 0.6;
@@ -352,7 +352,7 @@ public static class HullArt
         var hull = new Hull(spec);
         var bow = PyDict.Merge(hull.Bow, PyDict.Of(("power", hull.Bow.F("power") + sh.F("bow_power", 0.0)),
             ("flare", sh.Get("bow_flare", 0.0))));
-        var stern = PyDict.Merge(hull.Stern, PyDict.Of(("transom", Py.Min(0.9, hull.Stern.F("transom") + sh.F("transom", 0.0)))));
+        var stern = PyDict.Merge(hull.Stern, PyDict.Of(("transom", Math.Min(0.9, hull.Stern.F("transom") + sh.F("transom", 0.0)))));
         return PyDict.Merge(spec, PyDict.Of(("bow", bow), ("stern", stern)));
     }
 
@@ -434,7 +434,7 @@ public static class HullArt
         var mainMarginD = Painter.HullPath(hull, inset: inset + margin,
             maxHw: mhw is double m1 && m1 != 0 ? m1 - margin : null,
             xMin: dx0 is double v0 ? v0 + margin : null, xMax: dx1 is double v1 ? v1 - margin : null);
-        double lineOp = Py.Round(P.ShF("deck_line_opacity", 0.45), 3);
+        double lineOp = Math.Round(P.ShF("deck_line_opacity", 0.45), 3);
         low.Add(new PathNode(mainMarginD).Fill("none").Stroke(lineCol, P.Sw * 0.7).StrokeOp(lineOp));
         var planks = new Group(lines) { Clip = [new PathNode(mainMarginD)] }.Stroke(lineCol, P.Sw * 0.7).StrokeOp(lineOp);
         low.Add(planks);
@@ -450,7 +450,7 @@ public static class HullArt
             var marginD = Painter.HullPath(hull, inset: rdIn + margin, xMin: rd.F("x0") + margin,
                 xMax: rd.F("x1") - (rd.F("x1") < hull.L / 2 - 0.5 ? margin : 0.0));
             var rdLines = PlankLines(rd.F("x0"), rd.F("x1"), lv % 2 != 0 ? spacing / 2 : 0.0, 1.5 * spacing * lv);
-            low.Add(P.Ln(new PathNode(rdD).Fill(Painter.Shade(deckCol, Py.Pow(1.07, lv)))));
+            low.Add(P.Ln(new PathNode(rdD).Fill(Painter.Shade(deckCol, Math.Pow(1.07, lv)))));
             Add(low, P.Dazzled(rdD, P.ShF("dazzle_decks", 0.0)));
             low.Add(new PathNode(marginD).Fill("none").Stroke(lineCol, P.Sw * 0.7).StrokeOp(0.45));
             low.Add(new Group(rdLines) { Clip = [new PathNode(marginD)] }.Stroke(lineCol, P.Sw * 0.7).StrokeOp(0.45));
@@ -468,7 +468,7 @@ public static class HullArt
             double hwHaw = hull.HalfWidth(xHaw) - 0.6;
             foreach (int side in new[] { -1, 1 })
             {
-                low.Add(new LineNode(bx, side * 1.6, xHaw, side * hwHaw).Stroke(P.C("chain"), Py.Max(0.45, P.Sw * 2)).Dash(0.45, 0.25));
+                low.Add(new LineNode(bx, side * 1.6, xHaw, side * hwHaw).Stroke(P.C("chain"), Math.Max(0.45, P.Sw * 2)).Dash(0.45, 0.25));
                 low.Add(P.Ln(new CircleNode(bx, side * 1.6, 0.9).Fill(P.C("fitting"))));
                 double px = xHaw - 1.2, py = side * (hwHaw + 0.2);
                 low.Add(new PathNode(new PathData().M(px, py).L(px + 1.6, py + side * 0.6).L(px + 2.2, py + side * 0.6 - side * 0.9).Z())
@@ -480,7 +480,7 @@ public static class HullArt
             double bw = spec.F("breakwater_x");
             double hwb = hull.HalfWidth(bw) - 1.2;
             low.Add(new PathNode(new PathData().M(bw - hwb * 0.55, -hwb).L(bw, 0).L(bw - hwb * 0.55, hwb)).Fill("none")
-                .Stroke(Painter.Shade(deckCol, 0.6), Py.Max(0.45, P.Sw * 2.2)));
+                .Stroke(Painter.Shade(deckCol, 0.6), Math.Max(0.45, P.Sw * 2.2)));
         }
         foreach (var bxo in spec.Get("bollards") as List<object?> ?? [])
         {
@@ -526,7 +526,7 @@ public static class HullArt
             {
                 var w = (System.Collections.IList)wr!;
                 g.Items.Add(new LineNode(Py.ToDouble(w[0]), Py.ToDouble(w[1]), Py.ToDouble(w[2]), Py.ToDouble(w[3]))
-                    .Stroke(Painter.Shade(mk, 0.75), Py.Max(0.25, P.Sw)).StrokeOp(0.8));
+                    .Stroke(Painter.Shade(mk, 0.75), Math.Max(0.25, P.Sw)).StrokeOp(0.8));
             }
             // painted lines: centreline dashes, deck-edge stripes, ramp stripes, catapult tracks
             foreach (var ln in (fd.Get("marks") as List<object?> ?? []).Cast<PyDict>())
@@ -567,7 +567,7 @@ public static class HullArt
             var levels = pal.L("levels");
             foreach (var it in items)
             {
-                string col = it.Level == 0 ? deckCol : (string)Painter.At(levels, Py.Min(it.Level, levels.Count) - 1)!;
+                string col = it.Level == 0 ? deckCol : (string)Painter.At(levels, Math.Min(it.Level, levels.Count) - 1)!;
                 Clutter.Draw(it.Level <= 1 ? low : high, it, P, col);
             }
         }

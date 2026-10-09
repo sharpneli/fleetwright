@@ -52,7 +52,7 @@ public sealed class PlaningStyle : Style
     {
         double fnv = Navarch.VolumetricFroude(r.Full, design.F("speed_kn"));
         if (fnv < 2.0)
-            return [$"Not fully planing at {Py.Str(design["speed_kn"])} kn (Fn∇ {Py.F(fnv, 1)}, want 2+): the hull is too heavy " +
+            return [$"Not fully planing at {Py.Str(design["speed_kn"])} kn (Fn∇ {fnv:F1}, want 2+): the hull is too heavy " +
                     "or too slow to rise onto the plane, so the power is spent pushing water."];
         return [];
     }
@@ -60,12 +60,12 @@ public sealed class PlaningStyle : Style
     public override string CREW_STANDARD => "H0";
 
     public override PyDict Results(PyDict design, Layout lay, Navarch.Result r) =>
-        PyDict.Of(("volumetric_froude", Py.Round(Navarch.VolumetricFroude(r.Full, design.F("speed_kn")), 2)),
-            ("power_to_weight_hp_per_t", Py.Round(r.PowerShp / r.Full, 1)), ("power_model", "planing placeholder"));
+        PyDict.Of(("volumetric_froude", Math.Round(Navarch.VolumetricFroude(r.Full, design.F("speed_kn")), 2)),
+            ("power_to_weight_hp_per_t", Math.Round(r.PowerShp / r.Full, 1)), ("power_model", "planing placeholder"));
 
     public override List<object?> Summary(PyDict design, Layout lay, Navarch.Result r) =>
-        [$"planing: Fn∇ {Py.F(Navarch.VolumetricFroude(r.Full, design.F("speed_kn")), 2)}   " +
-         $"{Py.F(r.PowerShp / r.Full, 0)} hp/t   (placeholder power model)"];
+        [$"planing: Fn∇ {Navarch.VolumetricFroude(r.Full, design.F("speed_kn")):F2}   " +
+         $"{r.PowerShp / r.Full:F0} hp/t   (placeholder power model)"];
 
     static PyDict PlaningHullSpec(PyDict design)
     {
@@ -91,13 +91,13 @@ public sealed class PlaningStyle : Style
         double cx0 = 0.0 + shift, cx1 = 0.22 * L + shift;
         double wc = 0.42 * B;
         Layout.AddBlock(lay, blocks, "Charthouse", cx0, cx1, wc, 1, 0.45 * wc, 0.2, role: "bridge");
-        var masts = new List<PyDict> { PyDict.Of(("x", cx0 + 0.25 * (cx1 - cx0)), ("yard", Py.Min(0.5 * B, 2.4)), ("tripod", false),
+        var masts = new List<PyDict> { PyDict.Of(("x", cx0 + 0.25 * (cx1 - cx0)), ("yard", Math.Min(0.5 * B, 2.4)), ("tripod", false),
             ("top", Layout.LEVEL_H + 3.5)) };
 
         double m0 = -0.42 * L, m1 = -0.08 * L;
         double lMach = Layout.PlanMachinery(lay, design, res, hull, (m0 + m1) / 2);
         if (lMach > m1 - m0)
-            lay.Fail("length", $"The engines need {Py.F(lMach, 1)} m, but the engine room has {Py.F(m1 - m0, 1)} m.");
+            lay.Fail("length", $"The engines need {lMach:F1} m, but the engine room has {m1 - m0:F1} m.");
         lay.Geo.Machinery = (m0, m1);
         lay.Geo.MachineryX = (m0 + m1) / 2;
         Layout.SetCitadel(lay, m0, m1);
@@ -107,12 +107,12 @@ public sealed class PlaningStyle : Style
         var tp = design.Or("torpedoes", null) as PyDict ?? new PyDict();
         if (Py.Truthy(tp.Get("mounts")))
         {
-            var xs = Py.Range(Py.Int(0.6 * L / 0.5)).Select(k => cx0 + 0.3 * (cx1 - cx0) - k * 0.5);
+            var xs = Enumerable.Range(0, (int)(0.6 * L / 0.5)).Select(k => cx0 + 0.3 * (cx1 - cx0) - k * 0.5);
 
             double YOfX(double x, PyDict t)
             {
                 double w = ((t.F("barrels") - 1) * t.F("spacing") + t.F("barrel_w")) / 2;
-                return Py.Min(hull.HalfWidth(x + t.F("barrel_len") / 2), hull.HalfWidth(x - t.F("barrel_len") / 2)) - w - 0.15;
+                return Math.Min(hull.HalfWidth(x + t.F("barrel_len") / 2), hull.HalfWidth(x - t.F("barrel_len") / 2)) - w - 0.15;
             }
 
             Armament.FixedTubePairs(lay, mounts, turretTypes, tp, xs, YOfX, toeDeg: 5.0);
@@ -169,7 +169,7 @@ public sealed class PlaningStyle : Style
         }
         var boats = new List<object?>();
         double rl = Layout.Clamp(0.1 * L, 1.8, 3.0), rw = Layout.Clamp(0.22 * B, 1.0, 1.6);
-        foreach (var x in Py.Range(Py.Int((m1 - m0) / 0.5)).Select(k => m1 - rl / 2 - k * 0.5))
+        foreach (var x in Enumerable.Range(0, Math.Max(0, (int)((m1 - m0) / 0.5))).Select(k => m1 - rl / 2 - k * 0.5))
         {
             var fp = Footprint.Rect(x - rl / 2, -rw / 2, x + rl / 2, rw / 2);
             if (lay.Free(fp, 0.2))

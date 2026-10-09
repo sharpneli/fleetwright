@@ -66,7 +66,7 @@ public static class Crew
 
     /// <summary>Deck, command, signals, control and damage control: k x standard displacement^0.5, tapering below 1,000 t.</summary>
     static double DeckCrew(double stdT, double k = 0.8) =>
-        k * Py.Pow(Py.Max(stdT, 1.0), 0.5) * Py.Pow(Py.Min(1.0, stdT / 1000.0), 0.3);
+        k * Math.Pow(Math.Max(stdT, 1.0), 0.5) * Math.Pow(Math.Min(1.0, stdT / 1000.0), 0.3);
 
     /// <summary>The complement by department: {department: men}, with totals.</summary>
     static PyDict Complement(Layout lay, Navarch.Result res, PyDict? extra, double deckK, object? officerFraction, double hotelFraction)
@@ -85,40 +85,40 @@ public static class Crew
             var cfg = Geometry.AA_CFG[a.S("type")];
             guns += GunCrew(cfg.CalibreMm, cfg.Barrels);
         }
-        var deps = PyDict.Of(("engineering", res.PlantRated.Get("crew", 0L)), ("weapons", Py.Round(guns + torps)),
-            ("deck_and_command", Py.Round(DeckCrew(res.Std, deckK))));
+        var deps = PyDict.Of(("engineering", res.PlantRated.Get("crew", 0L)), ("weapons", (long)Math.Round(guns + torps)),
+            ("deck_and_command", (long)Math.Round(DeckCrew(res.Std, deckK))));
         if (extra != null)
             deps.Update(extra);
         long ops = Py.ToLong(Py.SumObj(deps.Values));
-        long total = Py.Ceil(ops / (1 - hotelFraction));
+        long total = (long)Math.Ceiling(ops / (1 - hotelFraction));
         deps["hotel"] = total - ops;
         double fo = officerFraction is not null ? Py.ToDouble(officerFraction) : (total < 30 ? 0.15 : 0.08);
-        return PyDict.Of(("departments", deps), ("total", total), ("officers", Math.Max(1L, Py.Round(fo * total))));
+        return PyDict.Of(("departments", deps), ("total", total), ("officers", Math.Max(1L, (long)Math.Round(fo * total))));
     }
 
     /// <summary>Volumes the crew needs: living space, provisions, water tankage and the distiller, and comfort inputs.</summary>
     static PyDict Needs(PyDict c, long n, long officers, double hAvail)
     {
         var s = c.D("standard");
-        long nc = Py.Round(s.F("cpo_fraction") * n);
+        long nc = (long)Math.Round(s.F("cpo_fraction") * n);
         long nr = Math.Max(0, n - officers - nc);
         double b = c.F("berth_ratio");
         double tEnd = c.F("endurance_days");
         double aSleep = nr * b * s.F("sleep_rating_m2") + nc * s.F("sleep_cpo_m2") + officers * s.F("sleep_officer_m2");
         double aMess = s.F("mess_seats_per_man") * (nr + nc) * 1.1 + (s.F("mess_seats_per_man") != 0 ? 0.8 * officers * 1.6 : 0.0);
-        double aGalley = Py.Max(s.F("galley_min_m2"), s.F("galley_k") * Py.Pow(n, 0.8));
-        double aSan = Py.Max(1.0, s.F("sanitary_m2") * n);
-        long beds = n >= 15 && tEnd > 3 ? Py.Ceil(s.F("sickbay_beds_per_man") * n) : 0;
+        double aGalley = Math.Max(s.F("galley_min_m2"), s.F("galley_k") * Math.Pow(n, 0.8));
+        double aSan = Math.Max(1.0, s.F("sanitary_m2") * n);
+        long beds = n >= 15 && tEnd > 3 ? (long)Math.Ceiling(s.F("sickbay_beds_per_man") * n) : 0;
         double aMed = (beds != 0 ? 6 + 4 * beds : 0) + (n > 1000 && s.F("sickbay_beds_per_man") >= 0.01 ? 40 : 0);
         double aWelfare = s.F("welfare_m2") * n;
-        double aServ = s.F("services_k") * Py.Pow(n, 0.85) * (tEnd > 7 ? 1 : 0.5);
+        double aServ = s.F("services_k") * Math.Pow(n, 0.85) * (tEnd > 7 ? 1 : 0.5);
         double aNet = aSleep + aMess + aGalley + aSan + aMed + aWelfare + aServ;
-        double hEff = Py.Min(s.F("deck_height_m"), hAvail);
+        double hEff = Math.Min(s.F("deck_height_m"), hAvail);
         double live = aNet * s.F("passage_factor") * hEff;
         double prov = n * tEnd * s.F("provisions_m3_per_day") * 1.4;
         double wDay = c.F("water_l_per_day");
         bool dist = Py.Truthy(c["distiller"]);
-        double water = n * wDay * (dist ? Py.Min(c.F("buffer_days"), tEnd) : tEnd) / 1000.0;
+        double water = n * wDay * (dist ? Math.Min(c.F("buffer_days"), tEnd) : tEnd) / 1000.0;
         double qDist = dist ? 1.2 * n * wDay / 1000.0 : 0.0;
         return PyDict.Of(("living_m3", live), ("provisions_m3", prov), ("water_m3", water), ("distiller_m3_per_day", qDist),
             ("distiller_volume_m3", 0.06 * qDist), ("net_area_m2", aNet), ("sleep_m2_per_man", aSleep / Math.Max(1, n)),
@@ -137,7 +137,7 @@ public static class Crew
         double db = Powerplant.DoubleBottom(D);
         var plan = lay.Geo.Plant ?? new PyDict();
         double low = (plan.B("armoured") ? plan.F("top", D) : D) - db;
-        double hullV = L * B * (T * cb + Py.Max(0.0, D - T) * Geometry.Cwp(cb)) - db * L * B * Geometry.Cwp(cb) * 0.9;
+        double hullV = L * B * (T * cb + Math.Max(0.0, D - T) * Geometry.Cwp(cb)) - db * L * B * Geometry.Cwp(cb) * 0.9;
         object raisedObj = Py.SumObj(lay.Decks.Where(dk => Py.Eq(dk["kind"], "deck"))
             .Select(dk => (object?)(Area(Geometry.Pts(dk["points"])) * (dk.F("top") - dk.F("base")))));
         double raised = Py.ToDouble(raisedObj);
@@ -158,22 +158,22 @@ public static class Crew
             if (!Py.Eq(b["kind"], "director") && !Py.In(b["role"], "hangar", "director", "casemate"))
                 rooms[b.S("id")] = (b.Has("area") ? b.F("area") : (b.F("x1") - b.F("x0")) * b.F("w")) * Layout.LEVEL_H * 0.9;
         double sup = Py.ToDouble(Py.SumObj(rooms.Values));
-        double free = Py.Max(0.0, hullV - taken) + raised + sup;
+        double free = Math.Max(0.0, hullV - taken) + raised + sup;
         return PyDict.Of(("hull_m3", hullV + raised), ("taken_m3", taken), ("superstructure_m3", sup), ("free_m3", free),
-            ("usable_m3", USABLE * free), ("hull_usable_m3", USABLE * (Py.Max(0.0, hullV - taken) + raised)), ("blocks_m3", rooms));
+            ("usable_m3", USABLE * free), ("hull_usable_m3", USABLE * (Math.Max(0.0, hullV - taken) + raised)), ("blocks_m3", rooms));
     }
 
     /// <summary>n men over rooms by volume ({id: m3}): whole men, the remainders to the largest fractions, {id: men} for
     /// the rooms that get any.</summary>
     public static List<(K Key, long Men)> Spread<K>(long n, IReadOnlyList<(K Key, double V)> vols)
     {
-        double total = Py.Sum(vols.Select(v => v.V));
+        double total = vols.Select(v => v.V).Sum();
         if (n <= 0 || total <= 0)
             return [];
         var shares = vols.Select(v => n * v.V / total).ToList();
-        var men = shares.Select(s => Py.Int(s)).ToList();
+        var men = shares.Select(s => (long)s).ToList();
         long left = n - men.Sum();
-        var order = Py.Sorted(Enumerable.Range(0, shares.Count), k => men[k] - shares[k]);
+        var order = Enumerable.Range(0, shares.Count).OrderBy(k => men[k] - shares[k]).ToList();
         foreach (var k in order.Take((int)Math.Max(0, left)))
             men[k] += 1;
         return Enumerable.Range(0, vols.Count).Where(i => men[i] != 0).Select(i => (vols[i].Key, men[i])).ToList();
@@ -182,7 +182,7 @@ public static class Crew
     static double Area(IReadOnlyList<Pt> pts)
     {
         int n = pts.Count;
-        return Math.Abs(Py.Sum(Enumerable.Range(0, n).Select(i => pts[i].X * pts[(i + 1) % n].Y - pts[(i + 1) % n].X * pts[i].Y))) / 2;
+        return Math.Abs(Enumerable.Range(0, n).Select(i => pts[i].X * pts[(i + 1) % n].Y - pts[(i + 1) % n].X * pts[i].Y).Sum()) / 2;
     }
 
     /// <summary>Double-bottom tankage left for fresh water after the fuel, m3.</summary>
@@ -193,7 +193,7 @@ public static class Crew
         double oil = fuel == "coal" ? 0.0 : res.Fuel * Powerplant.FUELS[fuel].Stowage;
         double D = res.Depth;
         double tank = Powerplant.DoubleBottom(D) * lay.Hull.L * lay.Hull.B * design.D("hull").F("block_coefficient") * 0.6;
-        return Py.Max(0.0, tank - oil);
+        return Math.Max(0.0, tank - oil);
     }
 
     /// <summary>Crew the laid-out ship: its complement, the volume the crew needs against the volume the ship has, and the
@@ -201,7 +201,7 @@ public static class Crew
     public static void Apply(Layout lay, PyDict design, Navarch.Result res, Style style)
     {
         var c = Spec(design, style.CREW_STANDARD);
-        long rangeDays = Py.Ceil(design.F("range_nm", 6000) / Py.Max(res.CruiseKn, 1.0) / 24.0 - 1e-9);
+        long rangeDays = (long)Math.Ceiling(design.F("range_nm", 6000) / Math.Max(res.CruiseKn, 1.0) / 24.0 - 1e-9);
         if (c["endurance_days"] is null)
             c["endurance_days"] = Math.Max(1L, rangeDays);
         var s = c.D("standard");
@@ -211,17 +211,17 @@ public static class Crew
         var nd = Needs(c, n, comp.I("officers"), hAvail);
         var room = CrewSpace(lay, design, res);
         double waterTanks = TankRoom(lay, design, res);
-        double waterFree = Py.Max(0.0, nd.F("water_m3") - waterTanks);
+        double waterFree = Math.Max(0.0, nd.F("water_m3") - waterTanks);
         double need = nd.F("living_m3") + nd.F("provisions_m3") + waterFree + nd.F("distiller_volume_m3");
         if (need > room.F("usable_m3"))
-            lay.Fail("length", $"No room for the crew: {n} men need about {Py.F(need, 0, comma: true)} m3 for quarters, provisions and " +
-                               $"water, but the ship has about {Py.F(room.F("usable_m3"), 0, comma: true)} m3 to spare. Use a lower " +
+            lay.Fail("length", $"No room for the crew: {n} men need about {need:N0} m3 for quarters, provisions and " +
+                               $"water, but the ship has about {room.F("usable_m3"):N0} m3 to spare. Use a lower " +
                                "habitability standard, a shorter endurance, a distiller, or fewer men (guns, power).");
         if (Py.ToDouble(c["endurance_days"]) < rangeDays)
             lay.Warnings.Add($"Provisions for {Py.Str(c["endurance_days"])} days, but the fuel lasts {rangeDays} days at " +
                              "cruising speed.");
-        double frac = need > 0 ? Py.Min(1.0, Py.Max(0.0, (need - room.F("hull_usable_m3")) / need)) : 0.0;
-        long up = Py.Round(n * frac);
+        double frac = need > 0 ? Math.Min(1.0, Math.Max(0.0, (need - room.F("hull_usable_m3")) / need)) : 0.0;
+        long up = (long)Math.Round(n * frac);
         var blocksM3 = room.D("blocks_m3").Select(kv => (kv.Key, Py.ToDouble(kv.Value))).ToList();
         var upBlocks = Spread(up, blocksM3);
         double xMid = lay.Geo.MachineryMid(lay.Hull.L);
@@ -241,13 +241,13 @@ public static class Crew
             ("superstructure_quarters", PyDict.Of(upBlocks.Select(t => (t.Key, (object?)t.Men)).ToArray())),
             ("officers", comp["officers"]), ("cpos", nd["cpos"]), ("ratings", nd["ratings"]), ("departments", comp["departments"]),
             ("standard", s.Get("name", "")), ("endurance_days", c["endurance_days"]), ("range_days", rangeDays),
-            ("distiller", c["distiller"]), ("berth_ratio", c["berth_ratio"]), ("living_m3", Py.Round(nd.F("living_m3"))),
-            ("provisions_m3", Py.Round(nd.F("provisions_m3"))), ("water_m3", Py.Round(nd.F("water_m3"))),
-            ("water_in_double_bottom_m3", Py.Round(nd.F("water_m3") - waterFree)),
-            ("distiller_m3_per_day", Py.Round(nd.F("distiller_m3_per_day"), 1)), ("space_needed_m3", Py.Round(need)),
-            ("space_usable_m3", Py.Round(room.F("usable_m3"))), ("space_free_m3", Py.Round(room.F("free_m3"))),
-            ("sleep_m2_per_man", Py.Round(nd.F("sleep_m2_per_man"), 2)), ("sleep_standard_m2", s["sleep_rating_m2"]),
-            ("headroom_m", Py.Round(nd.F("headroom_m"), 2)), ("deck_height_m", s["deck_height_m"]), ("sickbay_beds", nd["sickbay_beds"]),
+            ("distiller", c["distiller"]), ("berth_ratio", c["berth_ratio"]), ("living_m3", (long)Math.Round(nd.F("living_m3"))),
+            ("provisions_m3", (long)Math.Round(nd.F("provisions_m3"))), ("water_m3", (long)Math.Round(nd.F("water_m3"))),
+            ("water_in_double_bottom_m3", (long)Math.Round(nd.F("water_m3") - waterFree)),
+            ("distiller_m3_per_day", Math.Round(nd.F("distiller_m3_per_day"), 1)), ("space_needed_m3", (long)Math.Round(need)),
+            ("space_usable_m3", (long)Math.Round(room.F("usable_m3"))), ("space_free_m3", (long)Math.Round(room.F("free_m3"))),
+            ("sleep_m2_per_man", Math.Round(nd.F("sleep_m2_per_man"), 2)), ("sleep_standard_m2", s["sleep_rating_m2"]),
+            ("headroom_m", Math.Round(nd.F("headroom_m"), 2)), ("deck_height_m", s["deck_height_m"]), ("sickbay_beds", nd["sickbay_beds"]),
             ("tolerance_days", s["tolerance_days"]));
     }
 
@@ -295,7 +295,7 @@ public static class Crew
         }
         foreach (var ((kind, k), men) in Spread(Py.ToLong(deps.Get("weapons", 0L)), need))
         {
-            long below = kind != "aa" && barbettes.Contains(k) ? Py.Round(HANDLING * men) : 0;
+            long below = kind != "aa" && barbettes.Contains(k) ? (long)Math.Round(HANDLING * men) : 0;
             Put(onComp, [((kind, k), men - below)], kind == "aa" ? "aa" : kind == "torpedo" ? "torpedoes" : "guns");
             Put(onComp, [(("barbette", $"{k} barbette"), below)], "handling");
         }
@@ -327,15 +327,15 @@ public static class Crew
             bridge = vol.Where(v => Role(v.Key) != "director").ToList();
         if (bridge.Count > 0)
         {
-            long n = Take(Py.Round(COMMAND_K.A + COMMAND_K.B * Py.ToDouble(deps.Get("deck_and_command", 0L))), rest);
-            long nAft = aft.Count > 0 ? Py.Round(AFT_CONTROL * n) : 0;
+            long n = Take((long)Math.Round(COMMAND_K.A + COMMAND_K.B * Py.ToDouble(deps.Get("deck_and_command", 0L))), rest);
+            long nAft = aft.Count > 0 ? (long)Math.Round(AFT_CONTROL * n) : 0;
             Put(onComp, Spread(n - nAft, bridge), "command");
             Put(onComp, Spread(nAft, aft), "command");
             rest -= n;
         }
         foreach (var d in lay.Directors)
         {
-            long n = Take(DIRECTOR_K + Py.Round(d.F("rangefinder_m")), rest);
+            long n = Take(DIRECTOR_K + (long)Math.Round(d.F("rangefinder_m")), rest);
             Put(onComp, [(("superstructure", d.S("id")), n)], "directors");
             rest -= n;
         }

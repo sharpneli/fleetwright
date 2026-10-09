@@ -60,6 +60,7 @@ The ship generator's command line, the port's test harness (`PORTING.md`):
 ```bash
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- golden-check          # every golden case, ~25 s
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- golden-check bismarck fuzz_lim_*
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- golden-update         # after a deliberate output change
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design shipgen/designs/bismarck.json --out out --previews
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- validate shipgen/designs/*.json
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- bench bismarck yamato
@@ -73,7 +74,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check     
 ```
 
 `golden-check` must stay at 371 of 371 for any change to `Fleetwright.Shipgen` that isn't a deliberate fix (fixes
-update the goldens on purpose, one per commit). `svg-check` and `sprite-check` do the same for
+update the goldens on purpose with `golden-update`, one per commit). `svg-check` and `sprite-check` do the same for
 `Fleetwright.Shipgen.Render`, until the drawing is changed on purpose (then the SVG goldens retire).
 
 ## Project Structure

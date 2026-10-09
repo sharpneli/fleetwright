@@ -136,8 +136,8 @@ public sealed class Scene(double x, double y, double w, double h, double scale)
     public readonly double X = x, Y = y, W = w, H = h, Scale = scale;
     public readonly Group Root = new();
 
-    public int WidthPx => (int)Py.Round(W * Scale);
-    public int HeightPx => (int)Py.Round(H * Scale);
+    public int WidthPx => (int)(long)Math.Round(W * Scale);
+    public int HeightPx => (int)(long)Math.Round(H * Scale);
 }
 
 /// <summary>Fluent paint setters, so the drawing code reads like the SVG it replaces.</summary>
@@ -183,7 +183,7 @@ public static class NodeStyle
 /// written as shipgen.f wrote them: 3 decimals, trailing zeros dropped.</summary>
 public static class SvgWriter
 {
-    public static string F(double v) => Py.F(v, 3).TrimEnd('0').TrimEnd('.');
+    public static string F(double v) => v.ToString("F3").TrimEnd('0').TrimEnd('.');
 
     public static string Write(Scene sc)
     {

@@ -13,7 +13,7 @@ public sealed class Painter
     {
         P = palette;
         Shapes = shapes ?? new PyDict();
-        Sw = Py.Max(0.12, 0.6 / scale);
+        Sw = Math.Max(0.12, 0.6 / scale);
     }
 
     // ------------------------------------------------------------------ helpers
@@ -32,8 +32,8 @@ public sealed class Painter
     {
         Span<long> c = [Convert.ToInt32(hex[1..3], 16), Convert.ToInt32(hex[3..5], 16), Convert.ToInt32(hex[5..7], 16)];
         for (int i = 0; i < 3; i++)
-            c[i] = k <= 1 ? Py.Round(c[i] * k) : Py.Round(c[i] + (255 - c[i]) * (k - 1));
-        return "#" + string.Concat(c.ToArray().Select(v => Py.Max(0L, Py.Min(255L, v)).ToString("x2")));
+            c[i] = k <= 1 ? (long)Math.Round(c[i] * k) : (long)Math.Round(c[i] + (255 - c[i]) * (k - 1));
+        return "#" + string.Concat(c.ToArray().Select(v => Math.Max(0L, Math.Min(255L, v)).ToString("x2")));
     }
 
     /// <summary>A list item by Python index (negative counts from the end).</summary>
@@ -43,8 +43,8 @@ public sealed class Painter
     public static PathData RrectPath(double x0, double y0, double x1, double y1, double rf = 0.0, double rb = 0.0)
     {
         double h = (y1 - y0) / 2;
-        rf = Py.Min(rf, h, (x1 - x0) / 2);
-        rb = Py.Min(rb, h, (x1 - x0) / 2);
+        rf = Math.Min(rf, Math.Min(h, (x1 - x0) / 2));
+        rb = Math.Min(rb, Math.Min(h, (x1 - x0) / 2));
         var d = new PathData().M(x0 + rb, y0).L(x1 - rf, y0);
         if (rf > 0)
             d.A(rf, rf, 0, false, true, x1, y0 + rf);
@@ -116,7 +116,7 @@ public sealed class Painter
     public void Fitting(List<Node> o, PyDict ft)
     {
         double x = ft.F("x"), y = ft.F("y"), l = ft.F("l"), w = ft.F("w");
-        double r = ft.F("r", Py.Min(l, w) * 0.2);
+        double r = ft.F("r", Math.Min(l, w) * 0.2);
         string key = ft.S("color", "fitting")!;
         string col = P.TryGet(key, out var pc) ? (string)pc! : ft.S("color", C("fitting"))!;
         o.Add(Ln(new PathNode(RrectPath(x - l / 2, y - w / 2, x + l / 2, y + w / 2, r, r)).Fill(col), 0.8));
@@ -140,12 +140,12 @@ public sealed class Painter
         else if (mode == "chamfer")     // cut corners instead of round ones
         {
             double h = w / 2;
-            double cf = Py.Min(rf, h, (x1 - x0) / 2), cb = Py.Min(rb, h, (x1 - x0) / 2);
+            double cf = Math.Min(rf, Math.Min(h, (x1 - x0) / 2)), cb = Math.Min(rb, Math.Min(h, (x1 - x0) / 2));
             d = Poly([new(x0 + cb, y - h), new(x1 - cf, y - h), new(x1, y - h + cf), new(x1, y + h - cf), new(x1 - cf, y + h),
                       new(x0 + cb, y + h), new(x0, y + h - cb), new(x0, y - h + cb)]);
         }
         else if (mode == "tower" && lvl >= ShF("tower_level", 3))   // a round-fronted tower bridge
-            d = RrectPath(x0, y - w / 2, x1, y + w / 2, Py.Min(w / 2, (x1 - x0) * 0.6), rb * 0.4);
+            d = RrectPath(x0, y - w / 2, x1, y + w / 2, Math.Min(w / 2, (x1 - x0) * 0.6), rb * 0.4);
         else
         {
             double kf, kb;
@@ -163,7 +163,7 @@ public sealed class Painter
             d = RrectPath(x0, y - w / 2, x1, y + w / 2, rf * kf, rb * kb);
         }
         var cols = P.L("levels");
-        string col = (string)At(cols, Py.Min(lvl, cols.Count) - 1)!;
+        string col = (string)At(cols, Math.Min(lvl, cols.Count) - 1)!;
         o.Add(Ln(new PathNode(d).Fill(col)));
         Add(o, Dazzled(d, ShF("dazzle_upperworks", 1.0)));
         // a thin lighter rim on the port/fwd edge suggests light from the upper-left
@@ -182,7 +182,7 @@ public sealed class Painter
         double rf = dr.F("rangefinder_m", 0);
         var parts = Geometry.DirectorParts(xc, y, l, w, rf);
         var cols = P.L("levels");
-        string col = (string)At(cols, Py.Min(dr.I("on", 0) + 1, cols.Count) - 1)!;   // a shade lighter than the roof it stands on
+        string col = (string)At(cols, Math.Min(dr.I("on", 0) + 1, cols.Count) - 1)!;   // a shade lighter than the roof it stands on
         var hood = Poly(parts.Hood);
         if (rf != 0)
         {
@@ -193,23 +193,23 @@ public sealed class Painter
             o.Add(Ln(new PathNode(hood).Fill(col)));
             Add(o, Dazzled(hood, ShF("dazzle_upperworks", 1.0)));
             // the hood's roof: a sighting hatch aft, and the radar aerial (a flat dish seen edge-on) forward
-            double hw = Py.Max(parts.Hood.Select(p => p.Y)) - y;
+            double hw = parts.Hood.Select(p => p.Y).Max() - y;
             o.Add(Ln(new PathNode(RrectPath(x0 + 0.12 * l, y - 0.4 * hw, x0 + 0.32 * l, y + 0.4 * hw, 0.1, 0.1))
                 .Fill(Shade(col, 0.88)), 0.6));
             if (dr.B("radar"))
             {
                 double ax = xc + 0.22 * l, aw = 1.5 * hw;
-                o.Add(new LineNode(xc, y, ax, y).Stroke(C("mast"), Py.Max(Sw * 1.2, 0.18)));
+                o.Add(new LineNode(xc, y, ax, y).Stroke(C("mast"), Math.Max(Sw * 1.2, 0.18)));
                 o.Add(Ln(new PathNode(RrectPath(ax - 0.18, y - aw / 2, ax + 0.18, y + aw / 2, 0.12, 0.12)).Fill(C("mast")), 0.6));
             }
         }
         else
         {
-            double r = Py.Min(l, w) / 2;
+            double r = Math.Min(l, w) / 2;
             o.Add(Ln(new PathNode(hood).Fill(C("tub"))));
             o.Add(new CircleNode(xc, y, r * 0.72).Fill(Shade(C("tub"), 0.8)));
             o.Add(Ln(new PathNode(RrectPath(xc - 0.3 * r, y - 0.35 * r, xc + 0.25 * r, y + 0.35 * r, 0.08, 0.08)).Fill(col), 0.6));
-            o.Add(new LineNode(xc + 0.25 * r, y, xc + 0.6 * r, y).Stroke(C("barrel"), Py.Max(Sw * 1.2, 0.15)));
+            o.Add(new LineNode(xc + 0.25 * r, y, xc + 0.6 * r, y).Stroke(C("barrel"), Math.Max(Sw * 1.2, 0.15)));
         }
         o.Add(new PathNode(hood).Fill("none").Stroke(Shade(col, 1.25), Sw * 0.9)
             .Tr(new Translate(-Sw * 0.6, -Sw * 0.6)).StrokeOp(0.7));
@@ -221,8 +221,8 @@ public sealed class Painter
         var mode = Shapes.Get("funnel") as string;
         double r = w / 2 * ShF("funnel_round", mode == "box" ? 0.44 : 1.0);
         var d = RrectPath(x - l / 2, y - w / 2, x + l / 2, y + w / 2, r, r);
-        var inner = RrectPath(x - l / 2 + 0.6, y - w / 2 + 0.6, x + l / 2 - 0.6, y + w / 2 - 0.6, Py.Max(0.0, r - 0.6),
-            Py.Max(0.0, r - 0.6));
+        var inner = RrectPath(x - l / 2 + 0.6, y - w / 2 + 0.6, x + l / 2 - 0.6, y + w / 2 - 0.6, Math.Max(0.0, r - 0.6),
+            Math.Max(0.0, r - 0.6));
         if (mode == "oval")       // a smooth superellipse, fuller than an ellipse
         {
             double n = ShF("funnel_squareness", 2.6);
@@ -230,8 +230,8 @@ public sealed class Painter
             PathData Sup(double a, double b_) => Poly(Enumerable.Range(0, k).Select(i =>
             {
                 double t = 2 * Math.PI * i / k, c = Math.Cos(t), s = Math.Sin(t);
-                return new Pt(x + a * Math.CopySign(Py.Pow(Math.Abs(c), 2 / n), c),
-                    y + b_ * Math.CopySign(Py.Pow(Math.Abs(s), 2 / n), s));
+                return new Pt(x + a * Math.CopySign(Math.Pow(Math.Abs(c), 2 / n), c),
+                    y + b_ * Math.CopySign(Math.Pow(Math.Abs(s), 2 / n), s));
             }));
             (d, inner) = (Sup(l / 2, w / 2), Sup(l / 2 - 0.6, w / 2 - 0.6));
         }
@@ -281,10 +281,10 @@ public sealed class Painter
         else if (capMode == "hat")       // a French "chapeau": a broad black cap with smoke vanes all round
         {
             double hl = l + 1.2, hw_ = w + 1.2;
-            var hd = RrectPath(x - hl / 2, y - hw_ / 2, x + hl / 2, y + hw_ / 2, Py.Min(hw_ / 2, r + 0.6), Py.Min(hw_ / 2, r + 0.6));
+            var hd = RrectPath(x - hl / 2, y - hw_ / 2, x + hl / 2, y + hw_ / 2, Math.Min(hw_ / 2, r + 0.6), Math.Min(hw_ / 2, r + 0.6));
             top.Add(Ln(new PathNode(hd).Fill(C("funnel_cap"))));
             top.Add(new PathNode(inner).Fill(Shade(C("funnel_cap"), 1.25)).Tr(new Translate(x * 0.12, y * 0.12), new Scale(0.88)));
-            long nv = Py.Max(2L, Py.Int(l / 1.5));
+            long nv = Math.Max(2L, (long)(l / 1.5));
             for (int i = 0; i < nv; i++)   // vanes across the cap
             {
                 double vx = x - l / 2 + 0.3 + (l - 0.6) * (i + 0.5) / nv;
@@ -303,11 +303,11 @@ public sealed class Painter
         double span = m.F("yard", 6);
         string mast = C("mast");
         if (span != 0)
-            o.Add(new LineNode(x, y - span / 2, x, y + span / 2).Stroke(mast, Py.Max(Sw * 1.6, 0.35)).Cap("round"));
+            o.Add(new LineNode(x, y - span / 2, x, y + span / 2).Stroke(mast, Math.Max(Sw * 1.6, 0.35)).Cap("round"));
         foreach (var bo in m.Get("booms") as List<object?> ?? [])   // cargo derricks, heel at the mast
         {
             var (bx, by) = Geometry.AsPt(bo);
-            o.Add(new LineNode(x, y, bx, by).Stroke(mast, Py.Max(Sw * 1.4, 0.3)).Cap("round"));
+            o.Add(new LineNode(x, y, bx, by).Stroke(mast, Math.Max(Sw * 1.4, 0.3)).Cap("round"));
             o.Add(new CircleNode(bx, by, 0.3).Fill(mast));
         }
         var mode = Shapes.Get("mast") as string;
@@ -316,20 +316,20 @@ public sealed class Painter
         if (tripod && legs != 0)
             foreach (int ang in new[] { 150, 210 })
             {
-                double lx = x + 4.0 * legs * Math.Cos(Py.Radians(ang));
+                double lx = x + 4.0 * legs * Math.Cos(double.DegreesToRadians(ang));
                 double ly = y + 3.0 * legs * (ang == 150 ? 1 : -1);
-                o.Add(new LineNode(x, y, lx, ly).Stroke(mast, Py.Max(Sw * 1.3, 0.3)).Cap("round"));
+                o.Add(new LineNode(x, y, lx, ly).Stroke(mast, Math.Max(Sw * 1.3, 0.3)).Cap("round"));
             }
         double cage = ShF("cage_r", mode == "cage" ? 3.0 : 0.0);
         if (cage != 0 && tripod)   // a US cage mast from above: twisted struts from a wide foot to a narrow head
         {
             for (int i = 0; i < 12; i++)
             {
-                double a0 = Py.Radians(i * 30), a1 = Py.Radians(i * 30 + 75);
+                double a0 = double.DegreesToRadians(i * 30), a1 = double.DegreesToRadians(i * 30 + 75);
                 o.Add(new LineNode(x + cage * Math.Cos(a0), y + cage * Math.Sin(a0), x + 0.4 * cage * Math.Cos(a1),
-                    y + 0.4 * cage * Math.Sin(a1)).Stroke(mast, Py.Max(Sw * 0.8, 0.15)));
+                    y + 0.4 * cage * Math.Sin(a1)).Stroke(mast, Math.Max(Sw * 0.8, 0.15)));
             }
-            o.Add(new CircleNode(x, y, cage).Fill("none").Stroke(mast, Py.Max(Sw * 0.8, 0.15)));
+            o.Add(new CircleNode(x, y, cage).Fill("none").Stroke(mast, Math.Max(Sw * 0.8, 0.15)));
             o.Add(Ln(new CircleNode(x, y, 0.45 * cage).Fill(Shade(mast, 0.85)), 0.6));
         }
         double lat = ShF("lattice_r", mode == "lattice" ? 2.2 : 0.0);
@@ -338,13 +338,13 @@ public sealed class Painter
             foreach (double k in new[] { 1.0, 0.55 })
             {
                 double q = lat * k;
-                o.Add(new RectNode(x - q, y - q, 2 * q, 2 * q).Fill("none").Stroke(mast, Py.Max(Sw * 0.9, 0.18)));
+                o.Add(new RectNode(x - q, y - q, 2 * q, 2 * q).Fill("none").Stroke(mast, Math.Max(Sw * 0.9, 0.18)));
             }
             foreach (var (sx, sy) in new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) })
                 o.Add(new LineNode(x + sx * lat, y + sy * lat, x - sx * 0.55 * lat, y + sy * 0.55 * lat)
-                    .Stroke(mast, Py.Max(Sw * 0.7, 0.14)));
+                    .Stroke(mast, Math.Max(Sw * 0.7, 0.14)));
             o.Add(Ln(new RectNode(x - 0.4 * lat, y - 0.4 * lat, 0.8 * lat, 0.8 * lat).Fill(Shade(mast, 1.3)), 0.6));
-            o.Add(new LineNode(x, y - 1.3 * lat, x, y + 1.3 * lat).Stroke(Shade(mast, 0.8), Py.Max(Sw * 1.6, 0.35)));
+            o.Add(new LineNode(x, y - 1.3 * lat, x, y + 1.3 * lat).Stroke(Shade(mast, 0.8), Math.Max(Sw * 1.6, 0.35)));
         }
         double top = ShF("top_r", mode == "fighting_top" ? 1.6 : 0.0);
         long tiers = top != 0 ? Shapes.I("top_tiers", 1) : 0;
@@ -361,11 +361,11 @@ public sealed class Painter
     public void Crane(List<Node> o, PyDict c)
     {
         double x = c.F("x"), y = c.F("y"), r = c.F("r", 1.2);
-        double a = Py.Radians(c.F("dir", 0));
+        double a = double.DegreesToRadians(c.F("dir", 0));
         double jx = x + c.F("jib") * Math.Cos(a), jy = y + c.F("jib") * Math.Sin(a);
         string col = C("crane");
         o.Add(Ln(new CircleNode(x, y, r).Fill(Shade(col, 1.3))));
-        o.Add(new LineNode(x, y, jx, jy).Stroke(col, Py.Max(0.45, r * 0.4)).Cap("round"));
+        o.Add(new LineNode(x, y, jx, jy).Stroke(col, Math.Max(0.45, r * 0.4)).Cap("round"));
         o.Add(new CircleNode(jx, jy, 0.35).Fill(col));
         o.Add(Ln(new CircleNode(x, y, r * 0.55).Fill(Shade(col, 1.6)), 0.6));
     }
@@ -376,7 +376,7 @@ public sealed class Painter
         double x = h.F("x"), y = h.F("y"), l = h.F("l"), w = h.F("w");
         o.Add(Ln(new RectNode(x - l / 2, y - w / 2, l, w, 0.25).Fill(C("hatch_coaming"))));
         o.Add(new RectNode(x - l / 2 + 0.35, y - w / 2 + 0.35, l - 0.7, w - 0.7).Fill(C("hatch")));
-        long n = Py.Max(1L, Py.Int(l / 1.6));
+        long n = Math.Max(1L, (long)(l / 1.6));
         for (int i = 1; i < n; i++)
         {
             double bx = x - l / 2 + l * i / n;

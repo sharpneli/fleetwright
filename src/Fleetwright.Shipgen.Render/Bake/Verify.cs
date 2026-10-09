@@ -263,8 +263,8 @@ public static class Verify
             var (lo, hi) = Py.Truthy(c.Get("traverse_deg")) ? Pair(c["traverse_deg"]) : (0.0, -1.0);
             var arcs = ((System.Collections.IEnumerable)c["arcs_deg"]!).Cast<object?>().Select(Pair).ToList();
             double rest = c.F("rest_deg");
-            if (!(0 <= hi - lo && hi - lo < 360 && Inside(lo, hi, Py.Mod(rest, 360))
-                  && arcs.All(a => Inside(lo, hi, Py.Mod(a.Item1, 360)) && Inside(lo, hi, Py.Mod(a.Item2, 360)) && a.Item2 - a.Item1 <= hi - lo)))
+            if (!(0 <= hi - lo && hi - lo < 360 && Inside(lo, hi, Geometry.Normalize360(rest))
+                  && arcs.All(a => Inside(lo, hi, Geometry.Normalize360(a.Item1)) && Inside(lo, hi, Geometry.Normalize360(a.Item2)) && a.Item2 - a.Item1 <= hi - lo)))
                 probs.Add($"{c.S("id")}: traverse {Py.Repr(PyJson.Plain(c.Get("traverse_deg")))} doesn't hold rest {Py.Repr(c["rest_deg"])} and arcs");
             spTr.TryGetValue(c.S("id"), out var st);
             if (!Py.Eq(PyJson.Plain(st), PyJson.Plain(c.Get("traverse_deg"))))
@@ -301,7 +301,7 @@ public static class Verify
             var hit2 = new SortedSet<string>(StringComparer.Ordinal);
             for (int k = 0; k <= (int)(hi - lo); k++)
             {
-                double a = Py.Radians(lo + k);
+                double a = double.DegreesToRadians(lo + k);
                 foreach (double f in new[] { 0.5, 0.75, 1.0 })
                 {
                     double px = c.F("x") + f * R * Math.Cos(a), py = c.F("y") + f * R * Math.Sin(a);

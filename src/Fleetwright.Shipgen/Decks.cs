@@ -36,13 +36,13 @@ public static class Decks
             foreach (var x in new[] { r.F("x0"), r.F("x1") })
                 if (s0 < x && x < s1)
                     set.Add(x);
-        var xs = Py.Sorted(set);
+        var xs = set.Order().ToList();
         var out_ = new List<(double, double, long)>();
         for (int i = 0; i < xs.Count - 1; i++)
         {
             double a = xs[i], b = xs[i + 1];
             double m = (a + b) / 2;
-            long lv = Math.Min(k, Py.Max(raised.Where(r => r.F("x0") <= m && m <= r.F("x1")).Select(r => r.I("levels")), 0L));
+            long lv = Math.Min(k, raised.Where(r => r.F("x0") <= m && m <= r.F("x1")).Select(r => r.I("levels")).DefaultIfEmpty(0L).Max());
             if (out_.Count > 0 && out_[^1].Item3 == lv)
                 out_[^1] = (out_[^1].Item1, b, lv);
             else
@@ -91,8 +91,8 @@ public static class Arcs
     /// <summary>[start, end] clockwise with 0 &lt;= start &lt; 360; end may exceed 360.</summary>
     static double[] Arc(double centre, double half)
     {
-        double start = Py.Mod(centre - half, 360.0);
-        return [Py.Round(start, 1), Py.Round(start + 2 * half, 1)];
+        double start = Geometry.Normalize360(centre - half);
+        return [Math.Round(start, 1), Math.Round(start + 2 * half, 1)];
     }
 
     static bool HasFixed(PyDict m) => m.Get("fixed") is not null;
@@ -127,7 +127,7 @@ public static class Arcs
         var arcs = MountArcs(m);
         var own = arcs[0];
         var cross = arcs[1];
-        if ((Py.Mod(m.F("rest"), 360.0) < 90.0) == (m.F("y") < 0))
+        if ((Geometry.Normalize360(m.F("rest")) < 90.0) == (m.F("y") < 0))
             return [own[0], cross[1] < own[0] ? cross[1] + 360.0 : cross[1]];
         return [cross[0], own[1] > cross[0] ? own[1] : own[1] + 360.0];
     }
@@ -140,7 +140,7 @@ public static class Arcs
             return CrossTurn(m);
         if (arcs.Count == 1)
             return [arcs[0][0], arcs[0][1]];
-        double rest = Py.Mod(HasFixed(m) ? m.F("fixed") : m.F("rest"), 360.0);
+        double rest = Geometry.Normalize360(HasFixed(m) ? m.F("fixed") : m.F("rest"));
         double[]? best = null;
         foreach (var (p, q) in new[] { (arcs[0], arcs[1]), (arcs[1], arcs[0]) })
         {

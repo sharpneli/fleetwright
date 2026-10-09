@@ -4,6 +4,14 @@ Python shipgen's output, captured by `../shipgen/tools/golden.py` at the shipgen
 (commit `b867f6bf`). The C# port must reproduce it (PORTING.md, Step 1). Don't edit these by hand. A capture
 is replaced only on purpose: after the port, when a bug fix changes the output, one fix per commit.
 
+Since the port the C# side owns them: a deliberate change rewrites the cases it changes with
+`shipgen golden-update` (design records, SVGs and sprite.json; the PNGs stay as visual references). Rewritten so far:
+
+- 2026-10-09, idiomatic C# cleanup: Python's numerics (compensated sum, CPython's hypot, correctly rounded
+  `round(x, n)`) gave way to .NET's (`Enumerable.Sum`, `double.Hypot`, `Math.Round`). Last-digit drift in most
+  cases, rounding ties going .NET's way, and a few ties among equal values (crew remainders, the order of equal
+  height columns) settling differently.
+
 ## Layout
 
 ```

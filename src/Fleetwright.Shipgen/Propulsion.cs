@@ -17,15 +17,15 @@ public static class Propulsion
     /// <summary>n positions across: a centreline one when n is odd, pairs out to y_out. [(y, rank)], starboard to port.</summary>
     public static List<(double Y, long Rank)> Spread(long n, double yOut)
     {
-        long pairs = Py.FloorDiv(n, 2);
-        var out_ = Py.Mod(n, 2) != 0 ? new List<(double, long)> { (0.0, 0) } : [];
+        long pairs = n / 2;
+        var out_ = n % 2 != 0 ? new List<(double, long)> { (0.0, 0) } : [];
         for (long k = 1; k <= pairs; k++)
         {
             double y = yOut * k / pairs;
             out_.Add((y, k));
             out_.Add((-y, k));
         }
-        return Py.Sorted(out_, v => -v.Item1);
+        return out_.OrderBy(v => -v.Item1).ToList();
     }
 
     static List<(double X0, double X1, string? Id)> EngineRooms(Layout lay)
@@ -34,7 +34,7 @@ public static class Propulsion
             .Select(c => (c.F("x0"), c.F("x1"), (string?)c.S("id"))).ToList();
         if (rooms.Count == 0 && lay.Geo.Machinery is { } gm)
             rooms = [(gm.X0, gm.X1, null)];
-        return Py.Sorted(rooms, r => -r.Item2);
+        return rooms.OrderBy(r => -r.Item2).ToList();
     }
 
     /// <summary>The stern gear, which the hull's lines must make room for: dict(screws, planing, propellers, rudders,
@@ -49,9 +49,9 @@ public static class Propulsion
         bool planing = Py.Eq(design.Get("style"), "planing");
         double ib = planing ? 0.0 : Powerplant.DoubleBottom(D);
         double mw = res.PowerShp * 0.7457 / 1000.0 / n;
-        double dp = Py.Max(DP_MIN, (planing ? DP_K_PLANING : DP_K) * Py.Pow(mw, 0.4));
+        double dp = Math.Max(DP_MIN, (planing ? DP_K_PLANING : DP_K) * Math.Pow(mw, 0.4));
         if (!planing)
-            dp = Py.Min(dp, DP_T * T);
+            dp = Math.Min(dp, DP_T * T);
         var (st0, st1) = lay.Geo.SteeringSpan(L);
         double xR = st0 + STOCK_AT * (st1 - st0);
 
@@ -59,7 +59,7 @@ public static class Propulsion
         double hR = RUDDER_H * T;
         double chord = area / hR;
         var shaftYs = Spread(n, SHAFT_Y * B);
-        double inner = Py.Min(shaftYs.Select(s => Math.Abs(s.Y)).Where(a => a > 1e-6), 0.1 * B);
+        double inner = shaftYs.Select(s => Math.Abs(s.Y)).Where(a => a > 1e-6).DefaultIfEmpty(0.1 * B).Min();
         var rYs = Spread(nR, inner).Select(s => s.Y).ToList();
         double rTop = (planing ? 0.15 : 0.85) * T;
         var rudders = new List<object?>();
@@ -68,15 +68,15 @@ public static class Propulsion
             string rid = nR == 1 ? "Rudder" : $"Rudder {k + 1}";
             rudders.Add(PyDict.Of(("id", rid), ("x", xR), ("y", rYs[k]), ("chord", chord),
                 ("x0", xR - (1 - RUDDER_BALANCE) * chord), ("x1", xR + RUDDER_BALANCE * chord),
-                ("thick", Py.Max(0.1, RUDDER_THICK * chord)), ("base", rTop - hR - (planing ? 0.3 * T : 0.0)),
+                ("thick", Math.Max(0.1, RUDDER_THICK * chord)), ("base", rTop - hR - (planing ? 0.3 * T : 0.0)),
                 ("top", rTop), ("area_m2", area)));
         }
 
         double xP0 = xR + RUDDER_BALANCE * chord + 0.25 * dp + 0.3;
-        double zP = planing ? -0.55 * dp : Py.Min(0.05 * T + 0.5 * dp, T - 0.6 * dp);
+        double zP = planing ? -0.55 * dp : Math.Min(0.05 * T + 0.5 * dp, T - 0.6 * dp);
         var rooms = EngineRooms(lay);
-        long pairs = Py.FloorDiv(n, 2);
-        long groups = pairs + Py.Mod(n, 2);
+        long pairs = n / 2;
+        long groups = pairs + n % 2;
         var shafts = new List<object?>();
         var props = new List<object?>();
         var mach = lay.Geo.Machinery;
@@ -86,11 +86,11 @@ public static class Propulsion
             string sid = $"Shaft {k + 1}", pid = $"Propeller {k + 1}";
             long g = pairs - rank;
             (double X0, double X1, string? Id)? room = rooms.Count > 0
-                ? rooms[(int)Math.Min(rooms.Count - 1, Py.FloorDiv(g * rooms.Count, groups))] : null;
+                ? rooms[(int)Math.Min(rooms.Count - 1, g * rooms.Count / groups)] : null;
             double xs = room is { } rm ? (rm.X0 + rm.X1) / 2 : (mach is { } mm ? mm.X0 : -0.2 * L);
             double zs = ib + SHAFT_ABOVE_IB;
-            double xp = xP0 + STAGGER * L * (rank - (Py.Mod(n, 2) == 0 ? 1 : 0));
-            xp = Py.Min(xp, xs - 1.0);
+            double xp = xP0 + STAGGER * L * (rank - (n % 2 == 0 ? 1 : 0));
+            xp = Math.Min(xp, xs - 1.0);
             string pos = Math.Abs(y) < 1e-6 ? "centre" : pairs == 1 ? "wing" : rank == pairs ? "outer" : "inner";
             shafts.Add(PyDict.Of(("id", sid), ("y", y), ("position", pos), ("engine_room", room?.Id), ("propeller", pid),
                 ("p0", new object?[] { xs, y, zs }), ("p1", new object?[] { xp, y, zP })));
@@ -121,7 +121,7 @@ public static class Propulsion
             var (xp, _, zP) = P3(sh["p1"]);
             double ZAt(double x) => xs != xp ? zs + (zP - zs) * (xs - x) / (xs - xp) : zs;
             double exitX = xp + 0.3;
-            long steps = Py.Max(2L, Py.Int((xs - xp) / 0.5));
+            long steps = Math.Max(2L, (long)((xs - xp) / 0.5));
             for (long j = 0; j <= steps; j++)
             {
                 double x = xs - (xs - xp) * j / steps;
@@ -139,7 +139,7 @@ public static class Propulsion
             {
                 double zt0 = ZAt(a0), zt1 = ZAt(exitX);
                 alleys.Add(PyDict.Of(("id", $"Shaft alley {k + 1}"), ("shaft", sh["id"]), ("x0", exitX), ("x1", a0),
-                    ("y", y), ("base", Py.Max(gr.F("ib"), Py.Min(zt0, zt1) - ALLEY_H / 2)), ("top", Py.Max(zt0, zt1) + ALLEY_H / 2)));
+                    ("y", y), ("base", Math.Max(gr.F("ib"), Math.Min(zt0, zt1) - ALLEY_H / 2)), ("top", Math.Max(zt0, zt1) + ALLEY_H / 2)));
                 shOut["alley"] = ((PyDict)alleys[^1]!)["id"];
             }
         }
@@ -171,7 +171,7 @@ public static class Propulsion
                 double exitX = sh.F("exit_x");
                 if (!(cy0 <= y && y < cy1 && cx0 < x0 && cx1 > exitX))
                     continue;
-                long n = Py.Max(2L, Py.Int((x0 - exitX) / 0.5));
+                long n = Math.Max(2L, (long)((x0 - exitX) / 0.5));
                 bool any = false;
                 for (long k = 0; k <= n; k++)
                 {
@@ -188,9 +188,9 @@ public static class Propulsion
             foreach (PyDict a in tr.L("alleys").Cast<PyDict>())
             {
                 double hw = ALLEY_W / 2;
-                if (Py.Min(cx1, a.F("x1")) - Py.Max(cx0, a.F("x0")) > 0.05 &&
-                    Py.Min(cy1, a.F("y") + hw) - Py.Max(cy0, a.F("y") - hw) > 0.05 &&
-                    Py.Min(ct, a.F("top") - D) - Py.Max(cb, a.F("base") - D) > 0.05)
+                if (Math.Min(cx1, a.F("x1")) - Math.Max(cx0, a.F("x0")) > 0.05 &&
+                    Math.Min(cy1, a.F("y") + hw) - Math.Max(cy0, a.F("y") - hw) > 0.05 &&
+                    Math.Min(ct, a.F("top") - D) - Math.Max(cb, a.F("base") - D) > 0.05)
                     ((List<object?>)c.SetDefault("through", new List<object?>())!).Add(a["id"]);
             }
         }

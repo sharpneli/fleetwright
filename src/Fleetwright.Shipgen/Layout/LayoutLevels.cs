@@ -60,7 +60,7 @@ public sealed partial class Layout
             if ((y0 > y) != (y1 > y))
                 xs.Add(x0 + (y - y0) * (x1 - x0) / (y1 - y0));
         }
-        return xs.Count > 0 ? [(Py.Min(xs) - margin, Py.Max(xs) + margin)] : [];
+        return xs.Count > 0 ? [(xs.Min() - margin, xs.Max() + margin)] : [];
     }
 
     /// <summary>A superstructure level's outline: a room laid out like a deck. See the Python docstring.</summary>
@@ -75,8 +75,8 @@ public sealed partial class Layout
         var sup = new Slabs(support);
         double H = w / 2;
         double st = DH_FIT;
-        int n = (int)Math.Max(1L, Py.Int(Math.Ceiling(H / st - 1e-6)));
-        var ys = Enumerable.Range(0, n + 1).Select(j => Py.Min(H, j * st)).ToList();
+        int n = (int)Math.Max(1L, (long)(Math.Ceiling(H / st - 1e-6)));
+        var ys = Enumerable.Range(0, n + 1).Select(j => Math.Min(H, j * st)).ToList();
         double floor = -0.3 * (x1 - x0);
         var ends = lay.EndMounts;
         var scan = lay.Scan;
@@ -93,20 +93,20 @@ public sealed partial class Layout
             var req = Enumerable.Repeat(floor, n + 1).ToList();
             foreach (var (bx0, by0, bx1, by1) in keep)
             {
-                double far = Py.Max(e * bx0, e * bx1) - uc + 0.3;
+                double far = Math.Max(e * bx0, e * bx1) - uc + 0.3;
                 for (int j = 0; j <= n; j++)
                 {
                     double y = ys[j];
                     if (new[] { 1, -1 }.Any(s => by0 - st <= s * y && s * y <= by1 + st))
-                        req[j] = Py.Max(req[j], far);
+                        req[j] = Math.Max(req[j], far);
                 }
             }
-            cap = Py.Max(cap, Py.Max(req));
+            cap = Math.Max(cap, req.Max());
             double loU = uc + floor, hiU = uc + cap + FP_MARGIN;
 
             bool NearZ(double xa, double xb)
             {
-                double ua = Py.Min(e * xa, e * xb), ub = Py.Max(e * xa, e * xb);
+                double ua = Math.Min(e * xa, e * xb), ub = Math.Max(e * xa, e * xb);
                 return ub > loU && ua < hiU;
             }
 
@@ -120,7 +120,7 @@ public sealed partial class Layout
             var circles = ms.Where(m => NearZ(m.F("x") - rad[m.S("id")], m.F("x") + rad[m.S("id")]))
                 .Select(m => (Cx: m.F("x"), Cy: m.F("y"), R: rad[m.S("id")])).ToList();
             var nearFps = fps.Where(fp => NearZ(fp.BBox.X0 - FP_MARGIN, fp.BBox.X1 + FP_MARGIN)).ToList();
-            if (polys.Count == 0 && circles.Count == 0 && nearFps.Count == 0 && Py.Max(req) <= cap)
+            if (polys.Count == 0 && circles.Count == 0 && nearFps.Count == 0 && req.Max() <= cap)
             {
                 prof[e] = [new(e * (uc + cap), 0.0), new(e * (uc + cap), H)];
                 continue;
@@ -144,7 +144,7 @@ public sealed partial class Layout
                                 if ((py > y) != (qy > y))
                                     xs.Add(px + (y - py) * (qx - px) / (qy - py));
                             }
-                            xs = Py.Sorted(xs);
+                            xs = xs.Order().ToList();
                             sl = [];
                             for (int i = 0; i < xs.Count - 1; i += 2)
                                 sl.Add((xs[i], xs[i + 1]));
@@ -157,7 +157,7 @@ public sealed partial class Layout
                 {
                     if (Math.Abs(y - cy) < r)
                     {
-                        double h = Math.Sqrt(r * r - Py.Pow(y - cy, 2));
+                        double h = Math.Sqrt(r * r - Math.Pow(y - cy, 2));
                         ivs.Add((cx - h, cx + h));
                     }
                 }
@@ -168,22 +168,22 @@ public sealed partial class Layout
                 {
                     if (notches.Any(nt => xa < nt.N1 && nt.N0 < xb && Math.Abs(y) > nt.H - 1e-6))
                         continue;
-                    double ua = Py.Min(e * xa, e * xb), ub = Py.Max(e * xa, e * xb);
+                    double ua = Math.Min(e * xa, e * xb), ub = Math.Max(e * xa, e * xb);
                     if (ub > uc + floor)
-                        d = Py.Min(d, ua - uc - 0.3);
+                        d = Math.Min(d, ua - uc - 0.3);
                 }
-                return Py.Max(floor, d);
+                return Math.Max(floor, d);
             }
 
-            var A = ys.Zip(req).Select(t => Py.Max(Py.Min(Raw(t.First), Raw(-t.First)), t.Second)).ToList();
-            double dIn = Py.Max(floor, Py.Min(A) - st);
-            var dgrid = Py.Range(Py.Int((cap - dIn) / st) + 1).Select(i => dIn + st * i).ToList();
+            var A = ys.Zip(req).Select(t => Math.Max(Math.Min(Raw(t.First), Raw(-t.First)), t.Second)).ToList();
+            double dIn = Math.Max(floor, A.Min() - st);
+            var dgrid = Enumerable.Range(0, Math.Max(0, (int)((cap - dIn) / st) + 1)).Select(i => dIn + st * i).ToList();
             dgrid.Add(cap);
             var hws = new List<double>();
             foreach (var d in dgrid)
             {
                 var spans = sup.At(e * (uc + d));
-                hws.Add(Py.Min(spans.Where(s => s.Lo <= 0 && 0 <= s.Hi).Select(s => Py.Min(-s.Lo, s.Hi)), -1.0));
+                hws.Add(spans.Where(s => s.Lo <= 0 && 0 <= s.Hi).Select(s => Math.Min(-s.Lo, s.Hi)).DefaultIfEmpty(-1.0).Min());
             }
             var E = ys.Select(y =>
             {
@@ -192,15 +192,15 @@ public sealed partial class Layout
                         return dgrid[i];
                 return cap;
             }).ToList();
-            var Aeff = A.Zip(E).Select(t => Py.Min(cap, t.Second <= t.First ? cap : t.First)).ToList();
+            var Aeff = A.Zip(E).Select(t => Math.Min(cap, t.Second <= t.First ? cap : t.First)).ToList();
             (double Score, List<(double Y, double D)> Pts)? best = null;
-            int faceMin = (int)Py.Int(Math.Ceiling(DH_MIN_FACE / 2 / st - 1e-9));
+            int faceMin = (int)(long)(Math.Ceiling(DH_MIN_FACE / 2 / st - 1e-9));
             var iList = new List<int> { 0 };
             for (int i = Math.Max(1, faceMin); i <= n; i++)
                 iList.Add(i);
             foreach (int i in iList)
             {
-                double d0 = Py.Min(Aeff.Take(i + 1));
+                double d0 = Aeff.Take(i + 1).Min();
                 if (req.Take(i + 1).Any(r => r > d0 + 1e-9))
                     continue;
                 double ya = ys[i], d1 = d0, lo = double.NegativeInfinity;
@@ -208,16 +208,16 @@ public sealed partial class Layout
                 {
                     double t = (ys[k] - ya) / (H - ya);
                     if (Aeff[k] < d0)
-                        d1 = Py.Min(d1, d0 - (d0 - Aeff[k]) / t);
+                        d1 = Math.Min(d1, d0 - (d0 - Aeff[k]) / t);
                     if (req[k] > floor)
-                        lo = Py.Max(lo, d0 - (d0 - req[k]) / t);
+                        lo = Math.Max(lo, d0 - (d0 - req[k]) / t);
                 }
                 if (d1 < lo - 1e-9 || d1 < floor)
                     continue;
                 if (d0 - d1 < DH_MIN_DROP && i < n)
                     continue;
                 var f = Enumerable.Range(0, n + 1).Select(k => k <= i ? d0 : d0 - (d0 - d1) * (ys[k] - ya) / (H - ya)).ToList();
-                double area = Py.Sum(Enumerable.Range(0, n + 1).Select(k => Py.Min(f[k], E[k]) * (0 < k && k < n ? st : st / 2)));
+                double area = Enumerable.Range(0, n + 1).Select(k => Math.Min(f[k], E[k]) * (0 < k && k < n ? st : st / 2)).Sum();
                 double score = area - (i < n ? DH_STEP_COST : 0.0);
                 if (best is null || score > best.Value.Score + 1e-6)
                 {
@@ -227,7 +227,7 @@ public sealed partial class Layout
                     best = (score, pts);
                 }
             }
-            best ??= (0.0, [(0.0, Py.Max(req)), (H, Py.Max(req))]);
+            best ??= (0.0, [(0.0, req.Max()), (H, req.Max())]);
             prof[e] = best.Value.Pts.Select(p => new Pt(e * (uc + p.D), p.Y)).ToList();
         }
         var half = prof[1].Concat(Enumerable.Reverse(prof[-1])).ToList();
@@ -244,8 +244,8 @@ public sealed partial class Layout
         flush ??= [];
         if (pts.Count < 3)
             return pts;
-        double w = Py.Max(pts.Select(p => p.Y)) - Py.Min(pts.Select(p => p.Y));
-        double xm = (Py.Min(pts.Select(p => p.X)) + Py.Max(pts.Select(p => p.X))) / 2;
+        double w = pts.Select(p => p.Y).Max() - pts.Select(p => p.Y).Min();
+        double xm = (pts.Select(p => p.X).Min() + pts.Select(p => p.X).Max()) / 2;
         var out_ = new List<Pt>();
         int n = pts.Count;
         for (int i = 0; i < n; i++)
@@ -255,7 +255,7 @@ public sealed partial class Layout
             var c = pts[(i + 1) % n];
             var ua = (X: a.X - b.X, Y: a.Y - b.Y);
             var uc = (X: c.X - b.X, Y: c.Y - b.Y);
-            double la = Py.Hypot(ua.X, ua.Y), lc = Py.Hypot(uc.X, uc.Y);
+            double la = double.Hypot(ua.X, ua.Y), lc = double.Hypot(uc.X, uc.Y);
             if (la < 1e-6 || lc < 1e-6 || Math.Abs(ua.X * uc.X + ua.Y * uc.Y) > 0.5 * la * lc ||
                 flush.Any(xf => Math.Abs(b.X - xf) < 1e-3))
             {
@@ -264,7 +264,7 @@ public sealed partial class Layout
             }
             bool outer = (b.X - xm) * (xm >= 0 ? 1 : -1) > 0;
             var (cap, frac) = outer ? BEVEL_OUTER : (inner ?? BEVEL_INNER);
-            double size = Py.Min(cap, frac * w, 0.4 * la, 0.4 * lc);
+            double size = Math.Min(cap, Math.Min(frac * w, Math.Min(0.4 * la, 0.4 * lc)));
             if (size < 0.25 || keep.Any(k => k.X0 - size < b.X && b.X < k.X1 + size && k.Y0 - size < b.Y && b.Y < k.Y1 + size))
             {
                 out_.Add(b);
@@ -285,7 +285,7 @@ public sealed partial class Layout
     {
         keep ??= [];
         notches ??= [];
-        if (level <= lay.DeckLevels((x0 + x1) / 2, Py.Max(0.0, (x1 - x0) / 2 - 0.75)).Lo)
+        if (level <= lay.DeckLevels((x0 + x1) / 2, Math.Max(0.0, (x1 - x0) / 2 - 0.75)).Lo)
             return null;
         double bse = LEVEL_H * (level - 1), top = LEVEL_H * level;
         var ign = (ignore ?? []).ToList();
@@ -328,15 +328,15 @@ public sealed partial class Layout
             return pts;
         foreach (int s in new[] { 1, -1 })
         {
-            double face = Py.Max(sp.SelectMany(t => new[] { s * t.Lo, s * t.Hi }));
-            double side = Py.Max(own.SelectMany(t => new[] { s * t.Lo, s * t.Hi }));
+            double face = sp.SelectMany(t => new[] { s * t.Lo, s * t.Hi }).Max();
+            double side = own.SelectMany(t => new[] { s * t.Lo, s * t.Hi }).Max();
             if (side - face < DH_SHOULDER_MIN)
                 continue;
-            double run = Py.Min(DH_SHOULDER * (side - face), 0.25 * (Py.Max(xs) - Py.Min(xs)));
+            double run = Math.Min(DH_SHOULDER * (side - face), 0.25 * (xs.Max() - xs.Min()));
             var A = (X: xf, Y: s * face);
             var B = (X: xf - e * run, Y: s * side);
             var d = (X: B.X - A.X, Y: B.Y - A.Y);
-            double nn = Py.Hypot(d.X, d.Y);
+            double nn = double.Hypot(d.X, d.Y);
             d = (d.X / nn, d.Y / nn);
             var nrm = (X: -d.Y, Y: d.X);
             var rf = (X: xf - e * run, Y: 0.0);
@@ -353,27 +353,27 @@ public sealed partial class Layout
     static List<Pt> NotchOutline(List<Pt> pts, IReadOnlyList<(double N0, double N1, double H)> notches)
     {
         var sl = new Slabs(pts);
-        var xsV = Py.Sorted(new HashSet<double>(pts.Select(p => p.X)));
+        var xsV = (new HashSet<double>(pts.Select(p => p.X))).Order().ToList();
         double xa = xsV[0], xb = xsV[^1];
 
-        double Cap(double x) => Py.Min(notches.Select(nt => nt.H + Py.Max(0.0, nt.N0 - x, x - nt.N1)), double.PositiveInfinity);
+        double Cap(double x) => notches.Select(nt => nt.H + Math.Max(0.0, Math.Max(nt.N0 - x, x - nt.N1))).DefaultIfEmpty(double.PositiveInfinity).Min();
 
         (double Lo, double Hi) Span(double x)
         {
-            var sp = sl.At(Py.Min(Py.Max(x, xa + 1e-6), xb - 1e-6));
-            return sp.Count > 0 ? (Py.Min(sp.Select(t => t.Lo)), Py.Max(sp.Select(t => t.Hi))) : (0.0, 0.0);
+            var sp = sl.At(Math.Min(Math.Max(x, xa + 1e-6), xb - 1e-6));
+            return sp.Count > 0 ? (sp.Select(t => t.Lo).Min(), sp.Select(t => t.Hi).Max()) : (0.0, 0.0);
         }
 
         var brk = new HashSet<double>(xsV);
         foreach (var (n0, n1, h) in notches)
         {
             var (lo_, hi_) = Span((n0 + n1) / 2);
-            double reach = Py.Max(hi_, -lo_) - h;
+            double reach = Math.Max(hi_, -lo_) - h;
             brk.UnionWith([n0, n1, n0 - reach, n1 + reach]);
         }
-        var brkL = Py.Sorted(brk.Where(x => xa <= x && x <= xb));
-        double Up(double x) => Py.Min(Span(x).Hi, Cap(x));
-        double Dn(double x) => Py.Max(Span(x).Lo, -Cap(x));
+        var brkL = brk.Where(x => xa <= x && x <= xb).Order().ToList();
+        double Up(double x) => Math.Min(Span(x).Hi, Cap(x));
+        double Dn(double x) => Math.Max(Span(x).Lo, -Cap(x));
         var xs = new List<double>();
         for (int i = 0; i < brkL.Count - 1; i++)
         {
@@ -387,7 +387,7 @@ public sealed partial class Layout
             }
         }
         xs.Add(brkL[^1]);
-        xs = Py.Sorted(new HashSet<double>(xs));
+        xs = (new HashSet<double>(xs)).Order().ToList();
         var top = xs.Select(x => new Pt(x, Up(x))).ToList();
         var bot = Enumerable.Reverse(xs).Select(x => new Pt(x, Dn(x))).ToList();
         if (top.Count == 0)
@@ -405,14 +405,14 @@ public sealed partial class Layout
         if (n <= 1)
             return [];
         var hull = lay.Hull;
-        var cells = Py.Range(Py.Int((x1 - x0) / DH_CELL)).Select(i => x0 + DH_CELL * i).ToList();
+        var cells = Enumerable.Range(0, Math.Max(0, (int)((x1 - x0) / DH_CELL))).Select(i => x0 + DH_CELL * i).ToList();
         var made = new List<PyDict>();
 
         bool Ok(double x, double w, double bse, double top, Func<double, bool>? support)
         {
             if (support != null && !support(x))
                 return false;
-            double hw = Py.Min(hull.HalfWidth(x), hull.HalfWidth(x + DH_CELL)) - 0.6;
+            double hw = Math.Min(hull.HalfWidth(x), hull.HalfWidth(x + DH_CELL)) - 0.6;
             if (w / 2 > hw)
                 return false;
             var fp = Footprint.Rect(x, -w / 2, x + DH_CELL, w / 2);
@@ -449,7 +449,7 @@ public sealed partial class Layout
             Func<double, bool> sup = skip != null ? x => support(x) && !skip(x) : support;
             if (wMax < DH_MIN_W)
                 return ([], 0.0);
-            double Total(List<(double A, double B)> rr) => Py.Sum(rr.Select(r => r.B - r.A));
+            double Total(List<(double A, double B)> rr) => rr.Select(r => r.B - r.A).Sum();
             double floor = Total(Runs(DH_MIN_W, bse, top, sup));
             if (floor <= 0)
                 return ([], 0.0);
@@ -474,9 +474,9 @@ public sealed partial class Layout
                         double g0 = pieces[^1][1];
                         var gap = cells.Where(x => g0 - 1e-6 <= x && x < a - 1e-6).ToList();
                         double wn = lo_ - DH_NOTCH_STEP;
-                        while (wn >= Py.Max(DH_MIN_W, DH_NOTCH_MIN * lo_) && !gap.All(x => Ok(x, wn, bse, top, sup)))
+                        while (wn >= Math.Max(DH_MIN_W, DH_NOTCH_MIN * lo_) && !gap.All(x => Ok(x, wn, bse, top, sup)))
                             wn -= DH_NOTCH_STEP;
-                        if (wn >= Py.Max(DH_MIN_W, DH_NOTCH_MIN * lo_))
+                        if (wn >= Math.Max(DH_MIN_W, DH_NOTCH_MIN * lo_))
                         {
                             pieces[^1][1] = b;
                             notches.Add((g0, a, wn / 2));
@@ -494,7 +494,7 @@ public sealed partial class Layout
                 var shallow = notches.Where(nt => lo / 2 - nt.Item3 < DH_MIN_DROP).Select(nt => 2 * nt.Item3).ToList();
                 if (shallow.Count == 0)
                     break;
-                lo = Py.Min(shallow);
+                lo = shallow.Min();
                 (pieces, notches) = Pieced(lo);
             }
             var towers = blocks.Where(t => Math.Abs(BlockBase(t) - bse) < 1e-6 && Py.Eq(t.Get("kind"), "superstructure")
@@ -505,7 +505,7 @@ public sealed partial class Layout
                 var jAft = towers.FirstOrDefault(t => a - DH_JOIN <= t.F("x1") && t.F("x1") <= a + 1e-6);
                 var jFwd = towers.FirstOrDefault(t => b - 1e-6 <= t.F("x0") && t.F("x0") <= b + DH_JOIN);
                 (a, b) = (jAft != null ? jAft.F("x1") : a, jFwd != null ? jFwd.F("x0") : b);
-                var on_ = Py.MaxByOrDefault(under, u => Py.Min(b, u.F("x1")) - Py.Max(a, u.F("x0")));
+                var on_ = under.MaxBy(u => Math.Min(b, u.F("x1")) - Math.Max(a, u.F("x0")));
                 var mine = notches.Where(nt => a <= nt.Item1 && nt.Item2 <= b).ToList();
                 foreach (var u in under)
                     if (u.Get("_notches") is List<(double, double, double)> un)
@@ -526,7 +526,7 @@ public sealed partial class Layout
         Func<double, bool> On(List<PyDict> bb) => x => bb.Any(b => b.F("x0") <= x && x + DH_CELL <= b.F("x1") + 1e-6);
         var below = baseBlocks.ToList();
         double w = dhW;
-        if (Py.Sum(below.Select(b => b.F("x1") - b.F("x0"))) < 0.5 * (x1 - x0))
+        if (below.Select(b => b.F("x1") - b.F("x0")).Sum() < 0.5 * (x1 - x0))
         {
             var (ext, _) = Level(1, dhW, x => true, skip: On(below));
             below.AddRange(ext);

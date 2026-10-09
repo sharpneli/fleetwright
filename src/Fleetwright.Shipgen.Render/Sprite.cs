@@ -8,7 +8,7 @@ public static class HeightMap
 {
     public const double HEIGHT_STEP_M = 0.25;      // one grey level = 0.25 m; 255 = 63.75 m above the waterline
 
-    public static Rgb Grey(double hM) => Rgb.Grey((int)Py.Max(0L, Py.Min(255L, Py.Round(hM / HEIGHT_STEP_M))));
+    public static Rgb Grey(double hM) => Rgb.Grey((int)Math.Max(0L, Math.Min(255L, (long)Math.Round(hM / HEIGHT_STEP_M))));
 
     /// <summary>The height map from the columns (lowest first, so the taller one wins where they overlap), on the
     /// hull's canvas; hull: the hull as drawn (a look may fill it out). Also returns the tallest column.</summary>
@@ -30,7 +30,7 @@ public static class HeightMap
             };
             o.Add(n.Fill(Grey(c.F("top"))));
         }
-        return (sc, Py.Max(columns.Select(c => c.F("top"))));
+        return (sc, columns.Select(c => c.F("top")).Max());
     }
 }
 
@@ -116,7 +116,7 @@ public sealed class ShipSprites
                 ("rule", "each layer has <name>_mips.png with level k at mip_rects[k] = [x, y, w, h]; " +
                          "within level k, size, origin_px, pivot_px and mount px are the level-0 values / 2^k"))),
             ("shadow", PyDict.Of(("height_map", "height.png"), ("height_step_m", HeightMap.HEIGHT_STEP_M),
-                ("deck_m", Py.Round(deckM, 2)), ("max_height_m", Py.Round(maxH, 2)),
+                ("deck_m", Math.Round(deckM, 2)), ("max_height_m", Math.Round(maxH, 2)),
                 ("note", "height map grey value x height_step_m = metres above the waterline (0 = sea); " +
                          "mount top_m is the turret roof above the waterline; see shadow.py"))),
             ("mounts", new List<object?>()));
@@ -127,7 +127,7 @@ public sealed class ShipSprites
             var md = PyDict.Of(("id", m["id"]), ("kind", lm["kind"]), ("type", m["type"]), ("pos_m", Py.List(m["x"], m["y"])),
                 ("px", Py.List(ox + m.F("x") * S, oy + m.F("y") * S)), ("rest_deg", lm["rest"]),
                 ("arcs_deg", lm["arcs"]), ("traverse_deg", lm["traverse"]), ("z", m["z"]),
-                ("top_m", Py.Round(deckM + lm.F("top"), 2)));
+                ("top_m", Math.Round(deckM + lm.F("top"), 2)));
             if (lm.Has("mount"))
                 md["mount"] = lm["mount"];
             mounts.Add(md);

@@ -12,7 +12,7 @@ public static class TurretArt
     /// least) and the pivot lands exactly at the image centre.</summary>
     public static double Extent(PyDict t, double? scale = null, int align = 2)
     {
-        double half = Py.Max(t.F("r") * 1.15, Geometry.TurretReach(t)) + 1.0;
+        double half = Math.Max(t.F("r") * 1.15, Geometry.TurretReach(t)) + 1.0;
         if (scale is double s && s != 0)
         {
             double a = align / 2.0;
@@ -41,10 +41,10 @@ public static class TurretArt
 
         IEnumerable<(double, double)> Rear(double cx, double rx, double ry, int step) =>
             Enumerable.Range(0, 90 / step + 1).Select(i => i * step)
-                .Select(a => (cx - rx * Math.Sin(Py.Radians(a)), -ry * Math.Cos(Py.Radians(a))));
+                .Select(a => (cx - rx * Math.Sin(double.DegreesToRadians(a)), -ry * Math.Cos(double.DegreesToRadians(a))));
 
         List<Pt> Drum(double cx, double rr) =>
-            [.. Enumerable.Range(0, 36).Select(i => new Pt((cx + rr * Math.Cos(Py.Radians(i * 10))) * r, rr * Math.Sin(Py.Radians(i * 10)) * r))];
+            [.. Enumerable.Range(0, 36).Select(i => new Pt((cx + rr * Math.Cos(double.DegreesToRadians(i * 10))) * r, rr * Math.Sin(double.DegreesToRadians(i * 10)) * r))];
 
         switch (look)
         {
@@ -158,7 +158,7 @@ public static class TurretArt
                     {
                         double cx = -0.05 * r;
                         s.Add(H(new CircleNode(cx, 0, 0.74 * r).Fill(Shade(bodyCol, 0.5))));
-                        double hw = Py.Min(0.6 * r, (n - 1) / 2.0 * sp + 0.35 * r);
+                        double hw = Math.Min(0.6 * r, (n - 1) / 2.0 * sp + 0.35 * r);
                         List<Pt> pear = [new(0.62 * r, -hw * 0.8), new(0.72 * r, 0.0), new(0.62 * r, hw * 0.8), new(0.2 * r, hw),
                             new(-0.45 * r, hw * 0.55), new(-0.6 * r, 0.0), new(-0.45 * r, -hw * 0.55), new(0.2 * r, -hw)];
                         string hoodCol = p.TryGet("turret_hood", out var hc) ? (string)hc! : Shade(bodyCol, 1.35);
@@ -178,7 +178,7 @@ public static class TurretArt
                         s.Add(H(new CircleNode(-0.05 * r, 0, rr * r).Fill(Shade(bodyCol, k))));
                     s.Add(H(new RectNode(-0.05 * r, -0.11 * r, 0.32 * r, 0.22 * r, 0.06 * r).Fill(Shade(bodyCol, 0.75))));
                     for (int a = 0; a < 360; a += 30)   // rivets round the lip
-                        s.Add(new CircleNode((-0.05 + 0.87 * Math.Cos(Py.Radians(a))) * r, 0.87 * Math.Sin(Py.Radians(a)) * r, 0.025 * r)
+                        s.Add(new CircleNode((-0.05 + 0.87 * Math.Cos(double.DegreesToRadians(a))) * r, 0.87 * Math.Sin(double.DegreesToRadians(a)) * r, 0.025 * r)
                             .Fill(Shade(bodyCol, 0.6)));
                     break;
                 case "quadruple":    // the wall between the two halves, a periscope hood over each gun pair

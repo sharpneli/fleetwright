@@ -132,8 +132,8 @@ public static class Clutter
 
     static Box BBox(IReadOnlyList<Pt> pts)
     {
-        var (x0, y0, x1, y1) = (Py.Min(pts.Select(p => p.X)), Py.Min(pts.Select(p => p.Y)), Py.Max(pts.Select(p => p.X)),
-            Py.Max(pts.Select(p => p.Y)));
+        var (x0, y0, x1, y1) = (pts.Select(p => p.X).Min(), pts.Select(p => p.Y).Min(), pts.Select(p => p.X).Max(),
+            pts.Select(p => p.Y).Max());
         return new(x0, y0, x1, y1);
     }
 
@@ -145,8 +145,8 @@ public static class Clutter
     /// <summary>Points over the rectangle r, its corners and edges included.</summary>
     static List<Pt> Samples(Box r, double step = 0.6)
     {
-        long nx = Py.Max(1L, Py.Ceil((r.X1 - r.X0) / step));
-        long ny = Py.Max(1L, Py.Ceil((r.Y1 - r.Y0) / step));
+        long nx = Math.Max(1L, (long)Math.Ceiling((r.X1 - r.X0) / step));
+        long ny = Math.Max(1L, (long)Math.Ceiling((r.Y1 - r.Y0) / step));
         var out_ = new List<Pt>((int)((nx + 1) * (ny + 1)));
         for (long i = 0; i <= nx; i++)
             for (long j = 0; j <= ny; j++)
@@ -159,7 +159,7 @@ public static class Clutter
     public static List<Pt> InsetPolygon(IReadOnlyList<Pt> pts, double d)
     {
         int n = pts.Count;
-        double area2 = Py.Sum(Enumerable.Range(0, n).Select(i => pts[i].X * pts[(i + 1) % n].Y - pts[(i + 1) % n].X * pts[i].Y));
+        double area2 = Enumerable.Range(0, n).Select(i => pts[i].X * pts[(i + 1) % n].Y - pts[(i + 1) % n].X * pts[i].Y).Sum();
         int sgn = area2 > 0 ? 1 : -1;
         var lines = new List<(Pt P, Pt R)>(n);
         for (int i = 0; i < n; i++)
@@ -167,7 +167,7 @@ public static class Clutter
             var (x0, y0) = pts[i];
             var (x1, y1) = pts[(i + 1) % n];
             double dx = x1 - x0, dy = y1 - y0;
-            double ln = Py.Hypot(dx, dy);
+            double ln = double.Hypot(dx, dy);
             if (ln == 0)
                 ln = 1e-9;
             double nx = -dy / ln * sgn, ny = dx / ln * sgn;     // inward normal
@@ -207,7 +207,7 @@ public static class Clutter
         return out_;
     }
 
-    static bool RowInside(double x, List<double> crossings) => (crossings.Count - Py.BisectRight(crossings, x)) % 2 == 1;
+    static bool RowInside(double x, List<double> crossings) => (crossings.Count - crossings.UpperBound(x)) % 2 == 1;
 
     /// <summary>An open roof (a superstructure block) or the deck, as a polygon plus what stands higher on it.</summary>
     sealed class Surface
@@ -302,8 +302,8 @@ public static class Clutter
                 return false;
             foreach (var (cx, cy, cr) in Circles)
             {
-                double dx = Py.Max(g.X0 - cx, 0, cx - g.X1);
-                double dy = Py.Max(g.Y0 - cy, 0, cy - g.Y1);
+                double dx = Math.Max(g.X0 - cx, Math.Max(0, cx - g.X1));
+                double dy = Math.Max(g.Y0 - cy, Math.Max(0, cy - g.Y1));
                 if (dx * dx + dy * dy < cr * cr)
                     return false;
             }
@@ -320,7 +320,7 @@ public static class Clutter
         }
 
         long DeckLevel(double x) =>
-            Py.Max(L(Spec, "raised_decks").Where(rd => rd.F("x0") <= x && x <= rd.F("x1")).Select(rd => rd.I("levels", 1)), 0L);
+            L(Spec, "raised_decks").Where(rd => rd.F("x0") <= x && x <= rd.F("x1")).Select(rd => rd.I("levels", 1)).DefaultIfEmpty(0L).Max();
     }
 
     static IEnumerable<PyDict> L(PyDict spec, string key) => (spec.Get(key) as List<object?> ?? []).Cast<PyDict>();
@@ -339,8 +339,8 @@ public static class Clutter
         // the deck as a polygon a little inside its edge
         const int n = 80;
         var xs = Enumerable.Range(0, n).Select(i => -hull.L / 2 + hull.L * (i + 0.5) / n).ToList();
-        var pts = xs.Select(x => new Pt(x, -Py.Max(0.0, hull.HalfWidth(x) - 0.6))).ToList();
-        pts.AddRange(Enumerable.Reverse(xs).Select(x => new Pt(x, Py.Max(0.0, hull.HalfWidth(x) - 0.6))));
+        var pts = xs.Select(x => new Pt(x, -Math.Max(0.0, hull.HalfWidth(x) - 0.6))).ToList();
+        pts.AddRange(Enumerable.Reverse(xs).Select(x => new Pt(x, Math.Max(0.0, hull.HalfWidth(x) - 0.6))));
         out_.Add(new Surface(pts, 0, "deck"));
         return out_;
     }
@@ -354,7 +354,7 @@ public static class Clutter
         {
             if (Geometry.PolygonYSpan(surf.Inner, xx) is not { } sp)
                 return null;
-            (lo, hi) = first ? (sp.Lo, sp.Hi) : (Py.Max(lo, sp.Lo), Py.Min(hi, sp.Hi));
+            (lo, hi) = first ? (sp.Lo, sp.Hi) : (Math.Max(lo, sp.Lo), Math.Min(hi, sp.Hi));
             first = false;
         }
         if (hi - lo < w)
@@ -362,7 +362,7 @@ public static class Clutter
         bool onCentre = lo + w / 2 <= 0 && 0 <= hi - w / 2;
         if (place == "centre" || (onCentre && rng.Random() < centreP))
             return onCentre ? [0.0] : null;
-        double edge = Py.Min(-lo, hi) - w / 2 - 0.05;
+        double edge = Math.Min(-lo, hi) - w / 2 - 0.05;
         if (place == "edge" || (place == "row" && rng.Random() < 0.5))
             return edge > w / 2 ? [-edge, edge] : null;
         if (edge > w / 2 + MARGIN)   // anywhere across, mirrored
@@ -382,13 +382,13 @@ public static class Clutter
             foreach (double y in ys)
             {
                 foreach (var r in P.Taken)
-                    best = Py.Min(best, Py.Hypot(x - (r.X0 + r.X1) / 2, y - (r.Y0 + r.Y1) / 2));
+                    best = Math.Min(best, double.Hypot(x - (r.X0 + r.X1) / 2, y - (r.Y0 + r.Y1) / 2));
                 foreach (var (cx, cy, cr) in P.Circles)
-                    best = Py.Min(best, Py.Hypot(x - cx, y - cy) - cr);
+                    best = Math.Min(best, double.Hypot(x - cx, y - cy) - cr);
                 if (ys.Length == 2)
-                    best = Py.Min(best, 2 * Math.Abs(y));
+                    best = Math.Min(best, 2 * Math.Abs(y));
                 if (Geometry.PolygonYSpan(surf.Inner, x) is { } sp)
-                    best = Py.Min(best, 2 * Py.Min(y - sp.Lo, sp.Hi - y) + 1.0);
+                    best = Math.Min(best, 2 * Math.Min(y - sp.Lo, sp.Hi - y) + 1.0);
             }
         return best;
     }
@@ -428,7 +428,7 @@ public static class Clutter
             if (it.Near != null && near.Count == 0)
                 continue;
             double want = area / 100.0 * per100 * density;
-            long n = Py.Int(want) + (rng.Random() < want - Py.Int(want) ? 1 : 0);
+            long n = (long)want + (rng.Random() < want - (long)want ? 1 : 0);
             int fails = 0;
             while (n > 0 && fails < 3)
             {
@@ -441,7 +441,7 @@ public static class Clutter
                     if (near.Count > 0)
                     {
                         var (a, b) = rng.Choice(near);
-                        x = rng.Uniform(Py.Max(a, x0), Py.Min(b, x1));
+                        x = rng.Uniform(Math.Max(a, x0), Math.Min(b, x1));
                     }
                     else
                         x = rng.Uniform(x0, x1);
@@ -461,7 +461,7 @@ public static class Clutter
                     fails++;
                     continue;
                 }
-                var best = Py.MaxBy(cands, c => c.Spread);
+                var best = cands.MaxBy(c => c.Spread);
                 P.Taken.AddRange(best.Rs);
                 foreach (var xx in best.Xs)
                     foreach (var y in best.Ys)
@@ -494,7 +494,7 @@ public static class Clutter
                     var sp = new[] { cx - l / 2, cx, cx + l / 2 }.Select(xx => Geometry.PolygonYSpan(surf.Inner, xx)).ToList();
                     if (sp.Any(s => s == null))
                         continue;
-                    double edge = Py.Min(sp.Select(s => Py.Min(-s!.Value.Lo, s.Value.Hi))) - w / 2 - 0.2;
+                    double edge = sp.Select(s => Math.Min(-s!.Value.Lo, s.Value.Hi)).Min() - w / 2 - 0.2;
                     double[] ys;
                     if (row == "outboard")
                     {
@@ -541,7 +541,7 @@ public static class Clutter
             var (x0, y0, x1, y1) = (s.BBox.X0, s.BBox.Y0, s.BBox.X1, s.BBox.Y1);     // a 1 m grid, a row at a time
             var above = P.BlockPolys.Where(b => s.Kind == "deck" || b.Level > s.Level).Select(b => b.Poly).ToList();
             s.Area = 0;
-            long rows = Py.Int(y1 - y0), cols = Py.Int(x1 - x0);
+            long rows = (long)(y1 - y0), cols = (long)(x1 - x0);
             for (long j = 0; j < rows; j++)
             {
                 double y = y0 + 0.5 + j;
@@ -558,8 +558,7 @@ public static class Clutter
         // boats first, on the widest open roofs (the boat deck)
         if (kit.Boats.Length > 0 && !flight)
         {
-            var roofs = Py.Sorted(surfs.Where(s => s.Kind == "roof" && s.BBox.Y1 - s.BBox.Y0 >= BOAT_ROOF_W && s.Area >= 60),
-                s => -s.Area);
+            var roofs = surfs.Where(s => s.Kind == "roof" && s.BBox.Y1 - s.BBox.Y0 >= BOAT_ROOF_W && s.Area >= 60).OrderBy(s => -s.Area).ToList();
             foreach (var s in roofs.Take(1))
                 foreach (var (name, x, y) in PlaceBoats(P, s, kit, rng))
                 {
@@ -576,7 +575,7 @@ public static class Clutter
             if (s.Kind == "roof" && kit.Big.Length > 0 && BigArea(s) > 0)   // the big gear first, then less small gear
             {
                 big = PlaceItems(P, s, kit.Big, density, rng, BigArea(s));
-                area = Py.Max(0.0, area - BIG_SHARE * Py.Sum(big.Select(b => ITEMS[b.Kind].L * ITEMS[b.Kind].W)));
+                area = Math.Max(0.0, area - BIG_SHARE * big.Select(b => ITEMS[b.Kind].L * ITEMS[b.Kind].W).Sum());
             }
             else
                 big = [];
@@ -608,7 +607,7 @@ public static class Clutter
         if (kit.Deck.Any(d => d.Item == "dc_rack") && hull.L < 140 && !flight)   // depth charges at the stern
             foreach (double x in new[] { -hull.L / 2 + 3.0, -hull.L / 2 + 4.5, -hull.L / 2 + 6.0 })
             {
-                double hw = Py.Min(hull.HalfWidth(x - 2.0), hull.HalfWidth(x + 2.0)) - 1.3;
+                double hw = Math.Min(hull.HalfWidth(x - 2.0), hull.HalfWidth(x + 2.0)) - 1.3;
                 var rs = new[] { -1, 1 }.Select(s => Rect(x, s * (hw - 0.6), 4.0, 1.2)).ToList();
                 if (hw > 2 && rs.All(r => P.Free(deck, r)))
                 {
@@ -667,7 +666,7 @@ public static class Clutter
                     o.Add(St(new RectNode(x - l / 2, y - w / 2, l, w, 0.1).Fill(fitting)));
                     o.Add(new RectNode(x - l / 2 + 0.2, y - w / 2 + 0.2, l - 0.4, w / 2 - 0.2).Fill(Shade(glass, 1.15)));
                     o.Add(new RectNode(x - l / 2 + 0.2, y, l - 0.4, w / 2 - 0.2).Fill(glass));
-                    long n = Py.Max(2L, Py.Int(l / 0.6));
+                    long n = Math.Max(2L, (long)(l / 0.6));
                     for (int i = 1; i < n; i++)
                     {
                         double xx = x - l / 2 + l * i / n;
@@ -686,7 +685,7 @@ public static class Clutter
                     o.Add(St(new CircleNode(x, y, r).Fill(fitting)));
                     o.Add(new CircleNode(x, y, r * 0.55).Fill(Shade(fitting, 1.3)));
                     for (int a = 0; a < 360; a += 45)
-                        o.Add(new LineNode(x, y, x + r * Math.Cos(Py.Radians(a)), y + r * Math.Sin(Py.Radians(a)))
+                        o.Add(new LineNode(x, y, x + r * Math.Cos(double.DegreesToRadians(a)), y + r * Math.Sin(double.DegreesToRadians(a)))
                             .Stroke(Shade(fitting, 0.6), P.Sw * 0.7));
                     return;
                 }
@@ -728,7 +727,7 @@ public static class Clutter
                 {
                     double r = l / 2;
                     o.Add(St(new CircleNode(x, y, r).Fill(Shade(surfaceCol, 0.8))));
-                    o.Add(new CircleNode(x, y, r - 0.2).Fill("none").Stroke(P.C("mast"), Py.Max(0.1, P.Sw * 0.8))
+                    o.Add(new CircleNode(x, y, r - 0.2).Fill("none").Stroke(P.C("mast"), Math.Max(0.1, P.Sw * 0.8))
                         .Dash(0.12, 0.9).StrokeOp(0.8));
                     o.Add(P.Ln(new CircleNode(x, y, r * 0.4).Fill(fitting), 0.5));
                     o.Add(new CircleNode(x + r * 0.2, y, r * 0.24).Fill("#d9dccf"));
@@ -807,7 +806,7 @@ public static class Clutter
         for (int i = 1; i < 5; i++)   // thwarts
         {
             double tx = x - l / 2 + l * i / 5;
-            o.Add(new LineNode(tx, y - 0.38 * w, tx, y + 0.38 * w).Stroke(Painter.Shade(col, 0.9), Py.Max(0.15, P.Sw)));
+            o.Add(new LineNode(tx, y - 0.38 * w, tx, y + 0.38 * w).Stroke(Painter.Shade(col, 0.9), Math.Max(0.15, P.Sw)));
         }
         if (it.Nest && kind == "cutter")   // a dinghy stowed inside
         {
@@ -828,9 +827,9 @@ public static class Clutter
         if (areaMin != 0 && Geometry.PolygonArea(pts) >= areaMin)
         {
             var inner = InsetPolygon(pts, 0.7);
-            string col = Painter.Shade(wood, Py.Pow(1.03, lvl));
-            double xmin = Py.Min(inner.Select(q => q.X)), xmax = Py.Max(inner.Select(q => q.X));
-            double ymin = Py.Min(inner.Select(q => q.Y)), ymax = Py.Max(inner.Select(q => q.Y));
+            string col = Painter.Shade(wood, Math.Pow(1.03, lvl));
+            double xmin = inner.Select(q => q.X).Min(), xmax = inner.Select(q => q.X).Max();
+            double ymin = inner.Select(q => q.Y).Min(), ymax = inner.Select(q => q.Y).Max();
             var g = new Group { Clip = [new PathNode(Painter.Poly(inner))] }.Stroke(P.C("deck_line"), P.Sw * 0.6).StrokeOp(0.4);
             double yy = ymin;
             while (yy < ymax)
@@ -850,8 +849,8 @@ public static class Clutter
         if (rails && Geometry.PolygonArea(pts) >= 12.0)
         {
             var rl = Painter.Poly(InsetPolygon(pts, 0.2));
-            o.Add(new PathNode(rl).Fill("none").Stroke(P.C("mast"), Py.Max(0.06, P.Sw * 0.5)).StrokeOp(0.55));
-            o.Add(new PathNode(rl).Fill("none").Stroke(P.C("mast"), Py.Max(0.14, P.Sw * 1.1)).Dash(0.12, 1.4).StrokeOp(0.7));
+            o.Add(new PathNode(rl).Fill("none").Stroke(P.C("mast"), Math.Max(0.06, P.Sw * 0.5)).StrokeOp(0.55));
+            o.Add(new PathNode(rl).Fill("none").Stroke(P.C("mast"), Math.Max(0.14, P.Sw * 1.1)).Dash(0.12, 1.4).StrokeOp(0.7));
         }
     }
 
@@ -868,12 +867,12 @@ public static class Clutter
                     "hull" => Math.Abs(y) <= hull.HalfWidth(x),
                     "polygon" => Geometry.PointInPolygon(x, y, Geometry.Pts(c["points"])),
                     "rect" => c.F("x") <= x && x <= c.F("x") + c.F("w") && c.F("y") <= y && y <= c.F("y") + c.F("h"),
-                    "circle" => Py.Pow(x - c.F("cx"), 2) + Py.Pow(y - c.F("cy"), 2) <= Py.Pow(c.F("r"), 2),
-                    "ellipse" => Py.Pow((x - c.F("cx")) / c.F("rx"), 2) + Py.Pow((y - c.F("cy")) / c.F("ry"), 2) <= 1,
+                    "circle" => Math.Pow(x - c.F("cx"), 2) + Math.Pow(y - c.F("cy"), 2) <= Math.Pow(c.F("r"), 2),
+                    "ellipse" => Math.Pow((x - c.F("cx")) / c.F("rx"), 2) + Math.Pow((y - c.F("cy")) / c.F("ry"), 2) <= 1,
                     _ => false,
                 };
                 if (inside)
-                    best = Py.Max(best, c.F("top"));
+                    best = Math.Max(best, c.F("top"));
             }
             return best;
         }

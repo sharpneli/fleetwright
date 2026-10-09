@@ -7,7 +7,7 @@ public static class Armament
     /// <summary>Radius of the turret body and its ears (not the barrels): its footprint on deck.</summary>
     public static double BodyReach(PyDict t)
     {
-        return Py.Max(t.F("r"), Geometry.TurretReach(t, 0.0));
+        return Math.Max(t.F("r"), Geometry.TurretReach(t, 0.0));
     }
 
     /// <summary>Rest bearing of a side mount at x on `side` (+1 starboard), whose arc is +-half about its own beam.</summary>
@@ -16,7 +16,7 @@ public static class Armament
     /// <summary>Axis-aligned box around a mount's barrels (as shown) trained to `bearing`.</summary>
     public static Footprint BarrelFootprint(PyDict t, double x, double y, double bearing)
     {
-        double c = Math.Cos(Py.Radians(bearing)), s = Math.Sin(Py.Radians(bearing));
+        double c = Math.Cos(double.DegreesToRadians(bearing)), s = Math.Sin(double.DegreesToRadians(bearing));
         double x0 = 0, y0 = 0, x1 = 0, y1 = 0;
         bool first = true;
         foreach (var poly in Geometry.TurretShapesOf(t).Barrels)
@@ -56,7 +56,7 @@ public static class Armament
     /// <summary>Axis-aligned box around a fixed tube laid along `bearing`.</summary>
     static Footprint TubeFootprint(PyDict t, double x, double y, double bearing)
     {
-        double a = Py.Radians(bearing);
+        double a = double.DegreesToRadians(bearing);
         double hl = t.F("barrel_len") / 2 + 0.2, hw = ((t.F("barrels") - 1) * t.F("spacing") + t.F("barrel_w")) / 2 + 0.2;
         double ex = Math.Abs(hl * Math.Cos(a)) + Math.Abs(hw * Math.Sin(a)), ey = Math.Abs(hl * Math.Sin(a)) + Math.Abs(hw * Math.Cos(a));
         return Footprint.Rect(x - ex, y - ey, x + ex, y + ey);
@@ -130,16 +130,16 @@ public static class Armament
             string mid = i < names.Count ? names[i] : $"{names[0]}{i + 1}";
             if (!lay.Free(Footprint.Circle(x, y, reach), 0.4, ignore))
             {
-                lay.Fail("length", $"{label} mount {mid} ({Py.G(gun.F("calibre_mm"))} mm) does not fit at {Py.F(x, 0)} m: " +
+                lay.Fail("length", $"{label} mount {mid} ({gun.F("calibre_mm")} mm) does not fit at {x:F0} m: " +
                                    "the deck is taken there. Use fewer or smaller guns.");
                 continue;
             }
             if (Math.Abs(y) + reach > lay.Hull.HalfWidth(x) + 0.2 && !lay.OnDeck(x, y))
             {
-                lay.Fail("beam", $"{label} mount {mid} ({Py.G(gun.F("calibre_mm"))} mm) is too wide for the hull at {Py.F(x, 0)} m.");
+                lay.Fail("beam", $"{label} mount {mid} ({gun.F("calibre_mm")} mm) is too wide for the hull at {x:F0} m.");
                 continue;
             }
-            long stow = Py.Mod(rest + 180, 360);
+            long stow = (long)Geometry.Normalize360(rest + 180);
             AddMount(lay, mounts, kind, tId, t, mid, x, y, bse, flush ? stow : rest, level, armourMm ?? 0.0, depth,
                 extra: battery != null ? [("battery", battery)] : null);
             if (flush)
@@ -232,11 +232,11 @@ public static class Armament
             var (tId, t) = GunType(b);
             turretTypes[tId] = t;
             long count = Py.ToLong(b["count"]);
-            long nEnd = Py.Eq(b["where"], "ends") ? count : Py.Mod(count, 2);
-            long nSide = Py.Eq(b["where"], "ends") ? 0 : Py.FloorDiv(count, 2);
+            long nEnd = Py.Eq(b["where"], "ends") ? count : count % 2;
+            long nSide = Py.Eq(b["where"], "ends") ? 0 : count / 2;
             if (nEnd != 0 && endLines.Count == 0)
             {
-                lay.Fail(null, $"No end positions for {nEnd} {Py.G(b.F("calibre_mm"))} mm mount(s): give them in pairs.");
+                lay.Fail(null, $"No end positions for {nEnd} {b.F("calibre_mm")} mm mount(s): give them in pairs.");
                 nEnd = 0;
             }
             long made = 0;
@@ -270,7 +270,7 @@ public static class Armament
     {
         var (tId, t) = TorpedoType(tp, true);
         turretTypes[tId] = t;
-        long want = Py.FloorDiv(Py.ToLong(tp["mounts"]) + 1, 2);
+        long want = (Py.ToLong(tp["mounts"]) + 1) / 2;
         long placed = 0;
         foreach (var x in xs)
         {
@@ -304,11 +304,11 @@ public static class Armament
 
         void File(Footprint fp)
         {
-            long c = Py.Floor(fp.X / AA_CELL);
+            long c = (long)Math.Floor(fp.X / AA_CELL);
             if (!grid.TryGetValue(c, out var l))
                 grid[c] = l = [];
             l.Add(fp);
-            rMax = Py.Max(rMax, fp.R);
+            rMax = Math.Max(rMax, fp.R);
         }
 
         foreach (var a in aaOut)
@@ -317,7 +317,7 @@ public static class Armament
         IEnumerable<Footprint> Near(Footprint fp)
         {
             double reach = fp.R + rMax + sp;
-            for (long c = Py.Floor((fp.X - reach) / AA_CELL); c <= Py.Floor((fp.X + reach) / AA_CELL); c++)
+            for (long c = (long)Math.Floor((fp.X - reach) / AA_CELL); c <= (long)Math.Floor((fp.X + reach) / AA_CELL); c++)
                 if (grid.TryGetValue(c, out var l))
                     foreach (var o in l)
                         yield return o;

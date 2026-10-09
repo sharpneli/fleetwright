@@ -8,7 +8,7 @@ public sealed partial class Layout
     public static double BlockBase(PyDict b) => b.F("z0", 0.0) + LEVEL_H * (b.F("level") - 1);
     public static double BlockTop(PyDict b) => b.F("z0", 0.0) + LEVEL_H * b.F("level");
 
-    public static double Clamp(double v, double lo, double hi) => Py.Max(lo, Py.Min(hi, v));
+    public static double Clamp(double v, double lo, double hi) => Math.Max(lo, Math.Min(hi, v));
 
     /// <summary>Superstructure block standing on z0: footprint, weight, record. points: an outline polygon instead of
     /// the rounded rectangle; x0, x1, y and w then become its bounding box, and rf, rb are 0.</summary>
@@ -21,10 +21,10 @@ public sealed partial class Layout
         List<Pt>? pts = null;
         if (points != null && points.Count > 0)
         {
-            pts = points.Select(p => new Pt(Py.Round(p.X, 3), Py.Round(p.Y, 3))).ToList();
-            x0 = Py.Min(pts.Select(p => p.X));
-            x1 = Py.Max(pts.Select(p => p.X));
-            double y0 = Py.Min(pts.Select(p => p.Y)), y1 = Py.Max(pts.Select(p => p.Y));
+            pts = points.Select(p => new Pt(Math.Round(p.X, 3), Math.Round(p.Y, 3))).ToList();
+            x0 = pts.Select(p => p.X).Min();
+            x1 = pts.Select(p => p.X).Max();
+            double y0 = pts.Select(p => p.Y).Min(), y1 = pts.Select(p => p.Y).Max();
             (y, w, rf, rb) = ((y0 + y1) / 2, y1 - y0, 0.0, 0.0);
         }
         var (rf_, rb_) = Geometry.RrectClamped(x0, y - w / 2, x1, y + w / 2, rf, rb);
@@ -36,7 +36,7 @@ public sealed partial class Layout
         if (pts != null)
         {
             (area, xc) = Geometry.PolygonCentroid(pts);
-            b.Update(("points", pts), ("area", Py.Round(area, 2)));
+            b.Update(("points", pts), ("area", Math.Round(area, 2)));
         }
         else
             (area, xc) = ((x1 - x0) * w, (x0 + x1) / 2);
@@ -61,13 +61,13 @@ public sealed partial class Layout
     public static double BlockPlating(Layout lay, PyDict b)
     {
         double own = HullWeight.SUP_PLATE_K * OwnPlateMm(lay);
-        double mm = Py.Max(own, lay.SupPlate.Plating);
+        double mm = Math.Max(own, lay.SupPlate.Plating);
         if (Py.In(b["role"], "bridge", "aft_control"))
-            mm = Py.Max(mm, lay.SupPlate.Control);
-        b["_plate_mm"] = Py.Round(mm, 1);
+            mm = Math.Max(mm, lay.SupPlate.Control);
+        b["_plate_mm"] = Math.Round(mm, 1);
         var pts = Geometry.BlockOutline(b);
         int n = pts.Count;
-        double perim = Py.Sum(Enumerable.Range(0, n).Select(i => Py.Dist(pts[(i - 1 + n) % n].X, pts[(i - 1 + n) % n].Y, pts[i].X, pts[i].Y)));
+        double perim = Enumerable.Range(0, n).Select(i => double.Hypot(pts[(i - 1 + n) % n].X - pts[i].X, pts[(i - 1 + n) % n].Y - pts[i].Y)).Sum();
         return HullWeight.ExtraPlateT(perim * (BlockTop(b) - BlockBase(b)), mm, own);
     }
 
@@ -116,8 +116,8 @@ public sealed partial class Layout
         var set = new HashSet<double> { -L / 2, L / 2 };
         foreach (var (a, b, _) in spans)
             foreach (var x in new[] { a, b })
-                set.Add(Py.Min(L / 2, Py.Max(-L / 2, x)));
-        var xs = Py.Sorted(set);
+                set.Add(Math.Min(L / 2, Math.Max(-L / 2, x)));
+        var xs = set.Order().ToList();
         var segs = new List<(double A, double B, long Lv)>();
         for (int i = 0; i < xs.Count - 1; i++)
         {
@@ -125,7 +125,7 @@ public sealed partial class Layout
             if (b - a < 1e-6)
                 continue;
             double m = (a + b) / 2;
-            long lv = Py.Max(spans.Where(s => s.X0 <= m && m <= s.X1).Select(s => s.N), 0L);
+            long lv = spans.Where(s => s.X0 <= m && m <= s.X1).Select(s => s.N).DefaultIfEmpty(0L).Max();
             if (segs.Count > 0 && segs[^1].Lv == lv)
                 segs[^1] = (segs[^1].A, b, lv);
             else
@@ -208,7 +208,7 @@ public sealed partial class Layout
                 xs.Add((bx0 + bx1) / 2);
             else
             {
-                long n = Py.Int((bx1 - bx0 - l) / step);
+                long n = (long)((bx1 - bx0 - l) / step);
                 for (long k = 0; k <= n; k++)
                     xs.Add(bx0 + l / 2 + k * step);
             }
@@ -290,7 +290,7 @@ public sealed partial class Layout
 
         public Slabs(IReadOnlyList<Pt> pts)
         {
-            xs = Py.Sorted(new HashSet<double>(pts.Select(p => p.X)));
+            xs = (new HashSet<double>(pts.Select(p => p.X))).Order().ToList();
             int n = pts.Count;
             var edges = new List<(double, double, double, double)>();
             for (int i = 0; i < n; i++)
@@ -303,8 +303,7 @@ public sealed partial class Layout
             for (int i = 0; i < xs.Count - 1; i++)
             {
                 double m = (xs[i] + xs[i + 1]) / 2;
-                slabs.Add(Py.Sorted(edges.Where(e => (e.Item1 > m) != (e.Item3 > m)),
-                    e => e.Item2 + (m - e.Item1) * (e.Item4 - e.Item2) / (e.Item3 - e.Item1)));
+                slabs.Add(edges.Where(e => (e.Item1 > m) != (e.Item3 > m)).OrderBy(e => e.Item2 + (m - e.Item1) * (e.Item4 - e.Item2) / (e.Item3 - e.Item1)).ToList());
             }
         }
 
@@ -320,7 +319,7 @@ public sealed partial class Layout
         public void At(double x, List<(double Lo, double Hi)> out_)
         {
             out_.Clear();
-            int i = Py.BisectRight(xs, x) - 1;
+            int i = xs.UpperBound(x) - 1;
             if (i < 0 || i >= slabs.Count)
                 return;
             var es = slabs[i];
@@ -340,7 +339,7 @@ public sealed partial class Layout
     {
         int legs = m.B("tripod") ? 3 : 1;
         double h = top - bse;
-        lay.Weights.Add(new Weight(name, "superstructure", legs * MAST_T_K * Py.Pow(h, 2), m.F("x"), ZRel.Deck(bse + h / 2)));
+        lay.Weights.Add(new Weight(name, "superstructure", legs * MAST_T_K * Math.Pow(h, 2), m.F("x"), ZRel.Deck(bse + h / 2)));
     }
 
     static readonly double[] AA_ROOF_PEN = [0.05, 0.05, 0.0, 0.0, 0.03];
@@ -362,7 +361,7 @@ public sealed partial class Layout
                 continue;
             string kind = Py.Eq(s.Get("mount"), "casemate") ? "casemate" : "auto";
             var t = Geometry.BatteryType(s, kind).T;
-            foreach (var (grp, pairs) in new[] { ("fore", Py.FloorDiv(n + 1, 2)), ("aft", Py.FloorDiv(n, 2)) })
+            foreach (var (grp, pairs) in new[] { ("fore", (n + 1) / 2), ("aft", n / 2) })
                 if (pairs != 0)
                     out_[grp].Add((Batteries.BatteryPrefix(k), 2 * pairs, Ordnance.AmmoM3(t)));
         }
@@ -374,7 +373,7 @@ public sealed partial class Layout
     {
         groups ??= [];
         var plan = lay.Geo.Plant ?? new PyDict();
-        double ghw = plan.B("wing_m") ? plan.F("width") / 2 : Py.Min(innerHw, plan.F("width", 2 * innerHw) / 2);
+        double ghw = plan.B("wing_m") ? plan.F("width") / 2 : Math.Min(innerHw, plan.F("width", 2 * innerHw) / 2);
         var zones = new List<PyDict>();
         var batteries = new OrderedDictionary<string, List<PyDict>>(StringComparer.Ordinal);
         foreach (var m in mounts)
@@ -394,7 +393,7 @@ public sealed partial class Layout
         var rooms = new Dictionary<string, List<object?>> { ["fore"] = [], ["aft"] = [] };
         foreach (var (bat, ms) in batteries)
         {
-            var pairs = Py.Sorted(new HashSet<double>(ms.Select(m => m.F("x"))), reverse: true);
+            var pairs = (new HashSet<double>(ms.Select(m => m.F("x")))).OrderDescending().ToList();
             int nFore = pairs.Count;
             if (ms[0].B("wing"))
                 nFore = Py.Eq(ms[0]["magazine_end"], "fore") ? pairs.Count : 0;
@@ -428,7 +427,7 @@ public sealed partial class Layout
         bool armoured = Py.Truthy(ag["armoured"]);
         double top = ag["roof_z"] is not null ? ag.F("roof_z") : D;
         double db = Powerplant.DoubleBottom(D);
-        double h = Py.Max(1.0, top - db);
+        double h = Math.Max(1.0, top - db);
         var sp = Powerplant.Space(p, res.PowerShp, w, h);
         double cb = design.D("hull").F("block_coefficient");
         var (wingT, end) = Powerplant.Bunkers(p, res.Fuel, sp.F("length"), w, h, hull.L, hull.B, cb, D, T, tds);
@@ -442,14 +441,14 @@ public sealed partial class Layout
         if (!Py.Truthy(sp["fits"]))
         {
             var unit = (object?[])sp["unit"]!;
-            lay.Fail("beam", $"The plant's units are {Py.F(unit[1], 1)} m wide, but the machinery space is only " +
-                             $"{Py.F(Py.Max(w, 0.0), 1)} m across. Use more shafts (smaller units) or less side protection.");
+            lay.Fail("beam", $"The plant's units are {unit[1]:F1} m wide, but the machinery space is only " +
+                             $"{Math.Max(w, 0.0):F1} m across. Use more shafts (smaller units) or less side protection.");
         }
         lay.Geo.Plant = PyDict.Of(("fuel", p.D("tech")["fuel"]), ("space", sp),
             ("segments", segs.Select(s => (object?)new object?[] { s.Kind, s.Len }).ToList()), ("wing_t", wingT), ("wing_m", wing),
             ("end_m", end), ("width", w), ("height", h), ("inner_bottom", db), ("top", top), ("armoured", armoured),
             ("deck_mm", ag["roof_mm"]), ("tds", tds), ("decks", Shipgen.Decks.DeckStack(design, D).Select(s => (object?)s.Z).ToList()));
-        return Py.Sum(segs.Select(s => s.Len));
+        return segs.Select(s => s.Len).Sum();
     }
 
     /// <summary>The plan's segments as (kind, length).</summary>
@@ -478,19 +477,19 @@ public sealed partial class Layout
         var names = new Dictionary<string, string> { ["boiler"] = "Boiler room", ["engine"] = "Engine room", ["bunker"] = "Bunker" };
         var count = new Dictionary<string, int> { ["boiler"] = 0, ["engine"] = 0, ["bunker"] = 0 };
         var rooms = new List<PyDict>();
-        double maxRoom = Py.Max(6.0, 0.07 * lay.Hull.L);
+        double maxRoom = Math.Max(6.0, 0.07 * lay.Hull.L);
         var segRooms = new Dictionary<long, List<object?>>();
         for (int si = 0; si < placed.Count; si++)
         {
             var (kind, x0, x1) = placed[si];
-            long n = Py.Max(1L, Py.Ceil((x1 - x0) / maxRoom - 1e-9));
+            long n = Math.Max(1L, (long)Math.Ceiling((x1 - x0) / maxRoom - 1e-9));
             for (long k = 0; k < n; k++)
             {
                 count[kind] += 1;
                 double a = x1 - (k + 1) * (x1 - x0) / n, b = x1 - k * (x1 - x0) / n;
                 var c = PyDict.Of(("id", $"{names[kind]} {count[kind]}"), ("kind", kind != "bunker" ? $"{kind}_room" : "bunker"),
                     ("x0", a), ("x1", b),
-                    ("half_width", plan.B("wing_m") ? plan.F("width") / 2 : Py.Min(innerHw, plan.F("width") / 2)));
+                    ("half_width", plan.B("wing_m") ? plan.F("width") / 2 : Math.Min(innerHw, plan.F("width") / 2)));
                 if (kind == "bunker")
                     c["fuel"] = fuel;
                 rooms.Add(c);
@@ -500,7 +499,7 @@ public sealed partial class Layout
             }
         }
         lay.Compartments.AddRange(rooms);
-        double mx0 = Py.Min(placed.Select(s => s.X0)), mx1 = Py.Max(placed.Select(s => s.X1));
+        double mx0 = placed.Select(s => s.X0).Min(), mx1 = placed.Select(s => s.X1).Max();
         if (plan.F("wing_m") > 0)
         {
             double y = plan.F("width") / 2 + plan.F("wing_m") / 2;
@@ -510,7 +509,7 @@ public sealed partial class Layout
                 lay.Compartments.Add(PyDict.Of(("id", $"Wing bunker {sd}"), ("kind", "bunker"), ("fuel", fuel),
                     ("per_section", $"Wing bunker {{}} {sd}"), ("x0", mx0), ("x1", mx1), ("y", side * y),
                     ("half_width", plan.F("wing_m") / 2), ("base", plan.F("inner_bottom") - depth), ("top", 0.0),
-                    ("tonnes", Py.Round(plan.F("wing_t") / 2, 1))));
+                    ("tonnes", Math.Round(plan.F("wing_t") / 2, 1))));
             }
         }
         var sp = plan.D("space");
@@ -520,7 +519,7 @@ public sealed partial class Layout
             if (engines.Count == 0)
                 engines = placed;
             var unit = (object?[])sp["unit"]!;
-            double cw = sp.I("rows") != 0 ? Py.Min(plan.F("width"), sp.I("rows") * (Py.ToDouble(unit[1]) + 0.8)) : plan.F("width");
+            double cw = sp.I("rows") != 0 ? Math.Min(plan.F("width"), sp.I("rows") * (Py.ToDouble(unit[1]) + 0.8)) : plan.F("width");
             double top = plan.F("inner_bottom") + Py.ToDouble(unit[2]) - depth;
             lay.Casings = engines.Select((e, i) => PyDict.Of(("id", $"Machinery casing {i + 1}"), ("x0", e.X0), ("x1", e.X1),
                 ("w", cw), ("base", plan.F("top") - depth), ("top", top),
@@ -552,7 +551,7 @@ public sealed partial class Layout
         long n = Math.Max(0, k - TOWER_TAPER_FROM);
         if (n == 0)
             return (1.0, 1.0);
-        return (Py.Max(TOWER_MIN_W, Py.Pow(1 - TOWER_TAPER_W, n)), Py.Max(TOWER_MIN_L, Py.Pow(1 - TOWER_TAPER_L, n)));
+        return (Math.Max(TOWER_MIN_W, Math.Pow(1 - TOWER_TAPER_W, n)), Math.Max(TOWER_MIN_L, Math.Pow(1 - TOWER_TAPER_L, n)));
     }
 
     /// <summary>The lowest level the navigating bridge can stand at (2 at least) to see over a turret roof this high.</summary>
@@ -560,7 +559,7 @@ public sealed partial class Layout
     {
         if (roof is null)
             return 2;
-        return Math.Max(2L, Py.Ceil((roof.Value + BRIDGE_CLEAR) / LEVEL_H - 1e-9) + 1);
+        return Math.Max(2L, (long)Math.Ceiling((roof.Value + BRIDGE_CLEAR) / LEVEL_H - 1e-9) + 1);
     }
 
     /// <summary>Funnel count and size for the planned machinery, with funnel tops `top` above the main deck.</summary>
@@ -577,8 +576,8 @@ public sealed partial class Layout
         lay.Geo.FunnelPlan = fp;
         long total = fp.L("counts").Sum(c => Py.ToLong(c));
         if (Py.Truthy(fp.Get("needed")))
-            lay.Warnings.Add($"The plant's gas needs {Py.Comma(fp.I("needed"))} funnels; it gets {total}, with the gas " +
-                             $"at {Py.F(fp.F("velocity"), 0)} m/s.");
+            lay.Warnings.Add($"The plant's gas needs {fp.I("needed"):N0} funnels; it gets {total}, with the gas " +
+                             $"at {fp.F("velocity"):F0} m/s.");
         lay.Geo.SmokeReach = Powerplant.SmokeReach(res.Plant, res.PowerShp);
         return (total, fp.F("width"), fp.F("length"));
     }
@@ -587,8 +586,7 @@ public sealed partial class Layout
     public static int BoilerSeg(Layout lay)
     {
         var segs = PlanSegments(lay.Geo.Plant!);
-        return Py.MaxBy(Enumerable.Range(0, segs.Count),
-            i => (segs[i].Kind == "boiler" ? 1 : 0, segs[i].Kind == "engine" ? 1 : 0, segs[i].Len));
+        return Enumerable.Range(0, segs.Count).MaxBy(i => (segs[i].Kind == "boiler" ? 1 : 0, segs[i].Kind == "engine" ? 1 : 0, segs[i].Len));
     }
 
     /// <summary>The machinery segment funnel i serves where the funnels stand together (merchants, carriers).</summary>
@@ -615,7 +613,7 @@ public sealed partial class Layout
         var plant = lay.Geo.Plant!;
         var sp = plant.D("space");
         double z0 = f.F("z0", 0.0);
-        double vert = Py.Max(1.0, depth - (plant.F("inner_bottom") + Py.ToDouble(((object?[])sp["unit"]!)[2]))) + z0;
+        double vert = Math.Max(1.0, depth - (plant.F("inner_bottom") + Py.ToDouble(((object?[])sp["unit"]!)[2]))) + z0;
         double horiz = Math.Abs(f.F("x") - servedX);
         var (wF, wU) = Powerplant.FunnelWeight(f.F("w"), f.F("l"), top - z0, vert, horiz);
         lay.Weights.Add(new Weight(f.S("id"), "superstructure", wF, f.F("x"), ZRel.Deck((z0 + top) / 2)));
@@ -637,7 +635,7 @@ public sealed partial class Layout
             var pts = Footprint.Rect(f.F("x") - f.F("l") / 2, f.F("y") - f.F("w") / 2, f.F("x") + f.F("l") / 2, f.F("y") + f.F("w") / 2).Points();
             foreach (var b in blocks)
                 if (b.B("points") && Geometry.PolygonsIntersect(Geometry.Pts(b["points"]), pts))
-                    nw = Py.Max(nw, BlockTop(b) + FUNNEL_ABOVE);
+                    nw = Math.Max(nw, BlockTop(b) + FUNNEL_ABOVE);
         }
         if (nw <= top + 1e-6)
             return top;
@@ -668,12 +666,12 @@ public sealed partial class Layout
     /// <summary>Bow and stern tapers for a deck of size_m2 (L x B) whose plan fills cwp(cb) + flare of its box.</summary>
     public static PyDict Planform(double cb, double sizeM2)
     {
-        double s = Py.Min(1.0, Py.Max(0.0, (sizeM2 - PLAN_SIZE.Lo) / (PLAN_SIZE.Hi - PLAN_SIZE.Lo)));
-        var large = new Dictionary<string, double>(LARGE) { ["mid"] = Py.Min(0.4, Py.Max(0.0, (cb - 0.5) * MIDBODY_K)) };
+        double s = Math.Min(1.0, Math.Max(0.0, (sizeM2 - PLAN_SIZE.Lo) / (PLAN_SIZE.Hi - PLAN_SIZE.Lo)));
+        var large = new Dictionary<string, double>(LARGE) { ["mid"] = Math.Min(0.4, Math.Max(0.0, (cb - 0.5) * MIDBODY_K)) };
         var k = SMALL.ToDictionary(kv => kv.K, kv => kv.V + (large[kv.K] - kv.V) * s);
         double mid = k["mid"], transom = k["transom"];
         double bt = (1 - mid) * k["bow_share"], st = (1 - mid) * (1 - k["bow_share"]);
-        double target = Py.Min(0.97, Geometry.Cwp(cb) + k["flare"]);
+        double target = Math.Min(0.97, Geometry.Cwp(cb) + k["flare"]);
         double Fill(double p) => mid + bt * Hull.EndFill(p, "pointed") + st * (transom + (1 - transom) * Hull.EndFill(p, "round"));
         double lo = 1.05, hi = 12.0;
         for (int i = 0; i < 30; i++)
@@ -708,7 +706,7 @@ public sealed partial class Layout
             ("half_width", halfWidth ?? Propulsion.STEERING.Hw * B));
         lay.Compartments.Add(room);
         lay.Geo.Steering = (a, b);
-        lay.Geo.SteeringBeam = 2 * Py.Sum(Enumerable.Range(0, 8).Select(k => lay.Hull.HalfWidth(a + (b - a) * (k + 0.5) / 8))) / 8;
+        lay.Geo.SteeringBeam = 2 * Enumerable.Range(0, 8).Select(k => lay.Hull.HalfWidth(a + (b - a) * (k + 0.5) / 8)).Sum() / 8;
         return room;
     }
 
@@ -717,7 +715,7 @@ public sealed partial class Layout
     /// <summary>Each mount's z, the draw order: its rank by base height (equal keys share a z).</summary>
     static void DrawOrder(List<PyDict> mounts)
     {
-        (double, int) Key(PyDict m) => (Py.Round(m.F("base"), 3), DRAW_KIND.TryGetValue(m.S("kind"), out var k) ? k : 0);
+        (double, int) Key(PyDict m) => (Math.Round(m.F("base"), 3), DRAW_KIND.TryGetValue(m.S("kind"), out var k) ? k : 0);
         var keys = mounts.Select(Key).Distinct().ToList();
         keys.Sort();
         var rank = keys.Select((k, i) => (k, i)).ToDictionary(t => t.k, t => (long)t.i);
@@ -767,9 +765,9 @@ public sealed partial class Layout
         {
             if (z1 <= z0 || x1 <= x0)
                 return;
-            for (long i = Py.Int(Math.Floor(x0 / WIND_COL)); i < Py.Int(Math.Ceiling(x1 / WIND_COL)); i++)
+            for (long i = (long)(Math.Floor(x0 / WIND_COL)); i < (long)(Math.Ceiling(x1 / WIND_COL)); i++)
             {
-                double f = (Py.Min(x1, (i + 1) * WIND_COL) - Py.Max(x0, i * WIND_COL)) / WIND_COL;
+                double f = (Math.Min(x1, (i + 1) * WIND_COL) - Math.Max(x0, i * WIND_COL)) / WIND_COL;
                 if (!cols.TryGetValue(i, out var l))
                     cols[i] = l = [];
                 l.Add((z0, z1, f));
@@ -781,7 +779,7 @@ public sealed partial class Layout
         foreach (var dk in lay.Decks)
         {
             var xs = Geometry.Pts(dk["points"]).Select(p => p.X).ToList();
-            Add(Py.Min(xs), Py.Max(xs), 0.0, dk.F("top"));
+            Add(xs.Min(), xs.Max(), 0.0, dk.F("top"));
         }
         foreach (var f in funnels)
             Add(f.F("x") - f.F("l") / 2, f.F("x") + f.F("l") / 2, f.F("z0", 0.0), funTop);
@@ -838,7 +836,7 @@ public sealed partial class Layout
         if (sf is true)
             return (nf, na);
         if (sf is false)
-            return (Py.Min(nf, 1), Py.Min(na, 1));
+            return (Math.Min(nf, 1), Math.Min(na, 1));
         var d = (PyDict)sf!;
         return (d.F("fore", nf), d.F("aft", na));
     }
@@ -847,14 +845,14 @@ public sealed partial class Layout
     public static object? StandsOn(PyDict spec, string key = "stands_on") => spec.Get(key, "deck");
 
     /// <summary>superstructure.deckhouse_levels (1 when the design gives none).</summary>
-    static long DeckhouseLevels(PyDict design) => Py.Int(design.DOr("superstructure").F("deckhouse_levels", 1));
+    static long DeckhouseLevels(PyDict design) => (long)(design.DOr("superstructure").F("deckhouse_levels", 1));
 
     /// <summary>superstructure.tower_levels: the bridge tower's top level; default when the design gives none.</summary>
-    public static long TowerLevels(PyDict design, long def) => Py.Int(design.DOr("superstructure").F("tower_levels", def));
+    public static long TowerLevels(PyDict design, long def) => (long)(design.DOr("superstructure").F("tower_levels", def));
 
     /// <summary>superstructure.aft_control (on by default).</summary>
     static bool AftControl(PyDict design) => Py.Truthy(design.DOr("superstructure").Get("aft_control", true));
 
     /// <summary>superstructure.levels_over_bridge (1 by default).</summary>
-    static long LevelsOverBridge(PyDict design) => Py.Int(design.DOr("superstructure").F("levels_over_bridge", 1));
+    static long LevelsOverBridge(PyDict design) => (long)(design.DOr("superstructure").F("levels_over_bridge", 1));
 }

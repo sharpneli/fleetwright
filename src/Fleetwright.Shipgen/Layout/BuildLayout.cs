@@ -37,8 +37,8 @@ public sealed partial class Layout
         double lb = Clamp(0.05 * L + 2, 7, 18);
         double la = AftControl(design) ? 0.045 * L + 2 : 0.0;
         var raisedIn = (design.DOr("hull").Or("raised", null) as List<object?> ?? []).Cast<PyDict>().ToList();
-        double fwdDeck = LEVEL_H * Py.Max(raisedIn.Where(q => RaisedCovers(q, "fore_group")).Select(q => q.F("decks")), 0.0);
-        double aftDeck = LEVEL_H * Py.Max(raisedIn.Where(q => RaisedCovers(q, "aft_group")).Select(q => q.F("decks")), 0.0);
+        double fwdDeck = LEVEL_H * raisedIn.Where(q => RaisedCovers(q, "fore_group")).Select(q => q.F("decks")).DefaultIfEmpty(0.0).Max();
+        double aftDeck = LEVEL_H * raisedIn.Where(q => RaisedCovers(q, "aft_group")).Select(q => q.F("decks")).DefaultIfEmpty(0.0).Max();
         int? fwdTier = nf != 0 ? Math.Min(nf, Math.Max(nStepF, 1)) - 1 : null;
         double? fwdRoof = fwdTier is int ft ? fwdDeck + 1.2 + TierSteps(F, ft) + F[ft].Th : null;
         long nbNeed = BridgeLevel(fwdRoof);
@@ -49,8 +49,8 @@ public sealed partial class Layout
         long nb = Math.Min(nTower, Math.Max(nbNeed, nTower - over));
         if (nb < nbNeed)
             lay.Warnings.Add(
-                $"The bridge (level {nb}, its deck {Py.F(LEVEL_H * (nb - 1), 1)} m above the main deck) cannot see over " +
-                $"turret {TurretName("ABC", fwdTier!.Value)}'s roof ({Py.F(fwdRoof!.Value, 1)} m): superstructure.tower_levels " +
+                $"The bridge (level {nb}, its deck {LEVEL_H * (nb - 1):F1} m above the main deck) cannot see over " +
+                $"turret {TurretName("ABC", fwdTier!.Value)}'s roof ({fwdRoof!.Value:F1} m): superstructure.tower_levels " +
                 $"{nbNeed} or more lifts it clear.");
         lay.Geo.Bridge = PyDict.Of(("level", nb), ("floor", LEVEL_H * (nb - 1)), ("need", nbNeed), ("tower", nTower),
             ("turret_roof", fwdRoof));
@@ -92,7 +92,7 @@ public sealed partial class Layout
 
         List<int> SpreadOver(List<int> cands, int n)
         {
-            var set = new SortedSet<int>(Enumerable.Range(0, n).Select(k => cands[Math.Min(cands.Count - 1, (int)Py.Int((k + 0.5) * cands.Count / n))]));
+            var set = new SortedSet<int>(Enumerable.Range(0, n).Select(k => cands[Math.Min(cands.Count - 1, (int)(long)((k + 0.5) * cands.Count / n))]));
             var out_ = set.ToList();
             foreach (var c in cands)
             {
@@ -109,7 +109,7 @@ public sealed partial class Layout
 
         while (Candidates().Count < nGaps)
         {
-            int i = Py.MaxBy(Enumerable.Range(0, segs.Count).Where(i => segs[i].Kind == mainKind), i => segs[i].Len);
+            int i = Enumerable.Range(0, segs.Count).Where(i => segs[i].Kind == mainKind).MaxBy(i => segs[i].Len);
             var half = (mainKind, segs[i].Len / 2);
             segs.RemoveAt(i);
             segs.InsertRange(i, [half, half]);
@@ -130,7 +130,7 @@ public sealed partial class Layout
         }
         var gapKind = new Dictionary<int, string>();
         var gapGun = new Dictionary<int, Gun>();
-        var tGaps = nm != 0 ? Enumerable.Range(0, nm).Select(k => gaps[(int)Py.Round((k + 0.5) * gaps.Count / nm - 0.5)]).ToList() : [];
+        var tGaps = nm != 0 ? Enumerable.Range(0, nm).Select(k => gaps[(int)(long)Math.Round((k + 0.5) * gaps.Count / nm - 0.5)]).ToList() : [];
         var tLeft = M.ToList();
         var wLeft = WE.ToList();
         foreach (var g in gaps)
@@ -146,7 +146,7 @@ public sealed partial class Layout
             .Concat(waBack.Select((g, k) => ($"W{waFront.Count + WE.Count + k + 1}", "aft", g))).ToList();
         var magPlan = MagazinePlan(design, groupedWings);
         var magL = magPlan.ToDictionary(kv => kv.Key, kv => kv.Value.Count > 0
-            ? Ordnance.ZoneLength(Py.Sum(kv.Value.Select(v => v.N * v.V)), plant.F("width"), plant) : 0.0);
+            ? Ordnance.ZoneLength(kv.Value.Select(v => v.N * v.V).Sum(), plant.F("width"), plant) : 0.0);
         if (magL["fore"] > 0)
         {
             segs.Insert(0, ("magazine", magL["fore"]));
@@ -158,12 +158,12 @@ public sealed partial class Layout
         double funTop = LEVEL_H * Math.Min(nTower, 4) + FUNNEL_ABOVE;
         double belowDeck = depth - plant.F("inner_bottom") - 1.0;
         if (Py.In(res.Plant.D("tech").D("draught")["system"], "natural", "forced_boost"))
-            funTop = Py.Max(funTop, STACK_NATURAL - belowDeck);
+            funTop = Math.Max(funTop, STACK_NATURAL - belowDeck);
         var groups = segs.Where(s => s.Kind == "boiler").Select(s => s.Len).ToList();
         var (nfun, fw, fl) = PlanFunnels(lay, design, res, B, funTop, groups);
         var fplan = lay.Geo.FunnelPlan!;
-        fw = Py.Min(fw, 0.3 * B);
-        double beamTan = Math.Tan(Py.Radians(90.0 - Arcs.ARC_BEAM));
+        fw = Math.Min(fw, 0.3 * B);
+        double beamTan = Math.Tan(double.DegreesToRadians(90.0 - Arcs.ARC_BEAM));
         double fMin = fl + (ntp != 0 && !tEdges ? 9.6 : 2.0);
 
         var seq = new List<string>();
@@ -190,7 +190,7 @@ public sealed partial class Layout
                 {
                     seq.Add("F");
                     segOf.Add(si);
-                    widths0.Add(Py.Max(segL / nG, fMin));
+                    widths0.Add(Math.Max(segL / nG, fMin));
                     seqGun.Add(null);
                 }
             }
@@ -252,12 +252,12 @@ public sealed partial class Layout
             ubSeg = us0;
             var fItems = Enumerable.Range(0, seq.Count).Where(i => seq[i] == "F" && segOf[i] == ubSeg).ToList();
             double ubL = segs[us0].Len;
-            underBridge = Py.Max(0.0, Py.Min(ubL - fItems.Count * fMin, BRIDGE_OVER_BOILERS * (lb + 1.5)));
+            underBridge = Math.Max(0.0, Math.Min(ubL - fItems.Count * fMin, BRIDGE_OVER_BOILERS * (lb + 1.5)));
             foreach (var i in fItems)
-                widths0[i] = Py.Max(fMin, (ubL - underBridge) / fItems.Count);
+                widths0[i] = Math.Max(fMin, (ubL - underBridge) / fItems.Count);
         }
-        double leadL = Py.Sum(lead.Select(si => segs[si].Len)) + underBridge;
-        double trailL = Py.Sum(trail.Select(si => segs[si].Len));
+        double leadL = lead.Select(si => segs[si].Len).Sum() + underBridge;
+        double trailL = trail.Select(si => segs[si].Len).Sum();
         double w2 = Clamp(0.36 * B, 4.5, 12);
         var endsHalf = new Dictionary<int, double> { [-1] = w2 / 2, [seq.Count] = la != 0 ? 0.14 * B : 0.0 };
 
@@ -278,7 +278,7 @@ public sealed partial class Layout
             y = Wy(g, y);
             if (half >= y - 0.2)
                 return g.RR + 0.5;
-            return Py.Max(0.5, Math.Sqrt(Py.Max(0.0, Py.Pow(g.Reach + 0.5, 2) - Py.Pow(y - half, 2))));
+            return Math.Max(0.5, Math.Sqrt(Math.Max(0.0, Math.Pow(g.Reach + 0.5, 2) - Math.Pow(y - half, 2))));
         }
 
         double WingStagger(Gun g, double y)
@@ -287,11 +287,11 @@ public sealed partial class Layout
             y = Wy(g, y);
             if (reach - y > y - 0.3)
                 return g.RR + reach + 0.5;
-            double s = Py.Max(2 * reach + 1.0, Math.Sqrt(Py.Max(0.0, Py.Pow(2 * reach + 0.5, 2) - 4 * y * y)));
+            double s = Math.Max(2 * reach + 1.0, Math.Sqrt(Math.Max(0.0, Math.Pow(2 * reach + 0.5, 2) - 4 * y * y)));
             if (g.Cross)
             {
-                double c = Py.Radians(Arcs.ARC_CROSS);
-                s = Py.Max(s, (reach + 0.5 + 2 * y * Math.Sin(c)) / Math.Cos(c));
+                double c = double.DegreesToRadians(Arcs.ARC_CROSS);
+                s = Math.Max(s, (reach + 0.5 + 2 * y * Math.Sin(c)) / Math.Cos(c));
             }
             return s;
         }
@@ -303,7 +303,7 @@ public sealed partial class Layout
             double g = WingGap(w, y, HalfOf(j, y));
             while (0 <= j && j < seq.Count && (seq[j] == "F" || seq[j] == "E"))
                 j += step;
-            g = Py.Max(g, WingGap(w, y, HalfOf(j, y)));
+            g = Math.Max(g, WingGap(w, y, HalfOf(j, y)));
             if ((step < 0 && nf != 0) || (step > 0 && na != 0))
             {
                 var e = step < 0 ? F[^1] : A[^1];
@@ -311,8 +311,8 @@ public sealed partial class Layout
                 double beyond = (flush ? e.RR + 1.0 : e.R + e.Gap) + (step < 0 ? lb + 1.5 : (la != 0 ? la + 1.5 : 1.0));
                 double yw = Wy(w, y);
                 double need = e.Reach > yw - 0.3 || w.Cross ? w.RR + e.Reach + 0.5
-                    : Math.Sqrt(Py.Max(0.0, Py.Pow(w.Reach + e.Reach + 0.5, 2) - yw * yw));
-                g = Py.Max(g, need - beyond);
+                    : Math.Sqrt(Math.Max(0.0, Math.Pow(w.Reach + e.Reach + 0.5, 2) - yw * yw));
+                g = Math.Max(g, need - beyond);
             }
             if (w.Cross)
             {
@@ -324,7 +324,7 @@ public sealed partial class Layout
                     jj += step;
                 }
                 if (0 <= jj && jj < seq.Count && (HalfOf(jj, y) > 0 || seq[jj] == "T"))
-                    g = Py.Max(g, w.RR + 0.5 + (seq[jj] == "T" ? seqGun[jj]!.Reach : 0.0) - openL);
+                    g = Math.Max(g, w.RR + 0.5 + (seq[jj] == "T" ? seqGun[jj]!.Reach : 0.0) - openL);
             }
             return g;
         }
@@ -340,9 +340,9 @@ public sealed partial class Layout
                     out_.Add(0.0);
                     continue;
                 }
-                double openL = Py.Sum((step < 0 ? Enumerable.Range(0, k.Value) : Enumerable.Range(k.Value + 1, seq.Count - k.Value - 1))
-                    .Select(e => widths0[e]!.Value));
-                out_.Add(Py.Max(0.0, seqGun[k.Value]!.RR + 0.5 - WingSide(k.Value, step, y) - openL));
+                double openL = ((step < 0 ? Enumerable.Range(0, k.Value) : Enumerable.Range(k.Value + 1, seq.Count - k.Value - 1))
+                    .Select(e => widths0[e]!.Value)).Sum();
+                out_.Add(Math.Max(0.0, seqGun[k.Value]!.RR + 0.5 - WingSide(k.Value, step, y) - openL));
             }
             return (out_[0], out_[1]);
         }
@@ -363,7 +363,7 @@ public sealed partial class Layout
                 {
                     int stow = i + 1 < seq.Count && seq[i + 1] == "T" ? 0 : 180;
                     int j = stow == 180 ? i - 1 : i + 1;
-                    double margin = Py.Max(seqGun[i]!.Reach + 1.0, HalfOf(j, y) / beamTan + 0.5);
+                    double margin = Math.Max(seqGun[i]!.Reach + 1.0, HalfOf(j, y) / beamTan + 0.5);
                     out_.Add(margin + seqGun[i]!.RR + 1.5);
                 }
                 else
@@ -376,20 +376,19 @@ public sealed partial class Layout
 
         double MiddleNeeds(List<double> ws, (double Ef, double Ea) ext)
         {
-            double before = core.Count > 0 ? Py.Sum(ws.Take(core[0])) : 0.0;
-            double cL = Py.Sum(core.Select(i => ws[i]));
+            double before = core.Count > 0 ? ws.Take(core[0]).Sum() : 0.0;
+            double cL = core.Select(i => ws[i]).Sum();
             var (ef, ea) = ext;
-            return Py.Max(lb + 1.5 + ef + Py.Sum(ws) + ea + aftL, leadL + cL + trailL + 2.0,
-                lb + 1.5 + ef + before + cL + trailL + 1.0, leadL + 1.0 + Py.Sum(ws) - before + ea + aftL);
+            return Math.Max(lb + 1.5 + ef + ws.Sum() + ea + aftL, Math.Max(leadL + cL + trailL + 2.0, Math.Max(lb + 1.5 + ef + before + cL + trailL + 1.0, leadL + 1.0 + ws.Sum() - before + ea + aftL)));
         }
 
         double y0 = nw != 0 ? B / 2 - gRef!.Reach - 0.6 : 0.0;
         double MReq = MiddleNeeds(PlanWidths(y0), CrossEnds(y0));
 
-        var big = bats.Count > 0 ? Py.MaxBy(bats, g => g.Reach) : null;
+        var big = bats.Count > 0 ? bats.MaxBy(g => g.Reach) : null;
         if (big != null && big.Reach + 0.6 > B / 2)
-            lay.Fail("beam", $"Main turrets{(bats.Count == 1 ? "" : $" of {big.Cal}")} are {Py.F(2 * big.Reach, 1)} m " +
-                             $"across; the {Py.G(B)} m beam cannot carry them (needs about {Py.F(2 * (big.Reach + 0.6), 1)} m). " +
+            lay.Fail("beam", $"Main turrets{(bats.Count == 1 ? "" : $" of {big.Cal}")} are {2 * big.Reach:F1} m " +
+                             $"across; the {B} m beam cannot carry them (needs about {2 * (big.Reach + 0.6):F1} m). " +
                              "Use fewer or smaller guns.");
 
         bool Fits(double x, Gun g)
@@ -439,7 +438,7 @@ public sealed partial class Layout
         {
             lay.Short.Add("length");
             double sb = bowPref - bowMin, ss = stPref - stMin;
-            double take = Py.Min(deficit, sb + ss);
+            double take = Math.Min(deficit, sb + ss);
             if (sb + ss > 0)
             {
                 bowCl -= take * sb / (sb + ss);
@@ -449,7 +448,7 @@ public sealed partial class Layout
             deficit = MReq - (midFwd - midAft);
             if (deficit > 0.5)
                 lay.Fail("length", "Not enough length amidships: the machinery, funnels and midships turrets need about " +
-                                   $"{Py.F(MReq, 0)} m between the turret groups, but only {Py.F(midFwd - midAft, 0)} m is free. " +
+                                   $"{MReq:F0} m between the turret groups, but only {midFwd - midAft:F0} m is free. " +
                                    "Reduce speed, use a more compact plant, or remove a turret.");
         }
         else if (deficit < 0 && spread > 0)
@@ -486,15 +485,15 @@ public sealed partial class Layout
         double bx0 = bx1 - lb;
         double fz0 = midAft + (la != 0 ? la + 1.5 : 1.0);
         double fz1 = bx0 - 1.5;
-        double yW = nw != 0 ? Py.Min(Enumerable.Range(0, 21).Select(k => hull.HalfWidth(fz0 + (fz1 - fz0) * k / 20))) - gRef!.Reach - 0.6 : 0.0;
+        double yW = nw != 0 ? Enumerable.Range(0, 21).Select(k => hull.HalfWidth(fz0 + (fz1 - fz0) * k / 20)).Min() - gRef!.Reach - 0.6 : 0.0;
 
         (double LoX, double HiX, double X) PlanFront(List<double> widths, double y)
         {
-            double beforeCore = core.Count > 0 ? Py.Sum(widths.Take(core[0])) : 0.0;
-            double coreL = Py.Sum(core.Select(i => widths[i]));
+            double beforeCore = core.Count > 0 ? widths.Take(core[0]).Sum() : 0.0;
+            double coreL = core.Select(i => widths[i]).Sum();
             var (ef, ea) = CrossEnds(y);
-            double loX = Py.Max(fz0 + ea + Py.Sum(widths), midAft + 1.0 + trailL + coreL + beforeCore);
-            double hiX = Py.Min(fz1 - ef, midFwd - 1.0 - leadL + beforeCore);
+            double loX = Math.Max(fz0 + ea + widths.Sum(), midAft + 1.0 + trailL + coreL + beforeCore);
+            double hiX = Math.Min(fz1 - ef, midFwd - 1.0 - leadL + beforeCore);
             return (loX, hiX, hiX >= loX ? (loX + hiX) / 2 : hiX);
         }
 
@@ -510,9 +509,9 @@ public sealed partial class Layout
                     double x = xx - WingSide(i, -1, y);
                     double hw = B;
                     foreach (var xw in g.Echelon ? new[] { x, x - WingStagger(g, y) } : [x])
-                        hw = Py.Min(hw, hull.HalfWidth(xw + -g.Reach), hull.HalfWidth(xw + 0.0), hull.HalfWidth(xw + g.Reach));
+                        hw = Math.Min(hw, Math.Min(hull.HalfWidth(xw + -g.Reach), Math.Min(hull.HalfWidth(xw + 0.0), hull.HalfWidth(xw + g.Reach))));
                     double lim = hw - g.Reach - 0.6;
-                    room = Py.Min(room, g.Reach == gRef.Reach ? lim : lim + g.Reach - gRef.Reach);
+                    room = Math.Min(room, g.Reach == gRef.Reach ? lim : lim + g.Reach - gRef.Reach);
                 }
                 xx -= widths[i];
             }
@@ -521,7 +520,7 @@ public sealed partial class Layout
 
         if (nw != 0)
         {
-            double loY = yW, hiY = Py.Min(WingRoom(yW), B / 2 - gRef!.Reach - 0.6);
+            double loY = yW, hiY = Math.Min(WingRoom(yW), B / 2 - gRef!.Reach - 0.6);
             for (int it = 0; it < 8; it++)
             {
                 if (hiY - loY < 0.05)
@@ -535,21 +534,21 @@ public sealed partial class Layout
         {
             if (!g.Echelon && Wy(g, yW) < g.Reach + 0.25)
             {
-                lay.Fail("beam", $"Wing turrets{(bats.Count == 1 ? "" : $" of {g.Cal}")} are {Py.F(2 * g.Reach, 1)} m " +
+                lay.Fail("beam", $"Wing turrets{(bats.Count == 1 ? "" : $" of {g.Cal}")} are {2 * g.Reach:F1} m " +
                                  "across: a pair cannot stand abreast on this beam (needs about " +
-                                 $"{Py.F(4 * g.Reach + 1.7, 1)} m). Set \"echelon\": true or use smaller guns.");
+                                 $"{4 * g.Reach + 1.7:F1} m). Set \"echelon\": true or use smaller guns.");
                 break;
             }
             else if (Wy(g, yW) <= 0.5)
             {
                 lay.Fail("beam", $"Hull too narrow for wing turrets{(bats.Count == 1 ? "" : $" of {g.Cal}")} even in " +
-                                 $"echelon: they need about {Py.F(2 * g.Reach + 2.2, 1)} m of beam amidships.");
+                                 $"echelon: they need about {2 * g.Reach + 2.2:F1} m of beam amidships.");
                 break;
             }
         }
         var widthsF = PlanWidths(yW);
-        double beforeCoreF = core.Count > 0 ? Py.Sum(widthsF.Take(core[0])) : 0.0;
-        double coreLF = Py.Sum(core.Select(i => widthsF[i]));
+        double beforeCoreF = core.Count > 0 ? widthsF.Take(core[0]).Sum() : 0.0;
+        double coreLF = core.Select(i => widthsF[i]).Sum();
         var (loX, hiX, xx0) = PlanFront(widthsF, yW);
         if (hiX < loX - 0.5)
         {
@@ -587,7 +586,7 @@ public sealed partial class Layout
             {
                 int stow = i + 1 < seq.Count && seq[i + 1] == "T" ? 0 : 180;
                 int j = stow == 180 ? i - 1 : i + 1;
-                double margin = Py.Max(seqGun[i]!.Reach + 1.0, HalfOf(j, yW) / beamTan + 0.5);
+                double margin = Math.Max(seqGun[i]!.Reach + 1.0, HalfOf(j, yW) / beamTan + 0.5);
                 mids.Add((seqGun[i]!, stow == 180 ? xx - margin : xx - w_ + margin, stow));
             }
             if (segOf[i] is int so)
@@ -606,13 +605,13 @@ public sealed partial class Layout
             double back = segSpan[ub][1];
             pos[ub] = (back, back + segs[ub].Len);
         }
-        double xp = Py.Max(new[] { coreFront }.Concat(pos.Values.Select(v => v.B)));
+        double xp = (new[] { coreFront }.Concat(pos.Values.Select(v => v.B))).Max();
         foreach (var si in Enumerable.Reverse(lead))
         {
             pos[si] = (xp, xp + segs[si].Len);
             xp += segs[si].Len;
         }
-        xp = Py.Min(new[] { coreFront - coreLF }.Concat(pos.Values.Select(v => v.A)));
+        xp = (new[] { coreFront - coreLF }.Concat(pos.Values.Select(v => v.A))).Min();
         foreach (var si in trail)
         {
             pos[si] = (xp - segs[si].Len, xp);
@@ -622,12 +621,12 @@ public sealed partial class Layout
         int firstEngine = Enumerable.Range(0, segs.Count).Cast<int?>().FirstOrDefault(k => segs[k!.Value].Kind == "engine") ?? 0;
         var fSegF = fSeg.Select(si => si ?? firstEngine).ToList();
         var plantPlaced = machPlaced.Where(p => p.Kind != "magazine").ToList();
-        double machC = (Py.Min(plantPlaced.Select(p => p.X0)) + Py.Max(plantPlaced.Select(p => p.X1))) / 2;
-        lay.Geo.Machinery = (Py.Min(plantPlaced.Select(p => p.X0)), Py.Max(plantPlaced.Select(p => p.X1)));
+        double machC = (plantPlaced.Select(p => p.X0).Min() + plantPlaced.Select(p => p.X1).Max()) / 2;
+        lay.Geo.Machinery = (plantPlaced.Select(p => p.X0).Min(), plantPlaced.Select(p => p.X1).Max());
         lay.Geo.MachineryX = machC;
 
         // ---------------- raised stretches of hull (hull.raised) ----------------
-        double? fAft = fxs.Count > 0 ? Py.Min(fxs) - fl / 2 : null, fFwd = fxs.Count > 0 ? Py.Max(fxs) + fl / 2 : null;
+        double? fAft = fxs.Count > 0 ? fxs.Min() - fl / 2 : null, fFwd = fxs.Count > 0 ? fxs.Max() + fl / 2 : null;
         var edges = new Dictionary<string, (double? Aft, double? Fwd)>
         {
             ["bow"] = (null, L / 2),
@@ -688,8 +687,8 @@ public sealed partial class Layout
                     long rest_ = flush ? (gname == "A" ? 180 : 0) : rest;
                     double bse = (flush ? dz : deck0) + 1.2 + TierSteps(gs, level);
                     if (!flush && prev is double pv && pv > deck0 + 1.2 + TierSteps(gs, level - 1) + 1e-9)
-                        bse = Py.Max(bse, pv + Geometry.SuperfireStep(gs[i - 1].Th));
-                    bse = Py.Max(bse, dz + 1.2);
+                        bse = Math.Max(bse, pv + Geometry.SuperfireStep(gs[i - 1].Th));
+                    bse = Math.Max(bse, dz + 1.2);
                     var probe = PyDict.Of(("kind", "main"), ("t", g.T), ("x", x), ("y", 0.0), ("rest", rest_), ("base", bse),
                         ("top", bse + g.Th));
                     if (flush)
@@ -716,7 +715,7 @@ public sealed partial class Layout
             {
                 double reach = g.Reach;
                 double dz = lay.DeckZ(x, reach);
-                double bse = Py.Max(dz, g.Raised ? LEVEL_H : 0.0) + 1.2;
+                double bse = Math.Max(dz, g.Raised ? LEVEL_H : 0.0) + 1.2;
                 var probe = PyDict.Of(("kind", "main"), ("t", g.T), ("x", x), ("y", y), ("rest", rest), ("base", bse), ("top", bse + g.Th));
                 foreach (var (k, v) in kw)
                     probe[k] = v;
@@ -727,7 +726,7 @@ public sealed partial class Layout
                 extra.AddRange(kw);
                 lay.ReserveSweep(Armament.AddMount(lay, mounts, "main", g.Tid, g.T, mid, x, y, bse, rest,
                     armourMm: g.Arm["armour_mm"], depth: depth, footprintR: reach, label: "Turret",
-                    deck: lay.Raised.Count > 0 ? Py.Max(0.0, bse - 1.2 - (g.Raised ? LEVEL_H : 0.0)) : dz, extra: [.. extra]));
+                    deck: lay.Raised.Count > 0 ? Math.Max(0.0, bse - 1.2 - (g.Raised ? LEVEL_H : 0.0)) : dz, extra: [.. extra]));
                 if (g.Raised && dz < LEVEL_H)
                     riders.Add((x - reach - DH_INSET, x + reach + DH_INSET, Math.Abs(y) + reach + DH_INSET));
             }
@@ -798,26 +797,26 @@ public sealed partial class Layout
             belowB = Stack("Bridge upper", nb + 1, tx0 + 0.1 * tl, tx1 - 0.06 * tl, 0.78 * w2, belowB);
         if (armour.F("belt_mm", 0) > 0)
         {
-            double ctR = Py.Min(Py.Max(0.1 * B, 1.25), 4.0, 0.4 * w2);
-            double ctX = Py.Max(bx1 - 0.42 * w2, bx0 + ctR);
+            double ctR = Math.Min(Math.Max(0.1 * B, 1.25), Math.Min(4.0, 0.4 * w2));
+            double ctX = Math.Max(bx1 - 0.42 * w2, bx0 + ctR);
             if (towerFoot != null)
             {
                 var pts_ = Geometry.Pts(towerFoot["points"]);
                 ctX = towerFoot.F("x1") - ctR - 0.3;
                 while (ctX > towerFoot.F("x0") + ctR &&
-                       Py.Min(Enumerable.Range(0, pts_.Count).Select(i => SegDist(ctX, 0.0, pts_[(i - 1 + pts_.Count) % pts_.Count].X,
-                           pts_[(i - 1 + pts_.Count) % pts_.Count].Y, pts_[i].X, pts_[i].Y))) < ctR + 0.3)
+                       Enumerable.Range(0, pts_.Count).Select(i => SegDist(ctX, 0.0, pts_[(i - 1 + pts_.Count) % pts_.Count].X,
+                           pts_[(i - 1 + pts_.Count) % pts_.Count].Y, pts_[i].X, pts_[i].Y)).Min() < ctR + 0.3)
                     ctX -= 0.25;
             }
             lay.ConningTower = PyDict.Of(("x", ctX), ("y", 0.0), ("r", ctR), ("top", 2 * LEVEL_H));
             double mm = armour.F("belt_mm") / 1000;
-            double area = 2 * Math.PI * ctR * 2 * LEVEL_H + 0.5 * Math.PI * Py.Pow(ctR, 2);
+            double area = 2 * Math.PI * ctR * 2 * LEVEL_H + 0.5 * Math.PI * Math.Pow(ctR, 2);
             lay.Weights.Add(new Weight("Conning tower", "armour", area * mm * 7.85, lay.ConningTower.F("x"), ZRel.Deck(LEVEL_H)));
         }
         for (long k = nb + 2; k <= nTower; k++)
         {
-            double f = Py.Min(0.12, 0.03 * (k - nb - 2)), tw = Py.Max(3.0, 0.5 * w2 * Py.Pow(0.9, k - nb - 2));
-            belowB = Stack($"Tower {k}", k, tx0 + (0.35 + f) * tl, Py.Max(tx0 + (0.35 + f) * tl + 3.0, tx1 - (0.2 + f) * tl), tw, belowB);
+            double f = Math.Min(0.12, 0.03 * (k - nb - 2)), tw = Math.Max(3.0, 0.5 * w2 * Math.Pow(0.9, k - nb - 2));
+            belowB = Stack($"Tower {k}", k, tx0 + (0.35 + f) * tl, Math.Max(tx0 + (0.35 + f) * tl + 3.0, tx1 - (0.2 + f) * tl), tw, belowB);
         }
         if (la != 0)
         {
@@ -835,7 +834,7 @@ public sealed partial class Layout
         bool InReach(int si, List<double> xs, double off)
         {
             var ends = new[] { machPlaced[si].X0, machPlaced[si].X1 };
-            return ends.All(e => Py.Min(xs.Select(x => Math.Abs(e - x - off))) <= Py.Max(reachLim, Py.Min(xs.Select(x => Math.Abs(e - x)))) + 1e-6);
+            return ends.All(e => xs.Select(x => Math.Abs(e - x - off)).Min() <= Math.Max(reachLim, xs.Select(x => Math.Abs(e - x)).Min()) + 1e-6);
         }
 
         var bySeg = new OrderedDictionary<int, List<int>>();
@@ -846,22 +845,22 @@ public sealed partial class Layout
             l.Add(i);
         }
         var fxFinal = fxs.ToList();
-        foreach (var si in Py.Sorted(bySeg.Keys, s => machPlaced[s].X0))
+        foreach (var si in bySeg.Keys.OrderBy(s => machPlaced[s].X0).ToList())
         {
             var idx = bySeg[si];
             double want = 0.0;
             if (machPlaced[si].Kind == "boiler")
-                want = Py.Min(0.0, machPlaced[si].X0 - (fxs[idx[0]] + fxs[idx[^1]]) / 2);
+                want = Math.Min(0.0, machPlaced[si].X0 - (fxs[idx[0]] + fxs[idx[^1]]) / 2);
             double off = want;
             var xs = idx.Select(i => fxs[i]).ToList();
-            double bound = Py.Max(new[] { machPlaced[si].X0, machPlaced[si].X1 }.Select(e =>
-                e - Py.Max(xs) - Py.Max(reachLim, Py.Min(xs.Select(x => Math.Abs(e - x)))))) - 1e-6;
-            while (off < Py.Min(0.0, bound))
-                off = Py.Min(0.0, off + 0.25);
+            double bound = (new[] { machPlaced[si].X0, machPlaced[si].X1 }.Select(e =>
+                e - xs.Max() - Math.Max(reachLim, xs.Select(x => Math.Abs(e - x)).Min()))).Max() - 1e-6;
+            while (off < Math.Min(0.0, bound))
+                off = Math.Min(0.0, off + 0.25);
             while (off < 0.0 && !(InReach(si, idx.Select(i => fxs[i]).ToList(), off) && idx.All(i =>
                        lay.Clear(FunFp(fxs[i] + off), funTop) && lay.Free(FunFp(fxs[i] + off), 0.0)
                        && lay.DeckLevels(fxs[i] + off, fl / 2) == lay.DeckLevels(fxs[i], fl / 2))))
-                off = Py.Min(0.0, off + 0.25);
+                off = Math.Min(0.0, off + 0.25);
             foreach (var i in idx)
             {
                 fxFinal[i] = fxs[i] + off;
@@ -894,31 +893,31 @@ public sealed partial class Layout
             long nsec = Py.ToLong(sec["per_side"]);
             if (!Py.Eq(sec.Get("mount", "deck"), "deck") || nsec == 0)
                 continue;
-            string pre = sec.S("prefix"), cal = $"{Py.G(sec.F("calibre_mm"))} mm";
+            string pre = sec.S("prefix"), cal = $"{sec.F("calibre_mm")} mm";
             bool raised = Py.Eq(StandsOn(sec), "deckhouse");
             var (tsId, ts) = Geometry.BatteryType(sec);
             turretTypes[tsId] = ts;
             double rs = ts.F("r");
-            double rsReach = Py.Max(rs, Geometry.TurretReach(ts, 0.0));
+            double rsReach = Math.Max(rs, Geometry.TurretReach(ts, 0.0));
             double ths = Geometry.TurretHeight(ts);
 
-            double SecBase(double x) => raised ? Py.Max(lay.DeckZ(x, rsReach), LEVEL_H) : lay.DeckZ(x, rsReach);
+            double SecBase(double x) => raised ? Math.Max(lay.DeckZ(x, rsReach), LEVEL_H) : lay.DeckZ(x, rsReach);
             double xLo = midAft + rsReach + 0.5, xHi = midFwd - rsReach - 0.5;
-            double inner = Py.Max(blocks.Where(b => b.I("level") >= 2).Select(b => b.F("w") / 2).Append(fw / 2)
-                .Concat(M.Select(g => g.Reach))) + rsReach + 0.4;
+            double inner = (blocks.Where(b => b.I("level") >= 2).Select(b => b.F("w") / 2).Append(fw / 2)
+                .Concat(M.Select(g => g.Reach))).Max() + rsReach + 0.4;
 
-            double OuterAt(double x) => Py.Min(hull.HalfWidth(x + -rsReach), hull.HalfWidth(x + 0.0), hull.HalfWidth(x + rsReach)) - rsReach - 0.6;
+            double OuterAt(double x) => Math.Min(hull.HalfWidth(x + -rsReach), Math.Min(hull.HalfWidth(x + 0.0), hull.HalfWidth(x + rsReach))) - rsReach - 0.6;
 
-            double YAt(double x) => Py.Max(inner, inner + 0.55 * (OuterAt(x) - inner));
+            double YAt(double x) => Math.Max(inner, inner + 0.55 * (OuterAt(x) - inner));
             var xsProbe = Enumerable.Range(0, 41).Select(k => xLo + (xHi - xLo) * k / 40).ToList();
             double xLo0 = xLo, xHi0 = xHi;
-            if (Py.Max(xsProbe.Select(OuterAt)) < inner)
+            if (xsProbe.Select(OuterAt).Max() < inner)
                 lay.Fail("beam", $"Hull too narrow for {cal} secondary mounts: they need about " +
-                                 $"{Py.F(2 * (inner + rsReach + 0.6), 1)} m of beam amidships.");
+                                 $"{2 * (inner + rsReach + 0.6):F1} m of beam amidships.");
             else
             {
                 var fitsX = xsProbe.Where(x => OuterAt(x) >= inner).ToList();
-                (xLo, xHi) = (Py.Min(fitsX), Py.Max(fitsX));
+                (xLo, xHi) = (fitsX.Min(), fitsX.Max());
             }
 
             void ShortOf(string msg, Func<bool> fitWider)
@@ -945,11 +944,11 @@ public sealed partial class Layout
             if (xHi <= xLo)
                 lay.Fail("length", "No room amidships for the secondary battery.");
             else if (first && nsec > 1 && (xHi - xLo) / (nsec - 1) < pitchS)
-                ShortOf($"{nsec} secondary mounts per side do not fit in {Py.F(xHi - xLo, 0)} m amidships " +
-                        $"(max {Py.Int((xHi - xLo) / pitchS) + 1}).", () => (xHi0 - xLo0) / (nsec - 1) >= pitchS);
-            double step = Py.Min((xHi - xLo) / Math.Max(nsec - 1, 1), 2.2 * rs + 4.0);
+                ShortOf($"{nsec} secondary mounts per side do not fit in {xHi - xLo:F0} m amidships " +
+                        $"(max {(long)((xHi - xLo) / pitchS) + 1}).", () => (xHi0 - xLo0) / (nsec - 1) >= pitchS);
+            double step = Math.Min((xHi - xLo) / Math.Max(nsec - 1, 1), 2.2 * rs + 4.0);
             double c = (xLo + xHi) / 2;
-            var sxs = Py.Range(nsec).Select(i => nsec > 1 ? c + (i - (nsec - 1) / 2.0) * step : c).ToList();
+            var sxs = Enumerable.Range(0, (int)nsec).Select(i => nsec > 1 ? c + (i - (nsec - 1) / 2.0) * step : c).ToList();
             bool spreadOk = Enumerable.Range(0, sxs.Count).All(i => PitchOk(sxs[i], sxs.Take(i), 0.0) && BarrelsOk(sxs[i]));
             if (nw != 0 || !first || !spreadOk)
             {
@@ -958,8 +957,8 @@ public sealed partial class Layout
                     var fps = new[] { 1, -1 }.Select(s => Footprint.Circle(x, s * YAt(x), rsReach));
                     return fps.All(fp => lay.Free(fp, 0.4) && lay.Clear(fp, SecBase(x) + ths)) && BarrelsOk(x);
                 }
-                var spots = Py.Sorted(Py.Range(Py.Int(Py.Max(0.0, xHi - xLo) * 2) + 1).Select(k => xLo + 0.5 * k)
-                    .Where(SpotOk), x => Math.Abs(x - c));
+                var spots = (Enumerable.Range(0, (int)(Math.Max(0.0, xHi - xLo) * 2) + 1).Select(k => xLo + 0.5 * k)
+                    .Where(SpotOk)).OrderBy(x => Math.Abs(x - c)).ToList();
                 foreach (var sp in new[] { 2.2 * rs + 4.0, pitchS })
                 {
                     sxs = [];
@@ -973,7 +972,7 @@ public sealed partial class Layout
                 {
                     if (sxs.Count == nsec)
                         break;
-                    var cand = NearestSpaced(spots, (int)nsec, c, sp, Py.Max(sp, pitchStowed));
+                    var cand = NearestSpaced(spots, (int)nsec, c, sp, Math.Max(sp, pitchStowed));
                     if (cand != null && cand.Count > 0 && Enumerable.Range(0, cand.Count).All(i => PitchOk(cand[i], cand.Take(i), sp)))
                         sxs = cand;
                 }
@@ -982,10 +981,10 @@ public sealed partial class Layout
                     string where = first ? (nw != 0 ? "beside the wing turrets" : "amidships") : "amidships beside the other secondaries";
                     var sxsCount = sxs.Count;
                     ShortOf($"Only {sxsCount} of {nsec} {(first ? "" : cal + " ")}secondary mounts per side fit {where}.",
-                        () => NearestSpaced(Py.Range(Py.Int(Py.Max(0.0, xHi0 - xLo0) * 2) + 1).Select(k => xLo0 + 0.5 * k)
-                            .Where(SpotOk), (int)nsec, c, pitchS, Py.Max(pitchS, pitchStowed)) is { Count: > 0 });
+                        () => NearestSpaced(Enumerable.Range(0, (int)(Math.Max(0.0, xHi0 - xLo0) * 2) + 1).Select(k => xLo0 + 0.5 * k)
+                            .Where(SpotOk), (int)nsec, c, pitchS, Math.Max(pitchS, pitchStowed)) is { Count: > 0 });
                 }
-                sxs = Py.Sorted(sxs);
+                sxs = sxs.Order().ToList();
             }
             for (int i = 0; i < sxs.Count; i++)
             {
@@ -1005,7 +1004,7 @@ public sealed partial class Layout
             }
             if (raised && sxs.Count > 0)
             {
-                double yS = Py.Max(sxs.Select(YAt));
+                double yS = sxs.Select(YAt).Max();
                 riders.AddRange(sxs.Where(sx => lay.DeckZ(sx, rsReach) < LEVEL_H)
                     .Select(sx => (sx - rsReach - DH_INSET, sx + rsReach + DH_INSET, yS + rsReach + DH_INSET)));
             }
@@ -1024,8 +1023,8 @@ public sealed partial class Layout
         bool aftOn = false;
         if (riders.Count > 0)
         {
-            double rx0 = Py.Min(riders.Select(r => r.X0)), rx1 = Py.Max(riders.Select(r => r.X1));
-            double rw = 2 * Py.Max(riders.Select(r => r.Hw));
+            double rx0 = riders.Select(r => r.X0).Min(), rx1 = riders.Select(r => r.X1).Max();
+            double rw = 2 * riders.Select(r => r.Hw).Max();
             var through = funnels.Select(f => f.S("id")).Concat(housings.Select(h => h.S("id"))).ToList();
 
             bool DeckFree(double x0_, double x1_)
@@ -1038,13 +1037,13 @@ public sealed partial class Layout
 
             if (DeckFree(rx1, dh.Value.X0))
             {
-                (rx0, rx1, rw) = (Py.Min(rx0, dh.Value.X0), Py.Max(rx1, dh.Value.X1), Py.Max(rw, dhW));
+                (rx0, rx1, rw) = (Math.Min(rx0, dh.Value.X0), Math.Max(rx1, dh.Value.X1), Math.Max(rw, dhW));
                 dh = null;
             }
             if (la != 0 && DeckFree(ax0 + la, rx0))
-                (rx0, aftOn) = (Py.Min(rx0, ax0), true);
-            double hwMax = Py.Max(Enumerable.Range(0, 21).Select(k => hull.HalfWidth(rx0 + (rx1 - rx0) * k / 20)));
-            pieces.Add(("Deckhouse", rx0, rx1, Py.Min(rw, 2 * (hwMax - DH_INSET)), "deckhouse"));
+                (rx0, aftOn) = (Math.Min(rx0, ax0), true);
+            double hwMax = Enumerable.Range(0, 21).Select(k => hull.HalfWidth(rx0 + (rx1 - rx0) * k / 20)).Max();
+            pieces.Add(("Deckhouse", rx0, rx1, Math.Min(rw, 2 * (hwMax - DH_INSET)), "deckhouse"));
         }
         if (dh is { } dhv)
             pieces.Add((pieces.Count > 0 ? "Deckhouse-2" : "Deckhouse", dhv.X0, dhv.X1, dhW, "deckhouse"));
@@ -1053,7 +1052,7 @@ public sealed partial class Layout
 
         Footprint DhRect(double x0_, double x1_)
         {
-            double hw = Py.Min(hull.HalfWidth(x0_), hull.HalfWidth(x1_)) - 0.6;
+            double hw = Math.Min(hull.HalfWidth(x0_), hull.HalfWidth(x1_)) - 0.6;
             return Footprint.Rect(x0_, -hw, x1_, hw);
         }
 
@@ -1063,7 +1062,7 @@ public sealed partial class Layout
         {
             var runs = new List<(double A, double B)> { (x0p, x1p) };
             foreach (var s_ in lay.Raised)
-                runs = runs.SelectMany(r => new[] { (r.A, Py.Min(r.B, s_.F("x0"))), (Py.Max(r.A, s_.F("x1")), r.B) })
+                runs = runs.SelectMany(r => new[] { (r.A, Math.Min(r.B, s_.F("x0"))), (Math.Max(r.A, s_.F("x1")), r.B) })
                     .Where(q => q.Item2 > q.Item1).ToList();
             runs = runs.Where(r => r.B - r.A >= DH_SLIVER || (r.A == x0p && r.B == x1p) || lay.Footprints.Any(o =>
                 o.Base >= LEVEL_H - 0.01 && r.A <= (o.Fp.BBox.X0 + o.Fp.BBox.X1) / 2 && (o.Fp.BBox.X0 + o.Fp.BBox.X1) / 2 <= r.B
@@ -1113,7 +1112,7 @@ public sealed partial class Layout
                     lay.Warnings.Add("Torpedo mounts at the deck edges go in pairs; rounded up to an even number.");
                     ntp += 1;
                 }
-                var xs = Py.Sorted(Py.Range(Py.Int(-L), Py.Int(L)).Select(x => x * 0.5), x => Math.Abs(x - machC));
+                var xs = Enumerable.Range((int)-L, 2 * (int)L).Select(x => x * 0.5).OrderBy(x => Math.Abs(x - machC)).ToList();
                 foreach (var x in xs)
                 {
                     if (placed >= ntp)
@@ -1139,7 +1138,7 @@ public sealed partial class Layout
             }
             if (placed < ntp)
             {
-                var cands = Py.Sorted(Py.Range(Py.Int((midFwd - midAft) * 2) + 1).Select(k => midAft + 0.5 * k), x => Math.Abs(x - machC));
+                var cands = Enumerable.Range(0, Math.Max(0, (int)((midFwd - midAft) * 2) + 1)).Select(k => midAft + 0.5 * k).OrderBy(x => Math.Abs(x - machC)).ToList();
                 foreach (var x in cands)
                 {
                     if (placed >= ntp)
@@ -1159,8 +1158,8 @@ public sealed partial class Layout
             }
             if (placed < ntp && dhBlocks.Count > 0)
             {
-                var cands = Py.Sorted(dhBlocks.SelectMany(b_ => Py.Range(Py.Int((b_.F("x1") - b_.F("x0") - 2 * sweep) * 2) + 1)
-                    .Select(k => b_.F("x0") + sweep + 0.5 * k)), x => Math.Abs(x - machC));
+                var cands = dhBlocks.SelectMany(b_ => Enumerable.Range(0, Math.Max(0, (int)((b_.F("x1") - b_.F("x0") - 2 * sweep) * 2) + 1))
+                    .Select(k => b_.F("x0") + sweep + 0.5 * k)).OrderBy(x => Math.Abs(x - machC)).ToList();
                 foreach (var x in cands)
                 {
                     if (placed >= ntp)
@@ -1198,7 +1197,7 @@ public sealed partial class Layout
             var scored = new List<(double S, object?[] C)>();
             foreach (var (x, y, z0, pair) in RoofSpots(blocks, 2 * rr, 2 * rr))
             {
-                long lvl = Py.Round(z0 / LEVEL_H);
+                long lvl = (long)Math.Round(z0 / LEVEL_H);
                 double pen = AA_ROOF_PEN[(int)Math.Min(lvl, AA_ROOF_PEN.Length - 1)];
                 if (pair)
                     scored.Add((Math.Abs(x - machC) / L + pen, [x, y, z0]));
@@ -1213,7 +1212,7 @@ public sealed partial class Layout
                     scored.Add((Math.Abs(xd - machC) / L + AA_DECK_PEN, [xd, yy, lay.DeckZ(xd, rr)]));
                 xd -= 0.5;
             }
-            var cands = Py.Sorted(scored, s => s.S).Select(s => s.C).ToList();
+            var cands = scored.OrderBy(s => s.S).ToList().Select(s => s.C).ToList();
             double sx = -L / 2 + rr + 2.5;
             if (hull.HalfWidth(sx) > rr + 0.6)
                 cands.Add([sx, 0.0, lay.DeckZ(sx, rr)]);
@@ -1229,11 +1228,11 @@ public sealed partial class Layout
         // ---------------- masts and boats ----------------
         double mastTop = funTop + 6.0;
         double fxM = lay.Clear(Footprint.Circle(bx0 - 1.2, 0, 0.7), mastTop) ? bx0 - 1.2 : bx0 + 0.3 * lb;
-        var masts = new List<PyDict> { PyDict.Of(("x", fxM), ("yard", Py.Min(0.3 * B, 10)), ("tripod", L >= 150)) };
+        var masts = new List<PyDict> { PyDict.Of(("x", fxM), ("yard", Math.Min(0.3 * B, 10)), ("tripod", L >= 150)) };
         if (LEVEL_H * nTower + hood + 2.0 > mastTop)
             masts[0]["top"] = LEVEL_H * nTower + hood + 2.0;
         if (la != 0)
-            masts.Add(PyDict.Of(("x", ax0 + la * 0.5), ("yard", Py.Min(0.22 * B, 8)), ("tripod", false)));
+            masts.Add(PyDict.Of(("x", ax0 + la * 0.5), ("yard", Math.Min(0.22 * B, 8)), ("tripod", false)));
         for (int k = 0; k < masts.Count; k++)
             MastWeight(lay, masts[k], masts[k].F("top", mastTop), k == 0 ? "Foremast" : "Mainmast", lay.DeckZ(masts[k].F("x")));
         var boats = new List<object?>();
@@ -1244,7 +1243,7 @@ public sealed partial class Layout
                 break;
             double y = riders.Count > 0 ? dhW / 2 - 0.35 * bl_ - 0.6 : B / 2 - 0.35 * bl_ - 1.0;
             var (lo_, hi_) = lay.DeckLevels(x, bl_ / 2);
-            double z = riders.Count > 0 ? Py.Max(LEVEL_H, hi_ * LEVEL_H) : LEVEL_H + hi_ * LEVEL_H;
+            double z = riders.Count > 0 ? Math.Max(LEVEL_H, hi_ * LEVEL_H) : LEVEL_H + hi_ * LEVEL_H;
             var fps = new[] { 1, -1 }.Select(s => Footprint.Rect(x - bl_ / 2, s * y - 0.15 * bl_, x + bl_ / 2, s * y + 0.15 * bl_)).ToList();
             if (lo_ == hi_ && y > fw / 2 + 0.3 * bl_ && fps.All(fp => lay.Free(fp, 0.3, dhIds) && lay.Clear(fp, z + 1.5)))
             {
@@ -1258,10 +1257,10 @@ public sealed partial class Layout
 
         // ---------------- citadel & compartments ----------------
         var mainMounts = mounts.Where(m => Py.Eq(m["kind"], "main")).ToList();
-        var block = (Py.Min(machPlaced.Select(p => p.X0)), Py.Max(machPlaced.Select(p => p.X1)));
+        var block = (machPlaced.Select(p => p.X0).Min(), machPlaced.Select(p => p.X1).Max());
         (double, double) cit = mainMounts.Count > 0
-            ? (Py.Min(Py.Min(mainMounts.Select(m => m.F("x") - m.D("t").F("r"))) - 2.0, block.Item1),
-               Py.Max(Py.Max(mainMounts.Select(m => m.F("x") + m.D("t").F("r"))) + 2.0, block.Item2))
+            ? (Math.Min(mainMounts.Select(m => m.F("x") - m.D("t").F("r")).Min() - 2.0, block.Item1),
+               Math.Max(mainMounts.Select(m => m.F("x") + m.D("t").F("r")).Max() + 2.0, block.Item2))
             : block;
         SetCitadel(lay, cit.Item1, cit.Item2);
         double innerHw = 0.8 * B / 2;

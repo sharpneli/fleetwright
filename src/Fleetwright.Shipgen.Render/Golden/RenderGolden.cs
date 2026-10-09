@@ -52,10 +52,56 @@ public static class RenderGolden
             out_.Add($"turret types {string.Join(" ", golden)} vs ours {string.Join(" ", ours)}");
         foreach (var t in golden.Intersect(ours))
             One($"turrets/{t}.svg.gz", sp.Turrets[t]);
-        double gMax = Py.Round(st.F("max_height_m"), 2), oMax = sp.Meta.D("shadow").F("max_height_m");
+        double gMax = Math.Round(st.F("max_height_m"), 2), oMax = sp.Meta.D("shadow").F("max_height_m");
         if (gMax != oMax)
             out_.Add($"max_height_m {gMax} vs ours {oMax}");
         return out_;
+    }
+
+    static void WriteGz(string path, string text)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        using var fs = File.Create(path);
+        using var gz = new GZipStream(fs, CompressionLevel.SmallestSize);
+        var bytes = Encoding.UTF8.GetBytes(text);
+        gz.Write(bytes, 0, bytes.Length);
+    }
+
+    /// <summary>Rewrite golden/svg and golden/sprite (sprite.json) from ours for the cases that no longer match, after a
+    /// deliberate change to the output. The PNGs stay: png-check compares them by coverage. Returns the cases
+    /// rewritten.</summary>
+    public static (List<string> Svg, List<string> Sprite) Update(string root, IReadOnlyList<GoldenCase> cases)
+    {
+        var svgCapturePath = Path.Combine(root, "golden", "svg", "capture.json");
+        var svgCapture = (PyDict)PyJson.Load(svgCapturePath)!;
+        var svgCases = svgCapture.D("cases");
+        var svg = new System.Collections.Concurrent.ConcurrentBag<(string Name, double MaxH, long Clutter)>();
+        var sprite = new System.Collections.Concurrent.ConcurrentBag<string>();
+        Parallel.ForEach(cases, new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2) }, c =>
+        {
+            if (CheckSvgs(root, c, 1).Count > 0)
+            {
+                var sp = Draw(c);
+                var dir = Path.Combine(root, "golden", "svg", c.Name);
+                Directory.Delete(dir, true);
+                WriteGz(Path.Combine(dir, "hull.svg.gz"), SvgWriter.Write(sp.Hull));
+                WriteGz(Path.Combine(dir, "height.svg.gz"), SvgWriter.Write(sp.Height));
+                foreach (var (tid, sc) in sp.Turrets)
+                    WriteGz(Path.Combine(dir, "turrets", tid + ".svg.gz"), SvgWriter.Write(sc));
+                svg.Add((c.Name, sp.Meta.D("shadow").F("max_height_m"), sp.Clutter.Count));
+            }
+            if (CheckSprite(root, c, 1).Count > 0)
+            {
+                var meta = ShipSprites.Build(ShipDesign.Build((PyDict)PyJson.Load(c.DesignPath)!), Scale, Mips).Meta;
+                PyJson.Save(Path.Combine(root, "golden", "sprite", c.Name, "sprite.json.gz"), PyJson.Plain(meta), 1);
+                sprite.Add(c.Name);
+            }
+        });
+        foreach (var (name, maxH, clutter) in svg)
+            svgCases[name] = PyDict.Of(("max_height_m", maxH), ("clutter", clutter));
+        if (!svg.IsEmpty)
+            PyJson.Save(svgCapturePath, svgCapture, 1);
+        return (svg.Select(s => s.Name).Order(StringComparer.Ordinal).ToList(), sprite.Order(StringComparer.Ordinal).ToList());
     }
 
     /// <summary>sprite.json against golden/sprite by the golden rules, except shadow.max_height_m, which comes from
@@ -78,7 +124,7 @@ public static class RenderGolden
         g["shadow"] = gs;
         o["shadow"] = os;
         var out_ = GoldenDiff.Compare(g, o, max).Select(d => d.ToString()).ToList();
-        double lo = Py.Round(Py.Max(ship.D("render").L("columns").Cast<PyDict>().Select(col => col.F("top"))), 2);
+        double lo = Math.Round((ship.D("render").L("columns").Cast<PyDict>().Select(col => col.F("top"))).Max(), 2);
         const double tallest = 3.2;   // the boiler cowl
         foreach (var (who, h) in new[] { ("golden", gh), ("ours", oh) })
             if (h < lo - 0.005 || h > lo + tallest + 0.005)

@@ -97,7 +97,7 @@ public static class Powerplant
         foreach (var (k, lo, why) in new[]
                  {
                      ("velocity_m_s", 0.0, "the funnel gas must move"),
-                     ("gas_temp_k", AMBIENT_K, $"funnel gas no hotter than the air ({Py.F(AMBIENT_K, 0)} K) draws no air"),
+                     ("gas_temp_k", AMBIENT_K, $"funnel gas no hotter than the air ({AMBIENT_K:F0} K) draws no air"),
                      ("reach_m", -1e-9, "an uptake can't lead a negative distance"),
                      ("air_fuel_ratio", -1e-9, "the boilers can't burn a negative amount of air"),
                  })
@@ -139,18 +139,18 @@ public static class Powerplant
     {
         var t = p.D("tech");
         double s = p.F("stress");
-        double kw = Py.Max(shp, 1.0) * KW_PER_SHP;
+        double kw = Math.Max(shp, 1.0) * KW_PER_SHP;
         double mw = kw / 1000.0;
         double unitMax = t.F("unit_max_mw");
-        long shafts = Py.Truthy(p["shafts"]) ? Py.ToLong(p["shafts"]) : Py.Max(1L, Py.Min(4L, Py.Ceil(mw / unitMax)));
-        long perShaft = Py.Max(p.I("units_per_shaft"), Py.Ceil(mw / shafts / unitMax));
+        long shafts = Py.Truthy(p["shafts"]) ? Py.ToLong(p["shafts"]) : Math.Max(1L, Math.Min(4L, (long)Math.Ceiling(mw / unitMax)));
+        long perShaft = Math.Max(p.I("units_per_shaft"), (long)Math.Ceiling(mw / shafts / unitMax));
         bool elec = Py.Eq(p["transmission"], "electric");
         double wSpec = t.F("weight_kg_per_kw") * (1 - (1 - t.F("stress_floor")) * s) * (elec ? 1.3 : 1.0);
         double sfc = t.F("sfc_g_per_kwh") * (1 + 0.08 * s) * (elec ? 1.06 : 1.0);
         return PyDict.Of(("kw", kw), ("shafts", shafts), ("units_per_shaft", perShaft), ("units", shafts * perShaft),
             ("unit_mw", mw / (shafts * perShaft)), ("weight_t", kw * wSpec / 1000.0), ("sfc", sfc),
             ("density", t.F("density_t_per_m3") * (0.85 + 0.15 * s)), ("continuous_kw", kw * (1 - 0.15 * s)),
-            ("overload", 1 + 0.15 * (1 - s)), ("crew", Py.Round(t.F("crew_k") * Py.Pow(mw, 0.75))),
+            ("overload", 1 + 0.15 * (1 - s)), ("crew", (long)Math.Round(t.F("crew_k") * Math.Pow(mw, 0.75))),
             ("raised_units", perShaft > p.I("units_per_shaft")));
     }
 
@@ -160,7 +160,7 @@ public static class Powerplant
         if (f >= 1.0)
             return pts[^1] + over * (f - 1.0) / 0.1;
         if (f <= CURVE_LOADS[0])
-            return pts[0] * Py.Pow(CURVE_LOADS[0] / Py.Max(f, 0.02), 0.25);
+            return pts[0] * Math.Pow(CURVE_LOADS[0] / Math.Max(f, 0.02), 0.25);
         for (int i = 0; i < pts.Length - 1; i++)
         {
             double f0 = CURVE_LOADS[i], m0 = pts[i], f1 = CURVE_LOADS[i + 1], m1 = pts[i + 1];
@@ -182,13 +182,13 @@ public static class Powerplant
         else
         {
             double unitKw = r.F("kw") / r.I("units");
-            long running = Py.Max(1L, Py.Min(r.I("units"), Py.Ceil(kw / unitKw - 1e-9)));
+            long running = Math.Max(1L, Math.Min(r.I("units"), (long)Math.Ceiling(kw / unitKw - 1e-9)));
             f = kw / (running * unitKw);
         }
         return kw * r.F("sfc") * CurveMult(curve, f) / 1000.0;
     }
 
-    public static double DoubleBottom(double depth) => Py.Max(DOUBLE_BOTTOM_MIN, DOUBLE_BOTTOM_FRAC * depth);
+    public static double DoubleBottom(double depth) => Math.Max(DOUBLE_BOTTOM_MIN, DOUBLE_BOTTOM_FRAC * depth);
 
     /// <summary>The machinery space for an inside width w_avail and a height h_avail.</summary>
     public static PyDict Space(PyDict p, double shp, double wAvail, double hAvail)
@@ -196,30 +196,30 @@ public static class Powerplant
         var t = p.D("tech");
         var r = Rated(p, shp);
         var u = t.D("unit");
-        double k = Py.Pow(r.F("unit_mw") / u.F("mw"), 1.0 / 3);
+        double k = Math.Pow(r.F("unit_mw") / u.F("mw"), 1.0 / 3);
         double hU = u.F("height_m") * k, wU = u.F("width_m") * k, lU = u.F("length_m") * k;
-        double hEff = Py.Max(1.0, hU, Py.Min(hAvail, hU + 2.5));
+        double hEff = Math.Max(1.0, Math.Max(hU, Math.Min(hAvail, hU + 2.5)));
         double pitch = wU + 0.8;
         bool split = Py.Truthy(p["centreline_bulkhead"]);
         double wSide = split ? wAvail / 2 : wAvail;
-        long rows = wSide > 0 ? Py.Int(Py.FloorDiv(wSide, pitch)) : 0;
+        long rows = wSide > 0 ? (long)Math.Floor(wSide / pitch) : 0;
         double used = rows * pitch;
         double wEff = (used + 0.5 * (wSide - used)) * (split ? 2 : 1);
         double volume = r.F("weight_t") / r.F("density");
         double bf = t.F("boiler_fraction");
-        double hBoil = Py.Max(1.0, hAvail, hU);
+        double hBoil = Math.Max(1.0, Math.Max(hAvail, hU));
         var order = Groups(p).Order;
         int nB = order.Count(x => x == "boiler"), nE = order.Count(x => x == "engine");
         double groupK = 1 + GROUP_K * Math.Max(0, order.Count - 2);
         double roomMin = lU + ROOM_GANGWAY;
-        double boilers = bf * volume / Py.Max(wEff, 0.5) / hBoil * groupK;
-        double engines = Py.Max((1 - bf) * volume / Py.Max(wEff, 0.5) / hEff * groupK, roomMin);
-        double bEach = nB != 0 ? Py.Max(boilers / nB, nB > 1 ? roomMin : 0.0) : 0.0;
-        double eEach = Py.Max(engines / nE, roomMin);
+        double boilers = bf * volume / Math.Max(wEff, 0.5) / hBoil * groupK;
+        double engines = Math.Max((1 - bf) * volume / Math.Max(wEff, 0.5) / hEff * groupK, roomMin);
+        double bEach = nB != 0 ? Math.Max(boilers / nB, nB > 1 ? roomMin : 0.0) : 0.0;
+        double eEach = Math.Max(engines / nE, roomMin);
         var lengths = order.Select(x => x == "boiler" ? bEach : eEach).ToList();
-        return PyDict.Of(("length", Py.Sum(lengths)), ("boilers", bEach * nB), ("engines", eEach * nE),
+        return PyDict.Of(("length", lengths.Sum()), ("boilers", bEach * nB), ("engines", eEach * nE),
             ("order", order.Cast<object?>().ToList()), ("lengths", lengths.Cast<object?>().ToList()), ("rows", rows),
-            ("unit", new object?[] { lU, wU, hU }), ("protrusion", Py.Max(0.0, hU - hAvail)), ("volume", volume),
+            ("unit", new object?[] { lU, wU, hU }), ("protrusion", Math.Max(0.0, hU - hAvail)), ("volume", volume),
             ("w_eff", wEff), ("h_eff", hEff), ("h_boilers", hBoil), ("fits", rows > 0));
     }
 
@@ -234,7 +234,7 @@ public static class Powerplant
         {
             if (Py.Eq(p["bunkers"], "wing"))
             {
-                wing = Py.Min(left, 2 * p.F("wing_bunker_m") * length * (depth - DoubleBottom(depth)) * 0.9 / stow);
+                wing = Math.Min(left, 2 * p.F("wing_bunker_m") * length * (depth - DoubleBottom(depth)) * 0.9 / stow);
                 left -= wing;
             }
             wEnd = wAvail + (Py.Eq(p["bunkers"], "wing") ? 2 * p.F("wing_bunker_m") : 0.0);
@@ -243,10 +243,10 @@ public static class Powerplant
         {
             double db = DoubleBottom(depth) * shipL * shipB * cb * 0.6 / stow;
             double layers = 2 * 0.5 * tds * 0.6 * shipL * draught / stow;
-            left = Py.Max(0.0, left - db - layers);
+            left = Math.Max(0.0, left - db - layers);
             wEnd = wAvail;
         }
-        double end = left > 0 ? left * stow / (Py.Max(wEnd, 1.0) * Py.Max(hAvail, 1.0) * 0.9) : 0.0;
+        double end = left > 0 ? left * stow / (Math.Max(wEnd, 1.0) * Math.Max(hAvail, 1.0) * 0.9) : 0.0;
         return (wing, end);
     }
 
@@ -313,7 +313,7 @@ public static class Powerplant
     public static double NaturalVelocity(PyDict p, double stackM, double trunkM = 0.0)
     {
         double t = p.D("tech").D("draught").F("gas_temp_k", 600);
-        return 0.3 * Math.Sqrt(2 * 9.81 * Py.Max(stackM, 1.0) * (1 - AMBIENT_K / t)) * Py.Max(0.5, 1 - 0.02 * trunkM);
+        return 0.3 * Math.Sqrt(2 * 9.81 * Math.Max(stackM, 1.0) * (1 - AMBIENT_K / t)) * Math.Max(0.5, 1 - 0.02 * trunkM);
     }
 
     /// <summary>Funnels for boiler groups of the given lengths: counts per group, width, length, gas velocity, area.</summary>
@@ -329,7 +329,7 @@ public static class Powerplant
             (area, v) = (mw * q / vNat, vNat);
         else if (sysname == "forced_boost")
         {
-            area = Py.Max(mw * q / d.F("velocity_m_s"), mw * d.F("natural_fraction", 0.6) * q / vNat);
+            area = Math.Max(mw * q / d.F("velocity_m_s"), mw * d.F("natural_fraction", 0.6) * q / vNat);
             v = d.F("velocity_m_s");
         }
         else
@@ -337,23 +337,23 @@ public static class Powerplant
             v = d.F("velocity_m_s", 14.0);
             area = mw * q / v;
         }
-        double wMax = Py.Min(0.22 * beam, 7.0);
+        double wMax = Math.Min(0.22 * beam, 7.0);
         double aMax = 0.785 * wMax * 1.5 * wMax;
-        long nArea = Py.Ceil(area / aMax - 1e-9);
+        long nArea = (long)Math.Ceiling(area / aMax - 1e-9);
         double reach = d.F("reach_m", 10.0);
         var counts = new List<long>();
         foreach (var g in groups)
         {
-            double lF = 1.5 * Py.Min(wMax, Math.Sqrt(area / Py.Max(1L, nArea) / (0.785 * 1.5)));
-            counts.Add(Py.Max(1L, Py.Ceil(g / (2 * reach + lF) - 1e-9)));
+            double lF = 1.5 * Math.Min(wMax, Math.Sqrt(area / Math.Max(1L, nArea) / (0.785 * 1.5)));
+            counts.Add(Math.Max(1L, (long)Math.Ceiling(g / (2 * reach + lF) - 1e-9)));
         }
         if (counts.Count == 0)
             counts = [1];
-        long want = Py.Max(nArea, counts.Sum()) + extra;
+        long want = Math.Max(nArea, counts.Sum()) + extra;
         long needed = want;
         if (want > MAX_FUNNELS)
         {
-            want = Py.Max(MAX_FUNNELS, counts.Count);
+            want = Math.Max(MAX_FUNNELS, counts.Count);
             while (counts.Sum() > want)
             {
                 long mx = counts.Max();
@@ -362,14 +362,14 @@ public static class Powerplant
         }
         while (counts.Sum() < want)
         {
-            int j = Py.MaxBy(Enumerable.Range(0, counts.Count), k => (groups.Count > 0 ? groups[k] : 1) / (double)counts[k]);
+            int j = Enumerable.Range(0, counts.Count).MaxBy(k => (groups.Count > 0 ? groups[k] : 1) / (double)counts[k]);
             counts[j] += 1;
         }
         long n = counts.Sum();
-        double w = Py.Min(wMax, Math.Sqrt(CASING * area / n / (0.785 * 1.5)));
-        w = Py.Max(w, sysname != "exhaust" ? 2.2 : 1.0);
+        double w = Math.Min(wMax, Math.Sqrt(CASING * area / n / (0.785 * 1.5)));
+        w = Math.Max(w, sysname != "exhaust" ? 2.2 : 1.0);
         if (needed > n)
-            v *= Py.Max(1.0, area / (n * 0.785 * w * 1.5 * w / CASING));
+            v *= Math.Max(1.0, area / (n * 0.785 * w * 1.5 * w / CASING));
         var o = PyDict.Of(("counts", counts.Cast<object?>().ToList()), ("width", w), ("length", 1.5 * w), ("velocity", v),
             ("area", area), ("gas", q), ("reach", reach));
         if (needed > n)
@@ -397,7 +397,7 @@ public static class Powerplant
     public static (double Funnel, double Uptake) FunnelWeight(double w, double l, double height, double uptakeVertical,
         double uptakeHorizontal)
     {
-        double per = Math.PI * w + 2 * Py.Max(0.0, l - w);
+        double per = Math.PI * w + 2 * Math.Max(0.0, l - w);
         return (0.12 * per * height, 0.18 * per * (uptakeVertical + 1.5 * uptakeHorizontal));
     }
 
@@ -407,11 +407,11 @@ public static class Powerplant
         var t = p.D("tech");
         var r = Rated(p, shp);
         string curve = t.S("part_load");
-        var o = PyDict.Of(("name", t.Get("name", "")), ("fuel", t["fuel"]), ("rated_kw", Py.Round(r.F("kw"))),
-            ("rated_shp", Py.Round(shp, -1)), ("continuous_kw", Py.Round(r.F("continuous_kw"))),
-            ("overload_max", Py.Round(r.F("overload"), 3)), ("shafts", r["shafts"]), ("units", r["units"]),
-            ("unit_mw", Py.Round(r.F("unit_mw"), 2)), ("weight_t", Py.Round(r.F("weight_t"), 1)),
-            ("sfc_g_per_kwh", Py.Round(r.F("sfc"), 1)),
+        var o = PyDict.Of(("name", t.Get("name", "")), ("fuel", t["fuel"]), ("rated_kw", (long)Math.Round(r.F("kw"))),
+            ("rated_shp", Math.Round(shp / 10.0) * 10), ("continuous_kw", (long)Math.Round(r.F("continuous_kw"))),
+            ("overload_max", Math.Round(r.F("overload"), 3)), ("shafts", r["shafts"]), ("units", r["units"]),
+            ("unit_mw", Math.Round(r.F("unit_mw"), 2)), ("weight_t", Math.Round(r.F("weight_t"), 1)),
+            ("sfc_g_per_kwh", Math.Round(r.F("sfc"), 1)),
             ("part_load", PyDict.Of(("curve", t["part_load"]), ("loads", CURVE_LOADS.Cast<object?>().ToList()),
                 ("multipliers", CURVES[curve].Pts.Cast<object?>().ToList()), ("overload_per_tenth", CURVES[curve].Over))),
             ("draught", t.D("draught")["system"]), ("stress", p["stress"]), ("transmission", p["transmission"]),

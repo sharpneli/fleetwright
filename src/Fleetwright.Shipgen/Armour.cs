@@ -135,12 +135,12 @@ public static class Armour
     public static List<PyDict> ArmourDecks(PyDict design, double D, IReadOnlyList<PyDict> raised)
     {
         var stack = Decks.DeckStack(design, D);
-        long top = -Py.Max(raised.Select(s => s.I("levels")), 0L);
+        long top = -raised.Select(s => s.I("levels")).DefaultIfEmpty(0L).Max();
         var out_ = new List<PyDict>();
         var decks = design.DOr("armour").Or("decks", null) as List<object?> ?? [];
         foreach (PyDict d in decks.Cast<PyDict>())
         {
-            long asked = Py.Int(Py.ToDouble(d.Get("deck", 0L)));
+            long asked = (long)(Py.ToDouble(d.Get("deck", 0L)));
             long n = Math.Max(top, Math.Min(asked, stack[^1].N));
             out_.Add(PyDict.Of(("deck", n), ("mm", d.Get("mm", 0L)), ("extent", d.Get("extent", "citadel")),
                 ("z", n >= 0 ? stack[(int)n].Z : D - n * Geometry.DECK_PITCH), ("asked", asked),
@@ -170,11 +170,11 @@ public static class Armour
             double f = (x - s.F("x0")) / (s.F("x1") - s.F("x0"));
             if (Py.Eq(s["extent"], "aft"))
                 f = 1.0 - f;
-            mm += (s.F("tip_mm") - mm) * Py.Min(1.0, Py.Max(0.0, f));
+            mm += (s.F("tip_mm") - mm) * Math.Min(1.0, Math.Max(0.0, f));
         }
         if (z is double zz && s.F("bottom_mm", mm) != mm && zz < s.F("wl") && s.F("wl") > s.F("bottom"))
         {
-            double f = Py.Max(0.0, (zz - s.F("bottom")) / (s.F("wl") - s.F("bottom")));
+            double f = Math.Max(0.0, (zz - s.F("bottom")) / (s.F("wl") - s.F("bottom")));
             mm = s.F("bottom_mm") + (mm - s.F("bottom_mm")) * f;
         }
         return mm;
@@ -202,11 +202,11 @@ public static class Armour
                     .Where(p => p.Lv >= -dn).Select(p => (s.Ext, p.X0, p.X1))).ToList();
             foreach (var (ext, p0, p1) in spans)
             {
-                var p = decks.FirstOrDefault(q => q.I("deck") == dn && Py.Min(q.F("x1"), p1) - Py.Max(q.F("x0"), p0) > 1e-6);
+                var p = decks.FirstOrDefault(q => q.I("deck") == dn && Math.Min(q.F("x1"), p1) - Math.Max(q.F("x0"), p0) > 1e-6);
                 if (p != null)
                 {
                     object? pm = p["material"], dm = d["material"];
-                    p.Update(("mm", Py.Add(p["mm"], d["mm"])), ("x0", Py.Min(p.F("x0"), p0)), ("x1", Py.Max(p.F("x1"), p1)),
+                    p.Update(("mm", Py.Add(p["mm"], d["mm"])), ("x0", Math.Min(p.F("x0"), p0)), ("x1", Math.Max(p.F("x1"), p1)),
                         ("extent", Py.Eq(p["extent"], "full") || ext == "full" ? "full" : p["extent"]),
                         ("material", dm is null || Py.Eq(dm, pm) ? pm : pm is null ? dm : $"{Py.Str(pm)} + {Py.Str(dm)}"));
                     continue;
@@ -217,18 +217,18 @@ public static class Armour
             }
         }
         var over = decks.Where(d => Py.In(d["extent"], "citadel", "full") && d.I("deck") >= 0).ToList();
-        var main = Py.MaxByOrDefault(over, d => (d.F("mm"), d.F("z")));
-        var roof = Py.MinByOrDefault(over, d => d.F("z"));
+        var main = over.MaxBy(d => (d.F("mm"), d.F("z")));
+        var roof = over.MinBy(d => d.F("z"));
         double h0 = BELT_H_A * T + BELT_H_B;
         double below = a.F("belt_depth_m", h0 / 2), above = a.F("belt_height_m", h0 / 2);
         double h = below + above;
-        double bot = Py.Max(0.0, T - below);
-        double band = Py.Min(D, Py.Max(bot, T + above));
-        double top = Py.Min(D, Py.Max(band, main != null ? main.F("z") : 0.0));
+        double bot = Math.Max(0.0, T - below);
+        double band = Math.Min(D, Math.Max(bot, T + above));
+        double top = Math.Min(D, Math.Max(band, main != null ? main.F("z") : 0.0));
 
         var strakes = new List<PyDict>();
         var endBhs = new List<PyDict>();
-        double bhBot = Py.Max(0.0, bot - 0.4 * h);
+        double bhBot = Math.Max(0.0, bot - 0.4 * h);
         var tops = new Dictionary<string, double>(StringComparer.Ordinal) { ["citadel"] = beltD > 0 ? top : band };
         foreach (var end in BELT_ENDS)
         {
@@ -237,15 +237,15 @@ public static class Armour
             if (e.F("mm", 0) <= 0)
                 continue;
             var (_, s0, s1) = ExtentSpans(end, L, x0, x1)[0];
-            double reach = Py.Min(1.0, Py.Max(0.0, e.F("reach", 1.0)));
+            double reach = Math.Min(1.0, Math.Max(0.0, e.F("reach", 1.0)));
             if (end == "fore")
                 s1 = s0 + (s1 - s0) * reach;
             else
                 s0 = s1 - (s1 - s0) * reach;
             double mid = (s0 + s1) / 2;
             var cover = decks.Where(d => d.F("x0") <= mid && mid <= d.F("x1") && Py.In(d["extent"], end, "full")).ToList();
-            var dk = Py.MaxByOrDefault(cover, d => (d.F("mm"), d.F("z")));
-            double et = Py.Min(D, Py.Max(band, dk != null ? dk.F("z") : 0.0));
+            var dk = cover.MaxBy(d => (d.F("mm"), d.F("z")));
+            double et = Math.Min(D, Math.Max(band, dk != null ? dk.F("z") : 0.0));
             tops[end] = et;
             if (s1 - s0 > 1e-6)
             {
@@ -258,14 +258,14 @@ public static class Armour
             }
         }
         var sb = a.DOr("steering_box");
-        if (Py.Max(sb.F("mm", 0), sb.F("deck_mm", 0), sb.F("bulkhead_mm", 0)) > 0)
+        if (Math.Max(sb.F("mm", 0), Math.Max(sb.F("deck_mm", 0), sb.F("bulkhead_mm", 0))) > 0)
         {
             var (b0, b1) = geo.SteeringSpan(L);
             var stack = Decks.DeckStack(design, D);
             object? wbox = geo.SteeringBeam;
             double rz = Ordnance.Span(PyDict.Of(("decks", stack.Select(s => (object?)s.Z).ToList()),
                 ("inner_bottom", Powerplant.DoubleBottom(D)), ("top", roof != null ? roof.F("z") : D))).Top + D;
-            long n = Py.MinBy(stack, v => Math.Abs(v.Z - rz)).N;
+            long n = stack.MinBy(v => Math.Abs(v.Z - rz)).N;
             if (sb.F("deck_mm", 0) > 0)
             {
                 object? own = sb.Get("deck_material");
@@ -273,7 +273,7 @@ public static class Armour
                     ("x0", b0), ("x1", b1), ("w", wbox),
                     ("material", ArmourMaterial(design, "decks", Py.Truthy(own) ? PyDict.Of(("material", own)) : null))));
             }
-            double floor = Py.Min(Powerplant.DoubleBottom(D), rz);
+            double floor = Math.Min(Powerplant.DoubleBottom(D), rz);
             if (sb.F("mm", 0) > 0)
                 strakes.Add(PyDict.Of(("id", "Steering gear box"), ("kind", "box"), ("extent", "aft"), ("mm", sb["mm"]),
                     ("tip_mm", sb["mm"]), ("x0", b0), ("x1", b1), ("bottom", floor), ("top", rz),
@@ -287,7 +287,7 @@ public static class Armour
         if (ub.F("mm", 0) > 0)
         {
             var stack = Decks.DeckStack(design, D);
-            long to = Py.Int(Py.ToDouble(ub.Get("to_deck", 0L)));
+            long to = (long)(Py.ToDouble(ub.Get("to_deck", 0L)));
             double ut = stack[(int)Math.Min(Math.Max(to, 0), stack[^1].N)].Z;
             var pieces = ExtentSpans(ub.S("extent", "citadel")!, L, x0, x1);
             if (Py.Eq(ub.Get("extent"), "full"))
@@ -309,8 +309,8 @@ public static class Armour
                 }
             }
         }
-        double bhTop = Py.Max(new[] { top }.Concat(strakes.Where(s => Py.Eq(s["kind"], "upper") && Py.Eq(s["extent"], "citadel"))
-            .Select(s => s.F("top"))));
+        double bhTop = (new[] { top }.Concat(strakes.Where(s => Py.Eq(s["kind"], "upper") && Py.Eq(s["extent"], "citadel"))
+            .Select(s => s.F("top")))).Max();
         return PyDict.Of(("x0", x0), ("x1", x1), ("belt_mm", belt), ("belt_bottom_mm", a.Get("belt_bottom_mm", belt)),
             ("waterline", T), ("belt_bottom", bot), ("belt_top", top), ("decks", decks.Cast<object?>().ToList()),
             ("strakes", strakes.Cast<object?>().ToList()), ("main_z", main?["z"]), ("roof_z", roof?["z"]),
@@ -330,7 +330,7 @@ public static class Armour
         if (g.F("belt_mm") > 0)
         {
             double bot = g.F("belt_bottom"), top = g.F("belt_top"), mm = g.F("belt_mm"), mb = g.F("belt_bottom_mm");
-            double t0 = Py.Min(top, Py.Max(bot, g.F("waterline")));
+            double t0 = Math.Min(top, Math.Max(bot, g.F("waterline")));
             double aUp = (top - t0) * mm, aLo = (t0 - bot) * (mm + mb) / 2;
             double zLo = mb + mm > 0 ? bot + (t0 - bot) * (mb + 2 * mm) / (3 * (mb + mm)) : bot;
             double zc = aUp + aLo > 0 ? ((top + t0) / 2 * aUp + zLo * aLo) / (aUp + aLo) : (top + bot) / 2;
@@ -359,7 +359,7 @@ public static class Armour
             double floor = Powerplant.DoubleBottom(D);
             double top = g["roof_z"] is not null ? g.F("roof_z") : g.F("waterline");
             double mm = TDS_MM_PER_M * tds;
-            out_.Add(new Weight("Torpedo protection", "armour", 2 * lc * Py.Max(0.0, top - floor) * mm / 1000 * Weight.STEEL, xc,
+            out_.Add(new Weight("Torpedo protection", "armour", 2 * lc * Math.Max(0.0, top - floor) * mm / 1000 * Weight.STEEL, xc,
                 Zf(top, floor)));
         }
         double cb = design.D("hull").F("block_coefficient");
@@ -381,11 +381,11 @@ public static class Armour
         var out_ = new List<string>();
         foreach (var d in ArmourDecks(design, res.Depth, geo.Raised))
             if (d.I("asked") != d.I("deck"))
-                out_.Add($"The hull has no {Decks.DeckName(d.I("asked")).ToLowerInvariant()} ({Py.F(res.Depth, 1)} m deep): its " +
+                out_.Add($"The hull has no {Decks.DeckName(d.I("asked")).ToLowerInvariant()} ({res.Depth:F1} m deep): its " +
                          $"{Py.Str(d["mm"])} mm deck armour lies on the {Decks.DeckName(d.I("deck")).ToLowerInvariant()}.");
         var arm = design.DOr("armour");
         if (arm.F("belt_mm", 0) > 0 && arm.F("belt_depth_m", 1.0) < 1.0)
-            out_.Add($"The belt reaches only {Py.F(arm.F("belt_depth_m"), 1)} m below the waterline: rolling or " +
+            out_.Add($"The belt reaches only {arm.F("belt_depth_m"):F1} m below the waterline: rolling or " +
                      "flooding uncovers the side under it.");
         var ub = arm.DOr("upper_belt");
         if (ub.F("mm", 0) > 0 && !res.Armour.L("strakes").Cast<PyDict>().Any(s => Py.Eq(s["kind"], "upper")))

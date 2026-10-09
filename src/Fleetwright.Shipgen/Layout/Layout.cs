@@ -135,7 +135,7 @@ public sealed partial class Layout
             Short.Add(need);
     }
 
-    static long Cell(double x) => Py.Floor(x / FP_CELL);
+    static long Cell(double x) => (long)Math.Floor(x / FP_CELL);
 
     /// <summary>The x-cell index of the footprints, kept up with Footprints as it grows (rebuilt when the list is
     /// replaced): free and free_at look only at the footprints whose box may reach them.</summary>
@@ -269,7 +269,7 @@ public sealed partial class Layout
 
     /// <summary>How many decks the weather deck stands above the main deck at x (the highest under x - r .. x + r).</summary>
     public long DeckLevel(double x, double r = 0.0) =>
-        Py.Max(Raised.Where(s => s.F("x0") - r <= x && x <= s.F("x1") + r).Select(s => s.I("levels")), 0L);
+        Raised.Where(s => s.F("x0") - r <= x && x <= s.F("x1") + r).Select(s => s.I("levels")).DefaultIfEmpty(0L).Max();
 
     /// <summary>(lowest, highest) deck_level under a footprint reaching x - r .. x + r.</summary>
     public (long Lo, long Hi) DeckLevels(double x, double r = 0.0)
@@ -280,7 +280,7 @@ public sealed partial class Layout
                 foreach (var d in new[] { -1e-6, 1e-6 })
                     if (x - r < e + d && e + d < x + r)
                         pts.Add(e + d);
-        var lv = pts.Select(p => Py.Max(Raised.Where(s => s.F("x0") <= p && p <= s.F("x1")).Select(s => s.I("levels")), 0L)).ToList();
+        var lv = pts.Select(p => Raised.Where(s => s.F("x0") <= p && p <= s.F("x1")).Select(s => s.I("levels")).DefaultIfEmpty(0L).Max()).ToList();
         return (lv.Min(), lv.Max());
     }
 
@@ -297,7 +297,7 @@ public sealed partial class Layout
         if (deckBand is null)
         {
             double xa = -Hull.L / 2, xb = Hull.L / 2;
-            long k = Math.Max(2L, Py.Int(xb - xa));
+            long k = Math.Max(2L, (long)(xb - xa));
             var xs = Enumerable.Range(0, (int)k + 1).Select(i => xa + (xb - xa) * i / k);
             var band = Thin(xs.Where(x => Hull.HalfWidth(x) - DH_INSET > 0.1).Select(x => new Pt(x, Hull.HalfWidth(x) - DH_INSET)).ToList(), 0.05);
             var all = band.Concat(Enumerable.Reverse(band).Select(p => new Pt(p.X, -p.Y))).ToList();
@@ -314,24 +314,24 @@ public sealed partial class Layout
         double den = dx * dx + dy * dy;
         if (den == 0)
             den = 1.0;
-        double t = Py.Max(0.0, Py.Min(1.0, ((px - ax) * dx + (py - ay) * dy) / den));
-        return Py.Hypot(px - ax - t * dx, py - ay - t * dy);
+        double t = Math.Max(0.0, Math.Min(1.0, ((px - ax) * dx + (py - ay) * dy) / den));
+        return double.Hypot(px - ax - t * dx, py - ay - t * dy);
     }
 
     /// <summary>Distance from (px, py) to a pie slice (cx, cy, R, a0, a1), 0 inside.</summary>
     static double SectorDist((double Cx, double Cy, double R, double A0, double A1) sec, double px, double py)
     {
         var (cx, cy, R, a0, a1) = sec;
-        double d = Py.Hypot(px - cx, py - cy);
-        double a = Py.Degrees(Math.Atan2(py - cy, px - cx));
-        bool inside = a1 - a0 >= 360 || Py.Mod(a - a0, 360.0) <= a1 - a0;
+        double d = double.Hypot(px - cx, py - cy);
+        double a = double.RadiansToDegrees(Math.Atan2(py - cy, px - cx));
+        bool inside = a1 - a0 >= 360 || Geometry.Normalize360(a - a0) <= a1 - a0;
         if (inside)
-            return Py.Max(0.0, d - R);
+            return Math.Max(0.0, d - R);
         double best = double.NaN;
         bool first = true;
         foreach (var b in new[] { a0, a1 })
         {
-            double ex = cx + R * Math.Cos(Py.Radians(b)), ey = cy + R * Math.Sin(Py.Radians(b));
+            double ex = cx + R * Math.Cos(double.DegreesToRadians(b)), ey = cy + R * Math.Sin(double.DegreesToRadians(b));
             double v = SegDist(px, py, cx, cy, ex, ey);
             if (first || v < best)
                 best = v;
@@ -368,23 +368,23 @@ public sealed partial class Layout
             return Geometry.PolygonsIntersect(p.Pts, o.Points(margin));
         }
         if (a.Kind == 'c' && b.Kind == 'c')
-            return Py.Hypot(a.X - b.X, a.Y - b.Y) < a.R + b.R + margin;
+            return double.Hypot(a.X - b.X, a.Y - b.Y) < a.R + b.R + margin;
         if (a.Kind == 'r' && b.Kind == 'r')
             return !(a.C + margin <= b.A || b.C + margin <= a.A || a.D + margin <= b.B || b.D + margin <= a.B);
         var (c, r) = a.Kind == 'c' ? (a, b) : (b, a);
-        double nx = Py.Min(Py.Max(c.X, r.A), r.C);
-        double ny = Py.Min(Py.Max(c.Y, r.B), r.D);
-        return Py.Hypot(c.X - nx, c.Y - ny) < c.R + margin;
+        double nx = Math.Min(Math.Max(c.X, r.A), r.C);
+        double ny = Math.Min(Math.Max(c.Y, r.B), r.D);
+        return double.Hypot(c.X - nx, c.Y - ny) < c.R + margin;
     }
 
     /// <summary>n of the positions spots, as near c as possible (least sum of |x - c|), spaced sp_same on one side of
     /// x = 0 and sp_cross across it. Sorted, or null if no n fit.</summary>
     public static List<double>? NearestSpaced(IEnumerable<double> spots, int n, double c, double spCross, double spSame)
     {
-        var xs = Py.Sorted(spots);
+        var xs = spots.Order().ToList();
         if (n <= 0 || xs.Count < n)
             return n <= 0 ? [] : null;
-        int neg = Py.BisectLeft(xs, 0.0);
+        int neg = xs.LowerBound(0.0);
         var cost = xs.Select(x => Math.Abs(x - c)).ToList();
         var back = new List<List<int>>();
         for (int step = 0; step < n - 1; step++)
@@ -403,9 +403,9 @@ public sealed partial class Layout
             for (int j = 0; j < xs.Count; j++)
             {
                 double x = xs[j];
-                int lim = Py.BisectRight(xs, x - spSame) - 1;
+                int lim = xs.UpperBound(x - spSame) - 1;
                 if (x >= 0.0)
-                    lim = Math.Max(lim, Math.Min(Py.BisectRight(xs, x - spCross), neg) - 1);
+                    lim = Math.Max(lim, Math.Min(xs.UpperBound(x - spCross), neg) - 1);
                 var (v, i) = lim >= 0 ? pre[lim] : (double.PositiveInfinity, -1);
                 nxt.Add(v + Math.Abs(x - c));
                 ptr.Add(i);
@@ -413,7 +413,7 @@ public sealed partial class Layout
             cost = nxt;
             back.Add(ptr);
         }
-        int jb = Py.MinBy(Enumerable.Range(0, xs.Count), k => cost[k]);
+        int jb = Enumerable.Range(0, xs.Count).MinBy(k => cost[k]);
         if (double.IsPositiveInfinity(cost[jb]))
             return null;
         var out_ = new List<double> { xs[jb] };
@@ -422,6 +422,6 @@ public sealed partial class Layout
             jb = back[b][jb];
             out_.Add(xs[jb]);
         }
-        return Py.Sorted(out_);
+        return out_.Order().ToList();
     }
 }

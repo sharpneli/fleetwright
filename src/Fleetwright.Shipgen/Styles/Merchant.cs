@@ -10,9 +10,9 @@ public sealed class MerchantStyle : Style
     /// <summary>Volume of the holds below the main deck.</summary>
     static double HoldVolume(Hull hull, List<(double H0, double H1)> holds, double depth)
     {
-        double area = Py.Sum(holds.Select(h => (h.H1 - h.H0) / 8 *
-            Py.Sum(Enumerable.Range(0, 8).Select(k => 2 * hull.HalfWidth(h.H0 + (h.H1 - h.H0) * (k + 0.5) / 8)))));
-        return 0.9 * area * Py.Max(0.0, depth - DOUBLE_BOTTOM);
+        double area = holds.Select(h => (h.H1 - h.H0) / 8 *
+            Enumerable.Range(0, 8).Select(k => 2 * hull.HalfWidth(h.H0 + (h.H1 - h.H0) * (k + 0.5) / 8)).Sum()).Sum();
+        return 0.9 * area * Math.Max(0.0, depth - DOUBLE_BOTTOM);
     }
 
     static PyDict Cargo(PyDict design) => PyDict.Merge(PyDict.Of(("kind", "dry"), ("deadweight_t", 0.0)), design.Or("cargo", null) as PyDict);
@@ -24,11 +24,11 @@ public sealed class MerchantStyle : Style
     {
         var lens = holds.Select(h => h.X1 - h.X0).ToList();
         var xs = holds.Select(h => (h.X0 + h.X1) / 2).ToList();
-        double total = Py.Sum(lens);
+        double total = lens.Sum();
         var prop = lens.Select(l => C * l / total).ToList();
         var caps = prop.Select(p => fill * p).ToList();
-        double wLight = Py.Sum(ctx.Items.Select(w => w.W));
-        double mLight = Py.Sum(ctx.Items.Select(w => w.W * w.X));
+        double wLight = ctx.Items.Select(w => w.W).Sum();
+        double mLight = ctx.Items.Select(w => w.W * w.X).Sum();
         double full = wLight + ctx.Fuel + C;
         double xc = (full * ctx.Lcb - mLight - ctx.Fuel * ctx.FuelX) / C;
 
@@ -38,17 +38,17 @@ public sealed class MerchantStyle : Style
             double left = C;
             foreach (int i in order)
             {
-                out_[i] = Py.Min(caps[i], left);
+                out_[i] = Math.Min(caps[i], left);
                 left -= out_[i];
             }
             return out_;
         }
 
-        double Centre(List<double> ws) => Py.Sum(ws.Zip(xs).Select(t => t.First * t.Second)) / C;
+        double Centre(List<double> ws) => ws.Zip(xs).Select(t => t.First * t.Second).Sum() / C;
         double xP = Centre(prop);
-        var end = Packed(Py.Sorted(Enumerable.Range(0, holds.Count), i => xc > xP ? -xs[i] : xs[i]));
+        var end = Packed(Enumerable.Range(0, holds.Count).OrderBy(i => xc > xP ? -xs[i] : xs[i]).ToList());
         double xE = Centre(end);
-        double a = Math.Abs(xE - xP) < 1e-9 ? 0.0 : Py.Max(0.0, Py.Min(1.0, (xc - xP) / (xE - xP)));
+        double a = Math.Abs(xE - xP) < 1e-9 ? 0.0 : Math.Max(0.0, Math.Min(1.0, (xc - xP) / (xE - xP)));
         return prop.Zip(end).Select(t => (1 - a) * t.First + a * t.Second).ToList();
     }
 
@@ -99,7 +99,7 @@ public sealed class MerchantStyle : Style
     public override List<Weight> RoughPayload(PyDict design, double D)
     {
         double L = design.D("hull").F("length");
-        return [new Weight("Cargo gear", "superstructure", 0.01 * Py.Pow(L, 2), zRel: ZRel.Deck(3))];
+        return [new Weight("Cargo gear", "superstructure", 0.01 * Math.Pow(L, 2), zRel: ZRel.Deck(3))];
     }
 
     public override (List<Weight> Std, List<Weight> Full) PayloadWeights(PyDict design, double L, double D, Geo geo, PyDict tun,
@@ -125,7 +125,7 @@ public sealed class MerchantStyle : Style
     {
         var cg = Cargo(design);
         var m = Machinery(design);
-        return PyDict.Of(("cargo_t", Py.RoundObj(cg["deadweight_t"])), ("deadweight_t", Py.Round(r.Full - r.Std)), ("cargo_kind", cg["kind"]),
+        return PyDict.Of(("cargo_t", Py.RoundObj(cg["deadweight_t"])), ("deadweight_t", (long)Math.Round(r.Full - r.Std)), ("cargo_kind", cg["kind"]),
             ("holds", (long)(lay.Geo.Holds?.Count ?? 0)), ("machinery_position", m["position"]));
     }
 
@@ -133,8 +133,8 @@ public sealed class MerchantStyle : Style
     {
         var cg = Cargo(design);
         var m = Machinery(design);
-        return [$"cargo: {Py.F(cg["deadweight_t"], 0, comma: true)} t {Py.Str(cg["kind"])} in {lay.Geo.Holds?.Count ?? 0} " +
-                $"{(Py.Eq(cg["kind"], "tanker") ? "tanks" : "holds")}   deadweight {Py.F(r.Full - r.Std, 0, comma: true)} t   " +
+        return [$"cargo: {cg["deadweight_t"]:N0} t {Py.Str(cg["kind"])} in {lay.Geo.Holds?.Count ?? 0} " +
+                $"{(Py.Eq(cg["kind"], "tanker") ? "tanks" : "holds")}   deadweight {r.Full - r.Std:N0} t   " +
                 $"machinery {Py.Str(m["position"])}"];
     }
 
@@ -156,7 +156,7 @@ public sealed class MerchantStyle : Style
         double lMach = Layout.PlanMachinery(lay, design, res, hull, aftEngines ? -0.38 * L : 0.0);
 
         double fcLen = Layout.Clamp(0.09 * L, 6, 22);
-        double poopLen = aftEngines ? Py.Max(0.08 * L, lMach + 0.03 * L) : 0.08 * L;
+        double poopLen = aftEngines ? Math.Max(0.08 * L, lMach + 0.03 * L) : 0.08 * L;
         double bdLen, bxc;
         if (aftEngines)
         {
@@ -165,12 +165,12 @@ public sealed class MerchantStyle : Style
         }
         else
         {
-            bdLen = Py.Max(Layout.Clamp(0.16 * L, 12, 40), lMach + 6);
+            bdLen = Math.Max(Layout.Clamp(0.16 * L, 12, 40), lMach + 6);
             bxc = -0.02 * L + shift;
         }
         var islands = new[] { ("Forecastle", L / 2 - fcLen, L / 2), ("Bridge deck", bxc - bdLen / 2, bxc + bdLen / 2), ("Poop", -L / 2, -L / 2 + poopLen) };
         foreach (var (name, x0, x1) in islands)
-            Layout.AddRaised(lay, design, name, x0, x1, Py.Round(RAISED_H / Layout.LEVEL_H));
+            Layout.AddRaised(lay, design, name, x0, x1, (long)Math.Round(RAISED_H / Layout.LEVEL_H));
         double DeckH(double x) => lay.DeckZ(x);
 
         var blocks = new List<PyDict>();
@@ -178,7 +178,7 @@ public sealed class MerchantStyle : Style
         var boats = new List<object?>();
         double bx0 = bxc - bdLen / 2, bx1 = bxc + bdLen / 2;
         double hwMid = hull.HalfWidth(bxc);
-        double wh = Py.Min(0.62 * B, 2 * (hwMid - 1.5));
+        double wh = Math.Min(0.62 * B, 2 * (hwMid - 1.5));
         var houseIds = new List<string>();
 
         PyDict House(string bid, double x0, double x1, double w, long level, double rf, double rb, double z0 = RAISED_H, string role = "deckhouse")
@@ -190,13 +190,13 @@ public sealed class MerchantStyle : Style
         House("House", bx0 + 0.08 * bdLen, bx1 - 0.06 * bdLen, wh, 1, 1.2, 1.0);
         if (!aftEngines)
             House("Boat deck house", bx0 + 0.25 * bdLen, bx1 - 0.08 * bdLen, 0.5 * B, 2, 1.0, 0.8);
-        House("Bridge", bx1 - 0.3 * bdLen, bx1 - 0.08 * bdLen, Py.Min(0.92 * B, 2 * (hwMid - 0.4)), !aftEngines ? 3 : 2, 0.6, 0.6, role: "bridge");
+        House("Bridge", bx1 - 0.3 * bdLen, bx1 - 0.08 * bdLen, Math.Min(0.92 * B, 2 * (hwMid - 0.4)), !aftEngines ? 3 : 2, 0.6, 0.6, role: "bridge");
         double funTop = RAISED_H + Layout.LEVEL_H * 3 + 2.0;
         double fx, mx, boatX, boatY;
         if (aftEngines)
         {
             double ex0 = -L / 2 + 0.03 * L, ex1 = -L / 2 + poopLen - 1.0;
-            House("Engine house", ex0, ex1, Py.Min(0.7 * B, 2 * (hull.HalfWidth((ex0 + ex1) / 2) - 1.5)), 1, 1.0, 1.0);
+            House("Engine house", ex0, ex1, Math.Min(0.7 * B, 2 * (hull.HalfWidth((ex0 + ex1) / 2) - 1.5)), 1, 1.0, 1.0);
             House("Engine house upper", ex0 + 0.15 * (ex1 - ex0), ex1 - 0.1 * (ex1 - ex0), 0.45 * B, 2, 0.8, 0.8);
             fx = (ex0 + ex1) / 2 - 0.1 * (ex1 - ex0);
             mx = (-L / 2 + 0.02 * L + -L / 2 + poopLen) / 2;
@@ -210,7 +210,7 @@ public sealed class MerchantStyle : Style
             (boatX, boatY) = (fx, 0.31 * B);
         }
         var (nfun, fw, fl) = Layout.PlanFunnels(lay, design, res, B, funTop);
-        fw = Py.Min(fw, 0.4 * B);
+        fw = Math.Min(fw, 0.4 * B);
         for (int i = 0; i < nfun; i++)
         {
             double x = aftEngines ? fx - i * (fl + 1.5) : fx + (i - (nfun - 1) / 2.0) * (fl + 1.5);
@@ -251,9 +251,9 @@ public sealed class MerchantStyle : Style
             double zl = z1 - z0;
             if (zl < 6)
                 continue;
-            long n = Math.Max(1L, Py.Round(zl / pitch));
+            long n = Math.Max(1L, (long)Math.Round(zl / pitch));
             double hl = zl / n;
-            var zone = Py.Range(n).Select(i => (X0: z0 + i * hl, X1: z0 + (i + 1) * hl)).ToList();
+            var zone = Enumerable.Range(0, (int)n).Select(i => (X0: z0 + i * hl, X1: z0 + (i + 1) * hl)).ToList();
             if (outward < 0)
                 zone.Reverse();
             holds.AddRange(zone);
@@ -311,7 +311,7 @@ public sealed class MerchantStyle : Style
                 mxx = spot.Value;
                 var booms = served.Where(h => h != null).SelectMany(h => new[] { 1, -1 }.Select(s => (object?)new object?[] { h!["x"], s * 0.18 * B }))
                     .ToList();
-                masts.Add(PyDict.Of(("x", mxx), ("y", 0.0), ("yard", Py.Min(0.25 * B, 6)), ("tripod", false), ("booms", booms), ("top", mastTop)));
+                masts.Add(PyDict.Of(("x", mxx), ("y", 0.0), ("yard", Math.Min(0.25 * B, 6)), ("tripod", false), ("booms", booms), ("top", mastTop)));
                 lay.Occupy(Footprint.Circle(mxx, 0.0, 0.9), 0, mastTop, $"Mast {masts.Count}");
                 lay.Weights.Add(new Weight($"Mast {masts.Count}", "superstructure", 8 + 0.2 * L, mxx, ZRel.Deck(mastTop / 3)));
                 k += 2;
@@ -319,7 +319,7 @@ public sealed class MerchantStyle : Style
         }
         if (tanker)
         {
-            masts.Add(PyDict.Of(("x", L / 2 - fcLen - 0.5), ("y", 0.0), ("yard", Py.Min(0.3 * B, 7)), ("tripod", false), ("top", mastTop)));
+            masts.Add(PyDict.Of(("x", L / 2 - fcLen - 0.5), ("y", 0.0), ("yard", Math.Min(0.3 * B, 7)), ("tripod", false), ("top", mastTop)));
             foreach (var (x0, x1) in new[] { (-L / 2 + poopLen, bx0), (bx1, L / 2 - fcLen) })
                 fittings.Add(PyDict.Of(("x", (x0 + x1) / 2), ("y", 0.0), ("l", x1 - x0), ("w", 1.2), ("color", "fitting"), ("r", 0.2)));
         }
@@ -330,10 +330,10 @@ public sealed class MerchantStyle : Style
             double vol = HoldVolume(hull, holds, depth);
             double need = cg.F("deadweight_t") * STOWAGE[cg.S("kind")];
             if (vol < need)
-                lay.Fail("length", $"The {(tanker ? "tanks" : "holds")} take about {Py.F(vol, 0, comma: true)} m3, but " +
-                                   $"{Py.F(cg["deadweight_t"], 0, comma: true)} t of cargo needs about {Py.F(need, 0, comma: true)} m3. Carry less cargo.");
+                lay.Fail("length", $"The {(tanker ? "tanks" : "holds")} take about {vol:N0} m3, but " +
+                                   $"{cg["deadweight_t"]:N0} t of cargo needs about {need:N0} m3. Carry less cargo.");
         }
-        double hatchT = Py.Sum(hatches.Select(h => h.F("l") * h.F("w"))) * 0.12;
+        double hatchT = hatches.Select(h => h.F("l") * h.F("w")).Sum() * 0.12;
         if (hatchT != 0)
             lay.Weights.Add(new Weight("Hatch covers", "superstructure", hatchT, 0.0, ZRel.Deck(1.0)));
         lay.Geo.Holds = holds;
@@ -343,7 +343,7 @@ public sealed class MerchantStyle : Style
         {
             var (ttId, tt) = Armament.TorpedoType(tp);
             double r = tt.F("barrel_len") / 2 + 0.3;
-            Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, Py.FloorDiv(Py.ToLong(tp["mounts"]) + 1, 2),
+            Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, (Py.ToLong(tp["mounts"]) + 1) / 2,
                 xs.Select(x => new object?[] { x, hull.HalfWidth(x) - r - 0.4, DeckH(x) + 0.3 }), "T", label: "Torpedo");
         }
         FireControl.Place(lay, design, blocks);
@@ -355,7 +355,7 @@ public sealed class MerchantStyle : Style
             double roof = RAISED_H + Layout.LEVEL_H;
             var cands = new List<object?[]>
             {
-                new object?[] { bx1 - 0.12 * bdLen, Py.Min(0.46 * B, hwMid - 0.4) - rr - 0.2, RAISED_H + Layout.LEVEL_H * 2 },
+                new object?[] { bx1 - 0.12 * bdLen, Math.Min(0.46 * B, hwMid - 0.4) - rr - 0.2, RAISED_H + Layout.LEVEL_H * 2 },
                 new object?[] { bx0 + 0.1 * bdLen, wh / 2 - rr - 0.3, roof },
             };
             cands.AddRange(xs.Select(x => new object?[] { x, hull.HalfWidth(x) - rr - 0.6, DeckH(x) }));
@@ -374,7 +374,7 @@ public sealed class MerchantStyle : Style
         if (guns.Count > 0)
         {
             double mx0 = steer.F("x1");
-            double mw = Py.Min(innerHw, 0.5 * B / 2);
+            double mw = Math.Min(innerHw, 0.5 * B / 2);
             Ordnance.Stow(lay, mounts, [PyDict.Of(("x0", mx0), ("x1", mx0 + Ordnance.ZoneLength(Ordnance.BookedM3(lay, guns), 2 * mw, lay.Geo.Plant!)),
                 ("half_width", mw), ("rooms", new List<object?> { PyDict.Of(("id", "Gun magazine"), ("mounts", guns.Cast<object?>().ToList())) }))]);
         }

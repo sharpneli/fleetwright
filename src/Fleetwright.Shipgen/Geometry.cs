@@ -31,7 +31,7 @@ public static class Geometry
     {
         double h = (y1 - y0) / 2;
         double halfLen = (x1 - x0) / 2;
-        return (Py.Min(rf, h, halfLen), Py.Min(rb, h, halfLen));
+        return (Math.Min(rf, Math.Min(h, halfLen)), Math.Min(rb, Math.Min(h, halfLen)));
     }
 
     /// <summary>Rounded rectangle (front corners radius rf at +x, back corners rb at -x) as a polygon.</summary>
@@ -50,7 +50,7 @@ public static class Geometry
             }
             for (int i = 0; i <= seg; i++)
             {
-                double a = Py.Radians(a0 + (double)((a1 - a0) * i) / seg);
+                double a = double.DegreesToRadians(a0 + (double)((a1 - a0) * i) / seg);
                 pts.Add(new Pt(cx + r * Math.Cos(a), cy + r * Math.Sin(a)));
             }
         }
@@ -101,14 +101,14 @@ public static class Geometry
             a += c;
             cx += (x0 + x1) * c;
         }
-        return (Math.Abs(a) / 2, a != 0 ? cx / (3 * a) : Py.Sum(pts.Select(p => p.X)) / n);
+        return (Math.Abs(a) / 2, a != 0 ? cx / (3 * a) : pts.Select(p => p.X).Sum() / n);
     }
 
     /// <summary>Sutherland-Hodgman: the part of polygon pts inside the convex polygon clip (either winding).</summary>
     public static List<Pt> ClipConvex(IReadOnlyList<Pt> pts, IReadOnlyList<Pt> clip)
     {
         int m = clip.Count;
-        double sgn = Py.Sum(Enumerable.Range(0, m).Select(i => clip[i].X * clip[(i + 1) % m].Y - clip[(i + 1) % m].X * clip[i].Y)) > 0
+        double sgn = Enumerable.Range(0, m).Select(i => clip[i].X * clip[(i + 1) % m].Y - clip[(i + 1) % m].X * clip[i].Y).Sum() > 0
             ? 1.0 : -1.0;
         var out_ = new List<Pt>(pts);
         for (int ci = 0; ci < m; ci++)
@@ -158,7 +158,7 @@ public static class Geometry
                 var b = out_[i];
                 var c = out_[(i + 1) % n];
                 if (Math.Abs((b.X - a.X) * (c.Y - a.Y) - (b.Y - a.Y) * (c.X - a.X)) <=
-                    tol * Py.Max(1.0, Py.Hypot(c.X - a.X, c.Y - a.Y)))
+                    tol * Math.Max(1.0, double.Hypot(c.X - a.X, c.Y - a.Y)))
                 {
                     out_.RemoveAt(i);
                     changed = true;
@@ -175,14 +175,14 @@ public static class Geometry
     {
         if (rangefinderM == 0)
         {
-            var tub = CirclePolygon(x, y, Py.Min(l, w) / 2, 16);
+            var tub = CirclePolygon(x, y, Math.Min(l, w) / 2, 16);
             return (tub, tub, null, []);
         }
         double x0 = x - l / 2, x1 = x + l / 2;
-        double hh = Py.Min(w, l * 1.15) / 2;
+        double hh = Math.Min(w, l * 1.15) / 2;
         double cf = 0.35 * hh, cb = 0.1 * hh;
-        double rx = x - 0.12 * l, tw = Py.Max(0.4, 0.14 * l);
-        double el = Py.Min(0.9, 0.3 * l), ew = 1.7 * tw;
+        double rx = x - 0.12 * l, tw = Math.Max(0.4, 0.14 * l);
+        double el = Math.Min(0.9, 0.3 * l), ew = 1.7 * tw;
         double ye = w / 2 - ew;
         if (ye <= hh)
         {
@@ -224,7 +224,7 @@ public static class Geometry
 
     public static List<Pt> RotateTranslate(IEnumerable<Pt> pts, double deg, double tx, double ty)
     {
-        double c = Math.Cos(Py.Radians(deg)), s = Math.Sin(Py.Radians(deg));
+        double c = Math.Cos(double.DegreesToRadians(deg)), s = Math.Sin(double.DegreesToRadians(deg));
         return pts.Select(p => new Pt(tx + p.X * c - p.Y * s, ty + p.X * s + p.Y * c)).ToList();
     }
 
@@ -251,11 +251,11 @@ public static class Geometry
     };
 
     /// <summary>The midship section's fullness for a block coefficient (Kerlen's fit), kept to a sane range.</summary>
-    public static double MidshipCoefficient(double cb) => Py.Min(0.995, Py.Max(0.6, 1.006 - 0.0056 * Py.Pow(cb, -3.56)));
+    public static double MidshipCoefficient(double cb) => Math.Min(0.995, Math.Max(0.6, 1.006 - 0.0056 * Math.Pow(cb, -3.56)));
 
     /// <summary>The share of its box that a quadrant (y / b) ** p + s ** q = 1 fills.</summary>
     public static double SuperellipseFill(double p, double q) =>
-        Py.Gamma(1 + 1 / p) * Py.Gamma(1 + 1 / q) / Py.Gamma(1 + 1 / p + 1 / q);
+        SpecialFunctions.Gamma(1 + 1 / p) * SpecialFunctions.Gamma(1 + 1 / q) / SpecialFunctions.Gamma(1 + 1 / p + 1 / q);
 
     // ------------------------------------------------------------------ turret types
 
@@ -276,16 +276,16 @@ public static class Geometry
         double calMm = Py.ToDouble(calibreMm), calLen = Py.ToDouble(calibreLength);
         long n = Py.ToLong(barrels);
         double cal = calMm / 1000.0;
-        double spacing = n > 1 ? Py.Max(cal * 6.5, 0.9 + cal * 3.0) : 0.0;
+        double spacing = n > 1 ? Math.Max(cal * 6.5, 0.9 + cal * 3.0) : 0.0;
         double width = (n - 1) * spacing + cal * 15.0 + 1.5;
         double r = width / 1.7;
         if (kind == "auto")
             kind = calMm >= 150 ? "bb" : calMm >= 76 ? "dp" : "open";
         string tid = $"t{Py.Str(barrels)}x{Py.RoundObj(calibreMm)}L{Py.RoundObj(calibreLength)}" +
                      (kind is "bb" or "dp" ? "" : "_" + kind);
-        var t = PyDict.Of(("desc", $"{Py.Str(barrels)} x {Py.G(calMm)}mm/{Py.G(calLen)}"), ("shape", kind),
-            ("r", Py.Round(r, 3)), ("barrels", barrels), ("barrel_len", Py.Round(cal * calLen, 3)),
-            ("barrel_w", Py.Round(Py.Max(cal * 2.3, 0.18), 3)), ("spacing", Py.Round(spacing, 3)),
+        var t = PyDict.Of(("desc", $"{Py.Str(barrels)} x {calMm}mm/{calLen}"), ("shape", kind),
+            ("r", Math.Round(r, 3)), ("barrels", barrels), ("barrel_len", Math.Round(cal * calLen, 3)),
+            ("barrel_w", Math.Round(Math.Max(cal * 2.3, 0.18), 3)), ("spacing", Math.Round(spacing, 3)),
             ("calibre_mm", calibreMm), ("calibre_length", calibreLength));
         if (kind == "torp")
             t.Update(("centered", true), ("barbette", false));
@@ -340,7 +340,7 @@ public static class Geometry
             bool first = true;
             foreach (var p in sh.Body.Concat(sh.Parts.Concat(sh.Barrels).SelectMany(q => q)))
             {
-                double d = Py.Hypot(p.X, p.Y);
+                double d = double.Hypot(p.X, p.Y);
                 if (first || d > reach)
                     reach = d;
                 first = false;
@@ -379,12 +379,12 @@ public static class Geometry
                     double R = 1.1 * r;
                     double half = 0.85 * r;
                     double cx = -0.55 * r + Math.Sqrt(R * R - half * half);
-                    double a0 = Py.Degrees(Math.Atan2(half, -0.55 * r - cx));
+                    double a0 = double.RadiansToDegrees(Math.Atan2(half, -0.55 * r - cx));
                     var pts = new List<Pt> { new(0.85 * r, -0.5 * r), new(0.85 * r, 0.5 * r), new(0.4 * r, 0.85 * r) };
                     int seg = 16;
                     for (int i = 0; i <= seg; i++)
                     {
-                        double a = Py.Radians(a0 + (360 - 2 * a0) * i / seg);
+                        double a = double.DegreesToRadians(a0 + (360 - 2 * a0) * i / seg);
                         pts.Add(new Pt(cx + R * Math.Cos(a), R * Math.Sin(a)));
                     }
                     pts.Add(new Pt(0.4 * r, -0.85 * r));
@@ -459,7 +459,7 @@ public static class Geometry
     public static double PolygonArea(IReadOnlyList<Pt> pts)
     {
         int n = pts.Count;
-        return Math.Abs(Py.Sum(Enumerable.Range(0, n).Select(i => pts[i].X * pts[(i + 1) % n].Y - pts[(i + 1) % n].X * pts[i].Y))) / 2;
+        return Math.Abs(Enumerable.Range(0, n).Select(i => pts[i].X * pts[(i + 1) % n].Y - pts[(i + 1) % n].X * pts[i].Y).Sum()) / 2;
     }
 
     /// <summary>(min y, max y) where the vertical line at x crosses the polygon, or null if it misses.</summary>
@@ -474,17 +474,17 @@ public static class Geometry
             if ((x0 <= x && x <= x1 || x1 <= x && x <= x0) && x0 != x1)
                 ys.Add(y0 + (x - x0) * (y1 - y0) / (x1 - x0));
         }
-        return ys.Count > 0 ? (Py.Min(ys), Py.Max(ys)) : null;
+        return ys.Count > 0 ? (ys.Min(), ys.Max()) : null;
     }
 
     /// <summary>Pie slice of radius R from bearing a0 to a1 (degrees clockwise from +x; a1 &gt; a0, ship-local).</summary>
     public static List<Pt> SectorPolygon(double cx, double cy, double R, double a0, double a1, double step = 10.0)
     {
-        long n = Py.Max(2L, Py.Int(Math.Ceiling((a1 - a0) / step)) + 1);
+        long n = Math.Max(2L, (long)(Math.Ceiling((a1 - a0) / step)) + 1);
         var pts = a1 - a0 < 360 ? new List<Pt> { new(cx, cy) } : new List<Pt>();
         for (long i = 0; i < n; i++)
         {
-            double a = Py.Radians(a0 + (a1 - a0) * i / (n - 1));
+            double a = double.DegreesToRadians(a0 + (a1 - a0) * i / (n - 1));
             pts.Add(new Pt(cx + R * Math.Cos(a), cy + R * Math.Sin(a)));
         }
         return pts;
@@ -527,10 +527,10 @@ public static class Geometry
     {
         var ba = Bounds(a);
         var bb = Bounds(b);
-        double x0 = Py.Max(ba.X0, bb.X0);
-        double x1 = Py.Min(ba.X1, bb.X1);
-        double y0 = Py.Max(ba.Y0, bb.Y0);
-        double y1 = Py.Min(ba.Y1, bb.Y1);
+        double x0 = Math.Max(ba.X0, bb.X0);
+        double x1 = Math.Min(ba.X1, bb.X1);
+        double y0 = Math.Max(ba.Y0, bb.Y0);
+        double y1 = Math.Min(ba.Y1, bb.Y1);
         if (x1 < x0 || y1 < y0)
             return false;
         // edges can only cross inside both boxes: the edges reaching into the overlap, in order
@@ -569,11 +569,18 @@ public static class Geometry
 
     // ------------------------------------------------------------------ firing arcs
 
-    public static double Wrap180(double a) => Py.Mod(a + 180.0, 360.0) - 180.0;
+    /// <summary>An angle in degrees brought into 0 &lt;= a &lt; 360.</summary>
+    public static double Normalize360(double a)
+    {
+        double r = a % 360.0;
+        return r < 0 ? r + 360.0 : r;
+    }
+
+    public static double Wrap180(double a) => Normalize360(a + 180.0) - 180.0;
 
     public static bool AngleAllowed(IEnumerable<(double Lo, double Hi)> arcs, double a)
     {
-        a = Py.Mod(a, 360.0);
+        a = Normalize360(a);
         return arcs.Any(r => r.Lo <= a && a <= r.Hi || r.Lo <= a + 360.0 && a + 360.0 <= r.Hi);
     }
 }
@@ -613,16 +620,16 @@ public sealed class PreparedPolygon
         {
             var s = pts[i];
             var e = pts[(i + 1) % n];
-            int c0 = Xc(Py.Min(s.X, e.X)), c1 = Xc(Py.Max(s.X, e.X));
+            int c0 = Xc(Math.Min(s.X, e.X)), c1 = Xc(Math.Max(s.X, e.X));
             for (int c = c0; c <= c1; c++)
                 xcells[c].Add((c0, s, e));
-            for (int c = Yc(Py.Min(s.Y, e.Y)); c <= Yc(Py.Max(s.Y, e.Y)); c++)
+            for (int c = Yc(Math.Min(s.Y, e.Y)); c <= Yc(Math.Max(s.Y, e.Y)); c++)
                 yslabs[c].Add((s, e));
         }
     }
 
-    int Xc(double x) => (int)Math.Max(0, Math.Min(k - 1, Py.Floor((x - bx0) / dx)));
-    int Yc(double y) => (int)Math.Max(0, Math.Min(k - 1, Py.Floor((y - by0) / dy)));
+    int Xc(double x) => (int)Math.Max(0, Math.Min(k - 1, (long)Math.Floor((x - bx0) / dx)));
+    int Yc(double y) => (int)Math.Max(0, Math.Min(k - 1, (long)Math.Floor((y - by0) / dy)));
 
     /// <summary>point_in_polygon(x, y, pts).</summary>
     public bool Contains(double x, double y)
@@ -639,8 +646,8 @@ public sealed class PreparedPolygon
     public bool Intersects(IReadOnlyList<Pt> b)
     {
         var bb = Geometry.Bounds(b);
-        double x0 = Py.Max(bx0, bb.X0), x1 = Py.Min(bx1, bb.X1);
-        double y0 = Py.Max(by0, bb.Y0), y1 = Py.Min(by1, bb.Y1);
+        double x0 = Math.Max(bx0, bb.X0), x1 = Math.Min(bx1, bb.X1);
+        double y0 = Math.Max(by0, bb.Y0), y1 = Math.Min(by1, bb.Y1);
         if (x1 < x0 || y1 < y0)
             return false;
 

@@ -81,6 +81,20 @@ public static class GoldenCases
     /// <summary>Python's == on JSON trees (exact floats), for the hint check.</summary>
     static bool ExactlyEqual(object? a, object? b) => Py.Eq(a, b);
 
+    /// <summary>Rewrite the case's golden record from ours when the two differ by the golden rules (after a deliberate
+    /// change to the output). Returns whether it was rewritten.</summary>
+    public static bool Update(string root, GoldenCase c)
+    {
+        var golden = (PyDict)PyJson.Load(GoldenFile(root, c.Name))!;
+        var ours = Capture((PyDict)PyJson.Load(c.DesignPath)!);
+        golden.Remove("build_s");
+        ours.Remove("build_s");
+        if (GoldenDiff.Compare(golden, ours, 1).Count == 0)
+            return false;
+        PyJson.Save(GoldenFile(root, c.Name), ours, 1);
+        return true;
+    }
+
     /// <summary>The differences between the golden record for a case and ours (build_s left out).</summary>
     public static List<Difference> Check(string root, GoldenCase c, int max = 20)
     {

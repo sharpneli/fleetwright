@@ -61,7 +61,7 @@ public static class FireControl
     static (double L, double W) Size(PyDict d)
     {
         double bse = d.F("rangefinder_m");
-        return (0.25 * bse + 1.8, Py.Max(bse + 1.0, 1.8));
+        return (0.25 * bse + 1.8, Math.Max(bse + 1.0, 1.8));
     }
 
     /// <summary>One director's weights, t.</summary>
@@ -70,11 +70,11 @@ public static class FireControl
         double bse = d.F("rangefinder_m");
         var (l, w) = Size(d);
         double area = 2 * (l + w) * HOOD_H + l * w;
-        return PyDict.Of(("hood", area * HOOD_PLATE_T), ("gear", GEAR_T.A + GEAR_T.B * bse), ("rangefinder", RF_T_K * Py.Pow(bse, 2)),
+        return PyDict.Of(("hood", area * HOOD_PLATE_T), ("gear", GEAR_T.A + GEAR_T.B * bse), ("rangefinder", RF_T_K * Math.Pow(bse, 2)),
             ("armour", area * d.F("armour_mm") / 1000.0 * 7.85), ("radar", d["radar_t"]), ("computer", d["computer_t"]));
     }
 
-    public static double HorizonKm(double eyeM) => 3.57 * Math.Sqrt(REFRACTION * Py.Max(0.0, eyeM));
+    public static double HorizonKm(double eyeM) => 3.57 * Math.Sqrt(REFRACTION * Math.Max(0.0, eyeM));
 
     static readonly string[] CONTROL_ROLES = ["bridge", "director", "aft_control"];
 
@@ -142,7 +142,7 @@ public static class FireControl
                 var b = Layout.AddBlock(lay, blocks, bid, x - hl, x + hl, w, 1, 0.0, 0.0, y: y, z0: z0, kind: "director", tPerM2: 0.0,
                     points: pts, role: "director");
                 b["director"] = PyDict.Of(("battery", bat), ("rangefinder_m", d["rangefinder_m"]), ("radar", d.F("radar_t") > 0),
-                    ("on", Py.Round(z0 / Layout.LEVEL_H)));
+                    ("on", (long)Math.Round(z0 / Layout.LEVEL_H)));
                 lay.Weights.Add(new Weight(bid, "fire_control", Py.ToDouble(Py.SumObj(wt.Where(kk => kk != "computer").Values)), x,
                     ZRel.Deck(z0 + 0.5 * HOOD_H)));
                 if (Py.Truthy(wt["computer"]))
@@ -156,7 +156,7 @@ public static class FireControl
             }
 
             bool Smoky(double x, double y, double z0) =>
-                SmokeFrom(lay.FunnelsPlanned, Py.Max(lay.FunnelsPlanned.Select(f => f.F("top", 0.0)), 0.0), lay.Geo.SmokeReach,
+                SmokeFrom(lay.FunnelsPlanned, lay.FunnelsPlanned.Select(f => f.F("top", 0.0)).DefaultIfEmpty(0.0).Max(), lay.Geo.SmokeReach,
                     x + hl, z0 + Layout.LEVEL_H, y, w).Count > 0;
 
             foreach (var spots in new Func<List<(double X, double Y, double Z0, bool Pair)>>[]
@@ -167,13 +167,13 @@ public static class FireControl
                 var sp = spots();
                 if (bat == "main")
                 {
-                    var cands = Py.Sorted(sp.Where(s => !s.Pair).Select(s => (s.X, s.Y, s.Z0)), s => (-s.Z0, -s.X));
+                    var cands = sp.Where(s => !s.Pair).Select(s => (s.X, s.Y, s.Z0)).OrderBy(s => (-s.Z0, -s.X)).ToList();
                     foreach (var spread in new[] { MAIN_SPREAD * L, 0.0 })
                         foreach (var (x, y, z0) in cands)
                         {
                             if (mine.Count >= n)
                                 break;
-                            if (mine.Any(m => Math.Abs(x - m.F("x")) < Py.Max(mine.Count < 2 ? spread : 0.0, l + 0.4)))
+                            if (mine.Any(m => Math.Abs(x - m.F("x")) < Math.Max(mine.Count < 2 ? spread : 0.0, l + 0.4)))
                                 continue;
                             if (Ok(x, y, z0))
                                 Put(x, y, z0);
@@ -181,7 +181,7 @@ public static class FireControl
                 }
                 else
                 {
-                    foreach (var (x, y, z0, pair) in Py.Sorted(sp, s => (-s.Z0, Smoky(s.X, s.Y, s.Z0) ? 1 : 0, !s.Pair ? 1 : 0, Math.Abs(s.X))))
+                    foreach (var (x, y, z0, pair) in sp.OrderBy(s => (-s.Z0, Smoky(s.X, s.Y, s.Z0) ? 1 : 0, !s.Pair ? 1 : 0, Math.Abs(s.X))).ToList())
                     {
                         long left = n - mine.Count;
                         if (left <= 0)
@@ -200,7 +200,7 @@ public static class FireControl
             }
             if (mine.Count < n)
                 lay.Fail("beam", $"Only {mine.Count} of {n} {(bat == "aa" ? "AA" : bat)} directors find a roof to stand on " +
-                                 $"({Py.F(w, 1)} m across with the rangefinder).");
+                                 $"({w:F1} m across with the rangefinder).");
         }
         if (Batteries.MainBatteries(design).Any(b => Batteries.BatteryTurrets(b) != 0) && Py.ToDouble(fc.D("main")["directors"]) == 0)
             lay.Warnings.Add("The main battery has no director: each turret fires under local control.");
@@ -221,9 +221,9 @@ public static class FireControl
             if (!Py.Eq(dk["kind"], "deck"))
                 continue;
             var pts = Geometry.Pts(dk["points"]);
-            out_.Add(PyDict.Of(("id", dk["id"]), ("x0", Py.Min(pts.Select(p => p.X))), ("x1", Py.Max(pts.Select(p => p.X))),
-                ("w", Py.Max(pts.Select(p => p.Y)) - Py.Min(pts.Select(p => p.Y))), ("y", 0.0), ("z0", 0.0),
-                ("level", Py.Round(dk.F("top") / Geometry.DECK_PITCH)), ("points", pts)));
+            out_.Add(PyDict.Of(("id", dk["id"]), ("x0", pts.Select(p => p.X).Min()), ("x1", pts.Select(p => p.X).Max()),
+                ("w", pts.Select(p => p.Y).Max() - pts.Select(p => p.Y).Min()), ("y", 0.0), ("z0", 0.0),
+                ("level", (long)Math.Round(dk.F("top") / Geometry.DECK_PITCH)), ("points", pts)));
         }
         return out_;
     }
@@ -240,7 +240,7 @@ public static class FireControl
             lay.Weights.Add(new Weight("Search radar", "fire_control", t, m.F("x"), ZRel.Deck(m.F("top", funTop + 6.0))));
             return;
         }
-        var top = Py.MaxByOrDefault(blocks, Layout.BlockTop);
+        var top = blocks.MaxBy(Layout.BlockTop);
         lay.Weights.Add(new Weight("Search radar", "fire_control", t, top != null ? (top.F("x0") + top.F("x1")) / 2 : 0.0,
             ZRel.Deck((top != null ? Layout.BlockTop(top) : 0.0) + 1.0)));
     }
@@ -252,8 +252,8 @@ public static class FireControl
         foreach (var d in lay.Directors)
         {
             double eye = deckM + d.F("eye");
-            out_.Add(PyDict.Of(("id", d["id"]), ("battery", d["battery"]), ("x", Py.Round(d.F("x"), 2)), ("y", Py.Round(d.F("y"), 2)),
-                ("eye_height_m", Py.Round(eye, 2)), ("horizon_km", Py.Round(HorizonKm(eye), 1)), ("rangefinder_m", d["rangefinder_m"]),
+            out_.Add(PyDict.Of(("id", d["id"]), ("battery", d["battery"]), ("x", Math.Round(d.F("x"), 2)), ("y", Math.Round(d.F("y"), 2)),
+                ("eye_height_m", Math.Round(eye, 2)), ("horizon_km", Math.Round(HorizonKm(eye), 1)), ("rangefinder_m", d["rangefinder_m"]),
                 ("armour_mm", d["armour_mm"]), ("radar_t", d["radar_t"]), ("weight_t", Py.RoundObj(d["weight_t"], 1))));
         }
         return out_;

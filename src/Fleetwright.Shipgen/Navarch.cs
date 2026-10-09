@@ -31,10 +31,10 @@ public static class Navarch
 
     public static double AdmiraltyC(double vKn, double L, double B, double cb, PyDict tun)
     {
-        double fn = Py.Max(Froude(vKn, L), 0.08);
-        double c = tun.F("admiralty_a") * Py.Pow(fn, -tun.F("admiralty_b"));
-        c *= Py.Pow(L / B / 8.0, 0.25);
-        c *= Py.Pow(0.55 / cb, 0.5);
+        double fn = Math.Max(Froude(vKn, L), 0.08);
+        double c = tun.F("admiralty_a") * Math.Pow(fn, -tun.F("admiralty_b"));
+        c *= Math.Pow(L / B / 8.0, 0.25);
+        c *= Math.Pow(0.55 / cb, 0.5);
         return c;
     }
 
@@ -42,19 +42,19 @@ public static class Navarch
     {
         if (Py.Eq(tun.Get("power_model"), "planing"))
             return PlaningPower(disp, vKn, tun);
-        return Py.Pow(disp, 2.0 / 3) * Py.Pow(vKn, 3) / AdmiraltyC(vKn, L, B, cb, tun);
+        return Math.Pow(disp, 2.0 / 3) * Math.Pow(vKn, 3) / AdmiraltyC(vKn, L, B, cb, tun);
     }
 
     /// <summary>Fn∇ = V / sqrt(g ∇^(1/3)).</summary>
     public static double VolumetricFroude(double disp, double vKn) =>
-        vKn * 0.5144 / Math.Sqrt(9.81 * Py.Pow(disp / Weight.SEAWATER, 1.0 / 3));
+        vKn * 0.5144 / Math.Sqrt(9.81 * Math.Pow(disp / Weight.SEAWATER, 1.0 / 3));
 
     /// <summary>PLACEHOLDER planing-hull power model.</summary>
     public static double PlaningPower(double disp, double vKn, PyDict tun)
     {
         double fnv = VolumetricFroude(disp, vKn);
         double hi = tun.F("planing_rw"), lo = tun.F("planing_rw_disp");
-        double rw = fnv < 1 ? lo * Py.Pow(fnv, 2) : lo + (hi - lo) * Py.Min(1.0, fnv - 1);
+        double rw = fnv < 1 ? lo * Math.Pow(fnv, 2) : lo + (hi - lo) * Math.Min(1.0, fnv - 1);
         double rKn = rw * disp * 9.81;
         return rKn * vKn * 0.5144 / tun.F("planing_eta") / 0.7457;
     }
@@ -115,16 +115,16 @@ public static class Navarch
                 var (area, wx, wz) = style.WeatherDeck(design, L, B);
                 items.Add(new Weight("Deck planking", "hull", area * wood * HullWeight.RHO_WOOD, wx, ZRel.Deck(wz)));
             }
-            double stdWoMisc = Py.Sum(items.Select(w => w.W));
+            double stdWoMisc = items.Select(w => w.W).Sum();
             std = stdWoMisc / (1 - tun.F("misc_frac"));
             items.Add(new Weight("Equipment, outfit, crew & stores", "misc", std - stdWoMisc, 0.0, ZRel.Frac(0.5)));
-            vc = Py.Truthy(tun.Get("cruise_at_service")) ? V : Py.Min(tun.F("cruise_kn"), 0.6 * V);
+            vc = Py.Truthy(tun.Get("cruise_at_service")) ? V : Math.Min(tun.F("cruise_kn"), 0.6 * V);
             double shpC = PowerRequired(disp, vc, L, B, cb, tun);
             fuel = Powerplant.FuelRate(plant, shp, shpC) * (rng / vc) / 1000.0;
             (stdLoad, fullLoad) = style.PayloadWeights(design, L, D, geo, tun,
                 new PayloadContext(items, fuel, geo.MachineryMid(L), tun.F("lcb_frac") * L));
-            std += Py.Sum(stdLoad.Select(w => w.W));
-            full = std + fuel + Py.Sum(fullLoad.Select(w => w.W));
+            std += stdLoad.Select(w => w.W).Sum();
+            full = std + fuel + fullLoad.Select(w => w.W).Sum();
             if (Math.Abs(full - disp) < 0.5)
             {
                 disp = full;
@@ -133,7 +133,7 @@ public static class Navarch
             }
             if (!double.IsFinite(full) || full > disp && full / (Weight.SEAWATER * L * B * cb) > OVERLOAD_TB * B)
             {
-                res.Errors.Add($"The weights never settle on a {Py.F(B, 1)} m beam: the ship sinks deeper with every " +
+                res.Errors.Add($"The weights never settle on a {B:F1} m beam: the ship sinks deeper with every " +
                                "tonne it carries. A wider hull, or less armour or armament, would help.");
                 settled = true;
                 break;
@@ -142,7 +142,7 @@ public static class Navarch
         }
         if (!settled)
             res.Errors.Add("The weights never settle: the ship needs a bigger hull to carry its load, which " +
-                           $"needs a bigger hull again (still growing at {Py.F(full, 0, comma: true)} t). Lighten the armour or " +
+                           $"needs a bigger hull again (still growing at {full:N0} t). Lighten the armour or " +
                            "armament.");
 
         items.AddRange(stdLoad);
@@ -172,21 +172,21 @@ public static class Navarch
         double TB = res.Draught / B;
         double tbMax = tun.F("tb_max", 0.48);
         if (TB > tbMax)
-            res.Errors.Add($"Hull overloaded: draught {Py.F(res.Draught, 1)} m is {Py.F(TB, 2)} x beam (max " +
+            res.Errors.Add($"Hull overloaded: draught {res.Draught:F1} m is {TB:F2} x beam (max " +
                            $"{Py.Str(tun.Get("tb_max", 0.48))}). Carry less.");
         else if (TB > tbMax - 0.08)
-            res.Warnings.Add($"Deep draught ({Py.F(res.Draught, 1)} m, {Py.F(TB, 2)} x beam): the hull is heavily loaded.");
+            res.Warnings.Add($"Deep draught ({res.Draught:F1} m, {TB:F2} x beam): the hull is heavily loaded.");
         if (L / B < tun.F("lb_warn", 4.5))
-            res.Warnings.Add($"Very beamy hull (L/B {Py.F(L / B, 1)}): hard to drive, needs a lot of power.");
+            res.Warnings.Add($"Very beamy hull (L/B {L / B:F1}): hard to drive, needs a lot of power.");
         if (L / B > 12)
-            res.Warnings.Add($"Very slender hull (L/B {Py.F(L / B, 1)}): weak structure and poor stability.");
+            res.Warnings.Add($"Very slender hull (L/B {L / B:F1}): weak structure and poor stability.");
         Stability.Checks(res, L, B, tun);
         double fn = Froude(V, L);
         res.Warnings.AddRange(style.Checks(design, res, tun));
         res.Warnings.AddRange(Armour.ArmourChecks(design, res, geo));
         res.Warnings.AddRange(HullWeight.StructureChecks(res.Hull));
         if (fn > tun.F("fn_warn", 0.62))
-            res.Warnings.Add($"Speed {Py.Str(design["speed_kn"])} kn is extreme for a {Py.F(L, 0)} m hull (Froude {Py.F(fn, 2)}); " +
+            res.Warnings.Add($"Speed {Py.Str(design["speed_kn"])} kn is extreme for a {L:F0} m hull (Froude {fn:F2}); " +
                              "power is enormous.");
         return res;
     }
@@ -195,7 +195,7 @@ public static class Navarch
     public static List<Weight> RoughPayload(PyDict design, double D)
     {
         var out_ = Batteries.RoughArmament(design, D);
-        out_.Add(new Weight("Superstructure", "superstructure", 0.012 * Py.Pow(design.D("hull").F("length"), 2),
+        out_.Add(new Weight("Superstructure", "superstructure", 0.012 * Math.Pow(design.D("hull").F("length"), 2),
             zRel: ZRel.Deck(4)));
         return out_;
     }

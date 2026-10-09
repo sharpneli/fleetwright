@@ -25,10 +25,10 @@ public static class HullWeight
             design.DOr("hull").Or("plating", null) as PyDict);
 
     /// <summary>The minimum gauge, mm: the thinnest plate the hull is built of.</summary>
-    public static double TMinMm(double L, PyDict c) => (T_MIN.A + T_MIN.B * Py.Min(L, LONG)) * c.F("standard");
+    public static double TMinMm(double L, PyDict c) => (T_MIN.A + T_MIN.B * Math.Min(L, LONG)) * c.F("standard");
 
     /// <summary>Plate thicker than the structure's own, t: plain steel plate over the area.</summary>
-    public static double ExtraPlateT(double areaM2, double mm, double ownMm) => RHO * areaM2 * Py.Max(0.0, mm - ownMm);
+    public static double ExtraPlateT(double areaM2, double mm, double ownMm) => RHO * areaM2 * Math.Max(0.0, mm - ownMm);
 
     /// <summary>The plating the game's damage model sees, from the structure h: mm of each kind of plate, unarmoured.</summary>
     public static PyDict Plates(PyDict h, double L, double shellMm, object? material, double supMm, double controlMm,
@@ -36,24 +36,24 @@ public static class HullWeight
     {
         double tMin = h.Has("t_min_mm") ? h.F("t_min_mm") : h.F("plate_own_mm", 0.0);
         double tStr = h.F("t_str_mm", 0.0);
-        static double R(double v) => Py.Round(v, 1);
+        static double R(double v) => Math.Round(v, 1);
         double ownSup = SUP_PLATE_K * tMin;
-        return PyDict.Of(("material", material), ("shell_mm", R(Py.Max(tMin, tStr, shellMm))),
-            ("shell_end_mm", R(Py.Max(tMin, shellMm))), ("strength_deck_mm", R(Py.Max(tMin, tStr))),
+        return PyDict.Of(("material", material), ("shell_mm", R(Math.Max(tMin, Math.Max(tStr, shellMm)))),
+            ("shell_end_mm", R(Math.Max(tMin, shellMm))), ("strength_deck_mm", R(Math.Max(tMin, tStr))),
             ("strength_deck_end_mm", R(tMin)), ("mid_x0", R(-GIRDER_TAPER * L / 2)), ("mid_x1", R(GIRDER_TAPER * L / 2)),
             ("deck_mm", R(INT_DECK_T * tMin)), ("bulkhead_mm", R(BHD_T * tMin)), ("inner_bottom_mm", R(tMin)),
-            ("superstructure_mm", R(Py.Max(ownSup, supMm))), ("control_mm", R(Py.Max(ownSup, supMm, controlMm))),
+            ("superstructure_mm", R(Math.Max(ownSup, supMm))), ("control_mm", R(Math.Max(ownSup, Math.Max(supMm, controlMm)))),
             ("deck_wood_mm", R(deckWoodMm)));
     }
 
-    public static double AllowableStress(PyDict c) => Py.Min(c.F("yield_mpa") / SF, SIG_CAP);
+    public static double AllowableStress(PyDict c) => Math.Min(c.F("yield_mpa") / SF, SIG_CAP);
 
     /// <summary>The strength deck's area, as the model takes it.</summary>
     public static double DeckArea(double L, double B, double cb) => B * L * (0.66 + 0.33 * cb);
 
     /// <summary>What the model weighs per m^2 of strength deck at minimum gauge.</summary>
     public static double DeckTPerM2(double L, PyDict c) =>
-        RHO * K_S * (T_MIN.A + T_MIN.B * Py.Min(L, LONG)) * c.F("standard") * (1 + F_FIT) * c.F("join_factor");
+        RHO * K_S * (T_MIN.A + T_MIN.B * Math.Min(L, LONG)) * c.F("standard") * (1 + F_FIT) * c.F("join_factor");
 
     /// <summary>A raised stretch of hull (forecastle, poop) at minimum gauge.</summary>
     public static double RaisedT(double L, PyDict c, double deckM2, double sideM2, double endM2, double shellMm = 0.0) =>
@@ -73,23 +73,23 @@ public static class HullWeight
         double aDb = doubleBottom * B * L * cb * DB_AREA;
         double tMin = TMinMm(L, c);
         double sig = AllowableStress(c);
-        double m = full * 9.81 * L / C_M * Py.Pow(Py.Min(1.0, LONG / L), 2);
+        double m = full * 9.81 * L / C_M * Math.Pow(Math.Min(1.0, LONG / L), 2);
         double G = girderDepth ?? D;
         double iReq = m / (sig * 1000) * (G / 2);
         object iArmObj = armourDecks.Count == 0 ? 0L
-            : Py.Sum(armourDecks.Select(a => ARM_DECK_WIDTH * B * a.Mm / 1000 * Py.Pow(a.Z - NEUTRAL_AXIS * G, 2)));
+            : armourDecks.Select(a => ARM_DECK_WIDTH * B * a.Mm / 1000 * Math.Pow(a.Z - NEUTRAL_AXIS * G, 2)).Sum();
         double iArm = Py.ToDouble(iArmObj);
         double zPerMm = G * (B + G / 3) / 1000;
-        double tStr = Py.Max(0.0, iReq - iArm) / (G / 2) / zPerMm;
+        double tStr = Math.Max(0.0, iReq - iArm) / (G / 2) / zPerMm;
         double wMin = RHO * K_S * tMin * (aShell + aDeck + aInt * INT_DECK_T + aBhd * BHD_T + aDb);
-        double wStr = RHO * GIRDER_TAPER * (aShell + aDeck) * Py.Max(0.0, tStr - tMin);
+        double wStr = RHO * GIRDER_TAPER * (aShell + aDeck) * Math.Max(0.0, tStr - tMin);
         double k = (1 + F_FIT) * c.F("join_factor");
-        double aSide = Py.Max(0.0, 2 * SHELL_SIDE * D * L - armouredSideM2);
+        double aSide = Math.Max(0.0, 2 * SHELL_SIDE * D * L - armouredSideM2);
         double wShell = (ExtraPlateT((1 - GIRDER_TAPER) * aSide, shellMm, tMin)
-                         + ExtraPlateT(GIRDER_TAPER * aSide, shellMm, Py.Max(tMin, tStr))) * c.F("join_factor");
+                         + ExtraPlateT(GIRDER_TAPER * aSide, shellMm, Math.Max(tMin, tStr))) * c.F("join_factor");
         return PyDict.Of(("t", (wMin + wStr) * k + wShell), ("min_gauge_t", wMin * k), ("strength_t", wStr * k),
             ("shell_t", wShell), ("t_min_mm", tMin), ("t_str_mm", tStr), ("stress_mpa", sig), ("i_req_m4", iReq),
-            ("i_armour_m4", iArmObj), ("i_plating_m4", Py.Max(tStr, tMin) * zPerMm * G / 2));
+            ("i_armour_m4", iArmObj), ("i_plating_m4", Math.Max(tStr, tMin) * zPerMm * G / 2));
     }
 
     const double STACK_DECK = 0.6;
@@ -102,7 +102,7 @@ public static class HullWeight
         double a = -GIRDER_MID * L, b = GIRDER_MID * L;
         double tot = 0.0;
         foreach (var s in raised)
-            tot += Py.Max(0.0, Py.Min(b, s.F("x1")) - Py.Max(a, s.F("x0"))) * s.F("levels") * Geometry.DECK_PITCH;
+            tot += Math.Max(0.0, Math.Min(b, s.F("x1")) - Math.Max(a, s.F("x0"))) * s.F("levels") * Geometry.DECK_PITCH;
         return tot / (b - a);
     }
 
@@ -111,9 +111,9 @@ public static class HullWeight
     public static PyDict HullStructure(PyDict design, double L, double B, double cb, double D, double full, PyDict arm,
         PyDict? above, IReadOnlyList<PyDict> raised)
     {
-        double nInt = STACK_DECK * Py.Max(0.0, (D - Powerplant.DoubleBottom(D) - Decks.MIN_TIER) / Geometry.DECK_PITCH);
+        double nInt = STACK_DECK * Math.Max(0.0, (D - Powerplant.DoubleBottom(D) - Decks.MIN_TIER) / Geometry.DECK_PITCH);
         var (lo, hi) = INNER_BOTTOM_T;
-        double inner = Py.Min(1.0, Py.Max(0.0, (full - lo) / (hi - lo)));
+        double inner = Math.Min(1.0, Math.Max(0.0, (full - lo) / (hi - lo)));
         var plates = arm.L("decks").Cast<PyDict>().Where(d => d.F("x0") <= 0.0 && 0.0 <= d.F("x1"))
             .Select(d => (d.F("mm"), d.F("z"))).ToList();
         double depth = D;
@@ -131,7 +131,7 @@ public static class HullWeight
             sideArm += (arm.F("x1") - arm.F("x0")) * (arm.F("belt_top") - arm.F("belt_bottom"));
         var out_ = WeightOf(L, B, depth, cb, full, Construction(design), nInt, inner, plates, bulkheadDepth: D,
             girderDepth: rh != 0 ? depth + rh : null, shellMm: Plating(design).F("shell_mm"),
-            armouredSideM2: 2 * Py.Max(0.0, sideArm));
+            armouredSideM2: 2 * Math.Max(0.0, sideArm));
         out_["depth_m"] = depth;
         return out_;
     }
@@ -142,7 +142,7 @@ public static class HullWeight
     {
         double plank = tun.F("plate_own_mm", 0.0);
         double shellT = ExtraPlateT(2 * SHELL_SIDE * D * L, Plating(design).F("shell_mm"), plank);
-        return PyDict.Of(("t", tun.F("hull_k") * Py.Pow(L * B * D, tun.F("hull_exp")) + shellT), ("shell_t", shellT),
+        return PyDict.Of(("t", tun.F("hull_k") * Math.Pow(L * B * D, tun.F("hull_exp")) + shellT), ("shell_t", shellT),
             ("plate_own_mm", plank));
     }
 
@@ -151,8 +151,8 @@ public static class HullWeight
     {
         var out_ = new List<string>();
         if (h.F("strength_t", 0.0) > h.F("min_gauge_t", double.PositiveInfinity))
-            out_.Add($"The hull is very long for its depth: {Py.F(h.F("strength_t"), 0, comma: true)} t of its plating (strength " +
-                     $"deck and shell {Py.F(h.F("t_str_mm"), 0)} mm, where {Py.F(h.F("t_min_mm"), 0)} mm would do) only " +
+            out_.Add($"The hull is very long for its depth: {h.F("strength_t"):N0} t of its plating (strength " +
+                     $"deck and shell {h.F("t_str_mm"):F0} mm, where {h.F("t_min_mm"):F0} mm would do) only " +
                      "keeps it from breaking in two. A shorter hull or an armour deck high in it would help.");
         return out_;
     }
@@ -218,7 +218,7 @@ public static class Ordnance
     {
         var decks = plan.L("decks").Select(Py.ToDouble).ToList();
         double D = decks[0], ib = plan.F("inner_bottom"), roof = plan.F("top");
-        var ups = Py.Sorted(decks.Where(z => ib + 1e-6 < z && z <= roof + 1e-6));
+        var ups = decks.Where(z => ib + 1e-6 < z && z <= roof + 1e-6).Order().ToList();
         if (ups.Count == 0)
             ups = [roof];
         double top;
@@ -244,13 +244,13 @@ public static class Ordnance
     /// <summary>Ready-use ammunition at a gun mount at action stations: (rounds, tonnes).</summary>
     public static (long N, double T) ReadyUse(double calibreMm, double barrels, double? cap = null)
     {
-        double n = barrels * Py.Max(1L, Py.Round(READY_K * Py.Pow(calibreMm, -READY_P)));
+        double n = barrels * Math.Max(1L, (long)Math.Round(READY_K * Math.Pow(calibreMm, -READY_P)));
         if (cap is double c)
-            n = Py.Min(n, c);
-        return ((long)n, n * Batteries.SHELL_K * Py.Pow(calibreMm, 3) / 1000.0 * Batteries.AMMO_MULT);
+            n = Math.Min(n, c);
+        return ((long)n, n * Batteries.SHELL_K * Math.Pow(calibreMm, 3) / 1000.0 * Batteries.AMMO_MULT);
     }
 
-    public static double WarheadKg(double diameterMm = TORPEDO_MM) => WARHEAD_K * Py.Pow(diameterMm, 3);
+    public static double WarheadKg(double diameterMm = TORPEDO_MM) => WARHEAD_K * Math.Pow(diameterMm, 3);
 
     public static double AmmoM3(PyDict t) => AmmoT(t) / T_PER_M3;
 
@@ -262,12 +262,12 @@ public static class Ordnance
     public static double BookedM3(Layout lay, IEnumerable<string> mids)
     {
         var names = new HashSet<string>(mids.Select(m => $"Magazine {m}"), StringComparer.Ordinal);
-        return Py.Sum(lay.Weights.Where(w => names.Contains(w.Name)).Select(w => w.W)) / T_PER_M3;
+        return lay.Weights.Where(w => names.Contains(w.Name)).Select(w => w.W).Sum() / T_PER_M3;
     }
 
     /// <summary>The length a zone `width` across needs for volume_m3 at `tiers` deck spaces tall.</summary>
     public static double ZoneLength(double volumeM3, double width, PyDict plan, int tiers = TIERS, double least = MIN_ROOM) =>
-        Py.Max(least, volumeM3 / Py.Max(width * Height(plan, tiers), 1.0));
+        Math.Max(least, volumeM3 / Math.Max(width * Height(plan, tiers), 1.0));
 
     /// <summary>Stow the ordnance in zones (dicts x0, x1, half_width, rooms, own). Adds the compartments, sets each
     /// mount's "magazine", and moves its "Magazine &lt;id&gt;" weight to its room. Returns {room id: (x0, x1, base, top)}.</summary>
@@ -290,14 +290,14 @@ public static class Ordnance
             {
                 var mids = r.Get("mounts") is List<object?> ml ? ml.Cast<string>() : r.Get("mounts") is List<string> sl ? sl : [];
                 var ms = mids.Where(mid => ammo.ContainsKey($"Magazine {mid}")).Select(mid => byId[mid]).ToList();
-                double t = r.F("tonnes", 0.0) + Py.Sum(ms.Select(m => ammo[$"Magazine {m.S("id")}"].W));
+                double t = r.F("tonnes", 0.0) + ms.Select(m => ammo[$"Magazine {m.S("id")}"].W).Sum();
                 rooms.Add((r, ms, t, t / r.F("t_per_m3", T_PER_M3)));
             }
-            double vol = Py.Sum(rooms.Select(r => r.V));
+            double vol = rooms.Select(r => r.V).Sum();
             if (vol <= 0)
                 continue;
             double L = z.F("x1") - z.F("x0");
-            var (bse, top) = Span(plan, vol / Py.Max(1.0, L * 2 * z.F("half_width")));
+            var (bse, top) = Span(plan, vol / Math.Max(1.0, L * 2 * z.F("half_width")));
             double x = z.F("x1");
             foreach (var (r, ms, t, v) in rooms)
             {
@@ -305,7 +305,7 @@ public static class Ordnance
                     continue;
                 double l = L * v / vol;
                 var c = PyDict.Of(("id", r["id"]), ("kind", r.Get("kind", "magazine")), ("x0", x - l), ("x1", x),
-                    ("half_width", z["half_width"]), ("base", bse), ("top", top), ("tonnes", Py.Round(t, 1)));
+                    ("half_width", z["half_width"]), ("base", bse), ("top", top), ("tonnes", Math.Round(t, 1)));
                 foreach (var kv in r)
                     if (!(kv.Key is "id" or "kind" or "mounts" or "tonnes" or "t_per_m3"))
                         c[kv.Key] = kv.Value;
@@ -332,7 +332,7 @@ public static class Ordnance
     public static PyDict OwnZone(PyDict m, double innerHw)
     {
         double r = m.D("t").F("r");
-        return PyDict.Of(("x0", m.F("x") - r), ("x1", m.F("x") + r), ("half_width", Py.Min(r, innerHw)), ("own", true),
+        return PyDict.Of(("x0", m.F("x") - r), ("x1", m.F("x") + r), ("half_width", Math.Min(r, innerHw)), ("own", true),
             ("rooms", new List<object?> { PyDict.Of(("id", $"Magazine {m.S("id")}"), ("mounts", new List<object?> { m["id"] })) }));
     }
 }

@@ -126,7 +126,7 @@ public static class Fuzz
             nv = 0;
         else
             nv = Py.ToDouble(v) * Math.Exp(Math.Log(0.25) + (Math.Log(4) - Math.Log(0.25)) * rng.NextDouble());
-        object nvo = v is long ? Py.Round(nv) : Py.Round(nv, 3);
+        object nvo = v is long ? (long)Math.Round(nv) : Math.Round(nv, 3);
         SetAt(d, path, nvo);
         return new Change(Show(path), Py.Repr(v), Py.Repr(nvo));
     }

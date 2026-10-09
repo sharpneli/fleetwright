@@ -70,7 +70,7 @@ public static class Looks
     static double[] Rgb3(string c) => [Convert.ToInt32(c[1..3], 16), Convert.ToInt32(c[3..5], 16), Convert.ToInt32(c[5..7], 16)];
 
     static string Hex(double[] c) =>
-        "#" + string.Concat(c.Select(v => Py.Max(0L, Py.Min(255L, Py.Round(v))).ToString("x2")));
+        "#" + string.Concat(c.Select(v => Math.Max(0L, Math.Min(255L, (long)Math.Round(v))).ToString("x2")));
 
     static double[] Mix(double[] a, double[] b, double t) => [.. a.Zip(b, (x, y) => x + (y - x) * t)];
 
