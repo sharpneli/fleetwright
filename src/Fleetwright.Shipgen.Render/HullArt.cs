@@ -350,9 +350,9 @@ public static class HullArt
         if (!new[] { "bow_power", "bow_flare", "transom" }.Any(k => Py.Truthy(sh.Get(k))))
             return spec;
         var hull = new Hull(spec);
-        var bow = PyDict.Merge(hull.Bow, PyDict.Of(("power", hull.Bow.F("power") + sh.F("bow_power", 0.0)),
+        var bow = PyDict.Merge((PyDict)hull.Bow.ToPy()!, PyDict.Of(("power", hull.Bow.Power!.Value + sh.F("bow_power", 0.0)),
             ("flare", sh.Get("bow_flare", 0.0))));
-        var stern = PyDict.Merge(hull.Stern, PyDict.Of(("transom", Math.Min(0.9, hull.Stern.F("transom") + sh.F("transom", 0.0)))));
+        var stern = PyDict.Merge((PyDict)hull.Stern.ToPy()!, PyDict.Of(("transom", Math.Min(0.9, hull.Stern.Transom!.Value + sh.F("transom", 0.0)))));
         return PyDict.Merge(spec, PyDict.Of(("bow", bow), ("stern", stern)));
     }
 

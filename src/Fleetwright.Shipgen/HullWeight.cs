@@ -256,7 +256,7 @@ public static class Ordnance
         return t - b;
     }
 
-    public static double AmmoT(PyDict t) => Batteries.MountWeights(t, 0.0, 0.0, 0).Ammo;
+    public static double AmmoT(TurretType t) => Batteries.MountWeights(t, 0.0, 0.0, 0).Ammo;
 
     /// <summary>Ready-use ammunition at a gun mount at action stations: (rounds, tonnes).</summary>
     public static (long N, double T) ReadyUse(double calibreMm, double barrels, double? cap = null)
@@ -269,11 +269,10 @@ public static class Ordnance
 
     public static double WarheadKg(double diameterMm = TORPEDO_MM) => WARHEAD_K * Math.Pow(diameterMm, 3);
 
-    public static double AmmoM3(PyDict t) => AmmoT(t) / T_PER_M3;
+    public static double AmmoM3(TurretType t) => AmmoT(t) / T_PER_M3;
 
     /// <summary>The ids of the mounts that carry ammunition (guns, not torpedo tubes).</summary>
-    public static List<string> Guns(IEnumerable<PyDict> mounts) =>
-        mounts.Where(m => Py.In(m["kind"], "main", "secondary")).Select(m => m.S("id")).ToList();
+    public static List<string> Guns(IEnumerable<Mount> mounts) => mounts.Where(m => m.Kind is "main" or "secondary").Select(m => m.Id).ToList();
 
     /// <summary>The magazine volume the mounts' booked ammunition ("Magazine &lt;id&gt;" weights) needs.</summary>
     public static double BookedM3(Layout lay, IEnumerable<string> mids)
@@ -286,15 +285,15 @@ public static class Ordnance
     public static double ZoneLength(double volumeM3, double width, PlantPlan plan, int tiers = TIERS, double least = MIN_ROOM) =>
         Math.Max(least, volumeM3 / Math.Max(width * Height(plan, tiers), 1.0));
 
-    /// <summary>Stow the ordnance in zones (dicts x0, x1, half_width, rooms, own). Adds the compartments, sets each
-    /// mount's "magazine", and moves its "Magazine &lt;id&gt;" weight to its room. Returns {room id: (x0, x1, base, top)}.</summary>
-    public static Dictionary<string, (double X0, double X1, double Base, double Top)> Stow(Layout lay, IReadOnlyList<PyDict> mounts,
-        IEnumerable<PyDict> zones)
+    /// <summary>Stow the ordnance in zones. Adds the compartments, sets each mount's Magazine, and moves its
+    /// "Magazine &lt;id&gt;" weight to its room. Returns {room id: (x0, x1, base, top)}.</summary>
+    public static Dictionary<string, (double X0, double X1, double Base, double Top)> Stow(Layout lay, IReadOnlyList<Mount> mounts,
+        IEnumerable<Zone> zones)
     {
         var plan = lay.Geo.Plant!;
-        var byId = new Dictionary<string, PyDict>(StringComparer.Ordinal);
+        var byId = new Dictionary<string, Mount>(StringComparer.Ordinal);
         foreach (var m in mounts)
-            byId[m.S("id")] = m;
+            byId[m.Id] = m;
         var ammo = new Dictionary<string, Weight>(StringComparer.Ordinal);
         foreach (var w in lay.Weights)
             if (w.Name.StartsWith("Magazine ", StringComparison.Ordinal))
@@ -302,43 +301,42 @@ public static class Ordnance
         var out_ = new Dictionary<string, (double, double, double, double)>(StringComparer.Ordinal);
         foreach (var z in zones)
         {
-            var rooms = new List<(PyDict R, List<PyDict> Ms, double T, double V)>();
-            foreach (PyDict r in z.L("rooms").Cast<PyDict>())
+            var rooms = new List<(ZoneRoom R, List<Mount> Ms, double T, double V)>();
+            foreach (var r in z.Rooms)
             {
-                var mids = r.Get("mounts") is List<object?> ml ? ml.Cast<string>() : r.Get("mounts") is List<string> sl ? sl : [];
-                var ms = mids.Where(mid => ammo.ContainsKey($"Magazine {mid}")).Select(mid => byId[mid]).ToList();
-                double t = r.F("tonnes", 0.0) + ms.Select(m => ammo[$"Magazine {m.S("id")}"].W).Sum();
-                rooms.Add((r, ms, t, t / r.F("t_per_m3", T_PER_M3)));
+                var ms = (r.Mounts ?? []).Where(mid => ammo.ContainsKey($"Magazine {mid}")).Select(mid => byId[mid]).ToList();
+                double t = r.Tonnes + ms.Select(m => ammo[$"Magazine {m.Id}"].W).Sum();
+                rooms.Add((r, ms, t, t / (r.TPerM3 ?? T_PER_M3)));
             }
             double vol = rooms.Select(r => r.V).Sum();
             if (vol <= 0)
                 continue;
-            double L = z.F("x1") - z.F("x0");
-            var (bse, top) = Span(plan, vol / Math.Max(1.0, L * 2 * z.F("half_width")));
-            double x = z.F("x1");
+            double L = z.X1 - z.X0;
+            var (bse, top) = Span(plan, vol / Math.Max(1.0, L * 2 * z.HalfWidth));
+            double x = z.X1;
             foreach (var (r, ms, t, v) in rooms)
             {
                 if (v <= 0)
                     continue;
                 double l = L * v / vol;
-                var c = PyDict.Of(("id", r["id"]), ("kind", r.Get("kind", "magazine")), ("x0", x - l), ("x1", x),
-                    ("half_width", z["half_width"]), ("base", bse), ("top", top), ("tonnes", Math.Round(t, 1)));
-                foreach (var kv in r)
-                    if (!(kv.Key is "id" or "kind" or "mounts" or "tonnes" or "t_per_m3"))
-                        c[kv.Key] = kv.Value;
-                if (ms.Count == 1 && z.B("own"))
-                    c["mount"] = ms[0]["id"];
+                var c = new Compartment
+                {
+                    Id = r.Id, Kind = r.Kind ?? "magazine", X0 = x - l, X1 = x, HalfWidth = z.HalfWidth, Base = bse, Top = top,
+                    Tonnes = Math.Round(t, 1),
+                };
+                if (ms.Count == 1 && z.Own)
+                    c.Mount = ms[0].Id;
                 else if (ms.Count > 0)
-                    c["mounts"] = ms.Select(m => m["id"]).ToList();
+                    c.Mounts = ms.Select(m => m.Id).ToList();
                 lay.Compartments.Add(c);
                 foreach (var m in ms)
                 {
-                    m["magazine"] = r["id"];
-                    var w = ammo[$"Magazine {m.S("id")}"];
+                    m.Magazine = r.Id;
+                    var w = ammo[$"Magazine {m.Id}"];
                     w.X = x - l / 2;
                     w.ZRel = ZRel.Deck((bse + top) / 2);
                 }
-                out_[r.S("id")] = (x - l, x, bse, top);
+                out_[r.Id] = (x - l, x, bse, top);
                 x -= l;
             }
         }
@@ -346,10 +344,9 @@ public static class Ordnance
     }
 
     /// <summary>A zone for one mount's own magazine: under it on the centreline, its diameter long.</summary>
-    public static PyDict OwnZone(PyDict m, double innerHw)
+    public static Zone OwnZone(Mount m, double innerHw)
     {
-        double r = m.D("t").F("r");
-        return PyDict.Of(("x0", m.F("x") - r), ("x1", m.F("x") + r), ("half_width", Math.Min(r, innerHw)), ("own", true),
-            ("rooms", new List<object?> { PyDict.Of(("id", $"Magazine {m.S("id")}"), ("mounts", new List<object?> { m["id"] })) }));
+        double r = m.T.R;
+        return new Zone(m.X - r, m.X + r, Math.Min(r, innerHw), [new ZoneRoom($"Magazine {m.Id}", [m.Id])], Own: true);
     }
 }

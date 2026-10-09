@@ -1,92 +1,78 @@
 namespace Fleetwright.Shipgen;
 
-/// <summary>armament: style-neutral placement of guns, torpedo mounts and AA, and the mount records that hitboxes,
-/// arcs and the renderer read.</summary>
+/// <summary>A place a mount (or a pair of mounts) could stand: X, Y and its base above the main deck; a pair's port
+/// mount at YPort (default -Y). A slot on the centreline, or a Lone one, takes a single mount.</summary>
+public sealed record Slot(double X, double Y, double Base, double? YPort = null, bool Lone = false)
+{
+    public bool Single => Y == 0 || Lone;
+    public double PortY => YPort ?? -Y;
+}
+
+/// <summary>Style-neutral placement of guns, torpedo mounts and AA, and the mounts that hitboxes, arcs and the renderer
+/// read.</summary>
 public static class Armament
 {
     /// <summary>Radius of the turret body and its ears (not the barrels): its footprint on deck.</summary>
-    public static double BodyReach(PyDict t)
-    {
-        return Math.Max(t.F("r"), Geometry.TurretReach(t, 0.0));
-    }
+    public static double BodyReach(TurretType t) => Math.Max(t.R, Geometry.TurretReach(t, 0.0));
 
     /// <summary>Rest bearing of a side mount at x on `side` (+1 starboard), whose arc is +-half about its own beam.</summary>
     public static double StowBearing(double x, double side, double half) => 90.0 * side + (x >= 0 ? -1.0 : 1.0) * side * half;
 
     /// <summary>Axis-aligned box around a mount's barrels (as shown) trained to `bearing`.</summary>
-    public static Footprint BarrelFootprint(PyDict t, double x, double y, double bearing)
+    public static Footprint BarrelFootprint(TurretType t, double x, double y, double bearing)
     {
         double c = Math.Cos(double.DegreesToRadians(bearing)), s = Math.Sin(double.DegreesToRadians(bearing));
-        double x0 = 0, y0 = 0, x1 = 0, y1 = 0;
-        bool first = true;
-        foreach (var poly in Geometry.TurretShapesOf(t).Barrels)
-            foreach (var p in poly)
-            {
-                double px = x + p.X * c - p.Y * s, py = y + p.X * s + p.Y * c;
-                if (first)
-                {
-                    (x0, y0, x1, y1) = (px, py, px, py);
-                    first = false;
-                    continue;
-                }
-                if (px < x0)
-                    x0 = px;
-                if (px > x1)
-                    x1 = px;
-                if (py < y0)
-                    y0 = py;
-                if (py > y1)
-                    y1 = py;
-            }
-        if (first)
-            throw new PyValueError("min() iterable argument is empty");
+        var pts = Geometry.TurretShapesOf(t).Barrels.SelectMany(poly => poly)
+            .Select(p => new Pt(x + p.X * c - p.Y * s, y + p.X * s + p.Y * c)).ToList();
+        var (x0, y0, x1, y1) = Geometry.Bounds(pts);
         return Footprint.Rect(x0, y0, x1, y1);
     }
 
     /// <summary>The heights (lo, hi) above the main deck that a mount's barrels take, about their axis.</summary>
-    public static (double Lo, double Hi) BarrelBand(double bse, double top, PyDict t)
+    public static (double Lo, double Hi) BarrelBand(double bse, double top, TurretType t)
     {
         double axis = bse + 0.55 * (top - bse);
-        double hw = t.F("barrel_w") / 2 + 0.1;
+        double hw = t.BarrelW / 2 + 0.1;
         return (axis - hw, axis + hw);
     }
 
-    public static (string Id, PyDict T) GunType(BatteryInput gun) => Geometry.BatteryType(gun);
+    public static (string Id, TurretType T) GunType(BatteryInput gun) => Geometry.BatteryType(gun);
 
     /// <summary>Axis-aligned box around a fixed tube laid along `bearing`.</summary>
-    static Footprint TubeFootprint(PyDict t, double x, double y, double bearing)
+    static Footprint TubeFootprint(TurretType t, double x, double y, double bearing)
     {
         double a = double.DegreesToRadians(bearing);
-        double hl = t.F("barrel_len") / 2 + 0.2, hw = ((t.F("barrels") - 1) * t.F("spacing") + t.F("barrel_w")) / 2 + 0.2;
+        double hl = t.BarrelLen / 2 + 0.2, hw = ((t.Barrels - 1) * t.Spacing + t.BarrelW) / 2 + 0.2;
         double ex = Math.Abs(hl * Math.Cos(a)) + Math.Abs(hw * Math.Sin(a)), ey = Math.Abs(hl * Math.Sin(a)) + Math.Abs(hw * Math.Cos(a));
         return Footprint.Rect(x - ex, y - ey, x + ex, y + ey);
     }
 
-    /// <summary>One mount: footprint, weights and the mount record, for every style.</summary>
-    public static PyDict AddMount(Layout lay, List<PyDict> mounts, string kind, string tId, PyDict t, string mid, double x, double y,
-        double bse, object rest, long level = 0, double armourMm = 0.0, double depth = 10.0, double? top = null,
-        double? footprintR = null, string label = "Mount", double deck = 0.0, (string Key, object? Value)[]? extra = null)
+    /// <summary>One mount: footprint, weights and the mount record, for every style. A side mount also claims the space
+    /// its barrels take at rest.</summary>
+    public static Mount AddMount(Layout lay, List<Mount> mounts, string kind, string tId, TurretType t, string mid, double x, double y,
+        double bse, double rest, long level = 0, double armourMm = 0.0, double depth = 10.0, double? top = null,
+        double? footprintR = null, string label = "Mount", double deck = 0.0, bool sideMount = false)
     {
-        extra ??= [];
-        double th = kind != "torpedo" || t.B("fixed_tube") ? Geometry.TurretHeight(t) : 1.1;
+        double th = kind != "torpedo" || t.IsFixedTube ? Geometry.TurretHeight(t) : 1.1;
         double tp = top ?? bse + th;
-        var m = PyDict.Of(("id", mid), ("kind", kind), ("type", tId), ("t", t), ("x", x), ("y", y), ("level", level),
-            ("base", bse), ("top", tp), ("rest", rest), ("armour_mm", armourMm));
-        foreach (var (k, v) in extra)
-            m[k] = v;
-        mounts.Add(m);
-        if (t.B("fixed_tube"))
+        var m = new Mount
         {
-            m["fixed"] = rest;
-            lay.Occupy(TubeFootprint(t, x, y, Py.ToDouble(rest)), bse, tp, mid);
+            Id = mid, Kind = kind, Type = tId, T = t, X = x, Y = y, Level = level, Base = bse, Top = tp, Rest = rest, ArmourMm = armourMm,
+            SideMount = sideMount,
+        };
+        mounts.Add(m);
+        if (t.IsFixedTube)
+        {
+            m.Fixed = rest;
+            lay.Occupy(TubeFootprint(t, x, y, rest), bse, tp, mid);
         }
         else
         {
-            double r = footprintR ?? (kind != "torpedo" ? BodyReach(t) : t.F("barrel_len") / 2 + 0.3);
+            double r = footprintR ?? (kind != "torpedo" ? BodyReach(t) : t.BarrelLen / 2 + 0.3);
             lay.Occupy(Footprint.Circle(x, y, r), bse, tp, mid);
-            if (m.B("side_mount"))
+            if (sideMount)
             {
-                var fp = BarrelFootprint(t, x, y, Py.ToDouble(rest));
+                var fp = BarrelFootprint(t, x, y, rest);
                 var (lo, hi) = BarrelBand(bse, tp, t);
                 lay.Occupy(fp, lo, hi, mid);
                 lay.Overhangs.Add(fp);
@@ -94,7 +80,7 @@ public static class Armament
         }
         if (kind == "torpedo")
         {
-            lay.Weights.Add(new Weight(mid, "armament", Batteries.TorpedoWeight(t.F("barrels"), t.B("fixed_tube")), x, ZRel.Deck(bse + 0.5)));
+            lay.Weights.Add(new Weight(mid, "armament", Batteries.TorpedoWeight(t.Barrels, t.IsFixedTube), x, ZRel.Deck(bse + 0.5)));
             return m;
         }
         var (tw, bw, aw) = Batteries.MountWeights(t, armourMm, depth, level, deck);
@@ -105,18 +91,18 @@ public static class Armament
         return m;
     }
 
-    /// <summary>n mounts in a line from x_start in direction step_dir, each superfiring over the one before it.</summary>
-    /// <summary>stepped: how many step up, superfiring (all of them when null); flat: none do, all on the deck.</summary>
-    public static void GunLine(Layout lay, List<PyDict> mounts, PyDict turretTypes, BatteryInput gun, long n, long? stepped, bool flat,
-        string kind, IReadOnlyList<string> names, double xStart, double stepDir, double y, long rest, Func<double, double> deckH,
-        bool raiseInner = false, double armourMm = 0.0, double depth = 10.0, string label = "Main",
+    /// <summary>n mounts in a line from xStart in direction stepDir, each superfiring over the one before it. stepped:
+    /// how many step up (all of them when null); flat: none do, all on the deck.</summary>
+    public static void GunLine(Layout lay, List<Mount> mounts, OrderedDictionary<string, TurretType> turretTypes, BatteryInput gun, long n,
+        long? stepped, bool flat, string kind, IReadOnlyList<string> names, double xStart, double stepDir, double y, double rest,
+        Func<double, double> deckH, bool raiseInner = false, double armourMm = 0.0, double depth = 10.0, string label = "Main",
         IReadOnlyCollection<string>? ignore = null, string? battery = null)
     {
         if (n == 0)
             return;
         var (tId, t) = GunType(gun);
         turretTypes[tId] = t;
-        double r = t.F("r"), th = Geometry.TurretHeight(t);
+        double r = t.R, th = Geometry.TurretHeight(t);
         double reach = BodyReach(t);
         double s = 2.2 * r + 3.0;
         long k = Math.Max(stepped ?? n, 1);
@@ -138,31 +124,30 @@ public static class Armament
                 lay.Fail("beam", $"{label} mount {mid} ({gun.CalibreMm} mm) is too wide for the hull at {x:F0} m.");
                 continue;
             }
-            long stow = (long)Geometry.Normalize360(rest + 180);
-            AddMount(lay, mounts, kind, tId, t, mid, x, y, bse, flush ? stow : rest, level, armourMm, depth,
-                extra: battery != null ? [("battery", battery)] : null);
+            double stow = Geometry.Normalize360(rest + 180);
+            var m = AddMount(lay, mounts, kind, tId, t, mid, x, y, bse, flush ? stow : rest, level, armourMm, depth);
+            m.Battery = battery;
             if (flush)
-                mounts[^1]["arc_role"] = "beam";
+                m.ArcRole = "beam";
         }
     }
 
-    /// <summary>per_side mounts on each side from candidates (x, y, base[, y_port]), in order of preference.</summary>
-    public static long SidePairs(Layout lay, List<PyDict> mounts, PyDict turretTypes, string kind, string tId, PyDict t, long perSide,
-        IEnumerable<object?[]> cands, string prefix, double? pitch = null, double armourMm = 25.0, double depth = 10.0,
-        string label = "Secondary", IReadOnlyCollection<string>? ignore = null)
+    /// <summary>perSide mounts on each side from candidate slots, in order of preference.</summary>
+    public static long SidePairs(Layout lay, List<Mount> mounts, OrderedDictionary<string, TurretType> turretTypes, string kind, string tId,
+        TurretType t, long perSide, IEnumerable<Slot> cands, string prefix, double? pitch = null, double armourMm = 25.0,
+        double depth = 10.0, string label = "Secondary", IReadOnlyCollection<string>? ignore = null)
     {
         if (perSide == 0)
             return 0;
         turretTypes[tId] = t;
-        double reach = kind != "torpedo" ? BodyReach(t) : t.F("barrel_len") / 2 + 0.3;
+        double reach = kind != "torpedo" ? BodyReach(t) : t.BarrelLen / 2 + 0.3;
         double pt = pitch is double p && p != 0 ? p : 2.1 * reach + 1.0;
         bool guns = kind != "torpedo";
         double pitchStowed = Geometry.TurretReach(t) + reach + 0.4;
         var placed = new List<double>();
         foreach (var c in cands)
         {
-            double x = Py.ToDouble(c[0]), y = Py.ToDouble(c[1]), bse = Py.ToDouble(c[2]);
-            double yPort = c.Length > 3 ? Py.ToDouble(c[3]) : -y;
+            double x = c.X, y = c.Y, bse = c.Base, yPort = c.PortY;
             if (placed.Count >= perSide)
                 break;
             if (placed.Any(px => Math.Abs(x - px) < pt || (guns && (x >= 0) == (px >= 0) && Math.Abs(x - px) < pitchStowed)))
@@ -182,10 +167,14 @@ public static class Armament
             {
                 string mid = $"{prefix}{k}{(side > 0 ? "S" : "P")}";
                 if (guns)
-                    AddMount(lay, mounts, kind, tId, t, mid, x, yy, bse, StowBearing(x, side, 90.0), armourMm: armourMm, depth: depth,
-                        extra: kind == "secondary" ? [("side_mount", true), ("battery", prefix)] : [("side_mount", true)]);
+                {
+                    var m = AddMount(lay, mounts, kind, tId, t, mid, x, yy, bse, StowBearing(x, side, 90.0), armourMm: armourMm,
+                        depth: depth, sideMount: true);
+                    if (kind == "secondary")
+                        m.Battery = prefix;
+                }
                 else
-                    AddMount(lay, mounts, kind, tId, t, mid, x, yy, bse, (long)(90 * side), armourMm: armourMm, depth: depth);
+                    AddMount(lay, mounts, kind, tId, t, mid, x, yy, bse, 90 * side, armourMm: armourMm, depth: depth);
             }
             placed.Add(x);
         }
@@ -207,13 +196,14 @@ public static class Armament
                                  $"{b.MountsPerSide} per side ({2 * b.MountsPerSide} mounts).");
     }
 
-    /// <summary>One end line for place_batteries: (x_start, step_dir, y, rest, deck_h, ignore).</summary>
-    public sealed record EndLine(double XStart, double StepDir, double Y, long Rest, Func<double, double> DeckH,
+    /// <summary>One end line for PlaceBatteries: where it starts and which way it runs, its y, the mounts' rest bearing,
+    /// the deck height under it, and what it may overlap.</summary>
+    public sealed record EndLine(double XStart, double StepDir, double Y, double Rest, Func<double, double> DeckH,
         IReadOnlyCollection<string> Ignore);
 
-    /// <summary>Fit every secondary battery: end lines in the order they fill, side_slots(t) -&gt; starboard candidates.</summary>
-    public static void PlaceBatteries(Layout lay, List<PyDict> mounts, PyDict turretTypes, Design design, IReadOnlyList<EndLine> endLines,
-        Func<PyDict, IEnumerable<object?[]>> sideSlots, double depth = 10.0)
+    /// <summary>Fit every secondary battery: end lines in the order they fill, sideSlots(t) -&gt; starboard slots.</summary>
+    public static void PlaceBatteries(Layout lay, List<Mount> mounts, OrderedDictionary<string, TurretType> turretTypes, Design design,
+        IReadOnlyList<EndLine> endLines, Func<TurretType, IEnumerable<Slot>> sideSlots, double depth = 10.0)
     {
         var cursor = endLines.Select(l => l.XStart).ToList();
         var bats = BatteriesOf(design);
@@ -242,21 +232,21 @@ public static class Armament
                 GunLine(lay, mounts, turretTypes, b, n, null, true, "secondary",
                     Enumerable.Range(0, (int)n).Select(j => $"{prefix}{made + j + 1}").ToList(), cursor[i], ln.StepDir, ln.Y, ln.Rest,
                     ln.DeckH, armourMm: b.ArmourMm!.Value, depth: depth, label: "Secondary", ignore: ln.Ignore, battery: prefix);
-                cursor[i] += ln.StepDir * (2 * BodyReach(t) + (n - 1) * (2.2 * t.F("r") + 3.0) + 1.0);
+                cursor[i] += ln.StepDir * (2 * BodyReach(t) + (n - 1) * (2.2 * t.R + 3.0) + 1.0);
                 made += n;
             }
             if (nSide != 0)
                 SidePairs(lay, mounts, turretTypes, "secondary", tId, t, nSide, sideSlots(t), prefix, armourMm: b.ArmourMm!.Value, depth: depth);
             foreach (var m in mounts.Skip(first))
-                m["material"] = b.Material;
+                m.Material = b.Material;
         }
     }
 
-    public static (string Id, PyDict T) TorpedoType(TorpedoInput tp, bool fixed_ = false) => Geometry.MakeTorpedoType(tp.Tubes ?? 4, fixed_);
+    public static (string Id, TurretType T) TorpedoType(TorpedoInput tp, bool fixed_ = false) => Geometry.MakeTorpedoType(tp.Tubes ?? 4, fixed_);
 
-    /// <summary>Fixed torpedo tubes in port/starboard pairs, toed out by toe_deg from dead ahead.</summary>
-    public static long FixedTubePairs(Layout lay, List<PyDict> mounts, PyDict turretTypes, TorpedoInput tp, IEnumerable<double> xs,
-        Func<double, PyDict, double> yOfX, double bse = 0.2, double toeDeg = 8.0)
+    /// <summary>Fixed torpedo tubes in port/starboard pairs, toed out by toeDeg from dead ahead.</summary>
+    public static long FixedTubePairs(Layout lay, List<Mount> mounts, OrderedDictionary<string, TurretType> turretTypes, TorpedoInput tp,
+        IEnumerable<double> xs, Func<double, TurretType, double> yOfX, double bse = 0.2, double toeDeg = 8.0)
     {
         var (tId, t) = TorpedoType(tp, true);
         turretTypes[tId] = t;
@@ -282,9 +272,9 @@ public static class Armament
     const double AA_CELL = 8.0;
     static readonly Dictionary<string, double> AA_TUB_T = new() { ["quad40"] = 3.0, ["twin40"] = 1.5, ["single20"] = 0.3 };
 
-    /// <summary>AA mounts in pairs from cands (x, y, base[, y_port]) in order of preference; y == 0 or y_port null is a
-    /// single mount. ignore: ids to disregard, or a function of the slot's base giving them.</summary>
-    public static long PlaceAa(Layout lay, List<PyDict> aaOut, string kind, long count, IReadOnlyList<object?[]> cands,
+    /// <summary>AA mounts in pairs from slots in order of preference (a single slot takes one). ignore: ids to
+    /// disregard, as a function of the slot's base; layerOf: the drawing layer for a base.</summary>
+    public static long PlaceAa(Layout lay, List<AaMount> aaOut, string kind, long count, IReadOnlyList<Slot> cands,
         double? spacing = null, Func<double, IReadOnlyCollection<string>>? ignore = null, Func<double, string>? layerOf = null)
     {
         double rr = Geometry.AA_CFG[kind].R;
@@ -302,7 +292,7 @@ public static class Armament
         }
 
         foreach (var a in aaOut)
-            File(Footprint.Circle(a.F("x"), a.F("y"), Geometry.AA_CFG[a.S("type")].R));
+            File(Footprint.Circle(a.X, a.Y, Geometry.AA_CFG[a.Type].R));
 
         IEnumerable<Footprint> Near(Footprint fp)
         {
@@ -313,12 +303,9 @@ public static class Armament
                         yield return o;
         }
 
-        static bool Single(object?[] c) => Py.ToDouble(c[1]) == 0 || (c.Length > 3 && c[3] is null);
-
-        List<(Footprint Fp, double Base, double Cx)>? Fits(object?[] c, IEnumerable<Footprint>? also = null)
+        List<(Footprint Fp, double Base, double Cx)>? Fits(Slot c, IEnumerable<Footprint>? also = null)
         {
-            double cx = Py.ToDouble(c[0]), cy = Py.ToDouble(c[1]), bse = Py.ToDouble(c[2]);
-            var use = Single(c) ? new[] { (cx, cy) } : [(cx, cy), (cx, c.Length > 3 ? Py.ToDouble(c[3]) : -cy)];
+            var use = c.Single ? new[] { (c.X, c.Y) } : [(c.X, c.Y), (c.X, c.PortY)];
             var fps = use.Select(u => Footprint.Circle(u.Item1, u.Item2, rr)).ToList();
             if (fps.Count == 2 && Layout.Overlap(fps[0], fps[1], sp))
                 return null;
@@ -327,10 +314,10 @@ public static class Armament
                 foreach (var o in Near(fp).Concat(alsoL))
                     if (Math.Abs(fp.X - o.X) < fp.R + o.R + sp && Layout.Overlap(fp, o, sp))
                         return null;
-            var ign = ignore?.Invoke(bse) ?? [];
-            if (!fps.All(fp => lay.FreeAt(fp, bse, bse + 2.0, 0.4, ign)) || !fps.All(fp => lay.Clear(fp, bse + 2.0)))
+            var ign = ignore?.Invoke(c.Base) ?? [];
+            if (!fps.All(fp => lay.FreeAt(fp, c.Base, c.Base + 2.0, 0.4, ign)) || !fps.All(fp => lay.Clear(fp, c.Base + 2.0)))
                 return null;
-            return fps.Select(fp => (fp, bse, cx)).ToList();
+            return fps.Select(fp => (fp, c.Base, c.X)).ToList();
         }
 
         void Put(List<(Footprint Fp, double Base, double Cx)> ms)
@@ -341,8 +328,7 @@ public static class Armament
                 double y = fp.Y;
                 string aid = $"AA{aaOut.Count + 1}";
                 long d = y == 0 && cx < 0 ? 180 : y > 0 ? 90 : y < 0 ? -90 : 0;
-                aaOut.Add(PyDict.Of(("id", aid), ("type", kind), ("x", fp.X), ("y", y), ("dir", d), ("base", bse),
-                    ("layer", layerOf != null ? layerOf(bse) : "base")));
+                aaOut.Add(new AaMount { Id = aid, Type = kind, X = fp.X, Y = y, Dir = d, Base = bse, Layer = layerOf != null ? layerOf(bse) : "base" });
                 lay.Occupy(fp, bse, bse + 2.0, aid);
                 lay.Weights.Add(new Weight(aid, "armament", Batteries.AA_T[kind] + (bse > 0.5 ? AA_TUB_T[kind] : 0.0), fp.X,
                     ZRel.Deck(bse + 1.0)));
@@ -357,19 +343,19 @@ public static class Armament
             long left = count - placed;
             if (left <= 0)
                 break;
-            if (!Single(c) && left < 2)
+            if (!c.Single && left < 2)
                 continue;
-            if (Single(c) && left % 2 == 0 && lonely)
+            if (c.Single && left % 2 == 0 && lonely)
                 continue;
             var got = Fits(c);
             if (got is null || got.Count == 0)
                 continue;
-            if (Single(c) && left % 2 == 0)
+            if (c.Single && left % 2 == 0)
             {
                 List<(Footprint, double, double)>? mate = null;
                 for (int j = i + 1; j < cands.Count; j++)
                 {
-                    if (!Single(cands[j]))
+                    if (!cands[j].Single)
                         continue;
                     var m = Fits(cands[j], got.Select(g => g.Fp));
                     if (m is { Count: > 0 })

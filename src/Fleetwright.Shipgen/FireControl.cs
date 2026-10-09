@@ -79,32 +79,32 @@ public static class FireControl
         double reach = Powerplant.SmokeReach(res.Plant, res.PowerShp);
         foreach (var b in lay.Blocks)
         {
-            if (!CONTROL_ROLES.Any(r => Py.Eq(b["role"], r)) || b.B("office"))
+            if (!CONTROL_ROLES.Contains(b.Role) || b.Office)
                 continue;
-            var hit = SmokeFrom(lay.Funnels, lay.FunTop, reach, b.F("x1"), Layout.BlockTop(b), b.F("y"), b.F("w"));
+            var hit = SmokeFrom(lay.Funnels, lay.FunTop, reach, b.X1, b.TopZ, b.Y, b.W);
             if (hit.Count > 0)
             {
-                lay.Smoke[b.S("id")] = hit;
-                lay.Warnings.Add($"{b.S("id")} stands in the smoke of {string.Join(", ", hit)}: poor visibility from it.");
+                lay.Smoke[b.Id] = hit;
+                lay.Warnings.Add($"{b.Id} stands in the smoke of {string.Join(", ", hit)}: poor visibility from it.");
             }
         }
     }
 
     /// <summary>Ids of the funnels whose smoke blinds a control position.</summary>
-    static List<string> SmokeFrom(IEnumerable<PyDict> funnels, double funTop, double reach, double x1, double top, double y, double w)
+    static List<string> SmokeFrom(IEnumerable<Funnel> funnels, double funTop, double reach, double x1, double top, double y, double w)
     {
         var hit = new List<string>();
         foreach (var f in funnels)
         {
-            double d = (f.F("x") - f.F("l") / 2) - x1;
-            if (0 <= d && d < reach && top < funTop + 0.3 * d && Math.Abs(f.F("y") - y) < w / 2 + f.F("w"))
-                hit.Add(f.S("id"));
+            double d = (f.X - f.L / 2) - x1;
+            if (0 <= d && d < reach && top < funTop + 0.3 * d && Math.Abs(f.Y - y) < w / 2 + f.W)
+                hit.Add(f.Id);
         }
         return hit;
     }
 
     /// <summary>Stand the design's directors on the superstructure's roofs as blocks of their own, with their weights.</summary>
-    public static void Place(Layout lay, Design design, List<PyDict> blocks)
+    public static void Place(Layout lay, Design design, List<Block> blocks)
     {
         double L = lay.Hull.L;
         foreach (var bat in BATTERIES)
@@ -132,8 +132,7 @@ public static class FireControl
                 var pts = Geometry.DirectorParts(x, y, l, w, d.RangefinderM).Outline;
                 var b = Layout.AddBlock(lay, blocks, bid, x - hl, x + hl, w, 1, 0.0, 0.0, y: y, z0: z0, kind: "director", tPerM2: 0.0,
                     points: pts, role: "director");
-                b["director"] = PyDict.Of(("battery", bat), ("rangefinder_m", d.RangefinderM), ("radar", d.RadarT > 0),
-                    ("on", (long)Math.Round(z0 / Layout.LEVEL_H)));
+                b.Director = new BlockDirector(bat, d.RangefinderM, d.RadarT > 0, (long)Math.Round(z0 / Layout.LEVEL_H));
                 double aloft = wt.Hood + wt.Gear + wt.Rangefinder + wt.Armour + wt.Radar;
                 lay.Weights.Add(new Weight(bid, "fire_control", aloft, x, ZRel.Deck(z0 + 0.5 * HOOD_H)));
                 if (wt.Computer != 0)
@@ -144,7 +143,7 @@ public static class FireControl
             }
 
             bool Smoky(double x, double y, double z0) =>
-                SmokeFrom(lay.FunnelsPlanned, lay.FunnelsPlanned.Select(f => f.F("top", 0.0)).DefaultIfEmpty(0.0).Max(), lay.Geo.SmokeReach,
+                SmokeFrom(lay.FunnelsPlanned, lay.FunnelsPlanned.Select(f => f.Top).DefaultIfEmpty(0.0).Max(), lay.Geo.SmokeReach,
                     x + hl, z0 + Layout.LEVEL_H, y, w).Count > 0;
 
             foreach (var spots in new Func<List<(double X, double Y, double Z0, bool Pair)>>[]
@@ -195,23 +194,16 @@ public static class FireControl
     }
 
     /// <summary>The raised stretches' decks as roofs for roof_spots.</summary>
-    static List<PyDict> RaisedRoofs(Layout lay)
-    {
-        var out_ = new List<PyDict>();
-        foreach (var dk in lay.Decks)
+    static List<Block> RaisedRoofs(Layout lay) =>
+        lay.Decks.Where(dk => dk.Kind == "deck").Select(dk => new Block
         {
-            if (!Py.Eq(dk["kind"], "deck"))
-                continue;
-            var pts = Geometry.Pts(dk["points"]);
-            out_.Add(PyDict.Of(("id", dk["id"]), ("x0", pts.Select(p => p.X).Min()), ("x1", pts.Select(p => p.X).Max()),
-                ("w", pts.Select(p => p.Y).Max() - pts.Select(p => p.Y).Min()), ("y", 0.0), ("z0", 0.0),
-                ("level", (long)Math.Round(dk.F("top") / Geometry.DECK_PITCH)), ("points", pts)));
-        }
-        return out_;
-    }
+            Id = dk.Id, Kind = "raised", Role = "deckhouse", X0 = dk.Points.Min(p => p.X), X1 = dk.Points.Max(p => p.X),
+            W = dk.Points.Max(p => p.Y) - dk.Points.Min(p => p.Y), Y = 0.0, Level = (long)Math.Round(dk.Top / Geometry.DECK_PITCH),
+            Points = dk.Points,
+        }).ToList();
 
     /// <summary>The search radar's weight on the foremast's top, or 1 m over the highest roof on a ship without masts.</summary>
-    public static void SearchRadar(Layout lay, Design design, List<PyDict> blocks, List<PyDict> masts, double funTop)
+    public static void SearchRadar(Layout lay, Design design, List<Block> blocks, List<Mast> masts, double funTop)
     {
         double t = design.FireControl?.SearchRadarT ?? 0.0;
         if (t == 0)
@@ -219,12 +211,12 @@ public static class FireControl
         if (masts.Count > 0)
         {
             var m = masts[0];
-            lay.Weights.Add(new Weight("Search radar", "fire_control", t, m.F("x"), ZRel.Deck(m.F("top", funTop + 6.0))));
+            lay.Weights.Add(new Weight("Search radar", "fire_control", t, m.X, ZRel.Deck(m.Top ?? funTop + 6.0)));
             return;
         }
-        var top = blocks.MaxBy(Layout.BlockTop);
-        lay.Weights.Add(new Weight("Search radar", "fire_control", t, top != null ? (top.F("x0") + top.F("x1")) / 2 : 0.0,
-            ZRel.Deck((top != null ? Layout.BlockTop(top) : 0.0) + 1.0)));
+        var top = blocks.MaxBy(b => b.TopZ);
+        lay.Weights.Add(new Weight("Search radar", "fire_control", t, top != null ? (top.X0 + top.X1) / 2 : 0.0,
+            ZRel.Deck((top?.TopZ ?? 0.0) + 1.0)));
     }
 
     /// <summary>The directors for the report.</summary>

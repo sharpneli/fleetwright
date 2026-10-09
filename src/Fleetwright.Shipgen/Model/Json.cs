@@ -14,6 +14,13 @@ namespace Fleetwright.Shipgen;
 [JsonSerializable(typeof(BatteryInput))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(HullPlates))]
+[JsonSerializable(typeof(TurretType))]
+[JsonSerializable(typeof(Block))]
+[JsonSerializable(typeof(Funnel))]
+[JsonSerializable(typeof(AaMount))]
+[JsonSerializable(typeof(Mast))]
+[JsonSerializable(typeof(RenderSpec))]
+[JsonSerializable(typeof(HullEnd))]
 [JsonSerializable(typeof(CrewReport))]
 public sealed partial class ShipgenJson : JsonSerializerContext
 {
@@ -21,6 +28,32 @@ public sealed partial class ShipgenJson : JsonSerializerContext
     public static ShipgenJson Indented => indented ??= new(new JsonSerializerOptions(Default.Options) { WriteIndented = true, IndentSize = 1 });
 
     static ShipgenJson? indented;
+}
+
+/// <summary>A point as [x, y].</summary>
+public sealed class PtConverter : JsonConverter<Pt>
+{
+    public override Pt Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.StartArray)
+            throw new JsonException("a point is [x, y]");
+        reader.Read();
+        double x = reader.GetDouble();
+        reader.Read();
+        double y = reader.GetDouble();
+        reader.Read();
+        if (reader.TokenType != JsonTokenType.EndArray)
+            throw new JsonException("a point is [x, y]");
+        return new Pt(x, y);
+    }
+
+    public override void Write(Utf8JsonWriter writer, Pt value, JsonSerializerOptions options)
+    {
+        writer.WriteStartArray();
+        writer.WriteNumberValue(value.X);
+        writer.WriteNumberValue(value.Y);
+        writer.WriteEndArray();
+    }
 }
 
 /// <summary>A list that the JSON may also give as its one item on its own (main and secondary batteries). Written as a

@@ -84,29 +84,30 @@ public sealed partial class Layout
     public readonly HashSet<Footprint> Overhangs = new(ReferenceEqualityComparer.Instance);
     public List<Weight> Weights = [];
     public List<string> Errors = [], Warnings = [];
-    public PyDict Spec = new();
+    public RenderSpec Spec = null!;
     public Geo Geo = new();
     public (double Lo, double Hi) ShiftRange = (0.0, 0.0);
-    public List<PyDict> Compartments = [];
-    public List<PyDict> Decks = [];
+    public List<Compartment> Compartments = [];
+    public List<DeckPlate> Decks = [];
     public List<RaisedStretch> Raised = [];
-    public List<PyDict> Sponsons = [];
+    public List<DeckPlate> Sponsons = [];
     public List<Sweep> Sweeps = [];
-    public List<PyDict> FunnelsPlanned = [];
-    public List<PyDict> Casings = [];
-    public PyDict? ConningTower;
+    public List<Funnel> FunnelsPlanned = [];
+    public List<Casing> Casings = [];
+    public ConningTower? ConningTower;
     public HashSet<string> Short = new(StringComparer.Ordinal);
-    public List<PyDict> EndMounts = [];
+    public List<Mount> EndMounts = [];
     public OrderedDictionary<string, List<string>> Smoke = new(StringComparer.Ordinal);
     public CrewReport? Crew;
     List<Pt>? deckBand;
     public readonly Dictionary<(List<Pt> Poly, double Y), List<(double, double)>> Scan = new(ScanKeyComparer.Instance);
 
     public Hull Hull = null!;
-    public List<PyDict> Mounts = [];
-    public List<PyDict> Blocks = [];
-    public List<PyDict> Funnels = [];
-    public List<PyDict> Aa = [];
+    public List<Mount> Mounts = [];
+    public List<Block> Blocks = [];
+    public List<Funnel> Funnels = [];
+    public List<AaMount> Aa = [];
+    public List<Mast> Masts = [];
     public double FunTop;
 
     sealed class ScanKeyComparer : IEqualityComparer<(List<Pt> Poly, double Y)>
@@ -215,18 +216,18 @@ public sealed partial class Layout
     public void Occupy(Footprint fp, double bse, double top, string owner) => Footprints.Add(new Placed(fp, bse, top, owner));
 
     /// <summary>A main turret claims the area its barrels sweep: its traverse, out to the muzzles.</summary>
-    public void ReserveSweep(PyDict m)
+    public void ReserveSweep(Mount m)
     {
         var tr = Arcs.MountTraverse(m)!;
-        double R = Geometry.TurretReach(m.D("t")) + 0.5;
-        var poly = Geometry.SectorPolygon(m.F("x"), m.F("y"), R, tr[0], tr[1]);
+        double R = Geometry.TurretReach(m.T) + 0.5;
+        var poly = Geometry.SectorPolygon(m.X, m.Y, R, tr[0], tr[1]);
         Sweeps.Add(new Sweep
         {
-            Owner = m.S("id"),
+            Owner = m.Id,
             Polys = [poly],
             Boxes = [Geometry.Bounds(poly)],
-            Sectors = [(m.F("x"), m.F("y"), R, tr[0], tr[1])],
-            Axis = m.F("base") + 0.55 * (m.F("top") - m.F("base")),
+            Sectors = [(m.X, m.Y, R, tr[0], tr[1])],
+            Axis = m.Base + 0.55 * (m.Top - m.Base),
         });
     }
 
@@ -289,7 +290,7 @@ public sealed partial class Layout
 
     /// <summary>Is (x, y) on a deck that overhangs the hull (a flight deck)?</summary>
     public bool OnDeck(double x, double y) =>
-        Decks.Any(dk => Py.Eq(dk["kind"], "flight_deck") && Geometry.PointInPolygon(x, y, Geometry.Pts(dk["points"])));
+        Decks.Any(dk => dk.Kind == "flight_deck" && Geometry.PointInPolygon(x, y, dk.Points));
 
     /// <summary>The main deck less DH_INSET at the sides, as a convex polygon (cached).</summary>
     public List<Pt> DeckBand()

@@ -4,26 +4,42 @@ namespace Fleetwright.Shipgen;
 public sealed class Hull
 {
     public readonly double L, B;
-    public readonly PyDict Bow, Stern;
+    /// <summary>The ends with every value filled in.</summary>
+    public readonly HullEnd Bow, Stern;
     readonly double bowTaper, bowPower, sternTaper, sternPower, transom;
     readonly string bowShape, sternShape;
     readonly double? flare;
 
-    public Hull(PyDict spec)
+    public Hull(HullSpec spec)
     {
-        L = spec.F("length");
-        B = spec.F("beam");
-        Bow = PyDict.Merge(PyDict.Of(("taper", 0.33), ("power", 1.6), ("shape", "pointed")), spec.Get("bow") as PyDict);
-        Stern = PyDict.Merge(PyDict.Of(("taper", 0.18), ("power", 2.0), ("shape", "round"), ("transom", 0.45)),
-            spec.Get("stern") as PyDict);
-        bowTaper = Bow.F("taper");
-        bowPower = Bow.F("power");
-        bowShape = Bow.S("shape");
-        flare = Bow.B("flare") ? Bow.F("flare") : null;
-        sternTaper = Stern.F("taper");
-        sternPower = Stern.F("power");
-        sternShape = Stern.S("shape");
-        transom = Stern.F("transom");
+        L = spec.Length;
+        B = spec.Beam;
+        Bow = spec.Bow with { Taper = spec.Bow.Taper ?? 0.33, Power = spec.Bow.Power ?? 1.6, Shape = spec.Bow.Shape ?? "pointed" };
+        Stern = spec.Stern with
+        {
+            Taper = spec.Stern.Taper ?? 0.18, Power = spec.Stern.Power ?? 2.0, Shape = spec.Stern.Shape ?? "round",
+            Transom = spec.Stern.Transom ?? 0.45,
+        };
+        bowTaper = Bow.Taper!.Value;
+        bowPower = Bow.Power!.Value;
+        bowShape = Bow.Shape!;
+        flare = Bow.Flare is double f && f != 0 ? f : null;
+        sternTaper = Stern.Taper!.Value;
+        sternPower = Stern.Power!.Value;
+        sternShape = Stern.Shape!;
+        transom = Stern.Transom!.Value;
+    }
+
+    /// <summary>A hull from a spec the renderer reads as a dict (until it reads the typed spec).</summary>
+    public Hull(PyDict spec) : this(new HullSpec(spec.F("length"), spec.F("beam"), EndOf(spec.Get("bow") as PyDict),
+        EndOf(spec.Get("stern") as PyDict)))
+    {
+    }
+
+    static HullEnd EndOf(PyDict? d)
+    {
+        double? N(string k) => d != null && d.Has(k) ? d.F(k) : null;
+        return new HullEnd { Taper = N("taper"), Power = N("power"), Shape = d?.Get("shape") as string, Transom = N("transom"), Flare = N("flare") };
     }
 
     static double End(double t, double power, string shape)

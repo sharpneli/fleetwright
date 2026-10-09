@@ -116,77 +116,67 @@ public sealed class CarrierStyle : Style
         Geometry.PolygonYSpan(dp.Points!, x) ?? (-dp.Hw, dp.Hw);
 
     /// <summary>Renderer spec for the flight deck.</summary>
-    static PyDict FlightDeckDrawing(DeckPlanData dp, AviationSpec av, double L)
+    static FlightDeckDrawing FlightDeckDrawingOf(DeckPlanData dp, AviationSpec av, double L)
     {
         double x0 = dp.X0, x1 = dp.X1, tap = dp.Tap, hw = dp.Hw;
-        var marks = new List<object?>();
-        var wires = new List<object?>();
+        var marks = new List<DeckMark>();
+        var wires = new List<double[]>();
         var ys = dp.Points!.Select(p => p.Y).ToList();
         double lc = Layout.Clamp(12 + 2.8 * av.AircraftT, 20, 85);
         var land = dp.Land;
         (double, double) At(double t, double off = 0.0) =>
             (land!.P0.X + off * land.N.X + t * land.D.X, land.P0.Y + off * land.N.Y + t * land.D.Y);
+        DeckMark Line((double X, double Y) a, (double X, double Y) b, string colour, double width) => new(a.X, a.Y, b.X, b.Y, colour, width);
         if (land != null)
         {
             double ll = land.Length, wl = land.Width;
-            var a = At(8);
-            var b = At(ll - 5);
-            marks.Add(PyDict.Of(("x1", a.Item1), ("y1", a.Item2), ("x2", b.Item1), ("y2", b.Item2), ("color", "marking"), ("width", 0.5), ("dash", "5 5")));
+            marks.Add(Line(At(8), At(ll - 5), "marking", 0.5) with { Dash = "5 5" });
             foreach (var off in new[] { wl / 2 - 1.0, -wl / 2 + 1.0 })
-            {
-                var a2 = At(2, off);
-                var b2 = At(ll - 2, off);
-                marks.Add(PyDict.Of(("x1", a2.Item1), ("y1", a2.Item2), ("x2", b2.Item1), ("y2", b2.Item2), ("color", "marking"), ("width", 0.35),
-                    ("opacity", 0.85)));
-            }
+                marks.Add(Line(At(2, off), At(ll - 2, off), "marking", 0.35) with { Opacity = 0.85 });
             for (int k = 0; k < 4; k++)
             {
                 double t = ll * (0.10 + 0.04 * k);
                 var a3 = At(t, wl / 2 - 2);
                 var b3 = At(t, -wl / 2 + 2);
-                wires.Add(new object?[] { a3.Item1, a3.Item2, b3.Item1, b3.Item2 });
+                wires.Add([a3.Item1, a3.Item2, b3.Item1, b3.Item2]);
             }
-            marks.Add(PyDict.Of(("x1", land.Corner.X), ("y1", 0L), ("x2", x1 - 4), ("y2", 0L), ("color", "marking"), ("width", 0.5), ("dash", "5 5")));
-            marks.Add(PyDict.Of(("x1", x0 + 1.5), ("y1", hw - 1.0), ("x2", x1 - tap), ("y2", hw - 1.0), ("color", "marking"), ("width", 0.35),
-                ("opacity", 0.85)));
+            marks.Add(new DeckMark(land.Corner.X, 0, x1 - 4, 0, "marking", 0.5) { Dash = "5 5" });
+            marks.Add(new DeckMark(x0 + 1.5, hw - 1.0, x1 - tap, hw - 1.0, "marking", 0.35) { Opacity = 0.85 });
         }
         else
         {
-            marks.Add(PyDict.Of(("x1", x0 + 4), ("y1", 0L), ("x2", x1 - 4), ("y2", 0L), ("color", "marking"), ("width", 0.5), ("dash", "5 5")));
+            marks.Add(new DeckMark(x0 + 4, 0, x1 - 4, 0, "marking", 0.5) { Dash = "5 5" });
             foreach (int side in new[] { -1, 1 })
-                marks.Add(PyDict.Of(("x1", x0 + 1.5), ("y1", side * (hw - 1.0)), ("x2", x1 - tap), ("y2", side * (hw - 1.0)), ("color", "marking"),
-                    ("width", 0.35), ("opacity", 0.85)));
+                marks.Add(new DeckMark(x0 + 1.5, side * (hw - 1.0), x1 - tap, side * (hw - 1.0), "marking", 0.35) { Opacity = 0.85 });
             for (int k = 0; k < 8; k++)
             {
                 double wx = x0 + (x1 - x0) * (0.06 + 0.02 * k);
-                wires.Add(new object?[] { wx, -hw + 2, wx, hw - 2 });
+                wires.Add([wx, -hw + 2, wx, hw - 2]);
             }
         }
         for (int i = 0; i < 6; i++)
         {
             double sx = x0 + 0.8 + i * 1.6;
-            marks.Add(PyDict.Of(("x1", sx), ("y1", -0.9 * hw + 1.5), ("x2", sx), ("y2", 0.9 * hw - 1.5), ("color", "stripe"), ("width", 0.7),
-                ("opacity", i % 2 == 0 ? 0.9 : (object)0L)));
+            marks.Add(new DeckMark(sx, -0.9 * hw + 1.5, sx, 0.9 * hw - 1.5, "stripe", 0.7) { Opacity = i % 2 == 0 ? 0.9 : 0.0 });
         }
         for (int k = 0; k < Math.Min(av.Catapults, land != null ? 4 : 2); k++)
         {
             if (k < 2)
             {
                 double y = (k == 0 ? -0.22 : 0.22) * hw;
-                marks.Add(PyDict.Of(("x1", x1 - 0.6 * tap), ("y1", y), ("x2", x1 - 0.6 * tap - lc), ("y2", y), ("color", "track"), ("width", 0.6)));
+                marks.Add(new DeckMark(x1 - 0.6 * tap, y, x1 - 0.6 * tap - lc, y, "track", 0.6));
             }
             else
             {
                 double off = land!.Width / 2 - 6 - 7 * (k - 2);
-                var a = At(land.Length - 10, off);
-                var b = At(land.Length - 10 - lc, off);
-                marks.Add(PyDict.Of(("x1", a.Item1), ("y1", a.Item2), ("x2", b.Item1), ("y2", b.Item2), ("color", "track"), ("width", 0.6)));
+                marks.Add(Line(At(land.Length - 10, off), At(land.Length - 10 - lc, off), "track", 0.6));
             }
         }
-        return PyDict.Of(("points", dp.Points), ("planks", PyDict.Of(("x0", x0), ("x1", x1), ("y0", ys.Min()), ("y1", ys.Max()), ("step", 1.4))),
-            ("elevators", new List<object?>()), ("edge_elevators", new List<object?>()), ("wires", wires), ("marks", marks),
-            ("number", !string.IsNullOrEmpty(av.Number) ? PyDict.Of(("x", x1 - 0.6 * tap - lc - 0.04 * L), ("y", 0L), ("text", av.Number),
-                ("size", 0.035 * L)) : null));
+        return new FlightDeckDrawing
+        {
+            Points = dp.Points!, Planks = new FlightDeckPlanks(x0, x1, ys.Min(), ys.Max(), 1.4), Wires = wires, Marks = marks,
+            Number = !string.IsNullOrEmpty(av.Number) ? new DeckNumber(x1 - 0.6 * tap - lc - 0.04 * L, 0, av.Number, 0.035 * L) : null,
+        };
     }
 
     /// <summary>Carriers and merchants are built around something else; guns are fitted where they suit.</summary>
@@ -349,10 +339,10 @@ public sealed class CarrierStyle : Style
 
     // ------------------------------------------------------------------ layouts
 
-    static (Layout Lay, PyDict Hs, Hull Hull, double Shift) Common(Design design, double shift)
+    static (Layout Lay, HullSpec Hs, Hull Hull, double Shift) Common(Design design, double shift)
     {
         var lay = new Layout(design);
-        var hs = Layout.HullSpec(design);
+        var hs = Layout.HullSpecOf(design);
         var hull = new Hull(hs);
         lay.Hull = hull;
         lay.ShiftRange = (-0.04 * hull.L, 0.04 * hull.L);
@@ -387,7 +377,7 @@ public sealed class CarrierStyle : Style
     }
 
     static void Compartments(Layout lay, Design design, Hull hull, (double X0, double X1) mach, (double X0, double X1, double Hhw) hangar,
-        List<PyDict> mounts)
+        List<Mount> mounts)
     {
         var av = Aviation(design);
         double L = hull.L, B = hull.B;
@@ -398,18 +388,19 @@ public sealed class CarrierStyle : Style
         var (hx0, hx1, hhw) = hangar;
         double airT = av.Aircraft * av.AircraftT;
         var st = Ordnance.Stow(lay, mounts, [
-            PyDict.Of(("x0", m1), ("x1", cit.Item2), ("half_width", innerHw), ("rooms", new List<object?> {
-                PyDict.Of(("id", "Aviation magazines"), ("tonnes", ORDNANCE_K * airT)),
-                PyDict.Of(("id", "Gun magazines"), ("mounts", Ordnance.Guns(mounts).Cast<object?>().ToList())) })),
-            PyDict.Of(("x0", cit.Item1), ("x1", m0), ("half_width", innerHw), ("rooms", new List<object?> {
-                PyDict.Of(("id", "Aviation fuel"), ("kind", "fuel_tank"), ("tonnes", AVGAS_K * airT), ("t_per_m3", AVGAS_T_PER_M3)) })),
+            new Zone(m1, cit.Item2, innerHw, [new ZoneRoom("Aviation magazines", Tonnes: ORDNANCE_K * airT),
+                new ZoneRoom("Gun magazines", Ordnance.Guns(mounts))]),
+            new Zone(cit.Item1, m0, innerHw, [new ZoneRoom("Aviation fuel", Tonnes: AVGAS_K * airT, Kind: "fuel_tank", TPerM3: AVGAS_T_PER_M3)]),
         ]);
         if (st.TryGetValue("Aviation magazines", out var am))
             lay.Geo.Magazine = ((am.X0 + am.X1) / 2, (am.Base + am.Top) / 2);
         if (st.TryGetValue("Aviation fuel", out var af))
             lay.Geo.Avgas = ((af.X0 + af.X1) / 2, (af.Base + af.Top) / 2);
-        lay.Compartments.Add(PyDict.Of(("id", "Hangar"), ("kind", "hangar"), ("x0", hx0), ("x1", hx1), ("half_width", hhw), ("base", 0.0),
-            ("top", av.FlightDeck == "none" ? 2 * Layout.LEVEL_H : HANGAR_H * av.HangarDecks)));
+        lay.Compartments.Add(new Compartment
+        {
+            Id = "Hangar", Kind = "hangar", X0 = hx0, X1 = hx1, HalfWidth = hhw, Base = 0.0,
+            Top = av.FlightDeck == "none" ? 2 * Layout.LEVEL_H : HANGAR_H * av.HangarDecks,
+        });
         Layout.AddSteering(lay);
     }
 
@@ -422,8 +413,8 @@ public sealed class CarrierStyle : Style
         var dp = DeckPlan(design);
         double fdH = dp.FdH, hw = dp.Hw;
         CheckCapacity(lay, av, dp);
-        lay.Decks.Add(PyDict.Of(("id", "Flight deck"), ("kind", "flight_deck"), ("points", dp.Points), ("base", fdH - 1.0), ("top", fdH)));
-        var fd = FlightDeckDrawing(dp, av, L);
+        lay.Decks.Add(new DeckPlate("Flight deck", "flight_deck", dp.Points!, fdH - 1.0, fdH));
+        var fd = FlightDeckDrawingOf(dp, av, L);
 
         double mc = -0.04 * L + shift;
         Machinery(lay, design, res, hull, mc);
@@ -435,8 +426,8 @@ public sealed class CarrierStyle : Style
         wi = Math.Max(wi, fw + 1.2);
         double xi = 0.05 * L + shift;
         double yi = hw - wi / 2 - 0.3;
-        var blocks = new List<PyDict>();
-        var funnels = new List<PyDict>();
+        var blocks = new List<Block>();
+        var funnels = new List<Funnel>();
         double ix0 = xi - li / 2, ix1 = xi + li / 2;
         Layout.AddBlock(lay, blocks, "Island", ix0, ix1, wi, 1, 1.5, 1.0, y: yi, z0: fdH, role: "island");
         double fwd0 = ix0 + nfun * (fl + 1.0) + 1.0;
@@ -454,26 +445,28 @@ public sealed class CarrierStyle : Style
         for (int i = 0; i < nfun; i++)
         {
             double fx = ix0 + 1.0 + (i + 0.5) * (fl + 1.0);
-            funnels.Add(PyDict.Of(("id", $"Funnel {i + 1}"), ("x", fx), ("y", yi), ("l", fl), ("w", fw), ("pipes", fw > 4 ? 2L : 1L), ("z0", fdH),
-                ("seg", Layout.FunnelSeg(lay, i))));
+            funnels.Add(new Funnel { Id = $"Funnel {i + 1}", X = fx, Y = yi, L = fl, W = fw, Pipes = fw > 4 ? 2 : 1, Z0 = fdH, Seg = Layout.FunnelSeg(lay, i) });
             lay.Occupy(Footprint.Rect(fx - fl / 2, yi - fw / 2, fx + fl / 2, yi + fw / 2), fdH, funTop, $"Funnel {i + 1}");
             Layout.AddFunnelWeights(lay, funnels[^1], funTop, mc, res.Depth);
         }
-        var masts = new List<PyDict> { PyDict.Of(("x", fwd0 - 0.5), ("y", yi), ("yard", Math.Min(0.6 * wi, 6)), ("tripod", false),
-            ("top", Math.Max(funTop + 5.0, fdH + Layout.LEVEL_H * topLevel + FireControl.HOOD_H + 2.0))) };
-        Layout.MastWeight(lay, masts[0], masts[0].F("top"), "Mast");
+        var masts = new List<Mast>
+        {
+            new() { X = fwd0 - 0.5, Y = yi, Yard = Math.Min(0.6 * wi, 6), Tripod = false,
+                Top = Math.Max(funTop + 5.0, fdH + Layout.LEVEL_H * topLevel + FireControl.HOOD_H + 2.0) },
+        };
+        Layout.MastWeight(lay, masts[0], masts[0].Top!.Value, "Mast");
 
-        var mounts = new List<PyDict>();
-        var turretTypes = new PyDict();
+        var mounts = new List<Mount>();
+        var turretTypes = new OrderedDictionary<string, TurretType>(StringComparer.Ordinal);
         bool islandGuns = Armament.BatteriesOf(design).Any(b => b.Where == "ends" || b.MountCount % 2 != 0);
 
         var (hx0, hx1, _) = dp.Hangar;
         double le = Layout.Clamp(0.055 * L, 10, 18), ew = Math.Min(Layout.Clamp(0.45 * 2 * hw, 10, 18), 0.9 * hw);
-        var fdElev = fd.L("elevators");
+        var fdElev = fd.Elevators;
         for (long k = 0; k < av.Elevators; k++)
         {
             double ex = hx1 - le / 2 - 2 - k * (hx1 - hx0 - le - 4) / Math.Max(av.Elevators - 1, 1);
-            fdElev.Add(PyDict.Of(("x", ex), ("y", -0.1 * hw), ("l", le), ("w", ew)));
+            fdElev.Add(new SponsonDrawing(ex, -0.1 * hw, le, ew));
         }
         double lee = Layout.Clamp(0.06 * L, 10, 20), wee = Layout.Clamp(0.045 * L, 6, 16);
         var land = dp.Land;
@@ -482,7 +475,7 @@ public sealed class CarrierStyle : Style
         if (islandGuns)
             slots = [slots[2], slots[1], slots[3], slots[0]];
         long placed = 0;
-        var fdEdge = fd.L("edge_elevators");
+        var fdEdge = fd.EdgeElevators;
         foreach (var (ex, side) in slots)
         {
             if (placed >= av.DeckEdgeElevators)
@@ -496,9 +489,9 @@ public sealed class CarrierStyle : Style
             string eid = $"Deck-edge elevator {placed + 1}";
             lay.Occupy(fp, fdH - 1.0, fdH, eid);
             double yc = (yIn + yOut) / 2;
-            fdEdge.Add(PyDict.Of(("x", ex), ("y", yc), ("l", lee), ("w", wee)));
-            lay.Sponsons.Add(PyDict.Of(("id", eid), ("points", new List<Pt> { new(ex - lee / 2, yIn), new(ex + lee / 2, yIn), new(ex + lee / 2, yOut),
-                new(ex - lee / 2, yOut) }), ("base", fdH - 1.0), ("top", fdH)));
+            fdEdge.Add(new SponsonDrawing(ex, yc, lee, wee));
+            lay.Sponsons.Add(new DeckPlate(eid, "sponson", [new(ex - lee / 2, yIn), new(ex + lee / 2, yIn), new(ex + lee / 2, yOut),
+                new(ex - lee / 2, yOut)], fdH - 1.0, fdH));
             placed++;
         }
         if (placed < av.DeckEdgeElevators)
@@ -506,13 +499,13 @@ public sealed class CarrierStyle : Style
 
         var xs = Vdc(64).Select(v => dp.X0 + 6 + v * (dp.X1 - dp.Tap - 10 - dp.X0)).ToList();
 
-        List<object?[]> SponsonSlots(double reach, double bse)
+        List<Slot> SponsonSlots(double reach, double bse)
         {
-            var out_ = new List<object?[]>();
+            var out_ = new List<Slot>();
             foreach (var x in xs)
             {
                 var (pe, se) = Edges(dp, x);
-                out_.Add([x, se + reach + 0.3, bse, pe - reach - 0.3]);
+                out_.Add(new Slot(x, se + reach + 0.3, bse, pe - reach - 0.3));
             }
             return out_;
         }
@@ -524,39 +517,40 @@ public sealed class CarrierStyle : Style
         {
             var (ttId, tt) = Armament.TorpedoType(tp);
             long n = (tp.Mounts.Value + 1) / 2;
-            Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, n, SponsonSlots(tt.F("barrel_len") / 2 + 0.3, fdH - 2.5), "T",
+            Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, n, SponsonSlots(tt.BarrelLen / 2 + 0.3, fdH - 2.5), "T",
                 label: "Torpedo");
         }
         FireControl.Place(lay, design, blocks);
-        var aaOut = new List<PyDict>();
+        var aaOut = new List<AaMount>();
         foreach (var (kind, count) in new[] { ("quad40", design.Aa?.Heavy ?? 0), ("single20", design.Aa?.Light ?? 0) })
         {
             double rr = Geometry.AA_CFG[kind].R;
             var island = Layout.RoofSpots(blocks, 2 * rr, 2 * rr).OrderBy(s => (s.Z0, Math.Abs(s.X - xi))).ToList()
-                .Where(s => !s.Pair).Select(s => new object?[] { s.X, s.Y, s.Z0, null }).ToList();
+                .Where(s => !s.Pair).Select(s => new Slot(s.X, s.Y, s.Z0, Lone: true)).ToList();
             Armament.PlaceAa(lay, aaOut, kind, count, island.Concat(SponsonSlots(rr, fdH - 2.4)).ToList(),
                 layerOf: bse => bse > fdH + 0.01 ? "upper" : "base");
         }
-        var sponsons = new List<object?>();
-        foreach (var it in mounts.Where(m => m.F("base") < fdH - 0.5).Concat(aaOut))
+        var sponsons = new List<SponsonDrawing>();
+        var below = mounts.Where(m => m.Base < fdH - 0.5)
+            .Select(m => (m.Id, m.X, m.Y, m.Base, Reach: m.Kind != "torpedo" ? Armament.BodyReach(m.T) : m.T.BarrelLen / 2 + 0.3))
+            .Concat(aaOut.Select(a => (a.Id, a.X, a.Y, a.Base, Reach: Geometry.AA_CFG[a.Type].R)));
+        foreach (var (id, x, y, bse, reach) in below)
         {
-            double reach = it.Has("dir") ? Geometry.AA_CFG[it.S("type")].R
-                : !Py.Eq(it["kind"], "torpedo") ? Armament.BodyReach(it.D("t")) : it.D("t").F("barrel_len") / 2 + 0.3;
-            var (pe, se) = Edges(dp, it.F("x"));
-            int side = it.F("y") > 0 ? 1 : -1;
+            var (pe, se) = Edges(dp, x);
+            int side = y > 0 ? 1 : -1;
             double edge = side > 0 ? se : pe;
-            double yIn = edge - side * 0.8, yOut = it.F("y") + side * (reach + 0.5);
+            double yIn = edge - side * 0.8, yOut = y + side * (reach + 0.5);
             double l = 2 * reach + 1.0;
-            sponsons.Add(PyDict.Of(("x", it["x"]), ("y", (yIn + yOut) / 2), ("l", l), ("w", Math.Abs(yOut - yIn))));
-            lay.Sponsons.Add(PyDict.Of(("id", $"Sponson {it.S("id")}"), ("points", new List<Pt> { new(it.F("x") - l / 2, yIn),
-                new(it.F("x") + l / 2, yIn), new(it.F("x") + l / 2, yOut), new(it.F("x") - l / 2, yOut) }), ("base", it.F("base") - 0.5),
-                ("top", it["base"])));
+            sponsons.Add(new SponsonDrawing(x, (yIn + yOut) / 2, l, Math.Abs(yOut - yIn)));
+            lay.Sponsons.Add(new DeckPlate($"Sponson {id}", "sponson", [new(x - l / 2, yIn), new(x + l / 2, yIn), new(x + l / 2, yOut),
+                new(x - l / 2, yOut)], bse - 0.5, bse));
         }
 
         MachineryRooms(lay, hull, res);
         Compartments(lay, design, hull, lay.Geo.Machinery!.Value, dp.Hangar, mounts);
-        return Layout.FinishLayout(lay, design, hs, mounts, turretTypes, blocks, funnels, masts, aaOut, funTop, null,
-            ("flight_deck", fd), ("sponsons", sponsons), ("boats", new List<object?>()));
+        Layout.FinishLayout(lay, design, hs, mounts, turretTypes, blocks, funnels, masts, aaOut, funTop);
+        (lay.Spec.FlightDeck, lay.Spec.Sponsons, lay.Spec.Boats) = (fd, sponsons, []);
+        return lay;
     }
 
     static Layout SeaplaneLayout(Design design, Navarch.Result res, double shift0)
@@ -567,10 +561,10 @@ public sealed class CarrierStyle : Style
         var av = Aviation(design);
         var dp = DeckPlan(design);
         CheckCapacity(lay, av, dp);
-        var blocks = new List<PyDict>();
-        var funnels = new List<PyDict>();
-        var mounts = new List<PyDict>();
-        var turretTypes = new PyDict();
+        var blocks = new List<Block>();
+        var funnels = new List<Funnel>();
+        var mounts = new List<Mount>();
+        var turretTypes = new OrderedDictionary<string, TurretType>(StringComparer.Ordinal);
         var (hx0, hx1, hhw) = dp.Hangar;
         (hx0, hx1) = (hx0 + shift, hx1 + shift);
         Layout.AddBlock(lay, blocks, "Hangar", hx0, hx1, 2 * hhw, 1, 1.0, 0.5, role: "hangar");
@@ -603,26 +597,25 @@ public sealed class CarrierStyle : Style
         for (int i = 0; i < nfun; i++)
         {
             double fx = hx1 + 1.0 + (i + 0.5) * room / nfun;
-            funnels.Add(PyDict.Of(("id", $"Funnel {i + 1}"), ("x", fx), ("y", 0.0), ("l", fl), ("w", fw), ("pipes", fw > 4 ? 2L : 1L),
-                ("seg", Layout.FunnelSeg(lay, i))));
+            funnels.Add(new Funnel { Id = $"Funnel {i + 1}", X = fx, Y = 0.0, L = fl, W = fw, Pipes = fw > 4 ? 2 : 1, Seg = Layout.FunnelSeg(lay, i) });
             lay.Occupy(Footprint.Rect(fx - fl / 2, -fw / 2, fx + fl / 2, fw / 2), 0, funTop, $"Funnel {i + 1}");
             Layout.AddFunnelWeights(lay, funnels[^1], funTop, mc, res.Depth);
         }
-        var masts = new List<PyDict> { PyDict.Of(("x", bx0 - 1.0), ("yard", Math.Min(0.3 * B, 8)), ("tripod", false)) };
+        var masts = new List<Mast> { new() { X = bx0 - 1.0, Yard = Math.Min(0.3 * B, 8), Tripod = false } };
         if (Layout.LEVEL_H * nTower + FireControl.HOOD_H + 2.0 > funTop + 6.0)
-            masts[0]["top"] = Layout.LEVEL_H * nTower + FireControl.HOOD_H + 2.0;
-        Layout.MastWeight(lay, masts[0], masts[0].F("top", funTop + 6.0), "Mast");
+            masts[0].Top = Layout.LEVEL_H * nTower + FireControl.HOOD_H + 2.0;
+        Layout.MastWeight(lay, masts[0], masts[0].Top ?? funTop + 6.0, "Mast");
 
         double park0 = dp.Park!.Value.A;
-        var fittings = new List<object?>();
-        var cranes = new List<object?>();
+        var fittings = new List<Fitting>();
+        var cranes = new List<Crane>();
         double lc = Layout.Clamp(0.5 * (hx0 - park0), 8, 25);
         long ncat = av.Catapults;
         for (long k = 0; k < ncat; k++)
         {
             double y = ncat == 1 ? 0.0 : ((double)k / (ncat - 1) - 0.5) * 0.5 * B;
             double cx = (park0 + hx0) / 2;
-            fittings.Add(PyDict.Of(("x", cx), ("y", y), ("l", lc), ("w", 1.0), ("color", "track")));
+            fittings.Add(new Fitting(cx, y, lc, 1.0, "track"));
             lay.Occupy(Footprint.Rect(cx - lc / 2, y - 0.8, cx + lc / 2, y + 0.8), 0, 1.5, $"Catapult {k + 1}");
         }
         double jib = Layout.Clamp(0.09 * L, 8, 16);
@@ -630,32 +623,32 @@ public sealed class CarrierStyle : Style
         for (int k = 0; k < Math.Min(av.Cranes, 4); k++)
         {
             var (cx, cy, d) = craneSlots[k];
-            cranes.Add(PyDict.Of(("x", cx), ("y", cy), ("r", 1.4), ("dir", d), ("jib", jib), ("top", roof + 6.0)));
+            cranes.Add(new Crane(cx, cy, 1.4, d, jib, roof + 6.0));
             lay.Occupy(Footprint.Circle(cx, cy, 1.6), 0, roof + 6.0, $"Crane {k + 1}");
         }
 
         var xs = Vdc(48).Select(v => hx0 + v * (bx1 - hx0)).ToList();
         Armament.PlaceBatteries(lay, mounts, turretTypes, design,
             [new Armament.EndLine(L / 2 - 0.08 * L, -1, 0.0, 0, x => 0.3, []), new Armament.EndLine(hx0 + 0.5, +1, 0.0, 180, x => roof, hangarIds)],
-            t => xs.Select(x => new object?[] { x, hull.HalfWidth(x) - Armament.BodyReach(t) - 0.6, 0.0 }), depth);
+            t => xs.Select(x => new Slot(x, hull.HalfWidth(x) - Armament.BodyReach(t) - 0.6, 0.0)), depth);
         if (design.Torpedoes is { Mounts: > 0 } tp)
         {
             var (ttId, tt) = Armament.TorpedoType(tp);
-            double r = tt.F("barrel_len") / 2 + 0.3;
+            double r = tt.BarrelLen / 2 + 0.3;
             Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, (tp.Mounts.Value + 1) / 2,
-                xs.Select(x => new object?[] { x, hull.HalfWidth(x) - r - 0.4, 0.3 }), "T", label: "Torpedo");
+                xs.Select(x => new Slot(x, hull.HalfWidth(x) - r - 0.4, 0.3)), "T", label: "Torpedo");
         }
         FireControl.Place(lay, design, blocks);
-        var aaOut = new List<PyDict>();
+        var aaOut = new List<AaMount>();
         foreach (var (kind, count) in new[] { ("quad40", design.Aa?.Heavy ?? 0), ("single20", design.Aa?.Light ?? 0) })
         {
             double rr = Geometry.AA_CFG[kind].R;
-            var cands = Vdc(24).Select(v => new object?[] { hx0 + v * (hx1 - hx0), hhw - rr - 0.3, roof }).ToList();
-            cands.AddRange(xs.Select(x => new object?[] { x, hull.HalfWidth(x) - rr - 0.5, 0.0 }));
+            var cands = Vdc(24).Select(v => new Slot(hx0 + v * (hx1 - hx0), hhw - rr - 0.3, roof)).ToList();
+            cands.AddRange(xs.Select(x => new Slot(x, hull.HalfWidth(x) - rr - 0.5, 0.0)));
             Armament.PlaceAa(lay, aaOut, kind, count, cands, ignore: _ => hangarIds);
         }
 
-        var boats = new List<object?>();
+        var boats = new List<Boat>();
         double bl_ = Layout.Clamp(0.03 * L, 4, 8);
         foreach (var x in Enumerable.Range(-4, 9).Select(k => (hx1 + bx0) / 2 + k * 2.0))
         {
@@ -665,7 +658,7 @@ public sealed class CarrierStyle : Style
             {
                 foreach (var (s, fp) in new[] { (1, fps[0]), (-1, fps[1]) })
                 {
-                    boats.Add(PyDict.Of(("x", x), ("y", s * y), ("l", bl_), ("w", 0.3 * bl_)));
+                    boats.Add(new Boat(x, s * y, bl_, 0.3 * bl_));
                     lay.Occupy(fp, Layout.LEVEL_H, Layout.LEVEL_H + 1.5, $"Boat{boats.Count}");
                 }
                 break;
@@ -674,8 +667,10 @@ public sealed class CarrierStyle : Style
 
         MachineryRooms(lay, hull, res);
         Compartments(lay, design, hull, lay.Geo.Machinery!.Value, (hx0, hx1, hhw), mounts);
-        return Layout.FinishLayout(lay, design, hs, mounts, turretTypes, blocks, funnels, masts, aaOut, funTop, null,
-            ("fittings", fittings), ("cranes", cranes), ("boats", boats), ("bollards", new List<object?> { L / 2 - 0.05 * L, -L / 2 + 0.06 * L }),
-            ("chain_x", L / 2 - 0.06 * L), ("hawse_back", 0.03 * L + 1.0));
+        Layout.FinishLayout(lay, design, hs, mounts, turretTypes, blocks, funnels, masts, aaOut, funTop);
+        var spec = lay.Spec;
+        (spec.Fittings, spec.Cranes, spec.Boats) = (fittings, cranes, boats);
+        (spec.Bollards, spec.ChainX, spec.HawseBack) = ([L / 2 - 0.05 * L, -L / 2 + 0.06 * L], L / 2 - 0.06 * L, 0.03 * L + 1.0);
+        return lay;
     }
 }

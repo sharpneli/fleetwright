@@ -295,8 +295,8 @@ public static class ShipDesign
         var fp = lay.Geo.FunnelPlan;
         var extra = PyDict.Of(
             ("machinery_length_m", Math.Round(plan?.Segments.Sum(s => s.Len) ?? 0.0, 1)),
-            ("boiler_rooms", (long)lay.Compartments.Count(c => Py.Eq(c["kind"], "boiler_room"))),
-            ("engine_rooms", (long)lay.Compartments.Count(c => Py.Eq(c["kind"], "engine_room"))),
+            ("boiler_rooms", (long)lay.Compartments.Count(c => c.Kind == "boiler_room")),
+            ("engine_rooms", (long)lay.Compartments.Count(c => c.Kind == "engine_room")),
             ("rows", plan?.Space.Rows), ("protrusion_m", Math.Round(plan?.Space.Protrusion ?? 0.0, 2)),
             ("space_m", PyDict.Of(("width", Math.Round(plan?.Width ?? 0.0, 2)), ("height", Math.Round(plan?.Height ?? 0.0, 2)))),
             ("wing_bunkers_t", (long)Math.Round(plan?.WingT ?? 0.0)), ("end_bunkers_m", Math.Round(plan?.EndM ?? 0.0, 1)),
@@ -394,37 +394,29 @@ public static class ShipDesign
     {
         var items = new List<PyDict> { PyDict.Of(("top", deckM), ("shape", "hull")) };
         foreach (var dk in lay.Decks.Concat(lay.Sponsons))
-            items.Add(PyDict.Of(("top", deckM + dk.F("top")), ("shape", "polygon"), ("points", dk["points"])));
-        foreach (PyDict ht in (lay.Spec.Get("hatches") as List<object?> ?? []).Cast<PyDict>())
-            items.Add(PyDict.Of(("top", deckM + ht.F("top", 1.2)), ("shape", "rect"), ("x", ht.F("x") - ht.F("l") / 2),
-                ("y", ht.F("y") - ht.F("w") / 2), ("w", ht["l"]), ("h", ht["w"])));
-        foreach (PyDict cr in (lay.Spec.Get("cranes") as List<object?> ?? []).Cast<PyDict>())
-            items.Add(PyDict.Of(("top", deckM + cr.F("top")), ("shape", "circle"), ("cx", cr["x"]), ("cy", cr["y"]), ("r", cr.Get("r", 1.2))));
+            items.Add(PyDict.Of(("top", deckM + dk.Top), ("shape", "polygon"), ("points", dk.Points)));
+        foreach (var ht in lay.Spec.Hatches ?? [])
+            items.Add(PyDict.Of(("top", deckM + 1.2), ("shape", "rect"), ("x", ht.X - ht.L / 2), ("y", ht.Y - ht.W / 2), ("w", ht.L), ("h", ht.W)));
+        foreach (var cr in lay.Spec.Cranes ?? [])
+            items.Add(PyDict.Of(("top", deckM + cr.Top), ("shape", "circle"), ("cx", cr.X), ("cy", cr.Y), ("r", cr.R)));
         foreach (var m in lay.Mounts)
-        {
-            var t = m.D("t");
-            if (Geometry.HasBarbette(t) && m.F("base") > 0.5)
-                items.Add(PyDict.Of(("top", deckM + m.F("base")), ("shape", "circle"), ("cx", m["x"]), ("cy", m["y"]), ("r", t.F("r") * 0.95)));
-        }
+            if (m.T.HasBarbette && m.Base > 0.5)
+                items.Add(PyDict.Of(("top", deckM + m.Base), ("shape", "circle"), ("cx", m.X), ("cy", m.Y), ("r", m.T.R * 0.95)));
         foreach (var b in lay.Blocks)
-            items.Add(PyDict.Of(("top", deckM + Layout.BlockTop(b)), ("shape", "polygon"), ("points", Geometry.BlockOutline(b))));
+            items.Add(PyDict.Of(("top", deckM + b.TopZ), ("shape", "polygon"), ("points", Geometry.BlockOutline(b))));
         foreach (var a in lay.Aa)
-            items.Add(PyDict.Of(("top", deckM + a.F("base") + 2.0), ("shape", "circle"), ("cx", a["x"]), ("cy", a["y"]),
-                ("r", Geometry.AA_CFG[a.S("type")].R * 0.8)));
-        foreach (PyDict bt in (lay.Spec.Get("boats") as List<object?> ?? []).Cast<PyDict>())
-            items.Add(PyDict.Of(("top", deckM + bt.F("top", Layout.LEVEL_H + 1.5)), ("shape", "ellipse"), ("cx", bt["x"]), ("cy", bt["y"]),
-                ("rx", bt.F("l") / 2), ("ry", bt.F("w") / 2)));
+            items.Add(PyDict.Of(("top", deckM + a.Base + 2.0), ("shape", "circle"), ("cx", a.X), ("cy", a.Y), ("r", Geometry.AA_CFG[a.Type].R * 0.8)));
+        foreach (var bt in lay.Spec.Boats ?? [])
+            items.Add(PyDict.Of(("top", deckM + (bt.Top ?? Layout.LEVEL_H + 1.5)), ("shape", "ellipse"), ("cx", bt.X), ("cy", bt.Y),
+                ("rx", bt.L / 2), ("ry", bt.W / 2)));
         foreach (var fn in lay.Funnels)
         {
-            var pts = Geometry.RrectPolygon(fn.F("x") - fn.F("l") / 2, fn.F("y") - fn.F("w") / 2, fn.F("x") + fn.F("l") / 2,
-                fn.F("y") + fn.F("w") / 2, fn.F("w") / 2, fn.F("w") / 2);
+            var pts = Geometry.RrectPolygon(fn.X - fn.L / 2, fn.Y - fn.W / 2, fn.X + fn.L / 2, fn.Y + fn.W / 2, fn.W / 2, fn.W / 2);
             items.Add(PyDict.Of(("top", deckM + lay.FunTop), ("shape", "polygon"), ("points", pts)));
         }
-        foreach (PyDict m in (lay.Spec.Get("masts") as List<object?> ?? []).Cast<PyDict>())
-        {
-            double top = m.F("top", lay.FunTop + MAST_ABOVE_FUNNEL);
-            items.Add(PyDict.Of(("top", deckM + top), ("shape", "circle"), ("cx", m["x"]), ("cy", m.Get("y", 0L)), ("r", 0.7)));
-        }
+        foreach (var m in lay.Spec.Masts)
+            items.Add(PyDict.Of(("top", deckM + (m.Top ?? lay.FunTop + MAST_ABOVE_FUNNEL)), ("shape", "circle"), ("cx", m.X), ("cy", m.Y ?? 0.0),
+                ("r", 0.7)));
         return items.OrderBy(it => it.F("top")).ToList();
     }
 
@@ -444,9 +436,8 @@ public static class ShipDesign
                 ("deck_m", deckM),
                 ("mounts", lay.Mounts.Select(m =>
                 {
-                    var o = PyDict.Of(("id", m["id"]), ("kind", m["kind"]), ("rest", m["rest"]), ("arcs", m["arcs"]), ("traverse", m["traverse"]),
-                        ("top", m["top"]));
-                    if (m.B("casemate"))
+                    var o = PyDict.Of(("id", m.Id), ("kind", m.Kind), ("rest", m.Rest), ("arcs", m.Arcs), ("traverse", m.Traverse), ("top", m.Top));
+                    if (m.Casemate)
                         o["mount"] = "casemate";
                     return (object?)o;
                 }).ToList()),

@@ -30,8 +30,7 @@ public static class Propulsion
 
     static List<(double X0, double X1, string? Id)> EngineRooms(Layout lay)
     {
-        var rooms = lay.Compartments.Where(c => Py.Eq(c["kind"], "engine_room"))
-            .Select(c => (c.F("x0"), c.F("x1"), (string?)c.S("id"))).ToList();
+        var rooms = lay.Compartments.Where(c => c.Kind == "engine_room").Select(c => (c.X0, c.X1, (string?)c.Id)).ToList();
         if (rooms.Count == 0 && lay.Geo.Machinery is { } gm)
             rooms = [(gm.X0, gm.X1, null)];
         return rooms.OrderBy(r => -r.Item2).ToList();
@@ -142,7 +141,7 @@ public static class Propulsion
                 shOut["alley"] = ((PyDict)alleys[^1]!)["id"];
             }
         }
-        var steering = lay.Compartments.FirstOrDefault(c => Py.Eq(c["kind"], "steering"))?["id"];
+        var steering = lay.Compartments.FirstOrDefault(c => c.Kind == "steering")?.Id;
         return PyDict.Of(("shafts", shafts), ("propellers", gr["propellers"]), ("rudders", gr["rudders"]),
             ("alleys", alleys), ("rated_mw_per_shaft", gr["rated_mw_per_shaft"]), ("steering", steering));
     }

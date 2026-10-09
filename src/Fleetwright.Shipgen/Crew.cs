@@ -112,7 +112,7 @@ public static class Crew
     /// <summary>Crew of one gun mount, handling rooms included.</summary>
     public static double GunCrew(double calibreMm, double barrels) => barrels * (0.5 + 0.09 * calibreMm) + 0.02 * calibreMm;
 
-    public static double TorpedoCrew(PyDict t) => t.B("fixed_tube") ? 0.5 * t.F("barrels") : 2 + 0.6 * t.F("barrels");
+    public static double TorpedoCrew(TurretType t) => t.IsFixedTube ? 0.5 * t.Barrels : 2 + 0.6 * t.Barrels;
 
     /// <summary>Deck, command, signals, control and damage control: k x standard displacement^0.5, tapering below 1,000 t.</summary>
     static double DeckCrew(double stdT, double k = 0.8) =>
@@ -125,15 +125,14 @@ public static class Crew
         double guns = 0.0, torps = 0.0;
         foreach (var m in lay.Mounts)
         {
-            var t = m.D("t");
-            if (Py.Eq(m["kind"], "torpedo"))
-                torps += TorpedoCrew(t);
+            if (m.Kind == "torpedo")
+                torps += TorpedoCrew(m.T);
             else
-                guns += GunCrew(t.F("calibre_mm"), t.F("barrels"));
+                guns += GunCrew(m.T.CalibreMm, m.T.Barrels);
         }
         foreach (var a in lay.Aa)
         {
-            var cfg = Geometry.AA_CFG[a.S("type")];
+            var cfg = Geometry.AA_CFG[a.Type];
             guns += GunCrew(cfg.CalibreMm, cfg.Barrels);
         }
         var deps = new OrderedDictionary<string, long>(StringComparer.Ordinal)
@@ -195,24 +194,22 @@ public static class Crew
         var plan = lay.Geo.Plant;
         double low = (plan is { Armoured: true } ? plan.Top : D) - db;
         double hullV = L * B * (T * cb + Math.Max(0.0, D - T) * Geometry.Cwp(cb)) - db * L * B * Geometry.Cwp(cb) * 0.9;
-        double raised = lay.Decks.Where(dk => Py.Eq(dk["kind"], "deck"))
-            .Sum(dk => Geometry.PolygonArea(Geometry.Pts(dk["points"])) * (dk.F("top") - dk.F("base")));
+        double raised = lay.Decks.Where(dk => dk.Kind == "deck").Sum(dk => Geometry.PolygonArea(dk.Points) * (dk.Top - dk.Base));
         double taken = 0.0;
         foreach (var c in lay.Compartments)
         {
-            if (!TAKEN.Contains(c.S("kind")))
+            if (!TAKEN.Contains(c.Kind))
                 continue;
-            double h = c.Has("top") && c.Has("base") ? c.F("top") - c.F("base")
-                : Py.In(c["kind"], "hold", "cargo_tank") ? D - db : low;
-            taken += (c.F("x1") - c.F("x0")) * 2 * c.F("half_width") * h;
+            double h = c.Top is double top && c.Base is double bse ? top - bse : c.Kind is "hold" or "cargo_tank" ? D - db : low;
+            taken += (c.X1 - c.X0) * 2 * c.HalfWidth * h;
         }
         var cit = lay.Geo.Citadel;
         if (plan is { Tds: > 0 } && cit is { } ct)
             taken += 2 * plan.Tds * (ct.X1 - ct.X0) * low;
         var rooms = new OrderedDictionary<string, double>(StringComparer.Ordinal);
         foreach (var b in lay.Blocks)
-            if (!Py.Eq(b["kind"], "director") && !Py.In(b["role"], "hangar", "director", "casemate"))
-                rooms[b.S("id")] = (b.Has("area") ? b.F("area") : (b.F("x1") - b.F("x0")) * b.F("w")) * Layout.LEVEL_H * 0.9;
+            if (b.Kind != "director" && b.Role is not ("hangar" or "director" or "casemate"))
+                rooms[b.Id] = (b.Area ?? (b.X1 - b.X0) * b.W) * Layout.LEVEL_H * 0.9;
         double sup = rooms.Values.Sum();
         double free = Math.Max(0.0, hullV - taken) + raised + sup;
         return new Space(hullV + raised, taken, sup, free, USABLE * free, USABLE * (Math.Max(0.0, hullV - taken) + raised),
@@ -269,14 +266,13 @@ public static class Crew
         long up = (long)Math.Round(n * frac);
         var upBlocks = Spread(up, room.BlocksM3);
         double xMid = lay.Geo.MachineryMid(lay.Hull.L);
-        var byId = new Dictionary<string, PyDict>(StringComparer.Ordinal);
+        var byId = new Dictionary<string, Block>(StringComparer.Ordinal);
         foreach (var b in lay.Blocks)
-            byId[b.S("id")] = b;
+            byId[b.Id] = b;
         foreach (var (bid, m) in upBlocks)
         {
             var b = byId[bid];
-            lay.Weights.Add(new Weight($"Crew and effects ({bid})", "misc", m * CREW_T, (b.F("x0") + b.F("x1")) / 2,
-                ZRel.Deck(Layout.BlockBase(b) + 1.3)));
+            lay.Weights.Add(new Weight($"Crew and effects ({bid})", "misc", m * CREW_T, (b.X0 + b.X1) / 2, ZRel.Deck(b.Base + 1.3)));
         }
         lay.Weights.Add(new Weight("Crew and effects", "misc", (n - up) * CREW_T, 0.0, ZRel.Deck(-1.5)));
         lay.Weights.Add(new Weight("Provisions", "misc", nd.ProvisionsM3 * PROVISIONS_T_PER_M3, 0.0, ZRel.Frac(0.4)));
@@ -312,7 +308,7 @@ public static class Crew
         if (deps.Count == 0)
             return ([], onRoom, summary);
         long Dep(string k) => deps.TryGetValue(k, out var v) ? v : 0;
-        var barbettes = new HashSet<string>(lay.Mounts.Where(m => Geometry.HasBarbette(m.D("t"))).Select(m => m.S("id")), StringComparer.Ordinal);
+        var barbettes = new HashSet<string>(lay.Mounts.Where(m => m.T.HasBarbette).Select(m => m.Id), StringComparer.Ordinal);
 
         void Put<K>(OrderedDictionary<K, long> where, IEnumerable<(K Key, long Men)> men, string station) where K : notnull
         {
@@ -329,14 +325,11 @@ public static class Crew
 
         var need = new List<((string, string) Key, double V)>();
         foreach (var m in lay.Mounts)
-        {
-            var t = m.D("t");
-            need.Add(((m.S("kind"), m.S("id")), Py.Eq(m["kind"], "torpedo") ? TorpedoCrew(t) : GunCrew(t.F("calibre_mm"), t.F("barrels"))));
-        }
+            need.Add(((m.Kind, m.Id), m.Kind == "torpedo" ? TorpedoCrew(m.T) : GunCrew(m.T.CalibreMm, m.T.Barrels)));
         foreach (var a in lay.Aa)
         {
-            var cfg = Geometry.AA_CFG[a.S("type")];
-            need.Add((("aa", a.S("id")), GunCrew(cfg.CalibreMm, cfg.Barrels)));
+            var cfg = Geometry.AA_CFG[a.Type];
+            need.Add((("aa", a.Id), GunCrew(cfg.CalibreMm, cfg.Barrels)));
         }
         foreach (var ((kind, k), men) in Spread(Dep("weapons"), need))
         {
@@ -356,14 +349,14 @@ public static class Crew
         foreach (var b in lay.Blocks)
         {
             double area = Math.Abs(Geometry.PolygonCentroid(Geometry.BlockOutline(b)).Area);
-            var key = ("superstructure", b.S("id"));
+            var key = ("superstructure", b.Id);
             int idx = vol.FindIndex(v => v.Key == key);
-            double val = area * (Layout.BlockTop(b) - Layout.BlockBase(b));
+            double val = area * (b.TopZ - b.Base);
             if (idx >= 0)
                 vol[idx] = (key, val);
             else
                 vol.Add((key, val));
-            roles[key] = b.S("role");
+            roles[key] = b.Role;
         }
         string? Role((string, string) k) => roles.TryGetValue(k, out var r) ? r : null;
         var bridge = vol.Where(v => Role(v.Key) is "bridge" or "island").ToList();
@@ -394,9 +387,9 @@ public static class Crew
         long air = Take(Dep("air_group"), rest);
         if (air != 0)
         {
-            var bays = lay.Compartments.Where(cc => Py.Eq(cc["kind"], "hangar")).Select(cc => (("hangar_bay", cc.S("id")), 1.0)).ToList();
+            var bays = lay.Compartments.Where(cc => cc.Kind == "hangar").Select(cc => (("hangar_bay", cc.Id), 1.0)).ToList();
             if (bays.Count == 0)
-                bays = lay.Decks.Where(dk => Py.Eq(dk["kind"], "flight_deck")).Select(dk => (("flight_deck", dk.S("id")), 1.0)).ToList();
+                bays = lay.Decks.Where(dk => dk.Kind == "flight_deck").Select(dk => (("flight_deck", dk.Id), 1.0)).ToList();
             bays = bays.GroupBy(b => b.Item1).Select(g => g.Last()).ToList();
             if (bays.Count > 0)
             {

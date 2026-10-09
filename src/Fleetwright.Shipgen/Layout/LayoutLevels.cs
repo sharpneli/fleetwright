@@ -80,15 +80,15 @@ public sealed partial class Layout
         double floor = -0.3 * (x1 - x0);
         var ends = lay.EndMounts;
         var scan = lay.Scan;
-        var endIds = new HashSet<string>(ends.Select(m => m.S("id")), StringComparer.Ordinal);
+        var endIds = new HashSet<string>(ends.Select(m => m.Id), StringComparer.Ordinal);
         var fps = lay.Footprints.Where(o => o.Top > bse + 1e-6 && o.Base < top - 1e-6 && !ignore.Contains(o.Owner)
                                             && !endIds.Contains(o.Owner)).Select(o => o.Fp).ToList();
         var prof = new Dictionary<int, List<Pt>>();
         foreach (var (e, xc) in new[] { (1, x1), (-1, x0) })
         {
             double uc = e * xc;
-            var ms = ends.Where(m => e * (m.F("x") - xc) > 0).ToList();
-            var rad = ms.ToDictionary(m => m.S("id"), m => Armament.BodyReach(m.D("t")) + DH_TURRET_CLEAR);
+            var ms = ends.Where(m => e * (m.X - xc) > 0).ToList();
+            var rad = ms.ToDictionary(m => m.Id, m => Armament.BodyReach(m.T) + DH_TURRET_CLEAR);
             double cap = 0.0;
             var req = Enumerable.Repeat(floor, n + 1).ToList();
             foreach (var (bx0, by0, bx1, by1) in keep)
@@ -110,15 +110,15 @@ public sealed partial class Layout
                 return ub > loU && ua < hiU;
             }
 
-            var owners = new HashSet<string>(ms.Select(m => m.S("id")), StringComparer.Ordinal);
+            var owners = new HashSet<string>(ms.Select(m => m.Id), StringComparer.Ordinal);
             var polys = new List<(List<Pt> P, (double A0, double B0, double A1, double B1) Bx)>();
             foreach (var sw in lay.Sweeps)
                 if (owners.Contains(sw.Owner) || (sw.Axis < top && !endIds.Contains(sw.Owner)))
                     for (int i = 0; i < sw.Polys.Count; i++)
                         if (NearZ(sw.Boxes[i].X0, sw.Boxes[i].X1))
                             polys.Add((sw.Polys[i], sw.Boxes[i]));
-            var circles = ms.Where(m => NearZ(m.F("x") - rad[m.S("id")], m.F("x") + rad[m.S("id")]))
-                .Select(m => (Cx: m.F("x"), Cy: m.F("y"), R: rad[m.S("id")])).ToList();
+            var circles = ms.Where(m => NearZ(m.X - rad[m.Id], m.X + rad[m.Id]))
+                .Select(m => (Cx: m.X, Cy: m.Y, R: rad[m.Id])).ToList();
             var nearFps = fps.Where(fp => NearZ(fp.BBox.X0 - FP_MARGIN, fp.BBox.X1 + FP_MARGIN)).ToList();
             if (polys.Count == 0 && circles.Count == 0 && nearFps.Count == 0 && req.Max() <= cap)
             {
@@ -278,10 +278,10 @@ public sealed partial class Layout
 
     /// <summary>One superstructure level as a block, shaped by level_outline, bevelled and notched. Returns the block, or
     /// null if nothing of it stands on its support.</summary>
-    static PyDict? AddLevel(Layout lay, List<PyDict> blocks, string bid, long level, double x0, double x1, double w,
+    static Block? AddLevel(Layout lay, List<Block> blocks, string bid, long level, double x0, double x1, double w,
         List<Pt>? support = null, IReadOnlyList<(double, double, double, double)>? keep = null,
         IReadOnlyCollection<string>? ignore = null, IReadOnlyList<(double N0, double N1, double H)>? notches = null,
-        (PyDict? Aft, PyDict? Fwd) joins = default, (double, double)? bevel = null, string role = "deckhouse", bool office = false)
+        (Block? Aft, Block? Fwd) joins = default, (double, double)? bevel = null, string role = "deckhouse", bool office = false)
     {
         keep ??= [];
         notches ??= [];
@@ -291,7 +291,7 @@ public sealed partial class Layout
         var ign = (ignore ?? []).ToList();
         foreach (var j in new[] { joins.Aft, joins.Fwd })
             if (j != null)
-                ign.Add(j.S("id"));
+                ign.Add(j.Id);
         var pts = LevelOutline(lay, x0, x1, w, bse, top, support, keep, ign, notches);
         var js = new[] { (x0, joins.Aft), (x1, joins.Fwd) };
         for (int e = 0; e < 2; e++)
@@ -311,18 +311,18 @@ public sealed partial class Layout
         var b = AddBlock(lay, blocks, bid, x0, x1, w, level, 0.0, 0.0, points: pts, role: role, office: office);
         if (notches.Count > 0)
         {
-            b["_support"] = convex.ToList();
-            b["_notches"] = notches.ToList();
+            b.Support = convex.ToList();
+            b.Notches = notches.ToList();
         }
         return b;
     }
 
     /// <summary>A convex outline whose end at xf (e: 1 forward, -1 aft) butts against block: where it is wider than the
     /// block's face there, each side falls back in a straight shoulder.</summary>
-    static List<Pt> ShoulderOutline(List<Pt> pts, double xf, int e, PyDict block)
+    static List<Pt> ShoulderOutline(List<Pt> pts, double xf, int e, Block block)
     {
         var xs = pts.Select(p => p.X).ToList();
-        var sp = new Slabs(Geometry.Pts(block["points"])).At(xf + e * 0.01);
+        var sp = new Slabs(block.Points!).At(xf + e * 0.01);
         var own = new Slabs(pts).At(xf - e * 0.01);
         if (sp.Count == 0 || own.Count == 0)
             return pts;
@@ -399,14 +399,14 @@ public sealed partial class Layout
     }
 
     /// <summary>The deckhouse's levels above the first, up to level n, over the middle (x0 .. x1).</summary>
-    static List<PyDict> AddDeckhouseLevels(Layout lay, List<PyDict> blocks, long n, double x0, double x1, List<PyDict> baseBlocks,
+    static List<Block> AddDeckhouseLevels(Layout lay, List<Block> blocks, long n, double x0, double x1, List<Block> baseBlocks,
         double dhW, IReadOnlyCollection<string> through)
     {
         if (n <= 1)
             return [];
         var hull = lay.Hull;
         var cells = Enumerable.Range(0, Math.Max(0, (int)((x1 - x0) / DH_CELL))).Select(i => x0 + DH_CELL * i).ToList();
-        var made = new List<PyDict>();
+        var made = new List<Block>();
 
         bool Ok(double x, double w, double bse, double top, Func<double, bool>? support)
         {
@@ -441,8 +441,8 @@ public sealed partial class Layout
             return out_;
         }
 
-        (List<PyDict> Out, double Lo) Level(long k, double wMax, Func<double, bool> support, Func<double, bool>? skip = null,
-            List<PyDict>? under = null)
+        (List<Block> Out, double Lo) Level(long k, double wMax, Func<double, bool> support, Func<double, bool>? skip = null,
+            List<Block>? under = null)
         {
             under ??= [];
             double bse = LEVEL_H * (k - 1), top = LEVEL_H * k;
@@ -461,7 +461,7 @@ public sealed partial class Layout
                 double mid = (lo + hi) / 2;
                 (lo, hi) = Total(Runs(mid, bse, top, sup)) >= DH_KEEP * floor ? (mid, hi) : (lo, mid);
             }
-            var out_ = new List<PyDict>();
+            var out_ = new List<Block>();
 
             (List<double[]> Pieces, List<(double, double, double)> Notches) Pieced(double lo_)
             {
@@ -497,21 +497,21 @@ public sealed partial class Layout
                 lo = shallow.Min();
                 (pieces, notches) = Pieced(lo);
             }
-            var towers = blocks.Where(t => Math.Abs(BlockBase(t) - bse) < 1e-6 && Py.Eq(t.Get("kind"), "superstructure")
-                                           && !Py.Eq(t["role"], "deckhouse") && Math.Abs(t.F("y")) < t.F("w") / 2).ToList();
+            var towers = blocks.Where(t => Math.Abs(t.Base - bse) < 1e-6 && t.Kind == "superstructure"
+                                           && t.Role != "deckhouse" && Math.Abs(t.Y) < t.W / 2).ToList();
             foreach (var piece in pieces)
             {
                 double a = piece[0], b = piece[1];
-                var jAft = towers.FirstOrDefault(t => a - DH_JOIN <= t.F("x1") && t.F("x1") <= a + 1e-6);
-                var jFwd = towers.FirstOrDefault(t => b - 1e-6 <= t.F("x0") && t.F("x0") <= b + DH_JOIN);
-                (a, b) = (jAft != null ? jAft.F("x1") : a, jFwd != null ? jFwd.F("x0") : b);
-                var on_ = under.MaxBy(u => Math.Min(b, u.F("x1")) - Math.Max(a, u.F("x0")));
+                var jAft = towers.FirstOrDefault(t => a - DH_JOIN <= t.X1 && t.X1 <= a + 1e-6);
+                var jFwd = towers.FirstOrDefault(t => b - 1e-6 <= t.X0 && t.X0 <= b + DH_JOIN);
+                (a, b) = (jAft != null ? jAft.X1 : a, jFwd != null ? jFwd.X0 : b);
+                var on_ = under.MaxBy(u => Math.Min(b, u.X1) - Math.Max(a, u.X0));
                 var mine = notches.Where(nt => a <= nt.Item1 && nt.Item2 <= b).ToList();
                 foreach (var u in under)
-                    if (u.Get("_notches") is List<(double, double, double)> un)
+                    if (u.Notches is { } un)
                         mine.AddRange(un.Where(nt => nt.Item2 > a && nt.Item1 < b));
                 List<Pt>? support_ = on_ is null ? null
-                    : (on_.Get("_support") is List<Pt> s_ && s_.Count > 0 ? s_ : Geometry.Pts(on_["points"]));
+                    : (on_.Support is { Count: > 0 } s_ ? s_ : on_.Points);
                 var blk = AddLevel(lay, blocks, $"Deckhouse {k}" + (out_.Count == 0 ? "" : $"-{out_.Count + 1}"), k, a, b, lo,
                     support: support_, ignore: through, notches: mine, joins: (jAft, jFwd), bevel: BEVEL_UPPER);
                 if (blk != null)
@@ -523,10 +523,10 @@ public sealed partial class Layout
             return (out_, lo);
         }
 
-        Func<double, bool> On(List<PyDict> bb) => x => bb.Any(b => b.F("x0") <= x && x + DH_CELL <= b.F("x1") + 1e-6);
+        Func<double, bool> On(List<Block> bb) => x => bb.Any(b => b.X0 <= x && x + DH_CELL <= b.X1 + 1e-6);
         var below = baseBlocks.ToList();
         double w = dhW;
-        if (below.Select(b => b.F("x1") - b.F("x0")).Sum() < 0.5 * (x1 - x0))
+        if (below.Select(b => b.X1 - b.X0).Sum() < 0.5 * (x1 - x0))
         {
             var (ext, _) = Level(1, dhW, x => true, skip: On(below));
             below.AddRange(ext);

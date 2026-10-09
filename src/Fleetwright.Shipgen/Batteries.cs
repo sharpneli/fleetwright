@@ -28,13 +28,13 @@ public static class Batteries
     }
 
     /// <summary>Rounds per gun in the magazines for turret type t: the battery's rounds_per_gun, else the curve.</summary>
-    public static double GunRounds(PyDict t) => t.Has("rounds_per_gun") ? t.F("rounds_per_gun") : RoundsPerGun(t.F("calibre_mm"));
+    public static double GunRounds(TurretType t) => t.RoundsPerGun ?? RoundsPerGun(t.CalibreMm);
 
     /// <summary>(turret incl. guns+armour, barbette armour, magazine/ammo) for one mount of type t.</summary>
-    public static (double Turret, double Barbette, double Ammo) MountWeights(PyDict t, double armourMm, double depth, double level,
+    public static (double Turret, double Barbette, double Ammo) MountWeights(TurretType t, double armourMm, double depth, double level,
         double deck = 0.0)
     {
-        double cal = t.F("calibre_mm"), cl = t.F("calibre_length"), n = t.F("barrels"), r = t.F("r");
+        double cal = t.CalibreMm, cl = t.CalibreLength!.Value, n = t.Barrels, r = t.R;
         double guns = n * GunTubeT(cal, cl);
         double mech = MOUNT_K * guns + MOUNT_FIXED_T * Math.Min(1.0, Math.Pow(cal / 76.0, 3));
         double th = 0.42 * r;
@@ -42,7 +42,7 @@ public static class Batteries
         double tAvg = TURRET_T_AVG * armourMm / 1000.0;
         double turret = guns + mech + area * tAvg * Weight.STEEL;
         double bh = 0.45 * depth + deck + level * Geometry.SuperfireStep(th);
-        double barbette = Geometry.HasBarbette(t) ? 2 * Math.PI * 0.95 * r * bh * (0.8 * armourMm / 1000.0) * Weight.STEEL : 0.0;
+        double barbette = t.HasBarbette ? 2 * Math.PI * 0.95 * r * bh * (0.8 * armourMm / 1000.0) * Weight.STEEL : 0.0;
         double ammo = n * GunRounds(t) * SHELL_K * Math.Pow(cal, 3) / 1000.0 * AMMO_MULT;
         return (turret, barbette, ammo);
     }

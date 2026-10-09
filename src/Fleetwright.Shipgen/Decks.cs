@@ -101,7 +101,7 @@ public sealed class Geo
     public (double X0, double X1) SteeringSpan(double L) => Steering ?? Propulsion.SteeringSpan(L);
 }
 
-/// <summary>arcs: fixed firing arcs by mount kind, and the one interval each mount turns within (traverse).</summary>
+/// <summary>Fixed firing arcs by mount kind, and the one interval each mount turns within (its traverse).</summary>
 public static class Arcs
 {
     public const double ARC_END = 135.0, ARC_SIDE = 90.0, ARC_BEAM = 65.0, ARC_CROSS = 30.0, ARC_CASEMATE = 60.0;
@@ -114,52 +114,50 @@ public static class Arcs
         return [Math.Round(start, 1), Math.Round(start + 2 * half, 1)];
     }
 
-    static bool HasFixed(PyDict m) => m.Get("fixed") is not null;
-
-    public static List<double[]> MountArcs(PyDict m)
+    public static List<double[]> MountArcs(Mount m)
     {
-        if (HasFixed(m))
-            return [Arc(m.F("fixed"), ARC_FIXED)];
-        double own = m.F("y") > 0 ? 90.0 : 270.0;
-        if (m.B("casemate"))
+        if (m.Fixed is double fixedBearing)
+            return [Arc(fixedBearing, ARC_FIXED)];
+        double own = m.Y > 0 ? 90.0 : 270.0;
+        if (m.Casemate)
             return [Arc(own, ARC_CASEMATE)];
-        if (m.B("side_mount"))
+        if (m.SideMount)
             return [Arc(own, ARC_SIDE)];
-        if (m.B("wing"))
+        if (m.Wing)
         {
-            if (m.B("cross_deck"))
+            if (m.CrossDeck)
                 return [Arc(own, ARC_SIDE), Arc(own + 180.0, ARC_CROSS)];
             return [Arc(own, ARC_SIDE)];
         }
-        if (Py.Eq(m.Get("arc_role"), "beam"))
+        if (m.ArcRole == "beam")
             return [Arc(90.0, ARC_BEAM), Arc(270.0, ARC_BEAM)];
-        if (Py.Eq(m["kind"], "torpedo") && Math.Abs(m.F("y")) < 0.5)
+        if (m.Kind == "torpedo" && Math.Abs(m.Y) < 0.5)
             return [Arc(90.0, ARC_TORPEDO), Arc(270.0, ARC_TORPEDO)];
-        if (Math.Abs(Math.Abs(Geometry.Wrap180(m.F("rest"))) - 90.0) < 1e-6)
-            return [Arc(m.F("rest"), ARC_SIDE)];
-        return [Arc(m.F("rest"), ARC_END)];
+        if (Math.Abs(Math.Abs(Geometry.Wrap180(m.Rest)) - 90.0) < 1e-6)
+            return [Arc(m.Rest, ARC_SIDE)];
+        return [Arc(m.Rest, ARC_END)];
     }
 
     /// <summary>A cross-deck wing turret's whole swing [start, end].</summary>
-    public static double[] CrossTurn(PyDict m)
+    public static double[] CrossTurn(Mount m)
     {
         var arcs = MountArcs(m);
         var own = arcs[0];
         var cross = arcs[1];
-        if ((Geometry.Normalize360(m.F("rest")) < 90.0) == (m.F("y") < 0))
+        if ((Geometry.Normalize360(m.Rest) < 90.0) == (m.Y < 0))
             return [own[0], cross[1] < own[0] ? cross[1] + 360.0 : cross[1]];
         return [cross[0], own[1] > cross[0] ? own[1] : own[1] + 360.0];
     }
 
     /// <summary>The one interval [start, end] (end may exceed 360) a mount turns within.</summary>
-    public static double[]? MountTraverse(PyDict m)
+    public static double[]? MountTraverse(Mount m)
     {
         var arcs = MountArcs(m);
-        if (m.B("cross_deck"))
+        if (m.CrossDeck)
             return CrossTurn(m);
         if (arcs.Count == 1)
             return [arcs[0][0], arcs[0][1]];
-        double rest = Geometry.Normalize360(HasFixed(m) ? m.F("fixed") : m.F("rest"));
+        double rest = Geometry.Normalize360(m.Fixed ?? m.Rest);
         double[]? best = null;
         foreach (var (p, q) in new[] { (arcs[0], arcs[1]), (arcs[1], arcs[0]) })
         {
@@ -178,14 +176,12 @@ public static class Arcs
     {
         foreach (var m in lay.Mounts)
         {
-            m["arcs"] = MountArcs(m);
-            m["traverse"] = MountTraverse(m);
-            m["rest"] = Geometry.Wrap180(HasFixed(m) ? m.F("fixed") : m.F("rest"));
+            m.Arcs = MountArcs(m);
+            m.Traverse = MountTraverse(m);
+            m.Rest = Geometry.Wrap180(m.Fixed ?? m.Rest);
         }
-        var byId = new Dictionary<string, PyDict>(StringComparer.Ordinal);
-        foreach (var m in lay.Mounts)
-            byId[m.S("id")] = m;
-        foreach (PyDict sm in lay.Spec.L("turrets").Cast<PyDict>())
-            sm["rest"] = byId[sm.S("id")]["rest"];
+        var byId = lay.Mounts.ToDictionary(m => m.Id, StringComparer.Ordinal);
+        foreach (var sm in lay.Spec.Turrets)
+            sm.Rest = byId[sm.Id].Rest;
     }
 }

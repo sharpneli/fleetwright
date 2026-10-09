@@ -70,7 +70,7 @@ public static class Hitbox
         var ag = inner.Armour;
         bool armoured = ag.Armoured;
         double barbetteZ = ag.MainZ ?? (ag.BeltMm > 0 ? ag.BeltTop : Math.Max(T, D - Geometry.DECK_PITCH));
-        double fdBase = lay.Decks.Where(dk => Py.Eq(dk["kind"], "flight_deck")).Select(dk => dk.F("base")).Append(1e9).Min();
+        double fdBase = lay.Decks.Where(dk => dk.Kind == "flight_deck").Select(dk => dk.Base).Append(1e9).Min();
         var comps = new List<PyDict>();
 
         PyDict WithMaterial(PyDict d, string? m)
@@ -82,48 +82,47 @@ public static class Hitbox
 
         foreach (var m in lay.Mounts)
         {
-            var t = m.D("t");
+            var t = m.T;
             var sh = Geometry.TurretShapesOf(t);
-            var arm = m.Get("armour_mm", 0L);
-            var c = PyDict.Of(("id", m["id"]), ("kind", m["kind"]), ("type", m["type"]));
+            double arm = m.ArmourMm;
+            var c = PyDict.Of(("id", m.Id), ("kind", m.Kind), ("type", m.Type));
             c.Update(Geometry.GunOf(t));
-            c.Update(("x", Math.Round(m.F("x"), 3)), ("y", Math.Round(m.F("y"), 3)), ("base", Math.Round(m.F("base"), 2)),
-                ("top", Math.Round(m.F("top"), 2)), ("armour_mm", arm), ("broadphase_r", Math.Round(Math.Max(t.F("r"), Geometry.TurretReach(t, 0.0)), 3)),
-                ("rotating", m.Get("fixed") is null), ("rest_deg", m["rest"]), ("arcs_deg", m["arcs"]), ("traverse_deg", m["traverse"]),
+            c.Update(("x", Math.Round(m.X, 3)), ("y", Math.Round(m.Y, 3)), ("base", Math.Round(m.Base, 2)),
+                ("top", Math.Round(m.Top, 2)), ("armour_mm", arm), ("broadphase_r", Math.Round(Math.Max(t.R, Geometry.TurretReach(t, 0.0)), 3)),
+                ("rotating", m.Fixed is null), ("rest_deg", m.Rest), ("arcs_deg", m.Arcs), ("traverse_deg", m.Traverse),
                 ("local", PyDict.Of(("body", R3(sh.Body)), ("parts", sh.Parts.Select(p => (object?)R3(p)).ToList()),
                     ("barrels", sh.Barrels.Select(p => (object?)R3(p)).ToList()))));
             comps.Add(c);
-            string? Own(string part) => m.Get("material") is string { Length: > 0 } own ? own : Armour.ArmourMaterial(design, part);
-            string? mat = Py.Eq(m["kind"], "main") ? Own("turrets") : Py.Eq(m["kind"], "secondary") ? Own("secondary") : null;
-            if (Py.In(m["kind"], "main", "secondary"))
+            string? Own(string part) => !string.IsNullOrEmpty(m.Material) ? m.Material : Armour.ArmourMaterial(design, part);
+            string? mat = m.Kind == "main" ? Own("turrets") : m.Kind == "secondary" ? Own("secondary") : null;
+            if (m.Kind is "main" or "secondary")
             {
-                double a = Py.ToDouble(arm);
-                c["armour"] = PyDict.Of(("face", arm), ("side", (long)Math.Round(TURRET_SIDE * a)), ("rear", (long)Math.Round(TURRET_REAR * a)),
-                    ("roof", (long)Math.Round(TURRET_ROOF * a)));
+                c["armour"] = PyDict.Of(("face", arm), ("side", (long)Math.Round(TURRET_SIDE * arm)), ("rear", (long)Math.Round(TURRET_REAR * arm)),
+                    ("roof", (long)Math.Round(TURRET_ROOF * arm)));
                 WithMaterial(c, mat);
             }
-            if (Py.Eq(m["kind"], "torpedo"))
-                c.Update(("torpedoes", t["barrels"]), ("warhead_kg", (long)Math.Round(Ordnance.WarheadKg())));
+            if (m.Kind == "torpedo")
+                c.Update(("torpedoes", t.Barrels), ("warhead_kg", (long)Math.Round(Ordnance.WarheadKg())));
             else
             {
-                long rounds = (long)Math.Round(Batteries.GunRounds(t) * t.F("barrels"));
-                var (n, w) = Ordnance.ReadyUse(t.F("calibre_mm"), t.F("barrels"), rounds);
+                long rounds = (long)Math.Round(Batteries.GunRounds(t) * t.Barrels);
+                var (n, w) = Ordnance.ReadyUse(t.CalibreMm, t.Barrels, rounds);
                 c.Update(("rounds", rounds), ("ready_rounds", n), ("ready_t", Math.Round(w, 2)));
             }
-            if (m.B("magazine"))
-                c["magazine"] = m["magazine"];
-            if (m.B("casemate"))
+            if (!string.IsNullOrEmpty(m.Magazine))
+                c["magazine"] = m.Magazine;
+            if (m.Casemate)
                 c["mount"] = "casemate";
-            if (Geometry.HasBarbette(t))
+            if (t.HasBarbette)
             {
-                bool inHull = Math.Abs(m.F("y")) + 0.95 * t.F("r") <= lay.Hull.HalfWidth(m.F("x")) && m.F("base") < fdBase;
-                c["barbette"] = $"{m.S("id")} barbette";
-                var bb = PyDict.Of(("id", $"{m.S("id")} barbette"), ("kind", "barbette"), ("mount", m["id"]), ("shape", "circle"),
-                    ("x", Math.Round(m.F("x"), 3)), ("y", Math.Round(m.F("y"), 3)), ("r", Math.Round(t.F("r") * 0.95, 3)),
-                    ("base", inHull ? Math.Min(Rz(barbetteZ), Math.Round(m.F("base"), 2)) : Math.Round(m.F("base") - 1.0, 2)),
-                    ("top", Math.Round(m.F("base"), 2)), ("armour_mm", (long)Math.Round(BARBETTE * Py.ToDouble(arm))));
+                bool inHull = Math.Abs(m.Y) + 0.95 * t.R <= lay.Hull.HalfWidth(m.X) && m.Base < fdBase;
+                c["barbette"] = $"{m.Id} barbette";
+                var bb = PyDict.Of(("id", $"{m.Id} barbette"), ("kind", "barbette"), ("mount", m.Id), ("shape", "circle"),
+                    ("x", Math.Round(m.X, 3)), ("y", Math.Round(m.Y, 3)), ("r", Math.Round(t.R * 0.95, 3)),
+                    ("base", inHull ? Math.Min(Rz(barbetteZ), Math.Round(m.Base, 2)) : Math.Round(m.Base - 1.0, 2)),
+                    ("top", Math.Round(m.Base, 2)), ("armour_mm", (long)Math.Round(BARBETTE * arm)));
                 comps.Add(bb);
-                WithMaterial(bb, Py.Eq(m["kind"], "main") ? Own("barbettes") : mat);
+                WithMaterial(bb, m.Kind == "main" ? Own("barbettes") : mat);
             }
         }
         var directors = lay.Directors.ToDictionary(d => d.Id, StringComparer.Ordinal);
@@ -132,21 +131,21 @@ public static class Hitbox
         foreach (var b in lay.Blocks)
         {
             var pts = Geometry.BlockOutline(b);
-            lay.Smoke.TryGetValue(b.S("id"), out var smoke);
-            var c = PyDict.Of(("id", b["id"]), ("kind", "superstructure"), ("role", b["role"]), ("shape", "polygon"), ("points", R3(pts)));
-            if (!b.B("points"))
-                c["rrect"] = PyDict.Of(("x0", Math.Round(b.F("x0"), 3)), ("x1", Math.Round(b.F("x1"), 3)), ("y0", Math.Round(b.F("y") - b.F("w") / 2, 3)),
-                    ("y1", Math.Round(b.F("y") + b.F("w") / 2, 3)), ("rf", Math.Round(b.F("rf"), 3)), ("rb", Math.Round(b.F("rb"), 3)));
-            c.Update(("base", Math.Round(Layout.BlockBase(b), 2)), ("top", Math.Round(Layout.BlockTop(b), 2)));
+            lay.Smoke.TryGetValue(b.Id, out var smoke);
+            var c = PyDict.Of(("id", b.Id), ("kind", "superstructure"), ("role", b.Role), ("shape", "polygon"), ("points", R3(pts)));
+            if (b.Points is not { Count: > 0 })
+                c["rrect"] = PyDict.Of(("x0", Math.Round(b.X0, 3)), ("x1", Math.Round(b.X1, 3)), ("y0", Math.Round(b.Y - b.W / 2, 3)),
+                    ("y1", Math.Round(b.Y + b.W / 2, 3)), ("rf", Math.Round(b.Rf, 3)), ("rb", Math.Round(b.Rb, 3)));
+            c.Update(("base", Math.Round(b.Base, 2)), ("top", Math.Round(b.TopZ, 2)));
             comps.Add(c);
-            if (directors.TryGetValue(b.S("id"), out var d))
+            if (directors.TryGetValue(b.Id, out var d))
                 c.Update(("battery", d.Battery), ("rangefinder_m", d.Spec.RangefinderM), ("armour_mm", d.Spec.ArmourMm),
                     ("radar", d.Spec.RadarT > 0));
             else
                 WithMaterial(c, supMaterial);
-            if (b.Has("_plate_mm"))
-                c["plate_mm"] = b["_plate_mm"];
-            if (quarters.TryGetValue(b.S("id"), out var men) && men != 0)
+            if (b.PlateMm is double plate)
+                c["plate_mm"] = plate;
+            if (quarters.TryGetValue(b.Id, out var men) && men != 0)
                 c["crew"] = men;
             if (smoke is { Count: > 0 })
                 c["smoke"] = smoke.ToList();
@@ -154,8 +153,8 @@ public static class Hitbox
         var ct = lay.ConningTower;
         if (ct != null)
         {
-            var c = PyDict.Of(("id", "Conning tower"), ("kind", "conning_tower"), ("shape", "circle"), ("x", Math.Round(ct.F("x"), 3)),
-                ("y", Math.Round(ct.F("y"), 3)), ("r", Math.Round(ct.F("r"), 3)), ("base", 0.0), ("top", Math.Round(ct.F("top"), 2)),
+            var c = PyDict.Of(("id", "Conning tower"), ("kind", "conning_tower"), ("shape", "circle"), ("x", Math.Round(ct.X, 3)),
+                ("y", Math.Round(ct.Y, 3)), ("r", Math.Round(ct.R, 3)), ("base", 0.0), ("top", Math.Round(ct.Top, 2)),
                 ("armour_mm", ag.BeltMm));
             comps.Add(c);
             WithMaterial(c, Armour.ArmourMaterial(design, "conning_tower"));
@@ -163,58 +162,51 @@ public static class Hitbox
         var plan = lay.Geo.Plant;
         foreach (var f in lay.Funnels)
         {
-            var pts = R3(Geometry.RrectPolygon(f.F("x") - f.F("l") / 2, f.F("y") - f.F("w") / 2, f.F("x") + f.F("l") / 2,
-                f.F("y") + f.F("w") / 2, f.F("w") / 2, f.F("w") / 2));
-            comps.Add(PyDict.Of(("id", f["id"]), ("kind", "funnel"), ("shape", "polygon"), ("points", pts), ("base", f.Get("z0", 0.0)),
-                ("top", Math.Round(lay.FunTop, 2)), ("boiler_rooms", f.Get("serves", new List<object?>()))));
-            if (plan != null && f.Get("serves") is not null)
-                comps.Add(PyDict.Of(("id", $"{f.S("id")} uptakes"), ("kind", "uptake"), ("funnel", f["id"]), ("shape", "polygon"),
+            var pts = R3(Geometry.RrectPolygon(f.X - f.L / 2, f.Y - f.W / 2, f.X + f.L / 2, f.Y + f.W / 2, f.W / 2, f.W / 2));
+            comps.Add(PyDict.Of(("id", f.Id), ("kind", "funnel"), ("shape", "polygon"), ("points", pts), ("base", f.Z0 ?? 0.0),
+                ("top", Math.Round(lay.FunTop, 2)), ("boiler_rooms", f.Serves ?? [])));
+            if (plan != null && f.Serves != null)
+                comps.Add(PyDict.Of(("id", $"{f.Id} uptakes"), ("kind", "uptake"), ("funnel", f.Id), ("shape", "polygon"),
                     ("points", pts), ("base", Math.Round(plan.InnerBottom + plan.Space.Unit.H - D, 2)),
-                    ("top", f.Get("z0", 0.0)), ("boiler_rooms", f.Get("serves", new List<object?>()))));
+                    ("top", f.Z0 ?? 0.0), ("boiler_rooms", f.Serves)));
         }
         foreach (var c in lay.Casings)
         {
-            var pts = Geometry.RrectPolygon(c.F("x0"), -c.F("w") / 2, c.F("x1"), c.F("w") / 2, 0.5, 0.5);
-            var cc = PyDict.Of(("id", c["id"]), ("kind", "casing"), ("shape", "polygon"), ("points", R3(pts)),
-                ("base", Math.Round(c.F("base"), 2)), ("top", Math.Round(c.F("top"), 2)), ("armour_mm", c["armour_mm"]));
+            var pts = Geometry.RrectPolygon(c.X0, -c.W / 2, c.X1, c.W / 2, 0.5, 0.5);
+            var cc = PyDict.Of(("id", c.Id), ("kind", "casing"), ("shape", "polygon"), ("points", R3(pts)),
+                ("base", Math.Round(c.Base, 2)), ("top", Math.Round(c.Top, 2)), ("armour_mm", c.ArmourMm));
             comps.Add(cc);
-            if (Py.Truthy(c["armour_mm"]))
+            if (c.ArmourMm != 0)
                 WithMaterial(cc, ag.RoofMaterial);
         }
-        var dks = lay.Decks.Where(d => !Py.Eq(d["kind"], "deck")).Concat(lay.Sponsons.Select(sp =>
+        foreach (var dk in lay.Decks.Where(d => d.Kind != "deck").Concat(lay.Sponsons))
         {
-            var s2 = sp.Copy();
-            s2["kind"] = "sponson";
-            return s2;
-        }));
-        foreach (var dk in dks)
-        {
-            var c = PyDict.Of(("id", dk["id"]), ("kind", dk["kind"]), ("shape", "polygon"), ("points", R3(Geometry.Pts(dk["points"]))),
-                ("base", Math.Round(dk.F("base"), 2)), ("top", Math.Round(dk.F("top"), 2)));
+            var c = PyDict.Of(("id", dk.Id), ("kind", dk.Kind), ("shape", "polygon"), ("points", R3(dk.Points)),
+                ("base", Math.Round(dk.Base, 2)), ("top", Math.Round(dk.Top, 2)));
             comps.Add(c);
             double fdMm = design.Armour?.FlightDeckMm ?? 0;
-            if (Py.Eq(dk["kind"], "flight_deck") && fdMm != 0)
+            if (dk.Kind == "flight_deck" && fdMm != 0)
             {
                 c["armour_mm"] = fdMm;
                 WithMaterial(c, Armour.ArmourMaterial(design, "flight_deck"));
             }
-            if (inner.Planked.Contains(dk.S("id")))
+            if (inner.Planked.Contains(dk.Id))
                 c["wood_mm"] = inner.Plating.DeckWoodMm;
         }
         foreach (var a in lay.Aa)
         {
-            var cfg = Geometry.AA_CFG[a.S("type")];
+            var cfg = Geometry.AA_CFG[a.Type];
             var (n, w) = Ordnance.ReadyUse(cfg.CalibreMm, cfg.Barrels);
-            comps.Add(PyDict.Of(("id", a["id"]), ("kind", "aa"), ("type", a["type"]), ("calibre_mm", cfg.CalibreMm),
-                ("calibre_length", cfg.CalibreLength), ("shape", "circle"), ("x", Math.Round(a.F("x"), 3)), ("y", Math.Round(a.F("y"), 3)),
-                ("r", cfg.R), ("base", a["base"]), ("top", a.F("base") + 2.0), ("ready_rounds", n), ("ready_t", Math.Round(w, 2))));
+            comps.Add(PyDict.Of(("id", a.Id), ("kind", "aa"), ("type", a.Type), ("calibre_mm", cfg.CalibreMm),
+                ("calibre_length", cfg.CalibreLength), ("shape", "circle"), ("x", Math.Round(a.X, 3)), ("y", Math.Round(a.Y, 3)),
+                ("r", cfg.R), ("base", a.Base), ("top", a.Base + 2.0), ("ready_rounds", n), ("ready_t", Math.Round(w, 2))));
         }
         foreach (var c in lay.Compartments)
-            if (Py.Eq(c["kind"], "hangar"))
+            if (c.Kind == "hangar")
             {
-                var pts = Geometry.RrectPolygon(c.F("x0"), -c.F("half_width"), c.F("x1"), c.F("half_width"), 0.0, 0.0);
-                comps.Add(PyDict.Of(("id", c["id"]), ("kind", "hangar_bay"), ("shape", "polygon"), ("points", R3(pts)),
-                    ("base", Math.Round(c.F("base"), 2)), ("top", Math.Round(c.F("top"), 2))));
+                var pts = Geometry.RrectPolygon(c.X0, -c.HalfWidth, c.X1, c.HalfWidth, 0.0, 0.0);
+                comps.Add(PyDict.Of(("id", c.Id), ("kind", "hangar_bay"), ("shape", "polygon"), ("points", R3(pts)),
+                    ("base", Math.Round(c.Base!.Value, 2)), ("top", Math.Round(c.Top!.Value, 2))));
             }
         comps.AddRange(PropulsionComponents(inner.Propulsion, D));
         foreach (var x in comps)

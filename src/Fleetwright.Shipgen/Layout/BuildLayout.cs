@@ -7,7 +7,7 @@ public sealed partial class Layout
     {
         double depth = res.Depth;
         var lay = new Layout(design);
-        var hs = HullSpec(design);
+        var hs = HullSpecOf(design);
         var hull = new Hull(hs);
         lay.Hull = hull;
         double L = hull.L, B = hull.B;
@@ -58,11 +58,11 @@ public sealed partial class Layout
         Armament.WarnUnpaired(lay, secs.Select(s => s.Sec));
         long ntp = design.Torpedoes?.Mounts ?? 0;
         string? ttId = null;
-        PyDict? tt = null;
+        TurretType? tt = null;
         if (ntp != 0)
             (ttId, tt) = Geometry.MakeTorpedoType(design.Torpedoes!.Tubes ?? 4);
-        double tSweep = ntp != 0 ? tt!.F("barrel_len") / 2 + 0.3 : 0.0;
-        bool tEdges = ntp != 0 && B / 2 - tt!.F("r") - 0.8 >= tSweep;
+        double tSweep = ntp != 0 ? tt!.BarrelLen / 2 + 0.3 : 0.0;
+        bool tEdges = ntp != 0 && B / 2 - tt!.R - 0.8 >= tSweep;
 
         // ---------------- the middle's plan ----------------
         var segs = PlanSegments(plant).Select(s => (Kind: s.Kind, Len: s.Len)).ToList();
@@ -657,8 +657,8 @@ public sealed partial class Layout
             AddRaised(lay, design, rid, x0_, x1_, lv, brk);
 
         // ---------------- main turrets ----------------
-        var turretTypes = new PyDict();
-        var mounts = new List<PyDict>();
+        var turretTypes = new OrderedDictionary<string, TurretType>(StringComparer.Ordinal);
+        var mounts = new List<Mount>();
         foreach (var g in bats)
             turretTypes[g.Tid] = g.T;
         if (nf != 0 || na != 0)
@@ -677,24 +677,25 @@ public sealed partial class Layout
                     bool flush = i >= Math.Max(stepped[gname], 1);
                     int level = flush ? 0 : i;
                     double dz = lay.DeckZ(x, g.Reach);
-                    long rest_ = flush ? (gname == "A" ? 180 : 0) : rest;
+                    double rest_ = flush ? (gname == "A" ? 180 : 0) : rest;
                     double bse = (flush ? dz : deck0) + 1.2 + TierSteps(gs, level);
                     if (!flush && prev is double pv && pv > deck0 + 1.2 + TierSteps(gs, level - 1) + 1e-9)
                         bse = Math.Max(bse, pv + Geometry.SuperfireStep(gs[i - 1].Th));
                     bse = Math.Max(bse, dz + 1.2);
-                    var probe = PyDict.Of(("kind", "main"), ("t", g.T), ("x", x), ("y", 0.0), ("rest", rest_), ("base", bse),
-                        ("top", bse + g.Th));
-                    if (flush)
-                        probe["arc_role"] = "beam";
+                    var probe = new Mount
+                    {
+                        Id = "", Kind = "main", Type = g.Tid, T = g.T, X = x, Rest = rest_, Base = bse, Top = bse + g.Th,
+                        ArcRole = flush ? "beam" : null,
+                    };
                     bse += RaisedLift(lay, probe);
                     prev = bse;
                     string mid = TurretName(names[gname], i);
                     var m = Armament.AddMount(lay, mounts, "main", g.Tid, g.T, mid, x, 0.0, bse, rest_, level: level,
                         armourMm: g.ArmourMm, depth: depth, footprintR: g.Reach, label: "Turret",
-                        deck: lay.Raised.Count > 0 ? bse - 1.2 - TierSteps(gs, level) : dz,
-                        extra: g.Material != null ? [("material", g.Material)] : []);
+                        deck: lay.Raised.Count > 0 ? bse - 1.2 - TierSteps(gs, level) : dz);
+                    m.Material = g.Material;
                     if (flush)
-                        m["arc_role"] = "beam";
+                        m.ArcRole = "beam";
                     lay.ReserveSweep(m);
                 }
             }
@@ -704,22 +705,21 @@ public sealed partial class Layout
         var riders = new List<(double X0, double X1, double Hw)>();
         if (nm != 0 || nw != 0)
         {
-            void MainMount(Gun g, string mid, double x, double y, long rest, params (string, object?)[] kw)
+            // flags: what the mount is (midships, wing, ...), set on the probe the raised decks are tested with and on the mount
+            void MainMount(Gun g, string mid, double x, double y, double rest, Action<Mount> flags)
             {
                 double reach = g.Reach;
                 double dz = lay.DeckZ(x, reach);
                 double bse = Math.Max(dz, g.Raised ? LEVEL_H : 0.0) + 1.2;
-                var probe = PyDict.Of(("kind", "main"), ("t", g.T), ("x", x), ("y", y), ("rest", rest), ("base", bse), ("top", bse + g.Th));
-                foreach (var (k, v) in kw)
-                    probe[k] = v;
+                var probe = new Mount { Id = "", Kind = "main", Type = g.Tid, T = g.T, X = x, Y = y, Rest = rest, Base = bse, Top = bse + g.Th };
+                flags(probe);
                 bse += RaisedLift(lay, probe);
-                var extra = new List<(string, object?)>();
-                if (g.Material != null)
-                    extra.Add(("material", g.Material));
-                extra.AddRange(kw);
-                lay.ReserveSweep(Armament.AddMount(lay, mounts, "main", g.Tid, g.T, mid, x, y, bse, rest,
+                var m = Armament.AddMount(lay, mounts, "main", g.Tid, g.T, mid, x, y, bse, rest,
                     armourMm: g.ArmourMm, depth: depth, footprintR: reach, label: "Turret",
-                    deck: lay.Raised.Count > 0 ? Math.Max(0.0, bse - 1.2 - (g.Raised ? LEVEL_H : 0.0)) : dz, extra: [.. extra]));
+                    deck: lay.Raised.Count > 0 ? Math.Max(0.0, bse - 1.2 - (g.Raised ? LEVEL_H : 0.0)) : dz);
+                m.Material = g.Material;
+                flags(m);
+                lay.ReserveSweep(m);
                 if (g.Raised && dz < LEVEL_H)
                     riders.Add((x - reach - DH_INSET, x + reach + DH_INSET, Math.Abs(y) + reach + DH_INSET));
             }
@@ -727,7 +727,7 @@ public sealed partial class Layout
             for (int k = 0; k < mids.Count; k++)
             {
                 var (g, x, stow) = mids[k];
-                MainMount(g, TurretName("QPRS", k), x, 0.0, stow, ("arc_role", "beam"), ("midships", true));
+                MainMount(g, TurretName("QPRS", k), x, 0.0, stow, m => (m.ArcRole, m.Midships) = ("beam", true));
             }
             for (int k = 0; k < wings.Count; k++)
             {
@@ -735,19 +735,16 @@ public sealed partial class Layout
                 foreach (var (x, side) in pair)
                 {
                     bool fwd = g.Echelon ? x == pair[0].X : x >= machC;
-                    var kw = new List<(string, object?)> { ("wing", true), ("battery", $"W{k + 1}"), ("magazine_end", x >= machC ? "fore" : "aft") };
-                    if (g.Echelon)
-                        kw.Add(("echelon", true));
-                    if (g.Cross)
-                        kw.Add(("cross_deck", true));
-                    MainMount(g, $"W{k + 1}{(side > 0 ? "S" : "P")}", x, side * yG, fwd ? 0 : 180, [.. kw]);
+                    string battery = $"W{k + 1}", end = x >= machC ? "fore" : "aft";
+                    MainMount(g, $"W{k + 1}{(side > 0 ? "S" : "P")}", x, side * yG, fwd ? 0 : 180,
+                        m => (m.Wing, m.Battery, m.MagazineEnd, m.Echelon, m.CrossDeck) = (true, battery, end, g.Echelon, g.Cross));
                 }
             }
         }
 
         // ---------------- superstructure, kept out of the guns' sweeps ----------------
-        lay.EndMounts = mounts.Where(m => Py.Eq(m["kind"], "main") && !(m.B("wing") || m.B("midships"))).ToList();
-        var blocks = new List<PyDict>();
+        lay.EndMounts = mounts.Where(m => m.Kind == "main" && !(m.Wing || m.Midships)).ToList();
+        var blocks = new List<Block>();
         double towerTop = LEVEL_H * nTower + hood;
         while (!lay.Clear(Footprint.Rect(bx0, -w2 / 2, bx1, w2 / 2), towerTop) && bx0 > midAft)
         {
@@ -768,14 +765,14 @@ public sealed partial class Layout
             return (x1t - l, x1t, w2 * fwT);
         }
 
-        PyDict? Stack(string bid, long k, double x0_, double x1_, double w_, PyDict? below, string role = "bridge", bool office = false)
+        Block? Stack(string bid, long k, double x0_, double x1_, double w_, Block? below, string role = "bridge", bool office = false)
         {
-            var b_ = AddLevel(lay, blocks, bid, k, x0_, x1_, w_, support: below != null ? Geometry.Pts(below["points"]) : null,
+            var b_ = AddLevel(lay, blocks, bid, k, x0_, x1_, w_, support: below?.Points,
                 role: role, office: office);
             return b_ ?? below;
         }
 
-        PyDict? belowB = null;
+        Block? belowB = null;
         for (long k = 2; k < nb; k++)
         {
             var (x0t, x1t, wt) = TowerFp(k);
@@ -794,17 +791,17 @@ public sealed partial class Layout
             double ctX = Math.Max(bx1 - 0.42 * w2, bx0 + ctR);
             if (towerFoot != null)
             {
-                var pts_ = Geometry.Pts(towerFoot["points"]);
-                ctX = towerFoot.F("x1") - ctR - 0.3;
-                while (ctX > towerFoot.F("x0") + ctR &&
+                var pts_ = towerFoot.Points!;
+                ctX = towerFoot.X1 - ctR - 0.3;
+                while (ctX > towerFoot.X0 + ctR &&
                        Enumerable.Range(0, pts_.Count).Select(i => SegDist(ctX, 0.0, pts_[(i - 1 + pts_.Count) % pts_.Count].X,
                            pts_[(i - 1 + pts_.Count) % pts_.Count].Y, pts_[i].X, pts_[i].Y)).Min() < ctR + 0.3)
                     ctX -= 0.25;
             }
-            lay.ConningTower = PyDict.Of(("x", ctX), ("y", 0.0), ("r", ctR), ("top", 2 * LEVEL_H));
+            lay.ConningTower = new ConningTower(ctX, 0.0, ctR, 2 * LEVEL_H);
             double mm = beltMm / 1000;
             double area = 2 * Math.PI * ctR * 2 * LEVEL_H + 0.5 * Math.PI * Math.Pow(ctR, 2);
-            lay.Weights.Add(new Weight("Conning tower", "armour", area * mm * 7.85, lay.ConningTower.F("x"), ZRel.Deck(LEVEL_H)));
+            lay.Weights.Add(new Weight("Conning tower", "armour", area * mm * 7.85, lay.ConningTower.X, ZRel.Deck(LEVEL_H)));
         }
         for (long k = nb + 2; k <= nTower; k++)
         {
@@ -861,7 +858,7 @@ public sealed partial class Layout
             }
         }
 
-        var funnels = new List<PyDict>();
+        var funnels = new List<Funnel>();
         for (int i = 0; i < fxFinal.Count; i++)
         {
             double fx = fxFinal[i];
@@ -870,10 +867,9 @@ public sealed partial class Layout
             if (!lay.Clear(fp, funTop) || !lay.Free(fp, 0.0, [fid]))
                 lay.Fail("length", $"{fid} would stand in a turret's sweep or against the bridge: use fewer funnels " +
                                    "or midships turrets.");
-            funnels.Add(PyDict.Of(("id", fid), ("x", fx), ("y", 0.0), ("l", fl), ("w", fw), ("pipes", fw > 4 ? 2L : 1L),
-                ("seg", (long)fSegF[i])));
+            funnels.Add(new Funnel { Id = fid, X = fx, Y = 0.0, L = fl, W = fw, Pipes = fw > 4 ? 2 : 1, Seg = fSegF[i] });
             if (lay.DeckZ(fx, fl / 2) != 0)
-                funnels[^1]["z0"] = lay.DeckZ(fx, fl / 2);
+                funnels[^1].Z0 = lay.DeckZ(fx, fl / 2);
             var seg = machPlaced[fSegF[i]];
             AddFunnelWeights(lay, funnels[^1], funTop, (seg.X0 + seg.X1) / 2, depth);
         }
@@ -890,13 +886,13 @@ public sealed partial class Layout
             bool raised = sec.StandsOn == "deckhouse";
             var (tsId, ts) = Geometry.BatteryType(sec);
             turretTypes[tsId] = ts;
-            double rs = ts.F("r");
+            double rs = ts.R;
             double rsReach = Math.Max(rs, Geometry.TurretReach(ts, 0.0));
             double ths = Geometry.TurretHeight(ts);
 
             double SecBase(double x) => raised ? Math.Max(lay.DeckZ(x, rsReach), LEVEL_H) : lay.DeckZ(x, rsReach);
             double xLo = midAft + rsReach + 0.5, xHi = midFwd - rsReach - 0.5;
-            double inner = (blocks.Where(b => b.I("level") >= 2).Select(b => b.F("w") / 2).Append(fw / 2)
+            double inner = (blocks.Where(b => b.Level >= 2).Select(b => b.W / 2).Append(fw / 2)
                 .Concat(M.Select(g => g.Reach))).Max() + rsReach + 0.4;
 
             double OuterAt(double x) => Math.Min(hull.HalfWidth(x + -rsReach), Math.Min(hull.HalfWidth(x + 0.0), hull.HalfWidth(x + rsReach))) - rsReach - 0.6;
@@ -989,10 +985,10 @@ public sealed partial class Layout
                 foreach (int side in new[] { 1, -1 })
                 {
                     string mid = $"{pre}{i + 1}{(side > 0 ? "S" : "P")}";
-                    Armament.AddMount(lay, mounts, "secondary", tsId, ts, mid, sx, side * yS, SecBase(sx),
+                    var m = Armament.AddMount(lay, mounts, "secondary", tsId, ts, mid, sx, side * yS, SecBase(sx),
                         Armament.StowBearing(sx, side, 90.0), armourMm: sec.ArmourMm!.Value, depth: depth, top: SecBase(sx) + ths,
-                        footprintR: rsReach, deck: lay.DeckZ(sx, rsReach),
-                        extra: [("material", sec.Material), ("side_mount", true), ("battery", pre)]);
+                        footprintR: rsReach, deck: lay.DeckZ(sx, rsReach), sideMount: true);
+                    (m.Material, m.Battery) = (sec.Material, pre);
                 }
             }
             if (raised && sxs.Count > 0)
@@ -1006,8 +1002,8 @@ public sealed partial class Layout
 
         // ---------------- casemates ----------------
         PlaceCasemates(lay, mounts, turretTypes, blocks, secs, hull, depth);
-        var housings = blocks.Where(b => Py.Eq(b["role"], "casemate")).ToList();
-        riders.AddRange(housings.Select(b => (b.F("x0"), b.F("x1"), Math.Abs(b.F("y")) - b.F("w") / 2)));
+        var housings = blocks.Where(b => b.Role == "casemate").ToList();
+        riders.AddRange(housings.Select(b => (b.X0, b.X1, Math.Abs(b.Y) - b.W / 2)));
 
         // ---------------- level 1 ----------------
         (double X0, double X1)? dh = (bx0 - 3.0, bx1 + 1.0);
@@ -1018,7 +1014,7 @@ public sealed partial class Layout
         {
             double rx0 = riders.Select(r => r.X0).Min(), rx1 = riders.Select(r => r.X1).Max();
             double rw = 2 * riders.Select(r => r.Hw).Max();
-            var through = funnels.Select(f => f.S("id")).Concat(housings.Select(h => h.S("id"))).ToList();
+            var through = funnels.Select(f => f.Id).Concat(housings.Select(h => h.Id)).ToList();
 
             bool DeckFree(double x0_, double x1_)
             {
@@ -1063,7 +1059,7 @@ public sealed partial class Layout
             runs.Reverse();
             cut.AddRange(runs.Select((r, k) => (pid + (k != 0 ? $" part {k + 1}" : ""), r.A, r.B, wp, role)));
         }
-        var level1 = new List<PyDict>();
+        var level1 = new List<Block>();
         foreach (var (pid, x0c, x1c, wc, role) in cut)
         {
             double x0_ = x0c, x1_ = x1c;
@@ -1078,7 +1074,7 @@ public sealed partial class Layout
                                                  && x0_ <= (o.Fp.BBox.X0 + o.Fp.BBox.X1) / 2 && (o.Fp.BBox.X0 + o.Fp.BBox.X1) / 2 <= x1_)
                 .Select(o => o.Fp.BBox).ToList();
             var b_ = AddLevel(lay, blocks, pid, 1, x0_, x1_, wc, keep: keep,
-                ignore: funnels.Select(f => f.S("id")).Concat(housings.Select(h => h.S("id"))).Concat(raisedIds).ToList(),
+                ignore: funnels.Select(f => f.Id).Concat(housings.Select(h => h.Id)).Concat(raisedIds).ToList(),
                 role: role, office: role == "aft_control");
             if (b_ != null)
             {
@@ -1088,14 +1084,14 @@ public sealed partial class Layout
                 level1.Add(b_);
             }
         }
-        var dhBlocks = level1.Where(b => Py.Eq(b["role"], "deckhouse")).ToList();
-        var dhIds = dhBlocks.Select(b => b.S("id")).ToList();
+        var dhBlocks = level1.Where(b => b.Role == "deckhouse").ToList();
+        var dhIds = dhBlocks.Select(b => b.Id).ToList();
         dhW = pieces.Where(p => p.Role == "deckhouse").Select(p => (double?)p.W).FirstOrDefault() ?? dhW;
 
         // ---------------- torpedo mounts ----------------
         if (ntp != 0)
         {
-            turretTypes[ttId!] = tt;
+            turretTypes[ttId!] = tt!;
             double sweep = tSweep;
             long placed = 0;
             if (tEdges)
@@ -1110,7 +1106,7 @@ public sealed partial class Layout
                 {
                     if (placed >= ntp)
                         break;
-                    double y = hull.HalfWidth(x) - tt!.F("r") - 0.8;
+                    double y = hull.HalfWidth(x) - tt!.R - 0.8;
                     if (y < sweep)
                         continue;
                     var fps = new[] { Footprint.Circle(x, y, sweep), Footprint.Circle(x, -y, sweep) };
@@ -1120,10 +1116,13 @@ public sealed partial class Layout
                         foreach (var (side, fp) in new[] { (1, fps[0]), (-1, fps[1]) })
                         {
                             string mid = $"T{placed / 2 + 1}{(side > 0 ? "S" : "P")}";
-                            mounts.Add(PyDict.Of(("id", mid), ("kind", "torpedo"), ("type", ttId), ("t", tt), ("x", x), ("y", side * y),
-                                ("level", 0L), ("base", dz + 0.3), ("top", dz + 1.4), ("rest", (long)(90 * side))));
+                            mounts.Add(new Mount
+                            {
+                                Id = mid, Kind = "torpedo", Type = ttId!, T = tt!, X = x, Y = side * y, Base = dz + 0.3, Top = dz + 1.4,
+                                Rest = 90 * side,
+                            });
                             lay.Occupy(fp, dz, dz + 1.4, mid);
-                            lay.Weights.Add(new Weight(mid, "armament", Batteries.TorpedoWeight(tt!.F("barrels")), x, ZRel.Deck(dz + 1)));
+                            lay.Weights.Add(new Weight(mid, "armament", Batteries.TorpedoWeight(tt!.Barrels), x, ZRel.Deck(dz + 1)));
                             placed++;
                         }
                     }
@@ -1138,21 +1137,20 @@ public sealed partial class Layout
                         break;
                     var fp = Footprint.Circle(x, 0, sweep);
                     double dz = lay.DeckZ(x, sweep);
-                    if (lay.Free(fp, 0.3) && lay.Clear(fp, dz + 1.4) && hull.HalfWidth(x) > tt!.F("r") + 0.5)
+                    if (lay.Free(fp, 0.3) && lay.Clear(fp, dz + 1.4) && hull.HalfWidth(x) > tt!.R + 0.5)
                     {
                         string mid = $"T{placed + 1}";
-                        mounts.Add(PyDict.Of(("id", mid), ("kind", "torpedo"), ("type", ttId), ("t", tt), ("x", x), ("y", 0.0),
-                            ("level", 0L), ("base", dz + 0.3), ("top", dz + 1.4), ("rest", 90L)));
+                        mounts.Add(new Mount { Id = mid, Kind = "torpedo", Type = ttId!, T = tt, X = x, Base = dz + 0.3, Top = dz + 1.4, Rest = 90 });
                         lay.Occupy(fp, dz, dz + 1.4, mid);
-                        lay.Weights.Add(new Weight(mid, "armament", Batteries.TorpedoWeight(tt.F("barrels")), x, ZRel.Deck(dz + 1)));
+                        lay.Weights.Add(new Weight(mid, "armament", Batteries.TorpedoWeight(tt.Barrels), x, ZRel.Deck(dz + 1)));
                         placed++;
                     }
                 }
             }
             if (placed < ntp && dhBlocks.Count > 0)
             {
-                var cands = dhBlocks.SelectMany(b_ => Enumerable.Range(0, Math.Max(0, (int)((b_.F("x1") - b_.F("x0") - 2 * sweep) * 2) + 1))
-                    .Select(k => b_.F("x0") + sweep + 0.5 * k)).OrderBy(x => Math.Abs(x - machC)).ToList();
+                var cands = dhBlocks.SelectMany(b_ => Enumerable.Range(0, Math.Max(0, (int)((b_.X1 - b_.X0 - 2 * sweep) * 2) + 1))
+                    .Select(k => b_.X0 + sweep + 0.5 * k)).OrderBy(x => Math.Abs(x - machC)).ToList();
                 foreach (var x in cands)
                 {
                     if (placed >= ntp)
@@ -1161,10 +1159,12 @@ public sealed partial class Layout
                     if (lay.Free(fp, 0.3, dhIds) && lay.Clear(fp, LEVEL_H + 1.4))
                     {
                         string mid = $"T{placed + 1}";
-                        mounts.Add(PyDict.Of(("id", mid), ("kind", "torpedo"), ("type", ttId), ("t", tt), ("x", x), ("y", 0.0),
-                            ("level", 1L), ("base", LEVEL_H + 0.3), ("top", LEVEL_H + 1.4), ("rest", 90L)));
+                        mounts.Add(new Mount
+                        {
+                            Id = mid, Kind = "torpedo", Type = ttId!, T = tt!, X = x, Level = 1, Base = LEVEL_H + 0.3, Top = LEVEL_H + 1.4, Rest = 90,
+                        });
                         lay.Occupy(fp, LEVEL_H, LEVEL_H + 1.4, mid);
-                        lay.Weights.Add(new Weight(mid, "armament", Batteries.TorpedoWeight(tt!.F("barrels")), x, ZRel.Deck(LEVEL_H + 1)));
+                        lay.Weights.Add(new Weight(mid, "armament", Batteries.TorpedoWeight(tt!.Barrels), x, ZRel.Deck(LEVEL_H + 1)));
                         placed++;
                     }
                 }
@@ -1174,40 +1174,40 @@ public sealed partial class Layout
         }
 
         // ---------------- deckhouse levels ----------------
-        AddDeckhouseLevels(lay, blocks, DeckhouseLevels(design), midAft, midFwd, dhBlocks, dhW, funnels.Select(f => f.S("id")).ToList());
+        AddDeckhouseLevels(lay, blocks, DeckhouseLevels(design), midAft, midFwd, dhBlocks, dhW, funnels.Select(f => f.Id).ToList());
         funTop = RaiseFunnels(lay, funnels, blocks, funTop);
 
         // ---------------- fire control ----------------
         FireControl.Place(lay, design, blocks);
 
         // ---------------- AA ----------------
-        var aaOut = new List<PyDict>();
+        var aaOut = new List<AaMount>();
 
-        List<object?[]> AaSlots(string kind)
+        List<Slot> AaSlots(string kind)
         {
             double rr = Geometry.AA_CFG[kind].R;
-            var scored = new List<(double S, object?[] C)>();
+            var scored = new List<(double S, Slot C)>();
             foreach (var (x, y, z0, pair) in RoofSpots(blocks, 2 * rr, 2 * rr))
             {
                 long lvl = (long)Math.Round(z0 / LEVEL_H);
                 double pen = AA_ROOF_PEN[(int)Math.Min(lvl, AA_ROOF_PEN.Length - 1)];
                 if (pair)
-                    scored.Add((Math.Abs(x - machC) / L + pen, [x, y, z0]));
+                    scored.Add((Math.Abs(x - machC) / L + pen, new Slot(x, y, z0)));
                 else if (Math.Abs(y) < 1e-6)
-                    scored.Add((Math.Abs(x - machC) / L + pen + AA_SINGLE_PEN, [x, 0.0, z0]));
+                    scored.Add((Math.Abs(x - machC) / L + pen + AA_SINGLE_PEN, new Slot(x, 0.0, z0)));
             }
             double xd = L / 2 - 0.06 * L;
             while (xd > -L / 2 + 2)
             {
                 double yy = hull.HalfWidth(xd) - rr - 0.5;
                 if (yy > rr + 0.5)
-                    scored.Add((Math.Abs(xd - machC) / L + AA_DECK_PEN, [xd, yy, lay.DeckZ(xd, rr)]));
+                    scored.Add((Math.Abs(xd - machC) / L + AA_DECK_PEN, new Slot(xd, yy, lay.DeckZ(xd, rr))));
                 xd -= 0.5;
             }
             var cands = scored.OrderBy(s => s.S).ToList().Select(s => s.C).ToList();
             double sx = -L / 2 + rr + 2.5;
             if (hull.HalfWidth(sx) > rr + 0.6)
-                cands.Add([sx, 0.0, lay.DeckZ(sx, rr)]);
+                cands.Add(new Slot(sx, 0.0, lay.DeckZ(sx, rr)));
             return cands;
         }
 
@@ -1220,14 +1220,14 @@ public sealed partial class Layout
         // ---------------- masts and boats ----------------
         double mastTop = funTop + 6.0;
         double fxM = lay.Clear(Footprint.Circle(bx0 - 1.2, 0, 0.7), mastTop) ? bx0 - 1.2 : bx0 + 0.3 * lb;
-        var masts = new List<PyDict> { PyDict.Of(("x", fxM), ("yard", Math.Min(0.3 * B, 10)), ("tripod", L >= 150)) };
+        var masts = new List<Mast> { new() { X = fxM, Yard = Math.Min(0.3 * B, 10), Tripod = L >= 150 } };
         if (LEVEL_H * nTower + hood + 2.0 > mastTop)
-            masts[0]["top"] = LEVEL_H * nTower + hood + 2.0;
+            masts[0].Top = LEVEL_H * nTower + hood + 2.0;
         if (la != 0)
-            masts.Add(PyDict.Of(("x", ax0 + la * 0.5), ("yard", Math.Min(0.22 * B, 8)), ("tripod", false)));
+            masts.Add(new Mast { X = ax0 + la * 0.5, Yard = Math.Min(0.22 * B, 8), Tripod = false });
         for (int k = 0; k < masts.Count; k++)
-            MastWeight(lay, masts[k], masts[k].F("top", mastTop), k == 0 ? "Foremast" : "Mainmast", lay.DeckZ(masts[k].F("x")));
-        var boats = new List<object?>();
+            MastWeight(lay, masts[k], masts[k].Top ?? mastTop, k == 0 ? "Foremast" : "Mainmast", lay.DeckZ(masts[k].X));
+        var boats = new List<Boat>();
         double bl_ = Clamp(0.03 * L, 4, 8);
         foreach (var x in Enumerable.Range(-6, 13).Select(k => machC + k * 2.0))
         {
@@ -1241,18 +1241,18 @@ public sealed partial class Layout
             {
                 foreach (var (s, fp) in new[] { (1, fps[0]), (-1, fps[1]) })
                 {
-                    boats.Add(PyDict.Of(("x", x), ("y", s * y), ("l", bl_), ("w", 0.3 * bl_)));
+                    boats.Add(new Boat(x, s * y, bl_, 0.3 * bl_));
                     lay.Occupy(fp, z, z + 1.5, $"Boat{boats.Count}");
                 }
             }
         }
 
         // ---------------- citadel & compartments ----------------
-        var mainMounts = mounts.Where(m => Py.Eq(m["kind"], "main")).ToList();
+        var mainMounts = mounts.Where(m => m.Kind == "main").ToList();
         var block = (machPlaced.Select(p => p.X0).Min(), machPlaced.Select(p => p.X1).Max());
         (double, double) cit = mainMounts.Count > 0
-            ? (Math.Min(mainMounts.Select(m => m.F("x") - m.D("t").F("r")).Min() - 2.0, block.Item1),
-               Math.Max(mainMounts.Select(m => m.F("x") + m.D("t").F("r")).Max() + 2.0, block.Item2))
+            ? (Math.Min(mainMounts.Select(m => m.X - m.T.R).Min() - 2.0, block.Item1),
+               Math.Max(mainMounts.Select(m => m.X + m.T.R).Max() + 2.0, block.Item2))
             : block;
         SetCitadel(lay, cit.Item1, cit.Item2);
         double innerHw = 0.8 * B / 2;
@@ -1269,20 +1269,23 @@ public sealed partial class Layout
             if (machPlaced[i].Kind != "magazine")
                 toPlant[i] = kk2++;
         foreach (var f in lay.FunnelsPlanned)
-            f["seg"] = f.Get("seg") is object sg && toPlant.TryGetValue(Py.ToLong(sg), out var tp2) ? tp2 : null;
+            f.Seg = f.Seg is long sg && toPlant.TryGetValue(sg, out var tp2) ? tp2 : null;
         AddMachineryRooms(lay, plantPlaced, innerHw, depth);
         AddSteering(lay);
 
         // ---------------- renderer spec ----------------
         double frontEdge = fore.Count > 0 ? fore[0] + F[0].R : midFwd;
-        var extra2 = new List<(string, object?)> { ("boats", boats), ("bollards", new List<object?> { L / 2 - 0.05 * L, -L / 2 + 0.06 * L }) };
+        FinishLayout(lay, design, hs, mounts, turretTypes, blocks, funnels, masts, aaOut, funTop, deck);
+        var spec = lay.Spec;
+        spec.Boats = boats;
+        spec.Bollards = [L / 2 - 0.05 * L, -L / 2 + 0.06 * L];
         if (L / 2 - frontEdge > 0.08 * L + 6)
         {
-            extra2.Add(("chain_x", frontEdge + 0.35 * (L / 2 - frontEdge)));
-            extra2.Add(("hawse_back", 0.03 * L + 1.0));
+            spec.ChainX = frontEdge + 0.35 * (L / 2 - frontEdge);
+            spec.HawseBack = 0.03 * L + 1.0;
         }
         if (L >= 150 && fore.Count > 0 && (L / 2 - frontEdge) > 12)
-            extra2.Add(("breakwater_x", frontEdge + 3.0));
-        return FinishLayout(lay, design, hs, mounts, turretTypes, blocks, funnels, masts, aaOut, funTop, deck, [.. extra2]);
+            spec.BreakwaterX = frontEdge + 3.0;
+        return lay;
     }
 }

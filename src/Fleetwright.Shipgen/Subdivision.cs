@@ -216,11 +216,11 @@ public static class Subdivision
         var rooms = new List<PyDict>();
         foreach (var c in lay.Compartments)
         {
-            if (Py.In(c["kind"], "citadel", "hangar"))
+            if (c.Kind is "citadel" or "hangar")
                 continue;
-            double y = c.F("y", 0.0), hw = c.F("half_width");
-            rooms.Add(PyDict.Of(("src", c), ("id", c["id"]), ("kind", c["kind"]), ("x0", c["x0"]), ("x1", c["x1"]), ("y0", y - hw),
-                ("y1", y + hw), ("base", c.Get("base", ib)), ("top", c.Get("top", under))));
+            double y = c.Y ?? 0.0;
+            rooms.Add(PyDict.Of(("src", c), ("id", c.Id), ("kind", c.Kind), ("x0", c.X0), ("x1", c.X1), ("y0", y - c.HalfWidth),
+                ("y1", y + c.HalfWidth), ("base", c.Base ?? ib), ("top", c.Top ?? under)));
         }
 
         (double X0, double X1, string Kind)? cit = null;
@@ -454,14 +454,13 @@ public static class Subdivision
         foreach (var r in rooms)
             roomOut[r.S("id")] = PyDict.Of(("id", r["id"]), ("kind", r["kind"]), ("cells", new List<object?>()));
         foreach (var r in rooms)
-            foreach (var kv in r.D("src"))
-                if (!(kv.Key is "id" or "kind" or "x0" or "x1" or "y" or "half_width" or "base" or "top"))
-                    roomOut[r.S("id")][kv.Key] = kv.Value;
+            foreach (var (key, value) in ((Compartment)r["src"]!).Extras())
+                roomOut[r.S("id")][key] = value;
         foreach (var (cid, rid) in owner)
             roomOut[rid].L("cells").Add(cid);
         foreach (var r in rooms)
         {
-            var fmt = r.D("src").Get("per_section") as string;
+            var fmt = ((Compartment)r["src"]!).PerSection;
             if (!roomOut.TryGetValue(r.S("id"), out var out_))
                 continue;
             var secs = (new HashSet<long>(out_.L("cells").Cast<string>().Select(cid => byId[cid].I("si")))).OrderBy(s => s).ToList();
@@ -658,7 +657,7 @@ public static class Subdivision
                 d["plate_mm"] = plating.DeckMm;
         }
         double wood = plating.DeckWoodMm;
-        var planked = wood != 0 ? lay.Decks.Where(dk => Py.Eq(dk["kind"], "flight_deck")).Select(dk => dk.S("id")).ToList() : [];
+        var planked = wood != 0 ? lay.Decks.Where(dk => dk.Kind == "flight_deck").Select(dk => dk.Id).ToList() : [];
         if (wood != 0 && planked.Count == 0)
             foreach (PyDict d in sub.L("decks").Cast<PyDict>())
                 if (Py.In(d["kind"], "main", "raised"))

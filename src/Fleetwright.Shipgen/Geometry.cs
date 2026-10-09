@@ -1,6 +1,7 @@
 namespace Fleetwright.Shipgen;
 
-/// <summary>A point in ship-local metres (Python's (x, y) tuple); written as [x, y].</summary>
+/// <summary>A point in ship-local metres; written as [x, y].</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(PtConverter))]
 public readonly record struct Pt(double X, double Y) : IPyValue
 {
     public object? ToPy() => new List<object?> { X, Y };
@@ -62,8 +63,11 @@ public static class Geometry
         return pts;
     }
 
-    /// <summary>A superstructure block's outline: its own polygon ("points") when it has one, else its rounded
-    /// rectangle.</summary>
+    /// <summary>A superstructure block's outline: its own polygon when it has one, else its rounded rectangle.</summary>
+    public static List<Pt> BlockOutline(Block b) =>
+        b.Points is { Count: > 0 } pts ? [.. pts] : RrectPolygon(b.X0, b.Y - b.W / 2, b.X1, b.Y + b.W / 2, b.Rf, b.Rb);
+
+    /// <summary>BlockOutline for a block the renderer reads as a dict (until it reads the typed spec).</summary>
     public static List<Pt> BlockOutline(PyDict b)
     {
         if (b.B("points"))
@@ -259,7 +263,19 @@ public static class Geometry
 
     // ------------------------------------------------------------------ turret types
 
+    /// <summary>A turret type the renderer reads as a dict (until it reads the typed spec).</summary>
+    public static TurretType Typed(PyDict t) =>
+        System.Text.Json.JsonSerializer.Deserialize(PyJson.Dumps(t, null), ShipgenJson.Default.TurretType)!;
+
     /// <summary>The gun of turret type t, as exported: calibre_mm and calibre_length, those it has.</summary>
+    public static PyDict GunOf(TurretType t)
+    {
+        var o = PyDict.Of(("calibre_mm", t.CalibreMm));
+        if (t.CalibreLength is double cl)
+            o["calibre_length"] = cl;
+        return o;
+    }
+
     public static PyDict GunOf(PyDict t)
     {
         var o = new PyDict();
@@ -270,7 +286,8 @@ public static class Geometry
     }
 
     /// <summary>Size a turret from its guns: (type id, type dict).</summary>
-    public static (string Id, PyDict T) MakeTurretType(double calMm, double calLen, int n, string kind = "auto")
+    /// <summary>Size a turret from its guns: (type id, type).</summary>
+    public static (string Id, TurretType T) MakeTurretType(double calMm, double calLen, int n, string kind = "auto")
     {
         double cal = calMm / 1000.0;
         double spacing = n > 1 ? Math.Max(cal * 6.5, 0.9 + cal * 3.0) : 0.0;
@@ -279,54 +296,53 @@ public static class Geometry
         if (kind == "auto")
             kind = calMm >= 150 ? "bb" : calMm >= 76 ? "dp" : "open";
         string tid = $"t{n}x{Math.Round(calMm)}L{Math.Round(calLen)}" + (kind is "bb" or "dp" ? "" : "_" + kind);
-        var t = PyDict.Of(("desc", $"{n} x {calMm}mm/{calLen}"), ("shape", kind),
-            ("r", Math.Round(r, 3)), ("barrels", (long)n), ("barrel_len", Math.Round(cal * calLen, 3)),
-            ("barrel_w", Math.Round(Math.Max(cal * 2.3, 0.18), 3)), ("spacing", Math.Round(spacing, 3)),
-            ("calibre_mm", calMm), ("calibre_length", calLen));
-        if (kind == "torp")
-            t.Update(("centered", true), ("barbette", false));
-        if (kind is "open" or "casemate")
-            t["barbette"] = false;
-        return (tid, t);
+        return (tid, new TurretType
+        {
+            Desc = $"{n} x {calMm}mm/{calLen}", Shape = kind, R = Math.Round(r, 3), Barrels = n, BarrelLen = Math.Round(cal * calLen, 3),
+            BarrelW = Math.Round(Math.Max(cal * 2.3, 0.18), 3), Spacing = Math.Round(spacing, 3), CalibreMm = calMm, CalibreLength = calLen,
+            Centered = kind == "torp" ? true : null, Barbette = kind is "torp" or "open" or "casemate" ? false : null,
+        });
     }
 
-    /// <summary>make_turret_type for a battery, carrying its rounds_per_gun when it gives one.</summary>
-    public static (string Id, PyDict T) BatteryType(BatteryInput b, string kind = "auto")
+    /// <summary>MakeTurretType for a battery, carrying its rounds_per_gun when it gives one.</summary>
+    public static (string Id, TurretType T) BatteryType(BatteryInput b, string kind = "auto")
     {
         var (tid, t) = MakeTurretType(b.CalibreMm!.Value, b.CalibreLength!.Value, b.Barrels!.Value, kind);
-        if (b.RoundsPerGun is double rpg)
-            t["rounds_per_gun"] = rpg;
-        return (tid, t);
+        return (tid, t with { RoundsPerGun = b.RoundsPerGun });
     }
 
-    public static (string Id, PyDict T) MakeTorpedoType(int n, bool fixed_ = false)
+    public static (string Id, TurretType T) MakeTorpedoType(int n, bool fixed_ = false)
     {
-        string ts = n.ToString();
         if (fixed_)
-            return ($"tube{ts}x533", PyDict.Of(("desc", $"{ts} x 533mm fixed torpedo tube{(n > 1 ? "s" : "")}"),
-                ("shape", "tube"), ("r", 0.55), ("barrels", (long)n), ("barrel_len", 7.2), ("barrel_w", 0.55),
-                ("spacing", 0.75), ("centered", true), ("barbette", false), ("fixed_tube", true), ("calibre_mm", 533.0)));
-        return ($"torp{ts}x533", PyDict.Of(("desc", $"{ts} x 533mm torpedo tubes"), ("shape", "torp"), ("r", 1.9),
-            ("barrels", (long)n), ("barrel_len", 7.6), ("barrel_w", 0.55), ("spacing", 0.66), ("centered", true),
-            ("barbette", false), ("calibre_mm", 533.0)));
+            return ($"tube{n}x533", new TurretType
+            {
+                Desc = $"{n} x 533mm fixed torpedo tube{(n > 1 ? "s" : "")}", Shape = "tube", R = 0.55, Barrels = n, BarrelLen = 7.2,
+                BarrelW = 0.55, Spacing = 0.75, Centered = true, Barbette = false, FixedTube = true, CalibreMm = 533.0,
+            });
+        return ($"torp{n}x533", new TurretType
+        {
+            Desc = $"{n} x 533mm torpedo tubes", Shape = "torp", R = 1.9, Barrels = n, BarrelLen = 7.6, BarrelW = 0.55, Spacing = 0.66,
+            Centered = true, Barbette = false, CalibreMm = 533.0,
+        });
     }
 
     static readonly Dictionary<string, double> BarrelRoot = new() { ["bb"] = 0.5, ["dp"] = 0.3, ["open"] = -0.3, ["casemate"] = 0.0 };
     public const double CASEMATE_SHIELD = 0.55;
     static readonly Dictionary<string, double> BarrelShownK = new() { ["bb"] = 0.8, ["dp"] = 0.8, ["casemate"] = 0.5 };
 
-    /// <summary>Does a mount of turret type t stand on a barbette? (t.get("barbette", True))</summary>
-    public static bool HasBarbette(PyDict t) => Py.Truthy(t.Get("barbette", true));
+    /// <summary>Does a mount of turret type t stand on a barbette?</summary>
+    public static bool HasBarbette(PyDict t) => Typed(t).HasBarbette;
 
-    public static double BarrelShown(PyDict t) =>
-        t.F("barrel_len") * (BarrelShownK.TryGetValue(t.S("shape", "bb")!, out var k) ? k : 1.0);
+    public static double BarrelShown(TurretType t) => t.BarrelLen * (BarrelShownK.TryGetValue(t.Shape, out var k) ? k : 1.0);
+
+    public static double BarrelShown(PyDict t) => BarrelShown(Typed(t));
 
     // turret_shapes is a pure function of these values; each thread memoises its own (no shared mutable state)
     [ThreadStatic] static Dictionary<(string, double, long, double, double, double), (TurretShapes Shapes, double Reach)>? shapeCache;
 
-    static (TurretShapes Shapes, double Reach) ShapesAndReach(PyDict t, double? barrelLen = null)
+    static (TurretShapes Shapes, double Reach) ShapesAndReach(TurretType t, double? barrelLen = null)
     {
-        var key = (t.S("shape", "bb")!, t.F("r"), t.I("barrels"), barrelLen ?? t.F("barrel_len"), t.F("barrel_w"), t.F("spacing"));
+        var key = (t.Shape, t.R, t.Barrels, barrelLen ?? t.BarrelLen, t.BarrelW, t.Spacing);
         shapeCache ??= [];
         if (!shapeCache.TryGetValue(key, out var v))
         {
@@ -348,7 +364,9 @@ public static class Geometry
     }
 
     /// <summary>Polygons (turret-local) for the turret body, extra parts and each barrel. Shared: don't modify.</summary>
-    public static TurretShapes TurretShapesOf(PyDict t) => ShapesAndReach(t).Shapes;
+    public static TurretShapes TurretShapesOf(TurretType t) => ShapesAndReach(t).Shapes;
+
+    public static TurretShapes TurretShapesOf(PyDict t) => TurretShapesOf(Typed(t));
 
     static TurretShapes MakeShapes(string shape, double r, long n, double bl, double bw, double sp)
     {
@@ -434,13 +452,15 @@ public static class Geometry
     }
 
     /// <summary>Max distance of any part of the turret from its pivot (barrel_len: a stand-in, as {**t, "barrel_len": 0}).</summary>
-    public static double TurretReach(PyDict t, double? barrelLen = null) => ShapesAndReach(t, barrelLen).Reach;
+    public static double TurretReach(TurretType t, double? barrelLen = null) => ShapesAndReach(t, barrelLen).Reach;
+
+    public static double TurretReach(PyDict t, double? barrelLen = null) => TurretReach(Typed(t), barrelLen);
 
     static readonly Dictionary<string, double> HeightK = new()
         { ["bb"] = 0.42, ["dp"] = 0.55, ["open"] = 0.9, ["torp"] = 0.5, ["tube"] = 1.6, ["casemate"] = 0.42 };
 
     /// <summary>Roof height of a turret above its base, metres.</summary>
-    public static double TurretHeight(PyDict t) => HeightK[t.S("shape", "bb")!] * t.F("r");
+    public static double TurretHeight(TurretType t) => HeightK[t.Shape] * t.R;
 
     /// <summary>The waterplane coefficient a hull of block coefficient cb aims for.</summary>
     public static double Cwp(double cb) => 0.18 + 0.86 * cb;

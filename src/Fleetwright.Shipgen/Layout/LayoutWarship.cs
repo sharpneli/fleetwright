@@ -6,7 +6,7 @@ public sealed class Gun
     public readonly BatteryInput Spec;
     public readonly int K;
     public readonly string Tid;
-    public readonly PyDict T;
+    public readonly TurretType T;
     public readonly string Cal;
     public readonly double R, Reach, Th, RR, Gap;
     public readonly double ArmourMm;
@@ -19,7 +19,7 @@ public sealed class Gun
         K = k;
         (Tid, T) = Geometry.BatteryType(spec);
         Cal = $"{spec.CalibreMm} mm";
-        R = T.F("r");
+        R = T.R;
         Reach = Math.Max(R, Geometry.TurretReach(T, 0.0));
         Th = Geometry.TurretHeight(T);
         RR = Geometry.TurretReach(T) + 0.5;
@@ -73,10 +73,10 @@ public sealed partial class Layout
 
     /// <summary>The casemate batteries: single guns at the hull side, in two tiers (lower in the hull side, upper in
     /// housings on the main deck).</summary>
-    static void PlaceCasemates(Layout lay, List<PyDict> mounts, PyDict turretTypes, List<PyDict> blocks,
+    static void PlaceCasemates(Layout lay, List<Mount> mounts, OrderedDictionary<string, TurretType> turretTypes, List<Block> blocks,
         List<(BatteryInput Sec, string Prefix)> secs, Hull hull, double depth)
     {
-        var bats = new List<((BatteryInput Sec, string Prefix) Sec, long N, string TId, PyDict T, bool Upper)>();
+        var bats = new List<((BatteryInput Sec, string Prefix) Sec, long N, string TId, TurretType T, bool Upper)>();
         foreach (var sec in secs)
         {
             long n = sec.Sec.MountsPerSide;
@@ -91,7 +91,7 @@ public sealed partial class Layout
             return;
         bats = bats.OrderBy(bt => bt.Upper ? 1 : 0).ToList();
         double B = hull.B;
-        var barbettes = mounts.Where(m => Py.Eq(m["kind"], "main") && Geometry.HasBarbette(m.D("t"))).ToList();
+        var barbettes = mounts.Where(m => m.Kind == "main" && m.T.HasBarbette).ToList();
 
         bool LowerOk(double x, double rc)
         {
@@ -99,7 +99,7 @@ public sealed partial class Layout
             if (hw < CASEMATE_BEAM * B / 2 || hw - 2 * rc < 0.5)
                 return false;
             var boxes = new[] { Footprint.Rect(x - rc, hw - 2 * rc, x + rc, hw), Footprint.Rect(x - rc, -hw, x + rc, -hw + 2 * rc) };
-            return !boxes.Any(bx => barbettes.Any(m => Overlap(bx, Footprint.Circle(m.F("x"), m.F("y"), 0.95 * m.D("t").F("r")), 0.3)));
+            return !boxes.Any(bx => barbettes.Any(m => Overlap(bx, Footprint.Circle(m.X, m.Y, 0.95 * m.T.R), 0.3)));
         }
 
         (double Yo, double D) Housing(double x0, double x1, double rc)
@@ -136,7 +136,7 @@ public sealed partial class Layout
         double c = (elig.Count > 0 ? (elig.Min() + elig.Max()) / 2 : 0.0) + lay.Geo.Shift;
         xs = xs.OrderBy(x => Math.Abs(x - c)).ToList();
         var okCache = new Dictionary<(double, double, bool), bool>();
-        double rUp = bats.Where(b => b.Upper).Select(b => b.T.F("r")).DefaultIfEmpty(0.0).Max();
+        double rUp = bats.Where(b => b.Upper).Select(b => b.T.R).DefaultIfEmpty(0.0).Max();
 
         bool Cached(double x, double rc, bool upper)
         {
@@ -161,7 +161,7 @@ public sealed partial class Layout
             var out_ = new List<List<double>>();
             foreach (var (sec, n, tId, t, upper) in bats)
             {
-                double rc = t.F("r");
+                double rc = t.R;
                 double h = Half(rc, upper);
                 var got = new List<double>();
                 foreach (var x in xs)
@@ -212,7 +212,7 @@ public sealed partial class Layout
                     break;
                 bool ok_ = true;
                 foreach (var (x, bt) in every)
-                    if (!Cached(x + d, bt.T.F("r"), bt.Upper))
+                    if (!Cached(x + d, bt.T.R, bt.Upper))
                     {
                         ok_ = false;
                         break;
@@ -233,7 +233,7 @@ public sealed partial class Layout
                                    $"per side fit {(upper ? "on deck" : "in the hull sides")}. " +
                                    "Use fewer or smaller guns.");
             var arm = sec.Sec.ArmourMm!.Value;
-            double rc = t.F("r");
+            double rc = t.R;
             for (int i = 0; i < got.Count; i++)
             {
                 double x = got[i];
@@ -250,10 +250,10 @@ public sealed partial class Layout
                 foreach (int side in new[] { 1, -1 })
                 {
                     string mid = $"{sec.Prefix}{i + 1}{(side > 0 ? "S" : "P")}";
-                    Armament.AddMount(lay, mounts, "secondary", tId, t, mid, x, side * yo, bse,
+                    var m = Armament.AddMount(lay, mounts, "secondary", tId, t, mid, x, side * yo, bse,
                         Armament.StowBearing(x, side, Arcs.ARC_CASEMATE), armourMm: arm, depth: depth, top: top,
-                        footprintR: Geometry.CASEMATE_SHIELD * rc,
-                        extra: [("battery", sec.Prefix), ("casemate", true), ("material", sec.Sec.Material)]);
+                        footprintR: Geometry.CASEMATE_SHIELD * rc);
+                    (m.Battery, m.Casemate, m.Material) = (sec.Prefix, true, sec.Sec.Material);
                 }
             }
         }
