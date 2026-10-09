@@ -77,6 +77,12 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check     
 update the goldens on purpose with `golden-update`, one per commit). `svg-check` and `sprite-check` do the same for
 `Fleetwright.Shipgen.Render`, until the drawing is changed on purpose (then the SVG goldens retire).
 
+## Profiling
+
+`dotnet-trace` is installed; `docs/profiling.md` has the recipe (trace a Release exe, summarize with
+`python -I tools/speedscope_top.py X.speedscope.json [--focus Method]`), how to read the numbers, the checks after an
+optimization, and a log of past findings.
+
 ## Project Structure
 
 ```
