@@ -4,3 +4,7 @@ obj/
 *.user
 imgui.ini
 screenshot.png
+
+# shipgen CLI output
+out_designs/
+out_sprites/
