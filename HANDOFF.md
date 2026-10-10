@@ -13,6 +13,20 @@ Notes for the next session. Delete or replace this file once its items are picke
 - **Ways of working with the user:** commit and push to main after each verified step. Verify looks with offscreen
   readback (`-screenshot`, CLI PNGs), never screen captures. Both are in Claude's memory too.
 
+## Views (2026-10-10)
+
+- **The view layering is agreed with the user** (CLAUDE.md "Views"): data step (CPU) -> renderer into any
+  `RenderTarget` -> `IScene` with its own UI. Each view runs on its own; isolation is by interfaces, all in the game
+  project. The engine only knows `IScene`; `SceneSwitcher` puts the ship and hitbox viewers behind one.
+- **The hitbox viewer is done** (`src/Fleetwright/HitView/`): hitview.py live, plus picking, a details pane and clip
+  boxes. The ship viewer's "hitbox inset" draws it into a 320x180 offscreen target shown with `ImGui.Image`: the
+  embedding pattern for game UI.
+- **Open (user):** the views consume one specific ship hitbox model. Today `HitboxMesh` reads the exported
+  `Hitboxes` (Shipgen's JSON-shaped model) and is its only reader on the view side; the user wants to settle that
+  model's data structures later, and the change then stays in `HitboxMesh.Build`.
+- `-screenshot` shows the main target only, not ImGui: to check an embedded view, blit its target into the main one
+  temporarily (as was done for the inset).
+
 ## Next up, in the order I'd suggest (none of it agreed with the user yet)
 
 1. **Route `-screenshot` through the engine's blit shader.** At the moment `CaptureScreenshot` uses

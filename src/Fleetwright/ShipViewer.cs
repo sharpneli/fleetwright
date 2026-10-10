@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using Fleetwright.Gpu;
+using Fleetwright.HitView;
 using Fleetwright.Shipgen;
 using Fleetwright.Shipgen.Render;
 using Fleetwright.Shipgen.Render.Bake;
@@ -54,6 +55,15 @@ public sealed unsafe class ShipViewer : IScene
     double[]? bearings;   // each mount's bearing now, slewing towards its target
     const double TraverseDegPerS = 45;   // faster than the sweep, so a turret catches up after a blind arc
     bool dragging;
+
+    // the hitbox inset: the hitbox renderer drawing into a small target of its own, shown in the panel, turning
+    HitboxRenderer? insetRenderer;
+    RenderTarget? insetTarget;
+    HitboxCamera insetCam = new() { Elevation = 25 };
+    readonly HitboxViewState insetState = HitboxViewState.All;
+    int insetVersion = -1;
+    bool inset;
+    const uint InsetW = 320, InsetH = 180;
 
     public ShipViewer(SDL_GPUDevice* device, DesignSession session, string? navy = null, string? era = null)
     {
@@ -348,11 +358,36 @@ public sealed unsafe class ShipViewer : IScene
         clock += dt;
         if (sprites != null)
             Traverse(dt);
+        if (inset)
+            DrawInset(cmd, dt);
         EnsurePipelines(target);
         var pass = target.BeginPass(cmd, new SDL_FColor { r = Sea.X, g = Sea.Y, b = Sea.Z, a = 1 }, depth: false);
         if (sprites != null && hullTex != null)
             DrawShip(cmd, pass, target.Width, target.Height);
         SDL_EndGPURenderPass(pass);
+    }
+
+    /// <summary>The hitbox inset: the session's ship as hitboxes, drawn into its own target before the main pass.</summary>
+    void DrawInset(SDL_GPUCommandBuffer* cmd, float dt)
+    {
+        insetRenderer ??= new HitboxRenderer(device);
+        insetTarget ??= new RenderTarget(device, InsetW, InsetH, SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+            SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_4);
+        if (insetVersion != session.Version)
+        {
+            insetVersion = session.Version;
+            if (session.Ship is { } ship)
+            {
+                var mesh = HitboxMesh.Build(ship.Hitboxes);
+                insetRenderer.Upload(mesh);
+                insetCam.Bearing = 90;   // fitted broadside, its widest, so it stays in view as it turns
+                insetCam.Fit(mesh.Vertices, (float)InsetW / InsetH);
+            }
+            else
+                insetRenderer.Clear();
+        }
+        insetCam.Bearing = (insetCam.Bearing + 20 * dt) % 360;
+        insetRenderer.Render(cmd, insetTarget, insetCam, insetState);
     }
 
     void DrawShip(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, uint w, uint h)
@@ -480,6 +515,9 @@ public sealed unsafe class ShipViewer : IScene
         ImGui.SameLine();
         if (ImGui.Button("rebuild"))
             session.Rebuild();
+        ImGui.Checkbox("hitbox inset", ref inset);
+        if (inset && insetTarget != null)
+            ImGui.Image((nint)insetTarget.Resolve, new Vector2(InsetW, InsetH));
         ImGui.Separator();
         ImGui.TextWrapped(status);
         ImGui.End();
@@ -516,6 +554,8 @@ public sealed unsafe class ShipViewer : IScene
     public void Dispose()
     {
         ReleaseTextures();
+        insetRenderer?.Dispose();
+        insetTarget?.Dispose();
         ReleasePipelines();
         SDL_ReleaseGPUShader(device, vs);
         SDL_ReleaseGPUShader(device, fsSprite);
