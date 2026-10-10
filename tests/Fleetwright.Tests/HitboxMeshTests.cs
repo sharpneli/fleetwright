@@ -149,6 +149,17 @@ public class HitboxMeshTests
                 Assert.True(Math.Abs(Math.Abs(v.Position.Y) - (w + 0.01)) < 2e-3 || w == 0,
                     $"{name}: {p.Id} vertex {v.Position} is {Math.Abs(v.Position.Y) - w:F3} m off the form");
             }
+            // and between them: a twisted quad is split so its triangles bulge out, never dipping under the form into
+            // the cells that hug it (split the other way, a tumblehome's side dipped 20 cm and the cells showed through)
+            for (int i = 0; i + 2 < idx.Length; i += 3)
+            {
+                Vector3 a = mesh.Vertices[idx[i]].Position, b = mesh.Vertices[idx[i + 1]].Position, c = mesh.Vertices[idx[i + 2]].Position;
+                var m = (a + b + c) / 3;
+                if (Math.Abs(Vector3.Normalize(Vector3.Cross(b - a, c - a)).Y) < 0.5 || m.X <= field.X0 + 0.01 || m.X >= field.X1 - 0.01)
+                    continue;
+                double w = field.HalfWidth(m.X, m.Z);
+                Assert.True(w < 0.5 || Math.Abs(m.Y) - w > 0.01 - 1e-3, $"{name}: {p.Id} dips {Math.Abs(m.Y) - w:F3} m off the form at {m}");
+            }
         }
         Assert.True(sides > 1000);
     }

@@ -227,11 +227,18 @@ public sealed class HitboxMesh
                 int firstIndex = tris.Count, firstEdge = lines.Count;
                 HitVertex V(double x, double y, double z, Vector3 n) =>
                     new() { Position = new((float)x, (float)y, (float)z), Normal = n, Kind = (uint)kind, Prism = pi };
+                // a side quad is twisted (the form is bilinear between rows and stations): split it along the diagonal
+                // that bulges out, so the skin lies on or outside the form and the cells' walls (split to bend in, see
+                // AddLoft) stay under it, however much the side twists (a tumblehome's does a lot)
                 void Quad(HitVertex a, HitVertex b, HitVertex c, HitVertex d)
                 {
                     uint v0 = (uint)verts.Count;
                     verts.AddRange([a, b, c, d]);
-                    tris.AddRange([v0, v0 + 1, v0 + 2, v0, v0 + 2, v0 + 3]);
+                    var n = a.Normal + b.Normal + c.Normal + d.Normal;
+                    if (Vector3.Dot(a.Position + c.Position - b.Position - d.Position, n) >= 0)
+                        tris.AddRange([v0, v0 + 1, v0 + 2, v0, v0 + 2, v0 + 3]);
+                    else
+                        tris.AddRange([v0, v0 + 1, v0 + 3, v0 + 1, v0 + 2, v0 + 3]);
                 }
                 void Wall(double x, Func<double, double> w, IReadOnlyList<double> hs, float nx)
                 {
@@ -507,7 +514,11 @@ public sealed class HitboxMesh
                     nrm = Vector3.Normalize(nrm);
                     uint v0 = (uint)verts.Count;
                     verts.AddRange([V(drawn[k][i], a.Z, nrm), V(drawn[k][j], b.Z, nrm), V(drawn[k + 1][j], c.Z, nrm), V(drawn[k + 1][i], d.Z, nrm)]);
-                    tris.AddRange([v0, v0 + 1, v0 + 2, v0, v0 + 2, v0 + 3]);
+                    // split along the diagonal that bends in, so a wall on the hull's side stays under the skin
+                    if (Vector3.Dot(a + c - b - d, nrm) <= 0)
+                        tris.AddRange([v0, v0 + 1, v0 + 2, v0, v0 + 2, v0 + 3]);
+                    else
+                        tris.AddRange([v0, v0 + 1, v0 + 3, v0 + 1, v0 + 2, v0 + 3]);
                 }
             // the caps, and their rings as edges
             foreach (var (k, up) in new[] { (zs.Count - 1, true), (0, false) })
