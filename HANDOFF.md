@@ -2,6 +2,17 @@
 
 Notes for the next session. Delete or replace this file once its items are picked up.
 
+## Hull form variations: tumblehome (2026-10-10, done)
+
+- `docs/shipgen/tumblehome-plan.md` has the plan, the user's decisions and what was done (steps 1-6). Step 7
+  (cross curves, GZ, flooding) waits for the game's physics sim: the user wants to know what the sim needs first.
+- The pieces: `Topside` (hull.section, shared by layout and `HullForm`), `Layout.Side(h)` / `DeckHalfWidth` /
+  `MountHalfWidth`, mount sponsons (`LayoutParts.AddMountSponsons`), `HullField` (the exported form for half-breadths
+  and exact raycasts), the drawing reading the deck from the form, and the hull skin in `HitboxMesh`.
+- Next variations go in as further terms on the same frame: a `Flare` topside, bow/stern dropdowns, `DeckTop` sheer,
+  bulges. Keep the beam the maximum beam (drydocks and canals); nothing fixed outside it.
+- Open: research request "Tumblehome proportions" (calibrate `Tumblehome.DeckIn` 0.28 and the 0.2 knuckle).
+
 ## Where things stand
 
 - **The shipgen port is done.** All eight PORTING.md steps are ticked off, and all 20 tests pass (`dotnet test`).
