@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ship designer — bureau (dense)</title>
+<link rel="stylesheet" href="assets/fonts/dense-fonts.css">
+<script src="dc-lite.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1215}
+button{font-family:inherit;cursor:pointer}
+.pn{position:absolute;background:#1C2329;border:1px solid #090C0E;box-shadow:inset 1px 1px 0 #2C3640, inset -1px -1px 0 #12171B;box-sizing:border-box;overflow:hidden}
+.tb{height:19px;display:flex;align-items:center;gap:6px;padding:0 6px;background:linear-gradient(#36434F,#27313A);border-bottom:1px solid #090C0E;font-weight:700;font-size:11px;letter-spacing:0.07em;text-transform:uppercase;color:#D9B868}
+.tb i{font-style:normal;color:#7F8B95;font-weight:500;letter-spacing:0.02em;text-transform:none}
+.tb b{margin-left:auto;font-weight:500;color:#7F8B95;letter-spacing:0;text-transform:none}
+.mono{font-family:'IBM Plex Mono',monospace}
+.row{display:grid;align-items:center;height:18px;border-bottom:1px solid #20292F;padding:0 6px}
+.row:nth-child(even){background:rgba(255,255,255,0.018)}
+.hd{display:grid;align-items:center;height:18px;padding:0 6px;background:#161C21;border-bottom:1px solid #090C0E;font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:#7F8B95}
+.sp{display:inline-flex;align-items:center;height:16px;border:1px solid #0A0D10;background:#11161A;box-shadow:inset 0 1px 0 #070A0C}
+.sp button{width:14px;height:14px;border:none;padding:0;background:linear-gradient(#3A4651,#2A333C);color:#C9D3DB;font-size:9px;line-height:14px}
+.sp button:hover{background:linear-gradient(#4E5D6B,#38434E);color:#FFF}
+.sp span{min-width:58px;text-align:right;padding:0 4px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EAF0F4}
+.kbd{display:inline-block;min-width:10px;padding:0 3px;border:1px solid #4A5764;border-bottom-width:2px;border-radius:2px;font-size:9.5px;line-height:11px;color:#AEB9C3;text-align:center;font-family:'IBM Plex Mono',monospace}
+.tab{height:20px;padding:0 9px;border:1px solid #090C0E;border-bottom:none;background:linear-gradient(#2A333C,#20282F);color:#9AA6B0;font-size:11.5px;font-weight:600;letter-spacing:0.03em;display:flex;align-items:center;gap:5px}
+.pos{color:#86C77E}.neg{color:#E3A452}.dim{color:#7F8B95}.gold{color:#D9B868}
+</style>
+</helmet>
+<div style="position:relative;width:1600px;height:960px;overflow:hidden;background:#0E1215;color:#C9D3DB;font-family:'Archivo Narrow',sans-serif;font-size:12px">
+
+  <!-- MENU BAR -->
+  <div style="position:absolute;left:0;top:0;width:1600px;height:20px;display:flex;align-items:center;gap:14px;padding:0 8px;box-sizing:border-box;background:#161B20;border-bottom:1px solid #090C0E;font-size:12px;color:#AEB9C3">
+    <span class="gold" style="font-weight:700;letter-spacing:0.06em">DESIGN BUREAU</span>
+    <span><u>F</u>ile</span><span><u>D</u>esign</span><span><u>S</u>ketches</span><span><u>C</u>ompare</span><span><u>T</u>emplates</span><span>Tec<u>h</u></span><span><u>V</u>iew</span><span>He<u>l</u>p</span>
+    <span style="flex:1"></span>
+    <span class="dim">Portsmouth DY · Slip No. 3 (210 × 31 m) · Mar 1905 · Treaty: none</span>
+  </div>
+
+  <!-- RESOURCE BAR -->
+  <div style="position:absolute;left:0;top:20px;width:1600px;height:30px;display:flex;align-items:stretch;box-sizing:border-box;background:linear-gradient(#26303A,#1B2228);border-bottom:1px solid #090C0E">
+    <div style="display:flex;align-items:center;gap:6px;padding:0 10px;border-right:1px solid #090C0E;min-width:210px">
+      <span style="font-weight:700;font-size:14px;color:#EAF0F4">Battleship 1905</span>
+      <span class="kbd" style="color:#D9B868;border-color:#8C7440">A</span><span class="kbd">B</span><span class="kbd">C</span>
+    </div>
+    <sc-for list="{{res}}" as="r" hint-placeholder-count="9">
+      <div onMouseEnter="{{r.enter}}" onMouseLeave="{{tipOff}}" style="{{r.box}}">
+        <span style="font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:#7F8B95;line-height:1">{{r.k}}</span>
+        <span style="display:flex;gap:5px;align-items:baseline;line-height:1.15"><span class="mono" style="{{r.vs}}">{{r.v}}</span><span class="mono" style="{{r.ds}}">{{r.d}}</span></span>
+      </div>
+    </sc-for>
+    <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:6px;padding:0 10px;border-left:1px solid #090C0E"><span class="dim" style="font-size:10px;letter-spacing:0.06em">CLASSIFIED</span><span style="font-weight:700;color:#D9B868">LINE OF BATTLE</span><span class="mono gold">{{lineScore}}</span></div>
+  </div>
+
+  <!-- ===== LEFT: OUTLINER ===== -->
+  <div class="pn" style="left:0;top:50px;width:300px;height:520px">
+    <div class="tb">Design outliner <b>t · % std</b></div>
+    <div style="display:flex;flex-direction:column">
+      <sc-for list="{{tree}}" as="n" hint-placeholder-count="30">
+        <button onClick="{{n.go}}" style="{{n.style}}">
+          <span style="{{n.indent}}">{{n.tw}}</span>
+          <span style="{{n.ic}}"></span>
+          <span style="{{n.ls}}">{{n.label}}</span>
+          <span class="mono" style="margin-left:auto;color:#AEB9C3;font-size:11px;white-space:nowrap">{{n.val}}</span>
+          <span class="mono" style="width:48px;text-align:right;color:#7F8B95;font-size:11px">{{n.t}}</span>
+          <span style="width:30px;height:5px;background:#11161A;position:relative;margin-left:4px"><span style="{{n.bar}}"></span></span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div class="pn" style="left:0;top:570px;width:300px;height:372px">
+    <div class="tb">Technology in this design <b>yr · status</b></div>
+    <sc-for list="{{techs}}" as="t" hint-placeholder-count="12">
+      <div class="row" style="grid-template-columns:86px minmax(0, 1fr) 34px 54px">
+        <span class="dim">{{t.a}}</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#C9D3DB">{{t.b}}</span><span class="mono dim" style="text-align:right;font-size:11px">{{t.y}}</span><span style="{{t.ss}}">{{t.s}}</span>
+      </div>
+    </sc-for>
+    <div style="padding:5px 6px;font-size:11.5px;color:#7F8B95;line-height:1.35">Templates come from research; the design stores a reference + snapshot. <span class="gold">[U]</span> modernise all · shows deltas first.</div>
+  </div>
+
+  <!-- ===== CENTRE: PLAN & PROFILE ===== -->
+  <div class="pn" style="left:300px;top:50px;width:970px;height:322px;background:#14243A;background-image:linear-gradient(rgba(150,190,230,0.07) 1px, transparent 1px),linear-gradient(90deg, rgba(150,190,230,0.07) 1px, transparent 1px);background-size:25px 25px">
+    <div class="tb" style="position:relative;z-index:2">Plan &amp; profile <i>1:400 · ship rests at waterline</i>
+      <span style="margin-left:auto;display:flex;gap:3px">
+        <sc-for list="{{overlays}}" as="o" hint-placeholder-count="7">
+          <button onClick="{{o.toggle}}" style="{{o.style}}"><span class="kbd" style="font-size:9px;line-height:10px">{{o.key}}</span>{{o.l}}</button>
+        </sc-for>
+      </span>
+    </div>
+    <div style="position:absolute;left:35px;top:28px;width:900px;border-top:1px solid #8FB6D8"></div>
+    <div style="position:absolute;left:35px;top:23px;height:10px;border-left:1px solid #8FB6D8"></div>
+    <div style="position:absolute;left:935px;top:23px;height:10px;border-left:1px solid #8FB6D8"></div>
+    <div class="mono" style="position:absolute;left:440px;top:21px;padding:0 6px;background:#14243A;font-size:11px;color:#CFE3F3">{{lenText}} m oa · 27.2 m · T 9.6 m</div>
+    <img src="assets/dreadnought.png" alt="Plan view of the design, bow to the right" style="position:absolute;left:35px;top:40px;width:900px;height:auto">
+    <sc-if value="{{ov.arcs}}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;left:25px;top:36px;width:200px;height:176px;border-radius:50%;border:1px solid rgba(91,155,224,0.7);background:rgba(91,155,224,0.10)"></div>
+      <div style="position:absolute;left:775px;top:36px;width:170px;height:176px;border-radius:50%;border:1px solid rgba(91,155,224,0.7);background:rgba(91,155,224,0.10)"></div>
+      <div style="position:absolute;left:590px;top:30px;width:150px;height:190px;border-radius:50%;border:1px dashed rgba(91,155,224,0.7)"></div>
+    </sc-if>
+    <sc-if value="{{ov.smoke}}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:420px;top:60px;width:280px;height:140px;border-radius:50%;background:radial-gradient(rgba(60,60,60,0.55),transparent 70%)"></div>
+    </sc-if>
+    <sc-for list="{{tags}}" as="t" hint-placeholder-count="6">
+      <div style="{{t.s}}">{{t.l}}</div>
+    </sc-for>
+    <!-- profile -->
+    <div style="position:absolute;left:35px;top:222px;width:900px;height:92px">
+      <div style="position:absolute;left:0;top:30%;width:100%;height:62%;background:rgba(207,227,243,0.05);border:1.5px solid #9CC2E2;box-sizing:border-box;border-radius:0 0 4% 9% / 0 0 30% 40%"></div>
+      <div style="position:absolute;left:50%;width:50%;top:21%;height:10%;border:1.5px solid #9CC2E2;border-bottom:none;box-sizing:border-box"></div>
+      <div style="position:absolute;left:0;right:0;top:58%;border-top:1px dashed #6FA9D3"></div>
+      <sc-for list="{{plates}}" as="p" hint-placeholder-count="9">
+        <div style="{{p.s}}"><span class="mono" style="{{p.ls}}">{{p.l}}</span></div>
+      </sc-for>
+      <div style="position:absolute;left:49%;width:2.2%;top:0;height:30%;border:1.5px solid #9CC2E2;box-sizing:border-box"></div>
+      <div style="position:absolute;left:54%;width:2.2%;top:0;height:30%;border:1.5px solid #9CC2E2;box-sizing:border-box"></div>
+      <div style="position:absolute;left:66.5%;width:6%;top:-8%;height:38%;border:1.5px solid #9CC2E2;box-sizing:border-box"></div>
+    </div>
+  </div>
+
+  <!-- ===== CENTRE: DETAIL PANE WITH TABS ===== -->
+  <div style="position:absolute;left:300px;top:376px;width:970px;height:22px;display:flex;align-items:flex-end;gap:2px;padding-left:4px;box-sizing:border-box">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="8">
+      <button onClick="{{t.go}}" style="{{t.s}}"><span class="kbd" style="font-size:9px;line-height:10px">{{t.key}}</span>{{t.l}}<span style="{{t.dot}}"></span></button>
+    </sc-for>
+  </div>
+  <div class="pn" style="left:300px;top:398px;width:970px;height:544px;border-top-color:#3A4651">
+
+    <!-- OVERVIEW TAB: trim table -->
+    <sc-if value="{{is.over}}" hint-placeholder-val="{{ true }}">
+      <div class="hd" style="grid-template-columns:150px 120px 52px 82px 82px 92px 92px minmax(0, 1fr)">
+        <span>Parameter</span><span style="text-align:center">Value</span><span style="text-align:right">Step</span><span style="text-align:right">Δ t / step</span><span style="text-align:right">Δ since open</span><span style="text-align:right">vs Lord Nelson</span><span style="text-align:right">vs République</span><span style="padding-left:10px">Drives</span>
+      </div>
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="16">
+        <div class="row" style="grid-template-columns:150px 120px 52px 82px 82px 92px 92px minmax(0, 1fr)">
+          <span style="{{r.ns}}">{{r.n}}</span>
+          <span style="display:flex;justify-content:center"><span class="sp"><button aria-label="{{r.ma}}" onClick="{{r.minus}}">◂</button><span>{{r.v}}</span><button aria-label="{{r.pa}}" onClick="{{r.plus}}">▸</button></span></span>
+          <span class="mono dim" style="text-align:right;font-size:11px">{{r.st}}</span>
+          <span class="mono" style="{{r.dts}}">{{r.dt}}</span>
+          <span class="mono" style="{{r.dos}}">{{r.dop}}</span>
+          <span class="mono" style="{{r.ln}}">{{r.lnv}}</span>
+          <span class="mono" style="{{r.rp}}">{{r.rpv}}</span>
+          <span class="dim" style="padding-left:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{r.drives}}</span>
+        </div>
+      </sc-for>
+      <div style="position:absolute;left:0;right:0;bottom:58px;height:150px;border-top:1px solid #090C0E">
+        <div class="hd" style="grid-template-columns:170px 70px 90px 110px 110px minmax(0, 1fr)"><span>Cheapest ways to save 1,000 t</span><span style="text-align:right">Steps</span><span style="text-align:right">To value</span><span style="text-align:right">Line of battle</span><span style="text-align:right">Other cost</span><span style="padding-left:10px">Note</span></div>
+        <sc-for list="{{cheap}}" as="c" hint-placeholder-count="6">
+          <div class="row" style="grid-template-columns:170px 70px 90px 110px 110px minmax(0, 1fr)"><span style="{{c.ns}}">{{c.n}}</span><span class="mono" style="text-align:right">{{c.k}}</span><span class="mono" style="text-align:right;color:#EAF0F4">{{c.v}}</span><span class="mono" style="{{c.ls}}">{{c.l}}</span><span class="mono dim" style="text-align:right">{{c.o}}</span><span class="dim" style="padding-left:10px">{{c.note}}</span></div>
+        </sc-for>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:58px;border-top:1px solid #090C0E;background:#161C21;display:flex;align-items:center;gap:14px;padding:0 10px;font-size:12px">
+        <div style="display:flex;flex-direction:column;gap:3px;width:430px">
+          <div style="display:flex;justify-content:space-between"><span class="dim">STANDARD vs REQUEST 24,000 t</span><span class="mono" style="{{marginS}}">{{marginT}}</span></div>
+          <div style="position:relative;height:10px;background:#0E1215;border:1px solid #090C0E">
+            <sc-for list="{{ticks}}" as="tk" hint-placeholder-count="11"><span style="{{tk}}"></span></sc-for>
+            <span style="{{meter}}"></span><span style="position:absolute;left:80%;top:-3px;bottom:-3px;width:2px;background:#EAF0F4"></span>
+          </div>
+        </div>
+        <button onClick="{{fitSpeed}}" style="height:24px;padding:0 10px;white-space:nowrap;border:1px solid #090C0E;background:linear-gradient(#5A4A24,#3E3218);color:#F0D58A;font-weight:600;font-size:12px"><span class="kbd" style="border-color:#8C7440;color:#F0D58A">G</span> Goal-seek speed</button>
+        <button onClick="{{reset}}" style="height:24px;padding:0 10px;white-space:nowrap;border:1px solid #090C0E;background:linear-gradient(#3A4651,#2A333C);color:#C9D3DB;font-size:12px"><span class="kbd">R</span> Revert</button>
+        <span class="dim" style="margin-left:auto;white-space:nowrap">Shift+click ×4 · Ctrl+click type · right-click lock / pin</span>
+      </div>
+    </sc-if>
+
+    <!-- PROTECTION TAB -->
+    <sc-if value="{{is.prot}}" hint-placeholder-val="{{ false }}">
+      <div class="hd" style="grid-template-columns:140px 70px 64px 110px 70px 64px 70px minmax(0, 1fr)">
+        <span>Plate</span><span style="text-align:right">Face</span><span style="text-align:right">Lower</span><span style="text-align:right">Extent</span><span style="text-align:right">Area m²</span><span style="text-align:right">t</span><span style="text-align:right">t / +1 in</span><span style="padding-left:10px">Material · notes</span>
+      </div>
+      <sc-for list="{{armour}}" as="a" hint-placeholder-count="12">
+        <div class="row" style="grid-template-columns:140px 70px 64px 110px 70px 64px 70px minmax(0, 1fr)">
+          <span>{{a.n}}</span><span class="mono" style="text-align:right;color:#EAF0F4">{{a.f}}</span><span class="mono dim" style="text-align:right">{{a.l}}</span><span class="mono dim" style="text-align:right;white-space:nowrap">{{a.e}}</span><span class="mono dim" style="text-align:right">{{a.ar}}</span><span class="mono" style="text-align:right">{{a.t}}</span><span class="mono neg" style="text-align:right">{{a.k}}</span><span class="dim" style="padding-left:10px">{{a.m}}</span>
+        </div>
+      </sc-for>
+      <div style="padding:8px 10px;display:flex;gap:6px;align-items:center;font-size:12px"><span class="dim">Scheme</span><span class="kbd">1</span>Protected <span class="kbd">2</span>Pre-dreadnought <span class="kbd" style="border-color:#8C7440;color:#D9B868">3</span><span class="gold">Incremental</span> <span class="kbd">4</span>All-or-nothing <span class="kbd">5</span>AoN + steering box <span class="dim" style="margin-left:auto">illustrative penetration figures</span></div>
+      <div class="hd" style="grid-template-columns:140px repeat(9, minmax(0, 1fr));border-top:1px solid #090C0E"><span>vs 12 in/45 Mk X</span><sc-for list="{{rngs}}" as="g" hint-placeholder-count="9"><span style="text-align:center">{{g}}</span></sc-for></div>
+      <sc-for list="{{penRows}}" as="r" hint-placeholder-count="3">
+        <div class="row" style="grid-template-columns:140px repeat(9, minmax(0, 1fr))"><span>{{r.n}}</span><sc-for list="{{r.c}}" as="c" hint-placeholder-count="9"><span style="{{c.s}}">{{c.v}}</span></sc-for></div>
+      </sc-for>
+    </sc-if>
+
+    <!-- ROLE TAB -->
+    <sc-if value="{{is.role}}" hint-placeholder-val="{{ false }}">
+      <div class="hd" style="grid-template-columns:150px 50px 70px 70px 70px 70px 70px 70px 80px minmax(0, 1fr)">
+        <span>Known class (intel)</span><span style="text-align:right">No.</span><span style="text-align:right">Trial kn</span><span style="text-align:right">Eff kn</span><span style="text-align:center">Catch</span><span style="text-align:center">Escape</span><span style="text-align:center">Beat</span><span style="text-align:center">Survive</span><span>Verdict</span><span>Conf.</span>
+      </div>
+      <sc-for list="{{enemy}}" as="e" hint-placeholder-count="8">
+        <div class="row" style="grid-template-columns:150px 50px 70px 70px 70px 70px 70px 70px 80px minmax(0, 1fr)">
+          <span style="color:#EAF0F4">{{e.n}} <span class="dim">{{e.k}}</span></span><span class="mono dim" style="text-align:right">{{e.no}}</span><span class="mono dim" style="text-align:right">{{e.tr}}</span><span class="mono" style="text-align:right">{{e.ef}}</span>
+          <span style="{{e.c}}">{{e.cv}}</span><span style="{{e.es}}">{{e.ev}}</span><span style="{{e.b}}">{{e.bv}}</span><span style="{{e.s}}">{{e.sv}}</span>
+          <span style="{{e.vs}}">{{e.v}}</span><span class="dim">{{e.conf}}</span>
+        </div>
+      </sc-for>
+      <div class="hd" style="grid-template-columns:150px 70px 140px 90px minmax(0, 1fr);margin-top:6px;border-top:1px solid #090C0E"><span>Role (assessed)</span><span style="text-align:right">Score</span><span></span><span>Orders</span><span>Driven by</span></div>
+      <sc-for list="{{roleRows}}" as="r" hint-placeholder-count="7">
+        <div class="row" style="grid-template-columns:150px 70px 140px 90px minmax(0, 1fr)"><span style="{{r.ns}}">{{r.n}}</span><span class="mono" style="text-align:right;color:#EAF0F4">{{r.v}}</span><span style="height:7px;margin-left:10px;background:#11161A;position:relative"><span style="{{r.bar}}"></span></span><span style="{{r.os}}">{{r.o}}</span><span class="dim">{{r.why}}</span></div>
+      </sc-for>
+      <div style="padding:8px 10px;font-size:12px;display:flex;gap:16px"><span class="dim">Theatre</span><span class="gold">North Sea SS4–5</span><span>Mediterranean</span><span>Atlantic</span><span class="dim" style="margin-left:auto">Your orders: <span style="color:#EAF0F4">Line of battle</span> · enemy intel will class her: <span class="gold">Line of battle</span></span></div>
+    </sc-if>
+
+    <!-- OTHER TABS -->
+    <sc-if value="{{is.other}}" hint-placeholder-val="{{ false }}">
+      <div class="hd" style="grid-template-columns:200px 160px minmax(0, 1fr)"><span>Item</span><span>Value</span><span>Notes</span></div>
+      <sc-for list="{{otherRows}}" as="o" hint-placeholder-count="10">
+        <div class="row" style="grid-template-columns:200px 160px minmax(0, 1fr)"><span>{{o.a}}</span><span class="mono" style="color:#EAF0F4">{{o.b}}</span><span class="dim">{{o.c}}</span></div>
+      </sc-for>
+    </sc-if>
+  </div>
+
+  <!-- ===== RIGHT COLUMN ===== -->
+  <div class="pn" style="left:1270px;top:50px;width:330px;height:206px">
+    <div class="tb">Weight ledger <b>std · Δ since open</b></div>
+    <div class="hd" style="grid-template-columns:minmax(0, 1fr) 62px 40px 70px 52px"><span>Group</span><span style="text-align:right">t</span><span style="text-align:right">%</span><span></span><span style="text-align:right">Δ</span></div>
+    <sc-for list="{{ledger}}" as="g" hint-placeholder-count="7">
+      <div class="row" onMouseEnter="{{g.enter}}" onMouseLeave="{{tipOff}}" style="grid-template-columns:minmax(0, 1fr) 62px 40px 70px 52px">
+        <span style="display:flex;align-items:center;gap:5px"><span style="{{g.sw}}"></span>{{g.n}}</span><span class="mono" style="text-align:right;color:#EAF0F4">{{g.t}}</span><span class="mono dim" style="text-align:right">{{g.p}}</span>
+        <span style="height:6px;margin-left:6px;background:#11161A;position:relative"><span style="{{g.bar}}"></span></span><span class="mono" style="{{g.ds}}">{{g.d}}</span>
+      </div>
+    </sc-for>
+    <div class="row" style="grid-template-columns:minmax(0, 1fr) 62px 40px 70px 52px;border-top:1px solid #3A4651;font-weight:700"><span>Standard</span><span class="mono" style="text-align:right;color:#EAF0F4">{{stdText}}</span><span></span><span></span><span class="mono" style="{{dStdS}}">{{dStd}}</span></div>
+  </div>
+
+  <div class="pn" style="left:1270px;top:256px;width:330px;height:226px">
+    <div class="tb">Performance <b>North Sea · full load</b></div>
+    <sc-for list="{{perf}}" as="p" hint-placeholder-count="10">
+      <div class="row" style="grid-template-columns:110px 92px minmax(0, 1fr)">
+        <span class="dim">{{p.k}}</span><span class="mono" style="color:#EAF0F4">{{p.v}}</span>
+        <span style="display:flex;gap:2px;justify-content:flex-end"><sc-for list="{{p.pips}}" as="pp" hint-placeholder-count="5"><span style="{{pp}}"></span></sc-for></span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div class="pn" style="left:1270px;top:482px;width:330px;height:250px">
+    <div class="tb">Matchups <i>C · E · B · S</i><b>8 classes</b></div>
+    <div style="display:flex;gap:6px;padding:4px 6px;border-bottom:1px solid #20292F">
+      <sc-for list="{{roleMini}}" as="r" hint-placeholder-count="5">
+        <span style="display:flex;flex-direction:column;gap:2px;flex:1"><span style="font-size:10px;color:#7F8B95;white-space:nowrap">{{r.n}}</span><span style="height:5px;background:#11161A;position:relative"><span style="{{r.bar}}"></span></span><span class="mono" style="font-size:10.5px;color:#C9D3DB">{{r.v}}</span></span>
+      </sc-for>
+    </div>
+    <sc-for list="{{enemy}}" as="e" hint-placeholder-count="8">
+      <div class="row" style="grid-template-columns:minmax(0, 1fr) 36px 60px 58px">
+        <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{e.n}}</span>
+        <span class="mono dim" style="text-align:right;font-size:11px">{{e.ef}}</span>
+        <span style="display:flex;gap:2px;justify-content:center"><span style="{{e.pc}}"></span><span style="{{e.pe}}"></span><span style="{{e.pb}}"></span><span style="{{e.ps}}"></span></span>
+        <span style="{{e.vs}}">{{e.v}}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div class="pn" style="left:1270px;top:732px;width:330px;height:210px">
+    <div class="tb">Remarks <b>{{remarkCount}}</b></div>
+    <sc-for list="{{remarks}}" as="m" hint-placeholder-count="4">
+      <div style="display:flex;gap:6px;padding:4px 6px;border-bottom:1px solid #20292F;font-size:12px;line-height:1.3">
+        <span style="{{m.ic}}">{{m.g}}</span>
+        <span style="flex:1">{{m.t}}<br><span class="dim">{{m.f}}</span></span>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- TOOLTIP (nested-breakdown style) -->
+  <div style="{{tipBox}}">
+    <div style="font-weight:700;color:#D9B868;font-size:12px;margin-bottom:3px">{{tip.title}}</div>
+    <sc-for list="{{tip.lines}}" as="l" hint-placeholder-count="6">
+      <div style="display:flex;gap:10px;font-size:12px;line-height:17px"><span style="{{l.ks}}">{{l.k}}</span><span class="mono" style="margin-left:auto;{{l.vs}}">{{l.v}}</span></div>
+    </sc-for>
+    <div class="dim" style="font-size:11px;margin-top:4px;border-top:1px solid #3A4651;padding-top:3px">underlined terms open their own tooltip · hold to pin</div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div style="position:absolute;left:0;top:942px;width:1600px;height:18px;display:flex;align-items:center;gap:16px;padding:0 8px;box-sizing:border-box;background:#161B20;border-top:1px solid #090C0E;font-size:11px;color:#7F8B95">
+    <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#86C77E;margin-right:4px"></span>engine: build 0.42 s · probes 7/7</span>
+    <span>history: bare hull › Dreadnought H › 21 kn › incremental › forecastle <span class="gold">● now</span></span>
+    <span style="margin-left:auto"><span class="kbd">Ctrl</span>+<span class="kbd">Z</span> undo · <span class="kbd">F5</span> rebuild · <span class="kbd">Tab</span> next field · <span class="kbd">F1</span> pedia</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":960}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = Object.assign({ tab: 'over', tip: null, ov: { arcs: true, armour: true, smoke: false, mags: false, crew: false, tags: true, horizon: false } }, this.base()); }
+  base() { return { speed: 21, range: 6600, belt: 11, deck: 3, turret: 11, rpg: 100, sec: 5 }; }
+  model(v) {
+    const D = [[17, 19229, 154], [18, 20235, 159.5], [19, 21756, 169], [20, 23326, 177], [21, 24970, 183.5], [22, 27110, 192], [23, 31127, 211.5], [24, 35101, 225], [25, 42033, 251.5]];
+    const k = Math.max(0, Math.min(7.999, v.speed - 17)), i = Math.floor(k), f = k - i;
+    const cs = D[i][1] + (D[i + 1][1] - D[i][1]) * f, cl = D[i][2] + (D[i + 1][2] - D[i][2]) * f;
+    const armour = 10087 + 310 * (v.belt - 11) + 720 * (v.deck - 3) + 94 * (v.turret - 11);
+    const arm = 3337 + 7 * (v.rpg - 100) + 12 * (v.sec - 5);
+    const std = Math.round(cs + (armour - 10087) + (arm - 3337) + 0.12 * (v.range - 6600));
+    const L = cl + 0.004 * (std - cs);
+    const shp = Math.round(33800 * Math.pow(v.speed / 21, 3) * Math.pow(std / 24970, 2 / 3) / 100) * 100;
+    const fuel = Math.round(4561 * (v.range / 6600) * Math.pow(std / 24970, 2 / 3));
+    const mach = Math.round(2783 * Math.pow(shp / 33800, 0.9));
+    const gm = 1.51 + 0.16 * (v.speed - 21) - 0.02 * (v.belt - 11);
+    const line = Math.max(0, Math.min(1, 0.84 + 0.04 * (v.belt - 11) + 0.06 * (v.deck - 3) + 0.02 * (v.turret - 11) + 0.02 * (v.speed - 21)));
+    const cost = Math.round(1.62e6 + 52 * (std - 24970) + 900 * (shp - 33800) / 10);
+    const crew = Math.round(908 + 0.012 * (shp - 33800) + 6 * (v.sec - 5));
+    const hull = std - armour - arm - mach - 1668 - 557;
+    return { std, L, shp, fuel, full: std + fuel, armour, arm, mach, hull, gm, line, cost, crew };
+  }
+  renderVals() {
+    const s = this.state, M = this.model(s), M0 = this.model(this.base()), REQ = 24000;
+    const nf = (x) => Math.round(x).toLocaleString('en-GB');
+    const sg = (x, u) => (Math.abs(x) < 0.5 ? '—' : (x > 0 ? '+' : '−') + nf(Math.abs(x)) + (u || ''));
+    const clr = (x, goodLow) => Math.abs(x) < 0.5 ? 'color:#7F8B95' : ((x < 0) === goodLow ? 'color:#86C77E' : 'color:#E3A452');
+    const over = M.std - REQ;
+    const tipOn = (k) => () => this.setState({ tip: k });
+
+    // resource bar
+    const RB = [
+      ['std', 'Standard', nf(M.std) + ' t', M.std - M0.std, true, over > 0 ? '#E3A452' : '#86C77E'],
+      ['full', 'Full load', nf(M.full) + ' t', M.full - M0.full, true],
+      ['cost', 'Cost', '£' + (M.cost / 1e6).toFixed(2) + 'M', (M.cost - M0.cost) / 1000, true],
+      ['time', 'Build', Math.round(30 + (M.std - 24970) / 1500) + ' mo', 0, true],
+      ['spd', 'Speed', s.speed.toFixed(1) + ' kn', 0, false],
+      ['rng', 'Range', nf(s.range) + ' nm', 0, false],
+      ['gm', 'GM', M.gm.toFixed(2) + ' m', 0, false],
+      ['crew', 'Crew', nf(M.crew), M.crew - M0.crew, true]
+    ];
+    const res = RB.map(r => ({ k: r[1], v: r[2], d: r[3] ? (r[0] === 'cost' ? sg(r[3], 'k') : sg(r[3])) : '',
+      enter: tipOn(r[0]),
+      box: 'display:flex;flex-direction:column;justify-content:center;gap:1px;padding:0 10px;border-right:1px solid #090C0E;cursor:help;' + (s.tip === r[0] ? 'background:rgba(217,184,104,0.10)' : ''),
+      vs: 'font-size:13px;font-weight:600;color:' + (r[5] || '#EAF0F4'), ds: 'font-size:10.5px;' + clr(r[3], r[4]) }));
+
+    // outliner tree
+    const pc = (t) => (100 * t / M.std);
+    const T = [
+      [0, '▾', 'hull', '#8C7B62', 'Hull', 'Cb 0.60 · 1.0 fb', M.hull, 'hull'], [1, '', 'hull', '', 'Construction', 'MS/HTS riveted', null, 'hull'], [1, '', 'hull', '', 'Forecastle', 'bow → funnels', null, 'hull'], [1, '', 'hull', '', 'Superstructure', 'tower 5 · dh 2', 557, 'hull'],
+      [0, '▾', 'arm', '#A3473A', 'Armament', '10 × 12 in', M.arm, 'main'], [1, '▸', 'arm', '', 'Battery 1 · 12"/45', '5 × twin', 2710, 'main'], [2, '', 'arm', '', 'A W1P W1S X Y', '11" faces', null, 'main'], [1, '▸', 'arm', '', 'Secondary · 3"/50', (2 * s.sec) + ' × 1', 120 + 24 * s.sec, 'sec'], [1, '', 'arm', '', 'Magazines', s.rpg + ' rpg', 460 + 7 * (s.rpg - 100), 'main'],
+      [0, '▾', 'prot', '#6E5A86', 'Protection', 'incremental', M.armour, 'prot'], [1, '', 'prot', '', 'Main belt', s.belt + ' → ' + (s.belt - 2) + ' in', 3050 + 310 * (s.belt - 11), 'prot'], [1, '', 'prot', '', 'Upper belt', '8 in', 1180, 'prot'], [1, '', 'prot', '', 'End belts', '6 / 4 in', 1020, 'prot'], [1, '', 'prot', '', 'Decks', s.deck + ' in citadel', 2240 + 720 * (s.deck - 3), 'prot'], [1, '', 'prot', '', 'Barbettes · turrets', s.turret + ' in', 2090 + 94 * (s.turret - 11), 'prot'], [1, '', 'prot', '', 'Bulkheads · CT', '8 · 11 in', 507, 'prot'],
+      [0, '▾', 'mach', '#C58A2E', 'Machinery', nf(M.shp) + ' shp', M.mach, 'mach'], [1, '', 'mach', '', 'DD turbines (1905)', '4 shafts', null, 'mach'], [1, '', 'mach', '', 'Boiler / engine rms', '3 / 3', null, 'mach'], [1, '', 'mach', '', 'Bunkers', nf(M.fuel) + ' t', null, 'mach'],
+      [0, '▸', 'fc', '#5E7F62', 'Fire control', '1 director', 7, 'fc'], [0, '▸', 'crew', '#9A9A8A', 'Crew & stores', nf(M.crew) + ' men', 1668, 'crew'], [0, '▸', 'role', '#4E6B7A', 'Role & matchups', 'Line 0.' + Math.round(M.line * 100), null, 'role']
+    ];
+    const tree = T.map(n => {
+      const sel = n[7] === s.tab && n[0] === 0;
+      return { tw: n[1], label: n[4], val: n[5], t: n[6] == null ? '' : nf(n[6]), go: () => this.setState({ tab: n[7] }),
+        style: 'height:' + (n[0] === 0 ? 21 : 18) + 'px;display:flex;align-items:center;gap:5px;padding:0 6px;border:none;border-bottom:1px solid #20292F;text-align:left;color:#C9D3DB;font-size:12px;background:' + (n[7] === s.tab ? (n[0] === 0 ? 'rgba(217,184,104,0.14)' : 'rgba(217,184,104,0.05)') : (n[0] === 0 ? '#20282F' : 'transparent')),
+        indent: 'width:' + (10 + n[0] * 12) + 'px;text-align:right;color:#7F8B95;font-size:10px',
+        ic: n[3] ? 'width:8px;height:8px;background:' + n[3] + ';flex:none' : 'width:0',
+        ls: 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;' + (n[0] === 0 ? 'font-weight:700;color:' + (sel ? '#D9B868' : '#EAF0F4') : 'color:#AEB9C3'),
+        bar: n[6] == null ? 'display:none' : 'position:absolute;left:0;top:0;bottom:0;background:' + (n[3] || '#56636F') + ';width:' + Math.min(100, pc(n[6]) * 2.5).toFixed(1) + '%' };
+    });
+
+    // overlays
+    const OV = [['arcs', 'Arcs', 'A'], ['armour', 'Armour', 'R'], ['mags', 'Mags', 'M'], ['smoke', 'Smoke', 'S'], ['crew', 'Crew', 'Q'], ['horizon', 'Horizon', 'H'], ['tags', 'Tags', 'T']];
+    const overlays = OV.map(o => ({ l: o[1], key: o[2], toggle: () => this.setState({ ov: Object.assign({}, s.ov, { [o[0]]: !s.ov[o[0]] }) }),
+      style: 'height:15px;display:flex;align-items:center;gap:3px;padding:0 5px;border:1px solid #090C0E;font-size:10.5px;font-weight:600;text-transform:none;letter-spacing:0;' + (s.ov[o[0]] ? 'background:linear-gradient(#5A4A24,#3E3218);color:#F0D58A' : 'background:linear-gradient(#2E3842,#232B33);color:#8D99A3') }));
+    const tag = (x, y, l) => ({ l, s: 'position:absolute;left:' + x + 'px;top:' + y + 'px;padding:0 3px;background:rgba(10,16,22,0.8);border:1px solid #4A5764;font-family:IBM Plex Mono,monospace;font-size:10px;color:#CFE3F3;white-space:nowrap' });
+    const tags = s.ov.tags ? [tag(92, 54, 'Y 2×12"'), tag(160, 192, 'X 2×12"'), tag(612, 48, 'W1P'), tag(612, 194, 'W1S'), tag(842, 54, 'A 2×12"'), tag(470, 194, 'FUN ×2 · smoke 42 m')] : [];
+
+    // profile plates
+    const col = (mm) => mm >= 260 ? '#8E3328' : mm >= 190 ? '#B24E36' : mm >= 140 ? '#CC6F43' : mm >= 95 ? '#DE9455' : mm >= 60 ? '#E9B66B' : '#F3E3A1';
+    const PL = (l, w, t, h, mm, lab) => ({ l: lab, s: 'position:absolute;left:' + l + '%;width:' + w + '%;top:' + t + '%;height:' + h + '%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;' + (s.ov.armour ? 'background:' + col(mm) + ';border:1px solid rgba(0,0,0,0.4)' : 'border:1px dashed #6FA9D3'), ls: 'font-size:10.5px;color:' + (mm >= 140 ? '#F6EFE2' : '#26221C') + ';opacity:' + (s.ov.armour && h > 8 ? 1 : 0) });
+    const plates = [PL(15.6, 68.5, 46, 22, 279, s.belt + '→' + (s.belt - 2) + '"'), PL(15.6, 68.5, 33, 13, 203, '8"'), PL(84.1, 15, 46, 22, 152, '6"'), PL(1, 14.6, 46, 22, 102, '4"'), PL(15.6, 68.5, 44, 2.5, 76, ''), PL(84.1, 14.5, 72, 2.4, 38, ''), PL(1.2, 14.4, 72, 2.4, 76, ''), PL(10.5, 6, 12, 18, 279, s.turret + '"'), PL(79, 6, 2, 19, 279, s.turret + '"')];
+
+    // tabs
+    const TB = [['over', 'Overview', 'F2'], ['main', 'Armament', 'F3'], ['prot', 'Protection', 'F4'], ['mach', 'Machinery', 'F5'], ['hull', 'Hull', 'F6'], ['fc', 'Fire control', 'F7'], ['crew', 'Crew', 'F8'], ['role', 'Role & matchups', 'F9']];
+    const tabWarn = { over: over > 0, mach: over > 0, crew: true };
+    const tabs = TB.map(t => ({ l: t[1], key: t[2], go: () => this.setState({ tab: t[0] }),
+      s: 'height:' + (s.tab === t[0] ? 22 : 20) + 'px;padding:0 9px;border:1px solid #090C0E;border-bottom:none;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;' + (s.tab === t[0] ? 'background:linear-gradient(#3A4651,#1C2329);color:#D9B868' : 'background:linear-gradient(#2A333C,#20282F);color:#9AA6B0'),
+      dot: 'width:6px;height:6px;border-radius:50%;background:' + (tabWarn[t[0]] ? '#E3A452' : '#4E7D52') }));
+
+    // overview trim table
+    const LN = { speed: 18, range: 7000, belt: 12, deck: 2, turret: 12, rpg: 80, sec: 12 };   // Lord Nelson (in service) – illustrative
+    const RP = { speed: 19, range: 8400, belt: 11.8, deck: 2.2, turret: 14, rpg: 75, sec: 0 }; // République – illustrative
+    const R = [
+      ['speed', 'Speed (trial)', 0.5, 16, 26, (v) => v.toFixed(1) + ' kn', 'length, power, GM, catch/escape'],
+      ['range', 'Range at 10 kn', 500, 2000, 12000, (v) => nf(v) + ' nm', 'bunkers, full load, station role'],
+      ['belt', 'Main belt', 0.5, 4, 14, (v) => v.toFixed(1) + ' in', 'immune zone (inner edge), citadel weight'],
+      ['deck', 'Armour deck', 0.25, 1, 5, (v) => v.toFixed(2) + ' in', 'immune zone (outer edge), hull girder'],
+      ['turret', 'Turret / barbette', 0.5, 6, 14, (v) => v.toFixed(1) + ' in', 'turret survival, topweight'],
+      ['rpg', 'Rounds per gun', 10, 50, 150, (v) => String(v), 'magazine length, combat endurance'],
+      ['sec', '3 in guns per side', 1, 0, 10, (v) => String(v), 'anti-torpedo-boat defence, crew']
+    ];
+    const rows = R.map(r => {
+      const key = r[0], st = r[2], lo = r[3], hi = r[4], v = s[key];
+      const dt = this.model(Object.assign({}, s, { [key]: Math.min(hi, v + st) })).std - M.std;
+      const dop = v - this.base()[key];
+      const vsC = (ref) => { const d = v - ref[key]; return Math.abs(d) < 1e-9 ? '=' : (d > 0 ? '+' : '−') + (Number.isInteger(st) ? Math.abs(d) : Math.abs(d).toFixed(st < 1 ? 2 : 1)); };
+      const vsS = (ref) => 'text-align:right;color:' + (v - ref[key] > 0 ? '#86C77E' : v - ref[key] < 0 ? '#E3A452' : '#7F8B95');
+      return { n: r[1], v: r[5](v), st: '±' + st, dt: '+' + nf(dt) + ' t', drives: r[6],
+        ns: 'color:' + (Math.abs(dop) > 1e-9 ? '#D9B868' : '#C9D3DB') + (Math.abs(dop) > 1e-9 ? ';font-weight:600' : ''),
+        dop: Math.abs(dop) < 1e-9 ? '—' : (dop > 0 ? '+' : '−') + (Number.isInteger(st) ? Math.abs(dop) : Math.abs(dop).toFixed(2)),
+        dos: 'text-align:right;color:' + (Math.abs(dop) < 1e-9 ? '#7F8B95' : '#D9B868'), dts: 'text-align:right;color:#E3A452;font-size:11px',
+        lnv: vsC(LN), ln: vsS(LN), rpv: vsC(RP), rp: vsS(RP),
+        ma: 'Less ' + r[1], pa: 'More ' + r[1],
+        minus: (e) => { const m = e && e.shiftKey ? 4 : 1; this.setState({ [key]: Math.max(lo, +(v - st * m).toFixed(2)) }); },
+        plus: (e) => { const m = e && e.shiftKey ? 4 : 1; this.setState({ [key]: Math.min(hi, +(v + st * m).toFixed(2)) }); } };
+    });
+    const staticRows = [['Hull form (Cb)', '0.60', '±0.01', '+190 t', 'resistance, length'], ['Freeboard', '1.00 ×', '±0.05', '+140 t', 'wetness, hull girder'], ['Bridge tower', '5 levels', '±1', '+38 t', 'horizon 14.6 km, GM −0.03'], ['Habitability', 'H1.0', '±0.1', '+42 t', 'comfort, crew space'], ['Machinery rating', '0.20', '±0.05', '−55 t', 'weight, sfc, overload'], ['Barbette armour', '= face', '', '', 'auto: follows turret face'], ['End belts', '6 / 4 in', '±0.5', '+96 t', 'flooding at ends']];
+    staticRows.forEach(r => rows.push({ n: r[0], v: r[1], st: r[2], dt: r[3], drives: r[4], ns: 'color:#AEB9C3', dop: '—', dos: 'text-align:right;color:#7F8B95', dts: 'text-align:right;color:#E3A452;font-size:11px', lnv: '', ln: '', rpv: '', rp: '', ma: 'Less ' + r[0], pa: 'More ' + r[0], minus: () => {}, plus: () => {} }));
+
+    const CH = [['speed', 'Speed', 0.5, 16, (v) => v.toFixed(1) + ' kn', 'effective speed, catch Gloire'], ['belt', 'Main belt', 0.5, 4, (v) => v.toFixed(1) + ' in', 'immune zone inner edge'], ['deck', 'Armour deck', 0.25, 1, (v) => v.toFixed(2) + ' in', 'immune zone outer edge'],
+      ['rpg', 'Rounds per gun', 10, 50, (v) => String(v), 'combat endurance'], ['range', 'Range', 500, 2000, (v) => nf(v) + ' nm', 'station role'], ['turret', 'Turret faces', 0.5, 6, (v) => v.toFixed(1) + ' in', 'turret survival']];
+    const cheap = CH.map(c => {
+      let v = s[c[0]], k = 0, m = M;
+      while (M.std - m.std < 1000 && v - c[2] >= c[3] - 1e-9 && k < 40) { v = +(v - c[2]).toFixed(2); k++; m = this.model(Object.assign({}, s, { [c[0]]: v })); }
+      const ok = M.std - m.std >= 1000, dl = m.line - M.line;
+      return { n: c[1], k: ok ? String(k) : '—', v: ok ? c[4](v) : 'n/a', l: ok ? (dl === 0 ? '±0.00' : (dl > 0 ? '+' : '−') + Math.abs(dl).toFixed(2)) : '', ls: 'text-align:right;color:' + (dl < -0.001 ? '#E3A452' : '#7F8B95'), o: c[0] === 'speed' ? '−' + Math.round(M.L - m.L) + ' m L' : '', note: ok ? c[5] : 'cannot save 1,000 t within limits', ns: 'color:' + (ok ? '#C9D3DB' : '#56636F'), score: ok ? -dl * 1000 + k : 9e9 };
+    }).sort((a, b) => a.score - b.score);
+    const ticks = Array.from({ length: 11 }, (_, i) => 'position:absolute;top:0;bottom:0;width:1px;background:#20292F;left:' + i * 10 + '%');
+    const meter = 'position:absolute;left:0;top:0;bottom:0;transition:width 0.25s;width:' + Math.min(100, 80 * M.std / REQ).toFixed(1) + '%;background:' + (over > 0 ? 'repeating-linear-gradient(90deg,#E3A452 0 6px,#C88A3A 6px 8px)' : 'repeating-linear-gradient(90deg,#86C77E 0 6px,#6AA963 6px 8px)');
+
+    // ledger
+    const G = [['Hull', M.hull, M0.hull, '#8C7B62'], ['Armour', M.armour, M0.armour, '#6E5A86'], ['Armament', M.arm, M0.arm, '#A3473A'], ['Machinery', M.mach, M0.mach, '#C58A2E'], ['Equip. & crew', 1668, 1668, '#9A9A8A'], ['Superstructure', 557, 557, '#5E7F62'], ['Fire control', 7, 7, '#4E6B7A']];
+    const ledger = G.map(g => ({ n: g[0], t: nf(g[1]), p: (100 * g[1] / M.std).toFixed(1), d: sg(g[1] - g[2]), ds: 'text-align:right;font-size:11px;' + clr(g[1] - g[2], true),
+      enter: tipOn('w:' + g[0]),
+      sw: 'width:8px;height:8px;background:' + g[3], bar: 'position:absolute;left:0;top:0;bottom:0;background:' + g[3] + ';width:' + (250 * g[1] / M.std).toFixed(1) + '%' }));
+
+    // performance with pips
+    const pips = (n, good) => Array.from({ length: 5 }, (_, i) => 'width:9px;height:9px;border:1px solid #090C0E;background:' + (i < n ? (good ? '#86C77E' : '#E3A452') : '#2A333C'));
+    const effKn = (s.speed * 0.95).toFixed(1);
+    const perf = [
+      { k: 'Effective speed', v: effKn + ' kn', pips: pips(Math.round((s.speed - 16) / 2), true) },
+      { k: 'Endurance', v: nf(s.range) + ' nm', pips: pips(Math.round(s.range / 2400), true) },
+      { k: 'Stability GM', v: M.gm.toFixed(2) + ' m', pips: pips(Math.round(M.gm * 3), true) },
+      { k: 'Roll period', v: (15.9 * Math.sqrt(1.51 / M.gm)).toFixed(1) + ' s', pips: pips(4, true) },
+      { k: 'Gale heel', v: '4.7°', pips: pips(5, true) },
+      { k: 'Seakeeping', v: 'dry fwd', pips: pips(4, true) },
+      { k: 'Bridge horizon', v: '14.6 km', pips: pips(3, true) },
+      { k: 'Immune zone', v: (9.2 + (s.belt - 11) * 0.6).toFixed(1) + '–' + (14.1 + (s.deck - 3) * 1.8).toFixed(1) + ' kyd', pips: pips(Math.max(0, Math.round(2 + (s.belt - 11) + (s.deck - 3) * 2)), true) },
+      { k: 'Habitability', v: '1.47 m²/man', pips: pips(2, false) },
+      { k: 'Smoke interference', v: 'aft control', pips: pips(2, false) }
+    ];
+
+    // matchups
+    const soft = (x, t, w) => 1 / (1 + Math.exp(-(x - t) / w));
+    const ours = s.speed * 0.95;
+    const EN = [['Dupuy de Lôme', 'AC', 1, 19.7, 0.94, 3.2, 'high'], ['Gloire', 'AC', 5, 21.4, 0.94, 2.1, 'high'], ['Léon Gambetta', 'AC', 3, 22.5, 0.94, 1.6, 'med'], ['République', 'BB', 2, 19.0, 0.94, 1.25 + (s.belt - 11) * 0.08, 'high'], ['Charlemagne', 'BB', 3, 18.0, 0.94, 1.6, 'high'], ['Châteaurenault', 'CP', 1, 24.0, 0.92, 5.0, 'med'], ['Guichen', 'CP', 1, 23.0, 0.92, 4.5, 'high'], ['Branlebas', 'DD', 12, 27.5, 0.74, 8.0, 'high']];
+    const cell = (v) => 'text-align:center;font-family:IBM Plex Mono,monospace;font-size:11px;margin:1px 6px;background:rgba(' + (v >= 0.5 ? '134,199,126,' : '227,164,82,') + (0.12 + 0.5 * Math.abs(v - 0.5)).toFixed(2) + ');color:' + (v >= 0.5 ? '#CFEFC9' : '#F3D3A6');
+    const pip = (v) => 'width:10px;height:10px;border:1px solid #090C0E;background:' + (v >= 0.66 ? '#86C77E' : v >= 0.33 ? '#C9B25A' : '#E3A452');
+    const enemy = EN.map(e => {
+      const eff = e[3] * e[4], m = ours - eff, lg = Math.log(e[5]);
+      const c = soft(m, 2, 0.7), es = lg < 0 ? soft(m, 1.5, 0.7) : 1, b = soft(lg, 0, 0.3), sv = soft(lg + 0.9, 0, 0.3);
+      let v, vc; if (lg >= 0 && c >= 0.5) { v = 'Prey'; vc = '#86C77E'; } else if (lg >= 0) { v = eff < ours ? 'Evades' : 'Too fast'; vc = '#8FB6D8'; } else if (es >= 0.5) { v = 'Run'; vc = '#C9B25A'; } else { v = 'Danger'; vc = '#E3A452'; }
+      return { n: e[0], k: e[1], no: e[2], tr: e[3].toFixed(1), ef: eff.toFixed(1), conf: e[6],
+        cv: c.toFixed(2), ev: lg < 0 ? es.toFixed(2) : '—', bv: b.toFixed(2), sv: sv.toFixed(2), c: cell(c), es: lg < 0 ? cell(es) : 'text-align:center;color:#56636F', b: cell(b), s: cell(sv),
+        pc: pip(c), pe: pip(es), pb: pip(b), ps: pip(sv), v, vs: 'font-size:11.5px;font-weight:600;color:' + vc };
+    });
+    const roleMini = [['Line', M.line], ['Station', 0.62], ['Trade', 0.31], ['Scout', 0.12], ['Raider', 0.05]].map(r => ({ n: r[0], v: r[1].toFixed(2), bar: 'position:absolute;left:0;top:0;bottom:0;background:' + (r[0] === 'Line' ? '#D9B868' : '#5E8396') + ';width:' + (100 * r[1]) + '%' }));
+
+    const RG = [6, 8, 10, 12, 14, 16, 18, 20, 22];
+    const beltPen = (r) => 16.5 - 0.62 * r, deckPen = (r) => Math.max(0.3, 0.12 * Math.pow(r - 4, 1.3));
+    const pc2 = (ok) => 'text-align:center;font-family:IBM Plex Mono,monospace;font-size:11px;margin:1px 3px;background:' + (ok ? 'rgba(134,199,126,0.22);color:#CFEFC9' : 'rgba(227,164,82,0.22);color:#F3D3A6');
+    const penRows = [
+      { n: 'Belt pen. (in)', c: RG.map(r => ({ v: beltPen(r).toFixed(1), s: pc2(beltPen(r) < s.belt) })) },
+      { n: 'Deck pen. (in)', c: RG.map(r => ({ v: deckPen(r).toFixed(1), s: pc2(deckPen(r) < s.deck) })) },
+      { n: 'Immune', c: RG.map(r => { const ok = beltPen(r) < s.belt && deckPen(r) < s.deck; return { v: ok ? 'IMMUNE' : '—', s: pc2(ok) }; }) }
+    ];
+    const roleRows = [['Line of battle', M.line, 'beats République & Charlemagne; survives 60 min'], ['Station', 0.62, '6,600 nm, British coaling stations'], ['Battlecruiser', 0.41, 'beats cruisers but cannot escape what beats her'], ['Trade protection', 0.31, 'Guichen & Châteaurenault outrun her'], ['Coastal defence', 0.28, 'overbuilt for the task'], ['Scout', 0.12, 'too slow to break off from Gambetta'], ['Commerce raider', 0.05, 'Gloire ×5 run her down']]
+      .map((r, i) => ({ n: r[0], v: r[1].toFixed(2), why: r[2], o: i === 0 ? '● ORDERED' : '', os: 'font-size:11px;font-weight:700;color:#D9B868', ns: 'color:' + (i === 0 ? '#EAF0F4;font-weight:600' : '#C9D3DB'),
+        bar: 'position:absolute;left:0;top:0;bottom:0;background:' + (i === 0 ? '#D9B868' : '#5E8396') + ';width:' + (r[1] * 100) + '%' }));
+    const remarks = [];
+    if (over > 0) remarks.push({ g: '▲', t: nf(over) + ' t over the Admiralty request (≤ 24,000 t).', f: '[G] goal-seek speed → ' + (() => { let lo = 16, hi = s.speed; for (let i = 0; i < 18; i++) { const m = (lo + hi) / 2; if (this.model(Object.assign({}, s, { speed: m })).std <= REQ) lo = m; else hi = m; } return lo.toFixed(2); })() + ' kn · [B] −3.5 in belt', ic: 'width:14px;color:#E3A452;font-size:11px' });
+    remarks.push({ g: '●', t: 'Aft control stands in the smoke of funnels 1–2 (smoke reach 41.9 m, coal).', f: '[1] move boilers fwd · [2] drop aft control (−180 t)', ic: 'width:14px;color:#C9B25A;font-size:11px' });
+    remarks.push({ g: '●', t: 'Habitability 1.47 m²/man: crowded for a 22-day endurance.', f: '[3] +0.2 habitability (+42 t)', ic: 'width:14px;color:#C9B25A;font-size:11px' });
+    remarks.push({ g: 'i', t: 'Main director 2.7 m: adequate to 10 kyd; 4.6 m advised for 15 kyd.', f: '[4] fit 4.6 m director (+3 t)', ic: 'width:14px;color:#8FB6D8;font-size:11px;font-style:italic;font-weight:700' });
+
+    // tooltips
+    const TIPS = {
+      std: { title: 'Standard displacement · ' + nf(M.std) + ' t', lines: [['Hull structure (riveted MS/HTS)', nf(M.hull)], ['Armour (incremental)', nf(M.armour)], ['Armament & magazines', nf(M.arm)], ['Machinery (' + nf(M.shp) + ' shp)', nf(M.mach)], ['Equipment & crew', '1,668'], ['Superstructure', '557'], ['Request (Admiralty, Mar 1905)', '≤ 24,000'], ['Margin', (over > 0 ? '+' : '−') + nf(Math.abs(over))]] },
+      full: { title: 'Full load · ' + nf(M.full) + ' t', lines: [['Standard', nf(M.std)], ['Coal (' + nf(s.range) + ' nm at 10 kn)', nf(M.fuel)], ['Reserve feed water', 'in std']] },
+      cost: { title: 'Cost · £' + (M.cost / 1e6).toFixed(2) + 'M', lines: [['Hull & fittings', '£0.52M'], ['Armour (Krupp, £105/t)', '£0.55M'], ['Guns & mountings', '£0.36M'], ['Machinery', '£0.19M'], ['Design study (developed from LN)', '£0.02M']] },
+      time: { title: 'Build time', lines: [['Slip No. 3 · 2 shifts', '30 mo'], ['Armour delivery (Vickers)', 'critical']] },
+      spd: { title: 'Speed · ' + s.speed + ' kn trial', lines: [['Slenderness sets length', M.L.toFixed(1) + ' m'], ['Effective, North Sea SS4–5', effKn + ' kn'], ['Sustained (DD turbines)', '0.97 ×']] },
+      rng: { title: 'Range', lines: [['Cruise 10 kn, part-load DT', nf(s.range) + ' nm'], ['Stores', '22 days']] },
+      gm: { title: 'Metacentric height', lines: [['Full load', M.gm.toFixed(2) + ' m'], ['Light (coal burnt)', (M.gm - 0.97).toFixed(2) + ' m'], ['Beam set by', 'GM ≥ 0.06 B']] },
+      crew: { title: 'Complement · ' + nf(M.crew), lines: [['Engineering', '337'], ['Weapons', '399'], ['Deck & command', '126'], ['Hotel', '46']] }
+    };
+    G.forEach(g => { TIPS['w:' + g[0]] = { title: g[0] + ' · ' + nf(g[1]) + ' t', lines: [['Share of standard', (100 * g[1] / M.std).toFixed(1) + ' %'], ['Since opened', sg(g[1] - g[2], ' t')], ['Largest item', { Hull: 'shell & framing', Armour: 'main belt', Armament: 'turrets & barbettes', Machinery: 'boilers' }[g[0]] || '—']] }; });
+    const tk = s.tip;
+    const tipD = tk && TIPS[tk] ? TIPS[tk] : { title: '', lines: [] };
+    const tipPos = tk && tk.indexOf('w:') === 0 ? 'left:930px;top:90px' : 'left:' + (220 + Math.max(0, RB.findIndex(r => r[0] === tk)) * 108) + 'px;top:52px';
+    const tipBox = 'position:absolute;' + tipPos + ';width:320px;z-index:50;padding:7px 9px;background:#11161A;border:1px solid #D9B868;box-shadow:0 6px 18px rgba(0,0,0,0.7);transition:opacity 0.12s;opacity:' + (tk && TIPS[tk] ? 1 : 0) + ';pointer-events:none';
+    const tip = { title: tipD.title, lines: tipD.lines.map((l, i) => ({ k: l[0], v: l[1], ks: 'color:#C9D3DB;' + (i < 2 ? 'text-decoration:underline dotted #7F8B95' : ''), vs: 'color:' + (/^\+/.test(l[1]) ? '#E3A452' : /^−/.test(l[1]) ? '#86C77E' : '#EAF0F4') })) };
+
+    // armour tab rows
+    const armour = [
+      { n: 'Main belt', f: s.belt.toFixed(1) + '"', l: (s.belt - 2).toFixed(1) + '"', e: 'citadel', ar: '640', t: nf(3050 + 310 * (s.belt - 11)), k: '+310', m: 'Krupp cemented · band 2.7 m ↓ 2.7 m ↑ (auto)' },
+      { n: 'Upper belt', f: '8.0"', l: '—', e: 'citadel', ar: '310', t: '1,180', k: '+148', m: 'to main deck' }, { n: 'End belt fwd', f: '6.0"', l: '6.0"', e: 'reach 1.0', ar: '230', t: '620', k: '+103', m: 'tapers to stem' },
+      { n: 'End belt aft', f: '4.0"', l: '4.0"', e: 'reach 1.0', ar: '200', t: '400', k: '+100', m: '' }, { n: 'Armour deck', f: s.deck.toFixed(2) + '"', l: '—', e: '2nd · citadel', ar: '3,620', t: nf(2240 + 720 * (s.deck - 3)), k: '+720', m: 'HTS · main armour deck, roof of vitals' },
+      { n: 'Deck plates fwd', f: '1.5"', l: '—', e: '3rd · fore', ar: '780', t: '235', k: '+157', m: '' }, { n: 'Deck plates aft', f: '3.0"', l: '—', e: '3rd · aft', ar: '690', t: '420', k: '+140', m: 'over steering gear' },
+      { n: 'Bulkheads', f: '8.0"', l: '—', e: '2 ×', ar: '190', t: '310', k: '+38', m: 'citadel ends' }, { n: 'Barbettes', f: s.turret.toFixed(1) + '"', l: '—', e: '5 ×', ar: '520', t: nf(1450 + 60 * (s.turret - 11)), k: '+60', m: '= turret face (auto)' },
+      { n: 'Turret faces', f: s.turret.toFixed(1) + '"', l: '—', e: '5 ×', ar: '180', t: nf(640 + 34 * (s.turret - 11)), k: '+34', m: 'sides 0.75, roof 0.3 ×' }, { n: 'Conning tower', f: '11.0"', l: '—', e: '1 ×', ar: '55', t: '197', k: '+18', m: '= belt (auto)' }
+    ];
+    const OTH = {
+      main: [['Battery 1', '12 in / 45 Mk X', 'quality 0 · 2 rpm · 386 kg shell'], ['Mounts', '5 × twin', 'A, W1P, W1S, X, Y · flush'], ['Bearing ahead / broadside / astern', '6 / 8 / 4', 'wing pair abreast'], ['Turret face', s.turret + ' in', 'barbette = face'], ['Rounds per gun', String(s.rpg), 'magazine 460 t'], ['Secondary', (2 * s.sec) + ' × 3 in/50', 'deck, open mounts'], ['Torpedo tubes', '5 × 18 in submerged', 'beam & stern']],
+      mach: [['Plant', 'DD turbines, water-tube (1905)', '120 kg/kW · 950 g/kWh · coal'], ['Rated power', nf(M.shp) + ' shp', 'overload ×1.12'], ['Shafts · units', '4 · 4', 'auto'], ['Arrangement', 'boiler | engine', '3 BR · 3 ER · 72.1 m'], ['Bunkers', 'wing 2.0 m', 'coal ' + nf(M.fuel) + ' t'], ['Funnels', '2', 'from gas · smoke reach 41.9 m']],
+      hull: [['Length set by', 'speed (slenderness)', 'layout needs 171.0 m'], ['Beam set by', 'GM ≥ 0.06 B', '27.2 m'], ['Construction', 'MS + HTS deck, riveted', 'join 1.10'], ['Forecastle', 'bow → funnels', '1 deck'], ['Bridge tower', '5 levels', 'bridge on 4 · sees over A'], ['Deckhouse', '2 levels', ''], ['Aft control', 'yes', 'in smoke ▲']],
+      fc: [['Main directors', '1 × 2.7 m', 'unit error @ 15 kyd 118 m vs spread 73 m · poor'], ['Secondary', 'local', ''], ['Computer', 'Dumaresq + range clock', 'C1'], ['Search radar', '—', 'not invented']],
+      crew: [['Standard', 'Hammocks over mess tables', 'H1'], ['Complement', nf(M.crew), '73 officers'], ['Living space', '4,102 m³', 'usable 17,722 m³'], ['Endurance', '22 days', 'distiller 16.3 m³/day']]
+    };
+    const otherRows = (OTH[s.tab] || []).map(r => ({ a: r[0], b: r[1], c: r[2] }));
+
+    const ovFlags = s.ov;
+    const techs = [['Plant', 'Direct-drive turbines, WT boilers', '1905', 'current'], ['Fuel', 'Coal, forced draught', '1905', 'oil ’08'], ['Hull', 'Mild steel + HTS deck, riveted', '1905', 'current'], ['Armour', 'Krupp cemented', '1898', 'current'], ['Deck armour', 'High-tensile steel', '1900', 'current'],
+      ['Main gun', '12 in/45 Mk X · Q0', '1905', 'current'], ['Mounting', 'Twin, BVIII', '1904', 'triple ’10'], ['Secondary', '3 in/50 12-pdr', '1903', '4 in ’08'], ['Fire control', 'Director, 2.7 m B&S', '1904', '4.6 m ’07'], ['Computer', 'Dumaresq + range clock', '1902', 'Dreyer ’11'], ['Crew std', 'Hammocks (H1)', '—', 'current']]
+      .map(t => ({ a: t[0], b: t[1], y: t[2], s: t[3], ss: 'font-size:11px;text-align:right;white-space:nowrap;color:' + (t[3] === 'current' ? '#4E7D52' : '#8FB6D8') }));
+    return {
+      rngs: RG.map(r => r + ' kyd'), penRows, roleRows, cheap, techs, res, tree, overlays, tags, plates, tabs, rows, ticks, meter, ledger, perf, enemy, roleMini, remarks, armour, otherRows, tip, tipBox,
+      ov: ovFlags, tipOff: () => this.setState({ tip: null }),
+      is: { over: s.tab === 'over', prot: s.tab === 'prot', role: s.tab === 'role', other: ['main', 'mach', 'hull', 'fc', 'crew'].indexOf(s.tab) >= 0 },
+      stdText: nf(M.std), dStd: sg(M.std - M0.std), dStdS: 'text-align:right;font-size:11px;' + clr(M.std - M0.std, true),
+      lineScore: M.line.toFixed(2), lenText: M.L.toFixed(1), remarkCount: remarks.length + ' · 1 amber',
+      marginT: over > 0 ? '+' + nf(over) + ' t OVER' : '−' + nf(-over) + ' t spare', marginS: 'font-size:12px;font-weight:600;color:' + (over > 0 ? '#E3A452' : '#86C77E'),
+      reset: () => this.setState(this.base()),
+      fitSpeed: () => { let lo = 16, hi = s.speed; for (let i = 0; i < 20; i++) { const m = (lo + hi) / 2; if (this.model(Object.assign({}, s, { speed: m })).std <= REQ) lo = m; else hi = m; } this.setState({ speed: Math.floor(lo * 100) / 100 }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

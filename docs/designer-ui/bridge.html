@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ship designer — drafting room</title>
+<link rel="stylesheet" href="assets/fonts/bridge-fonts.css">
+<script src="dc-lite.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&amp;family=Saira+Stencil+One&amp;family=Share+Tech+Mono&amp;family=Special+Elite&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#101317}
+a{color:#E8C875}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="position:relative;width:1600px;height:960px;overflow:hidden;background:#14181C;background-image:repeating-linear-gradient(90deg, rgba(255,255,255,0.014) 0 2px, transparent 2px 6px);color:#E8F1F8;font-family:'Barlow Condensed',sans-serif;font-size:15px">
+
+  <!-- ===== TOP BAR: steel with brass nameplate ===== -->
+  <div style="position:absolute;left:0;top:0;width:1600px;height:56px;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:0 14px;background:linear-gradient(180deg,#2E363E,#20262C);border-bottom:2px solid #0B0E11;box-shadow:inset 0 1px 0 rgba(255,255,255,0.08)">
+    <div style="height:38px;display:flex;align-items:center;gap:10px;padding:0 16px;border-radius:3px;background:linear-gradient(180deg,#EED38A,#C99A45 55%,#94692A);box-shadow:inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.3), 0 2px 3px rgba(0,0,0,0.5);color:#2C1E08">
+      <span style="width:6px;height:6px;border-radius:50%;background:#7A5520;box-shadow:inset 0 1px 1px rgba(0,0,0,0.6)"></span>
+      <span style="font-family:'Saira Stencil One',sans-serif;font-size:19px;letter-spacing:0.06em">BATTLESHIP 1905</span>
+      <span style="font-weight:600;font-size:15px;letter-spacing:0.08em;opacity:0.75">SKETCH A</span>
+      <span style="width:6px;height:6px;border-radius:50%;background:#7A5520;box-shadow:inset 0 1px 1px rgba(0,0,0,0.6)"></span>
+    </div>
+    <div style="display:flex;gap:6px">
+      <span style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Saira Stencil One',sans-serif;font-size:16px;color:#2C1E08;background:radial-gradient(circle at 35% 30%,#F4DE9C,#B98A3C 70%);box-shadow:0 2px 3px rgba(0,0,0,0.6), inset 0 -2px 0 rgba(0,0,0,0.25)">A</span>
+      <span style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Saira Stencil One',sans-serif;font-size:16px;color:#9AA6B1;background:radial-gradient(circle at 35% 30%,#4A545E,#2A3138 70%);box-shadow:0 2px 3px rgba(0,0,0,0.6)">B</span>
+      <span style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7C8994;border:1px dashed #4A545E;box-sizing:border-box">+</span>
+    </div>
+    <span style="height:30px;display:flex;align-items:center;gap:6px;padding:0 12px;border-radius:3px;background:#1A1F24;border:1px solid #3F4952;font-weight:600;letter-spacing:0.1em;font-size:13px;color:#B9C4CE">⇆ COMPARE</span>
+    <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:3px;background:#0F1317;border:1px solid #3F4952">
+      <span style="{{lamp}}"></span>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:15px;color:#E8F1F8">{{stdText}} T</span>
+      <span style="font-size:13px;letter-spacing:0.08em;color:#8E9BA6">REQUEST ≤ 24,000</span>
+    </div>
+    <div style="height:34px;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:3px;background:linear-gradient(180deg,#3A434C,#2A3138);border:1px solid #57636E">
+      <span style="font-size:12px;letter-spacing:0.14em;color:#8E9BA6">CLASSIFIED</span>
+      <span style="font-family:'Saira Stencil One',sans-serif;font-size:15px;color:#E8C875;letter-spacing:0.04em">LINE OF BATTLE</span>
+      <span style="font-family:'Share Tech Mono',monospace;color:#E8C875">{{lineScore}}</span>
+    </div>
+  </div>
+
+  <!-- ===== LEFT RAIL: numeral pennants ===== -->
+  <div style="position:absolute;left:0;top:56px;width:330px;height:860px;box-sizing:border-box;background:linear-gradient(90deg,#1E242A,#191E23);border-right:2px solid #0B0E11;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:12px 16px 6px;font-size:12px;letter-spacing:0.2em;color:#6E7C88">SIGNAL HOIST · SECTIONS</div>
+    <div style="position:absolute;left:30px;top:36px;bottom:60px;width:2px;background:repeating-linear-gradient(180deg,#8C7A5A 0 4px,#5E5240 4px 8px);opacity:0.6"></div>
+    <sc-for list="{{sections}}" as="s" hint-placeholder-count="9">
+      <div style="{{s.wrap}}">
+        <button onClick="{{s.open}}" style="width:100%;height:46px;display:flex;align-items:center;gap:12px;padding:0 14px 0 18px;border:none;background:transparent;color:#E8F1F8;text-align:left">
+          <span style="{{s.flag}}"></span>
+          <span style="{{s.nameStyle}}">{{s.name}}</span>
+          <span style="flex:1"></span>
+          <span style="font-size:13px;color:#8E9BA6;white-space:nowrap">{{s.summary}}</span>
+        </button>
+        <div style="{{s.body}}">
+          <sc-for list="{{s.controls}}" as="c" hint-placeholder-count="2">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="width:84px;flex:none;font-size:13px;letter-spacing:0.06em;color:#8E9BA6">{{c.k}}</span>
+              <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;background:#0B0D0F;color:#F4F4F0;font-family:'Share Tech Mono',monospace;font-size:14px;letter-spacing:0.06em;white-space:nowrap;border-radius:2px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12), 0 1px 0 #000;text-transform:uppercase">{{c.v}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+    <div style="margin-top:auto;padding:10px 16px;font-size:12.5px;color:#6E7C88;border-top:1px solid #2B333A;letter-spacing:0.04em">0–8 hoists a section · or click the ship</div>
+  </div>
+
+  <!-- ===== BLUEPRINT TABLE ===== -->
+  <div style="position:absolute;left:338px;top:64px;width:874px;height:844px;background-color:#143E66;background-image:linear-gradient(rgba(255,255,255,0.13) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,0.13) 1px, transparent 1px),linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);background-size:100px 100px,100px 100px,20px 20px,20px 20px;box-shadow:0 0 0 1px #0B2238, 0 6px 18px rgba(0,0,0,0.6), inset 0 0 80px rgba(5,20,40,0.55)"></div>
+  <div style="position:absolute;left:350px;top:72px;font-family:'Saira Stencil One',sans-serif;font-size:13px;letter-spacing:0.16em;color:rgba(232,241,248,0.55)">SHEER &amp; HALF-BREADTH · SCALE 1:420</div>
+  <div style="position:absolute;right:400px;top:72px;font-family:'Special Elite',monospace;font-size:12px;color:rgba(232,241,248,0.5)">D.N.C. drawing no. 1905/A</div>
+
+  <!-- length dimension -->
+  <div style="position:absolute;left:393px;top:100px;width:768px;border-top:1px solid #CFE3F3"></div>
+  <div style="position:absolute;left:393px;top:94px;height:12px;border-left:1px solid #CFE3F3"></div>
+  <div style="position:absolute;left:1160px;top:94px;height:12px;border-left:1px solid #CFE3F3"></div>
+  <div style="position:absolute;left:740px;top:91px;padding:0 8px;background:#143E66;font-family:'Share Tech Mono',monospace;font-size:13px;color:#E8F1F8;transition:all 0.3s">{{lenText}} M O.A.</div>
+
+  <img src="assets/dreadnought.png" alt="Top-down render of the design, bow to the right" style="position:absolute;left:385px;top:108px;width:780px;height:auto;filter:drop-shadow(0 3px 2px rgba(0,0,0,0.35))">
+  <!-- beam dimension -->
+  <div style="position:absolute;left:1180px;top:148px;height:62px;border-left:1px solid #CFE3F3"></div>
+  <div style="position:absolute;left:1174px;top:148px;width:12px;border-top:1px solid #CFE3F3"></div>
+  <div style="position:absolute;left:1174px;top:210px;width:12px;border-top:1px solid #CFE3F3"></div>
+  <div style="position:absolute;left:1186px;top:170px;font-family:'Share Tech Mono',monospace;font-size:12px;color:#E8F1F8;writing-mode:vertical-rl">27.2 M</div>
+  <sc-for list="{{hot}}" as="h" hint-placeholder-count="5">
+    <button onClick="{{h.go}}" aria-label="{{h.aria}}" title="{{h.aria}}" style="{{h.style}}"></button>
+  </sc-for>
+
+  <!-- dock captions & slots -->
+  <sc-for list="{{docks}}" as="d" hint-placeholder-count="4">
+    <div style="{{d.slot}}"></div>
+    <div style="{{d.cap}}">{{d.label}}</div>
+  </sc-for>
+
+  <!-- ===== WIDGET: sheer profile / armour ===== -->
+  <div onClick="{{goProt}}" style="{{w.profile}}">
+    <div style="position:absolute;left:0;top:30%;width:100%;height:62%;background:rgba(207,227,243,0.07);border:2px solid #DCEBF7;box-sizing:border-box;border-radius:0 0 4% 9% / 0 0 30% 40%"></div>
+    <div style="{{fcsl}}"></div>
+    <div style="position:absolute;left:0;right:0;top:58%;border-top:1px dashed #7FC3E8"></div>
+    <sc-for list="{{plates}}" as="p" hint-placeholder-count="10">
+      <div style="{{p.style}}"><span style="{{p.lab}}">{{p.mm}}</span></div>
+    </sc-for>
+    <div style="position:absolute;left:49%;width:2.4%;top:4%;height:26%;border:2px solid #DCEBF7;box-sizing:border-box"></div>
+    <div style="position:absolute;left:54%;width:2.4%;top:4%;height:26%;border:2px solid #DCEBF7;box-sizing:border-box"></div>
+    <div style="position:absolute;left:66.5%;width:6%;top:0;height:30%;border:2px solid #DCEBF7;box-sizing:border-box;background:rgba(207,227,243,0.08)"></div>
+    <div style="{{profLabels}}">
+      <span style="position:absolute;left:16%;top:-4%;font-family:'Saira Stencil One',sans-serif;font-size:13px;letter-spacing:0.08em;color:#F2C65A;white-space:nowrap">CITADEL 117.5 M</span>
+      <span style="position:absolute;right:0.5%;top:53%;font-family:'Share Tech Mono',monospace;font-size:11px;color:#7FC3E8">WL</span>
+      <span style="position:absolute;left:0.5%;bottom:0;font-family:'Special Elite',monospace;font-size:12px;color:#CFE3F3">click a plate · scroll to change · drag edges</span>
+    </div>
+  </div>
+
+  <!-- ===== WIDGET: arrangement strip ===== -->
+  <div onClick="{{goMain}}" style="{{w.strip}}">
+    <div style="position:absolute;inset:0;border:2px solid #DCEBF7;border-radius:2px;background:rgba(10,30,52,0.55)"></div>
+    <div style="position:absolute;left:14px;top:8px;font-family:'Saira Stencil One',sans-serif;font-size:14px;letter-spacing:0.12em;color:#E8F1F8">TURRET ARRANGEMENT</div>
+    <div style="position:absolute;left:14px;top:34px;width:230px;height:130px;border:1.5px dashed #9CC9EA;display:flex;gap:10px;align-items:center;padding:0 12px;box-sizing:border-box">
+      <span style="position:absolute;left:8px;top:4px;font-size:12px;letter-spacing:0.14em;color:#9CC9EA">AFT</span>
+      <sc-for list="{{aftT}}" as="t" hint-placeholder-count="2"><span style="{{t.style}}">{{t.l}}</span></sc-for>
+    </div>
+    <div style="position:absolute;left:254px;top:34px;width:390px;height:130px;border:1.5px dashed #9CC9EA;display:flex;gap:6px;align-items:center;padding:0 12px;box-sizing:border-box">
+      <span style="position:absolute;left:8px;top:4px;font-size:12px;letter-spacing:0.14em;color:#9CC9EA">MIDDLE · MACHINERY</span>
+      <span style="height:44px;padding:0 14px;border:2px solid #CFE3F3;display:flex;align-items:center;font-family:'Saira Stencil One',sans-serif;font-size:13px">ENG</span>
+      <span style="height:44px;padding:0 14px;border:2px solid #F2C65A;color:#F2C65A;display:flex;align-items:center;font-family:'Saira Stencil One',sans-serif;font-size:13px">BOIL</span>
+      <span style="height:44px;width:30px;border:2px dashed #F2C65A;color:#F2C65A;display:flex;align-items:center;justify-content:center;font-family:'Saira Stencil One',sans-serif">Q</span>
+      <span style="height:44px;padding:0 14px;border:2px solid #F2C65A;color:#F2C65A;display:flex;align-items:center;font-family:'Saira Stencil One',sans-serif;font-size:13px">BOIL</span>
+      <span style="width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Saira Stencil One',sans-serif;font-size:15px;color:#2C1E08;background:radial-gradient(circle at 35% 30%,#F4DE9C,#B98A3C 70%);box-shadow:0 3px 4px rgba(0,0,0,0.5)">W1</span>
+    </div>
+    <div style="position:absolute;left:654px;top:34px;width:198px;height:130px;border:1.5px dashed #9CC9EA;display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:0 12px;box-sizing:border-box">
+      <span style="position:absolute;right:8px;top:4px;font-size:12px;letter-spacing:0.14em;color:#9CC9EA">FORE</span>
+      <span style="width:40px;height:40px;border-radius:50%;border:1.5px dashed #9CC9EA;color:#9CC9EA;display:flex;align-items:center;justify-content:center;font-size:22px">+</span>
+      <span style="width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Saira Stencil One',sans-serif;font-size:22px;color:#2C1E08;background:radial-gradient(circle at 35% 30%,#F4DE9C,#B98A3C 70%);box-shadow:0 3px 4px rgba(0,0,0,0.5)">A</span>
+    </div>
+  </div>
+
+  <!-- ===== WIDGET: speed curve ===== -->
+  <div onClick="{{goMach}}" style="{{w.curve}}">
+    <div style="position:absolute;inset:0;border:2px solid #DCEBF7;border-radius:2px;background:rgba(10,30,52,0.55)"></div>
+    <div style="position:absolute;left:14px;top:8px;font-family:'Saira Stencil One',sans-serif;font-size:14px;letter-spacing:0.12em">DISPLACEMENT ON SPEED</div>
+    <svg width="866" height="300" viewBox="0 0 866 300" style="position:absolute;left:0;top:0" role="img" aria-label="Standard displacement rises from 19,229 t at 17 knots to 42,033 t at 25 knots; the 24,000 t request is met at 20.47 knots.">
+      <line x1="40" x2="840" y1="{{reqY}}" y2="{{reqY}}" stroke="#F2C65A" stroke-width="1.5" stroke-dasharray="8 5"></line>
+      <polyline points="{{curve}}" fill="none" stroke="#F4F8FB" stroke-width="3"></polyline>
+      <circle cx="{{cur.x}}" cy="{{cur.y}}" r="9" fill="#143E66" stroke="#F2C65A" stroke-width="3"></circle>
+      <sc-for list="{{xt}}" as="t" hint-placeholder-count="9"><text x="{{t.x}}" y="290" text-anchor="middle" font-family="Share Tech Mono, monospace" font-size="12" fill="#9CC9EA">{{t.l}}</text></sc-for>
+    </svg>
+  </div>
+
+  <!-- ===== WIDGET: fire control ===== -->
+  <div onClick="{{goFc}}" style="{{w.fc}}">
+    <div style="position:absolute;inset:0;border:2px solid #DCEBF7;border-radius:2px;background:rgba(10,30,52,0.55)"></div>
+    <div style="position:absolute;left:14px;top:8px;font-family:'Saira Stencil One',sans-serif;font-size:14px;letter-spacing:0.12em">DIRECTOR HORIZON</div>
+    <div style="position:absolute;left:60px;top:140px;width:746px;height:100px;border-radius:50% 50% 0 0;border:2px dashed #9CC9EA;border-bottom:none;box-sizing:border-box"></div>
+    <div style="position:absolute;left:330px;top:184px;width:206px;height:36px;border:2px solid #DCEBF7;border-radius:0 0 10px 30px;box-sizing:border-box"></div>
+    <div style="position:absolute;left:420px;top:120px;width:24px;height:64px;border:2px solid #DCEBF7;box-sizing:border-box"></div>
+    <div style="position:absolute;left:600px;top:70px;font-family:'Special Elite',monospace;font-size:14px;color:#E8F1F8">eye 26 m · horizon 18.9 km</div>
+  </div>
+
+  <!-- ===== WIDGET: crew ===== -->
+  <div onClick="{{goCrew}}" style="{{w.crew}}">
+    <div style="position:absolute;inset:0;border:2px solid #DCEBF7;border-radius:2px;background:rgba(10,30,52,0.55)"></div>
+    <div style="position:absolute;left:14px;top:8px;font-family:'Saira Stencil One',sans-serif;font-size:14px;letter-spacing:0.12em">BERTHING</div>
+    <div style="position:absolute;left:40px;top:80px;display:flex;gap:6px">
+      <sc-for list="{{bunks}}" as="b" hint-placeholder-count="24"><span style="{{b}}"></span></sc-for>
+    </div>
+    <div style="position:absolute;left:40px;top:200px;font-family:'Special Elite',monospace;font-size:14px;color:#E8F1F8">908 men · hammocks over mess tables</div>
+  </div>
+
+  <!-- ===== SECTION PANEL ===== -->
+  <div style="{{panel}}">
+    <sc-if value="{{is.over}}" hint-placeholder-val="{{ true }}">
+      <div style="height:100%;display:flex;gap:10px">
+        <!-- engine order telegraph -->
+        <div style="width:226px;flex:none;position:relative;border-radius:4px;background:linear-gradient(180deg,#2E363E,#21272D);border:1px solid #4E5963;box-shadow:inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 10px rgba(0,0,0,0.5);background-image:radial-gradient(circle at 9px 9px,#7A848E 1.6px,transparent 2.4px),radial-gradient(circle at calc(100% - 9px) 9px,#7A848E 1.6px,transparent 2.4px),radial-gradient(circle at 9px calc(100% - 9px),#7A848E 1.6px,transparent 2.4px),radial-gradient(circle at calc(100% - 9px) calc(100% - 9px),#7A848E 1.6px,transparent 2.4px),linear-gradient(180deg,#2E363E,#21272D)">
+          <div style="position:absolute;left:0;right:0;top:12px;text-align:center;font-family:'Saira Stencil One',sans-serif;font-size:15px;letter-spacing:0.14em;color:#E8C875">ENGINE ORDER</div>
+          <div style="position:absolute;left:18px;top:40px;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle,#F3ECD9 0 58%,#E3D7B8 70%);box-shadow:0 0 0 7px #B98A3C, 0 0 0 9px #6E4E1E, 0 6px 12px rgba(0,0,0,0.6), inset 0 2px 8px rgba(0,0,0,0.35)">
+            <sc-for list="{{teleTicks}}" as="t" hint-placeholder-count="11"><span style="{{t.tick}}"></span><span style="{{t.lab}}">{{t.l}}</span></sc-for>
+            <span style="position:absolute;left:28%;top:58%;font-family:'Saira Stencil One',sans-serif;font-size:11px;color:#8A2A1E;letter-spacing:0.08em">AHEAD</span>
+            <span style="{{teleNeedle}}"></span>
+            <span style="position:absolute;left:calc(50% - 11px);top:calc(50% - 11px);width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F4DE9C,#8C6526);box-shadow:0 2px 3px rgba(0,0,0,0.5)"></span>
+          </div>
+          <div style="position:absolute;left:0;right:0;top:246px;display:flex;justify-content:center;align-items:center;gap:10px">
+            <button aria-label="Less Speed" onClick="{{spd.minus}}" style="width:38px;height:34px;border-radius:3px;border:none;font-size:20px;color:#2C1E08;background:linear-gradient(180deg,#EED38A,#B98A3C);box-shadow:0 2px 0 #6E4E1E">−</button>
+            <span style="min-width:86px;height:34px;display:flex;align-items:center;justify-content:center;background:#0B0D0F;font-family:'Share Tech Mono',monospace;font-size:20px;color:#F2C65A;border-radius:2px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.8)">{{spd.value}}</span>
+            <button aria-label="More Speed" onClick="{{spd.plus}}" style="width:38px;height:34px;border-radius:3px;border:none;font-size:20px;color:#2C1E08;background:linear-gradient(180deg,#EED38A,#B98A3C);box-shadow:0 2px 0 #6E4E1E">+</button>
+          </div>
+          <div style="position:absolute;left:0;right:0;top:292px;text-align:center"><span style="display:inline-block;padding:3px 10px;background:#EDE6D3;color:#2A2216;font-family:'Special Elite',monospace;font-size:13px;transform:rotate(-1.5deg);box-shadow:0 2px 3px rgba(0,0,0,0.4)">{{spd.chip}}</span></div>
+          <div style="position:absolute;left:0;right:0;top:330px;text-align:center;font-size:13px;letter-spacing:0.08em;color:#8E9BA6">{{shpText}}</div>
+        </div>
+        <!-- levers -->
+        <div style="flex:1;position:relative;border-radius:4px;border:1px solid #4E5963;box-shadow:inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 10px rgba(0,0,0,0.5);background-image:radial-gradient(circle at 9px 9px,#7A848E 1.6px,transparent 2.4px),radial-gradient(circle at calc(100% - 9px) 9px,#7A848E 1.6px,transparent 2.4px),radial-gradient(circle at 9px calc(100% - 9px),#7A848E 1.6px,transparent 2.4px),radial-gradient(circle at calc(100% - 9px) calc(100% - 9px),#7A848E 1.6px,transparent 2.4px),linear-gradient(180deg,#2E363E,#21272D);display:flex;justify-content:space-around;padding:12px 10px 10px;box-sizing:border-box">
+          <sc-for list="{{levers}}" as="l" hint-placeholder-count="6">
+            <div style="width:56px;display:flex;flex-direction:column;align-items:center;gap:6px">
+              <span style="width:56px;height:26px;display:flex;align-items:center;justify-content:center;background:#0B0D0F;font-family:'Share Tech Mono',monospace;font-size:14px;color:#F2C65A;border-radius:2px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.8)">{{l.value}}</span>
+              <span style="position:relative;width:16px;height:150px;border-radius:8px;background:#0B0D0F;box-shadow:inset 0 2px 5px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.08)">
+                <sc-for list="{{l.ticks}}" as="tk" hint-placeholder-count="5"><span style="{{tk}}"></span></sc-for>
+                <span style="{{l.mark}}"></span>
+                <span style="{{l.knob}}"></span>
+              </span>
+              <span style="display:flex;gap:4px">
+                <button aria-label="{{l.minusAria}}" onClick="{{l.minus}}" style="width:28px;height:24px;border-radius:2px;border:none;color:#2C1E08;background:linear-gradient(180deg,#EED38A,#B98A3C);box-shadow:0 2px 0 #6E4E1E;font-size:15px;line-height:1">−</button>
+                <button aria-label="{{l.plusAria}}" onClick="{{l.plus}}" style="width:28px;height:24px;border-radius:2px;border:none;color:#2C1E08;background:linear-gradient(180deg,#EED38A,#B98A3C);box-shadow:0 2px 0 #6E4E1E;font-size:15px;line-height:1">+</button>
+              </span>
+              <span style="font-family:'Saira Stencil One',sans-serif;font-size:12px;letter-spacing:0.06em;color:#CFD8E0;text-align:center;line-height:1.1;height:28px">{{l.name}}</span>
+              <span style="padding:2px 5px;background:#EDE6D3;color:#2A2216;font-family:'Special Elite',monospace;font-size:11.5px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,0.4)">{{l.chip}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <!-- displacement gauge -->
+        <div style="width:236px;flex:none;position:relative;border-radius:4px;border:1px solid #4E5963;box-shadow:inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 10px rgba(0,0,0,0.5);background-image:radial-gradient(circle at 9px 9px,#7A848E 1.6px,transparent 2.4px),radial-gradient(circle at calc(100% - 9px) 9px,#7A848E 1.6px,transparent 2.4px),radial-gradient(circle at 9px calc(100% - 9px),#7A848E 1.6px,transparent 2.4px),radial-gradient(circle at calc(100% - 9px) calc(100% - 9px),#7A848E 1.6px,transparent 2.4px),linear-gradient(180deg,#2E363E,#21272D)">
+          <div style="position:absolute;left:0;right:0;top:12px;text-align:center;font-family:'Saira Stencil One',sans-serif;font-size:15px;letter-spacing:0.14em;color:#E8C875">DISPLACEMENT</div>
+          <div style="position:absolute;left:28px;top:40px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,#F3ECD9 0 58%,#E3D7B8 70%);box-shadow:0 0 0 7px #8C969F, 0 0 0 9px #3A424A, 0 6px 12px rgba(0,0,0,0.6), inset 0 2px 8px rgba(0,0,0,0.35)">
+            <span style="{{gaugeArc}}"></span>
+            <sc-for list="{{gaugeTicks}}" as="t" hint-placeholder-count="9"><span style="{{t.tick}}"></span><span style="{{t.lab}}">{{t.l}}</span></sc-for>
+            <span style="position:absolute;left:0;right:0;top:64%;text-align:center;font-family:'Share Tech Mono',monospace;font-size:10px;color:#5A4E38">STD · ×1000 T</span>
+            <span style="{{gaugeNeedle}}"></span>
+            <span style="position:absolute;left:calc(50% - 10px);top:calc(50% - 10px);width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#C9D1D8,#4A545E);box-shadow:0 2px 3px rgba(0,0,0,0.5)"></span>
+          </div>
+          <div style="position:absolute;left:0;right:0;top:236px;display:flex;justify-content:center;gap:2px">
+            <sc-for list="{{odo}}" as="d" hint-placeholder-count="6"><span style="{{d.style}}">{{d.c}}</span></sc-for>
+            <span style="margin-left:6px;align-self:center;font-family:'Saira Stencil One',sans-serif;font-size:14px;color:#8E9BA6">T</span>
+          </div>
+          <div style="position:absolute;left:0;right:0;top:282px;display:flex;justify-content:center;align-items:center;gap:8px">
+            <span style="{{lamp}}"></span>
+            <span style="{{marginStyle}}">{{marginText}}</span>
+          </div>
+          <div style="position:absolute;left:14px;right:14px;bottom:12px;display:flex;gap:8px">
+            <button onClick="{{reset}}" style="flex:1;height:32px;border:1px solid #57636E;border-radius:3px;background:linear-gradient(180deg,#3A434C,#2A3138);color:#CFD8E0;font-family:'Saira Stencil One',sans-serif;font-size:12px;letter-spacing:0.1em">RESET</button>
+            <button onClick="{{fitSpeed}}" style="flex:1.2;height:32px;border:none;border-radius:3px;background:linear-gradient(180deg,#EED38A,#B98A3C);box-shadow:0 2px 0 #6E4E1E;color:#2C1E08;font-family:'Saira Stencil One',sans-serif;font-size:12px;letter-spacing:0.08em">⌖ FIT SPEED</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{is.main}}" hint-placeholder-val="{{ false }}">
+      <div style="{{plate}}">
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{presets}}" as="p" hint-placeholder-count="5"><span style="{{p.style}}">{{p.l}}</span></sc-for></div>
+        <span style="font-family:'Special Elite',monospace;font-size:15px;color:#E8F1F8">Battery 1 — 12 in / 45 Mk X, twin · 10 guns · 100 rounds per gun</span>
+        <span style="font-family:'Special Elite',monospace;font-size:14px;color:#CFD8E0">Bearing: ahead 6 · broadside 8 · astern 4</span>
+        <span style="align-self:flex-start;padding:3px 10px;background:#EDE6D3;color:#2A2216;font-family:'Special Elite',monospace;font-size:13px;transform:rotate(-1deg)">+1 end turret: +1,150 t · +0.0 m (12.5 m slack)</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{is.prot}}" hint-placeholder-val="{{ false }}">
+      <div style="{{plate}}">
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><sc-for list="{{schemes}}" as="p" hint-placeholder-count="4"><span style="{{p.style}}">{{p.l}}</span></sc-for></div>
+        <span style="font-family:'Special Elite',monospace;font-size:14px;color:#CFD8E0">Belt band 2.7 m below · 2.7 m above (auto) · end belts to stem and stern · no steering box · TDS 0 m</span>
+        <span style="align-self:flex-start;padding:3px 10px;background:#EDE6D3;color:#2A2216;font-family:'Special Elite',monospace;font-size:13px;transform:rotate(-1deg)">+1 in belt: +310 t</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{is.role}}" hint-placeholder-val="{{ false }}">
+      <div style="{{plate}}">
+        <span style="font-size:13px;letter-spacing:0.14em;color:#8E9BA6">YOUR ORDERS (THE ENEMY IGNORES THEM)</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{roles}}" as="p" hint-placeholder-count="4"><span style="{{p.style}}">{{p.l}}</span></sc-for></div>
+        <span style="font-size:13px;letter-spacing:0.14em;color:#8E9BA6;margin-top:6px">FITNESS</span>
+        <sc-for list="{{fit}}" as="f" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:118px;font-family:'Special Elite',monospace;font-size:13.5px">{{f.name}}</span><span style="flex:1;height:10px;background:#0B0D0F;border-radius:2px;position:relative;box-shadow:inset 0 1px 2px #000"><span style="{{f.bar}}"></span></span><span style="font-family:'Share Tech Mono',monospace;width:36px;text-align:right">{{f.v}}</span></div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{is.mach}}" hint-placeholder-val="{{ false }}">
+      <div style="{{plate}}">
+        <span style="font-family:'Special Elite',monospace;font-size:15px">Direct-drive turbines, coal-fired · 120 kg/kW · 950 g/kWh</span>
+        <span style="font-family:'Special Elite',monospace;font-size:14px;color:#CFD8E0">Rating: conservative (0.2) · range {{rangeText}}</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{is.plain}}" hint-placeholder-val="{{ false }}">
+      <div style="{{plate}}"><span style="font-family:'Special Elite',monospace;font-size:15px;color:#E8F1F8">{{plainText}}</span></div>
+    </sc-if>
+  </div>
+
+  <!-- ===== CLIPBOARD: dockyard report ===== -->
+  <div style="position:absolute;left:1224px;top:64px;width:370px;height:844px;border-radius:8px;background:linear-gradient(160deg,#5A3E26,#3E2A18);box-shadow:0 6px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)"></div>
+  <div style="position:absolute;left:1240px;top:92px;width:340px;height:802px;background:#EDE6D3;background-image:repeating-linear-gradient(180deg, transparent 0 23px, rgba(80,110,150,0.12) 23px 24px);box-shadow:0 2px 4px rgba(0,0,0,0.5)"></div>
+  <div style="position:absolute;left:1350px;top:70px;width:120px;height:36px;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,#D9DEE2,#8C969F);box-shadow:0 3px 4px rgba(0,0,0,0.5)"></div>
+  <div style="position:absolute;left:1396px;top:76px;width:28px;height:8px;border-radius:4px;background:#5A646D"></div>
+  <div style="position:absolute;left:1256px;top:112px;font-family:'Saira Stencil One',sans-serif;font-size:18px;letter-spacing:0.08em;color:#2A2216">DOCKYARD REPORT</div>
+  <div style="position:absolute;left:1256px;top:134px;font-family:'Special Elite',monospace;font-size:12.5px;color:#5A4E38">Sketch A · as designed</div>
+  <div style="{{stamp}}">{{stampText}}</div>
+  <div style="position:absolute;left:1256px;top:162px;width:308px;display:flex;flex-direction:column">
+    <sc-for list="{{legend}}" as="p" hint-placeholder-count="8">
+      <button onClick="{{p.go}}" style="display:flex;align-items:baseline;gap:4px;height:24px;border:none;background:transparent;padding:0;text-align:left;color:#2A2216;font-family:'Special Elite',monospace;font-size:13.5px">
+        <span>{{p.k}}</span><span style="flex:1;border-bottom:1px dotted #8C7E62;transform:translateY(-4px)"></span><span>{{p.v}}</span>
+      </button>
+    </sc-for>
+  </div>
+  <div style="position:absolute;left:1256px;top:366px;width:308px;font-family:'Special Elite',monospace;font-size:11.5px;color:#5A4E38">weights (std) — request line</div>
+  <div style="position:absolute;left:1256px;top:384px;width:308px;height:14px;display:flex;border:1px solid #2A2216;background:#E2D9C2">
+    <sc-for list="{{segs}}" as="g" hint-placeholder-count="6"><span style="{{g}}"></span></sc-for>
+    <span style="{{reqLine}}"></span>
+  </div>
+  <div style="{{matchSlot}}">plot taken to the table ↙</div>
+
+  <!-- ===== WIDGET: plotting sheet (catches · escapes · beats) ===== -->
+  <div onClick="{{goRole}}" style="{{w.match}}">
+    <div style="position:absolute;inset:0;background:#F4EFDF;background-image:linear-gradient(rgba(60,90,130,0.16) 1px, transparent 1px),linear-gradient(90deg, rgba(60,90,130,0.16) 1px, transparent 1px);background-size:26.6px 26.6px;box-shadow:0 3px 8px rgba(0,0,0,0.45)"></div>
+    <div style="position:absolute;left:0;top:13%;width:44%;height:40%;background:rgba(47,125,74,0.13)"></div>
+    <div style="position:absolute;left:44%;top:53%;width:56%;height:40%;background:rgba(160,60,40,0.12)"></div>
+    <div style="position:absolute;left:44%;top:13%;height:80%;border-left:2px dashed #9A6A1E"></div>
+    <div style="position:absolute;left:0;right:0;top:53%;border-top:1.5px solid #5A4E38"></div>
+    <div style="position:absolute;left:14px;top:10px;font-family:'Saira Stencil One',sans-serif;font-size:19px;letter-spacing:0.06em;color:#2A2216">CATCHES · ESCAPES · BEATS</div>
+    <sc-for list="{{dots}}" as="d" hint-placeholder-count="8">
+      <div style="{{d.dot}}"></div><div style="{{d.lab}}">{{d.name}}</div>
+    </sc-for>
+    <div style="position:absolute;left:calc(50% - 12px);top:calc(53% - 12px);width:24px;height:24px;transform:rotate(45deg);background:#B98A3C;border:2px solid #2A2216;box-sizing:border-box"></div>
+    <div style="{{quadLabels}}">
+      <span style="position:absolute;left:10px;top:15%;font-family:'Saira Stencil One',sans-serif;font-size:13px;color:#2F7D4A">PREY</span>
+      <span style="position:absolute;right:10px;top:46%;font-family:'Saira Stencil One',sans-serif;font-size:13px;color:#3E5A78">TOO FAST</span>
+      <span style="position:absolute;left:10px;bottom:9%;font-family:'Saira Stencil One',sans-serif;font-size:13px;color:#9A6A1E">ESCAPE</span>
+      <span style="position:absolute;right:10px;bottom:9%;font-family:'Saira Stencil One',sans-serif;font-size:13px;color:#A03C28">DANGER</span>
+    </div>
+    <div style="position:absolute;left:14px;bottom:6px;font-family:'Special Elite',monospace;font-size:16px;color:#2A2216">Prey 3 · Too fast 5 · Danger 0</div>
+    <div style="position:absolute;left:calc(50% - 9px);top:-7px;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#E86A55,#8A2A1E);box-shadow:0 2px 3px rgba(0,0,0,0.5)"></div>
+  </div>
+
+  <div style="position:absolute;left:1256px;top:654px;width:308px;font-family:'Saira Stencil One',sans-serif;font-size:14px;letter-spacing:0.06em;color:#2A2216">REMARKS</div>
+  <div style="position:absolute;left:1256px;top:678px;width:308px;display:flex;flex-direction:column;gap:6px;font-family:'Special Elite',monospace;font-size:13px;color:#2A2216">
+    <sc-if value="{{overReq}}" hint-placeholder-val="{{ true }}"><span>— {{overBy}} t over the request. <u>Trim</u></span></sc-if>
+    <span>— Aft control stands in the funnel smoke. <u>Show</u></span>
+  </div>
+
+  <!-- ===== BOTTOM: log ===== -->
+  <div style="position:absolute;left:0;top:916px;width:1600px;height:44px;box-sizing:border-box;display:flex;align-items:center;gap:16px;padding:0 16px;background:linear-gradient(180deg,#232A30,#1A1F24);border-top:2px solid #0B0E11;font-family:'Special Elite',monospace;font-size:13px;color:#B9C4CE">
+    <span style="font-family:'Saira Stencil One',sans-serif;font-size:13px;letter-spacing:0.14em;color:#6E7C88">LOG</span>
+    <span>09:12 bare hull</span><span>09:14 preset Dreadnought H</span><span>09:20 21 kn</span><span>09:31 incremental armour</span><span style="color:#E8C875">09:40 forecastle to funnels</span>
+    <span style="flex:1"></span>
+    <button style="height:32px;padding:0 16px;border:none;border-radius:3px;background:linear-gradient(180deg,#EED38A,#B98A3C);box-shadow:0 2px 0 #6E4E1E;color:#2C1E08;font-family:'Saira Stencil One',sans-serif;font-size:13px;letter-spacing:0.1em">LAY DOWN</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":960}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = Object.assign({ section: 'over', panelVis: true }, this.base()); }
+  base() { return { speed: 21, range: 6600, belt: 11, deck: 3, turret: 11, rpg: 100, sec: 5 }; }
+  model(v) {
+    const D = [[17, 19229, 154], [18, 20235, 159.5], [19, 21756, 169], [20, 23326, 177], [21, 24970, 183.5], [22, 27110, 192], [23, 31127, 211.5], [24, 35101, 225], [25, 42033, 251.5]];
+    const k = Math.max(0, Math.min(7.999, v.speed - 17)), i = Math.floor(k), f = k - i;
+    const cs = D[i][1] + (D[i + 1][1] - D[i][1]) * f, cl = D[i][2] + (D[i + 1][2] - D[i][2]) * f;
+    const armour = 10087 + 310 * (v.belt - 11) + 720 * (v.deck - 3) + 94 * (v.turret - 11);
+    const arm = 3337 + 7 * (v.rpg - 100) + 12 * (v.sec - 5);
+    const std = Math.round(cs + (armour - 10087) + (arm - 3337) + 0.12 * (v.range - 6600));
+    const L = cl + 0.004 * (std - cs);
+    const shp = Math.round(33800 * Math.pow(v.speed / 21, 3) * Math.pow(std / 24970, 2 / 3) / 100) * 100;
+    const fuel = Math.round(4561 * (v.range / 6600) * Math.pow(std / 24970, 2 / 3));
+    const mach = Math.round(2783 * Math.pow(shp / 33800, 0.9));
+    const gm = 1.51 + 0.16 * (v.speed - 21) - 0.02 * (v.belt - 11);
+    const line = Math.max(0, Math.min(1, 0.84 + 0.04 * (v.belt - 11) + 0.06 * (v.deck - 3) + 0.02 * (v.turret - 11) + 0.02 * (v.speed - 21)));
+    return { std, L, shp, fuel, full: std + fuel, armour, arm, mach, gm, line };
+  }
+  componentWillUnmount() { clearTimeout(this._t); }
+  go(id) {
+    return () => {
+      if (id === this.state.section) return;
+      clearTimeout(this._t);
+      this.setState({ section: id, panelVis: false });
+      this._t = setTimeout(() => this.setState({ panelVis: true }), 330);
+    };
+  }
+  renderVals() {
+    const s = this.state, sec = s.section;
+    const M = this.model(s), M0 = this.model(this.base()), REQ = 24000;
+    const nf = (x) => Math.round(x).toLocaleString('en-GB');
+    const sg = (x) => (x > 0 ? '+' : x < 0 ? '−' : '±') + nf(Math.abs(x));
+    const over = M.std - REQ;
+    const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+    const T = 'transition:transform 0.55s ' + EASE + ', opacity 0.35s ease, box-shadow 0.4s;';
+    const place = (B, R, z, focused, clickable) => 'position:absolute;left:' + B.x + 'px;top:' + B.y + 'px;width:' + B.w + 'px;height:' + B.h + 'px;transform-origin:0 0;transform:translate(' + (R.x - B.x) + 'px,' + (R.y - B.y) + 'px) scale(' + (R.w / B.w).toFixed(4) + ',' + (R.h / B.h).toFixed(4) + ');' + T + 'z-index:' + z + ';' + (clickable ? 'cursor:pointer;' : '') + (focused ? 'filter:drop-shadow(0 10px 18px rgba(0,0,0,0.45));' : '');
+    const DOCK = { strip: { x: 350, y: 836 }, curve: { x: 567, y: 836 }, fc: { x: 784, y: 836 }, crew: { x: 1001, y: 836 } };
+    const dockRect = (k, B) => { const sc = 200 / B.w; return { x: DOCK[k].x, y: DOCK[k].y, w: B.w * sc, h: B.h * sc }; };
+    const Bstrip = { x: 342, y: 340, w: 866, h: 180 }, Bcurve = { x: 342, y: 340, w: 866, h: 300 }, Bfc = { x: 342, y: 340, w: 866, h: 260 }, Bcrew = { x: 342, y: 340, w: 866, h: 260 };
+    const Bprof = { x: 345, y: 248, w: 860, h: 340 };
+    const profRect = sec === 'prot' ? Bprof : sec === 'hull' ? { x: 345, y: 248, w: 860, h: 200 } : sec === 'over' ? { x: 385, y: 248, w: 780, h: 160 } : { x: 385, y: 246, w: 780, h: 86 };
+    const Bmatch = { x: 350, y: 346, w: 532, h: 380 };
+    const matchDock = { x: 1256, y: 410, w: 308, h: 308 * 380 / 532 };
+    const w = {
+      profile: place(Bprof, profRect, sec === 'prot' || sec === 'hull' ? 6 : 2, sec === 'prot', sec !== 'prot'),
+      strip: place(Bstrip, sec === 'main' ? Bstrip : dockRect('strip', Bstrip), sec === 'main' ? 6 : 3, sec === 'main', sec !== 'main'),
+      curve: place(Bcurve, sec === 'mach' ? Bcurve : dockRect('curve', Bcurve), sec === 'mach' ? 6 : 3, sec === 'mach', sec !== 'mach'),
+      fc: place(Bfc, sec === 'fc' ? Bfc : dockRect('fc', Bfc), sec === 'fc' ? 6 : 3, sec === 'fc', sec !== 'fc'),
+      crew: place(Bcrew, sec === 'crew' ? Bcrew : dockRect('crew', Bcrew), sec === 'crew' ? 6 : 3, sec === 'crew', sec !== 'crew'),
+      match: place(Bmatch, sec === 'role' ? Bmatch : matchDock, sec === 'role' ? 8 : 9, sec === 'role', sec !== 'role')
+    };
+    const big = { prot: sec === 'prot', hull: sec === 'hull', role: sec === 'role', over: sec === 'over' };
+    const fade = (on, extra) => 'opacity:' + (on ? 1 : 0) + ';transition:opacity 0.3s ease ' + (on ? '0.3s' : '0s') + ';' + (extra || '');
+    const psx = profRect.w / Bprof.w, psy = profRect.h / Bprof.h;
+    const inv = 'transform:scale(' + (1 / psx).toFixed(3) + ',' + (1 / psy).toFixed(3) + ');transition:opacity 0.3s ease, transform 0.55s ' + EASE + ';';
+
+    // armour plates: blueprint hatching over heat colours
+    const col = (mm) => mm >= 260 ? '#B4442F' : mm >= 190 ? '#C9643C' : mm >= 140 ? '#D9824A' : mm >= 95 ? '#E3A15E' : mm >= 60 ? '#EAC27A' : '#F0DDA0';
+    const P = (l, wd, t, h, mm, txt) => ({ mm: txt, style: 'position:absolute;left:' + l + '%;width:' + wd + '%;top:' + t + '%;height:' + h + '%;background-color:' + col(mm) + ';background-image:repeating-linear-gradient(135deg, rgba(255,255,255,0.18) 0 2px, transparent 2px 7px);border:1.5px solid #F4F8FB;box-sizing:border-box;display:flex;align-items:center;justify-content:center;opacity:0.92',
+      lab: 'opacity:' + (big.prot || (big.over && h >= 6) ? 1 : 0) + ';' + inv + "font-family:'Saira Stencil One',sans-serif;font-size:13px;letter-spacing:0.04em;white-space:nowrap;color:#1B140A;" + (h < 6 ? 'background:#F4EFDF;padding:0 4px;' : '') });
+    const plates = [
+      P(15.6, 68.5, 46, 22, 279, s.belt + ' → ' + (s.belt - 2) + ' IN'), P(15.6, 68.5, 33, 13, 203, '8 IN'), P(84.1, 15, 46, 22, 152, '6 IN'), P(1, 14.6, 46, 22, 102, '4 IN'),
+      P(15.6, 68.5, 44, 3, 76, s.deck + ' IN DECK'), P(84.1, 14.5, 72, 2.4, 38, '1.5'), P(1.2, 14.4, 72, 2.4, 76, '3'),
+      P(10.5, 6, 14, 16, 279, s.turret + ''), P(17.5, 6, 14, 16, 279, s.turret + ''), P(79, 6, 4, 18, 279, s.turret + '')
+    ];
+    const fcsl = 'position:absolute;left:50%;width:50%;top:' + (sec === 'hull' ? 18 : 22) + '%;height:' + (sec === 'hull' ? 13 : 9) + '%;border:2px solid ' + (sec === 'hull' ? '#F2C65A' : '#DCEBF7') + ';border-bottom:none;box-sizing:border-box;transition:all 0.5s ' + EASE;
+
+    // telegraph dial (speed 16..26 over -120..120 deg)
+    const ang = (v, lo, hi) => -120 + 240 * (v - lo) / (hi - lo);
+    const tickAt = (a, r, len, wdt, colr) => 'position:absolute;left:calc(50% - ' + wdt / 2 + 'px);top:calc(50% - ' + r + 'px);width:' + wdt + 'px;height:' + len + 'px;background:' + colr + ';transform-origin:' + wdt / 2 + 'px ' + r + 'px;transform:rotate(' + a + 'deg)';
+    const labAt = (a, r) => { const rad = (a - 90) * Math.PI / 180; return 'position:absolute;left:calc(50% + ' + (Math.cos(rad) * r).toFixed(1) + 'px - 14px);top:calc(50% + ' + (Math.sin(rad) * r).toFixed(1) + 'px - 8px);width:28px;text-align:center;font-family:Share Tech Mono,monospace;font-size:12px;color:#2A2216'; };
+    const teleTicks = [16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26].map(v => ({ tick: tickAt(ang(v, 16, 26), 92, v % 2 === 0 ? 12 : 7, 2, '#2A2216'), lab: labAt(ang(v, 16, 26), 66), l: v % 2 === 0 ? String(v) : '' }));
+    const needle = (a, colr) => 'position:absolute;left:calc(50% - 3px);top:calc(50% - 76px);width:6px;height:80px;border-radius:3px 3px 1px 1px;background:' + colr + ';transform-origin:3px 76px;transform:rotate(' + a.toFixed(1) + 'deg);transition:transform 0.6s cubic-bezier(0.3, 1.4, 0.5, 1);box-shadow:0 1px 2px rgba(0,0,0,0.4)';
+    const teleNeedle = needle(ang(s.speed, 16, 26), '#8A2A1E');
+    // displacement gauge 20k..28k
+    const gA = (t) => ang(Math.max(20000, Math.min(28000, t)), 20000, 28000);
+    const gaugeTicks = [20, 21, 22, 23, 24, 25, 26, 27, 28].map(v => ({ tick: tickAt(gA(v * 1000), 84, v % 2 === 0 ? 12 : 7, 2, '#2A2216'), lab: labAt(gA(v * 1000), 60), l: v % 2 === 0 ? String(v) : '' }));
+    const gaugeNeedle = needle(gA(M.std), '#1B140A').replace('height:80px', 'height:74px').replace('top:calc(50% - 76px)', 'top:calc(50% - 70px)').replace('transform-origin:3px 76px', 'transform-origin:3px 70px');
+    const a0 = gA(REQ) + 360, a1 = 120 + 360;
+    const gaugeArc = 'position:absolute;inset:6px;border-radius:50%;background:conic-gradient(from 0deg, transparent 0deg ' + (gA(REQ) + 360) % 360 + 'deg, rgba(222,150,40,0.55) ' + (gA(REQ) + 360) % 360 + 'deg 120deg, transparent 120deg);-webkit-mask:radial-gradient(circle, transparent 0 62%, #000 63% 74%, transparent 75%);mask:radial-gradient(circle, transparent 0 62%, #000 63% 74%, transparent 75%)';
+    const digits = nf(M.std).padStart(6, ' ');
+    const odo = digits.split('').map(c => ({ c: c === ' ' ? '0' : c, style: c === ',' ? "width:8px;font-family:'Share Tech Mono',monospace;font-size:22px;color:#8E9BA6;align-self:flex-end" : 'width:24px;height:34px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#0B0D0F,#22282E 50%,#0B0D0F);color:' + (c === ' ' ? '#3A424A' : '#F4F4F0') + ";font-family:'Share Tech Mono',monospace;font-size:22px;border-radius:2px;box-shadow:inset 0 1px 2px rgba(0,0,0,0.9)" }));
+    const lamp = 'width:14px;height:14px;border-radius:50%;flex:none;transition:all 0.3s;' + (over > 0 ? 'background:radial-gradient(circle at 35% 30%,#FFE29A,#E09A1A 60%);box-shadow:0 0 10px 2px rgba(240,170,40,0.7)' : 'background:radial-gradient(circle at 35% 30%,#D8FFD0,#3FAE4F 60%);box-shadow:0 0 10px 2px rgba(80,210,100,0.7)');
+
+    // levers
+    const LV = [['range', 'RANGE', 500, 2000, 12000, (v) => (v / 1000).toFixed(1) + 'k', 'nm'], ['belt', 'BELT', 0.5, 4, 14, (v) => v.toFixed(1), 'in'], ['deck', 'DECK', 0.25, 1, 5, (v) => v.toFixed(2), 'in'],
+      ['turret', 'TURRETS', 0.5, 6, 14, (v) => v.toFixed(1), 'in'], ['rpg', 'ROUNDS', 10, 50, 150, (v) => String(v), ''], ['sec', '3 IN / SIDE', 1, 0, 10, (v) => String(v), '']];
+    const lever = (l) => {
+      const key = l[0], st = l[2], lo = l[3], hi = l[4], v = s[key], v0 = this.base()[key];
+      const dStd = this.model(Object.assign({}, s, { [key]: Math.max(lo, v - st) })).std - M.std;
+      const pos = (x) => (x - lo) / (hi - lo);
+      return { name: l[1], value: l[5](v),
+        minus: () => this.setState({ [key]: Math.max(lo, +(v - st).toFixed(2)) }), plus: () => this.setState({ [key]: Math.min(hi, +(v + st).toFixed(2)) }),
+        minusAria: 'Less ' + l[1], plusAria: 'More ' + l[1],
+        ticks: [0, 0.25, 0.5, 0.75, 1].map(t => 'position:absolute;left:-9px;width:6px;height:1px;background:#6E7C88;top:' + (150 - t * 150) + 'px'),
+        mark: 'position:absolute;right:-10px;width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:7px solid #E8C875;top:' + (145 - pos(v0) * 140) + 'px',
+        knob: 'position:absolute;left:-14px;width:44px;height:18px;border-radius:3px;background:linear-gradient(180deg,#F4DE9C,#B98A3C 60%,#8C6526);box-shadow:0 3px 4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.6);transition:top 0.35s cubic-bezier(0.3, 1.3, 0.5, 1);top:' + (141 - pos(v) * 132) + 'px',
+        chip: sg(dStd) + ' t' };
+    };
+    const levers = LV.map(lever);
+    const spdL = lever(['speed', 'SPEED', 0.5, 16, 26, (v) => v.toFixed(1) + ' KN', 'kn']);
+    const spd = { minus: spdL.minus, plus: spdL.plus, value: spdL.value, chip: '−0.5 kn saves ' + nf(-(this.model(Object.assign({}, s, { speed: s.speed - 0.5 })).std - M.std)) + ' t' };
+
+    // sections as numeral pennants (simplified International Code numeral pennants)
+    const fR = '#C8312B', fW = '#F4F1E8', fB = '#1F4E9C', fY = '#F2C230', fK = '#1A1A1A';
+    const pen = {
+      0: 'linear-gradient(90deg,' + fY + ' 0 33%,' + fR + ' 33% 66%,' + fY + ' 66%)', 1: 'radial-gradient(circle at 32% 50%,' + fR + ' 0 6px,' + fW + ' 6.5px)', 2: 'radial-gradient(circle at 32% 50%,' + fW + ' 0 6px,' + fB + ' 6.5px)',
+      3: 'linear-gradient(90deg,' + fR + ' 0 33%,' + fW + ' 33% 66%,' + fB + ' 66%)', 4: 'linear-gradient(transparent 0 40%,' + fW + ' 40% 60%,transparent 60%),linear-gradient(90deg,transparent 0 26%,' + fW + ' 26% 40%,transparent 40%),' + fR,
+      5: 'linear-gradient(90deg,' + fY + ' 50%,' + fB + ' 50%)', 6: 'linear-gradient(' + fK + ' 50%,' + fW + ' 50%)', 7: 'linear-gradient(' + fY + ' 50%,' + fR + ' 50%)',
+      8: 'linear-gradient(transparent 0 40%,' + fR + ' 40% 60%,transparent 60%),linear-gradient(90deg,transparent 0 26%,' + fR + ' 26% 40%,transparent 40%),' + fW
+    };
+    const SEC = [
+      { id: 'over', n: 0, name: 'OVERVIEW', summary: 'trim the ship', controls: [] },
+      { id: 'role', n: 1, name: 'ROLE', summary: 'Line of battle', controls: [{ k: 'ORDERS', v: 'Line of battle' }, { k: 'THEATRE', v: 'North Sea' }] },
+      { id: 'main', n: 2, name: 'MAIN BATTERY', summary: '5 × twin 12 in', controls: [{ k: 'GUN', v: '12 in/45 Mk X' }, { k: 'BARRELS', v: '2' }] },
+      { id: 'sec', n: 3, name: 'SECONDARY · AA', summary: (2 * s.sec) + ' × 3 in', controls: [{ k: 'PER SIDE', v: String(s.sec) }] },
+      { id: 'prot', n: 4, name: 'PROTECTION', summary: 'belt ' + s.belt + ' · deck ' + s.deck, controls: [{ k: 'BELT', v: s.belt.toFixed(1) + ' in' }, { k: 'DECK', v: s.deck.toFixed(2) + ' in' }] },
+      { id: 'mach', n: 5, name: 'SPEED · ENGINES', summary: s.speed + ' kn', controls: [{ k: 'SPEED', v: s.speed.toFixed(1) + ' kn' }, { k: 'RANGE', v: nf(s.range) + ' nm' }] },
+      { id: 'hull', n: 6, name: 'HULL', summary: 'forecastle · tower 5', controls: [{ k: 'FORECASTLE', v: 'to funnels' }] },
+      { id: 'fc', n: 7, name: 'FIRE CONTROL', summary: '1 director', controls: [{ k: 'MAIN', v: '1 × 2.7 m' }] },
+      { id: 'crew', n: 8, name: 'CREW', summary: '908 · hammocks', controls: [{ k: 'BERTHS', v: 'Hammocks' }] }
+    ];
+    const sections = SEC.map(x => {
+      const open = x.id === sec;
+      return { name: x.name, summary: x.summary, controls: x.controls, open: this.go(x.id),
+        wrap: 'position:relative;border-bottom:1px solid #2B333A;transition:background 0.3s;background:' + (open ? 'linear-gradient(90deg, rgba(232,200,117,0.12), transparent 80%)' : 'transparent'),
+        flag: 'width:44px;height:24px;flex:none;clip-path:polygon(0 0,100% 34%,100% 66%,0 100%);background:' + pen[x.n] + ';box-shadow:0 1px 0 rgba(0,0,0,0.6);transition:transform 0.35s ' + EASE + ';transform:translateX(' + (open ? 8 : 0) + 'px)',
+        nameStyle: "font-family:'Saira Stencil One',sans-serif;font-size:15px;letter-spacing:0.08em;transition:color 0.3s;color:" + (open ? '#E8C875' : '#CFD8E0'),
+        body: 'overflow:hidden;display:flex;flex-direction:column;gap:6px;padding:' + (open && x.controls.length ? '0 14px 12px 76px' : '0 14px 0 76px') + ';max-height:' + (open && x.controls.length ? 34 * x.controls.length + 12 : 0) + 'px;opacity:' + (open ? 1 : 0) + ';transition:max-height 0.4s ' + EASE + ', opacity 0.3s, padding 0.4s' };
+    });
+
+    const hs = (id, l, wd, aria) => ({ go: this.go(id), aria, style: 'position:absolute;left:' + (385 + l * 7.8) + 'px;width:' + (wd * 7.8) + 'px;top:122px;height:118px;border-radius:50%;transition:all 0.35s;background:' + (sec === id ? 'rgba(242,198,90,0.14)' : 'transparent') + ';border:' + (sec === id ? '2px solid #F2C65A' : '1px dashed rgba(207,227,243,0.25)') });
+    const hot = [hs('main', 6, 18, 'Main battery: Y and X'), hs('main', 74, 10, 'Main battery: A'), hs('main', 58, 9, 'Main battery: wing pair'), hs('mach', 45, 11, 'Machinery: funnels'), hs('hull', 66, 8, 'Hull: bridge')];
+    const dk = [['strip', 'TURRETS', 'main'], ['curve', 'SPEED CURVE', 'mach'], ['fc', 'DIRECTOR', 'fc'], ['crew', 'BERTHING', 'crew']];
+    const docks = dk.map(d => ({ label: d[1],
+      slot: 'position:absolute;left:' + DOCK[d[0]].x + 'px;top:' + DOCK[d[0]].y + 'px;width:200px;height:62px;border:1.5px dashed #9CC9EA;box-sizing:border-box;' + fade(sec === d[2]),
+      cap: "position:absolute;left:" + DOCK[d[0]].x + "px;top:" + (DOCK[d[0]].y - 20) + "px;font-family:'Saira Stencil One',sans-serif;font-size:12px;letter-spacing:0.12em;transition:color 0.3s;color:" + (sec === d[2] ? '#F2C65A' : 'rgba(207,227,243,0.7)') }));
+
+    const E = [['Dupuy de Lôme', 26, 22], ['Gloire', 52, 32], ['Léon Gambetta', 62, 42], ['République', 34, 44], ['Charlemagne', 18, 38], ['Châteaurenault', 82, 25], ['Guichen', 72, 30], ['Branlebas', 90, 18]];
+    const dots = E.map(e => ({ name: e[0], dot: 'position:absolute;left:calc(' + e[1] + '% - 8px);top:calc(' + e[2] + '% - 8px);width:16px;height:16px;border-radius:50%;border:2px solid #2A2216;box-sizing:border-box;background:' + (e[1] < 44 ? '#2F7D4A' : '#3E5A78'),
+      lab: fade(big.role, "position:absolute;" + (e[1] > 66 ? "right:calc(" + (100 - e[1]) + "% + 11px)" : "left:calc(" + e[1] + "% + 11px)") + ";top:calc(" + e[2] + "% - 9px);font-family:'Special Elite',monospace;font-size:13px;color:#2A2216;white-space:nowrap") }));
+
+    const data = [[17, 19229], [18, 20235], [19, 21756], [20, 23326], [21, 24970], [22, 27110], [23, 31127], [24, 35101], [25, 42033]];
+    const X = (v) => 50 + (v - 17) / 8 * 780, Y = (t) => 270 - (t - 18000) / 25000 * 230;
+    const PR = { over: { x: 342, y: 418, w: 866, h: 390 }, main: { x: 342, y: 532, w: 866, h: 262 }, prot: { x: 342, y: 600, w: 866, h: 130 }, hull: { x: 342, y: 460, w: 866, h: 150 }, role: { x: 894, y: 346, w: 314, h: 452 }, mach: { x: 342, y: 652, w: 866, h: 142 }, fc: { x: 342, y: 612, w: 866, h: 182 }, crew: { x: 342, y: 612, w: 866, h: 182 }, sec: { x: 342, y: 346, w: 866, h: 452 } }[sec];
+    const plate = 'height:100%;box-sizing:border-box;padding:16px 18px;display:flex;flex-direction:column;gap:10px;border-radius:4px;border:1px solid #4E5963;box-shadow:inset 0 1px 0 rgba(255,255,255,0.07), 0 4px 10px rgba(0,0,0,0.5);background-image:radial-gradient(circle at 9px 9px,#7A848E 1.6px,transparent 2.4px),radial-gradient(circle at calc(100% - 9px) 9px,#7A848E 1.6px,transparent 2.4px),radial-gradient(circle at 9px calc(100% - 9px),#7A848E 1.6px,transparent 2.4px),radial-gradient(circle at calc(100% - 9px) calc(100% - 9px),#7A848E 1.6px,transparent 2.4px),linear-gradient(180deg,#2E363E,#21272D)';
+    const chipS = (on) => "height:28px;display:inline-flex;align-items:center;padding:0 12px;border-radius:3px;font-family:'Saira Stencil One',sans-serif;font-size:12.5px;letter-spacing:0.06em;" + (on ? 'background:linear-gradient(180deg,#EED38A,#B98A3C);color:#2C1E08;box-shadow:0 2px 0 #6E4E1E' : 'background:#1A1F24;color:#B9C4CE;border:1px solid #4E5963');
+    const tok = (l, big2) => 'width:' + (big2 ? 62 : 50) + 'px;height:' + (big2 ? 62 : 50) + "px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Saira Stencil One',sans-serif;font-size:20px;color:#2C1E08;background:radial-gradient(circle at 35% 30%,#F4DE9C,#B98A3C 70%);box-shadow:0 3px 4px rgba(0,0,0,0.5)";
+    const segDefs = [[M.armour, '#6E5A86'], [M.std - M.armour - M.arm - M.mach - 1668 - 557, '#8C7B62'], [M.arm, '#A3473A'], [M.mach, '#C58A2E'], [1668, '#9A9A8A'], [557, '#5E7F62']];
+    const scale = Math.max(M.std, REQ) * 1.04;
+    const legend = [
+      { k: 'Dimensions', v: M.L.toFixed(1) + ' x 27.2 x 9.6 m', go: this.go('hull') }, { k: 'Standard', v: nf(M.std) + ' t', go: this.go('over') }, { k: 'Full load', v: nf(M.full) + ' t', go: this.go('over') },
+      { k: 'Machinery', v: nf(M.shp) + ' shp, ' + s.speed + ' kn', go: this.go('mach') }, { k: 'Armament', v: '10 x 12 in, ' + (2 * s.sec) + ' x 3 in', go: this.go('main') },
+      { k: 'Protection', v: 'belt ' + s.belt + ', deck ' + s.deck + ' in', go: this.go('prot') }, { k: 'Stability', v: 'GM ' + M.gm.toFixed(2) + ' m', go: this.go('hull') }, { k: 'Line of battle', v: M.line.toFixed(2) + (M.line < M0.line ? ' (down)' : ''), go: this.go('role') }
+    ];
+    return {
+      sections, hot, docks, w, plates, fcsl, dots, legend, plate,
+      teleTicks, teleNeedle, gaugeTicks, gaugeNeedle, gaugeArc, odo, lamp, levers, spd,
+      stdText: nf(M.std), lineScore: M.line.toFixed(2), lenText: M.L.toFixed(1),
+      shpText: nf(M.shp) + ' SHP · GM ' + M.gm.toFixed(2) + ' M',
+      marginText: over > 0 ? nf(over) + ' T OVER REQUEST' : 'WITHIN REQUEST · ' + nf(-over) + ' T SPARE',
+      marginStyle: "font-family:'Saira Stencil One',sans-serif;font-size:13px;letter-spacing:0.06em;transition:color 0.3s;color:" + (over > 0 ? '#F2C65A' : '#8EE39A'),
+      stamp: "position:absolute;left:1462px;top:100px;padding:3px 8px;border:3px double " + (over > 0 ? '#B26A12' : '#2F7D4A') + ";color:" + (over > 0 ? '#B26A12' : '#2F7D4A') + ";font-family:'Saira Stencil One',sans-serif;font-size:13px;letter-spacing:0.08em;transform:rotate(-8deg);opacity:0.82;transition:all 0.3s;mix-blend-mode:multiply;text-align:center;line-height:1.1",
+      stampText: over > 0 ? nf(over) + ' T OVER' : 'WITHIN LIMIT',
+      overReq: over > 0, overBy: nf(over),
+      reset: () => this.setState(this.base()),
+      fitSpeed: () => { let lo = 16, hi = s.speed; for (let i = 0; i < 20; i++) { const m = (lo + hi) / 2; if (this.model(Object.assign({}, s, { speed: m })).std <= REQ) lo = m; else hi = m; } this.setState({ speed: Math.floor(lo * 100) / 100 }); },
+      segs: segDefs.map(g => 'height:100%;flex:none;box-sizing:border-box;border-right:1px solid #EDE6D3;transition:width 0.4s ease;background:' + g[1] + ';width:' + (100 * g[0] / scale).toFixed(2) + '%'),
+      reqLine: 'position:absolute;top:-4px;bottom:-4px;width:2px;background:#8A2A1E;left:' + (100 * REQ / scale).toFixed(2) + '%;transition:left 0.4s ease',
+      matchSlot: "position:absolute;left:1256px;top:410px;width:308px;height:220px;border:2px dashed #9A8A68;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:'Special Elite',monospace;font-size:13px;color:#6B5E44;" + fade(big.role),
+      quadLabels: fade(big.role, 'position:absolute;inset:0;pointer-events:none'),
+      profLabels: fade(big.prot, 'position:absolute;inset:0;pointer-events:none'),
+      curve: data.map(d => X(d[0]).toFixed(1) + ',' + Y(d[1]).toFixed(1)).join(' '), xt: data.map(d => ({ x: X(d[0]).toFixed(1), l: d[0] + ' KN' })),
+      reqY: Y(REQ).toFixed(1), cur: { x: X(s.speed).toFixed(1), y: Y(this.model(Object.assign({}, this.base(), { speed: s.speed })).std).toFixed(1) },
+      aftT: [{ style: tok('Y', true), l: 'Y' }, { style: tok('X', true), l: 'X' }], bunks: Array.from({ length: 24 }, (_, i) => 'width:22px;height:' + (40 + (i % 3) * 18) + 'px;border:2px solid #DCEBF7;box-sizing:border-box;background:' + (i < 18 ? 'rgba(242,198,90,0.35)' : 'transparent')),
+      presets: ['DREADNOUGHT H', 'A-B-X-Y', 'HEXAGONAL', 'ECHELON', 'ALL FORWARD'].map((l, i) => ({ l, style: chipS(i === 0) })),
+      schemes: ['PROTECTED', 'PRE-DREADNOUGHT', 'INCREMENTAL', 'ALL OR NOTHING'].map((l, i) => ({ l, style: chipS(i === 2) })),
+      roles: ['LINE OF BATTLE', 'TRADE PROTECTION', 'SCOUT', 'STATION'].map((l, i) => ({ l, style: chipS(i === 0) })),
+      fit: [['Line of battle', M.line], ['Station', 0.62], ['Trade protection', 0.31], ['Scout', 0.12], ['Raider', 0.05]].map(f => ({ name: f[0], v: f[1].toFixed(2), bar: 'position:absolute;left:0;top:0;bottom:0;border-radius:2px;transition:width 0.4s;width:' + (f[1] * 100) + '%;background:' + (f[0] === 'Line of battle' ? 'linear-gradient(180deg,#EED38A,#B98A3C)' : '#5E8396') })),
+      rangeText: nf(s.range) + ' nm',
+      plainText: { sec: 'Secondary battery: the casemate band lights on the plan above; battery cards here.', fc: 'Directors per battery; rangefinder base against the design range.', crew: 'Berthing standard, complement by department, where they sleep.' }[sec] || '',
+      panel: 'position:absolute;left:' + PR.x + 'px;top:' + PR.y + 'px;width:' + PR.w + 'px;height:' + PR.h + 'px;z-index:5;opacity:' + (s.panelVis ? 1 : 0) + ';transform:translateY(' + (s.panelVis ? 0 : 10) + 'px);transition:opacity 0.3s ease, transform 0.3s ease',
+      is: { over: sec === 'over', main: sec === 'main', prot: sec === 'prot', role: sec === 'role', mach: sec === 'mach', plain: ['sec', 'fc', 'crew', 'hull'].indexOf(sec) >= 0 },
+      goProt: this.go('prot'), goMain: this.go('main'), goMach: this.go('mach'), goFc: this.go('fc'), goCrew: this.go('crew'), goRole: this.go('role')
+    };
+  }
+}
+</script>
+</body>
+</html>
