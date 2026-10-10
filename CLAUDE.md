@@ -80,8 +80,9 @@ update the goldens on purpose with `golden-update`, one per commit). `svg-check`
 ## Profiling
 
 `dotnet-trace` is installed; `docs/profiling.md` has the recipe (trace a Release exe, summarize with
-`python -I tools/speedscope_top.py X.speedscope.json [--focus Method]`), how to read the numbers, the checks after an
-optimization, and a log of past findings.
+`python -I tools/speedscope_top.py X.speedscope.json [--focus Method]`), allocation traces (`tools/alloctop`: the game
+is soft real time, so garbage counts), how to read the numbers, the checks after an optimization, and a log of past
+findings.
 
 ## Project Structure
 

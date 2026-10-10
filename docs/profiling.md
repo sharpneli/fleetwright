@@ -42,7 +42,36 @@ Visual Studio.
 - One `design` run is cold: most of `ShipDesign.Build`'s ~0.9 s there is JIT. `bench --repeat 5` gives warm build
   times (~0.17 s for Bismarck) and allocations; profile `bench` for the design side.
 - The first run of a method includes its JIT; tiny methods can look odd. Compare runs, not single samples.
-- `PollGCWorker` time is threads parked for a GC: allocation pressure, look for the allocating loop.
+- `PollGCWorker` time is threads parked for a GC: allocation pressure, look for the allocating loop. The CPU trace
+  charges it to whoever triggered the GC, not to who allocated: use an allocation trace (below) to find the garbage.
+
+## Allocations
+
+The game is soft real time, so garbage matters as much as CPU time. `bench` prints MB allocated per build; to see
+who allocates, take a `gc-verbose` trace (an AllocationTick event with its stack per ~100 KB) and sum it with
+`tools/alloctop`:
+
+```powershell
+dotnet build tools/alloctop -c Release
+dotnet-trace collect --profile gc-verbose -o "$p\alloc.nettrace" -- `
+    src\Fleetwright.Shipgen.Cli\bin\Release\net10.0\shipgen.exe bench bismarck yamato --repeat 3
+tools\alloctop\bin\Release\net10.0\alloctop.exe "$p\alloc.nettrace" -n 25      # by method, by type, by both
+tools\alloctop\bin\Release\net10.0\alloctop.exe "$p\alloc.nettrace" --focus "Navarch.Solve("            # by callee
+tools\alloctop\bin\Release\net10.0\alloctop.exe "$p\alloc.nettrace" --focus "Pt].AddWithResize" --callers # who grows lists
+```
+
+Methods show as the innermost `Fleetwright` frame; lambdas and local functions show by their compiler names
+(`<BuildLayout>b__135`): `--focus` on that name shows what it calls, `--callers` who calls it.
+
+How the hot loops avoid garbage (`Fleetwright.Shipgen`):
+
+- `Scratch<T>.Rent(out var list)` lends a per-thread list for the length of a `using`; it comes back cleared. Hot
+  helpers have an overload that appends to a caller's list (`RoofSpots`, `CirclePolygon`, `Footprint.Points`,
+  `FpIntervals`).
+- `KeyedSort` sorts `(key, index)` pairs in a scratch list: `OrderBy`'s order (ties by index) without its arrays.
+  `List.Sort` alone is not stable and can change a layout.
+- LINQ's `Min`/`Max` on doubles have NaN rules (`Min`: a NaN wins; `Max`: leading NaNs are skipped); a loop that
+  replaces one keeps them (`SpanMath.Min`), or golden-check may catch it one day.
 
 ## After an optimization
 
@@ -60,3 +89,5 @@ Speed changes must not change output. Check, all `-c Release`:
 | 2026-10-09 | `design bismarck --previews` | `Preview.ShadowMask` "1.9 s" (really ~60 ms wall per call, see above), `ShipDesign.Build` ~0.9 s cold, `GpuBaker` device ~0.2 s, `Preview.Rotate` 0.16 s | baseline, ~2.3 s wall untraced |
 | 2026-10-09 | `Preview` | ShadowMask marched every ray to full length, also over the sea | rays only visit steps inside the height map's bounding box and stop once hmax can't beat the best; rotated turrets cached per (type, angle). ShadowMask 56-75 -> 30-49 ms, Rotate 161 -> 57 ms; previews byte-identical |
 | 2026-10-09 | `bench bismarck yamato` | warm 0.17 s per build, 229-278 MB allocated each; top self: `Layout.Clear` (linear scan of all sweep polys), int sort with a `Comparison`, `PolygonsIntersect`, `AddDeckhouseLevels.Runs`, LINQ in `DeckLevel` | not done: next candidates are a spatial index for `Layout.Sweeps` and cutting allocations; gate is `golden-check` |
+| 2026-10-10 | `bench bismarck yamato` | the row above misread `Layout.Clear`: `Sweeps` holds one poly per main turret (2-6), an index can't help, and `Clear` was <1% of CPU. GC was 41% of CPU; an allocation trace put the garbage in `AaSlots`/`RoofSpots`, `LevelOutline`, `FireControl.Place`, `Slabs`, `Navarch.Solve`'s weight list, LINQ in `DeckLevel`, `BarrelFootprint`, the deckhouse width search | scratch lists, keyed sorts and loops in place of LINQ, outputs unchanged (golden/svg/sprite-check 371/371). Allocated per build 230 -> 65 MB (Bismarck), 278 -> 76 MB (Yamato); warm build ~25-35% faster, same machine back to back |
+| 2026-10-10 | (left) | the weight iteration (`Navarch.Solve`: `ArmourGeometry`, `ArmourWeights`, `HullStructure`, up to 60 passes) makes new layouts and `Weight`s per pass, ~35% of what remains; a fresh `Footprint` per probe (`AddDeckhouseLevels.Ok`, `Footprint.Rect`/`Circle`) ~12% | needs a design change (sums-only passes, or footprint checks that take a box without an object), not pooling |
