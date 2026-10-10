@@ -99,7 +99,7 @@ public sealed partial class Layout
             if (hw < CasemateBeam * B / 2 || hw - 2 * rc < 0.5)
                 return false;
             var boxes = new[] { Footprint.Rect(x - rc, hw - 2 * rc, x + rc, hw), Footprint.Rect(x - rc, -hw, x + rc, -hw + 2 * rc) };
-            return !boxes.Any(bx => barbettes.Any(m => Overlap(bx, Footprint.Circle(m.X, m.Y, 0.95 * m.T.R), 0.3)));
+            return !boxes.Any(bx => barbettes.Any(m => Overlap(bx, Footprint.Circle(m.X, m.Y, Geometry.BarbetteR(m.T)), 0.3)));
         }
 
         (double Yo, double D) Housing(double x0, double x1, double rc)

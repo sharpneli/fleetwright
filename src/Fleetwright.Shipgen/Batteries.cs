@@ -42,7 +42,7 @@ public static class Batteries
         double tAvg = TurretTAvg * armourMm / 1000.0;
         double turret = guns + mech + area * tAvg * Weight.Steel;
         double bh = 0.45 * depth + deck + level * Geometry.SuperfireStep(th);
-        double barbette = t.HasBarbette ? 2 * Math.PI * 0.95 * r * bh * (0.8 * armourMm / 1000.0) * Weight.Steel : 0.0;
+        double barbette = t.HasBarbette ? 2 * Math.PI * Geometry.BarbetteR(t) * bh * (0.8 * armourMm / 1000.0) * Weight.Steel : 0.0;
         double ammo = n * GunRounds(t) * ShellK * Math.Pow(cal, 3) / 1000.0 * AmmoMult;
         return (turret, barbette, ammo);
     }

@@ -300,9 +300,9 @@ public static class Geometry
     public static double BarrelShown(TurretType t) => t.BarrelLen * (BarrelShownK.TryGetValue(t.Shape, out var k) ? k : 1.0);
 
     // turret_shapes is a pure function of these values; each thread memoises its own (no shared mutable state)
-    [ThreadStatic] static Dictionary<(string, double, long, double, double, double), (TurretShapes Shapes, double Reach)>? shapeCache;
+    [ThreadStatic] static Dictionary<(string, double, long, double, double, double), (TurretShapes Shapes, double Reach, double Inscribed)>? shapeCache;
 
-    static (TurretShapes Shapes, double Reach) ShapesAndReach(TurretType t, double? barrelLen = null)
+    static (TurretShapes Shapes, double Reach, double Inscribed) ShapesAndReach(TurretType t, double? barrelLen = null)
     {
         var key = (t.Shape, t.R, t.Barrels, barrelLen ?? t.BarrelLen, t.BarrelW, t.Spacing);
         shapeCache ??= [];
@@ -320,13 +320,32 @@ public static class Geometry
             }
             if (first)
                 throw new InvalidOperationException("a turret with no outline");
-            shapeCache[key] = v = (sh, reach);
+            // the body's inscribed radius about the pivot: the circle it covers at any training angle
+            double ins = double.PositiveInfinity;
+            for (int i = 0; i < sh.Body.Count; i++)
+                ins = Math.Min(ins, SegmentDistance(sh.Body[i], sh.Body[(i + 1) % sh.Body.Count]));
+            shapeCache[key] = v = (sh, reach, ins);
         }
         return v;
     }
 
     /// <summary>Polygons (turret-local) for the turret body, extra parts and each barrel. Shared: don't modify.</summary>
     public static TurretShapes TurretShapesOf(TurretType t) => ShapesAndReach(t).Shapes;
+
+    /// <summary>How far inside the gunhouse a barbette stands, so its open top is covered at any training angle.</summary>
+    const double BarbetteFit = 0.97;
+
+    /// <summary>A barbette's radius: 0.95 r, but never beyond the gunhouse over it (a bb body's flat faces are at
+    /// 0.85 r, a dp's sides at 0.72 r), so a shell can't fall past the gunhouse into the barbette's open top.</summary>
+    public static double BarbetteR(TurretType t) => Math.Min(0.95 * t.R, BarbetteFit * ShapesAndReach(t).Inscribed);
+
+    /// <summary>The distance from the origin to the segment ab.</summary>
+    static double SegmentDistance(Pt a, Pt b)
+    {
+        double dx = b.X - a.X, dy = b.Y - a.Y, l2 = dx * dx + dy * dy;
+        double f = l2 > 0 ? Math.Clamp(-(a.X * dx + a.Y * dy) / l2, 0.0, 1.0) : 0.0;
+        return double.Hypot(a.X + f * dx, a.Y + f * dy);
+    }
 
     static TurretShapes MakeShapes(string shape, double r, long n, double bl, double bw, double sp)
     {

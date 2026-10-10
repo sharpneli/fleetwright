@@ -87,12 +87,13 @@ public static class Hitbox
             yield return c;
             if (!t.HasBarbette)
                 continue;
-            bool inHull = Math.Abs(m.Y) + 0.95 * t.R <= lay.Hull.HalfWidth(m.X) && m.Base < fdBase;
+            double br = Geometry.BarbetteR(t);
+            bool inHull = Math.Abs(m.Y) + br <= lay.Hull.HalfWidth(m.X) && m.Base < fdBase;
             c.Barbette = $"{m.Id} barbette";
             yield return new Component
             {
                 Id = c.Barbette, Kind = "barbette", Mount = m.Id, Shape = "circle", X = Math.Round(m.X, 3), Y = Math.Round(m.Y, 3),
-                R = Math.Round(t.R * 0.95, 3), Base = inHull ? Math.Min(Math.Round(barbetteZ - D, 2), Math.Round(m.Base, 2)) : Math.Round(m.Base - 1.0, 2),
+                R = Math.Round(br, 3), Base = inHull ? Math.Min(Math.Round(barbetteZ - D, 2), Math.Round(m.Base, 2)) : Math.Round(m.Base - 1.0, 2),
                 Top = Math.Round(m.Base, 2), ArmourMm = (long)Math.Round(Barbette * arm), Material = NonEmpty(m.Kind == "main" ? Own("barbettes") : mat),
             };
         }
