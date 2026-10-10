@@ -1,4 +1,9 @@
 <Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <BuildType Name="DevRelease" />
+  </Configurations>
   <Folder Name="/src/">
     <Project Path="src/Fleetwright.Gpu/Fleetwright.Gpu.csproj" />
     <Project Path="src/Fleetwright.Shipgen.Cli/Fleetwright.Shipgen.Cli.csproj" />

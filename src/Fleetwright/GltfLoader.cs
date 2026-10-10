@@ -2,7 +2,9 @@ using System.Numerics;
 using SDL;
 using Fleetwright.Gpu;
 using SharpGLTF.Schema2;
+#if TRACY
 using TracyWrapper;
+#endif
 using static SDL.SDL3;
 using static SDL.SDL3_image;
 

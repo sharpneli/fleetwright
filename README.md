@@ -16,7 +16,8 @@ dotnet run --project src/Fleetwright                                        # th
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json   # another design
 dotnet run --project src/Fleetwright -- -screenshot=30                      # save frame 30 to screenshot.png and exit
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design shipgen/designs/bismarck.json --out out_designs --previews
-release.bat                                                                  # release/Fleetwright/, self-contained
+release.bat                                                                  # release/Fleetwright/: for players, no console or Tracy
+release.bat DevRelease                                                       # release/Fleetwright-DevRelease/: with both
 ```
 
 Controls: wheel zooms, left drag pans, the "Ship" panel picks the design and look, F2 shows stats, Escape quits.

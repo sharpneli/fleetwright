@@ -24,12 +24,21 @@ and sun. Wheel zooms, left drag pans, F2 shows the stats window, Escape quits.
 
 ## Release and game assets
 
+Three configurations:
+
+- **Debug** - the everyday build: console, Tracy.
+- **Release** - what players get: optimized, no console window (`WinExe`), no Tracy (`TracyWrapper` isn't referenced
+  and `ProfilerStubs.cs` stands in for its calls as no-ops). Console output goes nowhere; there's no log file yet.
+- **DevRelease** - for us: optimized like Release, with the console and Tracy (the `TRACY` define).
+
 ```bash
-release.bat     # release/Fleetwright/ (gitignored): Fleetwright.exe, the .NET runtime, native DLLs, the game assets
+release.bat              # release/Fleetwright/            (gitignored)
+release.bat DevRelease   # release/Fleetwright-DevRelease/
 ```
 
-The release is a self-contained win-x64 publish: it runs on a stock Windows 11 with nothing installed, except the
-VC++ runtime (`vcruntime140`, `msvcp140`; SDL3_image and TracyClient import them), which is assumed present.
+Each holds Fleetwright.exe, the .NET runtime, the native DLLs and the game assets: a self-contained win-x64 publish
+that runs on a stock Windows 11 with nothing installed, except the VC++ runtime (`vcruntime140`, `msvcp140`;
+SDL3_image and TracyClient import them), which is assumed present.
 
 Game assets are the data the game ships with, listed as `GameAsset` items in `src/Fleetwright/Fleetwright.csproj`:
 each lands in the build and publish output under its `Link` path and is read through `AppContext.BaseDirectory`, so a
@@ -82,6 +91,7 @@ src/
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
     Camera.cs                 #   FPS camera (unused; to become the top-down Earth camera)
     ShipViewer.cs             #   the ship viewer (the default launch), a test tool for Shipgen
+    ProfilerStubs.cs          #   no-op Tracy stand-ins for Release
   Fleetwright.Gpu/            # GPU helpers for the game exe
     GpuTypes.cs               #   buffers, textures, samplers, DrawContext, SceneNode, MeshNode, materials
     GpuPipelineBuilder.cs     #   fluent pipeline builder
@@ -127,7 +137,7 @@ Content paths in code (`"Content/Shaders/Compiled/..."`) resolve against `AppCon
 - HDR R16G16B16A16 color target, 8x MSAA, resolved and blitted to the swapchain
 - The ship viewer draws into it. Without a viewer the engine draws its scene graph instead (meshes with a base color
   texture and spherical-harmonics ambient light, `PbrMaterial` in Engine.cs), but nothing fills the scene today
-- Dear ImGui overlay; Tracy zones in the frame loop
+- Dear ImGui overlay; Tracy zones in the frame loop (not in Release, see above)
 
 ## Shaders
 
@@ -143,7 +153,7 @@ compile_shaders.bat
 - ppy.SDL3_image-CS - texture decoding (glTF images) and PNG saving
 - SharpGLTF.Toolkit - glTF/GLB loading
 - ImGui.NET - Dear ImGui bindings
-- TracyWrapper - Tracy profiler integration
+- TracyWrapper - Tracy profiler integration (Debug and DevRelease only)
 
 ## Research Notes
 

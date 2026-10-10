@@ -23,7 +23,7 @@ python -I tools/speedscope_top.py "$p\shipgen.speedscope.json" --focus "ShipDesi
 The exe is `shipgen.exe` (not `Fleetwright.Shipgen.Cli.exe`). Other useful targets: `bench bismarck yamato` (build
 only, single-threaded), `bake ...` (the GPU bake), `golden-check` (everything, ~25 s).
 
-The game: `src\Fleetwright\bin\Release\net10.0\Fleetwright.exe -ship=shipgen/designs/bismarck.json -screenshot=300`
+The game, built `-c DevRelease` (Release has no console): `src\Fleetwright\bin\DevRelease\net10.0\Fleetwright.exe -ship=shipgen/designs/bismarck.json -screenshot=300`
 runs 300 frames and exits, so it traces the same way. To trace an already running game:
 `dotnet-trace collect -p <pid> --duration 00:00:10 --format Speedscope -o game.nettrace`.
 

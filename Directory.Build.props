@@ -8,6 +8,12 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <ContentRoot>$(MSBuildThisFileDirectory)Content\</ContentRoot>
+    <!-- DevRelease: optimized like Release, but the game keeps its console and Tracy (src/Fleetwright/Fleetwright.csproj). -->
+    <Configurations>Debug;Release;DevRelease</Configurations>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'DevRelease'">
+    <Optimize>true</Optimize>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Fleetwright.Shipgen'))">

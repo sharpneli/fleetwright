@@ -1,7 +1,6 @@
 using System.Numerics;
 using SDL;
 using Fleetwright.Gpu;
-using TracyWrapper;
 using static SDL.SDL3;
 
 namespace Fleetwright;

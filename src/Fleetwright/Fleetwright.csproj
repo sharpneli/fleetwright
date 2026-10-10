@@ -7,12 +7,21 @@
     <AssemblyName>Fleetwright</AssemblyName>
   </PropertyGroup>
 
+  <!-- Release is what players get: no console window, no Tracy (its client listens on a port). Debug and DevRelease
+       (optimized, for us) keep both. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <OutputType>WinExe</OutputType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' != 'Release'">
+    <DefineConstants>$(DefineConstants);TRACY</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="ppy.SDL3-CS" />
     <PackageReference Include="ppy.SDL3_image-CS" />
     <PackageReference Include="SharpGLTF.Toolkit" />
     <PackageReference Include="ImGui.NET" />
-    <PackageReference Include="TracyWrapper" />
+    <PackageReference Include="TracyWrapper" Condition="'$(Configuration)' != 'Release'" />
   </ItemGroup>
 
   <ItemGroup>

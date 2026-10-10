@@ -4,7 +4,9 @@ using System.Runtime.InteropServices;
 using ImGuiNET;
 using SDL;
 using Fleetwright.Gpu;
+#if TRACY
 using TracyWrapper;
+#endif
 using static SDL.SDL3;
 using static SDL.SDL3_image;
 
