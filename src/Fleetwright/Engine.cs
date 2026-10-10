@@ -1139,7 +1139,8 @@ public unsafe class Sdl3GpuEngine : IDisposable
         // Stats window (F2 toggles, its close button hides it)
         if (_showStatsWindow)
         {
-            ImGui.SetNextWindowPos(new Vector2(10, 10), ImGuiCond.Always);
+            var vp = ImGui.GetMainViewport();   // top right: the left edge is the scenes' side panel
+            ImGui.SetNextWindowPos(new Vector2(vp.WorkPos.X + vp.WorkSize.X - 260, vp.WorkPos.Y + 10), ImGuiCond.Always);
             ImGui.SetNextWindowSize(new Vector2(250, 150), ImGuiCond.Always);
 
             ImGui.Begin("Stats", ref _showStatsWindow, ImGuiWindowFlags.NoCollapse);

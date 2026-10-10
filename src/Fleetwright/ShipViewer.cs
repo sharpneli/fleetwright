@@ -491,9 +491,7 @@ public sealed unsafe class ShipViewer : IScene
 
     public void BuildUi()
     {
-        ImGui.SetNextWindowPos(new Vector2(10, 170), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowSize(new Vector2(330, 420), ImGuiCond.FirstUseEver);
-        ImGui.Begin("Ship");
+        SidePanel.Begin("Ship");
         int designIndex = session.Index;
         if (ImGui.Combo("design", ref designIndex, session.Names, session.Names.Length))
         {
