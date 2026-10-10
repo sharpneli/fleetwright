@@ -15,12 +15,17 @@ dotnet test
 dotnet run --project src/Fleetwright
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
+dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan] [-show=all|outside|internal|rooms|armour]
 ```
 
 The exe opens the ship viewer. `-ship=` picks the design; without it, it shows `Content/Designs/bismarck.json` next to
 the exe (a game asset, below), and the "Ship" panel lists the design's folder. It builds, bakes and shows a design from the baked textures
 (mips, turrets through their arcs, height-map shadows); the "Ship" panel switches design, look, mip level, turrets
 and sun. Wheel zooms, left drag pans, F2 shows the stats window, Escape quits.
+
+The menu bar (or F3) switches to the hitbox viewer: the same design's hitbox model in 3D (`HitView/`, the live
+`hitview.py`). Left drag orbits, right drag pans, wheel zooms; its panel picks the view, the projection and which kinds
+are drawn. `-screenshot` captures the scene without the ImGui overlay.
 
 ## Release and game assets
 
@@ -93,7 +98,9 @@ src/
     DesignSession.cs          #   the picked design and its built Ship, shared by the scenes (they watch Version)
     IScene.cs                 #   a full-window view with its own UI; the engine draws the current one (see Views)
     ShipViewer.cs             #   the ship viewer (the default launch), a test tool for Shipgen
-    HitView/                  #   the hitbox view: HitboxMesh (the hitbox model as triangles, CPU), HitKinds (style)
+    SceneSwitcher.cs          #   several scenes behind one IScene: the menu bar and F3 switch
+    HitView/                  #   the hitbox viewer: HitboxMesh (hitboxes as triangles, CPU), HitboxRenderer (into any
+                              #   RenderTarget), HitboxCamera and HitboxViewState (what it shows), HitboxScene (UI)
     ProfilerStubs.cs          #   no-op Tracy stand-ins for Release
   Fleetwright.Gpu/            # GPU helpers for the game exe
     GpuTypes.cs               #   buffers, textures, samplers, DrawContext, SceneNode, MeshNode, materials
@@ -102,6 +109,7 @@ src/
     ShaderTypes.cs            #   vertex layout, uniforms, scene data
     RenderTarget.cs           #   colour (+MSAA resolve) and depth a view draws into: the main target or offscreen
     GpuShader.cs              #   SPIR-V loading from a device alone
+    GpuUpload.cs              #   static buffer uploads, and DynamicGpuBuffer (refilled within a frame)
   Fleetwright.Shipgen/        # ship design library (ported, see below). No package references.
     Model/                    #   the typed data: Design (the input), Ship (the output), the JSON context and JsonFile
     Layout/                   #   layout.py: the Layout object, parts, superstructure levels, the warship layout

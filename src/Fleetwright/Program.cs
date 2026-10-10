@@ -7,7 +7,7 @@ public static unsafe class Program
         // Parse command line arguments
         int screenshotFrame = -1;
         string screenshotPath = "screenshot.png";
-        string? shipPath = null, navy = null, era = null;
+        string? shipPath = null, navy = null, era = null, view = null, camera = null, show = null;
 
         foreach (string arg in args)
         {
@@ -31,6 +31,18 @@ public static unsafe class Program
             {
                 era = arg.Substring("-era=".Length);
             }
+            else if (arg.StartsWith("-view="))
+            {
+                view = arg.Substring("-view=".Length);
+            }
+            else if (arg.StartsWith("-camera="))
+            {
+                camera = arg.Substring("-camera=".Length);
+            }
+            else if (arg.StartsWith("-show="))
+            {
+                show = arg.Substring("-show=".Length);
+            }
             else if (arg.StartsWith("-output="))
             {
                 screenshotPath = arg.Substring("-output=".Length);
@@ -48,14 +60,18 @@ public static unsafe class Program
                 engine.SetScreenshotCapture(screenshotFrame, screenshotPath);
             }
 
-            // The ship viewer: build, bake and show a Shipgen design
+            // The design's scenes: the ship viewer (sprites) and the hitbox viewer, on one shared design
             shipPath ??= Path.Combine(AppContext.BaseDirectory, DefaultDesign);
             if (!File.Exists(shipPath))
             {
                 Console.Error.WriteLine($"Design not found: {shipPath}");
                 return 1;
             }
-            engine.Scene = new ShipViewer(engine.Device, new DesignSession(shipPath), navy, era);
+            var session = new DesignSession(shipPath);
+            nint device = (nint)engine.Device;   // lambdas may not capture a pointer
+            engine.Scene = new SceneSwitcher(view == "hitbox" ? 1 : 0,
+                ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),
+                ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show)));
 
             // Run the engine
             engine.Run();
