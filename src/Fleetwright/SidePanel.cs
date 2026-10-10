@@ -7,7 +7,7 @@ namespace Fleetwright;
 /// window. Only its width is the user's: the right edge drags, the height follows the window.</summary>
 public static class SidePanel
 {
-    const float StartWidth = 330, MinWidth = 200;
+    const float StartWidth = 420, MinWidth = 200;
 
     /// <summary>Begins the panel; end it with <see cref="ImGui.End"/> as any window.</summary>
     public static void Begin(string name)

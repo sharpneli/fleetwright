@@ -146,8 +146,8 @@ public unsafe class PbrMaterial
 public unsafe class Sdl3GpuEngine : IDisposable
 {
     // Window settings
-    public const int DefaultWindowWidth = 1280;
-    public const int DefaultWindowHeight = 720;
+    public const int DefaultWindowWidth = 1920;
+    public const int DefaultWindowHeight = 1080;
     public const string DefaultWindowTitle = "Fleetwright";
 
     // Core handles
