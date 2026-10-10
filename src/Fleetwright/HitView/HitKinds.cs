@@ -37,8 +37,9 @@ public static class HitKinds
         K("armoured_bulkhead", 60, 70, 90, 255),
         K("shaft", 225, 225, 120, 255), K("shaft_alley", 200, 190, 120, 150), K("propeller", 215, 160, 60, 255),
         K("rudder", 240, 110, 190, 255),
-        // lines only: the waterline and the hull's edges (deck outline, keel, stem and stern, sections)
-        K("waterline", 80, 170, 255, 200), K("hull_lines", 200, 210, 220, 160),
+        // guides: the waterline (a band and a line) and the hull's edges (lines only: deck outline, keel, stem and
+        // stern, sections)
+        K("waterline", 40, 200, 255, 255), K("hull_lines", 200, 210, 220, 160),
         K("other", 200, 200, 200, 255),
     ];
 

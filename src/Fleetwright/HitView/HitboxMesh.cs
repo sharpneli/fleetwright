@@ -321,12 +321,24 @@ public sealed class HitboxMesh
             }
         }
 
-        /// <summary>Lines with no prism: the waterline, and the hull's edges (deck outline, keel line, stem and stern
-        /// posts, a few sections).</summary>
+        /// <summary>The guides: the waterline (a band, and a line with no prism), and the hull's edges (lines with no
+        /// prism: deck outline, keel line, stem and stern posts, a few sections).</summary>
         void AddGuides(double keel, double wl)
         {
             uint waterline = (uint)HitKinds.IndexOf("waterline"), hull = (uint)HitKinds.IndexOf("hull_lines");
-            Polyline(FormOutline(wl).Select(p => new Vector3((float)p.X, (float)p.Y, (float)wl)), waterline, closed: true);
+            // the waterline is what direct fire can't get under: a solid band around the hull, proud of the belt
+            // (0.15 m out) so the armour never hides it, with the exact line along its face
+            const double In = 0.2, Out = 0.35, Half = 0.4;
+            var wlOutline = FormOutline(wl);
+            int half = wlOutline.Count / 2;   // FormOutline: the port side aft to fore, then starboard fore to aft
+            foreach (int side in new[] { 1, -1 })
+            {
+                var row = wlOutline.Take(half).Select(p => (p.X, W: -p.Y)).ToList();
+                var outer = row.Select(p => new Pt(p.X, side * (p.W + Out)));
+                var inner = Enumerable.Reverse(row).Select(p => new Pt(p.X, side * (p.W + In)));
+                Add("waterline", side > 0 ? "waterline, starboard" : "waterline, port", null, [.. outer, .. inner], wl - Half, wl + Half);
+            }
+            Polyline(wlOutline.Select(p => new Vector3((float)p.X, (float)(p.Y + Math.Sign(p.Y) * (Out + 0.02)), (float)wl)), waterline, closed: true);
             Polyline(hb.Hull.Select(p => new Vector3((float)p.X, (float)p.Y, 0)), hull, closed: true);
             var st = hb.HullForm.Stations;
             if (st.Count >= 2)
