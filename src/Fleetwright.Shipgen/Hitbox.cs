@@ -215,11 +215,15 @@ public static class Hitbox
             armour.Strakes = ag.Strakes.Select(st => new StrakeReport(st.Id, st.Kind, st.Extent, st.Mm, Math.Round(st.X0, 3), Math.Round(st.X1, 3),
                 Rz(st.Bottom), Rz(st.Top)) { TipMm = st.TipMm != st.Mm ? st.TipMm : null, Material = NonEmpty(st.Material) }).ToList();
         var bulkheads = new List<ArmourBulkheadReport>();
+        ArmourBulkheadReport BulkheadReport(ArmourBulkhead b) => new(b.Id, Math.Round(b.X, 3), Math.Round(b.Mm), Rz(b.Bottom), Rz(b.Top),
+            NonEmpty(b.Material))
+        {
+            LowerMm = b.LowerTop > b.Bottom && b.LowerMm != b.Mm ? Math.Round(b.LowerMm) : null,
+            LowerTop = b.LowerTop > b.Bottom && b.LowerMm != b.Mm ? Rz(b.LowerTop) : null,
+        };
         if (ag.Armoured && ag.BulkheadMm > 0)
-            bulkheads.AddRange(new[] { ("Forward", ag.X1), ("Aft", ag.X0) }.Select(t => new ArmourBulkheadReport($"{t.Item1} bulkhead",
-                Math.Round(t.Item2, 3), Math.Round(ag.BulkheadMm), Rz(ag.BulkheadBottom), Rz(ag.BulkheadTop), NonEmpty(ag.BulkheadMaterial))));
-        bulkheads.AddRange(ag.EndBulkheads.Concat(ag.EndPlates).Select(b => new ArmourBulkheadReport(b.Id, Math.Round(b.X, 3), Math.Round(b.Mm), Rz(b.Bottom), Rz(b.Top),
-            NonEmpty(b.Material))));
+            bulkheads.AddRange(Armour.CitadelBulkheads(ag).Select(BulkheadReport));
+        bulkheads.AddRange(ag.EndBulkheads.Concat(ag.EndPlates).Select(BulkheadReport));
         if (bulkheads.Count > 0)
             armour.Bulkheads = bulkheads;
         if (ag.Decks.Count > 0)

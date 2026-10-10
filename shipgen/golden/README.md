@@ -44,6 +44,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   armoured bulkheads as wide as the hull up their height, and side guns' barbettes stay inside the deck edge.
   `bouvet` and `babel` go to strength 0.6, `brennus` to 0.4 (at 1 the barbette rule widened her to 34 m). 4 design,
   4 SVG and 4 sprite.json cases rewritten; every other case unchanged.
+- 2026-10-10, the citadel bulkheads thinner under the belt, on purpose: half `bulkhead_mm` from the belt's lower edge
+  down to the inner bottom. Every armoured design is lighter: standard median −1% (Yamato −7.8%, Bismarck −5.4%), and
+  the hitboxes' bulkheads carry `lower_mm`/`lower_top`. 238 design, 477 SVG and 51 sprite.json cases rewritten.
 
 ## Layout
 

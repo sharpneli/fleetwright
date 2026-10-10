@@ -225,8 +225,7 @@ public static class Subdivision
             lay.Raised.SelectMany(s => new[] { s.X0, s.X1 }), ag.EndBulkheads.Select(b => b.X));
         var armBh = new List<ArmourBulkhead>();
         if (cit is { Kind: "armoured" })
-            foreach (var x in new[] { ag.X0, ag.X1 })
-                armBh.Add(new ArmourBulkhead("", x, ag.BulkheadMm, ag.BulkheadBottom, ag.BulkheadTop, null, ag.BulkheadMaterial));
+            armBh.AddRange(Armour.CitadelBulkheads(ag));
         armBh.AddRange(ag.EndBulkheads);
         var sections = Enumerable.Range(0, st.Count - 1)
             .Select(i => new Section((i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), st[i + 1].X, st[i].X)).ToList();
@@ -245,6 +244,8 @@ public static class Subdivision
             {
                 var a = armBh.MinBy(b => Math.Abs(b.X - s.X))!;
                 (d.ArmourMm, d.ArmourBottom, d.ArmourTop) = (Math.Round(a.Mm), Math.Round(Rz(a.Bottom), 2), Math.Round(Rz(a.Top), 2));
+                if (a.LowerTop > a.Bottom && a.LowerMm != a.Mm)
+                    (d.ArmourLowerMm, d.ArmourLowerTop) = (Math.Round(a.LowerMm), Math.Round(Rz(a.LowerTop), 2));
                 d.ArmourMaterial = string.IsNullOrEmpty(a.Material) ? null : a.Material;
             }
             tb.Add(d);

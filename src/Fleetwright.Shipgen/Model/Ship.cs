@@ -318,7 +318,12 @@ public sealed record StrakeReport(string Id, string Kind, string Extent, double 
     public string? Material { get; init; }
 }
 
-public sealed record ArmourBulkheadReport(string Id, double X, double ThicknessMm, double Bottom, double Top, string? Material);
+/// <summary>An armoured transverse bulkhead: ThicknessMm from Top down, LowerMm under LowerTop when it's thinner there.</summary>
+public sealed record ArmourBulkheadReport(string Id, double X, double ThicknessMm, double Bottom, double Top, string? Material)
+{
+    public double? LowerMm { get; init; }
+    public double? LowerTop { get; init; }
+}
 
 public sealed record ArmourDeckReport(string Deck, double ThicknessMm, string Extent, double X0, double X1, double Z, bool Main, bool Roof,
     string? Material);
@@ -455,6 +460,8 @@ public sealed class Bulkhead
     public double? ArmourMm { get; set; }
     public double? ArmourBottom { get; set; }
     public double? ArmourTop { get; set; }
+    public double? ArmourLowerMm { get; set; }
+    public double? ArmourLowerTop { get; set; }
     public string? ArmourMaterial { get; set; }
     public double? PlateMm { get; set; }
 }

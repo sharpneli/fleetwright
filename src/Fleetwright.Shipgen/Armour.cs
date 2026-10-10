@@ -27,8 +27,13 @@ public sealed record Strake(string Id, string Kind, string Extent, double Mm, do
     public double? Wl { get; init; }
 }
 
-/// <summary>An armoured transverse bulkhead at x; W narrower than the beam (the steering box).</summary>
-public sealed record ArmourBulkhead(string Id, double X, double Mm, double Bottom, double Top, double? W, string? Material);
+/// <summary>An armoured transverse bulkhead at x; W narrower than the beam (the steering box). Mm down to LowerTop,
+/// LowerMm below it (the citadel's under its belt); LowerTop is Bottom when it's one thickness.</summary>
+public sealed record ArmourBulkhead(string Id, double X, double Mm, double Bottom, double Top, double? W, string? Material)
+{
+    public double LowerMm { get; init; } = Mm;
+    public double LowerTop { get; init; } = Bottom;
+}
 
 /// <summary>Where the armour is: the citadel (X0..X1), the belt, the armour decks and strakes, the bulkheads. Heights
 /// above the keel. MainZ: the main armour deck's height; RoofZ: the lowest armour deck over the citadel.</summary>
@@ -41,7 +46,9 @@ public sealed class ArmourLayout
     public double RoofMm;
     public string? RoofMaterial, BeltMaterial, BulkheadMaterial;
     public bool Armoured;
-    public double BulkheadMm, BulkheadBottom, BulkheadTop;
+    /// <summary>The citadel's bulkheads: BulkheadMm from BulkheadTop down to BulkheadStep (the belt's lower edge),
+    /// BulkheadLowerMm below it down to BulkheadBottom (the inner bottom).</summary>
+    public double BulkheadMm, BulkheadLowerMm, BulkheadBottom, BulkheadStep, BulkheadTop;
     public List<ArmourBulkhead> EndBulkheads = [];
     /// <summary>The end belts' plates across the hull's end face (a transom), where a belt runs all the way to it: the
     /// belt carried round the stern, as the complete belts were. Not bulkheads: the subdivision doesn't stop at them.</summary>
@@ -54,6 +61,10 @@ public static class Armour
 {
     public const double TdsMmPerM = 12.0;
     const double BeltHA = 0.30, BeltHB = 2.4;
+    /// <summary>The citadel bulkheads' thickness under the belt, as a share of theirs above. A shell gets that low at
+    /// the citadel's end only by falling through the unarmoured end (lower, it meets water first), so it strikes the
+    /// upright plate at least as obliquely as it falls: a placeholder until the practice is researched.</summary>
+    public const double BulkheadLowerShare = 0.5;
     static readonly string[] ArmourExtents = ["citadel", "full", "fore", "aft", "ends"];
     static readonly string[] BeltEnds = ["fore", "aft"];
     static readonly string[] ArmourParts = ["belt", "upper_belt", "end_belts", "bulkheads", "decks", "turrets", "barbettes",
@@ -328,8 +339,9 @@ public static class Armour
         }
         // the bulkheads reach the belt's top or the citadel's upper belt (LINQ's Max: leading NaNs skipped), and down
         // to the inner bottom: a shell falling through an unarmoured end stays inside the dry hull, so stopping them
-        // short of the vital spaces' floor would leave a way in under them
-        double bhTop = top, citBot = Math.Min(bhBot, Powerplant.DoubleBottom(D));
+        // short of the vital spaces' floor would leave a way in under them. Under the belt they're thinner
+        // (BulkheadLowerShare)
+        double bhTop = top, citBot = Math.Min(bhBot, Powerplant.DoubleBottom(D)), bhMm = a.BulkheadMm ?? 0.6 * belt;
         foreach (var s in strakes)
             if (s.Kind == "upper" && s.Extent == "citadel" && (double.IsNaN(bhTop) || s.Top > bhTop))
                 bhTop = s.Top;
@@ -338,10 +350,16 @@ public static class Armour
             X0 = x0, X1 = x1, BeltMm = belt, BeltBottomMm = a.BeltBottomMm ?? belt, Waterline = T, BeltBottom = bot, BeltTop = top,
             Decks = decks, Strakes = strakes, MainZ = main?.Z, RoofZ = roof?.Z, RoofMm = roof?.Mm ?? 0, RoofMaterial = roof?.Material,
             BeltMaterial = ArmourMaterial(design, "belt"), BulkheadMaterial = ArmourMaterial(design, "bulkheads"),
-            Armoured = belt > 0 || over.Count > 0, BulkheadMm = a.BulkheadMm ?? 0.6 * belt, BulkheadBottom = citBot, BulkheadTop = bhTop,
+            Armoured = belt > 0 || over.Count > 0, BulkheadMm = bhMm, BulkheadLowerMm = BulkheadLowerShare * bhMm,
+            BulkheadBottom = citBot, BulkheadStep = Math.Max(citBot, Math.Min(bot, bhTop)), BulkheadTop = bhTop,
             EndBulkheads = endBhs, EndPlates = endPlates,
         };
     }
+
+    /// <summary>The citadel's two armoured bulkheads, forward then aft.</summary>
+    public static ArmourBulkhead[] CitadelBulkheads(ArmourLayout g) =>
+        [.. new[] { ("Forward", g.X1), ("Aft", g.X0) }.Select(t => new ArmourBulkhead($"{t.Item1} bulkhead", t.Item2, g.BulkheadMm, g.BulkheadBottom,
+            g.BulkheadTop, null, g.BulkheadMaterial) { LowerMm = g.BulkheadLowerMm, LowerTop = g.BulkheadStep })];
 
     /// <summary>The armour's weights from its geometry.</summary>
     /// <param name="topside">the side above the widest point: a full-width armour deck is its breadth at its height,
@@ -367,9 +385,12 @@ public static class Armour
         }
         if (g.Armoured && g.BulkheadMm > 0)
         {
-            double hb = g.BulkheadTop - g.BulkheadBottom;
-            double across = (Across(g.X0, g.BulkheadBottom, g.BulkheadTop) + Across(g.X1, g.BulkheadBottom, g.BulkheadTop)) / 2;
-            result.Add(new Weight("Bulkheads", "armour", 2 * B * across * hb * g.BulkheadMm / 1000 * Weight.Steel, xc, Zf(g.BulkheadTop, g.BulkheadBottom)));
+            // full thickness down to the step, thinner under it
+            double Part(double lo, double hi, double mm) => (Across(g.X0, lo, hi) + Across(g.X1, lo, hi)) / 2 * (hi - lo) * mm;
+            double up = Part(g.BulkheadStep, g.BulkheadTop, g.BulkheadMm), low = Part(g.BulkheadBottom, g.BulkheadStep, g.BulkheadLowerMm);
+            double zc = up + low > 0 ? ((g.BulkheadStep + g.BulkheadTop) / 2 * up + (g.BulkheadBottom + g.BulkheadStep) / 2 * low) / (up + low)
+                : (g.BulkheadTop + g.BulkheadBottom) / 2;
+            result.Add(new Weight("Bulkheads", "armour", 2 * B * (up + low) / 1000 * Weight.Steel, xc, ZRel.Frac(D != 0 ? zc / D : 0.5)));
         }
         foreach (var b in g.EndBulkheads.Concat(g.EndPlates))
             result.Add(new Weight(b.Id, "armour", (b.W is double w && w != 0 ? w : B * Across(b.X, b.Bottom, b.Top)) * (b.Top - b.Bottom) * b.Mm / 1000 * Weight.Steel, b.X,
