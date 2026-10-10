@@ -979,15 +979,52 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     break;
             }
 
-            // Forward to the scene or the camera (only if ImGui doesn't want input)
-            ImGuiIOPtr io = ImGui.GetIO();
-            if (!io.WantCaptureMouse && !io.WantCaptureKeyboard)
+            // Forward to the scene or the camera, unless ImGui wants this kind of input
+            if (SceneWants(&evt))
             {
                 if (Scene != null)
                     Scene.ProcessEvent(&evt, _windowWidth, _windowHeight);
                 else
                     _mainCamera.ProcessSdlEvent(&evt);
             }
+        }
+    }
+
+    /// <summary>Mouse buttons whose press went to the scene: their release goes there too, wherever it lands.</summary>
+    uint _sceneButtons;
+
+    /// <summary>
+    /// Whether an event goes to the scene. The mouse goes to whatever is under it: the scene unless the cursor is over
+    /// an ImGui window (or ImGui owns the drag), with no click needed to move focus either way. The keyboard goes to the
+    /// scene unless an ImGui text field is being typed into. Not WantCaptureKeyboard: with keyboard navigation on it
+    /// stays set as long as any ImGui window has focus, which is any window last clicked.
+    /// </summary>
+    private bool SceneWants(SDL_Event* e)
+    {
+        ImGuiIOPtr io = ImGui.GetIO();
+        switch ((SDL_EventType)e->type)
+        {
+            case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN:
+                if (io.WantCaptureMouse)
+                    return false;
+                _sceneButtons |= 1u << e->button.button;
+                return true;
+            case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
+                uint bit = 1u << e->button.button;
+                bool pressedInScene = (_sceneButtons & bit) != 0;
+                _sceneButtons &= ~bit;
+                return pressedInScene;
+            case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
+                return !io.WantCaptureMouse || _sceneButtons != 0;
+            case SDL_EventType.SDL_EVENT_MOUSE_WHEEL:
+                return !io.WantCaptureMouse;
+            case SDL_EventType.SDL_EVENT_KEY_DOWN:
+            case SDL_EventType.SDL_EVENT_KEY_UP:
+            case SDL_EventType.SDL_EVENT_TEXT_INPUT:
+            case SDL_EventType.SDL_EVENT_TEXT_EDITING:
+                return !io.WantTextInput;
+            default:
+                return true;
         }
     }
 
