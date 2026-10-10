@@ -120,7 +120,7 @@ public static class HullArt
 
     /// <summary>Dazzle camouflage: slanted panels cut across the whole ship, in a repeatable pattern per design.
     /// Panels are clipped to the hull band, the superstructure and the funnels as they're drawn.</summary>
-    static List<(List<Pt>, string)> DazzlePanels(TopView v, Hull hull, IReadOnlyList<string> colours)
+    static List<(List<Pt>, string)> DazzlePanels(TopView v, Planform hull, IReadOnlyList<string> colours)
     {
         var rng = new ShipRng($"{v.Id}/dazzle");
         double L = hull.L, Y = hull.B / 2 + 2.0;
@@ -173,7 +173,7 @@ public static class HullArt
     /// <summary>A look's paint and canvas on the open deck: recognition stripes on the forecastle (and quarterdeck)
     /// and peacetime awnings over the quarterdeck; then, separately (drawn over the anchor chains), a hull number on
     /// the foredeck.</summary>
-    static (List<Node> Paint, List<Node> Number) DeckPaint(TopView v, Hull hull, Painter P, PathData deckD)
+    static (List<Node> Paint, List<Node> Number) DeckPaint(TopView v, Planform hull, Painter P, PathData deckD)
     {
         var sh = P.Shapes;
         double L = hull.L;
@@ -252,11 +252,6 @@ public static class HullArt
         return (result, num);
     }
 
-    /// <summary>The deck as a look draws it inside the physical hull: with tumblehome (sides that bulge out below a
-    /// narrower deck, seen from above as a band round it) a hull that much narrower, else the hull itself.</summary>
-    public static Hull DeckHull(Hull hull, Shapes sh) =>
-        sh.Tumblehome is double th && th > 0 ? new Hull(new HullSpec(hull.L, hull.B / (1 + th), hull.Bow, hull.Stern)) : hull;
-
     /// <summary>What build_hull returns: the drawing, the physical hull and the clutter items (for the height
     /// map).</summary>
     public sealed record Result(Scene Scene, Hull Hull, List<Clutter.Item> Clutter);
@@ -265,9 +260,10 @@ public static class HullArt
     {
         var spec = v.Dressing;
         var P = new Painter(pal, scale, sh);
-        // the hull is the physical one, whatever the look; what is drawn on deck keeps to the deck as the look draws it
+        // the hull is the physical one, whatever the look: seen from above at its widest, and the deck inside it (narrower
+        // where the sides lean in); what is drawn on deck keeps to the deck
         var outer = v.Hull;
-        var hull = DeckHull(outer, sh);
+        var hull = v.Deck;
         var (hx, hy) = ShipExtent(v, outer, scale, align);
         var scene = new Scene(-hx, -hy, 2 * hx, 2 * hy, scale);
         var hullD = Painter.HullPath(outer);

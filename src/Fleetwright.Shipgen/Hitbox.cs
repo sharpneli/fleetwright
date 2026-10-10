@@ -235,6 +235,7 @@ public static class Hitbox
             {
                 Keel = -Math.Round(D, 2), Waterline = -Math.Round(D - T, 2), ArmourDeck = ag.MainZ is double mz ? Rz(mz) : null,
                 Draught = Math.Round(T, 2), Depth = Math.Round(D, 2), Freeboard = Math.Round(D - T, 2),
+                Knuckle = lay.Topside.Plain ? null : Math.Round(inner.Form.KnuckleZ - D, 2),
                 Raised = lay.Raised.Count > 0
                     ? lay.Raised.Select(st => new RaisedReport(st.Id, Math.Round(st.X0, 3), Math.Round(st.X1, 3), Math.Round(st.Levels * Geometry.DeckPitch, 2))).ToList()
                     : null,

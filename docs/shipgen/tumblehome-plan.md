@@ -1,6 +1,6 @@
 # Plan: physical hull form variations, tumblehome first
 
-2026-10-10. Status: agreed 2026-10-10 (decisions at the end); steps 1-6 now, step 7 later. Done: steps 1-3 (with the side-gun
+2026-10-10. Status: agreed 2026-10-10 (decisions at the end); steps 1-6 now, step 7 later. Done: steps 1-4 (with the side-gun
 sponsons from step 8 pulled forward: without them a tumblehome Bouvet grew to a 31 m beam to fit her wing turrets on the
 narrow deck). Background and options: `hull-form-variations.md`.
 

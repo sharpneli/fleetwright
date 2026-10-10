@@ -242,7 +242,7 @@ public static class Clutter
     sealed class Placer
     {
         public readonly TopView View;
-        public readonly Hull Hull;
+        public readonly Planform Hull;
         public readonly List<(long Level, List<Pt> Poly, Box Box)> BlockPolys = [];
         public readonly List<(List<Pt> Poly, Box Box)> Directors = [];
         public readonly List<(double X, double Y, double R)> Circles = [];
@@ -250,7 +250,7 @@ public static class Clutter
         public readonly List<(double X, double L)> Funnels = [];
         public readonly List<Box> Taken = [];
 
-        public Placer(TopView v, Hull hull)
+        public Placer(TopView v, Planform hull)
         {
             View = v;
             Hull = hull;
@@ -327,7 +327,7 @@ public static class Clutter
 
     // ------------------------------------------------------------------ placement
 
-    static List<Surface> Surfaces(TopView v, Hull hull)
+    static List<Surface> Surfaces(TopView v, Planform hull)
     {
         var result = v.Blocks.Where(b => b.Director == null).Select(b => new Surface(b.Outline, b.Level, "roof")).ToList();
         // the deck as a polygon a little inside its edge
@@ -517,8 +517,8 @@ public static class Clutter
         return result;
     }
 
-    /// <summary>Every clutter item for the ship, on the deck as drawn (deckHull: HullArt.DeckHull). Repeatable.</summary>
-    public static List<Item> Plan(TopView v, Hull deckHull, Shapes shapes)
+    /// <summary>Every clutter item for the ship, on the deck (deckHull: TopView.Deck). Repeatable.</summary>
+    public static List<Item> Plan(TopView v, Planform deckHull, Shapes shapes)
     {
         var kitName = shapes.Clutter;
         var kit = Kit(kitName ?? "");

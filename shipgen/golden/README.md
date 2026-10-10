@@ -36,6 +36,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-10, tumblehome (`hull.section`), on purpose: `bouvet`, `brennus`, `babel` and `danton` got a physical
   tumblehome in place of the look's. Their hitboxes, reports, SVGs and sprite.json changed (narrower deck, sponsons
   under the side guns, lighter topsides, the hull form's extra rows); every other case is unchanged.
+- 2026-10-10, the drawing reads the tumblehome (step 4), on purpose: the look's `tumblehome` key is gone; the deck is
+  drawn from the hull form (narrower where the sides lean in), the height map steps up the leaning side, and the
+  hitboxes carry `vertical.knuckle`. 4 design and 24 SVG cases rewritten: the four tumblehome designs, `courbet`
+  (wall-sided, it lost the look's drawn tumblehome) and the 19 fuzz mutants of the French Victorian designs.
 
 ## Layout
 

@@ -60,7 +60,7 @@ public sealed class Painter
     public static PathData Poly(IEnumerable<Pt> pts) => PathData.Poly(pts);
 
     /// <summary>The hull (or an inset deck) outline.</summary>
-    public static PathData HullPath(Hull hull, double inset = 0.0, double? maxHw = null, double? xMin = null,
+    public static PathData HullPath(Planform hull, double inset = 0.0, double? maxHw = null, double? xMin = null,
         double? xMax = null, int n = 260) => Poly(hull.Points(inset, maxHw, xMin, xMax, n));
 
     /// <summary>The dazzle panels clipped to the outline d, or null with no dazzle.</summary>

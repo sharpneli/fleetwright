@@ -48,8 +48,15 @@ public sealed class TopView
     }
 
     public required string Id;
-    /// <summary>The physical hull.</summary>
+    /// <summary>The physical hull at its widest: what is seen from above.</summary>
     public required Hull Hull;
+    /// <summary>The main deck: the hull where the sides are straight, narrower where they lean in (tumblehome).</summary>
+    public required Planform Deck;
+    /// <summary>Where the sides lean in: the side's outline at heights between the widest point and the deck, as
+    /// (metres above the waterline, outline), lowest first; empty on a wall-sided hull.</summary>
+    public required List<(double TopM, List<Pt> Outline)> SideBands;
+    /// <summary>The widest point above the waterline (the deck on a wall-sided hull).</summary>
+    public required double KnuckleM;
     /// <summary>The main deck above the waterline.</summary>
     public required double DeckM;
     public required OrderedDictionary<string, TurretType> TurretTypes;
@@ -119,15 +126,27 @@ public sealed class TopView
             OnUpper(c))).ToList();
 
         var hull = new Hull(new HullSpec(hb.Length, hb.Beam, hb.Bow, hb.Stern));
-        var raised = (hb.Vertical.Raised ?? []).Select(r => new Raised(r.X0, r.X1, (long)Math.Round(r.Top / Geometry.DeckPitch),
-            hull.Points(inset: Layout.RaisedInset, xMin: r.X0, xMax: r.X1), r.Top)).ToList();
+        var vert = hb.Vertical;
+        double deckM = Math.Max(vert.Freeboard, 0.1);
+        // where the sides lean in, the decks are the form's at their heights; else the hull's own outline
+        Planform SideAt(double h) => vert.Knuckle is null ? hull : new FormPlanform(hb.HullForm, hb.Length, hb.Beam, h);
+        var raised = (vert.Raised ?? []).Select(r => new Raised(r.X0, r.X1, (long)Math.Round(r.Top / Geometry.DeckPitch),
+            SideAt(r.Top).Points(inset: Layout.RaisedInset, xMin: r.X0, xMax: r.X1), r.Top)).ToList();
+        var bands = new List<(double, List<Pt>)>();
+        double knuckleM = deckM;
+        if (vert.Knuckle is double k)
+        {
+            knuckleM = Math.Max(0.0, k - vert.Waterline);
+            foreach (var f in new[] { 0.25, 0.5, 0.75 })
+                bands.Add((knuckleM + (deckM - knuckleM) * f, SideAt(k * (1 - f)).Points()));
+        }
 
         var platforms = comps.Where(c => c.Kind is "flight_deck" or "sponson")
             .Select(c => (c.Kind, P: new Platform(c.Id, c.Points!, c.Top, c.Role == "elevator"))).ToList();
 
         return new TopView
         {
-            Id = ship.Design.Id ?? "", Hull = hull, DeckM = Math.Max(hb.Vertical.Freeboard, 0.1), TurretTypes = hb.TurretTypes, Mounts = mounts,
+            Id = ship.Design.Id ?? "", Hull = hull, Deck = SideAt(0.0), SideBands = bands, KnuckleM = knuckleM, DeckM = deckM, TurretTypes = hb.TurretTypes, Mounts = mounts,
             Barbettes = comps.Where(c => c.Kind == "barbette").Select(c => new Barbette(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top)).ToList(),
             Blocks = blocks, Funnels = funnels, Masts = masts, AaMounts = aa, RaisedDecks = raised,
             ConningTower = comps.Where(c => c.Kind == "conning_tower").Select(c => new Tower(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top))
@@ -144,7 +163,12 @@ public sealed class TopView
     public List<HeightColumn> HeightColumns()
     {
         var d = Dressing;
-        var items = new List<HeightColumn> { new(DeckM, "hull") };
+        // the hull at its widest, then where the sides lean in, the side stepping up to the deck
+        var items = new List<HeightColumn> { new(KnuckleM, "hull") };
+        foreach (var (top, outline) in SideBands)
+            items.Add(new(top, "polygon") { Points = outline });
+        if (SideBands.Count > 0)
+            items.Add(new(DeckM, "polygon") { Points = Deck.Points() });
         foreach (var r in RaisedDecks)
             items.Add(new(DeckM + r.Top, "polygon") { Points = r.Outline });
         if (FlightDeck is { } fd)

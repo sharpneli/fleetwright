@@ -73,8 +73,6 @@
 //     tower_level        the lowest superstructure level drawn as a tower by blocks "tower" (3)
 //     funnel_rake        how far aft a raked funnel's top stands from its foot, in m (0)
 //     funnel_cap         "pan" (an Italian flat plate overhanging aft) or "hat" (a broad black French cap)
-//     tumblehome         the deck drawn this much narrower than the hull (a fraction of the deck's beam): sides
-//                        that bulge out below a narrow deck
 //     deck_line_opacity  planking and plate seam lines (0.45; 0 = a plain deck)
 //     clutter            the kit of roof and deck gear (Clutter.KITS; defaults to the look's era, None = none),
 //                        with clutter_density, roof_planks and roof_rails (see Clutter.cs)
@@ -700,11 +698,11 @@
     "toulon": {
       "desc": "France-inspired",
       "eras": {
-        // France-inspired 1890s, the "floating hotels": black hull bulging out in a great tumblehome under ochre
-        // upperworks and funnels, mushroom-roofed drum turrets, military masts with stacked tops, awnings aft
+        // France-inspired 1890s, the "floating hotels": black hull (give the design a tumblehome, hull.section) under
+        // ochre upperworks and funnels, mushroom-roofed drum turrets, military masts with stacked tops, awnings aft
         "victorian": {
           "from": "generic/victorian",
-          "desc": "France-inspired 1890s: black and ochre, tumblehome, mushroom turrets, stacked tops, awnings",
+          "desc": "France-inspired 1890s: black and ochre, mushroom turrets, stacked tops, awnings",
           "palette": {
             "hull": "#161618", "wood": "#d9c9a0", "deck_line": "#8a7650",
             "levels": ["#c49a52", "#cba45e", "#d2ae6b", "#d9b878"], "turret": "#3a3b3e", "barbette": "#2b2c2f",
@@ -712,17 +710,17 @@
           },
           "turrets": "champignon",
           "shapes": {
-            "tumblehome": 0.07, "top_r": 2.1, "top_tiers": 3, "awnings": true, "blocks": "soft"
+            "top_r": 2.1, "top_tiers": 3, "awnings": true, "blocks": "soft"
           },
           "shapes_by_style": {
-            "merchant": {"tumblehome": 0.0, "awnings": false},
-            "planing": {"tumblehome": 0.0, "awnings": false}
+            "merchant": {"awnings": false},
+            "planing": {"awnings": false}
           }
         },
-        // France-inspired 1910s: "gris bleu" all over, the decks painted to match, tumblehome, tall pole masts
+        // France-inspired 1910s: "gris bleu" all over, the decks painted to match, tall pole masts
         "great_war": {
           "from": "wwii",
-          "desc": "France-inspired 1910s: gris bleu all over, decks included, tall pole masts, tumblehome",
+          "desc": "France-inspired 1910s: gris bleu all over, decks included, tall pole masts",
           "adjust": [
             {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.14, "styles": ["warship", "carrier", "planing"]},
             {"keys": ["hull", "upperworks", "armament", "funnels"], "tint": ["#4d6a8c", 0.3], "saturate": 0.0, "styles": ["warship", "carrier", "planing"]},
@@ -731,13 +729,8 @@
             {"keys": "deck_line", "tint": ["#2c3846", 1.0], "styles": ["warship", "carrier", "planing"]}
           ],
           "shapes": {
-            "funnel": "oval", "funnel_rake": 0.0, "turret_bands": null, "tumblehome": 0.05, "top_r": 0.9,
+            "funnel": "oval", "funnel_rake": 0.0, "turret_bands": null, "top_r": 0.9,
             "deck_line_opacity": 0.6, "funnel_band_w": 0.5
-          },
-          "shapes_by_style": {
-            "merchant": {"tumblehome": 0.0},
-            "planing": {"tumblehome": 0.0},
-            "carrier": {"tumblehome": 0.0}
           }
         },
         // France-inspired 1920s-30s: light blue-grey, white teak, tripods with director tops, awnings aft

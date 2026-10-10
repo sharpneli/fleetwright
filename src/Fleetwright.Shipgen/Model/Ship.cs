@@ -192,6 +192,9 @@ public sealed class Vertical
     public double Depth { get; init; }
     public double Freeboard { get; init; }
     public List<RaisedReport>? Raised { get; init; }
+    /// <summary>The widest point's height (above the main deck, so negative) where the sides lean in above it
+    /// (tumblehome); absent on a wall-sided hull.</summary>
+    public double? Knuckle { get; init; }
 }
 
 public sealed record RaisedReport(string Id, double X0, double X1, double Top);
@@ -283,6 +286,12 @@ public static class HullFormExtensions
         }
         return [.. pts.Select(p => new Pt(p.X, -p.W)), .. Enumerable.Reverse(pts).Select(p => new Pt(p.X, p.W))];
     }
+}
+
+/// <summary>The hull's side at height h over the main deck seen from above, read from the exported form.</summary>
+public sealed class FormPlanform(HullFormReport form, double length, double beam, double h) : Planform(length, beam)
+{
+    public override double HalfWidth(double x) => form.HalfWidth(x, h);
 }
 
 /// <summary>A hull station: its half-breadths Y at heights Z.</summary>
