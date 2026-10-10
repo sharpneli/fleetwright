@@ -53,6 +53,8 @@ public sealed unsafe class ShipViewer : IScene
     bool shadows = true;
     double clock;
     double[]? bearings;   // each mount's bearing now, slewing towards its target
+    (double Lo, double Hi)[][] mountArcs = [];   // each mount's arcs, and the mounts in draw order (ascending z),
+    int[] drawOrder = [];                        // made once per bake so a frame allocates nothing
     const double TraverseDegPerS = 45;   // faster than the sweep, so a turret catches up after a blind arc
     bool dragging;
 
@@ -190,6 +192,9 @@ public sealed unsafe class ShipViewer : IScene
             foreach (var (tid, im) in baked.Turrets)
                 turretTex[tid] = (nint)Upload(im, height: false);
             sprites = sp;
+            var mounts = sp.Meta.Mounts;
+            mountArcs = mounts.Select(m => m.ArcsDeg.Select(a => (Lo: a[0], Hi: a[1])).ToArray()).ToArray();
+            drawOrder = Enumerable.Range(0, mounts.Count).OrderBy(i => mounts[i].Z).ToArray();
             var size = sp.Meta.SizePx;
             status = $"{sp.Meta.Name}\n{size[0]} x {size[1]} px, {sp.Turrets.Count} turret types, {sp.Clutter.Count} clutter items\n" +
                      $"{session.Status}, draw {tDraw:F2} s, bake {tBake:F2} s";
@@ -298,30 +303,20 @@ public sealed unsafe class ShipViewer : IScene
         for (int i = 0; i < mounts.Count; i++)
         {
             var m = mounts[i];
-            double target = Target(m);
+            var arcs = mountArcs[i];
+            double target = Target(m, arcs);
             if (first)
             {
                 bearings[i] = target;
                 continue;
             }
-            var arcs = m.ArcsDeg.Select(a => (Lo: a[0], Hi: a[1])).ToList();
             double now = bearings[i];
             double ccw = Geometry.Normalize360(target - now), cw = ccw - 360;
             if (ccw == 0)
                 continue;
             // the shorter way, unless it crosses a blind arc (only the path's inside is tested: both ends are allowed)
-            bool Clear(double d)
-            {
-                if (arcs.Count == 0)
-                    return true;
-                int n = (int)Math.Ceiling(Math.Abs(d));
-                for (int s = 1; s < n; s++)
-                    if (!Geometry.AngleAllowed(arcs, now + d * s / n))
-                        return false;
-                return true;
-            }
             var (a, b) = ccw <= -cw ? (ccw, cw) : (cw, ccw);
-            double delta = Clear(a) || !Clear(b) ? a : b;
+            double delta = Clear(arcs, now, a) || !Clear(arcs, now, b) ? a : b;
             double step = TraverseDegPerS * dt;
             bearings[i] = Math.Abs(delta) <= step ? target : Geometry.Normalize360(now + Math.Sign(delta) * step);
         }
@@ -329,26 +324,38 @@ public sealed unsafe class ShipViewer : IScene
 
     /// <summary>Where the turret is heading: its rest angle, a bearing circling the ship (stopping at the arcs' ends),
     /// or the nearest allowed to starboard.</summary>
-    double Target(SpriteMount m)
+    double Target(SpriteMount m, (double Lo, double Hi)[] arcs)
     {
-        var arcs = m.ArcsDeg.Select(a => (Lo: a[0], Hi: a[1])).ToList();
         double target = turretMode switch
         {
             0 => m.RestDeg,
             1 => Geometry.Wrap180(clock * 24.0),
             _ => 90.0,
         };
-        if (turretMode == 0 || arcs.Count == 0 || Geometry.AngleAllowed(arcs, target))
+        if (turretMode == 0 || arcs.Length == 0 || Geometry.AngleAllowed(arcs, target))
             return target;
         double best = target, bd = 1e9;   // geometry.nearest_allowed
         foreach (var (lo, hi) in arcs)
-            foreach (var e in new[] { lo, hi })
-            {
-                double d = Math.Abs(Geometry.Wrap180(e - target));
-                if (d < bd)
-                    (best, bd) = (e, d);
-            }
+        {
+            double dl = Math.Abs(Geometry.Wrap180(lo - target)), dh = Math.Abs(Geometry.Wrap180(hi - target));
+            if (dl < bd)
+                (best, bd) = (lo, dl);
+            if (dh < bd)
+                (best, bd) = (hi, dh);
+        }
         return best;
+    }
+
+    /// <summary>Does turning d degrees from now stay inside the arcs? Only the path's inside is tested.</summary>
+    static bool Clear((double Lo, double Hi)[] arcs, double now, double d)
+    {
+        if (arcs.Length == 0)
+            return true;
+        int n = (int)Math.Ceiling(Math.Abs(d));
+        for (int s = 1; s < n; s++)
+            if (!Geometry.AngleAllowed(arcs, now + d * s / n))
+                return false;
+        return true;
     }
 
     public void Draw(SDL_GPUCommandBuffer* cmd, RenderTarget target, float dt)
@@ -432,12 +439,11 @@ public sealed unsafe class ShipViewer : IScene
 
         // the turrets, their shadows first (only where the hull is lower than the turret's roof)
         var types = meta.TurretTypes;
-        var order = Enumerable.Range(0, meta.Mounts.Count).OrderBy(i => meta.Mounts[i].Z).ToList();
-        foreach (var pass2 in new[] { 0, 1 })
+        for (int pass2 = 0; pass2 < 2; pass2++)
         {
             if (pass2 == 0 && !shadows)
                 continue;
-            foreach (int i in order)
+            foreach (int i in drawOrder)
             {
                 var m = meta.Mounts[i];
                 var tm = types[m.Type];

@@ -556,6 +556,16 @@ public static class Geometry
         a = Normalize360(a);
         return arcs.Any(r => r.Lo <= a && a <= r.Hi || r.Lo <= a + 360.0 && a + 360.0 <= r.Hi);
     }
+
+    /// <summary>The same test without allocating, for per-frame callers.</summary>
+    public static bool AngleAllowed(ReadOnlySpan<(double Lo, double Hi)> arcs, double a)
+    {
+        a = Normalize360(a);
+        foreach (var r in arcs)
+            if (r.Lo <= a && a <= r.Hi || r.Lo <= a + 360.0 && a + 360.0 <= r.Hi)
+                return true;
+        return false;
+    }
 }
 
 /// <summary>A polygon tested many times (a layout footprint): polygons_intersect and point_in_polygon with the same
