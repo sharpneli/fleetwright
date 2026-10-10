@@ -1,9 +1,9 @@
 namespace Fleetwright.Shipgen.Tools;
 
 /// <summary>shell-test: an empirical check that the citadel has no holes. Shells are aimed at random points in the
-/// citadel's cells under its roof (the highest armour deck over the citadel that the side armour reaches) from random
-/// bearings, at fall angles from direct fire (0°) to plunging (50°), and flown as straight
-/// lines over their last stretch. Each is traced back from its target out of the ship: it's stopped if on the way in it
+/// citadel's cells between the inner bottom and its roof (the highest armour deck over the citadel that the side armour
+/// reaches) from random bearings, at fall angles from direct fire (0°) to plunging (50°), and flown as straight lines
+/// over their last stretch. Each is traced back from its target out of the ship: it's stopped if on the way in it
 /// crossed armour or water, and a leak if it reached the citadel through neither.
 /// <para>Only the hitbox model is read, the way a game would read it: the belt and strakes lie on the hull side
 /// (HullForm.HalfWidth) over their x0..x1 and bottom..top; an armour deck is the plane z over x0..x1 across the hull, with
@@ -123,7 +123,8 @@ public static class ShellTest
         foreach (var st in hb.Armour.Strakes ?? [])
             if (st.ThicknessMm > 0)
                 s.Sides.Add((st.X0, st.X1, st.Bottom, st.Top));
-        // the box: the citadel's cells under its roof, the highest armour deck over the whole citadel that the side
+        // the box: the citadel's cells over the inner bottom (the double bottom isn't vital, and a falling shell can't
+        // climb out of it) and under its roof, the highest armour deck over the whole citadel that the side
         // armour reaches up to (or the lowest, if none is reached); the tiers above it aren't inside the armour
         var cit = hb.Cells.Where(c => c.Citadel == true).ToList();
         if (cit.Count > 0)
@@ -132,7 +133,7 @@ public static class ShellTest
             double side = s.Sides.Where(t => t.X0 < cx1 && t.X1 > cx0).Select(t => t.Top).Append(double.NegativeInfinity).Max();
             var over = s.Decks.Where(d => d.X0 <= cx0 + 0.01 && d.X1 >= cx1 - 0.01).ToList();
             s.Roof = over.Where(d => d.Z <= side + 0.01).Select(d => (double?)d.Z).Max() ?? over.Select(d => (double?)d.Z).Min();
-            s.Citadel = s.Roof is double roof ? cit.Where(c => c.Top <= roof + 0.01).ToList() : [];
+            s.Citadel = s.Roof is double roof ? cit.Where(c => c.Top <= roof + 0.01 && c.Tier != "bottom").ToList() : [];
         }
         static T Bound<T>(T sol, IEnumerable<Pt> pts) where T : Solid
         {

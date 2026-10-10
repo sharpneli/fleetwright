@@ -318,8 +318,10 @@ public static class Armour
                 }
             }
         }
-        // the bulkheads reach the belt's top or the citadel's upper belt (LINQ's Max: leading NaNs skipped)
-        double bhTop = top;
+        // the bulkheads reach the belt's top or the citadel's upper belt (LINQ's Max: leading NaNs skipped), and down
+        // to the inner bottom: a shell falling through an unarmoured end stays inside the dry hull, so stopping them
+        // short of the vital spaces' floor would leave a way in under them
+        double bhTop = top, citBot = Math.Min(bhBot, Powerplant.DoubleBottom(D));
         foreach (var s in strakes)
             if (s.Kind == "upper" && s.Extent == "citadel" && (double.IsNaN(bhTop) || s.Top > bhTop))
                 bhTop = s.Top;
@@ -328,7 +330,7 @@ public static class Armour
             X0 = x0, X1 = x1, BeltMm = belt, BeltBottomMm = a.BeltBottomMm ?? belt, Waterline = T, BeltBottom = bot, BeltTop = top,
             Decks = decks, Strakes = strakes, MainZ = main?.Z, RoofZ = roof?.Z, RoofMm = roof?.Mm ?? 0, RoofMaterial = roof?.Material,
             BeltMaterial = ArmourMaterial(design, "belt"), BulkheadMaterial = ArmourMaterial(design, "bulkheads"),
-            Armoured = belt > 0 || over.Count > 0, BulkheadMm = a.BulkheadMm ?? 0.6 * belt, BulkheadBottom = bhBot, BulkheadTop = bhTop,
+            Armoured = belt > 0 || over.Count > 0, BulkheadMm = a.BulkheadMm ?? 0.6 * belt, BulkheadBottom = citBot, BulkheadTop = bhTop,
             EndBulkheads = endBhs,
         };
     }
