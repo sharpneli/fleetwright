@@ -1,6 +1,6 @@
 # Plan: physical hull form variations, tumblehome first
 
-2026-10-10. Status: proposed, not agreed. Background and options: `hull-form-variations.md`.
+2026-10-10. Status: agreed 2026-10-10 (decisions at the end); steps 1-6 now, step 7 later. Background and options: `hull-form-variations.md`.
 
 ## Goal
 
@@ -84,7 +84,8 @@ uses `wl`, and nothing in the layout sits there.
 
 - `knuckle` is the height of the maximum beam above the waterline, as a fraction of freeboard (default 0.2).
 - `extent` is `"full"` or `"midships"`.
-- `strength` runs from 0 to 1. Validation rejects any combination whose main deck can't hold the main battery's
+- `strength` runs from 0 to 2: 1.0 is a strong French hull, 2.0 is "La Baguette II" (deck about 0.45 of the beam).
+  The game allows silliness without encouraging it: anything that floats and fits its guns builds. Validation rejects any combination whose main deck can't hold the main battery's
   barbettes. The layout's error says so ("tumblehome too strong for the wing turrets").
 
 This follows the variations doc's region selectors (`section`, later `bow`, `stern`, `profile`, `addons`). I kept
@@ -190,8 +191,9 @@ Each step is one verified commit.
    and no allocations per call (`alloctop`). `ShellTest` moves onto it and gets faster.
 6. **Hull skin in the hitbox view.** The lofted mesh replaces the slabs. Checked with `-view=hitbox -camera=bow` on the
    tumblehome designs.
-7. **Cross curves, GZ, reserve buoyancy.** These go in the report and hydrostatics, with large-angle warnings. Before
-   players get tumblehome, ideally.
+7. **Cross curves, GZ, reserve buoyancy: later, with the game's lightweight physics sim.** What the sim needs from
+   the hull form (cross curves, a flooding model's inputs) is decided with the sim, not before. Tumblehome's real
+   price (a small leak shifts weight and she capsizes) lands then.
 8. **Later, on the same frame:**
    - wing sponsons over the tumblehome (arcs);
    - flat-sided casemate stretches;
@@ -200,13 +202,11 @@ Each step is one verified commit.
    - `DeckTop` sheer and profiles;
    - bulges as an additive term.
 
-## Questions for the user
+## Decisions (user, 2026-10-10)
 
-- **Beam = maximum beam** (recommended), with the deck narrower? The other choice is beam = deck beam, with the hull
-  bulging out below it.
-- **Strength scale:** at 1.0, the main deck is about 0.72 of the maximum beam. Should the cap go further, for the
-  Avant-garde extreme?
-- **Raised hull decks:** should the tumblehome carry on up the forecastle sides (recommended, as on the French ships)?
-  Deckhouses stay vertical.
-- **GZ before or after shipping:** should step 7 land before tumblehome reaches players? Otherwise it is mostly upside
-  for a while.
+- **Beam is the maximum beam**: it also says whether the ship fits a drydock or a canal lock. Invariant: nothing
+  fixed stands outside the beam (boats and the like can be swung in), so a hole as wide as the beam takes the ship.
+  Wing sponsons over a tumblehome must stay inside it.
+- **Strength goes past the historical**, up to 2.0 (above). Silly hulls are allowed if they float and fit their guns.
+- **The tumblehome carries up the raised hull decks' sides**; deckhouses stay vertical.
+- **Tumblehome now, stability later** (step 7), with the in-game physics sim.
