@@ -65,7 +65,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- validate shipgen/
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- bench bismarck yamato
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- draw shipgen/designs/bismarck.json --out out   # sprite.json + SVGs
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- bake shipgen/designs/bismarck.json --out out   # PNGs on the GPU
-dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- png-check             # bake all, IoU vs Python's PNGs
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- png-check             # bake all, IoU vs Python's PNGs (turrets; hulls retired)
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- svg-check             # every case's SVGs, ~20 s
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- fuzz shipgen/designs/*.json --cases 1600   # robustness
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- verify out_designs/*  # sprites vs hitboxes
@@ -74,7 +74,13 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check     
 
 `golden-check` must stay at 371 of 371 for any change to `Fleetwright.Shipgen` that isn't a deliberate fix (fixes
 update the goldens on purpose with `golden-update`, one per commit). `svg-check` and `sprite-check` do the same for
-`Fleetwright.Shipgen.Render`, until the drawing is changed on purpose (then the SVG goldens retire).
+`Fleetwright.Shipgen.Render`: a deliberate drawing change rewrites them with `golden-update` too, noted in
+`shipgen/golden/README.md`.
+
+The sprites are drawn from the physical model: `TopView` reads every part with a hitbox from `Ship.Hitboxes`, and only
+dressing with no physical effect (boats, fittings, hatches, cranes, deck markings) from elsewhere. A look may draw a
+part a little over or under its hitbox, never move or reshape it (the hull least of all). Don't add geometry the
+drawing needs anywhere but the hitbox model.
 
 ## Profiling
 

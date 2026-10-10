@@ -14,7 +14,7 @@ public static class HullArt
         double hw = hull.B / 2;
         if (v.FlightDeck is { } fd)
             hw = Math.Max(hw, fd.Outline.Max(p => Math.Abs(p.Y)));
-        foreach (var (y, w) in v.Sponsons.Where(s => !s.Elevator).Select(s => ((s.Y0 + s.Y1) / 2, s.Y1 - s.Y0))
+        foreach (var (y, w) in v.Sponsons.Select(s => ((s.Y0 + s.Y1) / 2, s.Y1 - s.Y0))
                      .Concat(v.Blocks.Select(b => (b.Y, b.W))).Concat((v.Dressing.Fittings ?? []).Select(f => (f.Y, f.W))))
             hw = Math.Max(hw, Math.Abs(y) + w / 2);
         foreach (var m in v.Mounts)   // casemate guns stand on the hull side: keep their barrels on the canvas
@@ -252,22 +252,12 @@ public static class HullArt
         return (result, num);
     }
 
-    /// <summary>The hull as a look draws it (shapes: bow_power and transom added, bow_flare). Drawing only, and only
-    /// ever fuller than the layout's hull, so deck-edge fittings stay on deck; the hitbox keeps the layout's hull.</summary>
-    public static HullSpec LookHullSpec(TopView v, Shapes sh)
-    {
-        var hs = new HullSpec(v.Hull.L, v.Hull.B, v.Hull.Bow, v.Hull.Stern);
-        if ((sh.BowPower ?? 0) == 0 && (sh.BowFlare ?? 0) == 0 && (sh.Transom ?? 0) == 0)
-            return hs;
-        var hull = new Hull(hs);
-        return hs with
-        {
-            Bow = hull.Bow with { Power = hull.Bow.Power!.Value + (sh.BowPower ?? 0.0), Flare = sh.BowFlare ?? 0.0 },
-            Stern = hull.Stern with { Transom = Math.Min(0.9, hull.Stern.Transom!.Value + (sh.Transom ?? 0.0)) },
-        };
-    }
+    /// <summary>The deck as a look draws it inside the physical hull: with tumblehome (sides that bulge out below a
+    /// narrower deck, seen from above as a band round it) a hull that much narrower, else the hull itself.</summary>
+    public static Hull DeckHull(Hull hull, Shapes sh) =>
+        sh.Tumblehome is double th && th > 0 ? new Hull(new HullSpec(hull.L, hull.B / (1 + th), hull.Bow, hull.Stern)) : hull;
 
-    /// <summary>What build_hull returns: the drawing, the hull as drawn and the clutter items (for the height
+    /// <summary>What build_hull returns: the drawing, the physical hull and the clutter items (for the height
     /// map).</summary>
     public sealed record Result(Scene Scene, Hull Hull, List<Clutter.Item> Clutter);
 
@@ -275,12 +265,11 @@ public static class HullArt
     {
         var spec = v.Dressing;
         var P = new Painter(pal, scale, sh);
-        var lookSpec = LookHullSpec(v, sh);
-        var hull = new Hull(lookSpec);
-        var (hx, hy) = ShipExtent(v, hull, scale, align);
+        // the hull is the physical one, whatever the look; what is drawn on deck keeps to the deck as the look draws it
+        var outer = v.Hull;
+        var hull = DeckHull(outer, sh);
+        var (hx, hy) = ShipExtent(v, outer, scale, align);
         var scene = new Scene(-hx, -hy, 2 * hx, 2 * hy, scale);
-        // tumblehome: the hull's sides bulge out below a narrower deck, seen from above as a wide band round the deck
-        var outer = sh.Tumblehome is double th && th != 0 ? new Hull(lookSpec with { Beam = hull.B * (1 + th) }) : hull;
         var hullD = Painter.HullPath(outer);
         if (sh.Dazzle == true && pal.Has("camo"))
             P.Dazzle = DazzlePanels(v, hull, pal.Colours("camo"));
@@ -438,9 +427,13 @@ public static class HullArt
         // --- superstructure, fittings, AA, boats --------------------------------
         // a look's clutter kit (Clutter): roof finishes drawn with each block, the gear itself after all blocks
         var kit = Clutter.Kit(sh.Clutter);
-        var items = kit != null ? Clutter.Plan(v, sh) : [];
+        var items = kit != null ? Clutter.Plan(v, hull, sh) : [];
         double roofPlanks = kit != null ? sh.RoofPlanks ?? kit.RoofPlanks : 0;
         bool rails = kit != null && (sh.RoofRails ?? kit.RoofRails);
+        foreach (var c in v.Casings)
+            low.Add(P.Ln(new PathNode(Painter.Poly(c.Outline)).Fill(Painter.Shade(deckCol, 0.9)), 0.8));
+        if (v.ConningTower is { } ct)   // mostly under the bridge's front; what stands clear of it shows
+            P.ConningTower(low, ct.X, ct.Y, ct.R);
         foreach (var sb in v.Blocks)
         {
             var o = sb.Upper ? high : low;
@@ -480,6 +473,6 @@ public static class HullArt
 
         scene.Root.Items.AddRange(low);
         scene.Root.Items.AddRange(high);
-        return new Result(scene, hull, items);
+        return new Result(scene, outer, items);
     }
 }

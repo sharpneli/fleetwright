@@ -45,10 +45,7 @@ public sealed record Shapes
     public double? RoofPlanks { get; init; }
     public bool? RoofRails { get; init; }
 
-    // the hull as drawn
-    public double? BowPower { get; init; }
-    public double? BowFlare { get; init; }
-    public double? Transom { get; init; }
+    // the deck as drawn inside the hull (HullArt.DeckHull)
     public double? Tumblehome { get; init; }
 
     // superstructure: "chamfer", "tower", "boxy", "soft", "bowfront"; block_round overrides the corner rounding

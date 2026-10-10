@@ -5,9 +5,10 @@ using Fleetwright.Shipgen.Render.Golden;
 
 namespace Fleetwright.Shipgen.Tests;
 
-/// <summary>The GPU bake (PORTING.md Step 5) against Python's PNGs: coverage IoU per layer (Python's own clutter and
-/// dazzle differ from ours, which barely moves coverage). Needs a GPU (SDL_GPU, Vulkan); `shipgen png-check` runs
-/// every design.</summary>
+/// <summary>The GPU bake (PORTING.md Step 5) against Python's PNGs: coverage IoU of the turrets (Python's own clutter
+/// and dazzle differ from ours, which barely moves coverage). The hull and height map are drawn from the physical hull
+/// since 2026-10-10, no longer Python's look hull, so they aren't compared. Needs a GPU (SDL_GPU, Vulkan); `shipgen
+/// png-check` runs every design.</summary>
 [Trait("Category", "Gpu")]
 [Collection("Gpu")]   // one GPU device at a time
 public class BakeTests
@@ -15,7 +16,7 @@ public class BakeTests
     static readonly string Root = Paths.Shipgen();
 
     [Fact]
-    public void BakesMatchPythonCoverage()
+    public void TurretBakesMatchPythonCoverage()
     {
         // a battleship, a carrier (text, flight deck), a small craft (small turrets) and the widest canvas (tiles)
         string[] names = ["bismarck", "fleet_carrier", "mtb", "gangut"];
@@ -26,8 +27,6 @@ public class BakeTests
             var sp = RenderGolden.Draw(c);
             var b = ShipBake.Bake(sp, gpu);
             string g = Paths.Shipgen("golden", "sprite", c.Name);
-            Assert.True(ShipBake.CoverageIoU(Png.Load(Path.Combine(g, "hull.png")), b.Hull) >= 0.997, $"{c.Name} hull");
-            Assert.True(ShipBake.CoverageIoU(Png.Load(Path.Combine(g, "height.png")), b.Height) >= 0.97, $"{c.Name} height");
             foreach (var (tid, im) in b.Turrets)
                 Assert.True(ShipBake.CoverageIoU(Png.Load(Path.Combine(g, "turrets", tid + ".png")), im) >= 0.965, $"{c.Name} {tid}");
             var rects = sp.Meta.MipRects;

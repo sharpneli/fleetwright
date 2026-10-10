@@ -379,6 +379,18 @@ public sealed class Painter
         }
     }
 
+    /// <summary>The conning tower from above: an armoured drum with a lighter roof and the dark band of its vision slits
+    /// round the forward half.</summary>
+    public void ConningTower(List<Node> o, double x, double y, double r)
+    {
+        string col = C("turret");
+        o.Add(Ln(new CircleNode(x, y, r).Fill(col), 1.1));
+        o.Add(new CircleNode(x, y, r * 0.78).Fill(Shade(col, 1.12)));
+        double rs = r * 0.88, a = double.DegreesToRadians(65);
+        o.Add(new PathNode(new PathData().M(x + rs * Math.Cos(a), y - rs * Math.Sin(a)).A(rs, rs, 0, false, true, x + rs * Math.Cos(a), y + rs * Math.Sin(a)))
+            .Fill("none").Stroke(Shade(col, 0.45), Math.Max(Sw, 0.1 * r)));
+    }
+
     public void Barbette(List<Node> o, double x, double y, double r)
     {
         o.Add(Ln(new CircleNode(x, y, r).Fill(C("barbette"))));

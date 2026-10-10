@@ -23,6 +23,13 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   values. 78 SVG cases and 67 sprite.json files rewritten. Checked: every difference was hitbox rounding (at most
   0.003 m in the drawing, 0.01 in `top_m`), height columns of the same grey swapping order, or one grey step (0.25 m)
   flipping on a rounded top in three cases.
+- 2026-10-10, the drawing follows the physical model (step 3), on purpose: a look no longer reshapes the hull
+  (`bow_power`, `bow_flare`, `transom` are gone; tumblehome draws the deck narrower inside the hull instead of the hull
+  wider), the conning tower and casings above the deck are drawn and cast height, AA mounts on a high-pass roof draw
+  over it (q_ship, seaplane_carrier), the canvas fits deck-edge elevators, and the height map's deck datum is the
+  hitboxes' freeboard. 286 SVG cases and 2 sprite.json files rewritten. `png-check`'s hull and height columns no
+  longer compare like with like (Python drew the look's hull): about 0.97, 0.93 with tumblehome, 0 for the two
+  carriers whose canvas grew; turrets unchanged.
 
 ## Layout
 

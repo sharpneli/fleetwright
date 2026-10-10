@@ -32,6 +32,12 @@ public sealed class TopView
     /// <summary>A raised stretch of hull, Levels decks up.</summary>
     public sealed record Raised(double X0, double X1, long Levels, List<Pt> Outline, double Top);
 
+    /// <summary>The conning tower: an armoured drum.</summary>
+    public sealed record Tower(double X, double Y, double R, double Top);
+
+    /// <summary>A machinery casing standing proud of the main deck.</summary>
+    public sealed record Casing(string Id, List<Pt> Outline, double Top);
+
     /// <summary>A platform outside the hull: the flight deck or a sponson (Elevator: a deck-edge elevator's).</summary>
     public sealed record Platform(string Id, List<Pt> Outline, double Top, bool Elevator)
     {
@@ -54,6 +60,8 @@ public sealed class TopView
     public required List<Mast> Masts;
     public required List<Aa> AaMounts;
     public required List<Raised> RaisedDecks;
+    public Tower? ConningTower;
+    public required List<Casing> Casings;
     public Platform? FlightDeck;
     public required List<Platform> Sponsons;
     /// <summary>What is drawn without a hitbox: deck finish, boats, fittings, hatches, cranes, bow details and the flight
@@ -105,9 +113,10 @@ public sealed class TopView
             return new Mast(c.Id, c.X!.Value, c.Y!.Value, c.R!.Value, c.Top, d.Yard, d.Tripod, d.Booms);
         }).ToList();
 
-        var upperAa = spec.Aa.Where(a => a.Layer == "upper").Select(a => a.Id).ToHashSet(StringComparer.Ordinal);
+        // an AA mount on a roof drawn in the high pass is drawn there too, over the roof
+        bool OnUpper(Component a) => blocks.Any(b => b.Upper && Math.Abs(b.Top - a.Base) < 0.02 && Geometry.PointInPolygon(a.X!.Value, a.Y!.Value, b.Outline));
         var aa = comps.Where(c => c.Kind == "aa").Select(c => new Aa(c.Id, c.Type!, c.X!.Value, c.Y!.Value, c.RestDeg ?? 0.0, c.R!.Value, c.Top,
-            upperAa.Contains(c.Id))).ToList();
+            OnUpper(c))).ToList();
 
         var hull = new Hull(new HullSpec(hb.Length, hb.Beam, hb.Bow, hb.Stern));
         var raised = (hb.Vertical.Raised ?? []).Select(r => new Raised(r.X0, r.X1, (long)Math.Round(r.Top / Geometry.DeckPitch),
@@ -118,17 +127,20 @@ public sealed class TopView
 
         return new TopView
         {
-            Id = spec.Id, Hull = hull, DeckM = ship.Render.DeckM, TurretTypes = hb.TurretTypes, Mounts = mounts,
+            Id = spec.Id, Hull = hull, DeckM = Math.Max(hb.Vertical.Freeboard, 0.1), TurretTypes = hb.TurretTypes, Mounts = mounts,
             Barbettes = comps.Where(c => c.Kind == "barbette").Select(c => new Barbette(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top)).ToList(),
             Blocks = blocks, Funnels = funnels, Masts = masts, AaMounts = aa, RaisedDecks = raised,
+            ConningTower = comps.Where(c => c.Kind == "conning_tower").Select(c => new Tower(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top))
+                .FirstOrDefault(),
+            Casings = comps.Where(c => c.Kind == "casing" && c.Top > 0).Select(c => new Casing(c.Id, c.Points!, c.Top)).ToList(),
             FlightDeck = platforms.Where(p => p.Kind == "flight_deck").Select(p => p.P).FirstOrDefault(),
             Sponsons = platforms.Where(p => p.Kind == "sponson").Select(p => p.P).ToList(), Dressing = spec,
         };
     }
 
     /// <summary>The static height-map columns, lowest first, metres above the waterline: the hull's deck, the raised and
-    /// flight decks and sponsons, the barbettes standing proud, the superstructure, AA, funnels and masts, and the
-    /// dressing that stands on deck (hatches, cranes, boats).</summary>
+    /// flight decks and sponsons, casings, the barbettes standing proud, the conning tower, the superstructure, AA,
+    /// funnels and masts, and the dressing that stands on deck (hatches, cranes, boats).</summary>
     public List<HeightColumn> HeightColumns()
     {
         var d = Dressing;
@@ -139,12 +151,16 @@ public sealed class TopView
             items.Add(new(DeckM + fd.Top, "polygon") { Points = fd.Outline });
         foreach (var sp in Sponsons)
             items.Add(new(DeckM + sp.Top, "polygon") { Points = sp.Outline });
+        foreach (var c in Casings)
+            items.Add(new(DeckM + c.Top, "polygon") { Points = c.Outline });
         foreach (var ht in d.Hatches ?? [])
             items.Add(new(DeckM + 1.2, "rect") { X = ht.X - ht.L / 2, Y = ht.Y - ht.W / 2, W = ht.L, H = ht.W });
         foreach (var cr in d.Cranes ?? [])
             items.Add(new(DeckM + cr.Top, "circle") { Cx = cr.X, Cy = cr.Y, R = cr.R });
         foreach (var b in Barbettes.Where(b => b.Top > 0.5))
             items.Add(new(DeckM + b.Top, "circle") { Cx = b.X, Cy = b.Y, R = b.R });
+        if (ConningTower is { } ct)
+            items.Add(new(DeckM + ct.Top, "circle") { Cx = ct.X, Cy = ct.Y, R = ct.R });
         foreach (var b in Blocks)
             items.Add(new(DeckM + b.Top, "polygon") { Points = b.Outline });
         foreach (var a in AaMounts)

@@ -250,11 +250,10 @@ public static class Clutter
         public readonly List<(double X, double L)> Funnels = [];
         public readonly List<Box> Taken = [];
 
-        public Placer(TopView v)
+        public Placer(TopView v, Hull hull)
         {
             View = v;
-            Hull = v.Hull;
-            var hull = v.Hull;
+            Hull = hull;
             var spec = v.Dressing;
             foreach (var b in v.Blocks)
             {
@@ -328,9 +327,8 @@ public static class Clutter
 
     // ------------------------------------------------------------------ placement
 
-    static List<Surface> Surfaces(TopView v)
+    static List<Surface> Surfaces(TopView v, Hull hull)
     {
-        var hull = v.Hull;
         var result = v.Blocks.Where(b => b.Director == null).Select(b => new Surface(b.Outline, b.Level, "roof")).ToList();
         // the deck as a polygon a little inside its edge
         const int n = 80;
@@ -519,8 +517,8 @@ public static class Clutter
         return result;
     }
 
-    /// <summary>Every clutter item for the ship. Repeatable.</summary>
-    public static List<Item> Plan(TopView v, Shapes shapes)
+    /// <summary>Every clutter item for the ship, on the deck as drawn (deckHull: HullArt.DeckHull). Repeatable.</summary>
+    public static List<Item> Plan(TopView v, Hull deckHull, Shapes shapes)
     {
         var kitName = shapes.Clutter;
         var kit = Kit(kitName ?? "");
@@ -528,10 +526,10 @@ public static class Clutter
             return [];
         double density = shapes.ClutterDensity ?? 1.0;
         var rng = new ShipRng($"{v.Id}/clutter/{kitName}");
-        var hull = v.Hull;
-        var P = new Placer(v);
+        var hull = deckHull;
+        var P = new Placer(v, hull);
         var items = new List<Item>();
-        var surfs = Surfaces(v);
+        var surfs = Surfaces(v, hull);
         bool flight = v.FlightDeck != null;
         foreach (var s in surfs)   // what's left open once the blocks above are drawn over it
         {

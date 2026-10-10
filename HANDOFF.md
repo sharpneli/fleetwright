@@ -50,7 +50,7 @@ Notes for the next session. Delete or replace this file once its items are picke
 | design side | `golden-check` | 371 of 371 |
 | drawing (display lists) | `svg-check` | 371 of 371 (325 drawn) |
 | sprite layout | `sprite-check` | 371 of 371 (70 with goldens) |
-| GPU bake | `png-check` | worst IoU about 0.971 (small turrets); hulls ≥ 0.998 |
+| GPU bake | `png-check` | turrets ≥ 0.97; hull and height retired (drawn from the physical hull since 2026-10-10) |
 | robustness | `fuzz shipgen/designs/*.json --cases 1600` | no crash, hang or memory |
 | sprites vs hitboxes | `design shipgen/designs/*.json --out X` then `verify X/*` | ALL OK (worst turret about 0.858) |
 
