@@ -1249,7 +1249,10 @@ public sealed partial class Layout
         if (la != 0)
             masts.Add(new Mast { X = ax0 + la * 0.5, Yard = Math.Min(0.22 * B, 8), Tripod = false });
         for (int k = 0; k < masts.Count; k++)
-            MastWeight(lay, masts[k], masts[k].Top ?? mastTop, k == 0 ? "Foremast" : "Mainmast", lay.DeckZ(masts[k].X));
+        {
+            masts[k].Id = k == 0 ? "Foremast" : "Mainmast";
+            MastWeight(lay, masts[k], masts[k].Top ?? mastTop, masts[k].Id!, lay.DeckZ(masts[k].X));
+        }
         var boats = new List<Boat>();
         double bl_ = Clamp(0.03 * L, 4, 8);
         foreach (var x in Enumerable.Range(-6, 13).Select(k => machC + k * 2.0))

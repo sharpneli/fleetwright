@@ -127,10 +127,13 @@ public sealed class AaMount
     public required string Layer { get; init; }
 }
 
-/// <summary>A mast: where it stands, its yard, tripod legs, its top above the main deck (null: the layout's default)
-/// and a merchant's cargo booms ([x, y] of each boom's head).</summary>
+/// <summary>A mast: where it stands, its yard, tripod legs, its top above the main deck (null until FinishLayout sets the
+/// layout's default) and a merchant's cargo booms ([x, y] of each boom's head). Its hitbox is a pole of PoleR.</summary>
 public sealed record Mast
 {
+    public const double PoleR = 0.7;
+    /// <summary>Its name (FinishLayout names those left without one).</summary>
+    [JsonIgnore] public string? Id { get; set; }
     public double X { get; init; }
     public double? Y { get; init; }
     public double Yard { get; init; }
@@ -140,8 +143,8 @@ public sealed record Mast
 }
 
 /// <summary>A deck the layout adds over the main deck: a raised stretch of hull ("deck"), a flight deck, or a sponson,
-/// with its outline and its base and top above the main deck.</summary>
-public sealed record DeckPlate(string Id, string Kind, List<Pt> Points, double Base, double Top);
+/// with its outline and its base and top above the main deck. Role "elevator": a deck-edge elevator's platform.</summary>
+public sealed record DeckPlate(string Id, string Kind, List<Pt> Points, double Base, double Top, string? Role = null);
 
 /// <summary>A compartment below the main deck: a room the subdivision gives cells to. HalfWidth about Y; Base and Top
 /// above the main deck when it doesn't run from the inner bottom to the armour deck.</summary>

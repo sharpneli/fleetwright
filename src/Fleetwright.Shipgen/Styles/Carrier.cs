@@ -491,7 +491,7 @@ public sealed class CarrierStyle : Style
             double yc = (yIn + yOut) / 2;
             fdEdge.Add(new SponsonDrawing(ex, yc, lee, wee));
             lay.Sponsons.Add(new DeckPlate(eid, "sponson", [new(ex - lee / 2, yIn), new(ex + lee / 2, yIn), new(ex + lee / 2, yOut),
-                new(ex - lee / 2, yOut)], fdH - 1.0, fdH));
+                new(ex - lee / 2, yOut)], fdH - 1.0, fdH, "elevator"));
             placed++;
         }
         if (placed < av.DeckEdgeElevators)

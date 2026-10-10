@@ -312,7 +312,7 @@ public sealed class MerchantStyle : Style
                 }
                 mxx = spot.Value;
                 var booms = served.OfType<Hatch>().SelectMany(h => new[] { 1, -1 }.Select(s => new[] { h.X, s * 0.18 * B })).ToList();
-                masts.Add(new Mast { X = mxx, Y = 0.0, Yard = Math.Min(0.25 * B, 6), Tripod = false, Booms = booms, Top = mastTop });
+                masts.Add(new Mast { Id = $"Mast {masts.Count + 1}", X = mxx, Y = 0.0, Yard = Math.Min(0.25 * B, 6), Tripod = false, Booms = booms, Top = mastTop });
                 lay.Occupy(Footprint.Circle(mxx, 0.0, 0.9), 0, mastTop, $"Mast {masts.Count}");
                 lay.Weights.Add(new Weight($"Mast {masts.Count}", "superstructure", 8 + 0.2 * L, mxx, ZRel.Deck(mastTop / 3)));
                 k += 2;
@@ -320,7 +320,7 @@ public sealed class MerchantStyle : Style
         }
         if (tanker)
         {
-            masts.Add(new Mast { X = L / 2 - fcLen - 0.5, Y = 0.0, Yard = Math.Min(0.3 * B, 7), Tripod = false, Top = mastTop });
+            masts.Add(new Mast { Id = "Foremast", X = L / 2 - fcLen - 0.5, Y = 0.0, Yard = Math.Min(0.3 * B, 7), Tripod = false, Top = mastTop });
             foreach (var (x0, x1) in new[] { (-L / 2 + poopLen, bx0), (bx1, L / 2 - fcLen) })
                 fittings.Add(new Fitting((x0 + x1) / 2, 0.0, x1 - x0, 1.2, "fitting", 0.2));
         }

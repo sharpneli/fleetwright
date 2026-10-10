@@ -406,13 +406,15 @@ The player never enters tonnage or positions. The allowed ranges are `styles.bas
     - `strakes`: the side armour other than the main belt (`armour.upper_belt`, `armour.end_belts` and `armour.steering_box`), each with `id`, `kind` (`upper` | `end` | `box`), `extent` (`citadel` | `fore` | `aft`), `thickness_mm` (at the citadel end), `tip_mm` (at its far end, only when it tapers), `x0`/`x1` and `bottom`/`top`.
     - `bulkheads`: the armoured transverse bulkheads: `id`, `x`, `thickness_mm`, `bottom`/`top`. These are the citadel's forward and aft ends, an end belt's closing bulkhead (`Fore end belt bulkhead`), and the steering box's two ends.
     - The steering box's roof is a deck plate with `extent` `steering`.
+  - `bow` and `stern`: the planform's ends with every value filled in (`taper`, `power`, `shape`, a stern's `transom`). `Hull(new HullSpec(length, beam, bow, stern))` is the hull whose outline `hull` is, for insets and half-breadths.
+  - `turret_types`: each mount `type`'s size, barrels and shape (`r`, `barrels`, `barrel_len`, `barrel_w`, `spacing`, `shape`, ...): what its `local` polygons are made from.
   - `components`:
     - Turrets: `local` body/parts/barrels polygons (rotate them by the turret angle, then add x, y), `broadphase_r`, `arcs_deg`, `traverse_deg`, `rest_deg`, base/top heights.
       - The gun, as numbers: `calibre_mm` and `calibre_length` (torpedo mounts: `calibre_mm` 533 only). AA mounts carry them too (40 mm/56, 20 mm/70: `geometry.AA_CFG`). Read these rather than parsing the `type` id, which rounds the calibre.
       - `armour_mm` is the face. `armour` splits it into `face`/`side`/`rear`/`roof` (`hitbox.TURRET_*` ratios).
       - Gun mounts link to their `barbette` (a component) and their `magazine` (a room). The barbette links back with `mount` and reaches down to the main armour deck (the belt top without deck armour, the second deck on an unarmoured ship). A mount on a sponson or a flight deck has only a 1 m pedestal on its platform.
-    - Superstructure: polygons with heights and a `role`: `bridge`, `director`, `aft_control`, `island`, `hangar`, `casemate` or `deckhouse` (`layout.BLOCK_ROLES`; each style gives it when it adds the block, never from the id). A control position in a funnel's smoke lists those funnels in `smoke`. Rounded-rectangle blocks also give their parameters in `rrect`. Blocks with their own outline (the warship's superstructure levels, bevelled, and the directors: hood and rangefinder arms, or a round tub) give only `points`.
-    - Funnels: polygons with heights. `boiler_rooms` lists the rooms each one serves. An `uptake` component runs from the top of the boilers up to the funnel's base, with the same footprint and links.
+    - Superstructure: polygons with heights and a `role`: `bridge`, `director`, `aft_control`, `island`, `hangar`, `casemate` or `deckhouse` (`layout.BLOCK_ROLES`; each style gives it when it adds the block, never from the id), and its `level` on what it stands on (1 the lowest). A control position in a funnel's smoke lists those funnels in `smoke`. Rounded-rectangle blocks also give their parameters in `rrect`. Blocks with their own outline (the warship's superstructure levels, bevelled, and the directors: hood and rangefinder arms, or a round tub) give only `points`.
+    - Funnels: polygons with heights, and `pipes`, the uptake openings in the top. `boiler_rooms` lists the rooms each one serves. An `uptake` component runs from the top of the boilers up to the funnel's base, with the same footprint and links.
     - `casing`: over machinery taller than its space, from the bounding deck up, with `armour_mm`.
     - `conning_tower`: a circle inside the bridge's front on warships with a belt, armoured like the belt. It isn't drawn.
     - **The propulsion train** (`propulsion.py`). Nothing in it is weighed: the plant's weight includes its shafting, and the hull's includes the rudders. All of it is underwater, so the sprite doesn't show it.
@@ -421,8 +423,9 @@ The player never enters tonnage or positions. The allowed ranges are `styles.bas
       - `propeller` (`shape` `disc`): centre `x`, `y`, `z` and `diameter_m`, about the x axis; `points`/`base`/`top` bound it. Each sits just ahead of the rudders, each pair further out 0.05 L further forward. The diameter grows with the power per shaft (1.2 × MW^0.4 m) and is capped at 0.75 × draught. Planing craft hang smaller ones under the hull bottom.
       - `rudder`: a thin blade under the steering gear, with its `steering` room, `x`/`y` (the stock) and `area_m2` (1.7% of L × T in all). `machinery.rudders` sets the count.
       - Links back: an engine room lists its `shafts` and the steering gear room its `rudders`. A cell a shaft or alley passes through lists them in `through`.
-    - Decks: `flight_deck`, and `deck` for raised forecastles, bridge decks and poops. `sponson`: gun and AA platforms, and deck-edge elevators. All are polygons with heights.
-    - AA: circles.
+    - Decks: `flight_deck`, and `deck` for raised forecastles, bridge decks and poops. `sponson`: gun and AA platforms, and deck-edge elevators. All are polygons with heights; a deck-edge elevator's has `role` `elevator`.
+    - AA: circles, with `rest_deg`, the way the guns point at rest.
+    - `mast`: a pole (`circle`, `r` 0.7) from the deck it is stepped on (the main deck, or a raised or flight deck under it) up through any deckhouse round it to its top. The sprite's cage, lattice or fighting top is the look's drawing of it.
   - Hangars are `hangar_bay` components: boxes above the hangar deck, outside the subdivision.
   - **The subdivision** (`subdivision.py`) is the hull below the main deck as a grid of watertight cells, and the rooms that own them. A point inside the hull below the main deck is in exactly one cell, and every cell has exactly one owning room.
     - `sections`: the hull between transverse bulkheads, `id` numbered from the bow, with `x0`/`x1`.

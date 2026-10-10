@@ -734,6 +734,11 @@ public sealed partial class Layout
         double funTop, string? deck = null)
     {
         DrawOrder(mounts);
+        for (int k = 0; k < masts.Count; k++)
+        {
+            masts[k].Top ??= funTop + MastAboveFunnel;
+            masts[k].Id ??= masts.Count == 1 ? "Mast" : $"Mast {k + 1}";
+        }
         lay.Spec = new RenderSpec
         {
             Id = design.Id!, Name = design.Name ?? design.Id!, Class = design.Type ?? "", Length = lay.Hull.L, Beam = lay.Hull.B, Bow = hs.Bow,
@@ -755,6 +760,9 @@ public sealed partial class Layout
     }
 
     const double WindCol = 1.0;
+
+    /// <summary>A mast's default top over the funnels' tops.</summary>
+    public const double MastAboveFunnel = 6.0;
 
     /// <summary>What the wind sees from abeam above the main deck.</summary>
     static Windage LateralProfile(Layout lay, List<Block> blocks, List<Funnel> funnels, List<Mast> masts, List<Mount> mounts,

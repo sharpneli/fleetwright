@@ -15,6 +15,11 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   few validation messages read differently (numbers as C# prints them, `null` for Python's `None`, the battery index
   on a lone secondary's missing keys).
 
+- 2026-10-10, one physical model (step 1): the hitboxes gained `bow`, `stern`, `turret_types`, a `mast` component
+  per mast, a block's `level`, a funnel's `pipes`, an AA mount's `rest_deg` and the deck-edge elevators' `role`; the
+  render spec's masts carry their resolved `top`. Checked: with those removed, every case equals the old capture
+  (within the comparer's 1e-9).
+
 ## Layout
 
 ```

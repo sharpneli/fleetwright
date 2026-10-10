@@ -4,7 +4,6 @@ namespace Fleetwright.Shipgen;
 /// the input errors (none: Build can run); Build returns the ship (design, report, hitboxes, render).</summary>
 public static class ShipDesign
 {
-    const double MastAboveFunnel = 6.0;
 
     /// <summary>Input errors. limits false skips the numeric ranges (--no-limits); structural checks stay.</summary>
     public static List<string> Validate(Design design, bool limits = true)
@@ -422,7 +421,7 @@ public static class ShipDesign
                 Points = Geometry.RrectPolygon(fn.X - fn.L / 2, fn.Y - fn.W / 2, fn.X + fn.L / 2, fn.Y + fn.W / 2, fn.W / 2, fn.W / 2),
             });
         foreach (var m in lay.Spec.Masts)
-            items.Add(new(deckM + (m.Top ?? lay.FunTop + MastAboveFunnel), "circle") { Cx = m.X, Cy = m.Y ?? 0.0, R = 0.7 });
+            items.Add(new(deckM + (m.Top ?? lay.FunTop + Layout.MastAboveFunnel), "circle") { Cx = m.X, Cy = m.Y ?? 0.0, R = 0.7 });
         return items.OrderBy(it => it.Top).ToList();
     }
 

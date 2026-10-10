@@ -185,10 +185,17 @@ public sealed class Hitboxes
     public double Beam { get; init; }
     public required Vertical Vertical { get; init; }
     public required List<Pt> Hull { get; init; }
+    /// <summary>The planform's ends, every value filled in: new Hull(new HullSpec(Length, Beam, Bow, Stern)) is the hull
+    /// whose outline Hull is, for insets and half-breadths.</summary>
+    public required HullEnd Bow { get; init; }
+    public required HullEnd Stern { get; init; }
     public required Hydrostatics Hydrostatics { get; init; }
     public required HullFormReport HullForm { get; init; }
     public required ArmourReport Armour { get; init; }
     public required HullPlates Plating { get; init; }
+    /// <summary>The gun and torpedo mounts' types by id (a mount's Type): the size, barrels and shape each mount's Local
+    /// polygons are made from.</summary>
+    public required OrderedDictionary<string, TurretType> TurretTypes { get; init; }
     public required List<Component> Components { get; init; }
     public required List<SubDeck> Decks { get; init; }
     public required List<Tier> Tiers { get; init; }
@@ -296,14 +303,16 @@ public sealed record ArmourDeckReport(string Deck, double ThicknessMm, string Ex
     string? Material);
 
 /// <summary>One hitbox component. Kind says which it is and so which of the optional fields it has: a gun or torpedo
-/// mount, barbette, superstructure block, conning tower, funnel, uptake, casing, deck, sponson, AA mount, hangar bay,
-/// shaft, shaft alley, propeller or rudder.</summary>
+/// mount, barbette, superstructure block, conning tower, funnel, uptake, casing, deck, sponson, AA mount, mast, hangar
+/// bay, shaft, shaft alley, propeller or rudder.</summary>
 public sealed class Component
 {
     public required string Id { get; init; }
     public required string Kind { get; init; }
     public string? Type { get; init; }
     public string? Role { get; init; }
+    /// <summary>A superstructure block's level on what it stands on (1: the lowest).</summary>
+    public long? Level { get; init; }
     public double? CalibreMm { get; init; }
     public double? CalibreLength { get; init; }
     public string? Shape { get; init; }
@@ -342,6 +351,8 @@ public sealed class Component
     public long? Crew { get; set; }
     public List<string>? Smoke { get; set; }
     public List<string>? BoilerRooms { get; init; }
+    /// <summary>A funnel's uptake openings.</summary>
+    public long? Pipes { get; init; }
     public string? Funnel { get; init; }
     public string? Position { get; init; }
     public double? LeavesHullX { get; init; }

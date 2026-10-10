@@ -25,7 +25,7 @@ public static class HitKinds
         K("hull", 150, 160, 170, 90, edges: false),
         K("main", 215, 70, 70, 255), K("secondary", 230, 150, 60, 255), K("torpedo", 80, 170, 230, 255),
         K("barbette", 200, 200, 205, 255), K("superstructure", 110, 200, 120, 255), K("funnel", 170, 110, 220, 255),
-        K("uptake", 150, 100, 200, 200), K("casing", 120, 120, 140, 255), K("aa", 235, 220, 70, 255),
+        K("uptake", 150, 100, 200, 200), K("casing", 120, 120, 140, 255), K("aa", 235, 220, 70, 255), K("mast", 180, 150, 110, 255),
         K("conning_tower", 240, 110, 190, 255), K("deck", 150, 175, 150, 255), K("sponson", 140, 150, 160, 255),
         K("flight_deck", 130, 140, 150, 200),
         K("belt", 60, 70, 90, 255), K("strake", 135, 145, 165, 255), K("armour_deck", 60, 70, 90, 110),

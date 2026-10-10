@@ -109,7 +109,7 @@ public static class Hitbox
             var smoke = lay.Smoke.GetValueOrDefault(b.Id);
             yield return new Component
             {
-                Id = b.Id, Kind = "superstructure", Role = b.Role, Shape = "polygon", Points = R3(Geometry.BlockOutline(b)),
+                Id = b.Id, Kind = "superstructure", Role = b.Role, Level = b.Level, Shape = "polygon", Points = R3(Geometry.BlockOutline(b)),
                 Rrect = b.Points is { Count: > 0 } ? null
                     : new Rrect(Math.Round(b.X0, 3), Math.Round(b.X1, 3), Math.Round(b.Y - b.W / 2, 3), Math.Round(b.Y + b.W / 2, 3),
                         Math.Round(b.Rf, 3), Math.Round(b.Rb, 3)),
@@ -133,6 +133,7 @@ public static class Hitbox
             yield return new Component
             {
                 Id = f.Id, Kind = "funnel", Shape = "polygon", Points = pts, Base = f.Z0 ?? 0.0, Top = Math.Round(lay.FunTop, 2), BoilerRooms = f.Serves ?? [],
+                Pipes = f.Pipes,
             };
             if (plan != null && f.Serves != null)
                 yield return new Component
@@ -162,7 +163,7 @@ public static class Hitbox
             bool armoured = dk.Kind == "flight_deck" && fdMm != 0;
             comps.Add(new Component
             {
-                Id = dk.Id, Kind = dk.Kind, Shape = "polygon", Points = R3(dk.Points), Base = Math.Round(dk.Base, 2), Top = Math.Round(dk.Top, 2),
+                Id = dk.Id, Kind = dk.Kind, Role = dk.Role, Shape = "polygon", Points = R3(dk.Points), Base = Math.Round(dk.Base, 2), Top = Math.Round(dk.Top, 2),
                 ArmourMm = armoured ? fdMm : null, Material = armoured ? NonEmpty(Armour.ArmourMaterial(design, "flight_deck")) : null,
                 WoodMm = inner.Planked.Contains(dk.Id) ? inner.Plating.DeckWoodMm : null,
             });
@@ -174,7 +175,20 @@ public static class Hitbox
             comps.Add(new Component
             {
                 Id = a.Id, Kind = "aa", Type = a.Type, CalibreMm = cfg.CalibreMm, CalibreLength = cfg.CalibreLength, Shape = "circle",
-                X = Math.Round(a.X, 3), Y = Math.Round(a.Y, 3), R = cfg.R, Base = a.Base, Top = a.Base + 2.0, ReadyRounds = n, ReadyT = Math.Round(w, 2),
+                X = Math.Round(a.X, 3), Y = Math.Round(a.Y, 3), R = cfg.R, Base = a.Base, Top = a.Base + 2.0, RestDeg = a.Dir, ReadyRounds = n,
+                ReadyT = Math.Round(w, 2),
+            });
+        }
+        foreach (var m in lay.Masts)   // a pole from the deck it is stepped on, through any deckhouse round it
+        {
+            double x = m.X, y = m.Y ?? 0.0, bse = 0.0;
+            foreach (var dk in lay.Decks)
+                if (dk.Top > bse && Geometry.PointInPolygon(x, y, dk.Points))
+                    bse = dk.Top;
+            comps.Add(new Component
+            {
+                Id = m.Id!, Kind = "mast", Shape = "circle", X = Math.Round(x, 3), Y = Math.Round(y, 3), R = Mast.PoleR, Base = Math.Round(bse, 2),
+                Top = Math.Round(m.Top!.Value, 2),
             });
         }
         foreach (var c in lay.Compartments.Where(c => c.Kind == "hangar"))
@@ -224,10 +238,10 @@ public static class Hitbox
                     ? lay.Raised.Select(st => new RaisedReport(st.Id, Math.Round(st.X0, 3), Math.Round(st.X1, 3), Math.Round(st.Levels * Geometry.DeckPitch, 2))).ToList()
                     : null,
             },
-            Hull = R3(lay.Hull.Points()), Hydrostatics = inner.Hydrostatics,
+            Hull = R3(lay.Hull.Points()), Bow = lay.Hull.Bow, Stern = lay.Hull.Stern, Hydrostatics = inner.Hydrostatics,
             HullForm = new HullFormReport(Math.Round(form.Cm, 3), Math.Round(form.Cwp, 3), form.Table().Select(s => new StationReport(Math.Round(s.X, 3),
                 s.Z.Select(z => Math.Round(z - D, 2)).ToArray(), s.Y.Select(y => Math.Round(y, 3)).ToArray())).ToList()),
-            Armour = armour, Plating = inner.Plating, Components = comps,
+            Armour = armour, Plating = inner.Plating, TurretTypes = lay.Spec.TurretTypes, Components = comps,
             Decks = sub.Decks, Tiers = sub.Tiers, Sections = sub.Sections, Bulkheads = sub.Bulkheads, Cells = sub.Cells, Rooms = sub.Rooms,
         };
     }
