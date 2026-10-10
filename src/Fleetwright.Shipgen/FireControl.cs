@@ -107,6 +107,17 @@ public static class FireControl
     public static void Place(Layout lay, Design design, List<Block> blocks)
     {
         double L = lay.Hull.L;
+        // the planned funnels' highest top (LINQ's Max: leading NaNs skipped), 0 with none
+        double funTop = 0.0;
+        for (int i = 0; i < lay.FunnelsPlanned.Count; i++)
+        {
+            double t = lay.FunnelsPlanned[i].Top;
+            if (i == 0 || double.IsNaN(funTop) || t > funTop)
+                funTop = t;
+        }
+        using var _s = Scratch<(double X, double Y, double Z0, bool Pair)>.Rent(out var spots);
+        using var _m = Scratch<((double, double) K, int I)>.Rent(out var mainKeys);
+        using var _k = Scratch<((double, int, int, double) K, int I)>.Rent(out var keys);
         foreach (var bat in BatteryNames)
         {
             var d = Spec(design, bat);
@@ -143,44 +154,67 @@ public static class FireControl
             }
 
             bool Smoky(double x, double y, double z0) =>
-                SmokeFrom(lay.FunnelsPlanned, lay.FunnelsPlanned.Select(f => f.Top).DefaultIfEmpty(0.0).Max(), lay.Geo.SmokeReach,
-                    x + hl, z0 + Layout.LevelH, y, w).Count > 0;
+                AnySmoke(lay.FunnelsPlanned, funTop, lay.Geo.SmokeReach, x + hl, z0 + Layout.LevelH, y, w);
 
-            foreach (var spots in new Func<List<(double X, double Y, double Z0, bool Pair)>>[]
-                     { () => Layout.RoofSpots(blocks, l, w), () => Layout.RoofSpots(RaisedRoofs(lay), l, w) })
+            bool Spaced(double x, double spread)
             {
-                if (mine.Count >= n)
-                    break;
-                var sp = spots();
+                foreach (var m in mine)
+                    if (Math.Abs(x - m.X) < Math.Max(mine.Count < 2 ? spread : 0.0, l + 0.4))
+                        return false;
+                return true;
+            }
+
+            for (int src = 0; src < 2 && mine.Count < n; src++)
+            {
+                spots.Clear();
+                Layout.RoofSpots(src == 0 ? blocks : RaisedRoofs(lay), l, w, spots);
                 if (bat == "main")
                 {
-                    var cands = sp.Where(s => !s.Pair).Select(s => (s.X, s.Y, s.Z0)).OrderBy(s => (-s.Z0, -s.X)).ToList();
-                    foreach (var spread in new[] { MainSpread * L, 0.0 })
-                        foreach (var (x, y, z0) in cands)
+                    // the single spots, highest and then furthest forward first
+                    mainKeys.Clear();
+                    for (int i = 0; i < spots.Count; i++)
+                        if (!spots[i].Pair)
+                            mainKeys.Add(((-spots[i].Z0, -spots[i].X), i));
+                    KeyedSort.Sort(mainKeys);
+                    for (int s = 0; s < 2; s++)
+                    {
+                        double spread = s == 0 ? MainSpread * L : 0.0;
+                        foreach (var (_, i) in mainKeys)
                         {
+                            var (x, y, z0, _) = spots[i];
                             if (mine.Count >= n)
                                 break;
-                            if (mine.Any(m => Math.Abs(x - m.X) < Math.Max(mine.Count < 2 ? spread : 0.0, l + 0.4)))
+                            if (!Spaced(x, spread))
                                 continue;
                             if (Ok(x, y, z0))
                                 Put(x, y, z0);
                         }
+                    }
                 }
                 else
                 {
-                    foreach (var (x, y, z0, pair) in sp.OrderBy(s => (-s.Z0, Smoky(s.X, s.Y, s.Z0) ? 1 : 0, !s.Pair ? 1 : 0, Math.Abs(s.X))).ToList())
+                    // highest first, out of the smoke, pairs before singles, nearest amidships
+                    keys.Clear();
+                    for (int i = 0; i < spots.Count; i++)
                     {
+                        var s = spots[i];
+                        keys.Add(((-s.Z0, Smoky(s.X, s.Y, s.Z0) ? 1 : 0, !s.Pair ? 1 : 0, Math.Abs(s.X)), i));
+                    }
+                    KeyedSort.Sort(keys);
+                    foreach (var (_, i) in keys)
+                    {
+                        var (x, y, z0, pair) = spots[i];
                         long left = n - mine.Count;
                         if (left <= 0)
                             break;
                         if (pair && left < 2)
                             continue;
-                        var pts = pair ? new[] { (x, y), (x, -y) } : [(x, y)];
-                        if (pts.All(p => Ok(p.Item1, p.Item2, z0)))
+                        if (Ok(x, y, z0) && (!pair || Ok(x, -y, z0)))
                         {
-                            long unit = mine.Select(m => m.Unit).Distinct().Count() + 1;
-                            foreach (var (px, py) in pts)
-                                Put(px, py, z0, pair, unit);
+                            long unit = DistinctUnits(mine) + 1;
+                            Put(x, y, z0, pair, unit);
+                            if (pair)
+                                Put(x, -y, z0, pair, unit);
                         }
                     }
                 }
@@ -191,6 +225,33 @@ public static class FireControl
         }
         if (design.MainBatteries.Any(b => b.Turrets != 0) && Spec(design, "main").Directors == 0)
             lay.Warnings.Add("The main battery has no director: each turret fires under local control.");
+    }
+
+    /// <summary>Does any funnel's smoke blind a control position? (SmokeFrom(...).Count > 0)</summary>
+    static bool AnySmoke(List<Funnel> funnels, double funTop, double reach, double x1, double top, double y, double w)
+    {
+        foreach (var f in funnels)
+        {
+            double d = (f.X - f.L / 2) - x1;
+            if (0 <= d && d < reach && top < funTop + 0.3 * d && Math.Abs(f.Y - y) < w / 2 + f.W)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>How many fire-control units (distinct Unit values, none counting as one) the directors make.</summary>
+    static long DistinctUnits(List<Director> ds)
+    {
+        long count = 0;
+        for (int a = 0; a < ds.Count; a++)
+        {
+            bool seen = false;
+            for (int b = 0; b < a && !seen; b++)
+                seen = ds[b].Unit == ds[a].Unit;
+            if (!seen)
+                count++;
+        }
+        return count;
     }
 
     /// <summary>The raised stretches' decks as roofs for roof_spots.</summary>

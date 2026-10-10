@@ -320,20 +320,13 @@ public sealed partial class Layout
                     if ((e.X0 > m) != (e.X1 > m))
                         keyed.Add((e.Y0 + (m - e.X0) * (e.Y1 - e.Y0) / (e.X1 - e.X0), j));
                 }
-                keyed.Sort(ByKeyThenIndex);
+                KeyedSort.Sort(keyed);
                 foreach (var (_, j) in keyed)
                     flat.Add(all[j]);
                 start[i + 1] = flat.Count;
             }
             edges = flat.ToArray();
         }
-
-        /// <summary>A stable sort's order (OrderBy's) from List.Sort: ties keep their index order.</summary>
-        internal static readonly Comparison<(double K, int I)> ByKeyThenIndex = (a, b) =>
-        {
-            int c = a.K.CompareTo(b.K);
-            return c != 0 ? c : a.I.CompareTo(b.I);
-        };
 
         /// <summary>The stretches of y inside the polygon at x.</summary>
         public List<(double Lo, double Hi)> At(double x)

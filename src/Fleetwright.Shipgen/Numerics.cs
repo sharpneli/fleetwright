@@ -84,6 +84,25 @@ public static class SpanMath
     }
 }
 
+/// <summary>OrderBy's order without its allocations: sort (key, index) pairs, then read the items back by index. Keys
+/// compare as OrderBy compares them (Comparer.Default, so a tuple key compares item by item) and ties keep their
+/// index order, as a stable sort does.</summary>
+public static class KeyedSort
+{
+    public static void Sort<TKey>(List<(TKey K, int I)> keyed) => keyed.Sort(ByKeyThenIndex<TKey>.Instance);
+
+    sealed class ByKeyThenIndex<TKey> : IComparer<(TKey K, int I)>
+    {
+        public static readonly ByKeyThenIndex<TKey> Instance = new();
+
+        public int Compare((TKey K, int I) a, (TKey K, int I) b)
+        {
+            int c = Comparer<TKey>.Default.Compare(a.K, b.K);
+            return c != 0 ? c : a.I.CompareTo(b.I);
+        }
+    }
+}
+
 /// <summary>Binary searches on an ascending list.</summary>
 public static class SortedListExtensions
 {

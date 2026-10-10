@@ -1213,7 +1213,7 @@ public sealed partial class Layout
                     Add(Math.Abs(xd - machC) / L + AaDeckPen, new Slot(xd, yy, lay.DeckZ(xd, rr)));
                 xd -= 0.5;
             }
-            scored.Sort(Slabs.ByKeyThenIndex);
+            KeyedSort.Sort(scored);
             foreach (var (_, i) in scored)
                 cands.Add(slots[i]);
             double sx = -L / 2 + rr + 2.5;
