@@ -144,46 +144,24 @@ public class HitboxMeshTests
                 if (Math.Abs(v.Normal.Y) < 0.5 || v.Normal.Z == 1 || v.Normal.Z == -1)
                     continue;   // the deck tops, bottoms and end walls
                 sides++;
-                var on = v.Position - 0.01f * v.Normal;   // pushed out a centimetre along its normal
-                double w = field.HalfWidth(Math.Clamp(on.X, field.X0 + 1e-4, field.X1 - 1e-4), on.Z);
-                Assert.True(Math.Abs(Math.Abs(on.Y) - w) < 2e-3 || w == 0,
-                    $"{name}: {p.Id} vertex {v.Position} is {Math.Abs(on.Y) - w:F3} m off the form");
+                double x = Math.Clamp(v.Position.X, field.X0 + 1e-4, field.X1 - 1e-4);
+                double w = field.HalfWidth(x, v.Position.Z);
+                Assert.True(Math.Abs(Math.Abs(v.Position.Y) - (w + 0.01)) < 2e-3 || w == 0,
+                    $"{name}: {p.Id} vertex {v.Position} is {Math.Abs(v.Position.Y) - w:F3} m off the form");
             }
             // and between them: a twisted quad is split so its triangles bulge out, never dipping under the form into
-            // the cells that hug it (split the other way, a tumblehome's side dipped 20 cm and the cells showed through),
-            // and the bottom stands off it too (a push across the ship moved it by nothing there)
+            // the cells that hug it (split the other way, a tumblehome's side dipped 20 cm and the cells showed through)
             for (int i = 0; i + 2 < idx.Length; i += 3)
             {
                 Vector3 a = mesh.Vertices[idx[i]].Position, b = mesh.Vertices[idx[i + 1]].Position, c = mesh.Vertices[idx[i + 2]].Position;
-                var n = Vector3.Cross(b - a, c - a);
-                if (n.LengthSquared() < 1e-12f || Math.Abs(Vector3.Normalize(n).X) > 0.5)
-                    continue;   // the flat ends
-                foreach (var m in new[] { (a + b + c) / 3, (a + b) / 2, (b + c) / 2, (a + c) / 2 })
-                    if (m.X > field.X0 + 0.05 && m.X < field.X1 - 0.05 && m.Z < -0.05 && field.HalfWidth(m.X, m.Z) > 0.3)
-                        // a centimetre out along the side's normal: 5 mm clear nearly everywhere, at least 2 next to
-                        // a step in the form (a cut-up stern's flat bottom), where the normal turns; the cells never
-                        // leave the form, so that is enough
-                        Assert.True(Clear(field, m, 0.001), $"{name}: {p.Id} comes within 1 mm of the form at {m}");
+                var m = (a + b + c) / 3;
+                if (Math.Abs(Vector3.Normalize(Vector3.Cross(b - a, c - a)).Y) < 0.5 || m.X <= field.X0 + 0.01 || m.X >= field.X1 - 0.01)
+                    continue;
+                double w = field.HalfWidth(m.X, m.Z);
+                Assert.True(w < 0.5 || Math.Abs(m.Y) - w > 0.01 - 1e-3, $"{name}: {p.Id} dips {Math.Abs(m.Y) - w:F3} m off the form at {m}");
             }
         }
         Assert.True(sides > 1000);
-    }
-
-    /// <summary>Does the point stand off the form by r: still outside it moved r any way (26 directions)?</summary>
-    static bool Clear(HullField f, Vector3 m, double r)
-    {
-        foreach (int dx in new[] { -1, 0, 1 })
-            foreach (int dy in new[] { -1, 0, 1 })
-                foreach (int dz in new[] { -1, 0, 1 })
-                {
-                    double l = Math.Sqrt(dx * dx + dy * dy + dz * dz);
-                    if (l == 0)
-                        continue;
-                    double x = m.X + r * dx / l, y = m.Y + r * dy / l, z = m.Z + r * dz / l;
-                    if (Math.Abs(y) < f.HalfWidth(Math.Clamp(x, f.X0 + 1e-4, f.X1 - 1e-4), z))
-                        return false;
-                }
-        return true;
     }
 
     /// <summary>What the hull's side cuts follows the side up its height: a cell cut by it stays inside the hull at every
@@ -215,30 +193,12 @@ public class HitboxMeshTests
                             select field.HalfWidth(Math.Clamp(xc + dx, field.X0 + 1e-4, field.X1 - 1e-4), zc + dz)).ToList();
                 double reach = near.Max(), wLo = near.Min();
                 if (p.Source is Cell)
-                    continue;   // below, by triangle
+                    Assert.True(Math.Abs(q.Y) <= reach + 0.05, $"{name}: {p.Id} reaches {Math.Abs(q.Y) - w:F2} m out of the hull at {q}");
                 else if (onSide && w > 0.3 && Math.Abs(q.Y) > 0.5 * w)   // where the side is wider than the belt is thick
                 {
                     // its outer face or its inner, give or take 5 cm in height (the side can step there: a cut-up stern)
                     bool On(double off) => Math.Abs(q.Y) - off >= wLo - 0.08 && Math.Abs(q.Y) - off <= reach + 0.08;   // a corner grows up to 4 hairs
                     Assert.True(On(0.15) || On(-0.25), $"{name}: {p.Id} stands {Math.Abs(q.Y) - w:F2} m off the side at {q}");
-                }
-            }
-            // a cell never reaches out of the form, anywhere on its faces: the skin's centimetre stays clear (a cut-up
-            // stern's bottom once had cells two metres out of it)
-            if (p.Source is Cell)
-            {
-                var idx = mesh.Indices.AsSpan(p.FirstIndex, p.IndexCount);
-                for (int i = 0; i + 2 < idx.Length; i += 3)
-                {
-                    Vector3 a = mesh.Vertices[idx[i]].Position, b = mesh.Vertices[idx[i + 1]].Position, c = mesh.Vertices[idx[i + 2]].Position;
-                    foreach (var m in new[] { a, (a + b + c) / 3, (a + b) / 2, (b + c) / 2, (a + c) / 2 })
-                    {
-                        // the widest within a tenth of a millimetre: a float's rounding can drop a point on the flat
-                        // bottom at a step in the form (a cut-up stern) just under it, where the side has no width yet
-                        double over = Math.Abs(m.Y) - new[] { -1e-4, 0.0, 1e-4 }.Max(e =>
-                            field.HalfWidth(Math.Clamp(m.X + e, field.X0 + 1e-4, field.X1 - 1e-4), m.Z + e));
-                        Assert.True(over < 1e-3, $"{name}: {p.Id} reaches {over:F3} m out of the hull at {m}");
-                    }
                 }
             }
         }

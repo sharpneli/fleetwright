@@ -266,20 +266,14 @@ public sealed class HitboxMesh
                     var zl = rows.Where(z => z < top - 1e-6).Append(top).ToList();
                     double Wa(double z) => f.InStrip(i, fa, z);
                     double Wb(double z) => f.InStrip(i, fb, z);
-                    // a point of the side, pushed out along its normal: off the cells where the side is near flat too
-                    // (the bottom, which a push across the ship would move by nothing)
-                    HitVertex Side(double x, double w, double z, int s)
-                    {
-                        var n = SideNormal(x, z, s);
-                        return V(x + n.X * Out, s * w + n.Y * Out, z + n.Z * Out, n);
-                    }
                     foreach (int s in new[] { 1, -1 })
                         for (int k = 0; k + 1 < zl.Count; k++)
                         {
                             double za = zl[k], zb = zl[k + 1];
                             if (Wa(za) + Wb(za) + Wa(zb) + Wb(zb) <= 0)
                                 continue;
-                            Quad(Side(xa, Wa(za), za, s), Side(xb, Wb(za), za, s), Side(xb, Wb(zb), zb, s), Side(xa, Wa(zb), zb, s));
+                            Quad(V(xa, s * (Wa(za) + Out), za, SideNormal(xa, za, s)), V(xb, s * (Wb(za) + Out), za, SideNormal(xb, za, s)),
+                                V(xb, s * (Wb(zb) + Out), zb, SideNormal(xb, zb, s)), V(xa, s * (Wa(zb) + Out), zb, SideNormal(xa, zb, s)));
                         }
                     // the deck top, and the bottom where the strip starts with width (a stern cut up out of the water)
                     double tz = top + Out, bz = zl[0] - Out, z0 = zl[0];
@@ -369,171 +363,69 @@ public sealed class HitboxMesh
             return [.. lo, .. hi];
         }
 
-        /// <summary>A cell: its box clipped to the hull. Where the side cuts it, its span across the ship at each x and
-        /// z, from max(Y0, -W) to min(Y1, W), over a grid on the form's own stations and rows: each square is a piece of
-        /// one of the form's bilinear patches, split along the diagonal that bends in (as the skin's bulges out), and a
-        /// chord of the clamps only bends in further, so the cell stays inside the hull however the side twists or the
-        /// bottom rises under it (a cut-up stern). Where the span closes (the side passes the cell's wall, the bottom
-        /// its base) the triangles are cut along where it closes. Else a prism.</summary>
-        void AddCell(string kindName, Cell c)
+        /// <summary>A cell: its box clipped to the hull. Where the side cuts it, a loft that follows the side up the
+        /// cell's height (the hull narrows to the keel, and leans in above the waterline with tumblehome); else a prism.
+        /// </summary>
+        void AddCell(string kind, Cell c)
         {
-            var outline = CellOutline(c);
-            bool cut = field != null && XsOver(c.X0, c.X1).Any(x => ZsOver(c.X0, c.X1, c.Base, c.Top).Any(z => HalfWidth(x, z) < Math.Max(-c.Y0, c.Y1)));
+            var xs = XsOver(c.X0, c.X1);
+            var zs = ZsOver(c.X0, c.X1, c.Base, c.Top);
+            bool cut = field != null && xs.Any(x => zs.Any(z => HalfWidth(x, z) < Math.Max(-c.Y0, c.Y1)));
             if (!cut)
             {
-                Add(kindName, c.Id, c, outline, c.Base, c.Top);
+                Add(kind, c.Id, c, CellOutline(c), c.Base, c.Top);
                 return;
             }
-            var f = field!;
-            // drawn grown by a hair like Add's prisms (walls, ends and caps), but never past the hull's side: the skin
-            // is the only thing outside it
-            double dz = 0.002 + 0.03 / Math.Sqrt(1 + Math.Abs(SignedArea(outline)));
-            double x0 = c.X0 - dz, x1 = c.X1 + dz, z0 = c.Base - dz, z1 = c.Top + dz, yLo = c.Y0 - dz, yHi = c.Y1 + dz;
-            var xs = new List<double> { x0 };
-            var zset = new SortedSet<double> { z0, z1 };
-            for (int i = 0; i <= f.StripCount; i++)
-                if (f.StationX(i) > x0 + 1e-6 && f.StationX(i) < x1 - 1e-6)
-                    xs.Add(f.StationX(i));
-            xs.Add(x1);
-            for (int i = 0; i < f.StripCount; i++)
-                if (f.StationX(i + 1) > x0 && f.StationX(i) < x1)
-                    foreach (var z in f.RowHeights(i))
-                        if (z > z0 + 1e-9 && z < z1 - 1e-9)
-                            zset.Add(z);
-            var zs = zset.ToList();
-            int nx = xs.Count, nz = zs.Count;
-            var g = new Span[nx, nz];
-            var w = new double[nx, nz];
-            for (int i = 0; i < nx; i++)
-                for (int k = 0; k < nz; k++)
-                {
-                    w[i, k] = HalfWidth(xs[i], zs[k]);
-                    g[i, k] = new Span(xs[i], zs[k], Math.Min(w[i, k], yHi), Math.Max(-w[i, k], yLo));
-                }
-
-            int kind = HitKinds.IndexOf(kindName);
-            uint pi = (uint)prisms.Count;
-            int firstIndex = tris.Count, firstEdge = lines.Count, firstVertex = verts.Count;
-            HitVertex V(Vector3 p, Vector3 nrm) => new() { Position = p, Normal = nrm, Kind = (uint)kind, Prism = pi };
-            // a convex polygon as a fan, its normal turned to face along out
-            void Face(List<Vector3> poly, Vector3 out_)
-            {
-                if (poly.Count < 3)
-                    return;
-                var nrm = Vector3.Zero;
-                for (int i = 1; i + 1 < poly.Count; i++)
-                    nrm += Vector3.Cross(poly[i] - poly[0], poly[i + 1] - poly[0]);
-                if (nrm.LengthSquared() < 1e-14f)
-                    return;
-                bool flip = Vector3.Dot(nrm, out_) < 0;
-                nrm = Vector3.Normalize(flip ? -nrm : nrm);
-                uint v0 = (uint)verts.Count;
-                foreach (var p in poly)
-                    verts.Add(V(p, nrm));
-                for (uint i = 1; i + 1 < poly.Count; i++)
-                    if (flip)
-                        tris.AddRange([v0, v0 + i + 1, v0 + i]);
-                    else
-                        tris.AddRange([v0, v0 + i, v0 + i + 1]);
-            }
-            void Edge(Vector3 a, Vector3 b)
-            {
-                uint e0 = (uint)verts.Count;
-                verts.AddRange([V(a, Vector3.UnitZ), V(b, Vector3.UnitZ)]);
-                lines.AddRange([e0, e0 + 1]);
-            }
-
-            // the two faces across the ship (y = Hi, y = Lo) over each square's two triangles, cut where the span closes
-            for (int i = 0; i + 1 < nx; i++)
-                for (int k = 0; k + 1 < nz; k++)
-                {
-                    // the diagonal that bends in: chords of W under W (and of -W over -W)
-                    bool main = w[i, k] - w[i + 1, k] - w[i, k + 1] + w[i + 1, k + 1] < 0;
-                    Span a = g[i, k], b = g[i + 1, k], cc = g[i + 1, k + 1], d = g[i, k + 1];
-                    foreach (var t in main ? new[] { (a, b, cc), (a, cc, d) } : [(a, b, d), (b, cc, d)])
+            // a level where the side crosses the cell's walls at each station, so the loft opens where the cell does
+            var levels = new SortedSet<double>(zs);
+            foreach (var x in xs)
+                foreach (var e in new[] { Math.Abs(c.Y0), Math.Abs(c.Y1) })
+                    for (int k = 0; k + 1 < zs.Count; k++)
                     {
-                        var poly = Span.Open([t.Item1, t.Item2, t.Item3]);
-                        if (poly.Count < 3)
+                        double lo = zs[k], hi = zs[k + 1];
+                        if ((HalfWidth(x, lo) - e) * (HalfWidth(x, hi) - e) >= 0)
                             continue;
-                        Face(poly.Select(s => new Vector3((float)s.X, (float)s.Hi, (float)s.Z)).ToList(), Vector3.UnitY);
-                        Face(poly.Select(s => new Vector3((float)s.X, (float)s.Lo, (float)s.Z)).ToList(), -Vector3.UnitY);
+                        bool rising = HalfWidth(x, hi) > e;
+                        for (int it = 0; it < 30; it++)
+                        {
+                            double m = (lo + hi) / 2;
+                            if ((HalfWidth(x, m) > e) == rising)
+                                hi = m;
+                            else
+                                lo = m;
+                        }
+                        levels.Add(rising ? hi : lo);
                     }
-                }
-            // the box's own walls around the grid's rim (base, top, aft and fore ends), from Lo to Hi where it is open;
-            // their rims and the box's corners as edges
-            void Rim(Span a, Span b, Vector3 out_)
+            zs = Merge(levels, c.Base, c.Top);
+            // at each station, the heights where the cell has width (the hull reaches its near wall): a ring point at a
+            // height where it has none rides to the nearest such height, onto the hull's side, so nothing hangs outside
+            double near = c.Y0 > 0 ? c.Y0 : c.Y1 < 0 ? -c.Y1 : 0.0;
+            var span = xs.Select(x =>
             {
-                var o = Span.Open([a, b]);
-                if (o.Count < 2)
-                    return;
-                Vector3 Lo(Span s) => new((float)s.X, (float)s.Lo, (float)s.Z);
-                Vector3 Hi(Span s) => new((float)s.X, (float)s.Hi, (float)s.Z);
-                Face([Lo(o[0]), Lo(o[1]), Hi(o[1]), Hi(o[0])], out_);
-                Edge(Lo(o[0]), Lo(o[1]));
-                Edge(Hi(o[0]), Hi(o[1]));
-            }
-            for (int i = 0; i + 1 < nx; i++)
-            {
-                Rim(g[i, 0], g[i + 1, 0], -Vector3.UnitZ);
-                Rim(g[i, nz - 1], g[i + 1, nz - 1], Vector3.UnitZ);
-            }
-            for (int k = 0; k + 1 < nz; k++)
-            {
-                Rim(g[0, k], g[0, k + 1], -Vector3.UnitX);
-                Rim(g[nx - 1, k], g[nx - 1, k + 1], Vector3.UnitX);
-            }
-            foreach (var s in new[] { g[0, 0], g[nx - 1, 0], g[0, nz - 1], g[nx - 1, nz - 1] })
-                if (s.Hi > s.Lo)
-                    Edge(new((float)s.X, (float)s.Lo, (float)s.Z), new((float)s.X, (float)s.Hi, (float)s.Z));
-
-            if (tris.Count == firstIndex)
-            {
-                verts.RemoveRange(firstVertex, verts.Count - firstVertex);
-                lines.RemoveRange(firstEdge, lines.Count - firstEdge);
+                var ok = zs.Where(z => HalfWidth(x, z) >= near - 1e-9 && HalfWidth(x, z) > 0).ToList();
+                return ok.Count > 0 ? (Lo: ok.Min(), Hi: ok.Max()) : (Lo: double.NaN, Hi: double.NaN);
+            }).ToList();
+            // a station where the cell has no width at any height (it ends short of its box): its points stand at the
+            // nearest station where it has some, so the loft closes there
+            var has = Enumerable.Range(0, xs.Count).Where(k => !double.IsNaN(span[k].Lo)).ToList();
+            if (has.Count == 0)
                 return;
-            }
-            var lo = new Vector3(float.MaxValue);
-            var hi = new Vector3(float.MinValue);
-            for (int j = firstVertex; j < verts.Count; j++)
-                (lo, hi) = (Vector3.Min(lo, verts[j].Position), Vector3.Max(hi, verts[j].Position));
-            prisms.Add(new HitPrism
+            xs = xs.Select((x, k) => double.IsNaN(span[k].Lo) ? xs[has.MinBy(j => Math.Abs(j - k))] : x).ToList();
+            span = span.Select((sp, k) => double.IsNaN(sp.Lo) ? span[has.MinBy(j => Math.Abs(j - k))] : sp).ToList();
+            List<P3> Ring(double z)
             {
-                Id = c.Id, Kind = kind, Source = c, Lofted = true,
-                Footprint = outline.Select(p => new Vector2((float)p.X, (float)p.Y)).ToArray(),
-                Base = (float)c.Base, Top = (float)c.Top, FirstIndex = firstIndex, IndexCount = tris.Count - firstIndex,
-                FirstEdge = firstEdge, EdgeCount = lines.Count - firstEdge, Min = lo, Max = hi,
-            });
-        }
-
-        /// <summary>A cell's span across the ship at (X, Z): from Lo to Hi, open where Hi > Lo. Along a chord it varies
-        /// linearly, so where it closes is cut exactly.</summary>
-        readonly record struct Span(double X, double Z, double Hi, double Lo)
-        {
-            double Gap => Hi - Lo;
-
-            static Span Lerp(Span a, Span b, double t) =>
-                new(a.X + (b.X - a.X) * t, a.Z + (b.Z - a.Z) * t, a.Hi + (b.Hi - a.Hi) * t, a.Lo + (b.Lo - a.Lo) * t);
-
-            /// <summary>The part of a polygon (or, of two points, a segment) where the span is open; empty where it is
-            /// closed throughout (or open by no more than a hair: no sheets of no thickness).</summary>
-            public static List<Span> Open(Span[] poly)
-            {
-                var o = new List<Span>(poly.Length + 1);
-                if (poly.All(s => s.Gap <= 1e-6))
-                    return o;
-                int n = poly.Length, m = n == 2 ? 1 : n;
-                if (n == 2 && poly[0].Gap >= 0)
-                    o.Add(poly[0]);
-                for (int i = 0; i < m; i++)
+                var lo = new List<P3>();
+                var hi = new List<P3>();
+                for (int k = 0; k < xs.Count; k++)
                 {
-                    Span a = poly[i], b = poly[(i + 1) % n];
-                    if ((a.Gap >= 0) != (b.Gap >= 0))
-                        o.Add(Lerp(a, b, a.Gap / (a.Gap - b.Gap)));
-                    if (b.Gap >= 0 && (n > 2 || i == 0))
-                        o.Add(b);
+                    double x = xs[k], zc = double.IsNaN(span[k].Lo) ? z : Math.Clamp(z, span[k].Lo, span[k].Hi), w = HalfWidth(x, zc);
+                    lo.Add(new P3(x, Math.Clamp(-w, c.Y0, c.Y1), zc));
+                    hi.Add(new P3(x, Math.Clamp(w, c.Y0, c.Y1), zc));
                 }
-                return o;
+                hi.Reverse();
+                return [.. lo, .. hi];
             }
+            AddLoft(kind, c.Id, c, zs, Ring);
         }
 
         /// <summary>The stations between x0 and x1, and both ends: where the hull's side bends along the length.</summary>
