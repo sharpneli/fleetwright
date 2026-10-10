@@ -192,30 +192,32 @@ public sealed partial class Layout
         double step = 0.5)
     {
         var result = new List<(double, double, double, bool)>();
+        RoofSpots(blocks, l, w, result, step);
+        return result;
+    }
+
+    /// <summary>RoofSpots, appended to `result`.</summary>
+    public static void RoofSpots(IEnumerable<Block> blocks, double l, double w, List<(double X, double Y, double Z0, bool Pair)> result,
+        double step = 0.5)
+    {
+        using var _0 = Scratch<(double Lo, double Hi)>.Rent(out var sp0);
+        using var _1 = Scratch<(double Lo, double Hi)>.Rent(out var sp1);
         foreach (var b in blocks)
         {
             if (b.Kind == "director")
                 continue;
             double z0 = b.TopZ;
             double bx0 = b.X0, bx1 = b.X1, by = b.Y, bw = b.W;
-            var xs = new List<double>();
-            if (bx1 - bx0 < l)
-                xs.Add((bx0 + bx1) / 2);
-            else
-            {
-                long n = (long)((bx1 - bx0 - l) / step);
-                for (long k = 0; k <= n; k++)
-                    xs.Add(bx0 + l / 2 + k * step);
-            }
+            bool one = bx1 - bx0 < l;
+            long n = one ? 0 : (long)((bx1 - bx0 - l) / step);
             double ye = bw / 2 - w / 2;
             if (b.Points is { Count: > 0 } && b.Slabs is null)
                 b.Slabs = new Slabs(b.Points);
             var slabs = b.Slabs;
             double hwR = w < bw ? w / 2 - 0.3 : 0.0;
-            var sp0 = new List<(double Lo, double Hi)>();
-            var sp1 = new List<(double Lo, double Hi)>();
-            foreach (var x in xs)
+            for (long k = 0; k <= n; k++)
             {
+                double x = one ? (bx0 + bx1) / 2 : bx0 + l / 2 + k * step;
                 if (slabs != null)
                 {
                     slabs.At(x + -l / 2, sp0);
@@ -227,7 +229,6 @@ public sealed partial class Layout
                     result.Add((x, ye, z0, true));
             }
         }
-        return result;
     }
 
     /// <summary>Is a spot of half-width hw at y (and -y, for a pair) inside a polygon roof's spans at both its ends?</summary>
@@ -280,27 +281,59 @@ public sealed partial class Layout
     /// <summary>A polygon cut into slabs between its vertices' x: where a line across the ship is inside it.</summary>
     public sealed class Slabs
     {
-        readonly List<double> xs;
-        readonly List<List<(double X0, double Y0, double X1, double Y1)>> slabs = [];
+        readonly double[] xs;
+        // slab i (between xs[i] and xs[i + 1]) is edges[start[i] .. start[i + 1]], ordered by y at its middle
+        readonly (double X0, double Y0, double X1, double Y1)[] edges;
+        readonly int[] start;
 
         public Slabs(IReadOnlyList<Pt> pts)
         {
-            xs = (new HashSet<double>(pts.Select(p => p.X))).Order().ToList();
             int n = pts.Count;
-            var edges = new List<(double, double, double, double)>();
+            using var _x = Scratch<double>.Rent(out var xl);
+            for (int i = 0; i < n; i++)
+                xl.Add(pts[i].X);
+            xl.Sort();
+            int u = 0;
+            for (int i = 0; i < xl.Count; i++)
+                if (u == 0 || xl[i] != xl[u - 1])
+                    xl[u++] = xl[i];
+            xl.RemoveRange(u, xl.Count - u);
+            xs = xl.ToArray();
+            using var _e = Scratch<(double X0, double Y0, double X1, double Y1)>.Rent(out var all);
             for (int i = 0; i < n; i++)
             {
                 var (x0, y0) = pts[i];
                 var (x1, y1) = pts[(i + 1) % n];
                 if (x0 != x1)
-                    edges.Add((x0, y0, x1, y1));
+                    all.Add((x0, y0, x1, y1));
             }
-            for (int i = 0; i < xs.Count - 1; i++)
+            using var _k = Scratch<(double K, int I)>.Rent(out var keyed);
+            using var _f = Scratch<(double X0, double Y0, double X1, double Y1)>.Rent(out var flat);
+            start = new int[Math.Max(xs.Length, 1)];
+            for (int i = 0; i < xs.Length - 1; i++)
             {
                 double m = (xs[i] + xs[i + 1]) / 2;
-                slabs.Add(edges.Where(e => (e.Item1 > m) != (e.Item3 > m)).OrderBy(e => e.Item2 + (m - e.Item1) * (e.Item4 - e.Item2) / (e.Item3 - e.Item1)).ToList());
+                keyed.Clear();
+                for (int j = 0; j < all.Count; j++)
+                {
+                    var e = all[j];
+                    if ((e.X0 > m) != (e.X1 > m))
+                        keyed.Add((e.Y0 + (m - e.X0) * (e.Y1 - e.Y0) / (e.X1 - e.X0), j));
+                }
+                keyed.Sort(ByKeyThenIndex);
+                foreach (var (_, j) in keyed)
+                    flat.Add(all[j]);
+                start[i + 1] = flat.Count;
             }
+            edges = flat.ToArray();
         }
+
+        /// <summary>A stable sort's order (OrderBy's) from List.Sort: ties keep their index order.</summary>
+        internal static readonly Comparison<(double K, int I)> ByKeyThenIndex = (a, b) =>
+        {
+            int c = a.K.CompareTo(b.K);
+            return c != 0 ? c : a.I.CompareTo(b.I);
+        };
 
         /// <summary>The stretches of y inside the polygon at x.</summary>
         public List<(double Lo, double Hi)> At(double x)
@@ -315,13 +348,12 @@ public sealed partial class Layout
         {
             result.Clear();
             int i = xs.UpperBound(x) - 1;
-            if (i < 0 || i >= slabs.Count)
+            if (i < 0 || i >= start.Length - 1)
                 return;
-            var es = slabs[i];
-            for (int k = 0; k + 1 < es.Count; k += 2)
+            for (int k = start[i]; k + 1 < start[i + 1]; k += 2)
             {
-                var e = es[k];
-                var f = es[k + 1];
+                var e = edges[k];
+                var f = edges[k + 1];
                 result.Add((e.Y0 + (x - e.X0) * (e.Y1 - e.Y0) / (e.X1 - e.X0), f.Y0 + (x - f.X0) * (f.Y1 - f.Y0) / (f.X1 - f.X0)));
             }
         }

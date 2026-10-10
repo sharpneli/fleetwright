@@ -1183,36 +1183,50 @@ public sealed partial class Layout
         // ---------------- AA ----------------
         var aaOut = new List<AaMount>();
 
-        List<Slot> AaSlots(string kind)
+        // the AA candidates, best first, into cands
+        void AaSlots(string kind, List<Slot> cands)
         {
             double rr = Geometry.AaCfg[kind].R;
-            var scored = new List<(double S, Slot C)>();
-            foreach (var (x, y, z0, pair) in RoofSpots(blocks, 2 * rr, 2 * rr))
+            using var _s = Scratch<Slot>.Rent(out var slots);
+            using var _k = Scratch<(double K, int I)>.Rent(out var scored);
+            using var _r = Scratch<(double X, double Y, double Z0, bool Pair)>.Rent(out var spots);
+            void Add(double s, Slot c)
+            {
+                scored.Add((s, slots.Count));
+                slots.Add(c);
+            }
+            RoofSpots(blocks, 2 * rr, 2 * rr, spots);
+            foreach (var (x, y, z0, pair) in spots)
             {
                 long lvl = (long)Math.Round(z0 / LevelH);
                 double pen = AaRoofPen[(int)Math.Min(lvl, AaRoofPen.Length - 1)];
                 if (pair)
-                    scored.Add((Math.Abs(x - machC) / L + pen, new Slot(x, y, z0)));
+                    Add(Math.Abs(x - machC) / L + pen, new Slot(x, y, z0));
                 else if (Math.Abs(y) < 1e-6)
-                    scored.Add((Math.Abs(x - machC) / L + pen + AaSinglePen, new Slot(x, 0.0, z0)));
+                    Add(Math.Abs(x - machC) / L + pen + AaSinglePen, new Slot(x, 0.0, z0));
             }
             double xd = L / 2 - 0.06 * L;
             while (xd > -L / 2 + 2)
             {
                 double yy = hull.HalfWidth(xd) - rr - 0.5;
                 if (yy > rr + 0.5)
-                    scored.Add((Math.Abs(xd - machC) / L + AaDeckPen, new Slot(xd, yy, lay.DeckZ(xd, rr))));
+                    Add(Math.Abs(xd - machC) / L + AaDeckPen, new Slot(xd, yy, lay.DeckZ(xd, rr)));
                 xd -= 0.5;
             }
-            var cands = scored.OrderBy(s => s.S).ToList().Select(s => s.C).ToList();
+            scored.Sort(Slabs.ByKeyThenIndex);
+            foreach (var (_, i) in scored)
+                cands.Add(slots[i]);
             double sx = -L / 2 + rr + 2.5;
             if (hull.HalfWidth(sx) > rr + 0.6)
                 cands.Add(new Slot(sx, 0.0, lay.DeckZ(sx, rr)));
-            return cands;
         }
 
-        void PlaceAa(string kind, long count) =>
-            Armament.PlaceAa(lay, aaOut, kind, count, AaSlots(kind), layerOf: bse => bse > LevelH + 0.01 ? "upper" : "base");
+        void PlaceAa(string kind, long count)
+        {
+            using var _ = Scratch<Slot>.Rent(out var cands);
+            AaSlots(kind, cands);
+            Armament.PlaceAa(lay, aaOut, kind, count, cands, layerOf: bse => bse > LevelH + 0.01 ? "upper" : "base");
+        }
 
         PlaceAa("quad40", design.Aa?.Heavy ?? 0);
         PlaceAa("single20", design.Aa?.Light ?? 0);

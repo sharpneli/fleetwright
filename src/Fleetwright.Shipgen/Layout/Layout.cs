@@ -48,6 +48,15 @@ public sealed class Footprint
         return [new(A - margin, B - margin), new(C + margin, B - margin), new(C + margin, D + margin), new(A - margin, D + margin)];
     }
 
+    /// <summary>A rect footprint's Points(margin), appended to `into`.</summary>
+    public void Points(double margin, List<Pt> into)
+    {
+        into.Add(new(A - margin, B - margin));
+        into.Add(new(C + margin, B - margin));
+        into.Add(new(C + margin, D + margin));
+        into.Add(new(A - margin, D + margin));
+    }
+
     /// <summary>The polygon prepared for many tests (geometry.PreparedPolygon), made once.</summary>
     public PreparedPolygon Prepared => prepared ??= new PreparedPolygon(Pts!);
 }
@@ -234,9 +243,18 @@ public sealed partial class Layout
     /// <summary>Is a footprint standing `top` metres above the deck clear of every gun sweep lower than it?</summary>
     public bool Clear(Footprint fp, double top)
     {
-        (double X, double Y, double R)? circle = fp.Kind == 'c' ? (fp.X, fp.Y, fp.R) : null;
-        var poly = fp.Kind == 'c' ? Geometry.CirclePolygon(fp.X, fp.Y, fp.R, 16) : fp.Points();
-        return Clear(poly, top, circle);
+        if (Sweeps.Count == 0)
+            return true;
+        if (fp.Kind == 'p')
+            return Clear(fp.Pts!, top);
+        using var _ = Scratch<Pt>.Rent(out var poly);
+        if (fp.Kind == 'c')
+        {
+            Geometry.CirclePolygon(fp.X, fp.Y, fp.R, 16, poly);
+            return Clear(poly, top, (fp.X, fp.Y, fp.R));
+        }
+        fp.Points(0.0, poly);
+        return Clear(poly, top);
     }
 
     public bool Clear(List<Pt> poly, double top, (double X, double Y, double R)? circle = null)

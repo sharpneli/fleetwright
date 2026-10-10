@@ -195,9 +195,15 @@ public static class Geometry
     public static List<Pt> CirclePolygon(double cx, double cy, double r, int seg = 32)
     {
         var pts = new List<Pt>(seg);
-        for (int i = 0; i < seg; i++)
-            pts.Add(new Pt(cx + r * Math.Cos(2 * Math.PI * i / seg), cy + r * Math.Sin(2 * Math.PI * i / seg)));
+        CirclePolygon(cx, cy, r, seg, pts);
         return pts;
+    }
+
+    /// <summary>CirclePolygon, appended to `into`.</summary>
+    public static void CirclePolygon(double cx, double cy, double r, int seg, List<Pt> into)
+    {
+        for (int i = 0; i < seg; i++)
+            into.Add(new Pt(cx + r * Math.Cos(2 * Math.PI * i / seg), cy + r * Math.Sin(2 * Math.PI * i / seg)));
     }
 
     public static List<Pt> RotateTranslate(IEnumerable<Pt> pts, double deg, double tx, double ty)

@@ -2,7 +2,7 @@ namespace Fleetwright.Shipgen;
 
 /// <summary>A place a mount (or a pair of mounts) could stand: X, Y and its base above the main deck; a pair's port
 /// mount at YPort (default -Y). A slot on the centreline, or a Lone one, takes a single mount.</summary>
-public sealed record Slot(double X, double Y, double Base, double? YPort = null, bool Lone = false)
+public readonly record struct Slot(double X, double Y, double Base, double? YPort = null, bool Lone = false)
 {
     public bool Single => Y == 0 || Lone;
     public double PortY => YPort ?? -Y;
@@ -294,30 +294,37 @@ public static class Armament
         foreach (var a in aaOut)
             File(Footprint.Circle(a.X, a.Y, Geometry.AaCfg[a.Type].R));
 
-        IEnumerable<Footprint> Near(Footprint fp)
-        {
-            double reach = fp.R + rMax + sp;
-            for (long c = (long)Math.Floor((fp.X - reach) / AaCell); c <= (long)Math.Floor((fp.X + reach) / AaCell); c++)
-                if (grid.TryGetValue(c, out var l))
-                    foreach (var o in l)
-                        yield return o;
-        }
+        bool Hits(Footprint fp, Footprint o) => Math.Abs(fp.X - o.X) < fp.R + o.R + sp && Layout.Overlap(fp, o, sp);
 
-        List<(Footprint Fp, double Base, double Cx)>? Fits(Slot c, IEnumerable<Footprint>? also = null)
+        // does the slot's mount (or pair) fit, clear of the mounts placed and of `also`? Appends them to `into` if so
+        bool Fits(Slot c, List<(Footprint Fp, double Base, double Cx)> into, List<(Footprint Fp, double Base, double Cx)>? also = null)
         {
-            var use = c.Single ? new[] { (c.X, c.Y) } : [(c.X, c.Y), (c.X, c.PortY)];
-            var fps = use.Select(u => Footprint.Circle(u.Item1, u.Item2, rr)).ToList();
-            if (fps.Count == 2 && Layout.Overlap(fps[0], fps[1], sp))
-                return null;
-            var alsoL = also?.ToList() ?? [];
-            foreach (var fp in fps)
-                foreach (var o in Near(fp).Concat(alsoL))
-                    if (Math.Abs(fp.X - o.X) < fp.R + o.R + sp && Layout.Overlap(fp, o, sp))
-                        return null;
+            var f0 = Footprint.Circle(c.X, c.Y, rr);
+            var f1 = c.Single ? null : Footprint.Circle(c.X, c.PortY, rr);
+            if (f1 != null && Layout.Overlap(f0, f1, sp))
+                return false;
+            for (int k = 0; k < (f1 is null ? 1 : 2); k++)
+            {
+                var fp = k == 0 ? f0 : f1!;
+                double reach = fp.R + rMax + sp;
+                for (long g = (long)Math.Floor((fp.X - reach) / AaCell); g <= (long)Math.Floor((fp.X + reach) / AaCell); g++)
+                    if (grid.TryGetValue(g, out var l))
+                        foreach (var o in l)
+                            if (Hits(fp, o))
+                                return false;
+                if (also != null)
+                    foreach (var o in also)
+                        if (Hits(fp, o.Fp))
+                            return false;
+            }
             var ign = ignore?.Invoke(c.Base) ?? [];
-            if (!fps.All(fp => lay.FreeAt(fp, c.Base, c.Base + 2.0, 0.4, ign)) || !fps.All(fp => lay.Clear(fp, c.Base + 2.0)))
-                return null;
-            return fps.Select(fp => (fp, c.Base, c.X)).ToList();
+            if (!lay.FreeAt(f0, c.Base, c.Base + 2.0, 0.4, ign) || f1 != null && !lay.FreeAt(f1, c.Base, c.Base + 2.0, 0.4, ign)
+                || !lay.Clear(f0, c.Base + 2.0) || f1 != null && !lay.Clear(f1, c.Base + 2.0))
+                return false;
+            into.Add((f0, c.Base, c.X));
+            if (f1 != null)
+                into.Add((f1, c.Base, c.X));
+            return true;
         }
 
         void Put(List<(Footprint Fp, double Base, double Cx)> ms)
@@ -337,6 +344,8 @@ public static class Armament
 
         long placed = 0;
         bool lonely = false;
+        using var _g = Scratch<(Footprint Fp, double Base, double Cx)>.Rent(out var got);
+        using var _m = Scratch<(Footprint Fp, double Base, double Cx)>.Rent(out var mate);
         for (int i = 0; i < cands.Count; i++)
         {
             var c = cands[i];
@@ -347,24 +356,16 @@ public static class Armament
                 continue;
             if (c.Single && left % 2 == 0 && lonely)
                 continue;
-            var got = Fits(c);
-            if (got is null || got.Count == 0)
+            got.Clear();
+            if (!Fits(c, got))
                 continue;
             if (c.Single && left % 2 == 0)
             {
-                List<(Footprint, double, double)>? mate = null;
-                for (int j = i + 1; j < cands.Count; j++)
-                {
-                    if (!cands[j].Single)
-                        continue;
-                    var m = Fits(cands[j], got.Select(g => g.Fp));
-                    if (m is { Count: > 0 })
-                    {
-                        mate = m;
-                        break;
-                    }
-                }
-                if (mate is null)
+                mate.Clear();
+                bool found = false;
+                for (int j = i + 1; j < cands.Count && !found; j++)
+                    found = cands[j].Single && Fits(cands[j], mate, got);
+                if (!found)
                 {
                     lonely = true;
                     continue;
