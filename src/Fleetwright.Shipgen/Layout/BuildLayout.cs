@@ -483,7 +483,8 @@ public sealed partial class Layout
         double bx0 = bx1 - lb;
         double fz0 = midAft + (la != 0 ? la + 1.5 : 1.0);
         double fz1 = bx0 - 1.5;
-        double yW = nw != 0 ? Enumerable.Range(0, 21).Select(k => lay.MountHalfWidth(fz0 + (fz1 - fz0) * k / 20)).Min() - gRef!.Reach - 0.6 : 0.0;
+        double yW = nw != 0 ? Enumerable.Range(0, 21).Select(k => fz0 + (fz1 - fz0) * k / 20)
+            .Min(x => Math.Min(lay.MountHalfWidth(x) - gRef!.Reach - 0.6, lay.BarbetteLimit(x, BarbetteOf(gRef.T)))) : 0.0;
 
         (double LoX, double HiX, double X) PlanFront(List<double> widths, double y)
         {
@@ -509,6 +510,8 @@ public sealed partial class Layout
                     foreach (var xw in g.Echelon ? new[] { x, x - WingStagger(g, y) } : [x])
                         hw = Math.Min(hw, Math.Min(lay.MountHalfWidth(xw + -g.Reach), Math.Min(lay.MountHalfWidth(xw + 0.0), lay.MountHalfWidth(xw + g.Reach))));
                     double lim = hw - g.Reach - 0.6;
+                    foreach (var xw in g.Echelon ? new[] { x, x - WingStagger(g, y) } : [x])
+                        lim = Math.Min(lim, lay.BarbetteLimit(xw, BarbetteOf(g.T)));
                     room = Math.Min(room, g.Reach == gRef.Reach ? lim : lim + g.Reach - gRef.Reach);
                 }
                 xx -= widths[i];
@@ -900,7 +903,8 @@ public sealed partial class Layout
             double inner = (blocks.Where(b => b.Level >= 2).Select(b => b.W / 2).Append(fw / 2)
                 .Concat(M.Select(g => g.Reach))).Max() + rsReach + 0.4;
 
-            double OuterAt(double x) => Math.Min(lay.MountHalfWidth(x + -rsReach), Math.Min(lay.MountHalfWidth(x + 0.0), lay.MountHalfWidth(x + rsReach))) - rsReach - 0.6;
+            double OuterAt(double x) => Math.Min(Math.Min(lay.MountHalfWidth(x + -rsReach), Math.Min(lay.MountHalfWidth(x + 0.0), lay.MountHalfWidth(x + rsReach))) - rsReach - 0.6,
+                lay.BarbetteLimit(x, BarbetteOf(ts)));
 
             double YAt(double x) => Math.Max(inner, inner + 0.55 * (OuterAt(x) - inner));
             var xsProbe = Enumerable.Range(0, 41).Select(k => xLo + (xHi - xLo) * k / 40).ToList();

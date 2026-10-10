@@ -40,6 +40,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   drawn from the hull form (narrower where the sides lean in), the height map steps up the leaning side, and the
   hitboxes carry `vertical.knuckle`. 4 design and 24 SVG cases rewritten: the four tumblehome designs, `courbet`
   (wall-sided, it lost the look's drawn tumblehome) and the 19 fuzz mutants of the French Victorian designs.
+- 2026-10-10, tumblehome physics, on purpose: side armour and the side shell weigh as long as the leaning side,
+  armoured bulkheads as wide as the hull up their height, and side guns' barbettes stay inside the deck edge.
+  `bouvet` and `babel` go to strength 0.6, `brennus` to 0.4 (at 1 the barbette rule widened her to 34 m). 4 design,
+  4 SVG and 4 sprite.json cases rewritten; every other case unchanged.
 
 ## Layout
 

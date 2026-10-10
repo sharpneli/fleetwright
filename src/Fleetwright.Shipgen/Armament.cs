@@ -140,7 +140,8 @@ public static class Armament
                                    "the deck is taken there. Use fewer or smaller guns.");
                 continue;
             }
-            if (Math.Abs(y) + reach > lay.MountHalfWidth(x) + 0.2 && !lay.OnDeck(x, y))
+            if ((Math.Abs(y) + reach > lay.MountHalfWidth(x) + 0.2 || Math.Abs(y) > lay.BarbetteLimit(x, Layout.BarbetteOf(t)) + Layout.BarbetteMargin)
+                && !lay.OnDeck(x, y))
             {
                 lay.Fail("beam", $"{label} mount {mid} ({gun.CalibreMm} mm) is too wide for the hull at {x:F0} m.");
                 continue;

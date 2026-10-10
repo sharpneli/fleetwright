@@ -31,6 +31,39 @@ public abstract class Topside
         return sum / n;
     }
 
+    /// <summary>How much longer the side is than it is tall between hLo and hHi over the main deck (1 where it is
+    /// upright): plate laid on it from hLo to hHi, over the middle of the hull where the half-breadth is B / 2.</summary>
+    public double SlantFactor(double B, double hLo, double hHi)
+    {
+        if (Plain || hHi <= KnuckleH || hHi <= hLo)
+            return 1.0;
+        const int n = 24;
+        double lo = Math.Max(hLo, KnuckleH), len = Math.Max(0.0, Math.Min(hHi, KnuckleH) - hLo), dh = (hHi - lo) / n;
+        for (int i = 0; i < n; i++)
+        {
+            double h0 = lo + i * dh, h1 = h0 + dh;
+            double dy = B / 2 * (Ratio(0.0, h1) - Ratio(0.0, h0));
+            len += Math.Sqrt(dh * dh + dy * dy);
+        }
+        return len / (hHi - hLo);
+    }
+
+    /// <summary>The side's mean share of the planform's half-width at x between hLo and hHi over the main deck (1
+    /// where it is upright): a plate across the hull there, such as an armoured bulkhead.</summary>
+    public double BandRatio(double x, double hLo, double hHi)
+    {
+        if (Plain || hHi <= KnuckleH || hHi <= hLo)
+            return 1.0;
+        const int n = 24;
+        double sum = 0.0;
+        for (int i = 0; i < n; i++)
+        {
+            double h = hLo + (hHi - hLo) * (i + 0.5) / n;
+            sum += h <= KnuckleH ? 1.0 : Ratio(x, h);
+        }
+        return sum / n;
+    }
+
     /// <summary>The design's topside. freeboard: the main deck's height over the waterline, which scales the knuckle.</summary>
     public static Topside Of(Design design, double freeboard)
     {

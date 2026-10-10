@@ -88,7 +88,7 @@ public static class Hitbox
             if (!t.HasBarbette)
                 continue;
             double br = Geometry.BarbetteR(t);
-            bool inHull = Math.Abs(m.Y) + br <= lay.MountHalfWidth(m.X) && m.Base < fdBase;
+            bool inHull = Math.Abs(m.Y) + br <= lay.DeckHalfWidth(m.X) && m.Base < fdBase;
             c.Barbette = $"{m.Id} barbette";
             yield return new Component
             {

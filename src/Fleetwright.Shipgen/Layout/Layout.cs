@@ -142,6 +142,18 @@ public sealed partial class Layout
     /// above the widest point, the maximum beam: the mount then stands on a sponson out over the side (Sponsons).</summary>
     public double MountHalfWidth(double x) => Topside.Plain ? DeckHalfWidth(x) : Hull.HalfWidth(x);
 
+    /// <summary>How far from the centreline a mount at x may stand for its barbette (radius r, 0 for none) to run down
+    /// inside the hull: within the deck's edge where the sides lean in (the turret may overhang onto a sponson, the
+    /// barbette and its trunk may not stand out of the side); no limit on an upright side, where MountHalfWidth keeps the
+    /// whole mount on deck.</summary>
+    public double BarbetteLimit(double x, double r) =>
+        Topside.Plain || r <= 0 ? double.PositiveInfinity : DeckHalfWidth(x) - r - BarbetteMargin;
+
+    public const double BarbetteMargin = 0.3;
+
+    /// <summary>A mount's barbette radius, 0 for none.</summary>
+    public static double BarbetteOf(TurretType t) => t.HasBarbette ? Geometry.BarbetteR(t) : 0.0;
+
     /// <summary>hull.section's side above the widest point (Topside.Of).</summary>
     public Topside Topside = WallSided.Instance;
     readonly Dictionary<double, Planform> sides = [];

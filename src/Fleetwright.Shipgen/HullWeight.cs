@@ -98,7 +98,7 @@ public static class HullWeight
 
     /// <summary>The hull structure: its weight, what it is made of and its girder.</summary>
     /// <param name="topside">the side above the widest point: the strength deck and the armour decks are its breadth at
-    /// their heights (null: wall-sided).</param>
+    /// their heights, and the side shell as long as the side (null: wall-sided).</param>
     public static HullStructure WeightOf(double L, double B, double D, double cb, double full, Construction c, double nInt,
         double doubleBottom, IReadOnlyList<(double Mm, double Z)> armourDecks, double? bulkheadDepth = null,
         double? girderDepth = null, double shellMm = 0.0, double armouredSideM2 = 0.0, Topside? topside = null)
@@ -106,7 +106,9 @@ public static class HullWeight
         double deckD = bulkheadDepth ?? D;   // the main deck's height (D is the girder's top when a strength deck stands above it)
         double Breadth(double z) => topside is null ? B : B * topside.MeanRatio(L, z - deckD);
         double bDeck = Breadth(D);
-        double aShell = 2 * ShellSide * D * L + ShellBottom * B * L * Math.Sqrt(cb);
+        // the side shell runs up the side: longer than the depth where the side leans in above the widest point
+        double slant = topside?.SlantFactor(B, -deckD, 0.0) ?? 1.0;
+        double aShell = 2 * ShellSide * D * L * slant + ShellBottom * B * L * Math.Sqrt(cb);
         double aDeck = DeckArea(L, bDeck, cb);
         double aInt = nInt * IntDeck * aDeck;
         double aBhd = Bulkheads * BhdArea * B * (bulkheadDepth ?? D);
@@ -122,7 +124,7 @@ public static class HullWeight
         double wMin = Rho * KS * tMin * (aShell + aDeck + aInt * IntDeckT + aBhd * BhdT + aDb);
         double wStr = Rho * GirderTaper * (aShell + aDeck) * Math.Max(0.0, tStr - tMin);
         double k = (1 + FFit) * c.JoinFactor;
-        double aSide = Math.Max(0.0, 2 * ShellSide * D * L - armouredSideM2);
+        double aSide = Math.Max(0.0, 2 * ShellSide * D * L * slant - armouredSideM2);
         double wShell = (ExtraPlateT((1 - GirderTaper) * aSide, shellMm, tMin)
                          + ExtraPlateT(GirderTaper * aSide, shellMm, Math.Max(tMin, tStr))) * c.JoinFactor;
         return new HullStructure((wMin + wStr) * k + wShell, wShell)

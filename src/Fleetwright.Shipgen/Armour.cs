@@ -344,19 +344,23 @@ public static class Armour
     }
 
     /// <summary>The armour's weights from its geometry.</summary>
-    /// <param name="topside">the side above the widest point: a full-width armour deck is its breadth at its height
-    /// (null: wall-sided).</param>
+    /// <param name="topside">the side above the widest point: a full-width armour deck is its breadth at its height,
+    /// side armour as long as the side it lies on, an armoured bulkhead as wide as the hull up its height (null:
+    /// wall-sided).</param>
     public static List<Weight> ArmourWeights(Design design, double L, double B, double D, ArmourLayout g, Topside? topside = null)
     {
         double lc = g.X1 - g.X0;
         double xc = (g.X0 + g.X1) / 2;
         ZRel Zf(double lo, double hi) => ZRel.Frac(D != 0 ? (lo + hi) / 2 / D : 0.5);
+        // heights here are over the keel; the topside's over the main deck
+        double Slant(double lo, double hi) => topside?.SlantFactor(B, lo - D, hi - D) ?? 1.0;
+        double Across(double x, double lo, double hi) => topside?.BandRatio(x, lo - D, hi - D) ?? 1.0;
         var result = new List<Weight>();
         if (g.BeltMm > 0)
         {
             double bot = g.BeltBottom, top = g.BeltTop, mm = g.BeltMm, mb = g.BeltBottomMm;
             double t0 = Math.Min(top, Math.Max(bot, g.Waterline));
-            double aUp = (top - t0) * mm, aLo = (t0 - bot) * (mm + mb) / 2;
+            double aUp = (top - t0) * mm * Slant(t0, top), aLo = (t0 - bot) * (mm + mb) / 2 * Slant(bot, t0);
             double zLo = mb + mm > 0 ? bot + (t0 - bot) * (mb + 2 * mm) / (3 * (mb + mm)) : bot;
             double zc = aUp + aLo > 0 ? ((top + t0) / 2 * aUp + zLo * aLo) / (aUp + aLo) : (top + bot) / 2;
             result.Add(new Weight("Belt armour", "armour", 2 * lc * (aUp + aLo) / 1000 * Weight.Steel, xc, ZRel.Frac(D != 0 ? zc / D : 0.5)));
@@ -364,16 +368,17 @@ public static class Armour
         if (g.Armoured && g.BulkheadMm > 0)
         {
             double hb = g.BulkheadTop - g.BulkheadBottom;
-            result.Add(new Weight("Bulkheads", "armour", 2 * B * hb * g.BulkheadMm / 1000 * Weight.Steel, xc, Zf(g.BulkheadTop, g.BulkheadBottom)));
+            double across = (Across(g.X0, g.BulkheadBottom, g.BulkheadTop) + Across(g.X1, g.BulkheadBottom, g.BulkheadTop)) / 2;
+            result.Add(new Weight("Bulkheads", "armour", 2 * B * across * hb * g.BulkheadMm / 1000 * Weight.Steel, xc, Zf(g.BulkheadTop, g.BulkheadBottom)));
         }
         foreach (var b in g.EndBulkheads.Concat(g.EndPlates))
-            result.Add(new Weight(b.Id, "armour", (b.W is double w && w != 0 ? w : B) * (b.Top - b.Bottom) * b.Mm / 1000 * Weight.Steel, b.X,
+            result.Add(new Weight(b.Id, "armour", (b.W is double w && w != 0 ? w : B * Across(b.X, b.Bottom, b.Top)) * (b.Top - b.Bottom) * b.Mm / 1000 * Weight.Steel, b.X,
                 Zf(b.Top, b.Bottom)));
         foreach (var s in g.Strakes)
         {
             var (a, b) = s.Extent != "aft" ? (s.Mm, s.TipMm) : (s.TipMm, s.Mm);
             double f = a + b > 0 ? (a + 2 * b) / (3 * (a + b)) : 0.5;
-            result.Add(new Weight(s.Id, "armour", 2 * (s.X1 - s.X0) * (s.Top - s.Bottom) * (a + b) / 2 / 1000 * Weight.Steel,
+            result.Add(new Weight(s.Id, "armour", 2 * (s.X1 - s.X0) * (s.Top - s.Bottom) * Slant(s.Bottom, s.Top) * (a + b) / 2 / 1000 * Weight.Steel,
                 s.X0 + f * (s.X1 - s.X0), Zf(s.Top, s.Bottom)));
         }
         double tds = design.Armour?.TdsM ?? 0.0;
