@@ -62,6 +62,8 @@ public sealed unsafe class DesignerScene : IScene
     string editText = "";
     bool editFocus;
 
+    readonly HashSet<(int Section, string Header)> openDetails = [];   // the Details headers left open
+
     // dialogs
     string saveName = "";
     string[] shippedDesigns = [], userDesigns = [];
@@ -124,13 +126,22 @@ public sealed unsafe class DesignerScene : IScene
             foreach (var st in steps)
             {
                 var parts = st.Split(':');
-                var k = Knobs.All(doc.Current).OfType<NumberKnob>().FirstOrDefault(k => k.Id == parts[0]);
-                if (k == null || parts.Length != 2 || !int.TryParse(parts[1], out int n))
+                var knob = parts.Length == 2 ? Knobs.All(doc.Current).FirstOrDefault(k => k.Id == parts[0]) : null;
+                switch (knob)
                 {
-                    Console.Error.WriteLine($"designer: no step '{st}' (knob:steps, e.g. speed:-2)");
-                    continue;
+                    case NumberKnob k when int.TryParse(parts[1], out int n):
+                        Step(Row(k, doc.Current, shown?.Ship), n);
+                        break;
+                    case ChoiceKnob c when c.Values.Contains(parts[1]):
+                        Edit(c.Set(doc.Current, parts[1]), $"{c.Label}: {parts[1]}");
+                        break;
+                    case ToggleKnob t when parts[1] is "on" or "off":
+                        Edit(t.Set(doc.Current, parts[1] == "on"), $"{t.Label} {parts[1]}");
+                        break;
+                    default:
+                        Console.Error.WriteLine($"designer: no step '{st}' (knob:steps, knob:value or knob:on/off, e.g. speed:-2)");
+                        continue;
                 }
-                Step(Row(k, doc.Current, shown?.Ship), n);
                 doc.Seal();
             }
             Submit();
@@ -283,7 +294,11 @@ public sealed unsafe class DesignerScene : IScene
 
     /// <summary>A line of the section panel.</summary>
     abstract record Item;
-    sealed record Header(string Text, string? Button = null, Action? OnButton = null) : Item;
+    /// <summary>A section heading; a <see cref="Details"/> one folds away the rows under it (the second layer).</summary>
+    sealed record Header(string Text, string? Button = null, Action? OnButton = null, bool Details = false) : Item
+    {
+        public string Upper { get; } = Text.ToUpperInvariant();
+    }
     sealed record Note(string Text) : Item;
     sealed record Act(string Label, Action OnClick) : Item;
     sealed record NumRow(NumberKnob Knob, string Label, string Value, string Hint, string Delta, bool Applies, bool IsAuto, double? Num) : Item;
@@ -479,6 +494,10 @@ public sealed unsafe class DesignerScene : IScene
                     Num(Knobs.MainStepped(i, "aft"));
                     Num(Knobs.MainArmour(i));
                     Num(Knobs.MainRounds(i));
+                    items.Add(new Header($"Battery {(char)('A' + i)}, details", Details: true));
+                    Toggle(Knobs.MainCrossDeck(i));
+                    if (style.HasRaisedMounts)
+                        Choice(Knobs.MainStandsOn(i));
                 }
                 if (mains.Count == 0 || style.TakesMainList)
                     items.Add(new Act(mains.Count == 0 ? "Add a main battery" : "Add another main battery", () => Edit(AddMain(doc.Current), "Main battery added")));
@@ -501,6 +520,12 @@ public sealed unsafe class DesignerScene : IScene
                     if (d.StyleName == "warship")
                         Choice(Knobs.SecMount(i));
                     Num(Knobs.SecArmour(i));
+                    items.Add(new Header($"Battery {i + 1}, details", Details: true));
+                    Num(Knobs.SecRounds(i));
+                    if (style.HasCasemates)
+                        Choice(Knobs.SecTier(i));
+                    if (style.HasRaisedMounts)
+                        Choice(Knobs.SecStandsOn(i));
                 }
                 items.Add(new Act("Add a secondary battery", () => Edit(AddSecondary(doc.Current), "Secondary battery added")));
                 items.Add(new Header("Anti-aircraft"));
@@ -525,6 +550,22 @@ public sealed unsafe class DesignerScene : IScene
                 Num(Knobs.EndBeltReach("aft"));
                 Num(Knobs.Bulkheads);
                 Num(Knobs.Tds);
+                if (d.StyleName == "carrier")
+                    Num(Knobs.FlightDeckArmour);
+                items.Add(new Header("Side, details", Details: true));
+                Num(Knobs.BeltDepth);
+                Num(Knobs.BeltHeight);
+                Num(Knobs.UpperBeltToDeck);
+                Choice(Knobs.UpperBeltExtent);
+                foreach (var end in new[] { "fore", "aft" })
+                {
+                    Num(Knobs.EndBeltTip(end));
+                    Num(Knobs.EndBeltBulkhead(end));
+                }
+                items.Add(new Header("Steering gear box", Details: true));
+                Num(Knobs.SteeringSides);
+                Num(Knobs.SteeringRoof);
+                Num(Knobs.SteeringEnds);
                 var decks = d.Armour?.Decks ?? [];
                 for (int i = 0; i < decks.Count; i++)
                 {
@@ -556,6 +597,14 @@ public sealed unsafe class DesignerScene : IScene
                 if (ship != null)
                     items.Add(new Note($"{ship.Report.Plant.Name}, {ship.Report.Plant.Fuel}: {N0(ship.Report.Plant.RatedShp)} shp, " +
                                        $"{ship.Report.Plant.Shafts} shafts, {N0(ship.Report.Plant.WeightT)} t"));
+                items.Add(new Header("Machinery, details", Details: true));
+                Num(Knobs.Funnels);
+                Choice(Knobs.Transmission);
+                Num(Knobs.UnitsPerShaft);
+                Toggle(Knobs.CentrelineBulkhead);
+                Choice(Knobs.Bunkers);
+                Num(Knobs.WingBunker);
+                Num(Knobs.Rudders);
                 break;
             case 5:
                 items.Add(new Header("Hull"));
@@ -566,6 +615,11 @@ public sealed unsafe class DesignerScene : IScene
                 Num(Knobs.Freeboard);
                 if (Knobs.Raised.AppliesTo(d))
                     Choice(Knobs.Raised);
+                items.Add(new Header("Hull form"));
+                Choice(Knobs.Topside);
+                Num(Knobs.TumblehomeStrength);
+                Num(Knobs.TumblehomeKnuckle);
+                Choice(Knobs.TumblehomeExtent);
                 items.Add(new Header("Upperworks"));
                 Num(Knobs.TowerLevels);
                 Num(Knobs.DeckhouseLevels);
@@ -573,6 +627,14 @@ public sealed unsafe class DesignerScene : IScene
                 if (ship?.Report.Bridge is { } br)
                     items.Add(new Note($"Bridge eye {br.EyeHeightM:0.0} m, horizon {br.HorizonKm:0.0} km" +
                                        (br.SeesOverTurrets ? ", sees over the turrets" : ", blocked by the turrets")));
+                items.Add(new Header("Hull and upperworks, details", Details: true));
+                Choice(Knobs.DeckFinish);
+                Num(Knobs.ShellMm);
+                Num(Knobs.DeckWoodMm);
+                if (style.HasControlTowers)
+                    Num(Knobs.LevelsOverBridge);
+                Num(Knobs.SuperstructurePlating);
+                Num(Knobs.ControlPlating);
                 break;
             case 6:
                 foreach (var b in new[] { "main", "secondary", "aa" })
@@ -580,6 +642,14 @@ public sealed unsafe class DesignerScene : IScene
                     Num(Knobs.Directors(b));
                     Num(Knobs.Rangefinder(b));
                 }
+                items.Add(new Header("Fire control, details", Details: true));
+                foreach (var (b, name) in new[] { ("main", "Main"), ("secondary", "Secondary"), ("aa", "AA") })
+                {
+                    Num(Knobs.DirectorArmour(b), $"{name} director armour");
+                    Num(Knobs.DirectorRadar(b), $"{name} fire-control radar, t");
+                    Num(Knobs.DirectorComputer(b), $"{name} computer, t");
+                }
+                Num(Knobs.SearchRadar);
                 break;
             case 7:
                 Pick("Crew standard", Templates.Crew, t => $"{t.Group}: {t.Name}", t => t.Name == d.Crew?.Standard?.Name,
@@ -587,6 +657,11 @@ public sealed unsafe class DesignerScene : IScene
                     (x, v) => x with { Crew = (x.Crew ?? new CrewInput()) with { Standard = v } });
                 Num(Knobs.Endurance);
                 Toggle(Knobs.Distiller);
+                items.Add(new Header("Crew, details", Details: true));
+                Num(Knobs.BufferDays);
+                Num(Knobs.WaterRation);
+                Num(Knobs.BerthRatio);
+                Num(Knobs.OfficerFraction);
                 if (ship?.Report.Crew is { } c)
                     items.Add(new Note($"{N0(c.Complement)} men ({c.Officers} officers), {c.Standard}; {c.SleepM2PerMan:0.00} m² to sleep per man " +
                                        $"against {c.SleepStandardM2:0.00}"));
@@ -1075,15 +1150,30 @@ public sealed unsafe class DesignerScene : IScene
         ImGui.Indent(P(6));
         ImGui.Dummy(V(0, 2));
         float labelW = P(170), valueW = P(110);
+        bool folded = false;   // under a closed Details header
         for (int n = 0; n < items.Count; n++)
         {
+            if (folded && items[n] is NumRow or ChoiceRow or ToggleRow or PickRow)
+                continue;
             ImGui.PushID(n);
             switch (items[n])
             {
+                case Header { Details: true } h:
+                    ImGui.Dummy(V(0, 4));
+                    bool open = openDetails.Contains((section, h.Text));
+                    ImGui.SetNextItemOpen(open);
+                    ImGui.PushStyleColor(ImGuiCol.Text, T.Muted);
+                    bool nowOpen = ImGui.CollapsingHeader(h.Text);
+                    ImGui.PopStyleColor();
+                    if (nowOpen != open && !openDetails.Remove((section, h.Text)))
+                        openDetails.Add((section, h.Text));
+                    folded = !nowOpen;
+                    break;
                 case Header h:
+                    folded = false;
                     ImGui.Dummy(V(0, 4));
                     ImGui.PushFont(UiFonts.SansBold);
-                    ImGui.TextColored(T.Brass, h.Text.ToUpperInvariant());
+                    ImGui.TextColored(T.Brass, h.Upper);
                     ImGui.PopFont();
                     if (h.Button != null)
                     {

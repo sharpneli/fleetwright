@@ -77,6 +77,22 @@ public class DesignerTests
         Assert.Equal(8, Knobs.Speed.Apply(d, 5).SpeedKn);   // the floor holds
     }
 
+    /// <summary>Tumblehome on builds a wider hull; back to wall-sided drops its settings, which the engine would refuse
+    /// on a wall-sided hull.</summary>
+    [Fact]
+    public void Tumblehome_goes_on_and_off()
+    {
+        var d = Design.Load(Paths.Shipgen("designs", "dreadnought.json"));
+        double beam = ShipDesign.Build(d).Report.Results.BeamM;
+        var th = Knobs.TumblehomeStrength.Apply(Knobs.Topside.Set(d, "tumblehome"), 1.5);
+        Assert.Empty(ShipDesign.Validate(th, limits: true));
+        Assert.True(ShipDesign.Build(th).Report.Results.BeamM > beam);
+        var back = Knobs.Topside.Set(th, "wall_sided");
+        Assert.Null(back.Hull!.Section);
+        Assert.Empty(ShipDesign.Validate(back, limits: true));
+        Assert.False(Knobs.TumblehomeKnuckle.AppliesTo(back));
+    }
+
     [Fact]
     public void History_merges_a_knob_and_undoes()
     {

@@ -37,7 +37,7 @@ The third tab (or `-view=designer`) is the ship designer (`Designer/`, `docs/des
 picked design, or the empty 8 kn hull with `-new`, to edit with knobs and templates (plant, hull construction, crew
 standard, armour materials). All three tabs show one design, `DesignSession`'s: an edit in the designer shows in the
 ship and hitbox views, and a design picked there opens in the designer; the style button (navy, era) tries a look on
-every view. `-steps=` applies knob steps at startup (knob ids from `Knobs`), as the +/- buttons do, for screenshots
+every view. `-steps=` applies knob steps at startup (knob ids from `Knobs`: `speed:-2`, `topside:tumblehome`, `distiller:off`), for screenshots
 of edited states in any view. Saves go to Documents/My Games/Fleetwright/Designs. The game uses the designer's other
 constructor: a design in, the edited one out through a callback, with a worker of its own.
 

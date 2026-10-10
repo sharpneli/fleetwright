@@ -645,6 +645,376 @@ public static class Knobs
         Default = true,
     };
 
+    // ------------------------------------------------------------------ hull form: the topside (hull.section)
+
+    static bool IsTumblehome(Design d) => d.Hull?.Section?.Topside == "tumblehome";
+
+    static Design Section(Design d, Func<SectionInput, SectionInput> f) =>
+        Hull(d, h => h with { Section = f(h.Section ?? new SectionInput { Topside = "tumblehome" }) });
+
+    /// <summary>Wall-sided or tumblehome. Back to wall-sided drops the tumblehome's settings (the engine rejects them
+    /// on a wall-sided hull).</summary>
+    public static readonly ChoiceKnob Topside = new("topside", "Topside", ["wall_sided", "tumblehome"], ["wall-sided", "tumblehome"])
+    {
+        Get = d => d.Hull?.Section?.Topside,
+        Set = (d, v) => Hull(d, h => h with { Section = v == "tumblehome" ? (h.Section ?? new SectionInput()) with { Topside = v } : null }),
+        Default = "wall_sided",
+    };
+
+    public static readonly NumberKnob TumblehomeStrength = new("th_strength", "Tumblehome, strength", Quantity.Ratio, 0.1, 0.1)
+    {
+        Get = d => d.Hull?.Section?.Strength,
+        Set = (d, v) => Section(d, s => s with { Strength = v }),
+        Auto = (d, s) => 1,
+        CanAuto = true,
+        LimitPath = ["hull", "section", "strength"],
+        Applies = IsTumblehome,
+    };
+
+    public static readonly NumberKnob TumblehomeKnuckle = new("th_knuckle", "Widest point (x freeboard)", Quantity.Ratio, 0.05, 0.05)
+    {
+        Get = d => d.Hull?.Section?.Knuckle,
+        Set = (d, v) => Section(d, s => s with { Knuckle = v }),
+        Auto = (d, s) => Shipgen.Tumblehome.DefaultKnuckle,
+        CanAuto = true,
+        Lo = 0,
+        Hi = Shipgen.Tumblehome.MaxKnuckle,
+        Applies = IsTumblehome,
+    };
+
+    public static readonly ChoiceKnob TumblehomeExtent = new("th_extent", "Tumblehome over", ["full", "midships"], ["full length", "midships (ends fade out)"])
+    {
+        Get = d => d.Hull?.Section?.Extent,
+        Set = (d, v) => Section(d, s => s with { Extent = v }),
+        Default = "full",
+        Applies = IsTumblehome,
+    };
+
+    // ------------------------------------------------------------------ hull and upperworks: details
+
+    public static readonly ChoiceKnob DeckFinish = new("deck_finish", "Deck", ["wood", "steel"], ["planked", "steel"])
+    {
+        Get = d => d.Deck,
+        Set = (d, v) => d with { Deck = v },
+    };
+
+    public static readonly NumberKnob ShellMm = new("shell_mm", "Side shell (0: the structure's own)", Quantity.Armour, 1, 0.05)
+    {
+        Get = d => d.Hull?.Plating?.ShellMm,
+        Set = (d, v) => Hull(d, h => h with { Plating = (h.Plating ?? new PlatingInput()) with { ShellMm = v } }),
+        Auto = (d, s) => 0,
+        LimitPath = ["hull", "plating", "shell_mm"],
+    };
+
+    public static readonly NumberKnob DeckWoodMm = new("deck_wood_mm", "Deck planking", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.Hull?.Plating?.DeckWoodMm,
+        Set = (d, v) => Hull(d, h => h with { Plating = (h.Plating ?? new PlatingInput()) with { DeckWoodMm = v } }),
+        Auto = (d, s) => 0,
+        CanAuto = true,
+        LimitPath = ["hull", "plating", "deck_wood_mm"],
+    };
+
+    public static readonly NumberKnob LevelsOverBridge = new("levels_over_bridge", "Tower levels over the bridge", Quantity.Count, 1, 1)
+    {
+        Get = d => d.Superstructure?.LevelsOverBridge,
+        Set = (d, v) => Sup(d, s => s with { LevelsOverBridge = I(v) }),
+        CanAuto = true,
+        LimitPath = ["superstructure", "levels_over_bridge"],
+        Applies = d => Styles.Get(d).HasControlTowers,
+    };
+
+    public static readonly NumberKnob SuperstructurePlating = new("sup_plating", "Superstructure plating (0: own gauge)", Quantity.Armour, 1, 0.05)
+    {
+        Get = d => d.Superstructure?.PlatingMm,
+        Set = (d, v) => Sup(d, s => s with { PlatingMm = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["superstructure", "plating_mm"],
+    };
+
+    public static readonly NumberKnob ControlPlating = new("control_mm", "Control positions' plating", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.Superstructure?.ControlMm,
+        Set = (d, v) => Sup(d, s => s with { ControlMm = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["superstructure", "control_mm"],
+    };
+
+    // ------------------------------------------------------------------ protection: details
+
+    public static readonly NumberKnob BeltDepth = new("belt_depth", "Belt, below the waterline", Quantity.Length, 0.1, 0.5)
+    {
+        Get = d => d.Armour?.BeltDepthM,
+        Set = (d, v) => Arm(d, a => a with { BeltDepthM = v }),
+        CanAuto = true,
+        LimitPath = ["armour", "belt_depth_m"],
+        Applies = d => (d.Armour?.BeltMm ?? 0) > 0,
+    };
+
+    public static readonly NumberKnob BeltHeight = new("belt_height", "Belt, above the waterline", Quantity.Length, 0.1, 0.5)
+    {
+        Get = d => d.Armour?.BeltHeightM,
+        Set = (d, v) => Arm(d, a => a with { BeltHeightM = v }),
+        CanAuto = true,
+        LimitPath = ["armour", "belt_height_m"],
+        Applies = d => (d.Armour?.BeltMm ?? 0) > 0,
+    };
+
+    public static readonly NumberKnob UpperBeltToDeck = new("upper_belt_to", "Upper belt up to deck", Quantity.Count, 1, 1)
+    {
+        Get = d => d.Armour?.UpperBelt?.ToDeck,
+        Set = (d, v) => Arm(d, a => a with { UpperBelt = (a.UpperBelt ?? new UpperBeltInput()) with { ToDeck = I(v) } }),
+        Auto = (d, s) => 0,
+        Lo = -2,
+        Hi = 0,
+        Applies = d => (d.Armour?.UpperBelt?.Mm ?? 0) > 0,
+    };
+
+    public static readonly ChoiceKnob UpperBeltExtent = new("upper_belt_extent", "Upper belt over", DeckExtents,
+        ["citadel", "full length", "fore end", "aft end", "both ends"])
+    {
+        Get = d => d.Armour?.UpperBelt?.Extent,
+        Set = (d, v) => Arm(d, a => a with { UpperBelt = (a.UpperBelt ?? new UpperBeltInput()) with { Extent = v } }),
+        Default = "citadel",
+        Applies = d => (d.Armour?.UpperBelt?.Mm ?? 0) > 0,
+    };
+
+    public static NumberKnob EndBeltTip(string end) => new($"end_belt_{end}_tip", $"End belt {end}, at the tip", Quantity.Armour, 10, 0.5)
+    {
+        Get = d => d.Armour?.EndBelts?.Of(end)?.TipMm,
+        Set = (d, v) => EndBelt(d, end, b => b with { TipMm = v }),
+        Auto = (d, s) => d.Armour?.EndBelts?.Of(end)?.Mm,
+        CanAuto = true,
+        LimitPath = ["armour", "end_belts", end, "tip_mm"],
+        Applies = d => (d.Armour?.EndBelts?.Of(end)?.Mm ?? 0) > 0,
+    };
+
+    public static NumberKnob EndBeltBulkhead(string end) => new($"end_belt_{end}_bh", $"End belt {end}, closing bulkhead", Quantity.Armour, 10, 0.5)
+    {
+        Get = d => d.Armour?.EndBelts?.Of(end)?.BulkheadMm,
+        Set = (d, v) => EndBelt(d, end, b => b with { BulkheadMm = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["armour", "end_belts", end, "bulkhead_mm"],
+        Applies = d => (d.Armour?.EndBelts?.Of(end)?.Mm ?? 0) > 0,
+    };
+
+    static Design Steering(Design d, Func<SteeringBoxInput, SteeringBoxInput> f) =>
+        Arm(d, a => a with { SteeringBox = f(a.SteeringBox ?? new SteeringBoxInput { Mm = 0, DeckMm = 0, BulkheadMm = 0 }) });
+
+    public static readonly NumberKnob SteeringSides = new("steer_mm", "Steering gear box, sides", Quantity.Armour, 10, 0.5)
+    {
+        Get = d => d.Armour?.SteeringBox?.Mm,
+        Set = (d, v) => Steering(d, s => s with { Mm = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["armour", "steering_box", "mm"],
+    };
+
+    public static readonly NumberKnob SteeringRoof = new("steer_deck", "Steering gear box, roof", Quantity.Armour, 10, 0.5)
+    {
+        Get = d => d.Armour?.SteeringBox?.DeckMm,
+        Set = (d, v) => Steering(d, s => s with { DeckMm = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["armour", "steering_box", "deck_mm"],
+    };
+
+    public static readonly NumberKnob SteeringEnds = new("steer_bh", "Steering gear box, ends", Quantity.Armour, 10, 0.5)
+    {
+        Get = d => d.Armour?.SteeringBox?.BulkheadMm,
+        Set = (d, v) => Steering(d, s => s with { BulkheadMm = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["armour", "steering_box", "bulkhead_mm"],
+    };
+
+    public static readonly NumberKnob FlightDeckArmour = new("flight_deck_mm", "Flight deck", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.Armour?.FlightDeckMm,
+        Set = (d, v) => Arm(d, a => a with { FlightDeckMm = v }),
+        Auto = (d, s) => 0,
+        Lo = 0,
+        Hi = 2000,
+        Applies = d => d.StyleName == "carrier",
+    };
+
+    // ------------------------------------------------------------------ batteries: details
+
+    public static ToggleKnob MainCrossDeck(int i) => new($"main{i}_cross", "Cross-deck fire (echelon)")
+    {
+        Get = d => d.Main?.ElementAtOrDefault(i)?.CrossDeck,
+        Set = (d, v) => MainBattery(d, i, b => b with { CrossDeck = v }),
+        Applies = d => d.Main?.ElementAtOrDefault(i) is { Wing: > 0, Echelon: true },
+    };
+
+    public static ChoiceKnob MainStandsOn(int i) => new($"main{i}_stands", "Wing and midships turrets on", ["deck", "deckhouse"], ["the deck", "the deckhouse"])
+    {
+        Get = d => d.Main?.ElementAtOrDefault(i)?.AmidshipsStandsOn,
+        Set = (d, v) => MainBattery(d, i, b => b with { AmidshipsStandsOn = v }),
+        Default = "deck",
+        Applies = d => Styles.Get(d).HasRaisedMounts && d.Main?.ElementAtOrDefault(i) is { } b && (b.Wing ?? 0) + (b.Mid ?? 0) > 0,
+    };
+
+    public static NumberKnob SecRounds(int i) => new($"sec{i}_rounds", "Rounds per gun", Quantity.Count, 10, 10)
+    {
+        Get = d => d.Secondary?.ElementAtOrDefault(i)?.RoundsPerGun,
+        Set = (d, v) => Sec(d, i, b => b with { RoundsPerGun = v }),
+        Auto = (d, s) => d.Secondary?.ElementAtOrDefault(i)?.CalibreMm is { } c ? Math.Round(Batteries.RoundsPerGun(c)) : null,
+        CanAuto = true,
+        LimitPath = ["secondary", "rounds_per_gun"],
+    };
+
+    public static ChoiceKnob SecTier(int i) => new($"sec{i}_tier", "Casemate tier", ["lower", "upper"], ["lower (in the hull)", "upper (on the main deck)"])
+    {
+        Get = d => d.Secondary?.ElementAtOrDefault(i)?.Tier,
+        Set = (d, v) => Sec(d, i, b => b with { Tier = v }),
+        Default = "lower",
+        Applies = d => d.Secondary?.ElementAtOrDefault(i)?.Mount == "casemate",
+    };
+
+    public static ChoiceKnob SecStandsOn(int i) => new($"sec{i}_stands", "Stands on", ["deck", "deckhouse"], ["the deck", "the deckhouse"])
+    {
+        Get = d => d.Secondary?.ElementAtOrDefault(i)?.StandsOn,
+        Set = (d, v) => Sec(d, i, b => b with { StandsOn = v }),
+        Default = "deck",
+        Applies = d => Styles.Get(d).HasRaisedMounts && d.Secondary?.ElementAtOrDefault(i) is { } b && (b.Mount ?? "deck") == "deck",
+    };
+
+    // ------------------------------------------------------------------ machinery: details
+
+    public static readonly NumberKnob Funnels = new("funnels", "Funnels (at least)", Quantity.Count, 1, 1)
+    {
+        Get = d => d.Funnels,
+        Set = (d, v) => d with { Funnels = v },
+        Auto = (d, s) => s?.Report.Plant.Funnels,
+        CanAuto = true,
+        LimitPath = ["funnels"],
+    };
+
+    public static readonly ChoiceKnob Transmission = new("transmission", "Transmission", ["mechanical", "electric"], ["mechanical", "electric (turbo-/diesel-electric)"])
+    {
+        Get = d => d.Machinery?.Transmission,
+        Set = (d, v) => Mach(d, m => m with { Transmission = v }),
+        Default = "mechanical",
+    };
+
+    public static readonly NumberKnob UnitsPerShaft = new("units_per_shaft", "Units per shaft", Quantity.Count, 1, 1)
+    {
+        Get = d => d.Machinery?.UnitsPerShaft,
+        Set = (d, v) => Mach(d, m => m with { UnitsPerShaft = I(v) }),
+        Auto = (d, s) => s?.Report.Plant is { Shafts: > 0 } p ? p.Units / p.Shafts : null,
+        CanAuto = true,
+        Lo = 1,
+        Hi = 6,
+    };
+
+    public static readonly ToggleKnob CentrelineBulkhead = new("centreline_bh", "Centreline bulkhead in the machinery")
+    {
+        Get = d => d.Machinery?.CentrelineBulkhead,
+        Set = (d, v) => Mach(d, m => m with { CentrelineBulkhead = v }),
+    };
+
+    public static readonly ChoiceKnob Bunkers = new("bunkers", "Coal bunkers", ["wing", "ends"], ["beside the machinery", "at its ends"])
+    {
+        Get = d => d.Machinery?.Bunkers,
+        Set = (d, v) => Mach(d, m => m with { Bunkers = v }),
+        Default = "wing",
+    };
+
+    public static readonly NumberKnob WingBunker = new("wing_bunker_m", "Wing bunker width", Quantity.Length, 0.1, 0.5)
+    {
+        Get = d => d.Machinery?.WingBunkerM,
+        Set = (d, v) => Mach(d, m => m with { WingBunkerM = v }),
+        Auto = (d, s) => 2,
+        CanAuto = true,
+        Lo = 0.5,
+        Hi = 6,
+        Applies = d => (d.Machinery?.Bunkers ?? "wing") == "wing",
+    };
+
+    public static readonly NumberKnob Rudders = new("rudders", "Rudders", Quantity.Count, 1, 1)
+    {
+        Get = d => d.Machinery?.Rudders,
+        Set = (d, v) => Mach(d, m => m with { Rudders = I(v) }),
+        Auto = (d, s) => 1,
+        CanAuto = true,
+        Lo = 1,
+        Hi = 8,
+    };
+
+    // ------------------------------------------------------------------ fire control and crew: details
+
+    public static NumberKnob DirectorArmour(string battery) => new($"fc_{battery}_armour", "Director armour", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.FireControl?.Of(battery)?.ArmourMm,
+        Set = (d, v) => Fc(d, battery, x => x with { ArmourMm = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["fire_control", battery, "armour_mm"],
+        Applies = d => (d.FireControl?.Of(battery)?.Directors ?? 0) > 0,
+    };
+
+    public static NumberKnob DirectorRadar(string battery) => new($"fc_{battery}_radar", "Fire-control radar, t", Quantity.Ratio, 0.5, 0.5)
+    {
+        Get = d => d.FireControl?.Of(battery)?.RadarT,
+        Set = (d, v) => Fc(d, battery, x => x with { RadarT = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["fire_control", battery, "radar_t"],
+        Applies = d => (d.FireControl?.Of(battery)?.Directors ?? 0) > 0,
+    };
+
+    public static NumberKnob DirectorComputer(string battery) => new($"fc_{battery}_computer", "Plotting computer, t", Quantity.Ratio, 0.5, 0.5)
+    {
+        Get = d => d.FireControl?.Of(battery)?.ComputerT,
+        Set = (d, v) => Fc(d, battery, x => x with { ComputerT = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["fire_control", battery, "computer_t"],
+        Applies = d => (d.FireControl?.Of(battery)?.Directors ?? 0) > 0,
+    };
+
+    public static readonly NumberKnob SearchRadar = new("search_radar", "Search radar, t", Quantity.Ratio, 0.5, 0.5)
+    {
+        Get = d => d.FireControl?.SearchRadarT,
+        Set = (d, v) => d with { FireControl = (d.FireControl ?? new FireControlInput()) with { SearchRadarT = v } },
+        Auto = (d, s) => 0,
+        LimitPath = ["fire_control", "search_radar_t"],
+    };
+
+    public static readonly NumberKnob BufferDays = new("buffer_days", "Stores beyond the fuel, days", Quantity.Days, 1, 1)
+    {
+        Get = d => d.Crew?.BufferDays,
+        Set = (d, v) => Crew(d, c => c with { BufferDays = v }),
+        Auto = (d, s) => 5,
+        CanAuto = true,
+        Lo = 0,
+        Hi = 90,
+    };
+
+    public static readonly NumberKnob WaterRation = new("water_l", "Water per man, l/day", Quantity.Ratio, 5, 5)
+    {
+        Get = d => d.Crew?.WaterLPerDay,
+        Set = (d, v) => Crew(d, c => c with { WaterLPerDay = v }),
+        Auto = (d, s) => d.Crew?.Standard?.WaterLPerDay,
+        CanAuto = true,
+        Lo = 1,
+        Hi = 300,
+    };
+
+    public static readonly NumberKnob BerthRatio = new("berth_ratio", "Berths per man", Quantity.Ratio, 0.05, 0.05)
+    {
+        Get = d => d.Crew?.BerthRatio,
+        Set = (d, v) => Crew(d, c => c with { BerthRatio = v }),
+        Auto = (d, s) => 1,
+        CanAuto = true,
+        Lo = 0.3,
+        Hi = 1.5,
+    };
+
+    public static readonly NumberKnob OfficerFraction = new("officer_frac", "Officers, share of the crew", Quantity.Ratio, 0.01, 0.01)
+    {
+        Get = d => d.Crew?.OfficerFraction,
+        Set = (d, v) => Crew(d, c => c with { OfficerFraction = v }),
+        CanAuto = true,
+        Lo = 0.01,
+        Hi = 0.5,
+    };
+
     /// <summary>Every knob the design has, per-battery and per-deck ones included.</summary>
     public static IEnumerable<Knob> All(Design d)
     {
@@ -653,6 +1023,10 @@ public static class Knobs
             Speed, Range, Belt, BeltBottom, UpperBelt, ArmourDeck, Bulkheads, Tds, AaHeavy, AaLight, TorpedoMounts, TorpedoTubes,
             Stress, Shafts, Arrangement, BlockCoefficient, Freeboard, Raised, TowerLevels, DeckhouseLevels, AftControl,
             Endurance, Distiller,
+            Topside, TumblehomeStrength, TumblehomeKnuckle, TumblehomeExtent, DeckFinish, ShellMm, DeckWoodMm, LevelsOverBridge,
+            SuperstructurePlating, ControlPlating, BeltDepth, BeltHeight, UpperBeltToDeck, UpperBeltExtent, SteeringSides,
+            SteeringRoof, SteeringEnds, FlightDeckArmour, Funnels, Transmission, UnitsPerShaft, CentrelineBulkhead, Bunkers,
+            WingBunker, Rudders, SearchRadar, BufferDays, WaterRation, BerthRatio, OfficerFraction,
         ];
         foreach (var k in fixedKnobs)
             yield return k;
@@ -660,6 +1034,8 @@ public static class Knobs
         {
             yield return EndBeltMm(end);
             yield return EndBeltReach(end);
+            yield return EndBeltTip(end);
+            yield return EndBeltBulkhead(end);
         }
         for (int i = 0; i < (d.Armour?.Decks?.Count ?? 0); i++)
         {
@@ -677,6 +1053,8 @@ public static class Knobs
             yield return MainStepped(i, "fore");
             yield return MainStepped(i, "aft");
             yield return MainEchelon(i);
+            yield return MainCrossDeck(i);
+            yield return MainStandsOn(i);
             yield return MainArmour(i);
             yield return MainRounds(i);
         }
@@ -689,11 +1067,17 @@ public static class Knobs
             yield return SecCount(i);
             yield return SecMount(i);
             yield return SecArmour(i);
+            yield return SecRounds(i);
+            yield return SecTier(i);
+            yield return SecStandsOn(i);
         }
         foreach (var b in new[] { "main", "secondary", "aa" })
         {
             yield return Directors(b);
             yield return Rangefinder(b);
+            yield return DirectorArmour(b);
+            yield return DirectorRadar(b);
+            yield return DirectorComputer(b);
         }
     }
 
