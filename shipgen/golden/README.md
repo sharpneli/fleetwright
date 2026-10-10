@@ -47,6 +47,11 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-10, the citadel bulkheads thinner under the belt, on purpose: half `bulkhead_mm` from the belt's lower edge
   down to the inner bottom. Every armoured design is lighter: standard median −1% (Yamato −7.8%, Bismarck −5.4%), and
   the hitboxes' bulkheads carry `lower_mm`/`lower_top`. 238 design, 477 SVG and 51 sprite.json cases rewritten.
+- 2026-10-10, the tumblehome flush with the hull below, on purpose: the side above the waterline is the wall-sided
+  ramp (waterline out to the planform at the main deck) leaned in by the topside, not a ramp out to the planform at
+  the knuckle, which put a nearly flat shelf just above the water toward the ends. Only the four tumblehome designs'
+  hull-form stations (between the waterline and the deck, off the midbody) and their height-map side bands changed;
+  the deck edge, layout, weights and sprites are unchanged. 4 design and 4 SVG cases rewritten.
 
 ## Layout
 

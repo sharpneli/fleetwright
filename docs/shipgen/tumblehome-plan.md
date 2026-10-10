@@ -60,8 +60,9 @@ Every design option is a term in how `W` is built. No consumer knows which optio
   `Hull.HalfWidth(x)`. It also has `DeckRatio(x, h)`: the half-breadth ratio at height `h` over the main deck,
   relative to `P`.
   - `WallSided`: today's ramp, bit for bit. It is the default, so the goldens hold.
-  - `Tumblehome(strength, knuckle, extent)`: `W` ramps from `wl` up to `P` at the knuckle height, then curves in:
-    `W = P(1 - a·env(x)·((z - zK)/(D - zK))^p)`, continuing above `D` for the raised decks. `a` is set by `strength`
+  - `Tumblehome(strength, knuckle, extent)`: `W` is the wall-sided ramp (from `wl` up to `P` at the deck), and above
+    the knuckle it curves in: `W = ramp(x, z)·(1 - a·env(x)·((z - zK)/(D - zK))^p)`. (First built as a ramp out to `P`
+    at the knuckle: off the midbody, where `wl` is finer than `P`, that made a near-flat shelf just above the water.), continuing above `D` for the raised decks. `a` is set by `strength`
     (1.0 gives a main deck of about 0.72 of the maximum beam, to be checked against research). `env(x)` is 1 over
     the midbody and fades toward the ends when `extent` is `"midships"` (the Borodino choice). `p` is about 1.6, for
     the French curve that steepens upward.

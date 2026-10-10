@@ -258,16 +258,18 @@ public static class Subdivision
         List<double> XsIn(double x0, double x1, int n = 8) => Enumerable.Range(0, n).Select(j => x0 + (x1 - x0) * (j + 0.5) / n).ToList();
         List<double> HwSamples(double x0, double x1, int n = 8) => XsIn(x0, x1, n).Select(hull.HalfWidth).ToList();
         double Widest(double x0, double x1, double z) => new[] { x0, x1 }.Concat(XsIn(x0, x1)).Max(x => form.HalfWidth(x, z + D));
-        // a tier's widest: at its top while the hull widens upward; a tumblehome is widest at its knuckle, and narrows
-        // above it, so a tier through the knuckle is widest there and one above it at its base
+        // a tier's widest: at its top while the hull widens upward; above a tumblehome's knuckle the side flares out from
+        // a fine waterline toward the ends while it leans in, so a tier there is widest anywhere up its height: sampled
         double zKnuckle = form.KnuckleZ - D;
         double WidestIn(double x0, double x1, double zLo, double zHi)
         {
             double w = Widest(x0, x1, zHi);
-            if (zLo < zKnuckle && zKnuckle < zHi)
-                w = Math.Max(w, Widest(x0, x1, zKnuckle));
-            else if (zLo >= zKnuckle)
-                w = Math.Max(w, Widest(x0, x1, zLo));
+            if (zHi <= zKnuckle)
+                return w;
+            double lo = Math.Max(zLo, zKnuckle);
+            const int n = 6;
+            for (int i = 0; i < n; i++)
+                w = Math.Max(w, Widest(x0, x1, lo + (zHi - lo) * i / n));
             return w;
         }
 

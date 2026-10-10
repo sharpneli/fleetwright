@@ -1,9 +1,9 @@
 namespace Fleetwright.Shipgen;
 
-/// <summary>hull.section's topside: the hull's side above its widest point, as a share of the planform's half-width
-/// (Hull, the maximum beam). Heights are metres above the main deck, so the layout and the hull form share one side
-/// whatever the waterline. Between the waterline and KnuckleH the hull form ramps from the waterline out to the
-/// planform; from KnuckleH up, through the main deck and the raised stretches' sides, it is this.</summary>
+/// <summary>hull.section's topside: how far the hull's side leans in above its knuckle, as a share of the wall-sided
+/// side's half-width (the ramp from the waterline out to the planform at the main deck; the planform from there up).
+/// Heights are metres above the main deck, so the layout and the hull form share one deck edge whatever the waterline.
+/// Midships the waterline is the planform (Hull, the maximum beam), so the knuckle is the widest point there.</summary>
 public abstract class Topside
 {
     /// <summary>The topsides a design may name, the default first.</summary>
@@ -12,7 +12,8 @@ public abstract class Topside
     /// <summary>The widest point's height over the main deck (0 or less).</summary>
     public abstract double KnuckleH { get; }
 
-    /// <summary>The side's half-width h above the main deck (h ≥ KnuckleH) as a share of the planform's at x.</summary>
+    /// <summary>The side's half-width h above the main deck as a share of the wall-sided side's at x (1 up to KnuckleH;
+    /// at and above the main deck, of the planform's).</summary>
     public abstract double Ratio(double x, double h);
 
     /// <summary>Is the side the planform at every height (Ratio is 1 throughout)?</summary>

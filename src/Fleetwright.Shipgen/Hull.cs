@@ -492,21 +492,27 @@ public sealed class HullForm
         return v;
     }
 
-    /// <summary>The widest point's height above the keel: the topside's knuckle, not under the waterline unless the
-    /// deck is (an overloaded ship).</summary>
+    /// <summary>The topside's knuckle above the keel, where the side starts leaning in (the widest point midships), not
+    /// under the waterline unless the deck is (an overloaded ship).</summary>
     public double KnuckleZ => Math.Max(Math.Min(T, D), D + Topside.KnuckleH);
 
     /// <summary>The half-breadth at x and z metres above the keel, up through the main deck and the raised stretches'
-    /// sides: the section below the waterline, a ramp out to the planform at the widest point, then the topside.</summary>
+    /// sides: the section below the waterline, then the side: a ramp from the waterline out to the planform at the main
+    /// deck, leaned in by the topside above its knuckle. Midships the waterline is the planform, so the side is upright
+    /// to the knuckle; toward the ends it flares from the fine waterline as on a wall-sided hull, and the topside leans
+    /// that in (ramping out to the planform at the knuckle instead put a shelf there, nearly flat, wherever the waterline
+    /// is finer than the planform).</summary>
     public double HalfWidth(double x, double z)
     {
         double deck = Hull.HalfWidth(x);
-        double zK = KnuckleZ;
-        if (z >= zK)
+        if (z >= D)
             return Topside.Plain ? deck : deck * Topside.Ratio(x, z - D);
         double wl = Waterline(x);
         if (z >= T)
-            return zK > T ? wl + (deck - wl) * (z - T) / (zK - T) : deck;
+        {
+            double side = wl + (deck - wl) * (z - T) / (D - T);
+            return Topside.Plain ? side : side * Topside.Ratio(x, z - D);
+        }
         double zk = Keel(x);
         if (z <= zk)
             return 0.0;
