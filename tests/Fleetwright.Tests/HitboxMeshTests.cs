@@ -93,9 +93,10 @@ public class HitboxMeshTests
                     failures.Add($"{name}: {p.Id} has no height");
                 if (p.Min.X < -reach || p.Max.X > reach || Math.Abs(p.Min.Y) > beam || Math.Abs(p.Max.Y) > beam)
                     failures.Add($"{name}: {p.Id} lies outside the ship ({p.Min} to {p.Max})");
-                // the top cap (the triangles facing up) must cover the footprint, no more, no less
-                var fp = p.Footprint.Select(q => new Pt(q.X, q.Y)).ToList();
-                double want = HitboxMesh.SignedArea(fp), got = 0;
+                // the top cap (the triangles facing up) must cover its ring of vertices (the footprint, drawn grown by
+                // a hair), no more, no less; and the drawn ring stays within a few centimetres of the footprint
+                double got = 0;
+                uint top0 = uint.MaxValue;
                 var idx = mesh.Indices.AsSpan(p.FirstIndex, p.IndexCount);
                 for (int i = 0; i + 2 < idx.Length; i += 3)
                 {
@@ -103,9 +104,18 @@ public class HitboxMeshTests
                         continue;
                     Vector3 a = v[idx[i]].Position, b = v[idx[i + 1]].Position, c = v[idx[i + 2]].Position;
                     got += Math.Abs((b.X - a.X) * (c.Y - a.Y) - (b.Y - a.Y) * (c.X - a.X)) / 2;
+                    top0 = Math.Min(top0, Math.Min(idx[i], Math.Min(idx[i + 1], idx[i + 2])));
                 }
+                var ring = Enumerable.Range((int)top0, p.Footprint.Length).Select(k => new Pt(v[k].Position.X, v[k].Position.Y)).ToList();
+                double want = HitboxMesh.SignedArea(ring);
                 if (Math.Abs(got - want) > 0.01 * want + 0.01)
                     failures.Add($"{name}: {p.Id} cap covers {got:F2} m2 of {want:F2}");
+                for (int k = 0; k < ring.Count; k++)
+                    if (Vector2.Distance(new((float)ring[k].X, (float)ring[k].Y), p.Footprint[k]) > 0.15f)
+                    {
+                        failures.Add($"{name}: {p.Id} is drawn {Vector2.Distance(new((float)ring[k].X, (float)ring[k].Y), p.Footprint[k]):F2} m off its footprint");
+                        break;
+                    }
             }
         });
         Assert.True(failures.IsEmpty, string.Join("\n", failures.Take(30)));

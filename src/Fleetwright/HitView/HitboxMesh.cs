@@ -383,19 +383,21 @@ public sealed class HitboxMesh
             };
             HitVertex V(Vector2 p, float z, Vector3 nrm) => new() { Position = new(p, z), Normal = nrm, Kind = (uint)kind, Prism = pi };
 
-            // overlapping prisms often share a cap height (a turret's body and its parts, a barbette flush with a
-            // deckhouse roof, an armour deck on the cells): the caps are drawn pulled out by a hair, more the smaller
-            // the footprint, so the smaller one sits proud instead of z-fighting. Base and Top keep the true heights.
-            float dz = 0.03f / MathF.Sqrt(1 + (float)SignedArea(fp));
+            // prisms often share a face: a cap height (a turret's body and its parts, a barbette flush with a deckhouse
+            // roof, an armour deck on the cells) or a wall (neighbouring cells). The prism is drawn grown by a hair,
+            // more the smaller the footprint, so no two faces lie in one plane and the smaller sits proud instead of
+            // z-fighting. Footprint, Base, Top and the bounds keep the true shape.
+            float dz = 0.002f + 0.03f / MathF.Sqrt(1 + (float)SignedArea(fp));
             float tDraw = t + dz, bDraw = b - dz;
+            var drawn = Outset(prism.Footprint, dz);
 
             // caps: the same triangulation at the top and the bottom
             var capTris = Triangulate(fp);
             uint top0 = (uint)verts.Count;
-            foreach (var p in prism.Footprint)
+            foreach (var p in drawn)
                 verts.Add(V(p, tDraw, Vector3.UnitZ));
             uint bot0 = (uint)verts.Count;
-            foreach (var p in prism.Footprint)
+            foreach (var p in drawn)
                 verts.Add(V(p, bDraw, -Vector3.UnitZ));
             foreach (int k in capTris)
                 tris.Add(top0 + (uint)k);
@@ -405,7 +407,7 @@ public sealed class HitboxMesh
             // sides: four vertices each, for the flat normal
             for (int i = 0; i < n; i++)
             {
-                Vector2 p0 = prism.Footprint[i], p1 = prism.Footprint[(i + 1) % n], d = p1 - p0;
+                Vector2 p0 = drawn[i], p1 = drawn[(i + 1) % n], d = p1 - p0;
                 var nrm = Vector3.Normalize(new Vector3(d.Y, -d.X, 0));
                 uint s = (uint)verts.Count;
                 verts.AddRange([V(p0, bDraw, nrm), V(p1, bDraw, nrm), V(p1, tDraw, nrm), V(p0, tDraw, nrm)]);
@@ -433,6 +435,27 @@ public sealed class HitboxMesh
             prism.Max = new(hi, t);
             prisms.Add(prism);
         }
+    }
+
+    /// <summary>A counter-clockwise polygon moved out by <paramref name="e"/>: each corner along its mitre, limited to
+    /// 4e at sharp ones.</summary>
+    static Vector2[] Outset(Vector2[] fp, float e)
+    {
+        var o = new Vector2[fp.Length];
+        static Vector2 Out(Vector2 a, Vector2 b)
+        {
+            var d = b - a;
+            float l = d.Length();
+            return l > 1e-9f ? new Vector2(d.Y, -d.X) / l : Vector2.Zero;
+        }
+        for (int i = 0; i < fp.Length; i++)
+        {
+            Vector2 n0 = Out(fp[(i + fp.Length - 1) % fp.Length], fp[i]), n1 = Out(fp[i], fp[(i + 1) % fp.Length]);
+            var m = n0 + n1;
+            float k = 1 + Vector2.Dot(n0, n1);
+            o[i] = fp[i] + (k > 1f / 8 ? m * (e / k) : (m.LengthSquared() > 1e-12f ? Vector2.Normalize(m) : n1) * (4 * e));
+        }
+        return o;
     }
 
     /// <summary>The polygon without repeated points (and without the closing point, if it repeats the first).</summary>
