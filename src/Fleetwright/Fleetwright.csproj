@@ -47,6 +47,7 @@
        repo is an asset: shipgen/designs/fuzz/ and the goldens are test data. -->
   <ItemGroup>
     <GameAsset Include="$(MSBuildThisFileDirectory)..\..\shipgen\designs\*.json" Link="Content\Designs\%(Filename)%(Extension)" />
+    <GameAsset Include="$(MSBuildThisFileDirectory)..\..\Content\Fonts\*" Link="Content\Fonts\%(Filename)%(Extension)" />
     <None Include="@(GameAsset)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
