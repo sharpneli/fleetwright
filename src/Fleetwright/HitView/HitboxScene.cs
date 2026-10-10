@@ -77,20 +77,18 @@ public sealed unsafe class HitboxScene : IScene
     {
         builtVersion = session.Version;
         state.Hover = state.Selected = HitboxMesh.NoPrism;
-        if (session.Ship is not { } ship)
+        if (session.Ship is not { } ship || session.Result?.Mesh is not { } mesh)
         {
             renderer.Clear();
             status = session.Status;
             return;
         }
         var sw = Stopwatch.StartNew();
-        var mesh = HitboxMesh.Build(ship.Hitboxes);
-        double tMesh = sw.Elapsed.TotalSeconds;
         renderer.Upload(mesh);
         tiers = ship.Hitboxes.Tiers;
         (state.ClipMin, state.ClipMax) = (mesh.Min - Vector3.One, mesh.Max + Vector3.One);
         status = $"{ship.Design.Name}\n{mesh.Prisms.Length} prisms, {mesh.Vertices.Length} vertices, {mesh.Indices.Length / 3} triangles\n" +
-                 $"{session.Status}, mesh {tMesh * 1000:F0} ms, upload {(sw.Elapsed.TotalSeconds - tMesh) * 1000:F0} ms";
+                 $"{session.Status}, upload {sw.Elapsed.TotalSeconds * 1000:F0} ms";
         frame = true;
     }
 

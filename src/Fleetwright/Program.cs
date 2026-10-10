@@ -84,8 +84,8 @@ public static unsafe class Program
                 Console.Error.WriteLine($"Design not found: {shipPath}");
                 return 1;
             }
-            var session = new DesignSession(shipPath);
             nint device = (nint)engine.Device;   // lambdas may not capture a pointer
+            using var session = new DesignSession(shipPath, ShipViewer.Scale, ShipViewer.MipLevels, device);
             engine.Scene = new SceneSwitcher(view == "hitbox" ? 1 : 0,
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),
                 ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show)));

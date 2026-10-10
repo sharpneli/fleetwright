@@ -1,16 +1,19 @@
-using System.Diagnostics;
 using Fleetwright.Shipgen;
 
 namespace Fleetwright;
 
 /// <summary>
-/// The design being looked at, shared by the scenes that show it: the designs in a folder, which one is picked, and
-/// the built <see cref="Ship"/>. Scenes watch <see cref="Version"/> and rebuild their own data when it moves, so
-/// switching scenes keeps the same ship and no scene knows another. Building is synchronous (well under a second).
+/// The design being looked at, shared by the viewer scenes: the designs in a folder, which one is picked, and its
+/// newest <see cref="DesignResult"/> from a <see cref="DesignWorker"/>. Scenes watch <see cref="Version"/> and take
+/// the new result when it moves, so switching scenes keeps the same ship and no scene knows another. Picking a design
+/// returns at once; the result lands a few frames later, and the last one stays until then.
 /// </summary>
-public sealed class DesignSession
+public sealed class DesignSession : IDisposable
 {
     readonly List<string> designs;
+    readonly DesignWorker worker;
+    Design? design;
+    string? loadError;
 
     /// <summary>The designs' file names without extension, in the order of <see cref="Index"/>.</summary>
     public string[] Names { get; }
@@ -20,17 +23,27 @@ public sealed class DesignSession
 
     public string Path => designs[Index];
 
+    /// <summary>The look the sprites are drawn in, other than the design's own (null: its own).</summary>
+    public LookInput? Look { get; private set; }
+
+    /// <summary>The newest finished build (null before the first).</summary>
+    public DesignResult? Result => worker.Latest;
+
     /// <summary>The built ship, or null when the design is invalid or failed to build (see <see cref="Status"/>).</summary>
-    public Ship? Ship { get; private set; }
+    public Ship? Ship => Result?.Ship;
 
-    /// <summary>A line or two on the last build: its time, or why there is no ship.</summary>
-    public string Status { get; private set; } = "";
+    /// <summary>Moves whenever a new result lands, whether it gave a ship or not.</summary>
+    public int Version => Result?.Id ?? 0;
 
-    /// <summary>Moves on every build, whether it gave a ship or not.</summary>
-    public int Version { get; private set; }
+    /// <summary>A build is waiting or running.</summary>
+    public bool Busy => worker.Busy;
 
-    /// <summary>The designs next to <paramref name="designPath"/>, with it picked and built.</summary>
-    public DesignSession(string designPath)
+    /// <summary>A line or two on the last build: its times, or why there is no ship.</summary>
+    public string Status => loadError ?? (Busy ? "building..." : Result?.Status ?? "");
+
+    /// <summary>The designs next to <paramref name="designPath"/>, with it picked and built (this one waits for the
+    /// build, so the first frame has the ship).</summary>
+    public DesignSession(string designPath, double spriteScale, int mipLevels, nint device = 0)
     {
         var full = System.IO.Path.GetFullPath(designPath);
         designs = Directory.GetFiles(System.IO.Path.GetDirectoryName(full)!, "*.json").Order(StringComparer.Ordinal).ToList();
@@ -38,7 +51,9 @@ public sealed class DesignSession
             designs.Add(designPath);
         Names = designs.Select(p => System.IO.Path.GetFileNameWithoutExtension(p)).ToArray();
         Index = Math.Max(0, designs.FindIndex(p => System.IO.Path.GetFullPath(p) == full));
+        worker = new DesignWorker(spriteScale, mipLevels, limits: false, device);
         Rebuild();
+        WaitIdle();
     }
 
     /// <summary>Picks a design and builds it (nothing happens if it is already picked).</summary>
@@ -50,28 +65,33 @@ public sealed class DesignSession
         Rebuild();
     }
 
-    /// <summary>Loads, validates and builds the picked design again (it may have changed on disk).</summary>
+    /// <summary>Draws the sprites in another look (null: the design's own).</summary>
+    public void SetLook(LookInput? look)
+    {
+        Look = look;
+        if (design != null)
+            worker.Submit(design, Look);
+    }
+
+    /// <summary>Loads the picked design again (it may have changed on disk) and builds it.</summary>
     public void Rebuild()
     {
-        var sw = Stopwatch.StartNew();
-        Ship = null;
         try
         {
-            var design = Design.Load(designs[Index]);
-            var errs = ShipDesign.Validate(design, limits: false).Concat(Shipgen.Looks.Validate(design)).ToList();
-            if (errs.Count > 0)
-                Status = "invalid design:\n" + string.Join("\n", errs.Take(6));
-            else
-            {
-                Ship = ShipDesign.Build(design);
-                Status = $"build {sw.Elapsed.TotalSeconds:F2} s";
-            }
+            design = Design.Load(designs[Index]);
+            loadError = null;
+            worker.Submit(design, Look);
         }
         catch (Exception e)
         {
-            Status = $"{e.GetType().Name}: {e.Message}";
-            Console.Error.WriteLine($"design {Names[Index]}: {Status}\n{e.StackTrace}");
+            design = null;
+            loadError = $"{Names[Index]}: {e.GetType().Name}: {e.Message}";
+            Console.Error.WriteLine($"design {loadError}");
         }
-        Version++;
     }
+
+    /// <summary>Blocks until the newest request has its result (startup, captures).</summary>
+    public bool WaitIdle() => worker.WaitIdle(TimeSpan.FromMinutes(1));
+
+    public void Dispose() => worker.Dispose();
 }

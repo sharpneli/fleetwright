@@ -106,7 +106,10 @@ src/
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
     Camera.cs                 #   FPS camera (unused; to become the top-down Earth camera)
-    DesignSession.cs          #   the picked design and its built Ship, shared by the scenes (they watch Version)
+    DesignSession.cs          #   the picked design and its newest DesignResult, shared by the viewers (they watch Version)
+    DesignWorker.cs           #   builds designs off the render thread: ship, hitbox mesh, sprites baked and mipped
+                              #   (on the game's device, its own command buffers); the newest request wins
+    ShipSpriteRenderer.cs     #   a baked ship sprite into any RenderTarget (hull, turrets at given bearings, shadows)
     IScene.cs                 #   a full-window view with its own UI; the engine draws the current one (see Views)
     ShipViewer.cs             #   the ship viewer (the default launch), a test tool for Shipgen
     SceneSwitcher.cs          #   several scenes behind one IScene: the menu bar and F3 switch
