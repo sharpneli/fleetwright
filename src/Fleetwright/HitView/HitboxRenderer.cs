@@ -27,7 +27,7 @@ public sealed unsafe class HitboxRenderer : IDisposable
 
     // the mesh on the GPU
     HitboxMesh? mesh;
-    SDL_GPUBuffer* vertexBuf, solidIdx, lineIdx;
+    SDL_GPUBuffer* vertexBuf, solidIdx, lineIdx, boundsBuf;
     DynamicGpuBuffer? clearIdx;
     uint solidCount, lineCount;
     Vector3 centre;
@@ -47,7 +47,7 @@ public sealed unsafe class HitboxRenderer : IDisposable
     public HitboxRenderer(SDL_GPUDevice* device)
     {
         this.device = device;
-        vs = GpuShader.Load(device, "Content/Shaders/Compiled/hitbox.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 0, 1);
+        vs = GpuShader.Load(device, "Content/Shaders/Compiled/hitbox.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 0, 1);
         fs = GpuShader.Load(device, "Content/Shaders/Compiled/hitbox.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 0, 1);
         if (vs == null || fs == null)
             throw new InvalidOperationException("hitbox shaders failed to load");
@@ -85,6 +85,10 @@ public sealed unsafe class HitboxRenderer : IDisposable
         vertexBuf = GpuUpload.Buffer<HitVertex>(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_VERTEX, m.Vertices);
         solidIdx = GpuUpload.Buffer<uint>(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_INDEX, solid.ToArray());
         lineIdx = GpuUpload.Buffer<uint>(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_INDEX, m.EdgeIndices);
+        var bounds = new Vector4[2 * m.Prisms.Length];   // for clipping whole prisms in the vertex shader
+        for (int i = 0; i < m.Prisms.Length; i++)
+            (bounds[2 * i], bounds[2 * i + 1]) = (new(m.Prisms[i].Min, 0), new(m.Prisms[i].Max, 0));
+        boundsBuf = GpuUpload.Buffer<Vector4>(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ, bounds);
         (solidCount, lineCount) = ((uint)solid.Count, (uint)m.EdgeIndices.Length);
 
         clearPrisms = clear.ToArray();
@@ -120,18 +124,22 @@ public sealed unsafe class HitboxRenderer : IDisposable
             ViewProj = cam.ViewProj(aspect, centre, radius),
             MaskLo = (uint)state.KindMask,
             MaskHi = (uint)(state.KindMask >> 32),
+            ClipMin = new(state.ClipMin, state.Clip ? 1 : 0),
+            ClipMax = new(state.ClipMax, state.ClipCut ? 1 : 0),
         };
         // lines are pulled toward the camera by about two pixels (orthographic) or a fixed small step (perspective)
         float lineBias = cam.Perspective ? 2e-4f : 4 * cam.HalfHeight / Math.Max(1, target.Height) / (2 * radius);
         fsParams.Light = new(Light, 0);
         fsParams.ClipMin = new(state.ClipMin, state.Clip ? 1 : 0);
-        fsParams.ClipMax = new(state.ClipMax, 0);
+        fsParams.ClipMax = new(state.ClipMax, state.ClipCut ? 1 : 0);
         fsParams.Hover = state.Hover;
         fsParams.Selected = state.Selected;
 
         var pass = target.BeginPass(cmd, bg);
         var vb = new SDL_GPUBufferBinding { buffer = vertexBuf };
         SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
+        var sb = boundsBuf;
+        SDL_BindGPUVertexStorageBuffers(pass, 0, &sb, 1);
         Draw(cmd, pass, solidPipe, solidIdx, solidCount, ref vsp, 0, 0);
         Draw(cmd, pass, clearPipe, clearIdx!.Buffer, (uint)clearIndices.Length, ref vsp, 1, 0);
         Draw(cmd, pass, linePipe, lineIdx, lineCount, ref vsp, 2, lineBias);
@@ -220,8 +228,9 @@ public sealed unsafe class HitboxRenderer : IDisposable
         SDL_ReleaseGPUBuffer(device, vertexBuf);
         SDL_ReleaseGPUBuffer(device, solidIdx);
         SDL_ReleaseGPUBuffer(device, lineIdx);
+        SDL_ReleaseGPUBuffer(device, boundsBuf);
         clearIdx?.Dispose();
-        vertexBuf = solidIdx = lineIdx = null;
+        vertexBuf = solidIdx = lineIdx = boundsBuf = null;
         (clearIdx, mesh) = (null, null);
     }
 
@@ -239,6 +248,7 @@ public sealed unsafe class HitboxRenderer : IDisposable
         public Matrix4x4 ViewProj;
         public Vector4 Misc;
         public uint MaskLo, MaskHi, Pad0, Pad1;
+        public Vector4 ClipMin, ClipMax;
     }
 
     [StructLayout(LayoutKind.Sequential)]

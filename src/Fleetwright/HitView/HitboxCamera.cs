@@ -111,6 +111,14 @@ public struct HitboxViewState
     public bool Clip;
     public Vector3 ClipMin, ClipMax;
 
+    /// <summary>Clip per pixel (a cross-section; cut prisms are open). Otherwise a prism is drawn whole when it
+    /// overlaps the clip box at all (a tier's rooms with their floors and ceilings).</summary>
+    public bool ClipCut;
+
+    /// <summary>Whether the clip box leaves a prism with these bounds (all of it, or the part inside when cutting).</summary>
+    public readonly bool Keeps(Vector3 min, Vector3 max) =>
+        !Clip || (min.X <= ClipMax.X && min.Y <= ClipMax.Y && min.Z <= ClipMax.Z && max.X >= ClipMin.X && max.Y >= ClipMin.Y && max.Z >= ClipMin.Z);
+
     /// <summary>Prism indices into the mesh, or HitboxMesh.NoPrism.</summary>
     public uint Hover, Selected;
 

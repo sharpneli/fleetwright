@@ -59,6 +59,96 @@ public sealed class HitboxMesh
 
     public static HitboxMesh Build(Hitboxes hb) => new Builder(hb).Run();
 
+    /// <summary>The prism a ray meets first among those the state shows (its kind drawn, the hit inside the clip box),
+    /// or <see cref="NoPrism"/>. The hull's slices are passed through, so pointing at the hull finds what is inside.
+    /// Exact against the prisms' faces; no allocation.</summary>
+    public uint Pick(Vector3 o, Vector3 d, in HitboxViewState state)
+    {
+        int hull = HitKinds.IndexOf("hull");
+        float best = float.MaxValue;
+        uint hit = NoPrism;
+        for (int i = 0; i < Prisms.Length; i++)
+        {
+            var p = Prisms[i];
+            if (p.Kind == hull || !state.Shows(p.Kind) || !state.Keeps(p.Min, p.Max) || !SlabHit(o, d, p.Min, p.Max, best))
+                continue;
+            float t = FirstHit(p, o, d, state, best);
+            if (t < best)
+                (best, hit) = (t, (uint)i);
+        }
+        return hit;
+    }
+
+    static bool SlabHit(Vector3 o, Vector3 d, Vector3 min, Vector3 max, float tMax)
+    {
+        float t0 = 0, t1 = tMax;
+        for (int a = 0; a < 3; a++)
+        {
+            float oa = a == 0 ? o.X : a == 1 ? o.Y : o.Z, da = a == 0 ? d.X : a == 1 ? d.Y : d.Z;
+            float lo = a == 0 ? min.X : a == 1 ? min.Y : min.Z, hi = a == 0 ? max.X : a == 1 ? max.Y : max.Z;
+            if (Math.Abs(da) < 1e-9f)
+            {
+                if (oa < lo || oa > hi)
+                    return false;
+                continue;
+            }
+            float ta = (lo - oa) / da, tb = (hi - oa) / da;
+            if (ta > tb)
+                (ta, tb) = (tb, ta);
+            (t0, t1) = (Math.Max(t0, ta), Math.Min(t1, tb));
+            if (t0 > t1)
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>The nearest t below <paramref name="tMax"/> where the ray meets the prism's surface (inside the clip
+    /// box when cutting: a cut prism is open, so its far side can be the first seen).</summary>
+    static float FirstHit(HitPrism p, Vector3 o, Vector3 d, in HitboxViewState state, float tMax)
+    {
+        float best = tMax;
+        bool Inside(Vector3 q, in HitboxViewState s) => !s.Clip || !s.ClipCut || (q.X >= s.ClipMin.X && q.Y >= s.ClipMin.Y && q.Z >= s.ClipMin.Z
+                                                                    && q.X <= s.ClipMax.X && q.Y <= s.ClipMax.Y && q.Z <= s.ClipMax.Z);
+        if (Math.Abs(d.Z) > 1e-9f)   // the caps
+            for (int k = 0; k < 2; k++)
+            {
+                float t = ((k == 0 ? p.Top : p.Base) - o.Z) / d.Z;
+                if (t <= 0 || t >= best)
+                    continue;
+                var q = o + d * t;
+                if (Contains(p.Footprint, new Vector2(q.X, q.Y)) && Inside(q, state))
+                    best = t;
+            }
+        var fp = p.Footprint;
+        var o2 = new Vector2(o.X, o.Y);
+        var d2 = new Vector2(d.X, d.Y);
+        for (int i = 0; i < fp.Length; i++)   // the sides
+        {
+            Vector2 a = fp[i], e = fp[(i + 1) % fp.Length] - a;
+            float den = d2.X * e.Y - d2.Y * e.X;
+            if (Math.Abs(den) < 1e-12f)
+                continue;
+            var w = a - o2;
+            float t = (w.X * e.Y - w.Y * e.X) / den, s = (w.X * d2.Y - w.Y * d2.X) / den;
+            if (t <= 0 || t >= best || s < 0 || s > 1)
+                continue;
+            var q = o + d * t;
+            if (q.Z >= p.Base && q.Z <= p.Top && Inside(q, state))
+                best = t;
+        }
+        return best;
+    }
+
+    static bool Contains(Vector2[] poly, Vector2 q)
+    {
+        bool inside = false;
+        for (int i = 0, j = poly.Length - 1; i < poly.Length; j = i++)
+            if ((poly[i].Y > q.Y) != (poly[j].Y > q.Y)
+                && q.X < (poly[j].X - poly[i].X) * (q.Y - poly[i].Y) / (poly[j].Y - poly[i].Y) + poly[i].X)
+                inside = !inside;
+        return inside;
+    }
+
     sealed class Builder(Hitboxes hb)
     {
         readonly List<HitVertex> verts = [];

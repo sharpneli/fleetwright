@@ -24,8 +24,10 @@ the exe (a game asset, below), and the "Ship" panel lists the design's folder. I
 and sun. Wheel zooms, left drag pans, F2 shows the stats window, Escape quits.
 
 The menu bar (or F3) switches to the hitbox viewer: the same design's hitbox model in 3D (`HitView/`, the live
-`hitview.py`). Left drag orbits, right drag pans, wheel zooms; its panel picks the view, the projection and which kinds
-are drawn. `-screenshot` captures the scene without the ImGui overlay.
+`hitview.py`). Left drag orbits, right drag pans, wheel zooms; hovering names a prism and a click selects it and lists
+its fields. Its panel picks the view, the projection, which kinds are drawn, and a clip box: whole prisms that overlap
+it (a tier button gives that tier's rooms, `hitbox_cells.png` live) or a per-pixel cut. `-screenshot` captures the
+scene without the ImGui overlay.
 
 ## Release and game assets
 

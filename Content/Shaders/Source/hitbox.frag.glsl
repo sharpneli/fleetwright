@@ -10,7 +10,7 @@ layout(set = 3, binding = 0) uniform Params
 {
     vec4 light;        // xyz: toward the light (unit), w: the pass (0 solid, 1 translucent, 2 lines)
     vec4 clipMin;      // the clip box, ship metres; w > 0.5: clipping on
-    vec4 clipMax;
+    vec4 clipMax;      // w > 0.5: cut per pixel (else the vertex shader drops whole prisms; guide lines are cut here)
     uvec4 ids;         // x: the hovered prism, y: the selected prism
     vec4 colours[64];  // per kind: rgb, alpha
     vec4 edges[64];    // per kind: the outline's rgb, alpha
@@ -22,7 +22,8 @@ const uint NoPrism = 0xFFFFFFFFu;
 
 void main()
 {
-    if (clipMin.w > 0.5 && (any(lessThan(fragWorld, clipMin.xyz)) || any(greaterThan(fragWorld, clipMax.xyz))))
+    if (clipMin.w > 0.5 && (clipMax.w > 0.5 || fragPrism == NoPrism)
+        && (any(lessThan(fragWorld, clipMin.xyz)) || any(greaterThan(fragWorld, clipMax.xyz))))
         discard;
     vec4 c;
     if (light.w > 1.5)

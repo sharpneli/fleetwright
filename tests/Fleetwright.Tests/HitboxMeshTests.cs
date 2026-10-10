@@ -35,6 +35,32 @@ public class HitboxMeshTests
         }
     }
 
+    /// <summary>A ray straight down onto a main turret finds it; with main mounts hidden it finds what is under the
+    /// turret instead; with the clip box below the turret's base, nothing above the box.</summary>
+    [Fact]
+    public void Picking_finds_the_first_shown_prism()
+    {
+        var mesh = HitboxMesh.Build(ShipDesign.Build(Design.Load(Paths.Shipgen("designs", "bismarck.json"))).Hitboxes);
+        var turret = mesh.Prisms.First(p => HitKinds.All[p.Kind].Name == "main");
+        var c = (turret.Min + turret.Max) / 2;
+        var (o, d) = (new Vector3(c.X, c.Y, 200), -Vector3.UnitZ);
+
+        var all = HitboxViewState.All;
+        Assert.Equal(turret.Id, mesh.Prisms[mesh.Pick(o, d, all)].Id);
+
+        var noMain = all with { KindMask = all.KindMask & ~(1UL << HitKinds.IndexOf("main")) };
+        var under = mesh.Prisms[mesh.Pick(o, d, noMain)];
+        Assert.NotEqual("main", HitKinds.All[under.Kind].Name);
+        Assert.True(under.Top <= turret.Base + 0.01f, $"{under.Id} tops at {under.Top}, the turret's base is {turret.Base}");
+
+        float cut = turret.Base - 3;
+        var clipped = all with { Clip = true, ClipMin = mesh.Min - Vector3.One, ClipMax = mesh.Max with { Z = cut } };
+        var below = mesh.Prisms[mesh.Pick(o, d, clipped)];
+        Assert.True(below.Base <= cut, $"{below.Id} starts at {below.Base}, above the cut at {cut}");
+
+        Assert.Equal(HitboxMesh.NoPrism, mesh.Pick(new Vector3(0, 500, 200), d, all));   // off the ship
+    }
+
     /// <summary>Every design's mesh: well-formed indices, prisms with height, caps that cover their footprint (the
     /// triangulation held), and nothing far outside the hull.</summary>
     [Fact]

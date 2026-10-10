@@ -8,9 +8,10 @@ namespace Fleetwright.HitView;
 
 /// <summary>
 /// The hitbox viewer: the session's ship as its hitbox model in 3D (hitview.py, live). Left drag orbits, right drag
-/// pans, the wheel zooms. The panel picks the design, a view (hitview's bow, quarter, side and internal, and plan),
-/// the projection, and which kinds are drawn, alone or by preset. Draws through a <see cref="HitboxRenderer"/>,
-/// which could as well draw into a small target inside another scene.
+/// pans, the wheel zooms; hovering names a prism, a click selects it and lists its fields. The panel picks the design,
+/// a view (hitview's bow, quarter, side and internal, and plan), the projection, which kinds are drawn (alone or by
+/// preset) and a clip box (a tier at a click). Draws through a <see cref="HitboxRenderer"/>, which could as well draw
+/// into a small target inside another scene.
 /// </summary>
 public sealed unsafe class HitboxScene : IScene
 {
@@ -23,6 +24,10 @@ public sealed unsafe class HitboxScene : IScene
     float aspect = 16f / 9;
     string status = "";
     bool orbiting, panning;
+    float dragPx;   // how far the mouse moved with the left button down: a click selects, a drag orbits
+    uint hoverFor = HitboxMesh.NoPrism, selectedFor = HitboxMesh.NoPrism;
+    string hoverText = "", selectedText = "";
+    List<Shipgen.Tier> tiers = [];
 
     static readonly string[] Rooms =
     [
@@ -82,6 +87,8 @@ public sealed unsafe class HitboxScene : IScene
         var mesh = HitboxMesh.Build(ship.Hitboxes);
         double tMesh = sw.Elapsed.TotalSeconds;
         renderer.Upload(mesh);
+        tiers = ship.Hitboxes.Tiers;
+        (state.ClipMin, state.ClipMax) = (mesh.Min - Vector3.One, mesh.Max + Vector3.One);
         status = $"{ship.Design.Name}\n{mesh.Prisms.Length} prisms, {mesh.Vertices.Length} vertices, {mesh.Indices.Length / 3} triangles\n" +
                  $"{session.Status}, mesh {tMesh * 1000:F0} ms, upload {(sw.Elapsed.TotalSeconds - tMesh) * 1000:F0} ms";
         frame = true;
@@ -131,6 +138,8 @@ public sealed unsafe class HitboxScene : IScene
                 ApplyPreset(shows);
         }
 
+        ClipUi();
+
         ImGui.Separator();
         var present = renderer.Mesh?.KindsPresent;
         for (int k = 0; k < HitKinds.All.Length; k++)
@@ -146,7 +155,71 @@ public sealed unsafe class HitboxScene : IScene
         }
         ImGui.Separator();
         ImGui.TextWrapped(status);
+        if (renderer.Mesh is { } m && state.Selected < m.Prisms.Length)
+        {
+            ImGui.Separator();
+            if (selectedFor != state.Selected)
+                (selectedFor, selectedText) = (state.Selected, HitInfo.Full(m.Prisms[state.Selected]));
+            if (ImGui.SmallButton("clear selection"))
+                state.Selected = HitboxMesh.NoPrism;
+            ImGui.TextWrapped(selectedText);
+        }
         ImGui.End();
+
+        // the hovered prism's name by the cursor, unless the cursor is over a window
+        if (ImGui.GetIO().WantCaptureMouse || orbiting || panning)
+            state.Hover = HitboxMesh.NoPrism;
+        else if (renderer.Mesh is { } mesh && state.Hover < mesh.Prisms.Length)
+        {
+            if (hoverFor != state.Hover)
+                (hoverFor, hoverText) = (state.Hover, HitInfo.Short(mesh.Prisms[state.Hover]));
+            ImGui.SetTooltip(hoverText);
+        }
+    }
+
+    /// <summary>The clip box: ranges along the ship, across and up, and a button per tier of the subdivision (cut to
+    /// its decks, the plan view of hitbox_cells.png).</summary>
+    void ClipUi()
+    {
+        if (renderer.Mesh is not { } m)
+            return;
+        ImGui.Checkbox("clip", ref state.Clip);
+        if (!state.Clip)
+            return;
+        ImGui.SameLine();
+        if (ImGui.RadioButton("whole prisms", !state.ClipCut))
+            state.ClipCut = false;
+        ImGui.SameLine();
+        if (ImGui.RadioButton("cut", state.ClipCut))
+            state.ClipCut = true;
+        Vector3 lo = m.Min - Vector3.One, hi = m.Max + Vector3.One;
+        ImGui.SliderFloat("aft", ref state.ClipMin.X, lo.X, hi.X, "%.1f m");
+        ImGui.SliderFloat("fore", ref state.ClipMax.X, lo.X, hi.X, "%.1f m");
+        ImGui.SliderFloat("port", ref state.ClipMin.Y, lo.Y, hi.Y, "%.1f m");
+        ImGui.SliderFloat("starboard", ref state.ClipMax.Y, lo.Y, hi.Y, "%.1f m");
+        ImGui.SliderFloat("bottom", ref state.ClipMin.Z, lo.Z, hi.Z, "%.1f m");
+        ImGui.SliderFloat("top", ref state.ClipMax.Z, lo.Z, hi.Z, "%.1f m");
+        if (ImGui.SmallButton("whole ship"))
+            (state.ClipMin, state.ClipMax) = (lo, hi);
+        ImGui.SameLine();
+        if (ImGui.SmallButton("port half"))
+            (state.ClipMin, state.ClipMax) = (lo, hi with { Y = 0 });
+        ImGui.Text("tier");
+        foreach (var t in tiers)
+        {
+            ImGui.SameLine();
+            if (ImGui.SmallButton(t.Id))   // the tier's decks, a little inside, so the decks themselves don't show
+                (state.ClipMin, state.ClipMax) = (lo with { Z = (float)t.Base + 0.05f }, hi with { Z = (float)t.Top - 0.05f });
+        }
+    }
+
+    void Pick(float x, float y, uint width, uint height)
+    {
+        if (renderer.Mesh is not { } m)
+            return;
+        var ndc = new Vector2(2 * x / Math.Max(1, width) - 1, 1 - 2 * y / Math.Max(1, height));
+        var (o, d) = cam.Ray(ndc, (float)width / Math.Max(1, height), (m.Max - m.Min).Length() + 10);
+        state.Hover = m.Pick(o, d, state);
     }
 
     public bool ProcessEvent(SDL_Event* e, uint width, uint height)
@@ -157,18 +230,28 @@ public sealed unsafe class HitboxScene : IScene
                 cam.HalfHeight *= MathF.Pow(1.15f, -e->wheel.y);
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN:
+                if (e->button.button == 1)
+                    dragPx = 0;
                 orbiting |= e->button.button == 1;
                 panning |= e->button.button is 2 or 3;
                 return orbiting || panning;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
                 if (e->button.button == 1)
+                {
                     orbiting = false;
+                    if (dragPx < 4)   // a click: select what is under the cursor, or nothing
+                    {
+                        Pick(e->button.x, e->button.y, width, height);
+                        state.Selected = state.Hover == state.Selected ? HitboxMesh.NoPrism : state.Hover;
+                    }
+                }
                 if (e->button.button is 2 or 3)
                     panning = false;
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
                 if (orbiting)
                 {
+                    dragPx += MathF.Abs(e->motion.xrel) + MathF.Abs(e->motion.yrel);
                     cam.Bearing = (cam.Bearing - e->motion.xrel * 0.4f + 360) % 360;
                     cam.Elevation = Math.Clamp(cam.Elevation + e->motion.yrel * 0.4f, -89.9f, 89.9f);
                     return true;
@@ -180,7 +263,8 @@ public sealed unsafe class HitboxScene : IScene
                     cam.Target += (-r * e->motion.xrel + s * e->motion.yrel) * mPerPx;
                     return true;
                 }
-                return false;
+                Pick(e->motion.x, e->motion.y, width, height);
+                return true;
         }
         return false;
     }
