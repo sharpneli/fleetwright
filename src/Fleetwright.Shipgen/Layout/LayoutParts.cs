@@ -10,7 +10,7 @@ public sealed partial class Layout
     /// <summary>Superstructure block standing on z0: footprint, weight, record. points: an outline polygon instead of
     /// the rounded rectangle; x0, x1, y and w then become its bounding box, and rf, rb are 0.</summary>
     public static Block AddBlock(Layout lay, List<Block> blocks, string bid, double x0, double x1, double w, long level,
-        double rf, double rb, double y = 0.0, double z0 = 0.0, string? layer = null, string kind = "superstructure",
+        double rf, double rb, double y = 0.0, double z0 = 0.0, string kind = "superstructure",
         double? tPerM2 = null, IReadOnlyList<Pt>? points = null, string role = "deckhouse", bool office = false)
     {
         if (!BlockRoles.Contains(role))
@@ -28,7 +28,7 @@ public sealed partial class Layout
         var b = new Block
         {
             Id = bid, Kind = kind, Role = role, X0 = x0, X1 = x1, Y = y, W = w, Level = level, Rf = rf_, Rb = rb_, Office = office,
-            Z0 = z0 != 0 ? z0 : null, Layer = layer != null || z0 != 0 ? layer ?? "upper" : null,
+            Z0 = z0 != 0 ? z0 : null,
         };
         double area, xc;
         if (pts != null)
@@ -728,7 +728,7 @@ public sealed partial class Layout
             m.Z = rank[Key(m)];
     }
 
-    /// <summary>The laid-out ship's renderer spec (lay.spec) and its parts on lay, for every style.</summary>
+    /// <summary>The laid-out ship's parts on lay and its dressing, for every style.</summary>
     public static Layout FinishLayout(Layout lay, Design design, HullSpec hs, List<Mount> mounts,
         OrderedDictionary<string, TurretType> turretTypes, List<Block> blocks, List<Funnel> funnels, List<Mast> masts, List<AaMount> aaOut,
         double funTop, string? deck = null)
@@ -739,15 +739,12 @@ public sealed partial class Layout
             masts[k].Top ??= funTop + MastAboveFunnel;
             masts[k].Id ??= masts.Count == 1 ? "Mast" : $"Mast {k + 1}";
         }
-        lay.Spec = new RenderSpec
+        lay.Dressing = new Dressing
         {
-            Id = design.Id!, Name = design.Name ?? design.Id!, Class = design.Type ?? "", Length = lay.Hull.L, Beam = lay.Hull.B, Bow = hs.Bow,
-            Stern = hs.Stern, Deck = deck ?? "steel", TurretTypes = turretTypes,
-            Turrets = mounts.Select(m => new SpecTurret { Id = m.Id, Type = m.Type, X = m.X, Y = m.Y, Z = m.Z, Rest = m.Rest }).ToList(),
-            Superstructure = blocks, Funnels = funnels, Masts = masts, Aa = aaOut,
-            RaisedDecks = lay.Raised.Count > 0 ? lay.Raised.Select(s => new RaisedDeckSpec(s.X0, s.X1, s.Levels)).ToList() : null,
-            DeckInset = hs.DeckInset, PlankSpacing = hs.PlankSpacing,
+            Deck = deck ?? "steel", DeckInset = hs.DeckInset, PlankSpacing = hs.PlankSpacing,
+            Masts = masts.Select(m => new MastDressing(m.Id!, m.Yard, m.Tripod, m.Booms)).ToList(),
         };
+        lay.TurretTypes = turretTypes;
         lay.Mounts = mounts;
         lay.Blocks = blocks;
         lay.Funnels = funnels;

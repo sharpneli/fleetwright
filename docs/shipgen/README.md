@@ -26,8 +26,9 @@ design JSON (player input: counts, calibres, armour, speed, look)
    v  DESIGN SIDE (Fleetwright.Shipgen): no drawing, no dependencies           (bismarck: about 0.3 s)
    ShipDesign.Validate(design, limits) -> errors;  ShipDesign.Build(design, hint) -> ship (a JSON-shaped dict)
    |
-   |  ship = {design, report, hitboxes, render: {spec, deck_m, mounts, columns, summary}}
+   |  ship = {design, report, hitboxes, dressing}
    v  RENDER SIDE (Fleetwright.Shipgen.Render): reads only `ship`
+   TopView.Of(ship)                             the ship from above: the hitboxes' parts in drawing shapes, and the dressing
    ShipSprites.Build(ship, scale, mips, look)   looks, the display lists (hull, turrets, height map), sprite.json
    ShipBake.Bake(sprites, gpu)                  the layers drawn on the GPU (SDL_GPU), then PNGs and mip atlases
 ```
@@ -36,6 +37,15 @@ design JSON (player input: counts, calibres, armour, speed, look)
   previous length as the hint to build about twice as fast with the same result.
 - The halves stay apart: the design side references nothing, the renderer reads nothing but the `ship` dict, and
   colours live only in the looks.
+- **One physical model.** The hitboxes are the ship: every system reads them, and the sprites are drawn from them
+  (`TopView`). The designer knows nothing of drawing. `dressing` holds only what has no physical effect: the deck's
+  finish, boats, fittings, hatches, cranes, bollards and anchor chains, the masts' yards, legs and booms, and a
+  flight deck's markings. A look draws the physical parts its own way, at most a little over or under their
+  hitboxes (turret styles, rounded or chamfered corners, a fighting top); it never moves or reshapes one, the hull
+  least of all. A view that shows a shell entering the ship uses the hitboxes, never the sprite.
+- **Heights:** the hitboxes measure from the main deck. The sprites and height map measure from the waterline, and
+  `TopView.DeckM` (the hitboxes' freeboard) is the one place that converts. The report's weights measure from the
+  keel, as naval architecture does.
 
 ## Where things are
 
@@ -361,7 +371,7 @@ The player never enters tonnage or positions. The allowed ranges are `styles.bas
 
 - Each look is a palette for all styles, plus overrides per style, plus a turret drawing (`shipgen.look_turret_body`) and silhouette `shapes` (also overridable per style).
 - Only armoured (`bb`) turrets change shape. The drawn outline stays close to the hitbox shape, and `verify.py` checks it like any other sprite.
-- Silhouettes (`shapes` in a look) are drawn only: the bow and stern may be fuller than the layout's hull (never finer, so nothing at the deck edge overhangs), and funnels, superstructure corners and masts change style. Hitboxes keep the layout's shapes. The height map follows the drawn hull, so shadows match the sprite.
+- Silhouettes (`shapes` in a look) are drawn only: funnels, superstructure corners and masts change style, and tumblehome draws the deck narrower inside the hull. The hull itself is always the physical one, as are the height map's columns.
 - **Painted features** (shapes keys, any navy may use them): `dazzle` (panels in the palette's `camo` colours over the hull band, superstructure and funnels, a repeatable pattern per design id; `dazzle_decks`, an opacity 0–1, carries them across the open decks too, under the plank lines; `dazzle_upperworks`, 0–1, default 1, sets them on the superstructure and funnels, so 0 keeps them on the hull sides), `deck_stripes` (recognition stripes on the open foredeck and optionally the quarterdeck, chevron or diagonal), `turret_bands` (bands across armoured turret roofs), `awnings` (canvas over the open quarterdeck) and `hull_number`. Silhouette extras: `tumblehome` (the hull drawn wider than the deck), `funnel_rake`, `funnel_cap` (`pan` or `hat`), `blocks: "tower"` and `mast: "lattice"`. The features that paint the deck keep clear of turrets, superstructure and funnels (`shipgen.open_ends`), and skip flight decks.
 - A design's own `"palette"` still overrides everything.
 - **Muting by era** (`looks.ERA_MUTE`): the looks quieten over time, from the Great War (the wildest after the Victorian liveries) to the Cold War (muted by hand). One number per era, `great_war` 0.12, `treaty` 0.27, `wwii` 0.43 (`victorian` and `cold_war` 0), takes that share of the saturation from the paint (decks, turret roofs, funnels), half of it from the hull, upperworks and teak, pulls markings (stripes, camouflage, numbers, turret bands) that far toward the upperworks grey, and fades painted decks. Every navy keeps its hue and lightness. It applies to naval styles; merchants keep their liveries but their camouflage is muted. Raise or lower an era's number to tune it.
@@ -370,7 +380,7 @@ The player never enters tonnage or positions. The allowed ranges are `styles.bas
 - **Nudges instead of new looks.** A look can start from another with `"from": "wwii"` (same navy) or `"from": "generic/great_war"` and list only what differs: palette, shapes and per-style keys merge key by key. `"adjust"` is a list of colour operations run in order over the finished palette (`lighten`, `saturate`, `tint`, each limited by `keys` to a colour group such as `hull`, `decks`, `upperworks`, `armament`, `funnels`, or to single palette keys). Shapes take numbers beside the named modes, which are now presets of them: `block_round`, `funnel_round`, `funnel_squareness`, `funnel_band_w`, `tripod` (leg length, 0 = pole), `top_r` (fighting top) and `deck_line_opacity`. The `looks.py` docstring lists them all. A bad `from` or era name fails when `looks` is imported.
 
 ## Outputs (`shipgen design`: out_designs/<id>/)
-- `report.json`: valid flag, errors, warnings, the hull's length, beam and block coefficient, displacement (std/full), draught, power, fuel, crew, GM, trim, and the weight list with x/z. Carriers add aircraft and capacity, flight deck size and height; merchants add cargo, deadweight and hold count.
+- `report.json`: valid flag, errors, warnings, the style's `summary` lines, the hull's length, beam and block coefficient, displacement (std/full), draught, power, fuel, crew, GM, trim, and the weight list with x/z. Carriers add aircraft and capacity, flight deck size and height; merchants add cargo, deadweight and hold count.
   - `crew`: the complement by department, with officers, CPOs, ratings and hotel crew. Also:
     - volumes: living, provisions, water (and how much of it is in the double bottom), distiller output
     - space: needed against usable

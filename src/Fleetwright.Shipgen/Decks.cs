@@ -186,8 +186,5 @@ public static class Arcs
             m.Traverse = MountTraverse(m);
             m.Rest = Geometry.Wrap180(m.Fixed ?? m.Rest);
         }
-        var byId = lay.Mounts.ToDictionary(m => m.Id, StringComparer.Ordinal);
-        foreach (var sm in lay.Spec.Turrets)
-            sm.Rest = byId[sm.Id].Rest;
     }
 }

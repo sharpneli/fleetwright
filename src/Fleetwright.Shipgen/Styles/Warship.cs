@@ -193,8 +193,8 @@ public sealed class PlaningStyle : Style
                 lx1, lw, [new ZoneRoom("Ammunition locker", guns)])]);
         }
         Layout.FinishLayout(lay, design, hs, mounts, turretTypes, blocks, [], masts, aaOut, 0.0);
-        lay.Spec.Boats = boats;
-        lay.Spec.Fittings = fittings;
+        lay.Dressing.Boats = boats;
+        lay.Dressing.Fittings = fittings;
         return lay;
     }
 }

@@ -382,7 +382,7 @@ public sealed class MerchantStyle : Style
         }
         Layout.SetCitadel(lay, m0, m1);
         Layout.FinishLayout(lay, design, hs, mounts, turretTypes, blocks, funnels, masts, aaOut, funTop);
-        var spec = lay.Spec;
+        var spec = lay.Dressing;
         (spec.Boats, spec.Hatches, spec.Fittings) = (boats, hatches, fittings);
         (spec.Bollards, spec.ChainX, spec.HawseBack) = ([L / 2 - 0.04 * L, -L / 2 + 0.04 * L], L / 2 - 0.05 * L, 0.025 * L + 1.0);
         return lay;

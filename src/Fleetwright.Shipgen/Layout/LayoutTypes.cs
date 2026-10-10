@@ -80,8 +80,6 @@ public sealed class Block
     public double? Area { get; set; }
     /// <summary>What it stands on, above the main deck (null: the main deck).</summary>
     public double? Z0 { get; set; }
-    /// <summary>The drawing layer ("upper" for a block standing on something).</summary>
-    public string? Layer { get; set; }
     public BlockDirector? Director { get; set; }
     /// <summary>Its wall plating, mm.</summary>
     [JsonIgnore] public double? PlateMm;
@@ -114,8 +112,8 @@ public sealed class Funnel
     [JsonIgnore] public List<string>? Serves;
 }
 
-/// <summary>An AA mount: its type (Geometry.AaCfg), where it stands, its rest bearing, its base above the main deck and
-/// its drawing layer.</summary>
+/// <summary>An AA mount: its type (Geometry.AaCfg), where it stands, its rest bearing and its base above the main
+/// deck.</summary>
 public sealed class AaMount
 {
     [JsonIgnore] public required string Id;
@@ -124,7 +122,6 @@ public sealed class AaMount
     public double Y { get; init; }
     public long Dir { get; init; }
     [JsonIgnore] public double Base;
-    public required string Layer { get; init; }
 }
 
 /// <summary>A mast: where it stands, its yard, tripod legs, its top above the main deck (null until FinishLayout sets the
@@ -204,8 +201,8 @@ public sealed record Crane(double X, double Y, double R, long Dir, double Jib, d
 /// <summary>A deck fitting drawn as a coloured box (palette key Color), rounded by R.</summary>
 public sealed record Fitting(double X, double Y, double L, double W, string Color, double? R = null);
 
-/// <summary>A carrier's gun or AA sponson, as drawn.</summary>
-public sealed record SponsonDrawing(double X, double Y, double L, double W);
+/// <summary>An elevator painted on a carrier's flight deck: L x W at X, Y.</summary>
+public sealed record ElevatorDrawing(double X, double Y, double L, double W);
 
 /// <summary>The hull's planform: its length and beam, the bow and stern tapers (Hull fills in what they leave out),
 /// and a planing hull's deck inset and plank spacing.</summary>
@@ -223,63 +220,37 @@ public sealed record HullEnd
     public double? Flare { get; init; }
 }
 
-/// <summary>A mount as the renderer draws it: its type, where it stands, its draw order and its rest bearing.</summary>
-public sealed class SpecTurret
+/// <summary>What is drawn without a physical effect (lay.Dressing): the deck's finish, plank spacing and edge inset,
+/// the masts' yards, tripod legs and cargo booms (by the mast component's id), each style's deck furniture and a
+/// flight deck's markings. Everything with a physical effect is in the hitboxes; the sprites draw both.</summary>
+public sealed class Dressing
 {
-    public required string Id { get; init; }
-    public required string Type { get; init; }
-    public double X { get; init; }
-    public double Y { get; init; }
-    public long Z { get; init; }
-    public double Rest { get; set; }
-}
-
-/// <summary>A raised stretch of hull as the renderer draws it.</summary>
-public sealed record RaisedDeckSpec(double X0, double X1, long Levels);
-
-/// <summary>What the renderer draws (lay.Spec): the hull, the turret types and mounts, the superstructure, funnels,
-/// masts and AA, and each style's deck furniture.</summary>
-public sealed class RenderSpec
-{
-    public required string Id { get; init; }
-    public required string Name { get; init; }
-    public required string Class { get; init; }
-    public double Length { get; init; }
-    public double Beam { get; init; }
-    public required HullEnd Bow { get; init; }
-    public required HullEnd Stern { get; init; }
     /// <summary>The deck finish: "wood" or "steel".</summary>
     public required string Deck { get; init; }
-    public required OrderedDictionary<string, TurretType> TurretTypes { get; init; }
-    public required List<SpecTurret> Turrets { get; init; }
-    public required List<Block> Superstructure { get; init; }
-    public required List<Funnel> Funnels { get; init; }
-    public required List<Mast> Masts { get; init; }
-    public required List<AaMount> Aa { get; init; }
-    public List<RaisedDeckSpec>? RaisedDecks { get; set; }
+    public double? DeckInset { get; init; }
+    public double? PlankSpacing { get; init; }
+    public required List<MastDressing> Masts { get; init; }
     public List<Boat>? Boats { get; set; }
     /// <summary>The x of the bollards at the bow and the stern.</summary>
     public List<double>? Bollards { get; set; }
     public double? ChainX { get; set; }
     public double? HawseBack { get; set; }
     public double? BreakwaterX { get; set; }
-    public double? DeckInset { get; set; }
-    public double? PlankSpacing { get; set; }
     public List<Fitting>? Fittings { get; set; }
     public List<Hatch>? Hatches { get; set; }
     public List<Crane>? Cranes { get; set; }
-    public List<SponsonDrawing>? Sponsons { get; set; }
     public FlightDeckDrawing? FlightDeck { get; set; }
 }
 
-/// <summary>A carrier's flight deck as drawn: its outline, the planks' box and pitch, the elevators, the arrester
-/// wires (x1, y1, x2, y2), the painted marks and the deck number (null: none).</summary>
+/// <summary>A mast's dressing: its yard's span, tripod legs, and a merchant's cargo booms ([x, y] of each head).</summary>
+public sealed record MastDressing(string Id, double Yard, bool Tripod, List<double[]>? Booms);
+
+/// <summary>A carrier's flight deck markings (its outline is the flight deck component's): the planks' box and pitch,
+/// the elevators, the arrester wires (x1, y1, x2, y2), the painted marks and the deck number (null: none).</summary>
 public sealed class FlightDeckDrawing
 {
-    public required List<Pt> Points { get; init; }
     public required FlightDeckPlanks Planks { get; init; }
-    public List<SponsonDrawing> Elevators { get; init; } = [];
-    public List<SponsonDrawing> EdgeElevators { get; init; } = [];
+    public List<ElevatorDrawing> Elevators { get; init; } = [];
     public List<double[]> Wires { get; init; } = [];
     public List<DeckMark> Marks { get; init; } = [];
     [JsonIgnore(Condition = JsonIgnoreCondition.Never)] public DeckNumber? Number { get; init; }

@@ -93,7 +93,10 @@ public sealed partial class Layout
     public readonly HashSet<Footprint> Overhangs = new(ReferenceEqualityComparer.Instance);
     public List<Weight> Weights = [];
     public List<string> Errors = [], Warnings = [];
-    public RenderSpec Spec = null!;
+    /// <summary>What the sprites draw beyond the hitboxes (FinishLayout).</summary>
+    public Dressing Dressing = null!;
+    /// <summary>The mounts' types by id.</summary>
+    public OrderedDictionary<string, TurretType> TurretTypes = new(StringComparer.Ordinal);
     public Geo Geo = new();
     public (double Lo, double Hi) ShiftRange = (0.0, 0.0);
     public List<Compartment> Compartments = [];

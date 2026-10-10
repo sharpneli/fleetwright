@@ -174,7 +174,7 @@ public sealed class CarrierStyle : Style
         }
         return new FlightDeckDrawing
         {
-            Points = dp.Points!, Planks = new FlightDeckPlanks(x0, x1, ys.Min(), ys.Max(), 1.4), Wires = wires, Marks = marks,
+            Planks = new FlightDeckPlanks(x0, x1, ys.Min(), ys.Max(), 1.4), Wires = wires, Marks = marks,
             Number = !string.IsNullOrEmpty(av.Number) ? new DeckNumber(x1 - 0.6 * tap - lc - 0.04 * L, 0, av.Number, 0.035 * L) : null,
         };
     }
@@ -466,7 +466,7 @@ public sealed class CarrierStyle : Style
         for (long k = 0; k < av.Elevators; k++)
         {
             double ex = hx1 - le / 2 - 2 - k * (hx1 - hx0 - le - 4) / Math.Max(av.Elevators - 1, 1);
-            fdElev.Add(new SponsonDrawing(ex, -0.1 * hw, le, ew));
+            fdElev.Add(new ElevatorDrawing(ex, -0.1 * hw, le, ew));
         }
         double lee = Layout.Clamp(0.06 * L, 10, 20), wee = Layout.Clamp(0.045 * L, 6, 16);
         var land = dp.Land;
@@ -475,7 +475,6 @@ public sealed class CarrierStyle : Style
         if (islandGuns)
             slots = [slots[2], slots[1], slots[3], slots[0]];
         long placed = 0;
-        var fdEdge = fd.EdgeElevators;
         foreach (var (ex, side) in slots)
         {
             if (placed >= av.DeckEdgeElevators)
@@ -489,7 +488,6 @@ public sealed class CarrierStyle : Style
             string eid = $"Deck-edge elevator {placed + 1}";
             lay.Occupy(fp, fdH - 1.0, fdH, eid);
             double yc = (yIn + yOut) / 2;
-            fdEdge.Add(new SponsonDrawing(ex, yc, lee, wee));
             lay.Sponsons.Add(new DeckPlate(eid, "sponson", [new(ex - lee / 2, yIn), new(ex + lee / 2, yIn), new(ex + lee / 2, yOut),
                 new(ex - lee / 2, yOut)], fdH - 1.0, fdH, "elevator"));
             placed++;
@@ -527,10 +525,8 @@ public sealed class CarrierStyle : Style
             double rr = Geometry.AaCfg[kind].R;
             var island = Layout.RoofSpots(blocks, 2 * rr, 2 * rr).OrderBy(s => (s.Z0, Math.Abs(s.X - xi))).ToList()
                 .Where(s => !s.Pair).Select(s => new Slot(s.X, s.Y, s.Z0, Lone: true)).ToList();
-            Armament.PlaceAa(lay, aaOut, kind, count, island.Concat(SponsonSlots(rr, fdH - 2.4)).ToList(),
-                layerOf: bse => bse > fdH + 0.01 ? "upper" : "base");
+            Armament.PlaceAa(lay, aaOut, kind, count, island.Concat(SponsonSlots(rr, fdH - 2.4)).ToList());
         }
-        var sponsons = new List<SponsonDrawing>();
         var below = mounts.Where(m => m.Base < fdH - 0.5)
             .Select(m => (m.Id, m.X, m.Y, m.Base, Reach: m.Kind != "torpedo" ? Armament.BodyReach(m.T) : m.T.BarrelLen / 2 + 0.3))
             .Concat(aaOut.Select(a => (a.Id, a.X, a.Y, a.Base, Reach: Geometry.AaCfg[a.Type].R)));
@@ -541,7 +537,6 @@ public sealed class CarrierStyle : Style
             double edge = side > 0 ? se : pe;
             double yIn = edge - side * 0.8, yOut = y + side * (reach + 0.5);
             double l = 2 * reach + 1.0;
-            sponsons.Add(new SponsonDrawing(x, (yIn + yOut) / 2, l, Math.Abs(yOut - yIn)));
             lay.Sponsons.Add(new DeckPlate($"Sponson {id}", "sponson", [new(x - l / 2, yIn), new(x + l / 2, yIn), new(x + l / 2, yOut),
                 new(x - l / 2, yOut)], bse - 0.5, bse));
         }
@@ -549,7 +544,7 @@ public sealed class CarrierStyle : Style
         MachineryRooms(lay, hull, res);
         Compartments(lay, design, hull, lay.Geo.Machinery!.Value, dp.Hangar, mounts);
         Layout.FinishLayout(lay, design, hs, mounts, turretTypes, blocks, funnels, masts, aaOut, funTop);
-        (lay.Spec.FlightDeck, lay.Spec.Sponsons, lay.Spec.Boats) = (fd, sponsons, []);
+        (lay.Dressing.FlightDeck, lay.Dressing.Boats) = (fd, []);
         return lay;
     }
 
@@ -668,7 +663,7 @@ public sealed class CarrierStyle : Style
         MachineryRooms(lay, hull, res);
         Compartments(lay, design, hull, lay.Geo.Machinery!.Value, (hx0, hx1, hhw), mounts);
         Layout.FinishLayout(lay, design, hs, mounts, turretTypes, blocks, funnels, masts, aaOut, funTop);
-        var spec = lay.Spec;
+        var spec = lay.Dressing;
         (spec.Fittings, spec.Cranes, spec.Boats) = (fittings, cranes, boats);
         (spec.Bollards, spec.ChainX, spec.HawseBack) = ([L / 2 - 0.05 * L, -L / 2 + 0.06 * L], L / 2 - 0.06 * L, 0.03 * L + 1.0);
         return lay;

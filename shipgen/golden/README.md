@@ -30,6 +30,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   hitboxes' freeboard. 286 SVG cases and 2 sprite.json files rewritten. `png-check`'s hull and height columns no
   longer compare like with like (Python drew the look's hull): about 0.97, 0.93 with tumblehome, 0 for the two
   carriers whose canvas grew; turrets unchanged.
+- 2026-10-10, the render data gone (step 4): `build.render` became `build.dressing` (only what has no physical
+  effect; mast dressing by the mast's id), and the style's summary lines moved to `report.summary`. Checked: the
+  hitboxes and the rest of the report are unchanged, and the dressing and summary hold exactly the old values.
 
 ## Layout
 

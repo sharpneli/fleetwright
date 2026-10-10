@@ -1234,7 +1234,7 @@ public sealed partial class Layout
         {
             using var _ = Scratch<Slot>.Rent(out var cands);
             AaSlots(kind, cands);
-            Armament.PlaceAa(lay, aaOut, kind, count, cands, layerOf: bse => bse > LevelH + 0.01 ? "upper" : "base");
+            Armament.PlaceAa(lay, aaOut, kind, count, cands);
         }
 
         PlaceAa("quad40", design.Aa?.Heavy ?? 0);
@@ -1299,10 +1299,10 @@ public sealed partial class Layout
         AddMachineryRooms(lay, plantPlaced, innerHw, depth);
         AddSteering(lay);
 
-        // ---------------- renderer spec ----------------
+        // ---------------- dressing ----------------
         double frontEdge = fore.Count > 0 ? fore[0] + F[0].R : midFwd;
         FinishLayout(lay, design, hs, mounts, turretTypes, blocks, funnels, masts, aaOut, funTop, deck);
-        var spec = lay.Spec;
+        var spec = lay.Dressing;
         spec.Boats = boats;
         spec.Bollards = [L / 2 - 0.05 * L, -L / 2 + 0.06 * L];
         if (L / 2 - frontEdge > 0.08 * L + 6)

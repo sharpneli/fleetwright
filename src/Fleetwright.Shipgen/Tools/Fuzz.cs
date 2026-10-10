@@ -256,8 +256,8 @@ public static class Fuzz
             if (!Finite(report))
                 return ("crash", "a NaN or infinity in the report");
             if (!Finite(JsonSerializer.SerializeToNode(ship.Hitboxes, json.Hitboxes)) ||
-                !Finite(JsonSerializer.SerializeToNode(ship.Render.Columns, json.ListHeightColumn)))
-                return ("crash", "a NaN or infinity in the hitboxes or height columns");
+                !Finite(JsonSerializer.SerializeToNode(ship.Dressing, json.Dressing)))
+                return ("crash", "a NaN or infinity in the hitboxes or dressing");
             return ship.Report.Valid ? ("ok", "") : ("errors", ship.Report.Errors[0]);
         }
         catch (Exception e)

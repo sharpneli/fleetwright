@@ -2,37 +2,10 @@ using System.Text.Json.Serialization;
 
 namespace Fleetwright.Shipgen;
 
-/// <summary>The designed ship (ShipDesign.Build): the design as given, the report, the hitboxes and what the renderer
-/// draws from.</summary>
-public sealed record Ship(Design Design, Report Report, Hitboxes Hitboxes, RenderData Render);
-
-// ------------------------------------------------------------------ the render data
-
-/// <summary>What the renderer draws from: the layout's spec, the main deck's height above the waterline, the mounts'
-/// arcs, the static height-map columns (lowest first) and the style's summary lines.</summary>
-public sealed record RenderData(RenderSpec Spec, double DeckM, List<RenderMount> Mounts, List<HeightColumn> Columns, List<string> Summary);
-
-public sealed record RenderMount(string Id, string Kind, double Rest, List<double[]> Arcs, double[]? Traverse, double Top)
-{
-    /// <summary>"casemate" for a casemate gun.</summary>
-    public string? Mount { get; init; }
-}
-
-/// <summary>A height-map column: Top metres above the waterline over a shape: "hull", "polygon" (Points), "rect" (X, Y,
-/// W, H), "circle" (Cx, Cy, R) or "ellipse" (Cx, Cy, Rx, Ry).</summary>
-public sealed record HeightColumn(double Top, string Shape)
-{
-    public List<Pt>? Points { get; init; }
-    public double? X { get; init; }
-    public double? Y { get; init; }
-    public double? W { get; init; }
-    public double? H { get; init; }
-    public double? Cx { get; init; }
-    public double? Cy { get; init; }
-    public double? R { get; init; }
-    public double? Rx { get; init; }
-    public double? Ry { get; init; }
-}
+/// <summary>The designed ship (ShipDesign.Build): the design as given, the report, the hitboxes (the physical ship,
+/// which every system reads: the sprites are drawn from it) and the dressing (what the sprites draw beyond it, with no
+/// physical effect).</summary>
+public sealed record Ship(Design Design, Report Report, Hitboxes Hitboxes, Dressing Dressing);
 
 // ------------------------------------------------------------------ the report
 
@@ -46,6 +19,8 @@ public sealed class Report
     /// <summary>The player's design, as given.</summary>
     public required Design Inputs { get; init; }
     public required Results Results { get; init; }
+    /// <summary>The style's summary lines.</summary>
+    public required List<string> Summary { get; init; }
     public required PlantReport Plant { get; init; }
     public required HullReport Hull { get; init; }
     public CrewReport? Crew { get; init; }

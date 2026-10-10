@@ -294,9 +294,9 @@ public static class Armament
     static readonly Dictionary<string, double> AaTubT = new() { ["quad40"] = 3.0, ["twin40"] = 1.5, ["single20"] = 0.3 };
 
     /// <summary>AA mounts in pairs from slots in order of preference (a single slot takes one). ignore: ids to
-    /// disregard, as a function of the slot's base; layerOf: the drawing layer for a base.</summary>
+    /// disregard, as a function of the slot's base.</summary>
     public static long PlaceAa(Layout lay, List<AaMount> aaOut, string kind, long count, IReadOnlyList<Slot> cands,
-        double? spacing = null, Func<double, IReadOnlyCollection<string>>? ignore = null, Func<double, string>? layerOf = null)
+        double? spacing = null, Func<double, IReadOnlyCollection<string>>? ignore = null)
     {
         double rr = Geometry.AaCfg[kind].R;
         double sp = spacing ?? (kind == "quad40" ? 3.0 : 2.2);
@@ -356,7 +356,7 @@ public static class Armament
                 double y = fp.Y;
                 string aid = $"AA{aaOut.Count + 1}";
                 long d = y == 0 && cx < 0 ? 180 : y > 0 ? 90 : y < 0 ? -90 : 0;
-                aaOut.Add(new AaMount { Id = aid, Type = kind, X = fp.X, Y = y, Dir = d, Base = bse, Layer = layerOf != null ? layerOf(bse) : "base" });
+                aaOut.Add(new AaMount { Id = aid, Type = kind, X = fp.X, Y = y, Dir = d, Base = bse });
                 lay.Occupy(fp, bse, bse + 2.0, aid);
                 lay.Weights.Add(new Weight(aid, "armament", Batteries.AaT[kind] + (bse > 0.5 ? AaTubT[kind] : 0.0), fp.X,
                     ZRel.Deck(bse + 1.0)));

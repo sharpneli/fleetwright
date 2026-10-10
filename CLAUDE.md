@@ -124,7 +124,8 @@ src/
     Styles/                   #   the style hooks and the warship, carrier, merchant and planing styles
     Golden/                   #   the golden comparer and case runner
     Tools/                    #   the fuzz mutator
-  Fleetwright.Shipgen.Render/ # the drawing side: reads only the built Ship (its render data)
+  Fleetwright.Shipgen.Render/ # the drawing side: reads only the built Ship (its hitboxes and dressing)
+    TopView.cs                #   the ship from above: the hitboxes' parts in drawing shapes, plus the dressing
     Data/looks.jsonc          #   every navy and era's colours and shapes (the documented table)
     Looks.cs                  #   resolving a design's look: from-chains, adjust, era muting
     Scene.cs                  #   the display list (paths, circles, rects, lines, text, clipped groups) and SvgWriter

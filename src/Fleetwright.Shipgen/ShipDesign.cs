@@ -352,6 +352,7 @@ public static class ShipDesign
         {
             Id = design.Id, Name = design.Name ?? design.Id, Valid = lay.Errors.Count == 0 && r.Errors.Count == 0,
             Errors = [.. lay.Errors, .. r.Errors], Warnings = [.. lay.Warnings, .. r.Warnings], Inputs = design, Results = results,
+            Summary = Styles.Get(design).Summary(sized, lay, r),
             Plant = PlantReport(lay, r), Hull = HullReport(design, r), Crew = lay.Crew, FireControl = FireControl.Report(lay, r.Freeboard),
             Bridge = lay.Geo.Bridge != null ? BridgeReport(lay, r.Freeboard) : null, WeightGroupsT = groups,
             Weights = r.Weights.Select(w => new WeightReport(w.Name, w.Group, Math.Round(w.W, 1), Math.Round(w.X, 2), Math.Round(w.Z!.Value, 2))).ToList(),
@@ -397,44 +398,12 @@ public static class ShipDesign
         return new BridgeReport(b.Level, b.Tower, Math.Round(eye, 2), Math.Round(FireControl.HorizonKm(eye), 1), b.Level >= b.Need, b.Need);
     }
 
-    /// <summary>The static height-map columns, lowest first.</summary>
-    static List<HeightColumn> HeightColumns(Layout lay, double deckM)
-    {
-        var items = new List<HeightColumn> { new(deckM, "hull") };
-        foreach (var dk in lay.Decks.Concat(lay.Sponsons))
-            items.Add(new(deckM + dk.Top, "polygon") { Points = dk.Points });
-        foreach (var ht in lay.Spec.Hatches ?? [])
-            items.Add(new(deckM + 1.2, "rect") { X = ht.X - ht.L / 2, Y = ht.Y - ht.W / 2, W = ht.L, H = ht.W });
-        foreach (var cr in lay.Spec.Cranes ?? [])
-            items.Add(new(deckM + cr.Top, "circle") { Cx = cr.X, Cy = cr.Y, R = cr.R });
-        foreach (var m in lay.Mounts.Where(m => m.T.HasBarbette && m.Base > 0.5))
-            items.Add(new(deckM + m.Base, "circle") { Cx = m.X, Cy = m.Y, R = m.T.R * 0.95 });
-        foreach (var b in lay.Blocks)
-            items.Add(new(deckM + b.TopZ, "polygon") { Points = Geometry.BlockOutline(b) });
-        foreach (var a in lay.Aa)
-            items.Add(new(deckM + a.Base + 2.0, "circle") { Cx = a.X, Cy = a.Y, R = Geometry.AaCfg[a.Type].R * 0.8 });
-        foreach (var bt in lay.Spec.Boats ?? [])
-            items.Add(new(deckM + (bt.Top ?? Layout.LevelH + 1.5), "ellipse") { Cx = bt.X, Cy = bt.Y, Rx = bt.L / 2, Ry = bt.W / 2 });
-        foreach (var fn in lay.Funnels)
-            items.Add(new(deckM + lay.FunTop, "polygon")
-            {
-                Points = Geometry.RrectPolygon(fn.X - fn.L / 2, fn.Y - fn.W / 2, fn.X + fn.L / 2, fn.Y + fn.W / 2, fn.W / 2, fn.W / 2),
-            });
-        foreach (var m in lay.Spec.Masts)
-            items.Add(new(deckM + (m.Top ?? lay.FunTop + Layout.MastAboveFunnel), "circle") { Cx = m.X, Cy = m.Y ?? 0.0, R = 0.7 });
-        return items.OrderBy(it => it.Top).ToList();
-    }
-
     /// <summary>Design the ship. hint: the hull length of a similar earlier build.</summary>
     public static Ship Build(Design design, double? hint = null)
     {
         var (lay, r, sized) = Solve(design, hint: hint);
-        double deckM = Math.Max(r.Freeboard, 0.1);
         var inner = InteriorOf(lay, sized, r);
-        var mounts = lay.Mounts.Select(m => new RenderMount(m.Id, m.Kind, m.Rest, m.Arcs, m.Traverse, m.Top) { Mount = m.Casemate ? "casemate" : null })
-            .ToList();
-        return new Ship(design, ReportOf(design, lay, r, sized), Hitbox.ExportHitboxes(lay, sized, r, inner),
-            new RenderData(lay.Spec, deckM, mounts, HeightColumns(lay, deckM), Styles.Get(design).Summary(sized, lay, r)));
+        return new Ship(design, ReportOf(design, lay, r, sized), Hitbox.ExportHitboxes(lay, sized, r, inner), lay.Dressing);
     }
 }
 

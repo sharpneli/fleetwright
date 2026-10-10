@@ -241,7 +241,7 @@ public static class Hitbox
             Hull = R3(lay.Hull.Points()), Bow = lay.Hull.Bow, Stern = lay.Hull.Stern, Hydrostatics = inner.Hydrostatics,
             HullForm = new HullFormReport(Math.Round(form.Cm, 3), Math.Round(form.Cwp, 3), form.Table().Select(s => new StationReport(Math.Round(s.X, 3),
                 s.Z.Select(z => Math.Round(z - D, 2)).ToArray(), s.Y.Select(y => Math.Round(y, 3)).ToArray())).ToList()),
-            Armour = armour, Plating = inner.Plating, TurretTypes = lay.Spec.TurretTypes, Components = comps,
+            Armour = armour, Plating = inner.Plating, TurretTypes = lay.TurretTypes, Components = comps,
             Decks = sub.Decks, Tiers = sub.Tiers, Sections = sub.Sections, Bulkheads = sub.Bulkheads, Cells = sub.Cells, Rooms = sub.Rooms,
         };
     }

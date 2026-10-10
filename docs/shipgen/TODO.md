@@ -30,8 +30,8 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Split layout.py: shared primitives (public names) vs the warship's `build_layout` into styles/warship.py
 - [ ] `Geo.plant` is still a nested dict (~14 keys, read in 9 modules): its own dataclass
 - [ ] Private `_` keys as side channels: `b["_plate_mm"]` (layout → hitbox), `spec["_clutter"]` (shipgen → render)
-- [ ] Mount rest bearing stored twice (`lay.mounts`, `lay.spec["turrets"]`), synced by `assign_arcs`; published twice too
-- [ ] Height columns and hitboxes restate the same shapes (AA `base + 2.0`, barbette `r * 0.95`, funnel rrect)
+- [x] Mount rest bearing stored twice (`lay.mounts`, `lay.spec["turrets"]`): gone with the render spec (2026-10-10)
+- [x] Height columns and hitboxes restate the same shapes: the height map is built from the hitboxes (2026-10-10)
 - [ ] `finish_layout` places the search radar and computes windage
 - [ ] Arc helpers reimplemented (geometry, vidgen `in_arc`, verify, shipgen `clamp_angle`); legacy `traverse` means ± degrees
 - [ ] Small: `RAISED_ANCHORS` defined twice; validators copy the dotted-path walk; merchant/planing import helpers from carrier

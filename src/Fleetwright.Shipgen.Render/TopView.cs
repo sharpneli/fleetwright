@@ -1,7 +1,7 @@
 namespace Fleetwright.Shipgen.Render;
 
 /// <summary>The ship from above, as the sprites draw it. Everything with a physical effect comes from the hitbox model
-/// (Ship.Hitboxes), in the shapes the drawing takes; the rest is dressing (Ship.Render.Spec) that has none. A look may
+/// (Ship.Hitboxes), in the shapes the drawing takes; the rest is dressing (Ship.Dressing) that has none. A look may
 /// draw a part slightly over or under its footprint, never move or reshape it. Heights are above the main deck, as in
 /// the hitboxes; DeckM turns them into the sprites' heights above the waterline.</summary>
 public sealed class TopView
@@ -65,8 +65,8 @@ public sealed class TopView
     public Platform? FlightDeck;
     public required List<Platform> Sponsons;
     /// <summary>What is drawn without a hitbox: deck finish, boats, fittings, hatches, cranes, bow details and the flight
-    /// deck's markings. Its parts with a hitbox (turrets, superstructure, funnels, masts, AA) are not read.</summary>
-    public required RenderSpec Dressing;
+    /// deck's markings.</summary>
+    public required Dressing Dressing;
 
     static readonly Dictionary<string, int> DrawKind = new(StringComparer.Ordinal) { ["main"] = 2, ["secondary"] = 1 };
 
@@ -76,7 +76,7 @@ public sealed class TopView
     public static TopView Of(Ship ship)
     {
         var hb = ship.Hitboxes;
-        var spec = ship.Render.Spec;
+        var spec = ship.Dressing;
         var comps = hb.Components;
 
         var guns = comps.Where(c => c.Local != null).ToList();
@@ -106,7 +106,7 @@ public sealed class TopView
             return new Funnel(c.Id, (x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0, c.Pipes ?? 1, c.Points!, c.Top);
         }).ToList();
 
-        var dressed = spec.Masts.ToDictionary(m => m.Id!, StringComparer.Ordinal);
+        var dressed = spec.Masts.ToDictionary(m => m.Id, StringComparer.Ordinal);
         var masts = comps.Where(c => c.Kind == "mast").Select(c =>
         {
             var d = dressed[c.Id];
@@ -127,7 +127,7 @@ public sealed class TopView
 
         return new TopView
         {
-            Id = spec.Id, Hull = hull, DeckM = Math.Max(hb.Vertical.Freeboard, 0.1), TurretTypes = hb.TurretTypes, Mounts = mounts,
+            Id = ship.Design.Id ?? "", Hull = hull, DeckM = Math.Max(hb.Vertical.Freeboard, 0.1), TurretTypes = hb.TurretTypes, Mounts = mounts,
             Barbettes = comps.Where(c => c.Kind == "barbette").Select(c => new Barbette(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top)).ToList(),
             Blocks = blocks, Funnels = funnels, Masts = masts, AaMounts = aa, RaisedDecks = raised,
             ConningTower = comps.Where(c => c.Kind == "conning_tower").Select(c => new Tower(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top))
@@ -173,4 +173,20 @@ public sealed class TopView
             items.Add(new(DeckM + m.Top, "circle") { Cx = m.X, Cy = m.Y, R = m.R });
         return items.OrderBy(it => it.Top).ToList();
     }
+}
+
+/// <summary>A height-map column: Top metres above the waterline over a shape: "hull", "polygon" (Points), "rect" (X, Y,
+/// W, H), "circle" (Cx, Cy, R) or "ellipse" (Cx, Cy, Rx, Ry).</summary>
+public sealed record HeightColumn(double Top, string Shape)
+{
+    public List<Pt>? Points { get; init; }
+    public double? X { get; init; }
+    public double? Y { get; init; }
+    public double? W { get; init; }
+    public double? H { get; init; }
+    public double? Cx { get; init; }
+    public double? Cy { get; init; }
+    public double? R { get; init; }
+    public double? Rx { get; init; }
+    public double? Ry { get; init; }
 }
