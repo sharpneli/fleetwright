@@ -155,6 +155,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
     private SDL_Window* _window;
     private uint _windowWidth = DefaultWindowWidth;
     private uint _windowHeight = DefaultWindowHeight;
+    private bool _windowSizeSet;   // SetWindowSize was called: no fitting to the display
     private SDL_GPUTextureFormat _swapchainFormat;
 
     // Render targets
@@ -312,6 +313,23 @@ public unsafe class Sdl3GpuEngine : IDisposable
             throw new InvalidOperationException("SetWindowSize goes before Init");
         _windowWidth = width;
         _windowHeight = height;
+        _windowSizeSet = true;
+    }
+
+    /// <summary>The window's opening size when none was set: the largest of 1080p, 1440p and 2160p that fits the primary
+    /// display's usable area with room for the title bar (a 4K desktop opens at 1440p).</summary>
+    private void FitWindowToDisplay()
+    {
+        SDL_Rect usable;
+        if (_windowSizeSet || !SDL_GetDisplayUsableBounds(SDL_GetPrimaryDisplay(), &usable))
+            return;
+        foreach (var (w, h) in new[] { (3840u, 2160u), (2560u, 1440u), (1920u, 1080u) })
+            if (w <= usable.w && h + 48 <= usable.h)
+            {
+                _windowWidth = w;
+                _windowHeight = h;
+                return;
+            }
     }
 
     public Sdl3GpuEngine()
@@ -392,6 +410,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
     private void InitWindow()
     {
+        FitWindowToDisplay();
         _window = SDL_CreateWindow(
             DefaultWindowTitle,
             (int)_windowWidth,

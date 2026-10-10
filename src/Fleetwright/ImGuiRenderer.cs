@@ -261,8 +261,48 @@ public unsafe class ImGuiRenderer : IDisposable
 
     private void CreateFontTexture()
     {
+        int w, h;
+        SDL_GetWindowSize(_window, &w, &h);
+        CreateFontTexture(UiFonts.ScaleFor(h));
+    }
+
+    // a scale the window's height asks for, waiting for the window to settle there
+    private float _pendingScale;
+    private ulong _pendingSinceMs;
+    private const ulong SettleMs = 250;
+
+    /// <summary>Reloads the fonts at the scale the window's height asks for, once the window has stayed at that
+    /// scale for <see cref="SettleMs"/> (a drag-resize doesn't rebuild the atlas at every step). Between frames only.</summary>
+    private void FollowWindowScale(int windowHeight)
+    {
+        float want = UiFonts.ScaleFor(windowHeight);
+        if (want == UiFonts.Scale)
+        {
+            _pendingScale = 0;
+            return;
+        }
+        ulong now = SDL_GetTicks();
+        if (want != _pendingScale)
+        {
+            _pendingScale = want;
+            _pendingSinceMs = now;
+            return;
+        }
+        if (now - _pendingSinceMs < SettleMs)
+            return;
+        _pendingScale = 0;
+        var old = _fontTexture;
+        ImGui.GetIO().Fonts.Clear();
+        CreateFontTexture(want);
+        if (old != null)
+            SDL_ReleaseGPUTexture(_device, old);   // SDL keeps it alive for the frames still in flight
+        Console.WriteLine($"UI scale {want:0.###} for a {windowHeight} px window");
+    }
+
+    private void CreateFontTexture(float scale)
+    {
         ImGuiIOPtr io = ImGui.GetIO();
-        UiFonts.Load(io.Fonts, SDL_GetWindowDisplayScale(_window));   // a high-DPI display's 150 %, 200 %
+        UiFonts.Load(io.Fonts, scale);
 
         // Get font texture data
         io.Fonts.GetTexDataAsRGBA32(out IntPtr pixels, out int width, out int height, out int bytesPerPixel);
@@ -506,6 +546,7 @@ public unsafe class ImGuiRenderer : IDisposable
         // Setup display size
         int w, h;
         SDL_GetWindowSize(_window, &w, &h);
+        FollowWindowScale(h);
         io.DisplaySize = new Vector2(w, h);
         io.DisplayFramebufferScale = Vector2.One;
 
