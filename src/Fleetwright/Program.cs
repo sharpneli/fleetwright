@@ -7,6 +7,8 @@ public static unsafe class Program
         // Parse command line arguments
         int screenshotFrame = -1;
         string screenshotPath = "screenshot.png";
+        bool screenshotUi = false;
+        uint width = 0, height = 0;
         string? shipPath = null, navy = null, era = null, view = null, camera = null, show = null;
 
         foreach (string arg in args)
@@ -43,6 +45,19 @@ public static unsafe class Program
             {
                 show = arg.Substring("-show=".Length);
             }
+            else if (arg == "-ui")   // the screenshot shows the UI too
+            {
+                screenshotUi = true;
+            }
+            else if (arg.StartsWith("-size="))   // the window's size, WxH
+            {
+                var wh = arg.Substring("-size=".Length).Split('x');
+                if (wh.Length != 2 || !uint.TryParse(wh[0], out width) || !uint.TryParse(wh[1], out height) || width == 0 || height == 0)
+                {
+                    Console.Error.WriteLine($"Bad size: {arg} (want -size=1920x1080)");
+                    return 1;
+                }
+            }
             else if (arg.StartsWith("-output="))
             {
                 screenshotPath = arg.Substring("-output=".Length);
@@ -52,12 +67,14 @@ public static unsafe class Program
         try
         {
             using var engine = new Sdl3GpuEngine();
+            if (width > 0)
+                engine.SetWindowSize(width, height);
             engine.Init();
 
             // Configure screenshot if requested
             if (screenshotFrame >= 0)
             {
-                engine.SetScreenshotCapture(screenshotFrame, screenshotPath);
+                engine.SetScreenshotCapture(screenshotFrame, screenshotPath, screenshotUi);
             }
 
             // The design's scenes: the ship viewer (sprites) and the hitbox viewer, on one shared design

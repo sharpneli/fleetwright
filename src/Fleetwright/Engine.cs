@@ -204,8 +204,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
     private int _screenshotFrame = -1;
     private string _screenshotPath = "screenshot.png";
     private bool _screenshotTaken;
-    private GpuTexture _screenshotTexture;
-    private SDL_GPUTransferBuffer* _screenshotTransferBuffer;
+    private bool _screenshotUi;
 
     // The scene drawn into the main target (the ship viewer today), instead of the scene graph below
     public IScene? Scene { get; set; }
@@ -293,12 +292,26 @@ public unsafe class Sdl3GpuEngine : IDisposable
     /// </summary>
     /// <param name="frameNumber">Frame number to capture (0-indexed).</param>
     /// <param name="outputPath">Output file path (PNG format).</param>
-    public void SetScreenshotCapture(int frameNumber, string outputPath = "screenshot.png")
+    /// <param name="withUi">The window as seen, ImGui on top; otherwise the scene alone.</param>
+    public void SetScreenshotCapture(int frameNumber, string outputPath = "screenshot.png", bool withUi = false)
     {
         _screenshotFrame = frameNumber;
         _screenshotPath = outputPath;
+        _screenshotUi = withUi;
         _screenshotTaken = false;
-        Console.WriteLine($"Screenshot will be taken at frame {frameNumber}");
+        // The capture shows the UI's own defaults: no saved layout read, the user's not overwritten
+        if (_isInitialized)
+            ImGui.GetIO().NativePtr->IniFilename = null;
+        Console.WriteLine($"Screenshot will be taken at frame {frameNumber}{(withUi ? " with the UI" : "")}");
+    }
+
+    /// <summary>The window's size in pixels, before <see cref="Init"/>.</summary>
+    public void SetWindowSize(uint width, uint height)
+    {
+        if (_isInitialized)
+            throw new InvalidOperationException("SetWindowSize goes before Init");
+        _windowWidth = width;
+        _windowHeight = height;
     }
 
     public Sdl3GpuEngine()
@@ -331,7 +344,6 @@ public unsafe class Sdl3GpuEngine : IDisposable
         InitDrawTextures();
         InitDefaultData();
         InitPipelines();
-        InitScreenshot();
         InitImGui();
 
         _isInitialized = true;
@@ -540,25 +552,6 @@ public unsafe class Sdl3GpuEngine : IDisposable
         _mainTarget.Resize(width, height);   // waits for the GPU
 
         Console.WriteLine($"Resized render targets to {width}x{height}");
-    }
-
-    private void InitScreenshot()
-    {
-        // Create screenshot texture (R8G8B8A8 for easy saving)
-        _screenshotTexture = CreateTexture(
-            SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
-            _windowWidth, _windowHeight,
-            SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
-            SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_SAMPLER
-        );
-
-        // Create transfer buffer for downloading screenshot
-        SDL_GPUTransferBufferCreateInfo downloadTransferInfo = new SDL_GPUTransferBufferCreateInfo
-        {
-            usage = SDL_GPUTransferBufferUsage.SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD,
-            size = _windowWidth * _windowHeight * 4 // RGBA
-        };
-        _screenshotTransferBuffer = SDL_CreateGPUTransferBuffer(_device, &downloadTransferInfo);
     }
 
     #endregion
@@ -905,11 +898,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
                 using (new ProfileScope("Draw", ZoneC.RED))
                     Draw();
 
-                // Check for screenshot capture
-                if (_screenshotFrame >= 0 && (int)FrameNumber == _screenshotFrame && !_screenshotTaken)
+                // The screenshot is taken in Draw; the run ends with it
+                if (_screenshotTaken)
                 {
-                    CaptureScreenshot();
-                    _screenshotTaken = true;
                     Console.WriteLine($"Screenshot complete. Exiting after frame {FrameNumber}.");
                     _isRunning = false;
                 }
@@ -1124,14 +1115,17 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
         // Resolve MSAA and blit to swapchain
         using (new ProfileScope("Blit", ZoneC.ORANGE))
-            BlitToSwapchain(commandBuffer, swapchainTexture);
+            BlitMainTo(commandBuffer, swapchainTexture);
 
         // Draw ImGui
         using (new ProfileScope("DrawImGui", ZoneC.PURPLE))
             DrawImGui(commandBuffer, swapchainTexture, drawData);
 
-        // Submit
-        SDL_SubmitGPUCommandBuffer(commandBuffer);
+        // Submit (the screenshot frame records its capture first, then submits and waits)
+        if (_screenshotFrame >= 0 && (int)FrameNumber >= _screenshotFrame && !_screenshotTaken)
+            CaptureScreenshot(commandBuffer, drawData);
+        else
+            SDL_SubmitGPUCommandBuffer(commandBuffer);
     }
 
     private void BuildImGuiUI()
@@ -1168,7 +1162,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
         }
     }
 
-    private void DrawImGui(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* swapchainTexture, ImDrawDataPtr drawData)
+    private void DrawImGui(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* target, ImDrawDataPtr drawData)
     {
         if (_imguiRenderer == null || drawData.TotalVtxCount <= 0)
             return;
@@ -1176,7 +1170,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
         // Begin render pass for ImGui (renders to swapchain with blending)
         SDL_GPUColorTargetInfo colorTargetInfo = new SDL_GPUColorTargetInfo
         {
-            texture = swapchainTexture,
+            texture = target,
             load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_LOAD, // Preserve existing content
             store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE
         };
@@ -1269,14 +1263,16 @@ public unsafe class Sdl3GpuEngine : IDisposable
         TriangleCount += (int)(obj.IndexCount / 3);
     }
 
-    private void BlitToSwapchain(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* swapchainTexture)
+    /// <summary>The main target, resolved, onto a texture of the swapchain's format: the swapchain, or the
+    /// screenshot that stands in for it.</summary>
+    private void BlitMainTo(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* target)
     {
         // Use blit pipeline if available, otherwise just copy
         if (_blitPipeline != null)
         {
             SDL_GPUColorTargetInfo colorTargetInfo = new SDL_GPUColorTargetInfo
             {
-                texture = swapchainTexture,
+                texture = target,
                 load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_DONT_CARE,
                 store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE
             };
@@ -1309,7 +1305,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
                 },
                 destination = new SDL_GPUBlitRegion
                 {
-                    texture = swapchainTexture,
+                    texture = target,
                     w = _windowWidth,
                     h = _windowHeight
                 },
@@ -1321,86 +1317,66 @@ public unsafe class Sdl3GpuEngine : IDisposable
         }
     }
 
-    private void CaptureScreenshot()
+    /// <summary>Records the frame again into a texture of the swapchain's format (the swapchain itself can't be
+    /// read back), with or without the UI, then submits the frame's command buffer, waits and saves the PNG.</summary>
+    private void CaptureScreenshot(SDL_GPUCommandBuffer* cmd, ImDrawDataPtr drawData)
     {
-        // Wait for GPU to finish
-        SDL_WaitForGPUIdle(_device);
-
-        // Blit HDR texture to screenshot texture (with tonemapping)
-        SDL_GPUCommandBuffer* cmdBuffer = SDL_AcquireGPUCommandBuffer(_device);
-
-        // Blit from draw texture to screenshot texture
-        SDL_GPUBlitInfo blitInfo = new SDL_GPUBlitInfo
+        uint w = _windowWidth, h = _windowHeight;
+        var shot = CreateTexture(_swapchainFormat, w, h, SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COLOR_TARGET);
+        var downloadInfo = new SDL_GPUTransferBufferCreateInfo
         {
-            source = new SDL_GPUBlitRegion
-            {
-                texture = _mainTarget.Resolve,
-                w = _windowWidth,
-                h = _windowHeight
-            },
-            destination = new SDL_GPUBlitRegion
-            {
-                texture = _screenshotTexture.Texture,
-                w = _windowWidth,
-                h = _windowHeight
-            },
-            load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_DONT_CARE,
-            filter = SDL_GPUFilter.SDL_GPU_FILTER_LINEAR
+            usage = SDL_GPUTransferBufferUsage.SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD,
+            size = w * h * 4
         };
-        SDL_BlitGPUTexture(cmdBuffer, &blitInfo);
+        SDL_GPUTransferBuffer* download = SDL_CreateGPUTransferBuffer(_device, &downloadInfo);
 
-        SDL_SubmitGPUCommandBuffer(cmdBuffer);
-        SDL_WaitForGPUIdle(_device);
+        BlitMainTo(cmd, shot.Texture);
+        if (_screenshotUi)
+            DrawImGui(cmd, shot.Texture, drawData);
 
-        // Download texture data
-        cmdBuffer = SDL_AcquireGPUCommandBuffer(_device);
-        SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(cmdBuffer);
-
-        SDL_GPUTextureTransferInfo transferInfo = new SDL_GPUTextureTransferInfo
-        {
-            transfer_buffer = _screenshotTransferBuffer,
-            offset = 0,
-            pixels_per_row = _windowWidth,
-            rows_per_layer = _windowHeight
-        };
-
-        SDL_GPUTextureRegion textureRegion = new SDL_GPUTextureRegion
-        {
-            texture = _screenshotTexture.Texture,
-            w = _windowWidth,
-            h = _windowHeight,
-            d = 1
-        };
-
-        SDL_DownloadFromGPUTexture(copyPass, &textureRegion, &transferInfo);
-
+        SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(cmd);
+        var region = new SDL_GPUTextureRegion { texture = shot.Texture, w = w, h = h, d = 1 };
+        var transfer = new SDL_GPUTextureTransferInfo { transfer_buffer = download, pixels_per_row = w, rows_per_layer = h };
+        SDL_DownloadFromGPUTexture(copyPass, &region, &transfer);
         SDL_EndGPUCopyPass(copyPass);
 
-        // Submit and wait
-        SDL_GPUFence* fence = SDL_SubmitGPUCommandBufferAndAcquireFence(cmdBuffer);
+        SDL_GPUFence* fence = SDL_SubmitGPUCommandBufferAndAcquireFence(cmd);
         SDL_WaitForGPUFences(_device, true, &fence, 1);
         SDL_ReleaseGPUFence(_device, fence);
 
-        // Map and save the data
-        byte* pixelData = (byte*)SDL_MapGPUTransferBuffer(_device, _screenshotTransferBuffer, false);
-
-        if (pixelData != null)
+        byte* pixels = (byte*)SDL_MapGPUTransferBuffer(_device, download, false);
+        if (pixels != null)
         {
-            SaveScreenshotToPng(pixelData, _windowWidth, _windowHeight, _screenshotPath);
-            SDL_UnmapGPUTransferBuffer(_device, _screenshotTransferBuffer);
+            SaveScreenshotToPng(pixels, w, h, _screenshotPath);
+            SDL_UnmapGPUTransferBuffer(_device, download);
         }
         else
-        {
             Console.Error.WriteLine("Failed to map screenshot transfer buffer");
-        }
+
+        SDL_ReleaseGPUTransferBuffer(_device, download);
+        DestroyTexture(shot);
+        _screenshotTaken = true;
     }
 
     private void SaveScreenshotToPng(byte* pixelData, uint width, uint height, string path)
     {
-        // Wrap the downloaded RGBA8 pixels in a surface (no copy) and save as PNG
-        // (ABGR8888 == RGBA32 byte order on little-endian)
-        SDL_Surface* surface = SDL_CreateSurfaceFrom((int)width, (int)height,
-            SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888, (IntPtr)pixelData, (int)width * 4);
+        // Wrap the downloaded pixels, in the swapchain's format, in a surface (no copy) and save as PNG
+        // (SDL's packed formats name the bits of a little-endian word: ABGR8888 is R,G,B,A in memory)
+        SDL_PixelFormat format = _swapchainFormat switch
+        {
+            SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM or
+            SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM_SRGB => SDL_PixelFormat.SDL_PIXELFORMAT_ARGB8888,
+            SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM or
+            SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB => SDL_PixelFormat.SDL_PIXELFORMAT_ABGR8888,
+            SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R10G10B10A2_UNORM => SDL_PixelFormat.SDL_PIXELFORMAT_ABGR2101010,
+            _ => SDL_PixelFormat.SDL_PIXELFORMAT_UNKNOWN,
+        };
+        if (format == SDL_PixelFormat.SDL_PIXELFORMAT_UNKNOWN)
+        {
+            Console.Error.WriteLine($"Failed to save screenshot: no pixel format for {_swapchainFormat}");
+            return;
+        }
+        SDL_Surface* surface = SDL_CreateSurfaceFrom((int)width, (int)height, format, (IntPtr)pixelData, (int)width * 4);
         if (surface == null)
         {
             Console.Error.WriteLine($"Failed to save screenshot: {SDL_GetError()}");
@@ -1471,11 +1447,6 @@ public unsafe class Sdl3GpuEngine : IDisposable
         DestroyTexture(_errorCheckerboardTexture);
         DestroyTexture(_defaultNormalTexture);
         _mainTarget?.Dispose();
-        DestroyTexture(_screenshotTexture);
-
-        // Release screenshot transfer buffer
-        if (_screenshotTransferBuffer != null)
-            SDL_ReleaseGPUTransferBuffer(_device, _screenshotTransferBuffer);
 
         // Release window and device
         SDL_ReleaseWindowFromGPUDevice(_device, _window);

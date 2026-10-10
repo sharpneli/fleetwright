@@ -15,6 +15,7 @@ dotnet test
 dotnet run --project src/Fleetwright
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
+dotnet run --project src/Fleetwright -- -screenshot=30 -ui [-size=1920x1080] # the window as seen, ImGui included
 dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour]
 ```
 
@@ -27,7 +28,8 @@ The menu bar (or F3) switches to the hitbox viewer: the same design's hitbox mod
 `hitview.py`). Left drag orbits, right drag pans, wheel zooms; hovering names a prism and a click selects it and lists
 its fields. Its panel picks the view, the projection, which kinds are drawn, and a clip box: whole prisms that overlap
 it (a tier button gives that tier's rooms, `hitbox_cells.png` live) or a per-pixel cut. `-screenshot` captures the
-scene without the ImGui overlay.
+scene alone; with `-ui` it is the window as seen, ImGui on top. Both go through the window's blit shader, and
+a capture run reads no `imgui.ini` and writes none, so the UI shows its defaults. `-size=WxH` sets the window size.
 
 ## Release and game assets
 

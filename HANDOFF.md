@@ -35,24 +35,18 @@ Notes for the next session. Delete or replace this file once its items are picke
 - **Open (user):** the views consume one specific ship hitbox model. Today `HitboxMesh` reads the exported
   `Hitboxes` (Shipgen's JSON-shaped model) and is its only reader on the view side; the user wants to settle that
   model's data structures later, and the change then stays in `HitboxMesh.Build`.
-- `-screenshot` shows the main target only, not ImGui: to check an embedded view, blit its target into the main one
-  temporarily (as was done for the inset).
+- `-screenshot=N -ui` captures the window as seen, ImGui included (`-size=WxH` for other window sizes); without
+  `-ui` the scene alone.
 
 ## Next up, in the order I'd suggest (none of it agreed with the user yet)
 
-1. **Route `-screenshot` through the engine's blit shader.** At the moment `CaptureScreenshot` uses
-   `SDL_BlitGPUTexture`, so the screenshot skips the shader the window uses. Render the blit pipeline into an offscreen
-   texture of the swapchain format and read that back, so the screenshot is what the window shows. Offered to the user;
-   not done.
-   - Background: the blit had a vertical flip (fixed in `blit.vert.glsl`, commit fe27ea0). The user checked the 3D test
-     cube afterwards: lit from above, so the right way up.
-2. **The bug fixes held back by "port as is":** `docs/shipgen/TODO.md` (Generator bugs, Hidden thresholds), one
+1. **The bug fixes held back by "port as is":** `docs/shipgen/TODO.md` (Generator bugs, Hidden thresholds), one
    fix per commit. Each fix updates the goldens on purpose: regenerate them from the C# side, since Python is
    frozen. Decide with the user how golden updates are recorded.
-3. **Smaller leftovers:**
+2. **Smaller leftovers:**
    - In the viewer, turret shadows and the height-map shadow darken twice where they overlap. Python took the max.
    - The bake's opacity groups must hold opaque, unnested children; it throws otherwise.
-4. **Later (user):** the game-facing API of Shipgen and the asset path, refits, texture compression.
+3. **Later (user):** the game-facing API of Shipgen and the asset path, refits, texture compression.
 
 ## Regression commands (all from the repo root, `-c Release`)
 
