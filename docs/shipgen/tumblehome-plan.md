@@ -1,6 +1,6 @@
 # Plan: physical hull form variations, tumblehome first
 
-2026-10-10. Status: agreed 2026-10-10 (decisions at the end); steps 1-6 now, step 7 later. Done: steps 1-4 (with the side-gun
+2026-10-10. Status: agreed 2026-10-10 (decisions at the end); steps 1-6 now, step 7 later. Done: steps 1-5 (with the side-gun
 sponsons from step 8 pulled forward: without them a tumblehome Bouvet grew to a 31 m beam to fit her wing turrets on the
 narrow deck). Background and options: `hull-form-variations.md`.
 
@@ -140,7 +140,10 @@ The table is compiled once per ship into flat arrays: station x, per-strip z row
 
   A shell crossing the hull visits a handful of cells, so this is exact against the game's `HalfWidth` and costs
   around a microsecond. The normal gives obliquity against the belt.
-- `ShellTest` moves onto it. Its old 5 cm march stays in the tests as a reference: march and raycast must agree.
+- `ShellTest` reads the hull through it (same results; no faster, since the march's other work dominates). Moving the
+  shell test's march to raycasts belongs with the damage model. `HullFieldTests` hold the raycast to a 1 cm march: no
+  disagreement over 5,000 rays, after modelling the flat ends (a transom is a face of its own, `HullFace.End`) and the
+  steps where rounding repeats a station's height.
 
 ### Rendering
 

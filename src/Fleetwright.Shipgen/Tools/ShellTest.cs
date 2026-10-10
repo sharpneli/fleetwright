@@ -6,7 +6,7 @@ namespace Fleetwright.Shipgen.Tools;
 /// over their last stretch. Each is traced back from its target out of the ship: it's stopped if on the way in it
 /// crossed armour or water, and a leak if it reached the citadel through neither.
 /// <para>Only the hitbox model is read, the way a game would read it: the belt and strakes lie on the hull side
-/// (HullForm.HalfWidth) over their x0..x1 and bottom..top; an armour deck is the plane z over x0..x1 across the hull, with
+/// (HullField.HalfWidth, the exported form) over their x0..x1 and bottom..top; an armour deck is the plane z over x0..x1 across the hull, with
 /// holes where a barbette (inside its wall) or an uptake passes through it, unless the uptakes have gratings; a bulkhead is the plane x over bottom..top across the hull. A
 /// barbette is a tube: its wall is armour, its open top isn't (the turret on it is). Turrets, the conning tower and
 /// armoured casings and directors are armoured solids. Water is anything outside the hull below the waterline.</para></summary>
@@ -74,7 +74,8 @@ public static class ShellTest
             return top;
         }
 
-        public double Hw(double x, double z) => Hb.HullForm.HalfWidth(x, z);
+        public required HullField Field;
+        public double Hw(double x, double z) => Field.HalfWidth(x, z);
 
         public bool InHull(double x, double y, double z) => z >= Keel && z <= DeckTop(x) && Math.Abs(y) < Hw(x, z);
 
@@ -114,7 +115,7 @@ public static class ShellTest
         var v = hb.Vertical;
         var s = new Ship
         {
-            Hb = hb, Keel = v.Keel, Wl = v.Waterline, XMax = hb.Length / 2 + 2, YMax = hb.Beam / 2 + 2, Raised = v.Raised ?? [],
+            Hb = hb, Field = new HullField(hb.HullForm, v), Keel = v.Keel, Wl = v.Waterline, XMax = hb.Length / 2 + 2, YMax = hb.Beam / 2 + 2, Raised = v.Raised ?? [],
             Decks = hb.Armour.Decks?.Where(d => d.ThicknessMm > 0).ToList() ?? [],
             Bulkheads = hb.Armour.Bulkheads?.Where(b => b.ThicknessMm > 0).ToList() ?? [],
         };
