@@ -3,7 +3,8 @@
 - plants.json:  docs/shipgen/plant-templates.md, the `machinery.tech` blocks by year
 - hulls.json:   docs/shipgen/hull-templates.md, the `hull.construction` blocks
 - crew.json:    docs/shipgen/crew-templates.md, the `crew.standard` blocks (H0-H5)
-- armour.json:  the `armour.materials` maps the shipped designs use (shipgen/designs/*.json), one per distinct scheme
+- armour.json:  the `armour.materials` maps the shipped designs use (shipgen/designs/*.json), one per distinct scheme,
+                weakest first (SIDE and DECK below)
 - materials.json: material names for the pickers (structure: hull plating, superstructure; armour: per-part overrides)
 
 Each entry is {"name", "group", "note", "value"}: value is the block as the design JSON takes it.
@@ -48,6 +49,31 @@ def crew():
     return [{"name": v["name"], "group": sec.split(":")[0], "note": "", "value": v} for sec, lab, v in blocks("crew-templates.md", "standard")]
 
 
+# How well each material resists AP shell, for ordering the armour schemes in the picker only: rough ratings after
+# Okun's comparisons (navweaps.com), Krupp cemented = 1.0. Face-hardened plate is rated as side armour; homogeneous
+# plate as deck armour, where face hardening doesn't pay. The engine never sees these (DECISIONS.md: materials are
+# names only); a new material needs a line here.
+SIDE = {
+    "wrought iron": 0.40, "mild steel": 0.40, "steel": 0.50, "compound": 0.50, "high-tensile steel": 0.55,
+    "nickel steel": 0.65, "Harvey nickel steel": 0.80, "non-cemented armour": 0.80, "Krupp non-cemented": 0.80,
+    "STS": 0.85, "special treatment steel": 0.85, "Class B": 0.85, "Vickers hardened": 0.90,
+    "Witkowitz cemented": 0.95, "Terni cemented": 0.97, "cemented armour": 1.00, "Krupp cemented": 1.00,
+    "Vickers cemented": 1.00, "Class A": 1.00, "Class A armour": 1.00, "Krupp cemented (KC n/A)": 1.05,
+}
+DECK = {
+    "wrought iron": 0.60, "mild steel": 0.70, "steel": 0.70, "compound": 0.70, "high-tensile steel": 0.80,
+    "nickel steel": 0.85, "Harvey nickel steel": 0.85, "cemented armour": 0.85, "Terni cemented": 0.85,
+    "Witkowitz cemented": 0.85, "special steel": 0.95, "non-cemented armour": 0.95, "Krupp non-cemented": 0.95,
+    "Molybdenum steel": 0.95, "Wotan": 1.00, "Wotan hart": 1.00, "STS": 1.00, "special treatment steel": 1.00,
+    "Class B": 1.00,
+}
+
+
+def effectiveness(m):
+    """A scheme's rating: mostly the belt, partly the decks."""
+    return 0.7 * SIDE[m["belt"]] + 0.3 * DECK[m["decks"]]
+
+
 def armour():
     """One scheme per distinct materials map, named by its side and deck armour, with the designs that use it."""
     schemes = {}
@@ -74,7 +100,7 @@ def armour():
         names[name] = True
         out.append({"name": name, "group": "", "note": "as in " + ", ".join(used[:3]) + (" ..." if len(used) > 3 else ""),
                     "value": dict(sorted(m.items()))})
-    out.sort(key=lambda e: e["name"].lower())
+    out.sort(key=lambda e: (effectiveness(e["value"]), e["name"].lower()))   # weakest first, as the eras went
     return out
 
 
