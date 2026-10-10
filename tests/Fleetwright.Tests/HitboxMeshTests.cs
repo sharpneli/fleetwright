@@ -93,8 +93,8 @@ public class HitboxMeshTests
                     failures.Add($"{name}: {p.Id} has no height");
                 if (p.Min.X < -reach || p.Max.X > reach || Math.Abs(p.Min.Y) > beam || Math.Abs(p.Max.Y) > beam)
                     failures.Add($"{name}: {p.Id} lies outside the ship ({p.Min} to {p.Max})");
-                if (p.Kind == HitKinds.IndexOf("hull"))
-                    continue;   // the hull's skin isn't an extruded footprint (Hull_skin_lies_on_the_hull_form)
+                if (p.Kind == HitKinds.IndexOf("hull") || p.Lofted)
+                    continue;   // the hull's skin and the lofts aren't extruded footprints (the tests below)
                 // the top cap (the triangles facing up) must cover its ring of vertices (the footprint, drawn grown by
                 // a hair), no more, no less; and the drawn ring stays within a few centimetres of the footprint
                 double got = 0;
@@ -151,5 +151,46 @@ public class HitboxMeshTests
             }
         }
         Assert.True(sides > 1000);
+    }
+
+    /// <summary>What the hull's side cuts follows the side up its height: a cell cut by it stays inside the hull at every
+    /// height, and the belt and strakes hug it (outer face 0.15 m out, inner 0.25 m in), top to bottom.</summary>
+    [Theory]
+    [InlineData("bismarck")]
+    [InlineData("bouvet")]
+    [InlineData("danton")]
+    public void Lofts_follow_the_hull_side(string name)
+    {
+        var hb = ShipDesign.Build(Design.Load(Paths.Shipgen("designs", $"{name}.json"))).Hitboxes;
+        var field = new HullField(hb.HullForm, hb.Vertical);
+        var mesh = HitboxMesh.Build(hb);
+        int belt = HitKinds.IndexOf("belt"), strake = HitKinds.IndexOf("strake"), cells = 0, armour = 0;
+        foreach (var p in mesh.Prisms.Where(p => p.Lofted))
+        {
+            bool onSide = p.Kind == belt || p.Kind == strake;
+            if (p.Source is Cell)
+                cells++;
+            else if (onSide)
+                armour++;
+            foreach (var i in mesh.Indices.AsSpan(p.FirstIndex, p.IndexCount))
+            {
+                var q = mesh.Vertices[i].Position;
+                double w = field.HalfWidth(Math.Clamp(q.X, field.X0 + 1e-4, field.X1 - 1e-4), Math.Clamp(q.Z, p.Base, p.Top));
+                                double xc = Math.Clamp(q.X, field.X0 + 1e-4, field.X1 - 1e-4), zc = Math.Clamp(q.Z, p.Base, p.Top);
+                // the side's least and greatest half-breadth within 5 cm (a drawn shape is grown by a hair, more at its corners)
+                var near = (from dx in new[] { -0.05, 0.0, 0.05 } from dz in new[] { -0.05, 0.0, 0.05 }
+                            select field.HalfWidth(Math.Clamp(xc + dx, field.X0 + 1e-4, field.X1 - 1e-4), zc + dz)).ToList();
+                double reach = near.Max(), wLo = near.Min();
+                if (p.Source is Cell)
+                    Assert.True(Math.Abs(q.Y) <= reach + 0.05, $"{name}: {p.Id} reaches {Math.Abs(q.Y) - w:F2} m out of the hull at {q}");
+                else if (onSide && w > 0.3 && Math.Abs(q.Y) > 0.5 * w)   // where the side is wider than the belt is thick
+                {
+                    // its outer face or its inner, give or take 5 cm in height (the side can step there: a cut-up stern)
+                    bool On(double off) => Math.Abs(q.Y) - off >= wLo - 0.08 && Math.Abs(q.Y) - off <= reach + 0.08;   // a corner grows up to 4 hairs
+                    Assert.True(On(0.15) || On(-0.25), $"{name}: {p.Id} stands {Math.Abs(q.Y) - w:F2} m off the side at {q}");
+                }
+            }
+        }
+        Assert.True(cells > 10 && armour >= 2, $"{name}: {cells} lofted cells, {armour} lofted belts and strakes");
     }
 }

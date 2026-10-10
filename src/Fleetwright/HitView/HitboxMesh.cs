@@ -18,7 +18,8 @@ public struct HitVertex
     public const int SizeInBytes = 32;
 }
 
-/// <summary>One hitbox shape as drawn: a footprint extruded from Base to Top. Its faces are
+/// <summary>One hitbox shape as drawn: a footprint extruded from Base to Top, or (Lofted) a solid whose outline changes
+/// with height to follow the hull's side, its Footprint then the outline at mid-height. Its faces are
 /// Indices[FirstIndex..+IndexCount] (triangles) and its outline EdgeIndices[FirstEdge..+EdgeCount] (lines).</summary>
 public sealed class HitPrism
 {
@@ -29,6 +30,10 @@ public sealed class HitPrism
     public object? Source { get; init; }
 
     public required Vector2[] Footprint { get; init; }
+
+    /// <summary>Not an extruded footprint: picked by its triangles.</summary>
+    public bool Lofted { get; init; }
+
     public float Base { get; init; }
     public float Top { get; init; }
     public int FirstIndex, IndexCount, FirstEdge, EdgeCount;
@@ -72,11 +77,44 @@ public sealed class HitboxMesh
             var p = Prisms[i];
             if (p.Kind == hull || !state.Shows(p.Kind) || !state.Keeps(p.Min, p.Max) || !SlabHit(o, d, p.Min, p.Max, best))
                 continue;
-            float t = FirstHit(p, o, d, state, best);
+            float t = p.Lofted ? FirstTriangle(p, o, d, state, best) : FirstHit(p, o, d, state, best);
             if (t < best)
                 (best, hit) = (t, (uint)i);
         }
         return hit;
+    }
+
+    /// <summary>The nearest t below <paramref name="tMax"/> where the ray meets one of the shape's triangles (inside the
+    /// clip box when cutting).</summary>
+    float FirstTriangle(HitPrism p, Vector3 o, Vector3 d, in HitboxViewState state, float tMax)
+    {
+        float best = tMax;
+        var idx = Indices.AsSpan(p.FirstIndex, p.IndexCount);
+        for (int i = 0; i + 2 < idx.Length; i += 3)
+        {
+            Vector3 a = Vertices[idx[i]].Position, e1 = Vertices[idx[i + 1]].Position - a, e2 = Vertices[idx[i + 2]].Position - a;
+            var pv = Vector3.Cross(d, e2);
+            float det = Vector3.Dot(e1, pv);
+            if (MathF.Abs(det) < 1e-12f)
+                continue;
+            float inv = 1 / det;
+            var tv = o - a;
+            float u = Vector3.Dot(tv, pv) * inv;
+            if (u < 0 || u > 1)
+                continue;
+            var qv = Vector3.Cross(tv, e1);
+            float v = Vector3.Dot(d, qv) * inv;
+            if (v < 0 || u + v > 1)
+                continue;
+            float t = Vector3.Dot(e2, qv) * inv;
+            if (t <= 0 || t >= best)
+                continue;
+            var q = o + d * t;
+            if (!state.Clip || !state.ClipCut || (q.X >= state.ClipMin.X && q.Y >= state.ClipMin.Y && q.Z >= state.ClipMin.Z
+                                                  && q.X <= state.ClipMax.X && q.Y <= state.ClipMax.Y && q.Z <= state.ClipMax.Z))
+                best = t;
+        }
+        return best;
     }
 
     static bool SlabHit(Vector3 o, Vector3 d, Vector3 min, Vector3 max, float tMax)
@@ -158,7 +196,10 @@ public sealed class HitboxMesh
 
         readonly HullField? field = hb.HullForm.Stations.Count >= 2 ? new HullField(hb.HullForm, hb.Vertical) : null;
 
-        double HalfWidth(double x, double z) => field?.HalfWidth(x, z) ?? DeckHalfWidth(x);
+        /// <summary>The hull's half-breadth; on an end station the end's own (a transom has width there, where
+        /// HullField.HalfWidth, off the hull, has none).</summary>
+        double HalfWidth(double x, double z) =>
+            field is { } f ? f.HalfWidth(Math.Abs(x - f.X0) < 1e-6 ? f.X0 + 1e-6 : Math.Abs(x - f.X1) < 1e-6 ? f.X1 - 1e-6 : x, z) : DeckHalfWidth(x);
 
         /// <summary>The hull's skin, one prism per strip between stations: both sides through every row of the form
         /// (smooth normals across cells), the deck tops, the bottom where a strip starts with width, the flat ends
@@ -315,6 +356,214 @@ public sealed class HitboxMesh
             return [.. lo, .. hi];
         }
 
+        /// <summary>A cell: its box clipped to the hull. Where the side cuts it, a loft that follows the side up the
+        /// cell's height (the hull narrows to the keel, and leans in above the waterline with tumblehome); else a prism.
+        /// </summary>
+        void AddCell(string kind, Cell c)
+        {
+            var xs = XsOver(c.X0, c.X1);
+            var zs = ZsOver(c.X0, c.X1, c.Base, c.Top);
+            bool cut = field != null && xs.Any(x => zs.Any(z => HalfWidth(x, z) < Math.Max(-c.Y0, c.Y1)));
+            if (!cut)
+            {
+                Add(kind, c.Id, c, CellOutline(c), c.Base, c.Top);
+                return;
+            }
+            // a level where the side crosses the cell's walls at each station, so the loft opens where the cell does
+            var levels = new SortedSet<double>(zs);
+            foreach (var x in xs)
+                foreach (var e in new[] { Math.Abs(c.Y0), Math.Abs(c.Y1) })
+                    for (int k = 0; k + 1 < zs.Count; k++)
+                    {
+                        double lo = zs[k], hi = zs[k + 1];
+                        if ((HalfWidth(x, lo) - e) * (HalfWidth(x, hi) - e) >= 0)
+                            continue;
+                        bool rising = HalfWidth(x, hi) > e;
+                        for (int it = 0; it < 30; it++)
+                        {
+                            double m = (lo + hi) / 2;
+                            if ((HalfWidth(x, m) > e) == rising)
+                                hi = m;
+                            else
+                                lo = m;
+                        }
+                        levels.Add(rising ? hi : lo);
+                    }
+            zs = Merge(levels, c.Base, c.Top);
+            // at each station, the heights where the cell has width (the hull reaches its near wall): a ring point at a
+            // height where it has none rides to the nearest such height, onto the hull's side, so nothing hangs outside
+            double near = c.Y0 > 0 ? c.Y0 : c.Y1 < 0 ? -c.Y1 : 0.0;
+            var span = xs.Select(x =>
+            {
+                var ok = zs.Where(z => HalfWidth(x, z) >= near - 1e-9 && HalfWidth(x, z) > 0).ToList();
+                return ok.Count > 0 ? (Lo: ok.Min(), Hi: ok.Max()) : (Lo: double.NaN, Hi: double.NaN);
+            }).ToList();
+            // a station where the cell has no width at any height (it ends short of its box): its points stand at the
+            // nearest station where it has some, so the loft closes there
+            var has = Enumerable.Range(0, xs.Count).Where(k => !double.IsNaN(span[k].Lo)).ToList();
+            if (has.Count == 0)
+                return;
+            xs = xs.Select((x, k) => double.IsNaN(span[k].Lo) ? xs[has.MinBy(j => Math.Abs(j - k))] : x).ToList();
+            span = span.Select((sp, k) => double.IsNaN(sp.Lo) ? span[has.MinBy(j => Math.Abs(j - k))] : sp).ToList();
+            List<P3> Ring(double z)
+            {
+                var lo = new List<P3>();
+                var hi = new List<P3>();
+                for (int k = 0; k < xs.Count; k++)
+                {
+                    double x = xs[k], zc = double.IsNaN(span[k].Lo) ? z : Math.Clamp(z, span[k].Lo, span[k].Hi), w = HalfWidth(x, zc);
+                    lo.Add(new P3(x, Math.Clamp(-w, c.Y0, c.Y1), zc));
+                    hi.Add(new P3(x, Math.Clamp(w, c.Y0, c.Y1), zc));
+                }
+                hi.Reverse();
+                return [.. lo, .. hi];
+            }
+            AddLoft(kind, c.Id, c, zs, Ring);
+        }
+
+        /// <summary>The stations between x0 and x1, and both ends: where the hull's side bends along the length.</summary>
+        List<double> XsOver(double x0, double x1)
+        {
+            var xs = new List<double> { x0 };
+            if (field != null)
+                for (int i = 0; i <= field.StripCount; i++)
+                {
+                    double x = field.StationX(i);
+                    if (x > x0 + 0.05 && x < x1 - 0.05)
+                        xs.Add(x);
+                }
+            else
+                xs.AddRange(Enumerable.Range(1, 7).Select(k => x0 + (x1 - x0) * k / 8));
+            xs.Add(x1);
+            return xs;
+        }
+
+        /// <summary>The form's rows between bottom and top over x0 .. x1, and both ends: where the side bends up its height
+        /// (rows closer than 2 cm merged).</summary>
+        List<double> ZsOver(double x0, double x1, double bottom, double top)
+        {
+            var zs = new SortedSet<double> { bottom, top };
+            if (field != null)
+                for (int i = 0; i < field.StripCount; i++)
+                    if (field.StationX(i + 1) > x0 && field.StationX(i) < x1)
+                        foreach (var z in field.RowHeights(i))
+                            if (z > bottom + 0.02 && z < top - 0.02)
+                                zs.Add(z);
+            return Merge(zs, bottom, top);
+        }
+
+        /// <summary>Heights from bottom to top in order, those closer than 2 cm to the one before merged (both ends kept).</summary>
+        static List<double> Merge(IEnumerable<double> zs, double bottom, double top)
+        {
+            var o = new List<double> { bottom };
+            foreach (var z in zs.Where(z => z > bottom && z < top))
+                if (z - o[^1] >= 0.02)
+                    o.Add(z);
+            if (o.Count > 1 && top - o[^1] < 0.02)
+                o.RemoveAt(o.Count - 1);
+            o.Add(top);
+            return o;
+        }
+
+        /// <summary>A solid stacked from rings, one per level in zs (lowest first), every ring the same number of points in
+        /// the same order. A point usually lies at its ring's level, but may ride up or down (onto the hull's side, where
+        /// a cell has no width at that level). Walls between neighbouring rings, caps on the lowest and highest, the top
+        /// and bottom rings and its sharp corners as edges. Drawn grown by a hair like Add's prisms; picked by its
+        /// triangles.</summary>
+        void AddLoft(string kindName, string id, object? src, IReadOnlyList<double> zs, Func<double, List<P3>> ringAt)
+        {
+            if (zs.Count < 2)
+                return;
+            var rings = zs.Select(ringAt).ToList();
+            int n = rings[0].Count;
+            if (n < 3 || rings.Any(r => r.Count != n))
+                return;
+            var largest = rings.MaxBy(r => Math.Abs(SignedArea(Plan(r))))!;
+            double area = SignedArea(Plan(largest));
+            if (Math.Abs(area) < 1e-6)
+                return;
+            if (area < 0)
+                rings = rings.Select(r => Enumerable.Reverse(r).ToList()).ToList();
+            int kind = HitKinds.IndexOf(kindName);
+            uint pi = (uint)prisms.Count;
+            int firstIndex = tris.Count, firstEdge = lines.Count;
+            float dz = 0.002f + 0.03f / MathF.Sqrt(1 + (float)Math.Abs(area));
+            var drawn = rings.Select(r => Outset(r.Select(p => new Vector2((float)p.X, (float)p.Y)).ToArray(), dz)).ToList();
+            float Zp(int k, int i) => (float)rings[k][i].Z + (k == 0 ? -dz : k == zs.Count - 1 ? dz : 0);
+            HitVertex V(Vector2 p, float z, Vector3 nrm) => new() { Position = new(p, z), Normal = nrm, Kind = (uint)kind, Prism = pi };
+
+            // the walls: a quad between each pair of neighbouring rings along each side, lit flat
+            for (int k = 0; k + 1 < zs.Count; k++)
+                for (int i = 0; i < n; i++)
+                {
+                    int j = (i + 1) % n;
+                    Vector3 a = new(drawn[k][i], Zp(k, i)), b = new(drawn[k][j], Zp(k, j)), c = new(drawn[k + 1][j], Zp(k + 1, j)),
+                        d = new(drawn[k + 1][i], Zp(k + 1, i));
+                    var nrm = Vector3.Cross(b - a, d - a);
+                    if (nrm.LengthSquared() < 1e-14f)
+                        nrm = Vector3.Cross(c - b, d - b);
+                    if (nrm.LengthSquared() < 1e-14f)
+                        continue;   // collapsed: the side has closed this stretch of the ring
+                    nrm = Vector3.Normalize(nrm);
+                    uint v0 = (uint)verts.Count;
+                    verts.AddRange([V(drawn[k][i], a.Z, nrm), V(drawn[k][j], b.Z, nrm), V(drawn[k + 1][j], c.Z, nrm), V(drawn[k + 1][i], d.Z, nrm)]);
+                    tris.AddRange([v0, v0 + 1, v0 + 2, v0, v0 + 2, v0 + 3]);
+                }
+            // the caps, and their rings as edges
+            foreach (var (k, up) in new[] { (zs.Count - 1, true), (0, false) })
+            {
+                // the ring without repeated points (a point keeps its own height: the cap bends where points ride)
+                var ring = rings[k];
+                var keep = new List<int>();
+                for (int i = 0; i < n; i++)
+                    if (keep.Count == 0 || Math.Abs(ring[i].X - ring[keep[^1]].X) > 1e-6 || Math.Abs(ring[i].Y - ring[keep[^1]].Y) > 1e-6)
+                        keep.Add(i);
+                while (keep.Count > 1 && Math.Abs(ring[keep[0]].X - ring[keep[^1]].X) <= 1e-6 && Math.Abs(ring[keep[0]].Y - ring[keep[^1]].Y) <= 1e-6)
+                    keep.RemoveAt(keep.Count - 1);
+                var cap = keep.Select(i => new Pt(ring[i].X, ring[i].Y)).ToList();
+                if (cap.Count >= 3 && Math.Abs(SignedArea(cap)) > 1e-6)
+                {
+                    var capDrawn = Outset(cap.Select(p => new Vector2((float)p.X, (float)p.Y)).ToArray(), dz);
+                    uint c0 = (uint)verts.Count;
+                    for (int i = 0; i < capDrawn.Length; i++)
+                        verts.Add(V(capDrawn[i], Zp(k, keep[i]), up ? Vector3.UnitZ : -Vector3.UnitZ));
+                    foreach (int t in Triangulate(cap))
+                        tris.Add(c0 + (uint)t);
+                    for (int i = 0; i < capDrawn.Length; i++)
+                        lines.AddRange([c0 + (uint)i, c0 + (uint)((i + 1) % capDrawn.Length)]);
+                }
+            }
+            // the sharp corners, up the whole height
+            var bottom = drawn[0];
+            for (int i = 0; i < n; i++)
+            {
+                Vector2 a = bottom[(i + n - 1) % n], c = bottom[i], e = bottom[(i + 1) % n];
+                if ((c - a).LengthSquared() < 1e-10f || (e - c).LengthSquared() < 1e-10f
+                    || Vector2.Dot(Vector2.Normalize(c - a), Vector2.Normalize(e - c)) >= SharpCos)
+                    continue;
+                uint e0 = (uint)verts.Count;
+                for (int k = 0; k < zs.Count; k++)
+                    verts.Add(V(drawn[k][i], Zp(k, i), Vector3.UnitZ));
+                for (int k = 0; k + 1 < zs.Count; k++)
+                    lines.AddRange([e0 + (uint)k, e0 + (uint)k + 1]);
+            }
+            if (tris.Count == firstIndex)
+                return;
+            var all = drawn.SelectMany(r => r).ToList();
+            var lo = all.Aggregate(new Vector2(float.MaxValue), Vector2.Min);
+            var hi = all.Aggregate(new Vector2(float.MinValue), Vector2.Max);
+            prisms.Add(new HitPrism
+            {
+                Id = id, Kind = kind, Source = src, Lofted = true,
+                Footprint = rings[rings.Count / 2].Select(p => new Vector2((float)p.X, (float)p.Y)).ToArray(),
+                Base = (float)zs[0], Top = (float)zs[^1], FirstIndex = firstIndex, IndexCount = tris.Count - firstIndex,
+                FirstEdge = firstEdge, EdgeCount = lines.Count - firstEdge,
+                Min = new(lo, (float)zs[0]), Max = new(hi, (float)zs[^1]),
+            });
+        }
+
+        static List<Pt> Plan(List<P3> ring) => ring.Select(p => new Pt(p.X, p.Y)).ToList();
+
         static List<Pt> Circle(double x, double y, double r) =>
             Enumerable.Range(0, CircleN).Select(k => new Pt(x + r * Math.Cos(2 * Math.PI * k / CircleN), y + r * Math.Sin(2 * Math.PI * k / CircleN))).ToList();
 
@@ -342,7 +591,7 @@ public sealed class HitboxMesh
 
             var rooms = hb.Rooms.ToDictionary(r => r.Id, StringComparer.Ordinal);
             foreach (var c in hb.Cells)
-                Add(rooms.TryGetValue(c.Room, out var room) ? room.Kind : "other", c.Id, c, CellOutline(c), c.Base, c.Top);
+                AddCell(rooms.TryGetValue(c.Room, out var room) ? room.Kind : "other", c);
 
             AddArmour(wl);
             AddGuides(keel, wl);
@@ -400,36 +649,44 @@ public sealed class HitboxMesh
                 slabs.Add(("strake", s.Id, s, s.X0, s.X1, s.Bottom, s.Top));
             foreach (var b in slabs)
             {
-                // a thin slab just outside the hull side over its stretch, split at the waterline: it follows the flare
-                var zs = new List<double> { b.Bottom };
-                if (b.Bottom < wl && wl < b.Top)
-                    zs.Add(wl);
-                zs.Add(b.Top);
-                for (int i = 0; i + 1 < zs.Count; i++)
-                {
-                    double zm = (zs[i] + zs[i + 1]) / 2;
-                    foreach (int side in new[] { 1, -1 })
+                // a thin shell just outside the hull's side over its stretch, following the side up its height (in to the
+                // keel, out at a flare, in again above a tumblehome's knuckle)
+                var xs = XsOver(b.X0, b.X1);
+                var zs = ZsOver(b.X0, b.X1, b.Bottom, b.Top);
+                // where its stretch runs below the hull's bottom (a stern cut up out of the water), the plate ends on the
+                // bottom: a point under it rides up to the lowest height where there is a side
+                var floor = xs.Select(x => zs.Where(z => HalfWidth(x, z) > 0.05).Append(double.NaN).First()).ToList();
+                if (floor.All(double.IsNaN))
+                    continue;
+                var has = Enumerable.Range(0, xs.Count).Where(k => !double.IsNaN(floor[k])).ToList();
+                var px = xs.Select((x, k) => double.IsNaN(floor[k]) ? xs[has.MinBy(j => Math.Abs(j - k))] : x).ToList();
+                var pz = floor.Select((f, k) => double.IsNaN(f) ? floor[has.MinBy(j => Math.Abs(j - k))] : f).ToList();
+                foreach (int side in new[] { 1, -1 })
+                    AddLoft(b.Kind, b.Id, b.Src, zs, z =>
                     {
-                        var xs = Enumerable.Range(0, 13).Select(k => b.X0 + (b.X1 - b.X0) * k / 12).ToList();
-                        var hw = xs.Select(x => HalfWidth(x, zm)).ToList();
-                        var outer = xs.Select((x, k) => new Pt(x, side * (hw[k] + 0.15)));
-                        var inner = xs.Select((x, k) => new Pt(x, side * Math.Max(hw[k] - 0.25, 0))).Reverse();
-                        Add(b.Kind, b.Id, b.Src, [.. outer, .. inner], zs[i], zs[i + 1]);
-                    }
-                }
+                        var at = px.Select((x, k) => (X: x, Z: Math.Max(z, pz[k]))).ToList();
+                        var hw = at.Select(p => HalfWidth(p.X, p.Z)).ToList();
+                        var outer = at.Select((p, k) => new P3(p.X, side * (hw[k] + 0.15), p.Z));
+                        var inner = at.Select((p, k) => new P3(p.X, side * Math.Max(hw[k] - 0.25, 0), p.Z)).Reverse();
+                        return [.. outer, .. inner];
+                    });
             }
+            // a plate across the hull at x, inside its side at every height
+            void Across(string id, object src, double x, double lo, double hi) =>
+                AddLoft("armoured_bulkhead", id, src, ZsOver(x - 0.15, x + 0.15, lo, hi), z =>
+                {
+                    double w = Math.Max(HalfWidth(x, z) - 0.2, 0.0);
+                    return [new(x - 0.15, -w, z), new(x + 0.15, -w, z), new(x + 0.15, w, z), new(x - 0.15, w, z)];
+                });
             foreach (var bh in hb.Bulkheads)   // the citadel's armoured ends, across the hull
                 if (bh is { Kind: "armoured", X: { } x, ArmourBottom: { } lo, ArmourTop: { } hi })
-                {
-                    double w = HalfWidth(x, (lo + hi) / 2) - 0.2;
-                    Add("armoured_bulkhead", bh.Id, bh, Box(x - 0.15, x + 0.15, -w, w), lo, hi);
-                }
+                    Across(bh.Id, bh, x, lo, hi);
             foreach (var p in arm.Bulkheads ?? [])   // an end belt's plate across a hull end face (a transom), just inside it
                 if (Math.Abs(p.X) >= hb.Length / 2 - 0.01)
                 {
-                    double x = p.X - Math.Sign(p.X) * 0.15, w = HalfWidth(x, (p.Bottom + p.Top) / 2);
-                    if (w > 0.01)
-                        Add("armoured_bulkhead", p.Id, p, Box(x - 0.15, x + 0.15, -w, w), p.Bottom, p.Top);
+                    double x = p.X - Math.Sign(p.X) * 0.15;
+                    if (HalfWidth(x, (p.Bottom + p.Top) / 2) > 0.01)
+                        Across(p.Id, p, x, p.Bottom, p.Top);
                 }
             foreach (var d in arm.Decks ?? [])
             {
@@ -665,3 +922,6 @@ public sealed class HitboxMesh
         return o;
     }
 }
+
+/// <summary>A point in ship space, metres (a loft's ring point).</summary>
+readonly record struct P3(double X, double Y, double Z);
