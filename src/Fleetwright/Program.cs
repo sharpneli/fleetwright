@@ -55,7 +55,7 @@ public static unsafe class Program
                 Console.Error.WriteLine($"Design not found: {shipPath}");
                 return 1;
             }
-            engine.Scene = new ShipViewer(engine.Device, shipPath, navy, era);
+            engine.Scene = new ShipViewer(engine.Device, new DesignSession(shipPath), navy, era);
 
             // Run the engine
             engine.Run();

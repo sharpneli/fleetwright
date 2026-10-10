@@ -90,6 +90,7 @@ src/
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
     Camera.cs                 #   FPS camera (unused; to become the top-down Earth camera)
+    DesignSession.cs          #   the picked design and its built Ship, shared by the scenes (they watch Version)
     IScene.cs                 #   a full-window view with its own UI; the engine draws the current one (see Views)
     ShipViewer.cs             #   the ship viewer (the default launch), a test tool for Shipgen
     ProfilerStubs.cs          #   no-op Tracy stand-ins for Release

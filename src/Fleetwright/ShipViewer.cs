@@ -31,16 +31,16 @@ public sealed unsafe class ShipViewer : IScene
     SDL_GPUTextureFormat pipeFormat;
     SDL_GPUSampleCount pipeSamples;
 
-    // what is shown
-    readonly List<string> designs;
-    int designIndex;
+    // what is shown: the session's ship in a look
+    readonly DesignSession session;
+    int builtVersion = -1;   // the session version the sprites are from
     int navyIndex, eraIndex;   // 0 = the design's own
     readonly string[] navies, eras;
     ShipSprites? sprites;
     SDL_GPUTexture* hullTex, heightTex;
     readonly Dictionary<string, nint> turretTex = new(StringComparer.Ordinal);
     string status = "";
-    bool dirty = true;
+    bool dirty = true;   // the look changed: draw and bake again
 
     // view and controls
     Vector2 centre;
@@ -55,14 +55,10 @@ public sealed unsafe class ShipViewer : IScene
     const double TraverseDegPerS = 45;   // faster than the sweep, so a turret catches up after a blind arc
     bool dragging;
 
-    public ShipViewer(SDL_GPUDevice* device, string designPath, string? navy = null, string? era = null)
+    public ShipViewer(SDL_GPUDevice* device, DesignSession session, string? navy = null, string? era = null)
     {
         this.device = device;
-        var dir = Path.GetDirectoryName(Path.GetFullPath(designPath))!;
-        designs = Directory.GetFiles(dir, "*.json").Order(StringComparer.Ordinal).ToList();
-        designIndex = Math.Max(0, designs.FindIndex(p => Path.GetFullPath(p) == Path.GetFullPath(designPath)));
-        if (designs.Count == 0)
-            designs.Add(designPath);
+        this.session = session;
         navies = ["(design)", .. Shipgen.Render.Looks.Navies];
         eras = ["(design)", .. Shipgen.Render.Looks.Eras];
         navyIndex = navy != null ? Math.Max(0, Array.IndexOf(navies, navy)) : 0;
@@ -76,7 +72,6 @@ public sealed unsafe class ShipViewer : IScene
             throw new InvalidOperationException("ship viewer shaders failed to load");
         linear = Sampler(SDL_GPUFilter.SDL_GPU_FILTER_LINEAR, SDL_GPUSamplerMipmapMode.SDL_GPU_SAMPLERMIPMAPMODE_LINEAR);
         nearest = Sampler(SDL_GPUFilter.SDL_GPU_FILTER_NEAREST, SDL_GPUSamplerMipmapMode.SDL_GPU_SAMPLERMIPMAPMODE_NEAREST);
-        Rebuild();
     }
 
     SDL_GPUSampler* Sampler(SDL_GPUFilter f, SDL_GPUSamplerMipmapMode m)
@@ -156,28 +151,28 @@ public sealed unsafe class ShipViewer : IScene
 
     // ------------------------------------------------------------------ building and baking
 
+    /// <summary>Draws and bakes the session's ship in the picked look.</summary>
     void Rebuild()
     {
         dirty = false;
+        builtVersion = session.Version;
+        if (session.Ship is not { } ship)
+        {
+            ReleaseTextures();
+            sprites = null;
+            status = session.Status;
+            return;
+        }
         var sw = Stopwatch.StartNew();
         try
         {
-            var design = Design.Load(designs[designIndex]);
-            var errs = ShipDesign.Validate(design, limits: false).Concat(Shipgen.Looks.Validate(design)).ToList();
-            if (errs.Count > 0)
-            {
-                status = "invalid design:\n" + string.Join("\n", errs.Take(6));
-                return;
-            }
-            var ship = ShipDesign.Build(design);
-            double tBuild = sw.Elapsed.TotalSeconds;
             LookInput? look = null;
             if (navyIndex > 0 || eraIndex > 0)
                 look = new LookInput { Navy = navyIndex > 0 ? navies[navyIndex] : null, Era = eraIndex > 0 ? eras[eraIndex] : null };
             var sp = ShipSprites.Build(ship, Scale, MipLevels, look);
-            double tDraw = sw.Elapsed.TotalSeconds - tBuild;
+            double tDraw = sw.Elapsed.TotalSeconds;
             var baked = ShipBake.Bake(sp, baker);
-            double tBake = sw.Elapsed.TotalSeconds - tBuild - tDraw;
+            double tBake = sw.Elapsed.TotalSeconds - tDraw;
             ReleaseTextures();
             bearings = null;
             hullTex = Upload(baked.Hull, height: false);
@@ -187,8 +182,8 @@ public sealed unsafe class ShipViewer : IScene
             sprites = sp;
             var size = sp.Meta.SizePx;
             status = $"{sp.Meta.Name}\n{size[0]} x {size[1]} px, {sp.Turrets.Count} turret types, {sp.Clutter.Count} clutter items\n" +
-                     $"build {tBuild:F2} s, draw {tDraw:F2} s, bake {tBake:F2} s";
-            Console.WriteLine($"viewer: {design.Id}: {status.Replace('\n', ';')}");
+                     $"{session.Status}, draw {tDraw:F2} s, bake {tBake:F2} s";
+            Console.WriteLine($"viewer: {ship.Design.Id}: {status.Replace('\n', ';')}");
         }
         catch (Exception e)
         {
@@ -348,7 +343,7 @@ public sealed unsafe class ShipViewer : IScene
 
     public void Draw(SDL_GPUCommandBuffer* cmd, RenderTarget target, float dt)
     {
-        if (dirty)
+        if (dirty || builtVersion != session.Version)
             Rebuild();
         clock += dt;
         if (sprites != null)
@@ -458,9 +453,12 @@ public sealed unsafe class ShipViewer : IScene
         ImGui.SetNextWindowPos(new Vector2(10, 170), ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowSize(new Vector2(330, 420), ImGuiCond.FirstUseEver);
         ImGui.Begin("Ship");
-        var names = designs.Select(Path.GetFileNameWithoutExtension).ToArray();
-        if (ImGui.Combo("design", ref designIndex, names!, names.Length))
-            dirty = fit = true;
+        int designIndex = session.Index;
+        if (ImGui.Combo("design", ref designIndex, session.Names, session.Names.Length))
+        {
+            session.Select(designIndex);
+            fit = true;
+        }
         if (ImGui.Combo("navy", ref navyIndex, navies, navies.Length))
             dirty = true;
         if (ImGui.Combo("era", ref eraIndex, eras, eras.Length))
@@ -481,7 +479,7 @@ public sealed unsafe class ShipViewer : IScene
             fit = true;
         ImGui.SameLine();
         if (ImGui.Button("rebuild"))
-            dirty = true;
+            session.Rebuild();
         ImGui.Separator();
         ImGui.TextWrapped(status);
         ImGui.End();
