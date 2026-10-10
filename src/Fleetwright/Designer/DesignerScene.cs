@@ -15,23 +15,19 @@ namespace Fleetwright.Designer;
 /// with a design (or <see cref="DesignDoc.Empty"/>) and a callback; Accept calls back with the edited design, Cancel
 /// with null. Without a callback (the dev launch) it only saves to the player's folder.
 ///
-/// Layout after docs/designer-ui/follow.html: the sections on the left, the ship pinned on top of the centre (the top
-/// view and the side profile, each from its renderer into an offscreen target), the open section under it, the Legend
-/// on the right and the history along the bottom. Every edit goes into the <see cref="DesignDoc"/>, the new design
+/// Layout after docs/designer-ui/bureau.html (DesignerScene.Layout.cs): the outliner and templates on the left, the plan
+/// and profile on top of the centre (each from its renderer into an offscreen target) with the sections as tabs under
+/// it, the weight ledger, particulars and remarks on the right, and the history in the status bar. Every edit goes into the <see cref="DesignDoc"/>, the new design
 /// to the <see cref="DesignWorker"/>, and the result lands a few frames later: nothing an edit does waits for a build.
 /// While a build runs the last result stays up, dimmed.
 /// </summary>
-public sealed unsafe class DesignerScene : IScene
+public sealed unsafe partial class DesignerScene : IScene
 {
     const double SpriteScale = 8;   // px per metre at mip 0
     const int MipLevels = 4;
     static float S => UiFonts.Scale;
     static float P(float px) => px * S;
     static Vector2 V(float x, float y) => new(x * S, y * S);
-    static float RailW => P(230);
-    static float LegendW => P(320);
-    static float TopBarH => P(54);
-    static float HistoryH => P(40);
 
     static readonly string[] Sections =
         ["Overview", "Main battery", "Secondary · AA · TT", "Protection", "Speed & machinery", "Hull & upperworks", "Fire control", "Crew"];
@@ -285,12 +281,24 @@ public sealed unsafe class DesignerScene : IScene
         public required string Title, TypeLabel, File, Status, Std, StdDelta, Settling, Style;
         public required string[] Summaries;
         public required (string Label, string Value)[] Particulars;
-        public required (string Group, float Frac, string Text)[] Weights;
+        /// <summary>The resource bar's figures.</summary>
+        public required (string Label, string Value)[] Stats;
+        public required LedgerRow[] Ledger;
+        public required string FullT, RemarkCount;
+        public required OutlineRow[] Outline;
         public required (bool Error, string Text)[] Remarks;
         public required (string Label, string Value)[] Consequences;
         public required List<Item> Panel;
+        /// <summary>The templates the design is built from (the left column's lower panel).</summary>
+        public required PickRow[] Templates;
         public required string[] HistoryLabels;
     }
+
+    /// <summary>A weight group in the ledger; <see cref="Tip"/> is its heaviest items.</summary>
+    sealed record LedgerRow(string Group, string Name, string T, string Pct, float Frac, (string Name, string T)[] Tip);
+
+    /// <summary>An outliner line: a section (opens its tab) or, under it, the weight items that belong to it.</summary>
+    sealed record OutlineRow(int Section, bool Child, string Label, string Detail, string T, float Frac, string Group);
 
     /// <summary>A line of the section panel.</summary>
     abstract record Item;
@@ -350,6 +358,21 @@ public sealed unsafe class DesignerScene : IScene
             res != null ? $"{N0(res.Crew)} men" : "",
         ];
 
+        var stats = new List<(string, string)>();
+        if (res != null)
+        {
+            stats.Add(("STANDARD", std));
+            stats.Add(("FULL LOAD", N0(res.FullDisplacementT) + " t"));
+            stats.Add(("LENGTH", Fmt(res.LengthM, Quantity.Length, 0.1)));
+            stats.Add(("BEAM", Fmt(res.BeamM, Quantity.Length, 0.1)));
+            stats.Add(("DRAUGHT", Fmt(res.DraughtM, Quantity.Length, 0.1)));
+            stats.Add(("SPEED", $"{d.SpeedKn:0.0} kn"));
+            stats.Add(("RANGE", N0(d.RangeNm ?? 6000) + " nm"));
+            stats.Add(("POWER", N0(res.PowerShp) + " shp"));
+            stats.Add(("GM", $"{res.GmFullM:0.00} m"));
+            stats.Add(("CREW", N0(res.Crew)));
+        }
+
         var part = new List<(string, string)>();
         if (res != null)
         {
@@ -362,15 +385,22 @@ public sealed unsafe class DesignerScene : IScene
             part.Add(("Protection", belt > 0 || deck > 0 ? $"belt {Fmt(belt, Quantity.Armour, unit: false)} · deck {Fmt(deck, Quantity.Armour)}" : "none"));
             part.Add(("Complement", N0(res.Crew)));
             part.Add(("Stability", $"GM {res.GmFullM:0.00} m · roll {res.RollPeriodS:0.0} s"));
+            part.Add(("Block coeff.", $"{res.BlockCoefficient:0.000}"));
+            if (ship!.Report.Bridge is { } br)
+                part.Add(("Bridge", $"eye {Fmt(br.EyeHeightM, Quantity.Length, 0.1)} · horizon {br.HorizonKm:0.0} km"));
+            if (ship.Report.Crew is { } cr)
+                part.Add(("Berths", $"{cr.SleepM2PerMan:0.00} m² / man (std {cr.SleepStandardM2:0.00})"));
+            part.Add(("Plant", $"{ship.Report.Plant.Name}, {ship.Report.Plant.Fuel}"));
         }
 
-        var weights = new List<(string, float, string)>();
+        var ledger = new List<LedgerRow>();
         if (ship != null)
         {
-            double total = ship.Report.WeightGroupsT.Values.Sum();
-            foreach (var (g, t) in ship.Report.WeightGroupsT)
+            double total = Math.Max(1, ship.Report.WeightGroupsT.Values.Sum());
+            foreach (var (g, t) in ship.Report.WeightGroupsT.OrderByDescending(kv => kv.Value))
                 if (t > 0)
-                    weights.Add((g, (float)(t / Math.Max(1, total)), $"{g.Replace('_', ' ')} {N0(t)} t"));
+                    ledger.Add(new LedgerRow(g, GroupName(g), N0(t), $"{100 * t / total:0.0}", (float)(t / total),
+                        Aggregate(ship.Report.Weights.Where(w => w.Group == g)).Take(8).Select(a => (a.Label, N0(a.T) + " t")).ToArray()));
         }
 
         var remarks = new List<(bool, string)>();
@@ -408,7 +438,12 @@ public sealed unsafe class DesignerScene : IScene
             StdDelta = stdDelta,
             Summaries = summaries,
             Particulars = part.ToArray(),
-            Weights = weights.ToArray(),
+            Stats = stats.ToArray(),
+            Ledger = ledger.ToArray(),
+            FullT = res != null ? N0(res.FullDisplacementT) : "–",
+            RemarkCount = remarks.Count == 0 ? "none" : remarks.Count.ToString(CultureInfo.InvariantCulture),
+            Outline = Outline(ship, summaries),
+            Templates = [PlantPick(d, ship), HullPick(d, ship), CrewPick(d, ship), ArmourPick(d)],
             Remarks = remarks.ToArray(),
             Consequences = cons.ToArray(),
             Panel = PanelItems(d, ship),
@@ -442,23 +477,6 @@ public sealed unsafe class DesignerScene : IScene
         void Toggle(ToggleKnob k) => items.Add(new ToggleRow(k, k.Value(d), k.AppliesTo(d)));
         var style = Styles.Get(d);
 
-        // a catalogue as a picker: the entry the design's block matches, else the block itself as "custom" (or what
-        // the engine chose, when the design leaves it out)
-        void Pick<TV>(string label, IReadOnlyList<Template<TV>> list, Func<Template<TV>, string> name, Func<Template<TV>, bool> matches,
-            string? own, Func<Design, TV, Design> apply)
-        {
-            var names = list.Select(name).ToList();
-            int i = -1;
-            for (int n = 0; n < list.Count && i < 0; n++)
-                if (matches(list[n]))
-                    i = n;
-            if (i < 0)
-            {
-                names.Add(own ?? "custom");
-                i = names.Count - 1;
-            }
-            items.Add(new PickRow(label, names.ToArray(), i, list.Count, k => Edit(apply(doc.Current, list[k].Value), $"{label}: {names[k]}")));
-        }
 
         switch (section)
         {
@@ -540,9 +558,7 @@ public sealed unsafe class DesignerScene : IScene
                 break;
             case 3:
                 items.Add(new Header("Materials"));
-                Pick("Armour", Templates.Armour, t => t.Name, t => Templates.SameMaterials(d.Armour?.Materials, t.Value),
-                    d.Armour?.Materials is { } am ? $"custom: {am.GetValueOrDefault("belt", "?")}" : "default",
-                    (x, v) => x with { Armour = (x.Armour ?? new ArmourInput()) with { Materials = Templates.MaterialsFor(x, v) } });
+                items.Add(ArmourPick(d));
                 items.Add(new Header("Side"));
                 Num(Knobs.Belt);
                 Num(Knobs.BeltBottom);
@@ -598,9 +614,7 @@ public sealed unsafe class DesignerScene : IScene
                 Num(Knobs.Speed);
                 Num(Knobs.Range);
                 items.Add(new Header("Plant"));
-                Pick("Technology", Templates.Plants, t => t.Name, t => t.Name == d.Machinery?.Tech?.Name,
-                    d.Machinery?.Tech is { } tech ? $"custom: {tech.Name}" : $"default: {ship?.Report.Plant.Name}",
-                    (x, v) => x with { Machinery = (x.Machinery ?? new MachineryInput()) with { Tech = v } });
+                items.Add(PlantPick(d, ship));
                 Num(Knobs.Stress);
                 Num(Knobs.Shafts);
                 Choice(Knobs.Arrangement);
@@ -618,9 +632,7 @@ public sealed unsafe class DesignerScene : IScene
                 break;
             case 5:
                 items.Add(new Header("Hull"));
-                Pick("Construction", Templates.Hulls, t => t.Note, t => t.Name == d.Hull?.Construction?.Name,
-                    d.Hull?.Construction is { } hc ? $"custom: {hc.Name}" : $"default: {ship?.Report.Hull.Construction}",
-                    (x, v) => x with { Hull = (x.Hull ?? new HullInput()) with { Construction = v } });
+                items.Add(HullPick(d, ship));
                 Num(Knobs.BlockCoefficient);
                 Num(Knobs.Freeboard);
                 if (Knobs.Raised.AppliesTo(d))
@@ -664,9 +676,7 @@ public sealed unsafe class DesignerScene : IScene
                 Num(Knobs.SearchRadar);
                 break;
             case 7:
-                Pick("Crew standard", Templates.Crew, t => $"{t.Group}: {t.Name}", t => t.Name == d.Crew?.Standard?.Name,
-                    d.Crew?.Standard is { } cs ? $"custom: {cs.Name}" : $"default: {ship?.Report.Crew?.Standard}",
-                    (x, v) => x with { Crew = (x.Crew ?? new CrewInput()) with { Standard = v } });
+                items.Add(CrewPick(d, ship));
                 Num(Knobs.Endurance);
                 Toggle(Knobs.Distiller);
                 items.Add(new Header("Crew, details", Details: true));
@@ -680,6 +690,122 @@ public sealed unsafe class DesignerScene : IScene
                 break;
         }
         return items;
+    }
+
+    // a catalogue as a picker: the entry the design's block matches, else the block itself as "custom" (or what the
+    // engine chose, when the design leaves it out)
+    PickRow Pick<TV>(string label, IReadOnlyList<Template<TV>> list, Func<Template<TV>, string> name, Func<Template<TV>, bool> matches,
+        string? own, Func<Design, TV, Design> apply)
+    {
+        var names = list.Select(name).ToList();
+        int i = -1;
+        for (int n = 0; n < list.Count && i < 0; n++)
+            if (matches(list[n]))
+                i = n;
+        if (i < 0)
+        {
+            names.Add(own ?? "custom");
+            i = names.Count - 1;
+        }
+        return new PickRow(label, names.ToArray(), i, list.Count, k => Edit(apply(doc.Current, list[k].Value), $"{label}: {names[k]}"));
+    }
+
+    PickRow PlantPick(Design d, Ship? ship) => Pick("Technology", Templates.Plants, t => t.Name, t => t.Name == d.Machinery?.Tech?.Name,
+        d.Machinery?.Tech is { } tech ? $"custom: {tech.Name}" : $"default: {ship?.Report.Plant.Name}",
+        (x, v) => x with { Machinery = (x.Machinery ?? new MachineryInput()) with { Tech = v } });
+
+    PickRow HullPick(Design d, Ship? ship) => Pick("Construction", Templates.Hulls, t => t.Note, t => t.Name == d.Hull?.Construction?.Name,
+        d.Hull?.Construction is { } hc ? $"custom: {hc.Name}" : $"default: {ship?.Report.Hull.Construction}",
+        (x, v) => x with { Hull = (x.Hull ?? new HullInput()) with { Construction = v } });
+
+    PickRow CrewPick(Design d, Ship? ship) => Pick("Crew standard", Templates.Crew, t => $"{t.Group}: {t.Name}", t => t.Name == d.Crew?.Standard?.Name,
+        d.Crew?.Standard is { } cs ? $"custom: {cs.Name}" : $"default: {ship?.Report.Crew?.Standard}",
+        (x, v) => x with { Crew = (x.Crew ?? new CrewInput()) with { Standard = v } });
+
+    PickRow ArmourPick(Design d) => Pick("Armour", Templates.Armour, t => t.Name, t => Templates.SameMaterials(d.Armour?.Materials, t.Value),
+        d.Armour?.Materials is { } am ? $"custom: {am.GetValueOrDefault("belt", "?")}" : "default",
+        (x, v) => x with { Armour = (x.Armour ?? new ArmourInput()) with { Materials = Templates.MaterialsFor(x, v) } });
+
+    // ------------------------------------------------------------------ the outliner and the ledger
+
+    static string GroupName(string g) => g switch
+    {
+        "fire_control" => "Fire control",
+        "misc" => "Equipment & crew",
+        _ => char.ToUpperInvariant(g[0]) + g[1..].Replace('_', ' '),
+    };
+
+    static readonly System.Text.RegularExpressions.Regex IdToken = new(@"^([A-Z]{1,2}\d*[A-Z]?|\d+[A-Z]?)$");
+
+    /// <summary>A weight item's name without its mount or position id and any "(of what)": "Turret A", "Mount S1S",
+    /// "Plotting room (Main director 2)" are "Turret", "Mount", "Plotting room".</summary>
+    static string Kind(string name)
+    {
+        int paren = name.IndexOf(" (", StringComparison.Ordinal);
+        if (paren > 0)
+            name = name[..paren];
+        int sp = name.LastIndexOf(' ');
+        if (sp > 0 && IdToken.IsMatch(name[(sp + 1)..]))
+            return name[..sp];
+        if (sp < 0)
+            return name.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');   // "AA17"
+        return name;
+    }
+
+    /// <summary>Weight items of a kind together ("Turret ×4"), heaviest first; empty ones left out.</summary>
+    static List<(string Label, double T)> Aggregate(IEnumerable<WeightReport> items)
+    {
+        var sums = new Dictionary<string, (double T, int N)>();
+        var order = new List<string>();
+        foreach (var w in items)
+        {
+            if (w.T < 0.5)
+                continue;
+            var k = Kind(w.Name);
+            if (!sums.TryGetValue(k, out var a))
+                order.Add(k);
+            sums[k] = (a.T + w.T, a.N + 1);
+        }
+        return order.Select(k => (Label: sums[k].N > 1 ? $"{k} ×{sums[k].N}" : k, sums[k].T)).OrderByDescending(x => x.T).ToList();
+    }
+
+    /// <summary>The section a weight item is edited in: the main battery's turrets and magazines, the other guns,
+    /// armour, machinery and fuel, hull and upperworks, fire control, crew and stores.</summary>
+    static int SectionOf(WeightReport w, HashSet<string> mainMounts) => w.Group switch
+    {
+        "armament" => (w.Name.StartsWith("Turret ") || w.Name.StartsWith("Magazine ")) && mainMounts.Contains(w.Name[(w.Name.LastIndexOf(' ') + 1)..]) ? 1 : 2,
+        "armour" => 3,
+        "machinery" or "fuel" => 4,
+        "hull" or "superstructure" => 5,
+        "fire_control" => 6,
+        _ => 7,
+    };
+
+    /// <summary>The weight group whose colour marks a section in the outliner.</summary>
+    static readonly string[] SectionGroup = ["", "armament", "armament", "armour", "machinery", "hull", "fire_control", "misc"];
+
+    OutlineRow[] Outline(Ship? ship, string[] summaries)
+    {
+        var rows = new List<OutlineRow>();
+        double std = ship?.Report.Results.StandardDisplacementT ?? 0;
+        var bySection = new List<WeightReport>[Sections.Length];
+        for (int i = 0; i < bySection.Length; i++)
+            bySection[i] = [];
+        if (ship != null)
+        {
+            var mains = ship.Report.Weights.Where(w => w.Name.StartsWith("Turret ")).Select(w => w.Name[7..]).ToHashSet();
+            foreach (var w in ship.Report.Weights)
+                bySection[SectionOf(w, mains)].Add(w);
+        }
+        float Frac(double t) => std > 0 ? (float)(t / std) : 0;
+        for (int i = 0; i < Sections.Length; i++)
+        {
+            double t = i == 0 ? std : bySection[i].Sum(w => w.T);
+            rows.Add(new OutlineRow(i, false, Sections[i], summaries[i], ship != null ? N0(t) : "", i == 0 ? 0 : Frac(t), SectionGroup[i]));
+            foreach (var (label, ct) in Aggregate(bySection[i]))
+                rows.Add(new OutlineRow(i, true, label, "", N0(ct), Frac(ct), SectionGroup[i]));
+        }
+        return rows.ToArray();
     }
 
     // ------------------------------------------------------------------ edits
@@ -746,750 +872,6 @@ public sealed unsafe class DesignerScene : IScene
         var decks = d.Armour!.Decks!.ToList();
         decks.RemoveAt(i);
         return d with { Armour = d.Armour with { Decks = decks } };
-    }
-
-    // ------------------------------------------------------------------ UI
-
-    public void BuildUi()
-    {
-        Sync();
-        if (snap == null || stale)
-        {
-            snap = Build();
-            stale = false;
-        }
-        Keys();
-        var vp = ImGui.GetMainViewport();
-        T.Push();
-        ImGui.SetNextWindowPos(vp.WorkPos);
-        ImGui.SetNextWindowSize(vp.WorkSize);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-        ImGui.Begin("##designer", ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBringToFrontOnFocus |
-                                  ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoScrollWithMouse);
-        ImGui.PopStyleVar();
-        ImGui.PushFont(UiFonts.Sans);
-        var size = vp.WorkSize;
-        float midW = size.X - RailW - LegendW, midH = size.Y - TopBarH - HistoryH;
-
-        TopBar(new Vector2(size.X, TopBarH));
-        ImGui.SetCursorPos(new Vector2(0, TopBarH));
-        Rail(new Vector2(RailW, midH));
-        ImGui.SetCursorPos(new Vector2(RailW, TopBarH));
-        Centre(new Vector2(midW, midH));
-        ImGui.SetCursorPos(new Vector2(RailW + midW, TopBarH));
-        Legend(new Vector2(LegendW, midH));
-        ImGui.SetCursorPos(new Vector2(0, TopBarH + midH));
-        History(new Vector2(size.X, HistoryH));
-
-        ImGui.PopFont();
-        ImGui.End();
-        T.Pop();
-    }
-
-    void Keys()
-    {
-        var io = ImGui.GetIO();
-        if (io.WantTextInput)
-            return;
-        if (io.KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.Z))
-            Undo();
-        else if (io.KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.Y))
-            Redo();
-        else if (!io.KeyCtrl)
-            for (int i = 0; i < Sections.Length; i++)
-                if (ImGui.IsKeyPressed(ImGuiKey._0 + i))
-                    Open(i);
-    }
-
-    void Undo()
-    {
-        doc.Undo();
-        stale = true;
-    }
-
-    void Redo()
-    {
-        doc.Redo();
-        stale = true;
-    }
-
-    void Open(int s)
-    {
-        if (s == section)
-            return;
-        section = s;
-        editing = null;
-        doc.Seal();
-        stale = true;
-    }
-
-    void TopBar(Vector2 size)
-    {
-        var s = snap!;
-        var dl = ImGui.GetWindowDrawList();
-        var p = ImGui.GetCursorScreenPos();
-        dl.AddRectFilled(p, p + size, T.U32(T.Panel));
-        dl.AddLine(p + new Vector2(0, size.Y - 1), p + size - V(0, 1), T.U32(T.Line));
-
-        // the type label and the name: click to edit, Enter keeps it, Escape or clicking away doesn't
-        ImGui.SetCursorPos(V(16, 4));
-        TextField("##type", s.TypeLabel, UiFonts.SansSmall, T.Muted, P(200), doc.Current.Type ?? "",
-            v => doc.Current with { Type = v.Length > 0 ? v : null }, "Type label");
-        ImGui.SetCursorPos(V(16, 22));
-        TextField("##name", s.Title, UiFonts.Title, T.Text, P(260), doc.Current.Name ?? "",
-            v => doc.Current with { Name = v.Length > 0 ? v : null }, "Name");
-        ImGui.SameLine();
-        ImGui.SetCursorPosY(P(26));
-        ImGui.TextColored(T.Muted, s.File);
-
-        float x = Math.Max(P(360), ImGui.GetItemRectMax().X - ImGui.GetWindowPos().X + P(24));   // after a long name
-        ImGui.SetCursorPos(new Vector2(x, P(14)));
-        if (ImGui.Button("New"))
-        {
-            Load(DesignDoc.New());
-            stale = true;
-        }
-        ImGui.SameLine();
-        if (ImGui.Button("Open…"))
-        {
-            shippedDesigns = List(Path.Combine(AppContext.BaseDirectory, "Content", "Designs"));
-            userDesigns = List(DesignDoc.UserFolder);
-            ImGui.OpenPopup("open");
-        }
-        OpenPopup();
-        ImGui.SameLine();
-        if (ImGui.Button("Save as…"))
-        {
-            saveName = Path.GetFileNameWithoutExtension(DesignDoc.FileName(doc.Current));
-            ImGui.OpenPopup("save");
-        }
-        SavePopup();
-        ImGui.SameLine(0, P(24));
-        ImGui.BeginDisabled(!doc.CanUndo);
-        if (ImGui.Button("Undo"))
-            Undo();
-        ImGui.EndDisabled();
-        ImGui.SameLine();
-        ImGui.BeginDisabled(!doc.CanRedo);
-        if (ImGui.Button("Redo"))
-            Redo();
-        ImGui.EndDisabled();
-        ImGui.SameLine();
-        ImGui.BeginDisabled(doc.Index == 0 && !doc.Dirty);
-        if (ImGui.Button("Reset"))
-        {
-            doc.Reset();
-            stale = true;
-        }
-        ImGui.EndDisabled();
-
-        ImGui.SameLine(0, P(24));
-        int u = (int)units;
-        bool unitsChanged = ImGui.RadioButton("metric", ref u, 0);
-        ImGui.SameLine();
-        unitsChanged |= ImGui.RadioButton("imperial", ref u, 1);
-        if (unitsChanged)
-        {
-            units = (UnitSystem)u;
-            stale = true;
-        }
-        ImGui.SameLine(0, P(24));
-        if (ImGui.Button(s.Style))
-        {
-            pennant = doc.Current.Look?.Number ?? "";
-            ImGui.OpenPopup("style");
-        }
-        StylePopup();
-
-        // the right end: build status, then Accept / Cancel for a caller
-        float right = size.X - 16;
-        if (onClose != null)
-        {
-            right -= P(180);
-            ImGui.SetCursorPos(new Vector2(right, 14));
-            ImGui.PushStyleColor(ImGuiCol.Button, T.AmberBg);
-            ImGui.PushStyleColor(ImGuiCol.Text, T.Brass);
-            if (ImGui.Button("Accept design"))
-                onClose(doc.Current);
-            ImGui.PopStyleColor(2);
-            ImGui.SameLine();
-            if (ImGui.Button("Cancel"))
-                onClose(null);
-        }
-        bool busy = worker.Busy;
-        string st = busy ? s.Settling : s.Status;
-        float w = ImGui.CalcTextSize(st).X;
-        ImGui.SetCursorPos(new Vector2(right - w - P(30), 18));
-        if (busy)
-            Spinner(dl, ImGui.GetCursorScreenPos() + V(-14, 9), P(6));
-        ImGui.TextColored(busy ? T.Brass : T.Muted, st);
-    }
-
-    /// <summary>Text that turns into an input when clicked; Enter applies <paramref name="apply"/> as a history entry.</summary>
-    void TextField(string id, string shown, ImFontPtr font, Vector4 colour, float width, string current, Func<string, Design> apply, string what)
-    {
-        if (editing == id)
-        {
-            ImGui.SetNextItemWidth(width);
-            if (editFocus)
-            {
-                ImGui.SetKeyboardFocusHere();
-                editFocus = false;
-            }
-            if (ImGui.InputText(id, ref editText, 80, ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.AutoSelectAll))
-            {
-                var v = editText.Trim();
-                editing = null;
-                Edit(apply(v), $"{what}: {(v.Length > 0 ? v : "none")}");
-            }
-            else if (ImGui.IsItemDeactivated())
-                editing = null;
-            return;
-        }
-        ImGui.PushFont(font);
-        ImGui.TextColored(colour, shown);
-        ImGui.PopFont();
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetMouseCursor(ImGuiMouseCursor.TextInput);
-            ImGui.SetTooltip("click to edit");
-        }
-        if (ImGui.IsItemClicked())
-        {
-            editing = id;
-            editText = current;
-            editFocus = true;
-        }
-    }
-
-    static void Spinner(ImDrawListPtr dl, Vector2 c, float r)
-    {
-        float a = (float)(ImGui.GetTime() * 6);
-        dl.PathArcTo(c, r, a, a + 4.2f, 16);
-        dl.PathStroke(T.U32(T.Brass), ImDrawFlags.None, P(2));
-    }
-
-    static readonly string[] Navies = ["(the design's own)", .. Shipgen.Render.Looks.Navies];
-    static readonly string[] Eras = ["(the design's own)", .. Shipgen.Render.Looks.Eras];
-
-    /// <summary>The navy and era the sprite is drawn in: tried on without touching the design (and shown in the other
-    /// scenes too), or kept in it.</summary>
-    void StylePopup()
-    {
-        if (!ImGui.BeginPopup("style"))
-            return;
-        ImGui.TextColored(T.Muted, "How she looks: a navy's paint and fittings in an era");
-        var look = Look;
-        int ni = Math.Max(0, Array.IndexOf(Navies, look?.Navy)), ei = Math.Max(0, Array.IndexOf(Eras, look?.Era));
-        ImGui.SetNextItemWidth(P(260));
-        bool changed = ImGui.Combo("navy", ref ni, Navies, Navies.Length);
-        ImGui.SetNextItemWidth(P(260));
-        changed |= ImGui.Combo("era", ref ei, Eras, Eras.Length);
-        if (changed)
-            SetLook(ni == 0 && ei == 0 ? null : new LookInput { Navy = ni > 0 ? Navies[ni] : null, Era = ei > 0 ? Eras[ei] : null });
-        ImGui.Separator();
-        ImGui.SetNextItemWidth(P(120));
-        if (ImGui.InputText("pennant number", ref pennant, 12, ImGuiInputTextFlags.EnterReturnsTrue) || ImGui.IsItemDeactivatedAfterEdit())
-        {
-            var v = pennant.Trim();
-            var d = doc.Current;
-            Edit(d with { Look = (d.Look ?? new LookInput()) with { Number = v.Length > 0 ? v : null } }, $"Pennant number: {(v.Length > 0 ? v : "none")}");
-        }
-        ImGui.TextColored(T.Muted, "painted on the hull by the looks that carry numbers (cold war)");
-        if (look != null)
-        {
-            if (ImGui.Button("Keep in the design"))
-            {
-                var d = doc.Current;
-                var kept = (d.Look ?? new LookInput()) with { Navy = look.Navy ?? d.Look?.Navy, Era = look.Era ?? d.Look?.Era };
-                Edit(d with { Look = kept }, $"Look: {kept.Navy ?? "generic"}, {kept.Era ?? "wwii"}");
-                SetLook(null);
-            }
-            ImGui.SameLine();
-            if (ImGui.Button("Back to the design's own"))
-                SetLook(null);
-        }
-        ImGui.EndPopup();
-    }
-
-    static string[] List(string dir) => Directory.Exists(dir)
-        ? Directory.GetFiles(dir, "*.json").Order(StringComparer.Ordinal).ToArray()
-        : [];
-
-    void OpenPopup()
-    {
-        if (!ImGui.BeginPopup("open"))
-            return;
-        ImGui.TextColored(T.Muted, "New design: an 8 kn hull and nothing else");
-        if (ImGui.Selectable("  empty hull"))
-            Load(DesignDoc.New());
-        ImGui.Separator();
-        void Group(string title, string[] files)
-        {
-            if (files.Length == 0)
-                return;
-            ImGui.TextColored(T.Muted, title);
-            ImGui.BeginChild("##" + title, V(320, Math.Min(files.Length * 26 + 4, 300)));
-            foreach (var f in files)
-                if (ImGui.Selectable("  " + Path.GetFileNameWithoutExtension(f)))
-                {
-                    try
-                    {
-                        Load(DesignDoc.Open(f));
-                    }
-                    catch (Exception e)
-                    {
-                        Console.Error.WriteLine($"designer: {f}: {e.Message}");
-                    }
-                    ImGui.CloseCurrentPopup();
-                }
-            ImGui.EndChild();
-        }
-        Group("My designs", userDesigns);
-        Group("Shipped designs", shippedDesigns);
-        ImGui.EndPopup();
-    }
-
-    void SavePopup()
-    {
-        if (!ImGui.BeginPopup("save"))
-            return;
-        ImGui.TextColored(T.Muted, DesignDoc.UserFolder);
-        ImGui.SetNextItemWidth(P(260));
-        bool enter = ImGui.InputText("##name", ref saveName, 64, ImGuiInputTextFlags.EnterReturnsTrue);
-        ImGui.SameLine();
-        if ((ImGui.Button("Save") || enter) && saveName.Trim().Length > 0)
-        {
-            var file = DesignDoc.FileName(doc.Current with { Name = saveName.Trim() });
-            doc.Save(Path.Combine(DesignDoc.UserFolder, file));
-            stale = true;
-            ImGui.CloseCurrentPopup();
-        }
-        ImGui.EndPopup();
-    }
-
-    void Rail(Vector2 size)
-    {
-        var s = snap!;
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, T.Panel);
-        ImGui.BeginChild("##rail", size);
-        var dl = ImGui.GetWindowDrawList();
-        for (int i = 0; i < Sections.Length; i++)
-        {
-            var p = ImGui.GetCursorScreenPos();
-            var rowSize = new Vector2(size.X, P(42));
-            ImGui.PushID(i);
-            if (ImGui.InvisibleButton("##sec", rowSize))
-                Open(i);
-            bool hover = ImGui.IsItemHovered();
-            ImGui.PopID();
-            if (i == section)
-                dl.AddRectFilled(p, p + rowSize, T.U32(T.Panel2));
-            else if (hover)
-                dl.AddRectFilled(p, p + rowSize, T.U32(T.Inset));
-            if (i == section)
-                dl.AddRectFilled(p, p + new Vector2(P(3), rowSize.Y), T.U32(T.Brass));
-            var num = p + V(14, 11);
-            dl.AddRect(num, num + V(20, 20), T.U32(i == section ? T.Brass : T.Line), P(3));
-            dl.AddText(UiFonts.Mono, UiFonts.Mono.FontSize, num + V(6, 1), T.U32(i == section ? T.Brass : T.Muted), DigitText[i]);
-            dl.AddText(UiFonts.Sans, UiFonts.Sans.FontSize, p + V(46, 4), T.U32(i == section ? T.Brass : T.Text), Sections[i]);
-            dl.AddText(UiFonts.SansSmall, UiFonts.SansSmall.FontSize, p + V(46, 23), T.U32(T.Muted), s.Summaries[i]);
-            dl.AddLine(p + new Vector2(0, rowSize.Y), p + rowSize, T.U32(T.Line));
-        }
-        ImGui.SetCursorPosY(size.Y - P(48));
-        ImGui.PushFont(UiFonts.SansSmall);
-        ImGui.PushTextWrapPos(size.X - P(12));
-        ImGui.SetCursorPosX(P(14));
-        ImGui.TextColored(T.Muted, "0–7 open a section · Ctrl+Z undo · wheel over a value steps it (Shift: ×4)");
-        ImGui.PopTextWrapPos();
-        ImGui.PopFont();
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
-    }
-
-    static readonly string[] DigitText = ["0", "1", "2", "3", "4", "5", "6", "7"];
-
-    void Centre(Vector2 size)
-    {
-        ImGui.BeginChild("##centre", size);
-        var s = snap!;
-        float pad = P(12);
-        float w = size.X - 2 * pad;
-        float topH = MathF.Round(Math.Clamp(size.Y * 0.28f, P(140), P(300)));
-        float profH = MathF.Round(Math.Clamp(size.Y * 0.16f, P(80), P(180)));
-        topSize = new Vector2(w, topH);
-        profileSize = new Vector2(w, profH);
-        Offscreen(ref topTarget, topSize);
-        Offscreen(ref profileTarget, profileSize);
-        bool dim = worker.Busy;
-        var tint = dim ? new Vector4(1, 1, 1, 0.75f) : Vector4.One;
-
-        ImGui.SetCursorPos(new Vector2(pad, pad));
-        if (topTarget != null)
-        {
-            var p = ImGui.GetCursorScreenPos();
-            ImGui.Image((nint)topTarget.Resolve, topSize, Vector2.Zero, Vector2.One, tint);
-            ScaleBar(ImGui.GetWindowDrawList(), p + new Vector2(P(10), topH - P(12)), topView.Zoom);
-        }
-        ImGui.SetCursorPos(new Vector2(pad, pad + topH + 6));
-        if (profileTarget != null)
-            ImGui.Image((nint)profileTarget.Resolve, profileSize, Vector2.Zero, Vector2.One, tint);
-
-        float y = pad + topH + 6 + profH + 12;
-        ImGui.SetCursorPos(new Vector2(pad, y));
-        float panelH = size.Y - y - pad;
-        if (section == 0)
-        {
-            float sheetW = MathF.Round(w - Math.Min(P(280), w * 0.4f) - P(12));
-            Panel("##panel", new Vector2(sheetW, panelH), s.Panel);
-            ImGui.SetCursorPos(new Vector2(pad + sheetW + 12, y));
-            Standard(new Vector2(w - sheetW - 12, panelH));
-        }
-        else
-            Panel("##panel", new Vector2(w, panelH), s.Panel);
-        ImGui.EndChild();
-    }
-
-    /// <summary>A scale bar of a round length that fits about 120 px.</summary>
-    void ScaleBar(ImDrawListPtr dl, Vector2 at, float pxPerM)
-    {
-        if (pxPerM <= 0)
-            return;
-        double unitM = units == UnitSystem.Metric ? 1 : 0.3048;
-        double want = P(120) / pxPerM / unitM;
-        double len = new[] { 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000 }.FirstOrDefault(x => x >= want * 0.6, 1000);
-        float px = (float)(len * unitM * pxPerM);
-        uint c = T.U32(T.Text);
-        dl.AddLine(at, at + new Vector2(px, 0), c, P(2));
-        dl.AddLine(at + V(0, -4), at + V(0, 4), c, 2);
-        dl.AddLine(at + new Vector2(px, P(-4)), at + new Vector2(px, P(4)), c, 2);
-        dl.AddText(UiFonts.SansSmall, UiFonts.SansSmall.FontSize, at + new Vector2(px + P(6), P(-8)), c, units == UnitSystem.Metric ? ScaleText(len, "m") : ScaleText(len, "ft"));
-    }
-
-    readonly Dictionary<(double, string), string> scaleTexts = [];
-    string ScaleText(double len, string unit)
-    {
-        if (!scaleTexts.TryGetValue((len, unit), out var t))
-            scaleTexts[(len, unit)] = t = $"{len:0} {unit}";
-        return t;
-    }
-
-    void Standard(Vector2 size)
-    {
-        var s = snap!;
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, T.Panel);
-        ImGui.BeginChild("##standard", size, ImGuiChildFlags.Border);
-        ImGui.SetCursorPos(V(14, 10));
-        ImGui.PushFont(UiFonts.SansBold);
-        ImGui.TextColored(T.Muted, "STANDARD DISPLACEMENT");
-        ImGui.PopFont();
-        ImGui.SetCursorPosX(P(14));
-        ImGui.PushFont(UiFonts.MonoBig);
-        ImGui.TextColored(worker.Busy ? T.Muted : T.Text, s.Std);
-        ImGui.PopFont();
-        ImGui.SetCursorPosX(P(14));
-        ImGui.TextColored(T.Muted, s.StdDelta);
-        ImGui.Spacing();
-        foreach (var (label, value) in s.Consequences)
-        {
-            ImGui.SetCursorPosX(P(14));
-            ImGui.TextColored(T.Muted, label);
-            ImGui.SameLine(size.X * 0.45f);
-            ImGui.PushFont(UiFonts.Mono);
-            ImGui.TextUnformatted(value);
-            ImGui.PopFont();
-        }
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
-    }
-
-    void Panel(string id, Vector2 size, List<Item> items)
-    {
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, T.Panel);
-        ImGui.BeginChild(id, size, ImGuiChildFlags.Border);
-        ImGui.Indent(P(6));
-        ImGui.Dummy(V(0, 2));
-        float labelW = P(170), valueW = P(110);
-        bool folded = false;   // under a closed Details header
-        for (int n = 0; n < items.Count; n++)
-        {
-            if (folded && items[n] is NumRow or ChoiceRow or ToggleRow or PickRow)
-                continue;
-            ImGui.PushID(n);
-            switch (items[n])
-            {
-                case Header { Details: true } h:
-                    ImGui.Dummy(V(0, 4));
-                    bool open = openDetails.Contains((section, h.Text));
-                    ImGui.SetNextItemOpen(open);
-                    ImGui.PushStyleColor(ImGuiCol.Text, T.Muted);
-                    bool nowOpen = ImGui.CollapsingHeader(h.Text);
-                    ImGui.PopStyleColor();
-                    if (nowOpen != open && !openDetails.Remove((section, h.Text)))
-                        openDetails.Add((section, h.Text));
-                    folded = !nowOpen;
-                    break;
-                case Header h:
-                    folded = false;
-                    ImGui.Dummy(V(0, 4));
-                    ImGui.PushFont(UiFonts.SansBold);
-                    ImGui.TextColored(T.Brass, h.Upper);
-                    ImGui.PopFont();
-                    if (h.Button != null)
-                    {
-                        ImGui.SameLine(size.X - P(90));
-                        ImGui.PushFont(UiFonts.SansSmall);
-                        if (ImGui.SmallButton(h.Button))
-                            h.OnButton!();
-                        ImGui.PopFont();
-                    }
-                    ImGui.Separator();
-                    break;
-                case Note t:
-                    ImGui.PushTextWrapPos(size.X - P(16));
-                    ImGui.TextColored(T.Muted, t.Text);
-                    ImGui.PopTextWrapPos();
-                    break;
-                case Act a:
-                    if (ImGui.Button(a.Label))
-                        a.OnClick();
-                    break;
-                case NumRow r:
-                    NumberRow(r, labelW, valueW);
-                    break;
-                case ChoiceRow c:
-                    ImGui.BeginDisabled(!c.Applies);
-                    ImGui.AlignTextToFramePadding();
-                    ImGui.TextUnformatted(c.Knob.Label);
-                    ImGui.SameLine(labelW);
-                    ImGui.SetNextItemWidth(valueW + P(150));
-                    int idx = c.Index;
-                    if (ImGui.Combo("##c", ref idx, c.Labels, c.Labels.Length) && idx < c.Knob.Values.Length)
-                        Edit(c.Knob.Set(doc.Current, c.Knob.Values[idx]), $"{c.Knob.Label}: {c.Labels[idx]}");
-                    ImGui.EndDisabled();
-                    break;
-                case PickRow pr:
-                    ImGui.AlignTextToFramePadding();
-                    ImGui.TextUnformatted(pr.Label);
-                    ImGui.SameLine(labelW);
-                    ImGui.SetNextItemWidth(Math.Min(P(460), size.X - labelW - P(24)));
-                    int pi = pr.Index;
-                    if (ImGui.Combo("##p", ref pi, pr.Names, pr.Names.Length) && pi < pr.Count && pi != pr.Index)
-                        pr.Apply(pi);
-                    break;
-                case ToggleRow tr:
-                    ImGui.BeginDisabled(!tr.Applies);
-                    ImGui.AlignTextToFramePadding();
-                    ImGui.TextUnformatted(tr.Knob.Label);
-                    ImGui.SameLine(labelW);
-                    bool v = tr.Value;
-                    if (ImGui.Checkbox("##t", ref v))
-                        Edit(tr.Knob.Set(doc.Current, v), $"{tr.Knob.Label} {(v ? "on" : "off")}");
-                    ImGui.EndDisabled();
-                    break;
-            }
-            ImGui.PopID();
-        }
-        ImGui.Unindent(P(6));
-        ImGui.EndChild();
-        ImGui.PopStyleColor();
-    }
-
-    void NumberRow(NumRow r, float labelW, float valueW)
-    {
-        var k = r.Knob;
-        ImGui.BeginDisabled(!r.Applies);
-        ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted(r.Label);
-        ImGui.SameLine(labelW);
-        float bw = ImGui.GetFrameHeight();
-        if (ImGui.Button("−", new Vector2(bw, 0)))
-            Step(r, ImGui.GetIO().KeyShift ? -4 : -1);
-        ImGui.SameLine(0, P(4));
-        if (editing == k.Id)
-        {
-            ImGui.SetNextItemWidth(valueW);
-            if (editFocus)
-            {
-                ImGui.SetKeyboardFocusHere();
-                editFocus = false;
-            }
-            if (ImGui.InputText("##v", ref editText, 32, ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.AutoSelectAll))
-            {
-                if (Units.TryParse(editText, k.Quantity, units, out double metric))
-                {
-                    SetValue(k, metric);
-                    doc.Seal();
-                }
-                editing = null;
-            }
-            else if (ImGui.IsItemDeactivated())
-                editing = null;
-        }
-        else
-        {
-            ImGui.PushStyleColor(ImGuiCol.Button, T.Inset);
-            ImGui.PushFont(UiFonts.Mono);
-            if (ImGui.Button(r.Value, new Vector2(valueW, 0)))
-            {
-                editing = k.Id;
-                editText = r.Num is { } x ? Fmt(k, x, unit: false).Replace(",", "") : "";
-                editFocus = true;
-            }
-            ImGui.PopFont();
-            ImGui.PopStyleColor();
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.SetItemKeyOwner(ImGuiKey.MouseWheelY);   // the value takes the wheel, the panel doesn't scroll
-                if (ImGui.GetIO().MouseWheel is var wheel && wheel != 0)
-                    Step(r, Math.Sign(wheel) * (ImGui.GetIO().KeyShift ? 4 : 1));
-            }
-        }
-        ImGui.SameLine(0, P(4));
-        if (ImGui.Button("+", new Vector2(bw, 0)))
-            Step(r, ImGui.GetIO().KeyShift ? 4 : 1);
-        ImGui.SameLine();
-        if (r.IsAuto && k.CanAuto)
-            ImGui.TextColored(T.Muted, "Auto");
-        else if (k.CanAuto)
-        {
-            ImGui.PushFont(UiFonts.SansSmall);
-            if (ImGui.SmallButton("auto"))
-            {
-                SetValue(k, null);
-                doc.Seal();
-            }
-            ImGui.PopFont();
-        }
-        else
-            ImGui.Dummy(Vector2.Zero);   // ends the line SameLine opened
-        if (r.Delta.Length > 0)
-        {
-            ImGui.SameLine(labelW + valueW + 2 * bw + P(90));
-            ImGui.TextColored(T.Brass, r.Delta);
-        }
-        ImGui.EndDisabled();
-    }
-
-    void Legend(Vector2 size)
-    {
-        var s = snap!;
-        ImGui.PushStyleColor(ImGuiCol.ChildBg, T.Paper);
-        ImGui.PushStyleColor(ImGuiCol.Text, T.Ink);
-        ImGui.BeginChild("##legend", size);
-        var dl = ImGui.GetWindowDrawList();
-        float pad = P(16), w = size.X - 2 * pad;
-        var ink = worker.Busy ? T.InkMuted : T.Ink;
-        ImGui.SetCursorPos(new Vector2(pad, 12));
-        ImGui.PushFont(UiFonts.CaslonBig);
-        ImGui.TextUnformatted("Legend");
-        ImGui.PopFont();
-        foreach (var (label, value) in s.Particulars)
-        {
-            ImGui.SetCursorPosX(pad);
-            ImGui.PushFont(UiFonts.Caslon);
-            ImGui.TextColored(T.InkMuted, label);
-            ImGui.PopFont();
-            ImGui.SameLine(pad + P(96));
-            ImGui.PushFont(UiFonts.Mono);
-            ImGui.PushTextWrapPos(size.X - pad);
-            ImGui.TextColored(ink, value);
-            ImGui.PopTextWrapPos();
-            ImGui.PopFont();
-            var y = ImGui.GetCursorScreenPos().Y - 3;
-            dl.AddLine(new Vector2(ImGui.GetWindowPos().X + pad, y), new Vector2(ImGui.GetWindowPos().X + size.X - pad, y), T.U32(T.PaperLine));
-        }
-
-        // the weight bar, its groups below it
-        ImGui.Dummy(V(0, 6));
-        ImGui.SetCursorPosX(pad);
-        var p = ImGui.GetCursorScreenPos();
-        float x = p.X;
-        foreach (var (g, frac, _) in s.Weights)
-        {
-            float wpx = frac * w;
-            dl.AddRectFilled(new Vector2(x, p.Y), new Vector2(x + wpx, p.Y + 16), T.U32(T.Group(g)));
-            x += wpx;
-        }
-        dl.AddRect(p, p + new Vector2(w, P(16)), T.U32(T.InkMuted));
-        ImGui.Dummy(new Vector2(w, P(20)));
-        ImGui.PushFont(UiFonts.SansSmall);
-        float colX = 0;
-        for (int i = 0; i < s.Weights.Length; i++)
-        {
-            ImGui.SetCursorPosX(pad + colX);
-            var q = ImGui.GetCursorScreenPos();
-            dl.AddRectFilled(q + V(0, 4), q + V(9, 13), T.U32(T.Group(s.Weights[i].Group)));
-            ImGui.SetCursorPosX(pad + colX + P(14));
-            ImGui.TextColored(T.InkMuted, s.Weights[i].Text);
-            if (i % 2 == 0)
-            {
-                ImGui.SameLine();
-                colX = w / 2;
-            }
-            else
-                colX = 0;
-        }
-        if (s.Weights.Length % 2 == 1)
-            ImGui.NewLine();
-        ImGui.PopFont();
-
-        ImGui.Dummy(V(0, 8));
-        ImGui.SetCursorPosX(pad);
-        ImGui.PushFont(UiFonts.CaslonBig);
-        ImGui.TextUnformatted(s.Remarks.Length > 0 ? $"Remarks ({s.Remarks.Length})" : "Remarks");
-        ImGui.PopFont();
-        ImGui.PushTextWrapPos(size.X - pad);
-        if (s.Remarks.Length == 0)
-        {
-            ImGui.SetCursorPosX(pad);
-            ImGui.TextColored(T.InkMuted, "None.");
-        }
-        foreach (var (error, text) in s.Remarks)
-        {
-            ImGui.SetCursorPosX(pad);
-            ImGui.PushFont(UiFonts.SansBold);
-            ImGui.TextColored(T.AmberInk, error ? "Won't build" : "Note");
-            ImGui.PopFont();
-            ImGui.SameLine();
-            ImGui.PushFont(UiFonts.SansSmall);
-            ImGui.TextUnformatted(text);
-            ImGui.PopFont();
-        }
-        ImGui.PopTextWrapPos();
-        ImGui.EndChild();
-        ImGui.PopStyleColor(2);
-    }
-
-    void History(Vector2 size)
-    {
-        var s = snap!;
-        var dl = ImGui.GetWindowDrawList();
-        var p = ImGui.GetCursorScreenPos();
-        dl.AddRectFilled(p, p + size, T.U32(T.Panel));
-        dl.AddLine(p, p + new Vector2(size.X, 0), T.U32(T.Line));
-        ImGui.SetCursorPos(ImGui.GetCursorPos() + V(16, 9));
-        ImGui.PushFont(UiFonts.SansBold);
-        ImGui.TextColored(T.Muted, "HISTORY");
-        ImGui.PopFont();
-        ImGui.SameLine(0, P(16));
-        // the newest entries that fit, oldest first
-        int first = Math.Max(0, s.HistoryLabels.Length - 8);
-        for (int i = first; i < s.HistoryLabels.Length; i++)
-        {
-            ImGui.PushID(i);
-            bool current = i == doc.Index;
-            ImGui.PushStyleColor(ImGuiCol.Text, current ? T.Brass : i > doc.Index ? T.Line : T.Muted);
-            if (ImGui.Selectable(s.HistoryLabels[i], current, ImGuiSelectableFlags.None, ImGui.CalcTextSize(s.HistoryLabels[i])))
-            {
-                doc.Jump(i);
-                stale = true;
-            }
-            ImGui.PopStyleColor();
-            ImGui.PopID();
-            ImGui.SameLine(0, P(18));
-        }
-        ImGui.NewLine();
     }
 
     public void Dispose()

@@ -12,7 +12,7 @@ namespace Fleetwright;
 /// </summary>
 public static unsafe class UiFonts
 {
-    public static ImFontPtr Sans, SansBold, SansSmall, Title, Mono, MonoBig, Caslon, CaslonBig;
+    public static ImFontPtr Sans, SansBold, SansSmall, Title, Mono, MonoBig;
 
     /// <summary>The window height the sizes below are designed at (scale 1).</summary>
     public const float ReferenceHeight = 1080;
@@ -63,8 +63,6 @@ public static unsafe class UiFonts
         Title = Add("ibm-plex-sans-condensed-latin-600-normal.ttf", 16);
         Mono = Add("ibm-plex-mono-latin-400-normal.ttf", 13);
         MonoBig = Add("ibm-plex-mono-latin-400-normal.ttf", 22);
-        Caslon = Add("libre-caslon-text-latin-400-normal.ttf", 13);
-        CaslonBig = Add("libre-caslon-text-latin-700-normal.ttf", 20);
         var style = ImGui.GetStyle();
         if (!haveBase)
         {
