@@ -17,6 +17,12 @@ public static class Decks
         return n < DeckNames.Length ? DeckNames[n] : $"Deck {n + 1}";
     }
 
+    static readonly string[] DeckNamesLower = DeckNames.Select(s => s.ToLowerInvariant()).ToArray();
+
+    /// <summary>DeckName(n) in lower case (the named decks' from a table, made once).</summary>
+    public static string DeckNameLower(long n) =>
+        n >= 0 && n < DeckNamesLower.Length ? DeckNamesLower[n] : DeckName(n).ToLowerInvariant();
+
     /// <summary>The hull's decks, every DeckPitch down from the main deck, as heights above the keel, top down.</summary>
     public static List<(long N, double Z)> DeckStack(Design design, double D)
     {

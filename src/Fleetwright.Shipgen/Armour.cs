@@ -203,7 +203,13 @@ public static class Armour
                     .Where(p => p.Lv >= -dn).Select(p => (s.Ext, p.X0, p.X1))).ToList();
             foreach (var (ext, p0, p1) in spans)
             {
-                var p = decks.FirstOrDefault(q => q.Deck == dn && Math.Min(q.X1, p1) - Math.Max(q.X0, p0) > 1e-6);
+                ArmourDeck? p = null;
+                foreach (var q in decks)
+                    if (q.Deck == dn && Math.Min(q.X1, p1) - Math.Max(q.X0, p0) > 1e-6)
+                    {
+                        p = q;
+                        break;
+                    }
                 if (p != null)
                 {
                     string? pm = p.Material, dm = d.Material;
@@ -263,8 +269,19 @@ public static class Armour
         {
             var (b0, b1) = geo.SteeringSpan(L);
             double? wbox = geo.SteeringBeam;
-            double rz = Ordnance.Span(stack.Select(s => s.Z).ToList(), Powerplant.DoubleBottom(D), roof?.Z ?? D).Top + D;
-            long n = stack.MinBy(v => Math.Abs(v.Z - rz)).N;
+            double rz;
+            using (Scratch<double>.Rent(out var zs))
+            {
+                foreach (var s in stack)
+                    zs.Add(s.Z);
+                rz = Ordnance.Span(zs, Powerplant.DoubleBottom(D), roof?.Z ?? D).Top + D;
+            }
+            // the deck nearest rz (MinBy: the first of equals)
+            long n = stack[0].N;
+            double best = Math.Abs(stack[0].Z - rz);
+            foreach (var v in stack)
+                if (Math.Abs(v.Z - rz).CompareTo(best) < 0)
+                    (n, best) = (v.N, Math.Abs(v.Z - rz));
             if (sbDeck > 0)
                 decks.Add(new ArmourDeck { Deck = n, Mm = sbDeck, Extent = "steering", Z = rz, Asked = n, X0 = b0, X1 = b1, W = wbox,
                     Material = ArmourMaterial(design, "decks", sb.DeckMaterial) });
@@ -301,7 +318,11 @@ public static class Armour
                 }
             }
         }
-        double bhTop = strakes.Where(s => s.Kind == "upper" && s.Extent == "citadel").Select(s => s.Top).Prepend(top).Max();
+        // the bulkheads reach the belt's top or the citadel's upper belt (LINQ's Max: leading NaNs skipped)
+        double bhTop = top;
+        foreach (var s in strakes)
+            if (s.Kind == "upper" && s.Extent == "citadel" && (double.IsNaN(bhTop) || s.Top > bhTop))
+                bhTop = s.Top;
         return new ArmourLayout
         {
             X0 = x0, X1 = x1, BeltMm = belt, BeltBottomMm = a.BeltBottomMm ?? belt, Waterline = T, BeltBottom = bot, BeltTop = top,
@@ -356,7 +377,7 @@ public static class Armour
         {
             string ext = d.Extent;
             double area = (ext == "full" ? L * Geometry.Cwp(cb) : d.X1 - d.X0) * (d.W is double w && w != 0 ? w : B) * 0.9;
-            string name = $"Deck armour ({Decks.DeckName(d.Deck).ToLowerInvariant()}" +
+            string name = $"Deck armour ({Decks.DeckNameLower(d.Deck)}" +
                           (ext is "fore" or "aft" or "steering" ? $", {ext})" : ")");
             result.Add(new Weight(name, "armour", area * d.Mm / 1000 * Weight.Steel, ext == "full" ? 0.0 : (d.X0 + d.X1) / 2, ZRel.Deck(d.Z - D)));
         }
@@ -369,8 +390,8 @@ public static class Armour
         var result = new List<string>();
         foreach (var d in ArmourDecks(design, res.Depth, geo.Raised))
             if (d.Asked != d.Deck)
-                result.Add($"The hull has no {Decks.DeckName(d.Asked).ToLowerInvariant()} ({res.Depth:F1} m deep): its " +
-                         $"{d.Mm} mm deck armour lies on the {Decks.DeckName(d.Deck).ToLowerInvariant()}.");
+                result.Add($"The hull has no {Decks.DeckNameLower(d.Asked)} ({res.Depth:F1} m deep): its " +
+                         $"{d.Mm} mm deck armour lies on the {Decks.DeckNameLower(d.Deck)}.");
         var arm = design.Armour ?? new ArmourInput();
         if ((arm.BeltMm ?? 0) > 0 && (arm.BeltDepthM ?? 1.0) < 1.0)
             result.Add($"The belt reaches only {arm.BeltDepthM:F1} m below the waterline: rolling or " +
@@ -378,7 +399,7 @@ public static class Armour
         var ub = arm.UpperBelt ?? new UpperBeltInput();
         if ((ub.Mm ?? 0) > 0 && !res.Armour.Strakes.Any(s => s.Kind == "upper"))
             result.Add($"The {ub.Mm} mm upper belt has no height: the belt below it already reaches the " +
-                     $"{Decks.DeckName(ub.ToDeck ?? 0).ToLowerInvariant()}.");
+                     $"{Decks.DeckNameLower(ub.ToDeck ?? 0)}.");
         return result;
     }
 }

@@ -404,9 +404,13 @@ public sealed partial class Layout
                 }
                 return best < o.R + margin;
             }
+            if (o.Kind == 'p')
+                return p.Pts!.Count >= PrepMin ? p.Prepared.Intersects(o.Pts!) : Geometry.PolygonsIntersect(p.Pts, o.Pts!);
+            using var _ = Scratch<Pt>.Rent(out var box);
+            o.Points(margin, box);
             if (p.Pts!.Count >= PrepMin)
-                return p.Prepared.Intersects(o.Points(margin));
-            return Geometry.PolygonsIntersect(p.Pts, o.Points(margin));
+                return p.Prepared.Intersects(box);
+            return Geometry.PolygonsIntersect(p.Pts, box);
         }
         if (a.Kind == 'c' && b.Kind == 'c')
             return double.Hypot(a.X - b.X, a.Y - b.Y) < a.R + b.R + margin;

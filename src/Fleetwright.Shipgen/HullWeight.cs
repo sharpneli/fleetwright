@@ -228,16 +228,26 @@ public static class Ordnance
         int tiers = Tiers)
     {
         double D = decks[0], ib = innerBottom;
-        var ups = decks.Where(z => ib + 1e-6 < z && z <= roof + 1e-6).Order().ToList();
+        using var _ = Scratch<double>.Rent(out var ups);
+        for (int i = 0; i < decks.Count; i++)
+            if (ib + 1e-6 < decks[i] && decks[i] <= roof + 1e-6)
+                ups.Add(decks[i]);
+        ups.Sort();
         if (ups.Count == 0)
-            ups = [roof];
+            ups.Add(roof);
         double top;
         if (needH is null)
             top = ups[Math.Min(tiers, ups.Count) - 1];
         else
         {
             double nh = needH.Value;
-            top = ups.Cast<double?>().FirstOrDefault(z => z >= ib + nh - 1e-6) ?? ups[^1];
+            top = ups[^1];
+            foreach (var z in ups)
+                if (z >= ib + nh - 1e-6)
+                {
+                    top = z;
+                    break;
+                }
         }
         return (ib - D, top - D);
     }
