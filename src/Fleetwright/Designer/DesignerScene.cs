@@ -25,7 +25,13 @@ public sealed unsafe class DesignerScene : IScene
 {
     const double SpriteScale = 8;   // px per metre at mip 0
     const int MipLevels = 4;
-    const float RailW = 250, LegendW = 340, TopBarH = 54, HistoryH = 40;
+    static float S => UiFonts.Scale;
+    static float P(float px) => px * S;
+    static Vector2 V(float x, float y) => new(x * S, y * S);
+    static float RailW => P(230);
+    static float LegendW => P(320);
+    static float TopBarH => P(54);
+    static float HistoryH => P(40);
 
     static readonly string[] Sections =
         ["Overview", "Main battery", "Secondary · AA · TT", "Protection", "Speed & machinery", "Hull & upperworks", "Fire control", "Crew"];
@@ -49,6 +55,7 @@ public sealed unsafe class DesignerScene : IScene
     int section;
     UnitSystem units;
     Snapshot? snap;
+    bool stale = true;   // the snapshot is rebuilt at the next BuildUi (never mid-frame: the panels drawn after an edit still read it)
 
     // a value being typed into
     string? editing;
@@ -109,7 +116,7 @@ public sealed unsafe class DesignerScene : IScene
         doc = next;
         baselineShip = null;
         editing = null;
-        snap = null;
+        stale = true;
     }
 
     void Submit()
@@ -161,7 +168,7 @@ public sealed unsafe class DesignerScene : IScene
             if (baselineShip == null && r.Design.ToJson() == doc.History[0].Json)
                 baselineShip = r.Ship;
         }
-        snap = null;
+        stale = true;
     }
 
     static SDL_FColor Clear(Vector4 c) => new() { r = c.X, g = c.Y, b = c.Z, a = 1 };
@@ -481,7 +488,7 @@ public sealed unsafe class DesignerScene : IScene
     {
         doc.Apply(next, label, key);
         editing = null;
-        snap = null;
+        stale = true;
     }
 
     /// <summary>Steps a number knob <paramref name="steps"/> steps along the displayed units' grid.</summary>
@@ -545,7 +552,11 @@ public sealed unsafe class DesignerScene : IScene
 
     public void BuildUi()
     {
-        snap ??= Build();
+        if (snap == null || stale)
+        {
+            snap = Build();
+            stale = false;
+        }
         Keys();
         var vp = ImGui.GetMainViewport();
         T.Push();
@@ -592,13 +603,13 @@ public sealed unsafe class DesignerScene : IScene
     void Undo()
     {
         doc.Undo();
-        snap = null;
+        stale = true;
     }
 
     void Redo()
     {
         doc.Redo();
-        snap = null;
+        stale = true;
     }
 
     void Open(int s)
@@ -608,7 +619,7 @@ public sealed unsafe class DesignerScene : IScene
         section = s;
         editing = null;
         doc.Seal();
-        snap = null;
+        stale = true;
     }
 
     void TopBar(Vector2 size)
@@ -617,26 +628,26 @@ public sealed unsafe class DesignerScene : IScene
         var dl = ImGui.GetWindowDrawList();
         var p = ImGui.GetCursorScreenPos();
         dl.AddRectFilled(p, p + size, T.U32(T.Panel));
-        dl.AddLine(p + new Vector2(0, size.Y - 1), p + size - new Vector2(0, 1), T.U32(T.Line));
+        dl.AddLine(p + new Vector2(0, size.Y - 1), p + size - V(0, 1), T.U32(T.Line));
 
-        ImGui.SetCursorPos(new Vector2(16, 6));
+        ImGui.SetCursorPos(V(16, 6));
         ImGui.PushFont(UiFonts.SansSmall);
         ImGui.TextColored(T.Muted, "SHIP DESIGN");
         ImGui.PopFont();
-        ImGui.SetCursorPos(new Vector2(16, 22));
+        ImGui.SetCursorPos(V(16, 22));
         ImGui.PushFont(UiFonts.Title);
         ImGui.TextUnformatted(s.Title);
         ImGui.PopFont();
         ImGui.SameLine();
-        ImGui.SetCursorPosY(26);
+        ImGui.SetCursorPosY(P(26));
         ImGui.TextColored(T.Muted, s.File);
 
-        float x = 360;
+        float x = P(360);
         ImGui.SetCursorPos(new Vector2(x, 14));
         if (ImGui.Button("New"))
         {
             Load(DesignDoc.New());
-            snap = null;
+            stale = true;
         }
         ImGui.SameLine();
         if (ImGui.Button("Open…"))
@@ -653,7 +664,7 @@ public sealed unsafe class DesignerScene : IScene
             ImGui.OpenPopup("save");
         }
         SavePopup();
-        ImGui.SameLine(0, 24);
+        ImGui.SameLine(0, P(24));
         ImGui.BeginDisabled(!doc.CanUndo);
         if (ImGui.Button("Undo"))
             Undo();
@@ -668,11 +679,11 @@ public sealed unsafe class DesignerScene : IScene
         if (ImGui.Button("Reset"))
         {
             doc.Reset();
-            snap = null;
+            stale = true;
         }
         ImGui.EndDisabled();
 
-        ImGui.SameLine(0, 24);
+        ImGui.SameLine(0, P(24));
         int u = (int)units;
         bool unitsChanged = ImGui.RadioButton("metric", ref u, 0);
         ImGui.SameLine();
@@ -680,14 +691,14 @@ public sealed unsafe class DesignerScene : IScene
         if (unitsChanged)
         {
             units = (UnitSystem)u;
-            snap = null;
+            stale = true;
         }
 
         // the right end: build status, then Accept / Cancel for a caller
         float right = size.X - 16;
         if (onClose != null)
         {
-            right -= 180;
+            right -= P(180);
             ImGui.SetCursorPos(new Vector2(right, 14));
             ImGui.PushStyleColor(ImGuiCol.Button, T.AmberBg);
             ImGui.PushStyleColor(ImGuiCol.Text, T.Brass);
@@ -701,9 +712,9 @@ public sealed unsafe class DesignerScene : IScene
         bool busy = worker.Busy;
         string st = busy ? s.Settling : s.Status;
         float w = ImGui.CalcTextSize(st).X;
-        ImGui.SetCursorPos(new Vector2(right - w - 30, 18));
+        ImGui.SetCursorPos(new Vector2(right - w - P(30), 18));
         if (busy)
-            Spinner(dl, ImGui.GetCursorScreenPos() + new Vector2(-14, 9), 6);
+            Spinner(dl, ImGui.GetCursorScreenPos() + V(-14, 9), P(6));
         ImGui.TextColored(busy ? T.Brass : T.Muted, st);
     }
 
@@ -711,7 +722,7 @@ public sealed unsafe class DesignerScene : IScene
     {
         float a = (float)(ImGui.GetTime() * 6);
         dl.PathArcTo(c, r, a, a + 4.2f, 16);
-        dl.PathStroke(T.U32(T.Brass), ImDrawFlags.None, 2);
+        dl.PathStroke(T.U32(T.Brass), ImDrawFlags.None, P(2));
     }
 
     static string[] List(string dir) => Directory.Exists(dir)
@@ -731,7 +742,7 @@ public sealed unsafe class DesignerScene : IScene
             if (files.Length == 0)
                 return;
             ImGui.TextColored(T.Muted, title);
-            ImGui.BeginChild("##" + title, new Vector2(320, Math.Min(files.Length * 26 + 4, 300)));
+            ImGui.BeginChild("##" + title, V(320, Math.Min(files.Length * 26 + 4, 300)));
             foreach (var f in files)
                 if (ImGui.Selectable("  " + Path.GetFileNameWithoutExtension(f)))
                 {
@@ -757,14 +768,14 @@ public sealed unsafe class DesignerScene : IScene
         if (!ImGui.BeginPopup("save"))
             return;
         ImGui.TextColored(T.Muted, DesignDoc.UserFolder);
-        ImGui.SetNextItemWidth(260);
+        ImGui.SetNextItemWidth(P(260));
         bool enter = ImGui.InputText("##name", ref saveName, 64, ImGuiInputTextFlags.EnterReturnsTrue);
         ImGui.SameLine();
         if ((ImGui.Button("Save") || enter) && saveName.Trim().Length > 0)
         {
             var file = DesignDoc.FileName(doc.Current with { Name = saveName.Trim() });
             doc.Save(Path.Combine(DesignDoc.UserFolder, file));
-            snap = null;
+            stale = true;
             ImGui.CloseCurrentPopup();
         }
         ImGui.EndPopup();
@@ -779,7 +790,7 @@ public sealed unsafe class DesignerScene : IScene
         for (int i = 0; i < Sections.Length; i++)
         {
             var p = ImGui.GetCursorScreenPos();
-            var rowSize = new Vector2(size.X, 42);
+            var rowSize = new Vector2(size.X, P(42));
             ImGui.PushID(i);
             if (ImGui.InvisibleButton("##sec", rowSize))
                 Open(i);
@@ -790,18 +801,18 @@ public sealed unsafe class DesignerScene : IScene
             else if (hover)
                 dl.AddRectFilled(p, p + rowSize, T.U32(T.Inset));
             if (i == section)
-                dl.AddRectFilled(p, p + new Vector2(3, rowSize.Y), T.U32(T.Brass));
-            var num = p + new Vector2(14, 11);
-            dl.AddRect(num, num + new Vector2(20, 20), T.U32(i == section ? T.Brass : T.Line), 3);
-            dl.AddText(UiFonts.Mono, 16, num + new Vector2(6, 1), T.U32(i == section ? T.Brass : T.Muted), DigitText[i]);
-            dl.AddText(UiFonts.Sans, 17, p + new Vector2(46, 4), T.U32(i == section ? T.Brass : T.Text), Sections[i]);
-            dl.AddText(UiFonts.SansSmall, 14, p + new Vector2(46, 23), T.U32(T.Muted), s.Summaries[i]);
+                dl.AddRectFilled(p, p + new Vector2(P(3), rowSize.Y), T.U32(T.Brass));
+            var num = p + V(14, 11);
+            dl.AddRect(num, num + V(20, 20), T.U32(i == section ? T.Brass : T.Line), P(3));
+            dl.AddText(UiFonts.Mono, UiFonts.Mono.FontSize, num + V(6, 1), T.U32(i == section ? T.Brass : T.Muted), DigitText[i]);
+            dl.AddText(UiFonts.Sans, UiFonts.Sans.FontSize, p + V(46, 4), T.U32(i == section ? T.Brass : T.Text), Sections[i]);
+            dl.AddText(UiFonts.SansSmall, UiFonts.SansSmall.FontSize, p + V(46, 23), T.U32(T.Muted), s.Summaries[i]);
             dl.AddLine(p + new Vector2(0, rowSize.Y), p + rowSize, T.U32(T.Line));
         }
-        ImGui.SetCursorPosY(size.Y - 48);
+        ImGui.SetCursorPosY(size.Y - P(48));
         ImGui.PushFont(UiFonts.SansSmall);
-        ImGui.PushTextWrapPos(size.X - 12);
-        ImGui.SetCursorPosX(14);
+        ImGui.PushTextWrapPos(size.X - P(12));
+        ImGui.SetCursorPosX(P(14));
         ImGui.TextColored(T.Muted, "0–7 open a section · Ctrl+Z undo · wheel over a value steps it (Shift: ×4)");
         ImGui.PopTextWrapPos();
         ImGui.PopFont();
@@ -815,10 +826,10 @@ public sealed unsafe class DesignerScene : IScene
     {
         ImGui.BeginChild("##centre", size);
         var s = snap!;
-        float pad = 12;
+        float pad = P(12);
         float w = size.X - 2 * pad;
-        float topH = MathF.Round(Math.Clamp(size.Y * 0.28f, 140, 300));
-        float profH = MathF.Round(Math.Clamp(size.Y * 0.16f, 80, 180));
+        float topH = MathF.Round(Math.Clamp(size.Y * 0.28f, P(140), P(300)));
+        float profH = MathF.Round(Math.Clamp(size.Y * 0.16f, P(80), P(180)));
         topSize = new Vector2(w, topH);
         profileSize = new Vector2(w, profH);
         Offscreen(ref topTarget, topSize);
@@ -831,7 +842,7 @@ public sealed unsafe class DesignerScene : IScene
         {
             var p = ImGui.GetCursorScreenPos();
             ImGui.Image((nint)topTarget.Resolve, topSize, Vector2.Zero, Vector2.One, tint);
-            ScaleBar(ImGui.GetWindowDrawList(), p + new Vector2(10, topH - 12), topView.Zoom);
+            ScaleBar(ImGui.GetWindowDrawList(), p + new Vector2(P(10), topH - P(12)), topView.Zoom);
         }
         ImGui.SetCursorPos(new Vector2(pad, pad + topH + 6));
         if (profileTarget != null)
@@ -842,7 +853,7 @@ public sealed unsafe class DesignerScene : IScene
         float panelH = size.Y - y - pad;
         if (section == 0)
         {
-            float sheetW = MathF.Round(w * 0.62f);
+            float sheetW = MathF.Round(w - Math.Min(P(280), w * 0.4f) - P(12));
             Panel("##panel", new Vector2(sheetW, panelH), s.Panel);
             ImGui.SetCursorPos(new Vector2(pad + sheetW + 12, y));
             Standard(new Vector2(w - sheetW - 12, panelH));
@@ -858,14 +869,14 @@ public sealed unsafe class DesignerScene : IScene
         if (pxPerM <= 0)
             return;
         double unitM = units == UnitSystem.Metric ? 1 : 0.3048;
-        double want = 120 / pxPerM / unitM;
+        double want = P(120) / pxPerM / unitM;
         double len = new[] { 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000 }.FirstOrDefault(x => x >= want * 0.6, 1000);
         float px = (float)(len * unitM * pxPerM);
         uint c = T.U32(T.Text);
-        dl.AddLine(at, at + new Vector2(px, 0), c, 2);
-        dl.AddLine(at + new Vector2(0, -4), at + new Vector2(0, 4), c, 2);
-        dl.AddLine(at + new Vector2(px, -4), at + new Vector2(px, 4), c, 2);
-        dl.AddText(UiFonts.SansSmall, 14, at + new Vector2(px + 6, -8), c, units == UnitSystem.Metric ? ScaleText(len, "m") : ScaleText(len, "ft"));
+        dl.AddLine(at, at + new Vector2(px, 0), c, P(2));
+        dl.AddLine(at + V(0, -4), at + V(0, 4), c, 2);
+        dl.AddLine(at + new Vector2(px, P(-4)), at + new Vector2(px, P(4)), c, 2);
+        dl.AddText(UiFonts.SansSmall, UiFonts.SansSmall.FontSize, at + new Vector2(px + P(6), P(-8)), c, units == UnitSystem.Metric ? ScaleText(len, "m") : ScaleText(len, "ft"));
     }
 
     readonly Dictionary<(double, string), string> scaleTexts = [];
@@ -881,22 +892,22 @@ public sealed unsafe class DesignerScene : IScene
         var s = snap!;
         ImGui.PushStyleColor(ImGuiCol.ChildBg, T.Panel);
         ImGui.BeginChild("##standard", size, ImGuiChildFlags.Border);
-        ImGui.SetCursorPos(new Vector2(14, 10));
+        ImGui.SetCursorPos(V(14, 10));
         ImGui.PushFont(UiFonts.SansBold);
         ImGui.TextColored(T.Muted, "STANDARD DISPLACEMENT");
         ImGui.PopFont();
-        ImGui.SetCursorPosX(14);
+        ImGui.SetCursorPosX(P(14));
         ImGui.PushFont(UiFonts.MonoBig);
         ImGui.TextColored(worker.Busy ? T.Muted : T.Text, s.Std);
         ImGui.PopFont();
-        ImGui.SetCursorPosX(14);
+        ImGui.SetCursorPosX(P(14));
         ImGui.TextColored(T.Muted, s.StdDelta);
         ImGui.Spacing();
         foreach (var (label, value) in s.Consequences)
         {
-            ImGui.SetCursorPosX(14);
+            ImGui.SetCursorPosX(P(14));
             ImGui.TextColored(T.Muted, label);
-            ImGui.SameLine(size.X * 0.5f);
+            ImGui.SameLine(size.X * 0.45f);
             ImGui.PushFont(UiFonts.Mono);
             ImGui.TextUnformatted(value);
             ImGui.PopFont();
@@ -909,22 +920,22 @@ public sealed unsafe class DesignerScene : IScene
     {
         ImGui.PushStyleColor(ImGuiCol.ChildBg, T.Panel);
         ImGui.BeginChild(id, size, ImGuiChildFlags.Border);
-        ImGui.Indent(6);
-        ImGui.Dummy(new Vector2(0, 2));
-        float labelW = 210, valueW = 120;
+        ImGui.Indent(P(6));
+        ImGui.Dummy(V(0, 2));
+        float labelW = P(170), valueW = P(110);
         for (int n = 0; n < items.Count; n++)
         {
             ImGui.PushID(n);
             switch (items[n])
             {
                 case Header h:
-                    ImGui.Dummy(new Vector2(0, 4));
+                    ImGui.Dummy(V(0, 4));
                     ImGui.PushFont(UiFonts.SansBold);
                     ImGui.TextColored(T.Brass, h.Text.ToUpperInvariant());
                     ImGui.PopFont();
                     if (h.Button != null)
                     {
-                        ImGui.SameLine(size.X - 90);
+                        ImGui.SameLine(size.X - P(90));
                         ImGui.PushFont(UiFonts.SansSmall);
                         if (ImGui.SmallButton(h.Button))
                             h.OnButton!();
@@ -933,7 +944,7 @@ public sealed unsafe class DesignerScene : IScene
                     ImGui.Separator();
                     break;
                 case Note t:
-                    ImGui.PushTextWrapPos(size.X - 16);
+                    ImGui.PushTextWrapPos(size.X - P(16));
                     ImGui.TextColored(T.Muted, t.Text);
                     ImGui.PopTextWrapPos();
                     break;
@@ -949,7 +960,7 @@ public sealed unsafe class DesignerScene : IScene
                     ImGui.AlignTextToFramePadding();
                     ImGui.TextUnformatted(c.Knob.Label);
                     ImGui.SameLine(labelW);
-                    ImGui.SetNextItemWidth(valueW + 64);
+                    ImGui.SetNextItemWidth(valueW + P(64));
                     int idx = c.Index;
                     if (ImGui.Combo("##c", ref idx, c.Labels, c.Labels.Length) && idx < c.Knob.Values.Length)
                         Edit(c.Knob.Set(doc.Current, c.Knob.Values[idx]), $"{c.Knob.Label}: {c.Labels[idx]}");
@@ -968,7 +979,7 @@ public sealed unsafe class DesignerScene : IScene
             }
             ImGui.PopID();
         }
-        ImGui.Unindent(6);
+        ImGui.Unindent(P(6));
         ImGui.EndChild();
         ImGui.PopStyleColor();
     }
@@ -983,7 +994,7 @@ public sealed unsafe class DesignerScene : IScene
         float bw = ImGui.GetFrameHeight();
         if (ImGui.Button("−", new Vector2(bw, 0)))
             Step(r, ImGui.GetIO().KeyShift ? -4 : -1);
-        ImGui.SameLine(0, 4);
+        ImGui.SameLine(0, P(4));
         if (editing == k.Id)
         {
             ImGui.SetNextItemWidth(valueW);
@@ -1016,10 +1027,14 @@ public sealed unsafe class DesignerScene : IScene
             }
             ImGui.PopFont();
             ImGui.PopStyleColor();
-            if (ImGui.IsItemHovered() && ImGui.GetIO().MouseWheel is var wheel && wheel != 0)
-                Step(r, Math.Sign(wheel) * (ImGui.GetIO().KeyShift ? 4 : 1));
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetItemKeyOwner(ImGuiKey.MouseWheelY);   // the value takes the wheel, the panel doesn't scroll
+                if (ImGui.GetIO().MouseWheel is var wheel && wheel != 0)
+                    Step(r, Math.Sign(wheel) * (ImGui.GetIO().KeyShift ? 4 : 1));
+            }
         }
-        ImGui.SameLine(0, 4);
+        ImGui.SameLine(0, P(4));
         if (ImGui.Button("+", new Vector2(bw, 0)))
             Step(r, ImGui.GetIO().KeyShift ? 4 : 1);
         ImGui.SameLine();
@@ -1039,7 +1054,7 @@ public sealed unsafe class DesignerScene : IScene
             ImGui.Dummy(Vector2.Zero);   // ends the line SameLine opened
         if (r.Delta.Length > 0)
         {
-            ImGui.SameLine(labelW + valueW + 2 * bw + 90);
+            ImGui.SameLine(labelW + valueW + 2 * bw + P(90));
             ImGui.TextColored(T.Brass, r.Delta);
         }
         ImGui.EndDisabled();
@@ -1052,7 +1067,7 @@ public sealed unsafe class DesignerScene : IScene
         ImGui.PushStyleColor(ImGuiCol.Text, T.Ink);
         ImGui.BeginChild("##legend", size);
         var dl = ImGui.GetWindowDrawList();
-        float pad = 16, w = size.X - 2 * pad;
+        float pad = P(16), w = size.X - 2 * pad;
         var ink = worker.Busy ? T.InkMuted : T.Ink;
         ImGui.SetCursorPos(new Vector2(pad, 12));
         ImGui.PushFont(UiFonts.CaslonBig);
@@ -1064,7 +1079,7 @@ public sealed unsafe class DesignerScene : IScene
             ImGui.PushFont(UiFonts.Caslon);
             ImGui.TextColored(T.InkMuted, label);
             ImGui.PopFont();
-            ImGui.SameLine(pad + 96);
+            ImGui.SameLine(pad + P(96));
             ImGui.PushFont(UiFonts.Mono);
             ImGui.PushTextWrapPos(size.X - pad);
             ImGui.TextColored(ink, value);
@@ -1075,7 +1090,7 @@ public sealed unsafe class DesignerScene : IScene
         }
 
         // the weight bar, its groups below it
-        ImGui.Dummy(new Vector2(0, 6));
+        ImGui.Dummy(V(0, 6));
         ImGui.SetCursorPosX(pad);
         var p = ImGui.GetCursorScreenPos();
         float x = p.X;
@@ -1085,16 +1100,16 @@ public sealed unsafe class DesignerScene : IScene
             dl.AddRectFilled(new Vector2(x, p.Y), new Vector2(x + wpx, p.Y + 16), T.U32(T.Group(g)));
             x += wpx;
         }
-        dl.AddRect(p, p + new Vector2(w, 16), T.U32(T.InkMuted));
-        ImGui.Dummy(new Vector2(w, 20));
+        dl.AddRect(p, p + new Vector2(w, P(16)), T.U32(T.InkMuted));
+        ImGui.Dummy(new Vector2(w, P(20)));
         ImGui.PushFont(UiFonts.SansSmall);
         float colX = 0;
         for (int i = 0; i < s.Weights.Length; i++)
         {
             ImGui.SetCursorPosX(pad + colX);
             var q = ImGui.GetCursorScreenPos();
-            dl.AddRectFilled(q + new Vector2(0, 4), q + new Vector2(9, 13), T.U32(T.Group(s.Weights[i].Group)));
-            ImGui.SetCursorPosX(pad + colX + 14);
+            dl.AddRectFilled(q + V(0, 4), q + V(9, 13), T.U32(T.Group(s.Weights[i].Group)));
+            ImGui.SetCursorPosX(pad + colX + P(14));
             ImGui.TextColored(T.InkMuted, s.Weights[i].Text);
             if (i % 2 == 0)
             {
@@ -1108,7 +1123,7 @@ public sealed unsafe class DesignerScene : IScene
             ImGui.NewLine();
         ImGui.PopFont();
 
-        ImGui.Dummy(new Vector2(0, 8));
+        ImGui.Dummy(V(0, 8));
         ImGui.SetCursorPosX(pad);
         ImGui.PushFont(UiFonts.CaslonBig);
         ImGui.TextUnformatted(s.Remarks.Length > 0 ? $"Remarks ({s.Remarks.Length})" : "Remarks");
@@ -1142,11 +1157,11 @@ public sealed unsafe class DesignerScene : IScene
         var p = ImGui.GetCursorScreenPos();
         dl.AddRectFilled(p, p + size, T.U32(T.Panel));
         dl.AddLine(p, p + new Vector2(size.X, 0), T.U32(T.Line));
-        ImGui.SetCursorPos(ImGui.GetCursorPos() + new Vector2(16, 9));
+        ImGui.SetCursorPos(ImGui.GetCursorPos() + V(16, 9));
         ImGui.PushFont(UiFonts.SansBold);
         ImGui.TextColored(T.Muted, "HISTORY");
         ImGui.PopFont();
-        ImGui.SameLine(0, 16);
+        ImGui.SameLine(0, P(16));
         // the newest entries that fit, oldest first
         int first = Math.Max(0, s.HistoryLabels.Length - 8);
         for (int i = first; i < s.HistoryLabels.Length; i++)
@@ -1157,11 +1172,11 @@ public sealed unsafe class DesignerScene : IScene
             if (ImGui.Selectable(s.HistoryLabels[i], current, ImGuiSelectableFlags.None, ImGui.CalcTextSize(s.HistoryLabels[i])))
             {
                 doc.Jump(i);
-                snap = null;
+                stale = true;
             }
             ImGui.PopStyleColor();
             ImGui.PopID();
-            ImGui.SameLine(0, 18);
+            ImGui.SameLine(0, P(18));
         }
         ImGui.NewLine();
     }

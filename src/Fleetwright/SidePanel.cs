@@ -15,8 +15,8 @@ public static class SidePanel
         var vp = ImGui.GetMainViewport();
         float h = vp.WorkSize.Y;
         ImGui.SetNextWindowPos(vp.WorkPos, ImGuiCond.Always);
-        ImGui.SetNextWindowSize(new Vector2(StartWidth, h), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowSizeConstraints(new Vector2(MinWidth, h), new Vector2(MathF.Max(MinWidth, vp.WorkSize.X * 0.8f), h));
+        ImGui.SetNextWindowSize(new Vector2(StartWidth * UiFonts.Scale, h), ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowSizeConstraints(new Vector2(MinWidth * UiFonts.Scale, h), new Vector2(MathF.Max(MinWidth * UiFonts.Scale, vp.WorkSize.X * 0.8f), h));
         ImGui.Begin(name, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoBringToFrontOnFocus);
     }
 }

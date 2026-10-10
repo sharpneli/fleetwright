@@ -18,6 +18,7 @@ dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # sa
 dotnet run --project src/Fleetwright -- -screenshot=30 -ui [-size=1920x1080] # the window as seen, ImGui included
 dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour]
 dotnet run --project src/Fleetwright -- -view=designer [-ship=X.json | -new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
+dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the display scale (fonts, spacing)
 ```
 
 The exe opens the ship viewer. `-ship=` picks the design; without it, it shows `Content/Designs/bismarck.json` next to

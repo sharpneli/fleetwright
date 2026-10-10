@@ -88,12 +88,12 @@ public static class DesignerTheme
         C(ImGuiCol.ScrollbarBg, Ground);
         C(ImGuiCol.ScrollbarGrab, Line);
         C(ImGuiCol.TextSelectedBg, Hex(0x5B9BE0, 0.35f));
-        V(ImGuiStyleVar.FrameRounding, 3);
-        V(ImGuiStyleVar.ChildRounding, 4);
-        V(ImGuiStyleVar.PopupRounding, 4);
+        V(ImGuiStyleVar.FrameRounding, 3 * UiFonts.Scale);
+        V(ImGuiStyleVar.ChildRounding, 4 * UiFonts.Scale);
+        V(ImGuiStyleVar.PopupRounding, 4 * UiFonts.Scale);
         V(ImGuiStyleVar.WindowBorderSize, 0);
-        V2(ImGuiStyleVar.FramePadding, new Vector2(8, 4));
-        V2(ImGuiStyleVar.ItemSpacing, new Vector2(8, 6));
+        V2(ImGuiStyleVar.FramePadding, new Vector2(8, 4) * UiFonts.Scale);
+        V2(ImGuiStyleVar.ItemSpacing, new Vector2(8, 6) * UiFonts.Scale);
     }
 
     public static void Pop()

@@ -262,7 +262,7 @@ public unsafe class ImGuiRenderer : IDisposable
     private void CreateFontTexture()
     {
         ImGuiIOPtr io = ImGui.GetIO();
-        UiFonts.Load(io.Fonts);
+        UiFonts.Load(io.Fonts, SDL_GetWindowDisplayScale(_window));   // a high-DPI display's 150 %, 200 %
 
         // Get font texture data
         io.Fonts.GetTexDataAsRGBA32(out IntPtr pixels, out int width, out int height, out int bytesPerPixel);
