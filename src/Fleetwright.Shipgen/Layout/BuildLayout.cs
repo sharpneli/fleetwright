@@ -926,8 +926,10 @@ public sealed partial class Layout
             {
                 double b = SecBase(x);
                 var band = Armament.BarrelBand(b, b + ths, ts);
-                var fps = new[] { 1, -1 }.Select(s => Armament.BarrelFootprint(ts, x, s * YAt(x), Armament.StowBearing(x, s, 90.0))).ToList();
-                return fps.All(fp => lay.FreeAt(fp, band.Lo, band.Hi, 0.2) && lay.Clear(fp, band.Hi));
+                var fpS = Armament.BarrelFootprint(ts, x, YAt(x), Armament.StowBearing(x, 1, 90.0));
+                var fpP = Armament.BarrelFootprint(ts, x, -YAt(x), Armament.StowBearing(x, -1, 90.0));
+                return lay.FreeAt(fpS, band.Lo, band.Hi, 0.2) && lay.Clear(fpS, band.Hi) && lay.FreeAt(fpP, band.Lo, band.Hi, 0.2)
+                       && lay.Clear(fpP, band.Hi);
             }
 
             if (xHi <= xLo)
@@ -943,8 +945,13 @@ public sealed partial class Layout
             {
                 bool SpotOk(double x)
                 {
-                    var fps = new[] { 1, -1 }.Select(s => Footprint.Circle(x, s * YAt(x), rsReach));
-                    return fps.All(fp => lay.Free(fp, 0.4) && lay.Clear(fp, SecBase(x) + ths)) && BarrelsOk(x);
+                    for (int s = 1; s >= -1; s -= 2)
+                    {
+                        var fp = Footprint.Circle(x, s * YAt(x), rsReach);
+                        if (!lay.Free(fp, 0.4) || !lay.Clear(fp, SecBase(x) + ths))
+                            return false;
+                    }
+                    return BarrelsOk(x);
                 }
                 var spots = (Enumerable.Range(0, (int)(Math.Max(0.0, xHi - xLo) * 2) + 1).Select(k => xLo + 0.5 * k)
                     .Where(SpotOk)).OrderBy(x => Math.Abs(x - c)).ToList();

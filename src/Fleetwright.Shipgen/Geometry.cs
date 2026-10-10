@@ -86,9 +86,15 @@ public static class Geometry
     public static List<Pt> ClipConvex(IReadOnlyList<Pt> pts, IReadOnlyList<Pt> clip)
     {
         int m = clip.Count;
-        double sgn = Enumerable.Range(0, m).Select(i => clip[i].X * clip[(i + 1) % m].Y - clip[(i + 1) % m].X * clip[i].Y).Sum() > 0
-            ? 1.0 : -1.0;
-        var result = new List<Pt>(pts);
+        double area2 = 0.0;
+        for (int i = 0; i < m; i++)
+            area2 += clip[i].X * clip[(i + 1) % m].Y - clip[(i + 1) % m].X * clip[i].Y;
+        double sgn = area2 > 0 ? 1.0 : -1.0;
+        // clipped against each edge in turn, back and forth between two scratch lists
+        using var _r = Scratch<Pt>.Rent(out var result);
+        using var _s = Scratch<Pt>.Rent(out var src);
+        for (int i = 0; i < pts.Count; i++)
+            result.Add(pts[i]);
         for (int ci = 0; ci < m; ci++)
         {
             if (result.Count == 0)
@@ -96,8 +102,8 @@ public static class Geometry
             var (ax, ay) = clip[ci];
             var (bx, by) = clip[(ci + 1) % m];
             double Side(Pt p) => sgn * ((bx - ax) * (p.Y - ay) - (by - ay) * (p.X - ax));
-            var src = result;
-            result = [];
+            (src, result) = (result, src);
+            result.Clear();
             int n = src.Count;
             for (int i = 0; i < n; i++)
             {
@@ -119,30 +125,34 @@ public static class Geometry
     /// <summary>Drop repeated and collinear vertices.</summary>
     public static List<Pt> SimplifyPolygon(IReadOnlyList<Pt> pts, double tol = 1e-3)
     {
-        var result = new List<Pt>();
-        foreach (var p in pts)
+        var result = new List<Pt>(pts.Count);
+        for (int i = 0; i < pts.Count; i++)
+        {
+            var p = pts[i];
             if (result.Count == 0 || Math.Abs(p.X - result[^1].X) > tol || Math.Abs(p.Y - result[^1].Y) > tol)
                 result.Add(p);
+        }
         if (result.Count > 1 && Math.Abs(result[0].X - result[^1].X) <= tol && Math.Abs(result[0].Y - result[^1].Y) <= tol)
             result.RemoveAt(result.Count - 1);
-        bool changed = true;
-        while (changed && result.Count > 3)
+        // drops the first collinear vertex, again and again. The vertices before the one dropped kept their neighbours
+        // and stay, so the next search starts just before it (from 0 if the last went, as vertex 0's neighbour changed)
+        int start = 0;
+        while (result.Count > 3)
         {
-            changed = false;
-            for (int i = 0; i < result.Count; i++)
+            int n = result.Count, hit = -1;
+            for (int i = start; i < n && hit < 0; i++)
             {
-                int n = result.Count;
                 var a = result[(i - 1 + n) % n];
                 var b = result[i];
                 var c = result[(i + 1) % n];
                 if (Math.Abs((b.X - a.X) * (c.Y - a.Y) - (b.Y - a.Y) * (c.X - a.X)) <=
                     tol * Math.Max(1.0, double.Hypot(c.X - a.X, c.Y - a.Y)))
-                {
-                    result.RemoveAt(i);
-                    changed = true;
-                    break;
-                }
+                    hit = i;
             }
+            if (hit < 0)
+                break;
+            result.RemoveAt(hit);
+            start = hit == n - 1 ? 0 : Math.Max(hit - 1, 0);
         }
         return result;
     }

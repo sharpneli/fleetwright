@@ -288,20 +288,38 @@ public sealed partial class Layout
     }
 
     /// <summary>How many decks the weather deck stands above the main deck at x (the highest under x - r .. x + r).</summary>
-    public long DeckLevel(double x, double r = 0.0) =>
-        Raised.Where(s => s.X0 - r <= x && x <= s.X1 + r).Select(s => s.Levels).DefaultIfEmpty(0L).Max();
+    public long DeckLevel(double x, double r = 0.0)
+    {
+        long lv = 0;
+        bool any = false;
+        foreach (var s in Raised)
+            if (s.X0 - r <= x && x <= s.X1 + r)
+            {
+                lv = any ? Math.Max(lv, s.Levels) : s.Levels;
+                any = true;
+            }
+        return lv;
+    }
 
     /// <summary>(lowest, highest) deck_level under a footprint reaching x - r .. x + r.</summary>
     public (long Lo, long Hi) DeckLevels(double x, double r = 0.0)
     {
-        var pts = new List<double> { x - r, x + r };
+        long lo = DeckLevel(x - r), hi = lo;
+        void At(double p)
+        {
+            long lv = DeckLevel(p);
+            lo = Math.Min(lo, lv);
+            hi = Math.Max(hi, lv);
+        }
+        At(x + r);
         foreach (var s in Raised)
-            foreach (var e in new[] { s.X0, s.X1 })
-                foreach (var d in new[] { -1e-6, 1e-6 })
-                    if (x - r < e + d && e + d < x + r)
-                        pts.Add(e + d);
-        var lv = pts.Select(p => Raised.Where(s => s.X0 <= p && p <= s.X1).Select(s => s.Levels).DefaultIfEmpty(0L).Max()).ToList();
-        return (lv.Min(), lv.Max());
+            for (int k = 0; k < 4; k++)
+            {
+                double p = (k < 2 ? s.X0 : s.X1) + (k % 2 == 0 ? -1e-6 : 1e-6);
+                if (x - r < p && p < x + r)
+                    At(p);
+            }
+        return (lo, hi);
     }
 
     /// <summary>Height of the weather deck at x (m above the main deck).</summary>

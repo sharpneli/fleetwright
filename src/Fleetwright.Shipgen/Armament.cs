@@ -22,9 +22,30 @@ public static class Armament
     public static Footprint BarrelFootprint(TurretType t, double x, double y, double bearing)
     {
         double c = Math.Cos(double.DegreesToRadians(bearing)), s = Math.Sin(double.DegreesToRadians(bearing));
-        var pts = Geometry.TurretShapesOf(t).Barrels.SelectMany(poly => poly)
-            .Select(p => new Pt(x + p.X * c - p.Y * s, y + p.X * s + p.Y * c)).ToList();
-        var (x0, y0, x1, y1) = Geometry.Bounds(pts);
+        // Geometry.Bounds of the barrels' points turned and moved, without the list
+        bool first = true;
+        double x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+        foreach (var poly in Geometry.TurretShapesOf(t).Barrels)
+            foreach (var p in poly)
+            {
+                double px = x + p.X * c - p.Y * s, py = y + p.X * s + p.Y * c;
+                if (first)
+                {
+                    (x0, y0, x1, y1) = (px, py, px, py);
+                    first = false;
+                    continue;
+                }
+                if (px < x0)
+                    x0 = px;
+                if (px > x1)
+                    x1 = px;
+                if (py < y0)
+                    y0 = py;
+                if (py > y1)
+                    y1 = py;
+            }
+        if (first)
+            throw new ArgumentException("no points");
         return Footprint.Rect(x0, y0, x1, y1);
     }
 
