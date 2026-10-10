@@ -26,6 +26,11 @@ public static class Templates
     public static IReadOnlyList<Template<CrewStandardInput>> Crew => crew.Value;
     public static IReadOnlyList<Template<Dictionary<string, string>>> Armour => armour.Value;
 
+    static readonly Lazy<IReadOnlyList<Template<string>>> materials = new(() => Load("materials.json", ShipgenJson.Default.String));
+
+    /// <summary>Material names: "structure" (hull plating, superstructure) and "armour" (a part's own).</summary>
+    public static IEnumerable<string> MaterialNames(string group) => materials.Value.Where(t => t.Group == group).Select(t => t.Value);
+
     /// <summary>Where the catalogues are read from (tests point it at the repo's Content folder).</summary>
     public static string Folder { get; set; } = Path.Combine(AppContext.BaseDirectory, "Content", "Templates");
 

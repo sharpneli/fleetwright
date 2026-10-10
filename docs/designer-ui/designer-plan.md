@@ -219,6 +219,24 @@ Values show in the toggled units (metric `279 mm`, imperial `11.0 in`; the desig
 - Next: the profile's armour coloured by thickness with mm on the plates (Step 7), then the marginal-cost chips
   (Step 9), then the research's later items.
 
+## The design's fields: where each lives (user, 2026-10-10)
+
+Every field of the design JSON is a knob in its section (first layer, or folded under "Details"), a template
+picker, or in the style popup, except these, decided with the user:
+
+- **Later: the style** (warship, carrier, merchant, planing). Chosen when a design starts, not a knob, since it
+  changes which sections and knobs exist. Silly intermediate designs should stay possible (half-converted hulls
+  exist), so a later conversion path is wanted, but not now.
+- **Later: style-specific sections**: a carrier's air group (`aviation`) and a merchant's cargo (`cargo`,
+  `machinery.position`, the secondaries' `where`), shown only for that style. Comes with the style choice above.
+- **Not wanted: fixed length and beam** (`hull.length`, `beam`). The engine sizes the hull.
+- **Kept as is: the machinery arrangement** is the named sets (grouped, unit); a custom room order waits for the
+  arrangement strip.
+- **Templated only: the tech numbers** (a plant's kg/kW, fuel use, ...; superstructure t/m²). They come from the
+  tech tree; until then the templates stand in. A scenario combat module with yearly presets comes before a full
+  campaign with years.
+- **Not exposed: palette overrides.** The navy and era looks cover them.
+
 ## Steps
 
 Each step is a commit, verified with `dotnet test` and, for UI, `-screenshot -ui` readback.

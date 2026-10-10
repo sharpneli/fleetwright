@@ -1015,6 +1015,57 @@ public static class Knobs
         Hi = 0.5,
     };
 
+    // ------------------------------------------------------------------ materials: names for the game's ballistics
+
+    /// <summary>A material name from the catalogue; "" is none of its own (a part takes the armour scheme's).</summary>
+    static ChoiceKnob Material(string id, string label, string group, string unset, Func<Design, string?> get,
+        Func<Design, string?, Design> set, Func<Design, bool>? applies = null)
+    {
+        var names = Templates.MaterialNames(group).ToArray();
+        return new ChoiceKnob(id, label, ["", .. names], [unset, .. names])
+        {
+            Get = get,
+            Set = (d, v) => set(d, v is null or "" ? null : v),
+            Default = "",
+            Applies = applies,
+        };
+    }
+
+    const string FromScheme = "from the armour scheme";
+
+    public static ChoiceKnob HullMaterial => Material("hull_material", "Hull plating material", "structure", "not named",
+        d => d.Hull?.Plating?.Material, (d, v) => Hull(d, h => h with { Plating = (h.Plating ?? new PlatingInput()) with { Material = v } }));
+
+    public static ChoiceKnob SuperstructureMaterial => Material("sup_material", "Superstructure material", "structure", "not named",
+        d => d.Superstructure?.Material, (d, v) => Sup(d, s => s with { Material = v }));
+
+    public static ChoiceKnob UpperBeltMaterial => Material("upper_belt_material", "Upper belt", "armour", FromScheme,
+        d => d.Armour?.UpperBelt?.Material,
+        (d, v) => Arm(d, a => a with { UpperBelt = (a.UpperBelt ?? new UpperBeltInput()) with { Material = v } }),
+        d => (d.Armour?.UpperBelt?.Mm ?? 0) > 0);
+
+    public static ChoiceKnob EndBeltMaterial(string end) => Material($"end_belt_{end}_material", $"End belt {end}", "armour", FromScheme,
+        d => d.Armour?.EndBelts?.Of(end)?.Material, (d, v) => EndBelt(d, end, b => b with { Material = v }),
+        d => (d.Armour?.EndBelts?.Of(end)?.Mm ?? 0) > 0);
+
+    public static ChoiceKnob DeckMaterial(int i) => Material($"deck{i}_material", "Material", "armour", FromScheme,
+        d => d.Armour?.Decks?.ElementAtOrDefault(i)?.Material,
+        (d, v) => Arm(d, a => a with { Decks = Replace(a.Decks!, i, x => x with { Material = v }) }));
+
+    public static ChoiceKnob SteeringMaterial => Material("steer_material", "Steering gear box, sides", "armour", FromScheme,
+        d => d.Armour?.SteeringBox?.Material, (d, v) => Steering(d, s => s with { Material = v }),
+        d => (d.Armour?.SteeringBox?.Mm ?? 0) > 0);
+
+    public static ChoiceKnob SteeringRoofMaterial => Material("steer_deck_material", "Steering gear box, roof", "armour", FromScheme,
+        d => d.Armour?.SteeringBox?.DeckMaterial, (d, v) => Steering(d, s => s with { DeckMaterial = v }),
+        d => (d.Armour?.SteeringBox?.DeckMm ?? 0) > 0);
+
+    public static ChoiceKnob MainMaterial(int i) => Material($"main{i}_material", "Turret and barbette material", "armour", FromScheme,
+        d => d.Main?.ElementAtOrDefault(i)?.Material, (d, v) => MainBattery(d, i, b => b with { Material = v }));
+
+    public static ChoiceKnob SecMaterial(int i) => Material($"sec{i}_material", "Mount material", "armour", FromScheme,
+        d => d.Secondary?.ElementAtOrDefault(i)?.Material, (d, v) => Sec(d, i, b => b with { Material = v }));
+
     /// <summary>Every knob the design has, per-battery and per-deck ones included.</summary>
     public static IEnumerable<Knob> All(Design d)
     {
@@ -1027,6 +1078,7 @@ public static class Knobs
             SuperstructurePlating, ControlPlating, BeltDepth, BeltHeight, UpperBeltToDeck, UpperBeltExtent, SteeringSides,
             SteeringRoof, SteeringEnds, FlightDeckArmour, Funnels, Transmission, UnitsPerShaft, CentrelineBulkhead, Bunkers,
             WingBunker, Rudders, SearchRadar, BufferDays, WaterRation, BerthRatio, OfficerFraction,
+            HullMaterial, SuperstructureMaterial, UpperBeltMaterial, SteeringMaterial, SteeringRoofMaterial,
         ];
         foreach (var k in fixedKnobs)
             yield return k;
@@ -1036,12 +1088,14 @@ public static class Knobs
             yield return EndBeltReach(end);
             yield return EndBeltTip(end);
             yield return EndBeltBulkhead(end);
+            yield return EndBeltMaterial(end);
         }
         for (int i = 0; i < (d.Armour?.Decks?.Count ?? 0); i++)
         {
             yield return DeckMm(i);
             yield return DeckLevel(i);
             yield return DeckExtent(i);
+            yield return DeckMaterial(i);
         }
         for (int i = 0; i < (d.Main?.Count ?? 0); i++)
         {
@@ -1055,6 +1109,7 @@ public static class Knobs
             yield return MainEchelon(i);
             yield return MainCrossDeck(i);
             yield return MainStandsOn(i);
+            yield return MainMaterial(i);
             yield return MainArmour(i);
             yield return MainRounds(i);
         }
@@ -1070,6 +1125,7 @@ public static class Knobs
             yield return SecRounds(i);
             yield return SecTier(i);
             yield return SecStandsOn(i);
+            yield return SecMaterial(i);
         }
         foreach (var b in new[] { "main", "secondary", "aa" })
         {

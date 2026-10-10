@@ -1,0 +1,188 @@
+[
+ {
+  "name": "steel",
+  "group": "structure",
+  "note": "",
+  "value": "steel"
+ },
+ {
+  "name": "mild steel",
+  "group": "structure",
+  "note": "",
+  "value": "mild steel"
+ },
+ {
+  "name": "wrought iron",
+  "group": "structure",
+  "note": "",
+  "value": "wrought iron"
+ },
+ {
+  "name": "wood",
+  "group": "structure",
+  "note": "",
+  "value": "wood"
+ },
+ {
+  "name": "aluminium alloy",
+  "group": "structure",
+  "note": "",
+  "value": "aluminium alloy"
+ },
+ {
+  "name": "high-tensile steel",
+  "group": "structure",
+  "note": "",
+  "value": "high-tensile steel"
+ },
+ {
+  "name": "Krupp cemented",
+  "group": "armour",
+  "note": "",
+  "value": "Krupp cemented"
+ },
+ {
+  "name": "mild steel",
+  "group": "armour",
+  "note": "",
+  "value": "mild steel"
+ },
+ {
+  "name": "cemented armour",
+  "group": "armour",
+  "note": "",
+  "value": "cemented armour"
+ },
+ {
+  "name": "STS",
+  "group": "armour",
+  "note": "",
+  "value": "STS"
+ },
+ {
+  "name": "Class A",
+  "group": "armour",
+  "note": "",
+  "value": "Class A"
+ },
+ {
+  "name": "Class B",
+  "group": "armour",
+  "note": "",
+  "value": "Class B"
+ },
+ {
+  "name": "high-tensile steel",
+  "group": "armour",
+  "note": "",
+  "value": "high-tensile steel"
+ },
+ {
+  "name": "Terni cemented",
+  "group": "armour",
+  "note": "",
+  "value": "Terni cemented"
+ },
+ {
+  "name": "Harvey nickel steel",
+  "group": "armour",
+  "note": "",
+  "value": "Harvey nickel steel"
+ },
+ {
+  "name": "wrought iron",
+  "group": "armour",
+  "note": "",
+  "value": "wrought iron"
+ },
+ {
+  "name": "Class A armour",
+  "group": "armour",
+  "note": "",
+  "value": "Class A armour"
+ },
+ {
+  "name": "Vickers cemented",
+  "group": "armour",
+  "note": "",
+  "value": "Vickers cemented"
+ },
+ {
+  "name": "nickel steel",
+  "group": "armour",
+  "note": "",
+  "value": "nickel steel"
+ },
+ {
+  "name": "compound",
+  "group": "armour",
+  "note": "",
+  "value": "compound"
+ },
+ {
+  "name": "Witkowitz cemented",
+  "group": "armour",
+  "note": "",
+  "value": "Witkowitz cemented"
+ },
+ {
+  "name": "Krupp cemented (KC n/A)",
+  "group": "armour",
+  "note": "",
+  "value": "Krupp cemented (KC n/A)"
+ },
+ {
+  "name": "steel",
+  "group": "armour",
+  "note": "",
+  "value": "steel"
+ },
+ {
+  "name": "Vickers hardened",
+  "group": "armour",
+  "note": "",
+  "value": "Vickers hardened"
+ },
+ {
+  "name": "non-cemented armour",
+  "group": "armour",
+  "note": "",
+  "value": "non-cemented armour"
+ },
+ {
+  "name": "special steel",
+  "group": "armour",
+  "note": "",
+  "value": "special steel"
+ },
+ {
+  "name": "special treatment steel",
+  "group": "armour",
+  "note": "",
+  "value": "special treatment steel"
+ },
+ {
+  "name": "Krupp non-cemented",
+  "group": "armour",
+  "note": "",
+  "value": "Krupp non-cemented"
+ },
+ {
+  "name": "Molybdenum steel",
+  "group": "armour",
+  "note": "",
+  "value": "Molybdenum steel"
+ },
+ {
+  "name": "Wotan",
+  "group": "armour",
+  "note": "",
+  "value": "Wotan"
+ },
+ {
+  "name": "Wotan hart",
+  "group": "armour",
+  "note": "",
+  "value": "Wotan hart"
+ }
+]

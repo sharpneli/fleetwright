@@ -4,6 +4,7 @@
 - hulls.json:   docs/shipgen/hull-templates.md, the `hull.construction` blocks
 - crew.json:    docs/shipgen/crew-templates.md, the `crew.standard` blocks (H0-H5)
 - armour.json:  the `armour.materials` maps the shipped designs use (shipgen/designs/*.json), one per distinct scheme
+- materials.json: material names for the pickers (structure: hull plating, superstructure; armour: per-part overrides)
 
 Each entry is {"name", "group", "note", "value"}: value is the block as the design JSON takes it.
 Run from the repo root after editing a source: python -I tools/designer_templates.py
@@ -77,9 +78,31 @@ def armour():
     return out
 
 
+def materials():
+    """Material names for the pickers: "structure" (hull plating, superstructure) and "armour" (a part's override),
+    each the names the shipped designs use, most used first, plus a few of the period's own."""
+    structure, armour_names = {}, {}
+    folder = os.path.join(ROOT, "shipgen", "designs")
+    for f in sorted(os.listdir(folder)):
+        if not f.endswith(".json"):
+            continue
+        d = json.load(open(os.path.join(folder, f), encoding="utf-8"))
+        for v in [((d.get("hull") or {}).get("plating") or {}).get("material"), (d.get("superstructure") or {}).get("material")]:
+            if v:
+                structure[v] = structure.get(v, 0) + 1
+        for v in ((d.get("armour") or {}).get("materials") or {}).values():
+            armour_names[v] = armour_names.get(v, 0) + 1
+    for v in ["high-tensile steel", "aluminium alloy"]:
+        structure.setdefault(v, 0)
+    def ranked(c):
+        return sorted(c, key=lambda k: (-c[k], k.lower()))
+    return ([{"name": n, "group": "structure", "note": "", "value": n} for n in ranked(structure)]
+            + [{"name": n, "group": "armour", "note": "", "value": n} for n in ranked(armour_names)])
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    for name, entries in [("plants", plants()), ("hulls", hulls()), ("crew", crew()), ("armour", armour())]:
+    for name, entries in [("plants", plants()), ("hulls", hulls()), ("crew", crew()), ("armour", armour()), ("materials", materials())]:
         path = os.path.join(OUT, name + ".json")
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             json.dump(entries, f, indent=1, ensure_ascii=False)

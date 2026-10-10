@@ -1,6 +1,6 @@
 # Fleetwright
 
-Fleetwright is a naval game written in C# on .NET 10, rendered with the SDL3 GPU API (via ppy.SDL3-CS). The exe currently opens the ship viewer (a test tool for the ship generator) with a Dear ImGui overlay; game code builds on top of it.
+Fleetwright is a naval game written in C# on .NET 10, rendered with the SDL3 GPU API (via ppy.SDL3-CS). The exe currently opens the ship designer, with the hitbox and ship viewers (test tools for the ship generator) as further tabs, in a Dear ImGui UI; game code builds on top of it.
 
 ## Build and test
 
@@ -9,37 +9,42 @@ dotnet build          # whole solution (Fleetwright.slnx)
 dotnet test
 ```
 
-## Run: the ship viewer
+## Run: the designer and the viewers
 
 ```bash
-dotnet run --project src/Fleetwright
-dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-navy=kure] [-era=wwii]
+dotnet run --project src/Fleetwright                                       # the designer on bismarck
+dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
 dotnet run --project src/Fleetwright -- -screenshot=30 -ui [-size=1920x1080] # the window as seen, ImGui included
 dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour]
-dotnet run --project src/Fleetwright -- -view=designer [-ship=X.json | -new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
+dotnet run --project src/Fleetwright -- -view=ship [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the display scale (fonts, spacing)
 ```
 
-The exe opens the ship viewer. `-ship=` picks the design; without it, it shows `Content/Designs/bismarck.json` next to
-the exe (a game asset, below), and the "Ship" panel lists the design's folder. It builds, bakes and shows a design from the baked textures
-(mips, turrets through their arcs, height-map shadows); the "Ship" panel switches design, look, mip level, turrets
-and sun. Wheel zooms, left drag pans, F2 shows the stats window, Escape quits.
+The exe opens three tabs on one design (menu bar, or F3 to step): the designer (default), the hitbox viewer and the
+ship viewer. `-ship=` picks the design; without it, it is `Content/Designs/bismarck.json` next to the exe (a game
+asset, below). All three show `DesignSession`'s design: an edit in the designer shows in the viewers, and a design
+picked in the ship viewer's list opens in the designer.
 
-The menu bar (or F3) switches to the hitbox viewer: the same design's hitbox model in 3D (`HitView/`, the live
-`hitview.py`). Left drag orbits, right drag pans, wheel zooms; hovering names a prism and a click selects it and lists
-its fields. Its panel picks the view, the projection, which kinds are drawn, and a clip box: whole prisms that overlap
-it (a tier button gives that tier's rooms, `hitbox_cells.png` live) or a per-pixel cut. `-screenshot` captures the
-scene alone; with `-ui` it is the window as seen, ImGui on top. Both go through the window's blit shader, and
-a capture run reads no `imgui.ini` and writes none, so the UI shows its defaults. `-size=WxH` sets the window size.
+The designer (`Designer/`, `docs/designer-ui/designer-plan.md`) edits the design, or the empty 8 kn hull with `-new`,
+with knobs, templates (plant, hull construction, crew standard, armour schemes, material names) and a style button
+(navy, era, pennant number), tried on every view or kept in the design. The name and type label edit in place in the
+top bar. `-steps=` applies knob steps at startup (knob ids from `Knobs`: `speed:-2`, `topside:tumblehome`,
+`distiller:off`), for screenshots of edited states in any view. Saves go to Documents/My Games/Fleetwright/Designs.
+The game uses the designer's other constructor: a design in, the edited one out through a callback, with a worker of
+its own.
 
-The third tab (or `-view=designer`) is the ship designer (`Designer/`, `docs/designer-ui/designer-plan.md`): the
-picked design, or the empty 8 kn hull with `-new`, to edit with knobs and templates (plant, hull construction, crew
-standard, armour materials). All three tabs show one design, `DesignSession`'s: an edit in the designer shows in the
-ship and hitbox views, and a design picked there opens in the designer; the style button (navy, era) tries a look on
-every view. `-steps=` applies knob steps at startup (knob ids from `Knobs`: `speed:-2`, `topside:tumblehome`, `distiller:off`), for screenshots
-of edited states in any view. Saves go to Documents/My Games/Fleetwright/Designs. The game uses the designer's other
-constructor: a design in, the edited one out through a callback, with a worker of its own.
+The hitbox viewer (`-view=hitbox`) shows the design's hitbox model in 3D (`HitView/`, the live `hitview.py`). Left
+drag orbits, right drag pans, wheel zooms; hovering names a prism and a click selects it and lists its fields. Its
+panel picks the view, the projection, which kinds are drawn, and a clip box: whole prisms that overlap it (a tier
+button gives that tier's rooms, `hitbox_cells.png` live) or a per-pixel cut.
+
+The ship viewer (`-view=ship`) shows the design from the baked textures (mips, turrets through their arcs,
+height-map shadows); its panel switches design, look, mip level, turrets and sun. Wheel zooms, left drag pans.
+
+F2 shows the stats window, Escape quits. `-screenshot` captures the scene alone; with `-ui` it is the window as seen,
+ImGui on top. Both go through the window's blit shader, and a capture run reads no `imgui.ini` and writes none, so
+the UI shows its defaults. `-size=WxH` sets the window size.
 
 ## Release and game assets
 
@@ -121,7 +126,7 @@ src/
                               #   (on the game's device, its own command buffers); the newest request wins
     ShipSpriteRenderer.cs     #   a baked ship sprite into any RenderTarget (hull, turrets at given bearings, shadows)
     IScene.cs                 #   a full-window view with its own UI; the engine draws the current one (see Views)
-    ShipViewer.cs             #   the ship viewer (the default launch), a test tool for Shipgen
+    ShipViewer.cs             #   the ship viewer, a test tool for Shipgen
     SceneSwitcher.cs          #   several scenes behind one IScene: the menu bar and F3 switch
     UiFonts.cs                #   the game UI's fonts (Content/Fonts) in ImGui's atlas
     Designer/                 #   the ship designer: DesignerScene (design in, design out), DesignDoc (history, save),
@@ -180,7 +185,7 @@ Content paths in code (`"Content/Shaders/Compiled/..."`) resolve against `AppCon
 ## Renderer
 
 - HDR R16G16B16A16 color target, 8x MSAA, resolved and blitted to the swapchain
-- The engine's main `RenderTarget` holds it; the current `IScene` (the ship viewer) draws into it. Without a scene the
+- The engine's main `RenderTarget` holds it; the current `IScene` draws into it. Without a scene the
   engine draws its scene graph instead (meshes with a base color
   texture and spherical-harmonics ambient light, `PbrMaterial` in Engine.cs), but nothing fills the scene today
 - Dear ImGui overlay; Tracy zones in the frame loop (not in Release, see above)

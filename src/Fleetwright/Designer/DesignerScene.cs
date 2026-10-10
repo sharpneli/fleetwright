@@ -65,7 +65,7 @@ public sealed unsafe class DesignerScene : IScene
     readonly HashSet<(int Section, string Header)> openDetails = [];   // the Details headers left open
 
     // dialogs
-    string saveName = "";
+    string saveName = "", pennant = "";
     string[] shippedDesigns = [], userDesigns = [];
 
     // linked to a session (the dev app): edits go to it, and a design changed elsewhere (the viewer's pick) comes back
@@ -282,7 +282,7 @@ public sealed unsafe class DesignerScene : IScene
     /// changes nothing allocates nothing.</summary>
     sealed class Snapshot
     {
-        public required string Title, File, Status, Std, StdDelta, Settling, Style;
+        public required string Title, TypeLabel, File, Status, Std, StdDelta, Settling, Style;
         public required string[] Summaries;
         public required (string Label, string Value)[] Particulars;
         public required (string Group, float Frac, string Text)[] Weights;
@@ -399,6 +399,7 @@ public sealed unsafe class DesignerScene : IScene
         return new Snapshot
         {
             Title = d.Name ?? d.Id ?? "Design",
+            TypeLabel = d.Type is { Length: > 0 } ty ? ty.ToUpperInvariant() : "NO TYPE LABEL",
             Style = $"Style: {Look?.Navy ?? d.Look?.Navy ?? "generic"} · {Look?.Era ?? d.Look?.Era ?? "wwii"}" + (Look != null ? " (trying)" : ""),
             File = file,
             Status = status,
@@ -498,6 +499,7 @@ public sealed unsafe class DesignerScene : IScene
                     Toggle(Knobs.MainCrossDeck(i));
                     if (style.HasRaisedMounts)
                         Choice(Knobs.MainStandsOn(i));
+                    Choice(Knobs.MainMaterial(i));
                 }
                 if (mains.Count == 0 || style.TakesMainList)
                     items.Add(new Act(mains.Count == 0 ? "Add a main battery" : "Add another main battery", () => Edit(AddMain(doc.Current), "Main battery added")));
@@ -526,6 +528,7 @@ public sealed unsafe class DesignerScene : IScene
                         Choice(Knobs.SecTier(i));
                     if (style.HasRaisedMounts)
                         Choice(Knobs.SecStandsOn(i));
+                    Choice(Knobs.SecMaterial(i));
                 }
                 items.Add(new Act("Add a secondary battery", () => Edit(AddSecondary(doc.Current), "Secondary battery added")));
                 items.Add(new Header("Anti-aircraft"));
@@ -566,6 +569,12 @@ public sealed unsafe class DesignerScene : IScene
                 Num(Knobs.SteeringSides);
                 Num(Knobs.SteeringRoof);
                 Num(Knobs.SteeringEnds);
+                items.Add(new Header("Materials, part by part", Details: true));
+                Choice(Knobs.UpperBeltMaterial);
+                Choice(Knobs.EndBeltMaterial("fore"));
+                Choice(Knobs.EndBeltMaterial("aft"));
+                Choice(Knobs.SteeringMaterial);
+                Choice(Knobs.SteeringRoofMaterial);
                 var decks = d.Armour?.Decks ?? [];
                 for (int i = 0; i < decks.Count; i++)
                 {
@@ -574,6 +583,7 @@ public sealed unsafe class DesignerScene : IScene
                     Num(Knobs.DeckMm(i));
                     Num(Knobs.DeckLevel(i));
                     Choice(Knobs.DeckExtent(i));
+                    Choice(Knobs.DeckMaterial(i));
                 }
                 items.Add(new Act("Add an armour deck", () => Edit(AddDeck(doc.Current), "Armour deck added")));
                 if ((d.Main?.Count ?? 0) > 0)
@@ -635,6 +645,8 @@ public sealed unsafe class DesignerScene : IScene
                     Num(Knobs.LevelsOverBridge);
                 Num(Knobs.SuperstructurePlating);
                 Num(Knobs.ControlPlating);
+                Choice(Knobs.HullMaterial);
+                Choice(Knobs.SuperstructureMaterial);
                 break;
             case 6:
                 foreach (var b in new[] { "main", "secondary", "aa" })
@@ -819,20 +831,19 @@ public sealed unsafe class DesignerScene : IScene
         dl.AddRectFilled(p, p + size, T.U32(T.Panel));
         dl.AddLine(p + new Vector2(0, size.Y - 1), p + size - V(0, 1), T.U32(T.Line));
 
-        ImGui.SetCursorPos(V(16, 6));
-        ImGui.PushFont(UiFonts.SansSmall);
-        ImGui.TextColored(T.Muted, "SHIP DESIGN");
-        ImGui.PopFont();
+        // the type label and the name: click to edit, Enter keeps it, Escape or clicking away doesn't
+        ImGui.SetCursorPos(V(16, 4));
+        TextField("##type", s.TypeLabel, UiFonts.SansSmall, T.Muted, P(200), doc.Current.Type ?? "",
+            v => doc.Current with { Type = v.Length > 0 ? v : null }, "Type label");
         ImGui.SetCursorPos(V(16, 22));
-        ImGui.PushFont(UiFonts.Title);
-        ImGui.TextUnformatted(s.Title);
-        ImGui.PopFont();
+        TextField("##name", s.Title, UiFonts.Title, T.Text, P(260), doc.Current.Name ?? "",
+            v => doc.Current with { Name = v.Length > 0 ? v : null }, "Name");
         ImGui.SameLine();
         ImGui.SetCursorPosY(P(26));
         ImGui.TextColored(T.Muted, s.File);
 
-        float x = P(360);
-        ImGui.SetCursorPos(new Vector2(x, 14));
+        float x = Math.Max(P(360), ImGui.GetItemRectMax().X - ImGui.GetWindowPos().X + P(24));   // after a long name
+        ImGui.SetCursorPos(new Vector2(x, P(14)));
         if (ImGui.Button("New"))
         {
             Load(DesignDoc.New());
@@ -884,7 +895,10 @@ public sealed unsafe class DesignerScene : IScene
         }
         ImGui.SameLine(0, P(24));
         if (ImGui.Button(s.Style))
+        {
+            pennant = doc.Current.Look?.Number ?? "";
             ImGui.OpenPopup("style");
+        }
         StylePopup();
 
         // the right end: build status, then Accept / Cancel for a caller
@@ -909,6 +923,43 @@ public sealed unsafe class DesignerScene : IScene
         if (busy)
             Spinner(dl, ImGui.GetCursorScreenPos() + V(-14, 9), P(6));
         ImGui.TextColored(busy ? T.Brass : T.Muted, st);
+    }
+
+    /// <summary>Text that turns into an input when clicked; Enter applies <paramref name="apply"/> as a history entry.</summary>
+    void TextField(string id, string shown, ImFontPtr font, Vector4 colour, float width, string current, Func<string, Design> apply, string what)
+    {
+        if (editing == id)
+        {
+            ImGui.SetNextItemWidth(width);
+            if (editFocus)
+            {
+                ImGui.SetKeyboardFocusHere();
+                editFocus = false;
+            }
+            if (ImGui.InputText(id, ref editText, 80, ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.AutoSelectAll))
+            {
+                var v = editText.Trim();
+                editing = null;
+                Edit(apply(v), $"{what}: {(v.Length > 0 ? v : "none")}");
+            }
+            else if (ImGui.IsItemDeactivated())
+                editing = null;
+            return;
+        }
+        ImGui.PushFont(font);
+        ImGui.TextColored(colour, shown);
+        ImGui.PopFont();
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetMouseCursor(ImGuiMouseCursor.TextInput);
+            ImGui.SetTooltip("click to edit");
+        }
+        if (ImGui.IsItemClicked())
+        {
+            editing = id;
+            editText = current;
+            editFocus = true;
+        }
     }
 
     static void Spinner(ImDrawListPtr dl, Vector2 c, float r)
@@ -936,6 +987,15 @@ public sealed unsafe class DesignerScene : IScene
         changed |= ImGui.Combo("era", ref ei, Eras, Eras.Length);
         if (changed)
             SetLook(ni == 0 && ei == 0 ? null : new LookInput { Navy = ni > 0 ? Navies[ni] : null, Era = ei > 0 ? Eras[ei] : null });
+        ImGui.Separator();
+        ImGui.SetNextItemWidth(P(120));
+        if (ImGui.InputText("pennant number", ref pennant, 12, ImGuiInputTextFlags.EnterReturnsTrue) || ImGui.IsItemDeactivatedAfterEdit())
+        {
+            var v = pennant.Trim();
+            var d = doc.Current;
+            Edit(d with { Look = (d.Look ?? new LookInput()) with { Number = v.Length > 0 ? v : null } }, $"Pennant number: {(v.Length > 0 ? v : "none")}");
+        }
+        ImGui.TextColored(T.Muted, "painted on the hull by the looks that carry numbers (cold war)");
         if (look != null)
         {
             if (ImGui.Button("Keep in the design"))
@@ -1202,7 +1262,7 @@ public sealed unsafe class DesignerScene : IScene
                     ImGui.AlignTextToFramePadding();
                     ImGui.TextUnformatted(c.Knob.Label);
                     ImGui.SameLine(labelW);
-                    ImGui.SetNextItemWidth(valueW + P(64));
+                    ImGui.SetNextItemWidth(valueW + P(150));
                     int idx = c.Index;
                     if (ImGui.Combo("##c", ref idx, c.Labels, c.Labels.Length) && idx < c.Knob.Values.Length)
                         Edit(c.Knob.Set(doc.Current, c.Knob.Values[idx]), $"{c.Knob.Label}: {c.Labels[idx]}");
