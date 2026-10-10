@@ -115,7 +115,7 @@ public static class Knobs
 
     static Design Arm(Design d, Func<ArmourInput, ArmourInput> f) => d with { Armour = f(d.Armour ?? new ArmourInput()) };
 
-    static Design Main(Design d, int i, Func<BatteryInput, BatteryInput> f)
+    static Design MainBattery(Design d, int i, Func<BatteryInput, BatteryInput> f)
     {
         var l = (d.Main ?? []).ToList();
         l[i] = f(l[i]);
@@ -297,21 +297,21 @@ public static class Knobs
     public static NumberKnob MainCalibre(int i) => new($"main{i}_cal", "Calibre", Quantity.Calibre, 10, 0.5)
     {
         Get = d => d.Main?.ElementAtOrDefault(i)?.CalibreMm,
-        Set = (d, v) => Main(d, i, b => b with { CalibreMm = v }),
+        Set = (d, v) => MainBattery(d, i, b => b with { CalibreMm = v }),
         LimitPath = ["main", "calibre_mm"],
     };
 
     public static NumberKnob MainLength(int i) => new($"main{i}_len", "Length, calibres", Quantity.Ratio, 1, 1)
     {
         Get = d => d.Main?.ElementAtOrDefault(i)?.CalibreLength,
-        Set = (d, v) => Main(d, i, b => b with { CalibreLength = v }),
+        Set = (d, v) => MainBattery(d, i, b => b with { CalibreLength = v }),
         LimitPath = ["main", "calibre_length"],
     };
 
     public static NumberKnob MainBarrels(int i) => new($"main{i}_barrels", "Guns per turret", Quantity.Count, 1, 1)
     {
         Get = d => d.Main?.ElementAtOrDefault(i)?.Barrels,
-        Set = (d, v) => Main(d, i, b => b with { Barrels = I(v) }),
+        Set = (d, v) => MainBattery(d, i, b => b with { Barrels = I(v) }),
         LimitPath = ["main", "barrels"],
         Hi = 4,
     };
@@ -332,7 +332,7 @@ public static class Knobs
             _ => b.Wing,
         } : null,
         Auto = (d, s) => 0,
-        Set = (d, v) => Main(d, i, b => group switch
+        Set = (d, v) => MainBattery(d, i, b => group switch
         {
             "fore" => b with { Fore = I(v) },
             "aft" => b with { Aft = I(v) },
@@ -354,7 +354,7 @@ public static class Knobs
         Quantity.Count, 1, 1)
     {
         Get = d => d.Main?.ElementAtOrDefault(i) is { } b ? (end == "fore" ? Layout.SteppedCounts(b).Fore : Layout.SteppedCounts(b).Aft) : null,
-        Set = (d, v) => Main(d, i, b =>
+        Set = (d, v) => MainBattery(d, i, b =>
         {
             var (f, a) = Layout.SteppedCounts(b);
             return b with { Superfire = end == "fore" ? new Superfire(null, I(v), a) : new Superfire(null, f, I(v)) };
@@ -366,14 +366,14 @@ public static class Knobs
     public static ToggleKnob MainEchelon(int i) => new($"main{i}_echelon", "Wing turrets in echelon")
     {
         Get = d => d.Main?.ElementAtOrDefault(i)?.Echelon,
-        Set = (d, v) => Main(d, i, b => b with { Echelon = v }),
+        Set = (d, v) => MainBattery(d, i, b => b with { Echelon = v }),
         Applies = d => (d.Main?.ElementAtOrDefault(i)?.Wing ?? 0) > 0,
     };
 
     public static NumberKnob MainArmour(int i) => new($"main{i}_armour", "Turret faces", Quantity.Armour, 10, 0.5)
     {
         Get = d => d.Main?.ElementAtOrDefault(i)?.ArmourMm,
-        Set = (d, v) => Main(d, i, b => b with { ArmourMm = v }),
+        Set = (d, v) => MainBattery(d, i, b => b with { ArmourMm = v }),
         Auto = (d, s) => 0,
         LimitPath = ["main", "armour_mm"],
         Applies = d => d.Main?.Count > i,
@@ -382,7 +382,7 @@ public static class Knobs
     public static NumberKnob MainRounds(int i) => new($"main{i}_rounds", "Rounds per gun", Quantity.Count, 10, 10)
     {
         Get = d => d.Main?.ElementAtOrDefault(i)?.RoundsPerGun,
-        Set = (d, v) => Main(d, i, b => b with { RoundsPerGun = v }),
+        Set = (d, v) => MainBattery(d, i, b => b with { RoundsPerGun = v }),
         Auto = (d, s) => d.Main?.ElementAtOrDefault(i)?.CalibreMm is { } c ? Math.Round(Batteries.RoundsPerGun(c)) : null,
         CanAuto = true,
         LimitPath = ["main", "rounds_per_gun"],
