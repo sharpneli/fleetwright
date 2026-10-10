@@ -29,4 +29,12 @@
           CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- Game assets: the data the game ships with (release.bat). Each lands in the output under its Link path, in
+       builds and publishes alike, and code finds it there through AppContext.BaseDirectory. Not everything in the
+       repo is an asset: shipgen/designs/fuzz/ and the goldens are test data. -->
+  <ItemGroup>
+    <GameAsset Include="$(MSBuildThisFileDirectory)..\..\shipgen\designs\*.json" Link="Content\Designs\%(Filename)%(Extension)" />
+    <None Include="@(GameAsset)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

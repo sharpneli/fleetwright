@@ -49,10 +49,10 @@ public static class Program
             }
 
             // The ship viewer: build, bake and show a Shipgen design
-            shipPath ??= FindDefaultDesign();
-            if (shipPath == null)
+            shipPath ??= Path.Combine(AppContext.BaseDirectory, DefaultDesign);
+            if (!File.Exists(shipPath))
             {
-                Console.Error.WriteLine($"No design given and {DefaultDesign} not found; pass -ship=path/to/design.json");
+                Console.Error.WriteLine($"Design not found: {shipPath}");
                 return 1;
             }
             engine.Viewer = new ShipViewer(engine, shipPath, navy, era);
@@ -70,21 +70,6 @@ public static class Program
         }
     }
 
-    const string DefaultDesign = "shipgen/designs/bismarck.json";
-
-    /// <summary>The design shown without -ship=: looked up from the working directory and from the exe's folder
-    /// upwards, so it works from the repo root (dotnet run) and from bin/ (the IDE).</summary>
-    static string? FindDefaultDesign()
-    {
-        foreach (var start in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
-        {
-            for (var dir = new DirectoryInfo(start); dir != null; dir = dir.Parent)
-            {
-                var path = Path.Combine(dir.FullName, DefaultDesign);
-                if (File.Exists(path))
-                    return path;
-            }
-        }
-        return null;
-    }
+    /// <summary>The design shown without -ship=: a game asset (GameAsset in the csproj), next to the exe.</summary>
+    const string DefaultDesign = "Content/Designs/bismarck.json";
 }

@@ -9,3 +9,6 @@ screenshot.png
 out_designs/
 out_sprites/
 fuzz_out/
+
+# release.bat output
+release/

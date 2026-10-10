@@ -17,10 +17,24 @@ dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-navy
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
 ```
 
-The exe opens the ship viewer. `-ship=` picks the design; without it, `shipgen/designs/bismarck.json` is looked up
-from the working directory and the exe's folder upwards. It builds, bakes and shows a design from the baked textures
+The exe opens the ship viewer. `-ship=` picks the design; without it, it shows `Content/Designs/bismarck.json` next to
+the exe (a game asset, below), and the "Ship" panel lists the design's folder. It builds, bakes and shows a design from the baked textures
 (mips, turrets through their arcs, height-map shadows); the "Ship" panel switches design, look, mip level, turrets
 and sun. Wheel zooms, left drag pans, F2 shows the stats window, Escape quits.
+
+## Release and game assets
+
+```bash
+release.bat     # release/Fleetwright/ (gitignored): Fleetwright.exe, the .NET runtime, native DLLs, the game assets
+```
+
+The release is a self-contained win-x64 publish: it runs on a stock Windows 11 with nothing installed, except the
+VC++ runtime (`vcruntime140`, `msvcp140`; SDL3_image and TracyClient import them), which is assumed present.
+
+Game assets are the data the game ships with, listed as `GameAsset` items in `src/Fleetwright/Fleetwright.csproj`:
+each lands in the build and publish output under its `Link` path and is read through `AppContext.BaseDirectory`, so a
+dev build and a release find it the same way. Today the assets are the designs, `shipgen/designs/*.json` ->
+`Content/Designs/` (not `fuzz/`, which is test data). Code must not reach into the repo for data a release needs.
 
 ## Shipgen CLI
 
@@ -57,6 +71,7 @@ findings.
 
 ```
 Fleetwright.slnx
+release.bat                   # builds release/Fleetwright/ (see "Release and game assets")
 Directory.Build.props         # net10.0, nullable, InvariantGlobalization; warnings as errors in Fleetwright.Shipgen*
 Directory.Packages.props      # central package versions (PackageReference has no Version)
 src/
@@ -96,6 +111,7 @@ shipgen/                      # the port's test data
   designs/                    #   the 71 designs, and fuzz/ (300 mutants)
   golden/                     #   Python's output (README.md there)
 Content/                      # copied into the game's output folder; the bake shaders are embedded in Shipgen.Render
+                              #   (the output's Content/Designs/ comes from shipgen/designs, see GameAsset)
   Shaders/Source/             #   GLSL sources
   Shaders/Compiled/           #   SPIR-V binaries (checked in)
 docs/shipgen/                 # the ship designer: inputs, outputs, conventions, decisions, TODO, its research notes
