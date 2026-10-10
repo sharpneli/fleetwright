@@ -159,9 +159,11 @@ public sealed class Hitboxes
     public double Length { get; init; }
     public double Beam { get; init; }
     public required Vertical Vertical { get; init; }
+    /// <summary>The main deck's outline. On a wall-sided hull it is the planform's; where the sides lean in above the
+    /// widest point (tumblehome) it is narrower, and HullForm has the side at every height.</summary>
     public required List<Pt> Hull { get; init; }
     /// <summary>The planform's ends, every value filled in: new Hull(new HullSpec(Length, Beam, Bow, Stern)) is the hull
-    /// whose outline Hull is, for insets and half-breadths.</summary>
+    /// at its maximum beam, for insets and half-breadths.</summary>
     public required HullEnd Bow { get; init; }
     public required HullEnd Stern { get; init; }
     public required Hydrostatics Hydrostatics { get; init; }
@@ -245,6 +247,41 @@ public sealed record HullFormReport(double MidshipCoefficient, double Waterplane
         double fx = b.X > a.X ? (x - a.X) / (b.X - a.X) : 0.0;
         double wa = At(a, z);
         return wa + (At(b, z) - wa) * fx;
+    }
+}
+
+public static class HullFormExtensions
+{
+    /// <summary>The hull's widest half-breadth at x over all heights: the outline seen from above (with tumblehome
+    /// wider than the deck). Exact for the table: HalfWidth is piecewise linear in z between the two stations'
+    /// heights, so its largest value is at one of them.</summary>
+    public static double MaxHalfWidth(this HullFormReport f, double x)
+    {
+        var st = f.Stations;
+        if (st.Count < 2 || x <= st[0].X || x >= st[^1].X)
+            return 0.0;
+        int i = 0;
+        while (i < st.Count - 2 && st[i + 1].X < x)
+            i++;
+        double best = 0.0;
+        foreach (var s in new[] { st[i], st[i + 1] })
+            foreach (var z in s.Z)
+                best = Math.Max(best, f.HalfWidth(x, z));
+        return best;
+    }
+
+    /// <summary>The outline seen from above as a closed polygon (port side aft to fore, then starboard), n + 1
+    /// stations closer at the ends.</summary>
+    public static List<Pt> Silhouette(this HullFormReport f, double length, int n = 260)
+    {
+        var pts = new List<(double X, double W)>();
+        for (int k = 0; k <= n; k++)
+        {
+            double x = -length / 2 + length * (1 - Math.Cos(Math.PI * k / n)) / 2, w = f.MaxHalfWidth(x);
+            if (w > 0.01)
+                pts.Add((x, w));
+        }
+        return [.. pts.Select(p => new Pt(p.X, -p.W)), .. Enumerable.Reverse(pts).Select(p => new Pt(p.X, p.W))];
     }
 }
 

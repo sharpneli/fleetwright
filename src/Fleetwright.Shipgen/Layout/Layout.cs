@@ -138,6 +138,10 @@ public sealed partial class Layout
         return side;
     }
 
+    /// <summary>How far out from the centreline a gun mount may reach at x: the deck's edge, or where the sides lean in
+    /// above the widest point, the maximum beam: the mount then stands on a sponson out over the side (Sponsons).</summary>
+    public double MountHalfWidth(double x) => Topside.Plain ? DeckHalfWidth(x) : Hull.HalfWidth(x);
+
     /// <summary>hull.section's side above the widest point (Topside.Of).</summary>
     public Topside Topside = WallSided.Instance;
     readonly Dictionary<double, Planform> sides = [];

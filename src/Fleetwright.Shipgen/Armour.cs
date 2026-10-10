@@ -344,7 +344,9 @@ public static class Armour
     }
 
     /// <summary>The armour's weights from its geometry.</summary>
-    public static List<Weight> ArmourWeights(Design design, double L, double B, double D, ArmourLayout g)
+    /// <param name="topside">the side above the widest point: a full-width armour deck is its breadth at its height
+    /// (null: wall-sided).</param>
+    public static List<Weight> ArmourWeights(Design design, double L, double B, double D, ArmourLayout g, Topside? topside = null)
     {
         double lc = g.X1 - g.X0;
         double xc = (g.X0 + g.X1) / 2;
@@ -386,7 +388,8 @@ public static class Armour
         foreach (var d in g.Decks)
         {
             string ext = d.Extent;
-            double area = (ext == "full" ? L * Geometry.Cwp(cb) : d.X1 - d.X0) * (d.W is double w && w != 0 ? w : B) * 0.9;
+            double wide = topside is null ? B : B * topside.MeanRatio(L, d.Z - D);
+            double area = (ext == "full" ? L * Geometry.Cwp(cb) : d.X1 - d.X0) * (d.W is double w && w != 0 ? w : wide) * 0.9;
             string name = $"Deck armour ({Decks.DeckNameLower(d.Deck)}" +
                           (ext is "fore" or "aft" or "steering" ? $", {ext})" : ")");
             result.Add(new Weight(name, "armour", area * d.Mm / 1000 * Weight.Steel, ext == "full" ? 0.0 : (d.X0 + d.X1) / 2, ZRel.Deck(d.Z - D)));

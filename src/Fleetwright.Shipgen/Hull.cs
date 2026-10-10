@@ -544,9 +544,23 @@ public sealed class HullForm
         return (area, lcf, iL, iT);
     }
 
-    /// <summary>Sampled sections for the hitboxes: [(x, z[], y[])], z on the keel scale.</summary>
-    public List<(double X, List<double> Z, List<double> Y)> Table(int stations = 48)
+    const int TopsideRows = 8;
+
+    /// <summary>Sampled sections for the hitboxes: [(x, z[], y[])], z on the keel scale. tops: the raised stretches'
+    /// heights over the main deck; a topside that isn't plain gets rows from its knuckle up the curve to the main deck,
+    /// and at each top (the side runs straight above the deck, so its ends are enough).</summary>
+    public List<(double X, List<double> Z, List<double> Y)> Table(int stations = 48, IEnumerable<double>? tops = null)
     {
+        var upper = new List<double>();
+        if (!Topside.Plain)
+        {
+            double zK = KnuckleZ;
+            for (int r = 0; r < TopsideRows; r++)
+                upper.Add(zK + (D - zK) * r / TopsideRows);
+            foreach (var t in tops ?? [])
+                if (t > 0)
+                    upper.Add(D + t);
+        }
         double L = Hull.L;
         double top = Math.Min(T, D);
         var result = new List<(double, List<double>, List<double>)>();
@@ -558,6 +572,8 @@ public sealed class HullForm
             foreach (var f in Heights)
                 set.Add(zk + (top - zk) * f);
             set.Add(D);
+            foreach (var z in upper)
+                set.Add(z);
             var zs = set.ToList();
             zs.Sort();
             result.Add((x, zs, zs.Select(z => HalfWidth(x, z)).ToList()));

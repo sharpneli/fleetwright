@@ -38,7 +38,7 @@ public abstract class Style
             Lim(100, 1500, "hull", "construction", "yield_mpa"), Lim(0.8, 1.5, "hull", "construction", "join_factor"),
             Lim(0.5, 2.0, "hull", "construction", "standard"), Lim(0.3, 2.0, "hull", "freeboard"),
             Lim(1, 2, "hull", "raised", "decks"), Lim(0, 200, "hull", "plating", "shell_mm"),
-            Lim(0, 300, "hull", "plating", "deck_wood_mm"),
+            Lim(0, 300, "hull", "plating", "deck_wood_mm"), Lim(0, 2, "hull", "section", "strength"),
             Lim(8, 42, "speed_kn"), Lim(1000, 25000, "range_nm"),
             Lim(1, 2000, "main", "calibre_mm"), Lim(1, 200, "main", "calibre_length"), Lim(1, 20, "main", "barrels"),
             Lim(0, 40, "main", "fore"), Lim(0, 40, "main", "aft"), Lim(0, 40, "main", "mid"),

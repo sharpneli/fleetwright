@@ -97,12 +97,17 @@ public static class HullWeight
         + ExtraPlateT(ShellSide * sideM2, shellMm, TMinMm(L, c)) * c.JoinFactor;
 
     /// <summary>The hull structure: its weight, what it is made of and its girder.</summary>
+    /// <param name="topside">the side above the widest point: the strength deck and the armour decks are its breadth at
+    /// their heights (null: wall-sided).</param>
     public static HullStructure WeightOf(double L, double B, double D, double cb, double full, Construction c, double nInt,
         double doubleBottom, IReadOnlyList<(double Mm, double Z)> armourDecks, double? bulkheadDepth = null,
-        double? girderDepth = null, double shellMm = 0.0, double armouredSideM2 = 0.0)
+        double? girderDepth = null, double shellMm = 0.0, double armouredSideM2 = 0.0, Topside? topside = null)
     {
+        double deckD = bulkheadDepth ?? D;   // the main deck's height (D is the girder's top when a strength deck stands above it)
+        double Breadth(double z) => topside is null ? B : B * topside.MeanRatio(L, z - deckD);
+        double bDeck = Breadth(D);
         double aShell = 2 * ShellSide * D * L + ShellBottom * B * L * Math.Sqrt(cb);
-        double aDeck = DeckArea(L, B, cb);
+        double aDeck = DeckArea(L, bDeck, cb);
         double aInt = nInt * IntDeck * aDeck;
         double aBhd = Bulkheads * BhdArea * B * (bulkheadDepth ?? D);
         double aDb = doubleBottom * B * L * cb * DbArea;
@@ -111,8 +116,8 @@ public static class HullWeight
         double m = full * 9.81 * L / CM * Math.Pow(Math.Min(1.0, Long / L), 2);
         double G = girderDepth ?? D;
         double iReq = m / (sig * 1000) * (G / 2);
-        double iArm = armourDecks.Sum(a => ArmDeckWidth * B * a.Mm / 1000 * Math.Pow(a.Z - NeutralAxis * G, 2));
-        double zPerMm = G * (B + G / 3) / 1000;
+        double iArm = armourDecks.Sum(a => ArmDeckWidth * Breadth(a.Z) * a.Mm / 1000 * Math.Pow(a.Z - NeutralAxis * G, 2));
+        double zPerMm = G * (bDeck + G / 3) / 1000;
         double tStr = Math.Max(0.0, iReq - iArm) / (G / 2) / zPerMm;
         double wMin = Rho * KS * tMin * (aShell + aDeck + aInt * IntDeckT + aBhd * BhdT + aDb);
         double wStr = Rho * GirderTaper * (aShell + aDeck) * Math.Max(0.0, tStr - tMin);
@@ -144,7 +149,7 @@ public static class HullWeight
     /// <summary>The hull's structure weight and girder. arm: the armour's geometry; above: the style's strength deck
     /// above the main deck, or null; raised: the layout's raised stretches.</summary>
     public static HullStructure HullStructure(Design design, double L, double B, double cb, double D, double full, ArmourLayout arm,
-        StrengthDeck? above, IReadOnlyList<RaisedStretch> raised)
+        StrengthDeck? above, IReadOnlyList<RaisedStretch> raised, Topside? topside = null)
     {
         double nInt = StackDeck * Math.Max(0.0, (D - Powerplant.DoubleBottom(D) - Decks.MinTier) / Geometry.DeckPitch);
         var (lo, hi) = InnerBottomT;
@@ -163,7 +168,7 @@ public static class HullWeight
             sideArm += (arm.X1 - arm.X0) * (arm.BeltTop - arm.BeltBottom);
         var h = WeightOf(L, B, depth, cb, full, ConstructionOf(design), nInt, inner, plates, bulkheadDepth: D,
             girderDepth: rh != 0 ? depth + rh : null, shellMm: PlatingOf(design).ShellMm,
-            armouredSideM2: 2 * Math.Max(0.0, sideArm));
+            armouredSideM2: 2 * Math.Max(0.0, sideArm), topside: topside);
         return h with { DepthM = depth };
     }
 

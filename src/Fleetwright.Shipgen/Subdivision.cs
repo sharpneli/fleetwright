@@ -257,6 +257,18 @@ public static class Subdivision
         List<double> XsIn(double x0, double x1, int n = 8) => Enumerable.Range(0, n).Select(j => x0 + (x1 - x0) * (j + 0.5) / n).ToList();
         List<double> HwSamples(double x0, double x1, int n = 8) => XsIn(x0, x1, n).Select(hull.HalfWidth).ToList();
         double Widest(double x0, double x1, double z) => new[] { x0, x1 }.Concat(XsIn(x0, x1)).Max(x => form.HalfWidth(x, z + D));
+        // a tier's widest: at its top while the hull widens upward; a tumblehome is widest at its knuckle, and narrows
+        // above it, so a tier through the knuckle is widest there and one above it at its base
+        double zKnuckle = form.KnuckleZ - D;
+        double WidestIn(double x0, double x1, double zLo, double zHi)
+        {
+            double w = Widest(x0, x1, zHi);
+            if (zLo < zKnuckle && zKnuckle < zHi)
+                w = Math.Max(w, Widest(x0, x1, zKnuckle));
+            else if (zLo >= zKnuckle)
+                w = Math.Max(w, Widest(x0, x1, zLo));
+            return w;
+        }
 
         var cells = new List<Cell>();
         var longi = new List<Bulkhead>();
@@ -316,7 +328,7 @@ public static class Subdivision
                 bool bottom = hasBottom && ti == 0;
                 double trTop = tr.Top, trBase = tr.Base;
                 bool centreSplit = cl && !bottom && trTop <= under + 1e-6;
-                double hwT = Math.Min(hwmax, Widest(x0, x1, trTop));
+                double hwT = Math.Min(hwmax, WidestIn(x0, x1, trBase, trTop));
                 bool banded = split is not null && !bottom && trTop <= sTop + 1e-6 && split.Value < hwT - 0.3;
                 if (banded)
                     loBase[sec.Id] = Math.Min(loBase.GetValueOrDefault(sec.Id, trBase), trBase);

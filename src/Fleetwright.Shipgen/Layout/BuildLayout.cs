@@ -12,6 +12,8 @@ public sealed partial class Layout
         lay.Hull = hull;
         lay.Topside = Topside.Of(design, res.Freeboard);
         double L = hull.L, B = hull.B;
+        // the main deck's half-width amidships: the beam's, unless the sides lean in above the widest point
+        double deckHw = lay.Topside.Plain ? B / 2 : B / 2 * lay.Topside.Ratio(0.0, 0.0);
         double beltMm = design.Armour?.BeltMm ?? 0;
         string deck = design.Deck ?? (L >= 150 ? "wood" : "steel");
 
@@ -63,7 +65,7 @@ public sealed partial class Layout
         if (ntp != 0)
             (ttId, tt) = Geometry.MakeTorpedoType(design.Torpedoes!.Tubes ?? 4);
         double tSweep = ntp != 0 ? tt!.BarrelLen / 2 + 0.3 : 0.0;
-        bool tEdges = ntp != 0 && B / 2 - tt!.R - 0.8 >= tSweep;
+        bool tEdges = ntp != 0 && deckHw - tt!.R - 0.8 >= tSweep;
 
         // ---------------- the middle's plan ----------------
         var segs = PlanSegments(plant).Select(s => (Kind: s.Kind, Len: s.Len)).ToList();
@@ -376,18 +378,18 @@ public sealed partial class Layout
             return Math.Max(lb + 1.5 + ef + ws.Sum() + ea + aftL, Math.Max(leadL + cL + trailL + 2.0, Math.Max(lb + 1.5 + ef + before + cL + trailL + 1.0, leadL + 1.0 + ws.Sum() - before + ea + aftL)));
         }
 
-        double y0 = nw != 0 ? B / 2 - gRef!.Reach - 0.6 : 0.0;
+        double y0 = nw != 0 ? deckHw - gRef!.Reach - 0.6 : 0.0;
         double MReq = MiddleNeeds(PlanWidths(y0), CrossEnds(y0));
 
         var big = bats.Count > 0 ? bats.MaxBy(g => g.Reach) : null;
-        if (big != null && big.Reach + 0.6 > B / 2)
+        if (big != null && big.Reach + 0.6 > deckHw)
             lay.Fail("beam", $"Main turrets{(bats.Count == 1 ? "" : $" of {big.Cal}")} are {2 * big.Reach:F1} m " +
-                             $"across; the {B} m beam cannot carry them (needs about {2 * (big.Reach + 0.6):F1} m). " +
-                             "Use fewer or smaller guns.");
+                             $"across; the {(lay.Topside.Plain ? $"{B} m beam" : $"{2 * deckHw:F1} m deck (tumblehome on a {B} m beam)")} " +
+                             $"cannot carry them (needs about {2 * (big.Reach + 0.6):F1} m). Use fewer or smaller guns.");
 
         bool Fits(double x, Gun g)
         {
-            if (g.Reach + 0.6 > B / 2)
+            if (g.Reach + 0.6 > deckHw)
                 return true;
             return lay.DeckHalfWidth(x) >= g.Reach + 0.6;
         }
@@ -481,7 +483,7 @@ public sealed partial class Layout
         double bx0 = bx1 - lb;
         double fz0 = midAft + (la != 0 ? la + 1.5 : 1.0);
         double fz1 = bx0 - 1.5;
-        double yW = nw != 0 ? Enumerable.Range(0, 21).Select(k => lay.DeckHalfWidth(fz0 + (fz1 - fz0) * k / 20)).Min() - gRef!.Reach - 0.6 : 0.0;
+        double yW = nw != 0 ? Enumerable.Range(0, 21).Select(k => lay.MountHalfWidth(fz0 + (fz1 - fz0) * k / 20)).Min() - gRef!.Reach - 0.6 : 0.0;
 
         (double LoX, double HiX, double X) PlanFront(List<double> widths, double y)
         {
@@ -505,7 +507,7 @@ public sealed partial class Layout
                     double x = xx - WingSide(i, -1, y);
                     double hw = B;
                     foreach (var xw in g.Echelon ? new[] { x, x - WingStagger(g, y) } : [x])
-                        hw = Math.Min(hw, Math.Min(lay.DeckHalfWidth(xw + -g.Reach), Math.Min(lay.DeckHalfWidth(xw + 0.0), lay.DeckHalfWidth(xw + g.Reach))));
+                        hw = Math.Min(hw, Math.Min(lay.MountHalfWidth(xw + -g.Reach), Math.Min(lay.MountHalfWidth(xw + 0.0), lay.MountHalfWidth(xw + g.Reach))));
                     double lim = hw - g.Reach - 0.6;
                     room = Math.Min(room, g.Reach == gRef.Reach ? lim : lim + g.Reach - gRef.Reach);
                 }
@@ -898,7 +900,7 @@ public sealed partial class Layout
             double inner = (blocks.Where(b => b.Level >= 2).Select(b => b.W / 2).Append(fw / 2)
                 .Concat(M.Select(g => g.Reach))).Max() + rsReach + 0.4;
 
-            double OuterAt(double x) => Math.Min(lay.DeckHalfWidth(x + -rsReach), Math.Min(lay.DeckHalfWidth(x + 0.0), lay.DeckHalfWidth(x + rsReach))) - rsReach - 0.6;
+            double OuterAt(double x) => Math.Min(lay.MountHalfWidth(x + -rsReach), Math.Min(lay.MountHalfWidth(x + 0.0), lay.MountHalfWidth(x + rsReach))) - rsReach - 0.6;
 
             double YAt(double x) => Math.Max(inner, inner + 0.55 * (OuterAt(x) - inner));
             var xsProbe = Enumerable.Range(0, 41).Select(k => xLo + (xHi - xLo) * k / 40).ToList();
@@ -1260,7 +1262,7 @@ public sealed partial class Layout
         {
             if (boats.Count >= 2)
                 break;
-            double y = riders.Count > 0 ? dhW / 2 - 0.35 * bl_ - 0.6 : B / 2 - 0.35 * bl_ - 1.0;
+            double y = riders.Count > 0 ? dhW / 2 - 0.35 * bl_ - 0.6 : deckHw - 0.35 * bl_ - 1.0;
             var (lo_, hi_) = lay.DeckLevels(x, bl_ / 2);
             double z = riders.Count > 0 ? Math.Max(LevelH, hi_ * LevelH) : LevelH + hi_ * LevelH;
             var fps = new[] { 1, -1 }.Select(s => Footprint.Rect(x - bl_ / 2, s * y - 0.15 * bl_, x + bl_ / 2, s * y + 0.15 * bl_)).ToList();

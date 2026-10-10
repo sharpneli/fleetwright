@@ -134,12 +134,15 @@ public static class Fuzz
         else if (rng.NextDouble() < 0.1)
             nv = 0;
         else
-            nv = (double)v * Math.Exp(Math.Log(0.25) + (Math.Log(4) - Math.Log(0.25)) * rng.NextDouble());
+            nv = Number(v) * Math.Exp(Math.Log(0.25) + (Math.Log(4) - Math.Log(0.25)) * rng.NextDouble());
         JsonValue nvo = JsonFile.IsInteger(v, out _) ? JsonValue.Create((long)Math.Round(nv)) : JsonValue.Create(Math.Round(nv, 3));
         string was = v.ToJsonString();
         SetAt(d, path, nvo);
         return new Change(Show(path), was, nvo.ToJsonString());
     }
+
+    /// <summary>A number leaf's value, parsed or set by an earlier change (which may have made it a long).</summary>
+    static double Number(JsonValue v) => JsonFile.IsInteger(v, out long n) ? n : v.TryGetValue(out double d) ? d : v.GetValue<JsonElement>().GetDouble();
 
     static Change? MutateChoice(JsonObject d, Random rng, Dictionary<string, List<string>> choices)
     {

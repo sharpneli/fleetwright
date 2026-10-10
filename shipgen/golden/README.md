@@ -33,6 +33,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-10, the render data gone (step 4): `build.render` became `build.dressing` (only what has no physical
   effect; mast dressing by the mast's id), and the style's summary lines moved to `report.summary`. Checked: the
   hitboxes and the rest of the report are unchanged, and the dressing and summary hold exactly the old values.
+- 2026-10-10, tumblehome (`hull.section`), on purpose: `bouvet`, `brennus`, `babel` and `danton` got a physical
+  tumblehome in place of the look's. Their hitboxes, reports, SVGs and sprite.json changed (narrower deck, sponsons
+  under the side guns, lighter topsides, the hull form's extra rows); every other case is unchanged.
 
 ## Layout
 

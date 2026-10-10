@@ -135,8 +135,10 @@ public static class Verify
             fixedWorst = Math.Min(fixedWorst, cov);
             rows.Add((c.Id, c.Kind, cov));
         }
-        // the hull image is the hull plus whatever overhangs it: flight decks, sponsons, deck-edge elevators
-        var outline = new[] { hb.Hull }.Concat(comps.Where(c => c.Kind is "flight_deck" or "sponson").Select(c => c.Points!));
+        // the hull image is the hull seen from above (wider than the deck with tumblehome) plus whatever overhangs it:
+        // flight decks, sponsons, deck-edge elevators
+        var seen = hb.HullForm.Stations.Count >= 2 ? hb.HullForm.Silhouette(hb.Length) : hb.Hull;
+        var outline = new[] { seen }.Concat(comps.Where(c => c.Kind is "flight_deck" or "sponson").Select(c => c.Points!));
         var hm = Mask(outline, S, ox, oy, 0, 0, W, H);
         var ha = new bool[W * H];
         for (int i = 0; i < ha.Length; i++)

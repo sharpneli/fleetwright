@@ -74,6 +74,9 @@ public sealed record HullInput
 public sealed record SectionInput
 {
     public string? Topside { get; init; }
+    public double? Strength { get; init; }
+    public double? Knuckle { get; init; }
+    public string? Extent { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

@@ -121,9 +121,11 @@ public static class Navarch
             D = T + DesignFreeboard(L, tun) * (design.Hull?.Freeboard ?? 1.0);
             items.Clear();
             var arm = Armour.ArmourGeometry(design, L, T, D, geo);
+            var top = Topside.Of(design, D - T);
+            var side = top.Plain ? null : top;
             hull = tun.BoxHull
                 ? HullWeight.BoxStructure(design, L, B, D, tun)
-                : HullWeight.HullStructure(design, L, B, cb, D, disp, arm, style.StrengthDeckOf(design, D), geo.Raised);
+                : HullWeight.HullStructure(design, L, B, cb, D, disp, arm, style.StrengthDeckOf(design, D), geo.Raised, side);
             double zFrac = tun.HullZFrac * ((hull.DepthM ?? D) / D);
             items.Add(new Weight("Hull structure", "hull", hull.T, -0.01 * L, ZRel.Frac(zFrac)));
             shp = PowerRequired(disp, V, L, B, cb, tun);
@@ -135,12 +137,13 @@ public static class Navarch
             }
             else
                 items.AddRange(own);
-            items.AddRange(Armour.ArmourWeights(design, L, B, D, arm));
+            items.AddRange(Armour.ArmourWeights(design, L, B, D, arm, side));
             items.AddRange(style.StructureWeights(design, L, B, T, D, geo, tun));
             double wood = HullWeight.PlatingOf(design).DeckWoodMm;
             if (wood != 0)
             {
                 var (area, wx, wz) = style.WeatherDeck(design, L, B);
+                area *= top.MeanRatio(L, wz);
                 items.Add(new Weight("Deck planking", "hull", area * wood * HullWeight.RhoWood, wx, ZRel.Deck(wz)));
             }
             double stdWoMisc = items.Sum(w => w.W);

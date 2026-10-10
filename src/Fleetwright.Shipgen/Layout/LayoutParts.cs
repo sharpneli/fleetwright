@@ -728,6 +728,32 @@ public sealed partial class Layout
     }
 
     /// <summary>The laid-out ship's parts on lay and its dressing, for every style.</summary>
+    /// <summary>A sponson under each gun mount that reaches past the deck's edge (a tumblehome's wing turrets and side
+    /// guns, out over the leaning side): a plate from just inside the edge to the mount's outer side, never past the
+    /// maximum beam, weighed as hull.</summary>
+    const double SponsonDepth = 0.4;
+
+    static void AddMountSponsons(Layout lay, Design design)
+    {
+        if (lay.Topside.Plain)
+            return;
+        var c = HullWeight.ConstructionOf(design);
+        foreach (var m in lay.Mounts.Where(m => m.Kind is "main" or "secondary" && !m.Casemate))
+        {
+            double reach = Armament.BodyReach(m.T), ay = Math.Abs(m.Y);
+            double edge = lay.DeckHalfWidth(m.X);   // the hull deck under it, whatever it stands on
+            if (ay + reach <= edge + 0.05)
+                continue;
+            int side = m.Y > 0 ? 1 : -1;
+            double yIn = side * (edge - 0.8), yOut = side * Math.Min(ay + reach + 0.5, lay.Hull.HalfWidth(m.X));
+            double l = 2 * reach + 1.0;
+            var pts = new List<Pt> { new(m.X - l / 2, yIn), new(m.X + l / 2, yIn), new(m.X + l / 2, yOut), new(m.X - l / 2, yOut) };
+            lay.Sponsons.Add(new DeckPlate($"Sponson {m.Id}", "sponson", pts, m.Base - SponsonDepth, m.Base));
+            double area = l * Math.Abs(yOut - yIn);
+            lay.Weights.Add(new Weight($"Sponson {m.Id}", "hull", HullWeight.DeckTPerM2(lay.Hull.L, c) * area, m.X, ZRel.Deck(m.Base)));
+        }
+    }
+
     public static Layout FinishLayout(Layout lay, Design design, HullSpec hs, List<Mount> mounts,
         OrderedDictionary<string, TurretType> turretTypes, List<Block> blocks, List<Funnel> funnels, List<Mast> masts, List<AaMount> aaOut,
         double funTop, string? deck = null)
@@ -750,6 +776,7 @@ public sealed partial class Layout
         lay.Aa = aaOut;
         lay.Masts = masts;
         lay.FunTop = funTop;
+        AddMountSponsons(lay, design);
         FireControl.SearchRadar(lay, design, blocks, masts, funTop);
         lay.Geo.Windage = LateralProfile(lay, blocks, funnels, masts, mounts, aaOut, funTop);
         return lay;

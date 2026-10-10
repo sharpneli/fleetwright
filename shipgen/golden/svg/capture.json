@@ -23,8 +23,8 @@
    "clutter": 34
   },
   "babel": {
-   "max_height_m": 25.42,
-   "clutter": 68
+   "max_height_m": 25.54,
+   "clutter": 69
   },
   "battlecruiser": {
    "max_height_m": 25.68,
@@ -43,12 +43,12 @@
    "clutter": 105
   },
   "bouvet": {
-   "max_height_m": 25.78,
+   "max_height_m": 26.03,
    "clutter": 54
   },
   "brennus": {
-   "max_height_m": 25.95,
-   "clutter": 50
+   "max_height_m": 26.14,
+   "clutter": 42
   },
   "colbert": {
    "max_height_m": 23.71,
@@ -71,8 +71,8 @@
    "clutter": 63
   },
   "danton": {
-   "max_height_m": 24.43,
-   "clutter": 58
+   "max_height_m": 24.45,
+   "clutter": 56
   },
   "daring": {
    "max_height_m": 22.93,
