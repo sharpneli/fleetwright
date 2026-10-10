@@ -410,13 +410,15 @@ public sealed partial class Layout
             int guard = 0;
             while (fore.Count > 0 && !Fits(fore[0], F[0]) && fore[0] > 0 && guard < 4000)
             {
-                fore = fore.Select(x => x - 0.25).ToList();
+                for (int i = 0; i < fore.Count; i++)
+                    fore[i] -= 0.25;
                 guard++;
             }
             guard = 0;
             while (aft.Count > 0 && !Fits(aft[0], A[0]) && aft[0] < 0 && guard < 4000)
             {
-                aft = aft.Select(x => x + 0.25).ToList();
+                for (int i = 0; i < aft.Count; i++)
+                    aft[i] += 0.25;
                 guard++;
             }
             double midFwd = fore.Count > 0 ? (flushF ? fore[^1] - F[^1].RR - 1.0 : fore[^1] - F[^1].R - F[^1].Gap) : L / 2 - bowC + sh;

@@ -549,9 +549,18 @@ public sealed partial class Layout
         List<(double, double)> Runs(double w, double bse, double top, Func<double, bool>? support)
         {
             var result = new List<(double, double)>();
+            RunsInto(w, bse, top, support, result);
+            return result;
+        }
+
+        // the runs of cells where a level w wide fits, into result (cleared first); the last step closes a run left open
+        void RunsInto(double w, double bse, double top, Func<double, bool>? support, List<(double, double)> result)
+        {
+            result.Clear();
             double? start = null;
-            foreach (var xo in cells.Select(c => (double?)c).Append(null))
+            for (int i = 0; i <= cells.Count; i++)
             {
+                double? xo = i < cells.Count ? cells[i] : null;
                 if (xo is double x && Ok(x, w, bse, top, support))
                 {
                     start ??= x;
@@ -565,7 +574,6 @@ public sealed partial class Layout
                     start = null;
                 }
             }
-            return result;
         }
 
         (List<Block> Out, double Lo) Level(long k, double wMax, Func<double, bool> support, Func<double, bool>? skip = null,
@@ -576,17 +584,26 @@ public sealed partial class Layout
             Func<double, bool> sup = skip != null ? x => support(x) && !skip(x) : support;
             if (wMax < DhMinW)
                 return ([], 0.0);
-            double Total(List<(double A, double B)> rr) => rr.Select(r => r.B - r.A).Sum();
-            double floor = Total(Runs(DhMinW, bse, top, sup));
+            // the runs' total length at width ww
+            double Total(double ww)
+            {
+                using var _ = Scratch<(double, double)>.Rent(out var rr);
+                RunsInto(ww, bse, top, sup, rr);
+                double sum = 0.0;
+                foreach (var (a, b) in rr)
+                    sum += b - a;
+                return sum;
+            }
+            double floor = Total(DhMinW);
             if (floor <= 0)
                 return ([], 0.0);
             double lo = DhMinW, hi = wMax;
-            if (Total(Runs(hi, bse, top, sup)) >= DhKeep * floor)
+            if (Total(hi) >= DhKeep * floor)
                 lo = hi;
             while (hi - lo > 0.25)
             {
                 double mid = (lo + hi) / 2;
-                (lo, hi) = Total(Runs(mid, bse, top, sup)) >= DhKeep * floor ? (mid, hi) : (lo, mid);
+                (lo, hi) = Total(mid) >= DhKeep * floor ? (mid, hi) : (lo, mid);
             }
             var result = new List<Block>();
 
@@ -650,7 +667,13 @@ public sealed partial class Layout
             return (result, lo);
         }
 
-        Func<double, bool> On(List<Block> bb) => x => bb.Any(b => b.X0 <= x && x + DhCell <= b.X1 + 1e-6);
+        Func<double, bool> On(List<Block> bb) => x =>
+        {
+            foreach (var b in bb)
+                if (b.X0 <= x && x + DhCell <= b.X1 + 1e-6)
+                    return true;
+            return false;
+        };
         var below = baseBlocks.ToList();
         double w = dhW;
         if (below.Select(b => b.X1 - b.X0).Sum() < 0.5 * (x1 - x0))
