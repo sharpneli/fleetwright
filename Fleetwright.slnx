@@ -13,5 +13,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Fleetwright.Shipgen.Tests/Fleetwright.Shipgen.Tests.csproj" />
+    <Project Path="tests/Fleetwright.Tests/Fleetwright.Tests.csproj" />
   </Folder>
 </Solution>

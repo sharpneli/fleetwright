@@ -233,7 +233,38 @@ public sealed class Hydrostatics
     public double MctTm { get; init; }
 }
 
-public sealed record HullFormReport(double MidshipCoefficient, double WaterplaneCoefficient, List<StationReport> Stations);
+public sealed record HullFormReport(double MidshipCoefficient, double WaterplaneCoefficient, List<StationReport> Stations)
+{
+    /// <summary>geometry.table_half_width: the hull's half-breadth at x and height z (above the main deck), bilinear
+    /// between stations and heights. Off the ends and under a station's keel nothing; above its top height, the top's.
+    /// The one reader of the exported form: views and the game share it.</summary>
+    public double HalfWidth(double x, double z)
+    {
+        var st = Stations;
+        if (st.Count < 2 || x <= st[0].X || x >= st[^1].X)
+            return 0.0;
+        int i = 0;
+        while (i < st.Count - 2 && st[i + 1].X < x)
+            i++;
+        static double At(StationReport s, double z)
+        {
+            var (zs, ys) = (s.Z, s.Y);
+            if (z >= zs[^1])
+                return ys[^1];
+            if (z < zs[0])
+                return 0.0;
+            int j = 0;
+            while (zs[j + 1] < z)
+                j++;
+            double f = zs[j + 1] > zs[j] ? (z - zs[j]) / (zs[j + 1] - zs[j]) : 0.0;
+            return ys[j] + (ys[j + 1] - ys[j]) * f;
+        }
+        var (a, b) = (st[i], st[i + 1]);
+        double fx = b.X > a.X ? (x - a.X) / (b.X - a.X) : 0.0;
+        double wa = At(a, z);
+        return wa + (At(b, z) - wa) * fx;
+    }
+}
 
 /// <summary>A hull station: its half-breadths Y at heights Z.</summary>
 public sealed record StationReport(double X, double[] Z, double[] Y);

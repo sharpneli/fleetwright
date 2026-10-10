@@ -93,6 +93,7 @@ src/
     DesignSession.cs          #   the picked design and its built Ship, shared by the scenes (they watch Version)
     IScene.cs                 #   a full-window view with its own UI; the engine draws the current one (see Views)
     ShipViewer.cs             #   the ship viewer (the default launch), a test tool for Shipgen
+    HitView/                  #   the hitbox view: HitboxMesh (the hitbox model as triangles, CPU), HitKinds (style)
     ProfilerStubs.cs          #   no-op Tracy stand-ins for Release
   Fleetwright.Gpu/            # GPU helpers for the game exe
     GpuTypes.cs               #   buffers, textures, samplers, DrawContext, SceneNode, MeshNode, materials
@@ -119,6 +120,7 @@ src/
     Golden/                   #   the SVG comparer and the drawing's golden checks
   Fleetwright.Shipgen.Cli/    # `shipgen` command, the port's test harness
 tests/
+  Fleetwright.Tests/          # xUnit for the game exe: the hitbox mesh over every design
   Fleetwright.Shipgen.Tests/  # xUnit: design input, every golden case, concurrent builds, the drawing, the
                               #   bake (trait Gpu: needs a GPU)
 shipgen/                      # the port's test data

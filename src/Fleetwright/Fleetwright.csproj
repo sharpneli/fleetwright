@@ -31,6 +31,10 @@
     <ProjectReference Include="..\Fleetwright.Shipgen.Render\Fleetwright.Shipgen.Render.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Fleetwright.Tests" />
+  </ItemGroup>
+
   <!-- Content/ lives at the repo root and is shared with the Shipgen renderer. -->
   <ItemGroup>
     <None Include="$(ContentRoot)Shaders\Compiled\**\*"
