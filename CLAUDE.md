@@ -34,9 +34,12 @@ scene alone; with `-ui` it is the window as seen, ImGui on top. Both go through 
 a capture run reads no `imgui.ini` and writes none, so the UI shows its defaults. `-size=WxH` sets the window size.
 
 The third tab (or `-view=designer`) is the ship designer (`Designer/`, `docs/designer-ui/designer-plan.md`): the
-picked design, or the empty 8 kn hull with `-new`, to edit with knobs; the worker rebuilds after each edit and the
-sprite, side profile and Legend follow. `-steps=` applies knob steps at startup (knob ids from `Knobs`), as the +/-
-buttons do, for screenshots of edited states. Saves go to Documents/My Games/Fleetwright/Designs.
+picked design, or the empty 8 kn hull with `-new`, to edit with knobs and templates (plant, hull construction, crew
+standard, armour materials). All three tabs show one design, `DesignSession`'s: an edit in the designer shows in the
+ship and hitbox views, and a design picked there opens in the designer; the style button (navy, era) tries a look on
+every view. `-steps=` applies knob steps at startup (knob ids from `Knobs`), as the +/- buttons do, for screenshots
+of edited states in any view. Saves go to Documents/My Games/Fleetwright/Designs. The game uses the designer's other
+constructor: a design in, the edited one out through a callback, with a worker of its own.
 
 ## Release and game assets
 
@@ -122,7 +125,7 @@ src/
     SceneSwitcher.cs          #   several scenes behind one IScene: the menu bar and F3 switch
     UiFonts.cs                #   the game UI's fonts (Content/Fonts) in ImGui's atlas
     Designer/                 #   the ship designer: DesignerScene (design in, design out), DesignDoc (history, save),
-                              #   Knobs (every control over the design), Units, DesignerTheme (the mockup's tokens)
+                              #   Knobs (every control over the design), Templates, Units, DesignerTheme (the tokens)
     HitView/                  #   the hitbox viewer: HitboxMesh (hitboxes as triangles, CPU), HitboxRenderer (into any
                               #   RenderTarget), HitboxCamera and HitboxViewState (what it shows), HitboxScene (UI)
     ProfilerStubs.cs          #   no-op Tracy stand-ins for Release
@@ -162,6 +165,8 @@ shipgen/                      # the port's test data
 Content/                      # copied into the game's output folder; the bake shaders are embedded in Shipgen.Render
                               #   (the output's Content/Designs/ comes from shipgen/designs, see GameAsset)
   Fonts/                      #   UI fonts (OFL), game assets
+  Templates/                  #   the designer's template catalogues (game assets), from tools/designer_templates.py:
+                              #   plants, hulls, crew from docs/shipgen/*-templates.md; armour from the designs' maps
   Shaders/Source/             #   GLSL sources
   Shaders/Compiled/           #   SPIR-V binaries (checked in)
 docs/shipgen/                 # the ship designer: inputs, outputs, conventions, decisions, TODO, its research notes

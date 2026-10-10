@@ -116,3 +116,48 @@ public class DesignerTests
         Assert.Equal(metric, v, 3);
     }
 }
+
+/// <summary>The template catalogues load from Content/Templates, and every template, applied, leaves the designs valid
+/// (and the plants and hulls build).</summary>
+public class TemplateTests
+{
+    public TemplateTests() => Templates.Folder = Path.Combine(Paths.Root, "Content", "Templates");
+
+    [Fact]
+    public void Every_template_applies()
+    {
+        Assert.True(Templates.Plants.Count >= 50);
+        Assert.True(Templates.Hulls.Count >= 8);
+        Assert.Equal(6, Templates.Crew.Count);
+        Assert.True(Templates.Armour.Count >= 20);
+        var failures = new List<string>();
+        foreach (var name in new[] { "dreadnought", "destroyer", "fleet_carrier" })
+        {
+            var d = Design.Load(Paths.Shipgen("designs", name + ".json"));
+            void Check(string what, Design x, bool build)
+            {
+                var errs = ShipDesign.Validate(x, limits: true);
+                if (errs.Count > 0)
+                    failures.Add($"{name} {what}: {errs[0]}");
+                else if (build)
+                    try
+                    {
+                        ShipDesign.Build(x);
+                    }
+                    catch (Exception e)
+                    {
+                        failures.Add($"{name} {what}: {e.Message}");
+                    }
+            }
+            foreach (var t in Templates.Plants)
+                Check(t.Name, d with { Machinery = (d.Machinery ?? new MachineryInput()) with { Tech = t.Value } }, build: name == "destroyer");
+            foreach (var t in Templates.Hulls)
+                Check(t.Name, d with { Hull = (d.Hull ?? new HullInput()) with { Construction = t.Value } }, build: true);
+            foreach (var t in Templates.Crew)
+                Check(t.Name, d with { Crew = (d.Crew ?? new CrewInput()) with { Standard = t.Value } }, build: false);
+            foreach (var t in Templates.Armour)
+                Check(t.Name, d with { Armour = (d.Armour ?? new ArmourInput()) with { Materials = Templates.MaterialsFor(d, t.Value) } }, build: false);
+        }
+        Assert.True(failures.Count == 0, string.Join("\n", failures.Take(20)));
+    }
+}

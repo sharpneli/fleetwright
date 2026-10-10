@@ -1,0 +1,450 @@
+[
+ {
+  "name": "cemented armour",
+  "group": "",
+  "note": "as in courbet, danton, erebus",
+  "value": {
+   "barbettes": "cemented armour",
+   "belt": "cemented armour",
+   "bulkheads": "cemented armour",
+   "conning_tower": "cemented armour",
+   "decks": "cemented armour",
+   "end_belts": "cemented armour",
+   "secondary": "cemented armour",
+   "turrets": "cemented armour",
+   "upper_belt": "cemented armour"
+  }
+ },
+ {
+  "name": "cemented armour, high-tensile steel decks",
+  "group": "",
+  "note": "as in super_dreadnought",
+  "value": {
+   "barbettes": "cemented armour",
+   "belt": "cemented armour",
+   "bulkheads": "cemented armour",
+   "conning_tower": "cemented armour",
+   "decks": "high-tensile steel",
+   "end_belts": "cemented armour",
+   "secondary": "cemented armour",
+   "turrets": "cemented armour",
+   "upper_belt": "cemented armour"
+  }
+ },
+ {
+  "name": "cemented armour, non-cemented armour decks",
+  "group": "",
+  "note": "as in all_forward, all_forward_flush",
+  "value": {
+   "barbettes": "cemented armour",
+   "belt": "cemented armour",
+   "bulkheads": "cemented armour",
+   "conning_tower": "cemented armour",
+   "decks": "non-cemented armour",
+   "end_belts": "cemented armour",
+   "secondary": "non-cemented armour",
+   "turrets": "cemented armour",
+   "upper_belt": "cemented armour"
+  }
+ },
+ {
+  "name": "cemented armour, special steel decks",
+  "group": "",
+  "note": "as in dunkerque, richelieu",
+  "value": {
+   "barbettes": "cemented armour",
+   "belt": "cemented armour",
+   "bulkheads": "cemented armour",
+   "conning_tower": "cemented armour",
+   "decks": "special steel",
+   "end_belts": "cemented armour",
+   "secondary": "cemented armour",
+   "turrets": "cemented armour",
+   "upper_belt": "cemented armour"
+  }
+ },
+ {
+  "name": "Class A armour, special treatment steel decks",
+  "group": "",
+  "note": "as in colorado, pennsylvania",
+  "value": {
+   "barbettes": "Class A armour",
+   "belt": "Class A armour",
+   "bulkheads": "Class A armour",
+   "conning_tower": "Class A armour",
+   "decks": "special treatment steel",
+   "end_belts": "Class A armour",
+   "secondary": "Class A armour",
+   "turrets": "Class A armour",
+   "upper_belt": "Class A armour"
+  }
+ },
+ {
+  "name": "Class A, Class B decks (STS elsewhere)",
+  "group": "",
+  "note": "as in battleship, battleship_layered, colbert ...",
+  "value": {
+   "barbettes": "Class A",
+   "belt": "Class A",
+   "bulkheads": "Class A",
+   "conning_tower": "Class B",
+   "decks": "Class B",
+   "end_belts": "Class A",
+   "secondary": "STS",
+   "turrets": "Class B",
+   "upper_belt": "Class A"
+  }
+ },
+ {
+  "name": "Class B, STS decks",
+  "group": "",
+  "note": "as in supercarrier, victory_1944",
+  "value": {
+   "barbettes": "Class B",
+   "belt": "Class B",
+   "bulkheads": "Class B",
+   "conning_tower": "Class B",
+   "decks": "STS",
+   "end_belts": "Class B",
+   "secondary": "STS",
+   "turrets": "Class B",
+   "upper_belt": "Class B"
+  }
+ },
+ {
+  "name": "compound, mild steel decks",
+  "group": "",
+  "note": "as in brennus",
+  "value": {
+   "barbettes": "compound",
+   "belt": "compound",
+   "bulkheads": "compound",
+   "conning_tower": "compound",
+   "decks": "mild steel",
+   "end_belts": "compound",
+   "secondary": "compound",
+   "turrets": "compound",
+   "upper_belt": "compound"
+  }
+ },
+ {
+  "name": "Harvey nickel steel, mild steel decks",
+  "group": "",
+  "note": "as in babel, bouvet",
+  "value": {
+   "barbettes": "Harvey nickel steel",
+   "belt": "Harvey nickel steel",
+   "bulkheads": "Harvey nickel steel",
+   "conning_tower": "Harvey nickel steel",
+   "decks": "mild steel",
+   "end_belts": "Harvey nickel steel",
+   "secondary": "Harvey nickel steel",
+   "turrets": "Harvey nickel steel",
+   "upper_belt": "Harvey nickel steel"
+  }
+ },
+ {
+  "name": "high-tensile steel",
+  "group": "",
+  "note": "as in kent, light_cruiser",
+  "value": {
+   "barbettes": "high-tensile steel",
+   "belt": "high-tensile steel",
+   "bulkheads": "high-tensile steel",
+   "conning_tower": "high-tensile steel",
+   "decks": "high-tensile steel",
+   "end_belts": "high-tensile steel",
+   "secondary": "high-tensile steel",
+   "turrets": "high-tensile steel",
+   "upper_belt": "high-tensile steel"
+  }
+ },
+ {
+  "name": "Krupp cemented (KC n/A), Wotan hart decks",
+  "group": "",
+  "note": "as in bismarck",
+  "value": {
+   "barbettes": "Krupp cemented (KC n/A)",
+   "belt": "Krupp cemented (KC n/A)",
+   "bulkheads": "Krupp cemented (KC n/A)",
+   "conning_tower": "Krupp cemented (KC n/A)",
+   "decks": "Wotan hart",
+   "end_belts": "Krupp cemented (KC n/A)",
+   "secondary": "Krupp cemented (KC n/A)",
+   "turrets": "Krupp cemented (KC n/A)",
+   "upper_belt": "Krupp cemented (KC n/A)"
+  }
+ },
+ {
+  "name": "Krupp cemented, high-tensile steel decks",
+  "group": "",
+  "note": "as in battlecruiser, dreadnought, invincible ...",
+  "value": {
+   "barbettes": "Krupp cemented",
+   "belt": "Krupp cemented",
+   "bulkheads": "Krupp cemented",
+   "conning_tower": "Krupp cemented",
+   "decks": "high-tensile steel",
+   "end_belts": "Krupp cemented",
+   "secondary": "Krupp cemented",
+   "turrets": "Krupp cemented",
+   "upper_belt": "Krupp cemented"
+  }
+ },
+ {
+  "name": "Krupp cemented, Krupp non-cemented decks",
+  "group": "",
+  "note": "as in gangut",
+  "value": {
+   "barbettes": "Krupp cemented",
+   "belt": "Krupp cemented",
+   "bulkheads": "Krupp cemented",
+   "conning_tower": "Krupp cemented",
+   "decks": "Krupp non-cemented",
+   "end_belts": "Krupp cemented",
+   "secondary": "Krupp cemented",
+   "turrets": "Krupp cemented",
+   "upper_belt": "Krupp cemented"
+  }
+ },
+ {
+  "name": "Krupp cemented, mild steel decks",
+  "group": "",
+  "note": "as in lord_nelson",
+  "value": {
+   "barbettes": "Krupp cemented",
+   "belt": "Krupp cemented",
+   "bulkheads": "Krupp cemented",
+   "conning_tower": "Krupp cemented",
+   "decks": "mild steel",
+   "end_belts": "Krupp cemented",
+   "secondary": "Krupp cemented",
+   "turrets": "Krupp cemented",
+   "upper_belt": "Krupp cemented"
+  }
+ },
+ {
+  "name": "Krupp cemented, nickel steel decks",
+  "group": "",
+  "note": "as in armoured_cruiser, connecticut, nassau ...",
+  "value": {
+   "barbettes": "Krupp cemented",
+   "belt": "Krupp cemented",
+   "bulkheads": "Krupp cemented",
+   "conning_tower": "Krupp cemented",
+   "decks": "nickel steel",
+   "end_belts": "Krupp cemented",
+   "secondary": "Krupp cemented",
+   "turrets": "Krupp cemented",
+   "upper_belt": "Krupp cemented"
+  }
+ },
+ {
+  "name": "Krupp cemented, nickel steel decks (Harvey nickel steel elsewhere)",
+  "group": "",
+  "note": "as in mikasa",
+  "value": {
+   "barbettes": "Krupp cemented",
+   "belt": "Krupp cemented",
+   "bulkheads": "Krupp cemented",
+   "conning_tower": "Krupp cemented",
+   "decks": "nickel steel",
+   "end_belts": "Harvey nickel steel",
+   "secondary": "Krupp cemented",
+   "turrets": "Krupp cemented",
+   "upper_belt": "Krupp cemented"
+  }
+ },
+ {
+  "name": "Krupp cemented, Wotan decks",
+  "group": "",
+  "note": "as in deutschland",
+  "value": {
+   "barbettes": "Krupp cemented",
+   "belt": "Krupp cemented",
+   "bulkheads": "Krupp cemented",
+   "conning_tower": "Krupp cemented",
+   "decks": "Wotan",
+   "end_belts": "Krupp cemented",
+   "secondary": "Krupp cemented",
+   "turrets": "Krupp cemented",
+   "upper_belt": "Krupp cemented"
+  }
+ },
+ {
+  "name": "mild steel",
+  "group": "",
+  "note": "as in escort_carrier, liberty, mtb ...",
+  "value": {
+   "barbettes": "mild steel",
+   "belt": "mild steel",
+   "bulkheads": "mild steel",
+   "conning_tower": "mild steel",
+   "decks": "mild steel",
+   "end_belts": "mild steel",
+   "secondary": "mild steel",
+   "turrets": "mild steel",
+   "upper_belt": "mild steel"
+  }
+ },
+ {
+  "name": "nickel steel",
+  "group": "",
+  "note": "as in karlsruhe",
+  "value": {
+   "barbettes": "nickel steel",
+   "belt": "nickel steel",
+   "bulkheads": "nickel steel",
+   "conning_tower": "nickel steel",
+   "decks": "nickel steel",
+   "end_belts": "nickel steel",
+   "secondary": "nickel steel",
+   "turrets": "nickel steel",
+   "upper_belt": "nickel steel"
+  }
+ },
+ {
+  "name": "steel, wrought iron decks",
+  "group": "",
+  "note": "as in duilio",
+  "value": {
+   "barbettes": "steel",
+   "belt": "steel",
+   "bulkheads": "steel",
+   "conning_tower": "steel",
+   "decks": "wrought iron",
+   "end_belts": "steel",
+   "secondary": "steel",
+   "turrets": "steel",
+   "upper_belt": "steel"
+  }
+ },
+ {
+  "name": "STS",
+  "group": "",
+  "note": "as in akizuki_1960, daring, destroyer ...",
+  "value": {
+   "barbettes": "STS",
+   "belt": "STS",
+   "bulkheads": "STS",
+   "conning_tower": "STS",
+   "decks": "STS",
+   "end_belts": "STS",
+   "secondary": "STS",
+   "turrets": "STS",
+   "upper_belt": "STS"
+  }
+ },
+ {
+  "name": "Terni cemented",
+  "group": "",
+  "note": "as in dante",
+  "value": {
+   "barbettes": "Terni cemented",
+   "belt": "Terni cemented",
+   "bulkheads": "Terni cemented",
+   "conning_tower": "Terni cemented",
+   "decks": "Terni cemented",
+   "end_belts": "Terni cemented",
+   "secondary": "Terni cemented",
+   "turrets": "Terni cemented",
+   "upper_belt": "Terni cemented"
+  }
+ },
+ {
+  "name": "Terni cemented, high-tensile steel decks",
+  "group": "",
+  "note": "as in littorio, zara",
+  "value": {
+   "barbettes": "Terni cemented",
+   "belt": "Terni cemented",
+   "bulkheads": "Terni cemented",
+   "conning_tower": "Terni cemented",
+   "decks": "high-tensile steel",
+   "end_belts": "Terni cemented",
+   "secondary": "Terni cemented",
+   "turrets": "Terni cemented",
+   "upper_belt": "Terni cemented"
+  }
+ },
+ {
+  "name": "Vickers cemented, high-tensile steel decks",
+  "group": "",
+  "note": "as in kongo, nagato",
+  "value": {
+   "barbettes": "Vickers cemented",
+   "belt": "Vickers cemented",
+   "bulkheads": "Vickers cemented",
+   "conning_tower": "Vickers cemented",
+   "decks": "high-tensile steel",
+   "end_belts": "Vickers cemented",
+   "secondary": "Vickers cemented",
+   "turrets": "Vickers cemented",
+   "upper_belt": "Vickers cemented"
+  }
+ },
+ {
+  "name": "Vickers hardened, Molybdenum steel decks",
+  "group": "",
+  "note": "as in yamato",
+  "value": {
+   "barbettes": "Vickers hardened",
+   "belt": "Vickers hardened",
+   "bulkheads": "Vickers hardened",
+   "conning_tower": "Vickers hardened",
+   "decks": "Molybdenum steel",
+   "end_belts": "Vickers hardened",
+   "secondary": "Vickers hardened",
+   "turrets": "Vickers hardened",
+   "upper_belt": "Vickers hardened"
+  }
+ },
+ {
+  "name": "Witkowitz cemented",
+  "group": "",
+  "note": "as in tegetthoff",
+  "value": {
+   "barbettes": "Witkowitz cemented",
+   "belt": "Witkowitz cemented",
+   "bulkheads": "Witkowitz cemented",
+   "conning_tower": "Witkowitz cemented",
+   "decks": "Witkowitz cemented",
+   "end_belts": "Witkowitz cemented",
+   "secondary": "Witkowitz cemented",
+   "turrets": "Witkowitz cemented",
+   "upper_belt": "Witkowitz cemented"
+  }
+ },
+ {
+  "name": "wrought iron",
+  "group": "",
+  "note": "as in devastation",
+  "value": {
+   "barbettes": "wrought iron",
+   "belt": "wrought iron",
+   "bulkheads": "wrought iron",
+   "conning_tower": "wrought iron",
+   "decks": "wrought iron",
+   "end_belts": "wrought iron",
+   "secondary": "wrought iron",
+   "turrets": "wrought iron",
+   "upper_belt": "wrought iron"
+  }
+ },
+ {
+  "name": "wrought iron (compound elsewhere)",
+  "group": "",
+  "note": "as in inflexible",
+  "value": {
+   "barbettes": "wrought iron",
+   "belt": "wrought iron",
+   "bulkheads": "wrought iron",
+   "conning_tower": "compound",
+   "decks": "wrought iron",
+   "end_belts": "wrought iron",
+   "secondary": "wrought iron",
+   "turrets": "compound",
+   "upper_belt": "wrought iron"
+  }
+ }
+]

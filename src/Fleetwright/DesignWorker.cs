@@ -84,7 +84,7 @@ public sealed class DesignWorker : IDisposable
     readonly Thread thread;
     readonly AutoResetEvent wake = new(false);
     readonly object gate = new();
-    (int Id, Design Design, LookInput? Look)? pending;
+    (int Id, Design Design, LookInput? Look, bool Limits)? pending;
     int nextId;
     volatile DesignResult? latest;
     volatile bool stopping;
@@ -123,13 +123,14 @@ public sealed class DesignWorker : IDisposable
     public bool Busy => Requested > (latest?.Id ?? 0);
 
     /// <summary>Asks for a design to be built (in a look other than its own, if given); returns the request's id.
-    /// Replaces the waiting request, if any.</summary>
-    public int Submit(Design design, LookInput? look = null)
+    /// Replaces the waiting request, if any. <paramref name="limits"/> overrides the worker's own for this request (a
+    /// shared worker: the designer's edits keep to the limits, the viewers' files needn't).</summary>
+    public int Submit(Design design, LookInput? look = null, bool? limits = null)
     {
         lock (gate)
         {
             int id = ++nextId;
-            pending = (id, design, look);
+            pending = (id, design, look, limits ?? this.limits);
             wake.Set();
             return id;
         }
@@ -160,7 +161,7 @@ public sealed class DesignWorker : IDisposable
                     baker?.Dispose();
                     return;
                 }
-                (int Id, Design Design, LookInput? Look) job;
+                (int Id, Design Design, LookInput? Look, bool Limits) job;
                 lock (gate)
                 {
                     if (pending is not { } p)
@@ -168,15 +169,15 @@ public sealed class DesignWorker : IDisposable
                     job = p;
                     pending = null;
                 }
-                latest = Make(job.Id, job.Design, job.Look);
+                latest = Make(job.Id, job.Design, job.Look, job.Limits);
             }
         }
     }
 
-    DesignResult Make(int id, Design design, LookInput? look)
+    DesignResult Make(int id, Design design, LookInput? look, bool limits)
     {
-        string shipKey = design.ToJson();
-        string key = shipKey + "\n" + look?.Navy + "/" + look?.Era;
+        string shipKey = design.ToJson() + (limits ? "\nlimits\n" : "\n\n");
+        string key = shipKey + look?.Navy + "/" + look?.Era;
         foreach (var (k, r) in cache)
             if (k == key)
                 return Remember(key, Copy(r, id, design, look));
@@ -184,7 +185,7 @@ public sealed class DesignWorker : IDisposable
         // a look change of a design built before: reuse its ship and mesh, draw again
         DesignResult? built = null;
         foreach (var (k, r) in cache)
-            if (r.Ship != null && k.StartsWith(shipKey + "\n", StringComparison.Ordinal))
+            if (r.Ship != null && k.StartsWith(shipKey, StringComparison.Ordinal))
                 built = r;
         var sw = Stopwatch.StartNew();
         Ship? ship = built?.Ship;

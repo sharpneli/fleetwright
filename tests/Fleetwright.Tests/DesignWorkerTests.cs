@@ -71,3 +71,28 @@ public class DesignWorkerTests
         Assert.Equal(0, w.Latest.BuildS);
     }
 }
+
+/// <summary>The session is the one design every scene shows: an edit becomes its design and its result, and picking
+/// the file again drops the edit.</summary>
+[Trait("Category", "Gpu")]
+[Collection("Gpu")]
+public class DesignSessionTests
+{
+    [Fact]
+    public void An_edit_is_what_every_scene_sees()
+    {
+        using var s = new DesignSession(Paths.Shipgen("designs", "destroyer.json"), 4, 2);
+        int v0 = s.DesignVersion;
+        var edited = s.Design! with { SpeedKn = 30 };
+        s.Edit(edited);
+        Assert.True(s.WaitIdle());
+        Assert.True(s.Edited);
+        Assert.True(s.DesignVersion > v0);
+        Assert.Equal(30, s.Result!.Design.SpeedKn);
+        Assert.NotNull(s.Ship);
+        s.Rebuild();   // the file again
+        Assert.True(s.WaitIdle());
+        Assert.False(s.Edited);
+        Assert.NotEqual(30, s.Result!.Design.SpeedKn);
+    }
+}

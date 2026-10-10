@@ -110,12 +110,19 @@ public static unsafe class Program
             }
             nint device = (nint)engine.Device;   // lambdas may not capture a pointer
             using var session = new DesignSession(shipPath, ShipViewer.Scale, ShipViewer.MipLevels, device);
+            // the designer edits the session's design, so every scene shows the same ship; with -steps it is made at
+            // once, so its edits are in place for the first frame of any scene
+            Designer.DesignerScene MakeDesigner()
+            {
+                if (newDesign)
+                    session.Load(Designer.DesignDoc.Empty(), null);
+                return new Designer.DesignerScene((SDL.SDL_GPUDevice*)device, session, units, section, steps);
+            }
+            var early = steps != null || newDesign ? MakeDesigner() : null;
             engine.Scene = new SceneSwitcher(view switch { "hitbox" => 1, "designer" => 2, _ => 0 },
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),
                 ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show)),
-                ("Designer", () => newDesign
-                    ? new Designer.DesignerScene((SDL.SDL_GPUDevice*)device, Designer.DesignDoc.Empty(), units: units, section: section, steps: steps)
-                    : new Designer.DesignerScene((SDL.SDL_GPUDevice*)device, Shipgen.Design.Load(session.Path), session.Path, units: units, section: section, steps: steps)));
+                ("Designer", () => early ?? MakeDesigner()));
 
             // Run the engine
             engine.Run();

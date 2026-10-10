@@ -1,0 +1,1807 @@
+[
+ {
+  "name": "Compound engines, cylindrical (Scotch) boilers (1880)",
+  "group": "1880",
+  "note": "ST2",
+  "value": {
+   "name": "Compound engines, cylindrical (Scotch) boilers (1880)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 203.8,
+   "stress_floor": 0.75,
+   "sfc_g_per_kwh": 1378,
+   "density_t_per_m3": 0.24,
+   "unit_max_mw": 4.8,
+   "unit": {
+    "mw": 3,
+    "height_m": 5.5,
+    "width_m": 4.5,
+    "length_m": 6
+   },
+   "boiler_fraction": 0.6,
+   "crew_k": 40,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced_boost",
+    "velocity_m_s": 7.0,
+    "reach_m": 7.0,
+    "natural_fraction": 0.55,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Compound engines, locomotive boilers (1880)",
+  "group": "1880",
+  "note": "ST2",
+  "value": {
+   "name": "Compound engines, locomotive boilers (1880)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 122.2,
+   "stress_floor": 0.75,
+   "sfc_g_per_kwh": 1378,
+   "density_t_per_m3": 0.24,
+   "unit_max_mw": 1.5,
+   "unit": {
+    "mw": 3,
+    "height_m": 5.5,
+    "width_m": 4.5,
+    "length_m": 6
+   },
+   "boiler_fraction": 0.6,
+   "crew_k": 40,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced_boost",
+    "velocity_m_s": 7.0,
+    "reach_m": 7.0,
+    "natural_fraction": 0.55,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Triple expansion, Scotch boilers (1890)",
+  "group": "1890",
+  "note": "ST3",
+  "value": {
+   "name": "Triple expansion, Scotch boilers (1890)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 167.8,
+   "stress_floor": 0.75,
+   "sfc_g_per_kwh": 1139,
+   "density_t_per_m3": 0.26,
+   "unit_max_mw": 6.8,
+   "unit": {
+    "mw": 5,
+    "height_m": 7.5,
+    "width_m": 4.5,
+    "length_m": 9
+   },
+   "boiler_fraction": 0.6,
+   "crew_k": 38,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced_boost",
+    "velocity_m_s": 8.5,
+    "reach_m": 8.5,
+    "natural_fraction": 0.6,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Triple expansion, locomotive boilers (1890)",
+  "group": "1890",
+  "note": "ST3",
+  "value": {
+   "name": "Triple expansion, locomotive boilers (1890)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 100.7,
+   "stress_floor": 0.75,
+   "sfc_g_per_kwh": 1139,
+   "density_t_per_m3": 0.26,
+   "unit_max_mw": 2.0,
+   "unit": {
+    "mw": 5,
+    "height_m": 7.5,
+    "width_m": 4.5,
+    "length_m": 9
+   },
+   "boiler_fraction": 0.6,
+   "crew_k": 38,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced_boost",
+    "velocity_m_s": 8.5,
+    "reach_m": 8.5,
+    "natural_fraction": 0.6,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Triple expansion, large-tube water-tube boilers (1890)",
+  "group": "1890",
+  "note": "ST4",
+  "value": {
+   "name": "Triple expansion, large-tube water-tube boilers (1890)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 150.0,
+   "stress_floor": 0.45,
+   "sfc_g_per_kwh": 1050,
+   "density_t_per_m3": 0.28,
+   "unit_max_mw": 6.0,
+   "unit": {
+    "mw": 5,
+    "height_m": 7.5,
+    "width_m": 4.5,
+    "length_m": 9
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 34,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced_boost",
+    "velocity_m_s": 8.5,
+    "reach_m": 8.5,
+    "natural_fraction": 0.7,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Triple expansion, large-tube water-tube boilers (1900)",
+  "group": "1900",
+  "note": "ST4",
+  "value": {
+   "name": "Triple expansion, large-tube water-tube boilers (1900)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 127.1,
+   "stress_floor": 0.45,
+   "sfc_g_per_kwh": 972,
+   "density_t_per_m3": 0.28,
+   "unit_max_mw": 9.9,
+   "unit": {
+    "mw": 5,
+    "height_m": 7.5,
+    "width_m": 4.5,
+    "length_m": 9
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 34,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 8.0,
+    "reach_m": 8.0,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Triple expansion, express small-tube boilers (1900)",
+  "group": "1900",
+  "note": "ST4",
+  "value": {
+   "name": "Triple expansion, express small-tube boilers (1900)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 76.3,
+   "stress_floor": 0.45,
+   "sfc_g_per_kwh": 972,
+   "density_t_per_m3": 0.28,
+   "unit_max_mw": 9.9,
+   "unit": {
+    "mw": 5,
+    "height_m": 6.38,
+    "width_m": 4.5,
+    "length_m": 9
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 34,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 8.0,
+    "reach_m": 8.0,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Triple expansion, Scotch boilers (1900)",
+  "group": "1900",
+  "note": "ST3",
+  "value": {
+   "name": "Triple expansion, Scotch boilers (1900)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 150.0,
+   "stress_floor": 0.75,
+   "sfc_g_per_kwh": 1050,
+   "density_t_per_m3": 0.26,
+   "unit_max_mw": 9.0,
+   "unit": {
+    "mw": 5,
+    "height_m": 7.5,
+    "width_m": 4.5,
+    "length_m": 9
+   },
+   "boiler_fraction": 0.6,
+   "crew_k": 38,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 8.0,
+    "reach_m": 8.0,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Direct-drive turbines, water-tube boilers (1905)",
+  "group": "1905",
+  "note": "ST5",
+  "value": {
+   "name": "Direct-drive turbines, water-tube boilers (1905)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 120.0,
+   "stress_floor": 0.35,
+   "sfc_g_per_kwh": 950,
+   "density_t_per_m3": 0.3,
+   "unit_max_mw": 8.0,
+   "unit": {
+    "mw": 10,
+    "height_m": 4.5,
+    "width_m": 4.5,
+    "length_m": 7
+   },
+   "boiler_fraction": 0.6,
+   "crew_k": 30,
+   "part_load": "DT",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 9.1,
+    "reach_m": 9.1,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Triple expansion, large-tube water-tube boilers (1905)",
+  "group": "1905",
+  "note": "ST4",
+  "value": {
+   "name": "Triple expansion, large-tube water-tube boilers (1905)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 118.0,
+   "stress_floor": 0.45,
+   "sfc_g_per_kwh": 940,
+   "density_t_per_m3": 0.28,
+   "unit_max_mw": 11.5,
+   "unit": {
+    "mw": 5,
+    "height_m": 7.5,
+    "width_m": 4.5,
+    "length_m": 9
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 34,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 9.1,
+    "reach_m": 9.1,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Quadruple expansion, large-tube water-tube boilers (1905)",
+  "group": "1905",
+  "note": "ST4",
+  "value": {
+   "name": "Quadruple expansion, large-tube water-tube boilers (1905)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 123.9,
+   "stress_floor": 0.45,
+   "sfc_g_per_kwh": 865,
+   "density_t_per_m3": 0.28,
+   "unit_max_mw": 11.5,
+   "unit": {
+    "mw": 5,
+    "height_m": 7.5,
+    "width_m": 4.5,
+    "length_m": 10.8
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 34,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 9.1,
+    "reach_m": 9.1,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Triple expansion, express small-tube boilers (1905)",
+  "group": "1905",
+  "note": "ST4",
+  "value": {
+   "name": "Triple expansion, express small-tube boilers (1905)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 70.8,
+   "stress_floor": 0.45,
+   "sfc_g_per_kwh": 940,
+   "density_t_per_m3": 0.28,
+   "unit_max_mw": 11.5,
+   "unit": {
+    "mw": 5,
+    "height_m": 6.38,
+    "width_m": 4.5,
+    "length_m": 9
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 34,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 9.1,
+    "reach_m": 9.1,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Direct-drive turbines, water-tube boilers (1910)",
+  "group": "1910",
+  "note": "ST5",
+  "value": {
+   "name": "Direct-drive turbines, water-tube boilers (1910)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 104.5,
+   "stress_floor": 0.35,
+   "sfc_g_per_kwh": 857,
+   "density_t_per_m3": 0.3,
+   "unit_max_mw": 15.5,
+   "unit": {
+    "mw": 10,
+    "height_m": 4.5,
+    "width_m": 4.5,
+    "length_m": 7
+   },
+   "boiler_fraction": 0.6,
+   "crew_k": 30,
+   "part_load": "DT",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 9.8,
+    "reach_m": 9.8,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Direct-drive turbines, water-tube boilers, mixed firing (coal, oil spray) (1910)",
+  "group": "1910",
+  "note": "ST5",
+  "value": {
+   "name": "Direct-drive turbines, water-tube boilers, mixed firing (coal, oil spray) (1910)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 101.3,
+   "stress_floor": 0.35,
+   "sfc_g_per_kwh": 844,
+   "density_t_per_m3": 0.3,
+   "unit_max_mw": 15.5,
+   "unit": {
+    "mw": 10,
+    "height_m": 4.5,
+    "width_m": 4.5,
+    "length_m": 7
+   },
+   "boiler_fraction": 0.6,
+   "crew_k": 25.5,
+   "part_load": "DT",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 9.8,
+    "reach_m": 9.8,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Direct-drive turbines, water-tube boilers, oil-fired (1910)",
+  "group": "1910",
+  "note": "ST5",
+  "value": {
+   "name": "Direct-drive turbines, water-tube boilers, oil-fired (1910)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 94.0,
+   "stress_floor": 0.35,
+   "sfc_g_per_kwh": 608,
+   "density_t_per_m3": 0.3,
+   "unit_max_mw": 15.5,
+   "unit": {
+    "mw": 10,
+    "height_m": 4.5,
+    "width_m": 4.5,
+    "length_m": 7
+   },
+   "boiler_fraction": 0.6,
+   "crew_k": 13.5,
+   "part_load": "DT",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 11.8,
+    "reach_m": 15.5,
+    "gas_temp_k": 570,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Triple expansion, large-tube water-tube boilers (1910)",
+  "group": "1910",
+  "note": "ST4",
+  "value": {
+   "name": "Triple expansion, large-tube water-tube boilers (1910)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 115.0,
+   "stress_floor": 0.45,
+   "sfc_g_per_kwh": 930,
+   "density_t_per_m3": 0.28,
+   "unit_max_mw": 12.0,
+   "unit": {
+    "mw": 5,
+    "height_m": 7.5,
+    "width_m": 4.5,
+    "length_m": 9
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 34,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 9.8,
+    "reach_m": 9.8,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Petrol engines (1910)",
+  "group": "1910",
+  "note": "PE1",
+  "value": {
+   "name": "Petrol engines (1910)",
+   "fuel": "petrol",
+   "weight_kg_per_kw": 8.0,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 328,
+   "density_t_per_m3": 0.4,
+   "unit_max_mw": 0.4,
+   "unit": {
+    "mw": 1,
+    "height_m": 1.2,
+    "width_m": 1.1,
+    "length_m": 2.5
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Early marine diesels (1910)",
+  "group": "1910",
+  "note": "DI1",
+  "value": {
+   "name": "Early marine diesels (1910)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 140.0,
+   "stress_floor": 0.6,
+   "sfc_g_per_kwh": 270,
+   "density_t_per_m3": 0.42,
+   "unit_max_mw": 0.4,
+   "unit": {
+    "mw": 1,
+    "height_m": 4.5,
+    "width_m": 2.5,
+    "length_m": 7
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 6,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Direct-drive turbines, water-tube boilers, oil-fired (1915)",
+  "group": "1915",
+  "note": "ST5",
+  "value": {
+   "name": "Direct-drive turbines, water-tube boilers, oil-fired (1915)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 86.7,
+   "stress_floor": 0.35,
+   "sfc_g_per_kwh": 573,
+   "density_t_per_m3": 0.3,
+   "unit_max_mw": 19.4,
+   "unit": {
+    "mw": 10,
+    "height_m": 4.5,
+    "width_m": 4.5,
+    "length_m": 7
+   },
+   "boiler_fraction": 0.6,
+   "crew_k": 13.5,
+   "part_load": "DT",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 13.0,
+    "reach_m": 18.0,
+    "gas_temp_k": 570,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Direct-drive turbines, water-tube boilers and cruising turbines, oil-fired (1915)",
+  "group": "1915",
+  "note": "ST5",
+  "value": {
+   "name": "Direct-drive turbines, water-tube boilers and cruising turbines, oil-fired (1915)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 91.0,
+   "stress_floor": 0.35,
+   "sfc_g_per_kwh": 573,
+   "density_t_per_m3": 0.3,
+   "unit_max_mw": 19.4,
+   "unit": {
+    "mw": 10,
+    "height_m": 4.5,
+    "width_m": 4.5,
+    "length_m": 7
+   },
+   "boiler_fraction": 0.6,
+   "crew_k": 13.5,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 13.0,
+    "reach_m": 18.0,
+    "gas_temp_k": 570,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Geared turbines, oil-fired small-tube boilers (1915)",
+  "group": "1915",
+  "note": "ST6",
+  "value": {
+   "name": "Geared turbines, oil-fired small-tube boilers (1915)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 75.0,
+   "stress_floor": 0.42,
+   "sfc_g_per_kwh": 520,
+   "density_t_per_m3": 0.32,
+   "unit_max_mw": 15.0,
+   "unit": {
+    "mw": 15,
+    "height_m": 4.5,
+    "width_m": 4.5,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 12,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 13.0,
+    "reach_m": 18.0,
+    "gas_temp_k": 570,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Direct-drive turbines, water-tube boilers (1915)",
+  "group": "1915",
+  "note": "ST5",
+  "value": {
+   "name": "Direct-drive turbines, water-tube boilers (1915)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 96.3,
+   "stress_floor": 0.35,
+   "sfc_g_per_kwh": 808,
+   "density_t_per_m3": 0.3,
+   "unit_max_mw": 19.4,
+   "unit": {
+    "mw": 10,
+    "height_m": 4.5,
+    "width_m": 4.5,
+    "length_m": 7
+   },
+   "boiler_fraction": 0.6,
+   "crew_k": 30,
+   "part_load": "DT",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 10.0,
+    "reach_m": 10.0,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   }
+  }
+ },
+ {
+  "name": "Petrol engines (1915)",
+  "group": "1915",
+  "note": "PE1",
+  "value": {
+   "name": "Petrol engines (1915)",
+   "fuel": "petrol",
+   "weight_kg_per_kw": 7.6,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 318,
+   "density_t_per_m3": 0.4,
+   "unit_max_mw": 0.6,
+   "unit": {
+    "mw": 1,
+    "height_m": 1.2,
+    "width_m": 1.1,
+    "length_m": 2.5
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Early marine diesels (1915)",
+  "group": "1915",
+  "note": "DI1",
+  "value": {
+   "name": "Early marine diesels (1915)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 117.8,
+   "stress_floor": 0.6,
+   "sfc_g_per_kwh": 253,
+   "density_t_per_m3": 0.42,
+   "unit_max_mw": 1.3,
+   "unit": {
+    "mw": 1,
+    "height_m": 4.5,
+    "width_m": 2.5,
+    "length_m": 7
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 6,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Geared turbines, oil-fired small-tube boilers (1920)",
+  "group": "1920",
+  "note": "ST6",
+  "value": {
+   "name": "Geared turbines, oil-fired small-tube boilers (1920)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 62.2,
+   "stress_floor": 0.42,
+   "sfc_g_per_kwh": 470,
+   "density_t_per_m3": 0.32,
+   "unit_max_mw": 26.1,
+   "unit": {
+    "mw": 15,
+    "height_m": 4.5,
+    "width_m": 4.5,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 12,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 13.8,
+    "reach_m": 19.5,
+    "gas_temp_k": 570,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Triple expansion, large-tube water-tube boilers, oil-fired (1920)",
+  "group": "1920",
+  "note": "ST4",
+  "value": {
+   "name": "Triple expansion, large-tube water-tube boilers, oil-fired (1920)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 103.5,
+   "stress_floor": 0.45,
+   "sfc_g_per_kwh": 660,
+   "density_t_per_m3": 0.28,
+   "unit_max_mw": 12.0,
+   "unit": {
+    "mw": 5,
+    "height_m": 7.5,
+    "width_m": 4.5,
+    "length_m": 9
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 15.3,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 13.8,
+    "reach_m": 19.5,
+    "gas_temp_k": 570,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Slow-speed 2-stroke crosshead diesels (merchant) (1920)",
+  "group": "1920",
+  "note": "DIS",
+  "value": {
+   "name": "Slow-speed 2-stroke crosshead diesels (merchant) (1920)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 135.9,
+   "stress_floor": 0.9,
+   "sfc_g_per_kwh": 220,
+   "density_t_per_m3": 0.4,
+   "unit_max_mw": 11.1,
+   "unit": {
+    "mw": 10,
+    "height_m": 9,
+    "width_m": 6,
+    "length_m": 15
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Petrol engines (1920)",
+  "group": "1920",
+  "note": "PE1",
+  "value": {
+   "name": "Petrol engines (1920)",
+   "fuel": "petrol",
+   "weight_kg_per_kw": 7.3,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 310,
+   "density_t_per_m3": 0.4,
+   "unit_max_mw": 0.7,
+   "unit": {
+    "mw": 1,
+    "height_m": 1.2,
+    "width_m": 1.1,
+    "length_m": 2.5
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Geared turbines, oil-fired small-tube boilers (1930)",
+  "group": "1930",
+  "note": "ST6",
+  "value": {
+   "name": "Geared turbines, oil-fired small-tube boilers (1930)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 52.0,
+   "stress_floor": 0.42,
+   "sfc_g_per_kwh": 430,
+   "density_t_per_m3": 0.32,
+   "unit_max_mw": 35.0,
+   "unit": {
+    "mw": 15,
+    "height_m": 4.5,
+    "width_m": 4.5,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 12,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 14.0,
+    "reach_m": 20.0,
+    "gas_temp_k": 570,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "High-pressure geared turbines (1930)",
+  "group": "1930",
+  "note": "ST7",
+  "value": {
+   "name": "High-pressure geared turbines (1930)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 45.0,
+   "stress_floor": 0.5,
+   "sfc_g_per_kwh": 420,
+   "density_t_per_m3": 0.34,
+   "unit_max_mw": 25.0,
+   "unit": {
+    "mw": 30,
+    "height_m": 5.0,
+    "width_m": 5.0,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.5,
+   "crew_k": 10,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 12.0,
+    "reach_m": 20.0,
+    "gas_temp_k": 450,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Lightweight double-acting 2-stroke diesels (1930)",
+  "group": "1930",
+  "note": "DI2",
+  "value": {
+   "name": "Lightweight double-acting 2-stroke diesels (1930)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 47.3,
+   "stress_floor": 0.75,
+   "sfc_g_per_kwh": 246,
+   "density_t_per_m3": 0.42,
+   "unit_max_mw": 3.9,
+   "unit": {
+    "mw": 5,
+    "height_m": 4.5,
+    "width_m": 3.5,
+    "length_m": 10
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 5,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Slow-speed 2-stroke crosshead diesels (merchant) (1930)",
+  "group": "1930",
+  "note": "DIS",
+  "value": {
+   "name": "Slow-speed 2-stroke crosshead diesels (merchant) (1930)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 120.0,
+   "stress_floor": 0.9,
+   "sfc_g_per_kwh": 208,
+   "density_t_per_m3": 0.4,
+   "unit_max_mw": 21.3,
+   "unit": {
+    "mw": 10,
+    "height_m": 9,
+    "width_m": 6,
+    "length_m": 15
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Petrol engines (1930)",
+  "group": "1930",
+  "note": "PE1",
+  "value": {
+   "name": "Petrol engines (1930)",
+   "fuel": "petrol",
+   "weight_kg_per_kw": 6.8,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 297,
+   "density_t_per_m3": 0.4,
+   "unit_max_mw": 1.0,
+   "unit": {
+    "mw": 1,
+    "height_m": 1.2,
+    "width_m": 1.1,
+    "length_m": 2.5
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "High-pressure geared turbines (1935)",
+  "group": "1935",
+  "note": "ST7",
+  "value": {
+   "name": "High-pressure geared turbines (1935)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 38.9,
+   "stress_floor": 0.5,
+   "sfc_g_per_kwh": 376,
+   "density_t_per_m3": 0.34,
+   "unit_max_mw": 36.1,
+   "unit": {
+    "mw": 30,
+    "height_m": 5.0,
+    "width_m": 5.0,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.5,
+   "crew_k": 10,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 13.7,
+    "reach_m": 25.6,
+    "gas_temp_k": 450,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Lightweight double-acting 2-stroke diesels (1935)",
+  "group": "1935",
+  "note": "DI2",
+  "value": {
+   "name": "Lightweight double-acting 2-stroke diesels (1935)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 42.2,
+   "stress_floor": 0.75,
+   "sfc_g_per_kwh": 237,
+   "density_t_per_m3": 0.42,
+   "unit_max_mw": 5.6,
+   "unit": {
+    "mw": 5,
+    "height_m": 4.5,
+    "width_m": 3.5,
+    "length_m": 10
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 5,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "High-speed diesels (E-boat) (1935)",
+  "group": "1935",
+  "note": "DI3",
+  "value": {
+   "name": "High-speed diesels (E-boat) (1935)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 13.2,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 240,
+   "density_t_per_m3": 0.45,
+   "unit_max_mw": 1.3,
+   "unit": {
+    "mw": 1.5,
+    "height_m": 1.8,
+    "width_m": 1.6,
+    "length_m": 4
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Petrol engines (1935)",
+  "group": "1935",
+  "note": "PE1",
+  "value": {
+   "name": "Petrol engines (1935)",
+   "fuel": "petrol",
+   "weight_kg_per_kw": 6.6,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 293,
+   "density_t_per_m3": 0.4,
+   "unit_max_mw": 1.0,
+   "unit": {
+    "mw": 1,
+    "height_m": 1.2,
+    "width_m": 1.1,
+    "length_m": 2.5
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "High-pressure geared turbines (1940)",
+  "group": "1940",
+  "note": "ST7",
+  "value": {
+   "name": "High-pressure geared turbines (1940)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 35.2,
+   "stress_floor": 0.5,
+   "sfc_g_per_kwh": 349,
+   "density_t_per_m3": 0.34,
+   "unit_max_mw": 42.8,
+   "unit": {
+    "mw": 30,
+    "height_m": 5.0,
+    "width_m": 5.0,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.5,
+   "crew_k": 10,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 14.7,
+    "reach_m": 28.9,
+    "gas_temp_k": 450,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Very-high-pressure geared turbines (1200 psi) (1940)",
+  "group": "1940",
+  "note": "ST8",
+  "value": {
+   "name": "Very-high-pressure geared turbines (1200 psi) (1940)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 32.4,
+   "stress_floor": 0.55,
+   "sfc_g_per_kwh": 332,
+   "density_t_per_m3": 0.36,
+   "unit_max_mw": 43.0,
+   "unit": {
+    "mw": 40,
+    "height_m": 5.0,
+    "width_m": 5.0,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.45,
+   "crew_k": 9,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 14.7,
+    "reach_m": 28.9,
+    "gas_temp_k": 450,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Triple expansion, large-tube water-tube boilers, oil-fired (1940)",
+  "group": "1940",
+  "note": "ST4",
+  "value": {
+   "name": "Triple expansion, large-tube water-tube boilers, oil-fired (1940)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 103.5,
+   "stress_floor": 0.45,
+   "sfc_g_per_kwh": 660,
+   "density_t_per_m3": 0.28,
+   "unit_max_mw": 12.0,
+   "unit": {
+    "mw": 5,
+    "height_m": 7.5,
+    "width_m": 4.5,
+    "length_m": 9
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 15.3,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 14.0,
+    "reach_m": 20.0,
+    "gas_temp_k": 570,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Geared turbines, oil-fired small-tube boilers (1940)",
+  "group": "1940",
+  "note": "ST6",
+  "value": {
+   "name": "Geared turbines, oil-fired small-tube boilers (1940)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 52.0,
+   "stress_floor": 0.42,
+   "sfc_g_per_kwh": 430,
+   "density_t_per_m3": 0.32,
+   "unit_max_mw": 35.0,
+   "unit": {
+    "mw": 15,
+    "height_m": 4.5,
+    "width_m": 4.5,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 12,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 14.0,
+    "reach_m": 20.0,
+    "gas_temp_k": 570,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Slow-speed 2-stroke crosshead diesels (merchant) (1940)",
+  "group": "1940",
+  "note": "DIS",
+  "value": {
+   "name": "Slow-speed 2-stroke crosshead diesels (merchant) (1940)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 105.9,
+   "stress_floor": 0.9,
+   "sfc_g_per_kwh": 198,
+   "density_t_per_m3": 0.4,
+   "unit_max_mw": 30.4,
+   "unit": {
+    "mw": 10,
+    "height_m": 9,
+    "width_m": 6,
+    "length_m": 15
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Lightweight double-acting 2-stroke diesels (1940)",
+  "group": "1940",
+  "note": "DI2",
+  "value": {
+   "name": "Lightweight double-acting 2-stroke diesels (1940)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 39.0,
+   "stress_floor": 0.75,
+   "sfc_g_per_kwh": 232,
+   "density_t_per_m3": 0.42,
+   "unit_max_mw": 6.7,
+   "unit": {
+    "mw": 5,
+    "height_m": 4.5,
+    "width_m": 3.5,
+    "length_m": 10
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 5,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "High-speed diesels (E-boat) (1940)",
+  "group": "1940",
+  "note": "DI3",
+  "value": {
+   "name": "High-speed diesels (E-boat) (1940)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 11.9,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 233,
+   "density_t_per_m3": 0.45,
+   "unit_max_mw": 2.0,
+   "unit": {
+    "mw": 1.5,
+    "height_m": 1.8,
+    "width_m": 1.6,
+    "length_m": 4
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Petrol engines (1940)",
+  "group": "1940",
+  "note": "PE1",
+  "value": {
+   "name": "Petrol engines (1940)",
+   "fuel": "petrol",
+   "weight_kg_per_kw": 6.5,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 291,
+   "density_t_per_m3": 0.4,
+   "unit_max_mw": 1.1,
+   "unit": {
+    "mw": 1,
+    "height_m": 1.2,
+    "width_m": 1.1,
+    "length_m": 2.5
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "High-pressure geared turbines (1945)",
+  "group": "1945",
+  "note": "ST7",
+  "value": {
+   "name": "High-pressure geared turbines (1945)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 34.0,
+   "stress_floor": 0.5,
+   "sfc_g_per_kwh": 340,
+   "density_t_per_m3": 0.34,
+   "unit_max_mw": 45.0,
+   "unit": {
+    "mw": 30,
+    "height_m": 5.0,
+    "width_m": 5.0,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.5,
+   "crew_k": 10,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 15.0,
+    "reach_m": 30.0,
+    "gas_temp_k": 450,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Very-high-pressure geared turbines (1200 psi) (1945)",
+  "group": "1945",
+  "note": "ST8",
+  "value": {
+   "name": "Very-high-pressure geared turbines (1200 psi) (1945)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 30.1,
+   "stress_floor": 0.55,
+   "sfc_g_per_kwh": 320,
+   "density_t_per_m3": 0.36,
+   "unit_max_mw": 47.3,
+   "unit": {
+    "mw": 40,
+    "height_m": 5.0,
+    "width_m": 5.0,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.45,
+   "crew_k": 9,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 15.0,
+    "reach_m": 30.0,
+    "gas_temp_k": 450,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "High-speed diesels (E-boat) (1945)",
+  "group": "1945",
+  "note": "DI3",
+  "value": {
+   "name": "High-speed diesels (E-boat) (1945)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 11.5,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 230,
+   "density_t_per_m3": 0.45,
+   "unit_max_mw": 2.2,
+   "unit": {
+    "mw": 1.5,
+    "height_m": 1.8,
+    "width_m": 1.6,
+    "length_m": 4
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Petrol engines (1945)",
+  "group": "1945",
+  "note": "PE1",
+  "value": {
+   "name": "Petrol engines (1945)",
+   "fuel": "petrol",
+   "weight_kg_per_kw": 6.5,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 290,
+   "density_t_per_m3": 0.4,
+   "unit_max_mw": 1.1,
+   "unit": {
+    "mw": 1,
+    "height_m": 1.2,
+    "width_m": 1.1,
+    "length_m": 2.5
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Very-high-pressure geared turbines (1200 psi) (1950)",
+  "group": "1950",
+  "note": "ST8",
+  "value": {
+   "name": "Very-high-pressure geared turbines (1200 psi) (1950)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 28.3,
+   "stress_floor": 0.55,
+   "sfc_g_per_kwh": 311,
+   "density_t_per_m3": 0.36,
+   "unit_max_mw": 50.7,
+   "unit": {
+    "mw": 40,
+    "height_m": 5.0,
+    "width_m": 5.0,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.45,
+   "crew_k": 9,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 15.0,
+    "reach_m": 30.0,
+    "gas_temp_k": 450,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Early naval gas turbines (boost) (1950)",
+  "group": "1950",
+  "note": "GT1",
+  "value": {
+   "name": "Early naval gas turbines (boost) (1950)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 15.2,
+   "stress_floor": 0.85,
+   "sfc_g_per_kwh": 477,
+   "density_t_per_m3": 0.22,
+   "unit_max_mw": 2.4,
+   "unit": {
+    "mw": 3,
+    "height_m": 1.5,
+    "width_m": 1.5,
+    "length_m": 4
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "GTS",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Turbocharged high-speed diesels (Deltic) (1950)",
+  "group": "1950",
+  "note": "DI4",
+  "value": {
+   "name": "Turbocharged high-speed diesels (Deltic) (1950)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 11.5,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 235,
+   "density_t_per_m3": 0.45,
+   "unit_max_mw": 1.5,
+   "unit": {
+    "mw": 2.5,
+    "height_m": 2.0,
+    "width_m": 2.0,
+    "length_m": 3.5
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Very-high-pressure geared turbines (1200 psi) (1960)",
+  "group": "1960",
+  "note": "ST8",
+  "value": {
+   "name": "Very-high-pressure geared turbines (1200 psi) (1960)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 26.3,
+   "stress_floor": 0.55,
+   "sfc_g_per_kwh": 301,
+   "density_t_per_m3": 0.36,
+   "unit_max_mw": 54.5,
+   "unit": {
+    "mw": 40,
+    "height_m": 5.0,
+    "width_m": 5.0,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.45,
+   "crew_k": 9,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 15.0,
+    "reach_m": 30.0,
+    "gas_temp_k": 450,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Early naval gas turbines (boost) (1960)",
+  "group": "1960",
+  "note": "GT1",
+  "value": {
+   "name": "Early naval gas turbines (boost) (1960)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 13.1,
+   "stress_floor": 0.85,
+   "sfc_g_per_kwh": 402,
+   "density_t_per_m3": 0.22,
+   "unit_max_mw": 3.5,
+   "unit": {
+    "mw": 3,
+    "height_m": 1.5,
+    "width_m": 1.5,
+    "length_m": 4
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "GTS",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Turbocharged high-speed diesels (Deltic) (1960)",
+  "group": "1960",
+  "note": "DI4",
+  "value": {
+   "name": "Turbocharged high-speed diesels (Deltic) (1960)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 9.9,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 224,
+   "density_t_per_m3": 0.45,
+   "unit_max_mw": 2.6,
+   "unit": {
+    "mw": 2.5,
+    "height_m": 2.0,
+    "width_m": 2.0,
+    "length_m": 3.5
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Slow-speed 2-stroke crosshead diesels (merchant) (1960)",
+  "group": "1960",
+  "note": "DIS",
+  "value": {
+   "name": "Slow-speed 2-stroke crosshead diesels (merchant) (1960)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 83.4,
+   "stress_floor": 0.9,
+   "sfc_g_per_kwh": 182,
+   "density_t_per_m3": 0.4,
+   "unit_max_mw": 44.9,
+   "unit": {
+    "mw": 10,
+    "height_m": 9,
+    "width_m": 6,
+    "length_m": 15
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Very-high-pressure geared turbines (1200 psi) (1970)",
+  "group": "1970",
+  "note": "ST8",
+  "value": {
+   "name": "Very-high-pressure geared turbines (1200 psi) (1970)",
+   "fuel": "oil",
+   "weight_kg_per_kw": 26.0,
+   "stress_floor": 0.55,
+   "sfc_g_per_kwh": 300,
+   "density_t_per_m3": 0.36,
+   "unit_max_mw": 55.0,
+   "unit": {
+    "mw": 40,
+    "height_m": 5.0,
+    "width_m": 5.0,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.45,
+   "crew_k": 9,
+   "part_load": "GTB",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 15.0,
+    "reach_m": 30.0,
+    "gas_temp_k": 450,
+    "air_fuel_ratio": 15
+   }
+  }
+ },
+ {
+  "name": "Marinised aero gas turbines (Olympus/Tyne) (1970)",
+  "group": "1970",
+  "note": "GT2",
+  "value": {
+   "name": "Marinised aero gas turbines (Olympus/Tyne) (1970)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 15.2,
+   "stress_floor": 0.85,
+   "sfc_g_per_kwh": 296,
+   "density_t_per_m3": 0.22,
+   "unit_max_mw": 16.8,
+   "unit": {
+    "mw": 20,
+    "height_m": 3.2,
+    "width_m": 2.8,
+    "length_m": 8
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 2.5,
+   "part_load": "GTS",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Medium-speed diesels (1970)",
+  "group": "1970",
+  "note": "DI5",
+  "value": {
+   "name": "Medium-speed diesels (1970)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 27.9,
+   "stress_floor": 0.8,
+   "sfc_g_per_kwh": 209,
+   "density_t_per_m3": 0.42,
+   "unit_max_mw": 4.9,
+   "unit": {
+    "mw": 6,
+    "height_m": 4.0,
+    "width_m": 3.0,
+    "length_m": 7
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ },
+ {
+  "name": "Turbocharged high-speed diesels (Deltic) (1970)",
+  "group": "1970",
+  "note": "DI4",
+  "value": {
+   "name": "Turbocharged high-speed diesels (Deltic) (1970)",
+   "fuel": "diesel",
+   "weight_kg_per_kw": 9.3,
+   "stress_floor": 0.7,
+   "sfc_g_per_kwh": 220,
+   "density_t_per_m3": 0.45,
+   "unit_max_mw": 3.0,
+   "unit": {
+    "mw": 2.5,
+    "height_m": 2.0,
+    "width_m": 2.0,
+    "length_m": 3.5
+   },
+   "boiler_fraction": 0.0,
+   "crew_k": 3,
+   "part_load": "DSL",
+   "draught": {
+    "system": "exhaust",
+    "velocity_m_s": 35,
+    "reach_m": 60,
+    "gas_temp_k": 620,
+    "air_fuel_ratio": 38
+   }
+  }
+ }
+]

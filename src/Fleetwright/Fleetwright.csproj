@@ -48,6 +48,7 @@
   <ItemGroup>
     <GameAsset Include="$(MSBuildThisFileDirectory)..\..\shipgen\designs\*.json" Link="Content\Designs\%(Filename)%(Extension)" />
     <GameAsset Include="$(MSBuildThisFileDirectory)..\..\Content\Fonts\*" Link="Content\Fonts\%(Filename)%(Extension)" />
+    <GameAsset Include="$(MSBuildThisFileDirectory)..\..\Content\Templates\*.json" Link="Content\Templates\%(Filename)%(Extension)" />
     <None Include="@(GameAsset)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 

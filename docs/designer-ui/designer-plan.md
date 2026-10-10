@@ -213,6 +213,9 @@ Values show in the toggled units (metric `279 mm`, imperial `11.0 in`; the desig
   remarks) and the history strip. Idle frames allocate about 200 bytes.
 - Learned: the engine builds the UI before `Draw`, so offscreen targets shown with `ImGui.Image` are sized in
   `BuildUi` (resizing in `Draw` freed a texture the UI held: a crash).
+- Then (user): one design across the scenes (`DesignSession` is the hub; the designer edits through it on its
+  shared worker), template pickers (plant, hull construction, crew standard, armour materials; catalogues in
+  `Content/Templates` from `tools/designer_templates.py`), the style button (navy and era, tried on or kept).
 - Next: the profile's armour coloured by thickness with mm on the plates (Step 7), then the marginal-cost chips
   (Step 9), then the research's later items.
 

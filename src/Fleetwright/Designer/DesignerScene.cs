@@ -66,16 +66,48 @@ public sealed unsafe class DesignerScene : IScene
     string saveName = "";
     string[] shippedDesigns = [], userDesigns = [];
 
+    // linked to a session (the dev app): edits go to it, and a design changed elsewhere (the viewer's pick) comes back
+    readonly DesignSession? session;
+    readonly bool ownsWorker;
+    int seenDesign;   // the session's DesignVersion last taken or caused here
+    LookInput? ownLook;   // the look override when there's no session (with one, the session's is shared)
+
+    /// <summary>A designer of its own: <paramref name="start"/> in, the edited design out through
+    /// <paramref name="onClose"/> (the game's use).</summary>
     /// <param name="steps">Knob steps to apply at once, as the + and - buttons do ("speed:-2", "belt:+3"): a dev hook for
     /// screenshots of edited states.</param>
     public DesignerScene(SDL_GPUDevice* device, Design start, string? sourcePath = null, Action<Design?>? onClose = null,
         UnitSystem units = UnitSystem.Metric, int section = 0, IEnumerable<string>? steps = null)
+        : this(device, null, new DesignWorker(SpriteScale, MipLevels, limits: true, (nint)device), new DesignDoc(start, sourcePath),
+            onClose, units, section, steps)
+    {
+    }
+
+    /// <summary>A designer on the session's design (the dev app): every edit shows in the other scenes at once, and a
+    /// design picked there opens here.</summary>
+    public DesignerScene(SDL_GPUDevice* device, DesignSession session, UnitSystem units = UnitSystem.Metric, int section = 0,
+        IEnumerable<string>? steps = null)
+        : this(device, session, session.Worker, new DesignDoc(session.Design ?? DesignDoc.Empty(), session.DesignPath), null, units,
+            section, steps)
+    {
+    }
+
+    DesignerScene(SDL_GPUDevice* device, DesignSession? session, DesignWorker worker, DesignDoc doc, Action<Design?>? onClose,
+        UnitSystem units, int section, IEnumerable<string>? steps)
     {
         this.device = device;
+        this.session = session;
+        this.worker = worker;
+        ownsWorker = session == null;
+        this.doc = doc;
         this.onClose = onClose;
         this.units = units;
         this.section = Math.Clamp(section, 0, Sections.Length - 1);
-        worker = new DesignWorker(SpriteScale, MipLevels, limits: true, (nint)device);
+        if (session != null)   // the session already builds this design
+        {
+            submitted = doc.History[0].Json;
+            seenDesign = session.DesignVersion;
+        }
         sprite = new ShipSpriteRenderer(device);
         profile = new HitboxRenderer(device);
         ulong mask = 0;
@@ -84,7 +116,6 @@ public sealed unsafe class DesignerScene : IScene
                 or "main" or "secondary" or "waterline" or "hull_lines")
                 mask |= 1UL << k;
         profileState.KindMask = mask;
-        doc = new DesignDoc(start, sourcePath);
         Submit();
         worker.WaitIdle(TimeSpan.FromMinutes(1));   // open with the ship on screen
         if (steps != null)
@@ -110,8 +141,19 @@ public sealed unsafe class DesignerScene : IScene
     /// <summary>The design as edited so far.</summary>
     public Design Current => doc.Current;
 
-    /// <summary>Starts over on another design (the old history goes).</summary>
+    /// <summary>Starts over on another design (the old history goes); with a session, the other scenes switch too.</summary>
     public void Load(DesignDoc next)
+    {
+        Switch(next);
+        if (session != null)
+        {
+            session.Load(next.Current, next.SourcePath);
+            submitted = next.History[0].Json;
+            seenDesign = session.DesignVersion;
+        }
+    }
+
+    void Switch(DesignDoc next)
     {
         doc = next;
         baselineShip = null;
@@ -119,19 +161,56 @@ public sealed unsafe class DesignerScene : IScene
         stale = true;
     }
 
+    /// <summary>A design changed in another scene (the viewer's pick, a reload) opens here.</summary>
+    void Sync()
+    {
+        if (session == null || session.DesignVersion == seenDesign)
+            return;
+        seenDesign = session.DesignVersion;
+        if (session.Design is { } d && d.ToJson() != doc.History[doc.Index].Json)
+        {
+            Switch(new DesignDoc(d, session.DesignPath));
+            submitted = doc.History[0].Json;
+        }
+    }
+
+    /// <summary>Sends the current design to be built if it changed: through the session (every scene shows it), or
+    /// to this designer's own worker.</summary>
     void Submit()
     {
         var json = doc.History[doc.Index].Json;
         if (ReferenceEquals(json, submitted))
             return;
         submitted = json;
-        worker.Submit(doc.Current);
+        if (session != null)
+        {
+            session.Edit(doc.Current);
+            seenDesign = session.DesignVersion;
+        }
+        else
+            worker.Submit(doc.Current, ownLook);
+    }
+
+    /// <summary>The look the sprite is drawn in, other than the design's own (null: its own).</summary>
+    LookInput? Look => session != null ? session.Look : ownLook;
+
+    void SetLook(LookInput? look)
+    {
+        if (session != null)
+            session.SetLook(look);
+        else
+        {
+            ownLook = look;
+            worker.Submit(doc.Current, look);
+        }
+        stale = true;
     }
 
     // ------------------------------------------------------------------ frame
 
     public void Draw(SDL_GPUCommandBuffer* cmd, RenderTarget target, float dt)
     {
+        Sync();
         Submit();
         Take();
         if (topTarget == null || profileTarget == null)   // sized in BuildUi, which runs first; this is the first frame
@@ -192,7 +271,7 @@ public sealed unsafe class DesignerScene : IScene
     /// changes nothing allocates nothing.</summary>
     sealed class Snapshot
     {
-        public required string Title, File, Status, Std, StdDelta, Settling;
+        public required string Title, File, Status, Std, StdDelta, Settling, Style;
         public required string[] Summaries;
         public required (string Label, string Value)[] Particulars;
         public required (string Group, float Frac, string Text)[] Weights;
@@ -209,6 +288,8 @@ public sealed unsafe class DesignerScene : IScene
     sealed record Act(string Label, Action OnClick) : Item;
     sealed record NumRow(NumberKnob Knob, string Label, string Value, string Hint, string Delta, bool Applies, bool IsAuto, double? Num) : Item;
     sealed record ChoiceRow(ChoiceKnob Knob, string[] Labels, int Index, bool Applies) : Item;
+    /// <summary>A template picker: <see cref="Count"/> catalogue entries, then maybe the design's own block ("custom").</summary>
+    sealed record PickRow(string Label, string[] Names, int Index, int Count, Action<int> Apply) : Item;
     sealed record ToggleRow(ToggleKnob Knob, bool Value, bool Applies) : Item;
 
     string Fmt(double metric, Quantity q, double? stepMetric = null, bool unit = true)
@@ -303,6 +384,7 @@ public sealed unsafe class DesignerScene : IScene
         return new Snapshot
         {
             Title = d.Name ?? d.Id ?? "Design",
+            Style = $"Style: {Look?.Navy ?? d.Look?.Navy ?? "generic"} · {Look?.Era ?? d.Look?.Era ?? "wwii"}" + (Look != null ? " (trying)" : ""),
             File = file,
             Status = status,
             Settling = "settling…",
@@ -343,6 +425,24 @@ public sealed unsafe class DesignerScene : IScene
         }
         void Toggle(ToggleKnob k) => items.Add(new ToggleRow(k, k.Value(d), k.AppliesTo(d)));
         var style = Styles.Get(d);
+
+        // a catalogue as a picker: the entry the design's block matches, else the block itself as "custom" (or what
+        // the engine chose, when the design leaves it out)
+        void Pick<TV>(string label, IReadOnlyList<Template<TV>> list, Func<Template<TV>, string> name, Func<Template<TV>, bool> matches,
+            string? own, Func<Design, TV, Design> apply)
+        {
+            var names = list.Select(name).ToList();
+            int i = -1;
+            for (int n = 0; n < list.Count && i < 0; n++)
+                if (matches(list[n]))
+                    i = n;
+            if (i < 0)
+            {
+                names.Add(own ?? "custom");
+                i = names.Count - 1;
+            }
+            items.Add(new PickRow(label, names.ToArray(), i, list.Count, k => Edit(apply(doc.Current, list[k].Value), $"{label}: {names[k]}")));
+        }
 
         switch (section)
         {
@@ -411,6 +511,10 @@ public sealed unsafe class DesignerScene : IScene
                 Num(Knobs.TorpedoTubes);
                 break;
             case 3:
+                items.Add(new Header("Materials"));
+                Pick("Armour", Templates.Armour, t => t.Name, t => Templates.SameMaterials(d.Armour?.Materials, t.Value),
+                    d.Armour?.Materials is { } am ? $"custom: {am.GetValueOrDefault("belt", "?")}" : "default",
+                    (x, v) => x with { Armour = (x.Armour ?? new ArmourInput()) with { Materials = Templates.MaterialsFor(x, v) } });
                 items.Add(new Header("Side"));
                 Num(Knobs.Belt);
                 Num(Knobs.BeltBottom);
@@ -443,6 +547,9 @@ public sealed unsafe class DesignerScene : IScene
                 Num(Knobs.Speed);
                 Num(Knobs.Range);
                 items.Add(new Header("Plant"));
+                Pick("Technology", Templates.Plants, t => t.Name, t => t.Name == d.Machinery?.Tech?.Name,
+                    d.Machinery?.Tech is { } tech ? $"custom: {tech.Name}" : $"default: {ship?.Report.Plant.Name}",
+                    (x, v) => x with { Machinery = (x.Machinery ?? new MachineryInput()) with { Tech = v } });
                 Num(Knobs.Stress);
                 Num(Knobs.Shafts);
                 Choice(Knobs.Arrangement);
@@ -452,6 +559,9 @@ public sealed unsafe class DesignerScene : IScene
                 break;
             case 5:
                 items.Add(new Header("Hull"));
+                Pick("Construction", Templates.Hulls, t => t.Note, t => t.Name == d.Hull?.Construction?.Name,
+                    d.Hull?.Construction is { } hc ? $"custom: {hc.Name}" : $"default: {ship?.Report.Hull.Construction}",
+                    (x, v) => x with { Hull = (x.Hull ?? new HullInput()) with { Construction = v } });
                 Num(Knobs.BlockCoefficient);
                 Num(Knobs.Freeboard);
                 if (Knobs.Raised.AppliesTo(d))
@@ -472,6 +582,9 @@ public sealed unsafe class DesignerScene : IScene
                 }
                 break;
             case 7:
+                Pick("Crew standard", Templates.Crew, t => $"{t.Group}: {t.Name}", t => t.Name == d.Crew?.Standard?.Name,
+                    d.Crew?.Standard is { } cs ? $"custom: {cs.Name}" : $"default: {ship?.Report.Crew?.Standard}",
+                    (x, v) => x with { Crew = (x.Crew ?? new CrewInput()) with { Standard = v } });
                 Num(Knobs.Endurance);
                 Toggle(Knobs.Distiller);
                 if (ship?.Report.Crew is { } c)
@@ -552,6 +665,7 @@ public sealed unsafe class DesignerScene : IScene
 
     public void BuildUi()
     {
+        Sync();
         if (snap == null || stale)
         {
             snap = Build();
@@ -693,6 +807,10 @@ public sealed unsafe class DesignerScene : IScene
             units = (UnitSystem)u;
             stale = true;
         }
+        ImGui.SameLine(0, P(24));
+        if (ImGui.Button(s.Style))
+            ImGui.OpenPopup("style");
+        StylePopup();
 
         // the right end: build status, then Accept / Cancel for a caller
         float right = size.X - 16;
@@ -723,6 +841,40 @@ public sealed unsafe class DesignerScene : IScene
         float a = (float)(ImGui.GetTime() * 6);
         dl.PathArcTo(c, r, a, a + 4.2f, 16);
         dl.PathStroke(T.U32(T.Brass), ImDrawFlags.None, P(2));
+    }
+
+    static readonly string[] Navies = ["(the design's own)", .. Shipgen.Render.Looks.Navies];
+    static readonly string[] Eras = ["(the design's own)", .. Shipgen.Render.Looks.Eras];
+
+    /// <summary>The navy and era the sprite is drawn in: tried on without touching the design (and shown in the other
+    /// scenes too), or kept in it.</summary>
+    void StylePopup()
+    {
+        if (!ImGui.BeginPopup("style"))
+            return;
+        ImGui.TextColored(T.Muted, "How she looks: a navy's paint and fittings in an era");
+        var look = Look;
+        int ni = Math.Max(0, Array.IndexOf(Navies, look?.Navy)), ei = Math.Max(0, Array.IndexOf(Eras, look?.Era));
+        ImGui.SetNextItemWidth(P(260));
+        bool changed = ImGui.Combo("navy", ref ni, Navies, Navies.Length);
+        ImGui.SetNextItemWidth(P(260));
+        changed |= ImGui.Combo("era", ref ei, Eras, Eras.Length);
+        if (changed)
+            SetLook(ni == 0 && ei == 0 ? null : new LookInput { Navy = ni > 0 ? Navies[ni] : null, Era = ei > 0 ? Eras[ei] : null });
+        if (look != null)
+        {
+            if (ImGui.Button("Keep in the design"))
+            {
+                var d = doc.Current;
+                var kept = (d.Look ?? new LookInput()) with { Navy = look.Navy ?? d.Look?.Navy, Era = look.Era ?? d.Look?.Era };
+                Edit(d with { Look = kept }, $"Look: {kept.Navy ?? "generic"}, {kept.Era ?? "wwii"}");
+                SetLook(null);
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Back to the design's own"))
+                SetLook(null);
+        }
+        ImGui.EndPopup();
     }
 
     static string[] List(string dir) => Directory.Exists(dir)
@@ -966,6 +1118,15 @@ public sealed unsafe class DesignerScene : IScene
                         Edit(c.Knob.Set(doc.Current, c.Knob.Values[idx]), $"{c.Knob.Label}: {c.Labels[idx]}");
                     ImGui.EndDisabled();
                     break;
+                case PickRow pr:
+                    ImGui.AlignTextToFramePadding();
+                    ImGui.TextUnformatted(pr.Label);
+                    ImGui.SameLine(labelW);
+                    ImGui.SetNextItemWidth(Math.Min(P(460), size.X - labelW - P(24)));
+                    int pi = pr.Index;
+                    if (ImGui.Combo("##p", ref pi, pr.Names, pr.Names.Length) && pi < pr.Count && pi != pr.Index)
+                        pr.Apply(pi);
+                    break;
                 case ToggleRow tr:
                     ImGui.BeginDisabled(!tr.Applies);
                     ImGui.AlignTextToFramePadding();
@@ -1183,7 +1344,8 @@ public sealed unsafe class DesignerScene : IScene
 
     public void Dispose()
     {
-        worker.Dispose();
+        if (ownsWorker)
+            worker.Dispose();
         SDL_WaitForGPUIdle(device);
         sprite.Dispose();
         profile.Dispose();

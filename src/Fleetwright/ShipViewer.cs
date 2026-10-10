@@ -203,12 +203,17 @@ public sealed unsafe class ShipViewer : IScene
     public void BuildUi()
     {
         SidePanel.Begin("Ship");
+        // the look may have been changed in another scene (the designer's style button)
+        navyIndex = Math.Max(0, Array.IndexOf(navies, session.Look?.Navy));
+        eraIndex = Math.Max(0, Array.IndexOf(eras, session.Look?.Era));
         int designIndex = session.Index;
         if (ImGui.Combo("design", ref designIndex, session.Names, session.Names.Length))
         {
             session.Select(designIndex);
             fit = true;
         }
+        if (session.Edited)
+            ImGui.TextColored(new Vector4(0.88f, 0.68f, 0.31f, 1), "edited in the designer (rebuild reloads the file)");
         if (ImGui.Combo("navy", ref navyIndex, navies, navies.Length) | ImGui.Combo("era", ref eraIndex, eras, eras.Length))
             session.SetLook(Look());
         ImGui.Separator();

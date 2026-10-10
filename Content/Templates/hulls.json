@@ -1,0 +1,90 @@
+[
+ {
+  "name": "Wrought iron, riveted",
+  "group": "",
+  "note": "Wrought iron, riveted (up to about 1885)",
+  "value": {
+   "name": "Wrought iron, riveted",
+   "yield_mpa": 190,
+   "join_factor": 1.12,
+   "standard": 1.0
+  }
+ },
+ {
+  "name": "Mild steel, riveted",
+  "group": "",
+  "note": "Mild steel, riveted (1885-1905)",
+  "value": {
+   "name": "Mild steel, riveted",
+   "yield_mpa": 235,
+   "join_factor": 1.1,
+   "standard": 1.0
+  }
+ },
+ {
+  "name": "Mild steel hull, high-tensile strength deck, riveted",
+  "group": "",
+  "note": "Mild steel hull, high-tensile strength deck, riveted (1905-1920)",
+  "value": {
+   "name": "Mild steel hull, high-tensile strength deck, riveted",
+   "yield_mpa": 290,
+   "join_factor": 1.1,
+   "standard": 1.0
+  }
+ },
+ {
+  "name": "High-tensile steel (D, Ducol, HTS), riveted",
+  "group": "",
+  "note": "High-tensile steel (D, Ducol, HTS), riveted (1920-1935: D steel, Ducol, USN HTS)",
+  "value": {
+   "name": "High-tensile steel (D, Ducol, HTS), riveted",
+   "yield_mpa": 340,
+   "join_factor": 1.08,
+   "standard": 1.0
+  }
+ },
+ {
+  "name": "High-tensile steel, riveted shell, welded internals",
+  "group": "",
+  "note": "High-tensile steel, riveted shell, welded internals (1933-1942)",
+  "value": {
+   "name": "High-tensile steel, riveted shell, welded internals",
+   "yield_mpa": 350,
+   "join_factor": 1.04,
+   "standard": 1.0
+  }
+ },
+ {
+  "name": "High-tensile and structural STS, mostly welded",
+  "group": "",
+  "note": "High-tensile and structural STS, mostly welded (1940-1945, USN)",
+  "value": {
+   "name": "High-tensile and structural STS, mostly welded",
+   "yield_mpa": 420,
+   "join_factor": 1.02,
+   "standard": 1.0
+  }
+ },
+ {
+  "name": "High-tensile steel, all welded",
+  "group": "",
+  "note": "High-tensile steel, all welded (1943 on)",
+  "value": {
+   "name": "High-tensile steel, all welded",
+   "yield_mpa": 350,
+   "join_factor": 1.0,
+   "standard": 1.0
+  }
+ },
+ {
+  "name": "HY-80, all welded",
+  "group": "",
+  "note": "HY-80, all welded (1955 on)",
+  "value": {
+   "name": "HY-80, all welded",
+   "yield_mpa": 420,
+   "join_factor": 1.0,
+   "standard": 1.0
+  }
+ }
+]
