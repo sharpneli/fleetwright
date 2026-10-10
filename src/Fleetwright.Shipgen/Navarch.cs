@@ -119,7 +119,7 @@ public static class Navarch
         {
             T = disp / (Weight.Seawater * L * B * cb);
             D = T + DesignFreeboard(L, tun) * (design.Hull?.Freeboard ?? 1.0);
-            items = [];
+            items.Clear();
             var arm = Armour.ArmourGeometry(design, L, T, D, geo);
             hull = tun.BoxHull
                 ? HullWeight.BoxStructure(design, L, B, D, tun)

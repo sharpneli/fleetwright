@@ -134,9 +134,10 @@ public static class Armour
         !string.IsNullOrEmpty(own) ? own : design.Armour?.Materials?.GetValueOrDefault(part);
 
     /// <summary>The design's armour decks (top down), placed on the deck stack.</summary>
-    public static List<PlannedArmourDeck> ArmourDecks(Design design, double D, IReadOnlyList<RaisedStretch> raised)
+    public static List<PlannedArmourDeck> ArmourDecks(Design design, double D, IReadOnlyList<RaisedStretch> raised,
+        List<(long N, double Z)>? stack = null)
     {
-        var stack = Decks.DeckStack(design, D);
+        stack ??= Decks.DeckStack(design, D);
         long top = -raised.Select(s => s.Levels).DefaultIfEmpty(0L).Max();
         var result = new List<PlannedArmourDeck>();
         foreach (var d in design.Armour?.Decks ?? [])
@@ -189,8 +190,9 @@ public static class Armour
         double belt = a.BeltMm ?? 0;
         var (x0, x1) = geo.CitadelSpan(L);
         var raised = geo.Raised;
+        var stack = Decks.DeckStack(design, D);
         var decks = new List<ArmourDeck>();
-        foreach (var d in ArmourDecks(design, D, raised))
+        foreach (var d in ArmourDecks(design, D, raised, stack))
         {
             if (d.Mm <= 0)
                 continue;
@@ -260,7 +262,6 @@ public static class Armour
         if (Math.Max(sbMm, Math.Max(sbDeck, sbBhd)) > 0)
         {
             var (b0, b1) = geo.SteeringSpan(L);
-            var stack = Decks.DeckStack(design, D);
             double? wbox = geo.SteeringBeam;
             double rz = Ordnance.Span(stack.Select(s => s.Z).ToList(), Powerplant.DoubleBottom(D), roof?.Z ?? D).Top + D;
             long n = stack.MinBy(v => Math.Abs(v.Z - rz)).N;
@@ -279,7 +280,6 @@ public static class Armour
         var ub = a.UpperBelt ?? new UpperBeltInput();
         if ((ub.Mm ?? 0) > 0)
         {
-            var stack = Decks.DeckStack(design, D);
             long to = ub.ToDeck ?? 0;
             double ut = stack[(int)Math.Min(Math.Max(to, 0), stack[^1].N)].Z;
             var pieces = ExtentSpans(ub.Extent ?? "citadel", L, x0, x1);
