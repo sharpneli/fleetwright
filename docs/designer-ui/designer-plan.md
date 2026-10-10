@@ -64,8 +64,9 @@ Findings that shape the plan:
 2. **A build allocates 30–80 MB.** Moving the build off the render thread does not move its garbage collections:
    gen0/gen1 collections stop every managed thread, the render thread too. A slider dragged across ten values is
    ~0.7 GB of garbage. This needs measuring (Tracy frame times during a drag) before deciding on a fix, see Step 1.
-3. **The input limits**: `Style.CommonLimits` has `speed_kn` 8..42 and `Warship` 15..60. The warship floor goes
-   to 8, matching the common one. The shipped designs run 9–41 kn, so none is affected.
+3. **The input limits already agree**: `Style.CommonLimits` has `speed_kn` 8..42, which warships use (the 15..60
+   is the planing style's). The empty ship at 8 kn validates and builds: 30.0 × 7.9 m, 159 t, 100 shp, the same
+   two warnings. No engine change.
 4. **The empty ship is not clean**: two warnings, both true physics of a 30 m hull carrying the default bridge. See
    open question 1.
 5. **Shipgen builds are already thread-safe** (`ConcurrentBuildsAreIdentical`), and the drawing tests run in
@@ -210,8 +211,8 @@ Each step is a commit, verified with `dotnet test` and, for UI, `-screenshot -ui
 1. **Measure the GC cost.** A Tracy run of the viewer with a background loop rebuilding Dreadnought; record frame-time
    spikes with the default GC, `SustainedLowLatency` and a larger gen0. Note the result in `docs/profiling.md` and pick
    the setting. Also confirm `ShipSprites.Build` + `ShipBake` with its own device on a non-main thread.
-2. **Engine: the 8 kn floor.** `Warship`'s `speed_kn` lower limit 15 → 8. `golden-check` stays
-   371/371 (limits only validate). Add the empty design as a test: it validates and builds.
+2. ~~Engine: the 8 kn floor.~~ Not needed (finding 3). The empty design gets a test with
+   DesignDoc (Step 5): it validates and builds.
 3. **DesignWorker + DesignResult**, with tests (latest wins, ids increase, errors keep the last good ship, cache hit
    on undo). Move `DesignSession` onto it; the ship and hitbox viewers consume results and stop stalling on design
    switches.
