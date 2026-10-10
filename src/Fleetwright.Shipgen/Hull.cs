@@ -1,19 +1,49 @@
 namespace Fleetwright.Shipgen;
 
-/// <summary>geometry.Hull: the hull's planform (the main deck): half-width along the length with bow and stern tapers.</summary>
-public sealed class Hull
+/// <summary>An outline of the hull seen from above, symmetric about the centreline: its half-width along the length.</summary>
+public abstract class Planform(double length, double beam)
 {
-    public readonly double L, B;
+    /// <summary>The ship's length, and its maximum beam (whatever this outline's own widest point).</summary>
+    public readonly double L = length, B = beam;
+
+    public abstract double HalfWidth(double x);
+
+    /// <summary>Closed outline as a point list (port side stern-&gt;bow, then starboard bow-&gt;stern).</summary>
+    public List<Pt> Points(double inset = 0.0, double? maxHw = null, double? xMin = null, double? xMax = null, int n = 260)
+    {
+        double lo = xMin ?? -L / 2;
+        double hi = xMax ?? L / 2;
+        var pts = new List<(double X, double W)>();
+        for (int i = 0; i <= n; i++)
+        {
+            double x = lo + (hi - lo) * (1 - Math.Cos(Math.PI * i / n)) / 2;
+            double w = HalfWidth(x) - inset;
+            if (maxHw is double m)
+                w = Math.Min(w, m);
+            if (w > 0.01)
+                pts.Add((x, w));
+        }
+        var result = new List<Pt>(2 * pts.Count);
+        foreach (var (x, w) in pts)
+            result.Add(new Pt(x, -w));
+        for (int i = pts.Count - 1; i >= 0; i--)
+            result.Add(new Pt(pts[i].X, pts[i].W));
+        return result;
+    }
+}
+
+/// <summary>geometry.Hull: the hull's planform at its maximum beam: half-width along the length with bow and stern
+/// tapers. On a wall-sided hull it is also the main deck's outline.</summary>
+public sealed class Hull : Planform
+{
     /// <summary>The ends with every value filled in.</summary>
     public readonly HullEnd Bow, Stern;
     readonly double bowTaper, bowPower, sternTaper, sternPower, transom;
     readonly string bowShape, sternShape;
     readonly double? flare;
 
-    public Hull(HullSpec spec)
+    public Hull(HullSpec spec) : base(spec.Length, spec.Beam)
     {
-        L = spec.Length;
-        B = spec.Beam;
         Bow = spec.Bow with { Taper = spec.Bow.Taper ?? 0.33, Power = spec.Bow.Power ?? 1.6, Shape = spec.Bow.Shape ?? "pointed" };
         Stern = spec.Stern with
         {
@@ -44,7 +74,7 @@ public sealed class Hull
         return power / (power + 1);
     }
 
-    public double HalfWidth(double x)
+    public override double HalfWidth(double x)
     {
         double u = (x + L / 2) / L;
         double w;
@@ -63,29 +93,6 @@ public sealed class Hull
         else
             w = 1.0;
         return B / 2 * w;
-    }
-
-    /// <summary>Closed outline as a point list (port side stern-&gt;bow, then starboard bow-&gt;stern).</summary>
-    public List<Pt> Points(double inset = 0.0, double? maxHw = null, double? xMin = null, double? xMax = null, int n = 260)
-    {
-        double lo = xMin ?? -L / 2;
-        double hi = xMax ?? L / 2;
-        var pts = new List<(double X, double W)>();
-        for (int i = 0; i <= n; i++)
-        {
-            double x = lo + (hi - lo) * (1 - Math.Cos(Math.PI * i / n)) / 2;
-            double w = HalfWidth(x) - inset;
-            if (maxHw is double m)
-                w = Math.Min(w, m);
-            if (w > 0.01)
-                pts.Add((x, w));
-        }
-        var result = new List<Pt>(2 * pts.Count);
-        foreach (var (x, w) in pts)
-            result.Add(new Pt(x, -w));
-        for (int i = pts.Count - 1; i >= 0; i--)
-            result.Add(new Pt(pts[i].X, pts[i].W));
-        return result;
     }
 }
 

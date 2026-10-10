@@ -531,7 +531,6 @@ public sealed partial class Layout
     {
         if (n <= 1)
             return [];
-        var hull = lay.Hull;
         var cells = Enumerable.Range(0, Math.Max(0, (int)((x1 - x0) / DhCell))).Select(i => x0 + DhCell * i).ToList();
         var made = new List<Block>();
 
@@ -539,7 +538,7 @@ public sealed partial class Layout
         {
             if (support != null && !support(x))
                 return false;
-            double hw = Math.Min(hull.HalfWidth(x), hull.HalfWidth(x + DhCell)) - 0.6;
+            double hw = Math.Min(lay.DeckHalfWidth(x), lay.DeckHalfWidth(x + DhCell)) - 0.6;
             if (w / 2 > hw)
                 return false;
             var fp = Footprint.Rect(x, -w / 2, x + DhCell, w / 2);

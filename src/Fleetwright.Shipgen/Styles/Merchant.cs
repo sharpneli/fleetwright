@@ -180,7 +180,7 @@ public sealed class MerchantStyle : Style
         var funnels = new List<Funnel>();
         var boats = new List<Boat>();
         double bx0 = bxc - bdLen / 2, bx1 = bxc + bdLen / 2;
-        double hwMid = hull.HalfWidth(bxc);
+        double hwMid = lay.DeckHalfWidth(bxc);
         double wh = Math.Min(0.62 * B, 2 * (hwMid - 1.5));
         var houseIds = new List<string>();
 
@@ -199,7 +199,7 @@ public sealed class MerchantStyle : Style
         if (aftEngines)
         {
             double ex0 = -L / 2 + 0.03 * L, ex1 = -L / 2 + poopLen - 1.0;
-            House("Engine house", ex0, ex1, Math.Min(0.7 * B, 2 * (hull.HalfWidth((ex0 + ex1) / 2) - 1.5)), 1, 1.0, 1.0);
+            House("Engine house", ex0, ex1, Math.Min(0.7 * B, 2 * (lay.DeckHalfWidth((ex0 + ex1) / 2) - 1.5)), 1, 1.0, 1.0);
             House("Engine house upper", ex0 + 0.15 * (ex1 - ex0), ex1 - 0.1 * (ex1 - ex0), 0.45 * B, 2, 0.8, 0.8);
             fx = (ex0 + ex1) / 2 - 0.1 * (ex1 - ex0);
             mx = (-L / 2 + 0.02 * L + -L / 2 + poopLen) / 2;
@@ -239,7 +239,7 @@ public sealed class MerchantStyle : Style
         Armament.PlaceBatteries(lay, mounts, turretTypes, design,
             [new Armament.EndLine(-L / 2 + 0.025 * L, +1, 0.0, 180, x => DeckH(x) + 0.3, houseIds.ToList()),
              new Armament.EndLine(L / 2 - 0.035 * L, -1, 0.0, 0, x => DeckH(x) + 0.3, [])],
-            t => xs.Select(x => new Slot(x, hull.HalfWidth(x) - Armament.BodyReach(t) - 0.6, DeckH(x) + 0.3)), depth);
+            t => xs.Select(x => new Slot(x, lay.DeckHalfWidth(x) - Armament.BodyReach(t) - 0.6, DeckH(x) + 0.3)), depth);
 
         var zones = new[] { (bx1 + 1.0, L / 2 - fcLen - 1.0, +1), (-L / 2 + poopLen + 1.0, bx0 - 1.0, -1) };
         double pitch = !tanker ? Layout.Clamp(0.12 * L, 10, 22) : Layout.Clamp(0.09 * L, 8, 16);
@@ -344,7 +344,7 @@ public sealed class MerchantStyle : Style
             var (ttId, tt) = Armament.TorpedoType(tp);
             double r = tt.BarrelLen / 2 + 0.3;
             Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, (tp.Mounts.Value + 1) / 2,
-                xs.Select(x => new Slot(x, hull.HalfWidth(x) - r - 0.4, DeckH(x) + 0.3)), "T", label: "Torpedo");
+                xs.Select(x => new Slot(x, lay.DeckHalfWidth(x) - r - 0.4, DeckH(x) + 0.3)), "T", label: "Torpedo");
         }
         FireControl.Place(lay, design, blocks);
         var aaOut = new List<AaMount>();
@@ -357,7 +357,7 @@ public sealed class MerchantStyle : Style
                 new(bx1 - 0.12 * bdLen, Math.Min(0.46 * B, hwMid - 0.4) - rr - 0.2, RaisedH + Layout.LevelH * 2),
                 new(bx0 + 0.1 * bdLen, wh / 2 - rr - 0.3, roof),
             };
-            cands.AddRange(xs.Select(x => new Slot(x, hull.HalfWidth(x) - rr - 0.6, DeckH(x))));
+            cands.AddRange(xs.Select(x => new Slot(x, lay.DeckHalfWidth(x) - rr - 0.6, DeckH(x))));
             var ign = houseIds.ToList();
             Armament.PlaceAa(lay, aaOut, kind, count, cands, ignore: _ => ign);
         }

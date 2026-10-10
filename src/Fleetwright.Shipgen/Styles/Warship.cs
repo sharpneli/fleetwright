@@ -112,7 +112,7 @@ public sealed class PlaningStyle : Style
             double YOfX(double x, TurretType t)
             {
                 double w = ((t.Barrels - 1) * t.Spacing + t.BarrelW) / 2;
-                return Math.Min(hull.HalfWidth(x + t.BarrelLen / 2), hull.HalfWidth(x - t.BarrelLen / 2)) - w - 0.15;
+                return Math.Min(lay.DeckHalfWidth(x + t.BarrelLen / 2), lay.DeckHalfWidth(x - t.BarrelLen / 2)) - w - 0.15;
             }
 
             Armament.FixedTubePairs(lay, mounts, turretTypes, tp, xs, YOfX, toeDeg: 5.0);
@@ -135,7 +135,7 @@ public sealed class PlaningStyle : Style
             var (tsId, ts) = Armament.GunType(sec);
             double r = Armament.BodyReach(ts);
             Armament.SidePairs(lay, mounts, turretTypes, "secondary", tsId, ts, sec.MountsPerSide,
-                xs2.Select(x => new Slot(x, hull.HalfWidth(x) - r - 0.3, 0.2)), "S", armourMm: sec.ArmourMm!.Value);
+                xs2.Select(x => new Slot(x, lay.DeckHalfWidth(x) - r - 0.3, 0.2)), "S", armourMm: sec.ArmourMm!.Value);
         }
         FireControl.Place(lay, design, blocks);
         var aaOut = new List<AaMount>();
@@ -143,7 +143,7 @@ public sealed class PlaningStyle : Style
         {
             double rr = Geometry.AaCfg[kind].R;
             var cands = new List<Slot> { new(cx0 - rr - 0.3, rr + 0.15, 0.2), new(cx0 - rr - 0.3, 0.0, 0.2) };
-            cands.AddRange(xs2.Select(x => new Slot(x, hull.HalfWidth(x) - rr - 0.3, 0.2)));
+            cands.AddRange(xs2.Select(x => new Slot(x, lay.DeckHalfWidth(x) - rr - 0.3, 0.2)));
             cands.AddRange(xs2.Select(x => new Slot(x, 0.0, 0.2)));
             Armament.PlaceAa(lay, aaOut, kind, count, cands, spacing: 0.6);
         }

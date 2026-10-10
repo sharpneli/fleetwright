@@ -126,6 +126,15 @@ public sealed partial class Layout
         }
     }
     Hull hull = null!;
+
+    /// <summary>The hull's side h metres above the main deck, seen from above: the outline that what stands at that
+    /// height inside the hull must keep within. Hull is the widest; a wall-sided hull is Hull at every height.</summary>
+    public Planform Side(double h) => Hull;
+
+    /// <summary>The half-width of the hull deck at x (the main deck, or a raised stretch's): where what stands on it
+    /// keeps inside.</summary>
+    public double DeckHalfWidth(double x) => Side(DeckZ(x)).HalfWidth(x);
+
     public List<Mount> Mounts = [];
     public List<Block> Blocks = [];
     public List<Funnel> Funnels = [];
@@ -350,7 +359,8 @@ public sealed partial class Layout
             double xa = -Hull.L / 2, xb = Hull.L / 2;
             long k = Math.Max(2L, (long)(xb - xa));
             var xs = Enumerable.Range(0, (int)k + 1).Select(i => xa + (xb - xa) * i / k);
-            var band = Thin(xs.Where(x => Hull.HalfWidth(x) - DhInset > 0.1).Select(x => new Pt(x, Hull.HalfWidth(x) - DhInset)).ToList(), 0.05);
+            var deck = Side(0.0);
+            var band = Thin(xs.Where(x => deck.HalfWidth(x) - DhInset > 0.1).Select(x => new Pt(x, deck.HalfWidth(x) - DhInset)).ToList(), 0.05);
             var all = band.Concat(Enumerable.Reverse(band).Select(p => new Pt(p.X, -p.Y))).ToList();
             deckBand = ConvexHull(all);
         }

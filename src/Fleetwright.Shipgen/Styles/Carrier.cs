@@ -625,13 +625,13 @@ public sealed class CarrierStyle : Style
         var xs = Vdc(48).Select(v => hx0 + v * (bx1 - hx0)).ToList();
         Armament.PlaceBatteries(lay, mounts, turretTypes, design,
             [new Armament.EndLine(L / 2 - 0.08 * L, -1, 0.0, 0, x => 0.3, []), new Armament.EndLine(hx0 + 0.5, +1, 0.0, 180, x => roof, hangarIds)],
-            t => xs.Select(x => new Slot(x, hull.HalfWidth(x) - Armament.BodyReach(t) - 0.6, 0.0)), depth);
+            t => xs.Select(x => new Slot(x, lay.DeckHalfWidth(x) - Armament.BodyReach(t) - 0.6, 0.0)), depth);
         if (design.Torpedoes is { Mounts: > 0 } tp)
         {
             var (ttId, tt) = Armament.TorpedoType(tp);
             double r = tt.BarrelLen / 2 + 0.3;
             Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, (tp.Mounts.Value + 1) / 2,
-                xs.Select(x => new Slot(x, hull.HalfWidth(x) - r - 0.4, 0.3)), "T", label: "Torpedo");
+                xs.Select(x => new Slot(x, lay.DeckHalfWidth(x) - r - 0.4, 0.3)), "T", label: "Torpedo");
         }
         FireControl.Place(lay, design, blocks);
         var aaOut = new List<AaMount>();
@@ -639,7 +639,7 @@ public sealed class CarrierStyle : Style
         {
             double rr = Geometry.AaCfg[kind].R;
             var cands = Vdc(24).Select(v => new Slot(hx0 + v * (hx1 - hx0), hhw - rr - 0.3, roof)).ToList();
-            cands.AddRange(xs.Select(x => new Slot(x, hull.HalfWidth(x) - rr - 0.5, 0.0)));
+            cands.AddRange(xs.Select(x => new Slot(x, lay.DeckHalfWidth(x) - rr - 0.5, 0.0)));
             Armament.PlaceAa(lay, aaOut, kind, count, cands, ignore: _ => hangarIds);
         }
 

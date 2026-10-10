@@ -72,10 +72,9 @@ public sealed partial class Layout
     public static RaisedStretch AddRaised(Layout lay, Design design, string rid, double x0, double x1, long levels = 1,
         (long Aft, long Fwd)? breaks = null)
     {
-        var hull = lay.Hull;
-        double L = hull.L;
+        double L = lay.Hull.L;
         double h = levels * LevelH;
-        var pts = hull.Points(inset: RaisedInset, xMin: x0, xMax: x1);
+        var pts = lay.Side(h).Points(inset: RaisedInset, xMin: x0, xMax: x1);
         var stretch = new RaisedStretch(rid, x0, x1, levels);
         lay.Raised.Add(stretch);
         lay.Geo.Raised = lay.Raised;
@@ -84,7 +83,7 @@ public sealed partial class Layout
         var (area, xc) = Geometry.PolygonCentroid(pts);
         var brk = breaks ?? (levels, levels);
         double endM2 = new[] { (x0, brk.Aft), (x1, brk.Fwd) }.Where(t => -L / 2 + 0.5 < t.Item1 && t.Item1 < L / 2 - 0.5)
-            .Sum(t => 2 * hull.HalfWidth(t.Item1) * t.Item2 * LevelH);
+            .Sum(t => 2 * lay.Side(h / 2).HalfWidth(t.Item1) * t.Item2 * LevelH);
         double sideM2 = 2 * (x1 - x0) * h;
         var c = HullWeight.ConstructionOf(design);
         double t = HullWeight.RaisedT(L, c, area, sideM2, endM2, HullWeight.PlatingOf(design).ShellMm);

@@ -91,11 +91,14 @@ public sealed partial class Layout
             return;
         bats = bats.OrderBy(bt => bt.Upper ? 1 : 0).ToList();
         double B = hull.B;
+        // the side where a casemate's gun ports are: half a deck below the main deck, or above it in a raised stretch;
+        // a housing on the main deck keeps inside the deck's edge
+        Planform lowSide = lay.Side(-LevelH / 2), highSide = lay.Side(LevelH / 2), deckEdge = lay.Side(0.0);
         var barbettes = mounts.Where(m => m.Kind == "main" && m.T.HasBarbette).ToList();
 
-        bool LowerOk(double x, double rc)
+        bool SideOk(Planform side, double x, double rc)
         {
-            double hw = hull.HalfWidth(x);
+            double hw = side.HalfWidth(x);
             if (hw < CasemateBeam * B / 2 || hw - 2 * rc < 0.5)
                 return false;
             var boxes = new[] { Footprint.Rect(x - rc, hw - 2 * rc, x + rc, hw), Footprint.Rect(x - rc, -hw, x + rc, -hw + 2 * rc) };
@@ -104,7 +107,7 @@ public sealed partial class Layout
 
         (double Yo, double D) Housing(double x0, double x1, double rc)
         {
-            double yo = Enumerable.Range(0, 9).Select(k => hull.HalfWidth(x0 + (x1 - x0) * k / 8)).Min() - 0.3;
+            double yo = Enumerable.Range(0, 9).Select(k => deckEdge.HalfWidth(x0 + (x1 - x0) * k / 8)).Min() - 0.3;
             return (yo, 1.6 * rc);
         }
 
@@ -112,10 +115,10 @@ public sealed partial class Layout
 
         bool UpperOk(double x, double rc)
         {
-            if (hull.HalfWidth(x) < CasemateBeam * B / 2)
+            if (deckEdge.HalfWidth(x) < CasemateBeam * B / 2)
                 return false;
             if (InRaised(x, rc))
-                return LowerOk(x, rc);
+                return SideOk(highSide, x, rc);
             double x0 = x - 1.05 * rc, x1 = x + 1.05 * rc;
             var (yo, d) = Housing(x0, x1, rc);
             if (yo - d < 0.5)
@@ -132,7 +135,7 @@ public sealed partial class Layout
         }
 
         var xs = Enumerable.Range((int)-hull.L, 2 * (int)hull.L + 1).Select(k => 0.5 * k).ToList();
-        var elig = xs.Where(x => hull.HalfWidth(x) >= CasemateBeam * B / 2).ToList();
+        var elig = xs.Where(x => lowSide.HalfWidth(x) >= CasemateBeam * B / 2).ToList();
         double c = (elig.Count > 0 ? (elig.Min() + elig.Max()) / 2 : 0.0) + lay.Geo.Shift;
         xs = xs.OrderBy(x => Math.Abs(x - c)).ToList();
         var okCache = new Dictionary<(double, double, bool), bool>();
@@ -142,7 +145,7 @@ public sealed partial class Layout
         {
             var key = (x, rc, upper);
             if (!okCache.TryGetValue(key, out var v))
-                okCache[key] = v = upper ? UpperOk(x, rc) : LowerOk(x, rc);
+                okCache[key] = v = upper ? UpperOk(x, rc) : SideOk(lowSide, x, rc);
             return v;
         }
 
@@ -245,7 +248,7 @@ public sealed partial class Layout
                     galleries.Add([x - 1.05 * rc, x + 1.05 * rc, hy, hd]);
                 }
                 else
-                    yo = hull.HalfWidth(x);
+                    yo = (upper ? highSide : lowSide).HalfWidth(x);
                 var (bse, top) = upper ? (0.0, LevelH) : (-LevelH, 0.0);
                 foreach (int side in new[] { 1, -1 })
                 {

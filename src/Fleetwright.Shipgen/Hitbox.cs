@@ -88,7 +88,7 @@ public static class Hitbox
             if (!t.HasBarbette)
                 continue;
             double br = Geometry.BarbetteR(t);
-            bool inHull = Math.Abs(m.Y) + br <= lay.Hull.HalfWidth(m.X) && m.Base < fdBase;
+            bool inHull = Math.Abs(m.Y) + br <= lay.DeckHalfWidth(m.X) && m.Base < fdBase;
             c.Barbette = $"{m.Id} barbette";
             yield return new Component
             {
@@ -239,7 +239,7 @@ public static class Hitbox
                     ? lay.Raised.Select(st => new RaisedReport(st.Id, Math.Round(st.X0, 3), Math.Round(st.X1, 3), Math.Round(st.Levels * Geometry.DeckPitch, 2))).ToList()
                     : null,
             },
-            Hull = R3(lay.Hull.Points()), Bow = lay.Hull.Bow, Stern = lay.Hull.Stern, Hydrostatics = inner.Hydrostatics,
+            Hull = R3(lay.Side(0.0).Points()), Bow = lay.Hull.Bow, Stern = lay.Hull.Stern, Hydrostatics = inner.Hydrostatics,
             HullForm = new HullFormReport(Math.Round(form.Cm, 3), Math.Round(form.Cwp, 3), form.Table().Select(s => new StationReport(Math.Round(s.X, 3),
                 s.Z.Select(z => Math.Round(z - D, 2)).ToArray(), s.Y.Select(y => Math.Round(y, 3)).ToArray())).ToList()),
             Armour = armour, Plating = inner.Plating, TurretTypes = lay.TurretTypes, Components = comps,

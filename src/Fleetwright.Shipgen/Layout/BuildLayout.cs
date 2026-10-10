@@ -388,7 +388,7 @@ public sealed partial class Layout
         {
             if (g.Reach + 0.6 > B / 2)
                 return true;
-            return hull.HalfWidth(x) >= g.Reach + 0.6;
+            return lay.DeckHalfWidth(x) >= g.Reach + 0.6;
         }
 
         double bowPref, bowMin, stPref, stMin;
@@ -480,7 +480,7 @@ public sealed partial class Layout
         double bx0 = bx1 - lb;
         double fz0 = midAft + (la != 0 ? la + 1.5 : 1.0);
         double fz1 = bx0 - 1.5;
-        double yW = nw != 0 ? Enumerable.Range(0, 21).Select(k => hull.HalfWidth(fz0 + (fz1 - fz0) * k / 20)).Min() - gRef!.Reach - 0.6 : 0.0;
+        double yW = nw != 0 ? Enumerable.Range(0, 21).Select(k => lay.DeckHalfWidth(fz0 + (fz1 - fz0) * k / 20)).Min() - gRef!.Reach - 0.6 : 0.0;
 
         (double LoX, double HiX, double X) PlanFront(List<double> widths, double y)
         {
@@ -504,7 +504,7 @@ public sealed partial class Layout
                     double x = xx - WingSide(i, -1, y);
                     double hw = B;
                     foreach (var xw in g.Echelon ? new[] { x, x - WingStagger(g, y) } : [x])
-                        hw = Math.Min(hw, Math.Min(hull.HalfWidth(xw + -g.Reach), Math.Min(hull.HalfWidth(xw + 0.0), hull.HalfWidth(xw + g.Reach))));
+                        hw = Math.Min(hw, Math.Min(lay.DeckHalfWidth(xw + -g.Reach), Math.Min(lay.DeckHalfWidth(xw + 0.0), lay.DeckHalfWidth(xw + g.Reach))));
                     double lim = hw - g.Reach - 0.6;
                     room = Math.Min(room, g.Reach == gRef.Reach ? lim : lim + g.Reach - gRef.Reach);
                 }
@@ -897,7 +897,7 @@ public sealed partial class Layout
             double inner = (blocks.Where(b => b.Level >= 2).Select(b => b.W / 2).Append(fw / 2)
                 .Concat(M.Select(g => g.Reach))).Max() + rsReach + 0.4;
 
-            double OuterAt(double x) => Math.Min(hull.HalfWidth(x + -rsReach), Math.Min(hull.HalfWidth(x + 0.0), hull.HalfWidth(x + rsReach))) - rsReach - 0.6;
+            double OuterAt(double x) => Math.Min(lay.DeckHalfWidth(x + -rsReach), Math.Min(lay.DeckHalfWidth(x + 0.0), lay.DeckHalfWidth(x + rsReach))) - rsReach - 0.6;
 
             double YAt(double x) => Math.Max(inner, inner + 0.55 * (OuterAt(x) - inner));
             var xsProbe = Enumerable.Range(0, 41).Select(k => xLo + (xHi - xLo) * k / 40).ToList();
@@ -1040,7 +1040,7 @@ public sealed partial class Layout
             }
             if (la != 0 && DeckFree(ax0 + la, rx0))
                 (rx0, aftOn) = (Math.Min(rx0, ax0), true);
-            double hwMax = Enumerable.Range(0, 21).Select(k => hull.HalfWidth(rx0 + (rx1 - rx0) * k / 20)).Max();
+            double hwMax = Enumerable.Range(0, 21).Select(k => lay.DeckHalfWidth(rx0 + (rx1 - rx0) * k / 20)).Max();
             pieces.Add(("Deckhouse", rx0, rx1, Math.Min(rw, 2 * (hwMax - DhInset)), "deckhouse"));
         }
         if (dh is { } dhv)
@@ -1050,7 +1050,7 @@ public sealed partial class Layout
 
         Footprint DhRect(double x0_, double x1_)
         {
-            double hw = Math.Min(hull.HalfWidth(x0_), hull.HalfWidth(x1_)) - 0.6;
+            double hw = Math.Min(lay.DeckHalfWidth(x0_), lay.DeckHalfWidth(x1_)) - 0.6;
             return Footprint.Rect(x0_, -hw, x1_, hw);
         }
 
@@ -1115,7 +1115,7 @@ public sealed partial class Layout
                 {
                     if (placed >= ntp)
                         break;
-                    double y = hull.HalfWidth(x) - tt!.R - 0.8;
+                    double y = lay.DeckHalfWidth(x) - tt!.R - 0.8;
                     if (y < sweep)
                         continue;
                     var fps = new[] { Footprint.Circle(x, y, sweep), Footprint.Circle(x, -y, sweep) };
@@ -1146,7 +1146,7 @@ public sealed partial class Layout
                         break;
                     var fp = Footprint.Circle(x, 0, sweep);
                     double dz = lay.DeckZ(x, sweep);
-                    if (lay.Free(fp, 0.3) && lay.Clear(fp, dz + 1.4) && hull.HalfWidth(x) > tt!.R + 0.5)
+                    if (lay.Free(fp, 0.3) && lay.Clear(fp, dz + 1.4) && lay.DeckHalfWidth(x) > tt!.R + 0.5)
                     {
                         string mid = $"T{placed + 1}";
                         mounts.Add(new Mount { Id = mid, Kind = "torpedo", Type = ttId!, T = tt, X = x, Base = dz + 0.3, Top = dz + 1.4, Rest = 90 });
@@ -1217,7 +1217,7 @@ public sealed partial class Layout
             double xd = L / 2 - 0.06 * L;
             while (xd > -L / 2 + 2)
             {
-                double yy = hull.HalfWidth(xd) - rr - 0.5;
+                double yy = lay.DeckHalfWidth(xd) - rr - 0.5;
                 if (yy > rr + 0.5)
                     Add(Math.Abs(xd - machC) / L + AaDeckPen, new Slot(xd, yy, lay.DeckZ(xd, rr)));
                 xd -= 0.5;
@@ -1226,7 +1226,7 @@ public sealed partial class Layout
             foreach (var (_, i) in scored)
                 cands.Add(slots[i]);
             double sx = -L / 2 + rr + 2.5;
-            if (hull.HalfWidth(sx) > rr + 0.6)
+            if (lay.DeckHalfWidth(sx) > rr + 0.6)
                 cands.Add(new Slot(sx, 0.0, lay.DeckZ(sx, rr)));
         }
 
