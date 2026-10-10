@@ -27,7 +27,6 @@ Notes for the next session. Delete or replace this file once its items are picke
 3. **Smaller leftovers:**
    - In the viewer, turret shadows and the height-map shadow darken twice where they overlap. Python took the max.
    - The bake's opacity groups must hold opaque, unnested children; it throws otherwise.
-   - README and the game csproj mention `Content/Models/`, which doesn't exist; there are no glTF files in the repo.
 4. **Later (user):** the game-facing API of Shipgen and the asset path, refits, texture compression.
 
 ## Regression commands (all from the repo root, `-c Release`)

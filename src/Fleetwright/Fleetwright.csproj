@@ -27,9 +27,6 @@
     <None Include="$(ContentRoot)Shaders\Compiled\**\*"
           Link="Content\Shaders\Compiled\%(RecursiveDir)%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest" />
-    <None Include="$(ContentRoot)Models\**\*"
-          Link="Content\Models\%(RecursiveDir)%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

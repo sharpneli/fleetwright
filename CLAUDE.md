@@ -9,37 +9,18 @@ dotnet build          # whole solution (Fleetwright.slnx)
 dotnet test
 ```
 
-## Run
+## Run: the ship viewer
 
 ```bash
-dotnet run --project src/Fleetwright    # the ship viewer on shipgen/designs/bismarck.json (see Ship viewer)
+dotnet run --project src/Fleetwright
+dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-navy=kure] [-era=wwii]
+dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
 ```
 
-## Screenshots
-
-Capture a specific frame as a PNG image:
-
-```bash
-# Capture frame 30 to screenshot.png
-dotnet run --project src/Fleetwright -- -screenshot=30
-
-# With a design and custom output path
-dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json -screenshot=30 -output=yamato.png
-```
-
-The application exits after capturing the screenshot.
-
-## Ship viewer
-
-```bash
-dotnet run --project src/Fleetwright -- -ship=shipgen/designs/bismarck.json [-navy=kure] [-era=wwii]
-dotnet run --project src/Fleetwright -- -ship=shipgen/designs/bismarck.json -screenshot=30 -output=ship.png
-```
-
-The default launch; `-ship=` picks the design (without it, `shipgen/designs/bismarck.json` is looked up from the
-working directory and the exe's folder upwards). Builds, bakes and shows a design from the baked textures (mips,
-turrets through their arcs, height-map shadows); the "Ship" panel switches design, look, mip level, turrets and sun.
-Wheel zooms, left drag pans, Escape quits.
+The exe opens the ship viewer. `-ship=` picks the design; without it, `shipgen/designs/bismarck.json` is looked up
+from the working directory and the exe's folder upwards. It builds, bakes and shows a design from the baked textures
+(mips, turrets through their arcs, height-map shadows); the "Ship" panel switches design, look, mip level, turrets
+and sun. Wheel zooms, left drag pans, F2 shows the stats window, Escape quits.
 
 ## Shipgen CLI
 
@@ -82,11 +63,11 @@ src/
   Fleetwright/                # the game exe
     Program.cs                #   entry point, command-line parsing
     Engine.cs                 #   Sdl3GpuEngine: init, resources, render loop, PbrMaterial
-    GltfLoader.cs             #   glTF/GLB loader (SharpGLTF)
+    GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
-    Camera.cs                 #   FPS camera
+    Camera.cs                 #   FPS camera (unused; to become the top-down Earth camera)
     ShipViewer.cs             #   the ship viewer (the default launch), a test tool for Shipgen
-  Fleetwright.Gpu/            # GPU helpers shared by the game and the Shipgen renderer
+  Fleetwright.Gpu/            # GPU helpers for the game exe
     GpuTypes.cs               #   buffers, textures, samplers, DrawContext, SceneNode, MeshNode, materials
     GpuPipelineBuilder.cs     #   fluent pipeline builder
     GpuMath.cs                #   math helpers (perspective, lookAt)
@@ -104,6 +85,7 @@ src/
     Painter.cs, HullArt.cs, TurretArt.cs, Clutter.cs   # shipgen.py's drawing and clutter.py
     Sprite.cs                 #   the height map and sprite.json (ShipSprites.Build)
     ShipRng.cs                #   the drawing's seeded RNG (per feature)
+    RenderTypes.cs            #   Palette, Shapes and the sprite.json records
     Bake/                     #   the GPU bake: Lower (scene -> triangles), Stroker, Glyphs, GpuBaker (SDL_GPU), PNG, mips
     Golden/                   #   the SVG comparer and the drawing's golden checks
   Fleetwright.Shipgen.Cli/    # `shipgen` command, the port's test harness
@@ -113,10 +95,9 @@ tests/
 shipgen/                      # the port's test data
   designs/                    #   the 71 designs, and fuzz/ (300 mutants)
   golden/                     #   Python's output (README.md there)
-Content/                      # shared by all exes, copied into each exe's output folder
+Content/                      # copied into the game's output folder; the bake shaders are embedded in Shipgen.Render
   Shaders/Source/             #   GLSL sources
   Shaders/Compiled/           #   SPIR-V binaries (checked in)
-  Models/                     #   glTF/GLB assets
 docs/shipgen/                 # the ship designer: inputs, outputs, conventions, decisions, TODO, its research notes
 research/                     # research notes, see below
 ```
@@ -125,16 +106,12 @@ Namespaces follow the project names: `Fleetwright`, `Fleetwright.Gpu`, `Fleetwri
 
 Content paths in code (`"Content/Shaders/Compiled/..."`) resolve against `AppContext.BaseDirectory`, not the working directory.
 
-## Renderer features
+## Renderer
 
-- HDR rendering with R16G16B16A16 color target
-- 8x MSAA
-- Reverse-Z depth buffer
-- PBR materials (metallic-roughness)
-- glTF/GLB loading via SharpGLTF
-- Hierarchical scene graph
-- FPS-style camera with mouse look
-- Dear ImGui overlay (stats window)
+- HDR R16G16B16A16 color target, 8x MSAA, resolved and blitted to the swapchain
+- The ship viewer draws into it. Without a viewer the engine draws its scene graph instead (meshes with a base color
+  texture and spherical-harmonics ambient light, `PbrMaterial` in Engine.cs), but nothing fills the scene today
+- Dear ImGui overlay; Tracy zones in the frame loop
 
 ## Shaders
 

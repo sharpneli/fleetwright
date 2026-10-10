@@ -213,7 +213,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
     // ImGui
     private ImGuiRenderer? _imguiRenderer;
     private bool _showDemoWindow = true;
-    private bool _showStatsWindow = true;
+    private bool _showStatsWindow;
 
     /// <summary>
     /// Gets the GPU device handle.
@@ -1166,21 +1166,23 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
     private void BuildImGuiUI()
     {
-        // Stats window
-        ImGui.SetNextWindowPos(new Vector2(10, 10), ImGuiCond.Always);
-        ImGui.SetNextWindowSize(new Vector2(250, 150), ImGuiCond.Always);
+        // Stats window (F2 toggles, its close button hides it)
+        if (_showStatsWindow)
+        {
+            ImGui.SetNextWindowPos(new Vector2(10, 10), ImGuiCond.Always);
+            ImGui.SetNextWindowSize(new Vector2(250, 150), ImGuiCond.Always);
 
-        bool windowOpen = true;
-        ImGui.Begin("Stats", ref windowOpen, ImGuiWindowFlags.NoCollapse);
-        ImGui.Text($"Frame: {FrameNumber}");
-        ImGui.Text($"Frame Time: {FrameTime:F2} ms");
-        ImGui.Text($"FPS: {(FrameTime > 0 ? 1000.0f / FrameTime : 0):F1}");
-        ImGui.Separator();
-        ImGui.Text($"Draw Calls: {DrawCalls}");
-        ImGui.Text($"Triangles: {TriangleCount}");
-        ImGui.Separator();
-        ImGui.Text($"DrawGeometry: {DrawGeometryTimeMs:F3} ms");
-        ImGui.End();
+            ImGui.Begin("Stats", ref _showStatsWindow, ImGuiWindowFlags.NoCollapse);
+            ImGui.Text($"Frame: {FrameNumber}");
+            ImGui.Text($"Frame Time: {FrameTime:F2} ms");
+            ImGui.Text($"FPS: {(FrameTime > 0 ? 1000.0f / FrameTime : 0):F1}");
+            ImGui.Separator();
+            ImGui.Text($"Draw Calls: {DrawCalls}");
+            ImGui.Text($"Triangles: {TriangleCount}");
+            ImGui.Separator();
+            ImGui.Text($"DrawGeometry: {DrawGeometryTimeMs:F3} ms");
+            ImGui.End();
+        }
 
         if (Viewer != null)
         {

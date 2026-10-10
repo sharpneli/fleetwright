@@ -18,7 +18,7 @@ dotnet run --project src/Fleetwright -- -screenshot=30                      # sa
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design shipgen/designs/bismarck.json --out out_designs --previews
 ```
 
-Controls: wheel zooms, left drag pans, the "Ship" panel picks the design and look, Escape quits.
+Controls: wheel zooms, left drag pans, the "Ship" panel picks the design and look, F2 shows stats, Escape quits.
 
 ## Layout
 
