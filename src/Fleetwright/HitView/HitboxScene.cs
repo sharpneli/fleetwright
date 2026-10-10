@@ -51,11 +51,11 @@ public sealed unsafe class HitboxScene : IScene
     /// <summary>hitview's views (bearing, elevation), and a plan from above.</summary>
     static readonly (string Name, float Bearing, float Elevation)[] Views =
     [
-        ("bow", 35, 28), ("quarter", 215, 24), ("side", 90, 0), ("internal", 55, 35), ("plan", 90, 89.9f), ("ahead", 0, 4),
+        ("bow", 35, 28), ("quarter", 215, 24), ("side", 90, 0), ("internal", 55, 35), ("plan", 90, 89.9f), ("ahead", 0, 4), ("astern", 180, 4),
     ];
 
     /// <summary><paramref name="view"/> and <paramref name="show"/> name a view and a preset to start with (the
-    /// buttons' names: bow, quarter, side, internal, plan, ahead (the sections head on); all, outside, internal, rooms, armour).</summary>
+    /// buttons' names: bow, quarter, side, internal, plan, ahead and astern (the sections head on); all, outside, internal, rooms, armour).</summary>
     public HitboxScene(SDL_GPUDevice* device, DesignSession session, string? view = null, string? show = null)
     {
         this.session = session;

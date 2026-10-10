@@ -15,7 +15,7 @@ dotnet test
 dotnet run --project src/Fleetwright
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
-dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead] [-show=all|outside|internal|rooms|armour]
+dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour]
 ```
 
 The exe opens the ship viewer. `-ship=` picks the design; without it, it shows `Content/Designs/bismarck.json` next to
