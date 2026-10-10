@@ -70,6 +70,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- svg-check        
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- fuzz shipgen/designs/*.json --cases 1600   # robustness
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- verify out_designs/*  # sprites vs hitboxes
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check          # every design's sprite.json
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shell-test shipgen/designs/bismarck.json [--gratings]   # shells at the citadel: leaks through neither armour nor water
 ```
 
 `golden-check` must stay at 371 of 371 for any change to `Fleetwright.Shipgen` that isn't a deliberate fix (fixes

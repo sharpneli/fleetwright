@@ -49,6 +49,10 @@ public static class Program
         shipgen verify DIR...
             check `design` output: turret sprites against their hitboxes at four angles, raised blocks and funnels
             opaque inside their hitboxes, the hull image against the hull outline, the subdivision and traverses
+        shipgen shell-test DESIGN.json... [--shells 200000] [--seed 1] [--show 15] [--gratings] [--no-limits]
+            toss shells at each design's citadel from every bearing, falling 0-50 degrees, and flag any that reach a
+            citadel cell through neither armour nor water (exit 1 if any do); --gratings closes the uptakes'
+            openings in the armour decks
         shipgen svg-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
             every case's SVGs against golden/svg (Python's drawing with the port's RNG)
         shipgen sprite-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
@@ -79,6 +83,7 @@ public static class Program
                 "fuzz" => FuzzCmd(a),
                 "fuzz-one" => FuzzOne(a),
                 "verify" => VerifyCmd(a),
+                "shell-test" => ShellTestCmd(a),
                 "bake" => BakeCmd(a),
                 "png-check" => PngCheck(a),
                 "svg-check" => Check(a, RenderGolden.CheckSvgs),
@@ -117,7 +122,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];
@@ -639,5 +644,26 @@ public static class Program
         }
         Console.WriteLine(worst > 0.85 ? "\nALL OK" : "\nSOME MISMATCH");
         return worst > 0.85 ? 0 : 1;
+    }
+
+    static int ShellTestCmd(Args a)
+    {
+        int shells = a.Int("shells", 200000), seed = a.Int("seed", 1), show = a.Int("show", 15), leaky = 0;
+        foreach (var p in a.Positional)
+        {
+            var design = LoadDesign(p);
+            if (ShipDesign.Validate(design, !a.Has("no-limits")) is { Count: > 0 } errs)
+            {
+                Console.WriteLine($"{p}: invalid input:\n  " + string.Join("\n  ", errs));
+                continue;
+            }
+            var sw = Stopwatch.StartNew();
+            var r = ShellTest.Run(ShipDesign.Build(design).Hitboxes, shells, seed, a.Has("gratings"));
+            Console.Write(ShellTest.Text(design.Id ?? p, r, show));
+            Console.WriteLine($"  ({sw.Elapsed.TotalSeconds:F1} s)");
+            leaky += r.Leaks.Count > 0 ? 1 : 0;
+        }
+        Console.WriteLine(leaky == 0 ? "\nNO LEAKS" : $"\n{leaky} DESIGN(S) LEAK");
+        return leaky == 0 ? 0 : 1;
     }
 }
