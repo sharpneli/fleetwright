@@ -30,6 +30,10 @@ public sealed unsafe partial class DesignerScene
     static readonly string[] DigitText = ["0", "1", "2", "3", "4", "5", "6", "7"];
     static readonly string[] TemplateLabels = ["Plant", "Hull", "Crew", "Armour"];
 
+    // the plan and profile's overlays: arcs of fire, armour plates, magazines, tags (A, R, M, T)
+    bool showArcs = true, showArmour = true, showMags, showTags = true;
+    static readonly (string Key, string Label)[] OverlayNames = [("A", "Arcs"), ("R", "Armour"), ("M", "Mags"), ("T", "Tags")];
+
     readonly bool[] expanded = [true, true, true, true, true, true, true, true];   // the outliner's sections showing their items
     string? pendingPopup;   // a popup a menu asked for, opened in the designer's own window
 
@@ -107,9 +111,32 @@ public sealed unsafe partial class DesignerScene
         else if (io.KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.S))
             AskSave();
         else if (!io.KeyCtrl)
+        {
             for (int i = 0; i < Sections.Length; i++)
                 if (ImGui.IsKeyPressed(ImGuiKey._0 + i))
                     Open(i);
+            if (ImGui.IsKeyPressed(ImGuiKey.A))
+                ToggleOverlay(0);
+            if (ImGui.IsKeyPressed(ImGuiKey.R))
+                ToggleOverlay(1);
+            if (ImGui.IsKeyPressed(ImGuiKey.M))
+                ToggleOverlay(2);
+            if (ImGui.IsKeyPressed(ImGuiKey.T))
+                ToggleOverlay(3);
+        }
+    }
+
+    bool OverlayOn(int i) => i switch { 0 => showArcs, 1 => showArmour, 2 => showMags, _ => showTags };
+
+    void ToggleOverlay(int i)
+    {
+        switch (i)
+        {
+            case 0: showArcs = !showArcs; break;
+            case 1: showArmour = !showArmour; break;
+            case 2: showMags = !showMags; break;
+            default: showTags = !showTags; break;
+        }
     }
 
     void Undo()
@@ -267,6 +294,10 @@ public sealed unsafe partial class DesignerScene
                 SetUnits(UnitSystem.Metric);
             if (ImGui.MenuItem("Imperial", null, units == UnitSystem.Imperial))
                 SetUnits(UnitSystem.Imperial);
+            ImGui.Separator();
+            for (int i = 0; i < OverlayNames.Length; i++)
+                if (ImGui.MenuItem(OverlayNames[i].Label, OverlayNames[i].Key, OverlayOn(i)))
+                    ToggleOverlay(i);
             ImGui.Separator();
             if (ImGui.MenuItem(snap!.Style + "…"))
             {
@@ -613,16 +644,29 @@ public sealed unsafe partial class DesignerScene
         Offscreen(ref profileTarget, profileSize);
         var tint = worker.Busy ? new Vector4(1, 1, 1, 0.75f) : Vector4.One;
 
-        if (BeginPane("##plan", "PLAN & PROFILE", "bow to the right", pos, new Vector2(size.X, planH), scroll: false))
+        if (BeginPane("##plan", "PLAN & PROFILE", null, pos, new Vector2(size.X, planH), scroll: false))
         {
+            var pdl = ImGui.GetWindowDrawList();
             ImGui.SetCursorPos(new Vector2(pad, pad));
             var p = ImGui.GetCursorScreenPos();
             ImGui.Image((nint)topTarget!.Resolve, topSize, Vector2.Zero, Vector2.One, tint);
-            ScaleBar(ImGui.GetWindowDrawList(), p + new Vector2(P(10), topH - P(12)), topView.Zoom);
             ImGui.SetCursorPos(new Vector2(pad, pad + topH + pad));
+            var pq = ImGui.GetCursorScreenPos();
             ImGui.Image((nint)profileTarget!.Resolve, profileSize, Vector2.Zero, Vector2.One, tint);
+            if (s.Over is { } ov && sprite.Meta != null)
+            {
+                pdl.PushClipRect(p, p + topSize, true);
+                PlanOverlays(pdl, p, ov);
+                pdl.PopClipRect();
+                pdl.PushClipRect(pq, pq + profileSize, true);
+                if (showArmour)
+                    ArmourOverlay(pdl, pq, ov);
+                pdl.PopClipRect();
+            }
+            ScaleBar(pdl, p + new Vector2(P(10), topH - P(12)), topView.Zoom);
         }
         EndPane();
+        OverlayToggles(pos + new Vector2(size.X, 0));
 
         float tabY = pos.Y + planH + P(4);
         Tabs(new Vector2(pos.X + P(4), tabY), size.X - P(8));
@@ -647,6 +691,140 @@ public sealed unsafe partial class DesignerScene
         else
             Flow("##panel", inner, s.Panel, columns: 0);
         ImGui.PopStyleVar();
+    }
+
+    /// <summary>The overlay toggles at the right end of the plan's title bar (<paramref name="topRight"/>).</summary>
+    void OverlayToggles(Vector2 topRight)
+    {
+        var dl = ImGui.GetWindowDrawList();
+        float x = topRight.X - P(6);
+        for (int i = OverlayNames.Length - 1; i >= 0; i--)
+        {
+            var (key, label) = OverlayNames[i];
+            bool on = OverlayOn(i);
+            float w = P(22) + Width(UiFonts.SansSmall, label);
+            x -= w;
+            var a = new Vector2(x, topRight.Y + P(3));
+            ImGui.SetCursorPos(a);
+            ImGui.PushID(i);
+            if (ImGui.InvisibleButton("##ov", new Vector2(w, P(15))))
+                ToggleOverlay(i);
+            bool hover = ImGui.IsItemHovered();
+            ImGui.PopID();
+            var sp = ImGui.GetItemRectMin();
+            var top = on ? T.BrassDark : new Vector4(0.18f, 0.22f, 0.26f, 1);
+            var bottom = on ? T.BrassDarker : new Vector4(0.137f, 0.169f, 0.2f, 1);
+            dl.AddRectFilledMultiColor(sp, sp + new Vector2(w, P(15)), T.U32(top), T.U32(top), T.U32(bottom), T.U32(bottom));
+            dl.AddRect(sp, sp + new Vector2(w, P(15)), T.U32(T.Edge));
+            var fg = on ? new Vector4(0.94f, 0.835f, 0.54f, 1) : hover ? T.Text : T.Muted;
+            dl.AddRect(sp + V(3, 2), sp + V(14, 13), T.U32(fg), P(2));
+            Text(dl, UiFonts.SansSmall, sp + new Vector2(P(5), (P(15) - UiFonts.SansSmall.FontSize) / 2), fg, key);
+            Text(dl, UiFonts.SansSmall, sp + new Vector2(P(18), (P(15) - UiFonts.SansSmall.FontSize) / 2), fg, label);
+            x -= P(3);
+        }
+    }
+
+    /// <summary>The plan's overlays: the length overall over the ship, the arcs of fire, the mounts' tags. Ship metres
+    /// map to the image as the sprite renderer maps them (bow right, starboard down, the ship's middle at the middle).</summary>
+    void PlanOverlays(ImDrawListPtr dl, Vector2 img, Overlay ov)
+    {
+        float z = topView.Zoom;
+        var mid = img + topSize / 2;
+        Vector2 Px(float x, float y) => mid + new Vector2(x * z, y * z);
+        if (showArcs)
+            foreach (var m in ov.Mounts)
+            {
+                float r = ov.Length * (m.Main ? 0.13f : 0.065f) * z;
+                foreach (var (from, to) in m.Arcs)
+                    Sector(dl, Px(m.X, m.Y), r, from, to, m.Main);
+            }
+        if (showTags)
+        {
+            // the length overall, with ticks at the ends, over the ship
+            float y = img.Y + P(14);
+            float x0 = Px(-ov.Length / 2, 0).X, x1 = Px(ov.Length / 2, 0).X;
+            uint line = T.U32(T.PlanLine);
+            dl.AddLine(new Vector2(x0, y), new Vector2(x1, y), line);
+            dl.AddLine(new Vector2(x0, y - P(5)), new Vector2(x0, y + P(5)), line);
+            dl.AddLine(new Vector2(x1, y - P(5)), new Vector2(x1, y + P(5)), line);
+            float tw = Width(UiFonts.Mono, ov.Dimensions);
+            var tp = new Vector2((x0 + x1 - tw) / 2, y - UiFonts.Mono.FontSize / 2);
+            dl.AddRectFilled(tp - V(6, 0), tp + new Vector2(tw + P(6), UiFonts.Mono.FontSize), T.U32(T.Plan));
+            Text(dl, UiFonts.Mono, tp, new Vector4(0.81f, 0.89f, 0.95f, 1), ov.Dimensions);
+            foreach (var m in ov.Mounts)
+            {
+                // main turrets tagged off the port side, the others just outboard of themselves
+                var at = m.Main ? Px(m.X, -ov.Beam / 2) - new Vector2(0, P(14)) : Px(m.X, m.Y) + new Vector2(0, m.Y > 0 ? P(12) : -P(12));
+                Tag(dl, at, m.Tag, m.Main);
+            }
+        }
+    }
+
+    static void Tag(ImDrawListPtr dl, Vector2 centre, string text, bool main)
+    {
+        var font = main ? UiFonts.Mono : UiFonts.SansSmall;
+        float w = Width(font, text);
+        var a = centre - new Vector2(w / 2 + P(3), font.FontSize / 2);
+        var b = centre + new Vector2(w / 2 + P(3), font.FontSize / 2);
+        dl.AddRectFilled(a, b, T.U32(new Vector4(0.04f, 0.063f, 0.086f, 0.8f)));
+        dl.AddRect(a, b, T.U32(new Vector4(0.29f, 0.34f, 0.39f, 1)));
+        Text(dl, font, a + new Vector2(P(3), 0), new Vector4(0.81f, 0.89f, 0.95f, 1), text);
+    }
+
+    /// <summary>An arc of fire: a translucent sector, in slices of at most 90° so each fills as a convex shape, and its
+    /// outline. Degrees clockwise from dead ahead, which on the plan (bow right, starboard down) is ImGui's angle.</summary>
+    static void Sector(ImDrawListPtr dl, Vector2 c, float r, float fromDeg, float toDeg, bool main)
+    {
+        const float Rad = MathF.PI / 180;
+        float a0 = fromDeg * Rad, a1 = toDeg * Rad;
+        int slices = Math.Max(1, (int)MathF.Ceiling((a1 - a0) / (MathF.PI / 2)));
+        uint fill = T.U32(T.Blue with { W = 0.10f });
+        for (int i = 0; i < slices && main; i++)   // the secondaries' arcs are outlines only: a dozen fills is fog
+        {
+            dl.PathLineTo(c);
+            dl.PathArcTo(c, r, a0 + (a1 - a0) * i / slices, a0 + (a1 - a0) * (i + 1) / slices, 12);
+            dl.PathFillConvex(fill);
+        }
+        dl.PathLineTo(c);
+        dl.PathArcTo(c, r, a0, a1, 48);
+        dl.PathStroke(T.U32(T.Blue with { W = main ? 0.7f : 0.3f }), ImDrawFlags.Closed, 1);
+    }
+
+    /// <summary>The armour on the profile: each plate in the thickness ramp, labelled where the label fits. Ship metres
+    /// map through the profile camera (orthographic, from the side).</summary>
+    void ArmourOverlay(ImDrawListPtr dl, Vector2 img, Overlay ov)
+    {
+        var (right, up, _) = profileCam.Basis();
+        float aspect = profileSize.X / Math.Max(1, profileSize.Y), hh = profileCam.HalfHeight;
+        var target = profileCam.Target;
+        Vector2 Px(float x, float z)
+        {
+            var d = new Vector3(x, 0, z) - target;
+            return img + new Vector2((Vector3.Dot(d, right) / (hh * aspect) + 1) / 2 * profileSize.X, (1 - Vector3.Dot(d, up) / hh) / 2 * profileSize.Y);
+        }
+        var font = UiFonts.SansSmall;
+        foreach (var pl in ov.Plates)
+        {
+            var a = Px(pl.X0, pl.Z1);
+            var b = Px(pl.X1, pl.Z0);
+            var min = Vector2.Min(a, b);
+            var max = Vector2.Max(Vector2.Max(a, b), min + new Vector2(1.5f, 1.5f));
+            dl.AddRectFilled(min, max, T.U32(T.Armour(pl.Mm)));
+            dl.AddRect(min, max, T.U32(new Vector4(0, 0, 0, 0.4f)));
+        }
+        foreach (var pl in ov.Plates)   // the labels after every plate, so a deck crossing a belt doesn't hide its label
+        {
+            if (pl.Label.Length == 0)
+                continue;
+            var a = Px(pl.X0, pl.Z1);
+            var b = Px(pl.X1, pl.Z0);
+            var min = Vector2.Min(a, b);
+            var max = Vector2.Max(a, b);
+            float tw = Width(font, pl.Label);
+            if (max.Y - min.Y >= font.FontSize && max.X - min.X >= tw + P(4))
+                Text(dl, font, (min + max) / 2 - new Vector2(tw / 2, font.FontSize / 2),
+                    pl.Mm >= 140 ? new Vector4(0.965f, 0.937f, 0.886f, 1) : new Vector4(0.149f, 0.133f, 0.11f, 1), pl.Label);
+        }
     }
 
     void Tabs(Vector2 pos, float width)

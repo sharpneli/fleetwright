@@ -60,7 +60,7 @@ public static unsafe class Program
             {
                 units = Designer.UnitSystem.Imperial;
             }
-            else if (arg.StartsWith("-uiscale="))   // a factor over the display's scale for the UI
+            else if (arg.StartsWith("-uiscale="))   // a factor over the UI scale (the window's height over 1080 px)
             {
                 if (float.TryParse(arg.Substring("-uiscale=".Length), System.Globalization.CultureInfo.InvariantCulture, out float f) && f > 0)
                     UiFonts.UserScale = f;

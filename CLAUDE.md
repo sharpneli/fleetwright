@@ -18,7 +18,7 @@ dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # sa
 dotnet run --project src/Fleetwright -- -screenshot=30 -ui [-size=1920x1080] # the window as seen, ImGui included
 dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour]
 dotnet run --project src/Fleetwright -- -view=ship [-navy=kure] [-era=wwii]
-dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the display scale (fonts, spacing)
+dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
 ```
 
 The exe opens three tabs on one design (menu bar, or F3 to step): the designer (default), the hitbox viewer and the
@@ -27,9 +27,10 @@ asset, below). All three show `DesignSession`'s design: an edit in the designer 
 picked in the ship viewer's list opens in the designer.
 
 The designer (`Designer/`, `docs/designer-ui/designer-plan.md`) edits the design, or the empty 8 kn hull with `-new`,
-with knobs, templates (plant, hull construction, crew standard, armour schemes, material names) and a style button
-(navy, era, pennant number), tried on every view or kept in the design. The name and type label edit in place in the
-top bar. `-steps=` applies knob steps at startup (knob ids from `Knobs`: `speed:-2`, `topside:tumblehome`,
+with knobs, templates (plant, hull construction, crew standard, armour schemes, material names) and a style (View
+menu: navy, era, pennant number), tried on every view or kept in the design. The layout is the dense one in
+`docs/designer-ui/bureau.html`: outliner and templates, plan and profile with overlays (A R M T), section tabs (0-7),
+ledger, particulars and remarks. The name and type label edit in place in the resource bar. `-steps=` applies knob steps at startup (knob ids from `Knobs`: `speed:-2`, `topside:tumblehome`,
 `distiller:off`), for screenshots of edited states in any view. Saves go to Documents/My Games/Fleetwright/Designs.
 The game uses the designer's other constructor: a design in, the edited one out through a callback, with a worker of
 its own.

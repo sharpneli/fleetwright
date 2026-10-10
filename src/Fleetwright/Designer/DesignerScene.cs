@@ -42,6 +42,8 @@ public sealed unsafe partial class DesignerScene : IScene
     ShipSpriteView topView = ShipSpriteView.Default;
     HitboxCamera profileCam = new() { Bearing = 90, Elevation = 0 };
     HitboxViewState profileState = HitboxViewState.All;
+    ulong profileMask;   // the kinds the profile always draws; the magazines overlay adds its own
+    static readonly ulong MagazineBit = 1UL << HitKinds.IndexOf("magazine");
 
     DesignDoc doc;
     string submitted = "";   // the JSON of the design last sent to the worker
@@ -113,7 +115,7 @@ public sealed unsafe partial class DesignerScene : IScene
             if (HitKinds.All[k].Name is "belt" or "strake" or "armour_deck" or "armoured_bulkhead" or "barbette" or "conning_tower"
                 or "main" or "secondary" or "waterline" or "hull_lines")
                 mask |= 1UL << k;
-        profileState.KindMask = mask;
+        profileMask = profileState.KindMask = mask;
         Submit();
         worker.WaitIdle(TimeSpan.FromMinutes(1));   // open with the ship on screen
         if (steps != null)
@@ -225,14 +227,24 @@ public sealed unsafe partial class DesignerScene : IScene
             Offscreen(ref topTarget, topSize);
             Offscreen(ref profileTarget, profileSize);
         }
+        // the plan and the profile at one scale, the ship's middle at the middle of both: a general arrangement, the
+        // overlays line up
+        profileState.KindMask = profileMask | (showMags ? MagazineBit : 0);
+        float zoom = sprite.Meta != null ? sprite.FitZoom(topSize.X, topSize.Y, 0.96f, 0.86f) : 0;
+        if (profile.Mesh is { Prisms.Length: > 0 } m)
+        {
+            profileCam.Fit(m.Vertices, profileSize.X / Math.Max(1, profileSize.Y), profileMask);
+            float fit = profileSize.Y / (2 * profileCam.HalfHeight);
+            zoom = zoom > 0 ? Math.Min(zoom, fit) : fit;
+            profileCam.HalfHeight = profileSize.Y / (2 * zoom);
+            profileCam.Target = profileCam.Target with { X = 0 };
+        }
         if (sprite.Meta != null)
         {
-            topView.Zoom = sprite.FitZoom(topSize.X, topSize.Y, 0.96f, 0.92f);
+            topView.Zoom = zoom;
             topView.Centre = Vector2.Zero;
         }
-        sprite.Render(cmd, topTarget!, topView, ReadOnlySpan<double>.Empty, Clear(T.Inset));
-        if (profile.Mesh is { Prisms.Length: > 0 } m)
-            profileCam.Fit(m.Vertices, profileSize.X / Math.Max(1, profileSize.Y), profileState.KindMask);
+        sprite.Render(cmd, topTarget!, topView, ReadOnlySpan<double>.Empty, Clear(T.Plan));
         profile.Render(cmd, profileTarget!, profileCam, profileState);
         var pass = target.BeginPass(cmd, Clear(T.Ground), depth: false);
         SDL_EndGPURenderPass(pass);
@@ -292,7 +304,18 @@ public sealed unsafe partial class DesignerScene : IScene
         /// <summary>The templates the design is built from (the left column's lower panel).</summary>
         public required PickRow[] Templates;
         public required string[] HistoryLabels;
+        /// <summary>What the plan and profile's overlays draw, in ship metres; null without a ship.</summary>
+        public required Overlay? Over;
     }
+
+    /// <summary>A gun mount on the plan: where it is, its tag, its arcs of fire (degrees clockwise from dead ahead, the
+    /// end past the start; past 360 it keeps going).</summary>
+    sealed record MountMark(string Tag, float X, float Y, bool Main, (float From, float To)[] Arcs);
+
+    /// <summary>An armour plate on the profile: x along the ship, z above the main deck, its thickness and label.</summary>
+    sealed record Plate(float X0, float X1, float Z0, float Z1, double Mm, string Label);
+
+    sealed record Overlay(MountMark[] Mounts, Plate[] Plates, float Length, float Beam, string Dimensions);
 
     /// <summary>A weight group in the ledger; <see cref="Tip"/> is its heaviest items.</summary>
     sealed record LedgerRow(string Group, string Name, string T, string Pct, float Frac, (string Name, string T)[] Tip);
@@ -448,7 +471,57 @@ public sealed unsafe partial class DesignerScene : IScene
             Consequences = cons.ToArray(),
             Panel = PanelItems(d, ship),
             HistoryLabels = doc.History.Select(h => h.Label).ToArray(),
+            Over = ship != null ? MakeOverlay(ship) : null,
         };
+    }
+
+    /// <summary>The overlays' geometry from the ship's hitboxes: the gun mounts and their arcs for the plan, the armour
+    /// as plates for the profile (belt and strakes, decks, bulkheads, barbettes, turret faces, conning tower).</summary>
+    Overlay MakeOverlay(Ship ship)
+    {
+        var hb = ship.Hitboxes;
+        string Mm(double mm) => Fmt(mm, Quantity.Armour, unit: false);
+        var mounts = new List<MountMark>();
+        var plates = new List<Plate>();
+        var barbetteR = new Dictionary<string, double>();
+        foreach (var c in hb.Components)
+            if (c.Kind == "barbette" && c.R is { } r)
+                barbetteR[c.Id] = r;
+        if (hb.Armour.Belt is { } b)
+            plates.Add(new Plate((float)b.X0, (float)b.X1, (float)b.Bottom, (float)b.Top, b.ThicknessMm,
+                b.BottomMm is { } bm && bm != b.ThicknessMm ? $"{Mm(b.ThicknessMm)}–{Mm(bm)}" : Mm(b.ThicknessMm)));
+        foreach (var st in hb.Armour.Strakes ?? [])
+            plates.Add(new Plate((float)st.X0, (float)st.X1, (float)st.Bottom, (float)st.Top, st.ThicknessMm, Mm(st.ThicknessMm)));
+        foreach (var dk in hb.Armour.Decks ?? [])   // drawn half a metre thick so they show; labelled at their ends
+            plates.Add(new Plate((float)dk.X0, (float)dk.X1, (float)dk.Z - 0.5f, (float)dk.Z, dk.ThicknessMm, Mm(dk.ThicknessMm)));
+        foreach (var bh in hb.Armour.Bulkheads ?? [])
+            plates.Add(new Plate((float)bh.X - 0.6f, (float)bh.X + 0.6f, (float)bh.Bottom, (float)bh.Top, bh.ThicknessMm, ""));
+        foreach (var c in hb.Components)
+        {
+            if (c.X is not { } x)
+                continue;
+            switch (c.Kind)
+            {
+                case "barbette" when c.ArmourMm is { } mm && c.R is { } r:
+                    plates.Add(new Plate((float)(x - r), (float)(x + r), (float)c.Base, (float)c.Top, mm, ""));
+                    break;
+                case "conning_tower" when c.ArmourMm is { } mm && c.R is { } r:
+                    plates.Add(new Plate((float)(x - r), (float)(x + r), (float)c.Base, (float)c.Top, mm, Mm(mm)));
+                    break;
+                case "main" or "secondary":
+                    double rr = barbetteR.GetValueOrDefault(c.Id, 2) * 1.15;
+                    if (c.Kind == "main" && c.ArmourMm is { } face)
+                        plates.Add(new Plate((float)(x - rr), (float)(x + rr), (float)c.Base, (float)c.Top, face, Mm(face)));
+                    int barrels = c.Type != null && hb.TurretTypes.TryGetValue(c.Type, out var tt) ? (int)tt.Barrels : 1;
+                    string tag = c.Kind == "main" ? $"{c.Id} {barrels}×{Fmt(c.CalibreMm ?? 0, Quantity.Calibre)}" : c.Id;
+                    var arcs = (c.ArcsDeg ?? []).Where(a => a.Length == 2).Select(a => ((float)a[0], (float)(a[1] < a[0] ? a[1] + 360 : a[1]))).ToArray();
+                    mounts.Add(new MountMark(tag, (float)x, (float)(c.Y ?? 0), c.Kind == "main", arcs));
+                    break;
+            }
+        }
+        var res = ship.Report.Results;
+        string dims = $"{Fmt(res.LengthM, Quantity.Length, 0.1)} oa · {Fmt(res.BeamM, Quantity.Length, 0.1)} · T {Fmt(res.DraughtM, Quantity.Length, 0.1)}";
+        return new Overlay(mounts.ToArray(), plates.ToArray(), (float)hb.Length, (float)hb.Beam, dims);
     }
 
     NumRow Row(NumberKnob k, Design d, Ship? ship, string? label = null)

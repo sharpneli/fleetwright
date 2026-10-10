@@ -157,6 +157,18 @@ last edit: +8.5 m").
 
 ### DesignerScene: the screen
 
+**2026-10-10: the layout now follows `bureau.html`, the dense variant** (`DesignerScene.Layout.cs`). The changes from
+the sketch below:
+
+- The rail became an outliner of sections and their weight items, over the templates in use (a click changes one).
+- The sections are tabs under the plan, and each tab is a set of dense tables flowed into columns.
+- The Legend became the weight ledger, particulars and remarks.
+- The history sits in a status bar.
+- File / Edit / View moved into the menu bar.
+
+The plan and profile share one scale. They have overlays for arcs, armour plates, magazines and tags (A R M T). The
+mockup's delta columns were not taken. The UI scale follows the window height (1080 px = 1.0). The original sketch:
+
 A third scene in `SceneSwitcher` ("Designer"), and `-view=designer` / `-view=designer -ship=…` on the command line
 so screenshots can drive it. Layout after `follow.html`, in ImGui themed with the mockup's tokens and the bundled
 IBM Plex fonts (shipped as game assets):
