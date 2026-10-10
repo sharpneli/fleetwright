@@ -19,6 +19,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   per mast, a block's `level`, a funnel's `pipes`, an AA mount's `rest_deg` and the deck-edge elevators' `role`; the
   render spec's masts carry their resolved `top`. Checked: with those removed, every case equals the old capture
   (within the comparer's 1e-9).
+- 2026-10-10, the sprites drawn from the hitboxes (step 2): the same drawing, read from the physical model's rounded
+  values. 78 SVG cases and 67 sprite.json files rewritten. Checked: every difference was hitbox rounding (at most
+  0.003 m in the drawing, 0.01 in `top_m`), height columns of the same grey swapping order, or one grey step (0.25 m)
+  flipping on a rounded top in three cases.
 
 ## Layout
 

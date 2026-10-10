@@ -241,7 +241,7 @@ public static class Clutter
 
     sealed class Placer
     {
-        public readonly RenderSpec Spec;
+        public readonly TopView View;
         public readonly Hull Hull;
         public readonly List<(long Level, List<Pt> Poly, Box Box)> BlockPolys = [];
         public readonly List<(List<Pt> Poly, Box Box)> Directors = [];
@@ -250,29 +250,31 @@ public static class Clutter
         public readonly List<(double X, double L)> Funnels = [];
         public readonly List<Box> Taken = [];
 
-        public Placer(RenderSpec spec, Hull hull)
+        public Placer(TopView v)
         {
-            Spec = spec;
-            Hull = hull;
-            foreach (var b in spec.Superstructure)
+            View = v;
+            Hull = v.Hull;
+            var hull = v.Hull;
+            var spec = v.Dressing;
+            foreach (var b in v.Blocks)
             {
-                var poly = Geometry.BlockOutline(b);
+                var poly = b.Outline;
                 if (b.Director != null)
                     Directors.Add((poly, BBox(poly)));
                 else
                     BlockPolys.Add((b.Level, poly, BBox(poly)));
             }
-            foreach (var m in spec.Turrets)
-                Circles.Add((m.X, m.Y, spec.TurretTypes[m.Type].R * 1.2));
-            foreach (var a in spec.Aa)
+            foreach (var m in v.Mounts)
+                Circles.Add((m.X, m.Y, v.TurretTypes[m.Type].R * 1.2));
+            foreach (var a in v.AaMounts)
                 Circles.Add((a.X, a.Y, 2.4));
-            foreach (var fn in spec.Funnels)
+            foreach (var fn in v.Funnels)
                 Funnels.Add((fn.X, fn.L));
-            foreach (var fn in spec.Funnels)
+            foreach (var fn in v.Funnels)
                 Rects.Add(Rect(fn.X, fn.Y, fn.L + 1.6, fn.W + 1.6));
-            foreach (var m in spec.Masts)
+            foreach (var m in v.Masts)
             {
-                double y = m.Y ?? 0;
+                double y = m.Y;
                 Circles.Add((m.X, y, 1.4));
                 if (m.Tripod)   // the legs run aft; keep them clear whichever look draws them
                     Rects.Add(new(m.X - 5.5, y - 4.0, m.X + 0.5, y + 4.0));
@@ -321,14 +323,15 @@ public static class Clutter
         }
 
         long DeckLevel(double x) =>
-            (Spec.RaisedDecks ?? []).Where(rd => rd.X0 <= x && x <= rd.X1).Select(rd => rd.Levels).DefaultIfEmpty(0L).Max();
+            View.RaisedDecks.Where(rd => rd.X0 <= x && x <= rd.X1).Select(rd => rd.Levels).DefaultIfEmpty(0L).Max();
     }
 
     // ------------------------------------------------------------------ placement
 
-    static List<Surface> Surfaces(RenderSpec spec, Hull hull)
+    static List<Surface> Surfaces(TopView v)
     {
-        var result = spec.Superstructure.Where(b => b.Director == null).Select(b => new Surface(Geometry.BlockOutline(b), b.Level, "roof")).ToList();
+        var hull = v.Hull;
+        var result = v.Blocks.Where(b => b.Director == null).Select(b => new Surface(b.Outline, b.Level, "roof")).ToList();
         // the deck as a polygon a little inside its edge
         const int n = 80;
         var xs = Enumerable.Range(0, n).Select(i => -hull.L / 2 + hull.L * (i + 0.5) / n).ToList();
@@ -517,18 +520,19 @@ public static class Clutter
     }
 
     /// <summary>Every clutter item for the ship. Repeatable.</summary>
-    public static List<Item> Plan(RenderSpec spec, Hull hull, Shapes shapes)
+    public static List<Item> Plan(TopView v, Shapes shapes)
     {
         var kitName = shapes.Clutter;
         var kit = Kit(kitName ?? "");
         if (kit == null)
             return [];
         double density = shapes.ClutterDensity ?? 1.0;
-        var rng = new ShipRng($"{spec.Id}/clutter/{kitName}");
-        var P = new Placer(spec, hull);
+        var rng = new ShipRng($"{v.Id}/clutter/{kitName}");
+        var hull = v.Hull;
+        var P = new Placer(v);
         var items = new List<Item>();
-        var surfs = Surfaces(spec, hull);
-        bool flight = spec.FlightDeck != null;
+        var surfs = Surfaces(v);
+        bool flight = v.FlightDeck != null;
         foreach (var s in surfs)   // what's left open once the blocks above are drawn over it
         {
             var (x0, y0, x1, y1) = (s.BBox.X0, s.BBox.Y0, s.BBox.X1, s.BBox.Y1);     // a 1 m grid, a row at a time
@@ -811,9 +815,9 @@ public static class Clutter
 
     /// <summary>A block's roof: planked like a deck (Victorian boat decks and the like) inside a steel waterway, and a
     /// guardrail round its edge. Drawn over the block, under whatever stands on it.</summary>
-    public static void RoofFinish(List<Node> o, Block b, Painter P, double areaMin, bool rails, string wood)
+    public static void RoofFinish(List<Node> o, TopView.Block b, Painter P, double areaMin, bool rails, string wood)
     {
-        var pts = Geometry.BlockOutline(b);
+        var pts = b.Outline;
         if (pts.Count < 3)
             return;
         long lvl = b.Level;

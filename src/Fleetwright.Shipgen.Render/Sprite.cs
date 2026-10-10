@@ -74,8 +74,7 @@ public sealed class ShipSprites
     public static ShipSprites Build(Ship ship, double S, int mips = 0, LookInput? look = null)
     {
         var design = ship.Design;
-        var rd = ship.Render;
-        var spec = rd.Spec;
+        var v = TopView.Of(ship);
         if (look != null)
         {
             var own = Looks.LookOf(design);
@@ -88,7 +87,7 @@ public sealed class ShipSprites
 
         var turrets = new Dictionary<string, Scene>(StringComparer.Ordinal);
         var tmeta = new OrderedDictionary<string, TurretSprite>(StringComparer.Ordinal);
-        foreach (var (tid, t) in spec.TurretTypes)
+        foreach (var (tid, t) in v.TurretTypes)
         {
             var sc = TurretArt.Build(t, pal, S, align, turretLook, shapes);
             turrets[tid] = sc;
@@ -98,19 +97,15 @@ public sealed class ShipSprites
                 { CalibreLength = t.CalibreLength };
         }
 
-        var hr = HullArt.Build(spec, pal, shapes, S, align);
-        double deckM = rd.DeckM;
-        var columns = rd.Columns.Concat(Render.Clutter.HeightColumns(hr.Clutter, rd.Columns, hr.Hull)).ToList();
+        var hr = HullArt.Build(v, pal, shapes, S, align);
+        double deckM = v.DeckM;
+        var fixedColumns = v.HeightColumns();
+        var columns = fixedColumns.Concat(Render.Clutter.HeightColumns(hr.Clutter, fixedColumns, hr.Hull)).ToList();
         var (height, maxH) = HeightMap.Build(columns, hr.Scene, hr.Hull);
         long W = hr.Scene.WidthPx, H = hr.Scene.HeightPx;
         double ox = W / 2.0, oy = H / 2.0;
-        var byId = rd.Mounts.ToDictionary(m => m.Id, StringComparer.Ordinal);
-        var mounts = spec.Turrets.Select(m =>
-        {
-            var lm = byId[m.Id];
-            return new SpriteMount(m.Id, lm.Kind, m.Type, [m.X, m.Y], [ox + m.X * S, oy + m.Y * S], lm.Rest, lm.Arcs, lm.Traverse, m.Z,
-                Math.Round(deckM + lm.Top, 2)) { Mount = lm.Mount };
-        }).ToList();
+        var mounts = v.Mounts.Select(m => new SpriteMount(m.Id, m.Kind, m.Type, [m.X, m.Y], [ox + m.X * S, oy + m.Y * S], m.Rest, m.Arcs,
+            m.Traverse, m.Z, Math.Round(deckM + m.Top, 2)) { Mount = m.Casemate ? "casemate" : null }).ToList();
         var meta = new SpriteMeta
         {
             Id = design.Id, Name = design.Name ?? design.Id, ScalePxPerM = S, SizePx = [W, H], OriginPx = [ox, oy],

@@ -7,22 +7,19 @@ public static class HullArt
 {
     public const double PadM = 3.0;  // empty margin around each hull sprite, metres
 
-    /// <summary>The layout's hull.</summary>
-    public static HullSpec HullSpecOf(RenderSpec spec) => new(spec.Length, spec.Beam, spec.Bow, spec.Stern);
-
     /// <summary>Half the canvas (x, y) in metres. With a scale, snapped so the canvas is a multiple of align px (even at
     /// least) and the origin lands on an exact pixel.</summary>
-    public static (double Hx, double Hy) ShipExtent(RenderSpec spec, Hull hull, double? scale = null, int align = 2)
+    public static (double Hx, double Hy) ShipExtent(TopView v, Hull hull, double? scale = null, int align = 2)
     {
         double hw = hull.B / 2;
-        if (spec.FlightDeck is { } fd)
-            hw = Math.Max(hw, fd.Points.Max(p => Math.Abs(p.Y)));
-        foreach (var (y, w) in (spec.Sponsons ?? []).Select(s => (s.Y, s.W)).Concat(spec.Superstructure.Select(b => (b.Y, b.W)))
-                     .Concat((spec.Fittings ?? []).Select(f => (f.Y, f.W))))
+        if (v.FlightDeck is { } fd)
+            hw = Math.Max(hw, fd.Outline.Max(p => Math.Abs(p.Y)));
+        foreach (var (y, w) in v.Sponsons.Where(s => !s.Elevator).Select(s => ((s.Y0 + s.Y1) / 2, s.Y1 - s.Y0))
+                     .Concat(v.Blocks.Select(b => (b.Y, b.W))).Concat((v.Dressing.Fittings ?? []).Select(f => (f.Y, f.W))))
             hw = Math.Max(hw, Math.Abs(y) + w / 2);
-        foreach (var m in spec.Turrets)   // casemate guns stand on the hull side: keep their barrels on the canvas
+        foreach (var m in v.Mounts)   // casemate guns stand on the hull side: keep their barrels on the canvas
         {
-            var t = spec.TurretTypes[m.Type];
+            var t = v.TurretTypes[m.Type];
             if (t.Shape == "casemate")
                 hw = Math.Max(hw, Math.Abs(m.Y) + Geometry.TurretReach(t));
         }
@@ -38,19 +35,19 @@ public static class HullArt
 
     /// <summary>Scatter small ventilators and hatches on level-1 deckhouses, avoiding everything else (drawn only when
     /// the look has no clutter kit).</summary>
-    static void Vents(List<Node> o, RenderSpec spec, Painter P)
+    static void Vents(List<Node> o, TopView v, Painter P)
     {
-        var rng = new ShipRng(spec.Id);
+        var rng = new ShipRng(v.Id);
         var obstacles = new List<(double X, double Y, double R)>();
-        foreach (var m in spec.Turrets)
-            obstacles.Add((m.X, m.Y, spec.TurretTypes[m.Type].R * 1.15));
-        foreach (var a in spec.Aa)
+        foreach (var m in v.Mounts)
+            obstacles.Add((m.X, m.Y, v.TurretTypes[m.Type].R * 1.15));
+        foreach (var a in v.AaMounts)
             obstacles.Add((a.X, a.Y, 2.4));
-        foreach (var b in spec.Boats ?? [])
+        foreach (var b in v.Dressing.Boats ?? [])
             obstacles.Add((b.X, b.Y, b.L / 2 + 0.6));
-        var rects = spec.Funnels.Select(fn => (fn.X - fn.L / 2 - 0.8, fn.Y - fn.W / 2 - 0.8, fn.X + fn.L / 2 + 2.5, fn.Y + fn.W / 2 + 2.5)).ToList();
-        rects.AddRange(spec.Superstructure.Where(b => b.Level > 1).Select(b => (b.X0 - 0.8, b.Y - b.W / 2 - 0.8, b.X1 + 2.0, b.Y + b.W / 2 + 2.0)));
-        foreach (var blk in spec.Superstructure.Where(b => b.Level == 1))
+        var rects = v.Funnels.Select(fn => (fn.X - fn.L / 2 - 0.8, fn.Y - fn.W / 2 - 0.8, fn.X + fn.L / 2 + 2.5, fn.Y + fn.W / 2 + 2.5)).ToList();
+        rects.AddRange(v.Blocks.Where(b => b.Level > 1).Select(b => (b.X0 - 0.8, b.Y - b.W / 2 - 0.8, b.X1 + 2.0, b.Y + b.W / 2 + 2.0)));
+        foreach (var blk in v.Blocks.Where(b => b.Level == 1))
         {
             double y0 = blk.Y - blk.W / 2 + 1.2, y1 = blk.Y + blk.W / 2 - 1.2;
             double x0 = blk.X0 + Math.Max(1.2, blk.Rb), x1 = blk.X1 - Math.Max(1.2, blk.Rf);
@@ -86,35 +83,36 @@ public static class HullArt
 
     /// <summary>Footprints (x0, x1, y0, y1) of what stands on deck: turrets, superstructure and funnels; with small,
     /// also AA, boats, masts and fittings. The look features that paint the open deck keep clear of them.</summary>
-    static List<(double X0, double X1, double Y0, double Y1)> DeckObstacles(RenderSpec spec, bool small = false)
+    static List<(double X0, double X1, double Y0, double Y1)> DeckObstacles(TopView v, bool small = false)
     {
         var result = new List<(double, double, double, double)>();
-        foreach (var m in spec.Turrets)
+        foreach (var m in v.Mounts)
         {
-            double r = spec.TurretTypes[m.Type].R * 1.15;
+            double r = v.TurretTypes[m.Type].R * 1.15;
             result.Add((m.X - r, m.X + r, m.Y - r, m.Y + r));
         }
-        foreach (var b in spec.Superstructure)
+        foreach (var b in v.Blocks)
             result.Add((b.X0, b.X1, b.Y - b.W / 2, b.Y + b.W / 2));
-        foreach (var fn in spec.Funnels)
+        foreach (var fn in v.Funnels)
             result.Add((fn.X - fn.L / 2, fn.X + fn.L / 2, fn.Y - fn.W / 2, fn.Y + fn.W / 2));
         if (small)
         {
-            foreach (var a in spec.Aa)
+            var d = v.Dressing;
+            foreach (var a in v.AaMounts)
                 result.Add((a.X - 2.0, a.X + 2.0, a.Y - 2.0, a.Y + 2.0));
-            foreach (var (x, y, l, w) in (spec.Boats ?? []).Select(b => (b.X, b.Y, b.L, b.W)).Concat((spec.Fittings ?? []).Select(f => (f.X, f.Y, f.L, f.W))))
+            foreach (var (x, y, l, w) in (d.Boats ?? []).Select(b => (b.X, b.Y, b.L, b.W)).Concat((d.Fittings ?? []).Select(f => (f.X, f.Y, f.L, f.W))))
                 result.Add((x - l / 2, x + l / 2, y - w / 2, y + w / 2));
-            foreach (var m in spec.Masts)
-                result.Add((m.X - 1.0, m.X + 1.0, (m.Y ?? 0) - 1.0, (m.Y ?? 0) + 1.0));
+            foreach (var m in v.Masts)
+                result.Add((m.X - 1.0, m.X + 1.0, m.Y - 1.0, m.Y + 1.0));
         }
         return result;
     }
 
     /// <summary>The open foredeck and quarterdeck: (front of the foremost obstacle, back of the aftmost), counting
     /// only obstacles within halfY of the centreline when given.</summary>
-    static (double Fwd, double Aft) OpenEnds(RenderSpec spec, double? halfY = null, bool small = false)
+    static (double Fwd, double Aft) OpenEnds(TopView v, double? halfY = null, bool small = false)
     {
-        var obs = DeckObstacles(spec, small).Where(o => halfY is not double h || (o.Y0 < h && o.Y1 > -h)).ToList();
+        var obs = DeckObstacles(v, small).Where(o => halfY is not double h || (o.Y0 < h && o.Y1 > -h)).ToList();
         if (obs.Count == 0)
             return (0.0, 0.0);
         return (obs.Max(o => o.X1), obs.Min(o => o.X0));
@@ -122,9 +120,9 @@ public static class HullArt
 
     /// <summary>Dazzle camouflage: slanted panels cut across the whole ship, in a repeatable pattern per design.
     /// Panels are clipped to the hull band, the superstructure and the funnels as they're drawn.</summary>
-    static List<(List<Pt>, string)> DazzlePanels(RenderSpec spec, Hull hull, IReadOnlyList<string> colours)
+    static List<(List<Pt>, string)> DazzlePanels(TopView v, Hull hull, IReadOnlyList<string> colours)
     {
-        var rng = new ShipRng($"{spec.Id}/dazzle");
+        var rng = new ShipRng($"{v.Id}/dazzle");
         double L = hull.L, Y = hull.B / 2 + 2.0;
         long n = Math.Max(5L, (long)Math.Round(L / 18));
         double step = L / n;
@@ -175,16 +173,16 @@ public static class HullArt
     /// <summary>A look's paint and canvas on the open deck: recognition stripes on the forecastle (and quarterdeck)
     /// and peacetime awnings over the quarterdeck; then, separately (drawn over the anchor chains), a hull number on
     /// the foredeck.</summary>
-    static (List<Node> Paint, List<Node> Number) DeckPaint(RenderSpec spec, Hull hull, Painter P, PathData deckD)
+    static (List<Node> Paint, List<Node> Number) DeckPaint(TopView v, Hull hull, Painter P, PathData deckD)
     {
         var sh = P.Shapes;
         double L = hull.L;
         var result = new List<Node>();
         double tip = L / 2 - 0.04 * L;
-        bool flight = spec.FlightDeck != null;
+        bool flight = v.FlightDeck != null;
         if (sh.DeckStripes is { } st && !flight)   // alternating bands, chevrons pointing ahead by default
         {
-            var (fwd, aft) = OpenEnds(spec);
+            var (fwd, aft) = OpenEnds(v);
             long n = st.N ?? 5;
             double k = (st.Pattern ?? "chevron") == "chevron" ? st.Slope ?? 0.8 : 0.0;
             var cols = (st.Colours ?? ["recog_a", "recog_b"]).Select(c => P.P.Or(c, c)).ToList();
@@ -215,7 +213,7 @@ public static class HullArt
         }
         if (sh.Awnings == true && !flight)   // canvas on stanchions over the quarterdeck, ridged along the centreline
         {
-            var (_, aft) = OpenEnds(spec);
+            var (_, aft) = OpenEnds(v);
             double x0 = -L / 2 + 0.03 * L, x1 = aft - 1.2;
             if (x1 - x0 > 6.0)
             {
@@ -238,10 +236,10 @@ public static class HullArt
         var num = new List<Node>();
         if (sh.HullNumber == true && !flight)   // painted big across the foredeck
         {
-            string text = !string.IsNullOrEmpty(sh.Number) ? sh.Number : (100 + Crc32(Encoding.UTF8.GetBytes(spec.Id)) % 900).ToString();
+            string text = !string.IsNullOrEmpty(sh.Number) ? sh.Number : (100 + Crc32(Encoding.UTF8.GetBytes(v.Id)) % 900).ToString();
             double hw = hull.HalfWidth(L / 2 - 0.15 * L);
             double size = 0.75 * 2 * hw / (0.62 * text.Length);
-            var (fwd, _) = OpenEnds(spec, halfY: 0.62 * text.Length * size / 2, small: true);
+            var (fwd, _) = OpenEnds(v, halfY: 0.62 * text.Length * size / 2, small: true);
             double x1 = L / 2 - 0.12 * L;
             size = Math.Min(size, Math.Min((x1 - fwd) * 0.8, 0.05 * L));
             if (size > 1.2)
@@ -256,9 +254,9 @@ public static class HullArt
 
     /// <summary>The hull as a look draws it (shapes: bow_power and transom added, bow_flare). Drawing only, and only
     /// ever fuller than the layout's hull, so deck-edge fittings stay on deck; the hitbox keeps the layout's hull.</summary>
-    public static HullSpec LookHullSpec(RenderSpec spec, Shapes sh)
+    public static HullSpec LookHullSpec(TopView v, Shapes sh)
     {
-        var hs = HullSpecOf(spec);
+        var hs = new HullSpec(v.Hull.L, v.Hull.B, v.Hull.Bow, v.Hull.Stern);
         if ((sh.BowPower ?? 0) == 0 && (sh.BowFlare ?? 0) == 0 && (sh.Transom ?? 0) == 0)
             return hs;
         var hull = new Hull(hs);
@@ -269,22 +267,23 @@ public static class HullArt
         };
     }
 
-    /// <summary>What build_hull returns: the drawing, the turret mounts, the hull as drawn and the clutter items (for
-    /// the height map).</summary>
-    public sealed record Result(Scene Scene, List<SpecTurret> Mounts, Hull Hull, List<Clutter.Item> Clutter);
+    /// <summary>What build_hull returns: the drawing, the hull as drawn and the clutter items (for the height
+    /// map).</summary>
+    public sealed record Result(Scene Scene, Hull Hull, List<Clutter.Item> Clutter);
 
-    public static Result Build(RenderSpec spec, Palette pal, Shapes sh, double scale, int align = 2)
+    public static Result Build(TopView v, Palette pal, Shapes sh, double scale, int align = 2)
     {
+        var spec = v.Dressing;
         var P = new Painter(pal, scale, sh);
-        var lookSpec = LookHullSpec(spec, sh);
+        var lookSpec = LookHullSpec(v, sh);
         var hull = new Hull(lookSpec);
-        var (hx, hy) = ShipExtent(spec, hull, scale, align);
+        var (hx, hy) = ShipExtent(v, hull, scale, align);
         var scene = new Scene(-hx, -hy, 2 * hx, 2 * hy, scale);
         // tumblehome: the hull's sides bulge out below a narrower deck, seen from above as a wide band round the deck
         var outer = sh.Tumblehome is double th && th != 0 ? new Hull(lookSpec with { Beam = hull.B * (1 + th) }) : hull;
         var hullD = Painter.HullPath(outer);
         if (sh.Dazzle == true && pal.Has("camo"))
-            P.Dazzle = DazzlePanels(spec, hull, pal.Colours("camo"));
+            P.Dazzle = DazzlePanels(v, hull, pal.Colours("camo"));
 
         // two passes in one image: low (hull, deck, level 1, what stands on the deck), then high (what stands on a
         // roof, and the tall stuff), so a roof never draws over what stands on it
@@ -347,7 +346,7 @@ public static class HullArt
         // deck. Each is laid as its own deck: planks shifted half a plank on alternate levels, butt seams from its
         // own end, and a margin plank round its edge, so the texture never runs on across a break
         const double rdIn = 0.3;
-        foreach (var rd in spec.RaisedDecks ?? [])
+        foreach (var rd in v.RaisedDecks)
         {
             long lv = rd.Levels;
             var rdD = Painter.HullPath(hull, inset: rdIn, xMin: rd.X0, xMax: rd.X1);
@@ -360,7 +359,7 @@ public static class HullArt
         }
         foreach (var ht in spec.Hatches ?? [])
             P.Hatch(low, ht);
-        var (paint, number) = DeckPaint(spec, hull, P, deckD);
+        var (paint, number) = DeckPaint(v, hull, P, deckD);
         low.AddRange(paint);
 
         // bow details: anchor chains, breakwater, bollards
@@ -396,13 +395,13 @@ public static class HullArt
         low.AddRange(number);   // over the chains, so it stays readable
 
         // --- aircraft carrier flight deck ---------------------------------------
-        if (spec.FlightDeck is { } fd)
+        if (v.FlightDeck is { } fdp && spec.FlightDeck is { } fd)
         {
-            foreach (var sp in spec.Sponsons ?? [])
-                P.Fitting(low, sp.X, sp.Y, sp.L, sp.W, P.C("deck"), 0.8);
-            foreach (var el in fd.EdgeElevators)
-                P.Fitting(low, el.X, el.Y, el.L, el.W, P.C("flight_deck"), 0.4);
-            var fdD = Painter.Poly(fd.Points);
+            foreach (var sp in v.Sponsons.Where(s => !s.Elevator))
+                P.Fitting(low, (sp.X0 + sp.X1) / 2, (sp.Y0 + sp.Y1) / 2, sp.X1 - sp.X0, sp.Y1 - sp.Y0, P.C("deck"), 0.8);
+            foreach (var el in v.Sponsons.Where(s => s.Elevator))
+                P.Fitting(low, (el.X0 + el.X1) / 2, (el.Y0 + el.Y1) / 2, el.X1 - el.X0, el.Y1 - el.Y0, P.C("flight_deck"), 0.4);
+            var fdD = Painter.Poly(fdp.Outline);
             low.Add(P.Ln(new PathNode(fdD).Fill(P.C("flight_deck")), 1.3));
             var pk = fd.Planks;
             var fl = new Group { Clip = [new PathNode(fdD)] }.Stroke(Painter.Shade(P.C("flight_deck"), 0.75), P.Sw * 0.7).StrokeOp(0.6);
@@ -439,13 +438,12 @@ public static class HullArt
         // --- superstructure, fittings, AA, boats --------------------------------
         // a look's clutter kit (Clutter): roof finishes drawn with each block, the gear itself after all blocks
         var kit = Clutter.Kit(sh.Clutter);
-        var items = kit != null ? Clutter.Plan(spec, new Hull(HullSpecOf(spec)), sh) : [];
+        var items = kit != null ? Clutter.Plan(v, sh) : [];
         double roofPlanks = kit != null ? sh.RoofPlanks ?? kit.RoofPlanks : 0;
         bool rails = kit != null && (sh.RoofRails ?? kit.RoofRails);
-        foreach (var sb in spec.Superstructure)
+        foreach (var sb in v.Blocks)
         {
-            string layer = sb.Layer ?? (sb.Level <= 1 ? "base" : "upper");
-            var o = layer == "base" ? low : high;
+            var o = sb.Upper ? high : low;
             P.Block(o, sb);
             if (kit != null && sb.Director == null)
                 Clutter.RoofFinish(o, sb, P, roofPlanks, rails, P.C("wood"));
@@ -460,32 +458,28 @@ public static class HullArt
             }
         }
         else
-            Vents(low, spec, P);
+            Vents(low, v, P);
         foreach (var ft in spec.Fittings ?? [])
             P.Fitting(low, ft);
-        foreach (var a in spec.Aa)
-            P.Aa(a.Layer == "upper" ? high : low, a);
+        foreach (var a in v.AaMounts)
+            P.Aa(a.Upper ? high : low, a);
         foreach (var b in spec.Boats ?? [])
             P.Boat(high, b);
 
         // --- turret barbettes (low pass) ------------------------------------------
-        foreach (var m in spec.Turrets)
-        {
-            var t = spec.TurretTypes[m.Type];
-            if (t.HasBarbette)
-                P.Barbette(low, m.X, m.Y, t.R * 0.95);
-        }
+        foreach (var b in v.Barbettes)
+            P.Barbette(low, b.X, b.Y, b.R);
 
         // --- tall stuff ----------------------------------------------------------
-        foreach (var fn in spec.Funnels)
+        foreach (var fn in v.Funnels)
             P.Funnel(high, fn);
-        foreach (var m in spec.Masts)
+        foreach (var m in v.Masts)
             P.Mast(high, m);
         foreach (var c in spec.Cranes ?? [])
             P.Crane(high, c);
 
         scene.Root.Items.AddRange(low);
         scene.Root.Items.AddRange(high);
-        return new Result(scene, spec.Turrets, hull, items);
+        return new Result(scene, hull, items);
     }
 }

@@ -113,7 +113,7 @@ public static class RenderGolden
         gs.Remove("max_height_m");
         os.Remove("max_height_m");
         var result = GoldenDiff.Compare(g, o, max).Select(d => d.ToString()).ToList();
-        double lo = Math.Round(ship.Render.Columns.Max(col => col.Top), 2);
+        double lo = Math.Round(TopView.Of(ship).HeightColumns().Max(col => col.Top), 2);
         const double tallest = 3.2;   // the boiler cowl
         foreach (var (who, h) in new[] { ("golden", gh), ("ours", oh) })
             if (h < lo - 0.005 || h > lo + tallest + 0.005)

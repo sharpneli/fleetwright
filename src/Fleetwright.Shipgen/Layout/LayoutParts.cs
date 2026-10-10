@@ -66,7 +66,7 @@ public sealed partial class Layout
         return HullWeight.ExtraPlateT(perim * (b.TopZ - b.Base), mm, own);
     }
 
-    const double RaisedInset = 0.3;
+    public const double RaisedInset = 0.3;
 
     /// <summary>A raised stretch of hull: the weather deck `levels` decks above the main deck from x0 to x1.</summary>
     public static RaisedStretch AddRaised(Layout lay, Design design, string rid, double x0, double x1, long levels = 1,

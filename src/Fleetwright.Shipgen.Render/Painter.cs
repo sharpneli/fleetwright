@@ -85,7 +85,7 @@ public sealed class Painter
     // ------------------------------------------------------------------ parts
 
     /// <summary>AA guns (baked into the hull layers; too small to rotate usefully).</summary>
-    public void Aa(List<Node> o, AaMount a)
+    public void Aa(List<Node> o, TopView.Aa a)
     {
         var cfg = Geometry.AaCfg[a.Type];
         double x = a.X, y = a.Y, d = a.Dir;
@@ -121,7 +121,7 @@ public sealed class Painter
     }
 
     /// <summary>Superstructure block; higher "level" =&gt; lighter.</summary>
-    public void Block(List<Node> o, Block b)
+    public void Block(List<Node> o, TopView.Block b)
     {
         if (b.Director != null)
         {
@@ -169,7 +169,7 @@ public sealed class Painter
     /// <summary>A fire-control director on its roof, facing ahead, drawn from Geometry.DirectorParts (the same shape
     /// as its hitbox): the hood, the rangefinder's tube and end hoods sticking out each side, and a radar aerial on
     /// the hood's roof when it has one. Without a rangefinder (a gyro sight): a round tub with the sight in it.</summary>
-    public void Director(List<Node> o, Block b)
+    public void Director(List<Node> o, TopView.Block b)
     {
         var dr = b.Director!;
         double x0 = b.X0, x1 = b.X1, y = b.Y, w = b.W;
@@ -210,7 +210,7 @@ public sealed class Painter
             .Tr(new Translate(-Sw * 0.6, -Sw * 0.6)).StrokeOp(0.7));
     }
 
-    public void Funnel(List<Node> o, Funnel fn)
+    public void Funnel(List<Node> o, TopView.Funnel fn)
     {
         double x = fn.X, y = fn.Y, l = fn.L, w = fn.W;
         var mode = Shapes.Funnel;
@@ -292,9 +292,9 @@ public sealed class Painter
             .StrokeOp(0.6));
     }
 
-    public void Mast(List<Node> o, Mast m)
+    public void Mast(List<Node> o, TopView.Mast m)
     {
-        double x = m.X, y = m.Y ?? 0;
+        double x = m.X, y = m.Y;
         double span = m.Yard;
         string mast = C("mast");
         if (span != 0)
