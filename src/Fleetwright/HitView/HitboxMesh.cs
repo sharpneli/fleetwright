@@ -383,14 +383,20 @@ public sealed class HitboxMesh
             };
             HitVertex V(Vector2 p, float z, Vector3 nrm) => new() { Position = new(p, z), Normal = nrm, Kind = (uint)kind, Prism = pi };
 
+            // overlapping prisms often share a cap height (a turret's body and its parts, a barbette flush with a
+            // deckhouse roof, an armour deck on the cells): the caps are drawn pulled out by a hair, more the smaller
+            // the footprint, so the smaller one sits proud instead of z-fighting. Base and Top keep the true heights.
+            float dz = 0.03f / MathF.Sqrt(1 + (float)SignedArea(fp));
+            float tDraw = t + dz, bDraw = b - dz;
+
             // caps: the same triangulation at the top and the bottom
             var capTris = Triangulate(fp);
             uint top0 = (uint)verts.Count;
             foreach (var p in prism.Footprint)
-                verts.Add(V(p, t, Vector3.UnitZ));
+                verts.Add(V(p, tDraw, Vector3.UnitZ));
             uint bot0 = (uint)verts.Count;
             foreach (var p in prism.Footprint)
-                verts.Add(V(p, b, -Vector3.UnitZ));
+                verts.Add(V(p, bDraw, -Vector3.UnitZ));
             foreach (int k in capTris)
                 tris.Add(top0 + (uint)k);
             foreach (int k in capTris)
@@ -402,7 +408,7 @@ public sealed class HitboxMesh
                 Vector2 p0 = prism.Footprint[i], p1 = prism.Footprint[(i + 1) % n], d = p1 - p0;
                 var nrm = Vector3.Normalize(new Vector3(d.Y, -d.X, 0));
                 uint s = (uint)verts.Count;
-                verts.AddRange([V(p0, b, nrm), V(p1, b, nrm), V(p1, t, nrm), V(p0, t, nrm)]);
+                verts.AddRange([V(p0, bDraw, nrm), V(p1, bDraw, nrm), V(p1, tDraw, nrm), V(p0, tDraw, nrm)]);
                 tris.AddRange([s, s + 1, s + 2, s, s + 2, s + 3]);
             }
 
