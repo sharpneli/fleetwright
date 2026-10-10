@@ -23,8 +23,8 @@
    "clutter": 34
   },
   "babel": {
-   "max_height_m": 25.43,
-   "clutter": 69
+   "max_height_m": 25.42,
+   "clutter": 68
   },
   "battlecruiser": {
    "max_height_m": 25.68,
@@ -43,12 +43,12 @@
    "clutter": 105
   },
   "bouvet": {
-   "max_height_m": 25.81,
+   "max_height_m": 25.78,
    "clutter": 54
   },
   "brennus": {
-   "max_height_m": 25.99,
-   "clutter": 44
+   "max_height_m": 25.95,
+   "clutter": 50
   },
   "colbert": {
    "max_height_m": 23.71,
@@ -60,11 +60,11 @@
   },
   "connecticut": {
    "max_height_m": 23.41,
-   "clutter": 44
+   "clutter": 46
   },
   "courbet": {
    "max_height_m": 24.06,
-   "clutter": 61
+   "clutter": 63
   },
   "dante": {
    "max_height_m": 24.81,
@@ -72,7 +72,7 @@
   },
   "danton": {
    "max_height_m": 24.43,
-   "clutter": 56
+   "clutter": 58
   },
   "daring": {
    "max_height_m": 22.93,
@@ -91,8 +91,8 @@
    "clutter": 35
   },
   "devastation": {
-   "max_height_m": 25.66,
-   "clutter": 33
+   "max_height_m": 25.61,
+   "clutter": 31
   },
   "doom": {
    "max_height_m": 19.14,
@@ -100,7 +100,7 @@
   },
   "dreadnought": {
    "max_height_m": 24.2,
-   "clutter": 70
+   "clutter": 67
   },
   "duilio": {
    "max_height_m": 23.6,
@@ -152,7 +152,7 @@
   },
   "karlsruhe": {
    "max_height_m": 23.67,
-   "clutter": 23
+   "clutter": 22
   },
   "kent": {
    "max_height_m": 25.79,
@@ -172,7 +172,7 @@
   },
   "light_cruiser": {
    "max_height_m": 23.49,
-   "clutter": 19
+   "clutter": 18
   },
   "lion": {
    "max_height_m": 26.03,
@@ -188,7 +188,7 @@
   },
   "mikasa": {
    "max_height_m": 23.2,
-   "clutter": 51
+   "clutter": 49
   },
   "mtb": {
    "max_height_m": 8.05,
@@ -208,7 +208,7 @@
   },
   "nassau_casemates": {
    "max_height_m": 23.71,
-   "clutter": 63
+   "clutter": 69
   },
   "nelson": {
    "max_height_m": 29.8,
@@ -272,7 +272,7 @@
   },
   "tiger_1914": {
    "max_height_m": 25.74,
-   "clutter": 60
+   "clutter": 58
   },
   "tramp_1914": {
    "max_height_m": 22.69,
@@ -305,7 +305,7 @@
   "fuzz_lim_003": "invalid",
   "fuzz_lim_004": {
    "max_height_m": 29.39,
-   "clutter": 203
+   "clutter": 202
   },
   "fuzz_lim_005": {
    "max_height_m": 31.8,
@@ -325,11 +325,11 @@
   },
   "fuzz_lim_009": {
    "max_height_m": 27.89,
-   "clutter": 65
+   "clutter": 66
   },
   "fuzz_lim_010": {
-   "max_height_m": 25.04,
-   "clutter": 50
+   "max_height_m": 25.02,
+   "clutter": 53
   },
   "fuzz_lim_011": {
    "max_height_m": 23.78,
@@ -341,7 +341,7 @@
   },
   "fuzz_lim_013": {
    "max_height_m": 23.41,
-   "clutter": 49
+   "clutter": 46
   },
   "fuzz_lim_014": {
    "max_height_m": 24.94,
@@ -353,7 +353,7 @@
   },
   "fuzz_lim_016": {
    "max_height_m": 24.43,
-   "clutter": 56
+   "clutter": 58
   },
   "fuzz_lim_017": {
    "max_height_m": 22.93,
@@ -375,7 +375,7 @@
   },
   "fuzz_lim_023": {
    "max_height_m": 24.27,
-   "clutter": 83
+   "clutter": 82
   },
   "fuzz_lim_024": {
    "max_height_m": 23.93,
@@ -420,8 +420,8 @@
   },
   "fuzz_lim_035": "invalid",
   "fuzz_lim_036": {
-   "max_height_m": 26.36,
-   "clutter": 27
+   "max_height_m": 26.35,
+   "clutter": 25
   },
   "fuzz_lim_037": {
    "max_height_m": 88.79,
@@ -451,7 +451,7 @@
   "fuzz_lim_044": "invalid",
   "fuzz_lim_045": {
    "max_height_m": 23.2,
-   "clutter": 44
+   "clutter": 40
   },
   "fuzz_lim_046": {
    "max_height_m": 7.965306899339232,
@@ -501,7 +501,7 @@
   },
   "fuzz_lim_059": {
    "max_height_m": 24.6,
-   "clutter": 48
+   "clutter": 49
   },
   "fuzz_lim_060": {
    "max_height_m": 36.49,
@@ -526,7 +526,7 @@
   },
   "fuzz_lim_066": {
    "max_height_m": 25.46,
-   "clutter": 53
+   "clutter": 59
   },
   "fuzz_lim_067": "invalid",
   "fuzz_lim_068": "invalid",
@@ -552,11 +552,11 @@
   },
   "fuzz_lim_074": {
    "max_height_m": 23.49,
-   "clutter": 31
+   "clutter": 35
   },
   "fuzz_lim_075": {
-   "max_height_m": 25.43,
-   "clutter": 69
+   "max_height_m": 25.42,
+   "clutter": 68
   },
   "fuzz_lim_076": {
    "max_height_m": 26.72,
@@ -569,7 +569,7 @@
    "clutter": 137
   },
   "fuzz_lim_080": {
-   "max_height_m": 25.54,
+   "max_height_m": 25.5,
    "clutter": 46
   },
   "fuzz_lim_081": "invalid",
@@ -580,7 +580,7 @@
   },
   "fuzz_lim_084": {
    "max_height_m": 23.62,
-   "clutter": 49
+   "clutter": 54
   },
   "fuzz_lim_085": {
    "max_height_m": 23.99,
@@ -588,11 +588,11 @@
   },
   "fuzz_lim_086": {
    "max_height_m": 24.83,
-   "clutter": 70
+   "clutter": 67
   },
   "fuzz_lim_087": {
    "max_height_m": 24.43,
-   "clutter": 66
+   "clutter": 55
   },
   "fuzz_lim_088": {
    "max_height_m": 23.06,
@@ -611,8 +611,8 @@
    "clutter": 35
   },
   "fuzz_lim_092": {
-   "max_height_m": 25.54,
-   "clutter": 33
+   "max_height_m": 25.49,
+   "clutter": 31
   },
   "fuzz_lim_093": {
    "max_height_m": 19.14,
@@ -620,7 +620,7 @@
   },
   "fuzz_lim_094": {
    "max_height_m": 24.21,
-   "clutter": 63
+   "clutter": 61
   },
   "fuzz_lim_095": {
    "max_height_m": 21.84,
@@ -666,7 +666,7 @@
   },
   "fuzz_lim_107": {
    "max_height_m": 24.04,
-   "clutter": 20
+   "clutter": 22
   },
   "fuzz_lim_108": {
    "max_height_m": 25.79,
@@ -678,7 +678,7 @@
   },
   "fuzz_lim_110": {
    "max_height_m": 25.76,
-   "clutter": 75
+   "clutter": 74
   },
   "fuzz_lim_111": {
    "max_height_m": 22.23,
@@ -686,7 +686,7 @@
   },
   "fuzz_lim_112": {
    "max_height_m": 23.5,
-   "clutter": 19
+   "clutter": 17
   },
   "fuzz_lim_113": {
    "max_height_m": 25.8,
@@ -702,7 +702,7 @@
   },
   "fuzz_lim_116": {
    "max_height_m": 25.5,
-   "clutter": 45
+   "clutter": 53
   },
   "fuzz_lim_117": {
    "max_height_m": 8.05,
@@ -722,7 +722,7 @@
   },
   "fuzz_lim_121": {
    "max_height_m": 23.67,
-   "clutter": 66
+   "clutter": 70
   },
   "fuzz_lim_122": {
    "max_height_m": 30.13,
@@ -778,7 +778,7 @@
   },
   "fuzz_lim_135": {
    "max_height_m": 23.34,
-   "clutter": 53
+   "clutter": 51
   },
   "fuzz_lim_136": "invalid",
   "fuzz_lim_137": {
@@ -815,11 +815,11 @@
   },
   "fuzz_lim_145": {
    "max_height_m": 23.49,
-   "clutter": 33
+   "clutter": 35
   },
   "fuzz_lim_146": {
-   "max_height_m": 25.11,
-   "clutter": 67
+   "max_height_m": 25.07,
+   "clutter": 71
   },
   "fuzz_lim_147": {
    "max_height_m": 25.62,
@@ -859,10 +859,10 @@
   "fuzz_free_008": "invalid",
   "fuzz_free_009": {
    "max_height_m": 25.8,
-   "clutter": 50
+   "clutter": 53
   },
   "fuzz_free_010": {
-   "max_height_m": 25.97,
+   "max_height_m": 25.98,
    "clutter": 45
   },
   "fuzz_free_011": "invalid",
@@ -884,7 +884,7 @@
   },
   "fuzz_free_016": {
    "max_height_m": 24.43,
-   "clutter": 57
+   "clutter": 56
   },
   "fuzz_free_017": {
    "max_height_m": 22.93,
@@ -900,7 +900,7 @@
    "clutter": 37
   },
   "fuzz_free_021": {
-   "max_height_m": 25.2,
+   "max_height_m": 25.13,
    "clutter": 31
   },
   "fuzz_free_022": {
@@ -955,7 +955,7 @@
   },
   "fuzz_free_036": {
    "max_height_m": 23.67,
-   "clutter": 23
+   "clutter": 22
   },
   "fuzz_free_037": {
    "max_height_m": 25.79,
@@ -967,12 +967,12 @@
   },
   "fuzz_free_039": {
    "max_height_m": 25.64,
-   "clutter": 72
+   "clutter": 63
   },
   "fuzz_free_040": "invalid",
   "fuzz_free_041": {
    "max_height_m": 23.49,
-   "clutter": 19
+   "clutter": 21
   },
   "fuzz_free_042": {
    "max_height_m": 26.03,
@@ -988,7 +988,7 @@
   },
   "fuzz_free_045": {
    "max_height_m": 23.41,
-   "clutter": 46
+   "clutter": 48
   },
   "fuzz_free_046": {
    "max_height_m": 8.05,
@@ -1004,7 +1004,7 @@
   },
   "fuzz_free_049": {
    "max_height_m": 23.65,
-   "clutter": 77
+   "clutter": 71
   },
   "fuzz_free_050": {
    "max_height_m": 23.69,
@@ -1040,7 +1040,7 @@
   },
   "fuzz_free_058": {
    "max_height_m": 24.78,
-   "clutter": 47
+   "clutter": 49
   },
   "fuzz_free_059": {
    "max_height_m": 24.56,
@@ -1069,7 +1069,7 @@
   },
   "fuzz_free_066": {
    "max_height_m": 25.7,
-   "clutter": 55
+   "clutter": 56
   },
   "fuzz_free_067": {
    "max_height_m": 27.2,
@@ -1098,11 +1098,11 @@
   },
   "fuzz_free_074": {
    "max_height_m": 23.55,
-   "clutter": 38
+   "clutter": 37
   },
   "fuzz_free_075": {
-   "max_height_m": 25.45,
-   "clutter": 59
+   "max_height_m": 25.44,
+   "clutter": 65
   },
   "fuzz_free_076": {
    "max_height_m": 25.58,
@@ -1118,12 +1118,12 @@
   },
   "fuzz_free_079": "invalid",
   "fuzz_free_080": {
-   "max_height_m": 25.81,
+   "max_height_m": 25.78,
    "clutter": 54
   },
   "fuzz_free_081": {
-   "max_height_m": 26.22,
-   "clutter": 44
+   "max_height_m": 26.19,
+   "clutter": 43
   },
   "fuzz_free_082": {
    "max_height_m": 23.71,
@@ -1135,19 +1135,19 @@
   },
   "fuzz_free_084": {
    "max_height_m": 23.42,
-   "clutter": 47
+   "clutter": 46
   },
   "fuzz_free_085": {
    "max_height_m": 23.99,
-   "clutter": 39
+   "clutter": 40
   },
   "fuzz_free_086": {
    "max_height_m": 24.8,
-   "clutter": 61
+   "clutter": 59
   },
   "fuzz_free_087": {
    "max_height_m": 24.43,
-   "clutter": 68
+   "clutter": 61
   },
   "fuzz_free_088": {
    "max_height_m": 22.78,
@@ -1163,7 +1163,7 @@
    "clutter": 48
   },
   "fuzz_free_092": {
-   "max_height_m": 25.79,
+   "max_height_m": 25.72,
    "clutter": 31
   },
   "fuzz_free_093": {
@@ -1232,11 +1232,11 @@
   "fuzz_free_111": "invalid",
   "fuzz_free_112": {
    "max_height_m": 23.49,
-   "clutter": 20
+   "clutter": 19
   },
   "fuzz_free_113": {
    "max_height_m": 29.05,
-   "clutter": 140
+   "clutter": 139
   },
   "fuzz_free_114": {
    "max_height_m": 27.99,
@@ -1265,7 +1265,7 @@
   },
   "fuzz_free_121": {
    "max_height_m": 23.59,
-   "clutter": 66
+   "clutter": 76
   },
   "fuzz_free_122": "invalid",
   "fuzz_free_123": {

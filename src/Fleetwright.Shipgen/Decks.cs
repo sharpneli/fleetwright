@@ -90,6 +90,9 @@ public sealed class Geo
     public (double X0, double X1)? Citadel;
     public (double X0, double X1)? Steering;
     public double? SteeringBeam;
+    /// <summary>The planform's half-width at the stern and the stem: an end belt run to an end with a face there (a
+    /// transom) closes round it.</summary>
+    public (double Aft, double Fore)? EndHalfWidths;
     public List<RaisedStretch> Raised = [];
     public Windage? Windage;
     public BridgePlan? Bridge;

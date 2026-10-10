@@ -310,6 +310,13 @@ public sealed class HitboxMesh
                     double w = HalfWidth(x, (lo + hi) / 2) - 0.2;
                     Add("armoured_bulkhead", bh.Id, bh, Box(x - 0.15, x + 0.15, -w, w), lo, hi);
                 }
+            foreach (var p in arm.Bulkheads ?? [])   // an end belt's plate across a hull end face (a transom), just inside it
+                if (Math.Abs(p.X) >= hb.Length / 2 - 0.01)
+                {
+                    double x = p.X - Math.Sign(p.X) * 0.15, w = HalfWidth(x, (p.Bottom + p.Top) / 2);
+                    if (w > 0.01)
+                        Add("armoured_bulkhead", p.Id, p, Box(x - 0.15, x + 0.15, -w, w), p.Bottom, p.Top);
+                }
             foreach (var d in arm.Decks ?? [])
             {
                 // inset from the side; stations where the hull is too narrow there are left out (hitview let the two

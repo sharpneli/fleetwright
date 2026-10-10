@@ -218,7 +218,7 @@ public static class Hitbox
         if (ag.Armoured && ag.BulkheadMm > 0)
             bulkheads.AddRange(new[] { ("Forward", ag.X1), ("Aft", ag.X0) }.Select(t => new ArmourBulkheadReport($"{t.Item1} bulkhead",
                 Math.Round(t.Item2, 3), Math.Round(ag.BulkheadMm), Rz(ag.BulkheadBottom), Rz(ag.BulkheadTop), NonEmpty(ag.BulkheadMaterial))));
-        bulkheads.AddRange(ag.EndBulkheads.Select(b => new ArmourBulkheadReport(b.Id, Math.Round(b.X, 3), Math.Round(b.Mm), Rz(b.Bottom), Rz(b.Top),
+        bulkheads.AddRange(ag.EndBulkheads.Concat(ag.EndPlates).Select(b => new ArmourBulkheadReport(b.Id, Math.Round(b.X, 3), Math.Round(b.Mm), Rz(b.Bottom), Rz(b.Top),
             NonEmpty(b.Material))));
         if (bulkheads.Count > 0)
             armour.Bulkheads = bulkheads;

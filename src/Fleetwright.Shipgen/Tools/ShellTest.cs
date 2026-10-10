@@ -214,8 +214,8 @@ public static class ShellTest
                 double t = (b.X - x0) / ux;
                 if (t < 0)
                     continue;
-                double y = y0 + uy * t, z = z0 + uz * t;
-                if (z >= b.Bottom - Eps && z <= b.Top + Eps && z <= s.DeckTop(b.X) + Eps && Math.Abs(y) <= s.Hw(b.X, z) + Eps)
+                double y = y0 + uy * t, z = z0 + uz * t, xh = b.X - Math.Sign(b.X) * 0.01;   // a plate on an end face: the hull just inside it
+                if (z >= b.Bottom - Eps && z <= b.Top + Eps && z <= s.DeckTop(xh) + Eps && Math.Abs(y) <= s.Hw(xh, z) + Eps)
                     return Outcome.Armour;
             }
         // the hull side, the tubes and the solids, by stepping out

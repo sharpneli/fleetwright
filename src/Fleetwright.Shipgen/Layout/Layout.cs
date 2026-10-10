@@ -115,7 +115,17 @@ public sealed partial class Layout
     Slabs? deckBandSlabs;
     public readonly Dictionary<(List<Pt> Poly, double Y), List<(double, double)>> Scan = new(ScanKeyComparer.Instance);
 
-    public Hull Hull = null!;
+    /// <summary>The planform; setting it records its end widths in Geo, for the armour.</summary>
+    public Hull Hull
+    {
+        get => hull;
+        set
+        {
+            hull = value;
+            Geo.EndHalfWidths = (value.HalfWidth(-value.L / 2), value.HalfWidth(value.L / 2));
+        }
+    }
+    Hull hull = null!;
     public List<Mount> Mounts = [];
     public List<Block> Blocks = [];
     public List<Funnel> Funnels = [];

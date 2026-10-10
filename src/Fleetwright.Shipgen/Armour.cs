@@ -43,6 +43,9 @@ public sealed class ArmourLayout
     public bool Armoured;
     public double BulkheadMm, BulkheadBottom, BulkheadTop;
     public List<ArmourBulkhead> EndBulkheads = [];
+    /// <summary>The end belts' plates across the hull's end face (a transom), where a belt runs all the way to it: the
+    /// belt carried round the stern, as the complete belts were. Not bulkheads: the subdivision doesn't stop at them.</summary>
+    public List<ArmourBulkhead> EndPlates = [];
 }
 
 /// <summary>The design's armour: its validation, where the armour is (the one source for its weights, the subdivision
@@ -234,6 +237,7 @@ public static class Armour
 
         var strakes = new List<Strake>();
         var endBhs = new List<ArmourBulkhead>();
+        var endPlates = new List<ArmourBulkhead>();
         double bhBot = Math.Max(0.0, bot - 0.4 * h);
         var tops = new Dictionary<string, double>(StringComparer.Ordinal) { ["citadel"] = belt > 0 ? top : band };
         foreach (var end in BeltEnds)
@@ -261,6 +265,10 @@ public static class Armour
                 if (reach < 1.0 && (e.BulkheadMm ?? 0) > 0)
                     endBhs.Add(new ArmourBulkhead($"{Capitalize(end)} end belt bulkhead", end == "fore" ? s1 : s0, e.BulkheadMm!.Value,
                         bhBot, et, null, ArmourMaterial(design, "bulkheads")));
+                double hwEnd = geo.EndHalfWidths is var (ha, hf) ? end == "fore" ? hf : ha : 0.0;
+                if (reach >= 1.0 && hwEnd > 0.01)
+                    endPlates.Add(new ArmourBulkhead($"{Capitalize(end)} end belt, {(end == "fore" ? "stem" : "stern")} face",
+                        end == "fore" ? L / 2 : -L / 2, e.TipMm ?? emm, bot, et, 2 * hwEnd, ArmourMaterial(design, "end_belts", e.Material)));
             }
         }
         var sb = a.SteeringBox ?? new SteeringBoxInput();
@@ -331,7 +339,7 @@ public static class Armour
             Decks = decks, Strakes = strakes, MainZ = main?.Z, RoofZ = roof?.Z, RoofMm = roof?.Mm ?? 0, RoofMaterial = roof?.Material,
             BeltMaterial = ArmourMaterial(design, "belt"), BulkheadMaterial = ArmourMaterial(design, "bulkheads"),
             Armoured = belt > 0 || over.Count > 0, BulkheadMm = a.BulkheadMm ?? 0.6 * belt, BulkheadBottom = citBot, BulkheadTop = bhTop,
-            EndBulkheads = endBhs,
+            EndBulkheads = endBhs, EndPlates = endPlates,
         };
     }
 
@@ -356,7 +364,7 @@ public static class Armour
             double hb = g.BulkheadTop - g.BulkheadBottom;
             result.Add(new Weight("Bulkheads", "armour", 2 * B * hb * g.BulkheadMm / 1000 * Weight.Steel, xc, Zf(g.BulkheadTop, g.BulkheadBottom)));
         }
-        foreach (var b in g.EndBulkheads)
+        foreach (var b in g.EndBulkheads.Concat(g.EndPlates))
             result.Add(new Weight(b.Id, "armour", (b.W is double w && w != 0 ? w : B) * (b.Top - b.Bottom) * b.Mm / 1000 * Weight.Steel, b.X,
                 Zf(b.Top, b.Bottom)));
         foreach (var s in g.Strakes)
