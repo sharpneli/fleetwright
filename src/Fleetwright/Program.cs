@@ -5,18 +5,13 @@ public static class Program
     public static int Main(string[] args)
     {
         // Parse command line arguments
-        string? modelPath = null;
         int screenshotFrame = -1;
         string screenshotPath = "screenshot.png";
         string? shipPath = null, navy = null, era = null;
 
         foreach (string arg in args)
         {
-            if (arg.StartsWith("-model="))
-            {
-                modelPath = arg.Substring("-model=".Length);
-            }
-            else if (arg.StartsWith("-screenshot="))
+            if (arg.StartsWith("-screenshot="))
             {
                 string value = arg.Substring("-screenshot=".Length);
                 if (int.TryParse(value, out int frame))
@@ -40,10 +35,6 @@ public static class Program
             {
                 screenshotPath = arg.Substring("-output=".Length);
             }
-            else if (!arg.StartsWith("-") && (arg.EndsWith(".gltf") || arg.EndsWith(".glb")))
-            {
-                modelPath = arg;
-            }
         }
 
         try
@@ -57,21 +48,14 @@ public static class Program
                 engine.SetScreenshotCapture(screenshotFrame, screenshotPath);
             }
 
-            // The ship viewer: build, bake and show a Shipgen design instead of the 3D scene
-            if (!string.IsNullOrEmpty(shipPath))
+            // The ship viewer: build, bake and show a Shipgen design
+            shipPath ??= FindDefaultDesign();
+            if (shipPath == null)
             {
-                engine.Viewer = new ShipViewer(engine, shipPath, navy, era);
+                Console.Error.WriteLine($"No design given and {DefaultDesign} not found; pass -ship=path/to/design.json");
+                return 1;
             }
-
-            // Load model if specified
-            if (!string.IsNullOrEmpty(modelPath))
-            {
-                var scene = GltfLoader.Load(engine, modelPath);
-                if (scene != null)
-                {
-                    engine.SceneRenderables.Add(scene);
-                }
-            }
+            engine.Viewer = new ShipViewer(engine, shipPath, navy, era);
 
             // Run the engine
             engine.Run();
@@ -84,5 +68,23 @@ public static class Program
             Console.Error.WriteLine(ex.StackTrace);
             return 1;
         }
+    }
+
+    const string DefaultDesign = "shipgen/designs/bismarck.json";
+
+    /// <summary>The design shown without -ship=: looked up from the working directory and from the exe's folder
+    /// upwards, so it works from the repo root (dotnet run) and from bin/ (the IDE).</summary>
+    static string? FindDefaultDesign()
+    {
+        foreach (var start in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
+        {
+            for (var dir = new DirectoryInfo(start); dir != null; dir = dir.Parent)
+            {
+                var path = Path.Combine(dir.FullName, DefaultDesign);
+                if (File.Exists(path))
+                    return path;
+            }
+        }
+        return null;
     }
 }

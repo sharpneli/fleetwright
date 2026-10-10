@@ -1,6 +1,6 @@
 # Fleetwright
 
-Fleetwright is a naval game written in C# on .NET 10, rendered with the SDL3 GPU API (via ppy.SDL3-CS). The renderer currently does PBR materials, glTF loading, a scene graph and a Dear ImGui overlay; game code builds on top of it.
+Fleetwright is a naval game written in C# on .NET 10, rendered with the SDL3 GPU API (via ppy.SDL3-CS). The exe currently opens the ship viewer (a test tool for the ship generator) with a Dear ImGui overlay; game code builds on top of it.
 
 ## Build and test
 
@@ -12,36 +12,22 @@ dotnet test
 ## Run
 
 ```bash
-dotnet run --project src/Fleetwright
-
-# Load a glTF/GLB model
-dotnet run --project src/Fleetwright -- -model=path/to/model.glb
-dotnet run --project src/Fleetwright -- path/to/model.gltf
+dotnet run --project src/Fleetwright    # the ship viewer on shipgen/designs/bismarck.json (see Ship viewer)
 ```
-
-With no model loaded, the engine draws a placeholder cube at the origin.
 
 ## Screenshots
 
 Capture a specific frame as a PNG image:
 
 ```bash
-# Capture frame 5 to screenshot.png
-dotnet run --project src/Fleetwright -- -screenshot=5
+# Capture frame 30 to screenshot.png
+dotnet run --project src/Fleetwright -- -screenshot=30
 
-# With a model and custom output path
-dotnet run --project src/Fleetwright -- path/to/model.glb -screenshot=10 -output=my_screenshot.png
+# With a design and custom output path
+dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json -screenshot=30 -output=yamato.png
 ```
 
 The application exits after capturing the screenshot.
-
-## Controls
-
-- **WASD** - Move camera
-- **Space** - Move up
-- **Left Ctrl/Shift** - Move down
-- **Left Mouse + Drag** - Look around
-- **Escape** - Exit
 
 ## Ship viewer
 
@@ -50,8 +36,10 @@ dotnet run --project src/Fleetwright -- -ship=shipgen/designs/bismarck.json [-na
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/bismarck.json -screenshot=30 -output=ship.png
 ```
 
-Builds, bakes and shows a design from the baked textures (mips, turrets through their arcs, height-map shadows);
-the "Ship" panel switches design, look, mip level, turrets and sun. Wheel zooms, left drag pans.
+The default launch; `-ship=` picks the design (without it, `shipgen/designs/bismarck.json` is looked up from the
+working directory and the exe's folder upwards). Builds, bakes and shows a design from the baked textures (mips,
+turrets through their arcs, height-map shadows); the "Ship" panel switches design, look, mip level, turrets and sun.
+Wheel zooms, left drag pans, Escape quits.
 
 ## Shipgen CLI
 
@@ -97,7 +85,7 @@ src/
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF)
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
     Camera.cs                 #   FPS camera
-    ShipViewer.cs             #   the ship viewer (-ship=), a test tool for Shipgen
+    ShipViewer.cs             #   the ship viewer (the default launch), a test tool for Shipgen
   Fleetwright.Gpu/            # GPU helpers shared by the game and the Shipgen renderer
     GpuTypes.cs               #   buffers, textures, samplers, DrawContext, SceneNode, MeshNode, materials
     GpuPipelineBuilder.cs     #   fluent pipeline builder

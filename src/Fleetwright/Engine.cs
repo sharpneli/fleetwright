@@ -178,9 +178,6 @@ public unsafe class Sdl3GpuEngine : IDisposable
     private GpuSampler _defaultSamplerLinear;
     private GpuSampler _defaultSamplerNearest;
 
-    // Test meshes
-    private GpuMeshBuffers _testMesh;
-
     // Loaded scenes
     private readonly List<LoadedGltf> _loadedScenes = new();
     private readonly List<IRenderable> _sceneRenderables = new();
@@ -331,7 +328,6 @@ public unsafe class Sdl3GpuEngine : IDisposable
         InitDrawTextures();
         InitDefaultData();
         InitPipelines();
-        InitRenderables();
         InitScreenshot();
         InitImGui();
 
@@ -508,68 +504,6 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
         SDL_ReleaseGPUShader(_device, vertexShader);
         SDL_ReleaseGPUShader(_device, fragmentShader);
-    }
-
-    private void InitRenderables()
-    {
-        // Create a test cube mesh
-        _testMesh = CreateCubeMesh();
-    }
-
-    private GpuMeshBuffers CreateCubeMesh()
-    {
-        Vertex[] vertices = new Vertex[]
-        {
-            // Front face
-            new(new(-0.5f, -0.5f,  0.5f), new(0, 0, 1), new(0, 1)),
-            new(new( 0.5f, -0.5f,  0.5f), new(0, 0, 1), new(1, 1)),
-            new(new( 0.5f,  0.5f,  0.5f), new(0, 0, 1), new(1, 0)),
-            new(new(-0.5f,  0.5f,  0.5f), new(0, 0, 1), new(0, 0)),
-            // Back face
-            new(new( 0.5f, -0.5f, -0.5f), new(0, 0, -1), new(0, 1)),
-            new(new(-0.5f, -0.5f, -0.5f), new(0, 0, -1), new(1, 1)),
-            new(new(-0.5f,  0.5f, -0.5f), new(0, 0, -1), new(1, 0)),
-            new(new( 0.5f,  0.5f, -0.5f), new(0, 0, -1), new(0, 0)),
-            // Top face
-            new(new(-0.5f,  0.5f,  0.5f), new(0, 1, 0), new(0, 1)),
-            new(new( 0.5f,  0.5f,  0.5f), new(0, 1, 0), new(1, 1)),
-            new(new( 0.5f,  0.5f, -0.5f), new(0, 1, 0), new(1, 0)),
-            new(new(-0.5f,  0.5f, -0.5f), new(0, 1, 0), new(0, 0)),
-            // Bottom face
-            new(new(-0.5f, -0.5f, -0.5f), new(0, -1, 0), new(0, 1)),
-            new(new( 0.5f, -0.5f, -0.5f), new(0, -1, 0), new(1, 1)),
-            new(new( 0.5f, -0.5f,  0.5f), new(0, -1, 0), new(1, 0)),
-            new(new(-0.5f, -0.5f,  0.5f), new(0, -1, 0), new(0, 0)),
-            // Right face
-            new(new( 0.5f, -0.5f,  0.5f), new(1, 0, 0), new(0, 1)),
-            new(new( 0.5f, -0.5f, -0.5f), new(1, 0, 0), new(1, 1)),
-            new(new( 0.5f,  0.5f, -0.5f), new(1, 0, 0), new(1, 0)),
-            new(new( 0.5f,  0.5f,  0.5f), new(1, 0, 0), new(0, 0)),
-            // Left face
-            new(new(-0.5f, -0.5f, -0.5f), new(-1, 0, 0), new(0, 1)),
-            new(new(-0.5f, -0.5f,  0.5f), new(-1, 0, 0), new(1, 1)),
-            new(new(-0.5f,  0.5f,  0.5f), new(-1, 0, 0), new(1, 0)),
-            new(new(-0.5f,  0.5f, -0.5f), new(-1, 0, 0), new(0, 0)),
-        };
-
-        // Indices with counter-clockwise winding (when viewed from outside), matching GLTF
-        uint[] indices = new uint[]
-        {
-            // Front (viewed from +Z)
-            0, 1, 2, 0, 2, 3,
-            // Back (viewed from -Z)
-            4, 5, 6, 4, 6, 7,
-            // Top (viewed from +Y)
-            8, 9, 10, 8, 10, 11,
-            // Bottom (viewed from -Y)
-            12, 13, 14, 12, 14, 15,
-            // Right (viewed from +X)
-            16, 17, 18, 16, 18, 19,
-            // Left (viewed from -X)
-            20, 21, 22, 20, 22, 23
-        };
-
-        return UploadMesh(vertices, indices);
     }
 
     private GpuTexture CreateSingleColorTexture(uint color)
@@ -1016,12 +950,6 @@ public unsafe class Sdl3GpuEngine : IDisposable
             return;
         }
 
-        // With no scene loaded, frame the fallback test cube at the origin
-        if (_sceneRenderables.Count == 0)
-        {
-            _mainCamera.Position = new Vector3(0, 0, 3);
-        }
-
         _isRunning = true;
         _totalTimer.Start();
         _frameTimer.Start();
@@ -1355,12 +1283,6 @@ public unsafe class Sdl3GpuEngine : IDisposable
             }
         }
 
-        // If no renderables, draw test mesh
-        if (_drawContext.OpaqueSurfaces.Count == 0 && _drawContext.TransparentSurfaces.Count == 0)
-        {
-            DrawTestMesh(renderPass, commandBuffer);
-        }
-
         SDL_EndGPURenderPass(renderPass);
     }
 
@@ -1406,57 +1328,6 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
         DrawCalls++;
         TriangleCount += (int)(obj.IndexCount / 3);
-    }
-
-    private void DrawTestMesh(SDL_GPURenderPass* renderPass, SDL_GPUCommandBuffer* commandBuffer)
-    {
-        if (!_testMesh.IsValid || _pbrMaterial.OpaquePipeline.Pipeline == null)
-            return;
-
-        SDL_BindGPUGraphicsPipeline(renderPass, _pbrMaterial.OpaquePipeline.Pipeline);
-
-        // Bind vertex buffer
-        SDL_GPUBufferBinding vertexBinding = new SDL_GPUBufferBinding
-        {
-            buffer = _testMesh.VertexBuffer.Buffer,
-            offset = 0
-        };
-        SDL_BindGPUVertexBuffers(renderPass, 0, &vertexBinding, 1);
-
-        // Bind index buffer
-        SDL_GPUBufferBinding indexBinding = new SDL_GPUBufferBinding
-        {
-            buffer = _testMesh.IndexBuffer.Buffer,
-            offset = 0
-        };
-        SDL_BindGPUIndexBuffer(renderPass, &indexBinding, SDL_GPUIndexElementSize.SDL_GPU_INDEXELEMENTSIZE_32BIT);
-
-        // Create push constant data for rotating cube
-        float time = (float)_totalTimer.Elapsed.TotalSeconds;
-        Matrix4x4 modelMatrix = Matrix4x4.CreateRotationY(time * 0.5f) * Matrix4x4.CreateRotationX(time * 0.3f);
-
-        GpuVertexPushData pushData = new GpuVertexPushData
-        {
-            ViewProj = _sceneData.ViewProj,
-            ModelMatrix = modelMatrix,
-            ColorFactors = Vector4.One
-        };
-
-        SDL_PushGPUVertexUniformData(commandBuffer, 0, (nint)(&pushData), (uint)GpuVertexPushData.SizeInBytes);
-
-        // Bind default color texture
-        SDL_GPUTextureSamplerBinding textureSamplerBinding = new SDL_GPUTextureSamplerBinding
-        {
-            texture = _errorCheckerboardTexture.Texture,
-            sampler = _defaultSamplerNearest.Sampler
-        };
-        SDL_BindGPUFragmentSamplers(renderPass, 0, &textureSamplerBinding, 1);
-
-        // Draw
-        SDL_DrawGPUIndexedPrimitives(renderPass, _testMesh.IndexCount, 1, 0, 0, 0);
-
-        DrawCalls++;
-        TriangleCount += (int)(_testMesh.IndexCount / 3);
     }
 
     private void BlitToSwapchain(SDL_GPUCommandBuffer* commandBuffer, SDL_GPUTexture* swapchainTexture)
@@ -1644,13 +1515,6 @@ public unsafe class Sdl3GpuEngine : IDisposable
             scene.Dispose();
         }
         _loadedScenes.Clear();
-
-        // Release test mesh
-        if (_testMesh.IsValid)
-        {
-            DestroyBuffer(_testMesh.VertexBuffer);
-            DestroyBuffer(_testMesh.IndexBuffer);
-        }
 
         // Release pipelines
         if (_blitPipeline != null)
