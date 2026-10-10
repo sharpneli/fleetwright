@@ -10,10 +10,22 @@ and compare, goal-seek, widget-grow animations, the drag-and-drop arrangement st
 
 ## User's decisions so far
 
-- **An empty ship is a 6 kn hull and nothing else.** `{"id": "new", "speed_kn": 6}`.
-- **Nothing under 6 kn.** Slower ships aren't seaworthy in rougher weather, and we don't want to simulate that for
-  an undamaged ship cruising. The speed knob's floor is 6 kn, for every style. (This replaces research §14.4 item 8,
+- **An empty ship is an 8 kn hull and nothing else.** `{"id": "new", "speed_kn": 8}`. (First proposed at 6 kn;
+  8 kn, the engine's existing common floor, is fine.)
+- **Nothing under 8 kn.** Slower ships aren't seaworthy in rougher weather, and we don't want to simulate that for
+  an undamaged ship cruising. The speed knob's floor is 8 kn, for every style. (This replaces research §14.4 item 8,
   "speed 0 means no plant": there is always a plant.)
+- **The designer is a scene of its own, callable from anywhere.** It takes a design in and hands a design back
+  (Accept or Cancel); the game launches it from its own UI and uses the result. The ship viewer's
+  `DesignSession` is one caller, not a dependency.
+- **ImGui** for the designer's UI, themed to the mockup.
+- **Units: a toggle** (metric / imperial). In the game it becomes a per-nation option; historical nations use their
+  own units for flavour.
+- **Saved designs** go to `Documents/My Games/Fleetwright/Designs/` for now; campaign saves come later and will
+  own them.
+- **The empty ship's warnings are accepted** for v1.
+- **Threading can grow step by step**: the build goes to the worker first; moving the sprite drawing and bake there
+  too can wait until it's convenient.
 - **Existing ships can be opened and tuned**: load, play with the knobs, see the effect.
 - **The designer works on a background thread.** No edit freezes the game; results land when ready.
 - **Compose from the offscreen renderers** (CLAUDE.md "Views"): the designer is an `IScene` whose pictures come
@@ -52,8 +64,8 @@ Findings that shape the plan:
 2. **A build allocates 30–80 MB.** Moving the build off the render thread does not move its garbage collections:
    gen0/gen1 collections stop every managed thread, the render thread too. A slider dragged across ten values is
    ~0.7 GB of garbage. This needs measuring (Tracy frame times during a drag) before deciding on a fix, see Step 1.
-3. **The input limits reject 6 kn**: `Style.CommonLimits` has `speed_kn` 8..42 and `Warship` 15..60. Both floors
-   go to 6. The shipped designs run 9–41 kn, so none is affected.
+3. **The input limits**: `Style.CommonLimits` has `speed_kn` 8..42 and `Warship` 15..60. The warship floor goes
+   to 8, matching the common one. The shipped designs run 9–41 kn, so none is affected.
 4. **The empty ship is not clean**: two warnings, both true physics of a 30 m hull carrying the default bridge. See
    open question 1.
 5. **Shipgen builds are already thread-safe** (`ConcurrentBuildsAreIdentical`), and the drawing tests run in
@@ -98,7 +110,7 @@ Three layers, matching the views' rule (data → renderer → scene):
   ```
 
   The range comes from the style's `Limits()` by the knob's JSON path, so the engine stays the one source of truth;
-  the UI only adds the 6 kn floor (which the limits will then agree with). A knob on Auto shows `Auto · 100`, typing
+  the 8 kn floor is the limits' own. A knob on Auto shows `Auto · 100`, typing
   or stepping overrides it, ⟲ returns it to Auto. Trim sheet and section panels read the same knobs, so an edit in
   one shows in the other (research §15.7 rule 2).
 
@@ -180,7 +192,7 @@ IBM Plex fonts (shipped as game assets):
 | 1 Main battery | per battery: calibre, calibre length, barrels, fore / aft / mid / wing counts, superfire per end, echelon; + battery, − battery |
 | 2 Secondary · AA · TT | per battery: calibre, barrels, per side, mount (deck / casemate); AA heavy and light; torpedo mounts and tubes |
 | 3 Protection | belt, belt bottom, upper belt, armour deck(s) mm, bulkhead, end belts fore / aft (mm, reach), TDS depth, turret faces per battery |
-| 4 Speed & machinery | speed (≥ 6), range, stress (Conservative ↔ Forced), shafts (Auto), arrangement (named presets) |
+| 4 Speed & machinery | speed (≥ 8), range, stress (Conservative ↔ Forced), shafts (Auto), arrangement (named presets) |
 | 5 Hull & upperworks | block coefficient (Full ↔ Fine), freeboard, raised stretches (presets), tower levels, deckhouse levels, aft control |
 | 6 Fire control | directors per battery (count), rangefinder base |
 | 7 Crew | crew standard (presets), endurance days (Auto) |
@@ -189,7 +201,7 @@ Adding the first main battery or the first armour to an empty ship sets a modest
 belt 50 mm) that the knobs then move; the history labels it.
 
 **Input**: `−`/`+` buttons, mouse wheel over a value (shift for ×4), typing, Ctrl+Z / Ctrl+Y, 0–7 for sections.
-Values show in metric with imperial beside them (`279 mm · 11.0 in`) until a units setting exists.
+Values show in the toggled units (metric `279 mm`, imperial `11.0 in`; the design always stores metric).
 
 ## Steps
 
@@ -198,7 +210,7 @@ Each step is a commit, verified with `dotnet test` and, for UI, `-screenshot -ui
 1. **Measure the GC cost.** A Tracy run of the viewer with a background loop rebuilding Dreadnought; record frame-time
    spikes with the default GC, `SustainedLowLatency` and a larger gen0. Note the result in `docs/profiling.md` and pick
    the setting. Also confirm `ShipSprites.Build` + `ShipBake` with its own device on a non-main thread.
-2. **Engine: the 6 kn floor.** `speed_kn` lower limit 6 in `Style.CommonLimits` and `Warship`. `golden-check` stays
+2. **Engine: the 8 kn floor.** `Warship`'s `speed_kn` lower limit 15 → 8. `golden-check` stays
    371/371 (limits only validate). Add the empty design as a test: it validates and builds.
 3. **DesignWorker + DesignResult**, with tests (latest wins, ids increase, errors keep the last good ship, cache hit
    on undo). Move `DesignSession` onto it; the ship and hitbox viewers consume results and stop stalling on design
@@ -219,12 +231,5 @@ animations, sketches and compare, structured warnings with fixes, size drivers i
 
 ## Open questions
 
-1. **The empty ship's two warnings** (L/B 3.8; 38° heel in a beam gale). They are honest physics for a 30 m hull
-   with the default bridge. Options: (a) accept them, the player's first edits remove them; (b) give the empty
-   preset a lower bridge (`tower_levels` 2 is already the minimum, so this would mean deckhouse or plating changes);
-   (c) silence the beam and gale checks below some size. Recommendation: (a) for v1.
-2. **Where saved designs live.** Recommendation: `Documents/My Games/Fleetwright/Designs/`, listed beside the
-   shipped ones in the Open dialog, shipped ones read-only.
-3. **ImGui for the designer**, themed to the mockup, versus a custom UI layer. Recommendation: ImGui now; the layout
-   is rect-based so the later animations still fit.
-4. **Units**: metric with imperial beside it until there's a setting, or a toggle in v1?
+None open. Answered 2026-10-10: the empty ship's warnings stay (v1), saves go to My Games for now, ImGui, a units
+toggle (see the decisions at the top).
