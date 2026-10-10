@@ -151,6 +151,34 @@ public sealed class HullField
         return a + (b - a) * fx;
     }
 
+    /// <summary>The strips between stations, for walking the surface cell by cell (a mesh of it).</summary>
+    public int StripCount => xs.Length - 1;
+
+    public double StationX(int i) => xs[i];
+
+    /// <summary>Strip i's row heights, ascending.</summary>
+    public ReadOnlySpan<double> RowHeights(int i) => zs.AsSpan(first[i], first[i + 1] - first[i]);
+
+    /// <summary>The half-breadth in strip i at fx (0: its aft station, 1: its fore) and z; unlike HalfWidth, exact on the
+    /// strip's own stations, the hull's ends included.</summary>
+    public double InStrip(int i, double fx, double z)
+    {
+        int k = Row(i, z);
+        if (k < 0)
+            return 0.0;
+        if (k == first[i + 1] - 1)
+            return wa[k] + (wb[k] - wa[k]) * fx;
+        double fz = (z - zs[k]) / (zs[k + 1] - zs[k]);
+        double a = wa[k] + (wa[k + 1] - wa[k]) * fz, b = wb[k] + (wb[k + 1] - wb[k]) * fz;
+        return a + (b - a) * fx;
+    }
+
+    /// <summary>Where the deck's height changes along the length (the hull's ends first and last), and the heights
+    /// between: DeckTops[k] over DeckBreaks[k] .. DeckBreaks[k + 1].</summary>
+    public ReadOnlySpan<double> DeckBreaks => deckX;
+
+    public ReadOnlySpan<double> DeckTops => deckTop;
+
     /// <summary>The hull's top at x: the main deck (0), or a raised stretch's deck.</summary>
     public double DeckTop(double x)
     {

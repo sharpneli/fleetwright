@@ -93,6 +93,8 @@ public class HitboxMeshTests
                     failures.Add($"{name}: {p.Id} has no height");
                 if (p.Min.X < -reach || p.Max.X > reach || Math.Abs(p.Min.Y) > beam || Math.Abs(p.Max.Y) > beam)
                     failures.Add($"{name}: {p.Id} lies outside the ship ({p.Min} to {p.Max})");
+                if (p.Kind == HitKinds.IndexOf("hull"))
+                    continue;   // the hull's skin isn't an extruded footprint (Hull_skin_lies_on_the_hull_form)
                 // the top cap (the triangles facing up) must cover its ring of vertices (the footprint, drawn grown by
                 // a hair), no more, no less; and the drawn ring stays within a few centimetres of the footprint
                 double got = 0;
@@ -119,5 +121,35 @@ public class HitboxMeshTests
             }
         });
         Assert.True(failures.IsEmpty, string.Join("\n", failures.Take(30)));
+    }
+
+    /// <summary>The hull's skin is the hull form: every vertex of its sides lies on |y| = W(x, z), pushed out by the
+    /// centimetre that keeps it off the cells; with tumblehome too, and up a raised stretch's sides.</summary>
+    [Theory]
+    [InlineData("bismarck")]
+    [InlineData("bouvet")]
+    [InlineData("danton")]
+    public void Hull_skin_lies_on_the_hull_form(string name)
+    {
+        var hb = ShipDesign.Build(Design.Load(Paths.Shipgen("designs", $"{name}.json"))).Hitboxes;
+        var field = new HullField(hb.HullForm, hb.Vertical);
+        var mesh = HitboxMesh.Build(hb);
+        int hull = HitKinds.IndexOf("hull"), sides = 0;
+        foreach (var p in mesh.Prisms.Where(p => p.Kind == hull))
+        {
+            var idx = mesh.Indices.AsSpan(p.FirstIndex, p.IndexCount);
+            foreach (var i in idx)
+            {
+                var v = mesh.Vertices[i];
+                if (Math.Abs(v.Normal.Y) < 0.5 || v.Normal.Z == 1 || v.Normal.Z == -1)
+                    continue;   // the deck tops, bottoms and end walls
+                sides++;
+                double x = Math.Clamp(v.Position.X, field.X0 + 1e-4, field.X1 - 1e-4);
+                double w = field.HalfWidth(x, v.Position.Z);
+                Assert.True(Math.Abs(Math.Abs(v.Position.Y) - (w + 0.01)) < 2e-3 || w == 0,
+                    $"{name}: {p.Id} vertex {v.Position} is {Math.Abs(v.Position.Y) - w:F3} m off the form");
+            }
+        }
+        Assert.True(sides > 1000);
     }
 }

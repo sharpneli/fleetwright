@@ -156,7 +156,116 @@ public sealed class HitboxMesh
         readonly List<uint> lines = [];
         readonly List<HitPrism> prisms = [];
 
-        double HalfWidth(double x, double z) => hb.HullForm.Stations.Count >= 2 ? hb.HullForm.HalfWidth(x, z) : DeckHalfWidth(x);
+        readonly HullField? field = hb.HullForm.Stations.Count >= 2 ? new HullField(hb.HullForm, hb.Vertical) : null;
+
+        double HalfWidth(double x, double z) => field?.HalfWidth(x, z) ?? DeckHalfWidth(x);
+
+        /// <summary>The hull's skin, one prism per strip between stations: both sides through every row of the form
+        /// (smooth normals across cells), the deck tops, the bottom where a strip starts with width, the flat ends
+        /// and the raised stretches' end walls. Pushed out by a hair against the cells that lie on it.</summary>
+        void AddHullSkin(HullField f)
+        {
+            const double Out = 0.01;
+            int kind = HitKinds.IndexOf("hull");
+            var breaks = f.DeckBreaks.ToArray();
+
+            Vector3 SideNormal(double x, double z, int s)
+            {
+                const double Hx = 0.3, Hz = 0.05;
+                double xa = Math.Max(f.X0 + 1e-6, x - Hx), xb = Math.Min(f.X1 - 1e-6, x + Hx), xm = Math.Clamp(x, xa, xb);
+                double gx = xb > xa ? (f.HalfWidth(xb, z) - f.HalfWidth(xa, z)) / (xb - xa) : 0.0;
+                double gz = (f.HalfWidth(xm, z + Hz) - f.HalfWidth(xm, z - Hz)) / (2 * Hz);
+                return Vector3.Normalize(new Vector3((float)-gx, s, (float)-gz));
+            }
+
+            for (int i = 0; i < f.StripCount; i++)
+            {
+                double x0 = f.StationX(i), x1 = f.StationX(i + 1), lx = x1 - x0;
+                var rows = f.RowHeights(i).ToArray();
+                uint pi = (uint)prisms.Count;
+                int firstIndex = tris.Count, firstEdge = lines.Count;
+                HitVertex V(double x, double y, double z, Vector3 n) =>
+                    new() { Position = new((float)x, (float)y, (float)z), Normal = n, Kind = (uint)kind, Prism = pi };
+                void Quad(HitVertex a, HitVertex b, HitVertex c, HitVertex d)
+                {
+                    uint v0 = (uint)verts.Count;
+                    verts.AddRange([a, b, c, d]);
+                    tris.AddRange([v0, v0 + 1, v0 + 2, v0, v0 + 2, v0 + 3]);
+                }
+                void Wall(double x, Func<double, double> w, IReadOnlyList<double> hs, float nx)
+                {
+                    var n = new Vector3(nx, 0, 0);
+                    double xo = x + nx * Out;
+                    for (int k = 0; k + 1 < hs.Count; k++)
+                    {
+                        double za = hs[k], zb = hs[k + 1];
+                        if (w(za) + w(zb) > 0)
+                            Quad(V(xo, -w(za), za, n), V(xo, w(za), za, n), V(xo, w(zb), zb, n), V(xo, -w(zb), zb, n));
+                    }
+                }
+                double wMax = 0, zLo = double.MaxValue, zHi = double.MinValue;
+
+                // the strip cut where the deck's height changes
+                var cuts = new List<double> { x0 };
+                foreach (var bx in breaks)
+                    if (bx > x0 + 1e-6 && bx < x1 - 1e-6)
+                        cuts.Add(bx);
+                cuts.Add(x1);
+                for (int c = 0; c + 1 < cuts.Count; c++)
+                {
+                    double xa = cuts[c], xb = cuts[c + 1], top = f.DeckTop((xa + xb) / 2);
+                    double fa = (xa - x0) / lx, fb = (xb - x0) / lx;
+                    var zl = rows.Where(z => z < top - 1e-6).Append(top).ToList();
+                    double Wa(double z) => f.InStrip(i, fa, z);
+                    double Wb(double z) => f.InStrip(i, fb, z);
+                    foreach (int s in new[] { 1, -1 })
+                        for (int k = 0; k + 1 < zl.Count; k++)
+                        {
+                            double za = zl[k], zb = zl[k + 1];
+                            if (Wa(za) + Wb(za) + Wa(zb) + Wb(zb) <= 0)
+                                continue;
+                            Quad(V(xa, s * (Wa(za) + Out), za, SideNormal(xa, za, s)), V(xb, s * (Wb(za) + Out), za, SideNormal(xb, za, s)),
+                                V(xb, s * (Wb(zb) + Out), zb, SideNormal(xb, zb, s)), V(xa, s * (Wa(zb) + Out), zb, SideNormal(xa, zb, s)));
+                        }
+                    // the deck top, and the bottom where the strip starts with width (a stern cut up out of the water)
+                    double tz = top + Out, bz = zl[0] - Out, z0 = zl[0];
+                    Quad(V(xa, -Wa(top) - Out, tz, Vector3.UnitZ), V(xb, -Wb(top) - Out, tz, Vector3.UnitZ),
+                        V(xb, Wb(top) + Out, tz, Vector3.UnitZ), V(xa, Wa(top) + Out, tz, Vector3.UnitZ));
+                    if (Wa(z0) + Wb(z0) > 0)
+                        Quad(V(xa, -Wa(z0), bz, -Vector3.UnitZ), V(xb, -Wb(z0), bz, -Vector3.UnitZ),
+                            V(xb, Wb(z0), bz, -Vector3.UnitZ), V(xa, Wa(z0), bz, -Vector3.UnitZ));
+                    // the flat ends (a transom), and a raised stretch's end wall where this piece starts
+                    if (i == 0 && c == 0)
+                        Wall(xa, Wa, zl, -1);
+                    if (i == f.StripCount - 1 && c == cuts.Count - 2)
+                        Wall(xb, Wb, zl, 1);
+                    int bi = Array.IndexOf(breaks, xa);
+                    if (bi > 0 && bi < breaks.Length - 1)
+                    {
+                        double before = f.DeckTops[bi - 1];
+                        if (Math.Abs(before - top) > 1e-6)
+                        {
+                            double lo = Math.Min(before, top), hi = Math.Max(before, top);
+                            Wall(xa, Wa, [.. Enumerable.Range(0, 5).Select(k => lo + (hi - lo) * k / 4)], top > before ? -1 : 1);
+                        }
+                    }
+                    foreach (var z in zl)
+                        wMax = Math.Max(wMax, Math.Max(Wa(z), Wb(z)));
+                    zLo = Math.Min(zLo, z0);
+                    zHi = Math.Max(zHi, top);
+                }
+                if (tris.Count == firstIndex)
+                    continue;
+                var fp = new[] { new Vector2((float)x0, (float)-wMax), new Vector2((float)x1, (float)-wMax), new Vector2((float)x1, (float)wMax),
+                    new Vector2((float)x0, (float)wMax) };
+                prisms.Add(new HitPrism
+                {
+                    Id = $"hull {x0:F1} to {x1:F1} m", Kind = kind, Footprint = fp, Base = (float)zLo, Top = (float)zHi, FirstIndex = firstIndex,
+                    IndexCount = tris.Count - firstIndex, FirstEdge = firstEdge, EdgeCount = 0,
+                    Min = new((float)x0, (float)-wMax, (float)zLo), Max = new((float)x1, (float)wMax, (float)zHi),
+                });
+            }
+        }
 
         /// <summary>The deck outline's half-width at x (its widest crossing), where there is no exported form.</summary>
         double DeckHalfWidth(double x)
@@ -216,12 +325,17 @@ public sealed class HitboxMesh
             var vert = hb.Vertical;
             double keel = vert.Keel, wl = vert.Waterline;
 
-            // the hull in slices, each its outline at the slice's middle: it narrows to the keel
-            var zs = new[] { 0.0, 0.06, 0.15, 0.3, 0.5, 0.75, 1.0 }.Select(f => keel + (Math.Min(wl, 0.0) - keel) * f).ToList();
-            if (wl < 0.0)
-                zs.Add(0.0);
-            for (int i = 0; i + 1 < zs.Count; i++)
-                Add("hull", $"hull {zs[i]:F1} to {zs[i + 1]:F1} m", null, FormOutline((zs[i] + zs[i + 1]) / 2), zs[i], zs[i + 1]);
+            if (field != null)
+                AddHullSkin(field);
+            else
+            {
+                // no exported form: the hull in slices of the deck's outline
+                var zs = new[] { 0.0, 0.5, 1.0 }.Select(f => keel + (Math.Min(wl, 0.0) - keel) * f).ToList();
+                if (wl < 0.0)
+                    zs.Add(0.0);
+                for (int i = 0; i + 1 < zs.Count; i++)
+                    Add("hull", $"hull {zs[i]:F1} to {zs[i + 1]:F1} m", null, FormOutline((zs[i] + zs[i + 1]) / 2), zs[i], zs[i + 1]);
+            }
 
             foreach (var c in hb.Components)
                 AddComponent(c);
