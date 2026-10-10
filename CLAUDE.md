@@ -90,6 +90,7 @@ src/
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
     Camera.cs                 #   FPS camera (unused; to become the top-down Earth camera)
+    IScene.cs                 #   a full-window view with its own UI; the engine draws the current one (see Views)
     ShipViewer.cs             #   the ship viewer (the default launch), a test tool for Shipgen
     ProfilerStubs.cs          #   no-op Tracy stand-ins for Release
   Fleetwright.Gpu/            # GPU helpers for the game exe
@@ -97,6 +98,8 @@ src/
     GpuPipelineBuilder.cs     #   fluent pipeline builder
     GpuMath.cs                #   math helpers (perspective, lookAt)
     ShaderTypes.cs            #   vertex layout, uniforms, scene data
+    RenderTarget.cs           #   colour (+MSAA resolve) and depth a view draws into: the main target or offscreen
+    GpuShader.cs              #   SPIR-V loading from a device alone
   Fleetwright.Shipgen/        # ship design library (ported, see below). No package references.
     Model/                    #   the typed data: Design (the input), Ship (the output), the JSON context and JsonFile
     Layout/                   #   layout.py: the Layout object, parts, superstructure levels, the warship layout
@@ -135,9 +138,21 @@ Content paths in code (`"Content/Shaders/Compiled/..."`) resolve against `AppCon
 ## Renderer
 
 - HDR R16G16B16A16 color target, 8x MSAA, resolved and blitted to the swapchain
-- The ship viewer draws into it. Without a viewer the engine draws its scene graph instead (meshes with a base color
+- The engine's main `RenderTarget` holds it; the current `IScene` (the ship viewer) draws into it. Without a scene the
+  engine draws its scene graph instead (meshes with a base color
   texture and spherical-harmonics ambient light, `PbrMaterial` in Engine.cs), but nothing fills the scene today
 - Dear ImGui overlay; Tracy zones in the frame loop (not in Release, see above)
+
+## Views
+
+Every view is built in layers joined by interfaces, so each runs on its own and none needs engine changes:
+
+- a CPU step from the ship's data (the hitbox model) to what is drawn (a mesh), with no GPU;
+- a renderer that draws into any `RenderTarget` (the main one, or a small offscreen one shown with `ImGui.Image` or
+  on a game UI quad), driven by plain camera/state structs. It takes a device, never the engine; it reads the
+  target's format and sample count to build its pipelines, and knows nothing of input, ImGui or the window;
+- an `IScene`: input and its own ImGui UI around a renderer. The engine owns the window, the frame loop and the main
+  target and calls the current scene each frame.
 
 ## Shaders
 

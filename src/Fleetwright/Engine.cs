@@ -158,9 +158,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
     private SDL_GPUTextureFormat _swapchainFormat;
 
     // Render targets
-    private GpuTexture _drawTexture;      // HDR R16G16B16A16_FLOAT
-    private GpuTexture _drawTextureMsaa;  // 8x MSAA resolve source
-    private GpuTexture _depthTexture;     // D32_FLOAT
+    private RenderTarget _mainTarget = null!;   // HDR R16G16B16A16_FLOAT, 8x MSAA, D32; blitted to the swapchain
 
     // Scene
     private Camera _mainCamera;
@@ -209,8 +207,11 @@ public unsafe class Sdl3GpuEngine : IDisposable
     private GpuTexture _screenshotTexture;
     private SDL_GPUTransferBuffer* _screenshotTransferBuffer;
 
-    // The ship viewer (-ship=...), drawn instead of the 3D scene
-    public ShipViewer? Viewer { get; set; }
+    // The scene drawn into the main target (the ship viewer today), instead of the scene graph below
+    public IScene? Scene { get; set; }
+
+    /// <summary>The main render target: scenes draw into it, and it is blitted to the swapchain.</summary>
+    public RenderTarget MainTarget => _mainTarget;
 
     // ImGui
     private ImGuiRenderer? _imguiRenderer;
@@ -401,29 +402,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
     private void InitDrawTextures()
     {
-        // Create HDR draw texture
-        _drawTexture = CreateTexture(
-            SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
-            _windowWidth, _windowHeight,
-            SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
-            SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_SAMPLER
-        );
-
-        // Create MSAA draw texture (8x)
-        _drawTextureMsaa = CreateTextureMsaa(
-            SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
-            _windowWidth, _windowHeight,
-            SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COLOR_TARGET,
-            SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_8
-        );
-
-        // Create depth texture
-        _depthTexture = CreateTextureMsaa(
-            SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_D32_FLOAT,
-            _windowWidth, _windowHeight,
-            SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
-            SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_8
-        );
+        // HDR colour, 8x MSAA resolved into a sampled texture, and depth
+        _mainTarget = new RenderTarget(_device, _windowWidth, _windowHeight,
+            SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT, SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_8);
     }
 
     private void InitDefaultData()
@@ -554,22 +535,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
         if (width == 0 || height == 0) return;
         if (width == _windowWidth && height == _windowHeight) return;
 
-        // Wait for GPU to finish
-        SDL_WaitForGPUIdle(_device);
-
-        // Release old textures
-        if (_drawTexture.IsValid)
-            SDL_ReleaseGPUTexture(_device, _drawTexture.Texture);
-        if (_drawTextureMsaa.IsValid)
-            SDL_ReleaseGPUTexture(_device, _drawTextureMsaa.Texture);
-        if (_depthTexture.IsValid)
-            SDL_ReleaseGPUTexture(_device, _depthTexture.Texture);
-
         _windowWidth = width;
         _windowHeight = height;
-
-        // Recreate render targets
-        InitDrawTextures();
+        _mainTarget.Resize(width, height);   // waits for the GPU
 
         Console.WriteLine($"Resized render targets to {width}x{height}");
     }
@@ -848,44 +816,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
     public SDL_GPUShader* LoadShader(string path, SDL_GPUShaderStage stage,
         uint numSamplers, uint numStorageBuffers, uint numStorageTextures, uint numUniformBuffers)
     {
-        // Content is copied next to the exe, so resolve against it rather than the working directory.
-        path = Path.Combine(AppContext.BaseDirectory, path);
-        if (!File.Exists(path))
-        {
-            Console.Error.WriteLine($"Shader file not found: {path}");
-            return null;
-        }
-
-        byte[] shaderCode = File.ReadAllBytes(path);
-
-        fixed (byte* codePtr = shaderCode)
-        {
-            byte* entrypoint = (byte*)Marshal.StringToHGlobalAnsi("main");
-
-            SDL_GPUShaderCreateInfo shaderCreateInfo = new SDL_GPUShaderCreateInfo
-            {
-                code = codePtr,
-                code_size = (nuint)shaderCode.Length,
-                entrypoint = entrypoint,
-                format = SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_SPIRV,
-                stage = stage,
-                num_samplers = numSamplers,
-                num_storage_buffers = numStorageBuffers,
-                num_storage_textures = numStorageTextures,
-                num_uniform_buffers = numUniformBuffers
-            };
-
-            SDL_GPUShader* shader = SDL_CreateGPUShader(_device, &shaderCreateInfo);
-
-            Marshal.FreeHGlobal((nint)entrypoint);
-
-            if (shader == null)
-            {
-                Console.Error.WriteLine($"Failed to create shader from {path}: {SDL_GetError()}");
-            }
-
-            return shader;
-        }
+        return GpuShader.Load(_device, path, stage, numSamplers, numStorageBuffers, numStorageTextures, numUniformBuffers);
     }
 
     /// <summary>
@@ -1048,12 +979,12 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     break;
             }
 
-            // Forward to the viewer or the camera (only if ImGui doesn't want input)
+            // Forward to the scene or the camera (only if ImGui doesn't want input)
             ImGuiIOPtr io = ImGui.GetIO();
             if (!io.WantCaptureMouse && !io.WantCaptureKeyboard)
             {
-                if (Viewer != null)
-                    Viewer.ProcessEvent(&evt, _windowWidth, _windowHeight);
+                if (Scene != null)
+                    Scene.ProcessEvent(&evt, _windowWidth, _windowHeight);
                 else
                     _mainCamera.ProcessSdlEvent(&evt);
             }
@@ -1146,8 +1077,8 @@ public unsafe class Sdl3GpuEngine : IDisposable
         using (new ProfileScope("DrawGeometry", ZoneC.ORANGE))
         {
             _drawGeometryTimer.Restart();
-            if (Viewer != null)
-                Viewer.Draw(commandBuffer, _drawTextureMsaa.Texture, _drawTexture.Texture, _windowWidth, _windowHeight, DeltaTime);
+            if (Scene != null)
+                Scene.Draw(commandBuffer, _mainTarget, DeltaTime);
             else
                 DrawGeometry(commandBuffer);
             _drawGeometryTimer.Stop();
@@ -1186,9 +1117,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
             ImGui.End();
         }
 
-        if (Viewer != null)
+        if (Scene != null)
         {
-            Viewer.BuildUi();
+            Scene.BuildUi();
             return;
         }
 
@@ -1221,43 +1152,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
     private void DrawGeometry(SDL_GPUCommandBuffer* commandBuffer)
     {
-        // Setup MSAA render pass
-        SDL_GPUColorTargetInfo colorTargetInfo = new SDL_GPUColorTargetInfo
-        {
-            texture = _drawTextureMsaa.Texture,
-            clear_color = new SDL_FColor { r = 0.1f, g = 0.1f, b = 0.15f, a = 1.0f },
-            load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-            store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_RESOLVE,
-            resolve_texture = _drawTexture.Texture,
-            cycle = true,
-            cycle_resolve_texture = true
-        };
-
-        SDL_GPUDepthStencilTargetInfo depthTargetInfo = new SDL_GPUDepthStencilTargetInfo
-        {
-            texture = _depthTexture.Texture,
-            clear_depth = 1.0f, // Standard depth: 1 is far
-            load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-            store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
-            stencil_load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_DONT_CARE,
-            stencil_store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
-            cycle = true
-        };
-
-        SDL_GPURenderPass* renderPass = SDL_BeginGPURenderPass(
-            commandBuffer, &colorTargetInfo, 1, &depthTargetInfo);
-
-        // Set viewport
-        SDL_GPUViewport viewport = new SDL_GPUViewport
-        {
-            x = 0,
-            y = 0,
-            w = _windowWidth,
-            h = _windowHeight,
-            min_depth = 0.0f,
-            max_depth = 1.0f
-        };
-        SDL_SetGPUViewport(renderPass, &viewport);
+        // MSAA pass with depth (1 is far), viewport over the whole target
+        SDL_GPURenderPass* renderPass = _mainTarget.BeginPass(
+            commandBuffer, new SDL_FColor { r = 0.1f, g = 0.1f, b = 0.15f, a = 1.0f });
 
         // Draw opaque surfaces
         using (new ProfileScope("OpaquePass", ZoneC.RED))
@@ -1352,7 +1249,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
             SDL_GPUTextureSamplerBinding textureSamplerBinding = new SDL_GPUTextureSamplerBinding
             {
-                texture = _drawTexture.Texture,
+                texture = _mainTarget.Resolve,
                 sampler = _blitSampler.Sampler
             };
             SDL_BindGPUFragmentSamplers(renderPass, 0, &textureSamplerBinding, 1);
@@ -1368,7 +1265,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
             {
                 source = new SDL_GPUBlitRegion
                 {
-                    texture = _drawTexture.Texture,
+                    texture = _mainTarget.Resolve,
                     w = _windowWidth,
                     h = _windowHeight
                 },
@@ -1399,7 +1296,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
         {
             source = new SDL_GPUBlitRegion
             {
-                texture = _drawTexture.Texture,
+                texture = _mainTarget.Resolve,
                 w = _windowWidth,
                 h = _windowHeight
             },
@@ -1506,8 +1403,8 @@ public unsafe class Sdl3GpuEngine : IDisposable
         // Wait for GPU to finish
         SDL_WaitForGPUIdle(_device);
 
-        Viewer?.Dispose();
-        Viewer = null;
+        Scene?.Dispose();
+        Scene = null;
 
         // Dispose ImGui
         _imguiRenderer?.Dispose();
@@ -1535,9 +1432,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
         DestroyTexture(_blackTexture);
         DestroyTexture(_errorCheckerboardTexture);
         DestroyTexture(_defaultNormalTexture);
-        DestroyTexture(_drawTexture);
-        DestroyTexture(_drawTextureMsaa);
-        DestroyTexture(_depthTexture);
+        _mainTarget?.Dispose();
         DestroyTexture(_screenshotTexture);
 
         // Release screenshot transfer buffer

@@ -1,6 +1,6 @@
 namespace Fleetwright;
 
-public static class Program
+public static unsafe class Program
 {
     public static int Main(string[] args)
     {
@@ -55,7 +55,7 @@ public static class Program
                 Console.Error.WriteLine($"Design not found: {shipPath}");
                 return 1;
             }
-            engine.Viewer = new ShipViewer(engine, shipPath, navy, era);
+            engine.Scene = new ShipViewer(engine.Device, shipPath, navy, era);
 
             // Run the engine
             engine.Run();

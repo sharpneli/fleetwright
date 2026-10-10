@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Numerics;
+using Fleetwright.Gpu;
 using Fleetwright.Shipgen;
 using Fleetwright.Shipgen.Render;
 using Fleetwright.Shipgen.Render.Bake;
@@ -9,21 +10,26 @@ using static SDL.SDL3;
 
 namespace Fleetwright;
 
-/// <summary>The ship viewer (PORTING.md Step 6), a test tool: builds a design, bakes it on the engine's GPU device
+/// <summary>The ship viewer (PORTING.md Step 6), a test tool: builds a design, bakes it on the GPU device
 /// and draws it from the baked textures as the game will. Mips, turrets turning through their arcs, turret shadows
 /// and the sun's shadow from the height map (a first version of the game's shadow shader). The ImGui panel picks
 /// the design, the look, the mip level, the turrets and the sun, and rebuilds on change: the designer's loop in
 /// miniature. Mouse: wheel zooms, left drag pans.</summary>
-public sealed unsafe class ShipViewer : IDisposable
+public sealed unsafe class ShipViewer : IScene
 {
     const double Scale = 10.0;   // px per metre at mip level 0
     const int MipLevels = 5;
     static readonly Vector4 Sea = new(0x2d / 255f, 0x5a / 255f, 0x73 / 255f, 1f);
 
-    readonly Sdl3GpuEngine engine;
+    readonly SDL_GPUDevice* device;
     readonly GpuBaker baker;
-    readonly SDL_GPUGraphicsPipeline* spritePipe, shadowPipe;
+    readonly SDL_GPUShader* vs, fsSprite, fsShadow;
     readonly SDL_GPUSampler* linear, nearest;
+
+    // built for the target drawn into (its format and sample count), rebuilt if a different one comes
+    SDL_GPUGraphicsPipeline* spritePipe, shadowPipe;
+    SDL_GPUTextureFormat pipeFormat;
+    SDL_GPUSampleCount pipeSamples;
 
     // what is shown
     readonly List<string> designs;
@@ -49,9 +55,9 @@ public sealed unsafe class ShipViewer : IDisposable
     const double TraverseDegPerS = 45;   // faster than the sweep, so a turret catches up after a blind arc
     bool dragging;
 
-    public ShipViewer(Sdl3GpuEngine engine, string designPath, string? navy = null, string? era = null)
+    public ShipViewer(SDL_GPUDevice* device, string designPath, string? navy = null, string? era = null)
     {
-        this.engine = engine;
+        this.device = device;
         var dir = Path.GetDirectoryName(Path.GetFullPath(designPath))!;
         designs = Directory.GetFiles(dir, "*.json").Order(StringComparer.Ordinal).ToList();
         designIndex = Math.Max(0, designs.FindIndex(p => Path.GetFullPath(p) == Path.GetFullPath(designPath)));
@@ -62,17 +68,12 @@ public sealed unsafe class ShipViewer : IDisposable
         navyIndex = navy != null ? Math.Max(0, Array.IndexOf(navies, navy)) : 0;
         eraIndex = era != null ? Math.Max(0, Array.IndexOf(eras, era)) : 0;
 
-        baker = new GpuBaker(engine.Device);
-        var vs = engine.LoadShader("Content/Shaders/Compiled/shipview.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 0, 1);
-        var fsSprite = engine.LoadShader("Content/Shaders/Compiled/shipview_sprite.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 0, 1);
-        var fsShadow = engine.LoadShader("Content/Shaders/Compiled/shipview_shadow.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 0, 1);
+        baker = new GpuBaker(device);
+        vs = GpuShader.Load(device, "Content/Shaders/Compiled/shipview.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 0, 1);
+        fsSprite = GpuShader.Load(device, "Content/Shaders/Compiled/shipview_sprite.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 0, 1);
+        fsShadow = GpuShader.Load(device, "Content/Shaders/Compiled/shipview_shadow.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 0, 1);
         if (vs == null || fsSprite == null || fsShadow == null)
             throw new InvalidOperationException("ship viewer shaders failed to load");
-        spritePipe = Pipeline(vs, fsSprite);
-        shadowPipe = Pipeline(vs, fsShadow);
-        SDL_ReleaseGPUShader(engine.Device, vs);
-        SDL_ReleaseGPUShader(engine.Device, fsSprite);
-        SDL_ReleaseGPUShader(engine.Device, fsShadow);
         linear = Sampler(SDL_GPUFilter.SDL_GPU_FILTER_LINEAR, SDL_GPUSamplerMipmapMode.SDL_GPU_SAMPLERMIPMAPMODE_LINEAR);
         nearest = Sampler(SDL_GPUFilter.SDL_GPU_FILTER_NEAREST, SDL_GPUSamplerMipmapMode.SDL_GPU_SAMPLERMIPMAPMODE_NEAREST);
         Rebuild();
@@ -90,14 +91,35 @@ public sealed unsafe class ShipViewer : IDisposable
             address_mode_w = SDL_GPUSamplerAddressMode.SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
             max_lod = 1000,
         };
-        return SDL_CreateGPUSampler(engine.Device, &info);
+        return SDL_CreateGPUSampler(device, &info);
     }
 
-    SDL_GPUGraphicsPipeline* Pipeline(SDL_GPUShader* vs, SDL_GPUShader* fs)
+    /// <summary>The pipelines for the target's colour format and sample count (no depth: the sprites are drawn in
+    /// order), kept until a target with another format or sample count comes.</summary>
+    void EnsurePipelines(RenderTarget target)
+    {
+        if (spritePipe != null && pipeFormat == target.ColorFormat && pipeSamples == target.SampleCount)
+            return;
+        ReleasePipelines();
+        (pipeFormat, pipeSamples) = (target.ColorFormat, target.SampleCount);
+        spritePipe = Pipeline(fsSprite);
+        shadowPipe = Pipeline(fsShadow);
+    }
+
+    void ReleasePipelines()
+    {
+        if (spritePipe != null)
+            SDL_ReleaseGPUGraphicsPipeline(device, spritePipe);
+        if (shadowPipe != null)
+            SDL_ReleaseGPUGraphicsPipeline(device, shadowPipe);
+        spritePipe = shadowPipe = null;
+    }
+
+    SDL_GPUGraphicsPipeline* Pipeline(SDL_GPUShader* fs)
     {
         var ctd = new SDL_GPUColorTargetDescription
         {
-            format = SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
+            format = pipeFormat,
             blend_state = new SDL_GPUColorTargetBlendState
             {
                 enable_blend = true,
@@ -119,14 +141,14 @@ public sealed unsafe class ShipViewer : IDisposable
                 fill_mode = SDL_GPUFillMode.SDL_GPU_FILLMODE_FILL,
                 cull_mode = SDL_GPUCullMode.SDL_GPU_CULLMODE_NONE,
             },
-            multisample_state = new SDL_GPUMultisampleState { sample_count = SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_8 },
+            multisample_state = new SDL_GPUMultisampleState { sample_count = pipeSamples },
             target_info = new SDL_GPUGraphicsPipelineTargetInfo
             {
                 color_target_descriptions = &ctd,
                 num_color_targets = 1,
             },
         };
-        var p = SDL_CreateGPUGraphicsPipeline(engine.Device, &info);
+        var p = SDL_CreateGPUGraphicsPipeline(device, &info);
         if (p == null)
             throw new InvalidOperationException($"ship viewer pipeline: {SDL_GetError()}");
         return p;
@@ -192,13 +214,13 @@ public sealed unsafe class ShipViewer : IDisposable
             num_levels = (uint)levels.Count,
             sample_count = SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1,
         };
-        var tex = SDL_CreateGPUTexture(engine.Device, &info);
+        var tex = SDL_CreateGPUTexture(device, &info);
         if (tex == null)
             throw new InvalidOperationException($"viewer texture: {SDL_GetError()}");
         uint total = (uint)levels.Sum(l => l.Data.Length);
         var ti = new SDL_GPUTransferBufferCreateInfo { usage = SDL_GPUTransferBufferUsage.SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, size = total };
-        var tb = SDL_CreateGPUTransferBuffer(engine.Device, &ti);
-        var dst = (byte*)SDL_MapGPUTransferBuffer(engine.Device, tb, false);
+        var tb = SDL_CreateGPUTransferBuffer(device, &ti);
+        var dst = (byte*)SDL_MapGPUTransferBuffer(device, tb, false);
         uint off = 0;
         foreach (var l in levels)
         {
@@ -213,8 +235,8 @@ public sealed unsafe class ShipViewer : IDisposable
                 }
             off += (uint)l.Data.Length;
         }
-        SDL_UnmapGPUTransferBuffer(engine.Device, tb);
-        var cmd = SDL_AcquireGPUCommandBuffer(engine.Device);
+        SDL_UnmapGPUTransferBuffer(device, tb);
+        var cmd = SDL_AcquireGPUCommandBuffer(device);
         var cp = SDL_BeginGPUCopyPass(cmd);
         off = 0;
         for (int k = 0; k < levels.Count; k++)
@@ -227,19 +249,19 @@ public sealed unsafe class ShipViewer : IDisposable
         }
         SDL_EndGPUCopyPass(cp);
         SDL_SubmitGPUCommandBuffer(cmd);
-        SDL_ReleaseGPUTransferBuffer(engine.Device, tb);
+        SDL_ReleaseGPUTransferBuffer(device, tb);
         return tex;
     }
 
     void ReleaseTextures()
     {
-        SDL_WaitForGPUIdle(engine.Device);
+        SDL_WaitForGPUIdle(device);
         if (hullTex != null)
-            SDL_ReleaseGPUTexture(engine.Device, hullTex);
+            SDL_ReleaseGPUTexture(device, hullTex);
         if (heightTex != null)
-            SDL_ReleaseGPUTexture(engine.Device, heightTex);
+            SDL_ReleaseGPUTexture(device, heightTex);
         foreach (var t in turretTex.Values)
-            SDL_ReleaseGPUTexture(engine.Device, (SDL_GPUTexture*)t);
+            SDL_ReleaseGPUTexture(device, (SDL_GPUTexture*)t);
         turretTex.Clear();
         hullTex = heightTex = null;
     }
@@ -324,26 +346,17 @@ public sealed unsafe class ShipViewer : IDisposable
         return best;
     }
 
-    public void Draw(SDL_GPUCommandBuffer* cmd, SDL_GPUTexture* msaa, SDL_GPUTexture* resolve, uint w, uint h, float dt)
+    public void Draw(SDL_GPUCommandBuffer* cmd, RenderTarget target, float dt)
     {
         if (dirty)
             Rebuild();
         clock += dt;
         if (sprites != null)
             Traverse(dt);
-        var cti = new SDL_GPUColorTargetInfo
-        {
-            texture = msaa,
-            clear_color = new SDL_FColor { r = Sea.X, g = Sea.Y, b = Sea.Z, a = 1 },
-            load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-            store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_RESOLVE,
-            resolve_texture = resolve,
-            cycle = true,
-            cycle_resolve_texture = true,
-        };
-        var pass = SDL_BeginGPURenderPass(cmd, &cti, 1, null);
+        EnsurePipelines(target);
+        var pass = target.BeginPass(cmd, new SDL_FColor { r = Sea.X, g = Sea.Y, b = Sea.Z, a = 1 }, depth: false);
         if (sprites != null && hullTex != null)
-            DrawShip(cmd, pass, w, h);
+            DrawShip(cmd, pass, target.Width, target.Height);
         SDL_EndGPURenderPass(pass);
     }
 
@@ -505,10 +518,12 @@ public sealed unsafe class ShipViewer : IDisposable
     public void Dispose()
     {
         ReleaseTextures();
-        SDL_ReleaseGPUGraphicsPipeline(engine.Device, spritePipe);
-        SDL_ReleaseGPUGraphicsPipeline(engine.Device, shadowPipe);
-        SDL_ReleaseGPUSampler(engine.Device, linear);
-        SDL_ReleaseGPUSampler(engine.Device, nearest);
+        ReleasePipelines();
+        SDL_ReleaseGPUShader(device, vs);
+        SDL_ReleaseGPUShader(device, fsSprite);
+        SDL_ReleaseGPUShader(device, fsShadow);
+        SDL_ReleaseGPUSampler(device, linear);
+        SDL_ReleaseGPUSampler(device, nearest);
         baker.Dispose();
     }
 }
