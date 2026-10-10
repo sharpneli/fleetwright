@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Fleetwright.Shipgen;
 
 public sealed partial class Layout
@@ -35,35 +37,57 @@ public sealed partial class Layout
         return lower.Take(lower.Count - 1).Concat(upper.Take(upper.Count - 1)).ToList();
     }
 
-    /// <summary>Where the line across the ship at y crosses a footprint grown by margin: [(x0, x1)].</summary>
-    static List<(double, double)> FpIntervals(Footprint fp, double y, double margin)
+    /// <summary>Where the line across the ship at y crosses a footprint grown by margin: its (x0, x1), appended to
+    /// `into`.</summary>
+    static void FpIntervals(Footprint fp, double y, double margin, List<(double, double)> into)
     {
         if (fp.Kind == 'c')
         {
             double dy = y - fp.Y;
             double r = fp.R + margin;
             if (Math.Abs(dy) >= r)
-                return [];
+                return;
             double h = Math.Sqrt(r * r - dy * dy);
-            return [(fp.X - h, fp.X + h)];
+            into.Add((fp.X - h, fp.X + h));
+            return;
         }
         if (fp.Kind == 'r')
-            return fp.B - margin < y && y < fp.D + margin ? [(fp.A - margin, fp.C + margin)] : [];
+        {
+            if (fp.B - margin < y && y < fp.D + margin)
+                into.Add((fp.A - margin, fp.C + margin));
+            return;
+        }
         if (!(fp.B - margin < y && y < fp.D + margin))
-            return [];
+            return;
         var pts = fp.Pts!;
-        var xs = new List<double>();
+        bool any = false;
+        double lo = 0, hi = 0;
         for (int i = 0; i < pts.Count; i++)
         {
             var (x0, y0) = pts[i];
             var (x1, y1) = pts[(i + 1) % pts.Count];
             if ((y0 > y) != (y1 > y))
-                xs.Add(x0 + (y - y0) * (x1 - x0) / (y1 - y0));
+            {
+                // LINQ's Min and Max: a NaN wins Min; Max skips leading NaNs
+                double x = x0 + (y - y0) * (x1 - x0) / (y1 - y0);
+                if (!any)
+                {
+                    lo = hi = x;
+                    any = true;
+                    continue;
+                }
+                if (!double.IsNaN(lo) && (x < lo || double.IsNaN(x)))
+                    lo = x;
+                if (double.IsNaN(hi) || x > hi)
+                    hi = x;
+            }
         }
-        return xs.Count > 0 ? [(xs.Min() - margin, xs.Max() + margin)] : [];
+        if (any)
+            into.Add((lo - margin, hi + margin));
     }
 
-    /// <summary>A superstructure level's outline: a room laid out like a deck. See the Python docstring.</summary>
+    /// <summary>A superstructure level's outline: a room laid out like a deck. See the Python docstring. Its working
+    /// lists come from Scratch: it runs for every level of every layout tried.</summary>
     static List<Pt> LevelOutline(Layout lay, double x0, double x1, double w, double bse, double top, List<Pt>? support = null,
         IReadOnlyList<(double X0, double Y0, double X1, double Y1)>? keep = null, IReadOnlyCollection<string>? ignore = null,
         IReadOnlyList<(double N0, double N1, double H)>? notches = null)
@@ -71,33 +95,76 @@ public sealed partial class Layout
         keep ??= [];
         ignore ??= [];
         notches ??= [];
+        var sup = support is null ? lay.DeckBandSlabs() : new Slabs(support);
         support ??= lay.DeckBand();
-        var sup = new Slabs(support);
         double H = w / 2;
         double st = DhFit;
         int n = (int)Math.Max(1L, (long)(Math.Ceiling(H / st - 1e-6)));
-        var ys = Enumerable.Range(0, n + 1).Select(j => Math.Min(H, j * st)).ToList();
+        using var _ys = Scratch<double>.Rent(out var ys);
+        for (int j = 0; j <= n; j++)
+            ys.Add(Math.Min(H, j * st));
         double floor = -0.3 * (x1 - x0);
         var ends = lay.EndMounts;
         var scan = lay.Scan;
-        var endIds = new HashSet<string>(ends.Select(m => m.Id), StringComparer.Ordinal);
-        var fps = lay.Footprints.Where(o => o.Top > bse + 1e-6 && o.Base < top - 1e-6 && !ignore.Contains(o.Owner)
-                                            && !endIds.Contains(o.Owner)).Select(o => o.Fp).ToList();
-        var prof = new Dictionary<int, List<Pt>>();
-        foreach (var (e, xc) in new[] { (1, x1), (-1, x0) })
+
+        bool IsEnd(string owner)
         {
+            foreach (var m in ends)
+                if (m.Id == owner)
+                    return true;
+            return false;
+        }
+
+        using var _fps = Scratch<Footprint>.Rent(out var fps);
+        foreach (var o in lay.Footprints)
+            if (o.Top > bse + 1e-6 && o.Base < top - 1e-6 && !ignore.Contains(o.Owner) && !IsEnd(o.Owner))
+                fps.Add(o.Fp);
+        using var _pf = Scratch<Pt>.Rent(out var profFwd);
+        using var _pa = Scratch<Pt>.Rent(out var profAft);
+        using var _ms = Scratch<(Mount M, double Rad)>.Rent(out var ms);
+        using var _rq = Scratch<double>.Rent(out var req);
+        using var _po = Scratch<(List<Pt> P, (double A0, double B0, double A1, double B1) Bx)>.Rent(out var polys);
+        using var _ci = Scratch<(double Cx, double Cy, double R)>.Rent(out var circles);
+        using var _nf = Scratch<Footprint>.Rent(out var nearFps);
+        using var _iv = Scratch<(double, double)>.Rent(out var ivs);
+        using var _cu = Scratch<double>.Rent(out var cuts);
+        using var _a = Scratch<double>.Rent(out var A);
+        using var _dg = Scratch<double>.Rent(out var dgrid);
+        using var _hw = Scratch<double>.Rent(out var hws);
+        using var _sp = Scratch<(double Lo, double Hi)>.Rent(out var spans);
+        using var _e = Scratch<double>.Rent(out var E);
+        using var _ae = Scratch<double>.Rent(out var Aeff);
+        for (int side = 0; side < 2; side++)
+        {
+            int e = side == 0 ? 1 : -1;
+            double xc = side == 0 ? x1 : x0;
+            var prof = side == 0 ? profFwd : profAft;
             double uc = e * xc;
-            var ms = ends.Where(m => e * (m.X - xc) > 0).ToList();
-            var rad = ms.ToDictionary(m => m.Id, m => Armament.BodyReach(m.T) + DhTurretClear);
-            double cap = 0.0;
-            var req = Enumerable.Repeat(floor, n + 1).ToList();
-            foreach (var (bx0, by0, bx1, by1) in keep)
+            ms.Clear();
+            foreach (var m in ends)
+                if (e * (m.X - xc) > 0)
+                    ms.Add((m, Armament.BodyReach(m.T) + DhTurretClear));
+
+            bool IsOwner(string owner)
             {
+                foreach (var (m, _) in ms)
+                    if (m.Id == owner)
+                        return true;
+                return false;
+            }
+
+            double cap = 0.0;
+            req.Clear();
+            for (int j = 0; j <= n; j++)
+                req.Add(floor);
+            for (int q = 0; q < keep.Count; q++)
+            {
+                var (bx0, by0, bx1, by1) = keep[q];
                 double far = Math.Max(e * bx0, e * bx1) - uc + 0.3;
                 for (int j = 0; j <= n; j++)
                 {
                     double y = ys[j];
-                    if (new[] { 1, -1 }.Any(s => by0 - st <= s * y && s * y <= by1 + st))
+                    if (by0 - st <= y && y <= by1 + st || by0 - st <= -y && -y <= by1 + st)
                         req[j] = Math.Max(req[j], far);
                 }
             }
@@ -110,25 +177,30 @@ public sealed partial class Layout
                 return ub > loU && ua < hiU;
             }
 
-            var owners = new HashSet<string>(ms.Select(m => m.Id), StringComparer.Ordinal);
-            var polys = new List<(List<Pt> P, (double A0, double B0, double A1, double B1) Bx)>();
+            polys.Clear();
             foreach (var sw in lay.Sweeps)
-                if (owners.Contains(sw.Owner) || (sw.Axis < top && !endIds.Contains(sw.Owner)))
+                if (IsOwner(sw.Owner) || (sw.Axis < top && !IsEnd(sw.Owner)))
                     for (int i = 0; i < sw.Polys.Count; i++)
                         if (NearZ(sw.Boxes[i].X0, sw.Boxes[i].X1))
                             polys.Add((sw.Polys[i], sw.Boxes[i]));
-            var circles = ms.Where(m => NearZ(m.X - rad[m.Id], m.X + rad[m.Id]))
-                .Select(m => (Cx: m.X, Cy: m.Y, R: rad[m.Id])).ToList();
-            var nearFps = fps.Where(fp => NearZ(fp.BBox.X0 - FpMargin, fp.BBox.X1 + FpMargin)).ToList();
+            circles.Clear();
+            foreach (var (m, rad) in ms)
+                if (NearZ(m.X - rad, m.X + rad))
+                    circles.Add((m.X, m.Y, rad));
+            nearFps.Clear();
+            foreach (var fp in fps)
+                if (NearZ(fp.BBox.X0 - FpMargin, fp.BBox.X1 + FpMargin))
+                    nearFps.Add(fp);
             if (polys.Count == 0 && circles.Count == 0 && nearFps.Count == 0 && req.Max() <= cap)
             {
-                prof[e] = [new(e * (uc + cap), 0.0), new(e * (uc + cap), H)];
+                prof.Add(new(e * (uc + cap), 0.0));
+                prof.Add(new(e * (uc + cap), H));
                 continue;
             }
 
             double Raw(double y)
             {
-                var ivs = new List<(double, double)>();
+                ivs.Clear();
                 foreach (var (p, (a0, b0, a1, b1)) in polys)
                 {
                     if (b0 <= y && y <= b1)
@@ -136,18 +208,18 @@ public sealed partial class Layout
                         var key = (p, y);
                         if (!scan.TryGetValue(key, out var sl))
                         {
-                            var xs = new List<double>();
+                            cuts.Clear();
                             for (int i = 0; i < p.Count; i++)
                             {
                                 var (px, py) = p[i];
                                 var (qx, qy) = p[(i + 1) % p.Count];
                                 if ((py > y) != (qy > y))
-                                    xs.Add(px + (y - py) * (qx - px) / (qy - py));
+                                    cuts.Add(px + (y - py) * (qx - px) / (qy - py));
                             }
-                            xs = xs.Order().ToList();
-                            sl = [];
-                            for (int i = 0; i < xs.Count - 1; i += 2)
-                                sl.Add((xs[i], xs[i + 1]));
+                            cuts.Sort();
+                            sl = new List<(double, double)>(cuts.Count / 2);
+                            for (int i = 0; i < cuts.Count - 1; i += 2)
+                                sl.Add((cuts[i], cuts[i + 1]));
                             scan[key] = sl;
                         }
                         ivs.AddRange(sl);
@@ -162,11 +234,17 @@ public sealed partial class Layout
                     }
                 }
                 foreach (var fp in nearFps)
-                    ivs.AddRange(FpIntervals(fp, y, FpMargin));
+                    FpIntervals(fp, y, FpMargin, ivs);
                 double d = cap;
                 foreach (var (xa, xb) in ivs)
                 {
-                    if (notches.Any(nt => xa < nt.N1 && nt.N0 < xb && Math.Abs(y) > nt.H - 1e-6))
+                    bool notched = false;
+                    for (int q = 0; q < notches.Count && !notched; q++)
+                    {
+                        var nt = notches[q];
+                        notched = xa < nt.N1 && nt.N0 < xb && Math.Abs(y) > nt.H - 1e-6;
+                    }
+                    if (notched)
                         continue;
                     double ua = Math.Min(e * xa, e * xb), ub = Math.Max(e * xa, e * xb);
                     if (ub > uc + floor)
@@ -175,33 +253,63 @@ public sealed partial class Layout
                 return Math.Max(floor, d);
             }
 
-            var A = ys.Zip(req).Select(t => Math.Max(Math.Min(Raw(t.First), Raw(-t.First)), t.Second)).ToList();
+            A.Clear();
+            for (int j = 0; j <= n; j++)
+                A.Add(Math.Max(Math.Min(Raw(ys[j]), Raw(-ys[j])), req[j]));
             double dIn = Math.Max(floor, A.Min() - st);
-            var dgrid = Enumerable.Range(0, Math.Max(0, (int)((cap - dIn) / st) + 1)).Select(i => dIn + st * i).ToList();
+            dgrid.Clear();
+            for (int i = 0, cnt = Math.Max(0, (int)((cap - dIn) / st) + 1); i < cnt; i++)
+                dgrid.Add(dIn + st * i);
             dgrid.Add(cap);
-            var hws = new List<double>();
+            hws.Clear();
             foreach (var d in dgrid)
             {
-                var spans = sup.At(e * (uc + d));
-                hws.Add(spans.Where(s => s.Lo <= 0 && 0 <= s.Hi).Select(s => Math.Min(-s.Lo, s.Hi)).DefaultIfEmpty(-1.0).Min());
+                sup.At(e * (uc + d), spans);
+                // the narrowest half-width of the spans across the centreline (LINQ's Min: a NaN wins), -1 if none
+                double hw = -1.0;
+                bool any = false;
+                foreach (var (lo, hi) in spans)
+                {
+                    if (!(lo <= 0 && 0 <= hi))
+                        continue;
+                    double v = Math.Min(-lo, hi);
+                    if (!any)
+                    {
+                        hw = v;
+                        any = true;
+                    }
+                    else if (!double.IsNaN(hw) && (v < hw || double.IsNaN(v)))
+                        hw = v;
+                }
+                hws.Add(hw);
             }
-            var E = ys.Select(y =>
+            E.Clear();
+            foreach (var y in ys)
             {
+                double ev = cap;
                 for (int i = 0; i < dgrid.Count; i++)
                     if (hws[i] < y - 1e-9)
-                        return dgrid[i];
-                return cap;
-            }).ToList();
-            var Aeff = A.Zip(E).Select(t => Math.Min(cap, t.Second <= t.First ? cap : t.First)).ToList();
-            (double Score, List<(double Y, double D)> Pts)? best = null;
+                    {
+                        ev = dgrid[i];
+                        break;
+                    }
+                E.Add(ev);
+            }
+            Aeff.Clear();
+            for (int k = 0; k <= n; k++)
+                Aeff.Add(Math.Min(cap, E[k] <= A[k] ? cap : A[k]));
+            bool found = false;
+            double bestScore = 0, bestD0 = 0, bestD1 = 0, bestYa = 0;
+            int bestI = 0;
             int faceMin = (int)(long)(Math.Ceiling(DhMinFace / 2 / st - 1e-9));
-            var iList = new List<int> { 0 };
-            for (int i = Math.Max(1, faceMin); i <= n; i++)
-                iList.Add(i);
-            foreach (int i in iList)
+            // i = 0, then faceMin (at least 1) .. n
+            for (int i = 0; i <= n; i = i == 0 ? Math.Max(1, faceMin) : i + 1)
             {
-                double d0 = Aeff.Take(i + 1).Min();
-                if (req.Take(i + 1).Any(r => r > d0 + 1e-9))
+                double d0 = SpanMath.Min(CollectionsMarshal.AsSpan(Aeff)[..(i + 1)]);
+                bool under = false;
+                for (int k = 0; k <= i && !under; k++)
+                    under = req[k] > d0 + 1e-9;
+                if (under)
                     continue;
                 double ya = ys[i], d1 = d0, lo = double.NegativeInfinity;
                 for (int k = i + 1; k <= n; k++)
@@ -216,22 +324,41 @@ public sealed partial class Layout
                     continue;
                 if (d0 - d1 < DhMinDrop && i < n)
                     continue;
-                var f = Enumerable.Range(0, n + 1).Select(k => k <= i ? d0 : d0 - (d0 - d1) * (ys[k] - ya) / (H - ya)).ToList();
-                double area = Enumerable.Range(0, n + 1).Select(k => Math.Min(f[k], E[k]) * (0 < k && k < n ? st : st / 2)).Sum();
-                double score = area - (i < n ? DhStepCost : 0.0);
-                if (best is null || score > best.Value.Score + 1e-6)
+                double area = 0.0;
+                for (int k = 0; k <= n; k++)
                 {
-                    List<(double, double)> pts = i == n
-                        ? [(0.0, d0), (H, d0)]
-                        : (i != 0 ? new List<(double, double)> { (0.0, d0) } : []).Concat(new[] { (ya, d0), (H, d1) }).ToList();
-                    best = (score, pts);
+                    double f = k <= i ? d0 : d0 - (d0 - d1) * (ys[k] - ya) / (H - ya);
+                    area += Math.Min(f, E[k]) * (0 < k && k < n ? st : st / 2);
                 }
+                double score = area - (i < n ? DhStepCost : 0.0);
+                if (!found || score > bestScore + 1e-6)
+                    (found, bestScore, bestI, bestD0, bestD1, bestYa) = (true, score, i, d0, d1, ya);
             }
-            best ??= (0.0, [(0.0, req.Max()), (H, req.Max())]);
-            prof[e] = best.Value.Pts.Select(p => new Pt(e * (uc + p.D), p.Y)).ToList();
+            if (!found)
+            {
+                double rm = req.Max();
+                prof.Add(new(e * (uc + rm), 0.0));
+                prof.Add(new(e * (uc + rm), H));
+            }
+            else if (bestI == n)
+            {
+                prof.Add(new(e * (uc + bestD0), 0.0));
+                prof.Add(new(e * (uc + bestD0), H));
+            }
+            else
+            {
+                if (bestI != 0)
+                    prof.Add(new(e * (uc + bestD0), 0.0));
+                prof.Add(new(e * (uc + bestD0), bestYa));
+                prof.Add(new(e * (uc + bestD1), H));
+            }
         }
-        var half = prof[1].Concat(Enumerable.Reverse(prof[-1])).ToList();
-        var all = half.Concat(Enumerable.Reverse(half).Select(p => new Pt(p.X, -p.Y))).ToList();
+        using var _all = Scratch<Pt>.Rent(out var all);
+        all.AddRange(profFwd);
+        for (int i = profAft.Count - 1; i >= 0; i--)
+            all.Add(profAft[i]);
+        for (int i = all.Count - 1; i >= 0; i--)
+            all.Add(new Pt(all[i].X, -all[i].Y));
         return Geometry.ClipConvex(Geometry.SimplifyPolygon(all), support);
     }
 

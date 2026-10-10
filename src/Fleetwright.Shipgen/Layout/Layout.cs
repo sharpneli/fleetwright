@@ -109,6 +109,7 @@ public sealed partial class Layout
     public OrderedDictionary<string, List<string>> Smoke = new(StringComparer.Ordinal);
     public CrewReport? Crew;
     List<Pt>? deckBand;
+    Slabs? deckBandSlabs;
     public readonly Dictionary<(List<Pt> Poly, double Y), List<(double, double)>> Scan = new(ScanKeyComparer.Instance);
 
     public Hull Hull = null!;
@@ -324,6 +325,9 @@ public sealed partial class Layout
         }
         return deckBand;
     }
+
+    /// <summary>The deck band's slabs (cached).</summary>
+    public Slabs DeckBandSlabs() => deckBandSlabs ??= new Slabs(DeckBand());
 
     // ------------------------------------------------------------------ collision helpers
 

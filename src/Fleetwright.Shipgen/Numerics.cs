@@ -62,6 +62,28 @@ public static class SpecialFunctions
     }
 }
 
+/// <summary>LINQ's Min of doubles (a NaN anywhere wins) on a span, with no enumerator to allocate.</summary>
+public static class SpanMath
+{
+    public static double Min(ReadOnlySpan<double> s)
+    {
+        if (s.IsEmpty)
+            throw new InvalidOperationException("Sequence contains no elements");
+        double v = s[0];
+        if (double.IsNaN(v))
+            return v;
+        for (int i = 1; i < s.Length; i++)
+        {
+            double x = s[i];
+            if (x < v)
+                v = x;
+            else if (double.IsNaN(x))
+                return x;
+        }
+        return v;
+    }
+}
+
 /// <summary>Binary searches on an ascending list.</summary>
 public static class SortedListExtensions
 {
