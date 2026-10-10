@@ -14,7 +14,9 @@ public unsafe interface IScene : IDisposable
     /// <summary>Draws the frame into <paramref name="target"/>: begins and ends its own render passes.</summary>
     void Draw(SDL_GPUCommandBuffer* cmd, RenderTarget target, float dt);
 
-    /// <summary>Builds the scene's ImGui windows, between the engine's NewFrame and Render.</summary>
+    /// <summary>Builds the scene's ImGui windows, between the engine's NewFrame and Render. The engine calls this
+    /// before <see cref="Draw"/> in the same frame, so an offscreen target shown with ImGui.Image must be made or
+    /// resized here, not in Draw (that would free a texture the UI already references).</summary>
     void BuildUi();
 
     /// <summary>An input event ImGui didn't want. <paramref name="width"/> and <paramref name="height"/> are the

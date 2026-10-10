@@ -204,6 +204,18 @@ belt 50 mm) that the knobs then move; the history labels it.
 **Input**: `−`/`+` buttons, mouse wheel over a value (shift for ×4), typing, Ctrl+Z / Ctrl+Y, 0–7 for sections.
 Values show in the toggled units (metric `279 mm`, imperial `11.0 in`; the design always stores metric).
 
+## Progress (2026-10-10)
+
+- Done: the worker (build, mesh, sprites and bake off the render thread, on the game's device with its own command
+  buffers; the viewers use it too), `ShipSpriteRenderer`, `DesignDoc` and the knob table with tests, the fonts, and
+  the scene: top bar (New / Open / Save as / Undo / Redo / Reset / units), the rail with summaries, the top view and
+  side profile offscreen, the trim sheet with "since opened", sections 1-7, the Legend (particulars, weight bar,
+  remarks) and the history strip. Idle frames allocate about 200 bytes.
+- Learned: the engine builds the UI before `Draw`, so offscreen targets shown with `ImGui.Image` are sized in
+  `BuildUi` (resizing in `Draw` freed a texture the UI held: a crash).
+- Next: the profile's armour coloured by thickness with mm on the plates (Step 7), then the marginal-cost chips
+  (Step 9), then the research's later items.
+
 ## Steps
 
 Each step is a commit, verified with `dotnet test` and, for UI, `-screenshot -ui` readback.

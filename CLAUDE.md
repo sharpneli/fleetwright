@@ -17,6 +17,7 @@ dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-navy
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
 dotnet run --project src/Fleetwright -- -screenshot=30 -ui [-size=1920x1080] # the window as seen, ImGui included
 dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour]
+dotnet run --project src/Fleetwright -- -view=designer [-ship=X.json | -new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
 ```
 
 The exe opens the ship viewer. `-ship=` picks the design; without it, it shows `Content/Designs/bismarck.json` next to
@@ -30,6 +31,11 @@ its fields. Its panel picks the view, the projection, which kinds are drawn, and
 it (a tier button gives that tier's rooms, `hitbox_cells.png` live) or a per-pixel cut. `-screenshot` captures the
 scene alone; with `-ui` it is the window as seen, ImGui on top. Both go through the window's blit shader, and
 a capture run reads no `imgui.ini` and writes none, so the UI shows its defaults. `-size=WxH` sets the window size.
+
+The third tab (or `-view=designer`) is the ship designer (`Designer/`, `docs/designer-ui/designer-plan.md`): the
+picked design, or the empty 8 kn hull with `-new`, to edit with knobs; the worker rebuilds after each edit and the
+sprite, side profile and Legend follow. `-steps=` applies knob steps at startup (knob ids from `Knobs`), as the +/-
+buttons do, for screenshots of edited states. Saves go to Documents/My Games/Fleetwright/Designs.
 
 ## Release and game assets
 
@@ -113,6 +119,9 @@ src/
     IScene.cs                 #   a full-window view with its own UI; the engine draws the current one (see Views)
     ShipViewer.cs             #   the ship viewer (the default launch), a test tool for Shipgen
     SceneSwitcher.cs          #   several scenes behind one IScene: the menu bar and F3 switch
+    UiFonts.cs                #   the game UI's fonts (Content/Fonts) in ImGui's atlas
+    Designer/                 #   the ship designer: DesignerScene (design in, design out), DesignDoc (history, save),
+                              #   Knobs (every control over the design), Units, DesignerTheme (the mockup's tokens)
     HitView/                  #   the hitbox viewer: HitboxMesh (hitboxes as triangles, CPU), HitboxRenderer (into any
                               #   RenderTarget), HitboxCamera and HitboxViewState (what it shows), HitboxScene (UI)
     ProfilerStubs.cs          #   no-op Tracy stand-ins for Release
@@ -151,6 +160,7 @@ shipgen/                      # the port's test data
   golden/                     #   Python's output (README.md there)
 Content/                      # copied into the game's output folder; the bake shaders are embedded in Shipgen.Render
                               #   (the output's Content/Designs/ comes from shipgen/designs, see GameAsset)
+  Fonts/                      #   UI fonts (OFL), game assets
   Shaders/Source/             #   GLSL sources
   Shaders/Compiled/           #   SPIR-V binaries (checked in)
 docs/shipgen/                 # the ship designer: inputs, outputs, conventions, decisions, TODO, its research notes

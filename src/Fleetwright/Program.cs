@@ -7,7 +7,10 @@ public static unsafe class Program
         // Parse command line arguments
         int screenshotFrame = -1;
         string screenshotPath = "screenshot.png";
-        bool screenshotUi = false;
+        bool screenshotUi = false, newDesign = false;
+        int section = 0;
+        string[]? steps = null;
+        var units = Designer.UnitSystem.Metric;
         uint width = 0, height = 0;
         string? shipPath = null, navy = null, era = null, view = null, camera = null, show = null;
 
@@ -44,6 +47,22 @@ public static unsafe class Program
             else if (arg.StartsWith("-show="))
             {
                 show = arg.Substring("-show=".Length);
+            }
+            else if (arg == "-new")   // the designer starts from the empty hull
+            {
+                newDesign = true;
+            }
+            else if (arg.StartsWith("-steps="))   // designer knob steps at startup: speed:-2,belt:+3
+            {
+                steps = arg.Substring("-steps=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries);
+            }
+            else if (arg == "-units=imperial")   // the designer's units
+            {
+                units = Designer.UnitSystem.Imperial;
+            }
+            else if (arg.StartsWith("-section="))   // the designer's open section, 0-7
+            {
+                int.TryParse(arg.Substring("-section=".Length), out section);
             }
             else if (arg == "-ui")   // the screenshot shows the UI too
             {
@@ -86,9 +105,12 @@ public static unsafe class Program
             }
             nint device = (nint)engine.Device;   // lambdas may not capture a pointer
             using var session = new DesignSession(shipPath, ShipViewer.Scale, ShipViewer.MipLevels, device);
-            engine.Scene = new SceneSwitcher(view == "hitbox" ? 1 : 0,
+            engine.Scene = new SceneSwitcher(view switch { "hitbox" => 1, "designer" => 2, _ => 0 },
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),
-                ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show)));
+                ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show)),
+                ("Designer", () => newDesign
+                    ? new Designer.DesignerScene((SDL.SDL_GPUDevice*)device, Designer.DesignDoc.Empty(), units: units, section: section, steps: steps)
+                    : new Designer.DesignerScene((SDL.SDL_GPUDevice*)device, Shipgen.Design.Load(session.Path), session.Path, units: units, section: section, steps: steps)));
 
             // Run the engine
             engine.Run();

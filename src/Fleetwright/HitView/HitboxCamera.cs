@@ -24,20 +24,25 @@ public struct HitboxCamera
     public bool Perspective;
     public const float FovY = 40f;
 
-    /// <summary>Aims at the points and zooms so they fill the view from the current direction, with a margin.</summary>
-    public void Fit(ReadOnlySpan<HitVertex> points, float aspect)
+    /// <summary>Aims at the points and zooms so they fill the view from the current direction, with a margin. Only
+    /// the kinds in <paramref name="kindMask"/> count (what the view shows: masts it hides don't shrink the hull).</summary>
+    public void Fit(ReadOnlySpan<HitVertex> points, float aspect, ulong kindMask = ulong.MaxValue)
     {
-        if (points.IsEmpty)
-            return;
         var (r, s, f) = Basis();
         float u0 = float.MaxValue, u1 = float.MinValue, v0 = float.MaxValue, v1 = float.MinValue, d = 0;
+        int n = 0;
         foreach (ref readonly var p in points)
         {
+            if ((kindMask & (1UL << (int)p.Kind)) == 0)
+                continue;
             float u = Vector3.Dot(p.Position, r), v = Vector3.Dot(p.Position, s);
             (u0, u1, v0, v1) = (Math.Min(u0, u), Math.Max(u1, u), Math.Min(v0, v), Math.Max(v1, v));
             d += Vector3.Dot(p.Position, f);
+            n++;
         }
-        Target = r * ((u0 + u1) / 2) + s * ((v0 + v1) / 2) + f * (d / points.Length);
+        if (n == 0)
+            return;
+        Target = r * ((u0 + u1) / 2) + s * ((v0 + v1) / 2) + f * (d / n);
         HalfHeight = 0.53f * Math.Max(v1 - v0, (u1 - u0) / Math.Max(aspect, 0.1f)) + 1;
     }
 
