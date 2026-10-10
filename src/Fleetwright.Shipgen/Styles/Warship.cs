@@ -84,6 +84,7 @@ public sealed class PlaningStyle : Style
         var hs = PlaningHullSpec(design);
         var hull = new Hull(hs);
         lay.Hull = hull;
+        lay.Topside = Topside.Of(design, res.Freeboard);
         double L = hull.L, B = hull.B;
         lay.ShiftRange = (-0.04 * L, 0.04 * L);
         shift = Layout.Clamp(shift, lay.ShiftRange.Lo, lay.ShiftRange.Hi);

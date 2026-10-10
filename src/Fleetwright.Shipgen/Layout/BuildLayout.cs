@@ -10,6 +10,7 @@ public sealed partial class Layout
         var hs = HullSpecOf(design);
         var hull = new Hull(hs);
         lay.Hull = hull;
+        lay.Topside = Topside.Of(design, res.Freeboard);
         double L = hull.L, B = hull.B;
         double beltMm = design.Armour?.BeltMm ?? 0;
         string deck = design.Deck ?? (L >= 150 ? "wood" : "steel");

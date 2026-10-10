@@ -129,7 +129,18 @@ public sealed partial class Layout
 
     /// <summary>The hull's side h metres above the main deck, seen from above: the outline that what stands at that
     /// height inside the hull must keep within. Hull is the widest; a wall-sided hull is Hull at every height.</summary>
-    public Planform Side(double h) => Hull;
+    public Planform Side(double h)
+    {
+        if (Topside.Plain || h <= Topside.KnuckleH)
+            return Hull;
+        if (!sides.TryGetValue(h, out var side))
+            sides[h] = side = new SidePlanform(Hull, Topside, h);
+        return side;
+    }
+
+    /// <summary>hull.section's side above the widest point (Topside.Of).</summary>
+    public Topside Topside = WallSided.Instance;
+    readonly Dictionary<double, Planform> sides = [];
 
     /// <summary>The half-width of the hull deck at x (the main deck, or a raised stretch's): where what stands on it
     /// keeps inside.</summary>

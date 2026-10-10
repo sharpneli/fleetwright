@@ -378,7 +378,8 @@ public static class ShipDesign
         var ag = r.Armour;
         double cb = design.BlockCoefficient;
         var gear = Propulsion.Gear(lay, design, r);
-        var form = new HullForm(lay.Hull, cb, Geometry.Cwp(cb), T, D, Navarch.Froude(design.SpeedKn!.Value, lay.Hull.L), gear, r.Lcb);
+        var form = new HullForm(lay.Hull, cb, Geometry.Cwp(cb), T, D, Navarch.Froude(design.SpeedKn!.Value, lay.Hull.L), gear, r.Lcb,
+            lay.Topside);
         var sub = Subdivision.Build(lay, design, r, ag, ag.Armoured, form);
         var plating = HullPlating(lay, design, r);
         var planked = Subdivision.DeckPlates(sub, plating, design, lay);

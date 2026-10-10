@@ -408,6 +408,7 @@ public sealed class CarrierStyle : Style
     {
         double depth = res.Depth;
         var (lay, hs, hull, shift) = Common(design, shift0);
+        lay.Topside = Topside.Of(design, res.Freeboard);
         double L = hull.L, B = hull.B;
         var av = Aviation(design);
         var dp = DeckPlan(design);
@@ -552,6 +553,7 @@ public sealed class CarrierStyle : Style
     {
         double depth = res.Depth;
         var (lay, hs, hull, shift) = Common(design, shift0);
+        lay.Topside = Topside.Of(design, res.Freeboard);
         double L = hull.L, B = hull.B;
         var av = Aviation(design);
         var dp = DeckPlan(design);

@@ -115,6 +115,8 @@ public sealed class HullForm
     static readonly double[] Heights = [0.0, 0.01, 0.03, 0.08, 0.15, 0.25, 0.4, 0.55, 0.7, 0.85, 1.0];
 
     public readonly Hull Hull;
+    /// <summary>The side above the widest point (hull.section), shared with the layout.</summary>
+    public readonly Topside Topside;
     public readonly double Cb, T, D, Fn, CwpTarget;
     readonly bool planing;
     readonly long screws;
@@ -181,10 +183,13 @@ public sealed class HullForm
     }
 
     /// <summary>cwp: the waterplane coefficient to aim for; fn: the Froude number at the design speed; gear:
-    /// propulsion.gear (null: a flat keel aft); lcb: the centre of buoyancy's x.</summary>
-    public HullForm(Hull hull, double cb, double cwp, double T, double D, double fn = 0.0, Gear? gear = null, double lcb = 0.0)
+    /// propulsion.gear (null: a flat keel aft); lcb: the centre of buoyancy's x; topside: the side above the widest
+    /// point (wall-sided by default).</summary>
+    public HullForm(Hull hull, double cb, double cwp, double T, double D, double fn = 0.0, Gear? gear = null, double lcb = 0.0,
+        Topside? topside = null)
     {
         Hull = hull;
+        Topside = topside ?? WallSided.Instance;
         Cb = cb;
         this.T = T;
         this.D = D;
@@ -487,15 +492,21 @@ public sealed class HullForm
         return v;
     }
 
-    /// <summary>The half-breadth at x and z metres above the keel.</summary>
+    /// <summary>The widest point's height above the keel: the topside's knuckle, not under the waterline unless the
+    /// deck is (an overloaded ship).</summary>
+    public double KnuckleZ => Math.Max(Math.Min(T, D), D + Topside.KnuckleH);
+
+    /// <summary>The half-breadth at x and z metres above the keel, up through the main deck and the raised stretches'
+    /// sides: the section below the waterline, a ramp out to the planform at the widest point, then the topside.</summary>
     public double HalfWidth(double x, double z)
     {
         double deck = Hull.HalfWidth(x);
-        if (z >= D)
-            return deck;
+        double zK = KnuckleZ;
+        if (z >= zK)
+            return Topside.Plain ? deck : deck * Topside.Ratio(x, z - D);
         double wl = Waterline(x);
         if (z >= T)
-            return D > T ? wl + (deck - wl) * (z - T) / (D - T) : deck;
+            return zK > T ? wl + (deck - wl) * (z - T) / (zK - T) : deck;
         double zk = Keel(x);
         if (z <= zk)
             return 0.0;

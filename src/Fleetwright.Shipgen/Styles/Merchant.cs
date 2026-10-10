@@ -149,6 +149,7 @@ public sealed class MerchantStyle : Style
         var hs = MerchantHullSpec(design);
         var hull = new Hull(hs);
         lay.Hull = hull;
+        lay.Topside = Topside.Of(design, res.Freeboard);
         double L = hull.L, B = hull.B;
         var cg = Cargo(design);
         bool tanker = cg.Kind == "tanker";

@@ -66,6 +66,14 @@ public sealed record HullInput
     public ConstructionInput? Construction { get; init; }
     public PlatingInput? Plating { get; init; }
     public List<RaisedInput>? Raised { get; init; }
+    public SectionInput? Section { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>hull.section: the hull's cross-section (Topside).</summary>
+public sealed record SectionInput
+{
+    public string? Topside { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
