@@ -220,7 +220,8 @@ Each step ends verified and committed, with its notes added here.
 
 1. **Names:** `ShipClass` / `ShipState` (or `Vessel`), `ShipClassArt`?
 2. **Where the battle code lives:** a new `Fleetwright.Battle` project with no GPU, depending only on Shipgen's model
-   (recommended), or inside Shipgen or the game exe?
+   (recommended), or inside Shipgen or the game exe? Superseded by `docs/world/architecture.md` (proposed): the battle
+   is the tactical tier of a `Fleetwright.Sim` project that holds the whole world.
 3. **Saves:** condition tables by index (compact; breaks when shipgen changes a class's layout) or by string id
    (survives a rebuild)? Proposed: indices plus the class hash at runtime, string ids in save files.
 4. **Buoyancy realism** (open since 2026-10-07, DECISIONS "Buoyancy"): step 6 needs it, steps 1-5 don't.

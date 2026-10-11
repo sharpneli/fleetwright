@@ -208,6 +208,7 @@ Content/                      # copied into the game's output folder; the bake s
   Shaders/Compiled/           #   SPIR-V binaries (checked in)
 docs/shipgen/                 # the ship designer: inputs, outputs, conventions, decisions, TODO, its research notes
 docs/battle/plan.md           # the battle module's data plan (ShipClass, ShipState, the steps): one step per session
+docs/world/architecture.md    # the world: tiers of time on one clock, the sim thread, commands/snapshot, the scene stack
 research/                     # research notes, see below
 ```
 
