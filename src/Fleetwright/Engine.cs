@@ -290,7 +290,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
     /// <summary>A dev hook for testing the UI without a mouse (-input=): events queued into ImGui at their frame.
     /// "F:click:X,Y" moves there and clicks (ImGui trickles the queue, a step a frame), "F:right:X,Y" right-clicks,
-    /// "F:wheel:X,Y:N" turns the wheel N notches, "F:type:TEXT" types TEXT then Enter. X, Y in window pixels.</summary>
+    /// "F:wheel:X,Y:N" turns the wheel N notches, "F:drag:X0,Y0:X1,Y1" drags with the left button, "F:type:TEXT" types TEXT then Enter. X, Y in window pixels.</summary>
     public List<string> ScriptedInput { get; } = [];
 
     void FeedScriptedInput()
@@ -301,7 +301,10 @@ public unsafe class Sdl3GpuEngine : IDisposable
         foreach (var ev in ScriptedInput)
         {
             var p = ev.Split(':');
-            if (p.Length < 3 || !int.TryParse(p[0], out int f) || f != (int)FrameNumber)
+            if (p.Length < 3 || !int.TryParse(p[0], out int f))
+                continue;
+            int step = (int)FrameNumber - f;   // a drag runs over frames: move, press, six moves, let go
+            if (step != 0 && !(p[1] == "drag" && step is > 0 and <= 8))
                 continue;
             System.Numerics.Vector2 At(string s)
             {
@@ -316,6 +319,21 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     io.AddMousePosEvent(c.X, c.Y);
                     io.AddMouseButtonEvent(b, true);
                     io.AddMouseButtonEvent(b, false);
+                    break;
+                case "drag" when p.Length > 3:   // a frame a step, as a hand would: move there, press, move, let go
+                    var d0 = At(p[2]);
+                    var d1 = At(p[3]);
+                    if (step == 0)
+                        io.AddMousePosEvent(d0.X, d0.Y);
+                    else if (step == 1)
+                        io.AddMouseButtonEvent(0, true);
+                    else if (step < 8)
+                    {
+                        var q = d0 + (d1 - d0) * ((step - 1) / 6f);
+                        io.AddMousePosEvent(q.X, q.Y);
+                    }
+                    else
+                        io.AddMouseButtonEvent(0, false);
                     break;
                 case "wheel" when p.Length > 3:
                     var w = At(p[2]);

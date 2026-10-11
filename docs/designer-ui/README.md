@@ -176,7 +176,7 @@ The reasoning, the engine finding (the lumpy tonnage), the port plan and the ope
 | `png/overview-game-dreadnought.png` | in the game: Dreadnought within Slipway No. 1 |
 | `png/overview-game-cruiser.png` | in the game: Heavy Cruiser against London 1930 |
 
-## Protection tab (`protection.html`, 2026-10-11)
+## Protection tab (`protection.html`, 2026-10-11; in the game since the same day)
 
 This mockup covers the Protection tab's pane only (1280 × 578). It replaces the knob list with four parts:
 
@@ -199,6 +199,9 @@ the port plan and the open questions are in `protection.md`. `?ship=dreadnought|
 | `png/protection-cover-tip.png` | Yamato, hovering the "Armoured ends" preset |
 | `png/protection-dreadnought-aon.png` | Dreadnought after "All-or-nothing" |
 | `png/protection-handle-reach.png` | Bismarck, parts removed, dragging the fore end belt's tip |
+| `png/protection-game-bismarck.png` | in the game: Bismarck, hovering the second deck's `+` |
+| `png/protection-game-dreadnought-menu.png` | in the game: right-click on Dreadnought's third deck, fore end |
+| `png/protection-game-yamato-cover.png` | in the game: Yamato, hovering "Armoured ends" |
 
 ## Screenshots (`png/`)
 

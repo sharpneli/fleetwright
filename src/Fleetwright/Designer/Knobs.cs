@@ -1071,6 +1071,20 @@ public static class Knobs
         d => d.Armour?.SteeringBox?.DeckMaterial, (d, v) => Steering(d, s => s with { DeckMaterial = v }),
         d => (d.Armour?.SteeringBox?.DeckMm ?? 0) > 0);
 
+    /// <summary>A part's material in the armour scheme's own map (belt, bulkheads, conning tower: the parts with no
+    /// material field of their own). Changing one makes the scheme custom.</summary>
+    public static ChoiceKnob SchemeMaterial(string part, string label) => Material($"scheme_{part}_material", label, "armour", "the engine's default",
+        d => d.Armour?.Materials?.GetValueOrDefault(part),
+        (d, v) => Arm(d, a =>
+        {
+            var m = new Dictionary<string, string>(a.Materials ?? []);
+            if (v == null)
+                m.Remove(part);
+            else
+                m[part] = v;
+            return a with { Materials = m };
+        }));
+
     public static ChoiceKnob MainMaterial(int i) => Material($"main{i}_material", "Turret and barbette material", "armour", FromScheme,
         d => d.Main?.ElementAtOrDefault(i)?.Material, (d, v) => MainBattery(d, i, b => b with { Material = v }));
 

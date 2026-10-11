@@ -1201,7 +1201,8 @@ public sealed unsafe partial class DesignerScene
                     ovForceTip = 2 * Int(1) + (Int(2) > 0 ? 1 : 0);
                     break;
                 default:
-                    Console.Error.WriteLine($"designer: no UI state '{it}'");
+                    if (!ApplyProtDevUi(p))
+                        Console.Error.WriteLine($"designer: no UI state '{it}'");
                     break;
             }
         }

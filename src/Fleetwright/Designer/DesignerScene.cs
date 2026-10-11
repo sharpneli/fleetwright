@@ -316,6 +316,8 @@ public sealed unsafe partial class DesignerScene : IScene
         public required SecPane? Sec;
         /// <summary>The Overview tab (built only while it's open).</summary>
         public required OvPane? Ov;
+        /// <summary>The Protection tab (built only while it's open).</summary>
+        public required ProtPane? Prot;
     }
 
     /// <summary>A gun mount on the plan: where it is, its tag, its arcs of fire (degrees clockwise from dead ahead, the
@@ -475,6 +477,7 @@ public sealed unsafe partial class DesignerScene : IScene
             Main = section == 1 ? MainPaneOf(d, ship, over) : null,
             Sec = section == 2 ? SecPaneOf(d, ship, over) : null,
             Ov = section == 0 ? OvPaneOf(d, ship) : null,
+            Prot = section == 3 ? ProtPaneOf(d, ship) : null,
         };
     }
 
@@ -565,58 +568,7 @@ public sealed unsafe partial class DesignerScene : IScene
                 break;
             case 2:   // its own pane (DesignerScene.Secondary.cs)
                 break;
-            case 3:
-                items.Add(new Header("Materials"));
-                items.Add(ArmourPick(d));
-                items.Add(new Header("Side"));
-                Num(Knobs.Belt);
-                Num(Knobs.BeltBottom);
-                Num(Knobs.UpperBelt);
-                Num(Knobs.EndBeltMm("fore"));
-                Num(Knobs.EndBeltReach("fore"));
-                Num(Knobs.EndBeltMm("aft"));
-                Num(Knobs.EndBeltReach("aft"));
-                Num(Knobs.Bulkheads);
-                Num(Knobs.Tds);
-                if (d.StyleName == "carrier")
-                    Num(Knobs.FlightDeckArmour);
-                items.Add(new Header("Side, details", Details: true));
-                Num(Knobs.BeltDepth);
-                Num(Knobs.BeltHeight);
-                Num(Knobs.UpperBeltToDeck);
-                Choice(Knobs.UpperBeltExtent);
-                foreach (var end in new[] { "fore", "aft" })
-                {
-                    Num(Knobs.EndBeltTip(end));
-                    Num(Knobs.EndBeltBulkhead(end));
-                }
-                items.Add(new Header("Steering gear box", Details: true));
-                Num(Knobs.SteeringSides);
-                Num(Knobs.SteeringRoof);
-                Num(Knobs.SteeringEnds);
-                items.Add(new Header("Materials, part by part", Details: true));
-                Choice(Knobs.UpperBeltMaterial);
-                Choice(Knobs.EndBeltMaterial("fore"));
-                Choice(Knobs.EndBeltMaterial("aft"));
-                Choice(Knobs.SteeringMaterial);
-                Choice(Knobs.SteeringRoofMaterial);
-                var decks = d.Armour?.Decks ?? [];
-                for (int i = 0; i < decks.Count; i++)
-                {
-                    int j = i;
-                    items.Add(new Header($"Armour deck {i + 1}", "Remove", () => Edit(RemoveDeck(doc.Current, j), $"Armour deck {j + 1} removed")));
-                    Num(Knobs.DeckMm(i));
-                    Num(Knobs.DeckLevel(i));
-                    Choice(Knobs.DeckExtent(i));
-                    Choice(Knobs.DeckMaterial(i));
-                }
-                items.Add(new Act("Add an armour deck", () => Edit(AddDeck(doc.Current), "Armour deck added")));
-                if ((d.Main?.Count ?? 0) > 0)
-                {
-                    items.Add(new Header("Turrets"));
-                    for (int i = 0; i < d.Main!.Count; i++)
-                        Num(Knobs.MainArmour(i), $"Battery {(char)('A' + i)} faces");
-                }
+            case 3:   // its own pane (DesignerScene.Protection.cs)
                 break;
             case 4:
                 items.Add(new Header("Speed and range"));
@@ -869,22 +821,6 @@ public sealed unsafe partial class DesignerScene : IScene
         var l = ((main ? d.Main : d.Secondary) ?? []).ToList();
         l.RemoveAt(i);
         return main ? d with { Main = l } : d with { Secondary = l };
-    }
-
-    static Design AddDeck(Design d)
-    {
-        var a = d.Armour ?? new ArmourInput();
-        var decks = (a.Decks ?? []).ToList();
-        int deck = decks.Count == 0 ? 1 : decks.Max(x => x.Deck ?? 1) + 1;
-        decks.Add(new ArmourDeckInput { Deck = deck, Mm = 25, Extent = "citadel" });
-        return d with { Armour = a with { Decks = decks } };
-    }
-
-    static Design RemoveDeck(Design d, int i)
-    {
-        var decks = d.Armour!.Decks!.ToList();
-        decks.RemoveAt(i);
-        return d with { Armour = d.Armour with { Decks = decks } };
     }
 
     public void Dispose()

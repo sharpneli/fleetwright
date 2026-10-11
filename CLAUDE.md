@@ -20,7 +20,7 @@ dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|i
 dotnet run --project src/Fleetwright -- -view=ship [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
 dotnet run --project src/Fleetwright -- -section=2 -designer-ui=secsel:1:2,secmenu  # UI state for screenshots (DesignerScene.ApplyDevUi)
-dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wheel:1160,559:-1;100:type:150  # scripted clicks, wheel, typing (window px; Engine.ScriptedInput)
+dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wheel:1160,559:-1;100:type:150  # scripted clicks, wheel, typing, F:drag:X0,Y0:X1,Y1 (window px; Engine.ScriptedInput)
 ```
 
 The exe opens three tabs on one design (menu bar, or F3 to step): the designer (default), the hitbox viewer and the
@@ -37,7 +37,11 @@ clickable turret arrangement (`+` slots add, the step between turrets toggles su
 move and split), guns bearing by bearing, and presets. The Secondary · AA · TT tab is too
 (`docs/designer-ui/secondary.md`): a battery table whose position (deckhouse, deck, upper or lower casemate) is one
 click, the broadside strip (a half-plan over one schematic track per position, a + at each track's head), the
-secondaries' guns bearing, and AA, torpedo and selected-battery panels. The Overview tab (`docs/designer-ui/overview.md`) is a trim sheet of
+secondaries' guns bearing, and AA, torpedo and selected-battery panels. The Protection tab (`docs/designer-ui/protection.md`) is the
+elevation (the side deck by deck, heights stretched, every built plate, `+` ghosts where a missing part goes), the midship
+section to scale, a table of the parts the ship has (a `+` in each group's header adds one with values from the belt, `x`
+removes), the selected plate, and coverage presets; brass handles drag belt edges, reach, decks and the torpedo bulkhead,
+and a drag edits once, on release. The Overview tab (`docs/designer-ui/overview.md`) is a trim sheet of
 18 broad-stroke levers, each with what one step down and up does to the standard displacement, measured by real builds
 in the background (`DesignProbes`: validate and build only, on several threads, a newer batch supersedes); limits
 (mocked in `DesignLimits` until the gameplay layer hands them in) only report, never refuse; Fit is greyed out until the

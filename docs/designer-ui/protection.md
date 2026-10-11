@@ -1,5 +1,37 @@
 # Protection tab (mockup, 2026-10-11)
 
+**Status:** this design is now the Protection tab, built in `Designer/DesignerScene.Protection.cs`, with the edits in
+`Designer/ProtectionEdits.cs` (tests in `tests/Fleetwright.Tests/ProtectionEditsTests.cs`). Review decisions on the
+second pass (2026-10-11): the three presets are fine (more can come if players keep wanting a layout); added parts take
+their starting values from the belt; finer control (sloped decks, a conning tower of its own) gets UI when the engine
+has it.
+
+The game differs from the mockup in these ways:
+
+- **A drag edits once, on release.** While the mouse is down the snapped edge is drawn in brass, with its value in a
+  tooltip; the design changes (and the ship rebuilds) only when you let go, and not at all if the value didn't move.
+  The wheel and the spinners step as everywhere else.
+- **The drawings are the built ship's**, from `Ship.Hitboxes` (belt, strakes, bulkheads, armour decks, barbettes,
+  turrets, conning tower, the hull form's stations), so they lag an edit by one build. The table is the design.
+- **Design decks and built decks:** the engine merges design decks that overlap on the same deck. A built deck plate
+  belongs to the first design deck on that deck and extent, so clicking it selects that row.
+- **Weights** come from the build's weight lines (the decks' by deck and extent). Turret armour is in each turret's
+  weight, so its row says "turret".
+- **Belt, bulkheads and conning tower materials** edit the armour scheme's own map (`Knobs.SchemeMaterial`); changing
+  one makes the scheme custom. Barbettes are "as the turrets".
+- **The arrow glyph (→) isn't in the UI fonts**, so the taper reads "to 170".
+- **Scripted drags:** `-input=F:drag:X0,Y0:X1,Y1` moves, presses a frame later, moves in six steps and lets go, as a
+  hand would (`Engine.ScriptedInput`).
+- **Dev hook:** `-designer-ui=protsel:ID` (belt, upper, end_fore, end_aft, bulk, tds, deckN, steer, mainN, barb, ct),
+  `protmenu` (its context menu), `protcover:N` (preset N's tooltip), `protghost:DECK:EXT` (that ghost hovered),
+  `prothandle:N` / `protsechandle:N` (handle N's tooltip on the elevation or the section).
+
+Game screenshots: `png/protection-game-bismarck.png` (hovering the second deck's `+`),
+`png/protection-game-dreadnought-menu.png` (right-click on the third deck, fore end),
+`png/protection-game-yamato-cover.png` (hovering "Armoured ends").
+
+The rest of this note is the mockup's reasoning.
+
 Mockup: `protection.html`. Open it in a browser; it is interactive and works offline. Like the other tab mockups it
 shows **only the tab's pane** (1280 × 578, its size at 1920 × 1080). The plan, the outliner and the ledger stay as they
 are.
@@ -188,13 +220,6 @@ change *should* move the citadel by 12–20 m is a question for the layout.
   snapping as above. The edit is applied once per snap step, so a drag doesn't flood the build queue.
 - A dev hook: `-designer-ui=protsel:ID,protmenu,protcover:N,protghost:DECK:EXT,protadd:ID`, and the `-input=` scripted
   clicks and drags to check every control once ported.
-
-## Open questions
-
-1. **Coverage presets:** are the three right (All-or-nothing, Armoured ends, Complete belt), and should they live in the
-   sub-bar, or among the Templates on the left?
-2. **Starting values for an added part** come from the belt (upper belt 0.5, end belts 0.4, bulkheads 0.7, decks
-   25 mm). Good enough, or should they come from the era or the scheme?
 
 Screenshots: `png/protection-opened.png` (Bismarck as opened), `png/protection-ghost.png` (hovering the second deck's
 `+` over the citadel), `png/protection-added-deck.png` (after adding it and thinning the main deck 10 mm),

@@ -128,6 +128,8 @@ public sealed unsafe partial class DesignerScene
                 RemoveTurret(doc.Current, sel);
             if (section == 2 && secSel is { } ss && ImGui.IsKeyPressed(ImGuiKey.Delete))
                 RemoveSecPair(ss);
+            if (section == 3 && ImGui.IsKeyPressed(ImGuiKey.Delete))
+                ProtDelete();
         }
     }
 
@@ -692,6 +694,8 @@ public sealed unsafe partial class DesignerScene
             MainBatteryPane(inner);
         else if (section == 2 && s.Sec != null)
             SecondaryPane(inner);
+        else if (section == 3 && s.Prot != null)
+            ProtectionPane(inner);
         else
             Flow("##panel", inner, s.Panel, columns: 0);
         ImGui.PopStyleVar();
