@@ -20,6 +20,9 @@ public static class SubmergedTubes
     const double DepthK = 0.3, DepthMin = 1.5, DepthMax = 3.0, MinDepth = 1.2, AxisUp = 1.0, MinTier = 1.8;
     /// <summary>A beam room's breadth at the tubes: a tube and the run to load it, staggered across the centreline.</summary>
     const double LoadRun = 2.0;
+    /// <summary>How far a bow or stern room's end may stand from where its tubes leave the hull: the tube, and a
+    /// sleeve through the spaces between.</summary>
+    const double MaxRun = 1.5 * TubeLen;
     /// <summary>Crew: per room and per tube (loading numbers).</summary>
     const double RoomCrew = 2, TubeCrew = 3;
 
@@ -35,12 +38,13 @@ public static class SubmergedTubes
     /// <summary>A torpedo room's crew for its tubes.</summary>
     public static double Crew(int tubes) => tubes == 0 ? 0 : RoomCrew + TubeCrew * tubes;
 
-    /// <summary>The rooms and their tubes, after the style's compartments are placed (ShipDesign.LayOut): a beam room
-    /// nearest the space forward of the forward turrets' trunks, a bow room abaft the collision bulkhead, a stern room as
-    /// far aft as the hull at its axis reaches, each clear of the rooms and trunks in its band. The axis lies about 0.3
-    /// draught under water, on a deck space's floor when one is near (else the room spans two); a stern tube rises over
-    /// a rudder or propeller on its line. Widths come from the hull's form. Books the weights; fails for length when a
-    /// room has no place.</summary>
+    /// <summary>The rooms and their tubes, after the style's compartments are placed (ShipDesign.LayOut): first a bow
+    /// room abaft the collision bulkhead and a stern room as far aft as the hull at its axis reaches, each within MaxRun
+    /// of where its tubes leave the hull; then the beam rooms, nearest the space forward of the forward turrets' trunks.
+    /// Each keeps clear of the rooms and trunks in its band. The axis lies about 0.3 draught under water, on a deck
+    /// space's floor when one is near (else the room spans two); a stern tube passes beside a centreline rudder's stock
+    /// and rises while gear hangs aft of where it leaves the hull. Widths come from the hull's form. Books the weights;
+    /// asks for length when a room has no place.</summary>
     public static void Plan(Layout lay, Design design, Navarch.Result res)
     {
         int nSide = PerSide(design), nBow = Bow(design), nStern = Stern(design);
@@ -121,17 +125,98 @@ public static class SubmergedTubes
             lay.Weights.Add(new Weight(c.Id, "armament", Weight(tubes, perTube), (c.X0 + c.X1) / 2, ZRel.Deck(a - D)));
         }
 
-        // the bow room first: it wants the end, where nothing else does
+        // the end rooms first: each wants its end, where its tubes leave; the beam rooms take what is left
         if (nBow > 0)
         {
             double off = 0.6 * (nBow - 1);
-            if (Room("Bow torpedo room", AxialL(nBow), axis, coll, (_, x1) => form.HalfWidth(x1 - 1.0, axis) > off + TubeR + 0.1,
+            double stem = L / 2;
+            while (stem > 0 && form.HalfWidth(stem, axis) <= off + TubeR + 0.1)
+                stem -= 0.25;
+            if (Room("Bow torpedo room", AxialL(nBow), axis, coll,
+                    (_, x1) => form.HalfWidth(x1 - 1.0, axis) > off + TubeR + 0.1 && stem - x1 <= MaxRun,
                     $"the bow tube{(nBow > 1 ? "s" : "")}") is { } room)
             {
                 var ys = Propulsion.Spread(nBow, off);
                 for (int k = 0; k < ys.Count; k++)
                     Add(lay, room, nBow == 1 ? "Bow tube" : $"Bow tube {k + 1}", "bow", room.X1, ys[k].Y, axis - D, 0.0);
                 Book(room, nBow, axis);
+            }
+        }
+        if (nStern > 0)
+        {
+            // beside a centreline rudder's stock (it runs up through the hull to the steering gear), not over it
+            double off = 0.6 * (nStern - 1), yc = 0.0;
+            if (gear.Rudders.FirstOrDefault(rd => Math.Abs(rd.Y) < off + TubeR + rd.Thick / 2 + 0.2) is { } stock)
+            {
+                double clear = stock.Thick / 2 + TubeR + 0.25;
+                if (nStern == 1)
+                    yc = stock.Y + clear;
+                else
+                    off = Math.Max(off, clear);
+            }
+            // where the hull at the axis ends aft, the torpedo leaves: nothing hanging under the counter may stand aft
+            // of that on its line, else the axis rises until the hull reaches past it (or the line clears it)
+            double lo = yc - off - TubeR, hi = yc + off + TubeR, reach = Math.Max(Math.Abs(lo), Math.Abs(hi));
+            double ExitX(double z)
+            {
+                double x = -L / 2;
+                while (x < 0 && form.HalfWidth(x, z) <= reach + 0.1)
+                    x += 0.25;
+                return x;
+            }
+            var hang = gear.Rudders.Select(rd => (Id: rd.Id, X: rd.X0, Y0: rd.Y - rd.Thick / 2, Y1: rd.Y + rd.Thick / 2, rd.Base, rd.Top))
+                .Concat(gear.Propellers.Select(p => (Id: p.Id, X: p.X - 0.25 * p.Diameter, Y0: p.Y - p.Diameter / 2, Y1: p.Y + p.Diameter / 2,
+                    Base: p.Z - p.Diameter / 2, Top: p.Z + p.Diameter / 2))).ToList();
+            List<string> InTheWay(double z)
+            {
+                double ex = ExitX(z);
+                return hang.Where(h => h.X < ex && h.Base < z + TubeR && z - TubeR < h.Top && h.Y0 < hi && lo < h.Y1)
+                    .Select(h => h.Id.ToLowerInvariant()).ToList();
+            }
+            double a = axis;
+            var over = InTheWay(a);
+            while (over.Count > 0 && T - a > TubeR + 0.2)
+            {
+                a += 0.25;
+                if (InTheWay(a).Count == 0)
+                    break;
+            }
+            string what = nStern > 1 ? "The stern tubes" : "The stern tube";
+            if (T - a < TubeR + 0.2)
+                lay.Fail(null, $"{what} would fire into the {string.Join(" and the ", over)} at any depth under water: twin rudders " +
+                               "or an even number of shafts leave the line clear.");
+            else
+            {
+                if (over.Count > 0 && T - a < MinDepth)
+                    lay.Warnings.Add($"{what} rise{(nStern > 1 ? "" : "s")} to clear the {string.Join(" and the ", over)}, only " +
+                                     $"{T - a:F1} m under the waterline: a torpedo leaving may broach.");
+                // the axis so far, then each deck space's whose axis is deep enough and clear (a room over the steering
+                // gear rather than beside it), nearest first
+                var axes = zs.Take(zs.Count - 1).Select((z, i) => (A: z + AxisUp, Tall: zs[i + 1] - z))
+                    .Where(c => c.Tall >= MinTier - 1e-6 && T - c.A >= MinDepth && Math.Abs(c.A - a) > 0.05 && InTheWay(c.A).Count == 0)
+                    .Select(c => c.A).OrderBy(c => Math.Abs(c - a)).Prepend(a);
+                Compartment? room = null;
+                double at = a;
+                foreach (var c in axes)
+                {
+                    double end = ExitX(c);
+                    room = TryRoom("Stern torpedo room", AxialL(nStern), c, -L / 2,
+                        (x0, _) => form.HalfWidth(x0 + 1.0, c) > reach + 0.1 && x0 - end <= MaxRun);
+                    if (room != null)
+                    {
+                        at = c;
+                        break;
+                    }
+                }
+                if (room is null)
+                    Short(AxialL(nStern), what.ToLowerInvariant());
+                else
+                {
+                    var ys = Propulsion.Spread(nStern, off);
+                    for (int k = 0; k < ys.Count; k++)
+                        Add(lay, room, nStern == 1 ? "Stern tube" : $"Stern tube {k + 1}", "stern", room.X0, yc + ys[k].Y, at - D, 180.0);
+                    Book(room, nStern, at);
+                }
             }
         }
         if (nSide > 0)
@@ -189,42 +274,6 @@ public static class SubmergedTubes
                                     side, axis - D, side > 0 ? 90.0 : 270.0);
                         Book(room, 2 * n, axis);
                     }
-                }
-            }
-        }
-        if (nStern > 0)
-        {
-            // over whatever hangs on the tubes' line: a centreline rudder, a centre propeller
-            double off = 0.6 * (nStern - 1), a = axis;
-            var over = new List<string>();
-            foreach (var rd in gear.Rudders)
-                if (Math.Abs(rd.Y) < off + TubeR + rd.Thick / 2 + 0.2)
-                {
-                    a = Math.Max(a, rd.Top + TubeR + 0.3);
-                    over.Add(rd.Id.ToLowerInvariant());
-                }
-            foreach (var p in gear.Propellers)
-                if (Math.Abs(p.Y) < off + TubeR + p.Diameter / 2)
-                {
-                    a = Math.Max(a, p.Z + p.Diameter / 2 + TubeR + 0.3);
-                    over.Add(p.Id.ToLowerInvariant());
-                }
-            string what = nStern > 1 ? "The stern tubes" : "The stern tube";
-            if (T - a < TubeR + 0.2)
-                lay.Fail(null, $"{what} would have to pass over the {string.Join(" and the ", over)} out of the water: twin rudders " +
-                               "or an even number of shafts leave the centreline clear.");
-            else
-            {
-                if (over.Count > 0 && T - a < MinDepth)
-                    lay.Warnings.Add($"{what} pass{(nStern > 1 ? "" : "es")} over the {string.Join(" and the ", over)}, only " +
-                                     $"{T - a:F1} m under the waterline: a torpedo leaving may broach.");
-                if (Room("Stern torpedo room", AxialL(nStern), a, -L / 2, (x0, _) => form.HalfWidth(x0 + 1.0, a) > off + TubeR + 0.1,
-                        what.ToLowerInvariant()) is { } room)
-                {
-                    var ys = Propulsion.Spread(nStern, off);
-                    for (int k = 0; k < ys.Count; k++)
-                        Add(lay, room, nStern == 1 ? "Stern tube" : $"Stern tube {k + 1}", "stern", room.X0, ys[k].Y, a - D, 180.0);
-                    Book(room, nStern, a);
                 }
             }
         }

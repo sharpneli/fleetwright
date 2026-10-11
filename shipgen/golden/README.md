@@ -61,6 +61,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   her stern tube would have to clear the single rudder out of the water), `lion`, `nelson`, `colorado` (1 a side). All
   533 mm. Lengths within 0.1 m, standard displacement up 39-149 t, crew up 9-31. 8 design, SVG and sprite cases
   rewritten.
+- 2026-10-11, stern tubes beside the rudder stock, on purpose: a stern tube now steps past a centreline rudder's
+  stock instead of rising over the whole rudder, rises only while gear hangs aft of where it leaves the hull, and its
+  room may stand a deck up over the steering gear; bow and stern rooms are placed before the beam rooms. `dreadnought`
+  gets her twin rudders, `invincible` her stern tube back. 4 design, SVG and sprite cases rewritten.
 
 ## Layout
 
