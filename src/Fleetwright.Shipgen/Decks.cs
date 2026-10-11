@@ -116,6 +116,19 @@ public static class Arcs
     public const double ArcEnd = 135.0, ArcSide = 90.0, ArcBeam = 65.0, ArcCross = 30.0, ArcCasemate = 60.0;
     public const double ArcTorpedo = 60.0, ArcFixed = 1.0;
 
+    /// <summary>A casemate's half arc either side of abeam: ArcCasemate, narrowed for a wide mount so that, trained to
+    /// its limit, the inboard barrel is outboard of the casemate face where it leaves the shield (a sextuple trains
+    /// hardly at all).</summary>
+    public static double CasemateHalf(TurretType t)
+    {
+        double h = (t.Barrels - 1) / 2.0 * t.Spacing + t.BarrelW / 2, s = Geometry.CasemateShieldR(t);
+        if (h >= s)
+            return 0.0;
+        // inboard edge at -h cos(th) + t0 sin(th) >= 0, th off the fore-and-aft line
+        double th = double.RadiansToDegrees(Math.Atan2(h, Math.Sqrt(s * s - h * h)));
+        return Math.Min(ArcCasemate, Math.Floor(90.0 - th));
+    }
+
     /// <summary>[start, end] clockwise with 0 &lt;= start &lt; 360; end may exceed 360.</summary>
     static double[] Arc(double centre, double half)
     {
@@ -129,7 +142,7 @@ public static class Arcs
             return [Arc(fixedBearing, ArcFixed)];
         double own = m.Y > 0 ? 90.0 : 270.0;
         if (m.Casemate)
-            return [Arc(own, ArcCasemate)];
+            return [Arc(own, CasemateHalf(m.T))];
         if (m.SideMount)
             return [Arc(own, ArcSide)];
         if (m.Wing)

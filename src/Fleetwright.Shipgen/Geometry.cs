@@ -295,6 +295,12 @@ public static class Geometry
 
     static readonly Dictionary<string, double> BarrelRoot = new() { ["bb"] = 0.5, ["dp"] = 0.3, ["open"] = -0.3, ["casemate"] = 0.0 };
     public const double CasemateShield = 0.55;
+
+    /// <summary>A casemate's shield radius: 0.55 r, but never narrower than its barrels and 0.3 m either side.</summary>
+    public static double CasemateShieldR(double r, long n, double spacing, double barrelW) =>
+        Math.Max(CasemateShield * r, (n - 1) / 2.0 * spacing + barrelW / 2 + 0.3);
+
+    public static double CasemateShieldR(TurretType t) => CasemateShieldR(t.R, t.Barrels, t.Spacing, t.BarrelW);
     static readonly Dictionary<string, double> BarrelShownK = new() { ["bb"] = 0.8, ["dp"] = 0.8, ["casemate"] = 0.5 };
 
     public static double BarrelShown(TurretType t) => t.BarrelLen * (BarrelShownK.TryGetValue(t.Shape, out var k) ? k : 1.0);
@@ -394,7 +400,7 @@ public static class Geometry
                 result.Barrels = BarrelPolys(BarrelRoot["open"] * r);
                 break;
             case "casemate":
-                result.Body = CirclePolygon(0, 0, CasemateShield * r);
+                result.Body = CirclePolygon(0, 0, CasemateShieldR(r, n, sp, bw));
                 result.Barrels = BarrelPolys(BarrelRoot["casemate"] * r);
                 break;
             case "torp":

@@ -164,12 +164,13 @@ public sealed partial class Layout
 
         List<List<double>> Attempt(string mode)
         {
-            double Half(double r, bool upper)
+            double Half(TurretType t, bool upper)
             {
+                double r = t.R;
                 if (mode == "pref")
                     return 1.1 * r + 2.0;
                 if (mode == "stagger" && !upper)
-                    return Math.Max(1.05 * r + 0.5, 1.05 * rUp + Geometry.CasemateShield * r + 0.3);
+                    return Math.Max(1.05 * r + 0.5, 1.05 * rUp + Geometry.CasemateShieldR(t) + 0.3);
                 return 1.05 * r + 0.5;
             }
             var taken = new Dictionary<bool, List<(double X, double H)>> { [false] = [], [true] = [] };
@@ -178,7 +179,7 @@ public sealed partial class Layout
             foreach (var (sec, n, tId, t, upper) in bats)
             {
                 double rc = t.R;
-                double h = Half(rc, upper);
+                double h = Half(t, upper);
                 var got = new List<double>();
                 foreach (var x in xs)
                 {
@@ -195,7 +196,7 @@ public sealed partial class Layout
                     }
                 }
                 if (!upper)
-                    shields.AddRange(got.Select(x => (x, Geometry.CasemateShield * rc)));
+                    shields.AddRange(got.Select(x => (x, Geometry.CasemateShieldR(t))));
                 result.Add(got.Order().ToList());
             }
             return result;
@@ -267,8 +268,8 @@ public sealed partial class Layout
                 {
                     string mid = $"{sec.Prefix}{i + 1}{(side > 0 ? "S" : "P")}";
                     var m = Armament.AddMount(lay, mounts, "secondary", tId, t, mid, x, side * yo, bse,
-                        Armament.StowBearing(x, side, Arcs.ArcCasemate), armourMm: arm, depth: depth, top: top,
-                        footprintR: Geometry.CasemateShield * rc);
+                        Armament.StowBearing(x, side, Arcs.CasemateHalf(t)), armourMm: arm, depth: depth, top: top,
+                        footprintR: Geometry.CasemateShieldR(t));
                     (m.Battery, m.Casemate, m.Material) = (sec.Prefix, true, sec.Sec.Material);
                 }
             }

@@ -234,7 +234,7 @@ public static class TurretArt
         }
         else if (shape == "casemate")   // the port shield on the hull side and the barrels run out through it
         {
-            double rc = Geometry.CasemateShield * r;
+            double rc = Geometry.CasemateShieldR(r, n, sp, bw);
             Barrels(BarrelRoot["casemate"] * r);
             s.Add(P.Ln(new CircleNode(0, 0, rc).Fill(P.C("hull")), 1.1));
             s.Add(new CircleNode(0, 0, rc * 0.72).Fill(Shade(P.C("hull"), 1.25)));
