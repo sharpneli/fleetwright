@@ -145,7 +145,12 @@ public sealed unsafe partial class DesignerScene : IScene
             Submit();
             worker.WaitIdle(TimeSpan.FromMinutes(1));
         }
+        if (DevUi != null)
+            ApplyDevUi(DevUi);
     }
+
+    /// <summary>A dev hook for screenshots: UI state to set when a designer opens (-designer-ui=, see ApplyDevUi).</summary>
+    public static string[]? DevUi { get; set; }
 
     /// <summary>The design as edited so far.</summary>
     public Design Current => doc.Current;
@@ -308,6 +313,8 @@ public sealed unsafe partial class DesignerScene : IScene
         public required Overlay? Over;
         /// <summary>The Main battery tab (built only while it's open).</summary>
         public required MainPane? Main;
+        /// <summary>The Secondary · AA · TT tab (built only while it's open).</summary>
+        public required SecPane? Sec;
     }
 
     /// <summary>A gun mount on the plan: where it is, its tag, its arcs of fire (degrees clockwise from dead ahead, the
@@ -480,6 +487,7 @@ public sealed unsafe partial class DesignerScene : IScene
             HistoryLabels = doc.History.Select(h => h.Label).ToArray(),
             Over = over,
             Main = section == 1 ? MainPaneOf(d, ship, over) : null,
+            Sec = section == 2 ? SecPaneOf(d, ship, over) : null,
         };
     }
 
@@ -577,37 +585,7 @@ public sealed unsafe partial class DesignerScene : IScene
                 break;
             case 1:   // its own pane (DesignerScene.MainBattery.cs)
                 break;
-            case 2:
-                var secs = d.Secondary ?? [];
-                for (int i = 0; i < secs.Count; i++)
-                {
-                    int j = i;
-                    items.Add(new Header($"Secondary battery {i + 1}", "Remove", () => Edit(RemoveAt(doc.Current, j, main: false), $"Secondary battery {j + 1} removed")));
-                    Num(Knobs.SecCalibre(i));
-                    Num(Knobs.SecLength(i));
-                    Num(Knobs.SecBarrels(i));
-                    if (Knobs.SecPerSide(i).AppliesTo(d))
-                        Num(Knobs.SecPerSide(i));
-                    else
-                        Num(Knobs.SecCount(i));
-                    if (d.StyleName == "warship")
-                        Choice(Knobs.SecMount(i));
-                    Num(Knobs.SecArmour(i));
-                    items.Add(new Header($"Battery {i + 1}, details", Details: true));
-                    Num(Knobs.SecRounds(i));
-                    if (style.HasCasemates)
-                        Choice(Knobs.SecTier(i));
-                    if (style.HasRaisedMounts)
-                        Choice(Knobs.SecStandsOn(i));
-                    Choice(Knobs.SecMaterial(i));
-                }
-                items.Add(new Act("Add a secondary battery", () => Edit(AddSecondary(doc.Current), "Secondary battery added")));
-                items.Add(new Header("Anti-aircraft"));
-                Num(Knobs.AaHeavy);
-                Num(Knobs.AaLight);
-                items.Add(new Header("Torpedoes"));
-                Num(Knobs.TorpedoMounts);
-                Num(Knobs.TorpedoTubes);
+            case 2:   // its own pane (DesignerScene.Secondary.cs)
                 break;
             case 3:
                 items.Add(new Header("Materials"));

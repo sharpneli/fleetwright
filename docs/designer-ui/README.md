@@ -121,7 +121,7 @@ it. `?ship=invincible` loads the echelon example.
 | `png/mainbattery-menu.png` | right-click on Y: change battery, split off, move, remove |
 | `png/mainbattery-echelon.png` | Invincible: echelon + cross-deck in the wing cluster, 8-gun broadside |
 
-## Secondary · AA · TT tab (`secondary.html`, 2026-10-11, for review)
+## Secondary · AA · TT tab (`secondary.html`, 2026-10-11; in the game since the same day)
 
 This mockup covers the tab's pane only (1280 × 578). It has four parts:
 
@@ -143,6 +143,9 @@ loads the other examples.
 | `png/secondary-babel-menu.png` | Babel's five batteries; right-click on a lower casemate pair |
 | `png/secondary-kongo-lane.png` | Kongō: casemates clear of Q's barbette; hovering the upper-casemate `+` |
 | `png/secondary-deutschland.png` | Deutschland: torpedo pair placed, rose with the main battery, S2 selected |
+| `png/secondary-game-babel-menu.png` | in the game: Babel, right-click on pair SB2 |
+| `png/secondary-game-kongo-lane.png` | in the game: Kongō, hovering the upper-casemate `+` with SB selected |
+| `png/secondary-game-deutschland.png` | in the game: Deutschland, S2 selected, rose with the main battery |
 
 ## Screenshots (`png/`)
 

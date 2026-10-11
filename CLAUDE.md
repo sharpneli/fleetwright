@@ -19,6 +19,7 @@ dotnet run --project src/Fleetwright -- -screenshot=30 -ui [-size=1920x1080] # t
 dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour]
 dotnet run --project src/Fleetwright -- -view=ship [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
+dotnet run --project src/Fleetwright -- -section=2 -designer-ui=secsel:1:2,secmenu  # UI state for screenshots (DesignerScene.ApplyDevUi)
 ```
 
 The exe opens three tabs on one design (menu bar, or F3 to step): the designer (default), the hitbox viewer and the
@@ -32,7 +33,10 @@ menu: navy, era, pennant number), tried on every view or kept in the design. The
 `docs/designer-ui/bureau.html`: outliner and templates, plan and profile with overlays (A R M T), section tabs (0-7),
 ledger, particulars and remarks. The name and type label edit in place in the resource bar. The Main battery tab is its own pane (`docs/designer-ui/mainbattery.md`): a battery table, a
 clickable turret arrangement (`+` slots add, the step between turrets toggles superfiring, right-click for battery,
-move and split), guns bearing by bearing, and presets. `-steps=` applies knob steps at startup (knob ids from `Knobs`: `speed:-2`, `topside:tumblehome`,
+move and split), guns bearing by bearing, and presets. The Secondary · AA · TT tab is too
+(`docs/designer-ui/secondary.md`): a battery table whose position (deckhouse, deck, upper or lower casemate) is one
+click, the broadside strip (a half-plan over one schematic track per position, a + at each track's head), the
+secondaries' guns bearing, and AA, torpedo and selected-battery panels. `-steps=` applies knob steps at startup (knob ids from `Knobs`: `speed:-2`, `topside:tumblehome`,
 `distiller:off`), for screenshots of edited states in any view. Saves go to Documents/My Games/Fleetwright/Designs.
 The game uses the designer's other constructor: a design in, the edited one out through a callback, with a worker of
 its own.

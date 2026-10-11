@@ -1,6 +1,32 @@
 # Secondary · AA · TT tab (mockup, 2026-10-11)
 
-**Status:** mockup for review. Nothing is ported yet.
+**Status:** this design is now the Secondary · AA · TT tab, built in `Designer/DesignerScene.Secondary.cs`, with the
+edits in `Designer/SecondaryArrangement.cs` (tests in `tests/Fleetwright.Tests/SecondaryArrangementTests.cs`). Review
+decisions (2026-10-11): the tracks stay schematic (real heights are for the hitbox viewer and the drawing; this view is
+semantic, so more kinds of mount can join it later); a track's `+` in another position starts a new battery, as mocked;
+no engine asks for now (AA and torpedoes are placeholder systems, their panels get reworked with them); directors are
+read-only here; no presets (the yard places the secondaries, so there is little to preset).
+
+The game differs from the mockup in these ways:
+
+- **The dashed engine-ask boxes are gone** (see above).
+- **The places, arcs, heights and tonnes are the built ship's**, so they lag the table by one build, as on the main
+  battery tab. A track's number is the mean gun axis height of its built mounts, or a nominal one when it's empty.
+- **The arcs are the engine's:** today every deck secondary gets a flat 180° on its side, with no masking, so the rose is
+  a full circle for a deck battery. Casemates get ±60° about the beam.
+- **The yard lengthens the hull rather than leaving pairs out.** Placed `n/m` turns amber, and ghosts appear on the
+  track, only while the last good ship is still shown after an edit, or when a build is capped.
+- **The amidships bracket** is drawn between the end turrets (the main turrets beyond a fifth of the length from
+  midships), since the layout's own stretch isn't in the hitboxes.
+- **Position is a knob,** `sec{i}_pos` (`house`, `deck`, `upper`, `lower`), so `-steps=sec1_pos:upper` works.
+- **A dev hook for screenshots:** `-designer-ui=` takes `sec:K` (select battery K), `secsel:K:N` (pair N of it),
+  `secmenu` (its context menu), `secrose:all` (the rose with the main battery) and `sectip:lane:P` / `sectip:short:K`
+  (draw that tooltip).
+
+Game screenshots: `png/secondary-game-babel-menu.png`, `png/secondary-game-kongo-lane.png`,
+`png/secondary-game-deutschland.png`.
+
+The rest of this note is the mockup's reasoning.
 
 Mockup: `secondary.html`. Open it in a browser; it is interactive and works offline. Screenshots are in
 `png/secondary-*.png`. Like `mainbattery.html`, it shows **only the tab's pane** (1280 × 578, its size at

@@ -56,6 +56,10 @@ public static unsafe class Program
             {
                 steps = arg.Substring("-steps=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries);
             }
+            else if (arg.StartsWith("-designer-ui="))   // designer UI state for screenshots: secsel:1:2,secmenu
+            {
+                Designer.DesignerScene.DevUi = arg.Substring("-designer-ui=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries);
+            }
             else if (arg == "-units=imperial")   // the designer's units
             {
                 units = Designer.UnitSystem.Imperial;

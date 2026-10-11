@@ -125,6 +125,8 @@ public sealed unsafe partial class DesignerScene
                 ToggleOverlay(3);
             if (section == 1 && mainSel is { } sel && ImGui.IsKeyPressed(ImGuiKey.Delete))
                 RemoveTurret(doc.Current, sel);
+            if (section == 2 && secSel is { } ss && ImGui.IsKeyPressed(ImGuiKey.Delete))
+                RemoveSecPair(ss);
         }
     }
 
@@ -692,6 +694,8 @@ public sealed unsafe partial class DesignerScene
         }
         else if (section == 1 && s.Main != null)
             MainBatteryPane(inner);
+        else if (section == 2 && s.Sec != null)
+            SecondaryPane(inner);
         else
             Flow("##panel", inner, s.Panel, columns: 0);
         ImGui.PopStyleVar();
@@ -759,6 +763,21 @@ public sealed unsafe partial class DesignerScene
                             mainActive = ch.Slot.Battery;
                             stale = true;
                         }
+        }
+        // the Secondary tab's hovered or selected pair (or its battery), ringed; a click on a secondary selects its pair
+        if (section == 2 && secFocus is { } f)
+            foreach (var m in ov.Mounts)
+                if (!m.Main && SecondaryArrangement.ParseId(m.Id) is var (k, n, _) && k == f.K && (f.N == 0 || n == f.N))
+                    dl.AddCircle(Px(m.X, m.Y), P(f.N == 0 ? 8 : 11), T.U32(new Vector4(1, 0.906f, 0.659f, f.N == 0 ? 0.6f : 1)), 0, P(f.N == 0 ? 1.2f : 2));
+        if (section == 2 && snap?.Sec != null && ImGui.IsWindowHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+        {
+            var mouse = ImGui.GetMousePos();
+            foreach (var m in ov.Mounts)
+                if (!m.Main && Vector2.Distance(mouse, Px(m.X, m.Y)) < P(10) && SecondaryArrangement.ParseId(m.Id) is var (k, n, _))
+                {
+                    (secActive, secSel) = (k, (k, n));
+                    stale = true;
+                }
         }
         if (showTags)
         {

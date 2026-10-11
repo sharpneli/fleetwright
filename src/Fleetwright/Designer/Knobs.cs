@@ -877,6 +877,17 @@ public static class Knobs
         Applies = d => Styles.Get(d).HasRaisedMounts && d.Secondary?.ElementAtOrDefault(i) is { } b && (b.Mount ?? "deck") == "deck",
     };
 
+    /// <summary>Where the battery stands, one of four (the Secondary tab's position buttons): writes mount, tier and
+    /// stands_on together.</summary>
+    public static ChoiceKnob SecPosition(int i) => new($"sec{i}_pos", "Position", SecondaryArrangement.Ids,
+        ["on the deckhouse", "on the deck", "upper casemates", "lower casemates"])
+    {
+        Get = d => d.Secondary?.ElementAtOrDefault(i) is { } b ? SecondaryArrangement.Ids[(int)SecondaryArrangement.Of(b)] : null,
+        Set = (d, v) => SecondaryArrangement.SetPos(d, i, (SecondaryArrangement.Pos)Math.Max(0, Array.IndexOf(SecondaryArrangement.Ids, v))),
+        Default = "deck",
+        Applies = d => d.Secondary?.Count > i,
+    };
+
     // ------------------------------------------------------------------ machinery: details
 
     public static readonly NumberKnob Funnels = new("funnels", "Funnels (at least)", Quantity.Count, 1, 1)
@@ -1126,6 +1137,7 @@ public static class Knobs
             yield return SecTier(i);
             yield return SecStandsOn(i);
             yield return SecMaterial(i);
+            yield return SecPosition(i);
         }
         foreach (var b in new[] { "main", "secondary", "aa" })
         {
