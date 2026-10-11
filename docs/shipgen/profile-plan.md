@@ -61,8 +61,24 @@ the drawing chooses freely: the gun's trunnion height, a sloped turret face, win
 4. **Checks**: `profile-verify` (the silhouette against the hitboxes seen from the side, the side twin of `verify`)
    and SVG goldens beside `svg-check`.
 
+## How it went
+
+- Steps 1 and 2 (2026-10-11): `SideView`, `SideArt`, `ShipProfile`, `ProfileBake`, `shipgen profile`, and a Profile
+  tab in the exe (`ProfileScene`, made only while open). Tested over every golden case that builds.
+- Step 3 (2026-10-11): side forms for the ten armoured turret looks (`SideArt.Profiles`, `Roofs`, hooded and
+  champignon drawn apart), the plan's hoods and cupolas and rangefinder ears at the same places; dazzle from one
+  `DazzleScheme` for both views (the plan's output unchanged; the side unrolls each cut over the hull's real edge, so
+  panels meet along the deck and roof edges); the hull number on the bow; scuttles a deck below each open deck (none
+  through the side armour, casemates or the fine ends); bridge window bands on each control position's top level,
+  scuttles on other deckhouses; rails on stanchions (not in the silhouette, not over a hangar); the hawse and anchor.
+  Tumblehome shading in both views: five bands from the knuckle to the deck (`TopView.ShadeBands`), each 3% whiter,
+  the side turning toward the light as it leans in; the four tumblehome designs' plan SVGs rewritten on purpose.
+
 ## Known gaps (the generator's, not the drawing's)
 
 - Straight stem and flat deck (no rake, sheer, flare): picked up once the hitbox model has them.
 - Turret parts (hoods, rangefinder ears) have plan shapes only; the side gives them a height inside the gunhouse box.
 - Clutter has no heights of its own beyond its columns; only what breaks the outline is drawn from the side.
+- Liberty's propeller is 1.45 m across in the hitboxes, small for a 142 m freighter; the profile shows it as built.
+- The plan's canvas is sized from the hull's length, so a flight deck overhanging the stern is cut off there; the
+  profile's canvas fits it.

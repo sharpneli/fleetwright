@@ -1,13 +1,19 @@
 namespace Fleetwright.Shipgen.Render;
 
 /// <summary>The profile: the ship from the starboard side, drawn the way HullArt draws the plan (the same palette keys,
-/// outline, rim light and scale rules), so the two read as one drawing. Ship metres with y = -height above the main
-/// deck. Parts are drawn far to near (by their starboard edge), the hull among them at half the beam: what is inside the
-/// hull's side hides behind it, what stands outside it (casemate guns, sponsons, the flight deck) in front.</summary>
+/// outline, rim light, dazzle scheme and scale rules), so the two read as one drawing. Ship metres with y = -height above
+/// the main deck. Parts are drawn far to near (by their starboard edge), the hull among them at half the beam: what is
+/// inside the hull's side hides behind it, what stands outside it (casemate guns, sponsons, the flight deck) in
+/// front.</summary>
 public static class SideArt
 {
     /// <summary>A part to draw: its depth (larger is nearer) and its drawing.</summary>
     readonly record struct Item(double Depth, int Order, Action<List<Node>> Draw);
+
+    /// <summary>What every part's drawing needs: the painter, the view, the dazzle scheme (null: none), the turret look,
+    /// the blocks that carry a bridge's windows, and whether this is the silhouette (no rails: a hairline fence isn't
+    /// part of a recognition outline).</summary>
+    sealed record Ctx(Painter P, SideView V, DazzleScheme? Dazzle, string TurretLook, HashSet<string> Bridges, bool Silhouette);
 
     /// <summary>The profile of v at scale px/m on a canvas from x0 to x1 and from top down to bottom (heights above the
     /// main deck). above: only what is above the waterline (the silhouette's cut).</summary>
@@ -15,29 +21,39 @@ public static class SideArt
         bool above = false)
     {
         var P = new Painter(pal, scale, sh);
+        var dz = sh.Dazzle == true && pal.Has("camo") ? DazzleScheme.Of(v.Id, v.Length, v.Beam, pal.Colours("camo")) : null;
+        // a bridge's windows go on the top level of each control position
+        var bridges = v.Blocks.Where(b => b.Role is "bridge" or "aft_control" or "island").GroupBy(b => b.Role)
+            .Select(g => g.MaxBy(b => b.B.Top)!.Id).ToHashSet(StringComparer.Ordinal);
+        var c = new Ctx(P, v, dz, turretLook, bridges, above);
         var scene = new Scene(x0, -top, x1 - x0, top - bottom, scale);
         var items = new List<Item>();
         void Add(double depth, Action<List<Node>> draw) => items.Add(new Item(depth, items.Count, draw));
         double hullDepth = v.Beam / 2;
         double wl = v.Waterline;
 
-        Add(hullDepth, o => Hull(o, v, P));
+        Add(hullDepth, o => Hull(o, c));
         foreach (var h in v.Hangars)   // the hangar's side, up to the flight deck when it stands on it
         {
             double up = v.Platforms.Where(p => p.Kind == "flight_deck" && p.B.Base >= h.Top && p.B.Base - h.Top < 1.5).Select(p => p.B.Base)
                 .DefaultIfEmpty(h.Top).Min();
-            Add(h.Y1, o => Box(o, P, h with { Top = up }, P.C("hull")));
+            var hb = h with { Top = up };
+            Add(h.Y1, o =>
+            {
+                Box(o, P, hb, P.C("hull"));
+                Dazzled(o, c, Rect(hb.X0, hb.X1, hb.Base, hb.Top), hb.Y1, hb.Top, hb.Base, 1.0);
+            });
         }
-        foreach (var c in v.Casings)
-            Add(c.Y1, o => Box(o, P, c, Painter.Shade(P.C("deck"), 0.9), 0.8));
+        foreach (var cs in v.Casings)
+            Add(cs.Y1, o => Box(o, P, cs, Painter.Shade(P.C("deck"), 0.9), 0.8));
         foreach (var b in v.Barbettes)
             Add(b.B.Y1, o => Box(o, P, b.B, P.C("barbette")));
         if (v.ConningTower is { } ct)
             Add(ct.Y1, o => ConningTower(o, P, ct));
         foreach (var b in v.Blocks)
-            Add(b.B.Y1, o => Block(o, P, b));
+            Add(b.B.Y1, o => Block(o, c, b));
         foreach (var f in v.Funnels)
-            Add(f.B.Y1, o => Funnel(o, P, f));
+            Add(f.B.Y1, o => Funnel(o, c, f));
         foreach (var m in v.Masts)
             Add(m.Y + m.R, o => Mast(o, P, m));
         foreach (var m in v.Mounts)
@@ -49,7 +65,7 @@ public static class SideArt
                     Add(hullDepth + 1, o => Casemate(o, P, m, t));
                 continue;
             }
-            Add(m.B.Y1, o => Turret(o, P, m, t, turretLook));
+            Add(m.B.Y1, o => Turret(o, c, m, t));
         }
         foreach (var a in v.AaMounts)
             Add(a.Y + a.R, o => Aa(o, P, a));
@@ -74,10 +90,7 @@ public static class SideArt
         foreach (var it in items.OrderBy(i => i.Depth).ThenBy(i => i.Order))
             it.Draw(drawn);
         if (above)
-        {
-            var g = new Group(drawn) { Clip = [new RectNode(x0, -top, x1 - x0, top - wl)] };
-            scene.Root.Items.Add(g);
-        }
+            scene.Root.Items.Add(new Group(drawn) { Clip = [new RectNode(x0, -top, x1 - x0, top - wl)] });
         else
             scene.Root.Items.AddRange(drawn);
         return scene;
@@ -113,43 +126,209 @@ public static class SideArt
         return Painter.At(cols, Math.Clamp(level, 1, cols.Count) - 1);
     }
 
+    /// <summary>The dazzle panels over the outline d of a surface whose top edge is at y = edge and height top, down to
+    /// bottom (DazzleScheme.Side: they meet the plan's panels across that edge).</summary>
+    static void Dazzled(List<Node> o, Ctx c, PathData d, double edge, double top, double bottom, double opacity) =>
+        Dazzled(o, c, d, _ => edge, top, bottom, opacity);
+
+    static void Dazzled(List<Node> o, Ctx c, PathData d, Func<double, double> edge, double top, double bottom, double opacity)
+    {
+        if (c.Dazzle is not { } dz || opacity <= 0)
+            return;
+        var g = new Group { Clip = [new PathNode(d)] };
+        if (opacity < 1)
+            g.Opacity(opacity);
+        foreach (var (pts, col) in dz.Side(edge, top, bottom))
+            g.Items.Add(new PathNode(Painter.Poly(pts)).Fill(col));
+        o.Add(g);
+    }
+
+    /// <summary>A small round window or scuttle: dark glass in a lighter rim, so it shows on a dark side too.</summary>
+    static void Scuttle(List<Node> o, Painter P, double x, double z, string wall, double r = 0.17)
+    {
+        o.Add(new CircleNode(x, -z, r).Fill(Painter.Shade(wall, 0.35)).Stroke(Painter.Shade(wall, 1.35), P.Sw * 0.5));
+    }
+
     // ------------------------------------------------------------------ the hull
 
-    /// <summary>The hull's side: the topsides in the hull colour, the bottom in anti-fouling under a boot-topping band at
-    /// the waterline, the knuckle's crease where the sides lean in, and the outline.</summary>
-    static void Hull(List<Node> o, SideView v, Painter P)
+    /// <summary>The hull's side: the topsides in the hull colour under the dazzle, lighter bands where the sides lean in
+    /// (as the plan shades them), the bottom in anti-fouling under a boot-topping band at the waterline, the scuttles,
+    /// hawse and anchor, the hull number, the outline, and the rails along the open decks.</summary>
+    static void Hull(List<Node> o, Ctx c)
     {
+        var (P, v) = (c.P, c.V);
         var d = Painter.Poly(Up(v.Hull));
         string hull = P.C("hull");
         o.Add(new PathNode(d).Fill(hull));
-        double wl = v.Waterline, x0 = v.HullX0 - 1, x1 = v.HullX1 + 1;
+        double wl = v.Waterline, x0 = v.HullX0 - 1, x1 = v.HullX1 + 1, top = v.Hull.Max(p => p.Y) + 1;
+        Dazzled(o, c, d, v.Planform.HalfWidth, 0.0, v.Keel, 1.0);   // the plan's rim: the hull at its widest
         double band = Math.Min(0.6, 0.12 * -wl);   // the boot top: a painted band, narrower on a low hull
-        var under = new Group { Clip = [new PathNode(d)] };
-        under.Items.Add(new PathNode(Rect(x0, x1, v.Keel - 1, wl)).Fill(P.C("bottom")));
-        under.Items.Add(new PathNode(Rect(x0, x1, wl - band / 2, wl + band)).Fill(P.C("boot_top")));
-        if (v.Knuckle is double k && k > wl + band)
-            under.Items.Add(new LineNode(x0, -k, x1, -k).Stroke(Painter.Shade(hull, 0.75), P.Sw * 0.8));
-        o.Add(under);
+        var side = new Group { Clip = [new PathNode(d)] };
+        if (v.Knuckle is double k && k > wl)
+        {
+            // the bands the plan lightens (TopView.TumblehomeShades of the way up from the knuckle to the deck), the same
+            // white over each
+            foreach (var f in TopView.TumblehomeShades)
+                side.Items.Add(new PathNode(Rect(x0, x1, k * (1 - f), top)).Fill("#ffffff").FillOp(HullArt.TumblehomeLight));
+            side.Items.Add(new LineNode(x0, -k, x1, -k).Stroke(Painter.Shade(hull, 0.75), P.Sw * 0.8).StrokeOp(0.6));
+        }
+        side.Items.Add(new PathNode(Rect(x0, x1, v.Keel - 1, wl)).Fill(P.C("bottom")));
+        side.Items.Add(new PathNode(Rect(x0, x1, wl - band / 2, wl + band)).Fill(P.C("boot_top")));
+        o.Add(side);
+        Scuttles(o, c);
+        Anchor(o, c);
+        HullNumber(o, c);
         o.Add(P.Ln(new PathNode(d).Fill("none"), 1.4));
         o.Add(Rim(P, d, hull));
+        if (!c.Silhouette)
+            Rails(o, c);
+    }
+
+    /// <summary>The stretches of the deck line: (x0, x1, height), stern to stem.</summary>
+    static IEnumerable<(double X0, double X1, double H)> Decks(SideView v)
+    {
+        var breaks = v.Raised.SelectMany(r => new[] { r.X0, r.X1 }).Where(x => v.HullX0 < x && x < v.HullX1).Append(v.HullX0).Append(v.HullX1)
+            .Distinct().Order().ToList();
+        for (int i = 0; i + 1 < breaks.Count; i++)
+            yield return (breaks[i], breaks[i + 1], v.DeckAt((breaks[i] + breaks[i + 1]) / 2));
+    }
+
+    /// <summary>Where the hawse pipe is (the plan's anchor chains run to it), or null without chains.</summary>
+    static double? HawseX(SideView v) => v.Dressing.ChainX is double cx && cx != 0 ? v.Length / 2 - (v.Dressing.HawseBack ?? 6.0) : null;
+
+    /// <summary>Rows of scuttles along the side: one a deck below each open deck, and one more a deck lower while it
+    /// stays clear of the water; none through the side armour, the casemate ports or the hawse, nor in the fine ends.</summary>
+    static void Scuttles(List<Node> o, Ctx c)
+    {
+        var (P, v) = (c.P, c.V);
+        double wl = v.Waterline, pitch = Geometry.DeckPitch, step = 3.0;
+        double lo = v.HullX0 + 0.07 * v.Length, hi = Math.Min(v.HullX1 - 0.12 * v.Length, (HawseX(v) ?? 1e9) - 2.0);
+        var casemates = v.Mounts.Where(m => m.Casemate && m.Y > 0).Select(m => (m.X, Z: m.B.Base + 0.45 * m.B.H)).ToList();
+        string hull = P.C("hull");
+        bool Clear(double x, double z) =>
+            z > wl + 0.9
+            && !v.SideArmour.Any(a => a.X0 - 0.5 <= x && x <= a.X1 + 0.5 && a.Bottom - 0.3 <= z && z <= a.Top + 0.3)
+            && !casemates.Any(m => Math.Abs(m.X - x) < 1.6 && Math.Abs(m.Z - z) < 1.6);
+        void Row(double xa, double xb, double z)
+        {
+            for (double x = Math.Ceiling(Math.Max(xa, lo) / step) * step; x <= Math.Min(xb, hi); x += step)
+                if (Clear(x, z))
+                    Scuttle(o, P, x, z, hull);
+        }
+        for (int i = 1; i <= 2; i++)
+            Row(v.HullX0, v.HullX1, -1.0 - (i - 1) * pitch);
+        foreach (var (xa, xb, h) in Decks(v).Where(dk => dk.H > 0))
+            Row(xa + 1.0, xb - 1.0, h - 1.0);
+    }
+
+    /// <summary>The hawse pipe below the deck edge near the bow, and the stockless anchor hanging from it.</summary>
+    static void Anchor(List<Node> o, Ctx c)
+    {
+        var (P, v) = (c.P, c.V);
+        if (HawseX(v) is not double xh || xh < v.HullX0)
+            return;
+        double k = Math.Clamp(v.Length / 180, 0.4, 1.4), deck = v.DeckAt(xh);
+        double zh = deck - 0.9 * k, zb = zh - 1.9 * k;
+        if (zb < v.Waterline + 0.3)
+            return;
+        string chain = P.C("chain");
+        o.Add(new EllipseNode(xh, -zh, 0.45 * k, 0.35 * k).Fill(Painter.Shade(P.C("hull"), 0.35)));
+        o.Add(P.Ln(new PathNode(Rect(xh - 0.13 * k, xh + 0.13 * k, zb + 0.2 * k, zh)).Fill(chain), 0.6));
+        o.Add(P.Ln(new PathNode(Poly(new(xh - 0.75 * k, zb + 0.55 * k), new(xh - 0.55 * k, zb + 0.62 * k), new(xh, zb + 0.22 * k),
+            new(xh + 0.55 * k, zb + 0.62 * k), new(xh + 0.75 * k, zb + 0.55 * k), new(xh, zb - 0.05 * k))).Fill(chain), 0.6));
+    }
+
+    /// <summary>The look's hull number (shapes hull_number) on the bow, the plan's number from the same source.</summary>
+    static void HullNumber(List<Node> o, Ctx c)
+    {
+        var (P, v) = (c.P, c.V);
+        if (P.Shapes.HullNumber != true || v.Platforms.Any(p => p.Kind == "flight_deck"))
+            return;
+        string text = HullArt.HullNumber(v.Id, P.Shapes);
+        double x = v.HullX1 - 0.13 * v.Length, deck = v.DeckAt(x), fb = deck - v.Waterline;
+        double size = Math.Min(0.42 * fb, 0.045 * v.Length);
+        if (size < 0.8)
+            return;
+        o.Add(new TextNode(x, -(deck - 0.45 * fb), size, text).Fill(P.P.Or("number", P.C("marking"))).FillOp(0.92));
+    }
+
+    /// <summary>Guard rails along the open decks: a rail a metre up on stanchions, stopping at a raised deck's break and
+    /// over a hangar's side.</summary>
+    static void Rails(List<Node> o, Ctx c)
+    {
+        var (P, v) = (c.P, c.V);
+        var g = new Group().Stroke(P.C("line"), Math.Max(P.Sw * 0.6, 0.05)).StrokeOp(0.6);
+        foreach (var (xa, xb, h) in Decks(v))
+        {
+            double a = xa + 0.3, b = xb - 0.3;
+            foreach (var hg in v.Hangars.Where(hg => h <= hg.Base + 0.1).OrderBy(hg => hg.X0))
+            {
+                if (hg.X1 < a || hg.X0 > b)
+                    continue;
+                if (hg.X0 - 0.3 > a)
+                    RailRun(g, a, hg.X0 - 0.3, h);
+                a = Math.Max(a, hg.X1 + 0.3);
+            }
+            if (b > a)
+                RailRun(g, a, b, h);
+        }
+        o.Add(g);
+    }
+
+    static void RailRun(Group g, double a, double b, double h)
+    {
+        if (b - a < 1.0)
+            return;
+        g.Items.Add(new LineNode(a, -(h + 1.0), b, -(h + 1.0)));
+        g.Items.Add(new LineNode(a, -(h + 0.5), b, -(h + 0.5)));
+        int n = Math.Max(1, (int)Math.Round((b - a) / 1.5));
+        for (int i = 0; i <= n; i++)
+        {
+            double x = a + (b - a) * i / n;
+            g.Items.Add(new LineNode(x, -h, x, -(h + 1.0)));
+        }
     }
 
     // ------------------------------------------------------------------ upperworks
 
-    static void Block(List<Node> o, Painter P, SideView.Block b)
+    /// <summary>A superstructure block in its level's colour under the dazzle; the top level of a bridge carries its
+    /// window band, other deckhouses a row of scuttles.</summary>
+    static void Block(List<Node> o, Ctx c, SideView.Block b)
     {
+        var P = c.P;
         if (b.Director is { } dr)
         {
-            Director(o, P, b, dr);
+            Director(o, c, b, dr);
             return;
         }
-        Box(o, P, b.B, Level(P, b.Level));
+        var bx = b.B;
+        if (bx.H <= 0 || bx.L <= 0)
+            return;
+        string col = Level(P, b.Level);
+        var d = Rect(bx.X0, bx.X1, bx.Base, bx.Top);
+        o.Add(P.Ln(new PathNode(d).Fill(col)));
+        Dazzled(o, c, d, bx.Y1, bx.Top, bx.Base, P.Shapes.DazzleUpperworks ?? 1.0);
+        if (c.Bridges.Contains(b.Id) && bx.H >= 1.6 && bx.L > 1.6)   // the bridge's windows, mullioned
+        {
+            double z0 = bx.Top - 1.05, z1 = bx.Top - 0.55, xa = bx.X0 + 0.3, xb = bx.X1 - 0.3;
+            o.Add(new PathNode(Rect(xa, xb, z0, z1)).Fill(P.C("line")));
+            var mull = new Group().Stroke(col, P.Sw * 0.8);
+            for (double x = xa + 0.9; x < xb - 0.2; x += 0.9)
+                mull.Items.Add(new LineNode(x, -z0, x, -z1));
+            o.Add(mull);
+        }
+        else if (bx.H >= 1.8 && bx.L > 3.0)
+            for (double x = bx.X0 + 1.1; x <= bx.X1 - 1.1; x += 2.2)
+                Scuttle(o, P, x, bx.Base + 0.62 * bx.H, col, 0.15);
+        o.Add(P.Ln(new PathNode(d).Fill("none")));
+        o.Add(Rim(P, d, col));
     }
 
     /// <summary>A director: the hood, a shade lighter than the roof it stands on as in the plan; the rangefinder runs
     /// across the ship, so it shows end-on, its hood a disc on the side; a radar aerial on a short post above.</summary>
-    static void Director(List<Node> o, Painter P, SideView.Block b, TopView.Director dr)
+    static void Director(List<Node> o, Ctx c, SideView.Block b, TopView.Director dr)
     {
+        var P = c.P;
         string col = Level(P, dr.On + 1);
         var bx = b.B;
         if (dr.RangefinderM == 0)   // a gyro sight in an open tub
@@ -158,7 +337,10 @@ public static class SideArt
             Box(o, P, bx with { Top = bx.Base + h }, P.C("tub"));
             return;
         }
-        Box(o, P, bx, col);
+        var d = Rect(bx.X0, bx.X1, bx.Base, bx.Top);
+        o.Add(P.Ln(new PathNode(d).Fill(col)));
+        Dazzled(o, c, d, bx.Y1, bx.Top, bx.Base, P.Shapes.DazzleUpperworks ?? 1.0);
+        o.Add(Rim(P, d, col));
         double r = Math.Min(bx.H * 0.28, bx.L * 0.2);
         o.Add(P.Ln(new CircleNode(bx.Xc, -(bx.Base + bx.H * 0.55), r).Fill(Painter.Shade(col, 0.85)), 0.7));
         if (dr.Radar)
@@ -178,10 +360,11 @@ public static class SideArt
         o.Add(new PathNode(Rect(b.X0 + P.Sw, b.X1 - P.Sw, b.Top - 3 * s, b.Top - 2 * s)).Fill(Painter.Shade(col, 0.45)));
     }
 
-    /// <summary>A funnel: the casing (raked aft by the look's rake, as the plan displaces its top), the painted band and
-    /// the cap the look gives it.</summary>
-    static void Funnel(List<Node> o, Painter P, SideView.Funnel f)
+    /// <summary>A funnel: the casing (raked aft by the look's rake, as the plan displaces its top) under the dazzle, the
+    /// painted band and the cap the look gives it.</summary>
+    static void Funnel(List<Node> o, Ctx c, SideView.Funnel f)
     {
+        var P = c.P;
         var b = f.B;
         if (b.H <= 0)
             return;
@@ -193,9 +376,7 @@ public static class SideArt
         string col = P.C("funnel");
         var casing = Band(b.Base, b.Top);
         o.Add(P.Ln(new PathNode(casing).Fill(col)));
-        var Dazzle = P.Dazzled(casing, sh.DazzleUpperworks ?? 1.0);
-        if (Dazzle != null)
-            o.Add(Dazzle);
+        Dazzled(o, c, casing, b.Y1, b.Top, b.Base, sh.DazzleUpperworks ?? 1.0);
         double cap = Math.Min(1.0, 0.07 * b.H);
         if (P.P.Has("funnel_band"))
         {
@@ -294,58 +475,192 @@ public static class SideArt
         }
     }
 
+    // ------------------------------------------------------------------ guns
+
+    /// <summary>How an armoured turret look stands up from the side: the face's knee (a fraction of the height) and the
+    /// slope back to the roof (a fraction of the length, at most a fraction of the height), and the rear's top corner
+    /// rounded or cut (a fraction of the height).</summary>
+    readonly record struct Profile(double Knee, double SlopeL, double SlopeH, double RearRound, double RearCut);
+
+    static readonly Dictionary<string, Profile> Profiles = new(StringComparer.Ordinal)
+    {
+        ["standard"] = new(0.55, 0.3, 0.6, 0, 0),
+        ["slab"] = new(0.85, 0.08, 0.15, 0, 0),
+        ["round"] = new(0.55, 0.25, 0.5, 0.5, 0),
+        ["classic"] = new(0.5, 0.22, 0.5, 0.35, 0),
+        ["faceted"] = new(0.5, 0.25, 0.55, 0, 0.35),
+        ["lancia"] = new(0.45, 0.35, 0.7, 0.55, 0),
+        ["quadruple"] = new(0.6, 0.2, 0.5, 0, 0.25),
+        ["drum"] = new(1, 0, 0, 0, 0),
+    };
+
+    /// <summary>What a look puts on an armoured turret's roof, seen from the side: (from, to) along the turret in units
+    /// of its radius (+ toward the face), how tall in units of its height, and rounded (a cupola) or square (a hood).
+    /// The plan's hoods and cupolas (TurretArt) at the same places.</summary>
+    static readonly Dictionary<string, (double A, double B, double H, bool Round)[]> Roofs = new(StringComparer.Ordinal)
+    {
+        ["standard"] = [(0.2, 0.42, 0.12, false)],
+        ["slab"] = [(0.3, 0.48, 0.1, false), (-0.6, -0.32, 0.12, false)],
+        ["round"] = [(0.2, 0.4, 0.14, true)],
+        ["classic"] = [(0.15, 0.45, 0.12, true), (-0.3, -0.08, 0.08, false)],
+        ["faceted"] = [(0.13, 0.37, 0.14, true), (-0.62, -0.42, 0.14, false)],
+        ["lancia"] = [(0.14, 0.46, 0.1, true)],
+        ["quadruple"] = [(0.18, 0.5, 0.12, false), (-0.85, -0.67, 0.1, false)],
+        ["drum"] = [(0.42, 0.62, 0.12, false)],
+    };
+
     /// <summary>A gun mount at its rest bearing: the gunhouse in the look's way, its face toward the barrels, and the
     /// barrels from the face to the muzzles (side by side, they show as one).</summary>
-    static void Turret(List<Node> o, Painter P, SideView.Mount m, TurretType t, string look)
+    static void Turret(List<Node> o, Ctx c, SideView.Mount m, TurretType t)
     {
+        var P = c.P;
         var b = m.B;
         double h = b.H;
         if (h <= 0)
             return;
-        double c = Math.Cos(double.DegreesToRadians(m.Rest));
-        int f = c >= 0 ? 1 : -1;
-        bool beam = Math.Abs(c) < 0.5;
+        double cos = Math.Cos(double.DegreesToRadians(m.Rest));
+        int f = cos >= 0 ? 1 : -1;
+        bool beam = Math.Abs(cos) < 0.5;
+        string look = t.Shape == "bb" ? c.TurretLook : "";
+        double r = t.R;
+        // the body's ends along the ship: the look's own outline, else the hitbox's
         double front = f > 0 ? b.X1 : b.X0, back = f > 0 ? b.X0 : b.X1;
+        if (t.Shape == "bb" && look != "standard" && !beam)
+        {
+            var (pts, _, _, _) = TurretArt.LookTurretBody(look, r);
+            (front, back) = (m.X + f * pts.Max(p => p.X), m.X + f * pts.Min(p => p.X));
+        }
+        double len = Math.Abs(front - back), xc = (front + back) / 2;
         double zt = b.Base + 0.42 * h;   // the trunnions
         double muzzle = f > 0 ? m.BarrelX1 : m.BarrelX0;
         string col = t.Shape is "torp" or "tube" ? P.C("tube") : P.C("turret");
+        double X(double local) => m.X + f * local * r;   // a point along the turret, in units of r from its pivot
 
         if (t.Shape is "torp" or "tube")   // trainable tubes: a cylinder on a low mount
         {
-            double r = Math.Min(h * 0.35, 0.6), zc = b.Base + h * 0.55;
+            double rr = Math.Min(h * 0.35, 0.6), zc = b.Base + h * 0.55;
             o.Add(P.Ln(new PathNode(Rect(b.Xc - 0.4, b.Xc + 0.4, b.Base, zc)).Fill(P.C("tub")), 0.7));
-            var tube = Painter.RrectPath(b.X0, -(zc + r), b.X1, -(zc - r), r, r);
+            var tube = Painter.RrectPath(b.X0, -(zc + rr), b.X1, -(zc - rr), rr, rr);
             o.Add(P.Ln(new PathNode(tube).Fill(col)));
             o.Add(Rim(P, tube, col));
             return;
         }
         if (!beam && Math.Abs(muzzle - front) > 0.1)
             Barrel(o, P, t, front - f * 0.4, muzzle, zt);
-        PathData d;
-        if (t.Shape == "open")   // a shield over the gun on its pedestal
-        {
-            double sf = front, sb = back + f * 0.45 * b.L;
-            o.Add(P.Ln(new PathNode(Rect(b.Xc - 0.15 * b.L, b.Xc + 0.15 * b.L, b.Base, zt)).Fill(P.C("tub")), 0.7));
-            d = Poly(new(sb, b.Base + 0.2 * h), new(sf, b.Base + 0.2 * h), new(sf, b.Top - 0.25 * h), new(sf - f * 0.25 * b.L, b.Top), new(sb, b.Top));
-        }
-        else if (beam)   // seen end-on: a box with both top corners eased
+        if (beam)   // seen end-on: a box with both top corners eased, the muzzles toward us
         {
             double e = Math.Min(0.25 * h, 0.15 * b.L);
-            d = Poly(new(b.X0, b.Base), new(b.X1, b.Base), new(b.X1, b.Top - e), new(b.X1 - e, b.Top), new(b.X0 + e, b.Top), new(b.X0, b.Top - e));
-        }
-        else   // the gunhouse: a sloped face over the guns (dual-purpose mounts a rounder one)
-        {
-            double slope = Math.Min((t.Shape == "dp" ? 0.4 : 0.3) * b.L, (t.Shape == "dp" ? 0.8 : 0.6) * h);
-            double knee = b.Base + (t.Shape == "dp" ? 0.4 : 0.55) * h;
-            d = Poly(new(back, b.Base), new(front, b.Base), new(front, knee), new(front - f * slope, b.Top), new(back, b.Top));
-        }
-        o.Add(P.Ln(new PathNode(d).Fill(col)));
-        var dz = P.Dazzled(d, P.Shapes.DazzleUpperworks ?? 1.0);
-        if (dz != null)
-            o.Add(dz);
-        o.Add(Rim(P, d, col));
-        if (beam && Math.Abs(muzzle - front) <= 0.1 + b.L)   // barrels toward us: the muzzles
+            var d = Poly(new(b.X0, b.Base), new(b.X1, b.Base), new(b.X1, b.Top - e), new(b.X1 - e, b.Top), new(b.X0 + e, b.Top), new(b.X0, b.Top - e));
+            o.Add(P.Ln(new PathNode(d).Fill(col)));
+            o.Add(Rim(P, d, col));
             o.Add(P.Ln(new CircleNode(b.Xc, -zt, Math.Max(t.BarrelW * 0.6, 0.12)).Fill(P.C("barrel")), 0.6));
+            return;
+        }
+        if (t.Shape == "open")   // a shield over the gun on its pedestal
+        {
+            double sf = front, sb = back + f * 0.45 * len;
+            o.Add(P.Ln(new PathNode(Rect(xc - 0.15 * len, xc + 0.15 * len, b.Base, zt)).Fill(P.C("tub")), 0.7));
+            var d = Poly(new(sb, b.Base + 0.2 * h), new(sf, b.Base + 0.2 * h), new(sf, b.Top - 0.25 * h), new(sf - f * 0.25 * len, b.Top), new(sb, b.Top));
+            o.Add(P.Ln(new PathNode(d).Fill(col)));
+            o.Add(Rim(P, d, col));
+            return;
+        }
+        if (t.Shape == "dp")   // a dual-purpose gunhouse: a rounder face
+        {
+            Gunhouse(o, P, col, f, front, back, b.Base, b.Top, new Profile(0.4, 0.4, 0.8, 0.25, 0));
+            return;
+        }
+        switch (look)
+        {
+            case "hooded":   // an open barbette's ring, the guns under a pear-shaped hood
+                {
+                    double wall = b.Base + 0.5 * h;
+                    var ring = Rect(back, front, b.Base, wall);
+                    o.Add(P.Ln(new PathNode(ring).Fill(col)));
+                    o.Add(Rim(P, ring, col));
+                    string hood = P.P.Or("turret_hood", Painter.Shade(col, 1.35));
+                    double ha = X(-0.55), hb = X(0.72);
+                    var d = new PathData().M(ha, -wall).L(hb, -wall)
+                        .C(hb, -(wall + 0.6 * (b.Top - wall)), (ha + hb) / 2 + f * 0.25 * r, -b.Top, (ha + hb) / 2, -b.Top)
+                        .C(ha + f * 0.1 * r, -b.Top, ha, -(wall + 0.5 * (b.Top - wall)), ha, -wall).Z();
+                    o.Add(P.Ln(new PathNode(d).Fill(hood), 0.8));
+                    o.Add(Rim(P, d, hood));
+                    return;
+                }
+            case "champignon":   // a drum under an overhanging mushroom roof, a conical sighting hood on top
+                {
+                    double z1 = b.Base + 0.78 * h, z2 = b.Base + 0.92 * h;
+                    var drum = Rect(back, front, b.Base, z1);
+                    o.Add(P.Ln(new PathNode(drum).Fill(col)));
+                    o.Add(Rim(P, drum, col));
+                    double lip = 0.08 * len, xa = Math.Min(back, front) - lip, xb = Math.Max(back, front) + lip;
+                    var roof = Painter.RrectPath(xa, -z2, xb, -z1, 0.15 * len, 0.15 * len);
+                    o.Add(P.Ln(new PathNode(roof).Fill(Painter.Shade(col, 0.85))));
+                    o.Add(Rim(P, roof, Painter.Shade(col, 0.85)));
+                    double cx = X(-0.05);
+                    var cone = Poly(new(cx - 0.3 * r, z2), new(cx + 0.3 * r, z2), new(cx + 0.15 * r, b.Top + 0.1 * h), new(cx - 0.15 * r, b.Top + 0.1 * h));
+                    o.Add(P.Ln(new PathNode(cone).Fill(Painter.Shade(col, 1.15)), 0.7));
+                    return;
+                }
+        }
+        var prof = Profiles.GetValueOrDefault(look, Profiles["standard"]);
+        foreach (var (a, bb, hh, round) in Roofs.GetValueOrDefault(look, Roofs["standard"]))   // hoods and cupolas, under the roof's outline
+        {
+            double xa = Math.Min(X(a), X(bb)), xb = Math.Max(X(a), X(bb)), zr = b.Top - 0.05 * h, zh = b.Top + hh * h;
+            var d = round ? new PathData().M(xa, -zr).C(xa, -zh, xb, -zh, xb, -zr).Z() : Painter.RrectPath(xa, -zh, xb, -zr, 0.05 * h, 0.05 * h);
+            o.Add(P.Ln(new PathNode(d).Fill(Painter.Shade(col, 0.85)), 0.6));
+        }
+        Gunhouse(o, P, col, f, front, back, b.Base, b.Top, prof);
+        if (look == "drum")   // the roof's lip
+            o.Add(P.Ln(new PathNode(Rect(Math.Min(front, back) - 0.08, Math.Max(front, back) + 0.08, b.Top - 0.12 * h, b.Top)).Fill(Painter.Shade(col, 1.1)), 0.7));
+        // rangefinder ears stand out at the turret's sides near the rear: seen across, a box on the side
+        var parts = look == "standard" ? Geometry.TurretShapesOf(t).Parts : TurretArt.LookTurretBody(look, r).Parts;
+        foreach (var part in parts.Where(p => p.Min(q => q.Y) < 0).Take(1))
+        {
+            double xa = Math.Min(m.X + f * part.Min(q => q.X), m.X + f * part.Max(q => q.X)), xb = Math.Max(m.X + f * part.Min(q => q.X), m.X + f * part.Max(q => q.X));
+            var d = Rect(xa, xb, b.Base + 0.4 * h, b.Base + 0.75 * h);
+            o.Add(P.Ln(new PathNode(d).Fill(Painter.Shade(col, 0.85)), 0.7));
+        }
+    }
+
+    /// <summary>A gunhouse from back to front (f: the face's side), Base..Top, in a profile: the sloped face plate a
+    /// shade darker, as the plan draws it.</summary>
+    static void Gunhouse(List<Node> o, Painter P, string col, int f, double front, double back, double bse, double top, Profile p)
+    {
+        double h = top - bse, len = Math.Abs(front - back);
+        double slope = Math.Min(p.SlopeL * len, p.SlopeH * h), knee = bse + p.Knee * h;
+        var pts = new List<Pt> { new(back, bse), new(front, bse), new(front, knee) };
+        if (slope > 0)
+            pts.Add(new(front - f * slope, top));
+        else
+            pts.Add(new(front, top));
+        if (p.RearRound > 0)   // the rear's top corner on a quarter circle
+        {
+            double rr = Math.Min(p.RearRound * h, 0.4 * len);
+            for (int i = 0; i <= 6; i++)
+            {
+                double a = Math.PI / 2 * i / 6;
+                pts.Add(new(back + f * rr * (1 - Math.Sin(a)), top - rr * (1 - Math.Cos(a))));
+            }
+        }
+        else if (p.RearCut > 0)
+        {
+            double rc = Math.Min(p.RearCut * h, 0.3 * len);
+            pts.Add(new(back + f * rc, top));
+            pts.Add(new(back, top - rc));
+        }
+        else
+            pts.Add(new(back, top));
+        var d = Poly([.. pts]);
+        o.Add(P.Ln(new PathNode(d).Fill(col)));
+        if (slope > 0)   // the face plate, edge-on: a darker strip along the slope
+        {
+            double t = Math.Min(0.08 * len, 0.5);
+            o.Add(new PathNode(Poly(new(front, knee), new(front - f * slope, top), new(front - f * (slope + t), top), new(front - f * t, knee)))
+                .Fill(Painter.Shade(col, 0.82)));
+        }
+        o.Add(P.Ln(new PathNode(d).Fill("none")));
+        o.Add(Rim(P, d, col));
     }
 
     /// <summary>A barrel from x0 (at the breech end) to the muzzle x1 at height z: tapering, with a collar where it leaves
@@ -392,6 +707,8 @@ public static class SideArt
         o.Add(P.Ln(new PathNode(tubD).Fill(P.C("tub"))));
         o.Add(Rim(P, tubD, P.C("tub")));
     }
+
+    // ------------------------------------------------------------------ platforms and dressing
 
     /// <summary>The flight deck's edge, or a sponson with a knee under it.</summary>
     static void Platform(List<Node> o, Painter P, SideView.Platform p, SideView v)

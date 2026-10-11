@@ -55,6 +55,10 @@ public sealed class TopView
     /// <summary>Where the sides lean in: the side's outline at heights between the widest point and the deck, as
     /// (metres above the waterline, outline), lowest first; empty on a wall-sided hull.</summary>
     public required List<(double TopM, List<Pt> Outline)> SideBands;
+    /// <summary>The side's outline at finer steps for its shading (TumblehomeShades of the way from the knuckle to the
+    /// deck), lowest first; empty on a wall-sided hull. The profile shades its side at the same heights.</summary>
+    public required List<List<Pt>> ShadeBands;
+    public static readonly double[] TumblehomeShades = [1 / 6.0, 2 / 6.0, 3 / 6.0, 4 / 6.0, 5 / 6.0];
     /// <summary>The widest point above the waterline (the deck on a wall-sided hull).</summary>
     public required double KnuckleM;
     /// <summary>The main deck above the waterline.</summary>
@@ -133,12 +137,15 @@ public sealed class TopView
         var raised = (vert.Raised ?? []).Select(r => new Raised(r.X0, r.X1, (long)Math.Round(r.Top / Geometry.DeckPitch),
             SideAt(r.Top).Points(inset: Layout.RaisedInset, xMin: r.X0, xMax: r.X1), r.Top)).ToList();
         var bands = new List<(double, List<Pt>)>();
+        var shades = new List<List<Pt>>();
         double knuckleM = deckM;
         if (vert.Knuckle is double k)
         {
             knuckleM = Math.Max(0.0, k - vert.Waterline);
             foreach (var f in new[] { 0.25, 0.5, 0.75 })
                 bands.Add((knuckleM + (deckM - knuckleM) * f, SideAt(k * (1 - f)).Points()));
+            foreach (var f in TumblehomeShades)
+                shades.Add(SideAt(k * (1 - f)).Points());
         }
 
         var platforms = comps.Where(c => c.Kind is "flight_deck" or "sponson")
@@ -146,7 +153,7 @@ public sealed class TopView
 
         return new TopView
         {
-            Id = ship.Design.Id ?? "", Hull = hull, Deck = SideAt(0.0), SideBands = bands, KnuckleM = knuckleM, DeckM = deckM, TurretTypes = hb.TurretTypes, Mounts = mounts,
+            Id = ship.Design.Id ?? "", Hull = hull, Deck = SideAt(0.0), SideBands = bands, ShadeBands = shades, KnuckleM = knuckleM, DeckM = deckM, TurretTypes = hb.TurretTypes, Mounts = mounts,
             Barbettes = comps.Where(c => c.Kind == "barbette").Select(c => new Barbette(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top)).ToList(),
             Blocks = blocks, Funnels = funnels, Masts = masts, AaMounts = aa, RaisedDecks = raised,
             ConningTower = comps.Where(c => c.Kind == "conning_tower").Select(c => new Tower(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top))

@@ -7,6 +7,10 @@ public static class HullArt
 {
     public const double PadM = 3.0;  // empty margin around each hull sprite, metres
 
+    /// <summary>The white laid over each band of a tumblehome side (TopView.TumblehomeShades), lower to higher: five
+    /// bands from the knuckle to the deck come to about 14% lighter at the deck.</summary>
+    internal const double TumblehomeLight = 0.03;
+
     /// <summary>Half the canvas (x, y) in metres. With a scale, snapped so the canvas is a multiple of align px (even at
     /// least) and the origin lands on an exact pixel.</summary>
     public static (double Hx, double Hy) ShipExtent(TopView v, Hull hull, double? scale = null, int align = 2)
@@ -118,44 +122,10 @@ public static class HullArt
         return (obs.Max(o => o.X1), obs.Min(o => o.X0));
     }
 
-    /// <summary>Dazzle camouflage: slanted panels cut across the whole ship, in a repeatable pattern per design.
-    /// Panels are clipped to the hull band, the superstructure and the funnels as they're drawn.</summary>
-    static List<(List<Pt>, string)> DazzlePanels(TopView v, Planform hull, IReadOnlyList<string> colours)
-    {
-        var rng = new ShipRng($"{v.Id}/dazzle");
-        double L = hull.L, Y = hull.B / 2 + 2.0;
-        long n = Math.Max(5L, (long)Math.Round(L / 18));
-        double step = L / n;
-        var cuts = new List<(double C, double K)> { (-L / 2 - 2.0, 0.0) };
-        for (int i = 1; i < n; i++)
-        {
-            double c = -L / 2 + step * i + rng.Uniform(-0.2, 0.2) * step;
-            cuts.Add((c, rng.Uniform(-0.45, 0.45) * step / Y));
-        }
-        cuts.Add((L / 2 + 2.0, 0.0));
-        var result = new List<(List<Pt>, string)>();
-        string? last = null;
-        for (int i = 0; i + 1 < cuts.Count; i++)
-        {
-            var ((c0, k0), (c1, k1)) = (cuts[i], cuts[i + 1]);
-            var opts = new List<string?> { null };
-            opts.AddRange(colours);
-            var col = rng.Choice(opts.Where(c => c != last).ToList());
-            last = col;
-            if (col != null)
-                result.Add(([new(c0 - k0 * Y, -Y), new(c1 - k1 * Y, -Y), new(c1 + k1 * Y, Y), new(c0 + k0 * Y, Y)], col));
-            if (rng.Random() < 0.5)   // a wedge from one side into the panel, in another colour
-            {
-                int side = rng.Choice([-1, 1]);
-                double mid = (c0 + c1) / 2;
-                var wcol = rng.Choice(colours.Where(c => c != col).ToList());
-                double tx = mid + rng.Uniform(-0.3, 0.3) * step;
-                double ty = side * Y * rng.Uniform(-0.2, 0.4);
-                result.Add(([new(mid - 0.35 * step, side * Y), new(mid + 0.35 * step, side * Y), new(tx, ty)], wcol));
-            }
-        }
-        return result;
-    }
+    /// <summary>The hull number a look with hull_number paints: the look's own, or one made from the design's id (the
+    /// plan's foredeck and the profile's bow carry the same).</summary>
+    internal static string HullNumber(string id, Shapes sh) =>
+        !string.IsNullOrEmpty(sh.Number) ? sh.Number : (100 + Crc32(Encoding.UTF8.GetBytes(id)) % 900).ToString();
 
     /// <summary>zlib.crc32.</summary>
     internal static uint Crc32(byte[] data)
@@ -236,7 +206,7 @@ public static class HullArt
         var num = new List<Node>();
         if (sh.HullNumber == true && !flight)   // painted big across the foredeck
         {
-            string text = !string.IsNullOrEmpty(sh.Number) ? sh.Number : (100 + Crc32(Encoding.UTF8.GetBytes(v.Id)) % 900).ToString();
+            string text = HullNumber(v.Id, sh);
             double hw = hull.HalfWidth(L / 2 - 0.15 * L);
             double size = 0.75 * 2 * hw / (0.62 * text.Length);
             var (fwd, _) = OpenEnds(v, halfY: 0.62 * text.Length * size / 2, small: true);
@@ -268,7 +238,7 @@ public static class HullArt
         var scene = new Scene(-hx, -hy, 2 * hx, 2 * hy, scale);
         var hullD = Painter.HullPath(outer);
         if (sh.Dazzle == true && pal.Has("camo"))
-            P.Dazzle = DazzlePanels(v, hull, pal.Colours("camo"));
+            P.Dazzle = DazzleScheme.Of(v.Id, hull.L, hull.B, pal.Colours("camo")).Plan();
 
         // two passes in one image: low (hull, deck, level 1, what stands on the deck), then high (what stands on a
         // roof, and the tall stuff), so a roof never draws over what stands on it
@@ -283,6 +253,10 @@ public static class HullArt
         // --- hull and deck -------------------------------------------------------
         low.Add(P.Ln(new PathNode(hullD).Fill(P.C("hull")), 1.4));
         Add(low, P.Dazzled(hullD));
+        // where the sides lean in (tumblehome), they turn toward the light the nearer the deck they are: each band of
+        // the side a shade lighter than the one below it (the profile shades its side the same way, SideArt.Hull)
+        foreach (var outline in v.ShadeBands)
+            low.Add(new PathNode(Painter.Poly(outline)).Fill("#ffffff").FillOp(TumblehomeLight));
         double inset = spec.DeckInset ?? 0.55;
         var deckD = Painter.HullPath(hull, inset: inset);
         bool wood = spec.Deck == "wood";

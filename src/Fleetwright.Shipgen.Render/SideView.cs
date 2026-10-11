@@ -20,8 +20,8 @@ public sealed class SideView
     }
 
     /// <summary>A superstructure block (or a director, whose rangefinder base and radar it carries), Level counting from
-    /// what it stands on, as in the plan.</summary>
-    public sealed record Block(string Id, Box B, long Level, TopView.Director? Director);
+    /// what it stands on, as in the plan; Role: "bridge", "aft_control", "island", "deckhouse", "director", ...</summary>
+    public sealed record Block(string Id, Box B, long Level, string? Role, TopView.Director? Director);
 
     /// <summary>A gun or torpedo mount at its rest bearing: the body's box, the barrels' extent along the ship
     /// (BarrelX0..BarrelX1; none for a type without barrels) and its type.</summary>
@@ -52,6 +52,8 @@ public sealed class SideView
     /// <summary>The hull's ends along the ship.</summary>
     public required double HullX0, HullX1;
     public required double Keel;
+    /// <summary>The hull from above at its widest (the plan's outline).</summary>
+    public required Hull Planform;
     public required double Waterline;
     /// <summary>Where the sides start to lean in (tumblehome), above the main deck; null on a wall-sided hull.</summary>
     public double? Knuckle;
@@ -71,6 +73,8 @@ public sealed class SideView
     public required List<Shaft> Shafts;
     public required List<Propeller> Propellers;
     public required List<Box> Rudders;
+    /// <summary>The side armour (the belt and the strakes above or beyond it): its stretch and heights.</summary>
+    public required List<(double X0, double X1, double Bottom, double Top)> SideArmour;
     /// <summary>What is drawn without a hitbox: boats, cranes, hatches.</summary>
     public required Dressing Dressing;
 
@@ -133,7 +137,7 @@ public sealed class SideView
                 new Box(body.Item1, body.Item2, body.Item3, body.Item4, c.Base, c.Top), bx0, bx1, c.Mount == "casemate"));
         }
 
-        var blocks = comps.Where(c => c.Kind == "superstructure").Select(c => new Block(c.Id, Box.Of(c.Points!, c.Base, c.Top), c.Level ?? 1,
+        var blocks = comps.Where(c => c.Kind == "superstructure").Select(c => new Block(c.Id, Box.Of(c.Points!, c.Base, c.Top), c.Level ?? 1, c.Role,
             c.Role == "director" ? new TopView.Director(c.RangefinderM ?? 0.0, c.Radar ?? false, (long)Math.Round(c.Base / Layout.LevelH)) : null)).ToList();
 
         var dressed = ship.Dressing.Masts.ToDictionary(m => m.Id, StringComparer.Ordinal);
@@ -156,9 +160,15 @@ public sealed class SideView
             shafts.Add(new Shaft(c.Id, p1[0], p1[2], xOut, zOut, p0[1], c.R ?? 0.25));
         }
 
+        var armour = new List<(double, double, double, double)>();
+        if (hb.Armour.Belt is { } belt)
+            armour.Add((belt.X0, belt.X1, belt.Bottom, belt.Top));
+        foreach (var sk in hb.Armour.Strakes ?? [])
+            armour.Add((sk.X0, sk.X1, sk.Bottom, sk.Top));
+
         return new SideView
         {
-            Id = ship.Design.Id ?? "", Length = hb.Length, Beam = hb.Beam, Hull = outline, HullX0 = hx0, HullX1 = hx1, Keel = vert.Keel,
+            Id = ship.Design.Id ?? "", Length = hb.Length, Beam = hb.Beam, Planform = new Hull(new HullSpec(hb.Length, hb.Beam, hb.Bow, hb.Stern)), Hull = outline, HullX0 = hx0, HullX1 = hx1, Keel = vert.Keel,
             Waterline = vert.Waterline, Knuckle = vert.Knuckle, Raised = raised, TurretTypes = hb.TurretTypes, Mounts = mounts,
             Barbettes = comps.Where(c => c.Kind == "barbette").Select(c => (Box.Round(c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top), c.Mount ?? ""))
                 .ToList(),
@@ -175,7 +185,7 @@ public sealed class SideView
                 .Select(c => new Platform(c.Id, c.Kind, Box.Of(c.Points!, c.Base, c.Top), c.Role == "elevator")).ToList(),
             Shafts = shafts, Propellers = props,
             Rudders = comps.Where(c => c.Kind == "rudder").Select(c => Box.Of(c.Points!, c.Base, c.Top)).ToList(),
-            Dressing = ship.Dressing,
+            SideArmour = armour, Dressing = ship.Dressing,
         };
     }
 

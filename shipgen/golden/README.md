@@ -52,6 +52,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   the knuckle, which put a nearly flat shelf just above the water toward the ends. Only the four tumblehome designs'
   hull-form stations (between the waterline and the deck, off the midbody) and their height-map side bands changed;
   the deck edge, layout, weights and sprites are unchanged. 4 design and 4 SVG cases rewritten.
+- 2026-10-11, tumblehome shading, on purpose: where the sides lean in, the plan lightens them in five bands from the
+  knuckle to the deck (`TopView.ShadeBands`), as the profile shades its side. Only the hull drawing of the four
+  tumblehome designs changed (5 white overlays each); the height map and sprite.json are unchanged. 4 SVG cases
+  rewritten.
 
 ## Layout
 
