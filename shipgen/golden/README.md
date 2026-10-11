@@ -56,6 +56,11 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   knuckle to the deck (`TopView.ShadeBands`), as the profile shades its side. Only the hull drawing of the four
   tumblehome designs changed (5 white overlays each); the height map and sprite.json are unchanged. 4 SVG cases
   rewritten.
+- 2026-10-11, submerged torpedo tubes in the designs that had them, on purpose: `dreadnought` (2 a side, stern,
+  5 torpedoes a tube), `nassau` and `seydlitz` (beam, bow, stern), `kongo` (4 a side, 2 a tube), `invincible` (2 a side;
+  her stern tube would have to clear the single rudder out of the water), `lion`, `nelson`, `colorado` (1 a side). All
+  533 mm. Lengths within 0.1 m, standard displacement up 39-149 t, crew up 9-31. 8 design, SVG and sprite cases
+  rewritten.
 
 ## Layout
 

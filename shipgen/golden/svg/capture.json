@@ -56,7 +56,7 @@
   },
   "colorado": {
    "max_height_m": 24.36,
-   "clutter": 42
+   "clutter": 39
   },
   "connecticut": {
    "max_height_m": 23.43,
@@ -100,7 +100,7 @@
   },
   "dreadnought": {
    "max_height_m": 24.21,
-   "clutter": 67
+   "clutter": 68
   },
   "duilio": {
    "max_height_m": 24.2,
@@ -148,7 +148,7 @@
   },
   "invincible": {
    "max_height_m": 24.56,
-   "clutter": 58
+   "clutter": 60
   },
   "karlsruhe": {
    "max_height_m": 23.71,
@@ -204,7 +204,7 @@
   },
   "nassau": {
    "max_height_m": 23.66,
-   "clutter": 73
+   "clutter": 71
   },
   "nassau_casemates": {
    "max_height_m": 23.72,
@@ -240,7 +240,7 @@
   },
   "seydlitz": {
    "max_height_m": 24.85,
-   "clutter": 54
+   "clutter": 52
   },
   "super_dreadnought": {
    "max_height_m": 24.69,
