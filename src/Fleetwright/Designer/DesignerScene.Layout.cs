@@ -1174,6 +1174,14 @@ public sealed unsafe partial class DesignerScene
     /// button) and the change since opened after it.</summary>
     void Spinner(NumRow r, float valueW, bool extras)
     {
+        // its own ID scope: several spinners share a table row, and their arrows, value and auto buttons would clash
+        ImGui.PushID(r.Knob.Id);
+        SpinnerIn(r, valueW, extras);
+        ImGui.PopID();
+    }
+
+    void SpinnerIn(NumRow r, float valueW, bool extras)
+    {
         var k = r.Knob;
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
         if (ImGui.ArrowButton("##m", ImGuiDir.Left))

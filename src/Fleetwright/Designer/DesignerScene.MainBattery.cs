@@ -466,6 +466,7 @@ public sealed unsafe partial class DesignerScene
     void NumberField(NumRow r, float valueW)
     {
         var k = r.Knob;
+        ImGui.PushID(k.Id);   // its own ID scope, as the spinner's
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
         if (ImGui.ArrowButton("##m", ImGuiDir.Left))
             Step(r, ImGui.GetIO().KeyShift ? -4 : -1);
@@ -512,6 +513,7 @@ public sealed unsafe partial class DesignerScene
         if (ImGui.ArrowButton("##p", ImGuiDir.Right))
             Step(r, ImGui.GetIO().KeyShift ? 4 : 1);
         ImGui.PopStyleVar();
+        ImGui.PopID();
     }
 
     // ------------------------------------------------------------------ the arrangement

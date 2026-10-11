@@ -10,6 +10,7 @@ public static unsafe class Program
         bool screenshotUi = false, newDesign = false;
         int section = 0;
         string[]? steps = null;
+        string[]? input = null;
         var units = Designer.UnitSystem.Metric;
         uint width = 0, height = 0;
         string? shipPath = null, navy = null, era = null, view = null, camera = null, show = null;
@@ -56,6 +57,10 @@ public static unsafe class Program
             {
                 steps = arg.Substring("-steps=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries);
             }
+            else if (arg.StartsWith("-input="))   // scripted UI input for testing: 60:click:957,559;80:type:12
+            {
+                input = arg.Substring("-input=".Length).Split(';', StringSplitOptions.RemoveEmptyEntries);
+            }
             else if (arg.StartsWith("-designer-ui="))   // designer UI state for screenshots: secsel:1:2,secmenu
             {
                 Designer.DesignerScene.DevUi = arg.Substring("-designer-ui=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries);
@@ -100,6 +105,8 @@ public static unsafe class Program
             engine.Init();
 
             // Configure screenshot if requested
+            if (input != null)
+                engine.ScriptedInput.AddRange(input);
             if (screenshotFrame >= 0)
             {
                 engine.SetScreenshotCapture(screenshotFrame, screenshotPath, screenshotUi);

@@ -288,6 +288,49 @@ public unsafe class Sdl3GpuEngine : IDisposable
     /// </summary>
     public List<IRenderable> SceneRenderables => _sceneRenderables;
 
+    /// <summary>A dev hook for testing the UI without a mouse (-input=): events queued into ImGui at their frame.
+    /// "F:click:X,Y" moves there and clicks (ImGui trickles the queue, a step a frame), "F:right:X,Y" right-clicks,
+    /// "F:wheel:X,Y:N" turns the wheel N notches, "F:type:TEXT" types TEXT then Enter. X, Y in window pixels.</summary>
+    public List<string> ScriptedInput { get; } = [];
+
+    void FeedScriptedInput()
+    {
+        if (ScriptedInput.Count == 0)
+            return;
+        var io = ImGui.GetIO();
+        foreach (var ev in ScriptedInput)
+        {
+            var p = ev.Split(':');
+            if (p.Length < 3 || !int.TryParse(p[0], out int f) || f != (int)FrameNumber)
+                continue;
+            System.Numerics.Vector2 At(string s)
+            {
+                var xy = s.Split(',');
+                return new(float.Parse(xy[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(xy[1], System.Globalization.CultureInfo.InvariantCulture));
+            }
+            switch (p[1])
+            {
+                case "click" or "right":
+                    var c = At(p[2]);
+                    int b = p[1] == "click" ? 0 : 1;
+                    io.AddMousePosEvent(c.X, c.Y);
+                    io.AddMouseButtonEvent(b, true);
+                    io.AddMouseButtonEvent(b, false);
+                    break;
+                case "wheel" when p.Length > 3:
+                    var w = At(p[2]);
+                    io.AddMousePosEvent(w.X, w.Y);
+                    io.AddMouseWheelEvent(0, float.Parse(p[3], System.Globalization.CultureInfo.InvariantCulture));
+                    break;
+                case "type":
+                    io.AddInputCharactersUTF8(p[2]);
+                    io.AddKeyEvent(ImGuiKey.Enter, true);
+                    io.AddKeyEvent(ImGuiKey.Enter, false);
+                    break;
+            }
+        }
+    }
+
     /// <summary>
     /// Configures screenshot capture.
     /// </summary>
@@ -1080,6 +1123,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
         {
             // Start ImGui frame
             _imguiRenderer?.NewFrame(DeltaTime);
+            FeedScriptedInput();
             ImGui.NewFrame();
 
             // Build ImGui UI

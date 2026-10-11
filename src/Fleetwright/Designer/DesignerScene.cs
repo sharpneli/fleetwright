@@ -854,7 +854,9 @@ public sealed unsafe partial class DesignerScene : IScene
         var k = r.Knob;
         double step = k.Step(units);
         double v = r.Num ?? k.Range(doc.Current).Lo;
-        double next = Math.Round((v + steps * step) / step) * step;
+        // off the grid (a design's own 305 mm, say), the first step goes to the next grid line that way, not past it
+        double on = steps > 0 ? Math.Floor(v / step + 1e-9) : Math.Ceiling(v / step - 1e-9);
+        double next = (on + steps) * step;
         SetValue(k, next);
     }
 
