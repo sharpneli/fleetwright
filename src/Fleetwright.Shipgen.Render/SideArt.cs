@@ -887,8 +887,8 @@ public static class SideArt
         }
     }
 
-    /// <summary>A propeller from the side on the shaft's end: the hub with its cap, a blade standing up and the two others
-    /// overlapping below, each a broad leaf seen edge-on and swept back a little.</summary>
+    /// <summary>A propeller from the side on the shaft's end: the hub with its cap and a blade standing up and one down,
+    /// mirror images (drawn symmetric by choice), each a broad leaf seen edge-on and swept back a little.</summary>
     static void Propeller(List<Node> o, Painter P, SideView.Propeller p)
     {
         string col = P.C("propeller");
@@ -899,7 +899,7 @@ public static class SideArt
             return new PathData().M(x - w / 2, -z).C(x - w / 2, -(z + s * 0.55 * a), x - w * 0.15, -(z + s * a), x + w * 0.1, -(z + s * a))
                 .C(x + w * 0.45, -(z + s * 0.9 * a), x + w / 2, -(z + s * 0.4 * a), x + w / 2, -z).Z();
         }
-        o.Add(P.Ln(new PathNode(Blade(-0.55 * r)).Fill(Painter.Shade(col, 0.85)), 0.7));
+        o.Add(P.Ln(new PathNode(Blade(-r)).Fill(col), 0.7));
         o.Add(P.Ln(new PathNode(Blade(r)).Fill(col), 0.7));
         double hl = Math.Max(0.5, 0.42 * r), hh = Math.Max(0.35, 0.3 * r);
         var hub = new PathData().M(x - hl / 2, -(z + hh / 2)).L(x + hl * 0.2, -(z + hh / 2)).C(x + hl * 0.55, -(z + hh / 2), x + hl * 0.6, -z, x + hl * 0.6, -z)
