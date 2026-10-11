@@ -12,6 +12,9 @@ memory at once. The game draws ships with the sprite model and computes damage w
 need to be damaged: each one carries a condition table tied to the hitbox model. This plan sets out how the data is
 laid out so that the shared, per-design data and the per-ship state stay apart.
 
+The battle is not an arena: the world is the whole planet at real scale (`research/naval/realtime-tech-stack-plan.md`),
+and a battle is ships that happen to be near each other on it. Nothing here may assume a flat map; see "The world".
+
 ## Where we are (the review of 2026-10-11)
 
 What already fits:
@@ -71,7 +74,8 @@ ShipClass        read-only, shared, int-indexed                  no GPU, determi
                                        │ spawned per ship
                                        ▼
 ShipState        one per ship: arrays parallel to the class's
-  pose           position, heading, speed; sinkage, trim, heel (derived from the water aboard)
+  pose           position (Earth-centred, double), forward (a tangent unit vector), speed;
+                 sinkage, trim, heel (derived from the water aboard)
   per mount      bearing, ammunition
   per component  state (ok / damaged / disabled / destroyed), integrity, flags (jammed, burning)
   per cell       water m³, fire, crew alive, hull breach area
@@ -94,6 +98,50 @@ Rules:
 - Indices are stable for one design and one shipgen version (the build is deterministic: the goldens), so the class's
   content hash goes with any stored index.
 
+## The world: one sphere, local frames inside it (proposed 2026-10-11)
+
+The question: at combat ranges, assume the sea is flat, or always work on the sphere? Proposed: **the sphere is the
+one truth, everywhere**; flatness exists only inside frames small enough that it's exact to the millimetre (a ship's
+own frame), never as a mode the sim switches into at "combat ranges".
+
+Why not flat at combat ranges:
+
+- **The error is not small where it matters.** The sea drops below the tangent plane by d²/2R: 8 m at 10 km, 31 m at
+  20 km, 71 m at 30 km. At 20 km a shell falling at 15° lands about 115 m long against a flat target; at 30 km
+  (falling at ~25°) about 150 m. A battleship is 30-40 m wide, so that's several beams, and about the size of a
+  salvo's spread. The real fire-control computers corrected for it
+  (`research/simulation/fire-control-research/computing.md`: 84 ft at 19,800 yd, ~100 yd of range); with a flat sim
+  that correction would be a number with nothing to correct.
+- **Curvature is a mechanic, not a detail.** The horizon decides who sees whom: from 10 m it's 11 km, from a 30 m
+  foretop 20 km, and a 30 m mast is seen from another at about 39 km. Hull-down, masts over the horizon, smoke seen
+  before ships: all of that falls out of the sphere and would have to be faked on a flat map.
+- **Two models means a seam.** Where does "the combat area" end? Two groups 40 km apart, a shell in flight when
+  the frame moves, a battle that drifts across a degree of longitude: each is a bug a single model doesn't have.
+- **It costs nearly nothing.** Gravity toward the centre instead of -z is one normalise per shell per tick, and a few
+  thousand shells in doubles is nothing.
+
+How:
+
+- **World positions are Earth-centred Cartesian, in doubles** (Earth-fixed, rotating with it). A double at 6.4e6 m
+  resolves about a nanometre, so there's no precision cliff anywhere on the planet and no floating origin. Floats only
+  after subtracting a nearby origin (the renderer's rule already: camera-relative).
+- **A sphere, not the ellipsoid.** Mean radius 6,371 km; map data's latitudes are used as spherical ones. The ellipsoid
+  changes nothing a player can see. Sea level is the sphere (tides: no).
+- **Ships move on the sphere:** a position and a tangent forward vector, both rotated about their common axis by
+  speed·dt / R each tick. No latitude, longitude or heading angle in the state, so nothing breaks at the poles or the
+  date line; heading in degrees and lat/lon are derived for the UI and orders.
+- **Local frames for local work.** A ship's frame (the one the sprites and hitboxes use: +x bow, +y starboard, up =
+  away from the centre) is built from its pose each tick. Inside 250 m the sphere departs from the frame's plane by
+  5 mm, so hit queries, flooding and everything in `ShipClass` stay flat and exact enough. A battle's broadphase is a
+  3D hash on the Earth-centred position (no poles to special-case).
+- **Shells fly in the Earth-centred frame**, gravity toward the centre, the air's density by height over the sphere,
+  plus the Coriolis term (-2Ω × v; ~15 m of deflection at 15 kyd per the research) since the frame rotates. A hit test
+  takes the shell's segment for the tick into the target's ship frame: that's step 3's "world ray to ship-local".
+- **Line of sight** is a ray against the sphere (refraction later: the usual trick is a larger radius, ~7/6 R).
+
+Determinism: the sim is fixed-tick doubles; trigonometry only where a frame is built, so the same inputs give the same
+battle on one build and platform (cross-platform lockstep isn't a goal yet).
+
 ## Damage on the sprites
 
 The rule stays "one physical model": what damage looks like comes from the hitboxes and the state, never from geometry
@@ -115,10 +163,13 @@ Each step ends verified and committed, with its notes added here.
 1. **`ShipClass`, the compiler.** Compile a `Ship`'s hitboxes and links into int-indexed, read-only arrays (component
    kinds as an enum, CSR adjacency, the mount table, the armour solids). Proof: ShellTest ported onto it gives the
    same results; `shell-test` stays the regression check. Decide where it lives first (open question 2).
-2. **`ShipState` and spawning.** The condition arrays, filled from the class's initial loads. Test: 50 ships of one
-   class share one `ShipClass` and none writes to it.
-3. **The hit query.** A world ray to ship-local (pose, sinkage, trim, heel), broadphase on `BroadphaseR`, then turrets
-   at the ship's bearings, the hull, armour and cells. Returns indices, not strings. Headless, allocation-free, tested.
+2. **`ShipState` and spawning.** The condition arrays, filled from the class's initial loads, and the pose on the
+   sphere ("The world": the double vector types, moving on the sphere, the ship frame). Test: 50 ships of one class
+   share one `ShipClass` and none writes to it; a ship steaming a full circle of the globe, across a pole, comes back
+   where it started.
+3. **The hit query.** A shell's segment, Earth-centred, to ship-local (pose, sinkage, trim, heel), broadphase on
+   `BroadphaseR`, then turrets at the ship's bearings, the hull, armour and cells. Returns indices, not strings.
+   Headless, allocation-free, tested.
 4. **The class registry.** Builds many designs in parallel keyed by content hash, none dropped; refcounted; frees the
    CPU images after the GPU upload; the `HitboxMesh` only on request. `DesignSession` stays the designer's one-ship
    view and may sit on top of it.
@@ -137,6 +188,8 @@ Each step ends verified and committed, with its notes added here.
 3. **Saves:** condition tables by index (compact; breaks when shipgen changes a class's layout) or by string id
    (survives a rebuild)? Proposed: indices plus the class hash at runtime, string ids in save files.
 4. **Buoyancy realism** (open since 2026-10-07, DECISIONS "Buoyancy"): step 6 needs it, steps 1-5 don't.
+5. **The world frame** ("The world"): the sphere everywhere, flat only inside a ship's frame (proposed), or a flat
+   battle area?
 
 ## Background
 
