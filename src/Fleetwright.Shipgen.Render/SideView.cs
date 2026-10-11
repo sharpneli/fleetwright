@@ -49,6 +49,8 @@ public sealed class SideView
     /// <summary>The hull's side seen from starboard as (x, z): the deck line (stepping up over the raised decks), the stem,
     /// the keel from the hull-form stations (forefoot and counter as built) and the stern, closed.</summary>
     public required List<Pt> Hull;
+    /// <summary>The keel line from the hull-form stations, aft to fore: (x, height).</summary>
+    public required List<(double X, double Z)> KeelLine;
     /// <summary>The hull's ends along the ship.</summary>
     public required double HullX0, HullX1;
     public required double Keel;
@@ -80,6 +82,31 @@ public sealed class SideView
 
     /// <summary>The deck line's height at x: the main deck (0), or a raised deck over it.</summary>
     public double DeckAt(double x) => Raised.Where(r => r.X0 <= x && x <= r.X1).Select(r => r.Top).DefaultIfEmpty(0.0).Max();
+
+    /// <summary>The hull's bottom at x on the centreline (the keel line between stations), or null off its ends.</summary>
+    public double? KeelAt(double x)
+    {
+        var k = KeelLine;
+        if (k.Count == 0 || x < k[0].X || x > k[^1].X)
+            return null;
+        int i = 1;
+        while (i < k.Count - 1 && k[i].X < x)
+            i++;
+        var (a, b) = (k[i - 1], k[i]);
+        return b.X - a.X < 1e-9 ? a.Z : a.Z + (b.Z - a.Z) * (x - a.X) / (b.X - a.X);
+    }
+
+    /// <summary>What a part at (x, y) whose foot is at height z stands on: the highest deck, roof, platform or barbette
+    /// top under it, no higher than z (a little over, for rounding); the deck line if nothing else.</summary>
+    public double SupportAt(double x, double y, double z)
+    {
+        double best = x >= HullX0 && x <= HullX1 ? DeckAt(x) : double.NegativeInfinity;
+        bool Under(Box b) => b.X0 <= x && x <= b.X1 && b.Y0 <= y && y <= b.Y1 && b.Top <= z + 0.05;
+        foreach (var b in Blocks.Select(b => b.B).Concat(Platforms.Select(p => p.B)).Concat(Casings).Concat(Hangars).Concat(Barbettes.Select(b => b.B)))
+            if (Under(b) && b.Top > best)
+                best = b.Top;
+        return double.IsNegativeInfinity(best) ? z : Math.Min(best, z);
+    }
 
     /// <summary>The body and barrels of a mount at its rest bearing, rotated into the ship's frame: (x0, x1, y0, y1)
     /// of each.</summary>
@@ -168,7 +195,7 @@ public sealed class SideView
 
         return new SideView
         {
-            Id = ship.Design.Id ?? "", Length = hb.Length, Beam = hb.Beam, Planform = new Hull(new HullSpec(hb.Length, hb.Beam, hb.Bow, hb.Stern)), Hull = outline, HullX0 = hx0, HullX1 = hx1, Keel = vert.Keel,
+            Id = ship.Design.Id ?? "", Length = hb.Length, Beam = hb.Beam, Planform = new Hull(new HullSpec(hb.Length, hb.Beam, hb.Bow, hb.Stern)), Hull = outline, KeelLine = keel, HullX0 = hx0, HullX1 = hx1, Keel = vert.Keel,
             Waterline = vert.Waterline, Knuckle = vert.Knuckle, Raised = raised, TurretTypes = hb.TurretTypes, Mounts = mounts,
             Barbettes = comps.Where(c => c.Kind == "barbette").Select(c => (Box.Round(c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top), c.Mount ?? ""))
                 .ToList(),

@@ -72,7 +72,7 @@ public static class SideArt
         foreach (var p in v.Platforms)
             Add(p.B.Y1, o => Platform(o, P, p, v));
         foreach (var bt in v.Dressing.Boats ?? [])
-            Add(bt.Y + bt.W / 2, o => Boat(o, P, bt));
+            Add(bt.Y + bt.W / 2, o => Boat(o, P, v, bt));
         foreach (var cr in v.Dressing.Cranes ?? [])
             Add(cr.Y + cr.R, o => Crane(o, P, cr));
         foreach (var ht in v.Dressing.Hatches ?? [])
@@ -80,9 +80,9 @@ public static class SideArt
         // under the water: the starboard and centreline gear in front of the hull, the port gear behind it
         double Under(double y) => y >= -0.01 ? hullDepth + 0.5 : -hullDepth;
         foreach (var r in v.Rudders)
-            Add(Under((r.Y0 + r.Y1) / 2), o => Rudder(o, P, r));
+            Add(Under((r.Y0 + r.Y1) / 2), o => Rudder(o, P, v, r));
         foreach (var s in v.Shafts)
-            Add(Under(s.Y), o => Shaft(o, P, s));
+            Add(Under(s.Y), o => Shaft(o, P, v, s));
         foreach (var pr in v.Propellers)
             Add(Under(pr.Y), o => Propeller(o, P, pr));
 
@@ -536,13 +536,9 @@ public static class SideArt
         string col = t.Shape is "torp" or "tube" ? P.C("tube") : P.C("turret");
         double X(double local) => m.X + f * local * r;   // a point along the turret, in units of r from its pivot
 
-        if (t.Shape is "torp" or "tube")   // trainable tubes: a cylinder on a low mount
+        if (t.Shape is "torp" or "tube")
         {
-            double rr = Math.Min(h * 0.35, 0.6), zc = b.Base + h * 0.55;
-            o.Add(P.Ln(new PathNode(Rect(b.Xc - 0.4, b.Xc + 0.4, b.Base, zc)).Fill(P.C("tub")), 0.7));
-            var tube = Painter.RrectPath(b.X0, -(zc + rr), b.X1, -(zc - rr), rr, rr);
-            o.Add(P.Ln(new PathNode(tube).Fill(col)));
-            o.Add(Rim(P, tube, col));
+            Tubes(o, c, m, t, beam, f);
             return;
         }
         if (!beam && Math.Abs(muzzle - front) > 0.1)
@@ -621,6 +617,65 @@ public static class SideArt
             var d = Rect(xa, xb, b.Base + 0.4 * h, b.Base + 0.75 * h);
             o.Add(P.Ln(new PathNode(d).Fill(Painter.Shade(col, 0.85)), 0.7));
         }
+    }
+
+    /// <summary>A torpedo mount, standing on what is under it: trainable tubes on a turntable over a pedestal from the
+    /// deck (or roof), seen end-on as a row of muzzles when trained on the beam, or as the stacked tubes with their
+    /// breech and muzzle bands and the training cab when trained fore and aft; a fixed tube lies in cradles on its
+    /// deck.</summary>
+    static void Tubes(List<Node> o, Ctx c, SideView.Mount m, TurretType t, bool beam, int f)
+    {
+        var P = c.P;
+        var b = m.B;
+        string tube = P.C("tube"), tub = P.C("tub");
+        double foot = c.V.SupportAt(m.X, m.Y, b.Base);
+        double r = Math.Max(t.BarrelW / 2, 0.15);
+        double zt = Math.Max(b.Base + r + 0.15, b.Base + 0.55 * b.H);   // the tubes' axis
+        if (t.Shape == "tube" || t.IsFixedTube)
+        {
+            zt = foot + r + 0.25;
+            double xa = Math.Min(m.BarrelX0, b.X0), xb = Math.Max(m.BarrelX1, b.X1);
+            foreach (double u in new[] { 0.2, 0.75 })
+            {
+                double x = xa + (xb - xa) * u;
+                o.Add(P.Ln(new PathNode(Poly(new(x - 0.35, foot), new(x + 0.35, foot), new(x + 0.2, zt), new(x - 0.2, zt))).Fill(tub), 0.6));
+            }
+            var d = Painter.RrectPath(xa, -(zt + r), xb, -(zt - r), r * 0.4, r * 0.4);
+            o.Add(P.Ln(new PathNode(d).Fill(tube), 0.7));
+            o.Add(Rim(P, d, tube));
+            return;
+        }
+        // the pedestal from the deck to the turntable, the turntable as wide as the mount's ring
+        double table = Math.Max(foot + 0.2, zt - r - 0.25), ring = Math.Min(t.R, 0.45 * b.L);
+        o.Add(P.Ln(new PathNode(Poly(new(m.X - 0.55 * ring, foot), new(m.X + 0.55 * ring, foot), new(m.X + 0.35 * ring, table),
+            new(m.X - 0.35 * ring, table))).Fill(Painter.Shade(tub, 0.9)), 0.7));
+        o.Add(P.Ln(new PathNode(Rect(m.X - ring, m.X + ring, table - 0.18, table)).Fill(tub), 0.7));
+        if (beam)   // trained on the beam: the muzzles in a row along the ship, in their frame
+        {
+            long n = Math.Max(1, t.Barrels);
+            double sp = n > 1 ? Math.Max(t.Spacing, 2 * r + 0.05) : 0, x0 = m.X - (n - 1) / 2.0 * sp;
+            o.Add(P.Ln(new PathNode(Rect(x0 - r - 0.1, x0 + (n - 1) * sp + r + 0.1, table, zt + r * 0.3)).Fill(Painter.Shade(tube, 0.85)), 0.6));
+            for (int i = 0; i < n; i++)
+            {
+                double x = x0 + i * sp;
+                o.Add(P.Ln(new CircleNode(x, -zt, r).Fill(tube), 0.6));
+                o.Add(new CircleNode(x, -zt, r * 0.62).Fill(Painter.Shade(tube, 0.35)));
+            }
+            return;
+        }
+        // trained fore and aft: the tubes one behind another, muzzles toward f
+        double xm = f > 0 ? Math.Max(b.X1, m.BarrelX1) : Math.Min(b.X0, m.BarrelX0);
+        double xbr = f > 0 ? Math.Min(b.X0, m.BarrelX0) : Math.Max(b.X1, m.BarrelX1);
+        var body = Painter.RrectPath(Math.Min(xm, xbr), -(zt + r), Math.Max(xm, xbr), -(zt - r), r * 0.5, r * 0.5);
+        o.Add(P.Ln(new PathNode(body).Fill(tube)));
+        o.Add(Rim(P, body, tube));
+        foreach (double u in new[] { 0.12, 0.88 })   // breech and muzzle bands
+        {
+            double x = xbr + (xm - xbr) * u;
+            o.Add(new PathNode(Rect(x - 0.12, x + 0.12, zt - r, zt + r)).Fill(Painter.Shade(tube, 0.75)));
+        }
+        double cab = xbr + (xm - xbr) * 0.2;
+        o.Add(P.Ln(new PathNode(Rect(Math.Min(cab, cab + f * 1.2), Math.Max(cab, cab + f * 1.2), table, zt + r + 0.7)).Fill(Painter.Shade(tub, 1.1)), 0.7));
     }
 
     /// <summary>A gunhouse from back to front (f: the face's side), Base..Top, in a profile: the sloped face plate a
@@ -737,12 +792,33 @@ public static class SideArt
         Box(o, P, b, col, 0.9);
     }
 
-    /// <summary>A boat at its davits: the hull below its gunwale.</summary>
-    static void Boat(List<Node> o, Painter P, Boat bt)
+    /// <summary>A boat, held by what it stands on: on chocks when it sits close over its deck or roof, else in davits
+    /// stepped there (from the side: the posts at its ends, their heads curving in over it, and the falls down to
+    /// it).</summary>
+    static void Boat(List<Node> o, Painter P, SideView v, Boat bt)
     {
-        double top = bt.Top ?? Layout.LevelH + 1.5, h = Math.Min(1.4, 0.45 * bt.W + 0.3), l = bt.L / 2;
-        var d = new PathData().M(bt.X - l, -top).L(bt.X + l, -top).C(bt.X + l * 0.85, -(top - h * 0.8), bt.X + l * 0.5, -(top - h), bt.X, -(top - h))
-            .C(bt.X - l * 0.6, -(top - h), bt.X - l, -(top - h * 0.6), bt.X - l, -top).Z();
+        double top = bt.Top ?? Layout.LevelH + 1.5, h = Math.Min(1.4, 0.45 * bt.W + 0.3), l = bt.L / 2, keel = top - h;
+        double foot = v.SupportAt(bt.X, bt.Y, keel);
+        string mast = P.C("mast");
+        if (keel - foot <= 1.2)   // chocks under the bilges
+            foreach (double u in new[] { -0.45, 0.45 })
+            {
+                double x = bt.X + u * l, zc = keel + 0.2 * h;
+                o.Add(P.Ln(new PathNode(Poly(new(x - 0.35, foot), new(x + 0.35, foot), new(x + 0.25, zc), new(x - 0.25, zc))).Fill(P.C("fitting")), 0.6));
+            }
+        else
+        {
+            double head = top + 0.9, w = Math.Max(0.16, P.Sw * 1.3);
+            foreach (int s in new[] { -1, 1 })
+            {
+                double x = bt.X + s * (l + 0.15), xi = bt.X + s * (l - 0.5);
+                o.Add(new PathNode(new PathData().M(x, -foot).L(x, -(head - 0.4)).C(x, -head, xi, -head, xi, -(head - 0.1)))
+                    .Fill("none").Stroke(mast, w).Cap("round"));
+                o.Add(new LineNode(xi, -(head - 0.1), xi, -top).Stroke(mast, w * 0.4));
+            }
+        }
+        var d = new PathData().M(bt.X - l, -top).L(bt.X + l, -top).C(bt.X + l * 0.85, -(top - h * 0.8), bt.X + l * 0.5, -keel, bt.X, -keel)
+            .C(bt.X - l * 0.6, -keel, bt.X - l, -(top - h * 0.6), bt.X - l, -top).Z();
         string col = P.C("boat");
         o.Add(P.Ln(new PathNode(d).Fill(col)));
         o.Add(new LineNode(bt.X - l + 0.3, -(top - 0.25), bt.X + l - 0.3, -(top - 0.25)).Stroke(Painter.Shade(col, 0.82), P.Sw));
@@ -768,25 +844,66 @@ public static class SideArt
 
     // ------------------------------------------------------------------ under the water
 
-    static void Rudder(List<Node> o, Painter P, SideView.Box r)
+    /// <summary>A rudder on its stock: the blade, and the stock from it up into the hull's bottom.</summary>
+    static void Rudder(List<Node> o, Painter P, SideView v, SideView.Box r)
     {
+        string col = P.C("bottom");
+        double sw = Math.Max(0.3, 0.16 * r.L), xs = r.X1 - Math.Max(sw, 0.22 * r.L);   // the stock, toward the leading edge
+        if (v.KeelAt(xs) is double hull && hull > r.Top - 0.3)
+            o.Add(P.Ln(new PathNode(Rect(xs - sw / 2, xs + sw / 2, r.Top - 0.4, hull + 0.4)).Fill(Painter.Shade(col, 0.85)), 0.7));
         var d = Painter.RrectPath(r.X0, -r.Top, r.X1, -r.Base, Math.Min(0.4, r.L * 0.3), Math.Min(0.8, r.L * 0.4));
-        o.Add(P.Ln(new PathNode(d).Fill(P.C("bottom"))));
-        o.Add(Rim(P, d, P.C("bottom")));
+        o.Add(P.Ln(new PathNode(d).Fill(col)));
+        o.Add(Rim(P, d, col));
     }
 
-    static void Shaft(List<Node> o, Painter P, SideView.Shaft s)
+    /// <summary>A shaft outside the hull: the faired boss where it leaves the hull, the shaft, and the A-bracket carrying
+    /// it from the hull's bottom just ahead of the propeller.</summary>
+    static void Shaft(List<Node> o, Painter P, SideView v, SideView.Shaft s)
     {
-        string col = Painter.Shade(P.C("bottom"), 0.8);
-        o.Add(new LineNode(s.X1, -s.Z1, s.X0, -s.Z0).Stroke(P.C("line"), 2 * s.R + 2 * P.Sw).Cap("round"));
-        o.Add(new LineNode(s.X1, -s.Z1, s.X0, -s.Z0).Stroke(col, 2 * s.R).Cap("round"));
+        string col = Painter.Shade(P.C("bottom"), 0.8), line = P.C("line");
+        void Bar(double xa, double za, double xb, double zb, double w)
+        {
+            o.Add(new LineNode(xa, -za, xb, -zb).Stroke(line, w + 2 * P.Sw).Cap("round"));
+            o.Add(new LineNode(xa, -za, xb, -zb).Stroke(col, w).Cap("round"));
+        }
+        double len = Math.Abs(s.X1 - s.X0);
+        if (len < 0.1)
+            return;
+        double dir = Math.Sign(s.X0 - s.X1);   // aft along the shaft: from where it leaves the hull to the propeller
+        double Z(double x) => s.Z1 + (s.Z0 - s.Z1) * (x - s.X1) / (s.X0 - s.X1);
+        Bar(s.X1, s.Z1, s.X0, s.Z0, 2 * s.R);
+        // the bossing where it leaves the hull: a slender spindle round the shaft, tapering both ways
+        double bl = Math.Min(4.0, 0.3 * len), br = Math.Max(2.2 * s.R, 0.35), xa0 = s.X1 - dir * 0.4 * bl, xb0 = s.X1 + dir * bl;
+        var boss = new PathData().M(xa0, -Z(xa0))
+            .C(xa0 + dir * 0.3 * bl, -(Z(xa0) + br), xb0 - dir * 0.6 * bl, -(Z(xb0) + br), xb0, -Z(xb0))
+            .C(xb0 - dir * 0.6 * bl, -(Z(xb0) - br), xa0 + dir * 0.3 * bl, -(Z(xa0) - br), xa0, -Z(xa0)).Z();
+        o.Add(P.Ln(new PathNode(boss).Fill(col), 0.7));
+        // the A-bracket: a strut from the hull's bottom down to a bearing on the shaft, ahead of the propeller
+        double xa = s.X0 - dir * Math.Max(1.2, 0.08 * len), xh = xa - dir * 0.8;
+        if (v.KeelAt(xh) is double hull && hull > Z(xa) + 0.4)
+        {
+            Bar(xa, Z(xa), xh, hull + 0.3, Math.Max(0.3, 1.6 * s.R));
+            o.Add(P.Ln(new PathNode(Painter.RrectPath(xa - 0.5, -(Z(xa) + 1.4 * s.R), xa + 0.5, -(Z(xa) - 1.4 * s.R), 0.2, 0.2)).Fill(col), 0.7));
+        }
     }
 
-    /// <summary>A propeller seen across its shaft: the blades edge-on round the boss.</summary>
+    /// <summary>A propeller from the side on the shaft's end: the hub with its cap, a blade standing up and the two others
+    /// overlapping below, each a broad leaf seen edge-on and swept back a little.</summary>
     static void Propeller(List<Node> o, Painter P, SideView.Propeller p)
     {
         string col = P.C("propeller");
-        o.Add(P.Ln(new EllipseNode(p.X, -p.Z, Math.Max(0.25, 0.2 * p.R), p.R).Fill(col)));
-        o.Add(P.Ln(new EllipseNode(p.X, -p.Z, Math.Max(0.3, 0.22 * p.R), Math.Max(0.25, 0.18 * p.R)).Fill(Painter.Shade(col, 0.8)), 0.6));
+        double x = p.X, z = p.Z, r = p.R, w = Math.Max(0.35, 0.36 * r);
+        PathData Blade(double len)   // from the hub's axis out to len (up +, down -)
+        {
+            double s = Math.Sign(len), a = Math.Abs(len);
+            return new PathData().M(x - w / 2, -z).C(x - w / 2, -(z + s * 0.55 * a), x - w * 0.15, -(z + s * a), x + w * 0.1, -(z + s * a))
+                .C(x + w * 0.45, -(z + s * 0.9 * a), x + w / 2, -(z + s * 0.4 * a), x + w / 2, -z).Z();
+        }
+        o.Add(P.Ln(new PathNode(Blade(-0.55 * r)).Fill(Painter.Shade(col, 0.85)), 0.7));
+        o.Add(P.Ln(new PathNode(Blade(r)).Fill(col), 0.7));
+        double hl = Math.Max(0.5, 0.42 * r), hh = Math.Max(0.35, 0.3 * r);
+        var hub = new PathData().M(x - hl / 2, -(z + hh / 2)).L(x + hl * 0.2, -(z + hh / 2)).C(x + hl * 0.55, -(z + hh / 2), x + hl * 0.6, -z, x + hl * 0.6, -z)
+            .C(x + hl * 0.6, -z, x + hl * 0.55, -(z - hh / 2), x + hl * 0.2, -(z - hh / 2)).L(x - hl / 2, -(z - hh / 2)).Z();
+        o.Add(P.Ln(new PathNode(hub).Fill(Painter.Shade(col, 0.9)), 0.7));
     }
 }
