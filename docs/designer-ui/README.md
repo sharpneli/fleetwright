@@ -99,6 +99,28 @@ Fonts: Archivo Narrow (UI) and IBM Plex Mono (numbers), bundled. The penetration
 | `png/bureau-protection.png` | Protection tab: plate table and penetration grid |
 | `png/bureau-role.png` | Role tab: matchup table and fitness by role |
 
+## Main battery picker (`mainbattery.html`, 2026-10-11)
+
+This mockup covers the Main battery tab's pane only (1280 × 578). It replaces the per-battery knob lists with three
+parts:
+
+- a **battery table** with one row per battery
+- a clickable **arrangement schematic**: `+` slots add a turret, and the ▲ between two turrets toggles superfiring
+- a **guns-bearing rose**.
+
+Below them are **arrangement presets** and a turret inspector.
+
+The reasoning, click counts, engine rules and port plan are in `mainbattery.md`. Open the page in a browser to try
+it. `?ship=invincible` loads the echelon example.
+
+| File | State |
+|---|---|
+| `png/mainbattery-opened.png` | Lord Nelson as opened: three batteries, A active |
+| `png/mainbattery-ghost-tip.png` | hovering the aft `+`: "+ X, superfiring" |
+| `png/mainbattery-add-x.png` | one click later: X superfires over Y, astern 2 → 4 guns; X selected |
+| `png/mainbattery-menu.png` | right-click on Y: change battery, split off, move, remove |
+| `png/mainbattery-echelon.png` | Invincible: echelon + cross-deck in the wing cluster, 8-gun broadside |
+
 ## Screenshots (`png/`)
 
 | File | State |

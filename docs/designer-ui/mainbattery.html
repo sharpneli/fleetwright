@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Main battery picker</title>
+<link rel="stylesheet" href="assets/fonts/dense-fonts.css">
+<style>
+:root{
+  --ground:#0E1215;--panel:#1C2329;--panel2:#20282F;--inset:#11161A;--line:#20292F;--edge:#090C0E;--bevel:#2C3640;
+  --tt:#36434F;--tb:#27313A;--hd:#161C21;--text:#C9D3DB;--bright:#EAF0F4;--muted:#7F8B95;--brass:#D9B868;
+  --brassd:#5A4A24;--ok:#86C77E;--amber:#E3A452;--blue:#5B9BE0;--plan:#14243A;--planline:#9CC2E2;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--text);font-family:'Archivo Narrow',sans-serif;font-size:12px;user-select:none}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:'IBM Plex Mono',monospace}
+.dim{color:var(--muted)}.gold{color:var(--brass)}
+#app{position:relative;width:1280px;height:600px;margin:0;overflow:hidden}
+/* tab strip, as in the app */
+.tabs{position:absolute;left:4px;top:0;height:22px;display:flex;gap:2px;align-items:flex-end}
+.tab{height:20px;padding:0 9px 0 5px;border:1px solid var(--edge);border-bottom:none;background:linear-gradient(#2A333C,#20282F);color:var(--muted);font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:5px}
+.tab.on{height:22px;background:linear-gradient(var(--tt),var(--panel));color:var(--brass)}
+.tab .k{border:1px solid #4A5764;border-radius:2px;font-size:9.5px;line-height:11px;padding:0 3px}
+.tab.on .k{border-color:var(--brass)}
+.pane{position:absolute;left:0;top:22px;width:1280px;height:578px;background:var(--panel);border:1px solid var(--edge);box-shadow:inset 0 1px 0 var(--tt)}
+.sub{height:18px;display:flex;align-items:center;gap:8px;padding:0 6px;background:var(--hd);border-bottom:1px solid var(--edge);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)}
+.sub b{margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0}
+/* battery table */
+.bt{min-height:102px;grid-auto-rows:min-content;align-content:start;display:grid;grid-template-columns:34px 46px 104px 92px 104px minmax(0,1fr) 44px 38px 104px 118px 112px 52px 44px;align-items:center}
+.bt>div{height:21px;display:flex;align-items:center;padding:0 4px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden}
+.bt .h{height:17px;background:var(--hd);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--edge)}
+.bt .r{cursor:pointer}
+.bt .r.sel{background:rgba(217,184,104,0.10)}
+.bt .r.first.sel{box-shadow:inset 3px 0 0 var(--brass)}
+.bt .r:hover{background:rgba(255,255,255,0.03)}
+.bt .r.sel:hover{background:rgba(217,184,104,0.13)}
+.right{justify-content:flex-end}
+.sp{display:inline-flex;align-items:center;height:16px;border:1px solid #0A0D10;background:var(--inset)}
+.sp button{width:14px;height:14px;border:none;padding:0;background:linear-gradient(#3A4651,#2A333C);color:#C9D3DB;font-size:8px;line-height:14px}
+.sp button:hover{background:linear-gradient(#4E5D6B,#38434E);color:#FFF}
+.sp span{min-width:58px;text-align:right;padding:0 4px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--bright)}
+.sp.auto span{color:var(--muted)}
+.seg{display:inline-flex;border:1px solid #0A0D10}
+.seg button{height:16px;min-width:20px;padding:0 5px;border:none;border-right:1px solid #0A0D10;background:linear-gradient(#2E3842,#232B33);color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace}
+.seg button:last-child{border-right:none}
+.seg button.on{background:linear-gradient(#6B5A30,#4A3E20);color:#FFE7A8}
+.seg button:hover:not(.on){color:var(--bright)}
+.seg.w button{font-family:'Archivo Narrow',sans-serif;font-size:11px}
+.sw{width:9px;height:9px;display:inline-block;margin-right:6px;border:1px solid rgba(0,0,0,0.5)}
+.ico{border:none;background:none;color:var(--muted);padding:0 3px;font-size:12px}
+.ico:hover{color:var(--bright)}
+.dd{height:16px;display:inline-flex;align-items:center;gap:6px;padding:0 5px;border:1px solid #0A0D10;background:var(--inset);color:var(--text);font-size:11.5px;width:104px;justify-content:space-between}
+.tagl{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis}
+.act{height:17px;padding:0 8px;border:1px solid #0A0D10;background:linear-gradient(#2E3842,#232B33);color:var(--text);font-size:11.5px}
+.act:hover{color:var(--bright);background:linear-gradient(#3A4651,#2A333C)}
+/* arrangement */
+#arr{position:absolute;left:6px;top:0;width:944px;height:282px;border:1px solid var(--edge);background:var(--plan);
+  background-image:linear-gradient(rgba(150,190,230,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(150,190,230,0.06) 1px,transparent 1px);background-size:24px 24px}
+#rose{position:absolute;left:958px;top:0;width:314px;height:282px;border:1px solid var(--edge);background:var(--panel2)}
+.kv{display:grid;grid-template-columns:1fr auto auto;gap:0 10px;padding:2px 8px;font-size:11.5px}
+.kv span:nth-child(3n+2),.kv span:nth-child(3n){font-family:'IBM Plex Mono',monospace;text-align:right}
+.presets{display:flex;flex-wrap:wrap;gap:4px;padding:5px 6px}
+.pre{width:110px;height:62px;border:1px solid #0A0D10;background:linear-gradient(#26303A,#1D252C);padding:2px 4px;display:flex;flex-direction:column;align-items:flex-start;color:var(--text)}
+.pre:hover{background:linear-gradient(#303C48,#242E36);color:var(--bright)}
+.pre small{color:var(--muted);font-size:10.5px}
+.insp{padding:4px 8px;line-height:1.55}
+.insp .t{font-weight:700;color:var(--bright);font-size:13px}
+.hint{position:absolute;left:0;bottom:0;width:100%;height:18px;display:flex;gap:14px;align-items:center;padding:0 8px;background:var(--hd);border-top:1px solid var(--edge);color:var(--muted);font-size:11px}
+.kbd{display:inline-block;padding:0 3px;border:1px solid #4A5764;border-bottom-width:2px;border-radius:2px;font-size:9.5px;line-height:11px;color:#AEB9C3;font-family:'IBM Plex Mono',monospace;margin-right:3px}
+#tip{position:absolute;pointer-events:none;display:none;max-width:280px;padding:5px 7px;background:#0F1418;border:1px solid #4A5764;color:var(--text);font-size:11.5px;line-height:1.35;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,0.6)}
+#tip b{color:var(--brass)}
+#menu{position:absolute;display:none;min-width:170px;background:#161C21;border:1px solid #4A5764;z-index:11;padding:2px 0;box-shadow:0 2px 10px rgba(0,0,0,0.6)}
+#menu div{padding:2px 10px;font-size:11.5px;display:flex;justify-content:space-between;gap:16px;cursor:pointer}
+#menu div:hover{background:rgba(217,184,104,0.15);color:var(--bright)}
+#menu .sep{height:1px;padding:0;margin:2px 0;background:var(--line);cursor:default}
+#menu .lab{color:var(--muted);cursor:default;font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em}
+#menu .lab:hover{background:none;color:var(--muted)}
+svg text{font-family:'IBM Plex Mono',monospace}
+.zone{cursor:ns-resize}
+.chip{cursor:pointer}
+.link{cursor:pointer}
+.ghost{cursor:copy}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="tabs" id="tabs"></div>
+  <div class="pane">
+    <div class="sub">Main batteries <span class="dim" style="text-transform:none;letter-spacing:0">· order = outboard first at each end</span>
+      <b>click a row to make it the battery the <span class="gold">+</span> slots add</b></div>
+    <div class="bt" id="bt"></div>
+    <div style="position:relative;height:0" id="below"></div>
+  </div>
+  <div id="tip"></div>
+  <div id="menu"></div>
+</div>
+
+<script>
+// ------------------------------------------------------------------ model: the design's BatteryInput list
+const COLOURS = ['#5B9BE0', '#D98B5F', '#8BC48A', '#B48CD9'];
+const MATERIALS = ['Krupp cemented', 'Harvey nickel', 'Mild steel'];
+const DESIGNS = {
+  lord_nelson: [
+    {cal:305,len:45,barrels:2,faces:305,rounds:null,mat:0,fore:1,aft:1,mid:0,wing:0,sfF:null,sfA:null,ech:false,cross:false,stands:'deck'},
+    {cal:234,len:50,barrels:1,faces:178,rounds:null,mat:0,fore:0,aft:0,mid:0,wing:1,sfF:null,sfA:null,ech:false,cross:false,stands:'deckhouse'},
+    {cal:234,len:50,barrels:2,faces:203,rounds:null,mat:0,fore:0,aft:0,mid:0,wing:2,sfF:null,sfA:null,ech:false,cross:false,stands:'deckhouse'},
+  ],
+  invincible: [
+    {cal:305,len:45,barrels:2,faces:178,rounds:null,mat:0,fore:1,aft:1,mid:0,wing:1,sfF:null,sfA:null,ech:true,cross:true,stands:'deckhouse'},
+  ],
+};
+const params = new URLSearchParams(location.search);
+let bats = structuredClone(DESIGNS[params.get('ship')] || DESIGNS.lord_nelson);
+let active = +(params.get('active') || 0);
+let sel = null;          // selected turret: {k, grp, i}
+let hover = null;        // hovered thing for the tooltip
+const L = i => String.fromCharCode(65 + i);
+
+// The engine's EndGroup: every battery's turrets at that end in list order, outermost first; `run` of them step up
+// (the outermost always counts), contiguous from the outermost.
+function endGroup(key) {
+  const out = []; let run = 0;
+  bats.forEach((b, k) => {
+    const n = key === 'fore' ? b.fore : b.aft;
+    const sf = key === 'fore' ? b.sfF : b.sfA;
+    const kk = sf == null ? n : sf;
+    for (let i = 0; i < n; i++) {
+      if (run === out.length && (out.length === 0 || i < kk)) run++;
+      out.push({k, i});
+    }
+  });
+  return {out, run};
+}
+// Set an end's run: each battery keeps how many of its own turrets fall inside it (null: all, so additions follow).
+function setRun(key, r) {
+  let o = 0;
+  bats.forEach(b => {
+    const n = key === 'fore' ? b.fore : b.aft;
+    const kk = Math.max(0, Math.min(n, r - o));
+    const v = kk === n ? null : kk;
+    if (key === 'fore') b.sfF = v; else b.sfA = v;
+    o += n;
+  });
+}
+function addEnd(key, k, flush) {
+  const {run} = endGroup(key);
+  const pos = insertPos(key, k);
+  bats[k][key] += 1;
+  // the new turret steps up when everything outboard of it does (unless asked for on the deck); the outermost always counts
+  setRun(key, pos === 0 || (!flush && run >= pos) ? run + 1 : Math.min(run, pos));
+}
+function insertPos(key, k) {
+  let o = 0;
+  for (let j = 0; j <= k; j++) o += key === 'fore' ? bats[j].fore : bats[j].aft;
+  return o;
+}
+function removeEnd(key, idx) {
+  const {out, run} = endGroup(key);
+  const t = out[idx];
+  bats[t.k][key] -= 1;
+  setRun(key, idx < run ? run - 1 : run);
+}
+function toggleLink(key, j) {      // the step between turret j-1 and j
+  const {run} = endGroup(key);
+  setRun(key, run > j ? j : j + 1);
+}
+function names(key, n) { return Array.from({length: n}, (_, i) => (key === 'fore' ? 'ABCDEF' : 'YXWVUT')[i]); }
+
+// ------------------------------------------------------------------ arcs (illustrative here; the game uses the built ship's mount arcs)
+function arcsFor(t) {
+  // degrees clockwise from dead ahead, [from, to] with to > from
+  if (t.grp === 'fore') return t.blocked ? [[-150, -28], [28, 150]] : [[-150, 150]];
+  if (t.grp === 'aft') return t.blocked ? [[30, 152], [208, 330]] : [[30, 330]];
+  if (t.grp === 'mid') return [[35, 145], [215, 325]];
+  const own = t.side > 0 ? [20, 160] : [200, 340];
+  if (!bats[t.k].ech) return [own];
+  const r = [t.side > 0 ? [8, 172] : [188, 352]];
+  if (bats[t.k].cross) r.push(t.side > 0 ? [240, 300] : [60, 120]);
+  return r;
+}
+function bearing(turrets) {
+  const g = new Float32Array(360);
+  for (const t of turrets) for (const [a, b] of arcsFor(t)) for (let d = a; d <= b; d++) g[((d % 360) + 360) % 360] += bats[t.k].barrels;
+  return g;
+}
+
+// ------------------------------------------------------------------ layout of the schematic
+const W = 942, H = 280, CY = 136, BOW = 860, STERN = 82;
+function radius(b) { return 9 + b.cal / 38 + (b.barrels - 1) * 1.6; }
+function turretsLaid(ghostK) {
+  const ts = [];
+  for (const key of ['fore', 'aft']) {
+    const {out, run} = endGroup(key);
+    const nm = names(key, out.length + 1);
+    const ins = ghostK != null ? insertPos(key, ghostK) : -1;
+    const seq = out.map((t, idx) => ({...t, idx}));
+    if (ghostK != null) seq.splice(ins, 0, {k: ghostK, ghost: true});
+    let x = key === 'fore' ? BOW : STERN, prevR = 0;
+    seq.forEach((t, j) => {
+      const r = radius(bats[t.k]);
+      if (j > 0) x += (key === 'fore' ? -1 : 1) * (prevR + r + 30);
+      const idx = t.ghost ? out.length : t.idx;
+      const nameIdx = t.ghost ? ins : j;
+      const stepped = t.ghost ? run >= ins : idx < run;
+      const tier = t.ghost ? (stepped ? ins : 0) : (idx < run ? idx : 0);
+      const firstOfBattery = j === 0 || seq[j - 1].k !== t.k;
+      ts.push({...t, grp: key, x, y: CY, r, side: 0, idx, firstOfBattery, name: nm[nameIdx], stepped: j > 0 && stepped, tier,
+               blocked: j > 0 && !stepped, face: key === 'fore' ? 0 : 180});
+      prevR = r;
+    });
+  }
+  // the waist: midships turrets on the centreline, wing pairs either side, spread between the end groups
+  const ends = ts.filter(t => !t.ghost);
+  const foreIn = Math.min(BOW, ...ts.filter(t => t.grp === 'fore').map(t => t.x - t.r));
+  const aftIn = Math.max(STERN, ...ts.filter(t => t.grp === 'aft').map(t => t.x + t.r));
+  const waist = [];
+  bats.forEach((b, k) => { for (let i = 0; i < b.wing; i++) waist.push({k, kind: 'wing', i}); });
+  bats.forEach((b, k) => { for (let i = 0; i < b.mid; i++) waist.push({k, kind: 'mid', i}); });
+  if (ghostK != null) waist.push({k: ghostK, kind: 'ghost'});   // the waist's + slot: aft of the rest
+  const n = waist.length, a = aftIn + 60, f = foreIn - 60;
+  let wn = 0, mn = 0;
+  // wings forward of the midships turrets, as the engine fills the waist
+  const rank = {wing: 0, mid: 1, ghost: 2};
+  waist.sort((p, q) => rank[p.kind] - rank[q.kind]);
+  waist.forEach((w, j) => {
+    const x = n === 1 ? (a + f) / 2 : f - (f - a) * j / (n - 1);
+    const b = bats[w.k], r = radius(b);
+    if (w.kind === 'ghost') {
+      ts.push({k: w.k, ghost: true, grp: 'waist', x, y: CY, r});
+    } else if (w.kind === 'mid') {
+      ts.push({k: w.k, grp: 'mid', i: w.i, idx: mn, x, y: CY, r, side: 0, name: 'QRS'[mn++], face: 0});
+    } else {
+      wn++;
+      const st = b.ech ? 26 : 0;
+      ts.push({k: w.k, grp: 'wing', i: w.i, idx: w.i, pair: wn, x: x + st, y: CY - 62, r, side: -1, name: `W${wn}P`, face: 270});
+      ts.push({k: w.k, grp: 'wing', i: w.i, idx: w.i, pair: wn, x: x - st, y: CY + 62, r, side: 1, name: `W${wn}S`, face: 90});
+    }
+  });
+  return ts;
+}
+
+// ------------------------------------------------------------------ rendering
+const $ = id => document.getElementById(id);
+function h(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (k === 'style') e.style.cssText = v; else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+const NS = 'http://www.w3.org/2000/svg';
+function s(tag, attrs = {}, ...kids) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+
+function tabs() {
+  const names = ['Overview', 'Main battery', 'Secondary · AA · TT', 'Protection', 'Speed & machinery', 'Hull & upperworks', 'Fire control', 'Crew'];
+  $('tabs').replaceChildren(...names.map((n, i) => h('div', {class: 'tab' + (i === 1 ? ' on' : '')}, h('span', {class: 'k mono'}, String(i)), n)));
+}
+
+function spinner(val, fmt, step, set, auto) {
+  const e = h('span', {class: 'sp' + (auto ? ' auto' : '')},
+    h('button', {onclick: ev => { ev.stopPropagation(); set(-step); }}, '◀'),
+    h('span', {}, fmt(val)),
+    h('button', {onclick: ev => { ev.stopPropagation(); set(step); }}, '▶'));
+  e.addEventListener('wheel', ev => { ev.preventDefault(); set(ev.deltaY < 0 ? step : -step); });
+  return e;
+}
+function autoRounds(b) { return Math.round(Math.min(120, 40 + 24000 / b.cal) / 10) * 10; }
+function turretsOf(b) { return b.fore + b.aft + b.mid + 2 * b.wing; }
+function tonnes(b) { return Math.round(turretsOf(b) * (b.barrels * 0.0011 * Math.pow(b.cal, 1.85) / 10 + b.faces * 0.32 + 60)); }
+function layoutTags(k) {
+  const ts = turretsLaid(null).filter(t => t.k === k);
+  const order = {fore: 0, mid: 1, wing: 2, aft: 3};
+  const parts = [];
+  for (const g of ['fore', 'mid', 'wing', 'aft']) {
+    const tt = ts.filter(t => t.grp === g);
+    if (!tt.length) continue;
+    if (g === 'wing') {
+      const pairs = [...new Set(tt.map(t => t.pair))];
+      parts.push(`W${pairs[0]}${pairs.length > 1 ? '–' + pairs[pairs.length - 1] : ''} ${bats[k].ech ? (bats[k].cross ? 'ech.×deck' : 'echelon') : 'abreast'}`);
+    } else {
+      const ord = g === 'aft' ? tt.slice().reverse() : tt;
+      parts.push(ord.map(t => t.name + (t.stepped ? '↑' : '')).join(' '));
+    }
+  }
+  return parts.join(' · ') || '—';
+}
+
+function table() {
+  const cols = ['', '', 'Calibre', 'Length', 'Guns / turret', 'Positions (outboard first; ↑ superfires)', 'Turr.', 'Guns', 'Faces', 'Rounds / gun', 'Material', 't', ''];
+  const cells = cols.map((c, i) => h('div', {class: 'h' + ([6, 7, 11].includes(i) ? ' right' : '')}, c));
+  bats.forEach((b, k) => {
+    const on = k === active;
+    const r = (cls, ...kids) => h('div', {class: 'r' + (on ? ' sel' : '') + (cls ? ' ' + cls : ''), onclick: () => { active = k; render(); }}, ...kids);
+    const ch = f => d => { f(d); render(); };
+    cells.push(
+      r('first', h('button', {class: 'ico', title: 'Move outboard (earlier in the list)', onclick: ev => { ev.stopPropagation(); move(k, -1); }}, '▴'),
+                 h('button', {class: 'ico', title: 'Move inboard', onclick: ev => { ev.stopPropagation(); move(k, 1); }}, '▾')),
+      r('', h('span', {class: 'sw', style: `background:${COLOURS[k]}`}), h('b', {style: `color:${on ? 'var(--brass)' : 'var(--bright)'}`}, L(k))),
+      r('', spinner(b.cal, v => v + ' mm', 10, ch(d => b.cal = Math.max(20, b.cal + d)))),
+      r('', spinner(b.len, v => v + ' cal', 1, ch(d => b.len += d)), ),
+      r('', h('span', {class: 'seg'}, ...[1, 2, 3, 4].map(n => h('button', {class: b.barrels === n ? 'on' : '', onclick: ev => { ev.stopPropagation(); b.barrels = n; render(); }}, String(n))))),
+      r('', h('span', {class: 'tagl'}, layoutTags(k))),
+      r('right', h('span', {class: 'mono'}, String(turretsOf(b)))),
+      r('right', h('span', {class: 'mono'}, String(turretsOf(b) * b.barrels))),
+      r('', spinner(b.faces, v => v + ' mm', 10, ch(d => b.faces = Math.max(0, b.faces + d)))),
+      r('', spinner(b.rounds ?? autoRounds(b), v => String(v), 10, ch(d => b.rounds = (b.rounds ?? autoRounds(b)) + d), b.rounds == null),
+            b.rounds == null ? h('span', {class: 'dim', style: 'margin-left:5px;font-size:10.5px'}, 'auto') : null),
+      r('', h('span', {class: 'dd'}, MATERIALS[b.mat], h('span', {class: 'dim'}, '▾'))),
+      r('right', h('span', {class: 'mono dim'}, tonnes(b).toLocaleString('en'))),
+      r('', h('button', {class: 'ico', title: 'Duplicate battery (Ctrl+D)', onclick: ev => { ev.stopPropagation(); dup(k); }}, '⧉'),
+            h('button', {class: 'ico', title: 'Remove battery', onclick: ev => { ev.stopPropagation(); bats.splice(k, 1); active = Math.min(active, bats.length - 1); sel = null; render(); }}, '✕')),
+    );
+  });
+  cells.push(h('div', {style: 'grid-column:1 / -1;border-bottom:none;gap:6px;padding-left:38px'},
+    h('button', {class: 'act', onclick: () => { bats.push({cal:152,len:50,barrels:2,faces:25,rounds:null,mat:0,fore:0,aft:0,mid:0,wing:0,sfF:null,sfA:null,ech:false,cross:false,stands:'deck'}); active = bats.length - 1; render(); }}, '+ Battery'),
+    h('span', {class: 'dim'}, 'new batteries have no turrets: click the + slots below to place them')));
+  $('bt').replaceChildren(...cells);
+}
+function move(k, d) {
+  const j = k + d; if (j < 0 || j >= bats.length) return;
+  [bats[k], bats[j]] = [bats[j], bats[k]];
+  if (active === k) active = j; else if (active === j) active = k;
+  sel = null; render();
+}
+function dup(k) { bats.splice(k + 1, 0, {...structuredClone(bats[k]), fore: 0, aft: 0, mid: 0, wing: 0}); active = k + 1; render(); }
+
+function arrangement(root) {
+  const svg = s('svg', {width: W, height: H, viewBox: `0 0 ${W} ${H}`});
+  // hull outline, bow to the right like the plan above
+  svg.append(s('path', {d: `M40 ${CY - 52} C 300 ${CY - 78}, 700 ${CY - 80}, 800 ${CY - 60} C 870 ${CY - 44}, 910 ${CY - 14}, 926 ${CY} C 910 ${CY + 14}, 870 ${CY + 44}, 800 ${CY + 60} C 700 ${CY + 80}, 300 ${CY + 78}, 40 ${CY + 52} C 26 ${CY + 30}, 22 ${CY - 30}, 40 ${CY - 52} Z`,
+    fill: 'rgba(156,194,226,0.05)', stroke: 'rgba(156,194,226,0.55)', 'stroke-width': 1}));
+  svg.append(s('line', {x1: 30, y1: CY, x2: 930, y2: CY, stroke: 'rgba(156,194,226,0.25)', 'stroke-dasharray': '6 5'}));
+  svg.append(s('text', {x: 912, y: 22, fill: 'rgba(156,194,226,0.7)', 'font-size': 10, 'text-anchor': 'end'}, 'BOW ▶'));
+  svg.append(s('text', {x: 34, y: 22, fill: 'rgba(156,194,226,0.7)', 'font-size': 10}, '◀ STERN'));
+
+  const all = turretsLaid(bats[active] ? active : null);
+  const laid = all.filter(t => !t.ghost);
+  // wheel zones: over an end group or the waist the wheel adds or removes the active battery's turrets
+  const zones = [['aft', 30, 330], ['waist', 330, 600], ['fore', 600, 930]];
+  for (const [z, x0, x1] of zones) {
+    svg.append(s('rect', {class: 'zone', x: x0, y: 30, width: x1 - x0, height: H - 40, fill: 'transparent',
+      onwheel: ev => { ev.preventDefault(); wheel(z, ev.deltaY < 0 ? 1 : -1); }}));
+  }
+
+  // links: the step between neighbours at an end; click toggles whether the inboard one superfires
+  for (const key of ['fore', 'aft']) {
+    const g = laid.filter(t => t.grp === key);
+    for (let j = 1; j < g.length; j++) {
+      const a = g[j - 1], b = g[j];
+      const mx = (a.x + b.x) / 2 + (key === 'fore' ? (a.r - b.r) / 2 : (b.r - a.r) / 2);
+      const on = b.stepped;
+      const grp = s('g', {class: 'link', onclick: () => { toggleLink(key, j); render(); },
+        onmouseenter: ev => tip(ev, on ? `<b>${b.name} superfires over ${a.name}</b><br>click: put ${b.name} on the deck (it loses the arc over ${a.name})` +
+                          (j + 1 < g.length ? `; turrets inboard of it come down too` : '')
+                                         : `<b>${b.name} on the deck</b><br>click: step ${b.name} up to fire over ${a.name}` + (j > 1 ? ' (and everything outboard of it)' : '')),
+        onmouseleave: untip});
+      grp.append(s('rect', {x: mx - 9, y: CY - 9, width: 18, height: 18, rx: 2, fill: on ? '#4A3E20' : '#1A2530', stroke: on ? '#D9B868' : '#4A5764'}));
+      grp.append(s('text', {x: mx, y: CY + 4, fill: on ? '#FFE7A8' : '#7F8B95', 'font-size': 11, 'text-anchor': 'middle'}, on ? '▲' : '═'));
+      svg.append(grp);
+    }
+  }
+
+  for (const t of laid) svg.append(chip(t));
+
+  // ghost slots for the active battery
+  if (bats[active]) {
+    const b = bats[active];
+    for (const g of all.filter(t => t.ghost)) {
+      if (g.grp !== 'waist') { svg.append(ghost(g, g.grp)); continue; }
+      // the waist's slot: a midships turret on the centreline, a wing pair either side
+      svg.append(ghost({...g, name: 'Q'}, 'mid'));
+      svg.append(ghost({...g, y: CY - 62, name: 'W'}, 'wing'));
+      svg.append(ghost({...g, y: CY + 62, name: 'W'}, 'wing'));
+    }
+  }
+
+  const arr = h('div', {id: 'arr'}, svg);
+  root.append(arr);
+  // wing-group controls, one cluster per battery with wing turrets, under the waist
+  const wingBats = bats.map((b, k) => ({b, k})).filter(x => x.b.wing + x.b.mid > 0);
+  const box = h('div', {style: 'position:absolute;left:10px;top:252px;display:flex;gap:10px;align-items:center'});
+  if (!wingBats.length) box.append(h('span', {class: 'dim', style: 'font-size:11px'}, 'No waist turrets: the + on the centreline adds a midships turret, either side of it a wing pair.'));
+  for (const {b, k} of wingBats) {
+    box.append(h('span', {style: 'display:flex;gap:4px;align-items:center;padding:2px 5px;background:rgba(14,18,21,0.75);border:1px solid #2C3640'},
+      h('span', {class: 'sw', style: `background:${COLOURS[k]};margin-right:2px`}), h('b', {}, `${L(k)} ${b.wing ? 'wings' : 'midships'}`),
+      b.wing === 0 ? null : h('span', {class: 'seg w'},
+        h('button', {class: !b.ech ? 'on' : '', onclick: () => { b.ech = false; b.cross = false; render(); }}, 'abreast'),
+        h('button', {class: b.ech ? 'on' : '', onclick: () => { b.ech = true; render(); }}, 'echelon')),
+      b.wing === 0 ? null : h('span', {class: 'seg w'},
+        h('button', {class: b.ech && b.cross ? 'on' : '', style: b.ech ? '' : 'opacity:0.35;cursor:default', title: 'Fire across the deck (needs echelon)',
+                     onclick: () => { if (b.ech) { b.cross = !b.cross; render(); } }}, 'cross-deck')),
+      h('span', {class: 'seg w'},
+        h('button', {class: b.stands === 'deck' ? 'on' : '', onclick: () => { b.stands = 'deck'; render(); }}, 'deck'),
+        h('button', {class: b.stands === 'deckhouse' ? 'on' : '', onclick: () => { b.stands = 'deckhouse'; render(); }}, 'deckhouse'))));
+  }
+  arr.append(box);
+}
+
+function chip(t) {
+  const b = bats[t.k], c = COLOURS[t.k];
+  const isSel = sel && sel.grp === t.grp && sel.idx === t.idx && (t.grp !== 'wing' || sel.k === t.k);
+  const g = s('g', {class: 'chip',
+    onclick: ev => { sel = {grp: t.grp, idx: t.idx, k: t.k, i: t.i}; active = t.k; render(); },
+    oncontextmenu: ev => { ev.preventDefault(); sel = {grp: t.grp, idx: t.idx, k: t.k, i: t.i}; render(); menu(ev, t); },
+    onmouseenter: ev => tip(ev, `<b>${t.name}</b> · battery ${L(t.k)} · ${b.barrels} × ${b.cal} mm<br>` +
+      (t.grp === 'fore' || t.grp === 'aft' ? (t.tier > 0 ? `tier ${t.tier}: superfires over ${t.tier === 1 ? 'the outermost' : 'the turrets outboard'}` : t.blocked ? 'on the deck behind a turret: no arc over it' : 'on the deck, outermost') :
+       t.grp === 'mid' ? 'midships, on the centreline' : `wing, ${t.side < 0 ? 'port' : 'starboard'}${b.ech ? ', in echelon' : ''}`) +
+      '<br><span style="color:#7F8B95">click selects · right-click: battery, move, remove · Del removes</span>'),
+    onmouseleave: untip});
+  if (t.tier > 0) g.append(s('circle', {cx: t.x + 3, cy: t.y + 4, r: t.r + 1, fill: 'rgba(0,0,0,0.45)'}));
+  // barrels toward the end the turret faces
+  const ang = t.face * Math.PI / 180, dx = Math.cos(ang), dy = Math.sin(ang);   // bow to the right, starboard down
+  const len = t.r + 6 + b.cal / 40, spread = 4.2;
+  for (let n = 0; n < b.barrels; n++) {
+    const off = (n - (b.barrels - 1) / 2) * spread;
+    const ox = -dy * off, oy = dx * off;
+    g.append(s('line', {x1: t.x + ox + dx * t.r * 0.5, y1: t.y + oy + dy * t.r * 0.5, x2: t.x + ox + dx * len, y2: t.y + oy + dy * len, stroke: c, 'stroke-width': 2.4, 'stroke-linecap': 'round'}));
+  }
+  g.append(s('circle', {cx: t.x, cy: t.y, r: t.r, fill: shade(c, t.tier > 0 ? 0.62 : 0.42), stroke: isSel ? '#FFE7A8' : c, 'stroke-width': isSel ? 2.5 : 1.4}));
+  if (t.tier > 0) g.append(s('circle', {cx: t.x, cy: t.y, r: t.r - 4, fill: 'none', stroke: 'rgba(255,255,255,0.35)', 'stroke-width': 1}));
+  g.append(s('text', {x: t.x, y: t.y + 4, fill: '#EAF0F4', 'font-size': 11.5, 'font-weight': 600, 'text-anchor': 'middle'}, t.name));
+  // tag: the battery once per run of its turrets at an end (wings: on the inboard side, clear of the barrels); the tier
+  const ty = t.grp === 'wing' ? (t.side < 0 ? t.y + t.r + 13 : t.y - t.r - 6) : t.y - t.r - 8;
+  if (t.grp !== 'fore' && t.grp !== 'aft' || t.firstOfBattery)
+    g.append(s('text', {x: t.x, y: ty, fill: c, 'font-size': 10, 'text-anchor': 'middle'}, `${L(t.k)} ${b.barrels}×${b.cal}`));
+  if (t.tier > 0) {
+    g.append(s('rect', {x: t.x + t.r * 0.55, y: t.y + t.r * 0.35, width: 20, height: 13, rx: 2, fill: '#4A3E20', stroke: '#D9B868'}));
+    g.append(s('text', {x: t.x + t.r * 0.55 + 10, y: t.y + t.r * 0.35 + 10, fill: '#FFE7A8', 'font-size': 9.5, 'text-anchor': 'middle'}, `↑${t.tier}`));
+  }
+  return g;
+}
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return `rgb(${Math.round(r * f)},${Math.round(g * f)},${Math.round(b * f)})`;
+}
+
+function ghost(t, kind) {
+  const c = COLOURS[t.k], b = bats[t.k];
+  const what = kind === 'wing' ? 'a wing pair' : kind === 'mid' ? 'a midships turret (Q)' : `${t.name}`;
+  const stepTxt = (kind === 'fore' || kind === 'aft') ? (t.stepped ? ', superfiring' : t.tier === 0 && t.idx > 0 ? ', on the deck' : '') : '';
+  const g = s('g', {class: 'ghost',
+    onclick: ev => { add(kind, ev.shiftKey); },
+    onmouseenter: ev => tip(ev, `<b>+ ${what}</b>${stepTxt}<br>battery ${L(t.k)} · ${b.barrels} × ${b.cal} mm` +
+      ((kind === 'fore' || kind === 'aft') && insertPos(kind, t.k) < endGroup(kind).out.length ? `<br>goes after ${L(t.k)}'s own turrets: battery order sets who is outboard` : '') +
+      ((kind === 'fore' || kind === 'aft') ? '<br><span style="color:#7F8B95">Shift+click: on the deck instead</span>' : '')),
+    onmouseleave: untip});
+  g.append(s('circle', {cx: t.x, cy: t.y, r: t.r, fill: 'rgba(14,18,21,0.35)', stroke: c, 'stroke-width': 1.3, 'stroke-dasharray': '3 3', opacity: 0.85}));
+  g.append(s('text', {x: t.x, y: t.y + 5, fill: c, 'font-size': 15, 'text-anchor': 'middle'}, '+'));
+  return g;
+}
+
+function add(kind, flush) {
+  const b = bats[active];
+  if (kind === 'fore' || kind === 'aft') addEnd(kind, active, flush);
+  else if (kind === 'mid') b.mid++;
+  else b.wing++;
+  untip(); render();
+}
+function removeSel() {
+  if (!sel) return;
+  const b = bats[sel.k];
+  if (sel.grp === 'fore' || sel.grp === 'aft') removeEnd(sel.grp, sel.idx);
+  else if (sel.grp === 'mid') b.mid = Math.max(0, b.mid - 1);
+  else b.wing = Math.max(0, b.wing - 1);
+  sel = null; render();
+}
+function wheel(zone, d) {
+  const b = bats[active];
+  if (zone === 'waist') { b.wing = Math.max(0, b.wing + d); render(); return; }
+  if (d > 0) addEnd(zone, active, false);
+  else {
+    const {out} = endGroup(zone);
+    for (let i = out.length - 1; i >= 0; i--) if (out[i].k === active) { removeEnd(zone, i); break; }
+  }
+  render();
+}
+
+function menu(ev, t) {
+  const m = $('menu');
+  const app = $('app').getBoundingClientRect();
+  const items = [h('div', {class: 'lab'}, `${t.name} · battery ${L(t.k)}`)];
+  if ((t.grp === 'fore' || t.grp === 'aft') && t.idx > 0)
+    items.push(h('div', {onclick: () => { toggleLink(t.grp, endGroupIndex(t)); hideMenu(); render(); }}, t.stepped ? 'Put on the deck' : 'Superfire', h('span', {class: 'dim'}, 'click ▲')));
+  items.push(h('div', {class: 'sep'}));
+  items.push(h('div', {class: 'lab'}, 'Battery'));
+  bats.forEach((b, k) => {
+    if (k === t.k) return;
+    items.push(h('div', {onclick: () => { reassign(t, k); hideMenu(); }}, `${L(k)} · ${b.barrels} × ${b.cal} mm`, h('span', {class: 'dim'}, '')));
+  });
+  items.push(h('div', {onclick: () => { splitOff(t); hideMenu(); }}, 'New battery from this turret', h('span', {class: 'dim'}, '')));
+  items.push(h('div', {class: 'sep'}));
+  items.push(h('div', {class: 'lab'}, 'Move to'));
+  for (const g of ['fore', 'aft', 'mid', 'wing']) if (g !== t.grp)
+    items.push(h('div', {onclick: () => { moveTo(t, g); hideMenu(); }}, {fore: 'Fore end (inboard)', aft: 'Aft end (inboard)', mid: 'Midships', wing: 'Wings (as a pair)'}[g]));
+  items.push(h('div', {class: 'sep'}));
+  items.push(h('div', {onclick: () => { removeSel(); hideMenu(); }}, t.grp === 'wing' ? 'Remove the pair' : 'Remove', h('span', {class: 'kbd'}, 'Del')));
+  m.replaceChildren(...items);
+  m.style.display = 'block';
+  m.style.left = (ev.clientX - app.left + 4) + 'px';
+  m.style.top = (ev.clientY - app.top + 4) + 'px';
+}
+function endGroupIndex(t) { return t.idx; }
+function hideMenu() { $('menu').style.display = 'none'; }
+function takeOut(t) {
+  const b = bats[t.k];
+  if (t.grp === 'fore' || t.grp === 'aft') removeEnd(t.grp, t.idx);
+  else if (t.grp === 'mid') b.mid--; else b.wing--;
+}
+function putIn(k, g) { if (g === 'fore' || g === 'aft') addEnd(g, k, false); else if (g === 'mid') bats[k].mid++; else bats[k].wing++; }
+function reassign(t, k) { takeOut(t); putIn(k, t.grp); sel = null; active = k; render(); }
+function moveTo(t, g) { takeOut(t); putIn(t.k, g); sel = null; render(); }
+function splitOff(t) {
+  takeOut(t);
+  bats.push({...structuredClone(bats[t.k]), fore: 0, aft: 0, mid: 0, wing: 0, sfF: null, sfA: null});
+  putIn(bats.length - 1, t.grp); active = bats.length - 1; sel = null; render();
+}
+
+function rose(root) {
+  const box = h('div', {id: 'rose'});
+  box.append(h('div', {class: 'sub'}, 'Guns bearing', h('b', {}, 'main batteries · by bearing')));
+  const laid = turretsLaid(null);
+  const g = bearing(laid);
+  const total = laid.reduce((a, t) => a + bats[t.k].barrels, 0) || 1;
+  const R = 84, cx = 157, cy = 104;
+  const svg = s('svg', {width: 314, height: 204});
+  for (let ring = 1; ring <= 4; ring++) svg.append(s('circle', {cx, cy, r: R * ring / 4, fill: 'none', stroke: '#2C3640'}));
+  for (let a = 0; a < 360; a += 45) {
+    const r = a * Math.PI / 180;
+    svg.append(s('line', {x1: cx, y1: cy, x2: cx + Math.sin(r) * R, y2: cy - Math.cos(r) * R, stroke: '#2C3640'}));
+  }
+  // the ship's outline in the middle, bow up
+  svg.append(s('path', {d: `M${cx} ${cy - 22} C ${cx + 7} ${cy - 10}, ${cx + 7} ${cy + 14}, ${cx + 5} ${cy + 20} L ${cx - 5} ${cy + 20} C ${cx - 7} ${cy + 14}, ${cx - 7} ${cy - 10}, ${cx} ${cy - 22} Z`, fill: '#2A3440', stroke: '#4A5764'}));
+  let d = '';
+  for (let a = 0; a <= 360; a++) {
+    const v = g[a % 360] / total * R, r = a * Math.PI / 180;
+    d += (a ? 'L' : 'M') + (cx + Math.sin(r) * v).toFixed(1) + ' ' + (cy - Math.cos(r) * v).toFixed(1);
+  }
+  svg.append(s('path', {d: d + 'Z', fill: 'rgba(91,155,224,0.28)', stroke: '#5B9BE0', 'stroke-width': 1.4}));
+  const lab = (a, txt) => { const r = a * Math.PI / 180; svg.append(s('text', {x: cx + Math.sin(r) * (R + 13), y: cy - Math.cos(r) * (R + 13) + 4, fill: '#7F8B95', 'font-size': 10, 'text-anchor': 'middle'}, txt)); };
+  lab(0, 'ahead'); lab(180, 'astern'); lab(90, 'stbd'); lab(270, 'port');
+  svg.append(s('text', {x: cx + 4, y: cy - R - 1, fill: '#4A5764', 'font-size': 9}, String(total)));
+  box.append(svg);
+  let max = 0, at = 0; g.forEach((v, a) => { if (v > max) { max = v; at = a; } });
+  const kv = h('div', {class: 'kv'});
+  const row = (k, v, n) => kv.append(h('span', {class: 'dim'}, k), h('span', {style: 'color:var(--bright)'}, v), h('span', {class: 'dim'}, n));
+  row('Ahead · astern', `${g[0]} · ${g[180]}`, 'guns');
+  row('Broadside port · stbd', `${g[270]} · ${g[90]}`, `of ${total}`);
+  row('Most at once', String(max), `at ${at > 180 ? 360 - at + '° port' : at + '° stbd'}`);
+  box.append(kv);
+  root.append(box);
+}
+
+function lower(root) {
+  const b = bats[active];
+  const left = h('div', {style: 'position:absolute;left:6px;top:288px;width:944px;height:140px;border:1px solid var(--edge);background:var(--panel)'});
+  left.append(h('div', {class: 'sub'}, 'Arrangements', h('b', {}, `apply to battery ${L(active)} · keeps its gun, replaces its positions · undo as usual`)));
+  const P = [
+    ['1 · 1', 'A, Y', {fore: 1, aft: 1, mid: 0, wing: 0}],
+    ['2 · 2 superfiring', 'A B↑ · X↑ Y', {fore: 2, aft: 2, mid: 0, wing: 0}],
+    ['2 · Q · 2', 'A B↑ · Q · X↑ Y', {fore: 2, aft: 2, mid: 1, wing: 0}],
+    ['3 forward', 'A B↑ C', {fore: 3, aft: 0, mid: 0, wing: 0, sfF: 2}],
+    ['2 · 1', 'A B↑ · Y', {fore: 2, aft: 1, mid: 0, wing: 0}],
+    ['Dreadnought', 'A · W1 · X Y', {fore: 1, aft: 2, mid: 0, wing: 1, sfA: 1}],
+    ['Hexagonal', 'A · W1–2 · Y', {fore: 1, aft: 1, mid: 0, wing: 2}],
+    ['Echelon', 'A · W1 ech. · Y', {fore: 1, aft: 1, mid: 0, wing: 1, ech: true, cross: true}],
+  ];
+  const grid = h('div', {class: 'presets'});
+  for (const [name, sub, p] of P) {
+    grid.append(h('button', {class: 'pre', onclick: () => { applyPreset(p); }}, h('span', {}, name), h('small', {class: 'mono'}, sub), mini(p)));
+  }
+  left.append(grid);
+  root.append(left);
+
+  const right = h('div', {style: 'position:absolute;left:958px;top:288px;width:314px;height:140px;border:1px solid var(--edge);background:var(--panel)'});
+  right.append(h('div', {class: 'sub'}, 'Selected', h('b', {}, sel ? '' : 'click a turret')));
+  if (sel) {
+    const t = turretsLaid(null).find(x => x.grp === sel.grp && x.idx === sel.idx && (x.grp !== 'wing' || x.k === sel.k));
+    if (t) {
+      const bb = bats[t.k];
+      const where = t.grp === 'fore' || t.grp === 'aft'
+        ? `${t.grp} end, ${t.idx === 0 ? 'outermost' : `${t.idx + 1}${['st','nd','rd'][t.idx] || 'th'} from the ${t.grp === 'fore' ? 'bow' : 'stern'}`} · ${t.tier > 0 ? 'superfiring, tier ' + t.tier : 'on the deck'}`
+        : t.grp === 'mid' ? 'midships, centreline' : `wing pair ${t.pair}, ${bb.ech ? 'in echelon' : 'abreast'}`;
+      right.append(h('div', {class: 'insp'},
+        h('div', {}, h('span', {class: 't'}, t.name), '  ', h('span', {class: 'sw', style: `background:${COLOURS[t.k]};margin-left:6px`}), `battery ${L(t.k)} · ${bb.barrels} × ${bb.cal} mm / ${bb.len}`),
+        h('div', {class: 'dim'}, where),
+        h('div', {class: 'dim'}, `arcs: ${arcsFor(t).map(([a, z]) => `${(a + 360) % 360}°–${(z + 360) % 360}°`).join(', ')}`),
+        h('div', {style: 'display:flex;gap:4px;margin-top:4px'},
+          (t.grp === 'fore' || t.grp === 'aft') && t.idx > 0 ? h('button', {class: 'act', onclick: () => { toggleLink(t.grp, t.idx); render(); }}, t.stepped ? 'Put on deck' : 'Superfire') : null,
+          h('button', {class: 'act', onclick: ev => menu(ev, t)}, 'Battery ▾'),
+          h('button', {class: 'act', onclick: removeSel}, 'Remove ', h('span', {class: 'kbd'}, 'Del')))));
+    }
+  } else {
+    right.append(h('div', {class: 'insp dim'}, 'A turret\'s place, tier and arcs show here. The plan above highlights it, and a click on a turret in the plan selects it here too.'));
+  }
+  root.append(right);
+}
+function mini(p) {
+  const svg = s('svg', {width: 104, height: 24, style: 'margin-top:2px'});
+  svg.append(s('path', {d: 'M4 6 C 40 2, 80 2, 92 6 C 98 9, 102 12, 103 12 C 102 12, 98 15, 92 18 C 80 22, 40 22, 4 18 Z', fill: 'none', stroke: '#4A5764'}));
+  const dot = (x, y, up) => svg.append(s('circle', {cx: x, cy: y, r: up ? 3.6 : 3, fill: up ? '#8FB6E8' : '#5B9BE0'}));
+  const sfF = p.sfF ?? p.fore, sfA = p.sfA ?? p.aft;
+  for (let i = 0; i < p.fore; i++) dot(90 - i * 9, 12, i > 0 && i < sfF);
+  for (let i = 0; i < p.aft; i++) dot(12 + i * 9, 12, i > 0 && i < sfA);
+  for (let i = 0; i < p.mid; i++) dot(52, 12, false);
+  for (let i = 0; i < p.wing; i++) { const x = 60 - i * 14 - (p.mid ? 8 : 0); dot(x + (p.ech ? 3 : 0), 6.5, false); dot(x - (p.ech ? 3 : 0), 17.5, false); }
+  return svg;
+}
+function applyPreset(p) {
+  const b = bats[active];
+  // the preset's positions replace this battery's; other batteries keep theirs
+  Object.assign(b, {fore: p.fore, aft: p.aft, mid: p.mid, wing: p.wing, ech: !!p.ech, cross: !!p.cross});
+  b.sfF = null; b.sfA = null;
+  if (p.sfF != null) setRun('fore', insertPos('fore', active) - b.fore + p.sfF);
+  if (p.sfA != null) setRun('aft', insertPos('aft', active) - b.aft + p.sfA);
+  sel = null; render();
+}
+
+// ------------------------------------------------------------------ tooltip
+function tip(ev, html) {
+  const t = $('tip'), app = $('app').getBoundingClientRect();
+  t.innerHTML = html; t.style.display = 'block';
+  const x = ev.clientX - app.left + 14, y = ev.clientY - app.top + 16;
+  t.style.left = Math.min(x, 1280 - 290) + 'px'; t.style.top = Math.min(y, 560) + 'px';
+}
+function untip() { $('tip').style.display = 'none'; }
+
+function render() {
+  table();
+  const below = $('below');
+  below.replaceChildren();
+  const holder = h('div', {style: 'position:absolute;left:0;top:6px;width:1280px;height:460px'});
+  arrangement(holder);
+  rose(holder);
+  lower(holder);
+  below.append(holder);
+  if (!$('hint')) {
+    document.querySelector('.pane').append(h('div', {class: 'hint', id: 'hint'},
+      h('span', {}, h('span', {class: 'kbd'}, '+'), 'slot adds the selected battery\'s turret'),
+      h('span', {}, h('span', {class: 'kbd'}, '▲'), 'between turrets: superfire / on the deck'),
+      h('span', {}, h('span', {class: 'kbd'}, 'wheel'), 'over an end or the waist adds / removes'),
+      h('span', {}, h('span', {class: 'kbd'}, 'Shift'), '+ click: add on the deck'),
+      h('span', {}, h('span', {class: 'kbd'}, 'Del'), 'removes the selected turret'),
+      h('span', {}, h('span', {class: 'kbd'}, 'RMB'), 'battery · move · split')));
+  }
+}
+document.addEventListener('keydown', ev => { if (ev.key === 'Delete') removeSel(); if (ev.key === 'Escape') { sel = null; hideMenu(); render(); } });
+document.addEventListener('click', ev => { if (!ev.target.closest('#menu') && !ev.target.closest('.act')) hideMenu(); });
+tabs();
+// scripted states for screenshots: ?ship=..&do=addX|...
+for (const step of (params.get('do') || '').split(',').filter(Boolean)) {
+  if (step === 'addAft') addEnd('aft', active, false);
+  if (step === 'addFore') addEnd('fore', active, false);
+  if (step.startsWith('sel')) { const [g, i] = step.slice(3).split(':'); sel = {grp: g, idx: +i, k: active}; }
+  if (step === 'echelon') bats[active].ech = true;
+}
+render();
+if (params.get('hover') === 'ghostAft') setTimeout(() => {
+  const g = [...document.querySelectorAll('.ghost')][1];
+  const r = g.getBoundingClientRect();
+  g.dispatchEvent(new MouseEvent('mouseenter', {clientX: r.left + r.width / 2, clientY: r.top + r.height / 2}));
+}, 50);
+if (params.get('menu')) setTimeout(() => {
+  const g = [...document.querySelectorAll('.chip')][+params.get('menu')];
+  const r = g.getBoundingClientRect();
+  g.dispatchEvent(new MouseEvent('contextmenu', {clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true}));
+}, 50);
+</script>
+</body>
+</html>
