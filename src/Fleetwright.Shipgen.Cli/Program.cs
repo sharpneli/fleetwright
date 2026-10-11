@@ -53,6 +53,10 @@ public static class Program
             toss shells at each design's citadel from every bearing, falling 0-50 degrees, and flag any that reach a
             citadel cell through neither armour nor water (exit 1 if any do); --gratings closes the uptakes'
             openings in the armour decks
+        shipgen mono-check [DESIGN...] [--steps 4] [--jobs N] [--show 10]
+            sweep the designer's trim levers (belt, speed, AA, ...) STEPS steps either way of each design's value and
+            build each step: list the reversals (more of a weight-adding input, a lighter ship) and lumps (a step far
+            bigger than its neighbours). DESIGN is a path or a shipped design's name; default a spread of types
         shipgen svg-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
             every case's SVGs against golden/svg (Python's drawing with the port's RNG)
         shipgen sprite-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
@@ -84,6 +88,7 @@ public static class Program
                 "fuzz-one" => FuzzOne(a),
                 "verify" => VerifyCmd(a),
                 "shell-test" => ShellTestCmd(a),
+                "mono-check" => MonoCheck(a),
                 "bake" => BakeCmd(a),
                 "png-check" => PngCheck(a),
                 "svg-check" => Check(a, RenderGolden.CheckSvgs),
@@ -644,6 +649,46 @@ public static class Program
         }
         Console.WriteLine(worst > 0.85 ? "\nALL OK" : "\nSOME MISMATCH");
         return worst > 0.85 ? 0 : 1;
+    }
+
+    static readonly string[] MonoDefault =
+    [
+        "bismarck", "yamato", "dreadnought", "kongo", "heavy_cruiser", "light_cruiser", "destroyer", "fubuki", "nelson",
+        "dunkerque", "armoured_cruiser", "mikasa", "fleet_carrier", "pt_boat", "tanker",
+    ];
+
+    static int MonoCheck(Args a)
+    {
+        string root = Root(a);
+        int steps = a.Int("steps", 4), show = a.Int("show", 10);
+        var names = a.Positional.Count > 0 ? a.Positional : [.. MonoDefault];
+        var designs = names.Select(n => (Name: Path.GetFileNameWithoutExtension(n),
+            Design: LoadDesign(File.Exists(n) ? n : Path.Combine(root, "designs", n + ".json")))).ToList();
+        var work = designs.SelectMany(d => Monotone.Levers.Select(l => (d.Name, d.Design, Lever: l))).ToList();
+        var sweeps = new List<Monotone.Sweep>?[work.Count];
+        var sw = Stopwatch.StartNew();
+        Parallel.For(0, work.Count, new ParallelOptions { MaxDegreeOfParallelism = a.Int("jobs", Environment.ProcessorCount) },
+            i => sweeps[i] = Monotone.Check(work[i].Name, work[i].Design, steps, [work[i].Lever]));
+        var all = sweeps.SelectMany(s => s!).ToList();
+        int builds = all.Sum(s => s.Steps.Count), nRev = all.Sum(s => s.Reversals.Count), nLump = all.Sum(s => s.Lumps.Count);
+        int shown = 0;
+        foreach (var s in all.Where(s => s.Reversals.Count + s.Lumps.Count > 0))
+        {
+            if (shown++ >= show)
+                break;
+            Console.WriteLine($"{s.Design} {s.Lever}:");
+            foreach (var st in s.Steps)
+            {
+                int i = s.Steps.IndexOf(st);
+                string mark = s.Reversals.Contains(i) ? "  <- reversal" : s.Lumps.Contains(i) ? "  <- lump" : "";
+                long dt = i > 0 ? st.StdT - s.Steps[i - 1].StdT : 0;
+                Console.WriteLine($"  {st.Value,8} {st.StdT,8} t {dt,+7} L {st.LengthM,6:F1} B {st.BeamM,5:F2}{(st.Valid ? "" : " invalid")}{mark}");
+            }
+        }
+        foreach (var g in all.GroupBy(s => s.Lever))
+            Console.WriteLine($"{g.Key,-14} {g.Sum(s => s.Reversals.Count),3} reversals {g.Sum(s => s.Lumps.Count),3} lumps");
+        Console.WriteLine($"{nRev} reversals, {nLump} lumps over {all.Count} sweeps ({builds} builds, {sw.Elapsed.TotalSeconds:F0} s)");
+        return nRev + nLump > 0 ? 1 : 0;
     }
 
     static int ShellTestCmd(Args a)
