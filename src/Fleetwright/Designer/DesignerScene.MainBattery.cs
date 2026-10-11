@@ -40,7 +40,9 @@ public sealed unsafe partial class DesignerScene
         NumRow Rounds, ChoiceRow Material, string Tonnes);
 
     /// <summary>A turret (or a + slot) on the schematic, in its 940 × 280 units: bow right, starboard down.</summary>
-    sealed record Chip(MainArrangement.Slot Slot, float X, float Y, float R, int Barrels, float Face, string Tag, int Tier, string Tip, bool Ghost);
+    /// A + slot's InsertX: where between the turrets the new one actually goes, when that isn't the slot itself (NaN).
+    sealed record Chip(MainArrangement.Slot Slot, float X, float Y, float R, int Barrels, float Face, string Tag, int Tier, string Tip, bool Ghost,
+        float InsertX = float.NaN);
 
     /// <summary>The step between an end's (J-1)-th and J-th turrets.</summary>
     sealed record StepLink(G End, int J, float X, float Y, bool On, string Tip);
@@ -53,7 +55,8 @@ public sealed unsafe partial class DesignerScene
         (string Label, string Value, string Note)[] RoseText, Selected? Sel, bool HasMid, bool HasWing, bool Raised, bool TakesList,
         string ActiveNote);
 
-    const float SchW = 940, SchH = 280, SchCy = 136, SchBow = 858, SchStern = 82, WingDy = 62, EchelonDx = 26;
+    // GhostR: the + slots' size, whatever the active battery, so picking another battery moves nothing
+    const float SchW = 940, SchH = 280, SchCy = 136, SchBow = 858, SchStern = 82, WingDy = 62, EchelonDx = 26, GhostR = 18;
 
     static float ChipR(BatteryInput b) => 9 + (float)(b.CalibreMm ?? 152) / 38 + ((b.Barrels ?? 1) - 1) * 1.6f;
 
@@ -110,36 +113,25 @@ public sealed unsafe partial class DesignerScene
         foreach (var end in new[] { G.Fore, G.Aft })
         {
             var (order, run) = MainArrangement.End(d, end);
-            int ins = any ? MainArrangement.InsertAt(d, mainActive, end) : -1;
-            bool ghostStepped = any && MainArrangement.AddsStepped(d, mainActive, end, flush: false);
-            int n = order.Count + (any ? 1 : 0);
             float dir = end == G.Fore ? -1 : 1, x = end == G.Fore ? SchBow : SchStern, prevR = 0;
             string letters = end == G.Fore ? "ABC" : "YXW";
+            int first = chips.Count;
             Chip? prev = null;
-            for (int j = 0, idx = 0; j < n; j++)
+            // the turrets as the design has them; the layout depends on nothing else
+            for (int idx = 0; idx < order.Count; idx++)
             {
-                bool ghost = j == ins;
-                int k = ghost ? mainActive : order[idx];
+                int k = order[idx];
                 var b = mains[k];
                 float r = ChipR(b);
-                if (j > 0)
+                if (idx > 0)
                     x += dir * (prevR + r + 38);
                 prevR = r;
-                string name = Layout.TurretName(letters, j);
-                if (ghost)
-                {
-                    string where = ghostStepped ? ", superfiring" : j > 0 ? ", on the deck" : "";
-                    string why = ins < order.Count ? $"\nIt goes after battery {Letter(k)}'s own turrets: battery order sets who is outboard." : "";
-                    chips.Add(new Chip(new MainArrangement.Slot(k, end, -1, name, 0, false, 0), x, SchCy, r, b.Barrels ?? 1, end == G.Fore ? 0 : 180, "",
-                        0, $"+ {name}{where}\nbattery {Letter(k)} · {Gun(b)}{why}\nShift+click: on the deck instead", true));
-                    prev = null;
-                    continue;
-                }
+                string name = Layout.TurretName(letters, idx);
                 var slot = slots.First(s => s.Group == end && s.Index == idx);
-                bool first = idx == 0 || order[idx - 1] != k || prev == null;
+                bool firstOfBattery = idx == 0 || order[idx - 1] != k;
                 string place = slot.Tier > 0 ? $"tier {slot.Tier}: fires over the turret{(slot.Tier > 1 ? "s" : "")} outboard of it"
                     : slot.Blocked ? "on the deck behind another turret: no arc over it" : "on the deck, outermost";
-                var chip = new Chip(slot, x, SchCy, r, b.Barrels ?? 1, end == G.Fore ? 0 : 180, first ? $"{Letter(k)} {Gun(b)}" : "", slot.Tier,
+                var chip = new Chip(slot, x, SchCy, r, b.Barrels ?? 1, end == G.Fore ? 0 : 180, firstOfBattery ? $"{Letter(k)} {Gun(b)}" : "", slot.Tier,
                     $"{name} · battery {Letter(k)} · {Gun(b)}\n{place}\nclick selects · right-click: battery, move, remove · Del removes", false);
                 if (prev != null)
                 {
@@ -152,8 +144,21 @@ public sealed unsafe partial class DesignerScene
                 }
                 chips.Add(chip);
                 prev = chip;
-                idx++;
             }
+            // the + slot, inboard of them all; when the active battery's turret goes further out (battery order), hovering
+            // it marks the gap it goes into
+            if (!any)
+                continue;
+            int ins = MainArrangement.InsertAt(d, mainActive, end);
+            bool stepped = MainArrangement.AddsStepped(d, mainActive, end, flush: false);
+            float gx = order.Count == 0 ? x : x + dir * (prevR + GhostR + 38);
+            float insertX = ins >= order.Count ? float.NaN : chips[first + ins].X - dir * (chips[first + ins].R + 19);
+            var ab = mains[mainActive];
+            string gname = Layout.TurretName(letters, ins);
+            string where = stepped ? ", superfiring" : ins > 0 ? ", on the deck" : "";
+            string why = ins < order.Count ? $"\nIt goes after battery {Letter(mainActive)}'s own turrets (marked): battery order sets who is outboard." : "";
+            chips.Add(new Chip(new MainArrangement.Slot(mainActive, end, -1, gname, 0, false, 0), gx, SchCy, GhostR, ab.Barrels ?? 1, end == G.Fore ? 0 : 180,
+                "", 0, $"+ {gname}{where}\nbattery {Letter(mainActive)} · {Gun(ab)}{why}\nShift+click: on the deck instead", true, insertX));
         }
         float foreIn = chips.Where(c => c.Slot.Group == G.Fore).Select(c => c.X - c.R).DefaultIfEmpty(SchBow).Min();
         float aftIn = chips.Where(c => c.Slot.Group == G.Aft).Select(c => c.X + c.R).DefaultIfEmpty(SchStern).Max();
@@ -167,7 +172,7 @@ public sealed unsafe partial class DesignerScene
             if (i == waist.Count)
             {
                 var b = mains[mainActive];
-                float r = ChipR(b);
+                float r = GhostR;
                 if (style.HasMidshipsTurrets)
                     chips.Add(new Chip(new MainArrangement.Slot(mainActive, G.Mid, -1, "Q", 0, false, 0), x, SchCy, r, b.Barrels ?? 1, 0, "", 0,
                         $"+ a midships turret\nbattery {Letter(mainActive)} · {Gun(b)}", true));
@@ -589,7 +594,15 @@ public sealed unsafe partial class DesignerScene
                     AddTurret(d, ch.Slot, io.KeyShift);
                 DashedCircle(dl, c, r, T.U32(col with { W = hover ? 1 : 0.8f }));
                 if (hover)
+                {
                     dl.AddCircleFilled(c, r - 1, T.U32(col with { W = 0.15f }));
+                    if (!float.IsNaN(ch.InsertX))
+                    {
+                        var m = Px(ch.InsertX, ch.Y);
+                        dl.AddLine(m - new Vector2(0, 26 * sc), m + new Vector2(0, 26 * sc), T.U32(col), P(2));
+                        dl.AddTriangleFilled(m - new Vector2(5, 32) * sc, m - new Vector2(-5, 32) * sc, m - new Vector2(0, 24) * sc, T.U32(col));
+                    }
+                }
                 float t = P(5);
                 dl.AddLine(c - new Vector2(t, 0), c + new Vector2(t, 0), T.U32(col), P(1.5f));
                 dl.AddLine(c - new Vector2(0, t), c + new Vector2(0, t), T.U32(col), P(1.5f));
