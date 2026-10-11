@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Secondary, AA and torpedoes</title>
+<link rel="stylesheet" href="assets/fonts/dense-fonts.css">
+<style>
+:root{
+  --ground:#0E1215;--panel:#1C2329;--panel2:#20282F;--inset:#11161A;--line:#20292F;--edge:#090C0E;--bevel:#2C3640;
+  --tt:#36434F;--tb:#27313A;--hd:#161C21;--text:#C9D3DB;--bright:#EAF0F4;--muted:#7F8B95;--brass:#D9B868;
+  --brassd:#5A4A24;--ok:#86C77E;--amber:#E3A452;--blue:#5B9BE0;--plan:#14243A;--planline:#9CC2E2;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--text);font-family:'Archivo Narrow',sans-serif;font-size:12px;user-select:none}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:'IBM Plex Mono',monospace}
+.dim{color:var(--muted)}.gold{color:var(--brass)}.amb{color:var(--amber)}.okc{color:var(--ok)}
+#app{position:relative;width:1280px;height:600px;margin:0;overflow:hidden}
+.tabs{position:absolute;left:4px;top:0;height:22px;display:flex;gap:2px;align-items:flex-end}
+.tab{height:20px;padding:0 9px 0 5px;border:1px solid var(--edge);border-bottom:none;background:linear-gradient(#2A333C,#20282F);color:var(--muted);font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:5px}
+.tab.on{height:22px;background:linear-gradient(var(--tt),var(--panel));color:var(--brass)}
+.tab .k{border:1px solid #4A5764;border-radius:2px;font-size:9.5px;line-height:11px;padding:0 3px}
+.tab.on .k{border-color:var(--brass)}
+.pane{position:absolute;left:0;top:22px;width:1280px;height:578px;background:var(--panel);border:1px solid var(--edge);box-shadow:inset 0 1px 0 var(--tt)}
+.sub{height:18px;display:flex;align-items:center;gap:8px;padding:0 6px;background:var(--hd);border-bottom:1px solid var(--edge);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.sub b{margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0}
+.sub .n{text-transform:none;letter-spacing:0}
+/* battery table */
+.bt{height:143px;overflow:hidden;grid-auto-rows:min-content;align-content:start;display:grid;grid-template-columns:34px 46px 104px 92px 104px minmax(0,1fr) 92px 46px 38px 104px 118px 112px 46px 44px;align-items:center}
+.bt>div{height:21px;display:flex;align-items:center;padding:0 4px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden}
+.bt .h{height:17px;background:var(--hd);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--edge)}
+.bt .r{cursor:pointer}
+.bt .r.sel{background:rgba(217,184,104,0.10)}
+.bt .r.first.sel{box-shadow:inset 3px 0 0 var(--brass)}
+.bt .r.hov{background:rgba(255,255,255,0.04)}
+.bt .r.sel.hov{background:rgba(217,184,104,0.14)}
+.right{justify-content:flex-end}
+.sp{display:inline-flex;align-items:center;height:16px;border:1px solid #0A0D10;background:var(--inset)}
+.sp button{width:14px;height:14px;border:none;padding:0;background:linear-gradient(#3A4651,#2A333C);color:#C9D3DB;font-size:8px;line-height:14px}
+.sp button:hover{background:linear-gradient(#4E5D6B,#38434E);color:#FFF}
+.sp span{min-width:58px;text-align:right;padding:0 4px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--bright)}
+.sp.s span{min-width:30px}
+.sp.auto span{color:var(--muted)}
+.seg{display:inline-flex;border:1px solid #0A0D10}
+.seg button{height:16px;min-width:20px;padding:0 5px;border:none;border-right:1px solid #0A0D10;background:linear-gradient(#2E3842,#232B33);color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace}
+.seg button:last-child{border-right:none}
+.seg button.on{background:linear-gradient(#6B5A30,#4A3E20);color:#FFE7A8}
+.seg button:hover:not(.on):not(:disabled){color:var(--bright)}
+.seg button:disabled{color:#3E4A54;cursor:default}
+.seg.w button{font-family:'Archivo Narrow',sans-serif;font-size:11px}
+.sw{width:9px;height:9px;display:inline-block;margin-right:6px;border:1px solid rgba(0,0,0,0.5)}
+.ico{border:none;background:none;color:var(--muted);padding:0 3px;font-size:12px}
+.ico:hover{color:var(--bright)}
+.dd{height:16px;display:inline-flex;align-items:center;gap:6px;padding:0 5px;border:1px solid #0A0D10;background:var(--inset);color:var(--text);font-size:11.5px;width:104px;justify-content:space-between}
+.act{height:17px;padding:0 8px;border:1px solid #0A0D10;background:linear-gradient(#2E3842,#232B33);color:var(--text);font-size:11.5px}
+.act:hover{color:var(--bright);background:linear-gradient(#3A4651,#2A333C)}
+.fit{font-family:'IBM Plex Mono',monospace;font-size:11.5px}
+.fit.short{color:var(--amber)}
+/* lower area */
+.box{position:absolute;border:1px solid var(--edge);background:var(--panel2)}
+#strip{left:6px;top:0;width:944px;height:230px;background:var(--plan);
+  background-image:linear-gradient(rgba(150,190,230,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(150,190,230,0.05) 1px,transparent 1px);background-size:24px 24px}
+#rose{left:958px;top:0;width:314px;height:230px}
+.kv{display:grid;grid-template-columns:1fr auto auto;gap:0 10px;padding:1px 8px;font-size:11.5px}
+.kv span:nth-child(3n+2),.kv span:nth-child(3n){font-family:'IBM Plex Mono',monospace;text-align:right}
+.rows{padding:3px 8px;display:grid;grid-template-columns:86px auto 1fr;gap:3px 8px;align-items:center;font-size:11.5px}
+.rows .v{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ask{border:1px dashed #55606A;padding:2px 6px;margin:3px 8px 0;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.ask .tg{font-size:9.5px;letter-spacing:0.05em;text-transform:uppercase;color:#8C7B55;border:1px solid #5A4A24;padding:0 3px;margin-left:auto}
+.foot{position:absolute;left:0;bottom:0;width:100%;height:19px;display:flex;align-items:center;gap:10px;padding:0 8px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+.foot a{color:var(--brass);text-decoration:none;cursor:pointer}
+.insp{padding:3px 8px;line-height:1.5;font-size:11.5px}
+.insp .t{font-weight:700;color:var(--bright);font-size:13px}
+.insp .l{display:grid;grid-template-columns:78px 1fr;gap:0 8px}
+.insp .l span:nth-child(odd){color:var(--muted)}
+.hint{position:absolute;left:0;bottom:0;width:100%;height:18px;display:flex;gap:14px;align-items:center;padding:0 8px;background:var(--hd);border-top:1px solid var(--edge);color:var(--muted);font-size:11px}
+.kbd{display:inline-block;padding:0 3px;border:1px solid #4A5764;border-bottom-width:2px;border-radius:2px;font-size:9.5px;line-height:11px;color:#AEB9C3;font-family:'IBM Plex Mono',monospace;margin-right:3px}
+#tip{position:absolute;pointer-events:none;display:none;max-width:300px;padding:5px 7px;background:#0F1418;border:1px solid #4A5764;color:var(--text);font-size:11.5px;line-height:1.35;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,0.6)}
+#tip b{color:var(--brass)}
+#tip .a{color:var(--amber)}
+#menu{position:absolute;display:none;min-width:190px;background:#161C21;border:1px solid #4A5764;z-index:11;padding:2px 0;box-shadow:0 2px 10px rgba(0,0,0,0.6)}
+#menu div{padding:2px 10px;font-size:11.5px;display:flex;justify-content:space-between;gap:16px;cursor:pointer}
+#menu div:hover{background:rgba(217,184,104,0.15);color:var(--bright)}
+#menu div.off{color:#4E5A64;cursor:default}
+#menu div.off:hover{background:none;color:#4E5A64}
+#menu .sep{height:1px;padding:0;margin:2px 0;background:var(--line);cursor:default}
+#menu .lab{color:var(--muted);cursor:default;font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em}
+#menu .lab:hover{background:none;color:var(--muted)}
+svg text{font-family:'IBM Plex Mono',monospace}
+.mnt{cursor:pointer}
+.lane{cursor:copy}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="tabs" id="tabs"></div>
+  <div class="pane">
+    <div class="sub">Secondary batteries <span class="n dim">· the yard places them: deck guns amidships from the middle out, casemates along the side, lower tier first</span>
+      <b>click a row to select it · position is one click</b></div>
+    <div class="bt" id="bt"></div>
+    <div style="position:relative;height:0" id="below"></div>
+  </div>
+  <div id="tip"></div>
+  <div id="menu"></div>
+</div>
+
+<script>
+// ------------------------------------------------------------------ model: the design's secondary BatteryInput list, aa and torpedoes
+// pos maps onto the engine's fields: house = mount deck + stands_on deckhouse, deck = mount deck, upper / lower = mount casemate + tier
+const COLOURS = ['#D98B5F', '#8BC48A', '#B48CD9', '#5FC2C0', '#D9C25F', '#D97A9A'];
+const MATERIALS = ['Krupp cemented', 'Harvey nickel', 'Mild steel'];
+const POS = {house: 'on the deckhouse', deck: 'on the deck', upper: 'casemate, upper tier', lower: 'casemate, lower tier'};
+const SHIPS = {
+  bismarck: {
+    name: 'Bismarck', L: 251, B: 36, F: 6.2, T: 9.9,
+    mains: [{x: 82, lv: 0, r: 6.2, n: 'A'}, {x: 65, lv: 1, r: 6.2, n: 'B'}, {x: -65, lv: 1, r: 6.2, n: 'C'}, {x: -82, lv: 0, r: 6.2, n: 'D'}],
+    blocks: [{x0: -44, x1: 50, lv: 1, w: 0.31}, {x0: 26, x1: 46, lv: 5, w: 0.16}, {x0: -4, x1: 12, lv: 3, w: 0.12}, {x0: -40, x1: -28, lv: 3, w: 0.12}],
+    amid: [-48, 52], cas: [-56, 60], mach: -4,
+    sec: [
+      {cal: 150, len: 55, barrels: 2, pos: 'house', per: 3, shield: 100, rounds: null, mat: 0},
+      {cal: 105, len: 65, barrels: 2, pos: 'house', per: 4, shield: 20, rounds: null, mat: 2},
+    ],
+    aa: {heavy: 0, light: 20, dirs: 2}, tt: {mounts: 0, tubes: 4}, secDirs: 2,
+  },
+  kongo: {
+    name: 'Kongō', L: 215, B: 28, F: 5.6, T: 8.4,
+    mains: [{x: 78, lv: 0, r: 5.4, n: 'A'}, {x: 62, lv: 1, r: 5.4, n: 'B'}, {x: -14, lv: 0, r: 5.4, n: 'C'}, {x: -72, lv: 0, r: 5.4, n: 'D'}],
+    blocks: [{x0: -52, x1: 52, lv: 1, w: 0.3}, {x0: 38, x1: 52, lv: 4, w: 0.16}, {x0: 14, x1: 24, lv: 3, w: 0.12}, {x0: -2, x1: 8, lv: 3, w: 0.12}, {x0: -36, x1: -26, lv: 3, w: 0.12}],
+    amid: [-50, 50], cas: [-60, 54], mach: 2,
+    sec: [
+      {cal: 152, len: 50, barrels: 1, pos: 'lower', per: 8, shield: 152, rounds: null, mat: 0},
+      {cal: 76, len: 40, barrels: 1, pos: 'house', per: 4, shield: 25, rounds: null, mat: 2},
+    ],
+    aa: {heavy: 0, light: 0, dirs: 0}, tt: {mounts: 0, tubes: 4}, secDirs: 0,
+  },
+  babel: {
+    name: 'Tour de Babel', L: 182.5, B: 26, F: 5.8, T: 7.6,
+    mains: [{x: 68, lv: 0, r: 5.6, n: 'A'}, {x: 52, lv: 1, r: 5.0, n: 'B'}, {x: -70, lv: 0, r: 5.0, n: 'Y'}, {x: -14, lv: 0, r: 4.2, n: 'Q'},
+            {x: 18, lv: 0, r: 4.6, n: 'W1', y: 8.5}, {x: -40, lv: 0, r: 4.4, n: 'W2', y: 8.5}],
+    blocks: [{x0: -54, x1: 44, lv: 1, w: 0.28}, {x0: 30, x1: 44, lv: 4, w: 0.15}, {x0: 2, x1: 10, lv: 3, w: 0.11}, {x0: -30, x1: -22, lv: 3, w: 0.11}],
+    amid: [-56, 42], cas: [-58, 46], mach: -6,
+    sec: [
+      {cal: 164.7, len: 45, barrels: 1, pos: 'house', per: 2, shield: 100, rounds: null, mat: 1},
+      {cal: 138.6, len: 45, barrels: 1, pos: 'lower', per: 3, shield: 76, rounds: null, mat: 1},
+      {cal: 100, len: 45, barrels: 1, pos: 'upper', per: 3, shield: 50, rounds: null, mat: 1},
+      {cal: 65, len: 50, barrels: 1, pos: 'house', per: 3, shield: 0, rounds: null, mat: 2},
+      {cal: 47, len: 40, barrels: 1, pos: 'house', per: 4, shield: 0, rounds: null, mat: 2},
+    ],
+    aa: {heavy: 0, light: 0, dirs: 0}, tt: {mounts: 0, tubes: 4}, secDirs: 0,
+  },
+  deutschland: {
+    name: 'Deutschland', L: 186, B: 21.6, F: 5.0, T: 7.2,
+    mains: [{x: 54, lv: 0, r: 5.6, n: 'A'}, {x: -54, lv: 0, r: 5.6, n: 'Y'}],
+    blocks: [{x0: -40, x1: 38, lv: 1, w: 0.3}, {x0: 18, x1: 32, lv: 5, w: 0.16}, {x0: -2, x1: 8, lv: 3, w: 0.13}, {x0: -34, x1: -26, lv: 3, w: 0.12}],
+    amid: [-42, 40], cas: [-44, 44], mach: -8,
+    sec: [{cal: 150, len: 55, barrels: 1, pos: 'house', per: 4, shield: 25, rounds: null, mat: 0}],
+    aa: {heavy: 0, light: 4, dirs: 1}, tt: {mounts: 2, tubes: 4}, secDirs: 1,
+  },
+};
+const params = new URLSearchParams(location.search);
+const ship = SHIPS[params.get('ship')] || SHIPS.bismarck;
+let bats = structuredClone(ship.sec);
+let aa = structuredClone(ship.aa), tt = structuredClone(ship.tt);
+let active = +(params.get('active') || 0);
+let sel = null;            // selected mount pair: {k, i}
+let hot = null;            // hovered: {k} battery, or 'aa' / 'tt'
+let roseAll = false;       // rose shows the main battery too
+const LEVEL = 2.4;         // Layout.LevelH
+const prefix = k => k === 0 ? 'S' : 'S' + String.fromCharCode(65 + k);
+
+// ------------------------------------------------------------------ the engine's numbers (Batteries.cs), so the t column is close
+const GunTube = (cal, len) => 1.9e-6 * cal ** 3 * (len / 50);
+function roundsCurve(cal) {
+  const P = [[127, 350], [152, 200], [203, 100]];
+  if (cal <= P[0][0]) return P[0][1];
+  for (let i = 0; i < P.length - 1; i++) {
+    const [c0, r0] = P[i], [c1, r1] = P[i + 1];
+    if (cal <= c1) return r0 * Math.pow(r1 / r0, Math.log(cal / c0) / Math.log(c1 / c0));
+  }
+  return P[P.length - 1][1];
+}
+const rounds = b => b.rounds ?? Math.round(roundsCurve(b.cal) / 10) * 10;
+const mountR = b => b.pos === 'upper' || b.pos === 'lower' ? 0.9 + b.cal * 0.0075 : 1.0 + b.cal * 0.012 + (b.barrels - 1) * 0.55;
+const houseKind = b => b.pos === 'upper' || b.pos === 'lower' ? 'casemate' : b.cal >= 150 ? 'turret, on a barbette' : b.cal >= 76 ? 'shielded mount' : 'open mount';
+function mountT(b) {
+  const guns = b.barrels * GunTube(b.cal, b.len);
+  const mech = 2.2 * guns + 4 * Math.min(1, (b.cal / 76) ** 3);
+  const r = mountR(b), th = 0.42 * r;
+  const area = 2 * Math.PI * 0.9 * r * th + 0.85 * Math.PI * r * r;
+  return guns + mech + area * 0.65 * b.shield / 1000 * 7.85;
+}
+const ammoT = b => b.barrels * rounds(b) * 1.83e-5 * b.cal ** 3 / 1000 * 1.6;
+const AA = {heavy: {t: 15, roof: 3, barrels: 4, name: 'quad 40 mm', r: 2.0}, light: {t: 1, roof: 0.3, barrels: 1, name: 'single 20 mm', r: 0.75}};
+const ttT = () => tt.mounts * (5 + tt.tubes * 4.6);
+
+// ------------------------------------------------------------------ placement: a stand-in for the layout (the game shows the built ship)
+// deck and deckhouse batteries share the amidships stretch (the first battery spread evenly from the middle, the rest
+// nearest the middle that is free); casemates take the hull side clear of barbettes, lower tier first
+function place() {
+  const out = bats.map(() => ({xs: [], want: 0}));
+  const c = (ship.amid[0] + ship.amid[1]) / 2;
+  const taken = [];          // {x, pitch} on the deck pool
+  let first = true;
+  bats.forEach((b, k) => {
+    out[k].want = b.per;
+    if (b.pos !== 'house' && b.pos !== 'deck') return;
+    const r = mountR(b), pitch = 2.1 * r + 1.0;
+    const lo = ship.amid[0] + r + 0.5, hi = ship.amid[1] - r - 0.5;
+    const free = x => taken.every(t => Math.abs(x - t.x) >= (pitch + t.pitch) / 2) &&
+      ship.mains.every(m => Math.abs(x - m.x) >= m.r + r + 1.5);
+    let xs = [];
+    if (first && b.per > 0) {
+      const step = Math.min((hi - lo) / Math.max(b.per - 1, 1), 2.2 * r + 4);
+      xs = Array.from({length: b.per}, (_, i) => b.per > 1 ? c + (i - (b.per - 1) / 2) * step : c);
+      if (!xs.every(free)) xs = [];
+    }
+    if (!xs.length) {
+      const spots = [];
+      for (let x = lo; x <= hi; x += 0.5) spots.push(x);
+      spots.sort((a, z) => Math.abs(a - c) - Math.abs(z - c));
+      for (const x of spots) {
+        if (xs.length >= b.per) break;
+        if (free(x) && xs.every(o => Math.abs(x - o) >= pitch)) xs.push(x);
+      }
+    }
+    xs.sort((a, z) => a - z);
+    xs.forEach(x => taken.push({x, pitch}));
+    out[k].xs = xs;
+    first = false;
+  });
+  for (const tier of ['lower', 'upper']) {
+    const used = [];
+    bats.forEach((b, k) => {
+      if (b.pos !== tier) return;
+      const r = mountR(b), pitch = 2.3 * r + 1.2;
+      const spots = [];
+      for (let x = ship.cas[0] + r; x <= ship.cas[1] - r; x += 0.5) spots.push(x);
+      spots.sort((a, z) => Math.abs(a - ship.mach) - Math.abs(z - ship.mach));
+      const xs = [];
+      for (const x of spots) {
+        if (xs.length >= b.per) break;
+        const clear = ship.mains.every(m => m.y || Math.abs(x - m.x) >= m.r * 0.8 + r + 0.6);
+        if (clear && used.concat(xs.map(x => ({x, pitch}))).every(u => Math.abs(x - u.x) >= (pitch + u.pitch) / 2)) xs.push(x);
+      }
+      xs.sort((a, z) => a - z);
+      xs.forEach(x => used.push({x, pitch}));
+      out[k].xs = xs;
+    });
+  }
+  return out;
+}
+function placeAa(sec) {
+  // roofs of the deckhouse and the levels above it first (pairs), then the deck edge; nearest the machinery first
+  const res = {heavy: [], light: []};
+  const busy = [];
+  sec.forEach((p, k) => p.xs.forEach(x => busy.push({x, y: lanesY(bats[k]), r: mountR(bats[k]) + 0.8})));
+  ship.mains.forEach(m => busy.push({x: m.x, y: m.y || 0, r: m.r + 2}));
+  const spots = [];
+  for (const bl of ship.blocks) for (let x = bl.x0 + 2; x <= bl.x1 - 2; x += 0.5) spots.push({x, y: bl.w * ship.B * 0.8, roof: bl.lv, pen: bl.lv > 3 ? 0.2 : 0});
+  for (let x = ship.L / 2 - 0.06 * ship.L; x > -ship.L / 2 + 2; x -= 0.5) spots.push({x, y: halfB(x) - 1.4, roof: 0, pen: 0.25});
+  spots.sort((a, z) => (Math.abs(a.x - ship.mach) / ship.L + a.pen) - (Math.abs(z.x - ship.mach) / ship.L + z.pen));
+  for (const kind of ['heavy', 'light']) {
+    const r = AA[kind].r, sp = kind === 'heavy' ? 3.0 : 2.2;
+    for (const s of spots) {
+      if (res[kind].length >= aa[kind]) break;
+      const fits = busy.every(o => Math.hypot(s.x - o.x, s.y - o.y) >= r + o.r + sp * 0.5);
+      if (!fits) continue;
+      res[kind].push(s);
+      busy.push({x: s.x, y: s.y, r});
+    }
+  }
+  return res;
+}
+function placeTt(sec) {
+  // trainable mounts at the deck edges in pairs near the machinery, else on the centreline
+  const xs = [];
+  if (!tt.mounts) return {edge: [], centre: []};
+  const pairs = Math.ceil(tt.mounts / 2);
+  const busy = sec.flatMap((p, k) => p.xs.map(x => ({x, r: mountR(bats[k]) + 4.5})));
+  for (let d = 0; d < ship.L / 3 && xs.length < pairs; d += 0.5)
+    for (const x of [ship.mach - 14 - d, ship.mach - 14 + d])
+      if (xs.length < pairs && busy.concat(xs.map(x => ({x, r: 4.5}))).every(o => Math.abs(x - o.x) >= o.r)) xs.push(x);
+  return {edge: xs, centre: []};
+}
+const halfB = x => { const u = Math.abs(x) / (ship.L / 2); return ship.B / 2 * (x > 0 ? Math.sqrt(Math.max(0, 1 - Math.pow(Math.max(0, u - 0.35) / 0.65, 2))) : Math.max(0.55, 1 - Math.pow(Math.max(0, u - 0.5) / 0.5, 2) * 0.45)); };
+const lanesY = b => b.pos === 'upper' || b.pos === 'lower' ? ship.B / 2 - 0.9 : 0.62 * ship.B / 2;
+function gunAxis(b) {        // the gun's axis above the full-load waterline, the number the lanes are named by
+  const F = ship.F;
+  return {lower: F - LEVEL / 2, upper: F + LEVEL / 2, deck: F + 1.4, house: F + LEVEL + 1.4}[b.pos];
+}
+
+// ------------------------------------------------------------------ rendering helpers
+const $ = id => document.getElementById(id);
+function h(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (k === 'style') e.style.cssText = v; else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+const NS = 'http://www.w3.org/2000/svg';
+function s(tag, attrs = {}, ...kids) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+function tabs() {
+  const names = ['Overview', 'Main battery', 'Secondary · AA · TT', 'Protection', 'Speed & machinery', 'Hull & upperworks', 'Fire control', 'Crew'];
+  $('tabs').replaceChildren(...names.map((n, i) => h('div', {class: 'tab' + (i === 2 ? ' on' : '')}, h('span', {class: 'k mono'}, String(i)), n)));
+}
+function spinner(val, fmt, step, set, auto, cls = '') {
+  const e = h('span', {class: 'sp ' + cls + (auto ? ' auto' : '')},
+    h('button', {onclick: ev => { ev.stopPropagation(); set(-step); }}, '◀'),
+    h('span', {}, fmt(val)),
+    h('button', {onclick: ev => { ev.stopPropagation(); set(step); }}, '▶'));
+  e.addEventListener('wheel', ev => { ev.preventDefault(); set(ev.deltaY < 0 ? step : -step); });
+  return e;
+}
+function seg(opts, cur, set, cls = '', disabled = () => false, tipOf = null) {
+  return h('span', {class: 'seg ' + cls}, opts.map(([v, lab]) => {
+    const b = h('button', {class: v === cur ? 'on' : '', onclick: ev => { ev.stopPropagation(); if (!disabled(v)) set(v); }}, lab);
+    if (disabled(v)) b.disabled = true;
+    if (tipOf) { b.addEventListener('mousemove', ev => tip(ev, tipOf(v))); b.addEventListener('mouseleave', untip); }
+    return b;
+  }));
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// ------------------------------------------------------------------ 1. the battery table
+let placed = [];
+function table() {
+  const bt = $('bt');
+  bt.replaceChildren();
+  const H = ['', '', 'Calibre', 'Length', 'Guns / mount', '', 'Per side', 'Placed', 'Guns', 'Shields', 'Rounds / gun', 'Material', 't', ''];
+  H.forEach((t, i) => {
+    if (i === 5) {
+      bt.append(h('div', {class: 'h'}, h('span', {style: 'width:88px'}, 'Turret on'), h('span', {style: 'margin-left:4px'}, 'Casemate')));
+      return;
+    }
+    bt.append(h('div', {class: 'h' + (i === 12 || i === 7 || i === 8 ? ' right' : '')}, t));
+  });
+  bats.forEach((b, k) => {
+    const cls = 'r' + (k === active ? ' sel' : '') + (hot && hot.k === k ? ' hov' : '');
+    const cell = (kids, extra = '') => h('div', {class: cls + extra, onclick: () => { active = k; sel = null; render(); },
+      onmouseenter: () => { hot = {k}; paintHot(); }, onmouseleave: () => { hot = null; paintHot(); }, 'data-k': k}, kids);
+    const p = placed[k];
+    const casemate = b.pos === 'upper' || b.pos === 'lower';
+    bt.append(
+      cell([h('button', {class: 'ico', onclick: ev => { ev.stopPropagation(); move(k, -1); }}, '▴'), h('button', {class: 'ico', onclick: ev => { ev.stopPropagation(); move(k, 1); }}, '▾')], ' first'),
+      cell([h('span', {class: 'sw', style: `background:${COLOURS[k % COLOURS.length]}`}), h('b', {class: 'mono', style: 'color:var(--bright)'}, prefix(k))]),
+      cell(spinner(b.cal, v => `${+v.toFixed(1)} mm`, 5, d => { b.cal = clamp(b.cal + d, 20, 400); render(); })),
+      cell(spinner(b.len, v => `${v} cal`, 1, d => { b.len = clamp(b.len + d, 20, 80); render(); })),
+      cell(seg([[1, '1'], [2, '2'], [3, '3'], [4, '4']], b.barrels, v => { b.barrels = v; render(); })),
+      cell([
+        seg([['house', 'deckhouse'], ['deck', 'deck']], b.pos, v => { b.pos = v; render(); }, 'w', () => false, v => posTip(b, v)),
+        h('span', {style: 'width:4px'}),
+        seg([['upper', 'upper'], ['lower', 'lower']], b.pos, v => { b.pos = v; render(); }, 'w', () => false, v => posTip(b, v)),
+        h('span', {class: 'dim mono', style: 'margin-left:8px;font-size:10.5px'}, `${gunAxis(b).toFixed(1)} m`),
+      ]),
+      cell(spinner(b.per, v => String(v), 1, d => { b.per = clamp(b.per + d, 0, 30); render(); }, false, 's')),
+      cell(h('span', {class: 'fit' + (p.xs.length < b.per ? ' short' : ' dim'),
+        onmousemove: ev => p.xs.length < b.per && tip(ev, shortTip(k)), onmouseleave: untip}, `${p.xs.length}/${b.per}`), ' right'),
+      cell(h('span', {class: 'mono', style: 'color:var(--bright)'}, String(2 * p.xs.length * b.barrels)), ' right'),
+      cell(spinner(b.shield, v => `${v} mm`, 5, d => { b.shield = clamp(b.shield + d, 0, 400); render(); })),
+      cell([spinner(rounds(b), v => String(v), 10, d => { b.rounds = clamp(rounds(b) + d, 0, 1000); render(); }, b.rounds == null),
+        h('span', {class: 'dim', style: 'margin-left:5px;font-size:10.5px;cursor:pointer', onclick: ev => { ev.stopPropagation(); b.rounds = null; render(); }}, b.rounds == null ? 'auto' : '↺')]),
+      cell(h('span', {class: 'dd'}, MATERIALS[b.mat], h('span', {class: 'dim'}, '▾'))),
+      cell(h('span', {class: 'mono dim'}, String(Math.round(2 * p.xs.length * (mountT(b) + ammoT(b))))), ' right'),
+      cell([h('button', {class: 'ico', title: 'duplicate', onclick: ev => { ev.stopPropagation(); dup(k); }}, '⧉'),
+        h('button', {class: 'ico', title: 'remove', onclick: ev => { ev.stopPropagation(); bats.splice(k, 1); active = Math.min(active, bats.length - 1); sel = null; render(); }}, '✕')]),
+    );
+  });
+  const add = h('div', {style: 'grid-column:1 / -1;border-bottom:none;gap:8px'},
+    h('button', {class: 'act', style: 'margin-left:30px', onclick: () => { bats.push({cal: 102, len: 45, barrels: 1, pos: 'house', per: 2, shield: 25, rounds: null, mat: 2}); active = bats.length - 1; render(); }}, '+ Battery'),
+    h('span', {class: 'dim'}, 'or click a lane’s + in the strip below to start a battery there with the selected gun'));
+  bt.append(add);
+}
+function posTip(b, v) {
+  const g = {...b, pos: v};
+  const w = {house: 'Deck mount raised onto the deckhouse: clear of the main turrets’ blast, better arcs, more top weight.',
+    deck: 'Deck mount on the main deck, beside the deckhouse. Low and dry enough; shares the amidships stretch with the deckhouse guns.',
+    upper: 'Casemate in a housing on the main deck: drier than the lower tier, single guns, 60° either side of the beam.',
+    lower: 'Casemate in the hull side, half a deck under the main deck: armoured by the side, but low and wet in a seaway.'}[v];
+  return `<b>${POS[v]}</b><br>${w}<br>Gun axis <b>${gunAxis(g).toFixed(1)} m</b> above the full-load waterline · ${houseKind(g)}`;
+}
+function shortTip(k) {
+  const b = bats[k], p = placed[k];
+  const where = b.pos === 'house' || b.pos === 'deck' ? 'amidships, beside the other deck secondaries' : `along the side in the ${b.pos} casemate tier`;
+  return `<span class="a">Only ${p.xs.length} of ${b.per} per side fit</span> ${where}.<br>Fewer or smaller mounts, another position, or a longer hull. The ledger counts only what fits.`;
+}
+function move(k, d) {
+  const j = k + d;
+  if (j < 0 || j >= bats.length) return;
+  [bats[k], bats[j]] = [bats[j], bats[k]];
+  if (active === k) active = j; else if (active === j) active = k;
+  sel = null; render();
+}
+function dup(k) { bats.splice(k + 1, 0, {...structuredClone(bats[k]), per: 1}); active = k + 1; sel = null; render(); }
+
+// ------------------------------------------------------------------ 2. the broadside strip: half-plan over elevation, one x scale
+const SX0 = 104, SX1 = 930, PLAN_CL = 80;
+function sx(x) { return SX0 + (x + ship.L / 2) / ship.L * (SX1 - SX0); }
+function hs() { return (SX1 - SX0) / ship.L; }
+const TRACK = {house: 118, upper: 140, deck: 158, lower: 184};
+const lanePx = b => TRACK[b.pos];
+
+function strip(root) {
+  const box = h('div', {class: 'box', id: 'strip'});
+  box.append(h('div', {class: 'sub', style: 'background:rgba(22,28,33,0.92)'}, 'Broadside',
+    h('span', {class: 'n dim'}, `· starboard half in plan · positions by height below (schematic; the number is the gun axis above the waterline) · ${ship.name}`),
+    h('b', {}, h('span', {class: 'dim'}, 'grey: main battery · '), h('span', {style: 'color:#E9EEF2'}, '● AA'), h('span', {class: 'dim'}, ' · '), h('span', {style: 'color:#9EC7E8'}, '▬ torpedo tubes'))));
+  const svg = s('svg', {width: 942, height: 210, style: 'display:block'});
+  const k1 = hs();
+  const X = sx;
+  // ---- the plan band (starboard half: the centreline is the bottom edge)
+  const yP = y => PLAN_CL - y * k1;
+  let d = '';
+  for (let x = -ship.L / 2; x <= ship.L / 2 + 0.01; x += 2) d += (d ? 'L' : 'M') + X(x).toFixed(1) + ' ' + yP(halfB(x)).toFixed(1);
+  d += `L${X(ship.L / 2)} ${PLAN_CL} L${X(-ship.L / 2)} ${PLAN_CL}Z`;
+  svg.append(s('path', {d, fill: 'rgba(156,194,226,0.07)', stroke: '#9CC2E2', 'stroke-width': 1}));
+  svg.append(s('line', {x1: X(-ship.L / 2) - 6, y1: PLAN_CL, x2: X(ship.L / 2) + 6, y2: PLAN_CL, stroke: '#4E6A84', 'stroke-dasharray': '6 4'}));
+  for (const bl of ship.blocks) svg.append(s('rect', {x: X(bl.x0), y: yP(bl.w * ship.B), width: X(bl.x1) - X(bl.x0), height: bl.w * ship.B * k1, fill: bl.lv > 1 ? '#2B3A4A' : '#223140', stroke: '#3E5266'}));
+  svg.append(s('defs', {}, s('clipPath', {id: 'planclip'}, s('rect', {x: 0, y: 0, width: 942, height: PLAN_CL + 0.5}))));
+  const planG = s('g', {'clip-path': 'url(#planclip)'});
+  svg.append(planG);
+  for (const m of ship.mains) {
+    planG.append(s('circle', {cx: X(m.x), cy: yP(m.y || 0), r: m.r * k1, fill: '#3A4651', stroke: '#56636E'}));
+    svg.append(s('text', {x: X(m.x), y: yP(m.y || 0) - (m.y ? -3 : 3), fill: '#7F8B95', 'font-size': 9, 'text-anchor': 'middle'}, m.n));
+  }
+  // the amidships stretch the deck secondaries share, and the casemate run
+  const brk = (x0, x1, y, lab) => {
+    svg.append(s('path', {d: `M${X(x0)} ${y + 3} L${X(x0)} ${y} L${X(x1)} ${y} L${X(x1)} ${y + 3}`, fill: 'none', stroke: '#4E6A84'}));
+    svg.append(s('text', {x: (X(x0) + X(x1)) / 2, y: y - 2, fill: '#6F8399', 'font-size': 9, 'text-anchor': 'middle'}, lab));
+  };
+  brk(ship.amid[0], ship.amid[1], 10, `amidships ${Math.round(ship.amid[1] - ship.amid[0])} m · deck & deckhouse guns`);
+  // ---- the tracks: a schematic elevation, one track per position in height order; the number is the true gun axis
+  //      height above the full-load waterline. Deck line between the deck and lower-casemate tracks.
+  const DECK = 168, WLY = 198, ROOF = 128;
+  svg.append(s('rect', {x: X(-ship.L / 2), y: DECK, width: X(ship.L / 2) - X(-ship.L / 2), height: WLY - DECK, fill: 'rgba(156,194,226,0.07)', stroke: 'none'}));
+  svg.append(s('line', {x1: X(-ship.L / 2), y1: DECK, x2: X(ship.L / 2), y2: DECK, stroke: '#9CC2E2'}));
+  svg.append(s('line', {x1: X(-ship.L / 2) - 10, y1: WLY, x2: X(ship.L / 2) + 10, y2: WLY, stroke: '#5B9BE0', 'stroke-width': 1.2}));
+  svg.append(s('text', {x: X(ship.L / 2) + 4, y: WLY - 3, fill: '#5B9BE0', 'font-size': 9}, 'WL'));
+  for (const bl of ship.blocks) {
+    const top = bl.lv > 1 ? Math.max(96, ROOF - (bl.lv - 1) * 9) : ROOF;
+    svg.append(s('rect', {x: X(bl.x0), y: top, width: X(bl.x1) - X(bl.x0), height: DECK - top, fill: bl.lv > 1 ? 'rgba(43,58,74,0.45)' : 'rgba(34,49,64,0.7)', stroke: bl.lv > 1 ? '#33475A' : '#3E5266'}));
+  }
+  for (const m of ship.mains) {
+    if (m.y) continue;
+    const w = m.r * k1, z = DECK - m.lv * 12;
+    svg.append(s('path', {d: `M${X(m.x) - w} ${z} L${X(m.x) - w * 0.8} ${z - 17} L${X(m.x) + w * 0.8} ${z - 17} L${X(m.x) + w} ${z}Z`, fill: '#3A4651', stroke: '#56636E'}));
+    if (m.lv) svg.append(s('rect', {x: X(m.x) - w * 0.7, y: z, width: w * 1.4, height: DECK - z, fill: '#2E3842', stroke: '#56636E'}));
+    const dir = m.x > 0 ? 1 : -1;
+    svg.append(s('line', {x1: X(m.x) + dir * w * 0.7, y1: z - 9, x2: X(m.x) + dir * w * 2.1, y2: z - 9.5, stroke: '#56636E', 'stroke-width': 2}));
+  }
+  const lanes = ['house', 'upper', 'deck', 'lower'];
+  for (const pos of lanes) {
+    const y = TRACK[pos];
+    svg.append(s('line', {x1: SX0 - 6, y1: y, x2: SX1, y2: y, stroke: 'rgba(156,194,226,0.13)', 'stroke-dasharray': '2 4'}));
+    const g = s('g', {class: 'lane',
+      onclick: () => laneAdd(pos),
+      onmousemove: ev => tip(ev, laneTip(pos)), onmouseleave: untip});
+    g.append(s('rect', {x: 4, y: y - 7, width: 96, height: 14, fill: 'transparent'}));
+    const here = bats[active] && bats[active].pos === pos;
+    const lc = here ? COLOURS[active % COLOURS.length] : '#56636E';
+    g.append(s('rect', {x: 6, y: y - 5.5, width: 11, height: 11, fill: 'none', stroke: lc, 'stroke-dasharray': '2 1.5'}));
+    g.append(s('text', {x: 11.5, y: y + 3.5, fill: here ? lc : '#7F8B95', 'font-size': 10, 'text-anchor': 'middle'}, '+'));
+    g.append(s('text', {x: 22, y: y + 3.5, fill: '#93A6B0', 'font-size': 9.5}, {house: 'deckhouse', upper: 'casemate ↑', deck: 'deck', lower: 'casemate ↓'}[pos]));
+    g.append(s('text', {x: 99, y: y + 3.5, fill: '#6F8399', 'font-size': 9, 'text-anchor': 'end'}, gunAxis({pos}).toFixed(1)));
+    svg.append(g);
+  }
+  svg.append(s('text', {x: 99, y: 104, fill: '#56636E', 'font-size': 8.5, 'text-anchor': 'end'}, 'axis m'));
+  // ---- AA and torpedo tubes (dim; the panels below own them)
+  const aaP = placeAa(placed), ttP = placeTt(placed);
+  const aaG = s('g', {id: 'aaG', opacity: hot === 'aa' ? 1 : 0.7});
+  for (const kind of ['heavy', 'light']) for (const p of aaP[kind])
+    aaG.append(s('circle', {cx: X(p.x), cy: yP(p.y), r: kind === 'heavy' ? 2.6 : 1.5, fill: '#E9EEF2', stroke: p.roof ? '#14243A' : 'none'}));
+  svg.append(aaG);
+  const ttG = s('g', {id: 'ttG'});
+  for (const x of ttP.edge) {
+    const y = halfB(x) - 1.6;
+    ttG.append(s('rect', {x: X(x) - 3.5 * k1, y: yP(y) - 1.6, width: 7 * k1, height: 3.2, fill: '#9EC7E8', opacity: 0.85}));
+  }
+  svg.append(ttG);
+  // ---- the secondaries: plan circle (deck) or side box (casemate), and the elevation glyph, per mount pair
+  bats.forEach((b, k) => {
+    const col = COLOURS[k % COLOURS.length];
+    const p = placed[k];
+    const r = mountR(b);
+    const cas = b.pos === 'upper' || b.pos === 'lower';
+    p.xs.forEach((x, i) => {
+      const isSel = sel && sel.k === k && sel.i === i;
+      const dimmed = k !== active && !(hot && hot.k === k);
+      const g = s('g', {class: 'mnt', 'data-k': k, opacity: dimmed ? 0.62 : 1,
+        onclick: ev => { ev.stopPropagation(); active = k; sel = {k, i}; render(); },
+        oncontextmenu: ev => { ev.preventDefault(); menu(ev, k, i); },
+        onmousemove: ev => { if (!hot || hot.k !== k) { hot = {k}; paintHot(); } tip(ev, mountTip(k, i)); },
+        onmouseleave: () => { hot = null; paintHot(); untip(); },
+        onwheel: ev => { ev.preventDefault(); b.per = clamp(b.per + (ev.deltaY < 0 ? 1 : -1), 0, 30); render(); }});
+      const nm = `${prefix(k)}${i + 1}`;
+      // plan
+      const y = lanesY(b);
+      if (cas) {
+        const hb = halfB(x);
+        g.append(s('rect', {x: X(x) - r * k1, y: yP(hb), width: 2 * r * k1, height: 1.6 * r * k1, fill: shade(col, 0.45), stroke: col}));
+        g.append(s('line', {x1: X(x), y1: yP(hb), x2: X(x), y2: yP(hb) - 2.6 * b.cal / 100 * k1 - 3, stroke: col, 'stroke-width': 1.6}));
+      } else {
+        g.append(s('circle', {cx: X(x), cy: yP(y), r: Math.max(2.4, r * k1), fill: shade(col, 0.45), stroke: col, 'stroke-width': 1.2}));
+        g.append(s('line', {x1: X(x), y1: yP(y) - r * k1, x2: X(x), y2: yP(y) - r * k1 - b.len * b.cal / 1000 * k1 * 0.7, stroke: col, 'stroke-width': 1 + (b.barrels > 1 ? 0.8 : 0)}));
+      }
+      // track
+      const ye = TRACK[b.pos];
+      if (b.pos === 'lower') {
+        g.append(s('rect', {x: X(x) - r * k1, y: ye - 5, width: 2 * r * k1, height: 10, fill: shade(col, 0.35), stroke: col}));
+        g.append(s('circle', {cx: X(x), cy: ye, r: 2.1, fill: col}));
+      } else if (b.pos === 'upper') {
+        g.append(s('rect', {x: X(x) - r * k1, y: ye - 7, width: 2 * r * k1, height: 168 - ye + 7, fill: shade(col, 0.35), stroke: col}));
+        g.append(s('circle', {cx: X(x), cy: ye, r: 2.1, fill: col}));
+      } else {
+        const w = Math.max(3, r * k1), base = b.pos === 'deck' ? 168 : 128, top = ye - 6;
+        g.append(s('path', {d: `M${X(x) - w} ${base} L${X(x) - w * 0.75} ${top} L${X(x) + w * 0.75} ${top} L${X(x) + w} ${base}Z`, fill: shade(col, 0.45), stroke: col}));
+        const dir = x >= 0 ? 1 : -1;
+        g.append(s('line', {x1: X(x) + dir * w * 0.7, y1: ye, x2: X(x) + dir * (w + b.len * b.cal / 1000 * k1 * 0.7), y2: ye - 0.5, stroke: col, 'stroke-width': 1.3}));
+      }
+      g.append(s('text', {x: X(x), y: b.pos === 'lower' ? ye + 14 : b.pos === 'deck' ? ye - 9 : ye - 10, fill: col, 'font-size': 8.5, 'text-anchor': 'middle'}, nm));
+      if (isSel) {
+        g.append(s('rect', {x: X(x) - r * k1 - 4, y: (cas ? yP(halfB(x)) : yP(y) - r * k1) - 4, width: 2 * r * k1 + 8, height: (cas ? 1.6 * r * k1 : 2 * r * k1) + 8, fill: 'none', stroke: '#D9B868', 'stroke-width': 1.2}));
+        g.append(s('rect', {x: X(x) - r * k1 - 4, y: ye - 12, width: 2 * r * k1 + 8, height: 22, fill: 'none', stroke: '#D9B868', 'stroke-width': 1.2}));
+      }
+      svg.append(g);
+    });
+    // the pairs that don't fit: amber ghosts at the end of their lane, named
+    const miss = b.per - p.xs.length;
+    if (miss > 0) {
+      const ye = lanePx(b);
+      const gx = SX1 - 6;
+      const g = s('g', {onmousemove: ev => tip(ev, shortTip(k)), onmouseleave: untip});
+      for (let j = 0; j < miss; j++) g.append(s('rect', {x: gx - 12 - j * 14, y: ye - 5, width: 10, height: 10, fill: 'none', stroke: '#E3A452', 'stroke-dasharray': '2 1.5'}));
+      g.append(s('text', {x: gx - 16 - miss * 14, y: ye + 3.5, fill: '#E3A452', 'font-size': 9, 'text-anchor': 'end'}, `${prefix(k)} ×${miss} no room`));
+      svg.append(g);
+    }
+  });
+  // scale bar
+  svg.append(s('line', {x1: SX0, y1: 92, x2: SX0 + 20 * k1, y2: 92, stroke: '#6F8399'}));
+  svg.append(s('text', {x: SX0 + 20 * k1 + 4, y: 95, fill: '#6F8399', 'font-size': 9}, '20 m'));
+  box.append(svg);
+  root.append(box);
+}
+function shade(hex, f) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.round(v * f + 20 * (1 - f)));
+  return `rgb(${c.join(',')})`;
+}
+function laneTip(pos) {
+  const b = bats[active];
+  if (!b) return `<b>+ ${POS[pos]}</b><br>Starts a new battery here.`;
+  if (b.pos === pos) return `<b>+ a pair of ${prefix(active)}</b> ${POS[pos]}<br>${b.per} → ${b.per + 1} per side`;
+  return `<b>+ new battery ${prefix(bats.length)}</b> ${POS[pos]}<br>with ${prefix(active)}’s gun (${b.barrels} × ${b.cal} mm/${b.len}), one pair. ` +
+    `<span class="dim">To move all of ${prefix(active)} here, use its position buttons.</span>`;
+}
+function laneAdd(pos) {
+  const b = bats[active];
+  if (b && b.pos === pos) b.per++;
+  else { bats.push({...(b ? structuredClone(b) : {cal: 102, len: 45, barrels: 1, shield: 25, rounds: null, mat: 2}), pos, per: 1}); active = bats.length - 1; }
+  sel = null; render();
+}
+function mountTip(k, i) {
+  const b = bats[k], x = placed[k].xs[i];
+  const arc = b.pos === 'upper' || b.pos === 'lower' ? '60° either side of the beam' : 'about 90° either side of the beam, less where the superstructure masks';
+  return `<b>${prefix(k)}${i + 1}S / ${prefix(k)}${i + 1}P</b> · ${b.barrels} × ${b.cal} mm/${b.len}, ${houseKind(b)}<br>` +
+    `${POS[b.pos]}, ${x >= 0 ? x.toFixed(0) + ' m forward of' : (-x).toFixed(0) + ' m aft of'} midships<br>` +
+    `gun axis ${gunAxis(b).toFixed(1)} m above the waterline · ${arc}<br>` +
+    `<span class="dim">wheel: per side ±1 · right-click: move · split · remove</span>`;
+}
+
+// ------------------------------------------------------------------ 3. the rose: guns bearing, secondaries (or all guns)
+function arcsOf(b, x) {
+  const cas = b.pos === 'upper' || b.pos === 'lower';
+  if (cas) return [[30, 150]];
+  if (x > ship.L * 0.12) return [[2, 168]];
+  if (x < -ship.L * 0.12) return [[12, 178]];
+  return [[14, 166]];
+}
+function bearing() {
+  const g = new Float32Array(360);
+  const per = bats.map(() => new Float32Array(360));
+  bats.forEach((b, k) => placed[k].xs.forEach(x => {
+    for (const [a, z] of arcsOf(b, x)) for (let d = a; d <= z; d++) {
+      per[k][d] += b.barrels; per[k][(360 - d) % 360] += b.barrels;
+    }
+  }));
+  per.forEach(p => p.forEach((v, i) => g[i] += v));
+  const main = new Float32Array(360);
+  if (roseAll) for (const m of ship.mains) {
+    const arcs = m.y ? [[20, 160], [200, 340]] : m.x > 0 ? [[-150, 150]] : [[30, 330]];
+    for (const [a, z] of arcs) for (let d = a; d <= z; d++) main[((d % 360) + 360) % 360] += 2;
+  }
+  return {g, per, main};
+}
+function rose(root) {
+  const box = h('div', {class: 'box', id: 'rose'});
+  box.append(h('div', {class: 'sub'}, 'Guns bearing', h('b', {}, seg([[false, 'secondaries'], [true, '+ main']], roseAll, v => { roseAll = v; render(); }, 'w'))));
+  const {g, per, main} = bearing();
+  const tot = a => g[a] + main[a];
+  let peak = 1; for (let a = 0; a < 360; a++) peak = Math.max(peak, tot(a));
+  const R = 58, cx = 157, cy = 74;
+  const svg = s('svg', {width: 314, height: 148});
+  for (let ring = 1; ring <= 4; ring++) svg.append(s('circle', {cx, cy, r: R * ring / 4, fill: 'none', stroke: '#2C3640'}));
+  for (let a = 0; a < 360; a += 45) {
+    const r = a * Math.PI / 180;
+    svg.append(s('line', {x1: cx, y1: cy, x2: cx + Math.sin(r) * R, y2: cy - Math.cos(r) * R, stroke: '#2C3640'}));
+  }
+  svg.append(s('path', {d: `M${cx} ${cy - 20} C ${cx + 6} ${cy - 9}, ${cx + 6} ${cy + 12}, ${cx + 4} ${cy + 18} L ${cx - 4} ${cy + 18} C ${cx - 6} ${cy + 12}, ${cx - 6} ${cy - 9}, ${cx} ${cy - 20} Z`, fill: '#2A3440', stroke: '#4A5764'}));
+  const poly = (f, fill, stroke) => {
+    let d = '';
+    for (let a = 0; a <= 360; a++) {
+      const v = f(a % 360) / peak * R, r = a * Math.PI / 180;
+      d += (a ? 'L' : 'M') + (cx + Math.sin(r) * v).toFixed(1) + ' ' + (cy - Math.cos(r) * v).toFixed(1);
+    }
+    svg.append(s('path', {d: d + 'Z', fill, stroke, 'stroke-width': 1.2}));
+  };
+  if (roseAll) poly(a => tot(a), 'rgba(91,155,224,0.16)', '#5B9BE0');
+  // stacked by battery, outermost = all secondaries
+  for (let k = bats.length - 1; k >= 0; k--) {
+    const upto = a => { let v = 0; for (let j = 0; j <= k; j++) v += per[j][a]; return v; };
+    const col = COLOURS[k % COLOURS.length];
+    poly(upto, shade(col, 0.5).replace('rgb', 'rgba').replace(')', ',0.55)'), col);
+  }
+  const lab = (a, txt) => { const r = a * Math.PI / 180; svg.append(s('text', {x: cx + Math.sin(r) * (R + 12), y: cy - Math.cos(r) * (R + 12) + 4, fill: '#7F8B95', 'font-size': 10, 'text-anchor': 'middle'}, txt)); };
+  lab(0, 'ahead'); lab(180, 'astern'); lab(90, 'stbd'); lab(270, 'port');
+  box.append(svg);
+  const kv = h('div', {class: 'kv'});
+  const row = (k, v, n) => kv.append(h('span', {class: 'dim'}, k), h('span', {style: 'color:var(--bright)'}, v), h('span', {class: 'dim'}, n));
+  const total = bats.reduce((a, b, k) => a + 2 * placed[k].xs.length * b.barrels, 0);
+  row('Broadside port · stbd', `${g[270]} · ${g[90]}`, `of ${total} guns`);
+  row('Ahead · astern', `${g[0]} · ${g[180]}`, 'guns');
+  box.append(kv);
+  const by = h('div', {style: 'padding:1px 8px;font-size:11px;display:flex;gap:9px;flex-wrap:wrap'}, h('span', {class: 'dim'}, 'per broadside'));
+  bats.forEach((b, k) => by.append(h('span', {class: 'mono', style: `color:${COLOURS[k % COLOURS.length]}`}, `${prefix(k)} ${per[k][90]}`)));
+  box.append(by);
+  root.append(box);
+}
+
+// ------------------------------------------------------------------ 4. AA, torpedoes and the selected battery
+function lower(root) {
+  const top = 236, hgt = 151;
+  const aaP = placeAa(placed), ttP = placeTt(placed);
+  // ---- AA
+  const A = h('div', {class: 'box', style: `left:6px;top:${top}px;width:416px;height:${hgt}px`,
+    onmouseenter: () => { hot = 'aa'; paintHot(); }, onmouseleave: () => { hot = null; paintHot(); }});
+  A.append(h('div', {class: 'sub'}, 'Anti-aircraft', h('b', {}, 'placed on roofs, then the deck edge, from the middle out')));
+  const rowsA = h('div', {class: 'rows', style: 'grid-template-columns:44px auto 86px 62px 56px 1fr;gap:2px 8px'});
+  for (const t of ['', 'mounts', 'type', 'barrels', 'placed', 't']) rowsA.append(h('span', {class: 'dim', style: 'font-size:10px;text-transform:uppercase;letter-spacing:0.05em' + (t === 't' || t === 'barrels' || t === 'placed' ? ';text-align:right' : '')}, t));
+  for (const kind of ['heavy', 'light']) {
+    const c = AA[kind], got = aaP[kind].length, want = aa[kind];
+    const t = aaP[kind].reduce((a, p) => a + c.t + (p.roof ? c.roof : 0), 0);
+    rowsA.append(h('span', {class: 'dim'}, kind === 'heavy' ? 'Heavy' : 'Light'),
+      spinner(want, v => String(v), kind === 'heavy' ? 1 : 2, d => { aa[kind] = clamp(aa[kind] + d, 0, 500); render(); }, false, 's'),
+      h('span', {class: 'v dim'}, c.name),
+      h('span', {class: 'v', style: 'text-align:right;color:var(--bright)'}, String(got * c.barrels)),
+      h('span', {class: 'v ' + (got < want ? 'amb' : 'dim'), style: 'text-align:right'}, `${got}/${want}`),
+      h('span', {class: 'v dim', style: 'text-align:right'}, String(Math.round(t))));
+  }
+  A.append(rowsA);
+  A.append(h('div', {class: 'ask'}, 'Heavy mount', seg([['twin40', 'twin 40'], ['quad40', 'quad 40']], 'quad40', () => {}, 'w'),
+    'Light mount', seg([['single20', 'single 20'], ['twin20', 'twin 20']], 'single20', () => {}, 'w'), h('span', {class: 'tg'}, 'engine ask')));
+  const aaHigh = aaP.heavy.concat(aaP.light).filter(p => p.roof).length;
+  A.append(h('div', {class: 'insp', style: 'padding-top:4px'},
+    h('div', {class: 'l'}, h('span', {}, 'Placement'), h('span', {class: 'mono'}, `${aaHigh} on roofs · ${aaP.heavy.length + aaP.light.length - aaHigh} at the deck edge`),
+      h('span', {}, 'Directors'), h('span', {}, h('span', {class: 'mono'}, `${aa.dirs} AA`), h('span', {class: 'dim'}, ' · set on '), h('a', {class: 'gold'}, 'Fire control ⟶')))));
+  root.append(A);
+  // ---- torpedoes
+  const T = h('div', {class: 'box', style: `left:428px;top:${top}px;width:416px;height:${hgt}px`,
+    onmouseenter: () => { hot = 'tt'; paintHot(); }, onmouseleave: () => { hot = null; paintHot(); }});
+  T.append(h('div', {class: 'sub'}, 'Torpedo tubes', h('b', {}, '533 mm · trainable mounts on the upper deck')));
+  const rowsT = h('div', {class: 'rows', style: 'grid-template-columns:52px auto 1fr'});
+  rowsT.append(h('span', {class: 'dim'}, 'Mounts'),
+    spinner(tt.mounts, v => String(v), 1, d => { tt.mounts = clamp(tt.mounts + d, 0, 40); render(); }, false, 's'),
+    h('span', {class: 'v dim'}, tt.mounts ? (tt.mounts % 2 ? 'odd: rounded up to pairs at the deck edges' : `${tt.mounts / 2} pair${tt.mounts > 2 ? 's' : ''} at the deck edges`) : 'none fitted'));
+  rowsT.append(h('span', {class: 'dim'}, 'Tubes'),
+    seg([[1, '1'], [2, '2'], [3, '3'], [4, '4'], [5, '5']].concat(tt.tubes > 5 ? [[tt.tubes, String(tt.tubes)]] : []), tt.tubes, v => { tt.tubes = v; render(); }),
+    h('span', {class: 'v dim'}, 'per mount · type more in the field'));
+  T.append(rowsT);
+  const nM = Math.min(tt.mounts + (tt.mounts % 2), 2 * ttP.edge.length);
+  T.append(h('div', {class: 'insp'},
+    h('div', {class: 'l'},
+      h('span', {}, 'Placed'), h('span', {class: 'mono'}, tt.mounts ? `${nM}/${tt.mounts + (tt.mounts % 2)} · ${ttP.edge.length} pair${ttP.edge.length === 1 ? '' : 's'} abreast the after funnel` : '—'),
+      h('span', {}, 'Broadside'), h('span', {class: 'mono'}, tt.mounts ? `${nM / 2 * tt.tubes} tubes a side · ${nM * tt.tubes} torpedoes, no reloads` : '—'),
+      h('span', {}, 'Weight'), h('span', {class: 'mono'}, `${Math.round(ttT())} t`))));
+  T.append(h('div', {class: 'ask'}, 'Torpedo', seg([['450', '450'], ['533', '533'], ['610', '610 mm']], '533', () => {}, 'w'),
+    'Reloads', seg([['0', '0'], ['1', '1']], '0', () => {}, 'w'), h('span', {class: 'tg'}, 'engine ask')));
+  root.append(T);
+  // ---- selected battery
+  const S = h('div', {class: 'box', style: `left:850px;top:${top}px;width:422px;height:${hgt}px`});
+  S.append(h('div', {class: 'sub'}, 'Selected', h('b', {}, sel ? 'mount pair' : 'battery · click a mount for a pair')));
+  const b = bats[active];
+  if (b) {
+    const p = placed[active];
+    const nm = sel ? `${prefix(active)}${sel.i + 1}S / P` : prefix(active);
+    const span = p.xs.length ? `x ${p.xs[0].toFixed(0)} … ${p.xs[p.xs.length - 1].toFixed(0)} m` : 'not placed';
+    S.append(h('div', {class: 'insp'},
+      h('div', {class: 't'}, h('span', {class: 'sw', style: `background:${COLOURS[active % COLOURS.length]}`}), `${nm} · ${b.barrels > 1 ? b.barrels + ' × ' : ''}${b.cal} mm/${b.len}, ${POS[b.pos]}`),
+      h('div', {class: 'l'},
+        h('span', {}, 'Mount'), h('span', {}, `${houseKind(b)} · shield ${b.shield} mm ${MATERIALS[b.mat]}`),
+        h('span', {}, 'Place'), h('span', {}, `${p.xs.length} of ${b.per} per side · ${span}`),
+        h('span', {}, 'Height'), h('span', {}, `gun axis ${gunAxis(b).toFixed(1)} m above the full-load waterline`),
+        h('span', {}, 'Ammunition'), h('span', {}, `${rounds(b)} per gun · ${Math.round(2 * p.xs.length * ammoT(b))} t in the magazines`),
+        h('span', {}, 'Directed by'), h('span', {}, `${ship.secDirs} secondary director${ship.secDirs === 1 ? '' : 's'}`, h('span', {class: 'dim'}, ' · shared by every secondary'))),
+      h('div', {style: 'display:flex;gap:4px;margin-top:4px'},
+        h('button', {class: 'act', onclick: () => splitOff(active)}, 'Split a pair off'),
+        h('button', {class: 'act', onclick: () => dup(active)}, 'Duplicate'),
+        h('button', {class: 'act', onclick: () => { if (b.per > 0) { b.per--; sel = null; render(); } }}, 'Remove a pair'))));
+  }
+  root.append(S);
+}
+function splitOff(k) {
+  const b = bats[k];
+  if (b.per < 1) return;
+  b.per--;
+  bats.splice(k + 1, 0, {...structuredClone(b), per: 1});
+  active = k + 1; sel = null; render();
+}
+
+// ------------------------------------------------------------------ menu, tooltip, hover
+function menu(ev, k, i) {
+  const m = $('menu'), app = $('app').getBoundingClientRect();
+  const b = bats[k];
+  const items = [['lab', `${prefix(k)}${i + 1} pair · battery ${prefix(k)}`]];
+  for (const [pos, lab] of [['house', 'Battery on the deckhouse'], ['deck', 'Battery on the deck'], ['upper', 'Battery in upper casemates'], ['lower', 'Battery in lower casemates']])
+    items.push([lab, b.pos === pos ? null : () => { b.pos = pos; render(); }, b.pos === pos ? '●' : '']);
+  items.push(['sep']);
+  items.push(['New battery from this pair', () => splitOff(k), '']);
+  for (let j = 0; j < bats.length; j++) if (j !== k)
+    items.push([`Move this pair to ${prefix(j)} (${bats[j].cal} mm, ${bats[j].pos})`, () => { b.per--; bats[j].per++; active = j; sel = null; render(); }, '']);
+  items.push(['sep']);
+  items.push(['Remove this pair', () => { b.per--; sel = null; render(); }, 'Del']);
+  m.replaceChildren(...items.map(([lab, fn, key]) => {
+    if (lab === 'sep') return h('div', {class: 'sep'});
+    if (lab === 'lab') return h('div', {class: 'lab'}, fn);
+    return h('div', {class: fn ? '' : 'off', onclick: () => { if (fn) { hideMenu(); fn(); } }}, h('span', {}, lab), h('span', {class: 'dim'}, key));
+  }));
+  m.style.display = 'block';
+  m.style.left = Math.min(ev.clientX - app.left, 1280 - 290) + 'px';
+  m.style.top = Math.min(ev.clientY - app.top, 600 - 230) + 'px';
+}
+function hideMenu() { $('menu').style.display = 'none'; }
+function tip(ev, html) {
+  const t = $('tip'), app = $('app').getBoundingClientRect();
+  t.innerHTML = html; t.style.display = 'block';
+  const x = ev.clientX - app.left + 14, y = ev.clientY - app.top + 16;
+  t.style.left = Math.min(x, 1280 - 310) + 'px'; t.style.top = Math.min(y, 600 - t.offsetHeight - 4) + 'px';
+}
+function untip() { $('tip').style.display = 'none'; }
+function paintHot() {
+  document.querySelectorAll('.bt .r').forEach(e => e.classList.toggle('hov', !!hot && hot.k === +e.dataset.k));
+  document.querySelectorAll('g.mnt').forEach(e => {
+    const k = +e.dataset.k;
+    e.setAttribute('opacity', k === active || (hot && hot.k === k) ? 1 : 0.62);
+  });
+  const aaG = $('aaG'); if (aaG) aaG.setAttribute('opacity', hot === 'aa' ? 1 : 0.7);
+  const ttG = $('ttG'); if (ttG) ttG.setAttribute('opacity', hot === 'tt' ? 1 : 0.85);
+}
+
+function render() {
+  placed = place();
+  table();
+  const below = $('below');
+  below.replaceChildren();
+  const holder = h('div', {style: 'position:absolute;left:0;top:6px;width:1280px;height:400px'});
+  strip(holder);
+  rose(holder);
+  lower(holder);
+  below.append(holder);
+  if (!$('hint')) {
+    document.querySelector('.pane').append(h('div', {class: 'hint', id: 'hint'},
+      h('span', {}, h('span', {class: 'kbd'}, '+'), 'lane: a pair of the selected battery there (or a new battery with its gun)'),
+      h('span', {}, h('span', {class: 'kbd'}, 'wheel'), 'over a mount: per side ±1'),
+      h('span', {}, h('span', {class: 'kbd'}, 'Del'), 'removes the selected pair'),
+      h('span', {}, h('span', {class: 'kbd'}, 'RMB'), 'position · split · move · remove')));
+  }
+}
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Delete' && sel) { bats[sel.k].per--; sel = null; render(); }
+  if (ev.key === 'Escape') { sel = null; hideMenu(); render(); }
+});
+document.addEventListener('click', ev => { if (!ev.target.closest('#menu')) hideMenu(); });
+tabs();
+// scripted states for screenshots: ?ship=..&do=step,step
+for (const step of (params.get('do') || '').split(',').filter(Boolean)) {
+  const [what, arg] = step.split(':');
+  if (what === 'per') bats[active].per += +arg;
+  if (what === 'pos') bats[active].pos = arg;
+  if (what === 'sel') sel = {k: active, i: +arg};
+  if (what === 'all') roseAll = true;
+  if (what === 'tt') tt.mounts = +arg;
+  if (what === 'aa') aa.heavy = +arg;
+}
+render();
+if (params.get('menu') != null) {
+  const g = document.querySelectorAll(`g.mnt[data-k="${active}"]`)[+params.get('menu')];
+  const r = g.getBoundingClientRect();
+  menu({clientX: r.right + 4, clientY: r.top + 4}, active, +params.get('menu'));
+}
+if (params.get('tip') === 'lane') {
+  const g = document.querySelectorAll('g.lane')[+(params.get('lane') || 1)];
+  const r = g.getBoundingClientRect();
+  tip({clientX: r.left + 30, clientY: r.top + 4}, laneTip(['house', 'upper', 'deck', 'lower'][+(params.get('lane') || 1)]));
+}
+if (params.get('tip') === 'short') {
+  const r = document.querySelector(`.bt .fit.short`).getBoundingClientRect();
+  tip({clientX: r.left, clientY: r.bottom}, shortTip(active));
+}
+</script>
+</body>
+</html>

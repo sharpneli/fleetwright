@@ -121,6 +121,29 @@ it. `?ship=invincible` loads the echelon example.
 | `png/mainbattery-menu.png` | right-click on Y: change battery, split off, move, remove |
 | `png/mainbattery-echelon.png` | Invincible: echelon + cross-deck in the wing cluster, 8-gun broadside |
 
+## Secondary · AA · TT tab (`secondary.html`, 2026-10-11, for review)
+
+This mockup covers the tab's pane only (1280 × 578). It has four parts:
+
+- a **secondary battery table** with a one-click position control (deckhouse · deck | upper · lower casemate) and a
+  placed `n/m` column
+- a **broadside strip**: a half-plan over four tracks, one per position, with amber ghosts for the pairs that don't
+  fit and `+` at the head of each track
+- a **guns-bearing rose** for the secondaries
+- **AA**, **torpedo** and **selected-battery** panels.
+
+The reasoning, engine mapping, engine asks and port plan are in `secondary.md`. `?ship=kongo|babel|deutschland`
+loads the other examples.
+
+| File | State |
+|---|---|
+| `png/secondary-before-babel.png` | today's tab on Babel, for comparison |
+| `png/secondary-opened.png` | Bismarck as opened: two deckhouse batteries, light AA |
+| `png/secondary-short.png` | SB at 10 per side: 8/10 placed, ghosts on the track; 12 heavy AA push the light AA to the deck edge |
+| `png/secondary-babel-menu.png` | Babel's five batteries; right-click on a lower casemate pair |
+| `png/secondary-kongo-lane.png` | Kongō: casemates clear of Q's barbette; hovering the upper-casemate `+` |
+| `png/secondary-deutschland.png` | Deutschland: torpedo pair placed, rose with the main battery, S2 selected |
+
 ## Screenshots (`png/`)
 
 | File | State |
