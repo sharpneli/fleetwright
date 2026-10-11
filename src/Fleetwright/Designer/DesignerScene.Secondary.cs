@@ -262,7 +262,7 @@ public sealed unsafe partial class DesignerScene
 
     // ------------------------------------------------------------------ drawing
 
-    static readonly float[] SecColW = [34, 40, 138, 104, 92, 0, 74, 50, 44, 104, 120, 150, 46, 46];   // 0: the position takes what's left
+    static readonly float[] SecColW = [34, 40, 138, 104, 128, 0, 74, 50, 44, 104, 120, 150, 46, 46];   // 0: the position takes what's left
     readonly float[] secX = new float[SecColW.Length + 1];
     static readonly string[] SecHead = ["", "", "CALIBRE", "LENGTH", "GUNS / MOUNT", "TURRET ON", "PER SIDE", "PLACED", "GUNS", "SHIELDS",
         "ROUNDS / GUN", "MATERIAL", "T", ""];
@@ -376,7 +376,7 @@ public sealed unsafe partial class DesignerScene
             Spinner(r.Len, P(56), extras: false);
             At(4);
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(1, 0));
-            for (int g = 1; g <= 4; g++)
+            for (int g = 1; g <= BarrelText.Length; g++)
             {
                 if (g > 1)
                     ImGui.SameLine();

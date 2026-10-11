@@ -71,7 +71,7 @@ The pane has four parts, top to bottom.
 
 One row per battery, all visible at once. Five rows fit; more scroll. Columns:
 
-▴▾ order · colour + name (S, SB, SC… as the plan tags them) · calibre · length · guns per mount (segmented 1–4) ·
+▴▾ order · colour + name (S, SB, SC… as the plan tags them) · calibre · length · guns per mount (segmented 1–6) ·
 **position** · per side · **placed** · guns · shields · rounds (auto) · material · t · duplicate / remove
 
 - **Position is one segmented control:** `deckhouse | deck` under "Turret on", and `upper | lower` under "Casemate".
