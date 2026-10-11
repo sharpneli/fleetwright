@@ -1202,9 +1202,18 @@ public unsafe class Sdl3GpuEngine : IDisposable
         using (new ProfileScope("DrawImGui", ZoneC.PURPLE))
             DrawImGui(commandBuffer, swapchainTexture, drawData);
 
-        // Submit (the screenshot frame records its capture first, then submits and waits)
+        // Submit (a capture frame records its capture first, then submits and waits): the command line's screenshot,
+        // or a scene's export (FrameCapture), always with the UI
         if (_screenshotFrame >= 0 && (int)FrameNumber >= _screenshotFrame && !_screenshotTaken)
-            CaptureScreenshot(commandBuffer, drawData);
+        {
+            CaptureFrame(commandBuffer, drawData, _screenshotPath, _screenshotUi, null);
+            _screenshotTaken = true;
+        }
+        else if (FrameCapture.Due() is { } req)
+        {
+            string? err = CaptureFrame(commandBuffer, drawData, req.Path, true, req);
+            FrameCapture.Done(err ?? req.Path);
+        }
         else
             SDL_SubmitGPUCommandBuffer(commandBuffer);
     }
@@ -1399,8 +1408,10 @@ public unsafe class Sdl3GpuEngine : IDisposable
     }
 
     /// <summary>Records the frame again into a texture of the swapchain's format (the swapchain itself can't be
-    /// read back), with or without the UI, then submits the frame's command buffer, waits and saves the PNG.</summary>
-    private void CaptureScreenshot(SDL_GPUCommandBuffer* cmd, ImDrawDataPtr drawData)
+    /// read back), with or without the UI, then submits the frame's command buffer, waits and saves the PNG at
+    /// <paramref name="path"/>, cropped to <paramref name="crop"/> (window pixels) if given. Returns why it failed, or
+    /// null.</summary>
+    private string? CaptureFrame(SDL_GPUCommandBuffer* cmd, ImDrawDataPtr drawData, string path, bool withUi, FrameCapture.Request? crop)
     {
         uint w = _windowWidth, h = _windowHeight;
         var shot = CreateTexture(_swapchainFormat, w, h, SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COLOR_TARGET);
@@ -1412,7 +1423,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
         SDL_GPUTransferBuffer* download = SDL_CreateGPUTransferBuffer(_device, &downloadInfo);
 
         BlitMainTo(cmd, shot.Texture);
-        if (_screenshotUi)
+        if (withUi)
             DrawImGui(cmd, shot.Texture, drawData);
 
         SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(cmd);
@@ -1425,21 +1436,35 @@ public unsafe class Sdl3GpuEngine : IDisposable
         SDL_WaitForGPUFences(_device, true, &fence, 1);
         SDL_ReleaseGPUFence(_device, fence);
 
+        string? err;
         byte* pixels = (byte*)SDL_MapGPUTransferBuffer(_device, download, false);
         if (pixels != null)
         {
-            SaveScreenshotToPng(pixels, w, h, _screenshotPath);
+            // the crop, kept inside the window: a surface over the rows and columns it covers (no copy)
+            int x0 = 0, y0 = 0, cw = (int)w, ch = (int)h;
+            if (crop != null)
+            {
+                x0 = Math.Clamp(crop.X, 0, (int)w - 1);
+                y0 = Math.Clamp(crop.Y, 0, (int)h - 1);
+                cw = Math.Clamp(crop.Width, 1, (int)w - x0);
+                ch = Math.Clamp(crop.Height, 1, (int)h - y0);
+            }
+            err = SavePng(pixels + ((long)y0 * w + x0) * 4, cw, ch, (int)w * 4, path);
             SDL_UnmapGPUTransferBuffer(_device, download);
         }
         else
-            Console.Error.WriteLine("Failed to map screenshot transfer buffer");
+            err = "the capture couldn't be read back";
+        if (err != null)
+            Console.Error.WriteLine($"Failed to save screenshot: {err}");
 
         SDL_ReleaseGPUTransferBuffer(_device, download);
         DestroyTexture(shot);
-        _screenshotTaken = true;
+        return err;
     }
 
-    private void SaveScreenshotToPng(byte* pixelData, uint width, uint height, string path)
+    /// <summary>Saves pixels in the swapchain's format, <paramref name="pitch"/> bytes a row, as a PNG; returns why it
+    /// failed, or null.</summary>
+    private string? SavePng(byte* pixelData, int width, int height, int pitch, string path)
     {
         // Wrap the downloaded pixels, in the swapchain's format, in a surface (no copy) and save as PNG
         // (SDL's packed formats name the bits of a little-endian word: ABGR8888 is R,G,B,A in memory)
@@ -1453,30 +1478,23 @@ public unsafe class Sdl3GpuEngine : IDisposable
             _ => SDL_PixelFormat.SDL_PIXELFORMAT_UNKNOWN,
         };
         if (format == SDL_PixelFormat.SDL_PIXELFORMAT_UNKNOWN)
-        {
-            Console.Error.WriteLine($"Failed to save screenshot: no pixel format for {_swapchainFormat}");
-            return;
-        }
-        SDL_Surface* surface = SDL_CreateSurfaceFrom((int)width, (int)height, format, (IntPtr)pixelData, (int)width * 4);
+            return $"no pixel format for {_swapchainFormat}";
+        SDL_Surface* surface = SDL_CreateSurfaceFrom(width, height, format, (IntPtr)pixelData, pitch);
         if (surface == null)
-        {
-            Console.Error.WriteLine($"Failed to save screenshot: {SDL_GetError()}");
-            return;
-        }
-
+            return SDL_GetError();
         try
         {
+            var dir = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (dir != null)
+                Directory.CreateDirectory(dir);
             if (!IMG_SavePNG(surface, path))
-            {
-                Console.Error.WriteLine($"Failed to save screenshot: {SDL_GetError()}");
-                return;
-            }
-
+                return SDL_GetError();
             Console.WriteLine($"Screenshot saved to: {path}");
+            return null;
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Failed to save screenshot: {ex.Message}");
+            return ex.Message;
         }
         finally
         {

@@ -120,7 +120,7 @@ public static unsafe class Program
                 return 1;
             }
             nint device = (nint)engine.Device;   // lambdas may not capture a pointer
-            using var session = new DesignSession(shipPath, ShipViewer.Scale, ShipViewer.MipLevels, device);
+            using var session = new DesignSession(shipPath, ShipViewer.Scale, ShipViewer.MipLevels, device) { Units = units };
             // the designer edits the session's design, so every scene shows the same ship; with -steps it is made at
             // once, so its edits are in place for the first frame of any scene
             Designer.DesignerScene MakeDesigner()

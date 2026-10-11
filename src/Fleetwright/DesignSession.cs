@@ -37,6 +37,9 @@ public sealed class DesignSession : IDisposable
     /// <summary>The look the sprites are drawn in, other than the design's own (null: its own).</summary>
     public LookInput? Look { get; private set; }
 
+    /// <summary>The units the designer shows (its View menu), which the other scenes follow (the ship card).</summary>
+    public Designer.UnitSystem Units { get; set; }
+
     /// <summary>The builder every scene shares.</summary>
     public DesignWorker Worker { get; }
 

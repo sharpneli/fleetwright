@@ -61,8 +61,10 @@ height-map shadows); its panel switches design, look, mip level, turrets and sun
 
 The profile (`-view=profile`, `ProfileScene`) is the ship card, a poster of the session's ship in its look: the name,
 the plan (the sprite, turrets at rest, no shadow) over the profile (`ShipProfile`) at one scale with a scale bar, the
-recognition silhouette small, and the headline figures in big type over the particulars (`ShipCard`). No controls:
-the design and look are picked in the designer or the ship viewer. The profile is made only while the tab is open,
+recognition silhouette small, and the headline figures in big type over the particulars (`ShipCard`), in the designer's
+units (`DesignSession.Units`). No controls: the design and look are picked in the designer or the ship viewer. Right-click
+saves the poster as a PNG in Documents/My Games/Fleetwright/Cards (`FrameCapture`: a scene asks, the engine captures
+the window as seen a couple of frames later, cropped to the poster). The profile is made only while the tab is open,
 off the render thread with a baker of its own, at the scale nearest above the poster's.
 
 F2 shows the stats window, Escape quits. `-screenshot` captures the scene alone; with `-ui` it is the window as seen,

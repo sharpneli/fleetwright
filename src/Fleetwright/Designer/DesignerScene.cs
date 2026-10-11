@@ -102,6 +102,8 @@ public sealed unsafe partial class DesignerScene : IScene
         this.doc = doc;
         this.onClose = onClose;
         this.units = units;
+        if (session != null)
+            session.Units = units;
         this.section = Math.Clamp(section, 0, Sections.Length - 1);
         if (session != null)   // the session already builds this design
         {

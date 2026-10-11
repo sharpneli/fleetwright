@@ -321,6 +321,8 @@ public sealed unsafe partial class DesignerScene
         if (u == units)
             return;
         units = u;
+        if (session != null)
+            session.Units = u;
         stale = true;
     }
 

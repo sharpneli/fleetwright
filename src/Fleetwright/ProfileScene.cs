@@ -44,9 +44,15 @@ public sealed unsafe class ProfileScene : IScene
     int planVersion = -1;
     float planZoom;
 
-    // the text, made once per ship
+    // the text, made once per ship and units
     ShipCard? card;
-    int cardVersion = -1;
+    (int Version, Designer.UnitSystem Units) cardKey = (-1, default);
+
+    // the export: the poster's rectangle in window pixels as last laid out, and the last save's note
+    Vector4 posterRect;
+    string exportNote = "";
+    string? exportPath;
+    double exportNoteUntil;   // the note shows in the margin until then (ImGui time)
 
     sealed record Made(Image8? Full, Image8? Silhouette, float SilWaterline, string Status);
 
@@ -178,8 +184,9 @@ public sealed unsafe class ProfileScene : IScene
 
     static float Width(ImFontPtr font, string text) => font.CalcTextSizeA(font.FontSize, float.MaxValue, 0, text).X;
 
-    /// <summary>A round length for the scale bar: the largest of 5, 10, 20, 25, 50, 100 m up to max.</summary>
-    static float BarLength(float max) => new[] { 100f, 50f, 25f, 20f, 10f, 5f }.FirstOrDefault(l => l <= max, 5f);
+    /// <summary>A round length for the scale bar, in the units shown: the largest of 5, 10, 20, 25, 50, 100, 200, 250 up to
+    /// max.</summary>
+    static float BarLength(float max) => new[] { 250f, 200f, 100f, 50f, 25f, 20f, 10f, 5f }.FirstOrDefault(l => l <= max, 5f);
 
     public void BuildUi()
     {
@@ -193,11 +200,17 @@ public sealed unsafe class ProfileScene : IScene
             if (session.Result is { Sprites: not null } r)
                 plan.Upload(r);
         }
-        if (cardVersion != session.Version)
+        if (cardKey != (session.Version, session.Units))
         {
-            cardVersion = session.Version;
+            cardKey = (session.Version, session.Units);
             if (session.Ship is { } ship)
-                card = ShipCard.Of(ship, session.Look);
+                card = ShipCard.Of(ship, session.Look, session.Units);
+        }
+        if (exportPath != null && FrameCapture.LastResult is { } done)   // the save went through (or didn't)
+        {
+            exportNote = done == exportPath ? "Saved " + Path.GetFileName(done) + " in My Games/Fleetwright/Cards" : "Couldn't save: " + done;
+            exportPath = null;
+            exportNoteUntil = ImGui.GetTime() + 4;
         }
 
         var vp = ImGui.GetMainViewport();
@@ -205,10 +218,14 @@ public sealed unsafe class ProfileScene : IScene
         float s = UiFonts.Scale, m = 34 * s;
         ImGui.SetNextWindowPos(pos);
         ImGui.SetNextWindowSize(size);
-        var flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoSavedSettings |
+        var flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings |
                     ImGuiWindowFlags.NoBringToFrontOnFocus;
         ImGui.Begin("##ship card", flags);
         var dl = ImGui.GetWindowDrawList();
+        posterRect = new Vector4(pos.X, pos.Y, size.X, size.Y);
+        ContextMenu();
+        if (ImGui.GetTime() < exportNoteUntil)   // after a save, in the top margin for a moment
+            dl.AddText(UiFonts.SansSmall, UiFonts.SansSmall.FontSize, pos + new Vector2(m / 2, m / 2 - UiFonts.SansSmall.FontSize - 3 * s), Grey, exportNote);
 
         // the frame: a heavy rule and a hairline inside it
         dl.AddRect(pos + new Vector2(m / 2), pos + size - new Vector2(m / 2), Ink, 0, ImDrawFlags.None, 2.2f * s);
@@ -264,8 +281,10 @@ public sealed unsafe class ProfileScene : IScene
         var f1 = f0 + profM * k;
         dl.AddImage((nint)fullTex, f0, f1);
 
-        // the scale bar under the profile: five cells, alternately solid and open
-        float barM = BarLength(0.2f * (float)session.Ship!.Hitboxes.Length), by = f1.Y + 6 * s, bx = x0;
+        // the scale bar under the profile, in the designer's units: five cells, alternately solid and open
+        bool feet = session.Units == Designer.UnitSystem.Imperial;
+        float unitM = feet ? 0.3048f : 1f;
+        float barU = BarLength(0.2f * (float)session.Ship!.Hitboxes.Length / unitM), barM = barU * unitM, by = f1.Y + 6 * s, bx = x0;
         for (int i = 0; i < 5; i++)
         {
             var a = new Vector2(bx + barM * k * i / 5, by);
@@ -275,7 +294,7 @@ public sealed unsafe class ProfileScene : IScene
             dl.AddRect(a, b, Ink, 0, ImDrawFlags.None, 0.8f * s);
         }
         dl.AddText(UiFonts.SansSmall, UiFonts.SansSmall.FontSize, new Vector2(bx, by + 7 * s), Grey, "0");
-        dl.AddText(UiFonts.SansSmall, UiFonts.SansSmall.FontSize, new Vector2(bx + barM * k - 6 * s, by + 7 * s), Grey, BarLabel(barM));
+        dl.AddText(UiFonts.SansSmall, UiFonts.SansSmall.FontSize, new Vector2(bx + barM * k - 6 * s, by + 7 * s), Grey, BarLabel(barU, feet));
         string toScale = "PLAN AND PROFILE TO SCALE";
         Tracked(dl, UiFonts.SansSmall, new Vector2(x1 - Tracked(dl, UiFonts.SansSmall, Vector2.Zero, Grey, toScale, 2 * s, false), by), Grey, toScale, 2 * s);
 
@@ -328,13 +347,46 @@ public sealed unsafe class ProfileScene : IScene
         ImGui.End();
     }
 
-    static readonly Dictionary<float, string> BarLabels = [];
+    static readonly Dictionary<(float, bool), string> BarLabels = [];
 
-    static string BarLabel(float m)
+    static string BarLabel(float len, bool feet)
     {
-        if (!BarLabels.TryGetValue(m, out var s))
-            BarLabels[m] = s = $"{m:0} m";
+        if (!BarLabels.TryGetValue((len, feet), out var s))
+            BarLabels[(len, feet)] = s = $"{len:0} {(feet ? "ft" : "m")}";
         return s;
+    }
+
+    /// <summary>The player's ship cards: My Games/Fleetwright/Cards in Documents, beside the designs.</summary>
+    static string CardsFolder =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "My Games", "Fleetwright", "Cards");
+
+    /// <summary>Right-click: save the poster as a PNG (the window as seen, without the menu bar, two frames on so the
+    /// menu has closed), or open the folder the cards go to.</summary>
+    void ContextMenu()
+    {
+        if (ImGui.IsWindowHovered() && ImGui.IsMouseReleased(ImGuiMouseButton.Right))
+            ImGui.OpenPopup("card menu");
+        if (!ImGui.BeginPopup("card menu"))
+            return;
+        if (ImGui.MenuItem("Save as PNG", null, false, card != null))
+        {
+            string name = new((card!.Name.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '_').ToArray()));
+            name = string.Join('_', name.Split('_', StringSplitOptions.RemoveEmptyEntries));
+            exportPath = Path.Combine(CardsFolder, $"{(name.Length > 0 ? name : "ship")}_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+            exportNote = "Saving...";
+            FrameCapture.Ask(new FrameCapture.Request(exportPath, (int)posterRect.X, (int)posterRect.Y, (int)posterRect.Z, (int)posterRect.W));
+        }
+        if (ImGui.MenuItem("Open the cards folder"))
+        {
+            Directory.CreateDirectory(CardsFolder);
+            SDL_OpenURL(new Uri(CardsFolder).AbsoluteUri);
+        }
+        if (exportNote.Length > 0)
+        {
+            ImGui.Separator();
+            ImGui.TextDisabled(exportNote);
+        }
+        ImGui.EndPopup();
     }
 
     public bool ProcessEvent(SDL_Event* e, uint width, uint height) => false;
