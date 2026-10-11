@@ -873,7 +873,7 @@ public static class SideArt
         double Z(double x) => s.Z1 + (s.Z0 - s.Z1) * (x - s.X1) / (s.X0 - s.X1);
         Bar(s.X1, s.Z1, s.X0, s.Z0, 2 * s.R);
         // the bossing where it leaves the hull: a slender spindle round the shaft, tapering both ways
-        double bl = Math.Min(4.0, 0.3 * len), br = Math.Max(2.2 * s.R, 0.35), xa0 = s.X1 - dir * 0.4 * bl, xb0 = s.X1 + dir * bl;
+        double bl = Math.Min(4.0, 0.3 * len), br = 2.2 * s.R, xa0 = s.X1 - dir * 0.4 * bl, xb0 = s.X1 + dir * bl;
         var boss = new PathData().M(xa0, -Z(xa0))
             .C(xa0 + dir * 0.3 * bl, -(Z(xa0) + br), xb0 - dir * 0.6 * bl, -(Z(xb0) + br), xb0, -Z(xb0))
             .C(xb0 - dir * 0.6 * bl, -(Z(xb0) - br), xa0 + dir * 0.3 * bl, -(Z(xa0) - br), xa0, -Z(xa0)).Z();
@@ -882,8 +882,9 @@ public static class SideArt
         double xa = s.X0 - dir * Math.Max(1.2, 0.08 * len), xh = xa - dir * 0.8;
         if (v.KeelAt(xh) is double hull && hull > Z(xa) + 0.4)
         {
-            Bar(xa, Z(xa), xh, hull + 0.3, Math.Max(0.3, 1.6 * s.R));
-            o.Add(P.Ln(new PathNode(Painter.RrectPath(xa - 0.5, -(Z(xa) + 1.4 * s.R), xa + 0.5, -(Z(xa) - 1.4 * s.R), 0.2, 0.2)).Fill(col), 0.7));
+            double bw = Math.Min(0.5, 4 * s.R);   // the bearing's half-length, the strut's width: both follow the shaft
+            Bar(xa, Z(xa), xh, hull + 0.3, 1.6 * s.R);
+            o.Add(P.Ln(new PathNode(Painter.RrectPath(xa - bw, -(Z(xa) + 1.4 * s.R), xa + bw, -(Z(xa) - 1.4 * s.R), 0.4 * bw, 0.4 * bw)).Fill(col), 0.7));
         }
     }
 

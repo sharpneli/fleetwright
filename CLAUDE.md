@@ -59,9 +59,11 @@ button gives that tier's rooms, `hitbox_cells.png` live) or a per-pixel cut.
 The ship viewer (`-view=ship`) shows the design from the baked textures (mips, turrets through their arcs,
 height-map shadows); its panel switches design, look, mip level, turrets and sun. Wheel zooms, left drag pans.
 
-The profile (`-view=profile`, `ProfileScene`) shows the ship card's side view (`ShipProfile`): the full hull above the
-recognition silhouette, in the session's look, drawn at 5, 10 or 20 px/m. It is made only while the tab is open, off
-the render thread with a baker of its own, so the designer's builds never wait for it.
+The profile (`-view=profile`, `ProfileScene`) is the ship card, a poster of the session's ship in its look: the name,
+the plan (the sprite, turrets at rest, no shadow) over the profile (`ShipProfile`) at one scale with a scale bar, the
+recognition silhouette small, and the headline figures in big type over the particulars (`ShipCard`). No controls:
+the design and look are picked in the designer or the ship viewer. The profile is made only while the tab is open,
+off the render thread with a baker of its own, at the scale nearest above the poster's.
 
 F2 shows the stats window, Escape quits. `-screenshot` captures the scene alone; with `-ui` it is the window as seen,
 ImGui on top. Both go through the window's blit shader, and a capture run reads no `imgui.ini` and writes none, so
@@ -151,7 +153,7 @@ src/
     ShipSpriteRenderer.cs     #   a baked ship sprite into any RenderTarget (hull, turrets at given bearings, shadows)
     IScene.cs                 #   a full-window view with its own UI; the engine draws the current one (see Views)
     ShipViewer.cs             #   the ship viewer, a test tool for Shipgen
-    ProfileScene.cs           #   the profile tab: the ship card's side view and silhouette (ShipProfile)
+    ProfileScene.cs, ShipCard.cs   # the profile tab: the ship card poster (drawings, silhouette, figures)
     SceneSwitcher.cs          #   several scenes behind one IScene: the menu bar and F3 switch
     UiFonts.cs                #   the game UI's fonts (Content/Fonts) in ImGui's atlas
     Designer/                 #   the ship designer: DesignerScene (design in, design out), DesignDoc (history, save),

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Numerics;
 using Fleetwright.Gpu;
 using Fleetwright.Shipgen;
@@ -10,71 +9,79 @@ using static SDL.SDL3;
 
 namespace Fleetwright;
 
-/// <summary>The profile tab: the session's ship from the starboard side as the ship card will show it (ShipProfile,
-/// docs/shipgen/profile-plan.md), the full hull above the recognition silhouette, in the session's look. A peek while
-/// designing: the profile is made only while the tab is open, off the render thread with a baker of its own, so the
-/// designer's builds don't wait for it. The panel picks the scale it is drawn at and the zoom it is shown at.</summary>
+/// <summary>The profile tab: the session's ship as a poster to hang on a wall. Its name over the plan and the profile at
+/// one scale with a scale bar, then the recognition silhouette small beside the headline figures in big type and the
+/// particulars (ShipCard). The plan is the sprite (ShipSpriteRenderer, turrets at rest, no shadow) drawn into a target
+/// of its own at the poster's scale; the profile and silhouette (ShipProfile) are made only while the tab is open, off
+/// the render thread with a baker of its own, at the scale nearest above the poster's, so the designer's builds don't
+/// wait for them. The design and look are the session's (picked in the designer or the ship viewer).</summary>
 public sealed unsafe class ProfileScene : IScene
 {
     static readonly float[] Scales = [5, 10, 20];
-    static readonly string[] ScaleNames = ["5 px/m", "10 px/m", "20 px/m"];
-    static readonly Vector4 Paper = new(0.91f, 0.89f, 0.84f, 1), Night = new(0.13f, 0.15f, 0.17f, 1);
+    static readonly Vector4 Paper = new(0.91f, 0.89f, 0.84f, 1);
+    static readonly uint Ink = ImGui.ColorConvertFloat4ToU32(new(0.11f, 0.13f, 0.15f, 1));
+    static readonly uint Grey = ImGui.ColorConvertFloat4ToU32(new(0.38f, 0.40f, 0.42f, 1));
+    static readonly uint Faint = ImGui.ColorConvertFloat4ToU32(new(0.11f, 0.13f, 0.15f, 0.35f));
+    static readonly string[] CharStrings = [.. Enumerable.Range(0, 0x2213).Select(c => ((char)c).ToString())];   // tracked text, no garbage
 
     readonly SDL_GPUDevice* device;
     readonly DesignSession session;
     GpuBaker? baker;   // used by one job at a time, never on the render thread
 
-    // what is shown, and what it was made from
+    // the profile and silhouette shown, and what they were made from
     SDL_GPUTexture* fullTex, silTex;
     Vector2 fullSize, silSize;
-    (int Version, int Scale) shown = (-1, -1);
+    float bakedScale = 10, silWaterline;
+    (int Version, float Scale) shown = (-1, -1);
     string status = "";
-
-    // the job making the next one
     Task<Made>? job;
-    (int Version, int Scale) jobKey;
+    (int Version, float Scale) jobKey;
+    float wantScale = 10;
 
-    // controls
-    int scaleIndex = 1;
-    bool fit = true, dark;
-    readonly string[] navies = ["(design)", .. Shipgen.Render.Looks.Navies], eras = ["(design)", .. Shipgen.Render.Looks.Eras];
+    // the plan: the sprite into a target of its own, at the poster's scale
+    readonly ShipSpriteRenderer plan;
+    RenderTarget? planTarget;
+    int planVersion = -1;
+    float planZoom;
 
-    sealed record Made(ShipProfile? Profile, Image8? Full, Image8? Silhouette, string Status);
+    // the text, made once per ship
+    ShipCard? card;
+    int cardVersion = -1;
+
+    sealed record Made(Image8? Full, Image8? Silhouette, float SilWaterline, string Status);
 
     public ProfileScene(SDL_GPUDevice* device, DesignSession session)
     {
         this.device = device;
         this.session = session;
+        plan = new ShipSpriteRenderer(device);
         Start();
         Take(job!.Result);   // the first one at once, so the first frame (and a capture) has it
     }
 
-    /// <summary>Starts a job for the session's ship as it is now, at the picked scale.</summary>
+    /// <summary>Starts a job for the session's ship as it is now, at the wanted scale.</summary>
     void Start()
     {
-        jobKey = (session.Version, scaleIndex);
+        jobKey = (session.Version, wantScale);
         var ship = session.Ship;
         var look = session.Look;
         string why = session.Status;
-        double scale = Scales[scaleIndex];
+        double scale = wantScale;
         job = Task.Run(() =>
         {
             if (ship == null)
-                return new Made(null, null, null, why);
+                return new Made(null, null, 0, why);
             try
             {
-                var sw = Stopwatch.StartNew();
                 var p = ShipProfile.Build(ship, scale, look);
-                double tDraw = sw.Elapsed.TotalSeconds;
                 baker ??= new GpuBaker(device);
                 var (full, sil) = ProfileBake.Bake(p, baker);
-                return new Made(p, full, sil, $"{ship.Design.Name ?? ship.Design.Id}\n{full.Width} x {full.Height} px at {scale:0} px/m\n" +
-                                              $"draw {tDraw * 1000:F0} ms, bake {(sw.Elapsed.TotalSeconds - tDraw) * 1000:F0} ms");
+                return new Made(full, sil, (float)p.SilhouetteWaterlinePx, "");
             }
             catch (Exception e)
             {
                 Console.Error.WriteLine($"profile: {ship.Design.Id}: {e}");
-                return new Made(null, null, null, $"{e.GetType().Name}: {e.Message}");
+                return new Made(null, null, 0, $"{e.GetType().Name}: {e.Message}");
             }
         });
     }
@@ -86,12 +93,14 @@ public sealed unsafe class ProfileScene : IScene
         job = null;
         status = m.Status;
         if (m.Full == null || m.Silhouette == null)
-            return;   // no ship: the last profile stays, under the status saying why
+            return;   // no ship: the last poster stays, with the status saying why
         Release();
         fullTex = Upload(m.Full);
         silTex = Upload(m.Silhouette);
         fullSize = new(m.Full.Width, m.Full.Height);
         silSize = new(m.Silhouette.Width, m.Silhouette.Height);
+        bakedScale = jobKey.Scale;
+        silWaterline = m.SilWaterline;
     }
 
     SDL_GPUTexture* Upload(Image8 im)
@@ -135,64 +144,197 @@ public sealed unsafe class ProfileScene : IScene
         fullTex = silTex = null;
     }
 
+    static SDL_FColor PaperClear => new() { r = Paper.X, g = Paper.Y, b = Paper.Z, a = 1 };
+
     public void Draw(SDL_GPUCommandBuffer* cmd, RenderTarget target, float dt)
     {
-        var bg = dark ? Night : Paper;
-        var pass = target.BeginPass(cmd, new SDL_FColor { r = bg.X, g = bg.Y, b = bg.Z, a = 1 }, depth: false);
+        if (planTarget != null && plan.Meta != null)
+        {
+            var view = ShipSpriteView.Default;
+            view.Zoom = planZoom;
+            view.Centre = Vector2.Zero;
+            view.Shadows = false;
+            plan.Render(cmd, planTarget, view, ReadOnlySpan<double>.Empty, PaperClear);
+        }
+        var pass = target.BeginPass(cmd, PaperClear, depth: false);
         SDL_EndGPURenderPass(pass);
     }
 
-    // ------------------------------------------------------------------ UI
+    // ------------------------------------------------------------------ the poster
+
+    /// <summary>Text spaced out letter by letter (tracking, in px), from x; returns its width.</summary>
+    static float Tracked(ImDrawListPtr dl, ImFontPtr font, Vector2 at, uint col, string text, float track, bool draw = true)
+    {
+        float size = font.FontSize, x = at.X;
+        foreach (char ch in text)
+        {
+            var s = ch < CharStrings.Length ? CharStrings[ch] : "?";
+            if (draw)
+                dl.AddText(font, size, new Vector2(x, at.Y), col, s);
+            x += font.CalcTextSizeA(size, float.MaxValue, 0, s).X + track;
+        }
+        return x - at.X - (text.Length > 0 ? track : 0);
+    }
+
+    static float Width(ImFontPtr font, string text) => font.CalcTextSizeA(font.FontSize, float.MaxValue, 0, text).X;
+
+    /// <summary>A round length for the scale bar: the largest of 5, 10, 20, 25, 50, 100 m up to max.</summary>
+    static float BarLength(float max) => new[] { 100f, 50f, 25f, 20f, 10f, 5f }.FirstOrDefault(l => l <= max, 5f);
 
     public void BuildUi()
     {
-        // a finished job is shown here, before the images are referenced; a newer ship or scale starts the next
         if (job is { IsCompleted: true })
             Take(job.Result);
-        if (job == null && shown != (session.Version, scaleIndex))
+        if (job == null && shown != (session.Version, wantScale))
             Start();
-
-        SidePanel.Begin("Profile");
-        // the design and look are the session's, shared with the other tabs (as the ship viewer picks them)
-        int designIndex = session.Index;
-        if (ImGui.Combo("design", ref designIndex, session.Names, session.Names.Length))
-            session.Select(designIndex);
-        if (session.Edited)
-            ImGui.TextColored(new Vector4(0.88f, 0.68f, 0.31f, 1), "edited in the designer");
-        int navyIndex = Math.Max(0, Array.IndexOf(navies, session.Look?.Navy)), eraIndex = Math.Max(0, Array.IndexOf(eras, session.Look?.Era));
-        if (ImGui.Combo("navy", ref navyIndex, navies, navies.Length) | ImGui.Combo("era", ref eraIndex, eras, eras.Length))
-            session.SetLook(navyIndex > 0 || eraIndex > 0
-                ? new LookInput { Navy = navyIndex > 0 ? navies[navyIndex] : null, Era = eraIndex > 0 ? eras[eraIndex] : null }
-                : null);
-        ImGui.Separator();
-        ImGui.Combo("drawn at", ref scaleIndex, ScaleNames, ScaleNames.Length);
-        ImGui.Checkbox("fit to the window", ref fit);
-        ImGui.Checkbox("dark background", ref dark);
-        ImGui.Separator();
-        ImGui.TextWrapped(job != null || session.Busy ? "drawing...\n" + status : status);
-        float panelRight = ImGui.GetWindowPos().X + ImGui.GetWindowWidth();
-        ImGui.End();
-
-        // the pictures: the full profile above the silhouette, on the background Draw clears to
-        var vp = ImGui.GetMainViewport();
-        ImGui.SetNextWindowPos(new Vector2(panelRight, vp.WorkPos.Y));
-        ImGui.SetNextWindowSize(new Vector2(vp.WorkPos.X + vp.WorkSize.X - panelRight, vp.WorkSize.Y));
-        ImGui.PushStyleColor(ImGuiCol.WindowBg, Vector4.Zero);
-        var flags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse |
-                    ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoSavedSettings;
-        flags |= fit ? ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse : ImGuiWindowFlags.HorizontalScrollbar;
-        if (ImGui.Begin("##profile pictures", flags) && fullTex != null)
+        if (planVersion != session.Version)
         {
-            float pad = 24 * UiFonts.Scale;
-            var avail = ImGui.GetContentRegionAvail();
-            float k = fit ? Math.Min((avail.X - 2 * pad) / fullSize.X, (avail.Y - 3 * pad) / (fullSize.Y + silSize.Y)) : 1;
-            ImGui.SetCursorPos(ImGui.GetCursorPos() + new Vector2(pad, pad));
-            ImGui.Image((nint)fullTex, fullSize * k);
-            ImGui.SetCursorPos(ImGui.GetCursorPos() + new Vector2(pad, pad));
-            ImGui.Image((nint)silTex, silSize * k);
+            planVersion = session.Version;
+            if (session.Result is { Sprites: not null } r)
+                plan.Upload(r);
         }
+        if (cardVersion != session.Version)
+        {
+            cardVersion = session.Version;
+            if (session.Ship is { } ship)
+                card = ShipCard.Of(ship, session.Look);
+        }
+
+        var vp = ImGui.GetMainViewport();
+        Vector2 pos = vp.WorkPos, size = vp.WorkSize;
+        float s = UiFonts.Scale, m = 34 * s;
+        ImGui.SetNextWindowPos(pos);
+        ImGui.SetNextWindowSize(size);
+        var flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoSavedSettings |
+                    ImGuiWindowFlags.NoBringToFrontOnFocus;
+        ImGui.Begin("##ship card", flags);
+        var dl = ImGui.GetWindowDrawList();
+
+        // the frame: a heavy rule and a hairline inside it
+        dl.AddRect(pos + new Vector2(m / 2), pos + size - new Vector2(m / 2), Ink, 0, ImDrawFlags.None, 2.2f * s);
+        dl.AddRect(pos + new Vector2(m / 2 + 5 * s), pos + size - new Vector2(m / 2 + 5 * s), Ink, 0, ImDrawFlags.None, 0.8f * s);
+        float x0 = pos.X + 1.4f * m, x1 = pos.X + size.X - 1.4f * m, y = pos.Y + 1.2f * m;
+
+        if (card == null || fullTex == null)
+        {
+            string why = status.Length > 0 ? status : session.Status.Length > 0 ? session.Status : "no ship";
+            dl.AddText(UiFonts.PosterText, UiFonts.PosterText.FontSize, new Vector2(x0, y), Grey, why);
+            ImGui.End();
+            return;
+        }
+
+        // the name, tracked wide, and the line under it
+        float track = 6 * s;
+        float tw = Tracked(dl, UiFonts.PosterTitle, Vector2.Zero, Ink, card.Name, track, draw: false);
+        Tracked(dl, UiFonts.PosterTitle, new Vector2((x0 + x1 - tw) / 2, y), Ink, card.Name, track);
+        y += UiFonts.PosterTitle.FontSize + 2 * s;
+        float sw = Tracked(dl, UiFonts.SansBold, Vector2.Zero, Grey, card.Subtitle, 2.5f * s, draw: false);
+        Tracked(dl, UiFonts.SansBold, new Vector2((x0 + x1 - sw) / 2, y), Grey, card.Subtitle, 2.5f * s);
+        y += UiFonts.SansBold.FontSize + 12 * s;
+        dl.AddLine(new Vector2(x0, y), new Vector2(x1, y), Ink, 1.6f * s);
+        dl.AddLine(new Vector2(x0, y + 3 * s), new Vector2(x1, y + 3 * s), Ink, 0.6f * s);
+        y += 16 * s;
+
+        // the lower band: silhouette, headline figures, particulars
+        float bandBottom = pos.Y + size.Y - 1.25f * m;
+        float bandH = Math.Clamp(size.Y * 0.3f, 190 * s, 330 * s), bandTop = bandBottom - bandH;
+
+        // the plan over the profile, one scale, as large as the space between allows
+        float barH = 26 * s;
+        var planM = plan.CanvasM;
+        Vector2 profM = fullSize / bakedScale;
+        float drawW = x1 - x0, drawH = bandTop - 18 * s - barH - y;
+        float overlap = (float)HullArt.PadM;   // the plan's margin under the hull and the profile's over the masts share one band
+        float k = Math.Min(drawW / Math.Max(planM.X, profM.X), drawH / Math.Max(1, planM.Y + profM.Y - overlap));
+        wantScale = Scales.FirstOrDefault(sc => sc >= k * 0.98f, Scales[^1]);
+        float cx = (x0 + x1) / 2;
+        float stackH = (planM.Y + profM.Y - overlap) * k, top = y + (drawH - stackH) / 2;
+        if (planM.X > 0)
+        {
+            uint pw = (uint)Math.Max(16, MathF.Round(planM.X * k)), ph = (uint)Math.Max(16, MathF.Round(planM.Y * k));
+            if (planTarget == null)
+                planTarget = new RenderTarget(device, pw, ph, SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM, SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_4);
+            else if (planTarget.Width != pw || planTarget.Height != ph)
+                planTarget.Resize(pw, ph);
+            planZoom = k;
+            var p0 = new Vector2(MathF.Round(cx - pw / 2f), MathF.Round(top));
+            dl.AddImage((nint)planTarget.Resolve, p0, p0 + new Vector2(pw, ph));
+        }
+        var f0 = new Vector2(cx - profM.X * k / 2, top + (planM.Y - overlap) * k);
+        var f1 = f0 + profM * k;
+        dl.AddImage((nint)fullTex, f0, f1);
+
+        // the scale bar under the profile: five cells, alternately solid and open
+        float barM = BarLength(0.2f * (float)session.Ship!.Hitboxes.Length), by = f1.Y + 6 * s, bx = x0;
+        for (int i = 0; i < 5; i++)
+        {
+            var a = new Vector2(bx + barM * k * i / 5, by);
+            var b = new Vector2(bx + barM * k * (i + 1) / 5, by + 5 * s);
+            if (i % 2 == 0)
+                dl.AddRectFilled(a, b, Ink);
+            dl.AddRect(a, b, Ink, 0, ImDrawFlags.None, 0.8f * s);
+        }
+        dl.AddText(UiFonts.SansSmall, UiFonts.SansSmall.FontSize, new Vector2(bx, by + 7 * s), Grey, "0");
+        dl.AddText(UiFonts.SansSmall, UiFonts.SansSmall.FontSize, new Vector2(bx + barM * k - 6 * s, by + 7 * s), Grey, BarLabel(barM));
+        string toScale = "PLAN AND PROFILE TO SCALE";
+        Tracked(dl, UiFonts.SansSmall, new Vector2(x1 - Tracked(dl, UiFonts.SansSmall, Vector2.Zero, Grey, toScale, 2 * s, false), by), Grey, toScale, 2 * s);
+
+        dl.AddLine(new Vector2(x0, bandTop), new Vector2(x1, bandTop), Ink, 1.6f * s);
+        dl.AddLine(new Vector2(x0, bandTop + 3 * s), new Vector2(x1, bandTop + 3 * s), Ink, 0.6f * s);
+
+        // the silhouette, small, sitting on its waterline
+        float boxW = 0.34f * (x1 - x0), pad = 14 * s, capY = bandTop + pad + 4 * s;
+        Tracked(dl, UiFonts.SansSmall, new Vector2(x0, capY), Grey, "RECOGNITION SILHOUETTE", 2 * s);
+        float availH = bandBottom - capY - UiFonts.SansSmall.FontSize - 2 * pad;
+        float ks = Math.Min(boxW / silSize.X, availH / silSize.Y);
+        float silTop = capY + UiFonts.SansSmall.FontSize + pad;   // centred in what is left under the caption
+        var s1 = new Vector2(x0 + (boxW - silSize.X * ks) / 2, silTop + (bandBottom - pad - silTop - silSize.Y * ks) / 2);
+        dl.AddImage((nint)silTex, s1, s1 + silSize * ks);
+        float wly = s1.Y + silWaterline * ks;
+        dl.AddLine(new Vector2(x0, wly), new Vector2(x0 + boxW, wly), Faint, 1f * s);
+        float divX = x0 + boxW + 22 * s;
+        dl.AddLine(new Vector2(divX, bandTop + pad), new Vector2(divX, bandBottom - pad), Faint, 1f * s);
+
+        // the headline figures across the top of the right side, the particulars in two columns under them
+        float rx0 = divX + 26 * s, rx1 = x1, ry = bandTop + pad + 2 * s;
+        int nh = card.Heroes.Length;
+        float cw = (rx1 - rx0) / Math.Max(1, nh);
+        for (int i = 0; i < nh; i++)
+        {
+            var (value, label) = card.Heroes[i];
+            float hx = rx0 + i * cw;
+            dl.AddText(UiFonts.PosterFigure, UiFonts.PosterFigure.FontSize, new Vector2(hx, ry), Ink, value);
+            Tracked(dl, UiFonts.SansSmall, new Vector2(hx, ry + UiFonts.PosterFigure.FontSize + 2 * s), Grey, label.ToUpperInvariant(), 1.5f * s);
+        }
+        ry += UiFonts.PosterFigure.FontSize + UiFonts.SansSmall.FontSize + 14 * s;
+        dl.AddLine(new Vector2(rx0, ry), new Vector2(rx1, ry), Faint, 1f * s);
+        ry += 10 * s;
+        float rowH = UiFonts.PosterText.FontSize + 5 * s, colW = (rx1 - rx0) / 2, labelW = 104 * s;
+        int fit = Math.Max(1, (int)((bandBottom - pad - ry) / rowH)), perCol = Math.Min(fit, Math.Max(1, (card.Rows.Length + 1) / 2));
+        for (int i = 0; i < card.Rows.Length && i < 2 * perCol; i++)
+        {
+            var (label, value) = card.Rows[i];
+            float lx = rx0 + (i / perCol) * colW, ly = ry + (i % perCol) * rowH;
+            Tracked(dl, UiFonts.SansSmall, new Vector2(lx, ly + 3 * s), Grey, label.ToUpperInvariant(), 1.2f * s);
+            dl.PushClipRect(new Vector2(lx + labelW, ly), new Vector2(lx + colW - 10 * s, ly + rowH), true);
+            dl.AddText(UiFonts.PosterText, UiFonts.PosterText.FontSize, new Vector2(lx + labelW, ly), Ink, value);
+            dl.PopClipRect();
+        }
+
+        // the imprint, small in the bottom margin
+        string imprint = "FLEETWRIGHT  ·  SHIP CARD";
+        float iw = Tracked(dl, UiFonts.SansSmall, Vector2.Zero, Grey, imprint, 2 * s, false);
+        Tracked(dl, UiFonts.SansSmall, new Vector2((x0 + x1 - iw) / 2, bandBottom + 0.25f * m - UiFonts.SansSmall.FontSize / 2), Grey, imprint, 2 * s);
         ImGui.End();
-        ImGui.PopStyleColor();
+    }
+
+    static readonly Dictionary<float, string> BarLabels = [];
+
+    static string BarLabel(float m)
+    {
+        if (!BarLabels.TryGetValue(m, out var s))
+            BarLabels[m] = s = $"{m:0} m";
+        return s;
     }
 
     public bool ProcessEvent(SDL_Event* e, uint width, uint height) => false;
@@ -208,5 +350,7 @@ public sealed unsafe class ProfileScene : IScene
         }
         baker?.Dispose();
         Release();
+        plan.Dispose();
+        planTarget?.Dispose();
     }
 }
