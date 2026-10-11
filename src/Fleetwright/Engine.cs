@@ -293,7 +293,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
     /// <summary>A dev hook for testing the UI without a mouse (-input=): events queued into ImGui at their frame.
     /// "F:click:X,Y" moves there and clicks (ImGui trickles the queue, a step a frame), "F:right:X,Y" right-clicks,
-    /// "F:wheel:X,Y:N" turns the wheel N notches, "F:drag:X0,Y0:X1,Y1" drags with the left button, "F:type:TEXT" types TEXT then Enter. X, Y in window pixels.</summary>
+    /// "F:wheel:X,Y:N" turns the wheel N notches, "F:drag:X0,Y0:X1,Y1" drags with the left button, "F:type:TEXT" types TEXT then Enter, "F:drop:PATH" drops the file PATH on the window. X, Y in window pixels.</summary>
     public List<string> ScriptedInput { get; } = [];
 
     void FeedScriptedInput()
@@ -347,6 +347,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     io.AddInputCharactersUTF8(p[2]);
                     io.AddKeyEvent(ImGuiKey.Enter, true);
                     io.AddKeyEvent(ImGuiKey.Enter, false);
+                    break;
+                case "drop":   // the path may hold colons (C:/...): all after the second
+                    FileDropped?.Invoke(ev[(ev.IndexOf(':', ev.IndexOf(':') + 1) + 1)..]);
                     break;
             }
         }

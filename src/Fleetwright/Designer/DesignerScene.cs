@@ -177,7 +177,8 @@ public sealed unsafe partial class DesignerScene : IScene
         stale = true;
     }
 
-    /// <summary>A design changed in another scene (the viewer's pick, a reload) opens here.</summary>
+    /// <summary>A design changed in another scene opens here: the viewer's pick or a reload starts over, an edit from
+    /// outside (a dropped file) is one more step in the history.</summary>
     void Sync()
     {
         if (session == null || session.DesignVersion == seenDesign)
@@ -185,8 +186,16 @@ public sealed unsafe partial class DesignerScene : IScene
         seenDesign = session.DesignVersion;
         if (session.Design is { } d && d.ToJson() != doc.History[doc.Index].Json)
         {
-            Switch(new DesignDoc(d, session.DesignPath));
-            submitted = doc.History[0].Json;
+            if (session.Edited)
+            {
+                doc.Apply(d, session.EditLabel ?? "Changed elsewhere");
+                doc.Seal();
+                editing = null;
+                stale = true;
+            }
+            else
+                Switch(new DesignDoc(d, session.DesignPath));
+            submitted = doc.History[doc.Index].Json;
         }
     }
 

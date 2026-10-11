@@ -31,6 +31,9 @@ public sealed class DesignSession : IDisposable
     /// <summary>The design differs from its file: edited in the designer.</summary>
     public bool Edited { get; private set; }
 
+    /// <summary>What made the last edit from outside the designer (a dropped file), for its undo history.</summary>
+    public string? EditLabel { get; private set; }
+
     /// <summary>Moves whenever <see cref="Design"/> changes.</summary>
     public int DesignVersion { get; private set; }
 
@@ -121,8 +124,8 @@ public sealed class DesignSession : IDisposable
         Set(design, path, edited: path == null, limits: true);
     }
 
-    /// <summary>A design file from outside (dropped on the window): read, then loaded as <see cref="Load"/>. The
-    /// error when it isn't a design.</summary>
+    /// <summary>A design file from outside (dropped on the window): read, then taken as an edit of the design now,
+    /// so it stays unsaved (and undoable) until saved. The error when it isn't a design.</summary>
     public string? Open(string path)
     {
         Design design;
@@ -135,7 +138,8 @@ public sealed class DesignSession : IDisposable
             Console.Error.WriteLine($"design {path}: {e.GetType().Name}: {e.Message}");
             return e.Message;
         }
-        Load(design, path);
+        Edit(design);
+        EditLabel = "Dropped " + System.IO.Path.GetFileName(path);
         return null;
     }
 
@@ -143,6 +147,7 @@ public sealed class DesignSession : IDisposable
     {
         Design = design;
         DesignPath = path;
+        EditLabel = null;
         Edited = edited;
         this.limits = limits;
         DesignVersion++;

@@ -129,7 +129,7 @@ public static unsafe class Program
                     session.Load(Designer.DesignDoc.Empty(), null);
                 return new Designer.DesignerScene((SDL.SDL_GPUDevice*)device, session, units, section, steps);
             }
-            // a design json dropped on the window opens in every scene (sharing ships is passing files around)
+            // a design json dropped on the window is an edit to it, in every scene (unsaved until saved) (sharing ships is passing files around)
             engine.FileDropped = path =>
             {
                 if (session.Open(path) is { } error)
