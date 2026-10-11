@@ -292,6 +292,9 @@ This replaces the battle plan's open question 2 (a `Fleetwright.Battle` project)
 
 ## Steps (proposed, one per session, each with its own investigation)
 
+The first shippable game is missions (`docs/missions/plan.md`), which orders these differently: pictures and a
+captain AI move up, and Resolved, merchants and admiralties wait. That plan's step list is the one to follow.
+
 1. **`Fleetwright.Sim` and the rails world.** The project; double vectors and great-circle motion; the clock;
    ships and groups on rails with routes (no land yet); commands and the snapshot. Tests: a ship around the globe
    over a pole comes back; 2,000 ships for a game year headless in seconds; the same run twice is bit-identical.

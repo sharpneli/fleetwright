@@ -12,6 +12,18 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-11 - Historical search and interception operations as mission seeds
+- Question: which naval operations 1890-1950 make good "find it and fight it" missions, with fixed forces in a
+  limited area? For each: the forces on each side (ships, groups, where they started), the area and duration, what
+  each side knew at the start and what reports came in when (sightings, shadowing, aircraft, D/F, codebreaking), the
+  weather and light, the hunted side's plan, and how it ended. Examples: the Bismarck chase, Graf Spee and the River
+  Plate, Emden, Goeben and Breslau, Scharnhorst at North Cape, Coronel and the Falklands, Dogger Bank, Operation
+  Berlin, Kormoran and Sydney.
+- Context / relevant files: `docs/missions/plan.md` (the mission format: forces, area, starting pictures, scripted
+  reports, objectives), `docs/world/architecture.md` (pictures, encounters, time compression).
+- Wanted output: a catalogue (one section per operation, the fields above), and which mission templates they suggest
+  (hunt, intercept, breakout, convoy, fleet action) with the parameters a generator would vary.
+
 ### 2026-10-10 - Tumblehome proportions
 - Question: for real tumblehome ships (Jauréguiberry, Charles Martel, Bouvet, Charlemagne, Tsesarevich, Borodino),
   what were the maximum beam, the beam at the upper/main deck and at the forecastle, the height of the maximum beam

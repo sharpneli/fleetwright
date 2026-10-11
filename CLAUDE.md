@@ -209,6 +209,7 @@ Content/                      # copied into the game's output folder; the bake s
 docs/shipgen/                 # the ship designer: inputs, outputs, conventions, decisions, TODO, its research notes
 docs/battle/plan.md           # the battle module's data plan (ShipClass, ShipState, the steps): one step per session
 docs/world/architecture.md    # the world: tiers of time on one clock, the sim thread, commands/snapshot, the scene stack
+docs/missions/plan.md         # the first shippable game: missions (format, objectives, generator) and the step order
 research/                     # research notes, see below
 ```
 
