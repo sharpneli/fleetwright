@@ -1,7 +1,7 @@
 # Plan: missions, the first shippable game
 
-2026-10-11. Status: proposed to the user; the open questions are at the end. Each step is its own session with its own
-investigation first, like `docs/battle/plan.md`.
+2026-10-11. Status: the direction is agreed with the user ("Decisions" at the end); the work goes in small stages,
+each planned before it's built ("Stages").
 
 ## Goal
 
@@ -75,8 +75,9 @@ On the scene stack (`docs/world/architecture.md` "Screens"):
 - **The tactical view:** the battle (the sprites, `docs/battle/plan.md` step 5 on), opened on an encounter.
 - **Debrief:** the result, the objectives, the event log, a replay later.
 
-A later hook: missions that let the player bring their own designs within a budget (tonnage, cost, a year's
-technology), with the designer pushed from the briefing. The designer already takes a design in and hands one back.
+**Mission start (agreed):** a mission gives fixed forces, or a limit (tonnage, cost, a year's technology) within
+which the player designs their own ships, or both. The designer is pushed from the mission start screen; it already
+takes a design in and hands one back, and the limits are its `DesignLimits` filled from the mission.
 
 ## Generating missions
 
@@ -105,7 +106,8 @@ Needed (from `docs/world/architecture.md`'s steps):
 - a sighting model good enough for search (horizon, weather, night; radar by era).
 
 Not needed yet: Resolved (every encounter in a mission is the player's, at Full; Resolved comes when the player
-wants to hand fights to captains or the campaign brings NPC wars), merchants, NPC admiralties, diplomacy, the
+wants to hand fights to captains or the campaign brings NPC wars), the world's merchant traffic (a mission's
+merchants, harassed by its warships, are just ships in it), NPC admiralties, diplomacy, the
 coarse tier beyond what a damaged ship needs after a fight. The job system comes when profiling asks for it (the
 architecture's threading rules hold from the start). The Earth model when the user brings it: first missions are
 open ocean.
@@ -113,27 +115,39 @@ open ocean.
 Later inside missions: aircraft (search planes and torpedo bombers, replacing scripted reports), torpedoes and
 destroyer attacks, submarines, D/F and signals intelligence.
 
-## Steps (proposed; the world and battle plans' steps, ordered for this)
+## Stages: baby steps (agreed 2026-10-11)
 
-1. **Sim core and rails** (world step 1).
-2. **App, stack, map; a mission file loaded into a world** (world step 2, plus the mission format and the area limit).
-   Test: a hand-written mission loads, ships steam at 30,000x, the map shows them.
-3. **Contacts, encounters, pictures and sighting.** Pictures and contacts on the map; scripted reports; speed drops.
-   Test: the hunters find (or lose) the target as the sighting model says, deterministically.
-4. **Captain AI:** standing orders (go to, evade, shadow, engage), for both sides.
-5. **The battle:** `docs/battle/plan.md` steps 1-7, in the world's encounters.
-6. **Objectives, end and debrief; briefing and mission select.** The first complete mission: the Bismarck chase.
-7. **The generator and the headless balance runs.** Many missions; the shippable game.
+Build one thing at a time, each playable before the next starts. The missions above are where the stages end up
+(days long, so time compression is in by then), not where they start.
+
+**This needs planning before it's built:** each stage gets its own plan (what's in it, what it proves, how it's
+tested), agreed with the user, at the start of the session that builds it; a stage may split into several sessions
+as we ramp up. The list below is the ramp, not the plan.
+
+1. **One ship in the world, controllable.** The sim core (the clock, a ship on the sphere, commands, the snapshot,
+   the sim thread), the scene stack and a first map: one ship drawn from the snapshot, given a course and speed, and
+   steaming. Time running at 1x, then faster.
+2. **Two ships.** Both in the snapshot and on the map; each with orders; the second one maybe steered by a trivial
+   captain (keep a course, follow, run).
+3. **They shoot at each other.** Sighting between the two, a gun aimed and fired, shells on their trajectories, hits
+   through the hit query, damage: the battle plan's steps, brought in one by one.
+4. **And on:** more ships and groups, contacts and pictures, encounters and speed drops, the captain AI, scripted
+   reports, objectives, the mission start UI, time compression for days-long missions, the generator.
+
+The world and battle plans' steps are the parts this draws on; the order is this one.
+
+## Decisions (the user's, 2026-10-11)
+
+1. **Start with one ship, then two, then shooting**, building one thing at a time; each stage planned first (above).
+2. **Scripted reports, not aircraft,** in the first iteration: warships only, and sometimes merchant ships harassed by
+   warships. Aircraft come later; submarines after (they'll be fun).
+3. **A mission start UI.** Missions can give fixed forces, or a tonnage limit (and the like) within which the player
+   designs their own ships, with the designer pushed from it. (An endless swarm of torpedo boats against a battleship
+   is a legitimate answer.)
+4. **No first mission picked;** the Bismarck chase is the kind of mission wanted: a few days long, so time compression
+   is needed by the time we're done.
 
 ## Open questions (the user's)
 
-1. **Is the step order right**, pictures and the captain AI before the battle (the search is playable before the
-   fight is), or the battle first?
-2. **Scripted reports standing in for aircraft** in the first version, or aircraft (as sensors at least) from the
-   start?
-3. **Player choices at the briefing:** fixed forces only, or picking which groups to commit (and later own designs
-   within a budget)?
-4. **The first mission:** the Bismarck chase (needs the North Atlantic and Denmark Strait land, so the Earth model
-   first, or an open-ocean stand-in), or something in open ocean (Graf Spee off the River Plate approaches)?
-5. **Research:** a catalogue of historical search and interception operations as mission seeds (requested in
+1. **Research:** a catalogue of historical search and interception operations as mission seeds (requested in
    `research/REQUESTS.md`).
