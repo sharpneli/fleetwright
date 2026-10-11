@@ -18,14 +18,15 @@ dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # sa
 dotnet run --project src/Fleetwright -- -screenshot=30 -ui [-size=1920x1080] # the window as seen, ImGui included
 dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour]
 dotnet run --project src/Fleetwright -- -view=ship [-navy=kure] [-era=wwii]
+dotnet run --project src/Fleetwright -- -view=profile                      # the ship card's side view
 dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
 dotnet run --project src/Fleetwright -- -section=2 -designer-ui=secsel:1:2,secmenu  # UI state for screenshots (DesignerScene.ApplyDevUi)
 dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wheel:1160,559:-1;100:type:150  # scripted clicks, wheel, typing, F:drag:X0,Y0:X1,Y1 (window px; Engine.ScriptedInput)
 ```
 
-The exe opens three tabs on one design (menu bar, or F3 to step): the designer (default), the hitbox viewer and the
-ship viewer. `-ship=` picks the design; without it, it is `Content/Designs/bismarck.json` next to the exe (a game
-asset, below). `-ship=` also takes the path without `.json`, or just a shipped design's name (`-ship=yamato`). All three show `DesignSession`'s design: an edit in the designer shows in the viewers, and a design
+The exe opens four tabs on one design (menu bar, or F3 to step): the designer (default), the hitbox viewer, the
+ship viewer and the profile. `-ship=` picks the design; without it, it is `Content/Designs/bismarck.json` next to the exe (a game
+asset, below). `-ship=` also takes the path without `.json`, or just a shipped design's name (`-ship=yamato`). All of them show `DesignSession`'s design: an edit in the designer shows in the viewers, and a design
 picked in the ship viewer's list opens in the designer.
 
 The designer (`Designer/`, `docs/designer-ui/designer-plan.md`) edits the design, or the empty 8 kn hull with `-new`,
@@ -57,6 +58,10 @@ button gives that tier's rooms, `hitbox_cells.png` live) or a per-pixel cut.
 
 The ship viewer (`-view=ship`) shows the design from the baked textures (mips, turrets through their arcs,
 height-map shadows); its panel switches design, look, mip level, turrets and sun. Wheel zooms, left drag pans.
+
+The profile (`-view=profile`, `ProfileScene`) shows the ship card's side view (`ShipProfile`): the full hull above the
+recognition silhouette, in the session's look, drawn at 5, 10 or 20 px/m. It is made only while the tab is open, off
+the render thread with a baker of its own, so the designer's builds never wait for it.
 
 F2 shows the stats window, Escape quits. `-screenshot` captures the scene alone; with `-ui` it is the window as seen,
 ImGui on top. Both go through the window's blit shader, and a capture run reads no `imgui.ini` and writes none, so
@@ -146,6 +151,7 @@ src/
     ShipSpriteRenderer.cs     #   a baked ship sprite into any RenderTarget (hull, turrets at given bearings, shadows)
     IScene.cs                 #   a full-window view with its own UI; the engine draws the current one (see Views)
     ShipViewer.cs             #   the ship viewer, a test tool for Shipgen
+    ProfileScene.cs           #   the profile tab: the ship card's side view and silhouette (ShipProfile)
     SceneSwitcher.cs          #   several scenes behind one IScene: the menu bar and F3 switch
     UiFonts.cs                #   the game UI's fonts (Content/Fonts) in ImGui's atlas
     Designer/                 #   the ship designer: DesignerScene (design in, design out), DesignDoc (history, save),

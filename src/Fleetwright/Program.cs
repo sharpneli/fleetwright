@@ -130,11 +130,12 @@ public static unsafe class Program
                 return new Designer.DesignerScene((SDL.SDL_GPUDevice*)device, session, units, section, steps);
             }
             var early = steps != null || newDesign ? MakeDesigner() : null;
-            // the designer opens by default; -view=hitbox or -view=ship opens the others
-            engine.Scene = new SceneSwitcher(view switch { "hitbox" => 1, "ship" => 2, _ => 0 },
+            // the designer opens by default; -view=hitbox, -view=ship or -view=profile opens the others
+            engine.Scene = new SceneSwitcher(view switch { "hitbox" => 1, "ship" => 2, "profile" => 3, _ => 0 },
                 ("Designer", () => early ?? MakeDesigner()),
                 ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show)),
-                ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)));
+                ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),
+                ("Profile", () => new ProfileScene((SDL.SDL_GPUDevice*)device, session)));
 
             // Run the engine
             engine.Run();
