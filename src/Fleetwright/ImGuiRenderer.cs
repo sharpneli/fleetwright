@@ -14,6 +14,7 @@ public unsafe class ImGuiRenderer : IDisposable
 {
     private readonly SDL_GPUDevice* _device;
     private readonly SDL_Window* _window;
+    private bool _textInput;   // SDL text input started for the window
 
     // Pipeline resources
     private SDL_GPUGraphicsPipeline* _pipeline;
@@ -552,6 +553,16 @@ public unsafe class ImGuiRenderer : IDisposable
 
         // Setup time step (must be > 0)
         io.DeltaTime = deltaTime > 0 ? deltaTime : 1.0f / 60.0f;
+
+        // SDL3 sends no text events until a window asks: on while a text field is active (as last frame left it)
+        if (io.WantTextInput != _textInput)
+        {
+            _textInput = io.WantTextInput;
+            if (_textInput)
+                SDL_StartTextInput(_window);
+            else
+                SDL_StopTextInput(_window);
+        }
 
         // Update cursor
         if ((io.ConfigFlags & ImGuiConfigFlags.NoMouseCursorChange) == 0)

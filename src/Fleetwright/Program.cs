@@ -102,10 +102,10 @@ public static unsafe class Program
             }
 
             // The design's scenes: the ship viewer (sprites) and the hitbox viewer, on one shared design
-            shipPath ??= Path.Combine(AppContext.BaseDirectory, DefaultDesign);
+            shipPath = shipPath == null ? Path.Combine(AppContext.BaseDirectory, DefaultDesign) : FindDesign(shipPath);
             if (!File.Exists(shipPath))
             {
-                Console.Error.WriteLine($"Design not found: {shipPath}");
+                Console.Error.WriteLine($"Design not found: {shipPath} (give a path to a .json, or a shipped design's name: -ship=yamato)");
                 return 1;
             }
             nint device = (nint)engine.Device;   // lambdas may not capture a pointer
@@ -140,4 +140,15 @@ public static unsafe class Program
 
     /// <summary>The design shown without -ship=: a game asset (GameAsset in the csproj), next to the exe.</summary>
     const string DefaultDesign = "Content/Designs/bismarck.json";
+
+    /// <summary>-ship='s design: the path as given, else with ".json" added, else a shipped design of that name
+    /// (Content/Designs next to the exe). What's not found comes back as given.</summary>
+    static string FindDesign(string arg)
+    {
+        string name = Path.GetFileNameWithoutExtension(arg);
+        foreach (var p in new[] { arg, arg + ".json", Path.Combine(AppContext.BaseDirectory, "Content", "Designs", name + ".json") })
+            if (File.Exists(p))
+                return p;
+        return arg;
+    }
 }

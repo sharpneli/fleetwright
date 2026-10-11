@@ -23,7 +23,7 @@ dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI s
 
 The exe opens three tabs on one design (menu bar, or F3 to step): the designer (default), the hitbox viewer and the
 ship viewer. `-ship=` picks the design; without it, it is `Content/Designs/bismarck.json` next to the exe (a game
-asset, below). All three show `DesignSession`'s design: an edit in the designer shows in the viewers, and a design
+asset, below). `-ship=` also takes the path without `.json`, or just a shipped design's name (`-ship=yamato`). All three show `DesignSession`'s design: an edit in the designer shows in the viewers, and a design
 picked in the ship viewer's list opens in the designer.
 
 The designer (`Designer/`, `docs/designer-ui/designer-plan.md`) edits the design, or the empty 8 kn hull with `-new`,
