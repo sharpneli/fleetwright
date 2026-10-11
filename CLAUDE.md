@@ -207,6 +207,7 @@ Content/                      # copied into the game's output folder; the bake s
   Shaders/Source/             #   GLSL sources
   Shaders/Compiled/           #   SPIR-V binaries (checked in)
 docs/shipgen/                 # the ship designer: inputs, outputs, conventions, decisions, TODO, its research notes
+docs/battle/plan.md           # the battle module's data plan (ShipClass, ShipState, the steps): one step per session
 research/                     # research notes, see below
 ```
 
