@@ -505,9 +505,26 @@ public sealed unsafe partial class DesignerScene
         float x0 = pos.X + labelW, x1 = pos.X + size.X - pad;
         float kx = (x1 - x0) / sp.L;
         float bodyTop = pos.Y + P(18), bodyH = size.Y - P(18);
-        float planH = MathF.Round(bodyH * 0.38f);
+        // the tracks first, packed at a small fixed pitch along the bottom (a schematic, so nothing in it is stretched to
+        // fill the strip); the plan, at true proportions, takes the height above them
+        var shown = TrackOrder.Where(p => sp.Offered[(int)p]).ToList();
+        float pitch = P(23);
+        float wlY = pos.Y + size.Y - P(10);
+        float deckY = sp.Offered[(int)Pos.Lower] ? wlY - pitch * 1.5f : wlY - P(10);
+        var trackY = new float[4];
+        trackY[(int)Pos.Lower] = deckY + pitch * 0.8f;
+        float ty0 = deckY - P(8);
+        foreach (var p in new[] { Pos.Deck, Pos.Upper, Pos.House })
+            if (sp.Offered[(int)p])
+            {
+                trackY[(int)p] = ty0;
+                ty0 -= pitch;
+            }
+        float roofY = sp.Offered[(int)Pos.House] ? trackY[(int)Pos.House] + P(8) : deckY;
+        float stackTop = shown.Count > 0 ? shown.Min(p => trackY[(int)p]) - P(22) : deckY - P(30);
+        float planH = Math.Max(P(40), stackTop - bodyTop);
         float cl = bodyTop + planH;   // the centreline: the plan band's bottom edge
-        float ky = Math.Min(kx, (planH - P(10)) / (sp.B / 2));
+        float ky = Math.Min(kx, (planH - P(24)) / (sp.B / 2));
         float X(float m) => x0 + (m + sp.L / 2) * kx;
         Vector2 Pl(float mx, float my) => new(X(mx), cl - my * ky);
         dl.PushClipRect(pos + new Vector2(1, P(18)), pos + size - new Vector2(1, 1), true);
@@ -578,33 +595,33 @@ public sealed unsafe partial class DesignerScene
             }
 
         // ---- the tracks
-        var shown = TrackOrder.Where(p => sp.Offered[(int)p]).ToList();
-        float tTop = cl + P(26), tBot = pos.Y + size.Y - P(16);
-        float pitch = shown.Count > 1 ? (tBot - tTop) / (shown.Count - 1 + 0.6f) : 0;
-        var trackY = new float[4];
-        for (int i = 0; i < shown.Count; i++)
-            trackY[(int)shown[i]] = tTop + i * pitch + (shown[i] == Pos.Lower ? pitch * 0.6f : 0);
-        float deckY = sp.Offered[(int)Pos.Lower] ? trackY[(int)Pos.Lower] - pitch * 0.65f : tBot - P(4);
-        float wlY = sp.Offered[(int)Pos.Lower] ? trackY[(int)Pos.Lower] + pitch * 0.55f : tBot + P(8);
-        float roofY = sp.Offered[(int)Pos.House] ? trackY[(int)Pos.House] + P(8) : deckY;
         float hullL = X(-sp.L / 2), hullR = X(sp.L / 2);
         dl.AddRectFilled(new Vector2(hullL, deckY), new Vector2(hullR, wlY), T.U32(T.PlanLine with { W = 0.06f }));
         dl.AddLine(new Vector2(hullL, deckY), new Vector2(hullR, deckY), T.U32(T.PlanLine with { W = 0.8f }));
         dl.AddLine(new Vector2(hullL - P(8), wlY), new Vector2(hullR + P(8), wlY), T.U32(T.Blue), P(1.2f));
         Text(dl, UiFonts.SansSmall, new Vector2(hullR + P(2), wlY - UiFonts.SansSmall.FontSize - P(1)), T.Blue, "WL");
-        // the superstructure as blocks in the elevation: its extent from the plan, its level
+        // the superstructure, low: the deckhouse as its roof (a band under the deckhouse track, faint to the deck), the
+        // levels above it as thin steps; its extent comes from the plan
         foreach (var (pts, lv) in sp.Blocks.OrderBy(b => b.Level))
         {
-            float bx0 = pts.Min(q => q.X), bx1 = pts.Max(q => q.X);
-            float top = lv > 1 ? Math.Max(cl + P(10), roofY - (lv - 1) * P(8)) : roofY;
-            dl.AddRectFilled(new Vector2(X(bx0), top), new Vector2(X(bx1), deckY), T.U32(lv > 1 ? new Vector4(0.17f, 0.23f, 0.29f, 0.45f) : new Vector4(0.13f, 0.19f, 0.25f, 0.7f)));
-            dl.AddRect(new Vector2(X(bx0), top), new Vector2(X(bx1), deckY), T.U32(new Vector4(0.2f, 0.28f, 0.35f, 1)));
+            float bx0 = X(pts.Min(q => q.X)), bx1 = X(pts.Max(q => q.X));
+            if (lv <= 1)
+            {
+                dl.AddRectFilled(new Vector2(bx0, roofY), new Vector2(bx1, deckY), T.U32(new Vector4(0.13f, 0.19f, 0.25f, 0.35f)));
+                dl.AddRectFilled(new Vector2(bx0, roofY), new Vector2(bx1, roofY + P(4)), T.U32(new Vector4(0.2f, 0.28f, 0.35f, 1)));
+            }
+            else
+            {
+                float top = roofY - Math.Min(lv - 1, 4) * P(3);
+                dl.AddRectFilled(new Vector2(bx0, top), new Vector2(bx1, roofY), T.U32(new Vector4(0.17f, 0.23f, 0.29f, 0.8f)));
+                dl.AddRect(new Vector2(bx0, top), new Vector2(bx1, roofY), T.U32(new Vector4(0.22f, 0.3f, 0.37f, 1)));
+            }
         }
         foreach (var m in sp.Mains)
         {
             if (Math.Abs(m.Y) > 0.5f)
                 continue;
-            float w = m.R * kx, z = deckY - m.Tier * P(12), hgt = P(16);
+            float w = m.R * kx, z = deckY - m.Tier * P(6), hgt = P(10);
             var grey = T.U32(new Vector4(0.23f, 0.27f, 0.32f, 1));
             if (m.Tier > 0)
                 dl.AddRectFilled(new Vector2(X(m.X) - w * 0.7f, z), new Vector2(X(m.X) + w * 0.7f, deckY), T.U32(new Vector4(0.18f, 0.22f, 0.26f, 1)));
@@ -686,9 +703,9 @@ public sealed unsafe partial class DesignerScene
                     dl.AddRect(new Vector2(X(m.X) - tr, ty - P(5)), new Vector2(X(m.X) + tr, ty + P(5)), T.U32(edge));
                     dl.AddCircleFilled(new Vector2(X(m.X), ty), P(2.1f), T.U32(edge));
                     break;
-                case Pos.Upper:
-                    dl.AddRectFilled(new Vector2(X(m.X) - tr, ty - P(7)), new Vector2(X(m.X) + tr, deckY), T.U32(fill));
-                    dl.AddRect(new Vector2(X(m.X) - tr, ty - P(7)), new Vector2(X(m.X) + tr, deckY), T.U32(edge));
+                case Pos.Upper:   // a housing: a box like the lower tier's, a little taller
+                    dl.AddRectFilled(new Vector2(X(m.X) - tr, ty - P(6)), new Vector2(X(m.X) + tr, ty + P(6)), T.U32(fill));
+                    dl.AddRect(new Vector2(X(m.X) - tr, ty - P(6)), new Vector2(X(m.X) + tr, ty + P(6)), T.U32(edge));
                     dl.AddCircleFilled(new Vector2(X(m.X), ty), P(2.1f), T.U32(edge));
                     break;
                 default:
@@ -705,7 +722,7 @@ public sealed unsafe partial class DesignerScene
             }
             string tag = $"{SecName(m.K)}{m.N}";
             float tw = Width(UiFonts.SansSmall, tag);
-            float tagY = m.Track == Pos.Lower ? ty + P(6) : ty - P(8) - UiFonts.SansSmall.FontSize;
+            float tagY = m.Track is Pos.Lower or Pos.Upper ? ty + P(6) : ty - P(8) - UiFonts.SansSmall.FontSize;   // under the boxes, over the turrets
             Text(dl, UiFonts.SansSmall, new Vector2(X(m.X) - tw / 2, tagY), edge, tag);
             if (sel)
             {

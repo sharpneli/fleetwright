@@ -18,6 +18,9 @@ The game differs from the mockup in these ways:
   track, only while the last good ship is still shown after an edit, or when a build is capped.
 - **The amidships bracket** is drawn between the end turrets (the main turrets beyond a fifth of the length from
   midships), since the layout's own stretch isn't in the hitboxes.
+- **The tracks are packed** at a small fixed pitch along the bottom of the strip, and the plan takes the height above
+  them at true proportions. Upper casemates are boxes like the lower ones, and the superstructure is a low roof band
+  with a thin step per level above it: nothing in the schematic stretches to fill the space.
 - **Position is a knob,** `sec{i}_pos` (`house`, `deck`, `upper`, `lower`), so `-steps=sec1_pos:upper` works.
 - **A dev hook for screenshots:** `-designer-ui=` takes `sec:K` (select battery K), `secsel:K:N` (pair N of it),
   `secmenu` (its context menu), `secrose:all` (the rose with the main battery), `sectip:lane:P` / `sectip:short:K`
