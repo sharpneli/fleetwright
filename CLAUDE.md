@@ -177,6 +177,7 @@ src/
     TopView.cs                #   the ship from above: the hitboxes' parts in drawing shapes, plus the dressing
     SideView.cs, SideArt.cs   #   the ship from the side (the card's profile), drawn by the plan's rules
     ShipProfile.cs            #   the profile and recognition silhouette as scenes (docs/shipgen/profile-plan.md)
+    Dazzle.cs                 #   the dazzle scheme both views paint from, so panels meet across the deck edge
     Data/looks.jsonc          #   every navy and era's colours and shapes (the documented table)
     Looks.cs                  #   resolving a design's look: from-chains, adjust, era muting
     Scene.cs                  #   the display list (paths, circles, rects, lines, text, clipped groups) and SvgWriter
