@@ -37,6 +37,9 @@ public static class Program
         shipgen bake DESIGN.json... [--out DIR] [--scale S] [--mips N]
             draw and bake each design on the GPU: DIR/<id>/sprite.json, hull.png, height.png, turrets/<type>.png
             and each layer's _mips.png
+        shipgen profile DESIGN.json... [--out DIR] [--scale S] [--navy N] [--era E]
+            draw and bake each design's profile from the starboard side (default 10 px/m): DIR/<id>/profile.png (the
+            full hull) and silhouette.png, and their SVGs; --navy and --era repaint it in another look
         shipgen png-check [--root DIR] [--out DIR] [CASE|PREFIX*...]
             bake every design with a sprite golden and compare its PNGs' coverage (IoU) with Python's; --out keeps
             the PNGs
@@ -90,6 +93,7 @@ public static class Program
                 "shell-test" => ShellTestCmd(a),
                 "mono-check" => MonoCheck(a),
                 "bake" => BakeCmd(a),
+                "profile" => ProfileCmd(a),
                 "png-check" => PngCheck(a),
                 "svg-check" => Check(a, RenderGolden.CheckSvgs),
                 "sprite-check" => Check(a, RenderGolden.CheckSprite),
@@ -483,6 +487,30 @@ public static class Program
             ShipBake.Save(sp, baked, dir);
             Console.WriteLine($"baked {design.Id}: {baked.Hull.Width}x{baked.Hull.Height} px, {sp.Turrets.Count} turret types " +
                               $"(build+draw {tBuild:F2} s, bake {tBake:F2} s, save {sw.Elapsed.TotalSeconds - tBuild - tBake:F2} s) -> {dir}");
+        }
+        return 0;
+    }
+
+    static int ProfileCmd(Args a)
+    {
+        string outDir = a.Get("out", "out_profiles")!;
+        double scale = double.Parse(a.Get("scale", "10")!, System.Globalization.CultureInfo.InvariantCulture);
+        string? navy = a.Get("navy"), era = a.Get("era");
+        var look = navy != null || era != null ? new LookInput { Navy = navy, Era = era } : null;
+        using var gpu = new GpuBaker();
+        foreach (var path in a.Positional)
+        {
+            var design = LoadDesign(path);
+            var sw = Stopwatch.StartNew();
+            var p = ShipProfile.Build(ShipDesign.Build(design), scale, look);
+            double tDraw = sw.Elapsed.TotalSeconds;
+            var (full, sil) = ProfileBake.Bake(p, gpu);
+            string dir = Path.Combine(outDir, design.Id!);
+            ProfileBake.Save(dir, full, sil);
+            File.WriteAllText(Path.Combine(dir, "profile.svg"), SvgWriter.Write(p.Full));
+            File.WriteAllText(Path.Combine(dir, "silhouette.svg"), SvgWriter.Write(p.Silhouette));
+            Console.WriteLine($"profiled {design.Id}: {full.Width}x{full.Height} px, silhouette {sil.Width}x{sil.Height} px " +
+                              $"(build+draw {tDraw:F2} s, bake {sw.Elapsed.TotalSeconds - tDraw:F2} s) -> {dir}");
         }
         return 0;
     }

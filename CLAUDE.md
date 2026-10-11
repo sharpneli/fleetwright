@@ -98,6 +98,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- validate shipgen/
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- bench bismarck yamato
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- draw shipgen/designs/bismarck.json --out out   # sprite.json + SVGs
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- bake shipgen/designs/bismarck.json --out out   # PNGs on the GPU
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- profile shipgen/designs/bismarck.json --out out [--scale 10]   # the side: profile.png, silhouette.png + SVGs
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- png-check             # bake all, IoU vs Python's PNGs (turrets; hulls retired)
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- svg-check             # every case's SVGs, ~20 s
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- fuzz shipgen/designs/*.json --cases 1600   # robustness
@@ -168,6 +169,8 @@ src/
     Tools/                    #   the fuzz mutator
   Fleetwright.Shipgen.Render/ # the drawing side: reads only the built Ship (its hitboxes and dressing)
     TopView.cs                #   the ship from above: the hitboxes' parts in drawing shapes, plus the dressing
+    SideView.cs, SideArt.cs   #   the ship from the side (the card's profile), drawn by the plan's rules
+    ShipProfile.cs            #   the profile and recognition silhouette as scenes (docs/shipgen/profile-plan.md)
     Data/looks.jsonc          #   every navy and era's colours and shapes (the documented table)
     Looks.cs                  #   resolving a design's look: from-chains, adjust, era muting
     Scene.cs                  #   the display list (paths, circles, rects, lines, text, clipped groups) and SvgWriter

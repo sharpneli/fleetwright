@@ -109,6 +109,10 @@
     "hatch": "#5d6650",                   // cargo hatch tarpaulins
     "hatch_coaming": "#4a5157",
     "crane": "#3a4045",
+    // the profile only (SideArt): the hull below the waterline
+    "bottom": "#7a3b30",                  // anti-fouling paint
+    "boot_top": "#2b2f33",                // the band along the waterline
+    "propeller": "#a8834f",               // bronze
     // look features, used only when a look's shapes ask for them
     "camo": ["#4d565d", "#76838f"],       // dazzle panel colours (shapes "dazzle")
     "recog_a": "#c22f27",                 // recognition stripes and turret-roof bands (shapes "deck_stripes", "turret_bands")
