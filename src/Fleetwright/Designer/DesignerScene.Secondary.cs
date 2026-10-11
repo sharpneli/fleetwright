@@ -24,6 +24,7 @@ public sealed unsafe partial class DesignerScene
     int secHotK = -1, secHotNext = -1;   // the battery hovered in the strip (this frame's, next frame's)
     (int K, int N)? secFocus;   // what the plan rings: a pair, or a whole battery (N = 0)
     string? secForceTip;   // dev hook: draw this tooltip without a mouse ("lane:2", "short:1")
+    Pos? secPressLane;   // dev hook: press this track's + at the next draw
 
     static readonly Vector4[] SecColours = [Hex(0xD98B5F), Hex(0x8BC48A), Hex(0xB48CD9), Hex(0x5FC2C0), Hex(0xD9C25F), Hex(0xD97A9A)];
     static Vector4 SecColour(int k) => SecColours[k % SecColours.Length];
@@ -468,6 +469,10 @@ public sealed unsafe partial class DesignerScene
         ImGui.PopFont();
     }
 
+    /// <summary>The selected battery's row, or null. An edit can move the selection to a battery the snapshot doesn't
+    /// have yet (added) or no longer has (removed): the rest of that frame still draws the old snapshot.</summary>
+    SecRow? ActiveRow(SecPane sp) => secActive >= 0 && secActive < sp.Rows.Length ? sp.Rows[secActive] : null;
+
     static string PosTip(Pos p, float axis) => p switch
     {
         Pos.House => "On the deckhouse: a deck mount raised a level, clear of the main turrets' blast, with better arcs and more top weight.",
@@ -622,7 +627,7 @@ public sealed unsafe partial class DesignerScene
             bool click = ImGui.InvisibleButton("##lane", new Vector2(labelW - P(6), P(14)));
             bool hover = ImGui.IsItemHovered();
             ImGui.PopID();
-            bool here = sp.Rows.Length > 0 && sp.Rows[secActive].Pos == p;
+            bool here = ActiveRow(sp)?.Pos == p;
             var lc = here ? SecColour(secActive) : hover ? T.Text : new Vector4(0.34f, 0.39f, 0.43f, 1);
             var bp = new Vector2(pos.X + P(6), y - P(5.5f));
             DashedRect(dl, bp, bp + V(11, 11), T.U32(lc));
@@ -638,8 +643,11 @@ public sealed unsafe partial class DesignerScene
             }
             if (secForceTip == $"lane:{(int)p}")
                 TipAt(tip, a + new Vector2(P(30), P(16)));
-            if (click)
+            if (click || secPressLane == p)
+            {
+                secPressLane = null;
                 LaneAdd(d, sp, p);
+            }
         }
 
         // the secondaries: a plan glyph and a track glyph each, one button over both
@@ -792,9 +800,8 @@ public sealed unsafe partial class DesignerScene
 
     string LaneTip(SecPane sp, Pos p)
     {
-        if (sp.Rows.Length == 0)
+        if (ActiveRow(sp) is not { } r)
             return $"+ a battery {SA.Text(p)}";
-        var r = sp.Rows[secActive];
         string gun = $"{r.Barrels} × {r.Cal.Value}/{r.Len.Plain}";
         if (r.Pos == p)
             return $"+ a pair of {SecName(r.K)} {SA.Text(p)}\n{r.Per.Value} → one more";
@@ -1083,14 +1090,13 @@ public sealed unsafe partial class DesignerScene
         ImGui.SetCursorScreenPos(pos);
         SubHeader(dl, size.X, "SELECTED", secSel != null ? "mount pair" : "battery · click a mount for a pair");
         float x = pos.X + P(8), y = pos.Y + P(22);
-        if (sp.Rows.Length == 0)
+        var d = doc.Current;
+        if (ActiveRow(sp) is not { } r || d.Secondary?.ElementAtOrDefault(r.K) is not { } b)
         {
-            Text(dl, UiFonts.SansSmall, new Vector2(x, y), T.Muted, "No secondary battery: + Battery, or a track's + in the strip.");
+            if (sp.Rows.Length == 0)
+                Text(dl, UiFonts.SansSmall, new Vector2(x, y), T.Muted, "No secondary battery: + Battery, or a track's + in the strip.");
             return;
         }
-        var d = doc.Current;
-        var r = sp.Rows[secActive];
-        var b = d.Secondary![secActive];
         string name = secSel is { } s ? $"{SecName(s.K)}{s.N}S / P" : SecName(r.K);
         string title = $"{name} · {(r.Barrels > 1 ? r.Barrels + " × " : "")}{r.Cal.Value}/{r.Len.Plain}, {SA.Text(r.Pos)}";
         float sw = P(9);
@@ -1143,7 +1149,8 @@ public sealed unsafe partial class DesignerScene
 
     /// <summary>The dev hook (-designer-ui=): UI state the screenshots need without a mouse. sec:K selects battery K,
     /// secsel:K:N pair N of it, secmenu opens its context menu, secrose:all adds the main battery to the rose,
-    /// sectip:lane:P or sectip:short:K draws that tooltip.</summary>
+    /// sectip:lane:P or sectip:short:K draws that tooltip, seclane:P presses track P's + (P: 0 deckhouse, 1 deck, 2 upper
+    /// casemate, 3 lower casemate).</summary>
     void ApplyDevUi(IEnumerable<string> items)
     {
         foreach (var it in items)
@@ -1163,6 +1170,9 @@ public sealed unsafe partial class DesignerScene
                     break;
                 case "secrose":
                     secRoseAll = p.Length > 1 && p[1] == "all";
+                    break;
+                case "seclane":
+                    secPressLane = (Pos)Math.Clamp(Int(1), 0, 3);
                     break;
                 case "sectip" when p.Length == 3:
                     secForceTip = $"{p[1]}:{p[2]}";

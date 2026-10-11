@@ -20,8 +20,8 @@ The game differs from the mockup in these ways:
   midships), since the layout's own stretch isn't in the hitboxes.
 - **Position is a knob,** `sec{i}_pos` (`house`, `deck`, `upper`, `lower`), so `-steps=sec1_pos:upper` works.
 - **A dev hook for screenshots:** `-designer-ui=` takes `sec:K` (select battery K), `secsel:K:N` (pair N of it),
-  `secmenu` (its context menu), `secrose:all` (the rose with the main battery) and `sectip:lane:P` / `sectip:short:K`
-  (draw that tooltip).
+  `secmenu` (its context menu), `secrose:all` (the rose with the main battery), `sectip:lane:P` / `sectip:short:K`
+  (draw that tooltip) and `seclane:P` (press track P's `+`; P is 0 deckhouse, 1 deck, 2 upper, 3 lower casemate).
 
 Game screenshots: `png/secondary-game-babel-menu.png`, `png/secondary-game-kongo-lane.png`,
 `png/secondary-game-deutschland.png`.
