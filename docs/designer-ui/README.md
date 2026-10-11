@@ -180,22 +180,25 @@ The reasoning, the engine finding (the lumpy tonnage), the port plan and the ope
 
 This mockup covers the Protection tab's pane only (1280 × 578). It replaces the knob list with four parts:
 
-- an **elevation**: the ship's side deck by deck, every plate where it is, `+` on a bare deck or side to add armour
-- a **midship section** to scale, with the belt's edges and the torpedo protection's depth as spinners on the drawing
-- a **plate table**: thickness, second value, where (deck, extent), material, t and real one-step tonnage
-- the **selected plate**: what it covers, its weight, and the one-step knock-on.
+- an **elevation**: the ship's side deck by deck, every plate where it is, `+` ghosts where a missing part would go
+- a **midship section** to scale, with the belt's edges and the torpedo protection's bulkhead as drag handles
+- a **plate table** of the parts the ship has: thickness, second value, where (deck, extent), material, weight and its
+  share; `+` chips in the group headers add a missing part, `×` removes one
+- the **selected plate**: what it covers and weighs, and the greyed immune-zone panel.
 
-The reasoning, the engine finding (one step can re-plan the citadel), the port plan and the open questions are in
-`protection.md`. `?ship=dreadnought|yamato` loads the other examples.
+Coverage presets (All-or-nothing, Armoured ends, Complete belt) sit in the sub-bar. The reasoning, the review decisions,
+the port plan and the open questions are in `protection.md`. `?ship=dreadnought|yamato` loads the other examples.
 
 | File | State |
 |---|---|
 | `png/protection-before.png` | today's Protection tab in the game, for comparison |
 | `png/protection-opened.png` | Bismarck as opened |
 | `png/protection-ghost.png` | hovering the second deck's `+` over the citadel |
-| `png/protection-added-deck.png` | after adding it and thinning the main deck 10 mm (stand-in figures) |
+| `png/protection-added-deck.png` | after adding it and thinning the main deck 10 mm |
 | `png/protection-dreadnought-menu.png` | right-click on Dreadnought's third deck, fore end |
-| `png/protection-replan-tip.png` | Yamato, armour deck +5 mm: +4,054 t, the citadel re-planned 20 m longer |
+| `png/protection-cover-tip.png` | Yamato, hovering the "Armoured ends" preset |
+| `png/protection-dreadnought-aon.png` | Dreadnought after "All-or-nothing" |
+| `png/protection-handle-reach.png` | Bismarck, parts removed, dragging the fore end belt's tip |
 
 ## Screenshots (`png/`)
 

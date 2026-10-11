@@ -5,18 +5,31 @@ shows **only the tab's pane** (1280 × 578, its size at 1920 × 1080). The plan,
 are.
 
 URL options: `?ship=bismarck` (the default), `dreadnought` (armoured ends, decks over the fore and aft ends) or `yamato`
-(all-or-nothing, steering gear box). For screenshots: `&sel=deck1` selects a plate, `&do=adddeck:1:citadel,deck0:-2`
-edits, `&tip=step:deck0:1` or `&tip=ghost:gh-1-citadel` draws a tooltip, `&menu=deck1` opens a plate's context menu.
+(all-or-nothing, steering gear box). For screenshots: `&sel=deck1` selects a plate; `&do=` edits, comma-separated
+(`adddeck:1:citadel`, `deck0:-2` for steps, `add:end_fore`, `rm:upper`, `cover:aon`, `reach:end_fore:0.6`, `bh:3.4`);
+`&tip=ghost:gh-1-citadel`, `&tip=cover:1` or `&tip=handle:2` draws a tooltip; `&menu=deck1` opens a plate's context
+menu.
 
 **What's real and what isn't:**
 
 - **Real:** each ship's geometry (the belt, strakes, bulkheads, armour decks, barbettes, turrets, conning tower, the
-  deck stack and the midship station), its weight lines and every one-step figure. They're `shipgen design` builds of the
-  shipped design, and of the design with that one value moved one step, done on 2026-10-11: 30 probe builds for
-  Bismarck, 30 for Dreadnought and 22 for Yamato. The step tooltips show each probe's biggest weight lines and what the
-  yard re-planned.
-- **Stand-in:** once you edit, the t column scales the opened build's line by area and thickness, and the step columns
-  turn grey with a `≈`. The game builds and probes the edited ship instead, as the Overview does.
+  deck stack and the midship station) and its weight lines, from `shipgen design` builds of the shipped designs on
+  2026-10-11.
+- **Stand-in:** once you edit, the t column scales the opened build's line by area and thickness, and the drawings move
+  the plates the way the engine would. The game shows the rebuilt ship.
+
+## Review decisions (2026-10-11, first pass)
+
+- **No deltas.** The tab shows weights (t, and the share of the armour), not one-step figures. That's the Overview's
+  job.
+- **The elevation keeps real heights**, stretched: they show the plates' relative sizes at a glance.
+- **The immune zone stays as a greyed placeholder**, a fixed panel at the foot of the selected plate. It will hold the
+  penetration model and a "1,000 shells fired in anger" run.
+- **Engine rules stay read-only** (the conning tower takes the belt; barbettes 0.8 × the faces). When the engine
+  changes, the UI changes with it.
+- **Turret faces stay on both tabs**, here and on Main battery.
+
+Second pass, from that review: make adding and removing parts simple, and coverage quick to change.
 
 ## Why the current tab is slow
 
@@ -30,16 +43,56 @@ Materials part by part folded away.
   "Armour deck N" blocks.
 - **An armour deck is four controls.** Thickness, "On deck" as a number (0 is the main deck, 2 the third), "Over" as a
   dropdown, and material. Adding one is: Add, then wheel the deck number, then pick the extent, then set the thickness.
+- **A missing part is a row at 0.** There's no telling what the ship has from what it could have, and removing a part
+  means spinning it to zero.
 - **Related values sit far apart.** The belt's lower edge, its height above and depth below the waterline, and its
   material are in three different folds.
-- **What a value costs is invisible.** There's no weight per plate and no one-step figure, so you can't tell which
-  plate is cheap to thicken.
 
 ## The design
 
-The pane has four parts. The sub-bar names what the scheme reads as (all-or-nothing, incremental with armoured ends,
-protected deck), the armour's weight and share of standard, and the armour scheme (the same template as in the
-Templates panel).
+The pane has four parts under the sub-bar. The sub-bar names what the scheme reads as (all-or-nothing, incremental
+with armoured ends, protected deck), the armour's weight and share of standard, the **coverage presets** and the armour
+scheme (the same template as in the Templates panel).
+
+### Adding and removing parts
+
+The armour is a fixed set of parts: belt, upper belt, end belts fore and aft, citadel bulkheads, torpedo protection,
+steering gear box, and any number of armour decks. The tab shows **only the parts the ship has**. Each one the ship
+lacks is a dashed **`+` chip in its group's header** ("+ upper belt", "+ end belt fore", "+ steering gear box"), and
+the decks group has a chip for each bare deck ("+ 2nd", "+ 4th"). One click adds the part with starting values taken
+from the belt (upper belt half its thickness, end belts 0.4, bulkheads 0.7, decks 25 mm), and selects it.
+
+Each row has a **`×`** at its end (or Del on the selected plate). Removing a part sets it to 0 in the design (a deck is
+deleted), and it comes back as a `+` chip, and as a ghost on the elevation. Barbettes, the conning tower and the turret
+faces can't be removed: the engine derives the first two, and the faces belong to the battery.
+
+On the elevation, the same parts are `+` ghosts where they would go: a bare stretch of a deck (aft end, citadel, fore
+end), the side above the belt (upper belt), the ends beside it (end belts), the stern over the rudders (steering gear
+box). Hovering shows what it adds and its weight.
+
+### Changing coverage
+
+Coverage is where a plate reaches. There are three ways to change it, from the broadest to the finest:
+
+1. **Coverage presets** in the sub-bar, a segmented control: **All-or-nothing · Armoured ends · Complete belt**. The
+   design's own reading is lit. A preset moves extents and adds or drops the end armour; thicknesses stay. Its tooltip
+   lists what it would do to this ship ("adds the end belt, fore 160 mm; adds the third deck, both ends 120 mm").
+   All-or-nothing drops the end belts and every deck's armour over the ends, and brings the upper belt back to the
+   citadel. Armoured ends adds both end belts and a deck over both ends, one deck below the roof. Complete belt does
+   that and carries the upper belt the full length.
+2. **Brass handles** on the drawings for the selected plate. Drag one, the value snaps, the drawing follows, and a
+   tooltip shows the value:
+   - the belt's **top and bottom edges** (0.1 m), on the elevation and on the section (the end belts share them);
+   - an end belt's **tip**, horizontally: its reach, in tenths of the way to the stem or stern;
+   - the upper belt's **top edge**, snapping deck to deck;
+   - an armour deck, up or down, **snapping to another deck**;
+   - the torpedo protection's **holding bulkhead**, in or out on the section (0.1 m).
+3. **The row's controls**: an extent segment (cit · full · fore · aft · ends) for decks and the upper belt, a deck
+   dropdown, the reach spinner, and the belt's ↓ ↑ heights. These are one click or one wheel step each.
+
+There are no handles for the length of the citadel (the layout places it between the outermost barbettes) or for a
+deck's extent. The engine's extents are fixed spans (the citadel, an end, both ends, the full length), not free ends,
+so a drag would only jump between them, and the segment does that in one click.
 
 ### 1. Elevation (top left)
 
@@ -50,59 +103,50 @@ so that each deck is a lane, with its name in the margin.
   taper below the waterline), the upper belt, the end belts (root and tip), both citadel bulkheads (thinner below the
   belt), each armour deck on its own deck, the steering gear box, the barbettes (dashed inside the hull), the turrets
   and the conning tower. The torpedo protection is a hatched band under the roof deck.
-- **Click** a plate to select it, **wheel** over it to step its thickness, **right-click** for its menu.
-- **`+` ghosts:** hovering a bare stretch of a deck (aft end, citadel, fore end) shows a dashed `+` and what it would
-  add ("+ armour deck on the second deck, citadel, 25 mm, ≈ +1,004 t"). One click adds it. The same goes for a missing
-  upper belt, end belt or steering gear box.
-- The citadel is bracketed and its length shown. The layout places it (between the outermost barbettes), so the tab
-  shows it and doesn't edit it.
+- **Click** a plate to select it, **wheel** over it to step its thickness, **right-click** for its menu, **drag** its
+  handles.
+- The citadel is bracketed and its length shown.
 
 ### 2. Midship section (top right)
 
-The midship station from the hull form, **to scale**, with the plates drawn three times as thick so they show:
-
-- belt and upper belt on both sides, tapering below the waterline;
-- every armour deck that crosses the station;
-- the torpedo protection: the holding bulkhead `tds_m` in from the shell, inner bottom to the roof deck, hatched.
-
-The belt's two height values sit on the drawing as spinners at its top and bottom edges (↑ above the waterline,
-↓ below it), and the torpedo protection's depth beside it. They're the values that matter most in the section and the
-hardest to picture as numbers.
+The midship station from the hull form, **to scale**, with the plates drawn three times as thick so they show: the belt
+and upper belt on both sides (tapering below the waterline), every armour deck that crosses the station, and the
+torpedo protection (the holding bulkhead `tds_m` in from the shell, inner bottom to the roof deck, hatched). The belt's
+edges and the holding bulkhead have handles, and spinners beside them.
 
 ### 3. Plate table (bottom left)
 
-One row per plate, in four groups: side and torpedo protection, armour decks, ends, guns and conning tower. A plate the
-design doesn't have stays as a grey row with 0 mm, so you can spin it up.
+One row per part the ship has, in four groups (side, armour decks, ends, guns and conning tower), with the `+` chips in
+the group headers.
 
 | Column | What it is |
 |---|---|
 | Thickness | spinner: ◀ ▶, wheel (Shift ×4), click to type. The torpedo protection's depth in m |
 | Lower · tip · roof | the second value: the belt's lower edge (auto: the belt), the end belt's tip, the steering box's roof |
-| Where | the belt's heights; the upper belt's top deck (dropdown) and extent (segmented: cit · full · fore · aft · ends); an end belt's reach; an armour deck's deck (dropdown) and extent; the turret faces' side, rear and roof |
+| Where | the belt's heights (↓ under and ↑ over the waterline); the upper belt's top deck (dropdown) and extent; an end belt's reach; an armour deck's deck (dropdown) and extent; the turret faces' side, rear and roof |
 | Material | the scheme's material in grey, or the plate's own. A click picks one |
-| t | the plate's weight from the build, with the weight lines in the tooltip |
-| − step, + step | standard displacement one step down and up, from real probe builds. Amber when the step re-plans the ship (below) |
-
-The armour decks' group header has "+ add an armour deck…" for the keyboard route; the elevation's `+` is the quick
-one. The guns group notes that turret faces are also on the Main battery tab, and the secondary shields on the
-Secondary tab.
+| t | the plate's weight, with the weight lines in the tooltip |
+| of the armour | a bar and the plate's share of the armour's weight |
+| × | remove |
 
 ### 4. Selected plate (bottom right)
 
 What the plate covers (from–to along the ship, its length and share), its height (deck, or from–to on the waterline),
 weight and share of standard, material, the taper, and a line on what the engine does with it ("Full thickness down to
-the belt's lower edge, half below it"). Below that, **one step** in a small table: the standard displacement and the
-biggest weight lines for − and +, and the citadel's change when the yard re-plans.
+the belt's lower edge, half below it"). The barbettes and the conning tower say which value they follow. At the foot,
+the greyed **immune zone** panel: against which gun, where the belt and the deck hold, and "Fire 1,000 shells…".
 
 ### Clicks
 
 | Task | Today | Here |
 |---|---|---|
-| Add an armour deck on the second deck over the citadel | Add, wheel "On deck" to 1, pick "Over", set the thickness | one click on the `+`, then wheel |
-| Move a deck down one | wheel "On deck" | right-click, "Down to the fourth deck" (or the deck dropdown) |
+| Add an armour deck on the second deck over the citadel | Add, wheel "On deck" to 1, pick "Over", set the thickness | one click on "+ 2nd" (or the elevation's `+`) |
+| Add end belts and an ends deck | two thicknesses, an Add, a deck number, an extent, a thickness | one click on "Armoured ends" |
+| Remove the upper belt | spin it to 0 | `×` |
+| Move a deck down one | wheel "On deck" | drag it down a lane, or the deck dropdown |
 | Armour the ends of a deck | "Over" dropdown | one segment click |
-| Raise the belt's top edge 0.3 m | open Side details, find the row, three wheel steps | three wheel steps on ↑ in the section |
-| Find what 10 mm of belt costs | Overview tab | the row's step columns |
+| Raise the belt's top edge 0.6 m | open Side details, find the row, six wheel steps | drag the top edge |
+| Shorten the fore end belt to 60 % | find "reach", four wheel steps | drag its tip |
 
 ## What the engine already does
 
@@ -115,7 +159,8 @@ Every control maps onto today's design fields (`armour` in the design JSON), so 
 - `steering_box` {`mm`, `deck_mm`, `bulkhead_mm`, `material`, `deck_material`}
 - `materials` (per part, from the armour scheme), and `main[].armour_mm` for the turret faces.
 
-These are the engine's and the tab only shows them, read-only:
+A part is "absent" when its thickness is 0 (a deck: when it isn't in `decks`), as the engine already reads it. These
+are the engine's rules, and the tab only shows them:
 
 - **The citadel's length** comes from the layout (the end barbettes).
 - **The conning tower takes the belt's thickness**; it has no value of its own.
@@ -124,49 +169,36 @@ These are the engine's and the tab only shows them, read-only:
 - **The citadel bulkheads are half thickness below the belt.** End belts are the belt's height.
 - **The belt is a vertical plate on the shell.** There are no inclined belts or sloped deck edges.
 
-## Engine finding: one step can re-plan the ship
+## Engine note: one step can re-plan the ship
 
-Some one-step probes cost far more than the plate itself, because the step crosses a layout threshold and the yard
-lays the ship out again:
-
-| Ship | Step | Standard | The plate alone | What moved |
-|---|---|---|---|---|
-| Bismarck | main deck, −5 mm | **+1,281 t** | −171 t | citadel +12.4 m, depth +0.36 m |
-| Bismarck | main deck, +5 mm | +1,901 t | +171 t | citadel +12.6 m, depth +0.39 m |
-| Bismarck | fore end belt, +10 mm | +1,616 t | +33 t | citadel +12.3 m |
-| Bismarck | torpedo protection, +0.5 m | +2,157 t | +131 t | citadel +14.9 m, length +0.5 m |
-| Yamato | armour deck, +5 mm | **+4,054 t** | +180 t | citadel +20.4 m (137.6 → 158.1 m), draught +0.75 m |
-
-"The plate alone" is the opened build's line scaled by thickness. Bismarck's third deck gives the same figures as its
-main deck.
-
-The Overview already shows Bismarck's deck figures and accepted them ("lumpy tonnage stays"; the UI follows the
-physics). This tab makes the cause visible: an amber step cell, and the tooltip says "The yard re-plans the ship:
-citadel +12.4 m…". Whether a 5 mm thinner deck *should* lengthen the citadel by 12 m is a question for the layout, not
-for this tab.
+The first pass's probe builds found steps that cost far more than the plate, because the yard lays the ship out again
+with a longer citadel. Bismarck: either armour deck ±5 mm costs +1,281 / +1,901 t (the plate alone ±171 t), with the
+citadel 12.4 m longer. Yamato: armour deck +5 mm costs +4,054 t (the plate about 180 t), with the citadel going from
+137.6 to 158.1 m. The tab no longer shows deltas, so this belongs to the Overview and to the layout. Whether a 5 mm
+change *should* move the citadel by 12–20 m is a question for the layout.
 
 ## Port plan
 
 - `Designer/DesignerScene.Protection.cs`: the four parts. The elevation and section draw from `Ship.Hitboxes`
   (`Armour`, `Decks`, the components and `HullForm` stations), never from the design, so they show what was built.
 - The table's controls are the existing `Knobs` (Belt, BeltBottom, BeltDepth, BeltHeight, UpperBelt, UpperBeltToDeck,
-  UpperBeltExtent, EndBelt*, Bulkheads, Tds, Deck*, Steering*, MainArmour, the material knobs). Adding a deck at a given
-  deck and extent is one new helper beside `AddDeck`.
-- The step columns run through `DesignProbes`, a batch per edit while the tab is open, as on the Overview.
-- A dev hook: `-designer-ui=protsel:ID,protmenu,prottip:step:ID:±1,protghost:DECK:EXT`, and the `-input=` scripted
-  clicks to check every control once ported.
+  UpperBeltExtent, EndBelt*, Bulkheads, Tds, Deck*, Steering*, MainArmour, the material knobs). New helpers: add a part
+  with starting values from the belt, add a deck at a given deck and extent, and the three coverage presets.
+- The handles are ImGui drags over the drawing (an invisible button per handle, `IsItemActive` and the mouse delta),
+  snapping as above. The edit is applied once per snap step, so a drag doesn't flood the build queue.
+- A dev hook: `-designer-ui=protsel:ID,protmenu,protcover:N,protghost:DECK:EXT,protadd:ID`, and the `-input=` scripted
+  clicks and drags to check every control once ported.
 
 ## Open questions
 
-1. **Heights in the elevation:** real heights stretched ×2.4, so the waterline and belt edges are true, or schematic
-   deck lanes at an even pitch (the Secondary tab's choice)?
-2. **The immune zone:** a greyed placeholder in the selected-plate panel (like Fit on the Overview), or leave it out
-   until there's a penetration model?
-3. **Engine asks**, if any: a conning tower thickness of its own; barbettes of their own thickness; inclined belts or
-   sloped deck edges.
-4. **Turret faces on two tabs** (here and on Main battery): keep both, or only show them here?
+1. **Coverage presets:** are the three right (All-or-nothing, Armoured ends, Complete belt), and should they live in the
+   sub-bar, or among the Templates on the left?
+2. **Starting values for an added part** come from the belt (upper belt 0.5, end belts 0.4, bulkheads 0.7, decks
+   25 mm). Good enough, or should they come from the era or the scheme?
 
 Screenshots: `png/protection-opened.png` (Bismarck as opened), `png/protection-ghost.png` (hovering the second deck's
-`+` over the citadel), `png/protection-added-deck.png` (after adding it and thinning the main deck 10 mm: stand-in
-figures), `png/protection-dreadnought-menu.png` (right-click on Dreadnought's third deck, fore end),
-`png/protection-replan-tip.png` (Yamato, armour deck + 5 mm: +4,054 t, citadel +20.4 m).
+`+` over the citadel), `png/protection-added-deck.png` (after adding it and thinning the main deck 10 mm),
+`png/protection-dreadnought-menu.png` (right-click on Dreadnought's third deck, fore end),
+`png/protection-cover-tip.png` (Yamato, hovering "Armoured ends"), `png/protection-dreadnought-aon.png` (Dreadnought
+after "All-or-nothing"), `png/protection-handle-reach.png` (Bismarck without its upper belt and aft end belt, belt
+raised to +3.4 m, dragging the fore end belt's tip to 0.6).
