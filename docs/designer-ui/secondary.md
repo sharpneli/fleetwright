@@ -129,7 +129,11 @@ rose.
   - **Placed:** what the yard did with them, for example "1 pair abreast the after funnel". An odd count is rounded
     up to a pair, which the engine already warns about.
   - **Broadside:** tubes per side and torpedoes carried.
-  - **Weight.**
+  - **Submerged** (added 2026-10-11, no mockup): spinners for beam tubes a side, bow and stern tubes, and **Reloads**,
+    the torpedoes each submerged tube carries. **Below** says how many torpedo rooms the yard made and the torpedoes
+    in them (built/wanted when some didn't fit; the remarks say why). The engine side is `SubmergedTubes`
+    (docs/shipgen/README.md, torpedoes).
+  - **Weight:** deck mounts and torpedo rooms together.
 - **Selected:** the selected battery, or the selected pair. It shows mount type and shield, place (how many per side
   and over which x range), gun height, ammunition and magazine tonnes, and the directors that serve it. Buttons:
   **Split a pair off**, **Duplicate**, **Remove a pair**.

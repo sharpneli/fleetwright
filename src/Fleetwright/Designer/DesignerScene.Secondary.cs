@@ -50,7 +50,7 @@ public sealed unsafe partial class DesignerScene
     sealed record SecPane(SecRow[] Rows, SecMount[] Mounts, Vector2[] Hull, (Vector2[] Pts, long Level)[] Blocks, PlanMark[] Mains,
         (Vector2 P, bool Heavy, bool Roof)[] Aa, Vector2[] Tt, float L, float B, float AmidX0, float AmidX1, float[] TrackAxis,
         float[][] RoseBy, float[] RoseMain, int RoseTotal, AaRow[] AaRows, string AaPlace, string AaDirs, NumRow TtMounts, int TtTubes,
-        string[] TtLines, string SecDirs, bool[] Offered, bool TakesList, bool Counted, bool Built);
+        string[] TtLines, NumRow[] SubRows, string SubLine, string SecDirs, bool[] Offered, bool TakesList, bool Counted, bool Built);
 
     SecPane SecPaneOf(Design d, Ship? ship, Overlay? over)
     {
@@ -153,7 +153,8 @@ public sealed unsafe partial class DesignerScene
         var aa = new List<(Vector2, bool, bool)>();
         var tt = new List<Vector2>();
         int aaHeavy = 0, aaLight = 0, roofsHeavy = 0, roofsLight = 0, ttEdge = 0, ttCentre = 0, ttHouse = 0, ttTubes = 0, ttMounts = 0;
-        double aaHeavyT = 0, aaLightT = 0, ttT = 0;
+        double aaHeavyT = 0, aaLightT = 0, ttT = 0, subT = 0;
+        int subBeam = 0, subBow = 0, subStern = 0, subRooms = 0;
         if (hb != null)
         {
             foreach (var p in hb.Hull)
@@ -191,6 +192,15 @@ public sealed unsafe partial class DesignerScene
                             ttCentre++;
                         ttT += weight.GetValueOrDefault(c.Id);
                         break;
+                    case "torpedo_tube":
+                        _ = c.Position == "bow" ? subBow++ : c.Position == "stern" ? subStern++ : subBeam++;
+                        break;
+                }
+            foreach (var r in hb.Rooms)
+                if (r.Kind == "torpedo_room")
+                {
+                    subRooms++;
+                    subT += weight.GetValueOrDefault(r.Id);
                 }
         }
         float L = (float)(hb?.Length ?? 100), B = (float)(hb?.Beam ?? 12);
@@ -250,13 +260,22 @@ public sealed unsafe partial class DesignerScene
         [
             ttMounts > 0 ? $"{ttMounts}/{Math.Max(wantTt, ttMounts)} · {placeTt}" : placeTt,
             ttMounts > 0 ? $"{perSide} tubes a side · {ttMounts * ttTubes} torpedoes, no reloads" : "–",
-            ship != null ? $"{N0(ttT)} t" : "–",
+            ship != null ? $"{N0(ttT + subT)} t" : "–",
         ];
+        int wantSub = SubmergedTubes.Count(d), gotSub = subBeam + subBow + subStern;
+        string subLine = wantSub == 0 ? "none" : ship == null ? "–" : gotSub == 0 ? "none fitted: see the remarks" :
+            string.Join(" · ", new[]
+            {
+                gotSub < wantSub ? $"{gotSub}/{wantSub}" : "",
+                $"{subRooms} torpedo room{(subRooms == 1 ? "" : "s")}",
+                $"{gotSub * SubmergedTubes.PerTube(d)} torpedoes",
+            }.Where(s => s.Length > 0));
+        NumRow[] subRows = [.. new[] { Knobs.SubPerSide, Knobs.SubBow, Knobs.SubStern, Knobs.SubPerTube }.Select(k => Row(k, d, ship) with { Delta = "" })];
 
         return new SecPane(rows, mounts.ToArray(), hull.ToArray(), blocks.ToArray(), mains.ToArray(), aa.ToArray(), tt.ToArray(), L, B,
             amid0, amid1, trackAxis, roseBy, roseMain, roseTotal, aaRows,
             aaAll > 0 ? $"{aaRoofs} on roofs · {aaAll - aaRoofs} at the deck edge" : "none", Dirs("aa", "AA"),
-            Row(Knobs.TorpedoMounts, d, ship) with { Delta = "" }, d.Torpedoes?.Tubes ?? 4, ttLines, Dirs("secondary", "secondary"),
+            Row(Knobs.TorpedoMounts, d, ship) with { Delta = "" }, d.Torpedoes?.Tubes ?? 4, ttLines, subRows, subLine, Dirs("secondary", "secondary"),
             SA.All.Select(p => SA.Offers(style, p)).ToArray(), style.TakesSecondaryList || secs.Count == 0, counted, ship != null);
     }
 
@@ -281,7 +300,7 @@ public sealed unsafe partial class DesignerScene
         SecTable(dl, o, w, sp);
         float tableH = P(18) + RowH * Math.Max(sp.Rows.Length + 1, 4);
         float gap = P(6), roseW = MathF.Round(Math.Clamp(w * 0.25f, P(240), P(330)));
-        float lowerH = P(150);
+        float lowerH = P(196);
         float stripH = Math.Max(P(170), size.Y - tableH - lowerH - 3 * gap);
         var stripPos = o + new Vector2(gap, tableH + gap);
         var stripSize = new Vector2(w - roseW - 3 * gap, stripH);
@@ -1094,9 +1113,35 @@ public sealed unsafe partial class DesignerScene
         ImGui.PopStyleVar();
         ImGui.EndDisabled();
         Text(dl, UiFonts.SansSmall, new Vector2(x + P(60) + 6 * P(20) + P(26), y + (RowH - UiFonts.SansSmall.FontSize) / 2), T.Muted, "per mount");
-        y += RowH + P(8);
-        KeyValue(dl, x, ref y, "Placed", sp.TtLines[0]);
+        y += RowH + P(2);
+        // submerged: beam a side, bow, stern, then the torpedoes each carries
+        Text(dl, UiFonts.Sans, new Vector2(x, y + (RowH - UiFonts.Sans.FontSize) / 2), T.Muted, "Submerged");
+        float sx = x + P(60);
+        string[] subLabels = ["a side", "bow", "stern"];
+        for (int i = 0; i < 3; i++)
+        {
+            ImGui.SetCursorScreenPos(new Vector2(sx, y + (RowH - fh) / 2));
+            ImGui.PushID(8300 + i);
+            Spinner(sp.SubRows[i], P(22), extras: false);
+            ImGui.PopID();
+            float after = ImGui.GetItemRectMax().X + P(3);
+            Text(dl, UiFonts.SansSmall, new Vector2(after, y + (RowH - UiFonts.SansSmall.FontSize) / 2), T.Muted, subLabels[i]);
+            sx = after + Width(UiFonts.SansSmall, subLabels[i]) + P(8);
+        }
+        y += RowH + P(2);
+        Text(dl, UiFonts.Sans, new Vector2(x, y + (RowH - UiFonts.Sans.FontSize) / 2), T.Muted, "Reloads");
+        ImGui.SetCursorScreenPos(new Vector2(x + P(60), y + (RowH - fh) / 2));
+        ImGui.BeginDisabled(!sp.SubRows[3].Applies);
+        ImGui.PushID(8310);
+        Spinner(sp.SubRows[3], P(22), extras: false);
+        ImGui.PopID();
+        ImGui.EndDisabled();
+        Text(dl, UiFonts.SansSmall, new Vector2(ImGui.GetItemRectMax().X + P(3), y + (RowH - UiFonts.SansSmall.FontSize) / 2), T.Muted,
+            "torpedoes per submerged tube, the loaded one in");
+        y += RowH + P(6);
+        KeyValue(dl, x, ref y, "On deck", sp.TtLines[0]);
         KeyValue(dl, x, ref y, "Broadside", sp.TtLines[1]);
+        KeyValue(dl, x, ref y, "Below", sp.SubLine);
         KeyValue(dl, x, ref y, "Weight", sp.TtLines[2]);
     }
 

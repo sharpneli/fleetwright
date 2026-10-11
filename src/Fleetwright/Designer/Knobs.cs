@@ -486,6 +486,51 @@ public static class Knobs
         Applies = d => (d.Torpedoes?.Mounts ?? 0) > 0,
     };
 
+    /// <summary>A design with its submerged tubes edited (a design without torpedoes gets none on deck).</summary>
+    static Design Sub(Design d, Func<SubmergedInput, SubmergedInput> f)
+    {
+        var tp = d.Torpedoes ?? new TorpedoInput { Mounts = 0, Tubes = 4 };
+        return d with { Torpedoes = tp with { Submerged = f(tp.Submerged ?? new SubmergedInput()) } };
+    }
+
+    public static readonly NumberKnob SubPerSide = new("sub_beam", "Beam tubes a side", Quantity.Count, 1, 1)
+    {
+        Get = d => d.Torpedoes?.Submerged?.PerSide,
+        Set = (d, v) => Sub(d, s => s with { PerSide = I(v) }),
+        Auto = (d, s) => 0,
+        LimitPath = ["torpedoes", "submerged", "per_side"],
+        Hi = 6,
+    };
+
+    public static readonly NumberKnob SubBow = new("sub_bow", "Bow tubes", Quantity.Count, 1, 1)
+    {
+        Get = d => d.Torpedoes?.Submerged?.Bow,
+        Set = (d, v) => Sub(d, s => s with { Bow = I(v) }),
+        Auto = (d, s) => 0,
+        LimitPath = ["torpedoes", "submerged", "bow"],
+        Hi = 2,
+    };
+
+    public static readonly NumberKnob SubStern = new("sub_stern", "Stern tubes", Quantity.Count, 1, 1)
+    {
+        Get = d => d.Torpedoes?.Submerged?.Stern,
+        Set = (d, v) => Sub(d, s => s with { Stern = I(v) }),
+        Auto = (d, s) => 0,
+        LimitPath = ["torpedoes", "submerged", "stern"],
+        Hi = 2,
+    };
+
+    public static readonly NumberKnob SubPerTube = new("sub_per_tube", "Torpedoes per tube", Quantity.Count, 1, 1)
+    {
+        Get = d => d.Torpedoes?.Submerged?.TorpedoesPerTube,
+        Set = (d, v) => Sub(d, s => s with { TorpedoesPerTube = I(v) }),
+        Auto = (d, s) => SubmergedTubes.PerTubeDefault,
+        LimitPath = ["torpedoes", "submerged", "torpedoes_per_tube"],
+        Lo = 1,
+        Hi = 10,
+        Applies = d => SubmergedTubes.Count(d) > 0,
+    };
+
     // speed and machinery
     public static readonly NumberKnob Stress = new("stress", "Design rating", Quantity.Ratio, 0.1, 0.1)
     {
@@ -1097,6 +1142,7 @@ public static class Knobs
         Knob[] fixedKnobs =
         [
             Speed, Range, Belt, BeltBottom, UpperBelt, ArmourDeck, Bulkheads, Tds, AaHeavy, AaLight, TorpedoMounts, TorpedoTubes,
+            SubPerSide, SubBow, SubStern, SubPerTube,
             Stress, Shafts, Arrangement, BlockCoefficient, Freeboard, Raised, TowerLevels, DeckhouseLevels, AftControl,
             Endurance, Distiller,
             Topside, TumblehomeStrength, TumblehomeKnuckle, TumblehomeExtent, DeckFinish, ShellMm, DeckWoodMm, LevelsOverBridge,
