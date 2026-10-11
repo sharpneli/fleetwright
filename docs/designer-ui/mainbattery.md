@@ -51,11 +51,11 @@ There are three bands and an inspector. Every band edits the same `BatteryInput`
 
 One row per battery, with all of them visible at once:
 
-▴▾ order · colour + letter · calibre · length · guns per turret (1–4 segmented) · positions · turrets · guns ·
+▴▾ order · colour + letter · calibre · length · guns per turret (1–6 segmented) · positions · turrets · guns ·
 faces · rounds (auto) · material · t · duplicate / remove
 
 - **Clicking a row makes it the active battery:** the one the `+` slots below add. This is the only mode in the tab.
-- **Guns per turret is a segmented 1|2|3|4**, not a spinner, so changing it is one click.
+- **Guns per turret is a segmented 1|2|3|4|5|6**, not a spinner, so changing it is one click.
 - **Positions is a read-only summary in the turret names the plan uses:** `A · X↑ Y`, `W2–3 abreast`,
   `A · W1 ech.×deck · Y`. ↑ marks a superfiring turret. Being able to read the whole armament as one line is the
   point.
@@ -142,7 +142,7 @@ copy of the rule.
 - **Section 1** gets its own body in place of the `Flow` of knob rows. Other sections keep `Flow`.
 - **The battery table** is an `ImGui.BeginTable` of compact cell spinners. They are the same NumberRow logic (wheel,
   click to type, auto), just without the label column, and they still go through the `Knobs` (`main{i}_cal`, …), so
-  `-steps=` and undo labels keep working. Segmented guns per turret is four small buttons.
+  `-steps=` and undo labels keep working. Segmented guns per turret is six small buttons (five and six for the silly ships).
 - **The arrangement** is a custom draw-list widget, like the outliner: chips, links and ghosts are `InvisibleButton`s
   with hover tooltips. It needs new edits that each make one undo step with a readable label, such as "X added
   (battery A, superfiring)" or "Y on the deck": `AddTurret(d, k, group, flush)`, `RemoveTurret(d, group, idx)`,

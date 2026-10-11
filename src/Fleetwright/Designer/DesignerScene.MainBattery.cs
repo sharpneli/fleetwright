@@ -27,7 +27,7 @@ public sealed unsafe partial class DesignerScene
 
     static readonly Vector4[] BatteryColours = [T.Blue, Hex(0xD98B5F), Hex(0x8BC48A), Hex(0xB48CD9), Hex(0xD9C85F), Hex(0x5FC8D9)];
     static readonly string[] TierText = ["", "↑1", "↑2", "↑3", "↑4", "↑5", "↑6", "↑7"];
-    static readonly string[] BarrelText = ["1", "2", "3", "4"];
+    static readonly string[] BarrelText = ["1", "2", "3", "4", "5", "6"];
     static readonly string[] Letters = Enumerable.Range(0, 26).Select(i => ((char)('A' + i)).ToString()).ToArray();
 
     static Vector4 Hex(uint rgb) => new(((rgb >> 16) & 255) / 255f, ((rgb >> 8) & 255) / 255f, (rgb & 255) / 255f, 1);
@@ -260,7 +260,7 @@ public sealed unsafe partial class DesignerScene
 
     // ------------------------------------------------------------------ drawing
 
-    static readonly float[] ColW = [34, 40, 138, 104, 92, 0, 42, 40, 104, 130, 168, 54, 46];   // 0: the positions take what's left
+    static readonly float[] ColW = [34, 40, 138, 104, 128, 0, 42, 40, 104, 130, 168, 54, 46];   // 0: the positions take what's left
     readonly float[] colX = new float[ColW.Length + 1];   // the table's column edges, laid out each frame
     static readonly string[] ColHead = ["", "", "CALIBRE", "LENGTH", "GUNS / TURRET", "POSITIONS · BOW TO STERN (↑ SUPERFIRES)", "TURR.", "GUNS",
         "FACES", "ROUNDS / GUN", "MATERIAL", "TURRET T", ""];
@@ -362,7 +362,7 @@ public sealed unsafe partial class DesignerScene
             Spinner(r.Len, P(56), extras: false);
             At(4);
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(1, 0));
-            for (int g = 1; g <= 4; g++)
+            for (int g = 1; g <= BarrelText.Length; g++)
             {
                 if (g > 1)
                     ImGui.SameLine();
