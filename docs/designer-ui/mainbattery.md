@@ -10,6 +10,9 @@ the mockup in these ways:
 - The rose and the arcs come from the built ship's mounts, so they lag the schematic by one build.
 - The t column is the battery's turret weight from the build, shared by turret count among batteries that use the
   same gun.
+- The `+` slots don't sit in their true place in the end order. That made the turrets shift whenever the active
+  battery changed. Each end has one fixed-size `+` slot inboard of all its turrets. When the new turret would go
+  further out, hovering the slot marks the gap. The layout depends only on the design.
 - Clicking a main turret on the plan selects it in the tab, and the plan rings the hovered or selected turret.
 - Wing pairs are numbered fore to aft in battery order. The engine can number them differently when there are mixed
   wing batteries.
