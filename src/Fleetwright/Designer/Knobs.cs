@@ -665,7 +665,7 @@ public static class Knobs
     {
         Get = d => d.Hull?.Section?.Strength,
         Set = (d, v) => Section(d, s => s with { Strength = v }),
-        Auto = (d, s) => 1,
+        Auto = (d, s) => Shipgen.Tumblehome.DefaultStrength,
         CanAuto = true,
         LimitPath = ["hull", "section", "strength"],
         Applies = IsTumblehome,

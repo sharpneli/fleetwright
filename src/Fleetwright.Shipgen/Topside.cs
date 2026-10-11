@@ -72,7 +72,7 @@ public abstract class Topside
         return s?.Topside switch
         {
             null or "wall_sided" => WallSided.Instance,
-            "tumblehome" => new Tumblehome(s.Strength ?? 1.0, s.Knuckle ?? Tumblehome.DefaultKnuckle, s.Extent == "midships",
+            "tumblehome" => new Tumblehome(s.Strength ?? Tumblehome.DefaultStrength, s.Knuckle ?? Tumblehome.DefaultKnuckle, s.Extent == "midships",
                 design.HullLength, freeboard),
             var t => throw new ArgumentException($"hull.section.topside = {t}: not a topside"),
         };
@@ -126,6 +126,8 @@ public sealed class WallSided : Topside
 public sealed class Tumblehome : Topside
 {
     public const double DeckIn = 0.28, Curve = 1.6, MinRatio = 0.15, DefaultKnuckle = 0.2, MaxKnuckle = 0.9;
+    /// <summary>The strength a design that leaves it out gets: a moderate tumblehome (1 is a strong French hull).</summary>
+    public const double DefaultStrength = 0.5;
     const double FadeFrom = 0.5, FadeRun = 0.35;
     readonly double a, hK, halfL;
     readonly bool midships;
