@@ -268,7 +268,7 @@ public sealed unsafe partial class DesignerScene
             if (ImGui.MenuItem("New: an empty 8 kn hull"))
                 Load(DesignDoc.New());
             DesignMenu("Open my design", userDesigns);
-            if (ImGui.MenuItem("Open Explorer here"))
+            if (ImGui.MenuItem("Open the save folder in Explorer"))
                 ShowFolder(DesignDoc.UserFolder);
             DesignMenu("Open a shipped design", shippedDesigns);
             ImGui.Separator();
