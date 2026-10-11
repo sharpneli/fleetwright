@@ -578,8 +578,8 @@ public static class Knobs
         Set = (d, v) => Sup(d, s => s with { TowerLevels = I(v) }),
         Auto = (d, s) => s?.Report.Bridge?.TowerLevels,
         CanAuto = true,
+        LimitPath = ["superstructure", "tower_levels"],
         LoOf = d => Styles.Get(d).MinTowerLevels,
-        Hi = 10,
         Applies = d => Styles.Get(d).MinTowerLevels > 0,
     };
 
