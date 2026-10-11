@@ -30,7 +30,9 @@ The designer (`Designer/`, `docs/designer-ui/designer-plan.md`) edits the design
 with knobs, templates (plant, hull construction, crew standard, armour schemes, material names) and a style (View
 menu: navy, era, pennant number), tried on every view or kept in the design. The layout is the dense one in
 `docs/designer-ui/bureau.html`: outliner and templates, plan and profile with overlays (A R M T), section tabs (0-7),
-ledger, particulars and remarks. The name and type label edit in place in the resource bar. `-steps=` applies knob steps at startup (knob ids from `Knobs`: `speed:-2`, `topside:tumblehome`,
+ledger, particulars and remarks. The name and type label edit in place in the resource bar. The Main battery tab is its own pane (`docs/designer-ui/mainbattery.md`): a battery table, a
+clickable turret arrangement (`+` slots add, the step between turrets toggles superfiring, right-click for battery,
+move and split), guns bearing by bearing, and presets. `-steps=` applies knob steps at startup (knob ids from `Knobs`: `speed:-2`, `topside:tumblehome`,
 `distiller:off`), for screenshots of edited states in any view. Saves go to Documents/My Games/Fleetwright/Designs.
 The game uses the designer's other constructor: a design in, the edited one out through a callback, with a worker of
 its own.

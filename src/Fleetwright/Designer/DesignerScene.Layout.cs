@@ -123,6 +123,8 @@ public sealed unsafe partial class DesignerScene
                 ToggleOverlay(2);
             if (ImGui.IsKeyPressed(ImGuiKey.T))
                 ToggleOverlay(3);
+            if (section == 1 && mainSel is { } sel && ImGui.IsKeyPressed(ImGuiKey.Delete))
+                RemoveTurret(doc.Current, sel);
         }
     }
 
@@ -688,6 +690,8 @@ public sealed unsafe partial class DesignerScene
             ImGui.SetCursorPos(new Vector2(pos.X + 1 + sheetW, detailY + 1));
             Standard(new Vector2(inner.X - sheetW, inner.Y));
         }
+        else if (section == 1 && s.Main != null)
+            MainBatteryPane(inner);
         else
             Flow("##panel", inner, s.Panel, columns: 0);
         ImGui.PopStyleVar();
@@ -738,6 +742,24 @@ public sealed unsafe partial class DesignerScene
                 foreach (var (from, to) in m.Arcs)
                     Sector(dl, Px(m.X, m.Y), r, from, to, m.Main);
             }
+        // the main battery tab's hovered or selected turret, ringed; a click on a main turret selects it there
+        if (section == 1 && planFocus != null)
+            foreach (var m in ov.Mounts)
+                if (m.Main && m.Id == planFocus)
+                    dl.AddCircle(Px(m.X, m.Y), P(14), T.U32(new Vector4(1, 0.906f, 0.659f, 1)), 0, P(2));
+        if (section == 1 && snap?.Main is { } mp && ImGui.IsWindowHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+        {
+            var mouse = ImGui.GetMousePos();
+            foreach (var m in ov.Mounts)
+                if (m.Main && Vector2.Distance(mouse, Px(m.X, m.Y)) < P(14))
+                    foreach (var ch in mp.Chips)
+                        if (!ch.Ghost && ch.Slot.Name == m.Id)
+                        {
+                            mainSel = ch.Slot;
+                            mainActive = ch.Slot.Battery;
+                            stale = true;
+                        }
+        }
         if (showTags)
         {
             // the length overall, with ticks at the ends, over the ship
@@ -1121,12 +1143,19 @@ public sealed unsafe partial class DesignerScene
     /// Auto or its button.</summary>
     void NumberRow(NumRow r, float labelW)
     {
-        var k = r.Knob;
         ImGui.BeginDisabled(!r.Applies);
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted(r.Label);
         ImGui.SameLine(labelW);
-        float valueW = P(96);
+        Spinner(r, P(96), extras: true);
+        ImGui.EndDisabled();
+    }
+
+    /// <summary>The spinner itself, <paramref name="valueW"/> wide between its arrows; with extras, Auto (or its
+    /// button) and the change since opened after it.</summary>
+    void Spinner(NumRow r, float valueW, bool extras)
+    {
+        var k = r.Knob;
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
         if (ImGui.ArrowButton("##m", ImGuiDir.Left))
             Step(r, ImGui.GetIO().KeyShift ? -4 : -1);
@@ -1177,6 +1206,8 @@ public sealed unsafe partial class DesignerScene
         if (ImGui.ArrowButton("##p", ImGuiDir.Right))
             Step(r, ImGui.GetIO().KeyShift ? 4 : 1);
         ImGui.PopStyleVar();
+        if (!extras)
+            return;
         ImGui.SameLine(0, P(8));
         ImGui.PushFont(UiFonts.SansSmall);
         if (r.IsAuto && k.CanAuto)
@@ -1199,7 +1230,6 @@ public sealed unsafe partial class DesignerScene
             ImGui.TextColored(T.Brass, r.Delta);
             ImGui.PopFont();
         }
-        ImGui.EndDisabled();
     }
 
     // ------------------------------------------------------------------ right: ledger, particulars, remarks

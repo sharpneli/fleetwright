@@ -41,7 +41,7 @@ public static unsafe class UiFonts
         Scale = scale;
         if (ranges == null)
         {
-            ushort[] r = [0x0020, 0x00FF, 0x2010, 0x2044, 0x2212, 0x2212, 0];
+            ushort[] r = [0x0020, 0x00FF, 0x2010, 0x2044, 0x2190, 0x2193, 0x2212, 0x2212, 0];
             ranges = (ushort*)NativeMemory.Alloc((nuint)(r.Length * sizeof(ushort)));
             r.CopyTo(new Span<ushort>(ranges, r.Length));
         }

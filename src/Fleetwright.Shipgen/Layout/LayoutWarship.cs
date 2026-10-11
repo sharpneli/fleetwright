@@ -37,21 +37,34 @@ public sealed partial class Layout
     /// <summary>An end group: every battery's turrets there in list order, outermost first, and how many step up.</summary>
     static (List<Gun> Out, int Run) EndGroup(List<Gun> guns, string key)
     {
-        var result = new List<Gun>();
+        var (order, run) = EndOrder(guns.Select(g => g.Spec).ToList(), key);
+        return (order.Select(i => guns[i]).ToList(), run);
+    }
+
+    /// <summary>
+    /// The order of an end group ("fore" or "aft"), outermost first: each turret's battery, as an index into
+    /// <paramref name="mains"/>, every battery's turrets together and in list order. Run: how many of them step up, a
+    /// contiguous run from the outermost (which always counts); a turret steps only if every one outboard of it does
+    /// and its battery's superfire count for that end reaches it.
+    /// </summary>
+    public static (List<int> Order, int Run) EndOrder(IReadOnlyList<BatteryInput> mains, string key)
+    {
+        var order = new List<int>();
         int run = 0;
-        foreach (var g in guns)
+        for (int b = 0; b < mains.Count; b++)
         {
-            long n = (key == "fore" ? g.Spec.Fore : g.Spec.Aft) ?? 0;
-            var sf = g.Spec.Superfire;
+            var spec = mains[b];
+            long n = (key == "fore" ? spec.Fore : spec.Aft) ?? 0;
+            var sf = spec.Superfire;
             double k = sf is null or { All: true } ? n : sf.All is false ? 0 : (key == "fore" ? sf.Fore : sf.Aft) ?? n;
             for (long i = 0; i < n; i++)
             {
-                if (run == result.Count && (result.Count == 0 || i < k))
+                if (run == order.Count && (order.Count == 0 || i < k))
                     run += 1;
-                result.Add(g);
+                order.Add(b);
             }
         }
-        return (result, run);
+        return (order, run);
     }
 
     /// <summary>How far an end group's tier `level` stands above the outermost turret.</summary>

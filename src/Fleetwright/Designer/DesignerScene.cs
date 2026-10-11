@@ -306,11 +306,13 @@ public sealed unsafe partial class DesignerScene : IScene
         public required string[] HistoryLabels;
         /// <summary>What the plan and profile's overlays draw, in ship metres; null without a ship.</summary>
         public required Overlay? Over;
+        /// <summary>The Main battery tab (built only while it's open).</summary>
+        public required MainPane? Main;
     }
 
     /// <summary>A gun mount on the plan: where it is, its tag, its arcs of fire (degrees clockwise from dead ahead, the
     /// end past the start; past 360 it keeps going).</summary>
-    sealed record MountMark(string Tag, float X, float Y, bool Main, (float From, float To)[] Arcs);
+    sealed record MountMark(string Tag, float X, float Y, bool Main, (float From, float To)[] Arcs, string Id, int Guns);
 
     /// <summary>An armour plate on the profile: x along the ship, z above the main deck, its thickness and label.</summary>
     sealed record Plate(float X0, float X1, float Z0, float Z1, double Mm, string Label);
@@ -332,7 +334,11 @@ public sealed unsafe partial class DesignerScene : IScene
     }
     sealed record Note(string Text) : Item;
     sealed record Act(string Label, Action OnClick) : Item;
-    sealed record NumRow(NumberKnob Knob, string Label, string Value, string Hint, string Delta, bool Applies, bool IsAuto, double? Num) : Item;
+    sealed record NumRow(NumberKnob Knob, string Label, string Value, string Hint, string Delta, bool Applies, bool IsAuto, double? Num) : Item
+    {
+        /// <summary>The value without its unit, as typed (for a field that edits in place).</summary>
+        public string Plain { get; init; } = "";
+    }
     sealed record ChoiceRow(ChoiceKnob Knob, string[] Labels, int Index, bool Applies) : Item;
     /// <summary>A template picker: <see cref="Count"/> catalogue entries, then maybe the design's own block ("custom").</summary>
     sealed record PickRow(string Label, string[] Names, int Index, int Count, Action<int> Apply) : Item;
@@ -449,6 +455,7 @@ public sealed unsafe partial class DesignerScene : IScene
         string status = latest != null ? latest.Ship != null ? $"built in {latest.BuildS * 1000 + latest.MeshS * 1000 + latest.DrawS * 1000 + latest.BakeS * 1000:F0} ms"
             : "doesn't build: see the remarks" : "";
 
+        var over = ship != null ? MakeOverlay(ship) : null;
         return new Snapshot
         {
             Title = d.Name ?? d.Id ?? "Design",
@@ -471,7 +478,8 @@ public sealed unsafe partial class DesignerScene : IScene
             Consequences = cons.ToArray(),
             Panel = PanelItems(d, ship),
             HistoryLabels = doc.History.Select(h => h.Label).ToArray(),
-            Over = ship != null ? MakeOverlay(ship) : null,
+            Over = over,
+            Main = section == 1 ? MainPaneOf(d, ship, over) : null,
         };
     }
 
@@ -515,7 +523,7 @@ public sealed unsafe partial class DesignerScene : IScene
                     int barrels = c.Type != null && hb.TurretTypes.TryGetValue(c.Type, out var tt) ? (int)tt.Barrels : 1;
                     string tag = c.Kind == "main" ? $"{c.Id} {barrels}×{Fmt(c.CalibreMm ?? 0, Quantity.Calibre)}" : c.Id;
                     var arcs = (c.ArcsDeg ?? []).Where(a => a.Length == 2).Select(a => ((float)a[0], (float)(a[1] < a[0] ? a[1] + 360 : a[1]))).ToArray();
-                    mounts.Add(new MountMark(tag, (float)x, (float)(c.Y ?? 0), c.Kind == "main", arcs));
+                    mounts.Add(new MountMark(tag, (float)x, (float)(c.Y ?? 0), c.Kind == "main", arcs, c.Id, barrels));
                     break;
             }
         }
@@ -533,7 +541,10 @@ public sealed unsafe partial class DesignerScene : IScene
         string delta = "";
         if (k.Value(doc.Baseline, baselineShip) is { } b0 && v is { } v1 && Math.Abs(v1 - b0) > 1e-9 && k.Applies?.Invoke(doc.Baseline) != false)
             delta = (v1 > b0 ? "+" : "−") + Fmt(k, Math.Abs(v1 - b0));
-        return new NumRow(k, label ?? k.Label, v is { } x ? Fmt(k, x) : "–", hint, delta, k.AppliesTo(d), isAuto, v);
+        return new NumRow(k, label ?? k.Label, v is { } x ? Fmt(k, x) : "–", hint, delta, k.AppliesTo(d), isAuto, v)
+        {
+            Plain = v is { } p ? Fmt(k, p, unit: false).Replace(",", "") : "",
+        };
     }
 
     List<Item> PanelItems(Design d, Ship? ship)
@@ -564,38 +575,7 @@ public sealed unsafe partial class DesignerScene : IScene
                         _ => null,
                     });
                 break;
-            case 1:
-                var mains = d.Main ?? [];
-                for (int i = 0; i < mains.Count; i++)
-                {
-                    int j = i;
-                    items.Add(new Header($"Main battery {(char)('A' + i)}", "Remove", () => Edit(RemoveAt(doc.Current, j, main: true), $"Main battery {(char)('A' + j)} removed")));
-                    Num(Knobs.MainCalibre(i));
-                    Num(Knobs.MainLength(i));
-                    Num(Knobs.MainBarrels(i));
-                    Num(Knobs.MainGroup(i, "fore"));
-                    Num(Knobs.MainGroup(i, "aft"));
-                    if (style.HasMidshipsTurrets)
-                        Num(Knobs.MainGroup(i, "mid"));
-                    if (style.HasWingTurrets)
-                    {
-                        Num(Knobs.MainGroup(i, "wing"));
-                        Toggle(Knobs.MainEchelon(i));
-                    }
-                    Num(Knobs.MainStepped(i, "fore"));
-                    Num(Knobs.MainStepped(i, "aft"));
-                    Num(Knobs.MainArmour(i));
-                    Num(Knobs.MainRounds(i));
-                    items.Add(new Header($"Battery {(char)('A' + i)}, details", Details: true));
-                    Toggle(Knobs.MainCrossDeck(i));
-                    if (style.HasRaisedMounts)
-                        Choice(Knobs.MainStandsOn(i));
-                    Choice(Knobs.MainMaterial(i));
-                }
-                if (mains.Count == 0 || style.TakesMainList)
-                    items.Add(new Act(mains.Count == 0 ? "Add a main battery" : "Add another main battery", () => Edit(AddMain(doc.Current), "Main battery added")));
-                if (mains.Count == 0)
-                    items.Add(new Note("No main battery: an unarmed hull."));
+            case 1:   // its own pane (DesignerScene.MainBattery.cs)
                 break;
             case 2:
                 var secs = d.Secondary ?? [];

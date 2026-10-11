@@ -1,4 +1,20 @@
-# Main battery picker (mockup, 2026-10-11)
+# Main battery picker (mockup, 2026-10-11; in the game since the same day)
+
+**Status:** this design is now the Main battery tab, built in `Designer/DesignerScene.MainBattery.cs`, with the edits
+in `Designer/MainArrangement.cs` and the end order taken from the engine's `Layout.EndOrder`. The game differs from
+the mockup in these ways:
+
+- The calibre is a field you type into, in the displayed units. The unit is drawn inside the field and can't be
+  typed. Input that doesn't parse, or is out of range, reverts to the old value. The arrows and the wheel still step
+  it.
+- The rose and the arcs come from the built ship's mounts, so they lag the schematic by one build.
+- The t column is the battery's turret weight from the build, shared by turret count among batteries that use the
+  same gun.
+- Clicking a main turret on the plan selects it in the tab, and the plan rings the hovered or selected turret.
+- Wing pairs are numbered fore to aft in battery order. The engine can number them differently when there are mixed
+  wing batteries.
+
+The rest of this note is the mockup's reasoning.
 
 Mockup: `mainbattery.html`. Open it in a browser; it is interactive and works offline. Screenshots are in
 `png/mainbattery-*.png`. It shows the **Main battery tab's pane only** (1280 × 578, the size it gets in the app at
