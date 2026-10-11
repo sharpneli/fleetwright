@@ -194,7 +194,10 @@ job system, one navy per job, reading a frozen picture and writing commands that
 deterministic and can't reach into the world. The player's navy and an NPC's are the same thing with a different
 command source: the player could hand a theatre to an AI admiral, or watch an all-NPC world headless for tests.
 
-## Technology: what a navy can build (proposed 2026-10-11)
+## Technology: what a navy can build (agreed 2026-10-11)
+
+Agreed with the user: a mission's technology is the set of templates it unlocks (a mission makes the templates for
+its sides' techs available, nothing else); the designer never refuses; the world does.
 
 A mission set in 1910 must not offer STS steel; the campaign's research module (later, but kept in mind) decides the
 same question as research completes. Both are one thing: **a navy's set of unlocked technologies**, frozen for a
@@ -215,8 +218,9 @@ mission and growing in a campaign.
   catalogues by it (`Templates` already says "in the game the tech tree will filter them"). Numbers a tech bounds
   rather than unlocks (the largest calibre a navy can make, boiler pressure) come as caps alongside `DesignLimits`.
 - **The designer still never refuses** (the limits rule): a design loaded from a file with locked tech builds and
-  shows it in the remarks ("STS steel: not available, 1910"). It's the gameplay that decides: the mission start
-  screen won't commission it, a campaign yard can't lay it down.
+  shows it in the remarks ("STS steel: not available, 1910"). **The world refuses:** such a ship can't be added to a
+  mission, and a campaign yard can't lay it down. That the designer can edit something doesn't mean the world takes
+  it; the check is the world's, on the command (commission, lay down), against the navy's `TechSet` and limits.
 - **The sim reads the set too,** for what isn't in a design: a navy's fire-control doctrine, training, signals.
 
 ## The pieces and where they live
