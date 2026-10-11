@@ -98,11 +98,13 @@ Rules:
 - Indices are stable for one design and one shipgen version (the build is deterministic: the goldens), so the class's
   content hash goes with any stored index.
 
-## The world: one sphere, local frames inside it (proposed 2026-10-11)
+## The world: one sphere, local frames inside it (agreed 2026-10-11)
 
-The question: at combat ranges, assume the sea is flat, or always work on the sphere? Proposed: **the sphere is the
-one truth, everywhere**; flatness exists only inside frames small enough that it's exact to the millimetre (a ship's
-own frame), never as a mode the sim switches into at "combat ranges".
+The question: at combat ranges, assume the sea is flat, or always work on the sphere? Agreed: **the sphere is the one
+truth for the sim, everywhere**; flatness exists only inside frames small enough that it's exact to what's being done
+(a ship's own frame, an effect's patch), never as a mode the sim switches into at "combat ranges". It's a historical
+naval game: everything happens somewhere on the Earth's surface. The Earth model itself (coastlines, bathymetry) comes
+later, from the user; until then the sphere is all sea.
 
 Why not flat at combat ranges:
 
@@ -117,8 +119,8 @@ Why not flat at combat ranges:
   before ships: all of that falls out of the sphere and would have to be faked on a flat map.
 - **Two models means a seam.** Where does "the combat area" end? Two groups 40 km apart, a shell in flight when
   the frame moves, a battle that drifts across a degree of longitude: each is a bug a single model doesn't have.
-- **It costs nearly nothing.** Gravity toward the centre instead of -z is one normalise per shell per tick, and a few
-  thousand shells in doubles is nothing.
+- **It costs nearly nothing.** The shells' trajectories are tables either way (below), and a sphere's are as cheap
+  as a plane's.
 
 How:
 
@@ -134,13 +136,43 @@ How:
   away from the centre) is built from its pose each tick. Inside 250 m the sphere departs from the frame's plane by
   5 mm, so hit queries, flooding and everything in `ShipClass` stay flat and exact enough. A battle's broadphase is a
   3D hash on the Earth-centred position (no poles to special-case).
-- **Shells fly in the Earth-centred frame**, gravity toward the centre, the air's density by height over the sphere,
-  plus the Coriolis term (-2Ω × v; ~15 m of deflection at 15 kyd per the research) since the frame rotates. A hit test
-  takes the shell's segment for the tick into the target's ship frame: that's step 3's "world ray to ship-local".
 - **Line of sight** is a ray against the sphere (refraction later: the usual trick is a larger radius, ~7/6 R).
+- **Effects are local and flat.** The wave sim, wakes, splashes, smoke and particles run in a tangent plane at their
+  emitter or the camera: the wave sim only shows at close zoom, and a 1 km patch departs from the sphere by 2 cm.
+  They're looks, read from the sim, never fed back into it.
+- **Mission areas are rules, not coordinate systems.** An early mission limits play to a region of the sphere (a cap
+  or a polygon on it); the ships inside are still on the sphere, at a real place.
 
 Determinism: the sim is fixed-tick doubles; trigonometry only where a frame is built, so the same inputs give the same
 battle on one build and platform (cross-platform lockstep isn't a goal yet).
+
+### Shells: an analytic trajectory, tracked, not integrated
+
+The sim may run on large ticks (seconds), so a shell can't be stepped with a numerical integrator per tick: its
+result would change with the tick length, and a long tick would chord straight through a ship. Instead each shell's
+whole flight is known the moment it's fired, and the sim looks positions up on it.
+
+- **The flight lies in one plane.** On a sphere with gravity toward the centre and drag along the velocity, the
+  trajectory stays in the plane through the Earth's centre, the muzzle and the initial velocity (a great circle's
+  plane), and depends only on the elevation (against the local horizontal) and the muzzle velocity. So per shell
+  type, a **table: elevation × time -> ground arc, height over the sea, and velocity**, integrated once (point mass,
+  the standard atmosphere by height, Cd(Mach): `research/simulation/fire_control_ref.py` `_fly` is the reference)
+  and interpolated (Hermite, positions with velocities). Curvature is in the table, not a correction to it. The
+  table's resolution is set by its error against direct integration: well under a metre at the fall.
+- **A shell is a few numbers:** fire time, muzzle position, the plane (its azimuth), the elevation and muzzle velocity
+  it actually left with (the ship's own motion, roll and pitch folded in; dispersion is a per-shell perturbation of
+  these). Its position at any time is one lookup, so the renderer draws it smoothly at any frame rate for free.
+- **Coriolis to first order, exactly from the table.** The frame rotates, so the shell also feels -2Ω × v. To first
+  order the offset is δ(t) = -2Ω × ∫₀ᵗ (x(τ) - x₀) dτ: the table also stores that integral of the in-plane
+  displacement, and the deflection is one cross product (~15 m at 15 kyd per the research). Wind, if ever, the same
+  way.
+- **Only the end of the flight can hit a ship.** Nothing at sea is taller than ~60 m, so a shell can hit one only
+  while it's below that: the last ~150 m of track, a fraction of a second. At firing the sim solves for the impact
+  time and that **danger window**, and schedules an event; until then the shell costs nothing per tick. At the window
+  the hit query sweeps the track against the ships near it, each in its own frame at those instants (the ships move
+  a few metres in the window). Results don't depend on the tick. Land (once the Earth model exists) and aircraft
+  (later) are tested along the whole track the same way.
+- **Splashes and near misses** come from the same solve: the impact point and time are known at firing.
 
 ## Damage on the sprites
 
@@ -167,7 +199,7 @@ Each step ends verified and committed, with its notes added here.
    sphere ("The world": the double vector types, moving on the sphere, the ship frame). Test: 50 ships of one class
    share one `ShipClass` and none writes to it; a ship steaming a full circle of the globe, across a pole, comes back
    where it started.
-3. **The hit query.** A shell's segment, Earth-centred, to ship-local (pose, sinkage, trim, heel), broadphase on
+3. **The hit query.** A segment, Earth-centred, to ship-local (pose, sinkage, trim, heel), broadphase on
    `BroadphaseR`, then turrets at the ship's bearings, the hull, armour and cells. Returns indices, not strings.
    Headless, allocation-free, tested.
 4. **The class registry.** Builds many designs in parallel keyed by content hash, none dropped; refcounted; frees the
@@ -179,6 +211,10 @@ Each step ends verified and committed, with its notes added here.
    its state change.
 6. **Damage rules.** Flooding first (`sinking.py`'s approach on `ShipState`), and disabling components. Penetration and
    the systems' dependency graph (`research/simulation/damage-model-research.md` §8-9) after.
+7. **Shells in flight** ("Shells"). The trajectory tables per shell type and their builder (checked against direct
+   integration), the shell record, the impact and danger-window solve, the event schedule, and the window's sweep
+   through step 3's query. Test: hits and splashes are the same at a 0.1 s and a 5 s tick; a shell fired along a
+   meridian and one along the equator land where direct integration on the rotating sphere says.
 
 ## Open questions (the user's)
 
@@ -188,8 +224,6 @@ Each step ends verified and committed, with its notes added here.
 3. **Saves:** condition tables by index (compact; breaks when shipgen changes a class's layout) or by string id
    (survives a rebuild)? Proposed: indices plus the class hash at runtime, string ids in save files.
 4. **Buoyancy realism** (open since 2026-10-07, DECISIONS "Buoyancy"): step 6 needs it, steps 1-5 don't.
-5. **The world frame** ("The world"): the sphere everywhere, flat only inside a ship's frame (proposed), or a flat
-   battle area?
 
 ## Background
 
