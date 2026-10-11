@@ -35,7 +35,8 @@ A mission is a file (JSON, `Content/Missions/*.json`, a game asset), everything 
 - **When and where:** the start time (UTC; sets the sun, the moon, night), the weather and sea state (fixed or a
   scripted sequence), the **area** (a polygon on the sphere; the map's camera and every order keep inside it), and
   the land in it (none until the Earth model).
-- **Sides:** each nation taking part, which is the player's, relations (at war), and each side's victory conditions.
+- **Sides:** each nation taking part, which is the player's, relations (at war), each side's victory conditions, and
+  its technology (a year preset or a list).
 - **Forces:** groups of ships: the design (a shipped design by name, or a design embedded in the file, with its
   content hash), the ship's name, position, course, speed, fuel and ammunition, state of readiness; the group's
   standing orders; the player's groups marked important or not.
@@ -77,7 +78,9 @@ On the scene stack (`docs/world/architecture.md` "Screens"):
 
 **Mission start (agreed):** a mission gives fixed forces, or a limit (tonnage, cost, a year's technology) within
 which the player designs their own ships, or both. The designer is pushed from the mission start screen; it already
-takes a design in and hands one back, and the limits are its `DesignLimits` filled from the mission.
+takes a design in and hands one back, and the limits are its `DesignLimits` filled from the mission. **The mission's
+technology** is a year preset per side (or an explicit list): the designer offers only the templates it unlocks, so
+no STS steel in 1910 (`docs/world/architecture.md` "Technology"; the campaign's research fills the same set later).
 
 ## Generating missions
 

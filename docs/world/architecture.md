@@ -194,6 +194,31 @@ job system, one navy per job, reading a frozen picture and writing commands that
 deterministic and can't reach into the world. The player's navy and an NPC's are the same thing with a different
 command source: the player could hand a theatre to an AI admiral, or watch an all-NPC world headless for tests.
 
+## Technology: what a navy can build (proposed 2026-10-11)
+
+A mission set in 1910 must not offer STS steel; the campaign's research module (later, but kept in mind) decides the
+same question as research completes. Both are one thing: **a navy's set of unlocked technologies**, frozen for a
+mission and growing in a campaign.
+
+- **`TechSet`** is a set of tech ids a navy has: materials (wrought iron, compound, Harvey, Krupp cemented, STS),
+  plants, hull construction, gun and mount types, fire control and radar levels, and navy-wide items that aren't
+  parts of a design (director firing, doctrine, signals). It's world state, per navy, in `Fleetwright.Sim`.
+- **Every catalogue entry names the tech that unlocks it.** The designer's templates (`Content/Templates`, written
+  by `tools/designer_templates.py`) gain a `tech` id per entry, and each tech carries its historical year (per
+  nation where it differed) as data. The plant templates are already by year; a design already carries its
+  technology's values, not a year (`docs/shipgen/plant-templates.md`: a navy may research things earlier or later
+  than history did).
+- **Where the set comes from is the only difference:** a mission gives a year preset ("everything this nation had by
+  1910") or an explicit list; the campaign's research adds to the set over time. The designer and the sim don't know
+  which.
+- **The designer offers what the set unlocks:** it's handed the set in its `DesignContext`, and filters the template
+  catalogues by it (`Templates` already says "in the game the tech tree will filter them"). Numbers a tech bounds
+  rather than unlocks (the largest calibre a navy can make, boiler pressure) come as caps alongside `DesignLimits`.
+- **The designer still never refuses** (the limits rule): a design loaded from a file with locked tech builds and
+  shows it in the remarks ("STS steel: not available, 1910"). It's the gameplay that decides: the mission start
+  screen won't commission it, a campaign yard can't lay it down.
+- **The sim reads the set too,** for what isn't in a design: a navy's fire-control doctrine, training, signals.
+
 ## The pieces and where they live
 
 ```
@@ -214,6 +239,7 @@ Fleetwright.Sim          the world; no GPU, no SDL, no ImGui; deterministic; hea
     Pictures             each navy's knowledge: contacts, dispatches
     Merchants            light entities on rails (route, nation, tonnage, cargo); full state only in an encounter
     Admiralties          NPC command sources (AI), reading their navy's picture
+    Tech                 per navy, the TechSet (unlocked ids); a mission's preset or the campaign's research
     SimSettings          every tuning number, from data
   Commands               the only way in: orders, designs submitted, ships laid down; stamped with the tick
   Snapshot               the only way out: what the screens need, published after a step
