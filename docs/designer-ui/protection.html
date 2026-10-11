@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Protection</title>
+<link rel="stylesheet" href="assets/fonts/dense-fonts.css">
+<style>
+:root{
+  --ground:#0E1215;--panel:#1C2329;--panel2:#20282F;--inset:#11161A;--line:#20292F;--edge:#090C0E;--bevel:#2C3640;
+  --tt:#36434F;--tb:#27313A;--hd:#161C21;--text:#C9D3DB;--bright:#EAF0F4;--muted:#7F8B95;--brass:#D9B868;
+  --brassd:#5A4A24;--ok:#86C77E;--amber:#E3A452;--blue:#5B9BE0;--plan:#14243A;--planline:#9CC2E2;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--text);font-family:'Archivo Narrow',sans-serif;font-size:12px;user-select:none}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:'IBM Plex Mono',monospace}
+.dim{color:var(--muted)}.gold{color:var(--brass)}.amb{color:var(--amber)}.okc{color:var(--ok)}
+#app{position:relative;width:1280px;height:600px;margin:0;overflow:hidden}
+.tabs{position:absolute;left:4px;top:0;height:22px;display:flex;gap:2px;align-items:flex-end}
+.tab{height:20px;padding:0 9px 0 5px;border:1px solid var(--edge);border-bottom:none;background:linear-gradient(#2A333C,#20282F);color:var(--muted);font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:5px}
+.tab.on{height:22px;background:linear-gradient(var(--tt),var(--panel));color:var(--brass)}
+.tab .k{border:1px solid #4A5764;border-radius:2px;font-size:9.5px;line-height:11px;padding:0 3px}
+.tab.on .k{border-color:var(--brass)}
+.pane{position:absolute;left:0;top:22px;width:1280px;height:578px;background:var(--panel);border:1px solid var(--edge);box-shadow:inset 0 1px 0 var(--tt)}
+.sub{height:18px;display:flex;align-items:center;gap:8px;padding:0 6px;background:var(--hd);border-bottom:1px solid var(--edge);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.sub .n{text-transform:none;letter-spacing:0;font-size:11.5px}
+.sub b{margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0;font-size:11.5px}
+.box{position:absolute;border:1px solid var(--edge);background:var(--panel2);overflow:hidden}
+.box .bh{position:absolute;left:0;top:0;right:0;height:16px;display:flex;align-items:center;gap:8px;padding:0 6px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);background:rgba(9,12,14,0.55);z-index:2;white-space:nowrap}
+.box .bh b{margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0;font-size:11px}
+.plan{background:var(--plan);background-image:linear-gradient(rgba(150,190,230,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(150,190,230,0.05) 1px,transparent 1px);background-size:24px 24px}
+/* plate table */
+.pt{position:absolute;display:grid;grid-template-columns:10px 124px 96px 108px minmax(0,1fr) 124px 50px 54px 54px;grid-auto-rows:min-content;align-content:start;overflow:hidden}
+.pt>div{height:17px;display:flex;align-items:center;padding:0 4px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;gap:5px}
+.pt .h{height:17px;background:var(--hd);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--edge)}
+.pt .g{height:14px;grid-column:1/-1;background:rgba(9,12,14,0.35);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#6D7983;border-bottom:1px solid var(--edge);padding-left:6px}
+.pt .g a{margin-left:10px;text-transform:none;letter-spacing:0;font-size:11px;color:var(--brass);cursor:pointer}
+.pt .g a:hover{color:#FFE7A8}
+.pt .r{cursor:pointer}
+.pt .r.sel{background:rgba(217,184,104,0.10)}
+.pt .r.first.sel{box-shadow:inset 3px 0 0 var(--brass)}
+.pt .r.hov{background:rgba(255,255,255,0.045)}
+.pt .r.sel.hov{background:rgba(217,184,104,0.14)}
+.pt .r.none{color:#59646E}
+.right{justify-content:flex-end}
+.sw{width:8px;height:12px;display:inline-block;border:1px solid rgba(0,0,0,0.5)}
+.sp{display:inline-flex;align-items:center;height:15px;border:1px solid #0A0D10;background:var(--inset)}
+.sp button{width:13px;height:13px;border:none;padding:0;background:linear-gradient(#3A4651,#2A333C);color:#C9D3DB;font-size:7.5px;line-height:13px}
+.sp button:hover{background:linear-gradient(#4E5D6B,#38434E);color:#FFF}
+.sp span{min-width:52px;text-align:right;padding:0 3px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bright)}
+.sp.s span{min-width:34px}
+.sp.auto span{color:var(--muted)}
+.sp .pre{min-width:0;color:var(--muted);font-family:'Archivo Narrow',sans-serif;font-size:10.5px;padding:0 0 0 3px;text-align:left}
+.sp input{width:52px;height:13px;border:none;background:#0A0E11;color:#FFE7A8;font-family:'IBM Plex Mono',monospace;font-size:11px;text-align:right;outline:1px solid var(--brass);padding:0 3px}
+.ro{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);min-width:52px;text-align:right;display:inline-block;padding-right:16px}
+.seg{display:inline-flex;border:1px solid #0A0D10}
+.seg button{height:15px;min-width:18px;padding:0 4px;border:none;border-right:1px solid #0A0D10;background:linear-gradient(#2E3842,#232B33);color:var(--muted);font-size:10.5px}
+.seg button:last-child{border-right:none}
+.seg button.on{background:linear-gradient(#6B5A30,#4A3E20);color:#FFE7A8}
+.seg button:hover:not(.on):not(:disabled){color:var(--bright)}
+.seg button:disabled{color:#3E4A54;cursor:default}
+.dd{height:15px;display:inline-flex;align-items:center;gap:4px;padding:0 4px;border:1px solid #0A0D10;background:var(--inset);color:var(--text);font-size:11px;justify-content:space-between;cursor:pointer;overflow:hidden;white-space:nowrap}
+.dd:hover{color:var(--bright);border-color:#3A4651}
+.dd.sch{color:var(--muted)}
+.dd i{font-style:normal;font-size:8px;color:var(--muted)}
+.num{font-family:'IBM Plex Mono',monospace;font-size:11px;justify-content:flex-end}
+.stp{font-family:'IBM Plex Mono',monospace;font-size:11px;justify-content:flex-end;cursor:default}
+.stp.est{color:#8A949C;font-style:italic}
+.stp.big{color:var(--amber)}
+.act{height:16px;padding:0 7px;border:1px solid #0A0D10;background:linear-gradient(#2E3842,#232B33);color:var(--text);font-size:11px}
+.act:hover{color:var(--bright);background:linear-gradient(#3A4651,#2A333C)}
+.act:disabled{color:#4E5A64;cursor:default}
+/* inspector */
+.insp{position:absolute;left:0;top:16px;right:0;bottom:0;padding:4px 8px;font-size:11.5px;line-height:1.45;overflow:hidden}
+.insp .t{font-weight:700;color:var(--bright);font-size:13px;display:flex;align-items:center;gap:8px}
+.insp .t .sw{height:11px}
+.insp .l{display:grid;grid-template-columns:86px 1fr;gap:0 8px}
+.insp .l>span:nth-child(odd){color:var(--muted)}
+.insp .l .v{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text)}
+.insp .note{color:var(--muted);font-size:11px;margin-top:3px;line-height:1.35}
+.insp .kn{margin-top:4px;border-top:1px solid var(--line);padding-top:3px}
+.insp .kn .hd{font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#6D7983}
+.insp .kn .row{display:grid;grid-template-columns:1fr 58px 58px;gap:0 6px;font-size:11px}
+.insp .kn .row span:nth-child(n+2){font-family:'IBM Plex Mono',monospace;text-align:right}
+.ask{border:1px dashed #55606A;padding:3px 6px;margin:5px 0 0;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);line-height:1.3}
+.ask .tg{font-size:9.5px;letter-spacing:0.05em;text-transform:uppercase;color:#8C7B55;border:1px solid #5A4A24;padding:0 3px;margin-left:auto;white-space:nowrap}
+.hint{position:absolute;left:0;bottom:0;width:100%;height:18px;display:flex;gap:14px;align-items:center;padding:0 8px;background:var(--hd);border-top:1px solid var(--edge);color:var(--muted);font-size:11px}
+.hint .tot{margin-left:auto;color:var(--text)}
+.kbd{display:inline-block;padding:0 3px;border:1px solid #4A5764;border-bottom-width:2px;border-radius:2px;font-size:9.5px;line-height:11px;color:#AEB9C3;font-family:'IBM Plex Mono',monospace;margin-right:3px}
+#tip{position:absolute;pointer-events:none;display:none;max-width:320px;padding:5px 7px;background:#0F1418;border:1px solid #4A5764;color:var(--text);font-size:11.5px;line-height:1.35;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,0.6)}
+#tip b{color:var(--brass)}
+#tip .a{color:var(--amber)}
+#tip .m{font-family:'IBM Plex Mono',monospace;font-size:11px}
+#tip table{border-collapse:collapse;margin-top:2px}
+#tip td{padding:0 0 0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;text-align:right}
+#tip td:first-child{padding:0;font-family:'Archivo Narrow',sans-serif;font-size:11.5px;text-align:left;color:var(--muted)}
+#menu{position:absolute;display:none;min-width:200px;background:#161C21;border:1px solid #4A5764;z-index:11;padding:2px 0;box-shadow:0 2px 10px rgba(0,0,0,0.6)}
+#menu div{padding:2px 10px;font-size:11.5px;display:flex;justify-content:space-between;gap:16px;cursor:pointer}
+#menu div:hover{background:rgba(217,184,104,0.15);color:var(--bright)}
+#menu div.off{color:#4E5A64;cursor:default}
+#menu div.off:hover{background:none;color:#4E5A64}
+#menu .sep{height:1px;padding:0;margin:2px 0;background:var(--line);cursor:default}
+#menu .lab{color:var(--muted);cursor:default;font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em}
+#menu .lab:hover{background:none;color:var(--muted)}
+svg text{font-family:'IBM Plex Mono',monospace}
+.pl{cursor:pointer}
+.gh{cursor:copy}
+.chip{position:absolute;z-index:3}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="tabs" id="tabs"></div>
+  <div class="pane" id="pane">
+    <div class="sub">Protection <span class="n dim" id="reads"></span>
+      <b id="scheme"></b></div>
+    <div class="box plan" id="elev" style="left:6px;top:24px;width:836px;height:224px"></div>
+    <div class="box plan" id="sect" style="left:848px;top:24px;width:426px;height:224px"></div>
+    <div class="box" id="tbl" style="left:6px;top:254px;width:836px;height:304px"></div>
+    <div class="box" id="ins" style="left:848px;top:254px;width:426px;height:304px"></div>
+  </div>
+  <div id="tip"></div>
+  <div id="menu"></div>
+</div>
+<script>
+const DATA = {"bismarck":{"name":"Bismarck-like (as completed, 1940)","type":"BB","std":39763,"L":225,"B":33.36,"h":{"keel":-15.89,"waterline":-5.55,"armour_deck":-5.2,"draught":10.34,"depth":15.89,"freeboard":5.55},"A":{"tds_m":5.5,"belt_mm":320,"belt_depth_m":2.0,"belt_height_m":2.8,"belt_bottom_mm":170,"bulkhead_mm":220,"upper_belt":{"mm":145,"to_deck":0,"extent":"citadel"},"end_belts":{"fore":{"mm":60,"tip_mm":60,"reach":1.0,"bulkhead_mm":0},"aft":{"mm":80,"tip_mm":80,"reach":1.0,"bulkhead_mm":0}},"steering_box":{"mm":0,"deck_mm":0,"bulkhead_mm":0},"decks":[{"deck":0,"mm":50,"extent":"citadel"},{"deck":2,"mm":100,"extent":"citadel"}],"materials":{"belt":"Krupp cemented (KC n/A)","upper_belt":"Krupp cemented (KC n/A)","end_belts":"Krupp cemented (KC n/A)","bulkheads":"Krupp cemented (KC n/A)","turrets":"Krupp cemented (KC n/A)","barbettes":"Krupp cemented (KC n/A)","conning_tower":"Krupp cemented (KC n/A)","secondary":"Krupp cemented (KC n/A)","decks":"Wotan hart"}},"main":[{"cal":380,"mm":360}],"rep":{"belt":{"thickness_mm":320,"x0":-75.847,"x1":69.145,"bottom":-7.55,"top":-2.75,"material":"Krupp cemented (KC n/A)","bottom_mm":170,"taper_from":-5.55},"strakes":[{"id":"Fore end belt","kind":"end","extent":"fore","thickness_mm":60,"x0":69.145,"x1":112.5,"bottom":-7.55,"top":-2.75,"material":"Krupp cemented (KC n/A)"},{"id":"Aft end belt","kind":"end","extent":"aft","thickness_mm":80,"x0":-112.5,"x1":-75.847,"bottom":-7.55,"top":-2.75,"material":"Krupp cemented (KC n/A)"},{"id":"Upper belt","kind":"upper","extent":"citadel","thickness_mm":145,"x0":-75.847,"x1":69.145,"bottom":-2.75,"top":0,"material":"Krupp cemented (KC n/A)"}],"bulkheads":[{"id":"Forward bulkhead","x":69.145,"thickness_mm":220,"bottom":-14.78,"top":0,"material":"Krupp cemented (KC n/A)","lower_mm":110,"lower_top":-7.55},{"id":"Aft bulkhead","x":-75.847,"thickness_mm":220,"bottom":-14.78,"top":0,"material":"Krupp cemented (KC n/A)","lower_mm":110,"lower_top":-7.55},{"id":"Aft end belt, stern face","x":-112.5,"thickness_mm":80,"bottom":-7.55,"top":-2.75,"material":"Krupp cemented (KC n/A)"}],"decks":[{"deck":"Main deck","thickness_mm":50,"extent":"citadel","x0":-75.847,"x1":69.145,"z":0,"main":false,"roof":false,"material":"Wotan hart"},{"deck":"Third deck","thickness_mm":100,"extent":"citadel","x0":-75.847,"x1":69.145,"z":-5.2,"main":true,"roof":true,"material":"Wotan hart"}]},"decks":[{"id":"Inner bottom","z":-14.776,"n":null,"kind":"inner_bottom"},{"id":"Sixth deck","z":-13,"n":5,"kind":"deck"},{"id":"Fifth deck","z":-10.4,"n":4,"kind":"deck"},{"id":"Fourth deck","z":-7.8,"n":3,"kind":"deck"},{"id":"Third deck","z":-5.2,"n":2,"kind":"deck"},{"id":"Second deck","z":-2.6,"n":1,"kind":"deck"},{"id":"Main deck","z":0,"n":0,"kind":"main"}],"mid":{"x":0,"z":[-15.89,-15.78,-15.58,-15.06,-14.34,-13.3,-11.75,-10.2,-8.65,-7.1,-5.55,0],"y":[0,10.247,12.117,13.986,15.162,15.971,16.472,16.634,16.674,16.68,16.68,16.68]},"comps":[{"id":"A","k":"main","x":61.46,"y":0,"r":0,"b":1.2,"t":3.59,"mm":360,"a":{"face":360,"side":198,"rear":180,"roof":144}},{"id":"A barbette","k":"barbette","x":61.46,"y":0,"r":4.69,"b":-5.2,"t":1.2,"mm":288,"a":null},{"id":"B","k":"main","x":45.94,"y":0,"r":0,"b":3.68,"t":6.07,"mm":360,"a":{"face":360,"side":198,"rear":180,"roof":144}},{"id":"B barbette","k":"barbette","x":45.94,"y":0,"r":4.69,"b":-5.2,"t":3.68,"mm":288,"a":null},{"id":"Y","k":"main","x":-68.16,"y":0,"r":0,"b":1.2,"t":3.59,"mm":360,"a":{"face":360,"side":198,"rear":180,"roof":144}},{"id":"Y barbette","k":"barbette","x":-68.16,"y":0,"r":4.69,"b":-5.2,"t":1.2,"mm":288,"a":null},{"id":"X","k":"main","x":-52.65,"y":0,"r":0,"b":3.68,"t":6.07,"mm":360,"a":{"face":360,"side":198,"rear":180,"roof":144}},{"id":"X barbette","k":"barbette","x":-52.65,"y":0,"r":4.69,"b":-5.2,"t":3.68,"mm":288,"a":null},{"id":"S1S barbette","k":"barbette","x":-15.97,"y":11.27,"r":2.47,"b":-5.2,"t":2.6,"mm":80,"a":null},{"id":"S1P barbette","k":"barbette","x":-15.97,"y":-11.27,"r":2.47,"b":-5.2,"t":2.6,"mm":80,"a":null},{"id":"S2S barbette","k":"barbette","x":-3.47,"y":11.36,"r":2.47,"b":-5.2,"t":2.6,"mm":80,"a":null},{"id":"S2P barbette","k":"barbette","x":-3.47,"y":-11.36,"r":2.47,"b":-5.2,"t":2.6,"mm":80,"a":null},{"id":"S3S barbette","k":"barbette","x":7.53,"y":11.34,"r":2.47,"b":-5.2,"t":2.6,"mm":80,"a":null},{"id":"S3P barbette","k":"barbette","x":7.53,"y":-11.34,"r":2.47,"b":-5.2,"t":2.6,"mm":80,"a":null},{"id":"SB1S barbette","k":"barbette","x":-37.09,"y":10.95,"r":1.76,"b":-5.2,"t":2.6,"mm":16,"a":null},{"id":"SB1P barbette","k":"barbette","x":-37.09,"y":-10.95,"r":1.76,"b":-5.2,"t":2.6,"mm":16,"a":null},{"id":"SB2S barbette","k":"barbette","x":-27.09,"y":11.21,"r":1.76,"b":-5.2,"t":2.6,"mm":16,"a":null},{"id":"SB2P barbette","k":"barbette","x":-27.09,"y":-11.21,"r":1.76,"b":-5.2,"t":2.6,"mm":16,"a":null},{"id":"SB3S barbette","k":"barbette","x":18.91,"y":11.23,"r":1.76,"b":-5.2,"t":2.6,"mm":16,"a":null},{"id":"SB3P barbette","k":"barbette","x":18.91,"y":-11.23,"r":1.76,"b":-5.2,"t":2.6,"mm":16,"a":null},{"id":"SB4S barbette","k":"barbette","x":28.91,"y":10.81,"r":1.76,"b":-5.2,"t":2.6,"mm":16,"a":null},{"id":"SB4P barbette","k":"barbette","x":28.91,"y":-10.81,"r":1.76,"b":-5.2,"t":2.6,"mm":16,"a":null},{"id":"Conning tower","k":"conning_tower","x":31.52,"y":0,"r":3.34,"b":0,"t":5.2,"mm":320,"a":null}],"w":{"Barbette A":471.8,"Barbette B":636.9,"Barbette Y":471.8,"Barbette X":636.9,"Conning tower":317.7,"Gratings Funnel 1":10.4,"Barbette S1S":69.1,"Barbette S1P":69.1,"Barbette S2S":69.1,"Barbette S2P":69.1,"Barbette S3S":69.1,"Barbette S3P":69.1,"Barbette SB1S":9.9,"Barbette SB1P":9.9,"Barbette SB2S":9.9,"Barbette SB2P":9.9,"Barbette SB3S":9.9,"Barbette SB3P":9.9,"Barbette SB4S":9.9,"Barbette SB4P":9.9,"Belt armour":3155.1,"Bulkheads":1286.2,"Aft end belt, stern face":10.1,"Fore end belt":196,"Aft end belt":221,"Upper belt":907.7,"Torpedo protection":1438.7,"Deck armour (main deck)":1708.6,"Deck armour (third deck)":3417.3},"groups":{"armour":15380,"hull":9315,"armament":6377,"fuel":3982,"machinery":3551,"misc":3142,"superstructure":1714,"fire_control":283},"probes":{"belt":[-129,218],"belt_bottom":[-31,30],"belt_depth":[-94,184],"belt_height":[-65,155],"bulkheads":[-78,77],"tds":[-475,2157],"upper_belt":[-83,174],"end_fore":[-22,1616],"end_fore_tip":[-22,1616],"end_fore_reach":[-26,null],"end_aft":[1581,18],"end_aft_tip":[1579,19],"end_aft_reach":[1558,null],"deck0":[1281,1901],"deck1":[1281,1901],"main0":[-127,216]},"det":{"belt":[{"groups":{"armour":-104,"hull":-10,"armament":0,"fuel":-8,"machinery":-7,"misc":-8,"superstructure":1,"fire_control":0},"lines":[["Belt armour",-85],["Hull structure",-10],["Conning tower",-10],["Fuel",-8],["Machinery",-7]],"L":0,"T":-0.03,"D":-0.03,"C":0.1},{"groups":{"armour":116,"hull":54,"armament":0,"fuel":11,"machinery":9,"misc":13,"superstructure":27,"fire_control":0},"lines":[["Belt armour",84],["Hull structure",52],["Secondary director 1S",25],["Secondary director 1P",25],["Secondary director 1",-25]],"L":0.5,"T":0.01,"D":0.02,"C":-0.1}],"belt_bottom":[{"groups":{"armour":-25,"hull":-2,"armament":0,"fuel":-2,"machinery":-2,"misc":-2,"superstructure":0,"fire_control":0},"lines":[["Belt armour",-22]],"L":0,"T":-0.01,"D":-0.01,"C":0.0},{"groups":{"armour":24,"hull":2,"armament":0,"fuel":2,"machinery":2,"misc":2,"superstructure":0,"fire_control":0},"lines":[["Belt armour",22]],"L":0,"T":0.01,"D":0.01,"C":-0.0}],"belt_depth":[{"groups":{"armour":-76,"hull":-8,"armament":0,"fuel":-6,"machinery":-5,"misc":-5,"superstructure":1,"fire_control":0},"lines":[["Belt armour",-55],["Hull structure",-8],["Bulkheads",-7],["Fuel",-6],["Machinery",-5]],"L":0,"T":-0.03,"D":-0.03,"C":0.0},{"groups":{"armour":88,"hull":51,"armament":0,"fuel":9,"machinery":7,"misc":11,"superstructure":27,"fire_control":0},"lines":[["Belt armour",54],["Hull structure",50],["Secondary director 1S",25],["Secondary director 1P",25],["Secondary director 1",-25]],"L":0.5,"T":0.0,"D":0.01,"C":-0.1}],"belt_height":[{"groups":{"armour":-53,"hull":-5,"armament":0,"fuel":-4,"machinery":-4,"misc":-4,"superstructure":0,"fire_control":0},"lines":[["Belt armour",-72],["Upper belt",33],["Hull structure",-5],["Aft end belt",-5]],"L":0,"T":-0.02,"D":-0.02,"C":0.0},{"groups":{"armour":65,"hull":48,"armament":0,"fuel":7,"machinery":6,"misc":9,"superstructure":27,"fire_control":0},"lines":[["Belt armour",72],["Hull structure",47],["Upper belt",-30],["Secondary director 1S",25],["Secondary director 1P",25]],"L":0.5,"T":-0.01,"D":0.0,"C":-0.1}],"bulkheads":[{"groups":{"armour":-63,"hull":-6,"armament":0,"fuel":-5,"machinery":-4,"misc":-4,"superstructure":0,"fire_control":0},"lines":[["Bulkheads",-59],["Hull structure",-6],["Fuel",-5]],"L":0,"T":-0.02,"D":-0.02,"C":0.0},{"groups":{"armour":63,"hull":6,"armament":0,"fuel":5,"machinery":4,"misc":4,"superstructure":-1,"fire_control":0},"lines":[["Bulkheads",60],["Hull structure",6],["Fuel",5]],"L":0,"T":0.02,"D":0.02,"C":-0.0}],"tds":[{"groups":{"armour":-310,"hull":-76,"armament":0,"fuel":-27,"machinery":-27,"misc":-28,"superstructure":-34,"fire_control":0},"lines":[["Torpedo protection",-158],["Hull structure",-74],["Deck armour (third deck)",-54],["Belt armour",-42],["Fuel",-28]],"L":-0.5,"T":-0.07,"D":-0.08,"C":-1.9},{"groups":{"armour":1389,"hull":212,"armament":0,"fuel":135,"machinery":117,"misc":132,"superstructure":307,"fire_control":0},"lines":[["Torpedo protection",377],["Deck armour (third deck)",359],["Belt armour",324],["Hull structure",211],["Deck armour (main deck)",180]],"L":0.5,"T":0.49,"D":0.5,"C":14.9}],"upper_belt":[{"groups":{"armour":-68,"hull":-7,"armament":0,"fuel":-5,"machinery":-5,"misc":-5,"superstructure":0,"fire_control":0},"lines":[["Upper belt",-62],["Hull structure",-7],["Fuel",-5]],"L":0,"T":-0.02,"D":-0.02,"C":0.0},{"groups":{"armour":80,"hull":50,"armament":0,"fuel":8,"machinery":7,"misc":10,"superstructure":27,"fire_control":0},"lines":[["Upper belt",65],["Hull structure",49],["Secondary director 1S",25],["Secondary director 1P",25],["Secondary director 1",-25]],"L":0.5,"T":0.0,"D":0.01,"C":-0.1}],"end_fore":[{"groups":{"armour":-18,"hull":-2,"armament":0,"fuel":-1,"machinery":-1,"misc":-1,"superstructure":0,"fire_control":0},"lines":[["Fore end belt",-16]],"L":0,"T":-0.01,"D":-0.01,"C":0.0},{"groups":{"armour":1017,"hull":132,"armament":0,"fuel":104,"machinery":94,"misc":100,"superstructure":273,"fire_control":0},"lines":[["Deck armour (third deck)",290],["Belt armour",267],["Torpedo protection",184],["Deck armour (main deck)",145],["Hull structure",132]],"L":0,"T":0.4,"D":0.4,"C":12.3}],"end_fore_tip":[{"groups":{"armour":-18,"hull":-2,"armament":0,"fuel":-1,"machinery":-1,"misc":-1,"superstructure":0,"fire_control":0},"lines":[["Fore end belt",-16]],"L":0,"T":-0.01,"D":-0.01,"C":0.0},{"groups":{"armour":1017,"hull":132,"armament":0,"fuel":104,"machinery":94,"misc":100,"superstructure":273,"fire_control":0},"lines":[["Deck armour (third deck)",290],["Belt armour",267],["Torpedo protection",184],["Deck armour (main deck)",145],["Hull structure",132]],"L":0,"T":0.4,"D":0.4,"C":12.3}],"end_fore_reach":[{"groups":{"armour":-21,"hull":-2,"armament":0,"fuel":-1,"machinery":-1,"misc":-1,"superstructure":0,"fire_control":0},"lines":[["Fore end belt",-20]],"L":0,"T":-0.01,"D":-0.01,"C":0.0},null],"end_aft":[{"groups":{"armour":989,"hull":129,"armament":0,"fuel":102,"machinery":92,"misc":98,"superstructure":273,"fire_control":0},"lines":[["Deck armour (third deck)",290],["Belt armour",268],["Torpedo protection",182],["Deck armour (main deck)",145],["Hull structure",129]],"L":0,"T":0.4,"D":0.4,"C":12.3},{"groups":{"armour":15,"hull":2,"armament":0,"fuel":2,"machinery":1,"misc":1,"superstructure":0,"fire_control":0},"lines":[["Aft end belt",14]],"L":0,"T":0.0,"D":0.0,"C":-0.0}],"end_aft_tip":[{"groups":{"armour":988,"hull":129,"armament":0,"fuel":102,"machinery":92,"misc":98,"superstructure":273,"fire_control":0},"lines":[["Deck armour (third deck)",290],["Belt armour",268],["Torpedo protection",182],["Deck armour (main deck)",145],["Hull structure",129]],"L":0,"T":0.4,"D":0.4,"C":12.3},{"groups":{"armour":16,"hull":2,"armament":0,"fuel":2,"machinery":1,"misc":1,"superstructure":0,"fire_control":0},"lines":[["Aft end belt",14]],"L":0,"T":0.0,"D":0.0,"C":-0.0}],"end_aft_reach":[{"groups":{"armour":970,"hull":127,"armament":0,"fuel":100,"machinery":91,"misc":97,"superstructure":273,"fire_control":0},"lines":[["Deck armour (third deck)",290],["Belt armour",268],["Torpedo protection",181],["Deck armour (main deck)",145],["Hull structure",127]],"L":0,"T":0.39,"D":0.39,"C":12.3},null],"deck0":[{"groups":{"armour":787,"hull":68,"armament":0,"fuel":86,"machinery":76,"misc":80,"superstructure":270,"fire_control":0},"lines":[["Deck armour (third deck)",284],["Belt armour",270],["Torpedo protection",178],["Deckhouse",110],["Fuel",85]],"L":-0.5,"T":0.37,"D":0.36,"C":12.4},{"groups":{"armour":1183,"hull":212,"armament":0,"fuel":124,"machinery":103,"misc":106,"superstructure":297,"fire_control":0},"lines":[["Deck armour (main deck)",349],["Deck armour (third deck)",323],["Belt armour",275],["Hull structure",210],["Torpedo protection",184]],"L":0.5,"T":0.38,"D":0.39,"C":12.6}],"deck1":[{"groups":{"armour":787,"hull":68,"armament":0,"fuel":86,"machinery":76,"misc":80,"superstructure":270,"fire_control":0},"lines":[["Belt armour",270],["Torpedo protection",178],["Deck armour (main deck)",142],["Deckhouse",110],["Deck armour (third deck)",99]],"L":-0.5,"T":0.37,"D":0.36,"C":12.4},{"groups":{"armour":1183,"hull":212,"armament":0,"fuel":124,"machinery":103,"misc":106,"superstructure":297,"fire_control":0},"lines":[["Deck armour (third deck)",510],["Belt armour",275],["Hull structure",210],["Torpedo protection",184],["Deck armour (main deck)",162]],"L":0.5,"T":0.38,"D":0.39,"C":12.6}],"main0":[{"groups":{"armour":-69,"hull":-10,"armament":-33,"fuel":-8,"machinery":-7,"misc":-8,"superstructure":1,"fire_control":0},"lines":[["Barbette B",-19],["Barbette X",-19],["Barbette Y",-14],["Barbette A",-14],["Hull structure",-10]],"L":0,"T":-0.03,"D":-0.03,"C":0.1},{"groups":{"armour":81,"hull":53,"armament":34,"fuel":11,"machinery":9,"misc":13,"superstructure":27,"fire_control":0},"lines":[["Hull structure",52],["Secondary director 1S",25],["Secondary director 1P",25],["Secondary director 1",-25],["Secondary director 2",-25]],"L":0.5,"T":0.01,"D":0.02,"C":-0.1}]}},"dreadnought":{"name":"HMS Dreadnought-like","type":"BB","std":25118,"L":184,"B":28.33,"h":{"keel":-14.09,"waterline":-4.81,"armour_deck":-2.6,"draught":9.28,"depth":14.09,"freeboard":4.81,"raised":[{"id":"Forecastle","x0":-1.677,"x1":92,"top":2.6}]},"A":{"belt_mm":279,"belt_depth_m":2.7,"belt_height_m":2.7,"belt_bottom_mm":229,"bulkhead_mm":203,"upper_belt":{"mm":203,"to_deck":0,"extent":"citadel"},"end_belts":{"fore":{"mm":152,"tip_mm":152,"reach":1.0,"bulkhead_mm":0},"aft":{"mm":102,"tip_mm":102,"reach":1.0,"bulkhead_mm":0}},"steering_box":{"mm":0,"deck_mm":0,"bulkhead_mm":0},"decks":[{"deck":1,"mm":76,"extent":"citadel"},{"deck":2,"mm":38,"extent":"fore"},{"deck":2,"mm":76,"extent":"aft"}],"materials":{"belt":"Krupp cemented","upper_belt":"Krupp cemented","end_belts":"Krupp cemented","bulkheads":"Krupp cemented","decks":"high-tensile steel","turrets":"Krupp cemented","barbettes":"Krupp cemented","conning_tower":"Krupp cemented","secondary":"Krupp cemented"}},"main":[{"cal":305,"mm":279}],"rep":{"belt":{"thickness_mm":279,"x0":-76.645,"x1":57.605,"bottom":-7.51,"top":-2.11,"material":"Krupp cemented","bottom_mm":229,"taper_from":-4.81},"strakes":[{"id":"Fore end belt","kind":"end","extent":"fore","thickness_mm":152,"x0":57.605,"x1":92,"bottom":-7.51,"top":-2.11,"material":"Krupp cemented"},{"id":"Aft end belt","kind":"end","extent":"aft","thickness_mm":102,"x0":-92,"x1":-76.645,"bottom":-7.51,"top":-2.11,"material":"Krupp cemented"},{"id":"Upper belt","kind":"upper","extent":"citadel","thickness_mm":203,"x0":-76.645,"x1":57.605,"bottom":-2.11,"top":0,"material":"Krupp cemented"}],"bulkheads":[{"id":"Forward bulkhead","x":57.605,"thickness_mm":203,"bottom":-13.09,"top":0,"material":"Krupp cemented","lower_mm":102,"lower_top":-7.51},{"id":"Aft bulkhead","x":-76.645,"thickness_mm":203,"bottom":-13.09,"top":0,"material":"Krupp cemented","lower_mm":102,"lower_top":-7.51},{"id":"Aft end belt, stern face","x":-92,"thickness_mm":102,"bottom":-7.51,"top":-2.11,"material":"Krupp cemented"}],"decks":[{"deck":"Second deck","thickness_mm":76,"extent":"citadel","x0":-76.645,"x1":57.605,"z":-2.6,"main":true,"roof":true,"material":"high-tensile steel"},{"deck":"Third deck","thickness_mm":38,"extent":"fore","x0":57.605,"x1":92,"z":-5.2,"main":false,"roof":false,"material":"high-tensile steel"},{"deck":"Third deck","thickness_mm":76,"extent":"aft","x0":-92,"x1":-76.645,"z":-5.2,"main":false,"roof":false,"material":"high-tensile steel"}]},"decks":[{"id":"Inner bottom","z":-13.09,"n":null,"kind":"inner_bottom"},{"id":"Fifth deck","z":-10.4,"n":4,"kind":"deck"},{"id":"Fourth deck","z":-7.8,"n":3,"kind":"deck"},{"id":"Third deck","z":-5.2,"n":2,"kind":"deck"},{"id":"Second deck","z":-2.6,"n":1,"kind":"deck"},{"id":"Main deck","z":0,"n":0,"kind":"main"},{"id":"Raised deck 1","z":2.6,"n":-1,"kind":"raised"}],"mid":{"x":-12.008,"z":[-14.09,-14,-13.81,-13.35,-12.7,-11.77,-10.38,-8.99,-7.6,-6.2,-4.81,0],"y":[0,10.254,11.477,12.623,13.312,13.772,14.051,14.14,14.162,14.165,14.165,14.165]},"comps":[{"id":"A","k":"main","x":50.87,"y":0,"r":0,"b":3.8,"t":5.79,"mm":279,"a":{"face":279,"side":153,"rear":140,"roof":112}},{"id":"A barbette","k":"barbette","x":50.87,"y":0,"r":3.91,"b":-2.6,"t":3.8,"mm":223,"a":null},{"id":"Y","k":"main","x":-69.91,"y":0,"r":0,"b":1.2,"t":3.19,"mm":279,"a":{"face":279,"side":153,"rear":140,"roof":112}},{"id":"Y barbette","k":"barbette","x":-69.91,"y":0,"r":3.91,"b":-2.6,"t":1.2,"mm":223,"a":null},{"id":"X","k":"main","x":-56.48,"y":0,"r":0,"b":1.2,"t":3.19,"mm":279,"a":{"face":279,"side":153,"rear":140,"roof":112}},{"id":"X barbette","k":"barbette","x":-56.48,"y":0,"r":3.91,"b":-2.6,"t":1.2,"mm":223,"a":null},{"id":"W1P","k":"main","x":23.18,"y":-7.26,"r":0,"b":3.8,"t":5.79,"mm":279,"a":{"face":279,"side":153,"rear":140,"roof":112}},{"id":"W1P barbette","k":"barbette","x":23.18,"y":-7.26,"r":3.91,"b":-2.6,"t":3.8,"mm":223,"a":null},{"id":"W1S","k":"main","x":23.18,"y":7.26,"r":0,"b":3.8,"t":5.79,"mm":279,"a":{"face":279,"side":153,"rear":140,"roof":112}},{"id":"W1S barbette","k":"barbette","x":23.18,"y":7.26,"r":3.91,"b":-2.6,"t":3.8,"mm":223,"a":null},{"id":"S1S barbette","k":"barbette","x":-15.01,"y":9.78,"r":1.08,"b":-2.6,"t":0,"mm":20,"a":null},{"id":"S1P barbette","k":"barbette","x":-15.01,"y":-9.78,"r":1.08,"b":-2.6,"t":0,"mm":20,"a":null},{"id":"S2S barbette","k":"barbette","x":-7.51,"y":9.78,"r":1.08,"b":-2.6,"t":0,"mm":20,"a":null},{"id":"S2P barbette","k":"barbette","x":-7.51,"y":-9.78,"r":1.08,"b":-2.6,"t":0,"mm":20,"a":null},{"id":"S3S barbette","k":"barbette","x":-0.01,"y":9.78,"r":1.08,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"S3P barbette","k":"barbette","x":-0.01,"y":-9.78,"r":1.08,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"S4S barbette","k":"barbette","x":7.49,"y":9.78,"r":1.08,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"S4P barbette","k":"barbette","x":7.49,"y":-9.78,"r":1.08,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"S5S barbette","k":"barbette","x":14.99,"y":9.77,"r":1.08,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"S5P barbette","k":"barbette","x":14.99,"y":-9.77,"r":1.08,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"Conning tower","k":"conning_tower","x":38.37,"y":0,"r":2.83,"b":0,"t":5.2,"mm":279,"a":null}],"w":{"Barbette A":384.6,"Barbette Y":272.8,"Barbette X":272.8,"Barbette W1P":384.6,"Barbette W1S":384.6,"Conning tower":230.3,"Gratings Funnel 1":6.5,"Gratings Funnel 2":6.5,"Barbette S3S":9.6,"Barbette S3P":9.6,"Barbette S4S":9.6,"Barbette S4P":9.6,"Barbette S5S":9.6,"Barbette S5P":9.6,"Belt armour":3033.2,"Bulkheads":930.1,"Aft end belt, stern face":12.2,"Fore end belt":443.2,"Aft end belt":132.8,"Upper belt":903.7,"Deck armour (second deck)":2042.1,"Deck armour (third deck, fore)":261.6,"Deck armour (third deck, aft)":233.6},"groups":{"armour":9993,"hull":6715,"fuel":4624,"armament":3337,"machinery":2818,"misc":1678,"superstructure":570,"fire_control":7},"probes":{"belt":[-173,173],"belt_bottom":[-39,40],"belt_depth":[-138,96],"belt_height":[-37,38],"bulkheads":[-63,64],"upper_belt":[-104,62],"end_fore":[-20,21],"end_fore_tip":[-20,21],"end_fore_reach":[-62,null],"end_aft":[-8,9],"end_aft_tip":[-10,11],"end_aft_reach":[-34,null],"deck0":[-126,-232],"deck1":[-48,49],"deck2":[-20,21],"main0":[-168,125]},"det":{"belt":[{"groups":{"armour":-114,"hull":-30,"fuel":-26,"armament":0,"machinery":-16,"misc":-11,"superstructure":-2,"fire_control":0},"lines":[["Belt armour",-86],["Hull structure",-27],["Fuel",-26],["Machinery",-15],["Deck armour (second deck)",-10]],"L":0,"T":-0.02,"D":-0.02,"C":-0.0},{"groups":{"armour":128,"hull":13,"fuel":20,"armament":0,"machinery":12,"misc":9,"superstructure":9,"fire_control":0},"lines":[["Belt armour",112],["Fuel",20],["Deck armour (second deck)",17],["Hull structure",14],["Machinery",12]],"L":0,"T":0.06,"D":0.06,"C":1.1}],"belt_bottom":[{"groups":{"armour":-31,"hull":-3,"fuel":-4,"armament":0,"machinery":-3,"misc":-3,"superstructure":0,"fire_control":0},"lines":[["Belt armour",-29],["Fuel",-5]],"L":0,"T":-0.02,"D":-0.01,"C":-0.0},{"groups":{"armour":31,"hull":3,"fuel":5,"armament":0,"machinery":3,"misc":2,"superstructure":0,"fire_control":0},"lines":[["Belt armour",29]],"L":0,"T":0.01,"D":0.01,"C":0.0}],"belt_depth":[{"groups":{"armour":-88,"hull":-27,"fuel":-22,"armament":0,"machinery":-13,"misc":-9,"superstructure":-2,"fire_control":0},"lines":[["Belt armour",-54],["Hull structure",-24],["Fuel",-22],["Machinery",-13],["Deck armour (second deck)",-9]],"L":0,"T":-0.01,"D":-0.01,"C":-0.0},{"groups":{"armour":75,"hull":8,"fuel":11,"armament":0,"machinery":7,"misc":5,"superstructure":1,"fire_control":0},"lines":[["Belt armour",55],["Fuel",11],["Hull structure",8],["Fore end belt",8],["Bulkheads",6]],"L":0,"T":0.03,"D":0.03,"C":0.1}],"belt_height":[{"groups":{"armour":-29,"hull":-3,"fuel":-4,"armament":0,"machinery":-3,"misc":-2,"superstructure":0,"fire_control":0},"lines":[["Belt armour",-59],["Upper belt",43],["Fore end belt",-8]],"L":0,"T":-0.02,"D":-0.01,"C":-0.0},{"groups":{"armour":29,"hull":3,"fuel":5,"armament":0,"machinery":3,"misc":2,"superstructure":0,"fire_control":0},"lines":[["Belt armour",59],["Upper belt",-43],["Fore end belt",8]],"L":0,"T":0.01,"D":0.01,"C":0.0}],"bulkheads":[{"groups":{"armour":-50,"hull":-5,"fuel":-7,"armament":0,"machinery":-5,"misc":-4,"superstructure":0,"fire_control":0},"lines":[["Bulkheads",-47],["Fuel",-7],["Hull structure",-5]],"L":0,"T":-0.02,"D":-0.02,"C":-0.0},{"groups":{"armour":50,"hull":5,"fuel":8,"armament":0,"machinery":4,"misc":3,"superstructure":0,"fire_control":0},"lines":[["Bulkheads",47],["Fuel",7],["Hull structure",5]],"L":0,"T":0.02,"D":0.02,"C":0.0}],"upper_belt":[{"groups":{"armour":-61,"hull":-24,"fuel":-18,"armament":0,"machinery":-11,"misc":-6,"superstructure":-2,"fire_control":0},"lines":[["Upper belt",-44],["Hull structure",-21],["Fuel",-18],["Machinery",-10],["Deck armour (second deck)",-9]],"L":0,"T":0.0,"D":0.0,"C":0.0},{"groups":{"armour":48,"hull":5,"fuel":7,"armament":0,"machinery":4,"misc":3,"superstructure":0,"fire_control":0},"lines":[["Upper belt",45],["Fuel",7],["Hull structure",5]],"L":0,"T":0.02,"D":0.02,"C":0.0}],"end_fore":[{"groups":{"armour":-16,"hull":-2,"fuel":-2,"armament":0,"machinery":-2,"misc":-1,"superstructure":0,"fire_control":0},"lines":[["Fore end belt",-15]],"L":0,"T":-0.01,"D":-0.01,"C":-0.0},{"groups":{"armour":16,"hull":2,"fuel":3,"armament":0,"machinery":1,"misc":1,"superstructure":0,"fire_control":0},"lines":[["Fore end belt",15]],"L":0,"T":0.0,"D":0.01,"C":0.0}],"end_fore_tip":[{"groups":{"armour":-16,"hull":-2,"fuel":-2,"armament":0,"machinery":-2,"misc":-1,"superstructure":0,"fire_control":0},"lines":[["Fore end belt",-15]],"L":0,"T":-0.01,"D":-0.01,"C":-0.0},{"groups":{"armour":15,"hull":2,"fuel":3,"armament":0,"machinery":1,"misc":1,"superstructure":0,"fire_control":0},"lines":[["Fore end belt",15]],"L":0,"T":0.0,"D":0.01,"C":0.0}],"end_fore_reach":[{"groups":{"armour":-47,"hull":-7,"fuel":-7,"armament":0,"machinery":-5,"misc":-4,"superstructure":0,"fire_control":0},"lines":[["Fore end belt",-47],["Fuel",-7],["Hull structure",-5]],"L":0,"T":-0.02,"D":-0.02,"C":-0.0},null],"end_aft":[{"groups":{"armour":-7,"hull":0,"fuel":-1,"armament":0,"machinery":-1,"misc":-1,"superstructure":0,"fire_control":0},"lines":[["Aft end belt",-7]],"L":0,"T":-0.01,"D":0.0,"C":-0.0},{"groups":{"armour":7,"hull":1,"fuel":1,"armament":0,"machinery":1,"misc":0,"superstructure":0,"fire_control":0},"lines":[["Aft end belt",7]],"L":0,"T":0.0,"D":0.0,"C":0.0}],"end_aft_tip":[{"groups":{"armour":-9,"hull":0,"fuel":-1,"armament":0,"machinery":-1,"misc":-1,"superstructure":0,"fire_control":0},"lines":[["Aft end belt",-7]],"L":0,"T":-0.01,"D":0.0,"C":-0.0},{"groups":{"armour":8,"hull":1,"fuel":1,"armament":0,"machinery":1,"misc":0,"superstructure":0,"fire_control":0},"lines":[["Aft end belt",7]],"L":0,"T":0.0,"D":0.0,"C":0.0}],"end_aft_reach":[{"groups":{"armour":-28,"hull":-2,"fuel":-4,"armament":0,"machinery":-3,"misc":-2,"superstructure":0,"fire_control":0},"lines":[["Aft end belt",-14],["Aft end belt, stern face",-12]],"L":0,"T":-0.01,"D":-0.01,"C":-0.0},null],"deck0":[{"groups":{"armour":-128,"hull":15,"fuel":-20,"armament":0,"machinery":-12,"misc":-8,"superstructure":7,"fire_control":0},"lines":[["Deck armour (second deck)",-127],["Belt armour",26],["Fuel",-21],["Hull structure",18],["Deck armour (third deck, aft)",-12]],"L":0,"T":-0.01,"D":0.0,"C":1.1},{"groups":{"armour":23,"hull":-170,"fuel":-83,"armament":0,"machinery":-47,"misc":-15,"superstructure":-23,"fire_control":0},"lines":[["Hull structure",-139],["Fuel",-84],["Machinery",-48],["Deck armour (second deck)",47],["Bulkheads",-27]],"L":0,"T":0.32,"D":0.32,"C":0.5}],"deck1":[{"groups":{"armour":-37,"hull":-5,"fuel":-5,"armament":0,"machinery":-4,"misc":-3,"superstructure":0,"fire_control":0},"lines":[["Deck armour (third deck, fore)",-35],["Fuel",-6]],"L":0,"T":-0.02,"D":-0.02,"C":-0.0},{"groups":{"armour":37,"hull":5,"fuel":6,"armament":0,"machinery":3,"misc":2,"superstructure":0,"fire_control":0},"lines":[["Deck armour (third deck, fore)",36],["Fuel",6]],"L":0,"T":0.01,"D":0.02,"C":0.0}],"deck2":[{"groups":{"armour":-17,"hull":-1,"fuel":-2,"armament":0,"machinery":-2,"misc":-1,"superstructure":0,"fire_control":0},"lines":[["Deck armour (third deck, aft)",-16]],"L":0,"T":-0.01,"D":-0.01,"C":-0.0},{"groups":{"armour":17,"hull":1,"fuel":3,"armament":0,"machinery":1,"misc":1,"superstructure":0,"fire_control":0},"lines":[["Deck armour (third deck, aft)",17]],"L":0,"T":0.0,"D":0.01,"C":0.0}],"main0":[{"groups":{"armour":-81,"hull":-30,"fuel":-25,"armament":-29,"machinery":-15,"misc":-11,"superstructure":-2,"fire_control":0},"lines":[["Hull structure",-27],["Fuel",-25],["Machinery",-15],["Barbette W1P",-14],["Barbette A",-14]],"L":0,"T":-0.02,"D":-0.02,"C":-0.0},{"groups":{"armour":69,"hull":11,"fuel":15,"armament":29,"machinery":9,"misc":7,"superstructure":1,"fire_control":0},"lines":[["Barbette W1P",15],["Barbette A",15],["Barbette W1S",15],["Fuel",14],["Barbette Y",11]],"L":0,"T":0.04,"D":0.04,"C":0.1}]}},"yamato":{"name":"Yamato-like (1941)","type":"BB","std":55709,"L":231,"B":37,"h":{"keel":-16.98,"waterline":-5.66,"armour_deck":-2.6,"draught":11.32,"depth":16.98,"freeboard":5.66},"A":{"tds_m":5.0,"belt_mm":410,"belt_depth_m":3.5,"belt_height_m":3.5,"belt_bottom_mm":287,"bulkhead_mm":328,"upper_belt":{"mm":0,"to_deck":0,"extent":"citadel"},"end_belts":{"fore":{"mm":0,"tip_mm":0,"reach":1.0,"bulkhead_mm":0},"aft":{"mm":0,"tip_mm":0,"reach":1.0,"bulkhead_mm":0}},"steering_box":{"mm":350,"deck_mm":200,"bulkhead_mm":328},"decks":[{"deck":1,"mm":200,"extent":"citadel"}],"materials":{"belt":"Vickers hardened","upper_belt":"Vickers hardened","end_belts":"Vickers hardened","bulkheads":"Vickers hardened","decks":"Molybdenum steel","turrets":"Vickers hardened","barbettes":"Vickers hardened","conning_tower":"Vickers hardened","secondary":"Vickers hardened"}},"main":[{"cal":460,"mm":650}],"rep":{"belt":{"thickness_mm":410,"x0":-70.969,"x1":66.675,"bottom":-9.16,"top":-2.16,"material":"Vickers hardened","bottom_mm":287,"taper_from":-5.66},"strakes":[{"id":"Steering gear box","kind":"box","extent":"aft","thickness_mm":350,"x0":-108.57,"x1":-97.02,"bottom":-15.79,"top":-10.4,"material":"Vickers hardened"}],"bulkheads":[{"id":"Forward bulkhead","x":66.675,"thickness_mm":328,"bottom":-15.79,"top":-2.16,"material":"Vickers hardened","lower_mm":164,"lower_top":-9.16},{"id":"Aft bulkhead","x":-70.969,"thickness_mm":328,"bottom":-15.79,"top":-2.16,"material":"Vickers hardened","lower_mm":164,"lower_top":-9.16},{"id":"Steering gear box forward bulkhead","x":-97.02,"thickness_mm":328,"bottom":-15.79,"top":-10.4,"material":"Vickers hardened"},{"id":"Steering gear box aft bulkhead","x":-108.57,"thickness_mm":328,"bottom":-15.79,"top":-10.4,"material":"Vickers hardened"}],"decks":[{"deck":"Second deck","thickness_mm":200,"extent":"citadel","x0":-70.969,"x1":66.675,"z":-2.6,"main":true,"roof":true,"material":"Molybdenum steel"},{"deck":"Fifth deck","thickness_mm":200,"extent":"steering","x0":-108.57,"x1":-97.02,"z":-10.4,"main":false,"roof":false,"material":"Molybdenum steel"}]},"decks":[{"id":"Inner bottom","z":-15.788,"n":null,"kind":"inner_bottom"},{"id":"Sixth deck","z":-13,"n":5,"kind":"deck"},{"id":"Fifth deck","z":-10.4,"n":4,"kind":"deck"},{"id":"Fourth deck","z":-7.8,"n":3,"kind":"deck"},{"id":"Third deck","z":-5.2,"n":2,"kind":"deck"},{"id":"Second deck","z":-2.6,"n":1,"kind":"deck"},{"id":"Main deck","z":0,"n":0,"kind":"main"}],"mid":{"x":0,"z":[-16.98,-16.86,-16.64,-16.07,-15.28,-14.15,-12.45,-10.75,-9.05,-7.36,-5.66,0],"y":[0,12.798,14.665,16.418,17.438,18.072,18.404,18.485,18.499,18.5,18.5,18.5]},"comps":[{"id":"A","k":"main","x":56.22,"y":0,"r":0,"b":1.2,"t":4.75,"mm":650,"a":{"face":650,"side":358,"rear":325,"roof":260}},{"id":"A barbette","k":"barbette","x":56.22,"y":0,"r":6.97,"b":-2.6,"t":1.2,"mm":520,"a":null},{"id":"B","k":"main","x":34.61,"y":0,"r":0,"b":3.91,"t":7.46,"mm":650,"a":{"face":650,"side":358,"rear":325,"roof":260}},{"id":"B barbette","k":"barbette","x":34.61,"y":0,"r":6.97,"b":-2.6,"t":3.91,"mm":520,"a":null},{"id":"Y","k":"main","x":-60.51,"y":0,"r":0,"b":1.2,"t":4.75,"mm":650,"a":{"face":650,"side":358,"rear":325,"roof":260}},{"id":"Y barbette","k":"barbette","x":-60.51,"y":0,"r":6.97,"b":-2.6,"t":1.2,"mm":520,"a":null},{"id":"S1S barbette","k":"barbette","x":-12.95,"y":12.26,"r":3.18,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"S1P barbette","k":"barbette","x":-12.95,"y":-12.26,"r":3.18,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"SB1S barbette","k":"barbette","x":-42.57,"y":12.07,"r":1.93,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"SB1P barbette","k":"barbette","x":-42.57,"y":-12.07,"r":1.93,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"SB2S barbette","k":"barbette","x":-34.07,"y":12.27,"r":1.93,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"SB2P barbette","k":"barbette","x":-34.07,"y":-12.27,"r":1.93,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"SB3S barbette","k":"barbette","x":-25.57,"y":12.39,"r":1.93,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"SB3P barbette","k":"barbette","x":-25.57,"y":-12.39,"r":1.93,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"SB4S barbette","k":"barbette","x":-3.07,"y":12.45,"r":1.93,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"SB4P barbette","k":"barbette","x":-3.07,"y":-12.45,"r":1.93,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"SB5S barbette","k":"barbette","x":3.93,"y":12.45,"r":1.93,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"SB5P barbette","k":"barbette","x":3.93,"y":-12.45,"r":1.93,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"SB6S barbette","k":"barbette","x":12.43,"y":12.45,"r":1.93,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"SB6P barbette","k":"barbette","x":12.43,"y":-12.45,"r":1.93,"b":-2.6,"t":2.6,"mm":20,"a":null},{"id":"Conning tower","k":"conning_tower","x":15.92,"y":0,"r":3.7,"b":0,"t":5.2,"mm":410,"a":null}],"w":{"Barbette A":1366.4,"Barbette B":1851.3,"Barbette Y":1366.4,"Conning tower":458.3,"Gratings Funnel 1":9.2,"Barbette S1S":24,"Barbette S1P":24,"Barbette SB1S":14.5,"Barbette SB1P":14.5,"Barbette SB2S":14.5,"Barbette SB2P":14.5,"Barbette SB3S":14.5,"Barbette SB3P":14.5,"Barbette SB4S":14.5,"Barbette SB4P":14.5,"Barbette SB5S":14.5,"Barbette SB5P":14.5,"Barbette SB6S":14.5,"Barbette SB6P":14.5,"Belt armour":5737,"Bulkheads":1965.4,"Steering gear box forward bulkhead":276.2,"Steering gear box aft bulkhead":276.2,"Steering gear box":342,"Torpedo protection":1710,"Deck armour (second deck)":7196.2,"Deck armour (fifth deck, steering)":324.9},"groups":{"armour":23101,"armament":12159,"hull":11269,"misc":4142,"fuel":3784,"machinery":3086,"superstructure":1729,"fire_control":222},"probes":{"belt":[-280,179],"belt_bottom":[-54,55],"belt_depth":[-185,122],"belt_height":[-254,155],"bulkheads":[-86,86],"tds":[-312,280],"deck0":[-359,4054],"steer":[-14,14],"steer_roof":[-23,24],"steer_ends":[-24,25],"main0":[-282,181]},"det":{"belt":[{"groups":{"armour":-168,"armament":0,"hull":-63,"misc":-17,"fuel":-9,"machinery":-7,"superstructure":-25,"fire_control":0},"lines":[["Belt armour",-118],["Hull structure",-62],["Deck armour (second deck)",-21],["Equipment, outfit, crew & stores",-15],["Conning tower",-12]],"L":-0.5,"T":-0.01,"D":-0.02,"C":-0.1},{"groups":{"armour":150,"armament":0,"hull":13,"misc":10,"fuel":8,"machinery":7,"superstructure":0,"fire_control":0},"lines":[["Belt armour",114],["Hull structure",13],["Conning tower",11],["Equipment, outfit, crew & stores",10],["Fuel",8]],"L":0,"T":0.03,"D":0.03,"C":0.0}],"belt_bottom":[{"groups":{"armour":-44,"armament":0,"hull":-4,"misc":-3,"fuel":-2,"machinery":-1,"superstructure":0,"fire_control":0},"lines":[["Belt armour",-38]],"L":0,"T":-0.01,"D":-0.01,"C":-0.0},{"groups":{"armour":46,"armament":0,"hull":4,"misc":3,"fuel":3,"machinery":2,"superstructure":0,"fire_control":0},"lines":[["Belt armour",38],["AA director 2",10],["AA director 1S",-10],["AA director 1",10],["AA director 1P",-10]],"L":0,"T":0.01,"D":0.01,"C":0.0}],"belt_depth":[{"groups":{"armour":-121,"armament":0,"hull":-38,"misc":-11,"fuel":-12,"machinery":-10,"superstructure":-4,"fire_control":0},"lines":[["Belt armour",-74],["Hull structure",-37],["Deck armour (second deck)",-32],["Bulkheads",-17],["Fuel",-13]],"L":0,"T":0.01,"D":0.01,"C":0.0},{"groups":{"armour":102,"armament":0,"hull":9,"misc":7,"fuel":6,"machinery":5,"superstructure":0,"fire_control":0},"lines":[["Belt armour",76],["Bulkheads",12],["AA director 2",10],["AA director 1S",-10],["AA director 1",10]],"L":0,"T":0.02,"D":0.02,"C":0.0}],"belt_height":[{"groups":{"armour":-147,"armament":0,"hull":-61,"misc":-14,"fuel":-8,"machinery":-6,"superstructure":-24,"fire_control":0},"lines":[["Belt armour",-93],["Hull structure",-60],["Bulkheads",-23],["Deck armour (second deck)",-21],["Equipment, outfit, crew & stores",-14]],"L":-0.5,"T":0.0,"D":-0.01,"C":-0.1},{"groups":{"armour":130,"armament":0,"hull":12,"misc":9,"fuel":7,"machinery":6,"superstructure":0,"fire_control":0},"lines":[["Belt armour",90],["Bulkheads",22],["Hull structure",11],["AA director 2",10],["AA director 1S",-10]],"L":0,"T":0.03,"D":0.03,"C":0.0}],"bulkheads":[{"groups":{"armour":-71,"armament":0,"hull":-6,"misc":-4,"fuel":-4,"machinery":-3,"superstructure":-1,"fire_control":0},"lines":[["Bulkheads",-61],["AA director 2",10],["AA director 1S",-10],["AA director 1",10],["AA director 1P",-10]],"L":0,"T":-0.02,"D":-0.02,"C":-0.0},{"groups":{"armour":72,"armament":0,"hull":7,"misc":5,"fuel":4,"machinery":4,"superstructure":0,"fire_control":0},"lines":[["Bulkheads",61],["AA director 2",10],["AA director 1S",-10],["AA director 1",10],["AA director 1P",-10]],"L":0,"T":0.02,"D":0.01,"C":0.0}],"tds":[{"groups":{"armour":-197,"armament":0,"hull":-66,"misc":-18,"fuel":-11,"machinery":-10,"superstructure":-20,"fire_control":0},"lines":[["Torpedo protection",-172],["Hull structure",-65],["Equipment, outfit, crew & stores",-17],["Deck armour (second deck)",-12],["Fuel",-11]],"L":-0.5,"T":-0.01,"D":-0.02,"C":0.1},{"groups":{"armour":195,"armament":0,"hull":58,"misc":16,"fuel":9,"machinery":8,"superstructure":3,"fire_control":0},"lines":[["Torpedo protection",174],["Hull structure",56],["Equipment, outfit, crew & stores",15],["AA director 2",10],["AA director 1S",-10]],"L":0.5,"T":0.02,"D":0.02,"C":-0.0}],"deck0":[{"groups":{"armour":-234,"armament":0,"hull":-68,"misc":-21,"fuel":-13,"machinery":-10,"superstructure":-25,"fire_control":0},"lines":[["Deck armour (second deck)",-201],["Hull structure",-68],["Equipment, outfit, crew & stores",-20],["Fuel",-13],["Deckhouse 3",-11]],"L":-0.5,"T":-0.02,"D":-0.03,"C":-0.1},{"groups":{"armour":2892,"armament":0,"hull":338,"misc":237,"fuel":175,"machinery":142,"superstructure":445,"fire_control":0},"lines":[["Deck armour (second deck)",1293],["Belt armour",852],["Torpedo protection",359],["Hull structure",336],["Deckhouse",223]],"L":0.5,"T":0.75,"D":0.76,"C":20.4}],"steer":[{"groups":{"armour":-11,"armament":0,"hull":-1,"misc":-1,"fuel":0,"machinery":0,"superstructure":0,"fire_control":0},"lines":[["AA director 2",10],["AA director 1S",-10],["AA director 1",10],["Steering gear box",-10],["AA director 1P",-10]],"L":0,"T":0.0,"D":-0.01,"C":-0.0},{"groups":{"armour":12,"armament":0,"hull":1,"misc":1,"fuel":1,"machinery":1,"superstructure":0,"fire_control":0},"lines":[["Steering gear box",10]],"L":0,"T":0.0,"D":0.0,"C":0.0}],"steer_roof":[{"groups":{"armour":-19,"armament":0,"hull":-1,"misc":-1,"fuel":-1,"machinery":0,"superstructure":0,"fire_control":0},"lines":[["Deck armour (fifth deck, steering)",-16],["AA director 2",10],["AA director 1S",-10],["AA director 1",10],["AA director 1P",-10]],"L":0,"T":-0.01,"D":-0.01,"C":-0.0},{"groups":{"armour":20,"armament":0,"hull":2,"misc":2,"fuel":1,"machinery":1,"superstructure":0,"fire_control":0},"lines":[["Deck armour (fifth deck, steering)",16]],"L":0,"T":0.0,"D":0.0,"C":0.0}],"steer_ends":[{"groups":{"armour":-20,"armament":0,"hull":-1,"misc":-1,"fuel":-1,"machinery":0,"superstructure":0,"fire_control":0},"lines":[["Steering gear box aft bulkhead",-9],["Steering gear box forward bulkhead",-9]],"L":0,"T":-0.01,"D":-0.01,"C":-0.0},{"groups":{"armour":21,"armament":0,"hull":2,"misc":2,"fuel":1,"machinery":1,"superstructure":0,"fire_control":0},"lines":[["Steering gear box aft bulkhead",9],["Steering gear box forward bulkhead",9]],"L":0,"T":0.0,"D":0.0,"C":0.0}],"main0":[{"groups":{"armour":-114,"armament":-56,"hull":-63,"misc":-17,"fuel":-9,"machinery":-7,"superstructure":-25,"fire_control":0},"lines":[["Hull structure",-62],["Barbette B",-30],["Barbette Y",-22],["Barbette A",-22],["Deck armour (second deck)",-21]],"L":-0.5,"T":-0.01,"D":-0.02,"C":-0.1},{"groups":{"armour":96,"armament":55,"hull":14,"misc":10,"fuel":8,"machinery":7,"superstructure":0,"fire_control":0},"lines":[["Barbette B",31],["Barbette Y",24],["Barbette A",24],["Turret B",18],["Turret A",18]],"L":0,"T":0.03,"D":0.03,"C":0.0}]}}};
+// ------------------------------------------------------------------ the opened ship: a real build (shipgen design, 2026-10-11)
+const params = new URLSearchParams(location.search);
+const SID = DATA[params.get('ship')] ? params.get('ship') : 'bismarck';
+const S = DATA[SID];
+const L = S.L, B = S.B, WL = S.h.waterline, KEEL = S.h.keel;
+const A0 = structuredClone(S.A), F0 = S.main.map(m => m.mm);
+let A = structuredClone(S.A), faces = [...F0];
+let sel = 'belt', hot = null, editing = null;
+const RAMP = ['#F3E3A1', '#E9B66B', '#DE9455', '#CC6F43', '#B24E36', '#8E3328'];
+const ramp = mm => RAMP[mm >= 260 ? 5 : mm >= 190 ? 4 : mm >= 140 ? 3 : mm >= 95 ? 2 : mm >= 60 ? 1 : 0];
+const ink = mm => mm >= 140 ? '#F6EFE2' : '#26221C';
+const SCHEMES = {
+  bismarck: 'Krupp cemented (KC n/A), Wotan hart decks', dreadnought: 'Krupp cemented, high-tensile steel decks',
+  yamato: 'Vickers hardened, Molybdenum steel decks'};
+const MATERIALS = ['Krupp cemented', 'Krupp cemented (KC n/A)', 'Krupp non-cemented', 'Vickers hardened', 'Vickers cemented',
+  'Harvey nickel steel', 'Class A armour', 'Class B', 'STS', 'Wotan hart', 'Wotan weich', 'Molybdenum steel', 'high-tensile steel', 'mild steel'];
+const N0 = v => Math.round(v).toLocaleString('en-US');
+const sgn = v => (v > 0 ? '+' : v < 0 ? '−' : '±') + N0(Math.abs(v));
+const f1 = v => (Math.round(v * 10) / 10).toFixed(1);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const $ = id => document.getElementById(id);
+
+// ------------------------------------------------------------------ geometry: from the build, moved by edits the way the engine moves it
+const belt0 = S.rep.belt;
+const X0 = belt0 ? belt0.x0 : -0.3 * L, X1 = belt0 ? belt0.x1 : 0.3 * L;   // the citadel: the layout's, from the end barbettes
+const DECKS = S.decks.filter(d => d.kind !== 'inner_bottom');
+const IB = (S.decks.find(d => d.kind === 'inner_bottom') || {z: KEEL + 1.1}).z;
+const deckOf = n => DECKS.find(d => d.n === n);
+const deckZ = n => (deckOf(n) || {z: -2.6 * n}).z;
+const SHORT = {'Main deck': 'Main', 'Second deck': '2nd', 'Third deck': '3rd', 'Fourth deck': '4th', 'Fifth deck': '5th', 'Sixth deck': '6th',
+  'Seventh deck': '7th', 'Raised deck 1': 'F’c’sle'};
+const deckName = n => (deckOf(n) || {id: `deck ${n}`}).id;
+const deckShort = n => SHORT[deckName(n)] || deckName(n);
+const raised = (S.h.raised || [])[0];
+const mainDecks = DECKS.filter(d => d.kind === 'deck' || d.kind === 'main').map(d => d.n).sort((a, b) => a - b);
+const EXT = {citadel: 'citadel', full: 'full length', fore: 'fore end', aft: 'aft end', ends: 'both ends', steering: 'steering gear'};
+function spans(ext) {
+  const h = L / 2;
+  return ext === 'full' ? [[-h, h]] : ext === 'fore' ? [[X1, h]] : ext === 'aft' ? [[-h, X0]] : ext === 'ends' ? [[-h, X0], [X1, h]] : [[X0, X1]];
+}
+const beltTop = () => WL + (A.belt_height_m ?? (belt0 ? belt0.top - WL : 2));
+const beltBot = () => WL - (A.belt_depth_m ?? (belt0 ? WL - belt0.bottom : 1.5));
+const steer0 = (S.rep.strakes || []).find(s => s.kind === 'box');
+const steerSpan = steer0 ? [steer0.x0, steer0.x1] : [-L / 2 + 0.035 * L, -L / 2 + 0.085 * L];
+const steerZ = steer0 ? [steer0.bottom, steer0.top] : [IB, deckZ(4)];
+const mainIds = S.comps.filter(c => c.k === 'main').map(c => c.id);
+// turrets belong to their battery by order of the design's batteries (one battery in all three ships)
+const batteryOf = id => 0;
+
+// ------------------------------------------------------------------ the plates: one row each, from the design's ArmourInput
+function plates() {
+  const P = [];
+  const ext = (e, n) => e || 'citadel';
+  const ub = A.upper_belt || {}, eb = A.end_belts || {}, sb = A.steering_box || {};
+  P.push({id: 'belt', g: 'side', name: 'Belt', mm: A.belt_mm || 0, has: (A.belt_mm || 0) > 0, mat: 'belt',
+    second: {lab: 'lower', v: A.belt_bottom_mm ?? A.belt_mm, auto: A.belt_bottom_mm == null, key: 'belt_bottom', step: 10},
+    spans: [[X0, X1]], z: [beltBot(), beltTop()], probe: 'belt'});
+  P.push({id: 'upper', g: 'side', name: 'Upper belt', mm: ub.mm || 0, has: (ub.mm || 0) > 0, mat: 'upper_belt',
+    spans: spans(ext(ub.extent)), z: [beltTop(), deckZ(ub.to_deck ?? 0)], probe: 'upper_belt', ext: ext(ub.extent), toDeck: ub.to_deck ?? 0});
+  for (const end of ['fore', 'aft']) {
+    const e = eb[end] || {}, h = L / 2, reach = e.reach ?? 1;
+    const sp = end === 'fore' ? [X1, X1 + reach * (h - X1)] : [-h + (1 - reach) * (X0 + h), X0];
+    P.push({id: 'end_' + end, g: 'side', name: `End belt, ${end}`, mm: e.mm || 0, has: (e.mm || 0) > 0, mat: 'end_belts', end,
+      second: {lab: 'tip', v: e.tip_mm ?? e.mm, auto: e.tip_mm == null, key: `end_${end}_tip`, step: 10},
+      spans: [sp], z: [beltBot(), beltTop()], probe: 'end_' + end, reach});
+  }
+  P.push({id: 'bulk', g: 'side', name: 'Citadel bulkheads', mm: A.bulkhead_mm || 0, has: (A.bulkhead_mm || 0) > 0, mat: 'bulkheads',
+    xs: [X0, X1], z: [IB, (A.upper_belt?.mm ? deckZ(A.upper_belt.to_deck ?? 0) : beltTop())], probe: 'bulkheads'});
+  P.push({id: 'tds', g: 'side', name: 'Torpedo protection', m: A.tds_m || 0, has: (A.tds_m || 0) > 0, spans: [[X0, X1]], probe: 'tds'});
+  (A.decks || []).forEach((d, i) => P.push({id: 'deck' + i, i, g: 'decks', name: `${deckName(d.deck)}${d.extent && d.extent !== 'citadel' ? ', ' + EXT[d.extent] : ''}`,
+    mm: d.mm || 0, has: (d.mm || 0) > 0, mat: 'decks', own: d.material, deck: d.deck, ext: d.extent || 'citadel',
+    spans: spans(d.extent || 'citadel'), z: [deckZ(d.deck), deckZ(d.deck)], probe: 'deck' + i}));
+  P.push({id: 'steer', g: 'ends', name: 'Steering gear box', mm: sb.mm || 0, has: (sb.mm || 0) > 0, mat: 'belt',
+    second: {lab: 'roof', v: sb.deck_mm || 0, auto: false, key: 'steer_roof', step: 10, set: v => { A.steering_box = {...(A.steering_box || {}), deck_mm: v}; }},
+    third: {lab: 'ends', v: sb.bulkhead_mm || 0, key: 'steer_ends', step: 10},
+    spans: [steerSpan], z: steerZ, probe: 'steer'});
+  S.main.forEach((m, k) => P.push({id: 'main' + k, g: 'guns', name: `Turrets, battery ${String.fromCharCode(65 + k)}`, mm: faces[k] || 0, has: (faces[k] || 0) > 0,
+    mat: 'turrets', k, probe: 'main' + k}));
+  P.push({id: 'barb', g: 'guns', name: 'Barbettes', mm: Math.round(0.8 * (faces[0] || 0)), has: (faces[0] || 0) > 0, mat: 'barbettes', ro: '0.8 × the faces'});
+  P.push({id: 'ct', g: 'guns', name: 'Conning tower', mm: A.belt_mm || 0, has: (A.belt_mm || 0) > 0, mat: 'conning_tower', ro: 'the belt’s thickness'});
+  return P;
+}
+const matOf = p => p.own || (p.id === 'upper' ? A.upper_belt?.material : p.end ? A.end_belts?.[p.end]?.material : p.id === 'steer' ? A.steering_box?.material : null);
+const schemeMat = p => (A.materials || {})[p.mat] || '';
+
+// ------------------------------------------------------------------ weights: the build's lines; after an edit a stand-in scaled by area and thickness
+const W = S.w;
+const wOf = names => names.reduce((s, n) => s + (W[n] || 0), 0);
+function areaMm(p) {   // plate area (m²) × mean thickness (mm): the stand-in's measure
+  const len = sp => sp.reduce((s, [a, b]) => s + (b - a), 0);
+  switch (true) {
+    case p.id === 'belt': { const ht = beltTop() - WL, dp = WL - beltBot(), lo = p.second.v ?? p.mm;
+      return 2 * len(p.spans) * (ht * p.mm + dp * (p.mm + lo) / 2); }
+    case p.id === 'upper': return 2 * len(p.spans) * Math.max(0, p.z[1] - p.z[0]) * p.mm;
+    case !!p.end: return 2 * len(p.spans) * (beltTop() - beltBot()) * (p.mm + (p.second.v ?? p.mm)) / 2;
+    case p.id === 'bulk': return 2 * 0.85 * B * (p.z[1] - p.z[0]) * p.mm * 0.8;
+    case p.id === 'tds': return len(p.spans) * p.m * 1000;
+    case p.id.startsWith('deck'): return len(p.spans) * B * (p.ext === 'citadel' ? 0.92 : 0.62) * p.mm;
+    case p.id === 'steer': { const l = steerSpan[1] - steerSpan[0], w = 0.3 * B, h = steerZ[1] - steerZ[0];
+      return 2 * l * h * p.mm + l * w * (p.second.v || 0) + 2 * w * h * (p.third.v || 0); }
+    case p.id === 'barb': return mainIds.length * 2 * Math.PI * 5.5 * 6 * p.mm;
+    case p.id === 'ct': return 2 * Math.PI * 3 * 5.2 * p.mm;
+  }
+  return 0;
+}
+function lines0(p0) {
+  if (p0.id === 'belt') return ['Belt armour'];
+  if (p0.id === 'upper') return ['Upper belt'];
+  if (p0.id === 'end_fore') return ['Fore end belt'];
+  if (p0.id === 'end_aft') return ['Aft end belt', 'Aft end belt, stern face'];
+  if (p0.id === 'bulk') return ['Bulkheads'];
+  if (p0.id === 'tds') return ['Torpedo protection'];
+  if (p0.id.startsWith('deck')) return [`Deck armour (${deckName(p0.deck).toLowerCase()}${p0.ext !== 'citadel' ? ', ' + p0.ext : ''})`];
+  if (p0.id === 'steer') return Object.keys(W).filter(n => n.startsWith('Steering gear box') || n.includes(', steering)'));
+  if (p0.id === 'barb') return Object.keys(W).filter(n => mainIds.some(id => n === 'Barbette ' + id || n === id + ' barbette'));
+  if (p0.id === 'ct') return ['Conning tower'];
+  return [];
+}
+const BASE = (() => { const a = A; A = A0; const P = plates(); A = a; return P; })();
+const wkey = p => p.id.startsWith('deck') ? `deck:${p.deck}:${p.ext}` : p.id;   // decks by place, so adding one doesn't shift the others
+const BASEW = Object.fromEntries(BASE.map(p => [wkey(p), {t: wOf(lines0(p)), am: areaMm(p)}]));
+function tOf(p) {
+  if (p.id.startsWith('main')) return null;   // in the turret's own weight (armament)
+  const b = BASEW[wkey(p)], am = areaMm(p);
+  if (b && b.am > 0 && b.t > 0) return b.t * am / b.am;
+  return am / 1000 * 7.85 * 0.95;
+}
+const pristine = () => JSON.stringify(A) === JSON.stringify(A0) && faces.every((f, k) => f === F0[k]);
+function stdNow() {
+  if (pristine()) return S.std;
+  let d = 0;
+  for (const p of plates()) { const t = tOf(p); if (t != null) d += t - (BASEW[wkey(p)]?.t || 0); }
+  for (let k = 0; k < faces.length; k++) d += (faces[k] - F0[k]) * ((S.probes['main' + k] || [0, 0])[1] / 10);
+  return S.std + d * 1.15;   // the knock-on: hull, machinery and fuel for the weight
+}
+
+// ------------------------------------------------------------------ setters, one per value the tab edits
+function setVal(p, field, v) {
+  v = Math.max(0, Math.round(v * 100) / 100);
+  if (p.id === 'belt') { if (field === 'mm') A.belt_mm = v; else A.belt_bottom_mm = v; }
+  else if (p.id === 'upper') A.upper_belt = {to_deck: 0, extent: 'citadel', ...(A.upper_belt || {}), mm: v};
+  else if (p.end) {
+    const e = {...(A.end_belts?.[p.end] || {reach: 1, bulkhead_mm: 0})};
+    if (field === 'mm') { if (!e.mm && e.tip_mm == null) e.tip_mm = v; e.mm = v; } else if (field === 'tip') e.tip_mm = v; else e.reach = clamp(v, 0.1, 1);
+    A.end_belts = {...(A.end_belts || {}), [p.end]: e};
+  }
+  else if (p.id === 'bulk') A.bulkhead_mm = v;
+  else if (p.id === 'tds') A.tds_m = v;
+  else if (p.id.startsWith('deck')) A.decks[p.i] = {...A.decks[p.i], mm: v};
+  else if (p.id === 'steer') A.steering_box = {...(A.steering_box || {}), [field === 'mm' ? 'mm' : field === 'roof' ? 'deck_mm' : 'bulkhead_mm']: v};
+  else if (p.id.startsWith('main')) faces[p.k] = v;
+}
+function edit(fn) { fn(); render(); }
+function addDeck(n, ext, mm = 25) {
+  A.decks = [...(A.decks || []), {deck: n, mm, extent: ext}];
+  A.decks.sort((a, b) => a.deck - b.deck);
+  sel = 'deck' + A.decks.findIndex(d => d.deck === n && d.extent === ext && d.mm === mm);
+}
+function removePlate(p) {
+  if (p.id.startsWith('deck')) { A.decks.splice(p.i, 1); sel = 'belt'; }
+  else setVal(p, 'mm', 0);
+}
+
+// ------------------------------------------------------------------ one step: real probe builds of the opened ship; after an edit, a stand-in
+const STEP = {belt: 10, upper: 10, end_fore: 10, end_aft: 10, bulk: 10, tds: 0.5, steer: 10};
+const stepOf = p => p.id.startsWith('deck') ? 5 : p.id.startsWith('main') ? 10 : STEP[p.id] || 10;
+function oneStep(p, dir) {   // -> {v, real, det}
+  if (p.ro) return null;
+  const val = p.id === 'tds' ? p.m : p.mm;
+  if (dir < 0 && val <= 0) return null;
+  if (pristine() && S.probes[p.probe]) {
+    const v = S.probes[p.probe][dir < 0 ? 0 : 1];
+    return v == null ? null : {v, real: true, det: (S.det[p.probe] || [])[dir < 0 ? 0 : 1]};
+  }
+  const t = tOf(p);
+  if (t == null) { const pr = S.probes[p.probe]; return pr ? {v: pr[dir < 0 ? 0 : 1], real: false} : null; }
+  const q = {...p}; const s = stepOf(p);
+  if (p.id === 'tds') q.m = Math.max(0, p.m + dir * s); else q.mm = Math.max(0, p.mm + dir * s);
+  if (q.second && p.second.auto) q.second = {...p.second, v: q.mm};
+  return {v: (tOf(q) - t) * 1.15, real: false};
+}
+function stepTip(p, dir) {
+  const r = oneStep(p, dir); if (!r) return '';
+  const s = stepOf(p), unit = p.id === 'tds' ? ' m' : ' mm', val = p.id === 'tds' ? p.m : p.mm;
+  let h = `<b>${p.name}</b> ${dir < 0 ? '−' : '+'}${s}${unit} → ${p.id === 'tds' ? f1(val + dir * s) : N0(val + dir * s)}${unit}<br>`;
+  if (!r.real) return h + `standard <span class="m">${sgn(r.v)} t</span><br><span class="dim">stand-in: the plate’s own weight and its knock-on. The game probes the edited ship (DesignProbes, as on the Overview).</span>`;
+  h += `standard <span class="m">${sgn(r.v)} t</span> <span class="dim">(a real build)</span>`;
+  const d = r.det;
+  if (d) {
+    h += '<table>' + d.lines.map(([n, t]) => `<tr><td>${n}</td><td>${sgn(t)}</td></tr>`).join('') + '</table>';
+    const re = [];
+    if (Math.abs(d.C) >= 1) re.push(`citadel ${d.C > 0 ? '+' : '−'}${f1(Math.abs(d.C))} m`);
+    if (Math.abs(d.L) >= 0.25) re.push(`length ${d.L > 0 ? '+' : '−'}${f1(Math.abs(d.L))} m`);
+    if (Math.abs(d.D) >= 0.1) re.push(`depth ${d.D > 0 ? '+' : '−'}${Math.abs(d.D).toFixed(2)} m`);
+    if (re.length) h += `<span class="a">The yard re-plans the ship: ${re.join(', ')}.</span><br><span class="dim">The step crosses a layout threshold, so it costs far more than the plate.</span>`;
+  }
+  return h;
+}
+
+// ------------------------------------------------------------------ dom helpers
+function h(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null) continue;
+    if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (k === 'style') e.style.cssText = v; else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+const NS = 'http://www.w3.org/2000/svg';
+function s(tag, attrs = {}, ...kids) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null) continue;
+    if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+function tabs() {
+  const names = ['Overview', 'Main battery', 'Secondary · AA · TT', 'Protection', 'Speed & machinery', 'Hull & upperworks', 'Fire control', 'Crew'];
+  $('tabs').replaceChildren(...names.map((n, i) => h('div', {class: 'tab' + (i === 3 ? ' on' : '')}, h('span', {class: 'k mono'}, String(i)), n)));
+}
+// a spinner: ◀ ▶ step, wheel steps (Shift ×4), a click on the number types
+function spinner(id, val, fmt, step, set, {auto = false, pre = null, cls = ''} = {}) {
+  const key = id;
+  const box = h('span', {class: 'sp ' + cls + (auto ? ' auto' : '')});
+  const dec = h('button', {onclick: ev => { ev.stopPropagation(); edit(() => set(val - step * (ev.shiftKey ? 4 : 1))); }}, '◀');
+  const inc = h('button', {onclick: ev => { ev.stopPropagation(); edit(() => set(val + step * (ev.shiftKey ? 4 : 1))); }}, '▶');
+  let mid;
+  if (editing === key) {
+    mid = h('input', {value: String(val), onkeydown: ev => {
+      if (ev.key === 'Enter') { const v = parseFloat(ev.target.value); editing = null; edit(() => { if (!isNaN(v)) set(v); }); }
+      if (ev.key === 'Escape') { editing = null; render(); }
+    }, onblur: () => { if (editing === key) { editing = null; render(); } }, onclick: ev => ev.stopPropagation()});
+    setTimeout(() => { mid.focus(); mid.select(); });
+  } else mid = h('span', {onclick: ev => { ev.stopPropagation(); editing = key; render(); }}, fmt(val));
+  box.append(...(pre ? [h('span', {class: 'pre'}, pre)] : []), dec, mid, inc);
+  box.addEventListener('wheel', ev => { ev.preventDefault(); edit(() => set(val + (ev.deltaY < 0 ? 1 : -1) * step * (ev.shiftKey ? 4 : 1))); });
+  return box;
+}
+function seg(opts, cur, set, disabled = () => false) {
+  return h('span', {class: 'seg'}, opts.map(([v, lab, t]) => {
+    const b = h('button', {class: v === cur ? 'on' : '', onclick: ev => { ev.stopPropagation(); if (!disabled(v)) edit(() => set(v)); }}, lab);
+    if (disabled(v)) b.disabled = true;
+    if (t) { b.addEventListener('mousemove', ev => tip(ev, t)); b.addEventListener('mouseleave', untip); }
+    return b;
+  }));
+}
+const mmF = v => N0(v) + ' mm';
+const mF = v => f1(v) + ' m';
+
+// ------------------------------------------------------------------ 1. the elevation: the ship's side, deck by deck, heights exaggerated
+const EL = {w: 836, h: 224, l: 58, r: 8, t: 20, b: 14};
+const zTop = Math.max(...S.comps.filter(c => c.k === 'main').map(c => c.t), raised ? raised.top : 0) + 1.2;
+const zBot = KEEL - 0.4;
+const ex = x => EL.l + (x + L / 2) / L * (EL.w - EL.l - EL.r);
+const ez = z => EL.t + (zTop - z) / (zTop - zBot) * (EL.h - EL.t - EL.b);
+const kx = (EL.w - EL.l - EL.r) / L, kz = (EL.h - EL.t - EL.b) / (zTop - zBot);
+function plateEvents(p) {
+  return {
+    'data-id': p.id, class: 'pl',
+    onmouseenter: () => { hot = p.id; paintHot(); },
+    onmousemove: ev => tip(ev, plateTip(p)),
+    onmouseleave: () => { hot = null; paintHot(); untip(); },
+    onclick: ev => { ev.stopPropagation(); sel = p.id; render(); },
+    oncontextmenu: ev => { ev.preventDefault(); sel = p.id; render(); menu(ev, p); },
+    onwheel: ev => { if (p.ro) return; ev.preventDefault(); const st = stepOf(p) * (ev.shiftKey ? 4 : 1) * (ev.deltaY < 0 ? 1 : -1);
+      edit(() => setVal(p, 'mm', (p.id === 'tds' ? p.m : p.mm) + st)); },
+  };
+}
+function rectPlate(g, p, x0, x1, z0, z1, mm, label = true) {
+  const a = ex(x0), b = ex(x1), y0 = ez(z1), y1 = ez(z0);
+  g.append(s('rect', {x: a, y: y0, width: Math.max(1.5, b - a), height: Math.max(2, y1 - y0), fill: ramp(mm), stroke: 'rgba(0,0,0,0.45)', 'stroke-width': 0.6}));
+  if (label && b - a > 26 && y1 - y0 >= 10)
+    g.append(s('text', {x: (a + b) / 2, y: (y0 + y1) / 2 + 3.5, 'text-anchor': 'middle', 'font-size': 10, fill: ink(mm), 'pointer-events': 'none'}, N0(mm)));
+}
+function elevation() {
+  const root = $('elev');
+  const svg = s('svg', {width: EL.w, height: EL.h, style: 'position:absolute;left:0;top:0'});
+  // hull side
+  const top = x => raised && x >= raised.x0 && x <= raised.x1 ? raised.top : 0;
+  const pts = [[-L / 2, top(-L / 2)]];
+  if (raised) pts.push([raised.x0, 0], [raised.x0, raised.top], [Math.min(raised.x1, L / 2), raised.top]);
+  pts.push([L / 2, top(L / 2) + 0.6], [L / 2 - 0.03 * L, KEEL + 0.25 * (0 - KEEL)], [L / 2 - 0.07 * L, KEEL], [-L / 2 + 0.06 * L, KEEL], [-L / 2 + 0.02 * L, WL - 1.2], [-L / 2, WL + 0.4]);
+  svg.append(s('polygon', {points: pts.map(([x, z]) => `${ex(x)},${ez(z)}`).join(' '), fill: '#1A2D44', stroke: '#6F93B5', 'stroke-width': 1}));
+  // decks: dashed lanes, names in the margin
+  for (const d of [...DECKS, {id: 'Inner bottom', z: IB, n: null, kind: 'inner_bottom'}]) {
+    const y = ez(d.z);
+    const x0 = d.id.startsWith('Raised') && raised ? ex(raised.x0) : ex(-L / 2 + (d.z < WL - 1 ? 0.05 * L : 0));
+    const x1 = d.id.startsWith('Raised') && raised ? ex(Math.min(L / 2, raised.x1)) : ex(L / 2 - (d.z < WL - 1 ? 0.06 * L : 0));
+    svg.append(s('line', {x1: x0, x2: x1, y1: y, y2: y, stroke: 'rgba(156,194,226,0.28)', 'stroke-dasharray': '3 3'}));
+    svg.append(s('text', {x: EL.l - 6, y: y + 3.5, 'text-anchor': 'end', 'font-size': 9.5, fill: '#7F9CB8'}, SHORT[d.id] || (d.kind === 'inner_bottom' ? 'Inner btm' : d.id)));
+  }
+  // the waterline
+  svg.append(s('line', {x1: ex(-L / 2) - 4, x2: ex(L / 2) + 4, y1: ez(WL), y2: ez(WL), stroke: '#5B9BE0', 'stroke-width': 1}));
+  svg.append(s('text', {x: 4, y: ez(WL) + 3.5, 'font-size': 9.5, fill: '#5B9BE0'}, 'WL'));
+  // citadel brackets
+  for (const x of [X0, X1]) svg.append(s('line', {x1: ex(x), x2: ex(x), y1: EL.t, y2: EL.h - EL.b, stroke: 'rgba(217,184,104,0.22)', 'stroke-dasharray': '2 3'}));
+  svg.append(s('text', {x: (ex(X0) + ex(X1)) / 2, y: EL.h - 3, 'text-anchor': 'middle', 'font-size': 9.5, fill: '#8C7B55'}, `citadel ${f1(X1 - X0)} m · ${Math.round((X1 - X0) / L * 100)} % of length`));
+  svg.append(s('text', {x: EL.l, y: EL.h - 3, 'font-size': 9.5, fill: '#5E7A96'}, 'aft'));
+  svg.append(s('text', {x: EL.w - EL.r, y: EL.h - 3, 'text-anchor': 'end', 'font-size': 9.5, fill: '#5E7A96'}, 'fore'));
+  const P = plates();
+  const byId = Object.fromEntries(P.map(p => [p.id, p]));
+  // torpedo protection: a band under the roof deck
+  const roof = (A.decks || []).filter(d => (d.extent || 'citadel') === 'citadel' || d.extent === 'full').map(d => deckZ(d.deck)).sort((a, b) => a - b)[0] ?? WL;
+  if (byId.tds.has) {
+    const g = s('g', plateEvents(byId.tds));
+    g.append(s('rect', {x: ex(X0), y: ez(Math.min(roof, WL)), width: ex(X1) - ex(X0), height: ez(IB) - ez(Math.min(roof, WL)), fill: 'url(#hatch)', stroke: 'rgba(91,155,224,0.35)', 'stroke-dasharray': '2 2'}));
+    g.append(s('text', {x: ex(X0) + 6, y: ez(IB) - 4, 'font-size': 9.5, fill: '#7FB0E0', 'pointer-events': 'none'}, `TDS ${f1(byId.tds.m)} m`));
+    svg.append(g);
+  }
+  svg.prepend(s('defs', {}, s('pattern', {id: 'hatch', width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)'},
+    s('line', {x1: 0, y1: 0, x2: 0, y2: 6, stroke: 'rgba(91,155,224,0.22)', 'stroke-width': 2}))));
+  // side plates
+  for (const id of ['end_aft', 'end_fore', 'belt', 'upper']) {
+    const p = byId[id]; if (!p.has) continue;
+    const g = s('g', plateEvents(p));
+    for (const [a, b] of p.spans) {
+      if (p.end && p.second.v != null && p.second.v !== p.mm) {   // tapering to the tip: root and tip halves
+        const m = (a + b) / 2, rootLeft = p.end === 'aft';
+        rectPlate(g, p, a, m, p.z[0], p.z[1], rootLeft ? p.second.v : p.mm, true);
+        rectPlate(g, p, m, b, p.z[0], p.z[1], rootLeft ? p.mm : p.second.v, true);
+      } else if (id === 'belt' && p.second.v != null && p.second.v !== p.mm) {
+        rectPlate(g, p, a, b, WL, p.z[1], p.mm, true);
+        rectPlate(g, p, a, b, p.z[0], WL, (p.mm + p.second.v) / 2, false);
+        const y0 = ez(WL), y1 = ez(p.z[0]);
+        if (y1 - y0 >= 9) g.append(s('text', {x: (ex(a) + ex(b)) / 2, y: (y0 + y1) / 2 + 3.5, 'text-anchor': 'middle', 'font-size': 9.5, fill: ink(p.mm), opacity: 0.85, 'pointer-events': 'none'}, `→ ${N0(p.second.v)}`));
+      } else rectPlate(g, p, a, b, p.z[0], p.z[1], p.mm);
+    }
+    svg.append(g);
+  }
+  // bulkheads
+  if (byId.bulk.has) {
+    const p = byId.bulk, g = s('g', plateEvents(p));
+    for (const x of p.xs) {
+      g.append(s('rect', {x: ex(x) - 2.5, y: ez(p.z[1]), width: 5, height: ez(beltBot()) - ez(p.z[1]), fill: ramp(p.mm), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.6}));
+      g.append(s('rect', {x: ex(x) - 1.5, y: ez(beltBot()), width: 3, height: ez(IB) - ez(beltBot()), fill: ramp(p.mm / 2), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.6}));
+      g.append(s('rect', {x: ex(x) - 6, y: ez(p.z[1]), width: 12, height: ez(IB) - ez(p.z[1]), fill: 'transparent'}));
+    }
+    svg.append(g);
+  }
+  // steering gear box
+  if (byId.steer.has) {
+    const p = byId.steer, g = s('g', plateEvents(p));
+    rectPlate(g, p, steerSpan[0], steerSpan[1], steerZ[0], steerZ[1], p.mm, false);
+    if (p.second.v) g.append(s('rect', {x: ex(steerSpan[0]), y: ez(steerZ[1]) - 3, width: ex(steerSpan[1]) - ex(steerSpan[0]), height: 3, fill: ramp(p.second.v), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.6}));
+    g.append(s('text', {x: (ex(steerSpan[0]) + ex(steerSpan[1])) / 2, y: ez(steerZ[0]) + 11, 'text-anchor': 'middle', 'font-size': 9.5, fill: '#C9B78A', 'pointer-events': 'none'}, `steering ${N0(p.mm)}`));
+    svg.append(g);
+  }
+  // barbettes, turrets, conning tower
+  const bars = S.comps.filter(c => c.k === 'barbette' && mainIds.some(id => c.id === id + ' barbette' || c.id === 'Barbette ' + id));
+  const barb = byId.barb, gb = s('g', plateEvents(barb));
+  for (const c of bars) {   // filled where it shows over the deck, dashed inside the hull behind the side armour
+    const deck = raised && c.x >= raised.x0 && c.x <= raised.x1 ? raised.top : 0;
+    if (c.t > deck) rectPlate(gb, barb, c.x - c.r * 0.8, c.x + c.r * 0.8, deck, c.t, barb.mm, false);
+    gb.append(s('rect', {x: ex(c.x - c.r * 0.8), y: ez(Math.min(deck, c.t)), width: ex(c.x + c.r * 0.8) - ex(c.x - c.r * 0.8), height: ez(c.b) - ez(Math.min(deck, c.t)),
+      fill: 'rgba(0,0,0,0.001)', stroke: ramp(barb.mm), 'stroke-width': 1, 'stroke-dasharray': '3 2', opacity: 0.8}));
+  }
+  svg.append(gb);
+  for (const c of S.comps.filter(c => c.k === 'main')) {
+    const p = byId['main' + batteryOf(c.id)], g = s('g', plateEvents(p));
+    const bc = bars.find(b => b.id.includes(c.id)) || {r: 5};
+    const w = bc.r * 1.15;
+    const fore = c.x > 0;
+    rectPlate(g, p, c.x - w, c.x + w, c.b, c.t, Math.round(p.mm * 0.55), false);   // the sides
+    const fx = fore ? c.x + w : c.x - w;   // the face, toward its end
+    g.append(s('rect', {x: ex(fx) - (fore ? 3 : 0), y: ez(c.t), width: 3, height: ez(c.b) - ez(c.t), fill: ramp(p.mm), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.6}));
+    g.append(s('text', {x: ex(c.x), y: ez(c.t) - 3, 'text-anchor': 'middle', 'font-size': 9, fill: '#C9D3DB', 'pointer-events': 'none'}, c.id.length <= 3 ? c.id : ''));
+    svg.append(g);
+  }
+  const ct = S.comps.find(c => c.k === 'conning_tower');
+  if (ct && byId.ct.has) { const g = s('g', plateEvents(byId.ct)); rectPlate(g, byId.ct, ct.x - ct.r, ct.x + ct.r, ct.b, ct.t, byId.ct.mm, false);
+    g.append(s('text', {x: ex(ct.x), y: ez(ct.t) - 3, 'text-anchor': 'middle', 'font-size': 9, fill: '#C9D3DB', 'pointer-events': 'none'}, 'CT')); svg.append(g); }
+  // armour decks, last so they read over the belt
+  for (const p of P.filter(p => p.id.startsWith('deck') && p.has)) {
+    const g = s('g', plateEvents(p)), th = clamp(p.mm / 25, 2.5, 6);
+    for (const [a, b] of p.spans) {
+      g.append(s('rect', {x: ex(a), y: ez(p.z[0]), width: ex(b) - ex(a), height: th, fill: ramp(p.mm), stroke: 'rgba(0,0,0,0.55)', 'stroke-width': 0.6}));
+      g.append(s('rect', {x: ex(a), y: ez(p.z[0]) - 4, width: ex(b) - ex(a), height: th + 8, fill: 'transparent'}));
+      const lx = Math.min(ex(a) + 24, (ex(a) + ex(b)) / 2), ly = ez(p.z[0]) + th + 11;   // under the deck, at its after end: clear of the turrets
+      g.append(s('rect', {x: lx - 15, y: ly - 9, width: 30, height: 11, rx: 2, fill: 'rgba(14,18,21,0.82)', 'pointer-events': 'none'}));
+      g.append(s('text', {x: lx, y: ly, 'text-anchor': 'middle', 'font-size': 9.5, fill: ramp(p.mm), 'pointer-events': 'none'}, N0(p.mm)));
+    }
+    svg.append(g);
+  }
+  // + ghosts: a deck stretch with no armour adds a deck there; missing side plates add themselves
+  const covered = (n, a, b) => P.some(p => p.id.startsWith('deck') && p.has && p.deck === n && p.spans.some(([u, v]) => u <= a + 0.5 && v >= b - 0.5));
+  const stretches = [['aft', -L / 2 + 0.04 * L, X0], ['citadel', X0, X1], ['fore', X1, L / 2 - 0.04 * L]];
+  for (const n of mainDecks) {
+    const z = deckZ(n);
+    if (z < IB + 0.5) continue;
+    for (const [ext, a, b] of stretches) {
+      if (covered(n, a, b)) continue;
+      const tipHtml = () => `<b>+ armour deck</b> on the ${deckName(n).toLowerCase()}, ${EXT[ext]}, 25 mm<br>` +
+        `<span class="m">≈ ${sgn(((b - a) * B * (ext === 'citadel' ? 0.92 : 0.62) * 25 / 1000 * 7.85) * 1.15)} t</span> <span class="dim">(the game probes it)</span><br>` +
+        `<span class="dim">Right-click it after for full length or both ends.</span>`;
+      ghost(svg, ex(a) + 1, ez(z) - 5, ex(b) - ex(a) - 2, 10, tipHtml, () => edit(() => addDeck(n, ext)), `gh-${n}-${ext}`);
+    }
+  }
+  if (!byId.belt.has) ghost(svg, ex(X0), ez(beltTop()), ex(X1) - ex(X0), ez(beltBot()) - ez(beltTop()),
+    () => '<b>+ belt</b> over the citadel, 100 mm', () => edit(() => { A.belt_mm = 100; sel = 'belt'; }), 'gh-belt');
+  if (!byId.upper.has && byId.belt.has) ghost(svg, ex(X0), ez(0), ex(X1) - ex(X0), ez(beltTop()) - ez(0),
+    () => `<b>+ upper belt</b> from the belt up to the main deck, over the citadel, ${N0(Math.round(byId.belt.mm * 0.5 / 10) * 10)} mm`,
+    () => edit(() => { A.upper_belt = {mm: Math.round(byId.belt.mm * 0.5 / 10) * 10, to_deck: 0, extent: 'citadel'}; sel = 'upper'; }), 'gh-upper');
+  for (const end of ['aft', 'fore']) {
+    const p = byId['end_' + end]; if (p.has || !byId.belt.has) continue;
+    const [a, b] = end === 'fore' ? [X1, L / 2 - 0.02 * L] : [-L / 2 + 0.02 * L, X0];
+    const mm = Math.round(byId.belt.mm * 0.4 / 10) * 10;
+    ghost(svg, ex(a) + 1, ez(beltTop()), ex(b) - ex(a) - 2, ez(beltBot()) - ez(beltTop()),
+      () => `<b>+ end belt, ${end}</b> from the citadel to the ${end === 'fore' ? 'stem' : 'stern'}, ${mm} mm`,
+      () => edit(() => { A.end_belts = {...(A.end_belts || {}), [end]: {mm, tip_mm: mm, reach: 1, bulkhead_mm: 0}}; sel = 'end_' + end; }), 'gh-end-' + end);
+  }
+  if (!byId.steer.has) ghost(svg, ex(steerSpan[0]), ez(steerZ[1]), ex(steerSpan[1]) - ex(steerSpan[0]), ez(steerZ[0]) - ez(steerZ[1]),
+    () => '<b>+ steering gear box</b> over the rudders, under the waterline: sides, roof and ends', () => edit(() => {
+      A.steering_box = {mm: Math.round((A.belt_mm || 100) * 0.8 / 10) * 10, deck_mm: (A.decks?.[0]?.mm) || 50, bulkhead_mm: A.bulkhead_mm || 0}; sel = 'steer'; }), 'gh-steer');
+  root.replaceChildren(svg, h('div', {class: 'bh'}, 'Elevation', h('span', {style: 'text-transform:none;letter-spacing:0'}, `heights ×${f1(kz / kx)} · deck by deck`),
+    h('b', {}, h('span', {class: 'gold'}, '+'), ' on a bare deck or side adds armour there')));
+}
+function ghost(svg, x, y, w, hgt, tipHtml, add, id) {
+  const g = s('g', {class: 'gh', 'data-gh': id});
+  const r = s('rect', {x, y, width: Math.max(4, w), height: Math.max(4, hgt), fill: 'rgba(217,184,104,0)', stroke: 'rgba(217,184,104,0)', 'stroke-dasharray': '3 2'});
+  const t = s('text', {x: x + w / 2, y: y + hgt / 2 + 4, 'text-anchor': 'middle', 'font-size': 11, fill: 'rgba(217,184,104,0)', 'pointer-events': 'none'}, '+');
+  g.append(r, t);
+  const on = v => { r.setAttribute('fill', v ? 'rgba(217,184,104,0.12)' : 'rgba(217,184,104,0)'); r.setAttribute('stroke', v ? 'rgba(217,184,104,0.75)' : 'rgba(217,184,104,0)');
+    t.setAttribute('fill', v ? '#FFE7A8' : 'rgba(217,184,104,0)'); };
+  g.addEventListener('mouseenter', () => on(true));
+  g.addEventListener('mousemove', ev => tip(ev, tipHtml()));
+  g.addEventListener('mouseleave', () => { on(false); untip(); });
+  g.addEventListener('click', ev => { ev.stopPropagation(); untip(); add(); });
+  g.on = on;
+  svg.append(g);
+}
+
+// ------------------------------------------------------------------ 2. the midship section, to scale (plates ×3)
+function section() {
+  const root = $('sect');
+  const W2 = 426, H2 = 224, top = 20, bot = 10;
+  const zHi = 1.0, zLo = KEEL - 0.3;
+  const k = Math.min((W2 - 170) / B, (H2 - top - bot) / (zHi - zLo));
+  const cx = 50 + B / 2 * k;
+  const oy = top + ((H2 - top - bot) - (zHi - zLo) * k) / 2;
+  const sy = z => oy + (zHi - z) * k;
+  const half = z => { const st = S.mid; for (let i = 1; i < st.z.length; i++) if (z <= st.z[i]) { const t = (z - st.z[i - 1]) / (st.z[i] - st.z[i - 1] || 1); return st.y[i - 1] + t * (st.y[i] - st.y[i - 1]); } return st.y[st.y.length - 1]; };
+  const TH = 3;   // plate thickness exaggeration
+  const svg = s('svg', {width: W2, height: H2, style: 'position:absolute;left:0;top:0'});
+  svg.append(s('defs', {}, s('pattern', {id: 'hatch2', width: 5, height: 5, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)'},
+    s('line', {x1: 0, y1: 0, x2: 0, y2: 5, stroke: 'rgba(91,155,224,0.25)', 'stroke-width': 2}))));
+  const st = S.mid;
+  const outline = [...st.z.map((z, i) => [cx + st.y[i] * k, sy(z)]), ...st.z.map((z, i) => [cx - st.y[i] * k, sy(z)]).reverse()];
+  svg.append(s('polygon', {points: outline.map(p => p.join(',')).join(' '), fill: '#1A2D44', stroke: '#6F93B5', 'stroke-width': 1}));
+  const P = plates(), byId = Object.fromEntries(P.map(p => [p.id, p]));
+  // decks (dashed) and their names
+  for (const d of [...DECKS.filter(d => !d.id.startsWith('Raised')), {id: 'Inner bottom', z: IB}]) {
+    const w = half(d.z);
+    svg.append(s('line', {x1: cx - w * k, x2: cx + w * k, y1: sy(d.z), y2: sy(d.z), stroke: 'rgba(156,194,226,0.25)', 'stroke-dasharray': '3 3'}));
+    svg.append(s('text', {x: cx - B / 2 * k - 6, y: sy(d.z) + 3.5, 'text-anchor': 'end', 'font-size': 9.5, fill: '#7F9CB8'}, SHORT[d.id] || (d.id === 'Inner bottom' ? 'IB' : d.id)));
+  }
+  // torpedo protection: the holding bulkhead tds_m in from the side, inner bottom to the roof deck
+  const roofDeck = P.filter(p => p.id.startsWith('deck') && p.has && (p.ext === 'citadel' || p.ext === 'full')).sort((a, b) => a.z[0] - b.z[0])[0];
+  const roofZ = roofDeck ? roofDeck.z[0] : WL;
+  if (byId.tds.has) {
+    const g = s('g', plateEvents(byId.tds));
+    for (const side of [1, -1]) {
+      const pts = [];
+      for (let z = IB; z <= roofZ + 1e-6; z += (roofZ - IB) / 12) pts.push([cx + side * (half(z) * k), sy(z)]);
+      const inner = pts.map(([x, y], i) => [cx + side * Math.max(0.5, Math.abs(x - cx) / k - byId.tds.m) * k, y]);
+      g.append(s('polygon', {points: [...pts, ...inner.reverse()].map(p => p.join(',')).join(' '), fill: 'url(#hatch2)', stroke: 'none'}));
+      const ix = cx + side * Math.max(0.5, half((IB + roofZ) / 2) - byId.tds.m) * k;
+      g.append(s('line', {x1: ix, x2: ix, y1: sy(IB), y2: sy(roofZ), stroke: '#7FB0E0', 'stroke-width': 1.2, 'stroke-dasharray': '4 2'}));
+    }
+    svg.append(g);
+  }
+  // the waterline
+  svg.append(s('line', {x1: cx - B / 2 * k - 8, x2: cx + B / 2 * k + 8, y1: sy(WL), y2: sy(WL), stroke: '#5B9BE0'}));
+  svg.append(s('text', {x: 4, y: sy(WL) + 3.5, 'font-size': 9.5, fill: '#5B9BE0'}, 'WL'));
+  // armour decks across, between the belts
+  for (const p of P.filter(p => p.id.startsWith('deck') && p.has && p.spans.some(([a, b]) => a <= st.x && b >= st.x))) {
+    const g = s('g', plateEvents(p)), w = half(p.z[0]), t = Math.max(2, p.mm / 1000 * k * TH);
+    g.append(s('rect', {x: cx - w * k, y: sy(p.z[0]), width: 2 * w * k, height: t, fill: ramp(p.mm), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.6}));
+    g.append(s('rect', {x: cx - w * k, y: sy(p.z[0]) - 4, width: 2 * w * k, height: t + 8, fill: 'transparent'}));
+    g.append(s('rect', {x: cx - 16, y: sy(p.z[0]) + t + 1, width: 32, height: 11, rx: 2, fill: 'rgba(14,18,21,0.82)', 'pointer-events': 'none'}));
+    g.append(s('text', {x: cx, y: sy(p.z[0]) + t + 10, 'text-anchor': 'middle', 'font-size': 9.5, fill: ramp(p.mm), 'pointer-events': 'none'}, N0(p.mm)));
+    svg.append(g);
+  }
+  // belt and upper belt on both sides (the belt tapering below the waterline)
+  const sideBand = (g, p, z0, z1, mmAt) => {
+    for (const side of [1, -1]) {
+      const pts = [], inner = [];
+      for (let i = 0; i <= 10; i++) { const z = z0 + (z1 - z0) * i / 10, x = half(z); pts.push([cx + side * x * k, sy(z)]); inner.push([cx + side * (x * k - Math.max(2, mmAt(z) / 1000 * k * TH)), sy(z)]); }
+      g.append(s('polygon', {points: [...pts, ...inner.reverse()].map(p => p.join(',')).join(' '), fill: ramp(mmAt((z0 + z1) / 2)), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.6}));
+      g.append(s('rect', {x: side > 0 ? cx + half(z1) * k - 10 : cx - half(z1) * k - 2, y: sy(z1), width: 12, height: sy(z0) - sy(z1), fill: 'transparent'}));
+    }
+  };
+  if (byId.belt.has) {
+    const p = byId.belt, g = s('g', plateEvents(p)), lo = p.second.v ?? p.mm;
+    sideBand(g, p, p.z[0], p.z[1], z => z >= WL ? p.mm : lo + (p.mm - lo) * (z - p.z[0]) / (WL - p.z[0]));
+    svg.append(g);
+  }
+  if (byId.upper.has && byId.upper.spans.some(([a, b]) => a <= st.x && b >= st.x)) {
+    const p = byId.upper, g = s('g', plateEvents(p));
+    sideBand(g, p, p.z[0], p.z[1], () => p.mm);
+    svg.append(g);
+  }
+  // labels on the starboard side
+  const lab = (z, txt, mm) => { const x = cx + half(z) * k - Math.max(2, mm / 1000 * k * TH) - 4, w = txt.length * 6 + 6;
+    svg.append(s('rect', {x: x - w, y: sy(z) - 6, width: w, height: 11, rx: 2, fill: 'rgba(14,18,21,0.82)', 'pointer-events': 'none'}));
+    svg.append(s('text', {x: x - 3, y: sy(z) + 3, 'text-anchor': 'end', 'font-size': 9.5, fill: ramp(mm), 'pointer-events': 'none'}, txt)); };
+  if (byId.upper.has && byId.upper.spans.some(([a, b]) => a <= st.x && b >= st.x)) lab((byId.upper.z[0] + byId.upper.z[1]) / 2, N0(byId.upper.mm), byId.upper.mm);
+  if (byId.belt.has) { lab((WL + byId.belt.z[1]) / 2, N0(byId.belt.mm), byId.belt.mm); if ((byId.belt.second.v ?? byId.belt.mm) !== byId.belt.mm) lab(byId.belt.z[0] + 0.5, '→ ' + N0(byId.belt.second.v), byId.belt.second.v); }
+  // in-place controls over the drawing: belt height and depth, the torpedo protection's depth
+  const chips = [];
+  const chip = (x, y, el) => { const c = h('div', {class: 'chip', style: `left:${x}px;top:${y}px`}, el); chips.push(c); };
+  const pB = byId.belt;
+  if (pB.has) {
+    chip(W2 - 104, sy(pB.z[1]) - 8, spinner('bh', A.belt_height_m ?? (beltTop() - WL), mF, 0.1, v => { A.belt_height_m = clamp(Math.round(v * 10) / 10, 0, 6); }, {pre: '↑', cls: 's'}));
+    chip(W2 - 104, sy(pB.z[0]) - 8, spinner('bd', A.belt_depth_m ?? (WL - beltBot()), mF, 0.1, v => { A.belt_depth_m = clamp(Math.round(v * 10) / 10, 0, 6); }, {pre: '↓', cls: 's'}));
+    svg.append(s('line', {x1: W2 - 108, x2: W2 - 108, y1: sy(pB.z[1]), y2: sy(pB.z[0]), stroke: '#8C7B55', 'stroke-width': 1}));
+    for (const z of [pB.z[1], WL, pB.z[0]]) svg.append(s('line', {x1: W2 - 112, x2: W2 - 104, y1: sy(z), y2: sy(z), stroke: z === WL ? '#5B9BE0' : '#8C7B55'}));
+  }
+  if (byId.tds.has || (A.belt_mm || 0) >= 200) {
+    chip(W2 - 104, sy((IB + roofZ) / 2) + 6, spinner('tdsc', A.tds_m || 0, mF, 0.5, v => { A.tds_m = clamp(v, 0, 9); }, {pre: 'TDS', cls: 's'}));
+  }
+  root.replaceChildren(svg, ...chips, h('div', {class: 'bh'}, 'Midship section', h('span', {style: 'text-transform:none;letter-spacing:0'}, `at ${st.x >= 0 ? '+' : '−'}${N0(Math.abs(st.x))} m · to scale, plates ×${TH}`),
+    h('b', {}, '↑↓ belt edges from the WL')));
+}
+
+// ------------------------------------------------------------------ 3. the plate table
+const GROUPS = {side: 'Side and torpedo protection', decks: 'Armour decks', ends: 'Ends', guns: 'Guns and conning tower'};
+function table() {
+  const root = $('tbl');
+  const P = plates();
+  const g = h('div', {class: 'pt', style: 'left:0;top:0;width:834px'});
+  for (const [t, cls] of [['', ''], ['Plate', ''], ['Thickness', 'right'], ['Lower · tip · roof', 'right'], ['Where', ''], ['Material', ''], ['t', 'right'], ['− step', 'right'], ['+ step', 'right']])
+    g.append(h('div', {class: 'h ' + cls}, t));
+  let last = null;
+  for (const p of P) {
+    if (p.g !== last) {
+      last = p.g;
+      const extra = p.g === 'decks' ? h('a', {onclick: ev => { ev.stopPropagation(); menuAddDeck(ev); }}, '+ add an armour deck…') :
+        p.g === 'guns' ? h('span', {class: 'dim', style: 'text-transform:none;letter-spacing:0;font-size:11px;margin-left:10px'}, 'turret faces also on the Main battery tab; secondary shields on Secondary') : null;
+      g.append(h('div', {class: 'g'}, GROUPS[p.g], extra));
+    }
+    const cells = rowCells(p);
+    cells.forEach((c, i) => {
+      c.classList.add('r'); if (i === 0) c.classList.add('first');
+      if (sel === p.id) c.classList.add('sel');
+      if (!p.has && !p.id.startsWith('deck')) c.classList.add('none');
+      c.dataset.id = p.id;
+      c.addEventListener('mouseenter', () => { hot = p.id; paintHot(); });
+      c.addEventListener('mouseleave', () => { hot = null; paintHot(); });
+      c.addEventListener('click', () => { sel = p.id; render(); });
+      c.addEventListener('contextmenu', ev => { ev.preventDefault(); sel = p.id; render(); menu(ev, p); });
+      g.append(c);
+    });
+  }
+  root.replaceChildren(g);
+}
+function rowCells(p) {
+  const C = [];
+  C.push(h('div', {}, h('span', {class: 'sw', style: `background:${p.has ? ramp(p.mm ?? 0) : 'transparent'};${p.id === 'tds' ? 'background:repeating-linear-gradient(45deg,#3F6F9F 0 2px,transparent 2px 4px)' : ''}`})));
+  C.push(h('div', {}, p.name));
+  // thickness
+  if (p.ro) C.push(h('div', {class: 'right'}, h('span', {class: 'ro', title: p.ro}, mmF(p.mm))));
+  else if (p.id === 'tds') C.push(h('div', {class: 'right'}, spinner('t-tds', p.m, mF, 0.5, v => setVal(p, 'mm', clamp(v, 0, 9)))));
+  else C.push(h('div', {class: 'right'}, spinner('t-' + p.id, p.mm, mmF, stepOf(p), v => setVal(p, 'mm', v))));
+  // second value
+  if (p.second && p.has) C.push(h('div', {class: 'right'}, spinner('s-' + p.id, p.second.v ?? 0, v => N0(v), p.second.step,
+    v => { if (p.id === 'belt') A.belt_bottom_mm = Math.max(0, v); else if (p.end) setVal(p, 'tip', v); else if (p.id === 'steer') setVal(p, 'roof', v); },
+    {auto: p.second.auto, pre: p.second.lab, cls: 's'})));
+  else C.push(h('div', {}));
+  // where
+  C.push(h('div', {}, whereOf(p)));
+  // material
+  if (p.id === 'tds') C.push(h('div', {class: 'dim'}, 'layered bulkheads'));
+  else if (p.id.startsWith('main')) C.push(h('div', {}, matCell(p)));
+  else C.push(h('div', {}, matCell(p)));
+  // weight
+  const t = tOf(p);
+  C.push(h('div', {class: 'num', onmousemove: ev => tip(ev, weightTip(p)), onmouseleave: untip}, t == null ? h('span', {class: 'dim'}, 'turret') : p.has ? N0(t) : h('span', {class: 'dim'}, '—')));
+  for (const dir of [-1, 1]) {
+    const r = oneStep(p, dir);
+    const big = r && r.real && Math.abs(r.v) > 4 * Math.max(30, Math.abs((oneStep(p, -dir) || {v: 0}).v));
+    const cls = 'stp' + (r && !r.real ? ' est' : '') + (r && r.real && r.det && Math.abs(r.det.C) >= 1 ? ' big' : '');
+    C.push(h('div', {class: cls, onmousemove: ev => { if (r) tip(ev, stepTip(p, dir)); }, onmouseleave: untip}, r ? (r.real ? '' : '≈') + sgn(r.v) : ''));
+  }
+  return C;
+}
+function whereOf(p) {
+  const DEXT = [['citadel', 'cit', 'over the citadel'], ['full', 'full', 'the full length'], ['fore', 'fore', 'the fore end'], ['aft', 'aft', 'the aft end'], ['ends', 'ends', 'both ends']];
+  if (p.id === 'belt') return p.has ? h('span', {class: 'dim'}, `citadel · WL −${f1(WL - p.z[0])} / +${f1(p.z[1] - WL)} m`) : h('span', {class: 'dim'}, 'none');
+  if (p.id === 'upper') return p.has ? h('span', {style: 'display:inline-flex;gap:5px;align-items:center'},
+    h('span', {class: 'dd', style: 'width:66px', onclick: ev => { ev.stopPropagation(); menuDeck(ev, p, true); }}, 'to ' + deckShort(p.toDeck), h('i', {}, '▼')),
+    seg(DEXT.map(([v, l, t]) => [v, l, `upper belt over ${t}`]), p.ext, v => { A.upper_belt = {...A.upper_belt, extent: v}; })) : h('span', {class: 'dim'}, 'none · + on the elevation adds one');
+  if (p.end) return p.has ? h('span', {style: 'display:inline-flex;gap:6px;align-items:center'},
+    spinner('r-' + p.id, p.reach, v => v.toFixed(1), 0.1, v => setVal(p, 'reach', v), {pre: 'reach', cls: 's'}),
+    h('span', {class: 'dim'}, p.reach >= 1 ? `to the ${p.end === 'fore' ? 'stem' : 'stern'}` : `${Math.round(p.reach * 100)} % of the way`)) : h('span', {class: 'dim'}, 'none · + on the elevation adds one');
+  if (p.id === 'bulk') return h('span', {class: 'dim'}, p.has ? `at both citadel ends · ${N0(p.mm / 2)} below the belt` : 'none');
+  if (p.id === 'tds') return h('span', {class: 'dim'}, p.has ? `${deckShort(roofDeck())} deck down to the inner bottom` : 'none');
+  if (p.id.startsWith('deck')) return h('span', {style: 'display:inline-flex;gap:5px;align-items:center'},
+    h('span', {class: 'dd', style: 'width:58px', onclick: ev => { ev.stopPropagation(); menuDeck(ev, p, false); }}, deckShort(p.deck), h('i', {}, '▼')),
+    seg(DEXT.map(([v, l, t]) => [v, l, `this deck over ${t}`]), p.ext, v => { A.decks[p.i] = {...A.decks[p.i], extent: v}; }));
+  if (p.id === 'steer') return p.has ? h('span', {style: 'display:inline-flex;gap:6px;align-items:center'},
+    spinner('e-steer', p.third.v, v => N0(v), 10, v => setVal(p, 'ends', v), {pre: 'ends', cls: 's'}), h('span', {class: 'dim'}, 'over the rudders')) : h('span', {class: 'dim'}, 'none · + on the elevation adds one');
+  if (p.id.startsWith('main')) return h('span', {class: 'dim'}, `faces · side ${N0(p.mm * 0.55)} · rear ${N0(p.mm * 0.5)} · roof ${N0(p.mm * 0.4)}`);
+  if (p.ro) return h('span', {class: 'dim'}, p.ro);
+  return '';
+}
+function roofDeck() {
+  const r = (A.decks || []).filter(d => (d.extent || 'citadel') === 'citadel' || d.extent === 'full').sort((a, b) => deckZ(a.deck) - deckZ(b.deck))[0];
+  return r ? r.deck : 1;
+}
+function matCell(p) {
+  const own = matOf(p), sch = schemeMat(p);
+  return h('span', {class: 'dd' + (own ? '' : ' sch'), style: 'width:116px', onclick: ev => { ev.stopPropagation(); menuMat(ev, p); },
+    onmousemove: ev => tip(ev, own ? `<b>${own}</b>, this plate’s own` : `<b>${sch}</b>, from the armour scheme`), onmouseleave: untip},
+    h('span', {style: 'overflow:hidden;text-overflow:ellipsis'}, own || sch.replace(' (KC n/A)', ' n/A')), h('i', {}, '▼'));
+}
+function weightTip(p) {
+  const t = tOf(p);
+  if (t == null) return `<b>${p.name}</b><br>The gunhouse armour is part of each turret’s weight (armament), so it has no line of its own here. The ± step columns are real builds.`;
+  const lines = lines0(BASE.find(b => wkey(b) === wkey(p)) || p);
+  let h = `<b>${p.name}</b> <span class="m">${N0(t)} t</span>`;
+  if (pristine() && lines.length) h += '<table>' + lines.map(n => `<tr><td>${n}</td><td>${N0(W[n] || 0)}</td></tr>`).join('') + '</table>';
+  else h += '<br><span class="dim">stand-in: the opened build’s line scaled by area and thickness</span>';
+  return h;
+}
+
+// ------------------------------------------------------------------ 4. the selected plate
+function inspector() {
+  const root = $('ins');
+  const P = plates(), p = P.find(q => q.id === sel) || P[0];
+  const body = h('div', {class: 'insp'});
+  body.append(h('div', {class: 't'}, h('span', {class: 'sw', style: `background:${p.has ? ramp(p.mm || 0) : 'transparent'}`}), p.name,
+    h('span', {class: 'dim', style: 'font-weight:400;font-size:11.5px'}, p.has ? (p.id === 'tds' ? f1(p.m) + ' m deep' : mmF(p.mm)) : 'none')));
+  const L2 = h('div', {class: 'l'});
+  const kv = (k, v) => L2.append(h('span', {}, k), h('span', {class: 'v'}, v));
+  const len = p.spans ? p.spans.reduce((s, [a, b]) => s + b - a, 0) : null;
+  if (p.spans && p.has) kv('Covers', `${p.spans.map(([a, b]) => `${N0(a)} → ${N0(b)} m`).join(', ')} · ${f1(len)} m, ${Math.round(len / L * 100)} %`);
+  if (p.z && p.has && p.id !== 'tds') kv('Height', p.z[0] === p.z[1] ? `${deckName(p.deck)}, ${f1(-p.z[0])} m below the main deck · ${f1(p.z[0] - WL)} m over WL` :
+    `${f1(p.z[0] - WL)} → ${f1(p.z[1] - WL)} m on the waterline`);
+  if (p.id === 'tds' && p.has) kv('Depth', `${f1(p.m)} m from the shell to the holding bulkhead`);
+  const t = tOf(p);
+  if (t != null && p.has) kv('Weight', `${N0(t)} t · ${f1(t / stdNow() * 100)} % of standard${pristine() ? '' : ' (stand-in)'}`);
+  if (p.id !== 'tds') kv('Material', matOf(p) || schemeMat(p) + ' (scheme)');
+  if (p.id === 'belt' && p.has) kv('Taper', `${N0(p.mm)} at the waterline → ${N0(p.second.v ?? p.mm)} at the lower edge`);
+  if (p.id.startsWith('main')) kv('Gunhouse', `face ${N0(p.mm)} · side ${N0(p.mm * 0.55)} · rear ${N0(p.mm * 0.5)} · roof ${N0(p.mm * 0.4)}`);
+  body.append(L2);
+  const NOTES = {
+    belt: 'The citadel runs between the outermost barbettes; the layout places it, so its length moves when the turrets do.',
+    upper: 'From the belt’s top edge up to the chosen deck.',
+    end_fore: 'Same height as the belt; tapers from the root to the tip. Reach is the share of the way to the stem.',
+    end_aft: 'Same height as the belt; tapers from the root to the tip. At reach 1.0 it turns across the stern face.',
+    bulk: 'Full thickness down to the belt’s lower edge, half below it to the inner bottom.',
+    tds: 'Its spaces count in the subdivision (liquid layers, holding bulkhead); the depth also takes beam.',
+    steer: 'A box over the steering gear: sides, a roof on its own deck and two ends.',
+    barb: 'Follows the turret faces at 0.8 ×, from the armour deck up to the gunhouse.',
+    ct: 'Takes the belt’s thickness.',
+  };
+  const note = p.id.startsWith('deck') ? (p.deck === roofDeck() && (p.ext === 'citadel' || p.ext === 'full') ? 'The citadel’s roof: the lowest armour deck over it, the one the belt’s top edge meets.' : 'Over or beside the roof deck: a capping deck to start shells or splinter deck below.') : NOTES[p.id.replace(/\d+$/, '')] || NOTES[p.id];
+  if (note) body.append(h('div', {class: 'note'}, note));
+  // one step, with the knock-on of the real builds
+  const kn = h('div', {class: 'kn'});
+  const m = oneStep(p, -1), q = oneStep(p, 1);
+  if (m || q) {
+    kn.append(h('div', {class: 'hd'}, `One step (${p.id === 'tds' ? '0.5 m' : stepOf(p) + ' mm'}): standard${pristine() ? ', real builds' : ', stand-in'}`));
+    kn.append(h('div', {class: 'row'}, h('span', {class: 'dim'}, ''), h('span', {class: 'dim'}, '− step'), h('span', {class: 'dim'}, '+ step')));
+    kn.append(h('div', {class: 'row'}, h('span', {}, 'Standard'), h('span', {}, m ? sgn(m.v) : ''), h('span', {}, q ? sgn(q.v) : '')));
+    if (m?.det || q?.det) {
+      const md = m?.det, qd = q?.det;
+      const plate = md || qd;
+      const names = [...new Set([...(md?.lines || []), ...(qd?.lines || [])].map(x => x[0]))].slice(0, 3);
+      for (const n of names) kn.append(h('div', {class: 'row'}, h('span', {class: 'dim'}, n), h('span', {}, md ? sgn((md.lines.find(x => x[0] === n) || [0, 0])[1]) : ''), h('span', {}, qd ? sgn((qd.lines.find(x => x[0] === n) || [0, 0])[1]) : '')));
+      const cit = d => d && Math.abs(d.C) >= 1 ? (d.C > 0 ? '+' : '−') + f1(Math.abs(d.C)) + ' m' : '';
+      if (cit(md) || cit(qd)) kn.append(h('div', {class: 'row'}, h('span', {class: 'amb'}, 'Citadel length (re-planned)'), h('span', {class: 'amb'}, cit(md)), h('span', {class: 'amb'}, cit(qd))));
+    }
+  }
+  body.append(kn);
+  if (p.id === 'tds' || p.id === 'belt' || p.id.startsWith('deck'))
+    body.append(h('div', {class: 'ask'}, 'Immune zone against a chosen gun (belt holds inside it, the deck beyond it)', h('span', {class: 'tg'}, 'needs a penetration model')));
+  if (p.id === 'ct' || p.id === 'barb')
+    body.append(h('div', {class: 'ask'}, p.id === 'ct' ? 'A thickness of its own for the conning tower' : 'Barbette thickness of its own, and over which decks', h('span', {class: 'tg'}, 'engine ask?')));
+  root.replaceChildren(h('div', {class: 'bh'}, 'Selected plate', h('b', {}, 'RMB: deck · extent · material · remove')), body);
+}
+
+// ------------------------------------------------------------------ menus
+function showMenu(ev, items) {
+  const m = $('menu'), app = $('app').getBoundingClientRect();
+  m.replaceChildren(...items.map(([lab, fn, key]) => {
+    if (lab === 'sep') return h('div', {class: 'sep'});
+    if (lab === 'lab') return h('div', {class: 'lab'}, fn);
+    return h('div', {class: fn ? '' : 'off', onclick: ev2 => { ev2.stopPropagation(); if (fn) { hideMenu(); edit(fn); } }}, h('span', {}, lab), h('span', {class: 'dim'}, key || ''));
+  }));
+  m.style.display = 'block';
+  const r = m.getBoundingClientRect();
+  m.style.left = Math.min(ev.clientX - app.left, 1280 - r.width - 4) + 'px';
+  m.style.top = Math.min(ev.clientY - app.top, 600 - r.height - 4) + 'px';
+}
+function hideMenu() { $('menu').style.display = 'none'; }
+function menu(ev, p) {
+  untip();
+  const it = [['lab', p.name]];
+  if (p.id.startsWith('deck')) {
+    for (const [v, l] of Object.entries(EXT)) if (v !== 'steering') it.push([`Over ${v === 'ends' ? '' : 'the '}${l}`, p.ext === v ? null : () => { A.decks[p.i] = {...A.decks[p.i], extent: v}; }, p.ext === v ? '●' : '']);
+    it.push(['sep']);
+    const k = mainDecks.indexOf(p.deck);
+    it.push([`Up to the ${k > 0 ? deckName(mainDecks[k - 1]).toLowerCase() : '—'}`, k > 0 ? () => { A.decks[p.i] = {...A.decks[p.i], deck: mainDecks[k - 1]}; } : null, '']);
+    it.push([`Down to the ${k < mainDecks.length - 1 ? deckName(mainDecks[k + 1]).toLowerCase() : '—'}`, k < mainDecks.length - 1 ? () => { A.decks[p.i] = {...A.decks[p.i], deck: mainDecks[k + 1]}; } : null, '']);
+    it.push(['Duplicate onto the deck below', k < mainDecks.length - 1 ? () => { addDeck(mainDecks[k + 1], p.ext, Math.round(p.mm / 2 / 5) * 5); } : null, '']);
+  }
+  if (p.id === 'upper') for (const [v, l] of Object.entries(EXT)) if (v !== 'steering') it.push([`Over ${v === 'ends' ? '' : 'the '}${l}`, p.ext === v ? null : () => { A.upper_belt = {...A.upper_belt, extent: v}; }, p.ext === v ? '●' : '']);
+  if (p.end) it.push(['Taper to the tip: ⅔ of the root', p.has ? () => setVal(p, 'tip', Math.round(p.mm * 2 / 3 / 10) * 10) : null, ''], ['No taper', p.has ? () => setVal(p, 'tip', p.mm) : null, '']);
+  if (!p.ro && p.id !== 'tds') { it.push(['sep']); it.push(['Material…', () => {}, '▸']); }
+  if (!p.ro && !p.id.startsWith('main')) { it.push(['sep']); it.push([p.id.startsWith('deck') ? 'Remove this deck' : 'Remove (0 mm)', p.has || p.id.startsWith('deck') ? () => removePlate(p) : null, 'Del']); }
+  showMenu(ev, it);
+}
+function menuDeck(ev, p, upper) {
+  const it = [['lab', upper ? 'Upper belt up to' : 'On the']];
+  for (const n of mainDecks) {
+    const z = deckZ(n);
+    if (upper && (z <= beltTop() + 0.3 || n < -1)) continue;
+    if (!upper && z < IB + 0.5) continue;
+    const cur = upper ? p.toDeck === n : p.deck === n;
+    it.push([`${deckName(n)}  ·  ${f1(z - WL)} m on WL`, cur ? null : () => { if (upper) A.upper_belt = {...A.upper_belt, to_deck: n}; else A.decks[p.i] = {...A.decks[p.i], deck: n}; }, cur ? '●' : '']);
+  }
+  showMenu(ev, it);
+}
+function menuAddDeck(ev) {
+  const it = [['lab', 'Add an armour deck, 25 mm']];
+  for (const n of mainDecks) { if (deckZ(n) < IB + 0.5) continue;
+    it.push([`${deckName(n)}, citadel`, () => addDeck(n, 'citadel'), '']); }
+  it.push(['sep'], ['Or click + on a bare deck in the elevation', null, '']);
+  showMenu(ev, it);
+}
+function menuMat(ev, p) {
+  const own = matOf(p), it = [['lab', p.name + ': material']];
+  it.push([`From the scheme (${schemeMat(p)})`, own ? () => setMat(p, null) : null, own ? '' : '●']);
+  it.push(['sep']);
+  for (const m of MATERIALS) it.push([m, own === m ? null : () => setMat(p, m), own === m ? '●' : '']);
+  showMenu(ev, it);
+}
+function setMat(p, m) {
+  if (p.id.startsWith('deck')) A.decks[p.i] = {...A.decks[p.i], material: m || undefined};
+  else if (p.id === 'upper') A.upper_belt = {...A.upper_belt, material: m || undefined};
+  else if (p.end) A.end_belts = {...A.end_belts, [p.end]: {...A.end_belts[p.end], material: m || undefined}};
+  else if (p.id === 'steer') A.steering_box = {...A.steering_box, material: m || undefined};
+  else A.materials = {...A.materials, [p.mat]: m || A0.materials[p.mat]};   // belt, bulkheads, turrets: the per-part map
+}
+
+// ------------------------------------------------------------------ tooltips, hover
+function plateTip(p) {
+  let t = `<b>${p.name}</b> <span class="m">${p.id === 'tds' ? f1(p.m) + ' m' : mmF(p.mm)}</span>`;
+  if (p.second && p.has) t += ` <span class="dim">· ${p.second.lab} ${N0(p.second.v ?? p.mm)}</span>`;
+  const tt = tOf(p); if (tt != null && p.has) t += `<br><span class="m">${N0(tt)} t</span>`;
+  if (p.ro) t += `<br><span class="dim">${p.ro}</span>`;
+  t += `<br><span class="dim">click: select · wheel: ±${p.id === 'tds' ? '0.5 m' : stepOf(p) + ' mm'} · RMB: more</span>`;
+  return t;
+}
+function tip(ev, html) {
+  if (!html) return;
+  const t = $('tip'), app = $('app').getBoundingClientRect();
+  t.innerHTML = html; t.style.display = 'block';
+  const x = ev.clientX - app.left + 14, y = ev.clientY - app.top + 16;
+  t.style.left = Math.min(x, 1280 - t.offsetWidth - 6) + 'px'; t.style.top = Math.min(y, 600 - t.offsetHeight - 4) + 'px';
+}
+function untip() { $('tip').style.display = 'none'; }
+function paintHot() {
+  document.querySelectorAll('.pt .r').forEach(e => e.classList.toggle('hov', hot === e.dataset.id));
+  document.querySelectorAll('g.pl').forEach(e => {
+    const on = hot === e.dataset.id || sel === e.dataset.id;
+    e.style.filter = on ? 'brightness(1.18) drop-shadow(0 0 2px rgba(255,231,168,0.9))' : '';
+    e.setAttribute('opacity', hot && !on ? 0.55 : 1);
+  });
+}
+
+// ------------------------------------------------------------------ the bars
+function reads() {
+  const P = plates(), by = Object.fromEntries(P.map(p => [p.id, p]));
+  const ends = by.end_fore.has || by.end_aft.has || P.some(p => p.id.startsWith('deck') && p.has && p.ext !== 'citadel') || (by.upper.has && by.upper.ext !== 'citadel');
+  const kind = !by.belt.has && P.some(p => p.id.startsWith('deck') && p.has) ? 'a protected deck' : !by.belt.has ? 'unarmoured' : ends ? 'incremental: armoured ends' : 'all-or-nothing';
+  const armour = P.reduce((s, p) => s + (p.has ? tOf(p) || 0 : 0), 0) + (S.groups.armour - BASE.reduce((s, p) => s + (p.has ? BASEW[wkey(p)].t : 0), 0));
+  const std = stdNow();
+  $('reads').replaceChildren(`· reads as `, h('span', {class: 'gold'}, kind), ` · armour ${N0(armour)} t, ${f1(armour / std * 100)} % of standard · standard ${N0(std)} t`,
+    pristine() ? '' : h('span', {class: 'dim'}, ' (stand-in)'));
+  $('scheme').replaceChildren(h('span', {class: 'dim'}, 'Scheme '), h('span', {class: 'dd', style: 'width:270px;display:inline-flex', onclick: ev => { ev.stopPropagation();
+    showMenu(ev, [['lab', 'Armour schemes, weakest first'], ['wrought iron', null, '1860s'], ['compound, mild steel decks', null, '1880s'], ['Harvey nickel steel, mild steel decks', null, '1890s'],
+      ['Krupp cemented, high-tensile steel decks', null, '1900s'], ['Krupp cemented (KC n/A), Wotan hart decks', null, '1930s'], ['Vickers hardened, Molybdenum steel decks', null, '1930s'], ['sep'], ['the Templates panel picks it too', null, '']]); }},
+    h('span', {}, SCHEMES[SID]), h('i', {}, '▼')));
+}
+function render() {
+  untip();
+  elevation(); section(); table(); inspector(); reads();
+  paintHot();
+  if (!$('hint')) $('pane').append(h('div', {class: 'hint', id: 'hint'},
+    h('span', {}, h('span', {class: 'kbd'}, 'wheel'), 'a plate or value: one step (Shift ×4)'),
+    h('span', {}, h('span', {class: 'kbd'}, 'click'), 'a number to type it'),
+    h('span', {}, h('span', {class: 'kbd'}, '+'), 'bare deck or side: add armour there'),
+    h('span', {}, h('span', {class: 'kbd'}, 'RMB'), 'deck · extent · material · remove'),
+    h('span', {}, h('span', {class: 'kbd'}, 'Del'), 'removes the selected plate')));
+}
+document.addEventListener('keydown', ev => {
+  if (editing) return;
+  if (ev.key === 'Delete') { const p = plates().find(q => q.id === sel); if (p && !p.ro && !p.id.startsWith('main')) edit(() => removePlate(p)); }
+  if (ev.key === 'Escape') hideMenu();
+});
+document.addEventListener('click', ev => { if (!ev.target.closest('#menu')) hideMenu(); });
+tabs();
+// scripted states for screenshots: ?ship=..&sel=deck0&do=adddeck:1:citadel,belt:+1&tip=step:deck0:1|ghost:gh-1-fore&menu=deck0
+for (const st of (params.get('do') || '').split(',').filter(Boolean)) {
+  const [what, a, b] = st.split(':');
+  if (what === 'adddeck') addDeck(+a, b);
+  else { const p = plates().find(q => q.id === what); if (p) setVal(p, 'mm', (p.id === 'tds' ? p.m : p.mm) + +a * stepOf(p)); }
+}
+if (params.get('sel')) sel = params.get('sel');
+render();
+const tp = (params.get('tip') || '').split(':');
+if (tp[0] === 'step') {
+  const p = plates().find(q => q.id === tp[1]);
+  const cells = [...document.querySelectorAll(`.pt .r[data-id="${tp[1]}"]`)], c = cells[tp[2] === '1' ? 8 : 7];
+  const r = c.getBoundingClientRect(); tip({clientX: r.left - 250, clientY: r.bottom - 4}, stepTip(p, tp[2] === '1' ? 1 : -1));
+}
+if (tp[0] === 'ghost') {
+  const g = document.querySelector(`g.gh[data-gh="${tp[1]}"]`); g.on(true);
+  const r = g.getBoundingClientRect(); const html = {clientX: r.left + 20, clientY: r.top - 4};
+  g.dispatchEvent(new MouseEvent('mousemove', {clientX: r.left + r.width / 2, clientY: r.top + 6}));
+}
+if (params.get('menu')) {
+  const p = plates().find(q => q.id === params.get('menu'));
+  const g = document.querySelector(`g.pl[data-id="${p.id}"]`); const r = g.getBoundingClientRect();
+  menu({clientX: r.left + 40, clientY: r.top + 6, preventDefault() {}}, p);
+}
+</script>
+</body>
+</html>
