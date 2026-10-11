@@ -6,7 +6,9 @@ public static class Batteries
 {
     public const double GunK = 1.9e-6, MountK = 2.2, TurretTAvg = 0.65, ShellK = 1.83e-5, AmmoMult = 1.6;
     static readonly (double Cal, double Rounds)[] Rounds = [(127, 350), (152, 200), (203, 100)];
-    const double MountFixedT = 4.0, TorpMountT = 5.0, TorpTubeT = 3.0, TorpT = 1.6, TorpFixedTubeT = 1.0;
+    const double MountFixedT = 4.0, TorpMountT = 5.0, TorpTubeT = 3.0, TorpFixedTubeT = 1.0;
+    /// <summary>A 533 mm torpedo, tonnes.</summary>
+    public const double TorpedoT = 1.6;
     public static readonly IReadOnlyDictionary<string, double> AaT =
         new Dictionary<string, double>(StringComparer.Ordinal) { ["quad40"] = 15.0, ["twin40"] = 7.0, ["single20"] = 1.0 };
 
@@ -50,8 +52,8 @@ public static class Batteries
     public static double TorpedoWeight(double tubes, bool fixed_ = false)
     {
         if (fixed_)
-            return tubes * (TorpFixedTubeT + TorpT);
-        return TorpMountT + tubes * (TorpTubeT + TorpT);
+            return tubes * (TorpFixedTubeT + TorpedoT);
+        return TorpMountT + tubes * (TorpTubeT + TorpedoT);
     }
 
     public const double SecondaryArmourMm = 25;
@@ -94,6 +96,8 @@ public static class Batteries
         }
         if (design.Torpedoes is { Mounts: > 0 } tp)
             result.Add(new Weight("Torpedoes", "armament", tp.Mounts.Value * TorpedoWeight(tp.Tubes ?? 4), zRel: ZRel.Deck(1)));
+        if (SubmergedTubes.Count(design) is var sub and > 0)
+            result.Add(new Weight("Submerged tubes", "armament", SubmergedTubes.Weight(sub, SubmergedTubes.PerTube(design)), zRel: ZRel.Frac(0.35)));
         double w = (design.Aa?.Heavy ?? 0) * AaT["quad40"] + (design.Aa?.Light ?? 0) * AaT["single20"];
         if (w != 0)
             result.Add(new Weight("AA guns", "armament", w, zRel: ZRel.Deck(2)));

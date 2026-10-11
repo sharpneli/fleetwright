@@ -155,6 +155,19 @@ public sealed record TorpedoInput
 {
     public int? Mounts { get; init; }
     public int? Tubes { get; init; }
+    /// <summary>Fixed tubes below the waterline (SubmergedTubes).</summary>
+    public SubmergedInput? Submerged { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>torpedoes.submerged: beam tubes per side, bow and stern tubes, and the torpedoes each tube carries (the one
+/// in it included).</summary>
+public sealed record SubmergedInput
+{
+    public int? PerSide { get; init; }
+    public int? Bow { get; init; }
+    public int? Stern { get; init; }
+    public int? TorpedoesPerTube { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

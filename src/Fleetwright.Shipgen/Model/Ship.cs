@@ -330,7 +330,7 @@ public sealed record ArmourDeckReport(string Deck, double ThicknessMm, string Ex
 
 /// <summary>One hitbox component. Kind says which it is and so which of the optional fields it has: a gun or torpedo
 /// mount, barbette, superstructure block, conning tower, funnel, uptake, casing, deck, sponson, AA mount, mast, hangar
-/// bay, shaft, shaft alley, propeller or rudder.</summary>
+/// bay, shaft, shaft alley, propeller, rudder or submerged torpedo tube.</summary>
 public sealed class Component
 {
     public required string Id { get; init; }
@@ -389,6 +389,8 @@ public sealed class Component
     public double? DiameterM { get; init; }
     public double? AreaM2 { get; init; }
     public string? Steering { get; init; }
+    /// <summary>A submerged torpedo tube's room.</summary>
+    public string? Room { get; init; }
     public long? BattleCrew { get; set; }
 }
 
@@ -512,6 +514,8 @@ public sealed record Room
     public double? Tonnes { get; set; }
     public string? Mount { get; init; }
     public List<string>? Mounts { get; init; }
+    /// <summary>A torpedo room's submerged tubes.</summary>
+    public List<string>? Tubes { get; init; }
     public bool? Shared { get; set; }
     public long? Crew { get; set; }
     public long? BattleCrew { get; set; }

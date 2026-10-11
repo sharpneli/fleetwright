@@ -199,6 +199,7 @@ public static class Hitbox
                 Base = Math.Round(c.Base!.Value, 2), Top = Math.Round(c.Top!.Value, 2),
             });
         comps.AddRange(PropulsionComponents(inner.Propulsion, D));
+        comps.AddRange(SubmergedTubes.Components(inner.Tubes));
         foreach (var x in comps)
             if (inner.BattleCrew.TryGetValue((x.Kind, x.Id), out var bc) && bc != 0)
                 x.BattleCrew = bc;

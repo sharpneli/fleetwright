@@ -133,6 +133,9 @@ public static class Crew
             var cfg = Geometry.AaCfg[a.Type];
             guns += GunCrew(cfg.CalibreMm, cfg.Barrels);
         }
+        foreach (var c in lay.Compartments)
+            if (c.Kind == "torpedo_room")
+                torps += SubmergedTubes.Crew(c.Tubes?.Count ?? 0);
         var deps = new OrderedDictionary<string, long>(StringComparer.Ordinal)
         {
             ["engineering"] = res.PlantRated.Crew, ["weapons"] = (long)Math.Round(guns + torps),
@@ -334,8 +337,16 @@ public static class Crew
             var cfg = Geometry.AaCfg[a.Type];
             need.Add((("aa", a.Id), GunCrew(cfg.CalibreMm, cfg.Barrels)));
         }
+        foreach (var c in lay.Compartments)
+            if (c.Kind == "torpedo_room")
+                need.Add((("torpedo_room", c.Id), SubmergedTubes.Crew(c.Tubes?.Count ?? 0)));
         foreach (var ((kind, k), men) in Spread(Dep("weapons"), need))
         {
+            if (kind == "torpedo_room")
+            {
+                Put(onRoom, [(k, men)], "torpedoes");
+                continue;
+            }
             long below = kind != "aa" && barbettes.Contains(k) ? (long)Math.Round(Handling * men) : 0;
             Put(onComp, [((kind, k), men - below)], kind == "aa" ? "aa" : kind == "torpedo" ? "torpedoes" : "guns");
             Put(onComp, [(("barbette", $"{k} barbette"), below)], "handling");

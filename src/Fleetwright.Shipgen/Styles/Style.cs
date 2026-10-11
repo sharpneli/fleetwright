@@ -47,6 +47,8 @@ public abstract class Style
             Lim(1, 20, "secondary", "barrels"), Lim(0, 100, "secondary", "per_side"), Lim(0, 200, "secondary", "count"),
             Lim(0, 1000, "main", "rounds_per_gun"), Lim(0, 1000, "secondary", "rounds_per_gun"),
             Lim(0, 40, "torpedoes", "mounts"), Lim(1, 20, "torpedoes", "tubes"),
+            Lim(0, 10, "torpedoes", "submerged", "per_side"), Lim(0, 4, "torpedoes", "submerged", "bow"),
+            Lim(0, 4, "torpedoes", "submerged", "stern"), Lim(1, 20, "torpedoes", "submerged", "torpedoes_per_tube"),
             Lim(0, 500, "aa", "heavy"), Lim(0, 500, "aa", "light"),
             Lim(0, 2000, "armour", "belt_mm"),
             Lim(0, 20, "armour", "tds_m"), Lim(0, 2000, "armour", "bulkhead_mm"),

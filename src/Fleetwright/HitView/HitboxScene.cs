@@ -32,7 +32,7 @@ public sealed unsafe class HitboxScene : IScene
     static readonly string[] Rooms =
     [
         "boiler_room", "engine_room", "bunker", "magazine", "accommodation", "steering", "hold", "cargo_tank", "fuel_tank",
-        "stores", "double_bottom", "tds",
+        "stores", "double_bottom", "tds", "torpedo_room",
     ];
     static readonly string[] Armour = ["belt", "strake", "armour_deck", "armoured_bulkhead"];
     static readonly string[] Guides = ["waterline", "hull_lines"];
@@ -43,7 +43,7 @@ public sealed unsafe class HitboxScene : IScene
         ("all", _ => true),
         ("outside", k => k is not ("armour_deck" or "hull_lines")),   // hitview's outside views
         ("internal", k => Rooms.Contains(k) || Armour.Contains(k) || Guides.Contains(k)
-                          || k is "barbette" or "uptake" or "casing" || HitKinds.Propulsion.Contains(k)),
+                          || k is "barbette" or "uptake" or "casing" or "torpedo_tube" || HitKinds.Propulsion.Contains(k)),
         ("rooms", k => Rooms.Contains(k) || Guides.Contains(k)),
         ("armour", k => Armour.Contains(k) || Guides.Contains(k) || k is "barbette" or "conning_tower" or "main" or "secondary"),
     ];

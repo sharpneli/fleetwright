@@ -103,7 +103,10 @@ public static class ShipDesign
         var style = Styles.Get(design);
         var lay = style.BuildLayout(design, r, shift, midExtra, plan);
         if (!plan)
+        {
+            SubmergedTubes.Plan(lay, design, r);
             Crew.Apply(lay, design, r, style);
+        }
         return lay;
     }
 
@@ -382,7 +385,15 @@ public static class ShipDesign
 
     /// <summary>What the solved, laid-out ship is inside, beyond the layout.</summary>
     public sealed record Interior(ArmourLayout Armour, HullForm Form, SubdivisionData Subdivision, HullPlates Plating, List<string> Planked,
-        Hydrostatics Hydrostatics, Train Propulsion, Dictionary<(string Kind, string Id), long> BattleCrew);
+        Hydrostatics Hydrostatics, Train Propulsion, List<TubeRun> Tubes, Dictionary<(string Kind, string Id), long> BattleCrew);
+
+    /// <summary>The laid-out ship's hull form, for the interior (and the layout steps that need its sections).</summary>
+    public static HullForm FormOf(Layout lay, Design design, Navarch.Result r, Gear gear)
+    {
+        double cb = design.BlockCoefficient;
+        return new HullForm(lay.Hull, cb, Geometry.Cwp(cb), r.Draught, r.Depth, Navarch.Froude(design.SpeedKn!.Value, lay.Hull.L), gear,
+            r.Lcb, lay.Topside);
+    }
 
     static Interior InteriorOf(Layout lay, Design design, Navarch.Result r)
     {
@@ -390,15 +401,15 @@ public static class ShipDesign
         var ag = r.Armour;
         double cb = design.BlockCoefficient;
         var gear = Propulsion.Gear(lay, design, r);
-        var form = new HullForm(lay.Hull, cb, Geometry.Cwp(cb), T, D, Navarch.Froude(design.SpeedKn!.Value, lay.Hull.L), gear, r.Lcb,
-            lay.Topside);
+        var form = FormOf(lay, design, r, gear);
         var sub = Subdivision.Build(lay, design, r, ag, ag.Armoured, form);
         var plating = HullPlating(lay, design, r);
         var planked = Subdivision.DeckPlates(sub, plating, design, lay);
         var hydro = Stability.Hydrostatics(form, r);
         var train = Propulsion.Build(lay, design, r, form, gear);
         Propulsion.Link(train, sub, D);
-        return new Interior(ag, form, sub, plating, planked, hydro, train, Crew.AssignBattleCrew(lay, sub));
+        var tubes = SubmergedTubes.Build(lay, form, D, sub);
+        return new Interior(ag, form, sub, plating, planked, hydro, train, tubes, Crew.AssignBattleCrew(lay, sub));
     }
 
     const double BridgeEye = 1.7;

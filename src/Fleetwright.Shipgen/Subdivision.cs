@@ -4,17 +4,18 @@ namespace Fleetwright.Shipgen;
 public static class Subdivision
 {
     const double MinSection = 0.03, MinSectionM = 1.0, MinSectionMaxM = 8.0, MaxSection = 0.07, MaxSectionM = 2.5;
-    const double Collision = 0.05, SteelFrame = 0.92;
+    public const double Collision = 0.05;
+    const double SteelFrame = 0.92;
     const int ZSamples = 6;
     const double SliverM3 = 1.0, SliverFrac = 0.05;
     static readonly Dictionary<string, int> RoomPriority = new()
     {
-        ["magazine"] = 9, ["steering"] = 6, ["boiler_room"] = 7, ["engine_room"] = 7, ["fuel_tank"] = 7, ["bunker"] = 6,
+        ["magazine"] = 9, ["torpedo_room"] = 8, ["steering"] = 6, ["boiler_room"] = 7, ["engine_room"] = 7, ["fuel_tank"] = 7, ["bunker"] = 6,
         ["cargo_tank"] = 5, ["hold"] = 5, ["accommodation"] = 2,
     };
     static readonly Dictionary<string, double> Permeability = new()
     {
-        ["magazine"] = 0.6, ["steering"] = 0.85, ["boiler_room"] = 0.85, ["engine_room"] = 0.85, ["fuel_tank"] = 0.95,
+        ["magazine"] = 0.6, ["torpedo_room"] = 0.85, ["steering"] = 0.85, ["boiler_room"] = 0.85, ["engine_room"] = 0.85, ["fuel_tank"] = 0.95,
         ["bunker"] = 0.95, ["cargo_tank"] = 0.95, ["hold"] = 0.6, ["accommodation"] = 0.95, ["stores"] = 0.6,
         ["double_bottom"] = 0.95, ["tds"] = 0.95,
     };
@@ -456,7 +457,8 @@ public static class Subdivision
         var byId = cells.ToDictionary(c => c.Id, StringComparer.Ordinal);
         var roomOut = new OrderedDictionary<string, Room>(StringComparer.Ordinal);
         foreach (var r in rooms)
-            roomOut[r.Id] = new Room { Id = r.Id, Kind = r.Kind, Fuel = r.Src.Fuel, Tonnes = r.Src.Tonnes, Mount = r.Src.Mount, Mounts = r.Src.Mounts };
+            roomOut[r.Id] = new Room { Id = r.Id, Kind = r.Kind, Fuel = r.Src.Fuel, Tonnes = r.Src.Tonnes, Mount = r.Src.Mount, Mounts = r.Src.Mounts,
+                Tubes = r.Src.Tubes };
         foreach (var (cid, rid) in owner)
             roomOut[rid].Cells.Add(cid);
         foreach (var r in rooms)

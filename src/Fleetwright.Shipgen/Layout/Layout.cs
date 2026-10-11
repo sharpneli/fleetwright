@@ -173,6 +173,8 @@ public sealed partial class Layout
     public List<Funnel> Funnels = [];
     public List<AaMount> Aa = [];
     public List<Mast> Masts = [];
+    /// <summary>The submerged torpedo tubes (SubmergedTubes.Plan).</summary>
+    public List<SubmergedTube> Tubes = [];
     public double FunTop;
 
     sealed class ScanKeyComparer : IEqualityComparer<(List<Pt> Poly, double Y)>
