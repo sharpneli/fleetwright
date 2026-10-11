@@ -50,7 +50,10 @@ public sealed record ShipCard(string Name, string Subtitle, (string Value, strin
         string aa = string.Join(" · ", hb.Components.Where(c => c.Kind == "aa").GroupBy(c => Geometry.AaCfg[c.Type!].CalibreMm)
             .OrderByDescending(g => g.Key).Select(g => $"{g.Sum(c => Geometry.AaCfg[c.Type!].Barrels)} × {Fmt(g.Key, Quantity.Calibre, u)}"));
         var tubes = hb.Components.Where(c => c.Kind == "torpedo").ToList();
-        string torpedoes = tubes.Count == 0 ? "" : $"{tubes.Sum(c => c.Torpedoes ?? 0)} × {Fmt(tubes[0].CalibreMm ?? 533, Quantity.Calibre, u)} tubes";
+        int submerged = hb.Components.Count(c => c.Kind == "torpedo_tube");
+        long allTubes = tubes.Sum(c => c.Torpedoes ?? 0) + submerged;
+        string torpedoes = allTubes == 0 ? "" : $"{allTubes} × {Fmt(SubmergedTubes.CalibreMm, Quantity.Calibre, u)} tubes" +
+            (submerged == 0 ? "" : submerged == allTubes ? ", submerged" : $", {submerged} submerged");
         double belt = hb.Armour.Belt?.ThicknessMm ?? 0, deck = (hb.Armour.Decks ?? []).Select(dk => dk.ThicknessMm).DefaultIfEmpty(0).Max();
         long aircraft = res.AircraftCapacity ?? 0;
         double speed = d.SpeedKn ?? 0;

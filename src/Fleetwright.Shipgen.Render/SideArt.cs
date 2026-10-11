@@ -174,6 +174,8 @@ public static class SideArt
         }
         side.Items.Add(new PathNode(Rect(x0, x1, v.Keel - 1, wl)).Fill(P.C("bottom")));
         side.Items.Add(new PathNode(Rect(x0, x1, wl - band / 2, wl + band)).Fill(P.C("boot_top")));
+        if (!c.Silhouette)
+            TubePorts(side.Items, P, v);
         o.Add(side);
         Scuttles(o, c);
         Anchor(o, c);
@@ -182,6 +184,19 @@ public static class SideArt
         o.Add(Rim(P, d, hull));
         if (!c.Silhouette)
             Rails(o, c);
+    }
+
+    /// <summary>The submerged tubes' muzzle doors: a round plate flush in the bottom paint, a shade darker, with its
+    /// rim; a bow or stern door, facing along the ship, a narrow upright oval at the stem or stern.</summary>
+    static void TubePorts(List<Node> o, Painter P, SideView v)
+    {
+        string bottom = P.C("bottom");
+        foreach (var t in v.TubePorts)
+        {
+            double rx = t.Beam ? 1.25 * t.R : 0.45 * t.R, rz = 1.25 * t.R;
+            o.Add(new EllipseNode(t.X, -t.Z, rx, rz).Fill(Painter.Shade(bottom, 0.7)));
+            o.Add(new EllipseNode(t.X, -t.Z, rx, rz).Fill("none").Stroke(Painter.Shade(bottom, 1.35), P.Sw * 0.7).StrokeOp(0.8));
+        }
     }
 
     /// <summary>The stretches of the deck line: (x0, x1, height), stern to stem.</summary>

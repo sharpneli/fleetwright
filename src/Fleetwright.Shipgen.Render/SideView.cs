@@ -43,6 +43,10 @@ public sealed class SideView
 
     public sealed record Propeller(string Id, double X, double Y, double Z, double R);
 
+    /// <summary>A submerged torpedo tube's muzzle door in the shell, seen from starboard: Beam (a round door in the
+    /// side) or a bow or stern door seen edge-on.</summary>
+    public sealed record TubePort(double X, double Z, double R, bool Beam);
+
     public required string Id;
     public required double Length;
     public required double Beam;
@@ -75,6 +79,7 @@ public sealed class SideView
     public required List<Shaft> Shafts;
     public required List<Propeller> Propellers;
     public required List<Box> Rudders;
+    public List<TubePort> TubePorts = [];
     /// <summary>The side armour (the belt and the strakes above or beyond it): its stretch and heights.</summary>
     public required List<(double X0, double X1, double Bottom, double Top)> SideArmour;
     /// <summary>What is drawn without a hitbox: boats, cranes, hatches.</summary>
@@ -212,6 +217,9 @@ public sealed class SideView
                 .Select(c => new Platform(c.Id, c.Kind, Box.Of(c.Points!, c.Base, c.Top), c.Role == "elevator")).ToList(),
             Shafts = shafts, Propellers = props,
             Rudders = comps.Where(c => c.Kind == "rudder").Select(c => Box.Of(c.Points!, c.Base, c.Top)).ToList(),
+            // the starboard beam doors, and one bow or stern door where a pair stands side by side
+            TubePorts = comps.Where(c => c.Kind == "torpedo_tube" && c.P1 is { } p && p[1] >= -0.01)
+                .Select(c => new TubePort(c.P1![0], c.P1[2], c.R ?? 0.35, c.Position == "beam")).ToList(),
             SideArmour = armour, Dressing = ship.Dressing,
         };
     }
