@@ -1194,6 +1194,12 @@ public sealed unsafe partial class DesignerScene
                 case "sectip" when p.Length == 3:
                     secForceTip = $"{p[1]}:{p[2]}";
                     break;
+                case "ovlimit":
+                    limitPick = Int(1);
+                    break;
+                case "ovtip" when p.Length == 3:   // ovtip:LEVER:-1 or +1, LEVER the trim sheet's row from 0
+                    ovForceTip = 2 * Int(1) + (Int(2) > 0 ? 1 : 0);
+                    break;
                 default:
                     Console.Error.WriteLine($"designer: no UI state '{it}'");
                     break;

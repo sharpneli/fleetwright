@@ -295,7 +295,7 @@ public sealed unsafe partial class DesignerScene : IScene
     /// changes nothing allocates nothing.</summary>
     sealed class Snapshot
     {
-        public required string Title, TypeLabel, File, Status, Std, StdDelta, Settling, Style;
+        public required string Title, TypeLabel, File, Status, Std, Settling, Style;
         public required string[] Summaries;
         public required (string Label, string Value)[] Particulars;
         /// <summary>The resource bar's figures.</summary>
@@ -304,7 +304,6 @@ public sealed unsafe partial class DesignerScene : IScene
         public required string FullT, RemarkCount;
         public required OutlineRow[] Outline;
         public required (bool Error, string Text)[] Remarks;
-        public required (string Label, string Value)[] Consequences;
         public required List<Item> Panel;
         /// <summary>The templates the design is built from (the left column's lower panel).</summary>
         public required PickRow[] Templates;
@@ -315,6 +314,8 @@ public sealed unsafe partial class DesignerScene : IScene
         public required MainPane? Main;
         /// <summary>The Secondary · AA · TT tab (built only while it's open).</summary>
         public required SecPane? Sec;
+        /// <summary>The Overview tab (built only while it's open).</summary>
+        public required OvPane? Ov;
     }
 
     /// <summary>A gun mount on the plan: where it is, its tag, its arcs of fire (degrees clockwise from dead ahead, the
@@ -368,13 +369,8 @@ public sealed unsafe partial class DesignerScene : IScene
         var d = doc.Current;
         var ship = shown?.Ship;
         var res = ship?.Report.Results;
-        var bres = baselineShip?.Report.Results;
 
         string std = res != null ? N0(res.StandardDisplacementT) + " t" : "–";
-        string stdDelta = res != null && bres != null
-            ? $"since opened: {Signed(res.StandardDisplacementT - bres.StandardDisplacementT, "N0")} t · {Signed(res.LengthM - bres.LengthM, "F1")} m"
-            : "";
-
         var mains = d.Main ?? [];
         var secs = d.Secondary ?? [];
         string Guns(IEnumerable<BatteryInput> bs, bool main) => string.Join(" · ", bs.Where(b => (main ? b.Turrets : b.MountCount) > 0).Select(b =>
@@ -446,17 +442,9 @@ public sealed unsafe partial class DesignerScene : IScene
         if (ship != null)
             foreach (var w in ship.Report.Warnings)
                 remarks.Add((false, w));
-
-        var cons = new List<(string, string)>();
-        if (res != null)
-        {
-            cons.Add(("Full load", N0(res.FullDisplacementT) + " t"));
-            cons.Add(("Length", Fmt(res.LengthM, Quantity.Length, 0.1)));
-            cons.Add(("Beam", Fmt(res.BeamM, Quantity.Length, 0.1)));
-            cons.Add(("GM", $"{res.GmFullM:0.00} m"));
-            cons.Add(("Power", N0(res.PowerShp) + " shp"));
-            cons.Add(("Complement", N0(res.Crew)));
-        }
+        if (ship != null)
+            foreach (var w in LimitRemarks(d, ship))
+                remarks.Add((false, w));
 
         string file = doc.SourcePath != null ? Path.GetFileName(doc.SourcePath) + (doc.Dirty ? " *" : "") : doc.Dirty ? "unsaved" : "";
         string status = latest != null ? latest.Ship != null ? $"built in {latest.BuildS * 1000 + latest.MeshS * 1000 + latest.DrawS * 1000 + latest.BakeS * 1000:F0} ms"
@@ -472,7 +460,6 @@ public sealed unsafe partial class DesignerScene : IScene
             Status = status,
             Settling = "settling…",
             Std = std,
-            StdDelta = stdDelta,
             Summaries = summaries,
             Particulars = part.ToArray(),
             Stats = stats.ToArray(),
@@ -482,12 +469,12 @@ public sealed unsafe partial class DesignerScene : IScene
             Outline = Outline(ship, summaries),
             Templates = [PlantPick(d, ship), HullPick(d, ship), CrewPick(d, ship), ArmourPick(d)],
             Remarks = remarks.ToArray(),
-            Consequences = cons.ToArray(),
             Panel = PanelItems(d, ship),
             HistoryLabels = doc.History.Select(h => h.Label).ToArray(),
             Over = over,
             Main = section == 1 ? MainPaneOf(d, ship, over) : null,
             Sec = section == 2 ? SecPaneOf(d, ship, over) : null,
+            Ov = section == 0 ? OvPaneOf(d, ship) : null,
         };
     }
 
@@ -573,16 +560,7 @@ public sealed unsafe partial class DesignerScene : IScene
         switch (section)
         {
             case 0:
-                items.Add(new Header("Trim sheet · main parameters"));
-                foreach (var k in Knobs.TrimSheet)
-                    Num(k, k.Id switch
-                    {
-                        "main0_armour" => "Main turret faces",
-                        "main0_rounds" => "Main rounds per gun",
-                        "sec0_per_side" => "Secondaries per side",
-                        _ => null,
-                    });
-                break;
+                break;   // its own pane (DesignerScene.Overview.cs)
             case 1:   // its own pane (DesignerScene.MainBattery.cs)
                 break;
             case 2:   // its own pane (DesignerScene.Secondary.cs)
@@ -849,15 +827,17 @@ public sealed unsafe partial class DesignerScene : IScene
     }
 
     /// <summary>Steps a number knob <paramref name="steps"/> steps along the displayed units' grid.</summary>
-    void Step(NumRow r, int steps)
+    void Step(NumRow r, int steps) => SetValue(r.Knob, StepTarget(r.Knob, r.Num, steps));
+
+    /// <summary>Where <paramref name="steps"/> steps from <paramref name="value"/> land on the displayed units' grid (the
+    /// overview's probes ask the same, so a probe is exactly the step its click takes).</summary>
+    double StepTarget(NumberKnob k, double? value, int steps)
     {
-        var k = r.Knob;
         double step = k.Step(units);
-        double v = r.Num ?? k.Range(doc.Current).Lo;
+        double v = value ?? k.Range(doc.Current).Lo;
         // off the grid (a design's own 305 mm, say), the first step goes to the next grid line that way, not past it
         double on = steps > 0 ? Math.Floor(v / step + 1e-9) : Math.Ceiling(v / step - 1e-9);
-        double next = (on + steps) * step;
-        SetValue(k, next);
+        return (on + steps) * step;
     }
 
     void SetValue(NumberKnob k, double? value)
@@ -909,6 +889,7 @@ public sealed unsafe partial class DesignerScene : IScene
 
     public void Dispose()
     {
+        probes.Dispose();
         if (ownsWorker)
             worker.Dispose();
         SDL_WaitForGPUIdle(device);

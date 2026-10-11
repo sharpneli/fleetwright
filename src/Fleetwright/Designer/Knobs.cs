@@ -1090,6 +1090,7 @@ public static class Knobs
             SteeringRoof, SteeringEnds, FlightDeckArmour, Funnels, Transmission, UnitsPerShaft, CentrelineBulkhead, Bunkers,
             WingBunker, Rudders, SearchRadar, BufferDays, WaterRation, BerthRatio, OfficerFraction,
             HullMaterial, SuperstructureMaterial, UpperBeltMaterial, SteeringMaterial, SteeringRoofMaterial,
+            MainFaces, MainCalibres, MainRoundsAll, EndBelts,
         ];
         foreach (var k in fixedKnobs)
             yield return k;
@@ -1149,9 +1150,102 @@ public static class Knobs
         }
     }
 
-    /// <summary>The overview's trim sheet: the continuous levers that change weight (research §15.7).</summary>
-    public static readonly NumberKnob[] TrimSheet =
-    [
-        Speed, Range, Belt, ArmourDeck, MainArmour(0), MainRounds(0), SecPerSide(0),
-    ];
+    // ------------------------------------------------------------------ the overview's broad strokes
+
+    /// <summary>A knob over every main battery at once: it shows the first battery's value, and a new value moves each
+    /// battery by the same amount (a design with 305 and 234 mm guns steps both by 10 mm).</summary>
+    static NumberKnob AllMain(string id, string label, Quantity q, double stepMetric, double stepImperial, Func<BatteryInput, double?> get,
+        Func<BatteryInput, double?, BatteryInput> set, string[] limit, Func<Design, Ship?, double?>? auto = null) =>
+        new(id, label, q, stepMetric, stepImperial)
+        {
+            Get = d => d.Main is { Count: > 0 } m ? get(m[0]) : null,
+            Set = (d, v) =>
+            {
+                if (d.Main is not { Count: > 0 } m)
+                    return d;
+                if (v is not { } x)
+                    return d with { Main = m.Select(b => set(b, null)).ToList() };
+                double first = get(m[0]) ?? auto?.Invoke(d, null) ?? x;
+                return d with { Main = m.Select((b, i) => set(b, Math.Max(0, Math.Round((i == 0 ? x : (get(b) ?? first) + x - first), 3)))).ToList() };
+            },
+            Auto = auto,
+            LimitPath = limit,
+            Applies = HasMain,
+        };
+
+    public static readonly NumberKnob MainFaces = AllMain("main_faces", "Turret faces", Quantity.Armour, 10, 0.5,
+        b => b.ArmourMm, (b, v) => b with { ArmourMm = v }, ["main", "armour_mm"], (d, s) => 0);
+
+    public static readonly NumberKnob MainCalibres = AllMain("main_calibres", "Main calibre", Quantity.Calibre, 10, 0.5,
+        b => b.CalibreMm, (b, v) => b with { CalibreMm = v }, ["main", "calibre_mm"]);
+
+    public static readonly NumberKnob MainRoundsAll = AllMain("main_rounds", "Main rounds per gun", Quantity.Count, 10, 10,
+        b => b.RoundsPerGun, (b, v) => b with { RoundsPerGun = v }, ["main", "rounds_per_gun"],
+        (d, s) => d.Main is { Count: > 0 } m && m[0].CalibreMm is { } c ? Math.Round(Batteries.RoundsPerGun(c)) : null);
+
+    /// <summary>Both end belts at once: shows their mean, and a new value moves each (and its tip, when set) by the same
+    /// amount. Only for a design that has end belts: adding them is the Protection tab's.</summary>
+    public static readonly NumberKnob EndBelts = new("end_belts", "End belts, both", Quantity.Armour, 10, 0.5)
+    {
+        Get = d => EndBeltMean(d),
+        Set = (d, v) =>
+        {
+            if (v is not { } x || EndBeltMean(d) is not { } mean)
+                return d;
+            double dv = x - mean;
+            foreach (var end in new[] { "fore", "aft" })
+                if (d.Armour?.EndBelts?.Of(end) is { Mm: > 0 })
+                    d = EndBelt(d, end, b => b with
+                    {
+                        Mm = Math.Max(0, Math.Round(b.Mm!.Value + dv, 3)),
+                        TipMm = b.TipMm is { } t ? Math.Max(0, Math.Round(t + dv, 3)) : null,
+                    });
+            return d;
+        },
+        Applies = d => EndBeltMean(d) != null,
+        Hi = 2000,
+    };
+
+    static double? EndBeltMean(Design d)
+    {
+        double sum = 0;
+        int n = 0;
+        foreach (var end in new[] { "fore", "aft" })
+            if (d.Armour?.EndBelts?.Of(end) is { Mm: > 0 } b)
+            {
+                sum += b.Mm!.Value;
+                n++;
+            }
+        return n > 0 ? Math.Round(sum / n, 3) : null;
+    }
+
+    /// <summary>Every armour thickness the design gives, times <paramref name="f"/> to the nearest mm: belt (and its lower
+    /// edge), upper belt, end belts (and tips and bulkheads), citadel bulkheads, decks, flight deck, the steering gear box
+    /// and the main turret faces (the barbettes follow the faces). Thicknesses the design leaves to the engine stay so.</summary>
+    public static Design ScaleArmour(Design d, double f)
+    {
+        static double? M(double? mm, double f) => mm is { } x ? Math.Round(x * f) : null;
+        if (d.Armour is { } a)
+            d = d with
+            {
+                Armour = a with
+                {
+                    BeltMm = M(a.BeltMm, f),
+                    BeltBottomMm = M(a.BeltBottomMm, f),
+                    BulkheadMm = M(a.BulkheadMm, f),
+                    FlightDeckMm = M(a.FlightDeckMm, f),
+                    Decks = a.Decks?.Select(x => x with { Mm = M(x.Mm, f) }).ToList(),
+                    UpperBelt = a.UpperBelt is { } u ? u with { Mm = M(u.Mm, f) } : null,
+                    EndBelts = a.EndBelts is { } eb ? eb with
+                    {
+                        Fore = eb.Fore is { } fo ? fo with { Mm = M(fo.Mm, f), TipMm = M(fo.TipMm, f), BulkheadMm = M(fo.BulkheadMm, f) } : null,
+                        Aft = eb.Aft is { } af ? af with { Mm = M(af.Mm, f), TipMm = M(af.TipMm, f), BulkheadMm = M(af.BulkheadMm, f) } : null,
+                    } : null,
+                    SteeringBox = a.SteeringBox is { } sb ? sb with { Mm = M(sb.Mm, f), DeckMm = M(sb.DeckMm, f), BulkheadMm = M(sb.BulkheadMm, f) } : null,
+                },
+            };
+        if (d.Main is { Count: > 0 } m)
+            d = d with { Main = m.Select(b => b with { ArmourMm = M(b.ArmourMm, f) }).ToList() };
+        return d;
+    }
 }

@@ -147,7 +147,7 @@ loads the other examples.
 | `png/secondary-game-kongo-lane.png` | in the game: Kongō, hovering the upper-casemate `+` with SB selected |
 | `png/secondary-game-deutschland.png` | in the game: Deutschland, S2 selected, rose with the main battery |
 
-## Overview tab (`overview.html`, 2026-10-11)
+## Overview tab (`overview.html`, 2026-10-11; in the game since the same day)
 
 This mockup covers the Overview tab's pane only (1280 × 578). It is a trim sheet for getting a ship under a limit with
 broad strokes:
@@ -172,6 +172,9 @@ The reasoning, the engine finding (the lumpy tonnage), the port plan and the ope
 | `png/overview-preset-menu.png` | the limit presets |
 | `png/overview-dreadnought-dock.png` | Dreadnought against a 600 × 90 ft dock: length and beam over |
 | `png/overview-cruiser-london.png` | Heavy Cruiser against London 1930, with speed and calibre locked |
+| `png/overview-game-bismarck.png` | in the game: Bismarck against Washington 1922, the armour deck's ⚠ tooltip |
+| `png/overview-game-dreadnought.png` | in the game: Dreadnought within Slipway No. 1 |
+| `png/overview-game-cruiser.png` | in the game: Heavy Cruiser against London 1930 |
 
 ## Screenshots (`png/`)
 

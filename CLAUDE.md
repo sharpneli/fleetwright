@@ -37,7 +37,11 @@ clickable turret arrangement (`+` slots add, the step between turrets toggles su
 move and split), guns bearing by bearing, and presets. The Secondary · AA · TT tab is too
 (`docs/designer-ui/secondary.md`): a battery table whose position (deckhouse, deck, upper or lower casemate) is one
 click, the broadside strip (a half-plan over one schematic track per position, a + at each track's head), the
-secondaries' guns bearing, and AA, torpedo and selected-battery panels. `-steps=` applies knob steps at startup (knob ids from `Knobs`: `speed:-2`, `topside:tumblehome`,
+secondaries' guns bearing, and AA, torpedo and selected-battery panels. The Overview tab (`docs/designer-ui/overview.md`) is a trim sheet of
+18 broad-stroke levers, each with what one step down and up does to the standard displacement, measured by real builds
+in the background (`DesignProbes`: validate and build only, on several threads, a newer batch supersedes); limits
+(mocked in `DesignLimits` until the gameplay layer hands them in) only report, never refuse; Fit is greyed out until the
+autodesigner. `-steps=` applies knob steps at startup (knob ids from `Knobs`: `speed:-2`, `topside:tumblehome`,
 `distiller:off`), for screenshots of edited states in any view. Saves go to Documents/My Games/Fleetwright/Designs.
 The game uses the designer's other constructor: a design in, the edited one out through a callback, with a worker of
 its own.

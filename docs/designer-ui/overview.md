@@ -1,5 +1,42 @@
 # Overview tab (mockup, 2026-10-11)
 
+**Status:** this design is now the Overview tab, built in `Designer/DesignerScene.Overview.cs`, with the probes in
+`DesignProbes.cs`, the mocked limits in `Designer/DesignLimits.cs` and the new levers in `Knobs` (`MainFaces`,
+`MainCalibres`, `MainRoundsAll`, `EndBelts`, `ScaleArmour`). Tests: `tests/Fleetwright.Tests/OverviewTests.cs`.
+
+Review decisions (2026-10-11):
+
+- **The one-step columns stay.** They're a forecast of the next click, so they're allowed under the no-deltas rule.
+- **Probes are real builds.** Each one is the same validation and `ShipDesign.Build` as any build, minus the visual
+  steps (mesh, sprites). The physics doesn't know it's a probe. They run on up to eight background threads (cores − 2),
+  only while the Overview is open. An edit starts a new batch, and the old one stops handing out work.
+- **Limits come from the gameplay layer** and are never saved in the design. They only report: a design over a limit
+  still builds, saves and can be accepted. Until gameplay exists, `DesignLimits.Mock` has: no limits, two slipways, and
+  Washington 1922, London 1930 and London 1936 (with their gun calibre limits).
+- **Fit is greyed out**, a placeholder for the autodesigner. That will be one autodesigner for the AI and the player,
+  and it's a separate, bigger piece of work.
+- **Lumpy tonnage stays.** The UI follows the physics; a hard case is hard for the player too.
+
+The game differs from the mockup in these ways:
+
+- **No locks** (◆). They only mattered to Fit.
+- **The limits can't be typed in.** You pick one from the list, and it shows; the gameplay layer will set it.
+- **The limits table adds Main calibre** (the treaties' gun limit), and an over-limit figure adds a remark.
+- **A probe is exactly the click:** the probe for a step is built from the same target `Step` computes. So an
+  off-grid value steps to the grid first (upper belt 145 → 140 mm), and the figure is what that step really does.
+  Verified: −42 t probed, 39,763 → 39,721 t clicked.
+- **A cell still building (`…`) takes its step too.** The step doesn't wait on the probe.
+- **The ⚠ is a drawn triangle**, because the UI fonts are Latin subsets. Reset is a small `reset` button.
+- **The all-armour scale** reads 100 % at the start of each run of steps. Every step scales the armour as it was when
+  the run began, so rounding never compounds. Any other edit ends the run.
+- **Dev hook:** `-designer-ui=ovlimit:N` picks limit N from the list, and `ovtip:LEVER:±1` draws that cell's tooltip
+  (LEVER is the trim sheet row, counting from 0).
+
+Game screenshots: `png/overview-game-bismarck.png` (against Washington, with the armour deck ⚠ tooltip),
+`png/overview-game-dreadnought.png` (within Slipway No. 1), `png/overview-game-cruiser.png` (against London 1930).
+
+The rest of this note is the mockup's reasoning.
+
 Mockup: `overview.html`. Open it in a browser; it is interactive and works offline. Like the main battery and secondary
 mockups it shows **only the tab's pane** (1280 × 578, its size at 1920 × 1080). URL options: `?ship=bismarck` (the
 default, against Washington 1922), `dreadnought` (against a 600 × 90 ft dock) or `heavy_cruiser` (against London 1930).

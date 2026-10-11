@@ -40,6 +40,7 @@ public sealed unsafe partial class DesignerScene
     public void BuildUi()
     {
         Sync();
+        PollProbes();
         if (snap == null || stale)
         {
             snap = Build();
@@ -685,13 +686,8 @@ public sealed unsafe partial class DesignerScene
         ImGui.SetCursorPos(new Vector2(pos.X + 1, detailY + 1));
         var inner = detail - new Vector2(2, 2);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(P(6), 0));
-        if (section == 0)
-        {
-            float sheetW = MathF.Round(Math.Min(P(620), inner.X * 0.55f));
-            Flow("##sheet", new Vector2(sheetW, inner.Y), s.Panel, columns: 1);
-            ImGui.SetCursorPos(new Vector2(pos.X + 1 + sheetW, detailY + 1));
-            Standard(new Vector2(inner.X - sheetW, inner.Y));
-        }
+        if (section == 0 && s.Ov != null)
+            OverviewPane(inner);
         else if (section == 1 && s.Main != null)
             MainBatteryPane(inner);
         else if (section == 2 && s.Sec != null)
@@ -924,38 +920,6 @@ public sealed unsafe partial class DesignerScene
         if (!scaleTexts.TryGetValue((len, unit), out var t))
             scaleTexts[(len, unit)] = t = $"{len:0} {unit}";
         return t;
-    }
-
-    /// <summary>The Overview's right half: the standard displacement and what follows from it.</summary>
-    void Standard(Vector2 size)
-    {
-        var s = snap!;
-        ImGui.BeginChild("##standard", size);
-        var dl = ImGui.GetWindowDrawList();
-        float w = size.X;
-        SubHeader(dl, w, "STANDARD DISPLACEMENT", null);
-        ImGui.SetCursorPos(new Vector2(P(10), ImGui.GetCursorPosY() + P(4)));
-        ImGui.PushFont(UiFonts.MonoBig);
-        ImGui.TextColored(worker.Busy ? T.Muted : T.Bright, s.Std);
-        ImGui.PopFont();
-        ImGui.SetCursorPosX(P(10));
-        ImGui.PushFont(UiFonts.SansSmall);
-        ImGui.TextColored(T.Muted, s.StdDelta);
-        ImGui.PopFont();
-        ImGui.Dummy(V(0, 4));
-        SubHeader(dl, w, "CONSEQUENCES", null);
-        for (int i = 0; i < s.Consequences.Length; i++)
-        {
-            var (label, value) = s.Consequences[i];
-            var p = ImGui.GetCursorScreenPos();
-            RowBg(dl, p, w, i);
-            float ty = (RowH - UiFonts.Sans.FontSize) / 2;
-            Text(dl, UiFonts.Sans, p + new Vector2(P(10), ty), T.Muted, label);
-            Text(dl, UiFonts.Mono, p + new Vector2(w * 0.45f, (RowH - UiFonts.Mono.FontSize) / 2), T.Bright, value);
-            ImGui.Dummy(new Vector2(w, RowH));
-            ImGui.SetCursorScreenPos(p + new Vector2(0, RowH));
-        }
-        ImGui.EndChild();
     }
 
     /// <summary>A table's header strip across the current window: muted caps, an optional note at the right.</summary>
