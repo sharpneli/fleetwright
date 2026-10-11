@@ -27,7 +27,8 @@ public sealed unsafe partial class DesignerScene
         ("HULL & CREW", 5, ["hull", "superstructure", "misc"]),
     ];
 
-    static readonly Lever[] Levers =
+    /// <summary>The levers; the armour deck row stands for each of the design's armour decks (<see cref="LeversOf"/>).</summary>
+    static readonly Lever[] BaseLevers =
     [
         new(0, "Speed", "power, machinery, fuel; the hull lengthens for speed", Knobs.Speed),
         new(0, "Range", "fuel, bunkers", Knobs.Range),
@@ -49,6 +50,53 @@ public sealed unsafe partial class DesignerScene
         new(3, "Stores for", "provisions, fresh water", Knobs.Endurance),
     ];
 
+    /// <summary>The levers for <paramref name="d"/>: one row per armour deck, highest first (the main deck is often a
+    /// thin capping deck over a thicker one below), in place of the single armour deck row. The same array comes back
+    /// while the decks stay the same, so the snapshot and the probes can tell they agree.</summary>
+    Lever[] LeversOf(Design d)
+    {
+        var decks = d.Armour?.Decks ?? [];
+        string sig = string.Join("|", decks.Select(x => $"{x.Deck}:{x.Extent}"));
+        if (sig == leversSig && (decks.Count > 0 || ReferenceEquals(leversCache, BaseLevers)))
+            return leversCache;
+        var list = new List<Lever>();
+        foreach (var lv in BaseLevers)
+        {
+            if (lv.Knob != Knobs.ArmourDeck || decks.Count == 0)
+            {
+                list.Add(lv);
+                continue;
+            }
+            foreach (int i in Enumerable.Range(0, decks.Count).OrderBy(i => decks[i].Deck ?? 1))
+            {
+                string extent = decks[i].Extent ?? "citadel";
+                string label = DeckName(decks[i].Deck ?? 1) + (extent == "citadel" ? "" : ", " + ExtentName(extent));
+                list.Add(new Lever(1, label, $"armour deck over the {ExtentName(extent)}; top weight", Knobs.DeckMm(i)));
+            }
+        }
+        (leversSig, leversCache) = (sig, list.ToArray());
+        return leversCache;
+    }
+
+    static string DeckName(int deck) => deck switch
+    {
+        < 0 => "Raised deck",
+        0 => "Main deck",
+        1 => "Second deck",
+        2 => "Third deck",
+        3 => "Fourth deck",
+        _ => $"Deck {deck}",
+    };
+
+    static string ExtentName(string extent) => extent switch
+    {
+        "full" => "full length",
+        "fore" => "fore end",
+        "aft" => "aft end",
+        "ends" => "both ends",
+        _ => extent,
+    };
+
     // ------------------------------------------------------------------ state
 
     readonly DesignProbes probes = new();
@@ -56,8 +104,11 @@ public sealed unsafe partial class DesignerScene
     ProbeKey? ovKey;   // what ovBatch was started for
     DesignProbes.Batch? ovBatch;
     int ovSeen = -1;   // ovBatch.Finished when the cells were last formatted
-    readonly string[] ovCell = new string[2 * Levers.Length];   // "−129 t", "…" or "—"
-    readonly bool[] ovLumpy = new bool[2 * Levers.Length];   // the step goes against the lever's usual sense
+    Lever[] ovBatchLevers = BaseLevers;   // the levers ovBatch probes, in its slot order
+    string[] ovCell = new string[2 * BaseLevers.Length];   // "−129 t", "…" or "—"
+    bool[] ovLumpy = new bool[2 * BaseLevers.Length];   // the step goes against the lever's usual sense
+    Lever[] leversCache = BaseLevers;
+    string leversSig = "";   // the armour decks leversCache was made for
     int? ovForceTip;   // dev hook: draw this cell's tooltip (2 × lever + 1 for the step up)
 
     int limitPick;   // DesignLimits.Mock; the gameplay layer will hand limits in
@@ -77,7 +128,7 @@ public sealed unsafe partial class DesignerScene
     /// <summary>A limits table row: the figure, ≤ or ≥, the limit (empty: none), the value now, the margin.</summary>
     sealed record LimitRow(string Label, string Op, string Limit, string Now, string Margin, bool Over, float Frac);
 
-    sealed record OvPane(OvRow[] Rows, string[] GroupT, LimitRow[] Limits, string Verdict, string VerdictNote, int VerdictKind,
+    sealed record OvPane(Lever[] Levers, OvRow[] Rows, string[] GroupT, LimitRow[] Limits, string Verdict, string VerdictNote, int VerdictKind,
         (float Frac, Vector4 Colour, string Tip)[] Bar, float LimitTick);
 
     /// <summary>Each limit the design is measured against: label, ≤ (or ≥ for GM), the limit, the value now, its
@@ -120,10 +171,11 @@ public sealed unsafe partial class DesignerScene
 
     OvPane OvPaneOf(Design d, Ship? ship)
     {
-        var rows = new OvRow[Levers.Length];
-        for (int i = 0; i < Levers.Length; i++)
+        var levers = LeversOf(d);
+        var rows = new OvRow[levers.Length];
+        for (int i = 0; i < levers.Length; i++)
         {
-            var lv = Levers[i];
+            var lv = levers[i];
             if (lv.Knob is { } k)
             {
                 var r = Row(k, d, ship, lv.Label);
@@ -196,16 +248,15 @@ public sealed unsafe partial class DesignerScene
             if (Limits.StandardT is { } lim)
                 tick = (float)(lim / max);
         }
-        return new OvPane(rows, groupT, limits.ToArray(), verdict, note, kind, bar.ToArray(), tick);
+        return new OvPane(levers, rows, groupT, limits.ToArray(), verdict, note, kind, bar.ToArray(), tick);
     }
 
     // ------------------------------------------------------------------ probes
 
-    /// <summary>The design one step of lever <paramref name="i"/> away (<paramref name="dir"/> ±1), as a click on its
+    /// <summary>The design one step of lever <paramref name="lv"/> away (<paramref name="dir"/> ±1), as a click on its
     /// arrow would make it; null when the lever doesn't apply or is at its end stop.</summary>
-    Design? LeverStep(int i, Design d, Ship? ship, int dir)
+    Design? LeverStep(Lever lv, Design d, Ship? ship, int dir)
     {
-        var lv = Levers[i];
         if (lv.Knob is not { } k)
         {
             if (d.Armour == null && d.Main is not { Count: > 0 })
@@ -240,12 +291,19 @@ public sealed unsafe partial class DesignerScene
         {
             var d = doc.Current;
             var ship = shown?.Ship;
-            var designs = new Design?[1 + 2 * Levers.Length];
+            var levers = LeversOf(d);
+            var designs = new Design?[1 + 2 * levers.Length];
             designs[0] = d;
-            for (int i = 0; i < Levers.Length; i++)
+            for (int i = 0; i < levers.Length; i++)
             {
-                designs[1 + 2 * i] = LeverStep(i, d, ship, -1);
-                designs[2 + 2 * i] = LeverStep(i, d, ship, 1);
+                designs[1 + 2 * i] = LeverStep(levers[i], d, ship, -1);
+                designs[2 + 2 * i] = LeverStep(levers[i], d, ship, 1);
+            }
+            ovBatchLevers = levers;
+            if (ovCell.Length != 2 * levers.Length)
+            {
+                ovCell = new string[2 * levers.Length];
+                ovLumpy = new bool[2 * levers.Length];
             }
             ovKey = new ProbeKey(json, units);
             ovBatch = probes.Start(ovKey, designs);
@@ -271,7 +329,7 @@ public sealed unsafe partial class DesignerScene
                     b.TryGet(c + 1, out var r);
                     double dt = r.StdT - r0.StdT;
                     ovCell[c] = (dt > 0.5 ? "+" : dt < -0.5 ? "−" : "±") + N0(Math.Abs(dt)) + " t";
-                    int sense = Levers[c / 2].Sense * (c % 2 == 0 ? -1 : 1);
+                    int sense = ovBatchLevers[c / 2].Sense * (c % 2 == 0 ? -1 : 1);
                     ovLumpy[c] = sense != 0 && Math.Sign(dt) == -sense && Math.Abs(dt) > 0.5;
                     break;
                 case DesignProbes.State.Built when !hasBase && b.StateOf(0) == DesignProbes.State.Failed:
@@ -356,11 +414,11 @@ public sealed unsafe partial class DesignerScene
             Text(dl, UiFonts.SansSmall, new Vector2(x[^1] - P(8) - Width(UiFonts.SansSmall, go), ty), gHover ? T.Brass : T.Muted, go);
             y += gh;
 
-            for (int i = 0; i < Levers.Length; i++)
+            for (int i = 0; i < op.Levers.Length; i++)
             {
-                if (Levers[i].Group != g)
+                if (op.Levers[i].Group != g)
                     continue;
-                LeverRow(dl, op.Rows[i], i, new Vector2(o.X, y), w, n++, fh);
+                LeverRow(dl, op, i, new Vector2(o.X, y), w, n++, fh);
                 y += RowH;
             }
         }
@@ -370,8 +428,9 @@ public sealed unsafe partial class DesignerScene
 
     static readonly string[] OvTabLink = ["4 · open tab ›", "3 · open tab ›", "1 · open tab ›", "5 · open tab ›"];
 
-    void LeverRow(ImDrawListPtr dl, OvRow r, int i, Vector2 p, float w, int n, float fh)
+    void LeverRow(ImDrawListPtr dl, OvPane op, int i, Vector2 p, float w, int n, float fh)
     {
+        var r = op.Rows[i];
         var x = ovX;
         RowBg(dl, p, w, n);
         if (r.Changed)
@@ -394,7 +453,9 @@ public sealed unsafe partial class DesignerScene
         for (int dir = -1; dir <= 1; dir += 2)
         {
             int c = 2 * i + (dir > 0 ? 1 : 0);
-            string cell = r.Applies ? ovCell[c] ?? "…" : "—";
+            // the cells belong to the probes' levers: for a frame after the decks change, the rows may not be those yet
+            bool ours = ReferenceEquals(op.Levers, ovBatchLevers) && c < ovCell.Length;
+            string cell = !r.Applies ? "—" : ours ? ovCell[c] ?? "…" : "…";
             bool live = r.Applies && cell != "—";   // a cell still building takes its step too: the step doesn't wait on the probe
             var a = new Vector2(x[dir < 0 ? 3 : 4] + P(4), p.Y + P(2));
             var size = new Vector2(P(OvColW[3]) - P(8), RowH - P(4));
@@ -408,7 +469,7 @@ public sealed unsafe partial class DesignerScene
                 dl.AddRectFilled(a, a + size, T.U32(T.Inset));
                 dl.AddRect(a, a + size, T.U32(T.Bevel));
             }
-            bool lumpy = live && ovLumpy[c];
+            bool lumpy = live && ours && ovLumpy[c];
             var col = !live || cell == "…" ? T.Muted : lumpy ? T.Amber : hover ? T.Bright : T.Text;
             float cw = Width(UiFonts.Mono, cell), cxr = a.X + size.X - P(4) - cw;
             Text(dl, UiFonts.Mono, new Vector2(cxr, my), col, cell);
@@ -418,7 +479,7 @@ public sealed unsafe partial class DesignerScene
                 dl.AddTriangleFilled(new Vector2(tx, tm + P(5)), new Vector2(tx + P(9), tm + P(5)), new Vector2(tx + P(4.5f), tm - P(4)), T.U32(T.Amber));
                 dl.AddLine(new Vector2(tx + P(4.5f), tm - P(1)), new Vector2(tx + P(4.5f), tm + P(2)), T.U32(T.Panel), P(1.2f));
             }
-            if ((hover || ovForceTip == c) && ovBatch is { } b && b.TryGet(0, out var r0) && b.TryGet(c + 1, out var r1))
+            if (ours && (hover || ovForceTip == c) && ovBatch is { } b && b.TryGet(0, out var r0) && b.TryGet(c + 1, out var r1))
             {
                 string tip = DeltaTip(r, dir, r0, r1, lumpy);
                 if (hover)

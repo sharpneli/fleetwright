@@ -20,6 +20,10 @@ Review decisions (2026-10-11):
 The game differs from the mockup in these ways:
 
 - **No locks** (◆). They only mattered to Fit.
+- **One row per armour deck**, highest first, in place of the single armour deck row: "Main deck", "Third deck",
+  "Third deck, aft end" (the name is the deck, plus the extent when it isn't the citadel). The main deck is often a thin
+  capping deck over a thicker one below, and the thicker one may matter more. Each row gets its own probes, so
+  Dreadnought's three decks make 40 probe builds.
 - **The limits can't be typed in.** You pick one from the list, and it shows; the gameplay layer will set it.
 - **The limits table adds Main calibre** (the treaties' gun limit), and an over-limit figure adds a remark.
 - **A probe is exactly the click:** the probe for a step is built from the same target `Step` computes. So an
