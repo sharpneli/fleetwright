@@ -248,7 +248,8 @@ public static class Verify
         var probs = new List<string>();
         foreach (var c in comps)
         {
-            if (c.ArcsDeg is not { } arcsDeg)
+            // mounts only: a submerged tube is a segment through the hull, fixed, with no position of its own
+            if (c.ArcsDeg is not { } arcsDeg || c.X is null)
                 continue;
             var (lo, hi) = c.TraverseDeg is { Length: > 0 } tr ? (tr[0], tr[1]) : (0.0, -1.0);
             var arcs = arcsDeg.Select(a => (a[0], a[1])).ToList();
