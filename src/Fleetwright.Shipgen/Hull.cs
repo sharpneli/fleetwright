@@ -100,7 +100,7 @@ public sealed class Hull : Planform
 /// See the Python docstring for the model; this is a line-for-line port.</summary>
 public sealed class HullForm
 {
-    const int N = 400;
+    const int N = 240;
     const double CMin = 0.35, CMax = 0.995, Kappa = 1.2;
     const double Forefoot = 0.10, ForefootFn = 0.2, ForefootK = 0.25, ForefootMax = 0.16;
     const double Rocker = 0.45, PlaningCm = 0.6, CutClear = 0.1, CutRun = 7.0, TransomDeep = 0.2;
@@ -108,7 +108,7 @@ public sealed class HullForm
     const double AftK = 0.8, CharRun = 0.3;
     const double PmbK = 1.8, PmbCp = 0.54, PmbMax = 0.5;
     const double Lambda = 0.5, LambdaK = 0.2, LamMin = 0.35, LamMax = 0.75;
-    const int Rounds = 3;
+    const int Rounds = 2;
     const double TransomC = 0.75;
     const int Smooth = 6;
     const double CEnd = 0.75, CEndPow = 2.0, KeelK = 0.06, KeelShare = 0.5;
@@ -150,7 +150,7 @@ public sealed class HullForm
             return lo;
         if (fHi <= 0)
             return hi;
-        double tol = (hi - lo) * Math.Pow(2.0, -40);
+        double tol = (hi - lo) * Math.Pow(2.0, -24);
         int side = 0;
         for (int it = 0; it < 200; it++)
         {

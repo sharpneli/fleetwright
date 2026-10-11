@@ -110,11 +110,12 @@ public static class Navarch
         var res = new Result();
 
         double disp = 200.0 * L * B * cb * 0.04;
-        var own = placed?.Select(w => w.Clone()).ToList();
+        int ownAt = 0;   // where the placed weights sit in items (cloned once settled: their heights get set)
         double T = 0, D = 0, shp = 0, std = 0, full = 0, fuel = 0, vc = 0;
         HullStructure hull = null!;
         List<Weight> items = [], stdLoad = [], fullLoad = [];
         bool settled = false;
+        (double Disp, double G)? lastG = null;
         for (int it = 0; it < 60; it++)
         {
             T = disp / (Weight.Seawater * L * B * cb);
@@ -130,13 +131,16 @@ public static class Navarch
             items.Add(new Weight("Hull structure", "hull", hull.T, -0.01 * L, ZRel.Frac(zFrac)));
             shp = PowerRequired(disp, V, L, B, cb, tun);
             items.Add(new Weight("Machinery", "machinery", Powerplant.Rated(plant, shp).WeightT, geo.MachineryMid(L), ZRel.Frac(0.32)));
-            if (own is null)
+            if (placed is null)
             {
                 items.AddRange(RoughPayload(design, D));
                 items.AddRange(style.RoughPayload(design, D));
             }
             else
-                items.AddRange(own);
+            {
+                ownAt = items.Count;
+                items.AddRange(placed);
+            }
             items.AddRange(Armour.ArmourWeights(design, L, B, D, arm, side));
             items.AddRange(style.StructureWeights(design, L, B, T, D, geo, tun));
             double wood = HullWeight.PlatingOf(design).DeckWoodMm;
@@ -156,7 +160,7 @@ public static class Navarch
                 new PayloadContext(items, fuel, geo.MachineryMid(L), tun.LcbFrac * L));
             std += stdLoad.Sum(w => w.W);
             full = std + fuel + fullLoad.Sum(w => w.W);
-            if (Math.Abs(full - disp) < 0.5)
+            if (Math.Abs(full - disp) < 0.05)
             {
                 disp = full;
                 settled = true;
@@ -169,13 +173,24 @@ public static class Navarch
                 settled = true;
                 break;
             }
-            disp = 0.5 * disp + 0.5 * full;
+            // the secant on full(disp) - disp once there are two points (it's near straight), half a step before
+            double g = full - disp, next = 0.5 * disp + 0.5 * full;
+            if (lastG is var (pd, pg) && pg != g)
+            {
+                double sec = disp - g * (disp - pd) / (g - pg);
+                if (double.IsFinite(sec) && sec > 0)
+                    next = sec;
+            }
+            lastG = (disp, g);
+            disp = next;
         }
         if (!settled)
             res.Errors.Add("The weights never settle: the ship needs a bigger hull to carry its load, which " +
                            $"needs a bigger hull again (still growing at {full:N0} t). Lighten the armour or " +
                            "armament.");
 
+        for (int i = 0; placed is not null && i < placed.Count; i++)
+            items[ownAt + i] = items[ownAt + i].Clone();
         items.AddRange(stdLoad);
         items.Add(new Weight("Fuel", "fuel", fuel, geo.MachineryMid(L), ZRel.Frac(0.18)));
         items.AddRange(fullLoad);

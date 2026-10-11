@@ -168,8 +168,11 @@ public static class Stability
         double Gm(double dispCase, bool includeFuel)
         {
             double T_ = dispCase / (Weight.Seawater * L * B * cb);
-            var ws = res.Weights.Where(w => includeFuel || !(w.Group is "fuel" or "cargo")).ToList();
-            double kg = ws.Select(w => w.W * w.Z!.Value).Sum() / ws.Select(w => w.W).Sum();
+            double m = 0.0, wt = 0.0;
+            foreach (var w in res.Weights)
+                if (includeFuel || !(w.Group is "fuel" or "cargo"))
+                    (m, wt) = (m + w.W * w.Z!.Value, wt + w.W);
+            double kg = m / wt;
             double kb = 0.53 * T_;
             double cw = Geometry.Cwp(cb);
             double it = 0.0372 * Math.Pow(2 * cw + 1, 3) * L * Math.Pow(B, 3) / 12;

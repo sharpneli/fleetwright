@@ -228,7 +228,11 @@ public static class Powerplant
         var t = p.Tech;
         var r = Rated(p, shp);
         var u = t.Unit;
-        double k = Math.Pow(r.UnitMw / u.Mw, 1.0 / 3);
+        // the units' size for the space: as big as the power per shaft asks, up to the largest the technology builds, and
+        // past that more of them, counted as a fraction (the plant's whole units halve in size when a shaft takes a
+        // second one, and its rooms shouldn't jump with them)
+        double mwSpace = r.Kw / 1000.0 / (r.Shafts * Math.Max(p.UnitsPerShaft, r.Kw / 1000.0 / r.Shafts / t.UnitMaxMw));
+        double k = Math.Pow(mwSpace / u.Mw, 1.0 / 3);
         double hU = u.HeightM * k, wU = u.WidthM * k, lU = u.LengthM * k;
         double hEff = Math.Max(1.0, Math.Max(hU, Math.Min(hAvail, hU + 2.5)));
         double pitch = wU + 0.8;
