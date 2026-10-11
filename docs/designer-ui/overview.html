@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Overview trim sheet</title>
+<link rel="stylesheet" href="assets/fonts/dense-fonts.css">
+<style>
+:root{
+  --ground:#0E1215;--panel:#1C2329;--panel2:#20282F;--inset:#11161A;--line:#20292F;--edge:#090C0E;--bevel:#2C3640;
+  --tt:#36434F;--tb:#27313A;--hd:#161C21;--text:#C9D3DB;--bright:#EAF0F4;--muted:#7F8B95;--brass:#D9B868;
+  --brassd:#5A4A24;--ok:#86C77E;--amber:#E3A452;--blue:#5B9BE0;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--text);font-family:'Archivo Narrow',sans-serif;font-size:12px;user-select:none}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:'IBM Plex Mono',monospace}
+.dim{color:var(--muted)}.gold{color:var(--brass)}.amb{color:var(--amber)}.okc{color:var(--ok)}
+#app{position:relative;width:1280px;height:600px;margin:0;overflow:hidden}
+.tabs{position:absolute;left:4px;top:0;height:22px;display:flex;gap:2px;align-items:flex-end}
+.tab{height:20px;padding:0 9px 0 5px;border:1px solid var(--edge);border-bottom:none;background:linear-gradient(#2A333C,#20282F);color:var(--muted);font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:5px}
+.tab.on{height:22px;background:linear-gradient(var(--tt),var(--panel));color:var(--brass)}
+.tab .k{border:1px solid #4A5764;border-radius:2px;font-size:9.5px;line-height:11px;padding:0 3px}
+.tab.on .k{border-color:var(--brass)}
+.pane{position:absolute;left:0;top:22px;width:1280px;height:578px;background:var(--panel);border:1px solid var(--edge);box-shadow:inset 0 1px 0 var(--tt)}
+.sub{height:18px;display:flex;align-items:center;gap:8px;padding:0 6px;background:var(--hd);border-bottom:1px solid var(--edge);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.sub b{margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0}
+.sub .n{text-transform:none;letter-spacing:0}
+.col{position:absolute;top:0;bottom:18px}
+#left{left:0;width:800px;border-right:1px solid var(--edge)}
+#right{left:801px;right:0}
+/* trim table */
+.tt{display:grid;grid-template-columns:20px 150px 132px 50px 84px 84px minmax(0,1fr) 22px;align-items:center}
+.tt>div{height:20px;display:flex;align-items:center;padding:0 4px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden}
+.tt .h{height:17px;background:var(--hd);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--edge)}
+.tt .g{height:19px;grid-column:1/-1;background:#192026;color:var(--brass);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;gap:8px;border-bottom:1px solid var(--edge);cursor:pointer}
+.tt .g .n{color:var(--muted);text-transform:none;letter-spacing:0;font-family:'IBM Plex Mono',monospace;font-size:10.5px}
+.tt .g .go{margin-left:auto;color:var(--muted);text-transform:none;letter-spacing:0}
+.tt .g:hover .go{color:var(--brass)}
+.tt .r.hov{background:rgba(255,255,255,0.035)}
+.tt .r.chg{background:rgba(217,184,104,0.06)}
+.tt .r.chg.hov{background:rgba(217,184,104,0.10)}
+.tt .r.na{color:#4E5A64}
+.tt .r.lockd .lab{color:var(--muted)}
+.right{justify-content:flex-end}
+.pin{border:none;background:none;padding:0;width:12px;height:14px;color:#3A4651;font-size:11px;line-height:14px}
+.pin:hover{color:var(--muted)}
+.pin.on{color:var(--brass)}
+.sp{display:inline-flex;align-items:center;height:16px;border:1px solid #0A0D10;background:var(--inset)}
+.sp button{width:14px;height:14px;border:none;padding:0;background:linear-gradient(#3A4651,#2A333C);color:#C9D3DB;font-size:8px;line-height:14px}
+.sp button:hover{background:linear-gradient(#4E5D6B,#38434E);color:#FFF}
+.sp span{min-width:96px;text-align:right;padding:0 4px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--bright)}
+.sp.chg span{color:#FFE7A8}
+.sp.off{opacity:0.35;pointer-events:none}
+.dt{height:16px;min-width:70px;padding:0 5px;border:1px solid transparent;background:none;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-align:right}
+.dt:hover{border-color:#3A4651;background:var(--inset);color:var(--bright)}
+.dt.lumpy{color:var(--amber)}
+.dt.wait{color:#46525C}
+.dt.na{color:#3A4651;pointer-events:none}
+.drv{color:var(--muted);font-size:11.5px;overflow:hidden;text-overflow:ellipsis}
+.rst{border:none;background:none;color:var(--muted);padding:0;font-size:12px}
+.rst:hover{color:var(--brass)}
+.probe{display:inline-flex;align-items:center;gap:6px}
+.probe i{display:inline-block;width:60px;height:4px;background:#2A333C;position:relative}
+.probe i b{position:absolute;left:0;top:0;bottom:0;background:var(--brass)}
+/* limits */
+.lt{display:grid;grid-template-columns:20px 70px 18px 116px 84px 96px minmax(0,1fr);align-items:center}
+.lt>div{height:21px;display:flex;align-items:center;padding:0 4px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden}
+.lt .h{height:17px;background:var(--hd);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--edge)}
+.lt .r.off{color:#56626C}
+.chk{width:11px;height:11px;border:1px solid #4A5764;background:var(--inset);display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:var(--brass);cursor:pointer}
+.fld{height:16px;width:88px;padding:0 5px;border:1px solid #0A0D10;background:var(--inset);color:var(--bright);font-family:'IBM Plex Mono',monospace;font-size:11.5px;text-align:right;outline:none}
+.fld:focus{border-color:var(--brass)}
+.fld:disabled{color:#4E5A64}
+.mg{font-family:'IBM Plex Mono',monospace;font-size:11.5px}
+.bar{position:relative;height:6px;width:100%;background:#151B20;border:1px solid #0A0D10}
+.bar b{position:absolute;left:0;top:0;bottom:0;background:#4F6170}
+.bar b.over{background:var(--amber)}
+.bar i{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--bright)}
+.dd{height:16px;display:inline-flex;align-items:center;gap:6px;padding:0 6px;border:1px solid #0A0D10;background:var(--inset);color:var(--text);font-size:11.5px;cursor:pointer;text-transform:none;letter-spacing:0}
+.dd:hover{color:var(--bright);border-color:#3A4651}
+.verdict{margin:6px 8px 4px;padding:5px 9px;display:flex;align-items:baseline;gap:10px;border:1px solid}
+.verdict.over{background:#2E2717;border-color:#5A4A24;color:#F1D79C}
+.verdict.ok{background:#1C3329;border-color:#2F5A40;color:#9FDDB7}
+.verdict .big{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:500}
+.verdict .what{font-size:12px}
+.verdict .and{margin-left:auto;font-size:11px;opacity:0.8}
+.wb{position:relative;height:16px;margin:2px 8px 0;display:flex;border:1px solid #0A0D10;background:#151B20}
+.wb span{height:100%;border-right:1px solid rgba(0,0,0,0.5)}
+.wb i{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--bright)}
+.wbl{display:flex;flex-wrap:wrap;gap:2px 10px;margin:4px 8px 6px;font-size:10.5px;color:var(--muted)}
+.wbl .sw{width:8px;height:8px;display:inline-block;margin-right:4px;border:1px solid rgba(0,0,0,0.5)}
+/* fit */
+.ft{display:grid;grid-template-columns:134px 100px 70px minmax(0,1fr) 60px;align-items:center}
+.ft>div{height:20px;display:flex;align-items:center;padding:0 4px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden}
+.ft .h{height:17px;background:var(--hd);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--edge)}
+.ft .r.cant{color:#56626C}
+.ft .r.hov{background:rgba(255,255,255,0.035)}
+.act{height:17px;padding:0 8px;border:1px solid #0A0D10;background:linear-gradient(#2E3842,#232B33);color:var(--text);font-size:11.5px}
+.act:hover{color:var(--bright);background:linear-gradient(#3A4651,#2A333C)}
+.act.gold{background:linear-gradient(#6B5A30,#4A3E20);color:#FFE7A8}
+.act.gold:hover{background:linear-gradient(#7E6A38,#5A4A24)}
+.act:disabled{opacity:0.35;cursor:default}
+.btns{display:flex;gap:6px;align-items:center;padding:6px 8px}
+.btns .dim{font-size:11px;margin-left:4px}
+.hint{position:absolute;left:0;bottom:0;width:100%;height:18px;display:flex;gap:14px;align-items:center;padding:0 8px;background:var(--hd);border-top:1px solid var(--edge);color:var(--muted);font-size:11px}
+.kbd{display:inline-block;padding:0 3px;border:1px solid #4A5764;border-bottom-width:2px;border-radius:2px;font-size:9.5px;line-height:11px;color:#AEB9C3;font-family:'IBM Plex Mono',monospace;margin-right:3px}
+#tip{position:absolute;pointer-events:none;display:none;max-width:320px;padding:5px 7px;background:#0F1418;border:1px solid #4A5764;color:var(--text);font-size:11.5px;line-height:1.35;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,0.6)}
+#tip b{color:var(--brass)}
+#tip .a{color:var(--amber)}
+#tip table{border-collapse:collapse;margin-top:3px}
+#tip td{padding:0 6px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px}
+#tip td:first-child{font-family:'Archivo Narrow',sans-serif;color:var(--muted)}
+#tip td.r{text-align:right}
+#menu{position:absolute;display:none;min-width:210px;background:#161C21;border:1px solid #4A5764;z-index:11;padding:2px 0;box-shadow:0 2px 10px rgba(0,0,0,0.6)}
+#menu div{padding:2px 10px;font-size:11.5px;white-space:nowrap;display:flex;justify-content:space-between;gap:16px;cursor:pointer}
+#menu div:hover{background:rgba(217,184,104,0.15);color:var(--bright)}
+#menu div.off{color:#4E5A64;cursor:default}
+#menu div.off:hover{background:none;color:#4E5A64}
+#menu .sep{height:1px;padding:0;margin:2px 0;background:var(--line);cursor:default}
+#menu .lab{color:var(--muted);cursor:default;font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em}
+#menu .lab:hover{background:none;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="tabs" id="tabs"></div>
+  <div class="pane">
+    <div class="col" id="left"></div>
+    <div class="col" id="right"></div>
+    <div class="hint">
+      <span><span class="kbd">wheel</span>steps a value · <span class="kbd">Shift</span>×4</span>
+      <span><span class="kbd">click</span>a value to type it · a Δ cell takes that step</span>
+      <span><span class="kbd">◆</span>locks a lever out of Fit</span>
+      <span><span class="kbd">RMB</span>lock · reset · fit with this · open its tab</span>
+      <span style="margin-left:auto"><span class="kbd">Ctrl</span><span class="kbd">Z</span>undo</span>
+    </div>
+  </div>
+  <div id="tip"></div>
+  <div id="menu"></div>
+</div>
+
+<script>
+// ------------------------------------------------------------------ real engine numbers: every lever stepped once each way on the shipped designs
+// (shipgen design, 2026-10-11). Each entry is [standard t, full load t, length m, beam m, draught m, GM m]; d holds
+// the change for one step down (-) and up (+), spd the change at whole knots relative to the design's own speed.
+const PROBES = {"bismarck":{"base":[39763,43745,225,33.36,10.34,2.56],"d":{"speed-":[-883,-968,-3.5,-0.06,-0.05,-0.02],"speed+":[2633,2835,3.5,0.2,0.43,-0.31],"range-":[1528,1394,-0.5,0.08,0.33,-0.32],"range+":[1655,2001,0.5,0.07,0.42,-0.34],"stress-":[2581,2704,0.5,-0.08,0.64,-0.58],"stress+":[-924,-948,-0.5,-0.08,-0.18,0.11],"belt-":[-129,-137,0,0.0,-0.03,0.03],"belt+":[218,229,0.5,0.07,0.01,0.01],"upper_belt-":[-83,-88,0,0.0,-0.02,0.02],"upper_belt+":[174,182,0.5,0.07,0.0,0.02],"deck-":[1281,1367,-0.5,-0.08,0.37,-0.36],"deck+":[1901,2025,0.5,0.23,0.38,-0.29],"bulkheads-":[-78,-82,0,0.0,-0.02,0.01],"bulkheads+":[77,82,0,0.0,0.02,-0.02],"end_belts-":[-82,-87,0,0.0,-0.02,0.01],"end_belts+":[82,88,0,0.0,0.02,-0.02],"turret-":[-127,-134,0,0.0,-0.03,0.03],"turret+":[216,227,0.5,0.07,0.01,0.0],"armour_scale-":[-1198,-1268,-2,-0.45,-0.07,-0.11],"armour_scale+":[2785,2950,2,0.29,0.5,-0.38],"main_cal-":[-784,-828,-1,-0.15,-0.11,0.06],"main_cal+":[2356,2500,1,0.14,0.49,-0.44],"rounds-":[-171,-182,0,0.0,-0.05,0.01],"rounds+":[261,275,0.5,0.07,0.02,-0.02],"sec_side-":[-736,-780,-0.5,-0.08,-0.14,0.09],"sec_side+":[2406,2562,0.5,0.23,0.5,-0.36],"aa-":[-9,-9,0,0.0,0.0,0.0],"aa+":[8,9,0,0.0,0.0,0.0],"freeboard-":[-441,-473,-1,-0.46,0.08,-0.11],"freeboard+":[924,992,1,0.61,0.0,0.1],"cb-":[92,66,0.5,0.38,0.06,0.06],"cb+":[1588,1720,0,-0.31,0.31,-0.4],"tower-":[-25,-26,0,0.0,-0.01,0.01],"tower+":[1760,1878,0,0.15,0.39,-0.34],"endurance-":[-65,-69,0,0.0,-0.02,0.01],"endurance+":[64,69,0,0.0,0.01,-0.01]},"spd":{"16":[-8257,-11326,-31,-1.59,-1.01,-0.68],"17":[-8112,-11014,-31,-1.6,-0.92,-0.72],"18":[-7830,-10536,-31,-1.3,-0.87,-0.56],"19":[-7684,-10182,-31,-1.46,-0.72,-0.71],"20":[-7341,-9596,-31,-1.16,-0.64,-0.56],"21":[-7127,-9124,-31,-1.32,-0.46,-0.71],"22":[-6820,-8526,-31,-1.33,-0.29,-0.78],"23":[-6409,-7788,-31,-1.19,-0.12,-0.74],"24":[-5923,-6935,-31,-0.96,0.05,-0.66],"25":[-5370,-5973,-31,-0.72,0.24,-0.59],"26":[-4635,-5112,-26.5,-0.65,0.21,-0.51],"27":[-3750,-4127,-20.5,-0.51,0.12,-0.33],"28":[-2742,-3035,-13.5,-0.26,-0.02,-0.14],"29":[-1676,-1840,-7,-0.14,-0.08,0.01],"30":[0,0,0,0.0,0.0,0.0],"31":[3649,3946,7,0.28,0.5,-0.33],"32":[5922,6413,14.5,0.34,0.68,-0.47],"33":[8448,9160,22,0.71,0.81,-0.42],"34":[11188,12128,30,1.04,0.96,-0.4],"35":[14639,15757,45.5,1.33,0.91,-0.33]}},"dreadnought":{"base":[25118,29743,184,28.33,9.28,2.3],"d":{"speed-":[-1030,-1394,-5,-0.15,-0.14,0.01],"speed+":[606,886,4.5,-1.06,0.41,-0.68],"range-":[-320,-715,-2,-0.06,-0.11,0.0],"range+":[-177,116,1,-1.2,0.39,-0.7],"stress-":[600,587,2.5,0.03,0.04,-0.03],"stress+":[-666,-653,-3.5,-0.16,0.02,-0.06],"belt-":[-173,-199,0,-0.13,-0.02,-0.04],"belt+":[173,192,0,0.0,0.06,-0.05],"upper_belt-":[-104,-123,0,-0.13,0.0,-0.05],"upper_belt+":[62,68,0,0.0,0.02,-0.02],"deck-":[-126,-148,0,-0.13,-0.01,-0.05],"deck+":[-232,-316,0,-1.23,0.32,-0.76],"bulkheads-":[-63,-71,0,0.0,-0.02,0.02],"bulkheads+":[64,70,0,0.0,0.02,-0.01],"end_belts-":[-60,-68,0,0.0,-0.02,0.02],"end_belts+":[61,67,0,0.0,0.02,-0.01],"turret-":[-168,-194,0,-0.13,-0.02,-0.03],"turret+":[125,139,0,0.0,0.04,-0.04],"armour_scale-":[-833,-948,0,-0.39,-0.17,-0.02],"armour_scale+":[424,427,0,-0.98,0.47,-0.75],"main_cal-":[-1306,-1476,-3.5,-1.63,0.26,-0.79],"main_cal+":[855,922,2.5,0.26,0.07,-0.01],"rounds-":[-182,-199,-0.5,-0.08,-0.01,-0.04],"rounds+":[139,143,0.5,-0.05,0.03,-0.04],"sec_side-":[-108,-117,-0.5,-0.08,0.01,-0.04],"sec_side+":[13,14,0,0.0,0.0,0.0],"aa-":[0,0,0,0.0,0.0,0.0],"aa+":[6,6,0,0.0,0.0,0.0],"freeboard-":[-351,-397,-0.5,-0.29,-0.01,0.01],"freeboard+":[-52,-76,-1,-0.75,0.28,-0.62],"cb-":[-98,-121,-1.5,0.15,0.14,-0.07],"cb+":[-473,-571,0.5,-1.65,0.2,-0.81],"tower-":[-33,-37,0,0.0,-0.01,0.02],"tower+":[12,13,0,0.0,0.0,-0.01],"endurance-":[-37,-42,0,0.0,-0.02,0.01],"endurance+":[37,41,0,0.0,0.01,0.0]},"spd":{"16":[-7157,-9891,-35.5,-2.22,-0.95,-0.69],"17":[-6238,-8582,-30.5,-2.05,-0.75,-0.69],"18":[-5174,-7071,-24.5,-1.87,-0.55,-0.66],"19":[-3732,-5133,-15.5,-1.9,-0.29,-0.8],"20":[-1912,-2619,-9,-0.33,-0.28,-0.01],"21":[0,0,0,0.0,0.0,0.0],"22":[1679,2398,8,-0.75,0.59,-0.6],"23":[5637,7299,27.5,-0.11,0.81,-0.51],"24":[10899,13761,48,0.81,1.18,-0.46],"25":[16573,20835,67.5,1.91,1.53,-0.26],"26":[21890,27027,80.5,2.79,1.93,-0.2],"27":[28311,34270,98,3.66,2.26,-0.13],"28":[39211,46160,127,4.7,2.73,-0.29],"29":[54533,62838,162.5,6.09,3.34,-0.42],"30":[63366,72565,186,7.21,3.37,-0.18],"31":[70071,80116,200.5,7.86,3.56,-0.08],"32":[84196,95570,233.5,10.67,3.23,1.01],"33":[98472,110996,269.5,12.72,3.01,1.77],"34":[112550,126588,291,15.19,3.02,2.84],"35":[132739,148479,329,18.62,2.75,4.57]}},"heavy_cruiser":{"base":[13220,15417,193,22.44,6.55,2.05],"d":{"speed-":[-386,-438,-3.5,-0.11,-0.03,-0.02],"speed+":[404,461,3,0.15,0.05,0.03],"range-":[-78,-203,-0.5,0.05,-0.08,0.06],"range+":[98,228,0.5,0.06,0.06,0.01],"stress-":[362,378,0.5,0.06,0.13,-0.07],"stress+":[-347,-359,-1,-0.01,-0.11,0.08],"belt-":[-117,-128,-0.5,-0.06,-0.02,-0.01],"belt+":[118,128,0.5,0.06,0.02,0.0],"upper_belt+":[254,278,1,0.22,0.02,0.06],"deck-":[-175,-189,-1,-0.11,-0.01,-0.02],"deck+":[160,177,0.5,0.16,0.01,0.05],"bulkheads-":[-40,-40,-0.5,0.05,-0.01,0.04],"bulkheads+":[32,35,0,0.0,0.02,-0.01],"end_belts-":[0,0,0,0.0,0.0,0.0],"end_belts+":[0,0,0,0.0,0.0,0.0],"turret-":[-88,-95,-0.5,-0.06,0.0,-0.01],"turret+":[79,90,0,0.11,0.01,0.04],"armour_scale-":[-316,-344,-1.5,-0.17,-0.04,-0.01],"armour_scale+":[312,342,1,0.22,0.05,0.04],"main_cal-":[-309,-338,-1,-0.11,-0.08,0.06],"main_cal+":[308,340,0.5,0.16,0.08,-0.03],"rounds-":[-40,-40,-0.5,0.05,-0.01,0.03],"rounds+":[31,34,0,0.0,0.02,-0.01],"sec_side-":[-388,-428,-1,-0.21,-0.09,-0.02],"sec_side+":[386,424,1,0.22,0.08,0.02],"aa-":[-8,-10,0,0.0,0.0,0.0],"aa+":[8,8,0,0.0,0.01,0.0],"freeboard-":[-143,-160,-1,-0.31,0.06,-0.07],"freeboard+":[256,285,1,0.42,-0.03,0.09],"cb-":[19,2,0,0.2,0.07,0.01],"cb+":[-27,-14,0,-0.2,-0.07,0.0],"tower-":[-14,-16,0,0.0,0.0,0.01],"tower+":[91,105,0,0.21,-0.01,0.07],"endurance-":[-52,-58,0,0.0,-0.02,0.01],"endurance+":[51,56,0,0.0,0.03,-0.01]},"spd":{"16":[-6511,-8257,-90.5,-0.9,-0.58,-0.34],"17":[-6476,-8144,-89,-1.52,-0.4,-0.76],"18":[-6182,-7756,-85,-1.51,-0.31,-0.79],"19":[-5953,-7427,-80,-1.38,-0.37,-0.63],"20":[-5707,-7071,-75,-1.32,-0.39,-0.55],"21":[-5448,-6691,-69.5,-1.28,-0.4,-0.47],"22":[-5185,-6299,-64,-1.32,-0.39,-0.45],"23":[-4202,-5104,-58.5,-1.19,0.09,-0.78],"24":[-3756,-4476,-53,-1.11,0.19,-0.78],"25":[-3218,-3737,-46.5,-0.96,0.28,-0.74],"26":[-2735,-3177,-41,-0.9,0.33,-0.77],"27":[-2227,-2600,-35.5,-0.8,0.37,-0.76],"28":[-1727,-2037,-30.5,-0.71,0.43,-0.76],"29":[-1115,-1334,-24.5,-0.52,0.47,-0.71],"30":[-2019,-2310,-18.5,-0.5,-0.25,-0.02],"31":[-1389,-1586,-12.5,-0.31,-0.18,0.01],"32":[-727,-828,-6.5,-0.16,-0.09,0.0],"33":[0,0,0,0.0,0.0,0.0],"34":[1115,1256,6.5,0.24,0.23,-0.1],"35":[2003,2275,11.5,0.48,0.4,-0.11]}}};
+const Q = ['Standard', 'Full load', 'Length', 'Beam', 'Draught', 'GM'];
+
+// ------------------------------------------------------------------ the levers: broad strokes onto today's design fields
+// key = the probe; the game's lever is a knob (or, for the new ones, a knob that edits several fields at once)
+const GROUPS = [
+  {id: 'mach', name: 'Speed & machinery', tab: 4, wg: ['machinery', 'fuel']},
+  {id: 'prot', name: 'Protection', tab: 3, wg: ['armour']},
+  {id: 'arm', name: 'Armament', tab: 1, wg: ['armament']},
+  {id: 'hull', name: 'Hull & crew', tab: 5, wg: ['hull', 'superstructure', 'misc']},
+];
+const LEVERS = [
+  {k: 'speed', g: 'mach', lab: 'Speed', unit: 'kn', step: 0.5, dec: 1, lo: 8, drv: 'power, machinery, fuel; length (the hull lengthens for speed)'},
+  {k: 'range', g: 'mach', lab: 'Range', unit: 'nm', step: 500, dec: 0, lo: 500, drv: 'fuel, bunkers'},
+  {k: 'stress', g: 'mach', lab: 'Machinery rating', unit: '', step: 0.1, dec: 2, lo: 0.1, hi: 1.5, inv: true, drv: 'higher: a lighter plant worked harder, less margin', fresh: true},
+  {k: 'belt', g: 'prot', lab: 'Belt', unit: 'mm', step: 10, dec: 0, lo: 0, drv: 'immune zone, inner edge'},
+  {k: 'upper_belt', g: 'prot', lab: 'Upper belt', unit: 'mm', step: 10, dec: 0, lo: 0, drv: 'side above the belt', fresh: true},
+  {k: 'deck', g: 'prot', lab: 'Armour deck', unit: 'mm', step: 5, dec: 0, lo: 0, drv: 'immune zone, outer edge; top weight'},
+  {k: 'bulkheads', g: 'prot', lab: 'Citadel bulkheads', unit: 'mm', step: 10, dec: 0, lo: 0, drv: 'raking fire along the citadel', fresh: true},
+  {k: 'end_belts', g: 'prot', lab: 'End belts, both', unit: 'mm', step: 10, dec: 0, lo: 0, drv: 'flooding at the ends', fresh: true},
+  {k: 'turret', g: 'prot', lab: 'Turret faces', unit: 'mm', step: 10, dec: 0, lo: 0, drv: 'main turrets; barbettes follow'},
+  {k: 'armour_scale', g: 'prot', lab: 'All armour, scale', unit: '%', step: 5, dec: 0, lo: 5, drv: 'every plate above by the same share', fresh: true, scale: true},
+  {k: 'main_cal', g: 'arm', lab: 'Main calibre', unit: 'mm', step: 10, dec: 0, lo: 20, drv: 'guns, turrets, barbettes, magazines', fresh: true},
+  {k: 'rounds', g: 'arm', lab: 'Main rounds per gun', unit: '', step: 10, dec: 0, lo: 10, drv: 'magazine length, combat endurance'},
+  {k: 'sec_side', g: 'arm', lab: 'Secondaries per side', unit: '', step: 1, dec: 0, lo: 0, drv: 'first battery; anti-torpedo-boat fire'},
+  {k: 'aa', g: 'arm', lab: 'Light AA mounts', unit: '', step: 2, dec: 0, lo: 0, drv: 'air defence', fresh: true},
+  {k: 'freeboard', g: 'hull', lab: 'Freeboard', unit: '×', step: 0.05, dec: 2, lo: 0.5, drv: 'wetness, hull girder, GM', fresh: true},
+  {k: 'cb', g: 'hull', lab: 'Hull form, Cb', unit: '', step: 0.01, dec: 2, lo: 0.35, hi: 0.85, nofit: true, drv: 'full ↔ fine: resistance, length, beam (Fit skips it)', fresh: true},
+  {k: 'tower', g: 'hull', lab: 'Bridge tower', unit: 'levels', step: 1, dec: 0, lo: 1, drv: 'horizon, top weight', fresh: true},
+  {k: 'endurance', g: 'hull', lab: 'Stores for', unit: 'days', step: 5, dec: 0, lo: 5, drv: 'provisions, fresh water', fresh: true},
+];
+const LV = Object.fromEntries(LEVERS.map(l => [l.k, l]));
+
+// the treaty and dock limits a player might set (tonnes; the treaties wrote long tons)
+const PRESETS = [
+  {name: 'None', set: {}},
+  {name: 'Washington 1922 · capital ship', note: '35,000 long tons standard', set: {std: 35560}},
+  {name: 'London 1930 · cruiser', note: '10,000 long tons standard', set: {std: 10160}},
+  {name: 'Panama locks (1914)', note: '294 × 32.3 m, 12.0 m draught', set: {len: 294.1, beam: 32.3, draught: 12.0}},
+  {name: 'Dock, 600 × 90 ft', note: 'a yard dock of 1905', set: {len: 182.9, beam: 27.4}},
+  {name: 'Stable', note: 'GM at full load at least 1.5 m', set: {gm: 1.5}},
+];
+const LIMITS = [
+  {id: 'std', lab: 'Standard', q: 0, op: '≤', unit: 't', dec: 0},
+  {id: 'full', lab: 'Full load', q: 1, op: '≤', unit: 't', dec: 0},
+  {id: 'len', lab: 'Length', q: 2, op: '≤', unit: 'm', dec: 1},
+  {id: 'beam', lab: 'Beam', q: 3, op: '≤', unit: 'm', dec: 1},
+  {id: 'draught', lab: 'Draught', q: 4, op: '≤', unit: 'm', dec: 1},
+  {id: 'gm', lab: 'GM', q: 5, op: '≥', unit: 'm', dec: 2},
+];
+
+const SHIPS = {
+  bismarck: {
+    name: 'Bismarck-like (as completed, 1940)', preset: 1,
+    v: {speed: 30, range: 9000, stress: 0.4, belt: 320, upper_belt: 145, deck: 50, bulkheads: 220, end_belts: 70, turret: 360, armour_scale: 100,
+        main_cal: 380, rounds: 100, sec_side: 3, aa: 20, freeboard: 1.0, cb: 0.55, tower: 6, endurance: 42},
+    wg: {armour: 15380, hull: 9315, armament: 6377, fuel: 3982, machinery: 3551, misc: 3142, superstructure: 1714, fire_control: 283},
+    notes: {deck: 'citadel deck; the 100 mm deck below is on Protection', end_belts: '60 fore · 80 aft, stepped together'},
+  },
+  dreadnought: {
+    name: 'HMS Dreadnought-like', preset: 4,
+    v: {speed: 21, range: 6600, stress: 0.2, belt: 279, upper_belt: 203, deck: 76, bulkheads: 203, end_belts: 127, turret: 279, armour_scale: 100,
+        main_cal: 305, rounds: 100, sec_side: 5, aa: 0, freeboard: 1.0, cb: 0.6, tower: 5, endurance: 22},
+    wg: {armour: 9993, hull: 6715, fuel: 4624, armament: 3337, machinery: 2818, misc: 1678, superstructure: 570, fire_control: 7},
+    notes: {end_belts: '152 fore · 102 aft, stepped together'},
+  },
+  heavy_cruiser: {
+    name: 'Heavy Cruiser', preset: 2,
+    v: {speed: 33, range: 10000, stress: 0.5, belt: 152, upper_belt: 0, deck: 64, bulkheads: 91, end_belts: 0, turret: 203, armour_scale: 100,
+        main_cal: 203, rounds: 100, sec_side: 3, aa: 16, freeboard: 1.0, cb: 0.53, tower: 6, endurance: 28},
+    wg: {hull: 4419, armour: 3036, fuel: 2196, machinery: 2065, armament: 1650, misc: 1334, superstructure: 615, fire_control: 103},
+    notes: {},
+  },
+};
+const WG = [['armour', 'Armour', '#8C7BD0'], ['hull', 'Hull', '#B59A72'], ['armament', 'Armament', '#C9574B'], ['machinery', 'Machinery', '#D99A3E'],
+            ['misc', 'Equipment & crew', '#8E9AA3'], ['superstructure', 'Superstructure', '#6FA36A'], ['fire_control', 'Fire control', '#5B9BE0']];
+
+const params = new URLSearchParams(location.search);
+const shipId = SHIPS[params.get('ship')] ? params.get('ship') : 'bismarck';
+const ship = SHIPS[shipId], P = PROBES[shipId];
+const opened = {...ship.v};
+let v = {...ship.v};
+const locked = new Set();
+let lim = Object.fromEntries(LIMITS.map(l => [l.id, {on: false, val: null}]));
+let preset = ship.preset;
+let probing = 0;           // 0..1 while the probe builds run after an edit
+let hot = null;            // hovered lever
+let lastFit = null;        // what the last Fit did (shown under the buttons)
+const history = [];
+
+function applyPreset(i) {
+  preset = i;
+  for (const l of LIMITS) lim[l.id].on = false;
+  for (const [id, val] of Object.entries(PRESETS[i].set)) lim[id] = {on: true, val};
+}
+applyPreset(preset);
+
+// ------------------------------------------------------------------ the stand-in model: the design's value = base + each lever's probed change
+// One step each way is the real build. Further steps go on at the smaller sane slope; levers add up independently.
+// The game builds the real ship instead; this only has to feel right.
+const zero = () => [0, 0, 0, 0, 0, 0];
+function slopeOf(k, dir) {
+  // beyond the first step: the same side's probe when it points the physical way, else a small share of the other side
+  const L = LV[k], sg = L.inv ? -1 : 1;
+  const m = P.d[k + '-'], p = P.d[k + '+'];
+  const same = dir < 0 ? m : p, other = dir < 0 ? p : m;
+  if (same && Math.sign(same[0]) === dir * sg) return same.map(x => x * dir);
+  const o = other ? other.map(x => Math.abs(x)) : zero();
+  return o.map((x, j) => (j ? 0 : Math.min(150, 0.15 * x)) * sg);
+}
+function speedVec(kn) {
+  const pts = [[0, zero()], [-0.5, P.d['speed-']], [0.5, P.d['speed+']]];
+  for (const [dk, vec] of Object.entries(P.spd)) pts.push([+dk - opened.speed, vec]);
+  pts.sort((a, b) => a[0] - b[0]);
+  const x = kn - opened.speed;
+  if (x <= pts[0][0]) return pts[0][1];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, a] = pts[i], [x1, b] = pts[i + 1];
+    if (x <= x1) return a.map((ai, j) => ai + (b[j] - ai) * (x - x0) / (x1 - x0));
+  }
+  return pts[pts.length - 1][1];
+}
+function contrib(k, val) {
+  if (k === 'speed') return speedVec(val);
+  const L = LV[k], n = (val - opened[k]) / L.step;
+  if (Math.abs(n) < 1e-9) return zero();
+  const one = P.d[k + (n > 0 ? '+' : '-')] || zero(), s = slopeOf(k, Math.sign(n));
+  const a = Math.abs(n);
+  if (a <= 1) return one.map(x => x * a);
+  return one.map((x, j) => x + Math.sign(n) * (a - 1) * s[j]);
+}
+function evalWith(vals) {
+  const r = [...P.base];
+  for (const L of LEVERS) {
+    const c = contrib(L.k, vals[L.k]);
+    for (let j = 0; j < 6; j++) r[j] += c[j];
+  }
+  return r;
+}
+// one step from vals, as the probe build would report it
+function probe(k, vals, dir) {
+  const L = LV[k], nv = round(k, vals[k] + dir * L.step);
+  if (!applies(k, nv)) return null;
+  const a = evalWith(vals), b = evalWith({...vals, [k]: nv});
+  return b.map((x, j) => x - a[j]);
+}
+const round = (k, x) => +x.toFixed(LV[k].dec + (LV[k].scale ? 0 : 2));
+function applies(k, val) {
+  const L = LV[k];
+  if (val < L.lo - 1e-9 || (L.hi != null && val > L.hi + 1e-9)) return false;
+  if (k === 'end_belts' && opened.end_belts === 0) return val === 0;     // no end belts: the Protection tab adds them
+  if (k === 'upper_belt' && opened.upper_belt === 0 && val > 0 && !P.d['upper_belt+']) return false;
+  return true;
+}
+const na = k => (k === 'end_belts' && opened.end_belts === 0) || (k === 'aa' && opened.aa === 0 && !P.d['aa+']);
+
+// ------------------------------------------------------------------ limits: what's over, by how much
+function excess(r) {        // per limit: how far past it (0 when within); in its own unit
+  const out = {};
+  for (const l of LIMITS) {
+    const s = lim[l.id];
+    if (!s.on || s.val == null) continue;
+    out[l.id] = l.op === '≤' ? Math.max(0, r[l.q] - s.val) : Math.max(0, s.val - r[l.q]);
+  }
+  return out;
+}
+const fits = r => Object.values(excess(r)).every(x => x <= 1e-6);
+
+// one lever alone: the fewest steps that bring every set limit within (the game does this by bisection with real builds)
+function fitWith(k, base = v) {
+  if (na(k) || LV[k].nofit) return null;
+  const L = LV[k];
+  let best = null;
+  for (const dir of [-1, 1]) {
+    for (let n = 1; n <= 80; n++) {
+      const nv = round(k, base[k] + dir * n * L.step);
+      if (!applies(k, nv)) break;
+      const r = evalWith({...base, [k]: nv});
+      if (fits(r)) { if (!best || n < best.n) best = {k, n, dir, to: nv, r}; break; }
+    }
+  }
+  if (best) return best;
+  // can't alone: how far it gets at its end stop
+  let nv = base[k], r = evalWith(base), sum = Object.values(excess(r)).reduce((a, b) => a + b, 0);
+  for (let n = 1; n <= 80; n++) {
+    const t = round(k, base[k] - (L.inv ? -1 : 1) * n * L.step);
+    if (!applies(k, t)) break;
+    const rt = evalWith({...base, [k]: t}), st = Object.values(excess(rt)).reduce((a, b) => a + b, 0);
+    if (st < sum) { nv = t; r = rt; sum = st; }
+  }
+  return {k, cant: true, to: nv, r};
+}
+// every unlocked lever cut by the same share of its value, rounded to its step, until it fits
+function fitEvenly() {
+  const ks = LEVERS.filter(L => !locked.has(L.k) && !na(L.k) && !L.nofit && !L.inv && L.k !== 'armour_scale' && (P.d[L.k + '-'] || [1])[0] < 0).map(L => L.k);
+  for (let pct = 1; pct <= 40; pct++) {
+    const nv = {...v};
+    for (const k of ks) {
+      const L = LV[k], span = Math.max(v[k] - L.lo, 0);
+      const t = Math.max(L.lo, v[k] - Math.round(span * pct / 100 / L.step) * L.step);
+      nv[k] = round(k, t);
+    }
+    if (fits(evalWith(nv))) return {pct, nv, ks: ks.filter(k => nv[k] !== v[k])};
+  }
+  return null;
+}
+
+// ------------------------------------------------------------------ formatting
+const N0 = x => Math.round(x).toLocaleString('en-US');
+const sgn = (x, d = 0) => (x > 0 ? '+' : x < 0 ? '−' : '±') + Math.abs(x).toLocaleString('en-US', {minimumFractionDigits: d, maximumFractionDigits: d});
+function fmtV(k, x) {
+  const L = LV[k];
+  const s = x.toLocaleString('en-US', {minimumFractionDigits: L.dec, maximumFractionDigits: L.dec});
+  return L.unit ? (L.unit === '×' ? s + ' ×' : `${s} ${L.unit}`) : s;
+}
+const fmtQ = (q, x) => q < 2 ? N0(x) + ' t' : x.toFixed(q === 5 ? 2 : q === 2 ? 1 : 2) + ' m';
+const fmtDQ = (q, x) => q < 2 ? sgn(x) + ' t' : sgn(x, q === 2 ? 1 : 2) + ' m';
+
+// ------------------------------------------------------------------ dom helpers
+const $ = id => document.getElementById(id);
+function h(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, val] of Object.entries(attrs)) {
+    if (k.startsWith('on')) e.addEventListener(k.slice(2), val); else if (val !== false && val != null) e.setAttribute(k, val);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+function tabs() {
+  const names = ['Overview', 'Main battery', 'Secondary · AA · TT', 'Protection', 'Speed & machinery', 'Hull & upperworks', 'Fire control', 'Crew'];
+  $('tabs').replaceChildren(...names.map((n, i) => h('div', {class: 'tab' + (i === 0 ? ' on' : '')}, h('span', {class: 'k mono'}, String(i)), n)));
+}
+function tip(ev, html) {
+  const t = $('tip'), app = $('app').getBoundingClientRect();
+  t.innerHTML = html; t.style.display = 'block';
+  const x = ev.clientX - app.left + 14, y = ev.clientY - app.top + 16;
+  t.style.left = Math.min(x, 1280 - t.offsetWidth - 6) + 'px'; t.style.top = Math.min(y, 600 - t.offsetHeight - 4) + 'px';
+}
+function untip() { $('tip').style.display = 'none'; }
+function tipOn(e, f) { e.addEventListener('mousemove', ev => tip(ev, f())); e.addEventListener('mouseleave', untip); return e; }
+function hideMenu() { $('menu').style.display = 'none'; }
+function menu(ev, items) {
+  ev.preventDefault();
+  const m = $('menu'), app = $('app').getBoundingClientRect();
+  m.replaceChildren(...items.map(([lab, fn, key]) => {
+    if (lab === 'sep') return h('div', {class: 'sep'});
+    if (lab === 'lab') return h('div', {class: 'lab'}, fn);
+    return h('div', {class: fn ? '' : 'off', onclick: () => { if (fn) { hideMenu(); fn(); } }}, h('span', {}, lab), h('span', {class: 'dim'}, key || ''));
+  }));
+  m.style.display = 'block';
+  m.style.left = Math.min(ev.clientX - app.left, 1280 - m.offsetWidth - 4) + 'px';
+  m.style.top = Math.min(ev.clientY - app.top, 600 - m.offsetHeight - 4) + 'px';
+}
+
+// ------------------------------------------------------------------ edits
+function edit(nv, label) {
+  history.push({v: {...v}, label});
+  v = nv;
+  startProbes();
+  render();
+}
+function step(k, dir, mult = 1) {
+  const L = LV[k];
+  let t = v[k];
+  for (let i = 0; i < mult; i++) { const n = round(k, t + dir * L.step); if (!applies(k, n)) break; t = n; }
+  if (t !== v[k]) edit({...v, [k]: t}, `${L.lab} ${fmtV(k, t)}`);
+}
+let probeTimer = null;
+function startProbes() {
+  probing = 0.001;
+  clearInterval(probeTimer);
+  const t0 = performance.now(), dur = +(params.get('probe') ?? 1600);
+  probeTimer = setInterval(() => {
+    probing = Math.min(1, (performance.now() - t0) / Math.max(dur, 1));
+    if (probing >= 1) { probing = 0; clearInterval(probeTimer); }
+    render();
+  }, 120);
+}
+
+// ------------------------------------------------------------------ left: the trim sheet
+function trim() {
+  const nLever = LEVERS.length;
+  const done = probing ? Math.floor(probing * nLever * 2) : nLever * 2;
+  const probeNote = probing
+    ? h('span', {class: 'probe n'}, `probing ${done}/${nLever * 2}`, h('i', {}, h('b', {style: `width:${probing * 100}%`})))
+    : h('span', {class: 'n dim'}, `${nLever * 2} probe builds · ${(nLever * 2 * 0.31).toFixed(0)} s`);
+  const head = h('div', {class: 'sub'}, 'Trim sheet', h('span', {class: 'n dim'}, '· broad strokes; the tabs hold the detail'), h('b', {}, probeNote));
+  const g = h('div', {class: 'tt'});
+  for (const t of ['', 'lever', 'value', 'step', 'one step −', 'one step +', 'drives', ''])
+    g.append(h('div', {class: 'h' + (t.startsWith('one') ? ' right' : '')}, t));
+  for (const G of GROUPS) {
+    const t = G.wg.reduce((a, w) => a + (w === 'fuel' ? 0 : ship.wg[w] || 0), 0);
+    g.append(tipOn(h('div', {class: 'g', onclick: () => {}}, G.name, h('span', {class: 'n'}, `${N0(t)} t`), h('span', {class: 'go'}, `${G.tab} · open tab ›`)),
+      () => `<b>${G.name}</b>: ${N0(t)} t of the standard displacement${G.wg.includes('fuel') ? ` (fuel ${N0(ship.wg.fuel)} t more at full load)` : ''}.<br>Click or press <b>${G.tab}</b> for the detail tab.`));
+    for (const L of LEVERS.filter(L => L.g === G.id)) row(g, L);
+  }
+  $('left').replaceChildren(head, g);
+}
+function row(g, L) {
+  const k = L.k, off = na(k), chg = Math.abs(v[k] - opened[k]) > 1e-9, lk = locked.has(k);
+  const cls = 'r' + (hot === k ? ' hov' : '') + (chg ? ' chg' : '') + (off ? ' na' : '') + (lk ? ' lockd' : '');
+  const cells = [];
+  const pin = h('button', {class: 'pin' + (lk ? ' on' : ''), onclick: ev => { ev.stopPropagation(); lk ? locked.delete(k) : locked.add(k); render(); }}, lk ? '◆' : '◇');
+  tipOn(pin, () => lk ? `<b>Locked</b>: Fit leaves ${L.lab.toLowerCase()} alone. Click to unlock.` : `Lock ${L.lab.toLowerCase()}: Fit won't touch it.`);
+  cells.push(h('div', {}, pin));
+  cells.push(h('div', {class: 'lab'}, L.lab, L.fresh ? h('span', {class: 'dim', style: 'margin-left:5px;font-size:10px'}, 'new') : null));
+  const sp = h('span', {class: 'sp' + (chg ? ' chg' : '') + (off ? ' off' : '')},
+    h('button', {onclick: ev => step(k, -1, ev.shiftKey ? 4 : 1)}, '◀'),
+    h('span', {}, off ? '—' : fmtV(k, v[k])),
+    h('button', {onclick: ev => step(k, 1, ev.shiftKey ? 4 : 1)}, '▶'));
+  sp.addEventListener('wheel', ev => { ev.preventDefault(); step(k, ev.deltaY < 0 ? 1 : -1, ev.shiftKey ? 4 : 1); });
+  cells.push(h('div', {}, sp));
+  cells.push(h('div', {class: 'right mono dim', style: 'font-size:11px'}, L.scale ? `${L.step} %` : `${L.step.toLocaleString('en-US')}`));
+  for (const dir of [-1, 1]) {
+    const d = off ? null : probe(k, v, dir);
+    const wait = probing && (LEVERS.indexOf(L) * 2 + (dir > 0)) >= Math.floor(probing * LEVERS.length * 2);
+    const lumpy = d && (dir < 0 ? d[0] > 0 : d[0] < 0);
+    const b = h('button', {class: 'dt' + (!d ? ' na' : wait ? ' wait' : lumpy ? ' lumpy' : ''), onclick: () => d && step(k, dir)},
+      !d ? '—' : wait ? '…' : (lumpy ? '⚠ ' : '') + sgn(d[0]) + ' t');
+    if (d) tipOn(b, () => deltaTip(L, dir, d, lumpy, wait));
+    cells.push(h('div', {class: 'right'}, b));
+  }
+  const note = ship.notes[k];
+  cells.push(h('div', {class: 'drv'}, off ? (k === 'end_belts' ? 'no end belts: add them on Protection' : 'none fitted') : note || L.drv));
+  cells.push(h('div', {}, chg ? tipOn(h('button', {class: 'rst', onclick: () => edit({...v, [k]: opened[k]}, `${L.lab} reset`)}, '↺'), () => `Back to ${fmtV(k, opened[k])}, as opened.`) : null));
+  for (const c of cells) {
+    c.className = (c.className + ' ' + cls).trim();
+    c.addEventListener('mouseenter', () => { hot = k; paintHot(); });
+    c.addEventListener('mouseleave', () => { hot = null; paintHot(); });
+    c.addEventListener('contextmenu', ev => rowMenu(ev, L));
+    c.dataset.k = k;
+    g.append(c);
+  }
+}
+function paintHot() { document.querySelectorAll('.tt .r').forEach(e => e.classList.toggle('hov', e.dataset.k === hot)); }
+function deltaTip(L, dir, d, lumpy, wait) {
+  const to = round(L.k, v[L.k] + dir * L.step);
+  if (wait) return `<b>${L.lab} → ${fmtV(L.k, to)}</b><br><span class="dim">being built…</span>`;
+  const rows = Q.map((q, j) => `<tr><td>${q}</td><td class="r">${fmtDQ(j, d[j])}</td></tr>`).join('');
+  return `<b>${L.lab} → ${fmtV(L.k, to)}</b> (one probe build)<table>${rows}</table>` +
+    (lumpy ? `<div class="a" style="margin-top:4px">A step ${dir < 0 ? 'down adds' : 'up saves'} weight: the hull settles on another form ` +
+      `(beam ${sgn(d[3], 2)} m, draught ${sgn(d[4], 2)} m). Two steps may come out differently; the cell shows only this one.</div>` : '') +
+    `<div class="dim" style="margin-top:3px">Click to take the step.</div>`;
+}
+function rowMenu(ev, L) {
+  const k = L.k, G = GROUPS.find(g => g.id === L.g);
+  const f = fitWith(k);
+  menu(ev, [
+    ['lab', L.lab],
+    [locked.has(k) ? 'Unlock' : 'Lock (Fit leaves it alone)', () => { locked.has(k) ? locked.delete(k) : locked.add(k); render(); }, 'L'],
+    ['Reset to ' + fmtV(k, opened[k]), v[k] !== opened[k] ? () => edit({...v, [k]: opened[k]}, `${L.lab} reset`) : null, ''],
+    ['sep'],
+    [f && !f.cant ? `Fit with ${L.lab.toLowerCase()}: ${fmtV(k, f.to)}` : `Fit with ${L.lab.toLowerCase()}: can't alone`, f && !f.cant && anyLimit() && !fits(evalWith(v)) ? () => applyFit(f) : null, 'F'],
+    ['sep'],
+    [`Open ${G.name}`, () => {}, String(G.tab)],
+  ]);
+}
+
+// ------------------------------------------------------------------ right: limits, verdict, fit
+const anyLimit = () => LIMITS.some(l => lim[l.id].on && lim[l.id].val != null);
+function limitsBox(r) {
+  const head = h('div', {class: 'sub'}, 'Limits', h('span', {class: 'n dim'}, '· saved with the design; never refused, only reported'),
+    h('b', {}, h('span', {class: 'dd', onclick: ev => menu(ev, [['lab', 'Preset'], ...PRESETS.map((p, i) => [p.name + (p.note ? ' · ' + p.note : ''), () => { applyPreset(i); render(); }, i === preset ? '●' : ''])])},
+      PRESETS[preset].name, h('span', {class: 'dim'}, '▾'))));
+  const g = h('div', {class: 'lt'});
+  for (const t of ['', '', '', 'limit', 'now', 'margin', ''])
+    g.append(h('div', {class: 'h' + (t === 'now' || t === 'margin' ? ' right' : '')}, t));
+  const ex = excess(r);
+  for (const l of LIMITS) {
+    const s = lim[l.id], on = s.on && s.val != null, cur = r[l.q];
+    const cls = 'r' + (s.on ? '' : ' off');
+    const chk = h('span', {class: 'chk', onclick: () => { s.on = !s.on; if (s.on && s.val == null) s.val = +cur.toFixed(l.dec); preset = presetOf(); render(); }}, s.on ? '✓' : '');
+    const fld = h('input', {class: 'fld', value: s.val == null ? '' : s.val.toLocaleString('en-US', {minimumFractionDigits: l.dec, maximumFractionDigits: l.dec}), placeholder: '—'});
+    fld.disabled = !s.on;
+    fld.addEventListener('change', () => { const x = parseFloat(fld.value.replace(/,/g, '')); s.val = isFinite(x) ? x : null; preset = presetOf(); render(); });
+    fld.addEventListener('keydown', ev => { if (ev.key === 'Enter') fld.blur(); });
+    let mg = '', mcls = 'dim';
+    if (on) {
+      const over = ex[l.id] > 1e-6, room = l.op === '≤' ? s.val - cur : cur - s.val;
+      mg = over ? `${l.q < 2 ? N0(ex[l.id]) + ' t' : ex[l.id].toFixed(l.dec) + ' m'} over` : `${l.q < 2 ? N0(room) + ' t' : room.toFixed(l.dec) + ' m'} spare`;
+      mcls = over ? 'amb' : 'okc';
+    }
+    const frac = on ? Math.min(1.15, cur / s.val) / 1.15 : 0;
+    const bar = on ? h('div', {class: 'bar'}, h('b', {class: ex[l.id] > 1e-6 ? 'over' : '', style: `width:${frac * 100}%`}), h('i', {style: `left:${100 / 1.15}%`})) : null;
+    for (const c of [h('div', {}, chk), h('div', {}, l.lab), h('div', {class: 'dim mono'}, l.op), h('div', {}, fld, h('span', {class: 'dim', style: 'margin-left:4px'}, l.unit)),
+                     h('div', {class: 'right mono', style: 'font-size:11.5px;color:var(--bright)'}, fmtQ(l.q, cur)), h('div', {class: 'right mg ' + mcls}, mg), h('div', {}, bar)]) {
+      c.className = (c.className + ' ' + cls).trim();
+      g.append(c);
+    }
+  }
+  return [head, g];
+}
+function presetOf() {
+  for (let i = 0; i < PRESETS.length; i++) {
+    const set = PRESETS[i].set;
+    if (LIMITS.every(l => (l.id in set) ? lim[l.id].on && lim[l.id].val === set[l.id] : !lim[l.id].on)) return i;
+  }
+  return 0;
+}
+function verdict(r) {
+  if (!anyLimit()) return h('div', {class: 'verdict ok'}, h('span', {class: 'what'}, 'No limits set. Pick a preset or tick a row: Fit then trims to it.'));
+  const ex = excess(r), over = LIMITS.filter(l => ex[l.id] > 1e-6);
+  const name = preset ? PRESETS[preset].name.split(' · ')[0] : 'your limits';
+  if (!over.length) {
+    const l = LIMITS.find(l => lim[l.id].on && l.id === 'std') || LIMITS.find(l => lim[l.id].on);
+    const room = l.op === '≤' ? lim[l.id].val - r[l.q] : r[l.q] - lim[l.id].val;
+    return h('div', {class: 'verdict ok'}, h('span', {class: 'big'}, l.q < 2 ? N0(room) + ' t' : room.toFixed(l.dec) + ' m'),
+      h('span', {class: 'what'}, `to spare · within ${name}`), h('span', {class: 'and'}, '✓ every limit met'));
+  }
+  const l = over[0];
+  return h('div', {class: 'verdict over'}, h('span', {class: 'big'}, l.q < 2 ? N0(ex[l.id]) + ' t' : ex[l.id].toFixed(l.dec) + ' m'),
+    h('span', {class: 'what'}, `${l.lab.toLowerCase()} over ${name}`),
+    h('span', {class: 'and'}, over.length > 1 ? `and ${over.slice(1).map(o => o.lab.toLowerCase()).join(', ')}` : ''));
+}
+function weightBar(r) {
+  // the standard displacement by group, scaled from the opened ship's ledger; the white tick is the standard limit
+  const total0 = WG.reduce((a, [w]) => a + ship.wg[w], 0), scale = r[0] / total0;
+  const max = Math.max(r[0], lim.std.on && lim.std.val ? lim.std.val : 0) * 1.04;
+  const bar = h('div', {class: 'wb'}, WG.map(([w, n, c]) => tipOn(h('span', {style: `width:${ship.wg[w] * scale / max * 100}%;background:${c}`}), () => `<b>${n}</b>: ${N0(ship.wg[w] * scale)} t`)));
+  if (lim.std.on && lim.std.val) bar.append(h('i', {style: `left:${lim.std.val / max * 100}%`}));
+  const legend = h('div', {class: 'wbl'}, WG.slice(0, 6).map(([w, n, c]) => h('span', {}, h('span', {class: 'sw', style: `background:${c}`}), n)));
+  return [bar, legend];
+}
+function fitBox(r) {
+  const head = h('div', {class: 'sub'}, 'Fit with one lever', h('span', {class: 'n dim'}, '· the rest held'), h('b', {}, 'least change first'));
+  const g = h('div', {class: 'ft'});
+  for (const t of ['lever', 'to', 'change', 'also', ''])
+    g.append(h('div', {class: 'h' + (t === 'change' ? ' right' : '')}, t));
+  const over = anyLimit() && !fits(r);
+  const rows = [];
+  if (over) {
+    for (const L of LEVERS) {
+      if (locked.has(L.k) || na(L.k)) continue;
+      const f = fitWith(L.k);
+      if (!f) continue;
+      const pct = Math.abs(f.to - v[L.k]) / Math.max(Math.abs(v[L.k]), L.step) * 100;
+      rows.push({L, f, pct});
+    }
+    rows.sort((a, b) => (a.f.cant - b.f.cant) || (a.pct - b.pct));
+  }
+  const shown = rows.filter(x => !x.f.cant).slice(0, 7);
+  const cant = rows.filter(x => x.f.cant && v[x.L.k] > x.L.lo);
+  if (!over) g.append(h('div', {class: 'dim', style: 'grid-column:1/-1;height:40px;white-space:normal'}, anyLimit() ? 'Within every limit: nothing to fit. Step a lever up to spend the spare tonnage.' : 'Set a limit to see what each lever would have to give.'));
+  for (const {L, f, pct} of shown) {
+    const also = [];
+    for (const j of [2, 5]) { const d = f.r[j] - r[j]; if (Math.abs(d) >= (j === 2 ? 0.5 : 0.05)) also.push(`${j === 2 ? 'L' : 'GM'} ${sgn(d, j === 2 ? 1 : 2)} m`); }
+    const cls = 'r' + (hot === 'fit:' + L.k ? ' hov' : '');
+    const cells = [h('div', {}, L.lab), h('div', {class: 'mono', style: 'font-size:11.5px;color:var(--bright)'}, fmtV(L.k, f.to)),
+      h('div', {class: 'right mono', style: 'font-size:11px'}, `${sgn(f.dir * f.n * L.step, L.dec)}${L.unit && L.unit !== '×' ? ' ' + (L.unit === 'levels' || L.unit === 'days' ? '' : L.unit) : ''}`),
+      h('div', {class: 'dim', style: 'font-size:11px'}, also.join(' · ')),
+      h('div', {class: 'right'}, h('button', {class: 'act', onclick: () => applyFit(f)}, 'Fit'))];
+    for (const c of cells) {
+      c.className = (c.className + ' ' + cls).trim();
+      tipOn(c, () => `<b>${L.lab}: ${fmtV(L.k, v[L.k])} → ${fmtV(L.k, f.to)}</b> (${f.n} step${f.n > 1 ? 's' : ''}, ${pct.toFixed(0)} % of its value)<br>` +
+        `Standard ${N0(f.r[0])} t · L ${f.r[2].toFixed(1)} m · B ${f.r[3].toFixed(1)} m · GM ${f.r[5].toFixed(2)} m<br>` +
+        `<span class="dim">The game bisects with real builds, then rebuilds once to confirm.</span>`);
+      g.append(c);
+    }
+  }
+  if (cant.length) {
+    const names = cant.slice(0, 6).map(x => x.L.lab.toLowerCase()).join(', ') + (cant.length > 6 ? ` +${cant.length - 6}` : '');
+    g.append(tipOn(h('div', {class: 'dim', style: 'grid-column:1/-1;font-size:11px'}, `Can't alone: ${names}`),
+      () => cant.map(x => `${x.L.lab}: at ${fmtV(x.L.k, x.f.to)} still ${N0(Math.max(0, ...Object.values(excess(x.f.r))))} over`).join('<br>')));
+  }
+  const ev = over ? fitEvenly() : null;
+  const btns = h('div', {class: 'btns'},
+    tipOn(h('button', {class: 'act gold', disabled: !ev, onclick: () => ev && edit(ev.nv, `Fit evenly −${ev.pct} %`)}, ev ? `Fit evenly · every unlocked lever −${ev.pct} %` : 'Fit evenly'),
+      () => ev ? `<b>Fit evenly</b>: cuts each unlocked lever by ${ev.pct} % of its room above its floor, rounded to its step:<br>` +
+        ev.ks.map(k => `${LV[k].lab} ${fmtV(k, v[k])} → ${fmtV(k, ev.nv[k])}`).join('<br>') + '<br><span class="dim">Lock (◆) what must not move.</span>'
+        : over ? 'The unlocked levers can\'t get there together.' : 'Within every limit.'),
+    lastFit ? h('span', {class: 'dim'}, lastFit) : null);
+  return [head, g, btns];
+}
+function applyFit(f) {
+  const L = LV[f.k];
+  lastFit = `last: ${L.lab.toLowerCase()} ${fmtV(f.k, v[f.k])} → ${fmtV(f.k, f.to)} · ${Math.max(3, Math.ceil(Math.log2(f.n + 1)) + 2)} builds`;
+  edit({...v, [f.k]: f.to}, `Fit: ${L.lab} ${fmtV(f.k, f.to)}`);
+}
+
+function render() {
+  const r = evalWith(v);
+  trim();
+  $('right').replaceChildren(...limitsBox(r), verdict(r), ...weightBar(r), ...fitBox(r));
+}
+document.addEventListener('click', ev => { if (!ev.target.closest('#menu') && !ev.target.closest('.dd')) hideMenu(); });
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape') hideMenu();
+  if ((ev.ctrlKey || ev.metaKey) && ev.key === 'z' && history.length) { v = history.pop().v; render(); }
+});
+tabs();
+// scripted states for screenshots: ?ship=..&do=step:k:n,lock:k,fit:k,even,preset:i,menu:k,tip:k:dir
+const scripted = [];
+for (const s of (params.get('do') || '').split(',').filter(Boolean)) {
+  const [what, a, b] = s.split(':');
+  if (what === 'step') { const t = round(a, v[a] + (+b) * LV[a].step); history.push({v: {...v}}); v = {...v, [a]: t}; }
+  if (what === 'lock') locked.add(a);
+  if (what === 'preset') applyPreset(+a);
+  if (what === 'lim') { lim[a] = {on: true, val: +b}; preset = presetOf(); }
+  if (what === 'fit') { const f = fitWith(a); if (f && !f.cant) { lastFit = `last: ${LV[a].lab.toLowerCase()} ${fmtV(a, v[a])} → ${fmtV(a, f.to)} · ${Math.max(3, Math.ceil(Math.log2(f.n + 1)) + 2)} builds`; v = {...v, [a]: f.to}; } }
+  if (what === 'even') { const e = fitEvenly(); if (e) v = e.nv; }
+  if (what === 'probing') probing = +a;
+  if (what === 'menu' || what === 'tip' || what === 'presetmenu') scripted.push([what, a, b]);
+}
+render();
+for (const [what, a, b] of scripted) {
+  if (what === 'menu') {
+    const cell = document.querySelector(`.tt .r[data-k="${a}"]`), rc = cell.getBoundingClientRect();
+    rowMenu({preventDefault() {}, clientX: rc.left + 60, clientY: rc.bottom - 4}, LV[a]);
+  }
+  if (what === 'presetmenu') document.querySelector('.dd').dispatchEvent(new MouseEvent('click', {bubbles: true, clientX: 1180, clientY: 30}));
+  if (what === 'tip') {
+    const cells = [...document.querySelectorAll(`.tt .r[data-k="${a}"] .dt`)], c = cells[+b > 0 ? 1 : 0], rc = c.getBoundingClientRect();
+    c.dispatchEvent(new MouseEvent('mousemove', {clientX: rc.left + 30, clientY: rc.top + 8}));
+  }
+}
+</script>
+</body>
+</html>

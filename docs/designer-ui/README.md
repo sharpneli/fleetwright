@@ -147,6 +147,32 @@ loads the other examples.
 | `png/secondary-game-kongo-lane.png` | in the game: Kongō, hovering the upper-casemate `+` with SB selected |
 | `png/secondary-game-deutschland.png` | in the game: Deutschland, S2 selected, rose with the main battery |
 
+## Overview tab (`overview.html`, 2026-10-11)
+
+This mockup covers the Overview tab's pane only (1280 × 578). It is a trim sheet for getting a ship under a limit with
+broad strokes:
+
+- **18 levers** in four groups. Each lever has real one-step − / + tonnage from probe builds, with ⚠ on steps where the
+  engine's tonnage jumps.
+- **Limits:** standard, full load, length, beam, draught and GM, with treaty and dock presets, a verdict line and a
+  weight bar.
+- **Fit:** one lever alone, or every unlocked lever evenly.
+
+The reasoning, the engine finding (the lumpy tonnage), the port plan and the open questions are in `overview.md`.
+`?ship=dreadnought|heavy_cruiser` loads the other examples.
+
+| File | State |
+|---|---|
+| `png/ov-before.png` | today's Overview in the game, for comparison |
+| `png/overview-opened.png` | Bismarck against Washington 1922: 4,203 t over |
+| `png/overview-delta-tip.png` | hovering armour deck "one step −": +1,281 t, the hull settles deeper |
+| `png/overview-fit-speed.png` | after Fit with speed: 30 → 26 kn, 432 t to spare |
+| `png/overview-probing.png` | right after an edit: probes filling in |
+| `png/overview-row-menu.png` | right-click on Belt |
+| `png/overview-preset-menu.png` | the limit presets |
+| `png/overview-dreadnought-dock.png` | Dreadnought against a 600 × 90 ft dock: length and beam over |
+| `png/overview-cruiser-london.png` | Heavy Cruiser against London 1930, with speed and calibre locked |
+
 ## Screenshots (`png/`)
 
 | File | State |
