@@ -1,8 +1,8 @@
 # The world: how the game is organised around a living planet
 
-2026-10-11. Status: an investigation, proposed to the user; nothing here is agreed yet except what
-`docs/battle/plan.md` "The world" already settled (one sphere, Earth-centred doubles, flat only locally). The open
-questions are at the end.
+2026-10-11. Status: the tiers, the sim thread, the commands and the snapshot, and the screen stack are agreed with the
+user (2026-10-11, "Decisions" at the end); "Conflicts" is proposed. `docs/battle/plan.md` "The world" settled the
+geometry (one sphere, Earth-centred doubles, flat only locally).
 
 ## What has to hold
 
@@ -78,6 +78,103 @@ The one thing that can't be scheduled ahead by a single ship is meeting another.
   (a ship completed, a convoy arrived, fuel low). Deterministic, and the player never overshoots a contact by 8
   minutes.
 
+## Conflicts: who fights, how closely it's simulated, and who's watching (proposed)
+
+Most fighting in the world isn't the player's: NPC navies at war with each other, a raider sinking merchants in the
+Indian Ocean, a French cruiser shadowing a British one off Brest. Most of it must happen without anyone deciding
+anything and without slowing the clock. The design splits an encounter into three independent questions.
+
+### 1. Whether there's a fight at all: relations and rules of engagement
+
+- **Relations are world state:** each pair of nations is at peace, in tension, or at war, and each side may treat
+  third parties as neutrals (blockade, contraband). The diplomacy that moves them is its own system, later.
+- **An encounter opens on contact between forces whose relations allow interaction**, not just "opposing": at war
+  they may fight; in tension they shadow, warn and maybe fire (an incident, which can feed back into relations); a
+  blockader stops neutrals. When rules say nothing can happen, ships just pass on rails.
+- **Every group carries standing orders (rules of engagement and doctrine):** engage, engage if superior, shadow,
+  evade, run for port; how far to fight (break off at x% damage); what to do with merchants (sink, capture, let go).
+  The player sets them per fleet, with navy-wide defaults. The same orders drive NPC groups. They decide what
+  happens in an encounter nobody is commanding.
+
+### 2. How closely the encounter is simulated: fidelity
+
+Each encounter runs at one of two fidelities, and can switch at a step boundary:
+
+- **Full:** the tactical tier: the battle tick, sighting, fire control, every shell, the damage model. It's the only
+  thing that slows the clock.
+- **Resolved:** the same encounter in coarse steps (a minute of game time, from `SimSettings`), on the job system,
+  never slowing the clock. Per step:
+  - **Manoeuvre** by the groups' doctrine: range and bearing change by what each side wants (close, hold, open, flee)
+    within its speed, and the ships still move on the sphere, so a running fight drifts across the map and can be
+    joined by others.
+  - **Sighting** as a probability over the step (horizon, weather, night) from the same sighting models.
+  - **Fire as expected hits:** from range, fire-control level, the guns and the target's size and aspect
+    (`fire_control_ref.py` `quick_hit_probability` is this already), the step's hits are sampled.
+  - **Each sampled hit goes through the real hit query and damage model:** a point and angle of fall on the target,
+    penetration, components, cells, flooding. The shell's flight is skipped; its effect is not.
+
+  So **damage is the same kind of damage** at both fidelities: a cruiser that took hits in a resolved fight off Brest
+  sails home with the same condition tables (a flooded cell, a turret out) it would have had in a full one, and the
+  player meets it in port or promotes the fight halfway and sees the holes. The cost scales with hits, not ticks: a
+  2-hour fight is ~120 steps, and at 30,000x it's over in a quarter of a real second on one job.
+- **Calibrated against Full:** the full tactical tier runs headless, so the resolver is tuned by running the same
+  scenarios thousands of times both ways and comparing outcomes (hits, sinkings, duration). That's a test, kept: a
+  change to either one that moves them apart fails it.
+- **Switching:** promote Resolved -> Full at any step: positions and condition tables are already real; fire-control
+  solutions start from the resolver's quality. Demote Full -> Resolved: shells in flight land at once (their impacts
+  are known), solutions collapse to a quality number. Each switch is a command, so replays hold.
+
+### 3. Who commands it, and whether the player hears of it: attention
+
+- **Control is separate from fidelity:** an encounter is commanded by the player or by captains (the AI acting on
+  the standing orders). The player can let captains fight at Full and watch, or command a Resolved fight through its
+  orders (break off, close) without watching it.
+- **Every encounter gets an interest for the player:** own ships involved and how valuable, the size of the forces,
+  ships the player flagged, how near own waters, whether a neutral or an ally is being hit. A user-configurable table
+  maps interest to what happens: nothing, a dispatch in the log, a notification, a speed drop (to 1x, effectively
+  paused at these scales), a pause, or straight to Full. Defaults: NPC vs NPC -> a dispatch; own merchant sunk -> a
+  notification; own warship engaged -> a speed drop with "take command" or "leave it to the captain"; own fleet
+  engaged -> pause.
+- **Promotion is the player's, never forced by NPCs:** whatever two NPC navies do, the clock only slows when the
+  player's rules say so, and the player can open any visible encounter to watch it at Full (it slows the clock while
+  it's watched).
+- **Several encounters at Full** slow the clock to the slowest; the UI lists them, and the player can hand any back
+  to the captains.
+
+### Many small fights: raiders, merchants and flows
+
+The thousands of merchant ships in the world (Britain alone had ~9,000 in 1914) shouldn't each be a ship on rails
+waiting to be found:
+
+- **Merchant traffic is a flow:** tonnage per lane per day, by nation, from the Earth model's trade routes. National
+  economies, convoys and losses are counted on the flows.
+- **Search is a rate, not a scan:** a raider (or a patrol) working a lane finds merchants at the rate random-search
+  theory gives (Koopman: sweep width x speed x traffic density). Each find is an event.
+- **A found merchant materialises:** a real ship of a class from the nation's merchant pool, at a real position, in
+  a Resolved encounter with the raider, run by both sides' orders (stop, sink or capture; run, scatter, signal).
+  After it, the merchant is sunk, captured or gone, and goes back into the flow as tonnage, or stays a ship if it
+  matters (a prize sailed home).
+- **Escorted convoys are real groups** (they're few and they matter), and their merchants materialise when the convoy
+  is attacked.
+- **The same pattern scales other numerous small things** (submarines on patrol, later aircraft searches): aggregate
+  until something finds them, a real entity from then on.
+
+### Knowledge: each navy sees its own picture
+
+Fog of war follows from all of this: **each navy has its own picture** (contacts, their age and accuracy, what
+dispatches reported). The player's snapshot is built from the player's navy's picture, not from the world; the NPC
+admiralties plan from theirs. An encounter far away reaches the player as a dispatch when someone could have reported
+it (a wireless signal, a survivor), not when it happened. A navy's picture is world state like any other: saved,
+deterministic, updated by events.
+
+### NPC navies are command sources
+
+An NPC admiralty is an AI that reads its navy's picture and issues the same commands the player does (orders, routes,
+designs, ships laid down) at a coarse rate (daily for strategy, per step for its groups in encounters). It runs on the
+job system, one navy per job, reading a frozen picture and writing commands that apply next step, so it's
+deterministic and can't reach into the world. The player's navy and an NPC's are the same thing with a different
+command source: the player could hand a theatre to an AI admiral, or watch an all-NPC world headless for tests.
+
 ## The pieces and where they live
 
 ```
@@ -93,7 +190,12 @@ Fleetwright.Sim          the world; no GPU, no SDL, no ImGui; deterministic; hea
     Designs              each navy's accepted designs, by content hash -> ShipClass (battle plan), compiled once
     Ships                ShipState stores (SoA): tier, track, condition tables (battle plan)
     Yards                construction as events: laid down, launched, completed
-    Encounters           the tactical bubbles and their battle state (shells, fire control)
+    Encounters           the bubbles: fidelity (Full / Resolved), control, interest; their battle state
+    Relations            peace / tension / war per pair of nations; neutrals
+    Pictures             each navy's knowledge: contacts, dispatches
+    Flows                merchant traffic per lane, raiders' search rates, the merchant pools
+    Admiralties          NPC command sources (AI), reading their navy's picture
+    SimSettings          every tuning number, from data
   Commands               the only way in: orders, designs submitted, ships laid down; stamped with the tick
   Snapshot               the only way out: what the screens need, published after a step
        ▲
@@ -125,8 +227,11 @@ This replaces the battle plan's open question 2 (a `Fleetwright.Battle` project)
 - **Deep looks (a ship's damage tables in a report screen)** go through a watch list: the UI says which ships it's
   showing, and the sim copies their full state into the snapshot. Nothing on the UI side holds a reference into the
   world.
-- **Start without the thread if it helps:** with commands in and the snapshot out from the first day, running the sim
-  on the main thread in a time slice is the same code, and moving it to its own thread is mechanical.
+- **Threaded throughout (agreed):** the sim thread from the start, and the job system (later, its own step) under it
+  for everything that's per ship, per group or per encounter: rails events in a batch, contact scans, the resolved
+  encounters, the tactical tier's models. Work is split so results don't depend on the thread count.
+- **No magic values (agreed):** the encounter range, the scan interval, the tick sizes, the tiers' steps and every
+  other tuning number live in one central settings table (`SimSettings`, loaded from data), never inline in the code.
 
 ### Screens: a stack, not tabs
 
@@ -174,18 +279,37 @@ This replaces the battle plan's open question 2 (a `Fleetwright.Battle` project)
 2. **The app, the stack and the map.** The scene stack in the exe; `App` owning the world and the sim thread; a
    first `MapScene`: a plain globe (lat/lon grid), ships as icons from the snapshot, time controls (pause, 1x to
    30,000x, asked vs achieved); the designer pushed and popped, a submitted design laid down and launched by event.
-3. **Contacts and encounters.** The scan, the exact crossing times, encounters opening, merging and closing, speed
-   drops at the event. Tactical ships just steam in it for now.
-4. **The tactical tier.** `docs/battle/plan.md` steps 1-7 land here: `ShipClass`, `ShipState`, the hit query, the
-   registry, the sprites, damage, shells.
-5. **The Earth model** (when the user brings it): land, the sea graph and routing, ports, the globe's tiles.
-6. **The coarse tier** when the first model needs it (flooding after a battle).
+3. **The job system.** Fixed workers, struct jobs, counters (the tech-stack plan's "Job system"), with the
+   determinism-across-thread-counts test; the rails events and the snapshot fill moved onto it.
+4. **Contacts, relations and encounters.** The scan, the exact crossing times, relations and standing orders deciding
+   whether an encounter opens, encounters opening, merging and closing; interest and the user's table (dispatch,
+   notify, speed drop, pause). Ships just steam in an encounter for now.
+5. **The tactical tier (Full).** `docs/battle/plan.md` steps 1-7 land here: `ShipClass`, `ShipState`, the hit query,
+   the registry, the sprites, damage, shells.
+6. **The resolver (Resolved).** Doctrine manoeuvre, sighting and expected hits per coarse step, sampled hits through
+   the real hit query and damage; promotion and demotion; the calibration test against Full.
+7. **The Earth model** (when the user brings it): land, the sea graph and routing, ports, the globe's tiles; then
+   trade lanes and merchant flows, search rates, materialising merchants.
+8. **Pictures and admiralties:** each navy's knowledge and dispatches; NPC navies as command sources.
+9. **The coarse tier** for ships when the first model needs it (flooding after a battle).
+
+## Decisions (the user's, 2026-10-11)
+
+1. **Threaded throughout:** the sim on its own thread from the start, a job system under it (its own step).
+2. **The project is `Fleetwright.Sim`.**
+3. **Time:** ms since 1850, 50 ms tactical ticks; the rendering interpolates for display.
+4. **The encounter range (~50 km) and scan interval (10 min)** are starting values, in the central `SimSettings`
+   with every other tuning number; no magic values in the code.
+5. **What drops the speed is user-configurable** (the interest table in "Conflicts").
+6. **The clock while the designer is open is user-configurable;** dropping to 1x, which at these scales is as good as
+   paused, is one choice.
 
 ## Open questions (the user's)
 
-1. **The sim on its own thread from step 2** (proposed), or in the frame loop until something needs more?
-2. **The project name:** `Fleetwright.Sim` (proposed), `Fleetwright.World`?
-3. **The epoch and the tick:** ms since 1850 and 50 ms tactical ticks?
-4. **The encounter range and the scan interval:** ~50 km and 10 minutes as starting values?
-5. **What drops the speed** by default: contacts only, or also arrivals, completions, fuel?
-6. **The clock while the designer is open:** paused by default?
+1. **Two fidelities (Full / Resolved)**, with damage always through the real hit query and damage model, and the
+   resolver calibrated against Full by a test?
+2. **Merchants as flows**, materialised when found, rather than every merchant a ship on rails?
+3. **Per-navy pictures** (fog of war in the sim itself, dispatches reaching the player late), from the start or
+   later?
+4. **Relations beyond war and peace** (tension, incidents, neutrals and blockade): wanted, and how much of it is the
+   game's?
