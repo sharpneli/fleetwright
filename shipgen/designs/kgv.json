@@ -1,4 +1,4 @@
-{"id": "kgv", "name": "King George V-like (1940)", "look": {"navy": "portsmouth", "era": "wwii"}, "type": "BB",
+{"version": 1, "id": "kgv", "name": "King George V-like (1940)", "look": {"navy": "portsmouth", "era": "wwii"}, "type": "BB",
  "hull": {"block_coefficient": 0.6, "construction": {"name": "High-tensile steel, riveted shell, welded internals", "yield_mpa": 350, "join_factor": 1.04, "standard": 1.0}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 64}, "freeboard": 1.0, "raised": [{"from": "bow", "to": "fore_group", "decks": 1}]},
  "speed_kn": 28,
  "range_nm": 6000,

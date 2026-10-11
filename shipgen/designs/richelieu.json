@@ -1,4 +1,4 @@
-{"id": "richelieu", "name": "Richelieu-like (1940)", "look": {"navy": "toulon", "era": "wwii"}, "type": "BB",
+{"version": 1, "id": "richelieu", "name": "Richelieu-like (1940)", "look": {"navy": "toulon", "era": "wwii"}, "type": "BB",
  "hull": {"block_coefficient": 0.58, "construction": {"name": "High-tensile steel, riveted shell, welded internals", "yield_mpa": 350, "join_factor": 1.04, "standard": 1.0}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 64}, "freeboard": 1.0, "raised": [{"from": "bow", "to": "aft_control", "decks": 1}]},
  "speed_kn": 30,
  "range_nm": 7700,

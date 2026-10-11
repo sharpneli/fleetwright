@@ -1,4 +1,5 @@
 {
+  "version": 1,
   "id": "battleship_layered", "name": "Fast Battleship, layered decks (Iowa-style)", "look": {"navy": "generic", "era": "wwii"}, "type": "BB",
   "hull": {"block_coefficient": 0.59, "construction": {"name": "High-tensile and structural STS, mostly welded", "yield_mpa": 420, "join_factor": 1.02, "standard": 1.0}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 76}, "freeboard": 1.0, "raised": []},
   "speed_kn": 33, "range_nm": 15000,

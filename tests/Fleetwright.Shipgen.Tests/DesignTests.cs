@@ -4,7 +4,7 @@ using Fleetwright.Shipgen.Golden;
 namespace Fleetwright.Shipgen.Tests;
 
 /// <summary>The typed design reads every design file and writes it back as given (a lone secondary battery comes back
-/// as a list of one).</summary>
+/// as a list of one, a file without a version with the current one).</summary>
 public class DesignTests
 {
     static readonly string Root = Paths.Shipgen();
@@ -23,6 +23,7 @@ public class DesignTests
                     given.Remove(k);
                     given[k] = new JsonArray(one);
                 }
+            given["version"] ??= JsonNode.Parse($"{DesignFormat.Current}");   // an older file comes back upgraded
             var back = JsonNode.Parse(Design.Parse(text).ToJson())!;
             if (!JsonNode.DeepEquals(Normalize(given), Normalize(back)))
                 failures.Add($"{c.Name}:\n  given {given.ToJsonString()}\n  back  {back.ToJsonString()}");

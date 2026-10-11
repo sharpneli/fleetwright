@@ -363,7 +363,7 @@ public static class ShipDesign
         return new Report
         {
             Id = design.Id, Name = design.Name ?? design.Id, Valid = lay.Errors.Count == 0 && r.Errors.Count == 0,
-            Errors = [.. lay.Errors, .. r.Errors], Warnings = [.. lay.Warnings, .. r.Warnings], Inputs = design, Results = results,
+            Errors = [.. lay.Errors, .. r.Errors], Warnings = [.. DesignFormat.Warnings(design), .. lay.Warnings, .. r.Warnings], Inputs = design, Results = results,
             Summary = Styles.Get(design).Summary(sized, lay, r),
             Plant = PlantReport(lay, r), Hull = HullReport(design, r), Crew = lay.Crew, FireControl = FireControl.Report(lay, r.Freeboard),
             Bridge = lay.Geo.Bridge != null ? BridgeReport(lay, r.Freeboard) : null, WeightGroupsT = groups,

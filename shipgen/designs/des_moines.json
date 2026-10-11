@@ -1,4 +1,4 @@
-{"id": "des_moines", "name": "Des Moines-like (1949)", "look": {"navy": "brooklyn", "era": "cold_war"}, "type": "CA",
+{"version": 1, "id": "des_moines", "name": "Des Moines-like (1949)", "look": {"navy": "brooklyn", "era": "cold_war"}, "type": "CA",
  "hull": {"block_coefficient": 0.53, "construction": {"name": "High-tensile steel, all welded", "yield_mpa": 350, "join_factor": 1.0, "standard": 1.0}, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 50}, "freeboard": 1.0, "raised": []},
  "speed_kn": 33,
  "range_nm": 10500,

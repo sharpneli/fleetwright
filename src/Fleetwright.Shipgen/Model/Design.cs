@@ -8,6 +8,8 @@ namespace Fleetwright.Shipgen;
 /// keys are the properties in snake_case. docs/shipgen/README.md documents them.</summary>
 public sealed record Design
 {
+    /// <summary>The file format (DesignFormat): older files are upgraded as they're read.</summary>
+    public int Version { get; init; } = DesignFormat.Current;
     public string? Id { get; init; }
     public string? Name { get; init; }
     public string? Type { get; init; }
@@ -48,8 +50,9 @@ public sealed record Design
     /// <summary>The main batteries, in the design's order (empty ones left out).</summary>
     [JsonIgnore] public IEnumerable<BatteryInput> MainBatteries => Main ?? [];
 
+    /// <summary>A design from its JSON, upgraded from an older format first (DesignFormat).</summary>
     public static Design Parse(string json) =>
-        JsonSerializer.Deserialize(json, ShipgenJson.Default.Design) ?? throw new JsonException("the design is null");
+        DesignFormat.Upgrade(json).Deserialize(ShipgenJson.Default.Design) ?? throw new JsonException("the design is null");
 
     public static Design Load(string path) => Parse(File.ReadAllText(path));
 

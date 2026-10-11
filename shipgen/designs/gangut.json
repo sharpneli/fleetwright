@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "id": "gangut",
     "name": "Gangut-class Dreadnought",
     "look": {"navy": "generic", "era": "wwii"},

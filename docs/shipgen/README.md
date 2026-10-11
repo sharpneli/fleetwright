@@ -79,6 +79,7 @@ the ship dict, `report.json`, `hitboxes.json` and `sprite.json` are unchanged, k
 ## Design input
 ```json
 {
+  "version": 1,
   "id": "battleship", "name": "Fast Battleship", "type": "BB", "look": {"navy": "generic", "era": "wwii"},
   "hull": {"block_coefficient": 0.59, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 0}},
   "speed_kn": 33, "range_nm": 15000,
@@ -100,6 +101,8 @@ the ship dict, `report.json`, `hitboxes.json` and `sprite.json` are unchanged, k
   "funnels": null
 }
 ```
+`version` is the file format (`DesignFormat.Current`, written on every save). A file without it is version 0, from before versions. Older files are upgraded as they are read (`DesignFormat`: one step per version, on the raw JSON), and one from a newer Fleetwright loads with a warning, what this build doesn't know ignored. A change that would make an old design read differently (a key renamed or moved, a default changed) bumps the version and adds a step; a new optional key whose default keeps old designs as they were needs none.
+
 `armour` holds the belt, turret and torpedo protection (`tds_m`) values, and `decks`: the armour decks, top down. Every design lists them, even an empty list.
 - **Torpedo protection** is weighed as longitudinal bulkheads totalling `TUNING tds_mm_per_m` (12 mm) per metre of `tds_m`, each side over the citadel, from the inner bottom to the roof deck (Bismarck: a 45 mm torpedo bulkhead and thinner ones, 5.5 m deep). An armoured ship's **conning tower** (the hitbox's cylinder, walls as thick as the belt, a roof half that) is weighed too.
 - **The deck stack:** the hull's decks lie every `geometry.DECK_PITCH` (2.6 m) down from the main deck to the inner bottom. Deck 0 is the main deck (a carrier's hangar deck), deck 1 the second deck, and so on. A deck closer than 1 m to the inner bottom is left out, so the hold is 1–3.6 m tall. Raised stretches of hull (`hull.raised`) add decks above the main deck, numbered −1, −2, …, which exist only over their stretches.
