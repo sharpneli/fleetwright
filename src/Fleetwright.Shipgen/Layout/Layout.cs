@@ -313,28 +313,29 @@ public sealed partial class Layout
     }
 
     /// <summary>Is a footprint standing `top` metres above the deck clear of every gun sweep lower than it?</summary>
-    public bool Clear(Footprint fp, double top)
+    public bool Clear(Footprint fp, double top, IReadOnlyCollection<string>? ignore = null)
     {
         if (Sweeps.Count == 0)
             return true;
         if (fp.Kind == 'p')
-            return Clear(fp.Pts!, top);
+            return Clear(fp.Pts!, top, ignore: ignore);
         using var _ = Scratch<Pt>.Rent(out var poly);
         if (fp.Kind == 'c')
         {
             Geometry.CirclePolygon(fp.X, fp.Y, fp.R, 16, poly);
-            return Clear(poly, top, (fp.X, fp.Y, fp.R));
+            return Clear(poly, top, (fp.X, fp.Y, fp.R), ignore);
         }
         fp.Points(0.0, poly);
-        return Clear(poly, top);
+        return Clear(poly, top, ignore: ignore);
     }
 
-    public bool Clear(List<Pt> poly, double top, (double X, double Y, double R)? circle = null)
+    public bool Clear(List<Pt> poly, double top, (double X, double Y, double R)? circle = null,
+        IReadOnlyCollection<string>? ignore = null)
     {
         var (x0, y0, x1, y1) = Geometry.Bounds(poly);
         foreach (var sw in Sweeps)
         {
-            if (sw.Axis >= top)
+            if (sw.Axis >= top || (ignore?.Contains(sw.Owner) ?? false))
                 continue;
             for (int i = 0; i < sw.Polys.Count; i++)
             {

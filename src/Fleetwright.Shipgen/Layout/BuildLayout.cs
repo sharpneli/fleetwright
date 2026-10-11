@@ -933,6 +933,31 @@ public sealed partial class Layout
             double ths = Geometry.TurretHeight(ts);
 
             double SecBase(double x) => raised ? Math.Max(lay.DeckZ(x, rsReach), LevelH) : lay.DeckZ(x, rsReach);
+
+            // batteries on the deck and on the deckhouse kept apart: a deck mount stays out of the level 1 that what
+            // rides on it needs, and a raised mount's level 1 out of the deck mounts and turrets standing on the deck
+            // (level 1 is notched in to what stands beside it, with 45-degree shoulders: the same rule)
+            var onDeck = mounts.Where(m => m.Base < LevelH && !m.Casemate && !lay.EndMounts.Contains(m))
+                .Select(m => (m.X, Y: Math.Abs(m.Y), R: Math.Max(m.T.R, Geometry.TurretReach(m.T, 0.0)))).ToList();
+            // (and out of the barrel sweeps of the turrets on the deck that pass under its roof)
+            var deckSwept = mounts.Where(m => m.Kind == "main" && (m.Wing || m.Midships) && m.Base < LevelH).Select(m => m.Id)
+                .ToHashSet();
+            var sweptBoxes = lay.Sweeps.Where(sw => deckSwept.Contains(sw.Owner) && sw.Axis < LevelH).SelectMany(sw => sw.Boxes)
+                .ToList();
+            static bool Apart((double X0, double X1, double Hw) r, double mx, double my, double mr) =>
+                my - mr - FpMargin + Math.Max(0.0, Math.Max(r.X0 - (mx + mr), mx - mr - r.X1)) >= r.Hw;
+
+            bool RiderOk(double x)
+            {
+                var zone = (X0: x - rsReach - DhInset, X1: x + rsReach + DhInset, Hw: YAt(x) + rsReach + DhInset);
+                return onDeck.All(d => Apart(zone, d.X, d.Y, d.R)) && sweptBoxes.All(b =>
+                    (b.Y0 > 0 ? b.Y0 : b.Y1 < 0 ? -b.Y1 : 0.0) - FpMargin + Math.Max(0.0, Math.Max(zone.X0 - b.X1, b.X0 - zone.X1))
+                    >= zone.Hw);
+            }
+
+            bool ApartOk(double x) => raised
+                ? lay.DeckZ(x, rsReach) >= LevelH || RiderOk(x)
+                : riders.All(r => Apart(r, x, YAt(x), rsReach));
             double xLo = midAft + rsReach + 0.5, xHi = midFwd - rsReach - 0.5;
             double inner = (blocks.Where(b => b.Level >= 2).Select(b => b.W / 2).Append(fw / 2)
                 .Concat(M.Select(g => g.Reach))).Max() + rsReach + 0.4;
@@ -988,7 +1013,8 @@ public sealed partial class Layout
             double step = Math.Min((xHi - xLo) / Math.Max(nsec - 1, 1), 2.2 * rs + 4.0);
             double c = (xLo + xHi) / 2;
             var sxs = Enumerable.Range(0, (int)nsec).Select(i => nsec > 1 ? c + (i - (nsec - 1) / 2.0) * step : c).ToList();
-            bool spreadOk = Enumerable.Range(0, sxs.Count).All(i => PitchOk(sxs[i], sxs.Take(i), 0.0) && BarrelsOk(sxs[i]));
+            bool spreadOk = Enumerable.Range(0, sxs.Count).All(i => PitchOk(sxs[i], sxs.Take(i), 0.0) && BarrelsOk(sxs[i])
+                                                                    && ApartOk(sxs[i]));
             if (nw != 0 || !first || !spreadOk)
             {
                 bool SpotOk(double x)
@@ -999,7 +1025,7 @@ public sealed partial class Layout
                         if (!lay.Free(fp, 0.4) || !lay.Clear(fp, SecBase(x) + ths))
                             return false;
                     }
-                    return BarrelsOk(x);
+                    return BarrelsOk(x) && ApartOk(x);
                 }
                 var spots = (Enumerable.Range(0, (int)(Math.Max(0.0, xHi - xLo) * 2) + 1).Select(k => xLo + 0.5 * k)
                     .Where(SpotOk)).OrderBy(x => Math.Abs(x - c)).ToList();
@@ -1108,12 +1134,44 @@ public sealed partial class Layout
         }
 
         var raisedIds = lay.Raised.Select(s => s.Id).ToList();
+        // what stands on the deck at level 1's height (wing turrets and secondaries on the deck beside the riders):
+        // level 1 is cut round it where it stands near the centreline and notched in to it at the side. Funnels and
+        // casemate housings (and their guns) run through level 1, raised decks cut it above, and the end turrets trim its
+        // ends.
+        var notIn = funnels.Select(f => f.Id).Concat(housings.Select(h => h.Id)).Concat(raisedIds)
+            .Concat(lay.EndMounts.Select(m => m.Id)).Concat(mounts.Where(m => m.Casemate).Select(m => m.Id))
+            .Concat(blocks.Select(b => b.Id)).ToHashSet();
+        var splits = new List<(double X0, double X1)>();
+        var yields = new List<(double N0, double N1, double H)>();
+        foreach (var o in lay.Footprints)
+        {
+            if (o.Base >= LevelH - 0.01 || o.Top <= 0.01 || notIn.Contains(o.Owner))
+                continue;
+            var (fx0, fy0, fx1, fy1) = o.Fp.BBox;
+            double h = (fy0 > 0 ? fy0 : fy1 < 0 ? -fy1 : 0.0) - FpMargin;
+            if (h < DhMinW / 2)
+                splits.Add((fx0 - FpMargin, fx1 + FpMargin));
+            else
+                yields.Add((fx0 - FpMargin, fx1 + FpMargin, h));
+        }
+        // the barrel sweeps of the wing and midships turrets on the deck the same way, where they pass under the roof
+        var deckTurrets = mounts.Where(m => m.Kind == "main" && (m.Wing || m.Midships) && m.Base < LevelH)
+            .Select(m => m.Id).ToHashSet();
+        foreach (var sw in lay.Sweeps.Where(sw => deckTurrets.Contains(sw.Owner) && sw.Axis < LevelH))
+            foreach (var (sx0, sy0, sx1, sy1) in sw.Boxes)
+            {
+                double h = (sy0 > 0 ? sy0 : sy1 < 0 ? -sy1 : 0.0) - FpMargin;
+                if (h < DhMinW / 2)
+                    splits.Add((sx0 - FpMargin, sx1 + FpMargin));
+                else
+                    yields.Add((sx0 - FpMargin, sx1 + FpMargin, h));
+            }
         var cut = new List<(string Id, double X0, double X1, double W, string Role)>();
         foreach (var (pid, x0p, x1p, wp, role) in pieces)
         {
             var runs = new List<(double A, double B)> { (x0p, x1p) };
-            foreach (var s_ in lay.Raised)
-                runs = runs.SelectMany(r => new[] { (r.A, Math.Min(r.B, s_.X0)), (Math.Max(r.A, s_.X1), r.B) })
+            foreach (var (sx0, sx1) in lay.Raised.Select(s_ => (s_.X0, s_.X1)).Concat(splits))
+                runs = runs.SelectMany(r => new[] { (r.A, Math.Min(r.B, sx0)), (Math.Max(r.A, sx1), r.B) })
                     .Where(q => q.Item2 > q.Item1).ToList();
             runs = runs.Where(r => r.B - r.A >= DhSliver || (r.A == x0p && r.B == x1p) || lay.Footprints.Any(o =>
                 o.Base >= LevelH - 0.01 && r.A <= (o.Fp.BBox.X0 + o.Fp.BBox.X1) / 2 && (o.Fp.BBox.X0 + o.Fp.BBox.X1) / 2 <= r.B
@@ -1125,19 +1183,26 @@ public sealed partial class Layout
         foreach (var (pid, x0c, x1c, wc, role) in cut)
         {
             double x0_ = x0c, x1_ = x1c;
-            while (!lay.Clear(DhRect(x0_, x1_), LevelH) && x1_ - x0_ > 4)
+            while (!lay.Clear(DhRect(x0_, x1_), LevelH, deckTurrets) && x1_ - x0_ > 4)
             {
-                if (lay.Clear(DhRect(x0_, (x0_ + x1_) / 2), LevelH))
+                if (lay.Clear(DhRect(x0_, (x0_ + x1_) / 2), LevelH, deckTurrets))
                     x1_ -= 0.5;
                 else
                     x0_ += 0.5;
             }
-            var keep = lay.Footprints.Where(o => o.Base >= LevelH - 0.01 && !lay.Overhangs.Contains(o.Fp)
+            var onRoof = lay.Footprints.Where(o => o.Base >= LevelH - 0.01 && !lay.Overhangs.Contains(o.Fp)
                                                  && x0_ <= (o.Fp.BBox.X0 + o.Fp.BBox.X1) / 2 && (o.Fp.BBox.X0 + o.Fp.BBox.X1) / 2 <= x1_)
-                .Select(o => o.Fp.BBox).ToList();
+                .Select(o => o.Fp).ToList();
+            var keep = onRoof.Select(fp => fp.BBox).ToList();
+            // a notch never cuts from under what stands on the roof, its 45-degree shoulders included
+            var roofPts = onRoof.SelectMany(fp => fp.Kind == 'c'
+                ? Enumerable.Range(0, 32).Select(k => new Pt(fp.X + fp.R * Math.Cos(k * Math.PI / 16), fp.Y + fp.R * Math.Sin(k * Math.PI / 16)))
+                : fp.Points()).ToList();
+            var mine = yields.Where(nt => nt.N1 > x0_ && nt.N0 < x1_).Select(nt => (nt.N0, nt.N1, H: roofPts.Select(p =>
+                Math.Abs(p.Y) + FpMargin - Math.Max(0.0, Math.Max(nt.N0 - p.X, p.X - nt.N1))).Append(nt.H).Max())).ToList();
             var b_ = AddLevel(lay, blocks, pid, 1, x0_, x1_, wc, keep: keep,
                 ignore: funnels.Select(f => f.Id).Concat(housings.Select(h => h.Id)).Concat(raisedIds).ToList(),
-                role: role, office: role == "aft_control");
+                yields: mine, role: role, office: role == "aft_control");
             if (b_ != null)
             {
                 var last = blocks[^1];

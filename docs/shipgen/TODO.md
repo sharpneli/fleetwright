@@ -10,8 +10,9 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 ## Generator bugs
 - [ ] `superfire: {"fore": 1}` with 3 fore turrets: B's sweep hits C (Nelson works around it)
 - [ ] Main director 2 placed inside X's barrel sweep (Colorado uses 1 director)
-- [ ] Wing turrets with `amidships_stands_on: "deck"` may overlap the bridge's level-1 core
-- [ ] Batteries with different `stands_on` on one ship aren't kept apart (deck-level wing turrets leave raised secondaries forward of them with no deckhouse under them)
+- [ ] A raised secondary straddling a raised deck's break (centre over the main deck, reach over the forecastle) is no rider and gets no level 1 (Littorio with wing turrets on the deck)
+- [ ] End turrets' barrels at the last degree of traverse dip into the deckhouse roof (Battleship Y by 12 cm; verify passes the fleet, flags Lord Nelson with W3 on the deck)
+- [ ] Merchant deck mounts can stand inside the engine house (q_ship mutant fuzz_free_055)
 - [ ] Upper belt beyond the citadel ignores a short end belt's `reach`
 - [ ] Nassau verify noise at the 0.85 threshold (use 0.845 or a finer raster)
 

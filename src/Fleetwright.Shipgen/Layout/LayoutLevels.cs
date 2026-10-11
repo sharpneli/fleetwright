@@ -403,12 +403,14 @@ public sealed partial class Layout
         return result;
     }
 
-    /// <summary>One superstructure level as a block, shaped by level_outline, bevelled and notched. Returns the block, or
-    /// null if nothing of it stands on its support.</summary>
+    /// <summary>One superstructure level as a block, shaped by level_outline, bevelled and notched. Yields are notches
+    /// made only where the bevelled outline reaches past them (what stands beside the level). Returns the block, or null if
+    /// nothing of it stands on its support.</summary>
     static Block? AddLevel(Layout lay, List<Block> blocks, string bid, long level, double x0, double x1, double w,
         List<Pt>? support = null, IReadOnlyList<(double, double, double, double)>? keep = null,
         IReadOnlyCollection<string>? ignore = null, IReadOnlyList<(double N0, double N1, double H)>? notches = null,
-        (Block? Aft, Block? Fwd) joins = default, (double, double)? bevel = null, string role = "deckhouse", bool office = false)
+        (Block? Aft, Block? Fwd) joins = default, (double, double)? bevel = null, string role = "deckhouse", bool office = false,
+        IReadOnlyList<(double N0, double N1, double H)>? yields = null)
     {
         keep ??= [];
         notches ??= [];
@@ -433,6 +435,14 @@ public sealed partial class Layout
         if (pts.Count < 3 || Geometry.PolygonCentroid(pts).Area < 1.0)
             return null;
         var convex = pts;
+        if (yields is { Count: > 0 })
+        {
+            var sl = new Slabs(pts);
+            var into = yields.Where(nt => Enumerable.Range(0, 9).Any(k =>
+                sl.At(nt.N0 + (nt.N1 - nt.N0) * k / 8).Any(t => Math.Max(-t.Lo, t.Hi) > nt.H + 0.01))).ToList();
+            if (into.Count > 0)
+                notches = [.. notches, .. into];
+        }
         if (notches.Count > 0)
             pts = NotchOutline(pts, notches);
         var b = AddBlock(lay, blocks, bid, x0, x1, w, level, 0.0, 0.0, points: pts, role: role, office: office);
