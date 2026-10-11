@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using Fleetwright.Shipgen;
 using ImGuiNET;
@@ -267,6 +268,8 @@ public sealed unsafe partial class DesignerScene
             if (ImGui.MenuItem("New: an empty 8 kn hull"))
                 Load(DesignDoc.New());
             DesignMenu("Open my design", userDesigns);
+            if (ImGui.MenuItem("Open Explorer here"))
+                ShowFolder(DesignDoc.UserFolder);
             DesignMenu("Open a shipped design", shippedDesigns);
             ImGui.Separator();
             if (ImGui.MenuItem("Save as…", "Ctrl+S"))
@@ -324,6 +327,20 @@ public sealed unsafe partial class DesignerScene
         if (session != null)
             session.Units = u;
         stale = true;
+    }
+
+    /// <summary>Opens <paramref name="folder"/> in the file browser, to share designs by hand (made if missing).</summary>
+    static void ShowFolder(string folder)
+    {
+        try
+        {
+            Directory.CreateDirectory(folder);
+            Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true });
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"designer: {folder}: {e.Message}");
+        }
     }
 
     void DesignMenu(string title, string[] files)

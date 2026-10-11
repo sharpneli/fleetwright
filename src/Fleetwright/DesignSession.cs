@@ -121,6 +121,24 @@ public sealed class DesignSession : IDisposable
         Set(design, path, edited: path == null, limits: true);
     }
 
+    /// <summary>A design file from outside (dropped on the window): read, then loaded as <see cref="Load"/>. The
+    /// error when it isn't a design.</summary>
+    public string? Open(string path)
+    {
+        Design design;
+        try
+        {
+            design = Design.Load(path);
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"design {path}: {e.GetType().Name}: {e.Message}");
+            return e.Message;
+        }
+        Load(design, path);
+        return null;
+    }
+
     void Set(Design design, string? path, bool edited, bool limits)
     {
         Design = design;

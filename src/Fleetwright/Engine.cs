@@ -210,6 +210,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
     // The scene drawn into the main target (the ship viewer today), instead of the scene graph below
     public IScene? Scene { get; set; }
 
+    /// <summary>A file dropped onto the window, by its path.</summary>
+    public Action<string>? FileDropped { get; set; }
+
     /// <summary>The main render target: scenes draw into it, and it is blitted to the swapchain.</summary>
     public RenderTarget MainTarget => _mainTarget;
 
@@ -1047,6 +1050,11 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
                 case SDL_EventType.SDL_EVENT_WINDOW_RESTORED:
                     _windowMinimized = false;
+                    break;
+
+                case SDL_EventType.SDL_EVENT_DROP_FILE:
+                    if (Marshal.PtrToStringUTF8((nint)evt.drop.data) is { } dropped)
+                        FileDropped?.Invoke(dropped);
                     break;
             }
 

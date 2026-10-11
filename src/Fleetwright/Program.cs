@@ -129,6 +129,13 @@ public static unsafe class Program
                     session.Load(Designer.DesignDoc.Empty(), null);
                 return new Designer.DesignerScene((SDL.SDL_GPUDevice*)device, session, units, section, steps);
             }
+            // a design json dropped on the window opens in every scene (sharing ships is passing files around)
+            engine.FileDropped = path =>
+            {
+                if (session.Open(path) is { } error)
+                    SDL.SDL3.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_WARNING, "Not a design",
+                        $"{Path.GetFileName(path)} couldn't be opened as a design:\n{error}", null);
+            };
             var early = steps != null || newDesign ? MakeDesigner() : null;
             // the designer opens by default; -view=hitbox, -view=ship or -view=profile opens the others
             engine.Scene = new SceneSwitcher(view switch { "hitbox" => 1, "ship" => 2, "profile" => 3, _ => 0 },
