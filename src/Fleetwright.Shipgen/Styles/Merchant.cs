@@ -96,7 +96,7 @@ public sealed class MerchantStyle : Style
         FreeboardA = 0.011, FreeboardB = 1.0, MiscFrac = 0.03, CruiseAtService = true, TbMax = 0.62, LcbFrac = 0.012, GmStiffFrac = 0.2,
     };
 
-    public override Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double spread = 0.0) =>
+    public override Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double midExtra = 0.0, bool plan = false) =>
         MerchantLayout(design, res, shift);
 
     public override List<Weight> RoughPayload(Design design, double D)
@@ -332,7 +332,7 @@ public sealed class MerchantStyle : Style
             double vol = HoldVolume(hull, holds, depth);
             double need = cg.DeadweightT * Stowage[cg.Kind];
             if (vol < need)
-                lay.Fail("length", $"The {(tanker ? "tanks" : "holds")} take about {vol:N0} m3, but " +
+                lay.FailLength(L * Math.Sqrt(need / Math.Max(vol, 1.0)), $"The {(tanker ? "tanks" : "holds")} take about {vol:N0} m3, but " +
                                    $"{cg.DeadweightT:N0} t of cargo needs about {need:N0} m3. Carry less cargo.");
         }
         double hatchT = hatches.Sum(h => h.L * h.W) * 0.12;

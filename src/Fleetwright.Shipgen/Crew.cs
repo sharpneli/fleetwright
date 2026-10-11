@@ -255,7 +255,12 @@ public static class Crew
         double waterFree = Math.Max(0.0, nd.WaterM3 - waterTanks);
         double need = nd.LivingM3 + nd.ProvisionsM3 + waterFree + nd.DistillerVolumeM3;
         if (need > room.UsableM3)
-            lay.Fail("length", $"No room for the crew: {n} men need about {need:N0} m3 for quarters, provisions and " +
+            // a metre more of hull gives its mean section (the hull's volume is its length times that), the rooms that take
+            // space staying as they are; three quarters of that step, as the longer hull also comes out wider and deeper,
+            // and at most a few percent: the superstructure's rooms come in steps (a deckhouse level there or not), and a
+            // step taken from a dip would stay
+            lay.FailLength(Math.Min(lay.Hull.L * 1.04, lay.Hull.L + 0.75 * (need - room.UsableM3) / (Usable * room.HullM3 / lay.Hull.L)),
+                $"No room for the crew: {n} men need about {need:N0} m3 for quarters, provisions and " +
                                $"water, but the ship has about {room.UsableM3:N0} m3 to spare. Use a lower " +
                                "habitability standard, a shorter endurance, a distiller, or fewer men (guns, power).");
         if (endurance < rangeDays)

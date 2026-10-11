@@ -219,7 +219,7 @@ public static class FireControl
                     }
                 }
             }
-            if (mine.Count < n)
+            if (mine.Count < n)   // a little more ship may give one a roof; the sizer only tries a few steps
                 lay.Fail("beam", $"Only {mine.Count} of {n} {(bat == "aa" ? "AA" : bat)} directors find a roof to stand on " +
                                  $"({w:F1} m across with the rangefinder).");
         }

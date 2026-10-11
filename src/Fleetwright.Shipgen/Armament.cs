@@ -286,8 +286,8 @@ public static class Armament
             foreach (int side in new[] { 1, -1 })
                 AddMount(lay, mounts, "torpedo", tId, t, $"T{placed}{(side > 0 ? "S" : "P")}", x, side * y, bse, side * toeDeg);
         }
-        if (placed < want)
-            lay.Fail("length", $"Only {placed} of {want} pairs of torpedo tubes fit along the sides.");
+        if (placed < want)   // each pair wants a tube's length more of the side, at least
+            lay.FailLength(lay.Hull.L + (want - placed) * (t.BarrelLen + 0.5), $"Only {placed} of {want} pairs of torpedo tubes fit along the sides.");
         return placed;
     }
 
@@ -398,8 +398,38 @@ public static class Armament
             lonely = false;
             placed += got.Count;
         }
+        if (count - placed == 1)
+        {
+            // the odd one out finds no place of its own (the single positions taken, a carrier's sponsons in pairs):
+            // it goes in as a pair
+            for (int i = 0; i < cands.Count; i++)
+            {
+                got.Clear();
+                if (cands[i].Single || !Fits(cands[i], got))
+                    continue;
+                Put(got);
+                placed += got.Count;
+                lay.Warnings.Add($"{(kind == "quad40" ? "Heavy" : "Light")} AA mounts go in pairs here; rounded up to an even number.");
+                break;
+            }
+        }
         if (placed < count)
-            lay.Fail("length", $"Only {placed} of {count} {(kind == "quad40" ? "heavy" : "light")} AA mounts fit.");
+        {
+            string msg = $"Only {placed} of {count} {(kind == "quad40" ? "heavy" : "light")} AA mounts fit.";
+            // a pair at the deck edges stands `sp` apart across the centreline, each 0.5 in from the edge
+            double rAa = Geometry.AaCfg[kind].R, hw = 0.0, edge = 2 * rAa + sp / 2 + 0.5;
+            for (int k = 0; k <= 20; k++)
+                hw = Math.Max(hw, lay.DeckHalfWidth(lay.Hull.L * (k / 20.0 - 0.5)));
+            if (hw < edge)   // no deck wide enough for a pair at the edges anywhere: a wider hull, not a longer one
+            {
+                lay.NeedB = Math.Max(lay.NeedB, lay.Hull.B * (edge + 0.05) / hw);
+                lay.Fail("beam", msg);
+            }
+            else if (lay.Deficit is not null)   // a layout with a middle: the mounts that didn't fit want it longer
+                lay.FailMid((count - placed) * (rAa + 0.3), msg);
+            else   // their positions spread along the hull: the length of the pairs that didn't fit, at least
+                lay.FailLength(lay.Hull.L + (count - placed) * (rAa + sp / 2), msg);
+        }
         return placed;
     }
 

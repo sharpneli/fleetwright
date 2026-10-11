@@ -3,7 +3,7 @@ using Fleetwright.Shipgen.Golden;
 namespace Fleetwright.Shipgen.Tests;
 
 /// <summary>The port against Python's goldens (shipgen/golden, PORTING.md Step 1): every design and fuzz mutant,
-/// validation strings exactly, the whole ship dict by the golden rules (GoldenDiff), and the hint check.</summary>
+/// validation strings exactly, the whole ship dict by the golden rules (GoldenDiff).</summary>
 public class GoldenTests
 {
     static readonly string Root = Paths.Shipgen();

@@ -329,8 +329,10 @@ public abstract class Style
     /// <summary>The style's changes to Navarch's tuning.</summary>
     public virtual Tuning Tuning(Design design) => new();
 
-    /// <summary>Lay the ship out for the solved weights res.</summary>
-    public abstract Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double spread = 0.0);
+    /// <summary>Lay the ship out for the solved weights res. midExtra: metres more for the middle's contents than the
+    /// layout itself asks (an earlier layout came up short there); plan: only as far as the sizer needs (a style may lay
+    /// out in full anyway). Styles without a middle of their own ignore both.</summary>
+    public abstract Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double midExtra = 0.0, bool plan = false);
 
     /// <summary>First-pass weights of style-specific items, before the layout exists.</summary>
     public virtual List<Weight> RoughPayload(Design design, double D) => [];

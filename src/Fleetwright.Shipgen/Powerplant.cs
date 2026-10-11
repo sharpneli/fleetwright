@@ -235,8 +235,9 @@ public static class Powerplant
         bool split = p.CentrelineBulkhead;
         double wSide = split ? wAvail / 2 : wAvail;
         long rows = wSide > 0 ? (long)Math.Floor(wSide / pitch) : 0;
-        double used = rows * pitch;
-        double wEff = (used + 0.5 * (wSide - used)) * (split ? 2 : 1);
+        // the width the plant fills: whole rows of units and half what's left beside them, taken at its mean (a quarter
+        // of a pitch short of the space), so the machinery doesn't lengthen by a room when the beam crosses a row
+        double wEff = Math.Max(0.0, wSide - 0.25 * pitch) * (split ? 2 : 1);
         double volume = r.WeightT / r.Density;
         double bf = t.BoilerFraction;
         double hBoil = Math.Max(1.0, Math.Max(hAvail, hU));

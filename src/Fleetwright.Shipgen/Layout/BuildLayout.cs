@@ -2,8 +2,28 @@ namespace Fleetwright.Shipgen;
 
 public sealed partial class Layout
 {
-    /// <summary>layout.build_layout: the warship layout. See the Python for the commentary on each stage.</summary>
-    public static Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double spread = 0.0)
+    /// <summary>The length the deck secondaries need amidships, each battery's mounts at their pitch in a row with
+    /// room for the first and last; the batteries one after another (the layout may well fit them closer).</summary>
+    static double SecondarySpan(IEnumerable<BatteryInput> secs)
+    {
+        double span = 0.0;
+        foreach (var sec in secs)
+        {
+            long n = sec.MountsPerSide;
+            if ((sec.Mount ?? "deck") != "deck" || n == 0)
+                continue;
+            var ts = Geometry.BatteryType(sec).T;
+            double reach = Math.Max(ts.R, Geometry.TurretReach(ts, 0.0)), pitch = 2.1 * reach + 1.0;
+            span += span == 0.0 ? (n - 1) * pitch + 2 * (reach + 0.5) : n * pitch;
+        }
+        return span;
+    }
+
+    /// <summary>The warship layout. The middle (machinery, funnels, midships and wing turrets, the secondaries beside
+    /// them) gets the length its contents need plus midExtra (what an earlier layout found short there), the end turret
+    /// groups close up on it, and any length to spare goes to the ends. plan: stop once the turret groups and the middle
+    /// are placed (Deficit, the citadel and the shift range set), for sizing the hull.</summary>
+    public static Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double midExtra = 0.0, bool plan = false)
     {
         double depth = res.Depth;
         var lay = new Layout(design);
@@ -379,9 +399,12 @@ public sealed partial class Layout
         }
 
         double y0 = nw != 0 ? deckHw - gRef!.Reach - 0.6 : 0.0;
-        double MReq = MiddleNeeds(PlanWidths(y0), CrossEnds(y0));
+        double MReq = Math.Max(MiddleNeeds(PlanWidths(y0), CrossEnds(y0)), SecondarySpan(secs.Select(s => s.Sec))) + midExtra;
 
         var big = bats.Count > 0 ? bats.MaxBy(g => g.Reach) : null;
+        double deckRatio = deckHw / (B / 2);
+        if (big != null)
+            lay.NeedB = Math.Max(lay.NeedB, 2 * (big.Reach + 0.6) / deckRatio);
         if (big != null && big.Reach + 0.6 > deckHw)
             lay.Fail("beam", $"Main turrets{(bats.Count == 1 ? "" : $" of {big.Cal}")} are {2 * big.Reach:F1} m " +
                              $"across; the {(lay.Topside.Plain ? $"{B} m beam" : $"{2 * deckHw:F1} m deck (tumblehome on a {B} m beam)")} " +
@@ -432,6 +455,7 @@ public sealed partial class Layout
         var (fore, aft, midFwd, midAft) = Arrangement(bowPref, stPref, 0.0);
         double deficit = MReq - (midFwd - midAft);
         double bowCl = bowPref, stCl = stPref;
+        lay.Deficit = deficit;
         if (deficit > 0)
         {
             lay.Short.Add("length");
@@ -449,10 +473,11 @@ public sealed partial class Layout
                                    $"{MReq:F0} m between the turret groups, but only {midFwd - midAft:F0} m is free. " +
                                    "Reduce speed, use a more compact plant, or remove a turret.");
         }
-        else if (deficit < 0 && spread > 0)
+        else if (deficit < 0)
         {
-            bowCl -= spread * deficit * bowPref / (bowPref + stPref);
-            stCl -= spread * deficit * stPref / (bowPref + stPref);
+            // the length to spare goes to the ends: the turret groups close up on the middle, the citadel no longer
+            bowCl -= deficit * bowPref / (bowPref + stPref);
+            stCl -= deficit * stPref / (bowPref + stPref);
             (fore, aft, midFwd, midAft) = Arrangement(bowCl, stCl, 0.0);
         }
 
@@ -477,6 +502,14 @@ public sealed partial class Layout
         shift = Clamp(shift, lo, hi);
         (fore, aft, midFwd, midAft) = Arrangement(bowCl, stCl, shift);
         lay.Geo.Shift = shift;
+        if (plan)
+        {
+            // what the weights need of the layout: the citadel as the full layout makes it (end turrets to the middle)
+            lay.Geo.Citadel = (aft.Count > 0 ? Math.Min(aft[0] - A[0].R - 2.0, midAft) : midAft,
+                fore.Count > 0 ? Math.Max(fore[0] + F[0].R + 2.0, midFwd) : midFwd);
+            lay.Geo.MachineryX = (midFwd + midAft) / 2;
+            return lay;
+        }
 
         // ---------------- middle: bridge, deckhouse, funnels, aft control ----------------
         double bx1 = midFwd;
@@ -553,6 +586,7 @@ public sealed partial class Layout
         var (loX, hiX, xx0) = PlanFront(widthsF, yW);
         if (hiX < loX - 0.5)
         {
+            lay.NeedMid += loX - hiX;
             var what = new List<string>();
             if (nm != 0)
                 what.Add($"{nm} midships turret(s)");
@@ -873,7 +907,7 @@ public sealed partial class Layout
             string fid = $"Funnel {i + 1}";
             var fp = FunFp(fx);
             if (!lay.Clear(fp, funTop) || !lay.Free(fp, 0.0, [fid]))
-                lay.Fail("length", $"{fid} would stand in a turret's sweep or against the bridge: use fewer funnels " +
+                lay.FailMid(fl + 1.0, $"{fid} would stand in a turret's sweep or against the bridge: use fewer funnels " +
                                    "or midships turrets.");
             funnels.Add(new Funnel { Id = fid, X = fx, Y = 0.0, L = fl, W = fw, Pipes = fw > 4 ? 2 : 1, Seg = fSegF[i] });
             if (lay.DeckZ(fx, fl / 2) != 0)
@@ -910,19 +944,24 @@ public sealed partial class Layout
             var xsProbe = Enumerable.Range(0, 41).Select(k => xLo + (xHi - xLo) * k / 40).ToList();
             double xLo0 = xLo, xHi0 = xHi;
             if (xsProbe.Select(OuterAt).Max() < inner)
+            {
+                lay.NeedB = Math.Max(lay.NeedB, 2 * (inner + rsReach + 0.6) / deckRatio);
                 lay.Fail("beam", $"Hull too narrow for {cal} secondary mounts: they need about " +
                                  $"{2 * (inner + rsReach + 0.6):F1} m of beam amidships.");
+            }
             else
             {
                 var fitsX = xsProbe.Where(x => OuterAt(x) >= inner).ToList();
                 (xLo, xHi) = (fitsX.Min(), fitsX.Max());
             }
 
-            void ShortOf(string msg, Func<bool> fitWider)
+            // what the battery came up short of, counted once (below)
+            double secShort = 0.0;
+
+            void ShortOf(string msg, double metres)
             {
                 lay.Fail("length", msg);
-                if ((xLo, xHi) != (xLo0, xHi0) && fitWider())
-                    lay.Short.Add("beam");
+                secShort = Math.Max(secShort, Math.Max(0.5, metres));
             }
 
             double pitchS = 2.1 * rsReach + 1.0;
@@ -942,10 +981,10 @@ public sealed partial class Layout
             }
 
             if (xHi <= xLo)
-                lay.Fail("length", "No room amidships for the secondary battery.");
+                lay.FailMid((nsec - 1) * pitchS + 1.0 - (xHi - xLo), "No room amidships for the secondary battery.");
             else if (first && nsec > 1 && (xHi - xLo) / (nsec - 1) < pitchS)
                 ShortOf($"{nsec} secondary mounts per side do not fit in {xHi - xLo:F0} m amidships " +
-                        $"(max {(long)((xHi - xLo) / pitchS) + 1}).", () => (xHi0 - xLo0) / (nsec - 1) >= pitchS);
+                        $"(max {(long)((xHi - xLo) / pitchS) + 1}).", (nsec - 1) * pitchS - (xHi - xLo));
             double step = Math.Min((xHi - xLo) / Math.Max(nsec - 1, 1), 2.2 * rs + 4.0);
             double c = (xLo + xHi) / 2;
             var sxs = Enumerable.Range(0, (int)nsec).Select(i => nsec > 1 ? c + (i - (nsec - 1) / 2.0) * step : c).ToList();
@@ -986,8 +1025,7 @@ public sealed partial class Layout
                     string where = first ? (nw != 0 ? "beside the wing turrets" : "amidships") : "amidships beside the other secondaries";
                     var sxsCount = sxs.Count;
                     ShortOf($"Only {sxsCount} of {nsec} {(first ? "" : cal + " ")}secondary mounts per side fit {where}.",
-                        () => NearestSpaced(Enumerable.Range(0, (int)(Math.Max(0.0, xHi0 - xLo0) * 2) + 1).Select(k => xLo0 + 0.5 * k)
-                            .Where(SpotOk), (int)nsec, c, pitchS, Math.Max(pitchS, pitchStowed)) is { Count: > 0 });
+                        (nsec - sxsCount) * pitchS);
                 }
                 sxs = sxs.Order().ToList();
             }
@@ -996,7 +1034,7 @@ public sealed partial class Layout
                 double sx = sxs[i];
                 double yS = YAt(sx);
                 if (!lay.Clear(Footprint.Circle(sx, yS, rsReach), SecBase(sx) + ths))
-                    lay.Fail("length", $"Secondary mounts {pre}{i + 1} would stand in a main turret's sweep: use fewer " +
+                    lay.FailMid(pitchS, $"Secondary mounts {pre}{i + 1} would stand in a main turret's sweep: use fewer " +
                                        "secondaries.");
                 foreach (int side in new[] { 1, -1 })
                 {
@@ -1013,6 +1051,14 @@ public sealed partial class Layout
                 riders.AddRange(sxs.Where(sx => lay.DeckZ(sx, rsReach) < LevelH)
                     .Select(sx => (sx - rsReach - DhInset, sx + rsReach + DhInset, yS + rsReach + DhInset)));
             }
+            // short where the deck beside the superstructure is too narrow for them, with the middle long enough: a wider
+            // hull would fit them, a longer middle wouldn't
+            // (mounts all on one side of amidships stow their barrels the same way: further apart)
+            double pitchEff = xHi < 0 || xLo > 0 ? Math.Max(pitchS, pitchStowed) : pitchS;
+            if (secShort > 0 && (nsec - 1) * pitchEff > xHi - xLo && (nsec - 1) * pitchEff <= xHi0 - xLo0)
+                lay.Short.Add("beam");
+            else if (secShort > 0)
+                lay.NeedMid += secShort;
             first = false;
         }
 
@@ -1186,7 +1232,7 @@ public sealed partial class Layout
                 }
             }
             if (placed < ntp)
-                lay.Fail("length", $"Only {placed} of {ntp} torpedo mounts fit on deck.");
+                lay.FailMid((ntp - placed) * (sweep + 0.3), $"Only {placed} of {ntp} torpedo mounts fit on deck.");
         }
 
         // ---------------- deckhouse levels ----------------

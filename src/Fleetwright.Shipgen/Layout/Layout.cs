@@ -108,6 +108,12 @@ public sealed partial class Layout
     public List<Casing> Casings = [];
     public ConningTower? ConningTower;
     public HashSet<string> Short = new(StringComparer.Ordinal);
+    /// <summary>What the hull's size needs, for the sizer (ShipDesign): Deficit, the metres the middle's contents need
+    /// beyond what it has with the ends at the lengths they like (negative: to spare; null: the style doesn't say); NeedMid, the
+    /// metres the middle came up short of in placing its contents (more to give it next time); NeedL, the hull length
+    /// some part needs in all; NeedB, the beam some part needs. Short says what more would fix the rest.</summary>
+    public double? Deficit;
+    public double NeedMid, NeedL, NeedB;
     public List<Mount> EndMounts = [];
     public OrderedDictionary<string, List<string>> Smoke = new(StringComparer.Ordinal);
     public CrewReport? Crew;
@@ -193,6 +199,20 @@ public sealed partial class Layout
         Errors.Add(msg);
         if (need != null)
             Short.Add(need);
+    }
+
+    /// <summary>Something in the middle doesn't fit, and about how many metres more of it would let it.</summary>
+    public void FailMid(double metres, string msg)
+    {
+        Fail("length", msg);
+        NeedMid += Math.Max(0.5, metres);
+    }
+
+    /// <summary>Something needs a hull of `metres` (an error, and the length the sizer gives it).</summary>
+    public void FailLength(double metres, string msg)
+    {
+        Fail("length", msg);
+        NeedL = Math.Max(NeedL, metres);
     }
 
     static long Cell(double x) => (long)Math.Floor(x / FpCell);

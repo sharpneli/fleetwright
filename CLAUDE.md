@@ -104,9 +104,11 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- fuzz shipgen/desi
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- verify out_designs/*  # sprites vs hitboxes
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check          # every design's sprite.json
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shell-test shipgen/designs/bismarck.json [--gratings]   # shells at the citadel: leaks through neither armour nor water
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- mono-check [bismarck ...] [--steps 4]   # trim levers swept: more weight in, never a lighter ship
 ```
 
-`golden-check` must stay at 371 of 371 for any change to `Fleetwright.Shipgen` that isn't a deliberate fix (fixes
+`mono-check` (about 15 s) lists where adding weight gave a lighter ship (reversals) or one step jumped far more than its
+neighbours (lumps); a sizing change shouldn't add to them. `golden-check` must stay at 371 of 371 for any change to `Fleetwright.Shipgen` that isn't a deliberate fix (fixes
 update the goldens on purpose with `golden-update`, one per commit). `svg-check` and `sprite-check` do the same for
 `Fleetwright.Shipgen.Render`: a deliberate drawing change rewrites them with `golden-update` too, noted in
 `shipgen/golden/README.md`.

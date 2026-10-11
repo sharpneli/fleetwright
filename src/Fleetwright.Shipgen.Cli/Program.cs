@@ -30,8 +30,7 @@ public static class Program
             after a deliberate change to the output: rewrite the design, SVG and sprite.json goldens of the cases
             that no longer match from ours (the PNGs stay; png-check compares them by coverage)
         shipgen bench [--root DIR] [--repeat N] [CASE|PREFIX*...]
-            single-threaded build time per case (best of N), next to Python's from the golden capture, and the
-            designer's per-knob rebuild (the same design with the length hint)
+            single-threaded build time per case (best of N), next to Python's from the golden capture
         shipgen draw DESIGN.json... [--out DIR] [--scale S] [--mips N]
             draw each design (default 10 px/m, 5 mips): DIR/<id>/sprite.json and the display lists as SVG (hull.svg,
             height.svg, turrets/<type>.svg)
@@ -56,7 +55,8 @@ public static class Program
         shipgen mono-check [DESIGN...] [--steps 4] [--jobs N] [--show 10]
             sweep the designer's trim levers (belt, speed, AA, ...) STEPS steps either way of each design's value and
             build each step: list the reversals (more of a weight-adding input, a lighter ship) and lumps (a step far
-            bigger than its neighbours). DESIGN is a path or a shipped design's name; default a spread of types
+            bigger than its neighbours), the biggest SHOW first. DESIGN is a path or a shipped design's name; default a
+            spread of types
         shipgen svg-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
             every case's SVGs against golden/svg (Python's drawing with the port's RNG)
         shipgen sprite-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
@@ -321,26 +321,21 @@ public static class Program
             var design = LoadDesign(c.DesignPath);
             if (ShipDesign.Validate(design, false).Count > 0)
                 continue;
-            double best = double.MaxValue, bestHinted = double.MaxValue;
+            double best = double.MaxValue;
             long alloc = 0;
             for (int i = 0; i < repeat; i++)
             {
                 long a0 = GC.GetAllocatedBytesForCurrentThread();
                 var sw = Stopwatch.StartNew();
-                var ship = ShipDesign.Build(design);
+                ShipDesign.Build(design);
                 best = Math.Min(best, sw.Elapsed.TotalSeconds);
                 alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
-                // the designer's per-knob rebuild: the same design again, starting from the length it had
-                double length = ship.Report.Results.LengthM;
-                sw.Restart();
-                ShipDesign.Build(design, length);
-                bestHinted = Math.Min(bestHinted, sw.Elapsed.TotalSeconds);
             }
             double p = (double?)pyTimes[c.Name] ?? double.NaN;
             totC += best;
             if (!double.IsNaN(p))
                 totP += p;
-            Console.WriteLine($"{c.Name,-24} {best,8:F3} s   python {p,8:F3} s   x{p / best,6:F1}   rebuild {bestHinted,7:F3} s" +
+            Console.WriteLine($"{c.Name,-24} {best,8:F3} s   python {p,8:F3} s   x{p / best,6:F1}" +
                               $"   {alloc / 1e6,6:F0} MB allocated");
         }
         Console.WriteLine($"total {totC:F2} s, python {totP:F2} s (x{totP / totC:F1})");
@@ -660,7 +655,7 @@ public static class Program
     static int MonoCheck(Args a)
     {
         string root = Root(a);
-        int steps = a.Int("steps", 4), show = a.Int("show", 10);
+        int steps = a.Int("steps", 4), show = a.Int("show", 30);
         var names = a.Positional.Count > 0 ? a.Positional : [.. MonoDefault];
         var designs = names.Select(n => (Name: Path.GetFileNameWithoutExtension(n),
             Design: LoadDesign(File.Exists(n) ? n : Path.Combine(root, "designs", n + ".json")))).ToList();
@@ -671,20 +666,23 @@ public static class Program
             i => sweeps[i] = Monotone.Check(work[i].Name, work[i].Design, steps, [work[i].Lever]));
         var all = sweeps.SelectMany(s => s!).ToList();
         int builds = all.Sum(s => s.Steps.Count), nRev = all.Sum(s => s.Reversals.Count), nLump = all.Sum(s => s.Lumps.Count);
-        int shown = 0;
-        foreach (var s in all.Where(s => s.Reversals.Count + s.Lumps.Count > 0))
+        // one line per finding: the step, how far it went against the usual step, and what the hull did
+        var found = new List<(double Size, string Line)>();
+        foreach (var s in all)
         {
-            if (shown++ >= show)
-                break;
-            Console.WriteLine($"{s.Design} {s.Lever}:");
-            foreach (var st in s.Steps)
+            var abs = Enumerable.Range(1, s.Steps.Count - 1).Select(i => Math.Abs(s.Steps[i].StdT - s.Steps[i - 1].StdT)).Order().ToList();
+            double median = Math.Max(1, abs[abs.Count / 2]);
+            foreach (int i in s.Reversals.Union(s.Lumps).Order())
             {
-                int i = s.Steps.IndexOf(st);
-                string mark = s.Reversals.Contains(i) ? "  <- reversal" : s.Lumps.Contains(i) ? "  <- lump" : "";
-                long dt = i > 0 ? st.StdT - s.Steps[i - 1].StdT : 0;
-                Console.WriteLine($"  {st.Value,8} {st.StdT,8} t {dt,+7} L {st.LengthM,6:F1} B {st.BeamM,5:F2}{(st.Valid ? "" : " invalid")}{mark}");
+                var (p, q) = (s.Steps[i - 1], s.Steps[i]);
+                long dt = q.StdT - p.StdT;
+                found.Add((Math.Abs(dt) / (double)p.StdT, $"{s.Design,-16} {s.Lever,-13} {p.Value,7}->{q.Value,-7} {dt,+7} t " +
+                    $"({100.0 * dt / p.StdT,+5:F1}%, {dt / median,+5:F1} x the usual {median:F0} t)  L {q.LengthM - p.LengthM,+6:F2}  " +
+                    $"B {q.BeamM - p.BeamM,+5:F2}  {(s.Reversals.Contains(i) ? "reversal" : "lump")}"));
             }
         }
+        foreach (var (_, line) in found.OrderByDescending(f => f.Size).Take(show))
+            Console.WriteLine(line);
         foreach (var g in all.GroupBy(s => s.Lever))
             Console.WriteLine($"{g.Key,-14} {g.Sum(s => s.Reversals.Count),3} reversals {g.Sum(s => s.Lumps.Count),3} lumps");
         Console.WriteLine($"{nRev} reversals, {nLump} lumps over {all.Count} sweeps ({builds} builds, {sw.Elapsed.TotalSeconds:F0} s)");

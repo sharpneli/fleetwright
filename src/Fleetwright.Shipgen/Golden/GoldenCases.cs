@@ -41,7 +41,7 @@ public static class GoldenCases
     static JsonArray Strings(List<string> xs) => new(xs.Select(x => (JsonNode?)x).ToArray());
 
     /// <summary>golden.py's capture_case: validation strings, the build (when validate(limits=False) passes), the
-    /// hint check and the build time.</summary>
+    /// build time.</summary>
     public static JsonObject Capture(Design design)
     {
         var rec = new JsonObject
@@ -56,17 +56,6 @@ public static class GoldenCases
             var build = Try(() => JsonSerializer.SerializeToNode(ShipDesign.Build(design), ShipgenJson.Default.Ship));
             rec["build_s"] = Math.Round(sw.Elapsed.TotalSeconds, 3);
             rec["build"] = build;
-            if (build is JsonObject b && !b.ContainsKey("raised"))
-            {
-                double L = (double)b["report"]!["results"]!["length_m"]!;
-                var hinted = Try(() => JsonSerializer.SerializeToNode(ShipDesign.Build(design, L), ShipgenJson.Default.Ship));
-                var hint = new JsonObject { ["length_m"] = L };
-                if (hinted is JsonObject h && h.ContainsKey("raised"))
-                    hint["raised"] = h["raised"]!.DeepClone();
-                else
-                    hint["equal"] = JsonNode.DeepEquals(build, hinted);
-                rec["hint"] = hint;
-            }
         }
         return rec;
     }

@@ -231,7 +231,7 @@ public sealed class CarrierStyle : Style
         FreeboardA = 0.024, FreeboardB = 2.5, MiscFrac = 0.075, HullZFrac = 0.5, FlightDeckTPerM2 = 0.34, HangarTPerM2 = 0.32,
     };
 
-    public override Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double spread = 0.0) =>
+    public override Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double midExtra = 0.0, bool plan = false) =>
         Aviation(design).FlightDeck == "none" ? SeaplaneLayout(design, res, shift) : FlightDeckLayout(design, res, shift);
 
     public override List<Weight> RoughPayload(Design design, double D)
@@ -354,7 +354,7 @@ public sealed class CarrierStyle : Style
     static void CheckCapacity(Layout lay, AviationSpec av, DeckPlanData dp)
     {
         if (av.Aircraft > dp.Capacity)
-            lay.Fail("length", $"Air group of {av.Aircraft} does not fit: the hangar and deck park hold about " +
+            lay.FailLength(lay.Hull.L * Math.Sqrt((double)av.Aircraft / Math.Max(dp.Capacity, 1)), $"Air group of {av.Aircraft} does not fit: the hangar and deck park hold about " +
                                $"{dp.Capacity} aircraft of {av.AircraftT} t. Add a hangar deck, or carry fewer or " +
                                "smaller aircraft.");
     }
@@ -363,7 +363,7 @@ public sealed class CarrierStyle : Style
     {
         double lMach = Layout.PlanMachinery(lay, design, res, hull, mc);
         if (lMach > 0.5 * hull.L)
-            lay.Fail("length", $"The machinery needs {lMach:F0} m, more than half the hull. Use less power or a more " +
+            lay.FailLength(2 * lMach, $"The machinery needs {lMach:F0} m, more than half the hull. Use less power or a more " +
                                "compact plant.");
         lay.Geo.Machinery = (mc - lMach / 2, mc + lMach / 2);
         lay.Geo.MachineryX = mc;

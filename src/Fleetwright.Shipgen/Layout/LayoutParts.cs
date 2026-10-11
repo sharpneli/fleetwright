@@ -455,8 +455,13 @@ public sealed partial class Layout
             lay.Warnings.Add($"machinery.arrangement has {nEng} engine groups for {units} " +
                              "engine unit(s): some engine rooms hold no engine.");
         if (!sp.Fits)
+        {
+            // one row of units across (each side of a centreline bulkhead), and the side protection outboard of it
+            double wNeed = (sp.Unit.W + 0.8) * (p.CentrelineBulkhead ? 2 : 1) + 2 * tds + 2 * wing;
+            lay.NeedB = Math.Max(lay.NeedB, wNeed / Powerplant.SteelFrame * hull.B / (2 * hull.HalfWidth(x)));
             lay.Fail("beam", $"The plant's units are {sp.Unit.W:F1} m wide, but the machinery space is only " +
                              $"{Math.Max(w, 0.0):F1} m across. Use more shafts (smaller units) or less side protection.");
+        }
         lay.Geo.Plant = new PlantPlan(p.Tech.Fuel, sp, segs, wingT, wing, end, w, h, db, top, ag.Armoured, ag.RoofMm, tds,
             Shipgen.Decks.DeckStack(design, D).Select(s => s.Z).ToList());
         return segs.Sum(s => s.Len);

@@ -15,8 +15,8 @@ public sealed class WarshipStyle : Style
     public override bool HasRaisedMounts => true;
     public override bool RaisedHull => true;
 
-    public override Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double spread = 0.0) =>
-        Layout.BuildLayout(design, res, shift, spread);
+    public override Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double midExtra = 0.0, bool plan = false) =>
+        Layout.BuildLayout(design, res, shift, midExtra, plan);
 }
 
 /// <summary>Planing-hull fast craft (motor torpedo boats, PT boats, motor gunboats).</summary>
@@ -48,7 +48,7 @@ public sealed class PlaningStyle : Style
         TrimWarnFrac = 0.01,
     };
 
-    public override Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double spread = 0.0) =>
+    public override Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double midExtra = 0.0, bool plan = false) =>
         PlaningLayout(design, res, shift);
 
     public override List<string> Checks(Design design, Navarch.Result r, Tuning tun)
@@ -99,7 +99,7 @@ public sealed class PlaningStyle : Style
         double m0 = -0.42 * L, m1 = -0.08 * L;
         double lMach = Layout.PlanMachinery(lay, design, res, hull, (m0 + m1) / 2);
         if (lMach > m1 - m0)
-            lay.Fail("length", $"The engines need {lMach:F1} m, but the engine room has {m1 - m0:F1} m.");
+            lay.FailLength(L * lMach / (m1 - m0), $"The engines need {lMach:F1} m, but the engine room has {m1 - m0:F1} m.");
         lay.Geo.Machinery = (m0, m1);
         lay.Geo.MachineryX = (m0 + m1) / 2;
         Layout.SetCitadel(lay, m0, m1);

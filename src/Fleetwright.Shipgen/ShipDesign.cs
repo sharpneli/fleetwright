@@ -44,247 +44,259 @@ public static class ShipDesign
         };
     }
 
-    /// <summary>The narrowest beam (at least B) for a hull of length L carrying `weights` (placed, from a layout).</summary>
-    static double BeamNeeded(Design design, double L, double B, List<Weight> weights, Geo geo)
+    /// <summary>The narrowest beam, at least bLo, on which a hull of length L carrying `weights` (placed, from a layout;
+    /// null: the rough estimate) keeps the style's GM and draught: the root of the margin, found to half a centimetre, so
+    /// the beam moves smoothly with what the ship carries. guess: where to start looking (the beam last time).</summary>
+    static double BeamFor(Design design, double L, double bLo, double guess, List<Weight>? weights, Geo? geo)
     {
         var size = Styles.Get(design).Sizing;
         double bMax = size.BeamMax;
-        double lo = Math.Max(B, L / size.LbMax);
+        bLo = Math.Min(bLo, bMax);
 
-        bool Ok(double b)
+        double Margin(double b)
         {
             var r = Navarch.Solve(WithHull(design, L, b), weights, geo);
-            return r.GmFull >= size.GmFrac * b && r.Draught <= size.Tb * b;
+            return Math.Min(r.GmFull - size.GmFrac * b, size.Tb * b - r.Draught);
         }
 
-        if (Ok(lo))
+        double lo = bLo, fLo = Margin(lo);
+        if (fLo >= 0)
             return lo;
-        double hi = lo;
-        bool broke = false;
-        while (hi < bMax)
+        // a bracket from the guess up, then Illinois regula falsi between the last beam short and the first enough
+        double hi = Math.Max(lo, Math.Min(bMax, guess * 1.005)), fHi = hi > lo ? Margin(hi) : fLo;
+        while (fHi < 0)
         {
-            (lo, hi) = (hi, Math.Min(bMax, hi * 1.15));
-            if (Ok(hi))
-            {
-                broke = true;
-                break;
-            }
+            if (hi >= bMax)
+                return bMax;
+            (lo, fLo) = (hi, fHi);
+            hi = Math.Min(bMax, hi * 1.06);
+            fHi = Margin(hi);
         }
-        if (!broke)
-            return bMax;
-        while (hi - lo > 0.05 * Math.Max(1.0, lo / 10))
+        int side = 0;
+        for (int it = 0; it < 40 && hi - lo > 0.005; it++)
         {
-            double mid = (lo + hi) / 2;
-            (lo, hi) = Ok(mid) ? (lo, mid) : (mid, hi);
+            double b = (lo * fHi - hi * fLo) / (fHi - fLo);
+            if (!(lo < b && b < hi))
+                b = (lo + hi) / 2;
+            double f = Margin(b);
+            if (f >= 0)
+            {
+                (hi, fHi) = (b, f);
+                if (side > 0)
+                    fLo /= 2;
+                side = 1;
+            }
+            else
+            {
+                (lo, fLo) = (b, f);
+                if (side < 0)
+                    fHi /= 2;
+                side = -1;
+            }
         }
         return hi;
     }
 
-    /// <summary>The style's layout for the solved weights r, then crewed.</summary>
-    static Layout LayOut(Design design, Navarch.Result r, double shift = 0.0, double spread = 0.0)
+    /// <summary>The style's layout for the solved weights r, then crewed (a plan isn't: it's only for sizing).</summary>
+    static Layout LayOut(Design design, Navarch.Result r, double shift, double midExtra, bool plan)
     {
         var style = Styles.Get(design);
-        var lay = style.BuildLayout(design, r, shift, spread);
-        Crew.Apply(lay, design, r, style);
+        var lay = style.BuildLayout(design, r, shift, midExtra, plan);
+        if (!plan)
+            Crew.Apply(lay, design, r, style);
         return lay;
     }
 
-    /// <summary>Does everything fit on a hull of length L? (fits, beam).</summary>
-    static (bool Fits, double B) Fit(Design design, double L, double B = 0.0)
+    /// <summary>Size the hull, lay it out and balance it: (layout, result, sized design).
+    /// <para>The hull is as long as the longer of what its speed asks (MinLength, from the displacement) and what its
+    /// contents need, and as wide as its stability and draught ask (BeamFor) and its contents need. Each pass lays the
+    /// ship out on the hull so far and reads those needs off it. What the contents need only ever grows: the length
+    /// steps up by the middle's measured shortfall (which can't overshoot: the middle gains at most a metre per metre of
+    /// hull), the middle's own extra length by what failed to fit in it. The length for speed and the beam are
+    /// recomputed each pass. So a design that carries more doesn't come out smaller for the sizer's sake, and nothing
+    /// depends on where a search happened to start.</para>
+    /// <para>Plan passes (the style's layout as far as the turret groups and the middle) size the hull on rough
+    /// weights; full passes then take the real weights, read what failed to fit, and move the arrangement fore and aft
+    /// until the ship floats level.</para></summary>
+    /// <summary>The hull (L, B) the weights ask for, the layout held as it is: at least lSpace long and bNeed wide, as long
+    /// as its speed asks of its displacement (MinLength) and as wide as BeamFor. The length for speed is the root of
+    /// MinLength(full(L)) - L, by the secant from the length so far (it rises slower than L, so there's one).</summary>
+    static (double L, double B) Settle(Design design, double lSpace, double bNeed, double L, double B, List<Weight>? weights, Geo? geo)
     {
         var size = Styles.Get(design).Sizing;
-        double bMax = size.BeamMax;
-        B = Math.Max(B, L / size.LbMax);
-        bool slender = size.Slender;
-        Navarch.Result r = null!;
-        Layout lay = null!;
-        for (int i = 0; i < 12; i++)
+        var (lMin, lMax) = size.Length;
+        double speed = design.SpeedKn!.Value;
+
+        (double F, double B) At(double l)
         {
-            var d = WithHull(design, L, B);
-            r = Navarch.Solve(d);
-            lay = LayOut(d, r, 0.0);
-            double B2 = BeamNeeded(design, L, B, lay.Weights, lay.Geo);
-            if (lay.Short.Contains("beam") && B < bMax)
-                B2 = Math.Max(B2, B * 1.05);
-            if (B2 <= B * 1.005)
-                break;
-            B = Math.Min(B2, bMax);
+            double b = BeamFor(design, l, Math.Max(l / size.LbMax, bNeed), B, weights, geo);
+            B = b;
+            if (Trace)
+                Console.Error.WriteLine($"   settle l {l:F2} bNeed {bNeed:F2} -> b {b:F2}");
+            return (size.Slender ? MinLength(Navarch.Solve(WithHull(design, l, b), weights, geo).Full, speed) - l : -1.0, b);
         }
-        bool longEnough = !slender || L >= MinLength(r.Full, design.SpeedKn!.Value);
-        return (!lay.Short.Contains("length") && longEnough, B);
+
+        double l0 = Math.Clamp(Math.Max(lSpace, L), lMin, lMax);
+        var (f0, b0) = At(l0);
+        if (f0 <= 0 && l0 <= Math.Max(lSpace, lMin) + 1e-9)
+            return (l0, b0);   // as long as its contents need, and that's long enough for its speed
+        if (f0 <= 0)
+        {
+            // longer than it needs to be (an earlier pass's weights): from the contents' length up
+            l0 = Math.Clamp(Math.Max(lSpace, lMin), lMin, lMax);
+            (f0, b0) = At(l0);
+            if (f0 <= 0)
+                return (l0, b0);
+        }
+        double l1 = Math.Clamp(l0 + f0, lMin, lMax);
+        var (f1, b1) = At(l1);
+        for (int it = 0; it < 30 && Math.Abs(f1) > 0.005 && l1 < lMax; it++)
+        {
+            double l2 = f1 != f0 ? l1 - f1 * (l1 - l0) / (f1 - f0) : l1 + f1;
+            l2 = Math.Clamp(Math.Max(l2, lSpace), lMin, lMax);
+            (l0, f0) = (l1, f1);
+            l1 = l2;
+            (f1, b1) = At(l1);
+        }
+        return (l1, b1);
     }
 
-    /// <summary>The hull for a design that gives none: the shortest that fits everything, and the narrowest beam that
-    /// carries it. hint: the length of a similar design to start the search from.</summary>
-    static (double L, double B) Size(Design design, double? hint = null)
+    /// <summary>Print each sizing pass to stderr (SHIPGEN_TRACE=1).</summary>
+    static readonly bool Trace = Environment.GetEnvironmentVariable("SHIPGEN_TRACE") == "1";
+
+    static (Layout Lay, Navarch.Result R, Design Sized) Solve(Design design)
     {
-        var (lMin, lMax) = Styles.Get(design).Sizing.Length;
-        double Snap(double v) => Math.Max(lMin, Math.Min(lMax, (long)Math.Round(v * 2) / 2.0));
-        double L, step;
-        if (hint is double h && h != 0)
-            (L, step) = (Snap(h), 1.03);
-        else
-        {
-            (L, step) = (100.0, 1.15);
-            for (int i = 0; i < 3; i++)
-            {
-                var r = Navarch.Solve(WithHull(design, L, L / 7.5));
-                L = Snap(5.0 * Math.Pow(r.Full, 1.0 / 3));
-            }
-        }
-        var cache = new Dictionary<double, (bool Fits, double B)>();
+        var style = Styles.Get(design);
+        var size = style.Sizing;
+        var (lMin, lMax) = size.Length;
+        double bMax = size.BeamMax, speed = design.SpeedKn!.Value;
 
-        bool Ok(double l)
+        // a start below the answer: the rough ship's displacement, and a length a little under any MinLength for it
+        double L = 100.0;
+        for (int i = 0; i < 3; i++)
+            L = Math.Clamp(5.0 * Math.Pow(Navarch.Solve(WithHull(design, L, L / 7.5)).Full, 1.0 / 3), lMin, lMax);
+        L = Math.Clamp(0.9 * L, lMin, lMax);
+        double B = Math.Min(bMax, L / size.LbMax);
+        double lSpace = lMin, midExtra = 0.0, bNeed = 0.0, shift = 0.0;
+        (double B, double Need, bool Plan)? lastNeed = null;
+        (double L, double B)? prev = null;
+        (double Shift, double Moment)? lastTrim = null;
+        List<Weight>? weights = null;
+        Geo? geo = null;
+        bool plan = true;
+        int full = 0, vagueSteps = 0, midSteps = 0;   // vague: short for want of something that doesn't say how much; at most a few 1% steps
+        Layout lay = null!;
+        Navarch.Result r = null!;
+        Design d = null!;
+        for (int pass = 0; pass < 80; pass++)
         {
-            if (!cache.TryGetValue(l, out var v))
-                cache[l] = v = Fit(design, l);
-            return v.Fits;
-        }
-
-        double? lo = null, hi = null;
-        if (Ok(L))
-        {
-            hi = L;
-            while (hi > lMin)
+            d = WithHull(design, L, B);
+            r = Navarch.Solve(d, weights, geo);
+            lay = LayOut(d, r, shift, midExtra, plan);
+            if (!plan)
             {
-                L = Snap(Math.Min(hi.Value - 0.5, hi.Value / step));
-                if (!Ok(L))
-                {
-                    lo = L;
-                    break;
-                }
-                hi = L;
+                r = Navarch.Solve(d, lay.Weights, lay.Geo);
+                (weights, geo) = (lay.Weights, lay.Geo);
+                full++;
             }
-        }
-        else
-        {
-            lo = L;
-            while (lo < lMax)
-            {
-                L = Snap(Math.Max(lo.Value + 0.5, lo.Value * step));
-                if (Ok(L))
-                {
-                    hi = L;
-                    break;
-                }
-                lo = L;
-            }
-        }
-        hi ??= lMax;
-        while (lo is not null && hi.Value - lo.Value > Math.Max(0.5, 0.004 * hi.Value))
-        {
-            double mid = Snap((lo.Value + hi.Value) / 2);
-            if (mid == lo.Value || mid == hi.Value)
-                break;
-            if (Ok(mid))
-                hi = mid;
             else
-                lo = mid;
-        }
-        var fitHi = cache.TryGetValue(hi.Value, out var fv) ? fv : Fit(design, hi.Value);
-        return (hi.Value, Math.Round(fitHi.B, 2));
-    }
+                geo = lay.Geo;
 
-    /// <summary>Size the hull, then lay it out and balance it. Returns the internal (layout, result, sized design).</summary>
-    static (Layout Lay, Navarch.Result R, Design Sized) Solve(Design design, int iterations = 6, double? hint = null)
-    {
-        var (L, B) = Size(design, hint);
-        double lMax = Styles.Get(design).Sizing.Length.Max, bMax = Styles.Get(design).Sizing.BeamMax;
-        Layout lay = null!;
-        Navarch.Result r = null!;
-        Design sized = null!;
-        for (int i = 0; i < 6; i++)
-        {
-            (lay, r, sized) = Balance(WithHull(design, L, B), iterations);
-            if (lay.Short.Count == 0 || (L >= lMax && B >= bMax))
+            // what the contents need of the hull: these only ever grow
+            bNeed = Math.Max(bNeed, lay.NeedB);
+            if (lay.NeedB > B + 0.01)
+            {
+                // a part's beam often grows with the beam (a deckhouse a share of it wide): aim for where the two meet,
+                // by the secant through this pass's need and the last one's
+                double g = lay.NeedB - B;
+                if (lastNeed is var (pb, pn, pp) && pp == plan && pb < B && pn - pb > g)
+                    bNeed = Math.Max(bNeed, B + Math.Min(3 * g, g * (B - pb) / (pn - pb - g)) + 0.005);
+                lastNeed = (B, lay.NeedB, plan);
+            }
+            bool wideEnough = lay.NeedB <= B + 0.01;
+            // short of beam for a part that doesn't say by how much (a director without a roof): as likely the length,
+            // so a little more of both, once the hull has settled (below)
+            bool vagueBeam = lay.Short.Contains("beam") && wideEnough;
+            var (L2, B2) = Settle(design, lSpace, bNeed, L, B, weights, geo);
+            // what the layout asks of the length, read off a hull as wide as this length gets (on one much narrower the
+            // turrets stand further in on the taper, a hangar holds fewer aircraft, and what's short overstates what a
+            // longer, and so wider, hull needs) ...
+            // ... and as long as its weights make it: a need read off a hull still growing for its speed overstates what
+            // the grown hull needs, and stays (needs only grow)
+            bool vague = false, settledBeam = wideEnough && Math.Abs(B2 - B) < 0.01 * B && L2 - L < 0.05;
+            if (settledBeam)
+            {
+                double l0 = lSpace;
+                if (lay.Deficit is double def && def > 0)
+                    lSpace = Math.Max(lSpace, L + def + 0.05);
+                if (lay.NeedL > L)   // a need met from below gets there only in the limit: a few centimetres over
+                    lSpace = Math.Max(lSpace, lay.NeedL + 0.05);
+                vague = (lay.Short.Contains("length") && lay.Deficit is not > 0 && lay.NeedL <= L && lay.NeedMid <= 0 || vagueBeam)
+                        && vagueSteps < 5;
+                if (vague)
+                    vagueSteps++;
+                if (vague)
+                    lSpace = Math.Max(lSpace, L * 1.01);
+                if (vague && vagueBeam)
+                    bNeed = Math.Max(bNeed, B * 1.01);
+                if (lay.NeedMid > 0 && midSteps < 4)   // a few steps: if those don't fit it, more length in the middle won't
+                {
+                    midExtra += lay.NeedMid;
+                    midSteps++;
+                }
+                if (lSpace > l0 || vague)
+                    (L2, B2) = Settle(design, lSpace, bNeed, L, B, weights, geo);
+            }
+
+            // the arrangement fore and aft for trim: the moment moves with the shift by the weight that moves with it
+            double shift2 = shift;
+            if (!plan)
+            {
+                double moment = 0.0, movable = 0.0;
+                foreach (var w in r.Weights)
+                {
+                    moment += w.W * (w.X - r.Lcb);
+                    if (!(w.Group is "hull" or "misc"))
+                        movable += w.W;
+                }
+                shift2 = Math.Clamp(shift - moment / movable, lay.ShiftRange.Lo, lay.ShiftRange.Hi);
+                // once the moment has changed sign, halve the bracket: the layout's own steps can make the plain update
+                // jump back and forth
+                if (lastTrim is var (ps, pm) && pm * moment < 0)
+                    shift2 = (shift + ps) / 2;
+                lastTrim = (shift, moment);
+            }
+            bool atMax = L >= lMax && L2 >= lMax;
+            // to a few centimetres: closer, a layout's own steps (a mount a quarter metre along) can flip it back and forth
+            // short of something more hull could still give (what has had its few steps stays an error)
+            bool vagueLeft = (lay.Short.Contains("length") && lay.Deficit is not > 0 && lay.NeedL <= L && lay.NeedMid <= 0 || vagueBeam)
+                             && vagueSteps < 5;
+            bool shortOf = lay.Short.Count > 0 && !atMax && (lay.NeedL > L + 0.01 || lay.Deficit > 0.01 || lay.NeedB > B + 0.01
+                                                              || lay.NeedMid > 0 && midSteps < 4 || vagueLeft);
+            bool settled = Math.Abs(L2 - L) < 0.05 && Math.Abs(B2 - B) < 0.02 && settledBeam && !shortOf;
+            if (Trace)
+                Console.Error.WriteLine($"{(plan ? "plan" : "full")} L {L:F2}->{L2:F2} (space {lSpace:F2}) B {B:F2}->{B2:F2} " +
+                                        $"mid+ {midExtra:F1} shift {shift:F2}->{shift2:F2} std {r.Std:F0} short [{string.Join(",", lay.Short)}]" +
+                                        (lay.Short.Count > 0 ? " " + string.Join(" | ", lay.Errors) : ""));
+            if ((settled || pass >= 40) && plan)
+            {
+                plan = false;
+                continue;
+            }
+            // a layout can flip between two states a step apart (a mount on one side of a line or the other): stop on
+            // the bigger hull, whichever pass the flip was seen in
+            bool flip = !plan && prev is var (pL, pB) && Math.Abs(L2 - pL) < 0.01 && Math.Abs(B2 - pB) < 0.01 && !shortOf
+                        && Math.Abs(L2 - L) < 0.5 && L >= L2;
+            if (settled && Math.Abs(shift2 - shift) < 0.05 || flip || !plan && full >= 16)
                 break;
-            if (lay.Short.Contains("beam"))
-                B = Math.Min(bMax, Math.Round(B * 1.03, 2));
-            if (lay.Short.Contains("length"))
-                L = Math.Min(lMax, Math.Max(L + 0.5, (long)Math.Round(L * 1.01 * 2) / 2.0));
+            prev = plan ? null : (L, B);
+            (L, B, shift) = (L2, B2, shift2);
         }
         if (lay.Short.Contains("length") && L >= lMax && lay.Errors.Count == 0)
             lay.Errors.Add($"Not everything fits even on the longest hull ({lMax:N0} m). Carry less.");
-        if (lay.Short.Count == 0)
-            (lay, r, sized) = SpreadEnds(sized, lay, r, iterations);
-        return (lay, r, sized);
-    }
-
-    /// <summary>Give the ends as much of the spare length as they take without the layout faring worse.</summary>
-    static (Layout, Navarch.Result, Design) SpreadEnds(Design design, Layout lay, Navarch.Result r, int iterations = 6)
-    {
-        double shift = lay.Geo.Shift;
-
-        (bool Short, HashSet<string> Errs, HashSet<string> Warns) Outcome(double s)
-        {
-            var l_ = LayOut(design, r, shift, s);
-            var r_ = Navarch.Solve(design, l_.Weights, l_.Geo);
-            FireControl.AssignSmoke(l_, r_);
-            var errs = new HashSet<string>(l_.Errors, StringComparer.Ordinal);
-            errs.UnionWith(r_.Errors);
-            return (l_.Short.Count > 0, errs, new HashSet<string>(l_.Warnings, StringComparer.Ordinal));
-        }
-
-        var (_, errs0, warns0) = Outcome(0.0);
-
-        bool Ok((bool Short, HashSet<string> Errs, HashSet<string> Warns) o) => !o.Short && o.Errs.IsSubsetOf(errs0) && o.Warns.IsSubsetOf(warns0);
-
-        double s;
-        if (Ok(Outcome(1.0)))
-            s = 1.0;
-        else
-        {
-            double lo = 0.0, hi = 1.0;
-            for (int i = 0; i < 5; i++)
-            {
-                double mid = (lo + hi) / 2;
-                (lo, hi) = Ok(Outcome(mid)) ? (mid, hi) : (lo, mid);
-            }
-            s = lo;
-        }
-        if (s <= 0.0)
-            return (lay, r, design);
-        var (lay2, r2, _) = Balance(design, iterations, s);
-        var e2 = new HashSet<string>(lay2.Errors, StringComparer.Ordinal);
-        e2.UnionWith(r2.Errors);
-        if (lay2.Short.Count > 0 || !e2.IsSubsetOf(errs0) || !new HashSet<string>(lay2.Warnings, StringComparer.Ordinal).IsSubsetOf(lay.Warnings))
-            return (lay, r, design);
-        return (lay2, r2, design);
-    }
-
-    /// <summary>Rough solve -&gt; layout -&gt; solve -&gt; shift to balance; repeat until stable.</summary>
-    public static (Layout Lay, Navarch.Result R, Design Design) Balance(Design design, int iterations = 6, double spread = 0.0)
-    {
-        var r = Navarch.Solve(design);
-        double shift = 0.0;
-        Layout lay = null!;
-        (double M, double Shift)? best = null;
-        var bracket = new List<(double Shift, double Moment)>();
-        for (int i = 0; i < iterations + 4; i++)
-        {
-            lay = LayOut(design, r, shift, spread);
-            r = Navarch.Solve(design, lay.Weights, lay.Geo);
-            shift = lay.Geo.Shift;
-            double moment = r.Weights.Select(w => w.W * (w.X - r.Lcb)).Sum();
-            double movable = r.Weights.Where(w => !(w.Group is "hull" or "misc")).Select(w => w.W).Sum();
-            if (best is null || Math.Abs(moment) < best.Value.M)
-                best = (Math.Abs(moment), shift);
-            var keep = bracket.Where(b => (b.Moment > 0) != (moment > 0)).ToList();
-            bracket = keep.Skip(Math.Max(0, keep.Count - 1)).ToList();
-            bracket.Add((shift, moment));
-            double newShift = bracket.Count == 2
-                ? (bracket[0].Shift + bracket[1].Shift) / 2
-                : Math.Max(lay.ShiftRange.Lo, Math.Min(lay.ShiftRange.Hi, shift - moment / movable));
-            if (Math.Abs(newShift - shift) < 0.05)
-                break;
-            shift = newShift;
-        }
-        shift = best!.Value.Shift;
-        lay = LayOut(design, r, shift, spread);
-        r = Navarch.Solve(design, lay.Weights, lay.Geo);
         Arcs.AssignArcs(lay);
         FireControl.AssignSmoke(lay, r);
-        return (lay, r, design);
+        return (lay, r, d);
     }
 
     /// <summary>The plant's static numbers for the game and how it sits in the hull.</summary>
@@ -399,10 +411,10 @@ public static class ShipDesign
         return new BridgeReport(b.Level, b.Tower, Math.Round(eye, 2), Math.Round(FireControl.HorizonKm(eye), 1), b.Level >= b.Need, b.Need);
     }
 
-    /// <summary>Design the ship. hint: the hull length of a similar earlier build.</summary>
-    public static Ship Build(Design design, double? hint = null)
+    /// <summary>Design the ship.</summary>
+    public static Ship Build(Design design)
     {
-        var (lay, r, sized) = Solve(design, hint: hint);
+        var (lay, r, sized) = Solve(design);
         var inner = InteriorOf(lay, sized, r);
         return new Ship(design, ReportOf(design, lay, r, sized), Hitbox.ExportHitboxes(lay, sized, r, inner), lay.Dressing);
     }

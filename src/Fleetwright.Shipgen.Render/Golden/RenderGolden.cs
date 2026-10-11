@@ -39,7 +39,8 @@ public static class RenderGolden
         }
         One("hull.svg.gz", sp.Hull);
         One("height.svg.gz", sp.Height);
-        var golden = Directory.GetFiles(Path.Combine(dir, "turrets"), "*.svg.gz").Select(f => Path.GetFileName(f)[..^".svg.gz".Length])
+        string tdir = Path.Combine(dir, "turrets");   // none for a ship without turrets (git keeps no empty folder)
+        var golden = (Directory.Exists(tdir) ? Directory.GetFiles(tdir, "*.svg.gz") : []).Select(f => Path.GetFileName(f)[..^".svg.gz".Length])
             .Order(StringComparer.Ordinal).ToList();
         var ours = sp.Turrets.Keys.Order(StringComparer.Ordinal).ToList();
         if (!golden.SequenceEqual(ours))
