@@ -37,6 +37,13 @@ public sealed unsafe partial class DesignerScene
     string? protForceTip;   // dev hook: "cover:N", "ghost:N:EXT", "handle:N"
     readonly List<(Vector2 A, Vector2 B, PRef R)> protHits = [];   // this frame's plates on the elevation, topmost last
 
+    // the drawings' frame (ship metres) and the top area's height, kept while the ship changes inside them, so a wheel
+    // step on a plate doesn't rescale the view: reset for another design or pane size, grown when the ship outgrows it,
+    // shrunk only when it's far too big
+    object? protFrameDoc;
+    Vector2 protFrameSize;
+    float protFrameL, protFrameTop, protFrameBot, protFrameB, protTopH;
+
     static readonly string[] ExtentValues = ["citadel", "full", "fore", "aft", "ends"];
     static readonly string[] ExtentShort = ["cit", "full", "fore", "aft", "ends"];
     static readonly string[] GroupTitle = ["SIDE", "ARMOUR DECKS", "ENDS", "GUNS AND CONNING TOWER"];
@@ -507,7 +514,16 @@ public sealed unsafe partial class DesignerScene
         float rowH = ProtRowH, groupH = P(15);
         float tableH = P(17) + pp.Rows.Length * rowH + 4 * groupH + P(2);
         float topY = o.Y + P(18) + gap;
-        float topH = Math.Clamp(size.Y - P(18) - 3 * gap - tableH, P(170), MathF.Max(P(170), size.Y * 0.46f));   // the lower half keeps room
+        float wantTop = Math.Clamp(size.Y - P(18) - 3 * gap - tableH, P(170), MathF.Max(P(170), size.Y * 0.46f));   // the lower half keeps room
+        if (!ReferenceEquals(protFrameDoc, doc) || protFrameSize != size)
+        {
+            (protFrameDoc, protFrameSize, protTopH, protFrameL) = (doc, size, wantTop, 0);
+        }
+        protTopH = MathF.Min(protTopH, wantTop);   // more rows take room from the drawings; fewer don't give it back
+        if (pp.Built && (protFrameL <= 0 || pp.L > protFrameL || pp.ZTop > protFrameTop || pp.Keel - 0.4f < protFrameBot || pp.B > protFrameB
+                         || pp.L < 0.8f * protFrameL))
+            (protFrameL, protFrameTop, protFrameBot, protFrameB) = (pp.L * 1.03f, pp.ZTop + 0.6f, pp.Keel - 0.9f, pp.B * 1.03f);
+        float topH = protTopH;
         float secW = MathF.Round(Math.Clamp(w * 0.33f, P(330), P(470)));
         float elevW = w - secW - 3 * gap;
         ProtElevation(dl, new Vector2(o.X + gap, topY), new Vector2(elevW, topH), pp);
@@ -610,9 +626,10 @@ public sealed unsafe partial class DesignerScene
         SubHeader(dl, size.X, "ELEVATION", "heights stretched, deck by deck · + on a bare deck or side adds armour there");
         var io = ImGui.GetIO();
         float left = P(58), right = P(8), top = P(26), bottom = P(16);
-        float kx = (size.X - left - right) / pp.L;
-        float kz = (size.Y - top - bottom) / Math.Max(1, pp.ZTop - (pp.Keel - 0.4f));
-        var m = new ElevMap(pos.X + left, pos.Y + top, kx, kz, pp.L, pp.ZTop);
+        float fl = protFrameL > 0 ? protFrameL : pp.L, ft = protFrameL > 0 ? protFrameTop : pp.ZTop, fb = protFrameL > 0 ? protFrameBot : pp.Keel - 0.4f;
+        float kx = (size.X - left - right) / fl;
+        float kz = (size.Y - top - bottom) / Math.Max(1, ft - fb);
+        var m = new ElevMap(pos.X + left, pos.Y + top, kx, kz, fl, ft);
         var font = UiFonts.SansSmall;
         var mono = UiFonts.Mono;
 
@@ -647,7 +664,7 @@ public sealed unsafe partial class DesignerScene
         Dashed(dl, new Vector2(m.X(pp.X0), pos.Y + P(20)), new Vector2(m.X(pp.X0), pos.Y + size.Y - bottom), brk, P(3), vertical: true);
         Dashed(dl, new Vector2(m.X(pp.X1), pos.Y + P(20)), new Vector2(m.X(pp.X1), pos.Y + size.Y - bottom), brk, P(3), vertical: true);
         Text(dl, font, new Vector2((m.X(pp.X0) + m.X(pp.X1) - Width(font, pp.Citadel)) / 2, pos.Y + size.Y - bottom + P(1)), new Vector4(0.55f, 0.48f, 0.33f, 1), pp.Citadel);
-        Text(dl, font, new Vector2(m.X(-pp.L / 2), pos.Y + size.Y - bottom + P(1)), new Vector4(0.37f, 0.48f, 0.59f, 1), "aft");
+        Text(dl, font, new Vector2(MathF.Max(pos.X + left, m.X(-pp.L / 2)), pos.Y + size.Y - bottom + P(1)), new Vector4(0.37f, 0.48f, 0.59f, 1), "aft");
         Text(dl, font, new Vector2(m.X(pp.L / 2) - Width(font, "fore"), pos.Y + size.Y - bottom + P(1)), new Vector4(0.37f, 0.48f, 0.59f, 1), "fore");
 
         // the interaction area under everything drawn from here
@@ -741,6 +758,8 @@ public sealed unsafe partial class DesignerScene
         bool dim = protHot is { } h && !lit;
         if (dim)
             col = col with { W = 0.55f };
+        if (protDrag == DragKind.DeckMove && pl.Ref == protSel)
+            col = col with { W = 0.45f };
         uint edge = T.U32(lit ? new Vector4(1, 0.906f, 0.659f, 0.95f) : new Vector4(0, 0, 0, 0.45f));
         var font = UiFonts.SansSmall;
         if (pl.Ref.Kind == PK.Tds)
@@ -892,27 +911,93 @@ public sealed unsafe partial class DesignerScene
                 _ => NearestDeck(pp, m.InvZ(io.MousePos.Y), upper: false),
             };
             protDragValue = v;
-            uint brass = T.U32(new Vector4(1, 0.906f, 0.659f, 1));
-            if (protDrag == DragKind.Reach)
-            {
-                float x = protDragI == 0 ? pp.X1 + (float)v * (pp.L / 2 - pp.X1) : pp.X0 - (float)v * (pp.X0 + pp.L / 2);
-                dl.AddLine(new Vector2(m.X(x), m.Z(pp.BeltTop)), new Vector2(m.X(x), m.Z(pp.BeltBottom)), brass, P(2));
-            }
-            else
-            {
-                float z = protDrag switch
-                {
-                    DragKind.BeltTop => pp.Wl + (float)v,
-                    DragKind.BeltBottom => pp.Wl - (float)v,
-                    _ => DeckZOf(pp, (long)v),
-                };
-                float xa = protDrag == DragKind.DeckMove ? -pp.L / 2 : pp.X0, xb = protDrag == DragKind.DeckMove ? pp.L / 2 : pp.X1;
-                dl.AddLine(new Vector2(m.X(xa), m.Z(z)), new Vector2(m.X(xb), m.Z(z)), brass, P(2));
-            }
+            DragPreview(dl, m, pp, v);
             DragTip(pp);
             EndDragIfReleased();
         }
         return hot;
+    }
+
+    static readonly Vector4 Light = new(1, 0.906f, 0.659f, 1);
+
+    /// <summary>A plate's outline where the drag would put it: brass, over a faint fill.</summary>
+    static void Target(ImDrawListPtr dl, Vector2 a, Vector2 b)
+    {
+        dl.AddRectFilled(a, b, T.U32(T.Brass with { W = 0.16f }));
+        dl.AddRect(a, b, T.U32(Light), 0, ImDrawFlags.None, P(1.5f));
+    }
+
+    /// <summary>The deck lane at height z lit in brass, its name in the margin.</summary>
+    static void LitLane(ImDrawListPtr dl, ElevMap m, ProtPane pp, float z)
+    {
+        foreach (var (name, lz, x0, x1) in pp.Lanes)
+        {
+            if (Math.Abs(lz - z) > 0.01f)
+                continue;
+            Dashed(dl, new Vector2(m.X(x0), m.Z(z)), new Vector2(m.X(x1), m.Z(z)), T.U32(T.Brass with { W = 0.8f }), P(3));
+            var font = UiFonts.SansSmall;
+            var at = new Vector2(m.Left - P(6) - Width(font, name), m.Z(z) - font.FontSize / 2);
+            dl.AddRectFilled(at - new Vector2(P(3), P(1)), at + new Vector2(Width(font, name) + P(3), font.FontSize + P(1)), T.U32(T.BrassDark), P(2));
+            Text(dl, font, at, Light, name);
+            return;
+        }
+    }
+
+    /// <summary>What the drag would do, drawn at its target: the belt (and the end belts, which share its heights) at its
+    /// new edges, the end belt to its new tip, the upper belt to its new deck, the armour deck on its new deck with that
+    /// deck's lane lit. The plate where it is now is left as it is, so both show.</summary>
+    void DragPreview(ImDrawListPtr dl, ElevMap m, ProtPane pp, double v)
+    {
+        uint light = T.U32(Light);
+        switch (protDrag)
+        {
+            case DragKind.BeltTop or DragKind.BeltBottom:
+            {
+                float top = protDrag == DragKind.BeltTop ? pp.Wl + (float)v : pp.BeltTop;
+                float bot = protDrag == DragKind.BeltBottom ? pp.Wl - (float)v : pp.BeltBottom;
+                float a = !float.IsNaN(pp.EndTipAft) ? pp.EndTipAft : pp.X0, b = !float.IsNaN(pp.EndTipFore) ? pp.EndTipFore : pp.X1;
+                Target(dl, new Vector2(m.X(a), m.Z(top)), new Vector2(m.X(b), m.Z(bot)));
+                float edge = protDrag == DragKind.BeltTop ? top : bot;
+                dl.AddLine(new Vector2(m.X(a), m.Z(edge)), new Vector2(m.X(b), m.Z(edge)), light, P(2.5f));
+                break;
+            }
+            case DragKind.Reach:
+            {
+                float x = protDragI == 0 ? pp.X1 + (float)v * (pp.L / 2 - pp.X1) : pp.X0 - (float)v * (pp.X0 + pp.L / 2);
+                float a = protDragI == 0 ? pp.X1 : x, b = protDragI == 0 ? x : pp.X0;
+                Target(dl, new Vector2(m.X(a), m.Z(pp.BeltTop)), new Vector2(m.X(b), m.Z(pp.BeltBottom)));
+                dl.AddLine(new Vector2(m.X(x), m.Z(pp.BeltTop) - P(4)), new Vector2(m.X(x), m.Z(pp.BeltBottom) + P(4)), light, P(2.5f));
+                break;
+            }
+            case DragKind.UpperTop:
+            {
+                float z = DeckZOf(pp, (long)v);
+                LitLane(dl, m, pp, z);
+                Target(dl, new Vector2(m.X(pp.UpX0), m.Z(z)), new Vector2(m.X(pp.UpX1), m.Z(pp.BeltTop)));
+                dl.AddLine(new Vector2(m.X(pp.UpX0), m.Z(z)), new Vector2(m.X(pp.UpX1), m.Z(z)), light, P(2.5f));
+                break;
+            }
+            case DragKind.DeckMove:
+            {
+                float z = DeckZOf(pp, (long)v);
+                LitLane(dl, m, pp, z);
+                foreach (var pl in pp.Plates)
+                {
+                    if (!pl.Flat || pl.Ref != protSel)
+                        continue;
+                    float th = Math.Clamp((float)pl.Mm / 25 * S, P(2.5f), P(6));
+                    var a = new Vector2(m.X(pl.X0), m.Z(z));
+                    var b = new Vector2(m.X(pl.X1), a.Y + th);
+                    dl.AddRectFilled(a, b, T.U32(T.Armour(pl.Mm) with { W = 0.85f }));
+                    dl.AddRect(a - new Vector2(1, 1), b + new Vector2(1, 1), light, 0, ImDrawFlags.None, P(1.5f));
+                    // from where it is to where it would go
+                    float cx = (a.X + b.X) / 2;
+                    if (Math.Abs(pl.Z0 - z) > 0.01f)
+                        Dashed(dl, new Vector2(cx, MathF.Min(m.Z(pl.Z0), a.Y)), new Vector2(cx, MathF.Max(m.Z(pl.Z0), a.Y)), light, P(2), vertical: true);
+                }
+                break;
+            }
+        }
     }
 
     static void Handle(ImDrawListPtr dl, Vector2 at, bool horizontal, bool on)
@@ -1085,9 +1170,9 @@ public sealed unsafe partial class DesignerScene
         var font = UiFonts.SansSmall;
         const float th = 3;   // plate thickness stretch
         float chipsW = P(122), top = P(24), bottom = P(10);
-        float zHi = 1.0f, zLo = pp.SecZ[0] - 0.3f;
-        float k = MathF.Min((size.X - chipsW - P(56)) / pp.B, (size.Y - top - bottom) / (zHi - zLo));
-        float cx = pos.X + P(46) + pp.B / 2 * k;
+        float zHi = 1.0f, zLo = protFrameL > 0 ? protFrameBot : pp.SecZ[0] - 0.3f, fB = protFrameL > 0 ? protFrameB : pp.B;
+        float k = MathF.Min((size.X - chipsW - P(56)) / fB, (size.Y - top - bottom) / (zHi - zLo));
+        float cx = pos.X + P(46) + fB / 2 * k;
         float oy = pos.Y + top + ((size.Y - top - bottom) - (zHi - zLo) * k) / 2;
         float Y(float z) => oy + (zHi - z) * k;
         float Half(float z)
@@ -1233,15 +1318,25 @@ public sealed unsafe partial class DesignerScene
             {
                 float zm = (pp.Ib + pp.RoofZ) / 2;
                 protDragValue = Math.Clamp(Math.Round((Half(zm) - (mouse.X - cx) / k) * 10) / 10, 0.5, pp.B / 2 - 2);
-                float ix = cx + MathF.Max(0.5f, Half(zm) - (float)protDragValue) * k;
-                dl.AddLine(new Vector2(ix, Y(pp.RoofZ)), new Vector2(ix, Y(pp.Ib)), brass, P(2));
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    float ix = cx + side * MathF.Max(0.5f, Half(zm) - (float)protDragValue) * k, ox = cx + side * Half(zm) * k;
+                    Target(dl, new Vector2(MathF.Min(ix, ox), Y(pp.RoofZ)), new Vector2(MathF.Max(ix, ox), Y(pp.Ib)));
+                    dl.AddLine(new Vector2(ix, Y(pp.RoofZ)), new Vector2(ix, Y(pp.Ib)), brass, P(2.5f));
+                }
             }
             else
             {
                 protDragValue = protDrag == DragKind.BeltTop ? Math.Clamp(Math.Round((zAt - pp.Wl) * 10) / 10, 0.3, -pp.Wl)
                     : Math.Clamp(Math.Round((pp.Wl - zAt) * 10) / 10, 0, pp.Wl - pp.Ib - 0.2);
                 float z = protDrag == DragKind.BeltTop ? pp.Wl + (float)protDragValue : pp.Wl - (float)protDragValue;
-                dl.AddLine(new Vector2(cx - Half(z) * k, Y(z)), new Vector2(cx + Half(z) * k, Y(z)), brass, P(2));
+                float zt = protDrag == DragKind.BeltTop ? z : pp.BeltTop, zb = protDrag == DragKind.BeltBottom ? z : pp.BeltBottom;
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    float o = cx + side * Half((zt + zb) / 2) * k, i = o - side * P(10);
+                    Target(dl, new Vector2(MathF.Min(o, i), Y(zt)), new Vector2(MathF.Max(o, i), Y(zb)));
+                }
+                dl.AddLine(new Vector2(cx - Half(z) * k, Y(z)), new Vector2(cx + Half(z) * k, Y(z)), brass, P(2.5f));
             }
             DragTip(pp);
             EndDragIfReleased();

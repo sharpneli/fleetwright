@@ -8,9 +8,15 @@ has it.
 
 The game differs from the mockup in these ways:
 
-- **A drag edits once, on release.** While the mouse is down the snapped edge is drawn in brass, with its value in a
-  tooltip; the design changes (and the ship rebuilds) only when you let go, and not at all if the value didn't move.
-  The wheel and the spinners step as everywhere else.
+- **A drag edits once, on release.** While the mouse is down its target is drawn where it would land: the belt (and
+  the end belts, which share its heights) outlined at its new edges, the end belt to its new tip, the upper belt to its
+  new deck, the armour deck on its new deck with that deck's name lit in the margin and a dashed line from where it is.
+  The value is in a tooltip. The design changes (and the ship rebuilds) only when you let go, and not at all if the
+  value didn't move. The wheel and the spinners step as everywhere else.
+- **The drawings keep their frame.** The elevation's and the section's scale, and the top area's height, are set when
+  the design opens and kept while the ship changes inside them, so a wheel step on a plate doesn't rescale the view.
+  The frame grows when the ship outgrows it, shrinks only when the ship is far smaller, and resets for another design
+  or pane size; a part added to the table can take height from the drawings, a part removed doesn't give it back.
 - **The drawings are the built ship's**, from `Ship.Hitboxes` (belt, strakes, bulkheads, armour decks, barbettes,
   turrets, conning tower, the hull form's stations), so they lag an edit by one build. The table is the design.
 - **Design decks and built decks:** the engine merges design decks that overlap on the same deck. A built deck plate
