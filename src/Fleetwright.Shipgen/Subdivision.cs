@@ -123,9 +123,12 @@ public static class Subdivision
 
     /// <summary>Transverse bulkhead positions, bow to stern: [(x, kind)], with the hull's ends.</summary>
     static List<(double X, string Kind)> Stations(double L, List<RoomBox> rooms, (double X0, double X1, string Kind)? cit, double minGap,
-        double maxGap, IEnumerable<double> breaks, IEnumerable<double> armoured)
+        double maxGap, IEnumerable<double> breaks, IEnumerable<double> armoured, IEnumerable<double> machinery)
     {
         var cands = new List<(double X, int P, string Kind)> { (L / 2 - Collision * L, 9, "collision") };
+        // the machinery's ends hold like the citadel's: a short room beside it (a secondary battery's magazine) joins
+        // the section on its other side, rather than taking the bottom of an engine room's
+        cands.AddRange(machinery.Select(x => (x, 10, "main")));
         cands.AddRange(breaks.Select(x => (x, BreakPriority, "main")));
         cands.AddRange(armoured.Select(x => (x, 10, "armoured")));
         if (cit is { } c)
@@ -222,7 +225,8 @@ public static class Subdivision
         else if (lay.Geo.Citadel is { } gc && design.StyleName is "warship" or "carrier")
             cit = (gc.X0, gc.X1, "citadel");
         var st = Stations(L, rooms, cit, Math.Min(MinSectionMaxM, Math.Max(MinSectionM, MinSection * L)), Math.Max(MaxSectionM, MaxSection * L),
-            lay.Raised.SelectMany(s => new[] { s.X0, s.X1 }), ag.EndBulkheads.Select(b => b.X));
+            lay.Raised.SelectMany(s => new[] { s.X0, s.X1 }), ag.EndBulkheads.Select(b => b.X),
+            mach is { } me ? [me.X0, me.X1] : []);
         var armBh = new List<ArmourBulkhead>();
         if (cit is { Kind: "armoured" })
             armBh.AddRange(Armour.CitadelBulkheads(ag));
