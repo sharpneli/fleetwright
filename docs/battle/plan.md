@@ -92,6 +92,9 @@ damage), a renderer that reads `ShipState` and `ShipClassArt` and knows nothing 
 
 Rules:
 
+- The battle is the world's tactical tier (`docs/world/architecture.md`): every step keeps to that doc's "What the
+  combat module must already respect" (world positions and time, encounters as sets of entities, `ShipState` made
+  and dropped per entity, damage from a hit not a flight, sighting into a navy's picture, commands in, `SimSettings`).
 - `Hitboxes` stays the export and interchange; nothing in the battle reads it after compiling. `ShipClass` is never
   written after it's made.
 - Per-ship arrays are allocated once at spawn; ticks and hit queries allocate nothing (the game is soft real time).

@@ -1,7 +1,7 @@
 # The world: how the game is organised around a living planet
 
-2026-10-11. Status: the tiers, the sim thread, the commands and the snapshot, and the screen stack are agreed with the
-user (2026-10-11, "Decisions" at the end); "Conflicts" is proposed. `docs/battle/plan.md` "The world" settled the
+2026-10-11. Status: agreed with the user (2026-10-11, "Decisions" at the end), diplomacy deferred. The combat module
+comes first; "What the combat module must already respect" lists what it keeps to so the rest can follow. `docs/battle/plan.md` "The world" settled the
 geometry (one sphere, Earth-centred doubles, flat only locally).
 
 ## What has to hold
@@ -78,7 +78,10 @@ The one thing that can't be scheduled ahead by a single ship is meeting another.
   (a ship completed, a convoy arrived, fuel low). Deterministic, and the player never overshoots a contact by 8
   minutes.
 
-## Conflicts: who fights, how closely it's simulated, and who's watching (proposed)
+## Conflicts: who fights, how closely it's simulated, and who's watching (agreed 2026-10-11)
+
+Agreed with the user, except relations beyond war and peace (deferred: the combat module comes first, but with these
+decisions shaping it, so later work refactors as little as possible).
 
 Most fighting in the world isn't the player's: NPC navies at war with each other, a raider sinking merchants in the
 Indian Ocean, a French cruiser shadowing a British one off Brest. Most of it must happen without anyone deciding
@@ -87,7 +90,9 @@ anything and without slowing the clock. The design splits an encounter into thre
 ### 1. Whether there's a fight at all: relations and rules of engagement
 
 - **Relations are world state:** each pair of nations is at peace, in tension, or at war, and each side may treat
-  third parties as neutrals (blockade, contraband). The diplomacy that moves them is its own system, later.
+  third parties as neutrals (blockade, contraband). The diplomacy that moves them is its own system, later. **For now
+  (agreed): a war/peace table only**, behind an interface ("may these two interact, and how") that tension,
+  incidents and neutrals can grow into without touching the encounter code.
 - **An encounter opens on contact between forces whose relations allow interaction**, not just "opposing": at war
   they may fight; in tension they shadow, warn and maybe fire (an incident, which can feed back into relations); a
   blockader stops neutrals. When rules say nothing can happen, ships just pass on rails.
@@ -135,37 +140,51 @@ Each encounter runs at one of two fidelities, and can switch at a step boundary:
   paused at these scales), a pause, or straight to Full. Defaults: NPC vs NPC -> a dispatch; own merchant sunk -> a
   notification; own warship engaged -> a speed drop with "take command" or "leave it to the captain"; own fleet
   engaged -> pause.
+- **Importance per own group (agreed):** the player marks fleets and ships important or not. An important one
+  engaged raises the interest (a speed drop, a pause, Full); an unimportant one, some poor sod on a distant station,
+  is resolved and reported in a dispatch.
 - **Promotion is the player's, never forced by NPCs:** whatever two NPC navies do, the clock only slows when the
   player's rules say so, and the player can open any visible encounter to watch it at Full (it slows the clock while
   it's watched).
 - **Several encounters at Full** slow the clock to the slowest; the UI lists them, and the player can hand any back
   to the captains.
 
-### Many small fights: raiders, merchants and flows
+### Many small fights: raiders and real merchants (agreed)
 
-The thousands of merchant ships in the world (Britain alone had ~9,000 in 1914) shouldn't each be a ship on rails
-waiting to be found:
+Every merchant is a real track (Britain alone had ~9,000 ships in 1914), because only real positions let a raider
+deplete an area as it really would, and let a navy route its merchants away from danger:
 
-- **Merchant traffic is a flow:** tonnage per lane per day, by nation, from the Earth model's trade routes. National
-  economies, convoys and losses are counted on the flows.
-- **Search is a rate, not a scan:** a raider (or a patrol) working a lane finds merchants at the rate random-search
-  theory gives (Koopman: sweep width x speed x traffic density). Each find is an event.
-- **A found merchant materialises:** a real ship of a class from the nation's merchant pool, at a real position, in
-  a Resolved encounter with the raider, run by both sides' orders (stop, sink or capture; run, scatter, signal).
-  After it, the merchant is sunk, captured or gone, and goes back into the flow as tonnage, or stays a ship if it
-  matters (a prize sailed home).
-- **Escorted convoys are real groups** (they're few and they matter), and their merchants materialise when the convoy
-  is attacked.
-- **The same pattern scales other numerous small things** (submarines on patrol, later aircraft searches): aggregate
-  until something finds them, a real entity from then on.
+- **A merchant is a light entity:** a position on rails (a great-circle route from port to port), its nation, its
+  tonnage and cargo, and a class drawn from the nation's merchant pool. No fuel, crew or condition tables while it's
+  steaming: a merchant voyage is a few legs and a few events over weeks, so 9,000 of them cost less than the warships.
+- **Merchants are in the contact scan like everything else**, and a raider finds them where they actually are: a
+  raider that sinks three ships on a route leaves it thinner, owners and admiralties divert sailings (route orders
+  to the merchants, issued by their navy's AI or the player), and traffic piles up at the ports that are still safe.
+- **A merchant becomes a full ship only in an encounter:** its class's `ShipClass` and a `ShipState` are made when a
+  raider (or anything) engages it, in a Resolved encounter run by both sides' orders (stop, sink or capture; run,
+  scatter, signal). Afterwards it's sunk, captured (a prize sailed home: it keeps its state) or let go (it drops its
+  state and goes back to being light, keeping only what the voyage needs to know: damaged, slower).
+- **Convoys are groups of merchants with escorts**, ordered like any group.
+- **The light/full split is per entity, not per kind:** anything numerous (submarines on patrol, later aircraft) can
+  start light and take full state only when something engages it.
 
 ### Knowledge: each navy sees its own picture
 
-Fog of war follows from all of this: **each navy has its own picture** (contacts, their age and accuracy, what
-dispatches reported). The player's snapshot is built from the player's navy's picture, not from the world; the NPC
-admiralties plan from theirs. An encounter far away reaches the player as a dispatch when someone could have reported
-it (a wireless signal, a survivor), not when it happened. A navy's picture is world state like any other: saved,
-deterministic, updated by events.
+Fog of war is **knowledge of entities, not a visual effect** (agreed): **each navy has its own picture**, a table of
+what it knows about other entities. A contact is what was learned and when: an entity (or "unidentified"), its
+classification as far as known (a ship, a cruiser, a *Gloire*-class, the *Montcalm*), a position and course with
+their uncertainty, the time of the report and its source (sighting, wireless, a dispatch, intelligence). It ages:
+the position estimate grows with time since the last report.
+
+- **The player's snapshot is built from the player's navy's picture,** never straight from the world: an enemy ship
+  the navy doesn't know of isn't in it at all, and one it knows of is where the picture says, not where it is.
+  Own ships come from the world. The map draws contacts as what they are (a reported position with its uncertainty),
+  not ships with a fog over them.
+- **The NPC admiralties plan from their pictures** too, so they're fooled by the same things the player is.
+- **An encounter far away reaches the player as a dispatch** when someone could have reported it (a wireless signal,
+  a survivor, a neutral port), not when it happened.
+- Inside an encounter, the tactical tier's sighting feeds the pictures of the navies taking part.
+- A picture is world state like any other: saved, deterministic, updated by events.
 
 ### NPC navies are command sources
 
@@ -193,7 +212,7 @@ Fleetwright.Sim          the world; no GPU, no SDL, no ImGui; deterministic; hea
     Encounters           the bubbles: fidelity (Full / Resolved), control, interest; their battle state
     Relations            peace / tension / war per pair of nations; neutrals
     Pictures             each navy's knowledge: contacts, dispatches
-    Flows                merchant traffic per lane, raiders' search rates, the merchant pools
+    Merchants            light entities on rails (route, nation, tonnage, cargo); full state only in an encounter
     Admiralties          NPC command sources (AI), reading their navy's picture
     SimSettings          every tuning number, from data
   Commands               the only way in: orders, designs submitted, ships laid down; stamped with the tick
@@ -289,7 +308,7 @@ This replaces the battle plan's open question 2 (a `Fleetwright.Battle` project)
 6. **The resolver (Resolved).** Doctrine manoeuvre, sighting and expected hits per coarse step, sampled hits through
    the real hit query and damage; promotion and demotion; the calibration test against Full.
 7. **The Earth model** (when the user brings it): land, the sea graph and routing, ports, the globe's tiles; then
-   trade lanes and merchant flows, search rates, materialising merchants.
+   merchants on their voyages (light entities, routes between ports, diversion orders, full state in an encounter).
 8. **Pictures and admiralties:** each navy's knowledge and dispatches; NPC navies as command sources.
 9. **The coarse tier** for ships when the first model needs it (flooding after a battle).
 
@@ -303,13 +322,32 @@ This replaces the battle plan's open question 2 (a `Fleetwright.Battle` project)
 5. **What drops the speed is user-configurable** (the interest table in "Conflicts").
 6. **The clock while the designer is open is user-configurable;** dropping to 1x, which at these scales is as good as
    paused, is one choice.
+7. **Two fidelities, Full and Resolved,** with Resolved calibrated on real game simulations at Full. The player marks
+   own forces important or not, and an unimportant one is resolved.
+8. **Merchants are real light tracks,** all ~9,000 of them: a position on a route between ports, no fuel or crew.
+   Real positions let raiders deplete an area realistically and let navies route merchants away.
+9. **Fog of war is knowledge of entities** (each navy's picture), not a visual effect.
+10. **Diplomacy waits:** war and peace only for now. The combat module comes first, built to these decisions so that
+    later work refactors as little as possible.
 
-## Open questions (the user's)
+## What the combat module must already respect
 
-1. **Two fidelities (Full / Resolved)**, with damage always through the real hit query and damage model, and the
-   resolver calibrated against Full by a test?
-2. **Merchants as flows**, materialised when found, rather than every merchant a ship on rails?
-3. **Per-navy pictures** (fog of war in the sim itself, dispatches reaching the player late), from the start or
-   later?
-4. **Relations beyond war and peace** (tension, incidents, neutrals and blockade): wanted, and how much of it is the
-   game's?
+The battle work (`docs/battle/plan.md`) comes first. So that the world can grow around it without a rewrite, the
+combat code keeps to these from its first step:
+
+- **Positions and time are the world's:** Earth-centred doubles, `long` ms world time. No battle-local origin or
+  clock, no "the battle started at t = 0".
+- **An encounter is a set of entities, not a scene:** it holds ship ids (which may join and leave), its fidelity and
+  its control. Nothing assumes two sides, a fixed list of ships or a fight that begins and ends with the program.
+- **Full state is made and dropped per entity:** `ShipState` can be created for a ship already at sea (a merchant
+  engaged, a ship joining) and a light entity can come back from it. Spawning isn't only "at the start of a battle".
+- **Damage takes a hit, not a shell flight:** the hit query and damage model take a hit (a point, a direction, a
+  shell type and its striking velocity) from whatever made it, the tactical shells or the resolver's sample. Shell
+  flight is one source of hits.
+- **Sighting writes to a navy's picture,** never to a global "visible" flag; fire control aims at a contact from the
+  picture, not at the entity's true position.
+- **Orders come in as commands;** the battle has no input handling of its own and reads no UI state. A captain (AI)
+  and the player issue the same commands.
+- **Every tuning number is in `SimSettings`.** Every random draw comes from a seeded stream named for its system.
+- **The step takes a `dt` from the scheduler** and allocates nothing; the battle never assumes it owns the clock or
+  the thread.
