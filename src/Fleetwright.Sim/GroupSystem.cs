@@ -25,6 +25,7 @@ public enum GroupCommand : ushort
     SetFormation,
     Disband,
     Join,
+    CreateOfNewest,
 }
 
 /// <summary>The world's groups (docs/battle/plan.md step 2.4): ships that move together, in order (the first is the
@@ -117,6 +118,12 @@ public sealed class GroupSystem : IWorldSystem
     /// just formed, before it knows the new group's id.</summary>
     public static Command Join(int entity, int alongside) => new(Id, (ushort)GroupCommand.Join, entity, A: alongside);
 
+    /// <summary>A new group of the last ships spawned, in the order they were spawned, the first the guide: how a UI
+    /// forms a group of ships it has just spawned, before it knows their ids (sent right after the spawns, it names
+    /// exactly them, on every replay too). Ships among them that are gone are left out.</summary>
+    public static Command CreateOfNewest(int count, Formation formation = Formation.Column, double spacingM = 600) =>
+        new(Id, (ushort)GroupCommand.CreateOfNewest, A: count, B: (int)formation, X: spacingM);
+
     /// <summary>A ship out of its group (a guide's place goes to the next ship).</summary>
     public static Command Remove(int entity) => new(Id, (ushort)GroupCommand.Remove, entity);
 
@@ -144,6 +151,23 @@ public sealed class GroupSystem : IWorldSystem
                 g.Name = $"Group {g.GroupId}";
                 g.members.Add(c.Entity);
                 groups.Add(g);
+                break;
+            case GroupCommand.CreateOfNewest:
+                Group? made = null;
+                for (int e = Math.Max(world.Ships.NewestEntity - (int)c.A + 1, 1); e <= world.Ships.NewestEntity; e++)
+                {
+                    if (world.Ships.Store.SlotOf(e) < 0)
+                        continue;
+                    world.Ships.Derail(world, e);
+                    Leave(e);
+                    if (made == null)
+                    {
+                        made = new Group { GroupId = nextId++, Formation = (Formation)c.B, SpacingM = Spacing(c.X) };
+                        made.Name = $"Group {made.GroupId}";
+                        groups.Add(made);
+                    }
+                    made.members.Add(e);
+                }
                 break;
             case GroupCommand.Add:
                 if (Get((int)c.A) is not { } to || world.Ships.Store.SlotOf(c.Entity) < 0 || to.members.Contains(c.Entity))

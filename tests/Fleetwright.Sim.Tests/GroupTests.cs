@@ -96,6 +96,21 @@ public class GroupTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_group_of_the_newest_ships_takes_exactly_them_in_spawn_order()
+    {
+        var (w, _) = Make(2);   // ships 1 and 2, not in it
+        int c = w.Ships.ClassOf(w.Ships.Store.SlotOf(1));
+        for (int i = 0; i < 4; i++)
+            w.Apply(ShipSystem.Spawn(c, Lat + 0.01 * i, Lon, 0, 10));
+        w.Apply(ShipSystem.Drop(5));
+        w.Apply(GroupSystem.CreateOfNewest(4, Formation.LineAbreast, 800));
+        Assert.Equal(1, w.Groups.Count);
+        Assert.Equal(new[] { 3, 4, 6 }, w.Groups[0].Members);
+        Assert.Equal(Formation.LineAbreast, w.Groups[0].Formation);
+        Assert.Equal(800, w.Groups[0].SpacingM);
+    }
+
+    [Fact]
     public void Ships_that_leave_or_sink_are_let_go_and_a_disbanded_group_frees_its_captains()
     {
         var (w, ai) = Make(4);

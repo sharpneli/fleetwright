@@ -62,6 +62,9 @@ public sealed class ShipSystem : IWorldSystem
         return h;
     }
 
+    /// <summary>The entity id the latest spawn got (ids are given in order, one per ship made), 0 before any.</summary>
+    public int NewestEntity => nextEntity - 1;
+
     /// <summary>The class id of a live ship's slot.</summary>
     public int ClassOf(int slot) => Store[slot].ClassIndex;
 

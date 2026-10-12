@@ -37,7 +37,8 @@ per pixel; projection, picking, the grid and the land's clip in double, so nothi
 `Content/World/` (Natural Earth, a rough first Earth: `LandView`), with the clock's controls (space pauses,
 + and - change speed). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects, the strip at the bottom orders course and speed, right-click steers for a point, shift+right-click adds a
-waypoint; the top-left panel spawns a shipped design where you click. `ShipBatchRenderer` draws them inside the
+waypoint; the top-left panel spawns a shipped design where you click, one ship or a group already on its
+stations (count, formation, spacing, heading, speed). `ShipBatchRenderer` draws them inside the
 globe's pass (sprites from `ShipArtLibrary`, a stand-in icon when small). Without `-view`, a designer-only flag (`-section`,
 `-steps`, `-new`, `-designer-ui`, `-units`) opens the designer instead.
 

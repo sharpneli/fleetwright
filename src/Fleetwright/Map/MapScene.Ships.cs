@@ -11,7 +11,8 @@ namespace Fleetwright.Map;
 /// <summary>The world tab's ships (docs/battle/plan.md step 2.3a): drawn by <see cref="ShipBatchRenderer"/> (sprites
 /// close in, icons further out), selected by a click, ordered from a strip (course, telegraph) or by right-clicking the
 /// sea (steer for it; with shift, add a waypoint). Routes, the selection and short tracks behind each ship are lines.
-/// A dev panel spawns ships of a shipped design where you click: the stand-in for missions placing forces. All of it
+/// A dev panel spawns ships of a shipped design where you click, one or a group already in formation: the stand-in
+/// for missions placing forces. All of it
 /// reads the snapshot and changes the world only by commands.</summary>
 public sealed unsafe partial class MapScene
 {
@@ -24,9 +25,11 @@ public sealed unsafe partial class MapScene
     double pressX, pressY;
     bool pressed;
 
-    // the dev spawn: the design picked, its class id once requested, and whether the next click places one
+    // the dev spawn: the design picked, its class id once requested, whether the next click places, and what it places:
+    // how many (more than one a group, each ship on its station), the formation, heading and speed
     int designPick = -1, placeClass = -1;
-    bool placing;
+    bool placing, keepPlacing;
+    int spawnCount = 1, spawnFormation, spawnSpacing = 600, spawnHeading, spawnKn = 10;
     int courseEdit;
     bool hardOver;
     int followMetres = 800;
@@ -181,12 +184,29 @@ public sealed unsafe partial class MapScene
         var view = View;
         if (placing && placeClass >= 0 && world.Classes.IsReady(placeClass) && view.Pick(x, y, out var at))
         {
-            var (lat, lon) = Earth.LatLon(at);
-            world.Send(ShipSystem.Spawn(placeClass, lat, lon, 0, 10));
-            placing = false;
+            Spawn(at);
+            placing = keepPlacing;
             return;
         }
         Pick(PickShip(view, x, y));
+    }
+
+    /// <summary>The dev panel's ships at a point: the guide there, the rest on their stations behind it (as the rails
+    /// reckon them, GroupSystem.OffsetFromGuide), all on one heading and speed; more than one made a group.</summary>
+    void Spawn(Vec3d at)
+    {
+        var up = at.Normalized();
+        var f = Earth.Forward(at, spawnHeading);
+        var starboard = Vec3d.Cross(f, up);
+        var formation = (Formation)spawnFormation;
+        for (int i = 0; i < spawnCount; i++)
+        {
+            var (astern, abeam) = GroupSystem.OffsetFromGuide(formation, spawnSpacing, i);
+            var (lat, lon) = Earth.LatLon(at - f * astern + starboard * abeam);
+            world.Send(ShipSystem.Spawn(placeClass, lat, lon, spawnHeading, spawnKn));
+        }
+        if (spawnCount > 1)
+            world.Send(GroupSystem.CreateOfNewest(spawnCount, formation, spawnSpacing));
     }
 
     /// <summary>The entity of the ship nearest the cursor within its drawn size (an icon's at least), or -1.</summary>
@@ -332,6 +352,29 @@ public sealed unsafe partial class MapScene
             if (ImGui.Button(placing ? "Click the sea..." : "Place"))
                 placing = !placing;
             ImGui.EndDisabled();
+            ImGui.SameLine();
+            ImGui.Checkbox("keep placing", ref keepPlacing);
+
+            float field = 110 * UiFonts.Scale;
+            ImGui.SetNextItemWidth(field);
+            if (ImGui.InputInt("ships", ref spawnCount, 1, 4))
+                spawnCount = Math.Clamp(spawnCount, 1, 24);
+            if (spawnCount > 1)
+            {
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth(170 * UiFonts.Scale);
+                ImGui.Combo("##spawnformation", ref spawnFormation, FormationNames, FormationNames.Length);
+                ImGui.SetNextItemWidth(field);
+                if (ImGui.InputInt("m apart", ref spawnSpacing, 100, 500))
+                    spawnSpacing = Math.Clamp(spawnSpacing, 100, 20_000);
+            }
+            ImGui.SetNextItemWidth(field);
+            if (ImGui.InputInt("° heading", ref spawnHeading, 15, 90))
+                spawnHeading = ((spawnHeading % 360) + 360) % 360;
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(field);
+            if (ImGui.InputInt("kn", ref spawnKn, 1, 5))
+                spawnKn = Math.Clamp(spawnKn, 0, 40);
             if (placeClass >= 0 && !ready)
                 ImGui.TextDisabled("building...");
             else if (error != null)
