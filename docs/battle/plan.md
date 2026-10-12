@@ -876,7 +876,7 @@ sighting to matter, which the rails themselves say. Agreed at the start: an orde
 clock speed (below it a turn plays out properly, so at 1x turns are seen); a side per ship, given at spawn; four search
 patterns.
 - **Orders on rails** (`ShipSystem.CanSnap`, `Snap`). A course, a speed ahead, a route or a loop, given to a ship on
-  rails of its own (alone, or a group's guide) with the clock at `RailsSnapMinSpeed` (100×) or more, is carried out at
+  rails of its own (alone, or a group's guide) with the clock at `RailsSnapMinSpeed` (100× then; 10,000× since the user found snaps jarring at 1,000× and below, 2026-10-12) or more, is carried out at
   once: the ship takes its course (or heads for its next waypoint) and the speed its new power holds, where it is, and
   goes back on rails; its group's ships jump to their exact stations on the new heading (`ShipStore.RailAt`), with
   the guide's course and speed as their orders, so they come off rails later steaming as the rails had them. A group

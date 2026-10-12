@@ -88,7 +88,7 @@ public class FormationRailsTests(ITestOutputHelper output)
     public void An_order_to_a_group_on_rails_at_speed_snaps_its_ships_onto_their_stations_and_keeps_them_on_rails()
     {
         var (w, c) = Make();
-        w.Apply(Command.SetSpeed(1000));
+        w.Apply(Command.SetSpeed(Settings.RailsSnapMinSpeed));
         int g = Group(w, c, Lat, Lon, 0, 4, Formation.Column, 600);
         UntilOnRails(w, g, 4);
 
@@ -139,8 +139,8 @@ public class FormationRailsTests(ITestOutputHelper output)
             }
             return double.PositiveInfinity;
         }
-        double slow = Entry(1, out _, out _), fast = Entry(1000, out var w, out int g);
-        output.WriteLine($"a column rung over its admiral's cap: on rails after {slow:F0} s at 1x, {fast:F0} s at 1,000x");
+        double slow = Entry(1, out _, out _), fast = Entry(Settings.RailsSnapMinSpeed, out var w, out int g);
+        output.WriteLine($"a column rung over its admiral's cap: on rails after {slow:F0} s at 1x, {fast:F0} s at the snap speed");
         Assert.True(fast <= Settings.RailsCheckMs / 1000.0 + 5, $"{fast} s");   // the first check (at 5 s, seen at the next look)
         Assert.True(slow > 60, "at 1x it forms up by its own steaming");
         Assert.True(OffStation(w, g, 4, Formation.Column, 600) < 0.01);
@@ -154,7 +154,7 @@ public class FormationRailsTests(ITestOutputHelper output)
         w.Apply(O.Course(Of(w, g), 120));
         Run(w, 30);
         Assert.False(Ship(w, g).OnRails);
-        w.Apply(Command.SetSpeed(1000));
+        w.Apply(Command.SetSpeed(Settings.RailsSnapMinSpeed));
         Run(w, Settings.RailsCheckMs / 1000.0 + 0.001);   // past the next check
         Assert.True(AllOnRails(w, g, 3));
         Assert.True(Math.Abs(Ship(w, g).HeadingDeg - 120) < 1e-6);
@@ -168,7 +168,7 @@ public class FormationRailsTests(ITestOutputHelper output)
         // guide's leg heading is its course, so the ships placed on their stations take it, and their captains (whose
         // station the rails hold exactly) don't re-order them off rails
         var (w, c) = Make();
-        w.Apply(Command.SetSpeed(1000));
+        w.Apply(Command.SetSpeed(Settings.RailsSnapMinSpeed));
         int g = Group(w, c, Lat, Lon, 0, 4, Formation.Column, 600);
         UntilOnRails(w, g, 4);
         var p = Ship(w, g).Position;

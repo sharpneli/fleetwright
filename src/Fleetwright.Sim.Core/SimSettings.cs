@@ -119,8 +119,9 @@ public sealed record SimSettings
     /// <summary>At this asked speed and above, an order to a ship or group on rails (a course, a speed, a route) is
     /// carried out at once on rails: the turn and the change of speed are instantaneous and a group's ships jump to
     /// their stations on the new heading. Below it the order takes them off rails and the turn plays out on the fine
-    /// tick. The speed is world state, so this is deterministic.</summary>
-    public double RailsSnapMinSpeed { get; init; } = 100;
+    /// tick. The speed is world state, so this is deterministic. 10,000× (the user, 2026-10-12): at 1,000× and below a
+    /// snap is plainly visible and jarring, so there the turns play out, at the clock's cost.</summary>
+    public double RailsSnapMinSpeed { get; init; } = 10_000;
 
     // ------------------------------------------------------------------ contacts (docs/battle/plan.md 2.5, ahead of 3.1)
 

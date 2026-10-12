@@ -193,7 +193,7 @@ public class ForceTests(ITestOutputHelper output)
     {
         var (w, ai) = Make();
         int c = Class(w, "dreadnought");
-        w.Apply(Command.SetSpeed(1000));
+        w.Apply(Command.SetSpeed(Settings.RailsSnapMinSpeed));
         int f = Force(w, [c, c, c], 3, Formation.LineAbreast, 3000);
         for (int m = 0; m < 60 && !AllOnRails(w, 9); m++)
             Run(w, 60);

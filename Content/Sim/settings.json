@@ -41,7 +41,7 @@
   "RailsGroupSpeedErrKn": 0.5,
   "RailsGroupHeadingDeg": 2,
   "RailsGroupStationM": 50,
-  "RailsSnapMinSpeed": 100,
+  "RailsSnapMinSpeed": 10000,
 
   // contacts (docs/battle/plan.md step 2.5, ahead of 3.1's contact scan)
   "EncounterRangeM": 50000,
