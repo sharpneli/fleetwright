@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Step 1.1 is done (2026-10-12); the next is 1.2, the globe.
+changed from the plan). Steps 1.1 and 1.2 are done (2026-10-12); the next is 2.1, `ShipClass`.
 
 ## What the battle module is
 
@@ -295,6 +295,34 @@ Tests:
 
 The water close up is plain shading; the wave sim is a look for later. Proof: screenshot readbacks at each zoom band,
 from orbit to a few metres, with no jitter, and the clock keeping the asked speed.
+
+**Done (2026-10-12).** As above, with what building it settled:
+- **The camera** looks straight down at a point, north up. The zoom is metres per pixel at that point (the bands'
+  unit), from the whole globe (the eye at most 4 R up) to 0.1 m/px, through a fixed 40° field. `MapView` resolves
+  it in double: projection, picking (the root solved without cancellation, |eye|² - R² as altitude·(2R + altitude))
+  and everything that must stay put. Zooming at the cursor and dragging solve for the camera by Newton's method on
+  where the grabbed point projects, with the step halved until it helps. A single "turn by the error" was a pixel off
+  in the middle bands and diverged near the limb, because the north-up axes turn as the camera moves.
+- **The globe** is ray-cast per pixel in Earth radii, with |eye|² - 1 handed over exactly from doubles, so the same
+  shader holds from orbit to 150 m up. It shades plain water, day and night with a soft terminator, a glint, the
+  air's glow at the limb and an anti-aliased limb. It places nothing: whatever must hold still is projected on the
+  CPU.
+- **The grid** (`Graticule`) is projected in double and drawn by `MapLines`: anti-aliased polylines with mitred
+  joins, expanded on the CPU, the line renderer coastlines will use. The spacing runs from 30° to 1", the finest at
+  least ~90 px apart. Only what's in view is sampled: the whole globe while the limb shows, else the screen border's
+  span. No allocation per frame.
+- **The world** is the app's (`WorldSession`): the engine's `FrameStarted` reports real time every frame, whatever
+  tab is open and even minimized. The world tab is first and the default. A designer-only flag (`-section`,
+  `-steps`, `-new`, `-designer-ui`, `-units`) opens the designer when no `-view` is given, so the designer's
+  screenshot commands still work. New flags: `-map=lat,lon,mpp`, `-time=`, `-speed=`, `-paused`.
+- **Proof:**
+  - Readbacks at 12,000, 2,000, 200, 20, 1 and 0.1 m/px. Centred on 56°42'N 5°48'E, the grid's lines cross at the
+    centre pixel at every zoom, and at 10 px/m the 1" lines are 308 px and 170 px apart, as they should be.
+  - At 15:48 UTC on 31 May 1916 the sun is in the west over the North Sea. At 30,000x the clock kept 29,991x and
+    reached night with the June pole still lit.
+  - Tests (`MapCameraTests`): picking and projecting agree to 1e-5 px at every band; 1 m is 10 px at 0.1 m/px
+    (including at the date line and near a pole); a 1 cm move of the camera is 0.1 px every time (no jitter, no
+    steps); zoom and drag keep their point to 1e-3 px; the grid allocates nothing.
 
 ### 2. Ships that move
 

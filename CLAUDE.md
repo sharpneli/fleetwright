@@ -1,6 +1,6 @@
 # Fleetwright
 
-Fleetwright is a naval game written in C# on .NET 10, rendered with the SDL3 GPU API (via ppy.SDL3-CS). The exe currently opens the ship designer, with the hitbox and ship viewers (test tools for the ship generator) as further tabs, in a Dear ImGui UI; game code builds on top of it.
+Fleetwright is a naval game written in C# on .NET 10, rendered with the SDL3 GPU API (via ppy.SDL3-CS). The exe opens the world (the globe of water on its sim thread, `Map/`), with the ship designer and the hitbox, ship and profile viewers (test tools for the ship generator) as further tabs, in a Dear ImGui UI; game code builds on top of it.
 
 ## Build and test
 
@@ -12,7 +12,9 @@ dotnet test
 ## Run: the designer and the viewers
 
 ```bash
-dotnet run --project src/Fleetwright                                       # the designer on bismarck
+dotnet run --project src/Fleetwright                                       # the world: the globe, its clock running at 1x
+dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48 [-speed=30000] [-paused]   # map camera: lat,lon,m/px; world start UTC
+dotnet run --project src/Fleetwright -- -view=designer                    # the designer on bismarck (any designer flag below opens it too)
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
 dotnet run --project src/Fleetwright -- -screenshot=30 -ui [-size=1920x1080] # the window as seen, ImGui included
@@ -24,7 +26,14 @@ dotnet run --project src/Fleetwright -- -section=2 -designer-ui=secsel:1:2,secme
 dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wheel:1160,559:-1;100:type:150  # scripted clicks, wheel, typing, F:drop:PATH, F:drag:X0,Y0:X1,Y1 (window px; Engine.ScriptedInput)
 ```
 
-The exe opens four tabs on one design (menu bar, or F3 to step): the designer (default), the hitbox viewer, the
+The world tab (`Map/`, `docs/battle/plan.md` step 1.2) is first and the default: `WorldSession` owns the world and
+its sim thread for the app (the engine's `FrameStarted` reports real time every frame, whatever tab is open), and
+`MapScene` draws the globe from orbit to 10 px/m (`MapCamera` and `MapView`: straight down, north up, zoom in metres
+per pixel; projection, picking and the grid in double, so nothing jitters), with the clock's controls (space pauses,
++ and - change speed). Wheel zooms at the cursor, left drag pans. Without `-view`, a designer-only flag (`-section`,
+`-steps`, `-new`, `-designer-ui`, `-units`) opens the designer instead.
+
+The other four tabs are on one design (menu bar, or F3 to step): the designer, the hitbox viewer, the
 ship viewer and the profile. `-ship=` picks the design; without it, it is `Content/Designs/bismarck.json` next to the exe (a game
 asset, below). `-ship=` also takes the path without `.json`, or just a shipped design's name (`-ship=yamato`). All of them show `DesignSession`'s design: an edit in the designer shows in the viewers, and a design
 picked in the ship viewer's list opens in the designer.
@@ -146,6 +155,9 @@ Directory.Packages.props      # central package versions (PackageReference has n
 src/
   Fleetwright/                # the game exe
     Program.cs                #   entry point, command-line parsing
+    Map/                      #   the world tab: WorldSession (the app's world and sim thread), MapCamera/MapView
+                              #   (double projection), GlobeRenderer (the sphere per pixel, then MapLines), Graticule,
+                              #   MapScene (input, clock controls, HUD)
     Engine.cs                 #   Sdl3GpuEngine: init, resources, render loop, PbrMaterial
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
@@ -199,7 +211,7 @@ src/
   Fleetwright.Sim/            # the world: World (clock, speed, events, commands in, snapshot out), Scheduler,
                               #   IWorldSystem, SimHost (the sim thread), TripleBuffer; no GPU or UI, runs headless
 tests/
-  Fleetwright.Tests/          # xUnit for the game exe: the hitbox mesh over every design
+  Fleetwright.Tests/          # xUnit for the game exe: the hitbox mesh over every design, the map camera's maths
   Fleetwright.Sim.Tests/      # xUnit, headless: the sphere, the sun, the streams, replays and slicing, the sim thread
   Fleetwright.Shipgen.Tests/  # xUnit: design input, every golden case, concurrent builds, the drawing, the
                               #   bake (trait Gpu: needs a GPU)
