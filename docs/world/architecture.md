@@ -49,6 +49,13 @@ does the same at sea: compression up to days, dropped on contact.
 
 ### Four tiers, one clock
 
+**Read the tiers as speed-ups, not as parts of the game (the user, 2026-10-12).** The world simply has ships, and they
+are its gold standard. At 1x every ship is fully simulated (what the table calls tactical; merchants on their routes
+are the exception, later). Groups, fleets and the map's symbols are derived from ships, and "tactical" is a zoom band
+of the map, not a place a ship is in. Rails, routines and coarse steps are ways to run compressed time cheaply, and
+each must reproduce what full simulation would have done (`docs/battle/plan.md` steps 2.2 and 2.5). Where the text
+below says a ship "goes tactical", read that it stays fully simulated whatever the speed.
+
 | Tier | What's in it | How it advances | Cost |
 |---|---|---|---|
 | **Routine** | In peacetime, groups on a standing routine (exercises, cruises, refits, a station's rotation) and merchants on a regular service | A schedule: a repeating program, its position and its rates (fuel, money, wear, training) all functions of time. No events inside it; only leaving or changing it is one. | Per change of routine, almost nothing |

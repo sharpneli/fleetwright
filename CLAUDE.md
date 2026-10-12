@@ -14,6 +14,7 @@ dotnet test
 ```bash
 dotnet run --project src/Fleetwright                                       # the world: the globe, its clock running at 1x
 dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48 [-speed=30000] [-paused]   # map camera: lat,lon,m/px; world start UTC
+dotnet run --project src/Fleetwright -- -ships=dreadnought:9 -map=56.51,4.02,3   # dev ships in the North Sea (heading ticks), every other turning to 135°
 dotnet run --project src/Fleetwright -- -view=designer                    # the designer on bismarck (any designer flag below opens it too)
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
@@ -127,6 +128,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check     
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shell-test shipgen/designs/bismarck.json [--gratings]   # shells at the citadel (on the ShipClass): leaks through neither armour nor water
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- mono-check [bismarck ...] [--steps 4]   # trim levers swept: more weight in, never a lighter ship
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sim [--from 1916-05-31T14:00] [--speed 30000] [--seconds 3]   # the world on its thread: clock, speed asked/achieved, sun, sim allocations
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- trials shipgen/designs/yamato.json [--out out]   # sea trials on the ship model: turning circles, 0 -> full, coasting, crash stop, beside the research's bands
 ```
 
 `mono-check` (about 15 s) lists where adding weight gave a lighter ship (reversals) or one step jumped far more than its
@@ -216,9 +218,14 @@ src/
                               #   IsLand)
   Fleetwright.Sim.Ships/      # the ships' data: ShipClass (a built Ship's hitboxes and report as read-only, int-indexed
                               #   tables: Rows.cs), ShipClassCompiler (strict: every kind an enum, every link an index),
-                              #   ArmourSolids, ContentHash (design and layout hashes), ShellTest (shell-test on a class)
+                              #   ArmourSolids, ContentHash (design and layout hashes), ShellTest (shell-test on a class),
+                              #   DesignerPlaceholders (facts the designer doesn't give yet: the one place they live)
+  Fleetwright.Sim.Combat/     # ships at sea: ShipStore (slots, state in columns), ShipState (a handle), Handling (a
+                              #   class's numbers for moving), ShipMotion (the step: Nomoto turning, forces on the
+                              #   power curve, arcs on the sphere; the helmsman: courses and routes)
   Fleetwright.Sim/            # the world: World (clock, speed, events, commands in, snapshot out), Scheduler,
-                              #   IWorldSystem, SimHost (the sim thread), TripleBuffer; no GPU or UI, runs headless
+                              #   IWorldSystem, ShipSystem (every ship, the ship tick, ship commands), SimHost (the sim
+                              #   thread), TripleBuffer; no GPU or UI, runs headless
 tests/
   Fleetwright.Tests/          # xUnit for the game exe: the hitbox mesh over every design, the map camera's maths
   Fleetwright.Sim.Tests/      # xUnit, headless: the sphere, the sun, the streams, replays and slicing, the sim thread,
@@ -232,6 +239,7 @@ Content/                      # copied into the game's output folder; the bake s
                               #   (the output's Content/Designs/ comes from shipgen/designs, see GameAsset)
   Fonts/                      #   UI fonts (OFL), game assets
   World/                      #   the land at 1:110M, 1:50M, 1:10M (game assets), from tools/land_bake.py (README.md)
+  Sim/settings.json           #   SimSettings: every tuning number of the sim (game asset; strict, every key)
   Templates/                  #   the designer's template catalogues (game assets), from tools/designer_templates.py:
                               #   plants, hulls, crew from docs/shipgen/*-templates.md; armour from the designs' maps
   Shaders/Source/             #   GLSL sources
@@ -248,7 +256,8 @@ Namespaces follow the project names: `Fleetwright`, `Fleetwright.Gpu`, `Fleetwri
 
 The sim's layers are projects, so the compiler keeps their direction: `Fleetwright.Sim.Core` references nothing,
 `Fleetwright.Sim.Ships` references Core and `Fleetwright.Shipgen` (the only sim layer that does), the world
-(`Fleetwright.Sim`) references Core, and `Combat` comes in between in step 2.2. The world
+(`Fleetwright.Sim`) references Core and `Fleetwright.Sim.Combat` (ships at sea, step 2.2), which references Core
+and Ships. Every ship in the world is fully simulated; "tactical" is only a zoom band of the map. The world
 rests its clock only on a moment's boundary, so commands replay exactly; a world system is an `IWorldSystem` with its
 events as plain structs, and nothing in a step allocates (the tests check it).
 
