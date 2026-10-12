@@ -124,14 +124,15 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- svg-check        
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- fuzz shipgen/designs/*.json --cases 1600   # robustness
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- verify out_designs/*  # sprites vs hitboxes
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check          # every design's sprite.json
-dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shell-test shipgen/designs/bismarck.json [--gratings]   # shells at the citadel: leaks through neither armour nor water
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shell-test shipgen/designs/bismarck.json [--gratings]   # shells at the citadel (on the ShipClass): leaks through neither armour nor water
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- mono-check [bismarck ...] [--steps 4]   # trim levers swept: more weight in, never a lighter ship
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sim [--from 1916-05-31T14:00] [--speed 30000] [--seconds 3]   # the world on its thread: clock, speed asked/achieved, sun, sim allocations
 ```
 
 `mono-check` (about 15 s) lists where adding weight gave a lighter ship (reversals) or one step jumped far more than its
 neighbours (lumps); a sizing change shouldn't add to them. `golden-check` must stay at 371 of 371 for any change to `Fleetwright.Shipgen` that isn't a deliberate fix (fixes
-update the goldens on purpose with `golden-update`, one per commit). `svg-check` and `sprite-check` do the same for
+update the goldens on purpose with `golden-update`, one per commit, and bump `ShipDesign.Version`, so compiled ships
+know they're stale). `svg-check` and `sprite-check` do the same for
 `Fleetwright.Shipgen.Render`: a deliberate drawing change rewrites them with `golden-update` too, noted in
 `shipgen/golden/README.md`.
 
@@ -213,11 +214,15 @@ src/
                               #   Vec3d, Earth (the sphere), ShipFrame (left-handed: +x bow, +y starboard, up),
                               #   WorldTime (ms since 1850), Sun, RandomStream, StateHash, SimSettings, Land (rings,
                               #   IsLand)
+  Fleetwright.Sim.Ships/      # the ships' data: ShipClass (a built Ship's hitboxes and report as read-only, int-indexed
+                              #   tables: Rows.cs), ShipClassCompiler (strict: every kind an enum, every link an index),
+                              #   ArmourSolids, ContentHash (design and layout hashes), ShellTest (shell-test on a class)
   Fleetwright.Sim/            # the world: World (clock, speed, events, commands in, snapshot out), Scheduler,
                               #   IWorldSystem, SimHost (the sim thread), TripleBuffer; no GPU or UI, runs headless
 tests/
   Fleetwright.Tests/          # xUnit for the game exe: the hitbox mesh over every design, the map camera's maths
-  Fleetwright.Sim.Tests/      # xUnit, headless: the sphere, the sun, the streams, replays and slicing, the sim thread
+  Fleetwright.Sim.Tests/      # xUnit, headless: the sphere, the sun, the streams, replays and slicing, the sim thread,
+                              #   every golden build compiled into a ShipClass, shell-test
   Fleetwright.Shipgen.Tests/  # xUnit: design input, every golden case, concurrent builds, the drawing, the
                               #   bake (trait Gpu: needs a GPU)
 shipgen/                      # the port's test data
@@ -241,8 +246,9 @@ research/                     # research notes, see below
 
 Namespaces follow the project names: `Fleetwright`, `Fleetwright.Gpu`, `Fleetwright.Shipgen`, ...
 
-The sim's layers are projects, so the compiler keeps their direction: `Fleetwright.Sim.Core` references nothing, the
-world (`Fleetwright.Sim`) references Core, and `Ships` and `Combat` come in between in steps 2.1 and 2.2. The world
+The sim's layers are projects, so the compiler keeps their direction: `Fleetwright.Sim.Core` references nothing,
+`Fleetwright.Sim.Ships` references Core and `Fleetwright.Shipgen` (the only sim layer that does), the world
+(`Fleetwright.Sim`) references Core, and `Combat` comes in between in step 2.2. The world
 rests its clock only on a moment's boundary, so commands replay exactly; a world system is an `IWorldSystem` with its
 events as plain structs, and nothing in a step allocates (the tests check it).
 

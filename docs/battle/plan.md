@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.3 are done (2026-10-12); the next is 2.1, `ShipClass`.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 are done (2026-10-12); the next is 2.2, ships on the sphere.
 
 ## What the battle module is
 
@@ -434,6 +434,47 @@ Strict: an unknown kind or a link that doesn't resolve is an error. Proofs:
 
 Nothing in it allocates per query, and nothing writes to a class once it's made.
 
+**Done (2026-10-12).** As above, with what building it settled:
+- **The shipgen fixes** (the user, at the start of the step): the hangar bay is `Hangar bay` on every carrier (the
+  seaplane carrier's hangar block keeps `Hangar`), and a casemate gun carries `casemate: true`, so `mount` is only a
+  barbette's link to its gun. Two golden commits (20 and 83 design cases, only those keys). `ShipDesign.Version` is
+  1, bumped with every `golden-update` from now on.
+- **`ShipClass`** (`Fleetwright.Sim.Ships`) is a table per kind of thing, each an array of immutable row structs
+  (`Rows.cs`) with a string id per row: components, mounts, turret types, barbettes, funnels (with their uptakes),
+  shaft lines (shaft, alley, propeller, engine room), rudders, directors, submerged tubes, cells, rooms, bulkheads,
+  decks, tiers, sections, and the armour report (side plates, armour bulkheads, armour decks). A component's `Detail`
+  is its row in its kind's table, and the side tables point back. Every list is a slice of a pool (links, points,
+  numbers, neighbours, armour layers, deck plates), so a row holds no references. Absent numbers are NaN, absent
+  links -1. The mount table is the components with a turret shape, in component order, as `TopView` draws them, and a
+  test holds it to that. A mount keeps only its turret's body for now; the parts and barrels come with the hit query
+  (4.1).
+- **Kept from Shipgen:** the hull is `HullField` itself, and points are Shipgen's `Pt` (a plain struct). For the
+  disk cache, `HullField` and the id maps are derived: written as the stations and the ids, rebuilt on load.
+- **Moving** (the user: the class holds facts, the turning model is 2.2's): `MotionFacts` (length, beam, draught,
+  Cb, displacements, the designed speed and power, the plant's rated, continuous and overload power, shafts, rudders
+  and their area, GM, roll period), and a power curve from shipgen's own resistance model at full load every 0.5 kn to
+  1.25 times the designed speed (`PowerAt`, `SpeedAt`). It meets the report's `PowerShp` within its rounding to
+  100 shp. It isn't scaled through that number: a 3 kn fuzz carrier reports 0 shp. The tactical diameter is 2.2's,
+  from these facts and `research/simulation/fire-control-research/manoeuvring.md`, with its numbers in `SimSettings`,
+  so tuning it changes neither the class nor its hash.
+- **The hashes:** the design hash is SHA-256 over the design as shipgen serializes it (its typed form, so the file's
+  spelling doesn't matter). The layout hash is SHA-256 over the shipgen version and, in index order, every id, kind
+  and link. Every design's layout hash is its own.
+- **Strict:** an unknown kind, role, shape, band, fuel, side or extent, a link that doesn't resolve or points at the
+  wrong kind, a duplicate id, a deck and bulkhead sharing a name, and links that don't agree both ways (a barbette
+  and its gun, an uptake and its funnel, a shaft and its propeller and alley) are each a `ShipCompileException`.
+- **The armour solids** (`ArmourSolids`) are shell-test's, compiled once into the class. "Armoured" keeps its rule:
+  armour over 0 mm, and every main and secondary mount (turret armour, even at 0 mm).
+- **shell-test** moved to `Fleetwright.Sim.Ships`, not the world: it's a query over a class, with no time. Shots are
+  drawn up front, shot k from the run's stream derived by k, so a run is the same on any number of threads (tested).
+  A trace allocates nothing. Before the old tool was deleted, the old tracer first took its deck tops from `HullField`
+  (the same output on all 71 designs). Then the two agreed shot by shot on all 71 designs, 1,500 shots each, with and
+  without gratings (outcome, cause, hole and entry). A port stepping 6 cm instead of 5 fails that test. The
+  `shell-test` command runs the port: the same 51 designs leak without gratings, through the same causes.
+- **Measured** (`shipgen bench`, Release): compiling takes 1-2 ms and allocates under 1 MB a class (Bismarck 2.1 ms,
+  0.7 MB), next to ~0.1 s for the build. A class is never the cost; the build and the drawing are.
+- Every golden build that builds (over 320) compiles. The world doesn't reference `Ships` yet; 2.2's `Combat` does.
+
 **2.2 Ships on the sphere.** `ShipState`'s pose, made and dropped per entity ("Full state is made and dropped per
 entity", architecture). Movement in the tactical tier at the fixed tick: acceleration and turning from the class.
 Commands: a course, a speed, a route of waypoints. Headless tests:
@@ -730,7 +771,7 @@ Fleetwright.Sim (World)   the world, the clock and scheduler, tiers, encounters,
 - The projects: `Fleetwright.Sim.Core`, `Fleetwright.Sim.Ships`, `Fleetwright.Sim.Combat` and `Fleetwright.Sim`
   (the world). `Ships` is the only one that references `Fleetwright.Shipgen`, which never references any of them.
 - Tests: `tests/Fleetwright.Sim.Tests` (xUnit, headless, no GPU).
-- Step 1.1 makes `Core` and the world with nothing in it; `Ships` comes in 2.1 and `Combat` in 2.2.
+- Step 1.1 makes `Core` and the world with nothing in it; `Ships` came in 2.1 and `Combat` comes in 2.2.
 
 Rules:
 
@@ -885,10 +926,18 @@ The user's, 2026-10-12, on step 1.1:
 3. **`SimSettings` from data in 2.2,** code defaults until then.
 4. **Determinism across machines:** noted (the last-bit trig differences), kept in mind, not solved now.
 
+The user's, 2026-10-12, on step 2.1:
+
+1. **Unique ids:** the hangar bay is `Hangar bay` on every carrier, rather than renaming the seaplane carrier's
+   hangar block.
+2. **The casemate flag:** `casemate: true` on the gun, and `mount` only as a barbette's link, as planned.
+3. **Turning:** `ShipClass` holds the physical facts; the tactical diameter is computed by 2.2's movement model, with
+   its numbers in `SimSettings`, so tuning it doesn't change a class or its hash.
+
 ## Open questions
 
-1. **The shipgen fixes in step 2.1** (unique ids, the `Casemate` flag) change the export. Confirm them at the start of
-   that step.
+None now. The shipgen fixes of step 2.1 were confirmed and made at its start (the user, 2026-10-12): the hangar bay
+renamed, the casemate flag.
 
 ## Background
 

@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Fleetwright.Shipgen;
 using Fleetwright.Shipgen.Golden;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Ships;
 using Fleetwright.Sim.Core;
 using Fleetwright.Shipgen.Tools;
 using Fleetwright.Shipgen.Render;
@@ -32,7 +33,8 @@ public static class Program
             after a deliberate change to the output: rewrite the design, SVG and sprite.json goldens of the cases
             that no longer match from ours (the PNGs stay; png-check compares them by coverage)
         shipgen bench [--root DIR] [--repeat N] [CASE|PREFIX*...]
-            single-threaded build time per case (best of N), next to Python's from the golden capture
+            single-threaded build time per case (best of N), next to Python's from the golden capture, and the
+            time to compile the build into a ShipClass
         shipgen draw DESIGN.json... [--out DIR] [--scale S] [--mips N]
             draw each design (default 10 px/m, 5 mips): DIR/<id>/sprite.json and the display lists as SVG (hull.svg,
             height.svg, turrets/<type>.svg)
@@ -56,7 +58,7 @@ public static class Program
         shipgen shell-test DESIGN.json... [--shells 200000] [--seed 1] [--show 15] [--gratings] [--no-limits]
             toss shells at each design's citadel from every bearing, falling 0-50 degrees, and flag any that reach a
             citadel cell through neither armour nor water (exit 1 if any do); --gratings closes the uptakes'
-            openings in the armour decks
+            openings in the armour decks. Runs on the compiled ShipClass, one random stream per shot
         shipgen mono-check [DESIGN...] [--steps 4] [--jobs N] [--show 10]
             sweep the designer's trim levers (belt, speed, AA, ...) STEPS steps either way of each design's value and
             build each step: list the reversals (more of a weight-adding input, a lighter ship) and lumps (a step far
@@ -331,22 +333,28 @@ public static class Program
             var design = LoadDesign(c.DesignPath);
             if (ShipDesign.Validate(design, false).Count > 0)
                 continue;
-            double best = double.MaxValue;
-            long alloc = 0;
+            double best = double.MaxValue, bestC = double.MaxValue;
+            long alloc = 0, allocC = 0;
             for (int i = 0; i < repeat; i++)
             {
                 long a0 = GC.GetAllocatedBytesForCurrentThread();
                 var sw = Stopwatch.StartNew();
-                ShipDesign.Build(design);
+                var ship = ShipDesign.Build(design);
                 best = Math.Min(best, sw.Elapsed.TotalSeconds);
                 alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
+                // and compiled for the sim (battle plan step 2.1)
+                a0 = GC.GetAllocatedBytesForCurrentThread();
+                sw.Restart();
+                ShipClassCompiler.Compile(ship);
+                bestC = Math.Min(bestC, sw.Elapsed.TotalSeconds);
+                allocC = GC.GetAllocatedBytesForCurrentThread() - a0;
             }
             double p = (double?)pyTimes[c.Name] ?? double.NaN;
             totC += best;
             if (!double.IsNaN(p))
                 totP += p;
             Console.WriteLine($"{c.Name,-24} {best,8:F3} s   python {p,8:F3} s   x{p / best,6:F1}" +
-                              $"   {alloc / 1e6,6:F0} MB allocated");
+                              $"   {alloc / 1e6,6:F0} MB allocated   ShipClass {bestC * 1000,6:F1} ms {allocC / 1e6,5:F1} MB");
         }
         Console.WriteLine($"total {totC:F2} s, python {totP:F2} s (x{totP / totC:F1})");
         return 0;
@@ -767,7 +775,7 @@ public static class Program
                 continue;
             }
             var sw = Stopwatch.StartNew();
-            var r = ShellTest.Run(ShipDesign.Build(design).Hitboxes, shells, seed, a.Has("gratings"));
+            var r = ShellTest.Run(ShipClassCompiler.Compile(ShipDesign.Build(design)), shells, (ulong)seed, a.Has("gratings"));
             Console.Write(ShellTest.Text(design.Id ?? p, r, show));
             Console.WriteLine($"  ({sw.Elapsed.TotalSeconds:F1} s)");
             leaky += r.Leaks.Count > 0 ? 1 : 0;
