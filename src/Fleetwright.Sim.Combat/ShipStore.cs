@@ -204,6 +204,24 @@ public sealed class ShipStore
         return false;
     }
 
+    /// <summary>A ship on rails crosses into a polar cap on its course: on from here along the great circle.</summary>
+    public void EnterPolarCap(int slot)
+    {
+        PoseNow(slot, out var p, out var f);
+        Reanchor(slot, p, f);
+    }
+
+    /// <summary>A ship on rails leaves a polar cap: it holds the heading it leaves with, as a course.</summary>
+    public void LeavePolarCap(int slot)
+    {
+        PoseNow(slot, out var p, out var f);
+        courseDeg[slot] = Earth.Heading(p, f);
+        ReanchorRhumb(slot, p, courseDeg[slot]);
+    }
+
+    /// <summary>Whether a ship's rails are a rhumb line (a course held), not a great circle.</summary>
+    public bool OnRhumb(int slot) => rails[slot] && railGuide[slot] < 0 && !double.IsNaN(railCourse[slot]);
+
     /// <summary>Counts the changes to a ship's rails: an event stamped with an older count is stale.</summary>
     public int RailGen(int slot) => railGen[slot];
 

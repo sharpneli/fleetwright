@@ -81,6 +81,11 @@ public sealed record SimSettings
     public double HelmGain { get; init; } = 1.5;
     public double HelmLeadOverT { get; init; } = 1.2;
 
+    /// <summary>Within this latitude of either pole a held course means steering straight: a compass course spirals
+    /// into the pole and can't be held there, so the helmsman takes his course from the heading, and rails run on the
+    /// great circle. Leaving, the ship holds the heading it leaves with.</summary>
+    public double PolarCapDeg { get; init; } = 89;
+
     /// <summary>A route's last waypoint counts as reached inside this, metres.</summary>
     public double ArrivalRadiusM { get; init; } = 300;
 
@@ -103,10 +108,19 @@ public sealed record SimSettings
     /// with a deadband; a ship still closing up runs faster).</summary>
     public double RailsGroupSpeedErrKn { get; init; } = 0.5;
 
+    /// <summary>A group's ships go on rails with their guide within this of its heading, degrees: more than the captains'
+    /// course deadband (<see cref="CaptainCourseDeadbandDeg"/>), which a ship in station may sit off by. On rails they
+    /// take the guide's heading.</summary>
+    public double RailsGroupHeadingDeg { get; init; } = 2;
+
     /// <summary>A group's ships go on rails only within this of their stations, m: rails hold their offsets as they are.</summary>
     public double RailsGroupStationM { get; init; } = 50;
 
     // ------------------------------------------------------------------ the AI (docs/battle/plan.md step 2.3b)
+
+    /// <summary>How often an AI layer thinks while every ship it commands is on rails, ms: nothing about them changes
+    /// but by events then, and thinking each second would hold the clock to about a hundred thousand times.</summary>
+    public int AiRailsPeriodMs { get; init; } = 60_000;
 
     /// <summary>How often captains think, ms of world time (on a grid of it).</summary>
     public int CaptainPeriodMs { get; init; } = 1000;

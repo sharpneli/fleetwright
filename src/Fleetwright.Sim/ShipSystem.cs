@@ -24,7 +24,7 @@ public enum ShipCommand : ushort
 public sealed class ShipSystem : IWorldSystem
 {
     public const byte Id = 1;
-    const ushort Tick = 1, RailsWaypoint = 2;
+    const ushort Tick = 1, RailsWaypoint = 2, PolarEntry = 3, PolarExit = 4;
 
     readonly SimSettings settings;
     readonly List<int> used = [];   // the registry ids ships have been made of, in the order first used
@@ -148,9 +148,23 @@ public sealed class ShipSystem : IWorldSystem
 
     public void Handle(World world, in SimEvent e)
     {
-        if (e.Code == RailsWaypoint)
+        if (e.Code is RailsWaypoint or PolarEntry or PolarExit)
         {
-            WaypointReached(world, e);
+            int slot = Store.SlotOf(e.Entity);
+            if (slot < 0 || !Store.OnRails(slot) || Store.RailGen(slot) != e.Generation)
+                return;   // derailed or re-anchored since
+            if (e.Code == RailsWaypoint)
+                WaypointReached(world, slot);
+            else if (e.Code == PolarEntry)
+            {
+                Store.EnterPolarCap(slot);
+                SchedulePolar(world, slot);
+            }
+            else
+            {
+                Store.LeavePolarCap(slot);
+                SchedulePolar(world, slot);
+            }
             return;
         }
         nextTickMs = -1;
@@ -226,7 +240,7 @@ public sealed class ShipSystem : IWorldSystem
                 var gp = gs.Position;
                 var station = gp - gs.Forward * astern + Vec3d.Cross(gs.Forward, gp.Normalized()) * abeam;
                 all = Math.Abs(ms.YawRate) * 180 / Math.PI <= settings.RailsMaxYawRateDegS && Math.Abs(ms.Rudder) * 180 / Math.PI <= settings.RailsMaxRudderDeg &&
-                      Math.Abs(dh) <= settings.RailsMaxCourseErrDeg && Math.Abs(ms.Speed - SteadySpeed(gs)) <= settings.RailsGroupSpeedErrKn * Handling.MsPerKnot &&
+                      Math.Abs(dh) <= settings.RailsGroupHeadingDeg && Math.Abs(ms.Speed - SteadySpeed(gs)) <= settings.RailsGroupSpeedErrKn * Handling.MsPerKnot &&
                       Earth.Distance(ms.Position, station) <= settings.RailsGroupStationM;   // in station: its offset is held on rails
             }
             if (!all)
@@ -246,9 +260,12 @@ public sealed class ShipSystem : IWorldSystem
     {
         var s = Store[slot];
         // a course held is a rhumb line at the ordered course exactly (the heading is within a fraction of a degree of
-        // it: rails turn at once, and a small error held for days would be miles)
-        // and at the speed the engines settle at (it's within a tenth of a knot: held for days, the rest would be miles)
-        Store.Rail(slot, s.Helm == Helm.Course ? s.CourseOrderDeg : double.NaN, SteadySpeed(s));
+        // it: rails turn at once, and a small error held for days would be miles), and at the speed the engines settle
+        // at (within a tenth of a knot: held for days, the rest would be miles); inside a polar cap, a great circle
+        bool polar = InPolarCap(s.Position);
+        Store.Rail(slot, s.Helm == Helm.Course && !polar ? s.CourseOrderDeg : double.NaN, SteadySpeed(s));
+        if (s.Helm == Helm.Course)
+            SchedulePolar(world, slot);
         if (s.Helm == Helm.Route && s.RouteNext < s.RouteCount)
         {
             var p = s.Position;
@@ -269,13 +286,50 @@ public sealed class ShipSystem : IWorldSystem
 
     /// <summary>A ship on rails reaches a waypoint: it turns there at once for the next, or, past the last, holds the
     /// course it arrived on.</summary>
-    void WaypointReached(World world, in SimEvent e)
+    void WaypointReached(World world, int slot)
     {
-        int slot = Store.SlotOf(e.Entity);
-        if (slot < 0 || !Store.OnRails(slot) || Store.RailGen(slot) != e.Generation)
-            return;   // derailed or re-anchored since
         if (Store.PassWaypoint(slot, out var next))
             ScheduleArrival(world, slot, next);
+        else
+            SchedulePolar(world, slot);
+    }
+
+    bool InPolarCap(Vec3d p) => Math.Abs(p.Z) > p.Length * Math.Sin(settings.PolarCapDeg * Math.PI / 180);
+
+    /// <summary>For a ship on its own rails holding a course: when its rhumb line reaches a polar cap, or, inside one,
+    /// when its great circle leaves it (solved in closed form), as an event.</summary>
+    void SchedulePolar(World world, int slot)
+    {
+        var s = Store[slot];
+        if (s.Speed <= 0 || s.Helm != Helm.Course)
+            return;
+        var p = s.Position;
+        double cap = settings.PolarCapDeg * Math.PI / 180, dist;
+        ushort code;
+        if (Store.OnRhumb(slot))
+        {
+            // the latitude changes linearly along a rhumb line: d lat / ds = cos(course) / R
+            double c = Math.Cos(s.CourseOrderDeg * Math.PI / 180), lat = Math.Asin(p.Z / p.Length);
+            if (Math.Abs(c) < 1e-9)
+                return;
+            dist = ((c > 0 ? cap : -cap) - lat) / c * Earth.Radius;
+            code = PolarEntry;
+        }
+        else
+        {
+            // on the great circle p cos u + f sin u (u = s/R), the height toward the pole is A cos(u - phi), with
+            // A = |(pz, fz)| and phi = atan2(fz, pz); it falls back to the cap's edge at u = phi + acos(edge / A)
+            var up = p.Normalized();
+            var f = s.Forward;
+            double sign = Math.Sign(up.Z), pz = up.Z * sign, fz = f.Z * sign, edge = Math.Sin(cap);
+            double a = Math.Sqrt(pz * pz + fz * fz);
+            dist = Earth.Radius * (Math.Atan2(fz, pz) + Math.Acos(Math.Min(edge / a, 1)));
+            code = PolarExit;
+        }
+        if (!(dist > 0))
+            return;
+        long ms = (long)Math.Ceiling(dist / s.Speed * 1000);
+        world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, code, Store.RailGen(slot));
     }
 
     static Vec3d Toward(Vec3d from, Vec3d to)
@@ -290,8 +344,6 @@ public sealed class ShipSystem : IWorldSystem
     bool Steady(int slot)
     {
         var s = Store[slot];
-        if (Math.Abs(Earth.LatLon(s.Position).Lat) > 89)
-            return false;   // rhumb lines spiral into the poles: near one, a ship stays on the fine tick
         if (s.Helm is not (Helm.Course or Helm.Route) || Math.Abs(s.YawRate) * 180 / Math.PI > settings.RailsMaxYawRateDegS ||
             Math.Abs(s.Rudder) * 180 / Math.PI > settings.RailsMaxRudderDeg || s.Power < 0 || s.Power != s.PowerOrder)
             return false;

@@ -843,6 +843,23 @@ Built:
   - Formation errors freeze on rails unless members are in station first.
   - Two allocation tests were flaky under parallel test load: first runs of a path (JIT, tiering) allocate. They now
     warm the path up before measuring, as play would.
+- **Fixed after (the user saw 42k× at most):**
+  - **The AI capped the clock.** Its layers thought every game second even with every ship on rails, which caps
+    the clock at ~75k×. A layer whose ships are all on rails now thinks once a game minute (`AiRailsPeriodMs`), and
+    a ship coming off rails brings it straight back (a sooner tick replaces the later one).
+  - **A group in station never went on rails.** Captains re-order course only past a 1° deadband, so members sat
+    up to ~1° off the guide's heading, and the check wanted 0.5°. A group's heading tolerance is now its own, 2°
+    (`RailsGroupHeadingDeg`); on rails members take the guide's heading.
+  - **Courses into the poles.** A compass course spirals into a pole. On rails the rhumb line ran through it and out
+    the far side; on the fine tick a helmsman holding 045° circled the pole forever, so the clock was stuck there.
+    Within `PolarCapDeg` (89°) a held course now means steering straight on: the helmsman takes his course from the
+    heading, and rails run on the great circle. Entering and leaving the cap on rails are events, solved in closed
+    form. A ship leaving holds the heading it leaves with.
+  - **Measured:** 4 ships in a group at 1M× in the app run at 1,001,052× achieved. A course of 020° from 86.5°N on
+    rails and on the fine tick both cross the pole and end 201 m apart a day later.
+  - **Left:** a ship following another on its own (not in a group) goes on rails at its own steady speed, a tenth
+    of a knot off its leader's. Its station drifts, its captain re-orders, and it comes off and goes back on; groups
+    don't have this. Riding a followed ship's rails like a group member would fix it, with the captain tuning.
 - **Not yet:**
   - the coarse clock tier (4.8), and routines (peace);
   - the contact scan that takes ships off rails when they meet (3.1);

@@ -16,7 +16,17 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
     readonly List<int> gone = [];
 
     public bool Active => groups.Count > 0 || AnyAdmirals();
-    public int PeriodMs(SimSettings s) => s.AdmiralPeriodMs;
+    public int PeriodMs(in AiContext ctx)
+    {
+        for (int k = 0; k < groups.Count; k++)
+        {
+            var members = groups[k].Members;
+            for (int i = 0; i < members.Count; i++)
+                if (ctx.Ships.SlotOf(members[i]) is int slot and >= 0 && !ctx.Ships.OnRails(slot))
+                    return ctx.Settings.AdmiralPeriodMs;
+        }
+        return ctx.Settings.AiRailsPeriodMs;
+    }
 
     public void Order(in AiContext ctx, in Command c) => throw new ArgumentException("admirals take no orders yet: groups are the world's");
 

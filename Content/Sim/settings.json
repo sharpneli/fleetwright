@@ -29,6 +29,7 @@
   "HelmGain": 1.5,
   "HelmLeadOverT": 1.2,
   "ArrivalRadiusM": 300,
+  "PolarCapDeg": 89,
 
   // the rails clock tier (docs/battle/plan.md step 2.5)
   "RailsEnabled": true,
@@ -38,9 +39,11 @@
   "RailsMaxCourseErrDeg": 0.5,
   "RailsMaxSpeedErrKn": 0.1,
   "RailsGroupSpeedErrKn": 0.5,
+  "RailsGroupHeadingDeg": 2,
   "RailsGroupStationM": 50,
 
   // the AI (docs/battle/plan.md step 2.3b)
+  "AiRailsPeriodMs": 60000,
   "CaptainPeriodMs": 1000,
   "CaptainCourseDeadbandDeg": 1,
   "CaptainSpeedDeadbandKn": 0.3,

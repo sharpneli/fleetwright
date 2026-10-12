@@ -11,8 +11,10 @@ namespace Fleetwright.Sim.Ai;
 /// commands a player gives (<see cref="Orders"/>). Nothing it does allocates, and all its state goes in the hash.</summary>
 public interface IAiLayer
 {
-    /// <summary>How often it thinks, ms of world time.</summary>
-    int PeriodMs(SimSettings s);
+    /// <summary>How often it thinks now, ms of world time: its own period while any ship it commands is on the fine
+    /// tick, <see cref="SimSettings.AiRailsPeriodMs"/> while they're all on rails (nothing about them changes but by
+    /// events, and thinking every second would cap the clock).</summary>
+    int PeriodMs(in AiContext ctx);
 
     /// <summary>Anything for it to do: while false its ticks stop, so an empty world stays free.</summary>
     bool Active { get; }

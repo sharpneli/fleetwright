@@ -44,7 +44,13 @@ public sealed class CaptainLayer : IAiLayer
 
     public int Count => count;
     public bool Active => count > 0;
-    public int PeriodMs(SimSettings s) => s.CaptainPeriodMs;
+    public int PeriodMs(in AiContext ctx)
+    {
+        for (int i = 0; i < count; i++)
+            if (ctx.Ships.SlotOf(captains[i].Entity) is int slot and >= 0 && !ctx.Ships.OnRails(slot))
+                return ctx.Settings.CaptainPeriodMs;
+        return ctx.Settings.AiRailsPeriodMs;
+    }
 
     /// <summary>A ship's captain's order and target, or None.</summary>
     public (CaptainOrder Order, int Target) Of(int entity)

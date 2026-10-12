@@ -20,6 +20,7 @@ public sealed class AiSystem : IWorldSystem
 {
     readonly IAiLayer[] layers;   // top-down: thought in this order at a shared moment
     readonly long[] nextTick;
+    readonly int[] tickGen;   // a tick rescheduled sooner leaves the old one stale
     readonly IPicture picture;
 
     public byte Id { get; }
@@ -32,6 +33,7 @@ public sealed class AiSystem : IWorldSystem
         Admirals = new AdmiralLayer(world.Groups, Captains);
         layers = [Admirals, Captains];
         nextTick = new long[layers.Length];
+        tickGen = new int[layers.Length];
         Array.Fill(nextTick, -1);
         picture = new TruthPicture(world.Ships.Store);   // EXCEPTION until pictures (step 3.2)
         Id = world.Register(this);
@@ -66,18 +68,26 @@ public sealed class AiSystem : IWorldSystem
 
     public void Applied(World world, in Command c) => WakeAll(world);
 
+    /// <summary>Schedules a layer's next think at its period now, on a grid of world time; a think already due sooner
+    /// stands, one due later (a slow rails period, now a ship is back on the fine tick) is replaced.</summary>
     void Wake(World world, int layer)
     {
-        if (nextTick[layer] >= 0 || !layers[layer].Active)
+        if (!layers[layer].Active)
             return;
-        long p = layers[layer].PeriodMs(world.Settings);
-        nextTick[layer] = (world.Time.Ms / p + 1) * p;
-        world.Schedule(new WorldTime(nextTick[layer]), EventTier.Fine, layer - layers.Length, Id, (ushort)layer);   // before the ship tick, the top layer first
+        long p = layers[layer].PeriodMs(new AiContext(world, picture));
+        long next = (world.Time.Ms / p + 1) * p;
+        if (nextTick[layer] >= 0 && nextTick[layer] <= next)
+            return;
+        nextTick[layer] = next;
+        tickGen[layer]++;
+        world.Schedule(new WorldTime(next), EventTier.Fine, layer - layers.Length, Id, (ushort)layer, tickGen[layer]);   // before the ship tick, the top layer first
     }
 
     public void Handle(World world, in SimEvent e)
     {
         int layer = e.Code;
+        if (e.Generation != tickGen[layer])
+            return;   // replaced by a sooner one
         nextTick[layer] = -1;
         layers[layer].Think(new AiContext(world, picture));
         WakeAll(world);   // a layer's orders can give the one below something to do (an admiral's first stations)
@@ -87,6 +97,8 @@ public sealed class AiSystem : IWorldSystem
     {
         foreach (long t in nextTick)
             h.Add(t);
+        foreach (int g in tickGen)
+            h.Add(g);
         foreach (var l in layers)
             l.Hash(ref h);
     }

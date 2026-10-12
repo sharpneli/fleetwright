@@ -37,7 +37,7 @@ public class RailsTests(ITestOutputHelper output)
         Assert.False(Ship(w, 1).OnRails);   // still working up
         Run(w, 15 * 60);
         Assert.True(Ship(w, 1).OnRails);
-        Assert.Equal(0, w.PendingEvents);   // no fine tick, nothing to do: the world jumps
+        Assert.Equal(1, w.PendingEvents);   // no fine tick: only its course reaching the polar cap, days away
 
         Run(w, 3 * 3600 + 0.123);
         var before = Ship(w, 1).Position;
@@ -71,6 +71,28 @@ public class RailsTests(ITestOutputHelper output)
         double d = Earth.Distance(rails, fine);
         output.WriteLine($"8 h at 070°: rails end {d:F1} m from the fine tick's");
         Assert.True(d < 30, $"{d:F0} m");
+    }
+
+    [Fact]
+    public void A_course_into_a_polar_cap_crosses_it_straight_on_rails_as_on_the_fine_tick()
+    {
+        // from the Arctic Ocean north of Svalbard, holding 020°: a compass course spirals into the pole; inside the cap
+        // the helmsman steers straight on, and leaves holding the heading he leaves with
+        Vec3d One(bool rails, out double lat, out double heading, out bool onRails)
+        {
+            var (w, c) = Make(Settings with { RailsEnabled = rails });
+            w.Apply(ShipSystem.Spawn(c, 86.5, 15, 20, 15));
+            Run(w, 24 * 3600);
+            var s = Ship(w, 1);
+            (lat, heading, onRails) = (Earth.LatLon(s.Position).Lat, s.HeadingDeg, s.OnRails);
+            return s.Position;
+        }
+        var r = One(true, out double lat, out double hdg, out bool on);
+        var f = One(false, out double latF, out double hdgF, out _);
+        output.WriteLine($"a day on: rails at {lat:F2}°N heading {hdg:F1}°, fine at {latF:F2}°N heading {hdgF:F1}°, {Earth.Distance(r, f):F0} m apart");
+        Assert.True(on);
+        Assert.True(hdg > 90 && hdg < 270 && lat < 88.9, $"over the pole and out of the cap, heading south: {lat:F2}°N, {hdg:F0}°");
+        Assert.True(Earth.Distance(r, f) < 2000, $"{Earth.Distance(r, f):F0} m");
     }
 
     [Fact]
