@@ -477,10 +477,94 @@ Nothing in it allocates per query, and nothing writes to a class once it's made.
 
 **2.2 Ships on the sphere.** `ShipState`'s pose, made and dropped per entity ("Full state is made and dropped per
 entity", architecture). Movement in the tactical tier at the fixed tick: acceleration and turning from the class.
-Commands: a course, a speed, a route of waypoints. Headless tests:
-- a ship steaming a full circle of the globe, across a pole, comes back where it started;
-- a turning circle matches the class's;
-- 50 ships of one class share one `ShipClass`, and none writes to it.
+Commands: a course, a speed, a route of waypoints.
+
+*Proposed (2026-10-12), to agree at the start of the session; the choices are in "Open questions":*
+
+- **Where it lives:**
+  - `Fleetwright.Sim.Combat` (new; references `Core` and `Ships`):
+    - `ShipStore`: the tactical tier's ships. Slots with a generation, a free list, and the pose in columns.
+    - `ShipState`: a handle (slot, generation) with index accessors, never the arrays themselves.
+    - `Handling`: what a class's numbers become for moving, worked out once per class from `MotionFacts` and
+      `SimSettings`, held by the store beside the class, never in it.
+    - The step: pure functions over the columns, taking `dt`.
+  - `Fleetwright.Sim` (the world):
+    - `TacticalTier`, an `IWorldSystem`: one tick event at `TacticalTickMs` while it has ships, none while it's empty,
+      so the empty world stays free at 30,000x.
+    - The ship commands, and the ships' part of the snapshot.
+  - The world holds its classes in a table: a `ShipClass` comes in by API for now. In 2.3 it comes from the registry
+    by design hash.
+- **The pose per ship:**
+  - position and forward (Earth-centred, double);
+  - speed through the water, yaw rate, rudder angle, shaft power;
+  - what's ordered: rudder, power, course, speed, and the route's next leg.
+
+  No lat, lon or heading in it.
+- **Turning: Nomoto, first order** (`research/simulation/fire-control-research/manoeuvring.md` §3):
+  - `T·dr/dt + r = K·δ`, with `K = K'·U/L` and `T = T'·L/U`, so the steady circle doesn't depend on the speed
+    (as New Jersey's didn't, much).
+  - The rudder moves at a rate up to a hard-over angle. Both numbers are in `SimSettings`: 2.3°/s and 35° to start.
+    Pre-1914 gear at 1-2°/s comes later, through technology.
+  - K is set from the tactical diameter: steady radius ≈ 0.45 TD at hard over.
+  - **TD** comes from the facts: TD/L as a function of L/B, the rudder area against L·T, and the number of rudders,
+    with its coefficients in `SimSettings`. Twin rudders turn ~25% tighter (Sumner against Fletcher).
+  - The fit is checked against the sourced anchors that have a golden near them: `yamato` (640 m at 26 kn, advance
+    589 m), `colorado` (Maryland's 23% speed loss over 180°), `pt_boat`, and the destroyer bands for `fubuki` and
+    `destroyer`.
+  - No drift angle and no heel yet: heel goes with buoyancy (4.x), drift if the tracks ask for it.
+- **Speed: forces from the class's own curve,** not fitted time constants:
+  - thrust from shaft power, `η·P/U`, capped at low speed by a bollard limit;
+  - resistance from `PowerAt(U)`, so `m·(1 + added mass)·dU/dt = η·(P - PowerAt(U))/U`;
+  - astern at a fraction of the power;
+  - power that changes at the plant's rate;
+  - in a turn, the research's loss: drag that brings the steady speed to `U0·(1 - f·(r/r_ss)²)`.
+
+  Coasting then decays quadratically, as the research says it should. Every number is in `SimSettings`, and the
+  research's time constants (battleship 150-250 s to accelerate, and so on) become checks, not inputs. If physics
+  moves a ship off a band, that's reported, not hidden.
+- **Integration on arcs:**
+  - Each tick, U and r are held, and the ship moves along the arc they make: forward turned by half of r·dt, then
+    `Earth.Advance` by U·dt, then the other half.
+  - That's second order, so the track barely depends on the tick. It's the architecture's "arc motion", the test for
+    whether the tick can grow past 50 ms.
+  - The rudder and r use exact exponential updates, stable at any dt.
+- **The helmsman** (an order -> the rudder) is part of the ship, not a captain:
+  - A course order steers by PD on the heading error, with counter-rudder, so a turn settles without overshoot.
+  - It uses standard rudder (15°, `SimSettings`) unless the order says hard over: the research's practice (routine
+    changes at 10-15°, hard over to evade).
+  - The shortest way round unless the order says which.
+  - A speed order sets the power to `PowerAt(speed)`.
+  - A route is great-circle legs. The helmsman steers for the next waypoint and turns onto the next leg at the
+    wheel-over point (R·tan(Δ/2) before it). Reaching the last waypoint holds its course.
+  - Nothing checks for land yet. The world doesn't hold `Land` until it routes; grounding comes with it.
+- **Commands** stay plain fixed-size data:
+  - `Spawn`, `Drop`, `Course` (heading, rudder), `Speed` (knots, or power), `Rudder` (direct), and `ClearRoute` /
+    `AddWaypoint`.
+  - A route is several commands at one stamp.
+  - A waypoint packs lat and lon into `A` as two int32 microdegrees (0.11 m).
+  - `Command` grows by one double if `Spawn` needs it (lat/lon, heading, speed, class).
+- **Entities:** the world gives a ship an id at spawn, in order. A dropped slot's generation goes up, so events and
+  commands for a dropped ship are ignored (`SimEvent.Generation` is already there).
+- **`SimSettings` from data** (decision 3 on 1.1):
+  - The file is `Content/Sim/settings.json`. It's strict: an unknown key is an error, and missing keys keep the code's
+    defaults.
+  - A world records the settings it was made with, since they change results.
+- **Something to look at:**
+  - `shipgen trials <design>`: the ship's sea trials, run headless in the world. The table: TD, advance and transfer,
+    times to 90/180/360°, speed loss, 0 -> full, coast down from full to half, crash stop, each with the research's
+    band beside it. Plus the turning circle's track as an SVG.
+  - Then a dev line in the world tab: a ship spawned from a golden design, drawn as a heading tick through
+    `MapLines`, so a run shows it moving. The real drawing is 2.3's.
+- **Tests (headless):**
+  - Steaming a full circle of the globe across a pole, rudder amidships, it comes back where it started (at a 1 s
+    tick, to keep the test fast).
+  - A course of 000° held across a pole turns the ship round with no NaN.
+  - A hard-over turn's measured TD matches its class's `Handling`, and the anchor goldens land in their bands.
+  - The same turn at 50 ms, 250 ms and 1 s ticks differs by less than a stated amount. This decides the tick.
+  - 50 ships of one class share one `ShipClass` and one `Handling`, and the class's layout hash is the same after.
+  - A run twice gives the same hash; advancing in pieces equals advancing at once.
+  - Ships spawned and dropped mid-run, with stale events ignored.
+  - A tick allocates nothing.
 
 **2.3 Ships on the map: one, then two.** The snapshot carries poses and bearings, and the map draws ships at every
 band: markers zoomed out, hulls to scale with a minimum size at the tactical band, sprites at the ship band. This
@@ -494,6 +578,67 @@ needs:
 
 Then click a ship and give it a course and speed (missions stage 1). Then a second ship with a trivial captain: keep
 a course, follow, run (stage 2).
+
+*Proposed (2026-10-12), to agree at its start; it may take two sessions (2.3a one ship, 2.3b two):*
+
+- **The snapshot's ships:**
+  - Per ship: entity id and generation, the class, the pose at the last tick (position, forward, speed, yaw rate)
+    and that tick's time.
+  - Bearings get their slot now and stay at rest until fire control moves them.
+  - The arrays are filled without allocating. They grow only on a spawn past their size.
+- **Drawn at the snapshot's time, extrapolated along the arc** from the last tick with that tick's U and r, by the
+  same function the sim moves by. That gives no lag, and the next tick's correction is second order (millimetres at
+  50 ms). The other way is interpolating between two ticks, a tick late.
+- **The class registry** (`Fleetwright.Sim.Ships`, no GPU):
+  - "The class for this design hash" is the one seam, so the disk cache slots in later.
+  - It builds on a few threads, drops nothing, and counts references.
+  - The build makes the `Ship` once and compiles it. A hook hands the `Ship` to the art before it's let go, so a
+    design is built once for both.
+  - `Spawn` names a design hash. The world takes the class from the registry and waits for it if it must, so when a
+    build finishes never changes the result.
+  - A replay or save carries the designs (as the architecture's saves do).
+- **`ShipClassArt` on the exe's side,** keyed by design hash and look:
+  - It draws (`TopView`), bakes and uploads, then frees the CPU images.
+  - The `HitboxMesh` is made only on request.
+  - Until a class's art is ready, its ships draw as markers.
+  - `DesignWorker` and `DesignSession` stay the designer's.
+- **The batch sprite renderer** draws into the map's main pass:
+  - Each ship is a quad of its frame's corners, projected like the land (eye-relative floats), so it's right at every
+    zoom and curves away at the limb. The far side fails the depth test against the masking sphere, as the coast does.
+  - The sun comes in each ship's own frame, per instance, for the height-map shadows.
+  - Instancing is per class: one draw per class per layer (shadows, hull, turrets). A turret instance is a (ship,
+    mount) pair, with the class's mount table in a buffer and its turret images in one atlas.
+  - A Jutland's 55 classes is ~165 draws, nothing for the GPU. **Texture arrays by size class wait for 2.6** and
+    come in if its numbers ask for them (a change from the tech-stack plan, to agree).
+- **By band** (`docs/map-ui/README.md`):
+  - Globe to operations: a marker a fixed number of pixels across, pointing along the heading.
+  - Tactical: the sprite at a coarse mip, to scale, never under a minimum length in pixels (a map
+    setting, not the sim's).
+  - Ship: the sprite in full, turrets and shadows.
+  - Cross-fades between them.
+  - Clustering into markers and group symbols waits for groups (2.4).
+- **Stage 1, one ship:**
+  - Dev spawn on the world tab: pick a golden design, click the sea. It's the mission UI's stand-in until 6.x.
+  - Click a ship to select it. A strip shows its course, speed and ordered values.
+  - Orders: a course box and dial; speed as a telegraph (stop, slow, half, full, flank, astern).
+  - Right-click the sea: steer for it. Shift-right-click: add a waypoint.
+  - Drawn: ordered course and route lines, and a short track behind the ship.
+  - A `-screenshot` flag that spawns ships, to check it without screen grabs.
+- **Stage 2, a second ship with a trivial captain:**
+  - Captains are a world system, at ~1 Hz (`SimSettings`). They give the same commands the player does, through the
+    same apply path. The captain's commands come from the sim itself, so a replay re-derives them rather than
+    reading them from the log.
+  - Behaviours: keep course; follow (a point astern of a ship at a distance, its speed matched); run (away, at full).
+  - Until pictures exist (3.2) a captain reads true positions. That's the one exception the architecture's "acts on
+    a picture" rule gets, and it's marked in the code.
+- **Tests:**
+  - The registry builds 10 designs on 4 threads and gets the same hashes as one thread. Every request is answered,
+    and references count down to freeing.
+  - The snapshot's poses are those of the world at that tick, and the extrapolation meets the next tick within the
+    bound.
+  - A follower ends at its station within a tolerance; a runner opens the range.
+  - Screenshots at each band, by readback.
+  - `-frametimes` with 50 ships in view, nothing allocated per frame.
 
 **2.4 Groups and formations.** Groups with a leader and stations; one order moves the group; keeping station is the
 first captain behaviour.
@@ -936,8 +1081,19 @@ The user's, 2026-10-12, on step 2.1:
 
 ## Open questions
 
-None now. The shipgen fixes of step 2.1 were confirmed and made at its start (the user, 2026-10-12): the hangar bay
-renamed, the casemate flag.
+For steps 2.2 and 2.3 (proposed 2026-10-12, to settle at the start of 2.2):
+
+1. **Speed from forces on the class's power curve,** with the research's time constants as checks, or the research's
+   fitted time constants per type as the model? Proposed: forces.
+2. **Tactical diameter from a formula over the facts** (L/B, rudder area, rudders), fitted to the anchors? Proposed:
+   yes, its coefficients in `SimSettings`.
+3. **What 2.2 shows:** `shipgen trials` and a dev heading tick on the world tab, with the sprites in 2.3? Proposed:
+   yes, since the map already exists.
+4. **Texture arrays wait for 2.6:** per-class textures with instancing per class in 2.3? Proposed: yes.
+5. **Drawing a tactical ship:** extrapolated along the arc from the last tick, or interpolated a tick late? Proposed:
+   extrapolated.
+6. **Captains in the sim,** reading true positions until 3.2? Proposed: yes.
+7. **2.3 in two sessions** (one ship, then two with the registry at scale)? Proposed: as it comes.
 
 ## Background
 
