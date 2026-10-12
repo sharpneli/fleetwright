@@ -16,6 +16,10 @@ geometry (one sphere, Earth-centred doubles, flat only locally).
 - **A real battle when it matters:** fixed small ticks, full ship models (fire control, damage, flooding), up to
   ~2,000 ships in the world and a few hundred in one fight.
 - **Deterministic and headless:** the same start and the same orders give the same world (replays, tests, saves).
+- **Independent components, no mixed concerns (the user's, 2026-10-12):** everything ships in the one executable, but
+  each part stands alone. The designer starts with or without a world sim (a `DesignContext` or none). The sim,
+  battle included, has no GPU, UI or engine dependency and runs headless. Renderers only read the sim's snapshot,
+  and the sim knows nothing about them.
 
 ## The core problem: one fixed tick can't do both
 
