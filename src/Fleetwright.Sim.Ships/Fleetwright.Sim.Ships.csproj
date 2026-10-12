@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The ships' data: ShipClass and its compiler from Shipgen's built Ship (docs/battle/plan.md, "Inside
+       Fleetwright.Sim"). Pure data and compilation: no time, no world, nothing that changes. The only sim layer that
+       references Fleetwright.Shipgen. -->
+  <PropertyGroup>
+    <RootNamespace>Fleetwright.Sim.Ships</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Fleetwright.Sim.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fleetwright.Sim.Core\Fleetwright.Sim.Core.csproj" />
+    <ProjectReference Include="..\Fleetwright.Shipgen\Fleetwright.Shipgen.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -285,6 +285,32 @@ public static class ShellTest
         return Outcome.Leak;
     }
 
+    /// <summary>The tracer on its own, so the port on ShipClass (Fleetwright.Sim.Ships) can be checked against it shot
+    /// by shot (battle plan step 2.1).</summary>
+    public sealed class Tracer
+    {
+        readonly Ship s;
+
+        public Tracer(Hitboxes hb, bool gratings)
+        {
+            s = Prepare(hb);
+            if (gratings)
+                s.Uptakes.Clear();
+        }
+
+        public double? Roof => s.Roof;
+        public IEnumerable<string> CitadelCells => s.Citadel.Select(c => c.Id);
+
+        /// <summary>0: armour, 1: water, 2: a leak, with its cause, hole and hull entry.</summary>
+        public int Trace(double x, double y, double z, double ux, double uy, double uz, out string? cause, out double[]? hole, out string? holeFace,
+            out double[]? entry, out string? entryFace)
+        {
+            var o = ShellTest.Trace(s, x, y, z, ux, uy, uz, out var lk);
+            (cause, hole, holeFace, entry, entryFace) = (lk.Cause, lk.Hole, lk.HoleFace, lk.Entry, lk.EntryFace);
+            return (int)o;
+        }
+    }
+
     static double R(double v) => Math.Round(v, 2);
 
     /// <summary>Bisect the step [a, b] for where inside(t) stops being was.</summary>

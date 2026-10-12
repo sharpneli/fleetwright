@@ -10,6 +10,7 @@
     <Project Path="src/Fleetwright.Shipgen.Render/Fleetwright.Shipgen.Render.csproj" />
     <Project Path="src/Fleetwright.Shipgen/Fleetwright.Shipgen.csproj" />
     <Project Path="src/Fleetwright.Sim.Core/Fleetwright.Sim.Core.csproj" />
+    <Project Path="src/Fleetwright.Sim.Ships/Fleetwright.Sim.Ships.csproj" />
     <Project Path="src/Fleetwright.Sim/Fleetwright.Sim.csproj" />
     <Project Path="src/Fleetwright/Fleetwright.csproj" />
   </Folder>
