@@ -343,6 +343,20 @@ build, test, measure, update this file.
 `Shore`, and the map sharing the instance (one load, not two). The cube's face projection moves to `Sim.Core`.
 Measure the build time and memory, and cache or thread the build if it's slow.
 
+*Agreed at its start (the user, 2026-10-12; "always keep performance in mind"):*
+- **Queries:** `IsLand`, `Clearance`, and `FirstContact`/`ArcClear` along great circles and rhumb lines (T2's
+  stopgap traces rails' rhumb courses and great-circle legs). Turns wait for T3.
+- **Only the cube moves to `Sim.Core`** (`CubeSphere`: the faces, the projection both ways). `CapRetraction` is a
+  drawing tool and stays in the exe: `Shore` clips its short segments per face.
+- **One signed short per cell:** positive at sea, negative on land (the lower bound on the distance to the coast
+  either way), 0 for a coast cell. Kind and bound in one 12.6 MB array, and T2's "nearest sea" is a lookup.
+- **Kinds by parity:** spread from one known sea cell, counting crossings between neighbouring cells' centres, not
+  an `IsLand` per region; tested against `Land.IsLand`.
+- **A world without land:** `World` takes an optional `Shore`; none is a world of water (the current tests, the
+  CLI's trials, T2's pole-crossing test). The app's world has one, and the map draws its 1:10M level from it.
+- **The build:** measured first; synchronous if it's quick, on a thread at start-up if not, a disk cache only if
+  that's still not enough.
+
 **T2 The backstop, spawning and waypoints.** From here no ship is ever on land, even if it still looks like Rule
 the Waves. It's a small step, and it's the guarantee everything after builds on. With it:
 - the rails stopgap (a unit whose track meets land comes off rails short of it), and placing refused onto land;
