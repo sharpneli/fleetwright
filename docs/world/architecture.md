@@ -1,7 +1,7 @@
 # The world: how the game is organised around a living planet
 
-2026-10-11. Status: agreed with the user (2026-10-11, "Decisions" at the end), diplomacy deferred. The battle module
-comes first. It's a deliverable, not a part of the code (the user, 2026-10-12): the final game's whole ship
+2026-10-11. Status: agreed with the user (2026-10-11, "Decisions" at the end), diplomacy deferred. Amended
+2026-10-12: peacetime routines and a faster clock for peace. The battle module comes first. It's a deliverable, not a part of the code (the user, 2026-10-12): the final game's whole ship
 simulation on this world, with missions standing in for politics and manufacturing. `docs/battle/plan.md` says what
 it holds and gives the build order, from an empty sphere of water up. "What the ship simulation must already respect"
 lists what it keeps to so the rest can follow. `docs/battle/plan.md` "The world" settled the geometry (one sphere,
@@ -15,7 +15,12 @@ Earth-centred doubles, flat only locally).
 - **Nothing of the designer lives in the game.** It's opened with a design and what the world allows, hands a design
   back, and is gone (it already works that way: `DesignerScene(device, design, path, onClose)` with its own worker).
 - **Absurd time compression out of combat:** a day in a few real seconds is ~30,000x. At 60 fps that's 8 game
-  minutes a frame.
+  minutes a frame. That's the wartime speed.
+- **Decades of peace that pass quickly (the user, 2026-10-12):** a campaign runs for decades, most of them at peace,
+  and at 30,000x a year is still ~18 real minutes of waiting. In peacetime the fleets are on fully automated routines
+  (exercises, cruises, refits, station rotations) and the game is research, designing ships and pressuring the
+  politicians for money to build them. The clock goes ~30x faster again, up to ~1,000,000x (a year in about half a
+  real minute), with the world on routines ("Peacetime: routines, above rails").
 - **A real battle when it matters:** fixed small ticks, full ship models (fire control, damage, flooding), up to
   ~2,000 ships in the world and a few hundred in one fight (Jutland: 250). `docs/battle/plan.md` "How many ships"
   checks these numbers against measured costs and sets targets.
@@ -41,18 +46,20 @@ clock. Kerbal Space Program is the well-known prior art: craft far from the play
 time warp is only allowed while nothing needs physics, and it drops when something does. Command: Modern Operations
 does the same at sea: compression up to days, dropped on contact.
 
-### Three tiers, one clock
+### Four tiers, one clock
 
 | Tier | What's in it | How it advances | Cost |
 |---|---|---|---|
+| **Routine** | In peacetime, groups on a standing routine (exercises, cruises, refits, a station's rotation) and merchants on a regular service | A schedule: a repeating program, its position and its rates (fuel, money, wear, training) all functions of time. No events inside it; only leaving or changing it is one. | Per change of routine, almost nothing |
 | **Rails** | Ships and groups in transit, at anchor, building in a yard; weather, the sun, tides of supply | Each thing is an analytic function of time from an anchor (position, forward, speed, fuel at t₀). Changes come as events, which re-anchor it. | Per event, not per tick |
 | **Coarse** | What has slow state that won't stay analytic: a damaged ship still flooding or burning in transit, repair work, a formation manoeuvring | Fixed steps of seconds to a minute, models written to be stable at that step | Per ship in it, cheap |
 | **Tactical** | Ships in an encounter (below) | The fixed battle tick (20 Hz, or larger if the analytic shells and arc motion allow) with every model | The real cost; bounds the speed |
 
 - **One world clock.** Every tier is on it; nothing runs on a clock of its own, so a reinforcement steaming on rails
   arrives at the battle at the right moment and causality is never in doubt.
-- **The speed the player asks for is clamped by the costliest live tier.** Rails alone: as fast as asked. A battle
-  on: what the CPU can do (a 4 ms tick at 20 Hz gives ~12x). The UI shows asked and achieved.
+- **The speed the player asks for is clamped by the costliest live tier.** Routine and rails alone: as fast as
+  asked, up to the cap for what's live ("Peacetime" below). A battle on: what the CPU can do (a 4 ms tick at 20 Hz
+  gives ~12x). The UI shows asked and achieved.
 - **Ticks nest.** Tactical steps fall inside coarse ones, coarse ones on whole multiples, events at exact times; at
   equal times the order is fixed (time, tier, entity id), so the result never depends on thread timing.
 - **Rails models must be analytic or event-driven; anything else must say what step it needs.** A model that can't
@@ -89,6 +96,43 @@ The one thing that can't be scheduled ahead by a single ship is meeting another.
   contact tick, sets the speed by the player's rules (pause, 1x, ...) and tells the UI. Other events can do the same
   (a ship completed, a convoy arrived, fuel low). Deterministic, and the player never overshoots a contact by 8
   minutes.
+
+### Peacetime: routines, above rails (the user, 2026-10-12)
+
+30,000x is right for a war: contacts drop it at the exact time, and a day still takes a few seconds, so the player
+sees a campaign unfold. Peace is different. Fleets exercise, cruise, refit and rotate on stations, all of it
+automated, and nothing can meet anything that matters. A campaign of decades has to get through those years quickly,
+so that the player's time goes to research, the designer and the budget, not to watching ships go round.
+
+- **A routine is a schedule, not a route.** A group's standing routine (home fleet: a month in harbour, exercises
+  off Portland, the autumn cruise, the annual refit; a foreign station's rotation) is a repeating program. Its
+  position at t is the program evaluated at t (the legs come from the same great circles as rails), and its fuel,
+  money, wear and crew training are rates over the program's cycle. Waypoints inside it aren't events, because
+  nothing else needs them: a renderer evaluates the position, a report evaluates the totals. Leaving the routine,
+  changing it, or a refit starting (a yard slot) are the only events.
+- **Merchants in peacetime are services:** a ship sails a line between ports on its schedule, its position a
+  function of t, and the trade it carries a rate. When the world leaves peace (below), each one is put on rails at
+  where its schedule has it at that tick, as a light entity with a real track. Being a function of t, that's
+  deterministic and costs nothing to keep for 9,000 ships.
+- **Relations gate the contact scan.** Only pairs whose rules allow interaction are solved. At peace there are
+  none, so the scan has no work, and ships just pass ("Conflicts", 1) without being looked at.
+- **Exercises are the routine's training rate,** not fights: a gunnery program raises a crew's efficiency at a cost in
+  fuel, ammunition and money, drawn from the budget. Accidents and breakdowns are events drawn from rates, from a
+  seeded stream. No exercise is simulated in a finer tier unless the player opens one to watch (later).
+- **The routine cap: ~1,000,000x** (`SimSettings`), allowed while nothing is coarse or tactical and no pair can
+  interact. At 60 fps that's ~4.6 game hours a frame and a year in ~32 real seconds; a quiet decade is about five
+  minutes of the clock running unattended. The wartime cap (30,000x) applies as soon as any pair can interact, a
+  group is on a non-routine order that can meet something, or anything is coarse or tactical.
+- **The drop is the sim's, at the exact event,** as with contacts: tension rising or war declared drops the clock
+  to the wartime cap (or pauses it), and peacetime rows in the interest table do the rest: research completed, a
+  ship launched or completed, trials, the estimates debated in parliament, intelligence of a foreign ship laid down.
+  Same user-configurable table as encounters ("Conflicts", 3).
+- **Routine is world state, not a speed.** Which groups are on routines and which relations hold is in the world;
+  the speed only maps game time to real time. The same orders give the same world at 1x, 30,000x or 1,000,000x,
+  which a test checks (a peacetime year at both caps, snapshots compared bit for bit).
+- **Slow ship state is rates** (wear, fouling, stores, crew training): a year of routine is one evaluation, not a
+  year of steps. A model that can't say its state at t from a rate takes the group off its routine while it's
+  active, as a flooding ship goes coarse.
 
 ## Conflicts: who fights, how closely it's simulated, and who's watching (agreed 2026-10-11)
 
@@ -244,11 +288,11 @@ Fleetwright.Shipgen      Design -> Ship (hitboxes, report)                    un
        ▲
 Fleetwright.Sim          the world; no GPU, no SDL, no ImGui; deterministic; headless tests and a CLI
   World                  the one root: clock, stores, registries; written only by the sim thread
-    Clock                world time as a long (ms since an epoch), the asked speed, pause
+    Clock                world time as a long (ms since an epoch), the asked speed, the cap for what's live, pause
     Scheduler            the event queue (time, tier, id ordered) and the coarse and tactical steppers
     Earth                the sphere maths (double vectors, great circles, local frames), later the Earth model:
                          land, the sea graph for routing, ports; the sun and moon as functions of time
-    Navies, Fleets       factions; groups with orders and routes (rails tracks)
+    Navies, Fleets       factions; groups with orders, routines (schedules) and routes (rails tracks)
     Designs              each navy's accepted designs, by content hash -> ShipClass (battle plan), compiled once
     Ships                ShipState stores (SoA): tier, track, condition tables (battle plan)
     Yards                construction as events: laid down, launched, completed
@@ -330,6 +374,10 @@ layered inside the project (`Core`, `Ships`, `Combat`, then the world on top, on
   century of game; ticks are whole milliseconds (50 ms tactical). Converted to seconds as double only inside models.
 - 30,000x at 60 fps: 8 game minutes a frame. 2,000 groups with a waypoint every few hours is ~4,000 events per real
   second, plus the contact scans: well under a millisecond.
+- 1,000,000x at 60 fps (peacetime, routines): ~4.6 game hours a frame, 11.6 game days a real second. Routines raise
+  no events inside their programs, so the cost is the changes of routine, refits, launches and research: a few
+  hundred events a real second, and no contact scan at peace. On rails at this speed the same 2,000 groups would be
+  ~140,000 waypoint events a second; that's why peace is routines, not rails.
 - A battle at 20 Hz with a 4 ms tick runs at up to ~12x; analytic shells and arc motion may let the tactical tick
   grow to 0.25-1 s, which multiplies that. Decide in the tactical tier's step, by checking results don't change with
   the tick.
@@ -363,6 +411,11 @@ After the battle module, the world grows around the ship simulation. Each item i
 - **Relations beyond war and peace,** then diplomacy.
 - **Yards and manufacturing:** construction as events, ships laid down from submitted designs.
 - **Research:** the `TechSet` growing over a campaign.
+- **Peacetime routines** ("Peacetime: routines, above rails"): schedules for groups and merchant services, the
+  routine cap, putting everything on rails when peace ends. Comes with the campaign; the battle module's missions
+  start at war.
+- **Budgets and politics:** the money a navy gets, and the player pressuring the politicians for more; with research
+  and the designer, the main peacetime game.
 - **Submarines,** before the campaign (decided 2026-10-12): its era (about 1890-1925) has the U-boat war.
 - **Aviation** is version 2.0, after the campaign (the user, 2026-10-12).
 
@@ -386,6 +439,9 @@ brings it, inside the battle module if it's ready by then.
 9. **Fog of war is knowledge of entities** (each navy's picture), not a visual effect.
 10. **Diplomacy waits:** war and peace only for now. The battle module comes first, built to these decisions so that
     later work refactors as little as possible.
+11. **Peacetime runs on routines (2026-10-12):** 30,000x is the wartime speed. In peace, fleets are on automated
+    routines (schedules above rails), the clock goes up to ~1,000,000x, and the game is research, design and
+    pressuring politicians for money. Tension or war drops it back.
 
 ## What the ship simulation must already respect
 
