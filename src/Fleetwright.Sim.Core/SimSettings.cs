@@ -101,6 +101,11 @@ public sealed record SimSettings
     public double FollowCloseS { get; init; } = 90;
     public double FollowMaxSpeedDiffKn { get; init; } = 6;
 
+    /// <summary>How often admirals think, ms of world time; and how far under the slowest member's designed speed they
+    /// hold their guide, so the others have speed in hand to keep station.</summary>
+    public int AdmiralPeriodMs { get; init; } = 1000;
+    public double GroupSpeedMarginKn { get; init; } = 2;
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its

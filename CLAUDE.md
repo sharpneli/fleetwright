@@ -16,6 +16,7 @@ dotnet run --project src/Fleetwright                                       # the
 dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48 [-speed=30000] [-paused]   # map camera: lat,lon,m/px; world start UTC
 dotnet run --project src/Fleetwright -- -ships=dreadnought:9 -map=56.51,4.02,3 [-select=1]   # dev ships in the North Sea (sprites close, icons far), every other turning to 135°
 dotnet run --project src/Fleetwright -- -ships=dreadnought:2 -captain=2:follow:1:800 -select=2   # a captain: follow:target[:m], run:target, keep, none
+dotnet run --project src/Fleetwright -- -ships=dreadnought:6 -group=1,2,3,4,5,6:column:500 -select=1   # a group: column, abreast, echelon-s, echelon-p
 dotnet run --project src/Fleetwright -- -view=designer                    # the designer on bismarck (any designer flag below opens it too)
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
@@ -169,9 +170,10 @@ src/
                               #   LandView (the finest land level, brought inside a cap around the view per frame),
                               #   LandMesh (the coarse levels baked once: tiled fans and a coast mesh), CapRetraction,
                               #   MapScene (input, clock controls, HUD; MapScene.Ships.cs: selection, orders, dev
-                              #   spawn), ShipArt (ShipArtLibrary: each class's sprites drawn on the class registry's
-                              #   threads, uploaded here), ShipBatchRenderer (ShipDrawList on the CPU, instanced quads
-                              #   in the globe's pass: sprites, shadows, icons)
+                              #   spawn; MapScene.Groups.cs: ctrl+click picks, forming groups, labels, collapsed
+                              #   markers), ShipArt (ShipArtLibrary: each class's sprites drawn on the class
+                              #   registry's threads, uploaded here), ShipBatchRenderer (ShipDrawList on the CPU,
+                              #   instanced quads in the globe's pass: sprites, shadows, icons)
     Engine.cs                 #   Sdl3GpuEngine: init, resources, render loop, PbrMaterial
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
@@ -233,9 +235,11 @@ src/
                               #   power curve, arcs on the sphere; the helmsman: courses and routes)
   Fleetwright.Sim.Ai/         # the AI above the world: AiSystem (layers of command, top-down, each at its rate),
                               #   Knowledge/ (IPicture; TruthPicture until sighting), Captains/ (CaptainLayer,
-                              #   Behaviours: keep course, follow, run); admirals and admiralties go beside Captains/
+                              #   Behaviours: keep course, follow, run, station), Admirals/ (AdmiralLayer: formations
+                              #   as captains' stations); admiralties go beside them
   Fleetwright.Sim/            # the world: World (clock, speed, events, commands in, snapshot out), Scheduler,
-                              #   IWorldSystem, ShipSystem (every ship, the ship tick, ship commands), SimHost (the sim
+                              #   IWorldSystem, ShipSystem (every ship, the ship tick, ship commands), GroupSystem
+                              #   (groups: members, guide first, formation, spacing), SimHost (the sim
                               #   thread), TripleBuffer; no GPU or UI, runs headless
 tests/
   Fleetwright.Tests/          # xUnit for the game exe: the hitbox mesh over every design, the map camera's maths

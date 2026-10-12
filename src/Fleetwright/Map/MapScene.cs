@@ -83,7 +83,8 @@ public sealed unsafe partial class MapScene : IScene
         }
         var s = world.Current;
         art.UploadPending();
-        shipRenderer.List.Build(view, s.Ships, s.Time.Ms, s.Sun, artOf, lengthOf, shipRenderer.Icon, selected);
+        PlaceGroups(view, s);
+        shipRenderer.List.Build(view, s.Ships, s.Time.Ms, s.Sun, artOf, lengthOf, shipRenderer.Icon, selected, hidden);
         BuildOverlay(view, s);
         renderer.Render(cmd, target, view, s.Sun, land.Fill, baked, lines, overlay, shipRenderer);
     }
@@ -92,6 +93,7 @@ public sealed unsafe partial class MapScene : IScene
     {
         ShipsUi();
         var s = world.Current;
+        GroupLabels(s);
         var vp = ImGui.GetMainViewport();
         float pad = 8 * UiFonts.Scale;
         const ImGuiWindowFlags Hud = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize |

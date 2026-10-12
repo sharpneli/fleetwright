@@ -52,7 +52,12 @@ public sealed class World
         log = new List<StampedCommand>(Settings.CommandLogCapacity);
         Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1));
         Register(Ships);
+        Groups = new GroupSystem();
+        Register(Groups);
     }
+
+    /// <summary>The world's groups: always registered second (<see cref="GroupSystem.Id"/>).</summary>
+    public GroupSystem Groups { get; }
 
     /// <summary>The world's ships: always registered first (<see cref="ShipSystem.Id"/>).</summary>
     public ShipSystem Ships { get; }
@@ -101,6 +106,8 @@ public sealed class World
         if (c.System != 0)
         {
             SystemOf(c.System).Apply(this, in c);
+            foreach (var s in systems)
+                s.Applied(this, in c);
             return;
         }
         switch ((WorldCommand)c.Code)

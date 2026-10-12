@@ -22,6 +22,7 @@ public static unsafe class Program
         string? devShips = null;
         int selectShip = -1;
         var captains = new List<string>();
+        var devGroups = new List<string>();
         bool frameTimes = false;
 
         foreach (string arg in args)
@@ -101,6 +102,10 @@ public static unsafe class Program
             else if (arg.StartsWith("-ships="))   // dev ships in the North Sea: -ships=dreadnought[:count]
             {
                 devShips = arg.Substring("-ships=".Length);
+            }
+            else if (arg.StartsWith("-group="))   // a dev group: -group=1,2,3,4[:column|abreast|echelon-s|echelon-p[:metres]]
+            {
+                devGroups.Add(arg.Substring("-group=".Length));
             }
             else if (arg.StartsWith("-captain="))   // a dev ship's captain: -captain=2:follow:1[:800], keep, run:1, none
             {
@@ -204,6 +209,9 @@ public static unsafe class Program
             using var classes = new Sim.Ships.ShipClassRegistry();
             using var shipArt = new Map.ShipArtLibrary((SDL.SDL_GPUDevice*)device, classes);
             using var world = new Map.WorldSession(start, 1, classes, devShips != null ? w => SpawnDevShips(w, devShips) : null);
+            foreach (var grp in devGroups)
+                foreach (var c in DevGroup(grp))
+                    world.Send(c);
             foreach (var cap in captains)
                 if (DevCaptain(world.Ai, cap) is { } order)
                     world.Send(order);
@@ -253,6 +261,29 @@ public static unsafe class Program
             w.Apply(Sim.ShipSystem.Spawn(c, 56.5 + dLat * (i / side), 4.0 + dLon * (i % side), 45, 15));
         for (int e = 2; e <= count; e += 2)
             w.Apply(Sim.ShipSystem.Course(e, 135));
+    }
+
+    /// <summary>-group=e1,e2,...[:formation[:metres]]: a dev group, guided by the first.</summary>
+    static IEnumerable<Sim.Command> DevGroup(string arg)
+    {
+        var p = arg.Split(':');
+        var ships = p[0].Split(',').Select(x => int.TryParse(x, out int e) ? e : 0).Where(e => e > 0).ToArray();
+        if (ships.Length == 0)
+        {
+            Console.Error.WriteLine($"Bad group: -group={arg} (want -group=1,2,3[:column|abreast|echelon-s|echelon-p[:metres]])");
+            yield break;
+        }
+        var f = (p.Length > 1 ? p[1] : "column") switch
+        {
+            "abreast" => Sim.Formation.LineAbreast,
+            "echelon-s" => Sim.Formation.EchelonStarboard,
+            "echelon-p" => Sim.Formation.EchelonPort,
+            _ => Sim.Formation.Column,
+        };
+        double m = p.Length > 2 && double.TryParse(p[2], System.Globalization.CultureInfo.InvariantCulture, out double v) ? v : 600;
+        yield return Sim.GroupSystem.Create(ships[0], f, m);
+        foreach (int e in ships.Skip(1))
+            yield return Sim.GroupSystem.Join(e, ships[0]);
     }
 
     /// <summary>-captain=entity:order[:target[:metres]]: a captain's order for a dev ship.</summary>

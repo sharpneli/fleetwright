@@ -34,6 +34,47 @@ public sealed class Snapshot
 
     /// <summary>Every ship at sea.</summary>
     public ShipsView Ships { get; } = new();
+
+    /// <summary>Every group.</summary>
+    public GroupsView Groups { get; } = new();
+}
+
+/// <summary>The groups' part of a snapshot: per group its id, name, formation and spacing, and its members (entities,
+/// the guide first) as a run of <see cref="Members"/>.</summary>
+public sealed class GroupsView
+{
+    public int Count;
+    public int[] Id = [], MemberStart = [], MemberCount = [], Members = [];
+    public string[] Name = [];
+    public Formation[] Formation = [];
+    public double[] SpacingM = [];
+
+    /// <summary>Room for n groups and m members; grows only past the most yet.</summary>
+    public void EnsureCapacity(int n, int m)
+    {
+        if (n > Id.Length)
+        {
+            n = Math.Max(n, Math.Max(8, Id.Length * 2));
+            Array.Resize(ref Id, n);
+            Array.Resize(ref MemberStart, n);
+            Array.Resize(ref MemberCount, n);
+            Array.Resize(ref Name, n);
+            Array.Resize(ref Formation, n);
+            Array.Resize(ref SpacingM, n);
+        }
+        if (m > Members.Length)
+            Array.Resize(ref Members, Math.Max(m, Math.Max(32, Members.Length * 2)));
+    }
+
+    /// <summary>The index of the group a ship is in, or -1.</summary>
+    public int IndexOfShip(int entity)
+    {
+        for (int g = 0; g < Count; g++)
+            for (int i = 0; i < MemberCount[g]; i++)
+                if (Members[MemberStart[g] + i] == entity)
+                    return g;
+        return -1;
+    }
 }
 
 /// <summary>The ships' part of a snapshot: per live ship, in columns of which the first <see cref="Count"/> hold. A

@@ -80,8 +80,10 @@ public sealed class ShipDrawList
     /// <param name="artOf">A class's art, or null while it isn't up.</param>
     /// <param name="lengthOf">A class's length, metres (for the icon's fade before its art is up).</param>
     /// <param name="icon">The icon's texture.</param>
+    /// <param name="hidden">Per snapshot ship, true to leave it out (drawn as part of its group's marker); may be
+    /// shorter than the ships.</param>
     public void Build(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, double> lengthOf,
-        nint icon, int selectedEntity)
+        nint icon, int selectedEntity, ReadOnlySpan<bool> hidden = default)
     {
         quadCount = drawCount = placedCount = 0;
         foreach (var l in byClass.Values)
@@ -96,6 +98,8 @@ public sealed class ShipDrawList
         for (int k = 0; k < ships.Count; k++)
         {
             DrawnAs[k] = 0;
+            if (k < hidden.Length && hidden[k])
+                continue;
             var (p, f) = ships.PoseAt(k, timeMs);
             if (!view.Project(p, out double x, out double y))
                 continue;

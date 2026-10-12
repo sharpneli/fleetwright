@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.3 are done (2026-10-12); the next is 2.4, groups and formations.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.4 are done (2026-10-12); the next is 2.5, the rails clock tier.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -749,6 +749,44 @@ a course, follow, run (stage 2).
 **2.4 Groups and formations.** Groups with a leader and stations; one order moves the group; keeping station is the
 first captain behaviour.
 
+**Done (2026-10-12).** The basics, to iterate on later (the user: tuning the captains comes later):
+- **Groups are the world's** (`GroupSystem`, registered second, id 2).
+  - Members in order, the first the **guide**. A formation (line ahead, line abreast, echelon to starboard or port)
+    and a spacing.
+  - Commands: `Create`, `Add`, `Join` (into another ship's group, so a UI adds to a group it has just formed),
+    `Remove`, `SetFormation` and `Disband`. A ship is in at most one group, and an empty group goes.
+  - The snapshot has `GroupsView`.
+- **The admiral** (`Ai/Admirals/AdmiralLayer`), the AI's layer above captains, thinks at 1 Hz before them.
+  - He gives each member a `Station` order: in column on the ship before it (a turn goes round in succession, near
+    enough); in line abreast and echelon on the guide (the group turns together, the outer ships wheeling).
+  - He holds the guide's speed 2 kn under the slowest member's designed speed.
+  - He takes back the stations of ships that left. Sunk ships leave their group (`World.Issue`, unlogged).
+  - The guide is the player's to steer, so **one order to the guide moves the group**.
+- **Captains** gained `Station` (a point astern and abeam of a ship, in its frame); `Follow` is `Station` with no
+  abeam. An admiral's orders are marked as his.
+- **The world** tells every system after any command (`IWorldSystem.Applied`), so the AI wakes when groups change.
+  After any layer thinks, all layers are woken: an admiral's first stations give the captains something to do.
+- **On the world tab** (`MapScene.Groups.cs`):
+  - Ctrl+click picks more ships; the strip forms a group of them, the selected ship guiding.
+  - A ship in a group shows the group's row: formation, spacing, leave, disband, and adding picked ships. Its
+    course and speed orders go to the guide.
+  - Every group is labelled at its guide. A group under 30 px on screen collapses into one marker (a diamond)
+    labelled with its count, its ships' icons hidden. Temporary, like the icons.
+  - The flag `-group=1,2,3:column[:500]`.
+- **Checked:**
+  - `GroupTests`, all four formations from a scattered start: within 11-46 m of station after 45 min, and within
+    23-46 m after the guide turns 90°, headings within 0.6°.
+  - The guide is held to the slowest member's speed.
+  - Leaving, sinking, the guide leaving and disbanding all release the captains.
+  - A replay of the log gives the same hash.
+  - 4 groups of 8 think without allocating.
+  - Screenshots: a column forming up, and the collapsed marker at 150 m/px.
+- **Not yet:**
+  - turns in succession at the guide's turning point (column members cut the corner a little);
+  - the map-ui's group symbols and strength pips;
+  - clustering several groups into one marker;
+  - groups' own names from the player or missions.
+
 **2.5 Time compression: the rails clock tier.** Ships with nothing near them go on rails (great-circle legs, events
 at the waypoints) and come back to the fine tier when something needs them. The speed is clamped by the costliest
 live clock tier, and rails ships are drawn exactly from their tracks. Tests:
@@ -1015,7 +1053,7 @@ Fleetwright.Sim.Core      double vectors, the sphere (great circles, frames), wo
 Fleetwright.Sim.Ships     ShipClass, its compiler from Shipgen's Ship, the class registry, content hashes
 Fleetwright.Sim.Combat    ShipState and its models: movement, the hit query, damage, flooding, buoyancy, shells
 Fleetwright.Sim (World)   the world, the clock and scheduler, clock tiers, encounters, commands in, the snapshot out
-Fleetwright.Sim.Ai        the AI's layers (captains; admirals, admiralties later), above the world, registered by a host
+Fleetwright.Sim.Ai        the AI's layers (admirals, captains; admiralties later), above the world, registered by a host
 ```
 
 - `Ships` is pure data and compilation: no time, no world, nothing that changes. `Combat` gets time and a `dt`

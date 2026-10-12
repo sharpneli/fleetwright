@@ -129,6 +129,8 @@ public sealed unsafe partial class MapScene
                 }
             }
         }
+        DrawGroups(view, s);
+
         // tracks of ships no longer there
         gone.Clear();
         foreach (var (e, tr) in tracks)
@@ -184,7 +186,7 @@ public sealed unsafe partial class MapScene
             placing = false;
             return;
         }
-        selected = PickShip(view, x, y);
+        Pick(PickShip(view, x, y));
     }
 
     /// <summary>The entity of the ship nearest the cursor within its drawn size (an icon's at least), or -1.</summary>
@@ -217,13 +219,14 @@ public sealed unsafe partial class MapScene
         if (waypoint)
         {
             var (lat, lon) = Earth.LatLon(at);
-            world.Send(ShipSystem.AddWaypoint(selected, lat, lon));
+            world.Send(ShipSystem.AddWaypoint(Commanded(s), lat, lon));
         }
         else
         {
-            var (p, _) = s.Ships.PoseAt(k, s.Time.Ms);
-            world.Send(ShipSystem.ClearRoute(selected));
-            world.Send(ShipSystem.Course(selected, Earth.Bearing(p, at), hardOver ? 90 : 0));
+            int c = Commanded(s), kc = s.Ships.IndexOf(c);
+            var (p, _) = s.Ships.PoseAt(kc, s.Time.Ms);
+            world.Send(ShipSystem.ClearRoute(c));
+            world.Send(ShipSystem.Course(c, Earth.Bearing(p, at), hardOver ? 90 : 0));
         }
     }
 
@@ -359,52 +362,62 @@ public sealed unsafe partial class MapScene
             ImGui.TextDisabled($"heading {heading:000}°, {kn:0.0} kn, rudder {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0;0}°  ·  " +
                                $"ordered: {orders}, {s.Ships.SpeedOrderKn[k]:0.#} kn");
 
+            // orders: to the ship, or to its group's guide (one order moves the group)
+            int cmd = Commanded(s), kc = s.Ships.IndexOf(cmd);
+            if (cmd != selected)
+                ImGui.TextDisabled($"orders go to the group's guide, #{cmd}");
+
             // course
             ImGui.SetNextItemWidth(70 * UiFonts.Scale);
             ImGui.InputInt("##course", ref courseEdit, 0);
             courseEdit = ((courseEdit % 360) + 360) % 360;
             ImGui.SameLine();
             if (ImGui.Button("Steer"))
-                world.Send(ShipSystem.Course(selected, courseEdit, hardOver ? 90 : 0));
+                world.Send(ShipSystem.Course(cmd, courseEdit, hardOver ? 90 : 0));
             foreach (int d in CourseSteps)
             {
                 ImGui.SameLine();
                 if (ImGui.Button($"{d:+0;-0}°"))
                 {
-                    courseEdit = (int)Math.Round(((s.Ships.CourseOrderDeg[k] + d) % 360 + 360) % 360);
-                    world.Send(ShipSystem.Course(selected, courseEdit, hardOver ? 90 : 0));
+                    courseEdit = (int)Math.Round(((s.Ships.CourseOrderDeg[kc] + d) % 360 + 360) % 360);
+                    world.Send(ShipSystem.Course(cmd, courseEdit, hardOver ? 90 : 0));
                 }
             }
             ImGui.SameLine();
             ImGui.Checkbox("hard over", ref hardOver);
-            if (s.Ships.RouteCount[k] > 0)
+            if (s.Ships.RouteCount[kc] > 0)
             {
                 ImGui.SameLine();
                 if (ImGui.Button("Clear route"))
-                    world.Send(ShipSystem.ClearRoute(selected));
+                    world.Send(ShipSystem.ClearRoute(cmd));
             }
 
             // the telegraph
-            if (cls != null)
+            var guideCls = world.Classes.TryGet(s.Ships.Class[kc]);
+            if (guideCls != null)
             {
-                double full = cls.Motion.MaxSpeedKn;
-                double flank = Math.Max(full, cls.SpeedAt(cls.Motion.RatedShp * Math.Max(cls.Motion.OverloadMax, 1)));
+                double full = guideCls.Motion.MaxSpeedKn;
+                double flank = Math.Max(full, guideCls.SpeedAt(guideCls.Motion.RatedShp * Math.Max(guideCls.Motion.OverloadMax, 1)));
                 (string Label, double Kn)[] bells =
                     [("Full astern", -full), ("Half astern", -full / 2), ("Stop", 0), ("Slow", full / 4), ("Half", full / 2), ("Full", full), ("Flank", flank)];
                 for (int i = 0; i < bells.Length; i++)
                 {
                     if (i > 0)
                         ImGui.SameLine();
-                    bool rung = Math.Abs(s.Ships.SpeedOrderKn[k] - bells[i].Kn) < 0.05;
+                    bool rung = Math.Abs(s.Ships.SpeedOrderKn[kc] - bells[i].Kn) < 0.05;
                     if (rung)
                         ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.ButtonActive));
                     if (ImGui.Button($"{bells[i].Label}##bell"))
-                        world.Send(ShipSystem.Speed(selected, Math.Round(bells[i].Kn, 2)));
+                        world.Send(ShipSystem.Speed(cmd, Math.Round(bells[i].Kn, 2)));
                     if (rung)
                         ImGui.PopStyleColor();
                 }
             }
-            CaptainRow(s, k);
+            if (cmd == selected)
+                CaptainRow(s, k);
+            else
+                ImGui.TextDisabled("Captain: keeping station in the group");
+            GroupRow(s);
             ImGui.TextDisabled("right-click the sea: steer for it · shift+right-click: add a waypoint · click elsewhere: deselect");
         }
         ImGui.End();

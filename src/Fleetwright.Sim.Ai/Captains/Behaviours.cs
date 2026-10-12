@@ -14,13 +14,19 @@ public static class Behaviours
     /// without snaking, turning round or cutting across the leader, and he
     /// rings the leader's speed plus what closes the gap along that line in <see cref="SimSettings.FollowCloseS"/>,
     /// within <see cref="SimSettings.FollowMaxSpeedDiffKn"/> and what his plant makes.</summary>
-    public static (double CourseDeg, double SpeedKn) Follow(ShipState own, in Sighting leader, double distanceM, SimSettings s)
+    public static (double CourseDeg, double SpeedKn) Follow(ShipState own, in Sighting leader, double distanceM, SimSettings s) =>
+        Station(own, leader, distanceM > 0 ? distanceM : s.FollowDistanceLengths * own.Handling.LengthM, 0, s);
+
+    /// <summary>Station: as <see cref="Follow"/>, for a station <paramref name="asternM"/> astern of the other ship and
+    /// <paramref name="abeamM"/> to its starboard (negative: port), in its own frame. The line he joins runs through the
+    /// station along the other ship's heading.</summary>
+    public static (double CourseDeg, double SpeedKn) Station(ShipState own, in Sighting leader, double asternM, double abeamM, SimSettings s)
     {
         var h = own.Handling;
         double length = h.LengthM;
-        double d = distanceM > 0 ? distanceM : s.FollowDistanceLengths * length;
         var lf = leader.Forward;
-        var station = Surface(leader.Position - lf * d);
+        var lup = leader.Position.Normalized();
+        var station = Surface(leader.Position - lf * asternM + Vec3d.Cross(lf, lup) * abeamM);
         double behind = Vec3d.Dot(station - own.Position, lf);   // positive: astern of station, close up
 
         // the point steered for is some lengths ahead of him along the leader's line, never behind him: a follower

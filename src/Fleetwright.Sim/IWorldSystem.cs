@@ -16,6 +16,12 @@ public interface IWorldSystem
     /// <summary>Mixes all of its state into the world's hash.</summary>
     void Hash(ref StateHash h);
 
+    /// <summary>Told after any command the world applied, whoever's it was (a system that depends on another's state
+    /// wakes on it here).</summary>
+    void Applied(World world, in Command c)
+    {
+    }
+
     /// <summary>Copies its part of what the screens need into a snapshot, after the world's; allocates nothing.</summary>
     void Fill(Snapshot s)
     {

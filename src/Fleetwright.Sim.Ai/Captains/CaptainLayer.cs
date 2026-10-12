@@ -18,6 +18,10 @@ public enum CaptainOrder : byte
 
     /// <summary>Turn away from another ship and run at flank speed.</summary>
     Run,
+
+    /// <summary>Keep a station on another ship: a distance astern and a distance to starboard (negative: to port) of it,
+    /// in its own frame. What an admiral gives his captains to hold a formation.</summary>
+    Station,
 }
 
 /// <summary>The captains: one per ship that has been given a <see cref="CaptainOrder"/>, kept in entity order so they
@@ -31,7 +35,8 @@ public sealed class CaptainLayer : IAiLayer
     {
         public int Entity, Target;
         public CaptainOrder Order;
-        public double DistanceM, HoldCourseDeg, HoldSpeedKn;
+        public double DistanceM, AbeamM, HoldCourseDeg, HoldSpeedKn;
+        public bool ByAdmiral;   // given by his group's admiral, who takes it back when the ship leaves the group
     }
 
     Captain[] captains = new Captain[16];
@@ -48,25 +53,47 @@ public sealed class CaptainLayer : IAiLayer
         return i >= 0 ? (captains[i].Order, captains[i].Target) : (CaptainOrder.None, 0);
     }
 
-    public void Order(in AiContext ctx, in Command c)
+    /// <summary>The player's order to a captain, as a command: B the order, A the target, X the distance astern, Y the
+    /// distance abeam.</summary>
+    public void Order(in AiContext ctx, in Command c) => Set(ctx, c.Entity, (CaptainOrder)c.B, (int)c.A, c.X, c.Y, byAdmiral: false);
+
+    /// <summary>Gives a captain an order (<see cref="CaptainOrder.None"/> takes his away). An order the same as the one
+    /// he has changes nothing, so an admiral can repeat his every second.</summary>
+    public void Set(in AiContext ctx, int entity, CaptainOrder order, int target, double astern, double abeam, bool byAdmiral)
     {
-        var order = (CaptainOrder)c.B;
-        int slot = ctx.Ships.SlotOf(c.Entity);
-        int i = Find(c.Entity);
+        int slot = ctx.Ships.SlotOf(entity);
+        int i = Find(entity);
         if (order == CaptainOrder.None || slot < 0)
         {
             if (i >= 0)
                 Remove(i);
             return;
         }
-        if (i < 0)
-            i = Insert(c.Entity);
+        if (i >= 0)
+        {
+            ref var c = ref captains[i];
+            if (c.Order == order && c.Target == target && c.DistanceM == astern && c.AbeamM == abeam && c.ByAdmiral == byAdmiral)
+                return;
+        }
+        else
+            i = Insert(entity);
         var ship = ctx.Ships[slot];
         captains[i] = new Captain
         {
-            Entity = c.Entity, Order = order, Target = (int)c.A, DistanceM = c.X,
+            Entity = entity, Order = order, Target = target, DistanceM = astern, AbeamM = abeam, ByAdmiral = byAdmiral,
             HoldCourseDeg = ship.HeadingDeg, HoldSpeedKn = ship.SpeedOrderKn,
         };
+    }
+
+    /// <summary>The entity of the i-th captain (in entity order) if he holds an admiral's order, else 0: for the admiral
+    /// to take back what's no longer his.</summary>
+    public int AdmiralsAt(int i) => captains[i].ByAdmiral ? captains[i].Entity : 0;
+
+    /// <summary>Whether a ship's captain holds an admiral's order.</summary>
+    public bool IsAdmirals(int entity)
+    {
+        int i = Find(entity);
+        return i >= 0 && captains[i].ByAdmiral;
     }
 
     public void Think(in AiContext ctx)
@@ -86,6 +113,8 @@ public sealed class CaptainLayer : IAiLayer
             bool seen = cap.Order != CaptainOrder.KeepCourse && ctx.Picture.TryGet(cap.Target, out t);
             if (cap.Order == CaptainOrder.Follow && seen)
                 (course, kn) = Behaviours.Follow(own, t, cap.DistanceM, ctx.Settings);
+            else if (cap.Order == CaptainOrder.Station && seen)
+                (course, kn) = Behaviours.Station(own, t, cap.DistanceM, cap.AbeamM, ctx.Settings);
             else if (cap.Order == CaptainOrder.Run && seen)
                 (course, kn) = Behaviours.Run(own, t);
             else if (cap.Order != CaptainOrder.KeepCourse)
@@ -115,6 +144,8 @@ public sealed class CaptainLayer : IAiLayer
             h.Add((int)c.Order);
             h.Add(c.Target);
             h.Add(c.DistanceM);
+            h.Add(c.AbeamM);
+            h.Add(c.ByAdmiral);
             h.Add(c.HoldCourseDeg);
             h.Add(c.HoldSpeedKn);
         }
