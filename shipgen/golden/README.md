@@ -69,6 +69,8 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   (`Bridge upper`, `Tower n`, `Aft control upper`, island towers) no longer count as crew space. Most cases change
   only `crew.space_usable_m3`/`space_free_m3`; `daring` and `destroyer` grow 1.3 m (+11 t), `fubuki`, `impetuoso`,
   `karlsruhe`, `victory_1944` and some fuzz cases move by centimetres.
+- 2026-10-12, unique component ids (battle plan step 2.1), on purpose: the hangar bay is `Hangar bay`, not
+  `Hangar`, which the seaplane carrier's hangar block is too. 20 carrier cases change only that id.
 
 ## Layout
 

@@ -398,7 +398,7 @@ public sealed class CarrierStyle : Style
             lay.Geo.Avgas = ((af.X0 + af.X1) / 2, (af.Base + af.Top) / 2);
         lay.Compartments.Add(new Compartment
         {
-            Id = "Hangar", Kind = "hangar", X0 = hx0, X1 = hx1, HalfWidth = hhw, Base = 0.0,
+            Id = "Hangar bay", Kind = "hangar", X0 = hx0, X1 = hx1, HalfWidth = hhw, Base = 0.0,
             Top = av.FlightDeck == "none" ? 2 * Layout.LevelH : HangarH * av.HangarDecks,
         });
         Layout.AddSteering(lay);
