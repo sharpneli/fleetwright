@@ -300,7 +300,8 @@ public unsafe class Sdl3GpuEngine : IDisposable
     /// "F:click:X,Y" moves there and clicks (ImGui trickles the queue, a step a frame), "F:right:X,Y" right-clicks,
     /// "F:wheel:X,Y:N" turns the wheel N notches, "F:drag:X0,Y0:X1,Y1" drags with the left button, "F:type:TEXT" types TEXT then Enter, "F:drop:PATH" drops the file PATH on the window. X, Y in window pixels.
     /// "F:pan:X0,Y0:X1,Y1:N" is a drag as a real mouse makes it: SDL events (so the scene gets them as from the
-    /// device), the button down at X0,Y0, then N frames of eight motion events each toward X1,Y1, then up.</summary>
+    /// device), the button down at X0,Y0, then N frames of eight motion events each toward X1,Y1, then up.
+    /// "F:mclick:X,Y" and "F:mright:X,Y" are left and right clicks the same way, as SDL events (the map's clicks).</summary>
     public List<string> ScriptedInput { get; } = [];
 
     void FeedScriptedInput()
@@ -374,6 +375,13 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     else
                         PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP, a1, default);
                     break;
+                case "mclick" or "mright":
+                    var m = At(p[2]);
+                    byte mb = p[1] == "mclick" ? (byte)1 : (byte)3;
+                    PushMouse(SDL_EventType.SDL_EVENT_MOUSE_MOTION, m, default);
+                    PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN, m, default, mb);
+                    PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP, m, default, mb);
+                    break;
                 case "drop":   // the path may hold colons (C:/...): all after the second
                     FileDropped?.Invoke(ev[(ev.IndexOf(':', ev.IndexOf(':') + 1) + 1)..]);
                     break;
@@ -381,8 +389,8 @@ public unsafe class Sdl3GpuEngine : IDisposable
         }
     }
 
-    /// <summary>Pushes a left-button mouse event into SDL's queue, read with the next frame's events.</summary>
-    void PushMouse(SDL_EventType type, System.Numerics.Vector2 at, System.Numerics.Vector2 rel)
+    /// <summary>Pushes a mouse event (left button unless given) into SDL's queue, read with the next frame's events.</summary>
+    void PushMouse(SDL_EventType type, System.Numerics.Vector2 at, System.Numerics.Vector2 rel, byte button = 1)
     {
         var e = new SDL_Event();
         e.type = (uint)type;
@@ -395,7 +403,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
         {
             e.button.windowID = SDL_GetWindowID(_window);
             (e.button.button, e.button.down, e.button.clicks, e.button.x, e.button.y) =
-                ((byte)1, type == SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN, (byte)1, at.X, at.Y);
+                (button, type == SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN, (byte)1, at.X, at.Y);
         }
         SDL_PushEvent(&e);
     }

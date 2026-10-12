@@ -114,52 +114,7 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
         drawOrder = [];
     }
 
-    SDL_GPUTexture* Upload(Image8[] levels, bool height)
-    {
-        var level0 = levels[0];
-        var info = new SDL_GPUTextureCreateInfo
-        {
-            type = SDL_GPUTextureType.SDL_GPU_TEXTURETYPE_2D,
-            format = height ? SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8_UNORM : SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
-            usage = SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_SAMPLER,
-            width = (uint)level0.Width,
-            height = (uint)level0.Height,
-            layer_count_or_depth = 1,
-            num_levels = (uint)levels.Length,
-            sample_count = SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1,
-        };
-        var tex = SDL_CreateGPUTexture(device, &info);
-        if (tex == null)
-            throw new InvalidOperationException($"ship sprite texture: {SDL_GetError()}");
-        uint total = 0;
-        foreach (var l in levels)
-            total += (uint)l.Data.Length;
-        var ti = new SDL_GPUTransferBufferCreateInfo { usage = SDL_GPUTransferBufferUsage.SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD, size = total };
-        var tb = SDL_CreateGPUTransferBuffer(device, &ti);
-        var dst = (byte*)SDL_MapGPUTransferBuffer(device, tb, false);
-        uint off = 0;
-        foreach (var l in levels)
-        {
-            l.Data.CopyTo(new Span<byte>(dst + off, l.Data.Length));
-            off += (uint)l.Data.Length;
-        }
-        SDL_UnmapGPUTransferBuffer(device, tb);
-        var cmd = SDL_AcquireGPUCommandBuffer(device);
-        var cp = SDL_BeginGPUCopyPass(cmd);
-        off = 0;
-        for (int k = 0; k < levels.Length; k++)
-        {
-            var l = levels[k];
-            var src = new SDL_GPUTextureTransferInfo { transfer_buffer = tb, offset = off, pixels_per_row = (uint)l.Width, rows_per_layer = (uint)l.Height };
-            var region = new SDL_GPUTextureRegion { texture = tex, mip_level = (uint)k, w = (uint)l.Width, h = (uint)l.Height, d = 1 };
-            SDL_UploadToGPUTexture(cp, &src, &region, false);
-            off += (uint)l.Data.Length;
-        }
-        SDL_EndGPUCopyPass(cp);
-        SDL_SubmitGPUCommandBuffer(cmd);
-        SDL_ReleaseGPUTransferBuffer(device, tb);
-        return tex;
-    }
+    SDL_GPUTexture* Upload(Image8[] levels, bool height) => Map.SpriteTextures.Upload(device, levels, height);
 
     // ------------------------------------------------------------------ pipelines
 

@@ -50,6 +50,28 @@ public sealed class ShipsView
     public Combat.Helm[] Helm = [];
     public double[] CourseOrderDeg = [], SpeedOrderKn = [];
 
+    /// <summary>Each ship's route still to steam: <see cref="RouteCount"/> waypoints from <see cref="RouteStart"/> in
+    /// <see cref="Waypoints"/> (the next one first).</summary>
+    public int[] RouteStart = [], RouteCount = [];
+    public Vec3d[] Waypoints = [];
+    public int WaypointCount;
+
+    /// <summary>Room for n waypoints in all; grows only past the most yet.</summary>
+    public void EnsureWaypoints(int n)
+    {
+        if (n > Waypoints.Length)
+            Array.Resize(ref Waypoints, Math.Max(n, Math.Max(64, Waypoints.Length * 2)));
+    }
+
+    /// <summary>The index of an entity's ship in these columns, or -1.</summary>
+    public int IndexOf(int entity)
+    {
+        for (int k = 0; k < Count; k++)
+            if (Entity[k] == entity)
+                return k;
+        return -1;
+    }
+
     /// <summary>Room for n ships; grows (allocates) only past the largest count yet.</summary>
     public void EnsureCapacity(int n)
     {
@@ -67,6 +89,8 @@ public sealed class ShipsView
         Array.Resize(ref Helm, n);
         Array.Resize(ref CourseOrderDeg, n);
         Array.Resize(ref SpeedOrderKn, n);
+        Array.Resize(ref RouteStart, n);
+        Array.Resize(ref RouteCount, n);
     }
 
     /// <summary>Ship k's position and forward carried on to a time, ms.</summary>

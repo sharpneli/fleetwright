@@ -11,14 +11,15 @@ namespace Fleetwright.Map;
 /// <summary>The world tab (docs/battle/plan.md step 1.2): the globe of water at every zoom from orbit down to 10 px/m,
 /// the lat/lon grid, day and night from the snapshot's sun, and the clock's controls (pause, 1x to 30,000x, asked
 /// against achieved). It reads the world only through <see cref="WorldSession.Current"/> and changes it only by
-/// commands. Mouse: wheel zooms at the cursor, left drag pans. Keys: space pauses, + and - change the speed.</summary>
-public sealed unsafe class MapScene : IScene
+/// commands. Mouse: wheel zooms at the cursor, left drag pans. Keys: space pauses, + and - change the speed. The ships
+/// (step 2.3) are in MapScene.Ships.cs.</summary>
+public sealed unsafe partial class MapScene : IScene
 {
     static readonly double[] Speeds = [1, 10, 100, 1000, 10_000, 30_000];
 
     readonly WorldSession world;
     readonly GlobeRenderer renderer;
-    readonly MapLines lines = new(), ships = new();   // ships: rebuilt every frame
+    readonly MapLines lines = new(), overlay = new();   // overlay: rebuilt every frame (routes, tracks, the selection)
     readonly LandView land;
     MapCamera camera, built;   // built: the view the lines and the land's fill were last built for
     (double, double) builtSize;
@@ -29,11 +30,18 @@ public sealed unsafe class MapScene : IScene
     Vector2 mouse;
     bool mouseIn;
 
-    public MapScene(SDL_GPUDevice* device, WorldSession world, MapCamera camera)
+    public MapScene(SDL_GPUDevice* device, WorldSession world, MapCamera camera, ShipArtLibrary art, int selectEntity = -1)
     {
         this.world = world;
         this.camera = camera;
+        this.art = art;
+        selected = selectEntity;
         renderer = new GlobeRenderer(device);
+        shipRenderer = new ShipBatchRenderer(device);
+        artOf = art.Get;
+        lengthOf = id => world.Classes.TryGet(id)?.Length ?? 150;
+        designNames = [.. Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "Content", "Designs"), "*.json")
+            .Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal)!];
         static Land Load(string res) => Land.Load(Path.Combine(AppContext.BaseDirectory, "Content", "World", $"land-{res}.bin"));
         land = new LandView(Load("110m"), Load("50m"), Load("10m"));
         // the coarse levels baked once into static meshes; the finest is built per view (docs/battle/plan.md 1.4)
@@ -73,44 +81,16 @@ public sealed unsafe class MapScene : IScene
                 land.Clear();
             (built, builtSize) = (camera, (width, height));
         }
-        BuildShips(view);
-        renderer.Render(cmd, target, view, world.Current.Sun, land.Fill, baked, lines, ships);
-    }
-
-    static readonly Vector4 ShipColor = new(1f, 0.93f, 0.75f, 1f);
-
-    /// <summary>Every ship as a tick along its heading, its length to scale but never under a few pixels, with a dot at
-    /// the bow (docs/battle/plan.md step 2.2's dev drawing; the sprites and markers by band are 2.3's). Poses are
-    /// carried on from their tick to the snapshot's time along their arc.</summary>
-    void BuildShips(in MapView view)
-    {
         var s = world.Current;
-        var v = s.Ships;
-        ships.Begin(width, height);
-        for (int k = 0; k < v.Count; k++)
-        {
-            var (p, f) = v.PoseAt(k, s.Time.Ms);
-            if (!view.Project(p, out double x, out double y) || !view.Project(p + f * 100, out double x2, out double y2))
-                continue;
-            double dx = x2 - x, dy = y2 - y, l = Math.Sqrt(dx * dx + dy * dy);
-            if (l < 1e-9)
-                continue;
-            (dx, dy) = (dx / l, dy / l);
-            double len = Math.Max(l / 100 * LengthOf(v.Class[k]), 14);
-            ships.BeginStrip(ShipColor, 3);
-            ships.Point(x - dx * len / 2, y - dy * len / 2);
-            ships.Point(x + dx * len / 2, y + dy * len / 2);
-            ships.BeginStrip(ShipColor, 7);
-            ships.Point(x + dx * (len / 2 - 2), y + dy * (len / 2 - 2));
-            ships.Point(x + dx * (len / 2 + 2), y + dy * (len / 2 + 2));
-        }
-        ships.End();
+        art.UploadPending();
+        shipRenderer.List.Build(view, s.Ships, s.Time.Ms, s.Sun, artOf, lengthOf, shipRenderer.Icon, selected);
+        BuildOverlay(view, s);
+        renderer.Render(cmd, target, view, s.Sun, land.Fill, baked, lines, overlay, shipRenderer);
     }
-
-    double LengthOf(int classIndex) => classIndex < world.ClassLengths.Length ? world.ClassLengths[classIndex] : 100;
 
     public void BuildUi()
     {
+        ShipsUi();
         var s = world.Current;
         var vp = ImGui.GetMainViewport();
         float pad = 8 * UiFonts.Scale;
@@ -182,11 +162,24 @@ public sealed unsafe class MapScene : IScene
                 camera.ZoomAt(Math.Pow(1.2, -e->wheel.y), e->wheel.mouse_x * sx, e->wheel.mouse_y * sy, width, height);
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN:
+                if (e->button.button == 3)
+                {
+                    OrderAt(e->button.x * sx, e->button.y * sy, (SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0);
+                    return true;
+                }
                 if (e->button.button != 1)
                     return false;
+                (pressX, pressY, pressed) = (e->button.x * sx, e->button.y * sy, true);
                 dragging = View.Pick(e->button.x * sx, e->button.y * sy, out grab);
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
+                if (e->button.button == 1 && pressed)
+                {
+                    double ux = e->button.x * sx, uy = e->button.y * sy;
+                    if (Math.Abs(ux - pressX) + Math.Abs(uy - pressY) < 5)
+                        Click(ux, uy);   // a click, not a drag
+                    pressed = false;
+                }
                 dragging = false;
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
@@ -239,5 +232,9 @@ public sealed unsafe class MapScene : IScene
     static string LatLon(double lat, double lon) =>
         $"{Math.Abs(lat):0.0000}°{(lat >= 0 ? 'N' : 'S')} {Math.Abs(lon):0.0000}°{(lon >= 0 ? 'E' : 'W')}";
 
-    public void Dispose() => renderer.Dispose();
+    public void Dispose()
+    {
+        shipRenderer.Dispose();
+        renderer.Dispose();
+    }
 }

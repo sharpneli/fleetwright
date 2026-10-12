@@ -27,41 +27,48 @@ public sealed class ShipSystem : IWorldSystem
     const ushort Tick = 1;
 
     readonly SimSettings settings;
-    readonly List<ShipClass> classes = [];
-    readonly List<Handling> handlings = [];
+    readonly List<int> used = [];   // the registry ids ships have been made of, in the order first used
+    readonly Dictionary<int, Handling> handlings = [];
     long nextTickMs = -1;   // the tick scheduled, or -1
     int nextEntity = 1;
 
     public ShipStore Store { get; }
 
-    internal ShipSystem(SimSettings settings)
+    internal ShipSystem(SimSettings settings, ShipClassRegistry registry)
     {
         this.settings = settings;
+        Registry = registry;
         Store = new ShipStore(settings);
     }
 
-    /// <summary>The classes ships can be made of, by index. Added before the world runs on a thread, or from the sim
-    /// thread (the class registry hands them in from step 2.3).</summary>
-    public int AddClass(ShipClass c)
+    /// <summary>Where classes come from, by id: the ids <see cref="Spawn"/> names and the snapshot carries.</summary>
+    public ShipClassRegistry Registry { get; }
+
+    /// <summary>Adds a compiled class to the registry: its id (tests and tools; the game requests designs).</summary>
+    public int AddClass(ShipClass c) => Registry.Add(c);
+
+    /// <summary>A class by its registry id, waiting for its build if it must.</summary>
+    public ShipClass Class(int id) => Registry.Get(id) ?? throw new InvalidOperationException($"class {id} didn't build: {Registry.ErrorOf(id)}");
+
+    /// <summary>A class's handling in this world, made the first time a ship of it is.</summary>
+    public Handling HandlingOf(int id)
     {
-        for (int i = 0; i < classes.Count; i++)
-            if (ReferenceEquals(classes[i], c))
-                return i;
-        classes.Add(c);
-        handlings.Add(new Handling(c, settings));
-        return classes.Count - 1;
+        if (!handlings.TryGetValue(id, out var h))
+        {
+            handlings[id] = h = new Handling(Class(id), settings);
+            used.Add(id);
+            Registry.Acquire(id);
+        }
+        return h;
     }
 
-    public int ClassCount => classes.Count;
-    public ShipClass Class(int i) => classes[i];
-    public Handling HandlingOf(int classIndex) => handlings[classIndex];
-
-    /// <summary>The class index of a live ship's slot.</summary>
+    /// <summary>The class id of a live ship's slot.</summary>
     public int ClassOf(int slot) => Store[slot].ClassIndex;
 
     // ------------------------------------------------------------------ commands
 
-    /// <summary>A ship of a class at a place, heading and speed; it gets the next entity id.</summary>
+    /// <summary>A ship of a class (its registry id) at a place, heading and speed; it gets the next entity id. A class
+    /// that didn't build makes no ship.</summary>
     public static Command Spawn(int classIndex, double latDeg, double lonDeg, double headingDeg, double kn) =>
         new(Id, (ushort)ShipCommand.Spawn, A: Earth.PackLatLon(latDeg, lonDeg), X: headingDeg, B: classIndex, Y: kn);
 
@@ -88,11 +95,13 @@ public sealed class ShipSystem : IWorldSystem
         const double Deg = Math.PI / 180;
         if ((ShipCommand)c.Code == ShipCommand.Spawn)
         {
-            if (c.B < 0 || c.B >= classes.Count)
+            if (c.B < 0 || c.B >= Registry.Count)
                 throw new ArgumentException($"no ship class {c.B}");
+            if (Registry.Get(c.B) == null)
+                return;   // the design didn't build: no ship, the same on every replay
             var (lat, lon) = Earth.UnpackLatLon(c.A);
             var p = Earth.Position(lat, lon);
-            Store.Spawn(nextEntity++, c.B, handlings[c.B], p, Earth.Forward(p, c.X), c.Y * Handling.MsPerKnot, world.Time.Ms);
+            Store.Spawn(nextEntity++, c.B, HandlingOf(c.B), p, Earth.Forward(p, c.X), c.Y * Handling.MsPerKnot, world.Time.Ms);
             EnsureTick(world);
             return;
         }
@@ -148,9 +157,13 @@ public sealed class ShipSystem : IWorldSystem
     {
         h.Add(nextTickMs);
         h.Add(nextEntity);
-        h.Add(classes.Count);
-        foreach (var c in classes)
-            h.Add(c.DesignHash.A);
+        h.Add(used.Count);
+        foreach (int id in used)
+        {
+            var d = Registry.HashOf(id);
+            h.Add(d.A);
+            h.Add(d.B);
+        }
         Store.Hash(ref h);
     }
 
@@ -161,7 +174,7 @@ public sealed class ShipSystem : IWorldSystem
     {
         var s = Store;
         v.EnsureCapacity(s.Count);
-        int n = 0;
+        int n = 0, w = 0;
         for (int i = 0; i < s.Slots; i++)
         {
             if (!s.IsAlive(i))
@@ -178,8 +191,15 @@ public sealed class ShipSystem : IWorldSystem
             v.Helm[n] = ship.Helm;
             v.CourseOrderDeg[n] = ship.CourseOrderDeg;
             v.SpeedOrderKn[n] = ship.SpeedOrderKn;
+            int left = ship.Helm == Helm.Route ? ship.RouteCount - ship.RouteNext : 0;
+            v.EnsureWaypoints(w + left);
+            v.RouteStart[n] = w;
+            v.RouteCount[n] = left;
+            for (int k = 0; k < left; k++)
+                v.Waypoints[w++] = ship.Waypoint(ship.RouteNext + k);
             n++;
         }
         v.Count = n;
+        v.WaypointCount = w;
     }
 }

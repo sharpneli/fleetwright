@@ -14,7 +14,7 @@ dotnet test
 ```bash
 dotnet run --project src/Fleetwright                                       # the world: the globe, its clock running at 1x
 dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48 [-speed=30000] [-paused]   # map camera: lat,lon,m/px; world start UTC
-dotnet run --project src/Fleetwright -- -ships=dreadnought:9 -map=56.51,4.02,3   # dev ships in the North Sea (heading ticks), every other turning to 135°
+dotnet run --project src/Fleetwright -- -ships=dreadnought:9 -map=56.51,4.02,3 [-select=1]   # dev ships in the North Sea (sprites close, icons far), every other turning to 135°
 dotnet run --project src/Fleetwright -- -view=designer                    # the designer on bismarck (any designer flag below opens it too)
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
@@ -24,7 +24,7 @@ dotnet run --project src/Fleetwright -- -view=ship [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -view=profile                      # the ship card's side view
 dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
 dotnet run --project src/Fleetwright -- -section=2 -designer-ui=secsel:1:2,secmenu  # UI state for screenshots (DesignerScene.ApplyDevUi)
-dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wheel:1160,559:-1;100:type:150  # scripted clicks, wheel, typing, F:drop:PATH, F:drag:X0,Y0:X1,Y1 (window px; Engine.ScriptedInput)
+dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wheel:1160,559:-1;100:type:150  # scripted clicks, wheel, typing, F:drop:PATH, F:drag:X0,Y0:X1,Y1, F:mclick or F:mright:X,Y (SDL clicks the map gets) (window px; Engine.ScriptedInput)
 dotnet run --project src/Fleetwright -c DevRelease -- -frametimes -screenshot=1100 -input=100:pan:900,500:400,350:80   # frame times at exit; F:pan is a real SDL drag (the map's input)
 ```
 
@@ -33,7 +33,10 @@ its sim thread for the app (the engine's `FrameStarted` reports real time every 
 `MapScene` draws the globe from orbit to 10 px/m (`MapCamera` and `MapView`: straight down, north up, zoom in metres
 per pixel; projection, picking, the grid and the land's clip in double, so nothing jitters), the land from
 `Content/World/` (Natural Earth, a rough first Earth: `LandView`), with the clock's controls (space pauses,
-+ and - change speed). Wheel zooms at the cursor, left drag pans. Without `-view`, a designer-only flag (`-section`,
++ and - change speed). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
+selects, the strip at the bottom orders course and speed, right-click steers for a point, shift+right-click adds a
+waypoint; the top-left panel spawns a shipped design where you click. `ShipBatchRenderer` draws them inside the
+globe's pass (sprites from `ShipArtLibrary`, a stand-in icon when small). Without `-view`, a designer-only flag (`-section`,
 `-steps`, `-new`, `-designer-ui`, `-units`) opens the designer instead.
 
 The other four tabs are on one design (menu bar, or F3 to step): the designer, the hitbox viewer, the
@@ -164,7 +167,10 @@ src/
                               #   (double projection), GlobeRenderer (the sphere per pixel, then MapLines), Graticule,
                               #   LandView (the finest land level, brought inside a cap around the view per frame),
                               #   LandMesh (the coarse levels baked once: tiled fans and a coast mesh), CapRetraction,
-                              #   MapScene (input, clock controls, HUD)
+                              #   MapScene (input, clock controls, HUD; MapScene.Ships.cs: selection, orders, dev
+                              #   spawn), ShipArt (ShipArtLibrary: each class's sprites drawn on the class registry's
+                              #   threads, uploaded here), ShipBatchRenderer (ShipDrawList on the CPU, instanced quads
+                              #   in the globe's pass: sprites, shadows, icons)
     Engine.cs                 #   Sdl3GpuEngine: init, resources, render loop, PbrMaterial
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
@@ -219,7 +225,8 @@ src/
   Fleetwright.Sim.Ships/      # the ships' data: ShipClass (a built Ship's hitboxes and report as read-only, int-indexed
                               #   tables: Rows.cs), ShipClassCompiler (strict: every kind an enum, every link an index),
                               #   ArmourSolids, ContentHash (design and layout hashes), ShellTest (shell-test on a class),
-                              #   DesignerPlaceholders (facts the designer doesn't give yet: the one place they live)
+                              #   DesignerPlaceholders (facts the designer doesn't give yet: the one place they live),
+                              #   ShipClassRegistry (classes by design hash, built on threads of its own, ids for commands)
   Fleetwright.Sim.Combat/     # ships at sea: ShipStore (slots, state in columns), ShipState (a handle), Handling (a
                               #   class's numbers for moving), ShipMotion (the step: Nomoto turning, forces on the
                               #   power curve, arcs on the sphere; the helmsman: courses and routes)

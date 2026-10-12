@@ -20,6 +20,7 @@ public static unsafe class Program
         double? startSpeed = null;
         bool startPaused = false;
         string? devShips = null;
+        int selectShip = -1;
         bool frameTimes = false;
 
         foreach (string arg in args)
@@ -99,6 +100,10 @@ public static unsafe class Program
             else if (arg.StartsWith("-ships="))   // dev ships in the North Sea: -ships=dreadnought[:count]
             {
                 devShips = arg.Substring("-ships=".Length);
+            }
+            else if (arg.StartsWith("-select="))   // the ship selected on the map at start, by entity id (screenshots)
+            {
+                int.TryParse(arg.Substring("-select=".Length), out selectShip);
             }
             else if (arg.StartsWith("-steps="))   // designer knob steps at startup: speed:-2,belt:+3
             {
@@ -190,7 +195,10 @@ public static unsafe class Program
             };
             var early = steps != null || newDesign ? MakeDesigner() : null;
             // the world: the app's, not a tab's, so it keeps running whatever tab is open (docs/world/architecture.md)
-            using var world = new Map.WorldSession(start, 1, devShips != null ? w => SpawnDevShips(w, devShips) : null);
+            // the classes in play and their art, the app's: the world and the map share them
+            using var classes = new Sim.Ships.ShipClassRegistry();
+            using var shipArt = new Map.ShipArtLibrary((SDL.SDL_GPUDevice*)device, classes);
+            using var world = new Map.WorldSession(start, 1, classes, devShips != null ? w => SpawnDevShips(w, devShips) : null);
             if (startSpeed is double speed0)
                 world.Send(Sim.Command.SetSpeed(speed0));
             if (startPaused)
@@ -201,7 +209,7 @@ public static unsafe class Program
             // opens the others
             view ??= designerFlags ? "designer" : null;
             engine.Scene = new SceneSwitcher(view switch { "designer" => 1, "hitbox" => 2, "ship" => 3, "profile" => 4, _ => 0 },
-                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera)),
+                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, selectShip)),
                 ("Designer", () => early ?? MakeDesigner()),
                 ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show)),
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),
@@ -228,7 +236,7 @@ public static unsafe class Program
         var parts = arg.Split(':');
         int count = parts.Length > 1 && int.TryParse(parts[1], out int n) ? Math.Max(n, 1) : 1;
         var design = Shipgen.Design.Load(FindDesign(parts[0]));
-        int c = w.Ships.AddClass(Sim.Ships.ShipClassCompiler.Compile(Shipgen.ShipDesign.Build(design)));
+        int c = w.Ships.Registry.Request(design);
         int side = (int)Math.Ceiling(Math.Sqrt(count));
         double dLat = 600 / 111_195.0, dLon = dLat / Math.Cos(56.5 * Math.PI / 180);
         for (int i = 0; i < count; i++)

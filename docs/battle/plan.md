@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4, 2.1 and 2.2 are done (2026-10-12); the next is 2.3a, one ship on the map.
+changed from the plan). Steps 1.1 to 1.4, 2.1, 2.2 and 2.3a are done (2026-10-12); the next is 2.3b, two ships and a trivial captain.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -658,6 +658,52 @@ a course, follow, run (stage 2).
   - A follower ends at its station within a tolerance; a runner opens the range.
   - Screenshots at each band, by readback.
   - `-frametimes` with 50 ships in view, nothing allocated per frame.
+
+**2.3a done (2026-10-12): one ship on the map, controllable.** As agreed, with these choices made in building it:
+- **`ShipClassRegistry`** (`Fleetwright.Sim.Ships`):
+  - Classes by design hash, each with a dense id. `Spawn` carries the id, and the snapshot's `Class` is the id.
+  - The building threads start only with the first build. No request is dropped, and references are counted.
+  - A failed design is an error, and spawning it makes no ship.
+  - The `Built` hook hands the `Ship` to the art on the building thread.
+  - `World` takes a registry (its own if none). The app makes one and shares it with the map. `AddClass(ShipClass)`
+    adds a compiled class (tests, tools).
+- **`ShipArtLibrary`** (exe, `Map/ShipArt.cs`):
+  - Draws and bakes each class's sprites on the registry's threads at 10 px/m with 7 mip levels (down to ~0.08
+    px/m).
+  - The render thread uploads up to two classes a frame, and the CPU images are then let go.
+  - `DesignWorker` stays the designer's. The texture upload is shared (`SpriteTextures`).
+- **`ShipBatchRenderer`** (exe), an `IMapLayer` drawn inside the globe's main pass after the map's lines:
+  - The CPU half, `ShipDrawList`, makes each ship's quads in its own frame, in metres from the eye (double on the
+    CPU, so nothing jitters). They go into one storage buffer per frame.
+  - One instanced draw per class and layer: the hull, the turrets' shadows and the turrets (per turret type), and
+    the sun's shadow from the height map. Texture arrays stay deferred (2.6).
+  - The mips are sampled by the hardware. The sun is turned into each ship's frame, and ships darken at night with
+    the globe's terminator. They're depth-tested against the masking sphere, so the far side hides them.
+  - Shadows only on sprites over 90 px long.
+  - **Icons (temporary, the user):** a ship shorter than ~16-28 px on screen, or past its last mip, or whose art
+    isn't up yet, is a stand-in hull-shaped icon 22 x 8 px along its heading, cross-faded with the sprite. Fancier
+    icons and clustering into group symbols come later (2.4 and the map-ui bands).
+- **On the world tab** (`MapScene.Ships.cs`):
+  - Click a ship to select it. A strip shows its state and orders, and takes a course (set, ±10°, ±90°, hard over)
+    and the telegraph (full and half astern, stop, slow, half, full, flank).
+  - Right-click the sea to steer for it; shift+right-click adds a waypoint.
+  - Drawn: routes as great-circle lines with waypoint rings, a 40-minute track behind every ship, the selection
+    ring, and the ordered course from the bow.
+  - The dev panel spawns a shipped design where you click.
+  - New flags: `-select=entity`. The scripted input gained `mclick` and `mright` (SDL clicks the scene receives).
+- **The snapshot** carries each ship's remaining route (`RouteStart`, `RouteCount`, `Waypoints`) and `IndexOf`.
+  Bearings wait for fire control: turrets draw at their rest angles.
+- **Checked:**
+  - Screenshots at 0.25, 0.8, 4, 12 and 60 m/px: sprites with turrets and shadows, the hand-over to icons, the
+    tracks.
+  - A scripted click and right-click turned a ship onto the ordered course the short way.
+  - `-frametimes` (DevRelease, 2560x1440, 49 sprite ships): vsync-bound, CPU 0.25 ms mean, 0.42 ms p99.
+  - Tests:
+    - `ShipClassRegistryTests`: 4 threads equal 1; one build per design; refs; failure; the world waits for a
+      build; routes in the snapshot.
+    - `ShipDrawListTests`: sprite, icon, far side, cross-fade, 50 ships in a handful of draws, no allocation per
+      frame.
+- **Left for 2.3b:** the second ship and its trivial captain (keep course, follow, run).
 
 **2.4 Groups and formations.** Groups with a leader and stations; one order moves the group; keeping station is the
 first captain behaviour.

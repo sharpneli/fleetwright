@@ -161,6 +161,21 @@ public unsafe class GpuPipelineBuilder
     }
 
     /// <summary>
+    /// Enables blending of premultiplied colour (src + dst * (1 - srcAlpha)).
+    /// </summary>
+    public GpuPipelineBuilder EnableBlendingPremultiplied()
+    {
+        _blendEnabled = true;
+        _srcColorBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE;
+        _dstColorBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+        _colorBlendOp = SDL_GPUBlendOp.SDL_GPU_BLENDOP_ADD;
+        _srcAlphaBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE;
+        _dstAlphaBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+        _alphaBlendOp = SDL_GPUBlendOp.SDL_GPU_BLENDOP_ADD;
+        return this;
+    }
+
+    /// <summary>
     /// Enables additive blending (src + dst).
     /// </summary>
     public GpuPipelineBuilder EnableBlendingAdditive()

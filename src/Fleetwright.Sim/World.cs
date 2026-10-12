@@ -1,4 +1,5 @@
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim;
 
@@ -39,7 +40,9 @@ public sealed class World
 
     public int PendingEvents => scheduler.Count;
 
-    public World(WorldTime start, ulong seed, SimSettings? settings = null)
+    /// <param name="classes">Where ship classes come from; a registry of its own if none (it's shared when the app's
+    /// art draws from the same builds).</param>
+    public World(WorldTime start, ulong seed, SimSettings? settings = null, ShipClassRegistry? classes = null)
     {
         Settings = settings ?? SimSettings.Default;
         Seed = seed;
@@ -47,7 +50,7 @@ public sealed class World
         targetMs = start.Ms;
         scheduler = new Scheduler(Settings.EventCapacity);
         log = new List<StampedCommand>(Settings.CommandLogCapacity);
-        Ships = new ShipSystem(Settings);
+        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1));
         Register(Ships);
     }
 

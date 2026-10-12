@@ -167,10 +167,11 @@ public sealed unsafe class GlobeRenderer : IDisposable
     /// <summary>Clears <paramref name="target"/> and draws the globe seen through <paramref name="view"/>, lit from
     /// <paramref name="sun"/> (a unit vector, Earth-fixed). The land is the baked level <paramref name="bakedLevel"/>
     /// (0 coarse, 1 medium, uploaded by <see cref="UploadLand"/>), or with -1 the fans in <paramref name="landFill"/>
-    /// (triangles in NDC). <paramref name="lines"/> go on top, and <paramref name="overlay"/> over them: lines rebuilt
-    /// every frame (the ships), apart from the ones rebuilt only when the view changes.</summary>
+    /// (triangles in NDC). <paramref name="lines"/> go on top, then <paramref name="layer"/> (the ships), then
+    /// <paramref name="overlay"/>: lines rebuilt every frame (routes, selection), apart from the ones rebuilt only when
+    /// the view changes.</summary>
     public void Render(SDL_GPUCommandBuffer* cmd, RenderTarget target, in MapView view, Vec3d sun,
-        ReadOnlySpan<Vector2> landFill, int bakedLevel, MapLines lines, MapLines? overlay = null)
+        ReadOnlySpan<Vector2> landFill, int bakedLevel, MapLines lines, MapLines? overlay = null, IMapLayer? layer = null)
     {
         EnsurePipelines(target);
         if (coverage == null)
@@ -190,6 +191,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
             over = over[..(maxOver - maxOver % 6)];
         lineBuf.Upload(cmd, verts);   // copy passes: before the render passes
         overlayBuf.Upload(cmd, over);
+        layer?.Copy(cmd);
         fillBuf.Upload(cmd, landFill);
         bool baked = bakedLevel is 0 or 1 && meshFill[bakedLevel] != null;
 
@@ -242,6 +244,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
             SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
             SDL_DrawGPUPrimitives(pass, (uint)verts.Length, 1, 0, 0);
         }
+        layer?.Draw(cmd, pass, target, view);
         if (over.Length > 0)
         {
             SDL_BindGPUGraphicsPipeline(pass, linePipe);
@@ -253,7 +256,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
     }
 
     // the depth range for the baked land and the masking sphere: from half the altitude to past the far side
-    static (double Near, double Far) DepthRange(in MapView v) => (v.Altitude * 0.5, v.Altitude + 2 * Earth.Radius);
+    internal static (double Near, double Far) DepthRange(in MapView v) => (v.Altitude * 0.5, v.Altitude + 2 * Earth.Radius);
 
     /// <summary>The shader's camera, in Earth radii with the eye at the origin. |eye|² - 1 is formed from the altitude
     /// in double: the one large quantity, exact, so the ray-cast holds close to the sea. So is |eye|² - r² for the
@@ -304,4 +307,12 @@ public sealed unsafe class GlobeRenderer : IDisposable
                      (nint)land3dVs, (nint)coast3dVs, (nint)depthFs })
             SDL_ReleaseGPUShader(device, (SDL_GPUShader*)s);
     }
+}
+
+/// <summary>Something drawn on the globe inside its main pass, depth-tested against the masking sphere (the ships).
+/// <see cref="Copy"/> runs before the passes (uploads), <see cref="Draw"/> in the main pass after the map's lines.</summary>
+public unsafe interface IMapLayer
+{
+    void Copy(SDL_GPUCommandBuffer* cmd);
+    void Draw(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view);
 }
