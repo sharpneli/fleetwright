@@ -25,10 +25,30 @@ public class SunLapseTests
         lapse.Update(100_000, 1 / 60.0);
         Assert.Equal(1, lapse.Motion);   // the first frame starts where it should be
         lapse.Update(1_000_000, 1 / 60.0);
-        Assert.InRange(lapse.Motion, 0.8, 0.99);
+        Assert.InRange(lapse.Motion, 0.6, 0.99);
         for (int i = 0; i < 60; i++)
             lapse.Update(1_000_000, 1 / 60.0);
         Assert.InRange(lapse.Motion, 0, 0.05);
+    }
+
+    [Fact]
+    public void The_faster_the_spin_the_quicker_the_fade()
+    {
+        static int FramesToFade(double speed)
+        {
+            var lapse = new SunLapse();
+            lapse.Update(0, 1 / 60.0);
+            int frames = 0;
+            while (lapse.Motion > 0.05)
+            {
+                lapse.Update(speed, 1 / 60.0);
+                frames++;
+            }
+            return frames;
+        }
+        int at300k = FramesToFade(300_000), at1M = FramesToFade(1_000_000);
+        Assert.InRange(at300k, 40, 50);   // as before: about 0.75 s to 5 %
+        Assert.InRange(at1M, 10, 16);     // about a quarter of a second
     }
 
     [Fact]

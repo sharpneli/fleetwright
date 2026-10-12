@@ -11,7 +11,10 @@ public sealed class SunLapse
     /// <summary>Days of world time per real second where the fade starts and ends.</summary>
     public const double FadeFrom = 1.5, FadeTo = 2.5;
 
-    const double EaseSeconds = 0.25;   // a speed change fades rather than pops, and the achieved speed's noise can't flicker it
+    // A speed change fades rather than pops, and the achieved speed's noise can't flicker it. The ease lasts about as
+    // many turns of the Earth at any speed (0.85 days a time constant, 0.25 s at 300,000x), so the faster the spin,
+    // the quicker the fade; never longer than 0.25 s, never shorter than a few frames.
+    const double EaseDays = 0.85, EaseMaxSeconds = 0.25, EaseMinSeconds = 0.03;
 
     double motion = -1;   // unset until the first frame, which starts where it should be
 
@@ -30,7 +33,8 @@ public sealed class SunLapse
     public void Update(double speed, double dt)
     {
         double target = Target(speed);
-        motion = motion < 0 ? target : motion + (target - motion) * (1 - Math.Exp(-Math.Max(dt, 0) / EaseSeconds));
+        double ease = Math.Clamp(EaseDays * 86_400 / Math.Max(speed, 1), EaseMinSeconds, EaseMaxSeconds);
+        motion = motion < 0 ? target : motion + (target - motion) * (1 - Math.Exp(-Math.Max(dt, 0) / ease));
     }
 
     /// <summary>Over one turn of the Earth at a latitude, the mean of the terminator smoothstep(lo, hi, s), s the sine
