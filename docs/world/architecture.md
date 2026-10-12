@@ -134,6 +134,42 @@ so that the player's time goes to research, the designer and the budget, not to 
   year of steps. A model that can't say its state at t from a rate takes the group off its routine while it's
   active, as a flooding ship goes coarse.
 
+**Moving between turbo and real time has to be quick (the user, 2026-10-12).** Peace isn't only fast-forward: the
+player can drop to 1x at any moment and do something real with a ship, then go back to the routine. None of it may
+cost a loading pause:
+
+- **Speed and tier are separate.** Dropping the speed changes nothing in the world: at 1x a routine group is still a
+  schedule, drawn smoothly because its position is a function of t. Speed is the player's; the tier is per group and
+  set by what it's doing.
+- **Leaving a routine is one evaluation.** An order to a group on a routine (steam there, exercise off here, open
+  for watching) evaluates the schedule and rates at that tick and re-anchors the group on rails from them; if it's
+  watched at Full, its `ShipState` is made from the same values (full state is made per entity anyway). O(1) per
+  group, applied at the next step, no catch-up.
+- **Going back is one command.** "Resume routine" puts the group back on its program: it routes to where the
+  program is heading, or the program's phase is shifted to start from where the group is (the player's choice per
+  routine, a default in `SimSettings`). The state it built up off the routine (fuel burned, wear, damage from an
+  accident) becomes the new anchor of its rates.
+- **The cap follows the world, a frame later at most.** When the last group leaves rails or coarse and no pair can
+  interact, the routine cap is allowed again; the player's asked speed is kept, so "back to turbo" is just setting
+  the speed. The UI shows why the cap is lower (which groups hold it down), so the player can find and resume them.
+
+**The insane captain (the user, 2026-10-12, an option).** With it on, the player may open fire in peacetime and
+start a war, and then live with the politics:
+
+- **Firing at peace is a command, not a contact.** The player orders a group off its routine to engage a target in
+  the navy's picture; the command opens the encounter itself, so the contact scan stays gated by relations and
+  needn't watch peaceful pairs. Without the option the command is refused (it's the world's check, like locked
+  tech), with it there's a confirmation.
+- **It's an incident, and incidents move relations:** the encounter is tagged with who fired first, and its result
+  (ships hit, sunk, lives lost, where, and who saw it) goes to the relations interface as an event. With the
+  war/peace table only, it declares war at once; tension and diplomacy, when they come, turn it into a crisis that
+  may or may not end in war.
+- **The consequences are politics, later:** the other nation's reaction, neutrals', and the player's own government
+  (a court-martial, the budget cut or raised by a war scare). They read the same incident record, so the incident
+  only has to be recorded fully now.
+- **NPCs can do it too, rarely:** an admiralty's captains with a rate of incidents (the Dogger Bank incident of 1904,
+  when the Russian fleet fired on British trawlers), drawn from a seeded stream. Same command, same incident record.
+
 ## Conflicts: who fights, how closely it's simulated, and who's watching (agreed 2026-10-11)
 
 Agreed with the user, except relations beyond war and peace (deferred: the battle module comes first, but with these
@@ -151,7 +187,8 @@ anything and without slowing the clock. The design splits an encounter into thre
   incidents and neutrals can grow into without touching the encounter code.
 - **An encounter opens on contact between forces whose relations allow interaction**, not just "opposing": at war
   they may fight; in tension they shadow, warn and maybe fire (an incident, which can feed back into relations); a
-  blockader stops neutrals. When rules say nothing can happen, ships just pass on rails.
+  blockader stops neutrals. When rules say nothing can happen, ships just pass on rails. The exception is a
+  deliberate order to fire at peace (the insane captain, "Peacetime"), which opens the encounter by command.
 - **Every group carries standing orders (rules of engagement and doctrine):** engage, engage if superior, shadow,
   evade, run for port; how far to fight (break off at x% damage); what to do with merchants (sink, capture, let go).
   The player sets them per fleet, with navy-wide defaults. The same orders drive NPC groups. They decide what
@@ -441,7 +478,9 @@ brings it, inside the battle module if it's ready by then.
     later work refactors as little as possible.
 11. **Peacetime runs on routines (2026-10-12):** 30,000x is the wartime speed. In peace, fleets are on automated
     routines (schedules above rails), the clock goes up to ~1,000,000x, and the game is research, design and
-    pressuring politicians for money. Tension or war drops it back.
+    pressuring politicians for money. Tension or war drops it back. The player can drop to real time and take a
+    group off its routine at any moment, and resume it, without a pause (speed and tier are separate). An "insane
+    captain" option lets the player fire at peace, which is an incident that starts a war and its politics.
 
 ## What the ship simulation must already respect
 
@@ -452,6 +491,8 @@ ship simulation keeps to these from its first step:
   clock, no "the battle started at t = 0".
 - **An encounter is a set of entities, not a scene:** it holds ship ids (which may join and leave), its fidelity and
   its control. Nothing assumes two sides, a fixed list of ships or a fight that begins and ends with the program.
+  It can be opened by a contact or by a command, and it records who fired first and what each hit did, for whatever
+  reads the result (a mission's objectives now, relations and politics later).
 - **Full state is made and dropped per entity:** `ShipState` can be created for a ship already at sea (a merchant
   engaged, a ship joining) and a light entity can come back from it. Spawning isn't only "at the start of a battle".
 - **Damage takes a hit, not a shell flight:** the hit query and damage model take a hit (a point, a direction, a
