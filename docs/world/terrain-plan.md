@@ -1,7 +1,8 @@
 # Plan: ships and the land
 
-2026-10-12. Status: proposed, nothing in it agreed with the user yet. "Open questions" at the end are the user's to
-answer before the first step starts.
+2026-10-12. Status: agreed (the user, 2026-10-12): the open questions are answered ("Decisions", at the end), and a
+review against the code added "Performance" and moved T4 ahead of the Jutland test. Each step still agrees its own
+details at its start.
 
 ## The problem
 
@@ -20,6 +21,10 @@ the coast: it works, but it looks silly. Here a ship should look conned by a sea
 turning circle, keeps a sensible distance off, follows a coast at that distance, takes a strait down the middle, and
 goes back to its order once it's clear. And underneath, a guarantee: a ship is never on land, in any clock tier, at
 any speed, deterministically.
+
+**How close (the user, 2026-10-12):** close. Rule the Waves' ships slide along touching the coast, and "if it was
+good enough for Rule the Waves it's good enough for us". The game is about fleet engagements, not coastal ones (even
+with MTBs in them), so the standoff is tens to hundreds of metres, not kilometres. It can grow later.
 
 So there are two halves. **The look** is where the ships go long before they need the guarantee: routing and
 pilotage. **The guarantee** is the step itself refusing land, which in a working game never fires.
@@ -94,29 +99,46 @@ is the coast?". `Shore` is built from `Land` at load and answers both.
     known) to `p`, against only that cell's segments.
   - `Clearance(p, maxM)`: the distance to the nearest coast within `maxM`, and the nearest point on it (so the
     direction away from land).
-  - `FirstContact(leg, clearanceM)`: along a great circle or a rhumb line from a point, the distance at which it
-    first comes within `clearanceM` of the coast. Sphere tracing: step by the cells' distance bounds, exact segment
-    tests only in coast cells. `ArcClear(a, b, clearanceM)` is the yes/no form.
-- **Build:** ~400k segments into cells, then the distance transform. Expect a few hundred ms; measure, and cache
-  to disk (like the art cache) only if it's slow. ~13 MB at 2 bytes a cell; a sparse layout if that matters.
+  - `FirstContact(leg, clearanceM)`: along a great circle, a rhumb line or a turn from a point, the distance at which
+    it first comes within `clearanceM` of the coast. Far from the coast it steps by the cells' distance bounds; where
+    the bound is near the clearance (a track along a coast, where sphere tracing crawls) it walks the cells the track
+    passes through, with exact segment tests in each. Only great circles are straight on a face; rhumb lines and
+    turns are marched. `ArcClear(a, b, clearanceM)` is the yes/no form.
+- **The cells' details:** gnomonic cells are about half as wide at a face's corners as at its centre, so the bound
+  is stored in metres (2 bytes at 100 m a unit), not in cells. The distance transform crosses the faces' seams. The
+  data's edges lying on ±180° (Chukotka, Fiji) and Antarctica's closing edges aren't coast and are left out.
+- **Build:** ~400k segments into cells, then the distance transform, deterministic on any number of threads. ~13 MB
+  at 2 bytes a cell; a sparse layout if that matters. It counts against the Jutland's "under 1 s from the cache" load
+  target, so it's cached to disk from the start, or built on a thread at start-up before the first spawn needs it.
+  The tests share one instance, built once per run.
+- **One shared copy:** the face projection now in the exe (`LandMesh`, `CapRetraction`) moves to `Sim.Core`, so
+  `Shore` and the map's tiles use one cube.
 - **The routing graph** needs more than 10 km near the coast (the Bosporus is 1.3 km wide), so coast cells split
   further for it, in quadrants down to ~250 m where the water needs it ("Routing").
-- **Tests:** `Shore.IsLand` against `Land.IsLand` at a million random points and at every probe in `LandTests`;
-  `Clearance` against brute force over all segments; the straits above open at the clearance a destroyer needs;
-  no allocation.
+- **Tests:** `Shore.IsLand` against `Land.IsLand` at every probe in `LandTests` and at random points (a sample in
+  the suite; a million as a bench, since `Land.IsLand` at 1:10M is slow); `Clearance` against brute force over all
+  segments; the straits above open at the clearance a destroyer needs; no allocation.
 
 ### 2. Standoff: how close a ship goes
 
 Two distances per ship, worked out once per class in `Handling` (from `MotionFacts`: length, beam, draught):
 
-- **The minimum** is the line the backstop holds: half the beam plus `CoastMinClearanceM` (about 100 m). Nothing
-  ever comes closer.
-- **The standoff** is where routes and the pilot keep a ship: it grows with draught and length (a battleship well
-  off, a torpedo boat close in), within settings. It's soft. A strait narrower than twice the standoff is still
-  open down to the minimum, and a ship takes it down the middle, because the cost rises toward the shores.
+- **The minimum** is the line the backstop holds: half the beam plus `CoastMinClearanceM` (a few tens of metres).
+  Nothing ever comes closer.
+- **The standoff** is where routes and the pilot keep a ship: a little more than the minimum, growing a little with
+  length and draught, within settings. Close, as in Rule the Waves (the user, 2026-10-12): a starting guess of ~100 m
+  for a torpedo boat, ~200 m for a destroyer, ~300 m for a battleship, tuned by eye with the overlay. It's soft: a
+  strait narrower than twice the standoff is still open down to the minimum, and a ship takes it down the middle.
 
-Without bathymetry the standoff stands in for shoal water: Natural Earth plus a draught-dependent margin. It's the
-number to tune by eye ("Open questions").
+Without bathymetry the standoff stands in for shoal water. At these distances it's inside Natural Earth's own error
+at 1:10M (its median segment is 1.6 km), which is fine: nobody sees the difference between the data's coast and the
+real one, only a ship sitting on the drawn coast.
+
+**Formations:** only the guide is plotted ("The pilot"), so its track must keep the whole formation clear. The
+helm's clearance (2.6b) is the formation's real extent toward the land, plus the outermost ship's own standoff: a
+column hugs the coast like one ship; a line abreast keeps its real width off. It isn't a kilometres-wide margin for
+its own sake. Today's `AiCommand.Clearance` gives the farthest station abeam on either side; T3 may split it into port
+and starboard, so a line abreast along a coast clears only its landward half.
 
 ### 3. Routing: the navigator (`Fleetwright.Sim`, once per order)
 
@@ -135,11 +157,12 @@ number to tune by eye ("Open questions").
   ends.
 - **Separate bodies of water:** the build labels them (oceans, the Caspian, lakes). An order to another body is
   refused, and the map says "no sea route".
-- **Commands:** a new `GoTo` (a unit order since battle plan 2.6, routed by the unit's commander) routes from the ship's position. Shift-click
-  (`AddWaypoint`) routes from the last waypoint to the new point and appends the legs. `Course` isn't routed: a
-  raw course is the pilot's job. `RouteCapacity` (32) grows, or routes move to a pooled array, since a route round
+- **Commands:** a new `GoTo` (a unit order since battle plan 2.6, routed by the unit's commander) routes from the
+  ship's position. A routed shift-click would route from the last waypoint to the new point and append the legs. `Course` isn't routed: a
+  raw course is the pilot's job. On the map, right-click stays a course and shift+right-click a plain waypoint (the
+  user, 2026-10-12, "On the map"); `GoTo` gets its own control when this step comes. `RouteCapacity` (32) grows, or routes move to a pooled array, since a route round
   Africa has more legs than that.
-- **Formations:** an admiral's route for the guide uses the standoff plus the formation's half-width, so ships
+- **Formations:** an admiral's route for the guide uses the standoff plus the formation's extent toward the land, so ships
   stationed abeam aren't pushed onto the coast the guide clears.
 
 ### 4. The pilot: plotting the track ahead
@@ -171,22 +194,31 @@ Then nothing about land needs a ship in the fine tier, and the clock keeps its s
      instead.
   5. Fillet the corners with turns at the ship's radius, placed so each turn starts at the wheel-over point the
      helmsman uses now. Check each turn's arc clear too; tighten to hard over or move the corner back if not.
-- **The horizon:** a plot runs a bounded distance ahead (`PilotHorizonM`, say a few hundred km, or the route's end).
-  Reaching its end is an event that plots the next piece from there. Still on rails: a re-plot is an event, not a
+- **The horizon** depends on the tier ("Performance"). On the fine tick a plot runs only as far as the ship can need
+  it: its look-ahead plus its turning circle, a few km, so a captain re-ordering every few seconds near a coast
+  doesn't trace hundreds of km of it each time. On rails (T4) it runs long (`PilotHorizonM`, a few hundred km, or the
+  route's end), since there plots are rare. Reaching its end is an event that plots the next piece from there. Still on rails: a re-plot is an event, not a
   derail. A course held along a whole continent is a chain of plots, one every few hours of game time.
 - **Determinism:** the plot is a pure function of the pose, the intent, the handling and the land. So it's the same
   on every replay, whether the ship is on rails or not, and whatever thread the map previews it on.
 - **Boxed in** (a course into the end of a fjord, where the contour closes with nothing clear): the plot turns the
   ship round at hard over where that clears, or failing that ends in "stop" as a piece of the plot (ring stop, then
-  astern). The last resort before the backstop, and it's plotted too.
-- **Who it applies to:** every helm mode except a raw `Rudder` order, which gets only the backstop. Captains'
-  behaviours (follow, station, run) are unchanged: their courses are intents the pilot plots like the player's. A
-  ship ordered to run, with a coast behind it, runs along the coast. For a captain chasing a moving target in the
-  fine tier, his course changes past the deadband at most every second or so, and a plot costs one trace when the
-  sea ahead is clear (up to a millisecond along a coast): affordable, and he's in the fine tier for his target
-  anyway, not for the land.
+  astern). The pilot may stop a ship (the user, 2026-10-12). The last resort before the backstop, and it's plotted
+  too, and reported in the strip.
+- **Who it applies to:** a ship on its own (or detached) and a formation's guide, in every helm mode except a raw
+  `Rudder` order, which gets only the backstop. **A formation's other ships aren't plotted** (the user, 2026-10-12):
+  they keep station on the guide, whose plot already clears the formation ("Standoff"), and only the backstop
+  watches them. At Jutland that's ~30 plotted units, not 250 ships. Captains' behaviours (follow, station, run) of
+  ships on their own are unchanged: their courses are intents the pilot plots like the player's. A ship ordered to
+  run, with a coast behind it, runs along the coast. A captain chasing a moving target changes course past his
+  deadband at most every second or so; with the fine tick's short horizon a plot costs one cell lookup in open water
+  and one short trace near a coast.
+- **Captains compare against their own orders, never the plot.** A ship altering for land is off the course its
+  captain gave, by design. If he read that as an error to correct, he'd re-order, the pilot would re-plot, and round
+  again. 2.6 already says the alterations aren't orders; T3 tests it with each behaviour against a coast.
 - **In the fine tier** the helmsman steers along the plot as he does a route: the plot's straights and turns, with
-  his real Nomoto lag. So a ship looks the same on either tier, and going on and off rails along a coast is seamless.
+  his real Nomoto lag. That's a new controller (cross-track error, not only heading), and his error through a turn
+  must stay inside the gap between the standoff and the minimum: tested per class, since the gap is small now. So a ship looks the same on either tier, and going on and off rails along a coast is seamless.
 - **Visible:** the plot goes into the snapshot. The map draws it ahead of the ship, so the player sees where the
   ship will go before it goes, and the strip says why ("altered for land, 062°", with the ordered course ghosted).
   Never an unexplained deviation: the fleet-command research's lesson from Rule the Waves is that a system quietly
@@ -204,7 +236,7 @@ Then nothing about land needs a ship in the fine tier, and the clock keeps its s
 - **Going on rails:** a ship steady on its plot goes on rails at any piece, a turn included. Today's check that a
   ship is steady (rudder amidships, no swing, on its course) becomes "on its plot within tolerance".
 - **Groups:**
-  - The guide's track is plotted at its standoff plus the formation's half-width, so ships stationed abeam clear the
+  - The guide's track is plotted at its standoff plus the formation's extent toward the land, so ships stationed abeam clear the
     coast the guide clears.
   - **Column:** a member rides the guide's plot itself, a distance astern along it (`s - astern`), so a column turns
     in succession round a headland, each ship at the guide's wheel-over point, exactly, on rails.
@@ -213,20 +245,33 @@ Then nothing about land needs a ship in the fine tier, and the clock keeps its s
     time.
 - **Coming off rails** is only for what the plot couldn't know: a contact (3.1), a new order, damage. The land never
   derails a ship.
-- **A held course into a continent:** the plot follows the coast at the standoff until the ordered course is clear,
-  then resumes it, all on rails, and reports the alteration once when it's plotted ("land ahead: altering to 340°
-  to follow the coast"). Whether that's the behaviour or the ship should stop and wait is the user's call ("Open
-  questions"), but following the coast no longer costs the clock.
+- **A held course into a continent** (agreed): the plot follows the coast at the standoff until the ordered course
+  is clear, then resumes it, all on rails, and reports the alteration once when it's plotted ("land ahead: altering
+  to 340° to follow the coast"). Following the coast doesn't cost the clock.
+- **Into land only by the player's order** (the user, 2026-10-12): ideally nothing on rails heads for land at all
+  unless the player ordered it. The AI's own movement (search patterns, patrols, later `GoTo`) shouldn't lay legs
+  across land: a pattern's legs are checked with `ArcClear` when an admiral lays them, and clipped or shifted to sea.
+  Coast-following on rails is then mostly the player's courses.
+- **Ships on rails come off where their track meets land, until T4** (T2's stopgap): see "The backstop".
 
 ### 6. The backstop (the step)
 
 - **After the step's arc:** if the new position is inside the minimum (the cell bound first, so it's free at sea),
   move the ship back out along the coast's normal to the minimum, turn its heading parallel to the coast and drop the
   speed into it. That's Rule the Waves' slide, but here it's the failure path. It's counted (a counter in
-  `ShipStore`, and a dev overlay), and the scenario tests require zero.
+  `ShipStore`, and a dev overlay), and the scenario tests require zero. For a formation's other ships (not plotted)
+  it's the only check, and it may fire if the guide's clearance is wrong; that's counted too.
+- **On rails the step doesn't run,** so the backstop can't see a ship there. Until T4 plots rails, T2 adds the
+  stopgap: when a unit's rails are laid or re-anchored, its track (the guide's, and its outermost riding offsets) is
+  traced with `FirstContact` at the minimum, and where it meets land an event takes the unit off rails, a few
+  minutes' steaming short of it, so the fine tick's backstop (and T3's pilot) take over. One trace per laying. It
+  costs the clock near coasts until T4 replaces it with plotted rails.
+- **Placing and snapping** put ships straight onto their stations (`RailAt`, `Placeable`, `Snap`). A station on land
+  or inside the minimum makes the unit not placeable, so it forms up by steaming instead.
 - **Spawning on land:** the command moves the ship to the nearest sea point (deterministically), and the map refuses
   the click at the cursor.
-- **A waypoint on land** snaps to the nearest sea point at the standoff, and the map shows the snapped point.
+- **A waypoint on land:** the player's is refused: shift+right-click on land does nothing, and the cursor says so
+  (the user, 2026-10-12). One from the AI or a mission snaps to the nearest sea point at the standoff.
 
 ### 7. Passages (the canals)
 
@@ -235,14 +280,14 @@ Then nothing about land needs a ship in the fine tier, and the clock keeps its s
 - **The router** adds an edge between a passage's ends, for ships within its limits and dates.
 - **The transit** is on rails along the polyline at the passage's speed, with the land checks off (it's inside the
   land). The passage's ends are events.
-- **It's a later step,** when a mission needs Kiel or Suez. The router just needs to allow edges that aren't
-  geometry from the start.
+- **It's a later step,** when a mission needs Kiel or Suez (the user, 2026-10-12: a note for the future, not in the
+  first version). The router just needs to allow edges that aren't geometry from the start.
 
 ### 8. On the map (the look)
 
-- **Right-click** routes (`GoTo`) and draws the route. A modifier keeps the raw "steer for that point". A ghost of
-  the route follows the cursor while shift is held.
-- **On land, the cursor says so:** a waypoint marker snaps to the sea, spawning is refused.
+- **Right-click** gives a course, as now, not a waypoint or a route (the user, 2026-10-12); the pilot plots it.
+  Shift+right-click adds a waypoint, and on land it fails. A routed `GoTo` gets its own control in T5.
+- **On land, the cursor says so:** waypoints and spawning there are refused.
 - **The pilot's plot** is drawn ahead of the ship, and its alterations are named in the strip (see 4).
 - **The levels disagree:** the sim uses 1:10M, but the globe zoom draws 1:110M, where the Dardanelles are shut and the
   coast can be tens of km off. A ship's icon may sit on drawn land in a narrow sea. At that zoom ships are icons and
@@ -251,17 +296,56 @@ Then nothing about land needs a ship in the fine tier, and the clock keeps its s
 - **A dev overlay** (like the hitbox viewer's clip boxes): `Shore`'s cells, clearance rings and standoffs, the pilot's
   traced contours, and the plot before and after string-pulling. The pilot can't be tuned without seeing it.
 
+## Performance
+
+What land costs, and where. Found reviewing this plan against the code (2026-10-12); each step measures its part.
+
+- **Per tick, nothing worth counting.** The backstop is one cell lookup per ship on the fine tick (exact segment tests
+  only in a coast cell): ~250 ships at 20 Hz is a few microseconds a tick.
+- **The plot's frequency, not its price, is the risk.** A re-plot follows every change of intent, and a captain keeping
+  station re-orders course past his 1° deadband every few seconds. Had every ship been plotted with a long horizon, a
+  Jutland beside the Danish coast would trace that coast ~50 times a game second, ~1 ms each: half a core at 10x. So:
+  - a formation's other ships aren't plotted (~30 units at Jutland, not 250 ships);
+  - the fine tick's horizon is short (look-ahead plus turning circle), and the long horizon is only on rails, where
+    plots are rare;
+  - a plot whose cell bound clears its horizon plus standoff is one straight, with no trace: open water costs one
+    lookup.
+- **Tracing along a coast** is the slow case: sphere tracing crawls along a track parallel to a coast at the
+  standoff, which is exactly coast-following. Walk the cells instead there, cap the contour's steps, and string-pull
+  greedily (each anchor extends as far as `ArcClear` allows, breaking early), never every pair, which is O(n²)
+  grazing traces. Budget: a plot along Norway's coast under a millisecond, measured in T3.
+- **Rails** gain events at the plot's piece ends: along a string-pulled coast, one every ~20-30 minutes of game time
+  per ship, far fewer out at sea. Nothing for 2,000 ships at 1M×. `PoseAt` (and the contact solver stepping it) finds
+  the piece by the ship's current piece index, not a search.
+- **Until T4 rails stop at the coast** (T2's stopgap, "The backstop"): a unit heading for land comes off rails short
+  of it and steams the coast on the fine tick. That costs the clock near coasts, which is why T4 comes before the
+  Jutland test.
+- **Load:** `Shore`'s build (a few hundred ms, to measure) is cached to disk or built on a thread at start-up, so it
+  doesn't eat the Jutland's "under 1 s from the cache". The tests share one instance.
+- **No garbage:** the pilot, the tracer and the router work in reused workspaces, one per thread (the sim's, the map's
+  previews); plots live in pooled arrays in `ShipStore`; routes grow past `RouteCapacity` by pooling, not per order.
+- **Determinism:** `Shore` is built the same on any number of threads, and the plot is a pure function, so a replay
+  re-derives it. Replays record the land data's hash, since the land now changes results.
+
 ## Steps
 
 Each is its own session, in the battle plan's way: read the code, check this plan against it, agree the details,
 build, test, measure, update this file.
 
 **T1 `Shore` and the world holding the land.** The index, its tests, the world taking the 1:10M `Land` and
-`Shore`, and the map sharing the instance (one load, not two). Measure the build time and memory.
+`Shore`, and the map sharing the instance (one load, not two). The cube's face projection moves to `Sim.Core`.
+Measure the build time and memory, and cache or thread the build if it's slow.
 
 **T2 The backstop, spawning and waypoints.** From here no ship is ever on land, even if it still looks like Rule
-the Waves. It's a small step, and it's the guarantee everything after builds on. Plus the counter, and the overlay's
-first layer.
+the Waves. It's a small step, and it's the guarantee everything after builds on. With it:
+- the rails stopgap (a unit whose track meets land comes off rails short of it), and placing refused onto land;
+- shift+right-click on land refused, and spawning on land;
+- AI search patterns laid with their legs at sea;
+- the counter, and the overlay's first layer;
+- **the scale tests moved to the Pacific** (the user, 2026-10-12): `RailsTests`' 2,000 ships spread from 40°S to
+  40°N round the whole globe, across every continent. They go where there's room to play; they can't circle the
+  world any more, and that's accepted. A test that must cross land (the meridian over both poles) runs in a world
+  without land.
 
 **T3 The pilot's plot, in the fine tier.** Plotting (straights, turns, contour tracing, string-pulling, fillets, the
 horizon), the helmsman following a plot, the snapshot's plot and the map drawing it, the overlay's traced contours.
@@ -271,46 +355,50 @@ Scenario tests, each also a `-ships` dev command to look at:
 - `Follow` through the Bosporus;
 - a column of six round the Skaw, and a line abreast plotted along the Jutland coast;
 - a destroyer and a battleship on the same coast (different standoffs);
-- a course into the end of a fjord (boxed in).
+- a course into the end of a fjord (boxed in: turned round, or stopped);
+- each captain's behaviour against a coast, with no re-order loop.
 
   Pass: no backstop touches, never inside the minimum, the order resumed once clear, fjord and bay mouths crossed
-  rather than followed, and the plot's cost measured (one trace in clear water; along Norway's coast).
+  rather than followed, and the plot's cost measured (one lookup in clear water; along Norway's coast).
 
 **T4 Rails along the plot.** Turn pieces on rails, the plot's events and horizon re-plots, "steady on its plot",
-columns riding the guide's track astern. Tests: the same scenarios at 30,000x on rails and on the fine tick end
-within metres of each other; a ship following the Norwegian coast for a day of game time stays on rails throughout
-and doesn't hold the clock (the 2.5 measure: achieved speed against asked); no allocation.
+columns riding the guide's track astern, coming off rails mid-turn with the turn's rudder and swing. It replaces T2's
+stopgap. Tests: the same scenarios at 30,000x on rails and on the fine tick end within metres of each other; a ship
+following the Norwegian coast for a day of game time stays on rails throughout and doesn't hold the clock (the 2.5
+measure: achieved speed against asked); no allocation.
 
 **T5 The router and `GoTo`.** A\*, string-pulling, bodies of water, the map's previews. Measure route times for
 North Sea hops, Scapa to Gibraltar and Scapa to Singapore (round the Cape until Suez exists), and add the coarse
 sea graph only if they ask for it.
 
-**T6 Passages,** when a mission needs one.
+**T6 Passages,** when a mission needs one (a note for the future).
 
 **Later:** bathymetry (GEBCO, behind the same clearance queries: draught-aware), 1916 harbour works and ports
 (the "Earth model"), and grounding as damage if it's ever wanted.
 
-**In the battle plan's order** (the user, 2026-10-12): T1-T3 come after 2.6 (one chain of command) and before 2.7
-(the Jutland test). The Jutland test is in the North Sea, beside the Danish coast and Horns Reef, so it measures the
-pilot's plots too. 2.6 comes first because it gives every intent one path to the helm, where the pilot hooks in. T4
-belongs with the rails work, and T5 with 5.1 (captains' "go to") or earlier if the player's orders need it first.
+**In the battle plan's order** (the user, 2026-10-12): T1-T4 come after 2.6 (one chain of command) and before 2.7
+(the Jutland test). T4 moved ahead of the test (the user: turns on rails, so land never holds the clock). The
+Jutland test is in the North Sea, beside the Danish coast and Horns Reef, so it measures the pilot's plots too. 2.6
+came first because it gives every intent one path to the helm, where the pilot hooks in. T5 goes with 5.1
+(captains' "go to") or earlier if the player's orders need it first.
 
 **What 2.6 changes here** (`docs/battle/plan.md` 2.6, "Ready for the land"):
 - `GoTo` is a unit order, not a `ShipSystem` command. The unit's commander routes it and hands the helm a `Route`.
-- The formation's half-width reaches the pilot as a clearance carried by the helm order, so the pilot doesn't read
-  groups.
+- The formation's extent reaches the pilot as a clearance carried by the helm order (`AiCommand.Clearance`,
+  `ShipState.ClearanceM`), so the pilot doesn't read groups.
 - A column's station is a distance along its guide's track, ready for T4.
 - The pilot's alterations aren't orders: they don't change who holds a unit.
 
-## Open questions (the user's)
+## Decisions (the user, 2026-10-12)
 
-1. **A held course into a continent:** follow the coast at the standoff until the course is clear and report it
-   (proposed; plotted, so it stays on rails), alter once to the nearest clear course and hold it, or stop and report
-   (drop the clock by the interest table)?
-2. **Right-click:** a routed "go to" by default with the raw "steer for" on a modifier (proposed), or the other way
-   round?
-3. **Standoffs:** how close looks right? A starting guess: a torpedo boat ~300 m, a destroyer ~500 m, a battleship
-   ~2 km. Tune by eye with the overlay.
-4. **Canals in the first version?** Kiel matters for the High Seas Fleet; Suez and Panama for anything global.
-5. **May the pilot stop a ship** (boxed in: stop and astern), or must it always find a way round, even through the
-   minimum?
+1. **A held course into a continent:** the plot follows the coast at the standoff until the course is clear, and
+   reports it. Plotted, so it stays on rails.
+2. **Right-click** gives a course, not a waypoint or a route. Shift+right-click adds a waypoint; on land it fails.
+3. **Standoffs are close,** as in Rule the Waves, whose ships slide touching the coast: tens to hundreds of metres,
+   not kilometres. The game is about fleet engagements, not coastal ones. They can grow later.
+4. **Canals:** not in the first version; a note for the future (T6).
+5. **The pilot may stop a ship** when it's boxed in.
+6. **Turns on rails before the Jutland test** (T4 moved up). Ideally nothing on rails heads for land unless the
+   player ordered it.
+7. **A formation's other ships aren't plotted:** the guide's plot clears the formation, and the backstop watches them.
+8. **The scale tests go to the Pacific.**
