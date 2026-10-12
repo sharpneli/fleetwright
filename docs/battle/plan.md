@@ -859,7 +859,7 @@ Built:
     rails and on the fine tick both cross the pole and end 201 m apart a day later.
   - **Left:** a ship following another on its own (not in a group) goes on rails at its own steady speed, a tenth
     of a knot off its leader's. Its station drifts, its captain re-orders, and it comes off and goes back on; groups
-    don't have this. Riding a followed ship's rails like a group member would fix it, with the captain tuning.
+    don't have this. Riding a followed ship's rails like a group member would fix it ("Fine-tuning").
 - **Not yet:**
   - the coarse clock tier (4.8), and routines (peace);
   - the contact scan that takes ships off rails when they meet (3.1);
@@ -959,6 +959,28 @@ selection strip (`docs/battle/command-ui.md`, `docs/map-ui/README.md`).
 **6.3 Saves and replays.** A mission saved and loaded at a tick. A replay is the mission file plus the command log.
 
 **6.4 The generator.** Missions from templates, each checked headless, AI against AI.
+
+## Fine-tuning
+
+What works but wants tuning once the basics run (the user, 2026-10-12: get the basics running first, iterate after).
+Each item says where it was found. Tuning numbers live in `SimSettings`; facts the designer owes are in "Needed from
+the designer" (step 2.2), not here.
+
+**The captains** (`Fleetwright.Sim.Ai/Captains`):
+- **A lone follower on rails** (found in 2.5): a ship following another on its own, not in a group, goes on rails
+  at its own steady speed, about a tenth of a knot off its leader's. Its station drifts, its captain re-orders, and
+  it comes off rails and goes back on. Groups don't have this, because their ships ride the guide's rails. The fix:
+  let a follower in station ride its leader's rails the same way.
+- **The deadbands** (2.3b, 2.5): captains re-order only past 1° and 0.3 kn, so a ship in station sits up to ~1° and
+  a few tenths of a knot off. That's why a group's rails tolerance had to be 2°. Tighter deadbands, or a
+  speed-matching term, would hold station closer.
+- **Choosing a side when the leader turns sharply** (2.3b): a follower doesn't yet pick the inside or outside of a
+  hard turn.
+- **Turns in succession** (2.4): in line ahead each ship follows the one before it, so it cuts the corner a little
+  rather than turning at the guide's turning point.
+- **Collision avoidance** (2.3b): none yet. Collisions are in the module's era list.
+- **The follow and station behaviour's numbers** (`Follow*` in `SimSettings`, 2.3b): the look-ahead, the closing
+  time, the most over or under the leader's speed.
 
 ## The ships' data
 
