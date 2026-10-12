@@ -39,7 +39,11 @@ public enum CaptainOrder : byte
 /// (<see cref="AiCommand.Resume"/>), and he gives them again then. A route the player gave such a ship hands it back at
 /// its last waypoint. An explicit <see cref="AiCommand.Detach"/> pins it out until resumed.</para>
 /// <para><b>Limits</b> come from above as orders (<see cref="AiCommand.SpeedLimit"/>): what he rings is never more,
-/// while what was asked is kept.</para>
+/// while what was asked is kept. So does the clearance from the coast his ship must keep (its formation's half-width,
+/// <see cref="AiCommand.Clearance"/>), which he hands the helm.</para>
+/// <para><b>Notices:</b> while the player holds a ship, an order its superior gives it is dropped, and the captain
+/// raises a notice ("resume?") once; the admiral raises it too when his group's orders change. It's cleared when the
+/// ship is handed back or let go.</para>
 /// A captain whose ship is gone is dropped; one whose target is gone holds his course.</summary>
 public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
 {
@@ -52,13 +56,43 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
         public double DistanceM, AbeamM;
         public double AskedKn;          // the speed ordered (NaN: none, the ship keeps what's rung)
         public double LimitKn;          // the most he may ring, from above (0: none)
+        public double ClearanceM;       // how far off the coast his ship must keep, from above (0: none)
         public bool Watch;              // held by the player on a route: its end hands the ship back
+        public bool Asked;              // held by the player while his superior's orders for him changed: a notice
     }
 
     Captain[] captains = new Captain[16];
     int count, active;
 
     public int Count => count;
+
+    /// <summary>How many notices captains have raised (a ship's notice going up): a UI shows the new ones.</summary>
+    public int Notices { get; private set; }
+
+    /// <summary>Whether a ship's captain has a notice up: held by the player, his superior's orders for him changed.</summary>
+    public bool IsAsked(int entity)
+    {
+        int i = Find(entity);
+        return i >= 0 && captains[i].Asked;
+    }
+
+    /// <summary>Raises a ship's notice (once while it's up): his superior's orders changed while the player holds him.</summary>
+    public void Ask(int entity)
+    {
+        ref var cap = ref Get(entity);
+        if (!cap.Asked)
+        {
+            cap.Asked = true;
+            Notices++;
+        }
+    }
+
+    /// <summary>The clearance from the coast a ship's captain was given (0: none).</summary>
+    public double ClearanceOf(int entity)
+    {
+        int i = Find(entity);
+        return i >= 0 ? captains[i].ClearanceM : 0;
+    }
     public bool Active => active > 0;
 
     public int PeriodMs(in AiContext ctx)
@@ -115,6 +149,8 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             case AiCommand.Resume:
                 if (g != null && detached != Detachment.InLine)
                     ctx.Issue(GroupSystem.Detach(e, Detachment.InLine));   // his admiral gives him his station
+                if (Find(e) is int ri and >= 0)
+                    captains[ri].Asked = false;
                 return;
             case AiCommand.Detach:
                 if (g == null || detached == Detachment.Pinned)
@@ -126,10 +162,17 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
                 ref var lim = ref Get(e);
                 SetLimit(ctx, ref lim, ctx.Ships[slot], c.X);
                 return;
+            case AiCommand.Clearance:
+                ref var clr = ref Get(e);
+                SetClearance(ctx, ref clr, e, c.X);
+                return;
         }
 
         if (source == OrderSource.Superior && g != null && detached != Detachment.InLine)
-            return;   // the player has him: his superior's order waits for the hand-back, and is given again then
+        {
+            Ask(e);   // the player has him: his superior's order waits for the hand-back, and is given again then
+            return;
+        }
         if (source == OrderSource.Player && g != null && detached == Detachment.InLine)
         {
             ctx.Issue(GroupSystem.Detach(e, Detachment.Nudged));   // the player takes him out of the line
@@ -139,7 +182,12 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
         ref var cap = ref Get(e);
         var own = ctx.Ships[slot];
         if (source == OrderSource.Player && cap.Source == OrderSource.Superior)
-            SetLimit(ctx, ref cap, own, 0);   // his superior's limit goes with his superior
+        {
+            SetLimit(ctx, ref cap, own, 0);   // his superior's limit and clearance go with his superior
+            SetClearance(ctx, ref cap, e, 0);
+        }
+        if (source == OrderSource.Superior)
+            cap.Asked = false;   // in his superior's hands again
         cap.Source = source;
         switch (code)
         {
@@ -197,7 +245,8 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
         if (cap.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.None)
             (cap.Order, cap.Target, cap.AskedKn) = (own.Helm == Helm.Route ? CaptainOrder.Route : CaptainOrder.Course, 0, own.SpeedOrderKn);
         SetLimit(ctx, ref cap, own, 0);
-        cap.Source = OrderSource.Player;
+        SetClearance(ctx, ref cap, entity, 0);
+        (cap.Source, cap.Asked) = (OrderSource.Player, false);
         Recount();
     }
 
@@ -292,6 +341,14 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
         Ring(ctx, cap, own);
     }
 
+    static void SetClearance(in AiContext ctx, ref Captain cap, int entity, double metres)
+    {
+        if (cap.ClearanceM == metres)
+            return;
+        cap.ClearanceM = metres;
+        ctx.Issue(ShipSystem.Clearance(entity, metres));
+    }
+
     void Recount()
     {
         active = 0;
@@ -303,6 +360,7 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
     public void Hash(ref StateHash h)
     {
         h.Add(count);
+        h.Add(Notices);
         for (int i = 0; i < count; i++)
         {
             ref readonly var c = ref captains[i];
@@ -314,16 +372,20 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             h.Add(c.AbeamM);
             h.Add(c.AskedKn);
             h.Add(c.LimitKn);
+            h.Add(c.ClearanceM);
             h.Add(c.Watch);
+            h.Add(c.Asked);
         }
     }
 
-    public void Fill(ShipsView v)
+    public void Fill(Snapshot s)
     {
+        var v = s.Ships;
         for (int k = 0; k < v.Count; k++)
         {
             int i = Find(v.Entity[k]);
             (v.Captain[k], v.CaptainTarget[k]) = i >= 0 ? ((byte)captains[i].Order, new Unit(captains[i].Target).ShipOf(groups)) : ((byte)0, 0);
+            v.Asked[k] = i >= 0 && captains[i].Asked;
         }
     }
 

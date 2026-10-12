@@ -48,6 +48,8 @@ public sealed unsafe partial class MapScene
         labelCount = 0;
         for (int g = 0; g < gv.Count; g++)
         {
+            if (gv.Force[g])
+                continue;   // a force's members are groups: its marker comes with the world tab's levels (2.6c)
             double x0 = double.MaxValue, y0 = double.MaxValue, x1 = double.MinValue, y1 = double.MinValue, gx = 0, gy = 0;
             bool any = false, guideSeen = false;
             int inLine = 0;

@@ -93,3 +93,27 @@ sealed class Thrower : IWorldSystem
     public void Apply(World world, in Command c) { }
     public void Hash(ref StateHash h) { }
 }
+
+/// <summary>Every helm and engine command the world applies to one ship, with its time: what the captain gave.</summary>
+sealed class HelmLog(int entity) : IWorldSystem
+{
+    public readonly List<(long Ms, ushort Code, long A, double X, double Y)> Commands = [];
+
+    public void Applied(World world, in Command c)
+    {
+        if (c.System == ShipSystem.Id && c.Entity == entity && (ShipCommand)c.Code != ShipCommand.Spawn)
+            Commands.Add((world.Time.Ms, c.Code, c.A, c.X, c.Y));
+    }
+
+    public void Apply(World world, in Command c)
+    {
+    }
+
+    public void Handle(World world, in SimEvent e)
+    {
+    }
+
+    public void Hash(ref StateHash h)
+    {
+    }
+}

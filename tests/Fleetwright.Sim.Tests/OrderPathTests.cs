@@ -18,30 +18,6 @@ public class OrderPathTests(ITestOutputHelper output)
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
     const double Lat = 56.5, Lon = 4.0;
 
-    /// <summary>Every helm and engine command the world applies to one ship, with its time: what the captain gave.</summary>
-    sealed class HelmLog(int entity) : IWorldSystem
-    {
-        public readonly List<(long Ms, ushort Code, long A, double X, double Y)> Commands = [];
-
-        public void Applied(World world, in Command c)
-        {
-            if (c.System == ShipSystem.Id && c.Entity == entity && (ShipCommand)c.Code != ShipCommand.Spawn)
-                Commands.Add((world.Time.Ms, c.Code, c.A, c.X, c.Y));
-        }
-
-        public void Apply(World world, in Command c)
-        {
-        }
-
-        public void Handle(World world, in SimEvent e)
-        {
-        }
-
-        public void Hash(ref StateHash h)
-        {
-        }
-    }
-
     static (World W, AiSystem Ai, int Class) Make(string design = "dreadnought")
     {
         var w = new World(Start, 7, Settings);

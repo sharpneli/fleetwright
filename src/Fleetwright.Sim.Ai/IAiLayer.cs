@@ -27,8 +27,8 @@ public interface IAiLayer
 
     void Hash(ref StateHash h);
 
-    /// <summary>Its part of the snapshot, per ship.</summary>
-    void Fill(ShipsView v);
+    /// <summary>Its part of the snapshot, per ship and per group, after the world's.</summary>
+    void Fill(Snapshot s);
 }
 
 /// <summary>What a layer thinks with: the time, the settings, its own ships (it knows them fully), the picture of

@@ -40,7 +40,7 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Resume)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Clearance)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         if (u.IsShip)
@@ -103,6 +103,6 @@ public sealed class AiSystem : IWorldSystem
     public void Fill(Snapshot s)
     {
         foreach (var l in layers)
-            l.Fill(s.Ships);
+            l.Fill(s);
     }
 }

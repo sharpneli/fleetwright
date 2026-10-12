@@ -103,10 +103,13 @@ public sealed partial class ShipSystem
         var s = Store[slot];
         (refPos[slot], refMs[slot], refSpeed[slot], refSide[slot]) = (s.Position, ms, Math.Abs(s.Speed), s.Side);
         double r = 0;
-        if (world.Groups.Of(s.Entity) is { } g)
-            for (int i = 1; i < g.Line.Count; i++)
-                if (Store.SlotOf(g.Line[i]) is int m and >= 0 && Store.RidingOn(m) == slot)
+        if (world.Groups.UnitOf(s.Entity) is { } u && world.Groups.GuideShip(u) == s.Entity)
+        {
+            world.Groups.LineOffsets(u, riders);
+            for (int i = 1; i < riders.Count; i++)
+                if (Store.SlotOf(riders[i].Ship) is int m and >= 0 && Store.RidingOn(m) == slot)
                     r = Math.Max(r, Store.RailOffsetM(m));
+        }
         unitRadius[slot] = r;
     }
 

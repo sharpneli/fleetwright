@@ -64,6 +64,10 @@ public enum AiCommand : ushort
 
     /// <summary>Back to its superior: a held unit takes its superior's orders again, a detached ship its station.</summary>
     Resume,
+
+    /// <summary>X how far from the coast the unit's leading ship must keep beyond its own standoff, m: the half-width
+    /// of the formation it leads, from its superior (the pilot's, docs/world/terrain-plan.md).</summary>
+    Clearance,
 }
 
 /// <summary>The one way an order gets to a unit, whoever gives it (docs/battle/plan.md step 2.6): the player's go in
@@ -98,6 +102,8 @@ public readonly struct UnitOrders(byte system)
     public Command Run(Unit u, Unit from, OrderSource source = OrderSource.Player) => Make(AiCommand.Run, u, source, a: from.Id);
 
     public Command SpeedLimit(Unit u, double kn) => Make(AiCommand.SpeedLimit, u, OrderSource.Superior, x: kn);
+
+    public Command Clearance(Unit u, double metres) => Make(AiCommand.Clearance, u, OrderSource.Superior, x: metres);
 
     public Command Detach(Unit u) => Make(AiCommand.Detach, u, OrderSource.Player);
 

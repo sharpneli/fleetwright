@@ -39,13 +39,18 @@ public sealed class Snapshot
     public GroupsView Groups { get; } = new();
 }
 
-/// <summary>The groups' part of a snapshot: per group its id, name, formation, spacing and guide (0 when every member
-/// is detached), and its members (entities, in order) as a run of <see cref="Members"/>, each with its
-/// <see cref="Detached"/>.</summary>
+/// <summary>The groups' part of a snapshot: per group its id, name, formation, spacing, whether it's a force (its
+/// members are groups, not ships), the force it's in (0 for none), its guide (the first member in its line, 0 when every
+/// member is detached) and the ship that leads it, and its members (entities or group ids, in order) as a run of
+/// <see cref="Members"/>, each with its <see cref="Detached"/>.</summary>
 public sealed class GroupsView
 {
     public int Count;
-    public int[] Id = [], MemberStart = [], MemberCount = [], Members = [], Guide = [];
+    public int[] Id = [], MemberStart = [], MemberCount = [], Members = [], Guide = [], GuideShip = [], Parent = [];
+    public bool[] Force = [];
+
+    /// <summary>Held by the player while its superior's orders for it have changed: a notice, "resume?" (the AI's).</summary>
+    public bool[] Asked = [];
     public Detachment[] Detached = [];
     public string[] Name = [];
     public Formation[] Formation = [];
@@ -64,6 +69,10 @@ public sealed class GroupsView
             Array.Resize(ref Formation, n);
             Array.Resize(ref SpacingM, n);
             Array.Resize(ref Guide, n);
+            Array.Resize(ref GuideShip, n);
+            Array.Resize(ref Parent, n);
+            Array.Resize(ref Force, n);
+            Array.Resize(ref Asked, n);
         }
         if (m > Members.Length)
         {
@@ -73,13 +82,23 @@ public sealed class GroupsView
         }
     }
 
-    /// <summary>The index of the group a ship is in, or -1.</summary>
+    /// <summary>The index of the squadron a ship is in, or -1.</summary>
     public int IndexOfShip(int entity)
     {
         for (int g = 0; g < Count; g++)
-            for (int i = 0; i < MemberCount[g]; i++)
-                if (Members[MemberStart[g] + i] == entity)
-                    return g;
+            if (!Force[g])
+                for (int i = 0; i < MemberCount[g]; i++)
+                    if (Members[MemberStart[g] + i] == entity)
+                        return g;
+        return -1;
+    }
+
+    /// <summary>The index of a group by its id, or -1.</summary>
+    public int IndexOfGroup(int groupId)
+    {
+        for (int g = 0; g < Count; g++)
+            if (Id[g] == groupId)
+                return g;
         return -1;
     }
 }
@@ -108,6 +127,9 @@ public sealed class ShipsView
     /// meaning of the order is the AI's (<c>Fleetwright.Sim.Ai.CaptainOrder</c>), with its target ship's entity or 0.</summary>
     public byte[] Captain = [];
     public int[] CaptainTarget = [];
+
+    /// <summary>Held by the player while its superior's orders for it have changed: a notice, "resume?" (the AI's).</summary>
+    public bool[] Asked = [];
 
     /// <summary>Each ship's route still to steam: <see cref="RouteCount"/> waypoints from <see cref="RouteStart"/> in
     /// <see cref="Waypoints"/> (the next one first).</summary>
@@ -155,6 +177,7 @@ public sealed class ShipsView
         Array.Resize(ref SpeedOrderKn, n);
         Array.Resize(ref Captain, n);
         Array.Resize(ref CaptainTarget, n);
+        Array.Resize(ref Asked, n);
         Array.Resize(ref RouteStart, n);
         Array.Resize(ref RouteCount, n);
         Array.Resize(ref RouteLoop, n);

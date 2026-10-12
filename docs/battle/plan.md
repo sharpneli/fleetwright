@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6a (one order path) is done; the next is 2.6b (nesting), then 2.6c (the world tab), then ships and the land (T1-T3 of `docs/world/terrain-plan.md`), then 2.7, the Jutland scale test.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6a (one order path) and 2.6b (forces) are done; the next is 2.6c (the world tab), then ships and the land (T1-T3 of `docs/world/terrain-plan.md`), then 2.7, the Jutland scale test.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1123,6 +1123,43 @@ the notices, the dev flags).
   ship carried by its guide comes off rails steering as they had it. Searches hid it: their first leg runs along the
   ship's heading. Test: `FormationRailsTests`, two waypoints at 1,000×, on rails every minute of the route.
 
+**2.6b done (2026-10-12): forces.** Agreed at its start (the user): a group holds ships (a squadron) or groups (a
+force), never both; a force places its groups with the same four formations, the fancy dispositions later; a column's
+station is defined along the guide's track but steamed as before until T4 brings the plotted track.
+- **Groups of groups** (`GroupSystem`): `Form` (a new force guided by a group), `Enter`, `Exit` and `DetachGroup`;
+  `Disband` frees a force's groups. A group is in at most one force, never one inside itself; a force left empty goes.
+  `Group.IsForce`, `Parent`; `TopOf` (the outermost group a group moves with), `UnitOf` (a ship's), `GuideShip` and
+  `LastShip` down the tree.
+- **One geometry:** `GroupSystem.LineOffsets` gives every ship of a line, down the tree, with its station from the
+  guide ship; `StationOfGroup` a group's station in its force (in line abreast and echelon on the force's guide ship,
+  in line ahead on the last ship of the group before, so squadrons in line ahead make one line). The rails (placing,
+  riding, derailing, contacts' spreads) and the admirals' limits and clearance all read `LineOffsets`.
+- **One admiral layer at every level:** a force's admiral hands his order to his guide group's admiral, who hands it to
+  his guide ship's captain, and gives his other groups their stations; held, nudged, gathered, pinned, resumed and
+  handed back at a route's end as ships are. Admirals are small classes now (made once per group), since an order
+  handed down re-enters the layer.
+- **Limits down the tree:** a force's speed limit is its slowest ship's less the margin, handed to its guide group,
+  whose own guide gets the lesser of the two; a ship or group taken by the player loses its superior's.
+- **The clearance from the coast** (for the pilot, T3): each admiral gives his guide the farthest station abeam of it
+  in his line, or his superior's if more, as an order (`AiCommand.Clearance`); the captain hands it to the helm
+  (`ShipSystem.Clearance`, `ShipState.ClearanceM`), which takes nothing off rails. Nothing reads it yet.
+- **Notices:** a superior's order dropped at a held unit, or an admiral's own orders changing while he has held
+  members, raises the unit's notice once (`IsAsked`, `Notices` on both layers, `Asked` in the snapshot's ships and
+  groups); handing it back clears it. The world tab shows them in 2.6c.
+- **The snapshot** has each group's `Force`, `Parent` and `GuideShip`; the map leaves forces out until 2.6c.
+- **Checked** (`ForceTests`):
+  - The same script to a ship and to a force two levels above it: the same 79 helm commands at the same times.
+  - Three columns in line abreast 3 km apart: on station steaming on; an hour after a turn to port, within 221 m.
+  - Two squadrons of three in line ahead steam bit-for-bit as one squadron of six.
+  - On rails at 1,000×, an order to the force snaps all nine ships onto their stations, each riding the force's
+    guide ship; six hours on, within a millimetre.
+  - A squadron in a force: nudged by the player's order (its ships keep their own formation), gathered by the force's,
+    pinned through it, one notice through repeated orders, resumed.
+  - A light cruiser squadron leading battleships is held to the battleships' speed and given the force's 3 km
+    half-width as its clearance; with the battleships detached, both go.
+  - A force with held and pinned squadrons replays from the log; four squadrons of eight think without allocating.
+  - The sim suite passed three full runs.
+
 **Ships and the land: T1-T3 of `docs/world/terrain-plan.md`** (the user, 2026-10-12: after 2.6 and before the
 Jutland test; planned in a session of its own when it starts). T1 is `Shore`, the land index, with the world holding
 the 1:10M `Land`. T2 is the backstop that keeps every ship off land, with spawning and waypoints. T3 is the pilot's
@@ -1245,6 +1282,10 @@ the designer" (step 2.2), not here.
   hard turn.
 - **Turns in succession** (2.4): in line ahead each ship follows the one before it, so it cuts the corner a little
   rather than turning at the guide's turning point.
+- **Long lines hunt after a turn** (2.6b): in a line of six, 40 minutes after a 90° turn the rear ships are still
+  surging and dropping back (340 m off station at worst, the last ship ringing 8.5 to 20 kn); it settles within the
+  hour (55 m). Each follower reacts to the ship ahead's speed changes, so they grow down the line. A speed term on the
+  guide's, not just the ship ahead's, would damp it.
 - **Collision avoidance** (2.3b): none yet. Collisions are in the module's era list.
 - **Slow ships settle slowly** (found in 2.5): at 5 kn a turn and the speed's recovery take most of an hour before
   the 0.1 kn rails tolerance is met (the net force is small at low speed). A tolerance relative to the speed, or one

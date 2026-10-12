@@ -36,7 +36,7 @@ public sealed class ShipStore
 
     // what's ordered
     internal Helm[] helm = [];
-    internal double[] rudderOrder = [], courseDeg = [], courseRudder = [], powerOrder = [], speedOrderKn = [];
+    internal double[] rudderOrder = [], courseDeg = [], courseRudder = [], powerOrder = [], speedOrderKn = [], clearance = [];
     internal Vec3d[] route = [];   // routeCap per slot
     internal bool[] routeLoop = [];   // past the last waypoint, on to the first again (a patrol)
 
@@ -103,6 +103,7 @@ public sealed class ShipStore
         courseDeg[slot] = Earth.Heading(this.position[slot], this.forward[slot]);
         courseRudder[slot] = settings.StandardRudderDeg * Math.PI / 180;
         rudderOrder[slot] = 0;
+        clearance[slot] = 0;
         routeCount[slot] = routeNext[slot] = 0;
         routeLoop[slot] = false;
         return slot;
@@ -370,6 +371,10 @@ public sealed class ShipStore
         courseRudder[slot] = rudderRad > 0 ? Math.Min(rudderRad, handling[slot].HardOverRad) : settings.StandardRudderDeg * Math.PI / 180;
     }
 
+    /// <summary>How far from the coast the ship must keep beyond its own standoff, metres: its formation's half-width
+    /// (the pilot's, docs/world/terrain-plan.md).</summary>
+    public void SetClearance(int slot, double metres) => clearance[slot] = metres;
+
     /// <summary>Hold a rudder angle, radians, positive to starboard.</summary>
     public void OrderRudder(int slot, double rudderRad)
     {
@@ -440,6 +445,7 @@ public sealed class ShipStore
             h.Add(rudderOrder[i]);
             h.Add(courseDeg[i]);
             h.Add(courseRudder[i]);
+            h.Add(clearance[i]);
             h.Add(powerOrder[i]);
             h.Add(speedOrderKn[i]);
             h.Add(routeCount[i]);
@@ -486,6 +492,7 @@ public sealed class ShipStore
         Array.Resize(ref rudderOrder, n);
         Array.Resize(ref courseDeg, n);
         Array.Resize(ref courseRudder, n);
+        Array.Resize(ref clearance, n);
         Array.Resize(ref powerOrder, n);
         Array.Resize(ref speedOrderKn, n);
         Array.Resize(ref route, n * routeCap);
@@ -573,6 +580,9 @@ public readonly struct ShipState(ShipStore store, int slot)
     public Helm Helm => store.helm[slot];
     public double CourseOrderDeg => store.courseDeg[slot];
     public double SpeedOrderKn => store.speedOrderKn[slot];
+
+    /// <summary>How far from the coast it must keep beyond its own standoff, m (<see cref="ShipStore.SetClearance"/>).</summary>
+    public double ClearanceM => store.clearance[slot];
     public double RudderOrder => store.rudderOrder[slot];
 
     /// <summary>The power rung (what the engines are going to), W.</summary>
