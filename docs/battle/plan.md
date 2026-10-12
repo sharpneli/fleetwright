@@ -332,13 +332,23 @@ from orbit to a few metres, with no jitter, and the clock keeping the asked spee
   `IsLand` counts crossings of the arc to a point of open sea (Point Nemo). It's not a winding sum around the point:
   Afro-Eurasia's and the Americas' rings span more than a hemisphere, so a Pacific point's antipode is inside
   Africa. Tested on 14 places at every level, the Caspian among the seas.
-- **On the map** (`LandView`): each ring near the view is clipped in double by planes through the Earth's centre
-  (just outside the screen's corners, or a polygon inside the horizon when the limb shows), as a GPU clips to its
-  frustum. The result is fanned into triangles and filled on the GPU by winding count into a coverage target, so
-  nothing is triangulated, and the globe's shader colours land from that count. The coast is the same clipped ring
-  minus its joins along a plane, so fill and coast never disagree. A chunk whose cap is clear of the view enters
-  the clip as one point. The level follows the zoom (1:110M over 6,000 km across, 1:50M over 600 km, else 1:10M),
-  and the lines are rebuilt only when the view moves. No allocation.
+- **On the map** (`LandView`): each ring near the view is brought inside a cap around it, in double: the screen's
+  corners pushed 5% outward, or the horizon when the limb shows. Points inside stay. Points outside are pulled in
+  along their bearing onto the cap's edge, an edge crossing it is cut where it crosses, and between outside points
+  the ring walks along the edge by the bearing the original arc swept. That moves nothing across a point inside, so
+  land or sea there is the original's for rings of any size. The result is fanned into triangles and filled on the
+  GPU by winding count into a coverage target, so nothing is triangulated, and the globe's shader colours land from
+  that count. The coast is the same ring minus its walks, so fill and coast never disagree. A chunk whose cap is
+  clear of the view enters as one point. The level follows the zoom (1:110M over 6,000 km across, 1:50M over
+  600 km, else 1:10M), and the lines are rebuilt only when the view moves. No allocation.
+- **The first version clipped by planes through the Earth's centre**, as a GPU clips to its frustum. That's only
+  valid for a ring inside a hemisphere: where a ring leaves and re-enters, the join along the plane's great circle
+  can go the wrong way round. Afro-Eurasia and the Americas are bigger than a hemisphere, so whenever the screen was
+  covered, land flickered on and off from one zoom step to the next (the user: "the LODs bounce").
+  `LodSweepTests` zooms from the globe to 10 px/m at five places. At every step it checks the fill under a grid of
+  probe pixels against that level's `IsLand`, and that the level and the grid only get finer. The old clipping
+  fails all five; the cap passes. `IsLand` now counts coasts to the nearest of 15 open-sea references, with no trig
+  in its culling, about 14x faster.
 - **Speed** (an optimization pass, 2026-10-12, after a drag dropped frames). The grid samples each line's visible
   stretch only, solved in closed form from the horizon, and steps by curvature (a chord within 0.25 px), turning the
   last point instead of calling trig. Land culling compares cosines with no trig, rings inside the view skip the

@@ -159,7 +159,7 @@ src/
     Program.cs                #   entry point, command-line parsing
     Map/                      #   the world tab: WorldSession (the app's world and sim thread), MapCamera/MapView
                               #   (double projection), GlobeRenderer (the sphere per pixel, then MapLines), Graticule,
-                              #   LandView (the land clipped to the view, filled by winding count), MapScene (input,
+                              #   LandView (the land brought inside a cap around the view, filled by winding count), MapScene (input,
                               #   clock controls, HUD)
     Engine.cs                 #   Sdl3GpuEngine: init, resources, render loop, PbrMaterial
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
