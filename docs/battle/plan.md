@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.4 are done (2026-10-12); the next is 2.5, the rails clock tier.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); the next is 2.6, the Jutland scale test.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -794,6 +794,59 @@ live clock tier, and rails ships are drawn exactly from their tracks. Tests:
 - a ship that goes rails -> fine -> rails ends where an all-fine run puts it, within the rails tier's
   instantaneous turns;
 - the same run twice is bit-identical.
+
+**Done (2026-10-12).** Agreed at its start (the user):
+- **What goes on rails:** a ship, or a whole group, steaming steady on a course or a route's legs, watched or not.
+  There's no combat yet (3 and 4).
+- **Groups** go on rails together and keep their relative distances.
+- **Leaving rails is exact.**
+- **The speed** is what the UI asks, or less if the CPU can't keep up. More speed buttons, up to 1M×.
+
+Built:
+- **The store** (`Fleetwright.Sim.Combat`) holds the rails columns.
+  - A ship on its own has an anchor (time, position, heading) and a speed. A held course is a **rhumb line** (closed
+    form through the Mercator latitude, `Earth.Rhumb`), what the helmsman steers. A route's leg is a **great
+    circle**, what he steers for a waypoint.
+  - A group's other ships ride at a fixed offset in their guide's frame.
+  - `ShipState`'s pose accessors evaluate rails at the world's time (`ShipStore.NowMs`, set by the world before
+    anything reads the store). So the AI, the snapshot and the tests see a ship on rails like any other.
+- **`ShipSystem`** puts ships on rails, every `RailsCheckMs` (5 s) of the fine tick:
+  - **A single ship** goes when steady: helm on a course or a route, under 0.02°/s of swing, rudder under 0.5°,
+    within 0.5° of the course, the engines at what was rung, and the speed within 0.1 kn of what they give. It's
+    taken onto the ordered course and the speed it settles at exactly; without that, the small errors held for
+    hours were kilometres.
+  - **A group** goes whole when its guide is steady and every member swings no more than that, is within 0.5° of
+    the guide's heading and 0.5 kn of its speed, and within 50 m of its station. The station geometry moved to the
+    world (`GroupSystem.StationOf`), since formations are the world's.
+  - **No fine tick runs while every ship is on rails.**
+  - **On a route** each waypoint is an event: the turn there is instantaneous, and past the last the course arrived
+    on is held as a rhumb line.
+  - **Any order to a ship or its group** (ship and group commands, the AI's own) takes the whole group off rails
+    first, exactly where the rails had it, rudder amidships and power unchanged.
+  - Rails stop within a degree of a pole, where rhumb lines spiral in.
+- **The snapshot** carries a ship on rails at the world's time with no swing, so the renderer's arc is exact. A ship
+  shows "(on rails)" in its strip.
+- **The clock:** `MaxSpeed` is 1,000,000. The UI's speeds run 1× to 1M× (1, 10, 100, 1k, 10k, 30k, 100k, 300k,
+  1M).
+- **Checked** (`RailsTests`):
+  - A steady ship goes on rails and the world schedules nothing. An order brings it off within a millionth of a
+    metre, at its speed, holding its course.
+  - **A course held for 8 h** on rails ends 17 m from the all-fine run.
+  - **A route of 4 legs** taken off rails and back on the way ends 478 m away. Its turns are instantaneous at the
+    waypoints, where the helmsman's start early and take minutes.
+  - **A group's gaps after a day on rails** are the same to 0.1 m. An order to its guide brings all four off.
+  - **2,000 ships steam 365 one-day legs** (a year) in ~10 s, Debug.
+  - **The same run twice**, and cut at odd times, gives the same hash.
+- **Learnt:**
+  - A great circle isn't a course: on rails it drifted 0.1-0.25° off the helmsman's in 20 minutes.
+  - Speed tolerance held for hours is kilometres.
+  - Formation errors freeze on rails unless members are in station first.
+  - Two allocation tests were flaky under parallel test load: first runs of a path (JIT, tiering) allocate. They now
+    warm the path up before measuring, as play would.
+- **Not yet:**
+  - the coarse clock tier (4.8), and routines (peace);
+  - the contact scan that takes ships off rails when they meet (3.1);
+  - land on routes (rails don't check for it, by design: routing will).
 
 **2.6 Scale: the Jutland test.** 250 ships of ~55 classes, loaded, steaming in formation in the fine tier, drawn
 at every zoom, with some hundreds more on rails. Measure load time, tick cost, frame time and VRAM against the targets

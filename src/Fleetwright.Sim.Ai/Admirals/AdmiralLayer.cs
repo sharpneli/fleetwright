@@ -10,9 +10,7 @@ namespace Fleetwright.Sim.Ai.Admirals;
 /// the guide moves the group. He holds the guide's speed under what the slowest member makes, less a margin to close
 /// up with. Ships that left a group get their captains back (if the admiral had them), and ships that are gone leave
 /// their group. He commands his own ships, so he reads them as they are; other ships he'd see through the picture.
-/// <para>The formations: in column each ship follows the one before it (so a turn goes round in succession, near
-/// enough); line abreast and echelon are stations on the guide (so the group turns together, the outer ships
-/// wheeling).</para></summary>
+/// <para>The formations' geometry is the world's (<see cref="GroupSystem.StationOf"/>).</para></summary>
 public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IAiLayer
 {
     readonly List<int> gone = [];
@@ -57,7 +55,7 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
 
             for (int i = 1; i < members.Count; i++)
             {
-                var (target, astern, abeam) = StationOf(g.Formation, g.SpacingM, members, i);
+                var (target, astern, abeam) = GroupSystem.StationOf(g.Formation, g.SpacingM, members, i);
                 captains.Set(ctx, members[i], CaptainOrder.Station, target, astern, abeam, byAdmiral: true);
             }
         }
@@ -69,20 +67,6 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
             if (e != 0 && (groups.Of(e) is not { } g || g.Guide == e))
                 captains.Set(ctx, e, CaptainOrder.None, 0, 0, 0, byAdmiral: true);
         }
-    }
-
-    /// <summary>Member i's station: the ship it keeps station on, and how far astern of it and to its starboard.</summary>
-    public static (int Target, double AsternM, double AbeamM) StationOf(Formation f, double spacing, IReadOnlyList<int> members, int i)
-    {
-        const double Diag = 0.70710678118654752;
-        return f switch
-        {
-            Formation.Column => (members[i - 1], spacing, 0),
-            Formation.LineAbreast => (members[0], 0, i * spacing),
-            Formation.EchelonStarboard => (members[0], i * spacing * Diag, i * spacing * Diag),
-            Formation.EchelonPort => (members[0], i * spacing * Diag, -i * spacing * Diag),
-            _ => throw new ArgumentOutOfRangeException(nameof(f)),
-        };
     }
 
     bool AnyAdmirals()

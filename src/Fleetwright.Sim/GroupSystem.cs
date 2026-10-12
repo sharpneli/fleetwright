@@ -78,6 +78,32 @@ public sealed class GroupSystem : IWorldSystem
         return null;
     }
 
+    // ------------------------------------------------------------------ formations
+
+    /// <summary>Member i's station: the ship it keeps station on, and how far astern of it and to its starboard. In
+    /// column each ship follows the one before it (a turn goes round in succession, near enough); in line abreast and
+    /// echelon it's placed on the guide (the group turns together, the outer ships wheeling).</summary>
+    public static (int Target, double AsternM, double AbeamM) StationOf(Formation f, double spacing, IReadOnlyList<int> members, int i)
+    {
+        var (astern, abeam) = OffsetFromGuide(f, spacing, i);
+        return f == Formation.Column ? (members[i - 1], spacing, 0) : (members[0], astern, abeam);
+    }
+
+    /// <summary>Member i's station from the guide, with every ship on the guide's heading: how far astern and to
+    /// starboard.</summary>
+    public static (double AsternM, double AbeamM) OffsetFromGuide(Formation f, double spacing, int i)
+    {
+        const double Diag = 0.70710678118654752;
+        return f switch
+        {
+            Formation.Column => (i * spacing, 0),
+            Formation.LineAbreast => (0, i * spacing),
+            Formation.EchelonStarboard => (i * spacing * Diag, i * spacing * Diag),
+            Formation.EchelonPort => (i * spacing * Diag, -i * spacing * Diag),
+            _ => throw new ArgumentOutOfRangeException(nameof(f)),
+        };
+    }
+
     // ------------------------------------------------------------------ commands
 
     /// <summary>A new group, guided by a ship (taken out of any group it was in); its id is the next.</summary>
@@ -101,6 +127,13 @@ public sealed class GroupSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
+        // a group that changes comes off rails whole first (and a ship joining or leaving one with it)
+        if (c.Entity != 0)
+            world.Ships.Derail(world, c.Entity);
+        if ((GroupCommand)c.Code is GroupCommand.SetFormation or GroupCommand.Disband or GroupCommand.Add && Get((int)c.A) is { Guide: > 0 } ga)
+            world.Ships.Derail(world, ga.Guide);
+        if ((GroupCommand)c.Code == GroupCommand.Join && c.A != 0)
+            world.Ships.Derail(world, (int)c.A);
         switch ((GroupCommand)c.Code)
         {
             case GroupCommand.Create:

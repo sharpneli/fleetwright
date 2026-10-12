@@ -9,13 +9,13 @@ using static SDL.SDL3;
 namespace Fleetwright.Map;
 
 /// <summary>The world tab (docs/battle/plan.md step 1.2): the globe of water at every zoom from orbit down to 10 px/m,
-/// the lat/lon grid, day and night from the snapshot's sun, and the clock's controls (pause, 1x to 30,000x, asked
+/// the lat/lon grid, day and night from the snapshot's sun, and the clock's controls (pause, 1x to 1,000,000x, asked
 /// against achieved). It reads the world only through <see cref="WorldSession.Current"/> and changes it only by
 /// commands. Mouse: wheel zooms at the cursor, left drag pans. Keys: space pauses, + and - change the speed. The ships
 /// (step 2.3) are in MapScene.Ships.cs.</summary>
 public sealed unsafe partial class MapScene : IScene
 {
-    static readonly double[] Speeds = [1, 10, 100, 1000, 10_000, 30_000];
+    static readonly double[] Speeds = [1, 10, 100, 1000, 10_000, 30_000, 100_000, 300_000, 1_000_000];
 
     readonly WorldSession world;
     readonly GlobeRenderer renderer;
@@ -215,7 +215,8 @@ public sealed unsafe partial class MapScene : IScene
         return true;
     }
 
-    static string SpeedLabel(double s) => s >= 1000 && s % 1000 == 0 ? $"{s / 1000:0}k×" : $"{s:0.#}×";
+    static string SpeedLabel(double s) => s >= 1_000_000 && s % 1_000_000 == 0 ? $"{s / 1_000_000:0}M×"
+        : s >= 1000 && s % 1000 == 0 ? $"{s / 1000:0}k×" : $"{s:0.#}×";
 
     /// <summary>The map's zoom bands by the distance across the view (docs/map-ui/README.md).</summary>
     static string Band(double acrossM) => acrossM switch

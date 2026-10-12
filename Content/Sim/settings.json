@@ -2,7 +2,7 @@
 // error. A world keeps the settings it was made with, and a replay records them.
 {
   // the clock
-  "MaxSpeed": 30000,
+  "MaxSpeed": 1000000,
   "MinSpeed": 0.1,
   "MaxLagRealSeconds": 0.25,
   "PublishIntervalMs": 8,
@@ -29,6 +29,16 @@
   "HelmGain": 1.5,
   "HelmLeadOverT": 1.2,
   "ArrivalRadiusM": 300,
+
+  // the rails clock tier (docs/battle/plan.md step 2.5)
+  "RailsEnabled": true,
+  "RailsCheckMs": 5000,
+  "RailsMaxYawRateDegS": 0.02,
+  "RailsMaxRudderDeg": 0.5,
+  "RailsMaxCourseErrDeg": 0.5,
+  "RailsMaxSpeedErrKn": 0.1,
+  "RailsGroupSpeedErrKn": 0.5,
+  "RailsGroupStationM": 50,
 
   // the AI (docs/battle/plan.md step 2.3b)
   "CaptainPeriodMs": 1000,

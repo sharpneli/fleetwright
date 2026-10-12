@@ -108,6 +108,24 @@ public static class Earth
         return Heading(from, d - up * Vec3d.Dot(d, up));
     }
 
+    /// <summary>The point and forward vector a distance along a rhumb line (a constant compass course, which is what a
+    /// helmsman holding a course steers) from a start: closed form through the Mercator latitude. Not for starts
+    /// within a degree of a pole, where rhumb lines spiral in.</summary>
+    public static void Rhumb(Vec3d start, double courseDeg, double distance, out Vec3d position, out Vec3d forward)
+    {
+        var (lat0d, lon0d) = LatLon(start);
+        double lat0 = lat0d * Deg, th = courseDeg * Deg, t = distance / Radius;
+        double lat = lat0 + t * Math.Cos(th);
+        double dlat = lat - lat0;
+        double dpsi = Math.Log(Math.Tan(Math.PI / 4 + lat / 2) / Math.Tan(Math.PI / 4 + lat0 / 2));
+        double q = Math.Abs(dpsi) > 1e-12 ? dlat / dpsi : Math.Cos(lat0);
+        double lon = lon0d * Deg + t * Math.Sin(th) / q;
+        double c = Math.Cos(lat);
+        var up = new Vec3d(c * Math.Cos(lon), c * Math.Sin(lon), Math.Sin(lat));
+        position = up * start.Length;
+        forward = Forward(position, courseDeg);
+    }
+
     /// <summary>A latitude and longitude packed into a long as two int32 microdegrees (0.11 m), for commands, which
     /// are plain fixed-size data.</summary>
     public static long PackLatLon(double latDeg, double lonDeg) =>

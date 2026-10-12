@@ -357,7 +357,7 @@ public sealed unsafe partial class MapScene
                 Helm.Rudder => $"rudder held {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0}°",
                 _ => "no helm orders",
             };
-            ImGui.Text($"{cls?.Name ?? "?"}  #{selected}");
+            ImGui.Text($"{cls?.Name ?? "?"}  #{selected}{(s.Ships.OnRails[k] ? "  (on rails)" : "")}");
             ImGui.SameLine();
             ImGui.TextDisabled($"heading {heading:000}°, {kn:0.0} kn, rudder {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0;0}°  ·  " +
                                $"ordered: {orders}, {s.Ships.SpeedOrderKn[k]:0.#} kn");

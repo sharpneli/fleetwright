@@ -14,7 +14,7 @@ public static class ShipMotion
     public static void StepAll(ShipStore s, long nowMs, SimSettings set)
     {
         for (int i = 0; i < s.Slots; i++)
-            if (s.alive[i] && s.poseMs[i] < nowMs)
+            if (s.alive[i] && !s.rails[i] && s.poseMs[i] < nowMs)
             {
                 Step(s, i, (nowMs - s.poseMs[i]) / 1000.0, set);
                 s.poseMs[i] = nowMs;

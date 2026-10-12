@@ -74,7 +74,9 @@ public class RandomStreamTests
     public void Draws_allocate_nothing()
     {
         var r = RandomStream.Named(1, "test");
-        double s = r.NextDouble() + r.NextInt(5) + r.Derive(3).NextDouble();
+        double s = 0;
+        for (int k = 0; k < 10000; k++)   // the same loop once untimed: tiering a hot loop may allocate, the draws mustn't
+            s += r.NextDouble() + r.NextInt(17) + r.Derive((ulong)k).NextDouble();
         long before = GC.GetAllocatedBytesForCurrentThread();
         for (int k = 0; k < 10000; k++)
             s += r.NextDouble() + r.NextInt(17) + r.Derive((ulong)k).NextDouble();

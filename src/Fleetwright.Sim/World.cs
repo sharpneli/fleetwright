@@ -103,6 +103,7 @@ public sealed class World
 
     void Run(in Command c)
     {
+        Ships.Store.NowMs = Time.Ms;
         if (c.System != 0)
         {
             SystemOf(c.System).Apply(this, in c);
@@ -175,11 +176,13 @@ public sealed class World
             }
             var e = scheduler.Pop();
             Time = e.Time;
+            Ships.Store.NowMs = Time.Ms;
             last = e.Time.Ms;
             SystemOf(e.System).Handle(this, in e);
             n++;
         }
         Time = Target;
+        Ships.Store.NowMs = Time.Ms;
         return true;
     }
 
@@ -193,6 +196,7 @@ public sealed class World
     /// <summary>Fills the world's part of a snapshot; allocates nothing.</summary>
     public void Fill(Snapshot s)
     {
+        Ships.Store.NowMs = Time.Ms;
         s.Time = Time;
         s.Target = Target;
         s.Sun = Sun.Direction(Time);

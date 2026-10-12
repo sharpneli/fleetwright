@@ -89,6 +89,9 @@ public sealed class ShipsView
     public double[] Speed = [], YawRate = [], Rudder = [];
     public long[] PoseMs = [];
     public Combat.Helm[] Helm = [];
+
+    /// <summary>On the rails clock tier (a function of time; its pose is now's and carries on exactly).</summary>
+    public bool[] OnRails = [];
     public double[] CourseOrderDeg = [], SpeedOrderKn = [];
 
     /// <summary>Who commands each ship and how, filled by the AI (0: nobody, the player's own orders stand); the
@@ -133,6 +136,7 @@ public sealed class ShipsView
         Array.Resize(ref Rudder, n);
         Array.Resize(ref PoseMs, n);
         Array.Resize(ref Helm, n);
+        Array.Resize(ref OnRails, n);
         Array.Resize(ref CourseOrderDeg, n);
         Array.Resize(ref SpeedOrderKn, n);
         Array.Resize(ref Captain, n);

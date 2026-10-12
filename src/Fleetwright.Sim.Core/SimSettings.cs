@@ -13,7 +13,7 @@ public sealed record SimSettings
     public static readonly SimSettings Default = new();
 
     /// <summary>The fastest the clock may be asked to run, game seconds per real second.</summary>
-    public double MaxSpeed { get; init; } = 30_000;
+    public double MaxSpeed { get; init; } = 1_000_000;
 
     /// <summary>The slowest, above zero (zero is a pause).</summary>
     public double MinSpeed { get; init; } = 0.1;
@@ -83,6 +83,28 @@ public sealed record SimSettings
 
     /// <summary>A route's last waypoint counts as reached inside this, metres.</summary>
     public double ArrivalRadiusM { get; init; } = 300;
+
+    // ------------------------------------------------------------------ the rails clock tier (docs/battle/plan.md 2.5)
+
+    /// <summary>Ships steaming steady go on rails (false: everything stays on the fine tick, for comparing).</summary>
+    public bool RailsEnabled { get; init; } = true;
+
+    /// <summary>How often the fine tick looks for ships to put on rails, ms (a multiple of the tick).</summary>
+    public int RailsCheckMs { get; init; } = 5000;
+
+    /// <summary>Steady enough for rails: the swing, the rudder, the heading off the course (or a group's ships off their
+    /// guide's), the speed off what the engines give (or off the guide's).</summary>
+    public double RailsMaxYawRateDegS { get; init; } = 0.02;
+    public double RailsMaxRudderDeg { get; init; } = 0.5;
+    public double RailsMaxCourseErrDeg { get; init; } = 0.5;
+    public double RailsMaxSpeedErrKn { get; init; } = 0.1;
+
+    /// <summary>A group's other ships go on rails with their guide within this of its speed (their captains keep station
+    /// with a deadband; a ship still closing up runs faster).</summary>
+    public double RailsGroupSpeedErrKn { get; init; } = 0.5;
+
+    /// <summary>A group's ships go on rails only within this of their stations, m: rails hold their offsets as they are.</summary>
+    public double RailsGroupStationM { get; init; } = 50;
 
     // ------------------------------------------------------------------ the AI (docs/battle/plan.md step 2.3b)
 

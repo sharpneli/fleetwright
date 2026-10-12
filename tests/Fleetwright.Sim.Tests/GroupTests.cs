@@ -49,7 +49,7 @@ public class GroupTests(ITestOutputHelper output)
         var guide = Ship(w, g.Guide);
         for (int i = 1; i < g.Members.Count; i++)
         {
-            var (t, astern, abeam) = AdmiralLayer.StationOf(g.Formation, g.SpacingM, g.Members, i);
+            var (t, astern, abeam) = GroupSystem.StationOf(g.Formation, g.SpacingM, g.Members, i);
             var ts = Ship(w, t);
             var up = ts.Position.Normalized();
             var station = (ts.Position - ts.Forward * astern + Vec3d.Cross(ts.Forward, up) * abeam).Normalized() * Earth.Radius;
@@ -162,7 +162,7 @@ public class GroupTests(ITestOutputHelper output)
                 w.Apply(GroupSystem.Add(g + 1, g * 8 + i));
         }
         var snap = new Snapshot();
-        Run(w, 5);
+        Run(w, 600);   // the same work once untimed: first runs of a path (the JIT, tiering) may allocate, play mustn't
         w.Fill(snap);
         long before = GC.GetAllocatedBytesForCurrentThread();
         Run(w, 600);

@@ -24,7 +24,7 @@ public enum ShipCommand : ushort
 public sealed class ShipSystem : IWorldSystem
 {
     public const byte Id = 1;
-    const ushort Tick = 1;
+    const ushort Tick = 1, RailsWaypoint = 2;
 
     readonly SimSettings settings;
     readonly List<int> used = [];   // the registry ids ships have been made of, in the order first used
@@ -108,6 +108,7 @@ public sealed class ShipSystem : IWorldSystem
         int slot = Store.SlotOf(c.Entity);
         if (slot < 0)
             return;   // dropped or never made: an order that reached no ship
+        Derail(world, c.Entity);   // an order to a ship on rails: back to the fine tick first, its group with it
         switch ((ShipCommand)c.Code)
         {
             case ShipCommand.Drop:
@@ -147,11 +148,163 @@ public sealed class ShipSystem : IWorldSystem
 
     public void Handle(World world, in SimEvent e)
     {
+        if (e.Code == RailsWaypoint)
+        {
+            WaypointReached(world, e);
+            return;
+        }
         nextTickMs = -1;
         ShipMotion.StepAll(Store, world.Time.Ms, settings);
-        if (Store.Count > 0)
+        if (settings.RailsEnabled && world.Time.Ms % settings.RailsCheckMs == 0)
+            RailsCheck(world);
+        if (AnyFine())
             EnsureTick(world);
     }
+
+    // ------------------------------------------------------------------ the rails clock tier (docs/battle/plan.md 2.5)
+
+    /// <summary>Any ship that isn't on rails: the fine tick runs only while there is.</summary>
+    bool AnyFine()
+    {
+        for (int i = 0; i < Store.Slots; i++)
+            if (Store.IsAlive(i) && !Store.OnRails(i))
+                return true;
+        return false;
+    }
+
+    /// <summary>Takes a ship off rails, and its whole group with it (they ride together), back to the fine tick.</summary>
+    public void Derail(World world, int entity)
+    {
+        bool any = false;
+        if (world.Groups.Of(entity) is { } g)
+        {
+            for (int i = 0; i < g.Members.Count; i++)
+                any |= DerailSlot(Store.SlotOf(g.Members[i]));
+        }
+        else
+            any = DerailSlot(Store.SlotOf(entity));
+        if (any)
+            EnsureTick(world);
+    }
+
+    bool DerailSlot(int slot)
+    {
+        if (slot < 0 || !Store.OnRails(slot))
+            return false;
+        Store.Derail(slot);
+        return true;
+    }
+
+    /// <summary>Every few seconds: ships, and groups whose every ship is, steaming steady go on rails. A group's guide
+    /// goes on its own rails, the rest at their offsets from it now, so the group keeps its shape exactly.</summary>
+    void RailsCheck(World world)
+    {
+        var groups = world.Groups;
+        for (int k = 0; k < groups.Count; k++)
+        {
+            var g = groups[k];
+            int guide = Store.SlotOf(g.Guide);
+            if (guide < 0 || Store.OnRails(guide) || !Steady(guide))
+                continue;
+            var gs = Store[guide];
+            bool all = true;
+            for (int i = 1; i < g.Members.Count && all; i++)
+            {
+                // a member: not swinging, with the guide, at the guide's speed near enough (its captain re-rings speed
+                // only past his deadband, so a ship in station may be rung a few tenths off; one catching up runs knots
+                // faster, and isn't taken onto rails at the wrong offset)
+                int m = Store.SlotOf(g.Members[i]);
+                if (m < 0)
+                {
+                    all = false;
+                    break;
+                }
+                var ms = Store[m];
+                double dh = ms.HeadingDeg - gs.HeadingDeg;
+                dh -= 360 * Math.Round(dh / 360);
+                var (astern, abeam) = GroupSystem.OffsetFromGuide(g.Formation, g.SpacingM, i);
+                var gp = gs.Position;
+                var station = gp - gs.Forward * astern + Vec3d.Cross(gs.Forward, gp.Normalized()) * abeam;
+                all = Math.Abs(ms.YawRate) * 180 / Math.PI <= settings.RailsMaxYawRateDegS && Math.Abs(ms.Rudder) * 180 / Math.PI <= settings.RailsMaxRudderDeg &&
+                      Math.Abs(dh) <= settings.RailsMaxCourseErrDeg && Math.Abs(ms.Speed - SteadySpeed(gs)) <= settings.RailsGroupSpeedErrKn * Handling.MsPerKnot &&
+                      Earth.Distance(ms.Position, station) <= settings.RailsGroupStationM;   // in station: its offset is held on rails
+            }
+            if (!all)
+                continue;
+            RailGuide(world, guide);
+            for (int i = 1; i < g.Members.Count; i++)
+                Store.RailWith(Store.SlotOf(g.Members[i]), guide);
+        }
+        for (int i = 0; i < Store.Slots; i++)
+            if (Store.IsAlive(i) && !Store.OnRails(i) && world.Groups.Of(Store[i].Entity) == null && Steady(i))
+                RailGuide(world, i);
+    }
+
+    /// <summary>A ship on its own rails: along its ordered course, or, on a route, straight for its next waypoint, with
+    /// the waypoint's arrival as an event.</summary>
+    void RailGuide(World world, int slot)
+    {
+        var s = Store[slot];
+        // a course held is a rhumb line at the ordered course exactly (the heading is within a fraction of a degree of
+        // it: rails turn at once, and a small error held for days would be miles)
+        // and at the speed the engines settle at (it's within a tenth of a knot: held for days, the rest would be miles)
+        Store.Rail(slot, s.Helm == Helm.Course ? s.CourseOrderDeg : double.NaN, SteadySpeed(s));
+        if (s.Helm == Helm.Route && s.RouteNext < s.RouteCount)
+        {
+            var p = s.Position;
+            var wp = s.Waypoint(s.RouteNext);
+            Store.Reanchor(slot, p, Toward(p, wp));
+            ScheduleArrival(world, slot, wp);
+        }
+    }
+
+    void ScheduleArrival(World world, int slot, Vec3d wp)
+    {
+        var s = Store[slot];
+        if (s.Speed <= 0)
+            return;
+        long ms = (long)Math.Ceiling(Earth.Distance(s.Position, wp) / s.Speed * 1000);
+        world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, RailsWaypoint, Store.RailGen(slot));
+    }
+
+    /// <summary>A ship on rails reaches a waypoint: it turns there at once for the next, or, past the last, holds the
+    /// course it arrived on.</summary>
+    void WaypointReached(World world, in SimEvent e)
+    {
+        int slot = Store.SlotOf(e.Entity);
+        if (slot < 0 || !Store.OnRails(slot) || Store.RailGen(slot) != e.Generation)
+            return;   // derailed or re-anchored since
+        if (Store.PassWaypoint(slot, out var next))
+            ScheduleArrival(world, slot, next);
+    }
+
+    static Vec3d Toward(Vec3d from, Vec3d to)
+    {
+        var up = from.Normalized();
+        var d = to - from;
+        return (d - up * Vec3d.Dot(d, up)).Normalized();
+    }
+
+    /// <summary>Steaming steady: on a course or a route's leg and on it, rudder amidships, no swing, the engines at what
+    /// was rung and the speed what they give.</summary>
+    bool Steady(int slot)
+    {
+        var s = Store[slot];
+        if (Math.Abs(Earth.LatLon(s.Position).Lat) > 89)
+            return false;   // rhumb lines spiral into the poles: near one, a ship stays on the fine tick
+        if (s.Helm is not (Helm.Course or Helm.Route) || Math.Abs(s.YawRate) * 180 / Math.PI > settings.RailsMaxYawRateDegS ||
+            Math.Abs(s.Rudder) * 180 / Math.PI > settings.RailsMaxRudderDeg || s.Power < 0 || s.Power != s.PowerOrder)
+            return false;
+        double want = s.Helm == Helm.Course ? s.CourseOrderDeg : Earth.Bearing(s.Position, s.Waypoint(s.RouteNext));
+        double dc = want - s.HeadingDeg;
+        dc -= 360 * Math.Round(dc / 360);
+        if (Math.Abs(dc) > settings.RailsMaxCourseErrDeg)
+            return false;
+        return Math.Abs(s.Speed - SteadySpeed(s)) <= settings.RailsMaxSpeedErrKn * Handling.MsPerKnot;
+    }
+
+    /// <summary>The speed a ship's power holds it at, m/s.</summary>
+    static double SteadySpeed(ShipState s) => s.Handling.Class.SpeedAt(s.Power / Handling.WattsPerShp) * Handling.MsPerKnot;
 
     public void Hash(ref StateHash h)
     {
@@ -189,6 +342,7 @@ public sealed class ShipSystem : IWorldSystem
             v.Rudder[n] = ship.Rudder;
             v.PoseMs[n] = ship.PoseMs;
             v.Helm[n] = ship.Helm;
+            v.OnRails[n] = ship.OnRails;
             v.CourseOrderDeg[n] = ship.CourseOrderDeg;
             v.SpeedOrderKn[n] = ship.SpeedOrderKn;
             v.Captain[n] = 0;   // the AI fills its own, after
