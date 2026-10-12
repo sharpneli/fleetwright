@@ -20,6 +20,10 @@ Earth-centred doubles, flat only locally).
   ~2,000 ships in the world and a few hundred in one fight (Jutland: 250). `docs/battle/plan.md` "How many ships"
   checks these numbers against measured costs and sets targets.
 - **Deterministic and headless:** the same start and the same orders give the same world (replays, tests, saves).
+- **The whole era, in cuts (the user, 2026-10-12):** the goal is pre-dreadnoughts to the early missile ships. It's
+  released in fully working cuts, each widening the last: the battle module, a campaign of about 1890-1925, then
+  aviation in 2.0 and on. What's built first must not assume its era (`docs/battle/plan.md` "The whole era, released
+  in cuts").
 - **Independent components, no mixed concerns (the user's, 2026-10-12):** everything ships in the one executable, but
   each part stands alone. The designer starts with or without a world sim (a `DesignContext` or none). The sim,
   battle included, has no GPU, UI or engine dependency and runs headless. Renderers only read the sim's snapshot,
@@ -357,7 +361,7 @@ After the battle module, the world grows around the ship simulation. Each item i
 - **Relations beyond war and peace,** then diplomacy.
 - **Yards and manufacturing:** construction as events, ships laid down from submitted designs.
 - **Research:** the `TechSet` growing over a campaign.
-- **Submarines,** before the campaign: its era (about 1890-1925) has the U-boat war.
+- **Submarines,** before the campaign (decided 2026-10-12): its era (about 1890-1925) has the U-boat war.
 - **Aviation** is version 2.0, after the campaign (the user, 2026-10-12).
 
 The Earth model (land, the sea graph and routing, ports, the globe's tiles) isn't on this list. It comes when the user
@@ -400,5 +404,8 @@ ship simulation keeps to these from its first step:
 - **Orders come in as commands;** the battle has no input handling of its own and reads no UI state. A captain (AI)
   and the player issue the same commands.
 - **Every tuning number is in `SimSettings`.** Every random draw comes from a seeded stream named for its system.
+- **Nothing assumes the first cut's era:** sensors other than the eye, weapons other than guns, torpedoes and mines,
+  entities above or below the surface, and ranges far beyond gun range all come later, through the same pictures,
+  hits, tracks and settings.
 - **The step takes a `dt` from the scheduler** and allocates nothing; the battle never assumes it owns the clock or
   the thread.

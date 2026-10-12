@@ -109,6 +109,7 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Carrier extras: flight-deck segments, lifts, hangar bays, avgas fore and aft
 - [ ] Systems session: radar and masts, plotting room as a room, power and hydraulic networks, director armour material
 - [ ] Reload torpedoes, depth charges and boats as hitboxes
+- [ ] Mines (battle module step 4.7, `docs/battle/plan.md`): mine stowage and rails as an armament with a count (minelayers, and cruisers and destroyers fitted for minelaying), its magazine as a room; sweeping gear for sweepers
 - [ ] Destroyer has 19 sections (research: 12–16)
 
 ## Looks

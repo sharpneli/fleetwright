@@ -34,8 +34,8 @@ missions on top (`docs/world/architecture.md` "The pieces and where they live").
   near something are in the tactical tier.
 - **Seeing and knowing:** contacts and encounters, sighting (horizon, weather, night), and each navy's picture. The
   player sees what their navy knows.
-- **Fighting:** fire control, guns and shells, torpedoes, the hit query, penetration, damage, flooding and sinking,
-  and damage drawn on the sprites.
+- **Fighting:** fire control, guns and shells, torpedoes, mines, collisions, the hit query, penetration, damage,
+  flooding and sinking, and damage drawn on the sprites.
 - **Command:** captains (the AI) following standing orders on both sides, and the player commanding through the same
   commands on the map at every zoom.
 - **Missions:** a mission file, the mission UI (place forces, set orders and objectives, the designer for
@@ -53,12 +53,37 @@ are just ships in it).
 battles between surface ships. Later technology then gives unhistorical battles (no carriers, no U-boats), which is
 accepted.
 
-### The era it's built for
+### The whole era, released in cuts
 
-The first full game is a campaign of **about 1890-1925**, after the political system is in. Aviation is for version
-2.0. So the battle module is built for the pre-dreadnought, dreadnought and First World War navies. Later designs
-still work (the designer makes them, and they fight), but nothing in the module is shaped around them. That era
-asks for things a WWII-shaped plan would leave out:
+**The game's goal is the whole era of the gun and steam warship, from the pre-dreadnoughts to the early missile
+ships** (the user, 2026-10-12). It gets there one bite at a time: each release is a fully working cut, and each one
+widens it.
+
+1. **The battle module:** surface ships, guns, torpedoes and mines, in missions.
+2. **The campaign of about 1890-1925:** the political system, manufacturing, research, Resolved fights, the world's
+   merchants, then submarines (the U-boat war is in the era).
+3. **Version 2.0, aviation,** and on toward the early missile ships.
+
+So the first cut is built for its era, but **nothing in it may assume that era.** Every step checks against the later
+ones:
+
+- **Sensors:** sighting is one sensor writing into a navy's picture. Radar, hydrophones, sonar and direction finding
+  are more sensors writing into the same picture, and nothing reads "can see" anywhere else.
+- **Weapons:** each is a source of hits for the one damage model, and each is a track with events: shells, torpedoes
+  and mines now; bombs, rockets and guided missiles later. A guided weapon is a track that re-anchors when its
+  guidance changes it, as a ship's does when an order comes.
+- **Entities off the surface:** positions are Earth-centred 3D already. Surface ships stay at sea level, but no code
+  assumes every entity does, so an aircraft's altitude and a submarine's depth fit later.
+- **Ranges:** the encounter range and the contact scan come from the longest sensor or weapon reach in play (in
+  `SimSettings`), not one constant tuned to gun ranges. Aircraft and missiles reach hundreds of kilometres.
+- **Numbers:** a WWII-era world has several times the ships of 1914 ("How many ships"). Rails and light entities
+  hold that; the per-ship models must not grow past what the Jutland target allows.
+
+### The first cut's era: 1890-1925
+
+The first full game is a campaign of **about 1890-1925**, after the political system is in. So the battle module is
+tuned for the pre-dreadnought, dreadnought and First World War navies. Later designs still work (the designer makes
+them, and they fight), with what the first cut has. That era asks for things a WWII-shaped plan would leave out:
 
 - **Sighting without radar.** Visibility, haze, night, searchlights and star shell. **Smoke is the big one:** funnel
   smoke, gun smoke and smoke screens decided what could be seen at Jutland. So smoke is sim state (puffs and screens
@@ -76,8 +101,9 @@ asks for things a WWII-shaped plan would leave out:
 - **Collisions and ramming.** Ships in close formation at night collided (Jutland had several), and ramming was still
   in the 1890s' tactics. A hull-against-hull test (both `HullField`s, in their frames) is a small query beside the hit
   query (step 4.6).
-- **Mines.** Fields laid by minelayers, and a ship crossing one. Mines sank the dreadnought *Audacious* in 1914 and
-  the three pre-dreadnoughts lost at the Dardanelles on 18 March 1915. Open question 1 asks whether they're in.
+- **Mines are critical** (the user, 2026-10-12). Mines sank the dreadnought *Audacious* in 1914 and the three
+  pre-dreadnoughts lost at the Dardanelles on 18 March 1915. Fields laid by minelayers, swept by sweepers, known or
+  not in each navy's picture (step 4.7).
 - **Coal.** Endurance, coaling and the smoke that comes with it. Oil firing (from ~1912) makes less smoke and needs
   fewer stokers. This sits in rails fuel and in the smoke model, and isn't a step of its own.
 
@@ -308,12 +334,23 @@ more detailed way.
 the previous one: leaks through bulkheads and decks, free surface, `sinking.py`'s non-linear settling, pumping and
 counter-flooding, a plunge or capsize that plays out.
 
-**4.6 Torpedoes, collisions, mines.** Tubes, and running torpedoes as tracks with events (like shells). Hits below
-the waterline go into the same damage. Torpedo boat and destroyer attacks need them. Then hull against hull:
-collisions and ramming, damage from where the stems struck. Mines, if they're in (open question 1): fields as static
-areas, a track crossing one as an event, a hit into the same damage.
+**4.6 Torpedoes and collisions.** Tubes, and running torpedoes as tracks with events (like shells). Hits below the
+waterline go into the same damage. Torpedo boat and destroyer attacks need them. Then hull against hull: collisions
+and ramming, damage from where the stems struck.
 
-**4.7 The coarse tier,** for damaged ships after a fight: still flooding, or burning, while the clock is compressed.
+**4.7 Mines.**
+- **Fields** are static areas on the sphere with a density, a depth and an owner. They're laid by a mission's file or
+  by minelayers at sea (mine stowage and rails are a shipgen export item, `docs/shipgen/TODO.md`), and thinned by
+  sweepers.
+- **Crossing a field is an event, in every tier.** Fields are static, so a rails leg that crosses one is solved when
+  the leg is anchored, as land will be. A ship steaming at 30,000x hits a mine at the right moment without going
+  tactical. The chance per crossing comes from the density, the ship's draught and beam against the mine's depth,
+  and the seeded stream.
+- **Knowledge:** a navy knows its own fields. It learns the enemy's from losses, sweeping and intelligence, as
+  entries in its picture, and orders route around what it knows.
+- **The hit** is an underwater explosion at a point on the hull, into the same damage as a torpedo.
+
+**4.8 The coarse tier,** for damaged ships after a fight: still flooding, or burning, while the clock is compressed.
 
 ### 5. Command
 
@@ -625,6 +662,11 @@ The user's, 2026-10-12, on the module:
    on a modern machine; if we can't hit it, we'll do brutal ECS tricks.
 6. **Compiled ships on disk,** in an internal cache, before release ("Compiled ships on disk").
 7. **The world is a tab** on the top bar for now, the default one, so the game opens on the world (step 1.2).
+8. **Mines are in the module:** they're critical (step 4.7).
+9. **Submarines come after the module and before the campaign,** not with aviation in 2.0.
+10. **The whole era is the goal:** pre-dreadnoughts to early missile ships. The 1890-1925 focus is only what comes
+    first. It's built one bite at a time, and each release is a fully working cut that the next one expands ("The
+    whole era, released in cuts").
 
 The user's, 2026-10-12, on the ships' data:
 
@@ -641,13 +683,8 @@ The user's, 2026-10-12, on the ships' data:
 
 ## Open questions
 
-1. **Mines: in the module or after?** My recommendation is in, late in step 4.6. They're surface warfare in this era
-   and cheap: static areas, an event when a track crosses one, and the same damage as a torpedo.
-2. **Submarines before the campaign.** They're out of the module, but the 1890-1925 campaign has the U-boat war. So
-   I assume they come between the module and the campaign, not with aviation in 2.0. Confirm when the campaign is
-   planned.
-3. **The layering inside `Fleetwright.Sim`** is proposed, not agreed: check it at step 1.1.
-4. **The shipgen fixes in step 2.1** (unique ids, the `Casemate` flag) change the export. Confirm them at the start of
+1. **The layering inside `Fleetwright.Sim`** is proposed, not agreed: check it at step 1.1.
+2. **The shipgen fixes in step 2.1** (unique ids, the `Casemate` flag) change the export. Confirm them at the start of
    that step.
 
 ## Background
