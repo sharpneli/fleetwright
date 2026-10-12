@@ -339,8 +339,13 @@ from orbit to a few metres, with no jitter, and the clock keeping the asked spee
   land or sea there is the original's for rings of any size. The result is fanned into triangles and filled on the
   GPU by winding count into a coverage target, so nothing is triangulated, and the globe's shader colours land from
   that count. The coast is the same ring minus its walks, so fill and coast never disagree. A chunk whose cap is
-  clear of the view enters as one point. The level follows the zoom (1:110M over 6,000 km across, 1:50M over
-  600 km, else 1:10M), and the lines are rebuilt only when the view moves. No allocation.
+  clear of the view enters as one point. The lines are rebuilt only when the view moves. No allocation.
+- **The level** (2026-10-12, the user: more precise on screen before a level gives way) is chosen by the data, not
+  the window: the coarsest level whose median coast segment (`Land.MedianSegmentMetres`: 63 km, 7.6 km, 1.6 km)
+  is at most 10 px on screen. That puts 1:50M from ~6,300 m/px and 1:10M from ~760 m/px. The old width rule let a
+  level run to 17-20 px segments. Points within 1.5 px of the last kept are dropped, so the work follows the
+  coast's length on screen. Panning just inside 1:10M over Norway's fjords, the densest coast there is: ~2 ms
+  DevRelease, ~8 ms Debug (p95). At 8 px, Debug went past 10 ms. The game sim uses the finest level always.
 - **The first version clipped by planes through the Earth's centre**, as a GPU clips to its frustum. That's only
   valid for a ring inside a hemisphere: where a ring leaves and re-enters, the join along the plane's great circle
   can go the wrong way round. Afro-Eurasia and the Americas are bigger than a hemisphere, so whenever the screen was

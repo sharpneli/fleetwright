@@ -13,8 +13,12 @@ namespace Fleetwright.Map;
 /// of any size. Afro-Eurasia and the Americas span more than a hemisphere, which broke clipping by planes through the
 /// centre: its joins along a plane's great circle could go the wrong way round. Walks along the edge are fill only,
 /// never coast.</para>
-/// <para>The level of detail follows the zoom: 1:110M for the globe, 1:50M for a theatre, 1:10M closer in. Allocates
-/// nothing once its buffers have grown to the views it's shown.</para></summary>
+/// <para>The level of detail follows the zoom, by the data alone: the coarsest level whose median coast segment is at
+/// most <see cref="MaxSegmentPx"/> on screen (with Natural Earth: 1:110M above ~6,300 m/px, 1:50M above ~760 m/px,
+/// else 1:10M), so the coast stays smooth before a level gives way, whatever the window's size. Points closer than
+/// <see cref="MinStepPx"/> to the last one kept are dropped (a coast line is 1.2 px wide): a level just past its
+/// switch has segments of about 2 px, and the work then follows the coast's length on screen, not the data's density. Allocates nothing once
+/// its buffers have grown to the views it's shown.</para></summary>
 public sealed class LandView(Land coarse, Land medium, Land fine)
 {
     struct Pt
@@ -24,6 +28,12 @@ public sealed class LandView(Land coarse, Land medium, Land fine)
     }
 
     const double WalkStep = 5 * Math.PI / 180;   // the longest step of a walk along the cap's edge
+
+    /// <summary>The longest a level's median coast segment may look before the next finer level takes over, pixels.</summary>
+    public const double MaxSegmentPx = 10;
+
+    /// <summary>Projected points nearer than this to the last one kept are dropped, pixels.</summary>
+    public const double MinStepPx = 1.5;
     static readonly Vector4 CoastColor = new(0.86f, 0.80f, 0.60f, 0.55f);
 
     Pt[] a = new Pt[4096];
@@ -31,25 +41,29 @@ public sealed class LandView(Land coarse, Land medium, Land fine)
     Vector2[] px = new Vector2[4096];
     int fillCount;
 
-    // the cap: its centre (the view's), and the cosine and sine of its radius
+    // the cap: its centre (the view's), and the cosine and sine of its radius; and the cosine of MinStepPx's angle
     Vec3d centre;
-    double capCos, capSin;
+    double capCos, capSin, minStepCos;
 
     /// <summary>The fill's triangles in NDC, wound either way: the GPU counts windings.</summary>
     public ReadOnlySpan<Vector2> Fill => fill.AsSpan(0, fillCount);
 
-    /// <summary>The land at the view's level of detail.</summary>
-    public Land LevelFor(in MapView v)
-    {
-        double across = v.MetresPerPixel * v.Width;
-        return across >= 6_000_000 ? coarse : across >= 600_000 ? medium : fine;
-    }
+    /// <summary>The land at the view's level of detail: the coarsest whose median segment is at most
+    /// <see cref="MaxSegmentPx"/> on screen.</summary>
+    public Land LevelFor(in MapView v) => LevelFor(v.MetresPerPixel);
+
+    public Land LevelFor(double metresPerPixel) =>
+        coarse.MedianSegmentMetres <= MaxSegmentPx * metresPerPixel ? coarse
+        : medium.MedianSegmentMetres <= MaxSegmentPx * metresPerPixel ? medium
+        : fine;
 
     /// <summary>Rebuilds the fill and adds the coast to <paramref name="lines"/>.</summary>
-    public void Build(in MapView v, MapLines lines)
+    public void Build(in MapView v, MapLines lines) => Build(v, lines, LevelFor(v));
+
+    /// <summary>Rebuilds at a given level of detail.</summary>
+    public void Build(in MapView v, MapLines lines, Land land)
     {
         fillCount = 0;
-        var land = LevelFor(v);
         SetCap(v);
         for (int i = 0; i < land.RingCount; i++)
         {
@@ -68,6 +82,8 @@ public sealed class LandView(Land coarse, Land medium, Land fine)
     void SetCap(in MapView v)
     {
         const double M = 0.05;
+        double step = MinStepPx * v.MetresPerPixel / Earth.Radius;
+        minStepCos = 1 - step * step / 2;
         centre = -v.Forward;
         double horizon = Earth.Radius / (Earth.Radius + v.Altitude);
         capCos = horizon + 1e-9 * (1 - horizon);
@@ -105,7 +121,14 @@ public sealed class LandView(Land coarse, Land medium, Land fine)
             if (cos > 0 && Clear(cc, cos))
                 to = from + 1;
             for (int k = from; k < to; k++)
-                Add(ring[k], k == 0);
+            {
+                var p = ring[k];
+                // a point inside the cap within MinStepPx of the one before it is dropped before any work is done on
+                // it (a dot product against the step's chord, at the view's scale)
+                if (k > 0 && Vec3d.Dot(p, prev) > minStepCos && In(p) && In(prev))
+                    continue;
+                Add(p, k == 0);
+            }
         }
         Close();
         return n;
@@ -249,11 +272,21 @@ public sealed class LandView(Land coarse, Land medium, Land fine)
     void Emit(in MapView v, int n, MapLines lines)
     {
         Grow(ref px, n);
+        int kept = 0;
         for (int k = 0; k < n; k++)
         {
             v.Project(a[k].P * Earth.Radius, out double x, out double y);
-            px[k] = new Vector2((float)x, (float)y);
+            var q = new Vector2((float)x, (float)y);
+            // drop a point within MinStepPx of the last kept, unless it starts or ends a walk along the cap's edge
+            if (kept > 0 && a[k].Mask == a[kept - 1].Mask && Vector2.DistanceSquared(q, px[kept - 1]) < MinStepPx * MinStepPx
+                && (k + 1 == n || a[k + 1].Mask == a[k].Mask))
+                continue;
+            a[kept] = a[k];
+            px[kept++] = q;
         }
+        n = kept;
+        if (n < 3)
+            return;
         int need = fillCount + 3 * (n - 2);
         if (need > fill.Length)
             Array.Resize(ref fill, Math.Max(fill.Length * 2, need));

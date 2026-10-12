@@ -71,5 +71,23 @@ public class LandViewTests(ITestOutputHelper output)
             Assert.Equal(0, LodSweepTests.Winding(View.Fill, x, y));
     }
 
+    [Fact]
+    public void The_level_shows_while_its_segments_are_short_on_screen()
+    {
+        // by the zoom alone, never the window's size; the chosen level's median segment at most MaxSegmentPx, and the
+        // next coarser one's over it
+        Land[] levels = [Load("110m"), Load("50m"), Load("10m")];
+        var view = new LandView(levels[0], levels[1], levels[2]);
+        for (double mpp = 20_000; mpp > 0.1; mpp /= 1.05)
+        {
+            var level = view.LevelFor(mpp);
+            Assert.Same(level, view.LevelFor(new MapView(MapCamera.At(0, 0, mpp), 800, 600)));
+            Assert.Same(level, view.LevelFor(new MapView(MapCamera.At(0, 0, mpp), 3840, 2160)));
+            int i = Array.IndexOf(levels, level);
+            Assert.True(i == 2 || level.MedianSegmentMetres / mpp <= LandView.MaxSegmentPx);
+            Assert.True(i == 0 || levels[i - 1].MedianSegmentMetres / mpp > LandView.MaxSegmentPx);
+        }
+    }
+
     static readonly (double X, double Y)[] Probes = [(800, 450), (5, 5), (1595, 5), (5, 895), (1595, 895), (400, 700)];
 }

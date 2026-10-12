@@ -24,6 +24,10 @@ public sealed class Land
     public int RingCount => start.Length - 1;
     public int PointCount => points.Length;
 
+    /// <summary>The median length of the coast's segments, metres: how fine the drawing is (1:110M ~63 km, 1:50M
+    /// ~7.6 km, 1:10M ~1.6 km). A map shows a level while these stay short on screen.</summary>
+    public double MedianSegmentMetres { get; }
+
     public ReadOnlySpan<Vec3d> Ring(int i) => points.AsSpan(start[i], start[i + 1] - start[i]);
 
     /// <summary>A ring's bounding cap: its centre, and the cosine of its angular radius.</summary>
@@ -40,6 +44,17 @@ public sealed class Land
         this.points = points;
         this.start = start;
         int n = start.Length - 1;
+        var lengths = new double[points.Length];
+        for (int i = 0, e = 0; i < n; i++)
+        {
+            var ring = Ring(i);
+            for (int k = 0; k < ring.Length; k++)
+                lengths[e++] = Vec3d.Dot(ring[k], ring[(k + 1) % ring.Length]) is var d && d < 1
+                    ? Math.Sqrt(2 - 2 * d) * Earth.Radius   // the chord: equal to the arc for coast segments
+                    : 0;
+        }
+        Array.Sort(lengths);
+        MedianSegmentMetres = lengths.Length > 0 ? lengths[lengths.Length / 2] : 0;
         capCentre = new Vec3d[n];
         capCos = new double[n];
         for (int i = 0; i < n; i++)

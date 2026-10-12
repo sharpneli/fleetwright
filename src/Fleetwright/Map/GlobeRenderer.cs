@@ -23,7 +23,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
     SDL_GPUTextureFormat pipeFormat;
     SDL_GPUSampleCount pipeSamples;
 
-    const uint LineBufferBytes = 4 << 20, FillBufferBytes = 8 << 20;
+    const uint LineBufferBytes = 16 << 20, FillBufferBytes = 8 << 20;
     const SDL_GPUTextureFormat CoverageFormat = SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16_FLOAT;
 
     struct GlobeParams
