@@ -260,7 +260,9 @@ Fleetwright (exe)        the app: engine, scene stack, screens, renderers
 ```
 
 This replaces the battle plan's open question 2 (a `Fleetwright.Battle` project): the battle is the tactical tier of
-`Fleetwright.Sim`, and `ShipClass` / `ShipState` live there.
+`Fleetwright.Sim`, and `ShipClass` / `ShipState` live there. The list above is what the world holds. How the code is
+layered inside the project (`Core`, `Ships`, `Combat`, then the world on top, one direction of dependency) is in
+`docs/battle/plan.md` "Inside `Fleetwright.Sim`".
 
 ### The sim thread and the boundary
 

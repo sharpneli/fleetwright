@@ -1,6 +1,7 @@
 # Plan: the battle module's data, from designs to ships at sea
 
-2026-10-11. Status: the shape is agreed with the user (2026-10-11); the names and the open questions at the end are not.
+2026-10-11. Status: the shape is agreed with the user (2026-10-11), and the open questions were settled on 2026-10-12
+("Decisions" at the end). "The code, checked again" holds what step 1 has to deal with.
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
 changed from the plan).
@@ -58,6 +59,63 @@ What doesn't fit a battle:
 8. **The mount ↔ component link is implicit:** it holds because the sprite and the hitbox side filter the components
    the same way.
 
+### The code, checked again (2026-10-12)
+
+This check read the code and surveyed the hitboxes of every golden build (325 builds: 71 designs plus the fuzz
+cases). It found these issues for step 1:
+
+- **Sizes are larger than above.** The largest build has 333 components, 984 cells, 212 rooms, 157 bulkheads, 20
+  decks and 6,148 neighbour entries (each edge listed from both cells). That's still dense arrays per ship: a few
+  thousand entries, tens of KB, ~100 MB for 2,000 of the largest. Typical warships are a quarter of that.
+- **Component ids aren't always unique.** The seaplane carrier and four fuzz cases have two components named
+  `Hangar`. Cells, rooms, bulkheads and decks are unique everywhere. Fix it in shipgen first (a golden change, its
+  own commit). The compiler rejects duplicate ids instead of picking one.
+- **`Component.Mount` means two things.** On a barbette it's the gun mount's id, a link. On a secondary gun it's
+  `"casemate"`, a flag (`Hitbox.cs:72`). The compiler can tell them apart by kind, but the export should say what it
+  means: a `Casemate` bool on the gun, and `Mount` only as a link. That's a golden change too, ideally in the same
+  shipgen pass.
+- **`Tier.Floor` of the bottom tier is `"Keel"`,** not a deck id. It's a sentinel the compiler maps to "no deck"
+  (-1).
+- **AA mounts aren't in `TurretTypes`** (`single20`, `quad40` are their own catalogue) and have no `Local` and no
+  rotation. So the mount table (`TopView`'s filter: components with `Local`) is main, secondary and torpedo mounts.
+  Some torpedo mounts don't rotate, and submerged tubes have arcs but no `Local`. AA bearings wait for aircraft.
+- **Every other string link resolves:** cell ↔ room, cell neighbours (by bulkhead, deck or "open"), cell
+  `Through` → shafts and alleys, `Also` → rooms, the component links (magazine, barbette, funnel, smoke, boiler
+  rooms, propeller, engine room, alley, shaft, steering, room) and the room links (cells, mounts, tubes, shafts,
+  rudders). These are what the compiler turns into indices, so step 1 can be strict: any link that doesn't resolve
+  is an error.
+- **Kinds:** 19 component kinds (`main`, `secondary`, `torpedo` and `aa` are mounts by battery; `barbette`,
+  `superstructure`, `conning_tower`, `funnel`, `uptake`, `casing`, `sponson`, `mast`, `shaft`, `shaft_alley`,
+  `propeller`, `rudder`, `torpedo_tube`, `flight_deck`, `hangar_bay`), 8 roles on superstructure and sponsons
+  (`bridge`, `director`, `aft_control`, `deckhouse`, `casemate`, `island`, `hangar`, `elevator`), 13 room kinds, 6
+  bulkhead kinds, 4 deck kinds. Directors are superstructure blocks with role `director`, a `Battery` and a
+  `RangefinderM`. All are enums in `ShipClass`, read from their strings once. An unknown string is a compile error,
+  so a new kind in shipgen is noticed.
+- **`Component`'s ~50 nullable fields fit common columns plus side tables.** Every component gets kind, role,
+  bounds, base and top, armour and crew. Mounts, funnels, the shaft line (shaft, alley, propeller, rudder),
+  barbettes and directors each get a table of their own, indexed by component. No per-kind class hierarchy.
+- **ShellTest isn't a fixed reference yet:**
+  - It steps along the ray at 5 cm and bisects at crossings. It allocates per trace (a `bool[]`, strings).
+  - It splits shells over `Environment.ProcessorCount` workers with a `Random` per worker, so its output depends on
+    the machine's core count.
+  - Its `DeckTop` duplicates `HullField.DeckTop`.
+
+  So step 1's proof separates sampling from tracing. The shots (target, bearing, fall) are drawn up front from the
+  seed, one stream per shot. Then the old tracer on `Hitboxes` and the port on `ShipClass` must agree shot by shot.
+  Step 3 replaces stepping with exact intersections and is checked against step 1 shot by shot: every disagreement
+  explained (near an edge), none in bulk.
+- **Where the ported shell-test lives:** `ShellTest` is in `Fleetwright.Shipgen`, and Shipgen can't see `ShipClass`
+  in the Sim. The port goes to `Fleetwright.Sim`, and `Fleetwright.Shipgen.Cli` references `Fleetwright.Sim` (a tool
+  may depend on anything; the libraries may not). The old `ShellTest` is deleted once the port matches it.
+- **There is no content hash and no shipgen version yet.** `DesignWorker` keys on the design JSON string, and
+  `Design.Id` isn't unique. Two hashes are needed, for different jobs:
+  - **The design hash:** the canonical design JSON (SHA-256 is in the BCL). It's the registry's key ("built this
+    already?") and a mission's or save's reference to a design.
+  - **The layout hash:** the compiled `ShipClass`'s structure (ids, kinds, links, in index order). Saves hold string
+    ids (decision 3), so they don't need it to load. It tells a load, a mission file or a test that a rebuilt class
+    differs from the one saved: shipgen changed it. State is still mapped by id, and parts that no longer exist are
+    dropped and logged. Within a run, it's the key indices are valid under.
+
 ## The shape
 
 ```
@@ -88,18 +146,44 @@ ShipClassArt     per (design, look): sprite layout, baked images -> GPU textures
 ```
 
 It mirrors the views' layering (CLAUDE.md "Views"): a CPU step that runs headless and deterministic (the sim and its
-damage), a renderer that reads `ShipState` and `ShipClassArt` and knows nothing of the sim, and an `IScene` on top.
+damage), a renderer that reads the snapshot's copy of what's drawn (pose, bearings, damage looks; never `ShipState`
+itself, per `docs/world/architecture.md` "The sim thread and the boundary") with `ShipClassArt`, and knows nothing
+of the sim, and an `IScene` on top.
+
+`ShipState` is one ship's view of the data. Its storage may later move into world-wide stores per kind, or an
+entity component system (the tech-stack plan leaves "hand-written SoA or Arch" for later). So callers reach it
+through index-based accessors, never its arrays' layout. Moving the storage is then a refactor of `ShipState`
+alone.
+
+## Inside `Fleetwright.Sim` (proposed 2026-10-12)
+
+Every part of the sim is in layers with one direction of dependency, as the projects are. Namespaces under
+`Fleetwright.Sim`, lowest first; each may use the ones above it in this list, never the ones below:
+
+```
+Fleetwright.Sim.Core      double vectors, the sphere (great circles, frames), world time, SimSettings, seeded streams
+Fleetwright.Sim.Ships     ShipClass, its compiler from Shipgen's Ship, the class registry, content hashes
+Fleetwright.Sim.Combat    ShipState, the hit query, damage, flooding and buoyancy, shells: the tactical tier
+Fleetwright.Sim (World)   the world, the clock and scheduler, tiers, encounters, commands in, the snapshot out
+```
+
+- `Ships` is pure data and compilation: no time, no world, nothing that changes. `Combat` gets time and a `dt`
+  from the scheduler and never owns either. Only `World` knows about threads, commands and the snapshot.
+- `Fleetwright.Sim` depends on `Fleetwright.Shipgen` only. `Fleetwright.Shipgen` never depends on it.
+- Tests: `tests/Fleetwright.Sim.Tests` (xUnit, headless, no GPU).
 
 Rules:
 
+- **The battle lives in `Fleetwright.Sim`, in layers of its own** (see "Inside `Fleetwright.Sim`"). It has no GPU, UI
+  or engine dependency. `ShipClassArt` and the sprite renderer are on the exe's side and only read the sim's snapshot.
 - The battle is the world's tactical tier (`docs/world/architecture.md`): every step keeps to that doc's "What the
   combat module must already respect" (world positions and time, encounters as sets of entities, `ShipState` made
   and dropped per entity, damage from a hit not a flight, sighting into a navy's picture, commands in, `SimSettings`).
 - `Hitboxes` stays the export and interchange; nothing in the battle reads it after compiling. `ShipClass` is never
   written after it's made.
 - Per-ship arrays are allocated once at spawn; ticks and hit queries allocate nothing (the game is soft real time).
-- Indices are stable for one design and one shipgen version (the build is deterministic: the goldens), so the class's
-  content hash goes with any stored index.
+- Indices are stable for one design and one shipgen version (the build is deterministic: the goldens). At runtime
+  everything is by index. Save files hold string ids and are mapped back to indices on load (decision 3).
 
 ## The world: one sphere, local frames inside it (agreed 2026-10-11)
 
@@ -195,9 +279,23 @@ of its own.
 
 Each step ends verified and committed, with its notes added here.
 
-1. **`ShipClass`, the compiler.** Compile a `Ship`'s hitboxes and links into int-indexed, read-only arrays (component
-   kinds as an enum, CSR adjacency, the mount table, the armour solids). Proof: ShellTest ported onto it gives the
-   same results; `shell-test` stays the regression check. Decide where it lives first (open question 2).
+0. **Before step 1, in shipgen** (its own commits, goldens updated on purpose): unique component ids (the duplicate
+   `Hangar`), and `Component.Mount` split into a link and a `Casemate` flag ("The code, checked again"). Small, but
+   the compiler is strict, so these go first.
+1. **`ShipClass`, the compiler.** It creates the `Fleetwright.Sim` project (`Core` and `Ships` only, with
+   `tests/Fleetwright.Sim.Tests`). It compiles a `Ship`'s hitboxes and links into int-indexed, read-only arrays:
+   - component kinds and roles as enums, common columns plus side tables;
+   - CSR adjacency (each edge → its bulkhead or deck);
+   - the mount table, the armour solids, the id ↔ index maps;
+   - the design hash and the layout hash.
+
+   Strict: an unknown kind or a link that doesn't resolve is an error. Proofs:
+   - The compiler runs over every golden build without an error.
+   - ShellTest's shots are drawn up front (one stream per shot), and the old tracer and the port on `ShipClass`
+     agree shot by shot on every design with a citadel.
+   - `shell-test` in the CLI runs the port. The old `ShellTest` goes once they match.
+
+   Nothing in it allocates per query, and nothing writes to a class once it's made.
 2. **`ShipState` and spawning.** The condition arrays, filled from the class's initial loads, and the pose on the
    sphere ("The world": the double vector types, moving on the sphere, the ship frame). Test: 50 ships of one class
    share one `ShipClass` and none writes to it; a ship steaming a full circle of the globe, across a pole, comes back
@@ -212,22 +310,51 @@ Each step ends verified and committed, with its notes added here.
    `research/naval/realtime-tech-stack-plan.md`), many ships drawn into an existing pass from their transforms,
    bearings and damage values, sinkage from the height map. Then a test scene: a few ships, click to hit one and watch
    its state change.
-6. **Damage rules.** Flooding first (`sinking.py`'s approach on `ShipState`), and disabling components. Penetration and
-   the systems' dependency graph (`research/simulation/damage-model-research.md` §8-9) after.
+6. **Damage rules.** Flooding first, and disabling components. Penetration and the systems' dependency graph
+   (`research/simulation/damage-model-research.md` §8-9) after. Buoyancy starts simple (decision 4): first they
+   float, then they float in a more detailed way.
+   - **First:** water by cell (volume × permeability), inflow through a breach's area. The ship settles, trims and
+     heels linearly from the exported full-load `Hydrostatics` (sinkage = added weight / TPC, trim from the moment
+     over MCT, heel from GM_T). It sinks when the water aboard exceeds the reserve buoyancy (the intact volume above
+     the waterline) or capsizes when heel passes a limit from `SimSettings`. No leaking bulkheads, free surface,
+     counter-flooding or motion past the deck edge yet.
+   - **Then, area by area:** leaks through bulkheads and decks, free surface, `sinking.py`'s non-linear settling,
+     pumping and counter-flooding, a plunge or capsize that plays out. Each is its own small step, checked against
+     the previous one.
+   - This will change once the damage model is in, because flooding and damage interact heavily: fire and flooding
+     share cells, power drives pumps, a jammed rudder steers into it. So the first version's job is to be easy to
+     change, not complete.
 7. **Shells in flight** ("Shells"). The trajectory tables per shell type and their builder (checked against direct
    integration), the shell record, the impact and danger-window solve, the event schedule, and the window's sweep
    through step 3's query. Test: hits and splashes are the same at a 0.1 s and a 5 s tick; a shell fired along a
    meridian and one along the equator land where direct integration on the rotating sphere says.
 
-## Open questions (the user's)
+## Order against the missions plan
 
-1. **Names:** `ShipClass` / `ShipState` (or `Vessel`), `ShipClassArt`?
-2. **Where the battle code lives:** a new `Fleetwright.Battle` project with no GPU, depending only on Shipgen's model
-   (recommended), or inside Shipgen or the game exe? Superseded by `docs/world/architecture.md` (proposed): the battle
-   is the tactical tier of a `Fleetwright.Sim` project that holds the whole world.
-3. **Saves:** condition tables by index (compact; breaks when shipgen changes a class's layout) or by string id
-   (survives a rebuild)? Proposed: indices plus the class hash at runtime, string ids in save files.
-4. **Buoyancy realism** (open since 2026-10-07, DECISIONS "Buoyancy"): step 6 needs it, steps 1-5 don't.
+`docs/missions/plan.md` orders the game's stages: one ship on the map, then two, then shooting. Steps 0-1 don't
+conflict with that. They're headless, they set up `Fleetwright.Sim`, and stage 1 needs a ship of a class anyway. So
+the next session does steps 0-1. After that, the missions stages decide when steps 2-7 come in. Step 2's pose on the
+sphere is part of stage 1.
+
+## Decisions (the user's, 2026-10-12)
+
+1. **Names:** `ShipState` for one ship at sea. It's easy to rename later, and its storage may become an entity
+   component system (hence the accessors in "The shape"). `ShipClass` and `ShipClassArt` stay as named here.
+2. **Where it lives:** `Fleetwright.Sim` (`docs/world/architecture.md`), in sub-layers of its own, and every part
+   inside has a coherent architecture of its own too ("Inside `Fleetwright.Sim`"). Everything ships in one
+   executable as independent components. The designer runs with or without the sim. The sim has no GPU dependency,
+   and its renderers only read its state.
+3. **Saves:** indices at runtime for performance, string ids in save files. Saving and loading may take a while;
+   play may not.
+4. **Buoyancy:** start simple and make it more detailed area by area, the way shipgen was built. First they float,
+   then they float in a more detailed way. Expect to change it a lot once the damage model is in.
+
+## Open questions
+
+1. **The layering inside `Fleetwright.Sim`** ("Inside `Fleetwright.Sim`") is proposed, not agreed: check it at the
+   start of step 1.
+2. **The shipgen fixes of step 0** (unique ids, the `Casemate` flag) change the export. Confirm them at the start of
+   step 0.
 
 ## Background
 
