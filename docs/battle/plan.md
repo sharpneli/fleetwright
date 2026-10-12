@@ -197,9 +197,9 @@ The order follows the user (2026-10-12): first a world, an empty sphere of water
 everything else on top, one step at a time. Each step ends with something to run and look at, and with a test. The
 missions plan's baby steps (one ship, two ships, shooting) are this order's 2.3 and 4.2.
 
-The Earth model comes in when the user brings it, at any point after 1.2. Until then a rough Earth stands in (1.3:
-Natural Earth's land), and nothing may assume the land is final: routes are legs between waypoints, and line of
-sight and the contact scan leave room for a land test.
+**The first version ships with Natural Earth's land** (1.3; the user, 2026-10-12: already better than Rule the
+Waves'). A richer Earth model (ports, bathymetry, 1916 harbours) may come later, so nothing may assume the land is
+final: routes are legs between waypoints, and line of sight and the contact scan ask `Land`, never its data.
 
 ### 1. A world of water
 
@@ -324,7 +324,8 @@ from orbit to a few metres, with no jitter, and the clock keeping the asked spee
     (including at the date line and near a pole); a 1 cm move of the camera is 0.1 px every time (no jitter, no
     steps); zoom and drag keep their point to 1e-3 px; the grid allocates nothing.
 
-**1.3 A rough Earth** (the user, 2026-10-12: land as a concept now, a better model later). **Done (2026-10-12):**
+**1.3 A rough Earth** (the user, 2026-10-12: land as a concept now; then, the same day, the Earth the first version
+ships with). **Done (2026-10-12):**
 - **Data:** Natural Earth's land at 1:110M, 1:50M and 1:10M, from world-atlas's TopoJSON (as the map mockup used),
   baked by `tools/land_bake.py` into `Content/World/land-*.bin` (3.3 MB; attribution in `Content/World/README.md`).
   These are modern coastlines (no 1916 harbour works) and have no ports.
@@ -361,6 +362,45 @@ from orbit to a few metres, with no jitter, and the clock keeping the asked spee
   work per frame): Debug 7.0 -> 2.7 ms, DevRelease 0.66 ms. The rebuild alone is under 0.4 ms (Release).
 - **Not yet:** the world doesn't hold the land (the map loads its own copy), and nothing in the sim asks it yet.
   The first users are routing and line of sight; the world will take the 1:10M `Land` when they come.
+
+**1.4 The land as static meshes** (planned 2026-10-12). Since Natural Earth ships, the map should draw it the way a
+game does: baked once, drawn with a few draw calls, no CPU per frame. Today the CPU rebuilds the visible land every
+time the view moves (0.3-2 ms Release, up to ~8 ms Debug). The plan:
+
+- **No triangulation.** The winding-count fill works with any set of fans. It only needs every fan triangle small
+  enough that its sag below the sphere (L²/8R for an edge L) can't show at the zooms its level is drawn at. So the
+  land is cut into tiles and each tile gets a fan of its own:
+  - Tiles are a cube-sphere grid: six faces, each an N x N grid in its gnomonic plane, where great circles are
+    straight lines.
+  - Per face, a ring is brought inside a cap around the face (60°: inside a hemisphere, so the gnomonic projection
+    holds), with the cap retraction `LandView` already uses (factored out to share). It's projected, clipped to the
+    face square, then split into quadrants down to tile size (Sutherland-Hodgman, planar now). Clipping keeps the
+    winding number of every point inside a tile, even for non-simple polygons.
+  - Each tile's clipped polygon becomes a fan from its first point. A tile inside a continent is a square: two
+    triangles. Polygons with no area (walks, slivers) are dropped.
+- **Tile sizes, from the sag:** half a pixel at 20° off straight down, at the finest zoom a level is drawn at,
+  allows a sag of 1.37 x mpp: ~8.6 km for 1:110M (from ~6,300 m/px), ~1 km for 1:50M (from ~760 m/px).
+  - A fan triangle can span a tile's diagonal, and gnomonic tiles are largest at the face centre (2/N rad a side).
+  - So one grid for both levels: N = 80, tiles of ~160 km and diagonals of ~230 km, which sag under 1.1 km.
+  - The coast's own edges sag far less (110m p90 121 km is 290 m; 50m p90 20 km is 8 m).
+- **The coast** is a static line mesh: two vertices per point, carrying the previous, current and next point and a
+  side. The vertex shader projects them and mitres the join in screen space, as `MapLines` does on the CPU.
+- **Precision:** floats are enough at these levels. A position at 6.4e6 m is good to ~0.5 m against pixels of
+  760 m and more. The shader takes the eye as a float uniform and forms pos - eye before the rotation and
+  perspective.
+- **The far side:** the coverage pass gets a depth buffer. A full-screen pre-pass ray-casts a sphere 2 km smaller
+  than the Earth and writes its depth, then fans draw with a depth test. Fans sag at most ~1 km, so front land
+  passes and far-side land fails. The coast lines test against the same depth, written by the globe pass in the
+  main target. A sliver of far-side land within ~1.4° of the limb can show through: a pixel or two at the limb.
+- **The finest level stays on the CPU path.** 1:10M close in would need ~2 km tiles everywhere (millions of
+  triangles). Its views are small, so `LandView` stays cheap. `MapScene` picks static or CPU by `LevelFor`.
+- **Baking** happens at load, in C#, deterministic, in tens of ms for 59k points. It could later be cached to disk
+  like compiled ships.
+- **Proof:**
+  - `LodSweepTests` checks the static fill too: fans projected through `MapView` on the CPU, the winding at probes
+    against `IsLand`, with probes near the limb left out.
+  - Screenshots at each band, against the CPU path's.
+  - `-frametimes` while panning: no land work on the CPU above the 1:10M switch.
 
 ### 2. Ships that move
 
