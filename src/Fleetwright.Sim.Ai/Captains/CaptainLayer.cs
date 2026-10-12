@@ -59,6 +59,7 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
         public double ClearanceM;       // how far off the coast his ship must keep, from above (0: none)
         public bool Watch;              // held by the player on a route: its end hands the ship back
         public bool Asked;              // held by the player while his superior's orders for him changed: a notice
+        public Trail? Track;            // following in line ahead: the track of the ship ahead (made once, reused)
     }
 
     Captain[] captains = new Captain[16];
@@ -296,12 +297,22 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
                 (cap.Order, cap.Target, cap.AskedKn) = (CaptainOrder.Course, 0, own.SpeedOrderKn);   // lost: he holds his course
                 continue;
             }
-            var (course, kn) = cap.Order switch
+            double course, kn;
+            if (cap.Order == CaptainOrder.Follow || cap.Order == CaptainOrder.Station && cap.AbeamM == 0)
             {
-                CaptainOrder.Follow => Behaviours.Follow(own, t, cap.DistanceM, ctx.Settings),
-                CaptainOrder.Station => Behaviours.Station(own, t, cap.DistanceM, cap.AbeamM, ctx.Settings),
-                _ => Behaviours.Run(own, t),
-            };
+                // in line ahead: on the track the ship ahead steamed, so he turns where it turned (laid straight astern
+                // of it when he starts following it, or comes off rails, where the line steamed straight)
+                var s = ctx.Settings;
+                double distance = cap.DistanceM > 0 ? cap.DistanceM : s.FollowDistanceLengths * own.Handling.LengthM;
+                var track = cap.Track ??= new Trail(s.FollowTrackPoints);
+                if (track.Of != target || track.Count == 0 || ctx.NowMs - track.LastMs > 3 * s.CaptainPeriodMs)
+                    track.Lay(target, t.Position, t.Forward, 1.5 * distance + 2000, s.FollowTrackStepM, ctx.NowMs);
+                track.Record(t.Position, s.FollowTrackStepM, ctx.NowMs);
+                if (!Behaviours.Track(own, t, track, distance, s, out course, out kn))
+                    (course, kn) = Behaviours.Station(own, t, distance, 0, s);   // off the track: onto its line first
+            }
+            else
+                (course, kn) = cap.Order == CaptainOrder.Station ? Behaviours.Station(own, t, cap.DistanceM, cap.AbeamM, ctx.Settings) : Behaviours.Run(own, t);
             if (cap.LimitKn > 0)
                 kn = Math.Min(kn, cap.LimitKn);
             Give(ctx, own, course, kn);
@@ -375,6 +386,7 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             h.Add(c.ClearanceM);
             h.Add(c.Watch);
             h.Add(c.Asked);
+            c.Track?.Hash(ref h);
         }
     }
 

@@ -1300,8 +1300,17 @@ the designer" (step 2.2), not here.
   speed-matching term, would hold station closer.
 - **Choosing a side when the leader turns sharply** (2.3b): a follower doesn't yet pick the inside or outside of a
   hard turn.
-- **Turns in succession** (2.4): in line ahead each ship follows the one before it, so it cuts the corner a little
-  rather than turning at the guide's turning point.
+- **Turns in succession** (2.4). **Done, 2026-10-12** (found by the user: a battle line of two squadrons didn't
+  keep one track, and surged): a ship in line ahead kept station on a point astern of the ship ahead along that
+  ship's *heading*, so in a turn its station swung round and it cut across; 3 km between squadrons (the map's force
+  default) made the second squadron cut a 90° turn by 2.5 km, ringing 4 to 18 kn. Now a follower in line ahead (a
+  follow, or a station with nothing abeam) keeps the *track* the ship ahead steamed (`Captains/Trail`, its positions
+  every 50 m, laid straight astern when he starts or comes off rails): he steers the track's heading two of his
+  lengths ahead, less 0.3° a metre he's off it, and rings for the gap along the track (`Behaviours.Track`; swept: a
+  point to pursue cuts inside every bend, further ahead turns early). The same line keeps within 54-128 m of the
+  guide's track through the turn, ringing 9.6 to 12.7 kn; a squadron's column after forming up 24 m → 4 m. Abreast
+  and echelon still turn together. On rails the line rides straight offsets as before (turns there are snaps, from
+  10,000×). A force switched to line ahead on the map takes its guide squadron's spacing, making one even line.
 - **Long lines hunted after a turn** (2.6b; the user: "a BMW driver in a traffic jam"). **Damped, 2026-10-12:** a
   follower rang the leader's speed plus the gap over the closing time, and his engines answer in minutes, so he
   overshot and braked, and down a line the swings grew (in a line of six, the last ship rang 253 times between 2.4

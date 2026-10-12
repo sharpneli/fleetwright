@@ -50,6 +50,98 @@ public static class Behaviours
         return (course, kn);
     }
 
+    /// <summary>Track: keep station <paramref name="distanceM"/> astern of the leader along the track he steamed (a
+    /// <see cref="Trail"/>), not along his heading: in line ahead each ship turns where the one ahead turned, as a
+    /// battle line turns in succession. He finds where he is along the track, steers the track's heading
+    /// <see cref="SimSettings.FollowTrackLookaheadLengths"/> of his lengths further along it, less a correction toward
+    /// it for how far he's off it, and rings as <see cref="Station"/> does, the gap measured along the track. False (and nothing) when he's more than
+    /// <see cref="SimSettings.FollowTrackJoinLengths"/> lengths off the track or astern of all of it: he joins the line
+    /// the plain way first.</summary>
+    public static bool Track(ShipState own, in Sighting leader, Trail trail, double distanceM, SimSettings s, out double courseDeg, out double speedKn)
+    {
+        (courseDeg, speedKn) = (0, 0);
+        var h = own.Handling;
+        double length = h.LengthM;
+        var p = own.Position;
+
+        // where he is along the track: the nearest point on it, walked back from the leader
+        var a = leader.Position;
+        double along = 0, best = double.MaxValue, at = 0;
+        var tangent = leader.Forward;
+        for (int k = 0; k < trail.Count; k++)
+        {
+            var b = trail.Newest(k);
+            var ab = b - a;
+            double len = ab.Length;
+            if (len > 1e-6)
+            {
+                double t = Math.Clamp(Vec3d.Dot(p - a, ab) / (len * len), 0, 1);
+                double d = (p - (a + ab * t)).Length;
+                if (d < best)
+                    (best, at, tangent) = (d, along + t * len, ab * (-1 / len));   // steaming from the older point to the newer
+                along += len;
+            }
+            a = b;
+        }
+        if (best > s.FollowTrackJoinLengths * length || at >= along - 1)
+            return false;
+
+        // he steers the track's own heading a little ahead of him (where his helm will have answered), so he puts his
+        // helm over where the ship ahead did and draws its arc, and corrects toward the track by how far he's off it
+        // (steering for a point ahead on the track instead cuts inside every bend: his helm answers late)
+        double aim = Math.Max(at - s.FollowTrackLookaheadLengths * length, 0);
+        var (ahead, dir) = TangentBack(leader.Position, leader.Forward, trail, aim);
+        var near = PointBack(leader.Position, trail, at);
+        double off = Vec3d.Dot(p - near, Vec3d.Cross(tangent, p.Normalized()));   // positive: to starboard of the track
+        courseDeg = Earth.Heading(ahead, dir) - Math.Clamp(off * s.FollowTrackCrossDegPerM, -s.FollowTrackCrossMaxDeg, s.FollowTrackCrossMaxDeg);
+        courseDeg = ((courseDeg % 360) + 360) % 360;
+
+        double behind = at - distanceM;   // positive: astern of station along the track, close up
+        double leaderKn = leader.SpeedMs / Handling.MsPerKnot;
+        double closing = own.Speed * Vec3d.Dot(own.Forward, tangent) - leader.SpeedMs;
+        double extra = Math.Clamp((behind / s.FollowCloseS - s.FollowSpeedDamping * closing) / Handling.MsPerKnot,
+            -s.FollowMaxSpeedDiffKn, s.FollowMaxSpeedDiffKn);
+        speedKn = Math.Clamp(leaderKn + extra, 0, Flank(h));
+        return true;
+    }
+
+    /// <summary>The point a distance back along a track from its newest end (the leader himself), and the direction the
+    /// track was steamed there (from the older point to the newer; the leader's own heading at his end).</summary>
+    static (Vec3d At, Vec3d Dir) TangentBack(Vec3d from, Vec3d forward, Trail trail, double metres)
+    {
+        var a = from;
+        for (int k = 0; k < trail.Count; k++)
+        {
+            var b = trail.Newest(k);
+            var ab = b - a;
+            double len = ab.Length;
+            if (len > 1e-6)
+            {
+                if (len >= metres)
+                    return (Surface(a + ab * (metres / len)), ab * (-1 / len));
+                metres -= len;
+            }
+            a = b;
+        }
+        return (a, forward);
+    }
+
+    /// <summary>The point a distance back along a track from its newest end (the leader himself).</summary>
+    static Vec3d PointBack(Vec3d from, Trail trail, double metres)
+    {
+        var a = from;
+        for (int k = 0; k < trail.Count; k++)
+        {
+            var b = trail.Newest(k);
+            double len = (b - a).Length;
+            if (len >= metres && len > 1e-6)
+                return Surface(a + (b - a) * (metres / len));
+            metres -= len;
+            a = b;
+        }
+        return a;
+    }
+
     /// <summary>Run: turn directly away from the other ship and ring flank speed.</summary>
     public static (double CourseDeg, double SpeedKn) Run(ShipState own, in Sighting from)
     {

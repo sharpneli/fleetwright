@@ -402,7 +402,12 @@ public sealed unsafe partial class MapScene
         ImGui.SetNextItemWidth(150 * UiFonts.Scale);
         int form = (int)gv.Formation[g];
         if (ImGui.Combo($"{id}formation", ref form, FormationNames, FormationNames.Length))
-            world.Send(GroupSystem.SetFormation(gv.Id[g], (Formation)form, gv.SpacingM[g]));
+        {
+            // a force into line ahead makes one line: its squadrons as far apart as their own ships
+            double gap = gv.Force[g] && (Formation)form == Formation.Column && gv.IndexOfGroup(gv.Guide[g]) is int sub and >= 0
+                ? gv.SpacingM[sub] : gv.SpacingM[g];
+            world.Send(GroupSystem.SetFormation(gv.Id[g], (Formation)form, gap));
+        }
         ImGui.SameLine();
         ImGui.SetNextItemWidth(90 * UiFonts.Scale);
         if (!ImGui.IsItemActive())

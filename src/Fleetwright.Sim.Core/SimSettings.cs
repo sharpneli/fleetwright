@@ -165,6 +165,22 @@ public sealed record SimSettings
     /// he's on station rather than overshooting it (his engines answer in minutes): 0 rings on the gap alone.</summary>
     public double FollowSpeedDamping { get; init; } = 2;
 
+    /// <summary>Following in line ahead (a follow, or a station with nothing abeam): the follower keeps the track the ship
+    /// ahead steamed, so he turns where it turned. Its points a step apart, m; as many as are kept (enough for the
+    /// longest gap astern, at 50 m a step 512 make 25 km); how far along the track ahead of himself he takes the heading
+    /// he steers, in his lengths (where his helm will have answered: swept 0.5 to 5 on a battle line's 90° turn, 2 best;
+    /// further, he turns before the ship ahead did); and how far off the track he may be before he joins its line the
+    /// plain way, in his lengths.</summary>
+    public double FollowTrackStepM { get; init; } = 50;
+    public int FollowTrackPoints { get; init; } = 512;
+    public double FollowTrackLookaheadLengths { get; init; } = 2;
+    public double FollowTrackJoinLengths { get; init; } = 4;
+
+    /// <summary>Steering the track: how many degrees off the track's heading he steers per metre he's off it, toward
+    /// it, and at most (swept 0.05 to 0.5: 0.3 holds a line within ~130 m through a 90° turn; more rings speed more).</summary>
+    public double FollowTrackCrossDegPerM { get; init; } = 0.3;
+    public double FollowTrackCrossMaxDeg { get; init; } = 30;
+
     /// <summary>How often admirals think, ms of world time; and how far under the slowest member's designed speed they
     /// hold their guide, so the others have speed in hand to keep station.</summary>
     public int AdmiralPeriodMs { get; init; } = 1000;

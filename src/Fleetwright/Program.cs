@@ -231,7 +231,7 @@ public static unsafe class Program
                 else
                     Console.Error.WriteLine($"Bad captain: -captain={cap} (want entity:follow:target[:metres], entity:run:target or entity:keep)");
             foreach (var search in searches)
-                if (!DevSearch(world, search, devGroups))
+                if (!DevSearch(world, search, devGroups, devForces))
                     Console.Error.WriteLine($"Bad search: -search={search} (want entity:ladder|square|sector|patrol[:leg nm[:nm apart[:legs]]])");
             if (startSpeed is double speed0)
                 world.Send(Sim.Command.SetSpeed(speed0));
@@ -281,9 +281,9 @@ public static unsafe class Program
     }
 
     /// <summary>-search=entity:pattern[:leg nm[:nm apart[:legs]]]: a search pattern for a dev ship, from where it is,
-    /// along its heading, to starboard. A ship that guides a -group= steams it for its group (the dev groups are made
-    /// first, in order, so the n-th is group n).</summary>
-    static bool DevSearch(Map.WorldSession world, string arg, List<string> devGroups)
+    /// along its heading, to starboard. A ship that guides a -group= steams it for its group, and one that guides a
+    /// -force= for its force (the dev groups are made first, in order, so the n-th is group n; the forces after them).</summary>
+    static bool DevSearch(Map.WorldSession world, string arg, List<string> devGroups, List<string> devForces)
     {
         var p = arg.Split(':');
         if (p.Length < 2 || !int.TryParse(p[0], out int e))
@@ -306,7 +306,8 @@ public static unsafe class Program
         int n = Sim.Ai.Admirals.SearchPatterns.Waypoints(pt, at, Sim.Core.Earth.Heading(at, f), Nm(2, 20) * 1852, Nm(3, 5) * 1852,
             (int)Nm(4, pt == Sim.Ai.Admirals.SearchPattern.Sector ? 3 : 6), true, wps);
         int guided = devGroups.FindIndex(g => g.Split(':')[0].Split(',')[0] == p[0]);
-        var unit = guided >= 0 ? Sim.Ai.Unit.Group(guided + 1) : Sim.Ai.Unit.Ship(e);
+        int forced = guided >= 0 ? devForces.FindIndex(f => f.Split(':')[0].Split(',')[0] == (guided + 1).ToString()) : -1;
+        var unit = forced >= 0 ? Sim.Ai.Unit.Group(devGroups.Count + forced + 1) : guided >= 0 ? Sim.Ai.Unit.Group(guided + 1) : Sim.Ai.Unit.Ship(e);
         Sim.Ai.Admirals.SearchPatterns.Orders(world.Ai.Orders, unit, wps.AsSpan(0, n), Sim.Ai.Admirals.SearchPatterns.Loops(pt), c => world.Send(c));
         return true;
     }

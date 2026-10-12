@@ -189,6 +189,48 @@ public class ForceTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_battle_line_turns_in_succession_on_its_guides_track()
+    {
+        // two squadrons of three in line ahead, 3 km between them (what the map's force forms with): every ship keeps to
+        // the track the guide steamed through a 90° turn, and the second squadron's guide keeps a steady speed. Before
+        // the line followed tracks, the second squadron cut the corner by 2.5 km and rang 4 to 18 kn.
+        var (w, ai) = Make();
+        int c = Class(w, "dreadnought");
+        int f = Force(w, [c, c], 3, Formation.Column, 3000);
+        var log = new HelmLog(4);
+        w.Register(log);
+        Run(w, 60);
+        w.Apply(ai.Orders.Course(Unit.Group(f), 90));
+        var track = new List<Vec3d>();
+        var worst = new double[7];
+        for (int sec = 0; sec < 50 * 60; sec++)
+        {
+            Run(w, 1);
+            track.Add(Ship(w, 1).Position);
+            if (sec % 5 != 0)
+                continue;
+            for (int e = 2; e <= 6; e++)
+            {
+                var p = Ship(w, e).Position;
+                double best = double.MaxValue;
+                int at = 0;
+                for (int i = 0; i < track.Count; i++)
+                    if (Earth.Distance(p, track[i]) is double d && d < best)
+                        (best, at) = (d, i);
+                if (at > 10 && at < track.Count - 10)   // alongside the track, not short of its start
+                    worst[e] = Math.Max(worst[e], best);
+            }
+        }
+        var speeds = log.Commands.Where(x => (ShipCommand)x.Code == ShipCommand.Speed).Select(x => x.X).ToList();
+        output.WriteLine($"off the guide's track at most {string.Join(" ", Enumerable.Range(2, 5).Select(e => $"{e}:{worst[e]:F0}"))} m; " +
+                         $"ship 4 rang {speeds.Count}x, {speeds.Min():F1}-{speeds.Max():F1} kn");
+        for (int e = 2; e <= 6; e++)
+            Assert.True(worst[e] < 200, $"ship {e} {worst[e]:F0} m off the guide's track");
+        Assert.InRange(speeds.Min(), 8, 12);
+        Assert.InRange(speeds.Max(), 12, 14);
+    }
+
+    [Fact]
     public void On_rails_at_speed_a_force_snaps_onto_its_stations_whole()
     {
         var (w, ai) = Make();
