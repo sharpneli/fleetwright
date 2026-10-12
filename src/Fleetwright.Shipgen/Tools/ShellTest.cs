@@ -65,16 +65,8 @@ public static class ShellTest
         public List<Cell> Citadel = [];
         public double? Roof;
 
-        public double DeckTop(double x)
-        {
-            double top = 0.0;
-            foreach (var r in Raised)
-                if (x >= r.X0 && x <= r.X1)
-                    top = Math.Max(top, r.Top);
-            return top;
-        }
-
         public required HullField Field;
+        public double DeckTop(double x) => Field.DeckTop(x);
         public double Hw(double x, double z) => Field.HalfWidth(x, z);
 
         public bool InHull(double x, double y, double z) => z >= Keel && z <= DeckTop(x) && Math.Abs(y) < Hw(x, z);
