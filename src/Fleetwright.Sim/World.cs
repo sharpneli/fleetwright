@@ -35,6 +35,9 @@ public sealed class World
 
     public bool Paused { get; private set; }
 
+    /// <summary>The map's scale, metres per pixel; 0 with no map (headless: everything counts as watched).</summary>
+    public double ViewMetresPerPixel { get; private set; }
+
     /// <summary>Every command applied, with the time it took effect.</summary>
     public IReadOnlyList<StampedCommand> CommandLog => log;
 
@@ -123,6 +126,9 @@ public sealed class World
             case WorldCommand.SetSpeed:
                 Speed = Math.Clamp(c.X, Settings.MinSpeed, Settings.MaxSpeed);
                 targetMs = Math.Min(targetMs, Time.Ms + MaxLagMs);
+                break;
+            case WorldCommand.SetViewScale:
+                ViewMetresPerPixel = double.IsFinite(c.X) && c.X > 0 ? c.X : 0;
                 break;
             case WorldCommand.Pause:
                 Paused = true;
@@ -223,6 +229,7 @@ public sealed class World
         h.Add(Time.Ms);
         h.Add(Speed);
         h.Add(Paused);
+        h.Add(ViewMetresPerPixel);
         scheduler.Hash(ref h);
         foreach (var s in systems)
             s.Hash(ref h);

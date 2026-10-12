@@ -42,6 +42,8 @@
   "RailsGroupHeadingDeg": 2,
   "RailsGroupStationM": 50,
   "RailsSnapMinSpeed": 10000,
+  "RailsPlaceUnwatchedMinSpeed": 1,
+  "RailsWatchedPx": 30,
 
   // contacts (docs/battle/plan.md step 2.5, ahead of 3.1's contact scan)
   "EncounterRangeM": 50000,

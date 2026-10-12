@@ -123,6 +123,17 @@ public sealed record SimSettings
     /// snap is plainly visible and jarring, so there the turns play out, at the clock's cost.</summary>
     public double RailsSnapMinSpeed { get; init; } = 10_000;
 
+    /// <summary>At this asked speed and above, a unit the map doesn't show ship by ship (its ships and turns spanning
+    /// fewer than <see cref="RailsWatchedPx"/> at the map's scale: drawn as one marker) is placed on rails and its
+    /// orders snap, as at <see cref="RailsSnapMinSpeed"/>. 1: at any speed (the user, 2026-10-12: once only the force
+    /// icon shows, a snap isn't seen).</summary>
+    public double RailsPlaceUnwatchedMinSpeed { get; init; } = 1;
+
+    /// <summary>A unit spanning at least this many pixels at the map's scale (its ships' spread and its turning circle)
+    /// is watched: it goes on rails only once it's steady, below <see cref="RailsSnapMinSpeed"/>. The map collapses a
+    /// group into one marker below about the same (MapScene.CollapsePx).</summary>
+    public double RailsWatchedPx { get; init; } = 30;
+
     // ------------------------------------------------------------------ contacts (docs/battle/plan.md 2.5, ahead of 3.1)
 
     /// <summary>Opposing ships within this of each other are in the fine tier, metres: beyond the longest sighting

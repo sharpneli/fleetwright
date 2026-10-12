@@ -12,13 +12,15 @@ namespace Fleetwright.Sim;
 /// first, on rails of its own; the rest riding it at their offsets), or a ship alone (or detached) by itself
 /// (<see cref="UnitLine"/>, <see cref="RailsCheck"/>).</item>
 /// <item><b>When.</b> Every <see cref="SimSettings.RailsCheckMs"/> of the fine tick, a unit off rails goes on when it's
-/// <see cref="Ready"/>. With the clock at <see cref="SimSettings.RailsSnapMinSpeed"/> or more (<see cref="Placing"/>)
-/// nobody watches a turn, so a unit is placed as its guide's orders say (<see cref="Placeable"/>); below it, it waits
-/// until it's steaming steady (<see cref="Steady"/>), every ship with it (<see cref="InStation"/>). Either way, not
-/// near an opposing ship (<see cref="NearOpposing"/>, ShipSystem.Contacts.cs).</item>
+/// <see cref="Ready"/>. Where nobody would see a turn (<see cref="Placing"/>: the clock at
+/// <see cref="SimSettings.RailsSnapMinSpeed"/> or more, or the unit too small on the map to show ship by ship,
+/// <see cref="Watched"/>), it's placed as its guide's orders say (<see cref="Placeable"/>); else it waits until it's
+/// steaming steady (<see cref="Steady"/>), every ship with it (<see cref="InStation"/>), so a formation is never seen
+/// to snap into place. Either way, not near an opposing ship (<see cref="NearOpposing"/>,
+/// ShipSystem.Contacts.cs).</item>
 /// <item><b>How.</b> <see cref="Lay"/>: placed, the guide is made what its orders say and its ships put on their
 /// stations; steady, they're taken on as they are.</item>
-/// <item><b>Orders on rails.</b> While placing, a movement order to a unit's guide is carried out at once on rails
+/// <item><b>Orders on rails.</b> While its unit is placing, a movement order to a unit's guide is carried out at once on rails
 /// (<see cref="CanSnap"/>, <see cref="Snap"/>, which lays it again the same way); any other order takes the unit off
 /// (<see cref="TakesOffRails"/>), as do changes to groups (<see cref="DerailFor"/>) and contacts.</item>
 /// <item><b>Off.</b> <see cref="Derail"/>, the one way off for a unit, exactly where its rails had it; it wakes
@@ -31,19 +33,38 @@ public sealed partial class ShipSystem
 {
     // ------------------------------------------------------------------ the rules
 
-    /// <summary>Whether rails are entered by placing, and orders on rails snap: the clock fast enough that nobody
-    /// watches a turn play out.</summary>
-    bool Placing(World world) => world.Speed >= settings.RailsSnapMinSpeed;
+    /// <summary>Whether the unit in <see cref="line"/> goes on rails by placing, and orders to it on rails snap: where
+    /// nobody would see the turn or the forming up that's skipped. The clock so fast nobody watches a turn play out, or
+    /// fast enough while the map shows the unit as one marker.</summary>
+    bool Placing(World world, int guide) =>
+        world.Speed >= settings.RailsSnapMinSpeed || world.Speed >= settings.RailsPlaceUnwatchedMinSpeed && !Watched(world, guide);
+
+    /// <summary>Whether the map would show the unit in <see cref="line"/> manoeuvring: its ships' spread and its turning
+    /// circle span <see cref="SimSettings.RailsWatchedPx"/> or more at the map's scale (the map collapses a group into
+    /// one marker below about that). With no map, everything is watched.</summary>
+    bool Watched(World world, int guide)
+    {
+        double mpp = world.ViewMetresPerPixel;
+        if (!(mpp > 0))
+            return true;
+        double turn = 2 * Store[guide].Handling.RadiusFor(settings.StandardRudderDeg * Math.PI / 180);
+        return Math.Max(FormationRadius(), GroupRadius(guide)) + turn >= settings.RailsWatchedPx * mpp;
+    }
 
     /// <summary>Whether a command to a ship takes it, and its unit, off rails: every movement order, but not a
     /// setting.</summary>
     static bool TakesOffRails(ShipCommand code) => code != ShipCommand.Clearance;
 
     /// <summary>Whether an order is carried out at once on rails: a course, a speed ahead or a route, to a ship on rails
-    /// of its own (alone, or a group's guide), while placing.</summary>
-    bool CanSnap(World world, int slot, ShipCommand code, double x) =>
-        code is ShipCommand.Course or ShipCommand.Speed or ShipCommand.ClearRoute or ShipCommand.AddWaypoint or ShipCommand.LoopRoute &&
-        (code != ShipCommand.Speed || x >= 0) && Store.OnRails(slot) && !Store.RidesAnother(slot) && Placing(world);
+    /// of its own (alone, or a group's guide), while its unit is <see cref="Placing"/>.</summary>
+    bool CanSnap(World world, int slot, ShipCommand code, double x)
+    {
+        if (code is not (ShipCommand.Course or ShipCommand.Speed or ShipCommand.ClearRoute or ShipCommand.AddWaypoint or ShipCommand.LoopRoute) ||
+            code == ShipCommand.Speed && x < 0 || !Store.OnRails(slot) || Store.RidesAnother(slot))
+            return false;
+        UnitLine(world, slot);
+        return Placing(world, slot);
+    }
 
     /// <summary>Whether the unit in <see cref="line"/> (its guide off rails) may go on rails now: placing, as its
     /// guide's orders say; else steaming steady, every ship with it. And no opposing ship near it, as far as its ships
@@ -116,7 +137,6 @@ public sealed partial class ShipSystem
     /// outermost force whose line they're in), then ships alone or detached.</summary>
     void RailsCheck(World world)
     {
-        bool placing = Placing(world);
         var groups = world.Groups;
         for (int k = 0; k < groups.Count; k++)
         {
@@ -127,6 +147,7 @@ public sealed partial class ShipSystem
             if (guide < 0 || Store.OnRails(guide))
                 continue;
             groups.LineOffsets(g, line);
+            bool placing = Placing(world, guide);
             if (Ready(guide, placing))
                 Lay(world, guide, placing);
         }
@@ -135,6 +156,7 @@ public sealed partial class ShipSystem
             if (!Store.IsAlive(i) || Store.OnRails(i) || groups.InLine(Store[i].Entity))
                 continue;
             Alone(i);
+            bool placing = Placing(world, i);
             if (Ready(i, placing))
                 Lay(world, i, placing);
         }

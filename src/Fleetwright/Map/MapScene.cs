@@ -30,6 +30,7 @@ public sealed unsafe partial class MapScene : IScene
     double dragX, dragY;   // the newest cursor of a drag: solved once a frame, however many motion events came
     Vector2 mouse;
     bool mouseIn;
+    double toldScale;   // the scale last told the world, metres per pixel (in steps)
 
     public MapScene(SDL_GPUDevice* device, WorldSession world, MapCamera camera, ShipArtLibrary art, int selectEntity = -1)
     {
@@ -82,6 +83,7 @@ public sealed unsafe partial class MapScene : IScene
                 land.Clear();
             (built, builtSize) = (camera, (width, height));
         }
+        TellScale();
         var s = world.Current;
         sunLapse.Update(s.Paused ? 0 : s.AchievedSpeed, dt);
         art.UploadPending();
@@ -89,6 +91,17 @@ public sealed unsafe partial class MapScene : IScene
         shipRenderer.List.Build(view, s.Ships, s.Time.Ms, s.Sun, artOf, lengthOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion);
         BuildOverlay(view, s);
         renderer.Render(cmd, target, view, s.Sun, land.Fill, baked, lines, overlay, shipRenderer, sunLapse.Motion);
+    }
+
+    /// <summary>Tells the world the map's scale when it changes, in quarter-octave steps (a zoom is a few commands, not
+    /// one a frame): the rails place what the map shows as one marker more readily (ShipSystem.Rails.cs).</summary>
+    void TellScale()
+    {
+        double q = Math.Pow(2, Math.Round(Math.Log2(camera.MetresPerPixel) * 4) / 4);
+        if (q == toldScale)
+            return;
+        toldScale = q;
+        world.Send(Command.SetViewScale(q));
     }
 
     public void BuildUi()
