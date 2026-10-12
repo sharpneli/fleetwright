@@ -16,7 +16,7 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Fleetwright.Shipgen'))">
+  <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Fleetwright.Shipgen')) Or $(MSBuildProjectName.StartsWith('Fleetwright.Sim'))">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The sim's lowest layer: values and pure functions, nothing that passes time (docs/battle/plan.md, "Inside
+       Fleetwright.Sim"). No references, no packages; the layers above reference it, never the other way. -->
+  <PropertyGroup>
+    <RootNamespace>Fleetwright.Sim.Core</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+</Project>

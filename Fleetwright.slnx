@@ -9,10 +9,13 @@
     <Project Path="src/Fleetwright.Shipgen.Cli/Fleetwright.Shipgen.Cli.csproj" />
     <Project Path="src/Fleetwright.Shipgen.Render/Fleetwright.Shipgen.Render.csproj" />
     <Project Path="src/Fleetwright.Shipgen/Fleetwright.Shipgen.csproj" />
+    <Project Path="src/Fleetwright.Sim.Core/Fleetwright.Sim.Core.csproj" />
+    <Project Path="src/Fleetwright.Sim/Fleetwright.Sim.csproj" />
     <Project Path="src/Fleetwright/Fleetwright.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Fleetwright.Shipgen.Tests/Fleetwright.Shipgen.Tests.csproj" />
+    <Project Path="tests/Fleetwright.Sim.Tests/Fleetwright.Sim.Tests.csproj" />
     <Project Path="tests/Fleetwright.Tests/Fleetwright.Tests.csproj" />
   </Folder>
 </Solution>

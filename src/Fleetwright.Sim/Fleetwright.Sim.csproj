@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The world: the clock, the scheduler, commands in and the snapshot out, and the sim thread (docs/battle/plan.md,
+       "Inside Fleetwright.Sim"). The top layer: no GPU, no SDL, no UI, and it doesn't know how it's used. -->
+  <PropertyGroup>
+    <RootNamespace>Fleetwright.Sim</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fleetwright.Sim.Core\Fleetwright.Sim.Core.csproj" />
+  </ItemGroup>
+
+</Project>
