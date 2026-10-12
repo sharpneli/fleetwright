@@ -1,7 +1,8 @@
 # The world: how the game is organised around a living planet
 
 2026-10-11. Status: agreed with the user (2026-10-11, "Decisions" at the end), diplomacy deferred. Amended
-2026-10-12: peacetime routines and a faster clock for peace. The battle module comes first. It's a deliverable, not a part of the code (the user, 2026-10-12): the final game's whole ship
+2026-10-12: peacetime routines, quick turbo/real-time transitions, the insane captain option. The battle module
+comes first. It's a deliverable, not a part of the code (the user, 2026-10-12): the final game's whole ship
 simulation on this world, with missions standing in for politics and manufacturing. `docs/battle/plan.md` says what
 it holds and gives the build order, from an empty sphere of water up. "What the ship simulation must already respect"
 lists what it keeps to so the rest can follow. `docs/battle/plan.md` "The world" settled the geometry (one sphere,
