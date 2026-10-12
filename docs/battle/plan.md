@@ -31,8 +31,8 @@ missions on top (`docs/world/architecture.md` "The pieces and where they live").
   and routing. One clock, from paused to ~30,000x, dropping by the player's rules when something needs them.
 - **Ships that move:** many ships of many designs, each compiled once to a `ShipClass`. They steam with real turning
   circles and acceleration, in groups and formations, on routes. Every ship is fully simulated (the ships are the
-  world's gold standard; 2.2). Under heavy time compression, ships far from anything may go on rails, which must
-  reproduce what they'd have done.
+  world's gold standard; 2.2). The map's tiers (ships, ship icons, fleet icons) are only how they're drawn at each
+  zoom.
 - **Seeing and knowing:** contacts and encounters, sighting (horizon, weather, night), and each navy's picture. The
   player sees what their navy knows.
 - **Fighting:** fire control, guns and shells, torpedoes, mines, collisions, the hit query, penetration, damage,
@@ -480,11 +480,13 @@ Nothing in it allocates per query, and nothing writes to a class once it's made.
 entity", architecture). Every ship moves at the fixed ship tick: acceleration and turning from the class. Commands: a
 course, a speed, a route of waypoints.
 
-**Ships are the world's gold standard (the user, 2026-10-12).** "Tactical" is a zoom band of the map, not a tier of
-the game. The world simply has ships, and at 1x every ship is fully simulated (merchants on their routes are the one
+**Ships are the world's gold standard (the user, 2026-10-12).** Tiers are UI: how the map draws things at a zoom so it
+doesn't clutter, never a state of the sim, and not a way to run compressed time either. "Tactical" is a zoom band of
+the map. The world simply has ships, and at 1x every ship is fully simulated (merchants on their routes are the one
 exception, later). Groups and fleets are formed from ships. The map's symbols at each zoom are derived from them too:
 ships become icons zoomed out, and then fleet icons replace those. Nothing above a ship is a thing of its own in the
-sim. Time compression (2.5) must reproduce what the ships would have done.
+sim. The one link to time: zooming into a combat leaves the coarse view, which naturally limits how much time
+compression can be used.
 
 **Done (2026-10-12):**
 - **`Fleetwright.Sim.Combat`** (new; references `Core` and `Ships`):
@@ -1115,7 +1117,11 @@ The user's, 2026-10-12, on steps 2.2 and 2.3:
 
 ## Open questions
 
-None now. The choices for 2.2 and 2.3 were settled on 2026-10-12 ("Decisions").
+1. **Step 2.5 and the architecture's tier table** were written with rails, routines and coarse steps as ways the
+   sim runs time. The user's correction (2026-10-12: tiers are UI only) leaves open how thousands of ships run at
+   high compression while each stays fully simulated. One way is a ship step that holds at long steps (the arc
+   integration is 24 m off at a 1 s tick, and the forces are implicit), with the step allowed by what's in view.
+   2.5 and the architecture's "Four tiers, one clock" are to be rewritten once that's settled, before 2.5.
 
 ## Background
 

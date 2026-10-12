@@ -49,12 +49,14 @@ does the same at sea: compression up to days, dropped on contact.
 
 ### Four tiers, one clock
 
-**Read the tiers as speed-ups, not as parts of the game (the user, 2026-10-12).** The world simply has ships, and they
-are its gold standard. At 1x every ship is fully simulated (what the table calls tactical; merchants on their routes
-are the exception, later). Groups, fleets and the map's symbols are derived from ships, and "tactical" is a zoom band
-of the map, not a place a ship is in. Rails, routines and coarse steps are ways to run compressed time cheaply, and
-each must reproduce what full simulation would have done (`docs/battle/plan.md` steps 2.2 and 2.5). Where the text
-below says a ship "goes tactical", read that it stays fully simulated whatever the speed.
+**The tiers are the UI's, not the sim's (the user, 2026-10-12, corrected the same day).** A tier is how the map draws
+things at a zoom, so it doesn't clutter: ships zoomed in, ship icons further out, fleet icons above that. It isn't a
+state a ship is in and it isn't a way to run time. The world simply has ships, its gold standard, each fully
+simulated (merchants on their routes are the exception, later). Groups, fleets and the map's symbols are derived from
+the ships. The one link to time: zooming into a combat leaves the coarse view, and that naturally limits how much
+time compression can be used. Otherwise it's display only. The table and text below were written with tiers as
+parts of the sim. Where they disagree with this, this holds, and they're to be rewritten (`docs/battle/plan.md`
+"Open questions").
 
 | Tier | What's in it | How it advances | Cost |
 |---|---|---|---|
