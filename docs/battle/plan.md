@@ -1,7 +1,7 @@
 # Plan: the battle module
 
-2026-10-11, reframed 2026-10-12. Status: what the battle module is, and that it's built from an empty world up, are
-the user's (2026-10-12, "Decisions"). The ships' data plan is agreed (2026-10-11), with its open questions settled on
+2026-10-11, reframed 2026-10-12. Status: what the battle module is, that it's built from an empty world up, what's
+out of it and the performance targets are the user's (2026-10-12, "Decisions"). The ships' data plan is agreed (2026-10-11), with its open questions settled on
 2026-10-12. "Building it from the ground up" is the step order for all battle module work; its steps from 3.1 on are
 proposed and are agreed one by one.
 
@@ -49,7 +49,37 @@ These are the final game's, around the simulation: politics and diplomacy, manuf
 research (a mission's `TechSet` is a preset), NPC admiralties, and the world's merchant traffic (a mission's merchants
 are just ships in it).
 
-Open question 1 lists what may or may not be in it: Resolved fights, aircraft and submarines.
+**Out by decision (the user, 2026-10-12):** Resolved fights, aircraft and submarines. The module keeps to naval
+battles between surface ships. Later technology then gives unhistorical battles (no carriers, no U-boats), which is
+accepted.
+
+### The era it's built for
+
+The first full game is a campaign of **about 1890-1925**, after the political system is in. Aviation is for version
+2.0. So the battle module is built for the pre-dreadnought, dreadnought and First World War navies. Later designs
+still work (the designer makes them, and they fight), but nothing in the module is shaped around them. That era
+asks for things a WWII-shaped plan would leave out:
+
+- **Sighting without radar.** Visibility, haze, night, searchlights and star shell. **Smoke is the big one:** funnel
+  smoke, gun smoke and smoke screens decided what could be seen at Jutland. So smoke is sim state (puffs and screens
+  with a position, an age and a drift with the wind), and sighting reads it. The smoke that's drawn is a look that
+  reads that state, never the other way round. That needs wind in the world's weather from step 3.2.
+- **Misidentification.** A contact's class is what the observer could tell, and it can be wrong (a battlecruiser
+  taken for a battleship). The picture already holds a classification "as far as known"; this is that, with errors.
+- **Signals, not radio orders.** Flags, searchlights and early wireless: an order takes time to pass down a line and
+  can be missed or misread (Jutland's signal failures). The player's command goes in at once; the group executes it
+  when the signal reaches it. The map mockup already shows orders in transit (◷). It's part of step 5.1.
+- **Fire control of its time.** Rangefinders by base length, plotting and clocks (Dreyer table, Argo clock), local
+  control before director firing. `research/simulation/fire-control-research/` covers the era.
+- **Torpedo boats in numbers.** The 1890s navies built them by the hundred (the Jeune École), so a fight can have
+  dozens of small, fast ships. They're cheap per ship, but there are many, and a torpedo attack by them must play well.
+- **Collisions and ramming.** Ships in close formation at night collided (Jutland had several), and ramming was still
+  in the 1890s' tactics. A hull-against-hull test (both `HullField`s, in their frames) is a small query beside the hit
+  query (step 4.6).
+- **Mines.** Fields laid by minelayers, and a ship crossing one. Mines sank the dreadnought *Audacious* in 1914 and
+  the three pre-dreadnoughts lost at the Dardanelles on 18 March 1915. Open question 1 asks whether they're in.
+- **Coal.** Endurance, coaling and the smoke that comes with it. Oil firing (from ~1912) makes less smoke and needs
+  fewer stokers. This sits in rails fuel and in the smoke model, and isn't a step of its own.
 
 ## How many ships (checked 2026-10-12)
 
@@ -60,11 +90,13 @@ other is how many are in the world, which costs the least per ship but there are
 (151 British, 99 German) of roughly 50-60 classes. Later fights had more aircraft, but not more ships in one action.
 So "a few hundred in one fight" (`docs/world/architecture.md`) holds. A mission should be able to stage a Jutland.
 
-**In the world:** the architecture's figure is ~2,000 warships. That's about right for 1914's navies together; a
-WWII world is larger (the USN alone built some 900 destroyers and destroyer escorts). Merchants are ~9,000 for
-Britain alone in 1914, and the world had more (to verify, `research/REQUESTS.md`). These are rails and light
-entities, so they cost events and contact scans, not models. The world's numbers aren't the battle module's load, but
-its scale tests keep them in view, so nothing built now has to be rebuilt for them.
+**In the world:** the end goal is the whole world of the First World War with every warship in it (the user,
+2026-10-12). The architecture's figure is ~2,000 warships. That's about right for 1914's navies together, and torpedo
+boats may push it toward 3,000 (to verify, `research/REQUESTS.md`). Merchants are ~9,000 for Britain alone in 1914,
+and the world had a few times that. These are rails and light entities, so they cost events and contact scans, not
+models. Not all of them fight at once. A world war has many fights, and in the campaign most go through Resolved,
+which comes after the module. The world's numbers aren't the battle module's load, but its scale tests keep them in
+view, so nothing built now has to be rebuilt for them.
 
 **What one class costs, measured (Release, this machine):**
 
@@ -80,9 +112,8 @@ its scale tests keep them in view, so nothing built now has to be rebuilt for th
   smaller than Bismarck (a destroyer's sprite is a tenth of the pixels), so the art is ~100-150 MB of textures,
   uncompressed. That's fine for the module without BC compression.
 - **The drawing is the cost, not the physics.** A `ShipClass` needs only the build (0.12 s); the art can follow,
-  coarse mips first. A disk cache of the drawn art, keyed by (design hash, look, shipgen version), makes a second load
-  instant. That's what the world's hundreds of classes will need, so the class registry is built to allow it from the
-  start.
+  coarse mips first. The compiled ships on disk ("Compiled ships on disk", below) make a second load instant, and the
+  whole world's hundreds of classes will need that.
 - **A fight at Full:** 250 ships at a 20 Hz tick, run at 10x, is 200 ticks per real second: 5 ms a tick, or 20 µs a
   ship if every model ran every tick. They don't need to. **Models in the tactical tier run at their own rates,** on
   whole multiples of the tick, set in `SimSettings`:
@@ -97,10 +128,42 @@ its scale tests keep them in view, so nothing built now has to be rebuilt for th
 - **Drawing:** at the tactical band, 250 ships are a few pixels each (instanced, trivial). At the ship band, a few
   ships fill the screen at full resolution.
 
-**Targets (proposed, measured in step 2.6 and again at the end):**
-- a Jutland at Full at 10x or better on an 8-core desktop, at 60 fps at any zoom;
-- 2,000 ships on rails at 30,000x;
-- a Jutland's first load under 10 s, and under 1 s from the cache.
+**Targets (agreed 2026-10-12, measured in step 2.6 and again at the end):**
+- **The minimum: a Jutland at Full, butter smooth on a modern machine.** That means:
+  - 60 fps at any zoom, judged by the worst frames, not the average (no frame over budget in a Tracy capture of a
+    few minutes);
+  - no GC pauses in play (gen 0 collections near zero while it runs);
+  - the UI never waits for a tick (the sim has its own thread).
+- The Jutland running at 10x or better on an 8-core desktop.
+- 2,000 ships on rails at 30,000x.
+- A Jutland's first load under 10 s, and under 1 s from the cache.
+
+**If the Jutland misses its target:** the user's answer is brutal ECS tricks (data-oriented storage, hot and cold
+data split, batched per-model passes over every ship). The plan is ready for it, because callers reach `ShipState`
+through index-based accessors, never its arrays' layout ("The shape"). Moving to an ECS is then a refactor of
+`ShipState` and the models' loops, not of the world.
+
+### Compiled ships on disk (before release, not now)
+
+Before release, compiled ships are kept on disk in an internal cache, so a mission or a saved world loads without
+building and drawing every class again. It isn't built yet: 2.6 measures whether the module needs it sooner. What it
+will be:
+
+- **What's stored:** per design, the `ShipClass` (its arrays, which are plain int and float columns, written as they
+  are); per design and look, the `ShipClassArt` (the drawn hull, height map and turret images with their mips, and
+  the layout).
+- **Where:** the game's internal cache under the user's local app data (`%LOCALAPPDATA%\Fleetwright\Cache`), not
+  Documents. It's not the player's files, and deleting it costs only a slower load. A release can also ship the
+  shipped designs precompiled.
+- **The key:** the design hash, the look (for art), the shipgen version and the cache's own format version. Any
+  change misses, and the class is rebuilt. Each entry also stores the layout hash.
+- **The design JSON stays the truth.** Saves and missions hold designs, never cache entries. The cache is disposable,
+  and a missing, stale or unreadable entry is rebuilt, never an error.
+- **Loading must equal compiling:** a test compiles each golden design, writes it, reads it back, and compares the
+  classes array by array (and the layout hash).
+- **What it needs from now:** the class registry gets classes through one seam ("the class for this design hash"),
+  so the cache slots in behind it (step 2.3). `ShipClass` stays plain arrays with nothing that can't be written
+  (step 2.1). And shipgen gets a version: a constant bumped whenever the goldens change on purpose.
 
 ## Building it from the ground up
 
@@ -126,8 +189,10 @@ the thread reaches its target times and never passes them; a step allocates noth
 known dates.
 
 **1.2 The globe.** In the exe:
-- the scene stack, and `App` owning the world and the sim thread;
-- the dev tabs still reachable;
+- **the world is a tab** on the top bar (the user, 2026-10-12), the first one and the default, so launching the game
+  opens the world. The designer, hitbox, ship and profile tabs stay beside it as they are (`-view=designer` opens
+  the designer). The world and its sim thread are owned by the app, not the tab, so switching tabs leaves it running.
+  The scene stack (the designer pushed over the map and popped) waits until a mission needs it (step 6.2);
 - a first `MapScene`: the sphere of water, drawn at every zoom from orbit down to ~10 px/m (the sprites' finest
   level), with a double-precision camera and camera-relative floats;
 - a lat/lon grid, and day and night from the snapshot's sun;
@@ -243,8 +308,10 @@ more detailed way.
 the previous one: leaks through bulkheads and decks, free surface, `sinking.py`'s non-linear settling, pumping and
 counter-flooding, a plunge or capsize that plays out.
 
-**4.6 Torpedoes.** Tubes, and running torpedoes as tracks with events (like shells). Hits below the waterline go into
-the same damage. Destroyer attacks need them.
+**4.6 Torpedoes, collisions, mines.** Tubes, and running torpedoes as tracks with events (like shells). Hits below
+the waterline go into the same damage. Torpedo boat and destroyer attacks need them. Then hull against hull:
+collisions and ramming, damage from where the stems struck. Mines, if they're in (open question 1): fields as static
+areas, a track crossing one as an event, a hit into the same damage.
 
 **4.7 The coarse tier,** for damaged ships after a fight: still flooding, or burning, while the clock is compressed.
 
@@ -550,7 +617,14 @@ The user's, 2026-10-12, on the module:
    manufacturing.
 2. **Build from the ground up:** first a world (a sphere of water until the user brings the world map), then ships
    moving on it, then the rest.
-3. **Keep the number of ships in mind** ("How many ships").
+3. **Keep the number of ships in mind** ("How many ships"). The end goal is the whole world of the First World War
+   with all its warships; not all of them need to fight at once.
+4. **Out of the module:** Resolved fights, aircraft and submarines. The focus is naval battles. Aviation is for
+   version 2.0, after the political system and a full campaign of about 1890-1925 ("The era it's built for").
+5. **Performance:** the targets in "How many ships" are fine. The absolute minimum is a Jutland going butter smooth
+   on a modern machine; if we can't hit it, we'll do brutal ECS tricks.
+6. **Compiled ships on disk,** in an internal cache, before release ("Compiled ships on disk").
+7. **The world is a tab** on the top bar for now, the default one, so the game opens on the world (step 1.2).
 
 The user's, 2026-10-12, on the ships' data:
 
@@ -567,14 +641,11 @@ The user's, 2026-10-12, on the ships' data:
 
 ## Open questions
 
-1. **In or out of the battle module?** My recommendation for each:
-   - **Resolved fights:** out. Every fight in a mission is the player's at Full; Resolved is for the world's NPC wars.
-     But it's part of "the whole ship simulation", and a large mission could hand side fights to it.
-   - **Aircraft:** out. They're a module of their own (spotting, search, strikes). Missions use scripted reports
-     until then (missions decision 2).
-   - **Submarines:** out, after aircraft (missions decision 2).
-2. **The targets in "How many ships"** (Jutland at 10x, 2,000 on rails at 30,000x, load times): proposed. Confirm or
-   change them at step 2.6.
+1. **Mines: in the module or after?** My recommendation is in, late in step 4.6. They're surface warfare in this era
+   and cheap: static areas, an event when a track crosses one, and the same damage as a torpedo.
+2. **Submarines before the campaign.** They're out of the module, but the 1890-1925 campaign has the U-boat war. So
+   I assume they come between the module and the campaign, not with aviation in 2.0. Confirm when the campaign is
+   planned.
 3. **The layering inside `Fleetwright.Sim`** is proposed, not agreed: check it at step 1.1.
 4. **The shipgen fixes in step 2.1** (unique ids, the `Casemate` flag) change the export. Confirm them at the start of
    that step.

@@ -313,6 +313,10 @@ layered inside the project (`Core`, `Ships`, `Combat`, then the world on top, on
   a menu would). The architecture allows both.
 - Escape-quits and F-keys move from the engine to the stack, so a screen can mean "back" by Escape.
 - The dev exe keeps `SceneSwitcher` and `DesignSession` as they are: shipgen work doesn't need a world.
+- **For now the world is a tab (the user, 2026-10-12):** the first tab on `SceneSwitcher`'s top bar and the default,
+  so the game opens on the world, with the designer and the viewers beside it. The app owns the world and its sim
+  thread, so switching tabs doesn't stop it. The stack described here comes in under the world tab when a mission
+  first pushes the designer (`docs/battle/plan.md` step 6.2).
 
 ### Time, in numbers
 
@@ -344,7 +348,7 @@ missions. It replaces the step list this doc had (2026-10-11), and the missions 
 
 After the battle module, the world grows around the ship simulation. Each item is its own plan when it comes:
 
-- **Resolved fights,** if they aren't in the battle module (its open question 1): doctrine manoeuvre, sighting and
+- **Resolved fights** (out of the battle module, decided 2026-10-12): doctrine manoeuvre, sighting and
   expected hits per coarse step, sampled hits through the real hit query and damage, promotion and demotion, and the
   calibration test against Full.
 - **The world's merchant traffic:** light entities on voyages between ports, diversion orders, full state in an
@@ -353,6 +357,8 @@ After the battle module, the world grows around the ship simulation. Each item i
 - **Relations beyond war and peace,** then diplomacy.
 - **Yards and manufacturing:** construction as events, ships laid down from submitted designs.
 - **Research:** the `TechSet` growing over a campaign.
+- **Submarines,** before the campaign: its era (about 1890-1925) has the U-boat war.
+- **Aviation** is version 2.0, after the campaign (the user, 2026-10-12).
 
 The Earth model (land, the sea graph and routing, ports, the globe's tiles) isn't on this list. It comes when the user
 brings it, inside the battle module if it's ready by then.

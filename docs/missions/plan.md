@@ -114,7 +114,8 @@ needs:
 - time compression with the rails tier, and speed drops by the user's interest table (steps 2.5, 3.1);
 - **pictures** (step 3.2): the search is the mission;
 - a captain AI per group following standing orders (evade, shadow, engage, go to), both sides (step 5.1);
-- a sighting model good enough for search: horizon, weather, night; radar by era (step 3.2).
+- a sighting model good enough for search: horizon, weather, night, smoke (step 3.2). No radar: the era is about
+  1890-1925 (`docs/battle/plan.md` "The era it's built for").
 
 Not needed yet: Resolved (every encounter in a mission is the player's, at Full; Resolved comes when the player
 wants to hand fights to captains or the campaign brings NPC wars), the world's merchant traffic (a mission's
@@ -123,8 +124,10 @@ coarse tier beyond what a damaged ship needs after a fight. The job system comes
 architecture's threading rules hold from the start). The Earth model when the user brings it: first missions are
 open ocean.
 
-Later inside missions: aircraft (search planes and torpedo bombers, replacing scripted reports), torpedoes and
-destroyer attacks, submarines, D/F and signals intelligence.
+Torpedoes and destroyer attacks are in the battle module (step 4.6). Later inside missions: D/F and signals
+intelligence; submarines before the campaign; aircraft (search planes and torpedo bombers, replacing scripted
+reports) in version 2.0. The game's era is about 1890-1925 (`docs/battle/plan.md` "The era it's built for"), so the
+first missions are drawn from it; the Bismarck chase above stays the model of what a mission asks for.
 
 ## Stages: baby steps (agreed 2026-10-11)
 
