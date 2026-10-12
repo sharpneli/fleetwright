@@ -29,6 +29,8 @@
     <!-- the ship viewer (-ship=...), a test tool for the Shipgen port -->
     <ProjectReference Include="..\Fleetwright.Shipgen\Fleetwright.Shipgen.csproj" />
     <ProjectReference Include="..\Fleetwright.Shipgen.Render\Fleetwright.Shipgen.Render.csproj" />
+    <!-- the world: the map reads its snapshots and sends it commands (docs/world/architecture.md) -->
+    <ProjectReference Include="..\Fleetwright.Sim\Fleetwright.Sim.csproj" />
   </ItemGroup>
 
   <ItemGroup>

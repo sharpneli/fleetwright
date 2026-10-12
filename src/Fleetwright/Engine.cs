@@ -210,6 +210,11 @@ public unsafe class Sdl3GpuEngine : IDisposable
     // The scene drawn into the main target (the ship viewer today), instead of the scene graph below
     public IScene? Scene { get; set; }
 
+    /// <summary>Called at the start of every frame with the last frame's length in seconds, before input reaches the
+    /// scene and whether or not anything is drawn (a minimized window still runs it): what must keep going whatever
+    /// is shown, such as the world's clock.</summary>
+    public Action<float>? FrameStarted { get; set; }
+
     /// <summary>A file dropped onto the window, by its path.</summary>
     public Action<string>? FileDropped { get; set; }
 
@@ -972,6 +977,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
             using (new ProfileScope("ProcessEvents", ZoneC.BLUE))
                 ProcessEvents();
+
+            // every frame, minimized or not and whatever scene is shown: the world's clock keeps running
+            FrameStarted?.Invoke(DeltaTime);
 
             if (!_windowMinimized)
             {

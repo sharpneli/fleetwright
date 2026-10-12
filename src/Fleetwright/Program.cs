@@ -14,6 +14,11 @@ public static unsafe class Program
         var units = Designer.UnitSystem.Metric;
         uint width = 0, height = 0;
         string? shipPath = null, navy = null, era = null, view = null, camera = null, show = null;
+        bool designerFlags = false;   // flags that only mean something in the designer open it when no -view is given
+        var mapCamera = Map.MapScene.DefaultCamera;
+        var start = Sim.Core.WorldTime.FromUtc(1916, 5, 31, 14, 0);
+        double? startSpeed = null;
+        bool startPaused = false;
 
         foreach (string arg in args)
         {
@@ -51,11 +56,44 @@ public static unsafe class Program
             }
             else if (arg == "-new")   // the designer starts from the empty hull
             {
-                newDesign = true;
+                newDesign = designerFlags = true;
+            }
+            else if (arg.StartsWith("-map="))   // the world map's camera: lat,lon,metres per pixel
+            {
+                var v = arg.Substring("-map=".Length).Split(',');
+                var ci = System.Globalization.CultureInfo.InvariantCulture;
+                if (v.Length != 3 || !double.TryParse(v[0], ci, out double lat) || !double.TryParse(v[1], ci, out double lon)
+                    || !double.TryParse(v[2], ci, out double mpp))
+                {
+                    Console.Error.WriteLine($"Bad map camera: {arg} (want -map=56.7,5.8,12000: lat, lon, metres per pixel)");
+                    return 1;
+                }
+                mapCamera = Map.MapCamera.At(lat, lon, mpp);
+            }
+            else if (arg.StartsWith("-time="))   // the world's start, UTC: 1916-05-31T15:48
+            {
+                if (!DateTime.TryParseExact(arg.Substring("-time=".Length), ["yyyy-MM-dd'T'HH:mm", "yyyy-MM-dd"],
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal, out var t))
+                {
+                    Console.Error.WriteLine($"Bad time: {arg} (want -time=1916-05-31T15:48, UTC)");
+                    return 1;
+                }
+                start = Sim.Core.WorldTime.FromUtc(t);
+            }
+            else if (arg.StartsWith("-speed="))   // the world's clock speed at start
+            {
+                if (double.TryParse(arg.Substring("-speed=".Length), System.Globalization.CultureInfo.InvariantCulture, out double sp))
+                    startSpeed = sp;
+            }
+            else if (arg == "-paused")   // the world starts paused
+            {
+                startPaused = true;
             }
             else if (arg.StartsWith("-steps="))   // designer knob steps at startup: speed:-2,belt:+3
             {
                 steps = arg.Substring("-steps=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries);
+                designerFlags = true;
             }
             else if (arg.StartsWith("-input="))   // scripted UI input for testing: 60:click:957,559;80:type:12
             {
@@ -64,10 +102,12 @@ public static unsafe class Program
             else if (arg.StartsWith("-designer-ui="))   // designer UI state for screenshots: secsel:1:2,secmenu
             {
                 Designer.DesignerScene.DevUi = arg.Substring("-designer-ui=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries);
+                designerFlags = true;
             }
             else if (arg == "-units=imperial")   // the designer's units
             {
                 units = Designer.UnitSystem.Imperial;
+                designerFlags = true;
             }
             else if (arg.StartsWith("-uiscale="))   // a factor over the UI scale (the window's height over 1080 px)
             {
@@ -77,6 +117,7 @@ public static unsafe class Program
             else if (arg.StartsWith("-section="))   // the designer's open section, 0-7
             {
                 int.TryParse(arg.Substring("-section=".Length), out section);
+                designerFlags = true;
             }
             else if (arg == "-ui")   // the screenshot shows the UI too
             {
@@ -137,8 +178,19 @@ public static unsafe class Program
                         $"{Path.GetFileName(path)} couldn't be opened as a design:\n{error}", null);
             };
             var early = steps != null || newDesign ? MakeDesigner() : null;
-            // the designer opens by default; -view=hitbox, -view=ship or -view=profile opens the others
-            engine.Scene = new SceneSwitcher(view switch { "hitbox" => 1, "ship" => 2, "profile" => 3, _ => 0 },
+            // the world: the app's, not a tab's, so it keeps running whatever tab is open (docs/world/architecture.md)
+            using var world = new Map.WorldSession(start, 1);
+            if (startSpeed is double speed0)
+                world.Send(Sim.Command.SetSpeed(speed0));
+            if (startPaused)
+                world.Send(Sim.Command.Pause());
+            engine.FrameStarted = world.Frame;
+
+            // the world opens by default; -view=designer (or any designer flag), -view=hitbox, -view=ship or -view=profile
+            // opens the others
+            view ??= designerFlags ? "designer" : null;
+            engine.Scene = new SceneSwitcher(view switch { "designer" => 1, "hitbox" => 2, "ship" => 3, "profile" => 4, _ => 0 },
+                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera)),
                 ("Designer", () => early ?? MakeDesigner()),
                 ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show)),
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),
