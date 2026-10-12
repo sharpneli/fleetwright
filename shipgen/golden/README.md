@@ -71,6 +71,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   `karlsruhe`, `victory_1944` and some fuzz cases move by centimetres.
 - 2026-10-12, unique component ids (battle plan step 2.1), on purpose: the hangar bay is `Hangar bay`, not
   `Hangar`, which the seaplane carrier's hangar block is too. 20 carrier cases change only that id.
+- 2026-10-12, the casemate flag (battle plan step 2.1), on purpose: a casemate gun carries `casemate: true` instead
+  of `mount: "casemate"`, so a component's `mount` is only a barbette's link to its gun. 83 design cases change only
+  that key, on 249 guns; `sprite.json` keeps its `mount: "casemate"`.
 
 ## Layout
 

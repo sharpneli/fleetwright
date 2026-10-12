@@ -94,7 +94,7 @@ public sealed class TopView
         (double, int) Key(Component c) => (Math.Round(c.Base, 3), DrawKind.GetValueOrDefault(c.Kind));
         var keys = guns.Select(Key).Distinct().Order().ToList();
         var mounts = guns.Select(c => new Mount(c.Id, c.Kind, c.Type!, c.X!.Value, c.Y!.Value, keys.IndexOf(Key(c)), c.RestDeg ?? 0.0,
-            c.ArcsDeg ?? [], c.TraverseDeg, c.Top, c.Mount == "casemate")).ToList();
+            c.ArcsDeg ?? [], c.TraverseDeg, c.Top, c.Casemate == true)).ToList();
 
         var blocks = new List<Block>();
         foreach (var c in comps.Where(c => c.Kind == "superstructure"))

@@ -369,7 +369,10 @@ public sealed class Component
     public long? Torpedoes { get; set; }
     public long? WarheadKg { get; set; }
     public string? Magazine { get; set; }
+    /// <summary>A barbette's gun mount (its id).</summary>
     public string? Mount { get; set; }
+    /// <summary>A gun in a casemate, in the hull's side or a deckhouse's.</summary>
+    public bool? Casemate { get; set; }
     public string? Barbette { get; set; }
     public string? Battery { get; set; }
     public double? RangefinderM { get; set; }

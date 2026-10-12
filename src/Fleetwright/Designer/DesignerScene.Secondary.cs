@@ -89,7 +89,7 @@ public sealed unsafe partial class DesignerScene
                 axisSum[(int)pos] += axis;
                 axisN[(int)pos]++;
                 var tty = c.Type != null && hb.TurretTypes.TryGetValue(c.Type, out var ty) ? ty : null;
-                bool cas = c.Mount == "casemate";
+                bool cas = c.Casemate == true;
                 string kind = cas ? "casemate" : tty?.Shape switch { "bb" => "turret on a barbette", "dp" => "shielded mount", "open" => "open mount", _ => "mount" };
                 string arcs = c.ArcsDeg is { Count: > 0 } a ? string.Join(", ", a.Where(q => q.Length == 2).Select(q => $"{q[0] % 360:0}°–{q[1] % 360:0}°")) : "–";
                 string pair = side == 0 ? c.Id : $"{SecName(k)}{n}S / {SecName(k)}{n}P";

@@ -166,7 +166,7 @@ public sealed class SideView
             var (body, barrels) = Rotated(c.Local!, c.X!.Value, c.Y!.Value, c.RestDeg ?? 0.0);
             var (bx0, bx1) = barrels ?? (c.X!.Value, c.X!.Value);
             mounts.Add(new Mount(c.Id, c.Kind, c.Type!, c.X!.Value, c.Y!.Value, c.RestDeg ?? 0.0,
-                new Box(body.Item1, body.Item2, body.Item3, body.Item4, c.Base, c.Top), bx0, bx1, c.Mount == "casemate"));
+                new Box(body.Item1, body.Item2, body.Item3, body.Item4, c.Base, c.Top), bx0, bx1, c.Casemate == true));
         }
 
         var blocks = comps.Where(c => c.Kind == "superstructure").Select(c => new Block(c.Id, Box.Of(c.Points!, c.Base, c.Top), c.Level ?? 1, c.Role,
