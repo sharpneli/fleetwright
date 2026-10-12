@@ -113,6 +113,48 @@ public class FormationRailsTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void At_speed_a_group_goes_on_rails_placed_on_its_stations_without_forming_up_first()
+    {
+        // spawned faster than its admiral lets it steam (the slowest's speed less a margin): at 1x the guide slows, the
+        // others surge and settle, and the group goes on rails a quarter of an hour later; at speed, at the first check
+        double cap = Fleet.Get("dreadnought").Class!.Motion.MaxSpeedKn - Settings.GroupSpeedMarginKn;
+        double Entry(double clock, out World w, out int g)
+        {
+            (w, int c) = Make();
+            w.Apply(Command.SetSpeed(clock));
+            g = Group(w, c, Lat, Lon, 0, 4, Formation.Column, 600);
+            w.Apply(ShipSystem.Speed(g, cap + 5));   // and rung faster still
+            for (int s = 0; s < 3600; s += 5)
+            {
+                if (AllOnRails(w, g, 4))
+                    return s;
+                Run(w, 5);
+            }
+            return double.PositiveInfinity;
+        }
+        double slow = Entry(1, out _, out _), fast = Entry(1000, out var w, out int g);
+        output.WriteLine($"a column rung over its admiral's cap: on rails after {slow:F0} s at 1x, {fast:F0} s at 1,000x");
+        Assert.True(fast <= Settings.RailsCheckMs / 1000.0 + 5, $"{fast} s");   // the first check (at 5 s, seen at the next look)
+        Assert.True(slow > 60, "at 1x it forms up by its own steaming");
+        Assert.True(OffStation(w, g, 4, Formation.Column, 600) < 0.01);
+        for (int e = g; e < g + 4; e++)
+            Assert.Equal(cap, Ship(w, e).Speed / Handling.MsPerKnot, 1);
+
+        // a group caught in a turn when the clock goes up: on rails at the next check, on its ordered course
+        (w, int c2) = Make();
+        g = Group(w, c2, Lat, Lon, 0, 3, Formation.LineAbreast, 800);
+        Run(w, 10);
+        w.Apply(ShipSystem.Course(g, 120));
+        Run(w, 30);
+        Assert.False(Ship(w, g).OnRails);
+        w.Apply(Command.SetSpeed(1000));
+        Run(w, Settings.RailsCheckMs / 1000.0 + 0.001);   // past the next check
+        Assert.True(AllOnRails(w, g, 3));
+        Assert.True(Math.Abs(Ship(w, g).HeadingDeg - 120) < 1e-6);
+        Assert.True(OffStation(w, g, 3, Formation.LineAbreast, 800) < 0.01);
+    }
+
+    [Fact]
     public void Below_the_snap_speed_an_order_takes_the_group_off_rails_to_turn_properly()
     {
         var (w, c) = Make();

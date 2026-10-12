@@ -882,6 +882,13 @@ patterns.
   the guide's course and speed as their orders, so they come off rails later steaming as the rails had them. A group
   on a route already turned at waypoints on rails (its ships ride the guide's frame). Below the speed, or for a rudder
   order or a speed astern, the order takes the group off rails as before.
+- **Entering rails by placing** (the user, after a regression test: a spawned group took long to go on rails). At
+  the same speed, nobody watches closely, so rails are entered by placing, not by forming up: a ship or group under
+  way on a course or a route, its engines ahead, with no opposing ship near, is made what its orders say at the next
+  rails check (its course, the speed its power holds) and goes on rails, its group's ships put on their stations.
+  A column spawned faster than its admiral lets it steam took 17 minutes of fine ticks to settle and pass the rails
+  check's tolerances (the guide slowed, the others surged); at 1,000x it's on rails at the first check, 5 s in. Below
+  the speed, groups still form up by their own steaming. Damage will keep a ship off when it comes (`Placeable`).
 - **Sides** (`ShipSystem.Spawn(..., side)`; the spawn's entity field carries it). Any two different sides are
   opposing until 3.1's relations. A group is of one side: joining across sides is refused. The snapshot has `Side`,
   and the map tints icons by side (a dev aid).

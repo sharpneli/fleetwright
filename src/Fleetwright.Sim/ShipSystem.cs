@@ -175,14 +175,7 @@ public sealed partial class ShipSystem : IWorldSystem
         RailGuide(world, slot);
         int entity = Store[slot].Entity;
         if (world.Groups.Of(entity) is { } g && g.Guide == entity)
-            for (int i = 1; i < g.Members.Count; i++)
-            {
-                int m = Store.SlotOf(g.Members[i]);
-                if (m < 0)
-                    continue;
-                var (astern, abeam) = GroupSystem.OffsetFromGuide(g.Formation, g.SpacingM, i);
-                Store.RailAt(m, slot, -astern, abeam);
-            }
+            PlaceOnStations(g, slot);
         Anchored(world, slot);
     }
 
@@ -269,15 +262,34 @@ public sealed partial class ShipSystem : IWorldSystem
     }
 
     /// <summary>Every few seconds: ships, and groups whose every ship is, steaming steady go on rails. A group's guide
-    /// goes on its own rails, the rest at their offsets from it now, so the group keeps its shape exactly.</summary>
+    /// goes on its own rails, the rest at their offsets from it now, so the group keeps its shape exactly.
+    /// <para>With the clock at <see cref="SimSettings.RailsSnapMinSpeed"/> or more nobody watches closely, so rails are
+    /// entered by placing, not by waiting: a ship or group under way on a course or a route, with no opposing ship
+    /// near, is made what its orders say at once (its course, the speed its power holds) and goes on rails, its group's
+    /// ships put on their stations. Forming up and settling would otherwise take minutes of fine ticks, more after an
+    /// order that changed the speed.</para></summary>
     void RailsCheck(World world)
     {
+        bool place = world.Speed >= settings.RailsSnapMinSpeed;
         var groups = world.Groups;
         for (int k = 0; k < groups.Count; k++)
         {
             var g = groups[k];
             int guide = Store.SlotOf(g.Guide);
-            if (guide < 0 || Store.OnRails(guide) || !Steady(guide))
+            if (guide < 0 || Store.OnRails(guide))
+                continue;
+            if (place && Placeable(guide))
+            {
+                if (!NearOpposing(guide, Math.Max(GroupRadius(g, guide), FormationRadius(g))))
+                {
+                    Store.Settle(guide);
+                    RailGuide(world, guide);
+                    PlaceOnStations(g, guide);
+                    Anchored(world, guide);
+                }
+                continue;
+            }
+            if (!Steady(guide))
                 continue;
             var gs = Store[guide];
             bool all = true;
@@ -310,11 +322,51 @@ public sealed partial class ShipSystem : IWorldSystem
             Anchored(world, guide);
         }
         for (int i = 0; i < Store.Slots; i++)
-            if (Store.IsAlive(i) && !Store.OnRails(i) && world.Groups.Of(Store[i].Entity) == null && Steady(i) && !NearOpposing(i, 0))
-            {
-                RailGuide(world, i);
-                Anchored(world, i);
-            }
+        {
+            if (!Store.IsAlive(i) || Store.OnRails(i) || world.Groups.Of(Store[i].Entity) != null)
+                continue;
+            bool placed = place && Placeable(i);
+            if (!placed && !Steady(i) || NearOpposing(i, 0))
+                continue;
+            if (placed)
+                Store.Settle(i);
+            RailGuide(world, i);
+            Anchored(world, i);
+        }
+    }
+
+    /// <summary>Whether a ship may be put on rails as its orders say, steady or not: steered on a course or a route,
+    /// its engines ahead or stopped. (Damage, when it comes, will keep a ship off: a flooding or burning ship is
+    /// coarse, 4.8.)</summary>
+    bool Placeable(int slot)
+    {
+        var s = Store[slot];
+        return (s.Helm == Helm.Course || s.Helm == Helm.Route && s.RouteNext < s.RouteCount) && s.PowerOrder >= 0;
+    }
+
+    /// <summary>A group's ships put on rails on their stations about its guide (on rails already), on its heading.</summary>
+    void PlaceOnStations(GroupSystem.Group g, int guide)
+    {
+        for (int i = 1; i < g.Members.Count; i++)
+        {
+            int m = Store.SlotOf(g.Members[i]);
+            if (m < 0)
+                continue;
+            var (astern, abeam) = GroupSystem.OffsetFromGuide(g.Formation, g.SpacingM, i);
+            Store.RailAt(m, guide, -astern, abeam);
+        }
+    }
+
+    /// <summary>How far a group's stations reach from its guide, metres.</summary>
+    static double FormationRadius(GroupSystem.Group g)
+    {
+        double r = 0;
+        for (int i = 1; i < g.Members.Count; i++)
+        {
+            var (astern, abeam) = GroupSystem.OffsetFromGuide(g.Formation, g.SpacingM, i);
+            r = Math.Max(r, Math.Sqrt(astern * astern + abeam * abeam));
+        }
+        return r;
     }
 
     /// <summary>How far a group's ships are from its guide, at most, metres.</summary>
