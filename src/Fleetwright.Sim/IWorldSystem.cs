@@ -1,0 +1,18 @@
+using Fleetwright.Sim.Core;
+
+namespace Fleetwright.Sim;
+
+/// <summary>A part of the world with events and commands of its own (later: rails, the tactical tier, encounters).
+/// Registered once with <see cref="World.Register"/>, which gives it the id its events and commands carry. It's
+/// called only from the thread advancing the world, and allocates nothing in either call.</summary>
+public interface IWorldSystem
+{
+    /// <summary>Runs one of its events; the world's time is the event's.</summary>
+    void Handle(World world, in SimEvent e);
+
+    /// <summary>Applies one of its commands at the world's current time.</summary>
+    void Apply(World world, in Command c);
+
+    /// <summary>Mixes all of its state into the world's hash.</summary>
+    void Hash(ref StateHash h);
+}
