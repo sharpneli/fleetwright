@@ -199,6 +199,15 @@ public sealed class ShipStore
             (NowMs, up * Earth.Radius, (forward - up * Vec3d.Dot(forward, up)).Normalized(), double.NaN);
     }
 
+    /// <summary>Re-anchors a ship on rails at the start of a route's leg, a great circle from a point along a direction,
+    /// and orders the leg's heading as its course: what a group placed on its stations takes from it (as passing a
+    /// waypoint does).</summary>
+    public void ReanchorLeg(int slot, Vec3d at, Vec3d forward)
+    {
+        Reanchor(slot, at, forward);
+        courseDeg[slot] = Earth.Heading(railPos[slot], railFwd[slot]);
+    }
+
     /// <summary>Re-anchors a ship on rails at a point on a rhumb line at a course (past a route's last waypoint).</summary>
     public void ReanchorRhumb(int slot, Vec3d at, double courseDeg)
     {
@@ -321,6 +330,8 @@ public sealed class ShipStore
         PoseNow(slot, out var p, out var f);
         (position[slot], forward[slot], speed[slot], poseMs[slot]) = (p, f, railSpeed[slot], NowMs);
         yawRate[slot] = rudder[slot] = 0;
+        if (railGuide[slot] >= 0 && helm[slot] == Helm.Course)
+            courseDeg[slot] = Earth.Heading(p, f);   // a ship carried by its guide comes off steering as the rails had it, not for a course they left behind
         SetRails(slot, false);
         railGen[slot]++;
     }

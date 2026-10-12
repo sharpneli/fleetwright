@@ -239,6 +239,8 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
                 }
                 continue;
             }
+            if (ctx.Ships.RidesAnother(slot))
+                continue;   // carried on its guide's rails, held exactly on station: an order would only derail the line
             int target = new Unit(cap.Target).ShipOf(groups);
             if (target == 0 || target == cap.Entity || !ctx.Picture.TryGet(target, out var t))
             {

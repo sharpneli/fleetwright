@@ -1115,6 +1115,13 @@ the notices, the dev flags).
   - Screenshot: a dev column with the strip's group orders and Detach.
   - The sim suite passed nine full runs; a tenth run had one failure that didn't reproduce in eight runs after
     (not identified; the threaded host's timing tests are the likeliest).
+- **Fixed after (found by the user, from 2.5):** waypoints added to a group on rails at speed (shift+right-click, no
+  route cleared first) took it off rails for the whole route. A ship put on rails onto a route's leg kept its old
+  ordered course, the ships placed on their stations took that, and their captains re-ordered them, which derails the
+  line, at every placing. Now a leg on rails orders its heading as the course (`ShipStore.ReanchorLeg`, as passing a
+  waypoint did), a captain leaves alone a ship riding its guide's rails (the rails hold its station exactly), and a
+  ship carried by its guide comes off rails steering as they had it. Searches hid it: their first leg runs along the
+  ship's heading. Test: `FormationRailsTests`, two waypoints at 1,000×, on rails every minute of the route.
 
 **Ships and the land: T1-T3 of `docs/world/terrain-plan.md`** (the user, 2026-10-12: after 2.6 and before the
 Jutland test; planned in a session of its own when it starts). T1 is `Shore`, the land index, with the world holding

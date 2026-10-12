@@ -162,6 +162,43 @@ public class FormationRailsTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Waypoints_added_to_a_group_on_rails_at_speed_keep_it_on_rails_through_the_turn()
+    {
+        // as the map's shift+right-click adds them: no route cleared first, the first leg off the group's course. The
+        // guide's leg heading is its course, so the ships placed on their stations take it, and their captains (whose
+        // station the rails hold exactly) don't re-order them off rails
+        var (w, c) = Make();
+        w.Apply(Command.SetSpeed(1000));
+        int g = Group(w, c, Lat, Lon, 0, 4, Formation.Column, 600);
+        UntilOnRails(w, g, 4);
+        var p = Ship(w, g).Position;
+        var f = Earth.Forward(p, 60);
+        Earth.Advance(ref p, ref f, 20_000);
+        var (la1, lo1) = Earth.LatLon(p);
+        f = Earth.Forward(p, 150);
+        Earth.Advance(ref p, ref f, 20_000);
+        var (la2, lo2) = Earth.LatLon(p);
+        w.Apply(O.AddWaypoint(Of(w, g), la1, lo1));
+        w.Apply(O.AddWaypoint(Of(w, g), la2, lo2));
+        Assert.Equal(60, Ship(w, g).CourseOrderDeg, 0);
+        for (int m = 0; m < 180; m++)
+        {
+            Run(w, 60);
+            Assert.True(AllOnRails(w, g, 4), $"off rails {m + 1} min after the waypoints");
+        }
+        Assert.Equal(Helm.Course, Ship(w, g).Helm);   // the route steamed, on rails throughout
+
+        // off rails (an order below the snap speed), every ship steers as the rails had it, not for the first leg
+        w.Apply(Command.SetSpeed(1));
+        w.Apply(O.Speed(Of(w, g), 12));
+        for (int e = g; e < g + 4; e++)
+        {
+            double d = Ship(w, e).CourseOrderDeg - Ship(w, e).HeadingDeg;
+            Assert.True(Math.Abs(d - 360 * Math.Round(d / 360)) < 0.5, $"ship {e}: ordered {Ship(w, e).CourseOrderDeg:F1}°, heading {Ship(w, e).HeadingDeg:F1}°");
+        }
+    }
+
+    [Fact]
     public void Below_the_snap_speed_an_order_takes_the_group_off_rails_to_turn_properly()
     {
         var (w, c) = Make();

@@ -398,7 +398,7 @@ public sealed partial class ShipSystem : IWorldSystem
         {
             var p = s.Position;
             var wp = s.Waypoint(s.RouteNext);
-            Store.Reanchor(slot, p, Toward(p, wp));
+            Store.ReanchorLeg(slot, p, Toward(p, wp));
             ScheduleArrival(world, slot, wp);
         }
     }
