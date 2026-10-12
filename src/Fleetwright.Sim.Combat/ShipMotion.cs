@@ -83,7 +83,7 @@ public static class ShipMotion
             case Helm.Rudder:
                 return s.rudderOrder[i];
             case Helm.Course:
-                if (Math.Abs(s.position[i].Z) > Earth.Radius * Math.Sin(set.PolarCapDeg * Math.PI / 180))
+                if (Earth.InPolarCap(s.position[i], set.PolarCapDeg))
                     s.courseDeg[i] = Earth.Heading(s.position[i], s.forward[i]);   // near a pole: steer straight on
                 return Steer(s, i, h, s.courseDeg[i], set);
             case Helm.Route:

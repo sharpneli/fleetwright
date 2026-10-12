@@ -386,24 +386,7 @@ public sealed class GroupSystem : IWorldSystem
     void Change(World world, in Command c)
     {
         var code = (GroupCommand)c.Code;
-        // what changes comes off rails whole first: the ship's unit, the group's own and its force's
-        if (c.Entity != 0)
-            world.Ships.Derail(world, c.Entity);
-        if (code is GroupCommand.SetFormation or GroupCommand.Disband or GroupCommand.Add or GroupCommand.Form or GroupCommand.Exit or GroupCommand.DetachGroup or GroupCommand.Enter)
-        {
-            DerailGroup(world, Get((int)c.A));
-            if (code == GroupCommand.Enter)
-                DerailGroup(world, Get((int)c.Y));
-        }
-        if (code == GroupCommand.EnterAlongside)
-        {
-            DerailGroup(world, Get((int)c.A));
-            DerailGroup(world, Get((int)c.Y));
-        }
-        if (code == GroupCommand.Join && c.A != 0)
-            world.Ships.Derail(world, (int)c.A);
-        if (code == GroupCommand.Detach && Of(c.Entity) is { } gd)
-            DerailGroup(world, gd);   // a ship rejoining is on rails of its own: its line comes off too
+        world.Ships.DerailFor(world, c);   // what changes comes off rails whole first (ShipSystem.Rails.cs)
         switch (code)
         {
             case GroupCommand.Create:
@@ -419,7 +402,6 @@ public sealed class GroupSystem : IWorldSystem
                 {
                     if (world.Ships.Store.SlotOf(e) < 0 || made != null && !SameSide(world, e, made.Members[0]))
                         continue;
-                    world.Ships.Derail(world, e);
                     Leave(e);
                     made ??= New(false, (Formation)c.B, c.X);
                     made.Add(e);
@@ -498,17 +480,6 @@ public sealed class GroupSystem : IWorldSystem
 
     static Detachment Detached(int b) => (Detachment)b is Detachment.InLine or Detachment.Nudged or Detachment.Pinned
         ? (Detachment)b : throw new ArgumentException($"no detachment {b}");
-
-    void DerailGroup(World world, Group? g)
-    {
-        if (g == null)
-            return;
-        int s = GuideShip(TopOf(g));
-        if (s != 0)
-            world.Ships.Derail(world, s);
-        if (g.Parent != 0 && Get(g.Parent) is { } f && GuideShip(TopOf(f)) is int fs and > 0)
-            world.Ships.Derail(world, fs);   // a detached group rejoining: the line it joins comes off too
-    }
 
     static double Spacing(double m) => m > 0 ? m : 600;
 

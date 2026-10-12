@@ -108,6 +108,10 @@ public static class Earth
         return Heading(from, d - up * Vec3d.Dot(d, up));
     }
 
+    /// <summary>Whether a point is nearer a pole than a latitude, degrees (<see cref="SimSettings.PolarCapDeg"/>): where a
+    /// compass course can't be held, so the helm and the rails steer straight on.</summary>
+    public static bool InPolarCap(Vec3d p, double capLatDeg) => Math.Abs(p.Z) > p.Length * Math.Sin(capLatDeg * Math.PI / 180);
+
     /// <summary>The point and forward vector a distance along a rhumb line (a constant compass course, which is what a
     /// helmsman holding a course steers) from a start: closed form through the Mercator latitude. Not for starts
     /// within a degree of a pole, where rhumb lines spiral in.</summary>

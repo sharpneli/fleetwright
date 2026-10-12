@@ -939,6 +939,23 @@ patterns.
 - **Not yet:** a contact's speed drop and encounters proper (3.1); a grid on the sphere if the pair loop shows in 2.7
   or later numbers; tracks drawn across a snap show the members' jump as a short fan.
 
+**The rails rules in one place (2026-10-12).** The user: rails are tuned often (the player mustn't see them, and the
+clock wants them aggressive), so a rule mustn't live in several paths, one of which gets forgotten. A review found
+four entry paths (groups and single ships, each steady or placed) with their own copies of the checks, snaps beside
+them, the group commands' derails in `GroupSystem` and the polar cap tested in three places. Now:
+- **`ShipSystem.Rails.cs`** holds every rule, its header listing them: `Placing` (the clock decides placing and
+  snapping), `Ready` (`Placeable`, or `Steady` and `InStation`, and not `NearOpposing`), `Lay` (the one way on, for
+  `RailsCheck` and `Snap` alike), `CanSnap`, `TakesOffRails` (ship commands), `DerailFor` (group commands) and
+  `Derail` (the one way off). The numbers stay in `SimSettings`; `Earth.InPolarCap` is the cap's one test.
+- **Fixed on the way** (`RailsRulesTests`): a contact's derail now wakes the AI (`IWorldSystem.OffRails`; before,
+  captains kept thinking once a minute); a squadron with nobody in its line is out of its force's line, so a force
+  whose guide squadron was all nudged out still has a guide and goes on rails; a waypoint given twice on rails is
+  passed over (a loop all at one point was an event a millisecond for ever).
+- The refactor changed no simulated number in the rails, formation and force tests.
+- **Left:** `Placeable` and `Steady` don't know captains' behaviours, so a unit following or keeping station on
+  another is placed and snapped once a minute at speed, and goes off and on below it (the lone follower's item,
+  "Fine-tuning", for groups too). A route ending inside a polar cap holds a rhumb line there.
+
 **2.6 One chain of command.** A movement order is one thing, whoever gives it (the player, a captain, an admiral)
 and whatever it's given to (a ship, a squadron, a force of squadrons). Proposed 2026-10-12 after a review of the AI
 (the user: a unified codebase where an order to a ship is the same from the AI, the player or a waypoint; higher

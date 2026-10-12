@@ -251,7 +251,7 @@ public sealed class ShipStore
         speed[slot] = handling[slot].SteadySpeedMs(power[slot]);
         yawRate[slot] = rudder[slot] = 0;
         var p = position[slot];
-        if (helm[slot] == Helm.Course && Math.Abs(p.Z) <= p.Length * Math.Sin(settings.PolarCapDeg * Math.PI / 180))
+        if (helm[slot] == Helm.Course && !Earth.InPolarCap(p, settings.PolarCapDeg))
             forward[slot] = Earth.Forward(p, courseDeg[slot]);
         else if (helm[slot] == Helm.Route && routeNext[slot] < routeCount[slot])
         {

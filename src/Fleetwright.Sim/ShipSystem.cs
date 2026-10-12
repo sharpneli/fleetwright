@@ -31,7 +31,7 @@ public sealed partial class ShipSystem : IWorldSystem
     readonly SimSettings settings;
     readonly List<int> used = [];   // the registry ids ships have been made of, in the order first used
     readonly Dictionary<int, Handling> handlings = [];
-    readonly List<(int Ship, double AsternM, double AbeamM)> line = [], derailing = [], riders = [];   // a unit's ships and stations, reused (one each: they nest)
+    readonly List<(int Ship, double AsternM, double AbeamM)> line = new(16), derailing = new(16), riders = new(16);   // a unit's ships and stations, reused (one each: they nest)
     long nextTickMs = -1;   // the tick scheduled, or -1
     int nextEntity = 1;
 
@@ -127,21 +127,19 @@ public sealed partial class ShipSystem : IWorldSystem
         int slot = Store.SlotOf(c.Entity);
         if (slot < 0)
             return;   // dropped or never made: an order that reached no ship
-        if (code == ShipCommand.Clearance)
-        {
-            Store.SetClearance(slot, Math.Max(c.X, 0));
-            return;
-        }
 
-        // an order to a ship on rails: back to the fine tick first, its group with it; or, with the clock fast enough,
-        // carried out at once on rails (the ship alone comes off for the moment, its group riding it as it is)
+        // an order to a ship on rails: back to the fine tick first, its group with it; or carried out at once on rails
+        // (the ship alone comes off for the moment, its group riding it as it is): ShipSystem.Rails.cs
         bool snap = CanSnap(world, slot, code, c.X);
         if (snap)
             Store.Derail(slot);
-        else
+        else if (TakesOffRails(code))
             Derail(world, c.Entity);
         switch (code)
         {
+            case ShipCommand.Clearance:
+                Store.SetClearance(slot, Math.Max(c.X, 0));
+                break;
             case ShipCommand.Drop:
                 SideCount(Store[slot].Side, -1);
                 Store.Drop(slot);
@@ -172,28 +170,6 @@ public sealed partial class ShipSystem : IWorldSystem
             Snap(world, slot);
     }
 
-    /// <summary>Whether an order is carried out at once on rails: a course, a speed ahead or a route, to a ship on rails
-    /// of its own (alone, or a group's guide), with the clock at <see cref="SimSettings.RailsSnapMinSpeed"/> or more.</summary>
-    bool CanSnap(World world, int slot, ShipCommand code, double x) =>
-        code is ShipCommand.Course or ShipCommand.Speed or ShipCommand.ClearRoute or ShipCommand.AddWaypoint or ShipCommand.LoopRoute &&
-        (code != ShipCommand.Speed || x >= 0) && Store.OnRails(slot) && !Store.RidesAnother(slot) &&
-        world.Speed >= settings.RailsSnapMinSpeed;
-
-    /// <summary>An order carried out at once on rails: the ship takes its new course (or heads for its next waypoint)
-    /// and speed where it is, and goes back on rails; its group's ships jump to their stations on the new heading.</summary>
-    void Snap(World world, int slot)
-    {
-        Store.Settle(slot);
-        RailGuide(world, slot);
-        int entity = Store[slot].Entity;
-        if (world.Groups.UnitOf(entity) is { } u && world.Groups.GuideShip(u) == entity)
-        {
-            world.Groups.LineOffsets(u, line);
-            PlaceOnStations(slot);
-        }
-        Anchored(world, slot);
-    }
-
     // ------------------------------------------------------------------ the tick
 
     void EnsureTick(World world)
@@ -219,22 +195,7 @@ public sealed partial class ShipSystem : IWorldSystem
         }
         if (e.Code is RailsWaypoint or PolarEntry or PolarExit)
         {
-            int slot = Store.SlotOf(e.Entity);
-            if (slot < 0 || !Store.OnRails(slot) || Store.RailGen(slot) != e.Generation)
-                return;   // derailed or re-anchored since
-            if (e.Code == RailsWaypoint)
-                WaypointReached(world, slot);
-            else if (e.Code == PolarEntry)
-            {
-                Store.EnterPolarCap(slot);
-                SchedulePolar(world, slot);
-            }
-            else
-            {
-                Store.LeavePolarCap(slot);
-                SchedulePolar(world, slot);
-            }
-            Anchored(world, slot);   // its rails changed: its contacts are solved again
+            RailsEvent(world, e);
             return;
         }
         nextTickMs = -1;
@@ -247,268 +208,6 @@ public sealed partial class ShipSystem : IWorldSystem
         if (AnyFine())
             EnsureTick(world);
     }
-
-    // ------------------------------------------------------------------ the rails clock tier (docs/battle/plan.md 2.5)
-
-    /// <summary>Any ship that isn't on rails: the fine tick runs only while there is.</summary>
-    bool AnyFine() => Store.FineCount > 0;
-
-    /// <summary>Takes a ship off rails, and the line of the outermost group it moves with (they ride together), back
-    /// to the fine tick. A detached member rides rails of its own, so it comes off alone.</summary>
-    public void Derail(World world, int entity)
-    {
-        bool any = false;
-        if (world.Groups.UnitOf(entity) is { } u)
-        {
-            world.Groups.LineOffsets(u, derailing);
-            for (int i = 0; i < derailing.Count; i++)
-                any |= DerailSlot(Store.SlotOf(derailing[i].Ship));
-        }
-        else
-            any = DerailSlot(Store.SlotOf(entity));
-        if (any)
-        {
-            EnsureTick(world);
-            world.OffRails();   // whoever watches them on the fine tick wakes (a contact isn't a command)
-        }
-    }
-
-    bool DerailSlot(int slot)
-    {
-        if (slot < 0 || !Store.OnRails(slot))
-            return false;
-        Store.Derail(slot);
-        return true;
-    }
-
-    /// <summary>Every few seconds: ships, and groups' lines whose every ship is, steaming steady go on rails. A group
-    /// goes whole with the outermost force whose line it's in: its guide ship goes on its own rails, every other ship
-    /// of the line, down the tree, at its offset from it now, so the formation keeps its shape exactly; detached ships
-    /// and groups go on rails of their own.
-    /// <para>With the clock at <see cref="SimSettings.RailsSnapMinSpeed"/> or more nobody watches closely, so rails are
-    /// entered by placing, not by waiting: a ship or group under way on a course or a route, with no opposing ship
-    /// near, is made what its orders say at once (its course, the speed its power holds) and goes on rails, its group's
-    /// ships put on their stations. Forming up and settling would otherwise take minutes of fine ticks, more after an
-    /// order that changed the speed.</para></summary>
-    void RailsCheck(World world)
-    {
-        bool place = world.Speed >= settings.RailsSnapMinSpeed;
-        var groups = world.Groups;
-        for (int k = 0; k < groups.Count; k++)
-        {
-            var g = groups[k];
-            if (groups.InForceLine(g))
-                continue;   // carried with its force
-            int guide = Store.SlotOf(groups.GuideShip(g));
-            if (guide < 0 || Store.OnRails(guide))
-                continue;
-            groups.LineOffsets(g, line);
-            if (place && Placeable(guide))
-            {
-                if (!NearOpposing(guide, Math.Max(GroupRadius(guide), FormationRadius())))
-                {
-                    Store.Settle(guide);
-                    RailGuide(world, guide);
-                    PlaceOnStations(guide);
-                    Anchored(world, guide);
-                }
-                continue;
-            }
-            if (!Steady(guide))
-                continue;
-            var gs = Store[guide];
-            bool all = true;
-            for (int i = 1; i < line.Count && all; i++)
-            {
-                // a member: not swinging, with the guide, at the guide's speed near enough (its captain re-rings speed
-                // only past his deadband, so a ship in station may be rung a few tenths off; one catching up runs knots
-                // faster, and isn't taken onto rails at the wrong offset)
-                int m = Store.SlotOf(line[i].Ship);
-                if (m < 0)
-                {
-                    all = false;
-                    break;
-                }
-                var ms = Store[m];
-                double dh = ms.HeadingDeg - gs.HeadingDeg;
-                dh -= 360 * Math.Round(dh / 360);
-                var (_, astern, abeam) = line[i];
-                var gp = gs.Position;
-                var station = gp - gs.Forward * astern + Vec3d.Cross(gs.Forward, gp.Normalized()) * abeam;
-                all = Math.Abs(ms.YawRate) * 180 / Math.PI <= settings.RailsMaxYawRateDegS && Math.Abs(ms.Rudder) * 180 / Math.PI <= settings.RailsMaxRudderDeg &&
-                      Math.Abs(dh) <= settings.RailsGroupHeadingDeg && Math.Abs(ms.Speed - SteadySpeed(gs)) <= settings.RailsGroupSpeedErrKn * Handling.MsPerKnot &&
-                      Earth.Distance(ms.Position, station) <= settings.RailsGroupStationM;   // in station: its offset is held on rails
-            }
-            if (!all || NearOpposing(guide, GroupRadius(guide)))
-                continue;
-            RailGuide(world, guide);
-            for (int i = 1; i < line.Count; i++)
-                Store.RailWith(Store.SlotOf(line[i].Ship), guide);
-            Anchored(world, guide);
-        }
-        for (int i = 0; i < Store.Slots; i++)
-        {
-            if (!Store.IsAlive(i) || Store.OnRails(i) || world.Groups.InLine(Store[i].Entity))
-                continue;
-            bool placed = place && Placeable(i);
-            if (!placed && !Steady(i) || NearOpposing(i, 0))
-                continue;
-            if (placed)
-                Store.Settle(i);
-            RailGuide(world, i);
-            Anchored(world, i);
-        }
-    }
-
-    /// <summary>Whether a ship may be put on rails as its orders say, steady or not: steered on a course or a route,
-    /// its engines ahead or stopped. (Damage, when it comes, will keep a ship off: a flooding or burning ship is
-    /// coarse, 4.8.)</summary>
-    bool Placeable(int slot)
-    {
-        var s = Store[slot];
-        return (s.Helm == Helm.Course || s.Helm == Helm.Route && s.RouteNext < s.RouteCount) && s.PowerOrder >= 0;
-    }
-
-    /// <summary>The line in <see cref="line"/> put on rails on their stations about its guide (on rails already), on
-    /// its heading.</summary>
-    void PlaceOnStations(int guide)
-    {
-        for (int i = 1; i < line.Count; i++)
-        {
-            int m = Store.SlotOf(line[i].Ship);
-            if (m < 0)
-                continue;
-            var (_, astern, abeam) = line[i];
-            Store.RailAt(m, guide, -astern, abeam);
-        }
-    }
-
-    /// <summary>How far the stations in <see cref="line"/> reach from its guide, metres.</summary>
-    double FormationRadius()
-    {
-        double r = 0;
-        for (int i = 1; i < line.Count; i++)
-        {
-            var (_, astern, abeam) = line[i];
-            r = Math.Max(r, Math.Sqrt(astern * astern + abeam * abeam));
-        }
-        return r;
-    }
-
-    /// <summary>How far the ships in <see cref="line"/> are from its guide, at most, metres.</summary>
-    double GroupRadius(int guide)
-    {
-        double r = 0;
-        var gp = Store[guide].Position;
-        for (int i = 1; i < line.Count; i++)
-            if (Store.SlotOf(line[i].Ship) is int m and >= 0)
-                r = Math.Max(r, Earth.Distance(gp, Store[m].Position));
-        return r;
-    }
-
-    /// <summary>A ship on its own rails: along its ordered course, or, on a route, straight for its next waypoint, with
-    /// the waypoint's arrival as an event.</summary>
-    void RailGuide(World world, int slot)
-    {
-        var s = Store[slot];
-        // a course held is a rhumb line at the ordered course exactly (the heading is within a fraction of a degree of
-        // it: rails turn at once, and a small error held for days would be miles), and at the speed the engines settle
-        // at (within a tenth of a knot: held for days, the rest would be miles); inside a polar cap, a great circle
-        bool polar = InPolarCap(s.Position);
-        Store.Rail(slot, s.Helm == Helm.Course && !polar ? s.CourseOrderDeg : double.NaN, SteadySpeed(s));
-        if (s.Helm == Helm.Course)
-            SchedulePolar(world, slot);
-        if (s.Helm == Helm.Route && s.RouteNext < s.RouteCount)
-        {
-            var p = s.Position;
-            var wp = s.Waypoint(s.RouteNext);
-            Store.ReanchorLeg(slot, p, Toward(p, wp));
-            ScheduleArrival(world, slot, wp);
-        }
-    }
-
-    void ScheduleArrival(World world, int slot, Vec3d wp)
-    {
-        var s = Store[slot];
-        if (s.Speed <= 0)
-            return;
-        long ms = (long)Math.Ceiling(Earth.Distance(s.Position, wp) / s.Speed * 1000);
-        world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, RailsWaypoint, Store.RailGen(slot));
-    }
-
-    /// <summary>A ship on rails reaches a waypoint: it turns there at once for the next, or, past the last, holds the
-    /// course it arrived on.</summary>
-    void WaypointReached(World world, int slot)
-    {
-        if (Store.PassWaypoint(slot, out var next))
-            ScheduleArrival(world, slot, next);
-        else
-            SchedulePolar(world, slot);
-    }
-
-    bool InPolarCap(Vec3d p) => Math.Abs(p.Z) > p.Length * Math.Sin(settings.PolarCapDeg * Math.PI / 180);
-
-    /// <summary>For a ship on its own rails holding a course: when its rhumb line reaches a polar cap, or, inside one,
-    /// when its great circle leaves it (solved in closed form), as an event.</summary>
-    void SchedulePolar(World world, int slot)
-    {
-        var s = Store[slot];
-        if (s.Speed <= 0 || s.Helm != Helm.Course)
-            return;
-        var p = s.Position;
-        double cap = settings.PolarCapDeg * Math.PI / 180, dist;
-        ushort code;
-        if (Store.OnRhumb(slot))
-        {
-            // the latitude changes linearly along a rhumb line: d lat / ds = cos(course) / R
-            double c = Math.Cos(s.CourseOrderDeg * Math.PI / 180), lat = Math.Asin(p.Z / p.Length);
-            if (Math.Abs(c) < 1e-9)
-                return;
-            dist = ((c > 0 ? cap : -cap) - lat) / c * Earth.Radius;
-            code = PolarEntry;
-        }
-        else
-        {
-            // on the great circle p cos u + f sin u (u = s/R), the height toward the pole is A cos(u - phi), with
-            // A = |(pz, fz)| and phi = atan2(fz, pz); it falls back to the cap's edge at u = phi + acos(edge / A)
-            var up = p.Normalized();
-            var f = s.Forward;
-            double sign = Math.Sign(up.Z), pz = up.Z * sign, fz = f.Z * sign, edge = Math.Sin(cap);
-            double a = Math.Sqrt(pz * pz + fz * fz);
-            dist = Earth.Radius * (Math.Atan2(fz, pz) + Math.Acos(Math.Min(edge / a, 1)));
-            code = PolarExit;
-        }
-        if (!(dist > 0))
-            return;
-        long ms = (long)Math.Ceiling(dist / s.Speed * 1000);
-        world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, code, Store.RailGen(slot));
-    }
-
-    static Vec3d Toward(Vec3d from, Vec3d to)
-    {
-        var up = from.Normalized();
-        var d = to - from;
-        return (d - up * Vec3d.Dot(d, up)).Normalized();
-    }
-
-    /// <summary>Steaming steady: on a course or a route's leg and on it, rudder amidships, no swing, the engines at what
-    /// was rung and the speed what they give.</summary>
-    bool Steady(int slot)
-    {
-        var s = Store[slot];
-        if (s.Helm is not (Helm.Course or Helm.Route) || Math.Abs(s.YawRate) * 180 / Math.PI > settings.RailsMaxYawRateDegS ||
-            Math.Abs(s.Rudder) * 180 / Math.PI > settings.RailsMaxRudderDeg || s.Power < 0 || s.Power != s.PowerOrder)
-            return false;
-        double want = s.Helm == Helm.Course ? s.CourseOrderDeg : Earth.Bearing(s.Position, s.Waypoint(s.RouteNext));
-        double dc = want - s.HeadingDeg;
-        dc -= 360 * Math.Round(dc / 360);
-        if (Math.Abs(dc) > settings.RailsMaxCourseErrDeg)
-            return false;
-        return Math.Abs(s.Speed - SteadySpeed(s)) <= settings.RailsMaxSpeedErrKn * Handling.MsPerKnot;
-    }
-
-    /// <summary>The speed a ship's power holds it at, m/s.</summary>
-    static double SteadySpeed(ShipState s) => s.Handling.SteadySpeedMs(s.Power);
 
     public void Hash(ref StateHash h)
     {
