@@ -18,7 +18,7 @@ public struct CoastVertex
 /// <summary>A level of the land baked once into static geometry, drawn with no CPU per frame (docs/battle/plan.md
 /// step 1.4): the fill as fans of triangles for the winding count, and the coast as a line mesh.
 /// <para>No triangulation: the winding-count fill takes any fans, as long as no triangle is big enough for its sag
-/// below the sphere (L²/8R) to show. So the land is cut into tiles of a cube-sphere grid (six faces, each
+/// below the sphere (L²/8R) to show. So the land is cut into tiles of a cube-sphere grid (<see cref="CubeSphere"/>: six faces, each
 /// <see cref="TilesPerFace"/> squared in its gnomonic plane, where great circles are straight) and each tile's piece
 /// becomes a fan of its own. Per face, a ring is brought inside a 60° cap around the face's centre
 /// (<see cref="CapRetraction"/>: inside a hemisphere, so the projection holds), projected, clipped to the face, then split
@@ -46,21 +46,14 @@ public sealed class LandMesh
 
     LandMesh(Vector3[] fill, CoastVertex[] coast, uint[] indices) => (Fill, Coast, CoastIndices) = (fill, coast, indices);
 
-    // the cube's faces: the centre's axis and the gnomonic plane's two axes
-    static readonly (Vec3d F, Vec3d U, Vec3d V)[] Faces =
-    [
-        (Vec3d.UnitX, Vec3d.UnitY, Vec3d.UnitZ), (-Vec3d.UnitX, -Vec3d.UnitY, Vec3d.UnitZ),
-        (Vec3d.UnitY, -Vec3d.UnitX, Vec3d.UnitZ), (-Vec3d.UnitY, Vec3d.UnitX, Vec3d.UnitZ),
-        (Vec3d.UnitZ, Vec3d.UnitY, -Vec3d.UnitX), (-Vec3d.UnitZ, Vec3d.UnitY, Vec3d.UnitX),
-    ];
-
     public static LandMesh Bake(Land land)
     {
         var fill = new List<Vector3>();
         var cap = new CapRetraction();
         var poly = new List<(double X, double Y)>();
-        foreach (var (f, u, v) in Faces)
+        for (int face = 0; face < CubeSphere.FaceCount; face++)
         {
+            var (f, u, v) = CubeSphere.Face(face);
             cap.Set(f, FaceCapCos);
             for (int i = 0; i < land.RingCount; i++)
             {
@@ -74,9 +67,7 @@ public sealed class LandMesh
                 var pts = cap.Points;
                 for (int k = 0; k < n; k++)
                 {
-                    var p = pts[k].P;
-                    double w = Vec3d.Dot(p, f);
-                    poly.Add((Vec3d.Dot(p, u) / w, Vec3d.Dot(p, v) / w));
+                    poly.Add(CubeSphere.Project(pts[k].P, face));
                 }
                 Split(poly, -1, -1, 2, 0, f, u, v, fill);
             }

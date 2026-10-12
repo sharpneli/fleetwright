@@ -173,6 +173,8 @@ public static unsafe class Program
             }
         }
 
+        // the land the world sails on, built while the window opens (docs/world/terrain-plan.md T1)
+        var shore = Map.WorldSession.LoadShore();
         try
         {
             using var engine = new Sdl3GpuEngine();
@@ -218,7 +220,7 @@ public static unsafe class Program
             // the classes in play and their art, the app's: the world and the map share them
             using var classes = new Sim.Ships.ShipClassRegistry();
             using var shipArt = new Map.ShipArtLibrary((SDL.SDL_GPUDevice*)device, classes);
-            using var world = new Map.WorldSession(start, 1, classes, devShips != null ? w => SpawnDevShips(w, devShips) : null);
+            using var world = new Map.WorldSession(start, 1, classes, shore.Result, devShips != null ? w => SpawnDevShips(w, devShips) : null);
             foreach (var grp in devGroups)
                 foreach (var c in DevGroup(grp))
                     world.Send(c);

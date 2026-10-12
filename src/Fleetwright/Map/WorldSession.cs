@@ -27,14 +27,23 @@ public sealed class WorldSession : IDisposable
     /// <summary>The world's settings: immutable, so the UI may read them (a route's capacity, the snap speed).</summary>
     public SimSettings Settings { get; }
 
-    /// <summary>A world with the shipped settings (Content/Sim/settings.json) and the app's class registry.
+    /// <summary>The world's land: immutable, so the map draws its finest level from the same instance.</summary>
+    public Shore Shore { get; }
+
+    /// <summary>The shipped 1:10M land and its index, built on a thread (~0.2-0.4 s): the app starts it before the
+    /// window opens and hands the result to the world.</summary>
+    public static Task<Shore> LoadShore() =>
+        Task.Run(() => Shore.Build(Land.Load(Path.Combine(AppContext.BaseDirectory, "Content", "World", "land-10m.bin"))));
+
+    /// <summary>A world with the shipped settings (Content/Sim/settings.json), the app's class registry and the land.
     /// <paramref name="setup"/> runs on it before its thread starts: the dev ships (-ships=) until missions place
     /// forces.</summary>
-    public WorldSession(WorldTime start, ulong seed, ShipClassRegistry classes, Action<World>? setup = null)
+    public WorldSession(WorldTime start, ulong seed, ShipClassRegistry classes, Shore shore, Action<World>? setup = null)
     {
         Classes = classes;
+        Shore = shore;
         var settings = Settings = SimSettings.Load(Path.Combine(AppContext.BaseDirectory, "Content", "Sim", "settings.json"));
-        var w = new World(start, seed, settings, classes);
+        var w = new World(start, seed, settings, classes, shore);
         Ai = new AiSystem(w);
         setup?.Invoke(w);
         host = new SimHost(w);

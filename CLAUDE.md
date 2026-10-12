@@ -135,6 +135,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check     
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shell-test shipgen/designs/bismarck.json [--gratings]   # shells at the citadel (on the ShipClass): leaks through neither armour nor water
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- mono-check [bismarck ...] [--steps 4]   # trim levers swept: more weight in, never a lighter ship
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sim [--from 1916-05-31T14:00] [--speed 30000] [--seconds 3]   # the world on its thread: clock, speed asked/achieved, sun, sim allocations
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shore [--points 100000]   # the land index: build time, memory, IsLand vs Land, query costs
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- trials shipgen/designs/yamato.json [--out out]   # sea trials on the ship model: turning circles, 0 -> full, coasting, crash stop, beside the research's bands
 ```
 
@@ -226,7 +227,8 @@ src/
   Fleetwright.Sim.Core/       # the sim's lowest layer, pure values (docs/battle/plan.md "Inside Fleetwright.Sim"):
                               #   Vec3d, Earth (the sphere), ShipFrame (left-handed: +x bow, +y starboard, up),
                               #   WorldTime (ms since 1850), Sun, RandomStream, StateHash, SimSettings, Land (rings,
-                              #   IsLand)
+                              #   IsLand), CubeSphere (the cube's faces, gnomonic), Shore (the land index the sim asks:
+                              #   IsLand, Clearance, FirstContact along great circles and rhumb lines; World.Shore)
   Fleetwright.Sim.Ships/      # the ships' data: ShipClass (a built Ship's hitboxes and report as read-only, int-indexed
                               #   tables: Rows.cs), ShipClassCompiler (strict: every kind an enum, every link an index),
                               #   ArmourSolids, ContentHash (design and layout hashes), ShellTest (shell-test on a class),

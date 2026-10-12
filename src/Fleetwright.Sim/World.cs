@@ -24,6 +24,10 @@ public sealed class World
     public SimSettings Settings { get; }
     public ulong Seed { get; }
 
+    /// <summary>The land, as the sim asks it (docs/world/terrain-plan.md): the 1:10M <see cref="Land"/> and its index.
+    /// Null in a world of water (headless tests that don't need it, or must cross where land would be).</summary>
+    public Shore? Shore { get; }
+
     /// <summary>The clock: every event before it has run, none at or after it.</summary>
     public WorldTime Time { get; private set; }
 
@@ -47,9 +51,11 @@ public sealed class World
 
     /// <param name="classes">Where ship classes come from; a registry of its own if none (it's shared when the app's
     /// art draws from the same builds).</param>
-    public World(WorldTime start, ulong seed, SimSettings? settings = null, ShipClassRegistry? classes = null)
+    /// <param name="shore">The land (immutable, so the map shares it); none for a world of water.</param>
+    public World(WorldTime start, ulong seed, SimSettings? settings = null, ShipClassRegistry? classes = null, Shore? shore = null)
     {
         Settings = settings ?? SimSettings.Default;
+        Shore = shore;
         Seed = seed;
         Time = start;
         targetMs = start.Ms;

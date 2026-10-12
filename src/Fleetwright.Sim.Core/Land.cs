@@ -30,6 +30,15 @@ public sealed class Land
 
     public ReadOnlySpan<Vec3d> Ring(int i) => points.AsSpan(start[i], start[i + 1] - start[i]);
 
+    /// <summary>Every ring's points, ring after ring: ring i starts at <see cref="RingStart"/>(i).</summary>
+    internal Vec3d[] Points => points;
+
+    internal int RingStart(int i) => start[i];
+
+    /// <summary>A hash of the data (every point, every ring's length): results depend on the land now, so a replay
+    /// records which land it ran on.</summary>
+    public ulong Hash { get; }
+
     /// <summary>A ring's bounding cap: its centre, and the cosine of its angular radius.</summary>
     public (Vec3d Centre, double Cos) Cap(int i) => (capCentre[i], capCos[i]);
 
@@ -44,6 +53,13 @@ public sealed class Land
         this.points = points;
         this.start = start;
         int n = start.Length - 1;
+        var hash = new StateHash();
+        hash.Add(n);
+        foreach (int k in start)
+            hash.Add(k);
+        foreach (var p in points)
+            hash.Add(p);
+        Hash = hash.Value;
         var lengths = new double[points.Length];
         for (int i = 0, e = 0; i < n; i++)
         {
@@ -185,11 +201,11 @@ public sealed class Land
     }
 
     /// <summary>Whether x (any length), on the circle of the arc a-b (normal n), lies between a and b.</summary>
-    static bool OnArc(Vec3d a, Vec3d b, Vec3d n, Vec3d x) =>
+    internal static bool OnArc(Vec3d a, Vec3d b, Vec3d n, Vec3d x) =>
         Vec3d.Dot(Vec3d.Cross(a, x), n) >= 0 && Vec3d.Dot(Vec3d.Cross(x, b), n) >= 0;
 
     /// <summary>Whether the arcs a-b (ab = a × b) and c-d cross.</summary>
-    static bool Cross(Vec3d a, Vec3d b, Vec3d ab, Vec3d c, Vec3d d)
+    internal static bool Cross(Vec3d a, Vec3d b, Vec3d ab, Vec3d c, Vec3d d)
     {
         double sc = Vec3d.Dot(c, ab), sd = Vec3d.Dot(d, ab);
         if ((sc > 0) == (sd > 0))

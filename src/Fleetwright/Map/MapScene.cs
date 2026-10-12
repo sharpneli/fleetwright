@@ -45,7 +45,7 @@ public sealed unsafe partial class MapScene : IScene
         designNames = [.. Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "Content", "Designs"), "*.json")
             .Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal)!];
         static Land Load(string res) => Land.Load(Path.Combine(AppContext.BaseDirectory, "Content", "World", $"land-{res}.bin"));
-        land = new LandView(Load("110m"), Load("50m"), Load("10m"));
+        land = new LandView(Load("110m"), Load("50m"), world.Shore.Land);   // the finest is the world's own
         // the coarse levels baked once into static meshes; the finest is built per view (docs/battle/plan.md 1.4)
         renderer.UploadLand(LandMesh.Bake(land.Coarse), LandMesh.Bake(land.Medium));
     }

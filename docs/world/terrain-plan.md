@@ -357,6 +357,28 @@ Measure the build time and memory, and cache or thread the build if it's slow.
 - **The build:** measured first; synchronous if it's quick, on a thread at start-up if not, a disk cache only if
   that's still not enough.
 
+*Done (2026-10-12):*
+- **`CubeSphere`** (`Sim.Core`): the faces and the gnomonic projection both ways; `LandMesh` tiles on it.
+- **`Shore`** (`Sim.Core`, `Shore.Build(land)`): 1024² cells a face (~12 km at a face's centre, ~5 km at its
+  corners); one signed short per cell (0 coast, ±(1 + bound in 100 m steps), capped at 300 km); the coast cells'
+  segments sorted by cell with an index per row. The kinds are a scanline per face (a face per thread, seeded by one
+  `Land.IsLand`); the bounds a shortest path over 8-neighbours with Dial's buckets, each step a cell's width under
+  its true one by 15%. Queries: `IsLand`, `BoundM`, `Clearance`, `FirstContact` (great circles: steps by the bound,
+  then closed-form caps and bands per segment over ~6 km pieces), `FirstContactRhumb` (chords within a metre of the
+  rhumb line, solved a metre wider, so up to two metres early), `ArcClear`. `Land.Hash` for replays.
+- **The world holds it:** `World(..., shore)` and `World.Shore` (null: a world of water). The app starts the build
+  on a thread before the window opens (`WorldSession.LoadShore`) and hands it to the world; the map draws 1:10M from
+  `WorldSession.Shore.Land`, one load instead of two.
+- **Measured** (`shipgen shore`, Release): load 0.1 s, build 0.16-0.3 s (warm to first), 95 MB transient, 17 MB
+  kept, 93,535 coast cells. `IsLand` 0.3 µs; `Clearance` 1.2 µs at 1 km, 13 µs at 50 km; `FirstContact` 200 km
+  at sea 0.9 µs, 20 km along a coast 4-5 µs; rhumb lines about the same. Nothing allocates. Threaded at start-up,
+  so no disk cache.
+- **Tests** (`ShoreTests`, one shared build): `IsLand` against `Land.IsLand` at 10,000 points (uniform, within 5 km
+  of the coast, on the cube's seams and corners); the bounds never over the brute-force distance; `Clearance` equal
+  to brute force to 1 cm; first contacts against the track marched every 10 m; Bosporus, Dardanelles, Øresund,
+  Great Belt, Dover, Messina, Hoxa Sound, Tsushima and Malacca open at 50 m (a flood whose every step is
+  `ArcClear`); no allocation; the same build twice.
+
 **T2 The backstop, spawning and waypoints.** From here no ship is ever on land, even if it still looks like Rule
 the Waves. It's a small step, and it's the guarantee everything after builds on. With it:
 - the rails stopgap (a unit whose track meets land comes off rails short of it), and placing refused onto land;
