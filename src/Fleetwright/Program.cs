@@ -22,6 +22,7 @@ public static unsafe class Program
         string? devShips = null;
         int selectShip = -1;
         var captains = new List<string>();
+        var searches = new List<string>();
         var devGroups = new List<string>();
         bool frameTimes = false;
 
@@ -99,7 +100,7 @@ public static unsafe class Program
             {
                 startPaused = true;
             }
-            else if (arg.StartsWith("-ships="))   // dev ships in the North Sea: -ships=dreadnought[:count]
+            else if (arg.StartsWith("-ships="))   // dev ships in the North Sea: -ships=dreadnought[:count[:side]]
             {
                 devShips = arg.Substring("-ships=".Length);
             }
@@ -110,6 +111,10 @@ public static unsafe class Program
             else if (arg.StartsWith("-captain="))   // a dev ship's captain: -captain=2:follow:1[:800], keep, run:1, none
             {
                 captains.Add(arg.Substring("-captain=".Length));
+            }
+            else if (arg.StartsWith("-search="))   // a dev search: -search=1:ladder[:leg nm[:nm apart[:legs]]] (ladder, square, sector, patrol)
+            {
+                searches.Add(arg.Substring("-search=".Length));
             }
             else if (arg.StartsWith("-select="))   // the ship selected on the map at start, by entity id (screenshots)
             {
@@ -217,6 +222,9 @@ public static unsafe class Program
                     world.Send(order);
                 else
                     Console.Error.WriteLine($"Bad captain: -captain={cap} (want entity:follow:target[:metres], entity:run:target, entity:keep or entity:none)");
+            foreach (var search in searches)
+                if (!DevSearch(world, search))
+                    Console.Error.WriteLine($"Bad search: -search={search} (want entity:ladder|square|sector|patrol[:leg nm[:nm apart[:legs]]])");
             if (startSpeed is double speed0)
                 world.Send(Sim.Command.SetSpeed(speed0));
             if (startPaused)
@@ -246,21 +254,50 @@ public static unsafe class Program
         }
     }
 
-    /// <summary>-ships=design[:count]: a block of ships of one design at sea in the North Sea, 600 m apart, steaming
+    /// <summary>-ships=design[:count[:side]]: a block of ships of one design at sea in the North Sea, 600 m apart, steaming
     /// 045° at 15 kn, every other one ordered round to 135° so the turns show (docs/battle/plan.md step 2.2: dev ships
     /// until missions place forces).</summary>
     static void SpawnDevShips(Sim.World w, string arg)
     {
         var parts = arg.Split(':');
         int count = parts.Length > 1 && int.TryParse(parts[1], out int n) ? Math.Max(n, 1) : 1;
+        byte shipSide = parts.Length > 2 && byte.TryParse(parts[2], out byte sd) ? sd : (byte)0;
         var design = Shipgen.Design.Load(FindDesign(parts[0]));
         int c = w.Ships.Registry.Request(design);
         int side = (int)Math.Ceiling(Math.Sqrt(count));
         double dLat = 600 / 111_195.0, dLon = dLat / Math.Cos(56.5 * Math.PI / 180);
         for (int i = 0; i < count; i++)
-            w.Apply(Sim.ShipSystem.Spawn(c, 56.5 + dLat * (i / side), 4.0 + dLon * (i % side), 45, 15));
+            w.Apply(Sim.ShipSystem.Spawn(c, 56.5 + dLat * (i / side), 4.0 + dLon * (i % side), 45, 15, shipSide));
         for (int e = 2; e <= count; e += 2)
             w.Apply(Sim.ShipSystem.Course(e, 135));
+    }
+
+    /// <summary>-search=entity:pattern[:leg nm[:nm apart[:legs]]]: a search pattern for a dev ship (a group's guide), from
+    /// where it is, along its heading, to starboard.</summary>
+    static bool DevSearch(Map.WorldSession world, string arg)
+    {
+        var p = arg.Split(':');
+        if (p.Length < 2 || !int.TryParse(p[0], out int e))
+            return false;
+        Sim.Ai.Admirals.SearchPattern? pattern = p[1] switch
+        {
+            "ladder" => Sim.Ai.Admirals.SearchPattern.Ladder,
+            "square" => Sim.Ai.Admirals.SearchPattern.ExpandingSquare,
+            "sector" => Sim.Ai.Admirals.SearchPattern.Sector,
+            "patrol" => Sim.Ai.Admirals.SearchPattern.PatrolLine,
+            _ => null,
+        };
+        var s = world.Current;
+        int k = s.Ships.IndexOf(e);
+        if (pattern is not { } pt || k < 0)
+            return false;
+        double Nm(int i, double d) => p.Length > i && double.TryParse(p[i], System.Globalization.CultureInfo.InvariantCulture, out double v) ? v : d;
+        var (at, f) = s.Ships.PoseAt(k, s.Time.Ms);
+        var wps = new Sim.Core.Vec3d[world.Settings.RouteCapacity];
+        int n = Sim.Ai.Admirals.SearchPatterns.Waypoints(pt, at, Sim.Core.Earth.Heading(at, f), Nm(2, 20) * 1852, Nm(3, 5) * 1852,
+            (int)Nm(4, pt == Sim.Ai.Admirals.SearchPattern.Sector ? 3 : 6), true, wps);
+        Sim.Ai.Admirals.SearchPatterns.Orders(e, wps.AsSpan(0, n), Sim.Ai.Admirals.SearchPatterns.Loops(pt), c => world.Send(c));
+        return true;
     }
 
     /// <summary>-group=e1,e2,...[:formation[:metres]]: a dev group, guided by the first.</summary>

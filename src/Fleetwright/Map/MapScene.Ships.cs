@@ -1,5 +1,6 @@
 using System.Numerics;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Ai.Admirals;
 using Fleetwright.Sim.Ai.Captains;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
@@ -29,7 +30,7 @@ public sealed unsafe partial class MapScene
     // how many (more than one a group, each ship on its station), the formation, heading and speed
     int designPick = -1, placeClass = -1;
     bool placing, keepPlacing;
-    int spawnCount = 1, spawnFormation, spawnSpacing = 600, spawnHeading, spawnKn = 10;
+    int spawnCount = 1, spawnFormation, spawnSpacing = 600, spawnHeading, spawnKn = 10, spawnSide;
     int courseEdit;
     bool hardOver;
     int followMetres = 800;
@@ -100,6 +101,8 @@ public sealed unsafe partial class MapScene
                     GreatCircle(view, from, to);
                     from = to;
                 }
+                if (v.RouteLoop[k])
+                    GreatCircle(view, from, v.Waypoints[v.RouteStart[k]]);   // a patrol: round to the first again
                 overlay.End();
                 for (int i = 0; i < v.RouteCount[k]; i++)
                     Ring(view, v.Waypoints[v.RouteStart[k] + i], 4, sel ? RouteSelected : RouteColor, 1.5f);
@@ -203,7 +206,7 @@ public sealed unsafe partial class MapScene
         {
             var (astern, abeam) = GroupSystem.OffsetFromGuide(formation, spawnSpacing, i);
             var (lat, lon) = Earth.LatLon(at - f * astern + starboard * abeam);
-            world.Send(ShipSystem.Spawn(placeClass, lat, lon, spawnHeading, spawnKn));
+            world.Send(ShipSystem.Spawn(placeClass, lat, lon, spawnHeading, spawnKn, (byte)spawnSide));
         }
         if (spawnCount > 1)
             world.Send(GroupSystem.CreateOfNewest(spawnCount, formation, spawnSpacing));
@@ -296,6 +299,73 @@ public sealed unsafe partial class MapScene
         }
     }
 
+    // the search row: the pattern, its first leg's course (or the ship's heading), its sizes in miles, its count of
+    // legs (a sector's triangles), and which way it turns
+    int searchPattern, searchAxis, searchLegNm = 20, searchSpacingNm = 5, searchLegs = 6;
+    bool searchAlongHeading = true, searchStarboard = true;
+    Vec3d[] searchWaypoints = [];
+    static readonly string[] SearchNames = ["Ladder", "Expanding square", "Sector", "Patrol line"];
+
+    /// <summary>A search pattern for the commanded ship (a group's guide: its group follows), from where it is: the
+    /// route's waypoints sent as orders. With the clock fast enough a group on rails steams it on rails, turning at
+    /// once at each waypoint.</summary>
+    void SearchRow(Snapshot s, int cmd, int kc)
+    {
+        float field = 80 * UiFonts.Scale;
+        var pattern = (SearchPattern)searchPattern;
+        ImGui.Text("Search:");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(140 * UiFonts.Scale);
+        ImGui.Combo("##search", ref searchPattern, SearchNames, SearchNames.Length);
+        var (p, f) = s.Ships.PoseAt(kc, s.Time.Ms);
+        if (searchAlongHeading)
+            searchAxis = (int)Math.Round(Earth.Heading(p, f)) % 360;
+        ImGui.SameLine();
+        ImGui.BeginDisabled(searchAlongHeading);
+        ImGui.SetNextItemWidth(field);
+        if (ImGui.InputInt("°##axis", ref searchAxis, 0))
+            searchAxis = ((searchAxis % 360) + 360) % 360;
+        ImGui.EndDisabled();
+        ImGui.SameLine();
+        ImGui.Checkbox("ahead", ref searchAlongHeading);
+        if (pattern != SearchPattern.ExpandingSquare)
+        {
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(field);
+            if (ImGui.InputInt(pattern == SearchPattern.Sector ? "nm radius" : "nm leg", ref searchLegNm, 1, 5))
+                searchLegNm = Math.Clamp(searchLegNm, 1, 500);
+        }
+        if (pattern is SearchPattern.Ladder or SearchPattern.ExpandingSquare)
+        {
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(field);
+            if (ImGui.InputInt("nm apart", ref searchSpacingNm, 1, 5))
+                searchSpacingNm = Math.Clamp(searchSpacingNm, 1, 100);
+        }
+        // as many legs as the route holds: a ladder's legs and the steps between them, a sector's three a triangle
+        int cap = world.Settings.RouteCapacity;
+        int most = pattern switch { SearchPattern.Ladder => (cap + 1) / 2, SearchPattern.Sector => cap / 3, _ => cap };
+        if (pattern != SearchPattern.PatrolLine)
+        {
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(field);
+            if (ImGui.InputInt(pattern == SearchPattern.Sector ? "triangles" : "legs", ref searchLegs, 1, 2))
+                searchLegs = Math.Clamp(searchLegs, 1, most);
+            ImGui.SameLine();
+            ImGui.Checkbox("to starboard", ref searchStarboard);
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Search"))
+        {
+            if (searchWaypoints.Length < cap)
+                searchWaypoints = new Vec3d[cap];
+            int legs = Math.Clamp(searchLegs, 1, most);
+            int n = SearchPatterns.Waypoints(pattern, p, searchAxis, searchLegNm * 1852.0, searchSpacingNm * 1852.0, legs, searchStarboard,
+                searchWaypoints.AsSpan(0, cap));
+            SearchPatterns.Orders(cmd, searchWaypoints.AsSpan(0, n), SearchPatterns.Loops(pattern), c => world.Send(c));
+        }
+    }
+
     string ShipLabel(Snapshot s, int entity)
     {
         int j = s.Ships.IndexOf(entity);
@@ -375,6 +445,11 @@ public sealed unsafe partial class MapScene
             ImGui.SetNextItemWidth(field);
             if (ImGui.InputInt("kn", ref spawnKn, 1, 5))
                 spawnKn = Math.Clamp(spawnKn, 0, 40);
+            ImGui.SetNextItemWidth(field);
+            if (ImGui.InputInt("side", ref spawnSide, 1, 1))
+                spawnSide = Math.Clamp(spawnSide, 0, 3);
+            ImGui.SameLine();
+            ImGui.TextDisabled("(different sides are opposing)");
             if (placeClass >= 0 && !ready)
                 ImGui.TextDisabled("building...");
             else if (error != null)
@@ -396,11 +471,12 @@ public sealed unsafe partial class MapScene
             string orders = s.Ships.Helm[k] switch
             {
                 Helm.Course => $"course {s.Ships.CourseOrderDeg[k]:000}°",
+                Helm.Route when s.Ships.RouteLoop[k] => $"patrol round {s.Ships.RouteCount[k]} waypoints",
                 Helm.Route => $"route, {s.Ships.RouteCount[k]} waypoint{(s.Ships.RouteCount[k] == 1 ? "" : "s")} to go",
                 Helm.Rudder => $"rudder held {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0}°",
                 _ => "no helm orders",
             };
-            ImGui.Text($"{cls?.Name ?? "?"}  #{selected}{(s.Ships.OnRails[k] ? "  (on rails)" : "")}");
+            ImGui.Text($"{cls?.Name ?? "?"}  #{selected}  side {s.Ships.Side[k]}{(s.Ships.OnRails[k] ? "  (on rails)" : "")}");
             ImGui.SameLine();
             ImGui.TextDisabled($"heading {heading:000}°, {kn:0.0} kn, rudder {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0;0}°  ·  " +
                                $"ordered: {orders}, {s.Ships.SpeedOrderKn[k]:0.#} kn");
@@ -456,6 +532,7 @@ public sealed unsafe partial class MapScene
                         ImGui.PopStyleColor();
                 }
             }
+            SearchRow(s, cmd, kc);
             if (cmd == selected)
                 CaptainRow(s, k);
             else

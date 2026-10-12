@@ -25,6 +25,7 @@ public sealed class ShipStore
 
     // identity
     internal int[] entity = [], generation = [], classIndex = [];
+    internal byte[] side = [];
     internal bool[] alive = [];
     internal Handling[] handling = [];
 
@@ -37,6 +38,7 @@ public sealed class ShipStore
     internal Helm[] helm = [];
     internal double[] rudderOrder = [], courseDeg = [], courseRudder = [], powerOrder = [], speedOrderKn = [];
     internal Vec3d[] route = [];   // routeCap per slot
+    internal bool[] routeLoop = [];   // past the last waypoint, on to the first again (a patrol)
 
     // the rails clock tier (docs/battle/plan.md step 2.5): a ship steaming steady isn't stepped, it's a function of time.
     // A ship on its own is on a great circle from an anchor (time, position, forward) at a speed; a group's other ships
@@ -69,8 +71,9 @@ public sealed class ShipStore
     public bool IsAlive(int slot) => slot >= 0 && slot < high && alive[slot];
     public ShipState this[int slot] => new(this, slot);
 
-    /// <summary>Makes a ship of a class (its index in the world's table, and its handling) at a pose. Its helm holds the heading it's given, its engines the speed.</summary>
-    public int Spawn(int entityId, int classIndex, Handling h, Vec3d position, Vec3d forward, double speedMs, long timeMs)
+    /// <summary>Makes a ship of a class (its index in the world's table, and its handling) at a pose, on a side. Its
+    /// helm holds the heading it's given, its engines the speed.</summary>
+    public int Spawn(int entityId, int classIndex, Handling h, Vec3d position, Vec3d forward, double speedMs, long timeMs, byte side = 0)
     {
         int slot;
         if (free.Count > 0)
@@ -84,6 +87,7 @@ public sealed class ShipStore
         var up = position.Normalized();
         entity[slot] = entityId;
         this.classIndex[slot] = classIndex;
+        this.side[slot] = side;
         alive[slot] = true;
         handling[slot] = h;
         this.position[slot] = up * Earth.Radius;
@@ -93,13 +97,14 @@ public sealed class ShipStore
         power[slot] = powerOrder[slot] = h.PowerFor(speedMs / Handling.MsPerKnot);
         speedOrderKn[slot] = speedMs / Handling.MsPerKnot;
         poseMs[slot] = timeMs;
-        rails[slot] = false;
+        SetRails(slot, false);
         railGen[slot]++;
         helm[slot] = Helm.Course;
         courseDeg[slot] = Earth.Heading(this.position[slot], this.forward[slot]);
         courseRudder[slot] = settings.StandardRudderDeg * Math.PI / 180;
         rudderOrder[slot] = 0;
         routeCount[slot] = routeNext[slot] = 0;
+        routeLoop[slot] = false;
         return slot;
     }
 
@@ -107,8 +112,44 @@ public sealed class ShipStore
 
     public bool OnRails(int slot) => rails[slot];
 
+    // the live ships off rails, densely: what the fine tick steps (each ship's step reads only its own slot, so their
+    // order changes nothing)
+    int[] fineSlots = [], fineIndex = [];
+    int fineCount;
+
+    /// <summary>How many live ships are on the fine tick, and the i-th of them (in no order that matters).</summary>
+    public int FineCount => fineCount;
+    public int FineSlot(int i) => fineSlots[i];
+
+    void SetRails(int slot, bool on)
+    {
+        rails[slot] = on;
+        if (on)
+            RemoveFine(slot);
+        else if (fineIndex[slot] < 0)
+        {
+            fineIndex[slot] = fineCount;
+            fineSlots[fineCount++] = slot;
+        }
+    }
+
+    void RemoveFine(int slot)
+    {
+        int k = fineIndex[slot];
+        if (k < 0)
+            return;
+        int last = fineSlots[--fineCount];
+        fineSlots[k] = last;
+        fineIndex[last] = k;
+        fineIndex[slot] = -1;
+    }
+
     /// <summary>A ship's pose now: its stepped pose, or where its rails put it at <see cref="NowMs"/>.</summary>
-    public void PoseNow(int slot, out Vec3d position, out Vec3d forward)
+    public void PoseNow(int slot, out Vec3d position, out Vec3d forward) => PoseAt(slot, NowMs, out position, out forward);
+
+    /// <summary>Where a ship's rails put it at a time, as if they held till then (a waypoint or an order on the way
+    /// re-anchors them); a ship off rails is where it was last stepped to.</summary>
+    public void PoseAt(int slot, long ms, out Vec3d position, out Vec3d forward)
     {
         if (!rails[slot])
         {
@@ -118,7 +159,7 @@ public sealed class ShipStore
         int g = railGuide[slot];
         if (g < 0)
         {
-            double s = railSpeed[slot] * (NowMs - railMs[slot]) / 1000.0;
+            double s = railSpeed[slot] * (ms - railMs[slot]) / 1000.0;
             if (!double.IsNaN(railCourse[slot]))
             {
                 Earth.Rhumb(railPos[slot], railCourse[slot], s, out position, out forward);
@@ -128,7 +169,7 @@ public sealed class ShipStore
             Earth.Advance(ref position, ref forward, s);
             return;
         }
-        PoseNow(g, out var gp, out var gf);
+        PoseAt(g, ms, out var gp, out var gf);
         var up = gp.Normalized();
         var p = gp + gf * railX[slot] + Vec3d.Cross(gf, up) * railY[slot];
         position = p.Normalized() * Earth.Radius;
@@ -141,7 +182,7 @@ public sealed class ShipStore
     /// heading (NaN).</summary>
     public void Rail(int slot, double courseDeg, double speedMs)
     {
-        rails[slot] = true;
+        SetRails(slot, true);
         railGen[slot]++;
         (railMs[slot], railPos[slot], railFwd[slot], railSpeed[slot], railGuide[slot], railCourse[slot]) =
             (NowMs, position[slot], forward[slot], speedMs, -1, courseDeg);
@@ -172,11 +213,54 @@ public sealed class ShipStore
         PoseNow(guide, out var gp, out var gf);
         var d = position[slot] - gp;
         var up = gp.Normalized();
-        rails[slot] = true;
+        SetRails(slot, true);
         railGen[slot]++;
         (railGuide[slot], railX[slot], railY[slot], railSpeed[slot]) = (guide, Vec3d.Dot(d, gf), Vec3d.Dot(d, Vec3d.Cross(gf, up)), railSpeed[guide]);
         yawRate[slot] = rudder[slot] = 0;
     }
+
+    /// <summary>Puts a ship on rails at a given offset from a guide (already on rails), metres ahead and to starboard
+    /// in its frame: a formation snapped onto its stations. It takes the guide's course and speed as its orders, and
+    /// the power that holds that speed, so it comes off rails steaming as the rails had it.</summary>
+    public void RailAt(int slot, int guide, double aheadM, double starboardM)
+    {
+        SetRails(slot, true);
+        railGen[slot]++;
+        (railGuide[slot], railX[slot], railY[slot], railSpeed[slot]) = (guide, aheadM, starboardM, railSpeed[guide]);
+        yawRate[slot] = rudder[slot] = 0;
+        courseDeg[slot] = courseDeg[guide];
+        speedOrderKn[slot] = railSpeed[guide] / Handling.MsPerKnot;
+        power[slot] = powerOrder[slot] = handling[slot].PowerFor(speedOrderKn[slot]);
+    }
+
+    /// <summary>A ship off rails made what its orders ask at once (an order snapped on rails): its engines at the
+    /// power rung and the speed that power holds, its head on the ordered course or for its next waypoint.</summary>
+    public void Settle(int slot)
+    {
+        power[slot] = powerOrder[slot];
+        speed[slot] = handling[slot].SteadySpeedMs(power[slot]);
+        yawRate[slot] = rudder[slot] = 0;
+        var p = position[slot];
+        if (helm[slot] == Helm.Course && Math.Abs(p.Z) <= p.Length * Math.Sin(settings.PolarCapDeg * Math.PI / 180))
+            forward[slot] = Earth.Forward(p, courseDeg[slot]);
+        else if (helm[slot] == Helm.Route && routeNext[slot] < routeCount[slot])
+        {
+            var up = p.Normalized();
+            var d = route[slot * routeCap + routeNext[slot]] - p;
+            var dir = d - up * Vec3d.Dot(d, up);
+            if (dir.Length > 1e-6)
+                forward[slot] = dir.Normalized();
+        }
+    }
+
+    /// <summary>On rails riding another ship (a group's ship on its guide's), not on rails of its own.</summary>
+    public bool RidesAnother(int slot) => rails[slot] && railGuide[slot] >= 0;
+
+    /// <summary>The slot of the ship a ship rides on rails (its group's guide), or -1.</summary>
+    public int RidingOn(int slot) => rails[slot] ? railGuide[slot] : -1;
+
+    /// <summary>How far a ship rides from its guide on rails, metres (0 on rails of its own, or off rails).</summary>
+    public double RailOffsetM(int slot) => rails[slot] && railGuide[slot] >= 0 ? Math.Sqrt(railX[slot] * railX[slot] + railY[slot] * railY[slot]) : 0;
 
     /// <summary>A ship on rails has reached its route's next waypoint: it turns there at once for the one after (true,
     /// with that one), or, past the last, holds the course it arrived on (false).</summary>
@@ -186,6 +270,8 @@ public sealed class ShipStore
         var wp = route[slot * cap + routeNext[slot]];
         PoseNow(slot, out _, out var arrived);
         routeNext[slot]++;
+        if (routeLoop[slot] && routeCount[slot] > 1)
+            routeNext[slot] %= routeCount[slot];
         if (routeNext[slot] < routeCount[slot])
         {
             next = route[slot * cap + routeNext[slot]];
@@ -201,6 +287,7 @@ public sealed class ShipStore
         courseDeg[slot] = Earth.Heading(wp, arrived);
         ReanchorRhumb(slot, wp, courseDeg[slot]);   // the helm holds the course it arrived on: a rhumb line
         routeCount[slot] = routeNext[slot] = 0;
+        routeLoop[slot] = false;
         return false;
     }
 
@@ -234,7 +321,7 @@ public sealed class ShipStore
         PoseNow(slot, out var p, out var f);
         (position[slot], forward[slot], speed[slot], poseMs[slot]) = (p, f, railSpeed[slot], NowMs);
         yawRate[slot] = rudder[slot] = 0;
-        rails[slot] = false;
+        SetRails(slot, false);
         railGen[slot]++;
     }
 
@@ -247,6 +334,7 @@ public sealed class ShipStore
                 Derail(i);   // riding on a ship that's going: off rails first
         Derail(slot);
         alive[slot] = false;
+        RemoveFine(slot);   // a dead slot is stepped by nothing
         handling[slot] = null!;
         generation[slot]++;
         free.Push(slot);
@@ -289,9 +377,14 @@ public sealed class ShipStore
     public void ClearRoute(int slot)
     {
         routeCount[slot] = routeNext[slot] = 0;
+        routeLoop[slot] = false;
         if (helm[slot] == Helm.Route)
             OrderCourse(slot, Earth.Heading(position[slot], forward[slot]));
     }
+
+    /// <summary>Whether the route goes round again from its first waypoint after its last (a patrol), until it's
+    /// cleared. A route of one waypoint doesn't loop.</summary>
+    public void LoopRoute(int slot, bool loop) => routeLoop[slot] = loop;
 
     /// <summary>Adds a waypoint to the route and steers by it. False when the route is full.</summary>
     public bool AddWaypoint(int slot, Vec3d point)
@@ -324,6 +417,7 @@ public sealed class ShipStore
                 continue;
             h.Add(entity[i]);
             h.Add(classIndex[i]);
+            h.Add(side[i]);
             h.Add(position[i]);
             h.Add(forward[i]);
             h.Add(speed[i]);
@@ -339,6 +433,7 @@ public sealed class ShipStore
             h.Add(speedOrderKn[i]);
             h.Add(routeCount[i]);
             h.Add(routeNext[i]);
+            h.Add(routeLoop[i]);
             h.Add(rails[i]);
             h.Add(railGen[i]);
             if (rails[i])
@@ -359,9 +454,14 @@ public sealed class ShipStore
 
     void Grow(int n)
     {
+        int old = fineIndex.Length;
+        Array.Resize(ref fineSlots, n);
+        Array.Resize(ref fineIndex, n);
+        Array.Fill(fineIndex, -1, old, n - old);
         Array.Resize(ref entity, n);
         Array.Resize(ref generation, n);
         Array.Resize(ref classIndex, n);
+        Array.Resize(ref side, n);
         Array.Resize(ref alive, n);
         Array.Resize(ref handling, n);
         Array.Resize(ref position, n);
@@ -380,6 +480,7 @@ public sealed class ShipStore
         Array.Resize(ref route, n * routeCap);
         Array.Resize(ref routeCount, n);
         Array.Resize(ref routeNext, n);
+        Array.Resize(ref routeLoop, n);
         Array.Resize(ref rails, n);
         Array.Resize(ref railMs, n);
         Array.Resize(ref railPos, n);
@@ -404,6 +505,9 @@ public readonly struct ShipState(ShipStore store, int slot)
 
     /// <summary>The class's index in the world's table of classes.</summary>
     public int ClassIndex => store.classIndex[slot];
+
+    /// <summary>The side it's on: ships of different sides are opposing (relations between sides come in step 3.1).</summary>
+    public byte Side => store.side[slot];
 
     /// <summary>Where the ship is now (on rails, evaluated at the world's time).</summary>
     public Vec3d Position
@@ -464,5 +568,8 @@ public readonly struct ShipState(ShipStore store, int slot)
     public double PowerOrder => store.powerOrder[slot];
     public int RouteCount => store.routeCount[slot];
     public int RouteNext => store.routeNext[slot];
+
+    /// <summary>The route goes round again after its last waypoint (a patrol).</summary>
+    public bool RouteLoop => store.routeLoop[slot];
     public Vec3d Waypoint(int k) => store.route[slot * store.RouteCapacity + k];
 }

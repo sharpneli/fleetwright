@@ -868,17 +868,69 @@ Built:
     don't have this. Riding a followed ship's rails like a group member would fix it ("Fine-tuning").
 - **Not yet:**
   - the coarse clock tier (4.8), and routines (peace);
-  - the contact scan that takes ships off rails when they meet (3.1);
   - land on routes (rails don't check for it, by design: routing will).
-  - **Fast turns for formations on rails** (the user, 2026-10-12). Today any order to a group takes it off rails, and
-    the turn plays out on the fine tick: minutes of manoeuvre, the members reforming, then the settle before the
-    rails check passes again. At high compression that is where the clock goes. Instead, a group on rails that turns
-    (a course order to its guide, or a waypoint on its route) should stay on rails and turn abruptly: the guide's leg
-    ends and the next begins at the turn, and every member jumps to its station on the new heading at that moment.
-    No-one watches a formation at 100k× closely enough to see it snap, and the error is minor (the turn's advance and
-    transfer, a few hundred metres, and the members' minutes of reforming). A single ship's route turns on rails are
-    already instantaneous at the waypoints, so this is the same idea for a group. It applies only where rails do: a
-    group near anything (the contact scan, 3.1) is on the fine tick and turns properly.
+
+**Formations on rails, search patterns and the first contacts (done 2026-10-12).** The user's aim: a task group
+ordered to search stays on rails, and the fine tick runs only where opposing sides are close enough for careful
+sighting to matter, which the rails themselves say. Agreed at the start: an order snaps on rails only at or above a
+clock speed (below it a turn plays out properly, so at 1x turns are seen); a side per ship, given at spawn; four search
+patterns.
+- **Orders on rails** (`ShipSystem.CanSnap`, `Snap`). A course, a speed ahead, a route or a loop, given to a ship on
+  rails of its own (alone, or a group's guide) with the clock at `RailsSnapMinSpeed` (100×) or more, is carried out at
+  once: the ship takes its course (or heads for its next waypoint) and the speed its new power holds, where it is, and
+  goes back on rails; its group's ships jump to their exact stations on the new heading (`ShipStore.RailAt`), with
+  the guide's course and speed as their orders, so they come off rails later steaming as the rails had them. A group
+  on a route already turned at waypoints on rails (its ships ride the guide's frame). Below the speed, or for a rudder
+  order or a speed astern, the order takes the group off rails as before.
+- **Sides** (`ShipSystem.Spawn(..., side)`; the spawn's entity field carries it). Any two different sides are
+  opposing until 3.1's relations. A group is of one side: joining across sides is refused. The snapshot has `Side`,
+  and the map tints icons by side (a dev aid).
+- **Contacts** (`ShipSystem.Contacts.cs`, ahead of 3.1). Opposing ships within `EncounterRangeM` (50 km) of each
+  other are on the fine tick; nothing else needs it.
+  - A unit on rails is a ship on rails of its own, grown by its farthest riding ship's offset. Two units' distance
+    can't change faster than their speeds together, so a pair is solved by stepping their rails' poses
+    (`ShipStore.PoseAt`) each step as far as the gap allows: it lands on the crossing to a metre, whatever their legs
+    (rhumb lines, great circles, offsets), and its time is an event carrying both rails' generations. In the test,
+    two ships on rails come off them 0 ms from the closed-form time, 0.01 m from the range.
+  - A unit is solved when its rails are laid or change (a waypoint, a polar cap, a snap), up to the next scan; every
+    `ContactScanMs` (1 h) all pairs are solved afresh. A pair is passed over without a solve when the chord between
+    where each was last anchored or scanned, less how far each can have gone since, is beyond reach: a subtraction
+    and a squared length.
+  - A ship on the fine tick has no rails to solve against: every `RailsCheckMs` it checks its distance to opposing
+    units on rails. Nothing goes on rails within the range plus `EncounterMarginM` (10 km) of an opposing ship, so a
+    pair along the edge doesn't flicker.
+  - No speed drop at a contact yet: that's 3.1's interest table.
+- **Search patterns** (`Fleetwright.Sim.Ai/Admirals/SearchPatterns.cs`, pure geometry an admiral or the map turns into
+  route orders): a ladder (creeping line), an expanding square, a sector (equilateral triangles through the datum,
+  radials every 60°) and a patrol line. Legs are laid as rhumb lines. A patrol is a **looping route**
+  (`ShipSystem.LoopRoute`): after its last waypoint the route goes on to its first, on rails and on the fine tick.
+- **On the world tab:** the selected ship's strip has a search row (pattern, first leg along the heading or a
+  course, sizes in miles, legs, to starboard or port); a looping route is drawn closed; the spawner has a side. Flags:
+  `-ships=design:count:side`, `-search=entity:ladder|square|sector|patrol[:nm[:nm apart[:legs]]]`.
+- **The fine tick steps only ships on it:** the store keeps a dense list of them (`FineCount`, `FineSlot`), so a
+  tick costs the ships near something, not the world's. Each ship's step reads only its own slot, so order changes
+  nothing.
+- **Fixed on the way:** the helmsman's wheel-over was R·tan(change/2), capped at 170°: 11 R before a reversal (5 km
+  for a dreadnought), so a 20 km patrol line steamed 16 km. Past 90° it's now R, about the ship's advance.
+- **Checked** (`FormationRailsTests`, and `RailsTests`):
+  - At 1,000×, a course order to a column on rails keeps all four on rails, on station to 1 cm; six hours on, under
+    1 m. Below 100× the same order takes them off rails.
+  - A group of four steams each pattern start to end on rails (a ladder and a square of ~146 nm, 9.7 h), within 1 m of
+    station at every look.
+  - A ladder searched on rails ends 1.9 km from the fine tick's run (eight turns at the waypoints, where the helmsman
+    cuts each corner).
+  - A fine-tick patrol goes round; same-side ships pass on rails; a ship on the fine tick takes an opposing group off
+    rails within a few seconds' run of the range plus the group's spread; nothing rails within range.
+  - Two opposing groups, searching and patrolling at 30,000× into contact: the same hash cut at odd times and on a
+    replay of the log. Contacts and snapped patrols allocate nothing.
+  - **Scale** (Release, built up in steps): 2,000 ships of two sides patrolling for 2 days take 41 s against 0.4 s for
+    one side. The contact work is small (2,714 solves of ~3.6 steps; the fine-tick checks 3.9 s, the rails gate 2.9 s);
+    34 s is the fine tick of the ~100 ships near an enemy at a time (362 contacts: the patrols cross everywhere). That's
+    the fine tier doing its job. On the way, the gate's and the scan's trig and per-anchor rebuilds were taken out
+    (1,000 ships for a day: the rails gate 1.47 -> 0.35 s), and the step stopped walking every slot. The suite runs
+    600 ships for 2 days.
+- **Not yet:** a contact's speed drop and encounters proper (3.1); a grid on the sphere if the pair loop shows in 2.6
+  or later numbers; tracks drawn across a snap show the members' jump as a short fan.
 
 **2.6 Scale: the Jutland test.** 250 ships of ~55 classes, loaded, steaming in formation in the fine tier, drawn
 at every zoom, with some hundreds more on rails. Measure load time, tick cost, frame time and VRAM against the targets
@@ -888,7 +940,8 @@ architecture's own step: fixed workers, struct jobs, with the test that results 
 ### 3. Seeing and knowing
 
 **3.1 Contacts and encounters.**
-- The contact scan and the exact crossing times.
+- The contact scan and the exact crossing times (a first version is in 2.5: sides, the solve from the rails, the
+  fine tick's check and the gate; 3.1 adds relations and encounters on top).
 - Relations as a war/peace table.
 - Encounters opening, merging and closing; their ships held in the fine tier.
 - Speed drops by the player's interest table.

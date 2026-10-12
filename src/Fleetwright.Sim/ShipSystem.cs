@@ -14,6 +14,7 @@ public enum ShipCommand : ushort
     Rudder,
     ClearRoute,
     AddWaypoint,
+    LoopRoute,
 }
 
 /// <summary>The world's ships (docs/battle/plan.md step 2.2), in the fine clock tier: each pose moves on the fixed
@@ -21,10 +22,10 @@ public enum ShipCommand : ushort
 /// Groups, fleet symbols and the map's markers are all derived from these ships, never the other way round.
 /// While there are no ships it schedules nothing, so an empty world costs nothing at any speed.
 /// <para>The world registers it first, so its id is always <see cref="Id"/>.</para></summary>
-public sealed class ShipSystem : IWorldSystem
+public sealed partial class ShipSystem : IWorldSystem
 {
     public const byte Id = 1;
-    const ushort Tick = 1, RailsWaypoint = 2, PolarEntry = 3, PolarExit = 4;
+    const ushort Tick = 1, RailsWaypoint = 2, PolarEntry = 3, PolarExit = 4, ContactCheck = 5, ContactScan = 6;
 
     readonly SimSettings settings;
     readonly List<int> used = [];   // the registry ids ships have been made of, in the order first used
@@ -70,10 +71,11 @@ public sealed class ShipSystem : IWorldSystem
 
     // ------------------------------------------------------------------ commands
 
-    /// <summary>A ship of a class (its registry id) at a place, heading and speed; it gets the next entity id. A class
-    /// that didn't build makes no ship.</summary>
-    public static Command Spawn(int classIndex, double latDeg, double lonDeg, double headingDeg, double kn) =>
-        new(Id, (ushort)ShipCommand.Spawn, A: Earth.PackLatLon(latDeg, lonDeg), X: headingDeg, B: classIndex, Y: kn);
+    /// <summary>A ship of a class (its registry id) at a place, heading and speed, on a side (ships of different sides
+    /// are opposing); it gets the next entity id. A class that didn't build makes no ship. (A spawn names no entity, so
+    /// the command's entity field carries the side.)</summary>
+    public static Command Spawn(int classIndex, double latDeg, double lonDeg, double headingDeg, double kn, byte side = 0) =>
+        new(Id, (ushort)ShipCommand.Spawn, side, A: Earth.PackLatLon(latDeg, lonDeg), X: headingDeg, B: classIndex, Y: kn);
 
     public static Command Drop(int entity) => new(Id, (ushort)ShipCommand.Drop, entity);
 
@@ -93,28 +95,43 @@ public sealed class ShipSystem : IWorldSystem
     public static Command AddWaypoint(int entity, double latDeg, double lonDeg) =>
         new(Id, (ushort)ShipCommand.AddWaypoint, entity, A: Earth.PackLatLon(latDeg, lonDeg));
 
+    /// <summary>Whether a ship's route goes round again after its last waypoint (a patrol), until it's cleared.</summary>
+    public static Command LoopRoute(int entity, bool loop = true) => new(Id, (ushort)ShipCommand.LoopRoute, entity, X: loop ? 1 : 0);
+
     public void Apply(World world, in Command c)
     {
         const double Deg = Math.PI / 180;
-        if ((ShipCommand)c.Code == ShipCommand.Spawn)
+        var code = (ShipCommand)c.Code;
+        if (code == ShipCommand.Spawn)
         {
             if (c.B < 0 || c.B >= Registry.Count)
                 throw new ArgumentException($"no ship class {c.B}");
+            if (c.Entity is < 0 or > byte.MaxValue)
+                throw new ArgumentException($"no side {c.Entity}");
             if (Registry.Get(c.B) == null)
                 return;   // the design didn't build: no ship, the same on every replay
             var (lat, lon) = Earth.UnpackLatLon(c.A);
             var p = Earth.Position(lat, lon);
-            Store.Spawn(nextEntity++, c.B, HandlingOf(c.B), p, Earth.Forward(p, c.X), c.Y * Handling.MsPerKnot, world.Time.Ms);
+            Store.Spawn(nextEntity++, c.B, HandlingOf(c.B), p, Earth.Forward(p, c.X), c.Y * Handling.MsPerKnot, world.Time.Ms, (byte)c.Entity);
+            SideCount((byte)c.Entity, +1);
             EnsureTick(world);
             return;
         }
         int slot = Store.SlotOf(c.Entity);
         if (slot < 0)
             return;   // dropped or never made: an order that reached no ship
-        Derail(world, c.Entity);   // an order to a ship on rails: back to the fine tick first, its group with it
-        switch ((ShipCommand)c.Code)
+
+        // an order to a ship on rails: back to the fine tick first, its group with it; or, with the clock fast enough,
+        // carried out at once on rails (the ship alone comes off for the moment, its group riding it as it is)
+        bool snap = CanSnap(world, slot, code, c.X);
+        if (snap)
+            Store.Derail(slot);
+        else
+            Derail(world, c.Entity);
+        switch (code)
         {
             case ShipCommand.Drop:
+                SideCount(Store[slot].Side, -1);
                 Store.Drop(slot);
                 break;
             case ShipCommand.Course:
@@ -133,9 +150,40 @@ public sealed class ShipSystem : IWorldSystem
                 var (lat, lon) = Earth.UnpackLatLon(c.A);
                 Store.AddWaypoint(slot, Earth.Position(lat, lon));
                 break;
+            case ShipCommand.LoopRoute:
+                Store.LoopRoute(slot, c.X != 0);
+                break;
             default:
                 throw new ArgumentException($"unknown ship command {c.Code}");
         }
+        if (snap)
+            Snap(world, slot);
+    }
+
+    /// <summary>Whether an order is carried out at once on rails: a course, a speed ahead or a route, to a ship on rails
+    /// of its own (alone, or a group's guide), with the clock at <see cref="SimSettings.RailsSnapMinSpeed"/> or more.</summary>
+    bool CanSnap(World world, int slot, ShipCommand code, double x) =>
+        code is ShipCommand.Course or ShipCommand.Speed or ShipCommand.ClearRoute or ShipCommand.AddWaypoint or ShipCommand.LoopRoute &&
+        (code != ShipCommand.Speed || x >= 0) && Store.OnRails(slot) && !Store.RidesAnother(slot) &&
+        world.Speed >= settings.RailsSnapMinSpeed;
+
+    /// <summary>An order carried out at once on rails: the ship takes its new course (or heads for its next waypoint)
+    /// and speed where it is, and goes back on rails; its group's ships jump to their stations on the new heading.</summary>
+    void Snap(World world, int slot)
+    {
+        Store.Settle(slot);
+        RailGuide(world, slot);
+        int entity = Store[slot].Entity;
+        if (world.Groups.Of(entity) is { } g && g.Guide == entity)
+            for (int i = 1; i < g.Members.Count; i++)
+            {
+                int m = Store.SlotOf(g.Members[i]);
+                if (m < 0)
+                    continue;
+                var (astern, abeam) = GroupSystem.OffsetFromGuide(g.Formation, g.SpacingM, i);
+                Store.RailAt(m, slot, -astern, abeam);
+            }
+        Anchored(world, slot);
     }
 
     // ------------------------------------------------------------------ the tick
@@ -151,6 +199,16 @@ public sealed class ShipSystem : IWorldSystem
 
     public void Handle(World world, in SimEvent e)
     {
+        if (e.Code == ContactCheck)
+        {
+            CheckPair(world, e);
+            return;
+        }
+        if (e.Code == ContactScan)
+        {
+            Scan(world, e);
+            return;
+        }
         if (e.Code is RailsWaypoint or PolarEntry or PolarExit)
         {
             int slot = Store.SlotOf(e.Entity);
@@ -168,12 +226,16 @@ public sealed class ShipSystem : IWorldSystem
                 Store.LeavePolarCap(slot);
                 SchedulePolar(world, slot);
             }
+            Anchored(world, slot);   // its rails changed: its contacts are solved again
             return;
         }
         nextTickMs = -1;
         ShipMotion.StepAll(Store, world.Time.Ms, settings);
         if (settings.RailsEnabled && world.Time.Ms % settings.RailsCheckMs == 0)
+        {
+            FineContacts(world);
             RailsCheck(world);
+        }
         if (AnyFine())
             EnsureTick(world);
     }
@@ -181,13 +243,7 @@ public sealed class ShipSystem : IWorldSystem
     // ------------------------------------------------------------------ the rails clock tier (docs/battle/plan.md 2.5)
 
     /// <summary>Any ship that isn't on rails: the fine tick runs only while there is.</summary>
-    bool AnyFine()
-    {
-        for (int i = 0; i < Store.Slots; i++)
-            if (Store.IsAlive(i) && !Store.OnRails(i))
-                return true;
-        return false;
-    }
+    bool AnyFine() => Store.FineCount > 0;
 
     /// <summary>Takes a ship off rails, and its whole group with it (they ride together), back to the fine tick.</summary>
     public void Derail(World world, int entity)
@@ -246,15 +302,30 @@ public sealed class ShipSystem : IWorldSystem
                       Math.Abs(dh) <= settings.RailsGroupHeadingDeg && Math.Abs(ms.Speed - SteadySpeed(gs)) <= settings.RailsGroupSpeedErrKn * Handling.MsPerKnot &&
                       Earth.Distance(ms.Position, station) <= settings.RailsGroupStationM;   // in station: its offset is held on rails
             }
-            if (!all)
+            if (!all || NearOpposing(guide, GroupRadius(g, guide)))
                 continue;
             RailGuide(world, guide);
             for (int i = 1; i < g.Members.Count; i++)
                 Store.RailWith(Store.SlotOf(g.Members[i]), guide);
+            Anchored(world, guide);
         }
         for (int i = 0; i < Store.Slots; i++)
-            if (Store.IsAlive(i) && !Store.OnRails(i) && world.Groups.Of(Store[i].Entity) == null && Steady(i))
+            if (Store.IsAlive(i) && !Store.OnRails(i) && world.Groups.Of(Store[i].Entity) == null && Steady(i) && !NearOpposing(i, 0))
+            {
                 RailGuide(world, i);
+                Anchored(world, i);
+            }
+    }
+
+    /// <summary>How far a group's ships are from its guide, at most, metres.</summary>
+    double GroupRadius(GroupSystem.Group g, int guide)
+    {
+        double r = 0;
+        var gp = Store[guide].Position;
+        for (int i = 1; i < g.Members.Count; i++)
+            if (Store.SlotOf(g.Members[i]) is int m and >= 0)
+                r = Math.Max(r, Earth.Distance(gp, Store[m].Position));
+        return r;
     }
 
     /// <summary>A ship on its own rails: along its ordered course, or, on a route, straight for its next waypoint, with
@@ -364,6 +435,8 @@ public sealed class ShipSystem : IWorldSystem
     public void Hash(ref StateHash h)
     {
         h.Add(nextTickMs);
+        h.Add(nextScanMs);
+        h.Add(scanGen);
         h.Add(nextEntity);
         h.Add(used.Count);
         foreach (int id in used)
@@ -390,6 +463,7 @@ public sealed class ShipSystem : IWorldSystem
             var ship = s[i];
             v.Entity[n] = ship.Entity;
             v.Class[n] = ship.ClassIndex;
+            v.Side[n] = ship.Side;
             v.Position[n] = ship.Position;
             v.Forward[n] = ship.Forward;
             v.Speed[n] = ship.Speed;
@@ -402,12 +476,14 @@ public sealed class ShipSystem : IWorldSystem
             v.SpeedOrderKn[n] = ship.SpeedOrderKn;
             v.Captain[n] = 0;   // the AI fills its own, after
             v.CaptainTarget[n] = 0;
-            int left = ship.Helm == Helm.Route ? ship.RouteCount - ship.RouteNext : 0;
+            bool loop = ship.RouteLoop && ship.RouteCount > 1;
+            int left = ship.Helm != Helm.Route ? 0 : loop ? ship.RouteCount : ship.RouteCount - ship.RouteNext;
             v.EnsureWaypoints(w + left);
             v.RouteStart[n] = w;
             v.RouteCount[n] = left;
+            v.RouteLoop[n] = loop && ship.Helm == Helm.Route;
             for (int k = 0; k < left; k++)
-                v.Waypoints[w++] = ship.Waypoint(ship.RouteNext + k);
+                v.Waypoints[w++] = ship.Waypoint((ship.RouteNext + k) % ship.RouteCount);
             n++;
         }
         v.Count = n;

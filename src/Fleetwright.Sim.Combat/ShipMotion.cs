@@ -10,11 +10,11 @@ public static class ShipMotion
 {
     const double Deg = Math.PI / 180;
 
-    /// <summary>Moves every live ship to <paramref name="nowMs"/> from wherever its pose is.</summary>
+    /// <summary>Moves every live ship off rails (the store's fine list) to <paramref name="nowMs"/> from wherever its pose is.</summary>
     public static void StepAll(ShipStore s, long nowMs, SimSettings set)
     {
-        for (int i = 0; i < s.Slots; i++)
-            if (s.alive[i] && !s.rails[i] && s.poseMs[i] < nowMs)
+        for (int k = 0; k < s.FineCount; k++)
+            if (s.FineSlot(k) is int i && s.poseMs[i] < nowMs)
             {
                 Step(s, i, (nowMs - s.poseMs[i]) / 1000.0, set);
                 s.poseMs[i] = nowMs;
@@ -113,22 +113,27 @@ public static class ShipMotion
     static double RouteCourse(ShipStore s, int i, Handling h, SimSettings set)
     {
         int cap = s.RouteCapacity, n = s.routeCount[i];
+        bool loop = s.routeLoop[i] && n > 1;
         var pos = s.position[i];
-        while (true)
+        for (int tries = 0; ; tries++)
         {
             int k = s.routeNext[i];
             var wp = s.route[i * cap + k];
             double course = Earth.Bearing(pos, wp);
             double dist = Earth.Distance(pos, wp);
-            if (k + 1 < n)
+            if (k + 1 < n || loop)
             {
-                var next = s.route[i * cap + k + 1];
+                if (tries > n)
+                    return course;   // a loop smaller than the turn: steer for the next and let it come round
+                var next = s.route[i * cap + (k + 1) % n];
                 double arrive = Earth.Bearing(wp, next) - Earth.Bearing(wp, wp + (wp - pos));   // the change of course at wp
                 arrive = Math.Abs(arrive - 360 * Math.Round(arrive / 360)) * Deg;
-                double wheelOver = h.RadiusFor(s.courseRudder[i]) * Math.Tan(Math.Min(arrive, 170 * Deg) / 2);
+                // the arc tangent to both legs starts R tan(change / 2) before the waypoint; past 90° that runs off to
+                // miles (11 R for a reversal), where the ship's advance in the turn is only about R: so no more than R
+                double wheelOver = h.RadiusFor(s.courseRudder[i]) * Math.Tan(Math.Min(arrive, 90 * Deg) / 2);
                 if (dist <= Math.Max(wheelOver, set.ArrivalRadiusM))
                 {
-                    s.routeNext[i] = k + 1;
+                    s.routeNext[i] = (k + 1) % n;
                     continue;
                 }
                 return course;

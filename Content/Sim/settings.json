@@ -41,6 +41,13 @@
   "RailsGroupSpeedErrKn": 0.5,
   "RailsGroupHeadingDeg": 2,
   "RailsGroupStationM": 50,
+  "RailsSnapMinSpeed": 100,
+
+  // contacts (docs/battle/plan.md step 2.5, ahead of 3.1's contact scan)
+  "EncounterRangeM": 50000,
+  "EncounterMarginM": 10000,
+  "ContactScanMs": 3600000,
+  "ContactTraceSteps": 64,
 
   // the AI (docs/battle/plan.md step 2.3b)
   "AiRailsPeriodMs": 60000,

@@ -50,6 +50,10 @@ public sealed class ShipDrawList
 
     public static readonly Vector4 IconTint = new(0.95f, 0.92f, 0.82f, 1f), SelectedTint = new(1f, 0.78f, 0.25f, 1f);
 
+    /// <summary>The icons' tint by side (side 0, and any past these, the plain one): a dev aid until missions say who
+    /// is whose, like the icons themselves.</summary>
+    public static readonly Vector4[] SideTints = [IconTint, new(0.55f, 0.75f, 1f, 1f), new(1f, 0.5f, 0.45f, 1f), new(0.55f, 0.95f, 0.55f, 1f)];
+
     ShipQuad[] quads = new ShipQuad[1024];
     ShipDraw[] draws = new ShipDraw[64];
     int quadCount, drawCount;
@@ -63,7 +67,7 @@ public sealed class ShipDrawList
         public Vector2 SunDir;
         public double SunTan;
         public bool Shadows;
-        public int Class, Entity;
+        public int Class, Entity, Side;
     }
 
     Placed[] placed = new Placed[64];
@@ -131,7 +135,7 @@ public sealed class ShipDrawList
                 SunDir = horiz > 1e-9 ? new Vector2((float)(sx / horiz), (float)(sy / horiz)) : Vector2.UnitX,
                 SunTan = Math.Max(sz / Math.Max(horiz, 1e-9), 0.15),
                 Shadows = sz > 0.05 && lengthPx >= ShadowFromPx && sunMotion > 0,   // in time-lapse they'd spin
-                Class = cls, Entity = ships.Entity[k],
+                Class = cls, Entity = ships.Entity[k], Side = ships.Side[k],
             };
             DrawnAs[k] = (byte)((sprite > 0 ? 2 : 0) | (sprite < 1 ? 1 : 0));
             if (sprite > 0)
@@ -230,7 +234,8 @@ public sealed class ShipDrawList
     {
         // a fixed size on screen, along the heading: metres per pixel at the ship
         double l = IconLengthPx / p.PxPerM, w = IconWidthPx / p.PxPerM;
-        Emit(ref p, null, -l / 2, -w / 2, l, 0, 0, w, mode: 2, opacity: p.IconAlpha, roof: 0, selected ? SelectedTint : IconTint);
+        Emit(ref p, null, -l / 2, -w / 2, l, 0, 0, w, mode: 2, opacity: p.IconAlpha, roof: 0,
+            selected ? SelectedTint : SideTints[p.Side < SideTints.Length ? p.Side : 0]);
     }
 
     /// <summary>A quad from ship-local metres: corner (ox, oy), edges (ux, uy) and (vx, vy).</summary>

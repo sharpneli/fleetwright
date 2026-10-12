@@ -111,16 +111,17 @@ public sealed class GroupSystem : IWorldSystem
     public static Command Create(int guide, Formation formation = Formation.Column, double spacingM = 600) =>
         new(Id, (ushort)GroupCommand.Create, guide, B: (int)formation, X: spacingM);
 
-    /// <summary>A ship to the end of a group (out of any other).</summary>
+    /// <summary>A ship to the end of a group (out of any other); refused for a ship of another side.</summary>
     public static Command Add(int groupId, int entity) => new(Id, (ushort)GroupCommand.Add, entity, A: groupId);
 
     /// <summary>A ship to the end of the group another ship is in (out of any other): how a UI adds to a group it has
-    /// just formed, before it knows the new group's id.</summary>
+    /// just formed, before it knows the new group's id. Refused for a ship of another side.</summary>
     public static Command Join(int entity, int alongside) => new(Id, (ushort)GroupCommand.Join, entity, A: alongside);
 
     /// <summary>A new group of the last ships spawned, in the order they were spawned, the first the guide: how a UI
     /// forms a group of ships it has just spawned, before it knows their ids (sent right after the spawns, it names
-    /// exactly them, on every replay too). Ships among them that are gone are left out.</summary>
+    /// exactly them, on every replay too). Ships among them that are gone, or of another side than the first, are left
+    /// out.</summary>
     public static Command CreateOfNewest(int count, Formation formation = Formation.Column, double spacingM = 600) =>
         new(Id, (ushort)GroupCommand.CreateOfNewest, A: count, B: (int)formation, X: spacingM);
 
@@ -156,7 +157,7 @@ public sealed class GroupSystem : IWorldSystem
                 Group? made = null;
                 for (int e = Math.Max(world.Ships.NewestEntity - (int)c.A + 1, 1); e <= world.Ships.NewestEntity; e++)
                 {
-                    if (world.Ships.Store.SlotOf(e) < 0)
+                    if (world.Ships.Store.SlotOf(e) < 0 || made != null && !SameSide(world, e, made.Guide))
                         continue;
                     world.Ships.Derail(world, e);
                     Leave(e);
@@ -170,13 +171,13 @@ public sealed class GroupSystem : IWorldSystem
                 }
                 break;
             case GroupCommand.Add:
-                if (Get((int)c.A) is not { } to || world.Ships.Store.SlotOf(c.Entity) < 0 || to.members.Contains(c.Entity))
+                if (Get((int)c.A) is not { } to || world.Ships.Store.SlotOf(c.Entity) < 0 || to.members.Contains(c.Entity) || !SameSide(world, c.Entity, to.Guide))
                     return;
                 Leave(c.Entity);
                 to.members.Add(c.Entity);
                 break;
             case GroupCommand.Join:
-                if (Of((int)c.A) is not { } with || world.Ships.Store.SlotOf(c.Entity) < 0 || with.members.Contains(c.Entity))
+                if (Of((int)c.A) is not { } with || world.Ships.Store.SlotOf(c.Entity) < 0 || with.members.Contains(c.Entity) || !SameSide(world, c.Entity, with.Guide))
                     return;
                 Leave(c.Entity);
                 with.members.Add(c.Entity);
@@ -198,6 +199,14 @@ public sealed class GroupSystem : IWorldSystem
     }
 
     static double Spacing(double m) => m > 0 ? m : 600;
+
+    /// <summary>A group is of one side: a ship joins only its own side's groups.</summary>
+    static bool SameSide(World world, int a, int b)
+    {
+        var s = world.Ships.Store;
+        int sa = s.SlotOf(a), sb = s.SlotOf(b);
+        return sa >= 0 && sb >= 0 && s[sa].Side == s[sb].Side;
+    }
 
     void Leave(int entity)
     {

@@ -84,6 +84,9 @@ public sealed class ShipsView
 {
     public int Count;
     public int[] Entity = [], Class = [];
+
+    /// <summary>The side each ship is on (ships of different sides are opposing).</summary>
+    public byte[] Side = [];
     public Vec3d[] Position = [], Forward = [];
     /// <summary>m/s, negative astern; rad/s, positive to starboard; rad.</summary>
     public double[] Speed = [], YawRate = [], Rudder = [];
@@ -102,6 +105,9 @@ public sealed class ShipsView
     /// <summary>Each ship's route still to steam: <see cref="RouteCount"/> waypoints from <see cref="RouteStart"/> in
     /// <see cref="Waypoints"/> (the next one first).</summary>
     public int[] RouteStart = [], RouteCount = [];
+
+    /// <summary>The route goes round again after its last waypoint (a patrol): its waypoints are all listed, the next first.</summary>
+    public bool[] RouteLoop = [];
     public Vec3d[] Waypoints = [];
     public int WaypointCount;
 
@@ -129,6 +135,7 @@ public sealed class ShipsView
         n = Math.Max(n, Math.Max(16, Entity.Length * 2));
         Array.Resize(ref Entity, n);
         Array.Resize(ref Class, n);
+        Array.Resize(ref Side, n);
         Array.Resize(ref Position, n);
         Array.Resize(ref Forward, n);
         Array.Resize(ref Speed, n);
@@ -143,6 +150,7 @@ public sealed class ShipsView
         Array.Resize(ref CaptainTarget, n);
         Array.Resize(ref RouteStart, n);
         Array.Resize(ref RouteCount, n);
+        Array.Resize(ref RouteLoop, n);
     }
 
     /// <summary>Ship k's position and forward carried on to a time, ms.</summary>

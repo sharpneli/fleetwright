@@ -116,6 +116,29 @@ public sealed record SimSettings
     /// <summary>A group's ships go on rails only within this of their stations, m: rails hold their offsets as they are.</summary>
     public double RailsGroupStationM { get; init; } = 50;
 
+    /// <summary>At this asked speed and above, an order to a ship or group on rails (a course, a speed, a route) is
+    /// carried out at once on rails: the turn and the change of speed are instantaneous and a group's ships jump to
+    /// their stations on the new heading. Below it the order takes them off rails and the turn plays out on the fine
+    /// tick. The speed is world state, so this is deterministic.</summary>
+    public double RailsSnapMinSpeed { get; init; } = 100;
+
+    // ------------------------------------------------------------------ contacts (docs/battle/plan.md 2.5, ahead of 3.1)
+
+    /// <summary>Opposing ships within this of each other are in the fine tier, metres: beyond the longest sighting
+    /// range, so the fine tier owns everything that could be seen. Ships on rails come off at the moment it's crossed.</summary>
+    public double EncounterRangeM { get; init; } = 50_000;
+
+    /// <summary>Ships go back on rails only this much further apart than the encounter range, metres, so a pair
+    /// steaming along its edge doesn't flicker between the tiers.</summary>
+    public double EncounterMarginM { get; init; } = 10_000;
+
+    /// <summary>How often every pair of opposing rails is solved afresh, ms: the horizon a solve looks ahead to. A
+    /// ship's rails changing (a waypoint, an order) solves it again at once.</summary>
+    public int ContactScanMs { get; init; } = 3_600_000;
+
+    /// <summary>The most steps one solve of a pair takes before it looks again later from where it got to.</summary>
+    public int ContactTraceSteps { get; init; } = 64;
+
     // ------------------------------------------------------------------ the AI (docs/battle/plan.md step 2.3b)
 
     /// <summary>How often an AI layer thinks while every ship it commands is on rails, ms: nothing about them changes

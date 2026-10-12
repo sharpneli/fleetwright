@@ -24,13 +24,16 @@ public sealed class WorldSession : IDisposable
     /// (<see cref="AiSystem.Captain"/>, which reads nothing but its id) and sends them.</summary>
     public AiSystem Ai { get; }
 
+    /// <summary>The world's settings: immutable, so the UI may read them (a route's capacity, the snap speed).</summary>
+    public SimSettings Settings { get; }
+
     /// <summary>A world with the shipped settings (Content/Sim/settings.json) and the app's class registry.
     /// <paramref name="setup"/> runs on it before its thread starts: the dev ships (-ships=) until missions place
     /// forces.</summary>
     public WorldSession(WorldTime start, ulong seed, ShipClassRegistry classes, Action<World>? setup = null)
     {
         Classes = classes;
-        var settings = SimSettings.Load(Path.Combine(AppContext.BaseDirectory, "Content", "Sim", "settings.json"));
+        var settings = Settings = SimSettings.Load(Path.Combine(AppContext.BaseDirectory, "Content", "Sim", "settings.json"));
         var w = new World(start, seed, settings, classes);
         Ai = new AiSystem(w);
         setup?.Invoke(w);

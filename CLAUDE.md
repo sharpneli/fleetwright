@@ -17,6 +17,7 @@ dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48
 dotnet run --project src/Fleetwright -- -ships=dreadnought:9 -map=56.51,4.02,3 [-select=1]   # dev ships in the North Sea (sprites close, icons far), every other turning to 135°
 dotnet run --project src/Fleetwright -- -ships=dreadnought:2 -captain=2:follow:1:800 -select=2   # a captain: follow:target[:m], run:target, keep, none
 dotnet run --project src/Fleetwright -- -ships=dreadnought:6 -group=1,2,3,4,5,6:column:500 -select=1   # a group: column, abreast, echelon-s, echelon-p
+dotnet run --project src/Fleetwright -- -ships=dreadnought:4:1 -group=1,2,3,4:column:500 -search=1:ladder:10:3:6 -speed=1000   # a search on rails (ladder, square, sector, patrol); :1 the side
 dotnet run --project src/Fleetwright -- -view=designer                    # the designer on bismarck (any designer flag below opens it too)
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
@@ -37,8 +38,8 @@ per pixel; projection, picking, the grid and the land's clip in double, so nothi
 `Content/World/` (Natural Earth, a rough first Earth: `LandView`), with the clock's controls (space pauses,
 + and - change speed). Wheel zooms at the cursor, left drag pans. Ships (`MapScene.Ships.cs`, step 2.3a): a click
 selects, the strip at the bottom orders course and speed, right-click steers for a point, shift+right-click adds a
-waypoint; the top-left panel spawns a shipped design where you click, one ship or a group already on its
-stations (count, formation, spacing, heading, speed). `ShipBatchRenderer` draws them inside the
+waypoint, the search row orders a search pattern; the top-left panel spawns a shipped design where you click, one ship or a group already on its
+stations (count, formation, spacing, heading, speed, side). `ShipBatchRenderer` draws them inside the
 globe's pass (sprites from `ShipArtLibrary`, a stand-in icon when small). Without `-view`, a designer-only flag (`-section`,
 `-steps`, `-new`, `-designer-ui`, `-units`) opens the designer instead.
 
@@ -275,7 +276,8 @@ The sim's layers are projects, so the compiler keeps their direction: `Fleetwrig
 (`Fleetwright.Sim`) references Core and `Fleetwright.Sim.Combat` (ships at sea, step 2.2), which references Core
 and Ships. Ships steaming steady go on the rails clock tier (step 2.5): read a ship's pose through `ShipState`
 (it evaluates rails at the world's time), never the store's columns, and take a ship off rails before changing it
-(`ShipSystem.Derail`; every command does). Zoom bands (the map's Globe ... Tactical, Ship: drawing only) and clock tiers (the sim's Routine, Rails,
+(`ShipSystem.Derail`; every command does, unless the clock is fast enough to snap it on rails: `ShipSystem.Snap`). Opposing
+sides (a side per ship) within the encounter range are on the fine tick, solved from the rails (`ShipSystem.Contacts.cs`). Zoom bands (the map's Globe ... Tactical, Ship: drawing only) and clock tiers (the sim's Routine, Rails,
 Coarse, Fine: how time advances) are different things (`docs/world/architecture.md` "Terms"). The world
 rests its clock only on a moment's boundary, so commands replay exactly; a world system is an `IWorldSystem` with its
 events as plain structs, and nothing in a step allocates (the tests check it).

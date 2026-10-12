@@ -160,14 +160,14 @@ public class RailsTests(ITestOutputHelper output)
     }
 
     /// <summary>n ships patrolling back and forth along their headings, a leg a day, for <paramref name="days"/>.</summary>
-    static World Patrol(int n, int days, int[]? cuts = null)
+    static World Patrol(int n, int days, int[]? cuts = null, int sides = 1)
     {
         var s = Settings with { RouteCapacity = days + 2, ShipCapacity = n };
         var (w, c) = Make(s, "destroyer");
         for (int i = 0; i < n; i++)
         {
             double lat = -40 + 80.0 * (i / 50) / Math.Max(1, (n - 1) / 50), lon = -170 + 6.8 * (i % 50), hdg = (i * 37) % 360;
-            w.Apply(ShipSystem.Spawn(c, lat, lon, hdg, 15));
+            w.Apply(ShipSystem.Spawn(c, lat, lon, hdg, 15, (byte)(i % Math.Max(sides, 1))));
             var a = Earth.Position(lat, lon);
             var f = Earth.Forward(a, hdg);
             var b = a;
@@ -200,6 +200,27 @@ public class RailsTests(ITestOutputHelper output)
         Assert.Equal(2000, onRails);
         Assert.True(sw.Elapsed.TotalSeconds < 60, $"{sw.Elapsed.TotalSeconds:F1} s");
         Assert.Equal(Start + 365L * 86_400_000, w.Time);
+    }
+
+    [Fact]
+    public void Ships_of_two_sides_steam_with_their_contacts_solved()
+    {
+        // 2,000 ships for 2 days (Release, 2026-10-12): 41 s, of which 34 s the fine tick of the ~100 ships near an
+        // enemy at a time (362 contacts); kept small here so the suite stays quick
+        const int ships = 600, days = 2, sides = 2;
+        // every other ship on the other side: rails are solved pair by pair as they're anchored and every scan, and the
+        // pairs that meet come off rails to the fine tick while they're in range
+        _ = Fleet.Get("destroyer");   // the golden cases build once for the run: outside the timing
+        var sw = Stopwatch.StartNew();
+        var w = Patrol(ships, days, sides: sides);
+        sw.Stop();
+        var store = w.Ships.Store;
+        int onRails = 0;
+        for (int i = 0; i < store.Slots; i++)
+            onRails += store.OnRails(i) ? 1 : 0;
+        output.WriteLine($"{ships} ships of two sides, {days} legs each: {sw.Elapsed.TotalSeconds:F2} s, {onRails} on rails at the end");
+        Assert.True(sw.Elapsed.TotalSeconds < 60, $"{sw.Elapsed.TotalSeconds:F1} s");
+        Assert.Equal(Start + days * 86_400_000L, w.Time);
     }
 
     [Fact]
