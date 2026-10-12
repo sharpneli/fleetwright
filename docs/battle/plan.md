@@ -338,8 +338,12 @@ from orbit to a few metres, with no jitter, and the clock keeping the asked spee
   nothing is triangulated, and the globe's shader colours land from that count. The coast is the same clipped ring
   minus its joins along a plane, so fill and coast never disagree. A chunk whose cap is clear of the view enters
   the clip as one point. The level follows the zoom (1:110M over 6,000 km across, 1:50M over 600 km, else 1:10M),
-  and the lines are rebuilt only when the view moves. Building takes 0.6 ms close in and about 2 ms for the globe
-  and a theatre (Debug), with no allocation.
+  and the lines are rebuilt only when the view moves. No allocation.
+- **Speed** (an optimization pass, 2026-10-12, after a drag dropped frames). The grid samples each line's visible
+  stretch only, solved in closed form from the horizon, and steps by curvature (a chord within 0.25 px), turning the
+  last point instead of calling trig. Land culling compares cosines with no trig, rings inside the view skip the
+  clip, and a drag is solved once a frame, not once per motion event. Panning at 2560x1440 (`-frametimes`, p95 CPU
+  work per frame): Debug 7.0 -> 2.7 ms, DevRelease 0.66 ms. The rebuild alone is under 0.4 ms (Release).
 - **Not yet:** the world doesn't hold the land (the map loads its own copy), and nothing in the sim asks it yet.
   The first users are routing and line of sight; the world will take the 1:10M `Land` when they come.
 
