@@ -166,7 +166,8 @@ doesn't: the decisions behind the current design, how to work safely here, and w
     - Lengths barely move, except where crew space binds: Mikasa 133 m (real 131.7 m), the Fletcher-like destroyer 132.5 m (114 m; it carries the wartime 326 men).
     - Small craft are overmanned: PT boat 31 men against about 17, MTB 20 against 13. They come out 5–6 m long. The spec's petrol `crew_k` (3) and the small-gun crews are the knobs.
   - Left game-side: comfort, fatigue and morale (report `crew` carries the inputs), and the damage hooks (fire load, off-watch casualties, sickbay).
-  - Later: hotel electrical load and distiller energy (no generator plant yet), and accommodation spilling into a grown superstructure as an alternative to length.
+  - Later: hotel electrical load and distiller energy (no generator plant yet). Accommodation in the superstructure came with `deckhouse_levels` (superstructure rework, below).
+  - **No berths over the bridge (2026-10-12).** Overflow quarters skip a command stack's levels over its bridge or aft control (`Bridge upper`, `Tower n`, `Aft control upper`, island towers; `Crew.SpaceOf`): before 1945 towers held sea cabins, not messdecks (`research/superstructure-research.md`). The bridge and aft control levels themselves and the base levels under them still count. Effects: Daring 112.0 → 113.3 m (1,500 → 1,511 t standard), the destroyer 123.2 → 124.5 m (2,205 → 2,217 t); Fubuki, Impetuoso, Karlsruhe and victory_1944 move by centimetres; the rest only report less free volume.
 - Remaining physics work:
   - Material inputs, with no period factors (see the decision above): the hull construction is done (`hull.construction`, 2026-10-04). The armour material is done as a string reference.
   - The parameters the user plans for sizing (hull form, beam preference).

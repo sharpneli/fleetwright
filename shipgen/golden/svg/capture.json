@@ -75,7 +75,7 @@
    "clutter": 55
   },
   "daring": {
-   "max_height_m": 22.92,
+   "max_height_m": 22.94,
    "clutter": 6
   },
   "des_moines": {
@@ -83,7 +83,7 @@
    "clutter": 46
   },
   "destroyer": {
-   "max_height_m": 23.12,
+   "max_height_m": 23.14,
    "clutter": 20
   },
   "deutschland": {
@@ -356,7 +356,7 @@
    "clutter": 64
   },
   "fuzz_lim_017": {
-   "max_height_m": 22.92,
+   "max_height_m": 22.94,
    "clutter": 6
   },
   "fuzz_lim_018": {
@@ -364,7 +364,7 @@
    "clutter": 44
   },
   "fuzz_lim_019": {
-   "max_height_m": 23.12,
+   "max_height_m": 23.14,
    "clutter": 20
   },
   "fuzz_lim_020": "invalid",
@@ -595,15 +595,15 @@
    "clutter": 67
   },
   "fuzz_lim_088": {
-   "max_height_m": 23.05,
-   "clutter": 12
+   "max_height_m": 23.06,
+   "clutter": 10
   },
   "fuzz_lim_089": {
    "max_height_m": 24.8,
    "clutter": 42
   },
   "fuzz_lim_090": {
-   "max_height_m": 23.12,
+   "max_height_m": 23.14,
    "clutter": 20
   },
   "fuzz_lim_091": {
@@ -665,7 +665,7 @@
    "clutter": 60
   },
   "fuzz_lim_107": {
-   "max_height_m": 23.91,
+   "max_height_m": 23.94,
    "clutter": 23
   },
   "fuzz_lim_108": {
@@ -790,8 +790,8 @@
    "clutter": 28
   },
   "fuzz_lim_139": {
-   "max_height_m": 20.89,
-   "clutter": 61
+   "max_height_m": 20.57,
+   "clutter": 50
   },
   "fuzz_lim_140": {
    "max_height_m": 31.38,
@@ -887,7 +887,7 @@
    "clutter": 64
   },
   "fuzz_free_017": {
-   "max_height_m": 22.92,
+   "max_height_m": 22.94,
    "clutter": 6
   },
   "fuzz_free_018": {
@@ -929,7 +929,7 @@
    "clutter": 0
   },
   "fuzz_free_029": {
-   "max_height_m": 23.39,
+   "max_height_m": 23.41,
    "clutter": 11
   },
   "fuzz_free_030": {
@@ -1150,13 +1150,13 @@
    "clutter": 56
   },
   "fuzz_free_088": {
-   "max_height_m": 22.77,
+   "max_height_m": 22.8,
    "clutter": 6
   },
   "fuzz_free_089": "invalid",
   "fuzz_free_090": {
    "max_height_m": 23.3,
-   "clutter": 22
+   "clutter": 24
   },
   "fuzz_free_091": {
    "max_height_m": 24.2,
@@ -1196,7 +1196,7 @@
   },
   "fuzz_free_100": {
    "max_height_m": 23.7,
-   "clutter": 16
+   "clutter": 15
   },
   "fuzz_free_101": {
    "max_height_m": 37.13,

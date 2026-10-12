@@ -65,6 +65,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   stock instead of rising over the whole rudder, rises only while gear hangs aft of where it leaves the hull, and its
   room may stand a deck up over the steering gear; bow and stern rooms are placed before the beam rooms. `dreadnought`
   gets her twin rudders, `invincible` her stern tube back. 4 design, SVG and sprite cases rewritten.
+- 2026-10-12, no berths over the bridge, on purpose: a command stack's levels over its bridge or aft control
+  (`Bridge upper`, `Tower n`, `Aft control upper`, island towers) no longer count as crew space. Most cases change
+  only `crew.space_usable_m3`/`space_free_m3`; `daring` and `destroyer` grow 1.3 m (+11 t), `fubuki`, `impetuoso`,
+  `karlsruhe`, `victory_1944` and some fuzz cases move by centimetres.
 
 ## Layout
 

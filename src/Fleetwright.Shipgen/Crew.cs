@@ -207,9 +207,14 @@ public static class Crew
         var cit = lay.Geo.Citadel;
         if (plan is { Tds: > 0 } && cit is { } ct)
             taken += 2 * plan.Tds * (ct.X1 - ct.X0) * low;
+        // a tower's levels over its bridge (compass platform, director tower) hold no berths: pre-1945 towers carried
+        // sea cabins, not messdecks
+        long? bridgeLvl = lay.Blocks.FirstOrDefault(b => b.Id == "Bridge")?.Level;
+        long? aftLvl = lay.Blocks.FirstOrDefault(b => b.Id == "Aft control")?.Level;
         var rooms = new OrderedDictionary<string, double>(StringComparer.Ordinal);
         foreach (var b in lay.Blocks)
-            if (b.Kind != "director" && b.Role is not ("hangar" or "director" or "casemate"))
+            if (b.Kind != "director" && b.Role is not ("hangar" or "director" or "casemate")
+                && !(b.Role is "bridge" or "island" && b.Level > bridgeLvl) && !(b.Role == "aft_control" && b.Level > aftLvl))
                 rooms[b.Id] = (b.Area ?? (b.X1 - b.X0) * b.W) * Layout.LevelH * 0.9;
         double sup = rooms.Values.Sum();
         double free = Math.Max(0.0, hullV - taken) + raised + sup;

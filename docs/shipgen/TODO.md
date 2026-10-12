@@ -65,7 +65,7 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Hotel electrical load and distiller energy
 - [ ] Crew fills citadel cells first (optional, deferred by user)
 - [x] Accommodation spilling into the superstructure as an alternative to hull length: done by `deckhouse_levels` (player knob) and overflow quartering (`crew.quartered_in_superstructure`)
-- [ ] Crew quartered in tower levels over the bridge (`Tower n`): limit overflow quarters to deckhouse and base levels (pre-1945 towers held sea cabins, not berths)
+- [x] Crew quartered in tower levels over the bridge (`Tower n`): those levels no longer count as crew space (2026-10-12)
 - [ ] Morale inputs in the report: berths in the superstructure (post-1955 the better ones: dry, ventilated)
 - [ ] Morale inputs in the report: quarters' surroundings (beside boilers, below waterline, wet ends) per rank
 - [ ] Morale inputs in the report: per-rank sleep space and the officer/rating gap (`sleep_m2_per_man` is an all-hands average)
