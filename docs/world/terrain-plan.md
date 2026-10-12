@@ -134,11 +134,13 @@ Without bathymetry the standoff stands in for shoal water. At these distances it
 at 1:10M (its median segment is 1.6 km), which is fine: nobody sees the difference between the data's coast and the
 real one, only a ship sitting on the drawn coast.
 
-**Formations:** only the guide is plotted ("The pilot"), so its track must keep the whole formation clear. The
-helm's clearance (2.6b) is the formation's real extent toward the land, plus the outermost ship's own standoff: a
-column hugs the coast like one ship; a line abreast keeps its real width off. It isn't a kilometres-wide margin for
-its own sake. Today's `AiCommand.Clearance` gives the farthest station abeam on either side; T3 may split it into port
-and starboard, so a line abreast along a coast clears only its landward half.
+**Formations** (the user, 2026-10-12): only the guide is plotted ("The pilot"), at its own standoff, and the
+formation's width isn't added. A ship stationed abeam that the coast comes too close to relies on the backstop's
+push-back, Rule the Waves' slide. Keeping the formation off is the AI's job, not a hard rule: an admiral leading a
+line abreast along a coast, or fighting near one, avoids going that close when he can. The formation's extent
+toward the land (2.6b's `AiCommand.Clearance`, the farthest station abeam) is what he weighs in choosing his
+courses and routes (a soft cost in T5's router, and in his own course choices in combat), never something the pilot
+or the step enforces.
 
 ### 3. Routing: the navigator (`Fleetwright.Sim`, once per order)
 
@@ -162,8 +164,9 @@ and starboard, so a line abreast along a coast clears only its landward half.
   raw course is the pilot's job. On the map, right-click stays a course and shift+right-click a plain waypoint (the
   user, 2026-10-12, "On the map"); `GoTo` gets its own control when this step comes. `RouteCapacity` (32) grows, or routes move to a pooled array, since a route round
   Africa has more legs than that.
-- **Formations:** an admiral's route for the guide uses the standoff plus the formation's extent toward the land, so ships
-  stationed abeam aren't pushed onto the coast the guide clears.
+- **Formations:** an admiral's route for the guide adds the formation's extent toward the land as a soft cost (the
+  penalty band widens by it), so where there's room the route keeps ships stationed abeam off the coast; where
+  there isn't (a strait), the route still goes through, and the outer ships rely on the backstop.
 
 ### 4. The pilot: plotting the track ahead
 
@@ -207,8 +210,8 @@ Then nothing about land needs a ship in the fine tier, and the clock keeps its s
   too, and reported in the strip.
 - **Who it applies to:** a ship on its own (or detached) and a formation's guide, in every helm mode except a raw
   `Rudder` order, which gets only the backstop. **A formation's other ships aren't plotted** (the user, 2026-10-12):
-  they keep station on the guide, whose plot already clears the formation ("Standoff"), and only the backstop
-  watches them. At Jutland that's ~30 plotted units, not 250 ships. Captains' behaviours (follow, station, run) of
+  they keep station on the guide, and only the backstop watches them. The guide's plot clears the guide alone; keeping
+  the rest off is the admiral's choice of course ("Standoff"). At Jutland that's ~30 plotted units, not 250 ships. Captains' behaviours (follow, station, run) of
   ships on their own are unchanged: their courses are intents the pilot plots like the player's. A ship ordered to
   run, with a coast behind it, runs along the coast. A captain chasing a moving target changes course past his
   deadband at most every second or so; with the fine tick's short horizon a plot costs one cell lookup in open water
@@ -236,15 +239,17 @@ Then nothing about land needs a ship in the fine tier, and the clock keeps its s
 - **Going on rails:** a ship steady on its plot goes on rails at any piece, a turn included. Today's check that a
   ship is steady (rudder amidships, no swing, on its course) becomes "on its plot within tolerance".
 - **Groups:**
-  - The guide's track is plotted at its standoff plus the formation's extent toward the land, so ships stationed abeam clear the
-    coast the guide clears.
+  - The guide's track is plotted at its own standoff.
   - **Column:** a member rides the guide's plot itself, a distance astern along it (`s - astern`), so a column turns
-    in succession round a headland, each ship at the guide's wheel-over point, exactly, on rails.
+    in succession round a headland, each ship at the guide's wheel-over point, exactly, on rails. It clears what the
+    guide clears.
   - **Abreast and echelons** keep their offsets in the guide's frame, as `RailWith` does now. Through a turn that's a
-    turn together, which is right for those formations. Turns are checked clear for the outermost ship at plot
-    time.
-- **Coming off rails** is only for what the plot couldn't know: a contact (3.1), a new order, damage. The land never
-  derails a ship.
+    turn together, which is right for those formations. On rails there's no step, so no push-back: when the rails are
+    laid, each riding offset's track is traced at the minimum, and where one meets land the unit comes off rails short
+    of it, to the fine tick, where the backstop slides that ship along the coast. Admirals keeping off the coast make
+    this rare.
+- **Coming off rails** is only for what the plot couldn't know: a contact (3.1), a new order, damage, and a
+  formation's outer ship meeting land (above). The land never derails a single ship or a column.
 - **A held course into a continent** (agreed): the plot follows the coast at the standoff until the ordered course
   is clear, then resumes it, all on rails, and reports the alteration once when it's plotted ("land ahead: altering
   to 340° to follow the coast"). Following the coast doesn't cost the clock.
@@ -259,8 +264,10 @@ Then nothing about land needs a ship in the fine tier, and the clock keeps its s
 - **After the step's arc:** if the new position is inside the minimum (the cell bound first, so it's free at sea),
   move the ship back out along the coast's normal to the minimum, turn its heading parallel to the coast and drop the
   speed into it. That's Rule the Waves' slide, but here it's the failure path. It's counted (a counter in
-  `ShipStore`, and a dev overlay), and the scenario tests require zero. For a formation's other ships (not plotted)
-  it's the only check, and it may fire if the guide's clearance is wrong; that's counted too.
+  `ShipStore`, and a dev overlay), and the scenario tests require zero for plotted ships.
+- **For a formation's other ships it's the rule, not a failure** (the user, 2026-10-12): they aren't plotted, so an
+  outer ship the coast comes too close to slides along it, as in Rule the Waves, and the rest of its line is
+  unaffected. It's counted separately, so the overlay and the scale test show how often admirals let it happen.
 - **On rails the step doesn't run,** so the backstop can't see a ship there. Until T4 plots rails, T2 adds the
   stopgap: when a unit's rails are laid or re-anchored, its track (the guide's, and its outermost riding offsets) is
   traced with `FirstContact` at the minimum, and where it meets land an event takes the unit off rails, a few
@@ -353,12 +360,13 @@ Scenario tests, each also a `-ships` dev command to look at:
 - a course straight at the Norwegian coast, at 10 and 28 kn;
 - `Run` from a ship with the Skagerrak behind the runner;
 - `Follow` through the Bosporus;
-- a column of six round the Skaw, and a line abreast plotted along the Jutland coast;
+- a column of six round the Skaw, and a line abreast along the Jutland coast close enough that its landward ship
+  slides (the push-back on a formation's outer ship, the rest of the line holding station);
 - a destroyer and a battleship on the same coast (different standoffs);
 - a course into the end of a fjord (boxed in: turned round, or stopped);
 - each captain's behaviour against a coast, with no re-order loop.
 
-  Pass: no backstop touches, never inside the minimum, the order resumed once clear, fjord and bay mouths crossed
+  Pass: no backstop touches on plotted ships, nothing ever inside the minimum, the order resumed once clear, fjord and bay mouths crossed
   rather than followed, and the plot's cost measured (one lookup in clear water; along Norway's coast).
 
 **T4 Rails along the plot.** Turn pieces on rails, the plot's events and horizon re-plots, "steady on its plot",
@@ -384,8 +392,10 @@ came first because it gives every intent one path to the helm, where the pilot h
 
 **What 2.6 changes here** (`docs/battle/plan.md` 2.6, "Ready for the land"):
 - `GoTo` is a unit order, not a `ShipSystem` command. The unit's commander routes it and hands the helm a `Route`.
-- The formation's extent reaches the pilot as a clearance carried by the helm order (`AiCommand.Clearance`,
-  `ShipState.ClearanceM`), so the pilot doesn't read groups.
+- 2.6b carries the formation's extent down the chain as a clearance (`AiCommand.Clearance`,
+  `ShipState.ClearanceM`), meant for the pilot. Since the outer ships now rely on the push-back, the pilot doesn't
+  read it: it's the admirals' (and T5's router's) soft cost for keeping a formation off a coast. T3 decides whether
+  the helm keeps it at all or it stays in the AI.
 - A column's station is a distance along its guide's track, ready for T4.
 - The pilot's alterations aren't orders: they don't change who holds a unit.
 
@@ -400,5 +410,7 @@ came first because it gives every intent one path to the helm, where the pilot h
 5. **The pilot may stop a ship** when it's boxed in.
 6. **Turns on rails before the Jutland test** (T4 moved up). Ideally nothing on rails heads for land unless the
    player ordered it.
-7. **A formation's other ships aren't plotted:** the guide's plot clears the formation, and the backstop watches them.
+7. **A formation's other ships aren't plotted,** and the guide's plot clears only the guide. An outer ship the coast
+   comes too close to relies on the backstop's push-back. Keeping the formation off is the admirals' soft choice
+   (in combat too, when they can avoid going that close), not a hard rule.
 8. **The scale tests go to the Pacific.**
