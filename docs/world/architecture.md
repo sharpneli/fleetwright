@@ -277,8 +277,10 @@ layered inside the project (`Core`, `Ships`, `Combat`, then the world on top, on
 ### The sim thread and the boundary
 
 - **The world runs on a thread of its own** (with the job system's workers under it), not in the frame loop. The
-  frame loop asks for a target time (now + real dt × speed); the sim thread advances toward it as fast as it can and
-  never past it. A heavy battle tick doesn't stutter the UI, the designer stays at 60 fps over a running world, and
+  speed and pause are the world's own state, changed by commands; the host (the frame loop, a test, a server) only
+  reports how much real time passed, and the sim makes its target from that (capped, so a slow sim drops the
+  achieved speed instead of building a backlog) and advances toward it as fast as it can and never past it. The
+  world doesn't know how it's used (`docs/battle/plan.md` step 1.1). A heavy battle tick doesn't stutter the UI, the designer stays at 60 fps over a running world, and
   at full speed the sim uses all the time the frame doesn't.
 - **Commands in.** The UI never writes the world. It enqueues commands; the sim applies them at the start of its next
   step and stamps them with that tick. The command log plus the start state is a replay; it's also the seam a

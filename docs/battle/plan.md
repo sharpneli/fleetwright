@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan).
+changed from the plan). Step 1.1's details were agreed on 2026-10-12 ("Decisions", on step 1.1).
 
 ## What the battle module is
 
@@ -203,16 +203,68 @@ for a land test.
 
 ### 1. A world of water
 
-**1.1 The sim core, headless.** The `Fleetwright.Sim` project and `tests/Fleetwright.Sim.Tests`:
-- `Core`: double vectors, the sphere (great circles, local frames), world time (`long` ms since 1850),
-  `SimSettings`, and seeded streams.
-- `World`: the clock, the scheduler's event queue (ordered by time, tier, id), commands in, and the snapshot out
-  (preallocated, triple-buffered).
-- The sim thread, advancing toward the target time it's asked for.
+**1.1 The sim core, headless.** The projects `Fleetwright.Sim.Core` and `Fleetwright.Sim` (the world), and
+`tests/Fleetwright.Sim.Tests` (details agreed 2026-10-12):
+- **`Core`**, pure values and functions, nothing that passes time:
+  - `Vec3d` (doubles; the BCL's vectors are float).
+  - The sphere: R = 6,371 km (a physical constant, not a setting); lat/lon <-> Earth-centred (x through 0°N 0°E,
+    z through the north pole); great-circle distance by `atan2(|a×b|, a·b)` (`acos` loses precision at combat
+    ranges); a position and its forward vector rotated together about their common axis; the local east/north/up
+    frame and the ship frame, with a fallback at the exact poles.
+  - **The ship frame is left-handed** (+x bow, +y starboard, heights up): the naval body frame's x and y with its z
+    (down) turned to up, because shipgen measures heights. It stays (changing it would change every golden). The
+    frame builder returns three explicit world vectors, starboard = forward × up, and a ship point maps by components
+    (pos + x·forward + y·starboard + h·up), so no right-handed cross product or `CreateLookAt` can mirror it. A test
+    pins it: heading north, starboard is east.
+  - `WorldTime`: a `long` of ms since 1850-01-01 00:00 UTC (JD 2396758.5), a uniform clock (no leap seconds, no
+    ΔT); `DateTime` for the UI, the Julian date for the sun.
+  - The sun: the Astronomical Almanac's low-precision formulas (declination, right ascension, Greenwich sidereal
+    time), ~0.01°, giving a unit vector in Earth-centred coordinates. **A function of time, not state:** the
+    world stores nothing for it, and each snapshot carries the vector at its own time.
+  - Seeded streams: our own xoshiro256** as a struct (`System.Random`'s seeded algorithm is legacy and not ours to
+    pin), four ulongs of state so it saves. A named stream's seed is SplitMix64 of the world seed and a stable hash
+    of its name (`string.GetHashCode` is randomised per process). `Derive(key)` gives a substream per ship or per
+    shot, which is what 2.1's shots and the job system's thread-count independence need.
+  - `SimSettings`: immutable, its defaults in code as the one source. Loading it from data comes in 2.2, with the
+    first real tuning numbers. Settings change results, so replays will record them.
+- **`World`:**
+  - The scheduler: a binary heap over a preallocated array of event structs (no delegates: plain data saves and
+    doesn't allocate), ordered by (time, tier, id, seq); the insertion sequence is the last tiebreak, for two events
+    of one entity at one moment. Cancelling is by generation: re-anchoring bumps an entity's generation, and stale
+    events are skipped when they're popped (rails, 2.5, leans on it).
+  - **Partition invariance:** advancing to t1 and then t2 gives exactly what advancing straight to t2 gives. The
+    clock may rest at any millisecond, but stepped models step only on their own grid of tick events.
+  - Commands: a ring of structs behind a lock (`ConcurrentQueue` drops segments as garbage), applied at the sim's
+    current time and stamped with it. **Determinism means:** the same start state, settings and stamped command log
+    give the same world. The thread and the wall clock only pick when a command lands and when a snapshot is
+    published. A replay feeds each logged command back as an event at its stamp.
+  - **The speed is the sim's** (the user, 2026-10-12): asked speed and pause are world state, changed by commands
+    (`SetSpeed`, `Pause`). The host only reports how much real time passed. The sim turns that into its target,
+    capped so a slow sim drops the achieved speed instead of building a backlog, and a speed drop at an event (3.1)
+    changes it at the exact event time with nothing to race against. The world doesn't know how it's used: an exe
+    with a map, a headless test, or later a server streaming snapshots to clients. Co-op, if it comes, is one
+    authoritative player whose sim this is and others who only view and send commands; the game isn't latency
+    sensitive.
+  - The snapshot: preallocated, triple-buffered, swapped lock-free (an index and a fresh bit). In 1.1: the clock, a
+    sequence number, the sun, speed asked and achieved, paused, and the sim thread's own allocated bytes (so "no GC
+    in play" can show live in F2). Tactical interpolation (2.3) puts both poses in one snapshot, so three buffers
+    stay enough.
+  - A world state hash (64-bit, over all state) for the determinism tests now and saves and replays later.
+- **The sim thread:** waits on a signal instead of spinning, advances toward its target and never past it, publishes
+  at least every few ms of wall time when behind, and catches an exception and reports it in the snapshot instead
+  of freezing silently.
+- **To run:** a `sim` command in the CLI printing the clock, speed asked and achieved, the subsolar point and the
+  bytes allocated.
 
-The world holds nothing yet but its clock and the sun's position. Tests: the same commands give the same snapshots;
-the thread reaches its target times and never passes them; a step allocates nothing; the subsolar point is right at
-known dates.
+Tests:
+- A live run on the thread, with commands arriving at random wall times, logs its commands. A headless replay of the
+  log ends with the same state hash.
+- Random partitions of one span end in the same state.
+- Under random targets, the published clock only goes forward, never passes the target, and always reaches it.
+- A step allocates nothing after warm-up (`GC.GetAllocatedBytesForCurrentThread`).
+- The subsolar point against almanac values for dates from 1850 to 2050, including 1916-05-31 (Jutland), and the sun
+  at local noon at 90° - |lat - δ|.
+- The sphere's round trips, a full circle across a pole, and the frame's handedness.
 
 **1.2 The globe.** In the exe:
 - **the world is a tab** on the top bar (the user, 2026-10-12), the first one and the default, so launching the game
@@ -523,10 +575,14 @@ entity component system (the tech-stack plan leaves "hand-written SoA or Arch" f
 through index-based accessors, never its arrays' layout. Moving the storage is then a refactor of `ShipState`
 alone.
 
-### Inside `Fleetwright.Sim` (proposed 2026-10-12)
+### Inside `Fleetwright.Sim` (agreed 2026-10-12)
 
-Every part of the sim is in layers with one direction of dependency, as the projects are. Namespaces under
-`Fleetwright.Sim`, lowest first; each may use the ones above it in this list, never the ones below:
+Every part of the sim is in layers with one direction of dependency, as the projects are. **Each layer is a project
+of its own** (the user, 2026-10-12), so the compiler enforces the direction. Namespaces in one project can't:
+C# shows a root namespace's types to its child namespaces without a `using`, so `Core` could reach the world
+unnoticed. In .NET this costs nothing at runtime. Every assembly ships as IL, and the JIT (or NativeAOT, if ever)
+compiles the whole program and inlines across assemblies; a single exe is `PublishSingleFile` away. Lowest first;
+each may use the ones above it in this list, never the ones below:
 
 ```
 Fleetwright.Sim.Core      double vectors, the sphere (great circles, frames), world time, SimSettings, seeded streams
@@ -537,10 +593,10 @@ Fleetwright.Sim (World)   the world, the clock and scheduler, tiers, encounters,
 
 - `Ships` is pure data and compilation: no time, no world, nothing that changes. `Combat` gets time and a `dt`
   from the scheduler and never owns either. Only `World` knows about threads, commands and the snapshot.
-- `Fleetwright.Sim` depends on `Fleetwright.Shipgen` only. `Fleetwright.Shipgen` never depends on it.
+- The projects: `Fleetwright.Sim.Core`, `Fleetwright.Sim.Ships`, `Fleetwright.Sim.Combat` and `Fleetwright.Sim`
+  (the world). `Ships` is the only one that references `Fleetwright.Shipgen`, which never references any of them.
 - Tests: `tests/Fleetwright.Sim.Tests` (xUnit, headless, no GPU).
-- Step 1.1 makes `Core` and the `World` root with nothing in it; `Ships` comes in 2.1 and `Combat` in 2.2. The
-  layering is the same; only the order the layers fill in changed.
+- Step 1.1 makes `Core` and the world with nothing in it; `Ships` comes in 2.1 and `Combat` in 2.2.
 
 Rules:
 
@@ -601,7 +657,11 @@ How:
   or a polygon on it); the ships inside are still on the sphere, at a real place.
 
 Determinism: the sim is fixed-tick doubles; trigonometry only where a frame is built, so the same inputs give the same
-battle on one build and platform (cross-platform lockstep isn't a goal yet).
+battle on one build and platform (cross-platform lockstep isn't a goal yet). **Keep in mind (the user, 2026-10-12):**
+on one machine it's exact, but the .NET maths library may pick a different code path per CPU, so `Math.Sin` and
+friends can differ in the last bit between machines. A replay or save shared between machines, or a server and its
+viewers, would need trig of our own. Keeping trig to frame building keeps that swap small. No FMA intrinsics in the
+sim either: the JIT doesn't fuse a·b + c by itself, and the sim mustn't ask it to.
 
 #### Shells: an analytic trajectory, tracked, not integrated
 
@@ -681,10 +741,19 @@ The user's, 2026-10-12, on the ships' data:
 4. **Buoyancy:** start simple and make it more detailed area by area, the way shipgen was built. First they float,
    then they float in a more detailed way. Expect to change it a lot once the damage model is in.
 
+The user's, 2026-10-12, on step 1.1:
+
+1. **The layers are projects** ("Inside `Fleetwright.Sim`"), as long as that costs no optimization and the game
+   still ships as one program. In .NET it costs neither.
+2. **The speed is part of the sim.** The world runs fully headless and doesn't know how it's used (a server
+   streaming to clients is a future use). Co-op, if it comes, has one authoritative player and others who view and
+   send commands.
+3. **`SimSettings` from data in 2.2,** code defaults until then.
+4. **Determinism across machines:** noted (the last-bit trig differences), kept in mind, not solved now.
+
 ## Open questions
 
-1. **The layering inside `Fleetwright.Sim`** is proposed, not agreed: check it at step 1.1.
-2. **The shipgen fixes in step 2.1** (unique ids, the `Casemate` flag) change the export. Confirm them at the start of
+1. **The shipgen fixes in step 2.1** (unique ids, the `Casemate` flag) change the export. Confirm them at the start of
    that step.
 
 ## Background
