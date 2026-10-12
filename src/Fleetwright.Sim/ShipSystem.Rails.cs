@@ -18,6 +18,10 @@ namespace Fleetwright.Sim;
 /// steaming steady (<see cref="Steady"/>), every ship with it (<see cref="InStation"/>), so a formation is never seen
 /// to snap into place. Either way, not near an opposing ship (<see cref="NearOpposing"/>,
 /// ShipSystem.Contacts.cs).</item>
+/// <item><b>EXCEPTION: the map's scale.</b> <see cref="Watched"/> is the sim's one dependence on display state, which
+/// is otherwise a hard rule (docs/world/architecture.md, "Terms"). It's kept only because we have to: a formation seen
+/// snapping is jarring, and leaving it on the fine tick costs the clock. It's to go once the snap can be hidden
+/// better. Don't add another, and don't lean on this one further.</item>
 /// <item><b>How.</b> <see cref="Lay"/>: placed, the guide is made what its orders say and its ships put on their
 /// stations; steady, they're taken on as they are.</item>
 /// <item><b>Orders on rails.</b> While its unit is placing, a movement order to a unit's guide is carried out at once on rails
@@ -41,7 +45,10 @@ public sealed partial class ShipSystem
 
     /// <summary>Whether the map would show the unit in <see cref="line"/> manoeuvring: its ships' spread and its turning
     /// circle span <see cref="SimSettings.RailsWatchedPx"/> or more at the map's scale (the map collapses a group into
-    /// one marker below about that). With no map, everything is watched.</summary>
+    /// one marker below about that). With no map, everything is watched.
+    /// <para>EXCEPTION to a hard rule: the sim doesn't depend on display state, and this is the one place it does (see
+    /// the file's summary). Kept only until the snap can be hidden better; nothing else may read
+    /// <see cref="World.ViewMetresPerPixel"/>.</para></summary>
     bool Watched(World world, int guide)
     {
         double mpp = world.ViewMetresPerPixel;

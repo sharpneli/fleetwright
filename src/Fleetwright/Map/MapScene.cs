@@ -94,7 +94,9 @@ public sealed unsafe partial class MapScene : IScene
     }
 
     /// <summary>Tells the world the map's scale when it changes, in quarter-octave steps (a zoom is a few commands, not
-    /// one a frame): the rails place what the map shows as one marker more readily (ShipSystem.Rails.cs).</summary>
+    /// one a frame): the rails place what the map shows as one marker more readily (ShipSystem.Rails.cs).
+    /// <para>EXCEPTION: the sim is otherwise independent of what the map shows; this is the one display state sent to
+    /// it, kept only until the rails' snap can be hidden better. Don't send any other.</para></summary>
     void TellScale()
     {
         double q = Math.Pow(2, Math.Round(Math.Log2(camera.MetresPerPixel) * 4) / 4);

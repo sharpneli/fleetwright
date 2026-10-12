@@ -24,6 +24,11 @@ docs keep them apart (the user, 2026-10-12):
 - **Where they touch:** only through what the player watches. At 1x every ship is in the fine tier (merchants on
   their routes are the exception, later). Zooming into a combat keeps it out of the coarse tier, in the fine one, and
   that naturally limits how much time compression can be used. Otherwise the zoom is display only.
+- **The sim is independent of display state: a hard rule.** What the world does mustn't depend on what a screen
+  shows. **One exception, kept only because we have to** (the user, 2026-10-12): the map's scale reaches the rails
+  (`Command.SetViewScale`), so a group drawn as one marker is snapped onto rails at any speed while one drawn ship by
+  ship forms up first; a formation seen snapping is jarring, and the fine tick costs the clock. It's to go once the
+  snap can be hidden better (docs/battle/plan.md, "The rails rules in one place"). **No more of these.**
 - **Fidelity** (an encounter's Full or Resolved, "Conflicts" below) is a third thing again: Full runs the encounter's
   ships in the fine clock tier, Resolved runs it in coarse steps with sampled hits.
 - **The tactical diameter** is the naval term for a ship's turning circle, unrelated to either.

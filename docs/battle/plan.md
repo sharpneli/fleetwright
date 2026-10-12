@@ -952,13 +952,15 @@ them, the group commands' derails in `GroupSystem` and the polar cap tested in t
   whose guide squadron was all nudged out still has a guide and goes on rails; a waypoint given twice on rails is
   passed over (a loop all at one point was an event a millisecond for ever).
 - The refactor changed no simulated number in the rails, formation and force tests.
-- **By zoom** (the user: a formation seen snapping into place is jarring until the clock is massive, but once only
-  its marker shows it's fine; UI-dependent rails are acceptable). The map tells the world its scale
+- **By zoom: an EXCEPTION, kept only because we have to.** The sim is independent of display state, a hard rule
+  (docs/world/architecture.md, "Terms"); this is the one break in it, and there are to be no more. A formation seen
+  snapping into place is jarring until the clock is massive, but once only its marker shows it's fine. To revisit:
+  hide the snap better on screen so the dependency can go. The map tells the world its scale
   (`Command.SetViewScale`, logged, in quarter-octave steps). A unit whose spread and turning circle span fewer than
   `RailsWatchedPx` (30, about where the map collapses a group into one marker) isn't `Watched`: it's placed and its
   orders snap from `RailsPlaceUnwatchedMinSpeed` (1×, any speed). Watched, it still forms up and steadies first
   below `RailsSnapMinSpeed` (9 minutes for a column ordered too fast, at 1×). With no map, everything is watched.
-  The world's result now depends on the zoom (the user's choice); raising the unwatched speed narrows that.
+  The world's result depends on the zoom while this stands; raising the unwatched speed narrows that.
 - **Left:** `Placeable` and `Steady` don't know captains' behaviours, so a unit following or keeping station on
   another is placed and snapped once a minute when placing, and goes off and on otherwise (the lone follower's item,
   "Fine-tuning", for groups too). Polar caps are left as they are (the user: ships don't sail the thick ice).

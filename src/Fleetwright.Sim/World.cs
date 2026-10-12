@@ -35,7 +35,9 @@ public sealed class World
 
     public bool Paused { get; private set; }
 
-    /// <summary>The map's scale, metres per pixel; 0 with no map (headless: everything counts as watched).</summary>
+    /// <summary>The map's scale, metres per pixel; 0 with no map (headless: everything counts as watched). EXCEPTION:
+    /// the one display state in the sim, read only by the rails (ShipSystem.Rails.cs, <c>Watched</c>) until their snap
+    /// can be hidden better.</summary>
     public double ViewMetresPerPixel { get; private set; }
 
     /// <summary>Every command applied, with the time it took effect.</summary>
