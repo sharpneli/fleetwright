@@ -14,7 +14,8 @@ public static class Graticule
 
     const double MetresPerDegree = Earth.Radius * Math.PI / 180;
     const double MinSpacingPx = 90;
-    const int MaxLines = 200, SegmentsAcross = 64, BorderSamples = 16;
+    const int MaxLines = 200, SegmentsAcross = 64, BorderSamples = 16, MaxSamples = 720;
+    const double SagittaPx = 0.25, Deg = Math.PI / 180;
 
     static readonly Vector4 LineColor = new(0.75f, 0.85f, 0.95f, 0.20f);
     static readonly Vector4 ZeroColor = new(0.85f, 0.92f, 1.0f, 0.42f);
@@ -37,41 +38,65 @@ public static class Graticule
     {
         double step = Spacing(view.MetresPerPixel);
         var (camLat, camLon) = Earth.LatLon(-view.Forward);
-        double latMin = -90, latMax = 90, lonMin = camLon - 180, lonMax = camLon + 180, ds = 1;
-        if (Covered(view))
+        if (!Covered(view))
         {
-            latMin = lonMin = double.MaxValue;
-            latMax = lonMax = double.MinValue;
-            for (int k = 0; k <= BorderSamples; k++)
+            // the limb shows: each line from where it meets the horizon (dot(p, centre) = cos a) to where it leaves
+            double cosA = Earth.Radius / (Earth.Radius + view.Altitude);
+            // every line is a circle of at most the globe's radius on screen (R / mpp pixels): a step of
+            // sqrt(8 s mpp / R) radians keeps its chord within s pixels of the arc
+            double ds = Math.Clamp(Math.Sqrt(8 * SagittaPx * view.MetresPerPixel / Earth.Radius) / Deg, 0.05, 5);
+            double sc = Math.Sin(camLat * Deg), cc = Math.Cos(camLat * Deg);
+            for (int k = (int)Math.Ceiling(-90 / step); k * step < 90 && k <= MaxLines; k++)
             {
-                double f = (double)k / BorderSamples;
-                Widen(view, f * view.Width, 0, camLon, ref latMin, ref latMax, ref lonMin, ref lonMax);
-                Widen(view, f * view.Width, view.Height, camLon, ref latMin, ref latMax, ref lonMin, ref lonMax);
-                Widen(view, 0, f * view.Height, camLon, ref latMin, ref latMax, ref lonMin, ref lonMax);
-                Widen(view, view.Width, f * view.Height, camLon, ref latMin, ref latMax, ref lonMin, ref lonMax);
+                double lat = k * step, num = cosA - Math.Sin(lat * Deg) * sc, den = Math.Cos(lat * Deg) * cc;
+                if (Math.Abs(lat) >= 90 || num > den)
+                    continue;   // behind the horizon all round
+                double half = num <= -den ? 180 : Math.Acos(num / den) / Deg;
+                Parallel(view, lines, lat, camLon - half, camLon + half, k == 0, ds);
             }
-            Pole(view, 90, camLon, ref latMin, ref latMax, ref lonMin, ref lonMax);
-            Pole(view, -90, camLon, ref latMin, ref latMax, ref lonMin, ref lonMax);
-            ds = Math.Max(latMax - latMin, lonMax - lonMin) / SegmentsAcross;
+            double first = Math.Ceiling((camLon - 180) / step) * step;
+            for (int k = 0; k < MaxLines && first + k * step < camLon + 180 - 1e-9; k++)
+            {
+                double lon = first + k * step;
+                double a = cc * Math.Cos((lon - camLon) * Deg), r = Math.Sqrt(a * a + sc * sc);
+                if (r <= cosA)
+                    continue;
+                double mid = Math.Atan2(sc, a) / Deg, half = Math.Acos(cosA / r) / Deg;
+                double lat0 = Math.Max(-90, mid - half), lat1 = Math.Min(90, mid + half);
+                if (lat1 > lat0)
+                    Meridian(view, lines, lon, lat0, lat1, Math.Abs(Math.IEEERemainder(lon, 360)) < 1e-9, ds);
+            }
+            lines.End();
+            return;
         }
 
-        // parallels, then meridians
-        double first = Math.Ceiling(latMin / step) * step;
-        for (int k = 0; k < MaxLines && first + k * step <= latMax + 1e-12; k++)
+        // close in: the span of the screen's border
+        double latMin = double.MaxValue, lonMin = double.MaxValue, latMax = double.MinValue, lonMax = double.MinValue;
+        for (int k = 0; k <= BorderSamples; k++)
         {
-            double lat = first + k * step;
-            if (Math.Abs(lat) >= 90)
-                continue;
-            Line(view, lines, lat, lonMin, lat, lonMax, Math.Abs(lat) < 1e-9, ds);
+            double f = (double)k / BorderSamples;
+            Widen(view, f * view.Width, 0, camLon, ref latMin, ref latMax, ref lonMin, ref lonMax);
+            Widen(view, f * view.Width, view.Height, camLon, ref latMin, ref latMax, ref lonMin, ref lonMax);
+            Widen(view, 0, f * view.Height, camLon, ref latMin, ref latMax, ref lonMin, ref lonMax);
+            Widen(view, view.Width, f * view.Height, camLon, ref latMin, ref latMax, ref lonMin, ref lonMax);
         }
-        first = Math.Ceiling(lonMin / step) * step;
-        for (int k = 0; k < MaxLines && first + k * step <= lonMax + 1e-12; k++)
+        Pole(view, 90, camLon, ref latMin, ref latMax, ref lonMin, ref lonMax);
+        Pole(view, -90, camLon, ref latMin, ref latMax, ref lonMin, ref lonMax);
+        double dsc = Math.Max(latMax - latMin, lonMax - lonMin) / SegmentsAcross;
+        double f0 = Math.Ceiling(latMin / step) * step;
+        for (int k = 0; k < MaxLines && f0 + k * step <= latMax + 1e-12; k++)
         {
-            double lon = first + k * step;
+            double lat = f0 + k * step;
+            if (Math.Abs(lat) < 90)
+                Parallel(view, lines, lat, lonMin, lonMax, Math.Abs(lat) < 1e-9, dsc);
+        }
+        f0 = Math.Ceiling(lonMin / step) * step;
+        for (int k = 0; k < MaxLines && f0 + k * step <= lonMax + 1e-12; k++)
+        {
+            double lon = f0 + k * step;
             if (lon >= camLon + 180 - 1e-9 && lonMax - lonMin >= 360 - 1e-9)
                 continue;   // the full circle: the first meridian again
-            double rem = Math.IEEERemainder(lon, 360);
-            Line(view, lines, Math.Max(latMin, -90), lon, Math.Min(latMax, 90), lon, Math.Abs(rem) < 1e-9, ds);
+            Meridian(view, lines, lon, Math.Max(latMin, -90), Math.Min(latMax, 90), Math.Abs(Math.IEEERemainder(lon, 360)) < 1e-9, dsc);
         }
         lines.End();
     }
@@ -101,21 +126,44 @@ public static class Graticule
         (lonMin, lonMax) = (camLon - 180, camLon + 180);
     }
 
-    /// <summary>A line of constant latitude or longitude from (lat0, lon0) to (lat1, lon1), sampled every ds degrees,
-    /// broken where it goes behind the globe.</summary>
-    static void Line(in MapView v, MapLines lines, double lat0, double lon0, double lat1, double lon1, bool zero, double ds)
+    /// <summary>A parallel from lon0 to lon1, sampled every ds degrees by turning the last point about the axis (no
+    /// trig per point), broken where it goes behind the globe.</summary>
+    static void Parallel(in MapView v, MapLines lines, double lat, double lon0, double lon1, bool zero, double ds)
     {
-        double span = Math.Max(Math.Abs(lat1 - lat0), Math.Abs(lon1 - lon0));
-        int n = Math.Clamp((int)Math.Ceiling(span / ds), 1, 720);
+        int n = Math.Clamp((int)Math.Ceiling((lon1 - lon0) / ds), 1, MaxSamples);
+        double d = (lon1 - lon0) / n * Deg, cd = Math.Cos(d), sd = Math.Sin(d);
+        double r = Earth.Radius * Math.Cos(lat * Deg), z = Earth.Radius * Math.Sin(lat * Deg);
+        double x = r * Math.Cos(lon0 * Deg), y = r * Math.Sin(lon0 * Deg);
         lines.BeginStrip(zero ? ZeroColor : LineColor, zero ? 1.5f : 1f);
         for (int i = 0; i <= n; i++)
         {
-            double f = (double)i / n;
-            if (v.Project(Earth.Position(lat0 + (lat1 - lat0) * f, lon0 + (lon1 - lon0) * f), out double x, out double y))
-                lines.Point(x, y);
-            else
-                lines.End();
+            Sample(v, lines, new Vec3d(x, y, z));
+            (x, y) = (x * cd - y * sd, x * sd + y * cd);
         }
         lines.End();
+    }
+
+    /// <summary>A meridian from lat0 to lat1, sampled every ds degrees by turning the last point in its plane.</summary>
+    static void Meridian(in MapView v, MapLines lines, double lon, double lat0, double lat1, bool zero, double ds)
+    {
+        int n = Math.Clamp((int)Math.Ceiling((lat1 - lat0) / ds), 1, MaxSamples);
+        double d = (lat1 - lat0) / n * Deg, cd = Math.Cos(d), sd = Math.Sin(d);
+        double mx = Earth.Radius * Math.Cos(lon * Deg), my = Earth.Radius * Math.Sin(lon * Deg);
+        double c = Math.Cos(lat0 * Deg), s = Math.Sin(lat0 * Deg);
+        lines.BeginStrip(zero ? ZeroColor : LineColor, zero ? 1.5f : 1f);
+        for (int i = 0; i <= n; i++)
+        {
+            Sample(v, lines, new Vec3d(mx * c, my * c, Earth.Radius * s));
+            (c, s) = (c * cd - s * sd, s * cd + c * sd);
+        }
+        lines.End();
+    }
+
+    static void Sample(in MapView v, MapLines lines, Vec3d p)
+    {
+        if (v.Project(p, out double x, out double y))
+            lines.Point(x, y);
+        else
+            lines.End();
     }
 }

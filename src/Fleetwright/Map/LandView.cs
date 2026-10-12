@@ -46,22 +46,22 @@ public sealed class LandView(Land coarse, Land medium, Land fine)
         fillCount = 0;
         var land = LevelFor(v);
         var centre = -v.Forward;
-        double viewRadius = Region(v, centre);
+        Region(v, centre);
         for (int i = 0; i < land.RingCount; i++)
         {
             var (c, cos) = land.Cap(i);
-            if (cos > -1 && Earth.Angle(c, centre) > Math.Acos(Math.Min(cos, 1)) + viewRadius)
+            if (Clear(c, cos, centre))
                 continue;
-            int n = Clip(land, i, centre, viewRadius);
+            int n = Clip(land, i, centre, Inside(c, cos, centre));
             if (n >= 3)
                 Emit(v, n, lines);
         }
         lines.End();
     }
 
-    /// <summary>Sets the clip planes for the view, inward normals through the centre, and returns the angular radius
-    /// of what they enclose.</summary>
-    double Region(in MapView v, Vec3d centre)
+    /// <summary>Sets the clip planes for the view (inward normals through the centre) and the caps around and inside
+    /// what they enclose.</summary>
+    void Region(in MapView v, Vec3d centre)
     {
         // close in: the screen's corners, pushed 5% outward, all on the globe
         const double M = 0.05;
@@ -80,20 +80,45 @@ public sealed class LandView(Land coarse, Land medium, Land fine)
             }
             planeCount = HorizonSides;
         }
-        double radius = 0;
+        // the cap around the clip region (through its farthest corner), and the one inside every plane
+        (viewCos, innerSin) = (1, 1);
         for (int k = 0; k < planeCount; k++)
         {
             var p = Vec3d.Cross(corners[k], corners[(k + 1) % planeCount]).Normalized();
             planes[k] = Vec3d.Dot(p, centre) >= 0 ? p : -p;
-            radius = Math.Max(radius, Earth.Angle(corners[k], centre));
+            viewCos = Math.Min(viewCos, Vec3d.Dot(corners[k], centre));
+            innerSin = Math.Min(innerSin, Vec3d.Dot(planes[k], centre));
         }
-        return radius;
+        viewSin = Math.Sqrt(Math.Max(0, 1 - viewCos * viewCos));
+        innerCos = Math.Sqrt(Math.Max(0, 1 - innerSin * innerSin));
+    }
+
+    // the view's caps, as cosines and sines, so the tests below need no trig
+    double viewCos, viewSin, innerCos, innerSin;
+
+    /// <summary>Whether a cap (centre c, cos of its radius) is clear of the view's: the angle between the centres is
+    /// over the two radii, by cos(r + v) = cos r cos v - sin r sin v.</summary>
+    bool Clear(Vec3d c, double cos, Vec3d centre)
+    {
+        if (cos <= -viewCos)
+            return false;   // the radii add up to half a turn or more
+        double sin = Math.Sqrt(Math.Max(0, 1 - cos * cos));
+        return Vec3d.Dot(c, centre) < cos * viewCos - sin * viewSin;
+    }
+
+    /// <summary>Whether a cap lies inside every clip plane (inside the inscribed cap), so its ring needs no clipping.</summary>
+    bool Inside(Vec3d c, double cos, Vec3d centre)
+    {
+        if (cos < innerCos)
+            return false;   // wider than the inscribed cap
+        double sin = Math.Sqrt(Math.Max(0, 1 - cos * cos));
+        return Vec3d.Dot(c, centre) > innerCos * cos + innerSin * sin;   // the angle is under (inner - r)
     }
 
     /// <summary>Clips ring i by every plane (Sutherland-Hodgman); the result is in a, its length returned. A chunk whose
     /// cap is clear of the view comes in as its first point only: the loop between it and that shortcut stays inside
     /// its cap, so it can't change what's in view, and a far coast costs a point per chunk.</summary>
-    int Clip(Land land, int i, Vec3d centre, double viewRadius)
+    int Clip(Land land, int i, Vec3d centre, bool inside)
     {
         var ring = land.Ring(i);
         Grow(ref a, ring.Length * 2);
@@ -102,12 +127,12 @@ public sealed class LandView(Land coarse, Land medium, Land fine)
         {
             int from = j * Land.ChunkSize, to = Math.Min(from + Land.ChunkSize, ring.Length);
             var (c, cos) = land.ChunkCap(i, j);
-            if (cos > 0 && Earth.Angle(c, centre) > Math.Acos(Math.Min(cos, 1)) + viewRadius)
+            if (cos > 0 && Clear(c, cos, centre))
                 to = from + 1;
             for (int k = from; k < to; k++)
                 a[n++] = new Pt { P = ring[k] };
         }
-        for (int k = 0; k < planeCount && n > 0; k++)
+        for (int k = 0; k < planeCount && n > 0 && !inside; k++)
         {
             Grow(ref b, n * 2);
             var plane = planes[k];

@@ -30,6 +30,20 @@ runs 300 frames and exits, so it traces the same way. To trace an already runnin
 The `.speedscope.json` also opens in https://www.speedscope.app for a flame graph, and the `.nettrace` in PerfView or
 Visual Studio.
 
+## Frame times in the game
+
+`-frametimes` prints, at exit, each frame's length and its CPU work (from the frame's start to the submit, less the
+wait for the swapchain): mean, p50, p95, p99 and max, after the first 60 frames. Frame length alone hides the CPU,
+since vsync pads every frame to the display's interval. Pair it with `-screenshot=N` to end the run, and with
+scripted input to load it: `F:pan:X0,Y0:X1,Y1:N` pushes a real SDL drag (button down, eight motion events a frame
+for N frames, up), which reaches the scenes as a mouse does. `F:drag` only reaches ImGui.
+
+```bash
+dotnet run --project src/Fleetwright -c DevRelease -- -size=2560x1440 -frametimes -screenshot=1100 -map=50,10,4000     "-input=100:pan:900,500:400,350:80;200:pan:400,350:1400,650:80"
+```
+
+Measure the Debug build too (`dotnet run` without `-c`): it's what runs day to day, and it's 3-5x slower.
+
 ## Reading the numbers
 
 - dotnet-trace ends every stack in a pseudo-frame: `CPU_TIME` (in managed code) or `UNMANAGED_CODE_TIME` (native

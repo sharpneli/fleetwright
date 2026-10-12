@@ -23,8 +23,9 @@ public sealed unsafe class MapScene : IScene
     MapCamera camera, built;   // built: the view the lines and the land's fill were last built for
     (double, double) builtSize;
     double width = 1, height = 1;   // the target's size at the last draw, pixels
-    bool dragging, clamped;
+    bool dragging, clamped, dragPending;
     Vec3d grab;
+    double dragX, dragY;   // the newest cursor of a drag: solved once a frame, however many motion events came
     Vector2 mouse;
     bool mouseIn;
 
@@ -49,6 +50,11 @@ public sealed unsafe class MapScene : IScene
         {
             camera.Clamp(height);
             clamped = true;
+        }
+        if (dragPending)
+        {
+            camera.Drag(grab, dragX, dragY, width, height);
+            dragPending = false;
         }
         var view = View;
         if (camera.Target != built.Target || camera.MetresPerPixel != built.MetresPerPixel || (width, height) != builtSize)
@@ -146,7 +152,7 @@ public sealed unsafe class MapScene : IScene
                 (mouse, mouseIn) = (new Vector2(e->motion.x, e->motion.y), true);
                 if (!dragging)
                     return false;
-                camera.Drag(grab, e->motion.x * sx, e->motion.y * sy, width, height);
+                (dragX, dragY, dragPending) = (e->motion.x * sx, e->motion.y * sy, true);
                 return true;
             case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_LEAVE:
                 mouseIn = false;

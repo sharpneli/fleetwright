@@ -298,7 +298,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
     /// <summary>A dev hook for testing the UI without a mouse (-input=): events queued into ImGui at their frame.
     /// "F:click:X,Y" moves there and clicks (ImGui trickles the queue, a step a frame), "F:right:X,Y" right-clicks,
-    /// "F:wheel:X,Y:N" turns the wheel N notches, "F:drag:X0,Y0:X1,Y1" drags with the left button, "F:type:TEXT" types TEXT then Enter, "F:drop:PATH" drops the file PATH on the window. X, Y in window pixels.</summary>
+    /// "F:wheel:X,Y:N" turns the wheel N notches, "F:drag:X0,Y0:X1,Y1" drags with the left button, "F:type:TEXT" types TEXT then Enter, "F:drop:PATH" drops the file PATH on the window. X, Y in window pixels.
+    /// "F:pan:X0,Y0:X1,Y1:N" is a drag as a real mouse makes it: SDL events (so the scene gets them as from the
+    /// device), the button down at X0,Y0, then N frames of eight motion events each toward X1,Y1, then up.</summary>
     public List<string> ScriptedInput { get; } = [];
 
     void FeedScriptedInput()
@@ -312,7 +314,8 @@ public unsafe class Sdl3GpuEngine : IDisposable
             if (p.Length < 3 || !int.TryParse(p[0], out int f))
                 continue;
             int step = (int)FrameNumber - f;   // a drag runs over frames: move, press, six moves, let go
-            if (step != 0 && !(p[1] == "drag" && step is > 0 and <= 8))
+            int panFrames = p[1] == "pan" && p.Length > 4 ? int.Parse(p[4]) : 0;
+            if (step != 0 && !(p[1] == "drag" && step is > 0 and <= 8) && !(p[1] == "pan" && step > 0 && step <= panFrames + 1))
                 continue;
             System.Numerics.Vector2 At(string s)
             {
@@ -353,11 +356,67 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     io.AddKeyEvent(ImGuiKey.Enter, true);
                     io.AddKeyEvent(ImGuiKey.Enter, false);
                     break;
+                case "pan" when panFrames > 0:
+                    var a0 = At(p[2]);
+                    var a1 = At(p[3]);
+                    if (step == 0)
+                    {
+                        PushMouse(SDL_EventType.SDL_EVENT_MOUSE_MOTION, a0, default);
+                        PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN, a0, default);
+                    }
+                    else if (step <= panFrames)
+                        for (int k = 1; k <= 8; k++)
+                        {
+                            var from = a0 + (a1 - a0) * ((step - 1 + (k - 1) / 8f) / panFrames);
+                            var to = a0 + (a1 - a0) * ((step - 1 + k / 8f) / panFrames);
+                            PushMouse(SDL_EventType.SDL_EVENT_MOUSE_MOTION, to, to - from);
+                        }
+                    else
+                        PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP, a1, default);
+                    break;
                 case "drop":   // the path may hold colons (C:/...): all after the second
                     FileDropped?.Invoke(ev[(ev.IndexOf(':', ev.IndexOf(':') + 1) + 1)..]);
                     break;
             }
         }
+    }
+
+    /// <summary>Pushes a left-button mouse event into SDL's queue, read with the next frame's events.</summary>
+    void PushMouse(SDL_EventType type, System.Numerics.Vector2 at, System.Numerics.Vector2 rel)
+    {
+        var e = new SDL_Event();
+        e.type = (uint)type;
+        if (type == SDL_EventType.SDL_EVENT_MOUSE_MOTION)
+        {
+            e.motion.windowID = SDL_GetWindowID(_window);
+            (e.motion.x, e.motion.y, e.motion.xrel, e.motion.yrel) = (at.X, at.Y, rel.X, rel.Y);
+        }
+        else
+        {
+            e.button.windowID = SDL_GetWindowID(_window);
+            (e.button.button, e.button.down, e.button.clicks, e.button.x, e.button.y) =
+                ((byte)1, type == SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN, (byte)1, at.X, at.Y);
+        }
+        SDL_PushEvent(&e);
+    }
+
+    /// <summary>With -frametimes: every frame's length and its CPU work (from its start to the submit, less the wait for
+    /// the swapchain), ms, reported at the end of the run (the first 60 frames, the start-up's, are left out).</summary>
+    public bool RecordFrameTimes { get; set; }
+    readonly List<(float Frame, float Work)> _frameTimes = new(100_000);
+    float _waitMs, _workMs;
+    readonly Stopwatch _waitTimer = new();
+
+    void ReportFrameTimes()
+    {
+        if (!RecordFrameTimes || _frameTimes.Count <= 60)
+            return;
+        var t = _frameTimes.Skip(60).ToArray();
+        float[] Sorted(Func<(float Frame, float Work), float> f) => t.Select(f).OrderBy(x => x).ToArray();
+        static string Stats(float[] v) =>
+            $"mean {v.Average():F2}, p50 {v[v.Length / 2]:F2}, p95 {v[(int)(v.Length * 0.95)]:F2}, p99 {v[(int)(v.Length * 0.99)]:F2}, max {v[^1]:F2} ms";
+        Console.WriteLine($"frame times over {t.Length} frames: {Stats(Sorted(x => x.Frame))}; {t.Count(x => x.Frame > 20)} over 20 ms");
+        Console.WriteLine($"  CPU work (frame start to submit, less the swapchain wait): {Stats(Sorted(x => x.Work))}");
     }
 
     /// <summary>
@@ -1002,10 +1061,14 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
             FrameNumber++;
             DeltaTime = (float)_frameTimer.Elapsed.TotalSeconds;
+            if (RecordFrameTimes)
+                _frameTimes.Add((DeltaTime * 1000, _workMs));
+            _waitMs = _workMs = 0;
             FrameTime = DeltaTime * 1000.0f; // Convert to milliseconds
 
             Profiler.HeartBeat(); // Frame boundary marker for Tracy
         }
+        ReportFrameTimes();
     }
 
     /// <summary>
@@ -1187,7 +1250,10 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
         using (new ProfileScope("Wait Swapchain", ZoneC.PURPLE))
         {
-            if (!SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, _window, &swapchainTexture, null, null))
+            _waitTimer.Restart();
+            bool acquired = SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, _window, &swapchainTexture, null, null);
+            _waitMs = (float)_waitTimer.Elapsed.TotalMilliseconds;
+            if (!acquired)
             {
                 Console.Error.WriteLine($"Failed to acquire swapchain texture: {SDL_GetError()}");
                 SDL_SubmitGPUCommandBuffer(commandBuffer);
@@ -1221,6 +1287,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
         using (new ProfileScope("DrawImGui", ZoneC.PURPLE))
             DrawImGui(commandBuffer, swapchainTexture, drawData);
 
+        _workMs = (float)_frameTimer.Elapsed.TotalMilliseconds - _waitMs;   // the CPU's part, before any blocking in submit
         // Submit (a capture frame records its capture first, then submits and waits): the command line's screenshot,
         // or a scene's export (FrameCapture), always with the UI
         if (_screenshotFrame >= 0 && (int)FrameNumber >= _screenshotFrame && !_screenshotTaken)

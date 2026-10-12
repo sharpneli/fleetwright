@@ -19,6 +19,7 @@ public static unsafe class Program
         var start = Sim.Core.WorldTime.FromUtc(1916, 5, 31, 14, 0);
         double? startSpeed = null;
         bool startPaused = false;
+        bool frameTimes = false;
 
         foreach (string arg in args)
         {
@@ -86,6 +87,10 @@ public static unsafe class Program
                 if (double.TryParse(arg.Substring("-speed=".Length), System.Globalization.CultureInfo.InvariantCulture, out double sp))
                     startSpeed = sp;
             }
+            else if (arg == "-frametimes")   // report the frame times at exit
+            {
+                frameTimes = true;
+            }
             else if (arg == "-paused")   // the world starts paused
             {
                 startPaused = true;
@@ -144,6 +149,7 @@ public static unsafe class Program
             if (width > 0)
                 engine.SetWindowSize(width, height);
             engine.Init();
+            engine.RecordFrameTimes = frameTimes;
 
             // Configure screenshot if requested
             if (input != null)
