@@ -36,9 +36,12 @@ public sealed class Handling
     /// the power fixed and P ∝ U³, it loses the fraction f of speed when (1 - f)³·(1 + g) = 1.</summary>
     public double TurnDragFactor { get; }
 
+    readonly double crossover;   // the speed below which the bollard cap, not eta P / U, limits thrust: eta / bollard, m/s
+
     public Handling(ShipClass c, SimSettings s)
     {
         var m = c.Motion;
+        crossover = s.PropulsiveEfficiency / s.BollardThrustPerWatt;
         Class = c;
         LengthM = m.LengthM;
         MassKg = m.FullDisplacementT * 1000 * (1 + s.AddedMassFraction);
@@ -58,11 +61,35 @@ public sealed class Handling
     /// <summary>The shaft power the hull needs at a speed through the water, watts (either way: astern as ahead).</summary>
     public double PowerAtW(double speedMs) => Class.PowerAt(Math.Abs(speedMs) / MsPerKnot) * WattsPerShp;
 
-    /// <summary>The power ordered for a speed, watts: what holds it straight ahead, within what the plant makes;
-    /// negative astern.</summary>
+    /// <summary>The power ordered for a speed, watts: what holds it straight ahead under the step's forces, within what
+    /// the plant makes; negative astern. Above the bollard crossover that's the hull's own curve; below it the thrust
+    /// per watt is capped, so holding the speed takes more (the engines turn faster for it, as a real ship's would).</summary>
     public double PowerFor(double kn) => kn >= 0
-        ? Math.Min(Class.PowerAt(kn) * WattsPerShp, MaxPowerW)
-        : -Math.Min(Class.PowerAt(-kn) * WattsPerShp, AsternPowerW);
+        ? Math.Min(HoldingPowerW(kn * MsPerKnot), MaxPowerW)
+        : -Math.Min(HoldingPowerW(-kn * MsPerKnot), AsternPowerW);
+
+    /// <summary>The power that holds a speed straight ahead under the step's forces, watts.</summary>
+    public double HoldingPowerW(double speedMs) => PowerAtW(speedMs) * Math.Max(1, crossover / Math.Max(speedMs, 1e-9));
+
+    /// <summary>The speed a power holds straight ahead under the step's forces, m/s: <see cref="HoldingPowerW"/>'s
+    /// inverse (it rises), by bisection; nothing allocated.</summary>
+    public double SteadySpeedMs(double powerW)
+    {
+        if (powerW <= 0)
+            return 0;
+        double lo = 0, hi = Class.PowerCurveKn[^1] * MsPerKnot;
+        if (HoldingPowerW(hi) <= powerW)
+            return hi;
+        for (int k = 0; k < 60; k++)
+        {
+            double mid = 0.5 * (lo + hi);
+            if (HoldingPowerW(mid) < powerW)
+                lo = mid;
+            else
+                hi = mid;
+        }
+        return 0.5 * (lo + hi);
+    }
 
     /// <summary>The rudder's effect for its angle: hard over gives its full effect, less gives more than its share
     /// (δ_eff/δmax = x(2 - x), x = |δ|/δmax: 15° of 35° turns in 1.53 times the hard-over circle, 25° in 1.15, near

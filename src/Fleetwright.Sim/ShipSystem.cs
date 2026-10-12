@@ -356,7 +356,7 @@ public sealed class ShipSystem : IWorldSystem
     }
 
     /// <summary>The speed a ship's power holds it at, m/s.</summary>
-    static double SteadySpeed(ShipState s) => s.Handling.Class.SpeedAt(s.Power / Handling.WattsPerShp) * Handling.MsPerKnot;
+    static double SteadySpeed(ShipState s) => s.Handling.SteadySpeedMs(s.Power);
 
     public void Hash(ref StateHash h)
     {

@@ -855,6 +855,12 @@ Built:
     Within `PolarCapDeg` (89°) a held course now means steering straight on: the helmsman takes his course from the
     heading, and rails run on the great circle. Entering and leaving the cap on rails are events, solved in closed
     form. A ship leaving holds the heading it leaves with.
+  - **Slow ships never went on rails (still 42k×, the user: one ship placed, one right-click).** Below the bollard
+    crossover (η / bollard thrust per watt, ~11.7 kn) the thrust cap holds a ship short of the speed the hull's
+    curve gives for the power rung: placed at 10 kn, it settled at 9.44 kn and never counted as steady. Ringing a
+    speed now sets the power that holds it under the step's own forces (`Handling.HoldingPowerW`). A power's settled
+    speed solves the same balance (`SteadySpeedMs`), so the order, the physics and the rails check agree. The dev
+    ships ran at 15 kn, above the crossover, which is why it hadn't shown.
   - **Measured:** 4 ships in a group at 1M× in the app run at 1,001,052× achieved. A course of 020° from 86.5°N on
     rails and on the fine tick both cross the pole and end 201 m apart a day later.
   - **Left:** a ship following another on its own (not in a group) goes on rails at its own steady speed, a tenth
@@ -979,6 +985,9 @@ the designer" (step 2.2), not here.
 - **Turns in succession** (2.4): in line ahead each ship follows the one before it, so it cuts the corner a little
   rather than turning at the guide's turning point.
 - **Collision avoidance** (2.3b): none yet. Collisions are in the module's era list.
+- **Slow ships settle slowly** (found in 2.5): at 5 kn a turn and the speed's recovery take most of an hour before
+  the 0.1 kn rails tolerance is met (the net force is small at low speed). A tolerance relative to the speed, or one
+  that's looser once the swing has stopped, would rail slow ships sooner.
 - **The follow and station behaviour's numbers** (`Follow*` in `SimSettings`, 2.3b): the look-ahead, the closing
   time, the most over or under the leader's speed.
 

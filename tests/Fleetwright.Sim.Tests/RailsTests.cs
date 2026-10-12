@@ -50,6 +50,25 @@ public class RailsTests(ITestOutputHelper output)
         Assert.Equal(30, Ship(w, 1).HeadingDeg, 1);
     }
 
+    [Theory]
+    [InlineData(5)]
+    [InlineData(10)]
+    [InlineData(18)]
+    public void A_ship_placed_slow_and_steered_makes_its_speed_and_goes_on_rails(double kn)
+    {
+        // as the map does it: placed at a speed, then a right-click (the route cleared, a course). Below the bollard
+        // crossover (~11.7 kn) the power for a speed once came from the hull's curve alone, the thrust cap kept the
+        // ship short of it, it never counted as steady and the fine tick ran for ever (42k x at most, the user)
+        var (w, c) = Make();
+        w.Apply(ShipSystem.Spawn(c, Lat, Lon, 0, kn));
+        Run(w, 7.5);
+        w.Apply(ShipSystem.ClearRoute(1));
+        w.Apply(ShipSystem.Course(1, 237.3));
+        Run(w, 60 * 60);   // slow ships turn and settle slowly: at 5 kn the turn alone takes ~8 minutes
+        Assert.True(Ship(w, 1).OnRails, $"{kn} kn: still on the fine tick at {Ship(w, 1).Speed / Handling.MsPerKnot:F2} kn");
+        Assert.Equal(kn, Ship(w, 1).Speed / Handling.MsPerKnot, 2);
+    }
+
     /// <summary>The same orders with rails and without: where the ship ends up.</summary>
     static (Vec3d Rails, Vec3d Fine) Both(Action<World, int> orders, double seconds)
     {
