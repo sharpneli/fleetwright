@@ -80,6 +80,7 @@ public sealed class GroupSystem : IWorldSystem
         readonly List<int> members = [];
         readonly List<Detachment> detached = [];
         readonly List<int> line = [];
+        internal GroupSystem? Owner;   // a force asks it which of its groups have anyone in line
         public IReadOnlyList<int> Members => members;
 
         /// <summary>The members in the formation, in order: the guide first.</summary>
@@ -126,12 +127,35 @@ public sealed class GroupSystem : IWorldSystem
             Relink();
         }
 
-        void Relink()
+        /// <summary>The line again from the members: those not detached, and in a force only groups with anyone in
+        /// their own line (a squadron whose every ship is out of it isn't in its force's line, so it doesn't guide it).
+        /// Whether it changed.</summary>
+        internal bool Relink()
         {
-            line.Clear();
+            int n = 0;
+            bool changed = false;
             for (int i = 0; i < members.Count; i++)
-                if (detached[i] == Detachment.InLine)
+            {
+                if (detached[i] != Detachment.InLine || IsForce && Owner != null && !Owner.HasLine(members[i]))
+                    continue;
+                if (n == line.Count)
                     line.Add(members[i]);
+                else if (line[n] != members[i])
+                    line[n] = members[i];
+                else
+                {
+                    n++;
+                    continue;
+                }
+                changed = true;
+                n++;
+            }
+            if (line.Count > n)
+            {
+                line.RemoveRange(n, line.Count - n);
+                changed = true;
+            }
+            return changed;
         }
     }
 
@@ -163,6 +187,21 @@ public sealed class GroupSystem : IWorldSystem
             if (g.GroupId == groupId)
                 return g;
         return null;
+    }
+
+    /// <summary>Whether a group has anyone in its line.</summary>
+    bool HasLine(int groupId) => Get(groupId) is { } g && g.Line.Count > 0;
+
+    /// <summary>Every force's line again, after its groups' lines changed (as deep as forces nest).</summary>
+    void RelinkForces()
+    {
+        for (bool changed = true; changed;)
+        {
+            changed = false;
+            for (int k = 0; k < groups.Count; k++)
+                if (groups[k].IsForce)
+                    changed |= groups[k].Relink();
+        }
     }
 
     /// <summary>Whether a ship is in a squadron's line: a member, not detached.</summary>
@@ -340,6 +379,12 @@ public sealed class GroupSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
+        Change(world, c);
+        RelinkForces();
+    }
+
+    void Change(World world, in Command c)
+    {
         var code = (GroupCommand)c.Code;
         // what changes comes off rails whole first: the ship's unit, the group's own and its force's
         if (c.Entity != 0)
@@ -445,7 +490,7 @@ public sealed class GroupSystem : IWorldSystem
 
     Group New(bool force, Formation f, double spacing)
     {
-        var g = new Group { GroupId = nextId++, Formation = f, SpacingM = Spacing(spacing), IsForce = force };
+        var g = new Group { GroupId = nextId++, Formation = f, SpacingM = Spacing(spacing), IsForce = force, Owner = this };
         g.Name = force ? $"Force {g.GroupId}" : $"Group {g.GroupId}";
         groups.Add(g);
         return g;

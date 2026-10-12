@@ -279,9 +279,23 @@ public sealed class ShipStore
         int cap = routeCap;
         var wp = route[slot * cap + routeNext[slot]];
         PoseNow(slot, out _, out var arrived);
-        routeNext[slot]++;
-        if (routeLoop[slot] && routeCount[slot] > 1)
-            routeNext[slot] %= routeCount[slot];
+        // on to the next waypoint, past any given again where this one is (a leg of no length would be an event a
+        // millisecond, for ever round a loop); a loop all at one point ends as a route does
+        int n = routeCount[slot], k = routeNext[slot] + 1;
+        bool loop = routeLoop[slot] && n > 1;
+        for (int skipped = 0; ; skipped++, k++)
+        {
+            if (loop)
+                k %= n;
+            if (k >= n || skipped >= n)
+            {
+                k = n;
+                break;
+            }
+            if ((route[slot * cap + k] - wp).LengthSquared > 1)
+                break;
+        }
+        routeNext[slot] = k;
         if (routeNext[slot] < routeCount[slot])
         {
             next = route[slot * cap + routeNext[slot]];

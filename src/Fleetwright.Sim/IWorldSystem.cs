@@ -22,6 +22,12 @@ public interface IWorldSystem
     {
     }
 
+    /// <summary>Told when ships came off rails other than by a command (a contact): a system that watches ships on the
+    /// fine tick more often than on rails wakes on it here, as on <see cref="Applied"/>.</summary>
+    void OffRails(World world)
+    {
+    }
+
     /// <summary>Copies its part of what the screens need into a snapshot, after the world's; allocates nothing.</summary>
     void Fill(Snapshot s)
     {

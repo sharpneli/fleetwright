@@ -65,6 +65,9 @@ public sealed class AiSystem : IWorldSystem
         WakeAll(world);
     }
 
+    /// <summary>Ships came off rails (a contact): their captains and admirals think at their fine-tick rate again.</summary>
+    public void OffRails(World world) => WakeAll(world);
+
     /// <summary>Schedules a layer's next think at its period now, on a grid of world time; a think already due sooner
     /// stands, one due later (a slow rails period, now a ship is back on the fine tick) is replaced.</summary>
     void Wake(World world, int layer)
@@ -79,6 +82,9 @@ public sealed class AiSystem : IWorldSystem
         tickGen[layer]++;
         world.Schedule(new WorldTime(next), EventTier.Fine, layer - layers.Length, Id, (ushort)layer, tickGen[layer]);   // before the ship tick, the top layer first
     }
+
+    /// <summary>When a layer (top-down: admirals 0, captains 1) next thinks, ms of world time, or -1 (tests).</summary>
+    internal long NextThinkMs(int layer) => nextTick[layer];
 
     public void Handle(World world, in SimEvent e)
     {

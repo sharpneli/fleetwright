@@ -85,6 +85,13 @@ public sealed class World
         scheduler.Push(time, tier, entity, system, code, generation, a);
     }
 
+    /// <summary>Tells every system that ships came off rails (<see cref="IWorldSystem.OffRails"/>).</summary>
+    internal void OffRails()
+    {
+        foreach (var s in systems)
+            s.OffRails(this);
+    }
+
     /// <summary>Applies a command at the current time and logs it: an input from outside (a player, a host).</summary>
     public void Apply(in Command c)
     {

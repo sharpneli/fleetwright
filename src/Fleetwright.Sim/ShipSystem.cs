@@ -267,7 +267,10 @@ public sealed partial class ShipSystem : IWorldSystem
         else
             any = DerailSlot(Store.SlotOf(entity));
         if (any)
+        {
             EnsureTick(world);
+            world.OffRails();   // whoever watches them on the fine tick wakes (a contact isn't a command)
+        }
     }
 
     bool DerailSlot(int slot)
