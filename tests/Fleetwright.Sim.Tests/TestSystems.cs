@@ -23,7 +23,7 @@ sealed class Metronome : IWorldSystem
         rng = world.Stream("metronome");
         period = periodMs;
         id = world.Register(this);
-        world.Schedule(world.Time + period, EventTier.Ships, 1, id, Tick, generation);
+        world.Schedule(world.Time + period, EventTier.Fine, 1, id, Tick, generation);
     }
 
     public void Handle(World world, in SimEvent e)
@@ -40,7 +40,7 @@ sealed class Metronome : IWorldSystem
         Sum += rng.NextDouble();
         if (rng.NextInt(10) == 0)   // something else at this very moment, in another tier and for another entity
             world.Schedule(world.Time, (EventTier)rng.NextInt(4), rng.NextInt(3), id, Echo, 0, rng.NextInt(100));
-        world.Schedule(world.Time + period, EventTier.Ships, 1, id, Tick, generation);
+        world.Schedule(world.Time + period, EventTier.Fine, 1, id, Tick, generation);
     }
 
     public void Apply(World world, in Command c)
@@ -49,7 +49,7 @@ sealed class Metronome : IWorldSystem
         {
             period = c.A;
             generation++;
-            world.Schedule(world.Time + period, EventTier.Ships, 1, id, Tick, generation);
+            world.Schedule(world.Time + period, EventTier.Fine, 1, id, Tick, generation);
         }
         else
             Sum += c.X;

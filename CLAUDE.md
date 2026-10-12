@@ -257,7 +257,8 @@ Namespaces follow the project names: `Fleetwright`, `Fleetwright.Gpu`, `Fleetwri
 The sim's layers are projects, so the compiler keeps their direction: `Fleetwright.Sim.Core` references nothing,
 `Fleetwright.Sim.Ships` references Core and `Fleetwright.Shipgen` (the only sim layer that does), the world
 (`Fleetwright.Sim`) references Core and `Fleetwright.Sim.Combat` (ships at sea, step 2.2), which references Core
-and Ships. Every ship in the world is fully simulated; "tactical" is only a zoom band of the map. The world
+and Ships. Zoom bands (the map's Globe ... Tactical, Ship: drawing only) and clock tiers (the sim's Routine, Rails,
+Coarse, Fine: how time advances) are different things (`docs/world/architecture.md` "Terms"). The world
 rests its clock only on a moment's boundary, so commands replay exactly; a world system is an `IWorldSystem` with its
 events as plain structs, and nothing in a step allocates (the tests check it).
 

@@ -32,7 +32,7 @@ The Bismarck chase ran 24-27 May 1941 over ~1,500 nm. A mission like it needs:
   with orders (a destination, evade contact, fight if cornered), not a target that waits.
 - **Reports that arrive:** shadowing cruisers' signals, an aircraft's sighting, a D/F bearing. Until aircraft are in
   the sim, a mission's **scripted reports** stand in for them (at a time, or on a condition, with an error).
-- **A fight worth having at the end:** the tactical tier at Full, the damage model, flooding, a jammed rudder.
+- **A fight worth having at the end:** the fine clock tier at Full, the damage model, flooding, a jammed rudder.
 - **An ending:** objectives met or failed, a time limit (Luftwaffe cover, the fuel of the hunters).
 
 ## A mission, as data

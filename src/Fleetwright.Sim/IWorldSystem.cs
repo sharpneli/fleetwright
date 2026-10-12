@@ -2,7 +2,7 @@ using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim;
 
-/// <summary>A part of the world with events and commands of its own (later: rails, the tactical tier, encounters).
+/// <summary>A part of the world with events and commands of its own (the ships in the fine clock tier; later: rails, encounters).
 /// Registered once with <see cref="World.Register"/>, which gives it the id its events and commands carry. It's
 /// called only from the thread advancing the world, and allocates nothing in either call.</summary>
 public interface IWorldSystem

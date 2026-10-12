@@ -9,6 +9,10 @@ Each step is its own session and starts with an investigation of its own: read t
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
 changed from the plan). Steps 1.1 to 1.4, 2.1 and 2.2 are done (2026-10-12); the next is 2.3a, one ship on the map.
 
+**Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
+tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
+(`docs/world/architecture.md` "Terms"). "Tactical" alone means the zoom band; the clock tier is Fine.
+
 ## What the battle module is
 
 **The battle module is a deliverable, not a part of the code.** When it's done, the game's whole ship simulation is
@@ -30,9 +34,9 @@ missions on top (`docs/world/architecture.md` "The pieces and where they live").
 - **A world:** the planet as a sphere at real scale, all sea at first, then the user's Earth model with land, ports
   and routing. One clock, from paused to ~30,000x, dropping by the player's rules when something needs them.
 - **Ships that move:** many ships of many designs, each compiled once to a `ShipClass`. They steam with real turning
-  circles and acceleration, in groups and formations, on routes. Every ship is fully simulated (the ships are the
-  world's gold standard; 2.2). The map's tiers (ships, ship icons, fleet icons) are only how they're drawn at each
-  zoom.
+  circles and acceleration, in groups and formations, on routes. Ships far from anything are on rails, and ships
+  near something, or watched, are in the fine clock tier (every ship at 1x). The map's zoom bands only change how
+  they're drawn ("Terms" below).
 - **Seeing and knowing:** contacts and encounters, sighting (horizon, weather, night), and each navy's picture. The
   player sees what their navy knows.
 - **Fighting:** fire control, guns and shells, torpedoes, mines, collisions, the hit query, penetration, damage,
@@ -248,7 +252,7 @@ final: routes are legs between waypoints, and line of sight and the contact scan
     sensitive.
   - The snapshot: preallocated, triple-buffered, swapped lock-free (an index and a fresh bit). In 1.1: the clock, a
     sequence number, the sun, speed asked and achieved, paused, and the sim thread's own allocated bytes (so "no GC
-    in play" can show live in F2). Tactical interpolation (2.3) puts both poses in one snapshot, so three buffers
+    in play" can show live in F2). Drawing ships in the fine tier (2.3) may put both poses in one snapshot, so three buffers
     stay enough.
   - A world state hash (64-bit, over all state) for the determinism tests now and saves and replays later.
 - **The sim thread:** waits on a signal instead of spinning, advances toward its target and never past it, publishes
@@ -275,7 +279,7 @@ Tests:
   clock 1 ms after it. Two deliberately broken versions of the rule (resting mid-moment, running the events at the
   target) each fail `Commands_where_a_sliced_run_rests_replay_exactly`.
 - **World systems** are `IWorldSystem`s, registered in order (ids from 1; 0 is the world). Events and commands are
-  plain structs with a system and a code; tiers at equal times run World, Rails, Coarse, Tactical. Cancelling is by
+  plain structs with a system and a code; clock tiers at equal times run World, Rails, Coarse, Fine (then called Tactical). Cancelling is by
   generation, as planned.
 - **The snapshot** holds the clock and target, the sun, speed asked and achieved, paused, the sim thread's allocated
   bytes and a crash's error. `SimHost` measures the achieved speed over 0.25 s windows of wall time.
@@ -477,16 +481,14 @@ Nothing in it allocates per query, and nothing writes to a class once it's made.
 - Every golden build that builds (over 320) compiles. The world doesn't reference `Ships` yet; 2.2's `Combat` does.
 
 **2.2 Ships on the sphere.** `ShipState`'s pose, made and dropped per entity ("Full state is made and dropped per
-entity", architecture). Every ship moves at the fixed ship tick: acceleration and turning from the class. Commands: a
+entity", architecture). Movement in the fine clock tier at the fixed tick: acceleration and turning from the class. Commands: a
 course, a speed, a route of waypoints.
 
-**Ships are the world's gold standard (the user, 2026-10-12).** Tiers are UI: how the map draws things at a zoom so it
-doesn't clutter, never a state of the sim, and not a way to run compressed time either. "Tactical" is a zoom band of
-the map. The world simply has ships, and at 1x every ship is fully simulated (merchants on their routes are the one
-exception, later). Groups and fleets are formed from ships. The map's symbols at each zoom are derived from them too:
-ships become icons zoomed out, and then fleet icons replace those. Nothing above a ship is a thing of its own in the
-sim. The one link to time: zooming into a combat leaves the coarse view, which naturally limits how much time
-compression can be used.
+**Ships are the world's gold standard (the user, 2026-10-12).** The world simply has ships. Groups and fleets are
+formed from them, and the map's symbols at each zoom band are derived from them: ships become icons zoomed out, and
+fleet icons replace those. Zoom bands are UI only; clock tiers are how time runs. The two are different things
+("Terms" below). At 1x every ship is in the fine clock tier (merchants on their routes are the exception, later).
+Zooming into a combat keeps it in the fine tier, which naturally limits time compression.
 
 **Done (2026-10-12):**
 - **`Fleetwright.Sim.Combat`** (new; references `Core` and `Ships`):
@@ -498,7 +500,7 @@ compression can be used.
   - `ShipSystem`, registered first by every `World` (id 1), holds the classes, the store, the commands and the ship
     tick (`ShipTickMs`, 50 ms, on a grid of world time). It schedules nothing while there are no ships.
   - Entity ids are given in spawn order. A ship spawned between ticks moves only the time it was there.
-  - `EventTier.Tactical` is now `EventTier.Ships`.
+  - The clock tier `EventTier.Tactical` is now `EventTier.Fine`, so "tactical" means only the zoom band.
 - **Turning:** Nomoto first order (`T·dr/dt + r = K·δ`, `T = T'·L/U`, exact over the step), with the rudder at its
   gear's rate.
   - K comes from the tactical diameter: steady radius 0.45 TD at hard over.
@@ -545,7 +547,7 @@ compression can be used.
     - Destroyers make 90° in 50-62 s, against 53-72 s.
     - Speed lost in a hard turn is 25-34%.
   - **The tick:** 4 minutes of a hard turn and a slow-down is 1 m off a 10 ms track at 50 ms, 6 m at 250 ms and
-    24 m at 1 s. So the tick could grow when the tactical numbers ask for it.
+    24 m at 1 s. So the fine tick could grow when the numbers ask for it.
   - **The helmsman** comes to a new course 90° away with no overshoot (bismarck, destroyer, pt_boat, dreadnought).
   - **Speed:** 0 -> 90% of full takes 266 s for bismarck and 76 s for the destroyer. With engines stopped, bismarck
     loses 40% of its speed in 133 s.
@@ -660,16 +662,15 @@ a course, follow, run (stage 2).
 **2.4 Groups and formations.** Groups with a leader and stations; one order moves the group; keeping station is the
 first captain behaviour.
 
-**2.5 Time compression: rails.** At 1x every ship is fully simulated (2.2). Rails are a speed-up for compressed time,
-not a different game: under compression, ships with nothing near them go on rails (great-circle legs, events at the
-waypoints) and come back to full simulation when something needs them. The speed is clamped by what the fully
-simulated ships cost, and rails ships are drawn exactly from their tracks. Tests:
+**2.5 Time compression: the rails clock tier.** Ships with nothing near them go on rails (great-circle legs, events
+at the waypoints) and come back to the fine tier when something needs them. The speed is clamped by the costliest
+live clock tier, and rails ships are drawn exactly from their tracks. Tests:
 - 2,000 ships for a game year, headless, in seconds;
-- a ship that goes rails -> full -> rails ends where an all-full run puts it, within the rails' instantaneous
-  turns;
+- a ship that goes rails -> fine -> rails ends where an all-fine run puts it, within the rails tier's
+  instantaneous turns;
 - the same run twice is bit-identical.
 
-**2.6 Scale: the Jutland test.** 250 ships of ~55 classes, loaded, steaming in formation, fully simulated, drawn
+**2.6 Scale: the Jutland test.** 250 ships of ~55 classes, loaded, steaming in formation in the fine tier, drawn
 at every zoom, with some hundreds more on rails. Measure load time, tick cost, frame time and VRAM against the targets
 in "How many ships". Then do what the numbers ask for: the art disk cache, coarse mips first, the job system (the
 architecture's own step: fixed workers, struct jobs, with the test that results don't depend on the thread count).
@@ -679,7 +680,7 @@ architecture's own step: fixed workers, struct jobs, with the test that results 
 **3.1 Contacts and encounters.**
 - The contact scan and the exact crossing times.
 - Relations as a war/peace table.
-- Encounters opening, merging and closing; their ships kept fully simulated whatever the speed.
+- Encounters opening, merging and closing; their ships held in the fine tier.
 - Speed drops by the player's interest table.
 
 **3.2 Sighting and pictures.**
@@ -732,15 +733,15 @@ and ramming, damage from where the stems struck.
 - **Fields** are static areas on the sphere with a density, a depth and an owner. They're laid by a mission's file or
   by minelayers at sea (mine stowage and rails are a shipgen export item, `docs/shipgen/TODO.md`), and thinned by
   sweepers.
-- **Crossing a field is an event, in every tier.** Fields are static, so a rails leg that crosses one is solved when
-  the leg is anchored, as land will be. A ship steaming at 30,000x hits a mine at the right moment without going
-  tactical. The chance per crossing comes from the density, the ship's draught and beam against the mine's depth,
+- **Crossing a field is an event, in every clock tier.** Fields are static, so a rails leg that crosses one is solved when
+  the leg is anchored, as land will be. A ship steaming at 30,000x hits a mine at the right moment without going into
+  the fine tier. The chance per crossing comes from the density, the ship's draught and beam against the mine's depth,
   and the seeded stream.
 - **Knowledge:** a navy knows its own fields. It learns the enemy's from losses, sweeping and intelligence, as
   entries in its picture, and orders route around what it knows.
 - **The hit** is an underwater explosion at a point on the hull, into the same damage as a torpedo.
 
-**4.8 The coarse tier,** for damaged ships after a fight: still flooding, or burning, while the clock is compressed.
+**4.8 The coarse clock tier,** for damaged ships after a fight: still flooding, or burning, while the clock is compressed.
 
 ### 5. Command
 
@@ -926,7 +927,7 @@ each may use the ones above it in this list, never the ones below:
 Fleetwright.Sim.Core      double vectors, the sphere (great circles, frames), world time, SimSettings, seeded streams
 Fleetwright.Sim.Ships     ShipClass, its compiler from Shipgen's Ship, the class registry, content hashes
 Fleetwright.Sim.Combat    ShipState and its models: movement, the hit query, damage, flooding, buoyancy, shells
-Fleetwright.Sim (World)   the world, the clock and scheduler, tiers, encounters, commands in, the snapshot out
+Fleetwright.Sim (World)   the world, the clock and scheduler, clock tiers, encounters, commands in, the snapshot out
 ```
 
 - `Ships` is pure data and compilation: no time, no world, nothing that changes. `Combat` gets time and a `dt`
@@ -940,7 +941,7 @@ Rules:
 
 - **The ship simulation lives in `Fleetwright.Sim`, in layers of its own** (above). It has no GPU, UI or engine
   dependency. `ShipClassArt` and the sprite renderer are on the exe's side and only read the sim's snapshot.
-- Combat is the ships' full simulation (`docs/world/architecture.md`): every step keeps to that doc's "What the ship
+- Combat is the fine clock tier's models (`docs/world/architecture.md`): every step keeps to that doc's "What the ship
   simulation must already respect" (world positions and time, encounters as sets of entities, `ShipState` made and
   dropped per entity, damage from a hit not a flight, sighting into a navy's picture, commands in, `SimSettings`).
 - `Hitboxes` stays the export and interchange; nothing in the sim reads it after compiling. `ShipClass` is never
@@ -1100,9 +1101,11 @@ The user's, 2026-10-12, on step 2.1:
 
 The user's, 2026-10-12, on steps 2.2 and 2.3:
 
-1. **Ships, not tiers:** "tactical" is a zoom band of the map, not a tier of the game. The ships in the world are
-   the gold standard: at 1x every ship is fully simulated (merchants' routes aside, later), and fleets and the map's
-   icons are derived from ships (step 2.2).
+1. **Ships are the gold standard; zoom bands and clock tiers are different things.** Fleets and the map's icons are
+   derived from ships. Zoom bands (Globe ... Tactical, Ship) are UI only. Clock tiers (Routine, Rails, Coarse,
+   Fine) are how time runs. At 1x every ship is in the fine tier, and zooming into a combat keeps it there, which
+   limits compression. The clock tier "Tactical" was renamed Fine so the word means only the zoom band
+   (architecture "Terms").
 2. **Speed from forces** on the class's power curve, the research's time constants as checks.
 3. **The tactical diameter comes from the designer.** Anything the sim needs from the designer that isn't there yet
    is a flagged placeholder ("Needed from the designer"), to be filled in a designer session.
@@ -1117,11 +1120,7 @@ The user's, 2026-10-12, on steps 2.2 and 2.3:
 
 ## Open questions
 
-1. **Step 2.5 and the architecture's tier table** were written with rails, routines and coarse steps as ways the
-   sim runs time. The user's correction (2026-10-12: tiers are UI only) leaves open how thousands of ships run at
-   high compression while each stays fully simulated. One way is a ship step that holds at long steps (the arc
-   integration is 24 m off at a 1 s tick, and the forces are implicit), with the step allowed by what's in view.
-   2.5 and the architecture's "Four tiers, one clock" are to be rewritten once that's settled, before 2.5.
+None now.
 
 ## Background
 

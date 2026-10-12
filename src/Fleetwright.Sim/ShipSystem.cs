@@ -16,9 +16,9 @@ public enum ShipCommand : ushort
     AddWaypoint,
 }
 
-/// <summary>The world's ships (docs/battle/plan.md step 2.2). Every ship at sea is here and fully simulated: its pose
-/// moves on the fixed ship tick (<see cref="SimSettings.ShipTickMs"/>, on a grid of world time), whatever the map shows
-/// of it. Groups, fleet symbols and the map's markers are all derived from these ships, never the other way round.
+/// <summary>The world's ships (docs/battle/plan.md step 2.2), in the fine clock tier: each pose moves on the fixed
+/// tick (<see cref="SimSettings.ShipTickMs"/>, on a grid of world time), whatever zoom band the map shows it at.
+/// Groups, fleet symbols and the map's markers are all derived from these ships, never the other way round.
 /// While there are no ships it schedules nothing, so an empty world costs nothing at any speed.
 /// <para>The world registers it first, so its id is always <see cref="Id"/>.</para></summary>
 public sealed class ShipSystem : IWorldSystem
@@ -133,7 +133,7 @@ public sealed class ShipSystem : IWorldSystem
             return;
         long tick = settings.ShipTickMs;
         nextTickMs = (world.Time.Ms / tick + 1) * tick;
-        world.Schedule(new WorldTime(nextTickMs), EventTier.Ships, 0, Id, Tick);
+        world.Schedule(new WorldTime(nextTickMs), EventTier.Fine, 0, Id, Tick);
     }
 
     public void Handle(World world, in SimEvent e)

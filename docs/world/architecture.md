@@ -8,6 +8,26 @@ it holds and gives the build order, from an empty sphere of water up. "What the 
 lists what it keeps to so the rest can follow. `docs/battle/plan.md` "The world" settled the geometry (one sphere,
 Earth-centred doubles, flat only locally).
 
+## Terms: zoom bands and clock tiers are different things
+
+Two unrelated ideas both used to be called "tiers", and "tactical" named one of each. They're orthogonal, so the
+docs keep them apart (the user, 2026-10-12):
+
+- **Zoom bands** are the map's, UI only: Globe, Theatre, Operations, **Tactical**, Ship (`docs/map-ui/README.md`
+  "Zoom bands"). A band is how things are drawn at a zoom so the map doesn't clutter: ships as sprites or hulls,
+  ship icons further out, fleet and cluster symbols above that. A band changes nothing in the sim. "Tactical" on its
+  own always means the zoom band.
+- **Clock tiers** are the sim's, for time: **Routine, Rails, Coarse, Fine** ("Four clock tiers, one clock" below).
+  A clock tier is how a ship's (or a group's) state advances: a schedule, an analytic track, coarse steps, or the
+  fine fixed tick with every model. **Fine** was called "Tactical" until 2026-10-12 and was renamed to end the clash.
+  In code it's `EventTier.Fine`; at equal times events run World, Rails, Coarse, Fine.
+- **Where they touch:** only through what the player watches. At 1x every ship is in the fine tier (merchants on
+  their routes are the exception, later). Zooming into a combat keeps it out of the coarse tier, in the fine one, and
+  that naturally limits how much time compression can be used. Otherwise the zoom is display only.
+- **Fidelity** (an encounter's Full or Resolved, "Conflicts" below) is a third thing again: Full runs the encounter's
+  ships in the fine clock tier, Resolved runs it in coarse steps with sampled hits.
+- **The tactical diameter** is the naval term for a ship's turning circle, unrelated to either.
+
 ## What has to hold
 
 - **One world, always alive.** The planet, its navies, ships, ports and yards exist from the start of a game to its
@@ -47,30 +67,23 @@ clock. Kerbal Space Program is the well-known prior art: craft far from the play
 time warp is only allowed while nothing needs physics, and it drops when something does. Command: Modern Operations
 does the same at sea: compression up to days, dropped on contact.
 
-### Four tiers, one clock
+### Four clock tiers, one clock
 
-**The tiers are the UI's, not the sim's (the user, 2026-10-12, corrected the same day).** A tier is how the map draws
-things at a zoom, so it doesn't clutter: ships zoomed in, ship icons further out, fleet icons above that. It isn't a
-state a ship is in and it isn't a way to run time. The world simply has ships, its gold standard, each fully
-simulated (merchants on their routes are the exception, later). Groups, fleets and the map's symbols are derived from
-the ships. The one link to time: zooming into a combat leaves the coarse view, and that naturally limits how much
-time compression can be used. Otherwise it's display only. The table and text below were written with tiers as
-parts of the sim. Where they disagree with this, this holds, and they're to be rewritten (`docs/battle/plan.md`
-"Open questions").
+Clock tiers, not zoom bands ("Terms" above).
 
 | Tier | What's in it | How it advances | Cost |
 |---|---|---|---|
 | **Routine** | In peacetime, groups on a standing routine (exercises, cruises, refits, a station's rotation) and merchants on a regular service | A schedule: a repeating program, its position and its rates (fuel, money, wear, training) all functions of time. No events inside it; only leaving or changing it is one. | Per change of routine, almost nothing |
 | **Rails** | Ships and groups in transit, at anchor, building in a yard; weather, the sun, tides of supply | Each thing is an analytic function of time from an anchor (position, forward, speed, fuel at t₀). Changes come as events, which re-anchor it. | Per event, not per tick |
 | **Coarse** | What has slow state that won't stay analytic: a damaged ship still flooding or burning in transit, repair work, a formation manoeuvring | Fixed steps of seconds to a minute, models written to be stable at that step | Per ship in it, cheap |
-| **Tactical** | Ships in an encounter (below) | The fixed battle tick (20 Hz, or larger if the analytic shells and arc motion allow) with every model | The real cost; bounds the speed |
+| **Fine** | Ships in an encounter (below), and every ship at 1x | The fixed fine tick (20 Hz, or larger if the analytic shells and arc motion allow) with every model | The real cost; bounds the speed |
 
 - **One world clock.** Every tier is on it; nothing runs on a clock of its own, so a reinforcement steaming on rails
   arrives at the battle at the right moment and causality is never in doubt.
 - **The speed the player asks for is clamped by the costliest live tier.** Routine and rails alone: as fast as
   asked, up to the cap for what's live ("Peacetime" below). A battle on: what the CPU can do (a 4 ms tick at 20 Hz
   gives ~12x). The UI shows asked and achieved.
-- **Ticks nest.** Tactical steps fall inside coarse ones, coarse ones on whole multiples, events at exact times; at
+- **Ticks nest.** Fine steps fall inside coarse ones, coarse ones on whole multiples, events at exact times; at
   equal times the order is fixed (time, tier, entity id), so the result never depends on thread timing.
 - **Rails models must be analytic or event-driven; anything else must say what step it needs.** A model that can't
   take a large step moves its ship into a finer tier while it's active (a flooding ship goes coarse until it's
@@ -81,7 +94,7 @@ parts of the sim. Where they disagree with this, this holds, and they're to be r
 
 - A leg is a great circle at constant speed: position(t) is the anchor rotated by speed·(t - t₀) / R about the leg's
   axis. A route is legs between waypoints; reaching one is an event. Turns are instantaneous on rails (at 8 game
-  minutes a frame, a 2-minute turn is invisible); the tactical tier has real turning circles.
+  minutes a frame, a 2-minute turn is invisible); the fine tier has real turning circles.
 - Fuel, stores and wear are linear in time for a leg (a rate from speed and the plant), so "fuel at t" is a formula
   and "bingo fuel" is an event solved when the leg is anchored.
 - What changes a rate (an order, a speed change, weather getting up, entering a current) is an event that
@@ -99,9 +112,9 @@ The one thing that can't be scheduled ahead by a single ship is meeting another.
   (two great circles: relative motion is near-linear over 10 minutes, a quadratic). That time is an event. At
   30,000x it's ~50 scans per real second over 2,000 groups: nothing.
 - **An encounter** opens when opposing forces come within the encounter range (beyond the longest sighting range,
-  ~50 km, so the tactical tier owns everything visible). Its ships go tactical; encounters merge when they overlap
+  ~50 km, so the fine tier owns everything visible). Its ships go into the fine tier; encounters merge when they overlap
   and close when the sides have been apart for a while. Sighting proper (who sees whom: horizon, weather, night) is
-  the tactical tier's job; the encounter range only says when to start looking carefully.
+  the fine tier's job; the encounter range only says when to start looking carefully.
 - **Speed drops are the sim's decision, at the exact event time**, not the UI's a frame later: the sim stops at the
   contact tick, sets the speed by the player's rules (pause, 1x, ...) and tells the UI. Other events can do the same
   (a ship completed, a convoy arrived, fuel low). Deterministic, and the player never overshoots a contact by 8
@@ -129,10 +142,10 @@ so that the player's time goes to research, the designer and the budget, not to 
 - **Exercises are the routine's training rate,** not fights: a gunnery program raises a crew's efficiency at a cost in
   fuel, ammunition and money, drawn from the budget. Accidents and breakdowns are events drawn from rates, from a
   seeded stream. No exercise is simulated in a finer tier unless the player opens one to watch (later).
-- **The routine cap: ~1,000,000x** (`SimSettings`), allowed while nothing is coarse or tactical and no pair can
+- **The routine cap: ~1,000,000x** (`SimSettings`), allowed while nothing is coarse or fine and no pair can
   interact. At 60 fps that's ~4.6 game hours a frame and a year in ~32 real seconds; a quiet decade is about five
   minutes of the clock running unattended. The wartime cap (30,000x) applies as soon as any pair can interact, a
-  group is on a non-routine order that can meet something, or anything is coarse or tactical.
+  group is on a non-routine order that can meet something, or anything is coarse or fine.
 - **The drop is the sim's, at the exact event,** as with contacts: tension rising or war declared drops the clock
   to the wartime cap (or pauses it), and peacetime rows in the interest table do the rest: research completed, a
   ship launched or completed, trials, the estimates debated in parliament, intelligence of a foreign ship laid down.
@@ -208,7 +221,7 @@ anything and without slowing the clock. The design splits an encounter into thre
 
 Each encounter runs at one of two fidelities, and can switch at a step boundary:
 
-- **Full:** the tactical tier: the battle tick, sighting, fire control, every shell, the damage model. It's the only
+- **Full:** the fine tier: the battle tick, sighting, fire control, every shell, the damage model. It's the only
   thing that slows the clock.
 - **Resolved:** the same encounter in coarse steps (a minute of game time, from `SimSettings`), on the job system,
   never slowing the clock. Per step:
@@ -225,7 +238,7 @@ Each encounter runs at one of two fidelities, and can switch at a step boundary:
   sails home with the same condition tables (a flooded cell, a turret out) it would have had in a full one, and the
   player meets it in port or promotes the fight halfway and sees the holes. The cost scales with hits, not ticks: a
   2-hour fight is ~120 steps, and at 30,000x it's over in a quarter of a real second on one job.
-- **Calibrated against Full:** the full tactical tier runs headless, so the resolver is tuned by running the same
+- **Calibrated against Full:** the full fine tier runs headless, so the resolver is tuned by running the same
   scenarios thousands of times both ways and comparing outcomes (hits, sinkings, duration). That's a test, kept: a
   change to either one that moves them apart fails it.
 - **Switching:** promote Resolved -> Full at any step: positions and condition tables are already real; fire-control
@@ -288,7 +301,7 @@ the position estimate grows with time since the last report.
 - **The NPC admiralties plan from their pictures** too, so they're fooled by the same things the player is.
 - **An encounter far away reaches the player as a dispatch** when someone could have reported it (a wireless signal,
   a survivor, a neutral port), not when it happened.
-- Inside an encounter, the tactical tier's sighting feeds the pictures of the navies taking part.
+- Inside an encounter, the fine tier's sighting feeds the pictures of the navies taking part.
 - A picture is world state like any other: saved, deterministic, updated by events.
 
 ### NPC navies are command sources
@@ -336,7 +349,7 @@ Fleetwright.Shipgen      Design -> Ship (hitboxes, report)                    un
 Fleetwright.Sim          the world; no GPU, no SDL, no ImGui; deterministic; headless tests and a CLI
   World                  the one root: clock, stores, registries; written only by the sim thread
     Clock                world time as a long (ms since an epoch), the asked speed, the cap for what's live, pause
-    Scheduler            the event queue (time, tier, id ordered) and the coarse and tactical steppers
+    Scheduler            the event queue (time, tier, id ordered) and the coarse and fine steppers
     Earth                the sphere maths (double vectors, great circles, local frames), later the Earth model:
                          land, the sea graph for routing, ports; the sun and moon as functions of time
     Navies, Fleets       factions; groups with orders, routines (schedules) and routes (rails tracks)
@@ -360,7 +373,7 @@ Fleetwright (exe)        the app: engine, scene stack, screens, renderers
   dev scenes             the viewers and SceneSwitcher, unchanged, for shipgen work
 ```
 
-This replaces the battle plan's open question 2 (a `Fleetwright.Battle` project): the battle is the tactical tier of
+This replaces the battle plan's open question 2 (a `Fleetwright.Battle` project): the battle is the fine tier of
 `Fleetwright.Sim`, and `ShipClass` / `ShipState` live there. The list above is what the world holds. How the code is
 layered inside the project (`Core`, `Ships`, `Combat`, then the world on top, one direction of dependency) is in
 `docs/battle/plan.md` "Inside `Fleetwright.Sim`".
@@ -381,14 +394,15 @@ layered inside the project (`Core`, `Ships`, `Combat`, then the world on top, on
   the encounters, the clock, and events for the UI (a contact, a ship completed). 2,000 ships is about 100-200 KB.
   Renderers read only the snapshot, never `World`.
 - **Rails ships draw exactly, not interpolated:** the snapshot carries their track, and the renderer evaluates it at
-  the render time, as it does shells. Tactical ships are interpolated between the last two snapshots.
+  the render time, as it does shells. Ships in the fine tier are carried on from their last tick along their arc
+  (`docs/battle/plan.md` step 2.2).
 - **Deep looks (a ship's damage tables in a report screen)** go through a watch list: the UI says which ships it's
   showing, and the sim copies their full state into the snapshot. Nothing on the UI side holds a reference into the
   world.
 - **Threaded throughout (agreed):** the sim thread from the start, and the job system (later, in the battle module's
   scale step) under it
   for everything that's per ship, per group or per encounter: rails events in a batch, contact scans, the resolved
-  encounters, the tactical tier's models. Work is split so results don't depend on the thread count.
+  encounters, the fine tier's models. Work is split so results don't depend on the thread count.
 - **No magic values (agreed):** the encounter range, the scan interval, the tick sizes, the tiers' steps and every
   other tuning number live in one central settings table (`SimSettings`, loaded from data), never inline in the code.
 
@@ -418,17 +432,17 @@ layered inside the project (`Core`, `Ships`, `Combat`, then the world on top, on
 ### Time, in numbers
 
 - World time is a `long` of milliseconds since an epoch (1850-01-01 UTC, say): exact, ordered, no drift over a
-  century of game; ticks are whole milliseconds (50 ms tactical). Converted to seconds as double only inside models.
+  century of game; ticks are whole milliseconds (50 ms in the fine tier). Converted to seconds as double only inside models.
 - 30,000x at 60 fps: 8 game minutes a frame. 2,000 groups with a waypoint every few hours is ~4,000 events per real
   second, plus the contact scans: well under a millisecond.
 - 1,000,000x at 60 fps (peacetime, routines): ~4.6 game hours a frame, 11.6 game days a real second. Routines raise
   no events inside their programs, so the cost is the changes of routine, refits, launches and research: a few
   hundred events a real second, and no contact scan at peace. On rails at this speed the same 2,000 groups would be
   ~140,000 waypoint events a second; that's why peace is routines, not rails.
-- A battle at 20 Hz with a 4 ms tick runs at up to ~12x; analytic shells and arc motion may let the tactical tick
-  grow to 0.25-1 s, which multiplies that. Decide in the tactical tier's step, by checking results don't change with
+- A battle at 20 Hz with a 4 ms tick runs at up to ~12x; analytic shells and arc motion may let the fine tick
+  grow to 0.25-1 s, which multiplies that. Decide in the fine tier's step, by checking results don't change with
   the tick.
-- **Models in the tactical tier run at their own rates,** on whole multiples of the tick (from `SimSettings`): pose
+- **Models in the fine tier run at their own rates,** on whole multiples of the tick (from `SimSettings`): pose
   every tick, sighting and fire-control solutions and flooding at about 1 Hz, shells and damage on events. That's
   what keeps a few hundred ships at Full inside a tick (`docs/battle/plan.md` "How many ships").
 
@@ -473,7 +487,7 @@ brings it, inside the battle module if it's ready by then.
 
 1. **Threaded throughout:** the sim on its own thread from the start, a job system under it (its own step).
 2. **The project is `Fleetwright.Sim`.**
-3. **Time:** ms since 1850, 50 ms tactical ticks; the rendering interpolates for display.
+3. **Time:** ms since 1850, 50 ms fine ticks; the rendering interpolates for display.
 4. **The encounter range (~50 km) and scan interval (10 min)** are starting values, in the central `SimSettings`
    with every other tuning number; no magic values in the code.
 5. **What drops the speed is user-configurable** (the interest table in "Conflicts").
@@ -506,7 +520,7 @@ ship simulation keeps to these from its first step:
 - **Full state is made and dropped per entity:** `ShipState` can be created for a ship already at sea (a merchant
   engaged, a ship joining) and a light entity can come back from it. Spawning isn't only "at the start of a battle".
 - **Damage takes a hit, not a shell flight:** the hit query and damage model take a hit (a point, a direction, a
-  shell type and its striking velocity) from whatever made it, the tactical shells or the resolver's sample. Shell
+  shell type and its striking velocity) from whatever made it, the fine tier's shells or the resolver's sample. Shell
   flight is one source of hits.
 - **Sighting writes to a navy's picture,** never to a global "visible" flag; fire control aims at a contact from the
   picture, not at the entity's true position.

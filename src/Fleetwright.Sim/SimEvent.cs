@@ -2,14 +2,16 @@ using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim;
 
-/// <summary>What kind of work an event is: at equal times, events run in this order (docs/world/architecture.md,
-/// "Four tiers, one clock"). <see cref="Ships"/> is the ships' fixed tick: every ship at sea, fully simulated.</summary>
+/// <summary>The clock tier an event belongs to: at equal times, events run in this order (docs/world/architecture.md,
+/// "Four clock tiers, one clock"). Clock tiers are how the sim advances things; they have nothing to do with the
+/// map's zoom bands ("Terms" there). <see cref="Fine"/> is the fixed fine tick with every model (it was called
+/// Tactical, which now means only the zoom band).</summary>
 public enum EventTier : byte
 {
     World,
     Rails,
     Coarse,
-    Ships,
+    Fine,
 }
 
 /// <summary>Something that happens at a moment: plain data, so it saves, and no delegate, so it doesn't allocate.
