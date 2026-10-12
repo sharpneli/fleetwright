@@ -870,6 +870,15 @@ Built:
   - the coarse clock tier (4.8), and routines (peace);
   - the contact scan that takes ships off rails when they meet (3.1);
   - land on routes (rails don't check for it, by design: routing will).
+  - **Fast turns for formations on rails** (the user, 2026-10-12). Today any order to a group takes it off rails, and
+    the turn plays out on the fine tick: minutes of manoeuvre, the members reforming, then the settle before the
+    rails check passes again. At high compression that is where the clock goes. Instead, a group on rails that turns
+    (a course order to its guide, or a waypoint on its route) should stay on rails and turn abruptly: the guide's leg
+    ends and the next begins at the turn, and every member jumps to its station on the new heading at that moment.
+    No-one watches a formation at 100k× closely enough to see it snap, and the error is minor (the turn's advance and
+    transfer, a few hundred metres, and the members' minutes of reforming). A single ship's route turns on rails are
+    already instantaneous at the waypoints, so this is the same idea for a group. It applies only where rails do: a
+    group near anything (the contact scan, 3.1) is on the fine tick and turns properly.
 
 **2.6 Scale: the Jutland test.** 250 ships of ~55 classes, loaded, steaming in formation in the fine tier, drawn
 at every zoom, with some hundreds more on rails. Measure load time, tick cost, frame time and VRAM against the targets
