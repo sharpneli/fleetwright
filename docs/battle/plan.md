@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); the next is 2.6, the Jutland scale test.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); the next is 2.6, one chain of command, then 2.7, the Jutland scale test.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -159,7 +159,7 @@ view, so nothing built now has to be rebuilt for them.
 - **Drawing:** at the tactical band, 250 ships are a few pixels each (instanced, trivial). At the ship band, a few
   ships fill the screen at full resolution.
 
-**Targets (agreed 2026-10-12, measured in step 2.6 and again at the end):**
+**Targets (agreed 2026-10-12, measured in step 2.7 and again at the end):**
 - **The minimum: a Jutland at Full, butter smooth on a modern machine.** That means:
   - 60 fps at any zoom, judged by the worst frames, not the average (no frame over budget in a Tracy capture of a
     few minutes);
@@ -177,7 +177,7 @@ through index-based accessors, never its arrays' layout ("The shape"). Moving to
 ### Compiled ships on disk (before release, not now)
 
 Before release, compiled ships are kept on disk in an internal cache, so a mission or a saved world loads without
-building and drawing every class again. It isn't built yet: 2.6 measures whether the module needs it sooner. What it
+building and drawing every class again. It isn't built yet: 2.7 measures whether the module needs it sooner. What it
 will be:
 
 - **What's stored:** per design, the `ShipClass` (its arrays, which are plain int and float columns, written as they
@@ -627,7 +627,7 @@ a course, follow, run (stage 2).
   - The sun comes in each ship's own frame, per instance, for the height-map shadows.
   - Instancing is per class: one draw per class per layer (shadows, hull, turrets). A turret instance is a (ship,
     mount) pair, with the class's mount table in a buffer and its turret images in one atlas.
-  - A Jutland's 55 classes is ~165 draws, nothing for the GPU. **Texture arrays by size class wait for 2.6** and
+  - A Jutland's 55 classes is ~165 draws, nothing for the GPU. **Texture arrays by size class wait for 2.7** and
     come in if its numbers ask for them (a change from the tech-stack plan, to agree).
 - **By band** (`docs/map-ui/README.md`):
   - Globe to operations: a marker a fixed number of pixels across, pointing along the heading.
@@ -676,7 +676,7 @@ a course, follow, run (stage 2).
   - The CPU half, `ShipDrawList`, makes each ship's quads in its own frame, in metres from the eye (double on the
     CPU, so nothing jitters). They go into one storage buffer per frame.
   - One instanced draw per class and layer: the hull, the turrets' shadows and the turrets (per turret type), and
-    the sun's shadow from the height map. Texture arrays stay deferred (2.6).
+    the sun's shadow from the height map. Texture arrays stay deferred (2.7).
   - The mips are sampled by the hardware. The sun is turned into each ship's frame, and ships darken at night with
     the globe's terminator. They're depth-tested against the masking sphere, so the far side hides them.
   - Shadows only on sprites over 90 px long.
@@ -936,10 +936,106 @@ patterns.
     the fine tier doing its job. On the way, the gate's and the scan's trig and per-anchor rebuilds were taken out
     (1,000 ships for a day: the rails gate 1.47 -> 0.35 s), and the step stopped walking every slot. The suite runs
     600 ships for 2 days.
-- **Not yet:** a contact's speed drop and encounters proper (3.1); a grid on the sphere if the pair loop shows in 2.6
+- **Not yet:** a contact's speed drop and encounters proper (3.1); a grid on the sphere if the pair loop shows in 2.7
   or later numbers; tracks drawn across a snap show the members' jump as a short fan.
 
-**2.6 Scale: the Jutland test.** 250 ships of ~55 classes, loaded, steaming in formation in the fine tier, drawn
+**2.6 One chain of command.** A movement order is one thing, whoever gives it (the player, a captain, an admiral)
+and whatever it's given to (a ship, a squadron, a force of squadrons). Proposed 2026-10-12 after a review of the AI
+(the user: a unified codebase where an order to a ship is the same from the AI, the player or a waypoint; higher
+admirals will give objectives to the rear admirals of squadrons, several layers up). It comes before the Jutland test,
+which is squadrons under force commanders and should run on the chain the game ships with.
+
+*What the review found (2026-10-12):*
+- **A ship's order is already one path:** the player's `ShipSystem.Course` (`World.Apply`, logged) and a captain's
+  (`Orders`, `World.Issue`, unlogged) reach the same `ShipSystem.Apply`. But the captain's `Orders` has only
+  `Course` and `Speed`. Routes and the rudder are the player's alone, so an AI can't give a waypoint.
+- **A squadron's order isn't an order at all:** the map sends it to the guide (`MapScene.Commanded`). The admiral
+  gives the members `Station` by calling `CaptainLayer.Set` directly, not through a command, and he takes no orders
+  himself (`AdmiralLayer.Order` throws).
+- **Nobody owns a ship's helm:** a player's order to a ship with a captain is overridden within a second. A
+  `KeepCourse` captain steers back to the course he was given; `Follow`, `Station` and `Run` steer over a course or a
+  route. A follower in a group is kept from the player only by the map's routing.
+- **The admiral re-rings the player's speed:** Flank rung on a guide is cut to the group's cap at his next think,
+  after the order was given, rather than when he hands it on.
+- **Formation-keeping is in two places:** captains hold stations (`StationOf`: in column, on the ship ahead) and
+  the rails place ships (`OffsetFromGuide`: all on the guide). The physics system knows formations.
+- `KeepCourse` holds the heading the ship had when told, not its ordered course, so given mid-turn it keeps the
+  half-turned heading.
+
+*The proposal:*
+- **The chain:** the ship (helm and engines, the world's `ShipSystem`) ← its captain (one per ship) ← its squadron's
+  rear admiral (one per group of ships) ← a force's admiral (one per group of squadrons or forces, as many levels as
+  nest) ← the admiralty (later: campaign, NPC navies). Each layer turns its order into orders for the layer below
+  and never orders up or sideways. Admirals at every level are one layer, `AdmiralLayer`, thinking the tree
+  top-down, so a directive reaches the ships in the same second at any depth.
+- **One order, at every level.** A unit order is one of a small vocabulary, addressed to a unit (a ship or a group):
+  - `Course` (with a rudder limit, for hard over) and `Speed`, separate as now;
+  - `Route`: clear, waypoints, loop, as now (several commands at one moment);
+  - `Station` on a unit (astern and abeam, in its frame); `Follow` is `Station` with no abeam;
+  - `Run` from a unit.
+  
+  A unit target resolves to its guide ship. `KeepCourse` goes: it's a `Course` and a `Speed` at what's ordered now,
+  which the map can offer as a button. Higher admirals' objectives (search an area, cover, intercept, rendezvous)
+  come later (5.1) as more kinds of the same order, which turn into these.
+- **One way in:** one AI command, `Order(unit, kind, ..., source)`. The player's goes through `World.Apply` and is
+  logged; an AI layer's goes through `World.Issue` and isn't logged. Admiral to captain becomes a command too, not
+  `CaptainLayer.Set`. `ShipSystem`'s `Course`, `Speed`, `Rudder` and route commands stay as the helm, issued only by
+  captains (and tests). The map sends unit orders, never helm commands, and `Commanded` goes.
+- **Waypoints are the helm's, whoever gives them:** a squadron's `Route` goes to its guide's captain, who hands it
+  to the helm; a force's goes to its guide squadron. A player's click and an admiral's search pattern
+  (`SearchPatterns`) become the same `Route` order. The rails' waypoint events need no change.
+- **Every ship has a captain:** `CaptainOrder.None` goes. A ship the player steers has a captain holding a `Course`
+  and a `Speed`, which he gives the helm once. Only behaviours that need watching (`Station`, `Follow`, `Run`) are
+  on the think list, so 2,000 ships on passive orders cost nothing a second.
+- **Who has a unit.** Each unit holds one standing order and its source: the player, or its superior.
+  - Its superior's order replaces it, unless the player has it.
+  - The player's order to a unit takes it: it's the player's until handed back (**Resume**). Its superior's orders
+    for it are kept, not carried out, and carried out on the hand-back. The superior counts it as detached.
+  - The player's order to a squadron sets the rear admiral's order. The members stay his, so he keeps them on
+    station exactly as if a force admiral had given that order.
+  - The player's order to one ship of a squadron detaches it: it stays a member, drawn as detached, off its station,
+    and its group's rails don't carry it. **Rejoin** hands it back.
+- **Limits are applied as an order is handed down:** the rear admiral gives the guide the lesser of the speed
+  ordered and the slowest member's less the margin, and a force's admiral the least of its squadrons'. The unit
+  keeps the speed that was asked (the map shows both), and nothing is re-rung after the fact.
+- **Formations of formations:** groups nest in the world's `GroupSystem` (a group's members are ships or groups), so
+  they replay and the map draws them. A force's formation places its squadrons about its guide squadron with the same
+  four formations (a cruising disposition is columns in line abreast). Each member's station is computed once, in
+  `GroupSystem`; captains, admirals and the rails all read it.
+- **Rails ride the tree:** a force steaming steady goes on rails whole, its guide's guide on rails of its own and
+  every other ship riding it at its offset, composed down the tree. A detached ship rails on its own. The rails stay
+  a clock tier, not a command source: placing a ship sets its helm to what its captain would order (as `RailAt`
+  does now).
+- **On the world tab** (minimal; the full command UI is 5.2): a level picker on the selection strip (Ship / Squadron /
+  Force) says where orders go, along with Detached, Resume and Rejoin. The captain row keeps only the behaviours
+  (station on, follow, run from).
+
+*Tests:*
+- **The same order from any source:** a ship given a course and speed by the player, by its rear admiral (a
+  squadron of one), and by a force admiral two levels up issues the same helm commands at the same times, with the
+  same state hash.
+- A squadron ordered by the player and by its force admiral with the same order steams the same tracks.
+- A route from the player's clicks and from an admiral's search pattern steams the same.
+- **Ownership:** a player-held follower ignores its rear admiral until it's rejoined, then returns to station. A
+  `Course` given mid-turn holds the ordered course. A speed above the cap gives the guide the cap, and the order
+  shows what was asked.
+- A force of three squadrons, columns in line abreast, turns 90° and holds station on the fine tick and on rails at
+  1,000×.
+- A replay of the log gives the same hash.
+- 2,000 ships on passive orders think nothing and allocate nothing.
+- `CaptainTests`, `GroupTests`, `FormationRailsTests` and `RailsTests` pass, changed only for the new API.
+
+*Not in it:* objectives for admirals (5.1), the admiralty, captains on pictures (3.2), the full command UI (5.2).
+
+*To agree at its start:*
+1. **The player's order to a unit under an AI superior:** take it until handed back (proposed), or let the
+   superior's next order win.
+2. **The player's order to one ship of a squadron:** detach it and keep it a member (proposed), or take it out of
+   the group.
+3. **Nesting:** groups of groups in `GroupSystem` (proposed), or a separate force structure in the AI.
+4. **Order:** this before the Jutland test (proposed), or Jutland first with flat squadrons.
+
+**2.7 Scale: the Jutland test.** 250 ships of ~55 classes, loaded, steaming in formation in the fine tier, drawn
 at every zoom, with some hundreds more on rails. Measure load time, tick cost, frame time and VRAM against the targets
 in "How many ships". Then do what the numbers ask for: the art disk cache, coarse mips first, the job system (the
 architecture's own step: fixed workers, struct jobs, with the test that results don't depend on the thread count).
@@ -1015,8 +1111,9 @@ and ramming, damage from where the stems struck.
 
 ### 5. Command
 
-**5.1 Captains.** Standing orders for both sides: go to, keep station, shadow, evade, engage, break off at x% damage.
-The player's orders are the same commands.
+**5.1 Captains and admirals.** Standing orders for both sides: go to, keep station, shadow, evade, engage, break off
+at x% damage. Admirals' objectives above their squadrons: search an area, cover, intercept, rendezvous. All are more
+kinds of 2.6's unit order, through its one way in, so the player's orders are the same commands at every level.
 
 **5.2 The command UI on the map.** Orders at every band, with previews, the forces rail, edge markers and the
 selection strip (`docs/battle/command-ui.md`, `docs/map-ui/README.md`).
@@ -1406,7 +1503,7 @@ The user's, 2026-10-12, on steps 2.2 and 2.3:
 3. **The tactical diameter comes from the designer.** Anything the sim needs from the designer that isn't there yet
    is a flagged placeholder ("Needed from the designer"), to be filled in a designer session.
 4. **2.2 shows** the trials and dev ships as heading ticks; the sprites are 2.3's.
-5. **Texture arrays may wait for 2.6;** instancing per class first.
+5. **Texture arrays may wait for 2.7 (was 2.6 when decided);** instancing per class first.
 6. **Drawing between ticks:** either way is fine (realistic battleship action, orders take ages against the tick).
    Extrapolation along the arc was built.
 7. **Captains in the sim,** reading true positions until pictures (3.2).
@@ -1416,7 +1513,8 @@ The user's, 2026-10-12, on steps 2.2 and 2.3:
 
 ## Open questions
 
-None now.
+- Step 2.6's four points to agree at its start (the player's orders against an AI superior, a detached ship,
+  nesting, and its order against the Jutland test).
 
 ## Background
 
