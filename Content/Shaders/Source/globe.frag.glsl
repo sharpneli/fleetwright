@@ -17,6 +17,7 @@ layout(set = 3, binding = 0) uniform Globe
     vec4 fwd;      // xyz: the camera's forward; w: the eye's distance from the centre, in radii
     vec4 eyeDir;   // xyz: unit vector from the centre to the eye; w: |eye|² - 1, in radii², exact
     vec4 sun;      // xyz: unit vector toward the sun
+    vec4 depth;    // x: |eye|² - r², r the masking sphere's radius (2 km inside), radii²; y: near, z: far, radii
 };
 
 const vec3 Space = vec3(0.006, 0.008, 0.016);
@@ -62,4 +63,13 @@ void main()
         cover = clamp(disc / fw + 0.5, 0.0, 1.0);
     }
     outColor = vec4(mix(outside, sea, cover), 1.0);
+
+    // depth: the masking sphere's, as spheredepth.frag, so the baked coast behind the globe is hidden
+    float cs = depth.x, discS = b * b - cs, zd = 1.0;
+    if (b < 0.0 && discS >= 0.0)
+    {
+        float ts = cs / (-b + sqrt(discS)), zv = ts * dot(d, fwd.xyz);
+        zd = depth.z * (zv - depth.y) / (zv * (depth.z - depth.y));
+    }
+    gl_FragDepth = clamp(zd, 0.0, 1.0);
 }

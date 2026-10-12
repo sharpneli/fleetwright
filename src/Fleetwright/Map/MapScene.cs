@@ -36,6 +36,8 @@ public sealed unsafe class MapScene : IScene
         renderer = new GlobeRenderer(device);
         static Land Load(string res) => Land.Load(Path.Combine(AppContext.BaseDirectory, "Content", "World", $"land-{res}.bin"));
         land = new LandView(Load("110m"), Load("50m"), Load("10m"));
+        // the coarse levels baked once into static meshes; the finest is built per view (docs/battle/plan.md 1.4)
+        renderer.UploadLand(LandMesh.Bake(land.Coarse), LandMesh.Bake(land.Medium));
     }
 
     /// <summary>Over the North Sea, the whole globe in view.</summary>
@@ -57,15 +59,21 @@ public sealed unsafe class MapScene : IScene
             dragPending = false;
         }
         var view = View;
+        var level = land.LevelFor(view);
+        int baked = level == land.Coarse ? 0 : level == land.Medium ? 1 : -1;
         if (camera.Target != built.Target || camera.MetresPerPixel != built.MetresPerPixel || (width, height) != builtSize)
         {
-            // the grid and the land change only with the view: a still map rebuilds nothing
+            // the grid and the finest level's land change only with the view: a still map rebuilds nothing, and the
+            // baked levels never do
             lines.Begin(width, height);
             Graticule.Build(view, lines);
-            land.Build(view, lines);
+            if (baked < 0)
+                land.Build(view, lines);
+            else
+                land.Clear();
             (built, builtSize) = (camera, (width, height));
         }
-        renderer.Render(cmd, target, view, world.Current.Sun, land.Fill, lines);
+        renderer.Render(cmd, target, view, world.Current.Sun, land.Fill, baked, lines);
     }
 
     public void BuildUi()

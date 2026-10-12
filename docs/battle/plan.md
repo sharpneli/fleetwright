@@ -363,7 +363,7 @@ ships with). **Done (2026-10-12):**
 - **Not yet:** the world doesn't hold the land (the map loads its own copy), and nothing in the sim asks it yet.
   The first users are routing and line of sight; the world will take the 1:10M `Land` when they come.
 
-**1.4 The land as static meshes** (planned 2026-10-12). Since Natural Earth ships, the map should draw it the way a
+**1.4 The land as static meshes** (planned and done 2026-10-12). Since Natural Earth ships, the map should draw it the way a
 game does: baked once, drawn with a few draw calls, no CPU per frame. Today the CPU rebuilds the visible land every
 time the view moves (0.3-2 ms Release, up to ~8 ms Debug). The plan:
 
@@ -401,6 +401,17 @@ time the view moves (0.3-2 ms Release, up to ~8 ms Debug). The plan:
     against `IsLand`, with probes near the limb left out.
   - Screenshots at each band, against the CPU path's.
   - `-frametimes` while panning: no land work on the CPU above the 1:10M switch.
+
+  **Done (2026-10-12)**, as planned, with one change: tiles are 2/128 rad a side at a face's centre (~100 km, a
+  power of two for the quadrant split), not 2/80. Their diagonals sag under 0.4 km.
+  - **The pieces:** `CapRetraction` is shared by the CPU path and the bake. `LandMesh` bakes 1:110M into 69k fill
+    triangles and 1:50M into 126k, with their coast meshes: ~14 MB on the GPU, 30-90 ms a level once warm.
+  - **The shaders:** `land3d.vert` for the fans, `coast3d.vert` for the coast mitred in screen space,
+    `spheredepth.frag` for the depth pre-pass, and `globe.frag` now writes the masking sphere's depth.
+  - **Checked:** `LodSweepTests` checks the baked fans at every step on the coarse levels; a bake that covers only
+    a quarter of each face fails all five places. Screenshots at each band match the CPU path's.
+  - **Panning in Debug** (p95 CPU work per frame, 2560x1440): globe 0.15 ms, theatre 1.1 ms, operations 0.7 ms,
+    where the CPU path took 6-11 ms. Just inside 1:10M over Norway it's still ~8 ms: the CPU path, as planned.
 
 ### 2. Ships that move
 

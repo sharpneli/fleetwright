@@ -159,8 +159,9 @@ src/
     Program.cs                #   entry point, command-line parsing
     Map/                      #   the world tab: WorldSession (the app's world and sim thread), MapCamera/MapView
                               #   (double projection), GlobeRenderer (the sphere per pixel, then MapLines), Graticule,
-                              #   LandView (the land brought inside a cap around the view, filled by winding count), MapScene (input,
-                              #   clock controls, HUD)
+                              #   LandView (the finest land level, brought inside a cap around the view per frame),
+                              #   LandMesh (the coarse levels baked once: tiled fans and a coast mesh), CapRetraction,
+                              #   MapScene (input, clock controls, HUD)
     Engine.cs                 #   Sdl3GpuEngine: init, resources, render loop, PbrMaterial
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
