@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6a (one order path) and 2.6b (forces) are done; the next is 2.6c (the world tab), then ships and the land (T1-T3 of `docs/world/terrain-plan.md`), then 2.7, the Jutland scale test.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; the next is ships and the land (T1-T3 of `docs/world/terrain-plan.md`), then 2.7, the Jutland scale test.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1159,6 +1159,26 @@ station is defined along the guide's track but steamed as before until T4 brings
     half-width as its clearance; with the battleships detached, both go.
   - A force with held and pinned squadrons replays from the log; four squadrons of eight think without allocating.
   - The sim suite passed three full runs.
+
+**2.6c done (2026-10-12): the world tab's chain of command, as placeholders** (the user: the full UI rework comes
+later, 5.2; `docs/battle/command-ui.md`, the user's command UI research, is committed beside this plan):
+- **Orders to:** the strip names the selected ship, its squadron and each force above it; orders go to the highest it's
+  in line with unless another is picked (for the selection), and alt+right-click orders the ship alone (the research's
+  "Alt = this ship only"). Picking a lower level takes that unit out of the line above, as any order to it does.
+- **Markers:** every group, forces too, is labelled at its guide ship (a force's a line below its guide squadron's)
+  and collapses into one diamond (a larger one for a force) when its line spans under 30 px; a group inside a
+  collapsed one has no label of its own. Ships out of their line are ringed, orange with a "!" when their superior's
+  orders changed; held groups' labels say "held" or "detached".
+- **Held by you** (top right, while there are any): every ship and group the player holds, nudged or detached, a "!"
+  for a notice, with Select and Resume.
+- **Rows:** the squadron's (Detach / Rejoin, formation, spacing, leave, disband) and the force's it's in (the same for
+  the squadron in its force); ctrl+click ships of other squadrons to form a force of their squadrons, the selected one
+  guiding, or add them to its force (`GroupSystem.EnterAlongside`, a group into another's force before the UI knows
+  the force's id).
+- **Dev flag:** `-force=1,2,3[:abreast|column|echelon-s|echelon-p[:metres]]`, of the `-group=` groups in order.
+- **Checked:** screenshots of a force of three squadrons forming up with a held ship (the strip's levels, the force's
+  rows, the held list and its notice) and zoomed out (one "Force 4 (8)" marker, the held ship apart);
+  `ForceTests` forms a force alongside before knowing its id. The sim suite passes.
 
 **Ships and the land: T1-T3 of `docs/world/terrain-plan.md`** (the user, 2026-10-12: after 2.6 and before the
 Jutland test; planned in a session of its own when it starts). T1 is `Shore`, the land index, with the world holding

@@ -467,6 +467,8 @@ public sealed unsafe partial class MapScene
         }
         ImGui.End();
 
+        HeldUi(s);
+
         // the selected ship: bottom centre
         int k = s.Ships.IndexOf(selected);
         if (k < 0)
@@ -491,12 +493,11 @@ public sealed unsafe partial class MapScene
             ImGui.TextDisabled($"heading {heading:000}°, {kn:0.0} kn, rudder {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0;0}°  ·  " +
                                $"ordered: {orders}, {s.Ships.SpeedOrderKn[k]:0.#} kn");
 
-            // orders: to the ship, or to its group (one order moves the group: its admiral hands it to the guide)
+            // orders: to the ship, or to a group it's in (one order moves the group: its admiral hands it down)
+            LevelRow(s);
             var (unit, cmd) = Commanded(s);
             int kc = s.Ships.IndexOf(cmd);
             var o = world.Ai.Orders;
-            if (unit.IsGroup)
-                ImGui.TextDisabled($"orders go to the group (its guide is #{cmd})");
 
             // course
             ImGui.SetNextItemWidth(70 * UiFonts.Scale);
@@ -547,7 +548,7 @@ public sealed unsafe partial class MapScene
             SearchRow(s, unit, kc);
             CaptainRow(s, unit, kc);
             GroupRow(s);
-            ImGui.TextDisabled("right-click the sea: steer for it · shift+right-click: add a waypoint · click elsewhere: deselect");
+            ImGui.TextDisabled("right-click the sea: steer for it · shift+right-click: add a waypoint · alt: this ship alone · click elsewhere: deselect");
         }
         ImGui.End();
     }

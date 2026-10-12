@@ -24,6 +24,7 @@ public static unsafe class Program
         var captains = new List<string>();
         var searches = new List<string>();
         var devGroups = new List<string>();
+        var devForces = new List<string>();
         bool frameTimes = false;
 
         foreach (string arg in args)
@@ -108,7 +109,11 @@ public static unsafe class Program
             {
                 devGroups.Add(arg.Substring("-group=".Length));
             }
-            else if (arg.StartsWith("-captain="))   // a dev ship's captain: -captain=2:follow:1[:800], keep, run:1, none
+            else if (arg.StartsWith("-force="))   // a dev force of -group= groups (by their order, from 1): -force=1,2,3[:abreast|column|echelon-s|echelon-p[:metres]]
+            {
+                devForces.Add(arg.Substring("-force=".Length));
+            }
+            else if (arg.StartsWith("-captain="))   // a dev ship's captain: -captain=2:follow:1[:800], keep, run:1
             {
                 captains.Add(arg.Substring("-captain=".Length));
             }
@@ -217,6 +222,9 @@ public static unsafe class Program
             foreach (var grp in devGroups)
                 foreach (var c in DevGroup(grp))
                     world.Send(c);
+            foreach (var force in devForces)
+                foreach (var c in DevForce(force))
+                    world.Send(c);
             foreach (var cap in captains)
                 if (DevCaptain(world.Ai, cap) is { } order)
                     world.Send(order);
@@ -324,6 +332,30 @@ public static unsafe class Program
         yield return Sim.GroupSystem.Create(ships[0], f, m);
         foreach (int e in ships.Skip(1))
             yield return Sim.GroupSystem.Join(e, ships[0]);
+    }
+
+    /// <summary>-force=g1,g2,...[:formation[:metres]]: a dev force of groups (ids: the -group= flags' in order, from 1),
+    /// guided by the first; line abreast 3 km apart by default.</summary>
+    static IEnumerable<Sim.Command> DevForce(string arg)
+    {
+        var p = arg.Split(':');
+        var ids = p[0].Split(',').Select(x => int.TryParse(x, out int g) ? g : 0).Where(g => g > 0).ToArray();
+        if (ids.Length == 0)
+        {
+            Console.Error.WriteLine($"Bad force: -force={arg} (want -force=1,2[:abreast|column|echelon-s|echelon-p[:metres]])");
+            yield break;
+        }
+        var f = (p.Length > 1 ? p[1] : "abreast") switch
+        {
+            "column" => Sim.Formation.Column,
+            "echelon-s" => Sim.Formation.EchelonStarboard,
+            "echelon-p" => Sim.Formation.EchelonPort,
+            _ => Sim.Formation.LineAbreast,
+        };
+        double m = p.Length > 2 && double.TryParse(p[2], System.Globalization.CultureInfo.InvariantCulture, out double v) ? v : 3000;
+        yield return Sim.GroupSystem.Form(ids[0], f, m);
+        foreach (int g in ids.Skip(1))
+            yield return Sim.GroupSystem.EnterAlongside(g, ids[0]);
     }
 
     /// <summary>-captain=entity:order[:target[:metres]]: an order for a dev ship's captain (a ship in a group's line is

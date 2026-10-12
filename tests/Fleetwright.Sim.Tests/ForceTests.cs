@@ -289,6 +289,28 @@ public class ForceTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_ui_forms_a_force_of_squadrons_before_it_knows_the_forces_id()
+    {
+        var (w, _) = Make();
+        int c = Class(w, "dreadnought");
+        for (int i = 0; i < 4; i++)
+            w.Apply(ShipSystem.Spawn(c, Lat + 0.02 * i, Lon, 0, 12));
+        w.Apply(GroupSystem.Create(1));
+        w.Apply(GroupSystem.Join(2, 1));
+        w.Apply(GroupSystem.Create(3));
+        w.Apply(GroupSystem.Create(4));
+        w.Apply(GroupSystem.Form(1, Formation.Column, 1000));   // as the map does: form on the selected squadron,
+        w.Apply(GroupSystem.EnterAlongside(2, 1));              // then the picked ships' squadrons alongside it
+        w.Apply(GroupSystem.EnterAlongside(3, 1));
+        w.Apply(GroupSystem.EnterAlongside(3, 1));              // twice: nothing changes
+        var force = w.Groups.Get(w.Groups.Get(1)!.Parent)!;
+        Assert.True(force.IsForce);
+        Assert.Equal(new[] { 1, 2, 3 }, force.Members);
+        w.Apply(GroupSystem.EnterAlongside(force.GroupId, 2));   // a force into itself: refused
+        Assert.Equal(0, force.Parent);
+    }
+
+    [Fact]
     public void A_force_with_held_and_pinned_squadrons_replays_from_the_log()
     {
         World Script()

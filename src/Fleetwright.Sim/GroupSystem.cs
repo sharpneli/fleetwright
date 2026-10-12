@@ -48,6 +48,7 @@ public enum GroupCommand : ushort
     Enter,
     Exit,
     DetachGroup,
+    EnterAlongside,
 }
 
 /// <summary>The world's groups (docs/battle/plan.md steps 2.4 and 2.6): units that move together, in order, with a
@@ -319,6 +320,11 @@ public sealed class GroupSystem : IWorldSystem
     /// force is inside.</summary>
     public static Command Enter(int forceId, int groupId) => new(Id, (ushort)GroupCommand.Enter, A: groupId, Y: forceId);
 
+    /// <summary>A group to the end of the force another group is in: how a UI adds to a force it has just formed,
+    /// before it knows the force's id (as <see cref="Join"/> for ships). Refused as <see cref="Enter"/> is.</summary>
+    public static Command EnterAlongside(int groupId, int alongsideGroupId) =>
+        new(Id, (ushort)GroupCommand.EnterAlongside, A: groupId, Y: alongsideGroupId);
+
     /// <summary>A group out of its force.</summary>
     public static Command Exit(int groupId) => new(Id, (ushort)GroupCommand.Exit, A: groupId);
 
@@ -343,6 +349,11 @@ public sealed class GroupSystem : IWorldSystem
             DerailGroup(world, Get((int)c.A));
             if (code == GroupCommand.Enter)
                 DerailGroup(world, Get((int)c.Y));
+        }
+        if (code == GroupCommand.EnterAlongside)
+        {
+            DerailGroup(world, Get((int)c.A));
+            DerailGroup(world, Get((int)c.Y));
         }
         if (code == GroupCommand.Join && c.A != 0)
             world.Ships.Derail(world, (int)c.A);
@@ -395,8 +406,9 @@ public sealed class GroupSystem : IWorldSystem
                 force.Add(first.GroupId);
                 first.Parent = force.GroupId;
                 break;
-            case GroupCommand.Enter:
-                if (Get((int)c.A) is not { } entering || Get((int)c.Y) is not { IsForce: true } into || entering.Parent == into.GroupId ||
+            case GroupCommand.Enter or GroupCommand.EnterAlongside:
+                var intoId = code == GroupCommand.Enter ? (int)c.Y : Get((int)c.Y)?.Parent ?? 0;
+                if (Get((int)c.A) is not { } entering || Get(intoId) is not { IsForce: true } into || entering.Parent == into.GroupId ||
                     Within(into, entering) || !SameSide(world, AnyShip(entering), AnyShip(into)))
                     return;
                 LeaveForce(entering);
