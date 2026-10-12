@@ -1,8 +1,11 @@
 # The world: how the game is organised around a living planet
 
-2026-10-11. Status: agreed with the user (2026-10-11, "Decisions" at the end), diplomacy deferred. The combat module
-comes first; "What the combat module must already respect" lists what it keeps to so the rest can follow. `docs/battle/plan.md` "The world" settled the
-geometry (one sphere, Earth-centred doubles, flat only locally).
+2026-10-11. Status: agreed with the user (2026-10-11, "Decisions" at the end), diplomacy deferred. The battle module
+comes first. It's a deliverable, not a part of the code (the user, 2026-10-12): the final game's whole ship
+simulation on this world, with missions standing in for politics and manufacturing. `docs/battle/plan.md` says what
+it holds and gives the build order, from an empty sphere of water up. "What the ship simulation must already respect"
+lists what it keeps to so the rest can follow. `docs/battle/plan.md` "The world" settled the geometry (one sphere,
+Earth-centred doubles, flat only locally).
 
 ## What has to hold
 
@@ -14,7 +17,8 @@ geometry (one sphere, Earth-centred doubles, flat only locally).
 - **Absurd time compression out of combat:** a day in a few real seconds is ~30,000x. At 60 fps that's 8 game
   minutes a frame.
 - **A real battle when it matters:** fixed small ticks, full ship models (fire control, damage, flooding), up to
-  ~2,000 ships in the world and a few hundred in one fight.
+  ~2,000 ships in the world and a few hundred in one fight (Jutland: 250). `docs/battle/plan.md` "How many ships"
+  checks these numbers against measured costs and sets targets.
 - **Deterministic and headless:** the same start and the same orders give the same world (replays, tests, saves).
 - **Independent components, no mixed concerns (the user's, 2026-10-12):** everything ships in the one executable, but
   each part stands alone. The designer starts with or without a world sim (a `DesignContext` or none). The sim,
@@ -84,7 +88,7 @@ The one thing that can't be scheduled ahead by a single ship is meeting another.
 
 ## Conflicts: who fights, how closely it's simulated, and who's watching (agreed 2026-10-11)
 
-Agreed with the user, except relations beyond war and peace (deferred: the combat module comes first, but with these
+Agreed with the user, except relations beyond war and peace (deferred: the battle module comes first, but with these
 decisions shaping it, so later work refactors as little as possible).
 
 Most fighting in the world isn't the player's: NPC navies at war with each other, a raider sinking merchants in the
@@ -161,6 +165,8 @@ deplete an area as it really would, and let a navy route its merchants away from
 - **A merchant is a light entity:** a position on rails (a great-circle route from port to port), its nation, its
   tonnage and cargo, and a class drawn from the nation's merchant pool. No fuel, crew or condition tables while it's
   steaming: a merchant voyage is a few legs and a few events over weeks, so 9,000 of them cost less than the warships.
+  The world's merchant fleet was a few times Britain's (to verify, `research/REQUESTS.md`); that's still events and
+  scans, not models.
 - **Merchants are in the contact scan like everything else**, and a raider finds them where they actually are: a
   raider that sinks three ships on a route leaves it thinner, owners and admiralties divert sailings (route orders
   to the merchants, issued by their navy's AI or the player), and traffic piles up at the ports that are still safe.
@@ -282,7 +288,8 @@ layered inside the project (`Core`, `Ships`, `Combat`, then the world on top, on
 - **Deep looks (a ship's damage tables in a report screen)** go through a watch list: the UI says which ships it's
   showing, and the sim copies their full state into the snapshot. Nothing on the UI side holds a reference into the
   world.
-- **Threaded throughout (agreed):** the sim thread from the start, and the job system (later, its own step) under it
+- **Threaded throughout (agreed):** the sim thread from the start, and the job system (later, in the battle module's
+  scale step) under it
   for everything that's per ship, per group or per encounter: rails events in a batch, contact scans, the resolved
   encounters, the tactical tier's models. Work is split so results don't depend on the thread count.
 - **No magic values (agreed):** the encounter range, the scan interval, the tick sizes, the tiers' steps and every
@@ -316,6 +323,9 @@ layered inside the project (`Core`, `Ships`, `Combat`, then the world on top, on
 - A battle at 20 Hz with a 4 ms tick runs at up to ~12x; analytic shells and arc motion may let the tactical tick
   grow to 0.25-1 s, which multiplies that. Decide in the tactical tier's step, by checking results don't change with
   the tick.
+- **Models in the tactical tier run at their own rates,** on whole multiples of the tick (from `SimSettings`): pose
+  every tick, sighting and fire-control solutions and flooding at about 1 Hz, shells and damage on events. That's
+  what keeps a few hundred ships at Full inside a tick (`docs/battle/plan.md` "How many ships").
 
 ### Saves and determinism
 
@@ -326,30 +336,26 @@ layered inside the project (`Core`, `Ships`, `Combat`, then the world on top, on
   wall-clock reads in the sim, parallel work reduced in a fixed order. A test runs a year on rails and a battle twice,
   on 1 and on N threads, and compares the snapshots bit for bit.
 
-## Steps (proposed, one per session, each with its own investigation)
+## Build order
 
-The first shippable game is missions (`docs/missions/plan.md`), which orders these differently: pictures and a
-captain AI move up, and Resolved, merchants and admiralties wait. That plan's step list is the one to follow.
+The battle module comes first, and `docs/battle/plan.md` "Building it from the ground up" is its step order: a world
+of water, then ships that move (time compression and the job system included), seeing, fighting, command, and
+missions. It replaces the step list this doc had (2026-10-11), and the missions plan's stages are steps in it.
 
-1. **`Fleetwright.Sim` and the rails world.** The project; double vectors and great-circle motion; the clock;
-   ships and groups on rails with routes (no land yet); commands and the snapshot. Tests: a ship around the globe
-   over a pole comes back; 2,000 ships for a game year headless in seconds; the same run twice is bit-identical.
-2. **The app, the stack and the map.** The scene stack in the exe; `App` owning the world and the sim thread; a
-   first `MapScene`: a plain globe (lat/lon grid), ships as icons from the snapshot, time controls (pause, 1x to
-   30,000x, asked vs achieved); the designer pushed and popped, a submitted design laid down and launched by event.
-3. **The job system.** Fixed workers, struct jobs, counters (the tech-stack plan's "Job system"), with the
-   determinism-across-thread-counts test; the rails events and the snapshot fill moved onto it.
-4. **Contacts, relations and encounters.** The scan, the exact crossing times, relations and standing orders deciding
-   whether an encounter opens, encounters opening, merging and closing; interest and the user's table (dispatch,
-   notify, speed drop, pause). Ships just steam in an encounter for now.
-5. **The tactical tier (Full).** `docs/battle/plan.md` steps 1-7 land here: `ShipClass`, `ShipState`, the hit query,
-   the registry, the sprites, damage, shells.
-6. **The resolver (Resolved).** Doctrine manoeuvre, sighting and expected hits per coarse step, sampled hits through
-   the real hit query and damage; promotion and demotion; the calibration test against Full.
-7. **The Earth model** (when the user brings it): land, the sea graph and routing, ports, the globe's tiles; then
-   merchants on their voyages (light entities, routes between ports, diversion orders, full state in an encounter).
-8. **Pictures and admiralties:** each navy's knowledge and dispatches; NPC navies as command sources.
-9. **The coarse tier** for ships when the first model needs it (flooding after a battle).
+After the battle module, the world grows around the ship simulation. Each item is its own plan when it comes:
+
+- **Resolved fights,** if they aren't in the battle module (its open question 1): doctrine manoeuvre, sighting and
+  expected hits per coarse step, sampled hits through the real hit query and damage, promotion and demotion, and the
+  calibration test against Full.
+- **The world's merchant traffic:** light entities on voyages between ports, diversion orders, full state in an
+  encounter. This needs the Earth model's ports and sea graph.
+- **NPC admiralties** as command sources, reading their navies' pictures.
+- **Relations beyond war and peace,** then diplomacy.
+- **Yards and manufacturing:** construction as events, ships laid down from submitted designs.
+- **Research:** the `TechSet` growing over a campaign.
+
+The Earth model (land, the sea graph and routing, ports, the globe's tiles) isn't on this list. It comes when the user
+brings it, inside the battle module if it's ready by then.
 
 ## Decisions (the user's, 2026-10-11)
 
@@ -366,13 +372,13 @@ captain AI move up, and Resolved, merchants and admiralties wait. That plan's st
 8. **Merchants are real light tracks,** all ~9,000 of them: a position on a route between ports, no fuel or crew.
    Real positions let raiders deplete an area realistically and let navies route merchants away.
 9. **Fog of war is knowledge of entities** (each navy's picture), not a visual effect.
-10. **Diplomacy waits:** war and peace only for now. The combat module comes first, built to these decisions so that
+10. **Diplomacy waits:** war and peace only for now. The battle module comes first, built to these decisions so that
     later work refactors as little as possible.
 
-## What the combat module must already respect
+## What the ship simulation must already respect
 
-The battle work (`docs/battle/plan.md`) comes first. So that the world can grow around it without a rewrite, the
-combat code keeps to these from its first step:
+The battle module (`docs/battle/plan.md`) comes first. So that the world can grow around it without a rewrite, the
+ship simulation keeps to these from its first step:
 
 - **Positions and time are the world's:** Earth-centred doubles, `long` ms world time. No battle-local origin or
   clock, no "the battle started at t = 0".

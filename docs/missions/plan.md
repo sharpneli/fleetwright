@@ -1,7 +1,8 @@
 # Plan: missions, the first shippable game
 
-2026-10-11. Status: the direction is agreed with the user ("Decisions" at the end); the work goes in small stages,
-each planned before it's built ("Stages").
+2026-10-11. Status: the direction is agreed with the user ("Decisions" at the end); the work goes in small steps,
+each planned before it's built ("Stages"). Since 2026-10-12, missions are part of the battle module
+(`docs/battle/plan.md`), and that plan's step order is the one to follow.
 
 ## Goal
 
@@ -12,6 +13,12 @@ Brest." Once one plays well, a generator makes many, and that's a game.
 A mission is **a small world, not a separate mode**: the same `Fleetwright.Sim`, the same clock and tiers, the same
 map, pictures and encounters as the whole planet later (`docs/world/architecture.md`). Nothing built for missions is
 thrown away when the campaign comes; the campaign is a bigger world with more systems switched on.
+
+**Missions are the battle module's stand-in for the campaign** (the user, 2026-10-12). The battle module is the final
+game's whole ship simulation on the world map. What it doesn't have is the political system that decides who fights,
+and the manufacturing that decides what each side has and where. A mission does both jobs: its file and its UI place
+the forces, set their orders and objectives, and judge the result. So the mission layer is the only part of the
+battle module the final game replaces, and missions are also the first shippable game.
 
 ## What "find Bismarck" asks of the sim
 
@@ -69,11 +76,14 @@ from the event log and the pictures (what each side knew, when).
 On the scene stack (`docs/world/architecture.md` "Screens"):
 
 - **Mission select:** the shipped and generated missions, with their date, area and briefing line.
+- **Mission setup:** place the sides' groups on the globe, set their orders, the objectives and the events. It's the
+  editor for hand-made missions, and it shows a generated one for changes before it starts.
 - **Briefing:** the situation as the player's side knows it (its picture at the start), the forces, the objectives;
   maybe the player's choices (which groups to commit, their starting orders).
 - **The map:** the world's screen, limited to the area: the globe there, own forces and contacts, orders, the clock
-  with its compression; encounters opening; "take command" into the tactical view.
-- **The tactical view:** the battle (the sprites, `docs/battle/plan.md` step 5 on), opened on an encounter.
+  with its compression; encounters opening; the whole zoom down to a single ship.
+- **No separate tactical view:** the battle is the same map, zoomed in to the tactical and ship bands
+  (`docs/map-ui/README.md`). "Take command" takes the camera there and hands the encounter to the player.
 - **Debrief:** the result, the objectives, the event log, a replay later.
 
 **Mission start (agreed):** a mission gives fixed forces, or a limit (tonnage, cost, a year's technology) within
@@ -98,15 +108,13 @@ Once one mission plays well, a generator makes more from templates:
 
 ## What the first version needs from the world, and what it doesn't
 
-Needed (from `docs/world/architecture.md`'s steps):
+Needed: the whole ship simulation (`docs/battle/plan.md` "Done means"). In particular, the search a mission is about
+needs:
 
-- the sim core, the clock and rails movement, commands and the snapshot, the sim thread (steps 1-2);
-- the map, limited to the area, and the scene stack (step 2);
-- contacts and encounters, the speed drops, the user's interest table (step 4);
-- **pictures**, moved up from step 8: the search is the mission;
-- the tactical tier at Full (step 5, the battle plan);
-- a captain AI per group following standing orders (evade, shadow, engage, go to), both sides;
-- a sighting model good enough for search (horizon, weather, night; radar by era).
+- time compression with the rails tier, and speed drops by the user's interest table (steps 2.5, 3.1);
+- **pictures** (step 3.2): the search is the mission;
+- a captain AI per group following standing orders (evade, shadow, engage, go to), both sides (step 5.1);
+- a sighting model good enough for search: horizon, weather, night; radar by era (step 3.2).
 
 Not needed yet: Resolved (every encounter in a mission is the player's, at Full; Resolved comes when the player
 wants to hand fights to captains or the campaign brings NPC wars), the world's merchant traffic (a mission's
@@ -125,19 +133,16 @@ Build one thing at a time, each playable before the next starts. The missions ab
 
 **This needs planning before it's built:** each stage gets its own plan (what's in it, what it proves, how it's
 tested), agreed with the user, at the start of the session that builds it; a stage may split into several sessions
-as we ramp up. The list below is the ramp, not the plan.
+as we ramp up.
 
-1. **One ship in the world, controllable.** The sim core (the clock, a ship on the sphere, commands, the snapshot,
-   the sim thread), the scene stack and a first map: one ship drawn from the snapshot, given a course and speed, and
-   steaming. Time running at 1x, then faster.
-2. **Two ships.** Both in the snapshot and on the map; each with orders; the second one maybe steered by a trivial
-   captain (keep a course, follow, run).
-3. **They shoot at each other.** Sighting between the two, a gun aimed and fired, shells on their trajectories, hits
-   through the hit query, damage: the battle plan's steps, brought in one by one.
-4. **And on:** more ships and groups, contacts and pictures, encounters and speed drops, the captain AI, scripted
-   reports, objectives, the mission start UI, time compression for days-long missions, the generator.
+Since 2026-10-12 the stages are steps in the battle module's order (`docs/battle/plan.md` "Building it from the ground
+up"), which starts one level lower, with a world of water and nothing on it (1.1, 1.2):
 
-The world and battle plans' steps are the parts this draws on; the order is this one.
+1. **One ship in the world, controllable:** step 2.3, first half.
+2. **Two ships,** the second steered by a trivial captain: step 2.3, second half.
+3. **They shoot at each other:** steps 4.1-4.3.
+4. **And on:** groups, time compression, contacts and pictures, the captain AI, scripted reports, objectives, the
+   mission UI, the generator: the rest of that order.
 
 ## Decisions (the user's, 2026-10-11)
 

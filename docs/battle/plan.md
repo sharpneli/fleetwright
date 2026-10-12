@@ -1,22 +1,286 @@
-# Plan: the battle module's data, from designs to ships at sea
+# Plan: the battle module
 
-2026-10-11. Status: the shape is agreed with the user (2026-10-11), and the open questions were settled on 2026-10-12
-("Decisions" at the end). "The code, checked again" holds what step 1 has to deal with.
+2026-10-11, reframed 2026-10-12. Status: what the battle module is, and that it's built from an empty world up, are
+the user's (2026-10-12, "Decisions"). The ships' data plan is agreed (2026-10-11), with its open questions settled on
+2026-10-12. "Building it from the ground up" is the step order for all battle module work; its steps from 3.1 on are
+proposed and are agreed one by one.
+
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
 changed from the plan).
 
-## Goal
+## What the battle module is
 
-A battle holds many ships. Each ship is of one design; several ships often share a design, and several designs are in
-memory at once. The game draws ships with the sprite model and computes damage with the hitbox model, and soon ships
-need to be damaged: each one carries a condition table tied to the hitbox model. This plan sets out how the data is
-laid out so that the shared, per-design data and the per-ship state stay apart.
+**The battle module is a deliverable, not a part of the code.** When it's done, the game's whole ship simulation is
+in place, as the final game will have it. Ships move, see, fight, take damage and sink in the world, on the one map,
+with the whole zoom from the globe down to a single ship's sprite. The final game will add things around that
+simulation, not replace it.
+
+The one part of the module that the final game won't keep is **the mission UI**. It places the forces, sets their
+orders and the objectives, and judges the result. In the final game, the political system (who is at war, and why)
+and manufacturing (what each navy has, and where) do that job, and neither exists yet. So the mission layer
+(`docs/missions/plan.md`) stands in for them, and it's also the first shippable game.
+
+There is no `Battle` project or namespace. The module is spread over the parts it's made of: `Fleetwright.Sim` (the
+world, the ships' data, combat; "Inside `Fleetwright.Sim`"), the exe's map, renderers and scene stack, and the
+missions on top (`docs/world/architecture.md` "The pieces and where they live").
+
+### Done means
+
+- **A world:** the planet as a sphere at real scale, all sea at first, then the user's Earth model with land, ports
+  and routing. One clock, from paused to ~30,000x, dropping by the player's rules when something needs them.
+- **Ships that move:** many ships of many designs, each compiled once to a `ShipClass`. They steam with real turning
+  circles and acceleration, in groups and formations, on routes. Ships far from anything are on rails, and ships
+  near something are in the tactical tier.
+- **Seeing and knowing:** contacts and encounters, sighting (horizon, weather, night), and each navy's picture. The
+  player sees what their navy knows.
+- **Fighting:** fire control, guns and shells, torpedoes, the hit query, penetration, damage, flooding and sinking,
+  and damage drawn on the sprites.
+- **Command:** captains (the AI) following standing orders on both sides, and the player commanding through the same
+  commands on the map at every zoom.
+- **Missions:** a mission file, the mission UI (place forces, set orders and objectives, the designer for
+  player-designed forces), briefing and debrief, and a generator of missions.
+- **Throughout:** deterministic and headless. Commands go in and a snapshot comes out, with replays and saves of a
+  mission. Every tuning number is in `SimSettings`. Within the targets in "How many ships".
+
+### Not in it
+
+These are the final game's, around the simulation: politics and diplomacy, manufacturing, yards and economy,
+research (a mission's `TechSet` is a preset), NPC admiralties, and the world's merchant traffic (a mission's merchants
+are just ships in it).
+
+Open question 1 lists what may or may not be in it: Resolved fights, aircraft and submarines.
+
+## How many ships (checked 2026-10-12)
+
+Two different numbers matter. One is how many ships are in one fight at Full, which costs the most per ship. The
+other is how many are in the world, which costs the least per ship but there are many of them.
+
+**In one fight:** Jutland is the largest surface action there was, and the module's design case. It had 250 ships
+(151 British, 99 German) of roughly 50-60 classes. Later fights had more aircraft, but not more ships in one action.
+So "a few hundred in one fight" (`docs/world/architecture.md`) holds. A mission should be able to stage a Jutland.
+
+**In the world:** the architecture's figure is ~2,000 warships. That's about right for 1914's navies together; a
+WWII world is larger (the USN alone built some 900 destroyers and destroyer escorts). Merchants are ~9,000 for
+Britain alone in 1914, and the world had more (to verify, `research/REQUESTS.md`). These are rails and light
+entities, so they cost events and contact scans, not models. The world's numbers aren't the battle module's load, but
+its scale tests keep them in view, so nothing built now has to be rebuilt for them.
+
+**What one class costs, measured (Release, this machine):**
+
+| | Bismarck | Notes |
+|---|---|---|
+| shipgen build (design -> `Ship`) | 0.12 s, 21 MB allocated | Yamato the same (`shipgen bench`) |
+| sprite drawing (CPU) | ~0.6 s | `shipgen bake`: "build+draw 0.63 s" |
+| GPU bake | 0.03 s | |
+| hull sprite at 10 px/m | 2432 x 384 px | RGBA 3.7 MB, plus the height map; ~6 MB with mips, uncompressed |
+| hitboxes | 93 components, 220 cells | the largest golden build: 333 and 984 |
+
+- **Loading a Jutland:** ~55 classes at ~0.75 s each is ~40 s of CPU, or ~6 s on 8 threads. Most classes are much
+  smaller than Bismarck (a destroyer's sprite is a tenth of the pixels), so the art is ~100-150 MB of textures,
+  uncompressed. That's fine for the module without BC compression.
+- **The drawing is the cost, not the physics.** A `ShipClass` needs only the build (0.12 s); the art can follow,
+  coarse mips first. A disk cache of the drawn art, keyed by (design hash, look, shipgen version), makes a second load
+  instant. That's what the world's hundreds of classes will need, so the class registry is built to allow it from the
+  start.
+- **A fight at Full:** 250 ships at a 20 Hz tick, run at 10x, is 200 ticks per real second: 5 ms a tick, or 20 µs a
+  ship if every model ran every tick. They don't need to. **Models in the tactical tier run at their own rates,** on
+  whole multiples of the tick, set in `SimSettings`:
+  - pose and turning every tick (~100 ns a ship);
+  - sighting and fire-control solutions at ~1 Hz;
+  - flooding at ~1 Hz, and only on ships with water in them;
+  - shells only when fired and in their danger window ("Shells");
+  - damage only on a hit.
+- **Shells:** Jutland's heavy guns fired ~8,000 rounds (British 4,598, German 3,597). With the secondaries and the
+  destroyers, that's a peak of perhaps 1,000-2,000 in flight. Each is a few numbers and two events.
+- **The snapshot:** 250 ships at ~200 B (pose, bearings, damage looks) plus 2,000 shells at ~48 B is ~150 KB.
+- **Drawing:** at the tactical band, 250 ships are a few pixels each (instanced, trivial). At the ship band, a few
+  ships fill the screen at full resolution.
+
+**Targets (proposed, measured in step 2.6 and again at the end):**
+- a Jutland at Full at 10x or better on an 8-core desktop, at 60 fps at any zoom;
+- 2,000 ships on rails at 30,000x;
+- a Jutland's first load under 10 s, and under 1 s from the cache.
+
+## Building it from the ground up
+
+The order follows the user (2026-10-12): first a world, an empty sphere of water; then ships moving on it; then
+everything else on top, one step at a time. Each step ends with something to run and look at, and with a test. The
+missions plan's baby steps (one ship, two ships, shooting) are this order's 2.3 and 4.2.
+
+The Earth model comes in when the user brings it, at any point after 1.2. Until then the world is all sea, and nothing
+may assume it always will be: routes are legs between waypoints, and line of sight and the contact scan leave room
+for a land test.
+
+### 1. A world of water
+
+**1.1 The sim core, headless.** The `Fleetwright.Sim` project and `tests/Fleetwright.Sim.Tests`:
+- `Core`: double vectors, the sphere (great circles, local frames), world time (`long` ms since 1850),
+  `SimSettings`, and seeded streams.
+- `World`: the clock, the scheduler's event queue (ordered by time, tier, id), commands in, and the snapshot out
+  (preallocated, triple-buffered).
+- The sim thread, advancing toward the target time it's asked for.
+
+The world holds nothing yet but its clock and the sun's position. Tests: the same commands give the same snapshots;
+the thread reaches its target times and never passes them; a step allocates nothing; the subsolar point is right at
+known dates.
+
+**1.2 The globe.** In the exe:
+- the scene stack, and `App` owning the world and the sim thread;
+- the dev tabs still reachable;
+- a first `MapScene`: the sphere of water, drawn at every zoom from orbit down to ~10 px/m (the sprites' finest
+  level), with a double-precision camera and camera-relative floats;
+- a lat/lon grid, and day and night from the snapshot's sun;
+- time controls: pause, 1x to 30,000x, asked vs achieved.
+
+The water close up is plain shading; the wave sim is a look for later. Proof: screenshot readbacks at each zoom band,
+from orbit to a few metres, with no jitter, and the clock keeping the asked speed.
+
+### 2. Ships that move
+
+**2.1 `ShipClass`, the compiler** (the data plan's work, "The ships' data" below). In shipgen first (its own commits,
+goldens updated on purpose): unique component ids (the duplicate `Hangar`), and `Component.Mount` split into a link
+and a `Casemate` flag ("The code, checked again"). Small, but the compiler is strict, so these go first.
+
+Then `Fleetwright.Sim.Ships` compiles a `Ship`'s hitboxes and links into int-indexed, read-only arrays:
+- component kinds and roles as enums, common columns plus side tables;
+- CSR adjacency (each edge -> its bulkhead or deck);
+- the mount table, the armour solids, the id <-> index maps;
+- the design hash and the layout hash;
+- what moving needs: length, the speed and power curve from the report, and a turning circle.
+
+Strict: an unknown kind or a link that doesn't resolve is an error. Proofs:
+- The compiler runs over every golden build without an error.
+- ShellTest's shots are drawn up front (one stream per shot), and the old tracer and the port on `ShipClass` agree
+  shot by shot on every design with a citadel.
+- `shell-test` in the CLI runs the port. The old `ShellTest` goes once they match.
+
+Nothing in it allocates per query, and nothing writes to a class once it's made.
+
+**2.2 Ships on the sphere.** `ShipState`'s pose, made and dropped per entity ("Full state is made and dropped per
+entity", architecture). Movement in the tactical tier at the fixed tick: acceleration and turning from the class.
+Commands: a course, a speed, a route of waypoints. Headless tests:
+- a ship steaming a full circle of the globe, across a pole, comes back where it started;
+- a turning circle matches the class's;
+- 50 ships of one class share one `ShipClass`, and none writes to it.
+
+**2.3 Ships on the map: one, then two.** The snapshot carries poses and bearings, and the map draws ships at every
+band: markers zoomed out, hulls to scale with a minimum size at the tactical band, sprites at the ship band. This
+needs:
+- **the batch sprite renderer:** per-class GPU textures (texture arrays by size class, per
+  `research/naval/realtime-tech-stack-plan.md`), many ships drawn into an existing pass from their transforms and
+  bearings;
+- **the first class registry:** builds many designs in parallel keyed by the design hash, none dropped, refcounted;
+  frees the CPU images after the GPU upload, and makes the `HitboxMesh` only on request. `DesignSession` stays the
+  designer's one-ship view and may sit on top of it.
+
+Then click a ship and give it a course and speed (missions stage 1). Then a second ship with a trivial captain: keep
+a course, follow, run (stage 2).
+
+**2.4 Groups and formations.** Groups with a leader and stations; one order moves the group; keeping station is the
+first captain behaviour.
+
+**2.5 Time compression: the rails tier.** Ships with nothing near them go on rails (great-circle legs, events at the
+waypoints) and come back to the tactical tier when something needs them. The speed is clamped by the costliest live
+tier, and rails ships are drawn exactly from their tracks. Tests:
+- 2,000 ships for a game year, headless, in seconds;
+- a ship that goes rails -> tactical -> rails ends where an all-tactical run puts it, within the rails tier's
+  instantaneous turns;
+- the same run twice is bit-identical.
+
+**2.6 Scale: the Jutland test.** 250 ships of ~55 classes, loaded, steaming in formation in the tactical tier, drawn
+at every zoom, with some hundreds more on rails. Measure load time, tick cost, frame time and VRAM against the targets
+in "How many ships". Then do what the numbers ask for: the art disk cache, coarse mips first, the job system (the
+architecture's own step: fixed workers, struct jobs, with the test that results don't depend on the thread count).
+
+### 3. Seeing and knowing
+
+**3.1 Contacts and encounters.**
+- The contact scan and the exact crossing times.
+- Relations as a war/peace table.
+- Encounters opening, merging and closing; their ships held in the tactical tier.
+- Speed drops by the player's interest table.
+
+**3.2 Sighting and pictures.**
+- Sighting: the horizon from the height of eye and of the target, weather, night.
+- Each navy's picture; the player's snapshot built from it.
+- The map draws contacts with their uncertainty.
+- Captains act on pictures (shadow, evade).
+
+### 4. Fighting
+
+**4.1 The hit query.** A segment, Earth-centred, to ship-local (pose, sinkage, trim, heel), broadphase on
+`BroadphaseR`, then turrets at the ship's bearings, the hull, armour and cells. Returns indices, not strings.
+Headless, allocation-free, tested.
+
+**4.2 Guns and shells (missions stage 3).**
+- The trajectory tables per shell type, and their builder, checked against direct integration.
+- The shell record, the impact and danger-window solve, the events, and the window's sweep through 4.1's query.
+- Splashes.
+- A first fire control: a director with a solution on a contact from the picture, salvoes, corrections from the fall
+  of shot.
+- Shells drawn from their records.
+
+Tests: hits and splashes are the same at a 0.1 s and a 5 s tick; a shell fired along a meridian and one along the
+equator land where direct integration on the rotating sphere says.
+
+**4.3 Damage: flooding and disabling.** Buoyancy starts simple (decision 4): first they float, then they float in a
+more detailed way.
+- **First:** water by cell (volume x permeability), inflow through a breach's area. The ship settles, trims and heels
+  linearly from the exported full-load `Hydrostatics` (sinkage = added weight / TPC, trim from the moment over MCT,
+  heel from GM_T). It sinks when the water aboard exceeds the reserve buoyancy (the intact volume above the
+  waterline), or capsizes when heel passes a limit from `SimSettings`. No leaking bulkheads, free surface,
+  counter-flooding or motion past the deck edge yet.
+- Components disabled by hits.
+- This will change once the damage model is in, because flooding and damage interact heavily: fire and flooding
+  share cells, power drives pumps, a jammed rudder steers into it. So the first version's job is to be easy to change,
+  not to be complete.
+
+**4.4 Damage on the sprites** ("Damage on the sprites" below), and a damage report through the watch list.
+
+**4.5 Penetration and the systems.** Penetration, and the systems' dependency graph
+(`research/simulation/damage-model-research.md` §8-9). Then, area by area, each its own small step checked against
+the previous one: leaks through bulkheads and decks, free surface, `sinking.py`'s non-linear settling, pumping and
+counter-flooding, a plunge or capsize that plays out.
+
+**4.6 Torpedoes.** Tubes, and running torpedoes as tracks with events (like shells). Hits below the waterline go into
+the same damage. Destroyer attacks need them.
+
+**4.7 The coarse tier,** for damaged ships after a fight: still flooding, or burning, while the clock is compressed.
+
+### 5. Command
+
+**5.1 Captains.** Standing orders for both sides: go to, keep station, shadow, evade, engage, break off at x% damage.
+The player's orders are the same commands.
+
+**5.2 The command UI on the map.** Orders at every band, with previews, the forces rail, edge markers and the
+selection strip (`docs/battle/command-ui.md`, `docs/map-ui/README.md`).
+
+### 6. Missions: the stand-in for politics and manufacturing
+
+**6.1 The mission file.** Sides, forces, area, starting pictures, scripted events and reports, objectives and seeds
+(`docs/missions/plan.md`). Objectives are checked on events.
+
+**6.2 The mission UI.**
+- Place groups on the globe, and set their orders and the objectives.
+- The designer, pushed for player-designed forces, under the mission's limits and `TechSet`.
+- Mission select, briefing, debrief.
+
+**6.3 Saves and replays.** A mission saved and loaded at a tick. A replay is the mission file plus the command log.
+
+**6.4 The generator.** Missions from templates, each checked headless, AI against AI.
+
+## The ships' data
+
+How a ship's data is laid out, from a design to a ship at sea (agreed 2026-10-11). Many ships share a design, and
+several designs are in memory at once. The game draws ships with the sprite model and computes damage with the hitbox
+model, and each ship at sea carries a condition table tied to the hitbox model. The plan keeps the shared, per-design
+data apart from the per-ship state.
 
 The battle is not an arena: the world is the whole planet at real scale (`research/naval/realtime-tech-stack-plan.md`),
 and a battle is ships that happen to be near each other on it. Nothing here may assume a flat map; see "The world".
 
-## Where we are (the review of 2026-10-11)
+### Where we are (the review of 2026-10-11)
 
 What already fits:
 
@@ -56,13 +320,13 @@ What doesn't fit a battle:
    must build all its classes and drop none, on several threads. Each `DesignResult` keeps the CPU mip chains after
    the upload (a few MB a design) and a `HitboxMesh` only the hitbox view needs.
 7. **`ShipSpriteRenderer` draws one ship:** one design's textures, and it clears the target in a pass of its own.
-8. **The mount ↔ component link is implicit:** it holds because the sprite and the hitbox side filter the components
+8. **The mount <-> component link is implicit:** it holds because the sprite and the hitbox side filter the components
    the same way.
 
 ### The code, checked again (2026-10-12)
 
 This check read the code and surveyed the hitboxes of every golden build (325 builds: 71 designs plus the fuzz
-cases). It found these issues for step 1:
+cases). It found these issues for step 2.1:
 
 - **Sizes are larger than above.** The largest build has 333 components, 984 cells, 212 rooms, 157 bulkheads, 20
   decks and 6,148 neighbour entries (each edge listed from both cells). That's still dense arrays per ship: a few
@@ -79,10 +343,10 @@ cases). It found these issues for step 1:
 - **AA mounts aren't in `TurretTypes`** (`single20`, `quad40` are their own catalogue) and have no `Local` and no
   rotation. So the mount table (`TopView`'s filter: components with `Local`) is main, secondary and torpedo mounts.
   Some torpedo mounts don't rotate, and submerged tubes have arcs but no `Local`. AA bearings wait for aircraft.
-- **Every other string link resolves:** cell ↔ room, cell neighbours (by bulkhead, deck or "open"), cell
-  `Through` → shafts and alleys, `Also` → rooms, the component links (magazine, barbette, funnel, smoke, boiler
+- **Every other string link resolves:** cell <-> room, cell neighbours (by bulkhead, deck or "open"), cell
+  `Through` -> shafts and alleys, `Also` -> rooms, the component links (magazine, barbette, funnel, smoke, boiler
   rooms, propeller, engine room, alley, shaft, steering, room) and the room links (cells, mounts, tubes, shafts,
-  rudders). These are what the compiler turns into indices, so step 1 can be strict: any link that doesn't resolve
+  rudders). These are what the compiler turns into indices, so step 2.1 can be strict: any link that doesn't resolve
   is an error.
 - **Kinds:** 19 component kinds (`main`, `secondary`, `torpedo` and `aa` are mounts by battery; `barbette`,
   `superstructure`, `conning_tower`, `funnel`, `uptake`, `casing`, `sponson`, `mast`, `shaft`, `shaft_alley`,
@@ -100,9 +364,9 @@ cases). It found these issues for step 1:
     the machine's core count.
   - Its `DeckTop` duplicates `HullField.DeckTop`.
 
-  So step 1's proof separates sampling from tracing. The shots (target, bearing, fall) are drawn up front from the
+  So step 2.1's proof separates sampling from tracing. The shots (target, bearing, fall) are drawn up front from the
   seed, one stream per shot. Then the old tracer on `Hitboxes` and the port on `ShipClass` must agree shot by shot.
-  Step 3 replaces stepping with exact intersections and is checked against step 1 shot by shot: every disagreement
+  Step 4.1 replaces stepping with exact intersections and is checked against 2.1 shot by shot: every disagreement
   explained (near an edge), none in bulk.
 - **Where the ported shell-test lives:** `ShellTest` is in `Fleetwright.Shipgen`, and Shipgen can't see `ShipClass`
   in the Sim. The port goes to `Fleetwright.Sim`, and `Fleetwright.Shipgen.Cli` references `Fleetwright.Sim` (a tool
@@ -116,7 +380,7 @@ cases). It found these issues for step 1:
     differs from the one saved: shipgen changed it. State is still mapped by id, and parts that no longer exist are
     dropped and logged. Within a run, it's the key indices are valid under.
 
-## The shape
+### The shape
 
 ```
 Design (json) ──ShipDesign.Build──► Ship (Hitboxes, Report)     shipgen, unchanged: the interchange format and the tools
@@ -155,7 +419,7 @@ entity component system (the tech-stack plan leaves "hand-written SoA or Arch" f
 through index-based accessors, never its arrays' layout. Moving the storage is then a refactor of `ShipState`
 alone.
 
-## Inside `Fleetwright.Sim` (proposed 2026-10-12)
+### Inside `Fleetwright.Sim` (proposed 2026-10-12)
 
 Every part of the sim is in layers with one direction of dependency, as the projects are. Namespaces under
 `Fleetwright.Sim`, lowest first; each may use the ones above it in this list, never the ones below:
@@ -171,21 +435,23 @@ Fleetwright.Sim (World)   the world, the clock and scheduler, tiers, encounters,
   from the scheduler and never owns either. Only `World` knows about threads, commands and the snapshot.
 - `Fleetwright.Sim` depends on `Fleetwright.Shipgen` only. `Fleetwright.Shipgen` never depends on it.
 - Tests: `tests/Fleetwright.Sim.Tests` (xUnit, headless, no GPU).
+- Step 1.1 makes `Core` and the `World` root with nothing in it; `Ships` comes in 2.1 and `Combat` in 2.2. The
+  layering is the same; only the order the layers fill in changed.
 
 Rules:
 
-- **The battle lives in `Fleetwright.Sim`, in layers of its own** (see "Inside `Fleetwright.Sim`"). It has no GPU, UI
-  or engine dependency. `ShipClassArt` and the sprite renderer are on the exe's side and only read the sim's snapshot.
-- The battle is the world's tactical tier (`docs/world/architecture.md`): every step keeps to that doc's "What the
-  combat module must already respect" (world positions and time, encounters as sets of entities, `ShipState` made
-  and dropped per entity, damage from a hit not a flight, sighting into a navy's picture, commands in, `SimSettings`).
-- `Hitboxes` stays the export and interchange; nothing in the battle reads it after compiling. `ShipClass` is never
+- **The ship simulation lives in `Fleetwright.Sim`, in layers of its own** (above). It has no GPU, UI or engine
+  dependency. `ShipClassArt` and the sprite renderer are on the exe's side and only read the sim's snapshot.
+- Combat is the world's tactical tier (`docs/world/architecture.md`): every step keeps to that doc's "What the ship
+  simulation must already respect" (world positions and time, encounters as sets of entities, `ShipState` made and
+  dropped per entity, damage from a hit not a flight, sighting into a navy's picture, commands in, `SimSettings`).
+- `Hitboxes` stays the export and interchange; nothing in the sim reads it after compiling. `ShipClass` is never
   written after it's made.
 - Per-ship arrays are allocated once at spawn; ticks and hit queries allocate nothing (the game is soft real time).
 - Indices are stable for one design and one shipgen version (the build is deterministic: the goldens). At runtime
   everything is by index. Save files hold string ids and are mapped back to indices on load (decision 3).
 
-## The world: one sphere, local frames inside it (agreed 2026-10-11)
+### The world: one sphere, local frames inside it (agreed 2026-10-11)
 
 The question: at combat ranges, assume the sea is flat, or always work on the sphere? Agreed: **the sphere is the one
 truth for the sim, everywhere**; flatness exists only inside frames small enough that it's exact to what's being done
@@ -233,7 +499,7 @@ How:
 Determinism: the sim is fixed-tick doubles; trigonometry only where a frame is built, so the same inputs give the same
 battle on one build and platform (cross-platform lockstep isn't a goal yet).
 
-### Shells: an analytic trajectory, tracked, not integrated
+#### Shells: an analytic trajectory, tracked, not integrated
 
 The sim may run on large ticks (seconds), so a shell can't be stepped with a numerical integrator per tick: its
 result would change with the tick length, and a long tick would chord straight through a ship. Instead each shell's
@@ -261,7 +527,7 @@ whole flight is known the moment it's fired, and the sim looks positions up on i
   (later) are tested along the whole track the same way.
 - **Splashes and near misses** come from the same solve: the impact point and time are known at firing.
 
-## Damage on the sprites
+### Damage on the sprites
 
 The rule stays "one physical model": what damage looks like comes from the hitboxes and the state, never from geometry
 of its own.
@@ -275,68 +541,18 @@ of its own.
   component's hitbox polygon (scorch, wreckage, a funnel gone).
 - **Fire and smoke** emit from the components' and cells' positions and tops.
 
-## Steps
+## Decisions
 
-Each step ends verified and committed, with its notes added here.
+The user's, 2026-10-12, on the module:
 
-0. **Before step 1, in shipgen** (its own commits, goldens updated on purpose): unique component ids (the duplicate
-   `Hangar`), and `Component.Mount` split into a link and a `Casemate` flag ("The code, checked again"). Small, but
-   the compiler is strict, so these go first.
-1. **`ShipClass`, the compiler.** It creates the `Fleetwright.Sim` project (`Core` and `Ships` only, with
-   `tests/Fleetwright.Sim.Tests`). It compiles a `Ship`'s hitboxes and links into int-indexed, read-only arrays:
-   - component kinds and roles as enums, common columns plus side tables;
-   - CSR adjacency (each edge → its bulkhead or deck);
-   - the mount table, the armour solids, the id ↔ index maps;
-   - the design hash and the layout hash.
+1. **The battle module is a deliverable:** the final game's whole ship simulation on the world map, with the full
+   zoom, plus a mission UI that places forces and handles objectives in place of the political system and
+   manufacturing.
+2. **Build from the ground up:** first a world (a sphere of water until the user brings the world map), then ships
+   moving on it, then the rest.
+3. **Keep the number of ships in mind** ("How many ships").
 
-   Strict: an unknown kind or a link that doesn't resolve is an error. Proofs:
-   - The compiler runs over every golden build without an error.
-   - ShellTest's shots are drawn up front (one stream per shot), and the old tracer and the port on `ShipClass`
-     agree shot by shot on every design with a citadel.
-   - `shell-test` in the CLI runs the port. The old `ShellTest` goes once they match.
-
-   Nothing in it allocates per query, and nothing writes to a class once it's made.
-2. **`ShipState` and spawning.** The condition arrays, filled from the class's initial loads, and the pose on the
-   sphere ("The world": the double vector types, moving on the sphere, the ship frame). Test: 50 ships of one class
-   share one `ShipClass` and none writes to it; a ship steaming a full circle of the globe, across a pole, comes back
-   where it started.
-3. **The hit query.** A segment, Earth-centred, to ship-local (pose, sinkage, trim, heel), broadphase on
-   `BroadphaseR`, then turrets at the ship's bearings, the hull, armour and cells. Returns indices, not strings.
-   Headless, allocation-free, tested.
-4. **The class registry.** Builds many designs in parallel keyed by content hash, none dropped; refcounted; frees the
-   CPU images after the GPU upload; the `HitboxMesh` only on request. `DesignSession` stays the designer's one-ship
-   view and may sit on top of it.
-5. **The batch sprite renderer.** Per-class GPU textures (texture arrays by size class, per
-   `research/naval/realtime-tech-stack-plan.md`), many ships drawn into an existing pass from their transforms,
-   bearings and damage values, sinkage from the height map. Then a test scene: a few ships, click to hit one and watch
-   its state change.
-6. **Damage rules.** Flooding first, and disabling components. Penetration and the systems' dependency graph
-   (`research/simulation/damage-model-research.md` §8-9) after. Buoyancy starts simple (decision 4): first they
-   float, then they float in a more detailed way.
-   - **First:** water by cell (volume × permeability), inflow through a breach's area. The ship settles, trims and
-     heels linearly from the exported full-load `Hydrostatics` (sinkage = added weight / TPC, trim from the moment
-     over MCT, heel from GM_T). It sinks when the water aboard exceeds the reserve buoyancy (the intact volume above
-     the waterline) or capsizes when heel passes a limit from `SimSettings`. No leaking bulkheads, free surface,
-     counter-flooding or motion past the deck edge yet.
-   - **Then, area by area:** leaks through bulkheads and decks, free surface, `sinking.py`'s non-linear settling,
-     pumping and counter-flooding, a plunge or capsize that plays out. Each is its own small step, checked against
-     the previous one.
-   - This will change once the damage model is in, because flooding and damage interact heavily: fire and flooding
-     share cells, power drives pumps, a jammed rudder steers into it. So the first version's job is to be easy to
-     change, not complete.
-7. **Shells in flight** ("Shells"). The trajectory tables per shell type and their builder (checked against direct
-   integration), the shell record, the impact and danger-window solve, the event schedule, and the window's sweep
-   through step 3's query. Test: hits and splashes are the same at a 0.1 s and a 5 s tick; a shell fired along a
-   meridian and one along the equator land where direct integration on the rotating sphere says.
-
-## Order against the missions plan
-
-`docs/missions/plan.md` orders the game's stages: one ship on the map, then two, then shooting. Steps 0-1 don't
-conflict with that. They're headless, they set up `Fleetwright.Sim`, and stage 1 needs a ship of a class anyway. So
-the next session does steps 0-1. After that, the missions stages decide when steps 2-7 come in. Step 2's pose on the
-sphere is part of stage 1.
-
-## Decisions (the user's, 2026-10-12)
+The user's, 2026-10-12, on the ships' data:
 
 1. **Names:** `ShipState` for one ship at sea. It's easy to rename later, and its storage may become an entity
    component system (hence the accessors in "The shape"). `ShipClass` and `ShipClassArt` stay as named here.
@@ -351,10 +567,17 @@ sphere is part of stage 1.
 
 ## Open questions
 
-1. **The layering inside `Fleetwright.Sim`** ("Inside `Fleetwright.Sim`") is proposed, not agreed: check it at the
-   start of step 1.
-2. **The shipgen fixes of step 0** (unique ids, the `Casemate` flag) change the export. Confirm them at the start of
-   step 0.
+1. **In or out of the battle module?** My recommendation for each:
+   - **Resolved fights:** out. Every fight in a mission is the player's at Full; Resolved is for the world's NPC wars.
+     But it's part of "the whole ship simulation", and a large mission could hand side fights to it.
+   - **Aircraft:** out. They're a module of their own (spotting, search, strikes). Missions use scripted reports
+     until then (missions decision 2).
+   - **Submarines:** out, after aircraft (missions decision 2).
+2. **The targets in "How many ships"** (Jutland at 10x, 2,000 on rails at 30,000x, load times): proposed. Confirm or
+   change them at step 2.6.
+3. **The layering inside `Fleetwright.Sim`** is proposed, not agreed: check it at step 1.1.
+4. **The shipgen fixes in step 2.1** (unique ids, the `Casemate` flag) change the export. Confirm them at the start of
+   that step.
 
 ## Background
 

@@ -12,6 +12,15 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-12 - How many ships were at sea: navies and merchant fleets
+- Question: how many seagoing ships did the world have, by nation, in 1914, 1922, 1939 and 1944? Warships by type
+  (capital ships, cruisers, destroyers and torpedo boats, escorts, submarines) and merchants (steamers and sailing
+  ships over ~500 GRT, and how many were at sea on a typical day rather than in port). And the largest single actions
+  by ships engaged and by classes present (Jutland's 250 ships: how many classes?).
+- Context / relevant files: `docs/battle/plan.md` "How many ships" (load and tick budgets), `docs/world/architecture.md`
+  "Many small fights" (merchants as light tracks; it assumes ~9,000, Britain's 1914 figure).
+- Wanted output: a table per year and nation, with sources, and the few largest actions with ships and classes.
+
 ### 2026-10-11 - Historical search and interception operations as mission seeds
 - Question: which naval operations 1890-1950 make good "find it and fight it" missions, with fixed forces in a
   limited area? For each: the forces on each side (ships, groups, where they started), the area and duration, what

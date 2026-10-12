@@ -207,9 +207,10 @@ Content/                      # copied into the game's output folder; the bake s
   Shaders/Source/             #   GLSL sources
   Shaders/Compiled/           #   SPIR-V binaries (checked in)
 docs/shipgen/                 # the ship designer: inputs, outputs, conventions, decisions, TODO, its research notes
-docs/battle/plan.md           # the battle module's data plan (ShipClass, ShipState, the steps): one step per session
+docs/battle/plan.md           # the battle module (a deliverable: the whole ship sim on the world map + missions):
+                              #   what done means, ship counts, the build order from a world of water up, the ships' data
 docs/world/architecture.md    # the world: tiers of time on one clock, the sim thread, commands/snapshot, the scene stack
-docs/missions/plan.md         # the first shippable game: missions (format, objectives, generator) and the step order
+docs/missions/plan.md         # missions, the battle module's stand-in for politics and manufacturing (format, objectives, UI, generator)
 research/                     # research notes, see below
 ```
 
