@@ -50,6 +50,11 @@ public sealed class ShipsView
     public Combat.Helm[] Helm = [];
     public double[] CourseOrderDeg = [], SpeedOrderKn = [];
 
+    /// <summary>Who commands each ship and how, filled by the AI (0: nobody, the player's own orders stand); the
+    /// meaning of the order is the AI's (<c>Fleetwright.Sim.Ai.CaptainOrder</c>), with its target ship's entity or 0.</summary>
+    public byte[] Captain = [];
+    public int[] CaptainTarget = [];
+
     /// <summary>Each ship's route still to steam: <see cref="RouteCount"/> waypoints from <see cref="RouteStart"/> in
     /// <see cref="Waypoints"/> (the next one first).</summary>
     public int[] RouteStart = [], RouteCount = [];
@@ -89,6 +94,8 @@ public sealed class ShipsView
         Array.Resize(ref Helm, n);
         Array.Resize(ref CourseOrderDeg, n);
         Array.Resize(ref SpeedOrderKn, n);
+        Array.Resize(ref Captain, n);
+        Array.Resize(ref CaptainTarget, n);
         Array.Resize(ref RouteStart, n);
         Array.Resize(ref RouteCount, n);
     }

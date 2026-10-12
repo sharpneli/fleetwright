@@ -15,6 +15,7 @@ dotnet test
 dotnet run --project src/Fleetwright                                       # the world: the globe, its clock running at 1x
 dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48 [-speed=30000] [-paused]   # map camera: lat,lon,m/px; world start UTC
 dotnet run --project src/Fleetwright -- -ships=dreadnought:9 -map=56.51,4.02,3 [-select=1]   # dev ships in the North Sea (sprites close, icons far), every other turning to 135°
+dotnet run --project src/Fleetwright -- -ships=dreadnought:2 -captain=2:follow:1:800 -select=2   # a captain: follow:target[:m], run:target, keep, none
 dotnet run --project src/Fleetwright -- -view=designer                    # the designer on bismarck (any designer flag below opens it too)
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
@@ -230,6 +231,9 @@ src/
   Fleetwright.Sim.Combat/     # ships at sea: ShipStore (slots, state in columns), ShipState (a handle), Handling (a
                               #   class's numbers for moving), ShipMotion (the step: Nomoto turning, forces on the
                               #   power curve, arcs on the sphere; the helmsman: courses and routes)
+  Fleetwright.Sim.Ai/         # the AI above the world: AiSystem (layers of command, top-down, each at its rate),
+                              #   Knowledge/ (IPicture; TruthPicture until sighting), Captains/ (CaptainLayer,
+                              #   Behaviours: keep course, follow, run); admirals and admiralties go beside Captains/
   Fleetwright.Sim/            # the world: World (clock, speed, events, commands in, snapshot out), Scheduler,
                               #   IWorldSystem, ShipSystem (every ship, the ship tick, ship commands), SimHost (the sim
                               #   thread), TripleBuffer; no GPU or UI, runs headless

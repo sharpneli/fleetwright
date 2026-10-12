@@ -1,4 +1,5 @@
 using Fleetwright.Sim;
+using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
@@ -19,6 +20,10 @@ public sealed class WorldSession : IDisposable
     /// world. Thread-safe; the map requests designs here and spawns ships by the ids it gives.</summary>
     public ShipClassRegistry Classes { get; }
 
+    /// <summary>The world's AI (captains). Owned by the sim thread: the UI only builds commands with it
+    /// (<see cref="AiSystem.Captain"/>, which reads nothing but its id) and sends them.</summary>
+    public AiSystem Ai { get; }
+
     /// <summary>A world with the shipped settings (Content/Sim/settings.json) and the app's class registry.
     /// <paramref name="setup"/> runs on it before its thread starts: the dev ships (-ships=) until missions place
     /// forces.</summary>
@@ -27,6 +32,7 @@ public sealed class WorldSession : IDisposable
         Classes = classes;
         var settings = SimSettings.Load(Path.Combine(AppContext.BaseDirectory, "Content", "Sim", "settings.json"));
         var w = new World(start, seed, settings, classes);
+        Ai = new AiSystem(w);
         setup?.Invoke(w);
         host = new SimHost(w);
         host.Start();

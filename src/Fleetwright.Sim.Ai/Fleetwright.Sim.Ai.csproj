@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The sim's command sources that aren't the player (docs/battle/plan.md step 2.3b; docs/world/architecture.md
+       "NPC navies are command sources"): captains now, admirals and admiralties later, each a layer in a folder of
+       its own. Above the world: the world doesn't know it, a host registers it. It gives the same commands a player
+       does and reads only what its side knows (Knowledge/). -->
+  <PropertyGroup>
+    <RootNamespace>Fleetwright.Sim.Ai</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Fleetwright.Sim.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fleetwright.Sim.Core\Fleetwright.Sim.Core.csproj" />
+    <ProjectReference Include="..\Fleetwright.Sim.Combat\Fleetwright.Sim.Combat.csproj" />
+    <ProjectReference Include="..\Fleetwright.Sim\Fleetwright.Sim.csproj" />
+  </ItemGroup>
+
+</Project>

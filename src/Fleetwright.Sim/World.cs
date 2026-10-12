@@ -80,10 +80,24 @@ public sealed class World
         scheduler.Push(time, tier, entity, system, code, generation, a);
     }
 
-    /// <summary>Applies a command at the current time and logs it.</summary>
+    /// <summary>Applies a command at the current time and logs it: an input from outside (a player, a host).</summary>
     public void Apply(in Command c)
     {
         log.Add(new StampedCommand(Time, c));
+        Run(in c);
+    }
+
+    /// <summary>Applies a command the sim gave itself (an AI's order to its ship), by the same path as
+    /// <see cref="Apply"/> but not logged: a replay runs the same AI and gives it again.</summary>
+    public void Issue(in Command c)
+    {
+        if (c.System == 0)
+            throw new ArgumentException("the world's own commands come from outside");
+        Run(in c);
+    }
+
+    void Run(in Command c)
+    {
         if (c.System != 0)
         {
             SystemOf(c.System).Apply(this, in c);
@@ -178,6 +192,9 @@ public sealed class World
         s.Speed = Speed;
         s.Paused = Paused;
         Ships.Fill(s.Ships);
+        foreach (var sys in systems)
+            if (sys != Ships)
+                sys.Fill(s);
     }
 
     /// <summary>A hash of all the world's state (not the target, which is the host's pacing, nor the log).</summary>

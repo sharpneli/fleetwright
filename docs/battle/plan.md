@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4, 2.1, 2.2 and 2.3a are done (2026-10-12); the next is 2.3b, two ships and a trivial captain.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.3 are done (2026-10-12); the next is 2.4, groups and formations.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -705,6 +705,47 @@ a course, follow, run (stage 2).
       frame.
 - **Left for 2.3b:** the second ship and its trivial captain (keep course, follow, run).
 
+**2.3b done (2026-10-12): two ships, a trivial captain.** Built as agreed, with the AI organised for its later layers
+(the user):
+- **`Fleetwright.Sim.Ai`**, a project above the world. The world doesn't know it; a host registers it.
+  - `AiSystem` is its one `IWorldSystem`. It holds the layers of command top-down. Each layer thinks at its own rate
+    on a grid of world time, only while it has anything to do. The layers think before the ship tick at a shared
+    moment, the top layer first.
+  - `IAiLayer` is the contract for a layer.
+  - `Knowledge/` holds `IPicture` (what a side knows of other ships) and `TruthPicture`, true positions: the marked
+    exception until 3.2. Layers ask the picture, never the world.
+  - `Orders` gives the player's own ship commands.
+  - **`Captains/`**: `CaptainLayer` holds one captain per ordered ship, in entity order, thinking at 1 Hz;
+    `Behaviours` are pure functions.
+  - **Admirals** (groups, 2.4) and **admiralties** (navies) go in folders beside `Captains/` as layers above it.
+- **Replays:** the AI's ship orders go through `World.Issue`, the same apply path as `World.Apply` but not logged, so
+  a replay re-derives them. The player's orders to captains are logged.
+- **The world:** systems fill their own part of the snapshot (`IWorldSystem.Fill`). The snapshot has
+  `Captain`/`CaptainTarget` per ship.
+- **Behaviours:**
+  - **Keep course** holds what the ship had, taking back other orders.
+  - **Follow** keeps station at a distance astern of another ship, matching its speed plus what closes the gap in
+    90 s. It steers for a point ahead of itself on the leader's line; while ahead of station it runs parallel to the
+    leader and drops back by speed, so it neither turns round nor cuts across the leader. The first version did
+    both.
+  - **Run** turns straight away and rings flank.
+  - Captains give an order only when the change is past a deadband (1°, 0.3 kn). The numbers are in `SimSettings`.
+- **Fixed on the way:** `SimEvent.Compare` boxed two enums whenever two events shared a moment (`Enum.CompareTo` takes
+  an object). Now it compares bytes.
+- **On the world tab:** the selected ship's captain row (player's orders, keep course, follow, run from), a target
+  ship, and the station's distance; a link drawn to the target. The flag `-captain=2:follow:1[:800]`.
+- **Checked:**
+  - `CaptainTests`:
+    - a follower 12 m off station after 30 min, and 17 m twenty minutes after the leader turns 90°;
+    - a runner opens the range every minute, heading within 5° of straight away;
+    - keep course undoes a rudder order;
+    - a replay of the logged orders gives the same hash;
+    - captains of dropped ships go;
+    - 40 ships and 20 captains allocate nothing.
+  - Screenshot: a follower spawned abeam runs parallel and drops back.
+- **Not yet:** collision avoidance (collisions are in the module's era list), and a follower's choice of side when the
+  leader turns sharply.
+
 **2.4 Groups and formations.** Groups with a leader and stations; one order moves the group; keeping station is the
 first captain behaviour.
 
@@ -974,6 +1015,7 @@ Fleetwright.Sim.Core      double vectors, the sphere (great circles, frames), wo
 Fleetwright.Sim.Ships     ShipClass, its compiler from Shipgen's Ship, the class registry, content hashes
 Fleetwright.Sim.Combat    ShipState and its models: movement, the hit query, damage, flooding, buoyancy, shells
 Fleetwright.Sim (World)   the world, the clock and scheduler, clock tiers, encounters, commands in, the snapshot out
+Fleetwright.Sim.Ai        the AI's layers (captains; admirals, admiralties later), above the world, registered by a host
 ```
 
 - `Ships` is pure data and compilation: no time, no world, nothing that changes. `Combat` gets time and a `dt`

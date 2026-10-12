@@ -84,6 +84,23 @@ public sealed record SimSettings
     /// <summary>A route's last waypoint counts as reached inside this, metres.</summary>
     public double ArrivalRadiusM { get; init; } = 300;
 
+    // ------------------------------------------------------------------ the AI (docs/battle/plan.md step 2.3b)
+
+    /// <summary>How often captains think, ms of world time (on a grid of it).</summary>
+    public int CaptainPeriodMs { get; init; } = 1000;
+
+    /// <summary>A captain re-gives an order only when what he wants differs from what's ordered by more than this.</summary>
+    public double CaptainCourseDeadbandDeg { get; init; } = 1;
+    public double CaptainSpeedDeadbandKn { get; init; } = 0.3;
+
+    /// <summary>Following: the station astern of the leader when the order gives none, in the follower's lengths; how far
+    /// past the station he steers for, in the same lengths (pursuing a point ahead keeps him from snaking); how fast he
+    /// closes a gap along the line, seconds to make it good; and the most he goes over or under the leader's speed.</summary>
+    public double FollowDistanceLengths { get; init; } = 3;
+    public double FollowLookaheadLengths { get; init; } = 4;
+    public double FollowCloseS { get; init; } = 90;
+    public double FollowMaxSpeedDiffKn { get; init; } = 6;
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its

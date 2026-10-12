@@ -28,7 +28,7 @@ public readonly record struct SimEvent(
         int c = a.Time.Ms.CompareTo(b.Time.Ms);
         if (c != 0)
             return c;
-        c = a.Tier.CompareTo(b.Tier);
+        c = ((byte)a.Tier).CompareTo((byte)b.Tier);   // as bytes: an enum's CompareTo takes an object and boxes
         if (c != 0)
             return c;
         c = a.Entity.CompareTo(b.Entity);

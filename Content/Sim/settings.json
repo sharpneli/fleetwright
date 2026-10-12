@@ -28,5 +28,14 @@
   "StandardRudderDeg": 15,
   "HelmGain": 1.5,
   "HelmLeadOverT": 1.2,
-  "ArrivalRadiusM": 300
+  "ArrivalRadiusM": 300,
+
+  // the AI (docs/battle/plan.md step 2.3b)
+  "CaptainPeriodMs": 1000,
+  "CaptainCourseDeadbandDeg": 1,
+  "CaptainSpeedDeadbandKn": 0.3,
+  "FollowDistanceLengths": 3,
+  "FollowLookaheadLengths": 4,
+  "FollowCloseS": 90,
+  "FollowMaxSpeedDiffKn": 6
 }

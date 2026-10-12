@@ -21,6 +21,7 @@ public static unsafe class Program
         bool startPaused = false;
         string? devShips = null;
         int selectShip = -1;
+        var captains = new List<string>();
         bool frameTimes = false;
 
         foreach (string arg in args)
@@ -100,6 +101,10 @@ public static unsafe class Program
             else if (arg.StartsWith("-ships="))   // dev ships in the North Sea: -ships=dreadnought[:count]
             {
                 devShips = arg.Substring("-ships=".Length);
+            }
+            else if (arg.StartsWith("-captain="))   // a dev ship's captain: -captain=2:follow:1[:800], keep, run:1, none
+            {
+                captains.Add(arg.Substring("-captain=".Length));
             }
             else if (arg.StartsWith("-select="))   // the ship selected on the map at start, by entity id (screenshots)
             {
@@ -199,6 +204,11 @@ public static unsafe class Program
             using var classes = new Sim.Ships.ShipClassRegistry();
             using var shipArt = new Map.ShipArtLibrary((SDL.SDL_GPUDevice*)device, classes);
             using var world = new Map.WorldSession(start, 1, classes, devShips != null ? w => SpawnDevShips(w, devShips) : null);
+            foreach (var cap in captains)
+                if (DevCaptain(world.Ai, cap) is { } order)
+                    world.Send(order);
+                else
+                    Console.Error.WriteLine($"Bad captain: -captain={cap} (want entity:follow:target[:metres], entity:run:target, entity:keep or entity:none)");
             if (startSpeed is double speed0)
                 world.Send(Sim.Command.SetSpeed(speed0));
             if (startPaused)
@@ -243,6 +253,25 @@ public static unsafe class Program
             w.Apply(Sim.ShipSystem.Spawn(c, 56.5 + dLat * (i / side), 4.0 + dLon * (i % side), 45, 15));
         for (int e = 2; e <= count; e += 2)
             w.Apply(Sim.ShipSystem.Course(e, 135));
+    }
+
+    /// <summary>-captain=entity:order[:target[:metres]]: a captain's order for a dev ship.</summary>
+    static Sim.Command? DevCaptain(Sim.Ai.AiSystem ai, string arg)
+    {
+        var p = arg.Split(':');
+        if (p.Length < 2 || !int.TryParse(p[0], out int e))
+            return null;
+        int target = p.Length > 2 && int.TryParse(p[2], out int t) ? t : 0;
+        double metres = p.Length > 3 && double.TryParse(p[3], System.Globalization.CultureInfo.InvariantCulture, out double m) ? m : 0;
+        Sim.Ai.Captains.CaptainOrder? order = p[1] switch
+        {
+            "follow" => Sim.Ai.Captains.CaptainOrder.Follow,
+            "run" => Sim.Ai.Captains.CaptainOrder.Run,
+            "keep" => Sim.Ai.Captains.CaptainOrder.KeepCourse,
+            "none" => Sim.Ai.Captains.CaptainOrder.None,
+            _ => null,
+        };
+        return order is { } o ? ai.Captain(e, o, target, metres) : null;
     }
 
     /// <summary>The design shown without -ship=: a game asset (GameAsset in the csproj), next to the exe.</summary>

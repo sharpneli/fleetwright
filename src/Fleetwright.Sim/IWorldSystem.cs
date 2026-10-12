@@ -2,7 +2,7 @@ using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim;
 
-/// <summary>A part of the world with events and commands of its own (the ships in the fine clock tier; later: rails, encounters).
+/// <summary>A part of the world with events and commands of its own (the ships in the fine clock tier, the AI's layers; later: rails, encounters).
 /// Registered once with <see cref="World.Register"/>, which gives it the id its events and commands carry. It's
 /// called only from the thread advancing the world, and allocates nothing in either call.</summary>
 public interface IWorldSystem
@@ -15,4 +15,9 @@ public interface IWorldSystem
 
     /// <summary>Mixes all of its state into the world's hash.</summary>
     void Hash(ref StateHash h);
+
+    /// <summary>Copies its part of what the screens need into a snapshot, after the world's; allocates nothing.</summary>
+    void Fill(Snapshot s)
+    {
+    }
 }

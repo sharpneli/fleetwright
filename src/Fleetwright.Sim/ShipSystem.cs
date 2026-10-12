@@ -191,6 +191,8 @@ public sealed class ShipSystem : IWorldSystem
             v.Helm[n] = ship.Helm;
             v.CourseOrderDeg[n] = ship.CourseOrderDeg;
             v.SpeedOrderKn[n] = ship.SpeedOrderKn;
+            v.Captain[n] = 0;   // the AI fills its own, after
+            v.CaptainTarget[n] = 0;
             int left = ship.Helm == Helm.Route ? ship.RouteCount - ship.RouteNext : 0;
             v.EnsureWaypoints(w + left);
             v.RouteStart[n] = w;

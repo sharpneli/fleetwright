@@ -1,5 +1,6 @@
 using System.Numerics;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Ai.Captains;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
@@ -28,6 +29,9 @@ public sealed unsafe partial class MapScene
     bool placing;
     int courseEdit;
     bool hardOver;
+    int followMetres = 800;
+
+    static readonly string[] CaptainNames = ["Player's orders", "Keep course", "Follow", "Run from"];
 
     /// <summary>A short wake of positions behind each ship, sampled in game time; made when a ship is first seen.</summary>
     sealed class Track
@@ -46,7 +50,7 @@ public sealed unsafe partial class MapScene
     long frame;
 
     static readonly Vector4 TrackColor = new(0.85f, 0.9f, 1f, 0.35f), RouteColor = new(1f, 0.85f, 0.4f, 0.55f),
-        RouteSelected = new(1f, 0.8f, 0.3f, 0.95f), SelectColor = new(1f, 0.78f, 0.25f, 0.95f), CourseColor = new(1f, 1f, 1f, 0.6f);
+        RouteSelected = new(1f, 0.8f, 0.3f, 0.95f), SelectColor = new(1f, 0.78f, 0.25f, 0.95f), CourseColor = new(1f, 1f, 1f, 0.6f), TargetColor = new(1f, 0.78f, 0.25f, 0.45f);
 
     // ------------------------------------------------------------------ lines over the globe
 
@@ -102,6 +106,16 @@ public sealed unsafe partial class MapScene
             {
                 double len = lengthOf(v.Class[k]) * view.Altitude / view.MetresPerPixel / Math.Max(Vec3d.Dot(p - view.Eye, view.Forward), 1e-3);
                 Ring(view, p, Math.Max(len / 2, ShipDrawList.IconLengthPx / 2) + 7, SelectColor, 2f);
+                int t = v.Captain[k] != 0 ? v.IndexOf(v.CaptainTarget[k]) : -1;
+                if (t >= 0)
+                {
+                    // the ship its captain follows or runs from
+                    var (tp, _) = v.PoseAt(t, s.Time.Ms);
+                    overlay.BeginStrip(TargetColor, 1f);
+                    Point(view, p);
+                    Point(view, tp);
+                    overlay.End();
+                }
                 if (v.Helm[k] == Helm.Course)
                 {
                     // the ordered course, a short line on from the bow
@@ -215,6 +229,71 @@ public sealed unsafe partial class MapScene
 
     // ------------------------------------------------------------------ the panels
 
+    /// <summary>The selected ship's captain: who gives its orders (the player, or its captain keeping course, following
+    /// or running from another ship), the other ship, and the station's distance.</summary>
+    void CaptainRow(Snapshot s, int k)
+    {
+        var v = s.Ships;
+        var order = (CaptainOrder)v.Captain[k];
+        int target = v.CaptainTarget[k];
+        ImGui.Text("Captain:");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(130 * UiFonts.Scale);
+        int pick = (int)order;
+        if (ImGui.Combo("##captain", ref pick, CaptainNames, CaptainNames.Length) && pick != (int)order)
+        {
+            var o = (CaptainOrder)pick;
+            if (o is CaptainOrder.Follow or CaptainOrder.Run && (target == 0 || v.IndexOf(target) < 0))
+                target = Nearest(s, k);
+            if (o is CaptainOrder.Follow or CaptainOrder.Run && target == 0)
+                o = CaptainOrder.None;   // nobody else at sea to follow or run from
+            world.Send(world.Ai.Captain(selected, o, target, followMetres));
+        }
+        if (order is CaptainOrder.Follow or CaptainOrder.Run)
+        {
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(170 * UiFonts.Scale);
+            if (ImGui.BeginCombo("##target", ShipLabel(s, target)))
+            {
+                for (int j = 0; j < v.Count; j++)
+                    if (j != k && ImGui.Selectable(ShipLabel(s, v.Entity[j]), v.Entity[j] == target))
+                        world.Send(world.Ai.Captain(selected, order, v.Entity[j], followMetres));
+                ImGui.EndCombo();
+            }
+        }
+        if (order == CaptainOrder.Follow)
+        {
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(90 * UiFonts.Scale);
+            if (ImGui.InputInt("m astern", ref followMetres, 100, 500, ImGuiInputTextFlags.EnterReturnsTrue))
+            {
+                followMetres = Math.Clamp(followMetres, 100, 20_000);
+                world.Send(world.Ai.Captain(selected, order, target, followMetres));
+            }
+        }
+    }
+
+    string ShipLabel(Snapshot s, int entity)
+    {
+        int j = s.Ships.IndexOf(entity);
+        return j < 0 ? "-" : $"#{entity} {world.Classes.TryGet(s.Ships.Class[j])?.Name ?? "?"}";
+    }
+
+    /// <summary>The entity of the ship nearest ship k, or 0.</summary>
+    static int Nearest(Snapshot s, int k)
+    {
+        var v = s.Ships;
+        int best = 0;
+        double bestD = double.MaxValue;
+        for (int j = 0; j < v.Count; j++)
+        {
+            double d = j == k ? double.MaxValue : Earth.Distance(v.Position[j], v.Position[k]);
+            if (d < bestD)
+                (best, bestD) = (v.Entity[j], d);
+        }
+        return best;
+    }
+
     void ShipsUi()
     {
         var vp = ImGui.GetMainViewport();
@@ -325,6 +404,7 @@ public sealed unsafe partial class MapScene
                         ImGui.PopStyleColor();
                 }
             }
+            CaptainRow(s, k);
             ImGui.TextDisabled("right-click the sea: steer for it · shift+right-click: add a waypoint · click elsewhere: deselect");
         }
         ImGui.End();
