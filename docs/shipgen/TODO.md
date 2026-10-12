@@ -29,13 +29,15 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Ammunition weights found by name: `ordnance.stow` takes the `"Magazine <mount id>"` weights (a field on the Weight, or the mount holding its weight)
 - [ ] `armament.side_pairs` defaults torpedo mounts to 25.0 mm armour (carriers, merchants): torpedo mount armour isn't an input
 - [ ] Split layout.py: shared primitives (public names) vs the warship's `build_layout` into styles/warship.py
-- [ ] `Geo.plant` is still a nested dict (~14 keys, read in 9 modules): its own dataclass
-- [ ] Private `_` keys as side channels: `b["_plate_mm"]` (layout → hitbox), `spec["_clutter"]` (shipgen → render)
+- [x] `Geo.plant` is still a nested dict: typed `PlantPlan` record since the port's cleanup
+- [x] Private `_` keys as side channels: `_plate_mm` is the block's typed `PlateMm`, `_clutter` gone with the typed port
 - [x] Mount rest bearing stored twice (`lay.mounts`, `lay.spec["turrets"]`): gone with the render spec (2026-10-10)
 - [x] Height columns and hitboxes restate the same shapes: the height map is built from the hitboxes (2026-10-10)
 - [ ] `finish_layout` places the search radar and computes windage
-- [ ] Arc helpers reimplemented (geometry, vidgen `in_arc`, verify, shipgen `clamp_angle`); legacy `traverse` means ± degrees
-- [ ] Small: `RAISED_ANCHORS` defined twice; validators copy the dotted-path walk; merchant/planing import helpers from carrier
+- [x] Arc helpers reimplemented: the copies were Python-only modules (vidgen, verify, legacy shipgen); C# has one (`Geometry.AngleAllowed`)
+- [x] `RAISED_ANCHORS` defined twice: one list in `Style.RaisedAnchors`, `LayoutParts` points to it
+- [ ] Small: validators copy the dotted-path walk; merchant/planing import helpers from carrier
+- [ ] Carrier's own `_common` layout setup and its "machinery over half the hull" check, which other styles don't make (left over from unifying the styles)
 
 ## Speed
 - [ ] Re-measure extreme wing-turret pairs (9–15) and 30 deckhouse levels after the 2026-10-08 optimization pass
@@ -62,6 +64,7 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Funnel gas area not re-planned for raised (taller) funnels
 - [ ] Hotel electrical load and distiller energy
 - [ ] Crew fills citadel cells first (optional, deferred by user)
+- [ ] Accommodation spilling into a grown superstructure as an alternative to hull length (ties in with "Upper levels growing")
 - [ ] Morale inputs in the report: quarters' surroundings (beside boilers, below waterline, wet ends) per rank
 - [ ] Morale inputs in the report: per-rank sleep space and the officer/rating gap (`sleep_m2_per_man` is an all-hands average)
 
@@ -70,6 +73,8 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Report: per-battery rounds and magazine tonnes, so the designer UI can show the endurance-vs-weight trade
 - [ ] Abreast wing pairs keep full barrel swings apart: Lord Nelson and Danton run 30 % long
 - [ ] Torpedo placement full check (Japanese-cruiser-size batteries, funnel spacing, swing room) (deferred by user)
+- [ ] Export ammunition per battery (propellant family, flash-reducer salt, bag or cased) for the battle's magazine and fire damage; vidgen guessed it from the navy
+- [ ] Undecided (user): should MTB guns become secondaries? Planing craft still have a main battery
 
 ## Superstructure
 - [ ] Upper levels growing, gated by use (terraces recommended; fresh session)
@@ -94,6 +99,8 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 ## Damage model and hitboxes
 - [ ] Cells list barbettes, uptakes and casings passing through
 - [ ] Double-bottom contents (oil, water)
+- [ ] Merchants' holds still span the full height of the deck stack (carriers' magazines and avgas were lowered)
+- [ ] Component ids repeat across kinds (seaplane carrier's `Hangar` block and hangar bay): the game must key by kind and id, or ids become unique
 - [ ] TDS layers in detail
 - [ ] Clean up remaining shared cells
 - [ ] Links and flags: engine room → shaft, generators → power networks, grouped vs alternating machinery, fuel type, bottom layers, riveted/welded, centreline bulkhead, TDS depth along length
