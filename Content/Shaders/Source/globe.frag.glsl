@@ -2,10 +2,13 @@
 // The globe of water (GlobeRenderer): each pixel's ray against the sphere, in units of the Earth's radius with the
 // camera at the origin. The one large quantity, |eye|² - 1, comes from doubles on the CPU, and the nearer root is
 // taken without cancellation, so the hit holds from orbit down to a few metres over the sea. Nothing here places
-// anything that must stay put (that's done in double on the CPU): it shades plain water, day and night from the sun,
-// and the limb with its glow.
+// anything that must stay put (that's done in double on the CPU): it shades plain water and the land, day and night
+// from the sun, and the limb with its glow. Where the land is comes from the winding count LandView's fill left in
+// the coverage target, pixel for pixel.
 layout(location = 0) in vec2 fragNdc;
 layout(location = 0) out vec4 outColor;
+
+layout(set = 2, binding = 0) uniform sampler2D coverage;   // the land's winding number per pixel
 
 layout(set = 3, binding = 0) uniform Globe
 {
@@ -20,6 +23,8 @@ const vec3 Space = vec3(0.006, 0.008, 0.016);
 const vec3 DaySea = vec3(0.13, 0.31, 0.43);
 const vec3 NightSea = vec3(0.012, 0.025, 0.05);
 const vec3 Glow = vec3(0.30, 0.50, 0.85);
+const vec3 DayLand = vec3(0.34, 0.36, 0.27);
+const vec3 NightLand = vec3(0.022, 0.026, 0.022);
 
 void main()
 {
@@ -48,8 +53,10 @@ void main()
         vec3 n = normalize(D * eyeDir.xyz + t * d);
         float s = dot(n, sun.xyz);
         float day = smoothstep(-0.10, 0.12, s);
+        float land = clamp(abs(texelFetch(coverage, ivec2(gl_FragCoord.xy), 0).r), 0.0, 1.0);
         vec3 col = mix(NightSea, DaySea * (0.6 + 0.4 * max(s, 0.0)), day);
         col += vec3(1.0, 0.95, 0.85) * pow(max(dot(reflect(d, n), sun.xyz), 0.0), 150.0) * 0.35 * day;
+        col = mix(col, mix(NightLand, DayLand * (0.55 + 0.45 * max(s, 0.0)), day), land);
         col += Glow * pow(1.0 - clamp(dot(n, -d), 0.0, 1.0), 4.0) * (0.1 + 0.4 * day);
         sea = col;
         cover = clamp(disc / fw + 0.5, 0.0, 1.0);

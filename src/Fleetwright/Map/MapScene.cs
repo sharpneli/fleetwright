@@ -19,7 +19,9 @@ public sealed unsafe class MapScene : IScene
     readonly WorldSession world;
     readonly GlobeRenderer renderer;
     readonly MapLines lines = new();
-    MapCamera camera;
+    readonly LandView land;
+    MapCamera camera, built;   // built: the view the lines and the land's fill were last built for
+    (double, double) builtSize;
     double width = 1, height = 1;   // the target's size at the last draw, pixels
     bool dragging, clamped;
     Vec3d grab;
@@ -31,6 +33,8 @@ public sealed unsafe class MapScene : IScene
         this.world = world;
         this.camera = camera;
         renderer = new GlobeRenderer(device);
+        static Land Load(string res) => Land.Load(Path.Combine(AppContext.BaseDirectory, "Content", "World", $"land-{res}.bin"));
+        land = new LandView(Load("110m"), Load("50m"), Load("10m"));
     }
 
     /// <summary>Over the North Sea, the whole globe in view.</summary>
@@ -47,9 +51,15 @@ public sealed unsafe class MapScene : IScene
             clamped = true;
         }
         var view = View;
-        lines.Begin(width, height);
-        Graticule.Build(view, lines);
-        renderer.Render(cmd, target, view, world.Current.Sun, lines);
+        if (camera.Target != built.Target || camera.MetresPerPixel != built.MetresPerPixel || (width, height) != builtSize)
+        {
+            // the grid and the land change only with the view: a still map rebuilds nothing
+            lines.Begin(width, height);
+            Graticule.Build(view, lines);
+            land.Build(view, lines);
+            (built, builtSize) = (camera, (width, height));
+        }
+        renderer.Render(cmd, target, view, world.Current.Sun, land.Fill, lines);
     }
 
     public void BuildUi()
