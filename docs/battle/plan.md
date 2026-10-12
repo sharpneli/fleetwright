@@ -995,6 +995,20 @@ which is squadrons under force commanders and should run on the chain the game s
     station exactly as if a force admiral had given that order.
   - The player's order to one ship of a squadron detaches it: it stays a member, drawn as detached, off its station,
     and its group's rails don't carry it. **Rejoin** hands it back.
+- **Handing back** (proposed): no "I forgot to give it back" and no "do what I say". The superior never takes a unit
+  back, but the common cases hand back by themselves:
+  - **An order with an end hands back at its end:** a route that doesn't loop, once its last waypoint is passed,
+    returns the unit to its superior. Most "go there" orders hand back alone. A course, a speed, a station and a
+    loop have no end, so they're held until handed back.
+  - **An order to the unit above gathers in what was only nudged:** the player's order to a squadron is to all of
+    it, so a member held by an ordinary order rejoins. One the player pinned with an explicit **Detach** (a scout, a
+    ship sent home) stays apart until **Rejoin**. The same holds at every level: an order to a force gathers in its
+    nudged squadrons and leaves its pinned ones.
+  - **The superior asks, it never takes:** when his order for a held unit changes (not his every repeat), the
+    player gets a quiet notice ("Rear-Admiral, 2nd BS: HMS Orion to resume station") with a one-click **Resume**.
+    No timers, no forced take-back.
+  - **Held units are always visible:** a mark on the map, and a list of what the player holds with what each
+    superior would have it do (in the forces rail, 5.2; a plain list on the world tab until then).
 - **Limits are applied as an order is handed down:** the rear admiral gives the guide the lesser of the speed
   ordered and the slowest member's less the margin, and a force's admiral the least of its squadrons'. The unit
   keeps the speed that was asked (the map shows both), and nothing is re-rung after the fact.
@@ -1019,6 +1033,9 @@ which is squadrons under force commanders and should run on the chain the game s
 - **Ownership:** a player-held follower ignores its rear admiral until it's rejoined, then returns to station. A
   `Course` given mid-turn holds the ordered course. A speed above the cap gives the guide the cap, and the order
   shows what was asked.
+- **Handing back:** a held ship given a route returns to its station after the last waypoint. An order to its
+  squadron gathers in a nudged member and leaves a pinned one apart. A changed superior's order raises one notice;
+  his repeats raise none.
 - A force of three squadrons, columns in line abreast, turns 90° and holds station on the fine tick and on rails at
   1,000×.
 - A replay of the log gives the same hash.
@@ -1027,13 +1044,12 @@ which is squadrons under force commanders and should run on the chain the game s
 
 *Not in it:* objectives for admirals (5.1), the admiralty, captains on pictures (3.2), the full command UI (5.2).
 
-*To agree at its start:*
-1. **The player's order to a unit under an AI superior:** take it until handed back (proposed), or let the
-   superior's next order win.
-2. **The player's order to one ship of a squadron:** detach it and keep it a member (proposed), or take it out of
-   the group.
-3. **Nesting:** groups of groups in `GroupSystem` (proposed), or a separate force structure in the AI.
-4. **Order:** this before the Jutland test (proposed), or Jutland first with flat squadrons.
+*Agreed (the user, 2026-10-12):*
+1. **The player keeps a unit they've ordered** until it's handed back. The way it goes back must avoid both "I forgot
+   to give it back" and "do what I say" ("Handing back" above is the proposal, to settle when the step starts).
+2. **The player's order to one ship of a squadron detaches it;** it stays a member.
+3. **Nesting:** groups of groups in `GroupSystem`.
+4. **This comes before the Jutland test,** which stress-tests it.
 
 **2.7 Scale: the Jutland test.** 250 ships of ~55 classes, loaded, steaming in formation in the fine tier, drawn
 at every zoom, with some hundreds more on rails. Measure load time, tick cost, frame time and VRAM against the targets
@@ -1513,8 +1529,8 @@ The user's, 2026-10-12, on steps 2.2 and 2.3:
 
 ## Open questions
 
-- Step 2.6's four points to agree at its start (the player's orders against an AI superior, a detached ship,
-  nesting, and its order against the Jutland test).
+- Step 2.6's handing back: the proposal (an order with an end hands back at its end, an order to the unit above
+  gathers in what was only nudged, the superior asks and never takes), to settle when the step starts.
 
 ## Background
 
