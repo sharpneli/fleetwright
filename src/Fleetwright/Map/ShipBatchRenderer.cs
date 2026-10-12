@@ -53,6 +53,7 @@ public sealed class ShipDrawList
     ShipQuad[] quads = new ShipQuad[1024];
     ShipDraw[] draws = new ShipDraw[64];
     int quadCount, drawCount;
+    double sunMotion = 1;   // this frame's SunLapse.Motion
 
     // per ship this frame
     struct Placed
@@ -82,9 +83,12 @@ public sealed class ShipDrawList
     /// <param name="icon">The icon's texture.</param>
     /// <param name="hidden">Per snapshot ship, true to leave it out (drawn as part of its group's marker); may be
     /// shorter than the ships.</param>
+    /// <param name="sunMotion"><see cref="SunLapse.Motion"/>: below 1 the light fades to the day's mean and the
+    /// shadows out.</param>
     public void Build(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, double> lengthOf,
-        nint icon, int selectedEntity, ReadOnlySpan<bool> hidden = default)
+        nint icon, int selectedEntity, ReadOnlySpan<bool> hidden = default, double sunMotion = 1)
     {
+        this.sunMotion = sunMotion;
         quadCount = drawCount = placedCount = 0;
         foreach (var l in byClass.Values)
             l.Clear();
@@ -119,11 +123,14 @@ public sealed class ShipDrawList
             placed[placedCount] = new Placed
             {
                 Rel = rel, F = f, S = s, PxPerM = pxPerM, LengthPx = lengthPx,
-                Light = 0.3 + 0.7 * SmoothStep(-0.10, 0.12, sz),   // the globe's terminator (globe.frag)
+                // the globe's terminator (globe.frag), or in time-lapse the day's mean at the ship's latitude
+                Light = 0.3 + 0.7 * (sunMotion < 1
+                    ? double.Lerp(SunLapse.DayAverage(up, sun), SmoothStep(-0.10, 0.12, sz), sunMotion)
+                    : SmoothStep(-0.10, 0.12, sz)),
                 SpriteAlpha = sprite, IconAlpha = 1 - sprite,
                 SunDir = horiz > 1e-9 ? new Vector2((float)(sx / horiz), (float)(sy / horiz)) : Vector2.UnitX,
                 SunTan = Math.Max(sz / Math.Max(horiz, 1e-9), 0.15),
-                Shadows = sz > 0.05 && lengthPx >= ShadowFromPx,
+                Shadows = sz > 0.05 && lengthPx >= ShadowFromPx && sunMotion > 0,   // in time-lapse they'd spin
                 Class = cls, Entity = ships.Entity[k],
             };
             DrawnAs[k] = (byte)((sprite > 0 ? 2 : 0) | (sprite < 1 ? 1 : 0));
@@ -201,7 +208,7 @@ public sealed class ShipDrawList
             {
                 double off = (m.TopM - deck) / p.SunTan;   // shadow.sun_offset_px, in metres
                 Emit(ref p, art, ox - p.SunDir.X * off, oy - p.SunDir.Y * off, axx, axy, ayx, ayy, mode: 1,
-                    opacity: 0.4 * p.SpriteAlpha, roof: m.TopM, Vector4.Zero);
+                    opacity: 0.4 * p.SpriteAlpha * sunMotion, roof: m.TopM, Vector4.Zero);
             }
             else
                 Emit(ref p, art, ox, oy, axx, axy, ayx, ayy, mode: 0, opacity: p.SpriteAlpha, roof: 0, Vector4.Zero);
@@ -245,7 +252,7 @@ public sealed class ShipDrawList
             V = new Vector4((float)v.X, (float)v.Y, (float)v.Z, (float)roof),
             Ship = new Vector4((float)ox, (float)oy, (float)ux, (float)uy),
             ShipV = new Vector4((float)vx, (float)vy, (float)p.Light, 0),
-            Sun = new Vector4(p.SunDir, (float)p.SunTan, 0.4f),
+            Sun = new Vector4(p.SunDir, (float)p.SunTan, (float)(0.4 * sunMotion)),
             March = march,
             Hmap = hmap,
             Tint = tint,

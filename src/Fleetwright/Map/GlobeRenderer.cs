@@ -169,9 +169,11 @@ public sealed unsafe class GlobeRenderer : IDisposable
     /// (0 coarse, 1 medium, uploaded by <see cref="UploadLand"/>), or with -1 the fans in <paramref name="landFill"/>
     /// (triangles in NDC). <paramref name="lines"/> go on top, then <paramref name="layer"/> (the ships), then
     /// <paramref name="overlay"/>: lines rebuilt every frame (routes, selection), apart from the ones rebuilt only when
-    /// the view changes.</summary>
+    /// the view changes. <paramref name="sunMotion"/> is <see cref="SunLapse.Motion"/>: 1 the live sun, 0 the
+    /// time-lapse (each latitude at its mean over the day, the sun's track drawn).</summary>
     public void Render(SDL_GPUCommandBuffer* cmd, RenderTarget target, in MapView view, Vec3d sun,
-        ReadOnlySpan<Vector2> landFill, int bakedLevel, MapLines lines, MapLines? overlay = null, IMapLayer? layer = null)
+        ReadOnlySpan<Vector2> landFill, int bakedLevel, MapLines lines, MapLines? overlay = null, IMapLayer? layer = null,
+        double sunMotion = 1)
     {
         EnsurePipelines(target);
         if (coverage == null)
@@ -195,7 +197,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
         fillBuf.Upload(cmd, landFill);
         bool baked = bakedLevel is 0 or 1 && meshFill[bakedLevel] != null;
 
-        var g = GlobeUniforms(view, sun);
+        var g = GlobeUniforms(view, sun, sunMotion);
         var vp = ViewUniforms(view, target);
 
         // the land's winding count: the masking sphere's depth, then the fans
@@ -261,7 +263,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
     /// <summary>The shader's camera, in Earth radii with the eye at the origin. |eye|² - 1 is formed from the altitude
     /// in double: the one large quantity, exact, so the ray-cast holds close to the sea. So is |eye|² - r² for the
     /// masking sphere.</summary>
-    static GlobeParams GlobeUniforms(in MapView v, Vec3d sun)
+    static GlobeParams GlobeUniforms(in MapView v, Vec3d sun, double sunMotion)
     {
         double h = v.Altitude / Earth.Radius, r = 1 - MaskDepthMetres / Earth.Radius;
         var (near, far) = DepthRange(v);
@@ -271,8 +273,9 @@ public sealed unsafe class GlobeRenderer : IDisposable
             Up = new Vector4(F(v.Up), (float)v.TanHalfY),
             Fwd = new Vector4(F(v.Forward), (float)(1 + h)),
             EyeDir = new Vector4(F(-v.Forward), (float)(h * (2 + h))),
-            Sun = new Vector4(F(sun), 0),
-            Depth = new Vector4((float)(h * (2 + h) + (1 - r * r)), (float)(near / Earth.Radius), (float)(far / Earth.Radius), 0),
+            Sun = new Vector4(F(sun), (float)Math.Clamp(sunMotion, 0, 1)),
+            Depth = new Vector4((float)(h * (2 + h) + (1 - r * r)), (float)(near / Earth.Radius), (float)(far / Earth.Radius),
+                (float)(v.MetresPerPixel / Earth.Radius)),
         };
     }
 

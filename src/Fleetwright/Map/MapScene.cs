@@ -21,6 +21,7 @@ public sealed unsafe partial class MapScene : IScene
     readonly GlobeRenderer renderer;
     readonly MapLines lines = new(), overlay = new();   // overlay: rebuilt every frame (routes, tracks, the selection)
     readonly LandView land;
+    readonly SunLapse sunLapse = new();
     MapCamera camera, built;   // built: the view the lines and the land's fill were last built for
     (double, double) builtSize;
     double width = 1, height = 1;   // the target's size at the last draw, pixels
@@ -82,11 +83,12 @@ public sealed unsafe partial class MapScene : IScene
             (built, builtSize) = (camera, (width, height));
         }
         var s = world.Current;
+        sunLapse.Update(s.Paused ? 0 : s.AchievedSpeed, dt);
         art.UploadPending();
         PlaceGroups(view, s);
-        shipRenderer.List.Build(view, s.Ships, s.Time.Ms, s.Sun, artOf, lengthOf, shipRenderer.Icon, selected, hidden);
+        shipRenderer.List.Build(view, s.Ships, s.Time.Ms, s.Sun, artOf, lengthOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion);
         BuildOverlay(view, s);
-        renderer.Render(cmd, target, view, s.Sun, land.Fill, baked, lines, overlay, shipRenderer);
+        renderer.Render(cmd, target, view, s.Sun, land.Fill, baked, lines, overlay, shipRenderer, sunLapse.Motion);
     }
 
     public void BuildUi()
@@ -141,9 +143,14 @@ public sealed unsafe partial class MapScene : IScene
             double across = camera.MetresPerPixel * width;
             ImGui.Text($"{Band(across)} · {Distance(across)} across · {Scale(camera.MetresPerPixel)} · grid {Graticule.Label(Graticule.Spacing(camera.MetresPerPixel))}");
             var (lat, lon) = Earth.LatLon(camera.Target);
-            var (_, sunLon) = Earth.LatLon(s.Sun);
-            double solar = ((12 + (lon - sunLon) / 15) % 24 + 24) % 24;
-            ImGui.Text($"centre {LatLon(lat, lon)}, local sun time {(int)solar:00}:{(int)(solar % 1 * 60):00}");
+            if (sunLapse.Motion < 0.5)   // the hours would only churn
+                ImGui.Text($"centre {LatLon(lat, lon)}, time-lapse sun, {s.AchievedSpeed / 86_400:0.#} days/s");
+            else
+            {
+                var (_, sunLon) = Earth.LatLon(s.Sun);
+                double solar = ((12 + (lon - sunLon) / 15) % 24 + 24) % 24;
+                ImGui.Text($"centre {LatLon(lat, lon)}, local sun time {(int)solar:00}:{(int)(solar % 1 * 60):00}");
+            }
             if (mouseIn && view.Pick(mouse.X * width / Math.Max(vp.Size.X, 1), mouse.Y * height / Math.Max(vp.Size.Y, 1), out var p))
             {
                 var (la, lo) = Earth.LatLon(p);
