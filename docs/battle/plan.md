@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 and 1.2 are done (2026-10-12); the next is 2.1, `ShipClass`.
+changed from the plan). Steps 1.1 to 1.3 are done (2026-10-12); the next is 2.1, `ShipClass`.
 
 ## What the battle module is
 
@@ -197,9 +197,9 @@ The order follows the user (2026-10-12): first a world, an empty sphere of water
 everything else on top, one step at a time. Each step ends with something to run and look at, and with a test. The
 missions plan's baby steps (one ship, two ships, shooting) are this order's 2.3 and 4.2.
 
-The Earth model comes in when the user brings it, at any point after 1.2. Until then the world is all sea, and nothing
-may assume it always will be: routes are legs between waypoints, and line of sight and the contact scan leave room
-for a land test.
+The Earth model comes in when the user brings it, at any point after 1.2. Until then a rough Earth stands in (1.3:
+Natural Earth's land), and nothing may assume the land is final: routes are legs between waypoints, and line of
+sight and the contact scan leave room for a land test.
 
 ### 1. A world of water
 
@@ -323,6 +323,25 @@ from orbit to a few metres, with no jitter, and the clock keeping the asked spee
   - Tests (`MapCameraTests`): picking and projecting agree to 1e-5 px at every band; 1 m is 10 px at 0.1 m/px
     (including at the date line and near a pole); a 1 cm move of the camera is 0.1 px every time (no jitter, no
     steps); zoom and drag keep their point to 1e-3 px; the grid allocates nothing.
+
+**1.3 A rough Earth** (the user, 2026-10-12: land as a concept now, a better model later). **Done (2026-10-12):**
+- **Data:** Natural Earth's land at 1:110M, 1:50M and 1:10M, from world-atlas's TopoJSON (as the map mockup used),
+  baked by `tools/land_bake.py` into `Content/World/land-*.bin` (3.3 MB; attribution in `Content/World/README.md`).
+  These are modern coastlines (no 1916 harbour works) and have no ports.
+- **`Land`** (`Fleetwright.Sim.Core`): rings of unit vectors with bounding caps per ring and per 64-point chunk.
+  `IsLand` counts crossings of the arc to a point of open sea (Point Nemo). It's not a winding sum around the point:
+  Afro-Eurasia's and the Americas' rings span more than a hemisphere, so a Pacific point's antipode is inside
+  Africa. Tested on 14 places at every level, the Caspian among the seas.
+- **On the map** (`LandView`): each ring near the view is clipped in double by planes through the Earth's centre
+  (just outside the screen's corners, or a polygon inside the horizon when the limb shows), as a GPU clips to its
+  frustum. The result is fanned into triangles and filled on the GPU by winding count into a coverage target, so
+  nothing is triangulated, and the globe's shader colours land from that count. The coast is the same clipped ring
+  minus its joins along a plane, so fill and coast never disagree. A chunk whose cap is clear of the view enters
+  the clip as one point. The level follows the zoom (1:110M over 6,000 km across, 1:50M over 600 km, else 1:10M),
+  and the lines are rebuilt only when the view moves. Building takes 0.6 ms close in and about 2 ms for the globe
+  and a theatre (Debug), with no allocation.
+- **Not yet:** the world doesn't hold the land (the map loads its own copy), and nothing in the sim asks it yet.
+  The first users are routing and line of sight; the world will take the 1:10M `Land` when they come.
 
 ### 2. Ships that move
 

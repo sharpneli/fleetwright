@@ -29,7 +29,8 @@ dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wh
 The world tab (`Map/`, `docs/battle/plan.md` step 1.2) is first and the default: `WorldSession` owns the world and
 its sim thread for the app (the engine's `FrameStarted` reports real time every frame, whatever tab is open), and
 `MapScene` draws the globe from orbit to 10 px/m (`MapCamera` and `MapView`: straight down, north up, zoom in metres
-per pixel; projection, picking and the grid in double, so nothing jitters), with the clock's controls (space pauses,
+per pixel; projection, picking, the grid and the land's clip in double, so nothing jitters), the land from
+`Content/World/` (Natural Earth, a rough first Earth: `LandView`), with the clock's controls (space pauses,
 + and - change speed). Wheel zooms at the cursor, left drag pans. Without `-view`, a designer-only flag (`-section`,
 `-steps`, `-new`, `-designer-ui`, `-units`) opens the designer instead.
 
@@ -157,7 +158,8 @@ src/
     Program.cs                #   entry point, command-line parsing
     Map/                      #   the world tab: WorldSession (the app's world and sim thread), MapCamera/MapView
                               #   (double projection), GlobeRenderer (the sphere per pixel, then MapLines), Graticule,
-                              #   MapScene (input, clock controls, HUD)
+                              #   LandView (the land clipped to the view, filled by winding count), MapScene (input,
+                              #   clock controls, HUD)
     Engine.cs                 #   Sdl3GpuEngine: init, resources, render loop, PbrMaterial
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
@@ -207,7 +209,8 @@ src/
   Fleetwright.Shipgen.Cli/    # `shipgen` command, the port's test harness (and `sim`, an empty world on its thread)
   Fleetwright.Sim.Core/       # the sim's lowest layer, pure values (docs/battle/plan.md "Inside Fleetwright.Sim"):
                               #   Vec3d, Earth (the sphere), ShipFrame (left-handed: +x bow, +y starboard, up),
-                              #   WorldTime (ms since 1850), Sun, RandomStream, StateHash, SimSettings
+                              #   WorldTime (ms since 1850), Sun, RandomStream, StateHash, SimSettings, Land (rings,
+                              #   IsLand)
   Fleetwright.Sim/            # the world: World (clock, speed, events, commands in, snapshot out), Scheduler,
                               #   IWorldSystem, SimHost (the sim thread), TripleBuffer; no GPU or UI, runs headless
 tests/
@@ -221,6 +224,7 @@ shipgen/                      # the port's test data
 Content/                      # copied into the game's output folder; the bake shaders are embedded in Shipgen.Render
                               #   (the output's Content/Designs/ comes from shipgen/designs, see GameAsset)
   Fonts/                      #   UI fonts (OFL), game assets
+  World/                      #   the land at 1:110M, 1:50M, 1:10M (game assets), from tools/land_bake.py (README.md)
   Templates/                  #   the designer's template catalogues (game assets), from tools/designer_templates.py:
                               #   plants, hulls, crew from docs/shipgen/*-templates.md; armour from the designs' maps
   Shaders/Source/             #   GLSL sources
