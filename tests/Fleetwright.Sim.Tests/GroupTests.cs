@@ -17,6 +17,8 @@ public class GroupTests(ITestOutputHelper output)
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
     const double Lat = 56.5, Lon = 4.0;
 
+    static Unit G(World w) => Unit.Group(w.Groups[0].GroupId);
+
     static (World W, AiSystem Ai) Make(int n, string design = "dreadnought", string? guideDesign = null)
     {
         var w = new World(Start, 5, Settings);
@@ -49,7 +51,7 @@ public class GroupTests(ITestOutputHelper output)
         var guide = Ship(w, g.Guide);
         for (int i = 1; i < g.Members.Count; i++)
         {
-            var (t, astern, abeam) = GroupSystem.StationOf(g.Formation, g.SpacingM, g.Members, i);
+            var (t, astern, abeam) = GroupSystem.StationOf(g.Formation, g.SpacingM, g.Line, i);
             var ts = Ship(w, t);
             var up = ts.Position.Normalized();
             var station = (ts.Position - ts.Forward * astern + Vec3d.Cross(ts.Forward, up) * abeam).Normalized() * Earth.Radius;
@@ -68,7 +70,7 @@ public class GroupTests(ITestOutputHelper output)
     [InlineData(Formation.EchelonPort)]
     public void A_scattered_group_forms_up_and_keeps_station_through_a_turn(Formation f)
     {
-        var (w, _) = Make(4);
+        var (w, ai) = Make(4);
         Group(w, 4, f);
         Run(w, 45 * 60);
         var (off, dh) = Worst(w);
@@ -76,7 +78,7 @@ public class GroupTests(ITestOutputHelper output)
         Assert.True(off < 150, $"{off:F0} m off station");
         Assert.True(dh < 3, $"{dh:F1}°");
 
-        w.Apply(ShipSystem.Course(1, 180));   // one order to the guide moves the group
+        w.Apply(ai.Orders.Course(G(w), 180));   // one order to the group: its admiral hands it to the guide
         Run(w, 30 * 60);
         (off, dh) = Worst(w);
         output.WriteLine($"{f}: 30 min after the guide turned south, {off:F0} m off, {dh:F1}°");
@@ -87,11 +89,13 @@ public class GroupTests(ITestOutputHelper output)
     [Fact]
     public void The_guide_is_held_to_what_the_slowest_can_make()
     {
-        var (w, _) = Make(3, design: "dreadnought", guideDesign: "light_cruiser");
+        var (w, ai) = Make(3, design: "dreadnought", guideDesign: "light_cruiser");
         Group(w, 3, Formation.Column);
-        w.Apply(ShipSystem.Speed(1, 28));
-        Run(w, 5);
+        w.Apply(ai.Orders.Speed(G(w), 28));
         double cap = Fleet.Get("dreadnought").Class!.Motion.MaxSpeedKn - Settings.GroupSpeedMarginKn;
+        Assert.Equal(cap, Ship(w, 1).SpeedOrderKn, 3);   // at once: the limit is applied as the order is handed down
+        Assert.Equal(28, ai.Admirals.SpeedOf(w.Groups[0].GroupId).AskedKn);   // and what was asked is kept
+        Run(w, 5);
         Assert.Equal(cap, Ship(w, 1).SpeedOrderKn, 3);
     }
 
@@ -116,22 +120,27 @@ public class GroupTests(ITestOutputHelper output)
         var (w, ai) = Make(4);
         Group(w, 4, Formation.Column);
         Run(w, 5);
-        Assert.Equal(3, ai.Captains.Count);
+        for (int e = 2; e <= 4; e++)
+            Assert.Equal((CaptainOrder.Station, OrderSource.Superior), (ai.Captains.Of(e).Order, ai.Captains.Of(e).Source));
         w.Apply(GroupSystem.Remove(3));
         w.Apply(ShipSystem.Drop(4));
         Run(w, 5);
         Assert.Equal(new[] { 1, 2 }, w.Groups[0].Members);
-        Assert.Equal(1, ai.Captains.Count);   // ship 3's captain went back to the player, ship 4 is gone
+        Assert.Equal((CaptainOrder.Course, OrderSource.Player), (ai.Captains.Of(3).Order, ai.Captains.Of(3).Source));   // his own again, holding
+        Assert.Equal(CaptainOrder.None, ai.Captains.Of(4).Order);   // gone with his ship
         Assert.Equal(CaptainOrder.Station, ai.Captains.Of(2).Order);
 
-        w.Apply(GroupSystem.Remove(1));   // the guide leaves: ship 2 guides itself, its admiral's order taken back
+        w.Apply(GroupSystem.Remove(1));   // the guide leaves: ship 2 guides, holding what it has; ship 1 is its own
         Run(w, 5);
         Assert.Equal(2, w.Groups[0].Guide);
-        Assert.Equal(0, ai.Captains.Count);
+        Assert.Equal((CaptainOrder.Course, OrderSource.Superior), (ai.Captains.Of(2).Order, ai.Captains.Of(2).Source));
+        Assert.Equal(OrderSource.Player, ai.Captains.Of(1).Source);
+        Assert.Equal(0, ai.Captains.SpeedOf(1).LimitKn);
 
         w.Apply(GroupSystem.Disband(w.Groups[0].GroupId));
         Run(w, 5);
         Assert.Equal(0, w.Groups.Count);
+        Assert.Equal(OrderSource.Player, ai.Captains.Of(2).Source);
     }
 
     [Fact]
@@ -143,7 +152,7 @@ public class GroupTests(ITestOutputHelper output)
             Group(w, 5, Formation.Column, 500);
             Run(w, 600.5);
             w.Apply(GroupSystem.SetFormation(1, Formation.LineAbreast, 700));
-            w.Apply(ShipSystem.Course(1, 30));
+            w.Apply(new UnitOrders(3).Course(Unit.Group(1), 30));
             Run(w, 400);
             w.Apply(GroupSystem.Remove(2));
             Run(w, 300);

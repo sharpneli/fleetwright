@@ -1,5 +1,6 @@
 using System.Numerics;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Ai.Admirals;
 using Fleetwright.Sim.Ai.Captains;
 using Fleetwright.Sim.Combat;
@@ -35,7 +36,7 @@ public sealed unsafe partial class MapScene
     bool hardOver;
     int followMetres = 800;
 
-    static readonly string[] CaptainNames = ["Player's orders", "Keep course", "Follow", "Run from"];
+    static readonly string[] CaptainNames = ["Course and speed", "Follow", "Run from"];
 
     /// <summary>A short wake of positions behind each ship, sampled in game time; made when a ship is first seen.</summary>
     sealed class Track
@@ -239,43 +240,42 @@ public sealed unsafe partial class MapScene
         int k = s.Ships.IndexOf(selected);
         if (k < 0 || !View.Pick(x, y, out var at))
             return;
+        var (unit, ship) = Commanded(s);
+        var o = world.Ai.Orders;
         if (waypoint)
         {
             var (lat, lon) = Earth.LatLon(at);
-            world.Send(ShipSystem.AddWaypoint(Commanded(s), lat, lon));
+            world.Send(o.AddWaypoint(unit, lat, lon));
         }
         else
         {
-            int c = Commanded(s), kc = s.Ships.IndexOf(c);
-            var (p, _) = s.Ships.PoseAt(kc, s.Time.Ms);
-            world.Send(ShipSystem.ClearRoute(c));
-            world.Send(ShipSystem.Course(c, Earth.Bearing(p, at), hardOver ? 90 : 0));
+            var (p, _) = s.Ships.PoseAt(s.Ships.IndexOf(ship), s.Time.Ms);
+            world.Send(o.ClearRoute(unit));
+            world.Send(o.Course(unit, Earth.Bearing(p, at), hardOver ? 90 : 0));
         }
     }
 
     // ------------------------------------------------------------------ the panels
 
-    /// <summary>The selected ship's captain: who gives its orders (the player, or its captain keeping course, following
-    /// or running from another ship), the other ship, and the station's distance.</summary>
-    void CaptainRow(Snapshot s, int k)
+    /// <summary>The commanded unit's behaviour: plain course and speed orders, or following or running from another
+    /// ship, with the other ship and the station's distance. The same orders go to a ship or a group.</summary>
+    void CaptainRow(Snapshot s, Unit unit, int k)
     {
         var v = s.Ships;
         var order = (CaptainOrder)v.Captain[k];
         int target = v.CaptainTarget[k];
-        ImGui.Text("Captain:");
+        int shown = order switch { CaptainOrder.Follow => 1, CaptainOrder.Run => 2, _ => 0 };
+        ImGui.Text(unit.IsGroup ? "Group:" : "Captain:");
         ImGui.SameLine();
-        ImGui.SetNextItemWidth(130 * UiFonts.Scale);
-        int pick = (int)order;
-        if (ImGui.Combo("##captain", ref pick, CaptainNames, CaptainNames.Length) && pick != (int)order)
+        ImGui.SetNextItemWidth(150 * UiFonts.Scale);
+        int pick = shown;
+        if (ImGui.Combo("##captain", ref pick, CaptainNames, CaptainNames.Length) && pick != shown)
         {
-            var o = (CaptainOrder)pick;
-            if (o is CaptainOrder.Follow or CaptainOrder.Run && (target == 0 || v.IndexOf(target) < 0))
+            if (pick != 0 && (target == 0 || v.IndexOf(target) < 0))
                 target = Nearest(s, k);
-            if (o is CaptainOrder.Follow or CaptainOrder.Run && target == 0)
-                o = CaptainOrder.None;   // nobody else at sea to follow or run from
-            world.Send(world.Ai.Captain(selected, o, target, followMetres));
+            Behaviour(pick, unit, target);
         }
-        if (order is CaptainOrder.Follow or CaptainOrder.Run)
+        if (shown != 0)
         {
             ImGui.SameLine();
             ImGui.SetNextItemWidth(170 * UiFonts.Scale);
@@ -283,20 +283,30 @@ public sealed unsafe partial class MapScene
             {
                 for (int j = 0; j < v.Count; j++)
                     if (j != k && ImGui.Selectable(ShipLabel(s, v.Entity[j]), v.Entity[j] == target))
-                        world.Send(world.Ai.Captain(selected, order, v.Entity[j], followMetres));
+                        Behaviour(shown, unit, v.Entity[j]);
                 ImGui.EndCombo();
             }
         }
-        if (order == CaptainOrder.Follow)
+        if (shown == 1)
         {
             ImGui.SameLine();
             ImGui.SetNextItemWidth(90 * UiFonts.Scale);
             if (ImGui.InputInt("m astern", ref followMetres, 100, 500, ImGuiInputTextFlags.EnterReturnsTrue))
             {
                 followMetres = Math.Clamp(followMetres, 100, 20_000);
-                world.Send(world.Ai.Captain(selected, order, target, followMetres));
+                Behaviour(shown, unit, target);
             }
         }
+    }
+
+    /// <summary>Sends a behaviour from the captain row: 0 holds the course and speed ordered now, 1 follows, 2 runs
+    /// from (with nobody else at sea, it holds).</summary>
+    void Behaviour(int pick, Unit unit, int target)
+    {
+        var o = world.Ai.Orders;
+        world.Send(pick == 0 || target == 0 ? o.Hold(unit)
+                 : pick == 1 ? o.Follow(unit, Unit.Ship(target), followMetres)
+                 : o.Run(unit, Unit.Ship(target)));
     }
 
     // the search row: the pattern, its first leg's course (or the ship's heading), its sizes in miles, its count of
@@ -306,10 +316,10 @@ public sealed unsafe partial class MapScene
     Vec3d[] searchWaypoints = [];
     static readonly string[] SearchNames = ["Ladder", "Expanding square", "Sector", "Patrol line"];
 
-    /// <summary>A search pattern for the commanded ship (a group's guide: its group follows), from where it is: the
+    /// <summary>A search pattern for the commanded unit (a ship, or a group: its guide steams it), from where it is: the
     /// route's waypoints sent as orders. With the clock fast enough a group on rails steams it on rails, turning at
     /// once at each waypoint.</summary>
-    void SearchRow(Snapshot s, int cmd, int kc)
+    void SearchRow(Snapshot s, Unit unit, int kc)
     {
         float field = 80 * UiFonts.Scale;
         var pattern = (SearchPattern)searchPattern;
@@ -362,7 +372,7 @@ public sealed unsafe partial class MapScene
             int legs = Math.Clamp(searchLegs, 1, most);
             int n = SearchPatterns.Waypoints(pattern, p, searchAxis, searchLegNm * 1852.0, searchSpacingNm * 1852.0, legs, searchStarboard,
                 searchWaypoints.AsSpan(0, cap));
-            SearchPatterns.Orders(cmd, searchWaypoints.AsSpan(0, n), SearchPatterns.Loops(pattern), c => world.Send(c));
+            SearchPatterns.Orders(world.Ai.Orders, unit, searchWaypoints.AsSpan(0, n), SearchPatterns.Loops(pattern), c => world.Send(c));
         }
     }
 
@@ -481,10 +491,12 @@ public sealed unsafe partial class MapScene
             ImGui.TextDisabled($"heading {heading:000}°, {kn:0.0} kn, rudder {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0;0}°  ·  " +
                                $"ordered: {orders}, {s.Ships.SpeedOrderKn[k]:0.#} kn");
 
-            // orders: to the ship, or to its group's guide (one order moves the group)
-            int cmd = Commanded(s), kc = s.Ships.IndexOf(cmd);
-            if (cmd != selected)
-                ImGui.TextDisabled($"orders go to the group's guide, #{cmd}");
+            // orders: to the ship, or to its group (one order moves the group: its admiral hands it to the guide)
+            var (unit, cmd) = Commanded(s);
+            int kc = s.Ships.IndexOf(cmd);
+            var o = world.Ai.Orders;
+            if (unit.IsGroup)
+                ImGui.TextDisabled($"orders go to the group (its guide is #{cmd})");
 
             // course
             ImGui.SetNextItemWidth(70 * UiFonts.Scale);
@@ -492,14 +504,14 @@ public sealed unsafe partial class MapScene
             courseEdit = ((courseEdit % 360) + 360) % 360;
             ImGui.SameLine();
             if (ImGui.Button("Steer"))
-                world.Send(ShipSystem.Course(cmd, courseEdit, hardOver ? 90 : 0));
+                world.Send(o.Course(unit, courseEdit, hardOver ? 90 : 0));
             foreach (int d in CourseSteps)
             {
                 ImGui.SameLine();
                 if (ImGui.Button($"{d:+0;-0}°"))
                 {
                     courseEdit = (int)Math.Round(((s.Ships.CourseOrderDeg[kc] + d) % 360 + 360) % 360);
-                    world.Send(ShipSystem.Course(cmd, courseEdit, hardOver ? 90 : 0));
+                    world.Send(o.Course(unit, courseEdit, hardOver ? 90 : 0));
                 }
             }
             ImGui.SameLine();
@@ -508,7 +520,7 @@ public sealed unsafe partial class MapScene
             {
                 ImGui.SameLine();
                 if (ImGui.Button("Clear route"))
-                    world.Send(ShipSystem.ClearRoute(cmd));
+                    world.Send(o.ClearRoute(unit));
             }
 
             // the telegraph
@@ -527,16 +539,13 @@ public sealed unsafe partial class MapScene
                     if (rung)
                         ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.ButtonActive));
                     if (ImGui.Button($"{bells[i].Label}##bell"))
-                        world.Send(ShipSystem.Speed(cmd, Math.Round(bells[i].Kn, 2)));
+                        world.Send(o.Speed(unit, Math.Round(bells[i].Kn, 2)));
                     if (rung)
                         ImGui.PopStyleColor();
                 }
             }
-            SearchRow(s, cmd, kc);
-            if (cmd == selected)
-                CaptainRow(s, k);
-            else
-                ImGui.TextDisabled("Captain: keeping station in the group");
+            SearchRow(s, unit, kc);
+            CaptainRow(s, unit, kc);
             GroupRow(s);
             ImGui.TextDisabled("right-click the sea: steer for it · shift+right-click: add a waypoint · click elsewhere: deselect");
         }

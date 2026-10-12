@@ -20,9 +20,16 @@ public class FormationRailsTests(ITestOutputHelper output)
     static (World W, int Class) Make(SimSettings? s = null)
     {
         var w = new World(Start, 11, s ?? Settings);
-        _ = new AiSystem(w);
+        Assert.Equal(AiId, new AiSystem(w).Id);
         return (w, w.Ships.AddClass(Fleet.Get("dreadnought").Class!));
     }
+
+    /// <summary>The AI is registered third, after the ships and groups: its orders' system id.</summary>
+    const byte AiId = 3;
+    static readonly UnitOrders O = new(AiId);
+
+    /// <summary>The unit a ship's orders go to: its group, if it guides one, or the ship.</summary>
+    static Unit Of(World w, int e) => w.Groups.Of(e) is { } g ? Unit.Group(g.GroupId) : Unit.Ship(e);
 
     static ShipState Ship(World w, int e) => w.Ships.Store[w.Ships.Store.SlotOf(e)];
 
@@ -85,13 +92,13 @@ public class FormationRailsTests(ITestOutputHelper output)
         int g = Group(w, c, Lat, Lon, 0, 4, Formation.Column, 600);
         UntilOnRails(w, g, 4);
 
-        w.Apply(ShipSystem.Course(g, 90));
+        w.Apply(O.Course(Of(w, g), 90));
         Assert.True(AllOnRails(w, g, 4));
         for (int e = g; e < g + 4; e++)
             Assert.True(Math.Abs(Ship(w, e).HeadingDeg - 90) < 0.05, $"{Ship(w, e).HeadingDeg}°");   // in the guide's frame: the meridians converge over the column
         Assert.True(OffStation(w, g, 4, Formation.Column, 600) < 0.01, "on station at once");
 
-        w.Apply(ShipSystem.Speed(g, 10));
+        w.Apply(O.Speed(Of(w, g), 10));
         Assert.True(AllOnRails(w, g, 4));
         for (int e = g; e < g + 4; e++)
             Assert.Equal(10, Ship(w, e).Speed / Handling.MsPerKnot, 1);
@@ -104,7 +111,7 @@ public class FormationRailsTests(ITestOutputHelper output)
 
         // off rails later (an order below the speed), the ships steam on as the rails had them
         w.Apply(Command.SetSpeed(1));
-        w.Apply(ShipSystem.Speed(g, 10));
+        w.Apply(O.Speed(Of(w, g), 10));
         Assert.False(Ship(w, g).OnRails);
         Run(w, 120);
         for (int e = g + 1; e < g + 4; e++)
@@ -123,7 +130,7 @@ public class FormationRailsTests(ITestOutputHelper output)
             (w, int c) = Make();
             w.Apply(Command.SetSpeed(clock));
             g = Group(w, c, Lat, Lon, 0, 4, Formation.Column, 600);
-            w.Apply(ShipSystem.Speed(g, cap + 5));   // and rung faster still
+            w.Apply(O.Speed(Of(w, g), cap + 5));   // and ordered faster still: its admiral hands the guide no more than the cap
             for (int s = 0; s < 3600; s += 5)
             {
                 if (AllOnRails(w, g, 4))
@@ -144,7 +151,7 @@ public class FormationRailsTests(ITestOutputHelper output)
         (w, int c2) = Make();
         g = Group(w, c2, Lat, Lon, 0, 3, Formation.LineAbreast, 800);
         Run(w, 10);
-        w.Apply(ShipSystem.Course(g, 120));
+        w.Apply(O.Course(Of(w, g), 120));
         Run(w, 30);
         Assert.False(Ship(w, g).OnRails);
         w.Apply(Command.SetSpeed(1000));
@@ -161,7 +168,7 @@ public class FormationRailsTests(ITestOutputHelper output)
         w.Apply(Command.SetSpeed(Settings.RailsSnapMinSpeed * 0.99));
         int g = Group(w, c, Lat, Lon, 0, 3, Formation.LineAbreast, 800);
         UntilOnRails(w, g, 3);
-        w.Apply(ShipSystem.Course(g, 90));
+        w.Apply(O.Course(Of(w, g), 90));
         for (int e = g; e < g + 3; e++)
             Assert.False(Ship(w, e).OnRails);
         Run(w, 10);
@@ -186,7 +193,7 @@ public class FormationRailsTests(ITestOutputHelper output)
         var from = Ship(w, g).Position;
         for (int i = 0; i < n; i++)
             (along, from) = (along + Earth.Distance(from, wps[i]), wps[i]);
-        SearchPatterns.Orders(g, wps[..n], SearchPatterns.Loops(pattern), cmd => w.Apply(cmd));
+        SearchPatterns.Orders(O, Of(w, g), wps[..n], SearchPatterns.Loops(pattern), cmd => w.Apply(cmd));
         Assert.True(AllOnRails(w, g, 4), "the order kept them on rails");
 
         double hours = along / (Kn * Handling.MsPerKnot) / 3600;
@@ -217,7 +224,7 @@ public class FormationRailsTests(ITestOutputHelper output)
             Run(w, 60);
             Span<Vec3d> wps = stackalloc Vec3d[16];
             int n = SearchPatterns.Waypoints(SearchPattern.Ladder, Ship(w, 1).Position, 30, 30_000, 10_000, 5, true, wps);
-            SearchPatterns.Orders(1, wps[..n], false, cmd => w.Apply(cmd));
+            SearchPatterns.Orders(O, Unit.Ship(1), wps[..n], false, cmd => w.Apply(cmd));
             Run(w, 12 * 3600);
             return Ship(w, 1).Position;
         }
@@ -234,7 +241,7 @@ public class FormationRailsTests(ITestOutputHelper output)
         var start = Ship(w, 1).Position;
         Span<Vec3d> wps = stackalloc Vec3d[2];
         int n = SearchPatterns.Waypoints(SearchPattern.PatrolLine, start, 90, 20_000, 0, 0, true, wps);
-        SearchPatterns.Orders(1, wps[..n], true, cmd => w.Apply(cmd));
+        SearchPatterns.Orders(O, Unit.Ship(1), wps[..n], true, cmd => w.Apply(cmd));
         double far = 0;
         for (int m = 0; m < 6 * 60; m++)
         {
@@ -354,9 +361,9 @@ public class FormationRailsTests(ITestOutputHelper output)
         At(1_800_000);
         Span<Vec3d> wps = stackalloc Vec3d[16];
         int n = SearchPatterns.Waypoints(SearchPattern.Ladder, Ship(w, a).Position, 90, 40_000, 15_000, 6, false, wps);
-        SearchPatterns.Orders(a, wps[..n], false, cmd => w.Apply(cmd));
+        SearchPatterns.Orders(O, Of(w, a), wps[..n], false, cmd => w.Apply(cmd));
         n = SearchPatterns.Waypoints(SearchPattern.PatrolLine, Ship(w, b).Position, 270, 60_000, 0, 0, true, wps);
-        SearchPatterns.Orders(b, wps[..n], true, cmd => w.Apply(cmd));
+        SearchPatterns.Orders(O, Of(w, b), wps[..n], true, cmd => w.Apply(cmd));
         foreach (long cut in cuts)
             At(cut);
         w.AdvanceTo(Start + 12 * 3_600_000L);
@@ -393,7 +400,7 @@ public class FormationRailsTests(ITestOutputHelper output)
         foreach (int g in new[] { a, b })
         {
             int n = SearchPatterns.Waypoints(SearchPattern.PatrolLine, Ship(w, g).Position, 90, 30_000, 0, 0, true, wps);
-            SearchPatterns.Orders(g, wps[..n], true, cmd => w.Apply(cmd));
+            SearchPatterns.Orders(O, Of(w, g), wps[..n], true, cmd => w.Apply(cmd));
         }
         var snap = new Snapshot();
         Run(w, 2 * 86_400);   // the same work once untimed (first runs of a path may allocate; play mustn't)

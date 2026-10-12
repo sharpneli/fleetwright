@@ -221,9 +221,9 @@ public static unsafe class Program
                 if (DevCaptain(world.Ai, cap) is { } order)
                     world.Send(order);
                 else
-                    Console.Error.WriteLine($"Bad captain: -captain={cap} (want entity:follow:target[:metres], entity:run:target, entity:keep or entity:none)");
+                    Console.Error.WriteLine($"Bad captain: -captain={cap} (want entity:follow:target[:metres], entity:run:target or entity:keep)");
             foreach (var search in searches)
-                if (!DevSearch(world, search))
+                if (!DevSearch(world, search, devGroups))
                     Console.Error.WriteLine($"Bad search: -search={search} (want entity:ladder|square|sector|patrol[:leg nm[:nm apart[:legs]]])");
             if (startSpeed is double speed0)
                 world.Send(Sim.Command.SetSpeed(speed0));
@@ -272,9 +272,10 @@ public static unsafe class Program
             w.Apply(Sim.ShipSystem.Course(e, 135));
     }
 
-    /// <summary>-search=entity:pattern[:leg nm[:nm apart[:legs]]]: a search pattern for a dev ship (a group's guide), from
-    /// where it is, along its heading, to starboard.</summary>
-    static bool DevSearch(Map.WorldSession world, string arg)
+    /// <summary>-search=entity:pattern[:leg nm[:nm apart[:legs]]]: a search pattern for a dev ship, from where it is,
+    /// along its heading, to starboard. A ship that guides a -group= steams it for its group (the dev groups are made
+    /// first, in order, so the n-th is group n).</summary>
+    static bool DevSearch(Map.WorldSession world, string arg, List<string> devGroups)
     {
         var p = arg.Split(':');
         if (p.Length < 2 || !int.TryParse(p[0], out int e))
@@ -296,7 +297,9 @@ public static unsafe class Program
         var wps = new Sim.Core.Vec3d[world.Settings.RouteCapacity];
         int n = Sim.Ai.Admirals.SearchPatterns.Waypoints(pt, at, Sim.Core.Earth.Heading(at, f), Nm(2, 20) * 1852, Nm(3, 5) * 1852,
             (int)Nm(4, pt == Sim.Ai.Admirals.SearchPattern.Sector ? 3 : 6), true, wps);
-        Sim.Ai.Admirals.SearchPatterns.Orders(e, wps.AsSpan(0, n), Sim.Ai.Admirals.SearchPatterns.Loops(pt), c => world.Send(c));
+        int guided = devGroups.FindIndex(g => g.Split(':')[0].Split(',')[0] == p[0]);
+        var unit = guided >= 0 ? Sim.Ai.Unit.Group(guided + 1) : Sim.Ai.Unit.Ship(e);
+        Sim.Ai.Admirals.SearchPatterns.Orders(world.Ai.Orders, unit, wps.AsSpan(0, n), Sim.Ai.Admirals.SearchPatterns.Loops(pt), c => world.Send(c));
         return true;
     }
 
@@ -323,7 +326,8 @@ public static unsafe class Program
             yield return Sim.GroupSystem.Join(e, ships[0]);
     }
 
-    /// <summary>-captain=entity:order[:target[:metres]]: a captain's order for a dev ship.</summary>
+    /// <summary>-captain=entity:order[:target[:metres]]: an order for a dev ship's captain (a ship in a group's line is
+    /// taken out of it, as any order to it alone).</summary>
     static Sim.Command? DevCaptain(Sim.Ai.AiSystem ai, string arg)
     {
         var p = arg.Split(':');
@@ -331,15 +335,15 @@ public static unsafe class Program
             return null;
         int target = p.Length > 2 && int.TryParse(p[2], out int t) ? t : 0;
         double metres = p.Length > 3 && double.TryParse(p[3], System.Globalization.CultureInfo.InvariantCulture, out double m) ? m : 0;
-        Sim.Ai.Captains.CaptainOrder? order = p[1] switch
+        var o = ai.Orders;
+        var ship = Sim.Ai.Unit.Ship(e);
+        return p[1] switch
         {
-            "follow" => Sim.Ai.Captains.CaptainOrder.Follow,
-            "run" => Sim.Ai.Captains.CaptainOrder.Run,
-            "keep" => Sim.Ai.Captains.CaptainOrder.KeepCourse,
-            "none" => Sim.Ai.Captains.CaptainOrder.None,
+            "follow" when target > 0 => o.Follow(ship, Sim.Ai.Unit.Ship(target), metres),
+            "run" when target > 0 => o.Run(ship, Sim.Ai.Unit.Ship(target)),
+            "keep" => o.Hold(ship),
             _ => null,
         };
-        return order is { } o ? ai.Captain(e, o, target, metres) : null;
     }
 
     /// <summary>The design shown without -ship=: a game asset (GameAsset in the csproj), next to the exe.</summary>

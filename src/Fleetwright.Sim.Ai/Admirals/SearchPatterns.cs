@@ -19,7 +19,7 @@ public enum SearchPattern : byte
 }
 
 /// <summary>Search patterns as routes (docs/battle/plan.md step 2.5): the waypoints a guide steams to search an area,
-/// from where it starts. Pure geometry: an admiral or the player's map turns them into route orders
+/// from where it starts. Pure geometry: an admiral or the player's map turns them into a unit's route orders
 /// (<see cref="Orders"/>). Legs are laid as rhumb lines, courses held, so a pattern keeps its shape on the chart; the
 /// ship steams great circles between the points, which over a pattern's tens of miles is the same within metres. On
 /// rails each turn is instantaneous; on the fine tick the helmsman turns at the wheel-over point.</summary>
@@ -77,17 +77,19 @@ public static class SearchPatterns
     /// guide holds the course it arrived on).</summary>
     public static bool Loops(SearchPattern pattern) => pattern == SearchPattern.PatrolLine;
 
-    /// <summary>The orders that put a ship (a group's guide: its group follows) on a pattern's route.</summary>
-    public static void Orders(int entity, ReadOnlySpan<Vec3d> waypoints, bool loop, Action<Command> send)
+    /// <summary>The orders that put a unit (a ship, or a group: its guide steams it and the rest keep station) on a
+    /// pattern's route: the same route orders whoever searches.</summary>
+    public static void Orders(UnitOrders orders, Unit unit, ReadOnlySpan<Vec3d> waypoints, bool loop, Action<Command> send,
+        OrderSource source = OrderSource.Player)
     {
-        send(ShipSystem.ClearRoute(entity));
+        send(orders.ClearRoute(unit, source));
         foreach (var w in waypoints)
         {
             var (lat, lon) = Earth.LatLon(w);
-            send(ShipSystem.AddWaypoint(entity, lat, lon));
+            send(orders.AddWaypoint(unit, lat, lon, source));
         }
         if (loop)
-            send(ShipSystem.LoopRoute(entity));
+            send(orders.LoopRoute(unit, true, source));
     }
 
     static Vec3d Along(Vec3d from, double courseDeg, double m)

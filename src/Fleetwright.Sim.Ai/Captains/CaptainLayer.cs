@@ -4,102 +4,212 @@ using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim.Ai.Captains;
 
-/// <summary>What a captain has been told to do (docs/battle/plan.md step 2.3b): the first, trivial behaviours.</summary>
+/// <summary>What a captain is doing (docs/battle/plan.md steps 2.3b and 2.6): plain orders he hands the helm once, or a
+/// behaviour he watches.</summary>
 public enum CaptainOrder : byte
 {
-    /// <summary>No captain: the ship keeps whatever the player last ordered.</summary>
+    /// <summary>Told nothing yet: the ship keeps what its helm and engines were last given.</summary>
     None,
 
-    /// <summary>Hold the course and speed the ship had when told.</summary>
-    KeepCourse,
+    /// <summary>Steer a course (and ring a speed): handed to the helm once.</summary>
+    Course,
 
-    /// <summary>Keep station astern of another ship at a distance, matching its speed.</summary>
+    /// <summary>Steam a route: handed to the helm, which turns at the waypoints.</summary>
+    Route,
+
+    /// <summary>Keep station astern of another unit at a distance, matching its speed.</summary>
     Follow,
 
-    /// <summary>Turn away from another ship and run at flank speed.</summary>
+    /// <summary>Turn away from another unit and run at flank speed.</summary>
     Run,
 
-    /// <summary>Keep a station on another ship: a distance astern and a distance to starboard (negative: to port) of it,
+    /// <summary>Keep a station on another unit: a distance astern and a distance to starboard (negative: to port) of it,
     /// in its own frame. What an admiral gives his captains to hold a formation.</summary>
     Station,
 }
 
-/// <summary>The captains: one per ship that has been given a <see cref="CaptainOrder"/>, kept in entity order so they
-/// think in the same order on every run. Each second (<see cref="SimSettings.CaptainPeriodMs"/>) a captain works out
-/// the course and speed his order wants from his own ship and the picture, and orders them when they differ from
-/// what's ordered by more than a deadband; so the helm and engines aren't hounded with orders every second. A captain
-/// whose ship is gone is dropped; one whose target is gone keeps his course.</summary>
-public sealed class CaptainLayer : IAiLayer
+/// <summary>The captains (docs/battle/plan.md steps 2.3b and 2.6): one per ship that has been given an order, kept in
+/// entity order so they think in the same order on every run. A captain is the only one who orders his ship's helm
+/// and engines. Plain orders (a course, a speed, a route) he hands the helm at once and then leaves alone, so a world
+/// of ships on plain orders costs nothing a second. Behaviours (follow, station, run) he watches each second
+/// (<see cref="SimSettings.CaptainPeriodMs"/>), ordering a course and speed when they differ from what's ordered by more
+/// than a deadband, so the helm and engines aren't hounded every second.
+/// <para><b>Who has a ship:</b> a ship in a group's line takes its admiral's orders. The player's order to it takes it
+/// out of the line (nudged) and makes it the player's; its admiral's orders for it are dropped until it's handed back
+/// (<see cref="AiCommand.Resume"/>), and he gives them again then. A route the player gave such a ship hands it back at
+/// its last waypoint. An explicit <see cref="AiCommand.Detach"/> pins it out until resumed.</para>
+/// <para><b>Limits</b> come from above as orders (<see cref="AiCommand.SpeedLimit"/>): what he rings is never more,
+/// while what was asked is kept.</para>
+/// A captain whose ship is gone is dropped; one whose target is gone holds his course.</summary>
+public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
 {
     struct Captain
     {
-        public int Entity, Target;
+        public int Entity;
         public CaptainOrder Order;
-        public double DistanceM, AbeamM, HoldCourseDeg, HoldSpeedKn;
-        public bool ByAdmiral;   // given by his group's admiral, who takes it back when the ship leaves the group
+        public OrderSource Source;
+        public int Target;              // a unit (Unit.Id)
+        public double DistanceM, AbeamM;
+        public double AskedKn;          // the speed ordered (NaN: none, the ship keeps what's rung)
+        public double LimitKn;          // the most he may ring, from above (0: none)
+        public bool Watch;              // held by the player on a route: its end hands the ship back
     }
 
     Captain[] captains = new Captain[16];
-    int count;
+    int count, active;
 
     public int Count => count;
-    public bool Active => count > 0;
+    public bool Active => active > 0;
+
     public int PeriodMs(in AiContext ctx)
     {
         for (int i = 0; i < count; i++)
-            if (ctx.Ships.SlotOf(captains[i].Entity) is int slot and >= 0 && !ctx.Ships.OnRails(slot))
+            if (IsActive(captains[i]) && ctx.Ships.SlotOf(captains[i].Entity) is int slot and >= 0 && !ctx.Ships.OnRails(slot))
                 return ctx.Settings.CaptainPeriodMs;
         return ctx.Settings.AiRailsPeriodMs;
     }
 
-    /// <summary>A ship's captain's order and target, or None.</summary>
-    public (CaptainOrder Order, int Target) Of(int entity)
+    static bool IsActive(in Captain c) => c.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station || c.Watch;
+
+    /// <summary>A ship's captain's order, its target unit and who gave it; None if he has none.</summary>
+    public (CaptainOrder Order, int Target, OrderSource Source) Of(int entity)
     {
         int i = Find(entity);
-        return i >= 0 ? (captains[i].Order, captains[i].Target) : (CaptainOrder.None, 0);
+        return i >= 0 ? (captains[i].Order, captains[i].Target, captains[i].Source) : (CaptainOrder.None, 0, OrderSource.Player);
     }
 
-    /// <summary>The player's order to a captain, as a command: B the order, A the target, X the distance astern, Y the
-    /// distance abeam.</summary>
-    public void Order(in AiContext ctx, in Command c) => Set(ctx, c.Entity, (CaptainOrder)c.B, (int)c.A, c.X, c.Y, byAdmiral: false);
-
-    /// <summary>Gives a captain an order (<see cref="CaptainOrder.None"/> takes his away). An order the same as the one
-    /// he has changes nothing, so an admiral can repeat his every second.</summary>
-    public void Set(in AiContext ctx, int entity, CaptainOrder order, int target, double astern, double abeam, bool byAdmiral)
+    /// <summary>The speed asked of a ship (NaN if none) and the most it may ring (0: no limit).</summary>
+    public (double AskedKn, double LimitKn) SpeedOf(int entity)
     {
-        int slot = ctx.Ships.SlotOf(entity);
         int i = Find(entity);
-        if (order == CaptainOrder.None || slot < 0)
+        return i >= 0 ? (captains[i].AskedKn, captains[i].LimitKn) : (double.NaN, 0);
+    }
+
+    /// <summary>Whether a ship's captain already holds his superior's order to keep this station: for the admiral, so
+    /// he doesn't give it again.</summary>
+    public bool Holds(int entity, CaptainOrder order, int target, double astern, double abeam)
+    {
+        int i = Find(entity);
+        if (i < 0)
+            return false;
+        ref readonly var c = ref captains[i];
+        return c.Source == OrderSource.Superior && c.Order == order && c.Target == target && c.DistanceM == astern && c.AbeamM == abeam;
+    }
+
+    /// <summary>The entity of the i-th captain (in entity order) if he holds an order from his superior, else 0.</summary>
+    public int SuperiorsAt(int i) => captains[i].Source == OrderSource.Superior ? captains[i].Entity : 0;
+
+    /// <summary>An order to a ship's captain, as a command (<see cref="UnitOrders"/>).</summary>
+    public void Order(in AiContext ctx, in Command c)
+    {
+        int e = c.Entity, slot = ctx.Ships.SlotOf(e);
+        if (slot < 0)
+            return;   // dropped or never made: an order that reached no ship
+        var code = (AiCommand)c.Code;
+        var source = (OrderSource)c.B;
+        var g = groups.Of(e);
+        var detached = g?.DetachmentOf(e) ?? Detachment.InLine;
+
+        switch (code)
         {
-            if (i >= 0)
-                Remove(i);
-            return;
-        }
-        if (i >= 0)
-        {
-            ref var c = ref captains[i];
-            if (c.Order == order && c.Target == target && c.DistanceM == astern && c.AbeamM == abeam && c.ByAdmiral == byAdmiral)
+            case AiCommand.Resume:
+                if (g != null && detached != Detachment.InLine)
+                    ctx.Issue(GroupSystem.Detach(e, Detachment.InLine));   // his admiral gives him his station
+                return;
+            case AiCommand.Detach:
+                if (g == null || detached == Detachment.Pinned)
+                    return;
+                ctx.Issue(GroupSystem.Detach(e, Detachment.Pinned));
+                Release(ctx, e);   // he holds what he was doing, the player's now
+                return;
+            case AiCommand.SpeedLimit:
+                ref var lim = ref Get(e);
+                SetLimit(ctx, ref lim, ctx.Ships[slot], c.X);
                 return;
         }
-        else
-            i = Insert(entity);
-        var ship = ctx.Ships[slot];
-        captains[i] = new Captain
+
+        if (source == OrderSource.Superior && g != null && detached != Detachment.InLine)
+            return;   // the player has him: his superior's order waits for the hand-back, and is given again then
+        if (source == OrderSource.Player && g != null && detached == Detachment.InLine)
         {
-            Entity = entity, Order = order, Target = target, DistanceM = astern, AbeamM = abeam, ByAdmiral = byAdmiral,
-            HoldCourseDeg = ship.HeadingDeg, HoldSpeedKn = ship.SpeedOrderKn,
-        };
+            ctx.Issue(GroupSystem.Detach(e, Detachment.Nudged));   // the player takes him out of the line
+            detached = Detachment.Nudged;
+        }
+
+        ref var cap = ref Get(e);
+        var own = ctx.Ships[slot];
+        if (source == OrderSource.Player && cap.Source == OrderSource.Superior)
+            SetLimit(ctx, ref cap, own, 0);   // his superior's limit goes with his superior
+        cap.Source = source;
+        switch (code)
+        {
+            case AiCommand.Course:
+                (cap.Order, cap.Target) = (CaptainOrder.Course, 0);
+                ctx.Helm.Course(e, c.X, c.Y);
+                break;
+            case AiCommand.Speed:
+                if (cap.Order is not (CaptainOrder.Course or CaptainOrder.Route))
+                    (cap.Order, cap.Target) = (CaptainOrder.Course, 0);   // out of a behaviour: on the course ordered now
+                cap.AskedKn = c.X;
+                Ring(ctx, cap, own, always: true);   // an order reaches the helm, as a course does, even one it has
+                break;
+            case AiCommand.Hold:
+                (cap.Order, cap.Target, cap.AskedKn) = (own.Helm == Helm.Route ? CaptainOrder.Route : CaptainOrder.Course, 0, own.SpeedOrderKn);
+                if (own.Helm == Helm.Rudder)
+                    ctx.Helm.Course(e, own.CourseOrderDeg);
+                break;
+            case AiCommand.ClearRoute:
+                (cap.Order, cap.Target) = (CaptainOrder.Course, 0);
+                ctx.Helm.ClearRoute(e);
+                break;
+            case AiCommand.AddWaypoint:
+                (cap.Order, cap.Target) = (CaptainOrder.Route, 0);
+                ctx.Helm.AddWaypoint(e, c.A);
+                break;
+            case AiCommand.LoopRoute:
+                ctx.Helm.LoopRoute(e, c.X != 0);
+                break;
+            case AiCommand.Follow:
+                (cap.Order, cap.Target, cap.DistanceM, cap.AbeamM) = (CaptainOrder.Follow, (int)c.A, c.X, 0);
+                break;
+            case AiCommand.Station:
+                (cap.Order, cap.Target, cap.DistanceM, cap.AbeamM) = (CaptainOrder.Station, (int)c.A, c.X, c.Y);
+                break;
+            case AiCommand.Run:
+                (cap.Order, cap.Target) = (CaptainOrder.Run, (int)c.A);
+                break;
+            default:
+                throw new ArgumentException($"unknown AI command {c.Code}");
+        }
+        cap.Watch = cap.Order == CaptainOrder.Route && source == OrderSource.Player && detached == Detachment.Nudged;
+        Recount();
     }
 
-    /// <summary>The entity of the i-th captain (in entity order) if he holds an admiral's order, else 0: for the admiral
-    /// to take back what's no longer his.</summary>
-    public int AdmiralsAt(int i) => captains[i].ByAdmiral ? captains[i].Entity : 0;
+    /// <summary>A ship no longer his superior's (it left its group, or was detached): he holds the course and speed
+    /// ordered now, and his superior's limit goes. Not an order: the captain finds he has nobody above him.</summary>
+    public void Release(in AiContext ctx, int entity)
+    {
+        int i = Find(entity), slot = ctx.Ships.SlotOf(entity);
+        if (i < 0 || slot < 0)
+            return;
+        ref var cap = ref captains[i];
+        var own = ctx.Ships[slot];
+        if (cap.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.None)
+            (cap.Order, cap.Target, cap.AskedKn) = (own.Helm == Helm.Route ? CaptainOrder.Route : CaptainOrder.Course, 0, own.SpeedOrderKn);
+        SetLimit(ctx, ref cap, own, 0);
+        cap.Source = OrderSource.Player;
+        Recount();
+    }
 
-    /// <summary>Whether a ship's captain holds an admiral's order.</summary>
-    public bool IsAdmirals(int entity)
+    /// <summary>A ship dropped from the world: its captain goes with it.</summary>
+    public void Forget(int entity)
     {
         int i = Find(entity);
-        return i >= 0 && captains[i].ByAdmiral;
+        if (i >= 0)
+        {
+            Remove(i);
+            Recount();
+        }
     }
 
     public void Think(in AiContext ctx)
@@ -113,20 +223,39 @@ public sealed class CaptainLayer : IAiLayer
                 Remove(i--);   // the ship is gone
                 continue;
             }
+            if (!IsActive(cap))
+                continue;
             var own = ctx.Ships[slot];
-            double course = cap.HoldCourseDeg, kn = cap.HoldSpeedKn;
-            Sighting t = default;
-            bool seen = cap.Order != CaptainOrder.KeepCourse && ctx.Picture.TryGet(cap.Target, out t);
-            if (cap.Order == CaptainOrder.Follow && seen)
-                (course, kn) = Behaviours.Follow(own, t, cap.DistanceM, ctx.Settings);
-            else if (cap.Order == CaptainOrder.Station && seen)
-                (course, kn) = Behaviours.Station(own, t, cap.DistanceM, cap.AbeamM, ctx.Settings);
-            else if (cap.Order == CaptainOrder.Run && seen)
-                (course, kn) = Behaviours.Run(own, t);
-            else if (cap.Order != CaptainOrder.KeepCourse)
-                (cap.HoldCourseDeg, cap.HoldSpeedKn, course, kn) = (own.CourseOrderDeg, own.SpeedOrderKn, own.CourseOrderDeg, own.SpeedOrderKn);
+            if (cap.Watch)
+            {
+                // a route the player gave a ship out of its line: at its end, back to its admiral
+                if (own.RouteLoop)
+                    cap.Watch = false;   // a patrol has no end
+                else if (own.Helm != Helm.Route)
+                {
+                    (cap.Watch, cap.Order) = (false, CaptainOrder.Course);
+                    if (groups.Of(cap.Entity)?.DetachmentOf(cap.Entity) == Detachment.Nudged)
+                        ctx.Issue(GroupSystem.Detach(cap.Entity, Detachment.InLine));
+                }
+                continue;
+            }
+            int target = new Unit(cap.Target).ShipOf(groups);
+            if (target == 0 || target == cap.Entity || !ctx.Picture.TryGet(target, out var t))
+            {
+                (cap.Order, cap.Target, cap.AskedKn) = (CaptainOrder.Course, 0, own.SpeedOrderKn);   // lost: he holds his course
+                continue;
+            }
+            var (course, kn) = cap.Order switch
+            {
+                CaptainOrder.Follow => Behaviours.Follow(own, t, cap.DistanceM, ctx.Settings),
+                CaptainOrder.Station => Behaviours.Station(own, t, cap.DistanceM, cap.AbeamM, ctx.Settings),
+                _ => Behaviours.Run(own, t),
+            };
+            if (cap.LimitKn > 0)
+                kn = Math.Min(kn, cap.LimitKn);
             Give(ctx, own, course, kn);
         }
+        Recount();
     }
 
     /// <summary>Orders the course and speed if they differ from what the ship has been ordered.</summary>
@@ -135,9 +264,38 @@ public sealed class CaptainLayer : IAiLayer
         double dc = course - own.CourseOrderDeg;
         dc -= 360 * Math.Round(dc / 360);
         if (own.Helm != Helm.Course || Math.Abs(dc) > ctx.Settings.CaptainCourseDeadbandDeg)
-            ctx.Orders.Course(own.Entity, course);
+            ctx.Helm.Course(own.Entity, course);
         if (Math.Abs(kn - own.SpeedOrderKn) > ctx.Settings.CaptainSpeedDeadbandKn)
-            ctx.Orders.Speed(own.Entity, kn);
+            ctx.Helm.Speed(own.Entity, kn);
+    }
+
+    /// <summary>Rings the speed asked within the limit (plain orders only: a behaviour works out its own speed): always
+    /// for an order, and for a changed limit only if that changes what's rung.</summary>
+    static void Ring(in AiContext ctx, in Captain cap, ShipState own, bool always = false)
+    {
+        if (double.IsNaN(cap.AskedKn) || cap.Order is not (CaptainOrder.Course or CaptainOrder.Route or CaptainOrder.None))
+            return;
+        double kn = cap.LimitKn > 0 ? Math.Min(cap.AskedKn, cap.LimitKn) : cap.AskedKn;
+        if (always || kn != own.SpeedOrderKn)
+            ctx.Helm.Speed(own.Entity, kn);
+    }
+
+    static void SetLimit(in AiContext ctx, ref Captain cap, ShipState own, double kn)
+    {
+        if (cap.LimitKn == kn)
+            return;
+        if (double.IsNaN(cap.AskedKn))
+            cap.AskedKn = own.SpeedOrderKn;   // what's rung now is what he keeps asking for
+        cap.LimitKn = kn;
+        Ring(ctx, cap, own);
+    }
+
+    void Recount()
+    {
+        active = 0;
+        for (int i = 0; i < count; i++)
+            if (IsActive(captains[i]))
+                active++;
     }
 
     public void Hash(ref StateHash h)
@@ -148,12 +306,13 @@ public sealed class CaptainLayer : IAiLayer
             ref readonly var c = ref captains[i];
             h.Add(c.Entity);
             h.Add((int)c.Order);
+            h.Add((int)c.Source);
             h.Add(c.Target);
             h.Add(c.DistanceM);
             h.Add(c.AbeamM);
-            h.Add(c.ByAdmiral);
-            h.Add(c.HoldCourseDeg);
-            h.Add(c.HoldSpeedKn);
+            h.Add(c.AskedKn);
+            h.Add(c.LimitKn);
+            h.Add(c.Watch);
         }
     }
 
@@ -162,8 +321,20 @@ public sealed class CaptainLayer : IAiLayer
         for (int k = 0; k < v.Count; k++)
         {
             int i = Find(v.Entity[k]);
-            (v.Captain[k], v.CaptainTarget[k]) = i >= 0 ? ((byte)captains[i].Order, captains[i].Target) : ((byte)0, 0);
+            (v.Captain[k], v.CaptainTarget[k]) = i >= 0 ? ((byte)captains[i].Order, new Unit(captains[i].Target).ShipOf(groups)) : ((byte)0, 0);
         }
+    }
+
+    /// <summary>A ship's captain, made (told nothing yet) if it has none.</summary>
+    ref Captain Get(int entity)
+    {
+        int i = Find(entity);
+        if (i < 0)
+        {
+            i = Insert(entity);
+            captains[i] = new Captain { Entity = entity, AskedKn = double.NaN };
+        }
+        return ref captains[i];
     }
 
     int Find(int entity)

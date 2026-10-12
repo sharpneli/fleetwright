@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); the next is 2.6, one chain of command, then ships and the land (T1-T3 of `docs/world/terrain-plan.md`), then 2.7, the Jutland scale test.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6a (one order path) is done; the next is 2.6b (nesting), then 2.6c (the world tab), then ships and the land (T1-T3 of `docs/world/terrain-plan.md`), then 2.7, the Jutland scale test.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1064,6 +1064,57 @@ handles land the same whoever gave the order. What this step leaves ready for it
 2. **The player's order to one ship of a squadron detaches it;** it stays a member.
 3. **Nesting:** groups of groups in `GroupSystem`.
 4. **This comes before the Jutland test,** which stress-tests it.
+
+*Split into three sessions:* 2.6a the order path, 2.6b nesting (forces, force admirals, column stations along the
+track, rails composed down the tree, the helm order's clearance), 2.6c the world tab (the level picker, the held list,
+the notices, the dev flags).
+
+**2.6a done (2026-10-12): one order path.**
+- **One vocabulary, one way in** (`Fleetwright.Sim.Ai/UnitOrders.cs`): a `Unit` is a ship (its entity) or a group
+  (its id negated), packed in the command's entity. `AiCommand` has `Course`, `Speed`, `Hold`, `ClearRoute`,
+  `AddWaypoint`, `LoopRoute`, `Follow`, `Station`, `Run`, `SpeedLimit`, `Detach` and `Resume`, each carrying its
+  `OrderSource` (the player, or the unit's superior). `ai.Orders` builds them, the same for the player (logged) and
+  for a layer (`AiContext.Issue`, unlogged). `KeepCourse` and `CaptainOrder.None`-as-an-order went: `Hold` keeps the
+  course *ordered* (not the heading, so given mid-turn it finishes the turn).
+- **Captains** are the only ones who work the helm (`HelmOrders`, with the route commands now too). Plain orders go
+  to the helm at once and are left alone; only behaviours (follow, station, run) and a held ship's route are
+  watched, so a ship's captain costs nothing a second. A captain is made at a ship's first order; a ship told nothing
+  has none. Explicit orders always reach the helm (a speed it has too, as a course always did); a changed limit
+  re-rings only if that changes what's rung.
+- **Admirals** hold their group's order (course, speed, route with its waypoints, or a behaviour) and hand it to the
+  guide's captain at once; a new guide gets all of it at the admiral's next think, within the second. Stations go to
+  the line by command, given only when they change (`CaptainLayer.Holds`).
+- **Limits are orders:** the admiral gives his guide a `SpeedLimit` (the slowest of the line, less the margin) as he
+  hands orders down; the captain rings no more than it while keeping what was asked (`SpeedOf` on both layers), and
+  an old guide's limit goes with it.
+- **Who has a ship:** detachment is the world's (`GroupSystem.Detach`: in line, nudged or pinned), since the rails must
+  not place or carry a detached ship. A group's `Line` is its members in line, and its guide the first of them: a
+  guide taken by the player hands the group to the next ship, and gets it back if it rejoins. The player's order to
+  a ship of a line nudges it out; an order to the group gathers nudged ships back; `Detach` pins one out until
+  `Resume`. A superior's order to a held ship is dropped, not stored: on the hand-back the superior gives his again.
+  A ship's captain finds himself released (holding his course, his limit gone) when it leaves its group or line.
+- **Handing back:** a non-looping route the player gave a nudged ship hands it back at its last waypoint. A pinned
+  ship waits for `Resume` even then: pinned means "leave it to me". The superior's notice waits for 2.6b, since
+  nothing above a squadron gives orders yet.
+- **The rails** work on the line: placing, riding and derailing a group take only its line, and a detached ship rails
+  on its own. `ShipSystem`'s formation geometry is otherwise unchanged (one `StationOf` source comes with 2.6b).
+- **On the world tab** (minimal until 2.6c): orders from the strip and right-clicks go to the selected ship's group, or
+  to the ship when it's detached (the map's `Commanded` reroute to the guide is gone). The group row shows a
+  detached ship and has Detach / Rejoin; the behaviour row works for a group too. `-captain` takes
+  `follow`/`run`/`keep`; `-search` on a `-group`'s first ship searches with its group.
+- **Checked** (`OrderPathTests`, and the captain, group and rails suites moved to unit orders):
+  - The same script to a ship and to its admiral (a squadron of one): the same 79 helm and engine commands at the
+    same times, and the ship ends bit-identical.
+  - A nudged ship isn't steered back, the line closes up behind it, an order to the group gathers it, a pinned one
+    stays out through the group's orders and comes back on `Resume`.
+  - A route to a nudged ship hands it back after its waypoint (535 s on).
+  - A guide taken by the player: the next ship guides on the group's course and speed, with the limit.
+  - A group ordered at 30 kn never rings past its cap, and the 30 kn asked is kept.
+  - 2,000 ships on plain orders: the AI inactive, an hour of play allocating nothing.
+  - Nudges, pins, hand-backs and a new guide replay from the log to the same hash.
+  - Screenshot: a dev column with the strip's group orders and Detach.
+  - The sim suite passed nine full runs; a tenth run had one failure that didn't reproduce in eight runs after
+    (not identified; the threaded host's timing tests are the likeliest).
 
 **Ships and the land: T1-T3 of `docs/world/terrain-plan.md`** (the user, 2026-10-12: after 2.6 and before the
 Jutland test; planned in a session of its own when it starts). T1 is `Shore`, the land index, with the world holding

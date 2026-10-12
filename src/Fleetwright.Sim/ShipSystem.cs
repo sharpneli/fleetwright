@@ -238,14 +238,15 @@ public sealed partial class ShipSystem : IWorldSystem
     /// <summary>Any ship that isn't on rails: the fine tick runs only while there is.</summary>
     bool AnyFine() => Store.FineCount > 0;
 
-    /// <summary>Takes a ship off rails, and its whole group with it (they ride together), back to the fine tick.</summary>
+    /// <summary>Takes a ship off rails, and its group's line with it if it's in one (they ride together), back to the
+    /// fine tick. A detached member rides rails of its own, so it comes off alone.</summary>
     public void Derail(World world, int entity)
     {
         bool any = false;
-        if (world.Groups.Of(entity) is { } g)
+        if (world.Groups.Of(entity) is { } g && g.DetachmentOf(entity) == Detachment.InLine)
         {
-            for (int i = 0; i < g.Members.Count; i++)
-                any |= DerailSlot(Store.SlotOf(g.Members[i]));
+            for (int i = 0; i < g.Line.Count; i++)
+                any |= DerailSlot(Store.SlotOf(g.Line[i]));
         }
         else
             any = DerailSlot(Store.SlotOf(entity));
@@ -261,8 +262,9 @@ public sealed partial class ShipSystem : IWorldSystem
         return true;
     }
 
-    /// <summary>Every few seconds: ships, and groups whose every ship is, steaming steady go on rails. A group's guide
-    /// goes on its own rails, the rest at their offsets from it now, so the group keeps its shape exactly.
+    /// <summary>Every few seconds: ships, and groups' lines whose every ship is, steaming steady go on rails. A group's
+    /// guide goes on its own rails, the rest of its line at their offsets from it now, so the group keeps its shape
+    /// exactly; its detached ships go on rails of their own, like ships alone.
     /// <para>With the clock at <see cref="SimSettings.RailsSnapMinSpeed"/> or more nobody watches closely, so rails are
     /// entered by placing, not by waiting: a ship or group under way on a course or a route, with no opposing ship
     /// near, is made what its orders say at once (its course, the speed its power holds) and goes on rails, its group's
@@ -293,12 +295,12 @@ public sealed partial class ShipSystem : IWorldSystem
                 continue;
             var gs = Store[guide];
             bool all = true;
-            for (int i = 1; i < g.Members.Count && all; i++)
+            for (int i = 1; i < g.Line.Count && all; i++)
             {
                 // a member: not swinging, with the guide, at the guide's speed near enough (its captain re-rings speed
                 // only past his deadband, so a ship in station may be rung a few tenths off; one catching up runs knots
                 // faster, and isn't taken onto rails at the wrong offset)
-                int m = Store.SlotOf(g.Members[i]);
+                int m = Store.SlotOf(g.Line[i]);
                 if (m < 0)
                 {
                     all = false;
@@ -317,13 +319,13 @@ public sealed partial class ShipSystem : IWorldSystem
             if (!all || NearOpposing(guide, GroupRadius(g, guide)))
                 continue;
             RailGuide(world, guide);
-            for (int i = 1; i < g.Members.Count; i++)
-                Store.RailWith(Store.SlotOf(g.Members[i]), guide);
+            for (int i = 1; i < g.Line.Count; i++)
+                Store.RailWith(Store.SlotOf(g.Line[i]), guide);
             Anchored(world, guide);
         }
         for (int i = 0; i < Store.Slots; i++)
         {
-            if (!Store.IsAlive(i) || Store.OnRails(i) || world.Groups.Of(Store[i].Entity) != null)
+            if (!Store.IsAlive(i) || Store.OnRails(i) || world.Groups.InLine(Store[i].Entity))
                 continue;
             bool placed = place && Placeable(i);
             if (!placed && !Steady(i) || NearOpposing(i, 0))
@@ -344,12 +346,12 @@ public sealed partial class ShipSystem : IWorldSystem
         return (s.Helm == Helm.Course || s.Helm == Helm.Route && s.RouteNext < s.RouteCount) && s.PowerOrder >= 0;
     }
 
-    /// <summary>A group's ships put on rails on their stations about its guide (on rails already), on its heading.</summary>
+    /// <summary>A group's line put on rails on their stations about its guide (on rails already), on its heading.</summary>
     void PlaceOnStations(GroupSystem.Group g, int guide)
     {
-        for (int i = 1; i < g.Members.Count; i++)
+        for (int i = 1; i < g.Line.Count; i++)
         {
-            int m = Store.SlotOf(g.Members[i]);
+            int m = Store.SlotOf(g.Line[i]);
             if (m < 0)
                 continue;
             var (astern, abeam) = GroupSystem.OffsetFromGuide(g.Formation, g.SpacingM, i);
@@ -361,7 +363,7 @@ public sealed partial class ShipSystem : IWorldSystem
     static double FormationRadius(GroupSystem.Group g)
     {
         double r = 0;
-        for (int i = 1; i < g.Members.Count; i++)
+        for (int i = 1; i < g.Line.Count; i++)
         {
             var (astern, abeam) = GroupSystem.OffsetFromGuide(g.Formation, g.SpacingM, i);
             r = Math.Max(r, Math.Sqrt(astern * astern + abeam * abeam));
@@ -374,8 +376,8 @@ public sealed partial class ShipSystem : IWorldSystem
     {
         double r = 0;
         var gp = Store[guide].Position;
-        for (int i = 1; i < g.Members.Count; i++)
-            if (Store.SlotOf(g.Members[i]) is int m and >= 0)
+        for (int i = 1; i < g.Line.Count; i++)
+            if (Store.SlotOf(g.Line[i]) is int m and >= 0)
                 r = Math.Max(r, Earth.Distance(gp, Store[m].Position));
         return r;
     }

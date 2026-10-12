@@ -1,5 +1,6 @@
 using System.Numerics;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Core;
 using ImGuiNET;
 using SDL;
@@ -49,24 +50,26 @@ public sealed unsafe partial class MapScene
         {
             double x0 = double.MaxValue, y0 = double.MaxValue, x1 = double.MinValue, y1 = double.MinValue, gx = 0, gy = 0;
             bool any = false, guideSeen = false;
+            int inLine = 0;
             for (int i = 0; i < gv.MemberCount[g]; i++)
             {
-                int k = v.IndexOf(gv.Members[gv.MemberStart[g] + i]);
-                if (k < 0)
-                    continue;
+                int m = gv.MemberStart[g] + i, k = v.IndexOf(gv.Members[m]);
+                if (k < 0 || gv.Detached[m] != Detachment.InLine)
+                    continue;   // a detached ship is drawn on its own, wherever it went
+                inLine++;
                 var (p, _) = v.PoseAt(k, s.Time.Ms);
                 if (!view.Project(p, out double x, out double y))
                     continue;
                 (x0, y0, x1, y1, any) = (Math.Min(x0, x), Math.Min(y0, y), Math.Max(x1, x), Math.Max(y1, y), true);
-                if (i == 0)
+                if (gv.Members[m] == gv.Guide[g])
                     (gx, gy, guideSeen) = (x, y, true);
             }
             if (!any || !guideSeen)
                 continue;
-            bool collapsed = gv.MemberCount[g] > 1 && Math.Max(x1 - x0, y1 - y0) < CollapsePx;
+            bool collapsed = inLine > 1 && Math.Max(x1 - x0, y1 - y0) < CollapsePx;
             if (collapsed)
                 for (int i = 0; i < gv.MemberCount[g]; i++)
-                    if (v.IndexOf(gv.Members[gv.MemberStart[g] + i]) is int k and >= 0)
+                    if (gv.Detached[gv.MemberStart[g] + i] == Detachment.InLine && v.IndexOf(gv.Members[gv.MemberStart[g] + i]) is int k and >= 0)
                         hidden[k] = true;
             if (labelCount == labels.Length)
                 Array.Resize(ref labels, labels.Length * 2);
@@ -123,17 +126,33 @@ public sealed unsafe partial class MapScene
             if (lb.Group >= gv.Count)
                 continue;
             var at = new Vector2(vp.Pos.X + (float)(lb.X * sx) + 12, vp.Pos.Y + (float)(lb.Y * sy) - 8);
-            string text = lb.Collapsed ? $"{gv.Name[lb.Group]} ({gv.MemberCount[lb.Group]})" : gv.Name[lb.Group];
+            int inLine = 0;
+            for (int i = 0; i < gv.MemberCount[lb.Group]; i++)
+                if (gv.Detached[gv.MemberStart[lb.Group] + i] == Detachment.InLine)
+                    inLine++;
+            string text = lb.Collapsed ? $"{gv.Name[lb.Group]} ({inLine})" : gv.Name[lb.Group];
             dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
             dl.AddText(at, ImGui.GetColorU32(GroupColor), text);
         }
     }
 
-    /// <summary>The ship orders of the selection go to: its group's guide, or the ship itself.</summary>
-    int Commanded(Snapshot s)
+    /// <summary>Where the selection's orders go (docs/battle/plan.md step 2.6): to its group, if it's in the group's
+    /// line, or else to the ship itself; and the ship that steams them (the group's guide, or the ship).</summary>
+    (Unit Unit, int Ship) Commanded(Snapshot s)
     {
-        int g = s.Groups.IndexOfShip(selected);
-        return g >= 0 ? s.Groups.Members[s.Groups.MemberStart[g]] : selected;
+        var gv = s.Groups;
+        int g = gv.IndexOfShip(selected);
+        if (g < 0 || gv.Guide[g] == 0 || DetachmentOf(gv, g, selected) != Detachment.InLine)
+            return (Unit.Ship(selected), selected);
+        return (Unit.Group(gv.Id[g]), gv.Guide[g]);
+    }
+
+    static Detachment DetachmentOf(GroupsView gv, int g, int entity)
+    {
+        for (int i = 0; i < gv.MemberCount[g]; i++)
+            if (gv.Members[gv.MemberStart[g] + i] == entity)
+                return gv.Detached[gv.MemberStart[g] + i];
+        return Detachment.InLine;
     }
 
     /// <summary>A click picked a ship: with ctrl it's added to (or taken from) the picked ones beside the selection.</summary>
@@ -162,10 +181,17 @@ public sealed unsafe partial class MapScene
         int g = gv.IndexOfShip(selected);
         if (g >= 0)
         {
-            int id = gv.Id[g], guide = gv.Members[gv.MemberStart[g]];
+            int id = gv.Id[g], guide = gv.Guide[g];
+            var detached = DetachmentOf(gv, g, selected);
             ImGui.Text($"{gv.Name[g]}:");
             ImGui.SameLine();
-            ImGui.TextDisabled($"{gv.MemberCount[g]} ships, guide #{guide}{(guide == selected ? " (this)" : "")}");
+            ImGui.TextDisabled(detached != Detachment.InLine
+                ? $"{gv.MemberCount[g]} ships; this one detached{(detached == Detachment.Pinned ? "" : " (an order to the group gathers it in)")}"
+                : $"{gv.MemberCount[g]} ships, guide #{guide}{(guide == selected ? " (this)" : "")}");
+            ImGui.SameLine();
+            if (detached != Detachment.InLine ? ImGui.Button("Rejoin") : ImGui.Button("Detach"))
+                world.Send(detached != Detachment.InLine ? world.Ai.Orders.Resume(Unit.Ship(selected)) : world.Ai.Orders.Detach(Unit.Ship(selected)));
+            ImGui.SameLine();
             ImGui.SameLine();
             ImGui.SetNextItemWidth(150 * UiFonts.Scale);
             int f = (int)gv.Formation[g];

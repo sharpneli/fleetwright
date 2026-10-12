@@ -39,12 +39,14 @@ public sealed class Snapshot
     public GroupsView Groups { get; } = new();
 }
 
-/// <summary>The groups' part of a snapshot: per group its id, name, formation and spacing, and its members (entities,
-/// the guide first) as a run of <see cref="Members"/>.</summary>
+/// <summary>The groups' part of a snapshot: per group its id, name, formation, spacing and guide (0 when every member
+/// is detached), and its members (entities, in order) as a run of <see cref="Members"/>, each with its
+/// <see cref="Detached"/>.</summary>
 public sealed class GroupsView
 {
     public int Count;
-    public int[] Id = [], MemberStart = [], MemberCount = [], Members = [];
+    public int[] Id = [], MemberStart = [], MemberCount = [], Members = [], Guide = [];
+    public Detachment[] Detached = [];
     public string[] Name = [];
     public Formation[] Formation = [];
     public double[] SpacingM = [];
@@ -61,9 +63,14 @@ public sealed class GroupsView
             Array.Resize(ref Name, n);
             Array.Resize(ref Formation, n);
             Array.Resize(ref SpacingM, n);
+            Array.Resize(ref Guide, n);
         }
         if (m > Members.Length)
-            Array.Resize(ref Members, Math.Max(m, Math.Max(32, Members.Length * 2)));
+        {
+            m = Math.Max(m, Math.Max(32, Members.Length * 2));
+            Array.Resize(ref Members, m);
+            Array.Resize(ref Detached, m);
+        }
     }
 
     /// <summary>The index of the group a ship is in, or -1.</summary>

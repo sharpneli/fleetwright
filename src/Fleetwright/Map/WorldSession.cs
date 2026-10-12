@@ -20,8 +20,8 @@ public sealed class WorldSession : IDisposable
     /// world. Thread-safe; the map requests designs here and spawns ships by the ids it gives.</summary>
     public ShipClassRegistry Classes { get; }
 
-    /// <summary>The world's AI (captains). Owned by the sim thread: the UI only builds commands with it
-    /// (<see cref="AiSystem.Captain"/>, which reads nothing but its id) and sends them.</summary>
+    /// <summary>The world's AI (admirals and captains). Owned by the sim thread: the UI only builds orders with it
+    /// (<see cref="AiSystem.Orders"/>, which reads nothing but its id) and sends them.</summary>
     public AiSystem Ai { get; }
 
     /// <summary>The world's settings: immutable, so the UI may read them (a route's capacity, the snap speed).</summary>
