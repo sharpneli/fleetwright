@@ -46,6 +46,26 @@ public class LandTests
             Assert.True(land.IsLand(Earth.Up(lat, lon)) == want, $"{res}: {name} should be {(want ? "land" : "sea")}");
     }
 
+    [Theory]
+    [MemberData(nameof(Resolutions))]
+    public void Every_reference_is_open_sea(string res)
+    {
+        // an even count of coasts between each reference and Point Nemo, at every level: they're all sea, or IsLand
+        // would answer differently depending on which is nearest
+        var land = Levels[res];
+        foreach (var r in Land.References)
+            Assert.True(land.Crossings(r, Land.References[0]) % 2 == 0 || Earth.Angle(r, Land.References[0]) > 3.1,
+                $"{res}: the reference at {Earth.LatLon(r)} isn't sea");
+        // and every place gets the same answer from every reference, near or far
+        foreach (var (name, lat, lon, want) in Places)
+        {
+            var p = Earth.Up(lat, lon);
+            foreach (var r in Land.References)
+                if (Earth.Angle(p, r) < 170 * Math.PI / 180)
+                    Assert.True(((land.Crossings(p, r) & 1) == 1) == want, $"{res}: {name} by way of {Earth.LatLon(r)}");
+        }
+    }
+
     [Fact]
     public void Finer_levels_have_more_coast()
     {

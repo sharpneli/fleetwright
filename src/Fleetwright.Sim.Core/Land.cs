@@ -104,19 +104,34 @@ public sealed class Land
         return Load(f);
     }
 
-    // known sea, far from any coast: Point Nemo, and the southern Indian Ocean for points near Nemo's antipode
-    static readonly Vec3d Nemo = Earth.Up(-48.876, -123.393), SouthIndian = Earth.Up(-40, 100);
+    /// <summary>Open sea, hundreds of kilometres from any coast, spread over the oceans: Point Nemo first. IsLand counts
+    /// coasts along the arc to the nearest, so the arc stays short (the answer is the same from any of them).</summary>
+    internal static readonly Vec3d[] References =
+    [
+        Earth.Up(-48.876, -123.393), Earth.Up(-40, 100), Earth.Up(30, -40), Earth.Up(-30, -15), Earth.Up(0, -150),
+        Earth.Up(35, 165), Earth.Up(15, -125), Earth.Up(10, 65), Earth.Up(-15, 75), Earth.Up(-62, 120),
+        Earth.Up(70, 2), Earth.Up(85, 0), Earth.Up(-25, -100), Earth.Up(55, -140), Earth.Up(20, 135),
+    ];
 
-    /// <summary>True when the point (any length; its direction counts) is on land: the great-circle arc from it to a
-    /// point of open sea crosses the coasts an odd number of times. Only rings whose cap the arc comes near are
-    /// walked.</summary>
+    /// <summary>True when the point (any length; its direction counts) is on land: the great-circle arc from it to the
+    /// nearest point of open sea crosses the coasts an odd number of times. Only rings and chunks whose cap the arc
+    /// comes near are walked, by tests with no trig.</summary>
     public bool IsLand(Vec3d p)
     {
         var a = p.Normalized();
-        var b = Earth.Angle(a, Nemo) < 170 * Math.PI / 180 ? Nemo : SouthIndian;
+        var b = References[0];
+        foreach (var r in References)
+            if (Vec3d.Dot(a, r) > Vec3d.Dot(a, b))
+                b = r;
+        return (Crossings(a, b) & 1) == 1;
+    }
+
+    /// <summary>How many times the arc a-b (unit vectors, under half a turn) crosses the coasts.</summary>
+    internal int Crossings(Vec3d a, Vec3d b)
+    {
         var ab = Vec3d.Cross(a, b);
         if (ab.LengthSquared == 0)
-            return false;   // the reference itself
+            return 0;
         var n = ab.Normalized();
         int crossings = 0;
         for (int i = 0; i < RingCount; i++)
@@ -135,24 +150,26 @@ public sealed class Land
                         crossings++;
             }
         }
-        return (crossings & 1) == 1;
+        return crossings;
     }
 
-    /// <summary>Whether the arc a-b (its circle's unit normal n) comes within a cap.</summary>
+    /// <summary>Whether the arc a-b (its circle's unit normal n) comes within a cap (centre c, cos of its radius),
+    /// without trig: the circle is within the radius r of c when |c·n| <= sin r; the nearest point of the circle to c
+    /// is on the arc, or else the nearer end must be within r.</summary>
     static bool ArcNearCap(Vec3d a, Vec3d b, Vec3d n, Vec3d c, double cos)
     {
         if (cos <= 0)
             return true;
-        double radius = Math.Acos(Math.Min(cos, 1));
-        // the nearest point of the circle to c, if it lies on the arc; else the nearer end
-        var foot = c - n * Vec3d.Dot(c, n);
-        double d = foot.LengthSquared > 1e-24 && OnArc(a, b, n, foot.Normalized())
-            ? Math.Asin(Math.Min(1, Math.Abs(Vec3d.Dot(c, n))))
-            : Math.Min(Earth.Angle(c, a), Earth.Angle(c, b));
-        return d <= radius + 1e-9;
+        double sin = Math.Sqrt(Math.Max(0, 1 - cos * cos)), cn = Vec3d.Dot(c, n);
+        if (Math.Abs(cn) > sin + 1e-12)
+            return false;
+        var foot = c - n * cn;
+        if (foot.LengthSquared > 1e-24 && OnArc(a, b, n, foot))
+            return true;
+        return Math.Max(Vec3d.Dot(c, a), Vec3d.Dot(c, b)) >= cos - 1e-12;
     }
 
-    /// <summary>Whether x, on the circle of the arc a-b (normal n), lies between a and b.</summary>
+    /// <summary>Whether x (any length), on the circle of the arc a-b (normal n), lies between a and b.</summary>
     static bool OnArc(Vec3d a, Vec3d b, Vec3d n, Vec3d x) =>
         Vec3d.Dot(Vec3d.Cross(a, x), n) >= 0 && Vec3d.Dot(Vec3d.Cross(x, b), n) >= 0;
 

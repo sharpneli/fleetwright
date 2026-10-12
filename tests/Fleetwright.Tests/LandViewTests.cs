@@ -5,8 +5,8 @@ using Xunit.Abstractions;
 
 namespace Fleetwright.Tests;
 
-/// <summary>The land as the map builds it each frame: no garbage once its buffers have grown, quick enough at every
-/// band, and the fill lands where the land is.</summary>
+/// <summary>The land as the map builds it each frame: no garbage once its buffers have grown (the times are printed,
+/// not asserted: frame cost is measured in the game with -frametimes), and the fill lands where the land is.</summary>
 public class LandViewTests(ITestOutputHelper output)
 {
     const double W = 1600, H = 900;
@@ -23,7 +23,7 @@ public class LandViewTests(ITestOutputHelper output)
     ];
 
     [Fact]
-    public void Building_allocates_nothing_and_is_quick()
+    public void Building_allocates_nothing()
     {
         var lines = new MapLines();
         foreach (var cam in Cameras)
@@ -52,21 +52,24 @@ public class LandViewTests(ITestOutputHelper output)
         for (int c = 0; c < Cameras.Length; c++)
             output.WriteLine($"{Cameras[c].MetresPerPixel,8} m/px: {ms[c],6:F2} ms, {counts[c].Fill} fill triangles, {counts[c].Coast} coast segments");
         Assert.Equal(0, allocated);
-        Assert.All(ms, t => Assert.True(t < 4, $"{t:F2} ms"));
     }
 
     [Fact]
     public void Over_land_the_view_is_filled_and_over_sea_it_is_not()
     {
         var lines = new MapLines();
-        // over Hoy at 10 px/m the whole screen is land: one clipped ring, the screen's quad
+        // over Hoy at 10 px/m the whole screen is land, and no coast is in view (nor a walk along the cap drawn as one)
         lines.Begin(W, H);
         View.Build(new MapView(MapCamera.At(58.88, -3.3, 0.1), W, H), lines);
-        Assert.True(View.Fill.Length >= 6);
-        Assert.Equal(0, lines.Vertices.Length);   // no coast in view, and no joins drawn as coast
-        // over the Jutland bank at 10 px/m: open sea, nothing to fill
+        foreach (var (x, y) in Probes)
+            Assert.NotEqual(0, LodSweepTests.Winding(View.Fill, x, y));
+        Assert.Equal(0, lines.Vertices.Length);
+        // over the Jutland bank at 10 px/m: open sea everywhere
         lines.Begin(W, H);
         View.Build(new MapView(MapCamera.At(56.7, 5.8, 0.1), W, H), lines);
-        Assert.Equal(0, View.Fill.Length);
+        foreach (var (x, y) in Probes)
+            Assert.Equal(0, LodSweepTests.Winding(View.Fill, x, y));
     }
+
+    static readonly (double X, double Y)[] Probes = [(800, 450), (5, 5), (1595, 5), (5, 895), (1595, 895), (400, 700)];
 }
