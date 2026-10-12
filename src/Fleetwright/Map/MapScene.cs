@@ -18,7 +18,7 @@ public sealed unsafe class MapScene : IScene
 
     readonly WorldSession world;
     readonly GlobeRenderer renderer;
-    readonly MapLines lines = new();
+    readonly MapLines lines = new(), ships = new();   // ships: rebuilt every frame
     readonly LandView land;
     MapCamera camera, built;   // built: the view the lines and the land's fill were last built for
     (double, double) builtSize;
@@ -73,8 +73,41 @@ public sealed unsafe class MapScene : IScene
                 land.Clear();
             (built, builtSize) = (camera, (width, height));
         }
-        renderer.Render(cmd, target, view, world.Current.Sun, land.Fill, baked, lines);
+        BuildShips(view);
+        renderer.Render(cmd, target, view, world.Current.Sun, land.Fill, baked, lines, ships);
     }
+
+    static readonly Vector4 ShipColor = new(1f, 0.93f, 0.75f, 1f);
+
+    /// <summary>Every ship as a tick along its heading, its length to scale but never under a few pixels, with a dot at
+    /// the bow (docs/battle/plan.md step 2.2's dev drawing; the sprites and markers by band are 2.3's). Poses are
+    /// carried on from their tick to the snapshot's time along their arc.</summary>
+    void BuildShips(in MapView view)
+    {
+        var s = world.Current;
+        var v = s.Ships;
+        ships.Begin(width, height);
+        for (int k = 0; k < v.Count; k++)
+        {
+            var (p, f) = v.PoseAt(k, s.Time.Ms);
+            if (!view.Project(p, out double x, out double y) || !view.Project(p + f * 100, out double x2, out double y2))
+                continue;
+            double dx = x2 - x, dy = y2 - y, l = Math.Sqrt(dx * dx + dy * dy);
+            if (l < 1e-9)
+                continue;
+            (dx, dy) = (dx / l, dy / l);
+            double len = Math.Max(l / 100 * LengthOf(v.Class[k]), 14);
+            ships.BeginStrip(ShipColor, 3);
+            ships.Point(x - dx * len / 2, y - dy * len / 2);
+            ships.Point(x + dx * len / 2, y + dy * len / 2);
+            ships.BeginStrip(ShipColor, 7);
+            ships.Point(x + dx * (len / 2 - 2), y + dy * (len / 2 - 2));
+            ships.Point(x + dx * (len / 2 + 2), y + dy * (len / 2 + 2));
+        }
+        ships.End();
+    }
+
+    double LengthOf(int classIndex) => classIndex < world.ClassLengths.Length ? world.ClassLengths[classIndex] : 100;
 
     public void BuildUi()
     {

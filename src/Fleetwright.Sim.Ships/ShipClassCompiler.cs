@@ -536,7 +536,7 @@ public static class ShipClassCompiler
                     n++;
                     area += x.AreaM2 ?? 0;
                 }
-            return new MotionFacts
+            var facts = new MotionFacts
             {
                 LengthM = res.LengthM, BeamM = res.BeamM, DraughtM = res.DraughtM, BlockCoefficient = res.BlockCoefficient,
                 FullDisplacementT = res.FullDisplacementT, StandardDisplacementT = res.StandardDisplacementT,
@@ -544,6 +544,7 @@ public static class ShipClassCompiler
                 RatedShp = r.Plant.RatedShp, ContinuousShp = r.Plant.ContinuousKw / 0.7457, OverloadMax = r.Plant.OverloadMax,
                 Shafts = checked((int)r.Plant.Shafts), Rudders = n, RudderAreaM2 = area, GmFullM = res.GmFullM, RollPeriodS = res.RollPeriodS,
             };
+            return DesignerPlaceholders.Fill(facts);
         }
 
         /// <summary>The power the hull needs, from shipgen's own resistance model at full load (the report's PowerShp

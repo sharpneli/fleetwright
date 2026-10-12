@@ -14,9 +14,19 @@ public sealed class WorldSession : IDisposable
     /// <summary>The newest snapshot, taken at the start of this frame. The UI thread's; valid until the next frame.</summary>
     public Snapshot Current { get; private set; }
 
-    public WorldSession(WorldTime start, ulong seed)
+    /// <summary>The length of each class the world holds, by index, metres: what the map draws ships to scale by
+    /// until the class registry comes (step 2.3).</summary>
+    public double[] ClassLengths { get; }
+
+    /// <summary>A world with the shipped settings (Content/Sim/settings.json). <paramref name="setup"/> runs on it
+    /// before its thread starts: the dev ships (-ships=) until missions place forces.</summary>
+    public WorldSession(WorldTime start, ulong seed, Action<World>? setup = null)
     {
-        host = new SimHost(new World(start, seed));
+        var settings = SimSettings.Load(Path.Combine(AppContext.BaseDirectory, "Content", "Sim", "settings.json"));
+        var w = new World(start, seed, settings);
+        setup?.Invoke(w);
+        ClassLengths = [.. Enumerable.Range(0, w.Ships.ClassCount).Select(i => w.Ships.Class(i).Length)];
+        host = new SimHost(w);
         host.Start();
         // the first snapshot, so no frame shows an empty one
         var s = host.Latest();

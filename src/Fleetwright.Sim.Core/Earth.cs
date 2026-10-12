@@ -77,4 +77,41 @@ public static class Earth
         position = up2 * r;
         forward = (f2 - up2 * Vec3d.Dot(f2, up2)).Normalized();
     }
+
+    /// <summary>Turns a forward vector about the up at its point by an angle, radians, positive to starboard
+    /// (clockwise seen from above: the heading grows). Starboard is forward × up, as in <see cref="ShipFrame"/>.</summary>
+    public static Vec3d Turn(Vec3d position, Vec3d forward, double angle)
+    {
+        var up = position.Normalized();
+        var starboard = Vec3d.Cross(forward, up);
+        return (forward * Math.Cos(angle) + starboard * Math.Sin(angle)).Normalized();
+    }
+
+    /// <summary>Moves a point along the arc a ship makes holding a speed and a rate of turn: half the turn, the
+    /// distance along the great circle, the other half. Second order in the step, so a track barely depends on how
+    /// it's cut (docs/battle/plan.md step 2.2); with no turn it's <see cref="Advance"/> exactly.</summary>
+    public static void Arc(ref Vec3d position, ref Vec3d forward, double distance, double turn)
+    {
+        if (turn != 0)
+            forward = Turn(position, forward, turn / 2);
+        Advance(ref position, ref forward, distance);
+        if (turn != 0)
+            forward = Turn(position, forward, turn / 2);
+    }
+
+    /// <summary>The heading from one point toward another along the great circle, degrees clockwise from north, in
+    /// [0, 360): the course a ship steers for it now.</summary>
+    public static double Bearing(Vec3d from, Vec3d to)
+    {
+        var up = from.Normalized();
+        var d = to - from;
+        return Heading(from, d - up * Vec3d.Dot(d, up));
+    }
+
+    /// <summary>A latitude and longitude packed into a long as two int32 microdegrees (0.11 m), for commands, which
+    /// are plain fixed-size data.</summary>
+    public static long PackLatLon(double latDeg, double lonDeg) =>
+        ((long)(int)Math.Round(latDeg * 1e6) << 32) | (uint)(int)Math.Round(lonDeg * 1e6);
+
+    public static (double Lat, double Lon) UnpackLatLon(long packed) => ((int)(packed >> 32) / 1e6, (int)packed / 1e6);
 }

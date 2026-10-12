@@ -1,0 +1,32 @@
+// Every tuning number of the sim (Fleetwright.Sim.Core/SimSettings.cs documents each). Strict: an unknown key is an
+// error. A world keeps the settings it was made with, and a replay records them.
+{
+  // the clock
+  "MaxSpeed": 30000,
+  "MinSpeed": 0.1,
+  "MaxLagRealSeconds": 0.25,
+  "PublishIntervalMs": 8,
+  "EventsPerSlice": 4096,
+  "EventCapacity": 16384,
+  "CommandCapacity": 256,
+  "CommandLogCapacity": 16384,
+
+  // ships at sea (docs/battle/plan.md step 2.2; research/simulation/fire-control-research/manoeuvring.md)
+  "ShipTickMs": 50,
+  "ShipCapacity": 64,
+  "RouteCapacity": 32,
+  "PropulsiveEfficiency": 0.6,
+  "BollardThrustPerWatt": 0.1,
+  "AddedMassFraction": 0.07,
+  "AsternPowerFraction": 0.5,
+  "SteadyRadiusOverTd": 0.45,
+  "NomotoTPrime": 1.25,
+  "SingleRudderTFactor": 1.1,
+  "NomotoMinSpeedMs": 1,
+  "TurnSpeedLossBeamy": 0.3,
+  "TurnSpeedLossSlender": 0.4,
+  "StandardRudderDeg": 15,
+  "HelmGain": 1.5,
+  "HelmLeadOverT": 1.2,
+  "ArrivalRadiusM": 300
+}

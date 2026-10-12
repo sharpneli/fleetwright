@@ -22,7 +22,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
 {
     readonly SDL_GPUDevice* device;
     readonly SDL_GPUShader* globeVs, globeFs, lineVs, lineFs, fillVs, fillFs, land3dVs, coast3dVs, depthFs;
-    readonly DynamicGpuBuffer lineBuf, fillBuf;
+    readonly DynamicGpuBuffer lineBuf, fillBuf, overlayBuf;
     readonly SDL_GPUSampler* nearest;
     SDL_GPUGraphicsPipeline* globePipe, linePipe, fillPipe, depthPipe, fill3dPipe, coast3dPipe;
     RenderTarget? coverage;   // the land's winding number per pixel, at the target's size, with depth
@@ -34,7 +34,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
     readonly SDL_GPUBuffer*[] meshFill = new SDL_GPUBuffer*[2], meshCoast = new SDL_GPUBuffer*[2], meshIdx = new SDL_GPUBuffer*[2];
     readonly uint[] meshFillCount = new uint[2], meshIdxCount = new uint[2];
 
-    const uint LineBufferBytes = 16 << 20, FillBufferBytes = 8 << 20;
+    const uint LineBufferBytes = 16 << 20, FillBufferBytes = 8 << 20, OverlayBufferBytes = 2 << 20;
     const SDL_GPUTextureFormat CoverageFormat = SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16_FLOAT;
 
     /// <summary>How far inside the Earth the masking sphere is: over the baked fans' sag (under 0.4 km), so they pass,
@@ -71,6 +71,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
             throw new InvalidOperationException("globe shaders failed to load");
         lineBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_VERTEX, LineBufferBytes);
         fillBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_VERTEX, FillBufferBytes);
+        overlayBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_VERTEX, OverlayBufferBytes);
         var si = new SDL_GPUSamplerCreateInfo
         {
             min_filter = SDL_GPUFilter.SDL_GPU_FILTER_NEAREST,
@@ -166,9 +167,10 @@ public sealed unsafe class GlobeRenderer : IDisposable
     /// <summary>Clears <paramref name="target"/> and draws the globe seen through <paramref name="view"/>, lit from
     /// <paramref name="sun"/> (a unit vector, Earth-fixed). The land is the baked level <paramref name="bakedLevel"/>
     /// (0 coarse, 1 medium, uploaded by <see cref="UploadLand"/>), or with -1 the fans in <paramref name="landFill"/>
-    /// (triangles in NDC). <paramref name="lines"/> go on top.</summary>
+    /// (triangles in NDC). <paramref name="lines"/> go on top, and <paramref name="overlay"/> over them: lines rebuilt
+    /// every frame (the ships), apart from the ones rebuilt only when the view changes.</summary>
     public void Render(SDL_GPUCommandBuffer* cmd, RenderTarget target, in MapView view, Vec3d sun,
-        ReadOnlySpan<Vector2> landFill, int bakedLevel, MapLines lines)
+        ReadOnlySpan<Vector2> landFill, int bakedLevel, MapLines lines, MapLines? overlay = null)
     {
         EnsurePipelines(target);
         if (coverage == null)
@@ -182,7 +184,12 @@ public sealed unsafe class GlobeRenderer : IDisposable
         int maxFill = (int)(FillBufferBytes / 8);
         if (landFill.Length > maxFill)
             landFill = landFill[..(maxFill - maxFill % 3)];
+        var over = overlay != null ? overlay.Vertices : default;
+        int maxOver = (int)(OverlayBufferBytes / LineVertex.SizeInBytes);
+        if (over.Length > maxOver)
+            over = over[..(maxOver - maxOver % 6)];
         lineBuf.Upload(cmd, verts);   // copy passes: before the render passes
+        overlayBuf.Upload(cmd, over);
         fillBuf.Upload(cmd, landFill);
         bool baked = bakedLevel is 0 or 1 && meshFill[bakedLevel] != null;
 
@@ -235,6 +242,13 @@ public sealed unsafe class GlobeRenderer : IDisposable
             SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
             SDL_DrawGPUPrimitives(pass, (uint)verts.Length, 1, 0, 0);
         }
+        if (over.Length > 0)
+        {
+            SDL_BindGPUGraphicsPipeline(pass, linePipe);
+            var binding = new SDL_GPUBufferBinding { buffer = overlayBuf.Buffer, offset = 0 };
+            SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
+            SDL_DrawGPUPrimitives(pass, (uint)over.Length, 1, 0, 0);
+        }
         SDL_EndGPURenderPass(pass);
     }
 
@@ -282,6 +296,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
         ReleasePipelines();
         ReleaseMeshes();
         lineBuf.Dispose();
+        overlayBuf.Dispose();
         fillBuf.Dispose();
         coverage?.Dispose();
         SDL_ReleaseGPUSampler(device, nearest);

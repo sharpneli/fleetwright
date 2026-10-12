@@ -14,7 +14,7 @@ public enum WorldCommand : ushort
 /// plain data. <see cref="System"/> and <see cref="Code"/> say who handles it and what it means; 0 is the world
 /// itself (<see cref="WorldCommand"/>). The world applies it at its current time and logs it with that stamp; the
 /// start state, the settings and the log are a replay.</summary>
-public readonly record struct Command(byte System, ushort Code, int Entity = 0, long A = 0, double X = 0)
+public readonly record struct Command(byte System, ushort Code, int Entity = 0, long A = 0, double X = 0, int B = 0, double Y = 0)
 {
     /// <summary>Game seconds per real second, clamped to the settings' range.</summary>
     public static Command SetSpeed(double speed) => new(0, (ushort)WorldCommand.SetSpeed, X: speed);

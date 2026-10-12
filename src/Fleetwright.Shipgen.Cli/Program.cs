@@ -71,6 +71,10 @@ public static class Program
         shipgen sim [--from 1916-05-31T14:00] [--speed 30000] [--seconds 3] [--seed 1]
             run an empty world on its sim thread at about 60 frames a second, printing twice a second the clock, the
             speed asked and achieved, the subsolar point, and the bytes the sim thread allocated (flat in play)
+        shipgen trials DESIGN.json... [--out DIR] [--settings Content/Sim/settings.json]
+            each design's sea trials on the ship model, headless: turning circles at hard over and standard rudder,
+            0 -> full, coasting, a crash stop, each beside the research's band for its kind; --out writes the circles
+            as DIR/<design>_turns.svg
         --root defaults to the repo's shipgen folder (found from the current directory up).
         """;
 
@@ -105,6 +109,7 @@ public static class Program
                 "svg-check" => Check(a, RenderGolden.CheckSvgs),
                 "sprite-check" => Check(a, RenderGolden.CheckSprite),
                 "sim" => SimCmd(a),
+                "trials" => SeaTrials.Run(a.Positional, a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("out")),
                 _ => Fail($"unknown command {args[0]}\n\n{Usage}"),
             };
         }

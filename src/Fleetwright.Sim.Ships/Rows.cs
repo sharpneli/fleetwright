@@ -352,4 +352,18 @@ public readonly record struct MotionFacts
     public double RudderAreaM2 { get; init; }
     public double GmFullM { get; init; }
     public double RollPeriodS { get; init; }
+
+    /// <summary>The tactical diameter at full speed and hard over, metres. The designer's to give; until it does, a
+    /// placeholder (<see cref="DesignerPlaceholders"/>).</summary>
+    public double TacticalDiameterM { get; init; }
+
+    /// <summary>The steering gear: how fast it puts the rudder over, degrees a second, and how far, degrees. The
+    /// designer's to give; placeholders until then.</summary>
+    public double RudderRateDegS { get; init; }
+    public double HardOverDeg { get; init; }
+
+    /// <summary>The plant: seconds from no power to full, and from full to none (the throttle shut: far quicker than
+    /// raising steam). The designer's to give (it's the boilers and the kind of plant); placeholders until then.</summary>
+    public double PowerRampS { get; init; }
+    public double PowerCutS { get; init; }
 }

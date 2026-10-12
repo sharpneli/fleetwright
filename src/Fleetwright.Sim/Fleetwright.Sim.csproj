@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fleetwright.Sim.Core\Fleetwright.Sim.Core.csproj" />
+    <ProjectReference Include="..\Fleetwright.Sim.Combat\Fleetwright.Sim.Combat.csproj" />
   </ItemGroup>
 
 </Project>

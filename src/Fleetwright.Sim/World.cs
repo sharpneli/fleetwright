@@ -47,7 +47,12 @@ public sealed class World
         targetMs = start.Ms;
         scheduler = new Scheduler(Settings.EventCapacity);
         log = new List<StampedCommand>(Settings.CommandLogCapacity);
+        Ships = new ShipSystem(Settings);
+        Register(Ships);
     }
+
+    /// <summary>The world's ships: always registered first (<see cref="ShipSystem.Id"/>).</summary>
+    public ShipSystem Ships { get; }
 
     /// <summary>Adds a system; its id (from 1, in the order registered) goes on its events and commands. A replay
     /// registers the same systems in the same order.</summary>
@@ -169,6 +174,7 @@ public sealed class World
         s.Sun = Sun.Direction(Time);
         s.Speed = Speed;
         s.Paused = Paused;
+        Ships.Fill(s.Ships);
     }
 
     /// <summary>A hash of all the world's state (not the target, which is the host's pacing, nor the log).</summary>

@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\src\Fleetwright.Sim.Core\Fleetwright.Sim.Core.csproj" />
     <ProjectReference Include="..\..\src\Fleetwright.Sim\Fleetwright.Sim.csproj" />
     <ProjectReference Include="..\..\src\Fleetwright.Sim.Ships\Fleetwright.Sim.Ships.csproj" />
+    <ProjectReference Include="..\..\src\Fleetwright.Sim.Combat\Fleetwright.Sim.Combat.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,14 +2,14 @@ using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim;
 
-/// <summary>Which tier an event belongs to: at equal times, events run in this order (docs/world/architecture.md,
-/// "Three tiers, one clock").</summary>
+/// <summary>What kind of work an event is: at equal times, events run in this order (docs/world/architecture.md,
+/// "Four tiers, one clock"). <see cref="Ships"/> is the ships' fixed tick: every ship at sea, fully simulated.</summary>
 public enum EventTier : byte
 {
     World,
     Rails,
     Coarse,
-    Tactical,
+    Ships,
 }
 
 /// <summary>Something that happens at a moment: plain data, so it saves, and no delegate, so it doesn't allocate.

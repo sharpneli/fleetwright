@@ -19,6 +19,7 @@ public static unsafe class Program
         var start = Sim.Core.WorldTime.FromUtc(1916, 5, 31, 14, 0);
         double? startSpeed = null;
         bool startPaused = false;
+        string? devShips = null;
         bool frameTimes = false;
 
         foreach (string arg in args)
@@ -94,6 +95,10 @@ public static unsafe class Program
             else if (arg == "-paused")   // the world starts paused
             {
                 startPaused = true;
+            }
+            else if (arg.StartsWith("-ships="))   // dev ships in the North Sea: -ships=dreadnought[:count]
+            {
+                devShips = arg.Substring("-ships=".Length);
             }
             else if (arg.StartsWith("-steps="))   // designer knob steps at startup: speed:-2,belt:+3
             {
@@ -185,7 +190,7 @@ public static unsafe class Program
             };
             var early = steps != null || newDesign ? MakeDesigner() : null;
             // the world: the app's, not a tab's, so it keeps running whatever tab is open (docs/world/architecture.md)
-            using var world = new Map.WorldSession(start, 1);
+            using var world = new Map.WorldSession(start, 1, devShips != null ? w => SpawnDevShips(w, devShips) : null);
             if (startSpeed is double speed0)
                 world.Send(Sim.Command.SetSpeed(speed0));
             if (startPaused)
@@ -213,6 +218,23 @@ public static unsafe class Program
             Console.Error.WriteLine(ex.StackTrace);
             return 1;
         }
+    }
+
+    /// <summary>-ships=design[:count]: a block of ships of one design at sea in the North Sea, 600 m apart, steaming
+    /// 045° at 15 kn, every other one ordered round to 135° so the turns show (docs/battle/plan.md step 2.2: dev ships
+    /// until missions place forces).</summary>
+    static void SpawnDevShips(Sim.World w, string arg)
+    {
+        var parts = arg.Split(':');
+        int count = parts.Length > 1 && int.TryParse(parts[1], out int n) ? Math.Max(n, 1) : 1;
+        var design = Shipgen.Design.Load(FindDesign(parts[0]));
+        int c = w.Ships.AddClass(Sim.Ships.ShipClassCompiler.Compile(Shipgen.ShipDesign.Build(design)));
+        int side = (int)Math.Ceiling(Math.Sqrt(count));
+        double dLat = 600 / 111_195.0, dLon = dLat / Math.Cos(56.5 * Math.PI / 180);
+        for (int i = 0; i < count; i++)
+            w.Apply(Sim.ShipSystem.Spawn(c, 56.5 + dLat * (i / side), 4.0 + dLon * (i % side), 45, 15));
+        for (int e = 2; e <= count; e += 2)
+            w.Apply(Sim.ShipSystem.Course(e, 135));
     }
 
     /// <summary>The design shown without -ship=: a game asset (GameAsset in the csproj), next to the exe.</summary>

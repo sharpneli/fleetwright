@@ -52,6 +52,7 @@
     <GameAsset Include="$(MSBuildThisFileDirectory)..\..\Content\Fonts\*" Link="Content\Fonts\%(Filename)%(Extension)" />
     <GameAsset Include="$(MSBuildThisFileDirectory)..\..\Content\Templates\*.json" Link="Content\Templates\%(Filename)%(Extension)" />
     <GameAsset Include="$(MSBuildThisFileDirectory)..\..\Content\World\*.bin" Link="Content\World\%(Filename)%(Extension)" />
+    <GameAsset Include="$(MSBuildThisFileDirectory)..\..\Content\Sim\*.json" Link="Content\Sim\%(Filename)%(Extension)" />
     <None Include="@(GameAsset)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 

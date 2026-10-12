@@ -15,6 +15,7 @@
     <!-- a tool may depend on anything; the libraries may not (docs/battle/plan.md, "The code, checked again") -->
     <ProjectReference Include="..\Fleetwright.Sim\Fleetwright.Sim.csproj" />
     <ProjectReference Include="..\Fleetwright.Sim.Ships\Fleetwright.Sim.Ships.csproj" />
+    <ProjectReference Include="..\Fleetwright.Sim.Combat\Fleetwright.Sim.Combat.csproj" />
   </ItemGroup>
 
 </Project>
