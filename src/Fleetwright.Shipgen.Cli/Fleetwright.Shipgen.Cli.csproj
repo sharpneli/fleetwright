@@ -12,6 +12,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Fleetwright.Shipgen\Fleetwright.Shipgen.csproj" />
     <ProjectReference Include="..\Fleetwright.Shipgen.Render\Fleetwright.Shipgen.Render.csproj" />
+    <!-- a tool may depend on anything; the libraries may not (docs/battle/plan.md, "The code, checked again") -->
+    <ProjectReference Include="..\Fleetwright.Sim\Fleetwright.Sim.csproj" />
   </ItemGroup>
 
 </Project>

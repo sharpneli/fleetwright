@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Step 1.1's details were agreed on 2026-10-12 ("Decisions", on step 1.1).
+changed from the plan). Step 1.1 is done (2026-10-12); the next is 1.2, the globe.
 
 ## What the battle module is
 
@@ -265,6 +265,23 @@ Tests:
 - The subsolar point against almanac values for dates from 1850 to 2050, including 1916-05-31 (Jutland), and the sun
   at local noon at 90° - |lat - δ|.
 - The sphere's round trips, a full circle across a pole, and the frame's handedness.
+
+**Done (2026-10-12).** As above, with what building it settled:
+- **Where the clock may rest:** at R only when every event before R has run and none at or after R has
+  (`World.Advance`: a slice that runs out of events finishes the last moment's events first). So a command always
+  lands on a clean boundary, and a replay is just "advance to each stamp, apply": commands never go through the
+  event queue. A halt at an event (`World.Halt`, a speed drop) lets that moment's other events run and rests the
+  clock 1 ms after it. Two deliberately broken versions of the rule (resting mid-moment, running the events at the
+  target) each fail `Commands_where_a_sliced_run_rests_replay_exactly`.
+- **World systems** are `IWorldSystem`s, registered in order (ids from 1; 0 is the world). Events and commands are
+  plain structs with a system and a code; tiers at equal times run World, Rails, Coarse, Tactical. Cancelling is by
+  generation, as planned.
+- **The snapshot** holds the clock and target, the sun, speed asked and achieved, paused, the sim thread's allocated
+  bytes and a crash's error. `SimHost` measures the achieved speed over 0.25 s windows of wall time.
+- **Measured:** the sun is within the Almanac's 1' of the NOAA/Meeus reference from 1850 to 2050. An empty world
+  holds 30,000x with the sim thread at 0 B allocated (`shipgen sim`). Over a 40,000 km circle in 1 km steps, rounding
+  walks the radius by micrometres, a random walk, not a drift.
+- The `sim` command is in the `shipgen` CLI, which now references `Fleetwright.Sim` (a tool may depend on anything).
 
 **1.2 The globe.** In the exe:
 - **the world is a tab** on the top bar (the user, 2026-10-12), the first one and the default, so launching the game

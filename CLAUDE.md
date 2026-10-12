@@ -115,6 +115,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- verify out_design
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check          # every design's sprite.json
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shell-test shipgen/designs/bismarck.json [--gratings]   # shells at the citadel: leaks through neither armour nor water
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- mono-check [bismarck ...] [--steps 4]   # trim levers swept: more weight in, never a lighter ship
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sim [--from 1916-05-31T14:00] [--speed 30000] [--seconds 3]   # the world on its thread: clock, speed asked/achieved, sun, sim allocations
 ```
 
 `mono-check` (about 15 s) lists where adding weight gave a lighter ship (reversals) or one step jumped far more than its
@@ -191,9 +192,15 @@ src/
     RenderTypes.cs            #   Palette, Shapes and the sprite.json records
     Bake/                     #   the GPU bake: Lower (scene -> triangles), Stroker, Glyphs, GpuBaker (SDL_GPU), PNG, mips
     Golden/                   #   the SVG comparer and the drawing's golden checks
-  Fleetwright.Shipgen.Cli/    # `shipgen` command, the port's test harness
+  Fleetwright.Shipgen.Cli/    # `shipgen` command, the port's test harness (and `sim`, an empty world on its thread)
+  Fleetwright.Sim.Core/       # the sim's lowest layer, pure values (docs/battle/plan.md "Inside Fleetwright.Sim"):
+                              #   Vec3d, Earth (the sphere), ShipFrame (left-handed: +x bow, +y starboard, up),
+                              #   WorldTime (ms since 1850), Sun, RandomStream, StateHash, SimSettings
+  Fleetwright.Sim/            # the world: World (clock, speed, events, commands in, snapshot out), Scheduler,
+                              #   IWorldSystem, SimHost (the sim thread), TripleBuffer; no GPU or UI, runs headless
 tests/
   Fleetwright.Tests/          # xUnit for the game exe: the hitbox mesh over every design
+  Fleetwright.Sim.Tests/      # xUnit, headless: the sphere, the sun, the streams, replays and slicing, the sim thread
   Fleetwright.Shipgen.Tests/  # xUnit: design input, every golden case, concurrent builds, the drawing, the
                               #   bake (trait Gpu: needs a GPU)
 shipgen/                      # the port's test data
@@ -215,6 +222,11 @@ research/                     # research notes, see below
 ```
 
 Namespaces follow the project names: `Fleetwright`, `Fleetwright.Gpu`, `Fleetwright.Shipgen`, ...
+
+The sim's layers are projects, so the compiler keeps their direction: `Fleetwright.Sim.Core` references nothing, the
+world (`Fleetwright.Sim`) references Core, and `Ships` and `Combat` come in between in steps 2.1 and 2.2. The world
+rests its clock only on a moment's boundary, so commands replay exactly; a world system is an `IWorldSystem` with its
+events as plain structs, and nothing in a step allocates (the tests check it).
 
 Content paths in code (`"Content/Shaders/Compiled/..."`) resolve against `AppContext.BaseDirectory`, not the working directory.
 

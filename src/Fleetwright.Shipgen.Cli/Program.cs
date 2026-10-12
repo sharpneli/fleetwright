@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Text.Json.Nodes;
 using Fleetwright.Shipgen;
 using Fleetwright.Shipgen.Golden;
+using Fleetwright.Sim;
+using Fleetwright.Sim.Core;
 using Fleetwright.Shipgen.Tools;
 using Fleetwright.Shipgen.Render;
 using Fleetwright.Shipgen.Render.Bake;
@@ -64,6 +66,9 @@ public static class Program
             every case's SVGs against golden/svg (Python's drawing with the port's RNG)
         shipgen sprite-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
             every design's sprite.json against golden/sprite
+        shipgen sim [--from 1916-05-31T14:00] [--speed 30000] [--seconds 3] [--seed 1]
+            run an empty world on its sim thread at about 60 frames a second, printing twice a second the clock, the
+            speed asked and achieved, the subsolar point, and the bytes the sim thread allocated (flat in play)
         --root defaults to the repo's shipgen folder (found from the current directory up).
         """;
 
@@ -97,6 +102,7 @@ public static class Program
                 "png-check" => PngCheck(a),
                 "svg-check" => Check(a, RenderGolden.CheckSvgs),
                 "sprite-check" => Check(a, RenderGolden.CheckSprite),
+                "sim" => SimCmd(a),
                 _ => Fail($"unknown command {args[0]}\n\n{Usage}"),
             };
         }
@@ -343,6 +349,38 @@ public static class Program
                               $"   {alloc / 1e6,6:F0} MB allocated");
         }
         Console.WriteLine($"total {totC:F2} s, python {totP:F2} s (x{totP / totC:F1})");
+        return 0;
+    }
+
+    static int SimCmd(Args a)
+    {
+        var from = DateTime.ParseExact(a.Get("from", "1916-05-31T14:00")!, ["yyyy-MM-dd'T'HH:mm", "yyyy-MM-dd"],
+            null, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal);
+        double speed = double.Parse(a.Get("speed", "30000")!), seconds = double.Parse(a.Get("seconds", "3")!);
+        var world = new World(WorldTime.FromUtc(from), (ulong)a.Int("seed", 1));
+        using var host = new SimHost(world);
+        host.Start();
+        host.Send(Command.SetSpeed(speed));
+        var sw = Stopwatch.StartNew();
+        double last = 0, nextPrint = 0.5;
+        long? alloc0 = null;
+        while (sw.Elapsed.TotalSeconds < seconds)
+        {
+            Thread.Sleep(16);
+            double now = sw.Elapsed.TotalSeconds;
+            host.Elapse(now - last);
+            last = now;
+            var s = host.Latest();
+            if (s.Error != null)
+                return Fail(s.Error);
+            if (now < nextPrint)
+                continue;
+            nextPrint += 0.5;
+            alloc0 ??= s.SimAllocatedBytes;
+            var (lat, lon) = Earth.LatLon(s.Sun);
+            Console.WriteLine($"{s.Time}  asked {s.Speed,7:G5}x  achieved {s.AchievedSpeed,9:F0}x  " +
+                              $"sun overhead {lat,6:F2}, {lon,7:F2}  sim thread +{s.SimAllocatedBytes - alloc0} B");
+        }
         return 0;
     }
 
