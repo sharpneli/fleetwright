@@ -161,6 +161,10 @@ public sealed record SimSettings
     public double FollowCloseS { get; init; } = 90;
     public double FollowMaxSpeedDiffKn { get; init; } = 6;
 
+    /// <summary>How much of the rate the gap is closing at a follower takes off what he rings, so he eases off before
+    /// he's on station rather than overshooting it (his engines answer in minutes): 0 rings on the gap alone.</summary>
+    public double FollowSpeedDamping { get; init; } = 2;
+
     /// <summary>How often admirals think, ms of world time; and how far under the slowest member's designed speed they
     /// hold their guide, so the others have speed in hand to keep station.</summary>
     public int AdmiralPeriodMs { get; init; } = 1000;

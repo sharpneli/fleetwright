@@ -58,6 +58,7 @@
   "FollowLookaheadLengths": 4,
   "FollowCloseS": 90,
   "FollowMaxSpeedDiffKn": 6,
+  "FollowSpeedDamping": 2,
   "AdmiralPeriodMs": 1000,
   "GroupSpeedMarginKn": 2
 }

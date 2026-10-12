@@ -1282,10 +1282,13 @@ the designer" (step 2.2), not here.
   hard turn.
 - **Turns in succession** (2.4): in line ahead each ship follows the one before it, so it cuts the corner a little
   rather than turning at the guide's turning point.
-- **Long lines hunt after a turn** (2.6b): in a line of six, 40 minutes after a 90° turn the rear ships are still
-  surging and dropping back (340 m off station at worst, the last ship ringing 8.5 to 20 kn); it settles within the
-  hour (55 m). Each follower reacts to the ship ahead's speed changes, so they grow down the line. A speed term on the
-  guide's, not just the ship ahead's, would damp it.
+- **Long lines hunted after a turn** (2.6b; the user: "a BMW driver in a traffic jam"). **Damped, 2026-10-12:** a
+  follower rang the leader's speed plus the gap over the closing time, and his engines answer in minutes, so he
+  overshot and braked, and down a line the swings grew (in a line of six, the last ship rang 253 times between 2.4
+  and 21.4 kn after a 90° turn, still 340 m off at 40 minutes). Now he takes off twice the rate the gap is already
+  closing (`FollowSpeedDamping` 2, swept against 0 to 3 and closing times of 90 to 300 s): the last ship rings 9
+  times between 12.2 and 13.4 kn and the line is within 22 m from 20 minutes on; three columns abreast an hour after
+  a turn, 221 m → 48 m; forming up from scattered as before. More damping is calmer still but sits further off.
 - **Collision avoidance** (2.3b): none yet. Collisions are in the module's era list.
 - **Slow ships settle slowly** (found in 2.5): at 5 kn a turn and the speed's recovery take most of an hour before
   the 0.1 kn rails tolerance is met (the net force is small at low speed). A tolerance relative to the speed, or one
