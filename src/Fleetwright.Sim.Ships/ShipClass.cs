@@ -21,6 +21,7 @@ public sealed class ShipClass
     internal ShaftLineRow[] shaftLines = [];
     internal RudderRow[] rudders = [];
     internal DirectorRow[] directors = [];
+    internal EyeRow[] eyes = [];
     internal TubeRow[] tubes = [];
     internal CellRow[] cells = [];
     internal RoomRow[] rooms = [];
@@ -75,6 +76,12 @@ public sealed class ShipClass
     public ReadOnlySpan<ShaftLineRow> ShaftLines => shaftLines;
     public ReadOnlySpan<RudderRow> Rudders => rudders;
     public ReadOnlySpan<DirectorRow> Directors => directors;
+
+    /// <summary>The observation posts, highest first (docs/battle/plan.md step 3.2a).</summary>
+    public ReadOnlySpan<EyeRow> Eyes => eyes;
+
+    /// <summary>What the ship shows an observer (step 3.2a).</summary>
+    public SilhouetteRow Silhouette { get; internal set; }
     public ReadOnlySpan<TubeRow> Tubes => tubes;
     public ReadOnlySpan<CellRow> Cells => cells;
     public ReadOnlySpan<RoomRow> Rooms => rooms;

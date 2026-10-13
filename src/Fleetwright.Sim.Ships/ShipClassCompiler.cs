@@ -63,6 +63,8 @@ public static class ShipClassCompiler
             c.sections = hb.Sections.Select(s => new SectionRow(s.X0, s.X1)).ToArray();
             Armour(c);
             (c.powerKn, c.powerShp) = PowerCurve(c.Motion);
+            c.eyes = Sight.Eyes(c);
+            c.Silhouette = Sight.Silhouette(c, numbers);
 
             c.links = links.ToArray();
             c.points = points.ToArray();
