@@ -168,6 +168,26 @@ public sealed class GroupSystem : IWorldSystem
     {
     }
 
+    /// <summary>The ships, for a group's side (set by the world).</summary>
+    internal Combat.ShipStore? Store { get; init; }
+
+    /// <summary>The side a group is on (its ships' one side), or -1 with none of them at sea.</summary>
+    public int SideOf(Group g)
+    {
+        for (int i = 0; i < g.Members.Count; i++)
+        {
+            int m = g.Members[i];
+            if (g.IsForce)
+            {
+                if (Get(m) is { } sub && SideOf(sub) is int s and >= 0)
+                    return s;
+            }
+            else if (Store?.SlotOf(m) is int slot and >= 0)
+                return Store[slot].Side;
+        }
+        return -1;
+    }
+
     public IReadOnlyList<Group> Groups => groups;
 
     /// <summary>The groups by index, for loops that mustn't allocate (a foreach over the interface boxes).</summary>
@@ -638,6 +658,8 @@ public sealed class GroupSystem : IWorldSystem
         int n = 0, k = 0;
         foreach (var g in groups)
         {
+            if (SideOf(g) is int side and >= 0 && !s.ShownSides[side])
+                continue;   // the enemy's: not in the player's view
             (v.Id[n], v.Name[n], v.Formation[n], v.SpacingM[n], v.MemberStart[n], v.MemberCount[n]) =
                 (g.GroupId, g.Name, g.Formation, g.SpacingM, k, g.Members.Count);
             (v.Guide[n], v.GuideShip[n], v.Force[n], v.Parent[n]) = (g.Guide, GuideShip(g), g.IsForce, g.Parent);

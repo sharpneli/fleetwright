@@ -72,6 +72,7 @@ public sealed unsafe partial class MapScene
         overlay.Begin(width, height);
         frame++;
         DrawEncounters(view, s);
+        DrawContacts(view, s);
         for (int k = 0; k < v.Count; k++)
         {
             var (p, f) = v.PoseAt(k, world.DrawMs);
@@ -594,6 +595,12 @@ public sealed unsafe partial class MapScene
         {
             ScenarioRow();
             ImGui.TextDisabled($"Ships at sea: {s.Ships.Count}   (dev: spawn)");
+            ImGui.SameLine();
+            bool truth = world.Truth;
+            if (ImGui.Checkbox("truth", ref truth))
+                world.Truth = truth;
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("dev: every ship as it is, not the player's picture");
             ImGui.SetNextItemWidth(170 * UiFonts.Scale);
             if (ImGui.BeginCombo("##design", designPick >= 0 ? designNames[designPick] : "pick a design"))
             {

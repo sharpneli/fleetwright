@@ -48,6 +48,17 @@ public sealed class Snapshot
     /// <summary>The side the player commands, -1 for none.</summary>
     public int PlayerSide { get; set; } = -1;
 
+    /// <summary>Filled with the truth (a dev's view, the host's choice): every ship, whoever knows of it. Otherwise the
+    /// player's view (docs/world/architecture.md "Knowledge"): their own ships and those of sides not at war with them,
+    /// and the enemy only as <see cref="Contacts"/> from their navy's picture.</summary>
+    public bool Truth { get; set; }
+
+    /// <summary>The sides whose ships (and groups) are in this snapshot, by side.</summary>
+    public bool[] ShownSides { get; } = new bool[256];
+
+    /// <summary>The player's navy's contacts (empty with no player side).</summary>
+    public ContactsView Contacts { get; } = new();
+
     /// <summary>The weather (one for the world for now).</summary>
     public WeatherHere Weather { get; set; }
 
@@ -57,6 +68,43 @@ public sealed class Snapshot
 
     /// <summary>The open encounters, and the last that was news to the player.</summary>
     public EncountersView Encounters { get; } = new();
+}
+
+/// <summary>The player's navy's picture, as the map draws it (docs/battle/plan.md step 3.2e): per contact the ship it's
+/// on (the key: contacts are on true ships in the battle module), the estimate carried on to the snapshot's time (position
+/// and velocity) and its error ellipse (1-sigma semi-axes, the major's bearing), whether it's in sight and when it was
+/// last seen, how far it's made out, its type, the class it's taken for (a registry id, -1 below class), and its side once
+/// its type is made out (255 before).</summary>
+public sealed class ContactsView
+{
+    public int Count;
+    public int[] Entity = [], TakenFor = [];
+    public Vec3d[] Position = [], Velocity = [];
+    public double[] MajorM = [], MinorM = [], AxisDeg = [];
+    public bool[] InSight = [];
+    public long[] SeenMs = [];
+    public ContactLevel[] Level = [];
+    public ShipType[] Type = [];
+    public byte[] Side = [];
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Entity.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, Entity.Length * 2));
+        Array.Resize(ref Entity, n);
+        Array.Resize(ref TakenFor, n);
+        Array.Resize(ref Position, n);
+        Array.Resize(ref Velocity, n);
+        Array.Resize(ref MajorM, n);
+        Array.Resize(ref MinorM, n);
+        Array.Resize(ref AxisDeg, n);
+        Array.Resize(ref InSight, n);
+        Array.Resize(ref SeenMs, n);
+        Array.Resize(ref Level, n);
+        Array.Resize(ref Type, n);
+        Array.Resize(ref Side, n);
+    }
 }
 
 /// <summary>The encounters' part of a snapshot: per open encounter (by id, oldest first) where it is, how far its ships
@@ -164,6 +212,9 @@ public sealed class ShipsView
 
     /// <summary>The side each ship is on (ships of different sides are opposing).</summary>
     public byte[] Side = [];
+
+    /// <summary>The encounter each ship is in, 0 for none.</summary>
+    public int[] Encounter = [];
     public Vec3d[] Position = [], Forward = [];
     /// <summary>m/s, negative astern; rad/s, positive to starboard; rad.</summary>
     public double[] Speed = [], YawRate = [], Rudder = [];
@@ -223,6 +274,7 @@ public sealed class ShipsView
         Array.Resize(ref Entity, n);
         Array.Resize(ref Class, n);
         Array.Resize(ref Side, n);
+        Array.Resize(ref Encounter, n);
         Array.Resize(ref Position, n);
         Array.Resize(ref Forward, n);
         Array.Resize(ref Speed, n);

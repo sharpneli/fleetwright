@@ -285,18 +285,20 @@ public sealed partial class ShipSystem : IWorldSystem
 
     // ------------------------------------------------------------------ out
 
-    /// <summary>Copies what the screens need of every live ship into a snapshot's part; allocates only to grow it.</summary>
-    public void Fill(ShipsView v)
+    /// <summary>Copies what the screens need of every live ship of the shown sides into a snapshot's part; allocates
+    /// only to grow it.</summary>
+    public void Fill(ShipsView v, bool[] shownSides)
     {
         var s = Store;
         v.EnsureCapacity(s.Count);
         int n = 0, w = 0;
         for (int i = 0; i < s.Slots; i++)
         {
-            if (!s.IsAlive(i))
+            if (!s.IsAlive(i) || !shownSides[s[i].Side])
                 continue;
             var ship = s[i];
             v.Entity[n] = ship.Entity;
+            v.Encounter[n] = encounters.Of(i, ship.Entity);
             v.Class[n] = ship.ClassIndex;
             v.Side[n] = ship.Side;
             v.Position[n] = ship.Position;

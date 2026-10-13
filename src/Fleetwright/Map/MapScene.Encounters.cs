@@ -19,13 +19,39 @@ public sealed partial class MapScene
     int newsSeen;          // the news last noticed, and when (wall clock)
     long newsSeenAt;
 
-    static double EncounterRingM(EncountersView v, int i) => Math.Max(v.RadiusM[i], EncounterRingPadM) + EncounterRingPadM;
+    /// <summary>Where an encounter's ring goes, if it's drawn: round all its ships with the truth; in the player's view
+    /// only the player's own, round their own ships in it (the rest of it is what the picture holds).</summary>
+    static bool Ring(Snapshot s, int i, out Vec3d centre, out double radiusM)
+    {
+        var v = s.Encounters;
+        (centre, radiusM) = (v.Centre[i], v.RadiusM[i]);
+        if (!s.Truth && s.PlayerSide >= 0)
+        {
+            if (!v.Own[i])
+                return false;
+            var ships = s.Ships;
+            var sum = default(Vec3d);
+            for (int k = 0; k < ships.Count; k++)
+                if (ships.Encounter[k] == v.Id[i] && ships.Side[k] == s.PlayerSide)
+                    sum += ships.Position[k];
+            if (sum.LengthSquared == 0)
+                return false;
+            centre = sum.Normalized() * Earth.Radius;
+            radiusM = 0;
+            for (int k = 0; k < ships.Count; k++)
+                if (ships.Encounter[k] == v.Id[i] && ships.Side[k] == s.PlayerSide)
+                    radiusM = Math.Max(radiusM, Earth.Distance(centre, ships.Position[k]));
+        }
+        radiusM = Math.Max(radiusM, EncounterRingPadM) + EncounterRingPadM;
+        return true;
+    }
 
     void DrawEncounters(in MapView view, Snapshot s)
     {
         var v = s.Encounters;
         for (int i = 0; i < v.Count; i++)
-            RingM(view, v.Centre[i], EncounterRingM(v, i), v.Own[i] ? OwnEncounter : OthersEncounter, v.Own[i] ? 2f : 1.5f);
+            if (Ring(s, i, out var centre, out double r))
+                RingM(view, centre, r, v.Own[i] ? OwnEncounter : OthersEncounter, v.Own[i] ? 2f : 1.5f);
     }
 
     /// <summary>Each encounter's label at the top of its ring.</summary>
@@ -40,12 +66,14 @@ public sealed partial class MapScene
         var dl = ImGui.GetBackgroundDrawList();
         for (int i = 0; i < v.Count; i++)
         {
-            var top = v.Centre[i];
+            if (!Ring(s, i, out var top, out double r))
+                continue;
             var north = Earth.Forward(top, 0);
-            Earth.Advance(ref top, ref north, EncounterRingM(v, i));
+            Earth.Advance(ref top, ref north, r);
             if (!view.Project(top, out double x, out double y))
                 continue;
-            string text = $"Encounter {v.Id[i]} · {v.Ships[i]} ships · since {new WorldTime(v.OpenedMs[i]).ToUtc():HH:mm}";
+            string ships = s.Truth || s.PlayerSide < 0 ? $" · {v.Ships[i]} ships" : "";   // the player knows their own, not the count
+            string text = $"Encounter {v.Id[i]}{ships} · since {new WorldTime(v.OpenedMs[i]).ToUtc():HH:mm}";
             var at = new Vector2(vp.Pos.X + (float)(x * sx) - ImGui.CalcTextSize(text).X / 2, vp.Pos.Y + (float)(y * sy) - ImGui.GetTextLineHeight() - 4);
             dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
             dl.AddText(at, ImGui.GetColorU32(v.Own[i] ? OwnEncounter with { W = 1 } : OthersEncounter with { W = 0.9f }), text);

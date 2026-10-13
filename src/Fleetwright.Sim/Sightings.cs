@@ -325,6 +325,7 @@ public sealed class Sightings
             c.EstMs = now;
         }
         ref var con = ref pic.At(ci);
+        con.Side = ts.Side;
         con.SeenMs = now;
         con.LookedMs = now;
         con.InSight = true;
@@ -436,6 +437,27 @@ public sealed class Sightings
     {
         if (cellStart.Length < cells + 1)
             Array.Resize(ref cellStart, Math.Max(cells + 1, cellStart.Length * 2));
+    }
+
+    /// <summary>The player's navy's picture into a snapshot's part, carried on to now; allocates only to grow it.</summary>
+    internal void Fill(ContactsView v, int playerSide, long now, ShipClassRegistry registry)
+    {
+        var pic = Of(playerSide);
+        v.Count = 0;
+        if (pic == null)
+            return;
+        v.EnsureCapacity(pic.Count);
+        for (int i = 0; i < pic.Count; i++)
+        {
+            ref readonly var c = ref pic[i];
+            var (p, vel, cov) = pic.EstimateAt(i, now, settings);
+            var (major, minor, axis) = cov.Ellipse();
+            (v.Entity[i], v.TakenFor[i], v.Position[i], v.Velocity[i]) = (c.Entity, c.TakenFor, p, vel);
+            (v.MajorM[i], v.MinorM[i], v.AxisDeg[i]) = (major, minor, axis);
+            (v.InSight[i], v.SeenMs[i], v.Level[i], v.Type[i]) = (c.InSight, c.SeenMs, c.Level, c.Type);
+            v.Side[i] = c.Level >= ContactLevel.Type ? c.Side : (byte)255;
+        }
+        v.Count = pic.Count;
     }
 
     public void Hash(ref StateHash h)

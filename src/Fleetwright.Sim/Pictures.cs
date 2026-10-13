@@ -106,6 +106,9 @@ public struct Contact
     public int TakenFor;
     public int Observer;
     public EyeKind Eye;
+
+    /// <summary>The ship's side (a navy knows it once it's made out the type: its colours, its build).</summary>
+    public byte Side;
 }
 
 /// <summary>One navy's picture: its contacts, in slots, by entity through an index. World state: deterministic, saved

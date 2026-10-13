@@ -175,6 +175,7 @@ public sealed class WorldSession : IDisposable
                     w.Apply(Command.Pause());
                 var old = host;
                 host = Start(w);
+                host.Truth = truth;
                 old.Dispose();
                 (Ai, Scenario, ScenarioStart) = (ai, p.Scenario, start);
                 Generation++;
@@ -228,6 +229,20 @@ public sealed class WorldSession : IDisposable
 
     /// <summary>A ship's name from the scenario, or null.</summary>
     public string? NameOf(int entity) => ScenarioStart?.ShipNames.GetValueOrDefault(entity);
+
+    /// <summary>The snapshots show the truth, every ship (a dev's view), not the player's picture; kept across a scenario's
+    /// new world.</summary>
+    public bool Truth
+    {
+        get => truth;
+        set
+        {
+            truth = value;
+            host.Truth = value;
+        }
+    }
+
+    bool truth;
 
     /// <summary>Sends a command to the world; the clock's (speed, pause) are remembered, so a scenario's new world
     /// starts as asked even before the old world's snapshot shows it.</summary>

@@ -21,8 +21,16 @@ public sealed class SimHost : IDisposable
     readonly AutoResetEvent wake = new(false);
     readonly object gate = new();
     readonly Thread thread;
-    volatile bool stop;
+    volatile bool stop, truth;
     double pendingReal;
+
+    /// <summary>Snapshots with the truth, every ship (a dev's view), rather than the player's (World.Fill). The host's
+    /// choice, never the world's state: the sim can't depend on it.</summary>
+    public bool Truth
+    {
+        get => truth;
+        set => truth = value;
+    }
     long sequence;
     string? error;
 
@@ -142,7 +150,7 @@ public sealed class SimHost : IDisposable
         }
         long t = Probes.Now;
         var s = snapshots.Back;
-        world.Fill(s);
+        world.Fill(s, Truth);
         s.Probes.CopyFrom(world.Probes);
         world.Probes.ResetMax();
         s.PublishedAt = Probes.Now;

@@ -75,7 +75,7 @@ public sealed class World
         Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations, Encounters, Sightings);
         Sightings.Registry = Ships.Registry;
         Register(Ships);
-        Groups = new GroupSystem();
+        Groups = new GroupSystem { Store = Ships.Store };
         Register(Groups);
     }
 
@@ -277,8 +277,10 @@ public sealed class World
             SetTarget(target);
     }
 
-    /// <summary>Fills the world's part of a snapshot; allocates nothing.</summary>
-    public void Fill(Snapshot s)
+    /// <summary>Fills the world's part of a snapshot; allocates nothing. The player's view (the enemy only as their
+    /// navy's contacts), or with <paramref name="truth"/> every ship (a dev's view: the host's choice, never world state,
+    /// so nothing in the sim can depend on it).</summary>
+    public void Fill(Snapshot s, bool truth = false)
     {
         long t = Probes.Now;
         Ships.Store.NowMs = Time.Ms;
@@ -287,8 +289,12 @@ public sealed class World
         s.Sun = Sun.Direction(Time);
         s.Speed = Speed;
         s.Paused = Paused;
-        Ships.Fill(s.Ships);
         s.PlayerSide = PlayerSide;
+        s.Truth = truth;
+        for (int side = 0; side < 256; side++)
+            s.ShownSides[side] = truth || PlayerSide < 0 || !Relations.Hostile((byte)PlayerSide, (byte)side);
+        Ships.Fill(s.Ships, s.ShownSides);
+        Sightings.Fill(s.Contacts, PlayerSide, Time.Ms, Ships.Registry);
         s.Weather = weather.Here;
         s.InterestOwn = Interest[InterestKind.Own];
         s.InterestOthers = Interest[InterestKind.Others];

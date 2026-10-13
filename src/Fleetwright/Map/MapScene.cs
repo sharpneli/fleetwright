@@ -144,6 +144,7 @@ public sealed unsafe partial class MapScene : IScene
         t = Probes.Now;
         GroupLabels(s);
         EncounterLabels(s);
+        ContactLabels(s);
         probes.Add(probeUiLabels, t);
         t = Probes.Now;
         if (Sdl3GpuEngine.StatsShown)

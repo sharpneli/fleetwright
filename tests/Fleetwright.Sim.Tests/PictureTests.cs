@@ -140,6 +140,39 @@ public class PictureTests(ITestOutputHelper output)
         Assert.Equal(a.ComputeHash(), r.ComputeHash());
     }
 
+    /// <summary>The player's snapshot (docs/battle/plan.md step 3.2e): their own ships and groups, the enemy's only as
+    /// contacts from their navy's picture (where it reckons them); with the truth, every ship.</summary>
+    [Fact]
+    public void The_players_snapshot_holds_the_enemy_only_as_contacts()
+    {
+        var w = Closing(Day, 25_000);
+        w.Apply(Command.SetPlayerSide(1));
+        w.Apply(GroupSystem.Create(2, Formation.Column, 600));   // the enemy's "group" of one: not to be named to the player
+        var s = new Snapshot();
+        w.Fill(s);
+        Assert.Equal(1, s.Ships.Count);
+        Assert.Equal(1, s.Ships.Entity[0]);
+        Assert.Equal(0, s.Groups.Count);
+        Assert.Equal(0, s.Contacts.Count);
+        FirstSeen(w);
+        w.Fill(s);
+        Assert.Equal(1, s.Ships.Count);
+        Assert.Equal(1, s.Contacts.Count);
+        Assert.Equal(2, s.Contacts.Entity[0]);
+        Assert.True(s.Contacts.InSight[0]);
+        Assert.True(Earth.Distance(s.Contacts.Position[0], Ship(w, 2).Position) < 1000);
+        Assert.True(s.Contacts.MajorM[0] >= s.Contacts.MinorM[0]);
+        Assert.True(s.Ships.Encounter[0] > 0);
+
+        w.Fill(s, truth: true);
+        Assert.Equal(2, s.Ships.Count);
+        Assert.Equal(1, s.Groups.Count);
+        Assert.Equal(1, s.Contacts.Count);   // the picture still, to hold against the truth
+        var none = new World(Day, 1, Settings);
+        none.Fill(s);
+        Assert.Equal(0, s.Contacts.Count);
+    }
+
     /// <summary>Two lines of 100 abreast 25 km apart: every ship of each side held by the other in a minute, the looks
     /// allocating nothing once the pictures have grown.</summary>
     [Fact]
