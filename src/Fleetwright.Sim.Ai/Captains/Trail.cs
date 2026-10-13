@@ -39,6 +39,10 @@ public sealed class Trail(int capacity)
             Push(position);
     }
 
+    /// <summary>Drops all but the newest <paramref name="n"/> points: the follower needs the track back to himself, not
+    /// the leader's whole wake.</summary>
+    public void KeepNewest(int n) => count = Math.Clamp(n, Math.Min(count, 2), count);
+
     void Push(Vec3d p)
     {
         points[head] = p;

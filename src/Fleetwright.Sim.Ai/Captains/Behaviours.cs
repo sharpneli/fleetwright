@@ -68,6 +68,7 @@ public static class Behaviours
         var a = leader.Position;
         double along = 0, best = double.MaxValue, at = 0;
         var tangent = leader.Forward;
+        int atK = 0;
         for (int k = 0; k < trail.Count; k++)
         {
             var b = trail.Newest(k);
@@ -78,13 +79,16 @@ public static class Behaviours
                 double t = Math.Clamp(Vec3d.Dot(p - a, ab) / (len * len), 0, 1);
                 double d = (p - (a + ab * t)).Length;
                 if (d < best)
-                    (best, at, tangent) = (d, along + t * len, ab * (-1 / len));   // steaming from the older point to the newer
+                    (best, at, tangent, atK) = (d, along + t * len, ab * (-1 / len), k);   // steaming from the older point to the newer
                 along += len;
             }
             a = b;
         }
         if (best > s.FollowTrackJoinLengths * length || at >= along - 1)
             return false;
+        // on the track: what lies further back than him and a margin is the leader's old wake, walked every second for
+        // nothing (docs/battle/plan.md step 2.7c: 512 points a follower, 8% of the sim); it's dropped
+        trail.KeepNewest(atK + 2 + (int)Math.Ceiling((s.FollowTrackJoinLengths * length + 2000) / s.FollowTrackStepM));
 
         // he steers the track's own heading a little ahead of him (where his helm will have answered), so he puts his
         // helm over where the ship ahead did and draws its arc, and corrects toward the track by how far he's off it

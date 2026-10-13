@@ -56,7 +56,9 @@ static class ScenarioRun
 
         // game minutes, each timed on this thread (the sim thread's work: no host, no snapshots); the probes from here
         var probes0 = new long[Probes.Capacity];
+        var calls0 = new long[Probes.Capacity];
         Array.Copy(w.Probes.Ticks, probes0, Probes.Capacity);
+        Array.Copy(w.Probes.Calls, calls0, Probes.Capacity);
         w.Probes.ResetMax();
         Console.WriteLine();
         Console.WriteLine("  game time   fine  rails   x real (this stretch)   allocated   gen0/1/2");
@@ -120,7 +122,8 @@ static class ScenarioRun
         {
             double ms = Probes.Ms(w.Probes.Ticks[i] - probes0[i]);
             if (ms > 0)
-                Console.WriteLine($"  {w.Probes.Names[i],-26} {ms / 1000 / run,7:P1}  {ms / 1000,7:F2} s   ({Probes.Ms(w.Probes.Max[i]):F2} ms)");
+                Console.WriteLine($"  {w.Probes.Names[i],-26} {ms / 1000 / run,7:P1}  {ms / 1000,7:F2} s  {(w.Probes.Calls[i] - calls0[i]) / game,9:F1} calls a game second, " +
+                                  $"{ms * 1000 / Math.Max(w.Probes.Calls[i] - calls0[i], 1),7:F2} µs each   (longest {Probes.Ms(w.Probes.Max[i]):F2} ms)");
         }
 
         if (replay)

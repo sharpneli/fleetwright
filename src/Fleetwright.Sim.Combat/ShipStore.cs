@@ -91,6 +91,12 @@ public sealed class ShipStore
         }
         var up = position.Normalized();
         entity[slot] = entityId;
+        if (entityId >= 0)
+        {
+            if (entityId >= slotOfEntity.Length)
+                Array.Resize(ref slotOfEntity, Math.Max(entityId + 1, slotOfEntity.Length * 2));
+            slotOfEntity[entityId] = slot + 1;
+        }
         this.classIndex[slot] = classIndex;
         this.side[slot] = side;
         alive[slot] = true;
@@ -396,20 +402,27 @@ public sealed class ShipStore
                 Derail(i);   // riding on a ship that's going: off rails first
         Derail(slot);
         alive[slot] = false;
+        if (entity[slot] >= 0 && entity[slot] < slotOfEntity.Length && slotOfEntity[entity[slot]] == slot + 1)
+            slotOfEntity[entity[slot]] = 0;
         RemoveFine(slot);   // a dead slot is stepped by nothing
         handling[slot] = null!;
         generation[slot]++;
         free.Push(slot);
     }
 
-    /// <summary>The slot of a live entity, or -1. A scan: commands are rare, ticks never ask.</summary>
+    /// <summary>The slot of a live entity, or -1: by its index (docs/battle/plan.md step 2.7c: the AI and the rails ask
+    /// it for every ship every second, and the scan it was cost the captains O(n²)).</summary>
     public int SlotOf(int entityId)
     {
-        for (int i = 0; i < high; i++)
+        if ((uint)entityId < (uint)slotOfEntity.Length)
+            return slotOfEntity[entityId] - 1;
+        for (int i = 0; i < high; i++)   // a negative id (tests): the scan
             if (alive[i] && entity[i] == entityId)
                 return i;
         return -1;
     }
+
+    int[] slotOfEntity = new int[64];   // slot + 1 by entity id, 0 for none
 
     // ------------------------------------------------------------------ orders
 
