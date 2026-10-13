@@ -937,7 +937,8 @@ patterns.
     (1,000 ships for a day: the rails gate 1.47 -> 0.35 s), and the step stopped walking every slot. The suite runs
     600 ships for 2 days.
 - **Not yet:** a contact's speed drop and encounters proper (3.1); a grid on the sphere if the pair loop shows in 2.7
-  or later numbers; tracks drawn across a snap show the members' jump as a short fan.
+  or later numbers (done in 2.7c); tracks drawn across a snap show the members' jump as a short fan (fixed 2026-10-13:
+  a jump no ship could steam starts its track again).
 
 **The rails rules in one place (2026-10-12).** The user: rails are tuned often (the player mustn't see them, and the
 clock wants them aggressive), so a rule mustn't live in several paths, one of which gets forgotten. A review found

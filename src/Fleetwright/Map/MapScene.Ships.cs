@@ -50,8 +50,8 @@ public sealed unsafe partial class MapScene
     }
 
     static readonly int[] CourseSteps = [-90, -10, 10, 90];
-    const int TrackPoints = 240;
-    const long TrackEveryMs = 10_000;   // 40 minutes of track
+    const int TrackPoints = 60;
+    const long TrackEveryMs = 10_000;   // 10 minutes of track (the user, 2026-10-13: 40 was too long)
     readonly Dictionary<int, Track> tracks = [];
     readonly List<int> gone = [];
     long frame;
@@ -80,14 +80,31 @@ public sealed unsafe partial class MapScene
             if (!tracks.TryGetValue(e, out var tr))
                 tracks[e] = tr = new Track();
             tr.Seen = frame;
-            if (tr.Count == 0 || s.Time.Ms - tr.LastMs >= TrackEveryMs)
+            long now = world.DrawMs;
+            if (tr.Count > 0)
+            {
+                // a jump no ship could have steamed (a unit snapped onto its stations on rails, or round to a new
+                // course): the track starts again where it is, not drawn across the jump (a fan of lines to the new
+                // stations, the user's 2026-10-13)
+                var last = tr.Points[(tr.Head - 1 + tr.Points.Length) % tr.Points.Length];
+                double could = (Math.Abs(v.Speed[k]) + 3) * Math.Abs(now - tr.LastMs) / 1000 + 100;
+                if (Earth.Distance(p, last) > could)
+                    (tr.Count, tr.Head) = (0, 0);
+            }
+            if (tr.Count == 0 || now - tr.LastMs >= TrackEveryMs)
             {
                 if (tr.Count == tr.Points.Length && tr.Points.Length < TrackPoints)
-                    Array.Resize(ref tr.Points, Math.Min(tr.Points.Length * 2, TrackPoints));   // not yet wrapped: in order
+                {
+                    // full and never wrapped (it grows before it would), so in order from 0, the head back at 0: the
+                    // next point goes after the old ones, not over the oldest (that left zeros read as points, every
+                    // track starting at the globe's centre)
+                    Array.Resize(ref tr.Points, Math.Min(tr.Points.Length * 2, TrackPoints));
+                    tr.Head = tr.Count;
+                }
                 tr.Points[tr.Head] = p;
                 tr.Head = (tr.Head + 1) % tr.Points.Length;
                 tr.Count = Math.Min(tr.Count + 1, tr.Points.Length);
-                tr.LastMs = s.Time.Ms;
+                tr.LastMs = now;
             }
 
             // the route still to steam
