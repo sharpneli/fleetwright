@@ -63,6 +63,10 @@ public sealed unsafe partial class MapScene
     void BuildOverlay(in MapView view, Snapshot s)
     {
         var v = s.Ships;
+        var cap = ViewCap(view);
+        // every ship's route only from the operations band in (under 1,000 km across): further out, only the
+        // selection's (2.7c: 1,750 tramps' routes over the Atlantic were a tangle, and 1.4 million vertices a frame)
+        bool allRoutes = view.MetresPerPixel * view.Width < 1_000_000;
         overlay.Begin(width, height);
         frame++;
         for (int k = 0; k < v.Count; k++)
@@ -84,22 +88,36 @@ public sealed unsafe partial class MapScene
 
             // the route still to steam
             bool sel = e == selected;
-            if (v.RouteCount[k] > 0)
+            if (v.RouteCount[k] > 0 && (sel || allRoutes && overlay.Vertices.Length < RouteVertexBudget))
             {
+                // only the legs that pass through the view (2.7c: 1,750 tramps' ocean routes, all off screen, were
+                // ~500,000 vertices a frame)
                 overlay.BeginStrip(sel ? RouteSelected : RouteColor, sel ? 2f : 1.2f);
+                clipHave = false;
                 var from = p;
-                Point(view, from);
-                for (int i = 0; i < v.RouteCount[k]; i++)
+                bool open = false;
+                int legs = v.RouteCount[k] + (v.RouteLoop[k] ? 1 : 0);   // a patrol: round to the first again
+                for (int i = 0; i < legs; i++)
                 {
-                    var to = v.Waypoints[v.RouteStart[k] + i];
-                    GreatCircle(view, from, to);
+                    var to = v.Waypoints[v.RouteStart[k] + i % v.RouteCount[k]];
+                    if (ArcInView(cap, from, to))
+                    {
+                        if (!open)
+                            ClipPoint(view, from);
+                        GreatCircle(view, from, to, cap);
+                        open = true;
+                    }
+                    else if (open)
+                    {
+                        overlay.End();
+                        (open, clipHave) = (false, false);
+                    }
                     from = to;
                 }
-                if (v.RouteLoop[k])
-                    GreatCircle(view, from, v.Waypoints[v.RouteStart[k]]);   // a patrol: round to the first again
                 overlay.End();
                 for (int i = 0; i < v.RouteCount[k]; i++)
-                    Ring(view, v.Waypoints[v.RouteStart[k] + i], 4, sel ? RouteSelected : RouteColor, 1.5f);
+                    if (InView(cap, v.Waypoints[v.RouteStart[k] + i]))
+                        Ring(view, v.Waypoints[v.RouteStart[k] + i], 4, sel ? RouteSelected : RouteColor, 1.5f);
             }
 
             if (sel && view.Project(p, out double x, out double y))
@@ -188,14 +206,104 @@ public sealed unsafe partial class MapScene
             overlay.End();
     }
 
-    void GreatCircle(in MapView view, Vec3d a, Vec3d b)
+    /// <summary>What the view can see on the sphere, generously: a cap round the point under the camera, its angular
+    /// radius (radians) the screen's half-diagonal at the centre's scale, doubled for the perspective, and never past
+    /// the horizon.</summary>
+    static (Vec3d Centre, double Radius) ViewCap(in MapView view)
     {
-        int n = Math.Clamp((int)(Earth.Distance(a, b) / 20_000), 1, 64);
+        double halfDiag = Math.Sqrt(view.Width * view.Width + view.Height * view.Height) / 2;
+        double horizon = Math.Acos(Earth.Radius / (Earth.Radius + view.Altitude));
+        return (-view.Forward, Math.Min(2 * halfDiag * view.MetresPerPixel / Earth.Radius + 0.002, horizon + 0.002));
+    }
+
+    static bool InView((Vec3d Centre, double Radius) cap, Vec3d p) =>
+        Vec3d.Dot(cap.Centre, p.Normalized()) >= Math.Cos(cap.Radius);
+
+    /// <summary>Whether the great-circle arc from a to b (shorter than half the way round) comes within the cap.</summary>
+    static bool ArcInView((Vec3d Centre, double Radius) cap, Vec3d a, Vec3d b)
+    {
+        if (cap.Radius >= Math.PI / 2 || InView(cap, a) || InView(cap, b))
+            return true;
+        var an = a.Normalized();
+        var bn = b.Normalized();
+        var n = Vec3d.Cross(an, bn);
+        double len = n.Length;
+        if (len < 1e-12)
+            return false;
+        n /= len;
+        double s = Vec3d.Dot(cap.Centre, n);   // the sine of the centre's angle off the arc's plane
+        if (Math.Abs(s) >= Math.Sin(cap.Radius))
+            return false;
+        var q = (cap.Centre - n * s).Normalized();   // the circle's nearest point to the centre: is it on the arc?
+        return Vec3d.Dot(Vec3d.Cross(an, q), n) >= 0 && Vec3d.Dot(Vec3d.Cross(q, bn), n) >= 0;
+    }
+
+    void GreatCircle(in MapView view, Vec3d a, Vec3d b, (Vec3d Centre, double Radius) cap)
+    {
+        // pieces about 24 px long on screen (at least one per 500 km, so a long one still bends), at most 64; a point
+        // outside the view's cap, its neighbours too, isn't even projected (a dot product, not a projection)
+        double d = Earth.Distance(a, b);
+        int n = Math.Clamp((int)Math.Max(d / view.MetresPerPixel / 24, d / 500_000), 1, 64);
+        double cosR = Math.Cos(cap.Radius);
+        var prev = a.Normalized();
+        bool prevIn = Vec3d.Dot(cap.Centre, prev) >= cosR;
         for (int i = 1; i <= n; i++)
         {
             double t = (double)i / n;
-            Point(view, (a * (1 - t) + b * t).Normalized() * Earth.Radius);
+            var q = (a * (1 - t) + b * t).Normalized();
+            bool qIn = Vec3d.Dot(cap.Centre, q) >= cosR;
+            if (qIn || prevIn || cap.Radius >= Math.PI / 2)
+            {
+                if (!prevIn && !clipHave)
+                    ClipPoint(view, prev * Earth.Radius);   // the piece coming in from outside the cap
+                ClipPoint(view, q * Earth.Radius);
+            }
+            else if (clipHave)
+            {
+                overlay.End();
+                clipHave = false;
+            }
+            (prev, prevIn) = (q, qIn);
         }
+    }
+
+    /// <summary>Other ships' routes stop being drawn once the overlay holds this many vertices: a sea crowded past
+    /// reading (2.7c's 1,750 tramps in one box of ocean) costs a bounded frame. The selection's is always drawn.</summary>
+    const int RouteVertexBudget = 120_000;
+
+    // a route's line clipped to the screen (and a margin): off it the line breaks, keeping the point just past the edge;
+    // a piece with both ends off is drawn alone if it may cross the screen
+    bool clipHave, clipPrevIn;
+    double clipX, clipY;
+
+    void ClipPoint(in MapView view, Vec3d p)
+    {
+        if (!view.Project(p, out double x, out double y))
+        {
+            overlay.End();
+            clipHave = false;
+            return;
+        }
+        const double M = 64;
+        bool inside = x > -M && y > -M && x < width + M && y < height + M;
+        if (inside)
+        {
+            if (clipHave && !clipPrevIn)
+                overlay.Point(clipX, clipY);
+            overlay.Point(x, y);
+        }
+        else if (clipHave && clipPrevIn)
+        {
+            overlay.Point(x, y);
+            overlay.End();
+        }
+        else if (clipHave && Math.Max(clipX, x) > -M && Math.Min(clipX, x) < width + M && Math.Max(clipY, y) > -M && Math.Min(clipY, y) < height + M)
+        {
+            overlay.Point(clipX, clipY);   // a long piece across the screen, both ends off it
+            overlay.Point(x, y);
+            overlay.End();
+        }
+        (clipHave, clipPrevIn, clipX, clipY) = (true, inside, x, y);
     }
 
     /// <summary>A circle on the sphere round a point, metres.</summary>

@@ -45,12 +45,13 @@ public sealed partial class ShipSystem : IWorldSystem
         this.probes = probes;
         stepProbe = probes.Register("Ships: step");
         contactsProbe = probes.Register("Ships: contacts");
-        railsProbe = probes.Register("Ships: rails");
+        railsProbe = probes.Register("Ships: rails check");
+        railsEventProbe = probes.Register("Ships: rails events");
         landProbe = probes.Register("Ships: land");
     }
 
     readonly Probes probes;
-    readonly int stepProbe, contactsProbe, railsProbe, landProbe;
+    readonly int stepProbe, contactsProbe, railsProbe, railsEventProbe, landProbe;
 
     /// <summary>Where classes come from, by id: the ids <see cref="Spawn"/> names and the snapshot carries.</summary>
     public ShipClassRegistry Registry { get; }
@@ -215,7 +216,7 @@ public sealed partial class ShipSystem : IWorldSystem
         if (e.Code is RailsWaypoint or PolarEntry or PolarExit)
         {
             RailsEvent(world, e);
-            probes.Add(railsProbe, t);
+            probes.Add(railsEventProbe, t);
             return;
         }
         if (e.Code is LandAhead or LandRecheck)

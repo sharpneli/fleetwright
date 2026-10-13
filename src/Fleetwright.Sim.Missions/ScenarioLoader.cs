@@ -72,8 +72,17 @@ public static class ScenarioLoader
                     continue;
                 }
                 var (lat, lon) = Earth.LatLon(at - fwd * astern + starboard * abeam);
+                // no faster than her design steams: spawned past it, she'd only creep down toward it, never steady (so
+                // never on rails: 2.7c's tramps at 10 kn of 9)
+                double kn = top.Kn, most = w.Ships.Registry.Get(cls)!.Motion.MaxSpeedKn;
+                if (kn > most && most > 0)
+                {
+                    if (!start.Warnings.Any(x => x.StartsWith(spec.Design + " at", StringComparison.Ordinal)))
+                        start.Warnings.Add($"{spec.Design} at {kn} kn, past her {most:0.#} kn: spawned at {most:0.#}");
+                    kn = most;
+                }
                 int before = w.Ships.NewestEntity;
-                w.Apply(ShipSystem.Spawn(cls, lat, lon, top.CourseDeg, top.Kn, (byte)sq.Side));
+                w.Apply(ShipSystem.Spawn(cls, lat, lon, top.CourseDeg, kn, (byte)sq.Side));
                 int e = w.Ships.NewestEntity;
                 if (e == before)
                 {
