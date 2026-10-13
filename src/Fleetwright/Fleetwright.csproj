@@ -32,6 +32,7 @@
     <!-- the world: the map reads its snapshots and sends it commands (docs/world/architecture.md) -->
     <ProjectReference Include="..\Fleetwright.Sim\Fleetwright.Sim.csproj" />
     <ProjectReference Include="..\Fleetwright.Sim.Ai\Fleetwright.Sim.Ai.csproj" />
+    <ProjectReference Include="..\Fleetwright.Sim.Missions\Fleetwright.Sim.Missions.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -54,6 +55,8 @@
     <GameAsset Include="$(MSBuildThisFileDirectory)..\..\Content\Templates\*.json" Link="Content\Templates\%(Filename)%(Extension)" />
     <GameAsset Include="$(MSBuildThisFileDirectory)..\..\Content\World\*.bin" Link="Content\World\%(Filename)%(Extension)" />
     <GameAsset Include="$(MSBuildThisFileDirectory)..\..\Content\Sim\*.json" Link="Content\Sim\%(Filename)%(Extension)" />
+    <GameAsset Include="$(MSBuildThisFileDirectory)..\..\Content\Scenarios\*.json" Link="Content\Scenarios\%(Filename)%(Extension)" />
+    <GameAsset Include="$(MSBuildThisFileDirectory)..\..\Content\Scenarios\Designs\*.json" Link="Content\Scenarios\Designs\%(Filename)%(Extension)" />
     <None Include="@(GameAsset)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 

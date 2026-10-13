@@ -119,6 +119,23 @@ public class ScenarioTests
         Assert.Contains(expected, x.Message);
     }
 
+    /// <summary>The shipped Jutland reads, its order of battle is the historical count, and every design it names is
+    /// there (in its Designs/ or the shipped designs). Not built here: that's the scale test's (shipgen scenario).</summary>
+    [Fact]
+    public void The_Jutland_reads_with_its_order_of_battle()
+    {
+        var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "jutland.json"));
+        Assert.Equal(250, s.ShipCount);
+        Assert.Equal(151, s.Units.Where(u => u.Side == 0).Sum(u => u.ShipCount));
+        Assert.Equal(99, s.Units.Where(u => u.Side == 1).Sum(u => u.ShipCount));
+        var names = s.DesignNames();
+        Assert.InRange(names.Count, 50, 60);
+        foreach (var n in names)
+            Assert.True(File.Exists(Path.Combine(s.Folder!, "Designs", n + ".json")) || File.Exists(Path.Combine(Designs[0], n + ".json")), n);
+        Assert.True(Scenario.IsScenario(Path.Combine(Fleet.Repo, "Content", "Scenarios", "jutland.json")));
+        Assert.False(Scenario.IsScenario(Path.Combine(Designs[0], "dreadnought.json")));
+    }
+
     [Fact]
     public void A_design_not_found_is_named()
     {

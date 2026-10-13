@@ -26,6 +26,7 @@ public static unsafe class Program
         var devGroups = new List<string>();
         var devForces = new List<string>();
         bool frameTimes = false;
+        string? variants = null, scenarioArg = null;
 
         foreach (string arg in args)
         {
@@ -167,11 +168,22 @@ public static unsafe class Program
                     return 1;
                 }
             }
+            else if (arg.StartsWith("-variants="))   // writes a spec's design variants (knob steps on shipped designs) and exits
+            {
+                variants = arg.Substring("-variants=".Length);
+            }
+            else if (arg.StartsWith("-scenario="))   // the world starts with a scenario: a path, or a shipped one's name (-scenario=jutland)
+            {
+                scenarioArg = arg.Substring("-scenario=".Length);
+            }
             else if (arg.StartsWith("-output="))
             {
                 screenshotPath = arg.Substring("-output=".Length);
             }
         }
+
+        if (variants != null)
+            return Designer.DesignVariants.Write(variants) == 0 ? 0 : 1;
 
         // the land the world sails on, built while the window opens (docs/world/terrain-plan.md T1)
         var shore = Map.WorldSession.LoadShore();

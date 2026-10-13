@@ -12,6 +12,19 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-13 - Jutland at 14:00 GMT: positions, courses, dispositions
+- Question: where was each formation of both fleets at 14:00 GMT on 31 May 1916, and how was it disposed? For each
+  (Beatty's battlecruisers and the 5th Battle Squadron, the light cruiser screens and flotillas with them, Engadine;
+  Jellicoe's battle fleet in its cruising order, its cruiser screen, 4th LCS, flotillas and attached ships; Hood's
+  3rd BCS with Chester and Canterbury; Hipper's scouting groups and torpedo boats; Scheer's battle line, 4th Scouting
+  Group and torpedo boats): the lead ship's position, the course and speed, the formation and the distances between
+  ships, columns and screens. Also the order of each line (which ship led, which followed), and the classes as built
+  (displacement, speed, main battery and layout, belt) for a ship design session.
+- Context / relevant files: `Content/Scenarios/jutland.json` (the scenario, positions from memory, marked
+  approximate), `tools/scenarios/jutland-classes.json` (the stand-in classes), `docs/battle/plan.md` step 2.7.
+- Wanted output: a table per formation (position, course, speed, formation, spacing), with sources, and a table of
+  the classes present.
+
 ### 2026-10-12 - How many ships were at sea: navies and merchant fleets
 - Question: how many seagoing ships did the world have, by nation, in 1890, 1905, 1914, 1918 and 1925 (the first
   campaign's era)? Warships by type

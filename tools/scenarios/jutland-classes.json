@@ -1,0 +1,68 @@
+// The Jutland scenario's classes beyond the shipped designs (docs/battle/plan.md step 2.7a): knob steps on the shipped
+// era designs, one variant per class at Jutland, so the test loads ~55 classes as a Jutland would. Stand-ins until a
+// ship design session makes the historical classes: speeds, belts and calibres roughly the class's, layouts only where
+// a knob gives them. Written by: Fleetwright -variants=tools/scenarios/jutland-classes.json
+{
+  "out": "../../Content/Scenarios/Designs",
+  "base_folder": "../../shipgen/designs",
+  "variants": [
+    // Grand Fleet and Battlecruiser Fleet: battleships (Queen Elizabeth is the shipped super_dreadnought)
+    { "id": "bellerophon", "name": "Bellerophon-like (1909)", "base": "dreadnought", "steps": ["speed=20.75", "belt=254"] },
+    { "id": "st_vincent", "name": "St Vincent-like (1910)", "base": "dreadnought", "steps": ["speed=21", "belt=254"] },
+    { "id": "neptune", "name": "Neptune-like (1911)", "base": "dreadnought", "steps": ["speed=21", "belt=254", "range=6330"] },
+    { "id": "colossus", "name": "Colossus-like (1911)", "base": "neptune", "steps": ["belt=279"] },
+    { "id": "orion", "name": "Orion-like (1912)", "base": "super_dreadnought", "steps": ["main0_cal=343", "main0_mid=1", "speed=21", "belt=305"] },
+    { "id": "king_george_v", "name": "King George V-like (1912)", "base": "orion", "steps": ["speed=21.5"] },
+    { "id": "iron_duke", "name": "Iron Duke-like (1914)", "base": "orion", "steps": ["speed=21.25", "range=7800"] },
+    { "id": "erin", "name": "Erin-like (1914)", "base": "orion", "steps": ["belt=229"] },
+    { "id": "agincourt", "name": "Agincourt-like (1914)", "base": "dreadnought", "steps": ["main0_fore=2", "main0_aft=3", "main0_mid=2", "main0_wing=0", "speed=22", "belt=229"] },
+    { "id": "canada", "name": "Canada-like (1915)", "base": "super_dreadnought", "steps": ["main0_cal=356", "main0_mid=1", "speed=22.75", "belt=229"] },
+    { "id": "revenge", "name": "Revenge-like (1916)", "base": "super_dreadnought", "steps": ["speed=21.5"] },
+    // battlecruisers (Lion, Tiger and Invincible are shipped)
+    { "id": "queen_mary", "name": "Queen Mary-like (1913)", "base": "lion", "steps": ["range=5610"] },
+    { "id": "indefatigable", "name": "Indefatigable-like (1911)", "base": "invincible", "steps": ["speed=25.75", "range=6690"] },
+    // armoured cruisers
+    { "id": "minotaur", "name": "Minotaur-like (1908)", "base": "armoured_cruiser", "navy": "portsmouth", "steps": ["main0_cal=234", "speed=23", "belt=152"] },
+    { "id": "warrior", "name": "Warrior-like (1907)", "base": "armoured_cruiser", "navy": "portsmouth", "steps": ["main0_cal=234", "main0_barrels=1", "speed=22.75", "belt=152"] },
+    { "id": "duke_of_edinburgh", "name": "Duke of Edinburgh-like (1906)", "base": "warrior", "steps": ["speed=22.25"] },
+    { "id": "devonshire", "name": "Devonshire-like (1905)", "base": "warrior", "steps": ["main0_cal=190", "speed=22"] },
+    // light cruisers
+    { "id": "town_chatham", "name": "Chatham-like Town (1912)", "base": "light_cruiser", "type": "CL", "steps": ["speed=25.5"] },
+    { "id": "town_birmingham", "name": "Birmingham-like Town (1914)", "base": "light_cruiser", "steps": ["speed=25.5", "belt=51"] },
+    { "id": "arethusa", "name": "Arethusa-like (1914)", "base": "light_cruiser", "steps": ["speed=28.5"] },
+    { "id": "caroline", "name": "Caroline-like C class (1914)", "base": "light_cruiser", "steps": ["speed=28.5", "main0_fore=1", "main0_aft=1", "main0_mid=0"] },
+    { "id": "cambrian", "name": "Cambrian-like C class (1916)", "base": "caroline", "steps": ["range=5900"] },
+    { "id": "scout_cruiser", "name": "Boadicea-like scout (1909)", "base": "light_cruiser", "steps": ["main0_cal=102", "speed=25", "belt=25"] },
+    // destroyers, the minelayer and the seaplane carrier
+    { "id": "m_class", "name": "M class destroyer (1915)", "base": "tb_destroyer", "steps": ["speed=34", "main0_aft=1"] },
+    { "id": "r_class", "name": "R class destroyer (1916)", "base": "m_class", "steps": ["speed=36"] },
+    { "id": "k_acasta", "name": "Acasta-like K class destroyer (1912)", "base": "tb_destroyer", "steps": ["speed=29", "main0_fore=1", "main0_aft=1"] },
+    { "id": "l_laforey", "name": "Laforey-like L class destroyer (1913)", "base": "tb_destroyer", "steps": ["speed=29", "main0_fore=1"] },
+    { "id": "flotilla_leader", "name": "Faulknor-like flotilla leader (1914)", "base": "tb_destroyer", "steps": ["speed=31"] },
+    { "id": "abdiel", "name": "Abdiel-like minelayer (1916)", "base": "m_class", "steps": ["speed=34.5"] },
+    { "id": "engadine", "name": "Engadine-like seaplane carrier (1911)", "base": "seaplane_carrier", "era": "great_war", "steps": ["speed=21.5"] },
+
+    // High Seas Fleet: battleships and pre-dreadnoughts
+    { "id": "konig", "name": "König-like (1914)", "base": "super_dreadnought", "navy": "kiel", "steps": ["main0_cal=305", "main0_mid=1", "speed=21", "belt=350"] },
+    { "id": "kaiser", "name": "Kaiser-like (1912)", "base": "dreadnought", "navy": "kiel", "steps": ["speed=21", "belt=350"] },
+    { "id": "helgoland", "name": "Helgoland-like (1911)", "base": "nassau", "era": "great_war", "steps": ["main0_cal=305", "speed=20.5"] },
+    { "id": "nassau_1916", "name": "Nassau-like (1909)", "base": "nassau", "era": "great_war", "steps": [] },
+    { "id": "deutschland_1906", "name": "Deutschland-like pre-dreadnought (1906)", "base": "mikasa", "navy": "kiel", "steps": ["main0_cal=280", "speed=18", "belt=240"] },
+    { "id": "hessen", "name": "Braunschweig-like pre-dreadnought (1905)", "base": "deutschland_1906", "steps": ["belt=250"] },
+    // battlecruisers (Seydlitz is shipped)
+    { "id": "derfflinger", "name": "Derfflinger-like (1914)", "base": "seydlitz", "steps": ["main0_cal=305", "main0_wing=0", "main0_fore=2", "main0_aft=2", "speed=26.5"] },
+    { "id": "moltke", "name": "Moltke-like (1911)", "base": "seydlitz", "steps": ["speed=25.5", "belt=270"] },
+    { "id": "von_der_tann", "name": "Von der Tann-like (1910)", "base": "seydlitz", "steps": ["speed=24.75", "belt=250", "main0_aft=1"] },
+    // light cruisers (Karlsruhe, for Rostock, is shipped)
+    { "id": "wiesbaden", "name": "Wiesbaden-like (1915)", "base": "karlsruhe", "steps": ["main0_cal=150", "speed=27.5"] },
+    { "id": "pillau", "name": "Pillau-like (1914)", "base": "karlsruhe", "steps": ["speed=27.5"] },
+    { "id": "graudenz", "name": "Graudenz-like (1914)", "base": "karlsruhe", "steps": ["speed=27.25"] },
+    { "id": "stettin", "name": "Stettin-like (1907)", "base": "karlsruhe", "steps": ["speed=24", "belt=50"] },
+    { "id": "gazelle", "name": "Gazelle-like (1900)", "base": "karlsruhe", "steps": ["speed=21.5", "belt=50"] },
+    // torpedo boats
+    { "id": "g101", "name": "G101-like large torpedo boat (1914)", "base": "tb_destroyer", "navy": "kiel", "steps": ["speed=33.5"] },
+    { "id": "v25", "name": "V25-like torpedo boat (1914)", "base": "tb_destroyer", "navy": "kiel", "steps": ["speed=33.5", "main0_cal=88"] },
+    { "id": "v1", "name": "V1-like torpedo boat (1911)", "base": "v25", "steps": ["speed=32", "main0_aft=1"] },
+    { "id": "b97", "name": "B97-like large torpedo boat (1915)", "base": "tb_destroyer", "navy": "kiel", "steps": ["speed=36", "main0_cal=105"] }
+  ]
+}
