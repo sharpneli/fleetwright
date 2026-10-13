@@ -210,6 +210,15 @@ public sealed record SimSettings
     /// between steps, so the step doesn't change where ships go, only when they decide.</summary>
     public int CoarseStepMs { get; init; } = 60_000;
 
+    /// <summary>A coarse ship within this of its course, degrees, takes it at once rather than turning for it (what's
+    /// left at a turn's end: the meridians converging along the arc).</summary>
+    public double CoarseSnapDeg { get; init; } = 0.01;
+
+    /// <summary>The fine model's sea trials that give each class its coarse accelerations: their step, s, and the
+    /// longest a trial runs, s (Handling).</summary>
+    public double CoarseCalibrationStepS { get; init; } = 1;
+    public double CoarseCalibrationMaxS { get; init; } = 7200;
+
     /// <summary>At this asked speed and above, a unit the map doesn't show ship by ship (its ships and turns spanning
     /// fewer than <see cref="RailsWatchedPx"/> at the map's scale: drawn as one marker) is placed on rails and its
     /// orders snap, as at <see cref="RailsSnapMinSpeed"/>. 1: at any speed (the user, 2026-10-12: once only the force

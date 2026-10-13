@@ -64,6 +64,52 @@ public sealed class Handling
         TurnDragFactor = 1 / ((1 - f) * (1 - f) * (1 - f)) - 1;
         MinClearanceM = m.BeamM / 2 + s.CoastMinClearanceM;
         StandoffM = Math.Max(Math.Clamp(MinClearanceM + s.CoastStandoffLengths * m.LengthM, s.CoastStandoffMinM, s.CoastStandoffMaxM), 1.5 * MinClearanceM);
+        (CoarseAccelUp, CoarseAccelDown, CoarseAccelAstern) = Calibrate(s);
+    }
+
+    /// <summary>The coarse tier's constant accelerations, m/s² (docs/battle/plan.md step 2.8): working up ahead, slowing
+    /// ahead, and going astern or stopping by it. Each is the fine model's own over its sea trial (0 to 90% of the top
+    /// speed at full power; the top speed to half with the engines stopped; the top speed to a stop at full astern), so
+    /// coarse ships take as long as fine ones over those.</summary>
+    public double CoarseAccelUp { get; }
+    public double CoarseAccelDown { get; }
+    public double CoarseAccelAstern { get; }
+
+    /// <summary>The fine model's trials, on a ship of its own at a step of <see cref="SimSettings.CoarseCalibrationStepS"/>
+    /// (the step's forces are stable at any step): once per class in a world, a few thousand steps.</summary>
+    (double Up, double Down, double Astern) Calibrate(SimSettings s)
+    {
+        var store = new ShipStore(s with { ShipCapacity = 1, RouteCapacity = 1 });
+        double maxKn = Class.Motion.MaxSpeedKn, top = SteadySpeedMs(PowerFor(maxKn)), dt = s.CoarseCalibrationStepS;
+        if (!(top > 0))
+            return (1, 1, 1);
+        var p = Earth.Position(0, 0);
+        var f = Earth.Forward(p, 0);
+        double Trial(double fromMs, double orderKn, Func<double, bool> done)
+        {
+            int i = store.Spawn(-1, 0, this, p, f, fromMs, 0);
+            store.OrderSpeed(i, orderKn);
+            double t = 0;
+            while (!done(store.speed[i]) && t < s.CoarseCalibrationMaxS)
+            {
+                ShipMotion.Step(store, i, dt, s);
+                t += dt;
+            }
+            store.Drop(i);
+            return Math.Max(t, dt);
+        }
+        double up = 0.9 * top / Trial(0, maxKn, u => u >= 0.9 * top);
+        double down = 0.5 * top / Trial(top, 0, u => u <= 0.5 * top);
+        double astern = top / Trial(top, -maxKn, u => u <= 0);
+        return (up, down, astern);
+    }
+
+    /// <summary>The rudder whose steady turn has a curvature, rad/m, positive to starboard: what a coarse ship's turn
+    /// hands the fine tick, so the swing carries on as it was.</summary>
+    public double RudderFor(double curvature)
+    {
+        double y = Math.Min(Math.Abs(curvature) * SteadyRadiusM, 1);   // the effect, as a share of hard over's
+        return Math.Sign(curvature) * HardOverRad * (1 - Math.Sqrt(1 - y));   // Effective's x(2 - x), inverted
     }
 
     /// <summary>The shaft power the hull needs at a speed through the water, watts (either way: astern as ahead).</summary>

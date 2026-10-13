@@ -66,6 +66,12 @@ public sealed class ShipStore
     internal int[] railGuide = [], railGen = [];
     internal double[] railCourse = [];   // NaN: a great circle (a route's leg); else a rhumb line at this course
 
+    // a coarse ship's own segment (docs/battle/plan.md step 2.8) beyond rails': a constant acceleration (m/s²) from the
+    // anchor's speed, a curvature (rad/m, positive to starboard; 0 straight, on the great circle or rhumb line above),
+    // and when the segment ends (its turn or its change of speed done, a waypoint's wheel-over), long.MaxValue for never
+    internal double[] railAccel = [], railCurv = [];
+    internal long[] segEndMs = [];
+
     /// <summary>The world's time: what a ship on rails is evaluated at. The world sets it before anything reads the
     /// store (events, commands, the snapshot).</summary>
     public long NowMs { get; set; }
@@ -219,7 +225,14 @@ public sealed class ShipStore
         int g = railGuide[slot];
         if (g < 0)
         {
-            double s = railSpeed[slot] * (ms - railMs[slot]) / 1000.0;
+            double t = (ms - railMs[slot]) / 1000.0;
+            double s = railSpeed[slot] * t + 0.5 * railAccel[slot] * t * t;
+            if (railCurv[slot] != 0)
+            {
+                (position, forward) = (railPos[slot], railFwd[slot]);
+                Earth.Circle(ref position, ref forward, s, railCurv[slot]);
+                return;
+            }
             if (!double.IsNaN(railCourse[slot]))
             {
                 Earth.Rhumb(railPos[slot], railCourse[slot], s, out position, out forward);
@@ -237,6 +250,59 @@ public sealed class ShipStore
         forward = (gf - u2 * Vec3d.Dot(gf, u2)).Normalized();
     }
 
+    /// <summary>A ship's speed through the water at a time, m/s: stepped (its last tick's), or its anchor's speed and
+    /// acceleration since; a ship riding another goes at its speed.</summary>
+    public double SpeedAt(int slot, long ms)
+    {
+        if (tier[slot] == ClockTier.Fine)
+            return speed[slot];
+        if (railGuide[slot] >= 0)
+            return SpeedAt(railGuide[slot], ms);
+        return railSpeed[slot] + railAccel[slot] * (ms - railMs[slot]) / 1000.0;
+    }
+
+    /// <summary>A ship's rate of turn at a time, rad/s, positive to starboard: stepped, its segment's curvature at its
+    /// speed, or (riding another) its guide's.</summary>
+    public double YawRateAt(int slot, long ms)
+    {
+        if (tier[slot] == ClockTier.Fine)
+            return yawRate[slot];
+        if (railGuide[slot] >= 0)
+            return YawRateAt(railGuide[slot], ms);
+        return railCurv[slot] == 0 ? 0 : SpeedAt(slot, ms) * railCurv[slot];
+    }
+
+    /// <summary>When a coarse ship's segment ends (ms), long.MaxValue for never or not coarse on its own.</summary>
+    public long SegmentEndMs(int slot) => tier[slot] == ClockTier.Coarse && railGuide[slot] < 0 ? segEndMs[slot] : long.MaxValue;
+
+    /// <summary>Makes a ship coarse on a segment of its own, anchored at its pose and speed now (from the fine tick, off
+    /// rails, or riding its guide), straight and steady until <see cref="CoarseMotion.Plan"/> lays it. The swing and
+    /// the rudder's lag are dropped: a coarse ship turns at once on its circle.</summary>
+    public void Coarsen(int slot)
+    {
+        PoseNow(slot, out var p, out var f);
+        double v = SpeedAt(slot, NowMs);
+        SetTier(slot, ClockTier.Coarse);
+        Anchor(slot, p, f, v);
+    }
+
+    /// <summary>A coarse ship anchored again where its segment has it now, for <see cref="CoarseMotion.Plan"/> to lay
+    /// the next (an order, its segment's end).</summary>
+    public void ReanchorCoarse(int slot)
+    {
+        PoseNow(slot, out var p, out var f);
+        Anchor(slot, p, f, SpeedAt(slot, NowMs));
+    }
+
+    void Anchor(int slot, Vec3d p, Vec3d f, double v)
+    {
+        railGen[slot]++;
+        var up = p.Normalized();
+        (railMs[slot], railPos[slot], railFwd[slot], railSpeed[slot], railGuide[slot], railCourse[slot]) =
+            (NowMs, up * Earth.Radius, (f - up * Vec3d.Dot(f, up)).Normalized(), v, -1, double.NaN);
+        (railAccel[slot], railCurv[slot], segEndMs[slot]) = (0, 0, long.MaxValue);
+    }
+
     /// <summary>Puts a ship on rails on its own, from its pose now at a speed (the one its engines settle at: it's within
     /// a fraction of a knot of it): on a rhumb line at a course (a course held), or on the great circle along its
     /// heading (NaN).</summary>
@@ -246,6 +312,7 @@ public sealed class ShipStore
         railGen[slot]++;
         (railMs[slot], railPos[slot], railFwd[slot], railSpeed[slot], railGuide[slot], railCourse[slot]) =
             (NowMs, position[slot], forward[slot], speedMs, -1, courseDeg);
+        (railAccel[slot], railCurv[slot], segEndMs[slot]) = (0, 0, long.MaxValue);
         yawRate[slot] = rudder[slot] = 0;
     }
 
@@ -296,6 +363,7 @@ public sealed class ShipStore
         SetTier(slot, ClockTier.Rails);
         railGen[slot]++;
         (railGuide[slot], railX[slot], railY[slot], railSpeed[slot]) = (guide, Vec3d.Dot(d, gf), Vec3d.Dot(d, Vec3d.Cross(gf, up)), railSpeed[guide]);
+        (railAccel[slot], railCurv[slot], segEndMs[slot]) = (0, 0, long.MaxValue);
         yawRate[slot] = rudder[slot] = 0;
     }
 
@@ -307,6 +375,7 @@ public sealed class ShipStore
         SetTier(slot, ClockTier.Rails);
         railGen[slot]++;
         (railGuide[slot], railX[slot], railY[slot], railSpeed[slot]) = (guide, aheadM, starboardM, railSpeed[guide]);
+        (railAccel[slot], railCurv[slot], segEndMs[slot]) = (0, 0, long.MaxValue);
         yawRate[slot] = rudder[slot] = 0;
         courseDeg[slot] = courseDeg[guide];
         speedOrderKn[slot] = railSpeed[guide] / Handling.MsPerKnot;
@@ -424,15 +493,27 @@ public sealed class ShipStore
     /// <summary>Counts the changes to a ship's rails: an event stamped with an older count is stale.</summary>
     public int RailGen(int slot) => railGen[slot];
 
-    /// <summary>Takes a ship off rails, exactly where they have it now, back to the fine tick: steady, rudder
-    /// amidships, its power as it was.</summary>
+    /// <summary>Takes a ship off rails or out of coarse, exactly where they have it now, back to the fine tick. Off
+    /// rails it's steady, rudder amidships, its power as it was; out of coarse it carries on as its segment had it, its
+    /// speed and rate of turn, the rudder that holds that turn, and while its speed was changing the power that holds
+    /// the speed it's at (the engines then go on toward what's rung), so the handover is smooth.</summary>
     public void Derail(int slot)
     {
         if (tier[slot] == ClockTier.Fine)
             return;
         PoseNow(slot, out var p, out var f);
-        (position[slot], forward[slot], speed[slot], poseMs[slot]) = (p, f, railSpeed[slot], NowMs);
+        double v = SpeedAt(slot, NowMs), r = YawRateAt(slot, NowMs);
+        bool coarse = tier[slot] == ClockTier.Coarse;
+        (position[slot], forward[slot], speed[slot], poseMs[slot]) = (p, f, v, NowMs);
         yawRate[slot] = rudder[slot] = 0;
+        if (coarse)
+        {
+            yawRate[slot] = r;
+            rudder[slot] = Math.Abs(v) > 1e-9 ? handling[slot].RudderFor(r / v) : 0;
+            int own = railGuide[slot] >= 0 ? railGuide[slot] : slot;
+            if (railAccel[own] != 0)
+                power[slot] = Math.Sign(v) * Math.Min(handling[slot].HoldingPowerW(Math.Abs(v)), v >= 0 ? handling[slot].MaxPowerW : handling[slot].AsternPowerW);
+        }
         if (railGuide[slot] >= 0 && helm[slot] == Helm.Course)
             courseDeg[slot] = Earth.Heading(p, f);   // a ship carried by its guide comes off steering as the rails had it, not for a course they left behind
         SetTier(slot, ClockTier.Fine);
@@ -581,6 +662,12 @@ public sealed class ShipStore
                 h.Add(railX[i]);
                 h.Add(railY[i]);
                 h.Add(railCourse[i]);
+                if (tier[i] == ClockTier.Coarse)
+                {
+                    h.Add(railAccel[i]);
+                    h.Add(railCurv[i]);
+                    h.Add(segEndMs[i]);
+                }
             }
             for (int k = 0; k < routeCount[i]; k++)
                 h.Add(route[i * routeCap + k]);
@@ -627,6 +714,9 @@ public sealed class ShipStore
         Array.Resize(ref railGuide, n);
         Array.Resize(ref railGen, n);
         Array.Resize(ref railCourse, n);
+        Array.Resize(ref railAccel, n);
+        Array.Resize(ref railCurv, n);
+        Array.Resize(ref segEndMs, n);
     }
 }
 
@@ -681,8 +771,8 @@ public readonly struct ShipState(ShipStore store, int slot)
 
     /// <summary>Speed through the water, m/s (negative astern); rate of turn, rad/s (positive to starboard); rudder
     /// angle, rad; shaft power, W (negative astern).</summary>
-    public double Speed => store.tier[slot] != ClockTier.Fine ? store.railSpeed[slot] : store.speed[slot];
-    public double YawRate => store.yawRate[slot];
+    public double Speed => store.tier[slot] != ClockTier.Fine ? store.SpeedAt(slot, store.NowMs) : store.speed[slot];
+    public double YawRate => store.tier[slot] != ClockTier.Fine ? store.YawRateAt(slot, store.NowMs) : store.yawRate[slot];
     public double Rudder => store.rudder[slot];
     public double Power => store.power[slot];
 

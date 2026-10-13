@@ -99,6 +99,26 @@ public static class Earth
             forward = Turn(position, forward, turn / 2);
     }
 
+    /// <summary>Moves a point a distance along a circle of constant curvature (rad/m, positive to starboard) from its
+    /// forward vector, and turns forward with it: a coarse ship's turn (docs/battle/plan.md step 2.8), exact for any
+    /// length of it, where <see cref="Arc"/> is a step's chord. Laid in the tangent plane and carried onto the sphere
+    /// along the chord's great circle: out by (radius / Earth's radius)², nothing at a ship's turning circle. Zero
+    /// curvature is <see cref="Advance"/> exactly.</summary>
+    public static void Circle(ref Vec3d position, ref Vec3d forward, double distance, double curvature)
+    {
+        double turn = distance * curvature;
+        if (turn == 0)
+        {
+            Advance(ref position, ref forward, distance);
+            return;
+        }
+        double x = Math.Sin(turn) / curvature, y = (1 - Math.Cos(turn)) / curvature;   // ahead, to starboard
+        double chord = Math.Sqrt(x * x + y * y), bearing = Math.Atan2(y, x);
+        var d = Turn(position, forward, bearing);
+        Advance(ref position, ref d, chord);
+        forward = Turn(position, d, turn - bearing);
+    }
+
     /// <summary>The heading from one point toward another along the great circle, degrees clockwise from north, in
     /// [0, 360): the course a ship steers for it now.</summary>
     public static double Bearing(Vec3d from, Vec3d to)
