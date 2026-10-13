@@ -1,6 +1,6 @@
 # Plan: ships and the land
 
-2026-10-12, reworked 2026-10-13. Status: **the rework is agreed** (the user, 2026-10-13). T1 (`Shore`) is done and stands. The rest of the 2026-10-12 plan (a pilot plotting each ship's track
+2026-10-12, reworked 2026-10-13. Status: **the rework is agreed** (the user, 2026-10-13); S1-S3 done 2026-10-13, for the user's testing; S4 later. T1 (`Shore`) is done and stands. The rest of the 2026-10-12 plan (a pilot plotting each ship's track
 ahead, rails along the plot, a router) was too complex for the result wanted now (the user, 2026-10-13), so it's
 replaced by a slide along the coast: Rule the Waves' behaviour, done a little better. What was dropped and why is in
 "Dropped", so it can come back if it's ever needed.
@@ -302,6 +302,34 @@ Norway at 10,000x, 100,000x and 1M×: S3's baseline.
 
 **S3 Sliding on rails,** so a coast no longer holds the clock: the same scenarios at 30,000x on rails and on the fine
 tick end close to each other, and S2's measure shows the clock kept along Norway.
+
+*Done (2026-10-13):*
+- **One feeler for both tiers:** `Slide.Feel` is the fine tick's feeler as a function of a pose (position, heading,
+  speed, course rudder, wanted course, side). The fine tick asks it at the stepped pose, rails at theirs.
+- **`SlidesOnRails`** (`ShipSystem.Rails.cs`): the clock at `RailsSnapMinSpeed` (10,000x) or more, the clock only.
+  There `WatchLand` traces the guide's track at its standoff alone and schedules `LandAhead` a look-ahead short of
+  the contact, where the feeler would start; `Ready` lets a sliding or land-bound unit on (placed, as at that speed
+  anything is). Below it, S2's rules as they were.
+- **`SlideStep`** at each `LandAhead` while fast: the feeler at the rails' pose. Sliding, the rails are anchored again
+  along its course (`ShipStore.ReanchorSliding`, a great circle, an instant turn) for at most `SlideRailsStepM` (2 km),
+  half the way to where that leg would come within the minimum (at least `SlideRailsMinStepM`, 20 m), then asked
+  again. Let go, the rails are laid on the orders again (a rhumb line, or the leg to the next waypoint with its
+  arrival) and the land watched from there. A route's waypoint near the slide is passed as the fine tick passes it,
+  without moving the ship onto it (`PassWaypoint(anchor: false)`). Each step solves contacts again (`Anchored`).
+  The clock slowing below 10,000x takes a sliding unit off rails at its next step, sliding on the fine tick from there.
+- **The side near square:** a wanted course within `SlideSquareDeg` (15°) of square to the coast slides to starboard
+  of the order, whichever way is a little nearer, so the two tiers choose alike (found in testing: they went opposite
+  ways onto a coast square to the course).
+- **Tests** (`RailsLandTests`): onto Norway at 10,000x, 100,000x and 1M x, sliding on rails at the standoff, never
+  off rails; the same scenarios on rails at 30,000x and on the fine tick end 10 m (Norway), 398 m (Jutland) and 790 m
+  (Bornholm) apart after four hours; 12 destroyers in the Skagerrak at 1M x for six hours, no backstop. One ship or a
+  column of four along Norway keeps 10,000x, 100,000x and 1M x as asked (S2: ~25,000x and ~6,500x at most). The year
+  of 2,000 ships is back among the Pacific islands with the land in, at 1M x: 6.5 s, all on rails at the end. The
+  battleship up the Oslofjord now goes to starboard into an arm narrower than its turning circle and needs one
+  backstop there, like the 28 kn case: the fjord tuning to come.
+- **For the user's testing:** a course held into a coast follows it round (decision 7), so held into Norway's west
+  coast a ship traces each fjord in and out, on rails at speed. Off Arendal's skerries even the fine tick weaves
+  (side flips, a backstop): both belong to the tuning noted for the Swedish archipelago.
 
 **S4 Guided areas,** gates and canals: after the Jutland test, when a mission needs one. The missions' game loop
 doesn't need them (the user, 2026-10-13), but S1-S3 must keep them possible ("Guided areas").

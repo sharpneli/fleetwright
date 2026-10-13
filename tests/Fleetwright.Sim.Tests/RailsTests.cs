@@ -163,10 +163,12 @@ public class RailsTests(ITestOutputHelper output)
     /// <summary>n ships patrolling back and forth along their headings, a leg a day, for <paramref name="days"/>: with
     /// the land, in the Pacific, 35°S to 35°N and 170°W to 140°W, a day's leg clear of the continents (its islands slide
     /// them); in a world of water, round the globe from 40°S to 40°N.</summary>
-    static World Patrol(int n, int days, int[]? cuts = null, int sides = 1, bool land = true)
+    static World Patrol(int n, int days, int[]? cuts = null, int sides = 1, bool land = true, double speed = 1)
     {
         var s = Settings with { RouteCapacity = days + 2, ShipCapacity = n };
         var (w, c) = Make(s, "destroyer", land);
+        if (speed != 1)
+            w.Apply(Command.SetSpeed(speed));
         for (int i = 0; i < n; i++)
         {
             // in a world of water, round the globe from 170°W, as 2.5 laid them
@@ -191,14 +193,14 @@ public class RailsTests(ITestOutputHelper output)
         return w;
     }
 
-    /// <summary>In a world of water: a ship going round an island is on the fine tick until it's clear (terrain plan
-    /// S2), hours of it at Hawaii, so with the land in a year takes far too long. S3 slides on rails, and brings the
-    /// land back into this test.</summary>
+    /// <summary>Among the Pacific islands at 1M x: ships going round an island slide on rails (terrain plan S3). Below
+    /// the snap speed they'd go round on the fine tick, hours of it at Hawaii, and a year would take far too long.</summary>
     [Fact]
     public void Two_thousand_ships_steam_a_year_in_seconds()
     {
+        _ = Fleet.Get("destroyer");   // the golden cases build once for the run: outside the timing
         var sw = Stopwatch.StartNew();
-        var w = Patrol(2000, 365, land: false);
+        var w = Patrol(2000, 365, speed: 1_000_000);
         sw.Stop();
         var store = w.Ships.Store;
         int onRails = 0;
@@ -213,8 +215,8 @@ public class RailsTests(ITestOutputHelper output)
     [Fact]
     public void Two_thousand_ships_steam_two_days_among_the_Pacific_islands()
     {
-        // Release, 2026-10-13: ~15 s, nearly all of it ships going round Hawaii and the Tuamotus on the fine tick, up to
-        // ~11 h each (S3's to take onto rails)
+        // at 1x, below the snap speed, so off rails round the islands (S2). Release, 2026-10-13: ~12 s, nearly all of it
+        // ships going round Hawaii and the Tuamotus on the fine tick, up to ~11 h each
         _ = Fleet.Get("destroyer");
         var sw = Stopwatch.StartNew();
         var w = Patrol(2000, 2);

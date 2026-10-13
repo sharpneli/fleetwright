@@ -145,6 +145,8 @@ public class SlideTests(ITestOutputHelper output)
         Assert.True(Earth.LatLon(Ship(w, 1).Position).Lat < 41.0, "the leader didn't come through");
     }
 
+    /// <summary>The battleship follows the coast into an arm narrower than its turning circle and needs the backstop
+    /// once at its end, as at 28 kn off Norway: the fjord and skerry tuning to come (the user's, 2026-10-13).</summary>
     [Fact]
     public void A_course_up_the_Oslofjord_follows_the_coast_round()
     {
@@ -153,7 +155,7 @@ public class SlideTests(ITestOutputHelper output)
         w.Apply(ShipSystem.Spawn(c, 59.05, 10.55, 0, 15));
         var m = Run(w, 6 * 3600, 1)[0];
         Report("Oslofjord", w, 1, m);
-        Safe(w, 1, m);
+        Safe(w, 1, m, backstops: 1);
     }
 
     [Fact]

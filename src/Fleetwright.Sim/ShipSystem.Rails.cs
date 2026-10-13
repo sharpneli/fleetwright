@@ -28,10 +28,14 @@ namespace Fleetwright.Sim;
 /// <item><b>Orders on rails.</b> While its unit is placing, a movement order to a unit's guide is carried out at once on rails
 /// (<see cref="CanSnap"/>, <see cref="Snap"/>, which lays it again the same way); any other order takes the unit off
 /// (<see cref="TakesOffRails"/>), as do changes to groups (<see cref="DerailFor"/>) and contacts.</item>
-/// <item><b>The land</b> (docs/world/terrain-plan.md S2). Rails don't slide: when a unit's rails are laid or anchored
-/// again, its track is traced for the coast (<see cref="WatchLand"/>), and it comes off short of it (a
-/// <see cref="LandAhead"/> event) so the fine tick's slide takes it along the coast. It goes on rails only with its
-/// track clear for a while (<see cref="LandClear"/>) and no ship of it sliding (<see cref="Sliding"/>).</item>
+/// <item><b>The land</b> (docs/world/terrain-plan.md S2, S3). When a unit's rails are laid or anchored again, its track
+/// is traced for the coast (<see cref="WatchLand"/>). Where nobody sees a turn (<see cref="SlidesOnRails"/>: the clock
+/// at <see cref="SimSettings.RailsSnapMinSpeed"/> or more; the clock only, never the map's scale) its rails slide along
+/// the coast as the fine tick's helmsman would (<see cref="SlideStep"/>: the same feeler, at the rails' pose, legs of
+/// it with instant turns), only its guide kept off the land (a formation is its marker there, the user's 2026-10-13).
+/// Slower, it comes off short of the coast (a <see cref="LandAhead"/> event) so the fine tick's slide takes it along,
+/// and goes on rails only with its track clear for a while (<see cref="LandClear"/>) and no ship of it sliding
+/// (<see cref="Sliding"/>).</item>
 /// <item><b>Off.</b> <see cref="Derail"/>, the one way off for a unit, exactly where its rails had it; it wakes
 /// whoever watches ships on the fine tick (the AI).</item>
 /// </list>
@@ -85,7 +89,7 @@ public sealed partial class ShipSystem
     {
         if (placing ? !Placeable(guide) : !Steady(guide) || !InStation(guide))
             return false;
-        if (Sliding() || !LandClear(world, guide))
+        if (!SlidesOnRails(world) && (Sliding() || !LandClear(world, guide)))
             return false;
         return !NearOpposing(guide, placing ? Math.Max(GroupRadius(guide), FormationRadius()) : GroupRadius(guide));
     }
@@ -146,6 +150,11 @@ public sealed partial class ShipSystem
                 return true;
         return false;
     }
+
+    /// <summary>Whether rails slide along coasts (S3) rather than come off short of them: where nobody would see the
+    /// slide's turns, which are instant on rails. The clock only, not the map's scale: the one display exception
+    /// (<see cref="Watched"/>) isn't leaned on further.</summary>
+    bool SlidesOnRails(World world) => world.Shore != null && world.Speed >= settings.RailsSnapMinSpeed;
 
     /// <summary>Whether the track the unit in <see cref="line"/> would take on rails (its guide's orders: the course as a
     /// rhumb line, or the leg to its next waypoint) keeps its standoff and its widest station abeam off the coast for
@@ -362,13 +371,25 @@ public sealed partial class ShipSystem
         var s = Store[guide];
         if (s.Speed <= 0)
             return;
-        double c = LandContact(shore, guide, UnitAbeam(world, guide), out bool whole), margin = LandMargin(s, s.Speed), at;
+        bool slide = SlidesOnRails(world);
+        if (slide && s.LandSide != 0)
+        {
+            SlideStep(world, guide);   // sliding already (laid from the fine tick's slide): on along the coast
+            return;
+        }
+        // sliding, only the guide is kept off the land, from where its feeler would start to slide; else the unit,
+        // its widest station too, comes off a margin short of that
+        double c = LandContact(shore, guide, slide ? 0 : UnitAbeam(world, guide), out bool whole), at;
+        double margin = slide ? Slide.LookaheadM(s.Handling, s.Speed, s.CourseRudder, settings) : LandMargin(s, s.Speed);
         ushort code;
         if (c < double.PositiveInfinity)
         {
             if (c <= margin)
             {
-                Derail(world, s.Entity);
+                if (slide)
+                    SlideStep(world, guide);
+                else
+                    Derail(world, s.Entity);
                 return;
             }
             (code, at) = (LandAhead, c - margin);
@@ -388,10 +409,76 @@ public sealed partial class ShipSystem
         int slot = Store.SlotOf(e.Entity);
         if (slot < 0 || !Store.OnRails(slot) || Store.RailGen(slot) != e.Generation)
             return;
-        if (e.Code == LandAhead)
-            Derail(world, e.Entity);
-        else
+        if (e.Code == LandRecheck)
             WatchLand(world, slot);
+        else if (SlidesOnRails(world))
+            SlideStep(world, slot);
+        else
+            Derail(world, e.Entity);   // slower now (or it always was): the fine tick's slide takes it along
+    }
+
+    /// <summary>A unit on rails near the coast where it slides on rails (S3): its guide's feeler (<see cref="Slide.Feel"/>,
+    /// the fine tick's own) asked at the rails' pose. Sliding, its rails are anchored again along the slide's course
+    /// (an instant turn), as far as that's clear, half the way to where the leg would come within its minimum, and at
+    /// most <see cref="SimSettings.SlideRailsStepM"/>; there it's asked again. Let go, its rails are laid on its orders
+    /// again, and the land watched from there. A route's waypoint near the slide is passed as the fine tick passes it
+    /// (inside the arrival radius, or abeam close by), without moving the ship onto it.</summary>
+    void SlideStep(World world, int slot)
+    {
+        var shore = world.Shore!;
+        var s = Store[slot];
+        var h = s.Handling;
+        Store.PoseNow(slot, out var p, out var f);
+        double radius = h.RadiusFor(s.CourseRudder);
+        while (s.Helm == Helm.Route && s.RouteNext < s.RouteCount)
+        {
+            var wp = s.Waypoint(s.RouteNext);
+            double dist = Earth.Distance(p, wp);
+            if (dist > settings.ArrivalRadiusM && (Vec3d.Dot(f, wp - p) > 0 || dist >= 2 * radius))
+                break;
+            if (!Store.PassWaypoint(slot, out _, anchor: false))
+                break;
+        }
+        bool route = s.Helm == Helm.Route && s.RouteNext < s.RouteCount;
+        double want = route ? Earth.Bearing(p, s.Waypoint(s.RouteNext)) : s.CourseOrderDeg;
+        sbyte side = (sbyte)s.LandSide;
+        double heading = Slide.Feel(shore, h, p, f, s.Speed, s.CourseRudder, want, ref side, settings, out _);
+        long ms;
+        if (side == 0)
+        {
+            // let go, or not sliding yet: on its orders again, and looked at again where it would start to slide
+            if (route)
+            {
+                Store.ReanchorLeg(slot, p, Toward(p, s.Waypoint(s.RouteNext)));
+                ScheduleArrival(world, slot, s.Waypoint(s.RouteNext));
+            }
+            else
+            {
+                Store.ReanchorRhumb(slot, p, s.CourseOrderDeg);
+                SchedulePolar(world, slot);
+            }
+            Store.LetGoOfCoast(slot);
+            Anchored(world, slot);
+            double c = LandContact(shore, slot, 0, out bool whole), look = Slide.LookaheadM(h, s.Speed, s.CourseRudder, settings);
+            ushort code;
+            double at;
+            if (c < double.PositiveInfinity)
+                (code, at) = (LandAhead, Math.Max(c - look, settings.SlideRailsMinStepM));
+            else if (!whole)
+                (code, at) = (LandRecheck, Math.Max(settings.RailsLandHorizonM - look, look));
+            else
+                return;
+            ms = (long)Math.Ceiling(at / s.Speed * 1000);
+            world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, code, Store.RailGen(slot));
+            return;
+        }
+        var dir = Earth.Forward(p, heading);
+        Store.ReanchorSliding(slot, p, dir, side);
+        Anchored(world, slot);
+        double near = shore.FirstContact(p, dir, settings.SlideRailsStepM, h.MinClearanceM);
+        double leg = Math.Min(settings.SlideRailsStepM, Math.Max(0.5 * near, settings.SlideRailsMinStepM));
+        ms = (long)Math.Ceiling(leg / s.Speed * 1000);
+        world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, LandAhead, Store.RailGen(slot));
     }
 
     /// <summary>How far abeam of a unit's guide on rails its widest riding ship is, metres.</summary>

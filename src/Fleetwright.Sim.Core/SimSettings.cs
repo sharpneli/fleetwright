@@ -113,6 +113,10 @@ public sealed record SimSettings
     /// coast turns toward its course.</summary>
     public double SlideReleaseDeg { get; init; } = 60;
 
+    /// <summary>A wanted course within this many degrees of square to the coast slides to starboard of it, whichever way
+    /// is a little nearer: so a small difference in where a ship meets the coast doesn't send it the other way.</summary>
+    public double SlideSquareDeg { get; init; } = 15;
+
     /// <summary>Along the coast, the most a sliding ship turns off its line toward the sea (or back toward the
     /// standoff), degrees: all of it at the coast itself, none at the standoff.</summary>
     public double SlideCorrectionDeg { get; init; } = 30;
@@ -180,6 +184,12 @@ public sealed record SimSettings
     /// <summary>A unit goes on rails only with its track clear of land for this many of those distances: never for a
     /// few minutes' steaming before it would come off again.</summary>
     public double RailsLandOnFactor { get; init; } = 2;
+
+    /// <summary>Sliding on rails (S3, at <see cref="RailsSnapMinSpeed"/> and up): the slide's course is taken again at
+    /// least this often along a coast, metres, and sooner where its leg would come near the minimum (half the way
+    /// there, but never less than the least step).</summary>
+    public double SlideRailsStepM { get; init; } = 2_000;
+    public double SlideRailsMinStepM { get; init; } = 20;
 
     /// <summary>At this asked speed and above, an order to a ship or group on rails (a course, a speed, a route) is
     /// carried out at once on rails: the turn and the change of speed are instantaneous and a group's ships jump to

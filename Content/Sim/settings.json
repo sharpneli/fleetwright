@@ -39,6 +39,7 @@
   "SlideLookaheadS": 30,
   "SlideReleaseFactor": 1.5,
   "SlideReleaseDeg": 60,
+  "SlideSquareDeg": 15,
   "SlideCorrectionDeg": 30,
   "SlideHardOverStandoffs": 0.75,
   "SlideHardOverRadii": 1.5,
@@ -62,6 +63,8 @@
   "RailsLandHorizonM": 500000,
   "RailsLandMarginM": 2000,
   "RailsLandOnFactor": 2,
+  "SlideRailsStepM": 2000,
+  "SlideRailsMinStepM": 20,
   "RailsPlaceUnwatchedMinSpeed": 1,
   "RailsWatchedPx": 30,
 

@@ -24,21 +24,30 @@ public static class Slide
     public static double LookaheadM(Handling h, double speedMs, double courseRudderRad, SimSettings set) =>
         h.RadiusFor(courseRudderRad) + Math.Abs(speedMs) * set.SlideLookaheadS;
 
-    /// <summary>The course the helmsman steers for the one he wants, degrees: the wanted one, or near land the coast's
-    /// line at the standoff. Keeps which way along the coast the ship slides (land to port +1, to starboard -1, 0 not
-    /// sliding) in the store. <paramref name="hardOver"/>: the coast ahead closes in tighter than his ordinary rudder
-    /// turns (a corner nearer than <see cref="SimSettings.SlideHardOverRadii"/> of its radius, or the coast nearer
-    /// than <see cref="SimSettings.SlideHardOverStandoffs"/>), so he may put it hard over.</summary>
+    /// <summary>The course the helmsman steers for the one he wants, degrees: <see cref="Feel"/> at the ship's stepped
+    /// pose, keeping its side in the store. Stopped or astern, only the backstop.</summary>
     public static double Course(ShipStore s, int i, Handling h, double wantDeg, Shore? shore, SimSettings set, out bool hardOver)
     {
         hardOver = false;
         if (shore == null || s.speed[i] < set.SlideMinSpeedMs)
-            return wantDeg;   // stopped or astern: only the backstop
-        var p = s.position[i];
-        double look = LookaheadM(h, s.speed[i], s.courseRudder[i], set), standoff = h.StandoffM;
+            return wantDeg;
+        return Feel(shore, h, s.position[i], s.forward[i], s.speed[i], s.courseRudder[i], wantDeg, ref s.landSide[i], set, out hardOver);
+    }
+
+    /// <summary>The feeler, for a pose (the fine tier's stepped one, or where rails have a ship, S3): the course to
+    /// steer for the wanted one, degrees: the wanted one, or near land the coast's line at the standoff.
+    /// <paramref name="side"/> is which way along the coast it slides (land to port +1, to starboard -1, 0 not sliding),
+    /// chosen when it starts and kept until it's let go. <paramref name="hardOver"/>: the coast ahead closes in tighter
+    /// than the ordinary rudder turns (a corner nearer than <see cref="SimSettings.SlideHardOverRadii"/> of its radius,
+    /// or the coast nearer than <see cref="SimSettings.SlideHardOverStandoffs"/>), so the helmsman may put it hard over.</summary>
+    public static double Feel(Shore shore, Handling h, Vec3d p, Vec3d forward, double speed, double courseRudder, double wantDeg,
+        ref sbyte side, SimSettings set, out bool hardOver)
+    {
+        hardOver = false;
+        double look = LookaheadM(h, speed, courseRudder, set), standoff = h.StandoffM;
         if (shore.BoundM(p) > look * set.SlideReleaseFactor + standoff)
         {
-            s.landSide[i] = 0;   // nothing near: one lookup, nearly every ship, nearly every tick
+            side = 0;   // nothing near: one lookup, nearly every ship, nearly every tick
             return wantDeg;
         }
 
@@ -50,12 +59,12 @@ public static class Slide
         // sliding, it's let go only once the wanted course is clear further on and near its heading: a long turn back
         // to it would sweep through the coast it's beside
         var want = Earth.Forward(p, wantDeg);
-        bool sliding = s.landSide[i] != 0;
-        double reach = sliding ? look * set.SlideReleaseFactor : look, off0 = wantDeg - Earth.Heading(p, s.forward[i]);
+        bool sliding = side != 0;
+        double reach = sliding ? look * set.SlideReleaseFactor : look, off0 = wantDeg - Earth.Heading(p, forward);
         bool turned = Math.Abs(off0 - 360 * Math.Round(off0 / 360)) <= set.SlideReleaseDeg;
         if ((!sliding || turned) && double.IsPositiveInfinity(shore.FirstContact(p, want, reach, clear)))
         {
-            s.landSide[i] = 0;
+            side = 0;
             return wantDeg;
         }
 
@@ -63,10 +72,10 @@ public static class Slide
         // turned for before the ship is in it; else along the coast nearest a point a turning radius ahead; failing
         // that (heading away from it), the coast nearest the ship
         var up = p.Normalized();
-        double radius = h.RadiusFor(s.courseRudder[i]);
-        double corner = shore.FirstContact(p, s.forward[i], look, clear);
+        double radius = h.RadiusFor(courseRudder);
+        double corner = shore.FirstContact(p, forward, look, clear);
         var q = p;
-        var fq = s.forward[i];
+        var fq = forward;
         Earth.Advance(ref q, ref fq, double.IsPositiveInfinity(corner) ? radius : corner);
         double dq = shore.Clearance(q, look * set.SlideReleaseFactor + standoff, out var nq);
         Vec3d at = q, coast = nq;
@@ -84,13 +93,14 @@ public static class Slide
 
         // along the line, land to port (+1: up × n, whose starboard is n) or to starboard (-1); kept once chosen
         var line = Vec3d.Cross(up, n);
-        sbyte side = s.landSide[i];
         if (side == 0)
         {
+            // the way nearer the wanted course; near square to the coast, to starboard of it (of the order, not the
+            // heading, so the two tiers, and replays from either, choose alike)
             double w = Vec3d.Dot(line, want);
-            if (Math.Abs(w) < 1e-3)
-                w = Vec3d.Dot(line, Vec3d.Cross(s.forward[i], up));   // square to the coast: to starboard
-            side = s.landSide[i] = w >= 0 ? (sbyte)1 : (sbyte)-1;
+            if (Math.Abs(w) < Math.Sin(set.SlideSquareDeg * Deg))
+                w = Vec3d.Dot(line, Vec3d.Cross(want, up));
+            side = w >= 0 ? (sbyte)1 : (sbyte)-1;
         }
         double off = atLand ? -dq : dq;
         hardOver = corner < set.SlideHardOverRadii * radius || off < set.SlideHardOverStandoffs * standoff;

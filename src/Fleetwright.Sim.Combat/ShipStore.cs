@@ -216,6 +216,17 @@ public sealed class ShipStore
         courseDeg[slot] = Earth.Heading(railPos[slot], railFwd[slot]);
     }
 
+    /// <summary>Re-anchors a ship on rails along a coast (docs/world/terrain-plan.md S3): on the great circle from a point
+    /// along the slide's direction, sliding on a side (land to port +1, to starboard -1), or let go of it (0).</summary>
+    public void ReanchorSliding(int slot, Vec3d at, Vec3d forward, sbyte side)
+    {
+        Reanchor(slot, at, forward);
+        landSide[slot] = side;
+    }
+
+    /// <summary>A ship no longer sliding along a coast: the side forgotten, its rails as they are.</summary>
+    public void LetGoOfCoast(int slot) => landSide[slot] = 0;
+
     /// <summary>Re-anchors a ship on rails at a point on a rhumb line at a course (past a route's last waypoint).</summary>
     public void ReanchorRhumb(int slot, Vec3d at, double courseDeg)
     {
@@ -283,8 +294,9 @@ public sealed class ShipStore
     public double RailOffsetM(int slot) => rails[slot] && railGuide[slot] >= 0 ? Math.Sqrt(railX[slot] * railX[slot] + railY[slot] * railY[slot]) : 0;
 
     /// <summary>A ship on rails has reached its route's next waypoint: it turns there at once for the one after (true,
-    /// with that one), or, past the last, holds the course it arrived on (false).</summary>
-    public bool PassWaypoint(int slot, out Vec3d next)
+    /// with that one), or, past the last, holds the course it arrived on (false). Not <paramref name="anchor"/>ed (a ship
+    /// sliding along a coast on rails, passing near it), its rails are left as they are, for the caller to lay.</summary>
+    public bool PassWaypoint(int slot, out Vec3d next, bool anchor = true)
     {
         int cap = routeCap;
         var wp = route[slot * cap + routeNext[slot]];
@@ -306,6 +318,20 @@ public sealed class ShipStore
                 break;
         }
         routeNext[slot] = k;
+        if (!anchor)
+        {
+            bool more = k < n;
+            next = more ? route[slot * cap + k] : default;
+            if (!more)
+            {
+                PoseNow(slot, out var here, out _);
+                helm[slot] = Helm.Course;
+                courseDeg[slot] = Earth.Heading(here, arrived);
+                routeCount[slot] = routeNext[slot] = 0;
+                routeLoop[slot] = false;
+            }
+            return more;
+        }
         if (routeNext[slot] < routeCount[slot])
         {
             next = route[slot * cap + routeNext[slot]];
