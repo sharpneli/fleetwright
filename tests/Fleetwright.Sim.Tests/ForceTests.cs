@@ -274,7 +274,7 @@ public class ForceTests(ITestOutputHelper output)
     {
         var (w, ai) = Make();
         int c = Class(w, "dreadnought");
-        w.Apply(Command.SetSpeed(Settings.RailsSnapMinSpeed));
+        w.Apply(Command.SetSpeed(30_000));   // its guide squadron's column turning in succession within a frame
         int f = Force(w, [c, c, c], 3, Formation.LineAbreast, 3000);
         for (int m = 0; m < 60 && !AllOnRails(w, 9); m++)
             Run(w, 60);

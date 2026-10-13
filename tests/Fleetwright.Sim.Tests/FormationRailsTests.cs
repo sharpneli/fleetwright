@@ -17,6 +17,10 @@ public class FormationRailsTests(ITestOutputHelper output)
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
     const double Lat = 56.5, Lon = 4.0, Kn = 15;
 
+    /// <summary>A clock a column of four snaps at: its turn in succession (1,800 m of wake at 15 kn) within a frame from
+    /// ~14,000x (ShipSystem.Tiers.cs, Placing); a line abreast snaps from the snap speed.</summary>
+    const double ColumnSnap = 30_000;
+
     static (World W, int Class) Make(SimSettings? s = null)
     {
         var w = new World(Start, 11, s ?? Settings);
@@ -88,7 +92,7 @@ public class FormationRailsTests(ITestOutputHelper output)
     public void An_order_to_a_group_on_rails_at_speed_snaps_its_ships_onto_their_stations_and_keeps_them_on_rails()
     {
         var (w, c) = Make();
-        w.Apply(Command.SetSpeed(Settings.RailsSnapMinSpeed));
+        w.Apply(Command.SetSpeed(ColumnSnap));
         int g = Group(w, c, Lat, Lon, 0, 4, Formation.Column, 600);
         UntilOnRails(w, g, 4);
 
@@ -120,6 +124,45 @@ public class FormationRailsTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_column_snaps_only_where_its_turn_in_succession_takes_about_a_frame()
+    {
+        // a column of four turned 90 degrees on rails: at the snap speed its turn in succession (233 s of wake, 1.4
+        // frames) isn't skipped: it comes off and turns where its guide turned, nobody jumping; at 30,000x it snaps
+        foreach (double clock in new[] { Settings.RailsSnapMinSpeed, ColumnSnap })
+        {
+            var (w, c) = Make();
+            w.Apply(Command.SetSpeed(clock));
+            int g = Group(w, c, Lat, Lon, 0, 4, Formation.Column, 600);
+            for (int m = 0; m < 10 && !AllOnRails(w, g, 4); m++)
+                Run(w, 60);
+            Assert.True(AllOnRails(w, g, 4), "in station: on rails");
+            w.Apply(O.Course(Of(w, g), 90));
+            if (clock == ColumnSnap)
+            {
+                Assert.True(AllOnRails(w, g, 4), "snapped");
+                Assert.True(OffStation(w, g, 4, Formation.Column, 600) < 0.01);
+                continue;
+            }
+            Assert.False(Ship(w, g).OnRails, "off rails to turn");
+            var last = Ship(w, g + 3).Position;
+            double fastest = 0;
+            bool succession = false;
+            for (int t = 0; t < 600; t += 5)
+            {
+                Run(w, 5);
+                var p = Ship(w, g + 3).Position;
+                fastest = Math.Max(fastest, Earth.Distance(p, last) / 5);
+                last = p;
+                succession |= Math.Abs(Ship(w, g).HeadingDeg - 90) < 1 && Ship(w, g + 3).HeadingDeg is < 5 or > 355;
+            }
+            output.WriteLine($"at {clock}x the last ship went at most {fastest / Handling.MsPerKnot:F1} kn");
+            Assert.True(succession, "the guide on its new course while the last is still on the old");
+            Assert.True(fastest < (Kn + 0.5) * Handling.MsPerKnot, "nothing jumped");
+            Assert.Equal(90, Ship(w, g + 3).HeadingDeg, 1);
+        }
+    }
+
+    [Fact]
     public void At_speed_a_group_goes_on_rails_placed_on_its_stations_without_forming_up_first()
     {
         // spawned faster than its admiral lets it steam (the slowest's speed less a margin): at 1x the guide slows, the
@@ -139,8 +182,8 @@ public class FormationRailsTests(ITestOutputHelper output)
             }
             return double.PositiveInfinity;
         }
-        double slow = Entry(1, out _, out _), fast = Entry(Settings.RailsSnapMinSpeed, out var w, out int g);
-        output.WriteLine($"a column rung over its admiral's cap: on rails after {slow:F0} s at 1x, {fast:F0} s at the snap speed");
+        double slow = Entry(1, out _, out _), fast = Entry(ColumnSnap, out var w, out int g);
+        output.WriteLine($"a column rung over its admiral's cap: on rails after {slow:F0} s at 1x, {fast:F0} s at {ColumnSnap}x");
         Assert.True(fast <= Settings.CoarseStepMs / 1000.0 + 5, $"{fast} s");   // coarse at this speed: the first coarse step (seen at the next look)
         Assert.True(slow > 60, "at 1x it forms up by its own steaming");
         Assert.True(OffStation(w, g, 4, Formation.Column, 600) < 0.01);
@@ -168,7 +211,7 @@ public class FormationRailsTests(ITestOutputHelper output)
         // guide's leg heading is its course, so the ships placed on their stations take it, and their captains (whose
         // station the rails hold exactly) don't re-order them off rails
         var (w, c) = Make();
-        w.Apply(Command.SetSpeed(Settings.RailsSnapMinSpeed));
+        w.Apply(Command.SetSpeed(ColumnSnap));
         int g = Group(w, c, Lat, Lon, 0, 4, Formation.Column, 600);
         UntilOnRails(w, g, 4);
         var p = Ship(w, g).Position;
@@ -220,7 +263,7 @@ public class FormationRailsTests(ITestOutputHelper output)
     public void A_group_searching_stays_on_rails_from_start_to_end(SearchPattern pattern)
     {
         var (w, c) = Make();
-        w.Apply(Command.SetSpeed(10_000));
+        w.Apply(Command.SetSpeed(ColumnSnap));
         int g = Group(w, c, Lat, Lon, 30, 4, Formation.Column, 500);
         UntilOnRails(w, g, 4);
 

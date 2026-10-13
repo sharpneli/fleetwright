@@ -1583,6 +1583,15 @@ switch between coarse and fine must be smooth when zoomed in; reuse the rails' c
   cancel the turn), and they ride again once steady in station, as the rails wait. Four abreast 800 m apart turned
   90° at 1,000x: all turn together, nobody over 21 kn, riding again after 18 minutes (a line abreast turned together
   is strung out ahead and astern, as on the fine tick). From the snap speed up, rails still place and snap.
+- **A column snaps by its length** (the user, 2026-10-13: line ahead turned nicely at 3,000x and snapped at 10,000x;
+  at 100,000x it doesn't matter). **Done, 2026-10-13:** the snap speed is a ship's turn in a frame; a line ahead's
+  turn in succession lasts until its last ship reaches where the guide turned. Now a unit places on rails, snaps its
+  orders and slides on rails only if that also fits in a frame (`RailsFrameS`, 1/60 s, a constant, never the
+  display's): its farthest station in the guide's wake over its speed, at most the asked speed times a frame
+  (`ShipSystem.Placing`). A column of four 600 m apart at 15 kn snaps from ~14,000x, twelve from ~51,000x; a line
+  abreast from 10,000x as before. Below that it turns coarse in succession on its guide's track. The tests that
+  snapped columns at 10,000x now do it at 30,000x. Not measured: columns spend more time coarse between 10,000x and
+  their snap speed.
 
 ### 3. Seeing and knowing
 

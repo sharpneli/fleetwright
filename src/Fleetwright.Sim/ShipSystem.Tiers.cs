@@ -23,7 +23,8 @@ namespace Fleetwright.Sim;
 /// (<see cref="UnitLine"/>, <see cref="RailsCheck"/>).</item>
 /// <item><b>When.</b> Every <see cref="SimSettings.RailsCheckMs"/> of the fine tick (or each coarse step), a unit off
 /// rails goes on when it's <see cref="Ready"/>. Where nobody would see a turn (<see cref="Placing"/>: the clock at
-/// <see cref="SimSettings.RailsSnapMinSpeed"/> or more), it's placed as its guide's orders say
+/// <see cref="SimSettings.RailsSnapMinSpeed"/> or more, and fast enough that its line ahead's turn in succession takes
+/// about a frame), it's placed as its guide's orders say
 /// (<see cref="Placeable"/>); else it waits until it's steaming steady (<see cref="Steady"/>), every ship with it
 /// (<see cref="InStation"/>), so a formation is never seen to snap into place. Either way, not near an opposing ship (<see cref="NearOpposing"/>,
 /// ShipSystem.Contacts.cs) nor in an encounter (<see cref="InEncounter"/>, held until it closes), no ship of it with a battery engaged
@@ -38,8 +39,8 @@ namespace Fleetwright.Sim;
 /// (<see cref="CanSnap"/>, <see cref="Snap"/>, which lays it again the same way); any other order takes the unit off
 /// (<see cref="TakesOffRails"/>), as do changes to groups (<see cref="DerailFor"/>) and contacts.</item>
 /// <item><b>The land</b> (docs/world/terrain-plan.md S2, S3). When a unit's rails are laid or anchored again, its track
-/// is traced for the coast (<see cref="WatchLand"/>). Where nobody sees a turn (<see cref="SlidesOnRails"/>: the clock
-/// at <see cref="SimSettings.RailsSnapMinSpeed"/> or more; the clock only, never the map's scale) its rails slide along
+/// is traced for the coast (<see cref="WatchLand"/>). Where nobody sees a turn (<see cref="SlidesOnRails"/>: where it's
+/// <see cref="Placing"/>; the clock only, never the map's scale) its rails slide along
 /// the coast as the fine tick's helmsman would (<see cref="SlideStep"/>: the same feeler, at the rails' pose, legs of
 /// it with instant turns), only its guide kept off the land (a formation is its marker there, the user's 2026-10-13).
 /// Slower, it comes off short of the coast (a <see cref="LandAhead"/> event) so the fine tick's slide takes it along,
@@ -56,8 +57,37 @@ public sealed partial class ShipSystem
     // ------------------------------------------------------------------ the rules
 
     /// <summary>Whether a unit goes on rails by placing, and orders to it on rails snap: where nobody would see the turn
-    /// or the forming up that's skipped, the clock so fast that a manoeuvre takes about a frame or less.</summary>
-    bool Placing(World world) => world.Speed >= settings.RailsSnapMinSpeed;
+    /// or the forming up that's skipped, the clock so fast that a manoeuvre takes about a frame or less. A ship's turn
+    /// does from <see cref="SimSettings.RailsSnapMinSpeed"/>; a line ahead's turn in succession lasts until its last
+    /// ship in the guide's wake reaches where the guide turned, so it must fit in <see cref="SimSettings.RailsFrameS"/>
+    /// too (the user, 2026-10-13: a column's turns looked nice at 3,000x and snapped at 10,000x). Slower, it turns in
+    /// succession coarse, riding its guide's track.</summary>
+    bool Placing(World world, int guide)
+    {
+        if (world.Speed < settings.RailsSnapMinSpeed)
+            return false;
+        double wake = WakeM(world, guide);
+        if (wake <= 0)
+            return true;
+        var s = Store[guide];
+        double v = Math.Max(Math.Abs(s.Speed), s.Handling.SteadySpeedMs(Math.Max(s.PowerOrder, 0)));
+        return v > 0 && wake / v <= world.Speed * settings.RailsFrameS;
+    }
+
+    /// <summary>How far astern of a unit's guide its line ahead reaches, metres: its farthest station in the guide's wake
+    /// (as the coarse tier rides them through a turn, <see cref="RidesThroughTurn"/>); 0 for a ship alone.</summary>
+    double WakeM(World world, int guide)
+    {
+        int entity = Store[guide].Entity;
+        if (world.Groups.UnitOf(entity) is not { } u || world.Groups.GuideShip(u) != entity)
+            return 0;
+        world.Groups.LineOffsets(u, riders);
+        double wake = 0;
+        for (int i = 1; i < riders.Count; i++)
+            if (Math.Abs(riders[i].AbeamM) <= settings.RailsGroupStationM)
+                wake = Math.Max(wake, riders[i].AsternM);
+        return wake;
+    }
 
     /// <summary>Whether a ship riding its guide stays on it through the guide's turn below the snap speed: in its line
     /// ahead (within <see cref="SimSettings.RailsGroupStationM"/> of its track), where riding turns it in succession as
@@ -77,8 +107,7 @@ public sealed partial class ShipSystem
         if (code is not (ShipCommand.Course or ShipCommand.Speed or ShipCommand.ClearRoute or ShipCommand.AddWaypoint or ShipCommand.LoopRoute) ||
             code == ShipCommand.Speed && x < 0 || !Store.OnRails(slot) || Store.RidesAnother(slot))
             return false;
-        UnitLine(world, slot);
-        return Placing(world);
+        return Placing(world, slot);
     }
 
     /// <summary>Whether the unit in <see cref="line"/> (its guide off rails) may go on rails now: placing, as its
@@ -88,7 +117,7 @@ public sealed partial class ShipSystem
     {
         if (placing ? !Placeable(guide) : !Steady(guide) || !InStation(guide))
             return false;
-        if (!SlidesOnRails(world) && (Sliding() || !LandClear(world, guide)))
+        if (!SlidesOnRails(world, guide) && (Sliding() || !LandClear(world, guide)))
             return false;
         if (InEncounter() || Engaged())
             return false;
@@ -167,9 +196,9 @@ public sealed partial class ShipSystem
         return false;
     }
 
-    /// <summary>Whether rails slide along coasts (S3) rather than come off short of them: where nobody would see the
-    /// slide's turns, which are instant on rails: the clock at the snap speed (below it, coarse or fine slides).</summary>
-    bool SlidesOnRails(World world) => world.Shore != null && world.Speed >= settings.RailsSnapMinSpeed;
+    /// <summary>Whether a unit's rails slide along coasts (S3) rather than come off short of them: where nobody would see
+    /// the slide's turns, which are instant on rails: where it's <see cref="Placing"/> (else coarse or fine slides).</summary>
+    bool SlidesOnRails(World world, int guide) => world.Shore != null && Placing(world, guide);
 
     /// <summary>Whether the track the unit in <see cref="line"/> would take on rails (its guide's orders: the course as a
     /// rhumb line, or the leg to its next waypoint) keeps its standoff and its widest station abeam off the coast for
@@ -236,7 +265,7 @@ public sealed partial class ShipSystem
             if (guide < 0 || Store.OnRails(guide))
                 continue;
             groups.LineOffsets(g, line);
-            bool placing = Placing(world);
+            bool placing = Placing(world, guide);
             if (Ready(world, guide, placing))
                 Lay(world, guide, placing);
         }
@@ -245,7 +274,7 @@ public sealed partial class ShipSystem
             if (!Store.IsAlive(i) || Store.OnRails(i) || groups.InLine(Store[i].Entity))
                 continue;
             Alone(i);
-            bool placing = Placing(world);
+            bool placing = Placing(world, i);
             if (Ready(world, i, placing))
                 Lay(world, i, placing);
         }
@@ -389,7 +418,7 @@ public sealed partial class ShipSystem
         var s = Store[guide];
         if (s.Speed <= 0)
             return;
-        bool slide = SlidesOnRails(world);
+        bool slide = SlidesOnRails(world, guide);
         if (slide && s.LandSide != 0)
         {
             SlideStep(world, guide);   // sliding already (laid from the fine tick's slide): on along the coast
@@ -429,7 +458,7 @@ public sealed partial class ShipSystem
             return;
         if (e.Code == LandRecheck)
             WatchLand(world, slot);
-        else if (SlidesOnRails(world))
+        else if (SlidesOnRails(world, slot))
             SlideStep(world, slot);
         else
             Derail(world, e.Entity);   // slower now (or it always was): the fine tick's slide takes it along

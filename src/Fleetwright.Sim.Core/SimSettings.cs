@@ -200,6 +200,13 @@ public sealed record SimSettings
     /// deterministic, and nothing here reads the map (the zoom's rule went in docs/battle/plan.md step 2.8e).</summary>
     public double RailsSnapMinSpeed { get; init; } = 10_000;
 
+    /// <summary>A rendered frame, real seconds, for the user's rule above: a unit is placed on rails and its orders
+    /// snap only where its own manoeuvre takes about this long or less at the asked speed. A ship's turn is
+    /// <see cref="RailsSnapMinSpeed"/>'s; a line ahead's turn in succession (its last ship in the guide's wake reaching
+    /// where the guide turned) is longer, so a long column snaps only at higher speeds (ShipSystem.Tiers.cs). A constant,
+    /// not the display's: the sim never reads the display.</summary>
+    public double RailsFrameS { get; init; } = 1.0 / 60;
+
     /// <summary>At this asked speed and above, every ship that isn't on rails is in the coarse clock tier: kinematic
     /// motion (constant acceleration, turns as arcs of the turning circle), decided for every
     /// <see cref="CoarseStepMs"/>; below it they're on the fine tick (docs/world/architecture.md "The speed picks the
