@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is under way: 2.7a (the scenario, loadable from the world tab) and 2.7b (the instruments) are done, and 2.7c (up the ladder) is well under way (2026-10-13).
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). The next is step 3, seeing and knowing (3.1 contacts and encounters first).
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1398,6 +1398,15 @@ laid at once: 37 µs each to check against every opposing ship, 19 µs to lay); 
 so a load runs ~50 gen0, 18 gen1 and 9 gen2 collections and the UI stutters while it loads; the ship art is 329 MB of
 textures for 54 classes; the group labels pile up at the operations band; the ship step is ~160 ns a ship (the
 heading's square roots and atan2, the arc, two coast lookups), no big-O left in it.
+
+**Carried on from 2.7 (2026-10-13), to take up when a step touches them or a later scale run asks:**
+- the O(n²) left (listed above under 2.7c), to bring under n log n;
+- the rails' snap seen as a jump when ships are drawn one by one: hide it in the renderer (ease ships to their new
+  stations over a moment), the rails-by-zoom exception's condition for going away;
+- the load: shipgen's ~21 MB of garbage per class build (collections, a stuttering UI while loading), the first rails
+  check of a 2,000-ship world (~100 ms), the ship art's 329 MB of textures;
+- the map: group labels piling up at the operations band (the UI rework, 5.2, may settle it);
+- the Jutland's real positions (research request of 2026-10-13) and its historical classes (a ship design session).
 
 **2.7d What the numbers ask for,** each fix measured on the rung that showed it, before and after. The candidates,
 not a list to do:
