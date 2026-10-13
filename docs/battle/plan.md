@@ -1221,7 +1221,7 @@ at every zoom, with some hundreds more on rails. Measure load time, tick cost, f
 in "How many ships". Then do what the numbers ask for: the art disk cache, coarse mips first, the job system (the
 architecture's own step: fixed workers, struct jobs, with the test that results don't depend on the thread count).
 
-**2.7's plan (proposed 2026-10-13, to agree).** Two aims: every system built so far works with all the others at a
+**2.7's plan (agreed 2026-10-13).** Two aims: every system built so far works with all the others at a
 Jutland's size, and it's fast enough. It's iterated: measure, fix the largest miss, measure again, until the targets
 hold or the user calls it a good spot. Nothing is optimised that a number didn't ask for.
 
@@ -1255,8 +1255,9 @@ What the code has today, checked:
   slide).
 - **The background:** some hundreds more on rails elsewhere (patrols, the tramp_1914 merchants on routes), and a
   2,000-ship variant for the rails target (2,000 at 30,000x).
-- **Loaded by** `-scenario=jutland` in the app and by a headless runner (a `shipgen` command beside `trials`, which
-  already references the sim). It's a dev scenario, not the mission format; step 6 may replace its file.
+- **Loaded by** the world tab (a scenario picker), `-scenario=jutland`, and a headless runner (a `shipgen` command
+  beside `trials`, which already references the sim). The format is the missions' first scaffolding (step 6 grows it:
+  objectives, triggers), so it's kept plain: forces, ships, designs by name, positions, orders.
 
 **2.7b The instruments,** before any fixing, so every later number comes the same way:
 - Tracy zones on the sim thread per system and model (the helm and step, rails, contacts, slide, AI, snapshot fill),
@@ -1296,20 +1297,19 @@ not a list to do:
 - the garbage: whatever the GC counts show, on either thread.
 
 **Done means:** the targets in "How many ships" hold for the Jutland as it stands, **with headroom** for what 3 and 4
-add (sighting, fire control, shells, flooding), since the sim has no fighting yet. Proposed: at 10x, everything that
-runs today takes at most a quarter of the sim thread. The numbers go in a "Measured" table here; the committed tests
+add (sighting, fire control, shells, flooding), since the sim has no fighting yet: at 10x, everything that runs today
+takes at most a quarter of the sim thread. The numbers go in a "Measured" table here; the committed tests
 stay small (a mini-Jutland headless: no allocation in play, the same hash on replay, no ship on land), as 2.5's do.
 
-Questions to agree at the start:
-1. The scenario as a JSON file under `Content/Scenarios/` (a dev precursor of missions) rather than C# in the dev
-   flags. Proposed: JSON.
-2. The ~55 classes as variants of the shipped designs now, the historical classes designed properly in a later
-   designer session. Proposed: variants.
-3. Roughly historical positions and timing (it exercises contacts and the Danish coast), or an abstract meeting in
-   open sea. Proposed: historical.
-4. The headroom: a quarter of the sim thread at 10x for today's systems, or another share.
-5. The reference machine for "a modern machine" and "an 8-core desktop": this one has 32 logical cores, which flatters
-   anything threaded. Measure with the job system capped at 8 workers too.
+The user's answers, 2026-10-13:
+1. **The scenario is JSON** under `Content/Scenarios/`: scaffolding the missions (step 6) will build on. **The world
+   tab gets a way to load one** (not only the dev flag).
+2. **Knob variants** for the ~55 classes now. The shipped variants are whatever testing needed so far; a ship design
+   session makes the historical classes later.
+3. **Historical** positions and timing.
+4. **A quarter of the sim thread at 10x** for today's systems: the starting share, iterated as the systems grow.
+5. **8 workers** is the reference for the largest battles (measure with the job system capped at 8). The hope after
+   the optimisation passes is that an old quad-core runs it smoothly too.
 
 ### 3. Seeing and knowing
 
