@@ -323,54 +323,78 @@ public sealed partial class ShipSystem : IWorldSystem
         v.EnsureCapacity(s.Count);
         int n = 0, w = 0, mounts = 0;
         for (int i = 0; i < s.Slots; i++)
+            if (s.IsAlive(i) && shownSides[s[i].Side])
+                Put(v, i, n++, ref w, ref mounts, orders: true);
+        v.Count = n;
+        v.WaypointCount = w;
+        v.MountCount = mounts;
+    }
+
+    /// <summary>The ships of the sides not shown that the player's navy has in sight (its contacts in sight), for the map
+    /// to draw as they are: pose, class and mounts, no orders or route; the side is the contact's (255 until its type is
+    /// made out). Allocates only to grow.</summary>
+    public void FillSighted(ShipsView v, ContactsView contacts, bool[] shownSides)
+    {
+        v.EnsureCapacity(contacts.Count);
+        int n = 0, w = 0, mounts = 0;
+        for (int j = 0; j < contacts.Count; j++)
         {
-            if (!s.IsAlive(i) || !shownSides[s[i].Side])
+            int i = contacts.InSight[j] ? Store.SlotOf(contacts.Entity[j]) : -1;
+            if (i < 0 || shownSides[Store[i].Side])
                 continue;
-            var ship = s[i];
-            v.Entity[n] = ship.Entity;
-            v.Encounter[n] = encounters.Of(i, ship.Entity);
-            v.Class[n] = ship.ClassIndex;
-            v.Side[n] = ship.Side;
-            v.Position[n] = ship.Position;
-            v.Forward[n] = ship.Forward;
-            v.Speed[n] = ship.Speed;
-            v.YawRate[n] = ship.YawRate;
-            v.Rudder[n] = ship.Rudder;
-            v.PoseMs[n] = ship.PoseMs;
-            v.Helm[n] = ship.Helm;
-            v.Tier[n] = ship.Tier;
-            v.TurnEndMs[n] = Store.SegmentEndMs(i);   // a coarse ship's own; long.MaxValue for the rest
-            v.CourseOrderDeg[n] = ship.CourseOrderDeg;
-            v.SpeedOrderKn[n] = ship.SpeedOrderKn;
-            v.Captain[n] = 0;   // the AI fills its own, after
-            v.CaptainTarget[n] = 0;
-            v.Asked[n] = false;
-            v.LandSide[n] = (sbyte)ship.LandSide;
-            v.Backstops[n] = ship.Backstops;
-            v.MinClearanceM[n] = ship.Handling.MinClearanceM;
-            v.StandoffM[n] = ship.Handling.StandoffM;
-            v.LookaheadM[n] = Slide.LookaheadM(ship.Handling, ship.Speed, ship.CourseRudder, settings);
-            bool loop = ship.RouteLoop && ship.RouteCount > 1;
-            int left = ship.Helm != Helm.Route ? 0 : loop ? ship.RouteCount : ship.RouteCount - ship.RouteNext;
-            v.EnsureWaypoints(w + left);
-            v.RouteStart[n] = w;
-            v.RouteCount[n] = left;
-            v.RouteLoop[n] = loop && ship.Helm == Helm.Route;
-            for (int k = 0; k < left; k++)
-                v.Waypoints[w++] = ship.Waypoint((ship.RouteNext + k) % ship.RouteCount);
-            v.MountStart[n] = -1;
-            if (s.Combat.Moved(i))
-            {
-                int count = ship.Handling.Class.Mounts.Length;
-                v.EnsureMounts(mounts + count);
-                v.MountStart[n] = mounts;
-                for (int m = 0; m < count; m++)
-                    v.MountBearingDeg[mounts++] = ship.MountBearingDeg(m);
-            }
-            n++;
+            Put(v, i, n, ref w, ref mounts, orders: false);
+            v.Side[n++] = contacts.Side[j];
         }
         v.Count = n;
         v.WaypointCount = w;
         v.MountCount = mounts;
+    }
+
+    /// <summary>Ship slot i into row n of a snapshot's part: with its orders and route, or (<paramref name="orders"/>
+    /// false) only what the eye sees.</summary>
+    void Put(ShipsView v, int i, int n, ref int w, ref int mounts, bool orders)
+    {
+        var s = Store;
+        var ship = s[i];
+        v.Entity[n] = ship.Entity;
+        v.Encounter[n] = encounters.Of(i, ship.Entity);
+        v.Class[n] = ship.ClassIndex;
+        v.Side[n] = ship.Side;
+        v.Position[n] = ship.Position;
+        v.Forward[n] = ship.Forward;
+        v.Speed[n] = ship.Speed;
+        v.YawRate[n] = ship.YawRate;
+        v.Rudder[n] = ship.Rudder;
+        v.PoseMs[n] = ship.PoseMs;
+        v.Helm[n] = orders ? ship.Helm : Helm.Course;
+        v.Tier[n] = ship.Tier;
+        v.TurnEndMs[n] = Store.SegmentEndMs(i);   // a coarse ship's own; long.MaxValue for the rest
+        v.CourseOrderDeg[n] = orders ? ship.CourseOrderDeg : 0;
+        v.SpeedOrderKn[n] = orders ? ship.SpeedOrderKn : 0;
+        v.Captain[n] = 0;   // the AI fills its own, after
+        v.CaptainTarget[n] = 0;
+        v.Asked[n] = false;
+        v.LandSide[n] = orders ? (sbyte)ship.LandSide : (sbyte)0;
+        v.Backstops[n] = orders ? ship.Backstops : 0;
+        v.MinClearanceM[n] = ship.Handling.MinClearanceM;
+        v.StandoffM[n] = ship.Handling.StandoffM;
+        v.LookaheadM[n] = orders ? Slide.LookaheadM(ship.Handling, ship.Speed, ship.CourseRudder, settings) : 0;
+        bool loop = ship.RouteLoop && ship.RouteCount > 1;
+        int left = !orders || ship.Helm != Helm.Route ? 0 : loop ? ship.RouteCount : ship.RouteCount - ship.RouteNext;
+        v.EnsureWaypoints(w + left);
+        v.RouteStart[n] = w;
+        v.RouteCount[n] = left;
+        v.RouteLoop[n] = left > 0 && loop;
+        for (int k = 0; k < left; k++)
+            v.Waypoints[w++] = ship.Waypoint((ship.RouteNext + k) % ship.RouteCount);
+        v.MountStart[n] = -1;
+        if (s.Combat.Moved(i))
+        {
+            int count = ship.Handling.Class.Mounts.Length;
+            v.EnsureMounts(mounts + count);
+            v.MountStart[n] = mounts;
+            for (int m = 0; m < count; m++)
+                v.MountBearingDeg[mounts++] = ship.MountBearingDeg(m);
+        }
     }
 }

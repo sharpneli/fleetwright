@@ -59,6 +59,11 @@ public sealed class Snapshot
     /// <summary>The player's navy's contacts (empty with no player side).</summary>
     public ContactsView Contacts { get; } = new();
 
+    /// <summary>The enemy ships the player's navy has in sight, as they are (their contacts' ships, for the map to draw
+    /// whole): pose, class and mounts, no orders or route, the side as the contact has it (255 until its type is made
+    /// out). Empty with the truth, which has them in <see cref="Ships"/>.</summary>
+    public ShipsView Sighted { get; } = new();
+
     /// <summary>The weather (one for the world for now).</summary>
     public WeatherHere Weather { get; set; }
 

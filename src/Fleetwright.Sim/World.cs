@@ -313,6 +313,7 @@ public sealed class World
             s.ShownSides[side] = truth || PlayerSide < 0 || !Relations.Hostile((byte)PlayerSide, (byte)side);
         Ships.Fill(s.Ships, s.ShownSides);
         Sightings.Fill(s.Contacts, PlayerSide, Time.Ms, Ships.Registry);
+        Ships.FillSighted(s.Sighted, s.Contacts, s.ShownSides);
         s.Weather = weather.Here;
         s.InterestOwn = Interest[InterestKind.Own];
         s.InterestOthers = Interest[InterestKind.Others];

@@ -68,12 +68,12 @@ public sealed class ShipDrawList
         public double SunTan;
         public bool Shadows;
         public int Class, Entity, Side;
-        /// <summary>Where its mounts' bearings start in the snapshot's ships (-1: at rest).</summary>
+        /// <summary>Its view's mounts' bearings, and where its own start in them (-1: at rest).</summary>
+        public double[] Bearings;
         public int MountStart;
     }
 
     Placed[] placed = new Placed[64];
-    double[] mountBearings = [];
     int placedCount;
     readonly Dictionary<int, List<int>> byClass = [];
     readonly List<int> classes = [];
@@ -81,7 +81,7 @@ public sealed class ShipDrawList
     public ReadOnlySpan<ShipQuad> Quads => quads.AsSpan(0, quadCount);
     public ReadOnlySpan<ShipDraw> Draws => draws.AsSpan(0, drawCount);
 
-    /// <summary>How each ship was drawn this frame, by its index in the snapshot: 0 not at all (off screen or the far
+    /// <summary>How each of the ships was drawn this frame (not the sighted), by its index in the snapshot: 0 not at all (off screen or the far
     /// side), 1 icon, 2 sprite, 3 both (cross-fading).</summary>
     public byte[] DrawnAs { get; private set; } = new byte[64];
 
@@ -92,66 +92,23 @@ public sealed class ShipDrawList
     /// shorter than the ships.</param>
     /// <param name="sunMotion"><see cref="SunLapse.Motion"/>: below 1 the light fades to the day's mean and the
     /// shadows out.</param>
+    /// <param name="sighted">The enemy ships in sight (<see cref="Snapshot.Sighted"/>), drawn the same after the ships.</param>
     public void Build(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, double> lengthOf,
-        nint icon, int selectedEntity, ReadOnlySpan<bool> hidden = default, double sunMotion = 1)
+        nint icon, int selectedEntity, ReadOnlySpan<bool> hidden = default, double sunMotion = 1, ShipsView? sighted = null)
     {
         this.sunMotion = sunMotion;
-        mountBearings = ships.MountBearingDeg;
         quadCount = drawCount = placedCount = 0;
         foreach (var l in byClass.Values)
             l.Clear();
         classes.Clear();
         if (DrawnAs.Length < ships.Count)
             DrawnAs = new byte[Math.Max(ships.Count, DrawnAs.Length * 2)];
-        if (placed.Length < ships.Count)
-            placed = new Placed[Math.Max(ships.Count, placed.Length * 2)];
-
-        // place every ship: where it is, how big on screen, sprite or icon, the sun in its frame
-        for (int k = 0; k < ships.Count; k++)
-        {
-            DrawnAs[k] = 0;
-            if (k < hidden.Length && hidden[k])
-                continue;
-            var (p, f) = ships.PoseAt(k, timeMs);
-            if (!view.Project(p, out double x, out double y))
-                continue;
-            int cls = ships.Class[k];
-            var art = artOf(cls);
-            double length = lengthOf(cls);
-            var rel = p - view.Eye;
-            double pxPerM = 1 / view.MetresPerPixel * view.Altitude / Math.Max(Vec3d.Dot(rel, view.Forward), 1e-3);
-            double lengthPx = length * pxPerM, margin = Math.Max(lengthPx, IconLengthPx);
-            if (x < -margin || y < -margin || x > view.Width + margin || y > view.Height + margin)
-                continue;
-            var up = p.Normalized();
-            var s = Vec3d.Cross(f, up);
-            double sx = Vec3d.Dot(sun, f), sy = Vec3d.Dot(sun, s), sz = Vec3d.Dot(sun, up);
-            double horiz = Math.Sqrt(sx * sx + sy * sy);
-            double sprite = art != null && pxPerM >= art.MinPxPerM ? SmoothStep(FadeFromPx, FadeToPx, lengthPx) : 0;
-            placed[placedCount] = new Placed
-            {
-                Rel = rel, F = f, S = s, PxPerM = pxPerM, LengthPx = lengthPx,
-                // the globe's terminator (globe.frag), or in time-lapse the day's mean at the ship's latitude
-                Light = 0.3 + 0.7 * (sunMotion < 1
-                    ? double.Lerp(SunLapse.DayAverage(up, sun), SmoothStep(-0.10, 0.12, sz), sunMotion)
-                    : SmoothStep(-0.10, 0.12, sz)),
-                SpriteAlpha = sprite, IconAlpha = 1 - sprite,
-                SunDir = horiz > 1e-9 ? new Vector2((float)(sx / horiz), (float)(sy / horiz)) : Vector2.UnitX,
-                SunTan = Math.Max(sz / Math.Max(horiz, 1e-9), 0.15),
-                Shadows = sz > 0.05 && lengthPx >= ShadowFromPx && sunMotion > 0,   // in time-lapse they'd spin
-                Class = cls, Entity = ships.Entity[k], Side = ships.Side[k], MountStart = ships.MountStart[k],
-            };
-            DrawnAs[k] = (byte)((sprite > 0 ? 2 : 0) | (sprite < 1 ? 1 : 0));
-            if (sprite > 0)
-            {
-                if (!byClass.TryGetValue(cls, out var list))
-                    byClass[cls] = list = [];
-                if (list.Count == 0)
-                    classes.Add(cls);
-                list.Add(placedCount);
-            }
-            placedCount++;
-        }
+        int most = ships.Count + (sighted?.Count ?? 0);
+        if (placed.Length < most)
+            placed = new Placed[Math.Max(most, placed.Length * 2)];
+        Place(view, ships, timeMs, sun, artOf, lengthOf, hidden, DrawnAs);
+        if (sighted != null)
+            Place(view, sighted, timeMs, sun, artOf, lengthOf, default, default);
 
         // the sprites, layer by layer, a draw per class (and turret type)
         foreach (int cls in classes)
@@ -193,6 +150,61 @@ public sealed class ShipDrawList
         AddDraw(ShipDrawKind.Sprite, icon, icon, firstIcon);
     }
 
+    /// <summary>Places a view's ships: where each is, how big on screen, sprite or icon, the sun in its frame; how each
+    /// was drawn into <paramref name="drawnAs"/>, if given.</summary>
+    void Place(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, double> lengthOf,
+        ReadOnlySpan<bool> hidden, Span<byte> drawnAs)
+    {
+        for (int k = 0; k < ships.Count; k++)
+        {
+            if (k < drawnAs.Length)
+                drawnAs[k] = 0;
+            if (k < hidden.Length && hidden[k])
+                continue;
+            var (p, f) = ships.PoseAt(k, timeMs);
+            if (!view.Project(p, out double x, out double y))
+                continue;
+            int cls = ships.Class[k];
+            var art = artOf(cls);
+            double length = lengthOf(cls);
+            var rel = p - view.Eye;
+            double pxPerM = 1 / view.MetresPerPixel * view.Altitude / Math.Max(Vec3d.Dot(rel, view.Forward), 1e-3);
+            double lengthPx = length * pxPerM, margin = Math.Max(lengthPx, IconLengthPx);
+            if (x < -margin || y < -margin || x > view.Width + margin || y > view.Height + margin)
+                continue;
+            var up = p.Normalized();
+            var s = Vec3d.Cross(f, up);
+            double sx = Vec3d.Dot(sun, f), sy = Vec3d.Dot(sun, s), sz = Vec3d.Dot(sun, up);
+            double horiz = Math.Sqrt(sx * sx + sy * sy);
+            double sprite = art != null && pxPerM >= art.MinPxPerM ? SmoothStep(FadeFromPx, FadeToPx, lengthPx) : 0;
+            placed[placedCount] = new Placed
+            {
+                Rel = rel, F = f, S = s, PxPerM = pxPerM, LengthPx = lengthPx,
+                // the globe's terminator (globe.frag), or in time-lapse the day's mean at the ship's latitude
+                Light = 0.3 + 0.7 * (sunMotion < 1
+                    ? double.Lerp(SunLapse.DayAverage(up, sun), SmoothStep(-0.10, 0.12, sz), sunMotion)
+                    : SmoothStep(-0.10, 0.12, sz)),
+                SpriteAlpha = sprite, IconAlpha = 1 - sprite,
+                SunDir = horiz > 1e-9 ? new Vector2((float)(sx / horiz), (float)(sy / horiz)) : Vector2.UnitX,
+                SunTan = Math.Max(sz / Math.Max(horiz, 1e-9), 0.15),
+                Shadows = sz > 0.05 && lengthPx >= ShadowFromPx && sunMotion > 0,   // in time-lapse they'd spin
+                Class = cls, Entity = ships.Entity[k], Side = ships.Side[k], Bearings = ships.MountBearingDeg, MountStart = ships.MountStart[k],
+            };
+            if (k < drawnAs.Length)
+                drawnAs[k] = (byte)((sprite > 0 ? 2 : 0) | (sprite < 1 ? 1 : 0));
+            if (sprite > 0)
+            {
+                if (!byClass.TryGetValue(cls, out var list))
+                    byClass[cls] = list = [];
+                if (list.Count == 0)
+                    classes.Add(cls);
+                list.Add(placedCount);
+            }
+            placedCount++;
+        }
+
+    }
+
     void Hull(ref Placed p, ShipArt art)
     {
         double cw = art.CanvasX, ch = art.CanvasY;
@@ -211,7 +223,7 @@ public sealed class ShipDrawList
             var m = meta.Mounts[i];
             // on its bearing from the snapshot (fire control's), else at rest
             int cm = art.ClassMount[i];
-            double deg = p.MountStart >= 0 && cm >= 0 ? mountBearings[p.MountStart + cm] : m.RestDeg;
+            double deg = p.MountStart >= 0 && cm >= 0 ? p.Bearings[p.MountStart + cm] : m.RestDeg;
             double a = deg * Math.PI / 180, ca = Math.Cos(a), sa = Math.Sin(a);
             double axx = ca * 2 * e, axy = sa * 2 * e, ayx = -sa * 2 * e, ayy = ca * 2 * e;
             double ox = m.PosM[0] - axx / 2 - ayx / 2, oy = m.PosM[1] - axy / 2 - ayy / 2;
