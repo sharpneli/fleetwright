@@ -73,6 +73,7 @@ public sealed unsafe partial class MapScene
         frame++;
         DrawEncounters(view, s);
         DrawContacts(view, s);
+        DrawShells(view, s);
         for (int k = 0; k < v.Count; k++)
         {
             var (p, f) = v.PoseAt(k, world.DrawMs);
@@ -416,6 +417,8 @@ public sealed unsafe partial class MapScene
     /// <summary>A right click on the sea with a ship selected: steer for it, or with shift add it to the route.</summary>
     void OrderAt(double x, double y, bool waypoint)
     {
+        if (FireAt(x, y))
+            return;
         var s = world.Current;
         int k = s.Ships.IndexOf(selected);
         if (k < 0 || !View.Pick(x, y, out var at))
@@ -742,6 +745,7 @@ public sealed unsafe partial class MapScene
             }
             SearchRow(s, unit, kc);
             CaptainRow(s, unit, kc);
+            FireRow(s, kc);
             GroupRow(s);
             ImGui.TextDisabled("right-click the sea: steer for it · shift+right-click: add a waypoint · alt: this ship alone · click elsewhere: deselect");
         }

@@ -68,6 +68,63 @@ public sealed class Snapshot
 
     /// <summary>The open encounters, and the last that was news to the player.</summary>
     public EncountersView Encounters { get; } = new();
+
+    /// <summary>Shells in flight (each drawn from its ballistic table at the frame's time) and the splashes and hits of
+    /// the last <see cref="SimSettings.SplashLifeMs"/> (docs/battle/fighting.md 4.2a).</summary>
+    public ShellsView Shells { get; } = new();
+    public SplashesView Splashes { get; } = new();
+}
+
+/// <summary>The shells in flight: per shell its ballistic table (an index into <see cref="Ballistics"/>, which the
+/// screens may read from their thread), when it was fired, its muzzle and heading, the elevation and muzzle velocity
+/// (a fraction of the shell's own) it left with, when its flight ends (seconds after firing), the ship it hits (an
+/// entity, -1 for the water) and who fired it. Its position at any moment is
+/// <c>Ballistics[Table].Position(Muzzle, Forward, ElevationDeg, Speed, t)</c>.</summary>
+public sealed class ShellsView
+{
+    public int Count;
+    public int[] Table = [], Hit = [], Shooter = [];
+    public long[] FiredMs = [];
+    public Vec3d[] Muzzle = [], Forward = [];
+    public double[] ElevationDeg = [], Speed = [], EndS = [];
+    public Combat.BallisticsRegistry? Ballistics;
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Table.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, Table.Length * 2));
+        Array.Resize(ref Table, n);
+        Array.Resize(ref Hit, n);
+        Array.Resize(ref Shooter, n);
+        Array.Resize(ref FiredMs, n);
+        Array.Resize(ref Muzzle, n);
+        Array.Resize(ref Forward, n);
+        Array.Resize(ref ElevationDeg, n);
+        Array.Resize(ref Speed, n);
+        Array.Resize(ref EndS, n);
+    }
+}
+
+/// <summary>The splashes and hits of the last while, newest first: where, when, the ship hit (an entity, -1 for a
+/// splash) and who fired.</summary>
+public sealed class SplashesView
+{
+    public int Count;
+    public Vec3d[] Point = [];
+    public long[] Ms = [];
+    public int[] Ship = [], Shooter = [];
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Point.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, Point.Length * 2));
+        Array.Resize(ref Point, n);
+        Array.Resize(ref Ms, n);
+        Array.Resize(ref Ship, n);
+        Array.Resize(ref Shooter, n);
+    }
 }
 
 /// <summary>The player's navy's picture, as the map draws it (docs/battle/plan.md step 3.2e): per contact the ship it's

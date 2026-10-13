@@ -49,6 +49,10 @@ static class ScenarioRun
         double place = sw.Elapsed.TotalSeconds;
         Console.WriteLine($"land: {(land ? $"waited {shoreWait:F2} s more" : "none (a world of water)")}; placed {start.Ships} ships in " +
                           $"{start.Groups} groups in {place * 1000:F0} ms; ready {total.Elapsed.TotalSeconds:F2} s after the start");
+        long tableBytes = 0;
+        for (int i = 0; i < w.Shells.Ballistics.Count; i++)
+            tableBytes += w.Shells.Ballistics[i].Bytes;
+        Console.WriteLine($"ballistic tables: {w.Shells.Ballistics.Count}, {tableBytes / 1048576.0:F1} MB (built as the classes went to sea)");
         foreach (var x in start.Warnings)
             Console.WriteLine($"  {x}");
 

@@ -85,9 +85,13 @@ public sealed partial class ShipSystem : IWorldSystem
             handlings[id] = h = new Handling(Class(id), settings);
             used.Add(id);
             Registry.Acquire(id);
+            ClassAdded?.Invoke(Class(id));
         }
         return h;
     }
+
+    /// <summary>Told the first time a class is in the world (the shells build its ballistic tables then).</summary>
+    internal Action<ShipClass>? ClassAdded { get; set; }
 
     /// <summary>The entity id the latest spawn got (ids are given in order, one per ship made), 0 before any.</summary>
     public int NewestEntity => nextEntity - 1;

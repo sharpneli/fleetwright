@@ -24,6 +24,7 @@ public static unsafe class Program
         int selectShip = -1;
         var captains = new List<string>();
         var searches = new List<string>();
+        var fires = new List<string>();
         var devGroups = new List<string>();
         var devForces = new List<string>();
         bool frameTimes = false;
@@ -123,6 +124,10 @@ public static unsafe class Program
             else if (arg.StartsWith("-captain="))   // a dev ship's captain: -captain=2:follow:1[:800], keep, run:1, shadow:1[:m]
             {
                 captains.Add(arg.Substring("-captain=".Length));
+            }
+            else if (arg.StartsWith("-fire="))   // a dev salvo: -fire=ship[:battery]:lat,lon (docs/battle/fighting.md 4.2a)
+            {
+                fires.Add(arg.Substring("-fire=".Length));
             }
             else if (arg.StartsWith("-search="))   // a dev search: -search=1:ladder[:leg nm[:nm apart[:legs]]] (ladder, square, sector, patrol)
             {
@@ -259,6 +264,11 @@ public static unsafe class Program
             foreach (var search in searches)
                 if (!DevSearch(world, search, devGroups, devForces))
                     Console.Error.WriteLine($"Bad search: -search={search} (want entity:ladder|square|sector|patrol[:leg nm[:nm apart[:legs]]])");
+            foreach (var fire in fires)
+                if (DevFire(fire) is { } shot)
+                    world.Send(shot);
+                else
+                    Console.Error.WriteLine($"Bad fire: -fire={fire} (want ship[:battery]:lat,lon)");
             worldRef = world;
             if (scenarioArg != null)
             {
@@ -329,6 +339,19 @@ public static unsafe class Program
         if (!placed)
             for (int e = first + 1; e < first + count; e += 2)
                 w.Apply(Sim.ShipSystem.Course(e, 135));
+    }
+
+    /// <summary>-fire=ship[:battery]:lat,lon: a dev ship's battery (0, the main, by default) fires a salvo at a point.</summary>
+    static Sim.Command? DevFire(string arg)
+    {
+        var p = arg.Split(':');
+        var ll = p[^1].Split(',');
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        if (p.Length is < 2 or > 3 || ll.Length != 2 || !int.TryParse(p[0], out int ship) || !double.TryParse(ll[0], inv, out double lat)
+            || !double.TryParse(ll[1], inv, out double lon))
+            return null;
+        int battery = p.Length == 3 && int.TryParse(p[1], out int b) ? b : 0;
+        return Sim.ShellSystem.FireAt(ship, battery, lat, lon);
     }
 
     /// <summary>-search=entity:pattern[:leg nm[:nm apart[:legs]]]: a search pattern for a dev ship, from where it is,

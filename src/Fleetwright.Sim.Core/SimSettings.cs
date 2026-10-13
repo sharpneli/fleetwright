@@ -408,6 +408,32 @@ public sealed record SimSettings
     public int AdmiralPeriodMs { get; init; } = 1000;
     public double GroupSpeedMarginKn { get; init; } = 2;
 
+    // ------------------------------------------------------------------ shells (docs/battle/fighting.md 4.2a)
+
+    /// <summary>The top of a shell's danger window, metres over the sea: nothing at sea is taller, so only the flight
+    /// below it can hit a ship (docs/battle/plan.md "Shells").</summary>
+    public double ShellWindowTopM { get; init; } = 60;
+
+    /// <summary>How far a shell's track is followed on under the water, metres along it, for the hit query (water is a
+    /// crossing, not a stop: the damage model decides what the shell does there).</summary>
+    public double ShellUnderwaterM { get; init; } = 10;
+
+    /// <summary>The shells in flight the world starts with room for (it grows past it), and the splashes it keeps for
+    /// the screens: how many, and for how long, ms.</summary>
+    public int ShellCapacity { get; init; } = 512;
+    public int SplashCapacity { get; init; } = 4096;
+    public int SplashLifeMs { get; init; } = 20_000;
+
+    /// <summary>The world's ship index (docs/battle/fighting.md, "One index of where things are"): its cubes' width, m,
+    /// and how old it may get before a query rebuilds it, ms (a query's reach grows by the fastest ship's run since).</summary>
+    public double ShipIndexCellM { get; init; } = 5000;
+    public int ShipIndexMaxAgeMs { get; init; } = 2000;
+
+    /// <summary>The dev's "fire at" (until fire control, 4.2b): each shell's error in range, 1 sigma, as a percentage of
+    /// the range, and across it as a share of that.</summary>
+    public double DevFirePatternPct { get; init; } = 0.8;
+    public double DevFireDeflectionShare { get; init; } = 0.4;
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its

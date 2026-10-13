@@ -16,6 +16,7 @@ dotnet run --project src/Fleetwright                                       # the
 dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48 [-speed=30000] [-paused]   # map camera: lat,lon,m/px; world start UTC
 dotnet run --project src/Fleetwright -- -ships=dreadnought:9 -map=56.51,4.02,3 [-select=1]   # dev ships in the North Sea (sprites close, icons far), every other turning to 135°
 dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@59.03,5.50,90,15 -ships=destroyer@59.035,5.5,80 -select=1 -map=59.02,5.6,8 -speed=30   # dev ships placed (lat,lon,heading[,kn]; repeatable): onto Norway, sliding round a headland
+dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@56.5,4.0,0,0 -ships=dreadnought:1:0@56.5,4.13,0,0 -fire=1:56.5,4.13 -map=56.5,4.12,2 -select=1   # a dev salvo (ship[:battery]:lat,lon); the strip's Fire row arms right-click
 dotnet run --project src/Fleetwright -- -ships=dreadnought:2 -captain=2:follow:1:800 -select=2   # a captain: follow:target[:m], run:target, keep, none
 dotnet run --project src/Fleetwright -- -ships=dreadnought:6 -group=1,2,3,4,5,6:column:500 -select=1   # a group: column, abreast, echelon-s, echelon-p
 dotnet run --project src/Fleetwright -- -ships=dreadnought:4:1 -group=1,2,3,4:column:500 -search=1:ladder:10:3:6 -speed=1000   # a search on rails (ladder, square, sector, patrol); :1 the side
@@ -139,6 +140,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- mono-check [bisma
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sim [--from 1916-05-31T14:00] [--speed 30000] [--seconds 3]   # the world on its thread: clock, speed asked/achieved, sun, sim allocations
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shore [--points 100000]   # the land index: build time, memory, IsLand vs Land, query costs
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- trials shipgen/designs/yamato.json [--out out]   # sea trials on the ship model: turning circles, 0 -> full, coasting, crash stop, beside the research's bands
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- ballistics dreadnought [--research]   # each battery's range table (range, elevation, time of flight, fall, striking velocity); the research's 16"/50 beside its sourced figures
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- weapons dreadnought [--research]   # weapon facts: batteries, fire-control level, guns' working numbers, shells, plating (placeholders beside the research's guns)
 ```
 
@@ -244,14 +246,17 @@ src/
                               #   power curve, arcs on the sphere; the helmsman: courses and routes), Slide (ships and
                               #   the land: the feeler slides a ship along a coast at its standoff, the backstop
                               #   refuses land, spawns and waypoints go to sea; docs/world/terrain-plan.md), HitQuery (a world
-                              #   segment into a ship's frame and attitude, through the tracer; a miss's fall)
+                              #   segment into a ship's frame and attitude, through the tracer; a miss's fall), Ballistics
+                              #   (the shells' flight on the sphere: tables by elevation x speed x density x time)
   Fleetwright.Sim.Ai/         # the AI above the world: AiSystem (layers of command, top-down, each at its rate),
                               #   Knowledge/ (IPicture; TruthPicture until sighting), Captains/ (CaptainLayer,
                               #   Behaviours: keep course, follow, run, station), Admirals/ (AdmiralLayer: formations
                               #   as captains' stations); admiralties go beside them
   Fleetwright.Sim/            # the world: World (clock, speed, events, commands in, snapshot out), Scheduler,
                               #   IWorldSystem, ShipSystem (every ship, the ship tick, ship commands), GroupSystem
-                              #   (groups: members, guide first, formation, spacing), SimHost (the sim
+                              #   (groups: members, guide first, formation, spacing), ShellSystem (shells in flight: two events
+                              #   each, the danger window through the hit query; splashes), ShipIndex (every ship on a
+                              #   CubeIndex, built when asked), SimHost (the sim
                               #   thread), TripleBuffer; no GPU or UI, runs headless
 tests/
   Fleetwright.Tests/          # xUnit for the game exe: the hitbox mesh over every design, the map camera's maths

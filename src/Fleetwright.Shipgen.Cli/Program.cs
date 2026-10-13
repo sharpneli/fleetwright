@@ -81,6 +81,10 @@ public static class Program
             each design's sea trials on the ship model, headless: turning circles at hard over and standard rudder,
             0 -> full, coasting, a crash stop, each beside the research's band for its kind; --out writes the circles
             as DIR/<design>_turns.svg
+        shipgen ballistics DESIGN... [--research]
+            each battery's range table from the shell it fires (docs/battle/fighting.md 4.2a): range, elevation, time
+            of flight, angle of fall and striking velocity from a muzzle 10 m up, and the table's size and build time;
+            --research adds the research's 16"/50 against its sourced times and falls
         shipgen weapons DESIGN... [--research]
             each design's weapon facts as the sim reads them (docs/battle/fighting.md 4.0): batteries, directors and
             fire-control level, a gun's reload, training and elevation, the shells and their shares, the plating; most
@@ -133,6 +137,7 @@ public static class Program
                     double.Parse(a.Get("at", "10")!, System.Globalization.CultureInfo.InvariantCulture), !a.Has("no-land"), a.Has("replay"),
                     a.Get("watch")?.Split(',').Select(int.Parse).ToArray(),
                     double.Parse(a.Get("speed", "0")!, System.Globalization.CultureInfo.InvariantCulture)),
+                "ballistics" => BallisticsBench.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "trials" => SeaTrials.Run(a.Positional, a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("out")),
                 _ => Fail($"unknown command {args[0]}\n\n{Usage}"),

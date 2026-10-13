@@ -1,7 +1,7 @@
 # Plan: fighting (battle module step 4)
 
 2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
-as its steps are built. **4.0 and 4.1 done 2026-10-13; 4.2a, ballistics and shells in flight, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
+as its steps are built. **4.0, 4.1 and 4.2a done 2026-10-13; 4.2b, mounts, fire control and spotting, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
 4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
 
 ## The aim
@@ -345,6 +345,53 @@ between cells), its thickness, material and normal.
   - **the research's guns:** times of flight and angles of fall within a few per cent of `fire-control-research.md`
     §5.1 (16"/50: 13.2 s at 10 kyd ... 50.3 s at 30 kyd);
   - no allocation per shell.
+
+**4.2a done 2026-10-13.**
+
+- **The one grid:** `CubeIndex` (`Sim.Core`), lifted from the contacts unchanged (the Jutland's and ladder-2's hashes
+  after an hour are identical). The contacts' grids index units on rails by their anchors, a cube as wide as they
+  reach before the next scan: another question from "where is every ship now". So the world's `ShipIndex` is a second
+  instance of the same structure. It holds every live ship on any tier, and is built only when a query comes (a world
+  with no fighting never pays for it) and again when it's over `ShipIndexMaxAgeMs` old or the ships have changed.
+- **Ballistics** (`Sim.Combat/Ballistics.cs`):
+  - **The model:** `_fly` on the sphere, inverse-square gravity, in the flight's plane.
+  - **The tables** are keyed by the ballistic numbers (calibre, mass, velocity, form factor, the gun's highest
+    elevation), not the shell type's id, so all of a gun's Great War shells share one. Each covers elevation (0.5°
+    from -3°) × muzzle velocity (0.96, 1, 1.04: the ship's own motion) × air density (0.95, 1, 1.05) × time (1 s).
+    A lookup is Hermite in time, a cubic in elevation and quadratics across, about 1.8 µs.
+- **Two things plan.md's "Shells" didn't have:**
+  - **The density dimension.** A muzzle 25 m up meets 0.28% thinner air the whole way, worth 35 m at long range,
+    so a muzzle h0 high reads the table at density e^(-h0/9000). The same dimension will take a day's weather.
+  - **Coriolis with drag's damping.** The plain integral of the displacement missed by 6 m of the turning's 38 on a
+    37 s flight: drag brakes a deflection's velocity as it brakes the shell. The table carries K = ∫e^-C ∫e^C v (C
+    the drag's integral), and the deflection is still one cross product. Across the track that's exact. Along it,
+    where drag brakes harder and a lifted shell meets thinner air, it's within ~3% of the turning's effect (4.9 m of
+    149 m firing east on the equator). The full variational equations would close that for ~50% more memory: a
+    deepening if fire control ever cares.
+- **Shells** (`Sim/ShellSystem.cs`, system 3):
+  - **Records** are pooled, with two events each: the window (where `ShellWindowTopM` is crossed) and the end.
+  - **At the window,** the track to the water and `ShellUnderwaterM` on under it, in four chords, goes through
+    `HitQuery` against the ships the index finds. A ship on the fine tick is carried on along its course for the
+    window's fraction of a second; one on rails or coarse is where its own function puts it.
+  - **At the end,** a splash or a hit goes into a ring the snapshot carries for `SplashLifeMs`.
+  - **Tables** are built when a class first goes to sea (`ShipSystem.ClassAdded`), not at its first salvo.
+- **The dev's "fire at":** the strip's Fire row (battery, "at (right-click)") and `-fire=ship[:battery]:lat,lon`.
+  Each shell's error is drawn from the stream "fire" by salvo and shell (`DevFirePatternPct`, a placeholder until
+  4.2b's chain).
+- **Drawn:** each shell from its table at the frame's time, a dot and a short tracer. Splashes are rings that widen
+  and fade; hits are orange.
+- **The bench:** `shipgen ballistics DESIGN [--research]` prints each battery's range table, the research's 16"/50
+  beside its sourced figures.
+- **The numbers:**
+  - **Against direct integration** at the fall: 0.14 m, 0.16 m in other air; the muzzle-height model 2.1 m from a
+    true flight from 5-25 m up.
+  - **The 16"/50:** times of flight within 2% and falls within 1°, as the research's own model (§5.1).
+  - **The turning sphere:** 0.5 m north along a meridian, 1.8 m west at 60° N, 4.9 m east on the equator.
+  - **Ticks:** 40 splashes and 23 hits identical at a 0.1 s and a 5 s tick.
+  - **Size and build:** a 12" Great War table is 786 KB, built in 35 ms. A Jutland's guns are 24 tables, 16.5 MB,
+    built as the classes go to sea (placing its 250 ships still takes ~0.4 s).
+- **For 4.2b:** `ElevationFor` bisects through falls (~10 ms): fine for the dev's fire, too slow for 500 batteries a
+  second. Fire control will want a range table per key, computed once from the tables.
 
 **4.2b Mounts, fire control and spotting.** The port of `fire_control_ref.py` `engage()`, cut to its spine.
 

@@ -72,7 +72,18 @@ public sealed class World
         Register(Ships);
         Groups = new GroupSystem { Store = Ships.Store };
         Register(Groups);
+        ShipIndex = new ShipIndex(Ships, Settings);
+        Shells = new ShellSystem(Settings, Ships, ShipIndex);
+        Register(Shells);
+        Ships.ClassAdded = Shells.Prepare;
     }
+
+    /// <summary>The world's index of where its ships are (docs/battle/fighting.md, "One index of where things are").</summary>
+    public ShipIndex ShipIndex { get; }
+
+    /// <summary>Shells in flight and their splashes (docs/battle/fighting.md 4.2a): always registered third
+    /// (<see cref="ShellSystem.Id"/>).</summary>
+    public ShellSystem Shells { get; }
 
     /// <summary>How the sides stand: war or peace (docs/battle/plan.md step 3.1a).</summary>
     public Relations Relations { get; } = new();

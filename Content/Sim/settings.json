@@ -132,5 +132,14 @@
   "FollowTrackCrossMaxDeg": 30,
   "FollowTrackCrossLeadOverT": 1.25,
   "AdmiralPeriodMs": 1000,
-  "GroupSpeedMarginKn": 2
+  "GroupSpeedMarginKn": 2,
+  "ShellWindowTopM": 60,
+  "ShellUnderwaterM": 10,
+  "ShellCapacity": 512,
+  "SplashCapacity": 4096,
+  "SplashLifeMs": 20000,
+  "ShipIndexCellM": 5000,
+  "ShipIndexMaxAgeMs": 2000,
+  "DevFirePatternPct": 0.8,
+  "DevFireDeflectionShare": 0.4
 }
