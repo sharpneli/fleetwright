@@ -292,6 +292,42 @@ public sealed record SimSettings
     /// <summary>How often each navy's sighting is looked at in an encounter, ms (the plan's ~1 Hz).</summary>
     public int SightingMs { get; init; } = 1000;
 
+    // ------------------------------------------------------------------ pictures (docs/battle/plan.md step 3.2d)
+
+    /// <summary>How many of a side's ships nearest a target look for it each time.</summary>
+    public int SightObservers { get; init; } = 6;
+
+    /// <summary>How many of an observer's eyes (highest first, those bearing on the target) look.</summary>
+    public int SightEyes { get; init; } = 4;
+
+    /// <summary>The looks' grid in an encounter's tangent plane, m a cell.</summary>
+    public double SightGridM { get; init; } = 8_000;
+
+    /// <summary>No eye looks further than this, m (two 60 m mastheads' horizons together).</summary>
+    public double SightMaxM { get; init; } = 60_000;
+
+    /// <summary>A contact's dead reckoning allows for manoeuvre: its acceleration's 1-sigma, m/s².</summary>
+    public double SightManoeuvreMs2 { get; init; } = 0.05;
+
+    /// <summary>The first report's course and speed, judged by eye: their 1-sigma errors, degrees and m/s.</summary>
+    public double SightCourseSigmaDeg { get; init; } = 20;
+    public double SightSpeedSigmaMs { get; init; } = 3;
+
+    /// <summary>The margins at which a contact's type and its class are made out, and the range within which its
+    /// name is (with the class's margin).</summary>
+    public double SightTypeMargin { get; init; } = 2;
+    public double SightClassMargin { get; init; } = 4;
+    public double SightNameM { get; init; } = 6_000;
+
+    /// <summary>The chance a class first made out is taken for the most similar class in the world (a battlecruiser
+    /// for a battleship), if one's like enough (its unlikeness under <see cref="SightSimilarScore"/>: funnels and masts
+    /// one each, main mounts a half, length five per ratio).</summary>
+    public double SightMisidentify { get; init; } = 0.3;
+    public double SightSimilarScore { get; init; } = 1.5;
+
+    /// <summary>A contact out of sight this long is forgotten, ms.</summary>
+    public long SightForgetMs { get; init; } = 6 * 3_600_000L;
+
     // ------------------------------------------------------------------ the AI (docs/battle/plan.md step 2.3b)
 
     /// <summary>How often an AI layer thinks while every ship it commands is on rails, ms: nothing about them changes

@@ -31,6 +31,7 @@ public sealed partial class ShipSystem : IWorldSystem
     readonly SimSettings settings;
     readonly Relations relations;
     readonly Encounters encounters;
+    readonly Sightings sightings;
     readonly List<int> used = [];   // the registry ids ships have been made of, in the order first used
     readonly Dictionary<int, Handling> handlings = [];
     readonly List<(int Ship, double AsternM, double AbeamM)> line = new(16), derailing = new(16), riders = new(16);   // a unit's ships and stations, reused (one each: they nest)
@@ -39,11 +40,13 @@ public sealed partial class ShipSystem : IWorldSystem
 
     public ShipStore Store { get; }
 
-    internal ShipSystem(SimSettings settings, ShipClassRegistry registry, Probes probes, Relations relations, Encounters encounters)
+    internal ShipSystem(SimSettings settings, ShipClassRegistry registry, Probes probes, Relations relations, Encounters encounters,
+        Sightings sightings)
     {
         this.settings = settings;
         this.relations = relations;
         this.encounters = encounters;
+        this.sightings = sightings;
         Registry = registry;
         Store = new ShipStore(settings);
         this.probes = probes;
@@ -53,10 +56,14 @@ public sealed partial class ShipSystem : IWorldSystem
         railsEventProbe = probes.Register("Ships: rails events");
         landProbe = probes.Register("Ships: land");
         encountersProbe = probes.Register("Encounters");
+        sightingProbe = probes.Register("Sighting");
     }
 
     readonly Probes probes;
-    readonly int stepProbe, contactsProbe, railsProbe, railsEventProbe, landProbe, encountersProbe;
+    readonly int stepProbe, contactsProbe, railsProbe, railsEventProbe, landProbe, encountersProbe, sightingProbe;
+
+    /// <summary>The registry ids ships have been made of, in the order first used: the classes in the world.</summary>
+    public IReadOnlyList<int> ClassesInUse => used;
 
     /// <summary>Where classes come from, by id: the ids <see cref="Spawn"/> names and the snapshot carries.</summary>
     public ShipClassRegistry Registry { get; }
@@ -242,12 +249,19 @@ public sealed partial class ShipSystem : IWorldSystem
                 probes.Add(contactsProbe, t);
             }
             UpdateEncounters(world);
+            sightings.Forget(world.Time.Ms);
             if (settings.RailsEnabled)
             {
                 t = Probes.Now;
                 RailsCheck(world);
                 probes.Add(railsProbe, t);
             }
+        }
+        if (encounters.Count > 0 && world.Time.Ms % settings.SightingMs == 0)
+        {
+            t = Probes.Now;
+            sightings.Look(world, Store, used);
+            probes.Add(sightingProbe, t);
         }
         if (AnyFine())
             EnsureTick(world);

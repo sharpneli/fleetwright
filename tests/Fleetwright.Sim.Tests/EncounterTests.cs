@@ -247,6 +247,7 @@ public class EncounterTests(ITestOutputHelper output)
     public void Two_hundred_ships_in_one_fight_are_one_encounter_without_garbage()
     {
         var (w, c) = Make();
+        w.Apply(Command.SetWeather(1_000));   // nobody sees anybody: the pictures' growth is PictureTests'
         for (int i = 0; i < 100; i++)
         {
             SpawnFrom(w, c, 56, 3, 90, i * 400, 0, Kn, 1);

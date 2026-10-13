@@ -71,7 +71,9 @@ public sealed class World
         fillProbe = Probes.Register("Snapshot fill");
         weather = new UniformWeather(new WeatherHere(Settings.DefaultVisibilityM, 0, 0));
         Encounters = new Encounters(Settings, Relations);
-        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations, Encounters);
+        Sightings = new Sightings(Settings, Relations, Encounters, seed);
+        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations, Encounters, Sightings);
+        Sightings.Registry = Ships.Registry;
         Register(Ships);
         Groups = new GroupSystem();
         Register(Groups);
@@ -89,6 +91,9 @@ public sealed class World
 
     /// <summary>What the clock does when an encounter opens, by the player's rules (step 3.1c).</summary>
     public Interest Interest { get; } = new();
+
+    /// <summary>Every navy's picture, and the looks that feed them (docs/battle/plan.md step 3.2d).</summary>
+    public Sightings Sightings { get; }
 
     /// <summary>The encounters: ships of sides at war near each other (docs/battle/plan.md step 3.1b).</summary>
     public Encounters Encounters { get; }
@@ -310,6 +315,7 @@ public sealed class World
         h.Add(weather.Here.WindMs);
         Interest.Hash(ref h);
         Encounters.Hash(ref h);
+        Sightings.Hash(ref h);
         scheduler.Hash(ref h);
         foreach (var s in systems)
             s.Hash(ref h);

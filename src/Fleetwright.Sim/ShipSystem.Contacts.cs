@@ -158,6 +158,7 @@ public sealed partial class ShipSystem
         if (e.Generation != scanGen)
             return;
         nextScanMs = -1;
+        sightings.Forget(world.Time.Ms);
         if (!Opposed)
             return;
         // the units in a compact list, each with how far it can close by the next scan (its spread and its run), so a
