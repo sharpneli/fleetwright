@@ -191,18 +191,18 @@ public sealed partial class ShipSystem
         for (int a = 0; a < units; a++)
             most = Math.Max(most, scanSlack[a]);
         double cell = range + 2 * most;
-        GridClear(units);
+        grid.Clear(units, cell);
         for (int a = 0; a < units; a++)
-            GridAdd(a, scanPos[a], cell);
+            grid.Add(a, scanPos[a]);
         for (int a = 0; a < units; a++)
         {
             var pa = scanPos[a];
             byte side = scanSide[a];
             double sa = range + scanSlack[a];
-            int found = Near(pa, cell);
-            for (int c = 0; c < found; c++)
+            var near = grid.Found(grid.Near(pa));
+            for (int c = 0; c < near.Length; c++)
             {
-                int b = gridFound[c];
+                int b = near[c];
                 if (b <= a || !Hostile(scanSide[b], side))
                     continue;
                 double reach = sa + scanSlack[b];
@@ -285,10 +285,10 @@ public sealed partial class ShipSystem
             int i = Store.OffRailsSlot(k);
             var p = Store[i].Position;
             byte side = Store[i].Side;
-            int n = Near(p, cell);
-            for (int c = 0; c < n; c++)
+            var near = grid.Found(grid.Near(p));
+            for (int c = 0; c < near.Length; c++)
             {
-                int j = gridFound[c];
+                int j = near[c];
                 if (!Hostile(refSide[j], side) || !IsUnit(j))
                     continue;
                 double reach = settings.EncounterRangeM + unitRadius[j];
@@ -301,13 +301,11 @@ public sealed partial class ShipSystem
         }
     }
 
-    // the units on rails in a grid of cubes in Earth-centred space by where they were anchored, a cube as wide as the
-    // furthest any can reach (2.7c: the fine tick's check paired every fine ship with every slot, 18% of the sim with
-    // 2,000 ships): a ship's candidates are the 27 cubes round it, in slot order, so it's the same check as the scan
-    const int GridBuckets = 4096;   // a power of two: cubes hashed into it (a collision only adds candidates)
-    readonly int[] gridHead = new int[GridBuckets];   // slot + 1 of the first unit in a bucket, 0 for none
-    int[] gridNext = [], gridSeen = [], gridFound = [];
-    int gridStamp;
+    // the units on rails in the grid (CubeIndex, the world's one structure for "what is near here") by where they were
+    // anchored, a cube as wide as the furthest any can reach (2.7c: the fine tick's check paired every fine ship with
+    // every slot, 18% of the sim with 2,000 ships): a ship's candidates are the 27 cubes round it, in slot order, so it's
+    // the same check as the scan
+    readonly CubeIndex grid = new();
 
     /// <summary>Buckets the units by their anchors, by slot; the cube's size, metres (0: no units).</summary>
     double BuildGrid(long now)
@@ -318,54 +316,11 @@ public sealed partial class ShipSystem
                 far = Math.Max(far, settings.EncounterRangeM + unitRadius[j] + refSpeed[j] * (now - refMs[j]) / 1000);
         if (far <= 0)
             return 0;
-        GridClear(Store.Slots);
+        grid.Clear(Store.Slots, far);
         for (int j = 0; j < Store.Slots; j++)
             if (IsUnit(j))
-                GridAdd(j, refPos[j], far);
+                grid.Add(j, refPos[j]);
         return far;
-    }
-
-    /// <summary>An empty grid for indices below <paramref name="capacity"/>; allocates only to grow.</summary>
-    void GridClear(int capacity)
-    {
-        if (gridNext.Length < capacity)
-        {
-            int n = Math.Max(capacity, gridNext.Length * 2);
-            Array.Resize(ref gridNext, n);
-            Array.Resize(ref gridSeen, n);
-            Array.Resize(ref gridFound, n);
-        }
-        Array.Clear(gridHead);
-    }
-
-    void GridAdd(int index, Vec3d p, double cell)
-    {
-        int b = Bucket(Cube(p.X, cell), Cube(p.Y, cell), Cube(p.Z, cell));
-        gridNext[index] = gridHead[b];
-        gridHead[b] = index + 1;
-    }
-
-    static long Cube(double x, double size) => (long)Math.Floor(x / size);
-
-    static int Bucket(long x, long y, long z) => (int)((x * 73856093 ^ y * 19349663 ^ z * 83492791) & (GridBuckets - 1));
-
-    /// <summary>The units in the 27 cubes round a point into <see cref="gridFound"/>, each once, in slot order; how many.</summary>
-    int Near(Vec3d p, double cell)
-    {
-        long cx = Cube(p.X, cell), cy = Cube(p.Y, cell), cz = Cube(p.Z, cell);
-        int n = 0;
-        gridStamp++;
-        for (long dx = -1; dx <= 1; dx++)
-            for (long dy = -1; dy <= 1; dy++)
-                for (long dz = -1; dz <= 1; dz++)
-                    for (int j = gridHead[Bucket(cx + dx, cy + dy, cz + dz)] - 1; j >= 0; j = gridNext[j] - 1)
-                        if (gridSeen[j] != gridStamp)
-                        {
-                            gridSeen[j] = gridStamp;
-                            gridFound[n++] = j;
-                        }
-        Array.Sort(gridFound, 0, n);   // the order the full loop met them in
-        return n;
     }
 
     /// <summary>The encounters brought up to date with the ships on the fine tick (Encounters.cs), while there's anything
