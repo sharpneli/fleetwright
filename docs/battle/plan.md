@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). The next is step 3, seeing and knowing, agreed 2026-10-13 (3.1 contacts and encounters first).
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). Step 3, seeing and knowing, was agreed 2026-10-13; 3.1 (relations, encounters, the player's interest) is done, 3.2 (sighting and pictures) is next.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1466,6 +1466,27 @@ compiles around it.
 - **c. The player's side and interest table:** the world knows which side the player commands (none headless). An
   encounter opening drops the clock by the player's rules (own ships involved, others), at the event; the snapshot
   lists encounters and the map draws them.
+
+**3.1 done (2026-10-13).**
+- **3.1a** `Relations` (Fleetwright.Sim): a 256×256 peace table, `Command.SetRelation` (logged), hashed only when
+  not all at war, so a world without peace hashes as before (the Jutland's 90-minute hash unchanged through the
+  refactor). Every "opposing" test asks `Relations.Hostile`. War declared schedules a contact scan at once. Scenario
+  files take `"peace": [["Britain", "Neutral"], ...]` by side names; the scale test's tramps are at peace with both
+  fleets (ladder 4 at full tilt 1,481x -> 1,953x).
+- **3.1b** `Encounters` (Fleetwright.Sim): every `RailsCheckMs` of the fine tick, and at once at a rails contact, the
+  fine ships are sorted by cube (a cube's diagonal the range and margin), joined within a cube and between neighbouring
+  cubes by the first pair in reach while not joined already (union-find, one sort, never a pair loop). A cluster with
+  sides at war within the range opens an encounter; it's hot while they're within the range and margin, and closes
+  `EncounterCloseMs` (10 min) after it last was. Merging keeps the oldest id; a hot part split off gets a new one, a
+  cool part stays in its encounter (its sides parting, it cools as one). Its ships stay off rails (`Ready`). Jutland:
+  42 µs an update at 250 ships, 1% of the sim; 200 ships in one encounter allocate nothing.
+- **3.1c** `World.PlayerSide` (`Command.SetPlayerSide`; a scenario's `"player"`, inherited through `"from"`; the dev
+  world's is side 0) and `Interest` (`Command.SetInterest`): an encounter the player's ships are in that they weren't
+  (opened, or come into) drops the clock by the "own" rule (pause by default), one opened between others by the
+  "others" rule (nothing by default); a part split off isn't news. The snapshot carries the encounters, the last news
+  and the rules. `World.AdvanceTo` now runs on through a halt (the pause stays as state for a host). The map rings
+  each encounter (own amber, others grey), labels it at the top, notes the news in the clock's panel and sets both
+  rules there. Seen: the Jutland pauses at 14:01:25, encounter 1 of 77 ships (the scouting forces start within 50 km).
 
 **3.2 Sighting and pictures.**
 - **a. Eyes and silhouettes in `ShipClass`,** compiled from the hitboxes (one physical model): the observation posts
