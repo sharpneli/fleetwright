@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; the next is ships and the land (T1-T4 of `docs/world/terrain-plan.md`; T1, `Shore`, done 2026-10-12), then 2.7, the Jutland scale test.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; the next is ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, done 2026-10-12; reworked 2026-10-13 into a slide along the coast, S1-S3, proposed), then 2.7, the Jutland scale test.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1206,14 +1206,15 @@ later, 5.2; `docs/battle/command-ui.md`, the user's command UI research, is comm
   rows, the held list and its notice) and zoomed out (one "Force 4 (8)" marker, the held ship apart);
   `ForceTests` forms a force alongside before knowing its id. The sim suite passes.
 
-**Ships and the land: T1-T4 of `docs/world/terrain-plan.md`** (the user, 2026-10-12: after 2.6 and before the
-Jutland test; the terrain plan's questions answered the same day). T1 is `Shore`, the land index, with the world
-holding the 1:10M `Land`. T2 is the backstop that keeps every ship off land, with spawning and waypoints, a stopgap
-taking units off rails short of land, and the scale tests moved to the Pacific. T3 is the pilot's plot in the fine
-tier, for single ships and formations' guides. T4 is rails along the plot, turns included, so a coast never holds
-the clock (moved ahead of the Jutland test, the user). Standoffs are close, as in Rule the Waves. Jutland was fought
-beside the Danish coast and Horns Reef, so the scale test measures the plots too. T5 (the router and `GoTo`) follows
-when it's needed.
+**Ships and the land: `docs/world/terrain-plan.md`** (the user, 2026-10-12: after 2.6 and before the Jutland
+test). T1 is `Shore`, the land index, with the world holding the 1:10M `Land` (done 2026-10-12). The rest was
+reworked 2026-10-13 (the user: the pilot's plots were too complex for the result wanted), proposed: Rule the Waves'
+slide along the coast, done a little better. S1 is the slide in the fine tier (a feeler in the helmsman turning a
+ship onto the coast's line at its standoff, every ship; the backstop in the step; spawning and waypoints off land).
+S2 takes units off rails short of land and moves the scale tests to the Pacific, and measures what coast-followers
+on the fine tick cost the clock; S3 slides on rails too if that's too much. Guided areas (gates closing straits,
+canals) come when a mission needs them. Jutland was fought beside the Danish coast and Horns Reef, so the scale test
+measures the slide too.
 
 **2.7 Scale: the Jutland test.** 250 ships of ~55 classes, loaded, steaming in formation in the fine tier, drawn
 at every zoom, with some hundreds more on rails. Measure load time, tick cost, frame time and VRAM against the targets
