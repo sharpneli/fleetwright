@@ -226,6 +226,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
     private bool _showDemoWindow = true;
     private bool _showStatsWindow;
 
+    /// <summary>Whether the stats window (F2) is open: scenes show their own figures beside it.</summary>
+    public static bool StatsShown { get; private set; }
+
     /// <summary>
     /// Gets the GPU device handle.
     /// </summary>
@@ -1314,6 +1317,7 @@ public unsafe class Sdl3GpuEngine : IDisposable
 
     private void BuildImGuiUI()
     {
+        StatsShown = _showStatsWindow;
         // Stats window (F2 toggles, its close button hides it)
         if (_showStatsWindow)
         {

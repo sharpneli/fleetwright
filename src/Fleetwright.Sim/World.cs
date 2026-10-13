@@ -17,6 +17,8 @@ namespace Fleetwright.Sim;
 public sealed class World
 {
     readonly List<IWorldSystem> systems = [];
+    readonly List<int> systemProbes = [];   // each system's events, timed (Probes)
+    readonly int commandsProbe, fillProbe;
     readonly Scheduler scheduler;
     readonly List<StampedCommand> log;
     double targetMs;
@@ -49,6 +51,10 @@ public sealed class World
 
     public int PendingEvents => scheduler.Count;
 
+    /// <summary>Where the sim thread's time goes (docs/battle/plan.md step 2.7b): each system's events, the commands, the
+    /// snapshot's fill, and the parts systems time inside themselves. Only measures; the world never reads it.</summary>
+    public Probes Probes { get; } = new();
+
     /// <param name="classes">Where ship classes come from; a registry of its own if none (it's shared when the app's
     /// art draws from the same builds).</param>
     /// <param name="shore">The land (immutable, so the map shares it); none for a world of water.</param>
@@ -61,7 +67,9 @@ public sealed class World
         targetMs = start.Ms;
         scheduler = new Scheduler(Settings.EventCapacity);
         log = new List<StampedCommand>(Settings.CommandLogCapacity);
-        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1));
+        commandsProbe = Probes.Register("Commands");
+        fillProbe = Probes.Register("Snapshot fill");
+        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes);
         Register(Ships);
         Groups = new GroupSystem();
         Register(Groups);
@@ -80,6 +88,7 @@ public sealed class World
         if (systems.Count == byte.MaxValue)
             throw new InvalidOperationException("too many systems");
         systems.Add(system);
+        systemProbes.Add(Probes.Register(system.GetType().Name));
         return (byte)systems.Count;
     }
 
@@ -106,8 +115,10 @@ public sealed class World
     /// <summary>Applies a command at the current time and logs it: an input from outside (a player, a host).</summary>
     public void Apply(in Command c)
     {
+        long t = Probes.Now;
         log.Add(new StampedCommand(Time, c));
         Run(in c);
+        Probes.Add(commandsProbe, t);
     }
 
     /// <summary>Applies a command the sim gave itself (an AI's order to its ship), by the same path as
@@ -199,7 +210,9 @@ public sealed class World
             Time = e.Time;
             Ships.Store.NowMs = Time.Ms;
             last = e.Time.Ms;
+            long t = Probes.Now;
             SystemOf(e.System).Handle(this, in e);
+            Probes.Add(systemProbes[e.System - 1], t);
             n++;
         }
         Time = Target;
@@ -217,6 +230,7 @@ public sealed class World
     /// <summary>Fills the world's part of a snapshot; allocates nothing.</summary>
     public void Fill(Snapshot s)
     {
+        long t = Probes.Now;
         Ships.Store.NowMs = Time.Ms;
         s.Time = Time;
         s.Target = Target;
@@ -227,6 +241,7 @@ public sealed class World
         foreach (var sys in systems)
             if (sys != Ships)
                 sys.Fill(s);
+        Probes.Add(fillProbe, t);
     }
 
     /// <summary>A hash of all the world's state (not the target, which is the host's pacing, nor the log).</summary>

@@ -52,6 +52,9 @@ public sealed class WorldSession : IDisposable
         ? (l.Scenario.Name, l.Classes?.Values.Count(Classes.IsReady) ?? 0, l.Scenario.DesignNames().Count)
         : null;
 
+    /// <summary>The world's instruments on the UI side (docs/battle/plan.md step 2.7b), fed every frame.</summary>
+    public WorldPerf Perf { get; } = new();
+
     /// <summary>The last scenario's failure to load, or null.</summary>
     public string? LoadError { get; private set; }
 
@@ -165,6 +168,10 @@ public sealed class WorldSession : IDisposable
             else
             {
                 var (w, ai, start) = p.Task.Result;
+                // the clock as the player left it: the new world runs at the speed asked of the old, paused if it was
+                w.Apply(Command.SetSpeed(Current.Speed));
+                if (Current.Paused)
+                    w.Apply(Command.Pause());
                 var old = host;
                 host = Start(w);
                 old.Dispose();
@@ -179,6 +186,7 @@ public sealed class WorldSession : IDisposable
         }
         host.Elapse(dt);
         Current = host.Latest();
+        Perf.Frame(Current, dt, Generation);
     }
 
     /// <summary>A ship's name from the scenario, or null.</summary>

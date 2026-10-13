@@ -50,7 +50,10 @@ static class ScenarioRun
         foreach (var x in start.Warnings)
             Console.WriteLine($"  {x}");
 
-        // game minutes, each timed on this thread (the sim thread's work: no host, no snapshots)
+        // game minutes, each timed on this thread (the sim thread's work: no host, no snapshots); the probes from here
+        var probes0 = new long[Probes.Capacity];
+        Array.Copy(w.Probes.Ticks, probes0, Probes.Capacity);
+        w.Probes.ResetMax();
         Console.WriteLine();
         Console.WriteLine("  game time   fine  rails   x real (this stretch)   allocated   gen0/1/2");
         var store = w.Ships.Store;
@@ -83,6 +86,13 @@ static class ScenarioRun
         Console.WriteLine($"{minutes:F0} game minutes in {run:F2} s: {speed:F0}x at full tilt, the slowest minute {60 / worst:F0}x; " +
                           $"{run / (game * 1000 / settings.ShipTickMs) * 1e6:F1} µs a fine tick");
         Console.WriteLine($"at {atSpeed:G}x the sim thread is {atSpeed / speed:P1} busy (the target: at most 25% at 10x, docs/battle/plan.md 2.7)");
+        Console.WriteLine("where the time went (share of the run, longest call):");
+        for (int i = 0; i < w.Probes.Count; i++)
+        {
+            double ms = Probes.Ms(w.Probes.Ticks[i] - probes0[i]);
+            if (ms > 0)
+                Console.WriteLine($"  {w.Probes.Names[i],-26} {ms / 1000 / run,7:P1}  {ms / 1000,7:F2} s   ({Probes.Ms(w.Probes.Max[i]):F2} ms)");
+        }
 
         if (replay)
         {

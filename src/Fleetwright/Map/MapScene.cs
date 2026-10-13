@@ -32,6 +32,9 @@ public sealed unsafe partial class MapScene : IScene
     bool mouseIn;
     double toldScale;   // the scale last told the world, metres per pixel (in steps)
 
+    // the map's parts, timed into the world's instruments (WorldPerf.Ui, docs/battle/plan.md step 2.7b)
+    readonly int probeLines, probeUpload, probeGroups, probeDrawList, probeOverlay, probeRender, probeUiShips, probeUiLabels, probeUiRest;
+
     public MapScene(SDL_GPUDevice* device, WorldSession world, MapCamera camera, ShipArtLibrary art, int selectEntity = -1)
     {
         this.world = world;
@@ -48,6 +51,16 @@ public sealed unsafe partial class MapScene : IScene
         land = new LandView(Load("110m"), Load("50m"), world.Shore.Land);   // the finest is the world's own
         // the coarse levels baked once into static meshes; the finest is built per view (docs/battle/plan.md 1.4)
         renderer.UploadLand(LandMesh.Bake(land.Coarse), LandMesh.Bake(land.Medium));
+        var ui = world.Perf.Ui;
+        probeLines = ui.Register("Grid and land lines");
+        probeUpload = ui.Register("Art upload");
+        probeGroups = ui.Register("Groups placed");
+        probeDrawList = ui.Register("Ship draw list");
+        probeOverlay = ui.Register("Overlay (tracks, routes)");
+        probeRender = ui.Register("Globe render (CPU)");
+        probeUiShips = ui.Register("UI: panels");
+        probeUiLabels = ui.Register("UI: group labels");
+        probeUiRest = ui.Register("UI: clock, where");
     }
 
     /// <summary>Over the North Sea, the whole globe in view.</summary>
@@ -69,6 +82,8 @@ public sealed unsafe partial class MapScene : IScene
             camera.Drag(grab, dragX, dragY, width, height);
             dragPending = false;
         }
+        var probes = world.Perf.Ui;
+        long t = Probes.Now;
         var view = View;
         var level = land.LevelFor(view);
         int baked = level == land.Coarse ? 0 : level == land.Medium ? 1 : -1;
@@ -84,14 +99,25 @@ public sealed unsafe partial class MapScene : IScene
                 land.Clear();
             (built, builtSize) = (camera, (width, height));
         }
+        probes.Add(probeLines, t);
         TellScale();
         var s = world.Current;
         sunLapse.Update(s.Paused ? 0 : s.AchievedSpeed, dt);
+        t = Probes.Now;
         art.UploadPending();
+        probes.Add(probeUpload, t);
+        t = Probes.Now;
         PlaceGroups(view, s);
+        probes.Add(probeGroups, t);
+        t = Probes.Now;
         shipRenderer.List.Build(view, s.Ships, s.Time.Ms, s.Sun, artOf, lengthOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion);
+        probes.Add(probeDrawList, t);
+        t = Probes.Now;
         BuildOverlay(view, s);
+        probes.Add(probeOverlay, t);
+        t = Probes.Now;
         renderer.Render(cmd, target, view, s.Sun, land.Fill, baked, lines, overlay, shipRenderer, sunLapse.Motion);
+        probes.Add(probeRender, t);
     }
 
     /// <summary>Tells the world the map's scale when it changes, in quarter-octave steps (a zoom is a few commands, not
@@ -110,9 +136,17 @@ public sealed unsafe partial class MapScene : IScene
     public void BuildUi()
     {
         NewWorld();
+        var probes = world.Perf.Ui;
+        long t = Probes.Now;
         ShipsUi();
+        probes.Add(probeUiShips, t);
         var s = world.Current;
+        t = Probes.Now;
         GroupLabels(s);
+        probes.Add(probeUiLabels, t);
+        t = Probes.Now;
+        if (Sdl3GpuEngine.StatsShown)
+            world.Perf.Draw(s);
         var vp = ImGui.GetMainViewport();
         float pad = 8 * UiFonts.Scale;
         const ImGuiWindowFlags Hud = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize |
@@ -180,6 +214,7 @@ public sealed unsafe partial class MapScene : IScene
                 ImGui.TextDisabled("cursor off the globe");
         }
         ImGui.End();
+        probes.Add(probeUiRest, t);
     }
 
     public bool ProcessEvent(SDL_Event* e, uint w, uint h)

@@ -37,12 +37,20 @@ public sealed partial class ShipSystem : IWorldSystem
 
     public ShipStore Store { get; }
 
-    internal ShipSystem(SimSettings settings, ShipClassRegistry registry)
+    internal ShipSystem(SimSettings settings, ShipClassRegistry registry, Probes probes)
     {
         this.settings = settings;
         Registry = registry;
         Store = new ShipStore(settings);
+        this.probes = probes;
+        stepProbe = probes.Register("Ships: step");
+        contactsProbe = probes.Register("Ships: contacts");
+        railsProbe = probes.Register("Ships: rails");
+        landProbe = probes.Register("Ships: land");
     }
+
+    readonly Probes probes;
+    readonly int stepProbe, contactsProbe, railsProbe, landProbe;
 
     /// <summary>Where classes come from, by id: the ids <see cref="Spawn"/> names and the snapshot carries.</summary>
     public ShipClassRegistry Registry { get; }
@@ -191,32 +199,42 @@ public sealed partial class ShipSystem : IWorldSystem
 
     public void Handle(World world, in SimEvent e)
     {
+        long t = Probes.Now;
         if (e.Code == ContactCheck)
         {
             CheckPair(world, e);
+            probes.Add(contactsProbe, t);
             return;
         }
         if (e.Code == ContactScan)
         {
             Scan(world, e);
+            probes.Add(contactsProbe, t);
             return;
         }
         if (e.Code is RailsWaypoint or PolarEntry or PolarExit)
         {
             RailsEvent(world, e);
+            probes.Add(railsProbe, t);
             return;
         }
         if (e.Code is LandAhead or LandRecheck)
         {
             LandEvent(world, e);
+            probes.Add(landProbe, t);
             return;
         }
         nextTickMs = -1;
         ShipMotion.StepAll(Store, world.Time.Ms, settings, world.Shore);
+        probes.Add(stepProbe, t);
         if (settings.RailsEnabled && world.Time.Ms % settings.RailsCheckMs == 0)
         {
+            t = Probes.Now;
             FineContacts(world);
+            probes.Add(contactsProbe, t);
+            t = Probes.Now;
             RailsCheck(world);
+            probes.Add(railsProbe, t);
         }
         if (AnyFine())
             EnsureTick(world);

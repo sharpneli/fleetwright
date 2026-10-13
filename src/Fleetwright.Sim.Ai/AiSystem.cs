@@ -16,6 +16,8 @@ public sealed class AiSystem : IWorldSystem
     readonly long[] nextTick;
     readonly int[] tickGen;   // a tick rescheduled sooner leaves the old one stale
     readonly IPicture picture;
+    readonly Probes probes;
+    readonly int[] layerProbes;
 
     public byte Id { get; }
     public AdmiralLayer Admirals { get; }
@@ -33,6 +35,8 @@ public sealed class AiSystem : IWorldSystem
         tickGen = new int[layers.Length];
         Array.Fill(nextTick, -1);
         picture = new TruthPicture(world.Ships.Store);   // EXCEPTION until pictures (step 3.2)
+        probes = world.Probes;
+        layerProbes = [.. layers.Select(l => probes.Register("AI: " + l.GetType().Name))];
         Id = world.Register(this);
     }
 
@@ -92,7 +96,9 @@ public sealed class AiSystem : IWorldSystem
         if (e.Generation != tickGen[layer])
             return;   // replaced by a sooner one
         nextTick[layer] = -1;
+        long t = Probes.Now;
         layers[layer].Think(Context(world));
+        probes.Add(layerProbes[layer], t);
         WakeAll(world);   // a layer's orders can give the one below something to do (an admiral's first stations)
     }
 

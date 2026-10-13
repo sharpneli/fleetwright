@@ -29,6 +29,13 @@ public sealed class Snapshot
     /// <summary>Bytes the sim thread has allocated since it started: flat in play.</summary>
     public long SimAllocatedBytes { get; set; }
 
+    /// <summary>The sim thread's probes as they stood at this snapshot (docs/battle/plan.md step 2.7b): sums since the
+    /// world began, longest calls since the snapshot before.</summary>
+    public Probes Probes { get; } = new();
+
+    /// <summary>When it was published, <see cref="Probes.Now"/>: how old it is when a frame draws it.</summary>
+    public long PublishedAt { get; set; }
+
     /// <summary>What stopped the sim, if it crashed; it no longer advances.</summary>
     public string? Error { get; set; }
 

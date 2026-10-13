@@ -276,6 +276,8 @@ public static unsafe class Program
 
             // Run the engine
             engine.Run();
+            if (frameTimes)
+                Console.Write(world.Perf.Report(world.Current));
 
             return 0;
         }

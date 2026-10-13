@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim;
 
@@ -29,11 +30,15 @@ public sealed class SimHost : IDisposable
     readonly Stopwatch wall = new();
     double windowStart, achieved;
     long windowGameMs;
+    readonly int advanceProbe, publishProbe, waitProbe;
 
     public SimHost(World world)
     {
         this.world = world;
         commands = new CommandQueue(world.Settings.CommandCapacity);
+        advanceProbe = world.Probes.Register("Host: advance");
+        publishProbe = world.Probes.Register("Host: publish");
+        waitProbe = world.Probes.Register("Host: idle");
         thread = new Thread(Run) { Name = "Sim", IsBackground = true };
     }
 
@@ -79,10 +84,12 @@ public sealed class SimHost : IDisposable
             Publish();
             while (!stop)
             {
+                long t = Probes.Now;
                 wake.WaitOne(100);
+                world.Probes.Add(waitProbe, t);
                 Drain();
                 double lastPublish = wall.Elapsed.TotalMilliseconds;
-                while (!stop && !world.Advance(world.Settings.EventsPerSlice))
+                while (!stop && !Advance())
                 {
                     if (wall.Elapsed.TotalMilliseconds - lastPublish >= publishMs)
                     {
@@ -99,6 +106,14 @@ public sealed class SimHost : IDisposable
             error = ex.ToString();
             Publish();
         }
+    }
+
+    bool Advance()
+    {
+        long t = Probes.Now;
+        bool done = world.Advance(world.Settings.EventsPerSlice);
+        world.Probes.Add(advanceProbe, t);
+        return done;
     }
 
     void Drain()
@@ -122,12 +137,17 @@ public sealed class SimHost : IDisposable
             achieved = (world.Time.Ms - windowGameMs) / 1000.0 / (now - windowStart);
             (windowStart, windowGameMs) = (now, world.Time.Ms);
         }
+        long t = Probes.Now;
         var s = snapshots.Back;
         world.Fill(s);
+        s.Probes.CopyFrom(world.Probes);
+        world.Probes.ResetMax();
+        s.PublishedAt = Probes.Now;
         s.Sequence = ++sequence;
         s.AchievedSpeed = achieved;
         s.SimAllocatedBytes = GC.GetAllocatedBytesForCurrentThread();
         s.Error = error;
         snapshots.Publish();
+        world.Probes.Add(publishProbe, t);
     }
 }
