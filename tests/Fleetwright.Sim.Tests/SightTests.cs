@@ -85,3 +85,92 @@ public class SightTests(ITestOutputHelper output)
         output.WriteLine($"{n} classes");
     }
 }
+
+/// <summary>The sighting model (docs/battle/plan.md step 3.2c): its reference, its independence of how often it looks,
+/// the record's reaches, and a printed table of reaches for tuning.</summary>
+public class SightModelTests(ITestOutputHelper output)
+{
+    static readonly Core.SimSettings S = Core.SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
+
+    /// <summary>The furthest range where a look finds the target at a rate of at least one in <paramref name="perS"/>
+    /// seconds (0: where it can be made out at all), km.</summary>
+    static double Reach(double eyeM, double mag, double search, ShipClass t, double vis, double sun, bool sil, double aspect, double perS)
+    {
+        for (double d = 80_000; d > 100; d -= 100)
+        {
+            var line = new Combat.SightLine(d, aspect, vis, sun, sil);
+            double m = Combat.SightModel.Margin(eyeM, mag, t, line, S);
+            if (perS == 0 ? m >= 1 : Combat.SightModel.Rate(m, search, S) >= 1 / perS)
+                return d / 1000;
+        }
+        return 0;
+    }
+
+    /// <summary>research/simulation/sighting_ref.py's table, written apart from the sim: the hidden height and the margin
+    /// for the area it gives (its schematic battleship), to the last digits it printed.</summary>
+    [Theory]
+    [InlineData(24, 20000, 7, 25000, 30, false, 0.083104166702, 1926.04124999, 1.64878924876)]
+    [InlineData(24, 30000, 7, 25000, 30, false, 8.30538589554, 602.676846267, 0.614042920136)]
+    [InlineData(20, 30000, 20, 40000, 30, false, 10.9478277071, 444.130337571, 2.09890480629)]
+    [InlineData(15, 34000, 7, double.PositiveInfinity, 30, false, 24.4565288112, 1.63041356626, 0.127747417247)]
+    [InlineData(24, 4000, 7, 25000, -15, false, 0, 1941, 1.5566438374)]
+    [InlineData(24, 25000, 7, 25000, -4, true, 2.51251756067, 1488.74683908, 2.57097622057)]
+    public void The_model_agrees_with_its_reference(double eye, double d, double mag, double vis, double sun, bool sil, double hidden, double area, double margin)
+    {
+        Assert.Equal(hidden, Combat.SightModel.HiddenM(eye, d, S), 1e-8);
+        double m = Combat.SightModel.MarginOfArea(area, d, mag, new Combat.SightLine(d, 90, vis, sun, sil), S);
+        Assert.Equal(margin, m, margin * 1e-9);
+    }
+
+    /// <summary>A look's chance comes from a rate, so ten looks of 0.5 s find it as often as one of 5 s.</summary>
+    [Fact]
+    public void How_often_it_looks_changes_nothing()
+    {
+        foreach (double margin in new[] { 1.2, 2, 5 })
+        {
+            double rate = Combat.SightModel.Rate(margin, 1, S);
+            double missTen = Math.Pow(1 - Combat.SightModel.Chance(rate, 0.5), 10);
+            Assert.Equal(Combat.SightModel.Chance(rate, 5), 1 - missTen, 12);
+        }
+        Assert.Equal(0, Combat.SightModel.Rate(0.99, 1, S));
+        Assert.Equal(S.SightRatePerS, Combat.SightModel.Rate(S.SightFullMargin * 2, 1, S), 12);
+    }
+
+    /// <summary>The record (research/simulation/fire-control-research.md §2) with the classes' own silhouettes and a
+    /// lookout at Bismarck's masthead: the Jutland's battlecruisers made each other out at ~24-26 km in a visibility of
+    /// about that; the Denmark Strait's ~35 km in clear Arctic air (the horizon's limit); a destroyer later than a
+    /// battleship, bow on later than side on; at night a few kilometres.</summary>
+    [Fact]
+    public void The_reaches_match_the_record()
+    {
+        var bis = Fleet.Get("bismarck").Class!;
+        var dd = Fleet.Get("destroyer").Class!;
+        double eye = bis.Eyes[0].HeightM;
+        Assert.InRange(Reach(eye, 7, 1, bis, 25_000, 30, false, 90, 0), 24, 29);
+        Assert.InRange(Reach(eye, 7, 1, bis, 1e9, 30, false, 90, 0), 32, 38);
+        Assert.True(Reach(eye, 7, 1, dd, 25_000, 30, false, 90, 0) < Reach(eye, 7, 1, bis, 25_000, 30, false, 90, 0) - 2);
+        Assert.True(Reach(eye, 7, 1, bis, 25_000, 30, false, 0, 0) < Reach(eye, 7, 1, bis, 25_000, 30, false, 90, 0) - 3);
+        Assert.InRange(Reach(eye, 7, 1, bis, 25_000, -15, false, 90, 0), 3, 7);
+        Assert.True(Reach(eye, 7, 1, bis, 25_000, -4, true, 90, 0) > Reach(eye, 7, 1, bis, 25_000, -4, false, 90, 0) + 3, "silhouetted at dusk");
+        Assert.True(Reach(20, 20, 0.3, bis, 25_000, 30, false, 90, 0) > Reach(20, 7, 1, bis, 25_000, 30, false, 90, 0), "a rangefinder's magnification");
+    }
+
+    /// <summary>For tuning: how far each kind of eye makes out each kind of ship, by weather and light.</summary>
+    [Fact]
+    public void Print_reaches()
+    {
+        foreach (var target in new[] { "bismarck", "dreadnought", "destroyer" })
+        {
+            var t = Fleet.Get(target).Class!;
+            output.WriteLine($"target {target} (top {t.Silhouette.TopM:F1} m), side on:");
+            foreach (var (name, eye, mag, search) in new[] { ("masthead 24 m x7", 24.0, 7.0, 1.0), ("director 20 m x20", 20.0, 20.0, 0.3), ("bridge 15 m x7", 15.0, 7.0, 1.0) })
+            {
+                string row = $"  {name,-20}";
+                foreach (double vis in new[] { 10_000.0, 25_000, 40_000, 1e9 })
+                    row += $"  V {(vis > 1e8 ? "inf" : (vis / 1000).ToString("0")),3} km: seen {Reach(eye, mag, search, t, vis, 30, false, 90, 0),4:F1} / 1 min {Reach(eye, mag, search, t, vis, 30, false, 90, 60),4:F1}";
+                output.WriteLine(row);
+            }
+            output.WriteLine($"  night (sun -15°), V 25: masthead seen {Reach(24, 7, 1, t, 25_000, -15, false, 90, 0):F1} km; dusk (sun -4°) {Reach(24, 7, 1, t, 25_000, -4, false, 90, 0):F1} km, silhouetted {Reach(24, 7, 1, t, 25_000, -4, true, 90, 0):F1} km; bow on by day V 25: {Reach(24, 7, 1, t, 25_000, 30, false, 0, 0):F1} km");
+        }
+    }
+}

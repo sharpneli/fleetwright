@@ -237,6 +237,61 @@ public sealed record SimSettings
     /// <summary>The visibility of a world whose scenario gives none, metres: a clear day at sea.</summary>
     public double DefaultVisibilityM { get; init; } = 40_000;
 
+    // ------------------------------------------------------------------ sighting (docs/battle/plan.md step 3.2c)
+
+    /// <summary>The refraction factor on the Earth's radius for sight lines (the standard 7/6: d = 3.86 √h km).</summary>
+    public double SightRefraction { get; init; } = 7.0 / 6.0;
+
+    /// <summary>A grey warship's inherent contrast against the horizon sky by day (0 none, 1 black on white).</summary>
+    public double SightContrastDay { get; init; } = 0.35;
+
+    /// <summary>Its contrast silhouetted against the bright horizon toward a low sun.</summary>
+    public double SightContrastSilhouette { get; init; } = 0.8;
+
+    /// <summary>The contrast a searching eye needs to pick out a large object (Koschmieder's 0.02 is for one looked at
+    /// where it's known to be; searching for it asks a few times more).</summary>
+    public double SightThresholdContrast { get; init; } = 0.05;
+
+    /// <summary>The threshold contrast rises as an object's solid angle (as magnified) shrinks: Cₜ = C∞ (1 + √(Ω꜀ / Ω))
+    /// (between Riccò's law for the smallest and none for the largest), sr. About (14 mrad)².</summary>
+    public double SightCriticalSolidAngle { get; init; } = 2e-4;
+
+    /// <summary>What a visibility means (the logs' sense, not the meteorologist's): a ship showing this much side on,
+    /// m², is made out by a lookout's binoculars at exactly the visibility; the haze's extinction follows from it.</summary>
+    public double SightReferenceAreaM2 { get; init; } = 1000;
+
+    /// <summary>The detection rate, per second, once an object is plainly visible (<see cref="SightFullMargin"/> times its
+    /// threshold): a lookout's sweep comes round to it in this.</summary>
+    public double SightRatePerS { get; init; } = 1.0 / 30;
+
+    /// <summary>The margin over the threshold contrast at which the rate is full; between 1 and this it rises with the
+    /// margin's logarithm.</summary>
+    public double SightFullMargin { get; init; } = 3;
+
+    /// <summary>How far an unlit ship shows at night (starlight, no moon), m: sight lines are cut to this in the dark.</summary>
+    public double SightNightM { get; init; } = 5_000;
+
+    /// <summary>The sun's elevation where night begins, degrees (nautical twilight's end); from 0° down to it the light
+    /// fails, the sight lines shortening geometrically to <see cref="SightNightM"/>.</summary>
+    public double SightNightSunDeg { get; init; } = -12;
+
+    /// <summary>A target against the bright horizon (silhouetted): the sun between this and <see cref="SightSilhouetteHighDeg"/>
+    /// of elevation, and within <see cref="SightSilhouetteArcDeg"/> of the line of sight's bearing beyond the target.</summary>
+    public double SightSilhouetteLowDeg { get; init; } = -10;
+    public double SightSilhouetteHighDeg { get; init; } = 6;
+    public double SightSilhouetteArcDeg { get; init; } = 50;
+
+    /// <summary>The binoculars' magnification at a masthead and on the bridge, and the conning tower's slits'.</summary>
+    public double SightLookoutMagnification { get; init; } = 7;
+    public double SightSlitsMagnification { get; init; } = 1;
+
+    /// <summary>A searching eye covers this share of the horizon: a director's or rangefinder's narrow field searches
+    /// slower than a lookout's binoculars.</summary>
+    public double SightDirectorSearchFactor { get; init; } = 0.3;
+
+    /// <summary>How often each navy's sighting is looked at in an encounter, ms (the plan's ~1 Hz).</summary>
+    public int SightingMs { get; init; } = 1000;
+
     // ------------------------------------------------------------------ the AI (docs/battle/plan.md step 2.3b)
 
     /// <summary>How often an AI layer thinks while every ship it commands is on rails, ms: nothing about them changes
