@@ -116,7 +116,7 @@ public static unsafe class Program
             {
                 devForces.Add(arg.Substring("-force=".Length));
             }
-            else if (arg.StartsWith("-captain="))   // a dev ship's captain: -captain=2:follow:1[:800], keep, run:1
+            else if (arg.StartsWith("-captain="))   // a dev ship's captain: -captain=2:follow:1[:800], keep, run:1, shadow:1[:m]
             {
                 captains.Add(arg.Substring("-captain=".Length));
             }
@@ -421,6 +421,7 @@ public static unsafe class Program
         {
             "follow" when target > 0 => o.Follow(ship, Sim.Ai.Unit.Ship(target), metres),
             "run" when target > 0 => o.Run(ship, Sim.Ai.Unit.Ship(target)),
+            "shadow" when target > 0 => o.Shadow(ship, Sim.Ai.Unit.Ship(target), metres),
             "keep" => o.Hold(ship),
             _ => null,
         };

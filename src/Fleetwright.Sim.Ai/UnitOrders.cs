@@ -68,6 +68,9 @@ public enum AiCommand : ushort
     /// <summary>X how far from the coast the unit's leading ship must keep beyond its own standoff, m: the half-width
     /// of the formation it leads, from its superior (the pilot's, docs/world/terrain-plan.md).</summary>
     Clearance,
+
+    /// <summary>A the unit shadowed; X the range to keep, m (0: by the visibility).</summary>
+    Shadow,
 }
 
 /// <summary>The one way an order gets to a unit, whoever gives it (docs/battle/plan.md step 2.6): the player's go in
@@ -100,6 +103,11 @@ public readonly struct UnitOrders(byte system)
         Make(AiCommand.Station, u, source, a: on.Id, x: asternM, y: abeamM);
 
     public Command Run(Unit u, Unit from, OrderSource source = OrderSource.Player) => Make(AiCommand.Run, u, source, a: from.Id);
+
+    /// <summary>Shadow another unit (an enemy known from the picture): keep it in sight at a range, on the bearing the
+    /// shadower is on (docs/battle/plan.md step 3.2f).</summary>
+    public Command Shadow(Unit u, Unit target, double rangeM = 0, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.Shadow, u, source, a: target.Id, x: rangeM);
 
     public Command SpeedLimit(Unit u, double kn) => Make(AiCommand.SpeedLimit, u, OrderSource.Superior, x: kn);
 

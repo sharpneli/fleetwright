@@ -26,6 +26,9 @@ public enum CaptainOrder : byte
     /// <summary>Keep a station on another unit: a distance astern and a distance to starboard (negative: to port) of it,
     /// in its own frame. What an admiral gives his captains to hold a formation.</summary>
     Station,
+
+    /// <summary>Keep another unit in sight at a range, on the bearing he's on (docs/battle/plan.md step 3.2f).</summary>
+    Shadow,
 }
 
 /// <summary>The captains (docs/battle/plan.md steps 2.3b and 2.6): one per ship that has been given an order, kept in
@@ -104,7 +107,7 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
         return ctx.Settings.AiRailsPeriodMs;
     }
 
-    static bool IsActive(in Captain c) => c.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station || c.Watch;
+    static bool IsActive(in Captain c) => c.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow || c.Watch;
 
     /// <summary>A ship's captain's order, its target unit and who gave it; None if he has none.</summary>
     public (CaptainOrder Order, int Target, OrderSource Source) Of(int entity)
@@ -227,6 +230,9 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             case AiCommand.Run:
                 (cap.Order, cap.Target) = (CaptainOrder.Run, (int)c.A);
                 break;
+            case AiCommand.Shadow:
+                (cap.Order, cap.Target, cap.DistanceM, cap.AbeamM) = (CaptainOrder.Shadow, (int)c.A, c.X, 0);
+                break;
             default:
                 throw new ArgumentException($"unknown AI command {c.Code}");
         }
@@ -243,7 +249,7 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             return;
         ref var cap = ref captains[i];
         var own = ctx.Ships[slot];
-        if (cap.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.None)
+        if (cap.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.None)
             (cap.Order, cap.Target, cap.AskedKn) = (own.Helm == Helm.Route ? CaptainOrder.Route : CaptainOrder.Course, 0, own.SpeedOrderKn);
         SetLimit(ctx, ref cap, own, 0);
         SetClearance(ctx, ref cap, entity, 0);
@@ -292,7 +298,7 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             if (ctx.Ships.RidesAnother(slot))
                 continue;   // carried on its guide's rails, held exactly on station: an order would only derail the line
             int target = new Unit(cap.Target).ShipOf(groups);
-            if (target == 0 || target == cap.Entity || !ctx.Picture.TryGet(target, out var t))
+            if (target == 0 || target == cap.Entity || !ctx.Picture.TryGet(own.Side, target, out var t))
             {
                 (cap.Order, cap.Target, cap.AskedKn) = (CaptainOrder.Course, 0, own.SpeedOrderKn);   // lost: he holds his course
                 continue;
@@ -311,6 +317,8 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
                 if (!Behaviours.Track(own, t, track, distance, s, out course, out kn))
                     (course, kn) = Behaviours.Station(own, t, distance, 0, s);   // off the track: onto its line first
             }
+            else if (cap.Order == CaptainOrder.Shadow)
+                (course, kn) = Behaviours.Shadow(own, t, cap.DistanceM > 0 ? cap.DistanceM : ShadowRange(ctx, own), ctx.Settings);
             else
                 (course, kn) = cap.Order == CaptainOrder.Station ? Behaviours.Station(own, t, cap.DistanceM, cap.AbeamM, ctx.Settings) : Behaviours.Run(own, t);
             if (cap.LimitKn > 0)
@@ -318,6 +326,16 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             Give(ctx, own, course, kn);
         }
         Recount();
+    }
+
+    /// <summary>The range a shadower keeps when he's given none: a share of how far he can see now (the weather's
+    /// visibility, or the dark's), kept between the settings' least and most.</summary>
+    static double ShadowRange(in AiContext ctx, ShipState own)
+    {
+        var s = ctx.Settings;
+        double vis = ctx.World.Weather.At(own.Position, ctx.World.Time).VisibilityM;
+        double reach = Math.Min(vis, SightModel.LightReachM(Light.SunElevationDeg(own.Position, ctx.World.Time), s));
+        return Math.Clamp(s.ShadowVisibilityShare * reach, s.ShadowMinM, s.ShadowMaxM);
     }
 
     /// <summary>Orders the course and speed if they differ from what the ship has been ordered.</summary>

@@ -163,8 +163,14 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
             case AiCommand.LoopRoute:
                 a.Loop = c.X != 0;
                 break;
-            case AiCommand.Follow or AiCommand.Station or AiCommand.Run:
-                a.Order = code switch { AiCommand.Follow => CaptainOrder.Follow, AiCommand.Station => CaptainOrder.Station, _ => CaptainOrder.Run };
+            case AiCommand.Follow or AiCommand.Station or AiCommand.Run or AiCommand.Shadow:
+                a.Order = code switch
+                {
+                    AiCommand.Follow => CaptainOrder.Follow,
+                    AiCommand.Station => CaptainOrder.Station,
+                    AiCommand.Shadow => CaptainOrder.Shadow,
+                    _ => CaptainOrder.Run,
+                };
                 (a.Target, a.DistanceM, a.AbeamM) = ((int)c.A, c.X, c.Y);
                 break;
             default:
@@ -308,7 +314,7 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
     {
         int lead = ctx.Ships.SlotOf(groups.GuideShip(g));
         var to = GuideUnit(g);
-        if (a.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.None && lead >= 0 && to.Id != 0)
+        if (a.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.None && lead >= 0 && to.Id != 0)
         {
             (a.Order, a.CourseDeg, a.RudderDeg, a.RouteCount, a.Loop) = (CaptainOrder.Course, double.NaN, 0, 0, false);
             a.AskedKn = ctx.Ships[lead].SpeedOrderKn;
@@ -362,6 +368,9 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
                 break;
             case CaptainOrder.Run:
                 ctx.Issue(o.Run(to, new Unit(a.Target), Up));
+                break;
+            case CaptainOrder.Shadow:
+                ctx.Issue(o.Shadow(to, new Unit(a.Target), a.DistanceM, Up));
                 break;
         }
         if (!double.IsNaN(a.AskedKn))

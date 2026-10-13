@@ -148,6 +148,21 @@ public static class Behaviours
         return a;
     }
 
+    /// <summary>Shadow: keep the other ship at a range, on the bearing from it he's on now (in its own frame), by the
+    /// same station keeping as a formation's. Closer, he opens; further, he closes; at the range he matches it.</summary>
+    public static (double CourseDeg, double SpeedKn) Shadow(ShipState own, in Sighting target, double rangeM, SimSettings s)
+    {
+        var up = target.Position.Normalized();
+        var rel = own.Position - target.Position;
+        rel -= up * Vec3d.Dot(rel, up);
+        var starboard = Vec3d.Cross(target.Forward, up);
+        double astern = -Vec3d.Dot(rel, target.Forward), abeam = Vec3d.Dot(rel, starboard);
+        double len = Math.Sqrt(astern * astern + abeam * abeam);
+        if (len < 1)
+            (astern, abeam, len) = (rangeM, 0, rangeM);   // on top of it: astern, out of its way
+        return Station(own, target, astern * rangeM / len, abeam * rangeM / len, s);
+    }
+
     /// <summary>Run: turn directly away from the other ship and ring flank speed.</summary>
     public static (double CourseDeg, double SpeedKn) Run(ShipState own, in Sighting from)
     {

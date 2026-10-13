@@ -328,6 +328,14 @@ public sealed record SimSettings
     /// <summary>A contact out of sight this long is forgotten, ms.</summary>
     public long SightForgetMs { get; init; } = 6 * 3_600_000L;
 
+    // ------------------------------------------------------------------ shadowing (docs/battle/plan.md step 3.2f)
+
+    /// <summary>A shadower given no range keeps this share of how far he can see (the visibility, or the dark's reach),
+    /// between the least and the most, m: inside sight, outside the guns' best.</summary>
+    public double ShadowVisibilityShare { get; init; } = 0.7;
+    public double ShadowMinM { get; init; } = 3_000;
+    public double ShadowMaxM { get; init; } = 20_000;
+
     // ------------------------------------------------------------------ the AI (docs/battle/plan.md step 2.3b)
 
     /// <summary>How often an AI layer thinks while every ship it commands is on rails, ms: nothing about them changes

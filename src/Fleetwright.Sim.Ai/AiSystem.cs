@@ -34,7 +34,7 @@ public sealed class AiSystem : IWorldSystem
         nextTick = new long[layers.Length];
         tickGen = new int[layers.Length];
         Array.Fill(nextTick, -1);
-        picture = new TruthPicture(world.Ships.Store);   // EXCEPTION until pictures (step 3.2)
+        picture = new NavyPicture(world);
         probes = world.Probes;
         layerProbes = [.. layers.Select(l => probes.Register("AI: " + l.GetType().Name))];
         Id = world.Register(this);
@@ -44,7 +44,7 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Clearance)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Shadow)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         if (u.IsShip)

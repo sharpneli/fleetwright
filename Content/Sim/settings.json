@@ -103,6 +103,9 @@
   "SightMisidentify": 0.3,
   "SightSimilarScore": 1.5,
   "SightForgetMs": 21600000,
+  "ShadowVisibilityShare": 0.7,
+  "ShadowMinM": 3000,
+  "ShadowMaxM": 20000,
   "ContactScanMs": 3600000,
   "ContactTraceSteps": 64,
 
