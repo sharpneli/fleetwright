@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). Step 3, seeing and knowing, was agreed and built 2026-10-13 (3.1 relations, encounters, the player's interest; 3.2 sighting and pictures), with what it leaves open listed after 3.2. Step 4, fighting, is next.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). Step 3, seeing and knowing, was agreed and built 2026-10-13 (3.1 relations, encounters, the player's interest; 3.2 sighting and pictures), with what it leaves open listed after 3.2. The time rework was agreed 2026-10-13 (the asked speed picks the clock tier, `docs/world/architecture.md` "The speed picks the tier"): 2.8, coarse motion, is next, then step 4, fighting.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -34,9 +34,9 @@ missions on top (`docs/world/architecture.md` "The pieces and where they live").
 - **A world:** the planet as a sphere at real scale, all sea at first, then the user's Earth model with land, ports
   and routing. One clock, from paused to ~30,000x, dropping by the player's rules when something needs them.
 - **Ships that move:** many ships of many designs, each compiled once to a `ShipClass`. They steam with real turning
-  circles and acceleration, in groups and formations, on routes. Ships far from anything are on rails, and ships
-  near something, or watched, are in the fine clock tier (every ship at 1x). The map's zoom bands only change how
-  they're drawn ("Terms" below).
+  circles and acceleration, in groups and formations, on routes. Ships far from anything are on rails; ships near
+  something are in the fine clock tier below 240x (every ship at 1x) and in the coarse one at 240x and up. The
+  asked speed picks the tier; the map's zoom bands only change how ships are drawn ("Terms" below).
 - **Seeing and knowing:** contacts and encounters, sighting (horizon, weather, night), and each navy's picture. The
   player sees what their navy knows.
 - **Fighting:** fire control, guns and shells, torpedoes, mines, collisions, the hit query, penetration, damage,
@@ -54,7 +54,8 @@ These are the final game's, around the simulation: politics and diplomacy, manuf
 research (a mission's `TechSet` is a preset), NPC admiralties, and the world's merchant traffic (a mission's merchants
 are just ships in it).
 
-**Out by decision (the user, 2026-10-12):** Resolved fights, aircraft and submarines. The module keeps to naval
+**Out by decision (the user, 2026-10-12):** aircraft and submarines. Resolved fights were out too until 2026-10-13,
+when they came back as the coarse tier (step 2.8, and coarse fire in step 4). The module keeps to naval
 battles between surface ships. Later technology then gives unhistorical battles (no carriers, no U-boats), which is
 accepted.
 
@@ -867,7 +868,7 @@ Built:
     of a knot off its leader's. Its station drifts, its captain re-orders, and it comes off and goes back on; groups
     don't have this. Riding a followed ship's rails like a group member would fix it ("Fine-tuning").
 - **Not yet:**
-  - the coarse clock tier (4.8), and routines (peace);
+  - the coarse clock tier (2.8), and routines (peace);
   - land on routes (rails don't check for it, by design: routing will).
 
 **Formations on rails, search patterns and the first contacts (done 2026-10-12).** The user's aim: a task group
@@ -953,7 +954,8 @@ them, the group commands' derails in `GroupSystem` and the polar cap tested in t
   whose guide squadron was all nudged out still has a guide and goes on rails; a waypoint given twice on rails is
   passed over (a loop all at one point was an event a millisecond for ever).
 - The refactor changed no simulated number in the rails, formation and force tests.
-- **By zoom: an EXCEPTION, kept only because we have to.** The sim is independent of display state, a hard rule
+- **By zoom: an EXCEPTION, to go in 2.8** (the user, 2026-10-13: the coarse tier makes forming up cheap at speed,
+  so the zoom is no longer needed). As it stands until then: the sim is independent of display state, a hard rule
   (docs/world/architecture.md, "Terms"); this is the one break in it, and there are to be no more. A formation seen
   snapping into place is jarring until the clock is massive, but once only its marker shows it's fine. To revisit:
   hide the snap better on screen so the dependency can go. The map tells the world its scale
@@ -1402,7 +1404,8 @@ heading's square roots and atan2, the arc, two coast lookups), no big-O left in 
 **Carried on from 2.7 (2026-10-13), to take up when a step touches them or a later scale run asks:**
 - the O(n²) left (listed above under 2.7c), to bring under n log n;
 - the rails' snap seen as a jump when ships are drawn one by one: hide it in the renderer (ease ships to their new
-  stations over a moment), the rails-by-zoom exception's condition for going away;
+  stations over a moment). It was the rails-by-zoom exception's condition for going away; since 2026-10-13 the
+  exception goes with the coarse tier (2.8), and snaps happen only at `RailsSnapMinSpeed` and up;
 - the load: shipgen's ~21 MB of garbage per class build (collections, a stuttering UI while loading), the first rails
   check of a 2,000-ship world (~100 ms), the ship art's 329 MB of textures;
 - the map: group labels piling up at the operations band (the UI rework, 5.2, may settle it);
@@ -1431,6 +1434,77 @@ The user's answers, 2026-10-13:
 4. **A quarter of the sim thread at 10x** for today's systems: the starting share, iterated as the systems grow.
 5. **8 workers** is the reference for the largest battles (measure with the job system capped at 8). The hope after
    the optimisation passes is that an old quad-core runs it smoothly too.
+
+**2.8 Coarse motion: the coarse clock tier (agreed 2026-10-13).** The user: coarse is for fast fights in a fight's
+clean-up phase, and for whenever the player just wants things to go faster. The asked speed picks the tier
+(`docs/world/architecture.md` "The speed picks the tier"). This step builds the tier and its motion. Fire in it
+comes in step 4, after the fine fire ("4.9").
+
+*Agreed (the user, 2026-10-13):*
+- **The rule, speed only:**
+  - **Rails** as now.
+  - **Coarse** for every other ship at `CoarseMinSpeed` and up: 240x for now, in config.
+  - **Fine** below that speed.
+  - The asked speed decides, never the achieved one, and never the zoom. Important encounters drop the speed as an
+    alert; asking for speed again fast-tracks the fight in coarse.
+- **The speed is a player input:** the same orders at other speeds may give other results, a sacrifice made for the
+  player's experience. Replays hold, because they store when the speed changed (it's logged).
+- **Coarse motion is kinematic:** no rudder and no swing to settle. Constant acceleration toward the speed rung,
+  and turns as perfect arcs of a circle, light to calculate (Rule the Waves uses exactly this). Steps of a minute
+  (`CoarseStepMs`).
+- **Rails at their forced speeds** (`RailsSnapMinSpeed` and up): a manoeuvre that takes about one rendered frame or
+  less is taken as done at once, so ships accelerate and turn instantly, are placed on their orders and settle onto
+  rails at once. Today's placing and snapping already do this. At 10,000x a frame is ~2.8 game minutes, about a
+  standard turn; a battleship working up to speed (5-10 minutes) is a frame at 30,000-100,000x. The number stays
+  10,000 in config; raise it if a snapped change of speed is seen.
+- **The map-scale exception goes:** the coarse tier makes forming up cheap at speed, so the zoom isn't needed.
+- **Later, maybe:** a dynamic threshold for slow machines (if the fine tier can't reach the asked speed, go coarse),
+  as a logged command from the host.
+
+*Proposed build:*
+- **2.8a The tier in one place.**
+  - `ShipStore`'s rails flag becomes a tier (Fine, Coarse, Rails), with a dense coarse list beside the fine one.
+  - `ShipSystem.Rails.cs` becomes `ShipSystem.Tiers.cs`, with every rule for every tier.
+  - `CoarseMinSpeed` and `CoarseStepMs` go in `SimSettings`.
+  - The snapshot's `OnRails` becomes the tier.
+- **2.8b The kinematics** (`Fleetwright.Sim.Combat`, beside `ShipMotion`).
+  - A coarse ship's motion is a segment: start time and pose, speed and acceleration, and the turning circle's radius
+    and side for its course rudder (`Handling.RadiusFor`, the same at any speed, as in Rule the Waves).
+  - When the turn ends (heading reached) and when the speed is reached are solved in closed form; `PoseAt`
+    evaluates the segment at any instant, as it does rails.
+  - Courses, routes (the helmsman's wheel-over, solved on the arc) and polar caps work as on rails.
+  - Near the coast, legs come from the slide's feeler (`Slide.Feel`), as `SlideStep` does on rails, short where
+    the coast is close.
+- **2.8c The coarse step:** an event at `EventTier.Coarse` on a grid of world time, a multiple of `RailsCheckMs`.
+  - It runs the contact check, encounters, the rails check, and the sighting look with dt = the step (the look is
+    already rate-based).
+  - AI layers whose ships are coarse think once a step.
+  - A group's ships ride their guide: a column on the guide's track, other formations at their stations (rails
+    already ride; a column's track needs the guide's past segments). Captains deciding once a minute can't keep
+    station by steering.
+- **2.8d Switching**, at a step boundary, with no pose jumping.
+  - Fine to coarse: the swing and the rudder's lag are dropped.
+  - Coarse to fine: the rudder and the rate of turn start from the arc the ship is on.
+  - Coarse to rails: exact, and at once, since a kinematic ship is steady the moment its manoeuvre ends.
+  - The snapshot carries each coarse ship's segment and when its turn and change of speed end, so the renderer
+    evaluates it as it does rails.
+- **2.8e The exception out:** `Watched`, `Command.SetViewScale`, `World.ViewMetresPerPixel`,
+  `RailsPlaceUnwatchedMinSpeed` and `RailsWatchedPx`. `MapScene` and `ScenarioRun` stop sending the scale.
+
+*Checked by:*
+- a coarse ship's pose after an hour is the same at a 5 s and a 60 s step, with orders at the same times;
+- coarse to rails exact, and at once when a manoeuvre ends;
+- coarse turning circles (advance, transfer, tactical diameter) and times to speed against the fine trials
+  (`shipgen trials`), within tolerances stated in the test;
+- changing the speed mid-manoeuvre makes no pose jump either way;
+- a replay with speed changes gives the same hash, cut at odd times too;
+- no ship on land from 240x to 30,000x, in the coast and archipelago scenarios;
+- no allocation in the coarse step;
+- measured: the Jutland's rungs at 240x, 1,000x and 30,000x, headless and in the app, against the asked speeds.
+
+*To settle at the step's start:* where the acceleration comes from (the handling's power ramp and curve, or the fine
+trials' time to speed), whether a turn's speed loss is left out or kept as a constant factor, and lone followers and
+shadowers (not in a group) at one decision a minute.
 
 ### 3. Seeing and knowing
 
@@ -1621,7 +1695,15 @@ and ramming, damage from where the stems struck.
   entries in its picture, and orders route around what it knows.
 - **The hit** is an underwater explosion at a point on the hull, into the same damage as a torpedo.
 
-**4.8 The coarse clock tier,** for damaged ships after a fight: still flooding, or burning, while the clock is compressed.
+**4.8 Damage in the coarse tier** (the tier itself is 2.8's): flooding, fire and repair at the coarse step, written
+to be stable at a minute, so a damaged ship still flooding or burning keeps going while the clock is compressed.
+
+**4.9 Coarse fire (agreed 2026-10-13: after the fine fire has been iterated enough to give data).** At the coarse
+step, fire is expected hits (range, fire-control level, the guns, the target's size and aspect:
+`fire_control_ref.py` `quick_hit_probability`), sampled from a seeded stream, with no shells in flight. Each hit
+goes through 4.1's query and the damage model, so damage is the same kind in either tier. Misses can be sampled as
+splashes for the screen. Calibrated against the fine fire: the same scenarios run many times both ways, comparing
+hits, sinkings and duration. That's a kept test.
 
 ### 5. Command
 
@@ -1997,8 +2079,10 @@ The user's, 2026-10-12, on the module:
    moving on it, then the rest.
 3. **Keep the number of ships in mind** ("How many ships"). The end goal is the whole world of the First World War
    with all its warships; not all of them need to fight at once.
-4. **Out of the module:** Resolved fights, aircraft and submarines. The focus is naval battles. Aviation is for
+4. **Out of the module:** aircraft and submarines. The focus is naval battles. Aviation is for
    version 2.0, after the political system and a full campaign of about 1890-1925 ("The era it's built for").
+   Resolved fights were out too, until 2026-10-13: they're in as the coarse tier (step 2.8, and step 4's coarse
+   fire).
 5. **Performance:** the targets in "How many ships" are fine. The absolute minimum is a Jutland going butter smooth
    on a modern machine; if we can't hit it, we'll do brutal ECS tricks.
 6. **Compiled ships on disk,** in an internal cache, before release ("Compiled ships on disk").

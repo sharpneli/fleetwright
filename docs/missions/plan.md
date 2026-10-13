@@ -117,10 +117,10 @@ needs:
 - a sighting model good enough for search: horizon, weather, night, smoke (step 3.2). No radar: the era is about
   1890-1925 (`docs/battle/plan.md` "The era it's built for").
 
-Not needed yet: Resolved (every encounter in a mission is the player's, at Full; Resolved comes when the player
-wants to hand fights to captains or the campaign brings NPC wars), the world's merchant traffic (a mission's
-merchants, harassed by its warships, are just ships in it), NPC admiralties, diplomacy, the
-coarse tier beyond what a damaged ship needs after a fight. The job system comes when profiling asks for it (the
+Not needed yet: the world's merchant traffic (a mission's
+merchants, harassed by its warships, are just ships in it), NPC admiralties, diplomacy. (Resolved
+fights were here until 2026-10-13: the coarse tier is now the battle module's, picked by the asked speed, so a
+mission's fight runs Full below 240x and Resolved above: `docs/battle/plan.md` 2.8 and 4.9.) The job system comes when profiling asks for it (the
 architecture's threading rules hold from the start). The Earth model when the user brings it: first missions are
 open ocean.
 
