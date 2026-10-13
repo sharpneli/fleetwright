@@ -107,6 +107,12 @@ Ballistics has no note of its own: the point-mass ballistics fitted to each gun 
 | [crew-space-model.md](simulation/crew-space-model.md) | Crew living space, provisions and water from complement and endurance | — |
 | [superstructure-research.md](simulation/superstructure-research.md) | Superstructure contents, size and height, 1890–1970 | — |
 
+### Scenarios and history
+
+| Note | What it covers |
+|---|---|
+| [jutland-1400-dispositions.md](jutland-1400-dispositions.md) | Both fleets at Jutland, 31 May 1916 at 14:00 GMT: positions, courses, formations and line orders, for `Content/Scenarios/jutland.json` |
+
 ### naval/
 
 Other Naval project docs that are neither rendering nor simulation.
