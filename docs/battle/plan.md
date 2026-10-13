@@ -1573,6 +1573,16 @@ switch between coarse and fine must be smooth when zoomed in; reuse the rails' c
 - **Stale rails events:** a unit laid on rails again and again (an order a minute below the snap speed) leaves a
   polar-cap event days ahead each time, as before 2.8; coarse ships no longer do.
 - **The dynamic threshold** for slow machines (a logged host command), when it's wanted.
+- **Abreast turns together in coarse** (the user, 2026-10-13: a big line abreast turned silly below the snap speed,
+  part of it riding its guide and part not). **Done, 2026-10-13:** a ship riding its guide's track abeam of it swung
+  round the guide as one rigid line (the outer wing at many times its speed, the inner one backward). Now, as the
+  guide lays a turn (an arc, or a heading changed at once), ships riding more than `RailsGroupStationM` abeam of its
+  track come off and turn together with it, on the guide's orders (`ShipStore.TurnTogether`); its line ahead still
+  rides, turning in succession. Their captains steer them back from where the turn leaves them (a coarse captain
+  leaves a ship mid-turn alone: it's done within a step or two, and at a minute he'd see the guide's old heading and
+  cancel the turn), and they ride again once steady in station, as the rails wait. Four abreast 800 m apart turned
+  90° at 1,000x: all turn together, nobody over 21 kn, riding again after 18 minutes (a line abreast turned together
+  is strung out ahead and astern, as on the fine tick). From the snap speed up, rails still place and snap.
 
 ### 3. Seeing and knowing
 

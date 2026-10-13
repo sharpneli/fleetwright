@@ -13,7 +13,8 @@ namespace Fleetwright.Sim;
 /// <list type="bullet">
 /// <item><b>Coarse.</b> A coarse ship is on segments of kinematic motion (CoarseMotion), laid from its orders as each
 /// ends and as it's ordered (<see cref="PlanCoarse"/>); a group's ships ride their guide while they're in station, and
-/// steer back to it by their captains when they're not (<see cref="RideCheck"/>). Everything the fine tick looks at
+/// steer back to it by their captains when they're not (<see cref="RideCheck"/>); as the guide turns, those abeam of its
+/// track come off to turn together, and only its line ahead rides on (<see cref="RidesThroughTurn"/>). Everything the fine tick looks at
 /// every few seconds is looked at once a coarse step (<see cref="CoarseStepEvent"/>). The asked speed crossing the
 /// threshold moves every ship off rails across at that moment, where it is (<see cref="SpeedChanged"/>); coming off
 /// rails, a ship goes to the tier the speed asks for (<see cref="DerailSlot"/>).</item>
@@ -57,6 +58,13 @@ public sealed partial class ShipSystem
     /// <summary>Whether a unit goes on rails by placing, and orders to it on rails snap: where nobody would see the turn
     /// or the forming up that's skipped, the clock so fast that a manoeuvre takes about a frame or less.</summary>
     bool Placing(World world) => world.Speed >= settings.RailsSnapMinSpeed;
+
+    /// <summary>Whether a ship riding its guide stays on it through the guide's turn below the snap speed: in its line
+    /// ahead (within <see cref="SimSettings.RailsGroupStationM"/> of its track), where riding turns it in succession as
+    /// a column turns. Abeam of it, riding would swing it round the guide as one rigid line (the outer wing at many
+    /// times the guide's speed, the inner one backward): it comes off to turn together, as the fine tick's captains
+    /// turn a line abreast, and rides again once steady in station (<see cref="RideCheck"/>, the rails check).</summary>
+    bool RidesThroughTurn(int slot) => Store.RailAbeamM(slot) <= settings.RailsGroupStationM;
 
     /// <summary>Whether a command to a ship takes it, and its unit, off rails: every movement order, but not a
     /// setting.</summary>
@@ -732,6 +740,7 @@ public sealed partial class ShipSystem
     /// gets the polar caps' events as rails do, once a step finds one coming (<see cref="CoarseStepEvent"/>).</summary>
     void PlanCoarse(World world, int slot)
     {
+        Store.PoseNow(slot, out _, out var was);
         long end = CoarseMotion.Plan(Store, slot, settings);
         if (world.Shore is { } shore)
             end = Slide.CoarseCoast(Store, slot, shore, settings, end);   // short of the coast, or sliding along it
@@ -739,6 +748,34 @@ public sealed partial class ShipSystem
             world.Schedule(new WorldTime(end), EventTier.Coarse, Store[slot].Entity, Id, CoarseSegment, Store.RailGen(slot));
         else
             SchedulePolar(world, slot, settings.CoarseStepMs);
+        TurnTogether(world, slot, was);
+    }
+
+    /// <summary>A unit's guide just laid a turn (an arc, or a heading changed at once: a slide's leg): its ships riding
+    /// abeam of its track come off it and turn together with it (<see cref="RidesThroughTurn"/>), their captains woken
+    /// to steer them back to their stations.</summary>
+    void TurnTogether(World world, int guide, Vec3d was)
+    {
+        Store.PoseNow(guide, out _, out var f);
+        if (Store.CurvatureNow(guide) == 0 && Vec3d.Dot(was, f) >= Math.Cos(settings.RailsGroupHeadingDeg * Math.PI / 180))
+            return;
+        int entity = Store[guide].Entity;
+        if (world.Groups.UnitOf(entity) is not { } u || world.Groups.GuideShip(u) != entity)
+            return;
+        world.Groups.LineOffsets(u, turning);
+        bool any = false;
+        for (int i = 1; i < turning.Count; i++)
+            if (Store.SlotOf(turning[i].Ship) is int m and >= 0 && Store.RidingOn(m) == guide && !RidesThroughTurn(m))
+            {
+                Store.TurnTogether(m, guide);
+                PlanCoarse(world, m);
+                any = true;
+            }
+        if (any)
+        {
+            EnsureCoarseStep(world);
+            world.OffRails();
+        }
     }
 
     /// <summary>A coarse ship's segment ends: the next laid from there. Stale (laid again, riding, or out of coarse

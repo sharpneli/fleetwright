@@ -250,6 +250,62 @@ public class CoarseTierTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_line_abreast_turns_together_coarse_and_rides_again_once_in_station()
+    {
+        // four abreast 800 m apart at 1,000x (on rails once steady), turned 90 degrees to starboard: riding the guide's
+        // track abeam would swing the line round it rigidly (the outer wing at ~6 times its speed, the inner one
+        // backward); they come off it, turn together on their own circles, their captains steer them back to their
+        // stations, and they ride again once steady in station
+        var (w, c) = Make();
+        w.Apply(Command.SetSpeed(1000));
+        var at = Earth.Position(Lat, Lon);
+        var fwd = Earth.Forward(at, 0);
+        var starboard = Vec3d.Cross(fwd, at.Normalized());
+        for (int i = 0; i < 4; i++)
+        {
+            var (la, lo) = Earth.LatLon(at + starboard * (i * 800));
+            w.Apply(ShipSystem.Spawn(c, la, lo, 0, Kn));
+        }
+        w.Apply(GroupSystem.CreateOfNewest(4, Formation.LineAbreast, 800));
+        int group = w.Groups[0].GroupId;
+        for (int m = 0; m < 10 && !Ship(w, 4).OnRails; m++)
+            Run(w, 60);
+        Assert.True(Ship(w, 1).OnRails && Ship(w, 4).OnRails, "in station: on rails");
+        w.Apply(O.Course(Unit.Group(group), 90));
+        Assert.Equal(ClockTier.Coarse, Ship(w, 1).Tier);
+        for (int e = 2; e <= 4; e++)
+            Assert.False(w.Ships.Store.RidesAnother(w.Ships.Store.SlotOf(e)), "abeam of the turning guide: off it");
+        var last = new Vec3d[5];
+        for (int e = 1; e <= 4; e++)
+            last[e] = Ship(w, e).Position;
+        double fastest = 0;
+        int ridingAt = -1;
+        for (int t = 5; t <= 3600 && ridingAt < 0; t += 5)
+        {
+            Run(w, 5);
+            for (int e = 1; e <= 4; e++)
+            {
+                var p = Ship(w, e).Position;
+                fastest = Math.Max(fastest, Earth.Distance(p, last[e]) / 5);
+                last[e] = p;
+            }
+            if (t == 30)
+                for (int e = 2; e <= 4; e++)
+                    Assert.InRange(Ship(w, e).HeadingDeg, 10, 100);   // turning with the guide, not running on
+            bool riding = true;
+            for (int e = 2; e <= 4; e++)
+                riding &= w.Ships.Store.RidesAnother(w.Ships.Store.SlotOf(e)) || Ship(w, e).OnRails;
+            if (riding)
+                ridingAt = t;
+        }
+        output.WriteLine($"riding again {ridingAt} s after the turn; the fastest any ship went {fastest / Handling.MsPerKnot:F1} kn");
+        Assert.True(ridingAt > 0, "back in station, riding its guide");
+        Assert.True(fastest < (Kn + Settings.FollowMaxSpeedDiffKn + 1) * Handling.MsPerKnot, "nobody swung round the guide");
+        for (int e = 1; e <= 4; e++)
+            Assert.Equal(90, Ship(w, e).HeadingDeg, 2.5);
+    }
+
+    [Fact]
     public void Coarse_ships_meet_open_an_encounter_and_see_each_other()
     {
         var (w, c) = Make();

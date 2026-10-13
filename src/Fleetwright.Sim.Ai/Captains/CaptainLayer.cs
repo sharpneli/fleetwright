@@ -357,6 +357,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             {
                 // coarse, deciding once a step: steer for where the station will be a step on (a trail recorded once
                 // a minute is no track to steer by; the line ahead's turns are its guide's rails, ShipSystem.Tiers.cs)
+                if (own.YawRate != 0)
+                    continue;   // mid-turn (turning together with its guide, ShipSystem.Tiers.cs, or his own last order): done within a step or two, steered on from where it comes out
                 var s = ctx.Settings;
                 var (astern, abeam) = cap.Order switch
                 {

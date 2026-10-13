@@ -420,6 +420,31 @@ public sealed class ShipStore
         return true;
     }
 
+    /// <summary>A ship riding its guide (coarse, or on rails as the guide comes off them) off it, as the guide turns, to
+    /// turn together with it: coarse on a segment of its own from where it is, its orders the guide's (its engines',
+    /// and its helm's: a rudder held, or the course the guide's turn ends on), for <see cref="CoarseMotion.Plan"/> to
+    /// lay. Its captain steers it back to its station from there.</summary>
+    public void TurnTogether(int slot, int guide)
+    {
+        Coarsen(slot);
+        (powerOrder[slot], speedOrderKn[slot], courseRudder[slot]) = (powerOrder[guide], speedOrderKn[guide], courseRudder[guide]);
+        if (helm[guide] is Helm.Rudder or Helm.None)
+        {
+            (helm[slot], rudderOrder[slot], rudder[slot]) = (helm[guide], rudderOrder[guide], rudder[guide]);
+            return;
+        }
+        helm[slot] = Helm.Course;
+        if (helm[guide] == Helm.Course)
+            courseDeg[slot] = courseDeg[guide];
+        else
+        {
+            // a route's turn: the heading its segment ends on (a straight leg: the leg's)
+            long end = SegmentEndMs(guide);
+            PoseAt(guide, end == long.MaxValue ? NowMs : end, out var p, out var f);
+            courseDeg[slot] = Earth.Heading(p, f);
+        }
+    }
+
     /// <summary>A coarse ship anchored again where its segment has it now, for <see cref="CoarseMotion.Plan"/> to lay
     /// the next (an order, its segment's end).</summary>
     public void ReanchorCoarse(int slot)

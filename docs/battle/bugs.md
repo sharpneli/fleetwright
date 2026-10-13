@@ -20,4 +20,7 @@ add what's found.
   for Release only and should say so (skip or scale it in Debug), or Debug got slower since S3; not hunted yet.
 - [ ] The other allocation tests warm up the same way and may share it: `ForceTests` (line ~400), `GroupTests`
   (~189), `FormationRailsTests` (~443), `RandomStreamTests` (~78), `SlideTests.Sliding_allocates_nothing_and_costs_little`.
-  None has been seen failing.
+  Seen failing since (2026-10-13, Release, on the commit before the coarse turn-together change and after it alike):
+  `FormationRailsTests.Contacts_and_snapped_searches_allocate_nothing`, `CoarseTierTests.Coarse_ships_in_an_encounter_allocate_nothing`
+  and `EncounterTests.Two_hundred_ships_in_one_fight_are_one_encounter_without_garbage`, each now and then (running
+  just the allocation tests, 1 run in 4 had two failures), each passing alone. Same suspicion as above.
