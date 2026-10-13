@@ -7,7 +7,8 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). Step 3, seeing and knowing, was agreed and built 2026-10-13 (3.1 relations, encounters, the player's interest; 3.2 sighting and pictures), with what it leaves open listed after 3.2. The time rework was agreed 2026-10-13 (the asked speed picks the clock tier, `docs/world/architecture.md` "The speed picks the tier") and 2.8, coarse motion, was built the same day (what it leaves open is under 2.8, "Carried on"). Step 4, fighting, is next.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). Step 3, seeing and knowing, was agreed and built 2026-10-13 (3.1 relations, encounters, the player's interest; 3.2 sighting and pictures), with what it leaves open listed after 3.2. The time rework was agreed 2026-10-13 (the asked speed picks the clock tier, `docs/world/architecture.md` "The speed picks the tier") and 2.8, coarse motion, was built the same day (what it leaves open is under 2.8, "Carried on"). Step 4, fighting, is next: its detailed plan is
+`docs/battle/fighting.md` (a draft to iterate, 2026-10-13).
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1709,6 +1710,11 @@ visibility they light up. Fire control's own sight lines (4.2) are per engaged p
   the smoke field.
 
 ### 4. Fighting
+
+**Planned in detail in `docs/battle/fighting.md`** (drafted 2026-10-13, to iterate with the user): the chain from
+target to sinking as links with contracts, each with a simple first model to deepen later one at a time; the steps
+4.0 (the scaffold) to 4.10 (scale), keeping the numbers and subjects below. Where the two differ, that doc leads; the
+sketch below stays as the step list other docs cite.
 
 **4.1 The hit query.** A segment, Earth-centred, to ship-local (pose, sinkage, trim, heel), broadphase on
 `BroadphaseR`, then turrets at the ship's bearings, the hull, armour and cells. Returns indices, not strings.
