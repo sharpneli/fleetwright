@@ -1387,6 +1387,11 @@ headless; fixed on the way, each measured before and after:
   matches Release). The Jutland at 1,000x reaches ~145x there, smoothly; 10x takes 6% of the sim thread. Whether to run
   DevRelease from the editor, or build the sim's libraries optimized in Debug, is the user's to decide.
 
+**O(n²) left, to bring under n log n** (the rule above; `GroupSystem.Get` by id is already an index, 2026-10-13):
+`NearOpposing` (each unit going onto rails against every slot: the 100 ms first check below), `Anchored` (each unit
+laid against every slot), `ShipStore.Drop` (every slot scanned for riders: a battle's sinkings), `GroupSystem.
+RelinkForces` (every group again until nothing changes), and `CaptainLayer`'s sorted array (shifted on each insert).
+
 Still open, for 2.7d or later: the first rails check of a 2,000-ship world takes ~100 ms (1,751 tramps checked and
 laid at once: 37 µs each to check against every opposing ship, 19 µs to lay); the classes' builds allocate ~21 MB each,
 so a load runs ~50 gen0, 18 gen1 and 9 gen2 collections and the UI stutters while it loads; the ship art is 329 MB of
@@ -1904,6 +1909,14 @@ The user's, 2026-10-12, on steps 2.2 and 2.3:
 8. **2.3 in two sessions,** with the coming N ships kept in mind while testing with one.
 9. **Ships may sail over land for now,** but tests and dev ships start at sea. Every great circle crosses land, so the
    round-the-globe test does too.
+
+The user's, 2026-10-13, during step 2.7:
+
+1. **No algorithm past O(n log n)** in its n (ships, units, groups, contacts): O(n²) is "fast enough to slip in but
+   slow enough to cause issues". Lookups by id go through an index, pairs through a spatial grid, the map's per-frame
+   work is culled to the view. An exact rewrite is proven by the state hash (`shipgen scenario` prints it).
+2. **DevRelease is the build to run and measure day to day** (Debug is ~8x slower in the sim, the optimizer alone):
+   `c:\git\.vscode\launch.json` has "Fleetwright (DevRelease)" beside Debug.
 
 ## Open questions
 

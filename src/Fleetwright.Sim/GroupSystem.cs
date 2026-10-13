@@ -209,12 +209,27 @@ public sealed class GroupSystem : IWorldSystem
         squadronStale = false;
     }
 
-    public Group? Get(int groupId)
+    /// <summary>A group by its id, or null: by an index (ids are handed out increasing and never reused), not a scan of
+    /// every group (it's asked per ship and per unit: the scan made those O(n²)).</summary>
+    public Group? Get(int groupId) => (uint)groupId < (uint)byId.Length ? byId[groupId] : null;
+
+    Group?[] byId = new Group?[64];
+
+    void AddGroup(Group g)
     {
-        foreach (var g in groups)
-            if (g.GroupId == groupId)
-                return g;
-        return null;
+        MembershipChanged();
+        groups.Add(g);
+        if (g.GroupId >= byId.Length)
+            Array.Resize(ref byId, Math.Max(g.GroupId + 1, byId.Length * 2));
+        byId[g.GroupId] = g;
+    }
+
+    void RemoveGroup(Group g)
+    {
+        MembershipChanged();
+        groups.Remove(g);
+        if ((uint)g.GroupId < (uint)byId.Length && byId[g.GroupId] == g)
+            byId[g.GroupId] = null;
     }
 
     /// <summary>Names a group: the start state's (a scenario's "2nd Battle Squadron"), set before the world runs, so a
@@ -504,8 +519,7 @@ public sealed class GroupSystem : IWorldSystem
                             if (Get(m) is { } freed)
                                 freed.Parent = 0;
                     LeaveForce(d);
-                    MembershipChanged();
-                    groups.Remove(d);
+                    RemoveGroup(d);
                 }
                 break;
             default:
@@ -517,8 +531,7 @@ public sealed class GroupSystem : IWorldSystem
     {
         var g = new Group { GroupId = nextId++, Formation = f, SpacingM = Spacing(spacing), IsForce = force, Owner = this };
         g.Name = force ? $"Force {g.GroupId}" : $"Group {g.GroupId}";
-        MembershipChanged();
-        groups.Add(g);
+        AddGroup(g);
         return g;
     }
 
@@ -568,8 +581,7 @@ public sealed class GroupSystem : IWorldSystem
                 {
                     var empty = groups[i];
                     LeaveForce(empty);
-                    MembershipChanged();
-                    groups.Remove(empty);
+                    RemoveGroup(empty);
                 }
                 return;
             }
@@ -588,8 +600,7 @@ public sealed class GroupSystem : IWorldSystem
         if (f.Members.Count == 0)
         {
             LeaveForce(f);
-            MembershipChanged();
-            groups.Remove(f);
+            RemoveGroup(f);
         }
     }
 
