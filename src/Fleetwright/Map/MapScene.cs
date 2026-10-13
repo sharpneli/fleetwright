@@ -15,8 +15,6 @@ namespace Fleetwright.Map;
 /// (step 2.3) are in MapScene.Ships.cs.</summary>
 public sealed unsafe partial class MapScene : IScene
 {
-    static readonly double[] Speeds = [1, 10, 100, 1000, 10_000, 30_000, 100_000, 300_000, 1_000_000];
-
     readonly WorldSession world;
     readonly GlobeRenderer renderer;
     readonly MapLines lines = new(), overlay = new();   // overlay: rebuilt every frame (routes, tracks, the selection)
@@ -150,21 +148,8 @@ public sealed unsafe partial class MapScene : IScene
             ImGui.SameLine();
             if (ImGui.Button(s.Paused ? "Run" : "Pause"))
                 world.Send(s.Paused ? Command.Resume() : Command.Pause());
-            foreach (double sp in Speeds)
-            {
-                ImGui.SameLine();
-                bool on = !s.Paused && s.Speed == sp;
-                if (on)
-                    ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.ButtonActive));
-                if (ImGui.Button(SpeedLabel(sp)))
-                {
-                    world.Send(Command.SetSpeed(sp));
-                    if (s.Paused)
-                        world.Send(Command.Resume());
-                }
-                if (on)
-                    ImGui.PopStyleColor();
-            }
+            ImGui.SameLine();
+            SpeedDetent(s);
             ImGui.TextDisabled(s.Paused
                 ? "paused"
                 : $"asked {SpeedLabel(s.Speed)}, achieved {SpeedLabel(Math.Round(s.AchievedSpeed))}");
@@ -258,18 +243,11 @@ public sealed unsafe partial class MapScene : IScene
         if (key == SDLK_SPACE)
             world.Send(s.Paused ? Command.Resume() : Command.Pause());
         else if (key is SDLK_EQUALS or SDLK_KP_PLUS or SDLK_MINUS or SDLK_KP_MINUS)
-        {
-            int i = Array.IndexOf(Speeds, s.Speed);
-            i = i < 0 ? 0 : Math.Clamp(i + (key is SDLK_MINUS or SDLK_KP_MINUS ? -1 : 1), 0, Speeds.Length - 1);
-            world.Send(Command.SetSpeed(Speeds[i]));
-        }
+            world.Send(Command.SetSpeed(StepSpeed(s.Speed, key is SDLK_MINUS or SDLK_KP_MINUS ? -1 : 1)));
         else
             return false;
         return true;
     }
-
-    static string SpeedLabel(double s) => s >= 1_000_000 && s % 1_000_000 == 0 ? $"{s / 1_000_000:0}M×"
-        : s >= 1000 && s % 1000 == 0 ? $"{s / 1000:0}k×" : $"{s:0.#}×";
 
     /// <summary>The map's zoom bands by the distance across the view (docs/map-ui/README.md).</summary>
     static string Band(double acrossM) => acrossM switch
