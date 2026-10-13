@@ -146,7 +146,7 @@ public sealed unsafe partial class MapScene : IScene
         probes.Add(probeUiLabels, t);
         t = Probes.Now;
         if (Sdl3GpuEngine.StatsShown)
-            world.Perf.Draw(s);
+            world.Perf.Draw(s, art, renderer.OverlayVertices);
         var vp = ImGui.GetMainViewport();
         float pad = 8 * UiFonts.Scale;
         const ImGuiWindowFlags Hud = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize |

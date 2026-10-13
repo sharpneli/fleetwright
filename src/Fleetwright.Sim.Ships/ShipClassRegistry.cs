@@ -23,6 +23,14 @@ public sealed class ShipClassRegistry : IDisposable
         public string? Error;
         public int Refs;
         public readonly ManualResetEventSlim Done = new(false);
+        public ClassTimings Timings;
+    }
+
+    /// <summary>What a class's build took, seconds on its building thread (docs/battle/plan.md step 2.7b, the load's
+    /// timeline): shipgen's build, the compile, and the built hook (the art's drawing and bake, in the app).</summary>
+    public readonly record struct ClassTimings(double Build, double Compile, double Hook)
+    {
+        public double Total => Build + Compile + Hook;
     }
 
     readonly object gate = new();
@@ -116,6 +124,12 @@ public sealed class ShipClassRegistry : IDisposable
 
     public string? ErrorOf(int id) => EntryOf(id).Error;
 
+    /// <summary>What a class's build took (zeros until it's built, or for one added already compiled).</summary>
+    public ClassTimings TimingsOf(int id) => EntryOf(id).Timings;
+
+    /// <summary>A class's name if it's built, else null.</summary>
+    public string? NameOf(int id) => TryGet(id)?.Name;
+
     /// <summary>Blocks until every request so far is built or failed.</summary>
     public void WaitAll()
     {
@@ -172,7 +186,9 @@ public sealed class ShipClassRegistry : IDisposable
                     e.Error = "invalid design: " + string.Join("; ", errs);
                 else
                 {
+                    long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                     var ship = ShipDesign.Build(design);
+                    long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
                     try
                     {
                         e.Class = ShipClassCompiler.Compile(ship);
@@ -181,6 +197,7 @@ public sealed class ShipClassRegistry : IDisposable
                     {
                         e.Error = x.Message;
                     }
+                    long t2 = System.Diagnostics.Stopwatch.GetTimestamp();
                     try
                     {
                         Built?.Invoke(id, ship, e.Class);
@@ -189,6 +206,9 @@ public sealed class ShipClassRegistry : IDisposable
                     {
                         Console.Error.WriteLine($"class registry: the built hook failed on {id}: {x}");   // the art's failure, not the class's
                     }
+                    long t3 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    double f = System.Diagnostics.Stopwatch.Frequency;
+                    e.Timings = new ClassTimings((t1 - t0) / f, (t2 - t1) / f, (t3 - t2) / f);
                 }
             }
             catch (Exception x)

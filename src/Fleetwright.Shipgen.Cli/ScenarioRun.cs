@@ -15,7 +15,7 @@ namespace Fleetwright.Shipgen.Cli;
 static class ScenarioRun
 {
     public static int Run(string path, string settingsPath, string landPath, string designsPath, double minutes, int threads,
-        int every, double atSpeed, bool land, bool replay)
+        int every, double atSpeed, bool land, bool replay, int[]? watch = null, double viewMpp = 0)
     {
         var settings = SimSettings.Load(settingsPath);
         var total = Stopwatch.StartNew();
@@ -44,6 +44,8 @@ static class ScenarioRun
         var w = new World(s.Start, s.Seed, settings, registry, land ? shore : null);
         var ai = new AiSystem(w);
         var start = ScenarioLoader.Apply(s, w, ai, classes);
+        if (viewMpp > 0)
+            w.Apply(Command.SetViewScale(viewMpp));   // as the app's map tells it (the rails' one display rule)
         double place = sw.Elapsed.TotalSeconds;
         Console.WriteLine($"land: {(land ? $"waited {shoreWait:F2} s more" : "none (a world of water)")}; placed {start.Ships} ships in " +
                           $"{start.Groups} groups in {place * 1000:F0} ms; ready {total.Elapsed.TotalSeconds:F2} s after the start");
@@ -57,6 +59,7 @@ static class ScenarioRun
         Console.WriteLine();
         Console.WriteLine("  game time   fine  rails   x real (this stretch)   allocated   gen0/1/2");
         var store = w.Ships.Store;
+        var snap = new Snapshot();
         long alloc0 = GC.GetAllocatedBytesForCurrentThread();
         int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
         double run = 0, worst = 0;
@@ -78,6 +81,30 @@ static class ScenarioRun
                                   $"{GC.CollectionCount(0) - g0}/{GC.CollectionCount(1) - g1}/{GC.CollectionCount(2) - g2}");
                 stretch.Restart();
                 stretchMs = 0;
+                if (watch != null)
+                    w.Fill(snap);
+                foreach (int e in watch ?? [])
+                {
+                    int j = snap.Ships.IndexOf(e);
+                    if (j >= 0)
+                    {
+                        var (sp, _) = snap.Ships.PoseAt(j, snap.Time.Ms);
+                        var (sla, slo) = Earth.LatLon(sp);
+                        Console.WriteLine($"    #{e} in the snapshot: {sla:F4}, {slo:F4} (pose of {snap.Ships.PoseMs[j] - snap.Time.Ms} ms)");
+                    }
+                    int k = store.SlotOf(e);
+                    if (k < 0)
+                    {
+                        Console.WriteLine($"    #{e}: gone");
+                        continue;
+                    }
+                    var sh = store[k];
+                    var (la, lo) = Earth.LatLon(sh.Position);
+                    var g = w.Groups.Of(e);
+                    Console.WriteLine($"    #{e} {start.ShipNames.GetValueOrDefault(e)}: {la:F4}, {lo:F4}, heading {sh.HeadingDeg:F1}, " +
+                                      $"{sh.Speed / Fleetwright.Sim.Combat.Handling.MsPerKnot:F1} kn, helm {sh.Helm} {sh.CourseOrderDeg:F0}° {sh.SpeedOrderKn:F1} kn, " +
+                                      $"{(sh.OnRails ? "rails" : "fine")}, {g?.Name ?? "no group"}");
+                }
             }
         }
         double game = minutes * 60;

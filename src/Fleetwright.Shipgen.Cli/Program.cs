@@ -121,7 +121,9 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), Path.Combine(Root(a), "designs"),
                     double.Parse(a.Get("minutes", "60")!, System.Globalization.CultureInfo.InvariantCulture), a.Int("threads", 0), a.Int("every", 5),
-                    double.Parse(a.Get("at", "10")!, System.Globalization.CultureInfo.InvariantCulture), !a.Has("no-land"), a.Has("replay")),
+                    double.Parse(a.Get("at", "10")!, System.Globalization.CultureInfo.InvariantCulture), !a.Has("no-land"), a.Has("replay"),
+                    a.Get("watch")?.Split(',').Select(int.Parse).ToArray(),
+                    double.Parse(a.Get("view", "0")!, System.Globalization.CultureInfo.InvariantCulture)),
                 "trials" => SeaTrials.Run(a.Positional, a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("out")),
                 _ => Fail($"unknown command {args[0]}\n\n{Usage}"),
             };

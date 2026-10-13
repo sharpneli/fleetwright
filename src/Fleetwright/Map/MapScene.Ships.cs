@@ -70,7 +70,7 @@ public sealed unsafe partial class MapScene
             var (p, f) = v.PoseAt(k, s.Time.Ms);
             int e = v.Entity[k];
 
-            // the track
+            // the track: sampled here, drawn last (TrackLines)
             if (!tracks.TryGetValue(e, out var tr))
                 tracks[e] = tr = new Track();
             tr.Seen = frame;
@@ -80,14 +80,6 @@ public sealed unsafe partial class MapScene
                 tr.Head = (tr.Head + 1) % TrackPoints;
                 tr.Count = Math.Min(tr.Count + 1, TrackPoints);
                 tr.LastMs = s.Time.Ms;
-            }
-            if (tr.Count > 0)
-            {
-                overlay.BeginStrip(TrackColor, 1.5f);
-                for (int i = 0; i < tr.Count; i++)
-                    Point(view, tr.Points[(tr.Head - tr.Count + i + TrackPoints) % TrackPoints]);
-                Point(view, p);
-                overlay.End();
             }
 
             // the route still to steam
@@ -151,6 +143,7 @@ public sealed unsafe partial class MapScene
             }
         }
         DrawGroups(view, s);
+        TrackLines(view, s);   // last: the most lines and the least needed, so a full buffer drops them first
 
         // tracks of ships no longer there
         gone.Clear();
@@ -160,6 +153,31 @@ public sealed unsafe partial class MapScene
         foreach (int e in gone)
             tracks.Remove(e);
         overlay.End();
+    }
+
+    /// <summary>Every ship's track, as cheaply as it reads (docs/battle/plan.md step 2.7b: 250 ships' tracks were
+    /// ~60,000 segments a frame, past the overlay's buffer): none for a ship further off the screen than its track
+    /// reaches, and the points thinned to about three pixels apart at its speed.</summary>
+    void TrackLines(in MapView view, Snapshot s)
+    {
+        var v = s.Ships;
+        double mpp = view.MetresPerPixel;
+        for (int k = 0; k < v.Count; k++)
+        {
+            if (!tracks.TryGetValue(v.Entity[k], out var tr) || tr.Count == 0)
+                continue;
+            var (p, _) = v.PoseAt(k, s.Time.Ms);
+            double reachPx = (tr.Count * (double)TrackEveryMs / 1000 * Math.Max(v.Speed[k], 2) + 1000) / mpp;
+            if (!view.Project(p, out double x, out double y) || x < -reachPx || y < -reachPx || x > width + reachPx || y > height + reachPx)
+                continue;
+            double spacingPx = Math.Max(v.Speed[k], 0.5) * TrackEveryMs / 1000 / mpp;
+            int stride = Math.Max(1, (int)(3 / spacingPx));
+            overlay.BeginStrip(TrackColor, 1.5f);
+            for (int i = (tr.Count - 1) % stride; i < tr.Count; i += stride)   // ends on the newest
+                Point(view, tr.Points[(tr.Head - tr.Count + i + TrackPoints) % TrackPoints]);
+            Point(view, p);
+            overlay.End();
+        }
     }
 
     void Point(in MapView view, Vec3d p)

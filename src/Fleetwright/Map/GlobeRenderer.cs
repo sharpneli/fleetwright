@@ -23,6 +23,10 @@ public sealed unsafe class GlobeRenderer : IDisposable
     readonly SDL_GPUDevice* device;
     readonly SDL_GPUShader* globeVs, globeFs, lineVs, lineFs, fillVs, fillFs, land3dVs, coast3dVs, depthFs;
     readonly DynamicGpuBuffer lineBuf, fillBuf, overlayBuf;
+
+    /// <summary>The overlay's vertices last frame, and how many fit: past it, the last drawn are dropped.</summary>
+    public int OverlayVertices { get; private set; }
+    public static int OverlayCapacity => (int)(OverlayBufferBytes / LineVertex.SizeInBytes);
     readonly SDL_GPUSampler* nearest;
     SDL_GPUGraphicsPipeline* globePipe, linePipe, fillPipe, depthPipe, fill3dPipe, coast3dPipe;
     RenderTarget? coverage;   // the land's winding number per pixel, at the target's size, with depth
@@ -34,7 +38,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
     readonly SDL_GPUBuffer*[] meshFill = new SDL_GPUBuffer*[2], meshCoast = new SDL_GPUBuffer*[2], meshIdx = new SDL_GPUBuffer*[2];
     readonly uint[] meshFillCount = new uint[2], meshIdxCount = new uint[2];
 
-    const uint LineBufferBytes = 16 << 20, FillBufferBytes = 8 << 20, OverlayBufferBytes = 2 << 20;
+    const uint LineBufferBytes = 16 << 20, FillBufferBytes = 8 << 20, OverlayBufferBytes = 8 << 20;
     const SDL_GPUTextureFormat CoverageFormat = SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16_FLOAT;
 
     /// <summary>How far inside the Earth the masking sphere is: over the baked fans' sag (under 0.4 km), so they pass,
@@ -189,6 +193,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
             landFill = landFill[..(maxFill - maxFill % 3)];
         var over = overlay != null ? overlay.Vertices : default;
         int maxOver = (int)(OverlayBufferBytes / LineVertex.SizeInBytes);
+        OverlayVertices = over.Length;
         if (over.Length > maxOver)
             over = over[..(maxOver - maxOver % 6)];
         lineBuf.Upload(cmd, verts);   // copy passes: before the render passes

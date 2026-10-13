@@ -75,6 +75,13 @@ public sealed unsafe class ShipArtLibrary : IDisposable
     /// <summary>Classes drawn and waiting for the render thread.</summary>
     public int Pending => pending.Count;
 
+    /// <summary>The art's texture memory, bytes, every mip level (docs/battle/plan.md step 2.7b: VRAM).</summary>
+    public long Bytes { get; private set; }
+
+    /// <summary>The longest frame's uploads, ms on the render thread, and the classes uploaded so far.</summary>
+    public double MaxUploadMs { get; private set; }
+    public int Uploaded { get; private set; }
+
     /// <summary>On a building thread: draws and bakes a design's sprites, mipmapped.</summary>
     void Draw(int id, Ship ship, ShipClass? cls)
     {
@@ -93,8 +100,13 @@ public sealed unsafe class ShipArtLibrary : IDisposable
     /// <summary>On the render thread, between frames: uploads up to <paramref name="max"/> classes' art.</summary>
     public void UploadPending(int max = 2)
     {
+        if (pending.IsEmpty)
+            return;
+        long t = System.Diagnostics.Stopwatch.GetTimestamp();
         for (int k = 0; k < max && pending.TryDequeue(out var p); k++)
         {
+            Bytes += Size(p.Images.Hull) + Size(p.Images.Height) + p.Images.Turrets.Values.Sum(Size);
+            Uploaded++;
             var meta = p.Sprites.Meta;
             var types = meta.TurretTypes.Keys.ToArray();
             var mounts = meta.Mounts;
@@ -113,6 +125,15 @@ public sealed unsafe class ShipArtLibrary : IDisposable
                 old.Release(device);
             art[p.Id] = a;
         }
+        MaxUploadMs = Math.Max(MaxUploadMs, (System.Diagnostics.Stopwatch.GetTimestamp() - t) * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
+    }
+
+    static long Size(Image8[] levels)
+    {
+        long n = 0;
+        foreach (var l in levels)
+            n += l.Data.Length;
+        return n;
     }
 
     public void Dispose()

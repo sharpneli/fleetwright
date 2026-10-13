@@ -130,7 +130,7 @@ public sealed class WorldPerf
     }
 
     /// <summary>The panel (F2, beside the engine's stats): the clock's smoothness, the sim thread, the map's parts.</summary>
-    public void Draw(Snapshot s)
+    public void Draw(Snapshot s, ShipArtLibrary art, int overlayVertices)
     {
         var vp = ImGui.GetMainViewport();
         float sc = UiFonts.Scale;
@@ -141,24 +141,50 @@ public sealed class WorldPerf
             ImGui.End();
             return;
         }
-        ImGui.Text($"Clock: asked {s.Speed:G4}x, achieved {Achieved:F0}x, behind {BehindMs / 1000.0:F1} s game");
-        ImGui.Text($"Frames {Frames}/s: {SmoothPct:F0}% smooth, {Stale} stale, worst step {WorstJump:F1}x a frame's");
-        ImGui.Text($"Snapshot age: mean {MeanAgeMs:F1} ms, worst {WorstAgeMs:F1} ms");
-        ImGui.Text($"GC this second: gen0 {Gen0}, gen1 {Gen1}, gen2 {Gen2}");
-        ImGui.Separator();
-        ImGui.TextDisabled("Sim thread, share of the thread (longest call)");
-        for (int i = 0; i < simCount; i++)
-            if (SimShare[i] >= 0.0005 || SimMaxMs[i] >= 1)
-                ImGui.Text($"  {simNames[i],-26} {SimShare[i] * 100,6:F1}%   ({SimMaxMs[i]:F2} ms)");
-        ImGui.Separator();
-        ImGui.TextDisabled("Map, ms a frame (longest)");
-        for (int i = 0; i < Ui.Count; i++)
-            ImGui.Text($"  {Ui.Names[i],-26} {UiMsPerFrame[i],6:F2}   ({UiMaxMs[i]:F2})");
+        // TextUnformatted throughout: ImGui.Text reads % as a format
+        ImGui.TextUnformatted($"Clock: asked {s.Speed:G4}x, achieved {Achieved:F0}x, behind {BehindMs / 1000.0:F1} s game");
+        ImGui.TextUnformatted($"Frames {Frames}/s: {SmoothPct:F0}% smooth, {Stale} stale, worst step {WorstJump:F1}x a frame's");
+        ImGui.TextUnformatted($"Snapshot age: mean {MeanAgeMs:F1} ms, worst {WorstAgeMs:F1} ms");
+        ImGui.TextUnformatted($"GC this second: gen0 {Gen0}, gen1 {Gen1}, gen2 {Gen2}");
+        ImGui.TextUnformatted($"Ship art: {art.Uploaded} classes, {art.Bytes / 1048576.0:F0} MB of textures, longest upload frame {art.MaxUploadMs:F1} ms");
+        ImGui.TextUnformatted($"Overlay: {overlayVertices:#,0} vertices of {GlobeRenderer.OverlayCapacity:#,0}{(overlayVertices > GlobeRenderer.OverlayCapacity ? "  (FULL: the last drawn are dropped)" : "")}");
+        if (ImGui.BeginTable("##simprobes", 3, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg))
+        {
+            ImGui.TableSetupColumn("Sim thread");
+            ImGui.TableSetupColumn("share");
+            ImGui.TableSetupColumn("longest");
+            ImGui.TableHeadersRow();
+            for (int i = 0; i < simCount; i++)
+                if (SimShare[i] >= 0.0005 || SimMaxMs[i] >= 1)
+                    Row(simNames[i], $"{SimShare[i] * 100:F1}%", $"{SimMaxMs[i]:F2} ms");
+            ImGui.EndTable();
+        }
+        if (ImGui.BeginTable("##uiprobes", 3, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg))
+        {
+            ImGui.TableSetupColumn("Map");
+            ImGui.TableSetupColumn("a frame");
+            ImGui.TableSetupColumn("longest");
+            ImGui.TableHeadersRow();
+            for (int i = 0; i < Ui.Count; i++)
+                Row(Ui.Names[i], $"{UiMsPerFrame[i]:F2} ms", $"{UiMaxMs[i]:F2} ms");
+            ImGui.EndTable();
+        }
         ImGui.End();
+
+        static void Row(string name, string a, string b)
+        {
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted(name);
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted(a);
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted(b);
+        }
     }
 
     /// <summary>The run's whole, for -frametimes at exit.</summary>
-    public string Report(Snapshot s)
+    public string Report(Snapshot s, ShipArtLibrary art)
     {
         if (run.Count < 2)
             return "world: no frames measured";
@@ -174,6 +200,7 @@ public sealed class WorldPerf
                           $"{100.0 * ratio.Count(r => Math.Abs(r - 1) < 0.25) / ratio.Length:F0}% within 25%");
         sb.AppendLine($"  snapshot age when drawn: p50 {age[age.Length / 2]:F1}, p99 {age[age.Length * 99 / 100]:F1}, max {age[^1]:F1} ms");
         sb.AppendLine($"  GC: gen0 {GC.CollectionCount(0) - runG0}, gen1 {GC.CollectionCount(1) - runG1}, gen2 {GC.CollectionCount(2) - runG2}");
+        sb.AppendLine($"  ship art: {art.Uploaded} classes, {art.Bytes / 1048576.0:F0} MB of textures, longest upload frame {art.MaxUploadMs:F1} ms");
         sb.AppendLine("  sim thread, share of the thread (longest call):");
         for (int i = 0; i < s.Probes.Count; i++)
         {

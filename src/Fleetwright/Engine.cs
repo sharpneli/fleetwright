@@ -304,7 +304,9 @@ public unsafe class Sdl3GpuEngine : IDisposable
     /// "F:wheel:X,Y:N" turns the wheel N notches, "F:drag:X0,Y0:X1,Y1" drags with the left button, "F:type:TEXT" types TEXT then Enter, "F:drop:PATH" drops the file PATH on the window. X, Y in window pixels.
     /// "F:pan:X0,Y0:X1,Y1:N" is a drag as a real mouse makes it: SDL events (so the scene gets them as from the
     /// device), the button down at X0,Y0, then N frames of eight motion events each toward X1,Y1, then up.
-    /// "F:mclick:X,Y" and "F:mright:X,Y" are left and right clicks the same way, as SDL events (the map's clicks).</summary>
+    /// "F:mclick:X,Y" and "F:mright:X,Y" are left and right clicks the same way, as SDL events (the map's clicks).
+    /// "F:mwheel:X,Y:N" turns the wheel N notches as an SDL event (the map's zoom: N &gt; 0 zooms in), and "F:key:NAME"
+    /// presses a key by its SDL name (F2, Space, =).</summary>
     public List<string> ScriptedInput { get; } = [];
 
     void FeedScriptedInput()
@@ -384,6 +386,22 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     PushMouse(SDL_EventType.SDL_EVENT_MOUSE_MOTION, m, default);
                     PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN, m, default, mb);
                     PushMouse(SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP, m, default, mb);
+                    break;
+                case "mwheel" when p.Length > 3:
+                    var mw = At(p[2]);
+                    var we = new SDL_Event();
+                    we.type = (uint)SDL_EventType.SDL_EVENT_MOUSE_WHEEL;
+                    we.wheel.windowID = SDL_GetWindowID(_window);
+                    (we.wheel.mouse_x, we.wheel.mouse_y, we.wheel.y) = (mw.X, mw.Y, float.Parse(p[3], System.Globalization.CultureInfo.InvariantCulture));
+                    SDL_PushEvent(&we);
+                    break;
+                case "key":
+                    var ke = new SDL_Event();
+                    ke.type = (uint)SDL_EventType.SDL_EVENT_KEY_DOWN;
+                    ke.key.windowID = SDL_GetWindowID(_window);
+                    ke.key.key = SDL_GetKeyFromName(p[2]);
+                    ke.key.down = true;
+                    SDL_PushEvent(&ke);
                     break;
                 case "drop":   // the path may hold colons (C:/...): all after the second
                     FileDropped?.Invoke(ev[(ev.IndexOf(':', ev.IndexOf(':') + 1) + 1)..]);

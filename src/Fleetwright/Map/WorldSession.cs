@@ -182,6 +182,12 @@ public sealed class WorldSession : IDisposable
                                   $"{p.Classes!.Count} classes ready in {p.ClassesSeconds:F2} s, running {LoadSeconds.Total:F2} s after asking");
                 foreach (var x in start.Warnings)
                     Console.WriteLine($"  {x}");
+                // the load's timeline (docs/battle/plan.md step 2.7b): each class's build, compile and art, on the
+                // building threads
+                var times = p.Classes.Select(kv => (kv.Key, T: Classes.TimingsOf(kv.Value))).OrderByDescending(x => x.T.Total).ToArray();
+                Console.WriteLine($"  classes: build {times.Sum(x => x.T.Build):F2} s, compile {times.Sum(x => x.T.Compile):F2} s, " +
+                                  $"art {times.Sum(x => x.T.Hook):F2} s of thread time; slowest: " +
+                                  string.Join(", ", times.Take(3).Select(x => $"{x.Key} {x.T.Total:F2} s (art {x.T.Hook:F2})")));
             }
         }
         host.Elapse(dt);
