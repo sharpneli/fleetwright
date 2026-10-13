@@ -100,7 +100,7 @@ public sealed unsafe partial class MapScene
             double x0 = double.MaxValue, y0 = double.MaxValue, x1 = double.MinValue, y1 = double.MinValue;
             bool any = false;
             foreach (int e in lineShips)
-                if (v.IndexOf(e) is int k and >= 0 && view.Project(v.PoseAt(k, s.Time.Ms).Position, out double x, out double y))
+                if (v.IndexOf(e) is int k and >= 0 && view.Project(v.PoseAt(k, world.DrawMs).Position, out double x, out double y))
                     (x0, y0, x1, y1, any) = (Math.Min(x0, x), Math.Min(y0, y), Math.Max(x1, x), Math.Max(y1, y), true);
             if (!any)
                 continue;
@@ -112,7 +112,7 @@ public sealed unsafe partial class MapScene
         }
         for (int g = 0; g < gv.Count; g++)
         {
-            if (Covered(gv, g) || v.IndexOf(gv.GuideShip[g]) is not (int k and >= 0) || !view.Project(v.PoseAt(k, s.Time.Ms).Position, out double gx, out double gy))
+            if (Covered(gv, g) || v.IndexOf(gv.GuideShip[g]) is not (int k and >= 0) || !view.Project(v.PoseAt(k, world.DrawMs).Position, out double gx, out double gy))
                 continue;
             if (labelCount == labels.Length)
                 Array.Resize(ref labels, labels.Length * 2);
@@ -159,7 +159,7 @@ public sealed unsafe partial class MapScene
                 overlay.BeginStrip(GroupLine, 1f);
                 for (int i = 0; i < gv.MemberCount[lb.Group]; i++)
                     if (v.IndexOf(gv.Members[gv.MemberStart[lb.Group] + i]) is int k and >= 0)
-                        Point(view, v.PoseAt(k, s.Time.Ms).Position);
+                        Point(view, v.PoseAt(k, world.DrawMs).Position);
                 overlay.End();
             }
         }
@@ -168,11 +168,11 @@ public sealed unsafe partial class MapScene
             if (!gv.Force[g])
                 for (int i = 0; i < gv.MemberCount[g]; i++)
                     if (gv.Detached[gv.MemberStart[g] + i] != Detachment.InLine && v.IndexOf(gv.Members[gv.MemberStart[g] + i]) is int k and >= 0)
-                        Ring(view, v.PoseAt(k, s.Time.Ms).Position, ShipDrawList.IconLengthPx / 2 + 9, v.Asked[k] ? AskColor : HeldColor, 1.2f);
+                        Ring(view, v.PoseAt(k, world.DrawMs).Position, ShipDrawList.IconLengthPx / 2 + 9, v.Asked[k] ? AskColor : HeldColor, 1.2f);
         // the other picked ships
         foreach (int e in picked)
             if (v.IndexOf(e) is int k and >= 0)
-                Ring(view, v.PoseAt(k, s.Time.Ms).Position, ShipDrawList.IconLengthPx / 2 + 5, PickColor, 1.5f);
+                Ring(view, v.PoseAt(k, world.DrawMs).Position, ShipDrawList.IconLengthPx / 2 + 5, PickColor, 1.5f);
     }
 
     /// <summary>The groups' labels, drawn under the UI's windows: a force's below its guide squadron's, "held" and "!"

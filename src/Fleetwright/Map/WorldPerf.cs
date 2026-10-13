@@ -43,7 +43,7 @@ public sealed class WorldPerf
 
     /// <summary>A frame: the snapshot it will draw, the real time since the last one, and which world it's from (a new
     /// world starts the measures over).</summary>
-    public void Frame(Snapshot s, double dt, int generation)
+    public void Frame(Snapshot s, double dt, int generation, long drawMs)
     {
         long now = Probes.Now;
         if (generation != lastGeneration)
@@ -62,14 +62,14 @@ public sealed class WorldPerf
 
         // the clock as the screen sees it
         bool fresh = s.Sequence != lastSequence;
-        double game = lastGameMs == long.MinValue ? 0 : s.Time.Ms - lastGameMs;
+        double game = lastGameMs == long.MinValue ? 0 : drawMs - lastGameMs;   // the clock the map draws at
         // smooth means each frame's step is the speed the clock is keeping (the achieved, which is the asked unless the
         // sim is behind): steady motion at a lower speed is smooth, jerks are not
         double expected = s.Paused || s.AchievedSpeed < 0.5 ? 0 : s.AchievedSpeed * dt * 1000;   // none yet after a load
         double age = Probes.Ms(now - s.PublishedAt);
         if (lastGameMs != long.MinValue && run.Count < run.Capacity)
             run.Add(((float)game, (float)expected, (float)age, !fresh && expected > 0));
-        (lastSequence, lastGameMs) = (s.Sequence, s.Time.Ms);
+        (lastSequence, lastGameMs) = (s.Sequence, drawMs);
         frames++;
         if (!fresh && expected > 0)
             stale++;

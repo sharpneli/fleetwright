@@ -73,7 +73,7 @@ public sealed unsafe partial class MapScene
         frame++;
         for (int k = 0; k < v.Count; k++)
         {
-            var (p, f) = v.PoseAt(k, s.Time.Ms);
+            var (p, f) = v.PoseAt(k, world.DrawMs);
             int e = v.Entity[k];
 
             // the track: sampled here, drawn last (TrackLines)
@@ -132,7 +132,7 @@ public sealed unsafe partial class MapScene
                 if (t >= 0)
                 {
                     // the ship its captain follows or runs from
-                    var (tp, _) = v.PoseAt(t, s.Time.Ms);
+                    var (tp, _) = v.PoseAt(t, world.DrawMs);
                     overlay.BeginStrip(TargetColor, 1f);
                     Point(view, p);
                     Point(view, tp);
@@ -188,7 +188,7 @@ public sealed unsafe partial class MapScene
         {
             if (!tracks.TryGetValue(v.Entity[k], out var tr) || tr.Count == 0)
                 continue;
-            var (p, _) = v.PoseAt(k, s.Time.Ms);
+            var (p, _) = v.PoseAt(k, world.DrawMs);
             double reachPx = (tr.Count * (double)TrackEveryMs / 1000 * Math.Max(v.Speed[k], 2) + 1000) / mpp;
             if (!view.Project(p, out double x, out double y) || x < -reachPx || y < -reachPx || x > width + reachPx || y > height + reachPx)
                 continue;
@@ -383,7 +383,7 @@ public sealed unsafe partial class MapScene
         double bestD = double.MaxValue;
         for (int k = 0; k < v.Count; k++)
         {
-            var (p, _) = v.PoseAt(k, s.Time.Ms);
+            var (p, _) = v.PoseAt(k, world.DrawMs);
             if (!view.Project(p, out double px, out double py))
                 continue;
             double len = lengthOf(v.Class[k]) * view.Altitude / view.MetresPerPixel / Math.Max(Vec3d.Dot(p - view.Eye, view.Forward), 1e-3);
@@ -412,7 +412,7 @@ public sealed unsafe partial class MapScene
         }
         else
         {
-            var (p, _) = s.Ships.PoseAt(s.Ships.IndexOf(ship), s.Time.Ms);
+            var (p, _) = s.Ships.PoseAt(s.Ships.IndexOf(ship), world.DrawMs);
             world.Send(o.ClearRoute(unit));
             world.Send(o.Course(unit, Earth.Bearing(p, at), hardOver ? 90 : 0));
         }
@@ -490,7 +490,7 @@ public sealed unsafe partial class MapScene
         ImGui.SameLine();
         ImGui.SetNextItemWidth(140 * UiFonts.Scale);
         ImGui.Combo("##search", ref searchPattern, SearchNames, SearchNames.Length);
-        var (p, f) = s.Ships.PoseAt(kc, s.Time.Ms);
+        var (p, f) = s.Ships.PoseAt(kc, world.DrawMs);
         if (searchAlongHeading)
             searchAxis = (int)Math.Round(Earth.Heading(p, f)) % 360;
         ImGui.SameLine();
@@ -638,7 +638,7 @@ public sealed unsafe partial class MapScene
         if (k < 0)
             return;
         var cls = world.Classes.TryGet(s.Ships.Class[k]);
-        var (p, f) = s.Ships.PoseAt(k, s.Time.Ms);
+        var (p, f) = s.Ships.PoseAt(k, world.DrawMs);
         ImGui.SetNextWindowPos(new Vector2(vp.WorkPos.X + vp.WorkSize.X / 2, vp.WorkPos.Y + vp.WorkSize.Y - pad), ImGuiCond.Always, new Vector2(0.5f, 1));
         ImGui.SetNextWindowBgAlpha(0.8f);
         if (ImGui.Begin("##selected", Hud))

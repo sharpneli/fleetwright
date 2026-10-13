@@ -192,7 +192,37 @@ public sealed class WorldSession : IDisposable
         }
         host.Elapse(dt);
         Current = host.Latest();
-        Perf.Frame(Current, dt, Generation);
+        Clock(dt);
+        Perf.Frame(Current, dt, Generation, DrawMs);
+    }
+
+    /// <summary>The world time the map draws at this frame, ms (docs/battle/plan.md step 2.7c): the newest snapshot's
+    /// time, smoothed. The sim publishes on its own beat (every few ms while behind), so a frame gets one snapshot's
+    /// worth of motion or two; drawn at its snapshot's time, a ship at 1,000x lurched. This clock runs on at the speed
+    /// the world is keeping and leans a tenth of the way to the newest snapshot each frame; it never runs back, never
+    /// gets more than a frame's step ahead of the snapshot, and jumps to it after a pause, a load or a stall. Poses are
+    /// extrapolated to it along their arcs (ShipsView.PoseAt).</summary>
+    public long DrawMs { get; private set; }
+
+    double drawMs = double.NaN;
+    int drawGeneration = -1;
+
+    void Clock(double dt)
+    {
+        var s = Current;
+        double latest = s.Time.Ms;
+        double rate = s.Paused ? 0 : Math.Max(s.AchievedSpeed, 0);
+        double step = rate * dt * 1000;
+        if (double.IsNaN(drawMs) || drawGeneration != Generation || s.Paused || latest - drawMs > Math.Max(4 * step, 1) * 4)
+            drawMs = latest;   // a new world, a pause or a stall: where the world is
+        else
+        {
+            double next = drawMs + step;
+            next += (latest - next) * 0.1;
+            drawMs = Math.Clamp(next, drawMs, Math.Max(latest + step, drawMs));
+        }
+        drawGeneration = Generation;
+        DrawMs = (long)Math.Round(drawMs);
     }
 
     /// <summary>A ship's name from the scenario, or null.</summary>
