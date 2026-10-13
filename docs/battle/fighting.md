@@ -36,6 +36,12 @@ change. A link is a file or class boundary with a struct contract, not an interf
 stay static and allocation-free. A C# interface appears only where two models must live side by side at runtime (the
 fire-control trackers by era, later).
 
+**Visuals are placeholders** (decision 10). What's drawn in step 4 is simple, light and quick to make: dots, lines,
+rings, tints, icons and labels, enough to see and debug what the sim does. A separate VFX pass comes far later, once
+the gameplay systems are in. Nothing in step 4 waits on a look, and no session spends its time on one. The rule that
+looks read the sim's state and never feed it still holds, so the VFX pass can replace any placeholder without touching
+the sim.
+
 ## The chain
 
 ```
@@ -246,8 +252,8 @@ superstructure and other parts, the hull, and inside it the armour and the cells
   with, the type, and the salvo it belongs to. They make the events above ("A salvo's life"). The candidates at the
   window come through the grid the encounters already keep.
 - **Splashes:** a short-lived ring of (point, time, shell, salvo), for spotting and the screen.
-- **Drawn:** each shell evaluated from its table at the frame's time (smooth at any rate, nothing in the snapshot but
-  its record), splashes as columns that rise and fall, a short tracer at the ship zoom band.
+- **Drawn (placeholders):** each shell a dot, evaluated from its table at the frame's time (smooth at any rate,
+  nothing in the snapshot but its record); a splash a ring that fades.
 - **Dev:** the strip's "fire at" (a right-click on the sea) and `-fire=ship:lat,lon`: a battery fires at a point, so
   shells and splashes can be seen before there's any fire control.
 - **Tests:**
@@ -291,9 +297,8 @@ superstructure and other parts, the hull, and inside it the armour and the cells
   are rows added later.
 - **The eyeball ship** (the user's test, once the module is ready: 72 secondary guns, eyeball only, going down in a
   blaze of glory). v0 spots each battery's splashes as if it were alone, which flatters many guns of one calibre
-  firing independently. So **whose splash it is** (`manual-gunnery-research.md` §5: identification falls as
-  1/(1 + 0.6·N) with N guns of the same calibre; salvo firing fixes it) is the first fire-control deepening, before
-  that ship sails.
+  firing independently. **Kept simple for now: that ship gets the advantage** (decision 9). Whose splash it is
+  (`manual-gunnery-research.md` §5) stays on 4.5's list with the rest.
 - **Crew quality,** one per side, given by a scenario (green, average, trained, elite; trained by default): it scales
   the rangetaker's δ and the laying error.
 - **Hits are counted and shown but do nothing yet** (a flash, a log line), so fire control is calibrated on its own
@@ -418,19 +423,18 @@ reach of the burst):
 
 ### 4.4 Damage seen
 
-What plan.md's "Damage on the sprites" section describes, and the report:
+What's needed to play and to read a fight, as placeholders (decision 10). plan.md's "Damage on the sprites" (settling
+through the height map, wreck overlays, fire and smoke from the cells) is the VFX pass's, far later.
 
-- **On the sprites:**
-  - sinkage, trim and heel through the height map, so a sinking draws itself;
-  - wrecked turrets tinted, and a jammed turret keeping its bearing;
-  - overlays for wrecked parts from their hitbox polygons;
-  - fires and smoke emitted from burning cells and parts: a simple look until the smoke field.
-- **On the map:** hit flashes; enemy ships drawn as their contacts are seen (low, listing, burning), own ships as
-  they are; a ship seen going under, and a marker where it went; the encounter's losses as each side knows them.
+- **On the ships:** a wrecked turret tinted, and a jammed one keeping its bearing; a fire a small marker on the ship;
+  a list, a trim and low in the water as a few characters on the label (or a tint), not drawn into the sprite.
+- **On the map:** a hit a brief flash; enemy ships marked as their contacts are seen (low, listing, burning), own
+  ships as they are; a ship going under fading out, and a marker where it went; the encounter's losses as each side
+  knows them.
 - **The damage report** (`damage-model-research.md` §12: the best model fails without one):
   - the selected ship's log lines, cause to effect ("12" AP · B turret face · defeated · turret jammed in train");
   - the strip's condition row: speed cap, steering, guns working of n, water in tonnes, list, fires, crew lost.
-- **Proof:** screenshots by readback: a ship listing, a jammed turret, a stern-first sinking.
+- **Proof:** screenshots by readback: a listing ship's label, a jammed turret, a ship going under.
 
 **The first pass ends here: the first playable fight.** A ladder scenario (ladder-2, Beatty against Hipper) plays
 out at 1x to 100x, under the AI on both sides or the player on one: ships engage, hit, lose guns and speed, flood and
@@ -446,7 +450,7 @@ numbers before and after against the anchors. The list, by link, with where the 
   - the clocks' limits (the Dreyer's ±1,200 yd/min);
   - rate error growing with target speed;
   - the full ladder of levels (0 to 8 and L), radar as a sensor, night (no solution without light);
-  - splash confusion with several ships on one target, and dyed shells;
+  - splash confusion with several ships on one target, and dyed shells (with whose splash it is, below);
   - the designer emitting levels and sensors (`fire-control-designer.md`).
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;
@@ -480,6 +484,8 @@ numbers before and after against the anchors. The list, by link, with where the 
 - **Fire:** spread on the cell graph and the vents, fire load by era, cook-off timers, fires lighting the ship at night.
 - **Crew:** casualties by space, crew as the damage-control resource, the command node (a bridge hit delays orders).
 - **Night:** searchlights, star shell, gun flashes and fires as light for the sighting model.
+- **Whose splash it is** (`manual-gunnery-research.md` §5): identification falls as 1/(1 + 0.6·N) with N guns of one
+  calibre firing independently; salvo firing fixes it. Until then many guns spotting alone are flattered (decision 9).
 
 ### 4.6 Torpedoes and collisions
 
@@ -601,3 +607,9 @@ The user's, 2026-10-13:
 7. **Sinking depends on the buoyancy model, not hit points.** A ship sinking slowly should leave the enemy unsure
    whether it's going down. The first step may use an ultra simple model.
 8. **Shells first,** torpedoes after. Baby steps.
+
+The user's, 2026-10-13, for the implementation:
+
+9. **Keep fire control simple now:** the 72-gun eyeball ship gets its advantage (no splash identification yet).
+10. **Visuals are simple, light placeholders** in this step. Don't get stuck on visual effects: a separate VFX pass
+    comes far in the future, once the gameplay systems are in place.
