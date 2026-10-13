@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is under way: 2.7a (the scenario, loadable from the world tab) and 2.7b (the instruments) are done (2026-10-13), 2.7c (up the ladder) is next.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is under way: 2.7a (the scenario, loadable from the world tab) and 2.7b (the instruments) are done, and 2.7c (up the ladder) is well under way (2026-10-13).
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1352,6 +1352,46 @@ Each rung checks that things work, not only that they're fast:
 - a replay of the command log gives the same hash at scale;
 - picking and ordering stay instant with 250 ships.
 Bugs found go by the usual rule (fixed on the spot if small, `bugs.md` if not).
+
+**2.7c so far (2026-10-13).** The ladder's rungs are scenarios in `Content/Scenarios`, taken from the Jutland so a
+corrected Jutland corrects them all (`"from"`, `"only"`): `ladder-1-squadron` (eight Orions), `ladder-2-scouting`
+(Beatty against Hipper, 92 ships), `jutland` (250), `ladder-4-world` (and 400 tramps on rails across the North
+Atlantic, a neutral side) and `ladder-5-world-2000` (and 1,750: 2,000 ships), the last two written by
+`tools/scenarios/background.py` (a fixed seed). Measured in the app at 10x, 100x, 1,000x and 30,000x, both builds, and
+headless; fixed on the way, each measured before and after:
+- **The snapshots came in jerks when the sim was behind:** the host ran 4,096 events between snapshots, up to 0.8 s.
+  `World.Advance` now also stops at the next snapshot's wall-clock deadline (only on a moment's boundary, and only
+  after a moment has run, so it changes nothing: a test cuts every moment and gets the same hash). Jutland at 1,000x:
+  the longest slice 815 -> 15 ms, stale frames 1,392 -> 10.
+- **The map draws at a smoothed clock** (`WorldSession.DrawMs`): it runs on at the speed the world keeps, leans to the
+  newest snapshot, and every pose is extrapolated to it. Jutland at 1,000x: 91% -> 98% of frames smooth.
+- **O(n²) lookups:** `ShipStore.SlotOf` was a scan (now an index by entity); `GroupSystem.Of` scanned every group's
+  members (now an index rebuilt after membership changes); a follower's captain walked the leader's whole trail of up
+  to 512 points every second (now the track back to him and a margin). Admirals 94 -> 30 µs, captains 129 -> 44 µs a
+  second.
+- **Contacts through a grid of cubes** in Earth-centred space (the fine tick's check and the hourly scan): 857 -> 40 µs
+  a check with 2,000 ships, the same decisions (the 2,000-ship rung's state hash after 400 game minutes is unchanged).
+- **The map:** routes are drawn only where they pass through the view, clipped to the screen, other ships' only from
+  the operations band in and within a vertex budget (1,750 tramps' routes were 1.4 million vertices a frame); tracks
+  grow as they fill (a 2,000-ship scenario's first frame made 11.5 MB of them).
+- **The data:** a scenario spawning a ship past her design's top speed spawns her at it, with a warning (she'd never
+  be steady, so never on rails); the background tramps start on their first leg.
+- **Headless** (`shipgen scenario`, Release): the Jutland's first two hours 1,101x -> 1,347x; all 250 on the fine tick
+  ~830x; 2,000 ships with the fleets apart ~2,000x, all on rails 350,000-600,000x (the target 30,000x). At 10x the
+  sim thread is under 1% busy (the target 25%).
+- **In the app** (DevRelease, 1920x1080): every rung keeps 10x, 100x and 30,000x; at 1,000x the Jutland's rungs reach
+  450-1,000x once all 250 are on the fine tick (the machine's state varies run to run: some runs present at 65 Hz and
+  get about half the sim speed), smoothly. Map CPU 0.1-1.9 ms a frame; the worst view, inside the tramps' box of ocean
+  at 768 km across, 2.9 ms.
+- **Debug** is ~8x slower than Release in the sim (the optimizer alone: DevRelease, which is Debug's settings optimized,
+  matches Release). The Jutland at 1,000x reaches ~145x there, smoothly; 10x takes 6% of the sim thread. Whether to run
+  DevRelease from the editor, or build the sim's libraries optimized in Debug, is the user's to decide.
+
+Still open, for 2.7d or later: the first rails check of a 2,000-ship world takes ~100 ms (1,751 tramps checked and
+laid at once: 37 µs each to check against every opposing ship, 19 µs to lay); the classes' builds allocate ~21 MB each,
+so a load runs ~50 gen0, 18 gen1 and 9 gen2 collections and the UI stutters while it loads; the ship art is 329 MB of
+textures for 54 classes; the group labels pile up at the operations band; the ship step is ~160 ns a ship (the
+heading's square roots and atan2, the arc, two coast lookups), no big-O left in it.
 
 **2.7d What the numbers ask for,** each fix measured on the rung that showed it, before and after. The candidates,
 not a list to do:
