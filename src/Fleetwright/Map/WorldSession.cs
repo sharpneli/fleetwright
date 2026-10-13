@@ -94,6 +94,7 @@ public sealed class WorldSession : IDisposable
         Settings = SimSettings.Load(Path.Combine(AppContext.BaseDirectory, "Content", "Sim", "settings.json"));
         var w = new World(start, seed, Settings, classes, shore);
         Ai = new AiSystem(w);
+        w.Apply(Command.SetPlayerSide(0));   // the dev world's player: side 0, the spawner's first
         setup?.Invoke(w);
         host = Start(w);
         Current = host.Latest();

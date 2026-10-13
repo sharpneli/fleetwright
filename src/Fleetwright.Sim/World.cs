@@ -79,6 +79,12 @@ public sealed class World
     /// <summary>How the sides stand: war or peace (docs/battle/plan.md step 3.1a).</summary>
     public Relations Relations { get; } = new();
 
+    /// <summary>The side the player commands, -1 for none (docs/battle/plan.md step 3.1c).</summary>
+    public int PlayerSide { get; private set; } = -1;
+
+    /// <summary>What the clock does when an encounter opens, by the player's rules (step 3.1c).</summary>
+    public Interest Interest { get; } = new();
+
     /// <summary>The encounters: ships of sides at war near each other (docs/battle/plan.md step 3.1b).</summary>
     public Encounters Encounters { get; }
 
@@ -170,6 +176,16 @@ public sealed class World
                 if (Relations.Set((byte)c.Entity, (byte)c.B, (Relation)c.A))
                     Ships.RelationsChanged(this);
                 break;
+            case WorldCommand.SetPlayerSide:
+                if (c.Entity is < -1 or > byte.MaxValue)
+                    throw new ArgumentException($"no side {c.Entity}");
+                PlayerSide = c.Entity;
+                break;
+            case WorldCommand.SetInterest:
+                if (c.Entity is < 0 or > (int)InterestKind.Others || c.A is < 0 or > (long)InterestAction.Slow || !(c.X > 0))
+                    throw new ArgumentException($"no interest rule {c.Entity}: {c.A} at {c.X}");
+                Interest.Set((InterestKind)c.Entity, new InterestRule((InterestAction)c.A, c.X));
+                break;
             default:
                 throw new ArgumentException($"unknown world command {c.Code}");
         }
@@ -237,11 +253,13 @@ public sealed class World
         return true;
     }
 
-    /// <summary>Sets the target and runs to it.</summary>
+    /// <summary>Sets the target and runs to it, on through any halt (<see cref="Halt"/>: the pause or the slower speed
+    /// stays, for a host that paces by them; headless runs and tests go where they're sent).</summary>
     public void AdvanceTo(WorldTime target)
     {
         SetTarget(target);
-        Advance();
+        while (Advance() && Time < target)
+            SetTarget(target);
     }
 
     /// <summary>Fills the world's part of a snapshot; allocates nothing.</summary>
@@ -255,6 +273,10 @@ public sealed class World
         s.Speed = Speed;
         s.Paused = Paused;
         Ships.Fill(s.Ships);
+        s.PlayerSide = PlayerSide;
+        s.InterestOwn = Interest[InterestKind.Own];
+        s.InterestOthers = Interest[InterestKind.Others];
+        Encounters.Fill(s.Encounters);
         foreach (var sys in systems)
             if (sys != Ships)
                 sys.Fill(s);
@@ -271,6 +293,8 @@ public sealed class World
         h.Add(Paused);
         h.Add(ViewMetresPerPixel);
         Relations.Hash(ref h);
+        h.Add(PlayerSide);
+        Interest.Hash(ref h);
         Encounters.Hash(ref h);
         scheduler.Hash(ref h);
         foreach (var s in systems)

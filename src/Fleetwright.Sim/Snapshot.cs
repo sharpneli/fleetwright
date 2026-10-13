@@ -44,6 +44,47 @@ public sealed class Snapshot
 
     /// <summary>Every group.</summary>
     public GroupsView Groups { get; } = new();
+
+    /// <summary>The side the player commands, -1 for none.</summary>
+    public int PlayerSide { get; set; } = -1;
+
+    /// <summary>The player's rules for what the clock does when an encounter opens (<see cref="Interest"/>).</summary>
+    public InterestRule InterestOwn { get; set; }
+    public InterestRule InterestOthers { get; set; }
+
+    /// <summary>The open encounters, and the last that was news to the player.</summary>
+    public EncountersView Encounters { get; } = new();
+}
+
+/// <summary>The encounters' part of a snapshot: per open encounter (by id, oldest first) where it is, how far its ships
+/// reach, how many, when it opened and whether the player's ships are in it; and the last encounter that was news to the
+/// player (opened, or the player's ships came into it), with when.</summary>
+public sealed class EncountersView
+{
+    public int Count;
+    public int[] Id = [], Ships = [];
+    public Vec3d[] Centre = [];
+    public double[] RadiusM = [];
+    public long[] OpenedMs = [];
+    public bool[] Own = [];
+
+    /// <summary>The last encounter news (its id, 0 for none yet), its kind and when.</summary>
+    public int NewsId;
+    public InterestKind NewsKind;
+    public long NewsMs;
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Id.Length)
+            return;
+        n = Math.Max(n, Math.Max(8, Id.Length * 2));
+        Array.Resize(ref Id, n);
+        Array.Resize(ref Ships, n);
+        Array.Resize(ref Centre, n);
+        Array.Resize(ref RadiusM, n);
+        Array.Resize(ref OpenedMs, n);
+        Array.Resize(ref Own, n);
+    }
 }
 
 /// <summary>The groups' part of a snapshot: per group its id, name, formation, spacing, whether it's a force (its

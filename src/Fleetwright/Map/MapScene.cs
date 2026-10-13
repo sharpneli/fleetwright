@@ -143,6 +143,7 @@ public sealed unsafe partial class MapScene : IScene
         var s = world.Current;
         t = Probes.Now;
         GroupLabels(s);
+        EncounterLabels(s);
         probes.Add(probeUiLabels, t);
         t = Probes.Now;
         if (Sdl3GpuEngine.StatsShown)
@@ -180,6 +181,7 @@ public sealed unsafe partial class MapScene : IScene
             ImGui.TextDisabled(s.Paused
                 ? "paused"
                 : $"asked {SpeedLabel(s.Speed)}, achieved {SpeedLabel(Math.Round(s.AchievedSpeed))}");
+            EncounterNews(s);
             if (s.Error != null)
                 ImGui.TextColored(new Vector4(1, 0.4f, 0.3f, 1), "the sim stopped: " + s.Error.Split('\n')[0]);
         }

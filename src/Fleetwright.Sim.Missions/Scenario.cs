@@ -13,7 +13,7 @@ namespace Fleetwright.Sim.Missions;
 /// <code>
 /// { "scenario": 1, "name": "Jutland", "brief": "...", "start": "1916-05-31T14:00", "seed": 1916,
 ///   "camera": [56.8, 5.2, 400], "sides": ["Britain", "Germany", "Neutral"],
-///   "peace": [["Britain", "Neutral"], ["Germany", "Neutral"]],
+///   "peace": [["Britain", "Neutral"], ["Germany", "Neutral"]], "player": "Britain",
 ///   "units": [
 ///     { "name": "Battlecruiser Fleet", "side": 0, "at": [56.77, 4.6], "course": 112, "kn": 19,
 ///       "formation": "column", "spacing": 3000,
@@ -43,6 +43,10 @@ public sealed class Scenario
 
     /// <summary>The sides by index (a ship's side byte).</summary>
     public required string[] Sides { get; init; }
+
+    /// <summary>The side the player commands (its name, and its index or -1 for none): docs/battle/plan.md step 3.1c.</summary>
+    public string? PlayerName { get; init; }
+    public int Player => PlayerName == null ? -1 : Array.IndexOf(Sides, PlayerName);
 
     /// <summary>The pairs of sides at peace (by index); every other pair is at war (docs/battle/plan.md step 3.1a).</summary>
     public List<(int A, int B)> Peace { get; init; } = [];
@@ -149,6 +153,12 @@ public sealed class Scenario
             // "peace": [["Britain", "Neutral"], ...], by the sides' names; a file giving its own sides gives its own peace
             var peace = r.TryGetProperty("peace", out var pe) ? ParsePeace(pe, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Peace : [];
+            // "player": a side's name; taken from "from" (where these sides have it) unless given
+            string? player = r.TryGetProperty("player", out var pl) ? pl.GetString() : from?.PlayerName;
+            if (r.TryGetProperty("player", out _) && Array.IndexOf(sides, player) < 0)
+                throw new ScenarioException($"player: \"{player}\" isn't one of the sides ({string.Join(", ", sides)})");
+            if (Array.IndexOf(sides, player) < 0)
+                player = null;
             var units = new List<ScenarioUnit>();
             if (from != null)
             {
@@ -173,6 +183,7 @@ public sealed class Scenario
                 Camera = r.TryGetProperty("camera", out var cam) ? ParseCamera(cam) : from?.Camera,
                 Sides = sides,
                 Peace = peace,
+                PlayerName = player,
                 Units = units,
                 Folder = folder,
             };

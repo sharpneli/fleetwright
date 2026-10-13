@@ -143,6 +143,104 @@ public class EncounterTests(ITestOutputHelper output)
         Assert.Equal(0, w.Encounters.Opened);
     }
 
+    /// <summary>Two ships of sides 1 and 2 on rails meeting head on, the clock at 10,000x, the player on a side.</summary>
+    static World Meeting(int player)
+    {
+        var (w, c) = Make();
+        w.Apply(Command.SetPlayerSide(player));
+        w.Apply(Command.SetSpeed(10_000));
+        w.Apply(ShipSystem.Spawn(c, 55, 4, 0, Kn, 1));
+        w.Apply(ShipSystem.Spawn(c, 57, 4, 180, Kn, 2));
+        Run(w, 60);
+        Assert.True(Ship(w, 1).OnRails && Ship(w, 2).OnRails);
+        return w;
+    }
+
+    [Fact]
+    public void The_players_rules_pause_the_clock_at_the_contact_itself()
+    {
+        var w = Meeting(1);
+        long contact = -1;
+        while (contact < 0)
+        {
+            w.SetTarget(w.Time + 60_000);
+            w.Advance();   // as a host does: a halt stops it short
+            if (w.Paused)
+                contact = w.Time.Ms;
+        }
+        Assert.False(Ship(w, 1).OnRails);
+        var e = w.Encounters.Open[0];
+        Assert.True(e.Own);
+        Assert.Equal((e.Id, InterestKind.Own), (w.Encounters.NewsId, w.Encounters.NewsKind));
+        Assert.Equal(e.OpenedMs, w.Encounters.NewsMs);
+        Assert.InRange(contact - e.OpenedMs, 0, 1);   // the clock rests a millisecond after the event
+        var snap = new Snapshot();
+        w.Fill(snap);
+        Assert.Equal(1, snap.PlayerSide);
+        Assert.Equal(1, snap.Encounters.Count);
+        Assert.True(snap.Encounters.Own[0] && snap.Encounters.Ships[0] == 2 && snap.Encounters.NewsId == e.Id);
+    }
+
+    [Fact]
+    public void Others_encounters_change_nothing_unless_the_player_asks()
+    {
+        var w = Meeting(3);
+        while (w.Encounters.Count == 0)
+            Run(w, 60);
+        Assert.False(w.Paused);
+        Assert.Equal(10_000, w.Speed);
+        Assert.False(w.Encounters.Open[0].Own);
+        Assert.Equal(InterestKind.Others, w.Encounters.NewsKind);
+
+        var v = Meeting(3);
+        v.Apply(Command.SetInterest(InterestKind.Others, InterestAction.Slow, 10));
+        while (v.Encounters.Count == 0)
+            Run(v, 60);
+        Assert.False(v.Paused);
+        Assert.Equal(10, v.Speed);
+    }
+
+    [Fact]
+    public void The_players_ships_coming_into_an_encounter_are_news_and_a_part_split_off_is_not()
+    {
+        var (w, c) = Make();
+        w.Apply(Command.SetPlayerSide(3));
+        // a fight between sides 1 and 2 lying stopped (two of side 1, one of side 2), and a ship of the player's side 3
+        // (at war with both) 150 km east, steaming west into it
+        SpawnFrom(w, c, 56, 3, 0, 0, 270, 0, 1);
+        SpawnFrom(w, c, 56, 3, 270, 10_000, 270, 0, 2);
+        int b = SpawnFrom(w, c, 56, 3, 90, 30_000, 270, 0, 2);
+        Run(w, 10);
+        Assert.Equal(InterestKind.Others, w.Encounters.NewsKind);
+        int p = SpawnFrom(w, c, 56, 3, 90, 150_000, 270, Kn, 3);
+        while (Of(w, p) == 0)
+            Run(w, 5);
+        Assert.True(w.Paused, "the player's ship came into it: paused");
+        Assert.Equal((1, InterestKind.Own), (w.Encounters.NewsId, w.Encounters.NewsKind));
+        Assert.True(w.Encounters.Open[0].Own);
+
+        // the player's ship and side 2's nearest steam north together, still at war with each other, and leave the
+        // other two fighting: two hot parts, one keeps the id, the other splits off, and neither is news (both were
+        // the player's encounter)
+        w.Apply(Command.Resume());
+        long news = w.Encounters.NewsMs;
+        while (Earth.Distance(Ship(w, p).Position, Ship(w, b).Position) > 20_000)
+            Run(w, 5);
+        foreach (int e in new[] { p, b })
+        {
+            w.Apply(ShipSystem.Course(e, 0));
+            w.Apply(ShipSystem.Speed(e, Kn));
+        }
+        while (w.Encounters.Count < 2 && w.Time.Ms - news < 6 * 3_600_000)
+            Run(w, 5);
+        Assert.Equal(2, w.Encounters.Count);
+        Assert.True(Of(w, 1) == 1 && Of(w, p) == 2, "the stopped fight kept the id, the pair steaming north split off");
+        Assert.Equal(1, w.Encounters.Open[1].From);
+        Assert.True(w.Encounters.Open[1].Own && !w.Encounters.Open[0].Own);
+        Assert.Equal(news, w.Encounters.NewsMs);
+        Assert.False(w.Paused);
+    }
+
     /// <summary>Two lines abreast of 100 ships each, 40 km apart in a single cluster, on the fine tick (all within
     /// reach): one encounter of all 200, updated without garbage and the same cut and replayed.</summary>
     [Fact]

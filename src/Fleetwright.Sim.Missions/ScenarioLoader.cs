@@ -52,6 +52,8 @@ public static class ScenarioLoader
         var start = new ScenarioStart();
         foreach (var (a, b) in s.Peace)
             w.Apply(Command.SetRelation((byte)a, (byte)b, Relation.Peace));
+        if (s.Player >= 0)
+            w.Apply(Command.SetPlayerSide(s.Player));
         var placed = new List<(ScenarioUnit Squadron, int Index, double AsternM, double AbeamM)>();
         var entities = new Dictionary<(ScenarioUnit, int), int>();   // a unit by identity (it has no Equals of its own)
         foreach (var top in s.Units)

@@ -374,8 +374,10 @@ public sealed partial class ShipSystem
         if (!Opposed && encounters.Count == 0)
             return;
         long t = Probes.Now;
-        encounters.Update(Store, world.Time.Ms);
+        var news = encounters.Update(Store, world.Time.Ms, world.PlayerSide);
         probes.Add(encountersProbe, t);
+        if (news is { } kind)
+            world.Interest.Apply(world, kind);   // the drop is the sim's, at the event, by the player's rules
     }
 
     /// <summary>Whether a ship of the unit in <see cref="line"/> is in an encounter (as of the last update): the

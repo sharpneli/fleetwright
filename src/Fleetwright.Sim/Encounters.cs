@@ -5,8 +5,9 @@ namespace Fleetwright.Sim;
 
 /// <summary>One encounter as it stands: its id, when it opened and when its sides were last within
 /// <see cref="SimSettings.EncounterRangeM"/> and the margin of each other, its ships' count, where it is (its ships'
-/// middle on the sphere) and how far its ships reach from there.</summary>
-public readonly record struct Encounter(int Id, long OpenedMs, long LastHotMs, int Ships, Vec3d Centre, double RadiusM);
+/// middle on the sphere) and how far its ships reach from there; whether the player's ships are in it, and the one it
+/// split off (0 for none).</summary>
+public readonly record struct Encounter(int Id, long OpenedMs, long LastHotMs, int Ships, Vec3d Centre, double RadiusM, bool Own = false, int From = 0);
 
 /// <summary>Encounters (docs/battle/plan.md step 3.1b; docs/world/architecture.md "Contacts"): sets of ships, not
 /// scenes. Ships on the fine tick near each other, of any side, are clustered (within the encounter range and its margin,
@@ -42,6 +43,7 @@ public sealed class Encounters
     // per cluster root: its oldest old id and the id it takes; per ship its encounter's index; per encounter its ships,
     // their sum (then their middle) and how far they reach from it
     int[] rootOld = [], rootNew = [], encOf = [], encShips = [];
+    bool[] encOwn = [];
     Vec3d[] encSum = [];
     double[] encFar = [];
     readonly List<int> roots = new(16);
@@ -61,11 +63,19 @@ public sealed class Encounters
     /// <summary>How many have opened since the world began (ids are given in order: the newest is this).</summary>
     public int Opened => nextId - 1;
 
+    /// <summary>The last encounter that was news to the player (opened, or the player's ships came into it), its kind
+    /// and when; 0 for none yet.</summary>
+    public int NewsId { get; private set; }
+    public InterestKind NewsKind { get; private set; }
+    public long NewsMs { get; private set; }
+
     /// <summary>The encounter a ship (by slot and entity) was in at the last update, 0 for none.</summary>
     public int Of(int slot, int entity) => slot >= 0 && slot < ofSlot.Length && entityOfSlot[slot] == entity ? ofSlot[slot] : 0;
 
-    /// <summary>Clusters the ships on the fine tick and opens, merges, splits and closes encounters by them.</summary>
-    internal void Update(ShipStore store, long nowMs)
+    /// <summary>Clusters the ships on the fine tick and opens, merges, splits and closes encounters by them. What was
+    /// news to the player this time (<see cref="InterestKind"/>, or null): an encounter the player's ships are in that
+    /// they weren't before (opened, or come into), else one opened between others; a part split off one isn't news.</summary>
+    internal InterestKind? Update(ShipStore store, long nowMs, int playerSide)
     {
         int n = store.FineCount;
         Ensure(store.Slots, n);
@@ -133,6 +143,50 @@ public sealed class Encounters
                     }
         }
         Assign(store, n, nowMs);
+        return News(n, nowMs, playerSide);
+    }
+
+    /// <summary>Marks the encounters the player's ships are in, and says what's news (the player's own first).</summary>
+    InterestKind? News(int n, long nowMs, int playerSide)
+    {
+        int m = open.Count;
+        for (int i = 0; i < m; i++)
+            encOwn[i] = false;
+        if (playerSide >= 0)
+            for (int k = 0; k < n; k++)
+                if (side[k] == playerSide && Find(open, ofSlot[slots[k]], m) is int at and >= 0)
+                    encOwn[at] = true;
+        InterestKind? news = null;
+        for (int i = 0; i < m; i++)
+        {
+            var e = open[i];
+            // a part split off one the player's ships were in was theirs already
+            bool wasOwn = e.Own || e.From != 0 && Find(open, e.From, m) is int f and >= 0 && open[f].Own;
+            bool fresh = e.OpenedMs == nowMs && e.From == 0;
+            InterestKind? kind = encOwn[i] && !wasOwn ? InterestKind.Own : fresh && !encOwn[i] ? InterestKind.Others : null;
+            if (kind is { } k && (news == null || k == InterestKind.Own && news != InterestKind.Own))
+            {
+                news = k;
+                (NewsId, NewsKind, NewsMs) = (e.Id, k, nowMs);
+            }
+        }
+        for (int i = 0; i < m; i++)
+            if (open[i].Own != encOwn[i])
+                open[i] = open[i] with { Own = encOwn[i] };
+        return news;
+    }
+
+    /// <summary>Copies the open encounters into a snapshot's part; allocates only to grow it.</summary>
+    internal void Fill(EncountersView v)
+    {
+        v.EnsureCapacity(open.Count);
+        for (int i = 0; i < open.Count; i++)
+        {
+            var e = open[i];
+            (v.Id[i], v.Ships[i], v.Centre[i], v.RadiusM[i], v.OpenedMs[i], v.Own[i]) = (e.Id, e.Ships, e.Centre, e.RadiusM, e.OpenedMs, e.Own);
+        }
+        v.Count = open.Count;
+        (v.NewsId, v.NewsKind, v.NewsMs) = (NewsId, NewsKind, NewsMs);
     }
 
     /// <summary>The first pair of ships of two cubes within reach joins their clusters.</summary>
@@ -229,7 +283,7 @@ public sealed class Encounters
             {
                 // a new contact, or a hot part split off one held by another
                 rootNew[r] = nextId++;
-                open.Add(new Encounter(rootNew[r], nowMs, nowMs, 0, default, 0));
+                open.Add(new Encounter(rootNew[r], nowMs, nowMs, 0, default, 0, From: old == int.MaxValue ? 0 : old));
             }
         }
         // the members, and where each encounter is: its ships' middle and how far they reach from it
@@ -351,6 +405,7 @@ public sealed class Encounters
         Array.Resize(ref encShips, c);
         Array.Resize(ref encSum, c);
         Array.Resize(ref encFar, c);
+        Array.Resize(ref encOwn, c);
     }
 
     public void Hash(ref StateHash h)
@@ -363,7 +418,11 @@ public sealed class Encounters
             h.Add(e.OpenedMs);
             h.Add(e.LastHotMs);
             h.Add(e.Ships);
+            h.Add(e.Own);
+            h.Add(e.From);
         }
+        h.Add(NewsId);
+        h.Add(NewsMs);
         for (int i = 0; i < ofSlot.Length; i++)
             if (ofSlot[i] != 0)
             {

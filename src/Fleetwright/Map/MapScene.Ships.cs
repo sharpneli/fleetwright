@@ -71,6 +71,7 @@ public sealed unsafe partial class MapScene
         bool allRoutes = view.MetresPerPixel * view.Width < 1_000_000;
         overlay.Begin(width, height);
         frame++;
+        DrawEncounters(view, s);
         for (int k = 0; k < v.Count; k++)
         {
             var (p, f) = v.PoseAt(k, world.DrawMs);

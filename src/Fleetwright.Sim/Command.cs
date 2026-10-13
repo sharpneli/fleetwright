@@ -10,6 +10,8 @@ public enum WorldCommand : ushort
     Resume,
     SetViewScale,
     SetRelation,
+    SetPlayerSide,
+    SetInterest,
 }
 
 /// <summary>The only way into the world (docs/world/architecture.md, "Commands in"): a player's or a captain's order,
@@ -32,6 +34,14 @@ public readonly record struct Command(byte System, ushort Code, int Entity = 0, 
     /// <summary>How two sides stand (<see cref="Relations"/>): war or peace, both ways.</summary>
     public static Command SetRelation(byte a, byte b, Relation r) =>
         new(0, (ushort)WorldCommand.SetRelation, a, A: (long)r, B: b);
+
+    /// <summary>The side the player commands, or -1 for none (headless, or watching): whose encounters are the player's
+    /// own (<see cref="Interest"/>), and later whose picture the snapshot is built from.</summary>
+    public static Command SetPlayerSide(int side) => new(0, (ushort)WorldCommand.SetPlayerSide, side);
+
+    /// <summary>What the clock does when an encounter of a kind opens (<see cref="Interest"/>).</summary>
+    public static Command SetInterest(InterestKind kind, InterestAction action, double speed = 1) =>
+        new(0, (ushort)WorldCommand.SetInterest, (int)kind, A: (long)action, X: speed);
 }
 
 /// <summary>A command as applied: the world time it took effect at.</summary>

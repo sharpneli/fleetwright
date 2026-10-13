@@ -11,6 +11,7 @@
   "seed": 1916,
   "camera": [57.0, 5.3, 250],
   "sides": ["Britain", "Germany"],
+  "player": "Britain",
   "units": [
     // ---------------------------------------------------------------- the Battlecruiser Fleet (Beatty): 52
     { "name": "Battlecruiser Fleet", "side": 0, "at": [56.82, 4.63], "course": 110, "kn": 19.5, "formation": "abreast", "spacing": 5000,

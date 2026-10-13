@@ -173,6 +173,20 @@ public class ScenarioTests
         Assert.Empty(Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "jutland.json")).Peace);
     }
 
+    /// <summary>The player's side by its name (docs/battle/plan.md step 3.1c), taken through "from" where the sides
+    /// have it, and given to the world.</summary>
+    [Fact]
+    public void The_player_is_a_side_by_name_and_goes_to_the_world()
+    {
+        Assert.Equal(0, Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "jutland.json")).Player);
+        Assert.Equal(0, Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "ladder-4-world.json")).Player);
+        Assert.Equal(-1, Scenario.Parse(Small).Player);
+        var (w, _, _) = Load(Small.Replace("\"sides\": [\"Britain\", \"Germany\"],", "\"sides\": [\"Britain\", \"Germany\"], \"player\": \"Germany\","));
+        Assert.Equal(1, w.PlayerSide);
+        var x = Assert.Throws<ScenarioException>(() => Scenario.Parse(Small.Replace("\"sides\":", "\"player\": \"France\", \"sides\":")));
+        Assert.Contains("\"France\" isn't one of the sides", x.Message);
+    }
+
     [Fact]
     public void A_design_not_found_is_named()
     {
