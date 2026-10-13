@@ -29,6 +29,7 @@ public sealed partial class ShipSystem : IWorldSystem
     const ushort Tick = 1, RailsWaypoint = 2, PolarEntry = 3, PolarExit = 4, ContactCheck = 5, ContactScan = 6, LandAhead = 7, LandRecheck = 8;
 
     readonly SimSettings settings;
+    readonly Relations relations;
     readonly List<int> used = [];   // the registry ids ships have been made of, in the order first used
     readonly Dictionary<int, Handling> handlings = [];
     readonly List<(int Ship, double AsternM, double AbeamM)> line = new(16), derailing = new(16), riders = new(16);   // a unit's ships and stations, reused (one each: they nest)
@@ -37,9 +38,10 @@ public sealed partial class ShipSystem : IWorldSystem
 
     public ShipStore Store { get; }
 
-    internal ShipSystem(SimSettings settings, ShipClassRegistry registry, Probes probes)
+    internal ShipSystem(SimSettings settings, ShipClassRegistry registry, Probes probes, Relations relations)
     {
         this.settings = settings;
+        this.relations = relations;
         Registry = registry;
         Store = new ShipStore(settings);
         this.probes = probes;
@@ -82,8 +84,8 @@ public sealed partial class ShipSystem : IWorldSystem
 
     // ------------------------------------------------------------------ commands
 
-    /// <summary>A ship of a class (its registry id) at a place, heading and speed, on a side (ships of different sides
-    /// are opposing); it gets the next entity id. A class that didn't build makes no ship. On land or near it, the ship
+    /// <summary>A ship of a class (its registry id) at a place, heading and speed, on a side (ships of sides at war
+    /// oppose each other, <see cref="Relations"/>); it gets the next entity id. A class that didn't build makes no ship. On land or near it, the ship
     /// is put at the nearest sea at its standoff; nowhere near the sea, there's no ship. (A spawn names no entity, so
     /// the command's entity field carries the side.)</summary>
     public static Command Spawn(int classIndex, double latDeg, double lonDeg, double headingDeg, double kn, byte side = 0) =>

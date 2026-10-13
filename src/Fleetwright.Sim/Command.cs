@@ -9,6 +9,7 @@ public enum WorldCommand : ushort
     Pause,
     Resume,
     SetViewScale,
+    SetRelation,
 }
 
 /// <summary>The only way into the world (docs/world/architecture.md, "Commands in"): a player's or a captain's order,
@@ -27,6 +28,10 @@ public readonly record struct Command(byte System, ushort Code, int Entity = 0, 
     /// <para>EXCEPTION to a hard rule: the sim is independent of display state, and this is the one display state it's
     /// told, kept only until the rails' snap can be hidden better. No other display state comes in.</para></summary>
     public static Command SetViewScale(double metresPerPixel) => new(0, (ushort)WorldCommand.SetViewScale, X: metresPerPixel);
+
+    /// <summary>How two sides stand (<see cref="Relations"/>): war or peace, both ways.</summary>
+    public static Command SetRelation(byte a, byte b, Relation r) =>
+        new(0, (ushort)WorldCommand.SetRelation, a, A: (long)r, B: b);
 }
 
 /// <summary>A command as applied: the world time it took effect at.</summary>

@@ -6,6 +6,7 @@
   "brief": "The scale test's fourth rung: the Jutland, and 400 tramp steamers on rails across the North Atlantic (a neutral side).",
   "from": "jutland",
   "sides": ["Britain", "Germany", "Neutral"],
+  "peace": [["Britain", "Neutral"], ["Germany", "Neutral"]],
   "units": [
     {"name": "Tramp 1", "side": 2, "at": [55.105, -18.435], "course": 279.4, "kn": 8, "route": [[55.64, -29.76], [51.955, -20.08], [46.743, -28.813], [44.0, -44.486]], "loop": true, "ships": [{"design": "tramp_1914"}]},
     {"name": "Tramp 2", "side": 2, "at": [55.283, -33.783], "course": 297.1, "kn": 8, "route": [[56.293, -37.535], [46.802, -38.065], [48.285, -25.669]], "loop": true, "ships": [{"design": "tramp_1914"}]},

@@ -69,11 +69,14 @@ public sealed class World
         log = new List<StampedCommand>(Settings.CommandLogCapacity);
         commandsProbe = Probes.Register("Commands");
         fillProbe = Probes.Register("Snapshot fill");
-        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes);
+        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations);
         Register(Ships);
         Groups = new GroupSystem();
         Register(Groups);
     }
+
+    /// <summary>How the sides stand: war or peace (docs/battle/plan.md step 3.1a).</summary>
+    public Relations Relations { get; } = new();
 
     /// <summary>The world's groups: always registered second (<see cref="GroupSystem.Id"/>).</summary>
     public GroupSystem Groups { get; }
@@ -156,6 +159,12 @@ public sealed class World
             case WorldCommand.Resume:
                 Paused = false;
                 targetMs = Time.Ms;
+                break;
+            case WorldCommand.SetRelation:
+                if (c.Entity is < 0 or > byte.MaxValue || c.B is < 0 or > byte.MaxValue || c.A is < 0 or > (long)Relation.Peace)
+                    throw new ArgumentException($"no relation {c.A} between sides {c.Entity} and {c.B}");
+                if (Relations.Set((byte)c.Entity, (byte)c.B, (Relation)c.A))
+                    Ships.RelationsChanged(this);
                 break;
             default:
                 throw new ArgumentException($"unknown world command {c.Code}");
@@ -257,6 +266,7 @@ public sealed class World
         h.Add(Speed);
         h.Add(Paused);
         h.Add(ViewMetresPerPixel);
+        Relations.Hash(ref h);
         scheduler.Hash(ref h);
         foreach (var s in systems)
             s.Hash(ref h);

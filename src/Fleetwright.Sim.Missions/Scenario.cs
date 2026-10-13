@@ -12,7 +12,8 @@ namespace Fleetwright.Sim.Missions;
 /// <para>The file:</para>
 /// <code>
 /// { "scenario": 1, "name": "Jutland", "brief": "...", "start": "1916-05-31T14:00", "seed": 1916,
-///   "camera": [56.8, 5.2, 400], "sides": ["Britain", "Germany"],
+///   "camera": [56.8, 5.2, 400], "sides": ["Britain", "Germany", "Neutral"],
+///   "peace": [["Britain", "Neutral"], ["Germany", "Neutral"]],
 ///   "units": [
 ///     { "name": "Battlecruiser Fleet", "side": 0, "at": [56.77, 4.6], "course": 112, "kn": 19,
 ///       "formation": "column", "spacing": 3000,
@@ -22,7 +23,7 @@ namespace Fleetwright.Sim.Missions;
 ///     { "name": "Patrol", "side": 0, "at": [58, 2], "course": 0, "kn": 10, "route": [[59, 2], [58, 2]], "loop": true,
 ///       "ships": [ { "design": "light_cruiser", "count": 2 } ] } ] }
 /// </code>
-/// <para>A unit's side, formation and spacing default to its parent's (side 0, column, 600 m for a squadron, 3 km for
+/// <para>Sides are at war with each other unless a pair is listed in <c>"peace"</c>. A unit's side, formation and spacing default to its parent's (side 0, column, 600 m for a squadron, 3 km for
 /// a force). A top unit of one ship is that ship, not a group. A top unit with a route steams it (from where it's
 /// placed, its course only the start's heading).</para>
 /// <para><c>"from": "jutland"</c> takes another scenario of the same folder: its top units first (only those named in
@@ -42,6 +43,9 @@ public sealed class Scenario
 
     /// <summary>The sides by index (a ship's side byte).</summary>
     public required string[] Sides { get; init; }
+
+    /// <summary>The pairs of sides at peace (by index); every other pair is at war (docs/battle/plan.md step 3.1a).</summary>
+    public List<(int A, int B)> Peace { get; init; } = [];
 
     public required List<ScenarioUnit> Units { get; init; }
 
@@ -142,6 +146,9 @@ public sealed class Scenario
                 : from?.Sides ?? ["Side 0"];
             if (sides.Length is 0 or > byte.MaxValue + 1)
                 throw new ScenarioException("sides: 1 to 256");
+            // "peace": [["Britain", "Neutral"], ...], by the sides' names; a file giving its own sides gives its own peace
+            var peace = r.TryGetProperty("peace", out var pe) ? ParsePeace(pe, sides)
+                : from != null && !r.TryGetProperty("sides", out _) ? from.Peace : [];
             var units = new List<ScenarioUnit>();
             if (from != null)
             {
@@ -165,10 +172,31 @@ public sealed class Scenario
                 Seed = r.TryGetProperty("seed", out var seed) && seed.TryGetUInt64(out ulong sv) ? sv : from?.Seed ?? 1,
                 Camera = r.TryGetProperty("camera", out var cam) ? ParseCamera(cam) : from?.Camera,
                 Sides = sides,
+                Peace = peace,
                 Units = units,
                 Folder = folder,
             };
         }
+    }
+
+    static List<(int, int)> ParsePeace(JsonElement e, string[] sides)
+    {
+        if (e.ValueKind != JsonValueKind.Array)
+            throw new ScenarioException("peace: a list of pairs of sides");
+        var pairs = new List<(int, int)>();
+        int i = 0;
+        foreach (var p in e.EnumerateArray())
+        {
+            var names = p.ValueKind == JsonValueKind.Array ? p.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [];
+            if (names.Length != 2)
+                throw new ScenarioException($"peace[{i}]: a pair of sides, [\"one\", \"another\"]");
+            int a = Array.IndexOf(sides, names[0]), b = Array.IndexOf(sides, names[1]);
+            if (a < 0 || b < 0 || a == b)
+                throw new ScenarioException($"peace[{i}]: \"{(a < 0 ? names[0] : names[1])}\" isn't another of the sides ({string.Join(", ", sides)})");
+            pairs.Add((a, b));
+            i++;
+        }
+        return pairs;
     }
 
     static ScenarioUnit ParseUnit(JsonElement e, string path, bool top, int parentSide, int sides)

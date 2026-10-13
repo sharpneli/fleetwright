@@ -21,7 +21,9 @@ public sealed partial class ShipSystem
     const double ContactToleranceM = 1;
 
     readonly int[] sideCount = new int[256];
-    int liveSides;
+    readonly byte[] liveSides = new byte[256];   // the sides with ships at sea, the first liveCount
+    int liveCount;
+    bool opposed;
     long nextScanMs = -1;
     int scanGen;
     double[] unitRadius = new double[64];
@@ -39,17 +41,44 @@ public sealed partial class ShipSystem
     Vec3d[] scanPos = new Vec3d[64];
     double[] scanSlack = new double[64];
 
-    /// <summary>Whether ships of more than one side are at sea: only then is there anything to look for.</summary>
-    public bool Opposed => liveSides > 1;
+    /// <summary>Whether ships of two sides at war are at sea: only then is there anything to look for.</summary>
+    public bool Opposed => opposed;
+
+    /// <summary>Whether two ships' sides are at war (<see cref="Relations"/>): the one test of opposing.</summary>
+    bool Hostile(byte a, byte b) => relations.Hostile(a, b);
 
     void SideCount(byte side, int delta)
     {
         int before = sideCount[side];
         sideCount[side] += delta;
         if (before == 0 && sideCount[side] > 0)
-            liveSides++;
+            liveSides[liveCount++] = side;
         else if (before > 0 && sideCount[side] == 0)
-            liveSides--;
+            liveSides[Array.IndexOf(liveSides, side, 0, liveCount)] = liveSides[--liveCount];
+        else
+            return;
+        opposed = AnyHostile();
+    }
+
+    bool AnyHostile()
+    {
+        for (int i = 0; i < liveCount; i++)
+            for (int j = i + 1; j < liveCount; j++)
+                if (Hostile(liveSides[i], liveSides[j]))
+                    return true;
+        return false;
+    }
+
+    /// <summary>Sides went to war or made peace: pairs that now oppose are solved at once (a scan now), and those at
+    /// peace stop holding each other off rails at the next check.</summary>
+    internal void RelationsChanged(World world)
+    {
+        opposed = AnyHostile();
+        if (!opposed)
+            return;
+        nextScanMs = world.Time.Ms;
+        scanGen++;
+        world.Schedule(world.Time, EventTier.Rails, 0, Id, ContactScan, scanGen);
     }
 
     /// <summary>A unit on rails: a ship on rails of its own.</summary>
@@ -72,7 +101,7 @@ public sealed partial class ShipSystem
         double sa = settings.EncounterRangeM + unitRadius[slot] + refSpeed[slot] * (until - refMs[slot]) / 1000;
         for (int j = 0; j < Store.Slots; j++)
         {
-            if (j == slot || refSide[j] == side || !IsUnit(j))
+            if (j == slot || !Hostile(refSide[j], side) || !IsUnit(j))
                 continue;
             // the chord between where each was last anchored or scanned (never more than the way round), less how
             // far each can have gone by then: beyond reach, they can't meet before the next scan
@@ -173,7 +202,7 @@ public sealed partial class ShipSystem
             for (int c = 0; c < found; c++)
             {
                 int b = gridFound[c];
-                if (b <= a || scanSide[b] == side)
+                if (b <= a || !Hostile(scanSide[b], side))
                     continue;
                 double reach = sa + scanSlack[b];
                 if ((scanPos[b] - pa).LengthSquared > reach * reach)
@@ -258,7 +287,7 @@ public sealed partial class ShipSystem
             for (int c = 0; c < n; c++)
             {
                 int j = gridFound[c];
-                if (refSide[j] == side || !IsUnit(j))
+                if (!Hostile(refSide[j], side) || !IsUnit(j))
                     continue;
                 double reach = settings.EncounterRangeM + unitRadius[j];
                 double far = reach + refSpeed[j] * (now - refMs[j]) / 1000;
@@ -350,7 +379,7 @@ public sealed partial class ShipSystem
         EnsureRefs();
         for (int j = 0; j < Store.Slots; j++)
         {
-            if (!Store.IsAlive(j) || Store[j].Side == side)
+            if (!Store.IsAlive(j) || !Hostile(Store[j].Side, side))
                 continue;
             if (Store.OnRails(j))
             {

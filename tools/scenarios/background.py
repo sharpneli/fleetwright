@@ -34,13 +34,14 @@ scenario = {
     "brief": f"The scale test's fourth rung: the Jutland, and {n} tramp steamers on rails across the North Atlantic (a neutral side).",
     "from": "jutland",
     "sides": ["Britain", "Germany", "Neutral"],
+    "peace": [["Britain", "Neutral"], ["Germany", "Neutral"]],
     "units": units,
 }
 with open(out, "w", encoding="utf-8", newline="\n") as f:
     f.write("// Written by tools/scenarios/background.py: the Jutland (\"from\") and tramp steamers on looping routes across the\n")
     f.write("// open North Atlantic, a neutral side, on rails while the battle is fought (docs/battle/plan.md step 2.7c).\n")
     f.write("{\n")
-    for k in ["scenario", "name", "brief", "from", "sides"]:
+    for k in ["scenario", "name", "brief", "from", "sides", "peace"]:
         f.write(f"  {json.dumps(k)}: {json.dumps(scenario[k], ensure_ascii=False)},\n")
     f.write('  "units": [\n')
     f.write(",\n".join("    " + json.dumps(u, ensure_ascii=False) for u in units))

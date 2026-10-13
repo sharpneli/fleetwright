@@ -131,6 +131,9 @@ public class ScenarioTests
     [InlineData("""{ "scenario": 1, "start": "1916-05-31T14:00", "units": [ { "at": [56, 3], "course": 0, "kn": 10, "units": [ { "at": [56, 3], "ships": [ { "design": "dreadnought" } ] } ] } ] }""", "only a top unit")]
     [InlineData("""{ "scenario": 1, "start": "1916-05-31T14:00", "units": [ { "side": 2, "at": [56, 3], "course": 0, "kn": 10, "ships": [ { "design": "dreadnought" } ] } ] }""", "side 2")]
     [InlineData("""{ "scenario": 1, "start": "31 May", "units": [] }""", "start")]
+    [InlineData("""{ "scenario": 1, "start": "1916-05-31T14:00", "sides": ["A", "B"], "peace": [["A", "C"]], "units": [] }""", "\"C\" isn't another")]
+    [InlineData("""{ "scenario": 1, "start": "1916-05-31T14:00", "sides": ["A", "B"], "peace": [["A", "A"]], "units": [] }""", "\"A\" isn't another")]
+    [InlineData("""{ "scenario": 1, "start": "1916-05-31T14:00", "sides": ["A", "B"], "peace": [["A"]], "units": [] }""", "a pair of sides")]
     public void A_bad_file_says_what_is_wrong(string json, string expected)
     {
         var x = Assert.Throws<ScenarioException>(() => Scenario.Parse(json));
@@ -152,6 +155,22 @@ public class ScenarioTests
             Assert.True(File.Exists(Path.Combine(s.Folder!, "Designs", n + ".json")) || File.Exists(Path.Combine(Designs[0], n + ".json")), n);
         Assert.True(Scenario.IsScenario(Path.Combine(Fleet.Repo, "Content", "Scenarios", "jutland.json")));
         Assert.False(Scenario.IsScenario(Path.Combine(Designs[0], "dreadnought.json")));
+    }
+
+    /// <summary>The scale test's world rungs keep their tramps at peace with both fleets (docs/battle/plan.md step 3.1a):
+    /// given to a world, the neutral side is hostile to neither, and the fleets still to each other.</summary>
+    [Fact]
+    public void Peace_is_read_by_the_sides_names_and_given_to_the_world()
+    {
+        var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "ladder-4-world.json"));
+        Assert.Equal(["Britain", "Germany", "Neutral"], s.Sides);
+        Assert.Equal([(0, 2), (1, 2)], s.Peace);
+        var w = new World(s.Start, s.Seed, Settings);
+        foreach (var (a, b) in s.Peace)
+            w.Apply(Command.SetRelation((byte)a, (byte)b, Relation.Peace));
+        Assert.False(w.Relations.Hostile(0, 2) || w.Relations.Hostile(2, 1));
+        Assert.True(w.Relations.Hostile(0, 1));
+        Assert.Empty(Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "jutland.json")).Peace);
     }
 
     [Fact]
