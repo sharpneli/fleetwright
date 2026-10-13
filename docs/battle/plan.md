@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is under way: 2.7a (the scenario, loadable from the world tab) is done (2026-10-13), 2.7b (the instruments) is next.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is under way: 2.7a (the scenario, loadable from the world tab) and 2.7b (the instruments) are done (2026-10-13), 2.7c (up the ladder) is next.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1300,6 +1300,41 @@ What the code has today, checked:
   allocated, and the state hash, cut and replayed.
 - A scripted run in the app: the zoom swept from the globe to 10 px/m and back, pans, speed steps (1x, 10x, 100x,
   10,000x), a force order, with `-frametimes` (worst frames, not the mean).
+
+**2.7b done (2026-10-13).** Tracy's C# wrapper allocates per zone, so the sim thread got its own probes instead:
+- **`Probes` (Sim.Core):** named wall-clock timers, registered once, summed with `Stopwatch` timestamps, the longest
+  call kept per window, allocation-free, copied into each snapshot. The world times each system's events, the commands
+  and the snapshot's fill; `ShipSystem` its step, contacts, rails and land; the AI each layer; `SimHost` advancing,
+  publishing and idling. They only measure: nothing in the sim reads them.
+- **`WorldPerf` (exe):** fed every frame. It measures the clock as the screen sees it (game time a frame against the
+  asked, stale frames, the snapshot's age when drawn), the sim thread's share per probe, the map's own parts and GC
+  collections. It's a panel with F2, and a report with `-frametimes`. Ship art's texture bytes and longest upload
+  frame are shown, and each class's build, compile and art times are printed at load.
+- **Scripted input:** `F:key:NAME` and `F:mwheel:X,Y:N` (an SDL wheel: the zoom sweep). `shipgen scenario` prints the
+  probes, and takes `--watch e1,e2` (the sim's and the snapshot's poses) and `--view MPP` (the map's scale, for the
+  rails' display rule).
+- **Found and fixed:** the overlay overflowed its 2 MB buffer. 250 ships' tracks were ~60,000 segments a frame, and
+  what came last was dropped silently: later ships' tracks and the group markers (the collapsed 3rd BCS vanished, its
+  ships hidden behind a marker that wasn't drawn). Tracks are now drawn last, skipped off screen, thinned to ~3 px; the
+  buffer is 8 MB (only the used part is uploaded) and the panel shows its fill. Also: a scenario's world inherits the
+  clock's speed, and `-select=` beside `-scenario=` survives the swap.
+- **Measured** (1920x1080, 120 Hz, the Jutland at 100x, the zoom swept from 250 m/px to 2 m/px and back):
+
+  | | DevRelease | Debug |
+  |---|---|---|
+  | frames p99 / max | 8.9 / 48 ms | 8.9 / 46 ms |
+  | CPU a frame, mean / p99 | 0.40 / 2.0 ms | 1.19 / 2.6 ms |
+  | frames within 25% of the asked game time | 100% | 99% |
+  | sim thread busy at 100x | 8% | 35% |
+  | GC collections in play | 0 | 0 |
+
+  Before the overlay fix, Debug spent 4.4 ms a frame on the overlay alone (frames p95 9.1 ms at 120 Hz: dropped
+  frames). The ship step is the sim's largest part (63% headless, 24% of the thread at 100x in Debug), the AI next
+  (29%).
+- **Seen, for 2.7c-d:** one frame of ~45-55 ms at every load (the swap: the new world's first frames, the art's
+  uploads of up to 9 ms a frame); the art is 326 MB of textures for 53 classes (the plan guessed 100-150 MB); load
+  thread time is 6.7 s of builds and 13 s of art (~3-5 s on 4 threads); the group labels pile up at the operations
+  band.
 
 **2.7c Up the ladder, small first** (each rung headless first, seconds-long, then in the app; the next rung only once
 this one's numbers are understood):
