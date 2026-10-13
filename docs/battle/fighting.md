@@ -1,9 +1,8 @@
 # Plan: fighting (battle module step 4)
 
-2026-10-13. Status: **a draft to iterate with the user.** It details step 4 of `docs/battle/plan.md` ("Fighting"),
-keeping its numbers (other docs cite 4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the scaffold) and
-4.10 (scale). The user settled four of its questions on 2026-10-13 ("Decisions" at the end, folded into the steps);
-"Questions to settle" lists what's still open.
+2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
+as its steps are built. It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
+4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the scaffold) and 4.10 (scale).
 
 ## The aim
 
@@ -150,7 +149,7 @@ splashes and log entries live in preallocated pools, grown only past their size 
 ## The steps
 
 Each step is a session (or a few), starts with the usual investigation, ends with something to run and look at, and
-updates this doc and `plan.md`. **Proposed order:** 4.0, 4.1, 4.2a, 4.2b, 4.2c, 4.3, 4.4 (the first full pass, ending
+updates this doc and `plan.md`. **The order** (decision 8: shells first, baby steps): 4.0, 4.1, 4.2a, 4.2b, 4.2c, 4.3, 4.4 (the first full pass, ending
 in the first playable fight), then 4.6, 4.7, 4.8, 4.9 and 4.10. **4.5 isn't a step in that sequence:** it's the list
 of deepenings, taken one at a time after the first pass, in whatever order playing asks for.
 
@@ -168,16 +167,19 @@ The contracts, the ship facts and the plumbing, with nothing firing yet.
   - The plating (`HullPlates`) compiled: side plating amidships and at the ends, decks, bulkheads, superstructure.
   - **Placeholders** for all of it, from calibre, calibre length and the look's era, fitted to the research's gun
     tables (`fire_control_ref.py` `Gun`, `gunfire_ref.py` `Shell`): shell mass ~ d³, muzzle velocity by calibre
-    length, reload and training by calibre (the research's mount-rate table), the shell mix by battery and era. The
-    fire-control level comes from the design's fit (directors, rangefinder base, computer and radar tonnage) through
-    a placeholder table, until the designer emits a level (`fire-control-designer.md` §3.3).
+    length, reload and training by calibre (the research's mount-rate table), the shell mix by battery and era.
+  - **The fire-control level is the design's** (decision 6): a choice in ship design, per battery. Until the designer
+    offers it, a placeholder table reads it from today's fit (directors, rangefinder base, computer and radar
+    tonnage; `fire-control-designer.md` §3.3). A design with no directors and no rangefinders is legal and must
+    fight: every mount in local control, ranges by eye.
 - **Each ship's condition** (`DamageStore`, `Sim.Combat`), allocated at spawn and sized by its class (plan.md: "per-ship
   arrays are allocated once at spawn"). It's reached only through `ShipState`'s index accessors, never through the
   arrays' layout:
   - per component: a state (ok, damaged, disabled, destroyed), flags (jammed, burning);
   - per mount: the bearing and elevation anchors, the reload clock, rounds left;
   - per cell: water (m³), breach area (m²), fire;
-  - per ship: crew lost, sinkage, trim and heel, a status (afloat, sinking, sunk).
+  - per ship: crew lost, sinkage, trim and heel, a status (afloat, going down, gone). There are no hit points
+    anywhere.
 - **The contracts:** `Hit` (the ship, the time, the point and direction in the ship's frame, the striking velocity,
   the source: shell, torpedo, mine, collision or a coarse sample; the shell type; who fired), `Path` (4.1),
   `Solution` (4.2b), `Outcome` (4.3). `Hit` is the architecture's "damage takes a hit, not a shell flight".
@@ -287,6 +289,11 @@ superstructure and other parts, the hull, and inside it the armour and the cells
 - **The levels:** a small table in settings: 0 (eyeball), 1 (early rangefinder), 3 (Dreyer and director) and L
   (local), with the research's numbers (`fire-control-research.md` §5.3, §12; `FCLevel` in the reference). More levels
   are rows added later.
+- **The eyeball ship** (the user's test, once the module is ready: 72 secondary guns, eyeball only, going down in a
+  blaze of glory). v0 spots each battery's splashes as if it were alone, which flatters many guns of one calibre
+  firing independently. So **whose splash it is** (`manual-gunnery-research.md` §5: identification falls as
+  1/(1 + 0.6·N) with N guns of the same calibre; salvo firing fixes it) is the first fire-control deepening, before
+  that ship sails.
 - **Crew quality,** one per side, given by a scenario (green, average, trained, elite; trained by default): it scales
   the rangetaker's δ and the laying error.
 - **Hits are counted and shown but do nothing yet** (a flash, a log line), so fire control is calibrated on its own
@@ -352,7 +359,11 @@ reach of the burst):
     fill: a side's or navy's knob). v0's result is the ship lost at once; the venting race and the break at the
     magazine are 4.5's (`07-magazine-explosions.md`).
 - **FUNCTIONS** (`Functions`), recomputed when the condition changes: the research's Model A
-  (`06-service-networks.md` §4), direct dependencies over the links the class already has:
+  (`06-service-networks.md` §4), direct dependencies over the links the class already has (decision 5). **Built to be
+  extended:** the dependencies are data compiled into the class, a table of each function's needs (all of these
+  parts, any one of those), evaluated by one generic pass, not `if`s in code. Later tiers add rows and kinds of
+  node to the same table: generators, switchboards and the routes of power, hydraulics, steam and data (Model B), and
+  the function states the coarse tier samples (Model C). What's needed now:
   - **a mount fires** if it's working, its barbette isn't jammed, its magazine isn't flooded or gone, and it has
     crew;
   - **a battery's fire control** uses its best working director, else local control;
@@ -363,7 +374,8 @@ reach of the burst):
   - **sight:** an eye works while its part does (the sightings read it);
   - **command:** the bridge and conning tower are recorded now; the delay their loss costs comes with 5.1's signals.
 
-  This is the seam for the service networks (power, hydraulics, steam, data) in 4.5.
+  This is the seam for the service networks in 4.5: they become more needs in the same table, so nothing that reads
+  a function changes.
 - **Fire v0:** a burning cell or part is damaged over time, spreads to a neighbour with a chance a minute, and is put
   out with a chance a minute by crew. Fire next to a magazine rolls for cooking off. That's all for now.
 - **FLOODING v0** (plan.md's first version):
@@ -371,16 +383,26 @@ reach of the burst):
     up to its volume × permeability. No spread through bulkheads, no pumps;
   - **settling** is linear from the full-load hydrostatics: sinkage from TPC, trim from the moment over MCT, heel from
     GM_T and the off-centre moment;
-  - **sinking or capsizing:** it sinks when the water aboard passes the reserve buoyancy, and capsizes past
-    `CapsizeHeelDeg`;
+  - **going down:** when the water aboard passes the reserve buoyancy it founders, and past `CapsizeHeelDeg` it
+    capsizes;
   - it runs every `FloodMs` only on ships with water in them, and in any clock tier until 4.8.
-- **LOSS:**
-  - **a sinking ship:**
-    - stops firing and steaming;
-    - leaves its group (the group's own rules, as for a dropped ship now);
-    - settles to its end over `SinkingMs` (shorter for a magazine);
-    - shows in the pictures as sunk.
-  - **then it's dropped** from the store. The log keeps its record.
+
+  Ultra simple on purpose (decision 7): the buoyancy model decides when a ship goes, and deepening it (4.5) changes
+  when ships go without changing anything else.
+- **LOSS, by buoyancy, not hit points** (decision 7):
+  - **A ship stays afloat until its buoyancy says otherwise.** One sinking slowly is just a ship settling deeper,
+    listing and slowing, perhaps for hours, and still fighting with what works. Nothing marks it "sinking".
+  - **The enemy sees only what can be seen:** a contact carries what its observers make out (low in the water, a
+    list, trim by the bow or stern, fires, stopped, guns silent), and nothing else. Whether it's going down is the
+    observer's judgement, so a navy may keep firing at a ship that's done for, or leave one that would have sunk and
+    lives. The AI decides on the same picture.
+  - **Its own side knows more:** the damage report has the water aboard and what's left of the reserve buoyancy (how
+    much the crew can tell, and the captain's own estimate, can come later).
+  - **Going down:** once it founders or capsizes, it goes under over a time from the model (quick for a capsize or a
+    magazine, slower for a founder), stops firing and steaming, and leaves its group. A navy learns it's gone when an
+    observer sees it go; unseen, its contact is dead-reckoned and forgotten as any other.
+  - **Then it's dropped** from the store. The log keeps the truth: what each side claimed and what really sank can
+    differ (the debrief's, later).
 - **The bench:** `shipgen hits <design> --shell <type> --range <m> --n 2000` (a port of `gunfire_ref.py` `mc()`):
   given hits on a design, spread over its silhouette as the fall of shot would put them. It reports outcome classes,
   parts lost, water taken, crippled and lost shares.
@@ -403,7 +425,8 @@ What plan.md's "Damage on the sprites" section describes, and the report:
   - wrecked turrets tinted, and a jammed turret keeping its bearing;
   - overlays for wrecked parts from their hitbox polygons;
   - fires and smoke emitted from burning cells and parts: a simple look until the smoke field.
-- **On the map:** hit flashes, a sinking ship, a "sunk" marker, and the encounter's losses.
+- **On the map:** hit flashes; enemy ships drawn as their contacts are seen (low, listing, burning), own ships as
+  they are; a ship seen going under, and a marker where it went; the encounter's losses as each side knows them.
 - **The damage report** (`damage-model-research.md` §12: the best model fails without one):
   - the selected ship's log lines, cause to effect ("12" AP · B turret face · defeated · turret jammed in train");
   - the strip's condition row: speed cap, steering, guns working of n, water in tonnes, list, fires, crew lost.
@@ -555,14 +578,7 @@ Placeholders in `DesignerPlaceholders.cs` until shipgen gives them, listed in pl
 
 ## Questions to settle (for the user)
 
-1. **Systems v0:** proposed, direct dependencies over the class's existing links (Model A), the service networks
-   later (they need the designer to emit networks).
-2. **The fire-control level:** proposed, from the design's fit through a placeholder table, with crew quality a
-   side's knob in the scenario. Or a level per side set by the scenario.
-3. **Sinking:** proposed, a sinking ship stays for `SinkingMs` (a few minutes; under one for a magazine), drawn going
-   down, then is dropped; its record stays in the log.
-4. **Order:** 4.6 (torpedoes) before 4.3 (damage)? Torpedo boats are central to the era, but torpedoes need the
-   damage model to mean anything, so proposed after the first pass.
+None open. New ones go here as the steps raise them.
 
 ## Decisions
 
@@ -578,3 +594,10 @@ The user's, 2026-10-13:
    **Single implementation is an important principle:** no second tracer kept beside it, even as a reference.
 4. **Guns are silent in the coarse tier until 4.9.** Some rumbling background sound for fights at high time
    compression is to be worked out.
+5. **Damage to systems starts with direct dependencies** (Model A). More tiers come later as they're needed, so the
+   system is built to be extended.
+6. **The fire-control level is the design's fit,** a choice in ship design. (The user's plan once the module is ready:
+   a manual, eyeball-only ship of 72 secondary guns, going down in a blaze of glory.)
+7. **Sinking depends on the buoyancy model, not hit points.** A ship sinking slowly should leave the enemy unsure
+   whether it's going down. The first step may use an ultra simple model.
+8. **Shells first,** torpedoes after. Baby steps.
