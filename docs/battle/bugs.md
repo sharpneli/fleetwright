@@ -1,7 +1,9 @@
 # Bugs to hunt
 
-Known bugs in the battle module (the sim, the AI, the world tab), kept for a bug-hunting round. One item each, with
-what's known; tick off or delete what's fixed, add what's found.
+Known bugs in the battle module (the sim, the AI, the world tab) that weren't quick to fix where they were found, kept
+for a bug-hunting round. A bug found mid-task is fixed on the spot when that's a small, clear job; once it grows into
+a bigger one, it goes here and the task goes on. One item each, with what's known; tick off or delete what's fixed,
+add what's found.
 
 ## Flaky tests
 
