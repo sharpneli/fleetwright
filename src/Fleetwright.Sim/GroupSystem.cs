@@ -102,6 +102,7 @@ public sealed class GroupSystem : IWorldSystem
 
         internal void Add(int member)
         {
+            Owner?.MembershipChanged();
             members.Add(member);
             detached.Add(Detachment.InLine);
             Relink();
@@ -112,6 +113,7 @@ public sealed class GroupSystem : IWorldSystem
             int i = members.IndexOf(member);
             if (i < 0)
                 return false;
+            Owner?.MembershipChanged();
             members.RemoveAt(i);
             detached.RemoveAt(i);
             Relink();
@@ -172,13 +174,39 @@ public sealed class GroupSystem : IWorldSystem
     public int Count => groups.Count;
     public Group this[int i] => groups[i];
 
-    /// <summary>The squadron a ship is in, or null.</summary>
+    /// <summary>The squadron a ship is in, or null: by an index rebuilt after membership changes (2.7c: the rails
+    /// check asks it of every ship every few seconds, and the scan of every group's members it was made that O(n²)).</summary>
     public Group? Of(int entity)
     {
+        if (squadronStale)
+            IndexSquadrons();
+        return (uint)entity < (uint)squadronOf.Length ? squadronOf[entity] : null;
+    }
+
+    Group?[] squadronOf = [];   // by entity
+    bool squadronStale = true;
+
+    internal void MembershipChanged() => squadronStale = true;
+
+    void IndexSquadrons()
+    {
+        Array.Clear(squadronOf);
         foreach (var g in groups)
-            if (!g.IsForce && g.Contains(entity))
-                return g;
-        return null;
+        {
+            if (g.IsForce)
+                continue;
+            var members = g.Members;
+            for (int i = 0; i < members.Count; i++)   // by index: an interface's foreach would box its enumerator
+            {
+                int e = members[i];
+                if (e < 0)
+                    continue;
+                if (e >= squadronOf.Length)
+                    Array.Resize(ref squadronOf, Math.Max(e + 1, squadronOf.Length * 2));
+                squadronOf[e] ??= g;   // the first squadron that holds it, as the scan found
+            }
+        }
+        squadronStale = false;
     }
 
     public Group? Get(int groupId)
@@ -476,6 +504,7 @@ public sealed class GroupSystem : IWorldSystem
                             if (Get(m) is { } freed)
                                 freed.Parent = 0;
                     LeaveForce(d);
+                    MembershipChanged();
                     groups.Remove(d);
                 }
                 break;
@@ -488,6 +517,7 @@ public sealed class GroupSystem : IWorldSystem
     {
         var g = new Group { GroupId = nextId++, Formation = f, SpacingM = Spacing(spacing), IsForce = force, Owner = this };
         g.Name = force ? $"Force {g.GroupId}" : $"Group {g.GroupId}";
+        MembershipChanged();
         groups.Add(g);
         return g;
     }
@@ -538,6 +568,7 @@ public sealed class GroupSystem : IWorldSystem
                 {
                     var empty = groups[i];
                     LeaveForce(empty);
+                    MembershipChanged();
                     groups.Remove(empty);
                 }
                 return;
@@ -557,6 +588,7 @@ public sealed class GroupSystem : IWorldSystem
         if (f.Members.Count == 0)
         {
             LeaveForce(f);
+            MembershipChanged();
             groups.Remove(f);
         }
     }

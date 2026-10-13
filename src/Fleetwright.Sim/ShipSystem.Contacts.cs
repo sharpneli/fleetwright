@@ -154,14 +154,26 @@ public sealed partial class ShipSystem
                 units++;
             }
         double range = settings.EncounterRangeM;
+        // through the grid (2.7c: 1,800 units were 1.6 million pairs an hour): a pair can close at most the range and
+        // both slacks, so a cube that wide finds every pair; each unit takes the later ones only, in order, as the full
+        // double loop did
+        double most = 0;
+        for (int a = 0; a < units; a++)
+            most = Math.Max(most, scanSlack[a]);
+        double cell = range + 2 * most;
+        GridClear(units);
+        for (int a = 0; a < units; a++)
+            GridAdd(a, scanPos[a], cell);
         for (int a = 0; a < units; a++)
         {
             var pa = scanPos[a];
             byte side = scanSide[a];
             double sa = range + scanSlack[a];
-            for (int b = a + 1; b < units; b++)
+            int found = Near(pa, cell);
+            for (int c = 0; c < found; c++)
             {
-                if (scanSide[b] == side)
+                int b = gridFound[c];
+                if (b <= a || scanSide[b] == side)
                     continue;
                 double reach = sa + scanSlack[b];
                 if ((scanPos[b] - pa).LengthSquared > reach * reach)
@@ -266,31 +278,40 @@ public sealed partial class ShipSystem
     int[] gridNext = [], gridSeen = [], gridFound = [];
     int gridStamp;
 
-    /// <summary>Buckets the units by their anchors; the cube's size, metres (0: no units).</summary>
+    /// <summary>Buckets the units by their anchors, by slot; the cube's size, metres (0: no units).</summary>
     double BuildGrid(long now)
     {
-        if (gridNext.Length < Store.Slots)
-        {
-            int n = Math.Max(Store.Slots, gridNext.Length * 2);
-            Array.Resize(ref gridNext, n);
-            Array.Resize(ref gridSeen, n);
-            Array.Resize(ref gridFound, n);
-        }
         double far = 0;
         for (int j = 0; j < Store.Slots; j++)
             if (IsUnit(j))
                 far = Math.Max(far, settings.EncounterRangeM + unitRadius[j] + refSpeed[j] * (now - refMs[j]) / 1000);
         if (far <= 0)
             return 0;
-        Array.Clear(gridHead);
+        GridClear(Store.Slots);
         for (int j = 0; j < Store.Slots; j++)
             if (IsUnit(j))
-            {
-                int b = Bucket(Cube(refPos[j].X, far), Cube(refPos[j].Y, far), Cube(refPos[j].Z, far));
-                gridNext[j] = gridHead[b];
-                gridHead[b] = j + 1;
-            }
+                GridAdd(j, refPos[j], far);
         return far;
+    }
+
+    /// <summary>An empty grid for indices below <paramref name="capacity"/>; allocates only to grow.</summary>
+    void GridClear(int capacity)
+    {
+        if (gridNext.Length < capacity)
+        {
+            int n = Math.Max(capacity, gridNext.Length * 2);
+            Array.Resize(ref gridNext, n);
+            Array.Resize(ref gridSeen, n);
+            Array.Resize(ref gridFound, n);
+        }
+        Array.Clear(gridHead);
+    }
+
+    void GridAdd(int index, Vec3d p, double cell)
+    {
+        int b = Bucket(Cube(p.X, cell), Cube(p.Y, cell), Cube(p.Z, cell));
+        gridNext[index] = gridHead[b];
+        gridHead[b] = index + 1;
     }
 
     static long Cube(double x, double size) => (long)Math.Floor(x / size);
