@@ -21,6 +21,9 @@ public sealed class ShipClass
     internal ShaftLineRow[] shaftLines = [];
     internal RudderRow[] rudders = [];
     internal DirectorRow[] directors = [];
+    internal BatteryRow[] batteries = [];
+    internal ShellTypeRow[] shellTypes = [];
+    internal ShellLoad[] shellLoads = [];
     internal EyeRow[] eyes = [];
     internal TubeRow[] tubes = [];
     internal CellRow[] cells = [];
@@ -40,7 +43,7 @@ public sealed class ShipClass
     internal DeckPlate[] deckPlates = [];
     internal double[] powerKn = [], powerShp = [];
     internal string[] componentIds = [], turretTypeIds = [], cellIds = [], roomIds = [], bulkheadIds = [], deckIds = [], tierIds = [],
-        sectionIds = [], sidePlateIds = [], armourBulkheadIds = [], materials = [];
+        sectionIds = [], sidePlateIds = [], armourBulkheadIds = [], materials = [], shellTypeIds = [];
     internal FrozenDictionary<string, int> componentIndex = null!, cellIndex = null!, roomIndex = null!, bulkheadIndex = null!,
         deckIndex = null!, tierIndex = null!, sectionIndex = null!;
 
@@ -63,6 +66,8 @@ public sealed class ShipClass
     public Slice DeckOutline { get; internal init; }
     public HydrostaticsRow Hydrostatics { get; internal init; }
     public MotionFacts Motion { get; internal init; }
+    /// <summary>The hull's own plating, beside the armour (fuzes arm on it, holes open in it).</summary>
+    public PlatingRow Plating { get; internal set; }
     /// <summary>The armour compiled into solids for ray tests.</summary>
     public ArmourSolids Armour { get; internal set; } = null!;
 
@@ -76,6 +81,11 @@ public sealed class ShipClass
     public ReadOnlySpan<ShaftLineRow> ShaftLines => shaftLines;
     public ReadOnlySpan<RudderRow> Rudders => rudders;
     public ReadOnlySpan<DirectorRow> Directors => directors;
+
+    /// <summary>The gun batteries (docs/battle/fighting.md 4.0): every gun mount is in one.</summary>
+    public ReadOnlySpan<BatteryRow> Batteries => batteries;
+    /// <summary>The shells the batteries carry, each kind once.</summary>
+    public ReadOnlySpan<ShellTypeRow> ShellTypes => shellTypes;
 
     /// <summary>The observation posts, highest first (docs/battle/plan.md step 3.2a).</summary>
     public ReadOnlySpan<EyeRow> Eyes => eyes;
@@ -101,6 +111,7 @@ public sealed class ShipClass
     public ReadOnlySpan<Neighbour> Neighbours(Slice s) => neighbours.AsSpan(s.Start, s.Count);
     public ReadOnlySpan<ArmourLayer> ArmourAbove(Slice s) => armourAbove.AsSpan(s.Start, s.Count);
     public ReadOnlySpan<DeckPlate> DeckPlates(Slice s) => deckPlates.AsSpan(s.Start, s.Count);
+    public ReadOnlySpan<ShellLoad> ShellLoads(Slice s) => shellLoads.AsSpan(s.Start, s.Count);
 
     // ------------------------------------------------------------------ ids
 
@@ -114,6 +125,9 @@ public sealed class ShipClass
     public string SectionId(int i) => sectionIds[i];
     public string SidePlateId(int i) => sidePlateIds[i];
     public string ArmourBulkheadId(int i) => armourBulkheadIds[i];
+    /// <summary>A shell type's id, shared across classes: the gun, the kind, the era and the quality ("305/45 AP
+    /// great_war rn1916"), so equal ids are equal rows.</summary>
+    public string ShellTypeId(int i) => shellTypeIds[i];
     /// <summary>A material's name (armour and plating: "Krupp cemented", "STS", "steel"), or null for -1.</summary>
     public string? Material(int i) => i < 0 ? null : materials[i];
     public int MaterialCount => materials.Length;

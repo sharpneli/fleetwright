@@ -62,6 +62,8 @@ public static class ShipClassCompiler
             c.tiers = hb.Tiers.Select(TierOf).ToArray();
             c.sections = hb.Sections.Select(s => new SectionRow(s.X0, s.X1)).ToArray();
             Armour(c);
+            c.Plating = PlatingOf(hb.Plating);
+            Weapons(c);
             (c.powerKn, c.powerShp) = PowerCurve(c.Motion);
             c.eyes = Sight.Eyes(c);
             c.Silhouette = Sight.Silhouette(c, numbers);
@@ -494,6 +496,127 @@ public static class ShipClassCompiler
                 new ArmourDeckRow(Deck(x.Deck), x.ThicknessMm, ExtentOf(x.Extent), x.X0, x.X1, x.Z, x.Main, x.Roof, Material(x.Material))).ToArray();
         }
 
+        PlatingRow PlatingOf(HullPlates p) => new()
+        {
+            Material = Material(p.Material), ShellMm = p.ShellMm, ShellEndMm = p.ShellEndMm, StrengthDeckMm = p.StrengthDeckMm,
+            StrengthDeckEndMm = p.StrengthDeckEndMm, MidX0 = p.MidX0, MidX1 = p.MidX1, DeckMm = p.DeckMm, BulkheadMm = p.BulkheadMm,
+            InnerBottomMm = p.InnerBottomMm, SuperstructureMm = p.SuperstructureMm, ControlMm = p.ControlMm, DeckWoodMm = p.DeckWoodMm,
+        };
+
+        // ------------------------------------------------------------------ the weapons
+
+        /// <summary>The guns' working numbers on each mount, the batteries (a kind of mount and a gun: one range table,
+        /// one set of shells), their directors and fire-control level, and the shells they carry. What the designer
+        /// doesn't give comes from DesignerPlaceholders, by the look's era and navy.</summary>
+        void Weapons(ShipClass c)
+        {
+            var era = Kinds.EraOf(ship.Design.Look?.Era);
+            string navy = ship.Design.Look?.Navy ?? "generic";
+            var mounts = c.mounts;
+            var batteries = new List<BatteryRow>();
+            var members = new List<List<int>>();
+            var byGun = new Dictionary<(ComponentKind, double, double), int>();
+            for (int i = 0; i < mounts.Length; i++)
+            {
+                var m = mounts[i];
+                where = $"mount \"{hb.Components[m.Component].Id}\"";
+                if (m.Kind == ComponentKind.Torpedo)
+                {
+                    mounts[i] = m with { Battery = -1, ReloadS = double.NaN, TrainDegS = double.NaN, ElevateDegS = double.NaN, MaxElevationDeg = double.NaN };
+                    continue;
+                }
+                if (!(m.CalibreMm > 0) || !(m.CalibreLength > 0))
+                    throw new ShipCompileException($"{where}: a gun with no calibre or length");
+                if (!byGun.TryGetValue((m.Kind, m.CalibreMm, m.CalibreLength), out int b))
+                {
+                    byGun[(m.Kind, m.CalibreMm, m.CalibreLength)] = b = batteries.Count;
+                    batteries.Add(new BatteryRow
+                    {
+                        Kind = m.Kind == ComponentKind.Main ? Battery.Main : Battery.Secondary, CalibreMm = m.CalibreMm, CalibreLength = m.CalibreLength,
+                    });
+                    members.Add([]);
+                }
+                members[b].Add(i);
+                var (reload, train, elevate, maxElev) = DesignerPlaceholders.Gun(m.CalibreMm, m.CalibreLength, c.turretTypes[m.Type].Shape, era);
+                mounts[i] = m with { Battery = b, ReloadS = reload, TrainDegS = train, ElevateDegS = elevate, MaxElevationDeg = maxElev };
+            }
+
+            var types = new List<ShellTypeRow>();
+            var typeIds = new List<string>();
+            var typeIndex = new Dictionary<string, int>(StringComparer.Ordinal);
+            var loads = new List<ShellLoad>();
+            int TypeOf(ShellKind kind, BatteryRow b)
+            {
+                var t = DesignerPlaceholders.Shell(kind, b.CalibreMm, b.CalibreLength, era, navy);
+                string id = FormattableString.Invariant($"{b.CalibreMm:0.#}/{b.CalibreLength:0.#} {KindName(kind)} {EraName(era)} {QualityName(t.Quality)}");
+                if (!typeIndex.TryGetValue(id, out int k))
+                {
+                    typeIndex[id] = k = types.Count;
+                    types.Add(t);
+                    typeIds.Add(id);
+                }
+                return k;
+            }
+
+            for (int b = 0; b < batteries.Count; b++)
+            {
+                var row = batteries[b];
+                int m0 = links.Count, guns = 0;
+                foreach (int i in members[b])
+                {
+                    links.Add(i);
+                    guns += c.turretTypes[mounts[i].Type].Barrels;
+                }
+                // its kind's directors, the longest rangefinder first
+                int d0 = links.Count;
+                double rf = 0;
+                bool radar = false;
+                foreach (int d in Enumerable.Range(0, c.directors.Length).Where(i => c.directors[i].Battery == row.Kind)
+                             .OrderByDescending(i => c.directors[i].RangefinderM > 0 ? c.directors[i].RangefinderM : 0).ThenBy(i => i))
+                {
+                    links.Add(d);
+                    if (c.directors[d].RangefinderM > rf)
+                        rf = c.directors[d].RangefinderM;
+                    radar |= c.directors[d].Radar;
+                }
+                int dirs = links.Count - d0;
+                var spec = FireControl.Spec(ship.Design, row.Kind == Battery.Main ? "main" : "secondary");
+                int l0 = loads.Count;
+                foreach (var (kind, share) in DesignerPlaceholders.ShellMix(row.CalibreMm, era))
+                    loads.Add(new ShellLoad(TypeOf(kind, row), share));
+                batteries[b] = row with
+                {
+                    Mounts = new Slice(m0, d0 - m0), Guns = guns, Directors = new Slice(d0, dirs),
+                    Level = DesignerPlaceholders.FireControl(dirs, rf, spec.ComputerT, radar || spec.RadarT > 0, era),
+                    Shells = new Slice(l0, loads.Count - l0), Fires = TypeOf(DesignerPlaceholders.Fires(row.CalibreMm, era), row),
+                };
+            }
+            c.batteries = batteries.ToArray();
+            c.shellTypes = types.ToArray();
+            c.shellTypeIds = typeIds.ToArray();
+            c.shellLoads = loads.ToArray();
+        }
+
+        static string KindName(ShellKind k) => k switch { ShellKind.Ap => "AP", ShellKind.Common => "common", _ => "HE" };
+
+        static string EraName(Era e) => e switch
+        {
+            Era.Victorian => "victorian",
+            Era.GreatWar => "great_war",
+            Era.Treaty => "treaty",
+            Era.Wwii => "wwii",
+            _ => "cold_war",
+        };
+
+        static string QualityName(ShellQuality q) => q switch
+        {
+            ShellQuality.Rn1916 => "rn1916",
+            ShellQuality.Km1916 => "km1916",
+            ShellQuality.Rn1918 => "rn1918",
+            ShellQuality.Ww2 => "ww2",
+            _ => "ijn_t91",
+        };
+
         static Extent ExtentOf(string s) => s switch
         {
             "citadel" => Extent.Citadel,
@@ -619,6 +742,20 @@ public static class ShipClassCompiler
             h.Add(c.directors.Length);
             foreach (var d in c.directors)
                 h.Add(d.Component);
+            h.Add(c.batteries.Length);
+            foreach (var b in c.batteries)
+            {
+                h.Add((int)b.Kind);
+                h.Add(c.Links(b.Mounts));
+                h.Add(c.Links(b.Directors));
+                h.Add(b.Shells.Count);
+                foreach (var l in c.ShellLoads(b.Shells))
+                    h.Add(l.ShellType);
+                h.Add(b.Fires);
+            }
+            h.Add(c.shellTypeIds.Length);
+            foreach (var id in c.shellTypeIds)
+                h.Add(id);
             h.Add(c.tubes.Length);
             foreach (var t in c.tubes)
                 h.Add(t.Room);

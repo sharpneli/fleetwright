@@ -139,6 +139,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- mono-check [bisma
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sim [--from 1916-05-31T14:00] [--speed 30000] [--seconds 3]   # the world on its thread: clock, speed asked/achieved, sun, sim allocations
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shore [--points 100000]   # the land index: build time, memory, IsLand vs Land, query costs
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- trials shipgen/designs/yamato.json [--out out]   # sea trials on the ship model: turning circles, 0 -> full, coasting, crash stop, beside the research's bands
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- weapons dreadnought [--research]   # weapon facts: batteries, fire-control level, guns' working numbers, shells, plating (placeholders beside the research's guns)
 ```
 
 `mono-check` (about 15 s) lists where adding weight gave a lighter ship (reversals) or one step jumped far more than its
@@ -234,6 +235,7 @@ src/
   Fleetwright.Sim.Ships/      # the ships' data: ShipClass (a built Ship's hitboxes and report as read-only, int-indexed
                               #   tables: Rows.cs), ShipClassCompiler (strict: every kind an enum, every link an index),
                               #   ArmourSolids, ContentHash (design and layout hashes), ShellTest (shell-test on a class),
+                              #   the weapon facts (batteries, shell types, the guns' working numbers, plating),
                               #   DesignerPlaceholders (facts the designer doesn't give yet: the one place they live),
                               #   ShipClassRegistry (classes by design hash, built on threads of its own, ids for commands)
   Fleetwright.Sim.Combat/     # ships at sea: ShipStore (slots, state in columns), ShipState (a handle), Handling (a

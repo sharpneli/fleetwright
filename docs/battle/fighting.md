@@ -1,7 +1,7 @@
 # Plan: fighting (battle module step 4)
 
 2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
-as its steps are built. It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
+as its steps are built. **4.0 done 2026-10-13; 4.1, the hit query, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
 4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
 
 ## The aim
@@ -207,6 +207,35 @@ that first uses it.
   - the placeholders for the research's guns (12"/45, 13.5"/45, 15"/42, 4"/45) land within a stated band of their
     sourced shell mass and muzzle velocity;
   - an eyeball-only design compiles, every battery at local control.
+
+**Done 2026-10-13.** `ShipClass` has `Batteries`, `ShellTypes` (with ids), the `ShellLoads` pool and `Plating`, and
+each `MountRow` its `Battery`, `ReloadS`, `TrainDegS`, `ElevateDegS` and `MaxElevationDeg`. The placeholders are in
+`DesignerPlaceholders` (`Shell`, `ShellMix`, `Fires`, `Gun`, `FireControl`), read from the look's era and navy (`Era`
+in `Kinds.cs`). `shipgen weapons DESIGN... [--research]` lists a class's batteries, shells and plating, and puts the
+placeholders beside the research's sixteen guns. `WeaponFactsTests` holds the tests above, and a few more.
+
+What it settled, beyond the plan:
+
+- **A battery is the mounts of one kind (main or secondary) that fire one gun** (calibre and length): one range table,
+  one set of shells, one fall of shot. KGV's quad and twin 14" turrets are one battery, Bismarck's 150s and 105s two.
+  Its directors are the ship's directors of its kind, longest rangefinder first. Torpedo mounts aren't in a battery
+  (4.6), and AA isn't (aircraft are out).
+- **The shell kind goes by the gun's size, not the battery's kind:** 8" and up carry mostly AP and fire it, lighter
+  guns mostly HE (common before 1906). A destroyer's main 4" fires as a battleship's secondary 4" does.
+- **Shell quality is an enum named after the research's outcome rows** (`rn1916`, `km1916`, `rn1918`, `ww2`,
+  `ijn_t91`). The numbers come with the terminal model, in 4.3a's settings. Victorian shells read as the worst row.
+- **The fire-control level is the research's ladder, 0 to 8**, read from the fit (directors, the best rangefinder,
+  computer and radar tonnage) and capped by the era's best (1 before 1906, 3 in the Great War, 4 between the wars, 6
+  in the Second). Local control isn't a level: it's a battery without a director, at level 0.
+- **For 4.2b:** the Jutland's ships read as levels 0 (destroyers, local control), 1 (the pre-dreadnoughts), 2 (the
+  light and armoured cruisers: under 1 t of computer, a clock) and 3 (the capital ships). So 4.2b's level table needs
+  row 2 as well as 0, 1, 3 and L; it's in the research (`LEVELS`).
+- **Shell type ids** are the gun, the kind, the era and the quality ("305/45 AP great_war rn1916"). A placeholder is a
+  pure function, so one id is one row in every class (a test checks it over the fleet), and 4.2a's tables can key on
+  it.
+- **The placeholders against the research** (`weapons --research`): the Great War's guns within 10% in shell mass
+  and muzzle velocity. The 1930s super-heavy shells come out ~11% light (16"), the 38 cm and 46 cm ~10% heavy, and
+  the 5"/38's short barrel ~12% slow. Good enough for placeholders; the designer should give the real ones.
 
 ### 4.1 The hit query
 
@@ -620,9 +649,14 @@ allocated at spawn.
 
 Placeholders in `DesignerPlaceholders.cs` until shipgen gives them, listed in plan.md's "Needed from the designer":
 
-- **Shells:** mass, muzzle velocity, kinds carried and the mix, filler, fuze, per gun.
-- **Working the guns:** reload time, training and elevating rates, highest elevation, per mount type.
-- **Fire control:** the level per battery from its fit (`fire-control-designer.md` §3), until the designer emits it.
+- **Shells** (in since 4.0): mass, muzzle velocity, drag form factor, kinds carried and the mix, filler, fuze, per
+  gun, and a navy's shell quality by year. Today they come from the calibre, the calibre length and the look's era
+  and navy; the look's era is a paint scheme, not a year, so a design drawn in the wrong era gets the wrong guns.
+- **Working the guns** (in since 4.0): reload time, training and elevating rates, highest elevation, per mount type.
+  Shipgen draws some Great War light guns in a dual-purpose shape; the placeholders ignore it before the treaty
+  years.
+- **Fire control** (in since 4.0): the level per battery from its fit (`fire-control-designer.md` §3), until the
+  designer emits it.
 - **Magazines:** the propellant kind and its sensitivity (a navy's and an era's).
 - **Torpedoes:** speed and range settings per calibre and era (the warhead is exported already).
 - **For 4.5's systems:** generators, switchboards and the routes of power, hydraulics and data

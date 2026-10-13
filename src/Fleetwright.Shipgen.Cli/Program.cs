@@ -77,6 +77,11 @@ public static class Program
             each design's sea trials on the ship model, headless: turning circles at hard over and standard rudder,
             0 -> full, coasting, a crash stop, each beside the research's band for its kind; --out writes the circles
             as DIR/<design>_turns.svg
+        shipgen weapons DESIGN... [--research]
+            each design's weapon facts as the sim reads them (docs/battle/fighting.md 4.0): batteries, directors and
+            fire-control level, a gun's reload, training and elevation, the shells and their shares, the plating; most
+            are placeholders until the designer gives them. DESIGN is a path or a shipped design's name. --research
+            adds the placeholders beside the research's guns
         shipgen scenario [SCENARIO.json] [--minutes 60] [--every 5] [--threads N] [--at 10] [--no-land] [--replay]
             a scenario headless at full tilt (default Content/Scenarios/jutland.json): its classes' build time (no
             art), the land and the placing, then game minutes on the sim's work alone: ships on the fine tick and on
@@ -124,6 +129,7 @@ public static class Program
                     double.Parse(a.Get("at", "10")!, System.Globalization.CultureInfo.InvariantCulture), !a.Has("no-land"), a.Has("replay"),
                     a.Get("watch")?.Split(',').Select(int.Parse).ToArray(),
                     double.Parse(a.Get("speed", "0")!, System.Globalization.CultureInfo.InvariantCulture)),
+                "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "trials" => SeaTrials.Run(a.Positional, a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("out")),
                 _ => Fail($"unknown command {args[0]}\n\n{Usage}"),
             };
@@ -159,7 +165,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

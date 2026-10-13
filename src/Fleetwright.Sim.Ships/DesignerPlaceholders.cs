@@ -15,7 +15,7 @@ public static class DesignerPlaceholders
     /// metre, kept to 12-30 (Barr &amp; Stroud's 9 ft FQ ~15-20x, 15 ft ~25x; the 1930s' long bases 25-30x).</summary>
     public static double RangefinderMagnification(double baseM) => Math.Clamp(10 + 4 * baseM, 12, 30);
 
-    /// <summary>Fills what the design didn't give.</summary>
+    /// <summary>Fills what the design didn't give (moving).</summary>
     public static MotionFacts Fill(MotionFacts m) => m with
     {
         TacticalDiameterM = m.TacticalDiameterM > 0 ? m.TacticalDiameterM : TacticalDiameter(m),
@@ -24,6 +24,166 @@ public static class DesignerPlaceholders
         PowerRampS = m.PowerRampS > 0 ? m.PowerRampS : 1.93 * Math.Pow(m.FullDisplacementT, 0.47),
         PowerCutS = m.PowerCutS > 0 ? m.PowerCutS : 15,
     };
+
+    // ------------------------------------------------------------------ the weapons (docs/battle/fighting.md 4.0)
+
+    /// <summary>PLACEHOLDER: a gun's shells, from its calibre and length, the look's era and navy. Fitted to the
+    /// research's gun tables (research/simulation/fire_control_ref.py GUNS, damage-research/gunfire_ref.py SHELLS):
+    /// <list type="bullet">
+    /// <item>AP mass k·d³, k = (13,000 + 6,000·d) kg/m³ (d in m): the Great War's guns within 10% (12"/45 386 kg, 13.5"
+    /// 635, 15" 871, the QF 4"/45 Mk V's 14.06), ×0.95 before 1906 and ×1.05 after the war (the heavy shells of the
+    /// 1930s: 16"/45 1,225 kg, but the 38 cm's 800);</item>
+    /// <item>muzzle velocity 280 + 11·L m/s (L the calibre length), from the Victorian muzzle-loaders (12"/14 RML
+    /// ~400 m/s) to the 76/62's 925: the 12"/45 Mk X 831 against 775, the 15"/42 749 against 742;</item>
+    /// <item>the drag form factor from the fitted i of fire_control_ref.py: 1.5-1.85 for the Great War's blunt 12"
+    /// and 13.5", ~1.1 for the 15" and later;</item>
+    /// <item>filler: AP ~3% early (Lyddite, 15" APC 1916 27 kg) and ~1.8% later; common 4-7%; HE 7-8%, as heavy as AP
+    /// in the Great War and 0.85 of it later, its velocity up by the masses' fourth root (16"/50 HC 820 against AP
+    /// 762);</item>
+    /// <item>fuzes: base with a delay (0.025 s in the Great War, 0.035 later, the IJN's Type 91 0.4), HE nose;</item>
+    /// <item>quality: the outcome table's rows by era and navy (portsmouth for the RN, kiel for Germany, kure for
+    /// Japan): Victorian shells as the worst row (rn1916).</item>
+    /// </list>
+    /// Each kind carried is one row; the designer should give shells per gun (mass, velocity, kinds, filler, fuze)
+    /// from its ordnance tech, and a navy's shell quality by year.</summary>
+    public static ShellTypeRow Shell(ShellKind kind, double calibreMm, double calibreLength, Era era, string navy)
+    {
+        double d = calibreMm / 1000;
+        double apKg = (13_000 + 6_000 * d) * d * d * d * era switch { Era.Victorian => 0.95, Era.GreatWar => 1.0, _ => 1.05 };
+        double apMs = Math.Clamp(280 + 11 * calibreLength, 380, 1000);
+        var quality = era switch
+        {
+            Era.Victorian => ShellQuality.Rn1916,
+            _ when navy == "kure" && era >= Era.Treaty => ShellQuality.IjnT91,
+            Era.GreatWar => navy == "portsmouth" ? ShellQuality.Rn1916 : ShellQuality.Km1916,
+            Era.Treaty => ShellQuality.Rn1918,
+            _ => ShellQuality.Ww2,
+        };
+        bool early = era <= Era.GreatWar;
+        double kg = kind == ShellKind.He && !early ? 0.85 * apKg : apKg;
+        return new ShellTypeRow
+        {
+            CalibreMm = calibreMm, MassKg = kg, MuzzleVelocityMs = apMs * Math.Pow(apKg / kg, 0.25),
+            FormFactor = era switch { Era.Victorian => 1.8, Era.GreatWar => 1.5, Era.Treaty => 1.15, Era.Wwii => 1.05, _ => 1.0 },
+            Kind = kind,
+            FillerKg = kg * kind switch
+            {
+                ShellKind.Ap => early ? 0.03 : 0.018,
+                ShellKind.Common => era == Era.Victorian ? 0.07 : early ? 0.06 : 0.04,
+                _ => early ? 0.07 : 0.08,
+            },
+            Fuze = kind == ShellKind.He ? Fuze.Nose : Fuze.Base,
+            FuzeDelayS = kind switch
+            {
+                ShellKind.He => 0,
+                ShellKind.Common => era == Era.Victorian ? 0 : 0.01,
+                _ => quality == ShellQuality.IjnT91 ? 0.4 : era switch { Era.Victorian => 0, Era.GreatWar => 0.025, _ => 0.035 },
+            },
+            Quality = quality,
+        };
+    }
+
+    /// <summary>The calibre from which a gun is a heavy one, mm: it carries mostly AP and fires it in v0.</summary>
+    public const double HeavyGunMm = 200;
+
+    /// <summary>PLACEHOLDER: the shells a battery carries and their shares, by the gun's size (a destroyer's main 4"
+    /// fires as a battleship's secondary 4" does): heavy guns (8" and up) AP and common half and half before 1906 (no
+    /// HE yet), 40/30/30 AP, common and HE in the Great War, 65/35 AP and HE later; light guns mostly common before
+    /// 1906, then mostly HE. The designer should give the outfit per battery, and the shell chosen by target is a
+    /// deepening (fighting.md 4.5).</summary>
+    public static ReadOnlySpan<(ShellKind Kind, double Share)> ShellMix(double calibreMm, Era era) => (calibreMm >= HeavyGunMm, era) switch
+    {
+        (true, Era.Victorian) => HeavyVictorian,
+        (true, Era.GreatWar) => HeavyGreatWar,
+        (true, _) => HeavyLater,
+        (_, Era.Victorian) => LightVictorian,
+        (_, Era.GreatWar) => LightGreatWar,
+        _ => LightLater,
+    };
+
+    static readonly (ShellKind, double)[] HeavyVictorian = [(ShellKind.Ap, 0.5), (ShellKind.Common, 0.5)],
+        HeavyGreatWar = [(ShellKind.Ap, 0.4), (ShellKind.Common, 0.3), (ShellKind.He, 0.3)],
+        HeavyLater = [(ShellKind.Ap, 0.65), (ShellKind.He, 0.35)],
+        LightVictorian = [(ShellKind.Ap, 0.2), (ShellKind.Common, 0.8)],
+        LightGreatWar = [(ShellKind.Common, 0.3), (ShellKind.He, 0.7)],
+        LightLater = [(ShellKind.Common, 0.2), (ShellKind.He, 0.8)];
+
+    /// <summary>The kind a battery fires in v0 (fighting.md 4.0, one kind per battery): AP from a heavy gun, else HE
+    /// when it carries any, else common.</summary>
+    public static ShellKind Fires(double calibreMm, Era era)
+    {
+        if (calibreMm >= HeavyGunMm)
+            return ShellKind.Ap;
+        foreach (var (k, _) in ShellMix(calibreMm, era))
+            if (k == ShellKind.He)
+                return k;
+        return ShellKind.Common;
+    }
+
+    /// <summary>PLACEHOLDER: working a gun, from its calibre and length, its mount's shape and the era.
+    /// <list type="bullet">
+    /// <item>reload 7·(d/102 mm)^1.5 s, at most 36 s: the 4"'s ~8 rounds a minute, the 8"'s ~3, the heavy guns' ~2
+    /// (research/simulation/manual-gunnery-research.md §4, fire-control-research/early-hit-rates.md: 12" about 2 a
+    /// minute in 1906, the KGV's 14" cycles 26-30 s); ×1.1 in the Great War, 0.9 in the Second, 0.5 for the Cold War's
+    /// automatic guns; before 1906 heavy guns are slower (12"/35 70-100 s, the muzzle-loaders minutes): up to ×1.3,
+    /// ×2.5 under 40 calibres and ×4 under 30, growing from 150 to 300 mm;</item>
+    /// <item>training 2·(381 mm/d)^1.5 °/s (fire-control-research.md §4's mount rates: RN 15" 2, 8" 6.7, 6" 10), ×0.7
+    /// before 1906, ×1.2 between the wars, ×1.5 in the Second (USN 16" 4, 38 cm 5), ×3 in the Cold War, ×1.6 for a
+    /// dual-purpose mount from the treaty years on (5"/38 25); elevating twice as fast, 2-20 °/s;</item>
+    /// <item>the highest elevation: 13° before 1906, 18° in the Great War (RN 13.5" and 15" 20°, German 13.5-16°), 30°
+    /// between the wars, 40° in the Second, 45° after and on dual-purpose mounts (from the treaty years: Shipgen draws
+    /// some earlier light guns in a dp shape).</item>
+    /// </list>
+    /// The designer should give these per mount type from its machinery (hydraulic or electric, all-angle loading).</summary>
+    public static (double ReloadS, double TrainDegS, double ElevateDegS, double MaxElevationDeg) Gun(double calibreMm, double calibreLength,
+        TurretShape shape, Era era)
+    {
+        double reload = Math.Min(7 * Math.Pow(calibreMm / 102, 1.5), 36);
+        if (era == Era.Victorian)
+        {
+            double slow = calibreLength < 30 ? 4 : calibreLength < 40 ? 2.5 : 1.3;
+            reload *= 1 + (slow - 1) * Math.Clamp((calibreMm - 150) / 150, 0, 1);
+        }
+        else
+            reload *= era switch { Era.GreatWar => 1.1, Era.Treaty => 1.0, Era.Wwii => 0.9, _ => 0.5 };
+        bool dp = shape == TurretShape.Dp && era >= Era.Treaty;
+        double train = Math.Clamp(2 * Math.Pow(381 / calibreMm, 1.5)
+            * era switch { Era.Victorian => 0.7, Era.GreatWar => 1.0, Era.Treaty => 1.2, Era.Wwii => 1.5, _ => 3.0 } * (dp ? 1.6 : 1), 0.5, 60);
+        double maxElev = dp ? 45 : era switch { Era.Victorian => 13, Era.GreatWar => 18, Era.Treaty => 30, Era.Wwii => 40, _ => 45 };
+        return (Math.Max(reload, 0.5), train, Math.Clamp(2 * train, 2, 20), maxElev);
+    }
+
+    /// <summary>PLACEHOLDER (fighting.md decision 6: the level is the design's choice, per battery): the fire-control
+    /// level read from today's fit, its directors, the best rangefinder among them, and the plotting room's computer
+    /// and radar tonnage (research/simulation/fire-control-designer.md §3.3, fire_control_ref.py LEVELS):
+    /// <list type="bullet">
+    /// <item>no director: eyeball, the mounts in local control;</item>
+    /// <item>radar: rangekeeper with radar ranging when there's a rangefinder too, auto-track without;</item>
+    /// <item>no computer: a rangefinder (or eyeball without one); under 1 t a clock (Dumaresq, Vickers); under 5 t a
+    /// Dreyer table and director; under 8 t the interwar table; more, a rangekeeper;</item>
+    /// <item>never past the era's best: rangefinders before 1906, the Dreyer in the Great War, the table between the
+    /// wars, radar spotting in the Second.</item>
+    /// </list>
+    /// The designer should offer the level (computer, mount and propellant tech) per battery.</summary>
+    public static FireControlLevel FireControl(int directors, double rangefinderM, double computerT, bool radar, Era era)
+    {
+        var level = directors == 0 ? FireControlLevel.Eyeball
+            : radar ? rangefinderM > 0 ? FireControlLevel.Rangekeeper : FireControlLevel.AutoTrack
+            : computerT <= 0 ? rangefinderM > 0 ? FireControlLevel.Rangefinder : FireControlLevel.Eyeball
+            : computerT < 1 ? FireControlLevel.Clock
+            : computerT < 5 ? FireControlLevel.Director
+            : computerT < 8 ? FireControlLevel.Table
+            : FireControlLevel.Rangekeeper;
+        var best = era switch
+        {
+            Era.Victorian => FireControlLevel.Rangefinder,
+            Era.GreatWar => FireControlLevel.Director,
+            Era.Treaty => FireControlLevel.Table,
+            Era.Wwii => FireControlLevel.RadarSpotting,
+            _ => FireControlLevel.Digital,
+        };
+        return level < best ? level : best;
+    }
 
     /// <summary>PLACEHOLDER: TD/L = 0.341·(L/B)^1.3, times 0.77 for two rudders or more, kept to 2.5-8 (4-8
     /// under 60 m: planing craft turn in 3-6 lengths). A rough fit to

@@ -90,6 +90,16 @@ public readonly record struct MountRow
     public double ReadyT { get; init; }
     public int Torpedoes { get; init; }
     public double WarheadKg { get; init; }
+
+    /// <summary>The gun battery it's in (Batteries), or -1 (torpedo mounts).</summary>
+    public int Battery { get; init; }
+    /// <summary>Working the guns (NaN on torpedo mounts): seconds from one round to the next per gun, training and
+    /// elevating rates in degrees a second, and the highest elevation, which sets the gun's range. The designer's to
+    /// give; placeholders until then (<see cref="DesignerPlaceholders"/>).</summary>
+    public double ReloadS { get; init; }
+    public double TrainDegS { get; init; }
+    public double ElevateDegS { get; init; }
+    public double MaxElevationDeg { get; init; }
 }
 
 public enum TurretShape : byte
@@ -139,6 +149,127 @@ public readonly record struct RudderRow(int Component, double X, double Y, doubl
 
 /// <summary>A director: a superstructure block with role director.</summary>
 public readonly record struct DirectorRow(int Component, Battery Battery, double RangefinderM, bool Radar);
+
+// ------------------------------------------------------------------ the weapons (docs/battle/fighting.md 4.0)
+
+public enum ShellKind : byte
+{
+    /// <summary>Armour-piercing: a small burster behind a base fuze with a delay.</summary>
+    Ap,
+    /// <summary>Common or semi-armour-piercing: more filler, a short delay.</summary>
+    Common,
+    /// <summary>High explosive: the most filler, a nose fuze that bursts on the first thing it meets.</summary>
+    He,
+}
+
+public enum Fuze : byte
+{
+    /// <summary>In the base, firing after a delay (FuzeDelayS) once armed.</summary>
+    Base,
+    /// <summary>In the nose, at once.</summary>
+    Nose,
+}
+
+/// <summary>How well a navy's shells of a time behave on armour: a row of the outcome table (duds, breaking up,
+/// bursting in the plate), named as in research/simulation/damage-research/gunfire_ref.py OUTCOME. The numbers come
+/// with the terminal model (4.3a), in its settings.</summary>
+public enum ShellQuality : byte
+{
+    Rn1916,
+    Km1916,
+    Rn1918,
+    Ww2,
+    IjnT91,
+}
+
+/// <summary>A kind of shell a gun fires: what its flight (the calibre, mass, muzzle velocity and drag form factor) and
+/// its end (kind, filler, fuze, quality) need. Shared by id across classes, so a gun's trajectory table is built
+/// once.</summary>
+public readonly record struct ShellTypeRow
+{
+    public double CalibreMm { get; init; }
+    public double MassKg { get; init; }
+    public double MuzzleVelocityMs { get; init; }
+    /// <summary>The drag form factor i over the standard Cd(Mach) curve (fire_control_ref.py's fitted i): blunt
+    /// early shells ~1.5-1.9, long-headed later ones ~1.0.</summary>
+    public double FormFactor { get; init; }
+    public ShellKind Kind { get; init; }
+    public double FillerKg { get; init; }
+    public Fuze Fuze { get; init; }
+    public double FuzeDelayS { get; init; }
+    public ShellQuality Quality { get; init; }
+}
+
+/// <summary>A shell type a battery carries, and its share of the rounds.</summary>
+public readonly record struct ShellLoad(int ShellType, double Share);
+
+/// <summary>How a battery's fire is controlled, the rungs of research/simulation/fire_control_ref.py's LEVELS (0-8;
+/// local control is a battery without a director, not a level). The design's choice (fighting.md decision 6); a
+/// placeholder reads it from the fit until the designer offers it.</summary>
+public enum FireControlLevel : byte
+{
+    /// <summary>0: ranges by eye (c.1890).</summary>
+    Eyeball,
+    /// <summary>1: an early rangefinder and stadimeter (1905).</summary>
+    Rangefinder,
+    /// <summary>2: Dumaresq and range clock (1910).</summary>
+    Clock,
+    /// <summary>3: Dreyer table and director firing (1916).</summary>
+    Director,
+    /// <summary>4: the interwar central table (AFCT, 1930s).</summary>
+    Table,
+    /// <summary>5: rangekeeper and stable vertical, radar ranging (1941-42).</summary>
+    Rangekeeper,
+    /// <summary>6: radar spotting (1945).</summary>
+    RadarSpotting,
+    /// <summary>7: auto-tracking radar (1955).</summary>
+    AutoTrack,
+    /// <summary>8: digital (1975).</summary>
+    Digital,
+}
+
+/// <summary>A gun battery: the mounts of one kind (main or secondary) firing one gun (calibre and length), so one
+/// range table, one set of shells and one fall of shot to spot. Its directors are the ship's directors of its kind;
+/// none means local control (each mount aims for itself).</summary>
+public readonly record struct BatteryRow
+{
+    public Battery Kind { get; init; }
+    public double CalibreMm { get; init; }
+    public double CalibreLength { get; init; }
+    /// <summary>Its mounts (Links: mount indices) and their barrels.</summary>
+    public Slice Mounts { get; init; }
+    public int Guns { get; init; }
+    /// <summary>Its directors (Links: director indices), best first; empty: local control.</summary>
+    public Slice Directors { get; init; }
+    public FireControlLevel Level { get; init; }
+    /// <summary>The shells it carries (the ShellLoads pool), shares adding up to 1.</summary>
+    public Slice Shells { get; init; }
+    /// <summary>The shell type it fires: v0 fires one kind per battery (AP from a heavy gun, HE or common from a light
+    /// one); choosing by target is a deepening (fighting.md 4.5).</summary>
+    public int Fires { get; init; }
+
+    public bool Local => Directors.Count == 0;
+}
+
+/// <summary>The hull's own plating (Shipgen's HullPlates): the side shell amidships (MidX0..MidX1) and at the ends,
+/// the strength deck likewise, the lower decks, bulkheads and inner bottom, the superstructure and the control
+/// positions; mm, and the material.</summary>
+public readonly record struct PlatingRow
+{
+    public int Material { get; init; }
+    public double ShellMm { get; init; }
+    public double ShellEndMm { get; init; }
+    public double StrengthDeckMm { get; init; }
+    public double StrengthDeckEndMm { get; init; }
+    public double MidX0 { get; init; }
+    public double MidX1 { get; init; }
+    public double DeckMm { get; init; }
+    public double BulkheadMm { get; init; }
+    public double InnerBottomMm { get; init; }
+    public double SuperstructureMm { get; init; }
+    public double ControlMm { get; init; }
+    public double DeckWoodMm { get; init; }
+}
 
 /// <summary>A submerged torpedo tube, from P0 (inboard) to P1 (the muzzle), in Room.</summary>
 public readonly record struct TubeRow
