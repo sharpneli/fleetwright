@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). The next is step 3, seeing and knowing (3.1 contacts and encounters first).
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). The next is step 3, seeing and knowing, agreed 2026-10-13 (3.1 contacts and encounters first).
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1434,18 +1434,73 @@ The user's answers, 2026-10-13:
 
 ### 3. Seeing and knowing
 
+Needed before the fighting is iterated on (the user, 2026-10-13). **Agreed 2026-10-13** after an investigation of the
+ship model and the research (`research/simulation/fire-control-research.md` §2, `superstructure-research.md` §6,
+`research/vfx/unified-smoke-system.md`):
+1. **A navy knows at once** what any of its ships sees ("at once is fine until much further in the future"). Each
+   picture entry still carries when it was reported and its source, so signals' delays (5.1) slot in later.
+2. **Contacts are keyed on the true entity** in the battle module: no false merges or splits of contacts.
+   Misidentification still happens (a class taken for a similar one).
+3. **No smoke in step 3.** Smoke comes with the smoke field (the puffs of the smoke research) when that comes up.
+   Until then sight lines are direct: no smoke, and no pretend smoke.
+4. **Realistic reach, direct line of sight:** with no smoke columns to see over the horizon, the encounter range
+   only has to cover the longest masthead-to-masthead sighting, so 50 km stands for now.
+5. **One weather per scenario** for now, behind a function of position and time, made richer later.
+
+**What the ships give** (checked on the goldens, 2026-10-13): every class compiles its observation posts already:
+masts (`ComponentKind.Mast`, the top), directors (`DirectorRow`: battery, rangefinder base, radar; shipgen's eye is
+the hood's base + 1.5 m), the bridge's levels (`ComponentRole.Bridge`), aft control and the conning tower, and which
+funnels' smoke blinds each control block (`ComponentRow.Smoke`). Over the sea: Dreadnought's masthead 24.2 m, director
+20.4 m, bridge 17.8 m; Bismarck's 25.5, 23.9 and 21.3 m; the destroyer's 23.1, 19.3 and 16.7 m. The sun's place is
+`Sun.cs`. What's silly there goes to the designer ("Needed from the designer for sighting", below), and the sim
+compiles around it.
+
 **3.1 Contacts and encounters.**
-- The contact scan and the exact crossing times (a first version is in 2.5: sides, the solve from the rails, the
-  fine tick's check and the gate; 3.1 adds relations and encounters on top).
-- Relations as a war/peace table.
-- Encounters opening, merging and closing; their ships held in the fine tier.
-- Speed drops by the player's interest table.
+- **a. Relations:** a war/peace table between sides, world state, set by a scenario and changed by a logged
+  command. Two sides are at war unless set at peace (as 2.5 had any two sides opposing). The contact scan, the fine
+  tick's check and the rails' gate ask it.
+- **b. Encounters** as world state: sets of ships, not scenes. Ships near each other (on the fine tick) are clustered
+  through the grid by union-find, never a loop over pairs; a cluster with a hostile pair within the encounter range is
+  an encounter. Encounters open (at the exact contact when it's the rails' solve), merge, split and close once the
+  sides have been apart for a while. Their ships are held in the fine tier.
+- **c. The player's side and interest table:** the world knows which side the player commands (none headless). An
+  encounter opening drops the clock by the player's rules (own ships involved, others), at the event; the snapshot
+  lists encounters and the map draws them.
 
 **3.2 Sighting and pictures.**
-- Sighting: the horizon from the height of eye and of the target, weather, night.
-- Each navy's picture; the player's snapshot built from it.
-- The map draws contacts with their uncertainty.
-- Captains act on pictures (shadow, evade).
+- **a. Eyes and silhouettes in `ShipClass`,** compiled from the hitboxes (one physical model): the observation posts
+  (where, how high, what kind: masthead lookout, director with its rangefinder, bridge; their blind arcs from the
+  taller parts round them), and what a target shows (its side and end areas above each height, its highest point,
+  and the funnels, masts and turrets that identification reads). Masts show over the horizon before hulls by the
+  geometry, nothing faked.
+- **b. Weather and light:** a scenario's weather (visibility, haze, wind) behind a function of position and time;
+  light from the sun's elevation and bearing (day, twilight, night; a target against the bright horizon at dusk).
+- **c. The sighting model,** pure and tested: how much of the target the horizon hides (refraction 7/6), its area
+  above that, contrast over distance (Koschmieder), light. It's a detection *rate*, so a check's chance is
+  1 - e^(-rate·dt) and the result doesn't depend on how often it's checked (tested at 0.5 s and 5 s). A Python
+  reference beside the research, calibrated on the recorded first sightings (Jutland ~24 km in haze, Denmark Strait
+  ~35 km). Draws are a counter-based hash of (seed, navy, target, tick), independent of order and threads.
+- **d. Each navy's picture,** world state (saved, hashed), in the world, not the AI: per contact the classification as
+  far as known ("smoke", heavy ships, a class, a name), an estimated position and velocity with an uncertainty long
+  along the line of sight (the eye's ±20%, a rangefinder by its base), when last seen and from where. Unseen, it's
+  dead-reckoned and its uncertainty grows. For each navy and enemy ship the nearest observers through the grid are
+  tried until one sees it, so it's O(n·k), not observers × targets.
+- **e. The player's snapshot from the picture:** enemy ships only as contacts, drawn as ellipses that fade with age;
+  a dev toggle shows the truth.
+- **f. Captains on pictures:** `TruthPicture` goes, own ships are read from the world; shadow and evade.
+
+Night's light sources (searchlights, star shell, gun flashes, fires) come with the fighting; 3.2 gives the night's
+visibility they light up. Fire control's own sight lines (4.2) are per engaged pair.
+
+**Needed from the designer for sighting** (2026-10-13; the sim compiles around them with flagged placeholders):
+- **Masts are the funnel top + 6 m on every ship:** a destroyer's and Bismarck's both stand 19.4 m over the main deck.
+  The research: Dreadnought's spotting top ~28-30 m over the sea, Bismarck's foretop ~31 m, battleship mastheads
+  45-55 m, destroyers' 25-30 m.
+- **No spotting or fighting top as a part.** Ships before directors spotted from the mast; Dreadnought (1906) has a
+  director on her bridge, and directors are never put on a mast (Iron Duke's and Bismarck's foretop).
+- **Searchlights are render clutter, not parts** (night fighting needs them).
+- **No smoke output per funnel in the export** (shipgen has the fuel, draught and gas flow behind `SmokeReach`): for
+  the smoke field.
 
 ### 4. Fighting
 
