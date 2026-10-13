@@ -813,7 +813,8 @@ public sealed partial class ShipSystem
     }
 
     /// <summary>At the coarse step, a group's ships steering back to their stations (their captains' doing) ride their
-    /// coarse guide again once they're in station, at their offsets as they are: nothing jumps.</summary>
+    /// coarse guide again once they're in station, at their offsets as they are, on the guide's track (a column turns
+    /// in succession, ShipStore): nothing jumps.</summary>
     void RideCheck(World world)
     {
         var groups = world.Groups;
@@ -831,7 +832,7 @@ public sealed partial class ShipSystem
             for (int i = 1; i < line.Count; i++)
                 if (Store.SlotOf(line[i].Ship) is int m and >= 0 && Store.TierOf(m) == ClockTier.Coarse && !Store.RidesAnother(m) &&
                     MemberInStation(gs, Store[m], speed, line[i].AsternM, line[i].AbeamM))
-                    Store.RideCoarseWith(m, guide);
+                    Store.RideCoarseWith(m, guide);   // where its guide's leg reaches back past it: else at a later step
         }
     }
 }

@@ -72,6 +72,14 @@ public sealed class ShipStore
     internal double[] railAccel = [], railCurv = [];
     internal long[] segEndMs = [];
 
+    // a coarse ship's track (step 2.8d): its past segments, newest last, in a ring of trackCap a slot (where each began,
+    // its way, curvature and line, how far along the track it began and how long it was), and how far along the track
+    // its own anchor is; a group's ships riding it coarse sit on it at their distance astern
+    readonly int trackCap;
+    internal Vec3d[] histPos = [], histFwd = [];
+    internal double[] histCourse = [], histCurv = [], histStart = [], histLen = [], trackAt = [];
+    internal int[] histFirst = [], histCount = [];
+
     /// <summary>The world's time: what a ship on rails is evaluated at. The world sets it before anything reads the
     /// store (events, commands, the snapshot).</summary>
     public long NowMs { get; set; }
@@ -81,6 +89,7 @@ public sealed class ShipStore
     {
         this.settings = settings;
         routeCap = settings.RouteCapacity;
+        trackCap = Math.Max(settings.CoarseTrackSegments, 1);
         Grow(Math.Max(settings.ShipCapacity, 1));
     }
 
@@ -230,21 +239,12 @@ public sealed class ShipStore
         int g = railGuide[slot];
         if (g < 0)
         {
-            double t = (ms - railMs[slot]) / 1000.0;
-            double s = railSpeed[slot] * t + 0.5 * railAccel[slot] * t * t;
-            if (railCurv[slot] != 0)
-            {
-                (position, forward) = (railPos[slot], railFwd[slot]);
-                Earth.Circle(ref position, ref forward, s, railCurv[slot]);
-                return;
-            }
-            if (!double.IsNaN(railCourse[slot]))
-            {
-                Earth.Rhumb(railPos[slot], railCourse[slot], s, out position, out forward);
-                return;
-            }
-            (position, forward) = (railPos[slot], railFwd[slot]);
-            Earth.Advance(ref position, ref forward, s);
+            Along(railPos[slot], railFwd[slot], railCourse[slot], railCurv[slot], Run(slot, ms), out position, out forward);
+            return;
+        }
+        if (OnTrack(slot))
+        {
+            OnGuidesTrack(slot, ms, out position, out forward, out _);
             return;
         }
         PoseAt(g, ms, out var gp, out var gf);
@@ -253,6 +253,84 @@ public sealed class ShipStore
         position = p.Normalized() * Earth.Radius;
         var u2 = position.Normalized();
         forward = (gf - u2 * Vec3d.Dot(gf, u2)).Normalized();
+    }
+
+    /// <summary>How far an anchored ship of its own has gone along its segment by a time, metres.</summary>
+    double Run(int slot, long ms)
+    {
+        double t = (ms - railMs[slot]) / 1000.0;
+        return railSpeed[slot] * t + 0.5 * railAccel[slot] * t * t;
+    }
+
+    /// <summary>A distance along a segment from where it began: an arc of a curvature, a rhumb line at a course, or the
+    /// great circle along its way.</summary>
+    static void Along(Vec3d from, Vec3d way, double course, double curvature, double s, out Vec3d position, out Vec3d forward)
+    {
+        (position, forward) = (from, way);
+        if (curvature != 0)
+            Earth.Circle(ref position, ref forward, s, curvature);
+        else if (!double.IsNaN(course))
+            Earth.Rhumb(from, course, s, out position, out forward);
+        else
+            Earth.Advance(ref position, ref forward, s);
+    }
+
+    /// <summary>A coarse ship riding a coarse guide of its own: it sits on the guide's track.</summary>
+    bool OnTrack(int slot) => tier[slot] == ClockTier.Coarse && railGuide[slot] is int g and >= 0 && tier[g] == ClockTier.Coarse && railGuide[g] < 0;
+
+    /// <summary>A coarse ship riding its guide on the guide's track (step 2.8d): at its distance astern along the way the
+    /// guide steamed (its segment now, then its past ones; before the oldest, straight back), and its distance abeam
+    /// across it. A column turns where its guide turned; abreast it's where the guide is now. The curvature of the
+    /// track there too (its rate of turn at the guide's speed).</summary>
+    void OnGuidesTrack(int slot, long ms, out Vec3d position, out Vec3d forward, out double curvature)
+    {
+        int g = railGuide[slot];
+        double at = trackAt[g] + Run(g, ms) + railX[slot];   // railX: metres ahead (astern negative)
+        Vec3d p, f;
+        if (at >= trackAt[g] || histCount[g] == 0)
+        {
+            double s = at - trackAt[g];   // back past a fresh anchor: straight back along its way
+            curvature = s >= 0 ? railCurv[g] : 0;
+            Along(railPos[g], railFwd[g], s >= 0 ? railCourse[g] : double.NaN, curvature, s, out p, out f);
+        }
+        else
+        {
+            int k = histCount[g] - 1;
+            int h = g * trackCap + (histFirst[g] + k) % trackCap;
+            while (k > 0 && at < histStart[h])
+            {
+                k--;
+                h = g * trackCap + (histFirst[g] + k) % trackCap;
+            }
+            double s = at - histStart[h];
+            curvature = s >= 0 ? histCurv[h] : 0;
+            Along(histPos[h], histFwd[h], s >= 0 ? histCourse[h] : double.NaN, curvature, s, out p, out f);
+        }
+        var up = p.Normalized();
+        position = (p + Vec3d.Cross(f, up) * railY[slot]).Normalized() * Earth.Radius;
+        var u2 = position.Normalized();
+        forward = (f - u2 * Vec3d.Dot(f, u2)).Normalized();
+    }
+
+    /// <summary>A coarse ship of its own about to be anchored again: the segment it's on goes on its track, as long as
+    /// it went (a segment of no length isn't kept); the oldest is dropped once there are as many as are kept.</summary>
+    void KeepTrack(int slot)
+    {
+        if (tier[slot] != ClockTier.Coarse || railGuide[slot] >= 0)
+            return;
+        double len = Run(slot, NowMs);
+        if (!(Math.Abs(len) > 1e-6))
+            return;
+        if (histCount[slot] == trackCap)
+        {
+            histFirst[slot] = (histFirst[slot] + 1) % trackCap;
+            histCount[slot]--;
+        }
+        int h = slot * trackCap + (histFirst[slot] + histCount[slot]) % trackCap;
+        (histPos[h], histFwd[h], histCourse[h], histCurv[h], histStart[h], histLen[h]) =
+            (railPos[slot], railFwd[slot], railCourse[slot], railCurv[slot], trackAt[slot], len);
+        histCount[slot]++;
+        trackAt[slot] += len;
     }
 
     /// <summary>A ship's speed through the water at a time, m/s: stepped (its last tick's), or its anchor's speed and
@@ -272,9 +350,25 @@ public sealed class ShipStore
     {
         if (tier[slot] == ClockTier.Fine)
             return yawRate[slot];
+        if (OnTrack(slot))
+        {
+            OnGuidesTrack(slot, ms, out _, out _, out double k);
+            return SpeedAt(slot, ms) * k;   // turning where its guide turned
+        }
         if (railGuide[slot] >= 0)
             return YawRateAt(railGuide[slot], ms);
         return railCurv[slot] == 0 ? 0 : SpeedAt(slot, ms) * railCurv[slot];
+    }
+
+    /// <summary>The curvature a coarse ship is on now, rad/m: its segment's, or riding, its guide's track's where it is.</summary>
+    public double CurvatureNow(int slot)
+    {
+        if (OnTrack(slot))
+        {
+            OnGuidesTrack(slot, NowMs, out _, out _, out double k);
+            return k;
+        }
+        return tier[slot] == ClockTier.Coarse && railGuide[slot] < 0 ? railCurv[slot] : 0;
     }
 
     /// <summary>A coarse ship on a segment of its own that's straight at a steady speed: its manoeuvre done.</summary>
@@ -291,6 +385,7 @@ public sealed class ShipStore
         PoseNow(slot, out var p, out var f);
         double v = SpeedAt(slot, NowMs);
         SetTier(slot, ClockTier.Coarse);
+        (histFirst[slot], histCount[slot], trackAt[slot]) = (0, 0, 0);   // a fresh track: straight back from here
         Anchor(slot, p, f, v);
     }
 
@@ -303,17 +398,22 @@ public sealed class ShipStore
     }
 
     /// <summary>A coarse ship of its own rides a coarse guide at its offset as it is now: a group's ship back in station
-    /// (its errors are kept, as on rails; nothing jumps).</summary>
-    public void RideCoarseWith(int slot, int guide)
+    /// (its errors are kept, as on rails; nothing jumps). Only while the guide's straight leg reaches back past it, so
+    /// its place on the guide's track is where it is; false (and nothing) otherwise.</summary>
+    public bool RideCoarseWith(int slot, int guide)
     {
         PoseNow(guide, out var gp, out var gf);
         PoseNow(slot, out var p, out _);
         var d = p - gp;
         var up = gp.Normalized();
+        double ahead = Vec3d.Dot(d, gf);
+        if (railCurv[guide] != 0 || -ahead > Run(guide, NowMs) && histCount[guide] > 0)
+            return false;
         SetTier(slot, ClockTier.Coarse);
         railGen[slot]++;
-        (railGuide[slot], railX[slot], railY[slot]) = (guide, Vec3d.Dot(d, gf), Vec3d.Dot(d, Vec3d.Cross(gf, up)));
+        (railGuide[slot], railX[slot], railY[slot]) = (guide, ahead, Vec3d.Dot(d, Vec3d.Cross(gf, up)));
         (railAccel[slot], railCurv[slot], segEndMs[slot]) = (0, 0, long.MaxValue);
+        return true;
     }
 
     /// <summary>A coarse ship anchored again where its segment has it now, for <see cref="CoarseMotion.Plan"/> to lay
@@ -321,7 +421,9 @@ public sealed class ShipStore
     public void ReanchorCoarse(int slot)
     {
         PoseNow(slot, out var p, out var f);
-        Anchor(slot, p, f, SpeedAt(slot, NowMs));
+        double v = SpeedAt(slot, NowMs);
+        KeepTrack(slot);
+        Anchor(slot, p, f, v);
     }
 
     void Anchor(int slot, Vec3d p, Vec3d f, double v)
@@ -350,6 +452,7 @@ public sealed class ShipStore
     /// waypoint the turn is instantaneous).</summary>
     public void Reanchor(int slot, Vec3d at, Vec3d forward)
     {
+        KeepTrack(slot);
         railGen[slot]++;
         var up = at.Normalized();
         (railMs[slot], railPos[slot], railFwd[slot], railCourse[slot]) =
@@ -379,6 +482,7 @@ public sealed class ShipStore
     /// <summary>Re-anchors a ship on rails at a point on a rhumb line at a course (past a route's last waypoint).</summary>
     public void ReanchorRhumb(int slot, Vec3d at, double courseDeg)
     {
+        KeepTrack(slot);
         railGen[slot]++;
         var up = at.Normalized();
         (railMs[slot], railPos[slot], railFwd[slot], railCourse[slot]) = (NowMs, up * Earth.Radius, Earth.Forward(up, courseDeg), courseDeg);
@@ -700,6 +804,18 @@ public sealed class ShipStore
                     h.Add(railAccel[i]);
                     h.Add(railCurv[i]);
                     h.Add(segEndMs[i]);
+                    h.Add(trackAt[i]);
+                    h.Add(histCount[i]);
+                    for (int k = 0; k < histCount[i]; k++)
+                    {
+                        int t = i * trackCap + (histFirst[i] + k) % trackCap;
+                        h.Add(histPos[t]);
+                        h.Add(histFwd[t]);
+                        h.Add(histCourse[t]);
+                        h.Add(histCurv[t]);
+                        h.Add(histStart[t]);
+                        h.Add(histLen[t]);
+                    }
                 }
             }
             for (int k = 0; k < routeCount[i]; k++)
@@ -750,6 +866,15 @@ public sealed class ShipStore
         Array.Resize(ref railAccel, n);
         Array.Resize(ref railCurv, n);
         Array.Resize(ref segEndMs, n);
+        Array.Resize(ref histPos, n * trackCap);
+        Array.Resize(ref histFwd, n * trackCap);
+        Array.Resize(ref histCourse, n * trackCap);
+        Array.Resize(ref histCurv, n * trackCap);
+        Array.Resize(ref histStart, n * trackCap);
+        Array.Resize(ref histLen, n * trackCap);
+        Array.Resize(ref trackAt, n);
+        Array.Resize(ref histFirst, n);
+        Array.Resize(ref histCount, n);
     }
 }
 
@@ -806,7 +931,7 @@ public readonly struct ShipState(ShipStore store, int slot)
     /// angle, rad; shaft power, W (negative astern).</summary>
     public double Speed => store.tier[slot] != ClockTier.Fine ? store.SpeedAt(slot, store.NowMs) : store.speed[slot];
     public double YawRate => store.tier[slot] != ClockTier.Fine ? store.YawRateAt(slot, store.NowMs) : store.yawRate[slot];
-    public double Rudder => store.tier[slot] == ClockTier.Coarse ? Handling.RudderFor(store.railGuide[slot] >= 0 ? 0 : store.railCurv[slot]) : store.rudder[slot];
+    public double Rudder => store.tier[slot] == ClockTier.Coarse ? Handling.RudderFor(store.CurvatureNow(slot)) : store.rudder[slot];
     public double Power => store.power[slot];
 
     /// <summary>The world time the pose is at, ms.</summary>

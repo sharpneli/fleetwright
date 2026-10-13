@@ -63,6 +63,7 @@
   "CoarseMinSpeed": 240,
   "CoarseStepMs": 60000,
   "CoarseRendezvousSteps": 2,
+  "CoarseTrackSegments": 16,
   "CoarseSnapDeg": 0.01,
   "CoarseCalibrationStepS": 1,
   "CoarseCalibrationMaxS": 7200,

@@ -176,6 +176,54 @@ public class CoarseTierTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_column_riding_its_guide_coarse_turns_in_succession()
+    {
+        // a column of four in station at 1,000x (on rails once steady), turned 90 degrees: coarse, its ships ride the
+        // guide's track, so each turns where the guide did, and nobody jumps
+        var (w, c) = Make();
+        w.Apply(Command.SetSpeed(1000));
+        var at = Earth.Position(Lat, Lon);
+        var fwd = Earth.Forward(at, 0);
+        for (int i = 0; i < 4; i++)
+        {
+            var (la, lo) = Earth.LatLon(at - fwd * (i * 600));
+            w.Apply(ShipSystem.Spawn(c, la, lo, 0, Kn));
+        }
+        w.Apply(GroupSystem.CreateOfNewest(4, Formation.Column, 600));
+        int group = w.Groups[0].GroupId;
+        for (int m = 0; m < 10 && !Ship(w, 4).OnRails; m++)
+            Run(w, 60);
+        Assert.True(Ship(w, 1).OnRails && Ship(w, 4).OnRails, "in station: on rails");
+        var turnedAt = Ship(w, 1).Position;
+        w.Apply(O.Course(Unit.Group(group), 90));
+        Assert.Equal(ClockTier.Coarse, Ship(w, 1).Tier);
+        Assert.True(w.Ships.Store.RidesAnother(w.Ships.Store.SlotOf(4)), "riding its guide, coarse");
+        var last = new Vec3d[5];
+        for (int e = 1; e <= 4; e++)
+            last[e] = Ship(w, e).Position;
+        double fastest = 0, lastsNearest = double.MaxValue;
+        bool succession = false;
+        for (int t = 0; t < 900; t += 5)
+        {
+            Run(w, 5);
+            for (int e = 1; e <= 4; e++)
+            {
+                var p = Ship(w, e).Position;
+                fastest = Math.Max(fastest, Earth.Distance(p, last[e]) / 5);
+                last[e] = p;
+            }
+            succession |= Math.Abs(Ship(w, 1).HeadingDeg - 90) < 1 && Ship(w, 4).HeadingDeg is < 5 or > 355;
+            lastsNearest = Math.Min(lastsNearest, Earth.Distance(Ship(w, 4).Position, turnedAt));
+        }
+        output.WriteLine($"the last ship came within {lastsNearest:F0} m of where the guide began its turn; the fastest any ship went {fastest / Handling.MsPerKnot:F1} kn");
+        Assert.True(succession, "the guide on its new course while the last is still on the old: in succession");
+        Assert.True(lastsNearest < 50, "the last ship turned where the guide did");
+        Assert.True(fastest < (Kn + 0.5) * Handling.MsPerKnot, "nothing jumped");
+        for (int e = 1; e <= 4; e++)
+            Assert.Equal(90, Ship(w, e).HeadingDeg, 1);
+    }
+
+    [Fact]
     public void Coarse_ships_meet_open_an_encounter_and_see_each_other()
     {
         var (w, c) = Make();

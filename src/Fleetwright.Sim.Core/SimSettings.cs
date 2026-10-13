@@ -210,6 +210,11 @@ public sealed record SimSettings
     /// between steps, so the step doesn't change where ships go, only when they decide.</summary>
     public int CoarseStepMs { get; init; } = 60_000;
 
+    /// <summary>How many of a coarse guide's past segments it keeps, so its group's ships ride its track (a column turns
+    /// where its guide turned): enough to reach back down a long line through a few turns. Past the oldest the track
+    /// runs straight back.</summary>
+    public int CoarseTrackSegments { get; init; } = 16;
+
     /// <summary>A coarse ship's captain keeping station steers for where it will be this many coarse steps on, at the
     /// speed that gets him there: two, so a change of speed taking longer than a step isn't overshot (a column spawned
     /// 400 m out of station closes without passing it).</summary>
