@@ -150,6 +150,8 @@ public sealed class ShellTest
         /// <summary>Under or over an armoured bulkhead (Index: ArmourBulkheads).</summary>
         Under,
         Over,
+        /// <summary>Down an unarmoured barbette, whose bore is a hole in the armour deck (Index: the component).</summary>
+        Unarmoured,
     }
 
     /// <summary>Where a leak got in: what let it in, the first point out of the citadel going back (Hole, on its
@@ -199,7 +201,10 @@ public sealed class ShellTest
                     else if (s.Shape == ShipSolids.Shape.Tube)
                     {
                         if (!s.Armoured)
+                        {
+                            (cause, causeIndex) = (Cause.Unarmoured, s.Component);   // its bore is a hole in the deck
                             break;
+                        }
                         if (x.Plate == PlateKind.Barbette)
                             return Outcome.Armour;
                         if (x.Point.Z >= s.Box.Top - 0.02)
@@ -298,6 +303,7 @@ public sealed class ShellTest
         Cause.NoBulkhead => $"{FaceName(p.HoleFace)}: no armoured bulkhead",
         Cause.Under => $"under {c.ArmourBulkheadId(p.Index)}",
         Cause.Over => $"over {c.ArmourBulkheadId(p.Index)}",
+        Cause.Unarmoured => $"down unarmoured {c.ComponentId(p.Index)}",
         _ => $"through the {FaceName(p.HoleFace)}",
     };
 

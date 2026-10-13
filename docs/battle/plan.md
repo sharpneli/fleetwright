@@ -1719,6 +1719,10 @@ fitted to the research's guns, `shipgen weapons --research`):
 - **The fire-control level per battery** (fighting.md decision 6), read from the fit (directors, rangefinder, computer
   and radar tonnage) until the designer offers it.
 - **Magazines' propellant** and **torpedoes' speed and range**: with 4.3a and 4.6.
+- **No unarmoured barbette over an armour deck** (the user, 2026-10-13: a 0 mm barbette's bore is a hole in the deck).
+  Lord Nelson's and Bouvet's secondary mounts stand on 0 mm barbettes that pass through the armour deck, so
+  `shell-test --gratings` finds leaks down them. The designer should armour them, or close the deck under a light
+  mount.
 
 ### 4. Fighting
 

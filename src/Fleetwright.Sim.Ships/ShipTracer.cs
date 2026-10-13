@@ -243,8 +243,8 @@ public static class ShipTracer
 
         // ------------------------------------------------------------------ the armour planes
 
-        /// <summary>The armour decks (with their openings: inside an armoured barbette's bore, none; over an uptake, a
-        /// grating; an unarmoured barbette leaves the deck whole, as shell-test always had it)
+        /// <summary>The armour decks (with their openings: inside a barbette's bore, none, even an unarmoured one's (the
+        /// user, 2026-10-13: a hole, to be fixed in the designer); over an uptake, a grating)
         /// and the armoured bulkheads, crossed exactly, anywhere on the segment inside the hull.</summary>
         void Planes()
         {
@@ -262,7 +262,7 @@ public static class ShipTracer
                     foreach (int t in g.Tubes)
                     {
                         ref readonly var b = ref g.Solids[t];
-                        if (b.Armoured && b.Box.Base <= d.Z + 0.01 && b.Box.Top > d.Z && ShipSolids.InBore(b, x, y))
+                        if (b.Box.Base <= d.Z + 0.01 && b.Box.Top > d.Z && ShipSolids.InBore(b, x, y))
                             kind = PlateKind.None;
                     }
                     if (kind == PlateKind.None)

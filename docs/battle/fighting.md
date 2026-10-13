@@ -304,14 +304,16 @@ between cells), its thickness, material and normal.
   from the eye. The ray and its crossings are drawn over the view (armour red, the hull's skin orange, parts blue,
   the sea cyan), and the path is listed in the panel.
 
-**Open for the user (from 4.1):**
+**Settled with the user (2026-10-13, after 4.1):**
 
-- **A barbette with 0 mm armour** (Lord Nelson's and Bouvet's wing turrets) leaves the armour deck under it whole, as
-  `shell-test` always had it. If its bore were a hole, those two designs would leak through it.
-- **Belts and underwater shells:** with `shell-test --gratings --underwater 4`, nearly every design leaks under its
-  belt (Bismarck's `belt_depth_m` is 2.0; its leaks come in 2-3.4 m down). `shell-test` can't say such a shell
-  arrives slowed with the torpedo bulkhead still ahead. That's the terminal model's call, but belt depths in the
-  designs may want a look.
+- **A barbette with 0 mm armour is a hole** in the armour deck it stands on or passes through: a leak, to be fixed in
+  the designer. The tracer pierces the deck inside any barbette's bore; `shell-test` names it ("down unarmoured S4S
+  barbette"). Lord Nelson (143 of 20,000 shots) and Bouvet (78) leak through their secondaries' 0 mm barbettes, as
+  the plan's "Needed from the designer for fighting" lists.
+- **Shells under water:** `shell-test` gives the track, and the damage model decides what happens on it and whether
+  some part stops the shell. A better model of shells slowing in the water comes later (with diving shells, 4.5).
+  With `--underwater 4` nearly every design leaks under its belt (Bismarck's `belt_depth_m` is 2.0, and its leaks
+  come in 2-3.4 m down): that's the track, not the verdict.
 
 ### 4.2 Guns and shells (missions stage 3)
 
