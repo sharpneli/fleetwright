@@ -13,6 +13,8 @@ namespace Fleetwright.Sim.Combat;
 /// <item><b>The backstop</b> (<see cref="Backstop"/>): after the step, a ship inside its minimum is put back on it and
 /// turned along the coast, Rule the Waves' snap, as the failure path under the feeler. Counted.</item>
 /// </list>
+/// <para>Coarse ships (docs/battle/plan.md step 2.8e) slide on the same feeler, turned at once onto its line for
+/// legs (<see cref="CoarseCoast"/>), with a backstop of their own (<see cref="CoarseBackstop"/>).</para>
 /// <para>Every question about land goes through this file, so the guided areas to come (gates closing a strait,
 /// canals; the plan's "Guided areas") add their own lines here and nowhere else.</para></summary>
 public static class Slide
@@ -136,6 +138,139 @@ public static class Slide
         }
         s.forward[i] = f;
         s.yawRate[i] = 0;
+    }
+
+    // ------------------------------------------------------------------ coarse ships (docs/battle/plan.md step 2.8e)
+
+    /// <summary>A coarse ship's segment, just laid (<see cref="CoarseMotion.Plan"/>), and the land: its end (ms), cut
+    /// short of the coast. Sliding along it already, or with the segment coming within its standoff inside its
+    /// look-ahead, it slides: the fine tick's own feeler asked at the anchor, and the ship turned at once onto the line
+    /// it gives (the user, 2026-10-13: being this close to land is a mistake, turning in place is fine, as in Rule the
+    /// Waves), for a leg as long as rails' (<see cref="SimSettings.SlideRailsStepM"/>, shorter where it would come near
+    /// its minimum). Else the segment is cut where it would come within its standoff, less the look-ahead, to be laid
+    /// again there; a segment longer than <see cref="SimSettings.RailsLandHorizonM"/> is looked at again there. Stopped
+    /// or astern, only the backstop (<see cref="CoarseBackstop"/>). Out at sea, one lookup.</summary>
+    public static long CoarseCoast(ShipStore s, int i, Shore shore, SimSettings set, long end)
+    {
+        var h = s.handling[i];
+        var p = s.railPos[i];
+        double v0 = s.railSpeed[i], top = end == long.MaxValue ? v0 : Math.Max(v0, s.SpeedAt(i, end));
+        if (s.railGuide[i] >= 0 || v0 < 0 || top <= set.SlideMinSpeedMs)
+            return end;
+        double look = LookaheadM(h, top, s.courseRudder[i], set), standoff = h.StandoffM;
+        if (s.landSide[i] != 0 && SlideLeg(s, i, shore, set, ref end))
+            return end;
+
+        // the segment traced for the coast, as far as it goes (or the horizon): a turn as two chords of its arc
+        bool whole = end != long.MaxValue && s.Run(i, end) <= set.RailsLandHorizonM;
+        double length = whole ? s.Run(i, end) : set.RailsLandHorizonM, c;
+        if (shore.BoundM(p) > length + standoff)
+            c = double.PositiveInfinity;
+        else if (s.railCurv[i] != 0)
+        {
+            var f = s.railFwd[i];
+            Vec3d mid = p, fm = f, last = p, fl = f;
+            Earth.Circle(ref mid, ref fm, length / 2, s.railCurv[i]);
+            Earth.Circle(ref last, ref fl, length, s.railCurv[i]);
+            double half = Earth.Distance(p, mid);
+            c = shore.FirstContact(p, mid - p, half, standoff);
+            if (double.IsPositiveInfinity(c))
+                c = half + shore.FirstContact(mid, last - mid, Earth.Distance(mid, last), standoff);
+        }
+        else if (!double.IsNaN(s.railCourse[i]))
+            c = shore.FirstContactRhumb(p, s.railCourse[i], length, standoff);
+        else
+            c = shore.FirstContact(p, s.railFwd[i], length, standoff);
+        if (c <= look && SlideLeg(s, i, shore, set, ref end))
+            return end;
+        double at = double.IsFinite(c) ? Math.Max(c - look, set.SlideRailsMinStepM) : whole ? double.PositiveInfinity : length - look;
+        if (double.IsFinite(at))
+            end = Math.Min(end, At(s, i, at));
+        s.segEndMs[i] = end;
+        return end;
+    }
+
+    /// <summary>A coarse ship near the coast: a route's waypoint near the slide passed as the fine tick passes it (inside
+    /// the arrival radius, or abeam close by), then the feeler at its anchor. Sliding, it's turned onto the feeler's line
+    /// at once, for a leg; let go, false (the segment laid from its orders stands).</summary>
+    static bool SlideLeg(ShipStore s, int i, Shore shore, SimSettings set, ref long end)
+    {
+        var h = s.handling[i];
+        var p = s.railPos[i];
+        var f = s.railFwd[i];
+        double radius = h.RadiusFor(s.courseRudder[i]);
+        int cap = s.RouteCapacity;
+        while (s.helm[i] == Helm.Route && s.routeNext[i] < s.routeCount[i])
+        {
+            var wp = s.route[i * cap + s.routeNext[i]];
+            double dist = Earth.Distance(p, wp);
+            if (dist > set.ArrivalRadiusM && (Vec3d.Dot(f, wp - p) > 0 || dist >= 2 * radius))
+                break;
+            int n = s.routeCount[i];
+            if (s.routeNext[i] + 1 < n || s.routeLoop[i] && n > 1)
+                s.routeNext[i] = (s.routeNext[i] + 1) % n;
+            else
+            {
+                (s.helm[i], s.courseDeg[i]) = (Helm.Course, Earth.Heading(p, f));   // past the last: the course it came on
+                s.routeCount[i] = s.routeNext[i] = 0;
+            }
+        }
+        double want = s.helm[i] switch
+        {
+            Helm.Route when s.routeNext[i] < s.routeCount[i] => Earth.Bearing(p, s.route[i * cap + s.routeNext[i]]),
+            Helm.Course => s.courseDeg[i],
+            _ => Earth.Heading(p, f),
+        };
+        sbyte side = s.landSide[i];
+        double heading = Feel(shore, h, p, f, Math.Max(s.railSpeed[i], set.SlideMinSpeedMs), s.courseRudder[i], want, ref side, set, out _);
+        s.landSide[i] = side;
+        if (side == 0)
+            return false;
+        var dir = Earth.Forward(p, heading);
+        (s.railFwd[i], s.railCurv[i], s.railCourse[i]) = (dir, 0, double.NaN);   // turned at once onto the coast's line
+        double near = shore.FirstContact(p, dir, set.SlideRailsStepM, h.MinClearanceM);
+        double leg = Math.Min(set.SlideRailsStepM, Math.Max(0.5 * near, set.SlideRailsMinStepM));
+        end = Math.Min(end, At(s, i, leg));
+        s.segEndMs[i] = end;
+        return true;
+    }
+
+    /// <summary>When a coarse ship's segment has run a distance, ms (at least a millisecond on); long.MaxValue for never.</summary>
+    static long At(ShipStore s, int i, double metres)
+    {
+        double t = CoarseMotion.TimeToGo(s.railSpeed[i], s.railAccel[i], metres);
+        return double.IsFinite(t) ? s.railMs[i] + Math.Max((long)Math.Ceiling(t * 1000), 1) : long.MaxValue;
+    }
+
+    /// <summary>Whether a coarse ship (anchored now) is on land or inside its minimum: one lookup at sea.</summary>
+    public static bool CoarseInside(Shore shore, Handling h, Vec3d p) => shore.BoundM(p) < h.MinClearanceM && Inside(shore, p, h.MinClearanceM);
+
+    /// <summary>The backstop for a coarse ship of its own, anchored now: inside its minimum (or on land), it's put back
+    /// out on the minimum along the coast's normal and turned onto the coast's line, its speed kept only along it, as
+    /// the fine tick's <see cref="Backstop"/>; and counted. True when it moved (to be laid again).</summary>
+    public static bool CoarseBackstop(ShipStore s, int i, Shore shore, SimSettings set)
+    {
+        var h = s.handling[i];
+        var p = s.railPos[i];
+        if (s.railGuide[i] >= 0 || !CoarseInside(shore, h, p))
+            return false;
+        s.backstops[i]++;
+        if (!ToSea(shore, ref p, h.MinClearanceM, set.CoastSearchM, out var n))
+            return false;
+        var up = p.Normalized();
+        var f = s.railFwd[i];
+        f = (f - up * Vec3d.Dot(f, up)).Normalized();
+        if (Vec3d.Dot(f, n) <= 0)
+        {
+            var line = Vec3d.Cross(up, n);
+            double along = Vec3d.Dot(f, line);
+            s.railSpeed[i] *= Math.Abs(along);
+            f = along >= 0 ? line : -line;
+            if (s.helm[i] is Helm.Course or Helm.Route && s.landSide[i] == 0)
+                s.landSide[i] = along >= 0 ? (sbyte)1 : (sbyte)-1;
+        }
+        (s.railPos[i], s.railFwd[i]) = (up * Earth.Radius, f);
+        return true;
     }
 
     /// <summary>Moves a point (at the Earth's radius) to sea at least <paramref name="clearM"/> off the coast if it's on

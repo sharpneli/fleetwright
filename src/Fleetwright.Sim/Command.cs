@@ -8,8 +8,7 @@ public enum WorldCommand : ushort
     SetSpeed = 1,
     Pause,
     Resume,
-    SetViewScale,
-    SetRelation,
+    SetRelation = 5,   // 4 was the map's scale, gone with the rails' one display rule (docs/battle/plan.md step 2.8e)
     SetPlayerSide,
     SetInterest,
     SetWeather,
@@ -30,7 +29,6 @@ public readonly record struct Command(byte System, ushort Code, int Entity = 0, 
     /// readily (ShipSystem.Tiers.cs). A host sends it when the scale changes, in steps, not every frame.
     /// <para>EXCEPTION to a hard rule: the sim is independent of display state, and this is the one display state it's
     /// told, kept only until the rails' snap can be hidden better. No other display state comes in.</para></summary>
-    public static Command SetViewScale(double metresPerPixel) => new(0, (ushort)WorldCommand.SetViewScale, X: metresPerPixel);
 
     /// <summary>How two sides stand (<see cref="Relations"/>): war or peace, both ways.</summary>
     public static Command SetRelation(byte a, byte b, Relation r) =>

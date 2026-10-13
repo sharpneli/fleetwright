@@ -30,7 +30,6 @@ public sealed unsafe partial class MapScene : IScene
     double dragX, dragY;   // the newest cursor of a drag: solved once a frame, however many motion events came
     Vector2 mouse;
     bool mouseIn;
-    double toldScale;   // the scale last told the world, metres per pixel (in steps)
 
     // the map's parts, timed into the world's instruments (WorldPerf.Ui, docs/battle/plan.md step 2.7b)
     readonly int probeLines, probeUpload, probeGroups, probeDrawList, probeOverlay, probeRender, probeUiShips, probeUiLabels, probeUiRest;
@@ -100,7 +99,6 @@ public sealed unsafe partial class MapScene : IScene
             (built, builtSize) = (camera, (width, height));
         }
         probes.Add(probeLines, t);
-        TellScale();
         var s = world.Current;
         sunLapse.Update(s.Paused ? 0 : s.AchievedSpeed, dt);
         t = Probes.Now;
@@ -120,18 +118,6 @@ public sealed unsafe partial class MapScene : IScene
         probes.Add(probeRender, t);
     }
 
-    /// <summary>Tells the world the map's scale when it changes, in quarter-octave steps (a zoom is a few commands, not
-    /// one a frame): the rails place what the map shows as one marker more readily (ShipSystem.Tiers.cs).
-    /// <para>EXCEPTION: the sim is otherwise independent of what the map shows; this is the one display state sent to
-    /// it, kept only until the rails' snap can be hidden better. Don't send any other.</para></summary>
-    void TellScale()
-    {
-        double q = Math.Pow(2, Math.Round(Math.Log2(camera.MetresPerPixel) * 4) / 4);
-        if (q == toldScale)
-            return;
-        toldScale = q;
-        world.Send(Command.SetViewScale(q));
-    }
 
     public void BuildUi()
     {

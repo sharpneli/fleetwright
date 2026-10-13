@@ -223,6 +223,10 @@ public sealed class ShipsView
 
     /// <summary>Its clock tier: on rails or coarse its pose is now's, a function of time; fine, its tick's.</summary>
     public Combat.ClockTier[] Tier = [];
+
+    /// <summary>When a coarse ship's turn (its segment) ends, ms: carried on past it, it goes straight (long.MaxValue
+    /// for none: fine, on rails, riding).</summary>
+    public long[] TurnEndMs = [];
     public double[] CourseOrderDeg = [], SpeedOrderKn = [];
 
     /// <summary>Who commands each ship and how, filled by the AI (0: nobody, the player's own orders stand); the
@@ -283,6 +287,7 @@ public sealed class ShipsView
         Array.Resize(ref PoseMs, n);
         Array.Resize(ref Helm, n);
         Array.Resize(ref Tier, n);
+        Array.Resize(ref TurnEndMs, n);
         Array.Resize(ref CourseOrderDeg, n);
         Array.Resize(ref SpeedOrderKn, n);
         Array.Resize(ref Captain, n);
@@ -298,12 +303,17 @@ public sealed class ShipsView
         Array.Resize(ref RouteLoop, n);
     }
 
-    /// <summary>Ship k's position and forward carried on to a time, ms.</summary>
+    /// <summary>Ship k's position and forward carried on to a time, ms: along its arc, and straight on past its turn's end.</summary>
     public (Vec3d Position, Vec3d Forward) PoseAt(int k, long timeMs)
     {
         var p = Position[k];
         var f = Forward[k];
-        Combat.ShipMotion.Extrapolate(ref p, ref f, Speed[k], YawRate[k], (timeMs - PoseMs[k]) / 1000.0);
+        double dt = (timeMs - PoseMs[k]) / 1000.0, turning = dt;
+        if (TurnEndMs[k] != long.MaxValue && dt > 0)
+            turning = Math.Clamp((TurnEndMs[k] - PoseMs[k]) / 1000.0, 0, dt);
+        Combat.ShipMotion.Extrapolate(ref p, ref f, Speed[k], YawRate[k], turning);
+        if (dt > turning)
+            Combat.ShipMotion.Extrapolate(ref p, ref f, Speed[k], 0, dt - turning);
         return (p, f);
     }
 }

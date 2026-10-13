@@ -169,7 +169,7 @@ public static class CoarseMotion
 
     /// <summary>The time to go a distance from a speed at a constant acceleration (both along the way the ship goes),
     /// s; +inf if it never does (it stops short, or isn't moving).</summary>
-    static double TimeToGo(double u, double a, double distance)
+    internal static double TimeToGo(double u, double a, double distance)
     {
         if (!double.IsFinite(distance))
             return double.PositiveInfinity;

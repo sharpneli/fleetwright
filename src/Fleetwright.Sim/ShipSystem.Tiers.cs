@@ -20,18 +20,16 @@ namespace Fleetwright.Sim;
 /// <item><b>Units.</b> Ships go on and off rails in units: the line of the outermost group a ship moves with (its guide
 /// first, on rails of its own; the rest riding it at their offsets), or a ship alone (or detached) by itself
 /// (<see cref="UnitLine"/>, <see cref="RailsCheck"/>).</item>
-/// <item><b>When.</b> Every <see cref="SimSettings.RailsCheckMs"/> of the fine tick, a unit off rails goes on when it's
-/// <see cref="Ready"/>. Where nobody would see a turn (<see cref="Placing"/>: the clock at
-/// <see cref="SimSettings.RailsSnapMinSpeed"/> or more, or the unit too small on the map to show ship by ship,
-/// <see cref="Watched"/>), it's placed as its guide's orders say (<see cref="Placeable"/>); else it waits until it's
-/// steaming steady (<see cref="Steady"/>), every ship with it (<see cref="InStation"/>), so a formation is never seen
-/// to snap into place. Either way, not near an opposing ship (<see cref="NearOpposing"/>,
+/// <item><b>When.</b> Every <see cref="SimSettings.RailsCheckMs"/> of the fine tick (or each coarse step), a unit off
+/// rails goes on when it's <see cref="Ready"/>. Where nobody would see a turn (<see cref="Placing"/>: the clock at
+/// <see cref="SimSettings.RailsSnapMinSpeed"/> or more), it's placed as its guide's orders say
+/// (<see cref="Placeable"/>); else it waits until it's steaming steady (<see cref="Steady"/>), every ship with it
+/// (<see cref="InStation"/>), so a formation is never seen to snap into place. Either way, not near an opposing ship (<see cref="NearOpposing"/>,
 /// ShipSystem.Contacts.cs) nor in an encounter (<see cref="InEncounter"/>, held until it closes), and no ship of it sliding along a coast (<see cref="Sliding"/>: the slide is the fine
 /// tier's, docs/world/terrain-plan.md; rails don't know the land until its step S2).</item>
-/// <item><b>EXCEPTION: the map's scale.</b> <see cref="Watched"/> is the sim's one dependence on display state, which
-/// is otherwise a hard rule (docs/world/architecture.md, "Terms"). It's kept only because we have to: a formation seen
-/// snapping is jarring, and leaving it on the fine tick costs the clock. It's to go once the snap can be hidden
-/// better. Don't add another, and don't lean on this one further.</item>
+/// <item><b>Nothing here reads the map.</b> The sim is independent of display state, a hard rule with no exceptions
+/// (docs/world/architecture.md, "Terms"): the map's scale used to place a unit drawn as one marker at any speed, and
+/// went once coarse made forming up cheap at speed (docs/battle/plan.md step 2.8e). Don't bring it back.</item>
 /// <item><b>How.</b> <see cref="Lay"/>: placed, the guide is made what its orders say and its ships put on their
 /// stations; steady, they're taken on as they are.</item>
 /// <item><b>Orders on rails.</b> While its unit is placing, a movement order to a unit's guide is carried out at once on rails
@@ -55,26 +53,9 @@ public sealed partial class ShipSystem
 {
     // ------------------------------------------------------------------ the rules
 
-    /// <summary>Whether the unit in <see cref="line"/> goes on rails by placing, and orders to it on rails snap: where
-    /// nobody would see the turn or the forming up that's skipped. The clock so fast nobody watches a turn play out, or
-    /// fast enough while the map shows the unit as one marker.</summary>
-    bool Placing(World world, int guide) =>
-        world.Speed >= settings.RailsSnapMinSpeed || world.Speed >= settings.RailsPlaceUnwatchedMinSpeed && !Watched(world, guide);
-
-    /// <summary>Whether the map would show the unit in <see cref="line"/> manoeuvring: its ships' spread and its turning
-    /// circle span <see cref="SimSettings.RailsWatchedPx"/> or more at the map's scale (the map collapses a group into
-    /// one marker below about that). With no map, everything is watched.
-    /// <para>EXCEPTION to a hard rule: the sim doesn't depend on display state, and this is the one place it does (see
-    /// the file's summary). Kept only until the snap can be hidden better; nothing else may read
-    /// <see cref="World.ViewMetresPerPixel"/>.</para></summary>
-    bool Watched(World world, int guide)
-    {
-        double mpp = world.ViewMetresPerPixel;
-        if (!(mpp > 0))
-            return true;
-        double turn = 2 * Store[guide].Handling.RadiusFor(settings.StandardRudderDeg * Math.PI / 180);
-        return Math.Max(FormationRadius(), GroupRadius(guide)) + turn >= settings.RailsWatchedPx * mpp;
-    }
+    /// <summary>Whether a unit goes on rails by placing, and orders to it on rails snap: where nobody would see the turn
+    /// or the forming up that's skipped, the clock so fast that a manoeuvre takes about a frame or less.</summary>
+    bool Placing(World world) => world.Speed >= settings.RailsSnapMinSpeed;
 
     /// <summary>Whether a command to a ship takes it, and its unit, off rails: every movement order, but not a
     /// setting.</summary>
@@ -88,7 +69,7 @@ public sealed partial class ShipSystem
             code == ShipCommand.Speed && x < 0 || !Store.OnRails(slot) || Store.RidesAnother(slot))
             return false;
         UnitLine(world, slot);
-        return Placing(world, slot);
+        return Placing(world);
     }
 
     /// <summary>Whether the unit in <see cref="line"/> (its guide off rails) may go on rails now: placing, as its
@@ -168,8 +149,7 @@ public sealed partial class ShipSystem
     }
 
     /// <summary>Whether rails slide along coasts (S3) rather than come off short of them: where nobody would see the
-    /// slide's turns, which are instant on rails. The clock only, not the map's scale: the one display exception
-    /// (<see cref="Watched"/>) isn't leaned on further.</summary>
+    /// slide's turns, which are instant on rails: the clock at the snap speed (below it, coarse or fine slides).</summary>
     bool SlidesOnRails(World world) => world.Shore != null && world.Speed >= settings.RailsSnapMinSpeed;
 
     /// <summary>Whether the track the unit in <see cref="line"/> would take on rails (its guide's orders: the course as a
@@ -237,7 +217,7 @@ public sealed partial class ShipSystem
             if (guide < 0 || Store.OnRails(guide))
                 continue;
             groups.LineOffsets(g, line);
-            bool placing = Placing(world, guide);
+            bool placing = Placing(world);
             if (Ready(world, guide, placing))
                 Lay(world, guide, placing);
         }
@@ -246,7 +226,7 @@ public sealed partial class ShipSystem
             if (!Store.IsAlive(i) || Store.OnRails(i) || groups.InLine(Store[i].Entity))
                 continue;
             Alone(i);
-            bool placing = Placing(world, i);
+            bool placing = Placing(world);
             if (Ready(world, i, placing))
                 Lay(world, i, placing);
         }
@@ -742,6 +722,8 @@ public sealed partial class ShipSystem
     void PlanCoarse(World world, int slot)
     {
         long end = CoarseMotion.Plan(Store, slot, settings);
+        if (world.Shore is { } shore)
+            end = Slide.CoarseCoast(Store, slot, shore, settings, end);   // short of the coast, or sliding along it
         if (end != long.MaxValue)
             world.Schedule(new WorldTime(end), EventTier.Coarse, Store[slot].Entity, Id, CoarseSegment, Store.RailGen(slot));
         else
@@ -756,6 +738,8 @@ public sealed partial class ShipSystem
         if (slot < 0 || Store.TierOf(slot) != ClockTier.Coarse || Store.RidesAnother(slot) || Store.RailGen(slot) != e.Generation)
             return;
         Store.ReanchorCoarse(slot);
+        if (world.Shore is { } shore)
+            Slide.CoarseBackstop(Store, slot, shore, settings);
         PlanCoarse(world, slot);
     }
 
@@ -770,8 +754,8 @@ public sealed partial class ShipSystem
 
     /// <summary>The coarse step: what the fine tick looks at every few seconds (contacts, encounters, the rails check,
     /// sighting over the step), looked at once a step while no ship is on the fine tick (if any is, its tick does it
-    /// for all); a group's ships back in station ride their guide again; and a polar cap coming within the step is an
-    /// event.</summary>
+    /// for all); a group's ships back in station ride their guide again; a ship inside its minimum off the coast is put
+    /// back out (Slide's backstop); and a polar cap coming within the step is an event.</summary>
     void CoarseStepEvent(World world)
     {
         nextCoarseMs = -1;
@@ -805,6 +789,18 @@ public sealed partial class ShipSystem
         for (int k = 0; k < Store.CoarseCount; k++)
         {
             int slot = Store.CoarseSlot(k);
+            if (world.Shore is { } shore && Slide.CoarseInside(shore, Store[slot].Handling, Store[slot].Position))
+            {
+                // inside its minimum (a turn's arc cut a corner, or a ship riding its guide's track abeam of it): off
+                // its guide, put back out, laid again; its captain steers it back to its station
+                if (Store.RidesAnother(slot))
+                    Store.Coarsen(slot);
+                else
+                    Store.ReanchorCoarse(slot);
+                Slide.CoarseBackstop(Store, slot, shore, settings);
+                PlanCoarse(world, slot);
+                continue;
+            }
             if (Store.SegmentEndMs(slot) == long.MaxValue && !Store.RidesAnother(slot))
                 SchedulePolar(world, slot, settings.CoarseStepMs);   // a polar cap reached within the step
         }

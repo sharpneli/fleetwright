@@ -122,50 +122,6 @@ public class RailsRulesTests(ITestOutputHelper output)
         Assert.Equal(Helm.Course, Ship(w, g + 1).Helm);
     }
 
-    /// <summary>A column of four at 1x, ordered faster than its admiral lets it steam (so it has to slow and close up
-    /// before it's steady), with the map at a scale; its first ship's entity and its group.</summary>
-    static (World W, AiSystem Ai, int First, int Group) Zoomed(double metresPerPixel)
-    {
-        var (w, ai, c) = Make();
-        w.Apply(Command.SetViewScale(metresPerPixel));
-        int g = Column(w, c, Lat, Lon, 0, 4);
-        int group = w.Groups.Of(g)!.GroupId;
-        w.Apply(ai.Orders.Speed(Unit.Group(group), 30));
-        return (w, ai, g, group);
-    }
-
-    [Fact]
-    public void Zoomed_out_to_one_marker_a_group_is_placed_on_rails_and_its_orders_snap_at_any_speed()
-    {
-        var (w, ai, g, group) = Zoomed(500);   // a column's 2 km and its turns are a few pixels
-        Run(w, 6);
-        Assert.True(AllOnRails(w, g, 4), "placed at the first check, 1x");
-        w.Apply(ai.Orders.Course(Unit.Group(group), 90));
-        Assert.True(AllOnRails(w, g, 4), "the order snapped");
-        for (int e = g; e < g + 4; e++)
-            Assert.True(Math.Abs(Ship(w, e).HeadingDeg - 90) < 0.05, $"{Ship(w, e).HeadingDeg}°");
-    }
-
-    [Fact]
-    public void Zoomed_in_to_its_ships_a_group_forms_up_before_rails_and_its_orders_play_out()
-    {
-        var (w, ai, g, group) = Zoomed(1);
-        Run(w, 6);
-        Assert.False(AllOnRails(w, g, 4), "not placed where its ships are seen");
-        int s = 6;
-        for (; s < 3600 && !AllOnRails(w, g, 4); s += 5)
-            Run(w, 5);
-        output.WriteLine($"zoomed in, on rails after {s / 60.0:F1} min of forming up");
-        Assert.True(AllOnRails(w, g, 4), "on rails once steady");
-        w.Apply(ai.Orders.Course(Unit.Group(group), 90));
-        Assert.False(Ship(w, g).OnRails, "the turn plays out on the fine tick");
-
-        // zoomed out again: the next check places it, mid-turn, where it's one marker
-        w.Apply(Command.SetViewScale(500));
-        Run(w, 6);
-        Assert.True(AllOnRails(w, g, 4));
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

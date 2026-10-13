@@ -73,6 +73,32 @@ public class CoarseTierTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_snapshot_carries_a_coarse_turn_on_to_its_end_and_no_further()
+    {
+        // what the map draws between snapshots: a coarse ship's turn carried on along its circle to the turn's end,
+        // then straight, where the world has it then (at 30,000x a snapshot may be minutes of game time old)
+        var (w, c) = Make(Settings with { RailsEnabled = false });
+        w.Apply(Command.SetSpeed(30_000));
+        w.Apply(ShipSystem.Spawn(c, Lat, Lon, 0, Kn));
+        Run(w, 60);
+        w.Apply(ShipSystem.Course(1, 120));
+        Run(w, 10);
+        var snap = new Snapshot();
+        w.Fill(snap);
+        int k = snap.Ships.IndexOf(1);
+        long end = snap.Ships.TurnEndMs[k], at = snap.Ships.PoseMs[k];
+        Assert.True(end != long.MaxValue && end > at, "mid-turn, its end in the snapshot");
+        foreach (long t in new[] { at + 5_000, end, end + 120_000 })
+        {
+            w.AdvanceTo(new WorldTime(t));
+            var (p, f) = snap.Ships.PoseAt(k, t);
+            double off = Earth.Distance(p, Ship(w, 1).Position), turn = Math.Abs(Earth.Heading(p, f) - Ship(w, 1).HeadingDeg);
+            output.WriteLine($"{(t - at) / 1000.0:F1} s on: drawn {off:F2} m and {turn:F3} deg from the world");
+            Assert.True(off < 1 && turn < 0.05, $"{off:F2} m, {turn:F3} deg");
+        }
+    }
+
+    [Fact]
     public void A_manoeuvre_in_coarse_plays_out_and_ends_on_rails_exactly()
     {
         var (w, c) = Make();
@@ -236,6 +262,78 @@ public class CoarseTierTests(ITestOutputHelper output)
         Assert.Equal(ClockTier.Coarse, Ship(w, 1).Tier);
         Assert.True(w.Sightings.Of(1)?.IndexOf(2) >= 0, "side 1 has seen her");
         output.WriteLine($"seen at {Earth.Distance(Ship(w, 1).Position, Ship(w, 2).Position):F0} m apart");
+    }
+
+    static double ClearanceOf(Shore shore, Vec3d p) => shore.IsLand(p) ? -1 : shore.Clearance(p, 20_000, out _);
+
+    [Theory]
+    [InlineData(1000)]
+    [InlineData(5000)]
+    public void Coarse_ships_keep_off_the_land(double speed)
+    {
+        // destroyers every which way in the Skagerrak and the Kattegat, coarse, for six hours: every pose ten seconds apart
+        var shore = TestLand.Shore;
+        var w = new World(Start, 11, Settings, shore: shore);
+        new AiSystem(w);
+        int c = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+        w.Apply(Command.SetSpeed(speed));
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 3; j++)
+                w.Apply(ShipSystem.Spawn(c, 57.4 + 0.35 * j, 8.5 + 1.1 * i, (i * 70 + j * 45) % 360, 20));
+        int n = w.Ships.Store.Count;
+        double closest = double.PositiveInfinity;
+        int inside = 0, looks = 0, backstops = 0, coarse = 0;
+        for (int m = 0; m < 6 * 360; m++)
+        {
+            w.AdvanceTo(w.Time + 10_000);
+            for (int e = 1; e <= n; e++)
+            {
+                var sh = Ship(w, e);
+                double d = ClearanceOf(shore, sh.Position) - sh.Handling.MinClearanceM;
+                closest = Math.Min(closest, d);
+                inside += d < 0 ? 1 : 0;
+                coarse += sh.Tier == ClockTier.Coarse ? 1 : 0;
+                looks++;
+            }
+        }
+        for (int e = 1; e <= n; e++)
+            backstops += Ship(w, e).Backstops;
+        output.WriteLine($"{n} destroyers, six hours at {speed:N0}x: {closest:F0} m outside their minimum at the closest, inside it at " +
+                         $"{inside} of {looks} looks, {backstops} backstops; coarse at {coarse} looks");
+        Assert.True(coarse > 0, "some of it coarse");
+        Assert.True(closest > -Ship(w, 1).Handling.MinClearanceM, $"a ship came {-closest:F0} m inside its minimum: on land");
+    }
+
+    [Theory]
+    [InlineData(59.0, 3.4, 90.0)]
+    [InlineData(55.13, 13.6, 90.0)]
+    [InlineData(56.3, 7.0, 80.0)]
+    public void A_coarse_slide_follows_the_coast_the_fine_tick_does(double lat, double lon, double course)
+    {
+        // onto Norway, round Bornholm, onto Jutland: coarse turns at once onto the feeler's line, for legs, so it drifts
+        // from the fine tick's track a little; it follows the same coast the same way and comes out near it
+        var shore = TestLand.Shore;
+        (Vec3d End, double Closest, int Backstops) Slide(double speed)
+        {
+            var w = new World(Start, 11, Settings with { RailsEnabled = false }, shore: shore);
+            int c = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+            w.Apply(Command.SetSpeed(speed));
+            w.Apply(ShipSystem.Spawn(c, lat, lon, course, 15));
+            double closest = double.PositiveInfinity;
+            for (int m = 0; m < 4 * 360; m++)
+            {
+                w.AdvanceTo(w.Time + 10_000);
+                closest = Math.Min(closest, ClearanceOf(shore, Ship(w, 1).Position));
+            }
+            return (Ship(w, 1).Position, closest, Ship(w, 1).Backstops);
+        }
+        var fine = Slide(1);
+        var coarse = Slide(1000);
+        double apart = Earth.Distance(fine.End, coarse.End);
+        output.WriteLine($"from {lat}, {lon} on {course}: coarse ends {apart:F0} m from fine; closest coarse {coarse.Closest:F0} m " +
+                         $"({coarse.Backstops} backstops), fine {fine.Closest:F0} m ({fine.Backstops})");
+        Assert.True(apart < 3000, $"{apart:F0} m apart");
+        Assert.True(coarse.Closest > 0, "never on land");
     }
 
     /// <summary>Two squadrons of opposing sides, ordered about with the clock changing across the coarse threshold.</summary>

@@ -15,7 +15,7 @@ namespace Fleetwright.Shipgen.Cli;
 static class ScenarioRun
 {
     public static int Run(string path, string settingsPath, string landPath, string designsPath, double minutes, int threads,
-        int every, double atSpeed, bool land, bool replay, int[]? watch = null, double viewMpp = 0, double worldSpeed = 0)
+        int every, double atSpeed, bool land, bool replay, int[]? watch = null, double worldSpeed = 0)
     {
         var settings = SimSettings.Load(settingsPath);
         var total = Stopwatch.StartNew();
@@ -45,9 +45,7 @@ static class ScenarioRun
         var ai = new AiSystem(w);
         var start = ScenarioLoader.Apply(s, w, ai, classes);
         if (worldSpeed > 0)
-            w.Apply(Command.SetSpeed(worldSpeed));   // the speed asked: the rails' rules read it (snaps from 10,000x)
-        if (viewMpp > 0)
-            w.Apply(Command.SetViewScale(viewMpp));   // as the app's map tells it (the rails' one display rule)
+            w.Apply(Command.SetSpeed(worldSpeed));   // the speed asked picks the tiers (coarse from 240x, snaps from 10,000x)
         double place = sw.Elapsed.TotalSeconds;
         Console.WriteLine($"land: {(land ? $"waited {shoreWait:F2} s more" : "none (a world of water)")}; placed {start.Ships} ships in " +
                           $"{start.Groups} groups in {place * 1000:F0} ms; ready {total.Elapsed.TotalSeconds:F2} s after the start");

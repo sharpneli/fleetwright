@@ -74,9 +74,15 @@ public static class ShipMotion
     }
 
     /// <summary>Where the pose will be <paramref name="dt"/> seconds on if speed and rate of turn hold: what a renderer
-    /// draws between ticks, by the same arc the step moves along.</summary>
-    public static void Extrapolate(ref Vec3d position, ref Vec3d forward, double speed, double yawRate, double dt) =>
-        Earth.Arc(ref position, ref forward, speed * dt, yawRate * dt);
+    /// draws between snapshots, on the exact circle they make (a coarse ship's turn may be carried on a long way at
+    /// speed, where a step's chord would cut inside it); with no speed, the turn on the spot.</summary>
+    public static void Extrapolate(ref Vec3d position, ref Vec3d forward, double speed, double yawRate, double dt)
+    {
+        if (Math.Abs(speed) > 1e-9)
+            Earth.Circle(ref position, ref forward, speed * dt, yawRate / speed);
+        else
+            forward = Earth.Turn(position, forward, yawRate * dt);
+    }
 
     // ------------------------------------------------------------------ the helmsman
 

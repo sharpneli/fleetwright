@@ -256,7 +256,7 @@ public sealed class ShipStore
     }
 
     /// <summary>How far an anchored ship of its own has gone along its segment by a time, metres.</summary>
-    double Run(int slot, long ms)
+    internal double Run(int slot, long ms)
     {
         double t = (ms - railMs[slot]) / 1000.0;
         return railSpeed[slot] * t + 0.5 * railAccel[slot] * t * t;

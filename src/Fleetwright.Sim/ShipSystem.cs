@@ -335,6 +335,7 @@ public sealed partial class ShipSystem : IWorldSystem
             v.PoseMs[n] = ship.PoseMs;
             v.Helm[n] = ship.Helm;
             v.Tier[n] = ship.Tier;
+            v.TurnEndMs[n] = Store.SegmentEndMs(i);   // a coarse ship's own; long.MaxValue for the rest
             v.CourseOrderDeg[n] = ship.CourseOrderDeg;
             v.SpeedOrderKn[n] = ship.SpeedOrderKn;
             v.Captain[n] = 0;   // the AI fills its own, after
