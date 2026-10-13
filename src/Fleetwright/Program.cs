@@ -19,7 +19,7 @@ public static unsafe class Program
         var start = Sim.Core.WorldTime.FromUtc(1916, 5, 31, 14, 0);
         double? startSpeed = null;
         bool startPaused = false;
-        string? devShips = null;
+        var devShips = new List<string>();
         int selectShip = -1;
         var captains = new List<string>();
         var searches = new List<string>();
@@ -101,9 +101,9 @@ public static unsafe class Program
             {
                 startPaused = true;
             }
-            else if (arg.StartsWith("-ships="))   // dev ships in the North Sea: -ships=dreadnought[:count[:side]]
+            else if (arg.StartsWith("-ships="))   // dev ships: -ships=dreadnought[:count[:side]][@lat,lon,heading[,kn]] (the North Sea by default); repeatable
             {
-                devShips = arg.Substring("-ships=".Length);
+                devShips.Add(arg.Substring("-ships=".Length));
             }
             else if (arg.StartsWith("-group="))   // a dev group: -group=1,2,3,4[:column|abreast|echelon-s|echelon-p[:metres]]
             {
@@ -220,7 +220,7 @@ public static unsafe class Program
             // the classes in play and their art, the app's: the world and the map share them
             using var classes = new Sim.Ships.ShipClassRegistry();
             using var shipArt = new Map.ShipArtLibrary((SDL.SDL_GPUDevice*)device, classes);
-            using var world = new Map.WorldSession(start, 1, classes, shore.Result, devShips != null ? w => SpawnDevShips(w, devShips) : null);
+            using var world = new Map.WorldSession(start, 1, classes, shore.Result, devShips.Count > 0 ? w => devShips.ForEach(d => SpawnDevShips(w, d)) : null);
             foreach (var grp in devGroups)
                 foreach (var c in DevGroup(grp))
                     world.Send(c);
@@ -266,20 +266,34 @@ public static unsafe class Program
 
     /// <summary>-ships=design[:count[:side]]: a block of ships of one design at sea in the North Sea, 600 m apart, steaming
     /// 045° at 15 kn, every other one ordered round to 135° so the turns show (docs/battle/plan.md step 2.2: dev ships
-    /// until missions place forces).</summary>
+    /// until missions place forces). With @lat,lon,heading[,kn] the block is there, all on that heading (the land
+    /// scenarios of docs/world/terrain-plan.md). Entities are numbered across the flags in order.</summary>
     static void SpawnDevShips(Sim.World w, string arg)
     {
+        double lat0 = 56.5, lon0 = 4.0, heading = 45, kn = 15;
+        bool placed = false;
+        int at = arg.IndexOf('@');
+        if (at >= 0)
+        {
+            var q = arg.Substring(at + 1).Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            (lat0, lon0, heading, placed) = (q[0], q[1], q.Length > 2 ? q[2] : 0, true);
+            if (q.Length > 3)
+                kn = q[3];
+            arg = arg.Substring(0, at);
+        }
+        int first = w.Ships.NewestEntity + 1;
         var parts = arg.Split(':');
         int count = parts.Length > 1 && int.TryParse(parts[1], out int n) ? Math.Max(n, 1) : 1;
         byte shipSide = parts.Length > 2 && byte.TryParse(parts[2], out byte sd) ? sd : (byte)0;
         var design = Shipgen.Design.Load(FindDesign(parts[0]));
         int c = w.Ships.Registry.Request(design);
         int side = (int)Math.Ceiling(Math.Sqrt(count));
-        double dLat = 600 / 111_195.0, dLon = dLat / Math.Cos(56.5 * Math.PI / 180);
+        double dLat = 600 / 111_195.0, dLon = dLat / Math.Cos(lat0 * Math.PI / 180);
         for (int i = 0; i < count; i++)
-            w.Apply(Sim.ShipSystem.Spawn(c, 56.5 + dLat * (i / side), 4.0 + dLon * (i % side), 45, 15, shipSide));
-        for (int e = 2; e <= count; e += 2)
-            w.Apply(Sim.ShipSystem.Course(e, 135));
+            w.Apply(Sim.ShipSystem.Spawn(c, lat0 + dLat * (i / side), lon0 + dLon * (i % side), heading, kn, shipSide));
+        if (!placed)
+            for (int e = first + 1; e < first + count; e += 2)
+                w.Apply(Sim.ShipSystem.Course(e, 135));
     }
 
     /// <summary>-search=entity:pattern[:leg nm[:nm apart[:legs]]]: a search pattern for a dev ship, from where it is,

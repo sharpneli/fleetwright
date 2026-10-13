@@ -55,7 +55,8 @@ public sealed unsafe partial class MapScene
     long frame;
 
     static readonly Vector4 TrackColor = new(0.85f, 0.9f, 1f, 0.35f), RouteColor = new(1f, 0.85f, 0.4f, 0.55f),
-        RouteSelected = new(1f, 0.8f, 0.3f, 0.95f), SelectColor = new(1f, 0.78f, 0.25f, 0.95f), CourseColor = new(1f, 1f, 1f, 0.6f), TargetColor = new(1f, 0.78f, 0.25f, 0.45f);
+        RouteSelected = new(1f, 0.8f, 0.3f, 0.95f), SelectColor = new(1f, 0.78f, 0.25f, 0.95f), CourseColor = new(1f, 1f, 1f, 0.6f), TargetColor = new(1f, 0.78f, 0.25f, 0.45f),
+        LandRing = new(0.55f, 0.85f, 0.6f, 0.5f), SlideColor = new(0.55f, 1f, 0.6f, 0.95f);
 
     // ------------------------------------------------------------------ lines over the globe
 
@@ -123,6 +124,19 @@ public sealed unsafe partial class MapScene
                     Point(view, tp);
                     overlay.End();
                 }
+                if (v.StandoffM[k] / view.MetresPerPixel >= 3)
+                {
+                    // ships and the land: the minimum and the standoff it keeps from the coast, and the feeler's reach
+                    RingM(view, p, v.MinClearanceM[k], LandRing, 1f);
+                    RingM(view, p, v.StandoffM[k], LandRing, 1f);
+                    var reach = p;
+                    var rf = f;
+                    Earth.Advance(ref reach, ref rf, v.LookaheadM[k]);
+                    overlay.BeginStrip(v.LandSide[k] != 0 ? SlideColor : LandRing, 1f);
+                    Point(view, p);
+                    Point(view, reach);
+                    overlay.End();
+                }
                 if (v.Helm[k] == Helm.Course)
                 {
                     // the ordered course, a short line on from the bow
@@ -166,6 +180,21 @@ public sealed unsafe partial class MapScene
         }
     }
 
+    /// <summary>A circle on the sphere round a point, metres.</summary>
+    void RingM(in MapView view, Vec3d p, double radiusM, Vector4 colour, float widthPx)
+    {
+        var up = p.Normalized();
+        var e = Earth.East(p);
+        var n = Vec3d.Cross(up, e);
+        overlay.BeginStrip(colour, widthPx);
+        for (int i = 0; i <= 32; i++)
+        {
+            double a = i * Math.PI * 2 / 32;
+            Point(view, (up * Earth.Radius + (e * Math.Cos(a) + n * Math.Sin(a)) * radiusM).Normalized() * Earth.Radius);
+        }
+        overlay.End();
+    }
+
     void Ring(in MapView view, Vec3d p, double radiusPx, Vector4 colour, float widthPx)
     {
         if (!view.Project(p, out double x, out double y))
@@ -188,6 +217,8 @@ public sealed unsafe partial class MapScene
         var view = View;
         if (placing && placeClass >= 0 && world.Classes.IsReady(placeClass) && view.Pick(x, y, out var at))
         {
+            if (world.Shore.IsLand(at))
+                return;   // no ships on land (the cursor line says it's land)
             Spawn(at);
             placing = keepPlacing;
             return;
@@ -244,6 +275,8 @@ public sealed unsafe partial class MapScene
         var o = world.Ai.Orders;
         if (waypoint)
         {
+            if (world.Shore.IsLand(at))
+                return;   // refused: the cursor says so (docs/world/terrain-plan.md)
             var (lat, lon) = Earth.LatLon(at);
             world.Send(o.AddWaypoint(unit, lat, lon));
         }
@@ -492,6 +525,11 @@ public sealed unsafe partial class MapScene
             ImGui.SameLine();
             ImGui.TextDisabled($"heading {heading:000}°, {kn:0.0} kn, rudder {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0;0}°  ·  " +
                                $"ordered: {orders}, {s.Ships.SpeedOrderKn[k]:0.#} kn");
+            // never an unexplained deviation: the order stands, the helm follows the coast (docs/world/terrain-plan.md)
+            if (s.Ships.LandSide[k] != 0)
+                ImGui.TextColored(SlideColor, $"altered for land: following the coast, land to {(s.Ships.LandSide[k] > 0 ? "port" : "starboard")}, until the ordered course is clear");
+            if (s.Ships.Backstops[k] > 0)
+                ImGui.TextDisabled($"put back off the land {s.Ships.Backstops[k]}x");
 
             // orders: to the ship, or to a group it's in (one order moves the group: its admiral hands it down)
             LevelRow(s);

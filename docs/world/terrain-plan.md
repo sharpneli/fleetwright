@@ -1,7 +1,6 @@
 # Plan: ships and the land
 
-2026-10-12, reworked 2026-10-13. Status: **the rework is agreed** (the user, 2026-10-13), but for one open question
-("Open questions"). T1 (`Shore`) is done and stands. The rest of the 2026-10-12 plan (a pilot plotting each ship's track
+2026-10-12, reworked 2026-10-13. Status: **the rework is agreed** (the user, 2026-10-13). T1 (`Shore`) is done and stands. The rest of the 2026-10-12 plan (a pilot plotting each ship's track
 ahead, rails along the plot, a router) was too complex for the result wanted now (the user, 2026-10-13), so it's
 replaced by a slide along the coast: Rule the Waves' behaviour, done a little better. What was dropped and why is in
 "Dropped", so it can come back if it's ever needed.
@@ -141,8 +140,9 @@ At clock speeds where nobody sees a turn (`RailsSnapMinSpeed` and up; the clock 
 rails' one display exception isn't leaned on further), `LandAhead` doesn't derail: the same slide rule, evaluated at
 the event's point, re-anchors the rails along the coast's line (an instant turn, as rails turn at waypoints now),
 with the next `LandAhead` along that leg and a release check every `SlideRailsCheckM`. The same function decides in
-both tiers, so they agree. A unit whose slide leg isn't clear at its width for a minimum length comes off rails as in
-4.
+both tiers, so they agree. Only the guide's track is kept off land there: at those speeds a formation is its marker,
+drawn at the guide, and it's enough that the marker stays off land (the user, 2026-10-13); its ships riding their
+offsets may cross a headland on rails, and the fine tier's feeler and backstop sort them out when they come off.
 
 ## Guided areas (not built now)
 
@@ -233,6 +233,42 @@ tests, each also a `-ships` dev command to look at:
 - each captain's behaviour against a coast, with no re-order loop;
 - no allocation; the feeler's cost at sea and along Norway, measured.
 
+*Done (2026-10-13):*
+- **Standoffs** (`Handling.MinClearanceM`, `StandoffM`): half the beam + 30 m; that + 1.5 lengths within 80-400 m.
+  The destroyer 36 m and 223 m, the dreadnought 44 m and 319 m.
+- **The feeler** (`Slide.Course`, between the helm's wanted course and `Steer`): out at sea one `BoundM` lookup. Near
+  a coast, `FirstContact` along the wanted course over the look-ahead (radius at the course rudder + 30 s of speed)
+  at the standoff (within it, only coming closer than the ship already is counts). Sliding, it steers along the
+  coast's line where its own heading would first come inside the standoff (a corner seen before it's reached), else a
+  turning radius ahead, pushed seaward up to 30° by how far inside the standoff that is. Released when the wanted
+  course is clear 1.5 look-aheads on *and* within 60° of the heading: found in testing, a ship let go on a course
+  139° off swung through the coast turning back to it, so it follows the coast until the coast turns its way.
+- **Hard over** where the coast closes in (a corner nearer 1.5 radii, or the coast nearer 0.75 standoffs), and the
+  helmsman holds it while he's more than 20° off: found in testing, his lead (meeting the swing) eased the rudder
+  into the coast at a tight corner, and a destroyer at 36 kn met corners its 15° rudder couldn't make.
+- **The backstop** (`Slide.Backstop`, after the arc): out to the minimum along the coast's normal (`Slide.ToSea`, a
+  few pushes for corners), heading onto the coast's line, speed along it, counted per ship (`ShipState.Backstops`).
+- **Spawns and waypoints** on land or inside the standoff go to the nearest sea at the standoff; nowhere near the
+  sea (deep inland), no ship and no waypoint. The map refuses spawning and shift+right-click on land, and the cursor
+  line and a tooltip say so.
+- **The order is untouched;** a new course more than 30° off the last forgets the side. The side and the counter are
+  in the store, hashed, and in the snapshot; the strip says "altered for land: following the coast, land to port,
+  until the ordered course is clear", and the selected ship's minimum, standoff and feeler are drawn on the map.
+- **Rails:** a unit with a ship sliding doesn't go on rails (`ShipSystem.Rails.cs`, `Sliding`). Otherwise rails still
+  don't know the land, and a steady ship goes on rails within seconds, so in the app the slide shows only for ships
+  off rails until S2 (the screenshots were taken with `RailsEnabled` off).
+- **The dev flag** `-ships=design[:count[:side]][@lat,lon,heading[,kn]]`, repeatable.
+- **Tests** (`SlideTests`, real 1:10M land, rails off): onto Norway at 10, 28 and 15 kn (070°); round Bornholm and
+  resuming 090°; a destroyer and a battleship on one coast (median 229 m against 435 m); a route through the
+  Bosporus with a follower; up the Oslofjord, following it round; a line abreast run onto Jutland; a runner with the
+  coast behind it; spawns and waypoints on land; determinism; no allocation. None comes inside its minimum, and the
+  backstop never fires but once: the battleship at 28 kn follows the coast into an inlet narrower than its turning
+  circle (~700 m) and needs it at the end, turning round there taking backing and filling the helmsman doesn't do.
+- **Measured:** the feeler costs 0.01 µs at sea and 0.6 µs sliding along Norway.
+- **Seen, for later:** a line abreast run onto a coast piles up. The ships whose stations are on land slide along the
+  same standoff line as the guide, so all three end at one spot. Keeping formations off coasts is the admirals'
+  (Later), or a captain whose station is on land falls in astern of the ship inboard of him.
+
 **S2 Rails respect the land.** The `LandAhead` trace and event, `Ready`'s clear check, all in
 `ShipSystem.Rails.cs`. The scale tests move to the Pacific (the user, 2026-10-12): `RailsTests`' 2,000 ships spread
 from 40°S to 40°N, where there's room; a test that must cross land (the meridian over both poles) runs in a world of
@@ -287,8 +323,6 @@ The user, 2026-10-13:
 7. **Boxed in, a ship follows the coast round,** for now; it isn't stopped (replaces 2026-10-12's "the pilot may stop
    a ship").
 8. **S1-S3 before the Jutland test; S4 after,** when a mission needs it, but kept possible.
-
-## Open questions (for the user)
-
-1. **Every ship feels,** formation members included (proposed), or only lone ships and guides, the rest left to the
-   backstop's snap as in Rule the Waves? The trade-offs were laid out 2026-10-13; waiting for the user's choice.
+9. **Every ship feels,** formation members included: the earlier bend of a line abreast and its outer ship out of
+   station are acceptable in the fine and coarse tiers. On rails seen from afar, it's enough that the formation's
+   marker stays off land (S3).

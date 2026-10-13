@@ -74,7 +74,8 @@ public sealed partial class ShipSystem : IWorldSystem
     // ------------------------------------------------------------------ commands
 
     /// <summary>A ship of a class (its registry id) at a place, heading and speed, on a side (ships of different sides
-    /// are opposing); it gets the next entity id. A class that didn't build makes no ship. (A spawn names no entity, so
+    /// are opposing); it gets the next entity id. A class that didn't build makes no ship. On land or near it, the ship
+    /// is put at the nearest sea at its standoff; nowhere near the sea, there's no ship. (A spawn names no entity, so
     /// the command's entity field carries the side.)</summary>
     public static Command Spawn(int classIndex, double latDeg, double lonDeg, double headingDeg, double kn, byte side = 0) =>
         new(Id, (ushort)ShipCommand.Spawn, side, A: Earth.PackLatLon(latDeg, lonDeg), X: headingDeg, B: classIndex, Y: kn);
@@ -93,7 +94,8 @@ public sealed partial class ShipSystem : IWorldSystem
 
     public static Command ClearRoute(int entity) => new(Id, (ushort)ShipCommand.ClearRoute, entity);
 
-    /// <summary>Add a waypoint to a ship's route and steer by the route. A route is several of these at one moment.</summary>
+    /// <summary>Add a waypoint to a ship's route and steer by the route. A route is several of these at one moment. One
+    /// on land or near it is moved to the nearest sea at the ship's standoff (the map refuses the player's on land).</summary>
     public static Command AddWaypoint(int entity, double latDeg, double lonDeg) =>
         new(Id, (ushort)ShipCommand.AddWaypoint, entity, A: Earth.PackLatLon(latDeg, lonDeg));
 
@@ -119,7 +121,10 @@ public sealed partial class ShipSystem : IWorldSystem
                 return;   // the design didn't build: no ship, the same on every replay
             var (lat, lon) = Earth.UnpackLatLon(c.A);
             var p = Earth.Position(lat, lon);
-            Store.Spawn(nextEntity++, c.B, HandlingOf(c.B), p, Earth.Forward(p, c.X), c.Y * Handling.MsPerKnot, world.Time.Ms, (byte)c.Entity);
+            var h = HandlingOf(c.B);
+            if (world.Shore is { } shore && !Slide.ToSea(shore, ref p, h.StandoffM, settings.CoastSearchM, out _))
+                return;   // nowhere near the sea: no ship, the same on every replay
+            Store.Spawn(nextEntity++, c.B, h, p, Earth.Forward(p, c.X), c.Y * Handling.MsPerKnot, world.Time.Ms, (byte)c.Entity);
             SideCount((byte)c.Entity, +1);
             EnsureTick(world);
             return;
@@ -158,7 +163,10 @@ public sealed partial class ShipSystem : IWorldSystem
                 break;
             case ShipCommand.AddWaypoint:
                 var (lat, lon) = Earth.UnpackLatLon(c.A);
-                Store.AddWaypoint(slot, Earth.Position(lat, lon));
+                var wp = Earth.Position(lat, lon);
+                if (world.Shore is { } sh && !Slide.ToSea(sh, ref wp, Store[slot].Handling.StandoffM, settings.CoastSearchM, out _))
+                    break;   // a waypoint nowhere near the sea is dropped (the map refuses the player's on land)
+                Store.AddWaypoint(slot, wp);
                 break;
             case ShipCommand.LoopRoute:
                 Store.LoopRoute(slot, c.X != 0);
@@ -199,7 +207,7 @@ public sealed partial class ShipSystem : IWorldSystem
             return;
         }
         nextTickMs = -1;
-        ShipMotion.StepAll(Store, world.Time.Ms, settings);
+        ShipMotion.StepAll(Store, world.Time.Ms, settings, world.Shore);
         if (settings.RailsEnabled && world.Time.Ms % settings.RailsCheckMs == 0)
         {
             FineContacts(world);
@@ -254,6 +262,11 @@ public sealed partial class ShipSystem : IWorldSystem
             v.Captain[n] = 0;   // the AI fills its own, after
             v.CaptainTarget[n] = 0;
             v.Asked[n] = false;
+            v.LandSide[n] = (sbyte)ship.LandSide;
+            v.Backstops[n] = ship.Backstops;
+            v.MinClearanceM[n] = ship.Handling.MinClearanceM;
+            v.StandoffM[n] = ship.Handling.StandoffM;
+            v.LookaheadM[n] = Slide.LookaheadM(ship.Handling, ship.Speed, ship.CourseRudder, settings);
             bool loop = ship.RouteLoop && ship.RouteCount > 1;
             int left = ship.Helm != Helm.Route ? 0 : loop ? ship.RouteCount : ship.RouteCount - ship.RouteNext;
             v.EnsureWaypoints(w + left);

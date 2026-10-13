@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; the next is ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, done 2026-10-12; reworked 2026-10-13 into a slide along the coast, S1-S3 before the Jutland test), then 2.7, the Jutland scale test.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; the next is ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, done 2026-10-12; reworked 2026-10-13 into a slide along the coast, S1-S3 before the Jutland test; S1, the slide in the fine tier, done 2026-10-13), then 2.7, the Jutland scale test.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things

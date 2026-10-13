@@ -31,6 +31,23 @@
   "ArrivalRadiusM": 300,
   "PolarCapDeg": 89,
 
+  // ships and the land (docs/world/terrain-plan.md)
+  "CoastMinClearanceM": 30,
+  "CoastStandoffLengths": 1.5,
+  "CoastStandoffMinM": 80,
+  "CoastStandoffMaxM": 400,
+  "SlideLookaheadS": 30,
+  "SlideReleaseFactor": 1.5,
+  "SlideReleaseDeg": 60,
+  "SlideCorrectionDeg": 30,
+  "SlideHardOverStandoffs": 0.75,
+  "SlideHardOverRadii": 1.5,
+  "SlideHardOverErrDeg": 20,
+  "SlideToleranceM": 10,
+  "SlideResetDeg": 30,
+  "SlideMinSpeedMs": 0.5,
+  "CoastSearchM": 100000,
+
   // the rails clock tier (docs/battle/plan.md step 2.5)
   "RailsEnabled": true,
   "RailsCheckMs": 5000,

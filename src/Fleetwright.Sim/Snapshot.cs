@@ -131,6 +131,13 @@ public sealed class ShipsView
     /// <summary>Held by the player while its superior's orders for it have changed: a notice, "resume?" (the AI's).</summary>
     public bool[] Asked = [];
 
+    /// <summary>Ships and the land (<see cref="Combat.Slide"/>): sliding along a coast (+1 land to port, -1 to
+    /// starboard, 0 not), how often the backstop has put it back off the land; its minimum and standoff from the
+    /// coast and the feeler's look-ahead, metres (the map's overlay).</summary>
+    public sbyte[] LandSide = [];
+    public int[] Backstops = [];
+    public double[] MinClearanceM = [], StandoffM = [], LookaheadM = [];
+
     /// <summary>Each ship's route still to steam: <see cref="RouteCount"/> waypoints from <see cref="RouteStart"/> in
     /// <see cref="Waypoints"/> (the next one first).</summary>
     public int[] RouteStart = [], RouteCount = [];
@@ -178,6 +185,11 @@ public sealed class ShipsView
         Array.Resize(ref Captain, n);
         Array.Resize(ref CaptainTarget, n);
         Array.Resize(ref Asked, n);
+        Array.Resize(ref LandSide, n);
+        Array.Resize(ref Backstops, n);
+        Array.Resize(ref MinClearanceM, n);
+        Array.Resize(ref StandoffM, n);
+        Array.Resize(ref LookaheadM, n);
         Array.Resize(ref RouteStart, n);
         Array.Resize(ref RouteCount, n);
         Array.Resize(ref RouteLoop, n);

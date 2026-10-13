@@ -89,6 +89,59 @@ public sealed record SimSettings
     /// <summary>A route's last waypoint counts as reached inside this, metres.</summary>
     public double ArrivalRadiusM { get; init; } = 300;
 
+    // ------------------------------------------------------------------ ships and the land (docs/world/terrain-plan.md)
+
+    /// <summary>The minimum: how close to the coast a ship's side may come, metres, beyond half its beam. The backstop
+    /// holds it; nothing comes closer.</summary>
+    public double CoastMinClearanceM { get; init; } = 30;
+
+    /// <summary>The standoff, where a sliding ship keeps: the minimum plus this many of its lengths, within the bounds,
+    /// metres (close, as in Rule the Waves: ~100 m for a torpedo boat, ~300 m for a battleship).</summary>
+    public double CoastStandoffLengths { get; init; } = 1.5;
+    public double CoastStandoffMinM { get; init; } = 80;
+    public double CoastStandoffMaxM { get; init; } = 400;
+
+    /// <summary>The feeler's look-ahead: the ship's turning radius at its course rudder plus this many seconds of its
+    /// speed (its answer to the helm, the Nomoto lag, inside it).</summary>
+    public double SlideLookaheadS { get; init; } = 30;
+
+    /// <summary>Released only once the wanted course is clear this many look-aheads on, so it doesn't dither.</summary>
+    public double SlideReleaseFactor { get; init; } = 1.5;
+
+    /// <summary>A sliding ship is let go only with the wanted course within this many degrees of its heading (and
+    /// clear): a longer turn back to it would sweep through the coast beside it, so it follows the coast until the
+    /// coast turns toward its course.</summary>
+    public double SlideReleaseDeg { get; init; } = 60;
+
+    /// <summary>Along the coast, the most a sliding ship turns off its line toward the sea (or back toward the
+    /// standoff), degrees: all of it at the coast itself, none at the standoff.</summary>
+    public double SlideCorrectionDeg { get; init; } = 30;
+
+    /// <summary>Sliding with the coast a turning radius ahead nearer than this many standoffs, the helmsman may put
+    /// the rudder hard over: the coast closes in tighter than his ordinary rudder turns.</summary>
+    public double SlideHardOverStandoffs { get; init; } = 0.75;
+
+    /// <summary>Sliding, a corner ahead (where its heading would come inside its standoff) nearer than this many of
+    /// its ordinary turning radii: hard over too.</summary>
+    public double SlideHardOverRadii { get; init; } = 1.5;
+
+    /// <summary>Hard over for the land, the helmsman holds it, not easing it as the swing builds, while he's more than
+    /// this many degrees off the slide's course.</summary>
+    public double SlideHardOverErrDeg { get; init; } = 20;
+
+    /// <summary>The feeler counts land only where the wanted course comes this much closer than the ship already is,
+    /// metres, inside its standoff: a ship that isn't heading for the coast is left alone.</summary>
+    public double SlideToleranceM { get; init; } = 10;
+
+    /// <summary>A new course this far from the last, degrees, forgets which way along the coast a ship slides.</summary>
+    public double SlideResetDeg { get; init; } = 30;
+
+    /// <summary>Slower than this, m/s, the feeler is off (a ship stopped or going astern has only the backstop).</summary>
+    public double SlideMinSpeedMs { get; init; } = 0.5;
+
+    /// <summary>How far the backstop, a spawn or a waypoint looks for the sea from a point on land, metres.</summary>
+    public double CoastSearchM { get; init; } = 100_000;
+
     // ------------------------------------------------------------------ the rails clock tier (docs/battle/plan.md 2.5)
 
     /// <summary>Ships steaming steady go on rails (false: everything stays on the fine tick, for comparing).</summary>

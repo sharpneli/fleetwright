@@ -15,6 +15,7 @@ dotnet test
 dotnet run --project src/Fleetwright                                       # the world: the globe, its clock running at 1x
 dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48 [-speed=30000] [-paused]   # map camera: lat,lon,m/px; world start UTC
 dotnet run --project src/Fleetwright -- -ships=dreadnought:9 -map=56.51,4.02,3 [-select=1]   # dev ships in the North Sea (sprites close, icons far), every other turning to 135°
+dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@59.03,5.50,90,15 -ships=destroyer@59.035,5.5,80 -select=1 -map=59.02,5.6,8 -speed=30   # dev ships placed (lat,lon,heading[,kn]; repeatable): onto Norway, sliding round a headland
 dotnet run --project src/Fleetwright -- -ships=dreadnought:2 -captain=2:follow:1:800 -select=2   # a captain: follow:target[:m], run:target, keep, none
 dotnet run --project src/Fleetwright -- -ships=dreadnought:6 -group=1,2,3,4,5,6:column:500 -select=1   # a group: column, abreast, echelon-s, echelon-p
 dotnet run --project src/Fleetwright -- -ships=dreadnought:4:1 -group=1,2,3,4:column:500 -search=1:ladder:10:3:6 -speed=1000   # a search on rails (ladder, square, sector, patrol); :1 the side
@@ -236,7 +237,9 @@ src/
                               #   ShipClassRegistry (classes by design hash, built on threads of its own, ids for commands)
   Fleetwright.Sim.Combat/     # ships at sea: ShipStore (slots, state in columns), ShipState (a handle), Handling (a
                               #   class's numbers for moving), ShipMotion (the step: Nomoto turning, forces on the
-                              #   power curve, arcs on the sphere; the helmsman: courses and routes)
+                              #   power curve, arcs on the sphere; the helmsman: courses and routes), Slide (ships and
+                              #   the land: the feeler slides a ship along a coast at its standoff, the backstop
+                              #   refuses land, spawns and waypoints go to sea; docs/world/terrain-plan.md)
   Fleetwright.Sim.Ai/         # the AI above the world: AiSystem (layers of command, top-down, each at its rate),
                               #   Knowledge/ (IPicture; TruthPicture until sighting), Captains/ (CaptainLayer,
                               #   Behaviours: keep course, follow, run, station), Admirals/ (AdmiralLayer: formations

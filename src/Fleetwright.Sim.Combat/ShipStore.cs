@@ -40,6 +40,11 @@ public sealed class ShipStore
     internal Vec3d[] route = [];   // routeCap per slot
     internal bool[] routeLoop = [];   // past the last waypoint, on to the first again (a patrol)
 
+    // ships and the land (Slide): which way along the coast a ship slides (+1 land to port, -1 to starboard, 0 not
+    // sliding), and how often the backstop has had to put it back off the land
+    internal sbyte[] landSide = [];
+    internal int[] backstops = [];
+
     // the rails clock tier (docs/battle/plan.md step 2.5): a ship steaming steady isn't stepped, it's a function of time.
     // A ship on its own is on a great circle from an anchor (time, position, forward) at a speed; a group's other ships
     // ride at a fixed offset (ahead, to starboard) in their guide's frame. railGen goes up whenever a ship's rails
@@ -106,6 +111,8 @@ public sealed class ShipStore
         clearance[slot] = 0;
         routeCount[slot] = routeNext[slot] = 0;
         routeLoop[slot] = false;
+        landSide[slot] = 0;
+        backstops[slot] = 0;
         return slot;
     }
 
@@ -380,8 +387,11 @@ public sealed class ShipStore
     /// <summary>Hold a course, degrees, with a rudder no larger than given (radians; 0 for the standard rudder).</summary>
     public void OrderCourse(int slot, double courseDeg, double rudderRad = 0)
     {
+        double was = this.courseDeg[slot], now = ((courseDeg % 360) + 360) % 360, change = now - was;
+        if (helm[slot] != Helm.Course || Math.Abs(change - 360 * Math.Round(change / 360)) > settings.SlideResetDeg)
+            landSide[slot] = 0;   // a new course: which way to slide along a coast is chosen again
         helm[slot] = Helm.Course;
-        this.courseDeg[slot] = ((courseDeg % 360) + 360) % 360;
+        this.courseDeg[slot] = now;
         courseRudder[slot] = rudderRad > 0 ? Math.Min(rudderRad, handling[slot].HardOverRad) : settings.StandardRudderDeg * Math.PI / 180;
     }
 
@@ -428,6 +438,7 @@ public sealed class ShipStore
         {
             helm[slot] = Helm.Route;
             routeNext[slot] = n;
+            landSide[slot] = 0;
             courseRudder[slot] = settings.StandardRudderDeg * Math.PI / 180;
         }
         return true;
@@ -465,6 +476,8 @@ public sealed class ShipStore
             h.Add(routeCount[i]);
             h.Add(routeNext[i]);
             h.Add(routeLoop[i]);
+            h.Add(landSide[i]);
+            h.Add(backstops[i]);
             h.Add(rails[i]);
             h.Add(railGen[i]);
             if (rails[i])
@@ -513,6 +526,8 @@ public sealed class ShipStore
         Array.Resize(ref routeCount, n);
         Array.Resize(ref routeNext, n);
         Array.Resize(ref routeLoop, n);
+        Array.Resize(ref landSide, n);
+        Array.Resize(ref backstops, n);
         Array.Resize(ref rails, n);
         Array.Resize(ref railMs, n);
         Array.Resize(ref railPos, n);
@@ -599,6 +614,9 @@ public readonly struct ShipState(ShipStore store, int slot)
     public double ClearanceM => store.clearance[slot];
     public double RudderOrder => store.rudderOrder[slot];
 
+    /// <summary>The most rudder its course or route is steered with, radians.</summary>
+    public double CourseRudder => store.courseRudder[slot];
+
     /// <summary>The power rung (what the engines are going to), W.</summary>
     public double PowerOrder => store.powerOrder[slot];
     public int RouteCount => store.routeCount[slot];
@@ -607,4 +625,10 @@ public readonly struct ShipState(ShipStore store, int slot)
     /// <summary>The route goes round again after its last waypoint (a patrol).</summary>
     public bool RouteLoop => store.routeLoop[slot];
     public Vec3d Waypoint(int k) => store.route[slot * store.RouteCapacity + k];
+
+    /// <summary>Sliding along a coast (Slide): +1 with the land to port, -1 to starboard, 0 not.</summary>
+    public int LandSide => store.landSide[slot];
+
+    /// <summary>How often the backstop has put the ship back off the land.</summary>
+    public int Backstops => store.backstops[slot];
 }

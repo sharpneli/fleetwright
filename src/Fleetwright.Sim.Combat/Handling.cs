@@ -36,6 +36,12 @@ public sealed class Handling
     /// the power fixed and P ∝ U³, it loses the fraction f of speed when (1 - f)³·(1 + g) = 1.</summary>
     public double TurnDragFactor { get; }
 
+    /// <summary>How close the ship's centre may come to the coast, metres (the backstop's line: half its beam and
+    /// <see cref="SimSettings.CoastMinClearanceM"/>), and where it keeps when it slides along a coast, its standoff
+    /// (docs/world/terrain-plan.md, "Standoff and minimum").</summary>
+    public double MinClearanceM { get; }
+    public double StandoffM { get; }
+
     readonly double crossover;   // the speed below which the bollard cap, not eta P / U, limits thrust: eta / bollard, m/s
 
     public Handling(ShipClass c, SimSettings s)
@@ -56,6 +62,8 @@ public sealed class Handling
         double slender = Math.Clamp((m.LengthM / m.BeamM - 7) / 3, 0, 1);
         double f = s.TurnSpeedLossBeamy + (s.TurnSpeedLossSlender - s.TurnSpeedLossBeamy) * slender;
         TurnDragFactor = 1 / ((1 - f) * (1 - f) * (1 - f)) - 1;
+        MinClearanceM = m.BeamM / 2 + s.CoastMinClearanceM;
+        StandoffM = Math.Max(Math.Clamp(MinClearanceM + s.CoastStandoffLengths * m.LengthM, s.CoastStandoffMinM, s.CoastStandoffMaxM), 1.5 * MinClearanceM);
     }
 
     /// <summary>The shaft power the hull needs at a speed through the water, watts (either way: astern as ahead).</summary>

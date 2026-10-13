@@ -4,31 +4,34 @@ namespace Fleetwright.Sim.Combat;
 
 /// <summary>Moves ships (docs/battle/plan.md step 2.2): the helmsman turns orders into a rudder angle, the rudder moves
 /// at its gear's rate, the ship's rate of turn follows Nomoto's first-order model, its speed follows the forces of its
-/// own power curve, and it moves along the arc its speed and rate of turn make. Every ship, every tick: nothing here
-/// allocates, and a ship's step reads only its own slot, so ships can later be stepped in parallel.</summary>
+/// own power curve, and it moves along the arc its speed and rate of turn make. Near land the helmsman slides along the
+/// coast and the step refuses it (<see cref="Slide"/>). Every ship, every tick: nothing here allocates, and a ship's
+/// step reads only its own slot (and the immutable <see cref="Shore"/>), so ships can later be stepped in
+/// parallel.</summary>
 public static class ShipMotion
 {
     const double Deg = Math.PI / 180;
 
-    /// <summary>Moves every live ship off rails (the store's fine list) to <paramref name="nowMs"/> from wherever its pose is.</summary>
-    public static void StepAll(ShipStore s, long nowMs, SimSettings set)
+    /// <summary>Moves every live ship off rails (the store's fine list) to <paramref name="nowMs"/> from wherever its
+    /// pose is, keeping them off the land if there is any.</summary>
+    public static void StepAll(ShipStore s, long nowMs, SimSettings set, Shore? shore = null)
     {
         for (int k = 0; k < s.FineCount; k++)
             if (s.FineSlot(k) is int i && s.poseMs[i] < nowMs)
             {
-                Step(s, i, (nowMs - s.poseMs[i]) / 1000.0, set);
+                Step(s, i, (nowMs - s.poseMs[i]) / 1000.0, set, shore);
                 s.poseMs[i] = nowMs;
             }
     }
 
     /// <summary>One ship, dt seconds.</summary>
-    public static void Step(ShipStore s, int i, double dt, SimSettings set)
+    public static void Step(ShipStore s, int i, double dt, SimSettings set, Shore? shore = null)
     {
         var h = s.handling[i];
         double u0 = s.speed[i], r0 = s.yawRate[i];
 
         // the helm, then the rudder at its gear's rate
-        double order = HelmOrder(s, i, h, set);
+        double order = HelmOrder(s, i, h, set, shore);
         double d = s.rudder[i], step = h.RudderRateRadS * dt;
         s.rudder[i] = d + Math.Clamp(order - d, -step, step);
 
@@ -66,6 +69,8 @@ public static class ShipMotion
         Earth.Arc(ref pos, ref fwd, 0.5 * (u0 + u1) * dt, 0.5 * (r0 + r1) * dt);
         s.position[i] = pos;
         s.forward[i] = fwd;
+        if (shore != null)
+            Slide.Backstop(s, i, h, shore, set);
     }
 
     /// <summary>Where the pose will be <paramref name="dt"/> seconds on if speed and rate of turn hold: what a renderer
@@ -76,7 +81,7 @@ public static class ShipMotion
     // ------------------------------------------------------------------ the helmsman
 
     /// <summary>The rudder the helmsman wants now, radians.</summary>
-    static double HelmOrder(ShipStore s, int i, Handling h, SimSettings set)
+    static double HelmOrder(ShipStore s, int i, Handling h, SimSettings set, Shore? shore)
     {
         switch (s.helm[i])
         {
@@ -85,9 +90,11 @@ public static class ShipMotion
             case Helm.Course:
                 if (Earth.InPolarCap(s.position[i], set.PolarCapDeg))
                     s.courseDeg[i] = Earth.Heading(s.position[i], s.forward[i]);   // near a pole: steer straight on
-                return Steer(s, i, h, s.courseDeg[i], set);
+                double course = Slide.Course(s, i, h, s.courseDeg[i], shore, set, out bool hard);
+                return Steer(s, i, h, course, set, hard);
             case Helm.Route:
-                return Steer(s, i, h, RouteCourse(s, i, h, set), set);
+                double leg = Slide.Course(s, i, h, RouteCourse(s, i, h, set), shore, set, out bool hardOnLeg);
+                return Steer(s, i, h, leg, set, hardOnLeg);
             default:
                 return s.rudder[i];
         }
@@ -95,15 +102,17 @@ public static class ShipMotion
 
     /// <summary>Steers for a course: rudder proportional to the heading error he expects a little ahead (the swing
     /// carried on for his lead time: the ship's answer to the helm, and the time to bring the rudder back), so he meets
-    /// the swing before it overshoots; within the order's rudder.</summary>
-    static double Steer(ShipStore s, int i, Handling h, double courseDeg, SimSettings set)
+    /// the swing before it overshoots; within the order's rudder, or hard over when the land asks for it.</summary>
+    static double Steer(ShipStore s, int i, Handling h, double courseDeg, SimSettings set, bool hardOver = false)
     {
         double heading = Earth.Heading(s.position[i], s.forward[i]);
         double e = courseDeg - heading;
         e -= 360 * Math.Round(e / 360);   // (-180, 180]: the shortest way round
         double lead = set.HelmLeadOverT * h.T(s.speed[i], set) + Math.Abs(s.rudder[i]) / h.RudderRateRadS;   // and the rudder's way back
         double ahead = e * Deg - s.yawRate[i] * lead;
-        double limit = s.courseRudder[i];
+        if (hardOver && Math.Abs(e) > set.SlideHardOverErrDeg)
+            ahead = Math.Sign(e) * double.MaxValue;   // the land closing in: hard over, not easing it as the swing builds
+        double limit = hardOver ? h.HardOverRad : s.courseRudder[i];
         return Math.Clamp(set.HelmGain * ahead, -limit, limit) * Math.Sign(s.speed[i] >= 0 ? 1 : -1);
     }
 

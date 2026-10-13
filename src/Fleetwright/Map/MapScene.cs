@@ -169,7 +169,10 @@ public sealed unsafe partial class MapScene : IScene
             if (mouseIn && view.Pick(mouse.X * width / Math.Max(vp.Size.X, 1), mouse.Y * height / Math.Max(vp.Size.Y, 1), out var p))
             {
                 var (la, lo) = Earth.LatLon(p);
-                ImGui.Text($"cursor {LatLon(la, lo)}");
+                bool onLand = world.Shore.IsLand(p);
+                ImGui.Text($"cursor {LatLon(la, lo)}{(onLand ? ", land" : "")}");
+                if (onLand && ImGui.GetIO().KeyShift && selected >= 0 && !ImGui.GetIO().WantCaptureMouse)
+                    ImGui.SetTooltip("land: no waypoint here");
             }
             else
                 ImGui.TextDisabled("cursor off the globe");

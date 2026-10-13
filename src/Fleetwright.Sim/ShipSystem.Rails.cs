@@ -17,7 +17,8 @@ namespace Fleetwright.Sim;
 /// <see cref="Watched"/>), it's placed as its guide's orders say (<see cref="Placeable"/>); else it waits until it's
 /// steaming steady (<see cref="Steady"/>), every ship with it (<see cref="InStation"/>), so a formation is never seen
 /// to snap into place. Either way, not near an opposing ship (<see cref="NearOpposing"/>,
-/// ShipSystem.Contacts.cs).</item>
+/// ShipSystem.Contacts.cs), and no ship of it sliding along a coast (<see cref="Sliding"/>: the slide is the fine
+/// tier's, docs/world/terrain-plan.md; rails don't know the land until its step S2).</item>
 /// <item><b>EXCEPTION: the map's scale.</b> <see cref="Watched"/> is the sim's one dependence on display state, which
 /// is otherwise a hard rule (docs/world/architecture.md, "Terms"). It's kept only because we have to: a formation seen
 /// snapping is jarring, and leaving it on the fine tick costs the clock. It's to go once the snap can be hidden
@@ -74,11 +75,13 @@ public sealed partial class ShipSystem
     }
 
     /// <summary>Whether the unit in <see cref="line"/> (its guide off rails) may go on rails now: placing, as its
-    /// guide's orders say; else steaming steady, every ship with it. And no opposing ship near it, as far as its ships
-    /// reach (placed, as far as their stations do: they jump there).</summary>
+    /// guide's orders say; else steaming steady, every ship with it. No ship of it sliding along a coast, and no
+    /// opposing ship near it, as far as its ships reach (placed, as far as their stations do: they jump there).</summary>
     bool Ready(int guide, bool placing)
     {
         if (placing ? !Placeable(guide) : !Steady(guide) || !InStation(guide))
+            return false;
+        if (Sliding())
             return false;
         return !NearOpposing(guide, placing ? Math.Max(GroupRadius(guide), FormationRadius()) : GroupRadius(guide));
     }
@@ -128,6 +131,16 @@ public sealed partial class ShipSystem
                 return false;
         }
         return true;
+    }
+
+    /// <summary>Whether a ship of the unit in <see cref="line"/> is sliding along a coast: placed on rails, it would be
+    /// put back on its order, into the land.</summary>
+    bool Sliding()
+    {
+        for (int i = 0; i < line.Count; i++)
+            if (Store.SlotOf(line[i].Ship) is int m and >= 0 && Store[m].LandSide != 0)
+                return true;
+        return false;
     }
 
     bool NotSwinging(ShipState s) =>
