@@ -1,15 +1,22 @@
 // Jutland, 31 May 1916 at 14:00 GMT (docs/battle/plan.md step 2.7: the scale test). The order of battle is the
 // historical one, ship by ship; the classes are stand-ins (Designs/, knob variants of the shipped designs, until a
-// ship design session); the positions and courses are approximate, from the usual accounts, to be checked
-// (research/REQUESTS.md). Beatty steams east, Hipper north, Jellicoe south-east and Scheer north behind Hipper, so
-// the scouting forces meet within the half hour, as they did at 14:20.
+// ship design session). The British dispositions are the 2 p.m. ones of Jellicoe's despatch and the Admiralty's
+// Narrative of the Battle: Lion in 56°46'N 4°40'E, just turned N by E at 19.5 kn to meet the Grand Fleet, the 2nd BCS
+// 3 miles ENE of her, the 5th Battle Squadron 5 miles NNW, the light cruisers a screen 8 miles astern on a line
+// ENE-WSW, 5 miles apart (the 1st LCS at its eastern end, as Galatea's 14:25 position, 56°48'N 5°21'E, has it);
+// the battle fleet in 57°57'N 3°45'E, organisation No. 5 (six columns of divisions, 1st to 6th port to starboard),
+// steering S 50 E at a 14-knot speed of advance, the 4th LCS 3 miles ahead, the cruisers 16 miles ahead and 8 apart,
+// Hood's 3rd BCS with Chester and Canterbury about 20 miles ahead. The German positions are reckoned from the
+// contact, not logged: Hipper fifty miles east of Beatty steering north, Elbing on his screen's western wing some
+// 17 miles east of Galatea (the steamer N. J. Fjord between them), Scheer fifty miles astern of Hipper. Galatea
+// sights Elbing's torpedo boats at the steamer at 14:20 and the first shots are at 14:28.
 {
   "scenario": 1,
   "name": "Jutland",
-  "brief": "31 May 1916, 14:00 GMT. Beatty's battlecruisers steam east toward the turn north; Hipper's scouting groups steam north fifty miles ahead of Scheer; Jellicoe's Grand Fleet comes south-east sixty miles astern of Beatty. 151 British and 99 German ships.",
+  "brief": "31 May 1916, 14:00 GMT. Beatty's battlecruisers have just turned north to meet the Grand Fleet, unaware of Hipper's scouting groups fifty miles to the east, steaming north with Scheer's High Seas Fleet fifty miles astern of them; Jellicoe's Grand Fleet comes south-east seventy miles to the north. 151 British and 99 German ships.",
   "start": "1916-05-31T14:00",
   "seed": 1916,
-  "camera": [57.0, 5.3, 250],
+  "camera": [56.95, 5.0, 250],
   "sides": ["Britain", "Germany"],
   "player": "Britain",
   // the afternoon of 31 May 1916: good early (the battlecruisers sighted each other at ~14 nm), worse later in
@@ -17,33 +24,38 @@
   "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 },
   "units": [
     // ---------------------------------------------------------------- the Battlecruiser Fleet (Beatty): 52
-    { "name": "Battlecruiser Fleet", "side": 0, "at": [56.82, 4.63], "course": 110, "kn": 19.5, "formation": "abreast", "spacing": 5000,
+    // Lion's squadron in line ahead with the 2nd BCS three miles on its starboard beam, each screened by its destroyers
+    { "name": "Battlecruiser Fleet", "side": 0, "at": [56.767, 4.667], "course": 11, "kn": 19.5, "formation": "abreast", "spacing": 5560,
       "units": [
-        { "name": "5th Battle Squadron", "spacing": 550, "ships": [ { "design": "super_dreadnought", "names": ["Barham", "Valiant", "Warspite", "Malaya"] } ] },
         { "name": "1st Battlecruiser Squadron", "spacing": 550, "ships": [
           { "design": "lion", "names": ["Lion", "Princess Royal"] }, { "design": "queen_mary", "name": "Queen Mary" }, { "design": "tiger_1914", "name": "Tiger" } ] },
         { "name": "2nd Battlecruiser Squadron", "spacing": 550, "ships": [ { "design": "indefatigable", "names": ["New Zealand", "Indefatigable"] } ] } ] },
-    { "name": "Battlecruiser Fleet light cruisers", "side": 0, "at": [56.80, 4.88], "course": 110, "kn": 19.5, "formation": "abreast", "spacing": 13000,
+    { "name": "5th Battle Squadron", "side": 0, "at": [56.844, 4.608], "course": 11, "kn": 19.5, "spacing": 550,
+      "ships": [ { "design": "super_dreadnought", "names": ["Barham", "Valiant", "Warspite", "Malaya"] } ] },
+    // the screen astern, from its eastern end: the 1st LCS, Engadine (between Cordelia and Gloucester), the 3rd LCS,
+    // the 2nd LCS; Yarmouth links it with Lion
+    { "name": "Battlecruiser Fleet light cruisers", "side": 0, "at": [56.84, 5.44], "course": 11, "kn": 19.5, "formation": "echelon-p", "spacing": 37040,
       "units": [
-        { "name": "1st Light Cruiser Squadron", "formation": "abreast", "spacing": 3000, "ships": [ { "design": "arethusa", "names": ["Galatea", "Phaeton", "Inconstant", "Cordelia"] } ] },
-        { "name": "3rd Light Cruiser Squadron", "formation": "abreast", "spacing": 3000, "ships": [
-          { "design": "town_chatham", "names": ["Falmouth", "Yarmouth"] }, { "design": "town_birmingham", "names": ["Birkenhead", "Gloucester"] } ] },
-        { "name": "2nd Light Cruiser Squadron", "formation": "abreast", "spacing": 3000, "ships": [
-          { "design": "town_chatham", "name": "Southampton" }, { "design": "town_birmingham", "names": ["Birmingham", "Nottingham"] }, { "design": "town_chatham", "name": "Dublin" } ] } ] },
-    { "name": "1st Flotilla", "side": 0, "at": [56.86, 4.72], "course": 110, "kn": 19.5, "formation": "abreast", "spacing": 400,
+        { "name": "1st Light Cruiser Squadron", "formation": "echelon-p", "spacing": 9260, "ships": [ { "design": "arethusa", "names": ["Galatea", "Phaeton", "Inconstant", "Cordelia"] } ] },
+        { "name": "3rd Light Cruiser Squadron", "formation": "echelon-p", "spacing": 13890, "ships": [
+          { "design": "town_birmingham", "names": ["Gloucester", "Birkenhead"] }, { "design": "town_chatham", "name": "Falmouth" } ] },
+        { "name": "2nd Light Cruiser Squadron", "formation": "echelon-p", "spacing": 9260, "ships": [
+          { "design": "town_chatham", "name": "Dublin" }, { "design": "town_birmingham", "names": ["Nottingham", "Birmingham"] }, { "design": "town_chatham", "name": "Southampton" } ] } ] },
+    { "name": "Yarmouth", "side": 0, "at": [56.675, 4.706], "course": 11, "kn": 19.5, "ships": [ { "design": "town_chatham", "name": "Yarmouth" } ] },
+    { "name": "Engadine", "side": 0, "at": [56.677, 4.998], "course": 11, "kn": 19.5, "ships": [ { "design": "engadine", "name": "Engadine" } ] },
+    { "name": "1st Flotilla", "side": 0, "at": [56.860, 4.584], "course": 11, "kn": 19.5, "formation": "abreast", "spacing": 400,
       "ships": [ { "design": "scout_cruiser", "name": "Fearless" },
                  { "design": "l_laforey", "names": ["Acheron", "Ariel", "Attack", "Hydra", "Badger", "Goshawk", "Defender", "Lizard", "Lapwing"] } ] },
-    { "name": "13th Flotilla", "side": 0, "at": [56.78, 4.74], "course": 110, "kn": 19.5, "formation": "abreast", "spacing": 400,
+    { "name": "13th Flotilla", "side": 0, "at": [56.784, 4.633], "course": 11, "kn": 19.5, "formation": "abreast", "spacing": 400,
       "ships": [ { "design": "cambrian", "name": "Champion" },
-                 { "design": "m_class", "names": ["Nestor", "Nomad", "Narborough", "Obdurate", "Petard", "Pelican", "Nerissa", "Onslow", "Moresby", "Nicator"] } ] },
-    { "name": "9th and 10th Flotillas", "side": 0, "at": [56.74, 4.66], "course": 110, "kn": 19.5, "formation": "abreast", "spacing": 400,
-      "ships": [ { "design": "l_laforey", "names": ["Lydiard", "Liberty", "Landrail", "Laurel", "Moorsom", "Morris"] },
-                 { "design": "m_class", "names": ["Termagant", "Turbulent"] } ] },
-    { "name": "Engadine", "side": 0, "at": [56.84, 4.55], "course": 110, "kn": 19.5, "ships": [ { "design": "engadine", "name": "Engadine" } ] },
+                 { "design": "m_class", "names": ["Nestor", "Nomad", "Narborough", "Obdurate", "Petard", "Pelican", "Nerissa", "Onslow", "Moresby", "Nicator", "Turbulent", "Termagant"] } ] },
+    { "name": "9th and 10th Flotillas", "side": 0, "at": [56.772, 4.745], "course": 11, "kn": 19.5, "formation": "abreast", "spacing": 400,
+      "ships": [ { "design": "l_laforey", "names": ["Lydiard", "Liberty", "Landrail", "Laurel", "Moorsom", "Morris"] } ] },
 
     // ---------------------------------------------------------------- the Grand Fleet (Jellicoe): 99
-    // the battle fleet in its cruising order, six columns of divisions a mile apart, port to starboard
-    { "name": "Grand Fleet", "side": 0, "at": [57.77, 4.28], "course": 128, "kn": 15, "formation": "abreast", "spacing": 3600,
+    // the battle fleet in organisation No. 5, six columns of divisions a mile apart, port to starboard; Iron Duke leads
+    // the 3rd column in 57°57'N 3°45'E
+    { "name": "Grand Fleet", "side": 0, "at": [57.975, 3.789], "course": 130, "kn": 14, "formation": "abreast", "spacing": 3600,
       "units": [
         { "name": "2nd Battle Squadron", "formation": "abreast", "spacing": 1800, "units": [
           { "name": "1st Division", "spacing": 500, "ships": [ { "design": "king_george_v", "names": ["King George V", "Ajax", "Centurion"] }, { "design": "erin", "name": "Erin" } ] },
@@ -58,65 +70,79 @@
             { "design": "colossus", "name": "Colossus" }, { "design": "st_vincent", "name": "Collingwood" }, { "design": "neptune", "name": "Neptune" }, { "design": "st_vincent", "name": "St Vincent" } ] },
           { "name": "6th Division", "spacing": 500, "ships": [
             { "design": "iron_duke", "name": "Marlborough" }, { "design": "revenge", "name": "Revenge" }, { "design": "colossus", "name": "Hercules" }, { "design": "agincourt", "name": "Agincourt" } ] } ] } ] },
-    { "name": "Cruiser screen", "side": 0, "at": [57.66, 4.95], "course": 128, "kn": 15, "formation": "abreast", "spacing": 11000,
+    // the cruisers 16 miles ahead, 8 apart on a line N 40 E - S 40 W, east to west; Hampshire links 6 miles astern of Minotaur
+    { "name": "Cruiser screen", "side": 0, "at": [58.079, 4.607], "course": 130, "kn": 14, "formation": "abreast", "spacing": 44448,
       "units": [
-        { "name": "2nd Cruiser Squadron", "formation": "abreast", "spacing": 11000, "ships": [
-          { "design": "minotaur", "names": ["Minotaur", "Shannon"] }, { "design": "warrior", "name": "Cochrane" }, { "design": "devonshire", "name": "Hampshire" } ] },
-        { "name": "1st Cruiser Squadron", "formation": "abreast", "spacing": 11000, "ships": [
-          { "design": "minotaur", "name": "Defence" }, { "design": "warrior", "name": "Warrior" }, { "design": "duke_of_edinburgh", "names": ["Duke of Edinburgh", "Black Prince"] } ] } ] },
-    { "name": "4th Light Cruiser Squadron", "side": 0, "at": [57.73, 4.38], "course": 128, "kn": 15, "formation": "abreast", "spacing": 2000,
+        { "name": "2nd Cruiser Squadron", "formation": "abreast", "spacing": 14816, "ships": [
+          { "design": "warrior", "name": "Cochrane" }, { "design": "minotaur", "names": ["Shannon", "Minotaur"] } ] },
+        { "name": "1st Cruiser Squadron", "formation": "abreast", "spacing": 14816, "ships": [
+          { "design": "minotaur", "name": "Defence" }, { "design": "duke_of_edinburgh", "names": ["Duke of Edinburgh", "Black Prince"] }, { "design": "warrior", "name": "Warrior" } ] } ] },
+    { "name": "Hampshire", "side": 0, "at": [57.939, 4.142], "course": 130, "kn": 14, "ships": [ { "design": "devonshire", "name": "Hampshire" } ] },
+    { "name": "4th Light Cruiser Squadron", "side": 0, "at": [57.939, 3.856], "course": 130, "kn": 14, "formation": "abreast", "spacing": 2000,
       "ships": [ { "design": "caroline", "names": ["Calliope", "Constance", "Caroline", "Royalist", "Comus"] } ] },
-    { "name": "Attached cruisers", "side": 0, "at": [57.80, 4.40], "course": 128, "kn": 15, "formation": "abreast", "spacing": 2500,
-      "ships": [ { "design": "scout_cruiser", "names": ["Active", "Bellona", "Blanche", "Boadicea"] } ] },
-    { "name": "4th Flotilla", "side": 0, "at": [57.76, 4.36], "course": 128, "kn": 15, "formation": "abreast", "spacing": 400,
+    // the attached cruisers on the battle fleet's flanks
+    { "name": "Attached cruisers, port", "side": 0, "at": [57.997, 3.812], "course": 130, "kn": 14, "spacing": 1000,
+      "ships": [ { "design": "scout_cruiser", "names": ["Boadicea", "Blanche"] } ] },
+    { "name": "Attached cruisers, starboard", "side": 0, "at": [57.897, 3.653], "course": 130, "kn": 14, "spacing": 1000,
+      "ships": [ { "design": "scout_cruiser", "names": ["Bellona", "Active"] } ] },
+    // the flotillas a screen ahead of the columns
+    { "name": "4th Flotilla", "side": 0, "at": [57.995, 3.883], "course": 130, "kn": 14, "formation": "abreast", "spacing": 400,
       "ships": [ { "design": "flotilla_leader", "names": ["Tipperary", "Broke"] },
                  { "design": "k_acasta", "names": ["Achates", "Porpoise", "Spitfire", "Unity", "Garland", "Ambuscade", "Ardent", "Fortune", "Sparrowhawk", "Contest", "Owl", "Hardy", "Midge"] } ] },
-    { "name": "11th Flotilla", "side": 0, "at": [57.74, 4.32], "course": 128, "kn": 15, "formation": "abreast", "spacing": 400,
+    { "name": "11th Flotilla", "side": 0, "at": [57.950, 3.811], "course": 130, "kn": 14, "formation": "abreast", "spacing": 400,
       "ships": [ { "design": "cambrian", "name": "Castor" }, { "design": "flotilla_leader", "name": "Kempenfelt" },
                  { "design": "m_class", "names": ["Ossory", "Mystic", "Moon", "Morning Star", "Magic", "Mounsey", "Mandate", "Marne", "Minion", "Manners", "Michael", "Mons", "Martial", "Milbrook"] } ] },
-    { "name": "12th Flotilla", "side": 0, "at": [57.72, 4.24], "course": 128, "kn": 15, "formation": "abreast", "spacing": 400,
+    { "name": "12th Flotilla", "side": 0, "at": [57.902, 3.735], "course": 130, "kn": 14, "formation": "abreast", "spacing": 400,
       "ships": [ { "design": "flotilla_leader", "names": ["Faulknor", "Marksman"] },
                  { "design": "m_class", "names": ["Obedient", "Maenad", "Opal", "Mary Rose", "Marvel", "Menace", "Nessus", "Narwhal", "Mindful", "Onslaught", "Munster", "Nonsuch", "Noble", "Mischief"] } ] },
-    { "name": "Fleet tenders", "side": 0, "at": [57.81, 4.22], "course": 128, "kn": 15, "formation": "abreast", "spacing": 600,
+    { "name": "Fleet tenders", "side": 0, "at": [57.965, 3.692], "course": 130, "kn": 14, "formation": "abreast", "spacing": 600,
       "ships": [ { "design": "abdiel", "name": "Abdiel" }, { "design": "l_laforey", "name": "Oak" } ] },
-    // Hood's battlecruisers, ordered ahead to join Beatty
-    { "name": "3rd Battlecruiser Squadron", "side": 0, "at": [57.55, 5.15], "course": 135, "kn": 22, "formation": "column", "spacing": 2500,
+    // Hood's battlecruisers about 20 miles ahead, Canterbury 5 miles ahead of them and Chester out on her starboard beam
+    { "name": "3rd Battlecruiser Squadron", "side": 0, "at": [57.730, 4.221], "course": 130, "kn": 14, "formation": "column", "spacing": 2500,
       "units": [
         { "name": "3rd Battlecruisers", "spacing": 550, "ships": [ { "design": "invincible", "names": ["Invincible", "Inflexible", "Indomitable"] } ] },
         { "name": "3rd BCS destroyers", "formation": "abreast", "spacing": 500, "ships": [ { "design": "k_acasta", "names": ["Shark", "Acasta", "Ophelia", "Christopher"] } ] } ] },
-    { "name": "3rd BCS light cruisers", "side": 0, "at": [57.47, 5.32], "course": 135, "kn": 22, "formation": "abreast", "spacing": 5000,
-      "ships": [ { "design": "town_birmingham", "name": "Chester" }, { "design": "cambrian", "name": "Canterbury" } ] },
+    { "name": "3rd BCS light cruisers", "side": 0, "at": [57.676, 4.341], "course": 130, "kn": 14, "formation": "abreast", "spacing": 9260,
+      "ships": [ { "design": "cambrian", "name": "Canterbury" }, { "design": "town_birmingham", "name": "Chester" } ] },
 
     // ---------------------------------------------------------------- the scouting forces (Hipper): 40
-    { "name": "1st Scouting Group", "side": 1, "at": [56.92, 6.00], "course": 345, "kn": 16, "formation": "column", "spacing": 500,
+    // the battlecruisers in line ahead, the II Scouting Group 6 miles ahead on a 16-mile front (Elbing the western
+    // wing), the torpedo boats nearer in
+    { "name": "1st Scouting Group", "side": 1, "at": [56.733, 6.230], "course": 0, "kn": 16, "formation": "column", "spacing": 500,
       "ships": [ { "design": "derfflinger", "names": ["Lützow", "Derfflinger"] }, { "design": "seydlitz", "name": "Seydlitz" },
                  { "design": "moltke", "name": "Moltke" }, { "design": "von_der_tann", "name": "Von der Tann" } ] },
-    { "name": "2nd Scouting Group", "side": 1, "at": [57.04, 5.70], "course": 345, "kn": 16, "formation": "abreast", "spacing": 6000,
+    { "name": "2nd Scouting Group", "side": 1, "at": [56.833, 5.986], "course": 0, "kn": 16, "formation": "abreast", "spacing": 9877,
       "ships": [ { "design": "pillau", "names": ["Elbing", "Pillau"] }, { "design": "wiesbaden", "names": ["Frankfurt", "Wiesbaden"] } ] },
-    { "name": "Scouting torpedo boats", "side": 1, "at": [56.96, 5.88], "course": 345, "kn": 16, "formation": "abreast", "spacing": 2500,
+    { "name": "Scouting torpedo boats", "side": 1, "at": [56.775, 6.107], "course": 0, "kn": 16, "formation": "abreast", "spacing": 4000,
       "units": [
         { "name": "Regensburg", "ships": [ { "design": "graudenz", "name": "Regensburg" } ] },
         { "name": "II Flotilla", "formation": "abreast", "spacing": 300, "ships": [
-          { "design": "b97", "names": ["B98", "B97", "B109", "B110", "B111", "B112"] }, { "design": "g101", "names": ["G101", "G102", "G103", "G104"] } ] },
+          { "design": "b97", "names": ["B98", "B97", "B111", "B112"] }, { "design": "g101", "names": ["G101", "G102", "G103", "G104"] } ] },
         { "name": "VI Flotilla", "formation": "abreast", "spacing": 300, "ships": [
           { "design": "v25", "names": ["G41", "V44", "G87", "G86", "V69", "V45", "V46", "S50", "G37"] } ] },
         { "name": "IX Flotilla", "formation": "abreast", "spacing": 300, "ships": [
           { "design": "v25", "names": ["V28", "S51", "V26", "S52", "V30", "S34", "S33", "S36", "V29", "S35", "V27"] } ] } ] },
 
+    // sent west by Elbing to examine the Danish steamer N. J. Fjord, lying stopped between the screens; Galatea sights
+    // them there
+    { "name": "B109 and B110", "side": 1, "at": [56.845, 5.960], "course": 280, "kn": 18, "route": [[56.86, 5.80], [57.05, 6.05]],
+      "ships": [ { "design": "b97", "names": ["B109", "B110"] } ] },
+
     // ---------------------------------------------------------------- the High Seas Fleet (Scheer): 59
-    // one line ahead: the III Squadron leading, the flagship, the I Squadron, the pre-dreadnoughts last
-    { "name": "High Seas Fleet", "side": 1, "at": [56.30, 6.36], "course": 345, "kn": 14, "formation": "column", "spacing": 900,
+    // fifty miles astern of Hipper, one line ahead: the III Squadron leading, the flagship, the I Squadron, the
+    // pre-dreadnoughts last; the 4th Scouting Group and the torpedo boats screening ahead
+    { "name": "High Seas Fleet", "side": 1, "at": [55.900, 6.220], "course": 0, "kn": 14, "formation": "column", "spacing": 900,
       "units": [
         { "name": "III Squadron", "spacing": 500, "ships": [
-          { "design": "konig", "names": ["König", "Grosser Kurfürst", "Markgraf", "Kronprinz"] }, { "design": "kaiser", "names": ["Kaiser", "Prinzregent Luitpold", "Kaiserin"] } ] },
+          { "design": "konig", "names": ["König", "Grosser Kurfürst", "Kronprinz", "Markgraf"] }, { "design": "kaiser", "names": ["Kaiser", "Kaiserin", "Prinzregent Luitpold"] } ] },
         { "name": "Fleet flagship", "ships": [ { "design": "kaiser", "name": "Friedrich der Grosse" } ] },
         { "name": "I Squadron", "spacing": 500, "ships": [
           { "design": "helgoland", "names": ["Ostfriesland", "Thüringen", "Helgoland", "Oldenburg"] }, { "design": "nassau_1916", "names": ["Posen", "Rheinland", "Nassau", "Westfalen"] } ] },
         { "name": "II Squadron", "spacing": 500, "ships": [
           { "design": "deutschland_1906", "names": ["Deutschland", "Pommern", "Schlesien", "Schleswig-Holstein", "Hannover"] }, { "design": "hessen", "name": "Hessen" } ] } ] },
-    { "name": "4th Scouting Group", "side": 1, "at": [56.42, 6.22], "course": 345, "kn": 14, "formation": "abreast", "spacing": 5000,
+    { "name": "4th Scouting Group", "side": 1, "at": [55.983, 6.059], "course": 0, "kn": 14, "formation": "abreast", "spacing": 5000,
       "ships": [ { "design": "stettin", "names": ["Stettin", "München", "Stuttgart"] }, { "design": "gazelle", "names": ["Hamburg", "Frauenlob"] } ] },
-    { "name": "Battle fleet torpedo boats", "side": 1, "at": [56.36, 6.42], "course": 345, "kn": 14, "formation": "abreast", "spacing": 2500,
+    { "name": "Battle fleet torpedo boats", "side": 1, "at": [55.933, 6.072], "course": 0, "kn": 14, "formation": "abreast", "spacing": 4000,
       "units": [
         { "name": "Rostock", "ships": [ { "design": "karlsruhe", "name": "Rostock" } ] },
         { "name": "I Half-Flotilla", "formation": "abreast", "spacing": 300, "ships": [ { "design": "v1", "names": ["S32", "G39", "G40", "G38"] } ] },

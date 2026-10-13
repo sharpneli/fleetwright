@@ -5,7 +5,7 @@
   "name": "Ladder 2: the scouting forces",
   "brief": "The scale test's second rung: Beatty's Battlecruiser Fleet against Hipper's scouting groups, from the Jutland at 14:00 GMT; 92 ships.",
   "from": "jutland",
-  "only": [ "Battlecruiser Fleet", "Battlecruiser Fleet light cruisers", "1st Flotilla", "13th Flotilla", "9th and 10th Flotillas", "Engadine",
-            "1st Scouting Group", "2nd Scouting Group", "Scouting torpedo boats" ],
+  "only": [ "Battlecruiser Fleet", "5th Battle Squadron", "Battlecruiser Fleet light cruisers", "Yarmouth", "1st Flotilla", "13th Flotilla", "9th and 10th Flotillas", "Engadine",
+            "1st Scouting Group", "2nd Scouting Group", "Scouting torpedo boats", "B109 and B110" ],
   "camera": [56.9, 5.3, 120]
 }
