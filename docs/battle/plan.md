@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). Step 3, seeing and knowing, was agreed and built 2026-10-13 (3.1 relations, encounters, the player's interest; 3.2 sighting and pictures), with what it leaves open listed after 3.2. The time rework was agreed 2026-10-13 (the asked speed picks the clock tier, `docs/world/architecture.md` "The speed picks the tier"): 2.8, coarse motion, is next, then step 4, fighting.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). Step 3, seeing and knowing, was agreed and built 2026-10-13 (3.1 relations, encounters, the player's interest; 3.2 sighting and pictures), with what it leaves open listed after 3.2. The time rework was agreed 2026-10-13 (the asked speed picks the clock tier, `docs/world/architecture.md` "The speed picks the tier") and 2.8, coarse motion, was built the same day (what it leaves open is under 2.8, "Carried on"). Step 4, fighting, is next.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -954,8 +954,8 @@ them, the group commands' derails in `GroupSystem` and the polar cap tested in t
   whose guide squadron was all nudged out still has a guide and goes on rails; a waypoint given twice on rails is
   passed over (a loop all at one point was an event a millisecond for ever).
 - The refactor changed no simulated number in the rails, formation and force tests.
-- **By zoom: an EXCEPTION, to go in 2.8** (the user, 2026-10-13: the coarse tier makes forming up cheap at speed,
-  so the zoom is no longer needed). As it stands until then: the sim is independent of display state, a hard rule
+- **By zoom: an EXCEPTION, gone in 2.8e** (the user, 2026-10-13: the coarse tier makes forming up cheap at speed,
+  so the zoom is no longer needed). As it stood until then: the sim is independent of display state, a hard rule
   (docs/world/architecture.md, "Terms"); this is the one break in it, and there are to be no more. A formation seen
   snapping into place is jarring until the clock is massive, but once only its marker shows it's fine. To revisit:
   hide the snap better on screen so the dependency can go. The map tells the world its scale
@@ -1505,6 +1505,71 @@ comes in step 4, after the fine fire ("4.9").
 *To settle at the step's start:* where the acceleration comes from (the handling's power ramp and curve, or the fine
 trials' time to speed), whether a turn's speed loss is left out or kept as a constant factor, and lone followers and
 shadowers (not in a group) at one decision a minute.
+
+**2.8 done (2026-10-13).** Settled at its start (the user): near land, push a ship back out along the coast's normal
+(turning in place is fine; being that close is the player's mistake, and a forgotten squadron hugging the coast
+mustn't drop the speed); a formation entering coarse doesn't jump to its stations, its ships steer back as usual; the
+switch between coarse and fine must be smooth when zoomed in; reuse the rails' code with performance in mind.
+- **2.8a** `ShipStore`'s rails flag is a `ClockTier` (Fine, Coarse, Rails) with a coarse list beside the fine one;
+  `CoarseMinSpeed` (240x) and `CoarseStepMs` (a minute); the snapshot's `Tier`.
+- **2.8b Coarse motion** (`CoarseMotion`, `Earth.Circle`). A coarse ship is an anchored segment, as rails are: a
+  constant acceleration toward what its power holds, and an exact arc of its course rudder's circle or a straight leg
+  (rhumb line on a course, great circle for a waypoint), ending when its turn or change of speed is done or at a
+  waypoint's wheel-over; the end is an event that lays the next. The helm is the fine helmsman's (a route's turn is
+  the tangent to the next waypoint, solved in the tangent plane). Laid again every 7 s, a turn and a route of three
+  legs end 0.005 mm from laying them only at their ends, so the step changes nothing about where ships go. Each
+  class's three accelerations (working up, slowing, astern) are the fine model's own over its trials, run once per
+  class at a 1 s step (Bismarck 0 -> 90% in 266 s, as `shipgen trials`); a turn's speed loss is left out.
+- **2.8c The tier in the world** (`ShipSystem.Rails.cs` is `ShipSystem.Tiers.cs`). The asked speed crossing 240x
+  moves every ship off rails across where it is (the drawn pose moves 0 mm; coarse to fine carries the swing and the
+  rudder on, and the power the speed needs). Coming off rails, a ship goes to the speed's tier. The coarse step does
+  the fine tick's contacts, encounters, rails check and a sighting look over the step; a manoeuvre's end goes on rails
+  exactly. AI layers whose ships are coarse think once a step. A coarse ship holding a course looks for polar caps
+  each step (a cap event days ahead at every re-lay piled up thousands of stale events in a long fight).
+- **Captains at a minute:** the fine tick's station keeping (its trail, its gains) swung ±30° and ran away at one
+  decision a minute. A coarse captain keeping station, following or shadowing steers for where the station will be
+  `CoarseRendezvousSteps` (2) steps on, at the speed that gets him there (`Behaviours.Rendezvous`): a column spawned
+  400 m out of station closes in 10 minutes and goes on rails (7 at 1x), nobody over 17 kn.
+- **2.8d Riding the guide's track.** A group's coarse ships ride their guide once in station, at their offsets as they
+  are; each coarse guide keeps its last `CoarseTrackSegments` (16) segments, and a rider sits on that track at its
+  distance astern and across it at its distance abeam, so a column turns in succession (the last of four passes 13 m
+  from where the guide began its turn). A ship joins only where its guide's straight leg reaches back past it, so
+  nothing jumps.
+- **2.8e The land, the zoom, the drawing.** Coarse ships slide on the fine tick's feeler, turned at once onto its line
+  for legs as rails do at 10,000x, each segment traced and cut short of the coast; a backstop at each segment's end and
+  each step pushes anything inside its minimum out along the coast's normal (riders come off their guide for it).
+  The map-scale exception is gone (`Command.SetViewScale`, `World.ViewMetresPerPixel`, `Watched`,
+  `RailsPlaceUnwatchedMinSpeed`, `RailsWatchedPx`, the CLI's `--view`): placing on rails is the clock's alone; with
+  the scale hashed as 0 the hashes didn't move. The snapshot carries a coarse ship's turn end, and the renderer carries
+  poses on along the exact circle (`Earth.Circle`, not a tick's chord) to it and straight after.
+- **Checked** (`CoarseMotionTests`, `CoarseTierTests`): the accelerations against the trials at the fine tick (3%);
+  the same track laid often or seldom; a route's waypoints passed as the helmsman does; the coarse tactical diameter
+  772 m against fine's 923 m (no swing to build, no speed lost); switching mid-turn moves nothing; a route coarse stays
+  within 1.4 of its turning circles of the fine track (the fine ship runs on ~25 s at each wheel-over before its swing
+  builds, so it enters each leg wider), its last course 1.6° apart; a column back into station and riding; coarse ships
+  meeting, opening an encounter and seeing each other; replays and odd cuts with speed changes the same; 40 coarse
+  ships zigzagging in an encounter allocate nothing; destroyers dodging about the Skagerrak six hours at 1,000x and
+  5,000x never on land (one look in 25,920 had one 5 m inside its minimum, before the backstop); coarse slides end
+  10-661 m from the fine tick's; a mid-turn snapshot drawn exactly to the turn's end.
+- **Tests changed:** those waiting 5-60 s at 10,000x for a rails check wait for the coarse step; the zoom's two tests
+  are gone with it. `RailAt` sets the helm to the guide's course (a gathered ship placed on rails at the same step as
+  its captain's first think kept steering for its old waypoint).
+- **Measured** (Release, headless, three hours of the Jutland; the runs at different speeds play out differently, and
+  the machine's noise is large): 1x 789x at full tilt (the fine tick's); 240x-30,000x asked, coarse, 9,000-22,000x at
+  full tilt. Sighting leads, 1.5-3.7 ms a look once a minute against 0.3 ms a second on the fine tick (the encounters
+  are bigger in these runs). The 2,000-ship world with the Jutland in it at 30,000x: 17,873x (2.7 had it at ~2,000x on
+  the fine tick). The 1x hashes after 30 minutes: ladder-2 `801C6289A93D9EE8`, Jutland `F718D1DA361E57CD`.
+
+**Carried on from 2.8:**
+- **A Jutland in coarse at 30,000x** isn't kept yet (9,000-22,000x): the minute's sighting look over a big encounter
+  (the job system, or the look's own cost; a coarse look every few steps is the cheap way, at the cost of a later
+  first sighting).
+- **The helm's lag in coarse:** coarse turns begin at once, fine ones ~25 s later on a wider circle; a straight run of
+  the lag before each coarse turn would bring the tracks to within a ship's length or so, if wanted.
+- **A turn's speed loss** is left out in coarse.
+- **Stale rails events:** a unit laid on rails again and again (an order a minute below the snap speed) leaves a
+  polar-cap event days ahead each time, as before 2.8; coarse ships no longer do.
+- **The dynamic threshold** for slow machines (a logged host command), when it's wanted.
 
 ### 3. Seeing and knowing
 

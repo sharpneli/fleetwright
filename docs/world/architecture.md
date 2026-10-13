@@ -28,8 +28,8 @@ docs keep them apart (the user, 2026-10-12):
 - **The sim is independent of display state: a hard rule, with no exceptions.** What the world does mustn't depend
   on what a screen shows. Until 2026-10-13 the map's scale reached the rails (`Command.SetViewScale`): a group drawn
   as one marker was snapped onto rails at any speed, while one drawn ship by ship formed up first, because forming
-  up on the fine tick held the clock down. The coarse tier makes forming up cheap at speed, so that exception goes
-  with it (docs/battle/plan.md step 2.8). **None may come back.**
+  up on the fine tick held the clock down. The coarse tier makes forming up cheap at speed, so that exception went
+  with it (docs/battle/plan.md step 2.8e). **None may come back.**
 - **The asked speed is a sim input** (the user, 2026-10-13): the player asking the sim to drop precision and run
   faster. It's world state, set by logged commands, so a replay holds. The same orders at different speeds may give
   different results. That's accepted for the player's experience.
@@ -120,8 +120,10 @@ The tier a ship is in depends on what it's doing and on the asked speed. The rul
   the ship's turning circle for its rudder (as in Rule the Waves). When a turn or a change of speed ends is solved
   in closed form, so a pose can be evaluated at any instant, as on rails. The step (a minute) sets only how often
   captains and admirals decide, ships look and guns fire. A kinematic ship is exactly steady the moment its manoeuvre
-  ends, so coarse hands over to rails at once and exactly. A group's ships ride their guide: a column on its track,
-  other formations at their stations.
+  ends, so coarse hands over to rails at once and exactly. A group's ships ride their guide while in station, on its
+  track at their distances astern and abeam (a column turns in succession); out of station, their captains steer for
+  where the station will be two steps on. Near land a coarse ship slides on the fine tick's feeler, turned at once
+  onto its line, and anything inside its minimum is pushed back out along the coast's normal.
 - **The asked speed, never the achieved one.** The asked speed is world state set by logged commands, so a replay
   that stores when the speed changed gives the same world. The achieved speed depends on the machine.
 - **Important encounters drop the speed as an alert** (the interest table, "Conflicts" 3), so the player can react

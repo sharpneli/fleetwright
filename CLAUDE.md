@@ -280,11 +280,13 @@ Namespaces follow the project names: `Fleetwright`, `Fleetwright.Gpu`, `Fleetwri
 The sim's layers are projects, so the compiler keeps their direction: `Fleetwright.Sim.Core` references nothing,
 `Fleetwright.Sim.Ships` references Core and `Fleetwright.Shipgen` (the only sim layer that does), the world
 (`Fleetwright.Sim`) references Core and `Fleetwright.Sim.Combat` (ships at sea, step 2.2), which references Core
-and Ships. Ships steaming steady go on the rails clock tier (step 2.5): read a ship's pose through `ShipState`
-(it evaluates rails at the world's time), never the store's columns, and take a ship off rails before changing it
+and Ships. Ships steaming steady go on the rails clock tier (step 2.5); off rails the asked speed picks the tier,
+coarse (kinematic segments, `CoarseMotion`, decided once a coarse step) at 240x and up, fine below (step 2.8): every
+rule for which tier is in `ShipSystem.Tiers.cs`. Read a ship's pose through `ShipState` (it evaluates rails and coarse
+segments at the world's time), never the store's columns, and take a ship off rails before changing it
 (`ShipSystem.Derail`; every command does, unless the clock is fast enough to snap it on rails: `ShipSystem.Snap`). Opposing
-sides (a side per ship) within the encounter range are on the fine tick, solved from the rails (`ShipSystem.Contacts.cs`). Zoom bands (the map's Globe ... Tactical, Ship: drawing only) and clock tiers (the sim's Routine, Rails,
-Coarse, Fine: how time advances) are different things (`docs/world/architecture.md` "Terms"). The world
+sides (a side per ship) within the encounter range are off rails, solved from the rails (`ShipSystem.Contacts.cs`). Zoom bands (the map's Globe ... Tactical, Ship: drawing only) and clock tiers (the sim's Routine, Rails,
+Coarse, Fine: how time advances) are different things (`docs/world/architecture.md` "Terms"); nothing in the sim reads the map. The world
 rests its clock only on a moment's boundary, so commands replay exactly; a world system is an `IWorldSystem` with its
 events as plain structs, and nothing in a step allocates (the tests check it).
 
