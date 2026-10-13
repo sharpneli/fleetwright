@@ -2,7 +2,8 @@
 
 2026-10-13. Status: **a draft to iterate with the user.** It details step 4 of `docs/battle/plan.md` ("Fighting"),
 keeping its numbers (other docs cite 4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the scaffold) and
-4.10 (scale). Nothing here is agreed until the user says so; "Questions to settle" lists what's open.
+4.10 (scale). The user settled four of its questions on 2026-10-13 ("Decisions" at the end, folded into the steps);
+"Questions to settle" lists what's still open.
 
 ## The aim
 
@@ -212,9 +213,13 @@ superstructure and other parts, the hull, and inside it the armour and the cells
   The first crossing gives the face (side or top) and the obliquity.
 - **A miss returns where it met the water,** and how far short of, over or beside the hull it fell. Splashes,
   spotting and later near misses and diving shells read it.
-- **v0 is `ShellTest`'s tracer,** generalised from "did it reach the citadel" to "everything it crossed", and kept to
-  the ship's box. It's proven against the old tool shot by shot. Exact crossings (planes, prisms, tubes, the hull's
-  own ray) are a 4.5 iteration, checked against v0 shot by shot, as plan.md asked of 4.1.
+- **v0 is `ShellTest`'s tracer, refactored into the one tracer** (decision 3): generalised from "did it reach the
+  citadel" to "everything it crossed", and kept to the ship's box. **There's one implementation:** the hit query is
+  the tracer, and `shell-test` and its tests become callers of it, not owners of a tracer of their own. Its results
+  are already proven against the old tool shot by shot.
+- **Exact crossings** (planes, prisms, tubes, the hull's own ray) are a 4.5 iteration that replaces the stepping
+  inside the same tracer. They're checked against the stepping version's recorded results shot by shot, not against
+  a second implementation kept alive beside it.
 - **To look at:** `shipgen shell-test --path` prints paths. In the hitbox tab, a click fires a ray at the ship and
   draws what it crossed (the debugging view every later damage iteration will want).
 - **Tests:**
@@ -297,18 +302,22 @@ superstructure and other parts, the hull, and inside it the armour and the cells
 - **`Engage(unit, contact)`** puts a ship's batteries on a contact. Given to a group, its admiral distributes fire
   over the enemy's line near that contact: v0 counts from the van, ship k on enemy k. **`HoldFire(unit)`** and
   **`FireAtWill(unit)`** go with it.
-- **Fire at will:** the captain picks the nearest enemy his navy holds in sight in each battery's arcs, and keeps it
-  until it's lost or another is much closer (no flicking between targets). Secondaries pick their own, smallest
-  first. Captains are already layers at 1 Hz; this adds a few comparisons.
+- **Fire at will is the default** for every ship, the player's and the AI's (decision 1). The captain picks the
+  nearest contact his navy holds in sight in each battery's arcs, and keeps it until it's lost or another is much
+  closer (no flicking between targets). Secondaries pick their own, smallest first. Captains are already layers at
+  1 Hz; this adds a few comparisons.
+- **An unidentified contact is fired on** (decision 1): a ship not yet made out may be an enemy that really is there.
+  Richer standing orders (rules of engagement per fleet: hold fire on the unidentified, on neutrals' waters, and so
+  on) come later, when there are more sides and they start to matter (5.1).
 - **A battery fires only at a contact** its navy's picture holds and its director (or a mount's eye) sees.
 - **On the world tab:**
   - the strip's weapons row: fire at will, hold fire, engage (a click on a contact);
   - per battery: target, state (no target, tracking, firing, not bearing, local control), salvos and hits;
   - target lines from the ship to what it engages;
   - the selected ship's shells and splashes.
-- **In the coarse tier guns are silent until 4.9:** a fight at 240x and up doesn't fire, and the clock panel says so.
-  Encounters pause the clock at 1x by default, so the first fights are seen at 1x. That's a gameplay rule relaxed for
-  a few steps and restored in 4.9 (end-goal rules).
+- **In the coarse tier guns are silent until 4.9** (decision 4): a fight at 240x and up doesn't fire, and the clock
+  panel says so. Encounters pause the clock at 1x by default, so the first fights are seen at 1x. That's a gameplay
+  rule relaxed for a few steps and restored in 4.9 (end-goal rules).
 - **Playable:** two squadrons engage each other, turrets train, salvos straddle, hits flash.
 
 ### 4.3 Damage v0: what a hit does, and sinking
@@ -481,8 +490,18 @@ form, not stepped), so a ship still flooding or burning goes on at speed and sin
 As plan.md has it (agreed 2026-10-13): at the coarse step, expected hits from the range, the fire-control level, the
 guns, and the target's size and aspect (`quick_hit_probability` and the MPI-by-salvo table, `fire-control-research.md`
 §8.3, §12.2), sampled from the seeded stream, with no shells in flight. Each hit goes through 4.1 and 4.3 like a fine
-one. Misses can be sampled as splashes for the screen. **It's calibrated against the fine fire:** the same scenarios
-run many times both ways, comparing hits, sinkings and duration, a kept test. Guns fire at any speed from here on.
+one. Misses can be sampled as splashes for the screen. Guns fire at any speed from here on.
+
+- **The tables come from the fine chain** (decision 2): the fine fire is run headless many times over (`shipgen duel`
+  across ranges, levels, guns, targets and their manoeuvres) to build coarse fire's tables, rather than taking the
+  research's tables as they are. The research's numbers are the cross-check.
+- **It's calibrated against the fine fire:** the same scenarios run many times both ways, comparing hits, sinkings and
+  duration, a kept test.
+- **To work out at the step's start: evasion in coarse.** Coarse motion is kinematic arcs a minute long, so a ship's
+  zigzags, chased salvos and steady turns aren't in its track the way the fine fire sees them. How evasive action
+  enters the coarse tables (an order's style as an input to the table, the coarse track's own turns, or both) is open.
+- **A fight at high compression gets a background rumble** (decision 4): some sound for a fight going on at speed, so
+  the player knows of it without seeing salvos. Its design is open (with the UI, 5.2).
 
 ### 4.10 Scale: a Jutland that fights
 
@@ -536,23 +555,26 @@ Placeholders in `DesignerPlaceholders.cs` until shipgen gives them, listed in pl
 
 ## Questions to settle (for the user)
 
-1. **Fire at will by default?** Proposed: yes for the AI's ships; for the player's too, with hold fire one click away
-   (Rule the Waves' way). Or the player's ships hold fire until told.
-2. **Fire control v0's depth:** proposed, the spine of `engage()` (measure, track, solve, lay, spot: each stage short),
-   because those stages are the seams later iterations work in. The cheaper way is the quick tier (the MPI by salvo
-   number around the picture's estimate), but that hides the causes; it's kept for coarse fire (4.9).
-3. **The hit query v0:** proposed, `ShellTest`'s proven stepping tracer behind the `Path` contract, with exact
-   crossings an iteration. Or exact crossings now, as plan.md's 4.1 said.
-4. **Systems v0:** proposed, direct dependencies over the class's existing links (Model A), the service networks
+1. **Systems v0:** proposed, direct dependencies over the class's existing links (Model A), the service networks
    later (they need the designer to emit networks).
-5. **The fire-control level:** proposed, from the design's fit through a placeholder table, with crew quality a
+2. **The fire-control level:** proposed, from the design's fit through a placeholder table, with crew quality a
    side's knob in the scenario. Or a level per side set by the scenario.
-6. **Sinking:** proposed, a sinking ship stays for `SinkingMs` (a few minutes; under one for a magazine), drawn going
+3. **Sinking:** proposed, a sinking ship stays for `SinkingMs` (a few minutes; under one for a magazine), drawn going
    down, then is dropped; its record stays in the log.
-7. **Guns silent in the coarse tier until 4.9:** acceptable for those steps?
-8. **Order:** 4.6 (torpedoes) before 4.3 (damage)? Torpedo boats are central to the era, but torpedoes need the
+4. **Order:** 4.6 (torpedoes) before 4.3 (damage)? Torpedo boats are central to the era, but torpedoes need the
    damage model to mean anything, so proposed after the first pass.
 
 ## Decisions
 
-None yet.
+The user's, 2026-10-13:
+
+1. **Fire at will is the default** for now, for the player's ships and the AI's. More complex standing orders for
+   fleets come later; they start to matter when there are more sides. An unidentified target is fired on: it may be
+   a real enemy where none was expected (Japanese torpedo boats in the English Channel: maybe this time they really are
+   there).
+2. **The fine tier gets the full fire-control chain** (measure, track, solve, lay, spot). It's then simulated
+   at length to build coarse fire's tables (4.9). How evasive action works in coarse is still to be worked out.
+3. **The hit query is `ShellTest`'s tracer, refactored into the one tracer;** `shell-test` and the tests use it.
+   **Single implementation is an important principle:** no second tracer kept beside it, even as a reference.
+4. **Guns are silent in the coarse tier until 4.9.** Some rumbling background sound for fights at high time
+   compression is to be worked out.
