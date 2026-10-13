@@ -59,6 +59,9 @@
   "RailsGroupHeadingDeg": 2,
   "RailsGroupStationM": 50,
   "RailsSnapMinSpeed": 10000,
+  "RailsLandHorizonM": 500000,
+  "RailsLandMarginM": 2000,
+  "RailsLandOnFactor": 2,
   "RailsPlaceUnwatchedMinSpeed": 1,
   "RailsWatchedPx": 30,
 

@@ -26,7 +26,7 @@ public enum ShipCommand : ushort
 public sealed partial class ShipSystem : IWorldSystem
 {
     public const byte Id = 1;
-    const ushort Tick = 1, RailsWaypoint = 2, PolarEntry = 3, PolarExit = 4, ContactCheck = 5, ContactScan = 6;
+    const ushort Tick = 1, RailsWaypoint = 2, PolarEntry = 3, PolarExit = 4, ContactCheck = 5, ContactScan = 6, LandAhead = 7, LandRecheck = 8;
 
     readonly SimSettings settings;
     readonly List<int> used = [];   // the registry ids ships have been made of, in the order first used
@@ -204,6 +204,11 @@ public sealed partial class ShipSystem : IWorldSystem
         if (e.Code is RailsWaypoint or PolarEntry or PolarExit)
         {
             RailsEvent(world, e);
+            return;
+        }
+        if (e.Code is LandAhead or LandRecheck)
+        {
+            LandEvent(world, e);
             return;
         }
         nextTickMs = -1;

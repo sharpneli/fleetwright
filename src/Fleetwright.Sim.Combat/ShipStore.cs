@@ -276,6 +276,9 @@ public sealed class ShipStore
     /// <summary>The slot of the ship a ship rides on rails (its group's guide), or -1.</summary>
     public int RidingOn(int slot) => rails[slot] ? railGuide[slot] : -1;
 
+    /// <summary>How far abeam of its guide a ship rides on rails, metres, either side (0 on rails of its own, or off).</summary>
+    public double RailAbeamM(int slot) => rails[slot] && railGuide[slot] >= 0 ? Math.Abs(railY[slot]) : 0;
+
     /// <summary>How far a ship rides from its guide on rails, metres (0 on rails of its own, or off rails).</summary>
     public double RailOffsetM(int slot) => rails[slot] && railGuide[slot] >= 0 ? Math.Sqrt(railX[slot] * railX[slot] + railY[slot] * railY[slot]) : 0;
 

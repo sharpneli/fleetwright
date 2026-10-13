@@ -9,16 +9,17 @@ namespace Fleetwright.Sim.Tests;
 /// <summary>The rails clock tier (docs/battle/plan.md step 2.5): ships and groups steaming steady go on rails and the fine
 /// tick stops; an order brings them back exactly where they are; rails agree with the fine tick (rhumb lines for a course
 /// held, great circles for a route's legs, the turns at waypoints instantaneous); groups keep their distances exactly;
-/// 2,000 ships steam a year in seconds; runs repeat bit for bit.</summary>
+/// 2,000 ships steam a year in seconds, in the Pacific with the land in (docs/world/terrain-plan.md S2: where there's
+/// room; the tests that must cross land run in a world of water); runs repeat bit for bit.</summary>
 public class RailsTests(ITestOutputHelper output)
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
     const double Lat = 56.5, Lon = 4.0;
 
-    static (World W, int Class) Make(SimSettings? s = null, string design = "dreadnought")
+    static (World W, int Class) Make(SimSettings? s = null, string design = "dreadnought", bool land = false)
     {
-        var w = new World(Start, 9, s ?? Settings);
+        var w = new World(Start, 9, s ?? Settings, shore: land ? TestLand.Shore : null);
         _ = new AiSystem(w);
         return (w, w.Ships.AddClass(Fleet.Get(design).Class!));
     }
@@ -159,14 +160,18 @@ public class RailsTests(ITestOutputHelper output)
         Assert.All(new[] { 1, 2, 3, 4 }, e => Assert.False(Ship(w, e).OnRails));
     }
 
-    /// <summary>n ships patrolling back and forth along their headings, a leg a day, for <paramref name="days"/>.</summary>
-    static World Patrol(int n, int days, int[]? cuts = null, int sides = 1)
+    /// <summary>n ships patrolling back and forth along their headings, a leg a day, for <paramref name="days"/>: with
+    /// the land, in the Pacific, 35°S to 35°N and 170°W to 140°W, a day's leg clear of the continents (its islands slide
+    /// them); in a world of water, round the globe from 40°S to 40°N.</summary>
+    static World Patrol(int n, int days, int[]? cuts = null, int sides = 1, bool land = true)
     {
         var s = Settings with { RouteCapacity = days + 2, ShipCapacity = n };
-        var (w, c) = Make(s, "destroyer");
+        var (w, c) = Make(s, "destroyer", land);
         for (int i = 0; i < n; i++)
         {
-            double lat = -40 + 80.0 * (i / 50) / Math.Max(1, (n - 1) / 50), lon = -170 + 6.8 * (i % 50), hdg = (i * 37) % 360;
+            // in a world of water, round the globe from 170°W, as 2.5 laid them
+            double lat = land ? -35 + 70.0 * (i / 50) / Math.Max(1, (n - 1) / 50) : -40 + 80.0 * (i / 50) / Math.Max(1, (n - 1) / 50);
+            double lon = land ? -170 + 30.0 * (i % 50) / 49 : -170 + 6.8 * (i % 50), hdg = (i * 37) % 360;
             w.Apply(ShipSystem.Spawn(c, lat, lon, hdg, 15, (byte)(i % Math.Max(sides, 1))));
             var a = Earth.Position(lat, lon);
             var f = Earth.Forward(a, hdg);
@@ -186,11 +191,14 @@ public class RailsTests(ITestOutputHelper output)
         return w;
     }
 
+    /// <summary>In a world of water: a ship going round an island is on the fine tick until it's clear (terrain plan
+    /// S2), hours of it at Hawaii, so with the land in a year takes far too long. S3 slides on rails, and brings the
+    /// land back into this test.</summary>
     [Fact]
     public void Two_thousand_ships_steam_a_year_in_seconds()
     {
         var sw = Stopwatch.StartNew();
-        var w = Patrol(2000, 365);
+        var w = Patrol(2000, 365, land: false);
         sw.Stop();
         var store = w.Ships.Store;
         int onRails = 0;
@@ -203,16 +211,43 @@ public class RailsTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Two_thousand_ships_steam_two_days_among_the_Pacific_islands()
+    {
+        // Release, 2026-10-13: ~15 s, nearly all of it ships going round Hawaii and the Tuamotus on the fine tick, up to
+        // ~11 h each (S3's to take onto rails)
+        _ = Fleet.Get("destroyer");
+        var sw = Stopwatch.StartNew();
+        var w = Patrol(2000, 2);
+        sw.Stop();
+        var store = w.Ships.Store;
+        int onRails = 0, backstops = 0;
+        double closest = double.PositiveInfinity;
+        for (int i = 0; i < store.Slots; i++)
+            if (store.IsAlive(i))
+            {
+                var st = store[i];
+                (onRails, backstops) = (onRails + (st.OnRails ? 1 : 0), backstops + st.Backstops);
+                if (!st.OnRails)
+                    closest = Math.Min(closest, TestLand.Shore.IsLand(st.Position) ? -1 : TestLand.Shore.Clearance(st.Position, 1000, out _));
+            }
+        output.WriteLine($"2,000 ships, 2 days among the islands: {sw.Elapsed.TotalSeconds:F1} s, {onRails} on rails at the end, {backstops} backstops");
+        Assert.Equal(2000, store.Count);
+        Assert.True(closest > 0, "a ship ended on land");
+        Assert.True(sw.Elapsed.TotalSeconds < 60, $"{sw.Elapsed.TotalSeconds:F1} s");
+    }
+
+    [Fact]
     public void Ships_of_two_sides_steam_with_their_contacts_solved()
     {
         // 2,000 ships for 2 days (Release, 2026-10-12): 41 s, of which 34 s the fine tick of the ~100 ships near an
-        // enemy at a time (362 contacts); kept small here so the suite stays quick
+        // enemy at a time (362 contacts); kept small here so the suite stays quick. Round the globe in a world of water:
+        // packed into the Pacific box (2026-10-13), its columns 68 km apart, the two sides were always in contact
         const int ships = 600, days = 2, sides = 2;
         // every other ship on the other side: rails are solved pair by pair as they're anchored and every scan, and the
         // pairs that meet come off rails to the fine tick while they're in range
         _ = Fleet.Get("destroyer");   // the golden cases build once for the run: outside the timing
         var sw = Stopwatch.StartNew();
-        var w = Patrol(ships, days, sides: sides);
+        var w = Patrol(ships, days, sides: sides, land: false);
         sw.Stop();
         var store = w.Ships.Store;
         int onRails = 0;

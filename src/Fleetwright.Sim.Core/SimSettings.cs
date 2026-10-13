@@ -169,6 +169,18 @@ public sealed record SimSettings
     /// <summary>A group's ships go on rails only within this of their stations, m: rails hold their offsets as they are.</summary>
     public double RailsGroupStationM { get; init; } = 50;
 
+    /// <summary>Rails and the land (docs/world/terrain-plan.md S2): a unit's track on rails is traced this far ahead
+    /// for land when its rails are laid or anchored again (and again when it's steamed that far), metres.</summary>
+    public double RailsLandHorizonM { get; init; } = 500_000;
+
+    /// <summary>A unit on rails comes off this far, metres, plus its guide's look-ahead, short of where its track
+    /// comes within its standoff (and its widest station abeam) of the coast, so the fine tick's slide takes over.</summary>
+    public double RailsLandMarginM { get; init; } = 2_000;
+
+    /// <summary>A unit goes on rails only with its track clear of land for this many of those distances: never for a
+    /// few minutes' steaming before it would come off again.</summary>
+    public double RailsLandOnFactor { get; init; } = 2;
+
     /// <summary>At this asked speed and above, an order to a ship or group on rails (a course, a speed, a route) is
     /// carried out at once on rails: the turn and the change of speed are instantaneous and a group's ships jump to
     /// their stations on the new heading. Below it the order takes them off rails and the turn plays out on the fine

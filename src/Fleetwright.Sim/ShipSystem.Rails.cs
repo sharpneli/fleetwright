@@ -28,6 +28,10 @@ namespace Fleetwright.Sim;
 /// <item><b>Orders on rails.</b> While its unit is placing, a movement order to a unit's guide is carried out at once on rails
 /// (<see cref="CanSnap"/>, <see cref="Snap"/>, which lays it again the same way); any other order takes the unit off
 /// (<see cref="TakesOffRails"/>), as do changes to groups (<see cref="DerailFor"/>) and contacts.</item>
+/// <item><b>The land</b> (docs/world/terrain-plan.md S2). Rails don't slide: when a unit's rails are laid or anchored
+/// again, its track is traced for the coast (<see cref="WatchLand"/>), and it comes off short of it (a
+/// <see cref="LandAhead"/> event) so the fine tick's slide takes it along the coast. It goes on rails only with its
+/// track clear for a while (<see cref="LandClear"/>) and no ship of it sliding (<see cref="Sliding"/>).</item>
 /// <item><b>Off.</b> <see cref="Derail"/>, the one way off for a unit, exactly where its rails had it; it wakes
 /// whoever watches ships on the fine tick (the AI).</item>
 /// </list>
@@ -77,11 +81,11 @@ public sealed partial class ShipSystem
     /// <summary>Whether the unit in <see cref="line"/> (its guide off rails) may go on rails now: placing, as its
     /// guide's orders say; else steaming steady, every ship with it. No ship of it sliding along a coast, and no
     /// opposing ship near it, as far as its ships reach (placed, as far as their stations do: they jump there).</summary>
-    bool Ready(int guide, bool placing)
+    bool Ready(World world, int guide, bool placing)
     {
         if (placing ? !Placeable(guide) : !Steady(guide) || !InStation(guide))
             return false;
-        if (Sliding())
+        if (Sliding() || !LandClear(world, guide))
             return false;
         return !NearOpposing(guide, placing ? Math.Max(GroupRadius(guide), FormationRadius()) : GroupRadius(guide));
     }
@@ -143,6 +147,47 @@ public sealed partial class ShipSystem
         return false;
     }
 
+    /// <summary>Whether the track the unit in <see cref="line"/> would take on rails (its guide's orders: the course as a
+    /// rhumb line, or the leg to its next waypoint) keeps its standoff and its widest station abeam off the coast for
+    /// <see cref="SimSettings.RailsLandOnFactor"/> times the distance it would come off rails short of it.</summary>
+    bool LandClear(World world, int guide)
+    {
+        if (world.Shore is not { } shore)
+            return true;
+        double abeam = 0;
+        for (int i = 1; i < line.Count; i++)
+            abeam = Math.Max(abeam, Math.Abs(line[i].AbeamM));
+        var s = Store[guide];
+        double c = LandContact(shore, guide, abeam, out _);
+        return c >= settings.RailsLandOnFactor * LandMargin(s, SteadySpeed(s));
+    }
+
+    /// <summary>How far short of the coast a unit comes off rails, metres: its guide's look-ahead at a speed, and
+    /// <see cref="SimSettings.RailsLandMarginM"/>.</summary>
+    double LandMargin(ShipState s, double speed) => Slide.LookaheadM(s.Handling, speed, s.CourseRudder, settings) + settings.RailsLandMarginM;
+
+    /// <summary>How far along its orders' track from where it is a ship first comes within its standoff and
+    /// <paramref name="abeamM"/> of the coast, metres; +inf if not within the horizon or (a route) its next waypoint,
+    /// <paramref name="whole"/> saying it looked all the way to that waypoint. A course is a rhumb line; a route's leg,
+    /// or a course inside a polar cap, a great circle: as on rails.</summary>
+    double LandContact(Shore shore, int slot, double abeamM, out bool whole)
+    {
+        var s = Store[slot];
+        double clear = s.Handling.StandoffM + abeamM, horizon = settings.RailsLandHorizonM;
+        var p = s.Position;
+        whole = false;
+        if (s.Helm == Helm.Route && s.RouteNext < s.RouteCount)
+        {
+            var wp = s.Waypoint(s.RouteNext);
+            double len = Earth.Distance(p, wp);
+            whole = len <= horizon;
+            return len < 1 ? double.PositiveInfinity : shore.FirstContact(p, Toward(p, wp), Math.Min(len, horizon), clear);
+        }
+        if (s.Helm == Helm.Course && !Earth.InPolarCap(p, settings.PolarCapDeg))
+            return shore.FirstContactRhumb(p, s.CourseOrderDeg, horizon, clear);
+        return shore.FirstContact(p, s.Forward, horizon, clear);
+    }
+
     bool NotSwinging(ShipState s) =>
         Math.Abs(s.YawRate) * 180 / Math.PI <= settings.RailsMaxYawRateDegS && Math.Abs(s.Rudder) * 180 / Math.PI <= settings.RailsMaxRudderDeg;
 
@@ -168,7 +213,7 @@ public sealed partial class ShipSystem
                 continue;
             groups.LineOffsets(g, line);
             bool placing = Placing(world, guide);
-            if (Ready(guide, placing))
+            if (Ready(world, guide, placing))
                 Lay(world, guide, placing);
         }
         for (int i = 0; i < Store.Slots; i++)
@@ -177,7 +222,7 @@ public sealed partial class ShipSystem
                 continue;
             Alone(i);
             bool placing = Placing(world, i);
-            if (Ready(i, placing))
+            if (Ready(world, i, placing))
                 Lay(world, i, placing);
         }
     }
@@ -222,6 +267,7 @@ public sealed partial class ShipSystem
                 Store.RailWith(m, guide);
         }
         Anchored(world, guide);
+        WatchLand(world, guide);
     }
 
     /// <summary>An order carried out at once on rails (the ship off them for the moment, its unit riding it as it is):
@@ -302,6 +348,65 @@ public sealed partial class ShipSystem
             SchedulePolar(world, slot);
         }
         Anchored(world, slot);
+        WatchLand(world, slot);
+    }
+
+    /// <summary>A unit's rails were laid or anchored again: its track traced for the coast, at its guide's standoff and
+    /// its widest station abeam. Where it comes within that, a <see cref="LandAhead"/> event takes it off rails short of
+    /// it (at once, if it's that close already); a course traced only as far as the horizon is traced again from there
+    /// (<see cref="LandRecheck"/>); a leg clear to its waypoint is looked at again there.</summary>
+    void WatchLand(World world, int guide)
+    {
+        if (world.Shore is not { } shore || !Store.OnRails(guide) || Store.RidesAnother(guide))
+            return;
+        var s = Store[guide];
+        if (s.Speed <= 0)
+            return;
+        double c = LandContact(shore, guide, UnitAbeam(world, guide), out bool whole), margin = LandMargin(s, s.Speed), at;
+        ushort code;
+        if (c < double.PositiveInfinity)
+        {
+            if (c <= margin)
+            {
+                Derail(world, s.Entity);
+                return;
+            }
+            (code, at) = (LandAhead, c - margin);
+        }
+        else if (!whole)
+            (code, at) = (LandRecheck, Math.Max(settings.RailsLandHorizonM - margin, margin));
+        else
+            return;
+        long ms = (long)Math.Ceiling(at / s.Speed * 1000);
+        world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, code, Store.RailGen(guide));
+    }
+
+    /// <summary>A unit's rails come short of the coast (off rails, to the fine tick's slide) or to the end of what was
+    /// traced (traced again). Stale (derailed or anchored again since) it's nothing.</summary>
+    void LandEvent(World world, in SimEvent e)
+    {
+        int slot = Store.SlotOf(e.Entity);
+        if (slot < 0 || !Store.OnRails(slot) || Store.RailGen(slot) != e.Generation)
+            return;
+        if (e.Code == LandAhead)
+            Derail(world, e.Entity);
+        else
+            WatchLand(world, slot);
+    }
+
+    /// <summary>How far abeam of a unit's guide on rails its widest riding ship is, metres.</summary>
+    double UnitAbeam(World world, int guide)
+    {
+        int entity = Store[guide].Entity;
+        double r = 0;
+        if (world.Groups.UnitOf(entity) is { } u && world.Groups.GuideShip(u) == entity)
+        {
+            world.Groups.LineOffsets(u, riders);
+            for (int i = 1; i < riders.Count; i++)
+                if (Store.SlotOf(riders[i].Ship) is int m and >= 0 && Store.RidingOn(m) == guide)
+                    r = Math.Max(r, Store.RailAbeamM(m));
+        }
+        return r;
     }
 
     void ScheduleArrival(World world, int slot, Vec3d wp)

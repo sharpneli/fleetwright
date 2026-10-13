@@ -275,6 +275,31 @@ from 40°S to 40°N, where there's room; a test that must cross land (the meridi
 water. Measure the clock (2.5's achieved speed against asked) for a ship and a squadron holding a course into
 Norway at 10,000x, 100,000x and 1M×: S3's baseline.
 
+*Done (2026-10-13):*
+- **`WatchLand`** (`ShipSystem.Rails.cs`, with every rails rule): wherever a unit's rails are laid or anchored again
+  (`Lay`, waypoints, polar caps), its guide's track is traced (`LandContact`: a course as a rhumb line, a route's leg
+  to its waypoint, a course in a polar cap as a great circle) out to `RailsLandHorizonM` (500 km) at its standoff
+  plus its widest riding ship abeam (`ShipStore.RailAbeamM`). A contact schedules `LandAhead` at the guide's
+  look-ahead plus `RailsLandMarginM` (2 km) short of it, which takes the unit off rails; a course clear to the horizon
+  schedules `LandRecheck` there; a leg clear to its waypoint is traced again at the waypoint. An order snapped on
+  rails that heads straight for the land comes off at once.
+- **`LandClear` in `Ready`:** a unit goes on rails only with its orders' track clear for `RailsLandOnFactor` (2) of
+  those distances, so it never goes on for a few minutes, and never back on while heading for the coast.
+- **Tests** (`RailsLandTests`, rails on, real land): a ship on rails into Norway at 1x and 100,000x comes off ~2.7 km
+  short of the coast, slides, no backstop; a line abreast 1 km wide comes off 4.8 km out; a route leg through
+  Bornholm at 30,000x comes off before it and gets past; 12 destroyers in the Skagerrak and Kattegat at 1M x for six
+  hours never inside their minimum (two backstops: the slide's limits, not rails'); the same twice.
+- **The scale tests** (`RailsTests`): with the land, in the Pacific, 35°S to 35°N and 170°W to 140°W, a day's leg
+  clear of the continents (a first box reaching 130°W sent a ship into California, where it followed the coast for
+  52 h). 2,000 ships for two days among the islands: 12 s, all on rails at the end, nearly all of it ships going round
+  Hawaii and the Tuamotus on the fine tick (up to ~11 h each). The year of 2,000 ships and the two sides' contacts
+  stay in a world of water: with the land the year would take hours until S3, and the contacts test's 50 columns,
+  packed into the Pacific box 68 km apart, were always in contact (95 s). S3 brings the land back into the year.
+- **Measured, S3's baseline** (`What_a_coast_costs_the_clock`, Release): one ship following Norway's coast on the
+  fine tick keeps the clock to ~25,000x, a column of four to ~6,500x, whatever is asked above that (~2.2 µs a ship a
+  fine tick). In the app, a ship sent at a headland from 30 km out goes on rails, comes off short of it, slides round
+  and goes back on rails on its course.
+
 **S3 Sliding on rails,** so a coast no longer holds the clock: the same scenarios at 30,000x on rails and on the fine
 tick end close to each other, and S2's measure shows the clock kept along Norway.
 
