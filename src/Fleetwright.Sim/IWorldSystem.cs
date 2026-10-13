@@ -22,8 +22,8 @@ public interface IWorldSystem
     {
     }
 
-    /// <summary>Told when ships came off rails other than by a command (a contact): a system that watches ships on the
-    /// fine tick more often than on rails wakes on it here, as on <see cref="Applied"/>.</summary>
+    /// <summary>Told when ships came off rails other than by a command (a contact), or an encounter opened: a system
+    /// that watches ships on the fine tick more often than on rails wakes on it here, as on <see cref="Applied"/>.</summary>
     void OffRails(World world)
     {
     }

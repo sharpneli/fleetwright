@@ -71,6 +71,32 @@ public enum AiCommand : ushort
 
     /// <summary>A the unit shadowed; X the range to keep, m (0: by the visibility).</summary>
     Shadow,
+
+    /// <summary>Fire at will (the default): each battery picks its own target (docs/battle/fighting.md 4.2c). Y the group
+    /// whose admiral handed it down (0: the unit's own, or the player's).</summary>
+    FireAtWill,
+
+    /// <summary>Hold fire: every battery ceases. Y as <see cref="FireAtWill"/>.</summary>
+    HoldFire,
+
+    /// <summary>A the ship (an entity, as its navy holds the contact) the main batteries engage; the secondaries keep
+    /// picking their own. To a group, its admiral distributes it over the enemy's line. Y as <see cref="FireAtWill"/>.</summary>
+    Engage,
+
+    /// <summary>Fight: close to a range band and hold it with the main battery bearing, turning away when outgunned. A the
+    /// unit fought (0: the nearest enemy), X the range, m (0: a share of the main battery's reach).</summary>
+    Fight,
+
+    /// <summary>A standing order for when the unit's ships first meet an enemy in an encounter: X 1 to Fight, 0 none.</summary>
+    Standing,
+}
+
+/// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
+public enum FireOrder : byte
+{
+    AtWill,
+    Hold,
+    Engage,
 }
 
 /// <summary>The one way an order gets to a unit, whoever gives it (docs/battle/plan.md step 2.6): the player's go in
@@ -108,6 +134,28 @@ public readonly struct UnitOrders(byte system)
     /// shadower is on (docs/battle/plan.md step 3.2f).</summary>
     public Command Shadow(Unit u, Unit target, double rangeM = 0, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Shadow, u, source, a: target.Id, x: rangeM);
+
+    /// <summary>Each battery picks its own target: the nearest in sight that bears, the secondaries the smallest.</summary>
+    public Command FireAtWill(Unit u, OrderSource source = OrderSource.Player) => Make(AiCommand.FireAtWill, u, source);
+
+    public Command HoldFire(Unit u, OrderSource source = OrderSource.Player) => Make(AiCommand.HoldFire, u, source);
+
+    /// <summary>The main batteries on a contact (a ship's entity); to a group, distributed over the enemy's line.</summary>
+    public Command Engage(Unit u, int contact, OrderSource source = OrderSource.Player) => Make(AiCommand.Engage, u, source, a: contact);
+
+    /// <summary>Close to a range band (0: by the main battery's reach) and hold it on a course that keeps the main battery
+    /// bearing, turning away when outgunned; on a unit, or the nearest enemy (default).</summary>
+    public Command Fight(Unit u, Unit target = default, double rangeM = 0, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.Fight, u, source, a: target.Id, x: rangeM);
+
+    /// <summary>Fight when the unit's ships first meet an enemy in sight (a scenario's standing order), or not.</summary>
+    public Command Standing(Unit u, bool fight) => Make(AiCommand.Standing, u, OrderSource.Player, x: fight ? 1 : 0);
+
+    /// <summary>A fire order an admiral hands down to a ship of his tree (<paramref name="from"/> his group): a fresh one
+    /// (his group was just given it) reaches the ship whatever it holds; a redistribution only if it still holds his.</summary>
+    public Command Fire(int ship, FireOrder order, int contact, int from, bool fresh) =>
+        Make(order switch { FireOrder.Hold => AiCommand.HoldFire, FireOrder.Engage => AiCommand.Engage, _ => AiCommand.FireAtWill },
+            Unit.Ship(ship), OrderSource.Superior, a: contact, x: fresh ? 1 : 0, y: from);
 
     public Command SpeedLimit(Unit u, double kn) => Make(AiCommand.SpeedLimit, u, OrderSource.Superior, x: kn);
 

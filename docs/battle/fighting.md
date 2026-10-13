@@ -1,7 +1,7 @@
 # Plan: fighting (battle module step 4)
 
 2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
-as its steps are built. **4.0, 4.1, 4.2a and 4.2b done 2026-10-13; 4.2c, ordering fire, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
+as its steps are built. **4.0, 4.1, 4.2a, 4.2b and 4.2c done 2026-10-13; 4.3a, what a hit does, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
 4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
 
 ## The aim
@@ -572,6 +572,83 @@ rework, with the fire-control computers by era, revisits these):
   panel says so. Encounters pause the clock at 1x by default, so the first fights are seen at 1x. That's a gameplay
   rule relaxed for a few steps and restored in 4.9 (end-goal rules).
 - **Playable:** two squadrons close and engage each other, turrets train, salvos straddle, hits flash.
+
+**How (planned 2026-10-13, after the investigation):**
+
+- **Orders:** `AiCommand.FireAtWill`, `HoldFire` and `Engage` (A the contact's ship), and `Fight` (A a target unit or 0,
+  X the range or 0). Fire orders never touch movement, so they don't nudge a ship out of its line. A captain keeps his
+  ship's fire order and the group it came from (0: his own or the player's). He alone gives `GunnerySystem.Engage` and
+  `Cease`, as he alone gives the helm orders.
+- **Fire at will,** each captain second, for every ship on the fine tick that's in an encounter or has a battery
+  engaged:
+  - each battery picks from its navy's contacts in sight and within its reach (the range table at its highest elevation,
+    with a margin to track before it): bearing first, then (secondaries) the smallest type, then the nearest;
+  - it keeps its target until the contact is lost (unseen for `FireLostMs`) or another is nearer by `FireSwitchShare`;
+  - with nothing to shoot at, it ceases fire, so the ship can go back on rails when the encounter closes;
+  - the contacts in sight come from one `CubeIndex` per navy, built once a think, not ships × contacts.
+- **To a group:** its admiral hands the order to every ship of his tree (the group they came from is his). `Engage` is
+  redistributed every second over the ships that still hold it. The enemy's line is the contacts chained to the target
+  within `FireLineGapM`, counted from its van along its course; own ships are counted from the van by their stations.
+  With n own and m enemy, ship k takes enemy ⌊k·m/n⌋ when n ≥ m (the van doubles, as Lion and Princess Royal did on
+  Lützow), else enemy k. A player's order to one ship stands until its group is given a fire order again.
+- **Fight:** a captain's behaviour (a group's through its guide, as the others are):
+  - The band is `FightRangeShare` of the main battery's reach. Beyond it the ship closes turned `FightCloseDeg` in
+    from the beam, inside it runs broadside, and below it opens as far out, always on the side it chose first.
+  - It turns away (runs) when the heavy guns its navy sees within `FightCompareM` outweigh its own unit's by
+    `FightOutgunnedRatio`. A contact counts as the class it's taken for, or by type until it's made out.
+  - A scenario's `"fight": [sides]` gives each top unit of those sides a standing order that becomes Fight when its
+    ships first meet an encounter with an enemy in sight.
+- **The clock:** an encounter of the player's pauses the clock and drops it to 1x. The clock panel says when guns are
+  silent in the coarse tier.
+- **On the world tab:**
+  - the strip's fire row for the commanded unit: at will, hold fire, engage (right-click a contact or ship), and the
+    dev's salvo "at";
+  - each battery's target and state;
+  - Fight in the captain row;
+  - the selected ship's shells drawn bright and the others' dim.
+- **A scenario,** `squadrons`: two squadrons closing, both sides with the standing Fight.
+
+**4.2c done 2026-10-13,** as planned above. Where it lives:
+
+- **The orders:** `UnitOrders` (`FireAtWill`, `HoldFire`, `Engage`, `Fight`, `Standing`).
+- **The captains:** `CaptainLayer.Fire.cs` (the fire pass, Fight). Their fire order and its group are in the hash and
+  the snapshot (`ShipsView.Fire`, `FireTarget`).
+- **The admirals:** `AdmiralLayer.Fire.cs` (the distribution, the standing order).
+- **The contacts:** `Knowledge/SeenContacts.cs`, each navy's contacts in sight in two `CubeIndex` grids, rebuilt when
+  asked at a new moment.
+- **The guns:** `CombatStore.Target(slot, battery)` (what each battery is on, O(1)) and `GunnerySystem.ReachM`.
+
+What it settled, beyond the plan:
+
+- **Hysteresis at the edge of reach:** a battery takes a contact within `FireReachShare` (1.1) of its range table's
+  reach and keeps it to `FireKeepShare` (1.25). The first runs flicked second by second as ranges crossed the line.
+- **An encounter opening wakes the AI** (`IWorldSystem.OffRails` is called for it too). Ships closing on the fine
+  tick come off no rails, so before this nobody woke the captains.
+- **The clock:** an encounter of the player's pauses the clock and drops it to the rule's speed, 1x by default, so the
+  guns fire. The clock panel says "guns silent" while a shown battery is silent for the coarse tier. The session
+  carries the player's interest rules into a newly loaded scenario, as it does the speed. `-nopause` (dev,
+  screenshots): the player's encounters don't pause.
+- **`shipgen scenario`** prints the fight: each shooter, battery and target with salvos, shells, straddles, hits, and
+  the first salvo and hit.
+- **The numbers** (`squadrons`, Release):
+  - Both sides fire at will and Fight, and run south side by side at ~11 km (the band, 0.6 of the main battery's
+    reach).
+  - The 13.5" hit 5-10%, the German 11" and 12" 4-9%, the secondaries at that range 0.1-1%.
+  - Under fire at will every British turret takes the nearest (Von der Tann) and the Germans Lion. A group's
+    Engage spreads the fire.
+  - The captains cost ~4 µs a fighting ship a second (the ladder-2 and the Jutland: +25 µs a game second over an
+    hour of encounters without fire). Nothing allocates.
+  - Hashes moved again (every captain's fire state is hashed); after an hour: ladder-2 `27849A47`, Jutland
+    `6A7CA774`.
+- **The Jutland and ladder-2 don't fight in their first hours:** the scouting forces keep their 14:00 courses north,
+  50 miles apart, and nothing turns Beatty at 14:32. Their fights need standing orders (a `"fight"` for their sides
+  would do it) or 5.1's admirals.
+- **Left as it is (v0):** the secondaries fire at capital ships at the edge of their reach, mostly to no effect. They
+  do it at will, as the German 15 cm did at Jutland, until a rule of engagement (5.1) or a shell choice (4.5) says
+  otherwise. Fight closes at 50° off the bow, so from twice the band it takes half an hour.
+- **`GunnerySystem.Engage`** stays the low-level command: for the bench (`duel`), the dev's `-engage`, and the
+  captains. A world with an `AiSystem` has its captains choose targets, so a dev engage there lasts only until the
+  captain's next pick (it agrees when the target is the nearest).
 
 ### 4.3 Damage v0
 

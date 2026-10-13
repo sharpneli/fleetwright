@@ -124,6 +124,8 @@ public static class ScenarioLoader
             else
                 w.Apply(o.Course(unit, top.CourseDeg));
             w.Apply(o.Speed(unit, top.Kn));
+            if (s.Fight.Contains(top.Side))
+                w.Apply(o.Standing(unit, fight: true));
         }
         return start;
     }

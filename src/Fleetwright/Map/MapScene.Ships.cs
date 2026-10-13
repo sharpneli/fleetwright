@@ -36,7 +36,7 @@ public sealed unsafe partial class MapScene
     bool hardOver;
     int followMetres = 800;
 
-    static readonly string[] CaptainNames = ["Course and speed", "Follow", "Run from"];
+    static readonly string[] CaptainNames = ["Course and speed", "Follow", "Run from", "Fight"];
 
     /// <summary>A short wake of positions behind each ship, sampled in game time; made when a ship is first seen.</summary>
     sealed class Track
@@ -449,18 +449,23 @@ public sealed unsafe partial class MapScene
         var v = s.Ships;
         var order = (CaptainOrder)v.Captain[k];
         int target = v.CaptainTarget[k];
-        int shown = order switch { CaptainOrder.Follow => 1, CaptainOrder.Run => 2, _ => 0 };
+        int shown = order switch { CaptainOrder.Follow => 1, CaptainOrder.Run => 2, CaptainOrder.Fight => 3, _ => 0 };
         ImGui.Text(unit.IsGroup ? "Group:" : "Captain:");
         ImGui.SameLine();
         ImGui.SetNextItemWidth(150 * UiFonts.Scale);
         int pick = shown;
         if (ImGui.Combo("##captain", ref pick, CaptainNames, CaptainNames.Length) && pick != shown)
         {
-            if (pick != 0 && (target == 0 || v.IndexOf(target) < 0))
+            if (pick is 1 or 2 && (target == 0 || v.IndexOf(target) < 0))
                 target = Nearest(s, k);
-            Behaviour(pick, unit, target);
+            Behaviour(pick, unit, pick == 3 ? 0 : target);
         }
-        if (shown != 0)
+        if (shown == 3)
+        {
+            ImGui.SameLine();
+            ImGui.TextDisabled(target != 0 ? $"on {TargetLabel(s, target)}" : "the nearest enemy in sight; turns away when outgunned");
+        }
+        else if (shown != 0)
         {
             ImGui.SameLine();
             ImGui.SetNextItemWidth(170 * UiFonts.Scale);
@@ -485,11 +490,12 @@ public sealed unsafe partial class MapScene
     }
 
     /// <summary>Sends a behaviour from the captain row: 0 holds the course and speed ordered now, 1 follows, 2 runs
-    /// from (with nobody else at sea, it holds).</summary>
+    /// from (with nobody else at sea, it holds), 3 fights (the nearest enemy, or the target).</summary>
     void Behaviour(int pick, Unit unit, int target)
     {
         var o = world.Ai.Orders;
-        world.Send(pick == 0 || target == 0 ? o.Hold(unit)
+        world.Send(pick == 3 ? o.Fight(unit, target != 0 ? Unit.Ship(target) : default)
+                 : pick == 0 || target == 0 ? o.Hold(unit)
                  : pick == 1 ? o.Follow(unit, Unit.Ship(target), followMetres)
                  : o.Run(unit, Unit.Ship(target)));
     }
@@ -745,7 +751,7 @@ public sealed unsafe partial class MapScene
             }
             SearchRow(s, unit, kc);
             CaptainRow(s, unit, kc);
-            FireRow(s, kc);
+            FireRow(s, unit, k);
             GroupRow(s);
             ImGui.TextDisabled("right-click the sea: steer for it · shift+right-click: add a waypoint · alt: this ship alone · click elsewhere: deselect");
         }

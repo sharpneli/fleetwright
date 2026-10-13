@@ -69,6 +69,7 @@ static class ScenarioRun
         long alloc0 = GC.GetAllocatedBytesForCurrentThread();
         int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
         double run = 0, worst = 0;
+        var fight = new FightTally(w.CombatLog);
         var stretch = Stopwatch.StartNew();
         long stretchMs = 0;
         for (int m = 1; m <= minutes; m++)
@@ -78,6 +79,7 @@ static class ScenarioRun
             double t = sw.Elapsed.TotalSeconds;
             run += t;
             worst = Math.Max(worst, t);
+            fight.Read();
             stretchMs += 60_000;
             if (m % every == 0 || m == (int)minutes)
             {
@@ -87,6 +89,9 @@ static class ScenarioRun
                                   $"{GC.CollectionCount(0) - g0}/{GC.CollectionCount(1) - g1}/{GC.CollectionCount(2) - g2}");
                 stretch.Restart();
                 stretchMs = 0;
+                if (fight.Any)
+                    Console.WriteLine($"    fighting: {w.Gunnery.EngagedCount} batteries engaged, {w.Shells.InFlight} shells in flight, " +
+                                      $"{fight.Shells} fired, {fight.Hits} hits");
                 if (watch != null)
                     w.Fill(snap);
                 foreach (int e in watch ?? [])
@@ -119,6 +124,7 @@ static class ScenarioRun
         Console.WriteLine($"{minutes:F0} game minutes in {run:F2} s: {speed:F0}x at full tilt, the slowest minute {60 / worst:F0}x; " +
                           $"{run / (game * 1000 / settings.ShipTickMs) * 1e6:F1} µs a fine tick");
         Console.WriteLine($"the world's state hash at {w.Time}: {w.ComputeHash():X16}");
+        fight.Print(w, start.ShipNames);
         Console.WriteLine($"at {atSpeed:G}x the sim thread is {atSpeed / speed:P1} busy (the target: at most 25% at 10x, docs/battle/plan.md 2.7)");
         Console.WriteLine("where the time went (share of the run, longest call):");
         for (int i = 0; i < w.Probes.Count; i++)
@@ -146,5 +152,65 @@ static class ScenarioRun
                 return 1;
         }
         return failed > 0 ? 1 : 0;
+    }
+}
+
+/// <summary>What the combat log said over a run, by shooter, battery and target: salvos, shells, straddles, hits, the
+/// first salvo and the first hit (the log is a ring: it's read every game minute, so nothing is lost below its size).</summary>
+sealed class FightTally(CombatLog log)
+{
+    sealed class Line
+    {
+        public int Salvos, Shells, Straddles, Hits;
+        public long FirstMs = long.MaxValue, FirstHitMs = long.MaxValue;
+    }
+
+    readonly SortedDictionary<(int Shooter, int Battery, int Target), Line> lines = [];
+    long read;
+
+    public bool Any => lines.Count > 0;
+    public int Shells => lines.Values.Sum(l => l.Shells);
+    public int Hits => lines.Values.Sum(l => l.Hits);
+
+    public void Read()
+    {
+        long n = Math.Min(log.Written - read, log.Count);
+        for (long i = n - 1; i >= 0; i--)
+        {
+            var e = log.Newest((int)i);
+            if (!lines.TryGetValue((e.Shooter, e.Battery, e.Target), out var l))
+                lines[(e.Shooter, e.Battery, e.Target)] = l = new Line();
+            switch (e.Kind)
+            {
+                case CombatEvent.Fired:
+                    (l.Salvos, l.Shells, l.FirstMs) = (l.Salvos + 1, l.Shells + e.Count, Math.Min(l.FirstMs, e.Ms));
+                    break;
+                case CombatEvent.Hit:
+                    (l.Hits, l.FirstHitMs) = (l.Hits + 1, Math.Min(l.FirstHitMs, e.Ms));
+                    break;
+                case CombatEvent.Straddle:
+                    l.Straddles++;
+                    break;
+            }
+        }
+        read = log.Written;
+    }
+
+    public void Print(World w, IReadOnlyDictionary<int, string> names)
+    {
+        if (!Any)
+            return;
+        string Name(int e) => names.TryGetValue(e, out var n) ? n : $"#{e}";
+        Console.WriteLine("the fight (shooter, battery: target, salvos, shells, straddled salvos, hits, first salvo and hit):");
+        foreach (var ((shooter, battery, target), l) in lines)
+        {
+            int slot = w.Ships.Store.SlotOf(shooter);
+            string gun = slot >= 0 && battery < w.Ships.Store[slot].Handling.Class.Batteries.Length
+                ? $"{w.Ships.Store[slot].Handling.Class.Batteries[battery].Guns} x {w.Ships.Store[slot].Handling.Class.Batteries[battery].CalibreMm:0}mm"
+                : $"battery {battery}";
+            string Clock(long ms) => ms == long.MaxValue ? "-" : new WorldTime(ms).ToString()[11..19];
+            Console.WriteLine($"  {Name(shooter),-16} {gun,-12} on {Name(target),-16} {l.Salvos,4} salvos {l.Shells,5} shells {l.Straddles,4} straddles " +
+                              $"{l.Hits,4} hits ({100.0 * l.Hits / Math.Max(l.Shells, 1),4:F1}%)   first {Clock(l.FirstMs)}, hit {Clock(l.FirstHitMs)}");
+        }
     }
 }

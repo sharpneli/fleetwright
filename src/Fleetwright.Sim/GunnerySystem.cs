@@ -157,6 +157,24 @@ public sealed class GunnerySystem : IWorldSystem
 
     public CrewQuality Crew(int side) => crews[side & 255];
 
+    readonly Dictionary<(int Table, double Elevation), double> reach = [];
+
+    /// <summary>How far a ship's battery reaches: its range table's fall at its mounts' highest elevation from a muzzle
+    /// 10 m up, m (worked out once per gun and elevation).</summary>
+    public double ReachM(ShipClass cls, int battery)
+    {
+        double top = 0;
+        foreach (int m in cls.Links(cls.Batteries[battery].Mounts))
+            top = Math.Max(top, cls.Mounts[m].MaxElevationDeg);
+        int table = shells.TableOf(cls, battery);
+        if (!reach.TryGetValue((table, top), out double r))
+        {
+            var t = shells.Ballistics[table];
+            reach[(table, top)] = r = t.Fall(Math.Min(top, t.MaxElevationDeg), 10).Range;
+        }
+        return r;
+    }
+
     public void Apply(World world, in Command c)
     {
         switch ((GunneryCommand)c.Code)
@@ -210,7 +228,7 @@ public sealed class GunnerySystem : IWorldSystem
             fc.BiasR = r.NextGaussian();
             fc.BiasD = r.NextGaussian();
             AddSensors(ref fc, f, cls, row, now, lvl, ref r);
-            store.Combat.Engage(slot, +1);
+            store.Combat.Engage(slot, b, target);
         }
         ever = true;
         if (store[slot].Tier != ClockTier.Fine && store[slot].OnRails)
@@ -290,7 +308,7 @@ public sealed class GunnerySystem : IWorldSystem
             return;
         int slot = ships.Store.SlotOf(fc.Shooter);
         if (slot >= 0)
-            ships.Store.Combat.Engage(slot, -1);
+            ships.Store.Combat.Engage(slot, fc.Battery, 0);
         fc.Alive = false;
         fc.Generation++;   // its salvo and spot events go stale
         freeFc.Push(f);

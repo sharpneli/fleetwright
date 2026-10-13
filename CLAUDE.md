@@ -21,6 +21,7 @@ dotnet run --project src/Fleetwright -- -ships=super_dreadnought:1:0@56.5,4.0,0,
 dotnet run --project src/Fleetwright -- -ships=dreadnought:2 -captain=2:follow:1:800 -select=2   # a captain: follow:target[:m], run:target, keep, none
 dotnet run --project src/Fleetwright -- -ships=dreadnought:6 -group=1,2,3,4,5,6:column:500 -select=1   # a group: column, abreast, echelon-s, echelon-p
 dotnet run --project src/Fleetwright -- -ships=dreadnought:4:1 -group=1,2,3,4:column:500 -search=1:ladder:10:3:6 -speed=1000   # a search on rails (ladder, square, sector, patrol); :1 the side
+dotnet run --project src/Fleetwright -- -scenario=squadrons [-nopause] [-speed=10]   # two squadrons fight (fire at will, Fight); -nopause: the player's encounters don't pause the clock
 dotnet run --project src/Fleetwright -- -scenario=jutland [-map=56.82,4.63,4]   # a scenario (Content/Scenarios; also the world tab's picker, or drop the file on the window): the Jutland, 250 ships
 dotnet run --project src/Fleetwright -- -view=designer                    # the designer on bismarck (any designer flag below opens it too)
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
@@ -141,6 +142,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- mono-check [bisma
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sim [--from 1916-05-31T14:00] [--speed 30000] [--seconds 3]   # the world on its thread: clock, speed asked/achieved, sun, sim allocations
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shore [--points 100000]   # the land index: build time, memory, IsLand vs Land, query costs
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- trials shipgen/designs/yamato.json [--out out]   # sea trials on the ship model: turning circles, 0 -> full, coasting, crash stop, beside the research's bands
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- scenario Content/Scenarios/squadrons.json [--minutes 30] [--every 2] [--no-land] [--watch 1,5] [--replay]   # a scenario headless: speed, probes, hash, and the fight (who fired at whom, hits)
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- duel super_dreadnought [lion] [--range 14630] [--level 3] [--runs 20] [--minutes 15] [--trace]   # fire control's bench: one battery on a ship, run after run; hit and straddle %, time to first hit, cost a battery-second
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- ballistics dreadnought [--research]   # each battery's range table (range, elevation, time of flight, fall, striking velocity); the research's 16"/50 beside its sourced figures
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- weapons dreadnought [--research]   # weapon facts: batteries, fire-control level, guns' working numbers, shells, plating (placeholders beside the research's guns)
@@ -257,9 +259,10 @@ src/
                               #   chain's pure models: reading errors, dispersion, laying a gun with its ship's motion, the
                               #   spotting ladder)
   Fleetwright.Sim.Ai/         # the AI above the world: AiSystem (layers of command, top-down, each at its rate),
-                              #   Knowledge/ (IPicture; TruthPicture until sighting), Captains/ (CaptainLayer,
-                              #   Behaviours: keep course, follow, run, station), Admirals/ (AdmiralLayer: formations
-                              #   as captains' stations); admiralties go beside them
+                              #   Knowledge/ (IPicture: the navy's picture; SeenContacts: its contacts in sight, gridded),
+                              #   Captains/ (CaptainLayer, Behaviours: keep course, follow, run, station, fight;
+                              #   CaptainLayer.Fire: fire at will, engage, hold fire), Admirals/ (AdmiralLayer: formations
+                              #   as captains' stations, fire distributed over the enemy's line); admiralties go beside them
   Fleetwright.Sim/            # the world: World (clock, speed, events, commands in, snapshot out), Scheduler,
                               #   IWorldSystem, ShipSystem (every ship, the ship tick, ship commands), GroupSystem
                               #   (groups: members, guide first, formation, spacing), ShellSystem (shells in flight: two events

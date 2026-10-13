@@ -517,6 +517,36 @@ public sealed record SimSettings
         new() { Name = "elite", Operator = 0.85, Lay = 0.9 },
     ];
 
+    // ------------------------------------------------------------------ fire orders (docs/battle/fighting.md 4.2c)
+
+    /// <summary>Fire at will: a battery takes contacts in sight within its reach (the range table at its highest
+    /// elevation) times <see cref="FireReachShare"/>, so it tracks one a little before it can fire, and keeps one to
+    /// <see cref="FireKeepShare"/> of it (no flicking at the edge); it keeps its target until the contact is unseen for
+    /// <see cref="FireLostMs"/>, or another is nearer than <see cref="FireSwitchShare"/> of its range.</summary>
+    public double FireReachShare { get; init; } = 1.1;
+    public double FireKeepShare { get; init; } = 1.25;
+    public long FireLostMs { get; init; } = 30_000;
+    public double FireSwitchShare { get; init; } = 0.7;
+
+    /// <summary>An admiral distributing fire: the enemy's line is the contacts in sight chained to the target, each
+    /// within this of the next, m.</summary>
+    public double FireLineGapM { get; init; } = 3_000;
+
+    /// <summary>Fight (a captain's minimal fighting manoeuvre): the range he keeps, a share of his main battery's reach,
+    /// and how far either side of it is near enough (a share of it); the angle off the line of sight he closes or opens
+    /// at, degrees; the radius his navy's guns and the enemy's are compared in, m, and the ratio of the enemy's heavy guns
+    /// to his own unit's past which he turns away (and back under a share of it).</summary>
+    public double FightRangeShare { get; init; } = 0.6;
+    public double FightBandShare { get; init; } = 0.15;
+    public double FightCloseDeg { get; init; } = 40;
+    public double FightCompareM { get; init; } = 30_000;
+    public double FightOutgunnedRatio { get; init; } = 2;
+    public double FightRallyShare { get; init; } = 0.75;
+
+    /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
+    /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>
+    public double[] FightTypeGuns { get; init; } = [1, 8, 1, 0.1, 0, 0];
+
     /// <summary>The salvos the world keeps in flight for spotting (it grows past it), and the combat log's ring.</summary>
     public int SalvoCapacity { get; init; } = 256;
     public int CombatLogCapacity { get; init; } = 4096;

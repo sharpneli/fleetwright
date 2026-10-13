@@ -1,0 +1,221 @@
+using Fleetwright.Sim.Ai;
+using Fleetwright.Sim.Ai.Captains;
+using Fleetwright.Sim.Combat;
+using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Missions;
+using Xunit.Abstractions;
+
+namespace Fleetwright.Sim.Tests;
+
+/// <summary>Ordering fire (docs/battle/fighting.md 4.2c): fire at will by default, from the navy's picture, the nearest
+/// for a main battery and the smallest for a secondary, without flicking between targets; hold fire and fire at will
+/// again; a group's Engage distributed over the enemy's line from the van, and a ship's own order standing until the
+/// group is given another; Fight closing to its band and turning away when outgunned; the squadrons scenario fighting,
+/// replayed to the same hash, without garbage.</summary>
+public class FireOrderTests(ITestOutputHelper output)
+{
+    static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
+    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
+    const double Lat = 56.0, Lon = 4.0;
+
+    /// <summary>A ship to place: its design, where it is from (Lat, Lon) by bearing and range, its course, speed and side.</summary>
+    record Placed(string Design, double BearingDeg, double RangeM, double CourseDeg, double Kn, byte Side);
+
+    /// <summary>A world in clear weather with the AI, the ships placed in order (entities 1, 2, ...).</summary>
+    static (World W, AiSystem Ai) Make(params Placed[] ships)
+    {
+        var w = new World(Start, 7, Settings);
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(25_000));
+        foreach (var s in ships)
+        {
+            int c = w.Ships.AddClass(Fleet.Get(s.Design).Class!);
+            var p = Earth.Position(Lat, Lon);
+            var f = Earth.Forward(p, s.BearingDeg);
+            if (s.RangeM > 0)
+                Earth.Advance(ref p, ref f, s.RangeM);
+            var (la, lo) = Earth.LatLon(p);
+            w.Apply(ShipSystem.Spawn(c, la, lo, s.CourseDeg, s.Kn, s.Side));
+        }
+        return (w, ai);
+    }
+
+    static void Run(World w, double seconds) => w.AdvanceTo(w.Time + (long)Math.Round(seconds * 1000));
+
+    static int Target(World w, int ship, int battery) => w.Ships.Store.Combat.Target(w.Ships.Store.SlotOf(ship), battery);
+
+    static double Apart(World w, int a, int b) =>
+        Earth.Distance(w.Ships.Store[w.Ships.Store.SlotOf(a)].Position, w.Ships.Store[w.Ships.Store.SlotOf(b)].Position);
+
+    [Fact]
+    public void Ships_fire_at_will_on_each_other_by_default()
+    {
+        var (w, _) = Make(new Placed("super_dreadnought", 0, 0, 0, 15, 0), new Placed("super_dreadnought", 90, 13_000, 0, 15, 1));
+        Run(w, 6 * 60);
+        Assert.Equal(2, Target(w, 1, 0));
+        Assert.Equal(1, Target(w, 2, 0));
+        var a = w.Gunnery.TallyOf(1, 0)!.Value;
+        var b = w.Gunnery.TallyOf(2, 0)!.Value;
+        output.WriteLine($"1 on 2: {a.Salvos} salvos, {a.Hits} hits; 2 on 1: {b.Salvos} salvos, {b.Hits} hits");
+        Assert.True(a.Salvos > 0 && b.Salvos > 0, "both opened fire");
+    }
+
+    [Fact]
+    public void Hold_fire_ceases_and_fire_at_will_opens_again()
+    {
+        var (w, ai) = Make(new Placed("super_dreadnought", 0, 0, 0, 15, 0), new Placed("super_dreadnought", 90, 13_000, 0, 15, 1));
+        Run(w, 30);
+        Assert.Equal(2, Target(w, 1, 0));
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(1)));
+        Assert.Equal(0, w.Ships.Store.Combat.Engaged(w.Ships.Store.SlotOf(1)));   // at once
+        Run(w, 5 * 60);
+        Assert.Equal(0, w.Ships.Store.Combat.Engaged(w.Ships.Store.SlotOf(1)));
+        Assert.Equal(FireOrder.Hold, ai.Captains.FireOf(1).Order);
+        Assert.Equal(1, Target(w, 2, 0));   // the other doesn't
+        w.Apply(ai.Orders.FireAtWill(Unit.Ship(1)));
+        Run(w, 2);
+        Assert.Equal(2, Target(w, 1, 0));
+    }
+
+    [Fact]
+    public void Main_batteries_take_the_nearest_secondaries_the_smallest_and_neither_flicks()
+    {
+        // a battleship at 7 km and a destroyer at 10 km, both abeam: the 15" on the battleship, the 6" on the destroyer
+        var (w, _) = Make(new Placed("super_dreadnought", 0, 0, 0, 12, 0), new Placed("dreadnought", 80, 7_000, 0, 12, 1),
+            new Placed("destroyer", 100, 10_000, 0, 12, 1));
+        var cls = Fleet.Get("super_dreadnought").Class!;
+        int secondary = Array.FindIndex(cls.Batteries.ToArray(), b => b.Kind == Ships.Battery.Secondary);
+        Assert.True(secondary > 0);
+        Run(w, 60);
+        Assert.Equal(2, Target(w, 1, 0));
+        Assert.Equal(3, Target(w, 1, secondary));
+        int changes = 0, last = Target(w, 1, 0);
+        for (int s = 0; s < 6 * 60; s++)
+        {
+            Run(w, 1);
+            if (Target(w, 1, 0) != last)
+                (changes, last) = (changes + 1, Target(w, 1, 0));
+        }
+        Assert.Equal(0, changes);
+    }
+
+    /// <summary>Four QEs (1-4) in column against three dreadnoughts (5-7) in column 13 km to the east, both north.</summary>
+    static (World W, AiSystem Ai) Lines(int own = 4)
+    {
+        var ships = new List<Placed>();
+        for (int i = 0; i < own; i++)
+            ships.Add(new Placed("super_dreadnought", 180, i * 500, 0, 15, 0));
+        for (int i = 0; i < 3; i++)
+            ships.Add(new Placed("dreadnought", 90 + Math.Atan2(i * 500, 13_000) * 180 / Math.PI, Math.Sqrt(13_000.0 * 13_000 + i * 500.0 * i * 500), 0, 15, 1));
+        var (w, ai) = Make([.. ships]);
+        w.Apply(GroupSystem.Create(1));
+        for (int i = 2; i <= own; i++)
+            w.Apply(GroupSystem.Add(1, i));
+        w.Apply(GroupSystem.Create(own + 1));
+        for (int i = own + 2; i <= own + 3; i++)
+            w.Apply(GroupSystem.Add(own + 1, i));
+        return (w, ai);
+    }
+
+    [Fact]
+    public void A_groups_engage_is_counted_from_the_van_and_a_ships_own_order_stands()
+    {
+        var (w, ai) = Lines();
+        int group = w.Groups.Of(1)!.GroupId;
+        Run(w, 30);   // the enemy sighted and made out
+        w.Apply(ai.Orders.Engage(Unit.Group(group), 5));
+        Run(w, 60);
+        // four on three: the van doubles on the enemy's leader (k·m/n: 0, 0, 1, 2)
+        Assert.Equal([5, 5, 6, 7], new[] { 1, 2, 3, 4 }.Select(e => Target(w, e, 0)));
+
+        // the player puts ship 3 on the leader: it stays there, and the admiral counts it out
+        w.Apply(ai.Orders.Engage(Unit.Ship(3), 5));
+        Run(w, 30);
+        Assert.Equal(5, Target(w, 3, 0));
+        Assert.Equal((FireOrder.Engage, 5, 0), ai.Captains.FireOf(3));
+        Assert.Equal([5, 6, 7], new[] { 1, 2, 4 }.Select(e => Target(w, e, 0)));   // three on three now
+
+        // the group given fire at will again: all of it, ship 3 too
+        w.Apply(ai.Orders.FireAtWill(Unit.Group(group)));
+        Assert.Equal((FireOrder.AtWill, 0, group), ai.Captains.FireOf(3));
+
+        // three on three: ship k on enemy k
+        var (w3, ai3) = Lines(own: 3);
+        Run(w3, 30);
+        w3.Apply(ai3.Orders.Engage(Unit.Group(w3.Groups.Of(1)!.GroupId), 4));
+        Run(w3, 60);
+        Assert.Equal([4, 5, 6], new[] { 1, 2, 3 }.Select(e => Target(w3, e, 0)));
+    }
+
+    [Fact]
+    public void Fight_closes_to_its_band_with_the_guns_bearing()
+    {
+        var (w, ai) = Make(new Placed("super_dreadnought", 0, 0, 90, 18, 0), new Placed("dreadnought", 90, 19_000, 0, 12, 1));
+        w.Apply(ai.Orders.Fight(Unit.Ship(1)));
+        Run(w, 30 * 60);
+        double band = Settings.FightRangeShare * w.Gunnery.ReachM(Fleet.Get("super_dreadnought").Class!, 0);
+        double range = Apart(w, 1, 2);
+        var s1 = w.Ships.Store[w.Ships.Store.SlotOf(1)];
+        double rel = Earth.Bearing(s1.Position, w.Ships.Store[w.Ships.Store.SlotOf(2)].Position) - s1.HeadingDeg;
+        rel -= 360 * Math.Round(rel / 360);
+        var t = w.Gunnery.TallyOf(1, 0)!.Value;
+        output.WriteLine($"band {band / 1000:F1} km: at {range / 1000:F1} km, the enemy {rel:F0}° off the bow; {t.Salvos} salvos, {t.Hits} hits");
+        Assert.InRange(range, 0.75 * band, 1.3 * band);
+        Assert.InRange(Math.Abs(rel), 45, 135);
+        Assert.Equal(CaptainOrder.Fight, ai.Captains.Of(1).Order);
+        Assert.True(t.Salvos > 5);
+    }
+
+    [Fact]
+    public void Fight_turns_away_when_outgunned()
+    {
+        var ships = new List<Placed> { new("dreadnought", 0, 0, 90, 18, 0) };
+        for (int i = 0; i < 4; i++)
+            ships.Add(new Placed("super_dreadnought", 90 + i * 3, 16_000, 270, 15, 1));
+        var (w, ai) = Make([.. ships]);
+        w.Apply(ai.Orders.Fight(Unit.Ship(1)));
+        Run(w, 30);
+        double before = Apart(w, 1, 2);
+        Run(w, 8 * 60);
+        double after = Apart(w, 1, 2);
+        var s1 = w.Ships.Store[w.Ships.Store.SlotOf(1)];
+        output.WriteLine($"from {before / 1000:F1} km to {after / 1000:F1} km, heading {s1.HeadingDeg:F0}°");
+        Assert.InRange(s1.HeadingDeg, 180, 360);   // turned away, west
+        Assert.True(after > before - 2_000, "not closing");
+    }
+
+    [Fact]
+    public void The_squadrons_fight_replay_and_allocate_nothing()
+    {
+        var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "squadrons.json"));
+        var designs = new[] { Path.Combine(Fleet.Shipgen, "designs") };
+        var w = new World(s.Start, s.Seed, Settings);
+        var ai = new AiSystem(w);
+        var classes = ScenarioLoader.RequestClasses(s, w.Ships.Registry, designs);
+        var start = ScenarioLoader.Apply(s, w, ai, classes);
+        Assert.Equal(9, start.Ships);
+        w.AdvanceTo(s.Start + 12 * 60_000);   // closed, tracking, firing: pools at their size
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        w.AdvanceTo(s.Start + 20 * 60_000);
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        int british = 0, german = 0;
+        for (int e = 1; e <= 9; e++)
+            for (int b = 0; b < 3; b++)
+                if (w.Gunnery.TallyOf(e, b) is { } t)
+                    (british, german) = e <= 4 ? (british + t.Salvos, german) : (british, german + t.Salvos);
+        output.WriteLine($"salvos: British {british}, German {german}; hits so far {w.Shells.Hits}; {allocated} bytes in eight minutes");
+        Assert.True(british > 20 && german > 20, "both sides fire");
+        Assert.True(w.Shells.Hits > 0);
+        Assert.Equal(0, allocated);
+
+        var r = new World(s.Start, s.Seed, Settings, w.Ships.Registry);
+        _ = new AiSystem(r);
+        foreach (var c in w.CommandLog)
+        {
+            r.AdvanceTo(c.At);
+            r.Apply(c.Command);
+        }
+        r.AdvanceTo(w.Time);
+        Assert.Equal(w.ComputeHash(), r.ComputeHash());
+    }
+}

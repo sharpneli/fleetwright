@@ -330,8 +330,11 @@ public sealed partial class ShipSystem
         if (!Opposed && encounters.Count == 0)
             return;
         long t = Probes.Now;
+        int opened = encounters.Opened;
         var news = encounters.Update(Store, world.Time.Ms, world.PlayerSide);
         probes.Add(encountersProbe, t);
+        if (encounters.Opened != opened)
+            world.OffRails();   // whoever watches encounters wakes (the captains' guns): ships on the fine tick met, nothing derailed
         if (news is { } kind)
             world.Interest.Apply(world, kind);   // the drop is the sim's, at the event, by the player's rules
     }

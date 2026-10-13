@@ -24,7 +24,9 @@ namespace Fleetwright.Sim.Missions;
 ///     { "name": "Patrol", "side": 0, "at": [58, 2], "course": 0, "kn": 10, "route": [[59, 2], [58, 2]], "loop": true,
 ///       "ships": [ { "design": "light_cruiser", "count": 2 } ] } ] }
 /// </code>
-/// <para>A side's gun crews are green, average, trained or elite (<c>"crews"</c>; trained if not listed).</para>
+/// <para>A side's gun crews are green, average, trained or elite (<c>"crews"</c>; trained if not listed). The sides in
+/// <c>"fight": ["Germany"]</c> give each of their top units a standing order to Fight when it first meets an enemy in sight
+/// (docs/battle/fighting.md 4.2c).</para>
 /// <para>Sides are at war with each other unless a pair is listed in <c>"peace"</c>. A unit's side, formation and spacing default to its parent's (side 0, column, 600 m for a squadron, 3 km for
 /// a force). A top unit of one ship is that ship, not a group. A top unit with a route steams it (from where it's
 /// placed, its course only the start's heading).</para>
@@ -58,6 +60,9 @@ public sealed class Scenario
 
     /// <summary>The sides' gun crews where they aren't trained (docs/battle/fighting.md 4.2b), by side index.</summary>
     public List<(int Side, CrewQuality Quality)> Crews { get; init; } = [];
+
+    /// <summary>The sides whose top units Fight when they first meet an enemy in sight (by index).</summary>
+    public List<int> Fight { get; init; } = [];
 
     public required List<ScenarioUnit> Units { get; init; }
 
@@ -172,6 +177,9 @@ public sealed class Scenario
             // "crews": { "Germany": "elite" }, by the sides' names; taken from "from" (with its sides) unless given
             var crews = r.TryGetProperty("crews", out var cr) ? ParseCrews(cr, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Crews : [];
+            // "fight": ["Germany"], by the sides' names; taken from "from" (with its sides) unless given
+            var fight = r.TryGetProperty("fight", out var fi) ? ParseSides(fi, sides, "fight")
+                : from != null && !r.TryGetProperty("sides", out _) ? from.Fight : [];
             var units = new List<ScenarioUnit>();
             if (from != null)
             {
@@ -199,10 +207,26 @@ public sealed class Scenario
                 PlayerName = player,
                 Weather = weather,
                 Crews = crews,
+                Fight = fight,
                 Units = units,
                 Folder = folder,
             };
         }
+    }
+
+    static List<int> ParseSides(JsonElement e, string[] sides, string key)
+    {
+        if (e.ValueKind != JsonValueKind.Array)
+            throw new ScenarioException($"{key}: an array of sides' names, [\"Germany\"]");
+        var list = new List<int>();
+        foreach (var x in e.EnumerateArray())
+        {
+            int side = Array.IndexOf(sides, x.GetString());
+            if (side < 0)
+                throw new ScenarioException($"{key}: \"{x}\" isn't one of the sides ({string.Join(", ", sides)})");
+            list.Add(side);
+        }
+        return list;
     }
 
     static List<(int, CrewQuality)> ParseCrews(JsonElement e, string[] sides)

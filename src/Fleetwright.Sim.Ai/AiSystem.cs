@@ -23,13 +23,17 @@ public sealed class AiSystem : IWorldSystem
     public AdmiralLayer Admirals { get; }
     public CaptainLayer Captains { get; }
 
+    /// <summary>Each navy's contacts in sight, gridded for the layers' questions (not world state).</summary>
+    public SeenContacts Seen { get; }
+
     /// <summary>Orders to units (ships and groups), as commands to send: the player's way in, and the layers'.</summary>
     public UnitOrders Orders => new(Id);
 
     public AiSystem(World world)
     {
-        Captains = new CaptainLayer(world.Groups);
-        Admirals = new AdmiralLayer(world.Groups, Captains);
+        Seen = new SeenContacts();
+        Captains = new CaptainLayer(world.Groups, world.Encounters, Seen);
+        Admirals = new AdmiralLayer(world.Groups, Captains, Seen);
         layers = [Admirals, Captains];
         nextTick = new long[layers.Length];
         tickGen = new int[layers.Length];
@@ -44,7 +48,7 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Shadow)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Standing)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         if (u.IsShip)

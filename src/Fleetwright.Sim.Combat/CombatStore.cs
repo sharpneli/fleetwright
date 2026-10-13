@@ -15,11 +15,12 @@ public struct MountState
 }
 
 /// <summary>Each ship's combat columns beside its <see cref="ShipStore"/> (docs/battle/fighting.md "Where it lives"):
-/// its mounts' state, made at spawn and sized by the class, and how many of its batteries are engaged. Reached through
+/// its mounts' state, made at spawn and sized by the class, how many of its batteries are engaged and on what. Reached through
 /// <see cref="ShipState"/>'s accessors and the gunnery system; the damage system's condition joins it in 4.3a.</summary>
 public sealed class CombatStore
 {
     MountState[]?[] mounts = [];
+    int[]?[] targets = [];
     int[] engaged = [];
     bool[] moved = [];
 
@@ -32,6 +33,7 @@ public sealed class CombatStore
         {
             int n = Math.Max(slot + 1, Math.Max(16, mounts.Length * 2));
             Array.Resize(ref mounts, n);
+            Array.Resize(ref targets, n);
             Array.Resize(ref engaged, n);
             Array.Resize(ref moved, n);
         }
@@ -48,11 +50,18 @@ public sealed class CombatStore
                 Rounds = row.Rounds > 0 ? row.Rounds : int.MaxValue,
             };
         }
+        var t = targets[slot];
+        if (t == null || t.Length != cls.Batteries.Length)
+            targets[slot] = t = new int[cls.Batteries.Length];
+        Array.Clear(t);
         engaged[slot] = 0;
         moved[slot] = false;
     }
 
     internal void Drop(int slot) => engaged[slot] = 0;
+
+    /// <summary>The ship (entity) a ship's battery is engaged on, 0 for none.</summary>
+    public int Target(int slot, int battery) => targets[slot] is { } t && battery < t.Length ? t[battery] : 0;
 
     /// <summary>A ship's mounts (the class's order).</summary>
     public Span<MountState> Mounts(int slot) => mounts[slot];
@@ -62,7 +71,13 @@ public sealed class CombatStore
     /// <summary>How many of a ship's batteries are engaged (the rails' rule reads it: an engaged ship stays off rails).</summary>
     public int Engaged(int slot) => slot < engaged.Length ? engaged[slot] : 0;
 
-    public void Engage(int slot, int delta) => engaged[slot] = Math.Max(engaged[slot] + delta, 0);
+    /// <summary>A ship's battery engaged on a ship (an entity), or freed (0).</summary>
+    public void Engage(int slot, int battery, int target)
+    {
+        ref int t = ref targets[slot]![battery];
+        engaged[slot] = Math.Max(engaged[slot] + (target != 0 ? 1 : 0) - (t != 0 ? 1 : 0), 0);
+        t = target;
+    }
 
     /// <summary>Whether a ship's mounts have left their rest (the snapshot sends their bearings only then).</summary>
     public bool Moved(int slot) => slot < moved.Length && moved[slot];

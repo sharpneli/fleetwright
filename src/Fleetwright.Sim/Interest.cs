@@ -32,12 +32,14 @@ public sealed class Interest
 
     internal void Set(InterestKind kind, InterestRule rule) => rules[(int)kind] = rule;
 
-    /// <summary>The clock dropped by a rule, from an event's handler: paused, or slowed if it's faster.</summary>
+    /// <summary>The clock dropped by a rule, from an event's handler: paused (and slowed to the rule's speed if it's
+    /// faster: 1x by default, so a fight opens on the fine tick, where the guns fire; docs/battle/fighting.md 4.2c), or
+    /// slowed if it's faster.</summary>
     internal void Apply(World world, InterestKind kind)
     {
         var r = rules[(int)kind];
         if (r.Action == InterestAction.Pause)
-            world.Halt(pause: true);
+            world.Halt(pause: true, world.Speed > r.Speed ? r.Speed : null);
         else if (r.Action == InterestAction.Slow && world.Speed > r.Speed)
             world.Halt(pause: false, r.Speed);
     }

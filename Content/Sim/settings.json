@@ -177,6 +177,18 @@
     { "Name": "trained", "Operator": 1, "Lay": 1 },
     { "Name": "elite", "Operator": 0.85, "Lay": 0.9 }
   ],
+  "FireReachShare": 1.1,
+  "FireKeepShare": 1.25,
+  "FireLostMs": 30000,
+  "FireSwitchShare": 0.7,
+  "FireLineGapM": 3000,
+  "FightRangeShare": 0.6,
+  "FightBandShare": 0.15,
+  "FightCloseDeg": 40,
+  "FightCompareM": 30000,
+  "FightOutgunnedRatio": 2,
+  "FightRallyShare": 0.75,
+  "FightTypeGuns": [1, 8, 1, 0.1, 0, 0],
   "SalvoCapacity": 256,
   "CombatLogCapacity": 4096
 }

@@ -168,6 +168,8 @@ public sealed unsafe partial class MapScene : IScene
             ImGui.TextDisabled(s.Paused
                 ? "paused"
                 : $"asked {SpeedLabel(s.Speed)}, achieved {SpeedLabel(Math.Round(s.AchievedSpeed))}");
+            if (GunsSilent(s))
+                ImGui.TextColored(new Vector4(1f, 0.75f, 0.3f, 1), $"guns silent: no fire in the coarse tier ({world.Settings.CoarseMinSpeed:0}x and up) until coarse fire (4.9)");
             EncounterNews(s);
             if (s.Error != null)
                 ImGui.TextColored(new Vector4(1, 0.4f, 0.3f, 1), "the sim stopped: " + s.Error.Split('\n')[0]);

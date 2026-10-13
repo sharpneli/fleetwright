@@ -1,0 +1,23 @@
+// Two squadrons close and fight (docs/battle/fighting.md 4.2c, "Playable"): Beatty's 1st Battlecruiser Squadron and
+// Hipper's 1st Scouting Group, 22 km apart on converging courses in clear weather, both sides with the standing order
+// to Fight when they meet. Fire at will is every ship's default; give a group Engage to distribute its fire, or Hold
+// fire. Not history: a bench to watch fire control play out at 1x.
+{
+  "scenario": 1,
+  "name": "Squadrons",
+  "brief": "Beatty's four battlecruisers against Hipper's five, 22 km apart and closing in clear weather. Both sides fight when they meet: watch the turrets train, the salvos fall and straddle, and the hits (which do nothing yet).",
+  "start": "1916-05-31T15:30",
+  "seed": 4,
+  "camera": [56.47, 4.18, 40],
+  "sides": ["Britain", "Germany"],
+  "player": "Britain",
+  "fight": ["Britain", "Germany"],
+  "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 },
+  "units": [
+    { "name": "1st Battlecruiser Squadron", "side": 0, "at": [56.5, 4.0], "course": 120, "kn": 22, "formation": "column", "spacing": 500,
+      "ships": [ { "design": "lion", "names": ["Lion", "Princess Royal"] }, { "design": "queen_mary", "name": "Queen Mary" }, { "design": "tiger_1914", "name": "Tiger" } ] },
+    { "name": "1st Scouting Group", "side": 1, "at": [56.5, 4.36], "course": 160, "kn": 22, "formation": "column", "spacing": 500,
+      "ships": [ { "design": "derfflinger", "names": ["Lützow", "Derfflinger"] }, { "design": "seydlitz", "name": "Seydlitz" },
+                 { "design": "moltke", "name": "Moltke" }, { "design": "von_der_tann", "name": "Von der Tann" } ] }
+  ]
+}

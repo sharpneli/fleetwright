@@ -1,4 +1,5 @@
 using Fleetwright.Sim.Ai.Captains;
+using Fleetwright.Sim.Ai.Knowledge;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 
@@ -21,7 +22,7 @@ namespace Fleetwright.Sim.Ai.Admirals;
 /// <para>Ships that left their group or its line get their captains back, groups that left their force their admirals,
 /// and ships that are gone leave their group. He commands his own ships, so he reads them as they are; other ships he'd
 /// see through the picture.</para></summary>
-public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IAiLayer
+public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captains, SeenContacts seen) : IAiLayer
 {
     /// <summary>One admiral: his group's order, kept to hand to a new guide, and who gave it.</summary>
     sealed class Admiral
@@ -42,6 +43,9 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
         public bool Loop;
         public bool Watch;              // held by the player on a route: its end hands the group back
         public bool Asked;              // held by the player while his superior's orders for it changed: a notice
+        public FireOrder Fire;          // his group's fire order (AdmiralLayer.Fire.cs), engaging FireTarget
+        public int FireTarget;
+        public bool Standing, Met;      // a standing order to fight; taken up in this encounter
     }
 
     Admiral[] admirals = new Admiral[8];
@@ -100,6 +104,16 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
         var parent = g.Parent != 0 ? groups.Get(g.Parent) : null;
         var detached = parent?.DetachmentOf(g.GroupId) ?? Detachment.InLine;
         var a = Get(g.GroupId);
+
+        switch (code)
+        {
+            case AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage:
+                FireOrdered(ctx, g, a, c);   // the guns: the line keeps its stations
+                return;
+            case AiCommand.Standing:
+                (a.Standing, a.Met) = (c.X != 0, false);
+                return;
+        }
 
         switch (code)
         {
@@ -170,12 +184,13 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
             case AiCommand.LoopRoute:
                 a.Loop = c.X != 0;
                 break;
-            case AiCommand.Follow or AiCommand.Station or AiCommand.Run or AiCommand.Shadow:
+            case AiCommand.Follow or AiCommand.Station or AiCommand.Run or AiCommand.Shadow or AiCommand.Fight:
                 a.Order = code switch
                 {
                     AiCommand.Follow => CaptainOrder.Follow,
                     AiCommand.Station => CaptainOrder.Station,
                     AiCommand.Shadow => CaptainOrder.Shadow,
+                    AiCommand.Fight => CaptainOrder.Fight,
                     _ => CaptainOrder.Run,
                 };
                 (a.Target, a.DistanceM, a.AbeamM) = ((int)c.A, c.X, c.Y);
@@ -243,6 +258,9 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
                 continue;
             if (a.HandedTo != to.Id)
                 HandOver(ctx, a, to);
+            TakeUpStanding(ctx, g, a, lead);
+            if (a.Fire == FireOrder.Engage)
+                HandFire(ctx, g, a, fresh: false);
             Limit(ctx, g, a);
             Clear(ctx, g, a);
             var members = g.Line;
@@ -321,7 +339,7 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
     {
         int lead = ctx.Ships.SlotOf(groups.GuideShip(g));
         var to = GuideUnit(g);
-        if (a.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.None && lead >= 0 && to.Id != 0)
+        if (a.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.Fight or CaptainOrder.None && lead >= 0 && to.Id != 0)
         {
             (a.Order, a.CourseDeg, a.RudderDeg, a.RouteCount, a.Loop) = (CaptainOrder.Course, double.NaN, 0, 0, false);
             a.AskedKn = ctx.Ships[lead].SpeedOrderKn;
@@ -378,6 +396,9 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
                 break;
             case CaptainOrder.Shadow:
                 ctx.Issue(o.Shadow(to, new Unit(a.Target), a.DistanceM, Up));
+                break;
+            case CaptainOrder.Fight:
+                ctx.Issue(o.Fight(to, new Unit(a.Target), a.DistanceM, Up));
                 break;
         }
         if (!double.IsNaN(a.AskedKn))
@@ -464,6 +485,10 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
             h.Add(a.Loop);
             h.Add(a.Watch);
             h.Add(a.Asked);
+            h.Add((int)a.Fire);
+            h.Add(a.FireTarget);
+            h.Add(a.Standing);
+            h.Add(a.Met);
         }
     }
 

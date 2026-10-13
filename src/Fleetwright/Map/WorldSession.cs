@@ -173,6 +173,9 @@ public sealed class WorldSession : IDisposable
                 w.Apply(Command.SetSpeed(askedSpeed));
                 if (askedPaused)
                     w.Apply(Command.Pause());
+                foreach (var rule in interest)
+                    if (rule is { } r)
+                        w.Apply(r);   // and the player's interest rules (what an encounter does to the clock)
                 var old = host;
                 host = Start(w);
                 host.Truth = truth;
@@ -244,8 +247,8 @@ public sealed class WorldSession : IDisposable
 
     bool truth;
 
-    /// <summary>Sends a command to the world; the clock's (speed, pause) are remembered, so a scenario's new world
-    /// starts as asked even before the old world's snapshot shows it.</summary>
+    /// <summary>Sends a command to the world; the clock's (speed, pause, the interest rules) are remembered, so a
+    /// scenario's new world starts as asked even before the old world's snapshot shows it.</summary>
     public void Send(in Command c)
     {
         if (c.System == 0)
@@ -260,12 +263,16 @@ public sealed class WorldSession : IDisposable
                 case WorldCommand.Resume:
                     askedPaused = false;
                     break;
+                case WorldCommand.SetInterest when c.Entity is >= 0 and < 2:
+                    interest[c.Entity] = c;
+                    break;
             }
         host.Send(c);
     }
 
     double askedSpeed = 1;
     bool askedPaused;
+    readonly Command?[] interest = new Command?[2];   // the player's interest rules, by kind
 
     public void Dispose() => host.Dispose();
 }

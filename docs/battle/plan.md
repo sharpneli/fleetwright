@@ -9,7 +9,8 @@ Each step is its own session and starts with an investigation of its own: read t
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
 changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). Step 3, seeing and knowing, was agreed and built 2026-10-13 (3.1 relations, encounters, the player's interest; 3.2 sighting and pictures), with what it leaves open listed after 3.2. The time rework was agreed 2026-10-13 (the asked speed picks the clock tier, `docs/world/architecture.md` "The speed picks the tier") and 2.8, coarse motion, was built the same day (what it leaves open is under 2.8, "Carried on"). Step 4, fighting, is under way: its detailed plan is
 `docs/battle/fighting.md` (agreed 2026-10-13); 4.0 (the weapon facts), 4.1 (the hit query), 4.2a (ballistics and shells
-in flight) and 4.2b (mounts, fire control and spotting) are done (2026-10-13), and 4.2c, ordering fire, is next.
+in flight), 4.2b (mounts, fire control and spotting) and 4.2c (ordering fire: fire at will, engage, hold fire, the
+admirals' distribution, Fight) are done (2026-10-13), and 4.3a, what a hit does, is next.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things

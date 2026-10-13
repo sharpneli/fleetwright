@@ -337,6 +337,11 @@ public sealed class ShipsView
     public byte[] Captain = [];
     public int[] CaptainTarget = [];
 
+    /// <summary>Each ship's fire order (the AI's <c>Fleetwright.Sim.Ai.FireOrder</c>: at will, hold, engage) and the
+    /// ship it engages (0: none).</summary>
+    public byte[] Fire = [];
+    public int[] FireTarget = [];
+
     /// <summary>Held by the player while its superior's orders for it have changed: a notice, "resume?" (the AI's).</summary>
     public bool[] Asked = [];
 
@@ -409,6 +414,8 @@ public sealed class ShipsView
         Array.Resize(ref SpeedOrderKn, n);
         Array.Resize(ref Captain, n);
         Array.Resize(ref CaptainTarget, n);
+        Array.Resize(ref Fire, n);
+        Array.Resize(ref FireTarget, n);
         Array.Resize(ref Asked, n);
         Array.Resize(ref LandSide, n);
         Array.Resize(ref Backstops, n);

@@ -29,6 +29,10 @@ public enum CaptainOrder : byte
 
     /// <summary>Keep another unit in sight at a range, on the bearing he's on (docs/battle/plan.md step 3.2f).</summary>
     Shadow,
+
+    /// <summary>Close to a range band and hold it with the main battery bearing; turn away when outgunned
+    /// (docs/battle/fighting.md 4.2c).</summary>
+    Fight,
 }
 
 /// <summary>The captains (docs/battle/plan.md steps 2.3b and 2.6): one per ship that has been given an order, kept in
@@ -47,8 +51,9 @@ public enum CaptainOrder : byte
 /// <para><b>Notices:</b> while the player holds a ship, an order its superior gives it is dropped, and the captain
 /// raises a notice ("resume?") once; the admiral raises it too when his group's orders change. It's cleared when the
 /// ship is handed back or let go.</para>
-/// A captain whose ship is gone is dropped; one whose target is gone holds his course.</summary>
-public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
+/// A captain whose ship is gone is dropped; one whose target is gone holds his course. His guns and Fight are in
+/// CaptainLayer.Fire.cs.</summary>
+public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounters, SeenContacts seen) : IAiLayer
 {
     struct Captain
     {
@@ -63,6 +68,11 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
         public bool Watch;              // held by the player on a route: its end hands the ship back
         public bool Asked;              // held by the player while his superior's orders for him changed: a notice
         public Trail? Track;            // following in line ahead: the track of the ship ahead (made once, reused)
+        public FireOrder Fire;          // at will (the default), hold, or engage FireTarget
+        public int FireTarget, FireFrom;   // the ship engaged; the group whose admiral gave the fire order (0: his own)
+        public int FightSide, FightEnemy;  // fighting: the side he keeps the enemy on (0: not chosen yet), and whom
+        public bool FightAway;          // fighting: outgunned, turned away
+        public bool Standing, Met;      // a standing order to fight; taken up in this encounter
     }
 
     Captain[] captains = new Captain[16];
@@ -97,11 +107,24 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
         int i = Find(entity);
         return i >= 0 ? captains[i].ClearanceM : 0;
     }
-    public bool Active => active > 0;
+    public bool Active => active > 0 || Fighting;
 
     public int PeriodMs(in AiContext ctx)
     {
         int period = ctx.Settings.AiRailsPeriodMs;
+        if (fightingFine)
+            return ctx.Settings.CaptainPeriodMs;
+        if (Fighting)
+            for (int k = 0; k < ctx.Ships.OffRailsCount; k++)
+            {
+                int slot = ctx.Ships.OffRailsSlot(k);
+                if (encounters.Of(slot, ctx.Ships[slot].Entity) != 0)
+                {
+                    if (ctx.Ships.TierOf(slot) == ClockTier.Fine)
+                        return ctx.Settings.CaptainPeriodMs;
+                    period = Math.Min(period, ctx.Settings.CoarseStepMs);
+                }
+            }
         for (int i = 0; i < count; i++)
             if (IsActive(captains[i]) && ctx.Ships.SlotOf(captains[i].Entity) is int slot and >= 0)
             {
@@ -114,7 +137,7 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
         return period;
     }
 
-    static bool IsActive(in Captain c) => c.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow || c.Watch;
+    static bool IsActive(in Captain c) => c.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.Fight || c.Watch;
 
     /// <summary>A ship's captain's order, its target unit and who gave it; None if he has none.</summary>
     public (CaptainOrder Order, int Target, OrderSource Source) Of(int entity)
@@ -152,6 +175,16 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             return;   // dropped or never made: an order that reached no ship
         var code = (AiCommand)c.Code;
         var source = (OrderSource)c.B;
+        switch (code)
+        {
+            case AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage:
+                FireOrdered(ctx, c, source);   // the guns: not the helm, so he keeps his place in the line
+                return;
+            case AiCommand.Standing:
+                ref var st = ref Get(e);
+                (st.Standing, st.Met) = (c.X != 0, false);
+                return;
+        }
         var g = groups.Of(e);
         var detached = g?.DetachmentOf(e) ?? Detachment.InLine;
 
@@ -240,6 +273,10 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             case AiCommand.Shadow:
                 (cap.Order, cap.Target, cap.DistanceM, cap.AbeamM) = (CaptainOrder.Shadow, (int)c.A, c.X, 0);
                 break;
+            case AiCommand.Fight:
+                (cap.Order, cap.Target, cap.DistanceM, cap.AbeamM) = (CaptainOrder.Fight, (int)c.A, c.X, 0);
+                (cap.FightSide, cap.FightEnemy, cap.FightAway) = (0, 0, false);
+                break;
             default:
                 throw new ArgumentException($"unknown AI command {c.Code}");
         }
@@ -256,7 +293,7 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             return;
         ref var cap = ref captains[i];
         var own = ctx.Ships[slot];
-        if (cap.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.None)
+        if (cap.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.Fight or CaptainOrder.None)
             (cap.Order, cap.Target, cap.AskedKn) = (own.Helm == Helm.Route ? CaptainOrder.Route : CaptainOrder.Course, 0, own.SpeedOrderKn);
         SetLimit(ctx, ref cap, own, 0);
         SetClearance(ctx, ref cap, entity, 0);
@@ -304,6 +341,11 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             }
             if (ctx.Ships.RidesAnother(slot))
                 continue;   // carried on its guide's rails, held exactly on station: an order would only derail the line
+            if (cap.Order == CaptainOrder.Fight)
+            {
+                FightThink(ctx, ref cap, own, slot);
+                continue;
+            }
             int target = new Unit(cap.Target).ShipOf(groups);
             if (target == 0 || target == cap.Entity || !ctx.Picture.TryGet(own.Side, target, out var t))
             {
@@ -345,6 +387,8 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
                 kn = Math.Min(kn, cap.LimitKn);
             Give(ctx, own, course, kn);
         }
+        if (Fighting)
+            FirePass(ctx);
         Recount();
     }
 
@@ -410,6 +454,7 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
     {
         h.Add(count);
         h.Add(Notices);
+        h.Add(fighting);
         for (int i = 0; i < count; i++)
         {
             ref readonly var c = ref captains[i];
@@ -424,6 +469,14 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             h.Add(c.ClearanceM);
             h.Add(c.Watch);
             h.Add(c.Asked);
+            h.Add((int)c.Fire);
+            h.Add(c.FireTarget);
+            h.Add(c.FireFrom);
+            h.Add(c.FightSide);
+            h.Add(c.FightEnemy);
+            h.Add(c.FightAway);
+            h.Add(c.Standing);
+            h.Add(c.Met);
             c.Track?.Hash(ref h);
         }
     }
@@ -436,6 +489,7 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
             int i = Find(v.Entity[k]);
             (v.Captain[k], v.CaptainTarget[k]) = i >= 0 ? ((byte)captains[i].Order, new Unit(captains[i].Target).ShipOf(groups)) : ((byte)0, 0);
             v.Asked[k] = i >= 0 && captains[i].Asked;
+            (v.Fire[k], v.FireTarget[k]) = i >= 0 ? ((byte)captains[i].Fire, captains[i].FireTarget) : ((byte)0, 0);
         }
     }
 

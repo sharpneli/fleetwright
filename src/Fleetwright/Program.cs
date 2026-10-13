@@ -19,7 +19,7 @@ public static unsafe class Program
         bool mapGiven = false;
         var start = Sim.Core.WorldTime.FromUtc(1916, 5, 31, 14, 0);
         double? startSpeed = null;
-        bool startPaused = false;
+        bool startPaused = false, noPause = false;
         var devShips = new List<string>();
         int selectShip = -1;
         var captains = new List<string>();
@@ -109,6 +109,10 @@ public static unsafe class Program
             else if (arg == "-paused")   // the world starts paused
             {
                 startPaused = true;
+            }
+            else if (arg == "-nopause")   // the player's encounters don't pause the clock (screenshots of a fight going on)
+            {
+                noPause = true;
             }
             else if (arg.StartsWith("-ships="))   // dev ships: -ships=dreadnought[:count[:side]][@lat,lon,heading[,kn]] (the North Sea by default); repeatable
             {
@@ -292,6 +296,8 @@ public static unsafe class Program
                 world.Send(Sim.Command.SetSpeed(speed0));
             if (startPaused)
                 world.Send(Sim.Command.Pause());
+            if (noPause)
+                world.Send(Sim.Command.SetInterest(Sim.InterestKind.Own, Sim.InterestAction.Nothing));
             engine.FrameStarted = world.Frame;
 
             // the world opens by default; -view=designer (or any designer flag), -view=hitbox, -view=ship or -view=profile

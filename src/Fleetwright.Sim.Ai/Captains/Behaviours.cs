@@ -204,6 +204,28 @@ public static class Behaviours
         return (course, Flank(own.Handling));
     }
 
+    /// <summary>Fight (docs/battle/fighting.md 4.2c): the course that keeps the enemy on the beam, the side the main
+    /// battery fights from, turned <paramref name="closeDeg"/> in toward him beyond the band (<paramref name="rangeM"/>,
+    /// ± <paramref name="bandShare"/> of it) and as far out inside it. <paramref name="side"/> is which side the enemy is
+    /// kept on (1 starboard, -1 port); 0 picks the one nearer the ship's heading, and it's returned so the captain keeps
+    /// it. The speed is his full speed.</summary>
+    public static (double CourseDeg, double SpeedKn) Fight(ShipState own, in Sighting enemy, double rangeM, double bandShare, double closeDeg,
+        ref int side)
+    {
+        var p = own.Position;
+        double bearing = Earth.Bearing(p, enemy.Position), range = Earth.Distance(p, enemy.Position);
+        double off = range > rangeM * (1 + bandShare) ? 90 - closeDeg : range < rangeM * (1 - bandShare) ? 90 + closeDeg : 90;
+        if (side == 0)
+        {
+            double heading = own.HeadingDeg;
+            side = Math.Abs(Wrap(bearing - off - heading)) <= Math.Abs(Wrap(bearing + off - heading)) ? 1 : -1;
+        }
+        double course = bearing - side * off;
+        return (((course % 360) + 360) % 360, own.Handling.Class.Motion.MaxSpeedKn);
+    }
+
+    static double Wrap(double d) => d - 360 * Math.Round(d / 360);
+
     /// <summary>The most the ship makes: its speed at the plant's overload rating.</summary>
     public static double Flank(Handling h) => h.Class.SpeedAt(h.MaxPowerW / Handling.WattsPerShp);
 
