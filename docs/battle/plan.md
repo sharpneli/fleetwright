@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; the next is ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, done 2026-10-12; reworked 2026-10-13 into a slide along the coast, S1-S3, proposed), then 2.7, the Jutland scale test.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; the next is ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, done 2026-10-12; reworked 2026-10-13 into a slide along the coast, S1-S3 before the Jutland test), then 2.7, the Jutland scale test.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1208,12 +1208,12 @@ later, 5.2; `docs/battle/command-ui.md`, the user's command UI research, is comm
 
 **Ships and the land: `docs/world/terrain-plan.md`** (the user, 2026-10-12: after 2.6 and before the Jutland
 test). T1 is `Shore`, the land index, with the world holding the 1:10M `Land` (done 2026-10-12). The rest was
-reworked 2026-10-13 (the user: the pilot's plots were too complex for the result wanted), proposed: Rule the Waves'
+reworked 2026-10-13 (the user: the pilot's plots were too complex for the result wanted), agreed: Rule the Waves'
 slide along the coast, done a little better. S1 is the slide in the fine tier (a feeler in the helmsman turning a
 ship onto the coast's line at its standoff, every ship; the backstop in the step; spawning and waypoints off land).
 S2 takes units off rails short of land and moves the scale tests to the Pacific, and measures what coast-followers
-on the fine tick cost the clock; S3 slides on rails too if that's too much. Guided areas (gates closing straits,
-canals) come when a mission needs them. Jutland was fought beside the Danish coast and Horns Reef, so the scale test
+on the fine tick cost the clock; S3 slides on rails too, so a coast doesn't hold the clock. All three come before
+the Jutland test. Guided areas (gates closing straits, canals: S4) come after it, when a mission needs them. Jutland was fought beside the Danish coast and Horns Reef, so the scale test
 measures the slide too.
 
 **2.7 Scale: the Jutland test.** 250 ships of ~55 classes, loaded, steaming in formation in the fine tier, drawn

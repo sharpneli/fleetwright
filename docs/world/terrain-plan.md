@@ -1,7 +1,7 @@
 # Plan: ships and the land
 
-2026-10-12, reworked 2026-10-13. Status: **the rework is proposed**, waiting for the user's word on "Open
-questions". T1 (`Shore`) is done and stands. The rest of the 2026-10-12 plan (a pilot plotting each ship's track
+2026-10-12, reworked 2026-10-13. Status: **the rework is agreed** (the user, 2026-10-13), but for one open question
+("Open questions"). T1 (`Shore`) is done and stands. The rest of the 2026-10-12 plan (a pilot plotting each ship's track
 ahead, rails along the plot, a router) was too complex for the result wanted now (the user, 2026-10-13), so it's
 replaced by a slide along the coast: Rule the Waves' behaviour, done a little better. What was dropped and why is in
 "Dropped", so it can come back if it's ever needed.
@@ -94,15 +94,15 @@ It changes what he steers, never the order.
   middle, so it goes down the middle.
 - **Released** when the wanted course is clear over the look-ahead again: it steers its order, and the side is
   forgotten.
-- **Boxed in:** when the slide's course is more than `SlideBoxedDeg` (~120°) from the wanted one (the end of a fjord,
-  a waypoint behind a peninsula), the ship rings stop and stays stopped until its next order. The pilot may stop a
-  ship (the user, 2026-10-12). It's a notice in the strip.
+- **Boxed in** (the end of a fjord, a waypoint behind a peninsula): the ship keeps following the coast round on its
+  side, even if that takes it round a bay and back (the user, 2026-10-13: for now). No stop. The strip says it's
+  following the coast.
 - **Who:** every ship steered by `Course` or `Route`, formation members included: at sea it costs one lookup, so
   there's no need to pick only guides. A ship stationed abeam that a coast comes too close to slides along it while
   the rest of the line holds station, as Rule the Waves' does. A raw `Rudder` order gets only the backstop.
 - **Orders are untouched.** The ordered course stays what the player or captain gave, and captains compare their
   ship against their own order, so the slide never starts a re-order loop. The store keeps two small things per
-  ship, hashed: the side it's sliding on (0, port, starboard) and whether it's boxed in. The snapshot carries them, so
+  ship, hashed: the side it's sliding on (0, port, starboard). The snapshot carries them, so
   the strip can say "altered for land" with the order ghosted: never an unexplained deviation (the lesson from Rule
   the Waves in the fleet-command research).
 - **Deterministic:** a pure function of the ship's state and `Shore`, so replays re-derive it.
@@ -131,11 +131,11 @@ Rails don't step, so neither the feeler nor the backstop sees a ship on them. On
 - **`Ready` asks for the same trace clear** past the margin, so a placing unit doesn't go straight back on rails
   heading for land, and for no ship of the unit sliding. Once a ship is clear and back on its order, it goes on rails
   again as now.
-- **The cost:** a unit following a coast stays on the fine tick, so a coast holds the clock while someone's on it.
-  This reverses the 2026-10-12 principle that land never breaks time compression (see "Open questions"). S2 measures
-  it; if it's too much, S3 slides on rails too.
+- **The cost:** until S3, a unit following a coast stays on the fine tick, so a coast holds the clock while someone's
+  on it. Allowed in between: "land never breaks time compression" is a rule for the end of development, not for every
+  step on the way (the user, 2026-10-13). S3 restores it before the Jutland test.
 
-### 5. Sliding on rails (only if S2's measure asks for it)
+### 5. Sliding on rails (S3, before the Jutland test)
 
 At clock speeds where nobody sees a turn (`RailsSnapMinSpeed` and up; the clock only, not the map's scale, so the
 rails' one display exception isn't leaned on further), `LandAhead` doesn't derail: the same slide rule, evaluated at
@@ -159,7 +159,7 @@ What must stay possible, and how the slide leaves room for it. Data in `Content/
   rails, so a transit does too, with its ends as events.
 - **What to keep now so they fit:** the feeler and the backstop ask about land through one small place (the slide's
   own two queries), never `Shore` from many paths, so gates add their few segments there; and a ship's slide state
-  has room for "guided" (land checks off) beside "sliding" and "boxed in".
+  has room for "guided" (land checks off) beside "sliding".
 - **A router** (A\* over `Shore`'s cells, routes round continents) isn't needed for any of this. If a routed `GoTo`
   comes, passages are edges in it.
 
@@ -167,7 +167,7 @@ What must stay possible, and how the slide leaves room for it. Data in `Content/
 
 - Right-click gives a course, shift+right-click a waypoint, as now (the user, 2026-10-12); a waypoint or a spawn on
   land is refused, and the cursor says so.
-- The strip names an alteration ("altered for land", the ordered course ghosted) and a ship boxed in.
+- The strip names an alteration ("altered for land", the ordered course ghosted) and a ship following a coast.
 - **A dev overlay:** the standoff and minimum around selected ships, the feeler's line and its contact, the backstop's
   touches. The slide can't be tuned without seeing it.
 - **The levels disagree:** the globe zoom draws 1:110M, where the Dardanelles are shut, so an icon may sit on drawn
@@ -182,7 +182,7 @@ What must stay possible, and how the slide leaves room for it. Data in `Content/
   ships within a few km of land pay it. If a Jutland beside the Danish coast shows it, the feeler can run every few
   ticks instead (the course it gives held between).
 - **Rails:** one trace per laying, nothing per tick. The real cost is 4's: coast-followers on the fine tick hold the
-  clock. Measured in S2, against S3.
+  clock until S3. S2 measures it, as S3's baseline.
 - **No garbage, deterministic:** nothing allocated in the slide; its state is in the store's arrays and hashed.
   Replays record the land's hash (`Land.Hash`), since the land now changes results.
 
@@ -220,14 +220,15 @@ signed short per cell; kinds by parity; `World` takes an optional `Shore`; the b
 
 **S1 The slide in the fine tier.** Standoffs in `Handling`; the feeler (`Slide.cs`) between the helm's wanted
 course and `Steer`; the backstop after the arc; its counters; spawning on land moved to sea; the map refusing
-waypoints and spawns on land; the slide's side and boxed-in in the store, hashed, and in the snapshot; the strip's
+waypoints and spawns on land; the slide's side in the store, hashed, and in the snapshot; the strip's
 notice; the overlay's first layer. `ShipMotion.StepAll` takes the world's `Shore` (null: nothing to do). Scenario
 tests, each also a `-ships` dev command to look at:
 - a course straight at the Norwegian coast at 10 and 28 kn, and one 20° off it: slides at the standoff, resumes once
   clear, never inside the minimum, no backstop touch;
 - a destroyer and a battleship on the same coast (different standoffs);
 - `Follow` through the Bosporus (down the middle);
-- a course into the end of a fjord, and a waypoint behind a peninsula: boxed in, stopped;
+- a course into the end of a fjord, and a waypoint behind a peninsula: it follows the coast round, never inside the
+  minimum;
 - a line abreast along the Jutland coast: the landward ship slides, the rest hold station; counted;
 - each captain's behaviour against a coast, with no re-order loop;
 - no allocation; the feeler's cost at sea and along Norway, measured.
@@ -236,17 +237,19 @@ tests, each also a `-ships` dev command to look at:
 `ShipSystem.Rails.cs`. The scale tests move to the Pacific (the user, 2026-10-12): `RailsTests`' 2,000 ships spread
 from 40°S to 40°N, where there's room; a test that must cross land (the meridian over both poles) runs in a world of
 water. Measure the clock (2.5's achieved speed against asked) for a ship and a squadron holding a course into
-Norway at 10,000x, 100,000x and 1M×, so S3 is decided by numbers.
+Norway at 10,000x, 100,000x and 1M×: S3's baseline.
 
-**S3 Sliding on rails,** if S2's numbers ask for it, before the Jutland test.
+**S3 Sliding on rails,** so a coast no longer holds the clock: the same scenarios at 30,000x on rails and on the fine
+tick end close to each other, and S2's measure shows the clock kept along Norway.
 
-**S4 Guided areas,** gates and canals, when a mission needs one.
+**S4 Guided areas,** gates and canals: after the Jutland test, when a mission needs one. The missions' game loop
+doesn't need them (the user, 2026-10-13), but S1-S3 must keep them possible ("Guided areas").
 
 **Later:** a router and a routed `GoTo` (passages as its edges), bathymetry (GEBCO, behind the same clearance
 queries: draught-aware), ports and 1916 harbour works (the "Earth model"), grounding as damage if it's ever wanted,
 admirals keeping formations off coasts (2.6b's clearance chain is theirs to read, or to remove).
 
-**In the battle plan's order:** S1 and S2 (and S3 if needed) come before 2.7, the Jutland test, which is fought
+**In the battle plan's order:** S1, S2 and S3 come before 2.7 (the user, 2026-10-13), the Jutland test, which is fought
 beside the Danish coast and Horns Reef, so it measures the slide too.
 
 ## Dropped from the 2026-10-12 plan
@@ -258,12 +261,12 @@ Kept here so it can come back if the slide isn't enough.
   The feeler gives the slide's look with none of it. What it loses: a ship follows a bay's shore rather than crossing
   its mouth (the release check cuts most short), and the player sees no track ahead, only the alteration as it
   happens.
-- **Rails along the plot** (old T4): turn pieces on rails, columns riding the guide's track astern. S3, if needed,
-  slides with instant turns instead.
+- **Rails along the plot** (old T4): turn pieces on rails, columns riding the guide's track astern. S3 slides with
+  instant turns instead.
 - **Only guides plotted** (decision 7): moot. Every ship feels, since it's cheap at sea; a formation's outer ships
   slide on the feeler, with the backstop under it.
 - **The router and `GoTo`** (old T5): to "Later".
-- **AI search patterns' legs checked against land:** a leg into land now slides, or is boxed in. Revisit if the AI
+- **AI search patterns' legs checked against land:** a leg into land now slides. Revisit if the AI
   is seen doing it.
 - **2.6b's clearance chain** stays in place, unread by the sim.
 
@@ -274,17 +277,18 @@ The user, 2026-10-12, still standing:
 1. **Right-click** gives a course, not a waypoint or a route. Shift+right-click adds a waypoint; on land it fails.
 2. **Standoffs are close,** as in Rule the Waves: tens to hundreds of metres. They can grow later.
 3. **Canals** aren't in the first version (now S4, with gates).
-4. **The pilot may stop a ship** when it's boxed in.
-5. **The scale tests go to the Pacific.**
+4. **The scale tests go to the Pacific.**
 
 The user, 2026-10-13:
 
-6. **The pilot's plot, plotted rails and the router are dropped** for a slide along the coast (this rework).
+5. **The pilot's plot, plotted rails and the router are dropped** for a slide along the coast (this rework).
+6. **"Land never breaks time compression" holds at the end:** a coast may hold the clock until S3. Gameplay rules
+   like it are what the finished game must do, not invariants for every step on the way.
+7. **Boxed in, a ship follows the coast round,** for now; it isn't stopped (replaces 2026-10-12's "the pilot may stop
+   a ship").
+8. **S1-S3 before the Jutland test; S4 after,** when a mission needs it, but kept possible.
 
 ## Open questions (for the user)
 
-1. **Coast-followers on the fine tick:** S2 lets a coast hold the clock while a ship follows it, until measured, and
-   S3 only if the numbers ask. That relaxes 2026-10-12's "land never breaks time compression". Fine?
-2. **Boxed in:** stop (as proposed), or keep following the coast round, even if that means circling a bay?
-3. **Every ship feels,** formation members included (proposed), or only lone ships and guides, the rest left to the
-   backstop's snap as in Rule the Waves?
+1. **Every ship feels,** formation members included (proposed), or only lone ships and guides, the rest left to the
+   backstop's snap as in Rule the Waves? The trade-offs were laid out 2026-10-13; waiting for the user's choice.
