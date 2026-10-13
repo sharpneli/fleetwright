@@ -2,6 +2,16 @@ using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim.Combat;
 
+/// <summary>How a ship advances (docs/world/architecture.md "Four clock tiers, one clock"): stepped on the fixed fine
+/// tick; on anchored segments of kinematic motion, decided for on the coarse step; or on rails, a function of time.
+/// What a ship is doing and the asked speed pick it (ShipSystem.Tiers.cs). Routine is a group's, above ships.</summary>
+public enum ClockTier : byte
+{
+    Fine,
+    Coarse,
+    Rails,
+}
+
 /// <summary>What steers a ship: nothing (the rudder stays where it is), a rudder angle held, a course, or a route.</summary>
 public enum Helm : byte
 {
@@ -45,11 +55,11 @@ public sealed class ShipStore
     internal sbyte[] landSide = [];
     internal int[] backstops = [];
 
-    // the rails clock tier (docs/battle/plan.md step 2.5): a ship steaming steady isn't stepped, it's a function of time.
-    // A ship on its own is on a great circle from an anchor (time, position, forward) at a speed; a group's other ships
-    // ride at a fixed offset (ahead, to starboard) in their guide's frame. railGen goes up whenever a ship's rails
-    // change, so its waypoint events go stale.
-    internal bool[] rails = [];
+    // the clock tier, and the anchored tiers' columns (docs/battle/plan.md steps 2.5 and 2.8): a ship on rails or coarse
+    // isn't stepped, it's a function of time. A ship on its own is on a great circle or a rhumb line from an anchor
+    // (time, position, forward) at a speed; a group's other ships ride at a fixed offset (ahead, to starboard) in their
+    // guide's frame. railGen goes up whenever a ship's anchor changes, so its events go stale.
+    internal ClockTier[] tier = [];
     internal long[] railMs = [];
     internal Vec3d[] railPos = [], railFwd = [];
     internal double[] railSpeed = [], railX = [], railY = [];
@@ -108,7 +118,7 @@ public sealed class ShipStore
         power[slot] = powerOrder[slot] = h.PowerFor(speedMs / Handling.MsPerKnot);
         speedOrderKn[slot] = speedMs / Handling.MsPerKnot;
         poseMs[slot] = timeMs;
-        SetRails(slot, false);
+        SetTier(slot, ClockTier.Fine);
         railGen[slot]++;
         helm[slot] = Helm.Course;
         courseDeg[slot] = Earth.Heading(this.position[slot], this.forward[slot]);
@@ -124,38 +134,74 @@ public sealed class ShipStore
 
     // ------------------------------------------------------------------ the rails tier
 
-    public bool OnRails(int slot) => rails[slot];
+    public bool OnRails(int slot) => tier[slot] == ClockTier.Rails;
 
-    // the live ships off rails, densely: what the fine tick steps (each ship's step reads only its own slot, so their
-    // order changes nothing)
-    int[] fineSlots = [], fineIndex = [];
-    int fineCount;
+    /// <summary>A ship's clock tier.</summary>
+    public ClockTier TierOf(int slot) => tier[slot];
+
+    /// <summary>Not stepped: on rails or coarse, its pose a function of time from its anchor.</summary>
+    public bool Anchored(int slot) => tier[slot] != ClockTier.Fine;
+
+    // the live ships of the fine and the coarse tier, densely: what the fine tick steps and the coarse step decides for
+    // (each ship's step reads only its own slot, so their order changes nothing)
+    readonly SlotList fine = new(), coarse = new();
 
     /// <summary>How many live ships are on the fine tick, and the i-th of them (in no order that matters).</summary>
-    public int FineCount => fineCount;
-    public int FineSlot(int i) => fineSlots[i];
+    public int FineCount => fine.Count;
+    public int FineSlot(int i) => fine[i];
 
-    void SetRails(int slot, bool on)
+    /// <summary>How many live ships are coarse, and the i-th of them (in no order that matters).</summary>
+    public int CoarseCount => coarse.Count;
+    public int CoarseSlot(int i) => coarse[i];
+
+    void SetTier(int slot, ClockTier t)
     {
-        rails[slot] = on;
-        if (on)
-            RemoveFine(slot);
-        else if (fineIndex[slot] < 0)
-        {
-            fineIndex[slot] = fineCount;
-            fineSlots[fineCount++] = slot;
-        }
+        tier[slot] = t;
+        if (t == ClockTier.Fine)
+            fine.Add(slot);
+        else
+            fine.Remove(slot);
+        if (t == ClockTier.Coarse)
+            coarse.Add(slot);
+        else
+            coarse.Remove(slot);
     }
 
-    void RemoveFine(int slot)
+    /// <summary>A set of slots, dense, with each one's place in it: adding, removing and walking allocate nothing
+    /// (removing moves the last into the gap).</summary>
+    sealed class SlotList
     {
-        int k = fineIndex[slot];
-        if (k < 0)
-            return;
-        int last = fineSlots[--fineCount];
-        fineSlots[k] = last;
-        fineIndex[last] = k;
-        fineIndex[slot] = -1;
+        int[] slots = [], index = [];
+
+        public int Count { get; private set; }
+        public int this[int i] => slots[i];
+
+        public void Grow(int n)
+        {
+            int old = index.Length;
+            Array.Resize(ref slots, n);
+            Array.Resize(ref index, n);
+            Array.Fill(index, -1, old, n - old);
+        }
+
+        public void Add(int slot)
+        {
+            if (index[slot] >= 0)
+                return;
+            index[slot] = Count;
+            slots[Count++] = slot;
+        }
+
+        public void Remove(int slot)
+        {
+            int k = index[slot];
+            if (k < 0)
+                return;
+            int last = slots[--Count];
+            slots[k] = last;
+            index[last] = k;
+            index[slot] = -1;
+        }
     }
 
     /// <summary>A ship's pose now: its stepped pose, or where its rails put it at <see cref="NowMs"/>.</summary>
@@ -165,7 +211,7 @@ public sealed class ShipStore
     /// re-anchors them); a ship off rails is where it was last stepped to.</summary>
     public void PoseAt(int slot, long ms, out Vec3d position, out Vec3d forward)
     {
-        if (!rails[slot])
+        if (tier[slot] == ClockTier.Fine)
         {
             (position, forward) = (this.position[slot], this.forward[slot]);
             return;
@@ -196,7 +242,7 @@ public sealed class ShipStore
     /// heading (NaN).</summary>
     public void Rail(int slot, double courseDeg, double speedMs)
     {
-        SetRails(slot, true);
+        SetTier(slot, ClockTier.Rails);
         railGen[slot]++;
         (railMs[slot], railPos[slot], railFwd[slot], railSpeed[slot], railGuide[slot], railCourse[slot]) =
             (NowMs, position[slot], forward[slot], speedMs, -1, courseDeg);
@@ -247,7 +293,7 @@ public sealed class ShipStore
         PoseNow(guide, out var gp, out var gf);
         var d = position[slot] - gp;
         var up = gp.Normalized();
-        SetRails(slot, true);
+        SetTier(slot, ClockTier.Rails);
         railGen[slot]++;
         (railGuide[slot], railX[slot], railY[slot], railSpeed[slot]) = (guide, Vec3d.Dot(d, gf), Vec3d.Dot(d, Vec3d.Cross(gf, up)), railSpeed[guide]);
         yawRate[slot] = rudder[slot] = 0;
@@ -258,7 +304,7 @@ public sealed class ShipStore
     /// the power that holds that speed, so it comes off rails steaming as the rails had it.</summary>
     public void RailAt(int slot, int guide, double aheadM, double starboardM)
     {
-        SetRails(slot, true);
+        SetTier(slot, ClockTier.Rails);
         railGen[slot]++;
         (railGuide[slot], railX[slot], railY[slot], railSpeed[slot]) = (guide, aheadM, starboardM, railSpeed[guide]);
         yawRate[slot] = rudder[slot] = 0;
@@ -288,16 +334,16 @@ public sealed class ShipStore
     }
 
     /// <summary>On rails riding another ship (a group's ship on its guide's), not on rails of its own.</summary>
-    public bool RidesAnother(int slot) => rails[slot] && railGuide[slot] >= 0;
+    public bool RidesAnother(int slot) => tier[slot] != ClockTier.Fine && railGuide[slot] >= 0;
 
     /// <summary>The slot of the ship a ship rides on rails (its group's guide), or -1.</summary>
-    public int RidingOn(int slot) => rails[slot] ? railGuide[slot] : -1;
+    public int RidingOn(int slot) => tier[slot] != ClockTier.Fine ? railGuide[slot] : -1;
 
     /// <summary>How far abeam of its guide a ship rides on rails, metres, either side (0 on rails of its own, or off).</summary>
-    public double RailAbeamM(int slot) => rails[slot] && railGuide[slot] >= 0 ? Math.Abs(railY[slot]) : 0;
+    public double RailAbeamM(int slot) => RidesAnother(slot) ? Math.Abs(railY[slot]) : 0;
 
     /// <summary>How far a ship rides from its guide on rails, metres (0 on rails of its own, or off rails).</summary>
-    public double RailOffsetM(int slot) => rails[slot] && railGuide[slot] >= 0 ? Math.Sqrt(railX[slot] * railX[slot] + railY[slot] * railY[slot]) : 0;
+    public double RailOffsetM(int slot) => RidesAnother(slot) ? Math.Sqrt(railX[slot] * railX[slot] + railY[slot] * railY[slot]) : 0;
 
     /// <summary>A ship on rails has reached its route's next waypoint: it turns there at once for the one after (true,
     /// with that one), or, past the last, holds the course it arrived on (false). Not <paramref name="anchor"/>ed (a ship
@@ -373,7 +419,7 @@ public sealed class ShipStore
     }
 
     /// <summary>Whether a ship's rails are a rhumb line (a course held), not a great circle.</summary>
-    public bool OnRhumb(int slot) => rails[slot] && railGuide[slot] < 0 && !double.IsNaN(railCourse[slot]);
+    public bool OnRhumb(int slot) => tier[slot] != ClockTier.Fine && railGuide[slot] < 0 && !double.IsNaN(railCourse[slot]);
 
     /// <summary>Counts the changes to a ship's rails: an event stamped with an older count is stale.</summary>
     public int RailGen(int slot) => railGen[slot];
@@ -382,14 +428,14 @@ public sealed class ShipStore
     /// amidships, its power as it was.</summary>
     public void Derail(int slot)
     {
-        if (!rails[slot])
+        if (tier[slot] == ClockTier.Fine)
             return;
         PoseNow(slot, out var p, out var f);
         (position[slot], forward[slot], speed[slot], poseMs[slot]) = (p, f, railSpeed[slot], NowMs);
         yawRate[slot] = rudder[slot] = 0;
         if (railGuide[slot] >= 0 && helm[slot] == Helm.Course)
             courseDeg[slot] = Earth.Heading(p, f);   // a ship carried by its guide comes off steering as the rails had it, not for a course they left behind
-        SetRails(slot, false);
+        SetTier(slot, ClockTier.Fine);
         railGen[slot]++;
     }
 
@@ -398,13 +444,14 @@ public sealed class ShipStore
         if (!IsAlive(slot))
             return;
         for (int i = 0; i < high; i++)
-            if (alive[i] && rails[i] && railGuide[i] == slot)
+            if (alive[i] && tier[i] != ClockTier.Fine && railGuide[i] == slot)
                 Derail(i);   // riding on a ship that's going: off rails first
         Derail(slot);
         alive[slot] = false;
         if (entity[slot] >= 0 && entity[slot] < slotOfEntity.Length && slotOfEntity[entity[slot]] == slot + 1)
             slotOfEntity[entity[slot]] = 0;
-        RemoveFine(slot);   // a dead slot is stepped by nothing
+        fine.Remove(slot);   // a dead slot is stepped and decided for by nothing
+        coarse.Remove(slot);
         handling[slot] = null!;
         generation[slot]++;
         free.Push(slot);
@@ -520,9 +567,11 @@ public sealed class ShipStore
             h.Add(routeLoop[i]);
             h.Add(landSide[i]);
             h.Add(backstops[i]);
-            h.Add(rails[i]);
+            h.Add(tier[i] != ClockTier.Fine);
+            if (tier[i] == ClockTier.Coarse)
+                h.Add(1);   // only then, so a world without coarse ships hashes as it did before the tier
             h.Add(railGen[i]);
-            if (rails[i])
+            if (tier[i] != ClockTier.Fine)
             {
                 h.Add(railMs[i]);
                 h.Add(railPos[i]);
@@ -540,10 +589,8 @@ public sealed class ShipStore
 
     void Grow(int n)
     {
-        int old = fineIndex.Length;
-        Array.Resize(ref fineSlots, n);
-        Array.Resize(ref fineIndex, n);
-        Array.Fill(fineIndex, -1, old, n - old);
+        fine.Grow(n);
+        coarse.Grow(n);
         Array.Resize(ref entity, n);
         Array.Resize(ref generation, n);
         Array.Resize(ref classIndex, n);
@@ -570,7 +617,7 @@ public sealed class ShipStore
         Array.Resize(ref routeLoop, n);
         Array.Resize(ref landSide, n);
         Array.Resize(ref backstops, n);
-        Array.Resize(ref rails, n);
+        Array.Resize(ref tier, n);
         Array.Resize(ref railMs, n);
         Array.Resize(ref railPos, n);
         Array.Resize(ref railFwd, n);
@@ -627,17 +674,20 @@ public readonly struct ShipState(ShipStore store, int slot)
     }
 
     /// <summary>On the rails clock tier: a function of time, not stepped.</summary>
-    public bool OnRails => store.rails[slot];
+    public bool OnRails => store.tier[slot] == ClockTier.Rails;
+
+    /// <summary>Its clock tier: fine, coarse or rails.</summary>
+    public ClockTier Tier => store.tier[slot];
 
     /// <summary>Speed through the water, m/s (negative astern); rate of turn, rad/s (positive to starboard); rudder
     /// angle, rad; shaft power, W (negative astern).</summary>
-    public double Speed => store.rails[slot] ? store.railSpeed[slot] : store.speed[slot];
+    public double Speed => store.tier[slot] != ClockTier.Fine ? store.railSpeed[slot] : store.speed[slot];
     public double YawRate => store.yawRate[slot];
     public double Rudder => store.rudder[slot];
     public double Power => store.power[slot];
 
     /// <summary>The world time the pose is at, ms.</summary>
-    public long PoseMs => store.rails[slot] ? store.NowMs : store.poseMs[slot];
+    public long PoseMs => store.tier[slot] != ClockTier.Fine ? store.NowMs : store.poseMs[slot];
 
     public double HeadingDeg
     {

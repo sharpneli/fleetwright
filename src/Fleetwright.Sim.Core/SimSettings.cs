@@ -198,6 +198,18 @@ public sealed record SimSettings
     /// snap is plainly visible and jarring, so there the turns play out, at the clock's cost.</summary>
     public double RailsSnapMinSpeed { get; init; } = 10_000;
 
+    /// <summary>At this asked speed and above, every ship that isn't on rails is in the coarse clock tier: kinematic
+    /// motion (constant acceleration, turns as arcs of the turning circle), decided for every
+    /// <see cref="CoarseStepMs"/>; below it they're on the fine tick (docs/world/architecture.md "The speed picks the
+    /// tier"). 240× (the user, 2026-10-13): a frame is 4 game seconds, so the rudder and the swing left out aren't seen.
+    /// The asked speed, never the achieved one: it's world state, so this is deterministic.</summary>
+    public double CoarseMinSpeed { get; init; } = 240;
+
+    /// <summary>The coarse step, ms (a multiple of <see cref="RailsCheckMs"/>): how often coarse ships' captains and
+    /// admirals decide, and contacts, encounters, the rails check and sighting are looked at. Coarse motion is exact
+    /// between steps, so the step doesn't change where ships go, only when they decide.</summary>
+    public int CoarseStepMs { get; init; } = 60_000;
+
     /// <summary>At this asked speed and above, a unit the map doesn't show ship by ship (its ships and turns spanning
     /// fewer than <see cref="RailsWatchedPx"/> at the map's scale: drawn as one marker) is placed on rails and its
     /// orders snap, as at <see cref="RailsSnapMinSpeed"/>. 1: at any speed (the user, 2026-10-12: once only the force

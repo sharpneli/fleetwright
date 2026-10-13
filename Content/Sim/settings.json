@@ -60,6 +60,8 @@
   "RailsGroupHeadingDeg": 2,
   "RailsGroupStationM": 50,
   "RailsSnapMinSpeed": 10000,
+  "CoarseMinSpeed": 240,
+  "CoarseStepMs": 60000,
   "RailsLandHorizonM": 500000,
   "RailsLandMarginM": 2000,
   "RailsLandOnFactor": 2,

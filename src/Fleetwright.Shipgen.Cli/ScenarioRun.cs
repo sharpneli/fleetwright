@@ -107,7 +107,7 @@ static class ScenarioRun
                     var g = w.Groups.Of(e);
                     Console.WriteLine($"    #{e} {start.ShipNames.GetValueOrDefault(e)}: {la:F4}, {lo:F4}, heading {sh.HeadingDeg:F1}, " +
                                       $"{sh.Speed / Fleetwright.Sim.Combat.Handling.MsPerKnot:F1} kn, helm {sh.Helm} {sh.CourseOrderDeg:F0}° {sh.SpeedOrderKn:F1} kn, " +
-                                      $"{(sh.OnRails ? "rails" : "fine")}, {g?.Name ?? "no group"}");
+                                      $"{sh.Tier.ToString().ToLowerInvariant()}, {g?.Name ?? "no group"}");
                 }
             }
         }

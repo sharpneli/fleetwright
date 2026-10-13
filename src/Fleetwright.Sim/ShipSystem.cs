@@ -308,7 +308,7 @@ public sealed partial class ShipSystem : IWorldSystem
             v.Rudder[n] = ship.Rudder;
             v.PoseMs[n] = ship.PoseMs;
             v.Helm[n] = ship.Helm;
-            v.OnRails[n] = ship.OnRails;
+            v.Tier[n] = ship.Tier;
             v.CourseOrderDeg[n] = ship.CourseOrderDeg;
             v.SpeedOrderKn[n] = ship.SpeedOrderKn;
             v.Captain[n] = 0;   // the AI fills its own, after

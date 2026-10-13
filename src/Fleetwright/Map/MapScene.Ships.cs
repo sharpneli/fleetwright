@@ -678,7 +678,7 @@ public sealed unsafe partial class MapScene
                 _ => "no helm orders",
             };
             string named = world.NameOf(selected) is { } nm ? $"{nm}, " : "";
-            ImGui.Text($"{named}{cls?.Name ?? "?"}  #{selected}  side {s.Ships.Side[k]}{(s.Ships.OnRails[k] ? "  (on rails)" : "")}");
+            ImGui.Text($"{named}{cls?.Name ?? "?"}  #{selected}  side {s.Ships.Side[k]}{s.Ships.Tier[k] switch { ClockTier.Rails => "  (on rails)", ClockTier.Coarse => "  (coarse)", _ => "" }}");
             ImGui.SameLine();
             ImGui.TextDisabled($"heading {heading:000}°, {kn:0.0} kn, rudder {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0;0}°  ·  " +
                                $"ordered: {orders}, {s.Ships.SpeedOrderKn[k]:0.#} kn");
