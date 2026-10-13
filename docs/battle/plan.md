@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). Step 3, seeing and knowing, was agreed 2026-10-13; 3.1 (relations, encounters, the player's interest) is done, 3.2 (sighting and pictures) is next.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). Step 3, seeing and knowing, was agreed and built 2026-10-13 (3.1 relations, encounters, the player's interest; 3.2 sighting and pictures), with what it leaves open listed after 3.2. Step 4, fighting, is next.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1512,6 +1512,52 @@ compiles around it.
 
 Night's light sources (searchlights, star shell, gun flashes, fires) come with the fighting; 3.2 gives the night's
 visibility they light up. Fire control's own sight lines (4.2) are per engaged pair.
+
+**3.2 done (2026-10-13).**
+- **3.2a** `Sight` (Sim.Ships), compiled from the class's own rows: `EyeRow`s, highest first: a lookout 1 m under each
+  masthead (placeholder `MastLookoutUnderTopM`), each director (hood floor + 1.5 m, its rangefinder), the top bridge
+  and aft-control blocks (floor + 1.5 m), the conning tower (slits 0.6 m under its roof). Each has 64 blind sectors
+  where a part at least 1.5 m wide stands across the eye's height (not one above it, nor one it's inside). The
+  `SilhouetteRow` has the side-on and end-on areas above each metre over the waterline (a 0.5 m raster of the hull
+  and parts), the top, and the funnels, masts and main mounts. Bismarck: blind astern from the bridge (the funnel);
+  aft control blind ahead (the funnel) and astern (AA director 2 right behind it).
+- **3.2b** `IWeather` (Sim.Core, `UniformWeather` for now) held by the world, `Command.SetWeather`, a scenario's
+  `"weather"`; the Jutland's 25 km, SW 8 kn. `Light`: the sun's elevation and bearing at a place.
+- **3.2c** `SightModel` (Sim.Combat). **A visibility means what a log means:** how far a ship is made out. The haze's
+  extinction is the one at which a reference ship (1,000 m² side on, 7x binoculars) is just made out at it. The
+  threshold contrast rises for small things as C∞(1 + √(Ω꜀/Ω)), and the margin gives a detection rate.
+  `research/simulation/sighting_ref.py` is the independent reference (the test holds its numbers). Reaches, a 24 m
+  masthead on Bismarck side on: ~27 km in 25 km visibility (Jutland's battlecruisers ~26 km), ~35 km in clear air
+  (Denmark Strait), ~5 km at night. A destroyer is ~15% shorter, bow-on ~20% shorter, silhouetted at dusk ~20%
+  longer. The rangefinder's magnification is a placeholder from its base.
+- **3.2d** `Picture` per navy (Fleetwright.Sim), fed by `Sightings`:
+  - It looks every second over ships in encounters. Each encounter has a grid in its tangent plane; for each side at
+    war, the 6 nearest observers and their 4 highest eyes that bear look. Their rates add, and a draw from a substream
+    keyed by side, ship and time finds the ship.
+  - A held contact gets a fix from the eye that ranges it best (a rangefinder before an eye's ±20%), into a
+    constant-velocity Kalman filter. Out of sight it's dead reckoned, and forgotten after 6 h.
+  - Type is made out at margin 2. Class at margin 4: 30% of the time it's taken for the most similar class in the
+    world. The name within 6 km, which puts a wrong class right.
+  - Jutland: 270 µs a look (1 a game second; 0.3% of the sim thread at 10x); 200 ships look without garbage.
+- **3.2e** The player's snapshot: their own ships and groups and those of sides at peace with them; the enemy only as
+  `ContactsView` (estimate, 2σ ellipse, level, type, the class taken for). The truth is the host's per-fill choice
+  (`SimHost.Truth`, a dev checkbox), never world state. On the map: a marker and course line in the ellipse, fading
+  out of sight; labels decluttered; encounter rings only round the player's own ships.
+- **3.2f** `NavyPicture` replaces `TruthPicture`: the AI asks by its side. **Shadow** is a new captain and admiral
+  order: keep station at a range, on the bearing the shadower is on (a share of the sight range, 3-20 km). Run is
+  the evade.
+- **The Jutland, three hours** (Release, headless): 855x at full tilt; the ship step 38 µs a tick, the encounters
+  41 µs per 5 s, the looks 273 µs a second. In the app at 300x the Germans show as the British picture holds them:
+  some named, some "Stettin-like class?", the battle line as "heavy ship".
+
+**Open after 3.2 (for the user):**
+- **An encounter's clock drop tells the player an enemy is within 50 km before anyone sees it.** It's the plan's
+  design (the sim drops the clock at a contact), but it's a leak. Drop only on the navy's first sighting instead?
+- **Fixes come every second**, so a held contact's ellipse shrinks to tens of metres, more than real reports gave a
+  navy (bias, the reporting rate). Fire control (4.2) will want its own readings anyway; the picture's fixes could
+  be thinned to a reporting rate, with a bias per observer.
+- **Ships of sides at peace are shown as they are** (exact positions); they'd need sighting too, at no clock cost.
+- **Smoke**, kept out of step 3 (agreed), comes with the smoke field.
 
 **Needed from the designer for sighting** (2026-10-13; the sim compiles around them with flagged placeholders):
 - **Masts are the funnel top + 6 m on every ship:** a destroyer's and Bismarck's both stand 19.4 m over the main deck.
