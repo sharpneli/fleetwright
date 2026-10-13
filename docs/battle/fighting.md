@@ -523,20 +523,26 @@ between cells), its thickness, material and normal.
 - **Found on the way:** the hit query's `HitPath` grew its per-part room on its first near miss (1.7 KB, once per
   bigger class); the shell system now makes the room when a class first goes to sea.
 
-**Settled beyond the plan (to confirm with the user):**
+**Settled beyond the plan** (the user's answers, 2026-10-13: 4.2b is a rough first iteration; the detailed fire-control
+rework, with the fire-control computers by era, revisits these):
 
 - **Hashes moved:** the gunnery system takes id 4, so the AI is 5 and every world's hash changed (proved: with gunnery
   unregistered, ladder-1, ladder-2 and the Jutland hash as before). New baselines after an hour: ladder-1 `C48F8760`,
   ladder-2 `2C890F64`, Jutland `736454C1`.
 - **One rangefinder a director:** the designs have one director with one rangefinder (QE's 15 ft); the reference's
   level 3 averages three (two 9 ft, one 15 ft), which is most of the remaining gap. Turret rangefinders aren't in the
-  data; the designer could give them.
+  data; the designer could give them. **Decided:** one a director until the fire-control rework, which brings
+  rangefinders as the designer's own parts (director, spotting top, turrets), each with its base.
 - **Spotting by eye at 15-16 kyd is mostly noise,** as in the reference: σ = 4e-5·1.5·R²/h is 400-500 m from a 25-35 m
   top, so most salvos read "straddle" and the ladder rarely moves. Faithful to the reference; tall spotting tops matter.
+  **Decided:** kept until the rework.
 - **The Earth's turning isn't in the solution** (the era's computers left it out); the spot takes it off with the rest
-  of the bias (up to ~150 m at long range).
+  of the bias (up to ~150 m at long range). **Decided:** left out for now; it comes with the fire-control computers,
+  for the later ones only. The Great War's never get it.
 - **The track starts from the picture** (as planned), so a well-watched contact is acquired with its course and speed
   already good; the level's first guess only floors the velocity's uncertainty.
+- **Point blank** (after the range table above): level 0's ceiling close in (the eye's 20%, the 550 m first step) stays
+  until the rework.
 
 **4.2c Ordering fire (the player and the AI, minimal).** Fire orders are unit orders in 2.6's one path:
 
@@ -712,7 +718,12 @@ numbers before and after against the anchors. The list, by link, with where the 
   - rate error growing with target speed;
   - the full ladder of levels (0 to 8 and L), radar as a sensor, night (no solution without light);
   - splash confusion with several ships on one target, and dyed shells (with whose splash it is, below);
-  - the designer emitting levels and sensors (`fire-control-designer.md`).
+  - the designer emitting levels and sensors (`fire-control-designer.md`), rangefinders among them as parts (director,
+    spotting top, turrets), each with its base (decided after 4.2b);
+  - the spotting constant (k·R²/h) tuned against the record, with aircraft and radar spotting (kept as the reference
+    has it until then);
+  - the Earth's turning corrected in the solution by the later computers only, never the Great War's;
+  - point-blank laying by sight, and a ladder step scaled to the range.
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;
   - laying error `√(base² + (τ·ω)²)`;
