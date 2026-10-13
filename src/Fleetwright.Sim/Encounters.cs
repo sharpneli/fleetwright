@@ -14,7 +14,7 @@ public readonly record struct Encounter(int Id, long OpenedMs, long LastHotMs, i
 /// chained); a cluster with ships of two sides at war within the encounter range of each other opens one. It stays while
 /// they're within the range and the margin, and closes <see cref="SimSettings.EncounterCloseMs"/> after they last were.
 /// Clusters joining merge their encounters (the oldest id goes on), a cluster parting splits it (the part keeping its
-/// oldest ships' id goes on, the other opens anew). Its ships are held in the fine tier (ShipSystem.Rails.cs,
+/// oldest ships' id goes on, the other opens anew). Its ships are held in the fine tier (ShipSystem.Tiers.cs,
 /// <c>Ready</c>).
 /// <para>Updated every <see cref="SimSettings.RailsCheckMs"/> of the fine tick, and at once at a contact. The clusters
 /// come from a grid, never a loop over pairs (the plan's rule, nothing past n log n): the ships sorted by cube, a cube's
@@ -77,14 +77,14 @@ public sealed class Encounters
     /// they weren't before (opened, or come into), else one opened between others; a part split off one isn't news.</summary>
     internal InterestKind? Update(ShipStore store, long nowMs, int playerSide)
     {
-        int n = store.FineCount;
+        int n = store.OffRailsCount;
         Ensure(store.Slots, n);
         double reach = settings.EncounterRangeM + settings.EncounterMarginM;
         double openAt = settings.EncounterRangeM + 1;   // a contact's derail comes within a metre of the range
         double cell = reach / Math.Sqrt(3);
         for (int k = 0; k < n; k++)
         {
-            int s = store.FineSlot(k);
+            int s = store.OffRailsSlot(k);
             var ship = store[s];
             slots[k] = s;
             pos[k] = ship.Position;

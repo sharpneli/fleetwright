@@ -66,17 +66,17 @@ public sealed class Sightings
         return p;
     }
 
-    /// <summary>A look: every ship in an encounter looked for by the sides at war with it there.</summary>
-    internal void Look(World world, ShipStore store, IReadOnlyList<int> classesInUse)
+    /// <summary>A look over dt seconds (<see cref="SimSettings.SightingMs"/> on the fine tick, the coarse step in the
+    /// coarse tier): every ship in an encounter looked for by the sides at war with it there.</summary>
+    internal void Look(World world, ShipStore store, IReadOnlyList<int> classesInUse, double dt)
     {
         long now = world.Time.Ms;
-        double dt = settings.SightingMs / 1000.0;
         // the ships in encounters, sorted by encounter
         int n = 0;
-        Ensure(store.FineCount);
-        for (int k = 0; k < store.FineCount; k++)
+        Ensure(store.OffRailsCount);
+        for (int k = 0; k < store.OffRailsCount; k++)
         {
-            int s = store.FineSlot(k);
+            int s = store.OffRailsSlot(k);
             int e = encounters.Of(s, store[s].Entity);
             if (e == 0)
                 continue;

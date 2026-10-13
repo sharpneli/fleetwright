@@ -280,9 +280,9 @@ public sealed partial class ShipSystem
         double cell = BuildGrid(now);
         if (cell <= 0)
             return;   // no unit on rails to take off them
-        for (int k = 0; k < Store.FineCount; k++)   // the ships on the fine tick (one a contact takes off rails joins the end)
+        for (int k = 0; k < Store.OffRailsCount; k++)   // the ships off rails (one a contact takes off rails joins the end)
         {
-            int i = Store.FineSlot(k);
+            int i = Store.OffRailsSlot(k);
             var p = Store[i].Position;
             byte side = Store[i].Side;
             int n = Near(p, cell);

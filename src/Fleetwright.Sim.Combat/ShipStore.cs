@@ -160,6 +160,11 @@ public sealed class ShipStore
     public int CoarseCount => coarse.Count;
     public int CoarseSlot(int i) => coarse[i];
 
+    /// <summary>How many live ships are off rails (fine or coarse), and the i-th of them: the fine ones, then the coarse
+    /// (what encounters and sighting look at, in an order that's the same on every run).</summary>
+    public int OffRailsCount => fine.Count + coarse.Count;
+    public int OffRailsSlot(int i) => i < fine.Count ? fine[i] : coarse[i - fine.Count];
+
     void SetTier(int slot, ClockTier t)
     {
         tier[slot] = t;
@@ -272,6 +277,9 @@ public sealed class ShipStore
         return railCurv[slot] == 0 ? 0 : SpeedAt(slot, ms) * railCurv[slot];
     }
 
+    /// <summary>A coarse ship on a segment of its own that's straight at a steady speed: its manoeuvre done.</summary>
+    public bool CoarseSteady(int slot) => tier[slot] == ClockTier.Coarse && railGuide[slot] < 0 && railAccel[slot] == 0 && railCurv[slot] == 0;
+
     /// <summary>When a coarse ship's segment ends (ms), long.MaxValue for never or not coarse on its own.</summary>
     public long SegmentEndMs(int slot) => tier[slot] == ClockTier.Coarse && railGuide[slot] < 0 ? segEndMs[slot] : long.MaxValue;
 
@@ -284,6 +292,28 @@ public sealed class ShipStore
         double v = SpeedAt(slot, NowMs);
         SetTier(slot, ClockTier.Coarse);
         Anchor(slot, p, f, v);
+    }
+
+    /// <summary>A ship riding its guide on rails rides it coarse (its guide come off rails into the coarse tier), at the
+    /// same offset.</summary>
+    public void RideCoarse(int slot)
+    {
+        if (tier[slot] == ClockTier.Rails && railGuide[slot] >= 0)
+            SetTier(slot, ClockTier.Coarse);
+    }
+
+    /// <summary>A coarse ship of its own rides a coarse guide at its offset as it is now: a group's ship back in station
+    /// (its errors are kept, as on rails; nothing jumps).</summary>
+    public void RideCoarseWith(int slot, int guide)
+    {
+        PoseNow(guide, out var gp, out var gf);
+        PoseNow(slot, out var p, out _);
+        var d = p - gp;
+        var up = gp.Normalized();
+        SetTier(slot, ClockTier.Coarse);
+        railGen[slot]++;
+        (railGuide[slot], railX[slot], railY[slot]) = (guide, Vec3d.Dot(d, gf), Vec3d.Dot(d, Vec3d.Cross(gf, up)));
+        (railAccel[slot], railCurv[slot], segEndMs[slot]) = (0, 0, long.MaxValue);
     }
 
     /// <summary>A coarse ship anchored again where its segment has it now, for <see cref="CoarseMotion.Plan"/> to lay
@@ -377,6 +407,7 @@ public sealed class ShipStore
         (railGuide[slot], railX[slot], railY[slot], railSpeed[slot]) = (guide, aheadM, starboardM, railSpeed[guide]);
         (railAccel[slot], railCurv[slot], segEndMs[slot]) = (0, 0, long.MaxValue);
         yawRate[slot] = rudder[slot] = 0;
+        helm[slot] = Helm.Course;   // its orders the guide's, whatever it steered for before it was gathered in
         courseDeg[slot] = courseDeg[guide];
         speedOrderKn[slot] = railSpeed[guide] / Handling.MsPerKnot;
         power[slot] = powerOrder[slot] = handling[slot].PowerFor(speedOrderKn[slot]);
@@ -510,8 +541,10 @@ public sealed class ShipStore
         {
             yawRate[slot] = r;
             rudder[slot] = Math.Abs(v) > 1e-9 ? handling[slot].RudderFor(r / v) : 0;
-            int own = railGuide[slot] >= 0 ? railGuide[slot] : slot;
-            if (railAccel[own] != 0)
+            // the power coarse didn't step: what's rung once at the speed it holds, else what holds the speed it's at
+            if (railGuide[slot] < 0 && railAccel[slot] == 0)
+                power[slot] = powerOrder[slot];
+            else
                 power[slot] = Math.Sign(v) * Math.Min(handling[slot].HoldingPowerW(Math.Abs(v)), v >= 0 ? handling[slot].MaxPowerW : handling[slot].AsternPowerW);
         }
         if (railGuide[slot] >= 0 && helm[slot] == Helm.Course)
@@ -773,7 +806,7 @@ public readonly struct ShipState(ShipStore store, int slot)
     /// angle, rad; shaft power, W (negative astern).</summary>
     public double Speed => store.tier[slot] != ClockTier.Fine ? store.SpeedAt(slot, store.NowMs) : store.speed[slot];
     public double YawRate => store.tier[slot] != ClockTier.Fine ? store.YawRateAt(slot, store.NowMs) : store.yawRate[slot];
-    public double Rudder => store.rudder[slot];
+    public double Rudder => store.tier[slot] == ClockTier.Coarse ? Handling.RudderFor(store.railGuide[slot] >= 0 ? 0 : store.railCurv[slot]) : store.rudder[slot];
     public double Power => store.power[slot];
 
     /// <summary>The world time the pose is at, ms.</summary>

@@ -37,7 +37,7 @@ and the Dardanelles say. The slide must leave room for them ("Guided areas").
   helmsman (`ShipMotion.HelmOrder`) has three modes: `Rudder` (held), `Course` (`Steer` for the ordered course) and
   `Route` (`RouteCourse` gives the bearing of the next waypoint, then `Steer`). Both of the last two end in one
   `Steer(course)` call, which is where the slide hooks in.
-- **Rails** (`ShipSystem.Rails.cs`, the one place for rails rules) lay a unit on a rhumb line (a course held) or a
+- **Rails** (`ShipSystem.Tiers.cs`, the one place for rails rules) lay a unit on a rhumb line (a course held) or a
   great circle (a route's leg), with events at waypoints and polar caps. `Ready` takes a unit on when it's placeable
   (placing) or steady and in station. Nothing on rails knows about land.
 - **2.6b's clearance chain** (`AiCommand.Clearance`, `ShipCommand.Clearance`, `ShipState.ClearanceM`) carries a
@@ -119,7 +119,7 @@ It changes what he steers, never the order.
 - **Waypoints on land:** the player's shift+right-click there is refused, and the cursor says so (the user,
   2026-10-12). The AI's or a mission's are moved to the nearest sea at the standoff.
 
-### 4. Rails: off before land (`ShipSystem.Rails.cs`)
+### 4. Rails: off before land (`ShipSystem.Tiers.cs`)
 
 Rails don't step, so neither the feeler nor the backstop sees a ship on them. One rule in the rails' file:
 
@@ -254,7 +254,7 @@ tests, each also a `-ships` dev command to look at:
 - **The order is untouched;** a new course more than 30° off the last forgets the side. The side and the counter are
   in the store, hashed, and in the snapshot; the strip says "altered for land: following the coast, land to port,
   until the ordered course is clear", and the selected ship's minimum, standoff and feeler are drawn on the map.
-- **Rails:** a unit with a ship sliding doesn't go on rails (`ShipSystem.Rails.cs`, `Sliding`). Otherwise rails still
+- **Rails:** a unit with a ship sliding doesn't go on rails (`ShipSystem.Tiers.cs`, `Sliding`). Otherwise rails still
   don't know the land, and a steady ship goes on rails within seconds, so in the app the slide shows only for ships
   off rails until S2 (the screenshots were taken with `RailsEnabled` off).
 - **The dev flag** `-ships=design[:count[:side]][@lat,lon,heading[,kn]]`, repeatable.
@@ -270,13 +270,13 @@ tests, each also a `-ships` dev command to look at:
   (Later), or a captain whose station is on land falls in astern of the ship inboard of him.
 
 **S2 Rails respect the land.** The `LandAhead` trace and event, `Ready`'s clear check, all in
-`ShipSystem.Rails.cs`. The scale tests move to the Pacific (the user, 2026-10-12): `RailsTests`' 2,000 ships spread
+`ShipSystem.Tiers.cs`. The scale tests move to the Pacific (the user, 2026-10-12): `RailsTests`' 2,000 ships spread
 from 40°S to 40°N, where there's room; a test that must cross land (the meridian over both poles) runs in a world of
 water. Measure the clock (2.5's achieved speed against asked) for a ship and a squadron holding a course into
 Norway at 10,000x, 100,000x and 1M×: S3's baseline.
 
 *Done (2026-10-13):*
-- **`WatchLand`** (`ShipSystem.Rails.cs`, with every rails rule): wherever a unit's rails are laid or anchored again
+- **`WatchLand`** (`ShipSystem.Tiers.cs`, with every rails rule): wherever a unit's rails are laid or anchored again
   (`Lay`, waypoints, polar caps), its guide's track is traced (`LandContact`: a course as a rhumb line, a route's leg
   to its waypoint, a course in a polar cap as a great circle) out to `RailsLandHorizonM` (500 km) at its standoff
   plus its widest riding ship abeam (`ShipStore.RailAbeamM`). A contact schedules `LandAhead` at the guide's
@@ -306,7 +306,7 @@ tick end close to each other, and S2's measure shows the clock kept along Norway
 *Done (2026-10-13):*
 - **One feeler for both tiers:** `Slide.Feel` is the fine tick's feeler as a function of a pose (position, heading,
   speed, course rudder, wanted course, side). The fine tick asks it at the stepped pose, rails at theirs.
-- **`SlidesOnRails`** (`ShipSystem.Rails.cs`): the clock at `RailsSnapMinSpeed` (10,000x) or more, the clock only.
+- **`SlidesOnRails`** (`ShipSystem.Tiers.cs`): the clock at `RailsSnapMinSpeed` (10,000x) or more, the clock only.
   There `WatchLand` traces the guide's track at its standoff alone and schedules `LandAhead` a look-ahead short of
   the contact, where the feeler would start; `Ready` lets a sliding or land-bound unit on (placed, as at that speed
   anything is). Below it, S2's rules as they were.

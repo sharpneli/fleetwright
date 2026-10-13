@@ -13,8 +13,9 @@ namespace Fleetwright.Sim.Ai;
 public interface IAiLayer
 {
     /// <summary>How often it thinks now, ms of world time: its own period while any ship it watches is on the fine
-    /// tick, <see cref="SimSettings.AiRailsPeriodMs"/> while they're all on rails (nothing about them changes but by
-    /// events, and thinking every second would cap the clock).</summary>
+    /// tick, the coarse step while any is coarse (it decides once a step there), <see cref="SimSettings.AiRailsPeriodMs"/>
+    /// while they're all on rails (nothing about them changes but by events, and thinking every second would cap the
+    /// clock).</summary>
     int PeriodMs(in AiContext ctx);
 
     /// <summary>Anything for it to watch: while false its ticks stop, so a world of ships on plain orders stays free.</summary>

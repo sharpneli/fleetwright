@@ -101,10 +101,17 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
 
     public int PeriodMs(in AiContext ctx)
     {
+        int period = ctx.Settings.AiRailsPeriodMs;
         for (int i = 0; i < count; i++)
-            if (IsActive(captains[i]) && ctx.Ships.SlotOf(captains[i].Entity) is int slot and >= 0 && !ctx.Ships.OnRails(slot))
-                return ctx.Settings.CaptainPeriodMs;
-        return ctx.Settings.AiRailsPeriodMs;
+            if (IsActive(captains[i]) && ctx.Ships.SlotOf(captains[i].Entity) is int slot and >= 0)
+            {
+                var tier = ctx.Ships.TierOf(slot);
+                if (tier == ClockTier.Fine)
+                    return ctx.Settings.CaptainPeriodMs;
+                if (tier == ClockTier.Coarse)
+                    period = Math.Min(period, ctx.Settings.CoarseStepMs);
+            }
+        return period;
     }
 
     static bool IsActive(in Captain c) => c.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow || c.Watch;
@@ -304,7 +311,20 @@ public sealed class CaptainLayer(GroupSystem groups) : IAiLayer
                 continue;
             }
             double course, kn;
-            if (cap.Order == CaptainOrder.Follow || cap.Order == CaptainOrder.Station && cap.AbeamM == 0)
+            if (own.Tier == ClockTier.Coarse && cap.Order is CaptainOrder.Follow or CaptainOrder.Station or CaptainOrder.Shadow)
+            {
+                // coarse, deciding once a step: steer for where the station will be a step on (a trail recorded once
+                // a minute is no track to steer by; the line ahead's turns are its guide's rails, ShipSystem.Tiers.cs)
+                var s = ctx.Settings;
+                var (astern, abeam) = cap.Order switch
+                {
+                    CaptainOrder.Shadow => Behaviours.ShadowStation(own, t, cap.DistanceM > 0 ? cap.DistanceM : ShadowRange(ctx, own)),
+                    CaptainOrder.Follow => (cap.DistanceM > 0 ? cap.DistanceM : s.FollowDistanceLengths * own.Handling.LengthM, 0.0),
+                    _ => (cap.DistanceM, cap.AbeamM),
+                };
+                (course, kn) = Behaviours.Rendezvous(own, t, astern, abeam, s.CoarseRendezvousSteps * s.CoarseStepMs / 1000.0, s);
+            }
+            else if (cap.Order == CaptainOrder.Follow || cap.Order == CaptainOrder.Station && cap.AbeamM == 0)
             {
                 // in line ahead: on the track the ship ahead steamed, so he turns where it turned (laid straight astern
                 // of it when he starts following it, or comes off rails, where the line steamed straight)

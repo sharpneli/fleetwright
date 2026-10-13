@@ -86,7 +86,7 @@ public class RailsRulesTests(ITestOutputHelper output)
         int second = w.Groups.Of(col)!.GroupId;
         w.Apply(GroupSystem.Form(first, Formation.LineAbreast, 3000));
         w.Apply(GroupSystem.Enter(w.Groups.Get(first)!.Parent, second));
-        Run(w, 60);
+        Run(w, Settings.CoarseStepMs / 1000.0 + 5);   // coarse at this speed: placed on rails at the first coarse step
         Assert.True(AllOnRails(w, lone, 1) && AllOnRails(w, col, 2), "the force on rails");
 
         // the player orders the guide squadron's one ship on its own: out of its line, so its squadron has nobody in line
@@ -104,7 +104,7 @@ public class RailsRulesTests(ITestOutputHelper output)
         w.Apply(Command.SetSpeed(Settings.RailsSnapMinSpeed));
         int g = Column(w, c, Lat, Lon, 0, 3);
         int group = w.Groups.Of(g)!.GroupId;
-        Run(w, 10);
+        Run(w, Settings.CoarseStepMs / 1000.0 + 5);   // coarse at this speed: placed on rails at the first coarse step
         Assert.True(AllOnRails(w, g, 3));
 
         // the player sends the second ship off on a route of its own, then orders the group: it's gathered back
@@ -175,7 +175,7 @@ public class RailsRulesTests(ITestOutputHelper output)
         var (w, _, c) = Make();
         w.Apply(Command.SetSpeed(Settings.RailsSnapMinSpeed));
         int e = Column(w, c, Lat, Lon, 0, 1);
-        Run(w, 10);
+        Run(w, Settings.CoarseStepMs / 1000.0 + 5);   // coarse at this speed: placed on rails at the first coarse step
         Assert.True(Ship(w, e).OnRails);
         w.Apply(ShipSystem.AddWaypoint(e, Lat + 0.2, Lon));
         w.Apply(ShipSystem.AddWaypoint(e, Lat + 0.2, Lon));

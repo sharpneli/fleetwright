@@ -152,6 +152,14 @@ public static class Behaviours
     /// same station keeping as a formation's. Closer, he opens; further, he closes; at the range he matches it.</summary>
     public static (double CourseDeg, double SpeedKn) Shadow(ShipState own, in Sighting target, double rangeM, SimSettings s)
     {
+        var (astern, abeam) = ShadowStation(own, target, rangeM);
+        return Station(own, target, astern, abeam, s);
+    }
+
+    /// <summary>The station a shadower keeps: at the range, on the bearing from the target he's on now (in its frame),
+    /// metres astern and to starboard.</summary>
+    public static (double AsternM, double AbeamM) ShadowStation(ShipState own, in Sighting target, double rangeM)
+    {
         var up = target.Position.Normalized();
         var rel = own.Position - target.Position;
         rel -= up * Vec3d.Dot(rel, up);
@@ -160,7 +168,32 @@ public static class Behaviours
         double len = Math.Sqrt(astern * astern + abeam * abeam);
         if (len < 1)
             (astern, abeam, len) = (rangeM, 0, rangeM);   // on top of it: astern, out of its way
-        return Station(own, target, astern * rangeM / len, abeam * rangeM / len, s);
+        return (astern * rangeM / len, abeam * rangeM / len);
+    }
+
+    /// <summary>Station keeping for a coarse ship, deciding once a coarse step (docs/battle/plan.md step 2.8): steer for
+    /// where the station will be <paramref name="horizonS"/> seconds from now (the other ship holding its course and
+    /// speed; <see cref="SimSettings.CoarseRendezvousSteps"/> steps, so a change of speed that takes more than one step
+    /// isn't overshot) at the speed that gets there by then. In station that's the other ship's course and speed, so it
+    /// closes in a few steps; the fine tick's controllers, made for a second, swing at a minute. Ahead of where the station will be, he doesn't turn round: he runs on its heading, closing sideways, and
+    /// drops back by speed. Within <see cref="SimSettings.FollowMaxSpeedDiffKn"/> of the other ship's speed and what his
+    /// plant makes.</summary>
+    public static (double CourseDeg, double SpeedKn) Rendezvous(ShipState own, in Sighting leader, double asternM, double abeamM, double horizonS, SimSettings s)
+    {
+        var h = own.Handling;
+        var lf = leader.Forward;
+        var lup = leader.Position.Normalized();
+        var starboard = Vec3d.Cross(lf, lup);
+        var then = Surface(leader.Position + lf * (leader.SpeedMs * horizonS - asternM) + starboard * abeamM);
+        var d = then - own.Position;
+        double along = Vec3d.Dot(d, lf), across = Vec3d.Dot(d, starboard);
+        double least = 0.3 * Math.Max(leader.SpeedMs * horizonS, h.LengthM);   // never aimed behind him
+        double heading = Earth.Heading(leader.Position, lf);
+        double course = heading + Math.Atan2(across, Math.Max(along, least)) * 180 / Math.PI;
+        double leaderKn = leader.SpeedMs / Handling.MsPerKnot;
+        double kn = Math.Sqrt(Math.Max(along, 0) * Math.Max(along, 0) + across * across) / horizonS / Handling.MsPerKnot;
+        kn = Math.Clamp(Math.Clamp(kn, leaderKn - s.FollowMaxSpeedDiffKn, leaderKn + s.FollowMaxSpeedDiffKn), 0, Flank(h));
+        return (((course % 360) + 360) % 360, kn);
     }
 
     /// <summary>Run: turn directly away from the other ship and ring flank speed.</summary>

@@ -141,7 +141,7 @@ public class FormationRailsTests(ITestOutputHelper output)
         }
         double slow = Entry(1, out _, out _), fast = Entry(Settings.RailsSnapMinSpeed, out var w, out int g);
         output.WriteLine($"a column rung over its admiral's cap: on rails after {slow:F0} s at 1x, {fast:F0} s at the snap speed");
-        Assert.True(fast <= Settings.RailsCheckMs / 1000.0 + 5, $"{fast} s");   // the first check (at 5 s, seen at the next look)
+        Assert.True(fast <= Settings.CoarseStepMs / 1000.0 + 5, $"{fast} s");   // coarse at this speed: the first coarse step (seen at the next look)
         Assert.True(slow > 60, "at 1x it forms up by its own steaming");
         Assert.True(OffStation(w, g, 4, Formation.Column, 600) < 0.01);
         for (int e = g; e < g + 4; e++)
@@ -155,7 +155,7 @@ public class FormationRailsTests(ITestOutputHelper output)
         Run(w, 30);
         Assert.False(Ship(w, g).OnRails);
         w.Apply(Command.SetSpeed(Settings.RailsSnapMinSpeed));
-        Run(w, Settings.RailsCheckMs / 1000.0 + 0.001);   // past the next check
+        Run(w, Settings.CoarseStepMs / 1000.0 + 0.001);   // past the next check: coarse at this speed, the coarse step's
         Assert.True(AllOnRails(w, g, 3));
         Assert.True(Math.Abs(Ship(w, g).HeadingDeg - 120) < 1e-6);
         Assert.True(OffStation(w, g, 3, Formation.LineAbreast, 800) < 0.01);

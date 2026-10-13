@@ -56,16 +56,23 @@ public sealed class AdmiralLayer(GroupSystem groups, CaptainLayer captains) : IA
 
     public int PeriodMs(in AiContext ctx)
     {
+        int period = ctx.Settings.AiRailsPeriodMs;
         for (int k = 0; k < groups.Count; k++)
         {
             if (groups[k].IsForce)
                 continue;
             var members = groups[k].Line;
             for (int i = 0; i < members.Count; i++)
-                if (ctx.Ships.SlotOf(members[i]) is int slot and >= 0 && !ctx.Ships.OnRails(slot))
-                    return ctx.Settings.AdmiralPeriodMs;
+                if (ctx.Ships.SlotOf(members[i]) is int slot and >= 0)
+                {
+                    var tier = ctx.Ships.TierOf(slot);
+                    if (tier == ClockTier.Fine)
+                        return ctx.Settings.AdmiralPeriodMs;
+                    if (tier == ClockTier.Coarse)
+                        period = Math.Min(period, ctx.Settings.CoarseStepMs);
+                }
         }
-        return ctx.Settings.AiRailsPeriodMs;
+        return period;
     }
 
     /// <summary>A group's admiral's order, its target unit and who gave it; None if he has none.</summary>

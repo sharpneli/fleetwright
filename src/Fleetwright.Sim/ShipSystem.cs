@@ -18,15 +18,17 @@ public enum ShipCommand : ushort
     Clearance,
 }
 
-/// <summary>The world's ships (docs/battle/plan.md step 2.2), in the fine clock tier: each pose moves on the fixed
-/// tick (<see cref="SimSettings.ShipTickMs"/>, on a grid of world time), whatever zoom band the map shows it at.
+/// <summary>The world's ships (docs/battle/plan.md step 2.2), in their clock tiers (ShipSystem.Tiers.cs): on the fine
+/// tick each pose moves on the fixed tick (<see cref="SimSettings.ShipTickMs"/>, on a grid of world time), coarse
+/// ones on segments decided for every coarse step, on rails as functions of time; whatever zoom band the map shows.
 /// Groups, fleet symbols and the map's markers are all derived from these ships, never the other way round.
 /// While there are no ships it schedules nothing, so an empty world costs nothing at any speed.
 /// <para>The world registers it first, so its id is always <see cref="Id"/>.</para></summary>
 public sealed partial class ShipSystem : IWorldSystem
 {
     public const byte Id = 1;
-    const ushort Tick = 1, RailsWaypoint = 2, PolarEntry = 3, PolarExit = 4, ContactCheck = 5, ContactScan = 6, LandAhead = 7, LandRecheck = 8;
+    const ushort Tick = 1, RailsWaypoint = 2, PolarEntry = 3, PolarExit = 4, ContactCheck = 5, ContactScan = 6, LandAhead = 7, LandRecheck = 8,
+        CoarseStep = 9, CoarseSegment = 10;
 
     readonly SimSettings settings;
     readonly Relations relations;
@@ -57,10 +59,11 @@ public sealed partial class ShipSystem : IWorldSystem
         landProbe = probes.Register("Ships: land");
         encountersProbe = probes.Register("Encounters");
         sightingProbe = probes.Register("Sighting");
+        coarseProbe = probes.Register("Ships: coarse");
     }
 
     readonly Probes probes;
-    readonly int stepProbe, contactsProbe, railsProbe, railsEventProbe, landProbe, encountersProbe, sightingProbe;
+    readonly int stepProbe, contactsProbe, railsProbe, railsEventProbe, landProbe, encountersProbe, sightingProbe, coarseProbe;
 
     /// <summary>The registry ids ships have been made of, in the order first used: the classes in the world.</summary>
     public IReadOnlyList<int> ClassesInUse => used;
@@ -145,9 +148,12 @@ public sealed partial class ShipSystem : IWorldSystem
             var h = HandlingOf(c.B);
             if (world.Shore is { } shore && !Slide.ToSea(shore, ref p, h.StandoffM, settings.CoastSearchM, out _))
                 return;   // nowhere near the sea: no ship, the same on every replay
-            Store.Spawn(nextEntity++, c.B, h, p, Earth.Forward(p, c.X), c.Y * Handling.MsPerKnot, world.Time.Ms, (byte)c.Entity);
+            int made = Store.Spawn(nextEntity++, c.B, h, p, Earth.Forward(p, c.X), c.Y * Handling.MsPerKnot, world.Time.Ms, (byte)c.Entity);
             SideCount((byte)c.Entity, +1);
-            EnsureTick(world);
+            if (coarseMode)
+                ToCoarse(world, made);
+            else
+                EnsureTick(world);
             return;
         }
         int slot = Store.SlotOf(c.Entity);
@@ -155,7 +161,7 @@ public sealed partial class ShipSystem : IWorldSystem
             return;   // dropped or never made: an order that reached no ship
 
         // an order to a ship on rails: back to the fine tick first, its group with it; or carried out at once on rails
-        // (the ship alone comes off for the moment, its group riding it as it is): ShipSystem.Rails.cs
+        // (the ship alone comes off for the moment, its group riding it as it is): ShipSystem.Tiers.cs
         bool snap = CanSnap(world, slot, code, c.X);
         if (snap)
             Store.Derail(slot);
@@ -169,7 +175,8 @@ public sealed partial class ShipSystem : IWorldSystem
             case ShipCommand.Drop:
                 SideCount(Store[slot].Side, -1);
                 Store.Drop(slot);
-                break;
+                Normalize(world);   // its riders came off on to the fine tick: coarse again, if that's the tier
+                return;
             case ShipCommand.Course:
                 Store.OrderCourse(slot, c.X, c.Y * Deg);
                 break;
@@ -197,6 +204,8 @@ public sealed partial class ShipSystem : IWorldSystem
         }
         if (snap)
             Snap(world, slot);
+        else if (Store.TierOf(slot) == ClockTier.Coarse && TakesOffRails(code))
+            Recoarsen(world, slot);
     }
 
     // ------------------------------------------------------------------ the tick
@@ -237,6 +246,18 @@ public sealed partial class ShipSystem : IWorldSystem
             probes.Add(landProbe, t);
             return;
         }
+        if (e.Code == CoarseSegment)
+        {
+            CoarseSegmentEnd(world, e);
+            probes.Add(coarseProbe, t);
+            return;
+        }
+        if (e.Code == CoarseStep)
+        {
+            CoarseStepEvent(world);
+            probes.Add(coarseProbe, t);
+            return;
+        }
         nextTickMs = -1;
         ShipMotion.StepAll(Store, world.Time.Ms, settings, world.Shore);
         probes.Add(stepProbe, t);
@@ -260,7 +281,7 @@ public sealed partial class ShipSystem : IWorldSystem
         if (encounters.Count > 0 && world.Time.Ms % settings.SightingMs == 0)
         {
             t = Probes.Now;
-            sightings.Look(world, Store, used);
+            sightings.Look(world, Store, used, settings.SightingMs / 1000.0);
             probes.Add(sightingProbe, t);
         }
         if (AnyFine())
@@ -270,6 +291,11 @@ public sealed partial class ShipSystem : IWorldSystem
     public void Hash(ref StateHash h)
     {
         h.Add(nextTickMs);
+        if (coarseMode || nextCoarseMs >= 0)
+        {
+            h.Add(coarseMode);   // only then, so a world never coarse hashes as it did before the tier
+            h.Add(nextCoarseMs);
+        }
         h.Add(nextScanMs);
         h.Add(scanGen);
         h.Add(nextEntity);

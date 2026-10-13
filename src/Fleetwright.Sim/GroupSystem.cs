@@ -463,7 +463,7 @@ public sealed class GroupSystem : IWorldSystem
     void Change(World world, in Command c)
     {
         var code = (GroupCommand)c.Code;
-        world.Ships.DerailFor(world, c);   // what changes comes off rails whole first (ShipSystem.Rails.cs)
+        world.Ships.DerailFor(world, c);   // what changes comes off rails whole first (ShipSystem.Tiers.cs)
         switch (code)
         {
             case GroupCommand.Create:

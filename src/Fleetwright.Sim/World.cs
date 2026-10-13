@@ -42,7 +42,7 @@ public sealed class World
     public bool Paused { get; private set; }
 
     /// <summary>The map's scale, metres per pixel; 0 with no map (headless: everything counts as watched). EXCEPTION:
-    /// the one display state in the sim, read only by the rails (ShipSystem.Rails.cs, <c>Watched</c>) until their snap
+    /// the one display state in the sim, read only by the rails (ShipSystem.Tiers.cs, <c>Watched</c>) until their snap
     /// can be hidden better.</summary>
     public double ViewMetresPerPixel { get; private set; }
 
@@ -168,6 +168,7 @@ public sealed class World
             case WorldCommand.SetSpeed:
                 Speed = Math.Clamp(c.X, Settings.MinSpeed, Settings.MaxSpeed);
                 targetMs = Math.Min(targetMs, Time.Ms + MaxLagMs);
+                Ships.SpeedChanged(this);   // the speed picks the tier
                 break;
             case WorldCommand.SetViewScale:
                 ViewMetresPerPixel = double.IsFinite(c.X) && c.X > 0 ? c.X : 0;
@@ -229,7 +230,10 @@ public sealed class World
     public void Halt(bool pause, double? speed = null)
     {
         if (speed is double s)
+        {
             Speed = Math.Clamp(s, Settings.MinSpeed, Settings.MaxSpeed);
+            Ships.SpeedChanged(this);
+        }
         Paused |= pause;
         targetMs = Math.Min(targetMs, Time.Ms + 1);
     }

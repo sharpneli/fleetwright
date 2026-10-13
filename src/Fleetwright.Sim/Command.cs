@@ -27,7 +27,7 @@ public readonly record struct Command(byte System, ushort Code, int Entity = 0, 
     public static Command Resume() => new(0, (ushort)WorldCommand.Resume);
 
     /// <summary>The map's scale, metres per pixel (0: no map): the rails place what it can't show ship by ship more
-    /// readily (ShipSystem.Rails.cs). A host sends it when the scale changes, in steps, not every frame.
+    /// readily (ShipSystem.Tiers.cs). A host sends it when the scale changes, in steps, not every frame.
     /// <para>EXCEPTION to a hard rule: the sim is independent of display state, and this is the one display state it's
     /// told, kept only until the rails' snap can be hidden better. No other display state comes in.</para></summary>
     public static Command SetViewScale(double metresPerPixel) => new(0, (ushort)WorldCommand.SetViewScale, X: metresPerPixel);

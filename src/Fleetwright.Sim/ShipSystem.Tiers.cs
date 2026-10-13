@@ -3,11 +3,20 @@ using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim;
 
-/// <summary>The rails clock tier (docs/battle/plan.md 2.5): every rule for when ships go on rails, how, and what takes
-/// them off, here and nowhere else. A ship on rails is a function of time, not stepped; the player shouldn't see it
-/// happen, and the more ships are on rails the faster the clock runs, so these rules are tuned often. The numbers are
-/// <see cref="SimSettings"/>' (Rails*, Encounter*, <see cref="SimSettings.PolarCapDeg"/>); the logic is this file's.
+/// <summary>The clock tiers (docs/battle/plan.md 2.5 and 2.8, docs/world/architecture.md "The speed picks the tier"):
+/// every rule for which tier a ship is in, when it goes on rails, how, and what takes it off, here and nowhere else. A
+/// ship on rails is a function of time, not stepped; the player shouldn't see it happen, and the more ships are on
+/// rails the faster the clock runs, so these rules are tuned often. Off rails, the asked speed picks the tier: coarse
+/// at <see cref="SimSettings.CoarseMinSpeed"/> and up, fine below (<see cref="CoarseNow"/>). The numbers are
+/// <see cref="SimSettings"/>' (Rails*, Coarse*, Encounter*, <see cref="SimSettings.PolarCapDeg"/>); the logic is
+/// this file's.
 /// <list type="bullet">
+/// <item><b>Coarse.</b> A coarse ship is on segments of kinematic motion (CoarseMotion), laid from its orders as each
+/// ends and as it's ordered (<see cref="PlanCoarse"/>); a group's ships ride their guide while they're in station, and
+/// steer back to it by their captains when they're not (<see cref="RideCheck"/>). Everything the fine tick looks at
+/// every few seconds is looked at once a coarse step (<see cref="CoarseStepEvent"/>). The asked speed crossing the
+/// threshold moves every ship off rails across at that moment, where it is (<see cref="SpeedChanged"/>); coming off
+/// rails, a ship goes to the tier the speed asks for (<see cref="DerailSlot"/>).</item>
 /// <item><b>Units.</b> Ships go on and off rails in units: the line of the outermost group a ship moves with (its guide
 /// first, on rails of its own; the rest riding it at their offsets), or a ship alone (or detached) by itself
 /// (<see cref="UnitLine"/>, <see cref="RailsCheck"/>).</item>
@@ -110,12 +119,14 @@ public sealed partial class ShipSystem
     bool Steady(int slot)
     {
         var s = Store[slot];
-        if (s.Helm is not (Helm.Course or Helm.Route) || !NotSwinging(s) || s.Power < 0 || s.Power != s.PowerOrder)
+        bool coarse = s.Tier == ClockTier.Coarse;   // coarse: its manoeuvre done (its power isn't stepped)
+        if (s.Helm is not (Helm.Course or Helm.Route) || (coarse ? !Store.CoarseSteady(slot) || s.PowerOrder < 0 : !NotSwinging(s) || s.Power < 0 || s.Power != s.PowerOrder))
             return false;
         double want = s.Helm == Helm.Course ? s.CourseOrderDeg : Earth.Bearing(s.Position, s.Waypoint(s.RouteNext));
         if (Math.Abs(AngleDeg(want - s.HeadingDeg)) > settings.RailsMaxCourseErrDeg)
             return false;
-        return Math.Abs(s.Speed - SteadySpeed(s)) <= settings.RailsMaxSpeedErrKn * Handling.MsPerKnot;
+        double steady = coarse ? s.Handling.SteadySpeedMs(s.PowerOrder) : SteadySpeed(s);
+        return Math.Abs(s.Speed - steady) <= settings.RailsMaxSpeedErrKn * Handling.MsPerKnot;
     }
 
     /// <summary>Every other ship of the unit in <see cref="line"/> with its guide: not swinging, on the guide's heading
@@ -125,22 +136,25 @@ public sealed partial class ShipSystem
     bool InStation(int guide)
     {
         var gs = Store[guide];
-        var gp = gs.Position;
-        var starboard = Vec3d.Cross(gs.Forward, gp.Normalized());
-        double speed = SteadySpeed(gs);
+        double speed = gs.Tier == ClockTier.Coarse ? gs.Speed : SteadySpeed(gs);
         for (int i = 1; i < line.Count; i++)
         {
             int m = Store.SlotOf(line[i].Ship);
-            if (m < 0)
-                return false;
-            var ms = Store[m];
-            var (_, astern, abeam) = line[i];
-            if (!NotSwinging(ms) || Math.Abs(AngleDeg(ms.HeadingDeg - gs.HeadingDeg)) > settings.RailsGroupHeadingDeg ||
-                Math.Abs(ms.Speed - speed) > settings.RailsGroupSpeedErrKn * Handling.MsPerKnot ||
-                Earth.Distance(ms.Position, gp - gs.Forward * astern + starboard * abeam) > settings.RailsGroupStationM)
+            if (m < 0 || !MemberInStation(gs, Store[m], speed, line[i].AsternM, line[i].AbeamM))
                 return false;
         }
         return true;
+    }
+
+    /// <summary>A group's ship with its guide: not swinging, on its heading and speed near enough, and within
+    /// <see cref="SimSettings.RailsGroupStationM"/> of its station (metres astern and abeam).</summary>
+    bool MemberInStation(ShipState gs, ShipState ms, double speed, double astern, double abeam)
+    {
+        var gp = gs.Position;
+        var starboard = Vec3d.Cross(gs.Forward, gp.Normalized());
+        return NotSwinging(ms) && Math.Abs(AngleDeg(ms.HeadingDeg - gs.HeadingDeg)) <= settings.RailsGroupHeadingDeg &&
+               Math.Abs(ms.Speed - speed) <= settings.RailsGroupSpeedErrKn * Handling.MsPerKnot &&
+               Earth.Distance(ms.Position, gp - gs.Forward * astern + starboard * abeam) <= settings.RailsGroupStationM;
     }
 
     /// <summary>Whether a ship of the unit in <see cref="line"/> is sliding along a coast: placed on rails, it would be
@@ -263,6 +277,9 @@ public sealed partial class ShipSystem
     /// steady, they're taken on as they are.</summary>
     void Lay(World world, int guide, bool placed)
     {
+        for (int i = 0; i < line.Count; i++)
+            if (Store.SlotOf(line[i].Ship) is int c and >= 0 && Store.TierOf(c) == ClockTier.Coarse)
+                Store.Derail(c);   // from coarse: handed to the fine tick where it is, for rails to take from there
         if (placed)
             Store.Settle(guide);
         RailGuide(world, guide);
@@ -341,8 +358,8 @@ public sealed partial class ShipSystem
     void RailsEvent(World world, in SimEvent e)
     {
         int slot = Store.SlotOf(e.Entity);
-        if (slot < 0 || !Store.OnRails(slot) || Store.RailGen(slot) != e.Generation)
-            return;
+        if (slot < 0 || !Store.Anchored(slot) || Store.RidesAnother(slot) || Store.RailGen(slot) != e.Generation)
+            return;   // stale; a coarse ship of its own gets its polar caps' (it lays its waypoints itself)
         if (e.Code == RailsWaypoint)
         {
             if (Store.PassWaypoint(slot, out var next))
@@ -508,8 +525,10 @@ public sealed partial class ShipSystem
     }
 
     /// <summary>For a ship on its own rails holding a course: when its rhumb line reaches a polar cap, or, inside one,
-    /// when its great circle leaves it (solved in closed form), as an event.</summary>
-    void SchedulePolar(World world, int slot)
+    /// when its great circle leaves it (solved in closed form), as an event; only if it's within
+    /// <paramref name="withinMs"/> (a coarse ship's, looked at each step: it's laid again too often to leave an event
+    /// days ahead each time).</summary>
+    void SchedulePolar(World world, int slot, long withinMs = long.MaxValue)
     {
         var s = Store[slot];
         if (s.Speed <= 0 || s.Helm != Helm.Course)
@@ -540,7 +559,8 @@ public sealed partial class ShipSystem
         if (!(dist > 0))
             return;
         long ms = (long)Math.Ceiling(dist / s.Speed * 1000);
-        world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, code, Store.RailGen(slot));
+        if (ms <= withinMs)
+            world.Schedule(world.Time + Math.Max(ms, 1), EventTier.Rails, s.Entity, Id, code, Store.RailGen(slot));
     }
 
     static Vec3d Toward(Vec3d from, Vec3d to)
@@ -555,33 +575,49 @@ public sealed partial class ShipSystem
     /// <summary>Any ship that isn't on rails: the fine tick runs only while there is.</summary>
     bool AnyFine() => Store.FineCount > 0;
 
-    /// <summary>Takes a ship off rails, and the line of the outermost group it moves with (they ride together), back
-    /// to the fine tick, exactly where the rails had them. A detached member rides rails of its own, so it comes off
-    /// alone. Whoever watches ships on the fine tick wakes (a contact isn't a command).</summary>
-    public void Derail(World world, int entity)
+    /// <summary>Takes a ship off rails, and the line of the outermost group it moves with (they ride together), into
+    /// the tier the speed asks for, exactly where the rails had them: the fine tick, or coarse (its guide on a segment
+    /// of its own, the rest riding it still). A detached member rides rails of its own, so it comes off alone. With
+    /// <paramref name="unride"/> (a change to groups) coarse ships riding their guide come off it too, to steer to
+    /// their new stations. Whoever watches ships on the fine tick wakes (a contact isn't a command).</summary>
+    public void Derail(World world, int entity, bool unride = false)
     {
         bool any = false;
         if (world.Groups.UnitOf(entity) is { } u)
         {
             world.Groups.LineOffsets(u, derailing);
             for (int i = 0; i < derailing.Count; i++)
-                any |= DerailSlot(Store.SlotOf(derailing[i].Ship));
+                any |= DerailSlot(world, Store.SlotOf(derailing[i].Ship), unride);
         }
         else
-            any = DerailSlot(Store.SlotOf(entity));
+            any = DerailSlot(world, Store.SlotOf(entity), unride);
         if (any)
         {
-            EnsureTick(world);
+            if (!coarseMode)
+                EnsureTick(world);
             world.OffRails();
         }
     }
 
-    bool DerailSlot(int slot)
+    bool DerailSlot(World world, int slot, bool unride)
     {
-        if (slot < 0 || !Store.OnRails(slot))
+        if (slot < 0)
             return false;
-        Store.Derail(slot);
-        return true;
+        if (Store.OnRails(slot))
+        {
+            if (coarseMode)
+                ToCoarse(world, slot);
+            else
+                Store.Derail(slot);
+            return true;
+        }
+        if (unride && Store.TierOf(slot) == ClockTier.Coarse && Store.RidesAnother(slot))
+        {
+            Store.Coarsen(slot);
+            PlanCoarse(world, slot);
+            return true;
+        }
+        return false;
     }
 
     /// <summary>What a change to groups takes off rails, before it's made: whatever changes comes off whole, the ship's
@@ -591,7 +627,7 @@ public sealed partial class ShipSystem
         var groups = world.Groups;
         var code = (GroupCommand)c.Code;
         if (c.Entity != 0)
-            Derail(world, c.Entity);
+            Derail(world, c.Entity, unride: true);
         switch (code)
         {
             case GroupCommand.SetFormation or GroupCommand.Disband or GroupCommand.Add or GroupCommand.Form or GroupCommand.Exit or GroupCommand.DetachGroup:
@@ -602,7 +638,7 @@ public sealed partial class ShipSystem
                 DerailGroup(world, groups.Get((int)c.Y));
                 break;
             case GroupCommand.Join when c.A != 0:
-                Derail(world, (int)c.A);
+                Derail(world, (int)c.A, unride: true);
                 break;
             case GroupCommand.Detach when groups.Of(c.Entity) is { } g:
                 DerailGroup(world, g);   // a ship rejoining is on rails of its own: its line comes off too
@@ -616,7 +652,7 @@ public sealed partial class ShipSystem
                     if (slot < 0 || side >= 0 && Store[slot].Side != side)
                         continue;
                     side = Store[slot].Side;
-                    Derail(world, e);
+                    Derail(world, e, unride: true);
                 }
                 break;
         }
@@ -628,8 +664,174 @@ public sealed partial class ShipSystem
             return;
         var groups = world.Groups;
         if (groups.GuideShip(groups.TopOf(g)) is int s and > 0)
-            Derail(world, s);
+            Derail(world, s, unride: true);
         if (g.Parent != 0 && groups.Get(g.Parent) is { } f && groups.GuideShip(groups.TopOf(f)) is int fs and > 0)
-            Derail(world, fs);   // a detached group rejoining: the line it joins comes off too
+            Derail(world, fs, unride: true);   // a detached group rejoining: the line it joins comes off too
+    }
+
+    // ------------------------------------------------------------------ the coarse tier (docs/battle/plan.md step 2.8)
+
+    bool coarseMode;   // ships off rails are coarse: the asked speed at CoarseMinSpeed or more, as of its last change
+    long nextCoarseMs = -1;   // the coarse step scheduled, or -1
+
+    /// <summary>Whether ships off rails are coarse: the asked speed at <see cref="SimSettings.CoarseMinSpeed"/> or
+    /// more. The asked speed, never the achieved one (world state, so it replays), and never the zoom.</summary>
+    bool CoarseNow(World world) => world.Speed >= settings.CoarseMinSpeed;
+
+    /// <summary>The asked speed changed (a command, or a halt at an event): crossing the threshold, every ship off rails
+    /// goes across at this moment, where it is.</summary>
+    internal void SpeedChanged(World world)
+    {
+        bool coarse = CoarseNow(world);
+        if (coarse == coarseMode)
+            return;
+        coarseMode = coarse;
+        Normalize(world);
+    }
+
+    /// <summary>Every ship off rails into the tier the speed asks for. Coarse: the fine tick's ships stepped to now and
+    /// put on segments of their own from where they are, steering as they were (a group's ships ride their guide again
+    /// once they're in station, <see cref="RideCheck"/>). Fine: coarse ships handed to the fine tick as their segments
+    /// have them, their swing carried on; whoever watches the fine tick wakes.</summary>
+    void Normalize(World world)
+    {
+        if (coarseMode)
+        {
+            if (Store.FineCount == 0)
+                return;
+            ShipMotion.StepAll(Store, world.Time.Ms, settings, world.Shore);
+            while (Store.FineCount > 0)
+                ToCoarse(world, Store.FineSlot(Store.FineCount - 1));
+            return;
+        }
+        if (Store.CoarseCount == 0)
+            return;
+        while (Store.CoarseCount > 0)
+            Store.Derail(Store.CoarseSlot(Store.CoarseCount - 1));
+        EnsureTick(world);
+        world.OffRails();
+    }
+
+    /// <summary>A ship into the coarse tier, from rails or the fine tick: riding its guide on rails, it rides it coarse;
+    /// else on a segment of its own from where it is.</summary>
+    void ToCoarse(World world, int slot)
+    {
+        if (Store.OnRails(slot) && Store.RidesAnother(slot))
+            Store.RideCoarse(slot);
+        else
+        {
+            Store.Coarsen(slot);
+            PlanCoarse(world, slot);
+        }
+        EnsureCoarseStep(world);
+    }
+
+    /// <summary>An order to a coarse ship, given: laid again from where it is (a ship riding its guide comes off it, on a
+    /// segment of its own).</summary>
+    void Recoarsen(World world, int slot)
+    {
+        if (Store.RidesAnother(slot))
+            Store.Coarsen(slot);
+        else
+            Store.ReanchorCoarse(slot);
+        PlanCoarse(world, slot);
+    }
+
+    /// <summary>Lays a coarse ship's next segment from its orders; its end is an event. Holding a course to no end, it
+    /// gets the polar caps' events as rails do, once a step finds one coming (<see cref="CoarseStepEvent"/>).</summary>
+    void PlanCoarse(World world, int slot)
+    {
+        long end = CoarseMotion.Plan(Store, slot, settings);
+        if (end != long.MaxValue)
+            world.Schedule(new WorldTime(end), EventTier.Coarse, Store[slot].Entity, Id, CoarseSegment, Store.RailGen(slot));
+        else
+            SchedulePolar(world, slot, settings.CoarseStepMs);
+    }
+
+    /// <summary>A coarse ship's segment ends: the next laid from there. Stale (laid again, riding, or out of coarse
+    /// since) it's nothing.</summary>
+    void CoarseSegmentEnd(World world, in SimEvent e)
+    {
+        int slot = Store.SlotOf(e.Entity);
+        if (slot < 0 || Store.TierOf(slot) != ClockTier.Coarse || Store.RidesAnother(slot) || Store.RailGen(slot) != e.Generation)
+            return;
+        Store.ReanchorCoarse(slot);
+        PlanCoarse(world, slot);
+    }
+
+    void EnsureCoarseStep(World world)
+    {
+        if (nextCoarseMs >= 0)
+            return;
+        long step = settings.CoarseStepMs;
+        nextCoarseMs = (world.Time.Ms / step + 1) * step;
+        world.Schedule(new WorldTime(nextCoarseMs), EventTier.Coarse, 0, Id, CoarseStep);
+    }
+
+    /// <summary>The coarse step: what the fine tick looks at every few seconds (contacts, encounters, the rails check,
+    /// sighting over the step), looked at once a step while no ship is on the fine tick (if any is, its tick does it
+    /// for all); a group's ships back in station ride their guide again; and a polar cap coming within the step is an
+    /// event.</summary>
+    void CoarseStepEvent(World world)
+    {
+        nextCoarseMs = -1;
+        if (Store.CoarseCount == 0)
+            return;
+        if (Store.FineCount == 0)
+        {
+            long t;
+            if (settings.RailsEnabled)
+            {
+                t = Probes.Now;
+                FineContacts(world);
+                probes.Add(contactsProbe, t);
+            }
+            UpdateEncounters(world);
+            sightings.Forget(world.Time.Ms);
+            if (settings.RailsEnabled)
+            {
+                t = Probes.Now;
+                RailsCheck(world);
+                probes.Add(railsProbe, t);
+            }
+            if (encounters.Count > 0)
+            {
+                t = Probes.Now;
+                sightings.Look(world, Store, used, settings.CoarseStepMs / 1000.0);
+                probes.Add(sightingProbe, t);
+            }
+        }
+        RideCheck(world);
+        for (int k = 0; k < Store.CoarseCount; k++)
+        {
+            int slot = Store.CoarseSlot(k);
+            if (Store.SegmentEndMs(slot) == long.MaxValue && !Store.RidesAnother(slot))
+                SchedulePolar(world, slot, settings.CoarseStepMs);   // a polar cap reached within the step
+        }
+        if (Store.CoarseCount > 0)
+            EnsureCoarseStep(world);
+    }
+
+    /// <summary>At the coarse step, a group's ships steering back to their stations (their captains' doing) ride their
+    /// coarse guide again once they're in station, at their offsets as they are: nothing jumps.</summary>
+    void RideCheck(World world)
+    {
+        var groups = world.Groups;
+        for (int k = 0; k < groups.Count; k++)
+        {
+            var g = groups[k];
+            if (groups.InForceLine(g))
+                continue;   // carried with its force
+            int guide = Store.SlotOf(groups.GuideShip(g));
+            if (guide < 0 || Store.TierOf(guide) != ClockTier.Coarse || Store.RidesAnother(guide))
+                continue;
+            groups.LineOffsets(g, line);
+            var gs = Store[guide];
+            double speed = gs.Speed;
+            for (int i = 1; i < line.Count; i++)
+                if (Store.SlotOf(line[i].Ship) is int m and >= 0 && Store.TierOf(m) == ClockTier.Coarse && !Store.RidesAnother(m) &&
+                    MemberInStation(gs, Store[m], speed, line[i].AsternM, line[i].AbeamM))
+                    Store.RideCoarseWith(m, guide);
+        }
     }
 }

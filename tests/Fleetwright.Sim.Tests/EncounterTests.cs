@@ -151,7 +151,7 @@ public class EncounterTests(ITestOutputHelper output)
         w.Apply(Command.SetSpeed(10_000));
         w.Apply(ShipSystem.Spawn(c, 55, 4, 0, Kn, 1));
         w.Apply(ShipSystem.Spawn(c, 57, 4, 180, Kn, 2));
-        Run(w, 60);
+        Run(w, Settings.CoarseStepMs / 1000.0 + 5);   // coarse at this speed: placed on rails at the first coarse step
         Assert.True(Ship(w, 1).OnRails && Ship(w, 2).OnRails);
         return w;
     }

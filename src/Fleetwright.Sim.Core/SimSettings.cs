@@ -210,6 +210,11 @@ public sealed record SimSettings
     /// between steps, so the step doesn't change where ships go, only when they decide.</summary>
     public int CoarseStepMs { get; init; } = 60_000;
 
+    /// <summary>A coarse ship's captain keeping station steers for where it will be this many coarse steps on, at the
+    /// speed that gets him there: two, so a change of speed taking longer than a step isn't overshot (a column spawned
+    /// 400 m out of station closes without passing it).</summary>
+    public double CoarseRendezvousSteps { get; init; } = 2;
+
     /// <summary>A coarse ship within this of its course, degrees, takes it at once rather than turning for it (what's
     /// left at a turn's end: the meridians converging along the arc).</summary>
     public double CoarseSnapDeg { get; init; } = 0.01;
@@ -223,7 +228,7 @@ public sealed record SimSettings
     /// fewer than <see cref="RailsWatchedPx"/> at the map's scale: drawn as one marker) is placed on rails and its
     /// orders snap, as at <see cref="RailsSnapMinSpeed"/>. 1: at any speed (the user, 2026-10-12: once only the force
     /// icon shows, a snap isn't seen). EXCEPTION: with <see cref="RailsWatchedPx"/>, the sim's one dependence on display
-    /// state (ShipSystem.Rails.cs), kept only until the snap can be hidden better.</summary>
+    /// state (ShipSystem.Tiers.cs), kept only until the snap can be hidden better.</summary>
     public double RailsPlaceUnwatchedMinSpeed { get; init; } = 1;
 
     /// <summary>A unit spanning at least this many pixels at the map's scale (its ships' spread and its turning circle)
