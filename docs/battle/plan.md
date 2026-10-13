@@ -1558,6 +1558,24 @@ the designer" (step 2.2), not here.
   closing (`FollowSpeedDamping` 2, swept against 0 to 3 and closing times of 90 to 300 s): the last ship rings 9
   times between 12.2 and 13.4 kn and the line is within 22 m from 20 minutes on; three columns abreast an hour after
   a turn, 221 m → 48 m; forming up from scattered as before. More damping is calmer still but sits further off.
+- **Long lines rang on the track after a turn** (the user: ringing and no settling in long line ahead, "a rather
+  beautiful ring pattern" in the turn). **Damped, 2026-10-13:** a follower steered the track's heading less a
+  correction for how far he was off it, and his helm answers late, so he swung across it; down the line each ship
+  passed the swing on a little larger (a model of the loop gives ~7% a ship on a ~100 s swing). In a line of twelve
+  after a 90° turn the rear was still 18 m off and swinging an hour on, 33 rudder reversals, never on rails. Now he
+  corrects for where he'll be off the track 1.25 of his Nomoto T on at the rate he's closing it
+  (`FollowTrackCrossLeadOverT`, swept 0 to 2 against gains of 0.2 and 0.3 on lines of 8-16 at 8-18 kn; past ~1.5
+  the rudder chatters again): the same line is on rails 27-29 minutes after the order with 7 reversals, a 180° turn 34
+  minutes (was 79), eight at 18 kn through 45° 12 minutes (was never). Two things left:
+  - **Lines cut the corner more ship by ship:** the twelfth ship of that line is up to ~175 m inside the guide's
+    track through the turn (the second 31 m). Each ship keeps the track of the one ahead, and the small inside cut of
+    each adds up; it settles, it doesn't ring. Keeping the guide's track instead would stop it adding.
+  - **Long slow lines still hunt in speed:** sixteen 400 m apart at 8 kn hold the track (7 m off late) but never go
+    on rails: the speed swings grow down the line (the second ship 7.9-8.1 kn, the sixteenth 6.0-9.8 kn, 400 m off
+    station), and did before. Ringing the ship ahead's speed plus the gap is string-unstable at any damping (the swing
+    grows some ship to ship at some period); taking the guide's speed (what's signalled to the line) instead of the
+    ship ahead's, with the gap and the damping on the ship ahead as now, is stable while the damping outlasts the
+    engines' lag ((2·damping + 1)·closing time ≥ 2·the speed's time constant).
 - **Collision avoidance** (2.3b): none yet. Collisions are in the module's era list.
 - **Slow ships settle slowly** (found in 2.5): at 5 kn a turn and the speed's recovery take most of an hour before
   the 0.1 kn rails tolerance is met (the net force is small at low speed). A tolerance relative to the speed, or one

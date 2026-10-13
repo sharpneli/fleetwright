@@ -269,6 +269,12 @@ public sealed record SimSettings
     public double FollowTrackCrossDegPerM { get; init; } = 0.3;
     public double FollowTrackCrossMaxDeg { get; init; } = 30;
 
+    /// <summary>Steering the track: he corrects for where he'll be off it a while on at the rate he's closing or opening
+    /// it, not where he is, looking ahead this multiple of his ship's Nomoto T (damped: his helm answers late, so on the
+    /// offset alone he swings across, and down a line each ship passes the swing on a little larger): 0 steers on the
+    /// offset alone.</summary>
+    public double FollowTrackCrossLeadOverT { get; init; } = 1.25;
+
     /// <summary>How often admirals think, ms of world time; and how far under the slowest member's designed speed they
     /// hold their guide, so the others have speed in hand to keep station.</summary>
     public int AdmiralPeriodMs { get; init; } = 1000;

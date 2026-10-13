@@ -231,6 +231,45 @@ public class ForceTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_long_line_settles_after_a_turn_and_goes_on_rails()
+    {
+        // twelve in line ahead through a 90° turn: steering on the offset from the track alone, each ship swung across
+        // it a little more than the one ahead and the rear never settled (33 rudder reversals, 18 m off the track an
+        // hour on, never on rails); damped by the rate he closes it, the whole line is on rails in under half an hour
+        var (w, ai) = Make();
+        int c = Class(w, "dreadnought");
+        const int n = 12;
+        var at = Earth.Position(Lat, Lon);
+        var fwd = Earth.Forward(at, 0);
+        for (int i = 0; i < n; i++)
+        {
+            var (la, lo) = Earth.LatLon(at - fwd * (i * 600));
+            w.Apply(ShipSystem.Spawn(c, la, lo, 0, 12));
+        }
+        w.Apply(GroupSystem.CreateOfNewest(n, Formation.Column, 600));
+        Run(w, 60);
+        w.Apply(ai.Orders.Course(Unit.Group(w.Groups[0].GroupId), 90));
+        var last = new int[n + 1];
+        int flips = 0, sec = 0;
+        for (; sec < 60 * 60 && !Ship(w, n).OnRails; sec++)
+        {
+            Run(w, 1);
+            for (int e = 2; e <= n; e++)
+                if (Ship(w, e).Rudder * 180 / Math.PI is double rd && Math.Abs(rd) > 2)
+                {
+                    if (last[e] != 0 && Math.Sign(rd) != last[e])
+                        flips++;
+                    last[e] = Math.Sign(rd);
+                }
+        }
+        output.WriteLine($"the line on rails {sec / 60.0:F1} min after the order to turn; {flips} rudder reversals past 2°");
+        for (int e = 1; e <= n; e++)
+            Assert.True(Ship(w, e).OnRails, $"ship {e} still off rails at {sec / 60.0:F1} min");
+        Assert.True(sec < 35 * 60, $"{sec / 60.0:F1} min");
+        Assert.True(flips < 15, $"{flips} reversals");
+    }
+
+    [Fact]
     public void On_rails_at_speed_a_force_snaps_onto_its_stations_whole()
     {
         var (w, ai) = Make();

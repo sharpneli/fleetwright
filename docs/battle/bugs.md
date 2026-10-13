@@ -15,6 +15,9 @@ add what's found.
   first runs (the JIT, tiering) allocate, and its warm-up (`Run(w, 120)` untimed) may be too short for tiering to
   have settled before the measured hour. To hunt it: run the suite in a loop until it fails and keep the message
   (the bytes and where), then compare a longer warm-up, `DOTNET_TieredCompilation=0`, and the test alone under load.
+- [ ] `RailsTests.Two_thousand_ships_steam_two_days_among_the_Pacific_islands` fails its 60 s limit in Debug (~129 s,
+  2026-10-13, with and without the line-ahead steering damping), and passes in Release (15.9 s). Either the limit is
+  for Release only and should say so (skip or scale it in Debug), or Debug got slower since S3; not hunted yet.
 - [ ] The other allocation tests warm up the same way and may share it: `ForceTests` (line ~400), `GroupTests`
   (~189), `FormationRailsTests` (~443), `RandomStreamTests` (~78), `SlideTests.Sliding_allocates_nothing_and_costs_little`.
   None has been seen failing.

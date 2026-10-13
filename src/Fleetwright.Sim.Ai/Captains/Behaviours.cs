@@ -54,7 +54,7 @@ public static class Behaviours
     /// <see cref="Trail"/>), not along his heading: in line ahead each ship turns where the one ahead turned, as a
     /// battle line turns in succession. He finds where he is along the track, steers the track's heading
     /// <see cref="SimSettings.FollowTrackLookaheadLengths"/> of his lengths further along it, less a correction toward
-    /// it for how far he's off it, and rings as <see cref="Station"/> does, the gap measured along the track. False (and nothing) when he's more than
+    /// it for how far he's off it a little on (where he is and the rate he closes it), and rings as <see cref="Station"/> does, the gap measured along the track. False (and nothing) when he's more than
     /// <see cref="SimSettings.FollowTrackJoinLengths"/> lengths off the track or astern of all of it: he joins the line
     /// the plain way first.</summary>
     public static bool Track(ShipState own, in Sighting leader, Trail trail, double distanceM, SimSettings s, out double courseDeg, out double speedKn)
@@ -96,7 +96,9 @@ public static class Behaviours
         double aim = Math.Max(at - s.FollowTrackLookaheadLengths * length, 0);
         var (ahead, dir) = TangentBack(leader.Position, leader.Forward, trail, aim);
         var near = PointBack(leader.Position, trail, at);
-        double off = Vec3d.Dot(p - near, Vec3d.Cross(tangent, p.Normalized()));   // positive: to starboard of the track
+        var starboard = Vec3d.Cross(tangent, p.Normalized());
+        double off = Vec3d.Dot(p - near, starboard);   // positive: to starboard of the track
+        off += s.FollowTrackCrossLeadOverT * h.T(own.Speed, s) * own.Speed * Vec3d.Dot(own.Forward, starboard);   // where he'll be at the rate he's going
         courseDeg = Earth.Heading(ahead, dir) - Math.Clamp(off * s.FollowTrackCrossDegPerM, -s.FollowTrackCrossMaxDeg, s.FollowTrackCrossMaxDeg);
         courseDeg = ((courseDeg % 360) + 360) % 360;
 

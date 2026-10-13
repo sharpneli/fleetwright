@@ -90,6 +90,7 @@
   "FollowTrackJoinLengths": 4,
   "FollowTrackCrossDegPerM": 0.3,
   "FollowTrackCrossMaxDeg": 30,
+  "FollowTrackCrossLeadOverT": 1.25,
   "AdmiralPeriodMs": 1000,
   "GroupSpeedMarginKn": 2
 }
