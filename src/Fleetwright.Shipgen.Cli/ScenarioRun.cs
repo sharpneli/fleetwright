@@ -116,6 +116,7 @@ static class ScenarioRun
         Console.WriteLine();
         Console.WriteLine($"{minutes:F0} game minutes in {run:F2} s: {speed:F0}x at full tilt, the slowest minute {60 / worst:F0}x; " +
                           $"{run / (game * 1000 / settings.ShipTickMs) * 1e6:F1} µs a fine tick");
+        Console.WriteLine($"the world's state hash at {w.Time}: {w.ComputeHash():X16}");
         Console.WriteLine($"at {atSpeed:G}x the sim thread is {atSpeed / speed:P1} busy (the target: at most 25% at 10x, docs/battle/plan.md 2.7)");
         Console.WriteLine("where the time went (share of the run, longest call):");
         for (int i = 0; i < w.Probes.Count; i++)
