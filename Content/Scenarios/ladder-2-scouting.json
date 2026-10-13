@@ -1,0 +1,11 @@
+// The scale test's second rung (docs/battle/plan.md step 2.7c): the scouting forces of the Jutland, Beatty's against
+// Hipper's (92 ships of ~20 classes), into contact within the half hour, as at 14:20.
+{
+  "scenario": 1,
+  "name": "Ladder 2: the scouting forces",
+  "brief": "The scale test's second rung: Beatty's Battlecruiser Fleet against Hipper's scouting groups, from the Jutland at 14:00 GMT; 92 ships.",
+  "from": "jutland",
+  "only": [ "Battlecruiser Fleet", "Battlecruiser Fleet light cruisers", "1st Flotilla", "13th Flotilla", "9th and 10th Flotillas", "Engadine",
+            "1st Scouting Group", "2nd Scouting Group", "Scouting torpedo boats" ],
+  "camera": [56.9, 5.3, 120]
+}

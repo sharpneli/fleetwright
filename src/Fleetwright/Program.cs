@@ -257,7 +257,13 @@ public static unsafe class Program
                     Console.Error.WriteLine($"Bad search: -search={search} (want entity:ladder|square|sector|patrol[:leg nm[:nm apart[:legs]]])");
             worldRef = world;
             if (scenarioArg != null)
-                world.Load(FindScenario(scenarioArg));
+            {
+                string found = FindScenario(scenarioArg, out string looked);
+                if (File.Exists(found))
+                    world.Load(found);
+                else
+                    Console.Error.WriteLine($"Scenario not found: {scenarioArg} (looked at {looked}; a new file in Content/Scenarios is copied next to the exe when the app builds)");
+            }
             if (startSpeed is double speed0)
                 world.Send(Sim.Command.SetSpeed(speed0));
             if (startPaused)
@@ -422,9 +428,11 @@ public static unsafe class Program
 
     /// <summary>-scenario='s file: the path as given, else with ".json" added, else a shipped scenario of that name
     /// (Content/Scenarios next to the exe). What's not found comes back as given.</summary>
-    static string FindScenario(string arg)
+    static string FindScenario(string arg, out string looked)
     {
-        foreach (var p in new[] { arg, arg + ".json", Path.Combine(AppContext.BaseDirectory, "Content", "Scenarios", Path.GetFileNameWithoutExtension(arg) + ".json") })
+        var tried = new[] { arg, arg + ".json", Path.Combine(AppContext.BaseDirectory, "Content", "Scenarios", Path.GetFileNameWithoutExtension(arg) + ".json") };
+        looked = string.Join(", ", tried.Select(Path.GetFullPath));
+        foreach (var p in tried)
             if (File.Exists(p))
                 return p;
         return arg;

@@ -24,7 +24,10 @@ namespace Fleetwright.Sim.Missions;
 /// </code>
 /// <para>A unit's side, formation and spacing default to its parent's (side 0, column, 600 m for a squadron, 3 km for
 /// a force). A top unit of one ship is that ship, not a group. A top unit with a route steams it (from where it's
-/// placed, its course only the start's heading).</para></summary>
+/// placed, its course only the start's heading).</para>
+/// <para><c>"from": "jutland"</c> takes another scenario of the same folder: its top units first (only those named in
+/// <c>"only": [...]</c>, if given; <c>[]</c> takes none), then this file's own; its start, seed, camera, sides and brief
+/// unless this file gives them. The scale test's ladder is made this way, so a corrected Jutland corrects every rung.</para></summary>
 public sealed class Scenario
 {
     public const int Version = 1;
@@ -93,7 +96,9 @@ public sealed class Scenario
 
     static readonly JsonDocumentOptions Options = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
 
-    public static Scenario Parse(string json, string? folder = null)
+    public static Scenario Parse(string json, string? folder = null) => Parse(json, folder, 0);
+
+    static Scenario Parse(string json, string? folder, int depth)
     {
         JsonDocument doc;
         try
@@ -112,12 +117,40 @@ public sealed class Scenario
             int version = r.TryGetProperty("scenario", out var v) && v.TryGetInt32(out int vi) ? vi : 0;
             if (version != Version)
                 throw new ScenarioException($"not a scenario of version {Version} (\"scenario\": {Version})");
+            // "from": another scenario in the same folder whose top units (those named in "only", or all) come first, and
+            // whose start, seed, camera and sides stand unless this one gives its own (the scale test's ladder takes
+            // parts of the Jutland, so a corrected position corrects every rung)
+            Scenario? from = null;
+            if (Str(r, "from", "") is { Length: > 0 } fromName)
+            {
+                if (depth > 4 || folder == null)
+                    throw new ScenarioException($"from \"{fromName}\": {(folder == null ? "no folder to find it in" : "too deep")}");
+                string fromPath = Path.Combine(folder, fromName + ".json");
+                if (!File.Exists(fromPath))
+                    throw new ScenarioException($"from \"{fromName}\": no {fromPath}");
+                try
+                {
+                    from = Parse(File.ReadAllText(fromPath), folder, depth + 1);
+                }
+                catch (ScenarioException x)
+                {
+                    throw new ScenarioException($"from \"{fromName}\": {x.Message}");
+                }
+            }
             var sides = r.TryGetProperty("sides", out var sd) && sd.ValueKind == JsonValueKind.Array
                 ? sd.EnumerateArray().Select(x => x.GetString() ?? "").ToArray()
-                : ["Side 0"];
+                : from?.Sides ?? ["Side 0"];
             if (sides.Length is 0 or > byte.MaxValue + 1)
                 throw new ScenarioException("sides: 1 to 256");
             var units = new List<ScenarioUnit>();
+            if (from != null)
+            {
+                var only = r.TryGetProperty("only", out var o) ? o.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : null;
+                foreach (var name in only ?? [])
+                    if (!from.Units.Any(u => u.Name == name))
+                        throw new ScenarioException($"only: no top unit \"{name}\" in {Str(r, "from", "")}");
+                units.AddRange(only == null ? from.Units : from.Units.Where(u => only.Contains(u.Name)));
+            }
             if (r.TryGetProperty("units", out var us) && us.ValueKind == JsonValueKind.Array)
             {
                 int i = 0;
@@ -127,10 +160,10 @@ public sealed class Scenario
             return new Scenario
             {
                 Name = Str(r, "name", "") is { Length: > 0 } n ? n : "Scenario",
-                Brief = Str(r, "brief", ""),
-                Start = ParseTime(Str(r, "start", "")),
-                Seed = r.TryGetProperty("seed", out var seed) && seed.TryGetUInt64(out ulong sv) ? sv : 1,
-                Camera = r.TryGetProperty("camera", out var cam) ? ParseCamera(cam) : null,
+                Brief = Str(r, "brief", from?.Brief ?? ""),
+                Start = from != null && !r.TryGetProperty("start", out _) ? from.Start : ParseTime(Str(r, "start", "")),
+                Seed = r.TryGetProperty("seed", out var seed) && seed.TryGetUInt64(out ulong sv) ? sv : from?.Seed ?? 1,
+                Camera = r.TryGetProperty("camera", out var cam) ? ParseCamera(cam) : from?.Camera,
                 Sides = sides,
                 Units = units,
                 Folder = folder,

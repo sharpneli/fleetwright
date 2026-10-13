@@ -1,0 +1,14 @@
+// The scale test's first rung (docs/battle/plan.md step 2.7c): one squadron of one class, the baseline per ship.
+// The Jutland's moment and place, none of its ships: eight Orions in line ahead where the Grand Fleet starts.
+{
+  "scenario": 1,
+  "name": "Ladder 1: one squadron",
+  "brief": "The scale test's first rung: eight Orion-like battleships in line ahead, the baseline per ship.",
+  "from": "jutland",
+  "only": [],
+  "camera": [57.77, 4.28, 20],
+  "units": [
+    { "name": "2nd Battle Squadron", "side": 0, "at": [57.77, 4.28], "course": 128, "kn": 15, "formation": "column", "spacing": 500,
+      "ships": [ { "design": "orion", "names": ["Orion", "Monarch", "Conqueror", "Thunderer", "King George V", "Ajax", "Centurion", "Erin"] } ] }
+  ]
+}
