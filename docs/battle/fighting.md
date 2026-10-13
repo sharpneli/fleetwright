@@ -494,8 +494,8 @@ between cells), its thickness, material and normal.
   |---|---|---|
   | 8 × 15"/42 at level 3, 16 kyd, a QE-size target | 5.0% | 4.7% (QE on QE) |
   | the same on a 250 m battleship | 6.8% | 5.8% (on a 270 m one) |
-  | levels 0, 1, 2 (the reference ×0.73 for the target's size) | 0.9, 2.9, 3.6% | 1.1, 2.8, 3.1% |
-  | straddles at levels 0, 1, 3 | 16, 44, 24% | 17, 40, 23% |
+  | levels 0, 1, 2 (the reference ×0.73 for the target's size) | 0.9, 2.9, 3.6% | 0.6, 2.8, 3.1% |
+  | straddles at levels 0, 1, 3 | 16, 44, 24% | 16, 40, 23% |
   | Lion-like 13.5" on a battlecruiser, 15 km | 4.7% | 4.5% |
   | Seydlitz-like 11" on a battlecruiser, 15 km | 5.5% | 4.6% (the record 4.0%) |
 
@@ -503,6 +503,20 @@ between cells), its thickness, material and normal.
   reference reaches it (2.7%) only with those conditions, which come with 4.5's deepenings (smoke, weather, splash
   confusion). `GunneryTests` keeps the ladder's order, level 3 at 2.5-8%, both pairs within ×2 (the German of its
   record), turrets that bear and those that don't, the rails and coarse rules, a replay, and no allocation.
+- **By range** (QE on QE, 20 runs each; the user asked, after 4.2b, whether point blank pays): every error grows with
+  the range (rangefinding as its square, the rest linearly) and the shell's flatter fall widens what it can hit, so
+  hits climb steeply as the range closes. Beyond the gun's reach (19.8 km for the placeholder 15"/42 at 18°; the real
+  gun at 20° reached ~23.7 km) it doesn't fire.
+
+  | Range | 1 km | 2 km | 4 km | 6 km | 9 km | 12 km | 16 kyd |
+  |---|---|---|---|---|---|---|---|
+  | level 3 | 90% | 72% | 59% | 35% | 16% | 7.4% | 4.6% |
+  | level 0 | 60% | 34% | 17% | 7.1% | 3.1% | 1.3% | 0.6% |
+
+  Level 0's ceiling close in is the eye's 20% range error (half its misses fall short and never reach the target)
+  and the ladder's first step of 550 m, rules made for long range. A bug found on the way: a `--level 0` override on a
+  battery with a director kept reading its rangefinder at row 0's magnification of 0 (an error without bound), so the
+  track coasted on the picture; a level without instruments now ranges by eye. `GunneryTests` keeps the climb.
 - **The cost:** ~10 µs of the sim thread a battery a game second, half of it the shells' launches (Release, `duel`). A
   Jutland's ~500 engaged batteries would take ~5 ms a game second, ~5% of a core at 10x: more than the plan's guess of
   1 µs, inside 2.7's budget; 4.10 measures it at scale.

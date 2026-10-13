@@ -264,7 +264,11 @@ public sealed class GunnerySystem : IWorldSystem
     }
 
     /// <summary>A sensor's readings a minute: an eye one, a rangefinder the level's.</summary>
-    static double Rate(GunneryLevel lvl, in Sensor s) => s.BaseM > 0 ? lvl.ReadingsPerMin : 1;
+    static double Rate(GunneryLevel lvl, in Sensor s) => Ranges(lvl, s) ? lvl.ReadingsPerMin : 1;
+
+    /// <summary>Whether a sensor takes ranges with its rangefinder: it has one, and the level has the instruments to
+    /// read it (row 0, the eyeball, hasn't: a director's rangefinder at level 0 ranges by eye).</summary>
+    static bool Ranges(GunneryLevel lvl, in Sensor s) => s.BaseM > 0 && lvl.Magnification > 0;
 
     int AllocateFc()
     {
@@ -393,7 +397,7 @@ public sealed class GunnerySystem : IWorldSystem
             if (!seen)
                 continue;
             double range = Earth.Distance(at, tpos), brg = Earth.Bearing(at, tpos), sr, bias, sb;
-            if (s.BaseM > 0)
+            if (Ranges(lvl, s))
             {
                 double unit = FireControl.RangefinderUnitM(s.BaseM, lvl.Magnification, range, settings);
                 (sr, bias, sb) = (crew.Operator * combat * unit, s.Bias * settings.RangefinderBiasUnits * unit, settings.RangefinderBearingMil * FireControl.Mil);

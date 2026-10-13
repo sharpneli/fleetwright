@@ -66,6 +66,24 @@ public class GunneryTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Close_in_the_hits_climb_steeply()
+    {
+        // every error grows with the range (rangefinding as its square) and the hittable space with the flatter fall:
+        // QE on QE at 2 and 6 km against 16 kyd (measured: level 3 72, 35 and 4.6%; level 0 34, 7 and 0.6%)
+        var qe = Class("super_dreadnought");
+        foreach (var (level, near) in new[] { (3, 50.0), (0, 20.0) })
+        {
+            var pct = new[] { 2_000, 6_000, 16 * Kyd }.Select(r =>
+            {
+                var (h, s, _, _) = Duels(qe, qe, r, 90, level, 8);
+                return 100.0 * h / s;
+            }).ToArray();
+            output.WriteLine($"level {level}: {pct[0]:F1}% at 2 km, {pct[1]:F1}% at 6 km, {pct[2]:F1}% at 16 kyd");
+            Assert.True(pct[0] > near && pct[0] > pct[1] && pct[1] > pct[2], $"level {level}");
+        }
+    }
+
+    [Fact]
     public void Jutland_like_pairs_land_near_the_reference_in_clear_weather()
     {
         var lion = Class("lion");
