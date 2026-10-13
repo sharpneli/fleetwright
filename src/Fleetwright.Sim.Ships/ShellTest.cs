@@ -6,30 +6,34 @@ namespace Fleetwright.Sim.Ships;
 /// <summary>shell-test on a ShipClass: an empirical check that the citadel has no holes. Shells are aimed at random
 /// points in the citadel's cells between the inner bottom and its roof (the highest armour deck over the citadel that
 /// the side armour reaches) from random bearings, at fall angles from direct fire (0°) to plunging (50°), and flown as
-/// straight lines over their last stretch. Each is traced back from its target out of the ship: it's stopped if on the
-/// way in it crossed armour or water, and a leak if it reached the citadel through neither.
-/// <para>Only the class is read, the way the game reads it: the side armour lies on the hull's side
-/// (<see cref="HullField"/>) over its x0..x1 and bottom..top; an armour deck is the plane z over x0..x1 across the hull,
-/// with holes where a barbette (inside its wall) or an uptake passes through it, unless the uptakes have gratings; a
-/// bulkhead is the plane x over bottom..top across the hull. A barbette is a tube, and the other armoured parts are
-/// solids (<see cref="ArmourSolids"/>). Water is anything outside the hull below the waterline.</para>
+/// straight lines over their last stretch. Each is traced through the ship by the one tracer (<see cref="ShipTracer"/>)
+/// from outside it to its target: it's stopped by the first armour on the way in, or by water (at once, or once it's
+/// deeper than a shell goes under water), and a leak if it reached the citadel through neither.
+/// <para>What counts as armour: an armour deck anywhere on the way (unless the shell passes inside a barbette's bore;
+/// over an uptake it meets a grating, which stops it only with gratings), an armoured bulkhead, side armour where it
+/// crosses the hull's side, a barbette's wall, and any other armoured part entered. Water is anything outside the hull
+/// below the waterline. Of what it passed on the way, the last barbette's open top or uptake before the target is what
+/// let a leak in.</para>
 /// <para>The shots are drawn up front, one stream per shot (<see cref="Draw"/>), so a run doesn't depend on how many
-/// threads trace it. A trace steps out along the ray at 5 cm and bisects where it crosses a surface, as the first
-/// version (Shipgen's, on the hitboxes) did; step 4.1's hit query replaces the stepping with exact
-/// crossings.</para></summary>
+/// threads trace it. The tracer's walk starts at the target and steps back toward the gun at 5 cm, as the first
+/// version (Shipgen's, on the hitboxes) did, so a shot's samples are where they always were.</para></summary>
 public sealed class ShellTest
 {
     public const double MaxFall = 50.0;
-    const double Step = 0.05, Eps = 1e-3;
+    const double Eps = 1e-3;
 
     readonly ShipClass c;
-    readonly ArmourSolids a;
+    readonly ShipSolids g;
     readonly HullField hull;
     readonly bool gratings;
-    readonly double keel, wl, xMax, yMax, zMax;
+    readonly double underwaterM;
+    readonly double keel, far;
     readonly int[] citadel;
+    readonly bool[] inCitadel;
     readonly double[] cum;
     readonly double holeX0, holeX1, holeTop;
+
+    [ThreadStatic] static HitPath? scratch;
 
     /// <summary>The citadel's roof: the box's top (null: no armour deck over the citadel, nothing to test).</summary>
     public double? Roof { get; }
@@ -39,12 +43,16 @@ public sealed class ShellTest
     public ShipClass Class => c;
 
     /// <summary>gratings: the uptakes' openings in the armour decks are closed by armoured gratings, as on real ships;
-    /// otherwise a shell can fall down an unarmoured uptake through the decks.</summary>
-    public ShellTest(ShipClass c, bool gratings = false)
+    /// otherwise a shell can fall down an unarmoured uptake through the decks. underwaterM: how deep under the waterline a
+    /// shell still goes on (0: water stops it at once, as shell-test always had it; research/simulation/damage-research/
+    /// 08-gunfire-effects.md §3.8: an underwater hit strikes 1-4 m deep).</summary>
+    public ShellTest(ShipClass c, bool gratings = false, double underwaterM = 0)
     {
-        (this.c, a, hull, this.gratings) = (c, c.Armour, c.Hull, gratings);
-        (keel, wl) = (c.Vertical.Keel, c.Vertical.Waterline);
-        (xMax, yMax, zMax) = (c.Length / 2 + 2, c.Beam / 2 + 2, a.ZMax);
+        (this.c, g, hull, this.gratings, this.underwaterM) = (c, c.Solids, c.Hull, gratings, underwaterM);
+        keel = c.Vertical.Keel;
+        var b = g.Bounds;
+        // far enough back that the shell starts outside the ship's box
+        far = 2 * Math.Sqrt((b.X1 - b.X0) * (b.X1 - b.X0) + (b.Y1 - b.Y0) * (b.Y1 - b.Y0) + (b.Top - b.Base) * (b.Top - b.Base)) + 10;
 
         // the box: the citadel's cells over the inner bottom (the double bottom isn't vital, and a falling shell can't
         // climb out of it) and under its roof, the highest armour deck over the whole citadel that the side armour
@@ -58,11 +66,11 @@ public sealed class ShellTest
         {
             double cx0 = cit.Min(i => c.Cells[i].Box.X0), cx1 = cit.Max(i => c.Cells[i].Box.X1);
             double side = double.NegativeInfinity;
-            foreach (int s in a.Sides)
+            foreach (int s in g.Sides)
                 if (c.SidePlates[s].X0 < cx1 && c.SidePlates[s].X1 > cx0)
                     side = Math.Max(side, c.SidePlates[s].Top);
             double? reached = null, lowest = null;
-            foreach (int d in a.Decks)
+            foreach (int d in g.Decks)
             {
                 var dk = c.ArmourDecks[d];
                 if (dk.X0 <= cx0 + 0.01 && dk.X1 >= cx1 - 0.01)
@@ -76,6 +84,9 @@ public sealed class ShellTest
             if (Roof is double roof)
                 citadel = cit.Where(i => c.Cells[i].Box.Top <= roof + 0.01 && c.Tiers[c.Cells[i].Tier].Floor >= 0).ToArray();
         }
+        inCitadel = new bool[c.Cells.Length];
+        foreach (int i in citadel)
+            inCitadel[i] = true;
         cum = new double[citadel.Length];
         double acc = 0;
         for (int i = 0; i < cum.Length; i++)
@@ -147,185 +158,121 @@ public sealed class ShellTest
 
     bool InHull(double x, double y, double z) => z >= keel && z <= hull.DeckTop(x) && Math.Abs(y) < hull.HalfWidth(x, z);
 
-    bool InCitadel(double x, double y, double z)
-    {
-        if (!InHull(x, y, z))
-            return false;
-        foreach (int i in citadel)
-        {
-            var b = c.Cells[i].Box;
-            if (x >= b.X0 - Eps && x <= b.X1 + Eps && y >= b.Y0 - Eps && y <= b.Y1 + Eps && z >= b.Base - Eps && z <= b.Top + Eps)
-                return true;
-        }
-        return false;
-    }
-
-    ReadOnlySpan<ArmourSolids.Solid> Uptakes => gratings ? [] : a.Uptakes;
-
-    /// <summary>Is the deck at z pierced at (x, y): inside a barbette that stands on or through it, or an uptake.</summary>
-    bool Pierced(double x, double y, double z)
-    {
-        foreach (ref readonly var b in a.BarbetteTubes)
-            if (b.Box.Base <= z + 0.01 && b.Box.Top > z && ArmourSolids.InBore(b, x, y))
-                return true;
-        foreach (ref readonly var u in Uptakes)
-            if (u.Box.Base < z + 0.01 && u.Box.Top > z - 0.01 && a.InPlan(u, x, y))
-                return true;
-        return false;
-    }
-
-    bool SideArmour(double x, double z)
-    {
-        foreach (int i in a.Sides)
-        {
-            ref readonly var s = ref c.SidePlates[i];
-            if (x >= s.X0 - Eps && x <= s.X1 + Eps && z >= s.Bottom - Eps && z <= s.Top + Eps)
-                return true;
-        }
-        return false;
-    }
-
-    /// <summary>Trace a shot back from its target out of the ship. leak: filled in when nothing stopped it. Allocates
-    /// nothing.</summary>
-    public Outcome Trace(in Shot shot, out LeakPath leak)
+    /// <summary>Trace a shot from outside the ship to its target. leak: filled in when nothing stopped it. path: the
+    /// tracer's buffer (null: this thread's own). Allocates nothing once the buffer has grown.</summary>
+    public Outcome Trace(in Shot shot, out LeakPath leak, HitPath? path = null)
     {
         var (ux, uy, uz) = shot.Back();
-        return Trace(shot.X, shot.Y, shot.Z, ux, uy, uz, out leak);
+        return Trace(shot.X, shot.Y, shot.Z, ux, uy, uz, out leak, path);
     }
 
-    public Outcome Trace(double x0, double y0, double z0, double ux, double uy, double uz, out LeakPath leak)
+    public Outcome Trace(double x0, double y0, double z0, double ux, double uy, double uz, out LeakPath leak, HitPath? path = null)
     {
         leak = default;
-        // the planes, exactly
-        if (uz > 1e-9)
-            foreach (int i in a.Decks)
-            {
-                ref readonly var d = ref c.ArmourDecks[i];
-                double t = (d.Z - z0) / uz;
-                if (t < 0)
-                    continue;
-                double x = x0 + ux * t, y = y0 + uy * t;
-                if (x >= d.X0 - Eps && x <= d.X1 + Eps && Math.Abs(y) <= hull.HalfWidth(x, d.Z) + Eps && !Pierced(x, y, d.Z))
-                    return Outcome.Armour;
-            }
-        if (Math.Abs(ux) > 1e-9)
-            foreach (int i in a.Bulkheads)
-            {
-                ref readonly var b = ref c.ArmourBulkheads[i];
-                double t = (b.X - x0) / ux;
-                if (t < 0)
-                    continue;
-                double y = y0 + uy * t, z = z0 + uz * t, xh = b.X - Math.Sign(b.X) * 0.01;   // a plate on an end face: the hull just inside it
-                if (z >= b.Bottom - Eps && z <= b.Top + Eps && z <= hull.DeckTop(xh) + Eps && Math.Abs(y) <= hull.HalfWidth(xh, z) + Eps)
-                    return Outcome.Armour;
-            }
-        // the hull side, the tubes and the solids, by stepping out
-        var tubes = a.BarbetteTubes;
-        Span<bool> inTube = tubes.Length <= 256 ? stackalloc bool[tubes.Length] : new bool[tubes.Length];
-        for (int i = 0; i < tubes.Length; i++)
-            inTube[i] = a.Inside(tubes[i], x0, y0, z0);
-        bool inHull = true;
+        path ??= scratch ??= new HitPath();
+        ShipTracer.Trace(c, new P3(x0 + ux * far, y0 + uy * far, z0 + uz * far), new P3(x0, y0, z0), [], Waterplane.Level(c), path);
+        var xs = path.Crossings;
+
+        // from the gun to the target: the first stop, and the last thing before the target that let it in
         var entry = new P3(double.NaN, double.NaN, double.NaN);
         var entryFace = Face.None;
         var cause = Cause.Through;
         int causeIndex = -1;
-        for (int n = 1; ; n++)
-        {
-            double t = n * Step, x = x0 + ux * t, y = y0 + uy * t, z = z0 + uz * t;
-            if (Math.Abs(x) > xMax || Math.Abs(y) > yMax || z > zMax || z < keel - 1)
-                break;
-            bool h = InHull(x, y, z);
-            if (!h && z < wl)
-                return Outcome.Water;
-            if (h != inHull)
+        foreach (ref readonly var x in xs)
+            switch (x.Kind)
             {
-                double tc = CrossHull(t - Step, t, inHull, x0, y0, z0, ux, uy, uz);
-                double qx = x0 + ux * tc, qy = y0 + uy * tc, qz = z0 + uz * tc;
-                // at the deck edge it's both: the side first, so a belt reaching the deck counts
-                var face = hull.HalfWidth(qx, qz) - Math.Abs(qy) < 0.05 ? Face.Side : Math.Abs(hull.DeckTop(qx) - qz) < 0.02 ? Face.Deck : Face.End;
-                if (face == Face.Side && SideArmour(qx, qz))
+                case CrossingKind.Plate when x.Plate is PlateKind.ArmourDeck or PlateKind.ArmourBulkhead or PlateKind.SideArmour
+                                             || x.Plate == PlateKind.Grating && gratings:
                     return Outcome.Armour;
-                if (inHull)
-                    (entry, entryFace) = (new P3(qx, qy, qz), face);
-                inHull = h;
+                case CrossingKind.WaterIn when underwaterM <= 0:
+                    return Outcome.Water;
+                case CrossingKind.HullIn when entryFace == Face.None:
+                    (entry, entryFace) = (x.Point, x.Plate switch { PlateKind.HullSide => Face.Side, PlateKind.HullDeck => Face.Deck, _ => Face.End });
+                    break;
+                case CrossingKind.PartIn or CrossingKind.PartOut:
+                    ref readonly var s = ref g.Solids[x.Index];
+                    if (s.Uptake)
+                    {
+                        if (!gratings)
+                            (cause, causeIndex) = (Cause.Uptake, s.Component);
+                    }
+                    else if (s.Shape == ShipSolids.Shape.Tube)
+                    {
+                        if (!s.Armoured)
+                            break;
+                        if (x.Plate == PlateKind.Barbette)
+                            return Outcome.Armour;
+                        if (x.Point.Z >= s.Box.Top - 0.02)
+                            (cause, causeIndex) = (Cause.OpenTop, s.Component);
+                    }
+                    else if (s.Armoured)
+                        return Outcome.Armour;
+                    break;
             }
-            for (int i = 0; i < tubes.Length; i++)
-            {
-                ref readonly var b = ref tubes[i];
-                bool inb = a.Inside(b, x, y, z);
-                if (inb == inTube[i])
-                    continue;
-                double tc = CrossTube(t - Step, t, inTube[i], b, x0, y0, z0, ux, uy, uz);
-                double qx = x0 + ux * tc, qy = y0 + uy * tc, qz = z0 + uz * tc;
-                if (Math.Abs(Math.Sqrt((qx - b.Cx) * (qx - b.Cx) + (qy - b.Cy) * (qy - b.Cy)) - b.R) < 0.01)   // through the wall (its foot on the deck too), not an open end
-                    return Outcome.Armour;
-                if (qz >= b.Box.Top - 0.02 && causeIndex < 0)
-                    (cause, causeIndex) = (Cause.OpenTop, b.Component);
-                inTube[i] = inb;
-            }
-            foreach (ref readonly var s in a.Armoured)
-                if (a.Inside(s, x, y, z))
-                    return Outcome.Armour;
-            foreach (ref readonly var u in Uptakes)
-                if (a.Inside(u, x, y, z) && causeIndex < 0)
-                    (cause, causeIndex) = (Cause.Uptake, u.Component);
-        }
-        // where it got into the citadel: the first point out of it, going back
+        // under water deeper than a shell goes: stopped there (the walk's samples, as the water's crossings are)
+        if (underwaterM > 0)
+            for (int i = 0; i + 1 < xs.Length; i++)
+                if (xs[i].Kind == CrossingKind.WaterIn && DeepestUnder(xs[i].T, NextOut(xs, i, path.Length), path) > underwaterM)
+                    return Outcome.Water;
+
+        // where it got into the citadel: the first sample out of it going back, after the crossing that leaves it
         var hole = new P3(x0, y0, z0);
         var holeFace = Face.Unknown;
-        for (int n = 1; n < 100000; n++)
+        for (int i = xs.Length - 1; i >= 0; i--)
         {
-            double t = n * Step, x = x0 + ux * t, y = y0 + uy * t, z = z0 + uz * t;
-            if (!InCitadel(x, y, z))
+            ref readonly var x = ref xs[i];
+            bool leaves = x.Kind == CrossingKind.HullIn
+                          || x.Kind == CrossingKind.CellIn && inCitadel[x.Index] && !(i > 0 && xs[i - 1].T == x.T && Into(xs, i - 1));
+            if (!leaves)
+                continue;
+            double back = path.Length - x.T;
+            double t = (Math.Floor(back / ShipTracer.Step) + 1) * ShipTracer.Step;
+            double hx = x0 + ux * t, hy = y0 + uy * t, hz = z0 + uz * t;
+            hole = new P3(hx, hy, hz);
+            holeFace = hx > holeX1 ? Face.ForwardEnd : hx < holeX0 ? Face.AftEnd : hz > holeTop || hz > hull.DeckTop(hx) ? Face.Top : Face.Side;
+            if (causeIndex < 0 && holeFace is Face.ForwardEnd or Face.AftEnd)
             {
-                hole = new P3(x, y, z);
-                holeFace = x > holeX1 ? Face.ForwardEnd : x < holeX0 ? Face.AftEnd : z > holeTop || z > hull.DeckTop(x) ? Face.Top : Face.Side;
-                if (causeIndex < 0 && holeFace is Face.ForwardEnd or Face.AftEnd)
-                {
-                    double ex = x > holeX1 ? holeX1 : holeX0, ez = Math.Abs(ux) > 1e-9 ? z0 + uz * (ex - x0) / ux : z;   // where it crossed the end
-                    int bh = -1;
-                    foreach (int i in a.Bulkheads)
-                        if (Math.Abs(c.ArmourBulkheads[i].X - ex) < 0.5 && (bh < 0 || c.ArmourBulkheads[i].Bottom < c.ArmourBulkheads[bh].Bottom))
-                            bh = i;
-                    if (bh < 0)
-                        cause = Cause.NoBulkhead;
-                    else if (ez < c.ArmourBulkheads[bh].Bottom)
-                        (cause, causeIndex) = (Cause.Under, bh);
-                    else if (ez > c.ArmourBulkheads[bh].Top)
-                        (cause, causeIndex) = (Cause.Over, bh);
-                }
-                break;
+                double ex = hx > holeX1 ? holeX1 : holeX0, ez = Math.Abs(ux) > 1e-9 ? z0 + uz * (ex - x0) / ux : hz;   // where it crossed the end
+                int bh = -1;
+                foreach (int k in g.Bulkheads)
+                    if (Math.Abs(c.ArmourBulkheads[k].X - ex) < 0.5 && (bh < 0 || c.ArmourBulkheads[k].Bottom < c.ArmourBulkheads[bh].Bottom))
+                        bh = k;
+                if (bh < 0)
+                    cause = Cause.NoBulkhead;
+                else if (ez < c.ArmourBulkheads[bh].Bottom)
+                    (cause, causeIndex) = (Cause.Under, bh);
+                else if (ez > c.ArmourBulkheads[bh].Top)
+                    (cause, causeIndex) = (Cause.Over, bh);
             }
+            break;
         }
         leak = new LeakPath(cause, causeIndex, hole, holeFace, entry, entryFace);
         return Outcome.Leak;
     }
 
-    /// <summary>Bisect the step [lo, hi] for where the ray leaves (or enters) the hull.</summary>
-    double CrossHull(double lo, double hi, bool was, double x0, double y0, double z0, double ux, double uy, double uz)
+    /// <summary>Where the water entered at i is left again (the path's end if it isn't).</summary>
+    static double NextOut(ReadOnlySpan<Crossing> xs, int i, double end)
     {
-        for (int k = 0; k < 20; k++)
-        {
-            double m = (lo + hi) / 2;
-            if (InHull(x0 + ux * m, y0 + uy * m, z0 + uz * m) == was)
-                lo = m;
-            else
-                hi = m;
-        }
-        return (lo + hi) / 2;
+        for (int k = i + 1; k < xs.Length; k++)
+            if (xs[k].Kind == CrossingKind.WaterOut)
+                return xs[k].T;
+        return end;
     }
 
-    double CrossTube(double lo, double hi, bool was, in ArmourSolids.Solid b, double x0, double y0, double z0, double ux, double uy, double uz)
+    /// <summary>How far under the waterline the segment goes between t0 and t1 (it's straight: at an end).</summary>
+    double DeepestUnder(double t0, double t1, HitPath path)
     {
-        for (int k = 0; k < 20; k++)
-        {
-            double m = (lo + hi) / 2;
-            if (a.Inside(b, x0 + ux * m, y0 + uy * m, z0 + uz * m) == was)
-                lo = m;
-            else
-                hi = m;
-        }
-        return (lo + hi) / 2;
+        double wl = c.Vertical.Waterline;
+        return Math.Max(wl - path.At(t0).Z, wl - path.At(t1).Z);
+    }
+
+    /// <summary>Do the crossings at one point, from i back, come out of a citadel cell (so the shell stays inside it)?</summary>
+    bool Into(ReadOnlySpan<Crossing> xs, int i)
+    {
+        for (double t = xs[i].T; i >= 0 && xs[i].T == t; i--)
+            if (xs[i].Kind == CrossingKind.CellOut)
+                return inCitadel[xs[i].Index];
+        return false;
     }
 
     // ------------------------------------------------------------------ text
@@ -369,10 +316,11 @@ public sealed class ShellTest
     public sealed record Result(int Shells, List<Band> Bands, List<Leak> Leaks, double? Roof = null, int Cells = 0);
 
     /// <summary>Shot k is drawn from the run's stream derived by k, so the result is the same on any number of
-    /// threads.</summary>
-    public static Result Run(ShipClass c, int shells, ulong seed, bool gratings = false)
+    /// threads. outcomes: filled with each shot's outcome (for comparing two versions of the tracer shot by
+    /// shot).</summary>
+    public static Result Run(ShipClass c, int shells, ulong seed, bool gratings = false, Outcome[]? outcomes = null, double underwaterM = 0)
     {
-        var st = new ShellTest(c, gratings);
+        var st = new ShellTest(c, gratings, underwaterM);
         var bands = new List<Band> { new(0, 5), new(5, 10), new(10, 20), new(20, 30), new(30, 40), new(40, MaxFall) };
         var leaks = new List<Leak>();
         if (st.citadel.Length == 0)
@@ -383,6 +331,8 @@ public sealed class ShellTest
         {
             var shot = st.Draw(stream.Derive((ulong)k));
             var o = st.Trace(shot, out var lk);
+            if (outcomes != null)
+                outcomes[k] = o;
             int bi = bands.FindIndex(bd => shot.FallDeg < bd.Hi);
             local.Counts[bi, 0]++;
             local.Counts[bi, 1 + (int)o]++;

@@ -1,7 +1,7 @@
 # Plan: fighting (battle module step 4)
 
 2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
-as its steps are built. **4.0 done 2026-10-13; 4.1, the hit query, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
+as its steps are built. **4.0 and 4.1 done 2026-10-13; 4.2a, ballistics and shells in flight, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
 4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
 
 ## The aim
@@ -269,6 +269,49 @@ superstructure and other parts, the hull, and inside it the armour and the cells
   - a ship heeled 10° is hit where the heel says;
   - no allocation per query;
   - a Jutland's worth of queries timed.
+
+**Done 2026-10-13.** The contract is `HitPath` (`Sim.Ships`; "Path" would collide with `System.IO.Path`): a fixed
+buffer of `Crossing`s in order along the segment. Each crossing has where it is (T, the point), what it is (plate, part
+in or out, hull in or out, cell in or out, water in or out), which plate (side armour, armour deck, grating, armour
+bulkhead, barbette, turret face, side, rear or roof, part armour or plating, hull side, end or deck, deck or bulkhead
+between cells), its thickness, material and normal.
+
+- **The one tracer:** `ShipTracer`, in `Sim.Ships` because `shell-test` must call it too. `ShipSolids` (replacing
+  `ArmourSolids`) makes every component a solid: a turret in turret space, so it turns with its bearing; a barbette's
+  tube; prisms, cylinders, capsules (shafts, tubes) and boxes. It also finds the cells by section.
+- **The hit query:** `HitQuery` in `Sim.Combat`. It brings the world segment into the ship's frame with its
+  `Attitude` (sinkage, trim, heel about the centre of flotation), checks the broadphase radius and traces. A miss's
+  `Fall` says where it met the sea and how far short, over or beside the hull's waterline it fell.
+- **The walk** starts at the segment's end and steps toward its start at 5 cm. That puts its samples where
+  `shell-test`'s always were, so the refactor could be checked shot by shot (`shell-test --dump`, every shot's
+  outcome).
+- **Water is a crossing, not a stop** (the user: shells travel a bit underwater, which is why belts go below the
+  waterline). A segment already in the sea where the walk begins gets its `WaterIn` out there, or at T = 0 if it
+  starts in the sea. How far a shell gets underwater is the terminal model's (4.3a, diving shells in 4.5; the
+  research: 1-4 m deep, 30-50% of its velocity, `08-gunfire-effects.md` §3.8).
+- **`shell-test` is a caller now.** It reads the path forward from the gun: the first armour or water stops a shell,
+  and the last open barbette top or uptake before the target is what let a leak in. `--underwater M` lets shells go
+  on under water to M m deep (default 0, the old rule). `--path N` prints the first N shots' paths.
+- **Against the recorded results** (70 designs × 20,000 shots, with and without gratings): the leak set is identical
+  with gratings. Without gratings it's identical too, but 7 leaks now name the uptake they came down (their target
+  lies in an uptake's last 2 cm, which the old walk, starting 5 cm back, never sampled), and 3 supercarrier shots are
+  stopped by its armoured flight deck, which overhangs the hull beyond the old walk's box. The other ~14,500
+  differences are labels on shots stopped twice: Armour or Water, now whichever comes first from the gun.
+- **The numbers** (Release): 22.5 µs a query on Dreadnought, ~10 crossings each, so a Jutland's 8,000 heavy rounds
+  take 0.18 s in all. Against `HullField`'s exact ray: 5,527 of 5,537 hull crossings found by both (the walk steps
+  over slivers under 5 cm), all within 1 cm. Nothing allocates.
+- **To look at:** in the hitbox tab, "click fires a ray" (or shift+click; `-hitray` starts with it on) traces a ray
+  from the eye. The ray and its crossings are drawn over the view (armour red, the hull's skin orange, parts blue,
+  the sea cyan), and the path is listed in the panel.
+
+**Open for the user (from 4.1):**
+
+- **A barbette with 0 mm armour** (Lord Nelson's and Bouvet's wing turrets) leaves the armour deck under it whole, as
+  `shell-test` always had it. If its bore were a hole, those two designs would leak through it.
+- **Belts and underwater shells:** with `shell-test --gratings --underwater 4`, nearly every design leaks under its
+  belt (Bismarck's `belt_depth_m` is 2.0; its leaks come in 2-3.4 m down). `shell-test` can't say such a shell
+  arrives slowed with the torpedo bulkhead still ahead. That's the terminal model's call, but belt depths in the
+  designs may want a look.
 
 ### 4.2 Guns and shells (missions stage 3)
 

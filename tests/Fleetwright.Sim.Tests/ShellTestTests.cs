@@ -3,7 +3,7 @@ using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Tests;
 
-/// <summary>shell-test on ShipClass. Before the first version (on the hitboxes) was deleted, the two agreed shot by shot
+/// <summary>shell-test on ShipClass, a caller of the one tracer (ShipTracer). Before the first version (on the hitboxes) was deleted, the two agreed shot by shot
 /// on all 71 designs, with and without gratings (commit ab66ee3, battle plan step 2.1).</summary>
 public class ShellTestTests
 {

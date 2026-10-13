@@ -68,8 +68,8 @@ public sealed class ShipClass
     public MotionFacts Motion { get; internal init; }
     /// <summary>The hull's own plating, beside the armour (fuzes arm on it, holes open in it).</summary>
     public PlatingRow Plating { get; internal set; }
-    /// <summary>The armour compiled into solids for ray tests.</summary>
-    public ArmourSolids Armour { get; internal set; } = null!;
+    /// <summary>The parts and armour as solids for the tracer (ShipTracer), and the cells by section.</summary>
+    public ShipSolids Solids { get; internal set; } = null!;
 
     // ------------------------------------------------------------------ the tables
 

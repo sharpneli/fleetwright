@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Numerics;
 using Fleetwright.Gpu;
+using Fleetwright.Sim.Ships;
+using ShipP3 = Fleetwright.Sim.Ships.P3;
 using ImGuiNET;
 using SDL;
 
@@ -10,8 +12,10 @@ namespace Fleetwright.HitView;
 /// The hitbox viewer: the session's ship as its hitbox model in 3D (hitview.py, live). Left drag orbits, right drag
 /// pans, the wheel zooms; hovering names a prism, a click selects it and lists its fields. The panel picks the design,
 /// a view (hitview's bow, quarter, side and internal, and plan), the projection, which kinds are drawn (alone or by
-/// preset) and a clip box (a tier at a click). Draws through a <see cref="HitboxRenderer"/>, which could as well draw
-/// into a small target inside another scene.
+/// preset) and a clip box (a tier at a click). With "click fires a ray" (or shift+click), a click fires a ray from the
+/// eye at the ship through the hit query's tracer (<see cref="ShipTracer"/>, docs/battle/fighting.md 4.1): the ray and
+/// what it crossed are drawn over the view, and the crossings listed in the panel. Draws through a
+/// <see cref="HitboxRenderer"/>, which could as well draw into a small target inside another scene.
 /// </summary>
 public sealed unsafe class HitboxScene : IScene
 {
@@ -28,6 +32,11 @@ public sealed unsafe class HitboxScene : IScene
     uint hoverFor = HitboxMesh.NoPrism, selectedFor = HitboxMesh.NoPrism;
     string hoverText = "", selectedText = "";
     List<Shipgen.Tier> tiers = [];
+    bool fireMode, shiftDown;
+    ShipClass? cls;   // compiled when a ray is first fired at this build
+    readonly HitPath path = new();
+    bool hasRay;
+    string pathText = "";
 
     static readonly string[] Rooms =
     [
@@ -56,9 +65,10 @@ public sealed unsafe class HitboxScene : IScene
 
     /// <summary><paramref name="view"/> and <paramref name="show"/> name a view and a preset to start with (the
     /// buttons' names: bow, quarter, side, internal, plan, ahead and astern (the sections head on); all, outside, internal, rooms, armour).</summary>
-    public HitboxScene(SDL_GPUDevice* device, DesignSession session, string? view = null, string? show = null)
+    public HitboxScene(SDL_GPUDevice* device, DesignSession session, string? view = null, string? show = null, bool fire = false)
     {
         this.session = session;
+        fireMode = fire;
         renderer = new HitboxRenderer(device);
         ApplyPreset(Presets.FirstOrDefault(p => p.Name == show, Presets[1]).Shows);
         var v = Views.FirstOrDefault(v => v.Name == view, Views[0]);
@@ -77,6 +87,7 @@ public sealed unsafe class HitboxScene : IScene
     {
         builtVersion = session.Version;
         state.Hover = state.Selected = HitboxMesh.NoPrism;
+        (cls, hasRay, pathText) = (null, false, "");
         if (session.Ship is not { } ship || session.Result?.Mesh is not { } mesh)
         {
             renderer.Clear();
@@ -135,6 +146,13 @@ public sealed unsafe class HitboxScene : IScene
         }
 
         ClipUi();
+        ImGui.Checkbox("click fires a ray (or shift+click)", ref fireMode);
+        if (hasRay)
+        {
+            ImGui.SameLine();
+            if (ImGui.SmallButton("clear ray"))
+                hasRay = false;
+        }
 
         ImGui.Separator();
         var present = renderer.Mesh?.KindsPresent;
@@ -160,7 +178,17 @@ public sealed unsafe class HitboxScene : IScene
                 state.Selected = HitboxMesh.NoPrism;
             ImGui.TextWrapped(selectedText);
         }
+        if (hasRay)
+        {
+            ImGui.Separator();
+            ImGui.TextUnformatted("the ray, as the hit query traces it:");
+            ImGui.BeginChild("ray", new Vector2(0, 0), ImGuiChildFlags.None, ImGuiWindowFlags.HorizontalScrollbar);
+            ImGui.TextUnformatted(pathText);
+            ImGui.EndChild();
+        }
         ImGui.End();
+        if (hasRay)
+            DrawRay();
 
         // the hovered prism's name by the cursor, unless the cursor is over a window
         if (ImGui.GetIO().WantCaptureMouse || orbiting || panning)
@@ -209,6 +237,60 @@ public sealed unsafe class HitboxScene : IScene
         }
     }
 
+    /// <summary>A ray from the eye through the view at (x, y), traced through the ship (turrets at rest, as drawn).</summary>
+    void Fire(float x, float y, uint width, uint height)
+    {
+        if (renderer.Mesh is not { } m || session.Ship is not { } ship)
+            return;
+        cls ??= ShipClassCompiler.Compile(ship);
+        var ndc = new Vector2(2 * x / Math.Max(1, width) - 1, 1 - 2 * y / Math.Max(1, height));
+        float reach = (m.Max - m.Min).Length() + 10;
+        var (o, d) = cam.Ray(ndc, (float)width / Math.Max(1, height), reach);
+        var end = o + d * (cam.Perspective ? cam.EyeDistance + reach : 8 * reach);
+        ShipTracer.Trace(cls, new ShipP3(o.X, o.Y, o.Z), new ShipP3(end.X, end.Y, end.Z), [], Waterplane.Level(cls), path);
+        (hasRay, pathText) = (true, path.Text(cls));
+    }
+
+    /// <summary>The ray and its crossings over the view: armour red, the hull's skin orange, parts blue, the sea cyan,
+    /// cell walls grey (not hidden by what's in front: it's a look inside).</summary>
+    void DrawRay()
+    {
+        if (renderer.Mesh is not { } m)
+            return;
+        var size = ImGui.GetIO().DisplaySize;
+        var vp = cam.ViewProj(size.X / Math.Max(1, size.Y), (m.Min + m.Max) / 2, Math.Max(1, (m.Max - m.Min).Length() / 2 + 5));
+        bool Screen(ShipP3 p, out Vector2 q)
+        {
+            var c = Vector4.Transform(new Vector4((float)p.X, (float)p.Y, (float)p.Z, 1), vp);
+            q = c.W > 1e-4f ? new Vector2((c.X / c.W + 1) / 2 * size.X, (1 - c.Y / c.W) / 2 * size.Y) : default;
+            return c.W > 1e-4f;
+        }
+        var dl = ImGui.GetBackgroundDrawList();
+        uint line = ImGui.GetColorU32(new Vector4(1, 1, 0.4f, 0.9f));
+        // from the first crossing to the last, a little either side
+        var xs = path.Crossings;
+        double t0 = xs.Length > 0 ? Math.Max(0, xs[0].T - 15) : 0, t1 = xs.Length > 0 ? Math.Min(path.Length, xs[^1].T + 5) : path.Length;
+        if (Screen(path.At(t0), out var a) && Screen(path.At(t1), out var b))
+            dl.AddLine(a, b, line, 2);
+        foreach (ref readonly var x in xs)
+        {
+            if (!Screen(x.Point, out var q))
+                continue;
+            var (colour, r) = x.Kind switch
+            {
+                CrossingKind.Plate when x.Plate is PlateKind.Deck or PlateKind.Bulkhead => (new Vector4(0.7f, 0.7f, 0.7f, 0.9f), 2.5f),
+                CrossingKind.Plate or CrossingKind.PartIn or CrossingKind.PartOut when x.Plate is PlateKind.SideArmour or PlateKind.ArmourDeck
+                    or PlateKind.ArmourBulkhead or PlateKind.Grating or PlateKind.Barbette or PlateKind.TurretFace or PlateKind.TurretSide
+                    or PlateKind.TurretRear or PlateKind.TurretRoof or PlateKind.PartArmour => (new Vector4(1, 0.2f, 0.2f, 1), 6f),
+                CrossingKind.HullIn or CrossingKind.HullOut => (new Vector4(1, 0.6f, 0.1f, 1), 5f),
+                CrossingKind.PartIn or CrossingKind.PartOut => (new Vector4(0.4f, 0.6f, 1, 1), 4f),
+                CrossingKind.WaterIn or CrossingKind.WaterOut => (new Vector4(0.2f, 0.9f, 1, 1), 5f),
+                _ => (new Vector4(0.7f, 0.7f, 0.7f, 0.6f), 2f),
+            };
+            dl.AddCircleFilled(q, r, ImGui.GetColorU32(colour));
+        }
+    }
+
     void Pick(float x, float y, uint width, uint height)
     {
         if (renderer.Mesh is not { } m)
@@ -226,6 +308,7 @@ public sealed unsafe class HitboxScene : IScene
                 cam.HalfHeight *= MathF.Pow(1.15f, -e->wheel.y);
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN:
+                shiftDown = (SDL3.SDL_GetModState() & SDL_Keymod.SDL_KMOD_SHIFT) != 0;
                 if (e->button.button == 1)
                     dragPx = 0;
                 orbiting |= e->button.button == 1;
@@ -235,7 +318,9 @@ public sealed unsafe class HitboxScene : IScene
                 if (e->button.button == 1)
                 {
                     orbiting = false;
-                    if (dragPx < 4)   // a click: select what is under the cursor, or nothing
+                    if (dragPx < 4 && (fireMode || shiftDown))   // a click fires a ray
+                        Fire(e->button.x, e->button.y, width, height);
+                    else if (dragPx < 4)   // a click: select what is under the cursor, or nothing
                     {
                         Pick(e->button.x, e->button.y, width, height);
                         state.Selected = state.Hover == state.Selected ? HitboxMesh.NoPrism : state.Hover;

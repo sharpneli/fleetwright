@@ -7,7 +7,7 @@ public static unsafe class Program
         // Parse command line arguments
         int screenshotFrame = -1;
         string screenshotPath = "screenshot.png";
-        bool screenshotUi = false, newDesign = false;
+        bool screenshotUi = false, newDesign = false, hitRay = false;
         int section = 0;
         string[]? steps = null;
         string[]? input = null;
@@ -62,6 +62,10 @@ public static unsafe class Program
             else if (arg.StartsWith("-show="))
             {
                 show = arg.Substring("-show=".Length);
+            }
+            else if (arg == "-hitray")   // the hitbox viewer starts with a click firing a ray (step 4.1's tracer)
+            {
+                hitRay = true;
             }
             else if (arg == "-new")   // the designer starts from the empty hull
             {
@@ -276,7 +280,7 @@ public static unsafe class Program
             engine.Scene = new SceneSwitcher(view switch { "designer" => 1, "hitbox" => 2, "ship" => 3, "profile" => 4, _ => 0 },
                 ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, selectShip) { KeepCameraOnce = mapGiven && scenarioArg != null, SelectOnce = scenarioArg != null ? selectShip : -1 }),
                 ("Designer", () => early ?? MakeDesigner()),
-                ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show)),
+                ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show, hitRay)),
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),
                 ("Profile", () => new ProfileScene((SDL.SDL_GPUDevice*)device, session)));
 

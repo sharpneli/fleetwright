@@ -82,7 +82,7 @@ public static class ShipClassCompiler
             (c.componentIndex, c.cellIndex, c.roomIndex, c.bulkheadIndex, c.deckIndex, c.tierIndex, c.sectionIndex) = (comp.ToFrozenDictionary(StringComparer.Ordinal),
                 cell.ToFrozenDictionary(StringComparer.Ordinal), room.ToFrozenDictionary(StringComparer.Ordinal), bulkhead.ToFrozenDictionary(StringComparer.Ordinal),
                 deck.ToFrozenDictionary(StringComparer.Ordinal), tier.ToFrozenDictionary(StringComparer.Ordinal), section.ToFrozenDictionary(StringComparer.Ordinal));
-            c.Armour = new ArmourSolids(c);
+            c.Solids = new ShipSolids(c);
             c.LayoutHash = LayoutHash(c);
             return c;
         }

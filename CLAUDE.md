@@ -24,7 +24,7 @@ dotnet run --project src/Fleetwright -- -view=designer                    # the 
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
 dotnet run --project src/Fleetwright -- -screenshot=30 -ui [-size=1920x1080] # the window as seen, ImGui included
-dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour]
+dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour] [-hitray]   # -hitray: a click fires a ray through the tracer
 dotnet run --project src/Fleetwright -- -view=ship [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -view=profile                      # the ship card's side view
 dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
@@ -134,7 +134,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- svg-check        
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- fuzz shipgen/designs/*.json --cases 1600   # robustness
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- verify out_designs/*  # sprites vs hitboxes
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check          # every design's sprite.json
-dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shell-test shipgen/designs/bismarck.json [--gratings]   # shells at the citadel (on the ShipClass): leaks through neither armour nor water
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shell-test shipgen/designs/bismarck.json [--gratings] [--underwater 4] [--path 5] [--dump DIR]   # shells at the citadel through the hit query's tracer: leaks through neither armour nor water
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- mono-check [bismarck ...] [--steps 4]   # trim levers swept: more weight in, never a lighter ship
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sim [--from 1916-05-31T14:00] [--speed 30000] [--seconds 3]   # the world on its thread: clock, speed asked/achieved, sun, sim allocations
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shore [--points 100000]   # the land index: build time, memory, IsLand vs Land, query costs
@@ -234,7 +234,8 @@ src/
                               #   IsLand, Clearance, FirstContact along great circles and rhumb lines; World.Shore)
   Fleetwright.Sim.Ships/      # the ships' data: ShipClass (a built Ship's hitboxes and report as read-only, int-indexed
                               #   tables: Rows.cs), ShipClassCompiler (strict: every kind an enum, every link an index),
-                              #   ArmourSolids, ContentHash (design and layout hashes), ShellTest (shell-test on a class),
+                              #   ShipSolids and ShipTracer (the one tracer: a segment through a ship into a HitPath),
+                              #   ContentHash (design and layout hashes), ShellTest (shell-test on a class, a tracer caller),
                               #   the weapon facts (batteries, shell types, the guns' working numbers, plating),
                               #   DesignerPlaceholders (facts the designer doesn't give yet: the one place they live),
                               #   ShipClassRegistry (classes by design hash, built on threads of its own, ids for commands)
@@ -242,7 +243,8 @@ src/
                               #   class's numbers for moving), ShipMotion (the step: Nomoto turning, forces on the
                               #   power curve, arcs on the sphere; the helmsman: courses and routes), Slide (ships and
                               #   the land: the feeler slides a ship along a coast at its standoff, the backstop
-                              #   refuses land, spawns and waypoints go to sea; docs/world/terrain-plan.md)
+                              #   refuses land, spawns and waypoints go to sea; docs/world/terrain-plan.md), HitQuery (a world
+                              #   segment into a ship's frame and attitude, through the tracer; a miss's fall)
   Fleetwright.Sim.Ai/         # the AI above the world: AiSystem (layers of command, top-down, each at its rate),
                               #   Knowledge/ (IPicture; TruthPicture until sighting), Captains/ (CaptainLayer,
                               #   Behaviours: keep course, follow, run, station), Admirals/ (AdmiralLayer: formations

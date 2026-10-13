@@ -55,10 +55,14 @@ public static class Program
         shipgen verify DIR...
             check `design` output: turret sprites against their hitboxes at four angles, raised blocks and funnels
             opaque inside their hitboxes, the hull image against the hull outline, the subdivision and traverses
-        shipgen shell-test DESIGN.json... [--shells 200000] [--seed 1] [--show 15] [--gratings] [--no-limits]
+        shipgen shell-test DESIGN.json... [--shells 200000] [--seed 1] [--show 15] [--gratings] [--no-limits] [--underwater M]
+                          [--dump DIR] [--path N]
             toss shells at each design's citadel from every bearing, falling 0-50 degrees, and flag any that reach a
             citadel cell through neither armour nor water (exit 1 if any do); --gratings closes the uptakes'
-            openings in the armour decks. Runs on the compiled ShipClass, one random stream per shot
+            openings in the armour decks; --underwater lets a shell go on under water to M m deep (default 0: water
+            stops it). Runs on the compiled ShipClass, one random stream per shot. --dump writes
+            every shot's outcome to DIR/<id>.txt, to compare two versions of the tracer shot by shot. --path N
+            prints the first N shots' paths instead: everything each crossed, in order (the hit query's HitPath)
         shipgen mono-check [DESIGN...] [--steps 4] [--jobs N] [--show 10]
             sweep the designer's trim levers (belt, speed, AA, ...) STEPS steps either way of each design's value and
             build each step: list the reversals (more of a weight-adding input, a lighter ship) and lumps (a step far
@@ -801,12 +805,45 @@ public static class Program
                 continue;
             }
             var sw = Stopwatch.StartNew();
-            var r = ShellTest.Run(ShipClassCompiler.Compile(ShipDesign.Build(design)), shells, (ulong)seed, a.Has("gratings"));
+            var cls = ShipClassCompiler.Compile(ShipDesign.Build(design));
+            if (a.Int("path", 0) is > 0 and int paths)
+            {
+                // the first shots' paths, drawn as the run draws them
+                var st = new ShellTest(cls, a.Has("gratings"), Underwater(a));
+                var path = new HitPath();
+                var stream = RandomStream.FromSeed((ulong)seed);
+                for (int k = 0; k < paths && st.CitadelCells.Length > 0; k++)
+                {
+                    var shot = st.Draw(stream.Derive((ulong)k));
+                    var o = st.Trace(shot, out var lk, path);
+                    Console.WriteLine($"{design.Id ?? p} shot {k}: bearing {shot.BearingDeg:F1}°, fall {shot.FallDeg:F1}° into {cls.CellId(shot.Cell)}: {o}" +
+                                      (o == ShellTest.Outcome.Leak ? $" ({st.CauseText(lk)})" : ""));
+                    Console.Write(path.Text(cls));
+                }
+                continue;
+            }
+            var outcomes = a.Get("dump") is null ? null : new ShellTest.Outcome[shells];
+            var r = ShellTest.Run(cls, shells, (ulong)seed, a.Has("gratings"), outcomes, Underwater(a));
             Console.Write(ShellTest.Text(design.Id ?? p, r, show));
+            if (outcomes != null)
+                DumpShots(a.Get("dump")!, design.Id ?? Path.GetFileNameWithoutExtension(p), outcomes, r);
             Console.WriteLine($"  ({sw.Elapsed.TotalSeconds:F1} s)");
             leaky += r.Leaks.Count > 0 ? 1 : 0;
         }
         Console.WriteLine(leaky == 0 ? "\nNO LEAKS" : $"\n{leaky} DESIGN(S) LEAK");
         return leaky == 0 ? 0 : 1;
+    }
+
+    static double Underwater(Args a) => double.Parse(a.Get("underwater", "0")!, System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>shell-test --dump DIR: every shot's outcome, and a leak's cause and faces, one line a shot, in
+    /// DIR/ID.txt: the record a new version of the tracer is compared against shot by shot.</summary>
+    static void DumpShots(string dir, string id, ShellTest.Outcome[] outcomes, ShellTest.Result r)
+    {
+        Directory.CreateDirectory(dir);
+        var leaks = r.Leaks.ToDictionary(l => l.Shot);
+        using var w = new StreamWriter(Path.Combine(dir, id + ".txt"));
+        for (int k = 0; k < outcomes.Length; k++)
+            w.WriteLine(leaks.TryGetValue(k, out var l) ? $"{k} {outcomes[k]} {l.Cause} | {l.HoleFace} | {l.EntryFace}" : $"{k} {outcomes[k]}");
     }
 }

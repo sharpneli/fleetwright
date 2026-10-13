@@ -163,8 +163,8 @@ public class ShipClassTests
                 foreach (var e in c.Neighbours(c.Cells[i].Neighbours))
                     sink += e.Cell;
             sink += c.ComponentIndex("A") + c.CellIndex(c.CellId(3));
-            foreach (ref readonly var s in c.Armour.Armoured)
-                sink += c.Armour.Inside(s, 1, 2, 0) ? 1 : 0;
+            foreach (ref readonly var s in c.Solids.Solids)
+                sink += c.Solids.Inside(s, 1, 2, 0) ? 1 : 0;
             foreach (var shot in shots)
                 sink += (int)st.Trace(shot, out _);
         }
