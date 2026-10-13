@@ -2,7 +2,7 @@
 
 2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
 as its steps are built. It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
-4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the scaffold) and 4.10 (scale).
+4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
 
 ## The aim
 
@@ -121,11 +121,20 @@ As the layers already are (plan.md "Inside `Fleetwright.Sim`"), models in `Comba
 | Layer | What's new |
 |---|---|
 | `Sim.Ships` | Weapon facts: `ShellTypeRow`, `BatteryRow`, the mounts' working numbers, the plating; their placeholders |
-| `Sim.Combat` | The pure models: `Ballistics` (tables), `HitQuery`, `FireControl` (measure, track, solve, spot), `Terminal`, `Effects`, `Functions`, `Flooding`; `DamageStore` (each ship's condition, beside `ShipStore`) |
+| `Sim.Combat` | The pure models: `Ballistics` (tables), `HitQuery`, `FireControl` (measure, track, solve, spot), `Terminal`, `Effects`, `Functions`, `Flooding`; `CombatStore` (each ship's mounts and condition, beside `ShipStore`) |
 | `Sim` (world) | The systems: `GunnerySystem` (batteries' fire control and firing), `ShellSystem` (shells in flight, splashes), `DamageSystem` (hits in, condition, flooding, losses); `CombatLog` (the record) |
 | `Sim.Ai` | Fire orders: captains pick targets (fire at will), admirals distribute fire |
 | the exe | Shells, splashes and hits drawn; turrets on their bearings; the weapons and condition rows; the damage report; damage on the sprites |
 | `shipgen` CLI | The benches: `ballistics`, `hits`, `duel`; `shell-test --path` |
+
+## One index of where things are
+
+**The world keeps one acceleration structure for "what is near here"** (decision 11): the cube grid in Earth-centred
+space the contacts got in 2.7c. It's brought up to date once, by its owner, and every system queries it: contacts and
+encounters now, then the ships near a falling shell (4.2a), torpedoes' runs and collisions (4.6), and whatever comes
+after. Systems that keep a grid of their own today (the encounters' cube sort, the sightings' grids in each
+encounter's plane) move onto it where it fits, when a step touches them. 4.2a, its first new user, starts by checking
+the grid's shape and when it's updated (it must hold every ship that can be hit, on any clock tier).
 
 ## A salvo's life, in events
 
@@ -154,20 +163,26 @@ splashes and log entries live in preallocated pools, grown only past their size 
 ## The steps
 
 Each step is a session (or a few), starts with the usual investigation, ends with something to run and look at, and
-updates this doc and `plan.md`. **The order** (decision 8: shells first, baby steps): 4.0, 4.1, 4.2a, 4.2b, 4.2c, 4.3, 4.4 (the first full pass, ending
-in the first playable fight), then 4.6, 4.7, 4.8, 4.9 and 4.10. **4.5 isn't a step in that sequence:** it's the list
-of deepenings, taken one at a time after the first pass, in whatever order playing asks for.
+updates this doc and `plan.md`. **The order** (decision 8: shells first, baby steps): 4.0, 4.1, 4.2a, 4.2b, 4.2c,
+4.3a, 4.3b, 4.4 (the first full pass, ending in the first playable fight), then 4.6, 4.7, 4.8, 4.9 and 4.10. **4.5
+isn't a step in that sequence:** it's the list of deepenings, taken one at a time after the first pass, in whatever
+order playing asks for.
 
-### 4.0 The scaffold
+**Each piece arrives with the step that first uses it** (the review, decision 12): a contract, a system, a column or a
+command is made where something runs and is tested with it, never ahead of it as an empty shell.
 
-The contracts, the ship facts and the plumbing, with nothing firing yet.
+### 4.0 The weapon facts
+
+The ship data fighting needs, and nothing that runs yet (decision 12): the rest of the scaffold arrives with the step
+that first uses it.
 
 - **Weapon facts in `ShipClass`:**
   - `ShellTypeRow`: calibre, mass, muzzle velocity, form factor (drag), kind (AP, common or SAP, HE), filler mass,
     fuze (base with a delay, or nose), a quality row (an index into a settings table: duds, breaking up). Shell types
     are shared by name across classes, so one gun's table is built once.
   - `BatteryRow`: a battery's mounts, its directors, its fire-control level, and the shell types it carries with the
-    mix of each.
+    mix of each. **v0 fires one kind per battery** (decision 12): AP from the main battery, HE (or common) from the
+    secondaries. Choosing the shell by target is a deepening (4.5).
   - On each mount: reload time per gun, training and elevating rates, the highest elevation (the gun's range).
   - The plating (`HullPlates`) compiled: side plating amidships and at the ends, decks, bulkheads, superstructure.
   - **Placeholders** for all of it, from calibre, calibre length and the look's era, fitted to the research's gun
@@ -177,32 +192,21 @@ The contracts, the ship facts and the plumbing, with nothing firing yet.
     offers it, a placeholder table reads it from today's fit (directors, rangefinder base, computer and radar
     tonnage; `fire-control-designer.md` §3.3). A design with no directors and no rangefinders is legal and must
     fight: every mount in local control, ranges by eye.
-- **Each ship's condition** (`DamageStore`, `Sim.Combat`), allocated at spawn and sized by its class (plan.md: "per-ship
-  arrays are allocated once at spawn"). It's reached only through `ShipState`'s index accessors, never through the
-  arrays' layout:
-  - per component: a state (ok, damaged, disabled, destroyed), flags (jammed, burning);
-  - per mount: the bearing and elevation anchors, the reload clock, rounds left;
-  - per cell: water (m³), breach area (m²), fire;
-  - per ship: crew lost, sinkage, trim and heel, a status (afloat, going down, gone). There are no hit points
-    anywhere.
-- **The contracts:** `Hit` (the ship, the time, the point and direction in the ship's frame, the striking velocity,
-  the source: shell, torpedo, mine, collision or a coarse sample; the shell type; who fired), `Path` (4.1),
-  `Solution` (4.2b), `Outcome` (4.3). `Hit` is the architecture's "damage takes a hit, not a shell flight".
-- **The systems registered and the commands defined:**
-  - `GunnerySystem`, `ShellSystem` and `DamageSystem`, registered after ships and groups;
-  - the commands `Engage`, `HoldFire` and `FireAtWill` (as unit orders, 4.2c), and the dev command `FireAt` (a
-    ship's battery at a point);
-  - streams `fire` and `damage`, derived per salvo, per shell and per hit: counter-based keys, so draws don't depend
-    on order or threads.
-- **`CombatLog`:** the architecture's "who fired first and what each hit did". A ring of plain structs per world:
-  time, kind (fired, hit, splash near, fire started, flooding, part lost, sunk), shooter, target, shell type, the part,
-  the outcome, the consequence. Encounters point into it. Missions read it later, and the damage report reads it now.
-- **The snapshot:** each mount's bearing (the sprites' turrets turn), and slots for shells, splashes and each ship's
-  condition summary.
-- **The rails rule** (`ShipSystem.Tiers.cs`, the one place): a ship with water in it, a fire, or a battery engaged
-  isn't `Placeable` and doesn't go on rails.
-- **Tests:** every golden compiles with weapon facts, and every mount has a battery and a shell type. The new state
-  is in the hash. Spawning a ship with its condition, and dropping it, replays the same.
+- **What comes later, and where:**
+  - `Path` and the one tracer: 4.1;
+  - shell records, `ShellSystem`, splashes, the dev `FireAt`, the stream `fire`: 4.2a;
+  - `GunnerySystem`, the mounts' state in `CombatStore`, bearings in the snapshot, `CombatLog`'s first entries, the
+    rails rule for engaged ships: 4.2b;
+  - the fire orders: 4.2c;
+  - `Hit`, the condition in `CombatStore`, `DamageSystem`, the stream `damage`: 4.3a;
+  - fire, flooding, loss, the rails rule for wet and burning ships: 4.3b.
+- **To look at:** each class's weapons printed by the CLI (a `weapons` listing beside `trials`), so the placeholders
+  can be checked by eye against the research's gun tables.
+- **Tests:**
+  - every golden compiles with weapon facts, and every mount is in a battery with a shell type;
+  - the placeholders for the research's guns (12"/45, 13.5"/45, 15"/42, 4"/45) land within a stated band of their
+    sourced shell mass and muzzle velocity;
+  - an eyeball-only design compiles, every battery at local control.
 
 ### 4.1 The hit query
 
@@ -210,7 +214,8 @@ As plan.md has it: a segment, Earth-centred, into each candidate ship's frame (p
 the condition, all 0 until 4.3), broadphase on the ship's radius. Then the turrets at their bearings, the
 superstructure and other parts, the hull, and inside it the armour and the cells.
 
-- **It returns a `Path`:** the crossings along the segment in order, in a fixed buffer. Each crossing has:
+- **It returns a `Path`** (the contract arrives here): the crossings along the segment in order, in a fixed buffer.
+  Each crossing has:
   - where along the segment it is, and the point;
   - what is crossed: a plate (side armour, armour deck, bulkhead, turret face or roof, barbette, hull plating,
     superstructure plating) with its thickness, material and normal;
@@ -246,17 +251,20 @@ superstructure and other parts, the hull, and inside it the armour and the cells
   atmosphere, on the sphere, as `fire_control_ref.py` `_fly`. The tables' resolution is set by their error against
   direct integration.
 - **The range table** comes from it: range ↔ elevation, time of flight, angle of fall and striking velocity, for fire
-  control (4.2b) and the terminal model (4.3).
-- **Shell records** (`ShellSystem`): fire time, muzzle position, azimuth, the elevation and muzzle velocity it left
-  with, the type, and the salvo it belongs to. They make the events above ("A salvo's life"). The candidates at the
-  window come through the grid the encounters already keep.
+  control (4.2b) and the terminal model (4.3a).
+- **Shell records** (`ShellSystem`, registered here): fire time, muzzle position, azimuth, the elevation and muzzle
+  velocity it left with, the type, and the salvo it belongs to. They make the events above ("A salvo's life"). The
+  ships near the fall come from the world's one location index ("One index of where things are"). Draws come from
+  the stream `fire`, keyed per salvo and shell (counter-based, so they don't depend on order or threads).
 - **Splashes:** a short-lived ring of (point, time, shell, salvo), for spotting and the screen.
 - **Drawn:** each shell evaluated from its table at the frame's time (smooth at any rate, nothing in the snapshot but
   its record), splashes as columns that rise and fall, a short tracer at the ship zoom band.
 - **Dev:** the strip's "fire at" (a right-click on the sea) and `-fire=ship:lat,lon`: a battery fires at a point, so
   shells and splashes can be seen before there's any fire control.
 - **Tests:**
-  - **tick independence:** splashes and hits are the same at a 0.1 s and a 5 s tick;
+  - **tick independence:** with the targets on rails or scripted tracks (so only the shell model is compared: ships
+    stepped on the fine tick differ by metres between tick lengths), splashes and hits are the same at a 0.1 s and a
+    5 s tick;
   - **the table:** within a metre of direct integration at the fall;
   - **the rotating sphere:** a shell along a meridian and one along the equator land where direct integration on
     the rotating sphere says (plan.md);
@@ -267,7 +275,10 @@ superstructure and other parts, the hull, and inside it the armour and the cells
 **4.2b Mounts, fire control and spotting.** The port of `fire_control_ref.py` `engage()`, cut to its spine.
 
 - **Mounts:** train toward the ordered bearing at their rate, within their arcs; elevate; load on their clocks. A mount
-  bears when the target is in its arcs and it's trained within `LayToleranceDeg`.
+  bears when the target is in its arcs and it's trained within `LayToleranceDeg`. Their state is the first of each
+  ship's combat columns (`CombatStore`, `Sim.Combat`): the bearing and elevation anchors, the reload clock and the
+  rounds left, allocated at spawn and sized by the class (plan.md: "per-ship arrays are allocated once at spawn"),
+  reached only through `ShipState`'s index accessors. Bearings go into the snapshot, so the sprites' turrets turn.
 - **A battery's fire-control state** (per ship and battery, in `GunnerySystem`): the target contact, the director in
   use, the tracker, the engagement's biases, the spot corrections, the salvo count. **The director in use** is the
   battery's best working director that sees the target (its eye's blind sectors, its line of sight). With none,
@@ -302,6 +313,10 @@ superstructure and other parts, the hull, and inside it the armour and the cells
   the rangetaker's δ and the laying error.
 - **Hits are counted and shown but do nothing yet** (a flash, a log line), so fire control is calibrated on its own
   before damage is in.
+- **`CombatLog`** starts here: the architecture's "who fired first and what each hit did". A ring of plain structs per
+  world: time, kind (fired, hit, splash near; damage's kinds join in 4.3), shooter, target, shell type, the part, the
+  outcome, the consequence. Encounters point into it; missions read it later, the damage report in 4.4.
+- **The rails rule** (`ShipSystem.Tiers.cs`, the one place): a ship with a battery engaged isn't `Placeable`.
 - **Tests:**
   - **the calibration** (`shipgen duel`, 4.2b's bench): a steady battleship target, 8 × 15", level 3, at 16 kyd hits
     within a band around the research's 7.8% (table 11, steady), and the level ladder keeps its order;
@@ -321,6 +336,12 @@ superstructure and other parts, the hull, and inside it the armour and the cells
   Richer standing orders (rules of engagement per fleet: hold fire on the unidentified, on neutrals' waters, and so
   on) come later, when there are more sides and they start to matter (5.1).
 - **A battery fires only at a contact** its navy's picture holds and its director (or a mount's eye) sees.
+- **A minimal fighting manoeuvre** (decision 12), so the AI doesn't just steam past: a captain's (or a group's
+  admiral's, steering the guide) **Fight** order closes to a range band, holds it on a course that keeps the main
+  battery bearing, and turns away when outgunned (v0: the heavy guns its navy sees against its own, by a ratio in
+  settings). It's a unit order in the same vocabulary; a scenario gives it as an AI side's standing order when an
+  encounter opens, and the player can give it too. Real tactics (crossing the T, torpedo attacks, breaking off at
+  x% damage) are 5.1's.
 - **On the world tab:**
   - the strip's weapons row: fire at will, hold fire, engage (a click on a contact);
   - per battery: target, state (no target, tracking, firing, not bearing, local control), salvos and hits;
@@ -329,14 +350,25 @@ superstructure and other parts, the hull, and inside it the armour and the cells
 - **In the coarse tier guns are silent until 4.9** (decision 4): a fight at 240x and up doesn't fire, and the clock
   panel says so. Encounters pause the clock at 1x by default, so the first fights are seen at 1x. That's a gameplay
   rule relaxed for a few steps and restored in 4.9 (end-goal rules).
-- **Playable:** two squadrons engage each other, turrets train, salvos straddle, hits flash.
+- **Playable:** two squadrons close and engage each other, turrets train, salvos straddle, hits flash.
 
-### 4.3 Damage v0: what a hit does, and sinking
+### 4.3 Damage v0
 
 The first pass of the damage model (decision 4 of plan.md: start simple, area by area later; it will change a lot
-once systems and flooding interact, so it's written to be changed). The research's four steps per hit
-(`08-gunfire-effects.md` §0: where it lands, what plates it meets, whether and where the fuze fires, what is within
-reach of the burst):
+once systems and flooding interact, so it's written to be changed), in two sessions (decision 12): 4.3a makes hits
+matter, 4.3b makes ships burn, flood and go down.
+
+**4.3a What a hit does.** The research's four steps per hit (`08-gunfire-effects.md` §0: where it lands, what plates
+it meets, whether and where the fuze fires, what is within reach of the burst):
+
+- **Arriving here:** the `Hit` contract (the ship, the time, the point and direction in the ship's frame, the striking
+  velocity, the source: shell, torpedo, mine, collision or a coarse sample; the shell type; who fired), the
+  architecture's "damage takes a hit, not a shell flight"; `DamageSystem`; the stream `damage`, keyed per hit; and
+  each ship's **condition** in `CombatStore`:
+  - per component: a state (ok, damaged, disabled, destroyed), flags (jammed, burning);
+  - per cell: water (m³), breach area (m²), fire;
+  - per ship: crew lost, sinkage, trim and heel, a status (afloat, going down, gone). There are no hit points
+    anywhere.
 
 - **TERMINAL** (`Terminal`, a port of `gunfire_ref.py` `resolve()`), walking the `Path`:
   - **penetration:** at each plate, De Marre (`damage-model-research.md` §8.1) with a constant per material, at the
@@ -355,8 +387,8 @@ reach of the burst):
     unless armour stronger than its splinters boxes them;
   - **through-shots** damage what's on the line of flight;
   - **holes:** plating crossed near or under the waterline breaches that cell, by a hole radius from the shell and
-    plate;
-  - **fire:** a chance by shell kind and the era's fire load;
+    plate (recorded now; water comes in through it from 4.3b);
+  - **fire:** a chance by shell kind and the era's fire load (the fire is set now; it burns from 4.3b);
   - **crew:** casualties by the space's crew density and the burst's area;
   - **a heavy hit on a turret or barbette** that doesn't get in can still jam it (~35%, R5);
   - **fire or a burst in a magazine** or its turret's handling path rolls for an explosion (propellant sensitivity ×
@@ -380,11 +412,28 @@ reach of the burst):
 
   This is the seam for the service networks in 4.5: they become more needs in the same table, so nothing that reads
   a function changes.
+- **The bench:** `shipgen hits <design> --shell <type> --range <m> --n 2000` (a port of `gunfire_ref.py` `mc()`):
+  given hits on a design, spread over its silhouette as the fall of shot would put them. It reports outcome classes,
+  parts lost and crippled shares now, water taken and lost shares from 4.3b.
+- **Tests** (anchors with wide bands, `08-gunfire-effects.md` §7.4 put into the era):
+  - a 12" AP mostly passes through a destroyer, and HE bursts;
+  - ten 4" HE hits usually cripple a destroyer;
+  - a battleship under medium HE loses its upper works and fire control, and keeps its speed and main turrets;
+  - heavy AP at long range seldom gets through the belt, and turrets jam;
+  - replays hold, and there's no allocation per hit.
+- **Playable:** hits knock out guns, directors, speed and steering; a ship circles with its rudder jammed.
+
+**4.3b Fire, flooding and going down.**
+
 - **Fire v0:** a burning cell or part is damaged over time, spreads to a neighbour with a chance a minute, and is put
   out with a chance a minute by crew. Fire next to a magazine rolls for cooking off. That's all for now.
 - **FLOODING v0** (plan.md's first version):
   - **inflow** into a breached cell is `Cd·A·√(2g·head)`, the head from the cell's depth under the present waterline,
-    up to its volume × permeability. No spread through bulkheads, no pumps;
+    up to its volume × permeability;
+  - **spread** over the cell graph (decision 12; without it one holed cell is too small against a big ship's reserve
+    buoyancy, and only magazines would ever sink one): water flows freely across `Open` joins, leaks slowly across
+    bulkheads and decks (`FloodLeak*` rates in settings), and floods fast through a deck that has sunk below the
+    outside waterline (`damage-model-research.md` §3.6, the Lützow rule). No pumps or counter-flooding yet;
   - **settling** is linear from the full-load hydrostatics: sinkage from TPC, trim from the moment over MCT, heel from
     GM_T and the off-centre moment;
   - **going down:** when the water aboard passes the reserve buoyancy it founders, and past `CapsizeHeelDeg` it
@@ -407,17 +456,14 @@ reach of the burst):
     observer sees it go; unseen, its contact is dead-reckoned and forgotten as any other.
   - **Then it's dropped** from the store. The log keeps the truth: what each side claimed and what really sank can
     differ (the debrief's, later).
-- **The bench:** `shipgen hits <design> --shell <type> --range <m> --n 2000` (a port of `gunfire_ref.py` `mc()`):
-  given hits on a design, spread over its silhouette as the fall of shot would put them. It reports outcome classes,
-  parts lost, water taken, crippled and lost shares.
-- **Tests** (anchors with wide bands, `08-gunfire-effects.md` §7.4 put into the era):
-  - a 12" AP mostly passes through a destroyer, and HE bursts;
-  - ten 4" HE hits cripple a destroyer more often than they sink it;
-  - a battleship under medium HE is a mission kill, not sunk;
-  - heavy AP at long range seldom gets through the belt, and turrets jam;
+- **The rails rule** (`ShipSystem.Tiers.cs`): a ship with water in it or a fire isn't `Placeable`.
+- **Tests** (anchors with wide bands, `damage-model-research.md` §11 and `08-gunfire-effects.md` §7.4):
+  - ten 4" HE hits cripple a destroyer more often than they sink it, and a battleship under medium HE stays afloat;
   - a waterline hole amidships takes hundreds of tonnes and lists the ship a few degrees;
+  - a hole in an end floods along it and trims the ship; a deck pushed under the waterline floods fast;
+  - a destroyer with two or three machinery spaces flooded founders; a capital ship lives through 1,000-3,000 t;
   - flooding at a 1 s and a 5 s step agrees within a few per cent;
-  - replays hold, and there's no allocation per hit.
+  - replays hold, and there's no allocation per flooding step.
 - **Playable: the first blood.** Two ships fight until one sinks.
 
 ### 4.4 Damage seen
@@ -512,7 +558,7 @@ and learns others'. The hit is a `Hit` from a mine, as a torpedo's.
 
 Flooding, fire and repair at the coarse step, written to hold at a minute (inflow integrated over the step in closed
 form, not stepped), so a ship still flooding or burning goes on at speed and sinks there if it must. Until this step,
-4.3's 1 s flooding runs on wet ships in any tier (correct, and slower at speed).
+4.3b's 1 s flooding runs on wet ships in any tier (correct, and slower at speed).
 
 ### 4.9 Coarse fire
 
@@ -548,7 +594,7 @@ Every iteration is measured the same way, so "better" is a number:
 
 - **`shipgen ballistics <design>`:** each gun's range table: range, elevation, time of flight, angle of fall, striking
   velocity, against the research's anchors.
-- **`shipgen hits <design> --shell T --range R --n N`:** given hits, the damage model alone (4.3).
+- **`shipgen hits <design> --shell T --range R --n N`:** given hits, the damage model alone (4.3a, 4.3b).
 - **`shipgen duel <a> <b> --range R --level L --runs N`:** two ships headless, the fire-control chain with or without
   damage. It reports hit %, straddle %, time to first hit, salvos to straddle, and time to sink.
 - **The probes** (2.7b): each new system timed per game minute. `shipgen scenario` prints them.
@@ -614,3 +660,8 @@ The user's, 2026-10-13, for the implementation:
 10. **Don't get stuck on visual effects:** a separate VFX pass comes far in the future, once the gameplay systems are
     in place. The style of the map so far is right and stays; this is a warning against spending time on looks, not
     a call to pare them down.
+11. **One acceleration structure for location queries:** the contacts' cube grid becomes the world's one index of
+    where things are, updated once and queried by every system that asks "what is near here".
+12. **The plan review's fixes are in:** 4.0 is data only (each piece arrives with its first user); water spreads over
+    the cell graph in the first flooding model; a minimal Fight manoeuvre for the AI in 4.2c; 4.3 split into 4.3a and
+    4.3b; one shell kind per battery in v0; the tick-independence test runs its targets on rails or scripted tracks.
