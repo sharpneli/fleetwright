@@ -14,6 +14,7 @@ namespace Fleetwright.Sim.Missions;
 /// { "scenario": 1, "name": "Jutland", "brief": "...", "start": "1916-05-31T14:00", "seed": 1916,
 ///   "camera": [56.8, 5.2, 400], "sides": ["Britain", "Germany", "Neutral"],
 ///   "peace": [["Britain", "Neutral"], ["Germany", "Neutral"]], "player": "Britain",
+///   "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 },
 ///   "units": [
 ///     { "name": "Battlecruiser Fleet", "side": 0, "at": [56.77, 4.6], "course": 112, "kn": 19,
 ///       "formation": "column", "spacing": 3000,
@@ -47,6 +48,9 @@ public sealed class Scenario
     /// <summary>The side the player commands (its name, and its index or -1 for none): docs/battle/plan.md step 3.1c.</summary>
     public string? PlayerName { get; init; }
     public int Player => PlayerName == null ? -1 : Array.IndexOf(Sides, PlayerName);
+
+    /// <summary>The weather (docs/battle/plan.md step 3.2b), the same everywhere; null for the world's default.</summary>
+    public WeatherHere? Weather { get; init; }
 
     /// <summary>The pairs of sides at peace (by index); every other pair is at war (docs/battle/plan.md step 3.1a).</summary>
     public List<(int A, int B)> Peace { get; init; } = [];
@@ -159,6 +163,8 @@ public sealed class Scenario
                 throw new ScenarioException($"player: \"{player}\" isn't one of the sides ({string.Join(", ", sides)})");
             if (Array.IndexOf(sides, player) < 0)
                 player = null;
+            // "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 }; taken from "from" unless given
+            var weather = r.TryGetProperty("weather", out var we) ? ParseWeather(we) : from?.Weather;
             var units = new List<ScenarioUnit>();
             if (from != null)
             {
@@ -184,10 +190,24 @@ public sealed class Scenario
                 Sides = sides,
                 Peace = peace,
                 PlayerName = player,
+                Weather = weather,
                 Units = units,
                 Folder = folder,
             };
         }
+    }
+
+    static WeatherHere ParseWeather(JsonElement e)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException("weather: an object, { \"visibility_km\": 25, \"wind_from\": 225, \"wind_kn\": 8 }");
+        double Num(string name, double fallback) => e.TryGetProperty(name, out var v) ? v.GetDouble() : fallback;
+        double vis = Num("visibility_km", double.NaN), from = Num("wind_from", 0), kn = Num("wind_kn", 0);
+        if (!(vis > 0))
+            throw new ScenarioException("weather: \"visibility_km\", more than 0");
+        if (!(kn >= 0))
+            throw new ScenarioException("weather: \"wind_kn\", 0 or more");
+        return new WeatherHere(vis * 1000, from, kn * 0.514444);
     }
 
     static List<(int, int)> ParsePeace(JsonElement e, string[] sides)

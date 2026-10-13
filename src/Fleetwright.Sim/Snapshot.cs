@@ -48,6 +48,9 @@ public sealed class Snapshot
     /// <summary>The side the player commands, -1 for none.</summary>
     public int PlayerSide { get; set; } = -1;
 
+    /// <summary>The weather (one for the world for now).</summary>
+    public WeatherHere Weather { get; set; }
+
     /// <summary>The player's rules for what the clock does when an encounter opens (<see cref="Interest"/>).</summary>
     public InterestRule InterestOwn { get; set; }
     public InterestRule InterestOthers { get; set; }

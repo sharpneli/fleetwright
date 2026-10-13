@@ -12,6 +12,9 @@
   "camera": [57.0, 5.3, 250],
   "sides": ["Britain", "Germany"],
   "player": "Britain",
+  // the afternoon of 31 May 1916: good early (the battlecruisers sighted each other at ~14 nm), worse later in
+  // the haze and smoke (12-16 km); a light SW wind, force 2-3. One weather for now (docs/battle/plan.md 3.2b)
+  "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 },
   "units": [
     // ---------------------------------------------------------------- the Battlecruiser Fleet (Beatty): 52
     { "name": "Battlecruiser Fleet", "side": 0, "at": [56.82, 4.63], "course": 110, "kn": 19.5, "formation": "abreast", "spacing": 5000,

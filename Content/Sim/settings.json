@@ -72,6 +72,7 @@
   "EncounterRangeM": 50000,
   "EncounterMarginM": 10000,
   "EncounterCloseMs": 600000,
+  "DefaultVisibilityM": 40000,
   "ContactScanMs": 3600000,
   "ContactTraceSteps": 64,
 

@@ -232,6 +232,11 @@ public sealed record SimSettings
     /// <summary>The most steps one solve of a pair takes before it looks again later from where it got to.</summary>
     public int ContactTraceSteps { get; init; } = 64;
 
+    // ------------------------------------------------------------------ weather (docs/battle/plan.md step 3.2b)
+
+    /// <summary>The visibility of a world whose scenario gives none, metres: a clear day at sea.</summary>
+    public double DefaultVisibilityM { get; init; } = 40_000;
+
     // ------------------------------------------------------------------ the AI (docs/battle/plan.md step 2.3b)
 
     /// <summary>How often an AI layer thinks while every ship it commands is on rails, ms: nothing about them changes

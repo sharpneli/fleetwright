@@ -12,6 +12,7 @@ public enum WorldCommand : ushort
     SetRelation,
     SetPlayerSide,
     SetInterest,
+    SetWeather,
 }
 
 /// <summary>The only way into the world (docs/world/architecture.md, "Commands in"): a player's or a captain's order,
@@ -38,6 +39,11 @@ public readonly record struct Command(byte System, ushort Code, int Entity = 0, 
     /// <summary>The side the player commands, or -1 for none (headless, or watching): whose encounters are the player's
     /// own (<see cref="Interest"/>), and later whose picture the snapshot is built from.</summary>
     public static Command SetPlayerSide(int side) => new(0, (ushort)WorldCommand.SetPlayerSide, side);
+
+    /// <summary>The weather, the same everywhere (docs/battle/plan.md step 3.2b): the visibility, metres, and the wind,
+    /// the way it blows from (degrees) and its speed (m/s).</summary>
+    public static Command SetWeather(double visibilityM, double windFromDeg = 0, double windMs = 0) =>
+        new(0, (ushort)WorldCommand.SetWeather, A: (long)Math.Round(windFromDeg * 1000), X: visibilityM, Y: windMs);
 
     /// <summary>What the clock does when an encounter of a kind opens (<see cref="Interest"/>).</summary>
     public static Command SetInterest(InterestKind kind, InterestAction action, double speed = 1) =>

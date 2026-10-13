@@ -69,6 +69,7 @@ public sealed class World
         log = new List<StampedCommand>(Settings.CommandLogCapacity);
         commandsProbe = Probes.Register("Commands");
         fillProbe = Probes.Register("Snapshot fill");
+        weather = new UniformWeather(new WeatherHere(Settings.DefaultVisibilityM, 0, 0));
         Encounters = new Encounters(Settings, Relations);
         Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations, Encounters);
         Register(Ships);
@@ -78,6 +79,10 @@ public sealed class World
 
     /// <summary>How the sides stand: war or peace (docs/battle/plan.md step 3.1a).</summary>
     public Relations Relations { get; } = new();
+
+    /// <summary>The weather (docs/battle/plan.md step 3.2b): one for the world for now, set by a command.</summary>
+    public IWeather Weather => weather;
+    UniformWeather weather;
 
     /// <summary>The side the player commands, -1 for none (docs/battle/plan.md step 3.1c).</summary>
     public int PlayerSide { get; private set; } = -1;
@@ -175,6 +180,11 @@ public sealed class World
                     throw new ArgumentException($"no relation {c.A} between sides {c.Entity} and {c.B}");
                 if (Relations.Set((byte)c.Entity, (byte)c.B, (Relation)c.A))
                     Ships.RelationsChanged(this);
+                break;
+            case WorldCommand.SetWeather:
+                if (!(c.X > 0) || !(c.Y >= 0))
+                    throw new ArgumentException($"no weather of {c.X} m visibility and {c.Y} m/s wind");
+                weather = new UniformWeather(new WeatherHere(c.X, ((c.A / 1000.0) % 360 + 360) % 360, c.Y));
                 break;
             case WorldCommand.SetPlayerSide:
                 if (c.Entity is < -1 or > byte.MaxValue)
@@ -274,6 +284,7 @@ public sealed class World
         s.Paused = Paused;
         Ships.Fill(s.Ships);
         s.PlayerSide = PlayerSide;
+        s.Weather = weather.Here;
         s.InterestOwn = Interest[InterestKind.Own];
         s.InterestOthers = Interest[InterestKind.Others];
         Encounters.Fill(s.Encounters);
@@ -294,6 +305,9 @@ public sealed class World
         h.Add(ViewMetresPerPixel);
         Relations.Hash(ref h);
         h.Add(PlayerSide);
+        h.Add(weather.Here.VisibilityM);
+        h.Add(weather.Here.WindFromDeg);
+        h.Add(weather.Here.WindMs);
         Interest.Hash(ref h);
         Encounters.Hash(ref h);
         scheduler.Hash(ref h);
