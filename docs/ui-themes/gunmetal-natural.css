@@ -1,0 +1,46 @@
+/* Fleetwright UI skin: Gunmetal, natural map.
+   Drop-in :root for map.html and the designer-ui pages. Names match the existing mockups.
+   Guide: ui-style-gunmetal-natural.md · Live reference: theme-trials.html (press 4). */
+@font-face{font-family:'Saira Extra Condensed';font-weight:500;src:url('saira-extra-condensed-latin-500-normal.woff2') format('woff2')}
+@font-face{font-family:'Saira Extra Condensed';font-weight:700;src:url('saira-extra-condensed-latin-700-normal.woff2') format('woff2')}
+@font-face{font-family:'Red Hat Mono';font-weight:400;src:url('red-hat-mono-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'Red Hat Mono';font-weight:500;src:url('red-hat-mono-latin-500-normal.woff2') format('woff2')}
+/* Barlow Condensed is already in designer-ui/assets/fonts. */
+
+:root{
+  color-scheme:dark;
+  /* surfaces: warm graphite, no blue */
+  --ground:#0F0F0E;--panel:#1B1B19;--panel2:#22221F;--inset:#0B0B0A;--hd:#141412;
+  --line:#272724;--edge:#050505;--bevel:#2E2E2A;--tt:#3A3934;--tb:#2A2A26;
+  --glass:rgba(27,27,25,.92);--glass2:rgba(34,34,31,.95);
+  /* text */
+  --text:#D3CFC4;--bright:#F6F3EA;--muted:#8A867B;--faint:#55524B;
+  /* the one accent (kept under the old name --brass) */
+  --brass:#E8772E;--brassd:#5C3416;--brassl:#FFC79A;--accent-bg:rgba(232,119,46,.16);
+  /* semantic */
+  --ok:#8DBE6B;--amber:#E8B64A;--bad:#E04A3C;
+  /* sides */
+  --fr:#F1ECDD;--frfill:#26323A;--al:#C9D4D8;--ho:#E04A3C;--hofill:#3A1714;--ne:#7FA86A;--un:#E8B64A;
+  --blue:#8EC1DE; /* fire-control weight colour only */
+  /* map: plain physical atlas */
+  --sea:#2E5269;--shoal:#3D6880;--land:#A3AD86;--landedge:#6F7A57;
+  --grid:rgba(235,240,242,.09);--contour:rgba(200,225,238,.28);--maplab:#B7C7CF;
+  /* designer plan view */
+  --plate:#262724;--hull:#A29F95;--deck:#7C796F;--arc:rgba(232,119,46,.09);
+  /* weight groups */
+  --w-armour:#9A86C9;--w-hull:#B7A27A;--w-fuel:#8A6A48;--w-armament:#D0503F;--w-machinery:#E8772E;--w-crew:#7FA86A;--w-fc:#8EC1DE;
+  /* type */
+  --font-head:'Saira Extra Condensed','Arial Narrow',sans-serif;
+  --font-ui:'Barlow Condensed','Arial Narrow',sans-serif;
+  --font-data:'Red Hat Mono',ui-monospace,monospace;
+}
+
+/* Base treatment */
+body{font-family:var(--font-ui);font-size:13px;color:var(--text);background:var(--ground)}
+.mono{font-family:var(--font-data);font-variant-numeric:tabular-nums}
+/* Panel headers: engraved capitals in the accent, with a rivet */
+.ph{font-family:var(--font-head);font-weight:700;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--brass);
+  background:var(--hd);border-bottom:1px solid var(--edge)}
+.ph::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--faint);box-shadow:inset 0 1px 0 rgba(255,255,255,.2);margin-right:2px}
+/* Panels: bevel, not shadow; square corners */
+.glass,.panel{border-radius:1px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),inset 0 -1px 0 rgba(0,0,0,.6)}

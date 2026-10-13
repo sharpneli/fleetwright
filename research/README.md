@@ -71,6 +71,17 @@ Raw appendices in [simulation/fire-control-research/](simulation/fire-control-re
 | [emergency-eyeball.md](simulation/fire-control-research/emergency-eyeball.md) | Emergency and local-control gunnery, 1914–1990 |
 | [component-costs.md](simulation/fire-control-research/component-costs.md) | Mass, size, crew, power and height of fire-control components, 1900–1990 |
 
+Ship motion and speed in [simulation/ship-motion/](simulation/ship-motion/) (2026-10-12):
+
+| Note | What it covers |
+|---|---|
+| [ship-motion-gunnery-research.md](simulation/ship-motion/ship-motion-gunnery-research.md) | How own speed (spray, funnel smoke, vibration), target speed, roll, pitch, heel and stabilisation affect gunnery, 1890–1990; roll period and amplitude from GM and the sea; §7 maps it onto this repo (shipgen's `RollPeriodS`, weather with swell, designer knobs, the battle sim) |
+| [own-ship-speed.md](simulation/ship-motion/own-ship-speed.md) | Vibration, spray and green water, funnel smoke, pitch and slamming, own speed in the solution |
+| [target-relative-speed.md](simulation/ship-motion/target-relative-speed.md) | Rate error vs target speed, computer and bearing-rate limits, chases, speed as defence |
+| [roll-physics.md](simulation/ship-motion/roll-physics.md) | Roll period coefficients, warship GM and roll data, amplitude vs sea state, bilge keels, tanks, gyros, fins |
+| [stabilisation-tech.md](simulation/ship-motion/stabilisation-tech.md) | Level, cross-level and trunnion tilt; each navy's stabilisation; selected-level firing; loading angles |
+| [heavy-weather-cases.md](simulation/ship-motion/heavy-weather-cases.md) | Coronel, Lofoten, Denmark Strait, Bismarck's end, North Cape and other actions where weather decided the shooting |
+
 Ballistics has no note of its own: the point-mass ballistics fitted to each gun live in [fire_control_ref.py](simulation/fire_control_ref.py) and are summarised in the companion-code paragraph of [fire-control-research.md](simulation/fire-control-research.md); penetration formulas are in [05-mechanics-and-games.md](simulation/damage-research/05-mechanics-and-games.md).
 
 **Damage**
