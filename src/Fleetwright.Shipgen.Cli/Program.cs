@@ -77,6 +77,11 @@ public static class Program
             each design's sea trials on the ship model, headless: turning circles at hard over and standard rudder,
             0 -> full, coasting, a crash stop, each beside the research's band for its kind; --out writes the circles
             as DIR/<design>_turns.svg
+        shipgen scenario [SCENARIO.json] [--minutes 60] [--every 5] [--threads N] [--at 10] [--no-land] [--replay]
+            a scenario headless at full tilt (default Content/Scenarios/jutland.json): its classes' build time (no
+            art), the land and the placing, then game minutes on the sim's work alone: ships on the fine tick and on
+            rails, the speed it runs at, the share of the sim thread --at x takes, allocations and collections;
+            --replay runs the command log again and compares the hashes
         --root defaults to the repo's shipgen folder (found from the current directory up).
         """;
 
@@ -112,6 +117,11 @@ public static class Program
                 "sprite-check" => Check(a, RenderGolden.CheckSprite),
                 "sim" => SimCmd(a),
                 "shore" => ShoreBench.Run(a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Int("points", 100_000)),
+                "scenario" => ScenarioRun.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
+                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
+                    a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), Path.Combine(Root(a), "designs"),
+                    double.Parse(a.Get("minutes", "60")!, System.Globalization.CultureInfo.InvariantCulture), a.Int("threads", 0), a.Int("every", 5),
+                    double.Parse(a.Get("at", "10")!, System.Globalization.CultureInfo.InvariantCulture), !a.Has("no-land"), a.Has("replay")),
                 "trials" => SeaTrials.Run(a.Positional, a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("out")),
                 _ => Fail($"unknown command {args[0]}\n\n{Usage}"),
             };
@@ -147,7 +157,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

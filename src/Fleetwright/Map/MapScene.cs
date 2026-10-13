@@ -58,6 +58,7 @@ public sealed unsafe partial class MapScene : IScene
     public void Draw(SDL_GPUCommandBuffer* cmd, RenderTarget target, float dt)
     {
         (width, height) = (target.Width, target.Height);
+        NewWorld();
         if (!clamped)
         {
             camera.Clamp(height);
@@ -108,6 +109,7 @@ public sealed unsafe partial class MapScene : IScene
 
     public void BuildUi()
     {
+        NewWorld();
         ShipsUi();
         var s = world.Current;
         GroupLabels(s);

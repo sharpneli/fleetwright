@@ -7,7 +7,7 @@ proposed and are agreed one by one.
 
 Each step is its own session and starts with an investigation of its own: read the code it touches, check this plan
 against it, agree the step's details with the user, then build. Update this file as steps finish (what was done, what
-changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. The next is 2.7, the Jutland scale test, after the user's testing round of the slide.
+changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is under way: 2.7a (the scenario, loadable from the world tab) is done (2026-10-13), 2.7b (the instruments) is next.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1251,13 +1251,44 @@ What the code has today, checked:
   designer's `Knobs` and committed as JSON, not applied at load). Each variant is its own design hash, so its own
   class and art, as Orion, King George V and Iron Duke were.
 - **Placed** on 1916-05-31 at about 14:00 UTC, near the historical positions and courses, so the two sides close into
-  contact within the first game hour, and the Grand Fleet's approach passes near the Danish coast and Horns Reef (the
-  slide).
+  contact within the first game hour. (The day action was fought 60-90 nm off the Danish coast; the coast and Horns
+  Reef come in with the night's run home, a later scenario or a longer run.)
 - **The background:** some hundreds more on rails elsewhere (patrols, the tramp_1914 merchants on routes), and a
   2,000-ship variant for the rails target (2,000 at 30,000x).
 - **Loaded by** the world tab (a scenario picker), `-scenario=jutland`, and a headless runner (a `shipgen` command
   beside `trials`, which already references the sim). The format is the missions' first scaffolding (step 6 grows it:
   objectives, triggers), so it's kept plain: forces, ships, designs by name, positions, orders.
+
+**2.7a done (2026-10-13).**
+- **Scenarios:** a new top layer, `Fleetwright.Sim.Missions` (above the AI: it gives the orders a player would).
+  `Scenario` reads the file (version 1: name, brief, start, seed, camera, sides, units); a unit is a force of units
+  or a squadron of ships (design, names or count), its side, formation and spacing inherited; only top units are
+  placed (`at`, `course`, `kn`) and ordered (a course, or a `route`, `loop`). `ScenarioLoader` requests every class at
+  once, then, on a world not yet running, spawns each ship on the station its group will reckon (the walk of
+  `LineOffsets` over the file's tree: `GroupSystem.GroupStation` is now the one rule both use), forms the groups
+  bottom-up as commands, names them (`GroupSystem.SetName`, start state, not a command), and gives the top units their
+  orders. A top unit of one ship is that ship; ships' names come back for the map. `ScenarioTests`: every ship within
+  1 m of its station, names and sides, orders steamed, the same file the same hash, the log replays it, clear errors.
+- **The Jutland** (`Content/Scenarios/jutland.json`): the historical order of battle ship by ship, 151 British and 99
+  German, in 53 classes: the 6 shipped era designs and 47 knob variants (`Content/Scenarios/Designs/`, written by the
+  `-variants=` dev flag from `tools/scenarios/jutland-classes.json`; `Designer/DesignVariants` applies the designer's
+  steps headless). The positions are from memory and marked approximate (research request of 2026-10-13). Agincourt's
+  seven turrets come out at 48,000 t and 292 m: a stand-in, the design session's.
+- **In the app:** a picker in the world tab's top-left panel (the shipped scenarios, Load), a scenario file dropped on
+  the window, or `-scenario=jutland` (an explicit `-map=` beside it keeps its camera). `WorldSession.Load` requests the
+  classes and places the new world on a thread while the old one runs, then swaps it in at a frame (`Generation`; the
+  map drops its selection and tracks and goes to the scenario's camera). Ships' names show in the selection and lists.
+- **Headless:** `shipgen scenario [file] [--minutes 60] [--threads N] [--at 10] [--no-land] [--replay]`.
+- **First numbers** (this machine, Release; the instruments of 2.7b come next):
+  - Classes without art: 53 in 1.6 s on 4 threads. In the app, with the art: 3.1 s from asking to the world running
+    (the plan guessed ~10 s; most classes are small). The placing: 23 ms.
+  - The first game hour headless: 2.6 s, ~1,400x at full tilt, the slowest minute (the first, forming up) 260x; 77
+    ships on the fine tick at the start, 159 at 15:00 as the sides close, the rest on rails; 35 µs a fine tick on
+    average. At 10x that's 0.7% of the sim thread (the target: 25%). Play allocates ~4 KB an hour after the placing's
+    685 KB; no collections. The log of 575 commands replays to the same hash.
+  - The app at 1x, 1920x1080, the whole battle in view: frames p99 8.9 ms (vsync 120 Hz), CPU p99 1.8 ms; one frame of
+    86 ms around the load (the swap or the art's upload: 2.7b finds which).
+  - Seen: at the operations band the groups' labels pile up (the Grand Fleet's 6 divisions, the flotillas): 2.7c's.
 
 **2.7b The instruments,** before any fixing, so every later number comes the same way:
 - Tracy zones on the sim thread per system and model (the helm and step, rails, contacts, slide, AI, snapshot fill),
@@ -1608,6 +1639,7 @@ Fleetwright.Sim.Ships     ShipClass, its compiler from Shipgen's Ship, the class
 Fleetwright.Sim.Combat    ShipState and its models: movement, the hit query, damage, flooding, buoyancy, shells
 Fleetwright.Sim (World)   the world, the clock and scheduler, clock tiers, encounters, commands in, the snapshot out
 Fleetwright.Sim.Ai        the AI's layers (admirals, captains; admiralties later), above the world, registered by a host
+Fleetwright.Sim.Missions  what starts a world and judges it: scenarios now (2.7a), missions' objectives later
 ```
 
 - `Ships` is pure data and compilation: no time, no world, nothing that changes. `Combat` gets time and a `dt`

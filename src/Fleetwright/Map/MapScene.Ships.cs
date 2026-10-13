@@ -412,7 +412,7 @@ public sealed unsafe partial class MapScene
     string ShipLabel(Snapshot s, int entity)
     {
         int j = s.Ships.IndexOf(entity);
-        return j < 0 ? "-" : $"#{entity} {world.Classes.TryGet(s.Ships.Class[j])?.Name ?? "?"}";
+        return j < 0 ? "-" : world.NameOf(entity) is { } name ? $"#{entity} {name}" : $"#{entity} {world.Classes.TryGet(s.Ships.Class[j])?.Name ?? "?"}";
     }
 
     /// <summary>The entity of the ship nearest ship k, or 0.</summary>
@@ -444,6 +444,7 @@ public sealed unsafe partial class MapScene
         ImGui.SetNextWindowBgAlpha(0.75f);
         if (ImGui.Begin("##spawn", Hud))
         {
+            ScenarioRow();
             ImGui.TextDisabled($"Ships at sea: {s.Ships.Count}   (dev: spawn)");
             ImGui.SetNextItemWidth(170 * UiFonts.Scale);
             if (ImGui.BeginCombo("##design", designPick >= 0 ? designNames[designPick] : "pick a design"))
@@ -521,7 +522,8 @@ public sealed unsafe partial class MapScene
                 Helm.Rudder => $"rudder held {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0}°",
                 _ => "no helm orders",
             };
-            ImGui.Text($"{cls?.Name ?? "?"}  #{selected}  side {s.Ships.Side[k]}{(s.Ships.OnRails[k] ? "  (on rails)" : "")}");
+            string named = world.NameOf(selected) is { } nm ? $"{nm}, " : "";
+            ImGui.Text($"{named}{cls?.Name ?? "?"}  #{selected}  side {s.Ships.Side[k]}{(s.Ships.OnRails[k] ? "  (on rails)" : "")}");
             ImGui.SameLine();
             ImGui.TextDisabled($"heading {heading:000}°, {kn:0.0} kn, rudder {s.Ships.Rudder[k] * 180 / Math.PI:+0;-0;0}°  ·  " +
                                $"ordered: {orders}, {s.Ships.SpeedOrderKn[k]:0.#} kn");

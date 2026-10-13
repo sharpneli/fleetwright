@@ -16,6 +16,7 @@ public static unsafe class Program
         string? shipPath = null, navy = null, era = null, view = null, camera = null, show = null;
         bool designerFlags = false;   // flags that only mean something in the designer open it when no -view is given
         var mapCamera = Map.MapScene.DefaultCamera;
+        bool mapGiven = false;
         var start = Sim.Core.WorldTime.FromUtc(1916, 5, 31, 14, 0);
         double? startSpeed = null;
         bool startPaused = false;
@@ -77,6 +78,7 @@ public static unsafe class Program
                     return 1;
                 }
                 mapCamera = Map.MapCamera.At(lat, lon, mpp);
+                mapGiven = true;
             }
             else if (arg.StartsWith("-time="))   // the world's start, UTC: 1916-05-31T15:48
             {
@@ -221,8 +223,14 @@ public static unsafe class Program
                 return new Designer.DesignerScene((SDL.SDL_GPUDevice*)device, session, units, section, steps);
             }
             // a design json dropped on the window is an edit to it, in every scene (unsaved until saved) (sharing ships is passing files around)
+            Map.WorldSession? worldRef = null;   // the world, for a scenario dropped on the window
             engine.FileDropped = path =>
             {
+                if (Sim.Missions.Scenario.IsScenario(path))
+                {
+                    worldRef?.Load(path);   // a scenario: the world tab's new world
+                    return;
+                }
                 if (session.Open(path) is { } error)
                     SDL.SDL3.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_WARNING, "Not a design",
                         $"{Path.GetFileName(path)} couldn't be opened as a design:\n{error}", null);
@@ -247,6 +255,9 @@ public static unsafe class Program
             foreach (var search in searches)
                 if (!DevSearch(world, search, devGroups, devForces))
                     Console.Error.WriteLine($"Bad search: -search={search} (want entity:ladder|square|sector|patrol[:leg nm[:nm apart[:legs]]])");
+            worldRef = world;
+            if (scenarioArg != null)
+                world.Load(FindScenario(scenarioArg));
             if (startSpeed is double speed0)
                 world.Send(Sim.Command.SetSpeed(speed0));
             if (startPaused)
@@ -257,7 +268,7 @@ public static unsafe class Program
             // opens the others
             view ??= designerFlags ? "designer" : null;
             engine.Scene = new SceneSwitcher(view switch { "designer" => 1, "hitbox" => 2, "ship" => 3, "profile" => 4, _ => 0 },
-                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, selectShip)),
+                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, selectShip) { KeepCameraOnce = mapGiven && scenarioArg != null }),
                 ("Designer", () => early ?? MakeDesigner()),
                 ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show)),
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),
@@ -405,6 +416,16 @@ public static unsafe class Program
             "keep" => o.Hold(ship),
             _ => null,
         };
+    }
+
+    /// <summary>-scenario='s file: the path as given, else with ".json" added, else a shipped scenario of that name
+    /// (Content/Scenarios next to the exe). What's not found comes back as given.</summary>
+    static string FindScenario(string arg)
+    {
+        foreach (var p in new[] { arg, arg + ".json", Path.Combine(AppContext.BaseDirectory, "Content", "Scenarios", Path.GetFileNameWithoutExtension(arg) + ".json") })
+            if (File.Exists(p))
+                return p;
+        return arg;
     }
 
     /// <summary>The design shown without -ship=: a game asset (GameAsset in the csproj), next to the exe.</summary>
