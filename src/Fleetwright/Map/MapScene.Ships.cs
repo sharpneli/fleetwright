@@ -394,11 +394,11 @@ public sealed unsafe partial class MapScene
             world.Send(GroupSystem.CreateOfNewest(spawnCount, formation, spawnSpacing));
     }
 
-    /// <summary>The entity of the ship nearest the cursor within its drawn size (an icon's at least), or -1.</summary>
-    int PickShip(in MapView view, double x, double y)
+    /// <summary>The entity of the ship nearest the cursor within its drawn size (an icon's at least), or -1: of the
+    /// snapshot's ships, or of another view of them (<see cref="Snapshot.Sighted"/>).</summary>
+    int PickShip(in MapView view, double x, double y, ShipsView? ships = null)
     {
-        var s = world.Current;
-        var v = s.Ships;
+        var v = ships ?? world.Current.Ships;
         int best = -1;
         double bestD = double.MaxValue;
         for (int k = 0; k < v.Count; k++)

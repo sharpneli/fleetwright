@@ -41,7 +41,7 @@ public sealed partial class MapScene
             if (!view.Project(p, out double x, out double y) || x < -10 || y < -10 || x > view.Width + 10 || y > view.Height + 10)
                 continue;
             var back = table.Position(v.Muzzle[i], v.Forward[i], v.ElevationDeg[i], v.Speed[i], Math.Max(0, t - TracerS), out _);
-            bool own = selected == 0 || v.Shooter[i] == selected;
+            bool own = selected < 0 || v.Shooter[i] == selected;
             overlay.BeginStrip(own ? ShellColour : ShellColour with { W = 0.35f }, own ? 2f : 1.5f);
             if (view.Project(back, out double bx, out double by) && Math.Abs(bx - x) + Math.Abs(by - y) > 3)
                 overlay.Point(bx, by);
@@ -63,7 +63,7 @@ public sealed partial class MapScene
                 continue;
             double grow = Math.Min(1, age / 1500);
             double r = Math.Max((hit ? 12 : SplashWideM * (0.4 + 0.6 * grow)) / mpp, hit ? 4 : 2.5);
-            bool own = selected == 0 || w.Shooter[i] == selected;
+            bool own = selected < 0 || w.Shooter[i] == selected;
             var col = (hit ? HitColour : SplashColour) with { W = (float)(1 - age / fade) * (hit ? 1f : 0.9f) * (own || hit ? 1f : 0.4f) };
             overlay.BeginStrip(col, hit ? 2.5f : 1.5f);
             for (int k = 0; k <= 16; k++)
@@ -216,14 +216,18 @@ public sealed partial class MapScene
     /// fire one salvo at the sea there.</summary>
     bool FireAt(double x, double y)
     {
-        if (selected == 0)
+        if (selected < 0)
             return false;
         if (engageArmed)
         {
-            int target = PickShip(View, x, y);
-            if (target == 0)
-                target = PickContact(View, world.Current, x, y);
-            if (target != 0 && target != selected)
+            // an enemy in sight by its sprite, a ship, else a contact by its marker
+            var s = world.Current;
+            int target = PickShip(View, x, y, s.Sighted);
+            if (target < 0)
+                target = PickShip(View, x, y, s.Ships);
+            if (target < 0)
+                target = PickContact(View, s, x, y);
+            if (target > 0 && target != selected)
                 world.Send(world.Ai.Orders.Engage(Commanded(world.Current).Unit, target));
             engageArmed = false;
             return true;
@@ -235,11 +239,11 @@ public sealed partial class MapScene
         return true;
     }
 
-    /// <summary>The contact whose marker is under the cursor (within a few pixels), or 0.</summary>
+    /// <summary>The contact whose marker is under the cursor (within a few pixels), or -1.</summary>
     static int PickContact(in MapView view, Snapshot s, double x, double y)
     {
         var c = s.Contacts;
-        int best = 0;
+        int best = -1;
         double bestD = ContactMarkerPx * 3;
         for (int i = 0; i < c.Count; i++)
             if (view.Project(c.Position[i], out double cx, out double cy) && Math.Abs(cx - x) + Math.Abs(cy - y) < bestD)
