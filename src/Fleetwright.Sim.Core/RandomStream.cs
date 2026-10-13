@@ -51,6 +51,13 @@ public struct RandomStream
     /// <summary>Uniform in [min, max).</summary>
     public double NextDouble(double min, double max) => min + (max - min) * NextDouble();
 
+    /// <summary>A standard normal draw (Box-Muller, one of the pair).</summary>
+    public double NextGaussian()
+    {
+        double u = 1 - NextDouble(), v = NextDouble();
+        return Math.Sqrt(-2 * Math.Log(u)) * Math.Cos(2 * Math.PI * v);
+    }
+
     /// <summary>Uniform in [0, n), unbiased (Lemire's multiply and reject).</summary>
     public int NextInt(int n)
     {

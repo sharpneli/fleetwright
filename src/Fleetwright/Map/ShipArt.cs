@@ -24,6 +24,18 @@ public sealed unsafe class ShipArt
     public required int[] MountType { get; init; }
     public required int[] DrawOrder { get; init; }
 
+    /// <summary>Each sprite mount's index in the class's mounts (the snapshot's bearings are by those), or -1.</summary>
+    public required int[] ClassMount { get; init; }
+
+    /// <summary>A sprite's mounts by the class's: each one's index in the class's mounts (one component id each), or -1.</summary>
+    public static int[] ClassMounts(SpriteMeta meta, ShipClass cls)
+    {
+        var byId = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (int m = 0; m < cls.Mounts.Length; m++)
+            byId[cls.ComponentId(cls.Mounts[m].Component)] = m;
+        return [.. meta.Mounts.Select(sm => byId.GetValueOrDefault(sm.Id, -1))];
+    }
+
     /// <summary>Sprite pixels per metre at mip 0, and the mip levels below it.</summary>
     public double Scale => Meta.ScalePxPerM;
     public int MipLevels { get; init; }
@@ -58,7 +70,7 @@ public sealed unsafe class ShipArtLibrary : IDisposable
     public const int MipLevels = 7;
 
     readonly SDL_GPUDevice* device;
-    readonly ConcurrentQueue<(int Id, ShipSprites Sprites, SpriteImages Images)> pending = new();
+    readonly ConcurrentQueue<(int Id, ShipSprites Sprites, SpriteImages Images, int[] ClassMount)> pending = new();
     readonly Dictionary<int, ShipArt> art = [];
     readonly ThreadLocal<GpuBaker> bakers;
 
@@ -89,12 +101,13 @@ public sealed unsafe class ShipArtLibrary : IDisposable
             return;
         var sprites = ShipSprites.Build(ship, SpriteScale, MipLevels);
         var baked = ShipBake.Bake(sprites, bakers.Value!);
+        int[] classMount = ShipArt.ClassMounts(sprites.Meta, cls);
         pending.Enqueue((id, sprites, new SpriteImages
         {
             Hull = SpriteImages.Chain(baked.Hull, false, MipLevels),
             Height = SpriteImages.Chain(baked.Height, true, MipLevels),
             Turrets = baked.Turrets.ToDictionary(t => t.Key, t => SpriteImages.Chain(t.Value, false, MipLevels), StringComparer.Ordinal),
-        }));
+        }, classMount));
     }
 
     /// <summary>On the render thread, between frames: uploads up to <paramref name="max"/> classes' art.</summary>
@@ -119,6 +132,7 @@ public sealed unsafe class ShipArtLibrary : IDisposable
                 Turrets = [.. types.Select(t => (nint)SpriteTextures.Upload(device, p.Images.Turrets[t], height: false))],
                 MountType = [.. mounts.Select(m => Array.IndexOf(types, m.Type))],
                 DrawOrder = [.. Enumerable.Range(0, mounts.Count).OrderBy(i => mounts[i].Z)],
+                ClassMount = p.ClassMount,
                 MipLevels = p.Images.Hull.Length - 1,
             };
             if (art.Remove(p.Id, out var old))

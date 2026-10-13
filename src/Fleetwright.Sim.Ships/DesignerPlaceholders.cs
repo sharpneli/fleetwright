@@ -153,6 +153,19 @@ public static class DesignerPlaceholders
         return (Math.Max(reload, 0.5), train, Math.Clamp(2 * train, 2, 20), maxElev);
     }
 
+    /// <summary>PLACEHOLDER: a gun's full-salvo pattern, % of the range (fire-control-research.md §7, fire_control_ref.py
+    /// GUNS): the Great War's heavy guns 3.3·(305 mm/d)³ (the 12" 3.3-3.5%, the 13.5" 2.5, the 15" 1.7, "the most
+    /// accurate battleship gun"), its lighter guns 2.5; before 1906 3.5; from the treaty years 1.9 for the heavy guns
+    /// (16" 1.9, 14" 2.0; delay coils and stiffer mounts) and 1.8 for the lighter (8" 2.0, 5"/38 1.7), the Cold War's 1.5.
+    /// The designer should give it from the gun and its mount (wear, delay coils, mixed rifling).</summary>
+    public static double Pattern(double calibreMm, Era era) => era switch
+    {
+        Era.Victorian => 3.5,
+        Era.GreatWar => calibreMm >= 280 ? Math.Clamp(3.3 * Math.Pow(305 / calibreMm, 3), 1.5, 3.5) : 2.5,
+        Era.Treaty or Era.Wwii => calibreMm >= 280 ? 1.9 : 1.8,
+        _ => 1.5,
+    };
+
     /// <summary>PLACEHOLDER (fighting.md decision 6: the level is the design's choice, per battery): the fire-control
     /// level read from today's fit, its directors, the best rangefinder among them, and the plotting room's computer
     /// and radar tonnage (research/simulation/fire-control-designer.md §3.3, fire_control_ref.py LEVELS):

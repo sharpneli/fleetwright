@@ -1,7 +1,7 @@
 # Plan: fighting (battle module step 4)
 
 2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
-as its steps are built. **4.0, 4.1 and 4.2a done 2026-10-13; 4.2b, mounts, fire control and spotting, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
+as its steps are built. **4.0, 4.1, 4.2a and 4.2b done 2026-10-13; 4.2c, ordering fire, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
 4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
 
 ## The aim
@@ -444,6 +444,86 @@ between cells), its thickness, material and normal.
   - **a Jutland-like pair** (13.5" and 12", level 3, ~15 kyd) within ×2 of the record;
   - replays give the same hash; no allocation; the fire control's cost per battery a second.
 
+**4.2b done 2026-10-13.**
+
+- **The range table** (`BallisticTable`): each elevation row's falls by speed and muzzle height (every 5 m to 60 m),
+  found once on the flights, so `Fall` is a lookup (a cubic in elevation, quadratics across) and `ElevationFor` a
+  regula falsi on it: ~5 µs from scratch, ~1 µs from last second's answer (it was ~10 ms). Within 0.9 m of the flights'
+  own falls from 2 km; point-blank, where a shell all but level falls as √h, up to ~50 m in range, under half a metre of
+  height at a target. `Descends` (a shell's window and end) starts from the table's time of flight and finishes with
+  Newton's steps (the height is concave in time, so from the late side they can't jump to the climb).
+- **One polar-fix model:** `Cov4` moved to Core with `Track`, a constant-velocity Kalman track on the sphere and a range
+  and bearing as a fix. The pictures and fire control both use it (the pictures' hashes unchanged).
+- **The mounts** (`CombatStore`, `Sim.Combat`, owned by the `ShipStore`, made at spawn): each mount's train and
+  elevation as analytic anchors inside its traverse (shipgen's one non-wrapping interval: a bearing outside it parks the
+  mount at the nearer end, and it doesn't fire), its loading clock and rounds. `ShipState.MountBearingDeg` reads them;
+  the snapshot carries the bearings of ships whose mounts have moved, and the sprites' turrets turn
+  (`ShipArt.ClassMounts` matches the sprite's mounts to the class's by component id).
+- **`GunnerySystem`** (world system 4; the AI is 5 now), `engage()`'s spine, one cause of a miss a stage:
+  - **measure:** the battery's directors' eyes as rangefinders (σ = δ·R²/(B·M), the level's magnification and rate, a
+    bias each drawn at the start); without a director, the highest mount's layer by eye (σ 20%); a reading reaches the
+    computer after the level's latency;
+  - **track:** a `Track` started from the navy's picture (its velocity no surer than the level's first guess), fixed by
+    the readings, the level's q;
+  - **solve:** the target where it'll be after the time of flight (iterated through the range table, from last
+    second's), the gun laid by `FireControl.Solve` with its ship's motion in (trained off the line by the motion across
+    it, the elevation whose flight at the speed and angle the two give falls at the range), every second on a grid;
+  - **lay, fire:** a salvo at the first instant the bearing mounts are loaded and laid; the level's salvo-to-salvo
+    error times battle's 1.5, the director's common laying error (each gun's for levels 0-2 and local control, as
+    dispersion), the engagement's residual biases, the own-turn kick while swinging; each shell laid for its own point
+    (the gun's pattern by guns in the salvo, `FireControl.Dispersion`);
+  - **spot:** when the salvo is down and 6 s on, if the highest eye sees the target: over, short or straddle with
+    σ = k·R²/h, the deflection to a mil, the RN ladder against the correction the salvo was fired with.
+  - Engaged ships stay off rails (`ShipSystem.Tiers.cs`, `Engaged`); batteries are silent off the fine tick
+    (`BatteryState.Silent`); hits are counted and logged, nothing more (4.3a).
+- **Settings:** the level table, rows 0-8 from `LEVELS` (the plan's 0, 1, 2, 3 and the rest, cheap as data; their
+  trackers, radars and stabilisation are 4.5's), crew qualities (green, average, trained, elite: the rangetakers' and
+  layers' errors), and the gunnery numbers. Crews per side: `GunnerySystem.SetCrew`, and a scenario's `"crews"`.
+- **The gun's pattern** is a placeholder on `BatteryRow` (`DesignerPlaceholders.Pattern`: the Great War's heavy guns
+  3.3·(305 mm/d)³ %, 12" 3.3, 13.5" 2.5, 15" 1.7; lighter 2.5; later 1.8-1.9).
+- **`CombatLog`:** a ring of plain lines (fired, hit, straddle) in the world, hashed; the snapshot carries the newest 64.
+- **On the map (dev, until 4.2c's orders):** the strip's fire row picks a battery or all; "engage" then a right-click
+  on a ship or a contact engages it, "cease" stops; each engaged battery's state, level, salvos and hits; a line from
+  each engaged ship to its target. `-engage=ship[:battery]:target`.
+- **The bench:** `shipgen duel SHOOTER [TARGET] [--range M] [--level L] [--runs N] [--trace] ...`; `--trace` prints
+  each salvo's fall against the target, the track's aim error and the correction it was fired with.
+- **The numbers**, against `fire_control_ref.py` run on the same cases in the same clear weather (no haze, smoke or
+  splash confusion, which the sim doesn't have yet):
+
+  | Case (combat 1.5, steady target) | the reference | the sim |
+  |---|---|---|
+  | 8 × 15"/42 at level 3, 16 kyd, a QE-size target | 5.0% | 4.7% (QE on QE) |
+  | the same on a 250 m battleship | 6.8% | 5.8% (on a 270 m one) |
+  | levels 0, 1, 2 (the reference ×0.73 for the target's size) | 0.9, 2.9, 3.6% | 1.1, 2.8, 3.1% |
+  | straddles at levels 0, 1, 3 | 16, 44, 24% | 17, 40, 23% |
+  | Lion-like 13.5" on a battlecruiser, 15 km | 4.7% | 4.5% |
+  | Seydlitz-like 11" on a battlecruiser, 15 km | 5.5% | 4.6% (the record 4.0%) |
+
+  The British record at Jutland (1.4%) came in haze and smoke, with splashes confused and both sides zigzagging: the
+  reference reaches it (2.7%) only with those conditions, which come with 4.5's deepenings (smoke, weather, splash
+  confusion). `GunneryTests` keeps the ladder's order, level 3 at 2.5-8%, both pairs within ×2 (the German of its
+  record), turrets that bear and those that don't, the rails and coarse rules, a replay, and no allocation.
+- **The cost:** ~10 µs of the sim thread a battery a game second, half of it the shells' launches (Release, `duel`). A
+  Jutland's ~500 engaged batteries would take ~5 ms a game second, ~5% of a core at 10x: more than the plan's guess of
+  1 µs, inside 2.7's budget; 4.10 measures it at scale.
+- **Found on the way:** the hit query's `HitPath` grew its per-part room on its first near miss (1.7 KB, once per
+  bigger class); the shell system now makes the room when a class first goes to sea.
+
+**Settled beyond the plan (to confirm with the user):**
+
+- **Hashes moved:** the gunnery system takes id 4, so the AI is 5 and every world's hash changed (proved: with gunnery
+  unregistered, ladder-1, ladder-2 and the Jutland hash as before). New baselines after an hour: ladder-1 `C48F8760`,
+  ladder-2 `2C890F64`, Jutland `736454C1`.
+- **One rangefinder a director:** the designs have one director with one rangefinder (QE's 15 ft); the reference's
+  level 3 averages three (two 9 ft, one 15 ft), which is most of the remaining gap. Turret rangefinders aren't in the
+  data; the designer could give them.
+- **Spotting by eye at 15-16 kyd is mostly noise,** as in the reference: σ = 4e-5·1.5·R²/h is 400-500 m from a 25-35 m
+  top, so most salvos read "straddle" and the ladder rarely moves. Faithful to the reference; tall spotting tops matter.
+- **The Earth's turning isn't in the solution** (the era's computers left it out); the spot takes it off with the rest
+  of the bias (up to ~150 m at long range).
+- **The track starts from the picture** (as planned), so a well-watched contact is acquired with its course and speed
+  already good; the level's first guess only floors the velocity's uncertainty.
+
 **4.2c Ordering fire (the player and the AI, minimal).** Fire orders are unit orders in 2.6's one path:
 
 - **`Engage(unit, contact)`** puts a ship's batteries on a contact. Given to a group, its admiral distributes fire
@@ -749,6 +829,10 @@ Placeholders in `DesignerPlaceholders.cs` until shipgen gives them, listed in pl
   years.
 - **Fire control** (in since 4.0): the level per battery from its fit (`fire-control-designer.md` §3), until the
   designer emits it.
+- **A gun's dispersion** (in since 4.2b): its full-salvo pattern, % of range, from the calibre and era until the
+  designer gives it from the gun and mount (wear, delay coils, mixed rifling).
+- **Rangefinders** (4.2b): today one per director, the director's own; turret and spotting-top rangefinders (and their
+  magnification) would give a battery several readings, as the era's ships had.
 - **Magazines:** the propellant kind and its sensitivity (a navy's and an era's).
 - **Torpedoes:** speed and range settings per calibre and era (the warhead is exported already).
 - **For 4.5's systems:** generators, switchboards and the routes of power, hydraulics and data

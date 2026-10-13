@@ -73,6 +73,52 @@ public sealed class Snapshot
     /// the last <see cref="SimSettings.SplashLifeMs"/> (docs/battle/fighting.md 4.2a).</summary>
     public ShellsView Shells { get; } = new();
     public SplashesView Splashes { get; } = new();
+
+    /// <summary>The engaged batteries of the ships shown, and the newest lines of the combat log (docs/battle/fighting.md
+    /// 4.2b).</summary>
+    public BatteriesView Batteries { get; } = new();
+    public CombatLogView CombatLog { get; } = new();
+}
+
+/// <summary>An engaged battery: its ship (an entity) and battery (the class's index), what it's engaged on (an entity),
+/// what it's doing, its level (local control at <see cref="Local"/>), and its salvos, shells and hits so far.</summary>
+public sealed class BatteriesView
+{
+    public int Count;
+    public int[] Shooter = [], Battery = [], Target = [], Salvos = [], Shells = [], Hits = [];
+    public BatteryState[] State = [];
+    public byte[] Level = [];
+    public bool[] Local = [];
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Shooter.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, Shooter.Length * 2));
+        Array.Resize(ref Shooter, n);
+        Array.Resize(ref Battery, n);
+        Array.Resize(ref Target, n);
+        Array.Resize(ref Salvos, n);
+        Array.Resize(ref Shells, n);
+        Array.Resize(ref Hits, n);
+        Array.Resize(ref State, n);
+        Array.Resize(ref Level, n);
+        Array.Resize(ref Local, n);
+    }
+}
+
+/// <summary>The combat log's newest lines (<see cref="Sim.CombatLog"/>), newest first, and how many were ever written.</summary>
+public sealed class CombatLogView
+{
+    public int Count;
+    public long Written;
+    public CombatEntry[] Entries = [];
+
+    public void EnsureCapacity(int n)
+    {
+        if (n > Entries.Length)
+            Array.Resize(ref Entries, Math.Max(n, 16));
+    }
 }
 
 /// <summary>The shells in flight: per shell its ballistic table (an index into <see cref="Ballistics"/>, which the
@@ -310,6 +356,20 @@ public sealed class ShipsView
     public Vec3d[] Waypoints = [];
     public int WaypointCount;
 
+    /// <summary>Each ship's mounts' bearings now, degrees clockwise from ahead, from <see cref="MountStart"/> in
+    /// <see cref="MountBearingDeg"/>, a mount per the class's mounts in order (docs/battle/fighting.md 4.2b); -1 for a
+    /// ship whose mounts have never left their rest (draw them at it).</summary>
+    public int[] MountStart = [];
+    public double[] MountBearingDeg = [];
+    public int MountCount;
+
+    /// <summary>Room for n mounts' bearings in all; grows only past the most yet.</summary>
+    public void EnsureMounts(int n)
+    {
+        if (n > MountBearingDeg.Length)
+            Array.Resize(ref MountBearingDeg, Math.Max(n, Math.Max(64, MountBearingDeg.Length * 2)));
+    }
+
     /// <summary>Room for n waypoints in all; grows only past the most yet.</summary>
     public void EnsureWaypoints(int n)
     {
@@ -358,6 +418,9 @@ public sealed class ShipsView
         Array.Resize(ref RouteStart, n);
         Array.Resize(ref RouteCount, n);
         Array.Resize(ref RouteLoop, n);
+        int had = MountStart.Length;
+        Array.Resize(ref MountStart, n);
+        Array.Fill(MountStart, -1, had, n - had);   // at rest, unless filled
     }
 
     /// <summary>Ship k's position and forward carried on to a time, ms: along its arc, and straight on past its turn's end.</summary>

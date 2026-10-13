@@ -187,6 +187,17 @@ public class ScenarioTests
         Assert.Contains("\"France\" isn't one of the sides", x.Message);
     }
 
+    /// <summary>A side's gun crews by its name (docs/battle/fighting.md 4.2b), trained where not given.</summary>
+    [Fact]
+    public void Crews_are_a_sides_by_name_and_go_to_the_world()
+    {
+        var (w, _, _) = Load(Small.Replace("\"sides\": [\"Britain\", \"Germany\"],", "\"sides\": [\"Britain\", \"Germany\"], \"crews\": { \"Germany\": \"elite\" },"));
+        Assert.Equal(CrewQuality.Trained, w.Gunnery.Crew(0));
+        Assert.Equal(CrewQuality.Elite, w.Gunnery.Crew(1));
+        var x = Assert.Throws<ScenarioException>(() => Scenario.Parse(Small.Replace("\"sides\":", "\"crews\": { \"Germany\": \"heroic\" }, \"sides\":")));
+        Assert.Contains("green, average, trained or elite", x.Message);
+    }
+
     [Fact]
     public void A_design_not_found_is_named()
     {

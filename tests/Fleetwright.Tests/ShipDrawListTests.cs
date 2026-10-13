@@ -23,6 +23,7 @@ public class ShipDrawListTests
             TurretTypes = types, Turrets = [.. types.Select((_, i) => (nint)(10 + i))],
             MountType = [.. meta.Mounts.Select(m => Array.IndexOf(types, m.Type))],
             DrawOrder = [.. Enumerable.Range(0, meta.Mounts.Count).OrderBy(i => meta.Mounts[i].Z)],
+            ClassMount = ShipArt.ClassMounts(meta, Fleetwright.Sim.Ships.ShipClassCompiler.Compile(ship)),
             MipLevels = ShipArtLibrary.MipLevels,
         };
     });

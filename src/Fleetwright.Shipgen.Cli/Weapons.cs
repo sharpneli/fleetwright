@@ -43,8 +43,8 @@ static class Weapons
                 Line("    directors: " + string.Join(", ", c.Links(row.Directors).ToArray().Select(d =>
                     string.Format(Inv, "{0} ({1:0.#} m rangefinder{2})", c.ComponentId(c.Directors[d].Component), c.Directors[d].RangefinderM,
                         c.Directors[d].Radar ? ", radar" : ""))));
-            Line(string.Format(Inv, "    a gun: reload {0:0.#} s ({1:0.#} a minute), trains {2:0.#}°/s, elevates {3:0.#}°/s to {4:0}°", m.ReloadS,
-                60 / m.ReloadS, m.TrainDegS, m.ElevateDegS, m.MaxElevationDeg));
+            Line(string.Format(Inv, "    a gun: reload {0:0.#} s ({1:0.#} a minute), trains {2:0.#}°/s, elevates {3:0.#}°/s to {4:0}°; pattern {5:0.#}% of the range",
+                m.ReloadS, 60 / m.ReloadS, m.TrainDegS, m.ElevateDegS, m.MaxElevationDeg, row.PatternPct));
             foreach (var l in c.ShellLoads(row.Shells))
             {
                 var s = c.ShellTypes[l.ShellType];

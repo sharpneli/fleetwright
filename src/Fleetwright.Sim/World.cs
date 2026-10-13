@@ -73,10 +73,21 @@ public sealed class World
         Groups = new GroupSystem { Store = Ships.Store };
         Register(Groups);
         ShipIndex = new ShipIndex(Ships, Settings);
-        Shells = new ShellSystem(Settings, Ships, ShipIndex);
+        CombatLog = new CombatLog(Settings.CombatLogCapacity);
+        Shells = new ShellSystem(Settings, Ships, ShipIndex, CombatLog);
         Register(Shells);
         Ships.ClassAdded = Shells.Prepare;
+        Gunnery = new GunnerySystem(Settings, Ships, Shells, CombatLog, seed);
+        Shells.Gunnery = Gunnery;
+        Register(Gunnery);
     }
+
+    /// <summary>The batteries' fire control and firing (docs/battle/fighting.md 4.2b): always registered fourth
+    /// (<see cref="GunnerySystem.Id"/>).</summary>
+    public GunnerySystem Gunnery { get; }
+
+    /// <summary>The record of the fighting: who fired, what hit (docs/battle/fighting.md 4.2b).</summary>
+    public CombatLog CombatLog { get; }
 
     /// <summary>The world's index of where its ships are (docs/battle/fighting.md, "One index of where things are").</summary>
     public ShipIndex ShipIndex { get; }

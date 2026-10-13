@@ -39,6 +39,9 @@ public sealed class ShellSystem : IWorldSystem
         /// <summary>Seconds after firing: the window's top, and the end (the hit, or the water until the window's run).</summary>
         public double WindowS, EndS;
         public int Salvo, Shooter, Battery, Generation;
+        /// <summary>The gunnery system's record of its salvo (for the spot), or -1 (the dev's fire); the shell type
+        /// (the shooter's class's).</summary>
+        public int Record, ShellType;
         public bool Alive;
         /// <summary>The ship it hits (an entity), or -1; and where it ends.</summary>
         public int Hit;
@@ -51,6 +54,7 @@ public sealed class ShellSystem : IWorldSystem
     readonly SimSettings settings;
     readonly ShipSystem ships;
     readonly ShipIndex index;
+    readonly CombatLog log;
     readonly HitPath path = new();
     Shell[] shells;
     int[] free;
@@ -72,9 +76,12 @@ public sealed class ShellSystem : IWorldSystem
     public int Hits { get; private set; }
     public int Misses { get; private set; }
 
-    internal ShellSystem(SimSettings settings, ShipSystem ships, ShipIndex index)
+    /// <summary>Told of each shell of a gunnery salvo as it comes down (set by the world).</summary>
+    internal GunnerySystem? Gunnery { get; set; }
+
+    internal ShellSystem(SimSettings settings, ShipSystem ships, ShipIndex index, CombatLog log)
     {
-        (this.settings, this.ships, this.index) = (settings, ships, index);
+        (this.settings, this.ships, this.index, this.log) = (settings, ships, index, log);
         shells = new Shell[Math.Max(settings.ShellCapacity, 16)];
         free = new int[shells.Length];
         splashes = new Splash[Math.Max(settings.SplashCapacity, 16)];
@@ -108,16 +115,24 @@ public sealed class ShellSystem : IWorldSystem
         FireBattery(world, slot, cls, c.B, Earth.Position(lat, lon));
     }
 
-    /// <summary>The tables for a class's batteries, built the first time it's in the world (not at its first salvo).</summary>
+    /// <summary>The tables for a class's batteries, and the hit query's room for its solids, made the first time it's in
+    /// the world (not at its first salvo or near miss).</summary>
     internal void Prepare(ShipClass cls)
     {
         biggest = Math.Max(biggest, cls.Solids.Radius);
+        path.Reserve(cls.Solids.Solids.Length);   // the hit query's room for it, now rather than at its first near miss
         foreach (ref readonly var b in cls.Batteries)
             Ballistics.Ensure(KeyOf(cls, b));
     }
 
     static BallisticKey KeyOf(ShipClass cls, in BatteryRow b) =>
         BallisticKey.Of(cls.ShellTypes[b.Fires], cls.Mounts[cls.Links(b.Mounts)[0]].MaxElevationDeg);
+
+    /// <summary>The index of a class's battery's table in <see cref="Ballistics"/> (built now if it's new).</summary>
+    public int TableOf(ShipClass cls, int battery) => Ballistics.Ensure(KeyOf(cls, cls.Batteries[battery]));
+
+    /// <summary>A new salvo's number.</summary>
+    public int NewSalvo() => nextSalvo++;
 
     void FireBattery(World world, int slot, ShipClass cls, int battery, Vec3d target)
     {
@@ -145,7 +160,7 @@ public sealed class ShellSystem : IWorldSystem
             {
                 var rng = stream.Derive((ulong)k);
                 double sigma = settings.DevFirePatternPct / 100 * range;
-                double aim = range + Gauss(ref rng) * sigma, across = Gauss(ref rng) * sigma * settings.DevFireDeflectionShare / Math.Max(range, 1);
+                double aim = range + rng.NextGaussian() * sigma, across = rng.NextGaussian() * sigma * settings.DevFireDeflectionShare / Math.Max(range, 1);
                 double e = t.ElevationFor(aim, h0);
                 if (double.IsNaN(e))
                     e = Math.Min(t.Key.MaxElevationDeg, t.MaxElevationDeg - 2 * BallisticTable.ElevationStep);
@@ -155,25 +170,20 @@ public sealed class ShellSystem : IWorldSystem
                 var v = (fwd * Math.Cos(er) + up * Math.Sin(er)) * v0 + shipVelocity;
                 double sp = v.Length, vu = Vec3d.Dot(v, up);
                 Launch(world, table, muzzle, (v - up * vu).Normalized(), double.RadiansToDegrees(Math.Asin(vu / sp)), sp / v0, salvo, ship.Entity,
-                    battery);
+                    battery, -1, b.Fires);
             }
         }
     }
 
-    /// <summary>A standard normal draw (Box-Muller, one of the pair).</summary>
-    static double Gauss(ref RandomStream r)
-    {
-        double u = 1 - r.NextDouble(), v = r.NextDouble();
-        return Math.Sqrt(-2 * Math.Log(u)) * Math.Cos(2 * Math.PI * v);
-    }
-
-    /// <summary>A shell away: its record, its window and end solved, its window's event scheduled.</summary>
-    public void Launch(World world, int table, Vec3d muzzle, Vec3d forward, double elevationDeg, double speed, int salvo, int shooter, int battery)
+    /// <summary>A shell away: its record, its window and end solved, its window's event scheduled. False if it never
+    /// comes down (no shell is made).</summary>
+    public bool Launch(World world, int table, Vec3d muzzle, Vec3d forward, double elevationDeg, double speed, int salvo, int shooter, int battery,
+        int record = -1, int shellType = -1)
     {
         var t = Ballistics[table];
         double end = t.Reaches(muzzle, forward, elevationDeg, speed, 0);
         if (double.IsNaN(end))
-            return;
+            return false;
         double top = t.Reaches(muzzle, forward, elevationDeg, speed, settings.ShellWindowTopM);
         if (double.IsNaN(top) || top > end)
             top = 0;   // it never rises over the window's top: all its flight is in the window
@@ -183,11 +193,13 @@ public sealed class ShellSystem : IWorldSystem
         s = new Shell
         {
             Table = table, FiredMs = world.Time.Ms, Muzzle = muzzle, Forward = forward, ElevationDeg = elevationDeg, Speed = speed, WindowS = top,
-            EndS = end, Salvo = salvo, Shooter = shooter, Battery = battery, Generation = gen, Alive = true, Hit = -1,
+            EndS = end, Salvo = salvo, Shooter = shooter, Battery = battery, Record = record, ShellType = shellType, Generation = gen, Alive = true,
+            Hit = -1,
         };
         alive++;
         fired = true;
         world.Schedule(new WorldTime(s.FiredMs + (long)Math.Floor(top * 1000)), EventTier.Fine, i, Id, WindowEvent, gen);
+        return true;
     }
 
     int Allocate()
@@ -217,12 +229,17 @@ public sealed class ShellSystem : IWorldSystem
             splashNext = (splashNext + 1) % splashes.Length;
             splashCount = Math.Min(splashCount + 1, splashes.Length);
             if (s.Hit >= 0)
+            {
                 Hits++;
+                log.Add(new CombatEntry(world.Time.Ms, CombatEvent.Hit, s.Shooter, s.Battery, s.Hit, s.ShellType));
+            }
             else
                 Misses++;
             s.Alive = false;
             alive--;
             free[freeCount++] = e.Entity;
+            if (s.Record >= 0)
+                Gunnery?.Landed(world, s.Record, s.End, s.Hit);
         }
     }
 

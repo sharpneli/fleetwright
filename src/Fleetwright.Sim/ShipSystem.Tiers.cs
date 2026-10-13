@@ -25,7 +25,8 @@ namespace Fleetwright.Sim;
 /// <see cref="SimSettings.RailsSnapMinSpeed"/> or more), it's placed as its guide's orders say
 /// (<see cref="Placeable"/>); else it waits until it's steaming steady (<see cref="Steady"/>), every ship with it
 /// (<see cref="InStation"/>), so a formation is never seen to snap into place. Either way, not near an opposing ship (<see cref="NearOpposing"/>,
-/// ShipSystem.Contacts.cs) nor in an encounter (<see cref="InEncounter"/>, held until it closes), and no ship of it sliding along a coast (<see cref="Sliding"/>: the slide is the fine
+/// ShipSystem.Contacts.cs) nor in an encounter (<see cref="InEncounter"/>, held until it closes), no ship of it with a battery engaged
+/// (<see cref="Engaged"/>), and no ship of it sliding along a coast (<see cref="Sliding"/>: the slide is the fine
 /// tier's, docs/world/terrain-plan.md; rails don't know the land until its step S2).</item>
 /// <item><b>Nothing here reads the map.</b> The sim is independent of display state, a hard rule with no exceptions
 /// (docs/world/architecture.md, "Terms"): the map's scale used to place a unit drawn as one marker at any speed, and
@@ -81,7 +82,7 @@ public sealed partial class ShipSystem
             return false;
         if (!SlidesOnRails(world) && (Sliding() || !LandClear(world, guide)))
             return false;
-        if (InEncounter())
+        if (InEncounter() || Engaged())
             return false;
         return !NearOpposing(guide, placing ? Math.Max(GroupRadius(guide), FormationRadius()) : GroupRadius(guide));
     }
@@ -136,6 +137,16 @@ public sealed partial class ShipSystem
         return NotSwinging(ms) && Math.Abs(AngleDeg(ms.HeadingDeg - gs.HeadingDeg)) <= settings.RailsGroupHeadingDeg &&
                Math.Abs(ms.Speed - speed) <= settings.RailsGroupSpeedErrKn * Handling.MsPerKnot &&
                Earth.Distance(ms.Position, gp - gs.Forward * astern + starboard * abeam) <= settings.RailsGroupStationM;
+    }
+
+    /// <summary>Whether a ship of the unit in <see cref="line"/> has a battery engaged (docs/battle/fighting.md 4.2b): fire
+    /// control is the fine tick's, so an engaged ship stays off rails.</summary>
+    bool Engaged()
+    {
+        for (int i = 0; i < line.Count; i++)
+            if (Store.SlotOf(line[i].Ship) is int m and >= 0 && Store.Combat.Engaged(m) > 0)
+                return true;
+        return false;
     }
 
     /// <summary>Whether a ship of the unit in <see cref="line"/> is sliding along a coast: placed on rails, it would be

@@ -589,6 +589,7 @@ public static class ShipClassCompiler
                     Mounts = new Slice(m0, d0 - m0), Guns = guns, Directors = new Slice(d0, dirs),
                     Level = DesignerPlaceholders.FireControl(dirs, rf, spec.ComputerT, radar || spec.RadarT > 0, era),
                     Shells = new Slice(l0, loads.Count - l0), Fires = TypeOf(DesignerPlaceholders.Fires(row.CalibreMm, era), row),
+                    PatternPct = DesignerPlaceholders.Pattern(row.CalibreMm, era),
                 };
             }
             c.batteries = batteries.ToArray();

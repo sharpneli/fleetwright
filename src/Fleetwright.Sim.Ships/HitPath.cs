@@ -192,7 +192,9 @@ public sealed class HitPath
         }
     }
 
-    internal void Reserve(int parts)
+    /// <summary>Room for a trace through a class with this many solids (the tracer grows it to each class it meets; a
+    /// caller can make the room ahead, when the class first comes along).</summary>
+    public void Reserve(int parts)
     {
         if (this.parts.Length >= parts)
             return;

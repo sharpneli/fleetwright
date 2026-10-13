@@ -434,6 +434,93 @@ public sealed record SimSettings
     public double DevFirePatternPct { get; init; } = 0.8;
     public double DevFireDeflectionShare { get; init; } = 0.4;
 
+    // ------------------------------------------------------------------ fire control (docs/battle/fighting.md 4.2b)
+
+    /// <summary>The engaged batteries' fire-control tick, ms, on a grid of world time: readings taken and taken in, the
+    /// mounts ordered, the next salvo timed.</summary>
+    public int FireControlMs { get; init; } = 1000;
+
+    /// <summary>Battle against practice: the multiplier on the salvo-to-salvo, laying, rangetaking and spotting errors
+    /// (fire_control_ref.py Conditions.combat, calibrated at 1.5).</summary>
+    public double GunneryCombat { get; init; } = 1.5;
+
+    /// <summary>How long after a battery's track starts (its first reading in the computer) it opens fire, s
+    /// (fire_control_ref.py Scenario.t_open).</summary>
+    public double GunneryOpenS { get; init; } = 120;
+
+    /// <summary>A mount bears when trained and elevated within this of its order, degrees.</summary>
+    public double LayToleranceDeg { get; init; } = 1;
+
+    /// <summary>Spotting: the judgement comes this long after a salvo's last shell lands, ms; a splash is judged over or
+    /// short with an error of k·R²/h rad (h the spotter's height; fire-control-research.md §9), and the deflection seen
+    /// to this many mil, a share of it corrected (half: one salvo's fall carries its random error, so full corrections
+    /// chase noise) once it's over a quarter of a pattern; the ladder's smallest step, m (and never under half a
+    /// pattern).</summary>
+    public int SpotDelayMs { get; init; } = 6000;
+    public double SpotOpticK { get; init; } = 4e-5;
+    public double SpotDeflectionMil { get; init; } = 1;
+    public double SpotDeflectionGain { get; init; } = 0.5;
+    public double SpotLadderMinM { get; init; } = 46;
+
+    /// <summary>A shell's dispersion across the line of fire as a share of its dispersion along it (Gun.defl_ratio).</summary>
+    public double DispersionDeflectionRatio { get; init; } = 0.4;
+
+    /// <summary>Rangefinding (fire-control-research.md §3.2): one unit of error δ at the eye, arcseconds (OP 1171), so a
+    /// reading's error is δ·R²/(B·M); bases longer than <see cref="RangefinderLongBaseM"/> give less than geometry says
+    /// (as the 0.75 power past it, NDRC 1941); an instrument's own bias after calibration, in units of error; its
+    /// bearing's error, mil.</summary>
+    public double RangefinderUnitArcsec { get; init; } = 12;
+    public double RangefinderLongBaseM { get; init; } = 5;
+    public double RangefinderBiasUnits { get; init; } = 1.5;
+    public double RangefinderBearingMil { get; init; } = 1;
+
+    /// <summary>A range by eye: its error and its bias as shares of the range, its bearing's error, mil.</summary>
+    public double EyeRangeShare { get; init; } = 0.20;
+    public double EyeRangeBiasShare { get; init; } = 0.10;
+    public double EyeBearingMil { get; init; } = 5;
+
+    /// <summary>Own ship counts as turning (its salvos take the level's own-turn kick) past this rate of yaw, °/s.</summary>
+    public double OwnTurnYawDegS { get; init; } = 0.2;
+
+    /// <summary>The fire-control levels, a row for each <c>FireControlLevel</c> (0-8) in order: fire_control_ref.py
+    /// LEVELS (0, 1, 2, 3, 4, 5, 6, 7, 8 of its rows; their trackers, radars and stabilisation are fighting.md 4.5's).
+    /// Local control (a battery without a director) fires at row 0.</summary>
+    public GunneryLevel[] GunneryLevels { get; init; } =
+    [
+        new() { Name = "0 eyeball", ReadingsPerMin = 1, Magnification = 0, LatencyS = 20, Q = 0.02, PriorKn = 5, PriorDeg = 30, ResidPct = 2.5,
+                DeflBiasMil = 4, LayMil = 3, Director = false, OwnTurnKickM = 0, Ladder0M = 550, SalvoPct = 2.5, SalvoDeflMil = 3 },
+        new() { Name = "1 early rangefinder", ReadingsPerMin = 2, Magnification = 24, LatencyS = 15, Q = 0.02, PriorKn = 4, PriorDeg = 25,
+                ResidPct = 2, DeflBiasMil = 3, LayMil = 2.5, Director = false, OwnTurnKickM = 0, Ladder0M = 366, SalvoPct = 2, SalvoDeflMil = 2.5 },
+        new() { Name = "2 Dumaresq and clock", ReadingsPerMin = 2, Magnification = 28, LatencyS = 15, Q = 0.03, PriorKn = 3, PriorDeg = 20,
+                ResidPct = 1.5, DeflBiasMil = 2.5, LayMil = 2, Director = false, OwnTurnKickM = 0, Ladder0M = 366, SalvoPct = 1.8, SalvoDeflMil = 2.5 },
+        new() { Name = "3 Dreyer and director", ReadingsPerMin = 2, Magnification = 28, LatencyS = 15, Q = 0.03, PriorKn = 2.5, PriorDeg = 15,
+                ResidPct = 1.2, DeflBiasMil = 2, LayMil = 1, Director = true, OwnTurnKickM = 300, Ladder0M = 366, SalvoPct = 1.5, SalvoDeflMil = 2 },
+        new() { Name = "4 interwar table", ReadingsPerMin = 4, Magnification = 28, LatencyS = 8, Q = 0.03, PriorKn = 2, PriorDeg = 12,
+                ResidPct = 0.6, DeflBiasMil = 1.5, LayMil = 0.8, Director = true, OwnTurnKickM = 250, Ladder0M = 366, SalvoPct = 1.2, SalvoDeflMil = 1.5 },
+        new() { Name = "5 rangekeeper", ReadingsPerMin = 6, Magnification = 25, LatencyS = 3, Q = 0.05, PriorKn = 2, PriorDeg = 12,
+                ResidPct = 0.4, DeflBiasMil = 1, LayMil = 0.5, Director = true, OwnTurnKickM = 150, Ladder0M = 366, SalvoPct = 1, SalvoDeflMil = 1.2 },
+        new() { Name = "6 radar spotting", ReadingsPerMin = 6, Magnification = 25, LatencyS = 2, Q = 0.05, PriorKn = 2, PriorDeg = 12,
+                ResidPct = 0.4, DeflBiasMil = 1, LayMil = 0.5, Director = true, OwnTurnKickM = 150, Ladder0M = 366, SalvoPct = 1, SalvoDeflMil = 1.2 },
+        new() { Name = "7 auto-track", ReadingsPerMin = 60, Magnification = 25, LatencyS = 1, Q = 0.02, PriorKn = 2, PriorDeg = 12,
+                ResidPct = 0.4, DeflBiasMil = 0.8, LayMil = 0.4, Director = true, OwnTurnKickM = 50, Ladder0M = 366, SalvoPct = 0.7, SalvoDeflMil = 0.8 },
+        new() { Name = "8 digital", ReadingsPerMin = 30, Magnification = 25, LatencyS = 0.5, Q = 0.01, PriorKn = 2, PriorDeg = 12,
+                ResidPct = 0.3, DeflBiasMil = 0.5, LayMil = 0.3, Director = true, OwnTurnKickM = 20, Ladder0M = 366, SalvoPct = 0.4, SalvoDeflMil = 0.5 },
+    ];
+
+    /// <summary>A side's gun crews, a row for each <see cref="CrewQuality"/> in order: the rangetakers' error (Conditions.
+    /// operator: 2 green, 1.5 average, 1 trained, 0.85 elite) and the layers' (a guess, the same way).</summary>
+    public GunneryCrew[] GunneryCrews { get; init; } =
+    [
+        new() { Name = "green", Operator = 2, Lay = 1.3 },
+        new() { Name = "average", Operator = 1.5, Lay = 1.15 },
+        new() { Name = "trained", Operator = 1, Lay = 1 },
+        new() { Name = "elite", Operator = 0.85, Lay = 0.9 },
+    ];
+
+    /// <summary>The salvos the world keeps in flight for spotting (it grows past it), and the combat log's ring.</summary>
+    public int SalvoCapacity { get; init; } = 256;
+    public int CombatLogCapacity { get; init; } = 4096;
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its
@@ -454,6 +541,48 @@ public sealed record SimSettings
 
     /// <summary>These settings as JSON, every key: what the shipped file is made from.</summary>
     public string ToJson() => JsonSerializer.Serialize(this, SimSettingsJson.Default.SimSettings);
+}
+
+/// <summary>A fire-control level's numbers (research/simulation/fire_control_ref.py FCLevel): rangefinder readings a
+/// minute and the instruments' magnification; the computer's latency, s, and the target acceleration it allows (q,
+/// m²/s³); the eye's first guess at the target's speed and course (1 sigma); the residual ballistic bias before spotting,
+/// % of range, and in deflection, mil; the common laying error a salvo, mil; whether a director fires the guns (else
+/// each gun lays itself and its error is dispersion); the extra error while own ship turns, m; the first ladder step,
+/// m; the salvo-to-salvo error, % of range and mil, that spotting can't remove.</summary>
+public sealed record GunneryLevel
+{
+    public string Name { get; init; } = "";
+    public double ReadingsPerMin { get; init; }
+    public double Magnification { get; init; }
+    public double LatencyS { get; init; }
+    public double Q { get; init; }
+    public double PriorKn { get; init; }
+    public double PriorDeg { get; init; }
+    public double ResidPct { get; init; }
+    public double DeflBiasMil { get; init; }
+    public double LayMil { get; init; }
+    public bool Director { get; init; }
+    public double OwnTurnKickM { get; init; }
+    public double Ladder0M { get; init; }
+    public double SalvoPct { get; init; }
+    public double SalvoDeflMil { get; init; }
+}
+
+/// <summary>How good a side's gun crews are (docs/battle/fighting.md 4.2b: one per side, a scenario's to give).</summary>
+public enum CrewQuality : byte
+{
+    Green,
+    Average,
+    Trained,
+    Elite,
+}
+
+/// <summary>A crew quality's multipliers on the rangetakers' and the layers' errors.</summary>
+public sealed record GunneryCrew
+{
+    public string Name { get; init; } = "";
+    public double Operator { get; init; }
+    public double Lay { get; init; }
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,

@@ -25,6 +25,7 @@ public static unsafe class Program
         var captains = new List<string>();
         var searches = new List<string>();
         var fires = new List<string>();
+        var engages = new List<string>();
         var devGroups = new List<string>();
         var devForces = new List<string>();
         bool frameTimes = false;
@@ -128,6 +129,10 @@ public static unsafe class Program
             else if (arg.StartsWith("-fire="))   // a dev salvo: -fire=ship[:battery]:lat,lon (docs/battle/fighting.md 4.2a)
             {
                 fires.Add(arg.Substring("-fire=".Length));
+            }
+            else if (arg.StartsWith("-engage="))   // a dev battery engages: -engage=ship[:battery]:target (docs/battle/fighting.md 4.2b)
+            {
+                engages.Add(arg.Substring("-engage=".Length));
             }
             else if (arg.StartsWith("-search="))   // a dev search: -search=1:ladder[:leg nm[:nm apart[:legs]]] (ladder, square, sector, patrol)
             {
@@ -269,6 +274,11 @@ public static unsafe class Program
                     world.Send(shot);
                 else
                     Console.Error.WriteLine($"Bad fire: -fire={fire} (want ship[:battery]:lat,lon)");
+            foreach (var engage in engages)
+                if (DevEngage(engage) is { } order)
+                    world.Send(order);
+                else
+                    Console.Error.WriteLine($"Bad engage: -engage={engage} (want ship[:battery]:target)");
             worldRef = world;
             if (scenarioArg != null)
             {
@@ -352,6 +362,16 @@ public static unsafe class Program
             return null;
         int battery = p.Length == 3 && int.TryParse(p[1], out int b) ? b : 0;
         return Sim.ShellSystem.FireAt(ship, battery, lat, lon);
+    }
+
+    /// <summary>-engage=ship[:battery]:target: a dev ship's battery (all of them without one) engages a ship.</summary>
+    static Sim.Command? DevEngage(string arg)
+    {
+        var p = arg.Split(':');
+        if (p.Length is < 2 or > 3 || !int.TryParse(p[0], out int ship) || !int.TryParse(p[^1], out int target))
+            return null;
+        int battery = p.Length == 3 && int.TryParse(p[1], out int b) ? b : -1;
+        return Sim.GunnerySystem.Engage(ship, battery, target);
     }
 
     /// <summary>-search=entity:pattern[:leg nm[:nm apart[:legs]]]: a search pattern for a dev ship, from where it is,

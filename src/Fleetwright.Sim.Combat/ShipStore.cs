@@ -83,6 +83,9 @@ public sealed class ShipStore
     /// <summary>The world's time: what a ship on rails is evaluated at. The world sets it before anything reads the
     /// store (events, commands, the snapshot).</summary>
     public long NowMs { get; set; }
+
+    /// <summary>The ships' combat columns: their mounts (docs/battle/fighting.md 4.2b), later their condition.</summary>
+    public CombatStore Combat { get; } = new();
     internal int[] routeCount = [], routeNext = [];
 
     public ShipStore(SimSettings settings)
@@ -144,6 +147,7 @@ public sealed class ShipStore
         routeLoop[slot] = false;
         landSide[slot] = 0;
         backstops[slot] = 0;
+        Combat.Spawn(slot, h.Class, timeMs);
         return slot;
     }
 
@@ -671,6 +675,7 @@ public sealed class ShipStore
         fine.Remove(slot);   // a dead slot is stepped and decided for by nothing
         coarse.Remove(slot);
         handling[slot] = null!;
+        Combat.Drop(slot);
         generation[slot]++;
         free.Push(slot);
     }
@@ -947,6 +952,12 @@ public readonly struct ShipState(ShipStore store, int slot)
     }
 
     public Helm Helm => store.helm[slot];
+
+    /// <summary>A mount's bearing now, degrees clockwise from ahead (its index in the class's mounts), and its
+    /// elevation; how many of its batteries are engaged.</summary>
+    public double MountBearingDeg(int mount) => CombatStore.BearingAt(store.Combat.Mount(slot, mount), Handling.Class.Mounts[mount], store.NowMs);
+    public double MountElevationDeg(int mount) => CombatStore.ElevationAt(store.Combat.Mount(slot, mount), Handling.Class.Mounts[mount], store.NowMs);
+    public int Engaged => store.Combat.Engaged(slot);
     public double CourseOrderDeg => store.courseDeg[slot];
     public double SpeedOrderKn => store.speedOrderKn[slot];
 

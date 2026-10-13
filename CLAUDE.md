@@ -17,6 +17,7 @@ dotnet run --project src/Fleetwright -- -map=56.7,5.8,0.1 -time=1916-05-31T15:48
 dotnet run --project src/Fleetwright -- -ships=dreadnought:9 -map=56.51,4.02,3 [-select=1]   # dev ships in the North Sea (sprites close, icons far), every other turning to 135°
 dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@59.03,5.50,90,15 -ships=destroyer@59.035,5.5,80 -select=1 -map=59.02,5.6,8 -speed=30   # dev ships placed (lat,lon,heading[,kn]; repeatable): onto Norway, sliding round a headland
 dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@56.5,4.0,0,0 -ships=dreadnought:1:0@56.5,4.13,0,0 -fire=1:56.5,4.13 -map=56.5,4.12,2 -select=1   # a dev salvo (ship[:battery]:lat,lon); the strip's Fire row arms right-click
+dotnet run --project src/Fleetwright -- -ships=super_dreadnought:1:0@56.5,4.0,0,0 -ships=super_dreadnought:1:1@56.5,4.23,0,15 -engage=1:2 -select=1 -speed=30 -map=56.5,4.0,0.45   # fire control: ship[:battery]:target engages (the strip's Fire row: engage, then right-click a ship or contact; cease)
 dotnet run --project src/Fleetwright -- -ships=dreadnought:2 -captain=2:follow:1:800 -select=2   # a captain: follow:target[:m], run:target, keep, none
 dotnet run --project src/Fleetwright -- -ships=dreadnought:6 -group=1,2,3,4,5,6:column:500 -select=1   # a group: column, abreast, echelon-s, echelon-p
 dotnet run --project src/Fleetwright -- -ships=dreadnought:4:1 -group=1,2,3,4:column:500 -search=1:ladder:10:3:6 -speed=1000   # a search on rails (ladder, square, sector, patrol); :1 the side
@@ -140,6 +141,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- mono-check [bisma
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sim [--from 1916-05-31T14:00] [--speed 30000] [--seconds 3]   # the world on its thread: clock, speed asked/achieved, sun, sim allocations
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shore [--points 100000]   # the land index: build time, memory, IsLand vs Land, query costs
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- trials shipgen/designs/yamato.json [--out out]   # sea trials on the ship model: turning circles, 0 -> full, coasting, crash stop, beside the research's bands
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- duel super_dreadnought [lion] [--range 14630] [--level 3] [--runs 20] [--minutes 15] [--trace]   # fire control's bench: one battery on a ship, run after run; hit and straddle %, time to first hit, cost a battery-second
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- ballistics dreadnought [--research]   # each battery's range table (range, elevation, time of flight, fall, striking velocity); the research's 16"/50 beside its sourced figures
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- weapons dreadnought [--research]   # weapon facts: batteries, fire-control level, guns' working numbers, shells, plating (placeholders beside the research's guns)
 ```
@@ -231,7 +233,9 @@ src/
   Fleetwright.Shipgen.Cli/    # `shipgen` command, the port's test harness (and `sim`, an empty world on its thread)
   Fleetwright.Sim.Core/       # the sim's lowest layer, pure values (docs/battle/plan.md "Inside Fleetwright.Sim"):
                               #   Vec3d, Earth (the sphere), ShipFrame (left-handed: +x bow, +y starboard, up),
-                              #   WorldTime (ms since 1850), Sun, RandomStream, StateHash, SimSettings, Land (rings,
+                              #   WorldTime (ms since 1850), Sun, RandomStream, StateHash, SimSettings, Track (a
+                              #   constant-velocity Kalman track on the sphere and a range-and-bearing fix: pictures and
+                              #   fire control), CubeIndex (the one "what is near here" grid), Land (rings,
                               #   IsLand), CubeSphere (the cube's faces, gnomonic), Shore (the land index the sim asks:
                               #   IsLand, Clearance, FirstContact along great circles and rhumb lines; World.Shore)
   Fleetwright.Sim.Ships/      # the ships' data: ShipClass (a built Ship's hitboxes and report as read-only, int-indexed
@@ -247,7 +251,11 @@ src/
                               #   the land: the feeler slides a ship along a coast at its standoff, the backstop
                               #   refuses land, spawns and waypoints go to sea; docs/world/terrain-plan.md), HitQuery (a world
                               #   segment into a ship's frame and attitude, through the tracer; a miss's fall), Ballistics
-                              #   (the shells' flight on the sphere: tables by elevation x speed x density x time)
+                              #   (the shells' flight on the sphere: tables by elevation x speed x density x time, and
+                              #   the range table: falls by elevation x speed x muzzle height), CombatStore (each ship's
+                              #   mounts as analytic train/elevation anchors, loading clocks, rounds), FireControl (the
+                              #   chain's pure models: reading errors, dispersion, laying a gun with its ship's motion, the
+                              #   spotting ladder)
   Fleetwright.Sim.Ai/         # the AI above the world: AiSystem (layers of command, top-down, each at its rate),
                               #   Knowledge/ (IPicture; TruthPicture until sighting), Captains/ (CaptainLayer,
                               #   Behaviours: keep course, follow, run, station), Admirals/ (AdmiralLayer: formations
@@ -255,8 +263,9 @@ src/
   Fleetwright.Sim/            # the world: World (clock, speed, events, commands in, snapshot out), Scheduler,
                               #   IWorldSystem, ShipSystem (every ship, the ship tick, ship commands), GroupSystem
                               #   (groups: members, guide first, formation, spacing), ShellSystem (shells in flight: two events
-                              #   each, the danger window through the hit query; splashes), ShipIndex (every ship on a
-                              #   CubeIndex, built when asked), SimHost (the sim
+                              #   each, the danger window through the hit query; splashes), GunnerySystem (engaged batteries:
+                              #   measure, track, solve, lay and fire, spot; docs/battle/fighting.md 4.2b), CombatLog (who
+                              #   fired, what hit), ShipIndex (every ship on a CubeIndex, built when asked), SimHost (the sim
                               #   thread), TripleBuffer; no GPU or UI, runs headless
 tests/
   Fleetwright.Tests/          # xUnit for the game exe: the hitbox mesh over every design, the map camera's maths

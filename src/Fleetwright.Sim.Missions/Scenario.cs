@@ -14,7 +14,7 @@ namespace Fleetwright.Sim.Missions;
 /// { "scenario": 1, "name": "Jutland", "brief": "...", "start": "1916-05-31T14:00", "seed": 1916,
 ///   "camera": [56.8, 5.2, 400], "sides": ["Britain", "Germany", "Neutral"],
 ///   "peace": [["Britain", "Neutral"], ["Germany", "Neutral"]], "player": "Britain",
-///   "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 },
+///   "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 }, "crews": { "Germany": "elite" },
 ///   "units": [
 ///     { "name": "Battlecruiser Fleet", "side": 0, "at": [56.77, 4.6], "course": 112, "kn": 19,
 ///       "formation": "column", "spacing": 3000,
@@ -24,6 +24,7 @@ namespace Fleetwright.Sim.Missions;
 ///     { "name": "Patrol", "side": 0, "at": [58, 2], "course": 0, "kn": 10, "route": [[59, 2], [58, 2]], "loop": true,
 ///       "ships": [ { "design": "light_cruiser", "count": 2 } ] } ] }
 /// </code>
+/// <para>A side's gun crews are green, average, trained or elite (<c>"crews"</c>; trained if not listed).</para>
 /// <para>Sides are at war with each other unless a pair is listed in <c>"peace"</c>. A unit's side, formation and spacing default to its parent's (side 0, column, 600 m for a squadron, 3 km for
 /// a force). A top unit of one ship is that ship, not a group. A top unit with a route steams it (from where it's
 /// placed, its course only the start's heading).</para>
@@ -54,6 +55,9 @@ public sealed class Scenario
 
     /// <summary>The pairs of sides at peace (by index); every other pair is at war (docs/battle/plan.md step 3.1a).</summary>
     public List<(int A, int B)> Peace { get; init; } = [];
+
+    /// <summary>The sides' gun crews where they aren't trained (docs/battle/fighting.md 4.2b), by side index.</summary>
+    public List<(int Side, CrewQuality Quality)> Crews { get; init; } = [];
 
     public required List<ScenarioUnit> Units { get; init; }
 
@@ -165,6 +169,9 @@ public sealed class Scenario
                 player = null;
             // "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 }; taken from "from" unless given
             var weather = r.TryGetProperty("weather", out var we) ? ParseWeather(we) : from?.Weather;
+            // "crews": { "Germany": "elite" }, by the sides' names; taken from "from" (with its sides) unless given
+            var crews = r.TryGetProperty("crews", out var cr) ? ParseCrews(cr, sides)
+                : from != null && !r.TryGetProperty("sides", out _) ? from.Crews : [];
             var units = new List<ScenarioUnit>();
             if (from != null)
             {
@@ -191,10 +198,28 @@ public sealed class Scenario
                 Peace = peace,
                 PlayerName = player,
                 Weather = weather,
+                Crews = crews,
                 Units = units,
                 Folder = folder,
             };
         }
+    }
+
+    static List<(int, CrewQuality)> ParseCrews(JsonElement e, string[] sides)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException("crews: an object of sides' names, { \"Germany\": \"elite\" }");
+        var list = new List<(int, CrewQuality)>();
+        foreach (var p in e.EnumerateObject())
+        {
+            int side = Array.IndexOf(sides, p.Name);
+            if (side < 0)
+                throw new ScenarioException($"crews: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
+            if (!Enum.TryParse<CrewQuality>(p.Value.GetString(), ignoreCase: true, out var q) || !Enum.IsDefined(q))
+                throw new ScenarioException($"crews: \"{p.Value}\" for {p.Name}: green, average, trained or elite");
+            list.Add((side, q));
+        }
+        return list;
     }
 
     static WeatherHere ParseWeather(JsonElement e)

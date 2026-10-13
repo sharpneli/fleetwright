@@ -321,7 +321,7 @@ public sealed partial class ShipSystem : IWorldSystem
     {
         var s = Store;
         v.EnsureCapacity(s.Count);
-        int n = 0, w = 0;
+        int n = 0, w = 0, mounts = 0;
         for (int i = 0; i < s.Slots; i++)
         {
             if (!s.IsAlive(i) || !shownSides[s[i].Side])
@@ -358,9 +358,19 @@ public sealed partial class ShipSystem : IWorldSystem
             v.RouteLoop[n] = loop && ship.Helm == Helm.Route;
             for (int k = 0; k < left; k++)
                 v.Waypoints[w++] = ship.Waypoint((ship.RouteNext + k) % ship.RouteCount);
+            v.MountStart[n] = -1;
+            if (s.Combat.Moved(i))
+            {
+                int count = ship.Handling.Class.Mounts.Length;
+                v.EnsureMounts(mounts + count);
+                v.MountStart[n] = mounts;
+                for (int m = 0; m < count; m++)
+                    v.MountBearingDeg[mounts++] = ship.MountBearingDeg(m);
+            }
             n++;
         }
         v.Count = n;
         v.WaypointCount = w;
+        v.MountCount = mounts;
     }
 }

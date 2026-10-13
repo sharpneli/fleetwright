@@ -68,9 +68,12 @@ public sealed class ShipDrawList
         public double SunTan;
         public bool Shadows;
         public int Class, Entity, Side;
+        /// <summary>Where its mounts' bearings start in the snapshot's ships (-1: at rest).</summary>
+        public int MountStart;
     }
 
     Placed[] placed = new Placed[64];
+    double[] mountBearings = [];
     int placedCount;
     readonly Dictionary<int, List<int>> byClass = [];
     readonly List<int> classes = [];
@@ -93,6 +96,7 @@ public sealed class ShipDrawList
         nint icon, int selectedEntity, ReadOnlySpan<bool> hidden = default, double sunMotion = 1)
     {
         this.sunMotion = sunMotion;
+        mountBearings = ships.MountBearingDeg;
         quadCount = drawCount = placedCount = 0;
         foreach (var l in byClass.Values)
             l.Clear();
@@ -135,7 +139,7 @@ public sealed class ShipDrawList
                 SunDir = horiz > 1e-9 ? new Vector2((float)(sx / horiz), (float)(sy / horiz)) : Vector2.UnitX,
                 SunTan = Math.Max(sz / Math.Max(horiz, 1e-9), 0.15),
                 Shadows = sz > 0.05 && lengthPx >= ShadowFromPx && sunMotion > 0,   // in time-lapse they'd spin
-                Class = cls, Entity = ships.Entity[k], Side = ships.Side[k],
+                Class = cls, Entity = ships.Entity[k], Side = ships.Side[k], MountStart = ships.MountStart[k],
             };
             DrawnAs[k] = (byte)((sprite > 0 ? 2 : 0) | (sprite < 1 ? 1 : 0));
             if (sprite > 0)
@@ -205,7 +209,10 @@ public sealed class ShipDrawList
             if (art.MountType[i] != type)
                 continue;
             var m = meta.Mounts[i];
-            double a = m.RestDeg * Math.PI / 180, ca = Math.Cos(a), sa = Math.Sin(a);
+            // on its bearing from the snapshot (fire control's), else at rest
+            int cm = art.ClassMount[i];
+            double deg = p.MountStart >= 0 && cm >= 0 ? mountBearings[p.MountStart + cm] : m.RestDeg;
+            double a = deg * Math.PI / 180, ca = Math.Cos(a), sa = Math.Sin(a);
             double axx = ca * 2 * e, axy = sa * 2 * e, ayx = -sa * 2 * e, ayy = ca * 2 * e;
             double ox = m.PosM[0] - axx / 2 - ayx / 2, oy = m.PosM[1] - axy / 2 - ayy / 2;
             if (shadow)

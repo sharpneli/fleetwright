@@ -248,6 +248,11 @@ public readonly record struct BatteryRow
     /// one); choosing by target is a deepening (fighting.md 4.5).</summary>
     public int Fires { get; init; }
 
+    /// <summary>The gun's full-salvo pattern, its 100% spread in range as a percentage of the range (fire_control_ref.py
+    /// Gun.pattern_pct): the shells' own dispersion, before any fire control. A placeholder until the designer gives it
+    /// (<see cref="DesignerPlaceholders.Pattern"/>).</summary>
+    public double PatternPct { get; init; }
+
     public bool Local => Directors.Count == 0;
 }
 

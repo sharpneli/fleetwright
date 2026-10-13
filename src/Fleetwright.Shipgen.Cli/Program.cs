@@ -81,6 +81,7 @@ public static class Program
             each design's sea trials on the ship model, headless: turning circles at hard over and standard rudder,
             0 -> full, coasting, a crash stop, each beside the research's band for its kind; --out writes the circles
             as DIR/<design>_turns.svg
+        shipgen duel SHOOTER [TARGET] [--range M] [--level L] [--runs N] [--minutes M] [--speed KN] [--target-speed KN] [--bearing DEG] [--course DEG] [--crew trained] [--battery B] [--seed S]
         shipgen ballistics DESIGN... [--research]
             each battery's range table from the shell it fires (docs/battle/fighting.md 4.2a): range, elevation, time
             of flight, angle of fall and striking velocity from a muzzle 10 m up, and the table's size and build time;
@@ -137,6 +138,12 @@ public static class Program
                     double.Parse(a.Get("at", "10")!, System.Globalization.CultureInfo.InvariantCulture), !a.Has("no-land"), a.Has("replay"),
                     a.Get("watch")?.Split(',').Select(int.Parse).ToArray(),
                     double.Parse(a.Get("speed", "0")!, System.Globalization.CultureInfo.InvariantCulture)),
+                "duel" => Duel.Run(a.Positional.ElementAtOrDefault(0) ?? "super_dreadnought", a.Positional.ElementAtOrDefault(1) ?? a.Positional.ElementAtOrDefault(0) ?? "super_dreadnought",
+                    n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json")),
+                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
+                    new Duel.Options(D(a, "range", 16_000 * 0.9144), a.Int("level", -1), a.Int("runs", 20), D(a, "minutes", 15), D(a, "speed", 25),
+                        D(a, "target-speed", 25), D(a, "bearing", 90), D(a, "course", 0),
+                        Enum.Parse<Fleetwright.Sim.Core.CrewQuality>(a.Get("crew", "trained")!, ignoreCase: true), a.Int("seed", 1), a.Int("battery", 0), a.Has("trace"))),
                 "ballistics" => BallisticsBench.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "trials" => SeaTrials.Run(a.Positional, a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("out")),
@@ -174,7 +181,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];
@@ -200,6 +207,8 @@ public static class Program
     }
 
     static Shipgen.Design LoadDesign(string path) => Shipgen.Design.Load(path);
+
+    static double D(Args a, string k, double def) => a.Get(k) is { } v ? double.Parse(v, System.Globalization.CultureInfo.InvariantCulture) : def;
 
     /// <summary>A design file as plain JSON data, for the fuzzer to mutate.</summary>
     static JsonObject LoadRaw(string path) => JsonFile.Load(path)!.AsObject();

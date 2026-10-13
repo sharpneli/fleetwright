@@ -262,35 +262,30 @@ public sealed class BallisticTable
         Vec3d.Cross(Ballistics.OmegaVector, forward * kx + up * ky) * -2;
 
     /// <summary>When a flight from a muzzle h0 over the sea comes down through a height (over the sea) on its way down,
-    /// in its plane, seconds; NaN if it never does.</summary>
+    /// in its plane, seconds; NaN if it never does. From the range table's time of flight, up the descent by the height
+    /// at its rate of fall, then Newton's steps on the flight: its height is concave in time (gravity), so from the late
+    /// side they close on the descent's crossing and can't jump to the climb's.</summary>
     public double Descends(double elevationDeg, double speed, double h0, double height)
     {
-        double density = DensityAt(h0), t = 0, prev = h0;
-        bool rising = true;
-        for (int n = 1; n < 8000; n++)
+        double density = DensityAt(h0), t = Fall(elevationDeg, h0, speed).Tof;
+        if (double.IsNaN(t))
+            return double.NaN;
+        if (height > 0)
+            t -= height / Math.Max(-At(elevationDeg, speed, density, t).HDot, 1);
+        for (int i = 0; i < 30; i++)
         {
-            double tn = n * TimeStep * 0.5;
-            double h = At(elevationDeg, speed, density, tn).H + h0;
-            if (rising && h < prev)
-                rising = false;
-            if (!rising && h <= height)
-            {
-                double lo = t, hi = tn;
-                for (int i = 0; i < 50; i++)
-                {
-                    double m = (lo + hi) / 2;
-                    if (At(elevationDeg, speed, density, m).H + h0 > height)
-                        lo = m;
-                    else
-                        hi = m;
-                }
-                return (lo + hi) / 2;
-            }
-            if (h < -Below + 100)
-                break;
-            (t, prev) = (tn, h);
+            if (!(t >= 0))
+                return double.NaN;
+            var p = At(elevationDeg, speed, density, t);
+            double f = p.H + h0 - height;
+            if (p.HDot >= 0)
+                return double.NaN;   // past the top going back: it never comes down through it
+            double dt = f / p.HDot;
+            t -= dt;
+            if (Math.Abs(dt) < 1e-9)
+                return t;
         }
-        return double.NaN;
+        return t;
     }
 
     /// <summary>When a shell in the world comes down through a height over the sea, seconds after firing (NaN if it never
@@ -446,6 +441,27 @@ public sealed class BallisticTable
             }
         }
         return (lo + hi) / 2;
+    }
+
+    /// <summary><see cref="ElevationFor(double, double, double)"/> from a guess near it (last second's, for a battery
+    /// following its target): the secant from there, a microsecond or so; the bracketed search if it strays.</summary>
+    public double ElevationFor(double range, double h0, double speed, double guessDeg)
+    {
+        if (double.IsNaN(guessDeg))
+            return ElevationFor(range, h0, speed);
+        double hi = Math.Min(Key.MaxElevationDeg, MaxElevationDeg - 2 * ElevationStep);
+        double a = Math.Clamp(guessDeg, MinElevation, hi), fa = Fall(a, h0, speed).Range - range;
+        double b = Math.Clamp(a + (fa > 0 ? -0.02 : 0.02), MinElevation, hi), fb = Fall(b, h0, speed).Range - range;
+        for (int i = 0; i < 6 && Math.Abs(fb) > 1e-6 && fb != fa; i++)
+        {
+            double c = b - fb * (b - a) / (fb - fa);
+            if (!(c >= MinElevation && c <= hi))
+                break;
+            (a, fa) = (b, fb);
+            b = c;
+            fb = Fall(b, h0, speed).Range - range;
+        }
+        return Math.Abs(fb) <= 1e-4 ? b : ElevationFor(range, h0, speed);
     }
 
     /// <summary>Metres of range a degree of elevation is worth there (the range table's slope): an error in elevation as
