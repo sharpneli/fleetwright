@@ -190,9 +190,12 @@ public sealed class World
         targetMs = Math.Min(targetMs, Time.Ms + 1);
     }
 
-    /// <summary>Runs events toward the target, at most about <paramref name="maxEvents"/> of them (the events of the
-    /// last moment run are finished, so the clock rests on a boundary). True when the clock reached the target.</summary>
-    public bool Advance(int maxEvents = int.MaxValue)
+    /// <summary>Runs events toward the target, at most about <paramref name="maxEvents"/> of them, and stopping once the
+    /// wall clock passes <paramref name="deadline"/> (a <see cref="System.Diagnostics.Stopwatch"/> timestamp: the host's
+    /// next snapshot is due, so a slow stretch can't hold the screen's snapshots back). Either way the events of the last
+    /// moment run are finished, so the clock rests on a boundary and where it stops changes nothing the world does. True
+    /// when the clock reached the target.</summary>
+    public bool Advance(int maxEvents = int.MaxValue, long deadline = long.MaxValue)
     {
         int n = 0;
         long last = long.MinValue;
@@ -201,7 +204,8 @@ public sealed class World
             long next = scheduler.Peek().Time.Ms;
             if (next >= Target.Ms)
                 break;
-            if (n >= maxEvents && next > last)
+            // a deadline cuts only after a moment has run (n > 0): each call makes progress, however late it starts
+            if (next > last && (n >= maxEvents || n > 0 && deadline != long.MaxValue && System.Diagnostics.Stopwatch.GetTimestamp() >= deadline))
             {
                 Time = new WorldTime(next);
                 return false;

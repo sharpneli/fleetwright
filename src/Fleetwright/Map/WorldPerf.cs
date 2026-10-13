@@ -63,7 +63,9 @@ public sealed class WorldPerf
         // the clock as the screen sees it
         bool fresh = s.Sequence != lastSequence;
         double game = lastGameMs == long.MinValue ? 0 : s.Time.Ms - lastGameMs;
-        double expected = s.Paused ? 0 : s.Speed * dt * 1000;
+        // smooth means each frame's step is the speed the clock is keeping (the achieved, which is the asked unless the
+        // sim is behind): steady motion at a lower speed is smooth, jerks are not
+        double expected = s.Paused || s.AchievedSpeed < 0.5 ? 0 : s.AchievedSpeed * dt * 1000;   // none yet after a load
         double age = Probes.Ms(now - s.PublishedAt);
         if (lastGameMs != long.MinValue && run.Count < run.Capacity)
             run.Add(((float)game, (float)expected, (float)age, !fresh && expected > 0));
@@ -195,7 +197,7 @@ public sealed class WorldPerf
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"world over {run.Count} frames ({seconds:F1} s), asked {s.Speed:G4}x, achieved {s.AchievedSpeed:F0}x at the end:");
         if (ratio.Length > 0)
-            sb.AppendLine($"  game time a frame over the asked: p1 {ratio[ratio.Length / 100]:F2}, p50 {ratio[ratio.Length / 2]:F2}, " +
+            sb.AppendLine($"  game time a frame over the achieved speed's: p1 {ratio[ratio.Length / 100]:F2}, p50 {ratio[ratio.Length / 2]:F2}, " +
                           $"p99 {ratio[ratio.Length * 99 / 100]:F2}, max {ratio[^1]:F2}; {moving.Count(r => r.Stale)} stale frames; " +
                           $"{100.0 * ratio.Count(r => Math.Abs(r - 1) < 0.25) / ratio.Length:F0}% within 25%");
         sb.AppendLine($"  snapshot age when drawn: p50 {age[age.Length / 2]:F1}, p99 {age[age.Length * 99 / 100]:F1}, max {age[^1]:F1} ms");

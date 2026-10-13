@@ -106,6 +106,24 @@ public class ScenarioTests
         Assert.Equal(w1.ComputeHash(), r.ComputeHash());
     }
 
+    /// <summary>The host cuts a slow stretch into slices that end when a snapshot is due (World.Advance's deadline):
+    /// cut at every moment it may be, the world comes out the same as one run straight through.</summary>
+    [Fact]
+    public void Slices_cut_by_a_deadline_change_nothing()
+    {
+        var (w1, _, _) = Load(Small);
+        var (w2, _, _) = Load(Small);
+        var end = w1.Time + 10 * 60_000;
+        w1.AdvanceTo(end);
+        w2.SetTarget(end);
+        int slices = 0;
+        while (!w2.Advance(int.MaxValue, deadline: 0))   // a deadline long past: every slice is one moment
+            slices++;
+        Assert.True(slices > 50, $"{slices} slices");   // the ships ride rails: ~100 moments in ten minutes
+        Assert.Equal(w1.Time, w2.Time);
+        Assert.Equal(w1.ComputeHash(), w2.ComputeHash());
+    }
+
     [Theory]
     [InlineData("""{ "name": "x" }""", "version")]
     [InlineData("""{ "scenario": 1, "start": "1916-05-31T14:00", "units": [ { "ships": [ { "design": "dreadnought" } ] } ] }""", "needs \"at\"")]

@@ -88,14 +88,17 @@ public sealed class SimHost : IDisposable
                 wake.WaitOne(100);
                 world.Probes.Add(waitProbe, t);
                 Drain();
-                double lastPublish = wall.Elapsed.TotalMilliseconds;
-                while (!stop && !Advance())
+                // behind, the world is run in slices that end when the next snapshot is due, so the screen gets one
+                // every publishMs however slow a stretch is (a slice of a fixed number of events took up to 0.8 s)
+                long publishTicks = (long)(publishMs / 1000 * Stopwatch.Frequency);
+                long due = Stopwatch.GetTimestamp() + publishTicks;
+                while (!stop && !Advance(due))
                 {
-                    if (wall.Elapsed.TotalMilliseconds - lastPublish >= publishMs)
+                    if (Stopwatch.GetTimestamp() >= due)
                     {
                         Publish();
                         Drain();
-                        lastPublish = wall.Elapsed.TotalMilliseconds;
+                        due = Stopwatch.GetTimestamp() + publishTicks;
                     }
                 }
                 Publish();
@@ -108,10 +111,10 @@ public sealed class SimHost : IDisposable
         }
     }
 
-    bool Advance()
+    bool Advance(long deadline)
     {
         long t = Probes.Now;
-        bool done = world.Advance(world.Settings.EventsPerSlice);
+        bool done = world.Advance(world.Settings.EventsPerSlice, deadline);
         world.Probes.Add(advanceProbe, t);
         return done;
     }

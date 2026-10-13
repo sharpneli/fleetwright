@@ -169,8 +169,8 @@ public sealed class WorldSession : IDisposable
             {
                 var (w, ai, start) = p.Task.Result;
                 // the clock as the player left it: the new world runs at the speed asked of the old, paused if it was
-                w.Apply(Command.SetSpeed(Current.Speed));
-                if (Current.Paused)
+                w.Apply(Command.SetSpeed(askedSpeed));
+                if (askedPaused)
                     w.Apply(Command.Pause());
                 var old = host;
                 host = Start(w);
@@ -198,7 +198,28 @@ public sealed class WorldSession : IDisposable
     /// <summary>A ship's name from the scenario, or null.</summary>
     public string? NameOf(int entity) => ScenarioStart?.ShipNames.GetValueOrDefault(entity);
 
-    public void Send(in Command c) => host.Send(c);
+    /// <summary>Sends a command to the world; the clock's (speed, pause) are remembered, so a scenario's new world
+    /// starts as asked even before the old world's snapshot shows it.</summary>
+    public void Send(in Command c)
+    {
+        if (c.System == 0)
+            switch ((WorldCommand)c.Code)
+            {
+                case WorldCommand.SetSpeed:
+                    askedSpeed = c.X;
+                    break;
+                case WorldCommand.Pause:
+                    askedPaused = true;
+                    break;
+                case WorldCommand.Resume:
+                    askedPaused = false;
+                    break;
+            }
+        host.Send(c);
+    }
+
+    double askedSpeed = 1;
+    bool askedPaused;
 
     public void Dispose() => host.Dispose();
 }
