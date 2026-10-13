@@ -69,7 +69,8 @@ public sealed class World
         log = new List<StampedCommand>(Settings.CommandLogCapacity);
         commandsProbe = Probes.Register("Commands");
         fillProbe = Probes.Register("Snapshot fill");
-        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations);
+        Encounters = new Encounters(Settings, Relations);
+        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations, Encounters);
         Register(Ships);
         Groups = new GroupSystem();
         Register(Groups);
@@ -77,6 +78,9 @@ public sealed class World
 
     /// <summary>How the sides stand: war or peace (docs/battle/plan.md step 3.1a).</summary>
     public Relations Relations { get; } = new();
+
+    /// <summary>The encounters: ships of sides at war near each other (docs/battle/plan.md step 3.1b).</summary>
+    public Encounters Encounters { get; }
 
     /// <summary>The world's groups: always registered second (<see cref="GroupSystem.Id"/>).</summary>
     public GroupSystem Groups { get; }
@@ -267,6 +271,7 @@ public sealed class World
         h.Add(Paused);
         h.Add(ViewMetresPerPixel);
         Relations.Hash(ref h);
+        Encounters.Hash(ref h);
         scheduler.Hash(ref h);
         foreach (var s in systems)
             s.Hash(ref h);

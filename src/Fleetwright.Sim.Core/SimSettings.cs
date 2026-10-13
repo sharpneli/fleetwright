@@ -221,6 +221,10 @@ public sealed record SimSettings
     /// steaming along its edge doesn't flicker between the tiers.</summary>
     public double EncounterMarginM { get; init; } = 10_000;
 
+    /// <summary>An encounter closes once its sides have been further apart than the range and margin for this long, ms
+    /// (docs/battle/plan.md step 3.1b): its ships are held in the fine tier until then.</summary>
+    public int EncounterCloseMs { get; init; } = 600_000;
+
     /// <summary>How often every pair of opposing rails is solved afresh, ms: the horizon a solve looks ahead to. A
     /// ship's rails changing (a waypoint, an order) solves it again at once.</summary>
     public int ContactScanMs { get; init; } = 3_600_000;

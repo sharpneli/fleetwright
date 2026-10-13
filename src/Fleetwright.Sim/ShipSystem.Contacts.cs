@@ -262,6 +262,7 @@ public sealed partial class ShipSystem
         {
             Derail(world, Store[a].Entity);
             Derail(world, Store[b].Entity);
+            UpdateEncounters(world);   // the encounter opens at the contact, not at the next check
         }
         else
             LookAt(world, a, b, t);
@@ -364,6 +365,29 @@ public sealed partial class ShipSystem
                         }
         Array.Sort(gridFound, 0, n);   // the order the full loop met them in
         return n;
+    }
+
+    /// <summary>The encounters brought up to date with the ships on the fine tick (Encounters.cs), while there's anything
+    /// to find or to close.</summary>
+    void UpdateEncounters(World world)
+    {
+        if (!Opposed && encounters.Count == 0)
+            return;
+        long t = Probes.Now;
+        encounters.Update(Store, world.Time.Ms);
+        probes.Add(encountersProbe, t);
+    }
+
+    /// <summary>Whether a ship of the unit in <see cref="line"/> is in an encounter (as of the last update): the
+    /// encounter holds it in the fine tier until it closes.</summary>
+    bool InEncounter()
+    {
+        if (encounters.Count == 0)
+            return false;
+        for (int i = 0; i < line.Count; i++)
+            if (Store.SlotOf(line[i].Ship) is int m and >= 0 && encounters.Of(m, line[i].Ship) != 0)
+                return true;
+        return false;
     }
 
     /// <summary>Whether an opposing ship is within the encounter range and its margin of a ship (grown by a radius: a

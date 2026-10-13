@@ -17,7 +17,7 @@ namespace Fleetwright.Sim;
 /// <see cref="Watched"/>), it's placed as its guide's orders say (<see cref="Placeable"/>); else it waits until it's
 /// steaming steady (<see cref="Steady"/>), every ship with it (<see cref="InStation"/>), so a formation is never seen
 /// to snap into place. Either way, not near an opposing ship (<see cref="NearOpposing"/>,
-/// ShipSystem.Contacts.cs), and no ship of it sliding along a coast (<see cref="Sliding"/>: the slide is the fine
+/// ShipSystem.Contacts.cs) nor in an encounter (<see cref="InEncounter"/>, held until it closes), and no ship of it sliding along a coast (<see cref="Sliding"/>: the slide is the fine
 /// tier's, docs/world/terrain-plan.md; rails don't know the land until its step S2).</item>
 /// <item><b>EXCEPTION: the map's scale.</b> <see cref="Watched"/> is the sim's one dependence on display state, which
 /// is otherwise a hard rule (docs/world/architecture.md, "Terms"). It's kept only because we have to: a formation seen
@@ -90,6 +90,8 @@ public sealed partial class ShipSystem
         if (placing ? !Placeable(guide) : !Steady(guide) || !InStation(guide))
             return false;
         if (!SlidesOnRails(world) && (Sliding() || !LandClear(world, guide)))
+            return false;
+        if (InEncounter())
             return false;
         return !NearOpposing(guide, placing ? Math.Max(GroupRadius(guide), FormationRadius()) : GroupRadius(guide));
     }

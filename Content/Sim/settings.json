@@ -71,6 +71,7 @@
   // contacts (docs/battle/plan.md step 2.5, ahead of 3.1's contact scan)
   "EncounterRangeM": 50000,
   "EncounterMarginM": 10000,
+  "EncounterCloseMs": 600000,
   "ContactScanMs": 3600000,
   "ContactTraceSteps": 64,
 

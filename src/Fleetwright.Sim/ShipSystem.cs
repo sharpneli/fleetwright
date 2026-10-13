@@ -30,6 +30,7 @@ public sealed partial class ShipSystem : IWorldSystem
 
     readonly SimSettings settings;
     readonly Relations relations;
+    readonly Encounters encounters;
     readonly List<int> used = [];   // the registry ids ships have been made of, in the order first used
     readonly Dictionary<int, Handling> handlings = [];
     readonly List<(int Ship, double AsternM, double AbeamM)> line = new(16), derailing = new(16), riders = new(16);   // a unit's ships and stations, reused (one each: they nest)
@@ -38,10 +39,11 @@ public sealed partial class ShipSystem : IWorldSystem
 
     public ShipStore Store { get; }
 
-    internal ShipSystem(SimSettings settings, ShipClassRegistry registry, Probes probes, Relations relations)
+    internal ShipSystem(SimSettings settings, ShipClassRegistry registry, Probes probes, Relations relations, Encounters encounters)
     {
         this.settings = settings;
         this.relations = relations;
+        this.encounters = encounters;
         Registry = registry;
         Store = new ShipStore(settings);
         this.probes = probes;
@@ -50,10 +52,11 @@ public sealed partial class ShipSystem : IWorldSystem
         railsProbe = probes.Register("Ships: rails check");
         railsEventProbe = probes.Register("Ships: rails events");
         landProbe = probes.Register("Ships: land");
+        encountersProbe = probes.Register("Encounters");
     }
 
     readonly Probes probes;
-    readonly int stepProbe, contactsProbe, railsProbe, railsEventProbe, landProbe;
+    readonly int stepProbe, contactsProbe, railsProbe, railsEventProbe, landProbe, encountersProbe;
 
     /// <summary>Where classes come from, by id: the ids <see cref="Spawn"/> names and the snapshot carries.</summary>
     public ShipClassRegistry Registry { get; }
@@ -230,14 +233,21 @@ public sealed partial class ShipSystem : IWorldSystem
         nextTickMs = -1;
         ShipMotion.StepAll(Store, world.Time.Ms, settings, world.Shore);
         probes.Add(stepProbe, t);
-        if (settings.RailsEnabled && world.Time.Ms % settings.RailsCheckMs == 0)
+        if (world.Time.Ms % settings.RailsCheckMs == 0)
         {
-            t = Probes.Now;
-            FineContacts(world);
-            probes.Add(contactsProbe, t);
-            t = Probes.Now;
-            RailsCheck(world);
-            probes.Add(railsProbe, t);
+            if (settings.RailsEnabled)
+            {
+                t = Probes.Now;
+                FineContacts(world);
+                probes.Add(contactsProbe, t);
+            }
+            UpdateEncounters(world);
+            if (settings.RailsEnabled)
+            {
+                t = Probes.Now;
+                RailsCheck(world);
+                probes.Add(railsProbe, t);
+            }
         }
         if (AnyFine())
             EnsureTick(world);
