@@ -41,7 +41,9 @@ public sealed unsafe partial class MapScene
     /// <summary>A short wake of positions behind each ship, sampled in game time; made when a ship is first seen.</summary>
     sealed class Track
     {
-        public readonly Vec3d[] Points = new Vec3d[TrackPoints];
+        // grows as it fills, up to TrackPoints (2.7c: 2,000 full-size tracks made at once on a scenario's first frame
+        // were 11.5 MB and a collection)
+        public Vec3d[] Points = new Vec3d[16];
         public int Count, Head;
         public long LastMs;
         public long Seen;
@@ -80,9 +82,11 @@ public sealed unsafe partial class MapScene
             tr.Seen = frame;
             if (tr.Count == 0 || s.Time.Ms - tr.LastMs >= TrackEveryMs)
             {
+                if (tr.Count == tr.Points.Length && tr.Points.Length < TrackPoints)
+                    Array.Resize(ref tr.Points, Math.Min(tr.Points.Length * 2, TrackPoints));   // not yet wrapped: in order
                 tr.Points[tr.Head] = p;
-                tr.Head = (tr.Head + 1) % TrackPoints;
-                tr.Count = Math.Min(tr.Count + 1, TrackPoints);
+                tr.Head = (tr.Head + 1) % tr.Points.Length;
+                tr.Count = Math.Min(tr.Count + 1, tr.Points.Length);
                 tr.LastMs = s.Time.Ms;
             }
 
@@ -192,7 +196,7 @@ public sealed unsafe partial class MapScene
             int stride = Math.Max(1, (int)(3 / spacingPx));
             overlay.BeginStrip(TrackColor, 1.5f);
             for (int i = (tr.Count - 1) % stride; i < tr.Count; i += stride)   // ends on the newest
-                Point(view, tr.Points[(tr.Head - tr.Count + i + TrackPoints) % TrackPoints]);
+                Point(view, tr.Points[(tr.Head - tr.Count + i + tr.Points.Length) % tr.Points.Length]);
             Point(view, p);
             overlay.End();
         }
