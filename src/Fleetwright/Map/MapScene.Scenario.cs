@@ -17,13 +17,16 @@ public sealed unsafe partial class MapScene
     /// <summary>The next scenario's camera is skipped: -map= given beside -scenario= at start (screenshots).</summary>
     public bool KeepCameraOnce { get; set; }
 
+    /// <summary>The next scenario's world starts with this ship selected (-select= beside -scenario=), or -1.</summary>
+    public int SelectOnce { get; set; } = -1;
+
     /// <summary>Once a frame, before anything reads the snapshot: a new world drops what the map held of the old.</summary>
     void NewWorld()
     {
         if (world.Generation == seenGeneration)
             return;
         seenGeneration = world.Generation;
-        selected = -1;
+        (selected, SelectOnce) = (SelectOnce, -1);
         picked.Clear();
         tracks.Clear();
         placing = false;
