@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Missions (docs/missions/plan.md), the top layer of the sim (docs/battle/plan.md "Inside Fleetwright.Sim"): what
+       starts a world and judges it. Its first scaffolding is the scenario (step 2.7): a file of forces placed on the
+       globe with their orders, given to a world as commands before it runs. Above the AI: it gives the orders a player
+       would. -->
+  <PropertyGroup>
+    <RootNamespace>Fleetwright.Sim.Missions</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Fleetwright.Sim.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fleetwright.Sim.Core\Fleetwright.Sim.Core.csproj" />
+    <ProjectReference Include="..\Fleetwright.Sim.Ships\Fleetwright.Sim.Ships.csproj" />
+    <ProjectReference Include="..\Fleetwright.Sim\Fleetwright.Sim.csproj" />
+    <ProjectReference Include="..\Fleetwright.Sim.Ai\Fleetwright.Sim.Ai.csproj" />
+  </ItemGroup>
+
+</Project>

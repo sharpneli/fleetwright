@@ -189,6 +189,15 @@ public sealed class GroupSystem : IWorldSystem
         return null;
     }
 
+    /// <summary>Names a group: the start state's (a scenario's "2nd Battle Squadron"), set before the world runs, so a
+    /// replay of the same start has it; not a command (commands carry no text). The default is "Group n" or
+    /// "Force n".</summary>
+    public void SetName(int groupId, string name)
+    {
+        if (Get(groupId) is { } g)
+            g.Name = name;
+    }
+
     /// <summary>Whether a group has anyone in its line.</summary>
     bool HasLine(int groupId) => Get(groupId) is { } g && g.Line.Count > 0;
 
@@ -308,19 +317,24 @@ public sealed class GroupSystem : IWorldSystem
         {
             if (Get(line[k]) is not { } sub)
                 continue;
-            double a = astern0, b = abeam0;
-            if (k > 0 && g.Formation == Formation.Column)
-            {
-                if (into.Count > 0)
-                    (a, b) = (into[^1].AsternM + g.SpacingM, into[^1].AbeamM);   // astern of the last ship before
-            }
-            else if (k > 0)
-            {
-                var (oa, ob) = OffsetFromGuide(g.Formation, g.SpacingM, k);
-                (a, b) = (astern0 + oa, abeam0 + ob);
-            }
+            var (a, b) = GroupStation(g.Formation, g.SpacingM, k, (astern0, abeam0), into.Count > 0 ? (into[^1].AsternM, into[^1].AbeamM) : null);
             Offsets(sub, a, b, into);
         }
+    }
+
+    /// <summary>Where the k-th group of a force's line puts its guide ship (k from 0), about the guide ship of the
+    /// whole line, given the force's own guide ship's place there and the last ship placed before it (null: none):
+    /// in line ahead a spacing astern of that last ship, else the force's offset for k. The one rule
+    /// <see cref="LineOffsets"/> and a scenario's placing (spawning a tree of groups on their stations) share.</summary>
+    public static (double AsternM, double AbeamM) GroupStation(Formation f, double spacing, int k, (double AsternM, double AbeamM) forceGuide,
+        (double AsternM, double AbeamM)? lastBefore)
+    {
+        if (k == 0)
+            return forceGuide;
+        if (f == Formation.Column)
+            return lastBefore is { } last ? (last.AsternM + spacing, last.AbeamM) : forceGuide;   // astern of the last ship before
+        var (oa, ob) = OffsetFromGuide(f, spacing, k);
+        return (forceGuide.AsternM + oa, forceGuide.AbeamM + ob);
     }
 
     // ------------------------------------------------------------------ commands

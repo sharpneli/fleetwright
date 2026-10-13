@@ -12,6 +12,7 @@
     <Project Path="src/Fleetwright.Sim.Combat/Fleetwright.Sim.Combat.csproj" />
     <Project Path="src/Fleetwright.Sim.Ai/Fleetwright.Sim.Ai.csproj" />
     <Project Path="src/Fleetwright.Sim.Core/Fleetwright.Sim.Core.csproj" />
+    <Project Path="src/Fleetwright.Sim.Missions/Fleetwright.Sim.Missions.csproj" />
     <Project Path="src/Fleetwright.Sim.Ships/Fleetwright.Sim.Ships.csproj" />
     <Project Path="src/Fleetwright.Sim/Fleetwright.Sim.csproj" />
     <Project Path="src/Fleetwright/Fleetwright.csproj" />
