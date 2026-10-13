@@ -287,13 +287,7 @@ public sealed class Sightings
         // the reading: the bearing and range with the eye's errors, as a point on the sphere
         double sr = SightModel.RangeSigmaM(eye, d), sb = SightModel.BearingSigmaRad(eye);
         double mr = Math.Max(d + sr * Gauss(ref r), 100), mb = brg + sb * Gauss(ref r) * 180 / Math.PI;
-        var z = os.Position;
-        var f = Earth.Forward(z, mb);
-        Earth.Advance(ref z, ref f, mr);
-        // its error in east/north: sr along the line of sight, sb·range across it
-        double b = mb * Math.PI / 180, ue = Math.Sin(b), un = Math.Cos(b);
-        double along = sr * sr, across = (sb * mr) * (sb * mr);
-        double r11 = along * ue * ue + across * un * un, r22 = along * un * un + across * ue * ue, r12 = (along - across) * ue * un;
+        var (z, r11, r12, r22) = Track.Reading(os.Position, mr, mb, sr, sb);
         if (ci < 0)
         {
             ref var nc = ref pic.Add(ts.Entity);
@@ -312,17 +306,8 @@ public sealed class Sightings
         {
             ref var c = ref pic.At(ci);
             var (p, v, cov) = pic.EstimateAt(ci, now, settings);
-            var e = Earth.East(p);
-            var nn = Earth.North(p);
-            var dz = z - p;
-            var (de, dn, dve, dvn) = cov.Update(Vec3d.Dot(dz, e), Vec3d.Dot(dz, nn), r11, r12, r22);
-            var moved = p + e * de + nn * dn;
-            c.Position = moved.Normalized() * Earth.Radius;
-            var vel = v + e * dve + nn * dvn;
-            var up = c.Position.Normalized();
-            c.Velocity = vel - up * Vec3d.Dot(vel, up);   // kept in the tangent plane
-            c.P = cov;
-            c.EstMs = now;
+            Track.Update(ref p, ref v, ref cov, z, r11, r12, r22);
+            (c.Position, c.Velocity, c.P, c.EstMs) = (p, v, cov, now);
         }
         ref var con = ref pic.At(ci);
         con.Side = ts.Side;

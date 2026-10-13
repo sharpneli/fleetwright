@@ -181,6 +181,7 @@ public sealed class BallisticTable
             data[f] = samples.ToArray();
             length[f] = samples.Count / Fields;
         });
+        falls = BuildFalls();
     }
 
     /// <summary>The air's density, as a fraction of the standard, for a muzzle h0 over the sea.</summary>
@@ -314,37 +315,143 @@ public sealed class BallisticTable
         return t;
     }
 
+    // ------------------------------------------------------------------ the range table (fire control's)
+
+    /// <summary>The range table's muzzle heights: every <see cref="FallHeightStep"/> m from the sea to
+    /// <see cref="FallHeightMax"/> (a muzzle over it reads the top row).</summary>
+    public const double FallHeightStep = 5, FallHeightMax = 60;
+    const int FallHeights = 13, FallFields = 4;
+
+    /// <summary>Each row's falls at sea level, by speed and muzzle height: range, time of flight, angle of fall and
+    /// striking velocity (<see cref="BuildFalls"/>).</summary>
+    readonly double[] falls;
+
+    /// <summary>The range table, from the flights: where each row's flight at each speed comes down to the sea from each
+    /// muzzle height, in the air that height gives (the density's quadratic across its three flights), found on the
+    /// flights' samples (the first sample past the top below the sea, then halving between Hermite points).</summary>
+    double[] BuildFalls()
+    {
+        var f = new double[rows * Speeds.Length * FallHeights * FallFields];
+        Parallel.For(0, rows, row =>
+        {
+            var wd = new double[3];
+            for (int sp = 0; sp < Speeds.Length; sp++)
+                for (int k = 0; k < FallHeights; k++)
+                {
+                    double h0 = k * FallHeightStep, fd = (DensityAt(h0) - Densities[0]) / (Densities[1] - Densities[0]);
+                    (wd[0], wd[1], wd[2]) = ((fd - 1) * (fd - 2) / 2, -fd * (fd - 2), fd * (fd - 1) / 2);
+                    int f0 = (row * 3 + sp) * 3, n = Math.Min(length[f0], Math.Min(length[f0 + 1], length[f0 + 2]));
+                    double H(int sample) =>
+                        wd[0] * data[f0][sample * Fields + 1] + wd[1] * data[f0 + 1][sample * Fields + 1] + wd[2] * data[f0 + 2][sample * Fields + 1];
+                    FlightPoint Point(double t)
+                    {
+                        var p = new FlightPoint();
+                        for (int l = 0; l < 3; l++)
+                            Accumulate(ref p, f0 + l, t, wd[l]);
+                        return p;
+                    }
+                    int at = ((row * 3 + sp) * FallHeights + k) * FallFields;
+                    int s = 1;
+                    while (s < n && H(s) >= H(s - 1))
+                        s++;   // up to the top
+                    while (s < n && H(s) > -h0)
+                        s++;   // down to the sea
+                    if (s >= n)
+                    {
+                        f.AsSpan(at, FallFields).Fill(double.NaN);
+                        continue;
+                    }
+                    double lo = (s - 1) * TimeStep, hi = s * TimeStep;
+                    for (int i = 0; i < 50; i++)
+                    {
+                        double m = (lo + hi) / 2;
+                        if (Point(m).H > -h0)
+                            lo = m;
+                        else
+                            hi = m;
+                    }
+                    double tf = (lo + hi) / 2;
+                    var pt = Point(tf);
+                    double along = pt.SDot * (Earth.Radius + h0 + pt.H) / Earth.Radius;
+                    (f[at], f[at + 1], f[at + 2], f[at + 3]) =
+                        (pt.S, tf, double.RadiansToDegrees(Math.Atan2(-pt.HDot, along)), Math.Sqrt(along * along + pt.HDot * pt.HDot));
+                }
+        });
+        return f;
+    }
+
     /// <summary>The fall at sea level of a flight from a muzzle h0 high, in its plane: range along the sea, time of
-    /// flight, angle of fall (degrees under the horizontal) and striking velocity.</summary>
+    /// flight, angle of fall (degrees under the horizontal) and striking velocity. From the range table: a cubic in
+    /// elevation, quadratics in speed and the muzzle's height; a fraction of a microsecond.</summary>
     public (double Range, double Tof, double FallDeg, double StrikeMs) Fall(double elevationDeg, double h0, double speed = 1)
     {
-        double t = Descends(elevationDeg, speed, h0, 0);
-        if (double.IsNaN(t))
-            return (double.NaN, double.NaN, double.NaN, double.NaN);
-        var p = At(elevationDeg, speed, DensityAt(h0), t);
-        double along = p.SDot * (Earth.Radius + h0 + p.H) / Earth.Radius;
-        return (p.S, t, double.RadiansToDegrees(Math.Atan2(-p.HDot, along)), Math.Sqrt(along * along + p.HDot * p.HDot));
+        double fe = (elevationDeg - MinElevation) / ElevationStep;
+        int e0 = Math.Clamp((int)Math.Floor(fe) - 1, 0, rows - 4);
+        double u = fe - e0;
+        Span<double> we = [Lagrange4(u, 0), Lagrange4(u, 1), Lagrange4(u, 2), Lagrange4(u, 3)];
+        double fv = (speed - Speeds[0]) / (Speeds[1] - Speeds[0]);
+        Span<double> wv = [(fv - 1) * (fv - 2) / 2, -fv * (fv - 2), fv * (fv - 1) / 2];
+        double fh = Math.Clamp(h0, 0, FallHeightMax) / FallHeightStep;
+        int k0 = Math.Clamp((int)Math.Round(fh) - 1, 0, FallHeights - 3);
+        double g = fh - k0;
+        Span<double> wh = [(g - 1) * (g - 2) / 2, -g * (g - 2), g * (g - 1) / 2];
+        double range = 0, tof = 0, fall = 0, strike = 0;
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 3; j++)
+            {
+                int at = (((e0 + i) * 3 + j) * FallHeights + k0) * FallFields;
+                for (int l = 0; l < 3; l++, at += FallFields)
+                {
+                    double w = we[i] * wv[j] * wh[l];
+                    range += w * falls[at];
+                    tof += w * falls[at + 1];
+                    fall += w * falls[at + 2];
+                    strike += w * falls[at + 3];
+                }
+            }
+        return (range, tof, fall, strike);
     }
 
     /// <summary>The elevation that throws to a range along the sea from a muzzle h0 high (the lower of the two), or NaN
-    /// beyond the gun's reach at its highest elevation.</summary>
+    /// beyond the gun's reach at its highest elevation: the range table's falls, by regula falsi (a few microseconds).</summary>
     public double ElevationFor(double range, double h0, double speed = 1)
     {
         double lo = MinElevation, hi = Math.Min(Key.MaxElevationDeg, MaxElevationDeg - 2 * ElevationStep);
-        if (!(Fall(hi, h0, speed).Range >= range))
+        double rHi = Fall(hi, h0, speed).Range - range;
+        if (!(rHi >= 0))
             return double.NaN;
-        if (Fall(lo, h0, speed).Range > range)
+        double rLo = Fall(lo, h0, speed).Range - range;
+        if (rLo > 0)
             return lo;
-        for (int i = 0; i < 50 && hi - lo > 1e-7; i++)
+        // Illinois: the false position, halving the stale end's value when the same end moves twice
+        int side = 0;
+        for (int i = 0; i < 60 && hi - lo > 1e-9; i++)
         {
-            double m = (lo + hi) / 2;
-            if (Fall(m, h0, speed).Range < range)
-                lo = m;
+            double m = (lo * rHi - hi * rLo) / (rHi - rLo), rm = Fall(m, h0, speed).Range - range;
+            if (Math.Abs(rm) < 1e-6)
+                return m;
+            if (rm < 0)
+            {
+                (lo, rLo) = (m, rm);
+                if (side == -1)
+                    rHi /= 2;
+                side = -1;
+            }
             else
-                hi = m;
+            {
+                (hi, rHi) = (m, rm);
+                if (side == 1)
+                    rLo /= 2;
+                side = 1;
+            }
         }
         return (lo + hi) / 2;
     }
+
+    /// <summary>Metres of range a degree of elevation is worth there (the range table's slope): an error in elevation as
+    /// one in range.</summary>
+    public double RangePerDeg(double elevationDeg, double h0, double speed = 1) =>
+        (Fall(elevationDeg + 0.01, h0, speed).Range - Fall(elevationDeg - 0.01, h0, speed).Range) / 0.02;
 }
 
 /// <summary>The world's ballistic tables, one per key, built when a class first needs them and read-only after; the

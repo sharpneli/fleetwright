@@ -216,11 +216,50 @@ public class BallisticsTests(ITestOutputHelper output)
             sink += s;
         }
         double ns = sw.Elapsed.TotalNanoseconds / 100_000;
-        output.WriteLine($"12\"/45 table (18°): built in {build:F0} ms, {t.Bytes / 1024} KB; a lookup {ns:F0} ns");
+        // fire control's question (4.2b), many times a second: the elevation for a range
+        sw.Restart();
+        for (int i = 0; i < 10_000; i++)
+            sink += t.ElevationFor(3000 + i % 13_000, 5 + i % 20, 0.98 + i % 5 * 0.01);
+        double elevationNs = sw.Elapsed.TotalNanoseconds / 10_000;
+        output.WriteLine($"12\"/45 table (18°): built in {build:F0} ms, {t.Bytes / 1024} KB; a lookup {ns:F0} ns, the elevation for a range {elevationNs:F0} ns");
         Assert.NotEqual(0, sink);
+        Assert.True(elevationNs < 50_000, $"{elevationNs:F0} ns for an elevation");
         long before = GC.GetAllocatedBytesForCurrentThread();
         t.At(7, 1.01, 0.999, 12.3);
         t.Fall(7, 10);
+        t.ElevationFor(12_000, 15, 1.01);
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
+
+    [Fact]
+    public void The_range_table_answers_as_the_flights_do()
+    {
+        // the range table's falls against the flights' own (the table's trajectory brought down to the sea, finely), and
+        // the elevation it gives throws to the range asked. From 2 km: closer, a shell all but level falls as √h0 and the
+        // table's 5 m heights are coarse for it (under 2 km, up to ~50 m in range, which at its fall of under 1° is under
+        // half a metre of height at a target)
+        var t = TwelveTable.Value;
+        var rng = RandomStream.FromSeed(9);
+        double worst = 0, worstTof = 0, worstBack = 0;
+        for (int k = 0, n = 0; n < 200; k++)
+        {
+            double e = -1 + 18.5 * rng.NextDouble(), h0 = 30 * rng.NextDouble(), v = 0.97 + 0.06 * rng.NextDouble();
+            double td = t.Descends(e, v, h0, 0);
+            var p = t.At(e, v, BallisticTable.DensityAt(h0), td);
+            if (p.S < 2000)
+                continue;
+            n++;
+            var f = t.Fall(e, h0, v);
+            worst = Math.Max(worst, Math.Abs(f.Range - p.S));
+            worstTof = Math.Max(worstTof, Math.Abs(f.Tof - td));
+            double range = 2000 + 16_000 * rng.NextDouble();
+            double el = t.ElevationFor(range, h0, v);
+            if (!double.IsNaN(el))
+                worstBack = Math.Max(worstBack, Math.Abs(t.Fall(el, h0, v).Range - range));
+        }
+        output.WriteLine($"the range table against the flights: worst {worst:F3} m, {worstTof * 1000:F1} ms; an elevation's fall {worstBack:F4} m off its range");
+        Assert.True(worst < 1, $"{worst:F2} m");
+        Assert.True(worstTof < 0.01, $"{worstTof:F3} s");
+        Assert.True(worstBack < 0.01, $"{worstBack:F3} m");
     }
 }
