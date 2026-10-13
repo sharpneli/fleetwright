@@ -1221,6 +1221,96 @@ at every zoom, with some hundreds more on rails. Measure load time, tick cost, f
 in "How many ships". Then do what the numbers ask for: the art disk cache, coarse mips first, the job system (the
 architecture's own step: fixed workers, struct jobs, with the test that results don't depend on the thread count).
 
+**2.7's plan (proposed 2026-10-13, to agree).** Two aims: every system built so far works with all the others at a
+Jutland's size, and it's fast enough. It's iterated: measure, fix the largest miss, measure again, until the targets
+hold or the user calls it a good spot. Nothing is optimised that a number didn't ask for.
+
+What the code has today, checked:
+- The sim thread, triple-buffered snapshots, the achieved speed and the sim thread's allocated bytes per snapshot
+  (`SimHost`). No Tracy zones on the sim thread (only the main thread's frame mark), and no GC collection counts
+  anywhere.
+- `ShipClassRegistry` builds on half the cores, **at most 4** threads, and the art is drawn on those same threads
+  (`ShipArtLibrary.Draw`, ~0.6 s of the ~0.75 s a class). 55 classes is ~10 s on 4 threads: on the target's edge
+  before anything else loads. `UploadPending` puts up 2 classes a frame, on the render thread, in play: a likely worst
+  frame.
+- `ShipDrawList` batches one instanced draw per class and layer; 55 classes is ~165 draws (fine). VRAM isn't counted.
+- The fine tick measured ~100 ns a ship (2.5's scale run). `FineContacts` walks every slot for each fine ship: 250 fine
+  ships against ~750 slots is ~190k pairs a tick, ~37M a second at 10x. The first suspect for "the grid on the sphere".
+- Dev flags place ships, groups and forces (`-ships=`, `-group=`, `-force=`) but nothing stages a fleet of 250.
+- ~20 shipped designs are of the era (great_war, victorian); a Jutland needs ~55 classes.
+- The rails' one display-dependent rule (`Watched` from the map's scale) means zooming changes what the sim does, so
+  the frame measurements must sweep the zoom, not sit at one.
+
+**2.7a The Jutland, staged.** A scenario both the app and a headless runner load:
+- **Order of battle, roughly historical:** British 28 BB, 9 BC, 8 AC, 26 CL, 78 DD, a minelayer and a seaplane
+  carrier (151); German 16 BB, 6 pre-dreadnoughts, 5 BC, 11 CL, 61 TB (99). Nested as 2.6 nests them: fleet, battle
+  and battlecruiser squadrons, divisions, flotillas, each with its admiral and formation.
+- **~55 classes:** the era's shipped designs (dreadnought, super_dreadnought, invincible, lion, tiger_1914,
+  battlecruiser, seydlitz, nassau, armoured_cruiser, light_cruiser, karlsruhe, tb_destroyer, connecticut, mikasa, ...)
+  and variants of them, saved once as designs (the knobs live in the exe, so variants are generated with the
+  designer's `Knobs` and committed as JSON, not applied at load). Each variant is its own design hash, so its own
+  class and art, as Orion, King George V and Iron Duke were.
+- **Placed** on 1916-05-31 at about 14:00 UTC, near the historical positions and courses, so the two sides close into
+  contact within the first game hour, and the Grand Fleet's approach passes near the Danish coast and Horns Reef (the
+  slide).
+- **The background:** some hundreds more on rails elsewhere (patrols, the tramp_1914 merchants on routes), and a
+  2,000-ship variant for the rails target (2,000 at 30,000x).
+- **Loaded by** `-scenario=jutland` in the app and by a headless runner (a `shipgen` command beside `trials`, which
+  already references the sim). It's a dev scenario, not the mission format; step 6 may replace its file.
+
+**2.7b The instruments,** before any fixing, so every later number comes the same way:
+- Tracy zones on the sim thread per system and model (the helm and step, rails, contacts, slide, AI, snapshot fill),
+  stubbed out in Release as the exe's are; Tracy plots of the achieved speed, the fine count and the GC counts.
+- GC collections (gen 0/1/2) on both threads in the F2 stats and in `-frametimes`' report.
+- The load's timeline: per class its build, draw, bake and upload, and the time until every class is drawn.
+- VRAM: the art's textures summed in `ShipArtLibrary`, shown in F2.
+- The headless runner's report: game seconds per real second at full tilt, ms per system per game minute, bytes
+  allocated, and the state hash, cut and replayed.
+- A scripted run in the app: the zoom swept from the globe to 10 px/m and back, pans, speed steps (1x, 10x, 100x,
+  10,000x), a force order, with `-frametimes` (worst frames, not the mean).
+
+**2.7c Up the ladder, small first** (each rung headless first, seconds-long, then in the app; the next rung only once
+this one's numbers are understood):
+1. One squadron, one class (8 ships): the baseline per ship.
+2. One fleet: the Battlecruiser Fleet against Hipper's scouting groups (~100 ships, ~15 classes), into contact.
+3. The Jutland: 250 ships, ~55 classes, the first hour of game time.
+4. The Jutland with the background on rails; then the 2,000-ship variant at 30,000x.
+Each rung checks that things work, not only that they're fast:
+- every class loads, and draws in every zoom band (sprite, icon, force marker);
+- formations form up and hold under the admirals; a force order reaches its squadrons (2.4, 2.6);
+- ships go onto rails far apart and come off them as the sides close (2.5's contacts), and steer clear of the coast
+  (S1-S3);
+- the clock's tiers change under load as they did alone; the speed asked is held, or the shortfall is the sim's
+  achieved speed, never the UI waiting;
+- a replay of the command log gives the same hash at scale;
+- picking and ordering stay instant with 250 ships.
+Bugs found go by the usual rule (fixed on the spot if small, `bugs.md` if not).
+
+**2.7d What the numbers ask for,** each fix measured on the rung that showed it, before and after. The candidates,
+not a list to do:
+- the load: more building threads at load time (the 4-thread cap), coarse mips first, the art disk cache
+  ("Compiled ships on disk", earlier if the 10 s and 1 s targets need it), uploads spread so no frame goes over;
+- the tick: the grid on the sphere for `FineContacts`, the job system (fixed workers, struct jobs, results not
+  depending on the thread count), the ECS tricks if the per-ship models are the cost;
+- the frame: texture arrays (deferred here since 2.3), the draw list's CPU cost, labels and tracks at 250 ships;
+- the garbage: whatever the GC counts show, on either thread.
+
+**Done means:** the targets in "How many ships" hold for the Jutland as it stands, **with headroom** for what 3 and 4
+add (sighting, fire control, shells, flooding), since the sim has no fighting yet. Proposed: at 10x, everything that
+runs today takes at most a quarter of the sim thread. The numbers go in a "Measured" table here; the committed tests
+stay small (a mini-Jutland headless: no allocation in play, the same hash on replay, no ship on land), as 2.5's do.
+
+Questions to agree at the start:
+1. The scenario as a JSON file under `Content/Scenarios/` (a dev precursor of missions) rather than C# in the dev
+   flags. Proposed: JSON.
+2. The ~55 classes as variants of the shipped designs now, the historical classes designed properly in a later
+   designer session. Proposed: variants.
+3. Roughly historical positions and timing (it exercises contacts and the Danish coast), or an abstract meeting in
+   open sea. Proposed: historical.
+4. The headroom: a quarter of the sim thread at 10x for today's systems, or another share.
+5. The reference machine for "a modern machine" and "an 8-core desktop": this one has 32 logical cores, which flatters
+   anything threaded. Measure with the job system capped at 8 workers too.
+
 ### 3. Seeing and knowing
 
 **3.1 Contacts and encounters.**
