@@ -3,7 +3,8 @@
 2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
 as its steps are built. **4.0, 4.1, 4.2a, 4.2b and 4.2c done 2026-10-13, 4.3a (what a hit does), 4.3b (fire,
 flooding and going down) and 4.4 (damage seen) 2026-10-14: the first pass is done; 4.6 (torpedoes) is done
-2026-10-14 (collisions moved out to 4.11, decision 16), and 4.8 is next. 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence (decisions 13 and 14, 2026-10-14): a later
+2026-10-14 (collisions moved out to 4.11, decision 16). 4.8 and 4.9, the coarse tier's damage and fire, move after the
+fine-tune pass (decision 17). 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence (decisions 13 and 14, 2026-10-14): a later
 tier of their own, the fine-tune pass, once most of the other components are in.** It details step 4 of
 `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite 4.1, 4.3, 4.6, 4.7 and 4.9) and their
 subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
@@ -174,6 +175,12 @@ updates this doc and `plan.md`. **The order** (decision 8: shells first, baby st
 They're a separate tier, independent of the rest, taken once most of the other components are in place: the game is
 playable from the damage side after 4.4, so everything else can be built and tested on the damage model as it is. Their
 sections stay below under their numbers (other docs cite them) as the tier's list.
+
+**Moved later still: the coarse tier** (decision 17). 4.8 (damage in the coarse tier) and 4.9 (coarse fire) come
+substantially later, after the fine-tune passes of all the systems: coarse fire is a model fitted to the fine chain, so
+it's fitted once the fine chain has settled. Engagements are playable on the fine tier as they are, and there are no
+wars between NPC navies yet to need fighting at speed. Until then guns stay silent in the coarse tier, and 4.3b's 1 s
+flooding and fire run on wet ships in any tier.
 
 **Each piece arrives with the step that first uses it** (the review, decision 12): a contract, a system, a column or a
 command is made where something runs and is tested with it, never ahead of it as an empty shell.
@@ -1199,13 +1206,13 @@ As plan.md has it: static fields with a density, a depth and an owner, laid by a
 sweepers; crossing a field is an event in every clock tier, solved when a leg is anchored; a navy knows its own fields
 and learns others'. The hit is a `Hit` from a mine, as a torpedo's.
 
-### 4.8 Damage in the coarse tier
+### 4.8 Damage in the coarse tier (moved later: after the fine-tune pass, decision 17)
 
 Flooding, fire and repair at the coarse step, written to hold at a minute (inflow integrated over the step in closed
 form, not stepped), so a ship still flooding or burning goes on at speed and sinks there if it must. Until this step,
 4.3b's 1 s flooding runs on wet ships in any tier (correct, and slower at speed).
 
-### 4.9 Coarse fire
+### 4.9 Coarse fire (moved later: after the fine-tune pass, decision 17)
 
 As plan.md has it (agreed 2026-10-13): at the coarse step, expected hits from the range, the fire-control level, the
 guns, and the target's size and aspect (`quick_hit_probability` and the MPI-by-salvo table, `fire-control-research.md`
@@ -1375,3 +1382,6 @@ The user's, 2026-10-14, after the first pass:
 15. **Foundering stays as it is for now** (question 7): 4.5 will help, and torpedoes (4.6) are the real answer: guns
     wreck ships, torpedoes finish the immobile ones.
 16. **Collisions move out of 4.6** to a later step of their own (4.11): 4.6 is torpedoes.
+17. **The coarse tier comes substantially later** (4.8 and 4.9): after the fine-tune passes of all the systems, so the
+    coarse model is fitted to the fine chain once it has settled. Engagements are playable as they are, and there are no
+    NPC wars yet that need fighting at speed.

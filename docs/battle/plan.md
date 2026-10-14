@@ -15,7 +15,9 @@ admirals' distribution, Fight) are done (2026-10-13), 4.3a (what a hit does: ter
 enemy sees, `shipgen flood`) and 4.4 (damage seen: sinking, trim and list drawn through the height map, turret tints,
 scorches, fires, wrecks, the damage report) are done (2026-10-14): the first pass of fighting is complete. 4.6
 (torpedoes: launchers, torpedoes as tracks, the underwater hit, the destroyers' attack, `shipgen torpedo`, the `flotilla`
-scenario) is done (2026-10-14); collisions moved out of it to a later step, 4.11 (the user, 2026-10-14). 4.8 is next. 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence (the user,
+scenario) is done (2026-10-14); collisions moved out of it to a later step, 4.11 (the user, 2026-10-14). 4.8 and 4.9 (the coarse tier's damage and
+fire) move substantially later, after the fine-tune passes of all the systems (the user, 2026-10-14, `fighting.md`
+decision 17). 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence (the user,
 2026-10-14): a later fine-tune tier of their own, once most of the other components are in.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
@@ -1816,10 +1818,12 @@ decision 14).
   entries in its picture, and orders route around what it knows.
 - **The hit** is an underwater explosion at a point on the hull, into the same damage as a torpedo.
 
-**4.8 Damage in the coarse tier** (the tier itself is 2.8's): flooding, fire and repair at the coarse step, written
+**4.8 Damage in the coarse tier** (moved later 2026-10-14: after the fine-tune passes, `fighting.md` decision 17; the
+tier itself is 2.8's): flooding, fire and repair at the coarse step, written
 to be stable at a minute, so a damaged ship still flooding or burning keeps going while the clock is compressed.
 
-**4.9 Coarse fire (agreed 2026-10-13: after the fine fire has been iterated enough to give data).** At the coarse
+**4.9 Coarse fire (agreed 2026-10-13: after the fine fire has been iterated enough to give data; moved later 2026-10-14,
+after the fine-tune passes, `fighting.md` decision 17).** At the coarse
 step, fire is expected hits (range, fire-control level, the guns, the target's size and aspect:
 `fire_control_ref.py` `quick_hit_probability`), sampled from a seeded stream, with no shells in flight. Each hit
 goes through 4.1's query and the damage model, so damage is the same kind in either tier. Misses can be sampled as
