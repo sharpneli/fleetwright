@@ -1,9 +1,16 @@
 # Ship sprites lit: relief, materials, a sun
 
-Draft for agreement, 2026-10-14. The ship sprites get a simple PBR model (albedo, normal, roughness, metallic, a
-little ambient occlusion) and a sun, so plates catch the light, barrels show a line of specular on close zoom and
+Agreed 2026-10-14. The ship sprites get a PBR-inspired model (albedo, normal, roughness, metallic, a little ambient
+occlusion), a sun and a mild moon, so plates catch the light, barrels show a line of specular on close zoom and
 brass shines. The sprites stay 2D: what's new is per-pixel surface data baked beside the colour and a richer sprite
 shader.
+
+**Why:** the ships should look more real. Cartoonish ships will clash with the realistic effects to come, so the
+target is a realistic look, not an illustrated one.
+
+**PBR-inspired, not strict PBR.** The BRDF is the standard one so materials behave plausibly, but the lights are set
+by eye: the sun's strength and colour, the moon, the ambient. Nothing is held to energy conservation or physical
+units where looks say otherwise.
 
 ## Restrictions
 
@@ -50,19 +57,27 @@ under today's if we ever need to (a CPU encoder on the building thread).
 - **Sun:** one directional light, its colour warming and dimming as the sun gets low, zero below the terminator
   (the same smoothstep the globe and `Light` use, so ships and sea darken together; time-lapse keeps today's
   day-average path).
+- **Moon:** at night a second directional light takes over as the sun goes, mild and cool, from opposite the sun
+  (a full moon's place) raised to a fixed elevation so it never grazes. Enough for the hull's relief and a faint glint
+  on wet-looking paint, never daylight. There is no moon in the sim: the light is display only and changes nothing
+  the sim sees (night sight stays starlight, `SimSettings`). A moon with phases can replace it later behind the same
+  two uniforms (direction, colour).
 - **Diffuse:** Lambert, albedo x (1 - metallic).
 - **Specular:** GGX with Schlick Fresnel and the Smith term, F0 = 0.04 for paint, wood and canvas, the albedo for
   metal. Roughness widened by **Toksvig** from the mip-averaged normal's length, so a barrel's glint is sharp at
   10 px/m and fades out by itself as the mips blur the cylinder away. That is the "specular on closer zoom", with no
   zoom rule.
-- **Ambient:** a hemisphere: sky above, the sea's colour below (from `globe.frag`'s `DaySea`), times AO.
+- **Ambient:** a hemisphere: sky above, the sea's colour below (from `globe.frag`'s `DaySea`), times AO. Its
+  colours and strength by day, at dusk and at night are tuned by eye, in one place (a small table of uniforms the
+  ship viewer's panel can edit live).
 - **Environment:** metal with nothing to reflect looks black, and there is no cube map in a single pass. An analytic
   sky instead: the reflected ray's z picks zenith, horizon haze or sea, blurred toward the hemisphere's average by
   roughness, weighted by the Karis analytic env-BRDF fit. A few ALU, no textures.
 - **Out:** encoded back to the frame's sRGB-coded values, highlights through a soft shoulder, so a glint rolls off
   instead of clipping (the blit has no tonemap and we don't add one).
 - **Calibration rule:** a flat, matte, up-facing pixel at the reference sun (high noon) comes out as today's colour.
-  The look doesn't shift; it gains relief and glints. Step L1 checks this with a screenshot diff.
+  The look doesn't shift; it gains relief and glints. Step L1 checks this with a screenshot diff. This anchors the
+  start only: the lights may move off it later by eye.
 
 **Frames for free.** The quad's own edges (u along the sprite's x, v along its y, metres from the eye) are its frame.
 The vertex shader takes the world's sun from the View uniform and projects it and the eye (-corner) onto
@@ -105,28 +120,32 @@ colour.
 `hull.png`, for looking at. `sprite-check` and `svg-check` change only where the art changes (step L3), each change
 through `golden-update` and noted in `shipgen/golden/README.md`.
 
-## Metallic, honestly
+## Metallic: realistic first
 
-Almost everything on a warship is painted, and paint is a dielectric. The metallic channel is for what wasn't
-painted: brass (ventilator rims, binnacles, Victorian fittings), bronze, bare steel (anchor chain, worn muzzles), the
-searchlights' glass and mirrors. The barrels' line of light is gloss paint on a cylinder, not metal. If that reads
-too plain, a look can push painted steel toward a stylised sheen (metallic 0.2-0.3) in its materials table, outside
-the default looks: a look decision, not a shader one.
+Decided: realistic first, and glossy paint is fine. Almost everything on a warship is painted, and paint is a
+dielectric, so painted steel is metallic 0 with a fairly low roughness (gloss paint). The metallic channel is for
+what wasn't painted: brass (ventilator rims, binnacles, Victorian fittings), bronze, bare steel (anchor chain, worn
+muzzles), the searchlights' glass and mirrors. The barrels' line of light is gloss paint on a cylinder, not metal.
+A stylised sheen on painted steel stays possible per look (its materials table) but isn't in the default looks.
 
 ## Steps
 
 **L1. The lighting, flat.** The shared lighting in one GLSL file both sprite shaders include (`Shaders/Source/Include/`,
 so `compile_shaders.bat`'s `*.glsl` loop doesn't compile it alone; glslangValidator's `#include` via
 `GL_GOOGLE_include_directive`). The sun in the View uniform, the quad frame in the vertex shader, linear-light
-lighting with a flat normal and one default material (paint, roughness 0.6), the sRGB round trip, the shoulder.
-Done when the reference-sun screenshot matches today's within a few levels, a low sun warms and dims the ships with
-the sea, and DevRelease frame time is unchanged within noise.
+lighting with a flat normal and one default material (gloss paint, roughness ~0.4), the sRGB round trip, the
+shoulder, the moon and the ambient table. The ship viewer and the poster go through the same shader: the poster's
+"lit" (a fixed sun) or "flat" (albedo as drawn: flat normal, no specular, ambient 1) is a switch in its uniforms, not
+another pipeline. Done when the reference-sun screenshot matches today's within a few levels, a low sun warms and
+dims the ships with the sea, night shows the ships faintly by the moon, and DevRelease frame time is unchanged within
+noise.
 
 **L2. Relief from the height map.** The relief bake mode, plateaus only, from the existing columns for the hull and
 from the turret drawing's own parts; the normal + AO texture, its mips, the upload, the binding. Block edges, funnels,
 barbettes and turret roofs catch the sun; decks darken at the walls' feet. The ship viewer gets the debug views
-(albedo, normal, AO, roughness, metallic, lit) next to its sun sliders: this is the bench for the rest. Measure bake
-time per class and VRAM (`ShipArtLibrary.Bytes`).
+(albedo, normal, AO, roughness, metallic, lit) next to its sun sliders: this is the bench for the rest. The ink
+outlines get a look knob (`Shapes.Outline`, 0-1 on `Painter.Ln`'s opacity and width) and side-by-side captures at
+0, 0.5 and 1 settle its default. Measure bake time per class and VRAM (`ShipArtLibrary.Bytes`).
 
 **L3. Profiles, and the painted light taken out.** Cylinders, domes and slopes tagged in `TurretArt`, `Clutter` and
 the masts and boats; the painted highlights that the normals now carry removed (the barrel highlight stroke, the 1.12
@@ -139,15 +158,19 @@ bare steel shine, decks go matte, eras differ.
 specular, the light tilted with the heel and trim (the sea plane's slopes are already in the quad), turret damage
 tints in albedo before the light.
 
-Each step: Release build, screenshots at 10, 3 and 1 px/m (`-screenshot`, sun high and low), DevRelease frame times
-at a Jutland, the bake bench.
+Each step: Release build, screenshots at 10, 3 and 1 px/m (`-screenshot`, sun high and low, and night), before and
+after side by side, DevRelease frame times at a Jutland, the bake bench. Looks are judged on the captures, not
+decided ahead.
 
-## Open questions
+## Decisions
 
-1. **The ink outlines.** `Painter.Ln`'s dark outlines are the illustrated style. With real rims they may read as
-   double edges. Keep, thin, or fade them by a look knob? Decide on L2's screenshots.
-2. **The poster** (`ProfileScene`): lit with a fixed noon sun, or flat albedo as a drawing? The flat one loses the
-   painted highlights in L3, so it would look flatter than today.
-3. **How metallic:** physically plausible paint by default (above), or a stylised sheen on the default looks too?
-4. **Spare channels:** the material texture has two free if it goes RGBA8: wetness (spray, rain later) and soot
-   would fit there instead of in the scorch quads. Not needed until weather.
+1. **Realistic first** (2026-10-14): plausible materials, glossy paint, metal only where it's bare (above).
+2. **The ink outlines** are settled by visual comparison at L2, through the outline knob.
+3. **The poster** is configurable, lit or flat, on the same shader as the sprites.
+4. **Night:** a mild moon and an ambient set by eye; display only.
+5. **PBR-inspired:** a plausible BRDF, lights by eye.
+
+## Open
+
+- **Spare channels:** the material texture has two free if it goes RGBA8: wetness (spray, rain later) and soot
+  would fit there instead of in the scorch quads. Not needed until weather.
