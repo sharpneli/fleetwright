@@ -18,8 +18,8 @@ public static class RenderGolden
     public static JsonNode? State(string root, string kind, string name) =>
         JsonFile.Load(Path.Combine(root, "golden", kind, "capture.json"))!["cases"]![name];
 
-    public static ShipSprites Draw(GoldenCase c) =>
-        ShipSprites.Build(ShipDesign.Build(Design.Load(c.DesignPath)), Scale, Mips);
+    public static ShipSprites Draw(GoldenCase c, double? outline = null) =>
+        ShipSprites.Build(ShipDesign.Build(Design.Load(c.DesignPath)), Scale, Mips, outline: outline);
 
     /// <summary>Every SVG of the case against golden/svg: hull, height map and each turret type. Empty when it
     /// matches or the case isn't drawn (it doesn't build).</summary>
@@ -74,7 +74,9 @@ public static class RenderGolden
         var spriteCapture = JsonFile.Load(spriteCapturePath)!;
         var spriteCases = spriteCapture["cases"]!.AsObject();
         var fresh = cases.Where(c => !svgCases.ContainsKey(c.Name)).Select(c => c.Name).ToHashSet();
-        var freshSprite = cases.Where(c => !spriteCases.ContainsKey(c.Name)).Select(c => c.Name).ToHashSet();
+        // a new case: one the SVG capture hasn't seen either (only the shipped designs have sprite goldens, so a fuzz case
+        // missing from the sprite capture isn't new)
+        var freshSprite = cases.Where(c => fresh.Contains(c.Name) && !spriteCases.ContainsKey(c.Name)).Select(c => c.Name).ToHashSet();
         var svg = new System.Collections.Concurrent.ConcurrentBag<(string Name, double MaxH, long Clutter)>();
         var sprite = new System.Collections.Concurrent.ConcurrentBag<string>();
         Parallel.ForEach(cases, new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2) }, c =>

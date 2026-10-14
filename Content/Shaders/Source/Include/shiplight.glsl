@@ -12,8 +12,17 @@ layout(set = 3, binding = LIGHTS_BINDING) uniform Lights
     vec4 moonRad;   // rgb: the moon's
     vec4 skyAmb;    // rgb: the ambient from above; w: the light's level, sRGB-coded (a flat white deck), for unlit constants
     vec4 seaAmb;    // rgb: the ambient from below
-    vec4 look;      // x: 1 lit, 0 flat (the albedo as drawn); y: the default roughness; z: the shoulder's knee; w: specular
+    vec4 look;      // x: 1 lit, 0 flat (the albedo as drawn), 2-5 debug views (normal, AO, roughness, metallic); y: the
+                    // default roughness; z: the shoulder's knee; w: specular
 };
+
+// a sprite's normal + AO texel (biased xyz, AO in a; ReliefMaps) as a unit normal; the mips' shortened normals are
+// renormalised here until L4 reads their length (Toksvig)
+vec3 unpackNormal(vec4 t)
+{
+    vec3 n = t.xyz * 2.0 - 1.0;
+    return normalize(n + vec3(0.0, 0.0, 1e-4));
+}
 
 vec3 srgbToLinear(vec3 c)
 {
@@ -46,11 +55,16 @@ vec3 specularPi(vec3 n, vec3 v, vec3 l, float nl, float a, vec3 f0)
 
 // A pixel's colour, sRGB-coded and not premultiplied, from its albedo as drawn (sRGB-coded): n its normal, v toward
 // the eye, lSun and lMoon toward the lights (all unit, in the sprite's frame); roughness, metallic, ambient occlusion.
-// Flat (look.x 0): the albedo as drawn.
+// Flat (look.x 0): the albedo as drawn; the debug views show one input as grey (the normal biased, as colour).
 vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float roughness, float metallic, float ao)
 {
     if (look.x < 0.5)
         return albedoSrgb;
+    if (look.x > 1.5)
+    {
+        int view = int(look.x + 0.5);
+        return view == 2 ? n * 0.5 + 0.5 : vec3(view == 3 ? ao : view == 4 ? roughness : metallic);
+    }
     vec3 albedo = srgbToLinear(albedoSrgb);
     vec3 diffuse = albedo * (1.0 - metallic);
     vec3 f0 = mix(vec3(0.04), albedo, metallic);

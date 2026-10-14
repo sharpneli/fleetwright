@@ -229,7 +229,7 @@ public static class HullArt
     public static Result Build(TopView v, Palette pal, Shapes sh, double scale, int align = 2)
     {
         var spec = v.Dressing;
-        var P = new Painter(pal, scale, sh);
+        var P = new Painter(pal, scale, sh) { Outline = Looks.PlanOutline(sh) };
         // the hull is the physical one, whatever the look: seen from above at its widest, and the deck inside it (narrower
         // where the sides lean in); what is drawn on deck keeps to the deck
         var outer = v.Hull;

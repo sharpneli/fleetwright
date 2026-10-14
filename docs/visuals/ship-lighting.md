@@ -42,6 +42,10 @@ units where looks say otherwise.
   `Include/shiplight.glsl` (flat normal, one material) from the lights `ShipLight.cs` computes once a frame at the
   view's centre (`LightTable`: the one place the lights are set; `ShipLights.Compute`). Before L1 it was one number,
   0.3 + 0.7 x the terminator. The shadows (`shipmap_shadow.frag`, the turret silhouettes) take the stronger light.
+- **Relief since L2** (2026-10-14): the bake writes a relief layer (`GpuBaker.RenderRelief`, R32F metres) from draws
+  with a `Style.Relief` (plateaus: the hull's height columns at their exact tops, the turret drawing's parts), and
+  `ReliefMaps` makes each layer's normal + AO (RGBA8) on the building thread, mipped by coverage; the sprite shaders
+  sample it beside the colour.
 - **The frame is display-referred.** The sprite textures are UNORM, not sRGB, blended as they are; the blit copies
   with no tonemap. So the sea and the sprites are sRGB-coded values, and anything over 1 clips.
 
@@ -192,6 +196,40 @@ barbettes and turret roofs catch the sun; decks darken at the walls' feet. The s
 (albedo, normal, AO, roughness, metallic, lit) next to its sun sliders: this is the bench for the rest. The ink
 outlines get a look knob (`Shapes.Outline`, 0-1 on `Painter.Ln`'s opacity and width) and side-by-side captures at
 0, 0.5 and 1 settle its default. Measure bake time per class and VRAM (`ShipArtLibrary.Bytes`).
+
+*Done 2026-10-14.* As planned, with these findings:
+
+- **Heights.** The hull's relief is the height map's columns at their exact tops (`HeightMap.Build` tags each column a
+  plateau). The turrets' come from the physical model: the gun house at `Geometry.TurretHeight`, the barrels at
+  `BarrelBand`'s axis (0.55 of it) plus half their width; hoods, cupolas, ears and hatches get a nominal 0.3 m over
+  the roof (no hitbox gives them a height: L3's domes and slopes replace it), an open mount's platform 0.15 m.
+- **Normals and AO** (`ReliefMaps`, `Bake/Relief.cs`): a [1 2 1] blur, Sobel, slopes clamped at 2.5 (68°), so a wall
+  is a 2-3 px rim; AO is the horizon in 16 directions at 0.25-2 m, strength 0.85, then smoothed by a pixel (8
+  directions left a star around every post). The mips average by the colour's coverage, not renormalised; the
+  shader renormalises until L4's Toksvig reads the length.
+- **The look:** up close, walls show a dark lee rim and a lit sun-side edge, the feet of blocks darken, vents read as
+  domes. At 3 m/px it is subtle; at a 7° sun it all goes dark (as L1 found, a low sun puts little light on a level
+  deck).
+- **Outlines: 0.5** (`Looks.DefaultOutline`; `Shapes.Outline` per look, `-outline=` for captures). Side by side at
+  0, 0.5 and 1 in the viewer (8 px/m) and on the map (10 and 3 px/m): at 1 the inks and the new dark rims double up;
+  at 0 the relief carries every edge and close-ups look the most physical, but small fittings blur into the deck at
+  3 m/px; 0.5 keeps silhouettes and fittings crisp at range and lets the relief speak up close. Revisit after L3,
+  when the cylinders and domes add relief. The side view (the poster's profile) keeps full inks; the poster's plan
+  takes the half weight and reads well. 313 cases' SVG goldens rewritten (`shipgen/golden/README.md`).
+- **Memory: 326 -> 599 MB at Jutland** (53 classes, `ShipArtLibrary.Bytes`): the RGBA8 normal + AO nearly doubles
+  the art, above the estimate (which assumed a smaller base). L4's material layer would add ~half again. Fine on an
+  8 GB card; if it bites, BC5 for the normal and AO into the material texture (or BC4) bring it back, as planned.
+- **Bake time** per class (the CLI's bake, all layers): 0.01-0.03 s before, 0.03-0.18 s now (fleet carrier the
+  most), on the building threads. png-check's 70 designs: 3.0 -> 9.1 s.
+- **Frame times** (DevRelease, Jutland running 3000 frames, alternating builds): equal in both of the machine's
+  refresh states (8.38 ms mean at 120 Hz, CPU 0.27 ms either way); CPU p99 2.0 vs 1.4 ms from the doubled uploads
+  while classes arrive (longest upload frame 6.6 ms).
+- **Tools:** the viewer's "show" picks lit, albedo, normal, AO, roughness or metallic (shadows off but for lit);
+  `-viewer=sun:AZ:EL,moon:AZ:EL:PHASE,shade:NAME,at:X:Y:ZOOM,mip:N` sets the viewer for captures. `shipgen bake`
+  writes relief.png, normal.png (+ mips) and each turret's.
+- **Fixed on the way:** `golden-update` took every fuzz case (none has a sprite golden) for a new case, drew it and
+  crashed on the unbuildable; `png-check` crashed on `borodino` (no Python PNGs) and now also draws at Python's full
+  ink (`outline: 1`), as does `BakeTests`.
 
 **L3. Profiles, and the painted light taken out.** Cylinders, domes and slopes tagged in `TurretArt`, `Clutter` and
 the masts and boats; the painted highlights that the normals now carry removed (the barrel highlight stroke, the 1.12

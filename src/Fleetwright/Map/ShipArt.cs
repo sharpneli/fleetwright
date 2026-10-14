@@ -9,15 +9,18 @@ using static SDL.SDL3;
 namespace Fleetwright.Map;
 
 /// <summary>One class's art on the GPU (docs/battle/plan.md "The shape": ShipClassArt): the hull, its height map and
-/// each turret type's image, mipmapped, and the sprite's layout. The CPU images are gone once these exist.</summary>
+/// each turret type's image, and the hull's and each turret's normal + AO (docs/visuals/ship-lighting.md), mipmapped,
+/// and the sprite's layout. The CPU images are gone once these exist.</summary>
 public sealed unsafe class ShipArt
 {
     public required SpriteMeta Meta { get; init; }
     public required nint Hull { get; init; }
     public required nint Height { get; init; }
+    public required nint HullNormal { get; init; }
 
-    /// <summary>Each turret type's texture, in the order of <see cref="TurretTypes"/>.</summary>
+    /// <summary>Each turret type's texture and normal + AO, in the order of <see cref="TurretTypes"/>.</summary>
     public required nint[] Turrets { get; init; }
+    public required nint[] TurretNormals { get; init; }
     public required string[] TurretTypes { get; init; }
 
     /// <summary>Each mount's turret type (an index into <see cref="Turrets"/>), and the mounts by ascending z.</summary>
@@ -51,7 +54,10 @@ public sealed unsafe class ShipArt
     {
         SDL_ReleaseGPUTexture(device, (SDL_GPUTexture*)Hull);
         SDL_ReleaseGPUTexture(device, (SDL_GPUTexture*)Height);
+        SDL_ReleaseGPUTexture(device, (SDL_GPUTexture*)HullNormal);
         foreach (var t in Turrets)
+            SDL_ReleaseGPUTexture(device, (SDL_GPUTexture*)t);
+        foreach (var t in TurretNormals)
             SDL_ReleaseGPUTexture(device, (SDL_GPUTexture*)t);
     }
 }
@@ -102,12 +108,7 @@ public sealed unsafe class ShipArtLibrary : IDisposable
         var sprites = ShipSprites.Build(ship, SpriteScale, MipLevels);
         var baked = ShipBake.Bake(sprites, bakers.Value!);
         int[] classMount = ShipArt.ClassMounts(sprites.Meta, cls);
-        pending.Enqueue((id, sprites, new SpriteImages
-        {
-            Hull = SpriteImages.Chain(baked.Hull, false, MipLevels),
-            Height = SpriteImages.Chain(baked.Height, true, MipLevels),
-            Turrets = baked.Turrets.ToDictionary(t => t.Key, t => SpriteImages.Chain(t.Value, false, MipLevels), StringComparer.Ordinal),
-        }, classMount));
+        pending.Enqueue((id, sprites, SpriteImages.Of(baked, MipLevels), classMount));
     }
 
     /// <summary>On the render thread, between frames: uploads up to <paramref name="max"/> classes' art.</summary>
@@ -118,7 +119,8 @@ public sealed unsafe class ShipArtLibrary : IDisposable
         long t = System.Diagnostics.Stopwatch.GetTimestamp();
         for (int k = 0; k < max && pending.TryDequeue(out var p); k++)
         {
-            Bytes += Size(p.Images.Hull) + Size(p.Images.Height) + p.Images.Turrets.Values.Sum(Size);
+            Bytes += Size(p.Images.Hull) + Size(p.Images.Height) + p.Images.Turrets.Values.Sum(Size)
+                + Size(p.Images.HullNormal) + p.Images.TurretNormals.Values.Sum(Size);
             Uploaded++;
             var meta = p.Sprites.Meta;
             var types = meta.TurretTypes.Keys.ToArray();
@@ -128,8 +130,10 @@ public sealed unsafe class ShipArtLibrary : IDisposable
                 Meta = meta,
                 Hull = (nint)SpriteTextures.Upload(device, p.Images.Hull, height: false),
                 Height = (nint)SpriteTextures.Upload(device, p.Images.Height, height: true),
+                HullNormal = (nint)SpriteTextures.Upload(device, p.Images.HullNormal, height: false),
                 TurretTypes = types,
                 Turrets = [.. types.Select(t => (nint)SpriteTextures.Upload(device, p.Images.Turrets[t], height: false))],
+                TurretNormals = [.. types.Select(t => (nint)SpriteTextures.Upload(device, p.Images.TurretNormals[t], height: false))],
                 MountType = [.. mounts.Select(m => Array.IndexOf(types, m.Type))],
                 DrawOrder = [.. Enumerable.Range(0, mounts.Count).OrderBy(i => mounts[i].Z)],
                 ClassMount = p.ClassMount,
@@ -162,7 +166,8 @@ public sealed unsafe class ShipArtLibrary : IDisposable
     }
 }
 
-/// <summary>A mip chain into a sampled GPU texture: RGBA (premultiplied) or a one-channel height map.</summary>
+/// <summary>A mip chain into a sampled GPU texture: RGBA (premultiplied colour, or a normal + AO) or a one-channel
+/// height map.</summary>
 public static unsafe class SpriteTextures
 {
     public static SDL_GPUTexture* Upload(SDL_GPUDevice* device, Image8[] levels, bool height)

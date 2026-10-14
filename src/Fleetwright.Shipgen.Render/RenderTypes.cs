@@ -41,6 +41,11 @@ public sealed record Shapes
 {
     /// <summary>The clutter kit (Clutter.Kits), by default the era's.</summary>
     public string? Clutter { get; init; }
+
+    /// <summary>The plan sprites' ink outlines (Painter.Ln), 0-1: their opacity, and their width from half to full;
+    /// 0 none. Lit sprites carry their edges in the relief (docs/visuals/ship-lighting.md, L2). Unset:
+    /// Looks.DefaultOutline.</summary>
+    public double? Outline { get; init; }
     public double? ClutterDensity { get; init; }
     public double? RoofPlanks { get; init; }
     public bool? RoofRails { get; init; }

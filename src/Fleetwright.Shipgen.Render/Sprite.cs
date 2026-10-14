@@ -3,7 +3,8 @@ namespace Fleetwright.Shipgen.Render;
 /// <summary>The height map: the static part of the ship (hull, superstructure, funnels, masts, AA, boats, barbettes and
 /// the clutter) as columns, grey = metres above the waterline / HeightStepM (0 = sea). Every pixel is a solid
 /// column from the sea up to its height; the game casts shadows from it (see ../shipgen/shadow.py for the reference
-/// shadow march until it moves here).</summary>
+/// shadow march until it moves here). Each column is also a plateau at its exact top: the hull's relief layer, which
+/// the lighting's normals and AO come from.</summary>
 public static class HeightMap
 {
     public const double HeightStepM = 0.25;      // one grey level = 0.25 m; 255 = 63.75 m above the waterline
@@ -28,7 +29,7 @@ public static class HeightMap
                 "ellipse" => new EllipseNode(c.Cx!.Value, c.Cy!.Value, c.Rx!.Value, c.Ry!.Value),
                 var sh => throw new ArgumentException($"unknown column shape '{sh}'"),
             };
-            o.Add(n.Fill(Grey(c.Top)));
+            o.Add(n.Fill(Grey(c.Top)).Plateau(c.Top));
         }
         return (sc, columns.Max(c => c.Top));
     }
@@ -70,8 +71,8 @@ public sealed class ShipSprites
 
     /// <summary>Draw a designed ship at S px/m with the given mip levels. look (navy, era; either may be left out)
     /// overrides the design's own look key by key, so the game can repaint a design into a later era without touching
-    /// it.</summary>
-    public static ShipSprites Build(Ship ship, double S, int mips = 0, LookInput? look = null)
+    /// it. outline: the plan's ink weight instead of the look's (Shapes.Outline; png-check draws at Python's 1).</summary>
+    public static ShipSprites Build(Ship ship, double S, int mips = 0, LookInput? look = null, double? outline = null)
     {
         var design = ship.Design;
         var v = TopView.Of(ship);
@@ -83,6 +84,8 @@ public sealed class ShipSprites
         int align = 1 << (mips + 1);
         var pal = Looks.Palette(design);
         var shapes = Looks.Shapes(design);
+        if (outline != null)
+            shapes = shapes with { Outline = outline };
         string turretLook = Looks.TurretLook(design);
 
         var turrets = new Dictionary<string, Scene>(StringComparer.Ordinal);

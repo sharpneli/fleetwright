@@ -40,7 +40,8 @@ public static class Program
             height.svg, turrets/<type>.svg)
         shipgen bake DESIGN.json... [--out DIR] [--scale S] [--mips N]
             draw and bake each design on the GPU: DIR/<id>/sprite.json, hull.png, height.png, turrets/<type>.png
-            and each layer's _mips.png
+            and each layer's _mips.png; for the lighting relief.png (grey to the tallest), normal.png (normal + AO in
+            alpha) and normal_mips.png, and each turret type's _relief.png and _normal.png
         shipgen profile DESIGN.json... [--out DIR] [--scale S] [--navy N] [--era E]
             draw and bake each design's profile from the starboard side (default 10 px/m): DIR/<id>/profile.png (the
             full hull) and silhouette.png, and their SVGs; --navy and --era repaint it in another look
@@ -655,12 +656,13 @@ public static class Program
         string root = Root(a);
         string? keep = a.Get("out");
         var cases = SelectCases(root, a.Positional)
-            .Where(c => (string?)RenderGolden.State(root, "sprite", c.Name) == "ok").ToList();
+            .Where(c => (string?)RenderGolden.State(root, "sprite", c.Name) == "ok")
+            .Where(c => File.Exists(Path.Combine(root, "golden", "sprite", c.Name, "hull.png"))).ToList();   // cases since the port have no PNGs
         using var gpu = new GpuBaker();
         Console.WriteLine($"GPU: {gpu.Driver}, {gpu.Samples}; {cases.Count} designs");
         // build and draw in parallel, bake one at a time on the one device
         var sprites = new ShipSprites[cases.Count];
-        Parallel.For(0, cases.Count, i => sprites[i] = RenderGolden.Draw(cases[i]));
+        Parallel.For(0, cases.Count, i => sprites[i] = RenderGolden.Draw(cases[i], outline: 1));   // Python's inks
         double worst = 1;
         var sw = Stopwatch.StartNew();
         Console.WriteLine($"{"case",-22} {"hull",7} {"height",7} {"turret",7} {"colour",7}");

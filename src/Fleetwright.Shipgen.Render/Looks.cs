@@ -249,6 +249,17 @@ public static class Looks
     static string MarksRef(Design design) => DefaultPalette.Over(Overrides(design with { Palette = null }, mute: false)).Colours("levels")[1];
 
     /// <summary>The look's drawing shapes for the design (Data/looks.jsonc, "shapes").</summary>
+    /// <summary>A dev override of every look's plan outline (<see cref="Render.Shapes.Outline"/>), for side-by-side
+    /// captures; null: the looks' own.</summary>
+    public static double? OutlineOverride;
+
+    /// <summary>The plan sprites' outline weight for a look's shapes: 0.5 unless the look says (settled by side-by-side
+    /// captures at L2, docs/visuals/ship-lighting.md: the relief carries the edges up close, half-weight inks keep
+    /// small fittings legible at 3 m/px).</summary>
+    public const double DefaultOutline = 0.5;
+
+    public static double PlanOutline(Shapes? sh) => OutlineOverride ?? sh?.Outline ?? DefaultOutline;
+
     public static Shapes Shapes(Design design)
     {
         var lk = Get(design);

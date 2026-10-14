@@ -41,12 +41,30 @@ public sealed class DesignResult
 }
 
 /// <summary>A sprite's baked layers as mip chains: colour premultiplied (so filtering doesn't bleed the transparent
-/// border's black in), the height map reduced by max.</summary>
+/// border's black in), the height map reduced by max, the normal + AO layers averaged by coverage
+/// (<see cref="ReliefMaps.Chain"/>).</summary>
 public sealed class SpriteImages
 {
     public required Image8[] Hull { get; init; }
     public required Image8[] Height { get; init; }
     public required Dictionary<string, Image8[]> Turrets { get; init; }
+    public required Image8[] HullNormal { get; init; }
+    public required Dictionary<string, Image8[]> TurretNormals { get; init; }
+
+    /// <summary>A bake's layers as chains of level 0 and up to <paramref name="levels"/> halvings.</summary>
+    public static SpriteImages Of(Baked b, int levels)
+    {
+        var hull = Chain(b.Hull, false, levels);
+        var turrets = b.Turrets.ToDictionary(t => t.Key, t => Chain(t.Value, false, levels), StringComparer.Ordinal);
+        return new SpriteImages
+        {
+            Hull = hull,
+            Height = Chain(b.Height, true, levels),
+            Turrets = turrets,
+            HullNormal = ReliefMaps.Chain(b.HullNormal, hull),
+            TurretNormals = turrets.ToDictionary(t => t.Key, t => ReliefMaps.Chain(b.TurretNormal[t.Key], t.Value), StringComparer.Ordinal),
+        };
+    }
 
     /// <summary>Level 0 and up to <paramref name="levels"/> halvings, while the size stays even.</summary>
     public static Image8[] Chain(Image8 level0, bool height, int levels)
@@ -208,12 +226,7 @@ public sealed class DesignWorker : IDisposable
             double tDraw = sw.Elapsed.TotalSeconds - t0;
             baker ??= MakeBaker();
             var baked = ShipBake.Bake(sprites, baker);
-            var images = new SpriteImages
-            {
-                Hull = SpriteImages.Chain(baked.Hull, false, mipLevels),
-                Height = SpriteImages.Chain(baked.Height, true, mipLevels),
-                Turrets = baked.Turrets.ToDictionary(t => t.Key, t => SpriteImages.Chain(t.Value, false, mipLevels), StringComparer.Ordinal),
-            };
+            var images = SpriteImages.Of(baked, mipLevels);
             double tBake = sw.Elapsed.TotalSeconds - t0 - tDraw;
             return Remember(key, new DesignResult
             {

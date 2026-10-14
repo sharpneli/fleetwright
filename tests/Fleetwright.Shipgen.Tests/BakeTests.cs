@@ -24,7 +24,7 @@ public class BakeTests
         using var gpu = new GpuBaker();
         foreach (var c in cases)
         {
-            var sp = RenderGolden.Draw(c);
+            var sp = RenderGolden.Draw(c, outline: 1);   // Python's full-weight inks
             var b = ShipBake.Bake(sp, gpu);
             string g = Paths.Shipgen("golden", "sprite", c.Name);
             foreach (var (tid, im) in b.Turrets)

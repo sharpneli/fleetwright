@@ -8,7 +8,8 @@ namespace Fleetwright.Shipgen.Render.Bake;
 
 /// <summary>Draws a DrawList on the GPU (SDL_GPU) and reads it back: stencil-then-cover fills, the clip stack and
 /// opacity groups in the stencil, 8x MSAA (4x if 8x isn't there) with the hardware resolve on the colour layers,
-/// 1 sample on the height map, and tiles of Tile px so a long ship or a fat MSAA target never outgrows the device.
+/// 1 sample on the height map and the relief layer (metres, R32F: only the ops with a relief profile write it), and
+/// tiles of Tile px so a long ship or a fat MSAA target never outgrows the device.
 ///
 /// Stencil bits: 0-3 the winding count of the fill being drawn (or 1 for a union), 4 an opacity group's "already
 /// drawn" flag, 5-7 the clip depth. A fill counts its winding where the clip depth is the current one (and the group
@@ -24,8 +25,8 @@ public sealed unsafe class GpuBaker : IDisposable
     public readonly SDL_GPUSampleCount Samples;
     readonly SDL_GPUTextureFormat dsFormat;
     readonly SDL_GPUShader* vs, fs;
-    readonly Pipes colour, height;
-    readonly SDL_GPUTexture* colMs, colRes, colDs, hCol, hDs;
+    readonly Pipes colour, height, relief;
+    readonly SDL_GPUTexture* colMs, colRes, colDs, hCol, hDs, rCol;
     SDL_GPUBuffer* vbuf;
     SDL_GPUTransferBuffer* up;
     uint vcap;
@@ -76,6 +77,7 @@ public sealed unsafe class GpuBaker : IDisposable
         fs = Shader("shipbake.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT);
         colour = MakePipes(SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM, Samples, blend: true);
         height = MakePipes(SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8_UNORM, SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1, blend: false);
+        relief = MakePipes(SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R32_FLOAT, SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1, blend: false);
 
         var ct = SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COLOR_TARGET;
         colMs = Texture(SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM, ct, Samples);
@@ -84,6 +86,7 @@ public sealed unsafe class GpuBaker : IDisposable
         colDs = Texture(dsFormat, SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET, Samples);
         hCol = Texture(SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8_UNORM, ct, SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1);
         hDs = Texture(dsFormat, SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET, SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1);
+        rCol = Texture(SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R32_FLOAT, ct, SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1);
         var di = new SDL_GPUTransferBufferCreateInfo
         {
             usage = SDL_GPUTransferBufferUsage.SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD,
@@ -267,12 +270,33 @@ public sealed unsafe class GpuBaker : IDisposable
         SDL_SubmitGPUCommandBuffer(cmd);
     }
 
+    enum Layer { Colour, Height, Relief }
+
     /// <summary>Draws dl and reads it back: RGBA with straight alpha, or for the height map one grey channel.</summary>
     public Image8 Render(DrawList dl, bool heightMap = false)
     {
         var img = new Image8(dl.Width, dl.Height, heightMap ? 1 : 4);
+        Tiles(dl, heightMap ? Layer.Height : Layer.Colour, img.Data, img.Channels);
+        if (!heightMap)
+            Unpremultiply(img);
+        return img;
+    }
+
+    /// <summary>Draws dl's relief: each op with a profile writes its height (metres; later ops win), the rest leave
+    /// it alone; 0 where nothing did. Clips apply as to the colour.</summary>
+    public ReliefImage RenderRelief(DrawList dl)
+    {
+        var r = new ReliefImage(dl.Width, dl.Height);
+        Tiles(dl, Layer.Relief, MemoryMarshal.AsBytes(r.M.AsSpan()), 4);
+        return r;
+    }
+
+    void Tiles(DrawList dl, Layer layer, Span<byte> dest, int bpp)
+    {
         Upload(dl.Verts);
-        var P = heightMap ? height : colour;
+        var P = layer switch { Layer.Height => height, Layer.Relief => relief, _ => colour };
+        var target = layer switch { Layer.Height => hCol, Layer.Relief => rCol, _ => colMs };
+        bool single = layer != Layer.Colour;
         for (int ty = 0; ty < dl.Height; ty += Tile)
             for (int tx = 0; tx < dl.Width; tx += Tile)
             {
@@ -280,15 +304,15 @@ public sealed unsafe class GpuBaker : IDisposable
                 var cmd = SDL_AcquireGPUCommandBuffer(dev);
                 var cti = new SDL_GPUColorTargetInfo
                 {
-                    texture = heightMap ? hCol : colMs,
+                    texture = target,
                     clear_color = new SDL_FColor { r = 0, g = 0, b = 0, a = 0 },
                     load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-                    store_op = heightMap ? SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE : SDL_GPUStoreOp.SDL_GPU_STOREOP_RESOLVE,
-                    resolve_texture = heightMap ? null : colRes,
+                    store_op = single ? SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE : SDL_GPUStoreOp.SDL_GPU_STOREOP_RESOLVE,
+                    resolve_texture = single ? null : colRes,
                 };
                 var dti = new SDL_GPUDepthStencilTargetInfo
                 {
-                    texture = heightMap ? hDs : colDs,
+                    texture = single ? hDs : colDs,
                     clear_depth = 0,
                     load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
                     store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
@@ -303,11 +327,11 @@ public sealed unsafe class GpuBaker : IDisposable
                     SDL_BindGPUVertexBuffers(pass, 0, &bind, 1);
                     var xf = new Vector4(2f / Tile, -2f / Tile, -1f - 2f * tx / Tile, 1f + 2f * ty / Tile);
                     SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&xf), 16);
-                    Draw(cmd, pass, dl, P, heightMap);
+                    Draw(cmd, pass, dl, P, layer);
                 }
                 SDL_EndGPURenderPass(pass);
                 var cp = SDL_BeginGPUCopyPass(cmd);
-                var region = new SDL_GPUTextureRegion { texture = heightMap ? hCol : colRes, w = (uint)tw, h = (uint)th, d = 1 };
+                var region = new SDL_GPUTextureRegion { texture = single ? target : colRes, w = (uint)tw, h = (uint)th, d = 1 };
                 var tinfo = new SDL_GPUTextureTransferInfo { transfer_buffer = down, offset = 0, pixels_per_row = (uint)tw, rows_per_layer = (uint)th };
                 SDL_DownloadFromGPUTexture(cp, &region, &tinfo);
                 SDL_EndGPUCopyPass(cp);
@@ -315,14 +339,10 @@ public sealed unsafe class GpuBaker : IDisposable
                 SDL_WaitForGPUFences(dev, true, &fence, 1);
                 SDL_ReleaseGPUFence(dev, fence);
                 var px = (byte*)SDL_MapGPUTransferBuffer(dev, down, false);
-                int c = img.Channels;
                 for (int y = 0; y < th; y++)
-                    new Span<byte>(px + y * tw * c, tw * c).CopyTo(img.Data.AsSpan(((ty + y) * img.Width + tx) * c, tw * c));
+                    new Span<byte>(px + y * tw * bpp, tw * bpp).CopyTo(dest.Slice(((ty + y) * dl.Width + tx) * bpp, tw * bpp));
                 SDL_UnmapGPUTransferBuffer(dev, down);
             }
-        if (!heightMap)
-            Unpremultiply(img);
-        return img;
     }
 
     static void Unpremultiply(Image8 im)
@@ -348,7 +368,7 @@ public sealed unsafe class GpuBaker : IDisposable
         SDL_SetGPUStencilReference(pass, (byte)stencilRef);
     }
 
-    void Draw(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, DrawList dl, Pipes P, bool heightMap)
+    void Draw(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, DrawList dl, Pipes P, Layer layer)
     {
         int depth = 0;
         SDL_GPUGraphicsPipeline* bound = null;
@@ -361,12 +381,19 @@ public sealed unsafe class GpuBaker : IDisposable
             {
                 case OpKind.Fill:
                     {
+                        if (layer == Layer.Relief && op.Relief.X == 0)
+                            break;   // paint on a surface: the relief under it stays
                         if (op.Union)
                             Use(pass, ref bound, P.Union, depth << 5 | 1);
                         else
                             Use(pass, ref bound, P.Wind, depth << 5);
                         SDL_DrawGPUPrimitives(pass, n, 1, first, 0);
-                        var col = heightMap ? new Vector4(op.Colour.X, 0, 0, 1) : op.Colour;
+                        var col = layer switch
+                        {
+                            Layer.Height => new Vector4(op.Colour.X, 0, 0, 1),
+                            Layer.Relief => new Vector4(op.Relief.Y, 0, 0, 1),   // a plateau: its top (L2's only profile)
+                            _ => op.Colour,
+                        };
                         SDL_PushGPUFragmentUniformData(cmd, 0, (nint)(&col), 16);
                         if (op.InGroup)
                             Use(pass, ref bound, P.CoverGroup, 0x10);
@@ -400,10 +427,10 @@ public sealed unsafe class GpuBaker : IDisposable
         if (dev == null)
             return;
         SDL_WaitForGPUIdle(dev);
-        foreach (var P in new[] { colour, height })
+        foreach (var P in new[] { colour, height, relief })
             foreach (var p in new[] { P.Wind, P.Union, P.Cover, P.CoverGroup, P.ClipPush, P.ClipPop, P.GroupClear })
                 SDL_ReleaseGPUGraphicsPipeline(dev, p);
-        foreach (var t in new[] { (nint)colMs, (nint)colRes, (nint)colDs, (nint)hCol, (nint)hDs })
+        foreach (var t in new[] { (nint)colMs, (nint)colRes, (nint)colDs, (nint)hCol, (nint)hDs, (nint)rCol })
             SDL_ReleaseGPUTexture(dev, (SDL_GPUTexture*)t);
         if (vbuf != null)
             SDL_ReleaseGPUBuffer(dev, vbuf);

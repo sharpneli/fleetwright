@@ -50,8 +50,31 @@ public sealed unsafe class ShipViewer : IScene
     bool inset;
     const uint InsetW = 320, InsetH = 180;
 
+    /// <summary>The view's settings for captures (the -viewer= flag): sun:AZ:EL, moon:AZ:EL:PHASE, shade:NAME (lit,
+    /// albedo, normal, ao, roughness, metallic), at:X:Y:ZOOM (ship metres at the centre, px/m), mip:N.</summary>
+    public static string? Dev;
+
+    void ApplyDev()
+    {
+        foreach (var item in (Dev ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var p = item.Split(':');
+            float F(int i) => float.Parse(p[i], System.Globalization.CultureInfo.InvariantCulture);
+            switch (p[0])
+            {
+                case "sun": (view.SunAzimuthDeg, view.SunElevationDeg) = (F(1), F(2)); break;
+                case "moon": (view.MoonAzimuthDeg, view.MoonElevationDeg, view.MoonPhaseDeg) = (F(1), F(2), F(3)); break;
+                case "shade": view.Show = ShowViews[Math.Max(0, Array.FindIndex(ShowNames, n => n.Equals(p[1], StringComparison.OrdinalIgnoreCase)))]; break;
+                case "at": (view.Centre, view.Zoom, fit) = (new Vector2(F(1), F(2)), F(3), false); break;
+                case "mip": view.Mip = (int)F(1); break;
+                default: Console.Error.WriteLine($"Bad -viewer item: {item}"); break;
+            }
+        }
+    }
+
     public ShipViewer(SDL_GPUDevice* device, DesignSession session, string? navy = null, string? era = null)
     {
+        ApplyDev();
         this.device = device;
         this.session = session;
         navies = ["(design)", .. Shipgen.Render.Looks.Navies];
@@ -229,6 +252,14 @@ public sealed unsafe class ShipViewer : IScene
         ImGui.RadioButton("starboard", ref turretMode, 2);
         ImGui.Checkbox("shadows", ref view.Shadows);
         ImGui.Checkbox("lit", ref view.Lit);
+        if (view.Lit)
+        {
+            ImGui.SameLine();
+            int show = Array.IndexOf(ShowViews, view.Show);
+            ImGui.SetNextItemWidth(120);
+            if (ImGui.Combo("show", ref show, ShowNames, ShowNames.Length))
+                view.Show = ShowViews[show];
+        }
         ImGui.SliderFloat("sun bearing", ref view.SunAzimuthDeg, 0, 360, "%.0f");
         ImGui.SliderFloat("sun elevation", ref view.SunElevationDeg, -20, 90, "%.0f");
         ImGui.SliderFloat("moon bearing", ref view.MoonAzimuthDeg, 0, 360, "%.0f");
@@ -247,6 +278,9 @@ public sealed unsafe class ShipViewer : IScene
         ImGui.TextWrapped(session.Busy ? "building...\n" + status : status);
         ImGui.End();
     }
+
+    static readonly ShadeView[] ShowViews = [ShadeView.Lit, ShadeView.Albedo, ShadeView.Normal, ShadeView.Ao, ShadeView.Roughness, ShadeView.Metallic];
+    static readonly string[] ShowNames = ["lit", "albedo", "normal", "AO", "roughness", "metallic"];
 
     /// <summary>The light table's knobs (the map reads the same table, so a change shows there too).</summary>
     static void LightTableUi(LightTable t)

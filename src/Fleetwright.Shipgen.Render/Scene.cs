@@ -38,6 +38,21 @@ public sealed class Style
     public double? DashOffset;
     public double? StrokeOpacity;
     public double? Opacity;         // group opacity: the node drawn whole, then faded
+    public Relief? Relief;          // what the node does to the relief layer (inherited); unset: leaves it alone
+}
+
+/// <summary>A relief profile (docs/visuals/ship-lighting.md, "The bake"): how a draw shapes the relief layer the
+/// normals and ambient occlusion come from. A plateau stands at a height, metres (over the waterline on the hull, over
+/// the turret's base on a turret); cylinders, domes and slopes come at L3. Paint on a surface carries none, so it
+/// never flattens what's under it. Not part of the SVG.</summary>
+public readonly record struct Relief(ReliefKind Kind, double TopM)
+{
+    public static Relief Plateau(double topM) => new(ReliefKind.Plateau, topM);
+}
+
+public enum ReliefKind : byte
+{
+    Plateau = 1,
 }
 
 /// <summary>One transform step, applied left to right as in SVG's transform list.</summary>
@@ -172,6 +187,8 @@ public static class NodeStyle
     public static T Dash<T>(this T n, params double[] d) where T : Node { n.S.Dash = d; return n; }
     public static T DashOff<T>(this T n, double v) where T : Node { n.S.DashOffset = v; return n; }
     public static T Opacity<T>(this T n, double v) where T : Node { n.S.Opacity = v; return n; }
+    /// <summary>A plateau in the relief layer at topM metres (<see cref="Relief"/>).</summary>
+    public static T Plateau<T>(this T n, double topM) where T : Node { n.S.Relief = Relief.Plateau(topM); return n; }
     public static T Tr<T>(this T n, params XOp[] ops) where T : Node
     {
         n.Transform = [.. ops];

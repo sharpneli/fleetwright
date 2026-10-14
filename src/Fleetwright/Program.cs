@@ -108,6 +108,14 @@ public static unsafe class Program
             {
                 frameTimes = true;
             }
+            else if (arg.StartsWith("-viewer="))   // the ship viewer's view for captures: -viewer=sun:300:30,moon:120:40:0,shade:normal,at:20:0:10
+            {
+                ShipViewer.Dev = arg.Substring("-viewer=".Length);
+            }
+            else if (arg.StartsWith("-outline="))   // every look's plan outline weight, 0-1, for side-by-side captures
+            {
+                Shipgen.Render.Looks.OutlineOverride = double.Parse(arg.Substring("-outline=".Length), System.Globalization.CultureInfo.InvariantCulture);
+            }
             else if (arg.StartsWith("-lights="))   // light table knobs, for side-by-side captures: -lights=roughness:0.6,specular:0
             {
                 foreach (var kv in arg.Substring("-lights=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))

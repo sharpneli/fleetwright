@@ -9,6 +9,10 @@ public sealed class Painter
     public List<(List<Pt> Pts, string Col)> Dazzle = [];   // dazzle camouflage panels, set by HullArt
     public readonly double Sw;         // outline width: at least ~0.6 px whatever the scale
 
+    /// <summary>The ink outlines' weight, 0-1 (<see cref="Render.Shapes.Outline"/>): the plan's painters set it, the
+    /// side view keeps 1.</summary>
+    public double Outline { get; init; } = 1;
+
     public Painter(Palette palette, double scale, Shapes? shapes)
     {
         P = palette;
@@ -21,8 +25,14 @@ public sealed class Painter
     /// <summary>Palette colour by key.</summary>
     public string C(string key) => P[key];
 
-    /// <summary>The outline: palette "line", sw * k wide, round joins (Painter.stroke).</summary>
-    public T Ln<T>(T n, double k = 1.0) where T : Node => n.Stroke(C("line"), Sw * k).Join("round");
+    /// <summary>The outline: palette "line", sw * k wide, round joins (Painter.stroke); weighed by <see cref="Outline"/>.</summary>
+    public T Ln<T>(T n, double k = 1.0) where T : Node
+    {
+        if (Outline <= 0)
+            return n;
+        n.Stroke(C("line"), Sw * k * (0.5 + 0.5 * Math.Min(Outline, 1))).Join("round");
+        return Outline < 1 ? n.StrokeOp(Outline) : n;
+    }
 
     /// <summary>k &lt; 1 darkens, k &gt; 1 lightens toward white.</summary>
     public static string Shade(string hex, double k)

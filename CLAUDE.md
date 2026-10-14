@@ -34,6 +34,7 @@ dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|i
 dotnet run --project src/Fleetwright -- -view=ship [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -view=profile                      # the ship card's side view
 dotnet run --project src/Fleetwright -- -lights=roughness:0.6,specular:0   # the ships' light table knobs (ShipLight.cs), for side-by-side captures
+dotnet run --project src/Fleetwright -- -view=ship -viewer=sun:300:30,shade:normal,at:10:0:8 [-outline=0.5]   # the viewer for captures: sun, moon, debug view (lit, albedo, normal, ao, ...), centre and zoom; the plan's ink weight
 dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
 dotnet run --project src/Fleetwright -- -section=2 -designer-ui=secsel:1:2,secmenu  # UI state for screenshots (DesignerScene.ApplyDevUi)
 dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wheel:1160,559:-1;100:type:150  # scripted clicks, wheel, typing, F:drop:PATH, F:drag:X0,Y0:X1,Y1, F:mclick or F:mright:X,Y (SDL clicks the map gets) (window px; Engine.ScriptedInput)
@@ -86,7 +87,8 @@ panel picks the view, the projection, which kinds are drawn, and a clip box: who
 button gives that tier's rooms, `hitbox_cells.png` live) or a per-pixel cut.
 
 The ship viewer (`-view=ship`) shows the design from the baked textures (mips, turrets through their arcs,
-height-map shadows); its panel switches design, look, mip level, turrets and sun. Wheel zooms, left drag pans.
+height-map shadows), lit as on the map; its panel switches design, look, mip level, turrets, sun and moon, the
+lighting's debug views (albedo, normal, AO, ...) and the light table. Wheel zooms, left drag pans.
 
 The profile (`-view=profile`, `ProfileScene`) is the ship card, a poster of the session's ship in its look: the name,
 the plan (the sprite, turrets at rest, no shadow) over the profile (`ShipProfile`) at one scale with a scale bar, the
@@ -240,7 +242,8 @@ src/
     Sprite.cs                 #   the height map and sprite.json (ShipSprites.Build)
     ShipRng.cs                #   the drawing's seeded RNG (per feature)
     RenderTypes.cs            #   Palette, Shapes and the sprite.json records
-    Bake/                     #   the GPU bake: Lower (scene -> triangles), Stroker, Glyphs, GpuBaker (SDL_GPU), PNG, mips
+    Bake/                     #   the GPU bake: Lower (scene -> triangles), Stroker, Glyphs, GpuBaker (SDL_GPU: colour, height
+                              #   map, relief), Relief (ReliefMaps: normals and AO from the relief), PNG, mips
     Golden/                   #   the SVG comparer and the drawing's golden checks
   Fleetwright.Shipgen.Cli/    # `shipgen` command, the port's test harness (and `sim`, an empty world on its thread)
   Fleetwright.Sim.Core/       # the sim's lowest layer, pure values (docs/battle/plan.md "Inside Fleetwright.Sim"):

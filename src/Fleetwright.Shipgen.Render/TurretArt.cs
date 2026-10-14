@@ -78,11 +78,14 @@ public static class TurretArt
 
     /// <summary>A turret sprite. Outlines come from Geometry.TurretShapesOf, the same polygons used for hitboxes; a
     /// look other than "standard" redraws armoured turrets in its own style (LookTurretBody). shapes: the look's
-    /// drawing variations (turret_bands: recognition bands painted across armoured turret roofs).</summary>
+    /// drawing variations (turret_bands: recognition bands painted across armoured turret roofs). The parts stand as
+    /// plateaus in the relief layer over the turret's base (the lighting's normals and AO): the gun house at its roof
+    /// (Geometry.TurretHeight), the barrels at their axis (BarrelBand's 0.55 of it) plus half their width, hoods,
+    /// cupolas and hatches a little over the roof; paint on the roof (the insets, bands, face plates) carries none.</summary>
     public static Scene Build(TurretType t, Palette palette, double scale, int align = 2, string look = "standard",
         Shapes? shapes = null)
     {
-        var P = new Painter(palette, scale, shapes);
+        var P = new Painter(palette, scale, shapes) { Outline = Looks.PlanOutline(shapes) };
         var p = palette;
         double r = t.R;
         long n = t.Barrels;
@@ -94,6 +97,8 @@ public static class TurretArt
         var G = Geometry.TurretShapesOf(t);
         string Shade(string c, double k) => Painter.Shade(c, k);
         double Gy(int i) => (i - (n - 1) / 2.0) * sp;
+        double th = Geometry.TurretHeight(t), bTop = 0.55 * th + bw / 2;
+        const double Fitting = 0.3;   // a hood, cupola or hatch over the roof, m (L2's nominal: no hitbox gives it)
 
         void Barrels(double xStart)
         {
@@ -101,9 +106,9 @@ public static class TurretArt
             {
                 double y = Gy(i);
                 double xe = xStart + Geometry.BarrelShown(t);
-                s.Add(P.Ln(new PathNode(Painter.Poly(G.Barrels[i])).Fill(P.C("barrel")), 0.8));
+                s.Add(P.Ln(new PathNode(Painter.Poly(G.Barrels[i])).Fill(P.C("barrel")), 0.8).Plateau(bTop));
                 s.Add(new LineNode(xStart, y - bw * 0.18, xe - bw, y - bw * 0.18).Stroke(Shade(P.C("barrel"), 1.6), bw * 0.18).StrokeOp(0.55));
-                s.Add(P.Ln(new RectNode(xe - bw * 0.9, y - bw * 0.58, bw * 0.9, bw * 1.16).Fill(Shade(P.C("barrel"), 0.7)), 0.6));
+                s.Add(P.Ln(new RectNode(xe - bw * 0.9, y - bw * 0.58, bw * 0.9, bw * 1.16).Fill(Shade(P.C("barrel"), 0.7)), 0.6).Plateau(bTop + 0.08 * bw));
             }
         }
 
@@ -114,16 +119,16 @@ public static class TurretArt
             var body = Painter.Poly(pts);
             Barrels(BarrelRoot["bb"] * r);
             for (int i = 0; i < n; i++)   // gun ports
-                s.Add(P.Ln(new RectNode(xf - 0.1 * r, Gy(i) - bw * 0.85, 0.2 * r, bw * 1.7, bw * 0.3).Fill(Shade(bodyCol, 0.55)), 0.6));
-            s.Add(P.Ln(new PathNode(body).Fill(bodyCol), 1.2));
+                s.Add(P.Ln(new RectNode(xf - 0.1 * r, Gy(i) - bw * 0.85, 0.2 * r, bw * 1.7, bw * 0.3).Fill(Shade(bodyCol, 0.55)), 0.6).Plateau(bTop));
+            s.Add(P.Ln(new PathNode(body).Fill(bodyCol), 1.2).Plateau(th));
             s.Add(new PathNode(body).Fill(Shade(bodyCol, 1.12)).Tr(new Translate(0.02 * r, 0), new Scale(0.8)));
             if (hf != 0)   // sloped face plate (a drum turret has none)
                 s.Add(new PathNode(new PathData().M(xf, -hf).L(xf, hf).L(xf - 0.22 * r, hf - 0.08 * r).L(xf - 0.22 * r, -hf + 0.08 * r).Z())
                     .Fill(Shade(bodyCol, 0.82)));
             foreach (var part in parts)
-                s.Add(P.Ln(new PathNode(Painter.Poly(part)).Fill(Shade(bodyCol, 0.85)), 0.8));
+                s.Add(P.Ln(new PathNode(Painter.Poly(part)).Fill(Shade(bodyCol, 0.85)), 0.8).Plateau(th + Fitting));
             string hood = Shade(bodyCol, 0.8);
-            T H<T>(T node) where T : Node => P.Ln(node, 0.5);
+            T H<T>(T node) where T : Node => P.Ln(node, 0.5).Plateau(th + Fitting);
             switch (look)
             {
                 case "slab":      // three periscope hoods forward, a vent box aft
@@ -157,12 +162,12 @@ public static class TurretArt
                 case "hooded":    // the ring's dark well, then the light hood over the guns' breeches
                     {
                         double cx = -0.05 * r;
-                        s.Add(H(new CircleNode(cx, 0, 0.74 * r).Fill(Shade(bodyCol, 0.5))));
+                        s.Add(H(new CircleNode(cx, 0, 0.74 * r).Fill(Shade(bodyCol, 0.5))).Plateau(0.35 * th));   // the ring's well
                         double hw = Math.Min(0.6 * r, (n - 1) / 2.0 * sp + 0.35 * r);
                         List<Pt> pear = [new(0.62 * r, -hw * 0.8), new(0.72 * r, 0.0), new(0.62 * r, hw * 0.8), new(0.2 * r, hw),
                             new(-0.45 * r, hw * 0.55), new(-0.6 * r, 0.0), new(-0.45 * r, -hw * 0.55), new(0.2 * r, -hw)];
                         string hoodCol = p.Or("turret_hood", Shade(bodyCol, 1.35));
-                        s.Add(P.Ln(new PathNode(Painter.Poly(pear)).Fill(hoodCol), 0.8));
+                        s.Add(P.Ln(new PathNode(Painter.Poly(pear)).Fill(hoodCol), 0.8).Plateau(th));
                         s.Add(new PathNode(Painter.Poly(pear)).Fill(Shade(hoodCol, 1.15)).Tr(new Translate(0.04 * r, 0), new Scale(0.7)));
                         s.Add(H(new CircleNode(-0.2 * r, 0, 0.1 * r).Fill(Shade(hoodCol, 0.85))));
                         break;
@@ -174,16 +179,16 @@ public static class TurretArt
                     s.Add(H(new CircleNode(-0.8 * r, 0, 0.1 * r).Fill(hood)));
                     break;
                 case "champignon":   // the mushroom roof's lip, the cone rising to a sighting hood at the centre
-                    foreach (var (k, rr) in new[] { (0.85, 0.78), (1.15, 0.52), (1.3, 0.3) })
-                        s.Add(H(new CircleNode(-0.05 * r, 0, rr * r).Fill(Shade(bodyCol, k))));
-                    s.Add(H(new RectNode(-0.05 * r, -0.11 * r, 0.32 * r, 0.22 * r, 0.06 * r).Fill(Shade(bodyCol, 0.75))));
+                    foreach (var (k, rr, up) in new[] { (0.85, 0.78, 0.0), (1.15, 0.52, 0.15), (1.3, 0.3, 0.3) })   // the cone in steps
+                        s.Add(H(new CircleNode(-0.05 * r, 0, rr * r).Fill(Shade(bodyCol, k))).Plateau(th + up * r));
+                    s.Add(H(new RectNode(-0.05 * r, -0.11 * r, 0.32 * r, 0.22 * r, 0.06 * r).Fill(Shade(bodyCol, 0.75))).Plateau(th + 0.3 * r + Fitting));
                     for (int a = 0; a < 360; a += 30)   // rivets round the lip
                         s.Add(new CircleNode((-0.05 + 0.87 * Math.Cos(double.DegreesToRadians(a))) * r, 0.87 * Math.Sin(double.DegreesToRadians(a)) * r, 0.025 * r)
                             .Fill(Shade(bodyCol, 0.6)));
                     break;
                 case "quadruple":    // the wall between the two halves, a periscope hood over each gun pair
                     if (n >= 4)
-                        s.Add(P.Ln(new RectNode(-0.95 * r, -0.05 * r, 1.79 * r, 0.1 * r).Fill(Shade(bodyCol, 0.65)), 0.4));
+                        s.Add(P.Ln(new RectNode(-0.95 * r, -0.05 * r, 1.79 * r, 0.1 * r).Fill(Shade(bodyCol, 0.65)), 0.4).Plateau(th + 0.15));
                     foreach (double yy in n >= 2 ? new[] { -0.48 * r, 0.48 * r } : [0.0])
                         s.Add(H(new RectNode(0.18 * r, yy - 0.1 * r, 0.32 * r, 0.2 * r, 0.05 * r).Fill(hood)));
                     s.Add(H(new RectNode(-0.85 * r, -0.2 * r, 0.18 * r, 0.4 * r, 0.04 * r).Fill(hood)));
@@ -204,64 +209,64 @@ public static class TurretArt
             var body = Painter.Poly(G.Body);
             Barrels(BarrelRoot["bb"] * r);
             for (int i = 0; i < n; i++)   // blast bags / gun ports
-                s.Add(P.Ln(new RectNode(0.75 * r, Gy(i) - bw * 0.85, 0.2 * r, bw * 1.7, bw * 0.3).Fill(Shade(bodyCol, 0.55)), 0.6));
-            s.Add(P.Ln(new PathNode(body).Fill(bodyCol), 1.2));
+                s.Add(P.Ln(new RectNode(0.75 * r, Gy(i) - bw * 0.85, 0.2 * r, bw * 1.7, bw * 0.3).Fill(Shade(bodyCol, 0.55)), 0.6).Plateau(bTop));
+            s.Add(P.Ln(new PathNode(body).Fill(bodyCol), 1.2).Plateau(th));
             s.Add(new PathNode(body).Fill(Shade(bodyCol, 1.12)).Tr(new Translate(0.02 * r, 0), new Scale(0.8)));
             // sloped front face plate
             s.Add(new PathNode(new PathData().M(0.85 * r, -0.5 * r).L(0.85 * r, 0.5 * r).L(0.62 * r, 0.42 * r).L(0.62 * r, -0.42 * r).Z())
                 .Fill(Shade(bodyCol, 0.82)));
             foreach (var part in G.Parts)   // rangefinder ears
-                s.Add(P.Ln(new PathNode(Painter.Poly(part)).Fill(Shade(bodyCol, 0.85)), 0.8));
+                s.Add(P.Ln(new PathNode(Painter.Poly(part)).Fill(Shade(bodyCol, 0.85)), 0.8).Plateau(th + Fitting));
             foreach (double yy in new[] { -0.45 * r, 0.45 * r })   // roof hatches / periscope hoods
-                s.Add(P.Ln(new RectNode(0.2 * r, yy - 0.09 * r, 0.22 * r, 0.18 * r, 0.05 * r).Fill(Shade(bodyCol, 0.8)), 0.5));
-            s.Add(P.Ln(new CircleNode(-0.15 * r, 0, 0.1 * r).Fill(Shade(bodyCol, 0.8)), 0.5));
+                s.Add(P.Ln(new RectNode(0.2 * r, yy - 0.09 * r, 0.22 * r, 0.18 * r, 0.05 * r).Fill(Shade(bodyCol, 0.8)), 0.5).Plateau(th + Fitting));
+            s.Add(P.Ln(new CircleNode(-0.15 * r, 0, 0.1 * r).Fill(Shade(bodyCol, 0.8)), 0.5).Plateau(th + Fitting));
         }
         else if (shape == "dp")
         {
             var body = Painter.Poly(G.Body);
             Barrels(BarrelRoot["dp"] * r);
-            s.Add(P.Ln(new PathNode(body).Fill(bodyCol), 1.1));
+            s.Add(P.Ln(new PathNode(body).Fill(bodyCol), 1.1).Plateau(th));
             s.Add(new PathNode(body).Fill(Shade(bodyCol, 1.12)).Tr(new Translate(-0.05 * r, 0), new Scale(0.78)));
-            s.Add(P.Ln(new RectNode(-0.55 * r, -0.18 * r, 0.3 * r, 0.36 * r, 0.06 * r).Fill(Shade(bodyCol, 0.8)), 0.5));
+            s.Add(P.Ln(new RectNode(-0.55 * r, -0.18 * r, 0.3 * r, 0.36 * r, 0.06 * r).Fill(Shade(bodyCol, 0.8)), 0.5).Plateau(th + Fitting));
         }
         else if (shape == "open")
         {
-            s.Add(P.Ln(new CircleNode(0, 0, r).Fill(P.C("tub"))));
+            s.Add(P.Ln(new CircleNode(0, 0, r).Fill(P.C("tub"))).Plateau(0.15));   // the platform
             Barrels(BarrelRoot["open"] * r);
             s.Add(new PathNode(new PathData().M(0.25 * r, -0.85 * r).A(0.9 * r, 0.9 * r, 0, false, true, 0.25 * r, 0.85 * r))
-                .Fill("none").Stroke(bodyCol, 0.28 * r).Cap("round"));
-            s.Add(P.Ln(new RectNode(-0.5 * r, -0.25 * r, 0.6 * r, 0.5 * r).Fill(bodyCol), 0.6));
+                .Fill("none").Stroke(bodyCol, 0.28 * r).Cap("round").Plateau(th));   // the shield
+            s.Add(P.Ln(new RectNode(-0.5 * r, -0.25 * r, 0.6 * r, 0.5 * r).Fill(bodyCol), 0.6).Plateau(0.5 * th));
         }
         else if (shape == "casemate")   // the port shield on the hull side and the barrels run out through it
         {
             double rc = Geometry.CasemateShieldR(r, n, sp, bw);
             Barrels(BarrelRoot["casemate"] * r);
-            s.Add(P.Ln(new CircleNode(0, 0, rc).Fill(P.C("hull")), 1.1));
+            s.Add(P.Ln(new CircleNode(0, 0, rc).Fill(P.C("hull")), 1.1).Plateau(th));
             s.Add(new CircleNode(0, 0, rc * 0.72).Fill(Shade(P.C("hull"), 1.25)));
             s.Add(new RectNode(0.2 * rc, -(n - 1) / 2.0 * sp - bw * 0.8, 0.8 * rc, (n - 1) * sp + bw * 1.6).Fill(Shade(P.C("hull"), 0.45)));
             for (int i = 0; i < n; i++)   // the barrels' roots in the gun port
-                s.Add(new RectNode(0.2 * rc, Gy(i) - bw * 0.62, 0.8 * rc, bw * 1.24).Fill(P.C("barrel")));
+                s.Add(new RectNode(0.2 * rc, Gy(i) - bw * 0.62, 0.8 * rc, bw * 1.24).Fill(P.C("barrel")).Plateau(bTop));
         }
         else if (shape == "torp")
         {
-            s.Add(P.Ln(new CircleNode(0, 0, r).Fill(Shade(bodyCol, 0.85))));
+            s.Add(P.Ln(new CircleNode(0, 0, r).Fill(Shade(bodyCol, 0.85))).Plateau(0.2 * th));
             for (int i = 0; i < G.Barrels.Count; i++)
             {
-                s.Add(P.Ln(new PathNode(Painter.Poly(G.Barrels[i])).Fill(P.C("tube")), 0.8));
+                s.Add(P.Ln(new PathNode(Painter.Poly(G.Barrels[i])).Fill(P.C("tube")), 0.8).Plateau(bTop));
                 s.Add(new CircleNode(bl / 2 - bw / 2, Gy(i), bw * 0.3).Fill("#111"));
             }
             var (bar, cab) = (G.Parts[0], G.Parts[1]);
-            s.Add(P.Ln(new PathNode(Painter.Poly(bar)).Fill(Shade(bodyCol, 0.9)), 0.7));
-            s.Add(P.Ln(new PathNode(Painter.Poly(cab)).Fill(bodyCol), 0.7));
+            s.Add(P.Ln(new PathNode(Painter.Poly(bar)).Fill(Shade(bodyCol, 0.9)), 0.7).Plateau(0.6 * th));
+            s.Add(P.Ln(new PathNode(Painter.Poly(cab)).Fill(bodyCol), 0.7).Plateau(th));
         }
         else if (shape == "tube")
         {
             // thin outlines: at 0.55 m a normal outline would visibly fatten the tube
-            s.Add(P.Ln(new PathNode(Painter.Poly(G.Body)).Fill(Shade(bodyCol, 0.8)), 0.4));
+            s.Add(P.Ln(new PathNode(Painter.Poly(G.Body)).Fill(Shade(bodyCol, 0.8)), 0.4).Plateau(bw / 2));
             for (int i = 0; i < G.Barrels.Count; i++)
             {
                 double y = Gy(i);
-                s.Add(P.Ln(new PathNode(Painter.Poly(G.Barrels[i])).Fill(P.C("tube")), 0.4));
+                s.Add(P.Ln(new PathNode(Painter.Poly(G.Barrels[i])).Fill(P.C("tube")), 0.4).Plateau(bw));
                 s.Add(new LineNode(-bl / 2 + 0.6, y - bw * 0.2, bl / 2 - 0.6, y - bw * 0.2).Stroke(Shade(P.C("tube"), 1.5), bw * 0.15)
                     .StrokeOp(0.6));
                 s.Add(new CircleNode(bl / 2 - bw / 2, y, bw * 0.3).Fill("#111"));

@@ -13,9 +13,10 @@ public enum OpKind
 
 /// <summary>One step of a lowered scene. Colour is premultiplied. Union: the triangles are a union of positively
 /// wound pieces (a stroke), so coverage is set rather than counted. InGroup: inside an opacity group, which is drawn
-/// topmost first, each pixel by the first op that reaches it.</summary>
+/// topmost first, each pixel by the first op that reaches it. Relief: the profile the relief layer gets (x: its
+/// <see cref="ReliefKind"/>, 0 for none; y: the plateau's top, m).</summary>
 public readonly record struct DrawOp(OpKind Kind, int First, int Count, Vector4 Colour = default, bool Union = false,
-    bool InGroup = false);
+    bool InGroup = false, Vector4 Relief = default);
 
 /// <summary>A scene lowered to triangles in canvas pixels (x right, y down), ready for stencil-then-cover.</summary>
 public sealed class DrawList(int width, int height)
@@ -66,14 +67,16 @@ public static class Lower
 
     /// <summary>The style in force: the node's own settings over its ancestors'.</summary>
     sealed record Paint(Rgb? Fill, bool FillNone, double FillOpacity, Rgb? Stroke, double StrokeWidth, string? Join,
-        string? Cap, double[]? Dash, double DashOffset, double StrokeOpacity)
+        string? Cap, double[]? Dash, double DashOffset, double StrokeOpacity, Relief? Relief)
     {
-        public static readonly Paint Default = new(null, false, 1, null, 1, null, null, null, 0, 1);
+        public static readonly Paint Default = new(null, false, 1, null, 1, null, null, null, 0, 1, null);
 
         public Paint With(Style s) => new(
             s.FillNone ? null : s.Fill ?? Fill, s.FillNone || (s.Fill == null && FillNone),
             s.FillOpacity ?? FillOpacity, s.Stroke ?? Stroke, s.StrokeWidth ?? StrokeWidth, s.LineJoin ?? Join,
-            s.LineCap ?? Cap, s.Dash ?? Dash, s.DashOffset ?? DashOffset, s.StrokeOpacity ?? StrokeOpacity);
+            s.LineCap ?? Cap, s.Dash ?? Dash, s.DashOffset ?? DashOffset, s.StrokeOpacity ?? StrokeOpacity, s.Relief ?? Relief);
+
+        public Vector4 ReliefOp => Relief is { } r ? new Vector4((float)r.Kind, (float)r.TopM, 0, 0) : default;
     }
 
     sealed class Ctx(DrawList dl)
@@ -179,7 +182,8 @@ public static class Lower
                 int first = dl.Verts.Count;
                 FanFill(contours, dl.Verts);
                 if (dl.Verts.Count > first)
-                    dl.Ops.Add(new DrawOp(OpKind.Fill, first, dl.Verts.Count - first, Premul(p.Fill ?? new Rgb(0, 0, 0), a)));
+                    dl.Ops.Add(new DrawOp(OpKind.Fill, first, dl.Verts.Count - first, Premul(p.Fill ?? new Rgb(0, 0, 0), a),
+                        Relief: p.ReliefOp));
             }
         }
         if (p.Stroke is Rgb sc && p.StrokeWidth > 0 && n is not TextNode)
@@ -193,7 +197,7 @@ public static class Lower
                 Stroker.Stroke(pts, closed, p.StrokeWidth * k, p.Join ?? "miter", p.Cap ?? "butt", dash, p.DashOffset * k,
                     TolPx, dl.Verts);
             if (dl.Verts.Count > first && a > 0)
-                dl.Ops.Add(new DrawOp(OpKind.Fill, first, dl.Verts.Count - first, Premul(sc, a), Union: true));
+                dl.Ops.Add(new DrawOp(OpKind.Fill, first, dl.Verts.Count - first, Premul(sc, a), Union: true, Relief: p.ReliefOp));
         }
     }
 

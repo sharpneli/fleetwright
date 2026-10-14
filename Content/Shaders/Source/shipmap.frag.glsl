@@ -7,7 +7,7 @@
 // point shifted by its height toward the low end and side: the trim and list, read back through the height map; the
 // turrets' and scorches' quads are shifted on the CPU), and what's under the sea is drowned, faint and green-dark by its
 // depth, with a pale wash along the new waterline. The hull, the turrets and the scorches are lit (Include/shiplight.glsl:
-// L1, a flat normal and one material); the silhouettes and the icons are not.
+// the sprite's normal and AO from its relief, one material; a scorch flat); the silhouettes and the icons are not.
 layout(location = 0) in vec2 fragUv;
 layout(location = 1) in vec2 fragShip;
 layout(location = 2) flat in vec4 fragMode;
@@ -22,6 +22,7 @@ layout(location = 10) in vec3 fragEye;
 
 layout(set = 2, binding = 0) uniform sampler2D spriteTex;
 layout(set = 2, binding = 1) uniform sampler2D heightTex;
+layout(set = 2, binding = 2) uniform sampler2D normalTex;   // the sprite's normal + AO (an icon: unused)
 
 layout(location = 0) out vec4 outColour;
 
@@ -99,7 +100,8 @@ void main()
         vec3 rgb = c.a > 0.0 ? c.rgb / c.a : vec3(0.0);   // the albedo as drawn, sRGB-coded
         if (fragTint.a > 0.0)
             rgb = mix(rgb, rgb * fragTint.rgb, fragTint.a);
-        rgb = shipShade(rgb, Up, normalize(fragEye), fragLightSun, fragLightMoon, look.y, 0.0, 1.0);
+        vec4 nt = texture(normalTex, uv);
+        rgb = shipShade(rgb, unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, look.y, 0.0, nt.a);
         vec4 col = vec4(rgb * c.a, c.a);
         if (fragSea.w > 0.5)
             col = drown(col, at, max(heightAt(at), fragMode.z));   // a turret stands as high as its roof

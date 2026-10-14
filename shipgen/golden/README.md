@@ -77,6 +77,11 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-14, the `kronstadt` navy (Russia), on purpose: `sverdlov` moved to `kronstadt`/`cold_war` (its design record's
   look echo and 3 SVGs: the colours), and `borodino` added, the first case since the port (`golden-update` writes a new
   case's goldens; it has no PNGs). Every other case unchanged.
+- 2026-10-14, the plan's ink outlines at half weight (docs/visuals/ship-lighting.md L2: `Shapes.Outline`, default
+  `Looks.DefaultOutline` 0.5, settled by side-by-side captures), on purpose: the hull and turret SVGs of 313 cases
+  draw `Painter.Ln`'s strokes at 0.75 of their width and 0.5 opacity. The side view, design records and sprite.json are
+  unchanged. `golden-update` no longer takes a fuzz case missing from the sprite capture for a new one (only the
+  shipped designs have sprite goldens; it was drawing them and failing on the unbuildable).
 
 ## Layout
 
