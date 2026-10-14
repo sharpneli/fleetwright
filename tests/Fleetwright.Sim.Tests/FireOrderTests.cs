@@ -153,7 +153,7 @@ public class FireOrderTests(ITestOutputHelper output)
         var (w, ai) = Make(new Placed("super_dreadnought", 0, 0, 90, 18, 0), new Placed("dreadnought", 90, 19_000, 0, 12, 1));
         w.Apply(ai.Orders.Fight(Unit.Ship(1)));
         Run(w, 30 * 60);
-        double band = Settings.FightRangeShare * w.Gunnery.ReachM(Fleet.Get("super_dreadnought").Class!, 0);
+        double band = Doctrine.Default(DoctrineField.RangeShare) * w.Gunnery.ReachM(Fleet.Get("super_dreadnought").Class!, 0);
         double range = Apart(w, 1, 2);
         var s1 = w.Ships.Store[w.Ships.Store.SlotOf(1)];
         double rel = Earth.Bearing(s1.Position, w.Ships.Store[w.Ships.Store.SlotOf(2)].Position) - s1.HeadingDeg;

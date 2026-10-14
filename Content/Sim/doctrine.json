@@ -1,0 +1,21 @@
+// Doctrine's presets (docs/battle/command.md "Doctrine: the standing rules", decision 7): named sets of values. A
+// scenario's side takes one ("doctrine": { "Britain": "default" }, else "default") and may set fields over it, per side
+// and per unit. A field not given is the neutral default (Fleetwright.Sim.Ai/Doctrine.cs: carry on, never fall out).
+// Presets by navy and year (the British at long range, the Germans' battle turn-away) come with the fine-tuning pass.
+{
+  "default": {
+    // what a unit does when it first meets an enemy in sight: "fight" (Fight, turning away when outgunned) or "carry on"
+    "Engage": "fight",
+    // Fight's range, a share of the main battery's reach; the enemy's heavy guns over the unit's own past which it turns away
+    "RangeShare": 0.6,
+    "OutgunnedRatio": 2,
+    // a ship falls out of the line under 60% of its designed speed, a third of its main guns, past 10° of list, or with
+    // half its reserve buoyancy flooded
+    "FallOutSpeedShare": 0.6,
+    "FallOutGunsShare": 0.34,
+    "FallOutListDeg": 10,
+    "FallOutWaterShare": 0.5,
+    // torpedoes "at will" or "on order" (only at a ship it's ordered to engage)
+    "Torpedoes": "at will"
+  }
+}

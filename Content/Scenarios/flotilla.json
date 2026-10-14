@@ -12,7 +12,6 @@
   "sides": ["Britain", "Germany"],
   "propellant": { "Britain": 2, "Germany": 0.1 },
   "player": "Britain",
-  "fight": ["Britain", "Germany"],
   // the end (docs/battle/command.md 5.0): the attack and the night after it
   "until": "1916-05-31T23:30",
   "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },

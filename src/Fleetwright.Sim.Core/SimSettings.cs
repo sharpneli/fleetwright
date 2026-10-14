@@ -552,15 +552,13 @@ public sealed record SimSettings
     /// within this of the next, m.</summary>
     public double FireLineGapM { get; init; } = 3_000;
 
-    /// <summary>Fight (a captain's minimal fighting manoeuvre): the range he keeps, a share of his main battery's reach,
-    /// and how far either side of it is near enough (a share of it); the angle off the line of sight he closes or opens
-    /// at, degrees; the radius his navy's guns and the enemy's are compared in, m, and the ratio of the enemy's heavy guns
-    /// to his own unit's past which he turns away (and back under a share of it).</summary>
-    public double FightRangeShare { get; init; } = 0.6;
+    /// <summary>Fight (a captain's minimal fighting manoeuvre): how far either side of the range he keeps is near enough
+    /// (a share of it); the angle off the line of sight he closes or opens at, degrees; the radius his navy's guns and the
+    /// enemy's are compared in, m; and the share of the outgunned ratio under which he turns back. The range and the ratio
+    /// are doctrine's (docs/battle/command.md "Doctrine": RangeShare, OutgunnedRatio).</summary>
     public double FightBandShare { get; init; } = 0.15;
     public double FightCloseDeg { get; init; } = 40;
     public double FightCompareM { get; init; } = 30_000;
-    public double FightOutgunnedRatio { get; init; } = 2;
     public double FightRallyShare { get; init; } = 0.75;
 
     /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×

@@ -13,8 +13,9 @@ namespace Fleetwright.Sim.Ai.Admirals;
 /// made out, counted from its van along its course; his own ships are counted from the van by their stations. With n of
 /// his against m, ship k takes enemy ⌊k·m/n⌋ when n ≥ m (the van doubles up, as Lion and Princess Royal did on
 /// Lützow), else enemy k (the rear goes unengaged).</item>
-/// <item><b>A standing order to fight</b> (a scenario's) becomes Fight when his guide first meets an enemy in sight in an
-/// encounter, for a group that's no force's line; it's armed again once the guide is out of encounters.</item>
+/// <item><b>Doctrine's Engage</b> (docs/battle/command.md "Doctrine"): to fight, it becomes Fight when his guide first meets
+/// an enemy in sight in an encounter, for a group that's no force's line; it's armed again once the guide is out of
+/// encounters.</item>
 /// </list></summary>
 public sealed partial class AdmiralLayer
 {
@@ -153,14 +154,16 @@ public sealed partial class AdmiralLayer
         }
     }
 
-    /// <summary>A group with a standing order to fight takes it up when its guide first meets an enemy in sight in an
+    /// <summary>A group whose doctrine is to fight takes up Fight when its guide first meets an enemy in sight in an
     /// encounter (and isn't in a force's line: its force fights).</summary>
     void TakeUpStanding(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
     {
-        if (!a.Standing || lead < 0)
+        if (lead < 0)
             return;
         var ships = ctx.Ships;
         var guide = ships[lead];
+        if ((Engage)doctrine.OfGroup(g, guide.Side, DoctrineField.Engage) != Engage.Fight)
+            return;
         if (ctx.World.Encounters.Of(lead, guide.Entity) == 0)
         {
             a.Met = false;

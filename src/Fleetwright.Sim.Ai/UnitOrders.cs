@@ -87,8 +87,16 @@ public enum AiCommand : ushort
     /// unit fought (0: the nearest enemy), X the range, m (0: a share of the main battery's reach).</summary>
     Fight,
 
-    /// <summary>A standing order for when the unit's ships first meet an enemy in an encounter: X 1 to Fight, 0 none.</summary>
-    Standing,
+    /// <summary>A value of the unit's doctrine (docs/battle/command.md "Doctrine"): A the <see cref="DoctrineField"/>, X
+    /// the value (NaN: back to what it inherits).</summary>
+    Doctrine,
+
+    /// <summary>A value of a side's doctrine: the command's Entity is the side (not a unit), A the field, X the value.</summary>
+    SideDoctrine,
+
+    /// <summary>Where a side's ships go when they're out of the fight (docs/battle/command.md "home"): Entity the side, A a
+    /// packed lat/lon (0: none).</summary>
+    Home,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -148,8 +156,15 @@ public readonly struct UnitOrders(byte system)
     public Command Fight(Unit u, Unit target = default, double rangeM = 0, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Fight, u, source, a: target.Id, x: rangeM);
 
-    /// <summary>Fight when the unit's ships first meet an enemy in sight (a scenario's standing order), or not.</summary>
-    public Command Standing(Unit u, bool fight) => Make(AiCommand.Standing, u, OrderSource.Player, x: fight ? 1 : 0);
+    /// <summary>A value of a unit's doctrine (NaN: back to what it inherits from its group, its side, the default).</summary>
+    public Command Doctrine(Unit u, DoctrineField field, double value) => Make(AiCommand.Doctrine, u, OrderSource.Player, a: (long)field, x: value);
+
+    /// <summary>A value of a side's doctrine (NaN: back to the default).</summary>
+    public Command SideDoctrine(int side, DoctrineField field, double value) =>
+        new(system, (ushort)AiCommand.SideDoctrine, side, A: (long)field, X: value);
+
+    /// <summary>A side's home: where its cripples go.</summary>
+    public Command Home(int side, double latDeg, double lonDeg) => new(system, (ushort)AiCommand.Home, side, A: Earth.PackLatLon(latDeg, lonDeg));
 
     /// <summary>A fire order an admiral hands down to a ship of his tree (<paramref name="from"/> his group): a fresh one
     /// (his group was just given it) reaches the ship whatever it holds; a redistribution only if it still holds his.</summary>

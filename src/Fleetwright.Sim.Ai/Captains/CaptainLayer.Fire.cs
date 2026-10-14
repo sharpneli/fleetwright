@@ -70,7 +70,7 @@ public sealed partial class CaptainLayer
             ctx.Issue(GunnerySystem.Cease(e));
     }
 
-    /// <summary>Each fighting ship's batteries put on their targets (and a ship alone's standing order taken up).</summary>
+    /// <summary>Each fighting ship's batteries put on their targets (and a ship alone's doctrine taken up).</summary>
     void FirePass(in AiContext ctx)
     {
         var store = ctx.Ships;
@@ -99,11 +99,11 @@ public sealed partial class CaptainLayer
         }
     }
 
-    /// <summary>A ship alone with a standing order to fight takes it up when it first meets an enemy in sight in an
-    /// encounter; it's armed again once it's out of encounters.</summary>
+    /// <summary>A ship alone whose doctrine is to fight (docs/battle/command.md "Doctrine": Engage) takes up Fight when
+    /// it first meets an enemy in sight in an encounter; it's armed again once it's out of encounters.</summary>
     void TakeUpStanding(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
-        if (!cap.Standing)
+        if ((Engage)doctrine.Of(own.Entity, own.Side, DoctrineField.Engage) != Engage.Fight)
             return;
         if (encounters.Of(slot, own.Entity) == 0)
         {
@@ -157,12 +157,15 @@ public sealed partial class CaptainLayer
         long now = ctx.NowMs;
         if (pic == null || cls.Launchers.Length == 0 || cap.Fire == FireOrder.Hold || cap.TorpedoMs != 0 && now - cap.TorpedoMs < s.TorpedoRefireMs)
             return;
+        bool onOrder = (TorpedoUse)doctrine.Of(own.Entity, own.Side, DoctrineField.Torpedoes) == TorpedoUse.OnOrder;
+        if (onOrder && cap.Fire != FireOrder.Engage)
+            return;   // only at a ship he's ordered to engage
         var (reach, speed) = FastSetting(cls);
         reach *= s.TorpedoFireShare;
         int target = 0;
         if (cap.Fire == FireOrder.Engage && pic.IndexOf(cap.FireTarget) is int ei and >= 0 && pic[ei].InSight && Run(ctx, pic, own, ei, speed) <= reach)
             target = cap.FireTarget;
-        if (target == 0)
+        if (target == 0 && !onOrder)
         {
             int bestRank = int.MaxValue;
             double bestRun = double.MaxValue;
@@ -349,7 +352,7 @@ public sealed partial class CaptainLayer
         var cls = own.Handling.Class;
         int main = MainBattery(cls);
         double reach = main >= 0 ? ctx.World.Gunnery.ReachM(cls, main) : s.ShadowMinM;
-        double band = cap.DistanceM > 0 ? cap.DistanceM : s.FightRangeShare * reach;
+        double band = cap.DistanceM > 0 ? cap.DistanceM : doctrine.Of(own.Entity, own.Side, DoctrineField.RangeShare) * reach;
 
         int enemy = new Unit(cap.Target).ShipOf(groups);
         if (enemy == 0 || !ctx.Picture.TryGet(own.Side, enemy, out var t))
@@ -374,7 +377,7 @@ public sealed partial class CaptainLayer
         }
 
         var (theirs, ours) = Weigh(ctx, own);
-        double ratio = s.FightOutgunnedRatio;
+        double ratio = doctrine.Of(own.Entity, own.Side, DoctrineField.OutgunnedRatio);
         cap.FightAway = cap.FightAway ? theirs > ours * ratio * s.FightRallyShare : theirs > ours * ratio;
         var (course, kn) = cap.FightAway ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, band, s.FightBandShare, s.FightCloseDeg, ref cap.FightSide);
         if (cap.LimitKn > 0)

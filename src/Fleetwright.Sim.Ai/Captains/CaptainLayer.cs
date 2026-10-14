@@ -53,7 +53,7 @@ public enum CaptainOrder : byte
 /// ship is handed back or let go.</para>
 /// A captain whose ship is gone is dropped; one whose target is gone holds his course. His guns and Fight are in
 /// CaptainLayer.Fire.cs.</summary>
-public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounters, SeenContacts seen) : IAiLayer
+public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounters, SeenContacts seen, Doctrine doctrine) : IAiLayer
 {
     struct Captain
     {
@@ -72,7 +72,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public int FireTarget, FireFrom;   // the ship engaged; the group whose admiral gave the fire order (0: his own)
         public int FightSide, FightEnemy;  // fighting: the side he keeps the enemy on (0: not chosen yet), and whom
         public bool FightAway;          // fighting: outgunned, turned away
-        public bool Standing, Met;      // a standing order to fight; taken up in this encounter
+        public bool Met;                // doctrine's Engage taken up in this encounter
         public long TorpedoMs;          // when he last fired torpedoes (0: never)
     }
 
@@ -180,10 +180,6 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         {
             case AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage:
                 FireOrdered(ctx, c, source);   // the guns: not the helm, so he keeps his place in the line
-                return;
-            case AiCommand.Standing:
-                ref var st = ref Get(e);
-                (st.Standing, st.Met) = (c.X != 0, false);
                 return;
         }
         var g = groups.Of(e);
@@ -478,7 +474,6 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add(c.FightSide);
             h.Add(c.FightEnemy);
             h.Add(c.FightAway);
-            h.Add(c.Standing);
             h.Add(c.Met);
             h.Add(c.TorpedoMs);
             c.Track?.Hash(ref h);

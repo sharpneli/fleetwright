@@ -1,6 +1,6 @@
 // Two squadrons close and fight (docs/battle/fighting.md 4.2c, "Playable"): Beatty's 1st Battlecruiser Squadron and
-// Hipper's 1st Scouting Group, 22 km apart on converging courses in clear weather, both sides with the standing order
-// to Fight when they meet. Fire at will is every ship's default; give a group Engage to distribute its fire, or Hold
+// Hipper's 1st Scouting Group, 22 km apart on converging courses in clear weather; both sides Fight when they meet
+// (doctrine's default, docs/battle/command.md). Fire at will is every ship's default; give a group Engage to distribute its fire, or Hold
 // fire. Not history: a bench to watch fire control play out at 1x.
 {
   "scenario": 1,
@@ -12,7 +12,6 @@
   "sides": ["Britain", "Germany"],
   "propellant": { "Britain": 2, "Germany": 0.1 },
   "player": "Britain",
-  "fight": ["Britain", "Germany"],
   // the end (docs/battle/command.md 5.0): an evening's fighting, each side out to sink the other
   "until": "1916-05-31T21:30",
   "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },

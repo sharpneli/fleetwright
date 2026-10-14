@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Core;
 
@@ -27,9 +28,12 @@ namespace Fleetwright.Sim.Missions;
 /// </code>
 /// <para>A side's gun crews are green, average, trained or elite (<c>"crews"</c>; trained if not listed). A side's
 /// propellant (<c>"propellant": { "Britain": 2, "Germany": 0.1 }</c>, 1 if not listed) scales how readily its magazines go
-/// up (docs/battle/fighting.md 4.3a: Jutland's cordite against brass-cased RP C/12). The sides in
-/// <c>"fight": ["Germany"]</c> give each of their top units a standing order to Fight when it first meets an enemy in sight
-/// (docs/battle/fighting.md 4.2c).</para>
+/// up (docs/battle/fighting.md 4.3a: Jutland's cordite against brass-cased RP C/12).</para>
+/// <para>Each side's doctrine (docs/battle/command.md "Doctrine") is a preset of <c>Content/Sim/doctrine.json</c>,
+/// <c>"doctrine": { "Germany": "default" }</c>, with values over it, <c>{ "Germany": { "preset": "default",
+/// "RangeShare": 0.5 } }</c>; a side not listed takes "default" (Engage: fight). A unit sets values of its own,
+/// <c>"doctrine": { "Torpedoes": "on order" }</c>. A side's <c>"home": { "Germany": [54.0, 8.0] }</c> is where its ships
+/// out of the fight go.</para>
 /// <para>It ends (docs/battle/command.md "The end", <see cref="ScenarioEnd"/>) at <c>"until": "1916-06-01T04:00"</c> (UTC;
 /// <see cref="SimSettings.PlayLimitMs"/> after the start if not given), or before that when it's decided or quiet. Each
 /// side wants its <c>"aims": { "Britain": "destroy everyone" }</c> (a name, or a list of them); a side not listed wants to
@@ -71,8 +75,11 @@ public sealed class Scenario
     /// <summary>The sides' propellant where it isn't 1 (docs/battle/fighting.md 4.3a), by side index.</summary>
     public List<(int Side, double Factor)> Propellant { get; init; } = [];
 
-    /// <summary>The sides whose top units Fight when they first meet an enemy in sight (by index).</summary>
-    public List<int> Fight { get; init; } = [];
+    /// <summary>Each side's doctrine where the file gives it, by index: a preset, and values over it.</summary>
+    public List<(int Side, string Preset, List<(DoctrineField Field, double Value)> Values)> Doctrine { get; init; } = [];
+
+    /// <summary>The sides' homes where the file gives them, by index.</summary>
+    public List<(int Side, double Lat, double Lon)> Homes { get; init; } = [];
 
     /// <summary>When it ends at the latest (docs/battle/command.md "The end"); null for the start plus
     /// <see cref="SimSettings.PlayLimitMs"/>.</summary>
@@ -211,9 +218,14 @@ public sealed class Scenario
             // "propellant": { "Germany": 0.1 }, by the sides' names; taken from "from" (with its sides) unless given
             var propellant = r.TryGetProperty("propellant", out var pr) ? ParsePropellant(pr, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Propellant : [];
-            // "fight": ["Germany"], by the sides' names; taken from "from" (with its sides) unless given
-            var fight = r.TryGetProperty("fight", out var fi) ? ParseSides(fi, sides, "fight")
-                : from != null && !r.TryGetProperty("sides", out _) ? from.Fight : [];
+            if (r.TryGetProperty("fight", out _))
+                throw new ScenarioException("fight: gone; doctrine's Engage is \"fight\" by default (\"doctrine\": { \"Germany\": { \"Engage\": \"carry on\" } } not to)");
+            // "doctrine": { "Germany": "default" | { "preset": "default", "RangeShare": 0.5 } }; "home": { "Germany": [54, 8] };
+            // by the sides' names, taken from "from" (with its sides) unless given
+            var doctrine = r.TryGetProperty("doctrine", out var dc) ? ParseDoctrine(dc, sides)
+                : from != null && !r.TryGetProperty("sides", out _) ? from.Doctrine : [];
+            var homes = r.TryGetProperty("home", out var ho) ? ParseHomes(ho, sides)
+                : from != null && !r.TryGetProperty("sides", out _) ? from.Homes : [];
             // "until": "1916-06-01T04:00"; "aims": { "Britain": "destroy everyone" }; both taken from "from" unless given
             WorldTime? until = r.TryGetProperty("until", out var un) ? ParseTime(un.GetString() ?? "", "until") : from?.Until;
             var aims = r.TryGetProperty("aims", out var ai) ? ParseAims(ai, sides)
@@ -246,7 +258,8 @@ public sealed class Scenario
                 Weather = weather,
                 Crews = crews,
                 Propellant = propellant,
-                Fight = fight,
+                Doctrine = doctrine,
+                Homes = homes,
                 Until = until,
                 AimList = aims,
                 Units = units,
@@ -255,17 +268,59 @@ public sealed class Scenario
         }
     }
 
-    static List<int> ParseSides(JsonElement e, string[] sides, string key)
+    static List<(int, string, List<(DoctrineField, double)>)> ParseDoctrine(JsonElement e, string[] sides)
     {
-        if (e.ValueKind != JsonValueKind.Array)
-            throw new ScenarioException($"{key}: an array of sides' names, [\"Germany\"]");
-        var list = new List<int>();
-        foreach (var x in e.EnumerateArray())
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException("doctrine: an object of sides' names, { \"Germany\": \"default\" }");
+        var list = new List<(int, string, List<(DoctrineField, double)>)>();
+        foreach (var p in e.EnumerateObject())
         {
-            int side = Array.IndexOf(sides, x.GetString());
+            int side = Array.IndexOf(sides, p.Name);
             if (side < 0)
-                throw new ScenarioException($"{key}: \"{x}\" isn't one of the sides ({string.Join(", ", sides)})");
-            list.Add(side);
+                throw new ScenarioException($"doctrine: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
+            if (p.Value.ValueKind == JsonValueKind.String)
+                list.Add((side, p.Value.GetString()!, []));
+            else if (p.Value.ValueKind == JsonValueKind.Object)
+                list.Add((side, p.Value.TryGetProperty("preset", out var pr) ? pr.GetString() ?? "" : DoctrinePresets.DefaultName,
+                    DoctrineValues(p.Value, $"doctrine of {p.Name}", "preset")));
+            else
+                throw new ScenarioException($"doctrine of {p.Name}: a preset's name, or {{ \"preset\": ..., fields }}");
+        }
+        return list;
+    }
+
+    /// <summary>Doctrine's fields and their values in an object (<paramref name="skip"/> aside).</summary>
+    static List<(DoctrineField, double)> DoctrineValues(JsonElement e, string path, string? skip = null)
+    {
+        var values = new List<(DoctrineField, double)>();
+        foreach (var f in e.EnumerateObject())
+        {
+            if (f.Name == skip)
+                continue;
+            try
+            {
+                values.Add(DoctrinePresets.Value(f.Name, f.Value));
+            }
+            catch (ArgumentException x)
+            {
+                throw new ScenarioException($"{path}: {x.Message}");
+            }
+        }
+        return values;
+    }
+
+    static List<(int, double, double)> ParseHomes(JsonElement e, string[] sides)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException("home: an object of sides' names, { \"Germany\": [54.0, 8.0] }");
+        var list = new List<(int, double, double)>();
+        foreach (var p in e.EnumerateObject())
+        {
+            int side = Array.IndexOf(sides, p.Name);
+            if (side < 0)
+                throw new ScenarioException($"home: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
+            var (lat, lon) = LatLon(p.Value, $"home of {p.Name}");
+            list.Add((side, lat, lon));
         }
         return list;
     }
@@ -406,6 +461,7 @@ public sealed class Scenario
             Kn = kn ?? 0,
             Route = route,
             Loop = e.TryGetProperty("loop", out var lp) && lp.GetBoolean(),
+            Doctrine = e.TryGetProperty("doctrine", out var dc) ? DoctrineValues(dc, $"{path} doctrine") : [],
         };
         if (hasUnits)
         {
@@ -497,6 +553,9 @@ public sealed class ScenarioUnit
 
     public List<ScenarioUnit> Units { get; } = [];
     public List<ScenarioShips> Ships { get; } = [];
+
+    /// <summary>Doctrine's values the unit sets for itself (docs/battle/command.md "Doctrine"), over its side's.</summary>
+    public List<(DoctrineField Field, double Value)> Doctrine { get; init; } = [];
 
     public bool IsForce => Units.Count > 0;
     public int ShipCount => IsForce ? Units.Sum(u => u.ShipCount) : Ships.Sum(s => s.Count);

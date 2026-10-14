@@ -26,14 +26,24 @@ public sealed class AiSystem : IWorldSystem
     /// <summary>Each navy's contacts in sight, gridded for the layers' questions (not world state).</summary>
     public SeenContacts Seen { get; }
 
+    /// <summary>Every side's and unit's standing rules (docs/battle/command.md "Doctrine").</summary>
+    public Doctrine Doctrine { get; }
+
+    // each side's home (docs/battle/command.md "home"): where its ships out of the fight go; null for none
+    readonly Vec3d?[] homes = new Vec3d?[256];
+
+    /// <summary>A side's home, if it has one.</summary>
+    public Vec3d? HomeOf(int side) => homes[side & 255];
+
     /// <summary>Orders to units (ships and groups), as commands to send: the player's way in, and the layers'.</summary>
     public UnitOrders Orders => new(Id);
 
     public AiSystem(World world)
     {
         Seen = new SeenContacts();
-        Captains = new CaptainLayer(world.Groups, world.Encounters, Seen);
-        Admirals = new AdmiralLayer(world.Groups, Captains, Seen);
+        Doctrine = new Doctrine(world.Groups);
+        Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine);
+        Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine);
         layers = [Admirals, Captains];
         nextTick = new long[layers.Length];
         tickGen = new int[layers.Length];
@@ -48,9 +58,24 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Standing)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Home)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
+        switch ((AiCommand)c.Code)
+        {
+            case AiCommand.Doctrine or AiCommand.SideDoctrine:
+                if (c.A is < 0 or >= Doctrine.FieldCount)
+                    throw new ArgumentException($"no doctrine field {c.A}");
+                if ((AiCommand)c.Code == AiCommand.Doctrine)
+                    Doctrine.Set(u, (DoctrineField)c.A, c.X);
+                else
+                    Doctrine.SetSide(c.Entity, (DoctrineField)c.A, c.X);
+                WakeAll(world);
+                return;
+            case AiCommand.Home:
+                homes[c.Entity & 255] = c.A == 0 ? null : Earth.Position(Earth.UnpackLatLon(c.A).Lat, Earth.UnpackLatLon(c.A).Lon);
+                return;
+        }
         if (u.IsShip)
             Captains.Order(Context(world), c);
         else if (u.IsGroup)
@@ -114,6 +139,15 @@ public sealed class AiSystem : IWorldSystem
             h.Add(g);
         foreach (var l in layers)
             l.Hash(ref h);
+        Doctrine.Hash(ref h);
+        for (int side = 0; side < homes.Length; side++)
+            if (homes[side] is { } p)
+            {
+                h.Add(side);
+                h.Add(p.X);
+                h.Add(p.Y);
+                h.Add(p.Z);
+            }
     }
 
     public void Fill(Snapshot s)

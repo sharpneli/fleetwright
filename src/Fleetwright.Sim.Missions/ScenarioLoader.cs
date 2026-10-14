@@ -46,10 +46,25 @@ public static class ScenarioLoader
     }
 
     /// <summary>The scenario into a world that hasn't run: its ships, groups and orders. The world's start time and
-    /// seed are the caller's (<see cref="Scenario.Start"/>, <see cref="Scenario.Seed"/>).</summary>
-    public static ScenarioStart Apply(Scenario s, World w, AiSystem ai, IReadOnlyDictionary<string, int> classes)
+    /// seed are the caller's (<see cref="Scenario.Start"/>, <see cref="Scenario.Seed"/>). Doctrine's presets are
+    /// <paramref name="presets"/>, else <c>Content/Sim/doctrine.json</c> beside the scenario's folder, else the builtin
+    /// default (<see cref="DoctrinePresets.Builtin"/>).</summary>
+    public static ScenarioStart Apply(Scenario s, World w, AiSystem ai, IReadOnlyDictionary<string, int> classes, DoctrinePresets? presets = null)
     {
         var start = new ScenarioStart();
+        presets ??= PresetsFor(s);
+        for (int side = 0; side < s.Sides.Length; side++)
+        {
+            // every side's doctrine: its preset (the default unless named), then its own values over it
+            var given = s.Doctrine.FirstOrDefault(d => d.Side == side);
+            string name = given.Preset ?? DoctrinePresets.DefaultName;
+            if (!presets.Has(name))
+                throw new ScenarioException($"doctrine of {s.Sides[side]}: no preset \"{name}\" (have {string.Join(", ", presets.Names)})");
+            foreach (var (f, v) in presets[name].Concat(given.Values ?? []))
+                w.Apply(ai.Orders.SideDoctrine(side, f, v));
+        }
+        foreach (var (side, lat, lon) in s.Homes)
+            w.Apply(ai.Orders.Home(side, lat, lon));
         foreach (var (a, b) in s.Peace)
             w.Apply(Command.SetRelation((byte)a, (byte)b, Relation.Peace));
         if (s.Player >= 0)
@@ -106,12 +121,16 @@ public static class ScenarioLoader
             }
 
             // the groups bottom-up, then the top unit's orders
-            int topGroup = Form(top, w, entities, start);
+            int topGroup = Form(top, w, ai, entities, start);
             Unit unit;
             if (topGroup > 0)
                 unit = Unit.Group(topGroup);
             else if (entities.TryGetValue((top, 0), out int lone))
+            {
                 unit = Unit.Ship(lone);
+                foreach (var (f, v) in top.Doctrine)
+                    w.Apply(ai.Orders.Doctrine(unit, f, v));
+            }
             else
                 continue;
             var o = ai.Orders;
@@ -126,10 +145,26 @@ public static class ScenarioLoader
             else
                 w.Apply(o.Course(unit, top.CourseDeg));
             w.Apply(o.Speed(unit, top.Kn));
-            if (s.Fight.Contains(top.Side))
-                w.Apply(o.Standing(unit, fight: true));
         }
         return start;
+    }
+
+    /// <summary>Doctrine's presets for a scenario read from a file: Content/Sim/doctrine.json beside its folder
+    /// (Content/Scenarios), else the builtin default.</summary>
+    static DoctrinePresets PresetsFor(Scenario s)
+    {
+        if (s.Folder != null && Path.Combine(s.Folder, "..", "Sim", "doctrine.json") is var p && File.Exists(p))
+        {
+            try
+            {
+                return DoctrinePresets.Load(p);
+            }
+            catch (Exception x) when (x is ArgumentException or System.Text.Json.JsonException)
+            {
+                throw new ScenarioException($"{p}: {x.Message}");
+            }
+        }
+        return DoctrinePresets.Builtin;
     }
 
     /// <summary>Every ship of a unit with its station about the top unit's guide ship, in line order: the walk of
@@ -169,7 +204,7 @@ public static class ScenarioLoader
     }
 
     /// <summary>A unit's group, made of what spawned (its id; 0 if none spawned, or a top unit of one ship).</summary>
-    static int Form(ScenarioUnit u, World w, Dictionary<(ScenarioUnit, int), int> entities, ScenarioStart start)
+    static int Form(ScenarioUnit u, World w, AiSystem ai, Dictionary<(ScenarioUnit, int), int> entities, ScenarioStart start)
     {
         bool top = u.At != null;
         int id = 0;
@@ -194,7 +229,7 @@ public static class ScenarioLoader
         {
             foreach (var c in u.Units)
             {
-                int g = Form(c, w, entities, start);
+                int g = Form(c, w, ai, entities, start);
                 if (g == 0)
                     continue;
                 if (id == 0)
@@ -211,6 +246,8 @@ public static class ScenarioLoader
             start.Groups++;
             if (u.Name.Length > 0)
                 w.Groups.SetName(id, u.Name);
+            foreach (var (f, v) in u.Doctrine)
+                w.Apply(ai.Orders.Doctrine(Unit.Group(id), f, v));
         }
         return id;
     }

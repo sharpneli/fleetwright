@@ -284,7 +284,8 @@ The commander, v0, rule by rule:
 
 A scenario ends when, in order:
 
-1. **its time limit** passes (a scenario's `"until"`, else a default of a day);
+1. **its time limit** passes (a scenario's `"until"`, else a default of a day). The limits are a testing aid for now
+   (decision 11): in the release they're relaxed far, and a clock never ends a fight that's going on;
 2. **every side is done:** each commander has met or given up his aims and his units are home or out of the area;
 3. **a side is gone** (sunk, or out of the area);
 4. **nothing has happened for long:** no encounter open and none of a side's units in contact for `QuietEndMs`
@@ -504,8 +505,8 @@ As the layers already are:
 | Layer | What's new |
 |---|---|
 | `Sim.Combat` | `Fitness` (a ship's, and an enemy's as seen) |
-| `Sim` (world) | Doctrine's store and command; formations as lines of bearing in `GroupSystem`; signals in transit (world state: the AI's orders, on both sides) |
-| `Sim.Ai` | `Commanders/` (the side's commander, aims, plans); the tasks in `AdmiralLayer` and `CaptainLayer`; `Knowledge/` the tactical picture and strength; `Captains/` evasion, falling out, combing tracks; `Admirals/` manoeuvres, the deployment, the flotilla's attack |
+| `Sim` (world) | Formations as lines of bearing in `GroupSystem`; signals in transit (world state: the AI's orders, on both sides) |
+| `Sim.Ai` | `Doctrine` (AI state: only captains and admirals read it; built in 5.1a) and the sides' homes in `AiSystem`; `Commanders/` (the side's commander, aims, plans); the tasks in `AdmiralLayer` and `CaptainLayer`; `Knowledge/` the tactical picture and strength; `Captains/` evasion, falling out, combing tracks; `Admirals/` manoeuvres, the deployment, the flotilla's attack |
 | `Sim.Missions` | `"aims"`, `"home"`, `"plan"`, `"doctrine"`, `"until"`; the end and the result |
 | the exe | Placeholders per step on the world tab; 5.2's UI |
 | `shipgen` CLI | `scenario --play [--seeds N]` |
@@ -580,3 +581,7 @@ The user's, 2026-10-14, on the questions:
 9. **Tune twice:** signals (5.1e) come after the layers they delay, since the delay is the trickier part; the tactics
    are tuned without them, then with them.
 10. **Captains attempt torpedo evasion already** in 5.1a (wakes seen at short range, combing the tracks).
+11. **Time limits are for testing the AI only** (the user, 2026-10-14, after 5.0). The release relaxes them a lot.
+    Nothing is more annoying than nearly sinking the last enemy and being told "out of time": no admiralty ever
+    ordered a captain back from finishing an enemy because a clock said so. So a scenario's end must never cut off a
+    fight that's going on; ending by time is for runs nobody is watching to a conclusion.

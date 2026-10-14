@@ -22,7 +22,7 @@ namespace Fleetwright.Sim.Ai.Admirals;
 /// <para>Ships that left their group or its line get their captains back, groups that left their force their admirals,
 /// and ships that are gone leave their group. He commands his own ships, so he reads them as they are; other ships he'd
 /// see through the picture.</para></summary>
-public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captains, SeenContacts seen) : IAiLayer
+public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captains, SeenContacts seen, Doctrine doctrine) : IAiLayer
 {
     /// <summary>One admiral: his group's order, kept to hand to a new guide, and who gave it.</summary>
     sealed class Admiral
@@ -45,7 +45,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public bool Asked;              // held by the player while his superior's orders for it changed: a notice
         public FireOrder Fire;          // his group's fire order (AdmiralLayer.Fire.cs), engaging FireTarget
         public int FireTarget;
-        public bool Standing, Met;      // a standing order to fight; taken up in this encounter
+        public bool Met;                // doctrine's Engage taken up in this encounter
     }
 
     Admiral[] admirals = new Admiral[8];
@@ -109,9 +109,6 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         {
             case AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage:
                 FireOrdered(ctx, g, a, c);   // the guns: the line keeps its stations
-                return;
-            case AiCommand.Standing:
-                (a.Standing, a.Met) = (c.X != 0, false);
                 return;
         }
 
@@ -487,7 +484,6 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             h.Add(a.Asked);
             h.Add((int)a.Fire);
             h.Add(a.FireTarget);
-            h.Add(a.Standing);
             h.Add(a.Met);
         }
     }
