@@ -1337,6 +1337,7 @@ From 4.6 (2026-10-14):
    the flooding model counting water on the side it came in (4.5). Until then torpedoes cripple battleships (half their
    power after four) more than they sink them. Leave it to 4.5, or bring a piece of it forward?
 9. **The broken back** (`TorpedoBreakShare`) is an addition to the plan, to meet the destroyer anchor: keep it?
+   *The user, 2026-10-14:* keep it; it's fine-tuned later (decision 18).
 
 
 ## Decisions
@@ -1385,3 +1386,4 @@ The user's, 2026-10-14, after the first pass:
 17. **The coarse tier comes substantially later** (4.8 and 4.9): after the fine-tune passes of all the systems, so the
     coarse model is fitted to the fine chain once it has settled. Engagements are playable as they are, and there are no
     NPC wars yet that need fighting at speed.
+18. **The broken back stays** (question 9), to be fine-tuned later.
