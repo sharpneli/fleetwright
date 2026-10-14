@@ -236,7 +236,7 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
 
     struct SpriteParams
     {
-        public Vector4 P, HMap, SunL, MoonL;
+        public Vector4 P, HMap, SunL, MoonL, Shadow, March, Frame;
     }
 
     struct ShadowParams
@@ -282,7 +282,7 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
         }
         var hmap = new Vector4((float)(Scale / size[0]), (float)(Scale / size[1]), 0.5f, 0.5f);
         var sh = meta.Shadow;
-        float deckM = (float)sh.DeckM, maxH = (float)sh.MaxHeightM;
+        float maxH = (float)sh.MaxHeightM;
         var lights = view.Lights();
         var lu = lights.Uniforms;
         SDL_PushGPUFragmentUniformData(cmd, 1, (nint)(&lu), (uint)sizeof(LightUniforms));
@@ -316,7 +316,24 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
         Sprite(hullTex, hullNormal, Q(new(-cw / 2, -ch / 2), new(cw, 0), new(0, ch)),
             new SpriteParams { P = new(mip, 0, 1, 0), HMap = hmap, SunL = new(sunW, 0), MoonL = new(moonW, 0) });
 
-        // the turrets, their shadows first (only where the hull is lower than the turret's roof)
+        // the hull's shadow, over the canvas and as far down-light of it as a shadow can reach: under the turrets, which
+        // take it at their roofs
+        float lod = Math.Max(0, mip);
+        var shadowL = new Vector4(toSun, k, shadowOpacity);
+        if (shadows)
+        {
+            var d = -toSun * (maxH / k);
+            var q = Q(new Vector2(-cw / 2, -ch / 2) + Vector2.Min(Vector2.Zero, d), new(cw + MathF.Abs(d.X), 0), new(0, ch + MathF.Abs(d.Y)));
+            var p = new ShadowParams { Sun = shadowL, HMap = hmap, March = Map.ShipDrawList.HullMarch(maxH, 0, k, lod, Scale) };
+            SDL_BindGPUGraphicsPipeline(pass, shadowPipe);
+            var bind = new SDL_GPUTextureSamplerBinding { texture = heightTex, sampler = nearest };
+            SDL_BindGPUFragmentSamplers(pass, 0, &bind, 1);
+            SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&q), (uint)sizeof(Quad));
+            SDL_PushGPUFragmentUniformData(cmd, 0, (nint)(&p), (uint)sizeof(ShadowParams));
+            SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
+        }
+
+        // the turrets, their shadows first (each a box down-light of the turret, projected by the receiver's height)
         var types = meta.TurretTypes;
         for (int pass2 = 0; pass2 < 2; pass2++)
         {
@@ -334,42 +351,29 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
                 var o = c - ax / 2 - ay / 2;
                 var tex = (SDL_GPUTexture*)turretTex[m.Type];
                 var normal = (SDL_GPUTexture*)turretNormal[m.Type];
+                float top = (float)m.TopM;
                 if (pass2 == 0)
                 {
-                    float top = (float)m.TopM;
-                    var off = -toSun * ((top - deckM) / k);   // shadow.sun_offset_px, in metres
-                    Sprite(tex, normal, Q(o + off, ax, ay), new SpriteParams { P = new(mip, 1, shadowOpacity, top), HMap = hmap });
+                    float r = e * MathF.Sqrt(2);
+                    var d = -toSun * (top / k);
+                    var lo = c + Vector2.Min(Vector2.Zero, d) - new Vector2(r);
+                    var box = Vector2.Abs(d) + new Vector2(2 * r);
+                    Sprite(tex, normal, Q(lo, new(box.X, 0), new(0, box.Y)), new SpriteParams
+                    {
+                        P = new(mip, 1, 1, top), HMap = hmap, Shadow = shadowL, March = Map.ShipDrawList.HullMarch(maxH, 0, k, lod, Scale),
+                        Frame = new(o, ax.X, ax.Y),
+                    });
                 }
                 else
                 {
                     var along = new Vector2(MathF.Cos(a), MathF.Sin(a));
                     Sprite(tex, normal, Q(o, ax, ay), new SpriteParams
                     {
-                        P = new(mip, 0, 1, 0), HMap = hmap, SunL = InFrame(sunW, along), MoonL = InFrame(moonW, along),
+                        P = new(mip, 0, 1, top), HMap = hmap, SunL = InFrame(sunW, along), MoonL = InFrame(moonW, along),
+                        Shadow = shadowL, March = shadows ? Map.ShipDrawList.HullMarch(maxH, top, k, lod, Scale) : default,
                     });
                 }
             }
-        }
-
-        // the shadow from the height map, over the canvas and as far beyond it as a shadow can reach
-        if (shadows)
-        {
-            float reach = maxH / k;
-            var q = Q(new(-cw / 2 - reach, -ch / 2 - reach), new(cw + 2 * reach, 0), new(0, ch + 2 * reach));
-            float lod = Math.Max(0, mip);
-            float step = MathF.Max(0.1f, (float)(1 / Scale) * MathF.Pow(2, lod));
-            var p = new ShadowParams
-            {
-                Sun = new(toSun, k, shadowOpacity),
-                HMap = hmap,
-                March = new(step, MathF.Ceiling(reach / step), 0.3f, lod),
-            };
-            SDL_BindGPUGraphicsPipeline(pass, shadowPipe);
-            var bind = new SDL_GPUTextureSamplerBinding { texture = heightTex, sampler = nearest };
-            SDL_BindGPUFragmentSamplers(pass, 0, &bind, 1);
-            SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&q), (uint)sizeof(Quad));
-            SDL_PushGPUFragmentUniformData(cmd, 0, (nint)(&p), (uint)sizeof(ShadowParams));
-            SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
         }
     }
 

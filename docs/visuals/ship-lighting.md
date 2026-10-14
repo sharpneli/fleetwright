@@ -259,7 +259,7 @@ roof insets, the face plates' dark shade becoming a slope). Goldens updated. The
   barrels their own gloss.
 - **Costs:** bake time as L2 (bismarck 0.14 s); no runtime change (only the bake's shaders and the textures' content).
 
-**S. Shadows reworked** (proposed 2026-10-14, before L4). Light: the same passes, roughly right, nothing new per
+**S. Shadows reworked** (2026-10-14, before L4). Light: the same passes, roughly right, nothing new per
 frame on the CPU but a few numbers per turret quad.
 
 What's wrong today (on the map and in the viewer, which draw alike):
@@ -302,6 +302,25 @@ Done when: captures at 10 and 3 px/m, sun high, low and abeam, turrets trained a
 by the hull's side, the barrels' shadows on the sea further out than on the deck and continuous across the side, the
 bridge's shadow on B turret at a low sun from astern, no darker patches where shadows meet; DevRelease frame times at
 a Jutland unchanged within noise.
+
+*Done 2026-10-14.* As planned, with these findings:
+
+- **The hull's shadow was cut short.** The march stopped at 96 steps of the zoom's finest step, so at 10 px/m no
+  shadow reached past 9.6 m (the hull's side at a 24° sun should throw ~20 m, the masts ~75 m). The step now spreads
+  over the whole reach (`ShipDrawList.HullMarch`, at most 256 steps), and each ray marches only where it crosses the
+  height map (a slab test in `hullShadow`), stopping once fully shaded; the shadow quad covers the canvas and only its
+  down-light side. Long low-sun shadows of the funnels and masts now show on the sea.
+- **Turret shadows on the deck are shorter, over the side longer.** The old offset measured from the main deck
+  (`Shadow.DeckM`, 4.9 m on the super-dreadnought); A turret's roof is 11.1 m over a forecastle at 8.25 m, so at 20°
+  its shadow falls 7.8 m off on the deck, not 17 m, and 30 m out on the sea. That's the hitbox model's heights.
+- **Seen:** at 10 px/m, sun low from abeam with the turrets trained over that side: the barrels clean, their shadows
+  out on the sea past the hull's and merged with it; from astern, a turret's shadow on the deck ahead of it; the
+  casemates' shadows on the sea; the viewer alike. A faint comb remains where a pointed end's shadow ends at a low sun
+  (the coarser step); acceptable.
+- **Frame times** (DevRelease, alternating builds, two runs each): one ship at 10 px/m with a low sun, and Jutland
+  (3000 frames), equal (vsync-bound, p50 8.33 ms; CPU unchanged).
+- **Left as it was:** the bake CLI's CPU preview (`Bake/Preview.cs`, preview_rest.png) still offsets the turret
+  shadows from the deck; it only writes pictures to look at.
 
 **L4. Materials.** `Style.Mat`, the looks' material tables, the material layer, Toksvig, the analytic sky. Brass and
 bare steel shine, decks go matte, eras differ.

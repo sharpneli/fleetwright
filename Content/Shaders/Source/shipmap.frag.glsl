@@ -1,13 +1,15 @@
 #version 450
 #extension GL_GOOGLE_include_directive : require
-// Ships on the map: a baked sprite (premultiplied alpha, mipmapped, sampled by the hardware), a turret's silhouette
-// as its shadow (only where the height map under it is lower than the turret's roof), the stand-in icon tinted, or a
+// Ships on the map: a baked sprite (premultiplied alpha, mipmapped, sampled by the hardware), a turret's shadow (its
+// silhouette projected by the receiver's height: Include/shipshadow.glsl), the stand-in icon tinted, or a
 // scorch over a wrecked part (on the ship only: where the height map has something). Damage (docs/battle/fighting.md
 // 4.4): a turret's tint multiplies in by its alpha; with the sea's plane on, the hull shows tilted by its slopes (each
 // point shifted by its height toward the low end and side: the trim and list, read back through the height map; the
 // turrets' and scorches' quads are shifted on the CPU), and what's under the sea is drowned, faint and green-dark by its
 // depth, with a pale wash along the new waterline. The hull, the turrets and the scorches are lit (Include/shiplight.glsl:
-// the sprite's normal and AO from its relief, one material; a scorch flat); the silhouettes and the icons are not.
+// the sprite's normal and AO from its relief, one material; a scorch flat); the silhouettes and the icons are not. A
+// turret takes the hull's shadow at its roof's height (drawn after the hull's shadow pass, which it would otherwise
+// get at the height under it).
 layout(location = 0) in vec2 fragUv;
 layout(location = 1) in vec2 fragShip;
 layout(location = 2) flat in vec4 fragMode;
@@ -28,15 +30,13 @@ layout(location = 0) out vec4 outColour;
 
 #define LIGHTS_BINDING 0
 #include "Include/shiplight.glsl"
+#include "Include/shipshadow.glsl"
 
 const vec3 Up = vec3(0.0, 0.0, 1.0);
 
 float heightAt(vec2 ship)
 {
-    vec2 huv = ship * fragHmap.xy + fragHmap.zw;
-    if (any(lessThan(huv, vec2(0.0))) || any(greaterThan(huv, vec2(1.0))))
-        return 0.0;
-    return textureLod(heightTex, huv, 0.0).r * 63.75;
+    return shadowHeight(heightTex, fragHmap, ship, 0.0);
 }
 
 // premultiplied colour under the sea's plane: drowned by its depth there
@@ -73,6 +73,25 @@ void main()
         outColour = drown(c, fragShip, h) * opacity;
         return;
     }
+    if (fragMode.x > 0.5 && fragMode.x < 1.5)
+    {
+        // a turret's shadow: the quad is a box down-light of it, the tint its frame, the roof its height; the mip by
+        // the turret's own uv (the projected one jumps at every deck edge)
+        vec2 own = turretUv(fragShip, fragTint);
+        vec2 gx = dFdx(own), gy = dFdy(own);
+        float h = shadowHeight(heightTex, fragHmap, fragShip, fragMarch.w);
+        if (h >= fragMode.z)
+            discard;
+        vec2 tuv = turretShadowUv(fragShip, h, fragMode.z, fragSun.xy, fragSun.z, fragTint);
+        if (any(lessThan(tuv, vec2(0.0))) || any(greaterThan(tuv, vec2(1.0))))
+            discard;
+        float a = textureGrad(spriteTex, tuv, gx, gy).a;
+        if (a <= 0.0)
+            discard;
+        float hs = hullShadow(heightTex, fragHmap, fragShip, h, fragSun.xy, fragSun.z, fragMarch);
+        outColour = vec4(0.0, 0.0, 0.0, shadowOver(a, hs, fragSun.w) * opacity);
+        return;
+    }
     vec2 uv = fragUv, at = fragShip;
     if (fragMode.x < 0.5 && fragMode.z <= 0.0 && fragSea.w > 0.5)
     {
@@ -88,13 +107,6 @@ void main()
     vec4 c = texture(spriteTex, uv);
     if (fragMode.x > 1.5)
         outColour = vec4(fragTint.rgb, 1.0) * fragTint.a * c.a * opacity;
-    else if (fragMode.x > 0.5)
-    {
-        float h = heightAt(fragShip);
-        if (h >= fragMode.z)
-            discard;
-        outColour = vec4(0.0, 0.0, 0.0, c.a * opacity);
-    }
     else
     {
         vec3 rgb = c.a > 0.0 ? c.rgb / c.a : vec3(0.0);   // the albedo as drawn, sRGB-coded
@@ -102,6 +114,8 @@ void main()
             rgb = mix(rgb, rgb * fragTint.rgb, fragTint.a);
         vec4 nt = texture(normalTex, uv);
         rgb = shipShade(rgb, unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, look.y, 0.0, nt.a);
+        if (fragMode.z > 0.0 && fragMarch.y > 0.0)   // a turret, in the hull's shadow at its roof's height
+            rgb *= 1.0 - hullShadow(heightTex, fragHmap, fragShip, fragMode.z, fragSun.xy, fragSun.z, fragMarch) * fragSun.w;
         vec4 col = vec4(rgb * c.a, c.a);
         if (fragSea.w > 0.5)
             col = drown(col, at, max(heightAt(at), fragMode.z));   // a turret stands as high as its roof

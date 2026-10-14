@@ -154,6 +154,15 @@ public sealed class ShipDrawList
                 Scorches(ref placed[i], art);
             AddDraw(ShipDrawKind.Sprite, art.Hull, art.Height, first, art.HullNormal);
         }
+        foreach (int cls in classes)   // the hull's shadow, on the hull and the sea: under the turrets, which take it at their roofs
+        {
+            var art = artOf(cls)!;
+            int first = quadCount;
+            foreach (int i in byClass[cls])
+                if (placed[i].Shadows)
+                    SunShadow(ref placed[i], art);
+            AddDraw(ShipDrawKind.Shadow, art.Height, 0, first);
+        }
         for (int layer = 0; layer < 2; layer++)   // turret shadows, then turrets
             foreach (int cls in classes)
             {
@@ -167,15 +176,6 @@ public sealed class ShipDrawList
                     AddDraw(ShipDrawKind.Sprite, art.Turrets[t], art.Height, first, art.TurretNormals[t]);
                 }
             }
-        foreach (int cls in classes)
-        {
-            var art = artOf(cls)!;
-            int first = quadCount;
-            foreach (int i in byClass[cls])
-                if (placed[i].Shadows)
-                    SunShadow(ref placed[i], art);
-            AddDraw(ShipDrawKind.Shadow, art.Height, 0, first);
-        }
 
         // the icons, all in one draw
         int firstIcon = quadCount;
@@ -340,7 +340,7 @@ public sealed class ShipDrawList
     {
         var meta = art.Meta;
         var tm = meta.TurretTypes[art.TurretTypes[type]];
-        double e = tm.SizePx[0] / art.Scale / 2, deck = meta.Shadow.DeckM;
+        double e = tm.SizePx[0] / art.Scale / 2;
         foreach (int i in art.DrawOrder)
         {
             if (art.MountType[i] != type)
@@ -354,25 +354,44 @@ public sealed class ShipDrawList
             double ox = m.PosM[0] - axx / 2 - ayx / 2 + m.TopM * p.Sea.Y, oy = m.PosM[1] - axy / 2 - ayy / 2 + m.TopM * p.Sea.Z;   // tilted with the hull
             if (shadow)
             {
-                double off = (m.TopM - deck) / p.SunTan;   // shadow.sun_offset_px, in metres
-                Emit(ref p, art, ox - p.SunDir.X * off, oy - p.SunDir.Y * off, axx, axy, ayx, ayy, mode: 1,
-                    opacity: Lights.ShadowOpacity * p.SpriteAlpha, roof: m.TopM, Vector4.Zero);
+                // a box over the turret and as far down-light as its roof's shadow falls (on the sea); the shader projects
+                // each point by the height there (Include/shipshadow.glsl). The tint carries the turret's frame.
+                double r = e * Math.Sqrt(2), reach = m.TopM / p.SunTan, cx = ox + axx / 2 + ayx / 2, cy = oy + axy / 2 + ayy / 2;
+                double dx = -p.SunDir.X * reach, dy = -p.SunDir.Y * reach;
+                double x0 = cx + Math.Min(0, dx) - r, y0 = cy + Math.Min(0, dy) - r;
+                Emit(ref p, art, x0, y0, Math.Abs(dx) + 2 * r, 0, 0, Math.Abs(dy) + 2 * r, mode: 1, opacity: p.SpriteAlpha, roof: m.TopM,
+                    new Vector4((float)ox, (float)oy, (float)axx, (float)axy), HullMarch(p, art, 0));
             }
             else
-                Emit(ref p, art, ox, oy, axx, axy, ayx, ayy, mode: 0, opacity: p.SpriteAlpha, roof: m.TopM, TurretTint(p, cm));
+                Emit(ref p, art, ox, oy, axx, axy, ayx, ayy, mode: 0, opacity: p.SpriteAlpha, roof: m.TopM, TurretTint(p, cm),
+                    p.Shadows ? HullMarch(p, art, m.TopM) : default);
         }
     }
 
     void SunShadow(ref Placed p, ShipArt art)
     {
         double cw = art.CanvasX, ch = art.CanvasY;
-        double reach = art.Meta.Shadow.MaxHeightM / p.SunTan;
-        double lod = Math.Clamp(Math.Log2(art.Scale / p.PxPerM), 0, art.MipLevels);
-        double step = Math.Max(0.1, Math.Pow(2, lod) / art.Scale);
-        double steps = Math.Min(Math.Ceiling(reach / step), 96);
-        Emit(ref p, art, -cw / 2 - reach, -ch / 2 - reach, cw + 2 * reach, 0, 0, ch + 2 * reach, mode: 0, opacity: p.SpriteAlpha * p.Fade, roof: 0,
-            Vector4.Zero, new Vector4((float)step, (float)steps, 0.3f, (float)lod));
+        double reach = art.Meta.Shadow.MaxHeightM / p.SunTan, dx = -p.SunDir.X * reach, dy = -p.SunDir.Y * reach;   // the canvas and down-light of it
+        Emit(ref p, art, -cw / 2 + Math.Min(0, dx), -ch / 2 + Math.Min(0, dy), cw + Math.Abs(dx), 0, 0, ch + Math.Abs(dy), mode: 0,
+            opacity: p.SpriteAlpha * p.Fade, roof: 0, Vector4.Zero, HullMarch(p, art, 0));
     }
+
+    static Vector4 HullMarch(in Placed p, ShipArt art, double fromM) =>
+        HullMarch(art.Meta.Shadow.MaxHeightM, fromM, p.SunTan, Math.Clamp(Math.Log2(art.Scale / p.PxPerM), 0, art.MipLevels), art.Scale);
+
+    /// <summary>The march for the hull's shadow (Include/shipshadow.glsl) on a point <paramref name="fromM"/> over the
+    /// waterline: as far toward the light as the tallest column can still shade it (none from above them all), in steps
+    /// of the height map's mip <paramref name="lod"/>, spread wider when that would take more than <see cref="MarchSteps"/>.
+    /// The map and the viewer both march by it.</summary>
+    public static Vector4 HullMarch(double maxHeightM, double fromM, double sunTan, double lod, double pxPerM)
+    {
+        double reach = Math.Max(0, maxHeightM - fromM) / sunTan;
+        double step = Math.Max(Math.Max(0.1, Math.Pow(2, lod) / pxPerM), reach / MarchSteps);
+        return new Vector4((float)step, (float)Math.Ceiling(reach / step), 0.3f, (float)lod);
+    }
+
+    /// <summary>The most steps a shadow's march takes.</summary>
+    public const int MarchSteps = 256;
 
     void Icon(ref Placed p, bool selected)
     {
