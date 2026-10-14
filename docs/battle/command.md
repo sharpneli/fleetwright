@@ -472,6 +472,88 @@ pursues a cripple or a beaten enemy yet (the force and the commander, 5.1c-d).
   reverses a line of eight in a few minutes without collisions of stations; in `flotilla` the boats attack together
   and the line turns away; in `squadrons` the side whose line crosses ahead gets the better of the hits over seeds.
 
+**5.1b done 2026-10-14,** built in five pieces, each committed when it played (the last one doesn't cross the T: see
+piece 2):
+
+1. **Lines of bearing and turning together.** `Formation.Bearing` with `Group.BearingDeg` (degrees clockwise from the
+   guide's heading where the line lies: line ahead 180, abreast 90, the echelons 135 and 225, `GroupSystem.BearingOf`);
+   `OffsetFromGuide` is the one geometry still. A force whose line of bearing its squadrons share is one line, as line
+   ahead is (`Chains`); every old formation places as before, and the bearing is hashed only for a line of bearing, so
+   the hashes didn't move. `GroupSystem.TurnTogether(group, deg)` changes the formation to what the ships will lie in
+   once round (the line stays where it is; one that would lie ahead of the guide's beam is taken in the reverse order,
+   so after 16 points the old rear leads; one that comes out astern is line ahead again), through the whole tree. Unit
+   orders `TurnTogether` (Y: rear ship first, `BattleTurn`) and `Form` (`SetFormation` through the chain);
+   `AdmiralLayer.Manoeuvres.cs` gives every ship the new course (past 150°, a quarter at a time, so she turns the way
+   the signal said; rear first, each `BattleTurnStepS` after the one astern), the guide's speed, and no stations in the
+   tree until all are within `ManoeuvreDoneDeg` (or `ManoeuvreMaxMs`). A turn in succession is a course to a line ahead,
+   as before. Measured (`ManoeuvreTests`, dreadnoughts at 15 kn): six in line ahead turned 90° are 18 m off their
+   line of bearing at 5 minutes and back in line ahead within 42 m after turning back; the battle turn-away reverses a
+   line of eight with every ship round in 5.4 minutes, never two closer than 500 m, the line stretched to 617 m off
+   station (each turned 10 s after the one astern, as Scheer's did) and closed up to 46 m at 20 minutes; a force of
+   two squadrons in one line turns as one line. Placeholders: the group row's "turn together" buttons, "Line of
+   bearing" in its formation picker.
+2. **The enemy's line, shared; the crossing measured and dropped.** `Knowledge/EnemyLines` is the one enemy line
+   (chained contacts, van first), the fire distribution's. The bench prints the hits each side made (and, from piece 4,
+   the torpedoes it fired). The squadron's Fight crossing ahead of the van was built three ways and measured against
+   Fight as it was (`squadrons`, 10 seeds, hits Britain/Germany; and a line against one steaming on):
+   - *the planned rule* (hold on the beam a point a share of the range ahead of the van): no crossing 170/400; both
+     sides crossing 112/172; Britain alone 122/173; Germany alone 152/179. Fights get less decisive (the lines fight
+     further out), and the side that crosses doesn't come out better. Against a German line steaming on, British hits
+     rise 238 → 405 but German hits rise more, 400 → 729: the lines run parallel, the British a little ahead, and
+     nobody's guns are masked.
+   - *steering for the point* (straight across the enemy's bow): worse, 87/154 against the steady line: the line comes
+     in bow on, with only its forward turrets bearing.
+   - *the band to the van, the beam ahead of it*: no gain in position. In a test of four dreadnoughts against four
+     steaming on 3 kn slower, plain Fight is round to 18° off the enemy van's bow at the hour, the crossing rules 32-55°.
+
+   Why: these lines are short (4-5 ships, ~2 km) fighting at 13-18 km, where no turret is masked and there's no van to
+   concentrate on; Fight already draws ahead when it has the speed. Crossing the T pays with long lines at shorter
+   ranges, and against an enemy that holds his course. So the rule isn't kept (no doctrine knob that doesn't do what it
+   says); it's for 5.1c's deployment with the Jutland's long lines, and the fine-tune pass.
+3. **The turn-away from torpedoes.** Doctrine's `TurnAwayDeg` (the default preset 45: 4 points; neutral 0). A line
+   that's no force's (its force turns) and isn't torpedo craft sees an attack coming
+   (`AdmiralLayer.TorpedoThreat`: a contact taken for a torpedo craft within `TorpedoThreatM`, 8 km, of a ship of the
+   line and closing on her faster than `TorpedoThreatClosingMs`, or a ship of it combing a track) and turns away
+   together, from the side it comes from; its order (Fight, say) waits, the guide holding the course it came out on,
+   until it's seen none for `TurnBackS` (3 minutes), when it turns back together and the order's handed on again. A
+   contact is a torpedo craft by the class it's taken for once that's made out (no gun of 6" or more, and tubes), else
+   by type: the golden "destroyer" is 2,700 t, so by type it reads as a cruiser. `TurnAwayTests`: a line steaming south
+   turns to 225° when destroyers from the east are made out at 7.7 km, and is back on 180° at 21.7 minutes. `flotilla`,
+   10 seeds: Britain loses 0.0 ships (0.3 before), the boats make 126 hits (190). 4.6's flotilla test's window is
+   longer: the boats reach their range later against a line that turns away.
+4. **The flotilla's attack.** Doctrine's `TorpedoAttack` ("together" in the default preset; neutral "alone", as 4.6)
+   and `AttackBreakOffShare` (0.5), the unit order `Attack` (a target, or the biggest in sight), and
+   `AdmiralLayer.Attack.cs`: a squadron of torpedo craft fighting (or told to Attack) gains a point `AttackGainDeg` (50°)
+   off the target's bow at `AttackGainShare` (1.5) of its torpedoes' fast range; runs in once ahead of his beam with
+   him within that run (or after `AttackGainMaxMs`), bow on, on the course that meets him; on the signal turns together
+   through 8 points, so the beam tubes bear and every track is square to the line and clear of the next boat; each
+   boat fires once as hers bear (`CaptainLayer.FireOnSignal`, within `AttackFireS`; the tubes train first, so the
+   spreads are in the water within two minutes); runs from the target for `TorpedoTurnAwayMs`; and goes in again while
+   any boat has torpedoes, then fights with its guns. A target that turns away so the boats fall abaft his beam sends
+   them back to gaining. Past the break-off share of its boats gone it's beaten off and runs. The captains hold their
+   torpedoes for the signal (`TorpedoHeld`, let go out of the line). Found on the way: a one-moment signal fired nothing,
+   since the boats ran in on Fight's slant with the target along their line abreast, and every track was foul of a
+   neighbour; the turn together is what the flotillas did. `FlotillaAttackTests`: gain, run, fire, away, gain again; 4
+   torpedoes on the signal at 16.7 minutes. `flotilla`, 10 seeds, against a line holding on: together 5.8 torpedoes a
+   run, alone 20.4 (each attack takes a quarter of an hour to set up under fire), Britain losing 0.2 ships either way
+   (0.3 alone); with the turn-away, 1.9 torpedoes. Runs now end by their own rules: 7-10 of 10 quiet, where alone
+   ended by time. Placeholder: the group row's "torpedo attack".
+5. **The screen and its counter-attack.** The unit order `Screen` (a unit, a distance; `ScreenM` 5 km), a group's
+   (`AdmiralLayer.Screen.cs`; the task proper, with its end and hand-back, is 5.1c's): it keeps station off the screened
+   unit's guide toward the nearest enemy in sight (ahead while there's none), given anew only when that moves it more
+   than `ScreenMoveM`; while enemy torpedo craft close on the screened unit (the turn-away's threat test) it fights the
+   nearest, and goes back to its station `TurnBackS` after the last. A screen doesn't take up doctrine's Engage nor turn
+   away. A ship told to Screen keeps station ahead of the unit. `ScreenTests`: two light cruisers from a mile astern of
+   a battle line are 1.5 km out on the enemy's side in 5 minutes, counter-attack the destroyers closing, and go back to
+   their station. Placeholder: "Screen" the picked ship's squadron.
+- **Evasion together** wasn't built as its own piece: a line under fire running away zigzags through its guide (5.1a's
+  evasion on the guide's course), the line following in succession; a line fighting holds steady, as the research
+  says inside 10 km. A zigzag by turns together is for the fine-tune.
+
+**After 5.1b** (Release, 5 seeds; the Jutland one): `squadrons` as after 5.1a (time 3, decided 2; Britain loses 3.0 of
+4); `flotilla` quiet 5 of 5 (Britain 0.2 of 4, Germany 2.2 of 6); Tsushima quiet 4, time 1 (Russia 5.2 of 13, Japan 4.2
+of 14); the Jutland to its time (04:00), 15 British and 19 German ships lost, in 199 s (130 s after 5.1a, with tests running beside it: to be measured clean in 5.1f). Allocation-free and replaying (`ManoeuvreTests`, 4.6's flotilla test).
+
 **5.1c The force: its tasks, the approach and the deployment.**
 
 - **The tasks** of the table above (GoTo, Search, Patrol, Scout, Screen, Intercept, Shadow, Cover, Join, Withdraw)

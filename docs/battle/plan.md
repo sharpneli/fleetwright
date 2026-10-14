@@ -1841,7 +1841,9 @@ whole) and 5.2 (the UI). Where the two differ, that doc leads; the sketch below 
 **5.0 done 2026-10-14:** a scenario ends (time, decided, quiet: `ScenarioEnd`), `shipgen scenario X --play [--seeds N]`
 plays it with the AI on every side, and the baseline is in `command.md` (every run ends; nothing decides Tsushima or
 the Jutland yet). **5.1a done 2026-10-14:** doctrine and its presets, fitness and falling out (home), a clear line of
-fire, evasion under fire, torpedoes seen and combed (`command.md` 5.1a).
+fire, evasion under fire, torpedoes seen and combed (`command.md` 5.1a). **5.1b done 2026-10-14:** lines of bearing,
+turning together and the battle turn-away, the turn-away from torpedoes, the flotilla's attack, the screen and its
+counter-attack; crossing the T measured and left for 5.1c's long lines (`command.md` 5.1b).
 
 **5.1 Captains and admirals.** Standing orders for both sides: go to, keep station, shadow, evade, engage, break off
 at x% damage. Admirals' objectives above their squadrons: search an area, cover, intercept, rendezvous. All are more
