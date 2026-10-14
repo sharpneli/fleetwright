@@ -253,6 +253,14 @@ public sealed record SimSettings
     /// (docs/battle/plan.md step 3.1b): its ships are held in the fine tier until then.</summary>
     public int EncounterCloseMs { get; init; } = 600_000;
 
+    /// <summary>A scenario with no <c>"until"</c> of its own ends this long after its start, ms (docs/battle/command.md
+    /// "The end").</summary>
+    public long PlayLimitMs { get; init; } = 24 * 3_600_000L;
+
+    /// <summary>A scenario whose sides have met ends once no encounter has been open for this long, ms: a stalemate, or
+    /// sides that have gone their ways (docs/battle/command.md "The end").</summary>
+    public long QuietEndMs { get; init; } = 2 * 3_600_000L;
+
     /// <summary>How often every pair of opposing rails is solved afresh, ms: the horizon a solve looks ahead to. A
     /// ship's rails changing (a waypoint, an order) solves it again at once.</summary>
     public int ContactScanMs { get; init; } = 3_600_000;

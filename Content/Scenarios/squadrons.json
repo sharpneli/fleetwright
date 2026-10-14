@@ -13,6 +13,9 @@
   "propellant": { "Britain": 2, "Germany": 0.1 },
   "player": "Britain",
   "fight": ["Britain", "Germany"],
+  // the end (docs/battle/command.md 5.0): an evening's fighting, each side out to sink the other
+  "until": "1916-05-31T21:30",
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 },
   "units": [
     { "name": "1st Battlecruiser Squadron", "side": 0, "at": [56.5, 4.0], "course": 120, "kn": 22, "formation": "column", "spacing": 500,

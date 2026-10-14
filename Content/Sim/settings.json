@@ -78,6 +78,9 @@
   "EncounterRangeM": 50000,
   "EncounterMarginM": 10000,
   "EncounterCloseMs": 600000,
+  // the end of a scenario (docs/battle/command.md "The end")
+  "PlayLimitMs": 86400000,
+  "QuietEndMs": 7200000,
   "DefaultVisibilityM": 40000,
   "SightRefraction": 1.1666666666666667,
   "SightContrastDay": 0.35,

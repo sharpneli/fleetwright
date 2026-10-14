@@ -13,6 +13,9 @@
   "propellant": { "Britain": 2, "Germany": 0.1 },
   "player": "Britain",
   "fight": ["Britain", "Germany"],
+  // the end (docs/battle/command.md 5.0): the attack and the night after it
+  "until": "1916-05-31T23:30",
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   "weather": { "visibility_km": 16, "wind_from": 225, "wind_kn": 8 },
   "units": [
     { "name": "2nd Battle Squadron", "side": 0, "at": [56.5, 4.0], "course": 180, "kn": 18, "formation": "column", "spacing": 600,

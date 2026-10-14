@@ -1838,6 +1838,9 @@ up, doctrine around; a side's commander above the admirals; tasks as more kinds 
 the end of a scenario, so that at the end of step 5 a scenario plays itself, AI against AI. Its steps are 5.0 (the
 bench: a scenario that ends), 5.1a-f (doctrine and the captains, the squadron, the force, the commander, signals, the
 whole) and 5.2 (the UI). Where the two differ, that doc leads; the sketch below stays as the step list other docs cite.
+**5.0 done 2026-10-14:** a scenario ends (time, decided, quiet: `ScenarioEnd`), `shipgen scenario X --play [--seeds N]`
+plays it with the AI on every side, and the baseline is in `command.md` (every run ends; nothing decides Tsushima or
+the Jutland yet).
 
 **5.1 Captains and admirals.** Standing orders for both sides: go to, keep station, shadow, evade, engage, break off
 at x% damage. Admirals' objectives above their squadrons: search an area, cover, intercept, rendezvous. All are more

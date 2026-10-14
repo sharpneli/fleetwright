@@ -20,6 +20,10 @@
   "sides": ["Russia", "Japan"],
   "player": "Russia",
   "fight": ["Russia", "Japan"],
+  // the end (docs/battle/command.md 5.0): the day and the night, to Nebogatov's surrender the next forenoon. History's aims
+  // (Russia through to Vladivostok) wait for "reach"; v0 has one aim
+  "until": "1905-05-28T02:00",
+  "aims": { "Russia": "destroy everyone", "Japan": "destroy everyone" },
   "crews": { "Russia": "average" },
   "weather": { "visibility_km": 13, "wind_from": 225, "wind_kn": 18 },
   "units": [

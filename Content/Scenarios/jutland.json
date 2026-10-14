@@ -20,6 +20,10 @@
   "sides": ["Britain", "Germany"],
   "propellant": { "Britain": 2, "Germany": 0.1 },
   "player": "Britain",
+  // the end (docs/battle/command.md 5.0): the afternoon, the night, and Scheer past Horns Reef by 03:00 on 1 June.
+  // History's aims (Germany to cut off part of the Grand Fleet and avoid the whole) wait for "avoid"; v0 has one aim
+  "until": "1916-06-01T04:00",
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   // the afternoon of 31 May 1916: good early (the battlecruisers sighted each other at ~14 nm), worse later in
   // the haze and smoke (12-16 km); a light SW wind, force 2-3. One weather for now (docs/battle/plan.md 3.2b)
   "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 },

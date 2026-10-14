@@ -118,6 +118,10 @@ public static class Program
             art), the land and the placing, then game minutes on the sim's work alone: ships on the fine tick and on
             rails, the speed it runs at, the share of the sim thread --at x takes, allocations and collections;
             --replay runs the command log again and compares the hashes
+        shipgen scenario [SCENARIO.json] --play [--seeds N] [--fast 1000] [--fine 1] [--threads N] [--no-land]
+            the scenario played to its end with the AI on every side (docs/battle/command.md 5.0): one seed's
+            timeline and result, or a line a seed and the spread; the asked speed is --fine while an encounter is
+            open (guns fire only in the fine tier) and --fast otherwise
         --root defaults to the repo's shipgen folder (found from the current directory up).
         """;
 
@@ -128,6 +132,7 @@ public static class Program
             Console.WriteLine(Usage);
             return args.Length == 0 ? 1 : 0;
         }
+        Console.OutputEncoding = System.Text.Encoding.UTF8;   // ships' names: Lützow, Fürst Bismarck
         var a = new Args(args.Skip(1));
         try
         {
@@ -153,6 +158,10 @@ public static class Program
                 "sprite-check" => Check(a, RenderGolden.CheckSprite),
                 "sim" => SimCmd(a),
                 "shore" => ShoreBench.Run(a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Int("points", 100_000)),
+                "scenario" when a.Has("play") => ScenarioPlay.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
+                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
+                    a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), Path.Combine(Root(a), "designs"),
+                    a.Int("threads", 0), !a.Has("no-land"), a.Int("seeds", 1), D(a, "fast", 1000), D(a, "fine", 1)),
                 "scenario" => ScenarioRun.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), Path.Combine(Root(a), "designs"),
@@ -218,7 +227,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

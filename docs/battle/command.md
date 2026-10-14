@@ -321,6 +321,56 @@ Before any AI is written, the instrument that says whether it works:
 - **The app:** a side may be "the AI's" (the player watching): the dev toggle to switch the player's side, and a
   scenario with no `"player"`.
 
+**5.0 done 2026-10-14.** Where it lives:
+
+- **The judge:** `Sim.Missions/ScenarioEnd.cs`, asked at whole game minutes (`Check`): over or not and why
+  (`EndReason`: time, decided, quiet), the timeline (`PlayLine`: the sides meet, each side's first sight, salvo, hit
+  and torpedoes, every loss, the end) and the result (`SideResult`: ships and tonnes, lost, damaged afloat, afloat,
+  aims met). It reads the world and the combat log; it isn't world state, since the world never ends, only a
+  scenario does.
+- **The aims:** `Sim.Ai/Commanders/Aims.cs` (`AimKind.DestroyEveryone`, `Aims.Met`, `Aims.Afloat`: going down counts
+  as lost from its first moment), where the commander (5.1d) will read them too.
+- **The file:** `"until"` and `"aims"` (`Scenario.Until`, `AimsOf`; a side not listed wants to destroy everyone), both
+  taken through `"from"`. The four scenarios have them: squadrons until 21:30, flotilla 23:30, Tsushima the next
+  forenoon, the Jutland 04:00 on 1 June. `SimSettings.PlayLimitMs` (24 h) and `QuietEndMs` (2 h).
+- **The bench:** `shipgen scenario X --play [--seeds N] [--fast 1000] [--fine 1]` (`ScenarioPlay.cs`). It sets no
+  player side and the others' interest rule to slow to `--fine`, so an encounter opening drops to the fine tier at the
+  event; `--fast` while none is open. A seed whose sim throws is reported with its stack, and the others run on.
+- **The app:** the spawner's "watch" box (no side is the player's); the spawner's side takes one back.
+- **Tests:** `ScenarioEndTests` (the fields read; decided, time and quiet ends), and `ShellSystemTests`' shell below.
+
+What it settled, beyond the plan:
+
+- **The end lives in the mission layer,** not in the world, and is asked on a grid of world time, so every run and
+  replay says the same at the same moment. 6.1's objectives can move onto events when they come.
+- **"Every side done" and "a side gone" are one rule in v0,** decided: every side still afloat has its aims. With
+  destroy everyone that's one side left (or only sides at peace).
+- **`"home"` waits for 5.1a,** its first user (each piece arrives with the step that first uses it).
+- **Found on the way:** Tsushima threw on its first run (an event scheduled in the past). A 6" casemate gun 2.7 m over
+  the sea at about 3° tops out at the shell's danger window's 60 m, where the climb is near nothing, and the solve
+  for when it comes down through the window's top stepped back to before it was fired. Its whole flight is in the
+  window now (`ShellSystem.Launch`; the shell as fired there is `ShellSystemTests.A_shell_topping_out_at_the_window_lands`).
+  Hashes of runs that never met it are unchanged.
+
+**The baseline** (Release, before any of 5.1; the AI as 4.2c and 4.6 left it: fire at will, the standing Fight):
+
+| Scenario | Seeds | How it ended | Losses |
+|---|---|---|---|
+| `squadrons` | 5 | decided 3 (after 0:41-3:27), time 2 (6:00) | Britain 3.2 of 4, Germany 0.4 of 5 |
+| `flotilla` | 5 | decided 2 (~1:15), time 2 (5:00), quiet 1 (4:05) | Britain 0.6 of 4, Germany 5.0 of 6 |
+| `tsushima` | 5 | quiet 5 (8:05-19:59) | Russia 5.0 of 13, Japan 2.0 of 14 |
+| the Jutland | 1 | time (14:00, played in 190 s) | Britain 25 of 151, Germany 22 of 99 |
+
+- **Every run ends, none crashes.** Nothing decides Tsushima or the Jutland: with no one to close or pursue, the
+  fleets drift apart (quiet) or the time runs out.
+- **The Jutland's fleets meet only at 18:36** (the first salvo, 4.5 h in): the scouts sight each other at 14:15 and
+  nobody turns toward what they've seen.
+- **Own fire:** 7 of the Jutland's 47 losses were last hit by their own side. Shells and torpedoes hit whatever is in
+  their way (the hit query is physical), and fire at will never asks whether its line of fire is clear of its own
+  ships. For 5.1a: a captain holds a battery's or launcher's fire while one of his own is in its line (and near it at
+  the fall).
+- **Cost:** the small scenarios play in 0.3-22 s a seed; the Jutland's 14 hours in 190 s.
+
 ### 5.1 Captains and admirals
 
 Bottom-up, so each layer is built on one that already behaves.
@@ -331,6 +381,9 @@ Bottom-up, so each layer is built on one that already behaves.
   in `Content/Sim/doctrine.json` (`default` only, decision 7) and its scenario field (`"doctrine"`: a preset per side,
   fields over it per side and per unit). `Standing` and the `"fight"` list become doctrine's Engage.
 - **Fitness** (`Sim.Combat`), and the seen fitness of enemies.
+- **Home** in the scenario file (from 5.0, which left it to its first user): where a side's cripples go.
+- **A clear line of fire** (found by 5.0's baseline: 7 of the Jutland's 47 losses were own fire): a battery or launcher
+  holds its fire while one of its own ships is in its line, near the fall or the torpedo's run.
 - **Falling out:** a ship past doctrine's fall out tells its admiral; he detaches it from the line (the line closes
   up, as a nudged ship's does), and it steers away from the enemy and goes home at the speed it has, firing at will
   as it goes. A ship that can't steer (jammed rudder) is a cripple in place: its admiral leaves it.

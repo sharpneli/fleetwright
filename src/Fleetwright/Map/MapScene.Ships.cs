@@ -716,6 +716,13 @@ public sealed unsafe partial class MapScene
                 world.Truth = truth;
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("dev: every ship as it is, not the player's picture");
+            ImGui.SameLine();
+            bool watch = s.PlayerSide < 0;
+            if (ImGui.Checkbox("watch", ref watch))
+                world.Send(Command.SetPlayerSide(watch ? -1 : spawnSide));
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("dev: no side is yours, every side the AI's (docs/battle/command.md 5.0); the spawner's side takes one back.\n" +
+                                 "Encounters are then all others': set what they do to the clock in the clock's panel.");
             bool fromDesigner = designPick == FromDesigner;
             if (fromDesigner && placeClass >= 0)
                 FollowDesigner();

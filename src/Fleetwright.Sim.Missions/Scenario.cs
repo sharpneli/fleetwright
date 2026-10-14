@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim.Missions;
@@ -29,6 +30,10 @@ namespace Fleetwright.Sim.Missions;
 /// up (docs/battle/fighting.md 4.3a: Jutland's cordite against brass-cased RP C/12). The sides in
 /// <c>"fight": ["Germany"]</c> give each of their top units a standing order to Fight when it first meets an enemy in sight
 /// (docs/battle/fighting.md 4.2c).</para>
+/// <para>It ends (docs/battle/command.md "The end", <see cref="ScenarioEnd"/>) at <c>"until": "1916-06-01T04:00"</c> (UTC;
+/// <see cref="SimSettings.PlayLimitMs"/> after the start if not given), or before that when it's decided or quiet. Each
+/// side wants its <c>"aims": { "Britain": "destroy everyone" }</c> (a name, or a list of them); a side not listed wants to
+/// destroy everyone, v0's one aim.</para>
 /// <para>Sides are at war with each other unless a pair is listed in <c>"peace"</c>. A unit's side, formation and spacing default to its parent's (side 0, column, 600 m for a squadron, 3 km for
 /// a force). A top unit of one ship is that ship, not a group. A top unit with a route steams it (from where it's
 /// placed, its course only the start's heading).</para>
@@ -68,6 +73,27 @@ public sealed class Scenario
 
     /// <summary>The sides whose top units Fight when they first meet an enemy in sight (by index).</summary>
     public List<int> Fight { get; init; } = [];
+
+    /// <summary>When it ends at the latest (docs/battle/command.md "The end"); null for the start plus
+    /// <see cref="SimSettings.PlayLimitMs"/>.</summary>
+    public WorldTime? Until { get; init; }
+
+    /// <summary>Each side's aims by index, where the file gives them; a side not listed wants to destroy everyone.</summary>
+    public List<(int Side, Aim Aim)> AimList { get; init; } = [];
+
+    /// <summary>A side's aims: the file's, else destroy everyone (v0's one aim).</summary>
+    public IEnumerable<Aim> AimsOf(int side)
+    {
+        bool any = false;
+        foreach (var (s, a) in AimList)
+            if (s == side)
+            {
+                any = true;
+                yield return a;
+            }
+        if (!any)
+            yield return new Aim(AimKind.DestroyEveryone);
+    }
 
     public required List<ScenarioUnit> Units { get; init; }
 
@@ -188,6 +214,10 @@ public sealed class Scenario
             // "fight": ["Germany"], by the sides' names; taken from "from" (with its sides) unless given
             var fight = r.TryGetProperty("fight", out var fi) ? ParseSides(fi, sides, "fight")
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Fight : [];
+            // "until": "1916-06-01T04:00"; "aims": { "Britain": "destroy everyone" }; both taken from "from" unless given
+            WorldTime? until = r.TryGetProperty("until", out var un) ? ParseTime(un.GetString() ?? "", "until") : from?.Until;
+            var aims = r.TryGetProperty("aims", out var ai) ? ParseAims(ai, sides)
+                : from != null && !r.TryGetProperty("sides", out _) ? from.AimList : [];
             var units = new List<ScenarioUnit>();
             if (from != null)
             {
@@ -207,7 +237,7 @@ public sealed class Scenario
             {
                 Name = Str(r, "name", "") is { Length: > 0 } n ? n : "Scenario",
                 Brief = Str(r, "brief", from?.Brief ?? ""),
-                Start = from != null && !r.TryGetProperty("start", out _) ? from.Start : ParseTime(Str(r, "start", "")),
+                Start = from != null && !r.TryGetProperty("start", out _) ? from.Start : ParseTime(Str(r, "start", ""), "start"),
                 Seed = r.TryGetProperty("seed", out var seed) && seed.TryGetUInt64(out ulong sv) ? sv : from?.Seed ?? 1,
                 Camera = r.TryGetProperty("camera", out var cam) ? ParseCamera(cam) : from?.Camera,
                 Sides = sides,
@@ -217,6 +247,8 @@ public sealed class Scenario
                 Crews = crews,
                 Propellant = propellant,
                 Fight = fight,
+                Until = until,
+                AimList = aims,
                 Units = units,
                 Folder = folder,
             };
@@ -234,6 +266,27 @@ public sealed class Scenario
             if (side < 0)
                 throw new ScenarioException($"{key}: \"{x}\" isn't one of the sides ({string.Join(", ", sides)})");
             list.Add(side);
+        }
+        return list;
+    }
+
+    static List<(int, Aim)> ParseAims(JsonElement e, string[] sides)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException("aims: an object of sides' names, { \"Britain\": \"destroy everyone\" }");
+        var list = new List<(int, Aim)>();
+        foreach (var p in e.EnumerateObject())
+        {
+            int side = Array.IndexOf(sides, p.Name);
+            if (side < 0)
+                throw new ScenarioException($"aims: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
+            var names = p.Value.ValueKind == JsonValueKind.Array ? p.Value.EnumerateArray().Select(x => x.GetString()).ToArray() : [p.Value.GetString()];
+            foreach (var name in names)
+                list.Add((side, name switch
+                {
+                    "destroy everyone" => new Aim(AimKind.DestroyEveryone),
+                    _ => throw new ScenarioException($"aims: \"{name}\" for {p.Name}: \"destroy everyone\" (v0's one aim)"),
+                }));
         }
         return list;
     }
@@ -413,11 +466,11 @@ public sealed class Scenario
         return (e[0].GetDouble(), e[1].GetDouble(), e[2].GetDouble());
     }
 
-    static WorldTime ParseTime(string s)
+    static WorldTime ParseTime(string s, string key)
     {
         if (!DateTime.TryParseExact(s, ["yyyy-MM-dd'T'HH:mm", "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd"], CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var t))
-            throw new ScenarioException($"start \"{s}\" (want UTC, 1916-05-31T14:00)");
+            throw new ScenarioException($"{key} \"{s}\" (want UTC, 1916-05-31T14:00)");
         return WorldTime.FromUtc(t);
     }
 
