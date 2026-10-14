@@ -21,9 +21,10 @@ public static class ShipBake
     public static Baked Bake(ShipSprites sp, GpuBaker g)
     {
         double s = sp.Meta.ScalePxPerM;
-        var hull = g.Render(Lower.Run(sp.Hull));
+        var hullDl = Lower.Run(sp.Hull);
+        var hull = g.Render(hullDl);
         var height = Lower.Run(sp.Height);
-        var hullRelief = g.RenderRelief(height);   // the columns' plateaus
+        var hullRelief = g.RenderRelief(DrawList.Concat(height, hullDl));   // the columns, then the drawing's profiled parts
         var turrets = new Dictionary<string, Image8>(StringComparer.Ordinal);
         var tRelief = new Dictionary<string, ReliefImage>(StringComparer.Ordinal);
         var tNormal = new Dictionary<string, Image8>(StringComparer.Ordinal);

@@ -82,6 +82,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   draw `Painter.Ln`'s strokes at 0.75 of their width and 0.5 opacity. The side view, design records and sprite.json are
   unchanged. `golden-update` no longer takes a fuzz case missing from the sprite capture for a new one (only the
   shipped designs have sprite goldens; it was drawing them and failing on the unbuildable).
+- 2026-10-14, the painted light taken out of the turrets (docs/visuals/ship-lighting.md L3: the lighting carries it
+  now), on purpose: the barrels' and tubes' highlight strokes, the roof insets, the face plates' dark shade (the body's
+  colour now), the cupolas' highlight dots, the casemate shield's lighter disc and the champignon's lightened rings
+  are gone from 317 cases' turret SVGs. Hulls, design records and sprite.json unchanged.
 
 ## Layout
 

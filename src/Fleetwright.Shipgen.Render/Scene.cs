@@ -42,17 +42,38 @@ public sealed class Style
 }
 
 /// <summary>A relief profile (docs/visuals/ship-lighting.md, "The bake"): how a draw shapes the relief layer the
-/// normals and ambient occlusion come from. A plateau stands at a height, metres (over the waterline on the hull, over
-/// the turret's base on a turret); cylinders, domes and slopes come at L3. Paint on a surface carries none, so it
-/// never flattens what's under it. Not part of the SVG.</summary>
-public readonly record struct Relief(ReliefKind Kind, double TopM)
+/// normals and ambient occlusion come from, in the node's own coordinates (metres), heights in metres (over the
+/// waterline on the hull, over the turret's base on a turret). Paint on a surface carries none, so it never flattens
+/// what's under it. Not part of the SVG.
+/// <list type="bullet">
+/// <item>Plateau: TopM everywhere.</item>
+/// <item>Cylinder: its axis through (X0, Y0) and (X1, Y1), radius R, its top at TopM (the axis R below):
+/// barrels, tubes, yards, booms.</item>
+/// <item>Dome: an ellipsoid's cap centred at (X0, Y0), radii R and R2, rising H to TopM: cupolas, vent heads,
+/// searchlights, boats, a drum turret's roof.</item>
+/// <item>Slope: a plane, TopM at (X0, Y0) and rising X1 metres a metre along x, Y1 along y: face plates.</item>
+/// </list></summary>
+public readonly record struct Relief(ReliefKind Kind, double TopM, double X0 = 0, double Y0 = 0, double X1 = 0,
+    double Y1 = 0, double R = 0, double R2 = 0, double H = 0)
 {
     public static Relief Plateau(double topM) => new(ReliefKind.Plateau, topM);
+
+    public static Relief Cylinder(double x0, double y0, double x1, double y1, double r, double topM) =>
+        new(ReliefKind.Cylinder, topM, x0, y0, x1, y1, r);
+
+    public static Relief Dome(double cx, double cy, double rx, double ry, double topM, double heightM) =>
+        new(ReliefKind.Dome, topM, cx, cy, R: rx, R2: ry, H: heightM);
+
+    public static Relief Slope(double x0, double y0, double topM, double riseX, double riseY) =>
+        new(ReliefKind.Slope, topM, x0, y0, riseX, riseY);
 }
 
 public enum ReliefKind : byte
 {
     Plateau = 1,
+    Cylinder = 2,
+    Dome = 3,
+    Slope = 4,
 }
 
 /// <summary>One transform step, applied left to right as in SVG's transform list.</summary>
@@ -189,6 +210,8 @@ public static class NodeStyle
     public static T Opacity<T>(this T n, double v) where T : Node { n.S.Opacity = v; return n; }
     /// <summary>A plateau in the relief layer at topM metres (<see cref="Relief"/>).</summary>
     public static T Plateau<T>(this T n, double topM) where T : Node { n.S.Relief = Relief.Plateau(topM); return n; }
+    /// <summary>Any relief profile (<see cref="Relief"/>).</summary>
+    public static T Profile<T>(this T n, Relief r) where T : Node { n.S.Relief = r; return n; }
     public static T Tr<T>(this T n, params XOp[] ops) where T : Node
     {
         n.Transform = [.. ops];

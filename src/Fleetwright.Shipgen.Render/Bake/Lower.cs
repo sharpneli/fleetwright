@@ -13,10 +13,16 @@ public enum OpKind
 
 /// <summary>One step of a lowered scene. Colour is premultiplied. Union: the triangles are a union of positively
 /// wound pieces (a stroke), so coverage is set rather than counted. InGroup: inside an opacity group, which is drawn
-/// topmost first, each pixel by the first op that reaches it. Relief: the profile the relief layer gets (x: its
-/// <see cref="ReliefKind"/>, 0 for none; y: the plateau's top, m).</summary>
+/// topmost first, each pixel by the first op that reaches it. Relief: the profile the relief layer gets, in canvas
+/// pixels (<see cref="ReliefPx"/>; Kind 0 for none).</summary>
 public readonly record struct DrawOp(OpKind Kind, int First, int Count, Vector4 Colour = default, bool Union = false,
-    bool InGroup = false, Vector4 Relief = default);
+    bool InGroup = false, ReliefPx Relief = default);
+
+/// <summary>A relief profile in canvas pixels for the bake shader (shipbake.frag): its kind, and two parameter
+/// vectors, heights in metres. Plateau: P0.z the top. Cylinder: P0 (a point on the axis, the axis height, the radius
+/// in m), P1.xy the axis's normal over the radius in px. Dome: P0 (the centre, the base, the rise), P1 the 2x2 that
+/// takes a pixel's offset to the unit circle (row-major). Slope: P0 (the anchor, its height), P1.xy the rise per px.</summary>
+public readonly record struct ReliefPx(ReliefKind Kind, Vector4 P0, Vector4 P1);
 
 /// <summary>A scene lowered to triangles in canvas pixels (x right, y down), ready for stencil-then-cover.</summary>
 public sealed class DrawList(int width, int height)
@@ -24,7 +30,25 @@ public sealed class DrawList(int width, int height)
     public readonly int Width = width, Height = height;
     public readonly List<Vector2> Verts = [];
     public readonly List<DrawOp> Ops = [];
+
+    /// <summary>a's ops, then b's (the same canvas): one list for one pass, as the hull's relief takes the height
+    /// map's columns and then the drawing's profiled parts.</summary>
+    public static DrawList Concat(DrawList a, DrawList b)
+    {
+        if (a.Width != b.Width || a.Height != b.Height)
+            throw new ArgumentException("different canvases");
+        var o = new DrawList(a.Width, a.Height);
+        o.Verts.AddRange(a.Verts);
+        o.Ops.AddRange(a.Ops);
+        o.Verts.AddRange(b.Verts);
+        int off = a.Verts.Count;
+        foreach (var op in b.Ops)
+            o.Ops.Add(op with { First = op.First + off });
+        return o;
+    }
 }
+
+
 
 /// <summary>Lowers a Scene (SVG's model) to a DrawList: transforms applied, styles inherited, arcs, curves, circles
 /// and text flattened to polygons within a tolerance in pixels, strokes expanded (Stroker), fills fanned into
@@ -66,22 +90,58 @@ public static class Lower
     }
 
     /// <summary>The style in force: the node's own settings over its ancestors'.</summary>
+    /// <summary>The style in force. A relief is placed in pixels where it is set, by that node's transform, so its
+    /// children inherit it where it is.</summary>
     sealed record Paint(Rgb? Fill, bool FillNone, double FillOpacity, Rgb? Stroke, double StrokeWidth, string? Join,
-        string? Cap, double[]? Dash, double DashOffset, double StrokeOpacity, Relief? Relief)
+        string? Cap, double[]? Dash, double DashOffset, double StrokeOpacity, ReliefPx ReliefOp)
     {
-        public static readonly Paint Default = new(null, false, 1, null, 1, null, null, null, 0, 1, null);
+        public static readonly Paint Default = new(null, false, 1, null, 1, null, null, null, 0, 1, default);
 
-        public Paint With(Style s) => new(
+        public Paint With(Style s, Affine m, double pxPerM) => new(
             s.FillNone ? null : s.Fill ?? Fill, s.FillNone || (s.Fill == null && FillNone),
             s.FillOpacity ?? FillOpacity, s.Stroke ?? Stroke, s.StrokeWidth ?? StrokeWidth, s.LineJoin ?? Join,
-            s.LineCap ?? Cap, s.Dash ?? Dash, s.DashOffset ?? DashOffset, s.StrokeOpacity ?? StrokeOpacity, s.Relief ?? Relief);
-
-        public Vector4 ReliefOp => Relief is { } r ? new Vector4((float)r.Kind, (float)r.TopM, 0, 0) : default;
+            s.LineCap ?? Cap, s.Dash ?? Dash, s.DashOffset ?? DashOffset, s.StrokeOpacity ?? StrokeOpacity,
+            s.Relief is { } r ? InPixels(r, m, pxPerM) : ReliefOp);
     }
 
-    sealed class Ctx(DrawList dl)
+    /// <summary>A profile from a node's coordinates to canvas pixels (its heights stay metres; a radius scaled by the
+    /// transform is that many metres).</summary>
+    static ReliefPx InPixels(Relief r, Affine m, double pxPerM)
+    {
+        var p = m.Apply(r.X0, r.Y0);
+        switch (r.Kind)
+        {
+            case ReliefKind.Cylinder:
+                {
+                    var q = m.Apply(r.X1, r.Y1);
+                    var d = Vector2.Normalize(q - p);
+                    double rPx = r.R * m.Scale;
+                    return new(r.Kind, new Vector4(p.X, p.Y, (float)(r.TopM - rPx / pxPerM), (float)(rPx / pxPerM)),
+                        new Vector4((float)(-d.Y / rPx), (float)(d.X / rPx), 0, 0));
+                }
+            case ReliefKind.Dome:
+                {
+                    // the ellipse's axes in pixels, [U V] = L * diag(R, R2); its inverse takes an offset to the unit disc
+                    double ua = m.A * r.R, ub = m.B * r.R, va = m.C * r.R2, vb = m.D * r.R2, det = ua * vb - va * ub;
+                    return new(r.Kind, new Vector4(p.X, p.Y, (float)(r.TopM - r.H), (float)r.H),
+                        new Vector4((float)(vb / det), (float)(-va / det), (float)(-ub / det), (float)(ua / det)));
+                }
+            case ReliefKind.Slope:
+                {
+                    // the rise per pixel: the inverse transform's transpose on the rise per metre
+                    double det = m.A * m.D - m.B * m.C;
+                    return new(r.Kind, new Vector4(p.X, p.Y, (float)r.TopM, 0),
+                        new Vector4((float)((m.D * r.X1 - m.B * r.Y1) / det), (float)((-m.C * r.X1 + m.A * r.Y1) / det), 0, 0));
+                }
+            default:
+                return new(r.Kind, new Vector4(0, 0, (float)r.TopM, 0), default);
+        }
+    }
+
+    sealed class Ctx(DrawList dl, double pxPerM)
     {
         public readonly DrawList Dl = dl;
+        public readonly double PxPerM = pxPerM;   // canvas pixels per scene unit (a metre)
         public int ClipDepth;
         public int GroupDepth;
     }
@@ -92,7 +152,7 @@ public static class Lower
         var m = new Affine(1, 0, 0, 1, -sc.X, -sc.Y).Then(new Affine(sc.Scale, 0, 0, sc.Scale, 0, 0));
         // cairosvg fits the view box to the canvas: scale by the rounded size over the view box
         m = m.Then(new Affine(sc.WidthPx / (sc.W * sc.Scale), 0, 0, sc.HeightPx / (sc.H * sc.Scale), 0, 0));
-        Walk(sc.Root, m, Paint.Default, new Ctx(dl));
+        Walk(sc.Root, m, Paint.Default, new Ctx(dl, m.Scale));
         return dl;
     }
 
@@ -109,7 +169,7 @@ public static class Lower
     static void Walk(Node n, Affine parent, Paint inherited, Ctx cx)
     {
         var m = Local(n, parent);
-        var paint = inherited.With(n.S);
+        var paint = inherited.With(n.S, m, cx.PxPerM);
         if (n is Group g)
         {
             var dl = cx.Dl;
@@ -154,7 +214,8 @@ public static class Lower
         {
             if (c is Group)
                 throw new NotSupportedException("a group inside an opacity group");
-            Shape(c, Local(c, m), paint.With(c.S), cx, opacity);
+            var lm = Local(c, m);
+            Shape(c, lm, paint.With(c.S, lm, cx.PxPerM), cx, opacity);
         }
         dl.Ops.Reverse(ops0, dl.Ops.Count - ops0);
         for (int i = ops0; i < dl.Ops.Count; i++)

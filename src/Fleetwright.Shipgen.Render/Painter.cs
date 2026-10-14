@@ -302,13 +302,19 @@ public sealed class Painter
             .StrokeOp(0.6));
     }
 
-    public void Mast(List<Node> o, TopView.Mast m)
+    /// <summary>A mast from above. Its relief (the lighting's, over the waterline at deckM): the yard a cylinder a metre
+    /// under the masthead, the head a dome.</summary>
+    public void Mast(List<Node> o, TopView.Mast m, double deckM)
     {
         double x = m.X, y = m.Y;
-        double span = m.Yard;
+        double span = m.Yard, head = deckM + m.Top;
         string mast = C("mast");
         if (span != 0)
-            o.Add(new LineNode(x, y - span / 2, x, y + span / 2).Stroke(mast, Math.Max(Sw * 1.6, 0.35)).Cap("round"));
+        {
+            double w = Math.Max(Sw * 1.6, 0.35);
+            o.Add(new LineNode(x, y - span / 2, x, y + span / 2).Stroke(mast, w).Cap("round")
+                .Profile(Relief.Cylinder(x, y - span / 2, x, y + span / 2, w / 2, head - 1.0)));
+        }
         foreach (var bo in m.Booms ?? [])   // cargo derricks, heel at the mast
         {
             var (bx, by) = (bo[0], bo[1]);
@@ -359,7 +365,7 @@ public sealed class Painter
             o.Add(Ln(new CircleNode(x, y, r).Fill(Shade(mast, 0.75 + 0.2 * i)), 0.8));
             o.Add(new CircleNode(x, y, r - 0.35).Fill("none").Stroke(Shade(mast, 1.2 + 0.2 * i), 0.2));
         }
-        o.Add(Ln(new CircleNode(x, y, 0.7).Fill(mast), 0.6));
+        o.Add(Ln(new CircleNode(x, y, 0.7).Fill(mast), 0.6).Profile(Relief.Dome(x, y, 0.7, 0.7, head, 0.5)));
     }
 
     /// <summary>Revolving crane: pedestal and cab, jib pointing along dir (degrees, 0 = ahead).</summary>

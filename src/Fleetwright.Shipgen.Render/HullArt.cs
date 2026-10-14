@@ -437,7 +437,7 @@ public static class HullArt
         foreach (var fn in v.Funnels)
             P.Funnel(high, fn);
         foreach (var m in v.Masts)
-            P.Mast(high, m);
+            P.Mast(high, m, v.DeckM);
         foreach (var c in spec.Cranes ?? [])
             P.Crane(high, c);
 

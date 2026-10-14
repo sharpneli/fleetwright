@@ -29,7 +29,7 @@ public static class HeightMap
                 "ellipse" => new EllipseNode(c.Cx!.Value, c.Cy!.Value, c.Rx!.Value, c.Ry!.Value),
                 var sh => throw new ArgumentException($"unknown column shape '{sh}'"),
             };
-            o.Add(n.Fill(Grey(c.Top)).Plateau(c.Top));
+            o.Add(n.Fill(Grey(c.Top)).Profile(c.Profile ?? Relief.Plateau(c.Top)));
         }
         return (sc, columns.Max(c => c.Top));
     }

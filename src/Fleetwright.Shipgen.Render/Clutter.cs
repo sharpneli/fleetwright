@@ -877,10 +877,17 @@ public static class Clutter
             if (it.H <= 0)
                 continue;
             double top = Under(it.X, it.Y) + it.H;
+            // round heads are domes (a cowl's bell, a mushroom vent, a searchlight), a boat an ellipsoid: the relief's shape
             if (it.Kind is "cowl" or "cowl_small" or "boiler_cowl" or "mushroom" or "searchlight" or "searchlight_tower")
-                result.Add(new(top, "circle") { Cx = it.X, Cy = it.Y, R = it.L / 2 });
+                result.Add(new(top, "circle")
+                {
+                    Cx = it.X, Cy = it.Y, R = it.L / 2, Profile = Relief.Dome(it.X, it.Y, it.L / 2, it.L / 2, top, Math.Min(it.L / 2, it.H)),
+                });
             else if (it.Kind == "boat")
-                result.Add(new(top, "ellipse") { Cx = it.X, Cy = it.Y, Rx = it.L / 2, Ry = it.W / 2 });
+                result.Add(new(top, "ellipse")
+                {
+                    Cx = it.X, Cy = it.Y, Rx = it.L / 2, Ry = it.W / 2, Profile = Relief.Dome(it.X, it.Y, it.L / 2, it.W / 2, top, Math.Min(it.W / 2, it.H)),
+                });
             else
                 result.Add(new(top, "rect") { X = it.X - it.L / 2, Y = it.Y - it.W / 2, W = it.L, H = it.W });
         }

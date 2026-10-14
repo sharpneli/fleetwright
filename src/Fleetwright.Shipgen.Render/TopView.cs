@@ -197,19 +197,27 @@ public sealed class TopView
         foreach (var a in AaMounts)
             items.Add(new(DeckM + a.Top, "circle") { Cx = a.X, Cy = a.Y, R = a.R * 0.8 });
         foreach (var bt in d.Boats ?? [])
-            items.Add(new(DeckM + (bt.Top ?? Layout.LevelH + 1.5), "ellipse") { Cx = bt.X, Cy = bt.Y, Rx = bt.L / 2, Ry = bt.W / 2 });
+        {
+            double top = DeckM + (bt.Top ?? Layout.LevelH + 1.5);   // a boat's hull: an ellipsoid along its length
+            items.Add(new(top, "ellipse")
+            {
+                Cx = bt.X, Cy = bt.Y, Rx = bt.L / 2, Ry = bt.W / 2, Profile = Relief.Dome(bt.X, bt.Y, bt.L / 2, bt.W / 2, top, bt.W / 2),
+            });
+        }
         foreach (var fn in Funnels)
             items.Add(new(DeckM + fn.Top, "polygon") { Points = fn.Outline });
         foreach (var m in Masts)
-            items.Add(new(DeckM + m.Top, "circle") { Cx = m.X, Cy = m.Y, R = m.R });
+            items.Add(new(DeckM + m.Top, "circle") { Cx = m.X, Cy = m.Y, R = m.R, Profile = Relief.Dome(m.X, m.Y, m.R, m.R, DeckM + m.Top, m.R) });
         return items.OrderBy(it => it.Top).ToList();
     }
 }
 
 /// <summary>A height-map column: Top metres above the waterline over a shape: "hull", "polygon" (Points), "rect" (X, Y,
-/// W, H), "circle" (Cx, Cy, R) or "ellipse" (Cx, Cy, Rx, Ry).</summary>
+/// W, H), "circle" (Cx, Cy, R) or "ellipse" (Cx, Cy, Rx, Ry). Profile: its relief's shape when it isn't flat at Top
+/// (a dome rising to Top), for the lighting only; the height map keeps the column.</summary>
 public sealed record HeightColumn(double Top, string Shape)
 {
+    public Relief? Profile { get; init; }
     public List<Pt>? Points { get; init; }
     public double? X { get; init; }
     public double? Y { get; init; }

@@ -358,6 +358,13 @@ public sealed unsafe class GpuBaker : IDisposable
         }
     }
 
+    /// <summary>shipbake.frag's Paint block: the colour (premultiplied; the height map's grey in x; for the relief
+    /// the profile's kind in x and w -1) and the relief profile's parameters (<see cref="ReliefPx"/>).</summary>
+    struct BakePaint
+    {
+        public Vector4 Colour, P0, P1;
+    }
+
     static void Use(SDL_GPURenderPass* pass, ref SDL_GPUGraphicsPipeline* bound, SDL_GPUGraphicsPipeline* p, int stencilRef)
     {
         if (p != bound)
@@ -381,20 +388,20 @@ public sealed unsafe class GpuBaker : IDisposable
             {
                 case OpKind.Fill:
                     {
-                        if (layer == Layer.Relief && op.Relief.X == 0)
+                        if (layer == Layer.Relief && op.Relief.Kind == 0)
                             break;   // paint on a surface: the relief under it stays
                         if (op.Union)
                             Use(pass, ref bound, P.Union, depth << 5 | 1);
                         else
                             Use(pass, ref bound, P.Wind, depth << 5);
                         SDL_DrawGPUPrimitives(pass, n, 1, first, 0);
-                        var col = layer switch
+                        var paint = layer switch
                         {
-                            Layer.Height => new Vector4(op.Colour.X, 0, 0, 1),
-                            Layer.Relief => new Vector4(op.Relief.Y, 0, 0, 1),   // a plateau: its top (L2's only profile)
-                            _ => op.Colour,
+                            Layer.Height => new BakePaint { Colour = new Vector4(op.Colour.X, 0, 0, 1) },
+                            Layer.Relief => new BakePaint { Colour = new Vector4((float)op.Relief.Kind, 0, 0, -1), P0 = op.Relief.P0, P1 = op.Relief.P1 },
+                            _ => new BakePaint { Colour = op.Colour },
                         };
-                        SDL_PushGPUFragmentUniformData(cmd, 0, (nint)(&col), 16);
+                        SDL_PushGPUFragmentUniformData(cmd, 0, (nint)(&paint), (uint)sizeof(BakePaint));
                         if (op.InGroup)
                             Use(pass, ref bound, P.CoverGroup, 0x10);
                         else

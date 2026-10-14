@@ -35,7 +35,7 @@ units where looks say otherwise.
   `Painter`), lowered to triangles (`Lower`) and stencil-then-covered in **flat colours** (`GpuBaker`,
   `shipbake.frag`). Per class: the hull RGBA, each turret type's RGBA, and the hull's height map (R8, 0.25 m a step),
   mipmapped (`SpriteImages.Chain`), uploaded by `ShipArtLibrary`.
-- **The lighting is painted in.** `Painter.Shade` fakes it: the lighter 1.12 inset on turret roofs, the highlight
+- **The lighting was painted in** (until L3). `Painter.Shade` faked it: the lighter 1.12 inset on turret roofs, the highlight
   stroke along each barrel's port side, darker sloped face plates, the dark ink outlines (`Painter.Ln`). A turret
   turning carries its painted highlight round with it, which is wrong under any real sun.
 - **Lit since L1** (2026-10-14): `shipmap.frag` and `shipview_sprite.frag` shade every sprite pixel through
@@ -43,7 +43,8 @@ units where looks say otherwise.
   view's centre (`LightTable`: the one place the lights are set; `ShipLights.Compute`). Before L1 it was one number,
   0.3 + 0.7 x the terminator. The shadows (`shipmap_shadow.frag`, the turret silhouettes) take the stronger light.
 - **Relief since L2** (2026-10-14): the bake writes a relief layer (`GpuBaker.RenderRelief`, R32F metres) from draws
-  with a `Style.Relief` (plateaus: the hull's height columns at their exact tops, the turret drawing's parts), and
+  with a `Style.Relief` (plateaus, and since L3 cylinders, domes and slopes, evaluated per pixel in `shipbake.frag`:
+  the hull's height columns at their exact tops, then the hull drawing's profiled parts; the turret drawing's), and
   `ReliefMaps` makes each layer's normal + AO (RGBA8) on the building thread, mipped by coverage; the sprite shaders
   sample it beside the colour.
 - **The frame is display-referred.** The sprite textures are UNORM, not sRGB, blended as they are; the blit copies
@@ -234,6 +235,28 @@ outlines get a look knob (`Shapes.Outline`, 0-1 on `Painter.Ln`'s opacity and wi
 **L3. Profiles, and the painted light taken out.** Cylinders, domes and slopes tagged in `TurretArt`, `Clutter` and
 the masts and boats; the painted highlights that the normals now carry removed (the barrel highlight stroke, the 1.12
 roof insets, the face plates' dark shade becoming a slope). Goldens updated. The barrels' glint shows here.
+
+*Done 2026-10-14.* As planned, with these findings:
+
+- **Profiles** (`Relief` in Scene.cs: `Cylinder`, `Dome`, `Slope`; `.Profile(...)`): set in the node's own
+  coordinates, placed in canvas pixels by Lower at the node where they're set (`ReliefPx`), evaluated by the bake
+  shader at each pixel's canvas position. Tested on the GPU through a rotation.
+- **Where:** turrets: barrels, muzzles, blast bags and torpedo tubes cylinders on the axis; cupolas and round hatches
+  domes (rising 0.8 of their radius, at most 0.6 m); face plates slopes falling 0.3 of the gun house's height to the
+  front; a drum turret's roof, the hooded mount's hood, the champignon's mushroom roof and a casemate's shield domes.
+  The hull: vent cowls, mushroom vents and searchlights domes, boats ellipsoids (both as column profiles:
+  `HeightColumn.Profile`, the height map keeps the column), mast heads domes, yards cylinders a metre under the head
+  (drawn in the hull's colour scene, appended to the relief pass: `DrawList.Concat`). Booms, tripod legs and cranes
+  stay flat for now (lines with no height the model gives).
+- **Painted light out:** the barrels' and tubes' highlight strokes, the roof insets (1.12 on armoured and DP turrets,
+  1.15 on the hooded mount's hood), the face plates' 0.82 shade (now the body's colour, sloped), the faceted cupolas'
+  highlight dots, the casemate shield's lighter disc, the champignon's lightened rings. 317 cases' turret SVGs
+  rewritten; hulls, design records and sprite.json unchanged; png-check's turret coverage unchanged (0.9496 worst).
+- **The look:** turrets read as solid at any bearing (a painted highlight turned with them); against L2's painted
+  contrast they look flatter under a mid sun, the honest result. Barrels shade round; at the default 0.6 roughness
+  their glint is a soft sheen, at 0.35 a clear line along each barrel and a spark on each cupola: L4's materials give
+  barrels their own gloss.
+- **Costs:** bake time as L2 (bismarck 0.14 s); no runtime change (only the bake's shaders and the textures' content).
 
 **L4. Materials.** `Style.Mat`, the looks' material tables, the material layer, Toksvig, the analytic sky. Brass and
 bare steel shine, decks go matte, eras differ.

@@ -103,4 +103,26 @@ public class ReliefBakeTests
         Assert.Equal(0f, H(2.5, 3.5));   // nothing with a profile
         Assert.Equal(0.5f, H(3.5, 0.5));
     }
+
+    [Fact]
+    public void Cylinders_domes_and_slopes_take_their_shape_through_a_transform()
+    {
+        var sc = new Scene(0, 0, 8, 8, PxPerM);
+        // a barrel along x at y = 1, radius 0.5, its top at 2 m
+        sc.Root.Items.Add(new RectNode(0, 0.5, 8, 1).Fill("#808080").Profile(Relief.Cylinder(0, 1, 1, 1, 0.5, 2)));
+        // a dome over a circle at (2, 4), radius 1, rising 0.8 m to 3 m; drawn turned and moved, which it follows
+        sc.Root.Items.Add(new CircleNode(0, 0, 1).Fill("#808080").Profile(Relief.Dome(0, 0, 1, 1, 3, 0.8))
+            .Tr(new Translate(2, 4), new Rotate(30)));
+        // a face plate: 4 m at x = 5, falling 0.5 m a metre toward +x
+        sc.Root.Items.Add(new RectNode(5, 3, 3, 3).Fill("#808080").Profile(Relief.Slope(5, 0, 4, -0.5, 0)));
+        using var gpu = new GpuBaker();
+        var r = gpu.RenderRelief(Lower.Run(sc));
+        double H(double xm, double ym) => r.M[(int)(ym * PxPerM) * r.Width + (int)(xm * PxPerM)];
+        Assert.Equal(2, H(3.05, 1.05), tolerance: 0.01);             // on the axis (pixel centres sit 0.05 m in)
+        Assert.Equal(1.5 + Math.Sqrt(0.25 - 0.35 * 0.35), H(3.05, 0.65), tolerance: 0.01);   // 0.35 m off it
+        Assert.Equal(3, H(2.05, 4.05), tolerance: 0.01);             // the dome's crown
+        Assert.Equal(2.2 + 0.8 * Math.Sqrt(1 - (0.95 * 0.95 + 0.05 * 0.05)), H(2.95, 4.05), tolerance: 0.01);   // near its rim
+        Assert.Equal(4 - 0.5 * 1.05, H(6.05, 4.05), tolerance: 0.01);
+        Assert.Equal(4 - 0.5 * 2.55, H(7.55, 4.05), tolerance: 0.01);
+    }
 }
