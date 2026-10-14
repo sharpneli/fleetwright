@@ -212,14 +212,19 @@ public class RailsTests(ITestOutputHelper output)
         Assert.Equal(Start + 365L * 86_400_000, w.Time);
     }
 
+    /// <summary>At the fine tier's top speed (below the coarse threshold, so off rails round the islands on the fine
+    /// tick, S2), the clock keeps that speed with room to spare. A day: about 3 of the 2,000 are off rails at a time, ~55
+    /// ship-hours of fine tick in all (ships going round Hawaii and the Tuamotus, up to ~11 h each), and the rest are on
+    /// rails, so the cost is the fine tick's per sliding ship, not the fleet's size. Release, 2026-10-14: ~8 s, ~10,000x;
+    /// Debug ~7 times slower. The faster tiers among the same islands are the year's (rails, 1M x) and
+    /// CoarseTierTests'.</summary>
     [Fact]
-    public void Two_thousand_ships_steam_two_days_among_the_Pacific_islands()
+    public void Two_thousand_ships_steam_a_day_among_the_Pacific_islands_at_the_fine_tiers_top_speed()
     {
-        // at 1x, below the snap speed, so off rails round the islands (S2). Release, 2026-10-13: ~12 s, nearly all of it
-        // ships going round Hawaii and the Tuamotus on the fine tick, up to ~11 h each
         _ = Fleet.Get("destroyer");
+        double top = Settings.CoarseMinSpeed - 1;
         var sw = Stopwatch.StartNew();
-        var w = Patrol(2000, 2);
+        var w = Patrol(2000, 1, speed: top);
         sw.Stop();
         var store = w.Ships.Store;
         int onRails = 0, backstops = 0;
@@ -232,10 +237,12 @@ public class RailsTests(ITestOutputHelper output)
                 if (!st.OnRails)
                     closest = Math.Min(closest, TestLand.Shore.IsLand(st.Position) ? -1 : TestLand.Shore.Clearance(st.Position, 1000, out _));
             }
-        output.WriteLine($"2,000 ships, 2 days among the islands: {sw.Elapsed.TotalSeconds:F1} s, {onRails} on rails at the end, {backstops} backstops");
+        double kept = 86_400 / sw.Elapsed.TotalSeconds;
+        output.WriteLine($"2,000 ships, a day among the islands at {top:#,0}x: {sw.Elapsed.TotalSeconds:F1} s, keeps {kept:#,0}x, " +
+                         $"{onRails} on rails at the end, {backstops} backstops");
         Assert.Equal(2000, store.Count);
         Assert.True(closest > 0, "a ship ended on land");
-        Assert.True(sw.Elapsed.TotalSeconds < 60, $"{sw.Elapsed.TotalSeconds:F1} s");
+        Assert.True(kept > 2 * top, $"keeps {kept:#,0}x, asked {top:#,0}x");
     }
 
     [Fact]

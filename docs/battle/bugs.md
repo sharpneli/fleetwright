@@ -15,12 +15,23 @@ add what's found.
   first runs (the JIT, tiering) allocate, and its warm-up (`Run(w, 120)` untimed) may be too short for tiering to
   have settled before the measured hour. To hunt it: run the suite in a loop until it fails and keep the message
   (the bytes and where), then compare a longer warm-up, `DOTNET_TieredCompilation=0`, and the test alone under load.
-- [ ] `RailsTests.Two_thousand_ships_steam_two_days_among_the_Pacific_islands` fails its 60 s limit in Debug (~129 s,
-  2026-10-13, with and without the line-ahead steering damping), and passes in Release (15.9 s). Either the limit is
-  for Release only and should say so (skip or scale it in Debug), or Debug got slower since S3; not hunted yet.
 - [ ] The other allocation tests warm up the same way and may share it: `ForceTests` (line ~400), `GroupTests`
   (~189), `FormationRailsTests` (~443), `RandomStreamTests` (~78), `SlideTests.Sliding_allocates_nothing_and_costs_little`.
   Seen failing since (2026-10-13, Release, on the commit before the coarse turn-together change and after it alike):
   `FormationRailsTests.Contacts_and_snapped_searches_allocate_nothing`, `CoarseTierTests.Coarse_ships_in_an_encounter_allocate_nothing`
   and `EncounterTests.Two_hundred_ships_in_one_fight_are_one_encounter_without_garbage`, each now and then (running
   just the allocation tests, 1 run in 4 had two failures), each passing alone. Same suspicion as above.
+
+## The slide
+
+- [ ] A ship can be trapped in a bay that opens away from its course: decision 7's "boxed in, it follows the coast
+  round" doesn't hold. Found 2026-10-14 by the islands rails test's layout at 1,000 ships (not the 2,000 the test runs):
+  a destroyer spawned at 1.842, -158.980 on 86° at 15 kn, routed to 2.250, -152.994, meets Kiritimati. On the 1:10M land
+  the atoll's west side is a pocket about 7 by 15 km, open only to the north (1.84-1.93°N, 157.41-157.55°W). At 1x the
+  ship goes in, meets its east shore, slides, is released once its course is clear over the short look-ahead (30 s,
+  ~230 m), goes back on rails on 86° (its side forgotten), comes off again at the east shore, and repeats every ~2.5 h:
+  still there after 36 h, a backstop a lap (20). Likely the release: inside a pocket the course clears for the
+  look-ahead long before the ship is out, so it never keeps one side long enough to follow the coast round. To hunt it:
+  the spawn above alone, at 1x and at 1,000x (does coarse escape?); then a release that also asks the course clear past
+  the pocket (rails' own `LandClear` horizon), or keeps the side until the ship has passed the point it first met the
+  coast. A test of it would bound how long any ship of the islands test stays off rails.
