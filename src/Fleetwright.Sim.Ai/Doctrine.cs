@@ -62,6 +62,25 @@ public enum DoctrineField : byte
     /// <summary>Whether a force in a cruising order deploys into one line of battle on meeting the enemy's main body (1),
     /// or doesn't (0) (docs/battle/command.md 5.1c).</summary>
     Deploy,
+
+    /// <summary>A side's commander breaks off (every unit home) once this share of the tonnage it came with is lost
+    /// (docs/battle/command.md 5.1d). A side's value: read from its doctrine, not a unit's.</summary>
+    BreakOffShare,
+
+    /// <summary>Whether a side's heavy ships accept action at night or avoid it (<see cref="Ai.NightAction"/>): avoiding,
+    /// its commander withdraws them from contact by night, his scouts keeping in touch. A side's value.</summary>
+    NightAction,
+
+    /// <summary>Whether a side's torpedo craft attack by night (1) or not (0): attacking, its commander sends them in on
+    /// any heavy enemy in reach, engaged or not. A side's value.</summary>
+    NightAttack,
+}
+
+/// <summary>Doctrine's NightAction: heavy ships accept action at night, or avoid it.</summary>
+public enum NightAction : byte
+{
+    Accept,
+    Avoid,
 }
 
 /// <summary>Doctrine's Engage: carry on with the orders given (firing at will), or Fight (and turn away when outgunned).</summary>
@@ -107,7 +126,7 @@ public enum TorpedoUse : byte
 /// per unit; a command sets one value, so it's logged and replays. AI state: only captains and admirals read it.</summary>
 public sealed class Doctrine(GroupSystem groups)
 {
-    public const int FieldCount = (int)DoctrineField.Deploy + 1;
+    public const int FieldCount = (int)DoctrineField.NightAttack + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -128,6 +147,9 @@ public sealed class Doctrine(GroupSystem groups)
         DoctrineField.TorpedoAttack => (double)Ai.TorpedoAttack.Alone,
         DoctrineField.AttackBreakOffShare => 1,   // never
         DoctrineField.Deploy => 0,
+        DoctrineField.BreakOffShare => 2,   // never
+        DoctrineField.NightAction => (double)Ai.NightAction.Accept,
+        DoctrineField.NightAttack => 0,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
@@ -240,6 +262,7 @@ public sealed class DoctrinePresets
             DoctrineField.Evasion when Enum.TryParse<Evasion>(name, ignoreCase: true, out var ev) => (f, (double)ev),
             DoctrineField.TorpedoEvasion when Enum.TryParse<TorpedoEvasion>(name, ignoreCase: true, out var te) => (f, (double)te),
             DoctrineField.TorpedoAttack when Enum.TryParse<TorpedoAttack>(name, ignoreCase: true, out var ta) => (f, (double)ta),
+            DoctrineField.NightAction when Enum.TryParse<NightAction>(name, ignoreCase: true, out var na) => (f, (double)na),
             _ => throw new ArgumentException($"doctrine: \"{v}\" isn't a value of {field}"),
         };
     }

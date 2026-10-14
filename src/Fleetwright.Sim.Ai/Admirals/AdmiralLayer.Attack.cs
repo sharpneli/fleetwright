@@ -199,7 +199,8 @@ public sealed partial class AdmiralLayer
     }
 
     /// <summary>Whether any boat of the line still has torpedoes and launchers to fire them.</summary>
-    static bool AnyTorpedoes(in AiContext ctx, GroupSystem.Group g)
+    /// <summary>Whether any boat of a group still has a torpedo in a launcher that works.</summary>
+    internal static bool AnyTorpedoes(in AiContext ctx, GroupSystem.Group g)
     {
         for (int i = 0; i < g.Line.Count; i++)
             if (ctx.Ships.SlotOf(g.Line[i]) is int slot and >= 0 && CaptainLayer.TorpedoCraft(ctx, ctx.Ships[slot], slot))

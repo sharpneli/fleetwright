@@ -141,6 +141,189 @@ public class CommanderTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_side_holding_an_enemy_sends_its_heavy_units_to_close_him()
+    {
+        var (w, ai) = Make();
+        int bb = Class(w, "dreadnought"), lc = Class(w, "light_cruiser");
+        var main = Column(w, ai, bb, Earth.Position(Lat, Lon), 0, 3, side: 1);
+        var enemy = Column(w, ai, bb, Off(90, 60_000), 0, 2, side: 0, kn: 12);
+        var (sla, slo) = LatLon(Off(90, 48_000));
+        w.Apply(ShipSystem.Spawn(lc, sla, slo, 0, 12, 1));   // a scout of his, keeping the enemy in sight
+        var scout = Unit.Ship(w.Ships.NewestEntity);
+        w.Apply(ai.Orders.HoldFire(scout));
+        Run(w, 60);   // a look, so the scout holds him
+        w.Apply(ai.Orders.Shadow(scout, enemy, 12_000));
+        w.Apply(ai.Orders.Commander(1, CommanderMode.On));
+        double closed = double.NaN;
+        for (double s = 0; s < 2 * 3600 && double.IsNaN(closed); s += 60)
+        {
+            Run(w, 60);
+            var g = w.Ships.Store[w.Ships.Store.SlotOf(main.ShipOf(w.Groups))];
+            var e = w.Ships.Store[w.Ships.Store.SlotOf(enemy.ShipOf(w.Groups))];
+            if (Earth.Distance(g.Position, e.Position) <= Settings.FightCompareM)
+                closed = s;
+        }
+        var given = ai.Commanders.GivenOf(main);
+        output.WriteLine($"closed to {Settings.FightCompareM / 1000:F0} km after {closed / 60:F0} min; given {given}; the scout {ai.Commanders.GivenOf(scout)}; " +
+                         $"phase {ai.Commanders.PhaseOf(1)}");
+        Assert.Equal((TaskKind.Intercept, CommanderWhy.Contact), (given.Given, given.Why));
+        Assert.InRange(closed, 10 * 60, 70 * 60);   // 30 km to close at 15 kn, converging: about 50 minutes
+        Assert.Equal(TaskKind.None, ai.Commanders.GivenOf(scout).Given);   // shadowing as told: his scout keeps at it
+        Assert.Equal(CommanderPhase.Battle, ai.Commanders.PhaseOf(1).Phase);
+    }
+
+    [Fact]
+    public void Flotillas_are_sent_in_on_an_enemy_line_their_heavy_units_engage()
+    {
+        var (w, ai) = Make();
+        int bb = Class(w, "dreadnought"), dd = Class(w, "destroyer");
+        var line = Column(w, ai, bb, Earth.Position(Lat, Lon), 180, 4, side: 0);
+        var flotilla = Column(w, ai, dd, Off(270, 3_000), 180, 4, side: 0);
+        var enemy = Column(w, ai, bb, Off(90, 16_000), 180, 4, side: 1);
+        w.Apply(ai.Orders.FireAtWill(flotilla));
+        w.Apply(ai.Orders.Screen(flotilla, line, 3_000));
+        w.Apply(ai.Orders.Commander(0, CommanderMode.On));
+        long seen = w.CombatLog.Written;
+        int torpedoes = 0;
+        double sent = double.NaN, fired = double.NaN;
+        for (double s = 0; s < 45 * 60 && double.IsNaN(fired); s += 60)
+        {
+            Run(w, 60);
+            if (double.IsNaN(sent) && ai.Commanders.GivenOf(flotilla).Given == TaskKind.Attack)
+                sent = s;
+            for (long i = w.CombatLog.Written - seen - 1; i >= 0; i--)
+                if (w.CombatLog.Newest((int)i) is { Kind: CombatEvent.Torpedoes } e && w.Ships.Store.SlotOf(e.Shooter) is int slot and >= 0 &&
+                    w.Ships.Store[slot].Side == 0)
+                    torpedoes += e.Count;
+            seen = w.CombatLog.Written;
+            if (torpedoes > 0)
+                fired = s;
+        }
+        output.WriteLine($"sent in at {sent / 60:F0} min, {torpedoes} torpedoes by {fired / 60:F0} min; given {ai.Commanders.GivenOf(flotilla)}, " +
+                         $"on {ai.Tasks.Of(flotilla)}; the line given {ai.Commanders.GivenOf(line)}");
+        Assert.InRange(sent, 0, 2 * 60);   // the lines are in sight of each other from the start
+        Assert.Equal(CommanderWhy.Battle, ai.Commanders.GivenOf(flotilla).Why);
+        Assert.True(torpedoes > 0);
+        Assert.Equal(TaskKind.None, ai.Commanders.GivenOf(line).Given);   // in contact: doctrine's, not his
+    }
+
+    [Fact]
+    public void An_outmatched_side_declines_and_goes_home()
+    {
+        var (w, ai) = Make();
+        int bb = Class(w, "dreadnought");
+        var mine = Column(w, ai, bb, Earth.Position(Lat, Lon), 0, 2, side: 1);
+        Column(w, ai, bb, Off(90, 22_000), 0, 8, side: 0, kn: 12);
+        var (hla, hlo) = LatLon(Off(270, 150_000));
+        w.Apply(ai.Orders.Home(1, hla, hlo));
+        w.Apply(ai.Orders.Commander(1, CommanderMode.On));
+        var home = Earth.Position(hla, hlo);
+        double Away() => Earth.Distance(w.Ships.Store[w.Ships.Store.SlotOf(mine.ShipOf(w.Groups))].Position, home);
+        double before = Away();
+        Run(w, 3 * 60);
+        var phase = ai.Commanders.PhaseOf(1);
+        var given = ai.Commanders.GivenOf(mine);
+        Run(w, 60 * 60);
+        output.WriteLine($"phase {phase}, given {given}; {before / 1000:F0} km from home, an hour on {Away() / 1000:F0} km");
+        Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), phase);
+        Assert.Equal((TaskKind.Withdraw, CommanderWhy.Outmatched), (given.Given, given.Why));
+        Assert.True(Away() < before - 20_000);
+    }
+
+    [Fact]
+    public void A_side_that_loses_the_enemy_searches_where_it_was_then_gives_up_and_goes_home()
+    {
+        var w = new World(Start, 3, Settings with { SearchLegM = 8_000 });
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(12_000));
+        int bb = Class(w, "dreadnought"), lc = Class(w, "light_cruiser");
+        var mine = Column(w, ai, bb, Earth.Position(Lat, Lon), 90, 3, side: 1);
+        var (ela, elo) = LatLon(Off(90, 10_000));
+        w.Apply(ShipSystem.Spawn(lc, ela, elo, 90, 28, 0));   // a fast one, running from him out of sight
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(w.Ships.NewestEntity)));
+        var (hla, hlo) = LatLon(Off(270, 60_000));
+        w.Apply(ai.Orders.Home(1, hla, hlo));
+        w.Apply(ShipSystem.LookNow());   // he sees her at once
+        w.Apply(ai.Orders.Commander(1, CommanderMode.On));
+        var seenPhases = new List<CommanderPhase>();
+        var givens = new List<TaskKind>();
+        for (double s = 0; s < 8 * 3600 && ai.Commanders.PhaseOf(1).Phase != CommanderPhase.Home; s += 60)
+        {
+            Run(w, 60);
+            if (seenPhases.Count == 0 || seenPhases[^1] != ai.Commanders.PhaseOf(1).Phase)
+                seenPhases.Add(ai.Commanders.PhaseOf(1).Phase);
+            if (ai.Commanders.GivenOf(mine).Given is var g && g != TaskKind.None && (givens.Count == 0 || givens[^1] != g))
+                givens.Add(g);
+        }
+        var given = ai.Commanders.GivenOf(mine);
+        output.WriteLine($"phases {string.Join(" > ", seenPhases)}; given {string.Join(" > ", givens)}; at {w.Time}: {ai.Commanders.PhaseOf(1)}, given {given}");
+        Assert.Equal([CommanderPhase.Battle, CommanderPhase.Contact, CommanderPhase.Lost, CommanderPhase.Home],
+            seenPhases.Where(p => p is not (CommanderPhase.None or CommanderPhase.NoContact)).Distinct());
+        Assert.Equal([TaskKind.Intercept, TaskKind.Search, TaskKind.Withdraw], givens);
+        Assert.Equal((TaskKind.Withdraw, CommanderWhy.GaveUp), (given.Given, given.Why));
+    }
+
+    [Fact]
+    public void Losses_past_doctrines_share_break_a_side_off()
+    {
+        var (w, ai) = Make();
+        int bb = Class(w, "dreadnought");
+        var mine = Column(w, ai, bb, Earth.Position(Lat, Lon), 0, 4, side: 1);
+        Column(w, ai, bb, Off(90, 22_000), 0, 4, side: 0, kn: 12);
+        var (hla, hlo) = LatLon(Off(270, 150_000));
+        w.Apply(ai.Orders.Home(1, hla, hlo));
+        w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.BreakOffShare, 0.34));
+        w.Apply(ai.Orders.Commander(1, CommanderMode.On));
+        Run(w, 2 * 60);
+        var before = ai.Commanders.PhaseOf(1);
+        var line = w.Groups.Get(mine.GroupId)!.Line;
+        int a = line[2], b = line[3];
+        w.Apply(ShipSystem.Drop(a));   // two of his four gone
+        w.Apply(ShipSystem.Drop(b));
+        Run(w, 2 * 60);
+        output.WriteLine($"before {before}, after {ai.Commanders.PhaseOf(1)}, given {ai.Commanders.GivenOf(mine)}");
+        Assert.Equal(CommanderPhase.Battle, before.Phase);
+        Assert.Equal((CommanderPhase.Retiring, CommanderReason.BrokenOff), ai.Commanders.PhaseOf(1));
+        Assert.Equal((TaskKind.Withdraw, CommanderWhy.BrokenOff), (ai.Commanders.GivenOf(mine).Given, ai.Commanders.GivenOf(mine).Why));
+    }
+
+    [Theory]
+    [InlineData(NightAction.Avoid)]
+    [InlineData(NightAction.Accept)]
+    public void By_night_heavy_ships_avoid_action_and_the_flotillas_go_in(NightAction night)
+    {
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 23), 3, Settings);
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(30_000));
+        int bb = Class(w, "dreadnought"), dd = Class(w, "destroyer");
+        var mine = Column(w, ai, bb, Earth.Position(Lat, Lon), 180, 3, side: 1);
+        var flotilla = Column(w, ai, dd, Off(90, 2_000), 180, 4, side: 1);
+        Column(w, ai, bb, Off(90, 7_000), 180, 4, side: 0);
+        w.Apply(ai.Orders.FireAtWill(flotilla));
+        var (hla, hlo) = LatLon(Off(270, 150_000));
+        w.Apply(ai.Orders.Home(1, hla, hlo));
+        w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.NightAction, (double)night));
+        w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.NightAttack, 1));
+        w.Apply(ShipSystem.LookNow());
+        w.Apply(ai.Orders.Commander(1, CommanderMode.On));
+        Run(w, 3 * 60);
+        var phase = ai.Commanders.PhaseOf(1);
+        output.WriteLine($"{night}: phase {phase}; the squadron given {ai.Commanders.GivenOf(mine)}, the flotilla {ai.Commanders.GivenOf(flotilla)}; " +
+                         $"the sun {Light.SunElevationDeg(Earth.Position(Lat, Lon), w.Time):F1}°");
+        if (night == NightAction.Avoid)
+        {
+            Assert.Equal(CommanderPhase.Night, phase.Phase);
+            Assert.Equal((TaskKind.Withdraw, CommanderWhy.Night), (ai.Commanders.GivenOf(mine).Given, ai.Commanders.GivenOf(mine).Why));
+            Assert.Equal((TaskKind.Attack, CommanderWhy.Night), (ai.Commanders.GivenOf(flotilla).Given, ai.Commanders.GivenOf(flotilla).Why));
+        }
+        else
+        {
+            Assert.Equal(CommanderPhase.Battle, phase.Phase);
+            Assert.Equal(TaskKind.None, ai.Commanders.GivenOf(mine).Given);   // in contact: doctrine fights
+        }
+    }
+
+    [Fact]
     public void Units_through_with_their_tasks_are_given_their_roles()
     {
         var (w, ai) = Make();

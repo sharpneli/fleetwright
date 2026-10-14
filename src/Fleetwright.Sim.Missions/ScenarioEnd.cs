@@ -21,6 +21,10 @@ public enum EndReason : byte
 
     /// <summary>Quiet: the sides met, and no encounter has been open for <see cref="SimSettings.QuietEndMs"/>.</summary>
     Quiet,
+
+    /// <summary>Every side done: each side still afloat has its aims, or its commander has given them up (gone home, or
+    /// broken off) and every ship of it afloat is home (docs/battle/command.md "The end", 2).</summary>
+    Done,
 }
 
 /// <summary>What a line of a scenario's timeline tells.</summary>
@@ -167,6 +171,8 @@ public sealed class ScenarioEnd
             End(EndReason.Time, now);
         else if (Decided())
             End(EndReason.Decided, now);
+        else if (ai != null && AllDone())
+            End(EndReason.Done, now);
         else if (met && world.Encounters.Count == 0 && now - lastBusyMs >= world.Settings.QuietEndMs)
             End(EndReason.Quiet, now);
         return Over;
@@ -186,6 +192,25 @@ public sealed class ScenarioEnd
                     return false;
         }
         return any;
+    }
+
+    /// <summary>Every side still afloat is done: its aims met, or given up with every ship of it afloat home.</summary>
+    bool AllDone()
+    {
+        var store = world.Ships.Store;
+        double home = world.Settings.HomeRadiusM;
+        for (int side = 0; side < afloat.Length; side++)
+        {
+            if (afloat[side] == 0 || aims[side].All(a => Aims.Met(world, side, a)))
+                continue;
+            var (phase, reason) = ai!.Commanders.PhaseOf(side);
+            if (!(phase == CommanderPhase.Home || reason == CommanderReason.BrokenOff) || ai.HomeOf(side) is not { } at)
+                return false;
+            for (int slot = 0; slot < store.Slots; slot++)
+                if (store.IsAlive(slot) && store[slot].Side == side && Aims.Afloat(store, slot) && Earth.Distance(store[slot].Position, at) > home)
+                    return false;
+        }
+        return true;
     }
 
     void End(EndReason why, long now)

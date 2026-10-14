@@ -20,6 +20,9 @@ public enum TaskKind : byte
     Scout,
     Search,
     Cover,
+
+    /// <summary>A flotilla's torpedo attack (docs/battle/command.md 5.1b), as a task: done once its torpedoes are spent.</summary>
+    Attack,
 }
 
 /// <summary>How a task stands, reported up (docs/battle/command.md "Reports and reasons").</summary>
@@ -64,6 +67,12 @@ public enum TaskReason : byte
 
     /// <summary>A search's pattern steamed to its end.</summary>
     Searched,
+
+    /// <summary>An attack's torpedoes spent.</summary>
+    Fired,
+
+    /// <summary>An attack beaten off (doctrine's AttackBreakOffShare of its boats gone).</summary>
+    BeatenOff,
 }
 
 /// <summary>The task layer (docs/battle/command.md 5.1c), above the admirals: a unit's task (a kind of the one unit
@@ -182,7 +191,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
     public static bool IsTask(AiCommand code, OrderSource source) =>
         code is AiCommand.GoTo or AiCommand.Patrol or AiCommand.Intercept or AiCommand.Join or AiCommand.Withdraw or AiCommand.Scout
             or AiCommand.Search or AiCommand.Cover ||
-        code is AiCommand.Shadow or AiCommand.Screen && source is OrderSource.Player or OrderSource.Commander;
+        code is AiCommand.Shadow or AiCommand.Screen or AiCommand.Attack && source is OrderSource.Player or OrderSource.Commander;
 
     /// <summary>The task a command gives.</summary>
     public static TaskKind KindOf(AiCommand code) => code switch
@@ -197,6 +206,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         AiCommand.Scout => TaskKind.Scout,
         AiCommand.Search => TaskKind.Search,
         AiCommand.Cover => TaskKind.Cover,
+        AiCommand.Attack => TaskKind.Attack,
         _ => throw new ArgumentException($"not a task: {code}"),
     };
 
@@ -240,7 +250,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         {
             Unit = u.Id, Kind = kind, Status = TaskState.OnTask, StartMs = ctx.NowMs, QuietMs = ctx.NowMs,
             Point = kind is TaskKind.GoTo or TaskKind.Patrol or TaskKind.Withdraw or TaskKind.Search ? c.A : 0,
-            Target = kind is TaskKind.Intercept or TaskKind.Join or TaskKind.Shadow or TaskKind.Screen or TaskKind.Scout or TaskKind.Cover ? (int)c.A : 0,
+            Target = kind is TaskKind.Intercept or TaskKind.Join or TaskKind.Shadow or TaskKind.Screen or TaskKind.Scout or TaskKind.Cover or TaskKind.Attack ? (int)c.A : 0,
             Kn = kind is TaskKind.GoTo or TaskKind.Intercept ? c.X : 0,
             DistanceM = kind switch
             {
@@ -319,6 +329,13 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         if (t.Kind == TaskKind.Scout && t.ShadowOf == 0 && Outmatched(ctx, ref t, u, guide))
             return;
 
+        // an attack is a fight: it isn't interrupted by one
+        if (t.Kind == TaskKind.Attack)
+        {
+            Attack(ctx, ref t, u, guide, slot);
+            return;
+        }
+
         // a force deploying into its line of battle: the task waits for the fight
         if (u.IsGroup && Admirals!.Deploying(u.GroupId))
         {
@@ -328,18 +345,15 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
 
         // a fight doctrine took up (or the captain's own: falling out) interrupts it
         var order = u.IsGroup ? Admirals!.Of(u.GroupId).Order : Captains!.Of(u.Entity).Order;
-        if (order is CaptainOrder.Fight or CaptainOrder.Home && !(t.Kind == TaskKind.Withdraw && t.RunFrom != 0))
+        if (order == CaptainOrder.Home)
         {
-            if (order == CaptainOrder.Home)
-            {
-                (t.Status, t.Reason) = (TaskState.Cant, TaskReason.None);   // fallen out: the captain's now
-                return;
-            }
-            if (now - t.QuietMs < (long)(s.TaskResumeS * 1000))
-            {
-                (t.Status, t.Issued) = (TaskState.Engaged, false);
-                return;
-            }
+            (t.Status, t.Reason) = (TaskState.Cant, TaskReason.None);   // fallen out: the captain's now
+            return;
+        }
+        if (order == CaptainOrder.Fight && t.Kind != TaskKind.Withdraw && now - t.QuietMs < (long)(s.TaskResumeS * 1000))
+        {
+            (t.Status, t.Issued) = (TaskState.Engaged, false);   // a withdrawal never waits on a fight: it breaks it off
+            return;
         }
         t.Status = TaskState.OnTask;
         var o = ctx.Orders;
@@ -375,13 +389,15 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
                 }
                 break;
             case TaskKind.Withdraw:
+                if (order == CaptainOrder.Fight)
+                    (t.RunFrom, t.Issued) = (0, false);   // a fight took it up after all: away again
                 Withdraw(ctx, ref t, u, guide);
                 break;
             case TaskKind.Intercept:
             {
                 var pic = ctx.World.Sightings.Of(guide.Side);
                 int ti = pic?.IndexOf(t.Target) ?? -1;
-                if (ti < 0)
+                if (ti < 0 || !Fresh(ctx, pic![ti]))
                 {
                     End(ref t, TaskState.Cant, TaskReason.LostContact);
                     break;
@@ -432,6 +448,34 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
                 Cover(ctx, ref t, u, guide);
                 break;
         }
+    }
+
+    /// <summary>Whether a contact is fresh: in sight, or seen within <see cref="SimSettings.ContactFreshMs"/>. One older is
+    /// lost: an intercept gives it up, and a commander chooses no target from it.</summary>
+    public static bool Fresh(in AiContext ctx, in Contact c) => c.InSight || ctx.NowMs - c.SeenMs <= ctx.Settings.ContactFreshMs;
+
+    /// <summary>Attack: the flotilla's attack (<see cref="AiCommand.Attack"/>) on its target, or the biggest in sight; done
+    /// once no boat has a torpedo left, or no enemy has been in sight of it for <see cref="SimSettings.TaskResumeS"/>;
+    /// can't be once it's beaten off (its admiral runs).</summary>
+    void Attack(in AiContext ctx, ref Task t, Unit u, ShipState guide, int slot)
+    {
+        if (!t.Issued)
+        {
+            (t.Status, t.Issued) = (TaskState.OnTask, true);
+            ctx.Issue(ctx.Orders.Attack(u, t.Target, OrderSource.Task));
+            return;
+        }
+        if (u.IsGroup && groups.Get(u.GroupId) is { } g)
+        {
+            if (Admirals!.Of(g.GroupId).Order == CaptainOrder.Run)
+                End(ref t, TaskState.Cant, TaskReason.BeatenOff);
+            else if (!AdmiralLayer.AnyTorpedoes(ctx, g))
+                End(ref t, TaskState.Done, TaskReason.Fired);
+        }
+        else if (!CaptainLayer.TorpedoCraft(ctx, guide, slot))
+            End(ref t, TaskState.Done, TaskReason.Fired);
+        if (Live(t.Status) && ctx.NowMs - t.QuietMs > (long)(ctx.Settings.TaskResumeS * 1000))
+            End(ref t, TaskState.Done, TaskReason.LostContact);
     }
 
     /// <summary>Scout: a station <see cref="Task.DistanceM"/> off the unit's guide, <see cref="Task.OffBowDeg"/> off its
@@ -621,6 +665,12 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         var s = ctx.Settings;
         var with = new Unit(t.Target);
         int theirs = Lead(with);
+        if (theirs == guide.Entity && u.IsGroup && with.IsGroup && groups.Get(u.GroupId) is { } guiding && guiding.Parent == with.GroupId)
+        {
+            ctx.Issue(ctx.Orders.Resume(u, OrderSource.Task));   // the force's own guide, back in its line
+            End(ref t, TaskState.Done, TaskReason.Joined);
+            return;
+        }
         if (ctx.Ships.SlotOf(theirs) is not (int ts and >= 0) || theirs == guide.Entity || ctx.Ships[ts].Side != guide.Side)
         {
             End(ref t, TaskState.Cant, TaskReason.Gone);

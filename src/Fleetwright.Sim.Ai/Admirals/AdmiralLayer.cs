@@ -38,7 +38,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public double AskedKn = double.NaN;   // NaN: none
         public int Target;              // a unit
         public double DistanceM, AbeamM;
-        public long[] Route = [];       // packed lat/lons, RouteCount of them
+        public long[] Route = new long[8];   // packed lat/lons, RouteCount of them (room made with him: a first route allocates nothing)
         public int RouteCount;
         public bool Loop;
         public bool Watch;              // held by the player on a route: its end hands the group back

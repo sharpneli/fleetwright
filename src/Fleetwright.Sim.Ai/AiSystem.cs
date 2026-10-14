@@ -59,7 +59,7 @@ public sealed class AiSystem : IWorldSystem
         Admirals.Tactical = Tactical;
         Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine };
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
-        Commanders = new CommanderLayer(world.Groups, world.Ships.Store) { Tasks = Tasks, Captains = Captains };
+        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Tactical, Doctrine) { Tasks = Tasks, Captains = Captains };
         layers = [Commanders, Tasks, Admirals, Captains];
         nextTick = new long[layers.Length];
         tickGen = new int[layers.Length];

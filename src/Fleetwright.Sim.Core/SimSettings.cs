@@ -645,8 +645,31 @@ public sealed record SimSettings
     public double FallBackM { get; init; } = 150_000;
     public double FallBackDeg { get; init; } = 100;
 
-    /// <summary>The side's commander (docs/battle/command.md 5.1d) thinks every CommanderPeriodMs. ms.</summary>
+    /// <summary>The side's commander (docs/battle/command.md 5.1d) thinks every CommanderPeriodMs. A contact out of sight
+    /// longer than ContactFreshMs is lost: an intercept gives it up, and he chooses no target from it. His heavy units
+    /// close the strongest fresh contact, and keep closing it until another is CommanderRetargetShare times as strong; he
+    /// sends a flotilla in on an enemy line his heavy units are engaging within CommanderAttackM of it, one of
+    /// CommanderAttackStrength or more (12" guns' worth: <c>Strength</c>). ms, ms, a ratio, m, guns.</summary>
     public int CommanderPeriodMs { get; init; } = 60_000;
+    public long ContactFreshMs { get; init; } = 1_800_000;
+    public double CommanderRetargetShare { get; init; } = 1.5;
+    public double CommanderAttackM { get; init; } = 25_000;
+    public double CommanderAttackStrength { get; init; } = 1;
+
+    /// <summary>He declines battle once the strength he holds fresh is past doctrine's outgunned ratio of his own by this
+    /// share more, and accepts it again once it's under the ratio by this share: his margin either way.</summary>
+    public double CommanderMarginShare { get; init; } = 0.25;
+
+    /// <summary>The enemy lost, his main body searches where he was last held on legs this long (m), and gives up after.</summary>
+    public double LostSearchLegM { get; init; } = 20_000;
+
+    /// <summary>It's night to a commander (doctrine's NightAction and NightAttack) with the sun more than this far down at
+    /// his main body, degrees (civil twilight's end).</summary>
+    public double NightSunElevationDeg { get; init; } = -6;
+
+    /// <summary>A ship with main guns of this calibre or more is one of his heavy ships, capital or not (the commander's
+    /// roles: an armoured cruiser, a pre-dreadnought). mm.</summary>
+    public double HeavyGunMm { get; init; } = 200;
 
     /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
     /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>

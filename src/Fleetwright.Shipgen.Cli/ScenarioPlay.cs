@@ -73,7 +73,7 @@ static class ScenarioPlay
             var result = end.Result();
             runs.Add((seed, end, result, wall));
             if (seeds == 1)
-                PrintOne(s, end, result, names, wall);
+                PrintOne(s, end, result, names, wall, w, ai);
             else
                 Console.WriteLine($"  seed {seed,6}: {Why(end.Reason),-7} at {Clock(s, end.EndMs)}  " +
                                   string.Join("   ", result.Select(r => $"{r.Name} lost {r.Lost}/{r.Ships} ({r.LostTonnes:0} t){(r.AimsMet ? ", aims met" : "")}")) +
@@ -86,7 +86,7 @@ static class ScenarioPlay
         return crashed > 0 ? 1 : 0;
     }
 
-    static void PrintOne(Scenario s, ScenarioEnd end, SideResult[] result, Dictionary<int, string> names, double wall)
+    static void PrintOne(Scenario s, ScenarioEnd end, SideResult[] result, Dictionary<int, string> names, double wall, World w, AiSystem ai)
     {
         string Name(int e) => names.TryGetValue(e, out var n) ? n : $"#{e}";
         string SideName(int side) => side >= 0 && side < s.Sides.Length ? s.Sides[side] : "?";
@@ -145,6 +145,21 @@ static class ScenarioPlay
             Console.WriteLine($"  {own} of the losses were last hit by their own side (shells and torpedoes hit whatever is in their way)");
         if (end.Missed > 0)
             Console.WriteLine($"  ({end.Missed} combat log lines went by unread: the ring is too small for a minute of this fight)");
+        // every side's top units at the end (docs/battle/command.md 5.1d: nothing idle)
+        for (int side = 0; side < s.Sides.Length; side++)
+        {
+            var (tasked, home, orders, idle, fallen) = ai.Commanders.Census(side);
+            Console.WriteLine($"  {s.Sides[side],-12} at the end: {tasked} units on a task, {home} home, {orders} on their first orders, {idle} idle; {fallen} fallen out");
+        }
+        // what the chain of command cost (docs/battle/command.md 5.1d: the commanders cost little)
+        double game = (end.EndMs - s.Start.Ms) / 1000.0;
+        Console.WriteLine("the AI's layers (share of the run, calls a game second, each, longest):");
+        for (int i = 0; i < w.Probes.Count; i++)
+            if (w.Probes.Names[i].StartsWith("AI: ", StringComparison.Ordinal) && w.Probes.Calls[i] > 0)
+            {
+                double ms = Probes.Ms(w.Probes.Ticks[i]);
+                Console.WriteLine($"  {w.Probes.Names[i],-24} {ms / 1000 / wall,7:P2}  {w.Probes.Calls[i] / game,7:F3}  {ms * 1000 / w.Probes.Calls[i],9:F1} µs   ({Probes.Ms(w.Probes.Max[i]):F2} ms)");
+            }
     }
 
     static void PrintSpread(Scenario s, List<(ScenarioEnd End, SideResult[] Result)> runs)
@@ -170,6 +185,7 @@ static class ScenarioPlay
         EndReason.Time => "time",
         EndReason.Decided => "decided",
         EndReason.Quiet => "quiet",
+        EndReason.Done => "done",
         _ => "not over",
     };
 
