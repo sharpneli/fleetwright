@@ -1832,6 +1832,12 @@ hits, sinkings and duration. That's a kept test.
 
 ### 5. Command
 
+**Planned in detail in `docs/battle/command.md`** (proposed 2026-10-14, for the user to agree): intent down, reports
+up, doctrine around; a side's commander above the admirals; tasks as more kinds of the one unit order; signals; and
+the end of a scenario, so that at the end of step 5 a scenario plays itself, AI against AI. Its steps are 5.0 (the
+bench: a scenario that ends), 5.1a-f (doctrine and the captains, the squadron, the force, the commander, signals, the
+whole) and 5.2 (the UI). Where the two differ, that doc leads; the sketch below stays as the step list other docs cite.
+
 **5.1 Captains and admirals.** Standing orders for both sides: go to, keep station, shadow, evade, engage, break off
 at x% damage. Admirals' objectives above their squadrons: search an area, cover, intercept, rendezvous. All are more
 kinds of 2.6's unit order, through its one way in, so the player's orders are the same commands at every level.
