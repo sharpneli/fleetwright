@@ -35,6 +35,14 @@ public static class Earth
     /// acos of the dot: acos loses precision at small angles, and combat ranges are small angles.</summary>
     public static double Angle(Vec3d a, Vec3d b) => Math.Atan2(Vec3d.Cross(a, b).Length, Vec3d.Dot(a, b));
 
+    /// <summary>How much air a light from an elevation (its sine) comes through, in units of the air overhead: Kasten and
+    /// Young (1989), 1 overhead (the fit's 0.9997 rounded up), 38 at the horizon; the sun's and the moon's extinction.</summary>
+    public static double AirMass(double sinElevation)
+    {
+        double s = Math.Clamp(sinElevation, 0, 1), h = Math.Asin(s) / Deg;
+        return Math.Max(1 / (s + 0.50572 * Math.Pow(h + 6.07995, -1.6364)), 1);
+    }
+
     /// <summary>The great-circle distance at sea level between the points under a and b, metres.</summary>
     public static double Distance(Vec3d a, Vec3d b) => Radius * Angle(a, b);
 

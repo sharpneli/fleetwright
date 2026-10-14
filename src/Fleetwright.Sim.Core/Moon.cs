@@ -56,6 +56,45 @@ public static class Moon
         return new MoonPhase(i / Deg, (1 + Math.Cos(i)) / 2, Math.Sin(dl) > 0);
     }
 
+    /// <summary>The moon's mean distance from the Earth's centre, m: <see cref="Light(double, double, double)"/> is
+    /// 1 for a full moon overhead at this distance.</summary>
+    public const double MeanDistanceM = 385_000_560;
+
+    /// <summary>The moon's light at a place (Earth-centred metres), on a surface facing it: 1 for a full moon overhead at
+    /// its mean distance (about 0.25 lux; on a level surface, times the sine of its elevation). What the display and the
+    /// sim's night sight both read, so the two can't disagree.</summary>
+    public static double Light(Vec3d from, WorldTime t)
+    {
+        var toMoon = Position(t) - from;
+        double dist = toMoon.Length;
+        return Light(Vec3d.Dot(toMoon / dist, from.Normalized()), Phase(t).AngleDeg, dist);
+    }
+
+    /// <summary>The moon's light (<see cref="Light(Vec3d, WorldTime)"/>) by the sine of its elevation, its phase angle
+    /// (degrees) and its distance (m): the phase law, the inverse square of the distance, the air's extinction, and
+    /// nothing once the disc's top has set (-0.83°: refraction and the semi-diameter), fading in as it rises.</summary>
+    public static double Light(double sinElevation, double phaseAngleDeg, double distanceM = MeanDistanceM)
+    {
+        const double Set = -0.0145;   // sin(-0.83°)
+        if (sinElevation <= Set)
+            return 0;
+        double rise = Math.Clamp(sinElevation / -Set + 1, 0, 1), r = MeanDistanceM / distanceM;
+        return rise * rise * (3 - 2 * rise) * PhaseLaw(phaseAngleDeg) * r * r * Extinction(sinElevation);
+    }
+
+    /// <summary>How bright the moon is by its phase alone, relative to full: Allen's phase law, 0.026 α + 4e-9 α⁴
+    /// magnitudes fainter than full, α the phase angle in degrees. Steep: a half moon gives about a tenth of a full
+    /// one's light, a crescent at 135° about a hundredth.</summary>
+    public static double PhaseLaw(double angleDeg)
+    {
+        double a = Math.Abs(angleDeg);
+        return Math.Pow(10, -0.4 * (0.026 * a + 4e-9 * a * a * a * a));
+    }
+
+    /// <summary>The light left after the air at an elevation (its sine), relative to overhead: 0.2 magnitudes per air
+    /// mass (<see cref="Earth.AirMass"/>), a clear night's visual extinction.</summary>
+    public static double Extinction(double sinElevation) => Math.Pow(10, -0.4 * 0.2 * (Earth.AirMass(sinElevation) - 1));
+
     /// <summary>Geocentric ecliptic longitude and latitude (of date), radians, and distance, m, d days after J2000.0.</summary>
     static void Ecliptic(double d, out double lam, out double beta, out double dist)
     {

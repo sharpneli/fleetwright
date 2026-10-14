@@ -41,6 +41,9 @@ public struct ShipDraw
 /// isn't drawn yet, is a stand-in icon a fixed number of pixels long, along its heading. The two cross-fade across a
 /// few pixels. Draws are one per class and layer (per turret type for the turrets), so a fleet of one class is a
 /// handful of draws. Nothing here allocates once the arrays have grown to the fleet.
+/// <para>The light (docs/visuals/ship-lighting.md) is one per frame, at the view's centre (sprites show only within a
+/// few km, where the sun's elevation varies by hundredths of a degree): the sun, the real moon, the ambient
+/// (<see cref="ShipLights"/>); the shadows are cast by the stronger of sun and moon.</para>
 /// <para>Damage shows on the sprite (docs/battle/fighting.md 4.4, kept light): the sea's plane in the ship's frame
 /// from its sinkage, trim and heel, against the height map, drowns what's under it, so a ship settling, listing or going
 /// under draws itself (going under, the plane rises over its last minutes by how it's lost: by the bow or stern
@@ -72,13 +75,14 @@ public sealed class ShipDrawList
     ShipQuad[] quads = new ShipQuad[1024];
     ShipDraw[] draws = new ShipDraw[64];
     int quadCount, drawCount;
-    double sunMotion = 1;   // this frame's SunLapse.Motion
+    /// <summary>This frame's light, at the view's centre.</summary>
+    public ShipLights Lights { get; private set; } = ShipLights.Flat;
 
     // per ship this frame
     struct Placed
     {
         public Vec3d Rel, F, S;
-        public double PxPerM, LengthPx, Light, SpriteAlpha, IconAlpha;
+        public double PxPerM, LengthPx, SpriteAlpha, IconAlpha;
         public Vector2 SunDir;
         public double SunTan;
         public bool Shadows;
@@ -112,13 +116,13 @@ public sealed class ShipDrawList
     /// <param name="icon">The icon's texture.</param>
     /// <param name="hidden">Per snapshot ship, true to leave it out (drawn as part of its group's marker); may be
     /// shorter than the ships.</param>
-    /// <param name="sunMotion"><see cref="SunLapse.Motion"/>: below 1 the light fades to the day's mean and the
-    /// shadows out.</param>
+    /// <param name="sunMotion"><see cref="SunLapse.Motion"/>: below 1 the light fades to the day's mean (and the moon's to
+    /// the night's) and the shadows out.</param>
     /// <param name="sighted">The enemy ships in sight (<see cref="Snapshot.Sighted"/>), drawn the same after the ships.</param>
     public void Build(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, ShipClass?> classOf,
         nint icon, int selectedEntity, ReadOnlySpan<bool> hidden = default, double sunMotion = 1, ShipsView? sighted = null)
     {
-        this.sunMotion = sunMotion;
+        Lights = LightsAt(view, timeMs, sun, sunMotion);
         quadCount = drawCount = placedCount = 0;
         foreach (var l in byClass.Values)
             l.Clear();
@@ -180,6 +184,17 @@ public sealed class ShipDrawList
         AddDraw(ShipDrawKind.Sprite, icon, icon, firstIcon);
     }
 
+    /// <summary>The light at the view's centre: the sun, the real moon from there, and in time-lapse the day's means.</summary>
+    static ShipLights LightsAt(in MapView view, long timeMs, Vec3d sun, double sunMotion)
+    {
+        var up = view.Eye.Normalized();
+        var t = new WorldTime(timeMs);
+        var at = up * Earth.Radius;
+        double phaseLaw = sunMotion < 1 ? Moon.PhaseLaw(Moon.Phase(t).AngleDeg) : 0;
+        var means = sunMotion < 1 ? SunLapse.DayMeans(up, sun) : default;
+        return ShipLights.Compute(LightTable.Current, up, sun, Moon.Direction(at, t), Moon.Light(at, t), phaseLaw, sunMotion, means);
+    }
+
     /// <summary>Places a view's ships: where each is, how big on screen, sprite or icon, the sun in its frame; how each
     /// was drawn into <paramref name="drawnAs"/>, if given.</summary>
     void Place(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, ShipClass?> classOf,
@@ -205,21 +220,18 @@ public sealed class ShipDrawList
                 continue;
             var up = p.Normalized();
             var s = Vec3d.Cross(f, up);
-            double sx = Vec3d.Dot(sun, f), sy = Vec3d.Dot(sun, s), sz = Vec3d.Dot(sun, up);
+            var light = Lights.ShadowDir;   // the shadows' light, in the ship's frame
+            double sx = Vec3d.Dot(light, f), sy = Vec3d.Dot(light, s), sz = Vec3d.Dot(light, up);
             double horiz = Math.Sqrt(sx * sx + sy * sy);
             double sprite = art != null && pxPerM >= art.MinPxPerM ? SmoothStep(FadeFromPx, FadeToPx, lengthPx) : 0;
             var (sea, fade) = c != null && art != null ? SeaOf(c, art, ships, k, timeMs) : (Vector4.Zero, 1.0);
             placed[placedCount] = new Placed
             {
                 Rel = rel, F = f, S = s, PxPerM = pxPerM, LengthPx = lengthPx,
-                // the globe's terminator (globe.frag), or in time-lapse the day's mean at the ship's latitude
-                Light = 0.3 + 0.7 * (sunMotion < 1
-                    ? double.Lerp(SunLapse.DayAverage(up, sun), SmoothStep(-0.10, 0.12, sz), sunMotion)
-                    : SmoothStep(-0.10, 0.12, sz)),
                 SpriteAlpha = sprite * fade, IconAlpha = (1 - sprite) * fade,
                 SunDir = horiz > 1e-9 ? new Vector2((float)(sx / horiz), (float)(sy / horiz)) : Vector2.UnitX,
                 SunTan = Math.Max(sz / Math.Max(horiz, 1e-9), 0.15),
-                Shadows = sz > 0.05 && lengthPx >= ShadowFromPx && sunMotion > 0,   // in time-lapse they'd spin
+                Shadows = sz > 0.05 && lengthPx >= ShadowFromPx && Lights.ShadowOpacity > 0,   // none in time-lapse: they'd spin
                 Class = cls, Entity = ships.Entity[k], Side = ships.Side[k], Bearings = ships.MountBearingDeg, MountStart = ships.MountStart[k],
                 View = ships, Row = k, Cls = c, Sea = sea, Fade = fade,
             };
@@ -343,7 +355,7 @@ public sealed class ShipDrawList
             {
                 double off = (m.TopM - deck) / p.SunTan;   // shadow.sun_offset_px, in metres
                 Emit(ref p, art, ox - p.SunDir.X * off, oy - p.SunDir.Y * off, axx, axy, ayx, ayy, mode: 1,
-                    opacity: 0.4 * p.SpriteAlpha * sunMotion, roof: m.TopM, Vector4.Zero);
+                    opacity: Lights.ShadowOpacity * p.SpriteAlpha, roof: m.TopM, Vector4.Zero);
             }
             else
                 Emit(ref p, art, ox, oy, axx, axy, ayx, ayy, mode: 0, opacity: p.SpriteAlpha, roof: m.TopM, TurretTint(p, cm));
@@ -387,8 +399,8 @@ public sealed class ShipDrawList
             U = new Vector4((float)u.X, (float)u.Y, (float)u.Z, (float)opacity),
             V = new Vector4((float)v.X, (float)v.Y, (float)v.Z, (float)roof),
             Ship = new Vector4((float)ox, (float)oy, (float)ux, (float)uy),
-            ShipV = new Vector4((float)vx, (float)vy, (float)p.Light, 0),
-            Sun = new Vector4(p.SunDir, (float)p.SunTan, (float)(0.4 * sunMotion)),
+            ShipV = new Vector4((float)vx, (float)vy, 0, 0),
+            Sun = new Vector4(p.SunDir, (float)p.SunTan, (float)Lights.ShadowOpacity),
             March = march,
             Hmap = hmap,
             Tint = tint,
@@ -437,14 +449,14 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
 
     struct ViewParams
     {
-        public Vector4 Right, Up, Fwd, Depth;
+        public Vector4 Right, Up, Fwd, Depth, Sun, Moon;
     }
 
     public ShipBatchRenderer(SDL_GPUDevice* device)
     {
         this.device = device;
         vs = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 0, 1);
-        fsSprite = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 0, 0);
+        fsSprite = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 0, 1);
         fsShadow = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap_shadow.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 0, 0);
         if (vs == null || fsSprite == null || fsShadow == null)
             throw new InvalidOperationException("ship map shaders failed to load");
@@ -538,7 +550,11 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         EnsurePipelines(target);
         var (near, far) = GlobeRenderer.DepthRange(view);
         var sb = quadBuf.Buffer;
+        var lights = List.Lights;
+        var lu = lights.Uniforms;
+        SDL_PushGPUFragmentUniformData(cmd, 0, (nint)(&lu), (uint)sizeof(LightUniforms));
         SDL_GPUGraphicsPipeline* bound = null;
+        var b2 = stackalloc SDL_GPUTextureSamplerBinding[2];
         foreach (var d in List.Draws)
         {
             if (d.First + d.Count > uploaded)
@@ -556,6 +572,8 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
                 Up = new Vector4(F(view.Up), (float)view.TanHalfY),
                 Fwd = new Vector4(F(view.Forward), 0),
                 Depth = new Vector4((float)near, (float)far, d.First, 0),
+                Sun = new Vector4(F(lights.SunDir), 0),
+                Moon = new Vector4(F(lights.MoonDir), 0),
             };
             SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&vp), (uint)sizeof(ViewParams));
             if (d.Kind == ShipDrawKind.Shadow)
@@ -565,10 +583,9 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
             }
             else
             {
-                var b = stackalloc SDL_GPUTextureSamplerBinding[2];
-                b[0] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex0, sampler = linear };
-                b[1] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex1, sampler = nearest };
-                SDL_BindGPUFragmentSamplers(pass, 0, b, 2);
+                b2[0] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex0, sampler = linear };
+                b2[1] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex1, sampler = nearest };
+                SDL_BindGPUFragmentSamplers(pass, 0, b2, 2);
             }
             SDL_DrawGPUPrimitives(pass, 6, (uint)d.Count, 0, 0);
         }

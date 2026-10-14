@@ -1,6 +1,8 @@
 #version 450
-// Ship viewer: a baked sprite (premultiplied alpha), or its silhouette as a turret's shadow, kept only where the
-// height map under it is lower than the turret's roof (shadow.below_mask).
+#extension GL_GOOGLE_include_directive : require
+// Ship viewer: a baked sprite (premultiplied alpha), lit as on the map (Include/shiplight.glsl; the eye straight
+// above), or its silhouette as a turret's shadow, kept only where the height map under it is lower than the turret's
+// roof (shadow.below_mask).
 layout(location = 0) in vec2 fragUv;
 layout(location = 1) in vec2 fragShip;
 
@@ -11,7 +13,12 @@ layout(set = 3, binding = 0) uniform Params
 {
     vec4 p;      // x: mip level (< 0: by the hardware), y: 1 = silhouette, z: opacity, w: the turret roof, m
     vec4 hmap;   // height map uv = ship metres * xy + zw
+    vec4 sunL;   // xyz: toward the sun, in the quad's frame (x along u, y along v, z up)
+    vec4 moonL;  // xyz: toward the moon
 };
+
+#define LIGHTS_BINDING 1
+#include "Include/shiplight.glsl"
 
 layout(location = 0) out vec4 outColour;
 
@@ -29,5 +36,10 @@ void main()
         outColour = vec4(0.0, 0.0, 0.0, c.a * p.z);
     }
     else
-        outColour = c * p.z;
+    {
+        vec3 rgb = c.a > 0.0 ? c.rgb / c.a : vec3(0.0);
+        const vec3 up = vec3(0.0, 0.0, 1.0);
+        rgb = shipShade(rgb, up, up, sunL.xyz, moonL.xyz, look.y, 0.0, 1.0);
+        outColour = vec4(rgb * c.a, c.a) * p.z;
+    }
 }

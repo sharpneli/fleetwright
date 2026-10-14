@@ -90,4 +90,39 @@ public class MoonTests
         Assert.Equal(-hp * Earth.Radius / 6_378_140, elev, 2);
         Assert.Equal(1.0, Moon.Direction(edge, t).Length, 12);
     }
+
+    [Fact]
+    public void A_half_moon_gives_about_a_tenth_of_a_full_ones_light()
+    {
+        Assert.Equal(1.0, Moon.PhaseLaw(0), 12);
+        Assert.InRange(Moon.PhaseLaw(90), 0.08, 0.12);
+        Assert.InRange(Moon.PhaseLaw(135), 0.008, 0.015);
+        Assert.True(Moon.PhaseLaw(180) < 1e-3);
+        Assert.Equal(Moon.PhaseLaw(90) * Moon.Light(1, 0), Moon.Light(1, 90), 12);
+    }
+
+    [Fact]
+    public void No_moonlight_below_the_horizon()
+    {
+        var t = WorldTime.FromUtc(1916, 6, 15, 23, 30);   // about full
+        Assert.True(Moon.Phase(t).AngleDeg < 15);
+        var (lat, lon, _) = Moon.Sublunar(t);
+        Assert.Equal(0, Moon.Light(-Earth.Position(lat, lon), t));             // the far side of the Earth
+        Assert.Equal(0, Moon.Light(Earth.Position(lat - 91 < -90 ? lat + 91 : lat - 91, lon), t));   // just set
+        Assert.Equal(0, Moon.Light(-0.02, 0));
+        Assert.True(Moon.Light(0.001, 0) > 0);   // the disc's top is up
+    }
+
+    [Fact]
+    public void Overhead_it_is_the_phase_law_by_the_distance_and_low_down_dimmer()
+    {
+        var t = WorldTime.FromUtc(1916, 6, 15, 23, 30);
+        var (lat, lon, dist) = Moon.Sublunar(t);
+        double r = Moon.MeanDistanceM / (dist - Earth.Radius);
+        Assert.Equal(Moon.PhaseLaw(Moon.Phase(t).AngleDeg) * r * r, Moon.Light(Earth.Position(lat, lon), t), 6);
+        Assert.Equal(1.0, Moon.Light(1, 0), 12);
+        double low = Moon.Light(Math.Sin(10 * Math.PI / 180), 0), lower = Moon.Light(Math.Sin(3 * Math.PI / 180), 0);
+        Assert.InRange(low, 0.35, 0.5);   // 5.6 air masses
+        Assert.True(lower < low / 1.5);
+    }
 }

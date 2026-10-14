@@ -11,7 +11,8 @@ namespace Fleetwright;
 /// <summary>The ship viewer (PORTING.md Step 6), a test tool: shows the session's design from its baked textures as
 /// the game will (<see cref="ShipSpriteRenderer"/>). Mips, turrets turning through their arcs, turret shadows and the
 /// sun's shadow from the height map (a first version of the game's shadow shader). The ImGui panel picks the design,
-/// the look, the mip level, the turrets and the sun. Mouse: wheel zooms, left drag pans.</summary>
+/// the look, the mip level, the turrets, the sun and the moon, and edits the light table live (the map's lights too:
+/// the bench for docs/visuals/ship-lighting.md). Mouse: wheel zooms, left drag pans.</summary>
 public sealed unsafe class ShipViewer : IScene
 {
     /// <summary>Sprite pixels per metre at mip level 0, and the mip levels below it.</summary>
@@ -173,7 +174,8 @@ public sealed unsafe class ShipViewer : IScene
         }
         if (inset)
             DrawInset(cmd, dt);
-        renderer.Render(cmd, target, view, bearings, new SDL_FColor { r = Sea.X, g = Sea.Y, b = Sea.Z, a = 1 });
+        float level = view.Lit ? view.Lights().Uniforms.Sky.W : 1;   // the sea darkens with the light
+        renderer.Render(cmd, target, view, bearings, new SDL_FColor { r = Sea.X * level, g = Sea.Y * level, b = Sea.Z * level, a = 1 });
     }
 
     /// <summary>The hitbox inset: the session's ship as hitboxes, drawn into its own target before the main pass.</summary>
@@ -226,8 +228,13 @@ public sealed unsafe class ShipViewer : IScene
         ImGui.SameLine();
         ImGui.RadioButton("starboard", ref turretMode, 2);
         ImGui.Checkbox("shadows", ref view.Shadows);
+        ImGui.Checkbox("lit", ref view.Lit);
         ImGui.SliderFloat("sun bearing", ref view.SunAzimuthDeg, 0, 360, "%.0f");
-        ImGui.SliderFloat("sun elevation", ref view.SunElevationDeg, 10, 85, "%.0f");
+        ImGui.SliderFloat("sun elevation", ref view.SunElevationDeg, -20, 90, "%.0f");
+        ImGui.SliderFloat("moon bearing", ref view.MoonAzimuthDeg, 0, 360, "%.0f");
+        ImGui.SliderFloat("moon elevation", ref view.MoonElevationDeg, -10, 90, "%.0f");
+        ImGui.SliderFloat("moon phase", ref view.MoonPhaseDeg, 0, 180, view.MoonPhaseDeg < 1 ? "full" : view.MoonPhaseDeg > 179 ? "new" : "%.0f");
+        LightTableUi(LightTable.Current);
         if (ImGui.Button("fit"))
             fit = true;
         ImGui.SameLine();
@@ -239,6 +246,30 @@ public sealed unsafe class ShipViewer : IScene
         ImGui.Separator();
         ImGui.TextWrapped(session.Busy ? "building...\n" + status : status);
         ImGui.End();
+    }
+
+    /// <summary>The light table's knobs (the map reads the same table, so a change shows there too).</summary>
+    static void LightTableUi(LightTable t)
+    {
+        if (!ImGui.CollapsingHeader("light table"))
+            return;
+        ImGui.ColorEdit3("sun overhead", ref t.SunZenith, ImGuiColorEditFlags.Float | ImGuiColorEditFlags.HDR);
+        ImGui.SliderFloat3("extinction", ref t.Extinction, 0, 1, "%.2f");
+        ImGui.ColorEdit3("sky, day", ref t.SkyDay, ImGuiColorEditFlags.Float);
+        ImGui.ColorEdit3("sea, day", ref t.SeaDay, ImGuiColorEditFlags.Float);
+        ImGui.ColorEdit3("sky, dusk", ref t.SkyDusk, ImGuiColorEditFlags.Float);
+        ImGui.ColorEdit3("sea, dusk", ref t.SeaDusk, ImGuiColorEditFlags.Float);
+        ImGui.ColorEdit3("sky, night", ref t.SkyNight, ImGuiColorEditFlags.Float);
+        ImGui.ColorEdit3("sea, night", ref t.SeaNight, ImGuiColorEditFlags.Float);
+        ImGui.SliderFloat("moon", ref t.MoonStrength, 0, 0.5f, "%.3f");
+        ImGui.ColorEdit3("moon tint", ref t.MoonTint, ImGuiColorEditFlags.Float);
+        ImGui.SliderFloat("moonlit sky", ref t.MoonSky, 0, 1, "%.2f");
+        ImGui.SliderFloat("roughness", ref t.Roughness, 0.05f, 1, "%.2f");
+        ImGui.SliderFloat("specular", ref t.Specular, 0, 2, "%.2f");
+        ImGui.SliderFloat("shoulder knee", ref t.Knee, 0.5f, 0.99f, "%.2f");
+        ImGui.SliderFloat("shadow", ref t.Shadow, 0, 1.5f, "%.2f");
+        var s = t.SunZenith + t.SkyDay;
+        ImGui.TextDisabled($"sun + day sky: {s.X:0.00} {s.Y:0.00} {s.Z:0.00} (1: a flat matte deck at noon as drawn)");
     }
 
     /// <summary>Wheel zooms about the cursor, left drag pans. False when the event isn't the viewer's.</summary>

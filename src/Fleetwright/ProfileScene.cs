@@ -40,6 +40,10 @@ public sealed unsafe class ProfileScene : IScene
 
     // the plan: the sprite into a target of its own, at the poster's scale
     readonly ShipSpriteRenderer plan;
+
+    /// <summary>The plan lit by a fixed sun (the viewer's default), or flat: the albedo as drawn, as the card has
+    /// always shown it. One switch on the sprites' own shader (docs/visuals/ship-lighting.md, decision 3).</summary>
+    public static bool PosterLit = false;
     RenderTarget? planTarget;
     int planVersion = -1;
     float planZoom;
@@ -160,6 +164,7 @@ public sealed unsafe class ProfileScene : IScene
             view.Zoom = planZoom;
             view.Centre = Vector2.Zero;
             view.Shadows = false;
+            view.Lit = PosterLit;
             plan.Render(cmd, planTarget, view, ReadOnlySpan<double>.Empty, PaperClear);
         }
         var pass = target.BeginPass(cmd, PaperClear, depth: false);

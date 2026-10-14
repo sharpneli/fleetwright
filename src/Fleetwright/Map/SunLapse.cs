@@ -39,17 +39,28 @@ public sealed class SunLapse
 
     /// <summary>Over one turn of the Earth at a latitude, the mean of the terminator smoothstep(lo, hi, s), s the sine
     /// of the sun's elevation. The same 32-step sum as globe.frag's dayAverage, so ships match the sea under them.</summary>
-    public static double DayAverage(double sinLat, double sinDec, double lo, double hi)
+    public static double DayAverage(double sinLat, double sinDec, double lo, double hi) => DayMeans(sinLat, sinDec, lo, hi).Day;
+
+    /// <summary><see cref="DayAverage(double, double, double, double)"/> (Day), and the mean of the smoothstep times
+    /// max(s, 0) (Lit: what a level deck gets of the sun): globe.frag's dayAverage, both terms.</summary>
+    public static (double Day, double Lit) DayMeans(double sinLat, double sinDec, double lo, double hi)
     {
         double a = sinLat * sinDec, b = Math.Sqrt(Math.Max(1 - sinLat * sinLat, 0)) * Math.Sqrt(Math.Max(1 - sinDec * sinDec, 0));
-        double sum = 0;
+        double day = 0, lit = 0;
         for (int i = 0; i < 32; i++)
-            sum += SmoothStep(lo, hi, a + b * Math.Cos((i + 0.5) * (2 * Math.PI / 32)));
-        return sum / 32;
+        {
+            double s = a + b * Math.Cos((i + 0.5) * (2 * Math.PI / 32)), d = SmoothStep(lo, hi, s);
+            day += d;
+            lit += d * Math.Max(s, 0);
+        }
+        return (day / 32, lit / 32);
     }
 
     /// <summary>The fraction of the day the sun is up at a point, for a sun direction (both unit, Earth-fixed).</summary>
     public static double DayAverage(Vec3d up, Vec3d sun) => DayAverage(up.Z, sun.Z, -0.10, 0.12);
+
+    /// <summary><see cref="DayMeans(double, double, double, double)"/> at a point, for a sun direction.</summary>
+    public static (double Day, double Lit) DayMeans(Vec3d up, Vec3d sun) => DayMeans(up.Z, sun.Z, -0.10, 0.12);
 
     static double SmoothStep(double e0, double e1, double x)
     {

@@ -108,6 +108,12 @@ public static unsafe class Program
             {
                 frameTimes = true;
             }
+            else if (arg.StartsWith("-lights="))   // light table knobs, for side-by-side captures: -lights=roughness:0.6,specular:0
+            {
+                foreach (var kv in arg.Substring("-lights=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!LightTable.Current.Set(kv))
+                        Console.Error.WriteLine($"Bad light knob: {kv} (want roughness, specular, knee, shadow, moon, moonsky)");
+            }
             else if (arg == "-paused")   // the world starts paused
             {
                 startPaused = true;

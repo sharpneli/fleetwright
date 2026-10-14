@@ -2,6 +2,7 @@ using System.Numerics;
 using Fleetwright.Gpu;
 using Fleetwright.Shipgen.Render;
 using Fleetwright.Shipgen.Render.Bake;
+using Fleetwright.Sim.Core;
 using SDL;
 using static SDL.SDL3;
 
@@ -19,15 +20,41 @@ public struct ShipSpriteView
     /// <summary>The mip level to sample, or -1 for the hardware's choice.</summary>
     public int Mip;
 
-    public float SunAzimuthDeg, SunElevationDeg;
+    /// <summary>The sun and the moon, ship-local: bearing from the bow toward starboard, and elevation; the moon's phase
+    /// angle (0 full, 180 new).</summary>
+    public float SunAzimuthDeg, SunElevationDeg, MoonAzimuthDeg, MoonElevationDeg, MoonPhaseDeg;
     public bool Shadows;
 
-    public static ShipSpriteView Default => new() { Zoom = 1, Mip = -1, SunAzimuthDeg = 300, SunElevationDeg = 50, Shadows = true };
+    /// <summary>Lit by the sun and moon, or flat: the albedo as drawn (the poster's choice).</summary>
+    public bool Lit;
+
+    public static ShipSpriteView Default => new()
+    {
+        Zoom = 1, Mip = -1, SunAzimuthDeg = 300, SunElevationDeg = 50, MoonAzimuthDeg = 120, MoonElevationDeg = 35,
+        Shadows = true, Lit = true,
+    };
+
+    static Vec3d Toward(float azimuthDeg, float elevationDeg)
+    {
+        double a = azimuthDeg * Math.PI / 180, e = elevationDeg * Math.PI / 180;
+        return new Vec3d(Math.Cos(a) * Math.Cos(e), Math.Sin(a) * Math.Cos(e), Math.Sin(e));
+    }
+
+    /// <summary>The light this view is lit by (<see cref="LightTable.Current"/>), ship-local, z up.</summary>
+    public readonly ShipLights Lights()
+    {
+        if (!Lit)
+            return ShipLights.Flat;
+        var moon = Toward(MoonAzimuthDeg, MoonElevationDeg);
+        return ShipLights.Compute(LightTable.Current, new Vec3d(0, 0, 1), Toward(SunAzimuthDeg, SunElevationDeg), moon,
+            Moon.Light(moon.Z, MoonPhaseDeg), Moon.PhaseLaw(MoonPhaseDeg));
+    }
 }
 
 /// <summary>
 /// Draws a baked ship sprite into any <see cref="RenderTarget"/>, as the game will: the hull, the turrets at the
-/// bearings the caller gives (their shadows first) and the sun's shadow from the height map. Textures come from a
+/// bearings the caller gives (their shadows first) and the shadow from the height map, lit by the view's sun and moon
+/// through the map's lighting (Include/shiplight.glsl), the shadows by the stronger. Textures come from a
 /// <see cref="DesignResult"/> (baked and mipped on the worker; only the upload happens here). Pipelines are built for
 /// the target's format and sample count, and rebuilt if a different target comes. Knows nothing of input or ImGui.
 /// </summary>
@@ -57,7 +84,7 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
     {
         this.device = device;
         vs = GpuShader.Load(device, "Content/Shaders/Compiled/shipview.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 0, 1);
-        fsSprite = GpuShader.Load(device, "Content/Shaders/Compiled/shipview_sprite.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 0, 1);
+        fsSprite = GpuShader.Load(device, "Content/Shaders/Compiled/shipview_sprite.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 0, 2);
         fsShadow = GpuShader.Load(device, "Content/Shaders/Compiled/shipview_shadow.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 0, 1);
         if (vs == null || fsSprite == null || fsShadow == null)
             throw new InvalidOperationException("ship sprite shaders failed to load");
@@ -186,7 +213,7 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
 
     struct SpriteParams
     {
-        public Vector4 P, HMap;
+        public Vector4 P, HMap, SunL, MoonL;
     }
 
     struct ShadowParams
@@ -233,8 +260,17 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
         var hmap = new Vector4((float)(Scale / size[0]), (float)(Scale / size[1]), 0.5f, 0.5f);
         var sh = meta.Shadow;
         float deckM = (float)sh.DeckM, maxH = (float)sh.MaxHeightM;
-        float k = MathF.Tan(view.SunElevationDeg * MathF.PI / 180);
-        var toSun = new Vector2(MathF.Cos(view.SunAzimuthDeg * MathF.PI / 180), MathF.Sin(view.SunAzimuthDeg * MathF.PI / 180));
+        var lights = view.Lights();
+        var lu = lights.Uniforms;
+        SDL_PushGPUFragmentUniformData(cmd, 1, (nint)(&lu), (uint)sizeof(LightUniforms));
+        Vector3 sunW = V(lights.SunDir), moonW = V(lights.MoonDir);
+        // the shadows' light: toward it on the deck, and the tangent of its elevation (no lower than the map's 8.5°)
+        var sd = lights.ShadowDir;
+        double horiz = Math.Sqrt(sd.X * sd.X + sd.Y * sd.Y);
+        var toSun = horiz > 1e-9 ? new Vector2((float)(sd.X / horiz), (float)(sd.Y / horiz)) : Vector2.UnitX;
+        float k = (float)Math.Max(sd.Z / Math.Max(horiz, 1e-9), 0.15);
+        bool shadows = view.Shadows && lights.ShadowOpacity > 0 && sd.Z > 0.05;
+        float shadowOpacity = (float)lights.ShadowOpacity;
         var height = heightTex;
 
         void Sprite(SDL_GPUTexture* tex, Quad q, SpriteParams p)
@@ -249,14 +285,18 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
             SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
         }
 
+        // the lights in a quad's frame: x along its u edge, y along its v, z up
+        static Vector4 InFrame(Vector3 w, Vector2 u) => new(w.X * u.X + w.Y * u.Y, -w.X * u.Y + w.Y * u.X, w.Z, 0);
+
         // the hull
-        Sprite(hullTex, Q(new(-cw / 2, -ch / 2), new(cw, 0), new(0, ch)), new SpriteParams { P = new(mip, 0, 1, 0), HMap = hmap });
+        Sprite(hullTex, Q(new(-cw / 2, -ch / 2), new(cw, 0), new(0, ch)),
+            new SpriteParams { P = new(mip, 0, 1, 0), HMap = hmap, SunL = new(sunW, 0), MoonL = new(moonW, 0) });
 
         // the turrets, their shadows first (only where the hull is lower than the turret's roof)
         var types = meta.TurretTypes;
         for (int pass2 = 0; pass2 < 2; pass2++)
         {
-            if (pass2 == 0 && !view.Shadows)
+            if (pass2 == 0 && !shadows)
                 continue;
             foreach (int i in drawOrder)
             {
@@ -273,15 +313,21 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
                 {
                     float top = (float)m.TopM;
                     var off = -toSun * ((top - deckM) / k);   // shadow.sun_offset_px, in metres
-                    Sprite(tex, Q(o + off, ax, ay), new SpriteParams { P = new(mip, 1, 0.4f, top), HMap = hmap });
+                    Sprite(tex, Q(o + off, ax, ay), new SpriteParams { P = new(mip, 1, shadowOpacity, top), HMap = hmap });
                 }
                 else
-                    Sprite(tex, Q(o, ax, ay), new SpriteParams { P = new(mip, 0, 1, 0), HMap = hmap });
+                {
+                    var along = new Vector2(MathF.Cos(a), MathF.Sin(a));
+                    Sprite(tex, Q(o, ax, ay), new SpriteParams
+                    {
+                        P = new(mip, 0, 1, 0), HMap = hmap, SunL = InFrame(sunW, along), MoonL = InFrame(moonW, along),
+                    });
+                }
             }
         }
 
-        // the sun's shadow from the height map, over the canvas and as far beyond it as a shadow can reach
-        if (view.Shadows)
+        // the shadow from the height map, over the canvas and as far beyond it as a shadow can reach
+        if (shadows)
         {
             float reach = maxH / k;
             var q = Q(new(-cw / 2 - reach, -ch / 2 - reach), new(cw + 2 * reach, 0), new(0, ch + 2 * reach));
@@ -289,7 +335,7 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
             float step = MathF.Max(0.1f, (float)(1 / Scale) * MathF.Pow(2, lod));
             var p = new ShadowParams
             {
-                Sun = new(toSun, k, 0.4f),
+                Sun = new(toSun, k, shadowOpacity),
                 HMap = hmap,
                 March = new(step, MathF.Ceiling(reach / step), 0.3f, lod),
             };
@@ -301,6 +347,8 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
             SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
         }
     }
+
+    static Vector3 V(Vec3d a) => new((float)a.X, (float)a.Y, (float)a.Z);
 
     public void Dispose()
     {

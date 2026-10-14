@@ -38,8 +38,10 @@ units where looks say otherwise.
 - **The lighting is painted in.** `Painter.Shade` fakes it: the lighter 1.12 inset on turret roofs, the highlight
   stroke along each barrel's port side, darker sloped face plates, the dark ink outlines (`Painter.Ln`). A turret
   turning carries its painted highlight round with it, which is wrong under any real sun.
-- `shipmap.frag` samples the colour and multiplies by one number, `Light` (0.3 + 0.7 x the terminator). The sun
-  already shows as the height-map shadows (`shipmap_shadow.frag`) and the turret silhouettes.
+- **Lit since L1** (2026-10-14): `shipmap.frag` and `shipview_sprite.frag` shade every sprite pixel through
+  `Include/shiplight.glsl` (flat normal, one material) from the lights `ShipLight.cs` computes once a frame at the
+  view's centre (`LightTable`: the one place the lights are set; `ShipLights.Compute`). Before L1 it was one number,
+  0.3 + 0.7 x the terminator. The shadows (`shipmap_shadow.frag`, the turret silhouettes) take the stronger light.
 - **The frame is display-referred.** The sprite textures are UNORM, not sRGB, blended as they are; the blit copies
   with no tonemap. So the sea and the sprites are sRGB-coded values, and anything over 1 clips.
 
@@ -161,6 +163,28 @@ poster's "lit" (a fixed sun) or "flat" (albedo as drawn: flat normal, no specula
 uniforms, not another pipeline. Done when the reference-sun screenshot matches today's within a few levels, a low
 sun warms and dims the ships with the sea, a full-moon night shows the ships and their shadows faintly, a moonless
 one keeps them readable, and DevRelease frame time is unchanged within noise.
+
+*Done 2026-10-14.* As planned, with these findings:
+
+- **The default roughness is 0.6, not 0.4.** With the flat normal, the sun high and the eye straight above, a gloss
+  plane at 0.4 sits in the GGX peak over the whole ship and washes it white, inks and all (side by side at 0.4, 0.6
+  and 0.7 under the zenith sun). At 0.6 it is a mild sheen under the sea's own glint. Worth revisiting at L3/L4, when
+  decks go matte and the normals break the plane up.
+- **Calibration holds:** with `-lights=specular:0`, ships under the zenith sun (21.9°N 60.6°W, 1916-05-31 16:00)
+  match the pre-L1 captures to 3 levels at 1, 3 and 10 px/m (10 px/m bit-identical). The sun high but not overhead
+  is darker than before by Lambert (56° at noon in the North Sea: about 10 levels), as intended.
+- **A low sun** (7°) dims the ships more than the globe's sea, whose day colour barely follows the sun; physically the
+  ships are right (a low sun puts little on a level deck, and its shadows there are faint), the sea is for the water
+  pass. The warm light shows little on level decks: it waits for the relief (L2).
+- **Moon:** a high full moon (1916-12-09 23:30, 56° up) lights the ships cool with faint shadows; a moonless night
+  (1916-12-24) leaves them dark but readable. Jutland's own night is a day off new. A June full moon at 56°N stands
+  only ~10° up and shows nothing, which is right. The display shows the moon only as the night comes (the eye's
+  adaptation): its light by eye is 0.1 of the sun's, which by day would otherwise brighten everything.
+- **Frame times:** DevRelease before and after (one ship at 10 px/m, 60 at 3 m/px, Jutland running) are vsync-bound
+  at 120 Hz, p50 8.33 ms, CPU work unchanged: the extra ALU fits.
+- **Tools:** `-lights=name:value,...` sets the table's scalar knobs for captures (roughness, specular, knee, shadow,
+  moon, moonsky); the ship viewer's panel edits the whole table live, with moon bearing, elevation and phase beside
+  the sun's (elevation now -20 to 90). The poster is flat by default (`ProfileScene.PosterLit`).
 
 **L2. Relief from the height map.** The relief bake mode, plateaus only, from the existing columns for the hull and
 from the turret drawing's own parts; the normal + AO texture, its mips, the upload, the binding. Block edges, funnels,
