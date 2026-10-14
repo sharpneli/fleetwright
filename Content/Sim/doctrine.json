@@ -24,6 +24,9 @@
     "EvadeLegS": 75,
     "EvadeBeyondM": 10000,
     // a torpedo her lookouts see coming at her: "none", or "comb" its track
-    "TorpedoEvasion": "comb"
+    "TorpedoEvasion": "comb",
+    // a line that sees a torpedo attack coming (enemy torpedo craft closing within 8 km, or tracks seen) turns away together
+    // through 4 points (the Grand Fleet's answer), and back three minutes after it's past; 0 holds on
+    "TurnAwayDeg": 45
   }
 }

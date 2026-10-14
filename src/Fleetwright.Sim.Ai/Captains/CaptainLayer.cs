@@ -183,6 +183,9 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         return i >= 0 ? (captains[i].Order, captains[i].Target, captains[i].Source) : (CaptainOrder.None, 0, OrderSource.Player);
     }
 
+    /// <summary>Whether a ship's captain is combing a torpedo's track his lookouts saw (his admiral reads it: tracks seen).</summary>
+    public bool Combing(int entity, long nowMs) => Find(entity) is int i and >= 0 && captains[i].CombUntilMs > nowMs;
+
     /// <summary>Why a ship's captain does what he does (fallen out, home), or None.</summary>
     public CaptainReason ReasonOf(int entity) => Find(entity) is int i and >= 0 ? captains[i].Reason : CaptainReason.None;
 

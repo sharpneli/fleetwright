@@ -130,7 +130,7 @@ public sealed partial class AdmiralLayer
         a.Met = true;
         (a.Order, a.Target, a.DistanceM, a.AbeamM) = (CaptainOrder.Fight, 0, 0, 0);
         var to = GuideUnit(g);
-        if (to.Id != 0)
+        if (to.Id != 0 && !a.Away)   // turned away from torpedoes: the Fight waits for the turn back
             ctx.Issue(ctx.Orders.Fight(to, default, 0, OrderSource.Superior));
     }
 }

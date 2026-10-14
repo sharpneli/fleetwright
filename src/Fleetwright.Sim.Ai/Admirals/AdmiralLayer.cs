@@ -50,8 +50,11 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public bool TurnRearFirst;
         public double TurnDeg, TurnCourse, TurnKn;
         public long TurnStartMs;
-        public int[] TurnShips = [];    // his line's ships in the order they turn, TurnCount of them
+        public int[] TurnShips = new int[16];   // his line's ships in the order they turn, TurnCount of them (made with him)
         public int TurnCount;
+        public bool Away;               // turned away from torpedoes, AwayDeg, on AwayCourse; his order waits
+        public double AwayDeg, AwayCourse;
+        public long ThreatMs;           // when he last saw the attack
     }
 
     Admiral[] admirals = new Admiral[8];
@@ -160,7 +163,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         if (source == OrderSource.Player)
             Gather(ctx, g);
         a.Source = source;
-        a.Turning = false;   // a new order ends a turn under way
+        (a.Turning, a.Away) = (false, false);   // a new order ends a turn under way, and a turn-away
 
         if (code == AiCommand.TurnTogether)
         {
@@ -284,6 +287,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             if (a.HandedTo != to.Id)
                 HandOver(ctx, a, to);
             TakeUpStanding(ctx, g, a, lead);
+            if (TurnAway(ctx, g, a, lead))
+                continue;   // turning together: no stations until it's round
             if (a.Fire == FireOrder.Engage)
                 HandFire(ctx, g, a, fresh: false);
             Limit(ctx, g, a);
@@ -395,6 +400,11 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         }
         var o = ctx.Orders;
         const OrderSource Up = OrderSource.Superior;
+        if (a.Away)
+        {
+            ctx.Issue(o.Course(to, a.AwayCourse, 0, Up));   // turned away from torpedoes: his order waits
+            return;
+        }
         switch (a.Order)
         {
             case CaptainOrder.None:
@@ -522,6 +532,12 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 h.Add(a.TurnStartMs);
                 for (int k = 0; k < a.TurnCount; k++)
                     h.Add(a.TurnShips[k]);
+            }
+            if (a.Away)
+            {
+                h.Add(a.AwayDeg);
+                h.Add(a.AwayCourse);
+                h.Add(a.ThreatMs);
             }
         }
     }

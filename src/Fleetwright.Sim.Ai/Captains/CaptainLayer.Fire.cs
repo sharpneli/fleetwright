@@ -237,12 +237,11 @@ public sealed partial class CaptainLayer
 
     /// <summary>Whether a ship fights with its torpedoes: one with no gun of <see cref="TorpedoCraftGunMm"/> or more (a
     /// torpedo boat, a destroyer: not a cruiser), with torpedoes left in launchers that work.</summary>
-    static bool TorpedoCraft(in AiContext ctx, ShipState own, int slot)
+    internal static bool TorpedoCraft(in AiContext ctx, ShipState own, int slot)
     {
         var cls = own.Handling.Class;
-        foreach (ref readonly var b in cls.Batteries)
-            if (b.CalibreMm >= TorpedoCraftGunMm)
-                return false;
+        if (!TorpedoCraft(cls))
+            return false;
         var k = ctx.Ships.Combat.Condition(slot);
         for (int l = 0; l < cls.Launchers.Length; l++)
         {
@@ -251,6 +250,16 @@ public sealed partial class CaptainLayer
                 return true;
         }
         return false;
+    }
+
+    /// <summary>Whether a class is a torpedo craft by its design: no gun of <see cref="TorpedoCraftGunMm"/> or more, and
+    /// torpedo tubes.</summary>
+    internal static bool TorpedoCraft(ShipClass cls)
+    {
+        foreach (ref readonly var b in cls.Batteries)
+            if (b.CalibreMm >= TorpedoCraftGunMm)
+                return false;
+        return cls.Launchers.Length > 0;
     }
 
     /// <summary>Each battery's reach for fire at will (<see cref="SimSettings.FireReachShare"/> of the range table's), and

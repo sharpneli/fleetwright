@@ -95,6 +95,97 @@ public sealed partial class AdmiralLayer
         }
     }
 
+    /// <summary>The turn-away from torpedoes (docs/battle/command.md 5.1b), for a line that's no force's (its force turns)
+    /// and isn't torpedo craft, with doctrine's TurnAwayDeg: when it sees an attack coming (<see cref="TorpedoThreat"/>)
+    /// it turns together away from it through those degrees, holding the course it comes out on while his order (Fight,
+    /// say) waits; once it's seen none for <see cref="SimSettings.TurnBackS"/> it turns back together and his order is
+    /// handed on again. Whether a turn was started (the think gives no stations then).</summary>
+    bool TurnAway(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
+    {
+        var guide = ctx.Ships[lead];
+        if (groups.InForceLine(g))
+            return false;
+        double deg = doctrine.OfGroup(g, guide.Side, DoctrineField.TurnAwayDeg);
+        if (!a.Away && (deg <= 0 || CaptainLayer.TorpedoCraft(ctx, guide, lead)))
+            return false;
+        bool threat = TorpedoThreat(ctx, g, guide, out double bearing);
+        long now = ctx.NowMs;
+        if (a.Away)
+        {
+            if (threat)
+                a.ThreatMs = now;
+            if (threat || now - a.ThreatMs < (long)(ctx.Settings.TurnBackS * 1000))
+                return false;
+            a.Away = false;
+            StartTurn(ctx, g, a, -a.AwayDeg, rearFirst: false, keep: true);
+            return true;
+        }
+        if (!threat)
+            return false;
+        double turn = Wrap180(bearing - guide.HeadingDeg) >= 0 ? -deg : deg;   // coming from starboard: away to port
+        (a.Away, a.AwayDeg, a.ThreatMs) = (true, turn, now);
+        StartTurn(ctx, g, a, turn, rearFirst: false, keep: true);
+        a.AwayCourse = a.TurnCourse;
+        return true;
+    }
+
+    /// <summary>Whether a line sees a torpedo attack coming: an enemy its navy takes for a torpedo craft within
+    /// <see cref="SimSettings.TorpedoThreatM"/> of a ship of the line and closing on her faster than
+    /// <see cref="SimSettings.TorpedoThreatClosingMs"/>, or a ship of it combing a track her lookouts saw; and the bearing
+    /// from the guide it comes from (the nearest such craft, else the nearest enemy in sight). Never without a bearing.</summary>
+    bool TorpedoThreat(in AiContext ctx, GroupSystem.Group g, ShipState guide, out double bearing)
+    {
+        bearing = 0;
+        var s = ctx.Settings;
+        var ships = ctx.Ships;
+        var pic = ctx.World.Sightings.Of(guide.Side);
+        if (pic == null)
+            return false;
+        groups.LineOffsets(g, line);
+        double reach = 0;
+        bool tracks = false;
+        foreach (var (ship, astern, abeam) in line)
+        {
+            reach = Math.Max(reach, Math.Sqrt(astern * astern + abeam * abeam));
+            tracks |= captains.Combing(ship, ctx.NowMs);
+        }
+        double craftD = double.MaxValue, anyD = double.MaxValue, anyBearing = 0;
+        foreach (int i in seen.Near(ctx.World, guide.Side, guide.Position, reach + s.TorpedoThreatM))
+        {
+            var q = seen.Position(guide.Side, i);
+            double d = (q - guide.Position).Length;
+            if (d < anyD)
+                (anyD, anyBearing) = (d, Earth.Bearing(guide.Position, q));
+            if (!TakenForTorpedoCraft(ctx, pic[i]))
+                continue;
+            var v = seen.Velocity(guide.Side, i);
+            foreach (var (ship, _, _) in line)
+            {
+                if (ships.SlotOf(ship) is not (int m and >= 0))
+                    continue;
+                var own = ships[m];
+                var to = own.Position - q;
+                double r = to.Length;
+                if (r > s.TorpedoThreatM || r < 1 || Vec3d.Dot(v - own.Forward * own.Speed, to) / r < s.TorpedoThreatClosingMs)
+                    continue;
+                if (d < craftD)
+                    (craftD, bearing) = (d, Earth.Bearing(guide.Position, q));
+                break;
+            }
+        }
+        if (craftD < double.MaxValue)
+            return true;
+        bearing = anyBearing;
+        return tracks && anyD < double.MaxValue;
+    }
+
+    /// <summary>Whether a contact is taken for a torpedo craft: by the class it's taken for once that's made out
+    /// (<see cref="CaptainLayer.TorpedoCraft(Ships.ShipClass)"/>), else by its type (a destroyer, or smaller).</summary>
+    static bool TakenForTorpedoCraft(in AiContext ctx, in Contact c) =>
+        c.Level >= ContactLevel.Class && c.TakenFor >= 0 && ctx.World.Ships.Registry.Get(c.TakenFor) is { } taken
+            ? CaptainLayer.TorpedoCraft(taken)
+            : c.Type is ShipType.Destroyer or ShipType.Small;
+
     /// <summary>Whether a group is turning together, or the line it's in is.</summary>
     bool Manoeuvring(GroupSystem.Group g)
     {

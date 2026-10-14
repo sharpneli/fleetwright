@@ -187,7 +187,7 @@ public class TorpedoTests(ITestOutputHelper output)
                 n += w.Groups[k].Members.Count;
             return n;
         }
-        for (long t = 16 * 60; t < 30 * 60; t++)
+        for (long t = 16 * 60; t < 50 * 60; t++)
         {
             int ships = w.Ships.Store.Count, grouped = Grouped();
             long before = GC.GetAllocatedBytesForCurrentThread();
@@ -195,7 +195,7 @@ public class TorpedoTests(ITestOutputHelper output)
             if (w.Ships.Store.Count == ships && Grouped() == grouped)
                 allocated += GC.GetAllocatedBytesForCurrentThread() - before;
         }
-        output.WriteLine($"torpedoes fired {w.Torpedoes.Fired}, hits {w.Torpedoes.Hits}; {allocated} bytes in 14 minutes");
+        output.WriteLine($"torpedoes fired {w.Torpedoes.Fired}, hits {w.Torpedoes.Hits}; {allocated} bytes in 34 minutes");
         Assert.True(w.Torpedoes.Fired > 0, "the boats fired");
         Assert.Equal(0, allocated);
 

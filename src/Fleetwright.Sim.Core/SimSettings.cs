@@ -593,6 +593,13 @@ public sealed record SimSettings
     public long ManoeuvreMaxMs { get; init; } = 600_000;
     public double BattleTurnStepS { get; init; } = 10;
 
+    /// <summary>A torpedo attack coming at a line (docs/battle/command.md 5.1b): enemy torpedo craft within
+    /// TorpedoThreatM of a ship of it and closing on her faster than TorpedoThreatClosingMs, or a ship of it combing a
+    /// track; a line turned away (doctrine's TurnAwayDeg) turns back once it has seen none for TurnBackS. m, m/s, s.</summary>
+    public double TorpedoThreatM { get; init; } = 8_000;
+    public double TorpedoThreatClosingMs { get; init; } = 3;
+    public double TurnBackS { get; init; } = 180;
+
     /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
     /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>
     public double[] FightTypeGuns { get; init; } = [1, 8, 1, 0.1, 0, 0];

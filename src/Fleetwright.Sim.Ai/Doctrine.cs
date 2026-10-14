@@ -46,6 +46,10 @@ public enum DoctrineField : byte
 
     /// <summary>What a ship does about a torpedo her lookouts see coming at her (<see cref="TorpedoEvasion"/>).</summary>
     TorpedoEvasion,
+
+    /// <summary>A line that sees a torpedo attack coming (enemy torpedo craft closing on it, or tracks seen) turns away
+    /// together through this many degrees, and back once it's past (docs/battle/command.md 5.1b). 0: it holds on.</summary>
+    TurnAwayDeg,
 }
 
 /// <summary>Doctrine's Engage: carry on with the orders given (firing at will), or Fight (and turn away when outgunned).</summary>
@@ -83,7 +87,7 @@ public enum TorpedoUse : byte
 /// per unit; a command sets one value, so it's logged and replays. AI state: only captains and admirals read it.</summary>
 public sealed class Doctrine(GroupSystem groups)
 {
-    public const int FieldCount = (int)DoctrineField.TorpedoEvasion + 1;
+    public const int FieldCount = (int)DoctrineField.TurnAwayDeg + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -100,6 +104,7 @@ public sealed class Doctrine(GroupSystem groups)
         DoctrineField.EvadeLegS => 75,
         DoctrineField.EvadeBeyondM => 10_000,
         DoctrineField.TorpedoEvasion => (double)Ai.TorpedoEvasion.None,
+        DoctrineField.TurnAwayDeg => 0,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
