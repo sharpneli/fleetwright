@@ -771,6 +771,8 @@ game minute (the captains 23%, the admirals 4%).
   only), so the Grand Fleet closes a light cruiser until a battlecruiser is held.
 - By night every heavy unit goes home; keeping between the enemy and his home (Jellicoe's night) is a fine-tune.
 - Navy presets (the Germans' outgunned ratio against the whole Grand Fleet) and the aims Avoid and Reach.
+- A flotilla whose torpedoes are spent stays in the gunfight while it's in contact, instead of falling back at once
+  (for 5.1g's third piece).
 
 **The order from here** (the user, 2026-10-14, after 5.1d): with something to play, the next work is **5.1g** (the
 matchup, below), then the **UI rework** (5.2, from the command UI research; the placeholders so far are clunky), then
@@ -847,6 +849,14 @@ inputs are the ones the coarse tables will fill, so they can replace it later wi
    `squadrons`, `flotilla`, Tsushima and the Jutland over 5 seeds against the numbers after 5.1d; the cases the user named
    played out (a light cruiser hunting a destroyer and running from a battleship; a flotilla going in on a battleship);
    allocation-free; replays; cost.
+
+   Also here, found after 5.1d: **a spent flotilla lingers.** Once its torpedoes are spent, its Attack task is done and
+   its admiral keeps fighting with its guns (4" against whatever's there). The commander gives an idle unit its next task
+   only once it's out of contact (no enemy within `FightCompareM`, 30 km), so a flotilla with no torpedoes left stays in
+   the gunfight until the battle moves off, instead of falling back to screen its heavy units (or rejoin its force) at
+   once. The fix: an Attack done by its torpedoes (`TaskReason.Fired`) hands the flotilla straight back to its screen,
+   withdrawing from the enemy in sight first, contact or not; and the matchup then says whether a flotilla with only its
+   guns is worth a fight at all.
 
 *Not in it:* the coarse tables themselves (4.8), so no simulating fights ahead; the matchup is a judgement of the
 odds, not a forecast of the battle.
