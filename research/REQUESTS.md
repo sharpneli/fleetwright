@@ -12,6 +12,42 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-14 - When ships fell out and fleets broke off, 1890-1925
+- Question: what damage made a captain leave the line (speed lost, guns out, list, flooding, fire), and what losses
+  or circumstances made an admiral break off an action, across the era's actions (Yalu, Santiago, Yellow Sea,
+  Tsushima, Coronel, Falklands, Dogger Bank, Jutland, and smaller ones)? Were there written rules, or only practice?
+- Context / relevant files: `docs/battle/command.md` "Doctrine" (the fall out and break off thresholds, now plain
+  guesses: 60% speed, a third of the guns, 10° list, half the reserve; a third of the force lost), step 5.1a and 5.1d.
+  Not needed for the first version of step 5, which uses basic numbers; this is for the fine-tuning pass.
+- Wanted output: cases with what each ship or fleet had suffered when it fell out or broke off, and suggested
+  thresholds by navy and period, with sources.
+
+### 2026-10-14 - Fleet tactics and doctrine by navy, 1890-1925
+- Question: how did the era's fleets cruise, scout, deploy and fight, navy by navy? The Grand Fleet Battle Orders
+  (cruising order, deployment from columns into line, the turn away from torpedo attack), the German battle
+  instructions (the battle turn-away, *Gefechtskehrtwendung*), the Japanese at the Yellow Sea and Tsushima, the
+  Russian and French practice; flotilla attack doctrine (launch ranges, approach, turning away); cruiser scouting lines
+  (spacing, signalling, falling back on the main body). And timings: how long a deployment, a turn together and a
+  battle turn-away took (Jellicoe's deployment of 31 May 1916, Scheer's turn-aways).
+- Context / relevant files: `docs/battle/command.md` steps 5.1b (squadron tactics, the flotilla's attack), 5.1c (the
+  force: approach, deployment), 5.1d (the commander) and "Doctrine" (the fields a navy's character would set);
+  `research/simulation/evasion-research.md` covers evasion under fire and torpedo attack ranges already. Not needed for
+  the first version of step 5; this is for the fine-tuning pass (navy doctrine presets by year).
+- Wanted output: per navy and period, the doctrine as rules an AI can follow (when to engage, at what range, how to
+  deploy, how to meet torpedo attack), with timings, and what the historical actions show of it in practice.
+
+### 2026-10-14 - Signals in the fleet, 1890-1925
+- Question: how did orders travel in a fleet of the era, and how long did they take? Flag hoists (hoist, read,
+  repeat down the line, execute), searchlight and lamp signalling by night, early wireless (coding, sending, delays,
+  failures, jamming). How often were signals missed or misread, and with what effect: Jutland's 5th Battle Squadron
+  turn, Beatty's signals at Dogger Bank and Jutland, others. What happened when a flagship was lost or her signalling
+  wrecked (Tsushima's *Knyaz Suvorov*, Yalu), and how long before command passed?
+- Context / relevant files: `docs/battle/command.md` "Signals: orders take time" and step 5.1e (delays, chances of a
+  missed signal, command passing); `docs/battle/plan.md` "The first cut's era" ("Signals, not radio orders"). Not
+  needed for the first version of step 5, which uses basic delays; this is for the fine-tuning pass.
+- Wanted output: typical delays and failure rates per means of signalling and conditions (day, night, smoke, range),
+  the passing of command, and the historical cases, with sources.
+
 ### 2026-10-13 - The Jutland's classes as built
 - Question: for each class present at Jutland (both fleets), its displacement, speed, main battery and its layout,
   and belt, as built or as refitted by May 1916, for a ship design session. Split from the Jutland 14:00 request,

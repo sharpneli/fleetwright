@@ -1,6 +1,7 @@
 # Plan: command (battle module step 5)
 
-2026-10-14. Status: **proposed, for the user to agree** ("Questions to settle" at the end). It details step 5 of
+2026-10-14. Status: **proposed, for the user to agree** ("Questions to settle" at the end); decisions 1-3 taken
+2026-10-14 ("Decisions"). It details step 5 of
 `docs/battle/plan.md` ("Command"), keeping its numbers (other docs cite 5.1 for signals, rules of engagement, flotilla
 attacks, breaking off and evasion, and 5.2 for the command UI) and splitting 5.1 into sessions. Each step starts with
 the usual investigation, and this doc is updated as they're built.
@@ -229,8 +230,11 @@ received time per unit, and between the two the unit carries on with what it had
   (a different order received) are a later deepening.
 - **A flagship lost** (sunk, or her signals wrecked) passes command to the next flag officer (the next squadron's
   admiral, or the next ship's captain), after a delay, during which the unit has no orders but its doctrine.
-- **Reports up stay instant** for now (3.2's decision 1); delaying them (and the navigational error in contact
-  reports that bedevilled Jutland) is a deepening of the picture, with 3.2's open question on fixes.
+- **Reports up stay instant** for now (decision 2; 3.2's decision 1), but the architecture keeps room for them to
+  take time: every report a superior reads (a unit's status, a contact) carries when it was made and by whom, as the
+  picture's entries already do, and the commander and admirals read their units' states through one place, not
+  straight from the captains. Delaying reports (and the navigational error in contact reports that bedevilled
+  Jutland) then changes that one place: a deepening of the picture, with 3.2's open question on fixes.
 
 ### The side's commander, its aims and its home
 
@@ -393,10 +397,9 @@ Bottom-up, so each layer is built on one that already behaves.
 
 - `squadrons`, `flotilla`, `tsushima` and the Jutland run with `--play` to an end over seeds, each with a timeline
   that reads like a battle (contact, deployment, the fight, cripples falling out, turn-aways, the break-off, home).
-- **Kept tests:** each reaches an end by its own rules (not the time limit) in most seeds; no unit idle; outcomes in
-  wide bands that say "it played", not "it played well" (Tsushima: the Russians lose more than the Japanese in most
-  seeds; the Jutland: the fleets meet, and neither is annihilated in most). A stalemate or a timeout is reported, so
-  a change that breaks the AI shows.
+- **Kept tests** (decision 1: the bar is "plays to an end in most seeds", not a historical outcome): each reaches an
+  end by its own rules (not the time limit) in most seeds; no unit idle; the sides meet and fight. A stalemate or a
+  timeout is reported, so a change that breaks the AI shows.
 - **Cost:** the AI at the Jutland within the sim thread's budget (plan.md "How many ships"), measured on the ladder,
   small first. Nothing allocates per think.
 - **The app:** watching both sides play, and taking one side over at any moment (the player's orders hold units as
@@ -452,9 +455,10 @@ Flagged placeholders until then (`DesignerPlaceholders.cs`):
 - **Torpedo wakes** aren't the designer's, but the torpedo's propulsion (the era's wet heaters left a track; oxygen
   torpedoes didn't) is a fact of the torpedo row when the designer offers torpedoes.
 
-## Research to ask for
+## Research for the fine-tuning pass
 
-For `research/REQUESTS.md`, if the user agrees:
+In `research/REQUESTS.md` (2026-10-14). **Not needed for the first version** (decision 3): step 5 is built on basic,
+guessed numbers and simple rules, and this research tunes them later, in a fine-tuning pass of its own:
 
 1. **Signals of the era:** how long a flag hoist took to read and execute, how it was repeated down a line, the
    searchlight's rate, wireless delays and failures; the record of missed and misread signals (Jutland's 5th BS,
@@ -486,8 +490,8 @@ For `research/REQUESTS.md`, if the user agrees:
    the admirals and captains below still carry out their tasks and doctrine; the player can hand a unit, or the whole
    side, to the AI ("leave it to the admiral"). The AI commander is on for every other side, and for the player's
    when watching. Or should the AI commander run the player's side by default, the player stepping in?
-3. **Signals delay the player's orders too** (plan.md's era list says so); reports up stay instant for now (3.2's
-   decision 1). Keep both?
+3. **Signals delay the player's orders too** (plan.md's era list says so). Keep it? (Reports up: settled, decision
+   2.)
 4. **Doctrine per side in the scenario now,** navy presets by year later (the fine-tune). Or presets now?
 5. **Aims, home and a plan in the scenario file now** (step 5.0), the missions' objectives building on them in 6.1
    (the same types, one check). Agree, or should 6.1's mission file come first?
@@ -495,5 +499,15 @@ For `research/REQUESTS.md`, if the user agrees:
    once without them and again with them; or signals first, so nothing is tuned twice?
 7. **Torpedo tracks seen** by a short range by day (a placeholder) to let ships comb them in 5.1a, or leave torpedo
    evasion to a later pass?
-8. **The self-play bar:** "plays to an end in most seeds, with outcomes in wide bands" is the test for 5.1f. Is that
-   the bar, or should a historical outcome (Tsushima a crushing Japanese win) be met already?
+8. ~~The self-play bar~~: settled, decision 1.
+
+## Decisions
+
+The user's, 2026-10-14:
+
+1. **The bar is "plays to an end in most seeds."** The AI isn't perfect and doesn't need to be; no historical outcome
+   is asked of 5.1f. Its bands say "it played", and playing well is a later fine-tune.
+2. **Reports up are instant for now,** kept simple but kept in mind in the architecture: reports carry their time and
+   source, and superiors read them through one place, so delays can come later ("Signals").
+3. **The research goes into `research/REQUESTS.md`,** but the first version is built with basic numbers and rules,
+   without waiting for it. The research is for a fine-tuning pass.
