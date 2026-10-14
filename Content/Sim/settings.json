@@ -61,7 +61,7 @@
   "RailsGroupStationM": 50,
   "RailsSnapMinSpeed": 10000,
   "RailsFrameS": 0.016666666666666666,
-  "CoarseMinSpeed": 240,
+  "CoarseMinSpeed": 241,
   "CoarseStepMs": 60000,
   "CoarseRendezvousSteps": 2,
   "CoarseTrackSegments": 16,
