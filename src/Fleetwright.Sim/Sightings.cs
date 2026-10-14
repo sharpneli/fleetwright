@@ -275,14 +275,14 @@ public sealed class Sightings
         if (inSight && best >= 1 || !inSight && rate > 0 && r.NextDouble() < SightModel.Chance(rate, dt))
         {
             var os = store[slot[fixObs]];
-            Fix(pic, ci, ts, os, os.Handling.Class.Eyes[fixEye], best, fixD, fixBrg, now, ref r, classesInUse);
+            Fix(pic, ci, ts, store.Combat.Condition(ts.Slot), os, os.Handling.Class.Eyes[fixEye], best, fixD, fixBrg, now, ref r, classesInUse);
         }
         else if (inSight && best < 1)
             pic.At(ci).InSight = false;
     }
 
     /// <summary>A sighting into the picture: a fix of a held contact, or a new one; and how far it's made out.</summary>
-    void Fix(Picture pic, int ci, ShipState ts, ShipState os, in EyeRow eye, double margin, double d, double brg, long now,
+    void Fix(Picture pic, int ci, ShipState ts, ShipCondition tk, ShipState os, in EyeRow eye, double margin, double d, double brg, long now,
         ref RandomStream r, IReadOnlyList<int> classesInUse)
     {
         // the reading: the bearing and range with the eye's errors, as a point on the sphere
@@ -317,7 +317,35 @@ public sealed class Sightings
         con.InSight = true;
         con.Observer = os.Entity;
         con.Eye = eye.Kind;
+        con.Seen = SeenOf(ts, tk) | con.Seen & SeenFlags.Gone;
         Identify(ref con, ts, margin, d, ref r, classesInUse);
+    }
+
+    /// <summary>What an observer makes out of a ship's condition (docs/battle/fighting.md 4.3b): settled low, a list, a
+    /// trim, fire and smoke, stopped, its guns silent, going under. Never its water or what's left of its buoyancy.</summary>
+    SeenFlags SeenOf(ShipState ts, ShipCondition k)
+    {
+        var seen = SeenFlags.None;
+        if (Math.Abs(ts.Speed) < settings.SeenStoppedKn * Handling.MsPerKnot)
+            seen |= SeenFlags.Stopped;
+        if (!k.Damaged)
+            return seen;
+        var a = k.Attitude;
+        if (a.SinkageM >= settings.SeenLowShare * Math.Max(ts.Handling.Class.Vertical.Freeboard, 0.1))
+            seen |= SeenFlags.Low;
+        if (Math.Abs(a.HeelDeg) >= settings.SeenListDeg)
+            seen |= SeenFlags.Listing;
+        if (a.TrimDeg >= settings.SeenTrimDeg)
+            seen |= SeenFlags.ByBow;
+        else if (a.TrimDeg <= -settings.SeenTrimDeg)
+            seen |= SeenFlags.ByStern;
+        if (k.Fires > 0)
+            seen |= SeenFlags.Burning;
+        if (k.MountWorks.Length > 0 && k.MountsWorking == 0)
+            seen |= SeenFlags.Silent;
+        if (k.Status == ShipStatus.GoingDown)
+            seen |= SeenFlags.GoingDown;
+        return seen;
     }
 
     /// <summary>How far a sighting makes a contact out: its type, its class (taken for a similar one by chance), its name
@@ -442,6 +470,7 @@ public sealed class Sightings
             (v.MajorM[i], v.MinorM[i], v.AxisDeg[i]) = (major, minor, axis);
             (v.InSight[i], v.SeenMs[i], v.Level[i], v.Type[i]) = (c.InSight, c.SeenMs, c.Level, c.Type);
             v.Side[i] = c.Level >= ContactLevel.Type ? c.Side : (byte)255;
+            v.Seen[i] = c.Seen;
         }
         v.Count = pic.Count;
     }

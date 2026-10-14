@@ -89,13 +89,16 @@ public sealed class Snapshot
 }
 
 /// <summary>A damaged ship's condition, as its own side knows it: hits taken, the share of its power left, its
-/// steering, whether it's going down, its mounts and directors working of all, crew lost, fires, the area of its holes
-/// to the sea (m²), and whether it's conned.</summary>
+/// steering, whether it's going down (and how), its mounts and directors working of all, crew lost, fires, the area of
+/// its holes to the sea (m²), whether it's conned, the water aboard and what's left of its reserve buoyancy (t), and the
+/// attitude it has settled to.</summary>
 public sealed class ConditionsView
 {
     public int Count;
     public int[] Entity = [], Hits = [], MountsWorking = [], Mounts = [], DirectorsWorking = [], Directors = [], Fires = [];
-    public double[] PowerCap = [], CrewLost = [], BreachM2 = [];
+    public double[] PowerCap = [], CrewLost = [], BreachM2 = [], WaterT = [], ReserveT = [];
+    public Fleetwright.Sim.Combat.Attitude[] Attitude = [];
+    public Fleetwright.Sim.Combat.LossKind[] Loss = [];
     public Fleetwright.Sim.Combat.Steering[] Steering = [];
     public Fleetwright.Sim.Combat.ShipStatus[] Status = [];
     public bool[] Conned = [];
@@ -124,6 +127,10 @@ public sealed class ConditionsView
         Array.Resize(ref PowerCap, n);
         Array.Resize(ref CrewLost, n);
         Array.Resize(ref BreachM2, n);
+        Array.Resize(ref WaterT, n);
+        Array.Resize(ref ReserveT, n);
+        Array.Resize(ref Attitude, n);
+        Array.Resize(ref Loss, n);
         Array.Resize(ref Steering, n);
         Array.Resize(ref Status, n);
         Array.Resize(ref Conned, n);
@@ -241,6 +248,7 @@ public sealed class ContactsView
     public ContactLevel[] Level = [];
     public ShipType[] Type = [];
     public byte[] Side = [];
+    public SeenFlags[] Seen = [];
 
     public void EnsureCapacity(int n)
     {
@@ -248,6 +256,7 @@ public sealed class ContactsView
             return;
         n = Math.Max(n, Math.Max(16, Entity.Length * 2));
         Array.Resize(ref Entity, n);
+        Array.Resize(ref Seen, n);
         Array.Resize(ref TakenFor, n);
         Array.Resize(ref Position, n);
         Array.Resize(ref Velocity, n);

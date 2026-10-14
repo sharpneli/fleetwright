@@ -125,21 +125,26 @@ public sealed partial class ShipSystem
     }
 
     /// <summary>Whether a ship may be put on rails as its orders say, steady or not: steered on a course or a route,
-    /// its engines ahead or stopped, its rudder answering the helm (damage, docs/battle/fighting.md 4.3a: a jammed or
-    /// lost rudder keeps it off; a flooding or burning ship will be kept off too, 4.3b).</summary>
+    /// its engines ahead or stopped, its rudder answering the helm, dry and not burning (damage, docs/battle/fighting.md
+    /// 4.3a and 4.3b: a jammed or lost rudder keeps it off, and so does water in it or a fire, whose steps change it).</summary>
     bool Placeable(int slot)
     {
         var s = Store[slot];
-        return (s.Helm == Helm.Course || s.Helm == Helm.Route && s.RouteNext < s.RouteCount) && s.PowerOrder >= 0 && s.Steering == Steering.Free;
+        return (s.Helm == Helm.Course || s.Helm == Helm.Route && s.RouteNext < s.RouteCount) && s.PowerOrder >= 0 && s.Steering == Steering.Free &&
+               !Wet(slot);
     }
 
+    /// <summary>Water in it or a fire aboard (docs/battle/fighting.md 4.3b): its flooding and fire step it, so it stays off
+    /// rails.</summary>
+    bool Wet(int slot) => Store.Combat.Condition(slot) is { Damaged: true } k && (k.NextStepMs >= 0 || k.WaterT > 0);
+
     /// <summary>Steaming steady: on a course or a route's leg and on it, rudder amidships, no swing, the engines at what
-    /// was rung and the speed what they give.</summary>
+    /// was rung and the speed what they give; dry and not burning.</summary>
     bool Steady(int slot)
     {
         var s = Store[slot];
         bool coarse = s.Tier == ClockTier.Coarse;   // coarse: its manoeuvre done (its power isn't stepped)
-        if (s.Helm is not (Helm.Course or Helm.Route) || s.Steering != Steering.Free || (coarse ? !Store.CoarseSteady(slot) || s.PowerOrder < 0 : !NotSwinging(s) || s.Power < 0 || s.Power != s.PowerOrder))
+        if (s.Helm is not (Helm.Course or Helm.Route) || s.Steering != Steering.Free || Wet(slot) || (coarse ? !Store.CoarseSteady(slot) || s.PowerOrder < 0 : !NotSwinging(s) || s.Power < 0 || s.Power != s.PowerOrder))
             return false;
         double want = s.Helm == Helm.Course ? s.CourseOrderDeg : Earth.Bearing(s.Position, s.Waypoint(s.RouteNext));
         if (Math.Abs(AngleDeg(want - s.HeadingDeg)) > settings.RailsMaxCourseErrDeg)
@@ -159,7 +164,7 @@ public sealed partial class ShipSystem
         for (int i = 1; i < line.Count; i++)
         {
             int m = Store.SlotOf(line[i].Ship);
-            if (m < 0 || !MemberInStation(gs, Store[m], speed, line[i].AsternM, line[i].AbeamM))
+            if (m < 0 || Wet(m) || !MemberInStation(gs, Store[m], speed, line[i].AsternM, line[i].AbeamM))
                 return false;
         }
         return true;

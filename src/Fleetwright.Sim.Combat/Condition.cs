@@ -51,7 +51,7 @@ public enum PartFlags : byte
     None = 0,
     /// <summary>A mount that can't train (a heavy hit on its turret or barbette that didn't get in).</summary>
     Jammed = 1,
-    /// <summary>On fire (it burns from fighting.md 4.3b).</summary>
+    /// <summary>On fire (<see cref="Fires"/>).</summary>
     Burning = 2,
 }
 
@@ -64,31 +64,36 @@ public enum Steering : byte
     Lost,
 }
 
-/// <summary>Whether a ship is afloat or going down (fighting.md 4.3b settles foundering and capsizing; 4.3a only blows
-/// a magazine).</summary>
+/// <summary>Whether a ship is afloat or going down (its magazine gone, foundered or capsized: <see cref="LossKind"/>).
+/// A ship settling and listing is still afloat until its buoyancy or stability gives out.</summary>
 public enum ShipStatus : byte
 {
     Afloat,
     GoingDown,
 }
 
-/// <summary>A ship's condition (docs/battle/fighting.md 4.3a): there are no hit points anywhere. Each part damage reaches
-/// (the class's nodes: its components, then its rooms) has a state and flags; each watertight cell its water, the area
-/// of its holes to the sea, whether it burns and whether its bulkheads are torn; the ship its crew lost, its status and
-/// attitude. What it can still do (<see cref="Functions"/>) is worked out from these when they change: which mounts,
-/// directors and eyes work, the power it can make and its steering. Allocated at spawn, sized by the class.</summary>
+/// <summary>A ship's condition (docs/battle/fighting.md 4.3a, 4.3b): there are no hit points anywhere. Each part damage
+/// reaches (the class's nodes: its components, then its rooms) has a state and flags; each watertight cell its water,
+/// the area of its holes to the sea (and their mean height and side, ship frame), whether it burns and whether its
+/// bulkheads are torn; the ship its crew lost, its status, the water aboard and the attitude and GM it settles to. What
+/// it can still do (<see cref="Functions"/>) is worked out from these when they change: which mounts, directors and
+/// eyes work, the power it can make and its steering. Allocated at spawn, sized by the class.</summary>
 public sealed class ShipCondition
 {
     public ShipClass Class { get; private set; } = null!;
     public PartState[] State = [];
     public PartFlags[] Flags = [];
-    public double[] WaterM3 = [], BreachM2 = [];
+    public double[] WaterM3 = [], BreachM2 = [], BreachY = [], BreachZ = [];
     public bool[] CellFire = [], CellOpened = [];
     public bool[] MountWorks = [], DirectorWorks = [], EyeWorks = [];
 
     public double CrewLost;
     public ShipStatus Status;
+    /// <summary>How it went down (None while afloat).</summary>
+    public LossKind Loss;
     public Attitude Attitude;
+    /// <summary>The water aboard, tonnes, and the transverse GM with it in, m (the class's while dry).</summary>
+    public double WaterT, GmM;
     /// <summary>The share of its power the plant can still make (boilers and shafts), 0-1.</summary>
     public double PowerCap = 1;
     public Steering Steering;
@@ -96,11 +101,19 @@ public sealed class ShipCondition
     public double JamRudderRad;
     /// <summary>Whether it's conned (a bridge or the conning tower works): recorded until the signals (5.1).</summary>
     public bool Conned = true;
-    /// <summary>Hits taken, and whether it's been touched at all (a ship never hit hashes as before).</summary>
-    public int Hits;
+    /// <summary>Hits taken, and whether it's been touched at all (a ship never hit hashes as before); who hit it last (an
+    /// entity and battery, for the log's line when it goes down).</summary>
+    public int Hits, LastShooter, LastBattery;
     public bool Damaged;
     /// <summary>Bumped each time what it can do may have changed (the gunnery system rebuilds a battery's instruments).</summary>
     public int Version;
+
+    /// <summary>The flooding and fire's clock (the damage system's): when it last stepped, when it steps next (-1: it
+    /// doesn't, dry and not burning), the step's generation (a step brought sooner cancels the one it replaces), and the
+    /// share of its power it was last held to with its water's weight in (the ship store's).</summary>
+    public long StepMs, NextStepMs = -1;
+    public int StepGen;
+    public double HeldCap = 1;
 
     internal void Reset(ShipClass c)
     {
@@ -111,6 +124,8 @@ public sealed class ShipCondition
             Flags = new PartFlags[c.NodeCount];
             WaterM3 = new double[c.Cells.Length];
             BreachM2 = new double[c.Cells.Length];
+            BreachY = new double[c.Cells.Length];
+            BreachZ = new double[c.Cells.Length];
             CellFire = new bool[c.Cells.Length];
             CellOpened = new bool[c.Cells.Length];
             MountWorks = new bool[c.Mounts.Length];
@@ -123,13 +138,16 @@ public sealed class ShipCondition
             Array.Clear(Flags);
             Array.Clear(WaterM3);
             Array.Clear(BreachM2);
+            Array.Clear(BreachY);
+            Array.Clear(BreachZ);
             Array.Clear(CellFire);
             Array.Clear(CellOpened);
         }
         Array.Fill(MountWorks, true);
         Array.Fill(DirectorWorks, true);
         Array.Fill(EyeWorks, true);
-        (CrewLost, Status, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (0, ShipStatus.Afloat, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
+        (CrewLost, Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (0, ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
+        (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0);
         Version++;
     }
 
@@ -140,6 +158,18 @@ public sealed class ShipCondition
             return false;
         State[node] = s;
         return true;
+    }
+
+    /// <summary>A hole to the sea in a cell, at a point (ship frame): its area adds, its height and side are the holes'
+    /// mean by area.</summary>
+    public void Hole(int cell, double areaM2, P3 at)
+    {
+        double a0 = BreachM2[cell], a1 = a0 + areaM2;
+        if (a1 <= 0)
+            return;
+        BreachY[cell] = (BreachY[cell] * a0 + at.Y * areaM2) / a1;
+        BreachZ[cell] = (BreachZ[cell] * a0 + at.Z * areaM2) / a1;
+        BreachM2[cell] = a1;
     }
 
     /// <summary>A part damaged once more: ok to damaged, damaged to disabled.</summary>
@@ -198,8 +228,9 @@ public sealed class ShipCondition
     {
         h.Add(Hits);
         h.Add(CrewLost);
-        h.Add((int)Status);
+        h.Add((int)Status | (int)Loss << 8);
         h.Add(PowerCap);
+        h.Add(WaterT);
         h.Add((int)Steering);
         h.Add(JamRudderRad);
         for (int i = 0; i < State.Length; i++)
@@ -209,10 +240,11 @@ public sealed class ShipCondition
                 h.Add((int)State[i] | (int)Flags[i] << 8);
             }
         for (int i = 0; i < BreachM2.Length; i++)
-            if (BreachM2[i] != 0 || CellFire[i] || CellOpened[i])
+            if (BreachM2[i] != 0 || CellFire[i] || CellOpened[i] || WaterM3[i] != 0)
             {
                 h.Add(i);
                 h.Add(BreachM2[i]);
+                h.Add(WaterM3[i]);
                 h.Add(CellFire[i]);
                 h.Add(CellOpened[i]);
             }

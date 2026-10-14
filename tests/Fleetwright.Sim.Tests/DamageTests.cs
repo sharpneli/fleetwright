@@ -30,14 +30,15 @@ public class DamageTests(ITestOutputHelper output)
     }
 
     GivenHits.Report Hits(string target, string shooter, int battery, double rangeM, int n, int perShip, ShellKind? kind = null,
-        Action<int, HitPath, TerminalResult, EffectsResult>? each = null)
+        Action<int, HitPath, TerminalResult, EffectsResult>? each = null, double settleS = 0)
     {
         var (shell, elev) = Shell(Class(shooter), battery, kind);
-        var r = GivenHits.Run(Class(target), shell, elev, rangeM, 90, n, perShip, 1, Settings, each);
+        var r = GivenHits.Run(Class(target), shell, elev, rangeM, 90, n, perShip, 1, Settings, each, settleS);
         output.WriteLine($"{shooter} {battery} on {target} at {rangeM / 1000:0.#} km: " + string.Join(", ",
             Enum.GetValues<Outcome>().Where(o => r.Outcomes[(int)o] > 0).Select(o => $"{o} {100 * r.Share(o):0.#}%")));
         output.WriteLine($"  after {perShip}: speed {100 * r.SpeedShare / r.Ships:0}%, main {r.MainWorking / r.Ships:0.0} of {r.MainMounts / r.Ships:0}, " +
-                         $"directors {r.DirectorsWorking / r.Ships:0.0} of {r.Directors / r.Ships:0}, crippled {100.0 * r.Crippled / r.Ships:0}%, lost {100.0 * r.Lost / r.Ships:0}%");
+                         $"directors {r.DirectorsWorking / r.Ships:0.0} of {r.Directors / r.Ships:0}, crippled {100.0 * r.Crippled / r.Ships:0}%, lost {100.0 * r.Lost / r.Ships:0}%, " +
+                         $"water {r.WaterT / r.Ships:0} t");
         return r;
     }
 
@@ -53,16 +54,22 @@ public class DamageTests(ITestOutputHelper output)
     [Fact]
     public void Ten_4in_HE_hits_usually_cripple_a_destroyer_and_seldom_sink_it()
     {
-        var r = Hits("destroyer", "lion", 1, 6_000, 1000, 10);
-        Assert.InRange((double)r.Crippled / r.Ships, 0.5, 1);
-        Assert.InRange((double)r.Lost / r.Ships, 0, 0.15);
+        // with half an hour of flooding and fire after: crippled more often than sunk (fighting.md 4.3b)
+        foreach (string dd in new[] { "destroyer", "tb_destroyer" })
+        {
+            var r = Hits(dd, "lion", 1, 6_000, 600, 10, settleS: 1800);
+            Assert.InRange((double)r.Crippled / r.Ships, 0.5, 1);
+            Assert.InRange((double)r.Lost / r.Ships, 0, 0.15);
+            Assert.True(r.Crippled > 3 * r.Lost, "crippled far more often than sunk");
+        }
     }
 
     [Fact]
     public void A_battleship_under_medium_HE_loses_upper_works_and_fire_control_and_keeps_speed_and_turrets()
     {
         var c = Class("super_dreadnought");
-        var r = Hits("super_dreadnought", "tiger_1914", 1, 8_000, 1500, 30);
+        var r = Hits("super_dreadnought", "tiger_1914", 1, 8_000, 1500, 30, settleS: 1800);
+        Assert.Equal(0, r.Lost);   // and stays afloat (fighting.md 4.3b)
         Assert.InRange(r.SpeedShare / r.Ships, 0.85, 1);
         Assert.InRange(r.MainWorking / r.MainMounts, 0.85, 1);
         Assert.InRange(r.DirectorsWorking / r.Directors, 0, 0.9);   // fire control lost in some

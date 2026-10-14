@@ -79,7 +79,7 @@ public sealed class World
         Gunnery = new GunnerySystem(Settings, Ships, Shells, CombatLog, seed);
         Shells.Gunnery = Gunnery;
         Register(Gunnery);
-        Damage = new DamageSystem(Settings, Ships, CombatLog, seed);
+        Damage = new DamageSystem(Settings, Ships, CombatLog, Sightings, seed);
         Shells.Damage = Damage;
         Ships.ClassAdded = cls =>
         {

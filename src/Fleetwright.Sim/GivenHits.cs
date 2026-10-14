@@ -8,14 +8,15 @@ namespace Fleetwright.Sim;
 /// gunfire_ref.py <c>mc()</c>): hits from one shell at a range, spread over the target as the falling shells see it
 /// (uniformly over its outline across their line of flight, so side and deck share the hits by the danger space, and
 /// parts by their size), each through the world's own damage system on a ship of the class. A run is K hits on one
-/// ship (1: each hit on a fresh ship); the report sums the hits' outcomes and the ships' state after their K. Not world
-/// state: a tool for <c>shipgen hits</c> and the damage tests.</summary>
+/// ship (1: each hit on a fresh ship), then its flooding and fire run on for a while (<c>settleS</c>, 4.3b); the report
+/// sums the hits' outcomes and the ships' state after. Not world state: a tool for <c>shipgen hits</c> and the damage
+/// tests.</summary>
 public static class GivenHits
 {
     /// <summary>What the hits did: per hit, where they struck, their outcomes, fires, crew and holes, how often each
     /// part was put out of action (a node: component, then room); per ship after its K hits, its power and the share of
     /// its top speed that makes (slowed: under <see cref="SlowShare"/>), steering, main mounts and directors, and how
-    /// many were lost.</summary>
+    /// many were lost, and how (by <see cref="LossKind"/>), and the water they took.</summary>
     public sealed class Report
     {
         public int Hits, Ships;
@@ -26,6 +27,8 @@ public static class GivenHits
         public int[] PartsOut = [];
         public double PowerCap, SpeedShare, MainWorking, MainMounts, DirectorsWorking, Directors;
         public int Crippled, Slowed, SteeringLost, Lost, MainSilenced;
+        public readonly int[] LostBy = new int[Enum.GetValues<LossKind>().Length];
+        public double WaterT;
         public double FallDeg, StrikeMs;
 
         public double Share(Outcome o) => Hits > 0 ? (double)Outcomes[(int)o] / Hits : 0;
@@ -36,7 +39,7 @@ public static class GivenHits
     public const double SlowShare = 0.85;
 
     public static Report Run(ShipClass target, ShellTypeRow shell, double maxElevationDeg, double rangeM, double aspectDeg, int n, int perShip, ulong seed,
-        SimSettings settings, Action<int, HitPath, TerminalResult, EffectsResult>? each = null)
+        SimSettings settings, Action<int, HitPath, TerminalResult, EffectsResult>? each = null, double settleS = 0)
     {
         var table = new BallisticTable(BallisticKey.Of(shell, maxElevationDeg));
         double e = table.ElevationFor(rangeM, 10);
@@ -119,8 +122,12 @@ public static class GivenHits
                     if (before[i] < PartState.Disabled && k0.State[i] >= PartState.Disabled)
                         rep.PartsOut[i]++;
             }
-            // the ship after its hits
+            // the ship after its hits, and its flooding and fire run on
+            if (settleS > 0)
+                w.Damage.Settle(w, entity, settleS);
             var kk = w.Ships.Store.Combat.Condition(slot);
+            rep.WaterT += kk.WaterT;
+            rep.LostBy[(int)kk.Loss]++;
             int main = 0, mainOk = 0, dirs = 0;
             for (int m = 0; m < target.Mounts.Length; m++)
                 if (target.Mounts[m].Kind == ComponentKind.Main)

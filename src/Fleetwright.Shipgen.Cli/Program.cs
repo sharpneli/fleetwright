@@ -82,12 +82,19 @@ public static class Program
             0 -> full, coasting, a crash stop, each beside the research's band for its kind; --out writes the circles
             as DIR/<design>_turns.svg
         shipgen duel SHOOTER [TARGET] [--range M] [--level L] [--runs N] [--minutes M] [--speed KN] [--target-speed KN] [--bearing DEG] [--course DEG] [--crew trained] [--battery B] [--seed S] [--damage]
-        shipgen hits TARGET [--shooter DESIGN] [--battery B] [--kind ap|common|he] [--range M] [--aspect DEG] [--n N] [--per-ship K] [--seed S] [--show N]
+        shipgen hits TARGET [--shooter DESIGN] [--battery B] [--kind ap|common|he] [--range M] [--aspect DEG] [--n N] [--per-ship K] [--seed S] [--show N] [--settle MIN]
             the damage model alone (docs/battle/fighting.md 4.3a): N hits of the shooter's battery's shell (the one it
             fires, or --kind) at a range, spread over the target as the falling shells see it from --aspect degrees off
             its bow, through the world's damage system: where they struck, the outcome classes, fire, crew and holes a
-            hit, the parts most often put out of action, and each ship's state after K hits (--per-ship); --show prints
+            hit, the parts most often put out of action, and each ship's state after K hits (--per-ship) and MIN minutes
+            of flooding and fire (default 30: the water it took, and lost to its magazine, foundered or capsized); --show prints
             the first N hits' paths. TARGET and DESIGN are paths or names (shipgen/designs, Content/Scenarios/Designs)
+        shipgen flood DESIGN [--hole WHERE:Z:AREA[:p],...] [--rooms KIND[:N],...] [--minutes M] [--every S] [--step MS] [--cells]
+            the flooding model alone (docs/battle/fighting.md 4.3b): the class's facts (reserve buoyancy, freeboard, TPC,
+            MCT, GM), then a ship of it stopped at sea, holed on the side (WHERE mid, bow, stern or x in m; Z m over the
+            waterline; AREA m²; :p to port) or with N spaces of a kind flooded (boiler_room:2), the world run on: water,
+            reserve left, sinkage, trim, heel, GM and spaces out every S seconds, until it goes down; then the water by
+            space (--cells: by cell, with its joins); --step sets FloodMs
         shipgen ballistics DESIGN... [--research]
             each battery's range table from the shell it fires (docs/battle/fighting.md 4.2a): range, elevation, time
             of flight, angle of fall and striking velocity from a muzzle 10 m up, and the table's size and build time;
@@ -153,7 +160,10 @@ public static class Program
                 "hits" => HitsBench.Run(a.Positional.ElementAtOrDefault(0) ?? "dreadnought", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new HitsBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), D(a, "range", 12_000), D(a, "aspect", 90), a.Int("n", 2000),
-                        a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0))),
+                        a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0), D(a, "settle", 30))),
+                "flood" => FloodBench.Run(a.Positional.ElementAtOrDefault(0) ?? "destroyer", n => LoadDesign(Resolve(a, n)),
+                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
+                    new FloodBench.Options(a.Get("hole"), a.Get("rooms"), D(a, "minutes", 60), D(a, "every", 120), a.Int("step", 0), a.Has("cells"))),
                 "ballistics" => BallisticsBench.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "trials" => SeaTrials.Run(a.Positional, a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("out")),
@@ -191,7 +201,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

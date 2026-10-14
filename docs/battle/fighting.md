@@ -1,8 +1,8 @@
 # Plan: fighting (battle module step 4)
 
 2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
-as its steps are built. **4.0, 4.1, 4.2a, 4.2b and 4.2c done 2026-10-13, 4.3a (what a hit does) 2026-10-14; 4.3b, fire,
-flooding and going down, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
+as its steps are built. **4.0, 4.1, 4.2a, 4.2b and 4.2c done 2026-10-13, 4.3a (what a hit does) and 4.3b (fire,
+flooding and going down) 2026-10-14; 4.4, damage seen, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
 4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
 
 ## The aim
@@ -857,6 +857,85 @@ What it settled, beyond the plan:
   - replays hold, and there's no allocation per flooding step.
 - **Playable: the first blood.** Two ships fight until one sinks.
 
+**4.3b done 2026-10-14.** Ships burn, flood, list and go down. Where it lives:
+
+- **The flooding** (`Sim.Combat/Flooding.cs`): `FloodModel`, a class's cells as water sees them (capacity, the area of
+  the water's surface, centre, open to the weather above, the graph's edges once each with the opening's height, the
+  reserve buoyancy, the deck's height at the centre of flotation, the complement), made once a class; `Flooding.Step`
+  (the sea in through holes and over a weather deck gone under; across the graph from the higher water to the lower,
+  heights measured over the sea outside so water finds its level in a trimmed, heeled ship; the pumps; rooms flooded out
+  of action) and `Flooding.Settle` (the attitude, GM, and whether it founders or capsizes).
+- **The fire** (`Sim.Combat/Fires.cs`): burning spaces and parts harmed, spreading, put out by the crew left, drowned by
+  water, cooking off magazines in or next to a burning space (times the side's propellant).
+- **The condition:** each hole's mean height and side (`ShipCondition.Hole`; `Effects` records where it opens), the water
+  aboard, GM, how it went down (`LossKind`: magazine, foundered, capsized), who hit it last, and the steps' clock.
+- **`DamageSystem`:** a ship with a hole or a fire steps every `FloodMs` (1 s) on a grid of world time, every
+  `FloodIdleMs` (30 s) once its water has settled, and not at all once dry with no hole under the sea and nothing
+  burning; in any clock tier. Its power is held to what drives its added weight (the power a speed needs goes as the
+  displacement to the two-thirds). Going down (a magazine, foundered, capsized) it stops, its guns fall silent, it
+  leaves its group, the log gets a `Lost` line saying how, and it goes under `MagazineLossMs` (1 min), `CapsizeMs`
+  (3 min) or `FounderMs` (10 min) later. The dev's `DamageSystem.Breach` (a hole in a cell) for tests and benches.
+- **What the enemy sees** (`Contact.Seen`, `SeenFlags`): at each sighting, low in the water, a list, trimmed by the bow or
+  stern, burning, stopped, its guns silent, going down; seen to go when it goes under in sight. Never its water. The AI's
+  contacts in sight (`SeenContacts`) leave out a ship seen going down: no target, no threat. A captain whose ship is
+  going down gives no orders.
+- **Its own side** (the snapshot's conditions): the water aboard, the reserve buoyancy left, the attitude, how it's going
+  down. The strip shows them under the damage row.
+- **The rails rule:** a ship with water in it or whose steps are running is neither `Placeable` nor `Steady`, nor in
+  station as a group's member; its steps' start takes it off rails.
+- **The benches:** `shipgen flood DESIGN` (the class's facts, then holes on the side or spaces flooded and the world run
+  on: water, reserve, sinkage, trim, heel, GM, spaces out; `--cells` lists the water by cell with its joins), and
+  `shipgen hits ... --settle MIN` (each ship's flooding and fire run on after its hits: water a ship, lost to the
+  magazine, foundered, capsized; `DamageSystem.Settle` is the tool behind it).
+
+What it settled, beyond the plan:
+
+- **Free surface is in now** (the plan had it in 4.5): without it no destroyer foundered on its machinery spaces (the
+  `destroyer` design has 3.7 m of freeboard and 172% reserve buoyancy), and the research names it the killer. Each
+  partly filled cell counts its own surface (the mean breadth cubed), less within `FreeSurfacePocket` (10%) of dry or
+  full; a room's cells side by side count apart, which understates a wide room split in bands.
+- **Heel is the wall-sided formula** (GM·tanφ + BM/2·tan³φ = moment), so a ship with no GM left lolls instead of
+  capsizing at once, and it comes on over `HeelLagS` (30 s): water rushing into empty spaces doesn't flip a ship in its
+  first seconds. It capsizes past `CapsizeHeelDeg` (25°).
+- **Pumps are in** (the plan had none until 4.5), only for the leaks: with steam, `PumpTPerHourPer1000T` (50) clear the
+  cells with no hole of their own. Without them every holed ship flooded on through its bulkheads' leaks for days and
+  sank. Counter-flooding stays 4.5's.
+- **The Lützow rule applies to decks that were over the waterline** and have gone under the sea outside (`FloodSunkDeckM2`
+  0.3 m²); decks always under the waterline leak like any other (`FloodLeakDeckM2`, `FloodLeakBulkheadM2` 5 cm²; 20 cm²
+  outran the pumps).
+- **A hole lets the sea in over its lower edge,** so a hole centred on the waterline floods.
+- **Founders** when the water passes the reserve buoyancy (the watertight hull over the displacement) or the sea closes
+  over the deck at the centre of flotation.
+- **The magazine's loss** goes through the same path as the others (stops, silent, out of its group, gone a minute
+  later); a fire may now set one off.
+- **The rooms in a cell** (`ShipClass.RoomsIn`) moved onto the class from `Effects`, for the fire's use too.
+
+**The numbers** (`shipgen flood`, `shipgen hits --settle`):
+
+| Case | the sim | the anchor |
+|---|---|---|
+| 0.5 m² at the waterline amidships, Lion (a wing bunker) | 145-220 t, list 1.3-1.5° | hundreds of tonnes, a few degrees |
+| 0.5 m² 1.5 m down amidships, QE (the engine room) | 3,270 t in 4 h, afloat, GM 0.57 m | a capital ship lives through 1,000-3,000 t |
+| eight 2 m² holes along the bow, QE | 1,030 t, trimmed 0.55° by the bow | Bismarck: 1,000-2,000 t, down by the bow |
+| `destroyer`: 1 boiler room flooded / 2 / 2 and an engine room | 225 t, GM 0.50 / 530 t, GM 0.31 / lolls 20°, capsizes after 2.5 h | survives if fewer than ~2-3 machinery spaces flood |
+| V25: 3 boiler rooms / 3 and an engine room | 690 t, GM 0.25, afloat / capsizes in 17 min | the same |
+| ten 4" HE hits, then 30 min: `destroyer` / V25 | crippled 72% / 67%, lost 1% / 7% (magazines mostly) | crippled more often than sunk |
+| 30 6" HE hits on QE, then 30 min | no water, none lost | a battleship under medium HE stays afloat |
+| ten 15" AP at 16 km on QE, then an hour | 430 t a ship, lost 5% (magazines) | |
+| a 1 s and a 5 s step, 20 min | within 0.5% | within a few per cent |
+
+- **The squadrons fight** (3 hours): Princess Royal blows up at 15:49; Lion takes 199 hits, 2,000 t, lists 17° with its
+  steering lost; Von der Tann takes 148 hits, 2,600 t and lists 21°, near capsizing. Nobody founders in three hours:
+  the fight's losses are magazines and wrecks so far.
+- **Cost:** a flooding and fire step is about 10-20 µs for a capital ship (the squadrons: 2.5 steps a game second);
+  nothing allocates.
+- **Hashes:** unchanged where nothing is hit (after an hour, ladder-2 `C9C2AC0C`, Jutland `332E1471`).
+- **Found on the way:** with the ship trimmed, a cell could give more water than it held (the water over the opening was
+  measured against two seas), and the clamp to zero made water; a hole that changed nothing the ship could do never
+  took it off rails.
+- **Left as it is (v0):** a ship going down keeps the attitude it had (4.4 draws it going under); its contacts are
+  forgotten as any other's. A room split into bands counts its free surface by band. Water doesn't slosh between steps.
+
 ### 4.4 Damage seen
 
 What plan.md's "Damage on the sprites" section describes, kept light (decision 10), and the report:
@@ -990,7 +1069,8 @@ Every iteration is measured the same way, so "better" is a number:
 
 - **`shipgen ballistics <design>`:** each gun's range table: range, elevation, time of flight, angle of fall, striking
   velocity, against the research's anchors.
-- **`shipgen hits <design> --shell T --range R --n N`:** given hits, the damage model alone (4.3a, 4.3b).
+- **`shipgen hits <design> --shell T --range R --n N`:** given hits, the damage model alone (4.3a, 4.3b: `--settle`).
+- **`shipgen flood <design>`:** the flooding model alone: holes or flooded spaces, and the ship as it settles (4.3b).
 - **`shipgen duel <a> <b> --range R --level L --runs N`:** two ships headless, the fire-control chain with or without
   damage. It reports hit %, straddle %, time to first hit, salvos to straddle, and time to sink.
 - **The probes** (2.7b): each new system timed per game minute. `shipgen scenario` prints them.
@@ -1043,14 +1123,23 @@ Placeholders in `DesignerPlaceholders.cs` until shipgen gives them, listed in pl
 From 4.3a (2026-10-14), each built one way and easy to change:
 
 1. **Penetration:** the reference's Garzke and Dulin fit, not the plan's De Marre. Keep it?
-2. **A magazine's loss in v0** drops the ship a minute after it blows up. Until then the enemy may still fire at it.
-   4.3b's loss by buoyancy and "seen to go" replace the minute.
+2. **A magazine's loss in v0** drops the ship a minute after it blows up (4.3b kept the minute, beside 3 for a capsize
+   and 10 for a founder). A ship seen going down is no longer a target.
 3. **Propellant by side:** Britain 2, Germany 0.1 in the squadrons and the Jutland. Tsushima keeps 1 for both.
 4. **Crippling a destroyer:** ten 4" HE hits cripple 62% of them (61% slowed under 85% of their speed); the reference cripples 77%
    (any machinery space lost). A damaged space gives half, so one hit in a boiler room of four costs an eighth of the
    steam. The steam lines that would make one hit matter more are the service networks' (4.5).
 5. **Medium HE on a battleship** costs a little speed, mostly through its funnels' draught (QE: 92% after 30 hits).
    The research's R4 says such hits don't touch speed; its §8 says funnel hits cost draught.
+
+From 4.3b (2026-10-14):
+
+6. **Free surface and pumps came forward from 4.5:** without them, destroyers never foundered on their machinery spaces,
+   and every holed ship sank through its leaks in the end. Keep them in v0?
+7. **Nothing founders in the squadrons' three hours:** the battlecruisers list 17-21° with 2,000-2,600 t aboard and fight
+   on at a quarter of their power. Holes from shells are small (a heavy shell's 0.1-0.3 m², a burst's a few m² above
+   the waterline), and speed doesn't drive water in yet (4.5). Is that the feel wanted, or should shell holes flood
+   faster?
 
 
 ## Decisions

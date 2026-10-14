@@ -218,7 +218,12 @@ sealed class FightTally(CombatLog log)
                               $"{l.Hits,4} hits ({100.0 * l.Hits / Math.Max(l.Shells, 1),4:F1}%)   first {Clock(l.FirstMs)}, hit {Clock(l.FirstHitMs)}");
         }
         foreach (var e in losses)
-            Console.WriteLine($"  LOST: {Name(e.Target)} at {new WorldTime(e.Ms).ToString()[11..19]}, her magazine set off by {Name(e.Shooter)}'s battery {e.Battery}");
+            Console.WriteLine($"  LOST: {Name(e.Target)} at {new WorldTime(e.Ms).ToString()[11..19]}, " + (LossKind)e.Count switch
+            {
+                LossKind.Magazine => "her magazine set off",
+                LossKind.Capsized => "capsized",
+                _ => "foundered",
+            } + $" (last hit by {Name(e.Shooter)}'s battery {e.Battery})");
 
         // what the hits did (docs/battle/fighting.md 4.3a): the ships still afloat that were hit
         var store = w.Ships.Store;
@@ -228,14 +233,14 @@ sealed class FightTally(CombatLog log)
             if (!store.IsAlive(slot) || store.Combat.Condition(slot) is not { Damaged: true } k)
                 continue;
             if (!header)
-                Console.WriteLine("the damage (hits taken, power and the speed it makes, mounts and directors working, steering, crew lost, fires, holes):");
+                Console.WriteLine("the damage (hits taken, power and the speed it makes, mounts and directors working, steering, crew lost, fires, holes, water, list):");
             header = true;
             var c = store[slot].Handling.Class;
             double top = c.Motion.MaxSpeedKn, kn = c.SpeedAt(c.PowerAt(top) * k.PowerCap);
             int dirs = k.DirectorWorks.Count(x => x);
             Console.WriteLine($"  {Name(store[slot].Entity),-16} {k.Hits,4} hits   power {100 * k.PowerCap,3:0}% ({kn,4:0.0} of {top:0.0} kn)   mounts {k.MountsWorking,2} of " +
                               $"{k.MountWorks.Length,-2}  directors {dirs} of {k.DirectorWorks.Length}   {k.Steering,-7}  crew {k.CrewLost,5:0}   fires {k.Fires,2}   holes {k.BreachTotalM2:0.00} m²" +
-                              (k.Status != ShipStatus.Afloat ? "   GOING DOWN" : ""));
+                              $"   water {k.WaterT,5:0} t   list {k.Attitude.HeelDeg,5:0.0}°" + (k.Status != ShipStatus.Afloat ? $"   GOING DOWN ({k.Loss})" : ""));
         }
     }
 }

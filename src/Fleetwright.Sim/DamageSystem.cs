@@ -9,6 +9,7 @@ public enum DamageCommand : ushort
 {
     SetPropellant = 1,
     Wreck,
+    Breach,
 }
 
 /// <summary>Hits and what they do (docs/battle/fighting.md 4.3a): a hit comes in (<see cref="Strike"/>, from the shell
@@ -24,14 +25,17 @@ public enum DamageCommand : ushort
 /// gear or the rudders: jammed where it was, or trailing);</item>
 /// <item>a line in the combat log: the shell, the part, the outcome, the effects.</item>
 /// </list>
-/// A magazine set off loses the ship at once (v0): it stops, its guns fall silent, and it goes under
-/// <see cref="SimSettings.MagazineLossMs"/> later, dropped from the world as a command would. Fire, flooding and loss by
-/// buoyancy are 4.3b's. Draws come from the stream "damage", one per hit. World state: replays, hashes. Registered fifth,
-/// so its id is always <see cref="Id"/>.</summary>
+/// A ship with water in it or a fire is stepped every <see cref="SimSettings.FloodMs"/> (4.3b; less often once its water
+/// has settled), in any clock tier: FLOODING (<see cref="Flooding"/>: the sea in, across the cell graph, the pumps; the
+/// ship settled to it, its power held to what drives its added weight) and FIRE (<see cref="Fires"/>). It goes down by
+/// its buoyancy, not hit points: foundered or capsized, or its magazine set off by a hit or a fire. Going down, it stops,
+/// its guns fall silent and it leaves its group; it goes under a while later (by how it went), seen to go by those who
+/// have it in sight, and is dropped from the world as a command would. Draws come from the stream "damage", one per hit
+/// and per ship's step. World state: replays, hashes. Registered fifth, so its id is always <see cref="Id"/>.</summary>
 public sealed class DamageSystem : IWorldSystem
 {
     public const byte Id = 5;
-    const ushort LossEvent = 1;
+    const ushort LossEvent = 1, StepEvent = 2;
 
     readonly SimSettings settings;
     readonly ShipSystem ships;
@@ -39,14 +43,17 @@ public sealed class DamageSystem : IWorldSystem
     readonly RandomStream stream;
     readonly HitPath path = new();
     readonly Dictionary<ShipClass, double[]> qualities = [];
+    readonly Dictionary<ShipClass, FloodModel> floods = [];
     readonly double[] propellant = new double[256];
     double[] bearings = new double[16];
     long hits;
     bool propellantSet, touched;
 
-    internal DamageSystem(SimSettings settings, ShipSystem ships, CombatLog log, ulong seed)
+    readonly Sightings sightings;
+
+    internal DamageSystem(SimSettings settings, ShipSystem ships, CombatLog log, Sightings sightings, ulong seed)
     {
-        (this.settings, this.ships, this.log) = (settings, ships, log);
+        (this.settings, this.ships, this.log, this.sightings) = (settings, ships, log, sightings);
         stream = RandomStream.Named(seed, "damage");
         Array.Fill(propellant, 1.0);
     }
@@ -77,6 +84,11 @@ public sealed class DamageSystem : IWorldSystem
     public static Command Wreck(int entity, int node, PartState state = PartState.Disabled) =>
         new(Id, (ushort)DamageCommand.Wreck, entity, A: node, B: (int)state);
 
+    /// <summary>The dev's hole (and the tests' and benches'): a hole of an area to the sea in a ship's cell, at a side
+    /// (y) and height (z) in the ship's frame, as a hit would leave it; its flooding steps begin.</summary>
+    public static Command Breach(int entity, int cell, double areaM2, double y, double z) =>
+        new(Id, (ushort)DamageCommand.Breach, entity, A: cell, X: areaM2, B: (int)Math.Round(y * 1000), Y: z);
+
     public void Apply(World world, in Command c)
     {
         switch ((DamageCommand)c.Code)
@@ -103,15 +115,36 @@ public sealed class DamageSystem : IWorldSystem
                 }
                 touched = true;
                 break;
+            case DamageCommand.Breach:
+                slot = ships.Store.SlotOf(c.Entity);
+                if (slot < 0)
+                    return;
+                k = ships.Store.Combat.Condition(slot);
+                if (c.A < 0 || c.A >= k.BreachM2.Length || !(c.X > 0))
+                    throw new ArgumentException($"no hole of {c.X} m² in cell {c.A} of ship {c.Entity}");
+                k.Damaged = touched = true;
+                k.Hole((int)c.A, c.X, new P3(0, c.B / 1000.0, c.Y));
+                if (k.Status == ShipStatus.Afloat)
+                    Wake(world, slot, k);
+                break;
         }
     }
 
-    /// <summary>A class's materials' qualities and the tracer's room for it, made the first time it's in the world (not
-    /// at its first hit).</summary>
+    /// <summary>A class's flooding model (its cells as water sees them), made when it's first in the world.</summary>
+    public FloodModel Flood(ShipClass cls)
+    {
+        if (!floods.TryGetValue(cls, out var f))
+            floods[cls] = f = new FloodModel(cls);
+        return f;
+    }
+
+    /// <summary>A class's materials' qualities, its flooding model and the tracer's room for it, made the first time it's
+    /// in the world (not at its first hit).</summary>
     internal void Prepare(ShipClass cls)
     {
         if (!qualities.ContainsKey(cls))
             qualities[cls] = Terminal.Qualities(cls, settings);
+        Flood(cls);
         path.Reserve(cls.Solids.Solids.Length);
         if (bearings.Length < cls.Mounts.Length)
             bearings = new double[Math.Max(cls.Mounts.Length, bearings.Length * 2)];
@@ -132,6 +165,7 @@ public sealed class DamageSystem : IWorldSystem
         long now = world.Time.Ms;
         k.Damaged = touched = true;
         k.Hits++;
+        (k.LastShooter, k.LastBattery) = (hit.Shooter, hit.Battery);
 
         // its own path: from just outside the point along the flight, through the whole ship
         Prepare(cls);
@@ -164,16 +198,16 @@ public sealed class DamageSystem : IWorldSystem
             fx |= HitEffect.Jammed;
         if (e.Changed && k.Status == ShipStatus.Afloat)
             fx |= Recompute(world, slot, k, ref rng);
-        if (e.Magazine && k.Status == ShipStatus.Afloat)
-        {
+        bool blew = e.Magazine && k.Status == ShipStatus.Afloat;
+        if (blew)
             fx |= HitEffect.Magazine;
-            Lose(world, slot, k);
-        }
         (LastTerminal, LastEffects, LastEffect) = (t, e, fx);
         log.Add(new CombatEntry(now, CombatEvent.Hit, hit.Shooter, hit.Battery, hit.Ship, hit.ShellType, e.Part, t.Outcome, fx, hit.Shell.Kind,
             (float)hit.Shell.CalibreMm));
-        if (e.Magazine && fx.HasFlag(HitEffect.Magazine))
-            log.Add(new CombatEntry(now, CombatEvent.Lost, hit.Shooter, hit.Battery, hit.Ship, 0));
+        if (blew)
+            Lose(world, slot, k, LossKind.Magazine);
+        else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || e.Fire))
+            Wake(world, slot, k);   // water or fire: its steps begin (or come sooner)
     }
 
     /// <summary>What the ship can still do, worked out again; the steering lost at the gear or the rudders jams or
@@ -195,32 +229,166 @@ public sealed class DamageSystem : IWorldSystem
         if (k.PowerCap < cap)
             fx |= HitEffect.Power;
         if (fx != HitEffect.None)
-            ships.Damaged(world, slot, k.PowerCap, k.Steering, k.JamRudderRad);
+            Hold(world, slot, k, force: true);
         return fx;
     }
 
-    /// <summary>The ship lost at once (v0, a magazine): it stops, its guns are silent, and it goes under later.</summary>
-    void Lose(World world, int slot, ShipCondition k)
+    /// <summary>The store holds the ship to the power it can make, less what its water's weight costs (the power a
+    /// speed needs goes as the displacement to the two-thirds); a change under 1% is let be, but for a hit's.</summary>
+    void Hold(World world, int slot, ShipCondition k, bool force)
+    {
+        double d = Flood(k.Class).DisplacementT, cap = k.PowerCap * Math.Pow(d / (d + k.WaterT), 2.0 / 3);
+        if (!force && Math.Abs(cap - k.HeldCap) < 0.01)
+            return;
+        k.HeldCap = cap;
+        ships.Damaged(world, slot, cap, k.Steering, k.JamRudderRad);
+    }
+
+    /// <summary>The ship going down (its magazine, foundered, capsized): it stops, its guns are silent, it leaves its
+    /// group, and it goes under a while later; the log's line says how.</summary>
+    void Lose(World world, int slot, ShipCondition k, LossKind how)
     {
         var store = ships.Store;
         int entity = store[slot].Entity;
-        k.Status = ShipStatus.GoingDown;
+        (k.Status, k.Loss) = (ShipStatus.GoingDown, how);
         k.PowerCap = 0;
+        k.NextStepMs = -1;
+        k.StepGen++;   // no more steps: its water and attitude stay as they were
         Array.Fill(k.MountWorks, false);
         Array.Fill(k.DirectorWorks, false);
         k.Version++;
+        k.HeldCap = 0;
         ships.Damaged(world, slot, 0, k.Steering == Steering.Free ? Steering.Lost : k.Steering, k.JamRudderRad);
         world.Issue(GunnerySystem.Cease(entity));
-        world.Schedule(new WorldTime(world.Time.Ms + settings.MagazineLossMs), EventTier.Fine, entity, Id, LossEvent, store[slot].Generation);
+        world.Issue(GroupSystem.Remove(entity));
+        log.Add(new CombatEntry(world.Time.Ms, CombatEvent.Lost, k.LastShooter, k.LastBattery, entity, (int)how));
+        int ms = how switch
+        {
+            LossKind.Magazine => settings.MagazineLossMs,
+            LossKind.Capsized => settings.CapsizeMs,
+            _ => settings.FounderMs,
+        };
+        world.Schedule(new WorldTime(world.Time.Ms + ms), EventTier.Fine, entity, Id, LossEvent, store[slot].Generation);
+    }
+
+    // ------------------------------------------------------------------ fire and flooding
+
+    /// <summary>A ship's steps begin, or come sooner: at the next <see cref="SimSettings.FloodMs"/> of world time.</summary>
+    void Wake(World world, int slot, ShipCondition k)
+    {
+        long now = world.Time.Ms, next = (now / settings.FloodMs + 1) * settings.FloodMs;
+        if (k.NextStepMs >= 0 && k.NextStepMs <= next)
+            return;
+        bool starting = k.NextStepMs < 0;
+        if (starting)
+            k.StepMs = now;   // still since then
+        k.NextStepMs = next;
+        k.StepGen++;
+        if (starting)
+            Hold(world, slot, k, force: true);   // off rails: its steps change it (ShipSystem.Tiers.cs)
+        world.Schedule(new WorldTime(next), EventTier.Fine, ships.Store[slot].Entity, Id, StepEvent, ships.Store[slot].Generation, k.StepGen);
+    }
+
+    /// <summary>One step of a ship's flooding and fire, from its last to now: the water, the attitude it settles to and
+    /// whether that loses it, the fires; what it can do worked out again if a room flooded or burned out; its power held
+    /// to its added weight. The time to its next step, ms, or -1 when it's dry, holed nowhere under the sea and not
+    /// burning (or going down).</summary>
+    long Step(World world, int slot, ShipCondition k, long now)
+    {
+        var cls = k.Class;
+        var f = Flood(cls);
+        double dt = (now - k.StepMs) / 1000.0, was = k.WaterT;
+        k.StepMs = now;
+        if (dt <= 0)
+            return settings.FloodMs;
+        var fl = Flooding.Step(cls, f, k, dt, k.PowerCap, settings);
+        var how = Flooding.Settle(cls, f, k, settings, dt);
+        var rng = stream.Derive(0xF100Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
+        var fs = k.Fires > 0 ? Fires.Step(cls, f, k, dt, settings, propellant[ships.Store[slot].Side], ref rng) : default;
+        touched = true;
+        if (fs.Magazine)
+            how = LossKind.Magazine;
+        if (how != LossKind.None)
+        {
+            Lose(world, slot, k, how);
+            return -1;
+        }
+        if (fl.RoomsFlooded || fs.Changed)
+            Recompute(world, slot, k, ref rng);
+        Hold(world, slot, k, force: false);
+        if (k.Fires > 0 || Math.Abs(k.WaterT - was) >= settings.FloodIdleT)
+            return settings.FloodMs;
+        return k.WaterT > 0 || Holed(cls, k) ? settings.FloodIdleMs : -1;
+    }
+
+    /// <summary>Whether any hole is under the sea now.</summary>
+    static bool Holed(ShipClass c, ShipCondition k)
+    {
+        var water = HitQuery.WaterOf(c, k.Attitude);
+        var cells = c.Cells;
+        for (int i = 0; i < cells.Length; i++)
+            if (k.BreachM2[i] > 0 && k.BreachZ[i] < water.At((cells[i].Box.X0 + cells[i].Box.X1) / 2, k.BreachY[i]))
+                return true;
+        return false;
+    }
+
+    /// <summary>A tool's (the hits bench's, the tests'): a ship's flooding and fire run on for a while from now, in steps
+    /// as the world would take them, without the world's clock moving. The ship's status after.</summary>
+    public ShipStatus Settle(World world, int entity, double seconds)
+    {
+        int slot = ships.Store.SlotOf(entity);
+        if (slot < 0)
+            return ShipStatus.GoingDown;
+        var k = ships.Store.Combat.Condition(slot);
+        long t = world.Time.Ms, end = t + (long)(seconds * 1000);
+        if (k.NextStepMs < 0 && k.Status == ShipStatus.Afloat)
+            k.StepMs = t;
+        k.StepGen++;   // the world's own steps for it are cancelled: these take their place
+        k.NextStepMs = -1;
+        long next = (t / settings.FloodMs + 1) * settings.FloodMs;
+        while (k.Status == ShipStatus.Afloat && next <= end)
+        {
+            long d = Step(world, slot, k, next);
+            if (d < 0)
+                break;
+            next = (next / d + 1) * d;
+        }
+        return k.Status;
     }
 
     public void Handle(World world, in SimEvent e)
     {
-        if (e.Code != LossEvent)
-            return;
         int slot = ships.Store.SlotOf(e.Entity);
-        if (slot >= 0 && ships.Store[slot].Generation == e.Generation)
+        if (slot < 0 || ships.Store[slot].Generation != e.Generation)
+            return;
+        if (e.Code == LossEvent)
+        {
+            Gone(e.Entity);
             world.Issue(ShipSystem.Drop(e.Entity));
+            return;
+        }
+        var k = ships.Store.Combat.Condition(slot);
+        if (e.A != k.StepGen || k.Status != ShipStatus.Afloat)
+            return;
+        long now = world.Time.Ms, d = Step(world, slot, k, now);
+        if (d < 0 || k.Status != ShipStatus.Afloat)
+        {
+            k.NextStepMs = -1;
+            return;
+        }
+        k.NextStepMs = (now / d + 1) * d;
+        world.Schedule(new WorldTime(k.NextStepMs), EventTier.Fine, e.Entity, Id, StepEvent, e.Generation, k.StepGen);
+    }
+
+    /// <summary>A ship gone under: every navy that has it in sight saw it go (its contact says so until it's forgotten).</summary>
+    void Gone(int entity)
+    {
+        foreach (var pic in sightings.All)
+        {
+            int i = pic.IndexOf(entity);
+            if (i >= 0 && pic[i].InSight)
+                pic.At(i).Seen |= SeenFlags.Gone;
+        }
     }
 
     // ------------------------------------------------------------------ the rest
@@ -264,6 +432,7 @@ public sealed class DamageSystem : IWorldSystem
                 (v.Entity[n], v.Hits[n], v.PowerCap[n], v.Steering[n], v.Status[n]) = (store[slot].Entity, k.Hits, k.PowerCap, k.Steering, k.Status);
                 (v.MountsWorking[n], v.Mounts[n], v.DirectorsWorking[n], v.Directors[n]) = (k.MountsWorking, k.MountWorks.Length, directors, k.DirectorWorks.Length);
                 (v.CrewLost[n], v.Fires[n], v.BreachM2[n], v.Conned[n]) = (k.CrewLost, k.Fires, k.BreachTotalM2, k.Conned);
+                (v.WaterT[n], v.ReserveT[n], v.Attitude[n], v.Loss[n]) = (k.WaterT, Flood(k.Class).ReserveT - k.WaterT, k.Attitude, k.Loss);
                 n++;
             }
         v.Count = n;

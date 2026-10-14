@@ -15,7 +15,7 @@ static class HitsBench
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-    public record Options(string? Shooter, int Battery, string? Kind, double RangeM, double AspectDeg, int N, int PerShip, int Seed, int Trace);
+    public record Options(string? Shooter, int Battery, string? Kind, double RangeM, double AspectDeg, int N, int PerShip, int Seed, int Trace, double SettleMin);
 
     public static int Run(string target, Func<string, Design> load, string settingsPath, Options o)
     {
@@ -55,7 +55,7 @@ static class HitsBench
                 "crew {9:0.0}, holes {10:0.000} m²{11}{12}{13}", i, t.Outcome, t.Burst, t.BurstT, t.Force, t.StopT, Node(tc, e.Part), e.Destroyed + e.Disabled,
                 e.Damaged, e.CrewLost, e.BreachM2, e.Fire ? ", fire" : "", e.Jammed ? ", jammed" : "", e.Magazine ? ", MAGAZINE" : ""));
             Console.Write(path.Text(tc));
-        });
+        }, o.SettleMin * 60);
         double secs = sw.Elapsed.TotalSeconds;
 
         Console.WriteLine(string.Format(Inv, "{0} on {1}: {2} ({3:0.#} kg, filler {4:0.##} kg, {5} {6}) at {7:0} m ({8:0.0} kyd) from {9:0}° off the bow",
@@ -78,6 +78,9 @@ static class HitsBench
             100 * r.SpeedShare / r.Ships, r.MainWorking / r.Ships, r.MainMounts / r.Ships, r.DirectorsWorking / r.Ships, r.Directors / r.Ships,
             100.0 * r.Crippled / r.Ships, 100 * GivenHits.SlowShare, 100.0 * r.Slowed / r.Ships, 100.0 * r.SteeringLost / r.Ships,
             100.0 * r.MainSilenced / r.Ships, 100.0 * r.Lost / r.Ships));
+        Console.WriteLine(string.Format(Inv, "  then {0:0} min of flooding and fire: water {1:0} t a ship; lost to the magazine {2:0.#}%, foundered {3:0.#}%, capsized {4:0.#}%",
+            o.SettleMin, r.WaterT / r.Ships, 100.0 * r.LostBy[(int)LossKind.Magazine] / r.Ships, 100.0 * r.LostBy[(int)LossKind.Foundered] / r.Ships,
+            100.0 * r.LostBy[(int)LossKind.Capsized] / r.Ships));
         return 0;
     }
 

@@ -14,7 +14,8 @@ public enum CombatEvent : byte
     Hit,
     /// <summary>A salvo's fall straddled its target (Count shells), as it truly fell.</summary>
     Straddle,
-    /// <summary>A ship (Target) lost: its magazine blew up (fighting.md 4.3a; foundering and capsizing come in 4.3b).</summary>
+    /// <summary>A ship (Target) going down: Count says how (a <see cref="LossKind"/>: its magazine, foundered, capsized);
+    /// Shooter and Battery hit it last.</summary>
     Lost,
 }
 

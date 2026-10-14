@@ -24,7 +24,7 @@ public struct EffectsResult
 /// people in its lane when it didn't burst;</item>
 /// <item><b>holes:</b> the hull's plating crossed near or under the waterline lets the sea into the cell behind it (a
 /// contact burst's hole, else the shell's own), and a heavy shell defeated by a belt at the waterline may open its
-/// seams; recorded now, water comes in through them from 4.3b;</item>
+/// seams: water comes in through them (<see cref="Flooding"/>);</item>
 /// <item><b>the burst:</b> parts within the wreck radius (cube-root scaled) wrecked or put out of action by distance,
 /// and the unarmoured ones in the blast's ring damaged, unless armour stronger than its fragments there boxes them; the
 /// space it bursts in and those beyond bulkheads its fragments get through; the crew within the radii;</item>
@@ -67,7 +67,7 @@ public static class Effects
                     break;
                 case CrossingKind.CellIn:
                     cell = x.Index;
-                    foreach (int room in Rooms(c, x.Index))
+                    foreach (int room in c.RoomsIn(x.Index))
                         if (r.NextDouble() < Vital(c, room, s))
                             Count(ref res, k, c.RoomNode(room), k.Worsen(c.RoomNode(room), PartState.Damaged) ? PartState.Damaged : PartState.Ok);
                     if (res.Part < 0 && c.Cells[x.Index].Room >= 0)
@@ -102,7 +102,7 @@ public static class Effects
                 continue;
             double hole = contact ? s.HoleRadiusK * size * Math.Sqrt(6 / Math.Max(x.Mm, 1)) : 0.5 * s.ShellHoleCalibres * calM;
             double a = Math.PI * hole * hole;
-            k.BreachM2[behind] += a;
+            k.Hole(behind, a, x.Point);
             res.BreachM2 += a;
         }
 
@@ -133,7 +133,7 @@ public static class Effects
                 int behind = CellAt(xs, t.Plate, inward: true);
                 if (behind >= 0)
                 {
-                    k.BreachM2[behind] += s.SeamLeakM2;
+                    k.Hole(behind, s.SeamLeakM2, x.Point);
                     res.BreachM2 += s.SeamLeakM2;
                 }
             }
@@ -213,7 +213,7 @@ public static class Effects
         // the space it burst in, and those its fragments get into through the bulkheads and decks
         if (inHull && t.Burst != BurstKind.Outside)
         {
-            foreach (int room in Rooms(c, cell))
+            foreach (int room in c.RoomsIn(cell))
             {
                 ref readonly var rr = ref c.Rooms[room];
                 int node = c.RoomNode(room);
@@ -240,7 +240,7 @@ public static class Effects
                     continue;
                 if (n.Join != JoinKind.Open)
                     k.CellOpened[cell] = k.CellOpened[n.Cell] = true;
-                foreach (int room in Rooms(c, n.Cell))
+                foreach (int room in c.RoomsIn(n.Cell))
                 {
                     if (r.NextDouble() >= s.NeighbourShare * RoomChance(c, room, rw, force, s))
                         continue;
@@ -323,41 +323,6 @@ public static class Effects
             case PartState.Damaged:
                 res.Damaged++;
                 break;
-        }
-    }
-
-    /// <summary>The rooms in a cell: its own and those sharing it.</summary>
-    static RoomsInCell Rooms(ShipClass c, int cell) => new(c, cell);
-
-    readonly ref struct RoomsInCell(ShipClass c, int cell)
-    {
-        public Enumerator GetEnumerator() => new(c, cell);
-
-        public ref struct Enumerator(ShipClass c, int cell)
-        {
-            int i = -2;
-            public int Current { get; private set; }
-
-            public bool MoveNext()
-            {
-                ref readonly var row = ref c.Cells[cell];
-                var also = c.Links(row.Also);
-                while (true)
-                {
-                    i++;
-                    if (i == -1)
-                    {
-                        if (row.Room < 0)
-                            continue;
-                        Current = row.Room;
-                        return true;
-                    }
-                    if (i >= also.Length)
-                        return false;
-                    Current = also[i];
-                    return true;
-                }
-            }
         }
     }
 

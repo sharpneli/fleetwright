@@ -323,8 +323,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 Remove(i--);   // the ship is gone
                 continue;
             }
-            if (!IsActive(cap))
-                continue;
+            if (!IsActive(cap) || ctx.Ships.Combat.Condition(slot).Status != ShipStatus.Afloat)
+                continue;   // nothing to do, or his ship going down
             var own = ctx.Ships[slot];
             if (cap.Watch)
             {

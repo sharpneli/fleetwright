@@ -146,7 +146,8 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- scenario Content/
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- duel super_dreadnought [lion] [--range 14630] [--level 3] [--runs 20] [--minutes 15] [--trace] [--damage]   # fire control's bench: one battery on a ship, run after run; hit and straddle %, time to first hit, cost a battery-second (hits do nothing unless --damage)
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- ballistics dreadnought [--research]   # each battery's range table (range, elevation, time of flight, fall, striking velocity); the research's 16"/50 beside its sourced figures
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- weapons dreadnought [--research]   # weapon facts: batteries, fire-control level, guns' working numbers, shells, plating (placeholders beside the research's guns)
-dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- hits v25 --shooter lion --battery 1 --range 6000 [--kind he] [--n 2000] [--per-ship 10] [--show 3]   # the damage model alone: hits spread over a design as falling shells see it, through the damage system; outcomes, parts lost, ships' state after K hits
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- hits v25 --shooter lion --battery 1 --range 6000 [--kind he] [--n 2000] [--per-ship 10] [--show 3] [--settle 30]   # the damage model alone: hits spread over a design as falling shells see it, through the damage system; outcomes, parts lost, ships' state after K hits and MIN minutes of flooding and fire
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- flood destroyer [--hole mid:-1:0.5,bow:-1:2:p] [--rooms boiler_room:2] [--minutes 120] [--every 600] [--step 1000] [--cells]   # the flooding model alone: reserve buoyancy, TPC, GM; holes or flooded spaces, then water, sinkage, trim, heel, GM until it goes down
 ```
 
 `mono-check` (about 15 s) lists where adding weight gave a lighter ship (reversals) or one step jumped far more than its
@@ -260,7 +261,9 @@ src/
                               #   chain's pure models: reading errors, dispersion, laying a gun with its ship's motion, the
                               #   spotting ladder), Condition (Hit, each ship's ShipCondition), Terminal (penetration, the
                               #   fuze, the outcome), Effects (what a hit wrecks, holes, fire, crew), Functions (what the
-                              #   ship can still do, from the class's function table)
+                              #   ship can still do, from the class's function table), Flooding (FloodModel: the cells as
+                              #   water sees them; the sea in, across the cell graph, pumps, settling, founder and
+                              #   capsize), Fires (burning, spreading, put out, cooking off magazines)
   Fleetwright.Sim.Ai/         # the AI above the world: AiSystem (layers of command, top-down, each at its rate),
                               #   Knowledge/ (IPicture: the navy's picture; SeenContacts: its contacts in sight, gridded),
                               #   Captains/ (CaptainLayer, Behaviours: keep course, follow, run, station, fight;
@@ -271,8 +274,8 @@ src/
                               #   (groups: members, guide first, formation, spacing), ShellSystem (shells in flight: two events
                               #   each, the danger window through the hit query; splashes), GunnerySystem (engaged batteries:
                               #   measure, track, solve, lay and fire, spot; docs/battle/fighting.md 4.2b), CombatLog (who
-                              #   fired, what hit), DamageSystem (hits in: terminal, effects, functions; docs/battle/fighting.md
-                              #   4.3a), GivenHits (the hits bench), ShipIndex (every ship on a CubeIndex, built when asked), SimHost (the sim
+                              #   fired, what hit), DamageSystem (hits in: terminal, effects, functions; each wet or burning
+                              #   ship's flooding and fire steps; going down; docs/battle/fighting.md 4.3a, 4.3b), GivenHits (the hits bench), ShipIndex (every ship on a CubeIndex, built when asked), SimHost (the sim
                               #   thread), TripleBuffer; no GPU or UI, runs headless
 tests/
   Fleetwright.Tests/          # xUnit for the game exe: the hitbox mesh over every design, the map camera's maths

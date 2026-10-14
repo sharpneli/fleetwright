@@ -694,6 +694,72 @@ public sealed record SimSettings
     /// that circles); else it trails amidships, the helm gone.</summary>
     public double RudderJamChance { get; init; } = 0.5;
 
+    // ------------------------------------------------------------------ fire, flooding, going down (fighting.md 4.3b)
+    // damage-model-research.md §3.5, §3.6, §8.4, §8.5, §11: v0, deliberately simple (Flooding, Fires)
+
+    /// <summary>A wet or burning ship's flooding and fire step, ms, on a grid of world time; once its water has settled
+    /// (it changed by under <see cref="FloodIdleT"/> in a step) and nothing burns, every <see cref="FloodIdleMs"/>.</summary>
+    public int FloodMs { get; init; } = 1000;
+    public int FloodIdleMs { get; init; } = 30_000;
+    public double FloodIdleT { get; init; } = 0.05;
+
+    /// <summary>The discharge coefficient of every opening water comes through (Cd·A·√(2g·head)).</summary>
+    public double FloodCd { get; init; } = 0.6;
+
+    /// <summary>The openings between neighbouring cells, m²: within a room (open), through an intact bulkhead or deck
+    /// (glands, pipes, doors: the leaks), through one a burst tore, and through a deck under the sea outside (the Lützow
+    /// rule: the spaces over it are no longer tight). A cell open to the weather takes the sea through this share of its
+    /// deck once the deck is under (hatches, vents, skylights).</summary>
+    public double FloodOpenM2 { get; init; } = 1;
+    public double FloodLeakBulkheadM2 { get; init; } = 0.0005;
+    public double FloodLeakDeckM2 { get; init; } = 0.0005;
+    public double FloodTornM2 { get; init; } = 0.05;
+    public double FloodSunkDeckM2 { get; init; } = 0.3;
+    public double FloodWeatherShare { get; init; } = 0.01;
+
+    /// <summary>A room is out of action once its cells hold this share of their capacity (machinery stops, a magazine
+    /// can't serve its guns).</summary>
+    public double RoomFloodedShare { get; init; } = 0.5;
+
+    /// <summary>The pumps, tonnes an hour for each 1,000 t of displacement, at full power: they clear the cells with no
+    /// hole of their own (the leaks, not the holes). Counter-flooding is fighting.md 4.5's.</summary>
+    public double PumpTPerHourPer1000T { get; init; } = 50;
+
+    /// <summary>A cell's free surface counts in full once its water is this share from dry and from full, less nearer
+    /// either (the water can't run across as the ship heels).</summary>
+    public double FreeSurfacePocket { get; init; } = 0.1;
+
+    /// <summary>The heel comes on toward what the water gives with this time constant, s (a ship lolls over its rolls,
+    /// not at once).</summary>
+    public double HeelLagS { get; init; } = 30;
+
+    /// <summary>A ship capsizes past this heel, degrees (damage-model-research.md §8.4: 20-30°).</summary>
+    public double CapsizeHeelDeg { get; init; } = 25;
+
+    /// <summary>How long a ship takes to go under once it founders or capsizes, ms (a magazine:
+    /// <see cref="MagazineLossMs"/>).</summary>
+    public int FounderMs { get; init; } = 600_000;
+    public int CapsizeMs { get; init; } = 180_000;
+
+    /// <summary>Fire, chances a minute: a burning space or part damaged (each room in it once more), a burning space
+    /// spreading to each neighbour, put out by its crew (times the share of the crew left); a magazine in a burning space,
+    /// or next to one, set off (times the side's propellant). A fire costs this many crew a minute; a space this share
+    /// flooded doesn't burn.</summary>
+    public double FireHarmPerMin { get; init; } = 0.2;
+    public double FireSpreadPerMin { get; init; } = 0.02;
+    public double FireOutPerMin { get; init; } = 0.15;
+    public double FireMagazineInPerMin { get; init; } = 0.05;
+    public double FireMagazineNextPerMin { get; init; } = 0.01;
+    public double FireCrewPerMin { get; init; } = 0.3;
+    public double FireDrownShare { get; init; } = 0.5;
+
+    /// <summary>What an observer makes out of a ship (a contact's <c>Seen</c>): low in the water (settled by this share of
+    /// its freeboard), a list, a trim (degrees), stopped (knots).</summary>
+    public double SeenLowShare { get; init; } = 0.3;
+    public double SeenListDeg { get; init; } = 3;
+    public double SeenTrimDeg { get; init; } = 1;
+    public double SeenStoppedKn { get; init; } = 1;
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its

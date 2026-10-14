@@ -116,6 +116,9 @@ public sealed class ShipClass
     public int NodeCount => components.Length + rooms.Length;
     public int RoomNode(int room) => components.Length + room;
 
+    /// <summary>The rooms in a cell: its own and those sharing it (allocates nothing).</summary>
+    public RoomsInCell RoomsIn(int cell) => new(this, cell);
+
     /// <summary>The mount a component is, or stands on (a barbette); -1 for none.</summary>
     public int MountOf(int component) => mountOfComponent[component];
 
@@ -196,4 +199,37 @@ public sealed class ShipClass
     public const double PowerStepKn = 0.5;
 
     public override string ToString() => $"{Name} ({DesignHash.Short})";
+}
+
+/// <summary>The rooms in a cell (<see cref="ShipClass.RoomsIn"/>): its own room, then those sharing it.</summary>
+public readonly ref struct RoomsInCell(ShipClass c, int cell)
+{
+    public Enumerator GetEnumerator() => new(c, cell);
+
+    public ref struct Enumerator(ShipClass c, int cell)
+    {
+        int i = -2;
+        public int Current { get; private set; }
+
+        public bool MoveNext()
+        {
+            ref readonly var row = ref c.Cells[cell];
+            while (true)
+            {
+                i++;
+                if (i == -1)
+                {
+                    if (row.Room < 0)
+                        continue;
+                    Current = row.Room;
+                    return true;
+                }
+                var also = c.Links(row.Also);
+                if (i >= also.Length)
+                    return false;
+                Current = also[i];
+                return true;
+            }
+        }
+    }
 }

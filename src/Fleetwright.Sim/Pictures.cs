@@ -24,10 +24,29 @@ public enum ShipType : byte
     Merchant,
 }
 
+/// <summary>What an observer makes out of a ship's condition (docs/battle/fighting.md 4.3b: the enemy sees only what can
+/// be seen): low in the water, a list, trimmed by the bow or the stern, fires, stopped, its guns silent, going under; and
+/// seen to go. Whether it's done for is the observer's judgement.</summary>
+[Flags]
+public enum SeenFlags : ushort
+{
+    None = 0,
+    Low = 1,
+    Listing = 2,
+    ByBow = 4,
+    ByStern = 8,
+    Burning = 16,
+    Stopped = 32,
+    Silent = 64,
+    GoingDown = 128,
+    Gone = 256,
+}
+
 /// <summary>A ship as a navy holds it (docs/world/architecture.md "Knowledge"; docs/battle/plan.md step 3.2d): keyed on
 /// the true ship (agreed 2026-10-13: no false merges or splits in the battle module); first and last seen, and whether it
 /// was in sight at the last look; the estimate (position and velocity at <see cref="EstMs"/>, with its covariance); how far
-/// it's been made out and what it's taken for (perhaps wrongly); and the last report's source.</summary>
+/// it's been made out and what it's taken for (perhaps wrongly); the last report's source; and what was made out of its
+/// condition at the last sighting (<see cref="Seen"/>).</summary>
 public struct Contact
 {
     public int Entity;
@@ -48,6 +67,9 @@ public struct Contact
 
     /// <summary>The ship's side (a navy knows it once it's made out the type: its colours, its build).</summary>
     public byte Side;
+
+    /// <summary>What was made out of its condition when last seen, and whether it was seen to go.</summary>
+    public SeenFlags Seen;
 }
 
 /// <summary>One navy's picture: its contacts, in slots, by entity through an index. World state: deterministic, saved
@@ -130,7 +152,7 @@ public sealed class Picture
             h.Add(c.P.Ee);
             h.Add(c.P.Nn);
             h.Add(c.P.VeVe);
-            h.Add((int)c.Level);
+            h.Add((int)c.Level | (int)c.Seen << 8);
             h.Add(c.TakenFor);
         }
     }

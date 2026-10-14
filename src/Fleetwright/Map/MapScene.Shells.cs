@@ -190,9 +190,9 @@ public sealed partial class MapScene
         DamageRow(s, k, cls);
     }
 
-    /// <summary>The selected ship's condition, if it's been hit (docs/battle/fighting.md 4.3a; the full damage report is
-    /// 4.4's): power and the speed it makes, mounts and directors working, steering, crew lost, fires and holes; and its
-    /// newest hits, cause to effect.</summary>
+    /// <summary>The selected ship's condition, if it's been hit (docs/battle/fighting.md 4.3a, 4.3b; the full damage report
+    /// is 4.4's): power and the speed it makes, mounts and directors working, steering, crew lost, fires and holes; the
+    /// water aboard and the reserve buoyancy left, its list and trim; and its newest hits, cause to effect.</summary>
     void DamageRow(Snapshot s, int k, ShipClass cls)
     {
         var c = s.Conditions;
@@ -208,7 +208,13 @@ public sealed partial class MapScene
         };
         ImGui.Text(string.Format(CultureInfo.InvariantCulture, "Damage: {0} hits; power {1:0}% ({2:0.0} of {3:0.0} kn); mounts {4} of {5}; directors {6} of {7}{8}; " +
             "crew lost {9:0}; fires {10}; holes {11:0.00} m²{12}", c.Hits[i], 100 * c.PowerCap[i], kn, top, c.MountsWorking[i], c.Mounts[i], c.DirectorsWorking[i],
-            c.Directors[i], steer, c.CrewLost[i], c.Fires[i], c.BreachM2[i], c.Status[i] == ShipStatus.GoingDown ? "; GOING DOWN" : ""));
+            c.Directors[i], steer, c.CrewLost[i], c.Fires[i], c.BreachM2[i], c.Status[i] == ShipStatus.GoingDown ? $"; GOING DOWN ({c.Loss[i]})" : ""));
+        if (c.WaterT[i] > 0)
+        {
+            var a = c.Attitude[i];
+            ImGui.Text(string.Format(CultureInfo.InvariantCulture, "Water: {0:0} t aboard, reserve buoyancy {1:0} t left; settled {2:0.00} m, list {3:0.0}° to {4}, trim {5:0.00}° by the {6}",
+                c.WaterT[i], c.ReserveT[i], a.SinkageM, Math.Abs(a.HeelDeg), a.HeelDeg >= 0 ? "starboard" : "port", Math.Abs(a.TrimDeg), a.TrimDeg >= 0 ? "bow" : "stern"));
+        }
         var log = s.CombatLog;
         for (int j = 0, shown = 0; j < log.Count && shown < 3; j++)
         {
