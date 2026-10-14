@@ -16,6 +16,7 @@ public enum ShipCommand : ushort
     AddWaypoint,
     LoopRoute,
     Clearance,
+    LookNow,
 }
 
 /// <summary>The world's ships (docs/battle/plan.md step 2.2), in their clock tiers (ShipSystem.Tiers.cs): on the fine
@@ -126,6 +127,12 @@ public sealed partial class ShipSystem : IWorldSystem
 
     public static Command Drop(int entity) => new(Id, (ushort)ShipCommand.Drop, entity);
 
+    /// <summary>Look round now, as if the ships had been where they are a while (a dev spawn's, after its ships): opposing
+    /// ships in range come off rails, encounters open, and every navy looks once over
+    /// <see cref="SimSettings.SightLookNowS"/>, so what's there to see is seen at once, paused or not. A command, so a
+    /// replay looks at the same moment; a batch of spawns sends one, never one a ship.</summary>
+    public static Command LookNow() => new(Id, (ushort)ShipCommand.LookNow, 0);
+
     /// <summary>Steer a course, degrees; the rudder no more than given (degrees; 0 for the standard rudder).</summary>
     public static Command Course(int entity, double headingDeg, double rudderDeg = 0) =>
         new(Id, (ushort)ShipCommand.Course, entity, X: headingDeg, Y: rudderDeg);
@@ -174,6 +181,11 @@ public sealed partial class ShipSystem : IWorldSystem
                 ToCoarse(world, made);
             else
                 EnsureTick(world);
+            return;
+        }
+        if (code == ShipCommand.LookNow)
+        {
+            LookNow(world);
             return;
         }
         int slot = Store.SlotOf(c.Entity);
@@ -226,6 +238,16 @@ public sealed partial class ShipSystem : IWorldSystem
             Snap(world, slot);
         else if (Store.TierOf(slot) == ClockTier.Coarse && TakesOffRails(code))
             Recoarsen(world, slot);
+    }
+
+    /// <summary>What the tick's checks do every few seconds, done now: contacts, encounters, and a look.</summary>
+    void LookNow(World world)
+    {
+        if (settings.RailsEnabled)
+            FineContacts(world);
+        UpdateEncounters(world);
+        if (encounters.Count > 0)
+            sightings.Look(world, Store, used, settings.SightLookNowS);
     }
 
     // ------------------------------------------------------------------ the tick

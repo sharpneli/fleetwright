@@ -76,6 +76,31 @@ public class PictureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_look_now_sees_a_ship_spawned_in_sight_at_once()
+    {
+        // ship 1 steaming a while (on rails, if the tier puts it there), then an enemy spawned 15 km off: without the
+        // look nobody has seen anybody at that moment; with it, both sides have, the clock not moved
+        var w = new World(Day, 4, Settings);
+        int c = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+        w.Apply(Command.SetWeather(25_000));
+        w.Apply(ShipSystem.Spawn(c, 56, 4, 0, Kn, 1));
+        Run(w, 600);
+        var p = Ship(w, 1).Position;
+        var f = Earth.Forward(p, 90);
+        Earth.Advance(ref p, ref f, 15_000);
+        var (la, lo) = Earth.LatLon(p);
+        w.Apply(ShipSystem.Spawn(c, la, lo, 180, Kn, 2));
+        output.WriteLine($"ship 1 on rails: {w.Ships.Store.OnRails(w.Ships.Store.SlotOf(1))}");
+        Assert.True(w.Sightings.Of(1)?.IndexOf(2) is null or < 0);
+        var t = w.Time;
+        w.Apply(ShipSystem.LookNow());
+        Assert.Equal(t, w.Time);
+        Assert.True(w.Sightings.Of(1)?.IndexOf(2) >= 0, "side 1 sees the new ship");
+        Assert.True(w.Sightings.Of(2)?.IndexOf(1) >= 0, "and the new ship sees side 1");
+        Assert.Equal(1, w.Encounters.Count);
+    }
+
+    [Fact]
     public void Up_close_she_is_named_and_out_of_sight_dead_reckoned_and_forgotten()
     {
         var w = Closing(Day, 25_000);

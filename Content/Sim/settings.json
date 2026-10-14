@@ -96,6 +96,7 @@
   "SightSlitsMagnification": 1,
   "SightDirectorSearchFactor": 0.3,
   "SightingMs": 1000,
+  "SightLookNowS": 300,
   "SightObservers": 6,
   "SightEyes": 4,
   "SightGridM": 8000,

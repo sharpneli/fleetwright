@@ -14,7 +14,8 @@ namespace Fleetwright.Map;
 /// close in, icons further out), selected by a click, ordered from a strip (course, telegraph) or by right-clicking the
 /// sea (steer for it; with shift, add a waypoint). Routes, the selection and short tracks behind each ship are lines.
 /// A dev panel spawns ships where you click, one or a group already in formation, of the designer's design (the
-/// default) or a shipped one: the stand-in for missions placing forces. All of it
+/// default) or a shipped one: the stand-in for missions placing forces; pressed and dragged, they head the way of the
+/// drag, shown as they'd lie until the release places them. All of it
 /// reads the snapshot and changes the world only by commands.</summary>
 public sealed unsafe partial class MapScene
 {
@@ -36,6 +37,11 @@ public sealed unsafe partial class MapScene
     readonly DesignSession designer;
     int designPick = FromDesigner, placeClass = -1, placeVersion = -1;
     bool placing, keepPlacing;
+    // a placement being aimed: pressed on the sea while armed, heading the way the cursor has been dragged
+    bool placeDrag;
+    Vec3d placeAt;
+    double placeX, placeY, placeHeading;
+    const double ClickPx = 5;   // a press that moves less than this is a click
     // the side is the player's too: a change sets it, and a new world sets the field to its player's (MapScene.Scenario)
     int spawnCount = 1, spawnFormation, spawnSpacing = 600, spawnHeading, spawnKn = 10, spawnSide, maxSide = 3;
     int courseEdit;
@@ -64,7 +70,7 @@ public sealed unsafe partial class MapScene
 
     static readonly Vector4 TrackColor = new(0.85f, 0.9f, 1f, 0.35f), RouteColor = new(1f, 0.85f, 0.4f, 0.55f),
         RouteSelected = new(1f, 0.8f, 0.3f, 0.95f), SelectColor = new(1f, 0.78f, 0.25f, 0.95f), CourseColor = new(1f, 1f, 1f, 0.6f), TargetColor = new(1f, 0.78f, 0.25f, 0.45f),
-        LandRing = new(0.55f, 0.85f, 0.6f, 0.5f), SlideColor = new(0.55f, 1f, 0.6f, 0.95f);
+        LandRing = new(0.55f, 0.85f, 0.6f, 0.5f), SlideColor = new(0.55f, 1f, 0.6f, 0.95f), PlaceColor = new(0.6f, 0.9f, 1f, 0.85f);
 
     // ------------------------------------------------------------------ lines over the globe
 
@@ -192,6 +198,7 @@ public sealed unsafe partial class MapScene
             }
         }
         DrawGroups(view, s);
+        PlacePreview(view);
         TrackLines(view, s);   // last: the most lines and the least needed, so a full buffer drops them first
 
         // tracks of ships no longer there
@@ -367,20 +374,99 @@ public sealed unsafe partial class MapScene
 
     // ------------------------------------------------------------------ the mouse
 
-    /// <summary>A left click: places a ship if the dev panel is armed, else selects the ship under the cursor (or
-    /// none).</summary>
+    /// <summary>A left click: selects the ship under the cursor (or none). Armed to place, a press on the sea is a
+    /// placement (<see cref="BeginPlace"/>), and a click on land places nothing and selects nothing (the cursor line
+    /// says it's land).</summary>
     void Click(double x, double y)
     {
         var view = View;
-        if (placing && placeClass >= 0 && world.Classes.IsReady(placeClass) && view.Pick(x, y, out var at))
-        {
-            if (world.Shore.IsLand(at))
-                return;   // no ships on land (the cursor line says it's land)
-            Spawn(at);
-            placing = keepPlacing;
+        if (Armed && view.Pick(x, y, out var at) && world.Shore.IsLand(at))
             return;
-        }
         Pick(PickShip(view, x, y));
+    }
+
+    /// <summary>Whether a press on the sea places ships: the dev panel armed and its class built.</summary>
+    bool Armed => placing && placeClass >= 0 && world.Classes.IsReady(placeClass);
+
+    /// <summary>A left press: armed and on the sea, the placement's guide goes here and the drag aims it (true); else
+    /// false, and the press pans or clicks as ever.</summary>
+    bool BeginPlace(double x, double y)
+    {
+        if (!Armed || !View.Pick(x, y, out var at) || world.Shore.IsLand(at))
+            return false;
+        (placeDrag, placeAt, placeX, placeY, placeHeading) = (true, at, x, y, spawnHeading);
+        return true;
+    }
+
+    /// <summary>The cursor dragged: the ships head from where they were pressed toward it; back within a click of the
+    /// press, the panel's heading again.</summary>
+    void AimPlace(double x, double y)
+    {
+        if (Math.Abs(x - placeX) + Math.Abs(y - placeY) < ClickPx)
+            placeHeading = spawnHeading;
+        else if (View.Pick(x, y, out var to))
+            placeHeading = (Earth.Bearing(placeAt, to) % 360 + 360) % 360;
+    }
+
+    /// <summary>The release: the ships placed on the heading aimed (a click: the panel's), which the panel keeps.</summary>
+    void EndPlace(double x, double y)
+    {
+        AimPlace(x, y);
+        placeDrag = false;
+        if (!Armed)
+            return;   // disarmed mid-drag
+        spawnHeading = (int)Math.Round(placeHeading) % 360;
+        Spawn(placeAt, spawnHeading);
+        placing = keepPlacing;
+    }
+
+    /// <summary>Where a placement's ships would lie, each a stroke its length (an icon's at least) on its station, and
+    /// an arrow on from the guide's bow: at the press while aiming, else under the cursor while armed.</summary>
+    void PlacePreview(in MapView view)
+    {
+        Vec3d at;
+        double heading;
+        if (placeDrag)
+            (at, heading) = (placeAt, placeHeading);
+        else if (Armed && mouseIn && !ImGui.GetIO().WantCaptureMouse && view.Pick(cursorX, cursorY, out at) && !world.Shore.IsLand(at))
+            heading = spawnHeading;
+        else
+            return;
+        var up = at.Normalized();
+        var f = Earth.Forward(at, heading);
+        var starboard = Vec3d.Cross(f, up);
+        var formation = (Formation)spawnFormation;
+        double half = Math.Max(lengthOf(placeClass), ShipDrawList.IconLengthPx * view.MetresPerPixel) / 2;
+        for (int i = 0; i < spawnCount; i++)
+        {
+            var p = Station(at, f, starboard, formation, i);
+            var pf = Earth.Forward(p, heading);
+            overlay.BeginStrip(PlaceColor, i == 0 ? 3f : 2f);
+            Point(view, p - pf * half);
+            Point(view, p + pf * half);
+            overlay.End();
+        }
+        // the arrow: as long as the spacing, or 60 px
+        double ahead = Math.Max(spawnSpacing, 60 * view.MetresPerPixel);
+        var bow = at + f * half;
+        var tip = (bow + f * ahead).Normalized() * Earth.Radius;
+        overlay.BeginStrip(PlaceColor, 1.5f);
+        Point(view, bow);
+        Point(view, tip);
+        overlay.End();
+        overlay.BeginStrip(PlaceColor, 1.5f);
+        Point(view, tip + Earth.Forward(tip, heading + 150) * (ahead * 0.25));
+        Point(view, tip);
+        Point(view, tip + Earth.Forward(tip, heading - 150) * (ahead * 0.25));
+        overlay.End();
+    }
+
+    /// <summary>A placement's ship i on its station behind the guide at a point (as the rails reckon them,
+    /// GroupSystem.OffsetFromGuide).</summary>
+    Vec3d Station(Vec3d at, Vec3d f, Vec3d starboard, Formation formation, int i)
+    {
+        var (astern, abeam) = GroupSystem.OffsetFromGuide(formation, spawnSpacing, i);
+        return (at - f * astern + starboard * abeam).Normalized() * Earth.Radius;
     }
 
     /// <summary>From the designer: the class of the designer's design as it is now, asked for once a change (a frame's
@@ -395,22 +481,23 @@ public sealed unsafe partial class MapScene
 
     string DesignerName() => designer.Design is { } d ? (d.Name ?? d.Id ?? "unnamed") + (designer.Edited ? " (edited)" : "") : "none";
 
-    /// <summary>The dev panel's ships at a point: the guide there, the rest on their stations behind it (as the rails
-    /// reckon them, GroupSystem.OffsetFromGuide), all on one heading and speed; more than one made a group.</summary>
-    void Spawn(Vec3d at)
+    /// <summary>The dev panel's ships at a point: the guide there, the rest on their stations behind it, all on one
+    /// heading and speed; more than one made a group. Then a look round at once (<see cref="ShipSystem.LookNow"/>):
+    /// what they see, and who sees them, is in the pictures now, not at the next checks.</summary>
+    void Spawn(Vec3d at, double heading)
     {
         var up = at.Normalized();
-        var f = Earth.Forward(at, spawnHeading);
+        var f = Earth.Forward(at, heading);
         var starboard = Vec3d.Cross(f, up);
         var formation = (Formation)spawnFormation;
         for (int i = 0; i < spawnCount; i++)
         {
-            var (astern, abeam) = GroupSystem.OffsetFromGuide(formation, spawnSpacing, i);
-            var (lat, lon) = Earth.LatLon(at - f * astern + starboard * abeam);
-            world.Send(ShipSystem.Spawn(placeClass, lat, lon, spawnHeading, spawnKn, (byte)spawnSide));
+            var (lat, lon) = Earth.LatLon(Station(at, f, starboard, formation, i));
+            world.Send(ShipSystem.Spawn(placeClass, lat, lon, heading, spawnKn, (byte)spawnSide));
         }
         if (spawnCount > 1)
             world.Send(GroupSystem.CreateOfNewest(spawnCount, formation, spawnSpacing));
+        world.Send(ShipSystem.LookNow());
     }
 
     /// <summary>The entity of the ship nearest the cursor within its drawn size (an icon's at least), or -1: of the
@@ -664,13 +751,15 @@ public sealed unsafe partial class MapScene
             // for the build
             bool canPlace = fromDesigner && placeClass < 0 ? designer.Design != null : ready && error == null;
             ImGui.BeginDisabled(!canPlace);
-            if (ImGui.Button(placing ? "Click the sea..." : "Place"))
+            if (ImGui.Button(placing ? "Click or drag on the sea..." : "Place"))
             {
                 placing = !placing;
                 if (placing && fromDesigner)
                     FollowDesigner();
             }
             ImGui.EndDisabled();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGui.SetTooltip("click the sea: on the heading below · press and drag: they head the way you drag, placed on release");
             ImGui.SameLine();
             ImGui.Checkbox("keep placing", ref keepPlacing);
 
@@ -712,6 +801,8 @@ public sealed unsafe partial class MapScene
         ImGui.End();
 
         HeldUi(s);
+        if (placeDrag)
+            ImGui.SetTooltip($"heading {Math.Round(placeHeading) % 360:000}°");
 
         // the selected ship: bottom centre
         int k = s.Ships.IndexOf(selected);

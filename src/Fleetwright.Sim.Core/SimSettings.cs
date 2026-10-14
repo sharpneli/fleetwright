@@ -320,6 +320,10 @@ public sealed record SimSettings
     /// <summary>How often each navy's sighting is looked at in an encounter, ms (the plan's ~1 Hz).</summary>
     public int SightingMs { get; init; } = 1000;
 
+    /// <summary>A look ordered at once (ShipSystem.LookNow, after a dev spawn) is over this many seconds: as if the ships
+    /// had been there a while, so anything plainly visible is found (a 1 s look finds it one time in eight).</summary>
+    public double SightLookNowS { get; init; } = 300;
+
     // ------------------------------------------------------------------ pictures (docs/battle/plan.md step 3.2d)
 
     /// <summary>How many of a side's ships nearest a target look for it each time.</summary>

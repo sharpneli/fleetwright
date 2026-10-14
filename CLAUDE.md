@@ -50,7 +50,8 @@ per pixel; projection, picking, the grid and the land's clip in double, so nothi
 selects, the strip at the bottom orders course and speed, right-click steers for a point, shift+right-click adds a
 waypoint, the search row orders a search pattern; the top-left panel spawns where you click, one ship or a group already on its
 stations (count, formation, spacing, heading, speed, side), the designer's design as it is now ("From designer", the
-default: an edit spawned is a new class, ships already out keep theirs) or a shipped one. `ShipBatchRenderer` draws them inside the
+default: an edit spawned is a new class, ships already out keep theirs) or a shipped one; pressed and dragged, they head
+the way of the drag (a ghost shows them until the release), and a spawn looks round at once (`ShipSystem.LookNow`). `ShipBatchRenderer` draws them inside the
 globe's pass (sprites from `ShipArtLibrary`, a stand-in icon when small). Without `-view`, a designer-only flag (`-section`,
 `-steps`, `-new`, `-designer-ui`, `-units`) opens the designer instead.
 

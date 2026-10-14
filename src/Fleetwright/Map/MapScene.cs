@@ -11,7 +11,7 @@ namespace Fleetwright.Map;
 /// <summary>The world tab (docs/battle/plan.md step 1.2): the globe of water at every zoom from orbit down to 10 px/m,
 /// the lat/lon grid, day and night from the snapshot's sun, and the clock's controls (pause, 1x to 1,000,000x, asked
 /// against achieved). It reads the world only through <see cref="WorldSession.Current"/> and changes it only by
-/// commands. Mouse: wheel zooms at the cursor, left drag pans. Keys: space pauses, + and - change the speed. The ships
+/// commands. Mouse: wheel zooms at the cursor, left drag pans (armed to place ships, it aims them). Keys: space pauses, + and - change the speed. The ships
 /// (step 2.3) are in MapScene.Ships.cs.</summary>
 public sealed unsafe partial class MapScene : IScene
 {
@@ -28,6 +28,7 @@ public sealed unsafe partial class MapScene : IScene
     double dragX, dragY;   // the newest cursor of a drag: solved once a frame, however many motion events came
     Vector2 mouse;
     bool mouseIn;
+    double cursorX = -1, cursorY = -1;   // the cursor in target pixels
 
     // the map's parts, timed into the world's instruments (WorldPerf.Ui, docs/battle/plan.md step 2.7b)
     readonly int probeLines, probeUpload, probeGroups, probeDrawList, probeOverlay, probeRender, probeUiShips, probeUiLabels, probeUiRest;
@@ -212,10 +213,17 @@ public sealed unsafe partial class MapScene : IScene
                 }
                 if (e->button.button != 1)
                     return false;
+                if (BeginPlace(e->button.x * sx, e->button.y * sy))
+                    return true;   // armed to place: the drag aims the ships, it doesn't pan
                 (pressX, pressY, pressed) = (e->button.x * sx, e->button.y * sy, true);
                 dragging = View.Pick(e->button.x * sx, e->button.y * sy, out grab);
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
+                if (e->button.button == 1 && placeDrag)
+                {
+                    EndPlace(e->button.x * sx, e->button.y * sy);
+                    return true;
+                }
                 if (e->button.button == 1 && pressed)
                 {
                     double ux = e->button.x * sx, uy = e->button.y * sy;
@@ -227,6 +235,12 @@ public sealed unsafe partial class MapScene : IScene
                 return true;
             case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
                 (mouse, mouseIn) = (new Vector2(e->motion.x, e->motion.y), true);
+                (cursorX, cursorY) = (e->motion.x * sx, e->motion.y * sy);
+                if (placeDrag)
+                {
+                    AimPlace(cursorX, cursorY);
+                    return true;
+                }
                 if (!dragging)
                     return false;
                 (dragX, dragY, dragPending) = (e->motion.x * sx, e->motion.y * sy, true);
