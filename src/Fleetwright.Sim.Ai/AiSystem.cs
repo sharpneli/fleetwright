@@ -48,7 +48,7 @@ public sealed class AiSystem : IWorldSystem
         Doctrine = new Doctrine(world.Groups);
         Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine, homes);
         Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine);
-        Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains };
+        Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine };
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
         layers = [Tasks, Admirals, Captains];
         nextTick = new long[layers.Length];
@@ -64,11 +64,11 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Withdraw)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Cover)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         var code = (AiCommand)c.Code;
-        if (code is AiCommand.GoTo or AiCommand.Patrol or AiCommand.Intercept or AiCommand.Join or AiCommand.Withdraw)
+        if (TaskLayer.IsTask(code, (OrderSource)c.B))
         {
             Tasks.Order(Context(world), c);
             WakeAll(world);

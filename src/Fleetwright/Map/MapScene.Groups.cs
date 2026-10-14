@@ -426,6 +426,7 @@ public sealed unsafe partial class MapScene
         return (Sim.Ai.Tasks.TaskState)status switch
         {
             Sim.Ai.Tasks.TaskState.Engaged => what + ": fighting",
+            Sim.Ai.Tasks.TaskState.InContact => what + ": in contact",
             Sim.Ai.Tasks.TaskState.Done => what + ": done",
             Sim.Ai.Tasks.TaskState.Cant => what + ": can't",
             _ => what,

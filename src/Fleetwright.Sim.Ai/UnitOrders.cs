@@ -140,6 +140,17 @@ public enum AiCommand : ushort
     /// <summary>A task: break off and go to A (a packed lat/lon; 0: the side's home), away from any enemy in sight first;
     /// done there.</summary>
     Withdraw,
+
+    /// <summary>A task: scout for A (an own unit), X ahead of it (0: the settings'), Y degrees off its bow (0: dead
+    /// ahead); on meeting an enemy stronger than itself, shadow him.</summary>
+    Scout,
+
+    /// <summary>A task: search about A (a packed lat/lon), legs X long (0: the settings'): a group spread abreast in a
+    /// scouting line spaced by the visibility, steaming a ladder; done on contact, or at its end.</summary>
+    Search,
+
+    /// <summary>A task: cover A (an own unit), X off it (0: the settings') on the side of the threat, to support it.</summary>
+    Cover,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -229,6 +240,18 @@ public readonly struct UnitOrders(byte system)
     /// <summary>The task: steer to meet a contact (a ship's entity), at a speed (0: all the unit makes).</summary>
     public Command Intercept(Unit u, int contact, double kn = 0, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Intercept, u, source, a: contact, x: kn);
+
+    /// <summary>The task: scout ahead of an own unit (a distance, 0: the settings'; degrees off its bow).</summary>
+    public Command Scout(Unit u, Unit of, double distanceM = 0, double offBowDeg = 0, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.Scout, u, source, a: of.Id, x: distanceM, y: offBowDeg);
+
+    /// <summary>The task: search about a point (legs of a length, 0: the settings').</summary>
+    public Command Search(Unit u, double latDeg, double lonDeg, double legM = 0, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.Search, u, source, a: Earth.PackLatLon(latDeg, lonDeg), x: legM);
+
+    /// <summary>The task: cover an own unit (a distance, 0: the settings').</summary>
+    public Command Cover(Unit u, Unit covered, double distanceM = 0, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.Cover, u, source, a: covered.Id, x: distanceM);
 
     /// <summary>The task: close on an own unit and join it.</summary>
     public Command Join(Unit u, Unit with, OrderSource source = OrderSource.Player) => Make(AiCommand.Join, u, source, a: with.Id);

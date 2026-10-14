@@ -436,9 +436,10 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 };
                 (course, kn) = Behaviours.Rendezvous(own, t, astern, abeam, s.CoarseRendezvousSteps * s.CoarseStepMs / 1000.0, s);
             }
-            else if (cap.Order == CaptainOrder.Follow || cap.Order == CaptainOrder.Station && cap.AbeamM == 0)
+            else if (cap.Order == CaptainOrder.Follow || cap.Order == CaptainOrder.Station && cap.AbeamM == 0 && cap.DistanceM > 0)
             {
-                // in line ahead: on the track the ship ahead steamed, so he turns where it turned (laid straight astern
+                // in line ahead (a station dead astern; one dead ahead, a scout's, is a plain station): on the track the
+                // ship ahead steamed, so he turns where it turned (laid straight astern
                 // of it when he starts following it, or comes off rails, where the line steamed straight)
                 var s = ctx.Settings;
                 double distance = cap.DistanceM > 0 ? cap.DistanceM : s.FollowDistanceLengths * own.Handling.LengthM;

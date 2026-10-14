@@ -15,6 +15,11 @@ public enum TaskKind : byte
     Intercept,
     Join,
     Withdraw,
+    Shadow,
+    Screen,
+    Scout,
+    Search,
+    Cover,
 }
 
 /// <summary>How a task stands, reported up (docs/battle/command.md "Reports and reasons").</summary>
@@ -34,6 +39,9 @@ public enum TaskState : byte
 
     /// <summary>Can't be done (<see cref="TaskReason"/> says why): the unit holds what it was last given.</summary>
     Cant,
+
+    /// <summary>In touch with an enemy too strong to fight: shadowing him (a scout), its task waiting.</summary>
+    InContact,
 }
 
 /// <summary>Why a task stands as it does.</summary>
@@ -53,6 +61,9 @@ public enum TaskReason : byte
 
     /// <summary>There's nowhere to go (no home).</summary>
     Nowhere,
+
+    /// <summary>A search's pattern steamed to its end.</summary>
+    Searched,
 }
 
 /// <summary>The task layer (docs/battle/command.md 5.1c), above the admirals: a unit's task (a kind of the one unit
@@ -79,6 +90,11 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         public bool Issued;             // its orders given (again after a fight)
         public double CourseDeg;        // the course last given (Intercept, Join)
         public int RunFrom;             // Withdraw: the enemy it's running from (0: going home)
+        public double DistanceM, OffBowDeg;   // Scout, Cover, Screen, Shadow: how far off; a scout's bearing off the bow
+        public int ShadowOf;            // Scout: the enemy it's shadowing (0: scouting)
+        public int StationOn;           // Scout, Cover: the ship its station was given on
+        public double StationAstern, StationAbeam;
+        public long LastWaypoint;       // Search: the route's end
         public long StartMs, QuietMs;   // when it began; when the unit last had an enemy in sight
     }
 
@@ -87,13 +103,17 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
 
     internal AdmiralLayer? Admirals { get; set; }
     internal CaptainLayer? Captains { get; set; }
+    internal Doctrine? Doctrine { get; set; }
+    readonly List<(int Ship, double AsternM, double AbeamM)> line = new(32);
+
+    static bool Live(TaskState s) => s is TaskState.OnTask or TaskState.Engaged or TaskState.InContact;
 
     public bool Active
     {
         get
         {
             for (int i = 0; i < count; i++)
-                if (tasks[i].Status is TaskState.OnTask or TaskState.Engaged)
+                if (Live(tasks[i].Status))
                     return true;
             return false;
         }
@@ -103,7 +123,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
     {
         int period = ctx.Settings.AiRailsPeriodMs;
         for (int i = 0; i < count; i++)
-            if (tasks[i].Status is TaskState.OnTask or TaskState.Engaged && ctx.Ships.SlotOf(Lead(new Unit(tasks[i].Unit))) is int slot and >= 0)
+            if (Live(tasks[i].Status) && ctx.Ships.SlotOf(Lead(new Unit(tasks[i].Unit))) is int slot and >= 0)
             {
                 var tier = ctx.Ships.TierOf(slot);
                 if (tier == ClockTier.Fine)
@@ -118,8 +138,20 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
     public (TaskKind Kind, TaskState Status, TaskReason Reason) Of(Unit u) =>
         Find(u.Id) is int i and >= 0 ? (tasks[i].Kind, tasks[i].Status, tasks[i].Reason) : (TaskKind.None, TaskState.None, TaskReason.None);
 
-    /// <summary>Whether a unit's task keeps it out of fights doctrine would take up (withdrawing).</summary>
-    public bool Avoids(Unit u) => Find(u.Id) is int i and >= 0 && tasks[i].Status == TaskState.OnTask && tasks[i].Kind == TaskKind.Withdraw;
+    /// <summary>Whether a unit's task keeps it out of fights doctrine would take up: withdrawing, shadowing, a scout
+    /// shadowing what it found.</summary>
+    public bool Avoids(Unit u) => Find(u.Id) is int i and >= 0 && tasks[i] is
+    {
+        Status: TaskState.OnTask or TaskState.InContact,
+        Kind: TaskKind.Withdraw or TaskKind.Shadow or TaskKind.Scout,
+    } t && (t.Kind != TaskKind.Scout || t.ShadowOf != 0);
+
+    /// <summary>Whether a command is a task for this layer: the task kinds, and Shadow and Screen when the player (or a
+    /// scenario) gives them; the same from a task, or a superior handing them down, are the plain orders.</summary>
+    public static bool IsTask(AiCommand code, OrderSource source) =>
+        code is AiCommand.GoTo or AiCommand.Patrol or AiCommand.Intercept or AiCommand.Join or AiCommand.Withdraw or AiCommand.Scout
+            or AiCommand.Search or AiCommand.Cover ||
+        code is AiCommand.Shadow or AiCommand.Screen && source == OrderSource.Player;
 
     /// <summary>The player's own order to a unit: its task ends (a speed is the task's speed).</summary>
     internal void Overridden(Unit u, in Command c)
@@ -145,15 +177,30 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
             AiCommand.Intercept => TaskKind.Intercept,
             AiCommand.Join => TaskKind.Join,
             AiCommand.Withdraw => TaskKind.Withdraw,
+            AiCommand.Shadow => TaskKind.Shadow,
+            AiCommand.Screen => TaskKind.Screen,
+            AiCommand.Scout => TaskKind.Scout,
+            AiCommand.Search => TaskKind.Search,
+            AiCommand.Cover => TaskKind.Cover,
             _ => throw new ArgumentException($"not a task: {c.Code}"),
         };
+        var s = ctx.Settings;
         ref var t = ref Get(u.Id);
         t = new Task
         {
             Unit = u.Id, Kind = kind, Status = TaskState.OnTask, StartMs = ctx.NowMs, QuietMs = ctx.NowMs,
-            Point = kind is TaskKind.GoTo or TaskKind.Patrol or TaskKind.Withdraw ? c.A : 0,
-            Target = kind is TaskKind.Intercept or TaskKind.Join ? (int)c.A : 0,
-            Kn = c.X,
+            Point = kind is TaskKind.GoTo or TaskKind.Patrol or TaskKind.Withdraw or TaskKind.Search ? c.A : 0,
+            Target = kind is TaskKind.Intercept or TaskKind.Join or TaskKind.Shadow or TaskKind.Screen or TaskKind.Scout or TaskKind.Cover ? (int)c.A : 0,
+            Kn = kind is TaskKind.GoTo or TaskKind.Intercept ? c.X : 0,
+            DistanceM = kind switch
+            {
+                TaskKind.Scout => c.X > 0 ? c.X : s.ScoutM,
+                TaskKind.Cover => c.X > 0 ? c.X : s.CoverM,
+                TaskKind.Search => c.X > 0 ? c.X : s.SearchLegM,
+                TaskKind.Shadow or TaskKind.Screen => c.X,
+                _ => 0,
+            },
+            OffBowDeg = kind == TaskKind.Scout ? c.Y : 0,
         };
         if (kind == TaskKind.Patrol && ctx.Ships.SlotOf(Lead(u)) is int slot and >= 0)
         {
@@ -173,7 +220,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
                 Remove(i--);   // the unit's gone
                 continue;
             }
-            if (tasks[i].Status is TaskState.OnTask or TaskState.Engaged)
+            if (Live(tasks[i].Status))
                 Step(ctx, ref tasks[i]);
         }
     }
@@ -191,6 +238,10 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         long now = ctx.NowMs;
         if (seen.Near(ctx.World, guide.Side, guide.Position, s.FightCompareM).Length > 0)
             t.QuietMs = now;
+
+        // a scout judges what it meets before any fight doctrine took up stands: too strong for it, it shadows
+        if (t.Kind == TaskKind.Scout && t.ShadowOf == 0 && Outmatched(ctx, ref t, u, guide))
+            return;
 
         // a fight doctrine took up (or the captain's own: falling out) interrupts it
         var order = u.IsGroup ? Admirals!.Of(u.GroupId).Order : Captains!.Of(u.Entity).Order;
@@ -264,7 +315,172 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
             case TaskKind.Join:
                 Join(ctx, ref t, u, guide);
                 break;
+            case TaskKind.Shadow:
+                if (ctx.World.Sightings.Of(guide.Side)?.IndexOf(new Unit(t.Target).ShipOf(groups)) is not (int and >= 0))
+                {
+                    End(ref t, TaskState.Cant, TaskReason.LostContact);
+                    break;
+                }
+                if (!t.Issued)
+                {
+                    ctx.Issue(o.Shadow(u, new Unit(t.Target), t.DistanceM, Own));
+                    t.Issued = true;
+                }
+                break;
+            case TaskKind.Screen:
+                if (ctx.Ships.SlotOf(Lead(new Unit(t.Target))) < 0)
+                {
+                    End(ref t, TaskState.Cant, TaskReason.Gone);
+                    break;
+                }
+                if (!t.Issued)
+                {
+                    ctx.Issue(o.Screen(u, new Unit(t.Target), t.DistanceM, Own));
+                    t.Issued = true;
+                }
+                break;
+            case TaskKind.Scout:
+                Scout(ctx, ref t, u, guide);
+                break;
+            case TaskKind.Search:
+                Search(ctx, ref t, u, guide);
+                break;
+            case TaskKind.Cover:
+                Cover(ctx, ref t, u, guide);
+                break;
         }
+    }
+
+    /// <summary>Scout: a station <see cref="Task.DistanceM"/> off the unit's guide, <see cref="Task.OffBowDeg"/> off its
+    /// bow. An enemy in sight that's stronger than the scout (by <see cref="Strength"/>, against doctrine's outgunned
+    /// ratio) is shadowed (the task in contact, and no fight taken up); one it can take, doctrine fights. A shadowed enemy
+    /// lost, the scout goes back to its station.</summary>
+    void Scout(in AiContext ctx, ref Task t, Unit u, ShipState guide)
+    {
+        var s = ctx.Settings;
+        var o = ctx.Orders;
+        if (t.ShadowOf != 0)
+        {
+            if (ctx.World.Sightings.Of(guide.Side)?.IndexOf(t.ShadowOf) is int and >= 0)
+            {
+                t.Status = TaskState.InContact;
+                return;
+            }
+            (t.ShadowOf, t.Issued, t.StationOn) = (0, false, 0);   // lost him: back to scouting
+        }
+        int on = Lead(new Unit(t.Target));
+        if (ctx.Ships.SlotOf(on) < 0 || on == guide.Entity)
+        {
+            End(ref t, TaskState.Cant, TaskReason.Gone);
+            return;
+        }
+        double off = t.OffBowDeg * Math.PI / 180;
+        Station(ctx, ref t, u, on, -t.DistanceM * Math.Cos(off), t.DistanceM * Math.Sin(off));
+    }
+
+    /// <summary>Whether a scout meets an enemy in sight stronger than itself (by <see cref="Strength"/>, against doctrine's
+    /// outgunned ratio): then it shadows the nearest, taking up no fight (and leaving one doctrine took up).</summary>
+    bool Outmatched(in AiContext ctx, ref Task t, Unit u, ShipState guide)
+    {
+        var s = ctx.Settings;
+        int enemy = NearestEnemy(ctx, guide, s.FightCompareM);
+        if (enemy == 0)
+            return false;
+        double theirs = Strength.Seen(ctx.World, seen, guide.Side, guide.Position, s.FightCompareM);
+        double ours = u.IsGroup && groups.Get(u.GroupId) is { } g ? Strength.OfGroup(groups, ctx.Ships, g, line) : Strength.Of(guide.Handling.Class);
+        if (theirs <= ours * Doctrine!.Of(guide.Entity, guide.Side, DoctrineField.OutgunnedRatio))
+            return false;
+        (t.ShadowOf, t.Status, t.Reason) = (enemy, TaskState.InContact, TaskReason.InContact);
+        ctx.Issue(ctx.Orders.Shadow(u, Unit.Ship(enemy), 0, OrderSource.Task));
+        return true;
+    }
+
+    /// <summary>Cover: a station <see cref="Task.DistanceM"/> off the covered unit's guide, toward the nearest enemy its
+    /// navy holds anywhere (else on the side it's on now), given again when that moves it more than twice
+    /// <see cref="SimSettings.ScreenMoveM"/>.</summary>
+    void Cover(in AiContext ctx, ref Task t, Unit u, ShipState guide)
+    {
+        int on = Lead(new Unit(t.Target));
+        if (ctx.Ships.SlotOf(on) is not (int slot and >= 0) || on == guide.Entity)
+        {
+            End(ref t, TaskState.Cant, TaskReason.Gone);
+            return;
+        }
+        var them = ctx.Ships[slot];
+        var threat = NearestHeld(ctx, them);
+        double bearing = threat is { } q ? Earth.Bearing(them.Position, q) : Earth.Bearing(them.Position, guide.Position);
+        double rel = (bearing - them.HeadingDeg) * Math.PI / 180;
+        Station(ctx, ref t, u, on, -t.DistanceM * Math.Cos(rel), t.DistanceM * Math.Sin(rel), 2 * ctx.Settings.ScreenMoveM);
+    }
+
+    /// <summary>A station on a ship, given when it's new, after a fight or a shadow, or moved past a margin.</summary>
+    static void Station(in AiContext ctx, ref Task t, Unit u, int on, double astern, double abeam, double margin = 0)
+    {
+        double moved = Math.Sqrt((astern - t.StationAstern) * (astern - t.StationAstern) + (abeam - t.StationAbeam) * (abeam - t.StationAbeam));
+        if (t.Issued && t.StationOn == on && moved <= margin)
+            return;
+        (t.StationOn, t.StationAstern, t.StationAbeam, t.Issued) = (on, astern, abeam, true);
+        ctx.Issue(ctx.Orders.Station(u, Unit.Ship(on), astern, abeam, OrderSource.Task));
+    }
+
+    /// <summary>Search: a group spread abreast <see cref="SimSettings.SearchSpacingShare"/> of the visibility apart (in
+    /// sight of each other, a scouting line), to the point and then a ladder about it (legs <see cref="Task.DistanceM"/>
+    /// long, on the course it came in on, its tracks a line's width apart); done on an enemy in sight, or at its end.</summary>
+    void Search(in AiContext ctx, ref Task t, Unit u, ShipState guide)
+    {
+        var s = ctx.Settings;
+        var o = ctx.Orders;
+        if (NearestEnemy(ctx, guide, s.FightCompareM) != 0)
+        {
+            End(ref t, TaskState.Done, TaskReason.InContact);
+            return;
+        }
+        if (t.Issued)
+        {
+            var (la, lo) = Earth.UnpackLatLon(t.LastWaypoint);
+            if (guide.Helm != Helm.Route && Earth.Distance(guide.Position, Earth.Position(la, lo)) <= 2 * s.ArrivedM)
+                End(ref t, TaskState.Done, TaskReason.Searched);
+            return;
+        }
+        double spacing = s.SearchSpacingShare * ctx.World.Weather.At(guide.Position, ctx.World.Time).VisibilityM;
+        int ships = 1;
+        if (u.IsGroup && groups.Get(u.GroupId) is { IsForce: false } g)
+        {
+            ships = Math.Max(1, g.Line.Count);
+            ctx.Issue(o.Form(u, Formation.LineAbreast, spacing, 0, OrderSource.Task));
+        }
+        var (lat, lon) = Earth.UnpackLatLon(t.Point);
+        var datum = Earth.Position(lat, lon);
+        double axis = Earth.Bearing(guide.Position, datum);
+        Span<Vec3d> legs = stackalloc Vec3d[8];
+        int n = SearchPatterns.Waypoints(SearchPattern.Ladder, datum, axis, t.DistanceM, ships * spacing, 4, starboard: true, legs);
+        ctx.Issue(o.ClearRoute(u, OrderSource.Task));
+        ctx.Issue(o.AddWaypoint(u, t.Point, OrderSource.Task));
+        for (int i = 0; i < n; i++)
+        {
+            var (wla, wlo) = Earth.LatLon(legs[i]);
+            ctx.Issue(o.AddWaypoint(u, wla, wlo, OrderSource.Task));
+            t.LastWaypoint = Earth.PackLatLon(wla, wlo);
+        }
+        t.Issued = true;
+    }
+
+    /// <summary>Where a navy holds the nearest enemy to a ship, in sight or not (the picture's estimate); null if none.</summary>
+    static Vec3d? NearestHeld(in AiContext ctx, ShipState from)
+    {
+        var pic = ctx.World.Sightings.Of(from.Side);
+        if (pic == null)
+            return null;
+        Vec3d? best = null;
+        double bestD = double.MaxValue;
+        for (int i = 0; i < pic.Count; i++)
+        {
+            var q = pic.EstimateAt(i, ctx.NowMs, ctx.Settings).Position;
+            double d = (q - from.Position).LengthSquared;
+            if (d < bestD)
+                (best, bestD) = (q, d);
+        }
+        return best;
     }
 
     /// <summary>Withdraw: from the nearest enemy in sight while there is one, else to its point (or its side's home);
@@ -440,6 +656,13 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
             h.Add(t.Issued);
             h.Add(t.CourseDeg);
             h.Add(t.RunFrom);
+            h.Add(t.DistanceM);
+            h.Add(t.OffBowDeg);
+            h.Add(t.ShadowOf);
+            h.Add(t.StationOn);
+            h.Add(t.StationAstern);
+            h.Add(t.StationAbeam);
+            h.Add(t.LastWaypoint);
             h.Add(t.StartMs);
             h.Add(t.QuietMs);
         }

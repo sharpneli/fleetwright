@@ -623,6 +623,14 @@ public sealed record SimSettings
     public double JoinM { get; init; } = 3_000;
     public double TaskResumeS { get; init; } = 300;
 
+    /// <summary>The scouting tasks (docs/battle/command.md 5.1c): a scout keeps ScoutM ahead of its unit; a search steams
+    /// legs SearchLegM long, a group spread abreast SearchSpacingShare of the visibility apart (in sight of each other); a
+    /// covering unit keeps CoverM off the one it covers. m, a share.</summary>
+    public double ScoutM { get; init; } = 20_000;
+    public double SearchLegM { get; init; } = 60_000;
+    public double SearchSpacingShare { get; init; } = 0.9;
+    public double CoverM { get; init; } = 20_000;
+
     /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
     /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>
     public double[] FightTypeGuns { get; init; } = [1, 8, 1, 0.1, 0, 0];

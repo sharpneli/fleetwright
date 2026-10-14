@@ -618,41 +618,8 @@ public sealed partial class CaptainLayer
 
     /// <summary>The heavy guns (12" guns' worth) his navy sees within <see cref="SimSettings.FightCompareM"/>, each
     /// contact as the class it's taken for or by its type, and his own unit's (his group's line, or his ship).</summary>
-    (double Theirs, double Ours) Weigh(in AiContext ctx, ShipState own)
-    {
-        var s = ctx.Settings;
-        var pic = ctx.World.Sightings.Of(own.Side);
-        var registry = ctx.World.Ships.Registry;
-        double theirs = 0, ours = 0;
-        if (pic != null)
-            foreach (int i in seen.Near(ctx.World, own.Side, own.Position, s.FightCompareM))
-            {
-                ref readonly var c = ref pic[i];
-                theirs += c.Level >= ContactLevel.Class && c.TakenFor >= 0 && registry.Get(c.TakenFor) is { } taken
-                    ? HeavyGuns(taken)
-                    : s.FightTypeGuns[Math.Min((int)c.Type, s.FightTypeGuns.Length - 1)];
-            }
-        if (groups.UnitOf(own.Entity) is { } unit)
-        {
-            groups.LineOffsets(unit, unitLine);
-            foreach (var (ship, _, _) in unitLine)
-                if (ctx.Ships.SlotOf(ship) is int m and >= 0)
-                    ours += HeavyGuns(ctx.Ships[m].Handling.Class);
-        }
-        else
-            ours = HeavyGuns(own.Handling.Class);
-        return (theirs, ours);
-    }
-
-    /// <summary>A class's main batteries in 12" guns' worth: guns × (calibre / 305 mm)³.</summary>
-    static double HeavyGuns(ShipClass cls)
-    {
-        double w = 0;
-        foreach (ref readonly var b in cls.Batteries)
-            if (b.Kind == Battery.Main)
-                w += b.Guns * Math.Pow(b.CalibreMm / 305, 3);
-        return w;
-    }
+    (double Theirs, double Ours) Weigh(in AiContext ctx, ShipState own) =>
+        (Strength.Seen(ctx.World, seen, own.Side, own.Position, ctx.Settings.FightCompareM), Strength.OfUnit(groups, ctx.Ships, own.Entity, unitLine));
 
     /// <summary>A class's main battery (the heaviest gun of its main batteries), -1 for none.</summary>
     static int MainBattery(ShipClass cls)
