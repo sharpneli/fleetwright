@@ -36,7 +36,8 @@ public sealed unsafe partial class MapScene
     readonly DesignSession designer;
     int designPick = FromDesigner, placeClass = -1, placeVersion = -1;
     bool placing, keepPlacing;
-    int spawnCount = 1, spawnFormation, spawnSpacing = 600, spawnHeading, spawnKn = 10, spawnSide;
+    // the side is the player's too: a change sets it, and a new world sets the field to its player's (MapScene.Scenario)
+    int spawnCount = 1, spawnFormation, spawnSpacing = 600, spawnHeading, spawnKn = 10, spawnSide, maxSide = 3;
     int courseEdit;
     bool hardOver;
     int followMetres = 800;
@@ -695,9 +696,12 @@ public sealed unsafe partial class MapScene
                 spawnKn = Math.Clamp(spawnKn, 0, 40);
             ImGui.SetNextItemWidth(field);
             if (ImGui.InputInt("side", ref spawnSide, 1, 1))
-                spawnSide = Math.Clamp(spawnSide, 0, 3);
+            {
+                spawnSide = Math.Clamp(spawnSide, 0, maxSide);
+                world.Send(Command.SetPlayerSide(spawnSide));   // the player plays the side they spawn
+            }
             ImGui.SameLine();
-            ImGui.TextDisabled("(different sides are opposing)");
+            ImGui.TextDisabled("(yours; different sides are opposing)");
             if (fromDesigner && designer.Design == null)
                 ImGui.TextColored(new Vector4(1, 0.4f, 0.3f, 1), "the designer has no design");
             else if (placeClass >= 0 && !ready)
