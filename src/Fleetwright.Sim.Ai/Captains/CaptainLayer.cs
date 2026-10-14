@@ -73,6 +73,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public int FightSide, FightEnemy;  // fighting: the side he keeps the enemy on (0: not chosen yet), and whom
         public bool FightAway;          // fighting: outgunned, turned away
         public bool Standing, Met;      // a standing order to fight; taken up in this encounter
+        public long TorpedoMs;          // when he last fired torpedoes (0: never)
     }
 
     Captain[] captains = new Captain[16];
@@ -479,6 +480,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add(c.FightAway);
             h.Add(c.Standing);
             h.Add(c.Met);
+            h.Add(c.TorpedoMs);
             c.Track?.Hash(ref h);
         }
     }

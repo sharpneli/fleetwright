@@ -14,12 +14,21 @@ public struct MountState
     public int Rounds;
 }
 
+/// <summary>A torpedo launcher's state (docs/battle/fighting.md 4.6): the torpedoes in its tubes, the spares it carries
+/// beside them, and when its tubes are loaded again from them (they load all at once).</summary>
+public struct LauncherState
+{
+    public int Loaded, Spare;
+    public long LoadedMs;
+}
+
 /// <summary>Each ship's combat columns beside its <see cref="ShipStore"/> (docs/battle/fighting.md "Where it lives"):
 /// its mounts' state, made at spawn and sized by the class, how many of its batteries are engaged and on what. Reached through
 /// <see cref="ShipState"/>'s accessors and the gunnery system; and its condition (the damage system's, 4.3a).</summary>
 public sealed class CombatStore
 {
     MountState[]?[] mounts = [];
+    LauncherState[]?[] launchers = [];
     ShipCondition?[] conditions = [];
     int[]?[] targets = [];
     int[] engaged = [];
@@ -34,6 +43,7 @@ public sealed class CombatStore
         {
             int n = Math.Max(slot + 1, Math.Max(16, mounts.Length * 2));
             Array.Resize(ref mounts, n);
+            Array.Resize(ref launchers, n);
             Array.Resize(ref conditions, n);
             Array.Resize(ref targets, n);
             Array.Resize(ref engaged, n);
@@ -51,6 +61,15 @@ public sealed class CombatStore
                 TrainMs = ms, TrainFrom = rest, TrainTo = rest, ElevMs = ms, LoadedMs = ms,
                 Rounds = row.Rounds > 0 ? row.Rounds : int.MaxValue,
             };
+        }
+        var l = launchers[slot];
+        if (l == null || l.Length != cls.Launchers.Length)
+            launchers[slot] = l = new LauncherState[cls.Launchers.Length];
+        for (int i = 0; i < l.Length; i++)
+        {
+            ref readonly var row = ref cls.Launchers[i];
+            int loaded = Math.Min(row.Tubes, row.Torpedoes);
+            l[i] = new LauncherState { Loaded = loaded, Spare = row.Torpedoes - loaded, LoadedMs = ms };
         }
         (conditions[slot] ??= new ShipCondition()).Reset(cls);
         var t = targets[slot];
@@ -73,6 +92,31 @@ public sealed class CombatStore
     public Span<MountState> Mounts(int slot) => mounts[slot];
 
     public ref MountState Mount(int slot, int mount) => ref mounts[slot]![mount];
+
+    /// <summary>A ship's torpedo launcher (the class's Launchers) as it is at a time: its tubes loaded again from its
+    /// spares once their time has come (read only: the store keeps it as it was last fired).</summary>
+    public LauncherState Launcher(int slot, int launcher, in LauncherRow row, long ms)
+    {
+        var l = launchers[slot]![launcher];
+        if (l.Spare > 0 && l.Loaded < row.Tubes && ms >= l.LoadedMs)
+        {
+            int n = Math.Min(row.Tubes - l.Loaded, l.Spare);
+            (l.Loaded, l.Spare) = (l.Loaded + n, l.Spare - n);
+        }
+        return l;
+    }
+
+    /// <summary>A launcher fired n torpedoes now: its tubes load again from its spares after its reload.</summary>
+    public void Launched(int slot, int launcher, in LauncherRow row, int n, long ms)
+    {
+        ref var l = ref launchers[slot]![launcher];
+        l = Launcher(slot, launcher, row, ms);
+        l.Loaded = Math.Max(l.Loaded - n, 0);
+        if (l.Spare > 0)
+            l.LoadedMs = ms + (long)Math.Round(row.ReloadS * 1000);
+        Touched = true;
+        moved[slot] = true;
+    }
 
     /// <summary>How many of a ship's batteries are engaged (the rails' rule reads it: an engaged ship stays off rails).</summary>
     public int Engaged(int slot) => slot < engaged.Length ? engaged[slot] : 0;
@@ -122,6 +166,19 @@ public sealed class CombatStore
         return Within(m, to, bearingDeg);
     }
 
+    /// <summary>Orders a torpedo mount to a bearing now (it trains, it doesn't elevate): when it gets there, ms (the
+    /// nearer end of its traverse if the bearing is outside it), and whether it's inside it.</summary>
+    public bool Train(int slot, int mount, in MountRow m, long ms, double bearingDeg, out long laidMs)
+    {
+        ref var s = ref mounts[slot]![mount];
+        double b = BearingAt(s, m, ms);
+        double to = Into(m, bearingDeg, b);
+        (s.TrainMs, s.TrainFrom, s.TrainTo) = (ms, b, to);
+        laidMs = ms + (m.TrainDegS > 0 ? (long)Math.Ceiling(Math.Abs(to - b) / m.TrainDegS * 1000) : 0);
+        moved[slot] = Touched = true;
+        return Within(m, to, bearingDeg);
+    }
+
     /// <summary>A mount stopped where it is now (out of action, jammed: it trains no more), its train and elevation held
     /// there.</summary>
     public void Stop(int slot, int mount, in MountRow m, long ms)
@@ -161,9 +218,13 @@ public sealed class CombatStore
 
     /// <summary>Whether a relative bearing is in one of a mount's arcs of fire (pairs of degrees clockwise from
     /// ahead).</summary>
-    public static bool InArcs(ShipClass cls, in MountRow m, double bearingDeg)
+    public static bool InArcs(ShipClass cls, in MountRow m, double bearingDeg) => InArcs(cls, m.Arcs, bearingDeg);
+
+    /// <summary>Whether a relative bearing is in arcs (pairs of degrees clockwise from ahead, the class's Numbers; none:
+    /// all round).</summary>
+    public static bool InArcs(ShipClass cls, Slice arcs, double bearingDeg)
     {
-        var a = cls.Numbers(m.Arcs);
+        var a = cls.Numbers(arcs);
         if (a.Length == 0)
             return true;
         for (int i = 0; i + 1 < a.Length; i += 2)
@@ -197,6 +258,12 @@ public sealed class CombatStore
                 h.Add(s.ElevTo);
                 h.Add(s.LoadedMs);
                 h.Add(s.Rounds);
+            }
+            foreach (ref readonly var l in launchers[slot].AsSpan())
+            {
+                h.Add(l.Loaded);
+                h.Add(l.Spare);
+                h.Add(l.LoadedMs);
             }
         }
     }

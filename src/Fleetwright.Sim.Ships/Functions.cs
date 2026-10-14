@@ -1,8 +1,8 @@
 namespace Fleetwright.Sim.Ships;
 
 /// <summary>What a function of the ship is (docs/battle/fighting.md 4.3a, FUNCTIONS): what the damage model asks of its
-/// parts. Index says which: a mount, a director, an eye, a shaft line, a boiler room (a room), a rudder; the command
-/// function has none.</summary>
+/// parts. Index says which: a mount, a director, an eye, a shaft line, a boiler room (a room), a rudder, a submerged
+/// tube; the command function has none.</summary>
 public enum FunctionKind : byte
 {
     /// <summary>A mount fires (Index: Mounts).</summary>
@@ -20,6 +20,8 @@ public enum FunctionKind : byte
     /// <summary>The ship is conned: a bridge or the conning tower (recorded now; what its loss costs comes with the
     /// signals, docs/battle/plan.md 5.1).</summary>
     Command,
+    /// <summary>A submerged tube fires (Index: Tubes): it and its torpedo room work (4.6).</summary>
+    Tube,
 }
 
 /// <summary>A function's needs (docs/research/simulation/damage-research/06-service-networks.md §4, Model A): every node
@@ -81,6 +83,11 @@ static class FunctionTable
         {
             ref readonly var row = ref c.rudders[r];
             rows.Add(new FunctionRow(FunctionKind.Rudder, r, Add([row.Component, row.Steering >= 0 ? Room(row.Steering) : -1]), Slice.Empty));
+        }
+        for (int t = 0; t < c.tubes.Length; t++)
+        {
+            ref readonly var row = ref c.tubes[t];
+            rows.Add(new FunctionRow(FunctionKind.Tube, t, Add([row.Component, row.Room >= 0 ? Room(row.Room) : -1]), Slice.Empty));
         }
         var conning = new List<int>();
         for (int i = 0; i < c.components.Length; i++)

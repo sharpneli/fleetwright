@@ -524,7 +524,11 @@ public static class ShipClassCompiler
                 where = $"mount \"{hb.Components[m.Component].Id}\"";
                 if (m.Kind == ComponentKind.Torpedo)
                 {
-                    mounts[i] = m with { Battery = -1, ReloadS = double.NaN, TrainDegS = double.NaN, ElevateDegS = double.NaN, MaxElevationDeg = double.NaN };
+                    mounts[i] = m with
+                    {
+                        Battery = -1, ReloadS = DesignerPlaceholders.TorpedoReloadS(LauncherKind.Mount, era), TrainDegS = DesignerPlaceholders.TorpedoTrainDegS(era),
+                        ElevateDegS = double.NaN, MaxElevationDeg = double.NaN,
+                    };
                     continue;
                 }
                 if (!(m.CalibreMm > 0) || !(m.CalibreLength > 0))
@@ -598,6 +602,53 @@ public static class ShipClassCompiler
             c.shellTypes = types.ToArray();
             c.shellTypeIds = typeIds.ToArray();
             c.shellLoads = loads.ToArray();
+            Launchers(c, era);
+        }
+
+        /// <summary>The torpedo mounts and the submerged tubes as one table, and the torpedoes they fire (docs/battle/
+        /// fighting.md 4.6): a mount's torpedoes go in at its pivot on the waterline, a tube's at its muzzle.</summary>
+        void Launchers(ShipClass c, Era era)
+        {
+            var launchers = new List<LauncherRow>();
+            var torpedoes = new List<TorpedoRow>();
+            int TorpedoOf(double calibreMm, double warheadKg)
+            {
+                var t = DesignerPlaceholders.Torpedo(calibreMm, warheadKg, era);
+                int k = torpedoes.IndexOf(t);
+                if (k < 0)
+                {
+                    k = torpedoes.Count;
+                    torpedoes.Add(t);
+                }
+                return k;
+            }
+            double wl = c.Vertical.Waterline;
+            for (int i = 0; i < c.mounts.Length; i++)
+            {
+                ref readonly var m = ref c.mounts[i];
+                if (m.Kind != ComponentKind.Torpedo || m.Torpedoes <= 0)
+                    continue;
+                launchers.Add(new LauncherRow
+                {
+                    Kind = LauncherKind.Mount, Index = i, Component = m.Component, X = m.X, Y = m.Y, Z = wl, Arcs = m.Arcs, Trains = m.Rotating,
+                    RestDeg = m.RestDeg, Tubes = Math.Max(c.turretTypes[m.Type].Barrels, 1), Torpedoes = m.Torpedoes, ReloadS = m.ReloadS,
+                    Torpedo = TorpedoOf(m.CalibreMm, m.WarheadKg),
+                });
+            }
+            for (int i = 0; i < c.tubes.Length; i++)
+            {
+                ref readonly var t = ref c.tubes[i];
+                if (t.Torpedoes <= 0)
+                    continue;
+                launchers.Add(new LauncherRow
+                {
+                    Kind = LauncherKind.Tube, Index = i, Component = t.Component, X = t.P1.X, Y = t.P1.Y, Z = t.P1.Z, Arcs = t.Arcs, Trains = t.Rotating,
+                    RestDeg = t.RestDeg, Tubes = 1, Torpedoes = t.Torpedoes, ReloadS = DesignerPlaceholders.TorpedoReloadS(LauncherKind.Tube, era),
+                    Torpedo = TorpedoOf(t.CalibreMm, t.WarheadKg),
+                });
+            }
+            c.launchers = launchers.ToArray();
+            c.torpedoes = torpedoes.ToArray();
         }
 
         static string KindName(ShellKind k) => k switch { ShellKind.Ap => "AP", ShellKind.Common => "common", _ => "HE" };

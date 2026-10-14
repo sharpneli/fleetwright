@@ -26,6 +26,7 @@ public static unsafe class Program
         var searches = new List<string>();
         var fires = new List<string>();
         var engages = new List<string>();
+        var torpedoes = new List<string>();
         var damages = new List<string>();
         var devGroups = new List<string>();
         var devForces = new List<string>();
@@ -138,6 +139,10 @@ public static unsafe class Program
             else if (arg.StartsWith("-engage="))   // a dev battery engages: -engage=ship[:battery]:target (docs/battle/fighting.md 4.2b)
             {
                 engages.Add(arg.Substring("-engage=".Length));
+            }
+            else if (arg.StartsWith("-torpedo="))   // a dev spread: -torpedo=ship:target[:n] (docs/battle/fighting.md 4.6)
+            {
+                torpedoes.Add(arg.Substring("-torpedo=".Length));
             }
             else if (arg.StartsWith("-hole=") || arg.StartsWith("-flood=") || arg.StartsWith("-jam=") || arg.StartsWith("-wreck=") ||
                      arg.StartsWith("-burn=") || arg.StartsWith("-sink="))   // dev damage (docs/battle/fighting.md 4.3b, 4.4): see DevDamage
@@ -289,6 +294,11 @@ public static unsafe class Program
                     world.Send(order);
                 else
                     Console.Error.WriteLine($"Bad engage: -engage={engage} (want ship[:battery]:target)");
+            foreach (var torpedo in torpedoes)
+                if (DevTorpedo(torpedo) is { } order)
+                    world.Send(order);
+                else
+                    Console.Error.WriteLine($"Bad torpedo: -torpedo={torpedo} (want ship:target[:n])");
             foreach (var damage in damages)
                 if (DevDamage(damage) is { } order)
                     world.Send(order);
@@ -390,6 +400,17 @@ public static unsafe class Program
             return null;
         int battery = p.Length == 3 && int.TryParse(p[1], out int b) ? b : -1;
         return Sim.GunnerySystem.Engage(ship, battery, target);
+    }
+
+    /// <summary>-torpedo=ship:target[:n]: a dev ship fires a spread of n (default 4) at a ship, aimed at it as it truly is
+    /// (its navy needn't have it in sight yet).</summary>
+    static Sim.Command? DevTorpedo(string arg)
+    {
+        var p = arg.Split(':');
+        if (p.Length is < 2 or > 3 || !int.TryParse(p[0], out int ship) || !int.TryParse(p[1], out int target))
+            return null;
+        int n = p.Length == 3 && int.TryParse(p[2], out int k) ? k : 4;
+        return Sim.TorpedoSystem.Launch(ship, target, n, truth: true);
     }
 
     /// <summary>Dev damage, as the damage system's dev commands: -hole=ship:mid|bow|stern|x:z:m2[:p] (a hole in the side, z m

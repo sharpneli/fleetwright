@@ -1,0 +1,23 @@
+// A torpedo-boat flotilla's attack (docs/battle/fighting.md 4.6, "A scenario"): six German boats of the 9th Flotilla
+// come in at a line of four British battleships steaming south, 14 km off on its beam. Both sides fight when they meet:
+// the boats close to their torpedoes' range whatever guns they face, fire, turn away and come in again; the battleships'
+// guns take them as they come. Not history: a bench to watch torpedoes run at 1x.
+{
+  "scenario": 1,
+  "name": "Flotilla",
+  "brief": "Six torpedo boats attack four battleships steaming south in line, 14 km off and closing. Watch the boats run in under fire, launch, turn away, and the torpedoes' wakes cross the line.",
+  "start": "1916-05-31T18:30",
+  "seed": 9,
+  "camera": [56.5, 4.1, 30],
+  "sides": ["Britain", "Germany"],
+  "propellant": { "Britain": 2, "Germany": 0.1 },
+  "player": "Britain",
+  "fight": ["Britain", "Germany"],
+  "weather": { "visibility_km": 16, "wind_from": 225, "wind_kn": 8 },
+  "units": [
+    { "name": "2nd Battle Squadron", "side": 0, "at": [56.5, 4.0], "course": 180, "kn": 18, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "king_george_v", "names": ["King George V", "Ajax"] }, { "design": "orion", "names": ["Orion", "Monarch"] } ] },
+    { "name": "9th Torpedo-boat Flotilla", "side": 1, "at": [56.47, 4.23], "course": 270, "kn": 30, "formation": "abreast", "spacing": 400,
+      "ships": [ { "design": "v25", "names": ["V28", "V26", "V27"] }, { "design": "g101", "names": ["S36", "S51", "S52"] } ] }
+  ]
+}

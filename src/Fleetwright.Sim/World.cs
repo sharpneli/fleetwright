@@ -81,13 +81,19 @@ public sealed class World
         Register(Gunnery);
         Damage = new DamageSystem(Settings, Ships, CombatLog, Sightings, seed);
         Shells.Damage = Damage;
+        Register(Damage);
+        Torpedoes = new TorpedoSystem(Settings, Ships, ShipIndex, CombatLog, seed) { Damage = Damage };
+        Register(Torpedoes);
         Ships.ClassAdded = cls =>
         {
             Shells.Prepare(cls);
             Damage.Prepare(cls);
+            Torpedoes.Prepare(cls);
         };
-        Register(Damage);
     }
+
+    /// <summary>Torpedoes running (docs/battle/fighting.md 4.6): always registered sixth (<see cref="TorpedoSystem.Id"/>).</summary>
+    public TorpedoSystem Torpedoes { get; }
 
     /// <summary>Hits and what they do (docs/battle/fighting.md 4.3a): always registered fifth
     /// (<see cref="DamageSystem.Id"/>).</summary>

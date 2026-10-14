@@ -26,6 +26,10 @@ public enum Outcome : byte
     BrokeUp,
     /// <summary>Armed, but out of the far side before its delay ran out.</summary>
     BurstBeyond,
+    /// <summary>An underwater charge (a torpedo's) went off against the hull, and got inside it (4.6).</summary>
+    Exploded,
+    /// <summary>An underwater charge went off against the hull, and the torpedo protection held it.</summary>
+    Held,
 }
 
 /// <summary>Where a burst was, as the effects need it: none, outside a plate, in it, or inside.</summary>

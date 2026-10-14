@@ -11,6 +11,9 @@ public enum LossKind : byte
     Magazine,
     Foundered,
     Capsized,
+    /// <summary>Its back broken by an underwater explosion (docs/battle/fighting.md 4.6): a small ship's hull girder
+    /// cut through amidships.</summary>
+    BrokeInTwo,
 }
 
 /// <summary>An edge of the cell graph, once (A &lt; B), as water sees it: what joins them, the height its opening

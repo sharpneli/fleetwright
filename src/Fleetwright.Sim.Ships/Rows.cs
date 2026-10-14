@@ -293,6 +293,47 @@ public readonly record struct TubeRow
     public double R { get; init; }
 }
 
+/// <summary>A torpedo (docs/battle/fighting.md 4.6): its calibre, its charge (kg of TNT's worth: what the explosion does),
+/// and its two settings of speed and range, the fast one first. The designer's to give; placeholders until then
+/// (<see cref="DesignerPlaceholders.Torpedo"/>).</summary>
+public readonly record struct TorpedoRow
+{
+    public double CalibreMm { get; init; }
+    public double ChargeKg { get; init; }
+    public double FastKn { get; init; }
+    public double FastRangeM { get; init; }
+    public double SlowKn { get; init; }
+    public double SlowRangeM { get; init; }
+}
+
+/// <summary>Where a torpedo comes from: a torpedo mount on deck or a submerged tube.</summary>
+public enum LauncherKind : byte
+{
+    Mount,
+    Tube,
+}
+
+/// <summary>A torpedo launcher (docs/battle/fighting.md 4.6): a torpedo mount (Index: Mounts) or a submerged tube (Index:
+/// Tubes), as one table. Where its torpedoes enter the water (ship frame), the arcs they leave through (pairs of degrees
+/// clockwise from ahead, Numbers), its bearing when it doesn't train, its tubes (fired at once), the torpedoes it carries
+/// (those in its tubes included), how long its tubes take to load again, and its torpedo (Torpedoes).</summary>
+public readonly record struct LauncherRow
+{
+    public LauncherKind Kind { get; init; }
+    public int Index { get; init; }
+    public int Component { get; init; }
+    public double X { get; init; }
+    public double Y { get; init; }
+    public double Z { get; init; }
+    public Slice Arcs { get; init; }
+    public bool Trains { get; init; }
+    public double RestDeg { get; init; }
+    public int Tubes { get; init; }
+    public int Torpedoes { get; init; }
+    public double ReloadS { get; init; }
+    public int Torpedo { get; init; }
+}
+
 /// <summary>A watertight cell: one section x tier x band.</summary>
 public readonly record struct CellRow
 {

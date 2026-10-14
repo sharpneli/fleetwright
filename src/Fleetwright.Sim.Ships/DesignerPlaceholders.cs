@@ -198,6 +198,50 @@ public static class DesignerPlaceholders
         return level < best ? level : best;
     }
 
+    // ------------------------------------------------------------------ the torpedoes (docs/battle/fighting.md 4.6)
+
+    /// <summary>PLACEHOLDER: a torpedo from its calibre, shipgen's warhead and the look's era.
+    /// <list type="bullet">
+    /// <item>the settings, fast and slow, a 21"'s: 30 kn for 1,000 m or 24 kn for 2,700 m before 1906 (the 1890s'
+    /// Whiteheads), 41 kn for 3,900 m or 28 kn for 9,200 m in the Great War (the RN's 21" Mk II 45 kn for 3,840 m or 29 kn
+    /// for 9,100; the German G/7 37 kn for 4,000 m or 27 kn for 9,300), 43/5,000 or 30/11,000 between the wars, 45/6,000
+    /// or 32/12,500 in the Second (Mk 15 45 kn for 5,500 m, G7a 44 for 5,000), 45/9,000 or 35/18,000 after; the range
+    /// by the calibre cubed (the air and fuel it holds), the speed by its 0.3 power (an 18" a little slower). Oxygen
+    /// torpedoes (the Type 93's 20 km at 48 kn) aren't told apart;</item>
+    /// <item>the charge, TNT's worth: shipgen's warhead (2·10⁻⁶·d³ kg, ~300 kg for a 21", the Second War's) times the
+    /// era's share: 0.45 before 1906 (wet guncotton), 0.6 in the Great War (the G/7's 195 kg of hexanite, the 21" Mk II's
+    /// ~110-130 kg), 0.85 between the wars, 1 after.</item>
+    /// </list>
+    /// The designer should give the torpedo by type and year: its settings, warhead and explosive.</summary>
+    public static TorpedoRow Torpedo(double calibreMm, double warheadKg, Era era)
+    {
+        var (fastKn, fastM, slowKn, slowM, share) = era switch
+        {
+            Era.Victorian => (30.0, 1_000.0, 24.0, 2_700.0, 0.45),
+            Era.GreatWar => (41.0, 3_900.0, 28.0, 9_200.0, 0.6),
+            Era.Treaty => (43.0, 5_000.0, 30.0, 11_000.0, 0.85),
+            Era.Wwii => (45.0, 6_000.0, 32.0, 12_500.0, 1.0),
+            _ => (45.0, 9_000.0, 35.0, 18_000.0, 1.0),
+        };
+        double d = calibreMm > 0 ? calibreMm / 533 : 1, range = d * d * d, speed = Math.Pow(d, 0.3);
+        double warhead = warheadKg > 0 ? warheadKg : 2e-6 * Math.Pow(calibreMm > 0 ? calibreMm : 533, 3);
+        return new TorpedoRow
+        {
+            CalibreMm = calibreMm > 0 ? calibreMm : 533, ChargeKg = warhead * share, FastKn = fastKn * speed, FastRangeM = fastM * range,
+            SlowKn = slowKn * speed, SlowRangeM = slowM * range,
+        };
+    }
+
+    /// <summary>PLACEHOLDER: a torpedo mount's training rate, °/s: trained by hand before the Second War (3), by power
+    /// in it (6). Shipgen gives the arcs, not the gear.</summary>
+    public static double TorpedoTrainDegS(Era era) => era >= Era.Wwii ? 6 : 3;
+
+    /// <summary>PLACEHOLDER: how long a tube takes to load again, s: a submerged tube's ~3 minutes (the torpedo run in
+    /// from the room by hand), a deck mount's reloads (when it carries any) ~10 (the IJN's reload gear ~5 by 1940).
+    /// Shipgen gives the torpedoes carried, not the gear.</summary>
+    public static double TorpedoReloadS(LauncherKind kind, Era era) =>
+        kind == LauncherKind.Tube ? 180 : era >= Era.Wwii ? 300 : 600;
+
     /// <summary>PLACEHOLDER: TD/L = 0.341·(L/B)^1.3, times 0.77 for two rudders or more, kept to 2.5-8 (4-8
     /// under 60 m: planing craft turn in 3-6 lengths). A rough fit to
     /// research/simulation/fire-control-research/manoeuvring.md §1: a single-rudder ship of L/B 6 turns in ~3.5

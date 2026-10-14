@@ -28,7 +28,7 @@ public static class GivenHits
         public double PowerCap, SpeedShare, MainWorking, MainMounts, DirectorsWorking, Directors;
         public int Crippled, Slowed, SteeringLost, Lost, MainSilenced;
         public readonly int[] LostBy = new int[Enum.GetValues<LossKind>().Length];
-        public double WaterT;
+        public double WaterT, ListDeg;
         public double FallDeg, StrikeMs;
 
         public double Share(Outcome o) => Hits > 0 ? (double)Outcomes[(int)o] / Hits : 0;
@@ -122,36 +122,103 @@ public static class GivenHits
                     if (before[i] < PartState.Disabled && k0.State[i] >= PartState.Disabled)
                         rep.PartsOut[i]++;
             }
-            // the ship after its hits, and its flooding and fire run on
-            if (settleS > 0)
-                w.Damage.Settle(w, entity, settleS);
-            var kk = w.Ships.Store.Combat.Condition(slot);
-            rep.WaterT += kk.WaterT;
-            rep.LostBy[(int)kk.Loss]++;
-            int main = 0, mainOk = 0, dirs = 0;
-            for (int m = 0; m < target.Mounts.Length; m++)
-                if (target.Mounts[m].Kind == ComponentKind.Main)
-                {
-                    main++;
-                    mainOk += kk.MountWorks[m] ? 1 : 0;
-                }
-            foreach (bool d in kk.DirectorWorks)
-                dirs += d ? 1 : 0;
-            rep.PowerCap += kk.PowerCap;
-            double top = target.Motion.MaxSpeedKn, speed = target.SpeedAt(target.PowerAt(top) * kk.PowerCap) / top;
-            rep.SpeedShare += speed;
-            rep.MainWorking += mainOk;
-            rep.MainMounts += main;
-            rep.DirectorsWorking += dirs;
-            rep.Directors += kk.DirectorWorks.Length;
-            bool lost = kk.Status != ShipStatus.Afloat, slowed = speed < SlowShare, steer = kk.Steering != Steering.Free;
-            rep.Lost += lost ? 1 : 0;
-            rep.Slowed += slowed ? 1 : 0;
-            rep.SteeringLost += steer ? 1 : 0;
-            rep.MainSilenced += main > 0 && mainOk == 0 ? 1 : 0;
-            rep.Crippled += lost || slowed || steer || main > 0 && mainOk == 0 ? 1 : 0;
+            After(rep, target, w, entity, slot, settleS);
         }
         return rep;
+    }
+
+    /// <summary>Torpedo hits (docs/battle/fighting.md 4.6): n of a torpedo on a class, at its set depth on its side, along
+    /// the waterline (at a share of its length from the stern, 0-1, or anywhere on it: NaN), to starboard, in runs of
+    /// perShip hits on one ship, each through the world's own damage system.</summary>
+    public static Report Torpedoes(ShipClass target, TorpedoRow torpedo, double depthM, double atShare, int n, int perShip, ulong seed, SimSettings settings,
+        double settleS = 0)
+    {
+        var rep = new Report { PartsOut = new int[target.NodeCount] };
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), seed, settings);
+        int cls = w.Ships.AddClass(target);
+        var rng = RandomStream.Named(seed, "given torpedoes");
+        double x0 = double.MaxValue, x1 = double.MinValue;
+        foreach (var p in target.Solids.Waterline)
+            (x0, x1) = (Math.Min(x0, p.X), Math.Max(x1, p.X));
+        double z = target.Vertical.Waterline - depthM;
+        int entity = 0;
+        while (rep.Hits < n)
+        {
+            if (entity != 0)
+                w.Apply(ShipSystem.Drop(entity));
+            w.Apply(ShipSystem.Spawn(cls, 56, 4, 0, 15));
+            entity = w.Ships.NewestEntity;
+            int slot = w.Ships.Store.SlotOf(entity);
+            rep.Ships++;
+            for (int k = 0; k < perShip && rep.Hits < n; k++)
+            {
+                int cell;
+                double x, y;
+                do
+                {
+                    x = x0 + (double.IsNaN(atShare) ? rng.NextDouble() : atShare) * (x1 - x0);
+                    (cell, y) = FloodModel.SideCell(target, x, z, true);
+                }
+                while (cell < 0 && double.IsNaN(atShare));
+                if (cell < 0)
+                    throw new ArgumentException($"no hull at {x:0.0} m, {depthM:0.0} m down on {target.Name}");
+                var k0 = w.Ships.Store.Combat.Condition(slot);
+                var before = (PartState[])k0.State.Clone();
+                w.Damage.Strike(w, new Hit
+                {
+                    Ship = entity, Ms = w.Time.Ms, Point = new P3(x, y, z), Direction = new P3(0, -1, 0), SpeedMs = 20, Source = HitSource.Torpedo,
+                    Torpedo = torpedo, ShellType = -1,
+                });
+                var fx = w.Damage.LastEffects;
+                rep.Hits++;
+                rep.Outcomes[(int)w.Damage.LastTerminal.Outcome]++;
+                rep.Magazines += fx.Magazine ? 1 : 0;
+                rep.CrewLost += fx.CrewLost;
+                rep.BreachM2 += fx.BreachM2;
+                string where = fx.Part >= target.Components.Length ? target.Rooms[fx.Part - target.Components.Length].Kind.ToString() : "-";
+                rep.Struck[where] = rep.Struck.GetValueOrDefault(where) + 1;
+                for (int i = 0; i < before.Length; i++)
+                    if (before[i] < PartState.Disabled && k0.State[i] >= PartState.Disabled)
+                        rep.PartsOut[i]++;
+            }
+            After(rep, target, w, entity, slot, settleS);
+        }
+        return rep;
+    }
+
+    /// <summary>A ship after its hits: its flooding and fire run on for a while, then what it can still do into the
+    /// report.</summary>
+    static void After(Report rep, ShipClass target, World w, int entity, int slot, double settleS)
+    {
+        // the ship after its hits, and its flooding and fire run on
+        if (settleS > 0)
+            w.Damage.Settle(w, entity, settleS);
+        var kk = w.Ships.Store.Combat.Condition(slot);
+        rep.WaterT += kk.WaterT;
+        rep.LostBy[(int)kk.Loss]++;
+        int main = 0, mainOk = 0, dirs = 0;
+        for (int m = 0; m < target.Mounts.Length; m++)
+            if (target.Mounts[m].Kind == ComponentKind.Main)
+            {
+                main++;
+                mainOk += kk.MountWorks[m] ? 1 : 0;
+            }
+        foreach (bool d in kk.DirectorWorks)
+            dirs += d ? 1 : 0;
+        rep.PowerCap += kk.PowerCap;
+        double top = target.Motion.MaxSpeedKn, speed = target.SpeedAt(target.PowerAt(top) * kk.PowerCap) / top;
+        rep.SpeedShare += speed;
+        rep.MainWorking += mainOk;
+        rep.MainMounts += main;
+        rep.DirectorsWorking += dirs;
+        rep.Directors += kk.DirectorWorks.Length;
+        bool lost = kk.Status != ShipStatus.Afloat, slowed = speed < SlowShare, steer = kk.Steering != Steering.Free;
+        rep.Lost += lost ? 1 : 0;
+        rep.Slowed += slowed ? 1 : 0;
+        rep.SteeringLost += steer ? 1 : 0;
+        rep.MainSilenced += main > 0 && mainOk == 0 ? 1 : 0;
+        rep.Crippled += lost || slowed || steer || main > 0 && mainOk == 0 ? 1 : 0;
+        rep.ListDeg += Math.Abs(kk.Attitude.HeelDeg);
     }
 
     /// <summary>Where the path met the sea before crossing i, or NaN.</summary>

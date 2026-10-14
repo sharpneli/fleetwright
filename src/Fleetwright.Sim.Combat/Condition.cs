@@ -16,8 +16,9 @@ public enum HitSource : byte
 
 /// <summary>A hit (docs/battle/fighting.md 4.3a; the architecture's "damage takes a hit, not a shell flight"): the ship
 /// struck (an entity), when, where on it and which way the shell was going, both in the ship's own frame (the hitboxes':
-/// +x bow, +y starboard, heights over the main deck), its striking speed, what struck it, the shell, and who fired (an
-/// entity, and the battery). Torpedoes, mines, collisions and coarse fire's samples come in as more hits.</summary>
+/// +x bow, +y starboard, heights over the main deck), its striking speed, what struck it, the shell (or the torpedo),
+/// and who fired (an entity, and the battery; a torpedo's launcher). Torpedoes (4.6), mines, collisions and coarse fire's
+/// samples come in as more hits.</summary>
 public readonly record struct Hit
 {
     public int Ship { get; init; }
@@ -28,6 +29,8 @@ public readonly record struct Hit
     public double SpeedMs { get; init; }
     public HitSource Source { get; init; }
     public ShellTypeRow Shell { get; init; }
+    /// <summary>A torpedo's hit (<see cref="HitSource.Torpedo"/>): the torpedo, its charge and calibre.</summary>
+    public TorpedoRow Torpedo { get; init; }
     /// <summary>The shell's type in the shooter's class (for the log), or -1.</summary>
     public int ShellType { get; init; }
     public int Shooter { get; init; }
@@ -85,7 +88,7 @@ public sealed class ShipCondition
     public PartFlags[] Flags = [];
     public double[] WaterM3 = [], BreachM2 = [], BreachY = [], BreachZ = [];
     public bool[] CellFire = [], CellOpened = [];
-    public bool[] MountWorks = [], DirectorWorks = [], EyeWorks = [];
+    public bool[] MountWorks = [], DirectorWorks = [], EyeWorks = [], TubeWorks = [];
 
     public double CrewLost;
     public ShipStatus Status;
@@ -132,6 +135,7 @@ public sealed class ShipCondition
             MountWorks = new bool[c.Mounts.Length];
             DirectorWorks = new bool[c.Directors.Length];
             EyeWorks = new bool[c.Eyes.Length];
+            TubeWorks = new bool[c.Tubes.Length];
         }
         else
         {
@@ -147,6 +151,7 @@ public sealed class ShipCondition
         Array.Fill(MountWorks, true);
         Array.Fill(DirectorWorks, true);
         Array.Fill(EyeWorks, true);
+        Array.Fill(TubeWorks, true);
         (CrewLost, Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (0, ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
         Version++;
@@ -185,6 +190,13 @@ public sealed class ShipCondition
     };
 
     public bool Has(int node, PartFlags f) => (Flags[node] & f) != 0;
+
+    /// <summary>Whether a launcher (the class's Launchers) can fire: its mount or its tube works.</summary>
+    public bool LauncherWorks(int launcher)
+    {
+        ref readonly var l = ref Class.Launchers[launcher];
+        return l.Kind == LauncherKind.Mount ? MountWorks[l.Index] : TubeWorks[l.Index];
+    }
 
     /// <summary>The working mounts of n (for the strip and tests).</summary>
     public int MountsWorking

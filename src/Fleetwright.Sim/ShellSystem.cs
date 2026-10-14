@@ -293,9 +293,11 @@ public sealed class ShellSystem : IWorldSystem
                 for (int c = 0; c < n; c++)
                 {
                     int ship = candidates[c];
+                    if (store[ship].Entity == s.Shooter)
+                        continue;   // not its own ship (at short range the whole flight is in the window: it starts at the muzzle)
                     var cls = ships.Class(store[ship].ClassIndex);
                     long midMs = s.FiredMs + (long)Math.Round((chordTime[j] + chordTime[j + 1]) / 2 * 1000);
-                    var frame = FrameAt(ship, midMs);
+                    var frame = ships.FrameAt(ship, midMs);
                     var attitude = store.Combat.Condition(ship).Attitude;
                     int mounts = cls.Mounts.Length;
                     if (bearings.Length < mounts)
@@ -323,23 +325,6 @@ public sealed class ShellSystem : IWorldSystem
             }
         }
         world.Schedule(new WorldTime(Math.Max(world.Time.Ms, s.FiredMs + (long)Math.Floor(s.EndS * 1000))), EventTier.Fine, slot, Id, EndEvent, s.Generation);
-    }
-
-    /// <summary>A ship's frame at a moment near now: on rails or coarse, its own; on the fine tick, its pose carried on
-    /// along its course at its speed (the window is a fraction of a second).</summary>
-    ShipFrame FrameAt(int slot, long ms)
-    {
-        var store = ships.Store;
-        store.PoseAt(slot, ms, out var p, out var f);
-        var ship = store[slot];
-        if (ship.Tier == ClockTier.Fine)
-        {
-            double d = ship.Speed * (ms - ship.PoseMs) / 1000;
-            p = (p + f * d).Normalized() * Earth.Radius;
-            var up = p.Normalized();
-            f = (f - up * Vec3d.Dot(f, up)).Normalized();
-        }
-        return ShipFrame.At(p, f);
     }
 
     // ------------------------------------------------------------------ the rest

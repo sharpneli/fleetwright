@@ -5,16 +5,18 @@ namespace Fleetwright.Sim.Combat;
 
 /// <summary>What a hit did, for the log and the report: the part it's told by (a node: the part it burst in or was
 /// stopped by, else the first it entered; -1 for none), how many parts it wrecked, put out of action or damaged, the
-/// crew it hit, the holes it opened to the sea (m²), and whether it jammed a mount, started a fire or set off a
-/// magazine.</summary>
+/// crew it hit, the holes it opened to the sea (m²), and whether it jammed a mount, started a fire, set off a magazine
+/// or broke the ship's back.</summary>
 public struct EffectsResult
 {
     public int Part;
     public int Destroyed, Disabled, Damaged;
     public double CrewLost, BreachM2;
     public bool Jammed, Fire, Magazine;
+    /// <summary>The hull girder cut through (an underwater explosion's, 4.6): the ship breaks in two.</summary>
+    public bool Broken;
 
-    public readonly bool Changed => Destroyed + Disabled + Damaged > 0 || BreachM2 > 0 || Jammed || Fire || Magazine;
+    public readonly bool Changed => Destroyed + Disabled + Damaged > 0 || BreachM2 > 0 || Jammed || Fire || Magazine || Broken;
 }
 
 /// <summary>EFFECTS (docs/battle/fighting.md 4.3a): a port of the effects half of research/simulation/damage-research/
@@ -303,14 +305,14 @@ public static class Effects
 
     /// <summary>What a shell passing through a part does to it: a mount, a director, a shaft or a rudder is put out of
     /// action; plating, a funnel or a mast is damaged.</summary>
-    static PartState Struck(ComponentKind kind) => kind switch
+    internal static PartState Struck(ComponentKind kind) => kind switch
     {
         ComponentKind.Main or ComponentKind.Secondary or ComponentKind.Torpedo or ComponentKind.Aa or ComponentKind.Shaft or ComponentKind.Propeller
             or ComponentKind.Rudder or ComponentKind.TorpedoTube => PartState.Disabled,
         _ => PartState.Damaged,
     };
 
-    static void Count(ref EffectsResult res, ShipCondition k, int node, PartState s)
+    internal static void Count(ref EffectsResult res, ShipCondition k, int node, PartState s)
     {
         switch (s)
         {
@@ -381,7 +383,7 @@ public static class Effects
     static double DeckMm(ShipClass c, int deck) => c.Decks[deck].PlateMm + c.Decks[deck].ArmourMm;
 
     /// <summary>How far a point is from a part: a mount's turret (a cylinder about its pivot), else its box.</summary>
-    static double Distance(ShipClass c, int i, P3 p)
+    internal static double Distance(ShipClass c, int i, P3 p)
     {
         ref readonly var comp = ref c.Components[i];
         int m = c.MountOf(i);
@@ -396,7 +398,7 @@ public static class Effects
         return BoxDistance(comp.Bounds, p);
     }
 
-    static double BoxDistance(in Box b, P3 p)
+    internal static double BoxDistance(in Box b, P3 p)
     {
         double dx = Math.Max(Math.Max(b.X0 - p.X, p.X - b.X1), 0), dy = Math.Max(Math.Max(b.Y0 - p.Y, p.Y - b.Y1), 0),
             dz = Math.Max(Math.Max(b.Base - p.Z, p.Z - b.Top), 0);

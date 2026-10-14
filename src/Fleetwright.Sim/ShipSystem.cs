@@ -77,6 +77,22 @@ public sealed partial class ShipSystem : IWorldSystem
     /// <summary>A class by its registry id, waiting for its build if it must.</summary>
     public ShipClass Class(int id) => Registry.Get(id) ?? throw new InvalidOperationException($"class {id} didn't build: {Registry.ErrorOf(id)}");
 
+    /// <summary>A ship's frame at a moment near now (a shell's window, a torpedo's next piece): on rails or coarse, its
+    /// own; on the fine tick, its pose carried on along its course at its speed (seconds at most).</summary>
+    public ShipFrame FrameAt(int slot, long ms)
+    {
+        Store.PoseAt(slot, ms, out var p, out var f);
+        var ship = Store[slot];
+        if (ship.Tier == ClockTier.Fine)
+        {
+            double d = ship.Speed * (ms - ship.PoseMs) / 1000;
+            p = (p + f * d).Normalized() * Earth.Radius;
+            var up = p.Normalized();
+            f = (f - up * Vec3d.Dot(f, up)).Normalized();
+        }
+        return ShipFrame.At(p, f);
+    }
+
     /// <summary>A class's handling in this world, made the first time a ship of it is.</summary>
     public Handling HandlingOf(int id)
     {
@@ -397,6 +413,14 @@ public sealed partial class ShipSystem : IWorldSystem
             v.MountStart[n] = mounts;
             for (int m = 0; m < count; m++)
                 v.MountBearingDeg[mounts++] = ship.MountBearingDeg(m);
+        }
+        var launchers = ship.Handling.Class.Launchers;
+        (v.TorpedoesLoaded[n], v.TorpedoesLeft[n]) = (0, 0);
+        for (int l = 0; l < launchers.Length && orders; l++)
+        {
+            var st = s.Combat.Launcher(i, l, launchers[l], s.NowMs);
+            v.TorpedoesLoaded[n] += st.Loaded;
+            v.TorpedoesLeft[n] += st.Loaded + st.Spare;
         }
         PutDamage(v, i, n);
     }

@@ -29,7 +29,9 @@ public enum HoleAt : byte
 }
 
 /// <summary>Hits and what they do (docs/battle/fighting.md 4.3a): a hit comes in (<see cref="Strike"/>, from the shell
-/// system as a shell lands; torpedoes, mines and coarse fire later), and at once, in the ship's own frame:
+/// system as a shell lands, from the torpedo system as a torpedo strikes; mines and coarse fire later), and at once, in
+/// the ship's own frame (a torpedo's explosion against the hull is <see cref="Underwater"/>'s, terminal and effects in
+/// one):
 /// <list type="bullet">
 /// <item>its own path: the one tracer from just outside the hit point along the shell's flight, the ship's mounts at
 /// their bearings and the ship at its attitude;</item>
@@ -242,7 +244,7 @@ public sealed class DamageSystem : IWorldSystem
                     }
                 throw new ArgumentException($"no {(ComponentKind)c.A} {c.B} on ship {c.Entity}");
             case DamageCommand.Sink:
-                if (c.A is < (int)LossKind.Magazine or > (int)LossKind.Capsized)
+                if (c.A is < (int)LossKind.Magazine or > (int)LossKind.BrokeInTwo)
                     throw new ArgumentException($"no way of going down {c.A}");
                 Lose(world, slot, k, (LossKind)c.A);
                 break;
@@ -308,21 +310,32 @@ public sealed class DamageSystem : IWorldSystem
         k.Hits++;
         (k.LastShooter, k.LastBattery) = (hit.Shooter, hit.Battery);
 
-        // its own path: from just outside the point along the flight, through the whole ship
         Prepare(cls);
-        int n = cls.Mounts.Length;
-        for (int m = 0; m < n; m++)
-            bearings[m] = CombatStore.BearingAt(store.Combat.Mount(slot, m), cls.Mounts[m], now);
-        var d = hit.Direction;
-        double far = 2 * cls.Solids.Radius + 10;
-        var p0 = new P3(hit.Point.X - d.X, hit.Point.Y - d.Y, hit.Point.Z - d.Z);
-        var p1 = new P3(hit.Point.X + d.X * far, hit.Point.Y + d.Y * far, hit.Point.Z + d.Z * far);
-        ShipTracer.Trace(cls, p0, p1, bearings.AsSpan(0, n), HitQuery.WaterOf(cls, k.Attitude), path);
-
         var rng = stream.Derive((ulong)hits++);
-        var q = qualities[cls];
-        var t = Terminal.Resolve(cls, hit, path, q, settings, ref rng);
-        var e = Effects.Apply(cls, k, hit, path, t, q, settings, propellant[ship.Side], ref rng);
+        TerminalResult t;
+        EffectsResult e;
+        if (hit.Source == HitSource.Torpedo)
+        {
+            // an underwater explosion against the hull (4.6): no path of its own
+            e = Underwater.Apply(cls, k, hit, settings, propellant[ship.Side], ref rng, out var outcome);
+            t = new TerminalResult { Outcome = outcome, Plate = -1 };
+        }
+        else
+        {
+            // its own path: from just outside the point along the flight, through the whole ship
+            int n = cls.Mounts.Length;
+            for (int m = 0; m < n; m++)
+                bearings[m] = CombatStore.BearingAt(store.Combat.Mount(slot, m), cls.Mounts[m], now);
+            var d = hit.Direction;
+            double far = 2 * cls.Solids.Radius + 10;
+            var p0 = new P3(hit.Point.X - d.X, hit.Point.Y - d.Y, hit.Point.Z - d.Z);
+            var p1 = new P3(hit.Point.X + d.X * far, hit.Point.Y + d.Y * far, hit.Point.Z + d.Z * far);
+            ShipTracer.Trace(cls, p0, p1, bearings.AsSpan(0, n), HitQuery.WaterOf(cls, k.Attitude), path);
+
+            var q = qualities[cls];
+            t = Terminal.Resolve(cls, hit, path, q, settings, ref rng);
+            e = Effects.Apply(cls, k, hit, path, t, q, settings, propellant[ship.Side], ref rng);
+        }
 
         var fx = HitEffect.None;
         if (e.Destroyed > 0)
@@ -339,14 +352,18 @@ public sealed class DamageSystem : IWorldSystem
             fx |= HitEffect.Jammed;
         if (e.Changed && k.Status == ShipStatus.Afloat)
             fx |= Recompute(world, slot, k, ref rng);
-        bool blew = e.Magazine && k.Status == ShipStatus.Afloat;
+        bool blew = e.Magazine && k.Status == ShipStatus.Afloat, broke = e.Broken && !blew && k.Status == ShipStatus.Afloat;
         if (blew)
             fx |= HitEffect.Magazine;
+        if (broke)
+            fx |= HitEffect.Broken;
         (LastTerminal, LastEffects, LastEffect) = (t, e, fx);
         log.Add(new CombatEntry(now, CombatEvent.Hit, hit.Shooter, hit.Battery, hit.Ship, hit.ShellType, e.Part, t.Outcome, fx, hit.Shell.Kind,
-            (float)hit.Shell.CalibreMm));
+            (float)(hit.Source == HitSource.Torpedo ? hit.Torpedo.CalibreMm : hit.Shell.CalibreMm), hit.Source));
         if (blew)
             Lose(world, slot, k, LossKind.Magazine);
+        else if (broke)
+            Lose(world, slot, k, LossKind.BrokeInTwo);
         else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || e.Fire))
             Wake(world, slot, k);   // water or fire: its steps begin (or come sooner)
     }
@@ -406,6 +423,7 @@ public sealed class DamageSystem : IWorldSystem
         k.NextStepMs = -1;
         k.StepGen++;   // no more steps: its water and attitude stay as they were
         Array.Fill(k.MountWorks, false);
+        Array.Fill(k.TubeWorks, false);
         Array.Fill(k.DirectorWorks, false);
         Freeze(world, slot, k);
         k.Version++;
@@ -418,6 +436,7 @@ public sealed class DamageSystem : IWorldSystem
         {
             LossKind.Magazine => settings.MagazineLossMs,
             LossKind.Capsized => settings.CapsizeMs,
+            LossKind.BrokeInTwo => settings.BrokenMs,
             _ => settings.FounderMs,
         };
         (k.LossMs, k.GoneMs) = (world.Time.Ms, world.Time.Ms + ms);

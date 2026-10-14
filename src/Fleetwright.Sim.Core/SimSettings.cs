@@ -760,6 +760,64 @@ public sealed record SimSettings
     public double SeenTrimDeg { get; init; } = 1;
     public double SeenStoppedKn { get; init; } = 1;
 
+    // ------------------------------------------------------------------ torpedoes (docs/battle/fighting.md 4.6)
+
+    /// <summary>Torpedoes running at once (the pool grows past it), and the ring of their ends the screens read.</summary>
+    public int TorpedoCapacity { get; init; } = 256;
+    public int TorpedoEndCapacity { get; init; } = 256;
+
+    /// <summary>A torpedo's run is checked against the ships near it in pieces this long, ms (each a swept segment, so a
+    /// hit doesn't depend on it); it can't hit in its first metres (arming).</summary>
+    public int TorpedoCheckMs { get; init; } = 2000;
+    public double TorpedoArmM { get; init; } = 200;
+
+    /// <summary>Aiming a spread: a fixed launcher fires within this many degrees of its own bearing (its gyro angle; by
+    /// era), each torpedo's own course error (1 sigma, degrees), the spacing between torpedoes as a share of the target's
+    /// length at the meeting point, and the depth set as a share of the target's draught as it's taken (within the two
+    /// depths, m).</summary>
+    public double[] TorpedoGyroDeg { get; init; } = [5, 20, 90, 90, 90];
+    public double TorpedoCourseSigmaDeg { get; init; } = 1;
+    public double TorpedoSpacingShare { get; init; } = 0.6;
+    public double TorpedoDepthShare { get; init; } = 0.6;
+    public double TorpedoDepthMinM { get; init; } = 1.5;
+    public double TorpedoDepthMaxM { get; init; } = 4.5;
+
+    /// <summary>By era: the chance a torpedo fails on its run (it sinks somewhere along it), and that one that strikes
+    /// doesn't go off.</summary>
+    public double[] TorpedoFail { get; init; } = [0.25, 0.12, 0.1, 0.08, 0.05];
+    public double[] TorpedoDud { get; init; } = [0.15, 0.1, 0.08, 0.1, 0.05];
+
+    /// <summary>The explosion at the hull (damage-model-research.md §3.4, A6): how far inboard it wrecks, m per kg^⅓ of its
+    /// charge (TNT's worth; a 300 kg charge 4.7 m, the depth of a TDS rated for it), and the hole it tears in the side,
+    /// m² per kg^⅔ (Seydlitz's 12 × 4 m from a ~200 kg charge). Each other cell within the reach takes a hole of its own
+    /// of this share of it, less by its distance; machinery spaces within this many reaches may trip from the shock (the
+    /// chance), a magazine within the reach may go (once a hit, times the side's propellant: torpedoes seldom set one
+    /// off), and this share of the battle crew in the spaces it floods is lost.</summary>
+    public double TorpedoReachK { get; init; } = 0.7;
+    public double TorpedoHoleK { get; init; } = 1.4;
+    public double TorpedoInnerHoleShare { get; init; } = 0.5;
+    public double TorpedoShockShare { get; init; } = 2;
+    public double TorpedoShockChance { get; init; } = 0.5;
+    public double TorpedoMagazineChance { get; init; } = 0.05;
+    public double TorpedoCasualtyShare { get; init; } = 0.5;
+
+    /// <summary>The hull girder (damage-model-research.md §1.6, 03-small-vessels: small ships die by broken backs): an
+    /// underwater explosion breaks a ship whose depth (keel to main deck) is small beside the explosion's height (twice its
+    /// reach): never when the height is under the first share of the depth, always over the second, and between them by
+    /// the share; times 1 over the middle half of its length, falling to none at the ends. A ship broken in two goes
+    /// under in <see cref="BrokenMs"/>.</summary>
+    public double[] TorpedoBreakShare { get; init; } = [0.7, 1.0];
+    public int BrokenMs { get; init; } = 300_000;
+
+    /// <summary>The captains' torpedoes (CaptainLayer.Fire.cs): at will when the run for the fast setting is within this
+    /// share of its range, so many a firing, then this long before the next; a torpedo craft's attack closes to this
+    /// share of the fast setting's range, and turns away for this long after firing.</summary>
+    public double TorpedoFireShare { get; init; } = 0.9;
+    public int TorpedoSpread { get; init; } = 2;
+    public int TorpedoRefireMs { get; init; } = 60_000;
+    public double TorpedoAttackShare { get; init; } = 0.7;
+    public int TorpedoTurnAwayMs { get; init; } = 180_000;
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its

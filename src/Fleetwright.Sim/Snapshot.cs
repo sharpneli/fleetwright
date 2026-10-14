@@ -79,6 +79,12 @@ public sealed class Snapshot
     public ShellsView Shells { get; } = new();
     public SplashesView Splashes { get; } = new();
 
+    /// <summary>Torpedoes running (each where its run puts it at the frame's time) and their ends of the last
+    /// <see cref="SimSettings.SplashLifeMs"/>: hits, and those that sank at the end of their run (docs/battle/fighting.md
+    /// 4.6).</summary>
+    public TorpedoesView Torpedoes { get; } = new();
+    public SplashesView TorpedoEnds { get; } = new();
+
     /// <summary>The engaged batteries of the ships shown, and the newest lines of the combat log (docs/battle/fighting.md
     /// 4.2b).</summary>
     public BatteriesView Batteries { get; } = new();
@@ -212,8 +218,42 @@ public sealed class ShellsView
     }
 }
 
+/// <summary>Torpedoes running: where each entered the water (on the sea's surface) and its heading there, when, its
+/// speed, m/s, how long its run lasts, s (to its end, or the hit), who fired it and the ship it'll hit (an entity, or -1).</summary>
+public sealed class TorpedoesView
+{
+    public int Count;
+    public Vec3d[] Origin = [], Forward = [];
+    public long[] LaunchMs = [];
+    public double[] SpeedMs = [], EndS = [];
+    public int[] Shooter = [], Hit = [];
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Origin.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, Origin.Length * 2));
+        Array.Resize(ref Origin, n);
+        Array.Resize(ref Forward, n);
+        Array.Resize(ref LaunchMs, n);
+        Array.Resize(ref SpeedMs, n);
+        Array.Resize(ref EndS, n);
+        Array.Resize(ref Shooter, n);
+        Array.Resize(ref Hit, n);
+    }
+
+    /// <summary>Where torpedo i is at a moment (on the surface over it), and how far it has run, m.</summary>
+    public Vec3d At(int i, long ms, out double runM)
+    {
+        runM = SpeedMs[i] * Math.Clamp((ms - LaunchMs[i]) / 1000.0, 0, EndS[i]);
+        var (p, f) = (Origin[i], Forward[i]);
+        Earth.Advance(ref p, ref f, runM);
+        return p;
+    }
+}
+
 /// <summary>The splashes and hits of the last while, newest first: where, when, the ship hit (an entity, -1 for a
-/// splash), who fired and the shell's calibre.</summary>
+/// splash), who fired and the shell's calibre (the torpedo's, for a torpedo's end).</summary>
 public sealed class SplashesView
 {
     public int Count;
@@ -432,6 +472,9 @@ public sealed class ShipsView
     public double[] MountBearingDeg = [];
     public int MountCount;
 
+    /// <summary>Each ship's torpedoes (docs/battle/fighting.md 4.6): in its tubes now, and all it has left.</summary>
+    public int[] TorpedoesLoaded = [], TorpedoesLeft = [];
+
     /// <summary>Damage as it shows (docs/battle/fighting.md 4.4): each ship's attitude in the water; how it's going down
     /// (None while afloat), from when and till when it's gone under, ms; its parts (the class's components) damaged,
     /// out of action, wrecked, jammed or burning, <see cref="PartCount"/> from <see cref="PartStart"/> in
@@ -526,6 +569,8 @@ public sealed class ShipsView
         Array.Resize(ref PartCount, n);
         Array.Resize(ref FireStart, n);
         Array.Resize(ref FireCount, n);
+        Array.Resize(ref TorpedoesLoaded, n);
+        Array.Resize(ref TorpedoesLeft, n);
         int had = MountStart.Length;
         Array.Resize(ref MountStart, n);
         Array.Fill(MountStart, -1, had, n - had);   // at rest, unless filled

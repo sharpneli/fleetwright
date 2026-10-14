@@ -22,7 +22,14 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// admiral's order he hands down again (a redistribution) only reaches the ships still holding his; a fresh one, from a
 /// group just given a fire order, reaches all of them.</item>
 /// <item><b>Fight:</b> a behaviour, as follow and station are: close to the band, hold it with the main battery bearing,
-/// turn away when outgunned (<see cref="Behaviours.Fight"/>).</item>
+/// turn away when outgunned (<see cref="Behaviours.Fight"/>). A torpedo craft's (no gun of 6" or more, torpedoes left)
+/// is the attack: close to <see cref="SimSettings.TorpedoAttackShare"/> of its torpedoes' fast setting whatever
+/// guns it faces, fire, turn away for <see cref="SimSettings.TorpedoTurnAwayMs"/>, and again (docs/battle/fighting.md
+/// 4.6).</item>
+/// <item><b>Torpedoes at will</b> (4.6), beside the guns, unless holding fire: at the engaged ship, else the biggest
+/// contact in sight, when its run for the fast setting is within <see cref="SimSettings.TorpedoFireShare"/> of its range
+/// and the launchers bear; <see cref="SimSettings.TorpedoSpread"/> a firing, then <see cref="SimSettings.TorpedoRefireMs"/>
+/// before the next.</item>
 /// </list>
 /// Guns are silent in the coarse tier (4.9): a coarse ship keeps its batteries' targets, and they fire again on the fine
 /// tick.</summary>
@@ -138,6 +145,92 @@ public sealed partial class CaptainLayer
             if (want != current)
                 ctx.Issue(want == 0 ? GunnerySystem.Cease(own.Entity, b) : GunnerySystem.Engage(own.Entity, b, want));
         }
+        Torpedoes(ctx, ref cap, own, slot, pic);
+    }
+
+    /// <summary>His torpedoes at will: at the engaged ship if it's within the fast setting's reach, else the biggest
+    /// contact in sight within it, the nearest first, when his launchers bear on it.</summary>
+    void Torpedoes(in AiContext ctx, ref Captain cap, ShipState own, int slot, Picture? pic)
+    {
+        var s = ctx.Settings;
+        var cls = own.Handling.Class;
+        long now = ctx.NowMs;
+        if (pic == null || cls.Launchers.Length == 0 || cap.Fire == FireOrder.Hold || cap.TorpedoMs != 0 && now - cap.TorpedoMs < s.TorpedoRefireMs)
+            return;
+        var (reach, speed) = FastSetting(cls);
+        reach *= s.TorpedoFireShare;
+        int target = 0;
+        if (cap.Fire == FireOrder.Engage && pic.IndexOf(cap.FireTarget) is int ei and >= 0 && pic[ei].InSight && Run(ctx, pic, own, ei, speed) <= reach)
+            target = cap.FireTarget;
+        if (target == 0)
+        {
+            int bestRank = int.MaxValue;
+            double bestRun = double.MaxValue;
+            foreach (int i in seen.Near(ctx.World, own.Side, own.Position, reach))
+            {
+                double run = Run(ctx, pic, own, i, speed);
+                int rank = TorpedoRank(pic[i].Type);
+                if (run <= reach && (rank < bestRank || rank == bestRank && run < bestRun))
+                    (target, bestRank, bestRun) = (pic[i].Entity, rank, run);
+            }
+        }
+        if (target == 0 || ctx.World.Torpedoes.Ready(ctx.World, own.Entity, target) == 0)
+            return;
+        ctx.Issue(TorpedoSystem.Launch(own.Entity, target, s.TorpedoSpread));
+        cap.TorpedoMs = now;
+    }
+
+    /// <summary>The run a torpedo at a speed needs to meet a contact going on as its navy holds it, m (infinite when it
+    /// can't).</summary>
+    double Run(in AiContext ctx, Picture pic, ShipState own, int i, double speedMs)
+    {
+        var (q, v, _) = pic.EstimateAt(i, ctx.NowMs, ctx.Settings);
+        return TorpedoAim.Intercept(own.Position, q, v, speedMs, out _, out double run) ? run : double.PositiveInfinity;
+    }
+
+    /// <summary>A class's torpedoes' fast setting: the longest range of its launchers' (m), and its speed (m/s).</summary>
+    static (double RangeM, double SpeedMs) FastSetting(ShipClass cls)
+    {
+        double range = 0, speed = 0;
+        foreach (ref readonly var l in cls.Launchers)
+        {
+            ref readonly var t = ref cls.Torpedoes[l.Torpedo];
+            if (t.FastRangeM > range)
+                (range, speed) = (t.FastRangeM, t.FastKn * Handling.MsPerKnot);
+        }
+        return (range, speed);
+    }
+
+    /// <summary>The gun that makes a ship more than a torpedo craft: a cruiser's 6".</summary>
+    const double TorpedoCraftGunMm = 150;
+
+    /// <summary>Whom torpedoes are for: the biggest first.</summary>
+    static int TorpedoRank(ShipType t) => t switch
+    {
+        ShipType.Capital => 0,
+        ShipType.Cruiser => 1,
+        ShipType.Merchant => 2,
+        ShipType.Unknown => 3,
+        ShipType.Destroyer => 4,
+        _ => 5,
+    };
+
+    /// <summary>Whether a ship fights with its torpedoes: one with no gun of <see cref="TorpedoCraftGunMm"/> or more (a
+    /// torpedo boat, a destroyer: not a cruiser), with torpedoes left in launchers that work.</summary>
+    static bool TorpedoCraft(in AiContext ctx, ShipState own, int slot)
+    {
+        var cls = own.Handling.Class;
+        foreach (ref readonly var b in cls.Batteries)
+            if (b.CalibreMm >= TorpedoCraftGunMm)
+                return false;
+        var k = ctx.Ships.Combat.Condition(slot);
+        for (int l = 0; l < cls.Launchers.Length; l++)
+        {
+            var st = ctx.Ships.Combat.Launcher(slot, l, cls.Launchers[l], ctx.NowMs);
+            if (k.LauncherWorks(l) && st.Loaded + st.Spare > 0)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>Each battery's reach for fire at will (<see cref="SimSettings.FireReachShare"/> of the range table's), and
@@ -269,6 +362,16 @@ public sealed partial class CaptainLayer
             return;
         if (enemy != cap.FightEnemy)
             (cap.FightEnemy, cap.FightSide) = (enemy, 0);
+
+        if (TorpedoCraft(ctx, own, slot))
+        {
+            // the attack: in to the torpedoes' range whatever guns he faces, fire, away, and in again
+            cap.FightAway = cap.TorpedoMs != 0 && ctx.NowMs - cap.TorpedoMs < s.TorpedoTurnAwayMs;
+            var (course0, kn0) = cap.FightAway ? Behaviours.Run(own, t)
+                : Behaviours.Fight(own, t, s.TorpedoAttackShare * FastSetting(cls).RangeM, s.FightBandShare, s.FightCloseDeg, ref cap.FightSide);
+            Give(ctx, own, course0, cap.LimitKn > 0 ? Math.Min(kn0, cap.LimitKn) : kn0);
+            return;
+        }
 
         var (theirs, ours) = Weigh(ctx, own);
         double ratio = s.FightOutgunnedRatio;

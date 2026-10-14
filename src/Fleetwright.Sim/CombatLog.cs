@@ -14,9 +14,12 @@ public enum CombatEvent : byte
     Hit,
     /// <summary>A salvo's fall straddled its target (Count shells), as it truly fell.</summary>
     Straddle,
-    /// <summary>A ship (Target) going down: Count says how (a <see cref="LossKind"/>: its magazine, foundered, capsized);
+    /// <summary>A ship (Target) going down: Count says how (a <see cref="LossKind"/>: its magazine, foundered, capsized,
+    /// broken in two);
     /// Shooter and Battery hit it last.</summary>
     Lost,
+    /// <summary>A launcher (Battery) fired Count torpedoes at Target (4.6).</summary>
+    Torpedoes,
 }
 
 /// <summary>What a hit did, as the log tells it.</summary>
@@ -36,14 +39,16 @@ public enum HitEffect : ushort
     Steering = 128,
     /// <summary>Its power cut.</summary>
     Power = 256,
+    /// <summary>Its back broken (an underwater explosion's): it breaks in two.</summary>
+    Broken = 512,
 }
 
 /// <summary>A line of the combat log: when, what, who fired (an entity) with which battery, at whom, and a count or a
 /// shell type; a hit's line also what it did: the part it's told by (a node of the target's class: a component, then
-/// the rooms; -1 for none), the outcome, its effects, and the shell's kind and calibre (so the line reads after the
-/// shooter is gone).</summary>
+/// the rooms; -1 for none), the outcome, its effects, the shell's kind and calibre (so the line reads after the
+/// shooter is gone), and what struck it (a torpedo's hit: Battery is its launcher, the calibre the torpedo's).</summary>
 public readonly record struct CombatEntry(long Ms, CombatEvent Kind, int Shooter, int Battery, int Target, int Count, int Part = -1,
-    Outcome Outcome = default, HitEffect Effect = default, ShellKind Shell = default, float CalibreMm = 0);
+    Outcome Outcome = default, HitEffect Effect = default, ShellKind Shell = default, float CalibreMm = 0, HitSource Source = HitSource.Shell);
 
 /// <summary>The world's record of the fighting (docs/world/architecture.md: "who fired first and what each hit did";
 /// docs/battle/fighting.md 4.2b): a ring of plain lines, the newest kept. Encounters, missions and the damage report
@@ -84,7 +89,7 @@ public sealed class CombatLog(int capacity)
             if (e.Kind == CombatEvent.Hit)
             {
                 h.Add(e.Part);
-                h.Add((int)e.Outcome | (int)e.Effect << 8);
+                h.Add((int)e.Outcome | (int)e.Effect << 8 | (int)e.Source << 24);
             }
         }
     }

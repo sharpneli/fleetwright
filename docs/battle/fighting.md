@@ -2,8 +2,8 @@
 
 2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
 as its steps are built. **4.0, 4.1, 4.2a, 4.2b and 4.2c done 2026-10-13, 4.3a (what a hit does), 4.3b (fire,
-flooding and going down) and 4.4 (damage seen) 2026-10-14: the first pass is done; 4.6, torpedoes and collisions, is
-next. 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence (decisions 13 and 14, 2026-10-14): a later
+flooding and going down) and 4.4 (damage seen) 2026-10-14: the first pass is done; 4.6 (torpedoes) is done
+2026-10-14 (collisions moved out to 4.11, decision 16), and 4.8 is next. 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence (decisions 13 and 14, 2026-10-14): a later
 tier of their own, the fine-tune pass, once most of the other components are in.** It details step 4 of
 `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite 4.1, 4.3, 4.6, 4.7 and 4.9) and their
 subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
@@ -76,7 +76,7 @@ the mounts ────────────────► LAY, FIRE  salvo:
                                 │
                              LOSS       sunk, dropped, recorded
 
-torpedoes (4.6), mines (4.7), collisions (4.6) and coarse fire's sampled hits (4.9) enter at TERMINAL as more Hits
+torpedoes (4.6), mines (4.7), collisions (4.11) and coarse fire's sampled hits (4.9) enter at TERMINAL as more Hits
 ```
 
 Each box is a link. The research's five causes of a miss (`fire-control-research.md` §0: range measurement, rate
@@ -135,7 +135,7 @@ As the layers already are (plan.md "Inside `Fleetwright.Sim`"), models in `Comba
 
 **The world keeps one acceleration structure for "what is near here"** (decision 11): the cube grid in Earth-centred
 space the contacts got in 2.7c. It's brought up to date once, by its owner, and every system queries it: contacts and
-encounters now, then the ships near a falling shell (4.2a), torpedoes' runs and collisions (4.6), and whatever comes
+encounters now, then the ships near a falling shell (4.2a), torpedoes' runs (4.6), collisions (4.11), and whatever comes
 after. Systems that keep a grid of their own today (the encounters' cube sort, the sightings' grids in each
 encounter's plane) move onto it where it fits, when a step touches them. 4.2a, its first new user, starts by checking
 the grid's shape and when it's updated (it must hold every ship that can be hit, on any clock tier).
@@ -168,7 +168,7 @@ splashes and log entries live in preallocated pools, grown only past their size 
 
 Each step is a session (or a few), starts with the usual investigation, ends with something to run and look at, and
 updates this doc and `plan.md`. **The order** (decision 8: shells first, baby steps): 4.0, 4.1, 4.2a, 4.2b, 4.2c,
-4.3a, 4.3b, 4.4 (the first full pass, ending in the first playable fight), then 4.6, 4.8, 4.9 and 4.10.
+4.3a, 4.3b, 4.4 (the first full pass, ending in the first playable fight), then 4.6, 4.8, 4.9, 4.10 and 4.11.
 
 **Moved out: the fine-tune pass** (decisions 13 and 14). 4.5 (the deepenings) and 4.7 (mines) aren't in that sequence.
 They're a separate tier, independent of the rest, taken once most of the other components are in place: the game is
@@ -1060,7 +1060,10 @@ numbers before and after against the anchors. The list, by link, with where the 
 - **Whose splash it is** (`manual-gunnery-research.md` §5): identification falls as 1/(1 + 0.6·N) with N guns of one
   calibre firing independently; salvo firing fixes it. Until then many guns spotting alone are flattered (decision 9).
 
-### 4.6 Torpedoes and collisions
+### 4.6 Torpedoes
+
+Collisions and ramming were part of this step; they're moved out to a later step of their own (4.11, the user,
+2026-10-14).
 
 - **Torpedoes as tracks:** a straight run at a set speed and depth for its range (placeholders by calibre and era:
   speed and range settings, the warhead from the export), with events at its end. Along the run it's checked against
@@ -1071,9 +1074,121 @@ numbers before and after against the anchors. The list, by link, with where the 
 - **Captains:** a destroyer's v0 attack is close to range, fire, turn away. Flotilla attacks are 5.1's.
 - **The hit** is a `Hit` from a torpedo: an underwater explosion at a hull point. The TDS (`CellRow.TdsM`) absorbs by
   its depth, the hole is sized by the charge, the cells there flood, and machinery in the cell can trip from shock.
-- **Collisions and ramming:** a hull-against-hull test (both `HullField`s in their frames) for ships closer than their
-  half-lengths together, through the grid. v0 breaches the struck ship at the stem's contact point, damages the
-  rammer's bow, and costs both their speed by the closing energy.
+
+**How (planned 2026-10-14, after the investigation):**
+
+- **The facts** (`Sim.Ships`): `ShipClass.Launchers`, one table for the torpedo mounts and the submerged tubes: where
+  the torpedo enters the water, its arcs, whether it trains, its tubes (a mount's barrels, a tube's one), the torpedoes
+  it carries (shipgen's: a deck mount carries no reloads, a submerged tube its `TorpedoesPerTube`) and the torpedo
+  (`ShipClass.Torpedoes`, `TorpedoRow`: calibre, the charge, two settings of speed and range). Placeholders in
+  `DesignerPlaceholders`: the settings by calibre and era (the Great War's 21" 41 kn for 3,900 m or 28 kn for 9,200 m;
+  the range by the calibre cubed), the charge (shipgen's one warhead for every era, times the era's share: the Great
+  War's ~180 kg against the WWII 21"'s ~300), a torpedo mount's training rate, a tube's reload. A tube works while it
+  and its torpedo room do (a function row, as a mount's).
+- **`TorpedoSystem`** (world system 6; the AI becomes 7, so the hashes move once):
+  - `Launch(shooter, target, n)`: a spread of n at a ship its navy holds, from the working, loaded launchers that bear.
+    Each mount trains to the course (analytic anchors, as the guns'), and fires when it gets there; at that moment the
+    aim is solved again from the navy's estimate of the target (position and velocity): the intercept for the setting
+    that reaches (the fast one first), the depth set for the target as it's taken (a share of its draught), the spread
+    over `TorpedoSpreadShare` of the target's length at the meeting point, each torpedo with its own gyro error.
+    A fixed launcher (a beam tube) fires only within `TorpedoGyroDeg` of its own bearing.
+  - A torpedo is a few numbers (where and when it entered the water, its heading, speed, run, depth): its position is
+    closed form on the great circle. A check event every `TorpedoCheckMs` (2 s) sweeps the next piece of its run
+    against the ships the index finds near it: in each ship's frame at the piece's two ends (its pose carried on, as
+    the shells' window has it), at the set depth, through the one tracer; the first hull or part it meets is hit, at
+    the instant along the piece. It can't hit in its first `TorpedoArmM` (arming); some fail and sink early
+    (`TorpedoFail` by era). At the end of its run it sinks. One fired in the fine tier runs on in any tier.
+  - The snapshot carries the torpedoes running and their ends (hits and sinkings) for the map.
+- **The hit** (`Sim.Combat/Underwater.cs`, through `DamageSystem.Strike` as `HitSource.Torpedo`): a dud by era
+  (`TorpedoDud`), else the explosion at the hull point with the charge's reach (`TorpedoReachK`·w^⅓ inboard) and hole
+  (`TorpedoHoleK`·w^⅔ m²). The cell behind the hull takes the hole; every cell within the reach floods too (its own
+  hole), unless the hit's cell is a TDS cell (`TdsM` > 0) deeper than the reach: then the holding bulkhead holds and
+  only the TDS and double-bottom cells flood. Parts within the reach (shafts, propellers, rudders, tubes) are put out of
+  action; machinery spaces within `TorpedoShockShare` times the reach can trip (damaged, by chance); a magazine within
+  it may go (`TorpedoMagazineChance` × the side's propellant). Crew in the flooded cells are lost by share. The log's
+  line: the torpedo, the space, the outcome (exploded, held by the TDS, dud), the effects.
+- **The captains** (`CaptainLayer.Fire.cs`): torpedoes at will beside the guns, for a ship on the fine tick not holding
+  fire: at the engaged target, else the main battery's, else the biggest contact in sight, when its run for the fast
+  setting is within `TorpedoFireShare` of the range; `TorpedoSpread` torpedoes a firing, then `TorpedoRefireMs` before
+  the next. **A torpedo craft's Fight** (a ship of the destroyer type or smaller with torpedoes left) is the attack:
+  close to `TorpedoAttackShare` of the fast setting's range regardless of the guns it faces, fire, turn away for
+  `TorpedoTurnAwayMs`, then again while it has torpedoes; without them it fights as any other ship.
+- **On the map:** each torpedo's wake (a pale line behind it), a hit's flash, the strip's torpedo row (launchers loaded
+  of n, torpedoes left, "torpedoes at (right-click a ship)"), the damage report's torpedo lines. Dev:
+  `-torpedo=ship:target[:n]`.
+- **The bench:** `shipgen torpedo TARGET [--at x|mid|bow|stern] [--n N] [--per-ship K] [--settle MIN]`: torpedo hits
+  along the target's side at the set depth through the world's damage system: water, list, lost, how; and the attack:
+  `--shooter DESIGN --range M [--aspect DEG] [--runs N]`, a spread at the target steaming on (hit %).
+- **Anchors** (wide bands, `damage-model-research.md` §3.4, §A6, 03-small-vessels): one torpedo usually sinks a
+  destroyer; a capital ship takes ~1,000-4,000 t from one (a TDS: 500-1,500 t) and lists 3-6°; it takes several to
+  sink one (Prince of Wales 4, Yamato ~11 on one side); a spread at a steady target at close range hits often, at long
+  range on a manoeuvring one seldom (Jutland, North Cape: a few to 10%).
+- **A scenario:** `flotilla`, a torpedo-boat flotilla's attack on a line of battleships.
+
+**4.6 done 2026-10-14,** as planned above. Where it lives:
+
+- **The facts** (`Sim.Ships`): `TorpedoRow`, `LauncherRow`, `ShipClass.Launchers` and `Torpedoes` (the compiler's
+  `Launchers`); the placeholders `DesignerPlaceholders.Torpedo`, `TorpedoTrainDegS` and `TorpedoReloadS`; a torpedo mount
+  trains now (it had no rate: the NaN bearing 4.4 found). A `Tube` function row per submerged tube
+  (`ShipCondition.TubeWorks`, `LauncherWorks`).
+- **The state:** `CombatStore`'s `LauncherState` per launcher (in the tubes, spares, when they're loaded again; read
+  pure, loaded again only when it fires), and `CombatStore.Train` (a torpedo mount trains, it doesn't elevate).
+- **The system:** `TorpedoSystem` (world system 6; the AI is 7): `Launch(shooter, target, n[, truth])`, `Ready`, the
+  launch, check, hit and end events, the snapshot's `Torpedoes` and `TorpedoEnds`. The aim is `TorpedoAim`
+  (`Sim.Combat`: the intercept on the sea's plane, and the setting that reaches), shared with the captains. A ship's frame
+  near now is `ShipSystem.FrameAt`, moved there from the shells', which both use.
+- **The hit:** `Sim.Combat/Underwater.cs` through `DamageSystem.Strike` (`HitSource.Torpedo`, `Hit.Torpedo`); the
+  outcomes `Exploded` and `Held`; the log's line carries its source (`CombatEntry.Source`) and a launch is its own line
+  (`CombatEvent.Torpedoes`).
+- **The captains** (`CaptainLayer.Fire.cs`): `Torpedoes` (at will), `TorpedoCraft` and the attack in `FightThink`.
+- **On the map:** wakes and hit flashes (`MapScene.Shells.cs`, `DrawTorpedoes`), the strip's `TorpedoRow` (loaded, left,
+  the torpedo's settings, "torpedoes at"), the damage report's lines ("broke in two"). Dev: `-torpedo=ship:target[:n]`,
+  aimed at the ship as it truly is (`truth`: the navy needn't have it in sight).
+- **The bench:** `shipgen torpedo` (`TorpedoBench`, on `GivenHits.Torpedoes`).
+- **The scenario:** `flotilla`, six German boats at four British battleships.
+
+What it settled, beyond the plan:
+
+- **Collisions moved out** to 4.11 (decision 16).
+- **A broken back** (`LossKind.BrokeInTwo`, `HitEffect.Broken`): without it one torpedo sank 10-12% of destroyers, not
+  the research's ~77% (31 torpedoed, 7 survived). An underwater explosion breaks the hull girder by its height (twice the
+  reach) against the hull's depth (`TorpedoBreakShare` 0.7-1.0 of it), full over the middle half of the length and
+  falling to none at the ends; the ship goes under in `BrokenMs` (5 min). Shipgen's destroyers are 2,300-2,800 t and
+  7.2-7.4 m deep, WWII destroyers' size, so that anchor applies as it is.
+- **A magazine rolls once a hit**, at `TorpedoMagazineChance` 0.05 (times the side's propellant): rolled per cell,
+  a magazine in several cells went up from 19% of hits on QE.
+- **A torpedo craft is a ship with no gun of 6" or more** (and torpedoes left), not the type: shipgen's "Fleet
+  Destroyer" is 2,770 t, a cruiser by `Sightings.TypeOf`.
+- **A launch waits for its mount to train,** and the aim is solved again at the launch; a launch that no longer bears or
+  has lost the target holds its fire.
+- **The dev's launch aims at the truth** (`Launch(..., truth: true)`): the flag is sent before any look is taken.
+
+**The numbers** (`shipgen torpedo`, Release, the V25's Great War 21": 182 kg, 41 kn for 3,900 m or 28 kn for 9,200 m):
+
+| Case | the sim | the anchor |
+|---|---|---|
+| one hit on the `destroyer`, V25, `m_class`, then an hour | lost 75%, 77%, 75% (broke in two 72-76%) | ~77% (31 torpedoed, 7 survived) |
+| one hit on a light cruiser (Arethusa-like, C-class-like) | lost 47%, 268 t | |
+| one hit on QE, then an hour | 2,070 t, list 0°, 85% speed, lost 2% (magazines) | 1,000-4,000 t, list 3-6°, correctable |
+| one hit on Lion | 2,570 t, list 0.9° | the same |
+| 2, 4, 6 hits on QE (2 hours) | 3,900 / 7,050 / 9,550 t, list under 2°, lost 6 / 14 / 21% (magazines) | Prince of Wales sank after 4, Royal Oak 3 |
+| 4, 8 hits on Lion (2 hours) | 10,000 / 16,900 t, list 7°, lost 8 / 15% (magazines) | |
+| a spread of 4 at QE steaming steady at 15 kn: 2.5 / 3.5 / 6 / 8 km | 36 / 33 / 28 / 24% of torpedoes hit | close: often; far, at a ship that turns: a few % |
+| a dud | 11% (Great War) | |
+
+- **The flotilla** (seed 9, 40 min): the boats close under fire and fire 15 torpedoes from 18:49; 7 hit Monarch, which
+  stops at 10,400 t with no list and stays afloat; three boats are sunk by gunfire. No evasion yet: the line steams on.
+- **Cost:** a torpedo's check ~4 µs a piece (the flotilla's torpedoes 0.4% of the sim's time); a hit ~25 µs (the cells
+  and parts within its reach). Nothing allocates per tick; dropping a ship may (the user, 2026-10-14: one-off events may
+  allocate, frames may not), so the flotilla's test counts the seconds no ship came or went.
+- **Hashes moved** (the AI is system 7): after an hour, ladder-2 `E88C6A03`, Jutland `A0D75B7C`.
+- **Found on the way:** at the short ranges destroyers fight at, a shell's whole flight is in its danger window, so its
+  window began at the muzzle and its first chord went through its own ship: ships hit themselves (King George V took four
+  of its own 13.5"). A shell can't hit the ship that fired it now (`ShellSystem.Window`).
+- **Left as it is (v0):** no ship evades a torpedo (combing the tracks, turning away: 5.1's or the evasion research's);
+  every torpedo shows on the map, whoever's (what's seen of a wake is a later deepening); deck mounts carry no reloads
+  (shipgen's torpedoes are their tubes); a torpedo doesn't turn from its launcher to its course; the spread's width comes
+  from the target's length as it's taken; a hit's reach is a sphere, and the holding bulkhead holds or fails whole.
 
 ### 4.7 Mines (moved out: with the fine-tune pass)
 
@@ -1117,6 +1232,13 @@ add"):
   batteries at 1 Hz;
 - **measured** on the ladder, small first, both builds (`docs/battle/plan.md` 2.7c's way);
 - **fixed** only where the numbers ask.
+
+### 4.11 Collisions and ramming (moved out of 4.6)
+
+Moved out of 4.6 to a later step of its own (the user, 2026-10-14). As it was planned there: a hull-against-hull test
+(both `HullField`s in their frames) for ships closer than their half-lengths together, through the grid. v0 breaches
+the struck ship at the stem's contact point, damages the rammer's bow, and costs both their speed by the closing
+energy. The hit comes in at TERMINAL as a `Hit` from a collision, as a torpedo's does.
 
 ## The instruments
 
@@ -1169,7 +1291,9 @@ Placeholders in `DesignerPlaceholders.cs` until shipgen gives them, listed in pl
   then.
 - **Funnels' draught** (4.3a): how much steam a boiler room keeps with its funnel holed or wrecked; `DraughtFloor` 0.7
   for every ship until then.
-- **Torpedoes:** speed and range settings per calibre and era (the warhead is exported already).
+- **Torpedoes** (in since 4.6): speed and range settings per calibre and era; the charge by era and explosive (shipgen's
+  warhead is the Second War's for every era: the placeholder takes a share of it); a torpedo mount's training gear and a
+  tube's reload; reloads for deck mounts (shipgen's torpedoes are the tubes').
 - **For 4.5's systems:** generators, switchboards and the routes of power, hydraulics and data
   (`06-service-networks.md` §3.3).
 
@@ -1194,6 +1318,18 @@ From 4.3b (2026-10-14):
 7. **Nothing founders in the squadrons' three hours:** the battlecruisers list 17-21° with 2,000-2,600 t aboard and fight
    on at a quarter of their power. *The user, 2026-10-14:* fine for now; 4.5 helps with foundering, and torpedoes (4.6)
    bring the real answer: guns wreck ships, torpedoes finish the immobile ones.
+
+From 4.6 (2026-10-14):
+
+8. **Battleships don't list from torpedoes, and take too many to sink.** One torpedo puts 2,000-2,500 t into QE or Lion
+   (in the anchor's band), but their compartments mostly span the beam (shipgen bands only TDS and wing-bunker cells), so
+   the water sits on the centreline: QE with six hits on one side lists under 2° and floats with 9,500 t against 27,700 t
+   of reserve buoyancy; Lion with eight lists 8°. Real battleships went over on 3-5 torpedoes on one side (Royal Oak,
+   Barham, Prince of Wales, Repulse; all six pre-dreadnoughts torpedoed in the Great War capsized). The cure is
+   asymmetric flooding: the designer's longitudinal subdivision (wing compartments by the machinery and magazines), or
+   the flooding model counting water on the side it came in (4.5). Until then torpedoes cripple battleships (half their
+   power after four) more than they sink them. Leave it to 4.5, or bring a piece of it forward?
+9. **The broken back** (`TorpedoBreakShare`) is an addition to the plan, to meet the destroyer anchor: keep it?
 
 
 ## Decisions
@@ -1238,3 +1374,4 @@ The user's, 2026-10-14, after the first pass:
 14. **Mines (4.7) move out too,** to be built separately in that later tier.
 15. **Foundering stays as it is for now** (question 7): 4.5 will help, and torpedoes (4.6) are the real answer: guns
     wreck ships, torpedoes finish the immobile ones.
+16. **Collisions move out of 4.6** to a later step of their own (4.11): 4.6 is torpedoes.

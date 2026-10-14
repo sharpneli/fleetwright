@@ -180,10 +180,14 @@ sealed class FightTally(CombatLog log)
         for (long i = n - 1; i >= 0; i--)
         {
             var e = log.Newest((int)i);
-            if (!lines.TryGetValue((e.Shooter, e.Battery, e.Target), out var l))
-                lines[(e.Shooter, e.Battery, e.Target)] = l = new Line();
+            int battery = e.Source == HitSource.Torpedo ? -1 : e.Battery;   // a ship's torpedoes on one line, its launchers together
+            if (!lines.TryGetValue((e.Shooter, battery, e.Target), out var l))
+                lines[(e.Shooter, battery, e.Target)] = l = new Line();
             switch (e.Kind)
             {
+                case CombatEvent.Torpedoes:
+                    (l.Salvos, l.Shells, l.FirstMs) = (l.Salvos + 1, l.Shells + e.Count, Math.Min(l.FirstMs, e.Ms));
+                    break;
                 case CombatEvent.Fired:
                     (l.Salvos, l.Shells, l.FirstMs) = (l.Salvos + 1, l.Shells + e.Count, Math.Min(l.FirstMs, e.Ms));
                     break;
@@ -210,7 +214,7 @@ sealed class FightTally(CombatLog log)
         foreach (var ((shooter, battery, target), l) in lines)
         {
             int slot = w.Ships.Store.SlotOf(shooter);
-            string gun = slot >= 0 && battery < w.Ships.Store[slot].Handling.Class.Batteries.Length
+            string gun = battery < 0 ? "torpedoes" : slot >= 0 && battery < w.Ships.Store[slot].Handling.Class.Batteries.Length
                 ? $"{w.Ships.Store[slot].Handling.Class.Batteries[battery].Guns} x {w.Ships.Store[slot].Handling.Class.Batteries[battery].CalibreMm:0}mm"
                 : $"battery {battery}";
             string Clock(long ms) => ms == long.MaxValue ? "-" : new WorldTime(ms).ToString()[11..19];
@@ -222,6 +226,7 @@ sealed class FightTally(CombatLog log)
             {
                 LossKind.Magazine => "her magazine set off",
                 LossKind.Capsized => "capsized",
+                LossKind.BrokeInTwo => "broke in two",
                 _ => "foundered",
             } + $" (last hit by {Name(e.Shooter)}'s battery {e.Battery})");
 

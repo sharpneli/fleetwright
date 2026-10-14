@@ -26,6 +26,8 @@ public sealed class ShipClass
     internal ShellLoad[] shellLoads = [];
     internal EyeRow[] eyes = [];
     internal TubeRow[] tubes = [];
+    internal LauncherRow[] launchers = [];
+    internal TorpedoRow[] torpedoes = [];
     internal CellRow[] cells = [];
     internal RoomRow[] rooms = [];
     internal BulkheadRow[] bulkheads = [];
@@ -98,6 +100,20 @@ public sealed class ShipClass
     /// <summary>What the ship shows an observer (step 3.2a).</summary>
     public SilhouetteRow Silhouette { get; internal set; }
     public ReadOnlySpan<TubeRow> Tubes => tubes;
+
+    /// <summary>The torpedo mounts and submerged tubes as one table (docs/battle/fighting.md 4.6), and the torpedoes they
+    /// fire, each kind once.</summary>
+    public ReadOnlySpan<LauncherRow> Launchers => launchers;
+    public ReadOnlySpan<TorpedoRow> Torpedoes => torpedoes;
+
+    /// <summary>The launcher a mount or tube is (its index in Launchers), or -1.</summary>
+    public int LauncherOf(LauncherKind kind, int index)
+    {
+        for (int i = 0; i < launchers.Length; i++)
+            if (launchers[i].Kind == kind && launchers[i].Index == index)
+                return i;
+        return -1;
+    }
     public ReadOnlySpan<CellRow> Cells => cells;
     public ReadOnlySpan<RoomRow> Rooms => rooms;
     public ReadOnlySpan<BulkheadRow> Bulkheads => bulkheads;

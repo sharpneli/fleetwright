@@ -16,15 +16,17 @@ namespace Fleetwright.Map;
 /// flashes scale with the shell's calibre (<see cref="CalibreScale"/>), so a secondary's fire reads apart from the main's. Fire control (4.2b):
 /// a line from each engaged battery's ship to its target. The strip's fire row (4.2c): the commanded unit's fire order
 /// (at will, hold fire, engage: a right-click on a ship or a contact), each of the selected ship's batteries with its
-/// target and state, and the dev's salvo "at" a point of the sea.</summary>
+/// target and state, and the dev's salvo "at" a point of the sea. Torpedoes (4.6): each running one's wake, a pale line
+/// behind it; a hit, a tall flash; the strip's torpedo row (loaded and left, "torpedoes at" a ship).</summary>
 public sealed partial class MapScene
 {
     static readonly Vector4 ShellColour = new(1f, 0.95f, 0.6f, 0.95f), SplashColour = new(0.9f, 0.95f, 1f, 0.9f),
-        HitColour = new(1f, 0.55f, 0.15f, 1f), TargetColour = new(1f, 0.35f, 0.25f, 0.55f);
+        HitColour = new(1f, 0.55f, 0.15f, 1f), TargetColour = new(1f, 0.35f, 0.25f, 0.55f), WakeColour = new(0.85f, 0.95f, 1f, 0.75f);
+    const double WakeM = 400, WakeMinPx = 14, TorpedoHitM = 30;   // a torpedo's wake behind it; a hit's column
     const double TracerS = 0.25;      // the tracer's length, seconds of flight
     const double SplashWideM = 30, SplashFadeMs = 8000, HitFadeMs = 4000;   // a 12" shell's; others by CalibreScale
     const double RefCalibreMm = 305;
-    bool fireArmed, engageArmed;
+    bool fireArmed, engageArmed, torpedoArmed;
     int fireBattery;   // the dev's salvo "at": which battery
     readonly Dictionary<int, int> shipIndex = [];   // a frame's ships by entity, for the target lines
 
@@ -57,6 +59,7 @@ public sealed partial class MapScene
         }
 
         DrawTargets(view, s);
+        DrawTorpedoes(view, s);
 
         var w = s.Splashes;
         for (int i = 0; i < w.Count; i++)
@@ -72,6 +75,45 @@ public sealed partial class MapScene
             bool own = selected < 0 || w.Shooter[i] == selected;
             var col = (hit ? HitColour : SplashColour) with { W = (float)(1 - age / fade) * (hit ? 1f : 0.9f) * (own || hit ? 1f : 0.4f) };
             overlay.BeginStrip(col, (float)((hit ? 2.5 : 1.5) * Math.Sqrt(f)));
+            for (int k = 0; k <= 16; k++)
+            {
+                double a = k * Math.PI * 2 / 16;
+                overlay.Point(x + Math.Cos(a) * r, y + Math.Sin(a) * r);
+            }
+            overlay.End();
+        }
+    }
+
+    /// <summary>Each torpedo running, as its wake: a pale line from a little behind it (a few pixels at least) to where it
+    /// is now, the selected ship's bright; and a torpedo's hit, a tall orange flash.</summary>
+    void DrawTorpedoes(in MapView view, Snapshot s)
+    {
+        var v = s.Torpedoes;
+        long now = world.DrawMs;
+        double mpp = view.MetresPerPixel, wake = Math.Max(WakeM, WakeMinPx * mpp);
+        for (int i = 0; i < v.Count; i++)
+        {
+            var head = v.At(i, now, out double run);
+            if (!view.Project(head, out double x, out double y) || x < -50 || y < -50 || x > view.Width + 50 || y > view.Height + 50)
+                continue;
+            bool own = selected < 0 || v.Shooter[i] == selected;
+            overlay.BeginStrip(own ? WakeColour : WakeColour with { W = 0.35f }, own ? 1.5f : 1f);
+            for (int j = 0; j <= 4; j++)
+            {
+                var (p, f) = (v.Origin[i], v.Forward[i]);
+                Earth.Advance(ref p, ref f, Math.Max(run - wake * (1 - j / 4.0), 0));
+                Point(view, p);
+            }
+            overlay.End();
+        }
+        var e = s.TorpedoEnds;
+        for (int i = 0; i < e.Count; i++)
+        {
+            double age = now - e.Ms[i];
+            if (e.Ship[i] < 0 || age < 0 || age > HitFadeMs * 2 || !view.Project(e.Point[i], out double x, out double y))
+                continue;
+            double r = Math.Max(TorpedoHitM * Math.Min(1, 0.4 + age / 1000) / mpp, 5);
+            overlay.BeginStrip(HitColour with { W = (float)(1 - age / (HitFadeMs * 2)) }, 3f);
             for (int k = 0; k <= 16; k++)
             {
                 double a = k * Math.PI * 2 / 16;
@@ -147,7 +189,7 @@ public sealed partial class MapScene
             world.Send(o.HoldFire(unit));
         ImGui.SameLine();
         if (ImGui.Checkbox("engage (right-click a ship)##engage", ref engageArmed) && engageArmed)
-            fireArmed = false;
+            (fireArmed, torpedoArmed) = (false, false);
         if (fire == FireOrder.Engage)
         {
             ImGui.SameLine();
@@ -167,7 +209,7 @@ public sealed partial class MapScene
         }
         ImGui.SameLine();
         if (ImGui.Checkbox("salvo at (right-click the sea)##fire", ref fireArmed) && fireArmed)
-            engageArmed = false;
+            (engageArmed, torpedoArmed) = (false, false);
         if (s.Shells.Count > 0)
         {
             ImGui.SameLine();
@@ -187,7 +229,32 @@ public sealed partial class MapScene
                 ImGui.TextDisabled($"{gun} on {TargetLabel(s, v.Target[i])}: {StateText(v.State[i])}, " +
                                    $"{(v.Local[i] ? "local control" : $"level {v.Level[i]}")}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}");
         }
+        TorpedoRow(s, k, cls);
         DamageRow(s, k, cls);
+    }
+
+    /// <summary>The selected ship's torpedoes (docs/battle/fighting.md 4.6): in its tubes and left, its torpedo (fast and
+    /// slow settings), and "torpedoes at": armed, a right-click on a ship or contact fires what's loaded and bears.</summary>
+    void TorpedoRow(Snapshot s, int k, ShipClass cls)
+    {
+        if (cls.Launchers.Length == 0)
+            return;
+        var t = cls.Torpedoes[cls.Launchers[0].Torpedo];
+        ImGui.Text("Torpedoes:");
+        ImGui.SameLine();
+        ImGui.TextDisabled(string.Format(CultureInfo.InvariantCulture, "{0} loaded, {1} left; {2:0}mm, {3:0} kn to {4:0.0} km or {5:0} kn to {6:0.0} km",
+            s.Ships.TorpedoesLoaded[k], s.Ships.TorpedoesLeft[k], t.CalibreMm, t.FastKn, t.FastRangeM / 1000, t.SlowKn, t.SlowRangeM / 1000));
+        ImGui.SameLine();
+        if (ImGui.Checkbox("torpedoes at (right-click a ship)##torpedo", ref torpedoArmed) && torpedoArmed)
+            (engageArmed, fireArmed) = (false, false);
+        int running = 0;
+        for (int i = 0; i < s.Torpedoes.Count; i++)
+            running += s.Torpedoes.Shooter[i] == selected ? 1 : 0;
+        if (running > 0)
+        {
+            ImGui.SameLine();
+            ImGui.TextDisabled($"{running} running");
+        }
     }
 
     /// <summary>The selected ship's condition, if it's been hit (docs/battle/fighting.md 4.4, damage-model-research.md §12: the
@@ -215,6 +282,7 @@ public sealed partial class MapScene
         {
             LossKind.Magazine => " · MAGAZINE: GOING DOWN",
             LossKind.Capsized => " · CAPSIZING",
+            LossKind.BrokeInTwo => " · BROKEN IN TWO",
             _ => " · FOUNDERING",
         } : "";
         ImGui.TextColored(c.Status[i] == ShipStatus.GoingDown ? new Vector4(1f, 0.4f, 0.3f, 1) : new Vector4(1f, 0.85f, 0.6f, 1), string.Format(inv,
@@ -234,7 +302,7 @@ public sealed partial class MapScene
             shown++;
             string when = new WorldTime(e.Ms).ToUtc().ToString("HH:mm:ss", inv);
             if (e.Kind == CombatEvent.Lost)
-                ImGui.TextColored(new Vector4(1f, 0.4f, 0.3f, 1), $"{when}  {(LossKind)e.Count switch { LossKind.Magazine => "magazine exploded", LossKind.Capsized => "capsized", _ => "foundered" }}");
+                ImGui.TextColored(new Vector4(1f, 0.4f, 0.3f, 1), $"{when}  {(LossKind)e.Count switch { LossKind.Magazine => "magazine exploded", LossKind.Capsized => "capsized", LossKind.BrokeInTwo => "broke in two", _ => "foundered" }}");
             else
                 ImGui.TextDisabled($"{when}  {HitText(e, cls)}");
         }
@@ -268,7 +336,7 @@ public sealed partial class MapScene
 
     static readonly (HitEffect, string)[] HitWords =
     [
-        (HitEffect.Magazine, "MAGAZINE"), (HitEffect.Steering, "steering"), (HitEffect.Power, "power cut"), (HitEffect.Jammed, "turret jammed"),
+        (HitEffect.Magazine, "MAGAZINE"), (HitEffect.Broken, "BROKEN IN TWO"), (HitEffect.Steering, "steering"), (HitEffect.Power, "power cut"), (HitEffect.Jammed, "turret jammed"),
         (HitEffect.Destroyed, "wrecked"), (HitEffect.Disabled, "put out of action"), (HitEffect.Damaged, "damaged"), (HitEffect.Holed, "holed"),
         (HitEffect.Fire, "fire"),
     ];
@@ -306,13 +374,13 @@ public sealed partial class MapScene
         _ => "silent (coarse tier)",
     };
 
-    /// <summary>The armed right-click: engage the ship or contact there with the selected ship's battery (or all), or
-    /// fire one salvo at the sea there.</summary>
+    /// <summary>The armed right-click: engage the ship or contact there with the selected ship's battery (or all), fire
+    /// its torpedoes at it, or fire one salvo at the sea there.</summary>
     bool FireAt(double x, double y)
     {
         if (selected < 0)
             return false;
-        if (engageArmed)
+        if (engageArmed || torpedoArmed)
         {
             // an enemy in sight by its sprite, a ship, else a contact by its marker
             var s = world.Current;
@@ -321,9 +389,12 @@ public sealed partial class MapScene
                 target = PickShip(View, x, y, s.Ships);
             if (target < 0)
                 target = PickContact(View, s, x, y);
-            if (target > 0 && target != selected)
+            int k = s.Ships.IndexOf(selected);
+            if (target > 0 && target != selected && torpedoArmed && k >= 0)
+                world.Send(TorpedoSystem.Launch(selected, target, Math.Max(s.Ships.TorpedoesLoaded[k], 1)));
+            else if (target > 0 && target != selected)
                 world.Send(world.Ai.Orders.Engage(Commanded(world.Current).Unit, target));
-            engageArmed = false;
+            (engageArmed, torpedoArmed) = (false, false);
             return true;
         }
         if (!fireArmed || !View.Pick(x, y, out var at))

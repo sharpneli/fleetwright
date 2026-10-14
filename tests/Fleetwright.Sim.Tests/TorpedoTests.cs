@@ -1,0 +1,204 @@
+using Fleetwright.Sim.Ai;
+using Fleetwright.Sim.Combat;
+using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Missions;
+using Fleetwright.Sim.Ships;
+using Xunit.Abstractions;
+
+namespace Fleetwright.Sim.Tests;
+
+/// <summary>Torpedoes (docs/battle/fighting.md 4.6): the facts (launchers, the placeholders' torpedo, a mount that trains);
+/// a torpedo runs straight to its range and sinks; a spread at a steady ship close by hits; a hit at the same point and
+/// moment whether the target is on the coarse tier or the fine tick; the anchors of the hit (one usually sinks a destroyer, a
+/// capital ship takes 1,000-4,000 t and lives); a torpedo boat's Fight closes, fires and turns away; the flotilla
+/// scenario replayed to the same hash, without garbage.</summary>
+public class TorpedoTests(ITestOutputHelper output)
+{
+    static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
+    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
+    const double Lat = 56.0, Lon = 4.0;
+
+    static ShipClass Class(string name) => Fleet.Get(name).Class!;
+
+    /// <summary>A world in clear weather (with the AI if asked) and two ships: the target at the origin, the shooter at a
+    /// range on a bearing from it, beam-on to it.</summary>
+    static World Pair(string shooter, string target, double rangeM, double bearingDeg, double targetKn, double speed = 1) =>
+        Pair(shooter, target, rangeM, bearingDeg, targetKn, speed, out _, withAi: false);
+
+    static World Pair(string shooter, string target, double rangeM, double bearingDeg, double targetKn, double speed, out AiSystem? ai, bool withAi = true)
+    {
+        var w = new World(Start, 3, Settings);
+        ai = withAi ? new AiSystem(w) : null;
+        w.Apply(Command.SetWeather(25_000));
+        if (speed != 1)
+            w.Apply(Command.SetSpeed(speed));
+        int a = w.Ships.AddClass(Class(shooter)), b = w.Ships.AddClass(Class(target));
+        w.Apply(ShipSystem.Spawn(b, Lat, Lon, 0, targetKn, side: 1));
+        var p = Earth.Position(Lat, Lon);
+        var f = Earth.Forward(p, bearingDeg);
+        Earth.Advance(ref p, ref f, rangeM);
+        var (la, lo) = Earth.LatLon(p);
+        w.Apply(ShipSystem.Spawn(a, la, lo, (Earth.Bearing(p, Earth.Position(Lat, Lon)) + 90) % 360, 0, side: 0));
+        return w;
+    }
+
+    [Fact]
+    public void A_destroyer_has_launchers_with_torpedoes_and_its_mounts_train()
+    {
+        var c = Class("destroyer");
+        Assert.NotEmpty(c.Launchers.ToArray());
+        foreach (var l in c.Launchers)
+        {
+            Assert.True(l.Torpedoes > 0 && l.Tubes > 0);
+            var t = c.Torpedoes[l.Torpedo];
+            Assert.True(t.ChargeKg > 50 && t.FastKn > t.SlowKn && t.SlowRangeM > t.FastRangeM, $"{t}");
+            if (l.Kind == LauncherKind.Mount)
+                Assert.True(c.Mounts[l.Index].TrainDegS > 0);
+        }
+        var lion = Class("lion");
+        Assert.Contains(lion.Launchers.ToArray(), l => l.Kind == LauncherKind.Tube);
+    }
+
+    [Fact]
+    public void A_torpedo_runs_straight_to_its_range_and_sinks()
+    {
+        // fired at a ship beyond the fast setting's reach, on the slow one (once its mount has trained)
+        var cls = Class("destroyer");
+        var row = cls.Torpedoes[cls.Launchers[0].Torpedo];
+        var w = Pair("destroyer", "super_dreadnought", row.FastRangeM + 1_500, 90, 0);
+        w.Apply(TorpedoSystem.Launch(2, 1, 1, truth: true));
+        for (int s = 1; s <= 120 && w.Torpedoes.Fired == 0; s++)
+            w.AdvanceTo(Start + s * 1000L);
+        Assert.Equal(1, w.Torpedoes.Running);
+        int slot = -1;
+        for (int i = 0; i < w.Torpedoes.Slots; i++)
+            if (w.Torpedoes[i].Alive)
+                slot = i;
+        var t = w.Torpedoes[slot];
+        Assert.Equal(row.SlowKn * Handling.MsPerKnot, t.SpeedMs, 6);
+        Assert.InRange(t.EndS * t.SpeedMs, 0, row.SlowRangeM + 1e-6);   // its range, or less if it fails
+        // the target out of the way: the run goes on to its end, and it sinks
+        w.Apply(ShipSystem.Drop(1));
+        w.AdvanceTo(w.Time + (long)(row.SlowRangeM / t.SpeedMs * 1000) + 10_000);
+        Assert.Equal(0, w.Torpedoes.Running);
+        Assert.Equal(1, w.Torpedoes.Ended);
+        Assert.Equal(0, w.Torpedoes.Hits);
+    }
+
+    [Fact]
+    public void A_spread_at_a_steady_ship_close_by_hits_and_it_floods()
+    {
+        var w = Pair("destroyer", "super_dreadnought", 2_500, 90, 12);
+        w.Apply(TorpedoSystem.Launch(2, 1, 4, truth: true));
+        w.AdvanceTo(Start + 5 * 60_000);
+        output.WriteLine($"fired {w.Torpedoes.Fired}, hits {w.Torpedoes.Hits}");
+        Assert.True(w.Torpedoes.Fired >= 2);
+        Assert.True(w.Torpedoes.Hits >= 1);
+        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(1));
+        Assert.True(k.BreachTotalM2 > 10 || k.Status != ShipStatus.Afloat);
+        Assert.Contains(Enumerable.Range(0, w.CombatLog.Count).Select(i => w.CombatLog.Newest(i)),
+            e => e.Kind == CombatEvent.Hit && e.Source == HitSource.Torpedo && e.Target == 1);
+    }
+
+    [Fact]
+    public void A_hit_does_not_depend_on_the_clock_tier()
+    {
+        // the same shot at a target steaming steady: on the fine tick at 1x, the coarse tier at 1,000x
+        (long Ms, P3 Point) Shot(double speed)
+        {
+            var w = Pair("destroyer", "super_dreadnought", 2_500, 60, 15, speed);
+            w.Apply(TorpedoSystem.Launch(2, 1, 1, truth: true));
+            long hitMs = -1;
+            P3 at = default;
+            for (int s = 1; s <= 600 && hitMs < 0; s++)
+            {
+                w.AdvanceTo(Start + s * 1000L);
+                for (int i = 0; i < w.Torpedoes.Slots; i++)
+                    if (w.Torpedoes[i].Alive && w.Torpedoes[i].Hit >= 0)
+                        (hitMs, at) = (w.Torpedoes[i].LaunchMs + (long)Math.Round(w.Torpedoes[i].EndS * 1000), w.Torpedoes[i].HitPoint);
+            }
+            output.WriteLine($"{speed}x: target {w.Ships.Store[w.Ships.Store.SlotOf(1)].Tier}, hit at {hitMs} ms, {at}");
+            return (hitMs, at);
+        }
+        var fine = Shot(1);
+        var coarse = Shot(1000);
+        Assert.True(fine.Ms > 0 && coarse.Ms > 0, "both hit");
+        Assert.InRange(Math.Abs(fine.Ms - coarse.Ms), 0, 300);
+        Assert.InRange(Math.Abs(fine.Point.X - coarse.Point.X), 0, 6);
+    }
+
+    [Fact]
+    public void One_torpedo_usually_sinks_a_destroyer_and_a_capital_ship_lives_through_one()
+    {
+        var torpedo = Class("destroyer").Torpedoes[0];
+        var dd = GivenHits.Torpedoes(Class("destroyer"), torpedo, 2.1, double.NaN, 200, 1, 1, Settings, 3600);
+        output.WriteLine($"destroyer: lost {100.0 * dd.Lost / dd.Ships:0}% (broken {100.0 * dd.LostBy[(int)LossKind.BrokeInTwo] / dd.Ships:0}%)");
+        Assert.InRange((double)dd.Lost / dd.Ships, 0.55, 0.95);
+        var bb = GivenHits.Torpedoes(Class("super_dreadnought"), torpedo, 4.5, double.NaN, 100, 1, 1, Settings, 3600);
+        output.WriteLine($"battleship: water {bb.WaterT / bb.Ships:0} t, lost {100.0 * bb.Lost / bb.Ships:0}%");
+        Assert.InRange(bb.WaterT / bb.Ships, 800, 4000);
+        Assert.InRange((double)bb.Lost / bb.Ships, 0, 0.1);
+    }
+
+    [Fact]
+    public void A_torpedo_boats_fight_closes_fires_and_turns_away()
+    {
+        var w = Pair("destroyer", "super_dreadnought", 12_000, 90, 12, 1, out var ai);
+        w.Apply(ai!.Orders.Fight(Unit.Ship(2), Unit.Ship(1)));
+        long fired = 0;
+        double closest = double.MaxValue;
+        for (int s = 1; s <= 25 * 60 && fired == 0; s++)
+        {
+            w.AdvanceTo(Start + s * 1000L);
+            fired = w.Torpedoes.Fired;
+            if (w.Ships.Store.SlotOf(2) is int a and >= 0 && w.Ships.Store.SlotOf(1) is int b and >= 0)
+                closest = Math.Min(closest, Earth.Distance(w.Ships.Store[a].Position, w.Ships.Store[b].Position));
+        }
+        output.WriteLine($"fired {fired} at {(w.Time.Ms - Start.Ms) / 1000} s, closest {closest:0} m");
+        Assert.True(fired > 0, "it fired");
+        var fast = Class("destroyer").Torpedoes[0].FastRangeM;
+        Assert.True(closest < fast, "it closed to its torpedoes' range");
+        // then away: the range opens over the next minutes
+        int ts = w.Ships.Store.SlotOf(1), ss = w.Ships.Store.SlotOf(2);
+        double at = Earth.Distance(w.Ships.Store[ss].Position, w.Ships.Store[ts].Position);
+        w.AdvanceTo(w.Time + 120_000);
+        if (w.Ships.Store.SlotOf(2) >= 0)
+            Assert.True(Earth.Distance(w.Ships.Store[w.Ships.Store.SlotOf(2)].Position, w.Ships.Store[w.Ships.Store.SlotOf(1)].Position) > at,
+                "turned away");
+    }
+
+    [Fact]
+    public void The_flotilla_attacks_replays_and_allocates_nothing()
+    {
+        var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "flotilla.json"));
+        var designs = new[] { Path.Combine(Fleet.Shipgen, "designs") };
+        var w = new World(s.Start, s.Seed, Settings);
+        var ai = new AiSystem(w);
+        var classes = ScenarioLoader.RequestClasses(s, w.Ships.Registry, designs);
+        ScenarioLoader.Apply(s, w, ai, classes);
+        w.AdvanceTo(s.Start + 16 * 60_000);   // closing, firing: pools at their size
+        // nothing a second, but in the seconds a ship goes (dropping one may allocate: the user, 2026-10-14)
+        long allocated = 0;
+        for (long t = 16 * 60; t < 30 * 60; t++)
+        {
+            int ships = w.Ships.Store.Count;
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            w.AdvanceTo(s.Start + (t + 1) * 1000);
+            if (w.Ships.Store.Count == ships)
+                allocated += GC.GetAllocatedBytesForCurrentThread() - before;
+        }
+        output.WriteLine($"torpedoes fired {w.Torpedoes.Fired}, hits {w.Torpedoes.Hits}; {allocated} bytes in 14 minutes");
+        Assert.True(w.Torpedoes.Fired > 0, "the boats fired");
+        Assert.Equal(0, allocated);
+
+        var r = new World(s.Start, s.Seed, Settings, w.Ships.Registry);
+        _ = new AiSystem(r);
+        foreach (var c in w.CommandLog)
+        {
+            r.AdvanceTo(c.At);
+            r.Apply(c.Command);
+        }
+        r.AdvanceTo(w.Time);
+        Assert.Equal(w.ComputeHash(), r.ComputeHash());
+    }
+}

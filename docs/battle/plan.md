@@ -13,8 +13,9 @@ in flight), 4.2b (mounts, fire control and spotting) and 4.2c (ordering fire: fi
 admirals' distribution, Fight) are done (2026-10-13), 4.3a (what a hit does: terminal, effects, functions, the
 `DamageSystem`, `shipgen hits`), 4.3b (fire, flooding and going down: `Flooding`, `Fires`, loss by buoyancy, what the
 enemy sees, `shipgen flood`) and 4.4 (damage seen: sinking, trim and list drawn through the height map, turret tints,
-scorches, fires, wrecks, the damage report) are done (2026-10-14): the first pass of fighting is complete, and 4.6
-(torpedoes and collisions) is next. 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence (the user,
+scorches, fires, wrecks, the damage report) are done (2026-10-14): the first pass of fighting is complete. 4.6
+(torpedoes: launchers, torpedoes as tracks, the underwater hit, the destroyers' attack, `shipgen torpedo`, the `flotilla`
+scenario) is done (2026-10-14); collisions moved out of it to a later step, 4.11 (the user, 2026-10-14). 4.8 is next. 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence (the user,
 2026-10-14): a later fine-tune tier of their own, once most of the other components are in.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
@@ -1747,7 +1748,8 @@ fitted to the research's guns, `shipgen weapons --research`):
 - **Rangefinders** (4.2b): one per director today; turret and spotting-top rangefinders would give a battery the
   several readings the era's ships had (QE's one 15 ft against the reference's three).
 - **Magazines' propellant** (4.3a: a side's factor in the scenario until then), **fillers' TNT equivalence** and
-  **funnels' draught** (4.3a), and **torpedoes' speed and range** (4.6).
+  **funnels' draught** (4.3a), and **torpedoes** (4.6: speed and range settings, the charge by era, the mounts'
+  training and the tubes' reload).
 - **No unarmoured barbette over an armour deck** (the user, 2026-10-13: a 0 mm barbette's bore is a hole in the deck).
   Lord Nelson's and Bouvet's secondary mounts stand on 0 mm barbettes that pass through the armour deck, so
   `shell-test --gratings` finds leaks down them. The designer should armour them, or close the deck under a light
@@ -1795,9 +1797,11 @@ decision 13). Penetration, and the systems' dependency graph
 the previous one: leaks through bulkheads and decks, free surface, `sinking.py`'s non-linear settling, pumping and
 counter-flooding, a plunge or capsize that plays out.
 
-**4.6 Torpedoes and collisions.** Tubes, and running torpedoes as tracks with events (like shells). Hits below the
-waterline go into the same damage. Torpedo boat and destroyer attacks need them. Then hull against hull: collisions
-and ramming, damage from where the stems struck.
+**4.6 Torpedoes** (done 2026-10-14, `fighting.md` 4.6). Tubes, and running torpedoes as tracks with events (like
+shells). Hits below the waterline go into the same damage. Torpedo boat and destroyer attacks need them.
+
+**4.11 Collisions and ramming** (moved out of 4.6, the user, 2026-10-14: a later step of its own). Hull against hull:
+collisions and ramming, damage from where the stems struck.
 
 **4.7 Mines** (moved out of the sequence 2026-10-14: built separately in the later tier with 4.5, `fighting.md`
 decision 14).

@@ -95,6 +95,14 @@ public static class Program
             waterline; AREA m²; :p to port) or with N spaces of a kind flooded (boiler_room:2), the world run on: water,
             reserve left, sinkage, trim, heel, GM and spaces out every S seconds, until it goes down; then the water by
             space (--cells: by cell, with its joins); --step sets FloodMs
+        shipgen torpedo TARGET [--shooter DESIGN] [--at mid|bow|stern|SHARE] [--depth M] [--n N] [--per-ship K] [--settle MIN] [--seed S]
+                        [--range M [--aspect DEG] [--target-speed KN] [--spread N] [--runs N]]
+            torpedoes (docs/battle/fighting.md 4.6), the shooter's (default destroyer). Without --range, the hit alone: N
+            hits at the set depth on the target's starboard side (anywhere along it, or at a share of its length from
+            the stern), K a ship, through the world's damage system, then MIN minutes of flooding (default 60): the
+            outcomes, the spaces struck, holes and crew, parts put out of action, and each ship's water, list, speed
+            and loss. With --range, the attack: the shooter at M m, DEG off the target's bow, fires a spread of N at it
+            steaming on (default 15 kn), run after run (default 20): torpedoes fired, hits, the target lost
         shipgen ballistics DESIGN... [--research]
             each battery's range table from the shell it fires (docs/battle/fighting.md 4.2a): range, elevation, time
             of flight, angle of fall and striking velocity from a muzzle 10 m up, and the table's size and build time;
@@ -161,6 +169,14 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new HitsBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), D(a, "range", 12_000), D(a, "aspect", 90), a.Int("n", 2000),
                         a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0), D(a, "settle", 30))),
+                "torpedo" => TorpedoBench.Run(a.Positional.ElementAtOrDefault(0) ?? "super_dreadnought", n => LoadDesign(Resolve(a, n)),
+                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
+                    new TorpedoBench.Options(a.Get("shooter") ?? "destroyer", a.Get("at") switch
+                        {
+                            null => double.NaN, "mid" => 0.5, "bow" => 0.9, "stern" => 0.1,
+                            var v => double.Parse(v, System.Globalization.CultureInfo.InvariantCulture),
+                        }, D(a, "depth", 0), a.Int("n", 200), a.Int("per-ship", 1), a.Int("seed", 1), D(a, "settle", 60), D(a, "range", 0), D(a, "aspect", 90),
+                        D(a, "target-speed", 15), a.Int("spread", 4), a.Int("runs", 20))),
                 "flood" => FloodBench.Run(a.Positional.ElementAtOrDefault(0) ?? "destroyer", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new FloodBench.Options(a.Get("hole"), a.Get("rooms"), D(a, "minutes", 60), D(a, "every", 120), a.Int("step", 0), a.Has("cells"))),
