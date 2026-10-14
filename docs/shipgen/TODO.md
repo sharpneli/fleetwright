@@ -111,6 +111,7 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Reload torpedoes, depth charges and boats as hitboxes
 - [ ] Mines (battle module step 4.7, `docs/battle/plan.md`): mine stowage and rails as an armament with a count (minelayers, and cruisers and destroyers fitted for minelaying), its magazine as a room; sweeping gear for sweepers
 - [ ] Destroyer has 19 sections (research: 12–16)
+- [ ] Side subdivision for asymmetric flooding (shelved by the user 2026-10-14 until the shipgen pass; `docs/battle/fighting.md` 4.6, question 8): most spaces span the beam, so torpedoes don't list battleships. `machinery.centreline_bulkhead` splits the cells but keeps one room with an open join, so it does nothing to the flooding. Made watertight, a split QE lists ~9° a torpedo and capsizes on the 2nd-3rd (history: 3-6°, 3-5 to sink). Options: wing compartments wider than a torpedo's blast reaches (~4 m), or the split plus counterflooding (4.5); a choice per design or navy, not everywhere
 
 ## Looks
 - [ ] Victorian pass: `generic` and `portsmouth` still close

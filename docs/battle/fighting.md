@@ -1336,6 +1336,12 @@ From 4.6 (2026-10-14):
    asymmetric flooding: the designer's longitudinal subdivision (wing compartments by the machinery and magazines), or
    the flooding model counting water on the side it came in (4.5). Until then torpedoes cripple battleships (half their
    power after four) more than they sink them. Leave it to 4.5, or bring a piece of it forward?
+   *The user, 2026-10-14:* shelved until the shipgen pass (decision 19). Tried on QE: shipgen's
+   `machinery.centreline_bulkhead` splits the machinery's cells but keeps them one room joined open, so nothing changes;
+   with the join made watertight (an experiment, not kept), one torpedo into the split machinery lists it 9°, and with
+   every space split two or three on one side would capsize it: too touchy beside history (3-6° a torpedo, 3-5 to sink)
+   without counterflooding. Wing compartments wider than a torpedo's reach are the likelier fit. Noted in
+   `docs/shipgen/TODO.md` (Damage model and hitboxes).
 9. **The broken back** (`TorpedoBreakShare`) is an addition to the plan, to meet the destroyer anchor: keep it?
    *The user, 2026-10-14:* keep it; it's fine-tuned later (decision 18).
 
@@ -1387,3 +1393,4 @@ The user's, 2026-10-14, after the first pass:
     coarse model is fitted to the fine chain once it has settled. Engagements are playable as they are, and there are no
     NPC wars yet that need fighting at speed.
 18. **The broken back stays** (question 9), to be fine-tuned later.
+19. **Asymmetric flooding waits for the shipgen pass** (question 8): scaffolding first, detail later.
