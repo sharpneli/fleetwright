@@ -48,8 +48,8 @@ public sealed class ShellSystem : IWorldSystem
         public Vec3d End;
     }
 
-    /// <summary>A splash, or a hit's mark (Ship: the ship hit, an entity), at a moment.</summary>
-    public readonly record struct Splash(Vec3d Point, long Ms, int Ship, int Salvo, int Shooter);
+    /// <summary>A splash, or a hit's mark (Ship: the ship hit, an entity), at a moment, and the shell's calibre.</summary>
+    public readonly record struct Splash(Vec3d Point, long Ms, int Ship, int Salvo, int Shooter, double CalibreMm);
 
     readonly SimSettings settings;
     readonly ShipSystem ships;
@@ -225,7 +225,7 @@ public sealed class ShellSystem : IWorldSystem
             Window(world, ref s, e.Entity);
         else if (e.Code == EndEvent)
         {
-            splashes[splashNext] = new Splash(s.End, world.Time.Ms, s.Hit, s.Salvo, s.Shooter);
+            splashes[splashNext] = new Splash(s.End, world.Time.Ms, s.Hit, s.Salvo, s.Shooter, Ballistics[s.Table].Key.CalibreMm);
             splashNext = (splashNext + 1) % splashes.Length;
             splashCount = Math.Min(splashCount + 1, splashes.Length);
             if (s.Hit >= 0)
@@ -362,7 +362,7 @@ public sealed class ShellSystem : IWorldSystem
             ref readonly var sp = ref splashes[(splashNext - 1 - k + splashes.Length) % splashes.Length];
             if (sp.Ms < oldest)
                 break;
-            (w.Point[n], w.Ms[n], w.Ship[n], w.Shooter[n]) = (sp.Point, sp.Ms, sp.Ship, sp.Shooter);
+            (w.Point[n], w.Ms[n], w.Ship[n], w.Shooter[n], w.CalibreMm[n]) = (sp.Point, sp.Ms, sp.Ship, sp.Shooter, sp.CalibreMm);
             n++;
         }
         w.Count = n;

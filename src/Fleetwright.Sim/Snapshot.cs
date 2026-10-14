@@ -158,13 +158,14 @@ public sealed class ShellsView
 }
 
 /// <summary>The splashes and hits of the last while, newest first: where, when, the ship hit (an entity, -1 for a
-/// splash) and who fired.</summary>
+/// splash), who fired and the shell's calibre.</summary>
 public sealed class SplashesView
 {
     public int Count;
     public Vec3d[] Point = [];
     public long[] Ms = [];
     public int[] Ship = [], Shooter = [];
+    public double[] CalibreMm = [];
 
     public void EnsureCapacity(int n)
     {
@@ -175,6 +176,7 @@ public sealed class SplashesView
         Array.Resize(ref Ms, n);
         Array.Resize(ref Ship, n);
         Array.Resize(ref Shooter, n);
+        Array.Resize(ref CalibreMm, n);
     }
 }
 

@@ -10,7 +10,8 @@ namespace Fleetwright.Map;
 /// <summary>Shells and splashes on the map (docs/battle/fighting.md 4.2a), in the map's style (decision 10: no effects
 /// yet). Each shell is looked up in its ballistic table at the frame's time, so it flies smoothly at any rate with
 /// nothing but its record in the snapshot: a dot, and a short tracer behind it once it's a few pixels long. A splash is
-/// a ring that widens and fades; a hit, an orange flash; the selected ship's bright, the others' dim. Fire control (4.2b):
+/// a ring that widens and fades; a hit, an orange flash; the selected ship's bright, the others' dim. Tracers, rings and
+/// flashes scale with the shell's calibre (<see cref="CalibreScale"/>), so a secondary's fire reads apart from the main's. Fire control (4.2b):
 /// a line from each engaged battery's ship to its target. The strip's fire row (4.2c): the commanded unit's fire order
 /// (at will, hold fire, engage: a right-click on a ship or a contact), each of the selected ship's batteries with its
 /// target and state, and the dev's salvo "at" a point of the sea.</summary>
@@ -19,7 +20,8 @@ public sealed partial class MapScene
     static readonly Vector4 ShellColour = new(1f, 0.95f, 0.6f, 0.95f), SplashColour = new(0.9f, 0.95f, 1f, 0.9f),
         HitColour = new(1f, 0.55f, 0.15f, 1f), TargetColour = new(1f, 0.35f, 0.25f, 0.55f);
     const double TracerS = 0.25;      // the tracer's length, seconds of flight
-    const double SplashWideM = 30, SplashFadeMs = 8000, HitFadeMs = 4000;
+    const double SplashWideM = 30, SplashFadeMs = 8000, HitFadeMs = 4000;   // a 12" shell's; others by CalibreScale
+    const double RefCalibreMm = 305;
     bool fireArmed, engageArmed;
     int fireBattery;   // the dev's salvo "at": which battery
     readonly Dictionary<int, int> shipIndex = [];   // a frame's ships by entity, for the target lines
@@ -40,9 +42,10 @@ public sealed partial class MapScene
             var p = table.Position(v.Muzzle[i], v.Forward[i], v.ElevationDeg[i], v.Speed[i], t, out _);
             if (!view.Project(p, out double x, out double y) || x < -10 || y < -10 || x > view.Width + 10 || y > view.Height + 10)
                 continue;
-            var back = table.Position(v.Muzzle[i], v.Forward[i], v.ElevationDeg[i], v.Speed[i], Math.Max(0, t - TracerS), out _);
+            double f = CalibreScale(table.Key.CalibreMm);
+            var back = table.Position(v.Muzzle[i], v.Forward[i], v.ElevationDeg[i], v.Speed[i], Math.Max(0, t - TracerS * f), out _);
             bool own = selected < 0 || v.Shooter[i] == selected;
-            overlay.BeginStrip(own ? ShellColour : ShellColour with { W = 0.35f }, own ? 2f : 1.5f);
+            overlay.BeginStrip(own ? ShellColour : ShellColour with { W = 0.35f }, (float)((own ? 2 : 1.5) * f));
             if (view.Project(back, out double bx, out double by) && Math.Abs(bx - x) + Math.Abs(by - y) > 3)
                 overlay.Point(bx, by);
             else
@@ -58,14 +61,15 @@ public sealed partial class MapScene
         {
             double age = now - w.Ms[i];
             bool hit = w.Ship[i] >= 0;
-            double fade = hit ? HitFadeMs : SplashFadeMs;
+            double f = CalibreScale(w.CalibreMm[i]);
+            double fade = (hit ? HitFadeMs : SplashFadeMs) * (0.5 + 0.5 * f);
             if (age < 0 || age > fade || !view.Project(w.Point[i], out double x, out double y))
                 continue;
             double grow = Math.Min(1, age / 1500);
-            double r = Math.Max((hit ? 12 : SplashWideM * (0.4 + 0.6 * grow)) / mpp, hit ? 4 : 2.5);
+            double r = Math.Max((hit ? 12 : SplashWideM * (0.4 + 0.6 * grow)) * f / mpp, (hit ? 4 : 2.5) * Math.Sqrt(f));
             bool own = selected < 0 || w.Shooter[i] == selected;
             var col = (hit ? HitColour : SplashColour) with { W = (float)(1 - age / fade) * (hit ? 1f : 0.9f) * (own || hit ? 1f : 0.4f) };
-            overlay.BeginStrip(col, hit ? 2.5f : 1.5f);
+            overlay.BeginStrip(col, (float)((hit ? 2.5 : 1.5) * Math.Sqrt(f)));
             for (int k = 0; k <= 16; k++)
             {
                 double a = k * Math.PI * 2 / 16;
@@ -74,6 +78,10 @@ public sealed partial class MapScene
             overlay.End();
         }
     }
+
+    /// <summary>How big a shell's marks draw beside a 12" shell's: by calibre, bounded so a 4" still shows and an 18"
+    /// doesn't swamp the sea.</summary>
+    static double CalibreScale(double calibreMm) => Math.Clamp(calibreMm / RefCalibreMm, 0.3, 1.6);
 
     /// <summary>A line from each engaged battery's ship to its target (where the screen shows it: the ship, or its
     /// contact), faint unless it's firing.</summary>
