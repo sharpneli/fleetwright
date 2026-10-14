@@ -220,6 +220,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             case AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage:
                 FireOrdered(ctx, c, source);   // the guns: not the helm, so he keeps his place in the line
                 return;
+            case AiCommand.Form:
+                return;   // a group's
         }
         var g = groups.Of(e);
         var detached = g?.DetachmentOf(e) ?? Detachment.InLine;
@@ -274,7 +276,14 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         {
             case AiCommand.Course:
                 (cap.Order, cap.Target) = (CaptainOrder.Course, 0);
-                ctx.Helm.Course(e, c.X, c.Y);
+                if (cap.CombUntilMs > ctx.NowMs)
+                    cap.CombBackDeg = c.X;   // combing a track: the course is steered once it's past
+                else
+                    ctx.Helm.Course(e, c.X, c.Y);
+                break;
+            case AiCommand.TurnTogether:
+                (cap.Order, cap.Target) = (CaptainOrder.Course, 0);
+                ctx.Helm.Course(e, ((own.HeadingDeg + c.X) % 360 + 360) % 360);
                 break;
             case AiCommand.Speed:
                 if (cap.Order is not (CaptainOrder.Course or CaptainOrder.Route))

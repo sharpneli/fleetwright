@@ -46,6 +46,12 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public FireOrder Fire;          // his group's fire order (AdmiralLayer.Fire.cs), engaging FireTarget
         public int FireTarget;
         public bool Met;                // doctrine's Engage taken up in this encounter
+        public bool Turning;            // turning his line together (AdmiralLayer.Manoeuvres.cs)
+        public bool TurnRearFirst;
+        public double TurnDeg, TurnCourse, TurnKn;
+        public long TurnStartMs;
+        public int[] TurnShips = [];    // his line's ships in the order they turn, TurnCount of them
+        public int TurnCount;
     }
 
     Admiral[] admirals = new Admiral[8];
@@ -110,6 +116,9 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             case AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage:
                 FireOrdered(ctx, g, a, c);   // the guns: the line keeps its stations
                 return;
+            case AiCommand.Form:
+                ctx.Issue(GroupSystem.SetFormation(g.GroupId, (Formation)c.A, c.X, c.Y));   // the line keeps its orders
+                return;
         }
 
         switch (code)
@@ -151,6 +160,14 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         if (source == OrderSource.Player)
             Gather(ctx, g);
         a.Source = source;
+        a.Turning = false;   // a new order ends a turn under way
+
+        if (code == AiCommand.TurnTogether)
+        {
+            StartTurn(ctx, g, a, c.X, c.Y != 0, keep: false);
+            AskHeld(g);
+            return;
+        }
 
         int lead = ctx.Ships.SlotOf(groups.GuideShip(g));
         switch (code)
@@ -253,6 +270,17 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             var to = GuideUnit(g);
             if (to.Id == 0 || lead < 0)
                 continue;
+            if (a.Turning)
+                TurnStep(ctx, g, a);
+            if (Manoeuvring(g))
+            {
+                // turning together: every ship has her course; no stations, no new guide's orders until it's done
+                if (a.Fire == FireOrder.Engage)
+                    HandFire(ctx, g, a, fresh: false);
+                Limit(ctx, g, a);
+                Clear(ctx, g, a);
+                continue;
+            }
             if (a.HandedTo != to.Id)
                 HandOver(ctx, a, to);
             TakeUpStanding(ctx, g, a, lead);
@@ -265,7 +293,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             {
                 if (!g.IsForce)
                 {
-                    var (target, astern, abeam) = GroupSystem.StationOf(g.Formation, g.SpacingM, members, i);
+                    var (target, astern, abeam) = GroupSystem.StationOf(g, i);
                     if (!captains.Holds(members[i], CaptainOrder.Station, target, astern, abeam))
                         ctx.Issue(ctx.Orders.Station(Unit.Ship(members[i]), Unit.Ship(target), astern, abeam, OrderSource.Superior));
                 }
@@ -485,6 +513,16 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             h.Add((int)a.Fire);
             h.Add(a.FireTarget);
             h.Add(a.Met);
+            if (a.Turning)
+            {
+                h.Add(a.TurnRearFirst);
+                h.Add(a.TurnDeg);
+                h.Add(a.TurnCourse);
+                h.Add(a.TurnKn);
+                h.Add(a.TurnStartMs);
+                for (int k = 0; k < a.TurnCount; k++)
+                    h.Add(a.TurnShips[k]);
+            }
         }
     }
 

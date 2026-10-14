@@ -362,6 +362,9 @@ public sealed class GroupsView
     public Formation[] Formation = [];
     public double[] SpacingM = [];
 
+    /// <summary>A line of bearing's bearing (<see cref="GroupSystem.Group.BearingDeg"/>).</summary>
+    public double[] BearingDeg = [];
+
     /// <summary>Room for n groups and m members; grows only past the most yet.</summary>
     public void EnsureCapacity(int n, int m)
     {
@@ -374,6 +377,7 @@ public sealed class GroupsView
             Array.Resize(ref Name, n);
             Array.Resize(ref Formation, n);
             Array.Resize(ref SpacingM, n);
+            Array.Resize(ref BearingDeg, n);
             Array.Resize(ref Guide, n);
             Array.Resize(ref GuideShip, n);
             Array.Resize(ref Parent, n);

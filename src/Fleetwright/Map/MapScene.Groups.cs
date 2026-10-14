@@ -42,6 +42,10 @@ public sealed unsafe partial class MapScene
     readonly List<int> lineShips = [];
 
     static readonly string[] FormationNames = ["Line ahead", "Line abreast", "Echelon to starboard", "Echelon to port"];
+
+    // a group's: a line of bearing too (what a turn together leaves, docs/battle/command.md 5.1b)
+    static readonly string[] GroupFormationNames = [.. FormationNames, "Line of bearing"];
+    static readonly (string Label, double Deg)[] TurnButtons = [("<8", -90), ("<4", -45), ("4>", 45), ("8>", 90)];
     static readonly Vector4 GroupColor = new(0.95f, 0.92f, 0.82f, 0.9f), GroupLine = new(0.95f, 0.92f, 0.82f, 0.25f), PickColor = new(1f, 0.78f, 0.25f, 0.6f),
         HeldColor = new(0.55f, 0.85f, 1f, 0.8f), AskColor = new(1f, 0.55f, 0.3f, 1f);
 
@@ -401,19 +405,44 @@ public sealed unsafe partial class MapScene
         ImGui.SameLine();
         ImGui.SetNextItemWidth(150 * UiFonts.Scale);
         int form = (int)gv.Formation[g];
-        if (ImGui.Combo($"{id}formation", ref form, FormationNames, FormationNames.Length))
+        var o = world.Ai.Orders;
+        var unit = Unit.Group(gv.Id[g]);
+        double bearing = GroupSystem.BearingOf(gv.Formation[g], gv.BearingDeg[g]);
+        if (ImGui.Combo($"{id}formation", ref form, GroupFormationNames, GroupFormationNames.Length))
         {
             // a force into line ahead makes one line: its squadrons as far apart as their own ships
             double gap = gv.Force[g] && (Formation)form == Formation.Column && gv.IndexOfGroup(gv.Guide[g]) is int sub and >= 0
                 ? gv.SpacingM[sub] : gv.SpacingM[g];
-            world.Send(GroupSystem.SetFormation(gv.Id[g], (Formation)form, gap));
+            world.Send(o.Form(unit, (Formation)form, gap, bearing));
+        }
+        if (gv.Formation[g] == Formation.Bearing)
+        {
+            ImGui.SameLine();
+            ImGui.TextDisabled($"{bearing:F0}°");
         }
         ImGui.SameLine();
         ImGui.SetNextItemWidth(90 * UiFonts.Scale);
         if (!ImGui.IsItemActive())
             spacing = (int)gv.SpacingM[g];
         if (ImGui.InputInt($"m apart{id}", ref spacing, 100, 500, ImGuiInputTextFlags.EnterReturnsTrue))
-            world.Send(GroupSystem.SetFormation(gv.Id[g], gv.Formation[g], Math.Clamp(spacing, 100, 50_000)));
+            world.Send(o.Form(unit, gv.Formation[g], Math.Clamp(spacing, 100, 50_000), gv.BearingDeg[g]));
+
+        // the manoeuvres (docs/battle/command.md 5.1b): turn together by 4 or 8 points either way, or about (the battle
+        // turn-away, rear ship first); a placeholder until 5.2's orders
+        ImGui.SameLine();
+        ImGui.TextDisabled("turn together");
+        foreach (var (label, deg) in TurnButtons)
+        {
+            ImGui.SameLine();
+            if (ImGui.SmallButton($"{label}{id}"))
+                world.Send(o.TurnTogether(unit, deg));
+        }
+        ImGui.SameLine();
+        if (ImGui.SmallButton($"about<{id}"))
+            world.Send(o.BattleTurn(unit, toStarboard: false));
+        ImGui.SameLine();
+        if (ImGui.SmallButton($"about>{id}"))
+            world.Send(o.BattleTurn(unit, toStarboard: true));
     }
 
     /// <summary>"Held by you", top right: every ship and group the player holds out of its line, with what's become of

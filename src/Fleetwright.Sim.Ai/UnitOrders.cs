@@ -97,6 +97,16 @@ public enum AiCommand : ushort
     /// <summary>Where a side's ships go when they're out of the fight (docs/battle/command.md "home"): Entity the side, A a
     /// packed lat/lon (0: none).</summary>
     Home,
+
+    /// <summary>Turn together (docs/battle/command.md 5.1b): every ship of the unit's line turns through X degrees (+ to
+    /// starboard) at once, and the line becomes a line of bearing on its old axis; Y 1 to turn the rear ship first, each
+    /// the next a moment after the one astern of her (the battle turn-away, through 16 points). To a ship alone, a
+    /// course X degrees from her heading.</summary>
+    TurnTogether,
+
+    /// <summary>A group's formation (A a <see cref="Formation"/>), spacing (X, m) and a line of bearing's bearing (Y,
+    /// degrees): <see cref="GroupSystem.SetFormation"/> through the chain. Nothing to a ship.</summary>
+    Form,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -155,6 +165,20 @@ public readonly struct UnitOrders(byte system)
     /// bearing, turning away when outgunned; on a unit, or the nearest enemy (default).</summary>
     public Command Fight(Unit u, Unit target = default, double rangeM = 0, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Fight, u, source, a: target.Id, x: rangeM);
+
+    /// <summary>Turn together through an angle, degrees (+ to starboard): every ship of the unit's line at once, or the
+    /// rear ship first.</summary>
+    public Command TurnTogether(Unit u, double deg, bool rearFirst = false, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.TurnTogether, u, source, x: deg, y: rearFirst ? 1 : 0);
+
+    /// <summary>The battle turn-away (Scheer's <i>Gefechtskehrtwendung</i>): together through 16 points, the rear ship
+    /// first, to starboard or to port; the line comes out reversed, its old rear leading.</summary>
+    public Command BattleTurn(Unit u, bool toStarboard, OrderSource source = OrderSource.Player) =>
+        TurnTogether(u, toStarboard ? 180 : -180, rearFirst: true, source);
+
+    /// <summary>A group's formation and spacing (and a line of bearing's bearing).</summary>
+    public Command Form(Unit u, Formation formation, double spacingM, double bearingDeg = 0, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.Form, u, source, a: (long)formation, x: spacingM, y: bearingDeg);
 
     /// <summary>A value of a unit's doctrine (NaN: back to what it inherits from its group, its side, the default).</summary>
     public Command Doctrine(Unit u, DoctrineField field, double value) => Make(AiCommand.Doctrine, u, OrderSource.Player, a: (long)field, x: value);

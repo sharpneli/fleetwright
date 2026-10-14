@@ -586,6 +586,13 @@ public sealed record SimSettings
     /// <summary>A ship out of the fight going home stops this near it, m (docs/battle/command.md 5.1a).</summary>
     public double HomeRadiusM { get; init; } = 10_000;
 
+    /// <summary>Manoeuvres (docs/battle/command.md 5.1b): a turn together is done when every ship of the line is within
+    /// ManoeuvreDoneDeg of the new course (the stations are given again then), or after ManoeuvreMaxMs whatever; turning
+    /// the rear ship first, each puts her helm over BattleTurnStepS after the one astern of her. Degrees, ms, s.</summary>
+    public double ManoeuvreDoneDeg { get; init; } = 5;
+    public long ManoeuvreMaxMs { get; init; } = 600_000;
+    public double BattleTurnStepS { get; init; } = 10;
+
     /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
     /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>
     public double[] FightTypeGuns { get; init; } = [1, 8, 1, 0.1, 0, 0];

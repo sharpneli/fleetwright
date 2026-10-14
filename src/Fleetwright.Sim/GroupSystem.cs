@@ -16,6 +16,12 @@ public enum Formation : byte
     /// <summary>Echelon: each a spacing further back along a 45° line to starboard, or to port.</summary>
     EchelonStarboard,
     EchelonPort,
+
+    /// <summary>A line of bearing at any angle (<see cref="GroupSystem.Group.BearingDeg"/>): each a spacing further along
+    /// the line, placed on the guide. What a turn together leaves (docs/battle/command.md 5.1b); the four above are
+    /// lines of bearing too (<see cref="GroupSystem.BearingOf"/>), and line ahead keeps its name, since its ships turn in
+    /// succession.</summary>
+    Bearing,
 }
 
 /// <summary>Whether a member keeps its place in its group's formation (docs/battle/plan.md step 2.6). A detached member
@@ -49,6 +55,7 @@ public enum GroupCommand : ushort
     Exit,
     DetachGroup,
     EnterAlongside,
+    TurnTogether,
 }
 
 /// <summary>The world's groups (docs/battle/plan.md steps 2.4 and 2.6): units that move together, in order, with a
@@ -70,6 +77,13 @@ public sealed class GroupSystem : IWorldSystem
         public string Name { get; internal set; } = "";
         public Formation Formation { get; internal set; }
         public double SpacingM { get; internal set; }
+
+        /// <summary>A <see cref="Formation.Bearing"/>'s line: the bearing its members lie on from the guide, degrees
+        /// clockwise from the guide's heading (180 astern, 90 abeam to starboard).</summary>
+        public double BearingDeg { get; internal set; }
+
+        /// <summary>The bearing its line lies on from the guide, whatever its formation (<see cref="BearingOf"/>).</summary>
+        public double LineBearingDeg => BearingOf(Formation, BearingDeg);
 
         /// <summary>A force: its members are groups. A squadron's are ships.</summary>
         public bool IsForce { get; internal init; }
@@ -118,6 +132,15 @@ public sealed class GroupSystem : IWorldSystem
             detached.RemoveAt(i);
             Relink();
             return true;
+        }
+
+        /// <summary>The members in the reverse order: the far end of the line guides.</summary>
+        internal void Reverse()
+        {
+            Owner?.MembershipChanged();
+            members.Reverse();
+            detached.Reverse();
+            Relink();
         }
 
         internal void Detach(int member, Detachment d)
@@ -318,41 +341,75 @@ public sealed class GroupSystem : IWorldSystem
 
     // ------------------------------------------------------------------ formations
 
+    /// <summary>The bearing a formation's line lies on from its guide, degrees clockwise from the guide's heading: line
+    /// ahead 180, line abreast 90, echelon 135 to starboard and 225 to port, a line of bearing its own.</summary>
+    public static double BearingOf(Formation f, double bearingDeg = 0) => f switch
+    {
+        Formation.Column => 180,
+        Formation.LineAbreast => 90,
+        Formation.EchelonStarboard => 135,
+        Formation.EchelonPort => 225,
+        Formation.Bearing => bearingDeg,
+        _ => throw new ArgumentOutOfRangeException(nameof(f)),
+    };
+
     /// <summary>The station of the i-th ship of a squadron's line (<see cref="Group.Line"/>, i from 1): the ship it
     /// keeps station on, and how far astern of it and to its starboard. In column each ship follows the one before it
-    /// (a turn goes round in succession, near enough); in line abreast and echelon it's placed on the guide (the group
-    /// turns together, the outer ships wheeling).</summary>
-    public static (int Target, double AsternM, double AbeamM) StationOf(Formation f, double spacing, IReadOnlyList<int> line, int i)
+    /// (a turn goes round in succession, near enough); in any other line it's placed on the guide (the group turns
+    /// together, the outer ships wheeling).</summary>
+    public static (int Target, double AsternM, double AbeamM) StationOf(Formation f, double spacing, IReadOnlyList<int> line, int i, double bearingDeg = 0)
     {
-        var (astern, abeam) = OffsetFromGuide(f, spacing, i);
+        var (astern, abeam) = OffsetFromGuide(f, spacing, i, bearingDeg);
         return f == Formation.Column ? (line[i - 1], spacing, 0) : (line[0], astern, abeam);
     }
 
+    /// <summary>The station of the i-th ship of a squadron's line (i from 1).</summary>
+    public static (int Target, double AsternM, double AbeamM) StationOf(Group g, int i) => StationOf(g.Formation, g.SpacingM, g.Line, i, g.BearingDeg);
+
     /// <summary>The station of the i-th group of a force's line (i from 1), for its guide ship: the ship it keeps
-    /// station on, and how far astern of it and to its starboard. In column it follows the last ship of the group
-    /// before (one line); in line abreast and echelon it's placed on the force's guide ship.</summary>
+    /// station on, and how far astern of it and to its starboard. Where the force's line goes on from the group before
+    /// (<see cref="Chains"/>: line ahead, or a line of bearing its groups share) it's a spacing on along it from the last
+    /// ship of that group (one line); else it's placed on the force's guide ship.</summary>
     public (int Target, double AsternM, double AbeamM) StationOfGroup(Group force, int i)
     {
         var line = force.Line;
         if (force.Formation == Formation.Column)
             return (Get(line[i - 1]) is { } before ? LastShip(before) : 0, force.SpacingM, 0);
-        var (astern, abeam) = OffsetFromGuide(force.Formation, force.SpacingM, i);
+        if (Get(line[i - 1]) is { } prior && Chains(force, prior))
+        {
+            var (a, b) = OffsetFromGuide(Formation.Bearing, force.SpacingM, 1, force.BearingDeg);
+            return (LastShip(prior), a, b);
+        }
+        var (astern, abeam) = OffsetFromGuide(force.Formation, force.SpacingM, i, force.BearingDeg);
         return (GuideShip(force), astern, abeam);
     }
 
+    /// <summary>Whether a force's line goes on from the last ship of a group of it, one line: in line ahead always (as
+    /// before lines of bearing), and in a line of bearing when that group lies on the same bearing (line ahead turned
+    /// together stays one line).</summary>
+    static bool Chains(Group force, Group before) => force.Formation == Formation.Column ||
+        force.Formation == Formation.Bearing && Math.Abs(Wrap180(force.BearingDeg - before.LineBearingDeg)) < 0.5;
+
+    static double Wrap180(double d) => d - 360 * Math.Round(d / 360);
+
+    static double Wrap360(double d) => ((d % 360) + 360) % 360;
+
     /// <summary>The i-th member of a line's station from the guide, with every ship on the guide's heading: how far
-    /// astern and to starboard.</summary>
-    public static (double AsternM, double AbeamM) OffsetFromGuide(Formation f, double spacing, int i)
+    /// astern and to starboard, i spacings along the line's bearing.</summary>
+    public static (double AsternM, double AbeamM) OffsetFromGuide(Formation f, double spacing, int i, double bearingDeg = 0)
     {
         const double Diag = 0.70710678118654752;
-        return f switch
+        switch (f)
         {
-            Formation.Column => (i * spacing, 0),
-            Formation.LineAbreast => (0, i * spacing),
-            Formation.EchelonStarboard => (i * spacing * Diag, i * spacing * Diag),
-            Formation.EchelonPort => (i * spacing * Diag, -i * spacing * Diag),
-            _ => throw new ArgumentOutOfRangeException(nameof(f)),
-        };
+            case Formation.Column: return (i * spacing, 0);
+            case Formation.LineAbreast: return (0, i * spacing);
+            case Formation.EchelonStarboard: return (i * spacing * Diag, i * spacing * Diag);
+            case Formation.EchelonPort: return (i * spacing * Diag, -i * spacing * Diag);
+            case Formation.Bearing:
+                double r = bearingDeg * Math.PI / 180;
+                return (-i * spacing * Math.Cos(r), i * spacing * Math.Sin(r));
+            default: throw new ArgumentOutOfRangeException(nameof(f));
+        }
     }
 
     /// <summary>Every ship of a group's line, down the tree, with its station from the group's guide ship (which is
@@ -371,33 +428,64 @@ public sealed class GroupSystem : IWorldSystem
         {
             for (int i = 0; i < line.Count; i++)
             {
-                var (a, b) = OffsetFromGuide(g.Formation, g.SpacingM, i);
+                var (a, b) = OffsetFromGuide(g.Formation, g.SpacingM, i, g.BearingDeg);
                 into.Add((line[i], astern0 + a, abeam0 + b));
             }
             return;
         }
+        Group? before = null;
         for (int k = 0; k < line.Count; k++)
         {
             if (Get(line[k]) is not { } sub)
                 continue;
-            var (a, b) = GroupStation(g.Formation, g.SpacingM, k, (astern0, abeam0), into.Count > 0 ? (into[^1].AsternM, into[^1].AbeamM) : null);
+            var (a, b) = GroupStation(g.Formation, g.SpacingM, k, (astern0, abeam0), into.Count > 0 ? (into[^1].AsternM, into[^1].AbeamM) : null,
+                g.BearingDeg, before != null && Chains(g, before));
             Offsets(sub, a, b, into);
+            before = sub;
         }
     }
 
     /// <summary>Where the k-th group of a force's line puts its guide ship (k from 0), about the guide ship of the
     /// whole line, given the force's own guide ship's place there and the last ship placed before it (null: none):
-    /// in line ahead a spacing astern of that last ship, else the force's offset for k. The one rule
-    /// <see cref="LineOffsets"/> and a scenario's placing (spawning a tree of groups on their stations) share.</summary>
+    /// in line ahead a spacing astern of that last ship, in a line of bearing that goes on from the group before
+    /// (<paramref name="chained"/>, <see cref="Chains"/>) a spacing on along the bearing from it, else the force's offset
+    /// for k. The one rule <see cref="LineOffsets"/> and a scenario's placing (spawning a tree of groups on their
+    /// stations) share.</summary>
     public static (double AsternM, double AbeamM) GroupStation(Formation f, double spacing, int k, (double AsternM, double AbeamM) forceGuide,
-        (double AsternM, double AbeamM)? lastBefore)
+        (double AsternM, double AbeamM)? lastBefore, double bearingDeg = 0, bool chained = false)
     {
         if (k == 0)
             return forceGuide;
         if (f == Formation.Column)
             return lastBefore is { } last ? (last.AsternM + spacing, last.AbeamM) : forceGuide;   // astern of the last ship before
-        var (oa, ob) = OffsetFromGuide(f, spacing, k);
+        if (chained && lastBefore is { } end)
+        {
+            var (ca, cb) = OffsetFromGuide(Formation.Bearing, spacing, 1, bearingDeg);
+            return (end.AsternM + ca, end.AbeamM + cb);
+        }
+        var (oa, ob) = OffsetFromGuide(f, spacing, k, bearingDeg);
         return (forceGuide.AsternM + oa, forceGuide.AbeamM + ob);
+    }
+
+    /// <summary>A group's line turned together through an angle (+ to starboard), and every group in its line with it,
+    /// as its ships will lie once each has turned: the line stays where it is, so its bearing from the guide's new
+    /// heading is the old less the angle. A line that would lie ahead of the guide's beam is taken in the reverse order
+    /// (its far end guides: after a turn through 16 points the rear ship leads), and one that comes out astern is line
+    /// ahead again.</summary>
+    void Turn(Group g, double deg)
+    {
+        double b = Wrap360(g.LineBearingDeg - deg);
+        if (Math.Cos(b * Math.PI / 180) > 1e-9)
+        {
+            g.Reverse();
+            b = Wrap360(b + 180);
+        }
+        (g.Formation, g.BearingDeg) = Math.Abs(b - 180) < 0.5 ? (Formation.Column, 0) : (Formation.Bearing, b);
+        if (!g.IsForce)
+            return;
+        for (int k = 0; k < g.Line.Count; k++)
+            if (Get(g.Line[k]) is { } sub)
+                Turn(sub, deg);
     }
 
     // ------------------------------------------------------------------ commands
@@ -447,8 +535,14 @@ public sealed class GroupSystem : IWorldSystem
     /// <summary>A group out of its force's line, or back into it, as <see cref="Detach"/> for a ship.</summary>
     public static Command DetachGroup(int groupId, Detachment d) => new(Id, (ushort)GroupCommand.DetachGroup, A: groupId, B: (int)d);
 
-    public static Command SetFormation(int groupId, Formation formation, double spacingM) =>
-        new(Id, (ushort)GroupCommand.SetFormation, A: groupId, B: (int)formation, X: spacingM);
+    /// <summary>A group's formation and spacing, and a line of bearing's bearing (<see cref="Group.BearingDeg"/>).</summary>
+    public static Command SetFormation(int groupId, Formation formation, double spacingM, double bearingDeg = 0) =>
+        new(Id, (ushort)GroupCommand.SetFormation, A: groupId, B: (int)formation, X: spacingM, Y: bearingDeg);
+
+    /// <summary>A group's line, and every group in it, turned together through an angle, degrees (+ to starboard): the
+    /// formation its ships will be in once each has turned (<see cref="Turn"/>). Its admiral turns them
+    /// (docs/battle/command.md 5.1b).</summary>
+    public static Command TurnTogether(int groupId, double deg) => new(Id, (ushort)GroupCommand.TurnTogether, A: groupId, X: deg);
 
     /// <summary>A group gone: its members are free (a force's groups stay squadrons and forces of their own), and it
     /// leaves its force.</summary>
@@ -529,7 +623,11 @@ public sealed class GroupSystem : IWorldSystem
                 break;
             case GroupCommand.SetFormation:
                 if (Get((int)c.A) is { } f)
-                    (f.Formation, f.SpacingM) = ((Formation)c.B, Spacing(c.X));
+                    (f.Formation, f.SpacingM, f.BearingDeg) = (Formed(c.B), Spacing(c.X), (Formation)c.B == Formation.Bearing ? Wrap360(c.Y) : 0);
+                break;
+            case GroupCommand.TurnTogether:
+                if (Get((int)c.A) is { } turned)
+                    Turn(turned, c.X);
                 break;
             case GroupCommand.Disband:
                 if (Get((int)c.A) is { } d)
@@ -554,6 +652,8 @@ public sealed class GroupSystem : IWorldSystem
         AddGroup(g);
         return g;
     }
+
+    static Formation Formed(int b) => (uint)b <= (uint)Formation.Bearing ? (Formation)b : throw new ArgumentException($"no formation {b}");
 
     static Detachment Detached(int b) => (Detachment)b is Detachment.InLine or Detachment.Nudged or Detachment.Pinned
         ? (Detachment)b : throw new ArgumentException($"no detachment {b}");
@@ -638,6 +738,8 @@ public sealed class GroupSystem : IWorldSystem
             h.Add(g.IsForce);
             h.Add(g.Parent);
             h.Add((int)g.Formation);
+            if (g.Formation == Formation.Bearing)
+                h.Add(g.BearingDeg);   // only then: a world of the four old formations hashes as before
             h.Add(g.SpacingM);
             h.Add(g.Members.Count);
             for (int i = 0; i < g.Members.Count; i++)
@@ -662,6 +764,7 @@ public sealed class GroupSystem : IWorldSystem
                 continue;   // the enemy's: not in the player's view
             (v.Id[n], v.Name[n], v.Formation[n], v.SpacingM[n], v.MemberStart[n], v.MemberCount[n]) =
                 (g.GroupId, g.Name, g.Formation, g.SpacingM, k, g.Members.Count);
+            v.BearingDeg[n] = g.BearingDeg;
             (v.Guide[n], v.GuideShip[n], v.Force[n], v.Parent[n]) = (g.Guide, GuideShip(g), g.IsForce, g.Parent);
             for (int i = 0; i < g.Members.Count; i++)
             {
