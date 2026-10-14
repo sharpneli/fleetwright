@@ -309,6 +309,7 @@ docs/battle/plan.md           # the battle module (a deliverable: the whole ship
                               #   what done means, ship counts, the build order from a world of water up, the ships' data
 docs/world/architecture.md    # the world: tiers of time on one clock, the sim thread, commands/snapshot, the scene stack
 docs/missions/plan.md         # missions, the battle module's stand-in for politics and manufacturing (format, objectives, UI, generator)
+docs/visuals/ship-lighting.md # the ship sprites lit (draft): relief and normals, materials, the sun, in the one forward pass
 research/                     # research notes, see below
 ```
 
