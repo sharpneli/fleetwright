@@ -123,6 +123,29 @@ public class DoctrineTests
     }
 
     [Fact]
+    public void Aggression_scales_the_fields_it_lists_as_they_are_read()
+    {
+        var (w, ai) = Make(2, 600, _ => 0);
+        w.Apply(GroupSystem.Create(1));
+        var d = ai.Doctrine;
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.OutgunnedRatio, 2));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.RangeShare, 0.6));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Aggression, 1));   // the side bold
+        Assert.Equal(3, d.Of(2, 0, DoctrineField.OutgunnedRatio), 9);   // 2 x (1 + 0.5)
+        Assert.Equal(0.42, d.Of(2, 0, DoctrineField.RangeShare), 9);    // nearer: 0.6 x (1 - 0.3)
+        Assert.Equal(30, d.Of(2, 0, DoctrineField.EvadeDeg), 9);        // not listed: as written
+        Assert.Equal(2, d.Of(2, 0, DoctrineField.BreakOffShare) / 1.5, 9);   // neutral "never" stays past any loss
+
+        w.Apply(ai.Orders.Doctrine(Unit.Group(w.Groups.Of(1)!.GroupId), DoctrineField.Aggression, -1));   // a timid squadron
+        Assert.Equal(1, d.Of(1, 0, DoctrineField.OutgunnedRatio), 9);   // its ship: 2 x (1 - 0.5)
+        Assert.Equal(3, d.Of(2, 0, DoctrineField.OutgunnedRatio), 9);   // a ship of no squadron: the side's
+        Assert.Equal(1, d.OfGroup(null, 0, DoctrineField.Aggression), 9);
+        Assert.Equal(1, d.SideValue(0, DoctrineField.Aggression), 9);
+
+        Assert.Throws<ArgumentException>(() => new Doctrine(w.Groups, new Dictionary<string, double> { ["Bravery"] = 1 }));
+    }
+
+    [Fact]
     public void Doctrine_replays_and_is_in_the_hash()
     {
         var (w, ai) = Make(2, 12_000);

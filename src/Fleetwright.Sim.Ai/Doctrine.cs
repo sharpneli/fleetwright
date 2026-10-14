@@ -74,6 +74,11 @@ public enum DoctrineField : byte
     /// <summary>Whether a side's torpedo craft attack by night (1) or not (0): attacking, its commander sends them in on
     /// any heavy enemy in reach, engaged or not. A side's value.</summary>
     NightAttack,
+
+    /// <summary>How aggressive a unit is, -1 (timid) to +1 (bold), 0 as its doctrine is written: it scales the fields
+    /// <see cref="SimSettings.AggressionShift"/> lists as they're read, each by (1 + shift x aggression), so a bold
+    /// unit takes worse odds, closes nearer, stays in the line longer and breaks off later. Inherited as any field is.</summary>
+    Aggression,
 }
 
 /// <summary>Doctrine's NightAction: heavy ships accept action at night, or avoid it.</summary>
@@ -124,9 +129,24 @@ public enum TorpedoUse : byte
 /// (<see cref="Default"/>: carry on, never fall out, the Fight numbers 4.2c had). A scenario gives each side a preset
 /// (<see cref="DoctrinePresets"/>: named values, the "default" one with Engage at Fight) and values over it per side and
 /// per unit; a command sets one value, so it's logged and replays. AI state: only captains and admirals read it.</summary>
-public sealed class Doctrine(GroupSystem groups)
+public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, double>? aggressionShift = null)
 {
-    public const int FieldCount = (int)DoctrineField.NightAttack + 1;
+    // how far aggression moves each field (SimSettings.AggressionShift), by field; 0 for those it doesn't
+    readonly double[] shift = Shifts(aggressionShift);
+
+    static double[] Shifts(IReadOnlyDictionary<string, double>? given)
+    {
+        var r = new double[FieldCount];
+        foreach (var (name, k) in given ?? new Dictionary<string, double>())
+        {
+            if (!Enum.TryParse<DoctrineField>(name, out var f) || f == DoctrineField.Aggression)
+                throw new ArgumentException($"AggressionShift: no doctrine field \"{name}\" to shift");
+            r[(int)f] = k;
+        }
+        return r;
+    }
+
+    public const int FieldCount = (int)DoctrineField.Aggression + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -150,6 +170,7 @@ public sealed class Doctrine(GroupSystem groups)
         DoctrineField.BreakOffShare => 2,   // never
         DoctrineField.NightAction => (double)Ai.NightAction.Accept,
         DoctrineField.NightAttack => 0,
+        DoctrineField.Aggression => 0,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
@@ -175,16 +196,28 @@ public sealed class Doctrine(GroupSystem groups)
         return r;
     }
 
-    /// <summary>A ship's value: its own, its groups' up the tree, its side's, the default.</summary>
-    public double Of(int entity, byte side, DoctrineField f)
+    /// <summary>A ship's value: its own, its groups' up the tree, its side's, the default; scaled by its aggression.</summary>
+    public double Of(int entity, byte side, DoctrineField f) =>
+        Scaled(f, RawOf(entity, side, f), shift[(int)f] != 0 ? RawOf(entity, side, DoctrineField.Aggression) : 0);
+
+    /// <summary>A group's value: its own, its forces' up the tree, its side's, the default; scaled by its aggression.</summary>
+    public double OfGroup(GroupSystem.Group? g, byte side, DoctrineField f) =>
+        Scaled(f, RawOfGroup(g, side, f), shift[(int)f] != 0 ? RawOfGroup(g, side, DoctrineField.Aggression) : 0);
+
+    /// <summary>A side's own value as set (NaN if it isn't), unscaled: what the UI shows.</summary>
+    public double SideValue(int side, DoctrineField f) => sides[side & 255] is { } s ? s[(int)f] : double.NaN;
+
+    double Scaled(DoctrineField f, double value, double aggression) =>
+        aggression == 0 ? value : value * (1 + shift[(int)f] * Math.Clamp(aggression, -1, 1));
+
+    double RawOf(int entity, byte side, DoctrineField f)
     {
         if (units.TryGetValue(entity, out var r) && !double.IsNaN(r[(int)f]))
             return r[(int)f];
-        return OfGroup(groups.Of(entity), side, f);
+        return RawOfGroup(groups.Of(entity), side, f);
     }
 
-    /// <summary>A group's value: its own, its forces' up the tree, its side's, the default.</summary>
-    public double OfGroup(GroupSystem.Group? g, byte side, DoctrineField f)
+    double RawOfGroup(GroupSystem.Group? g, byte side, DoctrineField f)
     {
         for (; g != null; g = g.Parent != 0 ? groups.Get(g.Parent) : null)
             if (units.TryGetValue(-g.GroupId, out var r) && !double.IsNaN(r[(int)f]))

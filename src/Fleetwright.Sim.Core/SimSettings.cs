@@ -667,6 +667,16 @@ public sealed record SimSettings
     /// his main body, degrees (civil twilight's end).</summary>
     public double NightSunElevationDeg { get; init; } = -6;
 
+    /// <summary>What doctrine's Aggression (-1 timid to +1 bold) does: each listed field is read as its value x (1 + shift
+    /// x aggression). Bold: worse odds taken (OutgunnedRatio up), losses borne longer (BreakOffShare, AttackBreakOffShare
+    /// up), nearer (RangeShare down), in the line longer (the fall-out thresholds), a smaller turn from torpedoes.</summary>
+    public Dictionary<string, double> AggressionShift { get; init; } = new()
+    {
+        ["OutgunnedRatio"] = 0.5, ["BreakOffShare"] = 0.5, ["AttackBreakOffShare"] = 0.4, ["RangeShare"] = -0.3,
+        ["FallOutSpeedShare"] = -0.3, ["FallOutGunsShare"] = -0.3, ["FallOutListDeg"] = 0.3, ["FallOutWaterShare"] = 0.3,
+        ["TurnAwayDeg"] = -0.5,
+    };
+
     /// <summary>A ship with main guns of this calibre or more is one of his heavy ships, capital or not (the commander's
     /// roles: an armoured cruiser, a pre-dreadnought). mm.</summary>
     public double HeavyGunMm { get; init; } = 200;

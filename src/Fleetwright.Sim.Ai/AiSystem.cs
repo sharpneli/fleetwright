@@ -52,7 +52,7 @@ public sealed class AiSystem : IWorldSystem
     public AiSystem(World world)
     {
         Seen = new SeenContacts();
-        Doctrine = new Doctrine(world.Groups);
+        Doctrine = new Doctrine(world.Groups, world.Settings.AggressionShift);
         Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine, homes);
         Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine);
         Tactical = new TacticalPicture(Seen);
@@ -207,6 +207,8 @@ public sealed class AiSystem : IWorldSystem
 
     public void Fill(Snapshot s)
     {
+        for (int side = 0; side < s.Aggression.Length; side++)
+            s.Aggression[side] = Doctrine.SideValue(side, DoctrineField.Aggression) is var a && double.IsNaN(a) ? 0 : a;
         foreach (var l in layers)
             l.Fill(s);
     }

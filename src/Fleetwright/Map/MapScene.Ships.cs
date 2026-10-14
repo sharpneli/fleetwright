@@ -699,6 +699,37 @@ public sealed unsafe partial class MapScene
         return best;
     }
 
+    // dev: each side's aggression as the slider shows it, while it's dragged (the snapshot's otherwise)
+    readonly float[] aggressionEdit = new float[256];
+    int aggressionDragged = -1;
+
+    /// <summary>Dev: each side's doctrine's aggression (-1 timid to +1 bold; docs/battle/command.md "Doctrine"), the
+    /// scenario's sides by name, else sides 0 and 1. Sent once a drag ends, as the side's doctrine.</summary>
+    void AggressionRow(Snapshot s)
+    {
+        var names = world.Scenario?.Sides;
+        int sides = names?.Length ?? 2;
+        ImGui.TextDisabled("aggression (dev):");
+        for (int side = 0; side < sides; side++)
+        {
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(110 * UiFonts.Scale);
+            if (aggressionDragged != side)
+                aggressionEdit[side] = (float)s.Aggression[side];
+            ImGui.SliderFloat($"{names?[side] ?? $"side {side}"}##aggr{side}", ref aggressionEdit[side], -1, 1, "%+.2f");
+            if (ImGui.IsItemActive())
+                aggressionDragged = side;
+            else if (aggressionDragged == side)
+                aggressionDragged = -1;
+            if (ImGui.IsItemDeactivatedAfterEdit())
+                world.Send(world.Ai.Orders.SideDoctrine(side, Sim.Ai.DoctrineField.Aggression, aggressionEdit[side]));
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("-1 timid, +1 bold: scales the odds it takes (outgunned ratio), how close it fights, when ships fall out,\n" +
+                                 "when flotillas and the side break off, and the turn from torpedoes (settings' AggressionShift).\n" +
+                                 "Ctrl+click to type a value.");
+        }
+    }
+
     void ShipsUi()
     {
         var vp = ImGui.GetMainViewport();
@@ -739,6 +770,7 @@ public sealed unsafe partial class MapScene
                     ImGui.SetTooltip("Your side's commander gives your top units their tasks; your own order to a unit takes it from him\n" +
                                      "(\"leave it to the admiral\" on its group row hands it back).");
             }
+            AggressionRow(s);
             bool fromDesigner = designPick == FromDesigner;
             if (fromDesigner && placeClass >= 0)
                 FollowDesigner();

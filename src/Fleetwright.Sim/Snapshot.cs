@@ -64,6 +64,9 @@ public sealed class Snapshot
     public byte[] CommanderPhase { get; } = new byte[256];
     public byte[] CommanderReason { get; } = new byte[256];
 
+    /// <summary>Each side's doctrine's aggression as set, -1 to +1 (the AI's; 0 unset).</summary>
+    public double[] Aggression { get; } = new double[256];
+
     /// <summary>The player's navy's contacts (empty with no player side).</summary>
     public ContactsView Contacts { get; } = new();
 

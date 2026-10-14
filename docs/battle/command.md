@@ -185,6 +185,15 @@ own value, else its group's, else the side's. A command sets it, so it's logged 
 and turn away from torpedoes; the Germans turn away from the whole Grand Fleet; the Japanese at Tsushima close): more
 presets by navy and year, from the research, are a fine-tune.
 
+**Aggression** (added 2026-10-14 after 5.1d, for testing by hand): one more field, -1 (timid) to +1 (bold), 0 as the
+doctrine is written, set and inherited as any other. It scales the fields `SimSettings.AggressionShift` lists as they're
+read, each by (1 + shift x aggression): bold takes worse odds (`OutgunnedRatio` up), closes nearer (`RangeShare` down),
+stays in the line longer (the fall-out thresholds), bears more losses before a flotilla or the side breaks off, and turns
+less far from torpedoes. A dev slider per side on the world tab sets it (as the side's doctrine, logged). `squadrons`, 5
+seeds, both sides alike: at -1 Britain loses 0.4 of 4 ships, at 0 2.2, at +1 3.6 (3 runs decided). Launch sliders and
+captains' and admirals' personalities can move it (or traits like it) later; the commander's own judgement numbers
+(`CommanderMarginShare` and the rest in `SimSettings`) aren't doctrine yet, so it doesn't reach them.
+
 ### Fitness: what a ship can still do
 
 One small summary per ship from its condition (`Sim.Combat`, pure, cached by the condition's `Version`): the speed it
