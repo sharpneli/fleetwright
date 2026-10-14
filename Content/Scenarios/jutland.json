@@ -30,12 +30,14 @@
   // the haze and smoke (12-16 km); a light SW wind, force 2-3. One weather for now (docs/battle/plan.md 3.2b)
   "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 },
   // opening tasks (docs/battle/command.md 5.1c): the 5th BS covers Beatty, the flotillas screen their fleets, the cruisers
-  // and scouting groups scout ahead of theirs at their historical distances; the main bodies and Beatty's light cruisers
-  // steam as placed, so the first contact is history's
+  // and scouting groups scout ahead of theirs at their historical distances; Beatty's light cruisers steam as placed, so
+  // the first contact is history's. The main bodies' plans (5.1d), the commanders' until the enemy is found: Beatty north
+  // to the rendezvous with Jellicoe in 57°45'N 4°15'E and into the Grand Fleet; Jellicoe to the rendezvous and on to sweep
+  // toward the Horns Reef; Hipper north to show himself off the Skagerrak, Scheer following fifty miles astern
   "units": [
     // ---------------------------------------------------------------- the Battlecruiser Fleet (Beatty): 52
     // Lion's squadron in line ahead with the 2nd BCS three miles on its starboard beam, each screened by its destroyers
-    { "name": "Battlecruiser Fleet", "side": 0, "at": [56.767, 4.667], "course": 11, "kn": 19.5, "formation": "abreast", "spacing": 5560,
+    { "name": "Battlecruiser Fleet", "tasks": [ { "do": "go to", "at": [57.75, 4.25] }, { "do": "join", "of": "Grand Fleet" } ], "side": 0, "at": [56.767, 4.667], "course": 11, "kn": 19.5, "formation": "abreast", "spacing": 5560,
       "units": [
         { "name": "1st Battlecruiser Squadron", "spacing": 550, "ships": [
           { "design": "lion", "names": ["Lion", "Princess Royal"] }, { "design": "queen_mary", "name": "Queen Mary" }, { "design": "tiger_1914", "name": "Tiger" } ] },
@@ -65,7 +67,7 @@
     // ---------------------------------------------------------------- the Grand Fleet (Jellicoe): 99
     // the battle fleet in organisation No. 5, six columns of divisions a mile apart, port to starboard; Iron Duke leads
     // the 3rd column in 57°57'N 3°45'E
-    { "name": "Grand Fleet", "side": 0, "at": [57.975, 3.789], "course": 130, "kn": 14, "formation": "abreast", "spacing": 3600,
+    { "name": "Grand Fleet", "tasks": [ { "do": "go to", "at": [57.75, 4.25] }, { "do": "go to", "at": [55.9, 6.8] } ], "side": 0, "at": [57.975, 3.789], "course": 130, "kn": 14, "formation": "abreast", "spacing": 3600,
       "units": [
         { "name": "2nd Battle Squadron", "formation": "abreast", "spacing": 1800, "units": [
           { "name": "1st Division", "spacing": 500, "ships": [ { "design": "king_george_v", "names": ["King George V", "Ajax", "Centurion"] }, { "design": "erin", "name": "Erin" } ] },
@@ -118,7 +120,7 @@
     // ---------------------------------------------------------------- the scouting forces (Hipper): 40
     // the battlecruisers in line ahead, the II Scouting Group 6 miles ahead on a 16-mile front (Elbing the western
     // wing), the torpedo boats nearer in
-    { "name": "1st Scouting Group", "side": 1, "at": [56.733, 6.230], "course": 0, "kn": 16, "formation": "column", "spacing": 500,
+    { "name": "1st Scouting Group", "tasks": [ { "do": "go to", "at": [57.6, 6.6] }, { "do": "go to", "at": [57.6, 8.4] } ], "side": 1, "at": [56.733, 6.230], "course": 0, "kn": 16, "formation": "column", "spacing": 500,
       "ships": [ { "design": "derfflinger", "names": ["Lützow", "Derfflinger"] }, { "design": "seydlitz", "name": "Seydlitz" },
                  { "design": "moltke", "name": "Moltke" }, { "design": "von_der_tann", "name": "Von der Tann" } ] },
     { "name": "2nd Scouting Group", "task": { "do": "scout", "of": "1st Scouting Group", "distance_km": 15 }, "side": 1, "at": [56.833, 5.986], "course": 0, "kn": 16, "formation": "abreast", "spacing": 9877,
@@ -141,7 +143,7 @@
     // ---------------------------------------------------------------- the High Seas Fleet (Scheer): 59
     // fifty miles astern of Hipper, one line ahead: the III Squadron leading, the flagship, the I Squadron, the
     // pre-dreadnoughts last; the 4th Scouting Group and the torpedo boats screening ahead
-    { "name": "High Seas Fleet", "side": 1, "at": [55.900, 6.220], "course": 0, "kn": 14, "formation": "column", "spacing": 900,
+    { "name": "High Seas Fleet", "tasks": [ { "do": "go to", "at": [57.3, 6.5] }, { "do": "go to", "at": [57.5, 8.2] } ], "side": 1, "at": [55.900, 6.220], "course": 0, "kn": 14, "formation": "column", "spacing": 900,
       "units": [
         { "name": "III Squadron", "spacing": 500, "ships": [
           { "design": "konig", "names": ["König", "Grosser Kurfürst", "Kronprinz", "Markgraf"] }, { "design": "kaiser", "names": ["Kaiser", "Kaiserin", "Prinzregent Luitpold"] } ] },

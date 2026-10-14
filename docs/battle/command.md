@@ -661,6 +661,108 @@ doesn't hold the T.
 - **Checked:** the Jutland meets (the scouts, then the battlecruisers) in most seeds; a side that's outmatched declines
   and goes home; every unit is on a task or home at the end (nothing idle); the commanders cost little (measured).
 
+**5.1d done 2026-10-14,** built in five pieces, each committed when it played (2-4 together):
+
+1. **The layer, its switch, plans and idle units.** `Sim.Ai/Commanders/CommanderLayer`, a fourth layer above the tasks
+   (`AiSystem`'s layers: commanders, tasks, admirals, captains), one commander per side, thinking every
+   `CommanderPeriodMs` (60 s). He commands his side's top units (groups that are no force's, ships in no group) by tasks,
+   given as the player's are but from `OrderSource.Commander`, by each unit's role: the main body (the strongest with heavy
+   ships), other heavy units, scouts, flotillas (most of its ships torpedo craft) and auxiliaries (no main battery).
+   - *Who he commands,* changed from the plan's "off for the player's side" alone: a world told nothing has no commander
+     (`CommanderMode.None`), so dev worlds and every test before him play as they did; a scenario gives every side one
+     that's on unless it's the player's (`Auto`: watching, every side's on), and the logged `Commander` command sets a
+     side's mode. Once he's thought, the player's own order to one of his units (a move, or a task) takes it from him, as
+     a held unit is from its admiral (2.6); `Automate` hands it back ("leave it to the admiral") or takes it.
+   - *Plans:* tasks queue (`UnitOrders.Then`), each begun when the one before ends, done or not; a scenario's `"tasks"`
+     list is a top unit's plan, its first given at once. A unit's plan is the task layer's, so it runs on the player's
+     side too; a new task in place of a plan drops what was to come.
+   - *Idle units:* one whose plan has run out gets its role's task (the main body searches ahead on its course, another
+     heavy unit joins it, scouts scout ahead of it spread 0°, ±45°, ±90° off its bow, flotillas screen the nearest heavy
+     unit, auxiliaries go home). A unit on the scenario's own orders is on its orders until the enemy's met; after that
+     (they were for the approach) it counts as idle too.
+   - Placeholders: "AI commands" beside the spawn panel's "watch" for the player's side; a top group's "leave it to the
+     admiral" / "take it from the admiral", and "· AI" / "· yours" on its label.
+2. **Contact and battle.** His target is the strongest fresh contact (`ContactFreshMs`, 30 minutes out of sight: older
+   is lost, and Intercept now gives such a contact up too), the nearest his main body of those as strong, kept until it's
+   lost or another is `CommanderRetargetShare` (1.5) times as strong. Every heavy unit not in contact closes it
+   (Intercept), unless it's on a task with a unit (scouting, covering, screening); one in contact is doctrine's. Heavy
+   means a capital ship or main guns of `HeavyGunMm` (8") or more: Tsushima's battleships are under 14,000 t, and
+   Kamimura's armoured cruisers were a battle line; with only capital ships, both fleets there were "scouts" an hour in
+   and nobody closed. In battle his flotillas with torpedoes are sent in (`TaskKind.Attack`, the flotilla's attack as a
+   task: done once the torpedoes are spent, can't once beaten off, and then never sent again) on an enemy line worth
+   `CommanderAttackStrength` (one 12" gun) that his heavy units engage, within `CommanderAttackM` (25 km); a force of
+   flotillas under a light cruiser sends in its squadrons, which rejoin it afterwards. The player's Attack is a task now
+   as well.
+3. **The balance turns.** *Declined* (outmatched): the strength he holds fresh past doctrine's outgunned ratio of his own
+   by `CommanderMarginShare` (25%), accepted again once it's under by as much; a side of light forces declines nothing
+   (its flotillas attack by doctrine). *Broken off,* for good: losses past doctrine's new `BreakOffShare` (the default
+   preset a third of the tonnage he came with; neutral never). Either way every unit goes home (Withdraw), a flotilla near
+   the enemy sent in once to cover a break-off. *Lost:* the enemy met and no contact fresh: his main body searches about
+   where he was last held (the picture's estimate) on `LostSearchLegM` (20 km) legs, and with nothing found he gives up:
+   every unit home. A new end, `EndReason.Done`: every side afloat has its aims, or has given up or broken off with every
+   ship afloat home.
+4. **Night.** Doctrine's `NightAction` (default preset "avoid"; neutral "accept") and `NightAttack` (1; neutral 0): with
+   the enemy held and the sun more than `NightSunElevationDeg` (6°) down at his main body, his heavy units are withdrawn
+   (home, free to close again at dawn), his scouts keep their tasks, and his flotillas go in on any heavy enemy in
+   reach, engaged or not.
+5. **The Jutland's plans** (`"tasks"`): Beatty north to the rendezvous with Jellicoe in 57°45'N 4°15'E and into the
+   Grand Fleet; Jellicoe to the rendezvous and on toward the Horns Reef; Hipper north into the Skagerrak, Scheer on the
+   same track fifty miles astern. History's first contact (Galatea and B109 at 14:20) comes in the first quarter hour,
+   so the plans give way at once to the commanders' rules: both main bodies close what their scouts hold.
+
+**The bench** prints the commander's phases and orders on the timeline, a census of each side's top units at the end (on
+a task, home, on their first orders, idle, fallen out), and the AI layers' cost.
+
+Found on the way:
+
+- A withdrawal waited on a fight taken up after it, and the commander gave it again every minute; a withdrawal now never
+  waits on a fight, and gives its run or its route home again if one took over.
+- A squadron that's its force's guide couldn't rejoin the force ("join can't: gone"); it resumes its place now.
+- An admiral's first route allocated (his waypoints grew from nothing); room for eight is made with him.
+- Regensburg and the other light cruisers with 4.1" guns are torpedo craft by 4.6's rule (no gun of 150 mm or more), so
+  they're sent in to attack with their flotillas. Left as it is (a classification for the fine-tune).
+
+**Checked** (Release; `CommanderTests`): who commands (none in a world told nothing; a scenario's every side but the
+player's; the player's order takes a unit; "leave it to the admiral" hands it back); a plan of two go-tos and then the
+main body's search; units through with their tasks given their roles; a side holding an enemy 60 km off closes him in
+an hour, its scout left shadowing; a flotilla sent in on an enemy line its own line engages, torpedoes in the water in 18
+minutes; an outmatched side declines and is 22 km nearer home an hour on; a side that loses a faster enemy intercepts,
+searches where it was, gives up and goes home; losses past the share break a side off; by night ("avoid") the heavy
+squadron is withdrawn and the flotilla sent in, and with "accept" it's a battle. Allocation-free (4.6's flotilla test) and
+replaying (Tsushima, 4 hours with a commander on). The commanders cost 0.05% of the Jutland's run, 85 µs a think once a
+game minute (the captains 23%, the admirals 4%).
+
+**After 5.1d** (Release, 5 seeds each):
+
+| Scenario | How it ended | Losses |
+|---|---|---|
+| `squadrons` | time 5 (6:00) | Britain 2.2 of 4, Germany 0.0 of 5 |
+| `flotilla` | time 5 (5:00) | Britain 0.2 of 4, Germany 3.2 of 6 (6.0 torpedoes a run, from 1.6) |
+| `tsushima` | quiet 5 (after 13:14) | Russia 7.0 of 13, Japan 5.0 of 14 |
+| the Jutland | time 5 (04:00; 114-153 s a seed) | Britain 29.4 of 151 (19-35), Germany 27.0 of 99 (20-35); after 5.1c, one seed: 18 and 13 |
+
+- **The Jutland meets in every seed,** the main bodies too: both commanders close from the first contact, the Grand Fleet
+  deploys (20:09 in seed 1916) and the High Seas Fleet after it; both withdraw their heavy ships by night (21:12 to about
+  02:00) and close again at first light. Germany doesn't decline the Grand Fleet: the British strength it holds is
+  about twice its own, under the default preset's outgunned ratio with the margin. A German preset that avoids the whole
+  Grand Fleet (history's aim) is the presets' fine-tune.
+- **Nothing idle:** at the end of the Jutland neither side has a unit idle or still on its first orders (on a task, home,
+  or fallen out).
+- **The small scenarios now pursue:** the side that's won chases the beaten one's survivors and cripples (the 2nd Battle
+  Squadron the limping torpedo boats; Hipper Beatty's survivors) and doesn't end quiet within the scenario's time.
+  `squadrons` before 5.1d decided 2 of 5 by sinking all four British ships; now Britain breaks off after losing two and
+  gets away. Ending by a scenario's own rules is 5.1f's bar.
+
+**Still open after 5.1d** (for 5.1f and the fine-tune):
+
+- Finishing cripples: a stopped or silent enemy in sight is fought at doctrine's range for hours (the Germans and a
+  rudderless Tiger in `squadrons`); a commander's (or a Fight's) "finish her" from the enemy's seen fitness is a
+  deepening.
+- His target is one contact, the strongest; the enemy held out of sight isn't grouped (the tactical picture is in sight
+  only), so the Grand Fleet closes a light cruiser until a battlecruiser is held.
+- By night every heavy unit goes home; keeping between the enemy and his home (Jellicoe's night) is a fine-tune.
+- Navy presets (the Germans' outgunned ratio against the whole Grand Fleet) and the aims Avoid and Reach.
+
 **5.1e Signals and flagships.**
 
 - **Flagships,** flag delays, searchlights by night, wireless, and missed signals, as above; the order in transit in

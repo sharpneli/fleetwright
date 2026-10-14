@@ -135,9 +135,10 @@ public enum CommanderWhy : byte
 /// side's on or off. Once he's thought, the player's own order to one of his units (a move, or a task) takes it from
 /// him, as an order to a held unit does from its admiral (2.6); <see cref="AiCommand.Automate"/> hands it back ("leave
 /// it to the admiral") or takes it, on a side whose commander is off too.</para>
-/// <para><b>Idle units:</b> a unit on the orders the scenario gave it is on its orders; one whose task ended with nothing
-/// after it (its plan's run out, <see cref="TaskLayer.Idle"/>) is given its role's task (<see cref="IdleTask"/>), so
-/// nothing is idle without a reason.</para>
+/// <para><b>Idle units:</b> a unit on the orders the scenario gave it is on its orders until the enemy's met (they were
+/// for the approach); one whose task ended with nothing after it (its plan's run out, <see cref="TaskLayer.Idle"/>), or
+/// on its first orders once the enemy's met, is given its role's task (<see cref="IdleTask"/>), so nothing is idle
+/// without a reason.</para>
 /// <para>Thinks every <see cref="SimSettings.CommanderPeriodMs"/> while any side has a commander. His records are kept
 /// in unit order; nothing allocated once grown.</para></summary>
 public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenContacts seen, TacticalPicture tactical, Doctrine doctrine) : IAiLayer
@@ -430,8 +431,9 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                     Give(ctx, t, ctx.Orders.Attack(t.Unit, 0, OrderSource.Commander), CommanderWhy.Battle);
                     continue;
             }
-            if (!Tasks!.Idle(t.Unit) || InContact(ctx, t) || Home(t.Unit))
-                continue;   // on its orders, or its task, or fighting (doctrine's), or home
+            bool firstOrders = Tasks!.Of(t.Unit).Kind == TaskKind.None;
+            if (!(Tasks.Idle(t.Unit) || firstOrders && s.Met) || InContact(ctx, t) || Home(t.Unit))
+                continue;   // on its task, or on the scenario's orders before the enemy's met, or fighting (doctrine's), or home
             if (t.Force != 0 && groups.Get(t.Unit.GroupId) is { } sq && groups.InForceLine(sq))
                 continue;   // in its force's line: its admiral's
             if (t.Force != 0)

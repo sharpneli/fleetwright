@@ -1846,7 +1846,11 @@ turning together and the battle turn-away, the turn-away from torpedoes, the flo
 counter-attack; crossing the T measured and left for 5.1c's long lines (`command.md` 5.1b). **5.1c done 2026-10-14:**
 tasks (go to, patrol, intercept, join, withdraw, scout, search, shadow, screen, cover) as a layer above the admirals,
 the tactical picture, the deployment into line of battle across the enemy's course, falling back on the main body,
-and opening tasks in the scenario file (`command.md` 5.1c).
+and opening tasks in the scenario file (`command.md` 5.1c). **5.1d done 2026-10-14:** the side's commander as a layer
+above the tasks (none in a world told nothing, a scenario's every side but the player's, switchable per side and unit),
+plans as queued tasks, idle units given their roles' tasks, closing the enemy, sending flotillas in, declining, breaking
+off, searching for a lost enemy and giving up, night, a "done" end, and the Jutland's plans; the Jutland meets in every
+seed (`command.md` 5.1d).
 
 **5.1 Captains and admirals.** Standing orders for both sides: go to, keep station, shadow, evade, engage, break off
 at x% damage. Admirals' objectives above their squadrons: search an area, cover, intercept, rendezvous. All are more
