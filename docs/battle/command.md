@@ -861,6 +861,42 @@ inputs are the ones the coarse tables will fill, so they can replace it later wi
 *Not in it:* the coarse tables themselves (4.8), so no simulating fights ahead; the matchup is a judgement of the
 odds, not a forecast of the battle.
 
+*Decided at the start* (the user, 2026-10-14, on the questions; folded over the text above where they differ):
+
+- **The measure.** Guns: the fire-control research's quick hit chance (§8.3: the hitting space from the class's length,
+  beam and height and the fall angle from the range table; the MPI error by the battery's fire-control level from §12.2,
+  with the gun's dispersion), scaled to `shipgen duel`; a hit's effect is the shell's weight or filler times whether it
+  passes the belt, deck and turret faces at that range (`Terminal.PenMm`). Toughness is the hits that **sink** (doctrine's
+  fall-out tests are sinking kinds of damage, so "out of the fight" is about the same number), from displacement and
+  reserve buoyancy, checked against `shipgen hits` and `shipgen torpedo`.
+- **Confidence follows the square law:** time for B to sink all of A over time for A to sink all of B, so twice the
+  ships is four times the confidence; `OutgunnedRatio` is retuned to it.
+- **The range is the faster side's:** the matchup is judged at a few candidate ranges (torpedo range, each side's
+  doctrine range); the side faster by a margin gets the one best for it, and at about equal speed it's the judge's own
+  doctrine range. Destroyers can force torpedo range on a battleship; a battleship can't hold a faster cruiser off.
+- **Fire goes where it tells:** a group's batteries are spread over the enemy's classes by what each does to them, not
+  by tonnage, so a light cruiser squadron's 6" goes to the destroyers in a mixed group.
+- **Night shortens the run-in:** the defence's guns open on torpedo craft only within the night's sight range, so a
+  night attack is cheap by the matchup itself.
+- **Damage counts, and cripples are finished:** own ships by their fitness exactly, enemies by what's seen (silent: no
+  guns; stopped: can't get away; low or listing: less toughness left). Fight closes in on an enemy that can barely hurt
+  it, so a silent cripple is finished rather than fought at doctrine's range for hours (5.1d's open item).
+- **Contacts not made out** are the average of the enemy side's own classes of that type in the registry (the user's
+  pick over a reference design per type: closer to the truth, though it knows which classes are at sea).
+  `FightTypeGuns` goes.
+- **Two bars:** the commander sends units after an enemy only when they're confident (a new doctrine field,
+  `SeekRatio`, 1 by default: expected to win); a unit that meets an enemy fights down to 1 / `OutgunnedRatio` before
+  turning away. Both scaled by aggression.
+- **Targets are assigned per enemy group:** the enemy groups ranked by threat, each given the nearest own top units
+  confident against it until together they clear the bar; a unit confident against none stays with the main body (a
+  scout shadows). Light cruisers go for the destroyers while the battle fleet goes for the battle fleet. The main body is
+  still the top unit with the most capital ships; "a match for him" (falling back) and "the gravest threat" are matchups.
+- **No escape:** an outmatched unit or side that can't get away doesn't decline. Fight runs only where running gains
+  (opens the range, or buys time: night coming, supports near, as the fall-back already looks for), else holds
+  doctrine's band and fights.
+- **Left as they are:** the torpedo-craft classification (Regensburg's 4.1" counts as one, 5.1d), since the turn-away's
+  threat test still reads it; `DesignerPlaceholders.HeavyGunMm` (the shell mix), which isn't the commander's.
+
 **5.1e Signals and flagships.**
 
 - **Flagships,** flag delays, searchlights by night, wireless, and missed signals, as above; the order in transit in
