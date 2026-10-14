@@ -574,6 +574,15 @@ public sealed record SimSettings
     public double TorpedoFoulM { get; init; } = 400;
     public double LineOfFireCellM { get; init; } = 5_000;
 
+    /// <summary>Torpedoes seen (docs/battle/command.md 5.1a): a wake is seen within TorpedoSeenM of a ship while the sun is
+    /// over TorpedoDayElevationDeg, within TorpedoSeenNightM otherwise; one passing within her half-length and
+    /// TorpedoCombMarginM is coming at her; she holds the comb TorpedoCombAfterS after it's past. m, degrees, s.</summary>
+    public double TorpedoSeenM { get; init; } = 2_000;
+    public double TorpedoSeenNightM { get; init; } = 400;
+    public double TorpedoDayElevationDeg { get; init; } = -6;
+    public double TorpedoCombMarginM { get; init; } = 100;
+    public double TorpedoCombAfterS { get; init; } = 20;
+
     /// <summary>A ship out of the fight going home stops this near it, m (docs/battle/command.md 5.1a).</summary>
     public double HomeRadiusM { get; init; } = 10_000;
 

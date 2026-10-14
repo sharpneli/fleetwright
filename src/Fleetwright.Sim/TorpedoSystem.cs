@@ -457,6 +457,16 @@ public sealed class TorpedoSystem : IWorldSystem
         return p;
     }
 
+    /// <summary>Where a running torpedo is at a moment, its heading there, and how far it has still to run, m (the
+    /// captains' lookouts: docs/battle/command.md 5.1a).</summary>
+    public static (Vec3d Position, Vec3d Forward, double LeftM) Where(in Torpedo t, long ms)
+    {
+        double run = Math.Max(0, (ms - t.LaunchMs) / 1000.0) * t.SpeedMs;
+        var (p, f) = (t.Origin, t.Forward);
+        Earth.Advance(ref p, ref f, run);
+        return (p, f, Math.Max(0, t.EndS * t.SpeedMs - run));
+    }
+
     /// <summary>A torpedo's end, a hit or sunk: its mark in the ring the screens read, and its record freed.</summary>
     void End(World world, ref Torpedo t, int i)
     {

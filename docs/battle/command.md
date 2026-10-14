@@ -399,7 +399,7 @@ Bottom-up, so each layer is built on one that already behaves.
   that see tracks comb them and fewer torpedoes hit than in 4.6's run (the same seed); evasion styles measured against
   `fire_control_ref.py`'s hit rates on `shipgen duel` (wide bands); allocation-free; replays.
 
-**5.1a so far (2026-10-14),** built in five pieces, each committed when it plays:
+**5.1a done 2026-10-14,** built in five pieces, each committed when it played:
 
 1. **Doctrine, presets, homes.** `Doctrine` is AI state (`Sim.Ai`, held by `AiSystem`; the table above put it in the
    world), read ship, squadron, forces, side, then a neutral default that behaves as before doctrine (carry on, never
@@ -436,6 +436,22 @@ Bottom-up, so each layer is built on one that already behaves.
    meant for her. Measured: running from a battleship at 14 km for 15 minutes, a light cruiser took 0 hits zigzagging
    and 4 steady over 4 seeds (no statistic, the right way round). The flotilla's boats lose 3.4 of 6 (from 4.6) and hit
    more (Britain loses 1.2 of 4, from 0.8): the research's run-in weave.
+5. **Torpedoes seen and combed.** `TorpedoWatch` (`Captains/`): the running torpedoes in a grid once a think
+   (`TorpedoSystem.Where`, the torpedo's closed form, now public). A ship's own lookouts see a wake within
+   `TorpedoSeenM` (2 km) by day, `TorpedoSeenNightM` (400 m) at night (the sun under `TorpedoDayElevationDeg`); one
+   whose track passes within her half-length and `TorpedoCombMarginM` before its run ends is coming at her, and with
+   doctrine's `TorpedoEvasion` at comb (the default preset; neutral: none, so 4.6's benches keep their steady targets)
+   she turns parallel to it, bow or stern on, the smaller turn, until `TorpedoCombAfterS` after it's past; a plain
+   course is given back then. Her reason says "combing". Deviation from the plan: the wakes are each ship's own
+   lookouts', not entries in the navy's picture (it holds ships); tracks go there when 5.1b's turn-away needs them.
+   Measured: a spread of 4 from 3 km on a battleship's beam, 6 seeds: 3 hits of 24 combing, 10 holding on. The
+   flotilla's battleships now comb: in its allocation test's window 10 torpedoes and no hits (4.6's run had 7 hits on
+   Monarch).
+
+**After 5.1a** (Release, 5 seeds; the Jutland one): `squadrons` time 3, decided 2 (Britain loses 3.0 of 4); `flotilla`
+time 4, quiet 1 (Britain 0.4 of 4, Germany 3.0 of 6); Tsushima quiet 5 (Russia 3.4 of 13, Japan 4.2 of 14); the Jutland
+to its time, 15 British and 16 German ships lost, 22 fallen out, in 130 s. Every run ends; most by time, since nobody
+pursues a cripple or a beaten enemy yet (the force and the commander, 5.1c-d).
 
 **5.1b The squadron's tactics.**
 

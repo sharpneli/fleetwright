@@ -1840,7 +1840,8 @@ bench: a scenario that ends), 5.1a-f (doctrine and the captains, the squadron, t
 whole) and 5.2 (the UI). Where the two differ, that doc leads; the sketch below stays as the step list other docs cite.
 **5.0 done 2026-10-14:** a scenario ends (time, decided, quiet: `ScenarioEnd`), `shipgen scenario X --play [--seeds N]`
 plays it with the AI on every side, and the baseline is in `command.md` (every run ends; nothing decides Tsushima or
-the Jutland yet).
+the Jutland yet). **5.1a done 2026-10-14:** doctrine and its presets, fitness and falling out (home), a clear line of
+fire, evasion under fire, torpedoes seen and combed (`command.md` 5.1a).
 
 **5.1 Captains and admirals.** Standing orders for both sides: go to, keep station, shadow, evade, engage, break off
 at x% damage. Admirals' objectives above their squadrons: search an area, cover, intercept, rendezvous. All are more

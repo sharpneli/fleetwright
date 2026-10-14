@@ -37,6 +37,7 @@ public sealed partial class CaptainLayer
 {
     readonly List<int> fighters = new(64);
     readonly LineOfFire lines = new();
+    readonly TorpedoWatch torpedoWatch = new();
     double[] underFire = [];   // by slot: the range of the nearest enemy battery on her, m (0: none), as of this think
     bool anyUnderFire;
     readonly List<(int Ship, double AsternM, double AbeamM)> unitLine = new(16);
@@ -92,6 +93,7 @@ public sealed partial class CaptainLayer
             {
                 ref var cap = ref Get(own.Entity);
                 FallOut(ctx, ref cap, own, slot);
+                Comb(ctx, ref cap, own);
                 TakeUpStanding(ctx, ref cap, own, slot);
                 Aim(ctx, ref cap, own, slot);
             }
@@ -471,6 +473,31 @@ public sealed partial class CaptainLayer
             return;
         }
         Give(ctx, own, Earth.Bearing(own.Position, home), flank);
+    }
+
+    /// <summary>A torpedo seen coming at her (doctrine's TorpedoEvasion: comb): she turns parallel to its track, at the
+    /// speed rung, until <see cref="SimSettings.TorpedoCombAfterS"/> after it's past (her behaviour waits); then a plain
+    /// course order is given back, and a behaviour steers on.</summary>
+    void Comb(in AiContext ctx, ref Captain cap, ShipState own)
+    {
+        long now = ctx.NowMs;
+        if (cap.CombUntilMs != 0 && now >= cap.CombUntilMs)
+        {
+            cap.CombUntilMs = 0;
+            if (cap.Reason == CaptainReason.Combing)
+                cap.Reason = CaptainReason.None;
+            if (cap.Order is CaptainOrder.Course or CaptainOrder.None)
+                ctx.Helm.Course(own.Entity, cap.CombBackDeg);
+        }
+        if ((TorpedoEvasion)doctrine.Of(own.Entity, own.Side, DoctrineField.TorpedoEvasion) != TorpedoEvasion.Comb
+            || !torpedoWatch.Threat(ctx, own, out double comb, out double past))
+            return;
+        if (cap.CombUntilMs == 0)
+            cap.CombBackDeg = own.CourseOrderDeg;
+        (cap.CombDeg, cap.CombUntilMs) = (comb, now + (long)((past + ctx.Settings.TorpedoCombAfterS) * 1000));
+        if (cap.Reason == CaptainReason.None)
+            cap.Reason = CaptainReason.Combing;
+        Give(ctx, own, comb, own.SpeedOrderKn);
     }
 
     /// <summary>Which ships are under fire, and from how near: every fighting ship's batteries' targets, once a think (a

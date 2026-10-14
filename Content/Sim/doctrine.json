@@ -22,6 +22,8 @@
     "Evasion": "zigzag",
     "EvadeDeg": 30,
     "EvadeLegS": 75,
-    "EvadeBeyondM": 10000
+    "EvadeBeyondM": 10000,
+    // a torpedo her lookouts see coming at her: "none", or "comb" its track
+    "TorpedoEvasion": "comb"
   }
 }

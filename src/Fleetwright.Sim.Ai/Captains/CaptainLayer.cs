@@ -62,6 +62,9 @@ public enum CaptainReason : byte
 
     /// <summary>Fallen out and home.</summary>
     Home,
+
+    /// <summary>Combing a torpedo's track her lookouts saw coming at her.</summary>
+    Combing,
 }
 
 /// <summary>The captains (docs/battle/plan.md steps 2.3b and 2.6): one per ship that has been given an order, kept in
@@ -105,6 +108,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public long TorpedoMs;          // when he last fired torpedoes (0: never)
         public CaptainReason Reason;    // why, when it isn't simply his order (fallen out)
         public int FitVersion;          // his ship's condition's version when he last judged its fitness
+        public long CombUntilMs;        // combing a torpedo's track until then (0: not)
+        public double CombDeg, CombBackDeg;   // the comb's course, and the course ordered before it
     }
 
     Captain[] captains = new Captain[16];
@@ -374,6 +379,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             }
             if (ctx.Ships.RidesAnother(slot))
                 continue;   // carried on its guide's rails, held exactly on station: an order would only derail the line
+            if (cap.CombUntilMs > ctx.NowMs)
+                continue;   // combing a torpedo's track: that first
             if (cap.Order == CaptainOrder.Fight)
             {
                 FightThink(ctx, ref cap, own, slot);
@@ -519,6 +526,9 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add(c.TorpedoMs);
             h.Add((int)c.Reason);
             h.Add(c.FitVersion);
+            h.Add(c.CombUntilMs);
+            h.Add(c.CombDeg);
+            h.Add(c.CombBackDeg);
             c.Track?.Hash(ref h);
         }
     }

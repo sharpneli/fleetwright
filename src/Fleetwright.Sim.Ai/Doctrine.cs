@@ -43,6 +43,9 @@ public enum DoctrineField : byte
     /// <summary>A running ship evades fire from beyond this range only, m: closer, the dodge buys nothing (the research's
     /// "steady inside ~10 kyd").</summary>
     EvadeBeyondM,
+
+    /// <summary>What a ship does about a torpedo her lookouts see coming at her (<see cref="TorpedoEvasion"/>).</summary>
+    TorpedoEvasion,
 }
 
 /// <summary>Doctrine's Engage: carry on with the orders given (firing at will), or Fight (and turn away when outgunned).</summary>
@@ -59,6 +62,13 @@ public enum Evasion : byte
     Zigzag,
 }
 
+/// <summary>Doctrine's TorpedoEvasion: nothing, or comb the track (turn parallel to it, bow or stern on).</summary>
+public enum TorpedoEvasion : byte
+{
+    None,
+    Comb,
+}
+
 /// <summary>Doctrine's Torpedoes: at will, or only on order.</summary>
 public enum TorpedoUse : byte
 {
@@ -73,7 +83,7 @@ public enum TorpedoUse : byte
 /// per unit; a command sets one value, so it's logged and replays. AI state: only captains and admirals read it.</summary>
 public sealed class Doctrine(GroupSystem groups)
 {
-    public const int FieldCount = (int)DoctrineField.EvadeBeyondM + 1;
+    public const int FieldCount = (int)DoctrineField.TorpedoEvasion + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -89,6 +99,7 @@ public sealed class Doctrine(GroupSystem groups)
         DoctrineField.EvadeDeg => 30,
         DoctrineField.EvadeLegS => 75,
         DoctrineField.EvadeBeyondM => 10_000,
+        DoctrineField.TorpedoEvasion => (double)Ai.TorpedoEvasion.None,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
@@ -199,6 +210,7 @@ public sealed class DoctrinePresets
             DoctrineField.Engage when Enum.TryParse<Engage>(name, ignoreCase: true, out var e) => (f, (double)e),
             DoctrineField.Torpedoes when Enum.TryParse<TorpedoUse>(name, ignoreCase: true, out var t) => (f, (double)t),
             DoctrineField.Evasion when Enum.TryParse<Evasion>(name, ignoreCase: true, out var ev) => (f, (double)ev),
+            DoctrineField.TorpedoEvasion when Enum.TryParse<TorpedoEvasion>(name, ignoreCase: true, out var te) => (f, (double)te),
             _ => throw new ArgumentException($"doctrine: \"{v}\" isn't a value of {field}"),
         };
     }
