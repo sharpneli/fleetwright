@@ -14,19 +14,24 @@ public class MatchupTests(ITestOutputHelper output)
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
     const double Share = 0.6;
 
+    /// <summary>The 1914 classes: the scenarios' own designs, else a shipped one (as the CLI resolves a name).</summary>
+    internal static readonly Lazy<Dictionary<string, ShipClass>> Classes = new(() =>
+    {
+        var d = new Dictionary<string, ShipClass>();
+        foreach (string name in new[] { "arethusa", "v25", "iron_duke", "derfflinger", "lion" })
+        {
+            string path = Path.Combine(Fleet.Repo, "Content", "Scenarios", "Designs", name + ".json");
+            var design = Design.Load(File.Exists(path) ? path : Path.Combine(Fleet.Shipgen, "designs", name + ".json"));
+            d[name] = ShipClassCompiler.Compile(ShipDesign.Build(design));
+        }
+        return d;
+    });
+
     static readonly Lazy<Dictionary<string, MatchupProfile>> profiles = new(() =>
     {
         var tables = new Dictionary<BallisticKey, BallisticTable>();
         BallisticTable Table(BallisticKey k) => tables.TryGetValue(k, out var t) ? t : tables[k] = new BallisticTable(k);
-        var d = new Dictionary<string, MatchupProfile>();
-        foreach (string name in new[] { "arethusa", "v25", "iron_duke", "derfflinger", "lion" })
-        {
-            // the scenarios' own designs, else a shipped one (as the CLI resolves a name)
-            string path = Path.Combine(Fleet.Repo, "Content", "Scenarios", "Designs", name + ".json");
-            var design = Design.Load(File.Exists(path) ? path : Path.Combine(Fleet.Shipgen, "designs", name + ".json"));
-            d[name] = new MatchupProfile(ShipClassCompiler.Compile(ShipDesign.Build(design)), Table, Settings);
-        }
-        return d;
+        return Classes.Value.ToDictionary(kv => kv.Key, kv => new MatchupProfile(kv.Value, Table, Settings));
     });
 
     static MatchupEntry E(string name, int n = 1, bool torpedoes = true, double mainRounds = 1) =>

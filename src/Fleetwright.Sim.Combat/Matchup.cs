@@ -217,10 +217,11 @@ public sealed class MatchupGun
     }
 }
 
-/// <summary>Ships of one class on a side of a matchup, and what they still have: their guns working (main and the rest,
-/// shares), their rounds left (shares of the outfit), their torpedoes left (a share), their speed (a share of the
-/// designed) and the toughness left in them (a share: less once they're seen low or listing).</summary>
-public readonly record struct MatchupEntry(MatchupProfile Profile, int Count, double MainGuns = 1, double OtherGuns = 1, double MainRounds = 1,
+/// <summary>Ships of one class on a side of a matchup (a count, fractional for a contact spread over the classes it may
+/// be), and what they still have: their guns working (main and the rest, shares), their rounds left (shares of the
+/// outfit), their torpedoes left (a share), their speed (a share of the designed) and the toughness left in them (a
+/// share: less once they're seen low or listing).</summary>
+public readonly record struct MatchupEntry(MatchupProfile Profile, double Count, double MainGuns = 1, double OtherGuns = 1, double MainRounds = 1,
     double OtherRounds = 1, double TorpedoesLeft = 1, double Speed = 1, double Toughness = 1)
 {
     public double SpeedKn => Profile.SpeedKn * Speed;
@@ -312,6 +313,7 @@ public static class Matchup
         if (a.Length > MaxClasses || b.Length > MaxClasses)
             throw new ArgumentException($"a matchup takes at most {MaxClasses} classes a side");
         Span<double> outA = stackalloc double[a.Length], outB = stackalloc double[b.Length];
+        Span<double> preA = stackalloc double[a.Length], preB = stackalloc double[b.Length];
         Span<bool> inA = stackalloc bool[a.Length], inB = stackalloc bool[b.Length];
         outA.Clear();
         outB.Clear();
@@ -332,10 +334,13 @@ public static class Matchup
         {
             Phase(a, inA, b, inB, rangeM, midA, midB, inMin, s, outA, outB);
             runIn = Sum(outA, inA) + Sum(outB, inB);
+            // the salvos are fired at once: each side's boats still in it as they were before either
+            outA.CopyTo(preA);
+            outB.CopyTo(preB);
             if (attackA > 0)
-                torpOnB += Torpedoes(a, inA, b, attackA, s, outB, outA, 1);
+                torpOnB += Torpedoes(a, inA, b, attackA, s, outB, preA, 1);
             if (attackB > 0)
-                torpOnA += Torpedoes(b, inB, a, attackB, s, outA, outB, 1);
+                torpOnA += Torpedoes(b, inB, a, attackB, s, outA, preB, 1);
             Phase(a, inA, b, inB, rangeM, attackA > 0 ? attackA : rangeM, attackB > 0 ? attackB : rangeM, fireMin, s, outA, outB);
             Phase(a, inA, b, inB, rangeM, midA, midB, inMin, s, outA, outB);
         }
@@ -348,22 +353,24 @@ public static class Matchup
             lineB[i] = !inB[i];
         Guns(a, lineA, default, b, lineB, default, rangeM, rangeM, rangeM, rest, s, outB);
         Guns(b, lineB, default, a, lineA, default, rangeM, rangeM, rangeM, rest, s, outA);
-        torpOnB += Torpedoes(a, lineA, b, rangeM, s, outB, outA, s.TorpedoFireShare);
-        torpOnA += Torpedoes(b, lineB, a, rangeM, s, outA, outB, s.TorpedoFireShare);
+        outA.CopyTo(preA);
+        outB.CopyTo(preB);
+        torpOnB += Torpedoes(a, lineA, b, rangeM, s, outB, preA, s.TorpedoFireShare);
+        torpOnA += Torpedoes(b, lineB, a, rangeM, s, outA, preB, s.TorpedoFireShare);
         double gunsOnA = Sum(outA, default) - torpOnA, gunsOnB = Sum(outB, default) - torpOnB;
         return new MatchupTerms(rangeM, style, attackA, attackB, Math.Max(attackMin, s.MatchupFightMin), gunsOnB, torpOnB, gunsOnA, torpOnA, runIn,
             Lost(a, outA), Lost(b, outB));
     }
 
-    /// <summary>A side's ships built for torpedo attacks with torpedoes left (marked), and their firing range: the
-    /// shortest of theirs; 0 with none.</summary>
+    /// <summary>A side's ships built for torpedo attacks with torpedoes left and under way (marked), and their firing
+    /// range: the shortest of theirs; 0 with none.</summary>
     static double Attackers(ReadOnlySpan<MatchupEntry> side, SimSettings s, Span<bool> mark)
     {
         double r = 0;
         for (int i = 0; i < side.Length; i++)
         {
             ref readonly var e = ref side[i];
-            mark[i] = e.Count > 0 && e.TorpedoesLeft > 0 && e.Profile.Attacker(s);
+            mark[i] = e.Count > 0 && e.TorpedoesLeft > 0 && e.SpeedKn > s.MatchupSpeedMarginKn && e.Profile.Attacker(s);
             if (mark[i])
                 r = r == 0 ? e.Profile.AttackRangeM(s) : Math.Min(r, e.Profile.AttackRangeM(s));
         }
@@ -457,7 +464,7 @@ public static class Matchup
             var pr = e.Profile;
             if (!sel[i] || pr.TubesBearing == 0 || e.TorpedoesLeft <= 0 || rangeM > reachShare * pr.Torpedo.FastRangeM && rangeM > reachShare * pr.Torpedo.SlowRangeM)
                 continue;
-            double left = e.Count * Math.Exp(-outFrom[i] / Math.Max(e.Count, 1));
+            double left = e.Count * Math.Exp(-outFrom[i] / Math.Max(e.Count, 1e-9));
             double fired = Math.Min(pr.TubesBearing, pr.Torpedoes * e.TorpedoesLeft) * left;
             // a target turning away outruns a torpedo the faster she is beside it (the bench's target steamed at the reference speed)
             double kn = pr.Torpedo.FastKn, run = Math.Clamp((kn - to[target].SpeedKn) / Math.Max(kn - s.MatchupTorpedoRefKn, 1), 0, 1.5);
@@ -587,7 +594,7 @@ public static class Matchup
     {
         double r = double.MaxValue;
         foreach (ref readonly var e in side)
-            if (e.Count > 0 && e.TorpedoesLeft > 0 && e.Profile.Attacker(s))
+            if (e.Count > 0 && e.TorpedoesLeft > 0 && e.SpeedKn > s.MatchupSpeedMarginKn && e.Profile.Attacker(s))
                 r = Math.Min(r, e.Profile.AttackRangeM(s));
         return r == double.MaxValue ? 0 : r;
     }

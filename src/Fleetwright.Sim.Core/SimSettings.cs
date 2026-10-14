@@ -1003,6 +1003,13 @@ public sealed record SimSettings
     public double MatchupSpeedMarginKn { get; init; } = 2;
     public double MatchupFloor { get; init; } = 0.001;
 
+    /// <summary>An enemy's toughness left as it's seen: low in the water, listing, trimmed by the bow or the stern, burning
+    /// (each a share, multiplied). Silent, its guns count for nothing; stopped, it can't get away.</summary>
+    public double MatchupSeenLowShare { get; init; } = 0.5;
+    public double MatchupSeenListingShare { get; init; } = 0.6;
+    public double MatchupSeenTrimShare { get; init; } = 0.8;
+    public double MatchupSeenBurningShare { get; init; } = 0.9;
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its

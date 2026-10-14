@@ -954,6 +954,25 @@ benches first, so it judges the game's physics, not history's:
 - **Cost:** 11 µs a judgement one class against one, 82 µs three against two; nothing allocated. The readers (piece 3)
   judge per pair of units and want it cached: a captain's Fight weighs every second.
 
+**Piece 2 done 2026-10-15: groups and what's known** (`Sim.Ai/Knowledge/Matchups.cs`; `MatchupSideTests`). Piece 1
+already judges groups (classes with counts a side, each battery's fire over the other's classes) and gives both sides'
+speeds (each its slowest ship's) and who can refuse. What's added is building the sides from the world:
+
+- **`Matchups`:** each class's profile, made once from the world's own range tables, and each side's census (its
+  classes at sea by type, made once a moment it's asked).
+- **`MatchupSide`:** a reused list of entries. An own ship goes in exactly: guns working by barrels and rounds left by
+  the outfit (main and the rest), torpedoes left in launchers that work, speed (`Fitness`), and toughness by the water
+  in her (1 - her reserve's share flooded). A contact goes in as taken: the class it's taken for once made out, else
+  spread over what its side has of its type as fractional ships (before its side is made out, v0 counts it as nothing);
+  as seen, silent is no guns, stopped no speed, and low, listing, trimmed and burning take its toughness down
+  (`MatchupSeen*Share`). One seen going down isn't there. Whole ships of a class are one entry, a damaged one her own.
+- **Found on the way:** both sides' torpedo salvos are fired at once now (a mirror match came out 1.19: B's salvo had
+  been fired from what survived A's), and a ship must be under way to make a torpedo attack (a stopped cripple "attacked"
+  at walking pace for hours).
+- **Checked:** an Iron Duke with her main magazines empty against her sister 0.04; Arethusa against a V25 taken rightly
+  3.3, taken for a battleship 0.31; a capital-ship contact not made out among two Iron Dukes and a Derfflinger is 2/3 of
+  an Iron Duke and 1/3 of a Derfflinger; Arethusa against a sister seen silent, stopped and low 73.
+
 **5.1e Signals and flagships.**
 
 - **Flagships,** flag delays, searchlights by night, wireless, and missed signals, as above; the order in transit in

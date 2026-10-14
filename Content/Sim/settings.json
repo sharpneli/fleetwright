@@ -394,5 +394,9 @@
   "MatchupAttackTubesPerKt": 0.5,
   "MatchupTorpedoFireMin": 2,
   "MatchupSpeedMarginKn": 2,
-  "MatchupFloor": 0.001
+  "MatchupFloor": 0.001,
+  "MatchupSeenLowShare": 0.5,
+  "MatchupSeenListingShare": 0.6,
+  "MatchupSeenTrimShare": 0.8,
+  "MatchupSeenBurningShare": 0.9
 }
