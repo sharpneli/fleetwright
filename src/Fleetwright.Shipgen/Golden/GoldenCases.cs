@@ -75,11 +75,11 @@ public static class GoldenCases
     }
 
     /// <summary>Rewrite the case's golden record from ours when the two differ by the golden rules (after a deliberate
-    /// change to the output). Returns whether it was rewritten.</summary>
+    /// change to the output), or write it for a new case that has none yet. Returns whether it was written.</summary>
     public static bool Update(string root, GoldenCase c)
     {
         var ours = Ours(c);
-        if (GoldenDiff.Compare(Golden(root, c), ours, 1).Count == 0)
+        if (File.Exists(GoldenFile(root, c.Name)) && GoldenDiff.Compare(Golden(root, c), ours, 1).Count == 0)
             return false;
         JsonFile.Save(GoldenFile(root, c.Name), ours);
         return true;

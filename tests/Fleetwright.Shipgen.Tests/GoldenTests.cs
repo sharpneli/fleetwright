@@ -12,7 +12,7 @@ public class GoldenTests
     public void EveryCaseMatches()
     {
         var cases = GoldenCases.Load(Root);
-        Assert.Equal(371, cases.Count);
+        Assert.Equal(372, cases.Count);
         var failures = new System.Collections.Concurrent.ConcurrentBag<string>();
         Parallel.ForEach(cases, new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2) }, c =>
         {

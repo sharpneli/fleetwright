@@ -437,7 +437,7 @@ public static class ShipDesign
 /// <summary>looks.validate: the design's look (navy, era). The rest of looks.py is the renderer's (Step 4).</summary>
 public static class Looks
 {
-    static readonly string[] Navies = ["generic", "brooklyn", "kure", "portsmouth", "kiel", "la_spezia", "toulon"];
+    static readonly string[] Navies = ["generic", "brooklyn", "kure", "portsmouth", "kiel", "la_spezia", "toulon", "kronstadt"];
     static readonly string[] Eras = ["victorian", "great_war", "treaty", "wwii", "cold_war"];
 
     public static List<string> Validate(Design design)

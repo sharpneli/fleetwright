@@ -395,7 +395,7 @@ public static class SideArt
         double cap = Math.Min(1.0, 0.07 * b.H);
         if (P.P.Has("funnel_band"))
         {
-            double bw = 3 * (sh.FunnelBandW ?? 0.25);
+            double bw = sh.FunnelBandH ?? 3 * (sh.FunnelBandW ?? 0.25);
             o.Add(new PathNode(Band(b.Top - cap - 0.4 - bw, b.Top - cap - 0.4)).Fill(P.C("funnel_band")));
         }
         string capCol = P.C("funnel_cap");

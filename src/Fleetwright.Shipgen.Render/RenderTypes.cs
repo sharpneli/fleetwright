@@ -58,6 +58,7 @@ public sealed record Shapes
     public double? FunnelSquareness { get; init; }
     public double? FunnelRake { get; init; }
     public double? FunnelBandW { get; init; }
+    public double? FunnelBandH { get; init; }
 
     // masts: "pole", "fighting_top", "cage", "lattice"
     public string? Mast { get; init; }

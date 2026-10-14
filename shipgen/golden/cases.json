@@ -68,6 +68,13 @@
    "changes": []
   },
   {
+   "case": "borodino",
+   "design": "designs/borodino.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
    "case": "bouvet",
    "design": "designs/bouvet.json",
    "source": null,

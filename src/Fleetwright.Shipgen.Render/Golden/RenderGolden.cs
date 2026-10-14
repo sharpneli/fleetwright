@@ -63,29 +63,35 @@ public static class RenderGolden
     }
 
     /// <summary>Rewrite golden/svg and golden/sprite (sprite.json) from ours for the cases that no longer match, after a
-    /// deliberate change to the output. The PNGs stay: png-check compares them by coverage. Returns the cases
-    /// rewritten.</summary>
+    /// deliberate change to the output, and write them for a new case that has none yet (it gets no PNGs: those are
+    /// Python's). The PNGs stay: png-check compares them by coverage. Returns the cases written.</summary>
     public static (List<string> Svg, List<string> Sprite) Update(string root, IReadOnlyList<GoldenCase> cases)
     {
         var svgCapturePath = Path.Combine(root, "golden", "svg", "capture.json");
         var svgCapture = JsonFile.Load(svgCapturePath)!;
         var svgCases = svgCapture["cases"]!.AsObject();
+        var spriteCapturePath = Path.Combine(root, "golden", "sprite", "capture.json");
+        var spriteCapture = JsonFile.Load(spriteCapturePath)!;
+        var spriteCases = spriteCapture["cases"]!.AsObject();
+        var fresh = cases.Where(c => !svgCases.ContainsKey(c.Name)).Select(c => c.Name).ToHashSet();
+        var freshSprite = cases.Where(c => !spriteCases.ContainsKey(c.Name)).Select(c => c.Name).ToHashSet();
         var svg = new System.Collections.Concurrent.ConcurrentBag<(string Name, double MaxH, long Clutter)>();
         var sprite = new System.Collections.Concurrent.ConcurrentBag<string>();
         Parallel.ForEach(cases, new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2) }, c =>
         {
-            if (CheckSvgs(root, c, 1).Count > 0)
+            if (fresh.Contains(c.Name) || CheckSvgs(root, c, 1).Count > 0)
             {
                 var sp = Draw(c);
                 var dir = Path.Combine(root, "golden", "svg", c.Name);
-                Directory.Delete(dir, true);
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, true);
                 WriteGz(Path.Combine(dir, "hull.svg.gz"), SvgWriter.Write(sp.Hull));
                 WriteGz(Path.Combine(dir, "height.svg.gz"), SvgWriter.Write(sp.Height));
                 foreach (var (tid, sc) in sp.Turrets)
                     WriteGz(Path.Combine(dir, "turrets", tid + ".svg.gz"), SvgWriter.Write(sc));
                 svg.Add((c.Name, sp.Meta.Shadow.MaxHeightM, sp.Clutter.Count));
             }
-            if (CheckSprite(root, c, 1).Count > 0)
+            if (freshSprite.Contains(c.Name) || CheckSprite(root, c, 1).Count > 0)
             {
                 var meta = ShipSprites.Build(ShipDesign.Build(Design.Load(c.DesignPath)), Scale, Mips).Meta;
                 JsonFile.Save(Path.Combine(root, "golden", "sprite", c.Name, "sprite.json.gz"), meta, RenderJson.Default.SpriteMeta);
@@ -96,6 +102,10 @@ public static class RenderGolden
             svgCases[name] = new JsonObject { ["max_height_m"] = maxH, ["clutter"] = clutter };
         if (!svg.IsEmpty)
             JsonFile.Save(svgCapturePath, svgCapture);
+        foreach (var name in freshSprite.Where(sprite.Contains))
+            spriteCases[name] = "ok";
+        if (freshSprite.Count > 0)
+            JsonFile.Save(spriteCapturePath, spriteCapture);
         return (svg.Select(s => s.Name).Order(StringComparer.Ordinal).ToList(), sprite.Order(StringComparer.Ordinal).ToList());
     }
 

@@ -74,6 +74,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-12, the casemate flag (battle plan step 2.1), on purpose: a casemate gun carries `casemate: true` instead
   of `mount: "casemate"`, so a component's `mount` is only a barbette's link to its gun. 83 design cases change only
   that key, on 249 guns; `sprite.json` keeps its `mount: "casemate"`.
+- 2026-10-14, the `kronstadt` navy (Russia), on purpose: `sverdlov` moved to `kronstadt`/`cold_war` (its design record's
+  look echo and 3 SVGs: the colours), and `borodino` added, the first case since the port (`golden-update` writes a new
+  case's goldens; it has no PNGs). Every other case unchanged.
 
 ## Layout
 
