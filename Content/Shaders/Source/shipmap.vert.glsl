@@ -5,14 +5,16 @@
 // fails the depth test against the masking sphere. Each corner also carries its ship-local position for the shadows,
 // and the light in the quad's own frame (u, v, up = v x u: a turret's quad is turned to its bearing, so its light comes
 // out in its own frame): the sun and the moon from the View uniform, and the eye per vertex, so glints slide a little
-// as the map pans.
+// as the map pans. A ship heeled and trimmed takes them in its own tilted frame: the sea's plane gives the level's up
+// there.
 struct Quad
 {
     vec4 o;      // xyz: corner uv (0, 0), metres from the eye; w: mode (0 sprite, 1 silhouette, 2 icon, 3 scorch)
     vec4 u;      // xyz: the quad's edge along uv.x; w: opacity
     vec4 v;      // xyz: the edge along uv.y; w: the turret's roof, m over the waterline (silhouettes, turrets)
     vec4 ship;   // xy: ship-local metres at corner o; zw: the u edge in ship metres
-    vec4 shipV;  // xy: the v edge in ship metres; z: the height the hull covers a turret from (0: nothing does); w: unused
+    vec4 shipV;  // xy: the v edge in ship metres; z: the height the hull covers a turret from (0: nothing does); w: soot
+                 // (a turret's damage: rougher, no metal, darker hollows)
     vec4 sun;    // the shadows' light (the stronger of sun and moon): xy: unit vector toward it, ship-local; z: tan(elevation); w: shadow opacity
     vec4 march;  // x: step, m; y: steps; z: softness, m; w: the height map's mip level
     vec4 hmap;   // height map uv = ship metres * xy + zw
@@ -43,6 +45,15 @@ layout(location = 7) flat out vec4 fragSea;
 layout(location = 8) flat out vec3 fragLightSun;    // toward the sun, in the quad's frame
 layout(location = 9) flat out vec3 fragLightMoon;
 layout(location = 10) out vec3 fragEye;             // toward the eye, in the quad's frame (not unit)
+layout(location = 11) flat out float fragSoot;
+
+// v turned by the rotation that takes up (0, 0, 1) to the unit n, the shortest way: a level frame's vector in a hull
+// heeled and trimmed so that the level's up is n in its own frame
+vec3 turnUp(vec3 v, vec3 n)
+{
+    vec3 k = vec3(-n.y, n.x, 0.0);   // up x n
+    return v * n.z + cross(k, v) + k * (dot(k, v) / (1.0 + n.z));
+}
 
 void main()
 {
@@ -64,4 +75,15 @@ void main()
     fragLightSun = vec3(dot(sun.xyz, fu), dot(sun.xyz, fv), dot(sun.xyz, fz));
     fragLightMoon = vec3(dot(moon.xyz, fu), dot(moon.xyz, fv), dot(moon.xyz, fz));
     fragEye = -vec3(dot(r, fu), dot(r, fv), dot(r, fz));
+    fragSoot = q.shipV.w;
+    if (q.sea.w > 0.5)
+    {
+        // heeled and trimmed: the level's up in the hull's frame is the sea plane's normal, its slopes taken along the
+        // quad's own edges (a turret's turned to its bearing)
+        vec2 su = normalize(q.ship.zw), sv = normalize(q.shipV.xy);
+        vec3 up = normalize(vec3(-dot(q.sea.yz, su), -dot(q.sea.yz, sv), 1.0));
+        fragLightSun = turnUp(fragLightSun, up);
+        fragLightMoon = turnUp(fragLightMoon, up);
+        fragEye = turnUp(fragEye, up);
+    }
 }

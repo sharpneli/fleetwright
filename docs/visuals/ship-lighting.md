@@ -47,6 +47,8 @@ units where looks say otherwise.
   the hull's height columns at their exact tops, then the hull drawing's profiled parts; the turret drawing's), and
   `ReliefMaps` makes each layer's normal + AO (RGBA8) on the building thread, mipped by coverage; the sprite shaders
   sample it beside the colour.
+- **Damage lit since L5** (2026-10-14): a heeled or trimmed hull takes the light in its own tilted frame, what the
+  sea drowns has no glint and casts no shadow, scorches and a damaged turret's soot are matte and dark in their hollows.
 - **Materials since L4** (2026-10-14): each fill's colour carries its palette key (`Painter.C`, `Rgb.Keyed`), the
   drawing may set a key over it (`.Mat("glass")`), and the look's tables (`default_materials`, `era_materials`, a
   look's own `materials` in `Data/looks.jsonc`) give each key a roughness and metallic; the bake draws the display list
@@ -366,6 +368,35 @@ bare steel shine, decks go matte, eras differ.
 **L5. The rest of the ship's states.** Scorches matte and sooty (roughness 1, AO down), what the sea drowns loses its
 specular, the light tilted with the heel and trim (the sea plane's slopes are already in the quad), turret damage
 tints in albedo before the light.
+
+*Done 2026-10-14.* As planned, with these findings:
+
+- **The light tilted:** `shipmap.vert` turns the sun, the moon and the eye by the shortest rotation that takes up to
+  the sea plane's normal (`turnUp`), its slopes taken along the quad's own edges, so a turret turned to any bearing
+  gets it in its own frame. Nothing new on the CPU. A ship capsizing to starboard under a southern noon sun brightens
+  its deck and upper works (they face the sun); under a low sun on the other side they darken.
+- **Drowned, no glint:** `shipShade` takes a scale on the specular and the sky's reflection, 0 from 5 cm under the sea's
+  plane. A turret's depth is taken where it stands untilted, per pixel, so as a ship rolls the turret's low barrel goes
+  under before the high one.
+- **Scorches** are shaded on the hull's relief at the point that shows (tilted like the hull, the mottling fixed to the
+  hull so it doesn't swim): its normal, its AO darkened to 0.45-0.8 by the mottling, roughness 1. A scorched funnel
+  keeps its rim; a scorched superstructure's hollows go dark.
+- **Turret soot** (`ShipQuad.ShipV.w`, by state: damaged 0.35, out of action 0.7, wrecked 1): roughness toward 1,
+  metallic toward 0, AO x (1 - 0.4 x soot). A wrecked turret's gloss rims go matte. The tints were already in the albedo
+  before the light (since L1); the jammed amber gets no soot.
+- **Shadows over the sea's plane** (`Include/shipshadow.glsl`: `seaAt`, `overSea`, `shownAt`): the hull's shadow, the
+  turret shadows and the shadow a turret takes all measure heights over the sea's plane, at the point that shows (tilted
+  like the hull). What's under the sea casts nothing, and the sea over a drowned deck is what takes the shadows. This
+  closes 4.4's "the sun's shadow of a ship isn't drowned with it". A foundering ship's bow, a metre or two out of the
+  water, now throws a metre-long shadow, not one from its 8 m of freeboard. The march reaches further by how far the
+  plane stands off the waterline (`SeaSpan`). The light's direction stays level: only the heights tilt.
+- **Fixed on the way:** measuring every pixel against the plane raised the open sea wherever the plane dips under the
+  waterline (a heeled hull's high side, a foundering ship's bow), so the sea there shaded itself and took the shadows
+  short. Off the hull is the sea's surface (`overSea`: 0).
+- **Frame times** (DevRelease, alternating builds, two runs each): Jutland (3000 frames) and a capsizing ship at
+  10 px/m with a low sun, equal (vsync-bound, p50 8.33 ms; CPU p50 0.20 and 0.10 ms either way). No new textures.
+- **Left as it is:** a tilted ship's shadow on the sea falls from its untilted plan (the heights tilt, the plan
+  doesn't); shadows' direction isn't turned with the hull.
 
 Each step: Release build, screenshots at 10, 3 and 1 px/m (`-screenshot`, sun high and low, and night), before and
 after side by side, DevRelease frame times at a Jutland, the bake bench. Looks are judged on the captures, not

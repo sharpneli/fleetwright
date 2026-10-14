@@ -80,8 +80,8 @@ vec3 specularPi(vec3 n, vec3 v, vec3 l, float nl, float a, vec3 f0)
 // unpacked (a mip's shortened average: Toksvig widens the roughness by it), v toward the eye, lSun and lMoon toward
 // the lights (unit, in the sprite's frame); its material's roughness and metallic; ambient occlusion. Flat (look.x
 // 0): the albedo as drawn; the debug views show one input as grey (the normal biased, as colour; the roughness as
-// shaded, Toksvig's and the scale's included).
-vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float roughness, float metallic, float ao)
+// shaded, Toksvig's and the scale's included). spec scales the specular and the sky's reflection (0: under the sea).
+vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float roughness, float metallic, float ao, float spec)
 {
     if (look.x < 0.5)
         return albedoSrgb;
@@ -107,12 +107,17 @@ vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float rou
     // the sky's reflection: what keeps metal from going black with no cube map
     float nv = max(dot(n, v), 1e-4);
     vec2 ab = envBrdf(rough, nv);
-    c += look.w * skyAt(reflect(-v, n), n, rough) * (f0 * ab.x + ab.y) * ao;
+    c += spec * look.w * skyAt(reflect(-v, n), n, rough) * (f0 * ab.x + ab.y) * ao;
     float nl = dot(n, lSun);
     if (nl > 0.0)
-        c += (diffuse + look.w * specularPi(n, v, lSun, nl, a, f0)) * sunRad.rgb * nl;
+        c += (diffuse + spec * look.w * specularPi(n, v, lSun, nl, a, f0)) * sunRad.rgb * nl;
     nl = dot(n, lMoon);
     if (nl > 0.0)
-        c += (diffuse + look.w * specularPi(n, v, lMoon, nl, a, f0)) * moonRad.rgb * nl;
+        c += (diffuse + spec * look.w * specularPi(n, v, lMoon, nl, a, f0)) * moonRad.rgb * nl;
     return linearToSrgb(shoulder(c, look.z));
+}
+
+vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float roughness, float metallic, float ao)
+{
+    return shipShade(albedoSrgb, n, v, lSun, lMoon, roughness, metallic, ao, 1.0);
 }

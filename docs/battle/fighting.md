@@ -1004,8 +1004,8 @@ its magazine.
 
 - **Found on the way:** a mount with no training rate (a torpedo mount) had a NaN bearing (harmless until something
   stopped it).
-- **Left as it is (v0):** the sun's shadow of a ship isn't drowned with it (it fades only at the very end); a scorch is
-  its part's bounding box; smoke has no wind; the first pass ends without a playable ladder-2 (its forces don't meet in
+- **Left as it is (v0):** a scorch is its part's bounding box (the sun's shadow of a ship is drowned with it since the
+  lighting's L5, `docs/visuals/ship-lighting.md`); smoke has no wind; the first pass ends without a playable ladder-2 (its forces don't meet in
   their first hours, 4.2c's note: standing orders or 5.1's admirals will make them).
 
 **The first pass ends here: the first playable fight.** A ladder scenario (ladder-2, Beatty against Hipper) plays
