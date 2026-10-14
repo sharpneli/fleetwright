@@ -46,7 +46,7 @@ missions on top (`docs/world/architecture.md` "The pieces and where they live").
   and routing. One clock, from paused to ~30,000x, dropping by the player's rules when something needs them.
 - **Ships that move:** many ships of many designs, each compiled once to a `ShipClass`. They steam with real turning
   circles and acceleration, in groups and formations, on routes. Ships far from anything are on rails; ships near
-  something are in the fine clock tier below 240x (every ship at 1x) and in the coarse one at 240x and up. The
+  something are in the fine clock tier up to 240x (every ship at 1x) and in the coarse one above 240x. The
   asked speed picks the tier; the map's zoom bands only change how ships are drawn ("Terms" below).
 - **Seeing and knowing:** contacts and encounters, sighting (horizon, weather, night), and each navy's picture. The
   player sees what their navy knows.
@@ -1454,7 +1454,7 @@ comes in step 4, after the fine fire ("4.9").
 *Agreed (the user, 2026-10-13):*
 - **The rule, speed only:**
   - **Rails** as now.
-  - **Coarse** for every other ship at `CoarseMinSpeed` and up: 240x for now, in config.
+  - **Coarse** for every other ship at `CoarseMinSpeed` and up: 241x for now (2026-10-14, so 240x is a fast fine speed), in config.
   - **Fine** below that speed.
   - The asked speed decides, never the achieved one, and never the zoom. Important encounters drop the speed as an
     alert; asking for speed again fast-tracks the fight in coarse.

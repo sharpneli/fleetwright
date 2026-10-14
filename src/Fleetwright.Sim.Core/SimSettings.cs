@@ -210,9 +210,10 @@ public sealed record SimSettings
     /// <summary>At this asked speed and above, every ship that isn't on rails is in the coarse clock tier: kinematic
     /// motion (constant acceleration, turns as arcs of the turning circle), decided for every
     /// <see cref="CoarseStepMs"/>; below it they're on the fine tick (docs/world/architecture.md "The speed picks the
-    /// tier"). 240× (the user, 2026-10-13): a frame is 4 game seconds, so the rudder and the swing left out aren't seen.
+    /// tier"). Just over 240× (the user, 2026-10-14; 240× 2026-10-13): 240× itself stays fine, the clock's fastest fine
+    /// notch; a coarse frame is 4 game seconds or more, so the rudder and the swing left out aren't seen.
     /// The asked speed, never the achieved one: it's world state, so this is deterministic.</summary>
-    public double CoarseMinSpeed { get; init; } = 240;
+    public double CoarseMinSpeed { get; init; } = 241;
 
     /// <summary>The coarse step, ms (a multiple of <see cref="RailsCheckMs"/>): how often coarse ships' captains and
     /// admirals decide, and contacts, encounters, the rails check and sighting are looked at. Coarse motion is exact

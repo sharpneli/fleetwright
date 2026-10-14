@@ -9,7 +9,7 @@ namespace Fleetwright.Map;
 /// over it and + and - step it.</summary>
 public sealed partial class MapScene
 {
-    static readonly double[] Speeds = [1, 3, 10, 30, 60, 300, 1000, 3000, 10_000, 30_000, 100_000, 300_000, 1_000_000];
+    static readonly double[] Speeds = [1, 3, 10, 30, 60, 240, 1000, 3000, 10_000, 30_000, 100_000, 300_000, 1_000_000];
     static readonly string[] SpeedLabels = [.. Speeds.Select(sp => SpeedLabel(sp).TrimEnd('×'))];
     static readonly string[] SpeedSpans = [.. Speeds.Select(sp => $"{SpeedLabel(sp)}: {PerSecond(sp)} a second")];
 
@@ -55,7 +55,9 @@ public sealed partial class MapScene
         }
 
         // the track, the coarse stretch over it, the notches and their labels
-        float x1 = x0 + step * (Speeds.Length - 1), xc = x0 + step * Notch(world.Settings.CoarseMinSpeed);
+        // the coarse stretch starts midway to the first coarse notch, so a fine notch just under the threshold reads fine
+        int firstCoarse = Array.FindIndex(Speeds, sp => sp >= world.Settings.CoarseMinSpeed);
+        float x1 = x0 + step * (Speeds.Length - 1), xc = firstCoarse < 0 ? x1 : x0 + step * Math.Max(0, firstCoarse - 0.5f);
         float th = 2 * sc;
         dl.AddRectFilled(new Vector2(x0, y - th), new Vector2(x1, y + th), ImGui.GetColorU32(ImGuiCol.FrameBg), th);
         if (xc < x1)
