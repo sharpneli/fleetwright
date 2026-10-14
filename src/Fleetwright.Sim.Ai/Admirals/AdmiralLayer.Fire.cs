@@ -1,4 +1,5 @@
 using Fleetwright.Sim.Ai.Captains;
+using Fleetwright.Sim.Ai.Knowledge;
 using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim.Ai.Admirals;
@@ -19,12 +20,11 @@ namespace Fleetwright.Sim.Ai.Admirals;
 /// </list></summary>
 public sealed partial class AdmiralLayer
 {
-    readonly List<int> tree = new(32), own = new(32), enemy = new(32), queue = new(32);
+    readonly List<int> tree = new(32), own = new(32), enemy = new(32);
+    readonly EnemyLines enemyLines = new(seen);
     readonly List<(int Ship, double AsternM, double AbeamM)> offsets = new(32);
     double[] keys = new double[32];
     int[] items = new int[32];
-    int[] visited = new int[32];
-    int visitStamp;
 
     /// <summary>A fire order to a group, from the player (or a scenario).</summary>
     void FireOrdered(in AiContext ctx, GroupSystem.Group g, Admiral a, in Command c)
@@ -53,7 +53,7 @@ public sealed partial class AdmiralLayer
         {
             int slot = ctx.Ships.SlotOf(own[0]);
             byte side = slot >= 0 ? ctx.Ships[slot].Side : (byte)0;
-            EnemyLine(ctx, side, a.FireTarget);
+            enemyLines.Of(ctx.World, side, a.FireTarget, enemy);
             if (enemy.Count == 0)
             {
                 // the target's gone from the picture: at will
@@ -99,50 +99,6 @@ public sealed partial class AdmiralLayer
             else if (into.IndexOf(member, 0, inLine) < 0)
                 into.Add(member);
         }
-    }
-
-    /// <summary>The enemy's line through a contact (<see cref="enemy"/>): the contacts in sight chained to it, van first;
-    /// just the contact if it's held but not in sight; empty if it's not held.</summary>
-    void EnemyLine(in AiContext ctx, byte side, int target)
-    {
-        enemy.Clear();
-        var pic = ctx.World.Sightings.Of(side);
-        int ti = pic?.IndexOf(target) ?? -1;
-        if (ti < 0)
-            return;
-        if (!pic![ti].InSight)
-        {
-            enemy.Add(target);
-            return;
-        }
-        var type = pic[ti].Type;
-        if (visited.Length < pic.Count)
-            visited = new int[Math.Max(pic.Count, visited.Length * 2)];
-        visitStamp++;
-        queue.Clear();
-        queue.Add(ti);
-        visited[ti] = visitStamp;
-        for (int q = 0; q < queue.Count; q++)
-            foreach (int j in seen.Close(ctx.World, side, seen.Position(side, queue[q])))
-                if (visited[j] != visitStamp && (type == ShipType.Unknown || pic[j].Type == type))
-                {
-                    visited[j] = visitStamp;
-                    queue.Add(j);
-                }
-
-        // van first: furthest along the target's course; a stopped line, nearest the target first
-        var at = seen.Position(side, ti);
-        var v = seen.Velocity(side, ti);
-        bool moving = v.Length > 1;
-        Ensure(queue.Count);
-        for (int k = 0; k < queue.Count; k++)
-        {
-            var d = seen.Position(side, queue[k]) - at;
-            (keys[k], items[k]) = (moving ? -Vec3d.Dot(d, v) : d.Length, pic[queue[k]].Entity);
-        }
-        Array.Sort(keys, items, 0, queue.Count);
-        for (int k = 0; k < queue.Count; k++)
-            enemy.Add(items[k]);
     }
 
     void Ensure(int n)
