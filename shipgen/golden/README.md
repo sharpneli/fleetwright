@@ -86,6 +86,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   now), on purpose: the barrels' and tubes' highlight strokes, the roof insets, the face plates' dark shade (the body's
   colour now), the cupolas' highlight dots, the casemate shield's lighter disc and the champignon's lightened rings
   are gone from 317 cases' turret SVGs. Hulls, design records and sprite.json unchanged.
+- 2026-10-14, brass (docs/visuals/ship-lighting.md L4: materials), on purpose: the Victorian looks have a `brass`
+  palette colour, and a capstan's drum is drawn in it where the look has one (`Painter.Or`), so 44 cases' hull SVGs
+  change only those circles' fill (98 of them). Other looks have no brass and draw as before; design records and
+  sprite.json unchanged. The material keys colours now carry (`Rgb.Keyed`) aren't written to the SVG.
 
 ## Layout
 

@@ -9,6 +9,7 @@ layout(location = 1) in vec2 fragShip;
 layout(set = 2, binding = 0) uniform sampler2D spriteTex;
 layout(set = 2, binding = 1) uniform sampler2D heightTex;
 layout(set = 2, binding = 2) uniform sampler2D normalTex;   // the sprite's normal + AO
+layout(set = 2, binding = 3) uniform sampler2D materialTex; // its roughness and metallic, by the colour's coverage
 
 layout(set = 3, binding = 0) uniform Params
 {
@@ -51,7 +52,8 @@ void main()
     vec3 rgb = c.a > 0.0 ? c.rgb / c.a : vec3(0.0);
     const vec3 up = vec3(0.0, 0.0, 1.0);
     vec4 nt = p.x < 0.0 ? texture(normalTex, fragUv) : textureLod(normalTex, fragUv, p.x);
-    rgb = shipShade(rgb, unpackNormal(nt), up, sunL.xyz, moonL.xyz, look.y, 0.0, nt.a);
+    vec2 mat = unpackMaterial(p.x < 0.0 ? texture(materialTex, fragUv) : textureLod(materialTex, fragUv, p.x), c.a);
+    rgb = shipShade(rgb, unpackNormal(nt), up, sunL.xyz, moonL.xyz, mat.x, mat.y, nt.a);
     if (p.w > 0.0 && march.y > 0.0)   // a turret, in the hull's shadow at its roof's height
         rgb *= 1.0 - hullShadow(heightTex, hmap, fragShip, p.w, shadow.xy, shadow.z, march) * shadow.w;
     outColour = vec4(rgb * c.a, c.a) * p.z;

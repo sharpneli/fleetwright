@@ -14,9 +14,10 @@ public enum OpKind
 /// <summary>One step of a lowered scene. Colour is premultiplied. Union: the triangles are a union of positively
 /// wound pieces (a stroke), so coverage is set rather than counted. InGroup: inside an opacity group, which is drawn
 /// topmost first, each pixel by the first op that reaches it. Relief: the profile the relief layer gets, in canvas
-/// pixels (<see cref="ReliefPx"/>; Kind 0 for none).</summary>
+/// pixels (<see cref="ReliefPx"/>; Kind 0 for none). Mat: the material's key (the node's own, else its colour's;
+/// null: the look's default paint).</summary>
 public readonly record struct DrawOp(OpKind Kind, int First, int Count, Vector4 Colour = default, bool Union = false,
-    bool InGroup = false, ReliefPx Relief = default);
+    bool InGroup = false, ReliefPx Relief = default, string? Mat = null);
 
 /// <summary>A relief profile in canvas pixels for the bake shader (shipbake.frag): its kind, and two parameter
 /// vectors, heights in metres. Plateau: P0.z the top. Cylinder: P0 (a point on the axis, the axis height, the radius
@@ -30,6 +31,27 @@ public sealed class DrawList(int width, int height)
     public readonly int Width = width, Height = height;
     public readonly List<Vector2> Verts = [];
     public readonly List<DrawOp> Ops = [];
+
+    /// <summary>The same triangles with each fill's colour its material's (roughness, metallic) by
+    /// <paramref name="materials"/>, at the fill's own alpha: drawn as a colour layer, the material layer
+    /// (docs/visuals/ship-lighting.md, L4).</summary>
+    public DrawList WithMaterials(Materials materials)
+    {
+        var o = new DrawList(Width, Height);
+        o.Verts.AddRange(Verts);
+        foreach (var op in Ops)
+        {
+            if (op.Kind != OpKind.Fill)
+            {
+                o.Ops.Add(op);
+                continue;
+            }
+            var (r, m) = materials[op.Mat];
+            float a = op.Colour.W;
+            o.Ops.Add(op with { Colour = new Vector4((float)r * a, (float)m * a, 0, a) });
+        }
+        return o;
+    }
 
     /// <summary>a's ops, then b's (the same canvas): one list for one pass, as the hull's relief takes the height
     /// map's columns and then the drawing's profiled parts.</summary>
@@ -93,15 +115,17 @@ public static class Lower
     /// <summary>The style in force. A relief is placed in pixels where it is set, by that node's transform, so its
     /// children inherit it where it is.</summary>
     sealed record Paint(Rgb? Fill, bool FillNone, double FillOpacity, Rgb? Stroke, double StrokeWidth, string? Join,
-        string? Cap, double[]? Dash, double DashOffset, double StrokeOpacity, ReliefPx ReliefOp)
+        string? Cap, double[]? Dash, double DashOffset, double StrokeOpacity, ReliefPx ReliefOp, string? FillMat,
+        string? StrokeMat, string? Mat)
     {
-        public static readonly Paint Default = new(null, false, 1, null, 1, null, null, null, 0, 1, default);
+        public static readonly Paint Default = new(null, false, 1, null, 1, null, null, null, 0, 1, default, null, null, null);
 
         public Paint With(Style s, Affine m, double pxPerM) => new(
             s.FillNone ? null : s.Fill ?? Fill, s.FillNone || (s.Fill == null && FillNone),
             s.FillOpacity ?? FillOpacity, s.Stroke ?? Stroke, s.StrokeWidth ?? StrokeWidth, s.LineJoin ?? Join,
             s.LineCap ?? Cap, s.Dash ?? Dash, s.DashOffset ?? DashOffset, s.StrokeOpacity ?? StrokeOpacity,
-            s.Relief is { } r ? InPixels(r, m, pxPerM) : ReliefOp);
+            s.Relief is { } r ? InPixels(r, m, pxPerM) : ReliefOp,
+            s.Fill != null ? s.FillMat : FillMat, s.Stroke != null ? s.StrokeMat : StrokeMat, s.Mat ?? Mat);
     }
 
     /// <summary>A profile from a node's coordinates to canvas pixels (its heights stay metres; a radius scaled by the
@@ -244,7 +268,7 @@ public static class Lower
                 FanFill(contours, dl.Verts);
                 if (dl.Verts.Count > first)
                     dl.Ops.Add(new DrawOp(OpKind.Fill, first, dl.Verts.Count - first, Premul(p.Fill ?? new Rgb(0, 0, 0), a),
-                        Relief: p.ReliefOp));
+                        Relief: p.ReliefOp, Mat: p.Mat ?? p.FillMat));
             }
         }
         if (p.Stroke is Rgb sc && p.StrokeWidth > 0 && n is not TextNode)
@@ -258,7 +282,8 @@ public static class Lower
                 Stroker.Stroke(pts, closed, p.StrokeWidth * k, p.Join ?? "miter", p.Cap ?? "butt", dash, p.DashOffset * k,
                     TolPx, dl.Verts);
             if (dl.Verts.Count > first && a > 0)
-                dl.Ops.Add(new DrawOp(OpKind.Fill, first, dl.Verts.Count - first, Premul(sc, a), Union: true, Relief: p.ReliefOp));
+                dl.Ops.Add(new DrawOp(OpKind.Fill, first, dl.Verts.Count - first, Premul(sc, a), Union: true, Relief: p.ReliefOp,
+                    Mat: p.Mat ?? p.StrokeMat));
         }
     }
 

@@ -39,6 +39,7 @@
 //                  awnings        true: canvas ("awning") over the open quarterdeck
 //                  hull_number    true: a number across the foredeck, the look's "number" or one made from the id
 //     shapes_by_style   further shape overrides for one style (optional)
+//     materials  {key: [roughness, metallic]} over the era's and the defaults' (optional, see default_materials)
 //     adjust     colour nudges applied over the finished palette (optional, see below)
 //     from       inherit another look and list only the differences (optional, see below)
 //
@@ -120,6 +121,43 @@
     "recog_b": "#f1efe8",
     "awning": "#ece7d6"                   // quarterdeck awnings (shapes "awnings")
   },
+  // The lit sprites' materials (docs/visuals/ship-lighting.md, L4): a palette key, or a key the drawing sets where it
+  // knows better (brass, glass, steel), to [roughness, metallic]. A fill's material is its colour's key; anything
+  // unkeyed is "paint". Realistic first: nearly everything on a warship is painted, and paint is a dielectric
+  // (metallic 0); metallic 1 is for what wasn't painted: brass, bronze, bare steel. These are the WWII baseline,
+  // matte decks and a satin grey; era_materials and a look's own "materials" go over them
+  "default_materials": {
+    "paint": [0.6, 0], "hull": [0.6, 0], "levels": [0.6, 0], "turret": [0.55, 0], "barbette": [0.6, 0],
+    "barrel": [0.4, 0], "tube": [0.45, 0], "tub": [0.6, 0], "funnel": [0.65, 0], "funnel_band": [0.65, 0],
+    "funnel_cap": [0.95, 0],              // soot
+    "mast": [0.6, 0], "crane": [0.6, 0], "boat": [0.5, 0], "fitting": [0.55, 0], "hatch_coaming": [0.6, 0],
+    "deck": [0.8, 0], "steel_line": [0.8, 0], "flight_deck": [0.9, 0],   // painted steel decks, non-skid
+    "wood": [0.85, 0], "deck_line": [0.85, 0],                           // holystoned teak and its seams
+    "marking": [0.6, 0], "stripe": [0.6, 0], "number": [0.6, 0], "recog_a": [0.6, 0], "recog_b": [0.6, 0],
+    "line": [0.75, 0],                    // the ink outlines
+    "hatch": [0.95, 0], "awning": [0.95, 0], "float": [0.8, 0], "raft": [0.7, 0],   // canvas, cork, rubber
+    "bottom": [0.8, 0], "boot_top": [0.7, 0],
+    "chain": [0.5, 1], "track": [0.45, 1], "steel": [0.45, 1],   // bare steel
+    "propeller": [0.35, 1], "brass": [0.25, 1],                  // bronze and polished brass
+    "glass": [0.08, 0]
+  },
+  // Each era's materials over the defaults (every navy's, whatever its "from" chain): the Victorian gloss enamels
+  // and varnish, then duller service paints, the peacetime treaty years a little glossier, the Cold War's non-skid
+  "era_materials": {
+    "victorian": {
+      "paint": [0.35, 0], "hull": [0.3, 0], "levels": [0.35, 0], "turret": [0.35, 0], "barbette": [0.4, 0],
+      "barrel": [0.3, 0], "tub": [0.4, 0], "funnel": [0.4, 0], "funnel_band": [0.4, 0], "mast": [0.45, 0],
+      "boat": [0.35, 0], "fitting": [0.4, 0], "deck": [0.65, 0], "wood": [0.7, 0], "deck_line": [0.7, 0]
+    },
+    "great_war": {
+      "paint": [0.5, 0], "hull": [0.5, 0], "levels": [0.5, 0], "turret": [0.45, 0], "barrel": [0.35, 0], "funnel": [0.55, 0]
+    },
+    "treaty": {
+      "paint": [0.45, 0], "hull": [0.45, 0], "levels": [0.45, 0], "turret": [0.4, 0], "barrel": [0.35, 0], "funnel": [0.5, 0]
+    },
+    "wwii": {},
+    "cold_war": {"paint": [0.55, 0], "deck": [0.9, 0], "steel_line": [0.9, 0]}
+  },
   // Each style's own colours, under any look: merchants are not navy grey
   "style_palettes": {
     "merchant": {
@@ -149,7 +187,7 @@
             "barrel": "#1b1b1c", "tub": "#2c2c2e", "funnel": "#c9a04a", "funnel_cap": "#161616",
             "funnel_band": "#161616", "boat": "#f1eee6", "fitting": "#3a3631", "mast": "#b08640",
             "flight_deck": "#cbb98f", "stripe": "#1d1d1f", "marking": "#f4f1e8", "chain": "#1e1e1e",
-            "crane": "#2c2c2e"
+            "crane": "#2c2c2e", "brass": "#b8913f"
           },
           "by_style": {
             "merchant": {

@@ -33,7 +33,7 @@ dotnet run --project src/Fleetwright -- -screenshot=30 -ui [-size=1920x1080] # t
 dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour] [-hitray]   # -hitray: a click fires a ray through the tracer
 dotnet run --project src/Fleetwright -- -view=ship [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -view=profile                      # the ship card's side view
-dotnet run --project src/Fleetwright -- -lights=roughness:0.6,specular:0   # the ships' light table knobs (ShipLight.cs), for side-by-side captures
+dotnet run --project src/Fleetwright -- -lights=roughness:0.5,specular:0   # the ships' light table knobs (ShipLight.cs: roughness scales the looks' materials), for side-by-side captures
 dotnet run --project src/Fleetwright -- -view=ship -viewer=sun:300:30,shade:normal,at:10:0:8 [-outline=0.5]   # the viewer for captures: sun, moon, debug view (lit, albedo, normal, ao, ...), centre and zoom; the plan's ink weight
 dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
 dotnet run --project src/Fleetwright -- -section=2 -designer-ui=secsel:1:2,secmenu  # UI state for screenshots (DesignerScene.ApplyDevUi)

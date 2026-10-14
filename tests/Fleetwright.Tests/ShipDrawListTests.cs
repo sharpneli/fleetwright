@@ -22,8 +22,9 @@ public class ShipDrawListTests
         var types = meta.TurretTypes.Keys.ToArray();
         return new ShipArt
         {
-            Meta = meta, Hull = 1, Height = 2, HullNormal = 3,   // stand-in handles: nothing here touches a GPU
+            Meta = meta, Hull = 1, Height = 2, HullNormal = 3, HullMaterial = 4,   // stand-in handles: nothing here touches a GPU
             TurretTypes = types, Turrets = [.. types.Select((_, i) => (nint)(10 + i))], TurretNormals = [.. types.Select((_, i) => (nint)(20 + i))],
+            TurretMaterials = [.. types.Select((_, i) => (nint)(30 + i))],
             MountType = [.. meta.Mounts.Select(m => Array.IndexOf(types, m.Type))],
             DrawOrder = [.. Enumerable.Range(0, meta.Mounts.Count).OrderBy(i => meta.Mounts[i].Z)],
             ClassMount = ShipArt.ClassMounts(meta, Class.Value),

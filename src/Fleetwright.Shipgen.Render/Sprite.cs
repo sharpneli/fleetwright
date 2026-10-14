@@ -45,6 +45,7 @@ public sealed class ShipSprites
     public required Dictionary<string, Scene> Turrets;
     public required Scene Height;
     public required List<Clutter.Item> Clutter;
+    public required Materials Materials;            // the look's (Looks.Materials), for the material layer
 
     public const string Orientation = "bow points +x (right); angles clockwise, 0 = ahead";
 
@@ -121,6 +122,9 @@ public sealed class ShipSprites
                 "mount top_m is the turret roof above the waterline; see shadow.py", MipsFile("height.png")),
             Mounts = mounts, MipRects = MipRects(W, H, mips),
         };
-        return new ShipSprites { Meta = meta, Hull = hr.Scene, Turrets = turrets, Height = height, Clutter = hr.Clutter };
+        return new ShipSprites
+        {
+            Meta = meta, Hull = hr.Scene, Turrets = turrets, Height = height, Clutter = hr.Clutter, Materials = Looks.Materials(design),
+        };
     }
 }

@@ -42,7 +42,8 @@ public sealed class DesignResult
 
 /// <summary>A sprite's baked layers as mip chains: colour premultiplied (so filtering doesn't bleed the transparent
 /// border's black in), the height map reduced by max, the normal + AO layers averaged by coverage
-/// (<see cref="ReliefMaps.Chain"/>).</summary>
+/// (<see cref="ReliefMaps.Chain"/>), the material layers two channels (roughness, metallic) premultiplied by the
+/// colour's coverage, which they share: the shader divides by the colour's alpha.</summary>
 public sealed class SpriteImages
 {
     public required Image8[] Hull { get; init; }
@@ -50,6 +51,8 @@ public sealed class SpriteImages
     public required Dictionary<string, Image8[]> Turrets { get; init; }
     public required Image8[] HullNormal { get; init; }
     public required Dictionary<string, Image8[]> TurretNormals { get; init; }
+    public required Image8[] HullMaterial { get; init; }
+    public required Dictionary<string, Image8[]> TurretMaterials { get; init; }
 
     /// <summary>A bake's layers as chains of level 0 and up to <paramref name="levels"/> halvings.</summary>
     public static SpriteImages Of(Baked b, int levels)
@@ -63,8 +66,20 @@ public sealed class SpriteImages
             Turrets = turrets,
             HullNormal = ReliefMaps.Chain(b.HullNormal, hull),
             TurretNormals = turrets.ToDictionary(t => t.Key, t => ReliefMaps.Chain(b.TurretNormal[t.Key], t.Value), StringComparer.Ordinal),
+            HullMaterial = MaterialChain(b.HullMaterial, levels),
+            TurretMaterials = b.TurretMaterial.ToDictionary(t => t.Key, t => MaterialChain(t.Value, levels), StringComparer.Ordinal),
         };
     }
+
+    /// <summary>A material layer (straight RGBA: roughness, metallic, -, coverage) as a premultiplied two-channel chain.</summary>
+    static Image8[] MaterialChain(Image8 level0, int levels) =>
+        [.. Chain(level0, false, levels).Select(l =>
+        {
+            var o = new Image8(l.Width, l.Height, 2);
+            for (int i = 0, n = l.Width * l.Height; i < n; i++)
+                (o.Data[i * 2], o.Data[i * 2 + 1]) = (l.Data[i * 4], l.Data[i * 4 + 1]);
+            return o;
+        })];
 
     /// <summary>Level 0 and up to <paramref name="levels"/> halvings, while the size stays even.</summary>
     public static Image8[] Chain(Image8 level0, bool height, int levels)

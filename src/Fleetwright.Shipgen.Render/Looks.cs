@@ -27,6 +27,8 @@ public static class Looks
         n is JsonObject o ? JsonSerializer.Deserialize(o, RenderJson.Default.DictionaryStringPaint)! : [];
 
     public static readonly Palette DefaultPalette = new(Paints(Data["default_palette"]));
+    static readonly JsonObject DefaultMaterials = Obj(Data["default_materials"]);
+    static readonly JsonObject EraMaterials = Obj(Data["era_materials"]);
     static readonly JsonObject StylePalettes = Obj(Data["style_palettes"]);
     static readonly JsonObject NavyTable = Obj(Data["navies"]);
 
@@ -201,14 +203,14 @@ public static class Looks
         var lk = Obj(LooksOf(navy)[era]);
         if (lk["from"] is not { } from)
             return Merge(new JsonObject { ["palette"] = new JsonObject(), ["by_style"] = new JsonObject(), ["turrets"] = "standard",
-                ["shapes"] = new JsonObject() }, lk);
+                ["shapes"] = new JsonObject(), ["materials"] = new JsonObject() }, lk);
         string src = (string)from!;
         var (pn, pe) = src.Contains('/') ? (src.Split('/')[0], src.Split('/')[1]) : (navy, src);
         var base_ = Look(pn, pe, [.. seen, (navy, era)]);
         var own = Merge(lk);
         own.Remove("from");
         var result = Merge(base_, own);
-        foreach (var k in new[] { "palette", "shapes" })
+        foreach (var k in new[] { "palette", "shapes", "materials" })
             result[k] = Merge(base_[k], lk[k]);
         foreach (var k in new[] { "by_style", "shapes_by_style" })
             result[k] = ByStyleMerge(base_[k], lk[k]);
@@ -278,6 +280,19 @@ public static class Looks
             result = result with { TurretBands = [.. bands.Select(c => c.StartsWith('#') ? MuteColour(c, m, ref_) : c)] };
         }
         return result;
+    }
+
+    /// <summary>The design's materials (docs/visuals/ship-lighting.md, L4): default_materials, then the era's, then
+    /// the look's own.</summary>
+    public static Materials Materials(Design design)
+    {
+        var (_, era) = Resolve(design);
+        var merged = Merge(DefaultMaterials, EraMaterials[era], Get(design)["materials"]);
+        var t = new Dictionary<string, (double, double)>(StringComparer.Ordinal);
+        foreach (var (k, v) in merged)
+            if (v is JsonArray { Count: 2 } a)
+                t[k] = ((double)a[0]!, (double)a[1]!);
+        return new Materials(t);
     }
 
     /// <summary>The design's palette: DefaultPalette under the look's own colours, muted by EraMute.</summary>

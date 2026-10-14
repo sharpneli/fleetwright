@@ -659,8 +659,8 @@ public static class Clutter
                 {
                     string glass = Pal("glass", "#5f7782");
                     o.Add(St(new RectNode(x - l / 2, y - w / 2, l, w, 0.1).Fill(fitting)));
-                    o.Add(new RectNode(x - l / 2 + 0.2, y - w / 2 + 0.2, l - 0.4, w / 2 - 0.2).Fill(Shade(glass, 1.15)));
-                    o.Add(new RectNode(x - l / 2 + 0.2, y, l - 0.4, w / 2 - 0.2).Fill(glass));
+                    o.Add(new RectNode(x - l / 2 + 0.2, y - w / 2 + 0.2, l - 0.4, w / 2 - 0.2).Fill(Shade(glass, 1.15)).Mat("glass"));
+                    o.Add(new RectNode(x - l / 2 + 0.2, y, l - 0.4, w / 2 - 0.2).Fill(glass).Mat("glass"));
                     long n = Math.Max(2L, (long)(l / 0.6));
                     for (int i = 1; i < n; i++)
                     {
@@ -678,7 +678,7 @@ public static class Clutter
                 {
                     double r = l / 2;
                     o.Add(St(new CircleNode(x, y, r).Fill(fitting)));
-                    o.Add(new CircleNode(x, y, r * 0.55).Fill(Shade(fitting, 1.3)));
+                    o.Add(new CircleNode(x, y, r * 0.55).Fill(P.Or("brass", Shade(fitting, 1.3))));   // a brass drum where the look has brass
                     for (int a = 0; a < 360; a += 45)
                         o.Add(new LineNode(x, y, x + r * Math.Cos(double.DegreesToRadians(a)), y + r * Math.Sin(double.DegreesToRadians(a)))
                             .Stroke(Shade(fitting, 0.6), P.Sw * 0.7));
@@ -715,7 +715,7 @@ public static class Clutter
                     double r = l / 2;
                     o.Add(St(new CircleNode(x, y, r).Fill(Shade(surfaceCol, 0.85))));
                     o.Add(P.Ln(new CircleNode(x, y, r * 0.5).Fill(fitting), 0.5));
-                    o.Add(new CircleNode(x + r * 0.28, y, r * 0.3).Fill("#d9dccf"));
+                    o.Add(new CircleNode(x + r * 0.28, y, r * 0.3).Fill("#d9dccf").Mat("glass"));
                     return;
                 }
             case "searchlight_tower":   // a raised platform with its rail, the lamp on it
@@ -725,7 +725,7 @@ public static class Clutter
                     o.Add(new CircleNode(x, y, r - 0.2).Fill("none").Stroke(P.C("mast"), Math.Max(0.1, P.Sw * 0.8))
                         .Dash(0.12, 0.9).StrokeOp(0.8));
                     o.Add(P.Ln(new CircleNode(x, y, r * 0.4).Fill(fitting), 0.5));
-                    o.Add(new CircleNode(x + r * 0.2, y, r * 0.24).Fill("#d9dccf"));
+                    o.Add(new CircleNode(x + r * 0.2, y, r * 0.24).Fill("#d9dccf").Mat("glass"));
                     return;
                 }
             case "fan_house":   // a boiler-room fan house: a steel box, louvres down both sides, a cap on top

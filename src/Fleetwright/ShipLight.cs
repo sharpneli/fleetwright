@@ -37,10 +37,11 @@ public sealed class LightTable
     /// spinning round the sky (up about half the time, and low much of it).</summary>
     public float MoonNightMean = 0.3f;
 
-    /// <summary>The default material (L1: one paint everywhere, eggshell: 0.4 glared the whole ship white under a high sun with the flat normal), the specular's scale (0 for the calibration check),
-    /// the shoulder's knee (linear: above it highlights roll off toward 1 instead of clipping), and the shadows'
-    /// opacity relative to the light they take away.</summary>
-    public float Roughness = 0.6f, Specular = 1f, Knee = 0.8f, Shadow = 0.9f;
+    /// <summary>A scale on every material's roughness (L4: the looks' materials tables give each part its own), the
+    /// specular's scale (0 for the calibration check: the sky's reflection goes with it), the shoulder's knee (linear:
+    /// above it highlights roll off toward 1 instead of clipping), the shadows' opacity relative to the light they take
+    /// away, and the horizon's brightness over the zenith's in what gloss reflects (the analytic sky).</summary>
+    public float Roughness = 1f, Specular = 1f, Knee = 0.8f, Shadow = 0.9f, Horizon = 1.4f;
 
     /// <summary>Sets one scalar knob from "name:value" (the -lights= flag); false if it isn't one.</summary>
     public bool Set(string nameValue)
@@ -54,6 +55,7 @@ public sealed class LightTable
             case "specular": Specular = v; break;
             case "knee": Knee = v; break;
             case "shadow": Shadow = v; break;
+            case "horizon": Horizon = v; break;
             case "moon": MoonStrength = v; break;
             case "moonsky": MoonSky = v; break;
             default: return false;
@@ -144,7 +146,7 @@ public struct ShipLights
                 SunRad = new Vector4(sunRad, 0),
                 MoonRad = new Vector4(moonRad, 0),
                 Sky = new Vector4(sky, (float)Math.Min(level, 1)),
-                Sea = new Vector4(sea, 0),
+                Sea = new Vector4(sea, t.Horizon),
                 Look = new Vector4(1, t.Roughness, t.Knee, t.Specular * m),
             },
             SunDir = sunDir, MoonDir = moon,

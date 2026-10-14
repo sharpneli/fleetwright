@@ -22,8 +22,11 @@ public sealed class Painter
 
     // ------------------------------------------------------------------ helpers
 
-    /// <summary>Palette colour by key.</summary>
-    public string C(string key) => P[key];
+    /// <summary>Palette colour by key, keyed with it (<see cref="Rgb.Keyed"/>): its material follows it.</summary>
+    public string C(string key) => Rgb.Keyed(P[key], key);
+
+    /// <summary>The palette's colour for key, keyed, or fallback (as it is) when it has none.</summary>
+    public string Or(string key, string fallback) => P.TryGet(key, out var c) ? Rgb.Keyed(c, key) : fallback;
 
     /// <summary>The outline: palette "line", sw * k wide, round joins (Painter.stroke); weighed by <see cref="Outline"/>.</summary>
     public T Ln<T>(T n, double k = 1.0) where T : Node
@@ -40,7 +43,8 @@ public sealed class Painter
         Span<long> c = [Convert.ToInt32(hex[1..3], 16), Convert.ToInt32(hex[3..5], 16), Convert.ToInt32(hex[5..7], 16)];
         for (int i = 0; i < 3; i++)
             c[i] = k <= 1 ? (long)Math.Round(c[i] * k) : (long)Math.Round(c[i] + (255 - c[i]) * (k - 1));
-        return "#" + string.Concat(c.ToArray().Select(v => Math.Max(0L, Math.Min(255L, v)).ToString("x2")));
+        string o = "#" + string.Concat(c.ToArray().Select(v => Math.Max(0L, Math.Min(255L, v)).ToString("x2")));
+        return Rgb.KeyOf(hex) is { } key ? Rgb.Keyed(o, key) : o;   // a shade of a keyed colour keeps its material
     }
 
     /// <summary>A list item by Python index (negative counts from the end).</summary>

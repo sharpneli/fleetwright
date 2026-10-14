@@ -6,9 +6,10 @@ namespace Fleetwright.Shipgen.Render;
 /// <summary>An opaque sRGB colour, written #rrggbb.</summary>
 public readonly record struct Rgb(byte R, byte G, byte B)
 {
-    /// <summary>"#rrggbb" or "#rgb".</summary>
+    /// <summary>"#rrggbb" or "#rgb", optionally keyed ("#rrggbb/deck": <see cref="Keyed"/>).</summary>
     public static Rgb Parse(string c)
     {
+        c = Plain(c);
         if (c.Length == 4 && c[0] == '#')
             return new(H(c[1..2] + c[1..2]), H(c[2..3] + c[2..3]), H(c[3..4] + c[3..4]));
         if (c.Length == 7 && c[0] == '#')
@@ -19,6 +20,25 @@ public readonly record struct Rgb(byte R, byte G, byte B)
     static byte H(string s) => byte.Parse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 
     public static Rgb Grey(int v) => new((byte)v, (byte)v, (byte)v);
+
+    /// <summary>A colour string carrying the palette key it came from, "#rrggbb/key" (<see cref="Painter.C"/>), so a
+    /// fill or stroke knows its material (docs/visuals/ship-lighting.md, L4) wherever the colour goes: shading it
+    /// (<see cref="Painter.Shade"/>) keeps the key. Everything that reads the colour reads only the hex.</summary>
+    public static string Keyed(string colour, string key) => Plain(colour) + "/" + key;
+
+    /// <summary>The key a colour string carries, or null.</summary>
+    public static string? KeyOf(string c)
+    {
+        int i = c.IndexOf('/');
+        return i < 0 ? null : c[(i + 1)..];
+    }
+
+    /// <summary>The colour without its key.</summary>
+    public static string Plain(string c)
+    {
+        int i = c.IndexOf('/');
+        return i < 0 ? c : c[..i];
+    }
 
     public override string ToString() => $"#{R:x2}{G:x2}{B:x2}";
 }
@@ -39,6 +59,10 @@ public sealed class Style
     public double? StrokeOpacity;
     public double? Opacity;         // group opacity: the node drawn whole, then faded
     public Relief? Relief;          // what the node does to the relief layer (inherited); unset: leaves it alone
+    public string? FillMat;         // the material key the fill's colour came with (Rgb.Keyed), set with the fill
+    public string? StrokeMat;       // the stroke's
+    public string? Mat;             // a material key set where the drawing knows better (inherited, over the colours'
+                                    // keys): brass, glass, bare steel. Not part of the SVG
 }
 
 /// <summary>A relief profile (docs/visuals/ship-lighting.md, "The bake"): how a draw shapes the relief layer the
@@ -184,7 +208,10 @@ public static class NodeStyle
         if (col == "none")
             n.S.FillNone = true;
         else
+        {
             n.S.Fill = Rgb.Parse(col);
+            n.S.FillMat = Rgb.KeyOf(col);
+        }
         return n;
     }
 
@@ -193,6 +220,7 @@ public static class NodeStyle
     public static T Stroke<T>(this T n, string col, double w) where T : Node
     {
         n.S.Stroke = Rgb.Parse(col);
+        n.S.StrokeMat = Rgb.KeyOf(col);
         n.S.StrokeWidth = w;
         return n;
     }
@@ -212,6 +240,8 @@ public static class NodeStyle
     public static T Plateau<T>(this T n, double topM) where T : Node { n.S.Relief = Relief.Plateau(topM); return n; }
     /// <summary>Any relief profile (<see cref="Relief"/>).</summary>
     public static T Profile<T>(this T n, Relief r) where T : Node { n.S.Relief = r; return n; }
+    /// <summary>The material by key (the look's materials table), over the colours' own (<see cref="Style.Mat"/>).</summary>
+    public static T Mat<T>(this T n, string key) where T : Node { n.S.Mat = key; return n; }
     public static T Tr<T>(this T n, params XOp[] ops) where T : Node
     {
         n.Transform = [.. ops];

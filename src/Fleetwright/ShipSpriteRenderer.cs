@@ -84,8 +84,9 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
     SDL_GPUTextureFormat pipeFormat;
     SDL_GPUSampleCount pipeSamples;
 
-    SDL_GPUTexture* hullTex, heightTex, hullNormal;
-    readonly Dictionary<string, nint> turretTex = new(StringComparer.Ordinal), turretNormal = new(StringComparer.Ordinal);
+    SDL_GPUTexture* hullTex, heightTex, hullNormal, hullMaterial;
+    readonly Dictionary<string, nint> turretTex = new(StringComparer.Ordinal), turretNormal = new(StringComparer.Ordinal),
+        turretMaterial = new(StringComparer.Ordinal);
     int[] drawOrder = [];   // the mounts by ascending z, made once per upload so a frame allocates nothing
 
     /// <summary>The shown sprite's layout, or null when nothing is uploaded.</summary>
@@ -101,7 +102,7 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
     {
         this.device = device;
         vs = GpuShader.Load(device, "Content/Shaders/Compiled/shipview.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 0, 1);
-        fsSprite = GpuShader.Load(device, "Content/Shaders/Compiled/shipview_sprite.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 3, 0, 0, 2);
+        fsSprite = GpuShader.Load(device, "Content/Shaders/Compiled/shipview_sprite.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 4, 0, 0, 2);
         fsShadow = GpuShader.Load(device, "Content/Shaders/Compiled/shipview_shadow.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 0, 1);
         if (vs == null || fsSprite == null || fsShadow == null)
             throw new InvalidOperationException("ship sprite shaders failed to load");
@@ -133,13 +134,16 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
         Clear();
         if (r.Sprites is not { } sp || r.Images is not { } im)
             return;
-        hullTex = Upload(im.Hull, height: false);
-        heightTex = Upload(im.Height, height: true);
-        hullNormal = Upload(im.HullNormal, height: false);
+        hullTex = Upload(im.Hull);
+        heightTex = Upload(im.Height);
+        hullNormal = Upload(im.HullNormal);
+        hullMaterial = Upload(im.HullMaterial);
         foreach (var (tid, levels) in im.Turrets)
-            turretTex[tid] = (nint)Upload(levels, height: false);
+            turretTex[tid] = (nint)Upload(levels);
         foreach (var (tid, levels) in im.TurretNormals)
-            turretNormal[tid] = (nint)Upload(levels, height: false);
+            turretNormal[tid] = (nint)Upload(levels);
+        foreach (var (tid, levels) in im.TurretMaterials)
+            turretMaterial[tid] = (nint)Upload(levels);
         Meta = sp.Meta;
         Scale = sp.Meta.ScalePxPerM;
         var mounts = sp.Meta.Mounts;
@@ -155,16 +159,19 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
             SDL_ReleaseGPUTexture(device, heightTex);
         if (hullNormal != null)
             SDL_ReleaseGPUTexture(device, hullNormal);
-        foreach (var t in turretTex.Values.Concat(turretNormal.Values))
+        if (hullMaterial != null)
+            SDL_ReleaseGPUTexture(device, hullMaterial);
+        foreach (var t in turretTex.Values.Concat(turretNormal.Values).Concat(turretMaterial.Values))
             SDL_ReleaseGPUTexture(device, (SDL_GPUTexture*)t);
         turretTex.Clear();
         turretNormal.Clear();
-        hullTex = heightTex = hullNormal = null;
+        turretMaterial.Clear();
+        hullTex = heightTex = hullNormal = hullMaterial = null;
         Meta = null;
         drawOrder = [];
     }
 
-    SDL_GPUTexture* Upload(Image8[] levels, bool height) => Map.SpriteTextures.Upload(device, levels, height);
+    SDL_GPUTexture* Upload(Image8[] levels) => Map.SpriteTextures.Upload(device, levels);
 
     // ------------------------------------------------------------------ pipelines
 
@@ -296,14 +303,15 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
         float shadowOpacity = (float)lights.ShadowOpacity;
         var height = heightTex;
 
-        void Sprite(SDL_GPUTexture* tex, SDL_GPUTexture* normal, Quad q, SpriteParams p)
+        void Sprite(SDL_GPUTexture* tex, SDL_GPUTexture* normal, SDL_GPUTexture* material, Quad q, SpriteParams p)
         {
             SDL_BindGPUGraphicsPipeline(pass, spritePipe);
-            var bind = stackalloc SDL_GPUTextureSamplerBinding[3];
+            var bind = stackalloc SDL_GPUTextureSamplerBinding[4];
             bind[0] = new SDL_GPUTextureSamplerBinding { texture = tex, sampler = linear };
             bind[1] = new SDL_GPUTextureSamplerBinding { texture = height, sampler = nearest };
             bind[2] = new SDL_GPUTextureSamplerBinding { texture = normal, sampler = linear };
-            SDL_BindGPUFragmentSamplers(pass, 0, bind, 3);
+            bind[3] = new SDL_GPUTextureSamplerBinding { texture = material, sampler = linear };
+            SDL_BindGPUFragmentSamplers(pass, 0, bind, 4);
             SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&q), (uint)sizeof(Quad));
             SDL_PushGPUFragmentUniformData(cmd, 0, (nint)(&p), (uint)sizeof(SpriteParams));
             SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
@@ -313,7 +321,7 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
         static Vector4 InFrame(Vector3 w, Vector2 u) => new(w.X * u.X + w.Y * u.Y, -w.X * u.Y + w.Y * u.X, w.Z, 0);
 
         // the hull
-        Sprite(hullTex, hullNormal, Q(new(-cw / 2, -ch / 2), new(cw, 0), new(0, ch)),
+        Sprite(hullTex, hullNormal, hullMaterial, Q(new(-cw / 2, -ch / 2), new(cw, 0), new(0, ch)),
             new SpriteParams { P = new(mip, 0, 1, 0), HMap = hmap, SunL = new(sunW, 0), MoonL = new(moonW, 0) });
 
         // the hull's shadow, over the canvas and as far down-light of it as a shadow can reach: under the turrets, which
@@ -351,6 +359,7 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
                 var o = c - ax / 2 - ay / 2;
                 var tex = (SDL_GPUTexture*)turretTex[m.Type];
                 var normal = (SDL_GPUTexture*)turretNormal[m.Type];
+                var material = (SDL_GPUTexture*)turretMaterial[m.Type];
                 float top = (float)m.TopM;
                 if (pass2 == 0)
                 {
@@ -358,7 +367,7 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
                     var d = -toSun * (top / k);
                     var lo = c + Vector2.Min(Vector2.Zero, d) - new Vector2(r);
                     var box = Vector2.Abs(d) + new Vector2(2 * r);
-                    Sprite(tex, normal, Q(lo, new(box.X, 0), new(0, box.Y)), new SpriteParams
+                    Sprite(tex, normal, material, Q(lo, new(box.X, 0), new(0, box.Y)), new SpriteParams
                     {
                         P = new(mip, 1, 1, top), HMap = hmap, Shadow = shadowL, March = Map.ShipDrawList.HullMarch(maxH, 0, k, lod, Scale),
                         Frame = new(o, ax.X, ax.Y),
@@ -367,7 +376,7 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
                 else
                 {
                     var along = new Vector2(MathF.Cos(a), MathF.Sin(a));
-                    Sprite(tex, normal, Q(o, ax, ay), new SpriteParams
+                    Sprite(tex, normal, material, Q(o, ax, ay), new SpriteParams
                     {
                         P = new(mip, 0, 1, top), HMap = hmap, SunL = InFrame(sunW, along), MoonL = InFrame(moonW, along),
                         Shadow = shadowL, March = shadows ? Map.ShipDrawList.HullMarch(maxH, top, k, lod, Scale) : default,

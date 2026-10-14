@@ -47,6 +47,11 @@ units where looks say otherwise.
   the hull's height columns at their exact tops, then the hull drawing's profiled parts; the turret drawing's), and
   `ReliefMaps` makes each layer's normal + AO (RGBA8) on the building thread, mipped by coverage; the sprite shaders
   sample it beside the colour.
+- **Materials since L4** (2026-10-14): each fill's colour carries its palette key (`Painter.C`, `Rgb.Keyed`), the
+  drawing may set a key over it (`.Mat("glass")`), and the look's tables (`default_materials`, `era_materials`, a
+  look's own `materials` in `Data/looks.jsonc`) give each key a roughness and metallic; the bake draws the display list
+  a second time in those (`DrawList.WithMaterials`) into an RG8 layer premultiplied by the colour's coverage. The
+  shader widens roughness by Toksvig and reflects an analytic sky.
 - **The frame is display-referred.** The sprite textures are UNORM, not sRGB, blended as they are; the blit copies
   with no tonemap. So the sea and the sprites are sRGB-coded values, and anything over 1 clips.
 
@@ -58,7 +63,7 @@ Per pixel of a sprite layer (the hull and each turret type):
 |---|---|---|
 | albedo | the RGBA we have (premultiplied) | painted lighting taken out (step L3) |
 | normal + AO | RGBA8: xyz biased, AO in a | sprite space: x to the bow (+x), y to starboard (+y), z up. Mips by plain averaging, **not renormalised**: the shortened normal is Toksvig's input (below) |
-| material | RG8: roughness, metallic | from the look's materials (step L4) |
+| material | RG8: roughness, metallic | from the look's materials (step L4); premultiplied by the colour's coverage, which it shares, so the shader divides by the colour's alpha |
 
 Memory: a hull at 10 px/m (Bismarck, 2432 x 384) is 3.7 MB of RGBA; this adds 3.7 + 1.9 MB, so the art goes from
 ~100-150 MB to ~250-350 MB for a Jutland, uncompressed. Fine for now; BC5 (normals), BC4 (AO) and BC7 bring it back
@@ -324,6 +329,39 @@ a Jutland unchanged within noise.
 
 **L4. Materials.** `Style.Mat`, the looks' material tables, the material layer, Toksvig, the analytic sky. Brass and
 bare steel shine, decks go matte, eras differ.
+
+*Done 2026-10-14.* As planned, with these findings:
+
+- **How a draw knows its material:** the colour string itself carries its palette key, `"#rrggbb/deck"`
+  (`Rgb.Keyed`, made by `Painter.C` and `Painter.Or`, kept by `Painter.Shade`; `Rgb.Parse` reads the hex only). So
+  the ~120 places that paint by palette key, and their shaded variants, needed no change; fills and strokes keep
+  their own keys (`Style.FillMat`, `StrokeMat`: the ink outline is a stroke on a deck). A key the drawing sets
+  (`Style.Mat`, inherited) goes over both: the skylights' and searchlights' glass. Unkeyed colours (dazzle, literal
+  hexes) are `"paint"`. The SVGs don't carry the keys.
+- **The tables** (`Data/looks.jsonc`): `default_materials` is the WWII baseline (paint 0.6; turrets 0.55, barrels 0.4;
+  painted steel decks 0.8, teak 0.85, flight decks 0.9; funnel caps 0.95, soot; canvas 0.95; chain, catapult tracks
+  and `steel` bare metal; propellers bronze; `brass` 0.25 metal; `glass` 0.08). `era_materials` goes over it for every
+  navy whatever its `from` chain (several navies' great_war and treaty come from their own wwii, not generic's):
+  Victorian gloss enamels (0.3-0.4) and varnish, Great War 0.5, treaty 0.45, Cold War non-skid decks 0.9. A look's
+  own `materials` goes last (none yet). Brass is drawn only where a look has a `brass` colour (the Victorian ones: a
+  capstan's drum); 44 cases' SVGs changed in just those circles.
+- **The layer:** the same display list drawn again with each fill's colour (roughness, metallic, 0) at its alpha,
+  through the colour pipeline, then the colour's mip chain, kept as two channels. Bake time unchanged (bismarck
+  0.14 s, fleet carrier 0.18 s).
+- **The shader:** roughness x the table's `roughness` knob (now a scale, 1 by default; `-lights=roughness:0.5` halves
+  them all), widened by Toksvig through the von Mises-Fisher fit (alpha squared + 2 / kappa, kappa from the mip normal's
+  length, half a percent let through for the 8-bit encoding's error), then GGX as before. The analytic sky: the
+  reflected ray picks zenith (the sky ambient), a hazier, brighter horizon (`horizon` knob, 1.4) or the sea, blurred
+  toward the hemisphere's average by roughness, times Karis's analytic environment BRDF and the AO, scaled with the
+  specular (so `specular:0` still checks the calibration). The roughness debug view shows the roughness as shaded.
+- **The look:** realistic first, so subtle, as intended. Decks lose their sheen; gloss parts (boats, turret roofs,
+  barrels) pick up a little sky, and block rims a little more at grazing angles; at a low sun the cupolas spark and the
+  barrels show a line by the breech; bare chain reads dark, brass capstans warm. At 3 and 1 px/m the frame differs
+  from L3's by at most 24 levels: Toksvig and the mips keep it quiet. The Victorian barrels are near black, so their
+  glint stays faint at the look's own 0.3.
+- **Memory: 599 -> 736 MB at Jutland** (`ShipArtLibrary.Bytes`), the RG8 layer's half of the colour's, as estimated.
+- **Frame times** (DevRelease, alternating builds): one ship at 10 px/m and Jutland, equal (vsync-bound, p50 8.33 ms);
+  Jutland's CPU p99 2.1 -> 3.0 ms from the extra uploads while classes arrive.
 
 **L5. The rest of the ship's states.** Scorches matte and sooty (roughness 1, AO down), what the sea drowns loses its
 specular, the light tilted with the heel and trim (the sea plane's slopes are already in the quad), turret damage

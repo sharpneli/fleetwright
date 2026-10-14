@@ -25,6 +25,9 @@ add what's found.
 - [ ] `PictureTests.Two_hundred_ships_look_at_each_other_without_garbage` failed once in a full run (2026-10-14, after
   4.3a) and passed alone and in the next full run. No ship fires in it, so it's not the damage system's; the same
   suspicion as above.
+- [ ] `ShipMotionTests.A_tick_allocates_nothing` failed in a full `dotnet test` of every assembly at once (2026-10-14,
+  lighting L4, which touches no sim code; once with a second Sim failure) and passed alone three times in three. The
+  same suspicion as above.
 
 ## The slide
 

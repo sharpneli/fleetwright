@@ -298,7 +298,8 @@ public sealed unsafe class ShipViewer : IScene
         ImGui.SliderFloat("moon", ref t.MoonStrength, 0, 0.5f, "%.3f");
         ImGui.ColorEdit3("moon tint", ref t.MoonTint, ImGuiColorEditFlags.Float);
         ImGui.SliderFloat("moonlit sky", ref t.MoonSky, 0, 1, "%.2f");
-        ImGui.SliderFloat("roughness", ref t.Roughness, 0.05f, 1, "%.2f");
+        ImGui.SliderFloat("roughness x", ref t.Roughness, 0.1f, 2, "%.2f");
+        ImGui.SliderFloat("horizon", ref t.Horizon, 0.5f, 3, "%.2f");
         ImGui.SliderFloat("specular", ref t.Specular, 0, 2, "%.2f");
         ImGui.SliderFloat("shoulder knee", ref t.Knee, 0.5f, 0.99f, "%.2f");
         ImGui.SliderFloat("shadow", ref t.Shadow, 0, 1.5f, "%.2f");

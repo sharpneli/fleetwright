@@ -28,11 +28,11 @@ public enum ShipDrawKind : byte
 }
 
 /// <summary>One instanced draw: <see cref="Count"/> quads from <see cref="First"/>, with these textures (a sprite: its
-/// colour, the height map, its normal + AO; a shadow: the height map).</summary>
+/// colour, the height map, its normal + AO, its material; a shadow: the height map).</summary>
 public struct ShipDraw
 {
     public ShipDrawKind Kind;
-    public nint Tex0, Tex1, Tex2;
+    public nint Tex0, Tex1, Tex2, Tex3;
     public int First, Count;
 }
 
@@ -144,7 +144,7 @@ public sealed class ShipDrawList
             int first = quadCount;
             foreach (int i in byClass[cls])
                 Hull(ref placed[i], art);
-            AddDraw(ShipDrawKind.Sprite, art.Hull, art.Height, first, art.HullNormal);
+            AddDraw(ShipDrawKind.Sprite, art.Hull, art.Height, first, art.HullNormal, art.HullMaterial);
         }
         foreach (int cls in classes)   // scorches over wrecked parts, under the turrets
         {
@@ -152,7 +152,7 @@ public sealed class ShipDrawList
             int first = quadCount;
             foreach (int i in byClass[cls])
                 Scorches(ref placed[i], art);
-            AddDraw(ShipDrawKind.Sprite, art.Hull, art.Height, first, art.HullNormal);
+            AddDraw(ShipDrawKind.Sprite, art.Hull, art.Height, first, art.HullNormal, art.HullMaterial);
         }
         foreach (int cls in classes)   // the hull's shadow, on the hull and the sea: under the turrets, which take it at their roofs
         {
@@ -173,7 +173,7 @@ public sealed class ShipDrawList
                     foreach (int i in byClass[cls])
                         if (layer == 1 || placed[i].Shadows)
                             Turrets(ref placed[i], art, t, shadow: layer == 0);
-                    AddDraw(ShipDrawKind.Sprite, art.Turrets[t], art.Height, first, art.TurretNormals[t]);
+                    AddDraw(ShipDrawKind.Sprite, art.Turrets[t], art.Height, first, art.TurretNormals[t], art.TurretMaterials[t]);
                 }
             }
 
@@ -182,7 +182,7 @@ public sealed class ShipDrawList
         for (int i = 0; i < placedCount; i++)
             if (placed[i].IconAlpha > 0)
                 Icon(ref placed[i], placed[i].Entity == selectedEntity);
-        AddDraw(ShipDrawKind.Sprite, icon, icon, firstIcon, icon);
+        AddDraw(ShipDrawKind.Sprite, icon, icon, firstIcon, icon, icon);
     }
 
     /// <summary>The light at the view's centre: the sun, the real moon from there, and in time-lapse the day's means.</summary>
@@ -428,13 +428,13 @@ public sealed class ShipDrawList
         };
     }
 
-    void AddDraw(ShipDrawKind kind, nint tex0, nint tex1, int first, nint tex2 = 0)
+    void AddDraw(ShipDrawKind kind, nint tex0, nint tex1, int first, nint tex2 = 0, nint tex3 = 0)
     {
         if (quadCount == first)
             return;
         if (drawCount == draws.Length)
             Array.Resize(ref draws, draws.Length * 2);
-        draws[drawCount++] = new ShipDraw { Kind = kind, Tex0 = tex0, Tex1 = tex1, Tex2 = tex2, First = first, Count = quadCount - first };
+        draws[drawCount++] = new ShipDraw { Kind = kind, Tex0 = tex0, Tex1 = tex1, Tex2 = tex2, Tex3 = tex3, First = first, Count = quadCount - first };
     }
 
     static double SmoothStep(double a, double b, double x)
@@ -476,14 +476,14 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     {
         this.device = device;
         vs = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 0, 1);
-        fsSprite = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 3, 0, 0, 1);
+        fsSprite = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 4, 0, 0, 1);
         fsShadow = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap_shadow.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 0, 0);
         if (vs == null || fsSprite == null || fsShadow == null)
             throw new InvalidOperationException("ship map shaders failed to load");
         linear = Sampler(SDL_GPUFilter.SDL_GPU_FILTER_LINEAR, SDL_GPUSamplerMipmapMode.SDL_GPU_SAMPLERMIPMAPMODE_LINEAR);
         nearest = Sampler(SDL_GPUFilter.SDL_GPU_FILTER_NEAREST, SDL_GPUSamplerMipmapMode.SDL_GPU_SAMPLERMIPMAPMODE_NEAREST);
         quadBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ, QuadBufferBytes);
-        Icon = (nint)SpriteTextures.Upload(device, SpriteImages.Chain(IconImage(), false, 5), height: false);
+        Icon = (nint)SpriteTextures.Upload(device, SpriteImages.Chain(IconImage(), false, 5));
     }
 
     /// <summary>The icon: a hull's plan 128 x 32, bow to the right (+x), a fine bow and a rounded stern.</summary>
@@ -574,7 +574,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         var lu = lights.Uniforms;
         SDL_PushGPUFragmentUniformData(cmd, 0, (nint)(&lu), (uint)sizeof(LightUniforms));
         SDL_GPUGraphicsPipeline* bound = null;
-        var b3 = stackalloc SDL_GPUTextureSamplerBinding[3];
+        var b4 = stackalloc SDL_GPUTextureSamplerBinding[4];
         foreach (var d in List.Draws)
         {
             if (d.First + d.Count > uploaded)
@@ -603,10 +603,11 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
             }
             else
             {
-                b3[0] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex0, sampler = linear };
-                b3[1] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex1, sampler = nearest };
-                b3[2] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex2, sampler = linear };
-                SDL_BindGPUFragmentSamplers(pass, 0, b3, 3);
+                b4[0] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex0, sampler = linear };
+                b4[1] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex1, sampler = nearest };
+                b4[2] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex2, sampler = linear };
+                b4[3] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex3, sampler = linear };
+                SDL_BindGPUFragmentSamplers(pass, 0, b4, 4);
             }
             SDL_DrawGPUPrimitives(pass, 6, (uint)d.Count, 0, 0);
         }

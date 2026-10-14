@@ -138,3 +138,15 @@ public sealed record SpriteMount(string Id, string Kind, string Type, double[] P
 [JsonSerializable(typeof(Dictionary<string, Paint>))]
 [JsonSerializable(typeof(SpriteMeta))]
 public sealed partial class RenderJson : JsonSerializerContext;
+
+/// <summary>A look's materials (Data/looks.jsonc "materials"): a palette key, or a key the drawing sets
+/// (<see cref="Style.Mat"/>), to (roughness, metallic). Anything unkeyed or unlisted is "paint".</summary>
+public sealed class Materials(Dictionary<string, (double Roughness, double Metallic)> table)
+{
+    public const string Paint = "paint";
+
+    public IReadOnlyDictionary<string, (double Roughness, double Metallic)> Table => table;
+
+    public (double Roughness, double Metallic) this[string? key] =>
+        key != null && table.TryGetValue(key, out var m) ? m : table.GetValueOrDefault(Paint, (0.6, 0.0));
+}

@@ -2,7 +2,8 @@ namespace Fleetwright.Shipgen.Render.Bake;
 
 /// <summary>A ship's baked layers: the hull, each turret type and the height map, at level 0 (the mip atlases are
 /// made from these when saved); and for the lighting, the hull's and each turret type's relief (metres) and its normal
-/// + AO (<see cref="ReliefMaps"/>).</summary>
+/// + AO (<see cref="ReliefMaps"/>), and its material: roughness in R, metallic in G, straight alpha (the colour's
+/// coverage; <see cref="DrawList.WithMaterials"/>).</summary>
 public sealed class Baked
 {
     public required Image8 Hull;
@@ -12,6 +13,8 @@ public sealed class Baked
     public required Image8 HullNormal;
     public required Dictionary<string, ReliefImage> TurretRelief;
     public required Dictionary<string, Image8> TurretNormal;
+    public required Image8 HullMaterial;
+    public required Dictionary<string, Image8> TurretMaterial;
 }
 
 /// <summary>Bakes ShipSprites on the GPU and writes what render.render_ship wrote: sprite.json, hull.png,
@@ -28,12 +31,14 @@ public static class ShipBake
         var turrets = new Dictionary<string, Image8>(StringComparer.Ordinal);
         var tRelief = new Dictionary<string, ReliefImage>(StringComparer.Ordinal);
         var tNormal = new Dictionary<string, Image8>(StringComparer.Ordinal);
+        var tMat = new Dictionary<string, Image8>(StringComparer.Ordinal);
         foreach (var (tid, scene) in sp.Turrets)
         {
             var dl = Lower.Run(scene);
             turrets[tid] = g.Render(dl);
             tRelief[tid] = g.RenderRelief(dl);
             tNormal[tid] = ReliefMaps.NormalAo(tRelief[tid], s, turrets[tid]);
+            tMat[tid] = g.Render(dl.WithMaterials(sp.Materials));
         }
         return new Baked
         {
@@ -44,6 +49,8 @@ public static class ShipBake
             HullNormal = ReliefMaps.NormalAo(hullRelief, s, hull),
             TurretRelief = tRelief,
             TurretNormal = tNormal,
+            HullMaterial = g.Render(hullDl.WithMaterials(sp.Materials)),
+            TurretMaterial = tMat,
         };
     }
 
@@ -59,12 +66,14 @@ public static class ShipBake
         Png.Save(Path.Combine(dir, "relief.png"), ReliefMaps.Preview(b.HullRelief));
         Png.Save(Path.Combine(dir, "normal.png"), b.HullNormal);
         Png.Save(Path.Combine(dir, "normal_mips.png"), NormalAtlas(b.HullNormal, b.Hull, rects));
+        Png.Save(Path.Combine(dir, "material.png"), b.HullMaterial);
         foreach (var (tid, tm) in meta.TurretTypes)
         {
             Png.Save(Path.Combine(dir, tm.File), b.Turrets[tid]);
             Png.Save(Path.Combine(dir, tm.MipsFile), Mips.Atlas(b.Turrets[tid], tm.MipRects, max: false));
             Png.Save(Path.Combine(dir, $"turrets/{tid}_relief.png"), ReliefMaps.Preview(b.TurretRelief[tid]));
             Png.Save(Path.Combine(dir, $"turrets/{tid}_normal.png"), b.TurretNormal[tid]);
+            Png.Save(Path.Combine(dir, $"turrets/{tid}_material.png"), b.TurretMaterial[tid]);
         }
         JsonFile.Save(Path.Combine(dir, "sprite.json"), meta, RenderJson.Default.SpriteMeta, 2);
     }
