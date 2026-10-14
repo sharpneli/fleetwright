@@ -17,6 +17,11 @@ units where looks say otherwise.
 - **The pipeline doesn't change.** Single-pass forward, in the globe's pass as today: no new passes, no G-buffer, no
   change to the main target (HDR R16G16B16A16, 8x MSAA), the blit or the engine. What changes is `shipmap.frag`/`.vert`
   (and `shipview_sprite.frag` for the ship viewer), the textures they bind, and the bake that makes them.
+- **Ships only.** The water is its own work: a separate FFT water surface pass (prototyped in the old code and in
+  WebGL), which brings the sea's light, the moon's path on the water and the rest. Nothing here touches the globe's
+  sea. What the two share is the light: the sun, the moon, their colours and the sky and ambient come from one
+  place, so the ships and the water are lit alike, and the ships' ambient "sea below" and analytic sky read the
+  water's colours once it has them (today's `globe.frag` constants until then).
 - **The sprites stay 2D quads.** No meshes; the relief is a normal map, never geometry.
 - **One physical model** (CLAUDE.md, "The sprites are drawn from the physical model"). Relief comes from the heights
   the hitbox model already gives (the height map's columns) and from the drawn parts' own sizes (a barrel's width is
@@ -72,7 +77,8 @@ under today's if we ever need to (a CPU encoder on the building thread).
   metal. Roughness widened by **Toksvig** from the mip-averaged normal's length, so a barrel's glint is sharp at
   10 px/m and fades out by itself as the mips blur the cylinder away. That is the "specular on closer zoom", with no
   zoom rule.
-- **Ambient:** a hemisphere: sky above, the sea's colour below (from `globe.frag`'s `DaySea`), times AO. Its
+- **Ambient:** a hemisphere: sky above, the sea's colour below (`globe.frag`'s `DaySea` today, the water pass's
+  later), times AO. Its
   colours and strength by day, at dusk and at night are tuned by eye, in one place (a small table of uniforms the
   ship viewer's panel can edit live). Night has a readability floor: on a moonless night your own ships still read
   as ships, not black cut-outs (today's 0.3 floor is the reference).
@@ -156,12 +162,6 @@ uniforms, not another pipeline. Done when the reference-sun screenshot matches t
 sun warms and dims the ships with the sea, a full-moon night shows the ships and their shadows faintly, a moonless
 one keeps them readable, and DevRelease frame time is unchanged within noise.
 
-**L1b. The sea under the moon (proposed, outside the sprites).** Moonlit ships on today's flat `NightSea` will look
-pasted on: the moon's path on the water is the strongest night cue there is. `globe.frag` already has the sun's
-glint; the moon's is the same lines with the moon's direction and light, and the night sea and land a little
-brighter by the moon. A few uniforms and lines in the globe's shader, no pass or pipeline change; it touches the
-globe, so it waits for a yes.
-
 **L2. Relief from the height map.** The relief bake mode, plateaus only, from the existing columns for the hull and
 from the turret drawing's own parts; the normal + AO texture, its mips, the upload, the binding. Block edges, funnels,
 barbettes and turret roofs catch the sun; decks darken at the walls' feet. The ship viewer gets the debug views
@@ -195,7 +195,6 @@ decided ahead.
 
 ## Open
 
-- **L1b, the sea under the moon:** yes or later (above).
 - **The sim's night sight and the moon:** sight is starlight only today (`SightNightM`), so a full-moon night shows
   ships on screen that the sim says can't be seen past 5 km. That's for the night-sight system to settle (reading
   the same light function); until it does, the display may look brighter than the sim's night.
