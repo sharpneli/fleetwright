@@ -11,14 +11,14 @@ namespace Fleetwright.Sim.Tests;
 /// further), and the fine tick's slide takes it along; it doesn't go back on rails heading for the land. At the snap
 /// speed and up its rails slide along the coast themselves, the fine tick's feeler asked at the rails' pose, and end
 /// near where the fine tick would. At any clock speed no guide is ever inside its minimum; and a coast no longer holds
-/// the clock.</summary>
+/// the clock (<see cref="RailsLandClockTests"/>).</summary>
 public class RailsLandTests(ITestOutputHelper output)
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
     static Shore Shore => TestLand.Shore;
 
-    static (World W, AiSystem Ai, int Class) Make(double speed, string design = "dreadnought")
+    internal static (World W, AiSystem Ai, int Class) Make(double speed, string design = "dreadnought")
     {
         var w = new World(Start, 11, Settings, shore: Shore);
         var ai = new AiSystem(w);
@@ -181,6 +181,32 @@ public class RailsLandTests(ITestOutputHelper output)
         Assert.True(closest >= 0, $"a ship came {-closest:F0} m inside its minimum");
     }
 
+    [Fact]
+    public void Rails_with_the_land_are_the_same_twice()
+    {
+        ulong Once()
+        {
+            var (w, _, c) = Make(100_000);
+            w.Apply(ShipSystem.Spawn(c, 59.0, 3.4, 90, 15));
+            w.Apply(ShipSystem.Spawn(c, 58.5, 3.4, 60, 18));
+            w.AdvanceTo(w.Time + 8 * 3_600_000);
+            return w.ComputeHash();
+        }
+        Assert.Equal(Once(), Once());
+    }
+}
+
+/// <summary>Wall-clock measurements: run alone, after the rest, since at a million times six hours is ~20 ms of wall
+/// time and another test's GC pause would eat the margin.</summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class WallClock
+{
+    public const string Name = "Wall clock";
+}
+
+[Collection(WallClock.Name)]
+public class RailsLandClockTests(ITestOutputHelper output)
+{
     /// <summary>The clock a ship and a squadron following Norway's coast allow, against asked (the most the sim can
     /// keep, game seconds a wall second, with nothing else in the world). Before S3 (on the fine tick) one ship kept it
     /// to ~25,000x and four to ~6,500x whatever was asked; sliding on rails, it keeps what's asked.</summary>
@@ -196,7 +222,7 @@ public class RailsLandTests(ITestOutputHelper output)
     double Measure(int count, double speed, bool write = true)
     {
             {
-                var (w, _, c) = Make(speed);
+                var (w, _, c) = RailsLandTests.Make(speed);
                 for (int i = 0; i < count; i++)
                     w.Apply(ShipSystem.Spawn(c, 59.0 - 0.006 * i, 4.9, 90, 15));
                 if (count > 1)
@@ -213,19 +239,5 @@ public class RailsLandTests(ITestOutputHelper output)
                                  $"(the sim's most {kept:#,0}x), {fine} on the fine tick at the end");
                 return Math.Min(kept, speed);
             }
-    }
-
-    [Fact]
-    public void Rails_with_the_land_are_the_same_twice()
-    {
-        ulong Once()
-        {
-            var (w, _, c) = Make(100_000);
-            w.Apply(ShipSystem.Spawn(c, 59.0, 3.4, 90, 15));
-            w.Apply(ShipSystem.Spawn(c, 58.5, 3.4, 60, 18));
-            w.AdvanceTo(w.Time + 8 * 3_600_000);
-            return w.ComputeHash();
-        }
-        Assert.Equal(Once(), Once());
     }
 }

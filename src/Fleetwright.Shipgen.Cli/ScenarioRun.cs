@@ -215,7 +215,7 @@ sealed class FightTally(CombatLog log)
         {
             int slot = w.Ships.Store.SlotOf(shooter);
             string gun = battery < 0 ? "torpedoes" : slot >= 0 && battery < w.Ships.Store[slot].Handling.Class.Batteries.Length
-                ? $"{w.Ships.Store[slot].Handling.Class.Batteries[battery].Guns} x {w.Ships.Store[slot].Handling.Class.Batteries[battery].CalibreMm:0}mm"
+                ? w.Ships.Store[slot].Handling.Class.Batteries[battery].Label
                 : $"battery {battery}";
             string Clock(long ms) => ms == long.MaxValue ? "-" : new WorldTime(ms).ToString()[11..19];
             Console.WriteLine($"  {Name(shooter),-16} {gun,-12} on {Name(target),-16} {l.Salvos,4} salvos {l.Shells,5} shells {l.Straddles,4} straddles " +

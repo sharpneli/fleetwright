@@ -133,12 +133,26 @@ public class WeaponFactsTests
     [Fact]
     public void Batteries_follow_the_guns_and_the_fit()
     {
-        // KGV's quad and twin 14" turrets are one battery; two secondary guns are two batteries
+        // KGV's quad and twin 14" turrets are one battery; two secondary guns are four batteries, a side each, each side's
+        // on its own side's director
         var kgv = Fleet.Get("kgv").Class!;
         Assert.Equal(1, kgv.Batteries.ToArray().Count(b => b.Kind == Battery.Main));
         Assert.Equal(10, kgv.Batteries[0].Guns);
         var bismarck = Fleet.Get("bismarck").Class!;
-        Assert.Equal(2, bismarck.Batteries.ToArray().Count(b => b.Kind == Battery.Secondary));
+        var secs = bismarck.Batteries.ToArray().Where(b => b.Kind == Battery.Secondary).ToArray();
+        Assert.Equal(4, secs.Length);
+        Assert.Equal(2, secs.Count(b => b.Side == Side.Port));
+        Assert.Equal(2, secs.Count(b => b.Side == Side.Starboard));
+        foreach (var b in secs)
+        {
+            var dirs = bismarck.Links(b.Directors).ToArray();
+            Assert.Single(dirs);
+            Assert.EndsWith(b.Side == Side.Port ? "P" : "S", bismarck.ComponentId(bismarck.Directors[dirs[0]].Component));
+            foreach (int m in bismarck.Links(b.Mounts))
+                Assert.Equal(b.Side == Side.Port, bismarck.Mounts[m].Y < 0);
+        }
+        // a centreline secondary is a third, its own
+        Assert.Contains(Fleet.Get("murica").Class!.Batteries.ToArray(), b => b.Kind == Battery.Secondary && b.Side == Side.Centre);
 
         // the Great War's dreadnought: a director and a Dreyer table, AP from the main battery, HE from the 12-pdrs
         var dn = Fleet.Get("dreadnought").Class!;

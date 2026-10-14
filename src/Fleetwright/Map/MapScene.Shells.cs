@@ -200,10 +200,10 @@ public sealed partial class MapScene
         ImGui.SameLine();
         fireBattery = Math.Clamp(fireBattery, 0, cls.Batteries.Length - 1);
         ImGui.SetNextItemWidth(120 * UiFonts.Scale);
-        if (ImGui.BeginCombo("##fb", $"{cls.Batteries[fireBattery].Guns} x {cls.Batteries[fireBattery].CalibreMm:0}mm"))
+        if (ImGui.BeginCombo("##fb", cls.Batteries[fireBattery].Label))
         {
             for (int b = 0; b < cls.Batteries.Length; b++)
-                if (ImGui.Selectable($"{cls.Batteries[b].Guns} x {cls.Batteries[b].CalibreMm:0}mm##fb{b}", fireBattery == b))
+                if (ImGui.Selectable($"{cls.Batteries[b].Label}##fb{b}", fireBattery == b))
                     fireBattery = b;
             ImGui.EndCombo();
         }
@@ -222,7 +222,7 @@ public sealed partial class MapScene
             int i = 0;
             while (i < v.Count && (v.Shooter[i] != selected || v.Battery[i] != b))
                 i++;
-            string gun = $"  {row.Guns} x {row.CalibreMm:0}mm {(row.Kind == Battery.Main ? "main" : "secondary")}";
+            string gun = $"  {row.Label} {(row.Kind == Battery.Main ? "main" : "secondary")}";
             if (i == v.Count)
                 ImGui.TextDisabled($"{gun}: no target{(fire == FireOrder.Hold ? " (holding fire)" : "")}");
             else

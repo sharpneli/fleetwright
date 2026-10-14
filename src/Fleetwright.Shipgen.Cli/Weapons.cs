@@ -35,8 +35,9 @@ static class Weapons
             var row = c.Batteries[b];
             var mounts = c.Links(row.Mounts);
             var m = c.Mounts[mounts[0]];
-            Line(string.Format(Inv, "  {0} {1:0.#}/{2:0.#}: {3} mount(s), {4} gun(s); level {5} ({6:D})", row.Kind.ToString().ToLowerInvariant(),
-                row.CalibreMm, row.CalibreLength, mounts.Length, row.Guns, row.Level, (int)row.Level));
+            Line(string.Format(Inv, "  {0}{1} {2:0.#}/{3:0.#}: {4} mount(s), {5} gun(s); level {6} ({7:D})", row.Kind.ToString().ToLowerInvariant(),
+                row.Side == Side.None ? "" : " " + row.Side.ToString().ToLowerInvariant(), row.CalibreMm, row.CalibreLength, mounts.Length, row.Guns, row.Level,
+                (int)row.Level));
             if (row.Local)
                 Line("    no director: local control, each mount by its layer's eye");
             else

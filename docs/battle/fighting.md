@@ -231,9 +231,14 @@ placeholders beside the research's sixteen guns. `WeaponFactsTests` holds the te
 What it settled, beyond the plan:
 
 - **A battery is the mounts of one kind (main or secondary) that fire one gun** (calibre and length): one range table,
-  one set of shells, one fall of shot. KGV's quad and twin 14" turrets are one battery, Bismarck's 150s and 105s two.
-  Its directors are the ship's directors of its kind, longest rangefinder first. Torpedo mounts aren't in a battery
-  (4.6), and AA isn't (aircraft are out).
+  one set of shells, one fall of shot. KGV's quad and twin 14" turrets are one battery. **A secondary gun's sides are
+  batteries of their own** (2026-10-14): its port, starboard and centreline mounts (within 0.5 m of it) are up to three,
+  each with its own fire control and target, so Bismarck's 150s and 105s are four, a side each, and a ship can fight
+  both broadsides. Its directors are the ship's directors of its kind, longest rangefinder first; a side battery's are
+  its own side's and the centreline's (all of its kind if that leaves none), so a P/S pair splits, a centreline single
+  serves both sides. A director isn't held by one battery: two can read the same one on two targets (one target a
+  director is the fire-control rework's). The main battery stays one whatever the side. Torpedo mounts aren't in a
+  battery (4.6), and AA isn't (aircraft are out).
 - **The shell kind goes by the gun's size, not the battery's kind:** 8" and up carry mostly AP and fire it, lighter
   guns mostly HE (common before 1906). A destroyer's main 4" fires as a battleship's secondary 4" does.
 - **Shell quality is an enum named after the research's outcome rows** (`rn1916`, `km1916`, `rn1918`, `ww2`,

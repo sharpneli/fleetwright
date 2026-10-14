@@ -517,7 +517,7 @@ public static class ShipClassCompiler
             var mounts = c.mounts;
             var batteries = new List<BatteryRow>();
             var members = new List<List<int>>();
-            var byGun = new Dictionary<(ComponentKind, double, double), int>();
+            var byGun = new Dictionary<(ComponentKind, double, double, Side), int>();
             for (int i = 0; i < mounts.Length; i++)
             {
                 var m = mounts[i];
@@ -533,12 +533,15 @@ public static class ShipClassCompiler
                 }
                 if (!(m.CalibreMm > 0) || !(m.CalibreLength > 0))
                     throw new ShipCompileException($"{where}: a gun with no calibre or length");
-                if (!byGun.TryGetValue((m.Kind, m.CalibreMm, m.CalibreLength), out int b))
+                // a secondary gun's sides fight apart, each its own battery; the main battery is one
+                var side = m.Kind == ComponentKind.Main ? Side.None : SideOf(m.Y);
+                if (!byGun.TryGetValue((m.Kind, m.CalibreMm, m.CalibreLength, side), out int b))
                 {
-                    byGun[(m.Kind, m.CalibreMm, m.CalibreLength)] = b = batteries.Count;
+                    byGun[(m.Kind, m.CalibreMm, m.CalibreLength, side)] = b = batteries.Count;
                     batteries.Add(new BatteryRow
                     {
-                        Kind = m.Kind == ComponentKind.Main ? Battery.Main : Battery.Secondary, CalibreMm = m.CalibreMm, CalibreLength = m.CalibreLength,
+                        Kind = m.Kind == ComponentKind.Main ? Battery.Main : Battery.Secondary, Side = side, CalibreMm = m.CalibreMm,
+                        CalibreLength = m.CalibreLength,
                     });
                     members.Add([]);
                 }
@@ -573,12 +576,17 @@ public static class ShipClassCompiler
                     links.Add(i);
                     guns += c.turretTypes[mounts[i].Type].Barrels;
                 }
-                // its kind's directors, the longest rangefinder first
+                // its kind's directors, the longest rangefinder first: a side's, its own side's and the centreline's (all
+                // of its kind if that leaves none); the centreline's, all of them
                 int d0 = links.Count;
                 double rf = 0;
                 bool radar = false;
-                foreach (int d in Enumerable.Range(0, c.directors.Length).Where(i => c.directors[i].Battery == row.Kind)
-                             .OrderByDescending(i => c.directors[i].RangefinderM > 0 ? c.directors[i].RangefinderM : 0).ThenBy(i => i))
+                bool Serves(int i) => row.Side is Side.None or Side.Centre || SideOf(Mid(c.components[c.directors[i].Component].Bounds)) is var s && (s == row.Side || s == Side.Centre);
+                static double Mid(Box b) => (b.Y0 + b.Y1) / 2;
+                var mine = Enumerable.Range(0, c.directors.Length).Where(i => c.directors[i].Battery == row.Kind).ToList();
+                if (mine.Any(Serves))
+                    mine.RemoveAll(i => !Serves(i));
+                foreach (int d in mine.OrderByDescending(i => c.directors[i].RangefinderM > 0 ? c.directors[i].RangefinderM : 0).ThenBy(i => i))
                 {
                     links.Add(d);
                     if (c.directors[d].RangefinderM > rf)
@@ -650,6 +658,12 @@ public static class ShipClassCompiler
             c.launchers = launchers.ToArray();
             c.torpedoes = torpedoes.ToArray();
         }
+
+        /// <summary>Within this of the centreline, a mount or director stands on it, m.</summary>
+        const double CentrelineM = 0.5;
+
+        /// <summary>The side a point athwartships stands on (+y starboard); none given is the centreline.</summary>
+        static Side SideOf(double y) => !(Math.Abs(y) >= CentrelineM) ? Side.Centre : y > 0 ? Side.Starboard : Side.Port;
 
         static string KindName(ShellKind k) => k switch { ShellKind.Ap => "AP", ShellKind.Common => "common", _ => "HE" };
 
@@ -800,6 +814,7 @@ public static class ShipClassCompiler
             foreach (var b in c.batteries)
             {
                 h.Add((int)b.Kind);
+                h.Add((int)b.Side);
                 h.Add(c.Links(b.Mounts));
                 h.Add(c.Links(b.Directors));
                 h.Add(b.Shells.Count);

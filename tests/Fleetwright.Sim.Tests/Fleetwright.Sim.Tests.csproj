@@ -2,6 +2,10 @@
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
+    <!-- No background GC: one started by a test running alongside skews another thread's
+         GC.GetAllocatedBytesForCurrentThread by a few KB of its allocation quantum, so the "allocates nothing" tests
+         failed on garbage nobody made (pure arithmetic blamed). Blocking GCs count exactly. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>

@@ -234,6 +234,9 @@ public enum FireControlLevel : byte
 public readonly record struct BatteryRow
 {
     public Battery Kind { get; init; }
+    /// <summary>The side its mounts stand on: a secondary gun's port, starboard and centreline mounts are three batteries,
+    /// each with its own fire control and target; a main battery is one whatever the side (None).</summary>
+    public Side Side { get; init; }
     public double CalibreMm { get; init; }
     public double CalibreLength { get; init; }
     /// <summary>Its mounts (Links: mount indices) and their barrels.</summary>
@@ -254,6 +257,15 @@ public readonly record struct BatteryRow
     public double PatternPct { get; init; }
 
     public bool Local => Directors.Count == 0;
+
+    /// <summary>Its guns for a label: "6 x 152mm", a secondary side's with P, S or C after it.</summary>
+    public string Label => FormattableString.Invariant($"{Guns} x {CalibreMm:0}mm") + Side switch
+    {
+        Side.Port => " P",
+        Side.Starboard => " S",
+        Side.Centre => " C",
+        _ => "",
+    };
 }
 
 /// <summary>The hull's own plating (Shipgen's HullPlates): the side shell amidships (MidX0..MidX1) and at the ends,
