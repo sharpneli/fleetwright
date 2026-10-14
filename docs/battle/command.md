@@ -772,6 +772,85 @@ game minute (the captains 23%, the admirals 4%).
 - By night every heavy unit goes home; keeping between the enemy and his home (Jellicoe's night) is a fine-tune.
 - Navy presets (the Germans' outgunned ratio against the whole Grand Fleet) and the aims Avoid and Reach.
 
+**The order from here** (the user, 2026-10-14, after 5.1d): with something to play, the next work is **5.1g** (the
+matchup, below), then the **UI rework** (5.2, from the command UI research; the placeholders so far are clunky), then
+the **VFX pass**, then the **detail passes** on the systems (fighting.md's fine-tune tier, doctrine presets, the AI
+playing well). **5.1e** (signals) and **5.1f** (the whole) come late, after those. 5.1g is numbered after them since it
+was added last (as fighting.md's 4.11), and built first.
+
+**5.1g The matchup: who can fight whom.** (Agreed with the user 2026-10-14.)
+
+*Why.* Two rules are absolute today. The commander's roles: a unit is heavy by main guns of `HeavyGunMm` (8") or more,
+only heavy units close the enemy, and a side with no heavy unit declines nothing. And `Strength`, one number per ship
+(main guns × (calibre / 12")³), which Fight's outgunned test, a scout's judgement and the commander's balance compare:
+it ignores torpedoes, armour and who the opponent is. A light cruiser's 6" counts the same against a destroyer as
+against a battleship, and a flotilla counts for nearly nothing, so torpedo craft press home only through a special case
+(4.6: they close whatever guns they face). What the user asked for is relative:
+
+- a light cruiser against a destroyer should be confident, and attack it;
+- light cruisers without torpedoes should avoid battleships like no tomorrow;
+- a pack of destroyers can challenge a battleship, and so can a squadron of light cruisers with torpedoes.
+
+*The measure.* Not a strength but a matchup: how fast A can sink B, and B sink A, and the ratio of the two (how many of
+B's ships A sinks for each of its own lost). One pure function, read by everything that judges a fight:
+
+- **Guns,** A on B: per battery, guns × rounds a minute × the chance of a hit on B (B's size, A's fire-control level,
+  at A's fighting range) × what a hit does to B (the shell's effect, times whether it gets through B's belt, deck and
+  turret faces at that range: the penetration fit of `Terminal`), over B's toughness (the hits that sink her, an
+  expectation from her displacement and reserve buoyancy; the damage research's warning stands: hit count is a poor
+  predictor of one ship, an average over many is what this needs). A 6" that can't pass a battleship's belt does little to
+  her and a great deal to a destroyer.
+- **Torpedoes,** A on B: tubes and torpedoes × the chance of a hit (B's size and speed, the torpedo's speed and range) ×
+  the warhead against B's toughness and torpedo protection, times the share of A's boats that get to firing range
+  through the fire of B's guns that bear on them (secondaries at their full rate, the mains at less) over the run in.
+  B's defence is shared among A's boats, so numbers saturate it: one destroyer against a battleship dies on the way in,
+  a flotilla of eight gets there. Against small, fast ships torpedoes count for little, as in the era.
+- **Groups:** summed over the classes on each side (a handful), each side's fire spread over the other's ships by
+  tonnage, never ship against ship pairs. A class's profile (its batteries, protection, size, speed, torpedoes and
+  defence against craft) is compiled once with the class; a pair of profiles is a few multiplications.
+- **What's known:** own ships exactly; the enemy as the picture takes him (the class he's taken for, a type's profile
+  until it's made out, replacing `FightTypeGuns`), so a mistaken class misleads, as it should.
+- **Speed** is its own output, not folded into the ratio: who can force a fight and who can refuse it. Declining only
+  works for the faster side; a slow unit that can't get away fights.
+- **Confidence** is the ratio against doctrine's `OutgunnedRatio` (scaled by aggression, as now).
+
+*v0 is analytic.* The coarse tier (fighting.md 4.8 and 4.9) is to build exactly this kind of table by class pair (hits to
+sink, hit rates by range) by simulating the fine model. v0 is a formula over the class data compiled already; its
+inputs are the ones the coarse tables will fill, so they can replace it later without changing its readers.
+
+*What it replaces* (one implementation; `Strength` goes):
+
+- Fight's outgunned test, and the turn-away when outgunned.
+- A scout's "too strong for it" (Scout shadows instead of fighting).
+- The commander: his target (the enemy group his side can best take on, or the gravest threat); who closes it (every
+  unit confident against it, not "heavy" units: `HeavyGunMm` and the heavy role go, the main body stays as the
+  strongest, for support); declining (his side against what he holds, and only if he can get away); sending a flotilla
+  in (when its matchup against the enemy line says so: `CommanderAttackStrength` goes).
+- The torpedo craft's exception in Fight: the matchup says when a pack presses in.
+- Left as they are for now: the tactical picture's capital ships (the deployment's "main body") and the turn-away from
+  torpedoes' threat test (torpedo craft closing).
+
+*The pieces.*
+
+1. **A class's profile and a pair.** `Sim.Combat/Matchup` (pure, beside `Terminal` and `Fitness`): profiles compiled with
+   the class, and A against B: each side's rate on the other, the ratio, the terms behind them. A bench, `shipgen
+   matchup A[:n] B[:n] [--range M]`, prints them. Checked on the cases above (a light cruiser and a destroyer; a light
+   cruiser without torpedoes and a dreadnought; one destroyer and a dreadnought; eight destroyers and one; light cruisers
+   with torpedoes and a dreadnought) and on even ones (a dreadnought and her sister about 1; Lion and Derfflinger; Queen
+   Elizabeth and Iron Duke); the hit chances against `shipgen duel`'s, the toughness against `shipgen hits` and
+   `shipgen torpedo` (the hits that sink, on average).
+2. **Groups and what's known.** Group against group from their classes and counts, own exact, the enemy as taken for,
+   types' profiles for contacts not made out; and the speed output. Tests: the saturation (n destroyers against one
+   battleship, the ratio rising with n past one), a mistaken class misleading, the same answer both ways round.
+3. **Onto its readers.** Fight, the scout, the commander (target, closing, declining with speed, flotillas sent in), the
+   torpedo craft's exception; `Strength`, `HeavyGunMm`, `CommanderAttackStrength` and `FightTypeGuns` retired. Measured:
+   `squadrons`, `flotilla`, Tsushima and the Jutland over 5 seeds against the numbers after 5.1d; the cases the user named
+   played out (a light cruiser hunting a destroyer and running from a battleship; a flotilla going in on a battleship);
+   allocation-free; replays; cost.
+
+*Not in it:* the coarse tables themselves (4.8), so no simulating fights ahead; the matchup is a judgement of the
+odds, not a forecast of the battle.
+
 **5.1e Signals and flagships.**
 
 - **Flagships,** flag delays, searchlights by night, wireless, and missed signals, as above; the order in transit in
