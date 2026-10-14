@@ -427,6 +427,15 @@ Bottom-up, so each layer is built on one that already behaves.
    track out to its run; neither counts the first `FireFoulNearM` off the shooter. A friend is his side, or one at peace
    with it. The Jutland's own-fire losses 4 → 1 (it plays in 107 s, from 124: fewer shells into its own lines);
    `squadrons`, `flotilla` and Tsushima much as after piece 2.
+4. **Evasion under fire.** Doctrine's `Evasion` (steady or zigzag), `EvadeDeg` (30°), `EvadeLegS` (75 s) and
+   `EvadeBeyondM` (10 km); the default preset zigzags. Who's under fire, and from how near, is read once a think from
+   the batteries' targets (a ship knows she's shot at). A ship running from fire beyond the range (Fight turned away,
+   falling out) zigzags about the course she wants, each ship on her own phase; a torpedo craft on her attack whatever
+   the range, steady within `EvadeSteadyShare` of her attack range to fire. A ship on station keeps it (the line's
+   evasion is 5.1b's). Weaving and chasing salvos are left for later: chasing needs a ship to know which splashes were
+   meant for her. Measured: running from a battleship at 14 km for 15 minutes, a light cruiser took 0 hits zigzagging
+   and 4 steady over 4 seeds (no statistic, the right way round). The flotilla's boats lose 3.4 of 6 (from 4.6) and hit
+   more (Britain loses 1.2 of 4, from 0.8): the research's run-in weave.
 
 **5.1b The squadron's tactics.**
 

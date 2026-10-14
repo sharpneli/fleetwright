@@ -16,6 +16,12 @@
     "FallOutListDeg": 10,
     "FallOutWaterShare": 0.5,
     // torpedoes "at will" or "on order" (only at a ship it's ordered to engage)
-    "Torpedoes": "at will"
+    "Torpedoes": "at will",
+    // under fire: "steady" or "zigzag" (30° either side of the course wanted, 75 s legs), when running from fire beyond
+    // 10 km, and a torpedo craft on its run-in (research/simulation/evasion-research.md §10)
+    "Evasion": "zigzag",
+    "EvadeDeg": 30,
+    "EvadeLegS": 75,
+    "EvadeBeyondM": 10000
   }
 }

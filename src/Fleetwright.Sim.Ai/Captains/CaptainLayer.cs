@@ -346,6 +346,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
 
     public void Think(in AiContext ctx)
     {
+        MarkUnderFire(ctx);
         for (int i = 0; i < count; i++)
         {
             ref var cap = ref captains[i];
@@ -380,7 +381,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             }
             if (cap.Order == CaptainOrder.Home)
             {
-                HomeThink(ctx, ref cap, own);
+                HomeThink(ctx, ref cap, own, slot);
                 continue;
             }
             int target = new Unit(cap.Target).ShipOf(groups);

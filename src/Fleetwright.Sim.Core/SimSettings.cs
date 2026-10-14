@@ -565,6 +565,10 @@ public sealed record SimSettings
     /// where its shells come down (from FireFoulBeforeM short of the target to FireFoulM past it), a torpedo's while one
     /// is within TorpedoFoulM of its track; neither counts the first FireFoulNearM off the shooter. m; the grid's cube.</summary>
     public double FireFoulM { get; init; } = 400;
+
+    /// <summary>A torpedo craft holds steady (stops evading) within this share of her attack range, to fire
+    /// (docs/battle/command.md 5.1a; the evasion research's 30 s before the launch).</summary>
+    public double EvadeSteadyShare { get; init; } = 1.25;
     public double FireFoulBeforeM { get; init; } = 2_000;
     public double FireFoulNearM { get; init; } = 300;
     public double TorpedoFoulM { get; init; } = 400;

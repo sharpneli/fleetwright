@@ -192,6 +192,7 @@
   "FightCompareM": 30000,
   "FightRallyShare": 0.75,
   "FireFoulM": 400,
+  "EvadeSteadyShare": 1.25,
   "FireFoulBeforeM": 2000,
   "FireFoulNearM": 300,
   "TorpedoFoulM": 400,

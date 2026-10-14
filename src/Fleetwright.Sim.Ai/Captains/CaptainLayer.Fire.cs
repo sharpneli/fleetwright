@@ -37,6 +37,8 @@ public sealed partial class CaptainLayer
 {
     readonly List<int> fighters = new(64);
     readonly LineOfFire lines = new();
+    double[] underFire = [];   // by slot: the range of the nearest enemy battery on her, m (0: none), as of this think
+    bool anyUnderFire;
     readonly List<(int Ship, double AsternM, double AbeamM)> unitLine = new(16);
     int fighting;          // ships with a battery engaged after the last pass
     bool fightingFine;     // any of them on the fine tick
@@ -395,8 +397,12 @@ public sealed partial class CaptainLayer
         {
             // the attack: in to the torpedoes' range whatever guns he faces, fire, away, and in again
             cap.FightAway = cap.TorpedoMs != 0 && ctx.NowMs - cap.TorpedoMs < s.TorpedoTurnAwayMs;
+            double attack = s.TorpedoAttackShare * FastSetting(cls).RangeM;
             var (course0, kn0) = cap.FightAway ? Behaviours.Run(own, t)
-                : Behaviours.Fight(own, t, s.TorpedoAttackShare * FastSetting(cls).RangeM, s.FightBandShare, s.FightCloseDeg, ref cap.FightSide);
+                : Behaviours.Fight(own, t, attack, s.FightBandShare, s.FightCloseDeg, ref cap.FightSide);
+            // under fire on the run-in, and away after: evading, but steady for the last of it (the research: hold for the launch)
+            if (cap.FightAway || Earth.Distance(own.Position, t.Position) > s.EvadeSteadyShare * attack)
+                course0 = Evade(ctx, own, slot, course0, attackRun: true);
             Give(ctx, own, course0, cap.LimitKn > 0 ? Math.Min(kn0, cap.LimitKn) : kn0);
             return;
         }
@@ -405,6 +411,8 @@ public sealed partial class CaptainLayer
         double ratio = doctrine.Of(own.Entity, own.Side, DoctrineField.OutgunnedRatio);
         cap.FightAway = cap.FightAway ? theirs > ours * ratio * s.FightRallyShare : theirs > ours * ratio;
         var (course, kn) = cap.FightAway ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, band, s.FightBandShare, s.FightCloseDeg, ref cap.FightSide);
+        if (cap.FightAway)
+            course = Evade(ctx, own, slot, course, attackRun: false);
         if (cap.LimitKn > 0)
             kn = Math.Min(kn, cap.LimitKn);
         Give(ctx, own, course, kn);
@@ -443,14 +451,14 @@ public sealed partial class CaptainLayer
     /// <summary>Out of the fight, each second: away from the nearest enemy his navy holds in sight within
     /// <see cref="SimSettings.FightCompareM"/>, else for his side's home (great circle), at all she can make; stopped
     /// within <see cref="SimSettings.HomeRadiusM"/> of it. With no home and nobody near he keeps his course.</summary>
-    void HomeThink(in AiContext ctx, ref Captain cap, ShipState own)
+    void HomeThink(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         var s = ctx.Settings;
         double flank = own.Handling.Class.Motion.MaxSpeedKn;
         if (Nearest(ctx, own, s.FightCompareM, out var t) != 0)
         {
             var (course, kn) = Behaviours.Run(own, t);
-            Give(ctx, own, course, kn);
+            Give(ctx, own, Evade(ctx, own, slot, course, attackRun: false), kn);
             return;
         }
         if (homes[own.Side] is not { } home)
@@ -463,6 +471,53 @@ public sealed partial class CaptainLayer
             return;
         }
         Give(ctx, own, Earth.Bearing(own.Position, home), flank);
+    }
+
+    /// <summary>Which ships are under fire, and from how near: every fighting ship's batteries' targets, once a think (a
+    /// ship knows when she's shot at: the flashes, the splashes). Before the behaviours, from the targets the last pass
+    /// set.</summary>
+    void MarkUnderFire(in AiContext ctx)
+    {
+        var store = ctx.Ships;
+        if (underFire.Length < store.Slots)
+            underFire = new double[Math.Max(store.Slots, underFire.Length * 2)];
+        if (anyUnderFire)
+            Array.Clear(underFire);
+        anyUnderFire = false;
+        if (fighting == 0)
+            return;
+        for (int k = 0; k < store.OffRailsCount; k++)
+        {
+            int slot = store.OffRailsSlot(k);
+            if (store.Combat.Engaged(slot) == 0)
+                continue;
+            var shooter = store[slot];
+            for (int b = 0; b < shooter.Handling.Class.Batteries.Length; b++)
+                if (store.Combat.Target(slot, b) is int t and > 0 && store.SlotOf(t) is int ts and >= 0)
+                {
+                    double r = Earth.Distance(shooter.Position, store[ts].Position);
+                    if (underFire[ts] == 0 || r < underFire[ts])
+                        underFire[ts] = r;
+                    anyUnderFire = true;
+                }
+        }
+    }
+
+    /// <summary>The course a ship under fire steers for one she wants (docs/battle/command.md 5.1a; the evasion research's
+    /// styles): doctrine's zigzag, legs of <see cref="DoctrineField.EvadeLegS"/> either side by
+    /// <see cref="DoctrineField.EvadeDeg"/>, each ship on her own phase. A running ship evades fire from beyond
+    /// <see cref="DoctrineField.EvadeBeyondM"/> only; a torpedo craft on her attack whatever the range.</summary>
+    double Evade(in AiContext ctx, ShipState own, int slot, double course, bool attackRun)
+    {
+        double near = slot < underFire.Length ? underFire[slot] : 0;
+        if (near == 0 || (Evasion)doctrine.Of(own.Entity, own.Side, DoctrineField.Evasion) != Evasion.Zigzag)
+            return course;
+        if (!attackRun && near < doctrine.Of(own.Entity, own.Side, DoctrineField.EvadeBeyondM))
+            return course;
+        long leg = Math.Max(1, (long)(doctrine.Of(own.Entity, own.Side, DoctrineField.EvadeLegS) * 1000));
+        long phase = own.Entity * 7_919L % leg;   // not every ship on the same leg
+        double swing = doctrine.Of(own.Entity, own.Side, DoctrineField.EvadeDeg);
+        return ((ctx.NowMs + phase) / leg % 2 == 0 ? course + swing : course - swing + 360) % 360;
     }
 
     /// <summary>The nearest contact his navy holds in sight within a radius, as a sighting; 0 if none.</summary>

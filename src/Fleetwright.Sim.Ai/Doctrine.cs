@@ -30,6 +30,19 @@ public enum DoctrineField : byte
 
     /// <summary>Whether captains fire torpedoes at will (<see cref="TorpedoUse"/>).</summary>
     Torpedoes,
+
+    /// <summary>How a ship under fire spoils the enemy's aim (<see cref="Evasion"/>; research/simulation/evasion-research.md §2).</summary>
+    Evasion,
+
+    /// <summary>A zigzag's swing either side of the course she wants, degrees...</summary>
+    EvadeDeg,
+
+    /// <summary>...and how long each leg, seconds.</summary>
+    EvadeLegS,
+
+    /// <summary>A running ship evades fire from beyond this range only, m: closer, the dodge buys nothing (the research's
+    /// "steady inside ~10 kyd").</summary>
+    EvadeBeyondM,
 }
 
 /// <summary>Doctrine's Engage: carry on with the orders given (firing at will), or Fight (and turn away when outgunned).</summary>
@@ -37,6 +50,13 @@ public enum Engage : byte
 {
     CarryOn,
     Fight,
+}
+
+/// <summary>Doctrine's Evasion: hold the course wanted, or zigzag about it. Weaving and chasing salvos come later.</summary>
+public enum Evasion : byte
+{
+    Steady,
+    Zigzag,
 }
 
 /// <summary>Doctrine's Torpedoes: at will, or only on order.</summary>
@@ -53,7 +73,7 @@ public enum TorpedoUse : byte
 /// per unit; a command sets one value, so it's logged and replays. AI state: only captains and admirals read it.</summary>
 public sealed class Doctrine(GroupSystem groups)
 {
-    public const int FieldCount = (int)DoctrineField.Torpedoes + 1;
+    public const int FieldCount = (int)DoctrineField.EvadeBeyondM + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -65,6 +85,10 @@ public sealed class Doctrine(GroupSystem groups)
         DoctrineField.FallOutListDeg => 90,
         DoctrineField.FallOutWaterShare => 2,
         DoctrineField.Torpedoes => (double)TorpedoUse.AtWill,
+        DoctrineField.Evasion => (double)Ai.Evasion.Steady,
+        DoctrineField.EvadeDeg => 30,
+        DoctrineField.EvadeLegS => 75,
+        DoctrineField.EvadeBeyondM => 10_000,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
@@ -174,6 +198,7 @@ public sealed class DoctrinePresets
         {
             DoctrineField.Engage when Enum.TryParse<Engage>(name, ignoreCase: true, out var e) => (f, (double)e),
             DoctrineField.Torpedoes when Enum.TryParse<TorpedoUse>(name, ignoreCase: true, out var t) => (f, (double)t),
+            DoctrineField.Evasion when Enum.TryParse<Evasion>(name, ignoreCase: true, out var ev) => (f, (double)ev),
             _ => throw new ArgumentException($"doctrine: \"{v}\" isn't a value of {field}"),
         };
     }
