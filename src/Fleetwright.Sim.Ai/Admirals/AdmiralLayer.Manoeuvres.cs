@@ -103,12 +103,12 @@ public sealed partial class AdmiralLayer
     bool TurnAway(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
     {
         var guide = ctx.Ships[lead];
-        if (groups.InForceLine(g))
+        if (groups.InForceLine(g) || a.Order == CaptainOrder.Screen)   // its force turns; a screen counter-attacks
             return false;
         double deg = doctrine.OfGroup(g, guide.Side, DoctrineField.TurnAwayDeg);
         if (!a.Away && (deg <= 0 || CaptainLayer.TorpedoCraft(ctx, guide, lead)))
             return false;
-        bool threat = TorpedoThreat(ctx, g, guide, out double bearing);
+        bool threat = TorpedoThreat(ctx, g, guide, out double bearing, out _);
         long now = ctx.NowMs;
         if (a.Away)
         {
@@ -132,16 +132,23 @@ public sealed partial class AdmiralLayer
     /// <summary>Whether a line sees a torpedo attack coming: an enemy its navy takes for a torpedo craft within
     /// <see cref="SimSettings.TorpedoThreatM"/> of a ship of the line and closing on her faster than
     /// <see cref="SimSettings.TorpedoThreatClosingMs"/>, or a ship of it combing a track her lookouts saw; and the bearing
-    /// from the guide it comes from (the nearest such craft, else the nearest enemy in sight). Never without a bearing.</summary>
-    bool TorpedoThreat(in AiContext ctx, GroupSystem.Group g, ShipState guide, out double bearing)
+    /// from the guide it comes from (the nearest such craft, <paramref name="craft"/>; else the nearest enemy in sight). Never
+    /// without a bearing.</summary>
+    bool TorpedoThreat(in AiContext ctx, GroupSystem.Group? g, ShipState guide, out double bearing, out int craft)
     {
-        bearing = 0;
+        (bearing, craft) = (0, 0);
         var s = ctx.Settings;
         var ships = ctx.Ships;
         var pic = ctx.World.Sightings.Of(guide.Side);
         if (pic == null)
             return false;
-        groups.LineOffsets(g, line);
+        if (g != null)
+            groups.LineOffsets(g, line);
+        else
+        {
+            line.Clear();
+            line.Add((guide.Entity, 0, 0));   // a ship alone
+        }
         double reach = 0;
         bool tracks = false;
         foreach (var (ship, astern, abeam) in line)
@@ -169,7 +176,7 @@ public sealed partial class AdmiralLayer
                 if (r > s.TorpedoThreatM || r < 1 || Vec3d.Dot(v - own.Forward * own.Speed, to) / r < s.TorpedoThreatClosingMs)
                     continue;
                 if (d < craftD)
-                    (craftD, bearing) = (d, Earth.Bearing(guide.Position, q));
+                    (craftD, bearing, craft) = (d, Earth.Bearing(guide.Position, q), pic[i].Entity);
                 break;
             }
         }

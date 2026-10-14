@@ -358,6 +358,16 @@ public sealed unsafe partial class MapScene
                     world.Send(GroupSystem.Add(id, e));
                 picked.Clear();
             }
+            // a placeholder until 5.2: this squadron screens the first picked ship's (docs/battle/command.md 5.1b)
+            if (gv.IndexOfShip(picked[0]) is int sg and >= 0 && sg != g)
+            {
+                ImGui.SameLine();
+                if (ImGui.Button($"Screen {gv.Name[sg]}"))
+                {
+                    world.Send(o.Screen(Unit.Group(id), Unit.Group(gv.Id[sg])));
+                    picked.Clear();
+                }
+            }
         }
 
         // the force it's in

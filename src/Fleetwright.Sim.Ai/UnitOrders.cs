@@ -112,6 +112,11 @@ public enum AiCommand : ushort
     /// contact; 0: the biggest in sight): ahead of its beam, in together, a spread on one signal, away together, and again
     /// while it has torpedoes. To a ship alone, Fight on it (4.6's attack, for a torpedo craft).</summary>
     Attack,
+
+    /// <summary>Screen a unit (docs/battle/command.md 5.1b): A the unit screened, X how far off it, m (0: the settings').
+    /// A group keeps that far off its guide toward the enemy (ahead while none is in sight), and fights enemy torpedo
+    /// craft closing on it until they're beaten off. To a ship alone, a station that far ahead of the unit.</summary>
+    Screen,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -184,6 +189,11 @@ public readonly struct UnitOrders(byte system)
     /// <summary>A group's formation and spacing (and a line of bearing's bearing).</summary>
     public Command Form(Unit u, Formation formation, double spacingM, double bearingDeg = 0, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Form, u, source, a: (long)formation, x: spacingM, y: bearingDeg);
+
+    /// <summary>Screen another unit of the same side: keep a distance off it toward the enemy (0: the settings'), and
+    /// counter-attack enemy torpedo craft closing on it.</summary>
+    public Command Screen(Unit u, Unit screened, double distanceM = 0, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.Screen, u, source, a: screened.Id, x: distanceM);
 
     /// <summary>A flotilla's torpedo attack on a contact (a ship's entity; 0: the biggest in sight).</summary>
     public Command Attack(Unit u, int contact = 0, OrderSource source = OrderSource.Player) => Make(AiCommand.Attack, u, source, a: contact);

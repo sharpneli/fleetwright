@@ -37,6 +37,9 @@ public enum CaptainOrder : byte
     /// <summary>Out of the fight (docs/battle/command.md 5.1a, falling out): away from the enemy in sight, else for his
     /// side's home, at what she can make; stopped once there.</summary>
     Home,
+
+    /// <summary>A group's: screen another unit (docs/battle/command.md 5.1b), its admiral's; a captain never holds it.</summary>
+    Screen,
 }
 
 /// <summary>Why a captain does what he does, when it isn't simply his order (docs/battle/command.md "Reports and
@@ -322,6 +325,10 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 break;
             case AiCommand.Shadow:
                 (cap.Order, cap.Target, cap.DistanceM, cap.AbeamM) = (CaptainOrder.Shadow, (int)c.A, c.X, 0);
+                break;
+            case AiCommand.Screen:
+                // a ship alone: a station that far ahead of the unit (a group's admiral screens it properly)
+                (cap.Order, cap.Target, cap.DistanceM, cap.AbeamM) = (CaptainOrder.Station, (int)c.A, -(c.X > 0 ? c.X : ctx.Settings.ScreenM), 0);
                 break;
             case AiCommand.Fight or AiCommand.Attack:
                 (cap.Order, cap.Target, cap.DistanceM, cap.AbeamM) = (CaptainOrder.Fight, (int)c.A, code == AiCommand.Fight ? c.X : 0, 0);

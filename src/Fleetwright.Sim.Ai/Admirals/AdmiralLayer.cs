@@ -59,6 +59,10 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public bool AttackOrdered;      // told to Attack (else by doctrine)
         public int AttackTarget, AttackShips, AttackSide;   // the ship; the boats it came in with; the side of him it gains (±1)
         public long AttackMs;           // when the phase began
+        public int ScreenOn;            // screening (AdmiralLayer.Screen.cs): the ship his station was given on (0: none yet)
+        public double ScreenAstern, ScreenAbeam;
+        public int ScreenFight;         // the enemy torpedo craft he's counter-attacking (0: none)
+        public long ScreenThreatMs;     // when he last saw one closing
     }
 
     Admiral[] admirals = new Admiral[8];
@@ -205,6 +209,10 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             case AiCommand.LoopRoute:
                 a.Loop = c.X != 0;
                 break;
+            case AiCommand.Screen:
+                (a.Order, a.Target, a.DistanceM, a.AbeamM) = (CaptainOrder.Screen, (int)c.A, c.X > 0 ? c.X : ctx.Settings.ScreenM, 0);
+                (a.ScreenOn, a.ScreenFight, a.AttackOrdered) = (0, 0, false);
+                break;
             case AiCommand.Attack:
                 (a.Order, a.Target, a.DistanceM, a.AbeamM) = (CaptainOrder.Fight, Unit.Ship((int)c.A).Id, 0, 0);
                 (a.AttackOrdered, a.Attack, a.AttackTarget) = (true, AttackPhase.None, 0);   // from a fresh start
@@ -300,6 +308,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             TakeUpStanding(ctx, g, a, lead);
             if (TurnAway(ctx, g, a, lead))
                 continue;   // turning together: no stations until it's round
+            ScreenStep(ctx, g, a);
             if (AttackStep(ctx, g, a, lead))
                 continue;   // the flotilla turning together to fire
             if (a.Fire == FireOrder.Engage)
@@ -382,7 +391,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
     {
         int lead = ctx.Ships.SlotOf(groups.GuideShip(g));
         var to = GuideUnit(g);
-        if (a.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.Fight or CaptainOrder.None && lead >= 0 && to.Id != 0)
+        if (a.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.Fight or CaptainOrder.Screen or CaptainOrder.None && lead >= 0 && to.Id != 0)
         {
             (a.Order, a.CourseDeg, a.RudderDeg, a.RouteCount, a.Loop) = (CaptainOrder.Course, double.NaN, 0, 0, false);
             a.AskedKn = ctx.Ships[lead].SpeedOrderKn;
@@ -447,6 +456,14 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 break;
             case CaptainOrder.Fight:
                 ctx.Issue(o.Fight(to, new Unit(a.Target), a.DistanceM, Up));
+                break;
+            case CaptainOrder.Screen:
+                if (a.ScreenFight != 0)
+                    ctx.Issue(o.Fight(to, Unit.Ship(a.ScreenFight), 0, Up));
+                else if (a.ScreenOn != 0)
+                    ctx.Issue(o.Station(to, Unit.Ship(a.ScreenOn), a.ScreenAstern, a.ScreenAbeam, Up));
+                else
+                    ctx.Issue(o.Hold(to, Up));   // given its station by the next think
                 break;
         }
         if (!double.IsNaN(a.AskedKn))
@@ -551,6 +568,14 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 h.Add(a.AwayDeg);
                 h.Add(a.AwayCourse);
                 h.Add(a.ThreatMs);
+            }
+            if (a.Order == CaptainOrder.Screen)
+            {
+                h.Add(a.ScreenOn);
+                h.Add(a.ScreenAstern);
+                h.Add(a.ScreenAbeam);
+                h.Add(a.ScreenFight);
+                h.Add(a.ScreenThreatMs);
             }
             if (a.Attack != AttackPhase.None || a.AttackOrdered)
             {

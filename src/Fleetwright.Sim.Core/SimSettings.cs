@@ -610,6 +610,11 @@ public sealed record SimSettings
     /// <summary>A flotilla's signal to fire holds this long: each boat fires once as her tubes bear, s.</summary>
     public double AttackFireS { get; init; } = 60;
 
+    /// <summary>A screen (docs/battle/command.md 5.1b) keeps ScreenM off the unit it screens unless told otherwise, and is
+    /// given a new station only when the bearing to the enemy moves it more than ScreenMoveM. m.</summary>
+    public double ScreenM { get; init; } = 5_000;
+    public double ScreenMoveM { get; init; } = 1_000;
+
     /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
     /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>
     public double[] FightTypeGuns { get; init; } = [1, 8, 1, 0.1, 0, 0];

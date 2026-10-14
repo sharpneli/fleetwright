@@ -118,7 +118,7 @@ public sealed partial class AdmiralLayer
             return;
         var ships = ctx.Ships;
         var guide = ships[lead];
-        if ((Engage)doctrine.OfGroup(g, guide.Side, DoctrineField.Engage) != Engage.Fight)
+        if (a.Order == CaptainOrder.Screen || (Engage)doctrine.OfGroup(g, guide.Side, DoctrineField.Engage) != Engage.Fight)
             return;
         if (ctx.World.Encounters.Of(lead, guide.Entity) == 0)
         {
