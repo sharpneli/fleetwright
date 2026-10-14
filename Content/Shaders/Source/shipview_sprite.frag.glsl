@@ -2,7 +2,8 @@
 #extension GL_GOOGLE_include_directive : require
 // Ship viewer: a baked sprite (premultiplied alpha), lit as on the map (Include/shiplight.glsl; the eye straight
 // above), or a turret's shadow, its silhouette projected by the receiver's height (Include/shipshadow.glsl). A turret
-// takes the hull's shadow at its roof's height (drawn after the hull's shadow pass).
+// takes the hull's shadow at its roof's height (drawn after the hull's shadow pass); a casemate is hidden where the
+// hull stands over its cover.
 layout(location = 0) in vec2 fragUv;
 layout(location = 1) in vec2 fragShip;
 
@@ -19,7 +20,8 @@ layout(set = 3, binding = 0) uniform Params
     vec4 moonL;   // xyz: toward the moon
     vec4 shadow;  // the shadows' light: xy toward it (ship-local), z tan(elevation), w opacity
     vec4 march;   // the hull's shadow: x step, m; y steps (0: none); z softness, m; w the height map's mip level
-    vec4 frame;   // a turret's shadow: the turret's uv (0, 0) corner and u edge, ship metres
+    vec4 frame;   // a turret's shadow: the turret's uv (0, 0) corner and u edge, ship metres; a turret: x the height the
+                  // hull covers it from (0: nothing does)
 };
 
 #define LIGHTS_BINDING 1
@@ -48,6 +50,8 @@ void main()
         outColour = vec4(0.0, 0.0, 0.0, shadowOver(a, hs, shadow.w) * p.z);
         return;
     }
+    if (p.w > 0.0 && frame.x > 0.0 && shadowHeight(heightTex, hmap, fragShip, 0.0) >= frame.x)
+        discard;   // a casemate, under the deck over it
     vec4 c = p.x < 0.0 ? texture(spriteTex, fragUv) : textureLod(spriteTex, fragUv, p.x);
     vec3 rgb = c.a > 0.0 ? c.rgb / c.a : vec3(0.0);
     const vec3 up = vec3(0.0, 0.0, 1.0);

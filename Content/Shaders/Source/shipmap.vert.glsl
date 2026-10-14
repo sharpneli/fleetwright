@@ -12,7 +12,7 @@ struct Quad
     vec4 u;      // xyz: the quad's edge along uv.x; w: opacity
     vec4 v;      // xyz: the edge along uv.y; w: the turret's roof, m over the waterline (silhouettes, turrets)
     vec4 ship;   // xy: ship-local metres at corner o; zw: the u edge in ship metres
-    vec4 shipV;  // xy: the v edge in ship metres; zw: unused
+    vec4 shipV;  // xy: the v edge in ship metres; z: the height the hull covers a turret from (0: nothing does); w: unused
     vec4 sun;    // the shadows' light (the stronger of sun and moon): xy: unit vector toward it, ship-local; z: tan(elevation); w: shadow opacity
     vec4 march;  // x: step, m; y: steps; z: softness, m; w: the height map's mip level
     vec4 hmap;   // height map uv = ship metres * xy + zw
@@ -34,7 +34,7 @@ layout(set = 1, binding = 0) uniform View
 
 layout(location = 0) out vec2 fragUv;
 layout(location = 1) out vec2 fragShip;
-layout(location = 2) flat out vec4 fragMode;    // x mode, y opacity, z roof
+layout(location = 2) flat out vec4 fragMode;    // x mode, y opacity, z roof, w cover
 layout(location = 3) flat out vec4 fragSun;
 layout(location = 4) flat out vec4 fragMarch;
 layout(location = 5) flat out vec4 fragHmap;
@@ -54,7 +54,7 @@ void main()
     gl_Position = vec4(dot(r, right.xyz) / right.w, dot(r, up.xyz) / up.w, depth.y * (z - depth.x) / (depth.y - depth.x), z);
     fragUv = t;
     fragShip = q.ship.xy + t.x * q.ship.zw + t.y * q.shipV.xy;
-    fragMode = vec4(q.o.w, q.u.w, q.v.w, 0.0);
+    fragMode = vec4(q.o.w, q.u.w, q.v.w, q.shipV.z);
     fragSun = q.sun;
     fragMarch = q.march;
     fragHmap = q.hmap;

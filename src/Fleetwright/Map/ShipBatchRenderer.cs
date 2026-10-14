@@ -364,7 +364,7 @@ public sealed class ShipDrawList
             }
             else
                 Emit(ref p, art, ox, oy, axx, axy, ayx, ayy, mode: 0, opacity: p.SpriteAlpha, roof: m.TopM, TurretTint(p, cm),
-                    p.Shadows ? HullMarch(p, art, m.TopM) : default);
+                    p.Shadows ? HullMarch(p, art, m.TopM) : default, CoverM(m));
         }
     }
 
@@ -393,6 +393,11 @@ public sealed class ShipDrawList
     /// <summary>The most steps a shadow's march takes.</summary>
     public const int MarchSteps = 256;
 
+    /// <summary>The height over the waterline from which the hull covers a mount: a casemate is under the deck over it
+    /// (or its housing's roof), so it shows only where the hull stands lower than half a deck under its roof, the shield
+    /// out past the side and the barrels; 0 for the others, which nothing covers. The map and the viewer both use it.</summary>
+    public static float CoverM(SpriteMount m) => m.Mount == "casemate" ? (float)(m.TopM - Fleetwright.Shipgen.Geometry.DeckPitch / 2) : 0f;
+
     void Icon(ref Placed p, bool selected)
     {
         // a fixed size on screen, along the heading: metres per pixel at the ship
@@ -403,7 +408,7 @@ public sealed class ShipDrawList
 
     /// <summary>A quad from ship-local metres: corner (ox, oy), edges (ux, uy) and (vx, vy).</summary>
     void Emit(ref Placed p, ShipArt? art, double ox, double oy, double ux, double uy, double vx, double vy, int mode, double opacity,
-        double roof, Vector4 tint, Vector4 march = default)
+        double roof, Vector4 tint, Vector4 march = default, float cover = 0)
     {
         if (quadCount == quads.Length)
             Array.Resize(ref quads, quads.Length * 2);
@@ -419,7 +424,7 @@ public sealed class ShipDrawList
             U = new Vector4((float)u.X, (float)u.Y, (float)u.Z, (float)opacity),
             V = new Vector4((float)v.X, (float)v.Y, (float)v.Z, (float)roof),
             Ship = new Vector4((float)ox, (float)oy, (float)ux, (float)uy),
-            ShipV = new Vector4((float)vx, (float)vy, 0, 0),
+            ShipV = new Vector4((float)vx, (float)vy, cover, 0),
             Sun = new Vector4(p.SunDir, (float)p.SunTan, (float)Lights.ShadowOpacity),
             March = march,
             Hmap = hmap,

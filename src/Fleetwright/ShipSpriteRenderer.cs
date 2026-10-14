@@ -380,6 +380,7 @@ public sealed unsafe class ShipSpriteRenderer : IDisposable
                     {
                         P = new(mip, 0, 1, top), HMap = hmap, SunL = InFrame(sunW, along), MoonL = InFrame(moonW, along),
                         Shadow = shadowL, March = shadows ? Map.ShipDrawList.HullMarch(maxH, top, k, lod, Scale) : default,
+                        Frame = new(Map.ShipDrawList.CoverM(m), 0, 0, 0),
                     });
                 }
             }

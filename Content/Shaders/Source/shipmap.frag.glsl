@@ -9,7 +9,7 @@
 // depth, with a pale wash along the new waterline. The hull, the turrets and the scorches are lit (Include/shiplight.glsl:
 // the sprite's normal and AO from its relief, its material from the look's; a scorch flat and rough); the silhouettes and the icons are not. A
 // turret takes the hull's shadow at its roof's height (drawn after the hull's shadow pass, which it would otherwise
-// get at the height under it).
+// get at the height under it). A casemate is under the deck over it: hidden where the hull stands over its cover.
 layout(location = 0) in vec2 fragUv;
 layout(location = 1) in vec2 fragShip;
 layout(location = 2) flat in vec4 fragMode;
@@ -103,6 +103,16 @@ void main()
             at = fragShip - heightAt(at) * slope;
         uv = at * fragHmap.xy + fragHmap.zw;
         if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0))))
+            discard;
+    }
+    if (fragMode.x < 0.5 && fragMode.w > 0.0)
+    {
+        // a casemate, under the deck over it: hidden where the hull that shows here (tilted, as above) stands over its cover
+        vec2 under = fragShip;
+        if (fragSea.w > 0.5)
+            for (int i = 0; i < 4; i++)
+                under = fragShip - heightAt(under) * fragSea.yz;
+        if (heightAt(under) >= fragMode.w)
             discard;
     }
     vec4 c = texture(spriteTex, uv);
