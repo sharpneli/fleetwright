@@ -639,6 +639,12 @@ public sealed record SimSettings
     public double DeployFormedM { get; init; } = 1_000;
     public long DeployMaxMs { get; init; } = 1_800_000;
 
+    /// <summary>Falling back on the main body (docs/battle/command.md 5.1c): a unit turned away from a stronger enemy runs
+    /// for the nearest own force within FallBackM that's a match for him, if that's within FallBackDeg of straight away.
+    /// m, degrees.</summary>
+    public double FallBackM { get; init; } = 150_000;
+    public double FallBackDeg { get; init; } = 100;
+
     /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
     /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>
     public double[] FightTypeGuns { get; init; } = [1, 8, 1, 0.1, 0, 0];

@@ -227,6 +227,8 @@
   "DeployM": 30000,
   "DeployFormedM": 1000,
   "DeployMaxMs": 1800000,
+  "FallBackM": 150000,
+  "FallBackDeg": 100,
   "FightTypeGuns": [1, 8, 1, 0.1, 0, 0],
   "SalvoCapacity": 256,
   "CombatLogCapacity": 4096,

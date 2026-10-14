@@ -458,10 +458,56 @@ public sealed partial class CaptainLayer
         cap.FightAway = cap.FightAway ? theirs > ours * ratio * s.FightRallyShare : theirs > ours * ratio;
         var (course, kn) = cap.FightAway ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, band, s.FightBandShare, s.FightCloseDeg, ref cap.FightSide);
         if (cap.FightAway)
-            course = Evade(ctx, own, slot, course, attackRun: false);
+            course = Evade(ctx, own, slot, FallBack(ctx, own, course, theirs), attackRun: false);
         if (cap.LimitKn > 0)
             kn = Math.Min(kn, cap.LimitKn);
         Give(ctx, own, course, kn);
+    }
+
+    /// <summary>Falling back on the main body (docs/battle/command.md 5.1c): turned away from an enemy of a strength, he
+    /// runs for the nearest own force (another top unit of his side) within <see cref="SimSettings.FallBackM"/> that's a
+    /// match for it, if that's within <see cref="SimSettings.FallBackDeg"/> of straight away; else straight away.</summary>
+    double FallBack(in AiContext ctx, ShipState own, double away, double theirs)
+    {
+        var s = ctx.Settings;
+        Forces(ctx);
+        var mine = groups.UnitOf(own.Entity);
+        double best = s.FallBackM;
+        double course = away;
+        for (int k = 0; k < forceCount; k++)
+        {
+            ref readonly var f = ref forces[k];
+            if (f.Side != own.Side || f.Strength < theirs || mine != null && f.GroupId == mine.GroupId)
+                continue;
+            double d = Earth.Distance(own.Position, f.At);
+            double toward = Earth.Bearing(own.Position, f.At);
+            double off = toward - away;
+            if (d < best && Math.Abs(off - 360 * Math.Round(off / 360)) <= s.FallBackDeg)
+                (best, course) = (d, toward);
+        }
+        return course;
+    }
+
+    // every side's top groups, where their guides are and their strength: made once a moment it's asked
+    (int GroupId, byte Side, Vec3d At, double Strength)[] forces = new (int, byte, Vec3d, double)[16];
+    int forceCount;
+    long forcesMs = long.MinValue;
+
+    void Forces(in AiContext ctx)
+    {
+        if (forcesMs == ctx.NowMs)
+            return;
+        (forcesMs, forceCount) = (ctx.NowMs, 0);
+        for (int k = 0; k < groups.Count; k++)
+        {
+            var g = groups[k];
+            if (g.Parent != 0 && groups.InForceLine(g) || ctx.Ships.SlotOf(groups.GuideShip(g)) is not (int slot and >= 0))
+                continue;
+            if (forceCount == forces.Length)
+                Array.Resize(ref forces, 2 * forces.Length);
+            var guide = ctx.Ships[slot];
+            forces[forceCount++] = (g.GroupId, guide.Side, guide.Position, Strength.OfGroup(groups, ctx.Ships, g, unitLine));
+        }
     }
 
     /// <summary>Whether his ship is past doctrine's fall-out (docs/battle/command.md 5.1a), judged when its condition
