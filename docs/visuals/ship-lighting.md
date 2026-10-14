@@ -1,7 +1,7 @@
-# Ship sprites lit: relief, materials, a sun
+# Ship sprites lit: relief, materials, sun and moon
 
 Agreed 2026-10-14. The ship sprites get a PBR-inspired model (albedo, normal, roughness, metallic, a little ambient
-occlusion), a sun and a mild moon, so plates catch the light, barrels show a line of specular on close zoom and
+occlusion), the sun and the moon, so plates catch the light, barrels show a line of specular on close zoom and
 brass shines. The sprites stay 2D: what's new is per-pixel surface data baked beside the colour and a richer sprite
 shader.
 
@@ -57,11 +57,16 @@ under today's if we ever need to (a CPU encoder on the building thread).
 - **Sun:** one directional light, its colour warming and dimming as the sun gets low, zero below the terminator
   (the same smoothstep the globe and `Light` use, so ships and sea darken together; time-lapse keeps today's
   day-average path).
-- **Moon:** at night a second directional light takes over as the sun goes, mild and cool, from opposite the sun
-  (a full moon's place) raised to a fixed elevation so it never grazes. Enough for the hull's relief and a faint glint
-  on wet-looking paint, never daylight. The light is display only and changes nothing the sim sees (night sight
-  stays starlight, `SimSettings`). The real moon (`Moon` in Sim.Core: its direction from a place and its phase, added
-  2026-10-14, nothing reads it yet) can replace it behind the same two uniforms (direction, colour).
+- **Moon:** the real one (`Moon` in Sim.Core): a second directional light, mild and cool, from
+  `Moon.Direction(view centre, t)` once a frame (its parallax across one view is far under a degree). Its strength is
+  the moon's light at that place, one function of time and place in Sim.Core beside `Moon` (the phase law: a half
+  moon about a tenth of a full one; nothing below the horizon; dimmer and warmer low down), so the sim's night sight
+  can read the same number when it learns the moon and the two can't disagree. The display maps that number to
+  brightness by eye: a full moon high gives the hull's relief and a faint glint on gloss paint, never daylight; a new
+  moon leaves only the ambient. By day it is there but lost under the sun.
+- **Shadows by the stronger light:** the height-map shadow and the turret silhouettes take the direction of whichever
+  light is stronger, crossfading through twilight, and their opacity follows that light. A full moon casts soft
+  shadows; a new-moon night has none. Same passes, a different vector.
 - **Diffuse:** Lambert, albedo x (1 - metallic).
 - **Specular:** GGX with Schlick Fresnel and the Smith term, F0 = 0.04 for paint, wood and canvas, the albedo for
   metal. Roughness widened by **Toksvig** from the mip-averaged normal's length, so a barrel's glint is sharp at
@@ -69,7 +74,10 @@ under today's if we ever need to (a CPU encoder on the building thread).
   zoom rule.
 - **Ambient:** a hemisphere: sky above, the sea's colour below (from `globe.frag`'s `DaySea`), times AO. Its
   colours and strength by day, at dusk and at night are tuned by eye, in one place (a small table of uniforms the
-  ship viewer's panel can edit live).
+  ship viewer's panel can edit live). Night has a readability floor: on a moonless night your own ships still read
+  as ships, not black cut-outs (today's 0.3 floor is the reference).
+- **Time-lapse** (`SunLapse.Motion` < 1): the moon goes the sun's way. Its light fades to the night's mean for the
+  phase, and its glints and shadows fade out, since a moon spinning round the sky would flicker.
 - **Environment:** metal with nothing to reflect looks black, and there is no cube map in a single pass. An analytic
   sky instead: the reflected ray's z picks zenith, horizon haze or sea, blurred toward the hemisphere's average by
   roughness, weighted by the Karis analytic env-BRDF fit. A few ALU, no textures.
@@ -78,9 +86,13 @@ under today's if we ever need to (a CPU encoder on the building thread).
 - **Calibration rule:** a flat, matte, up-facing pixel at the reference sun (high noon) comes out as today's colour.
   The look doesn't shift; it gains relief and glints. Step L1 checks this with a screenshot diff. This anchors the
   start only: the lights may move off it later by eye.
+- **Glints in shadow (an approximation):** the shadows are drawn over the lit sprite, darkening it by their opacity,
+  so a sun glint inside a shadow is dimmed, not removed. Glints are mostly on the turrets, which stand above most
+  shadows. If one shows where it shouldn't, the sprite shader can march the height map a few steps only where the
+  specular is bright, without another pass.
 
 **Frames for free.** The quad's own edges (u along the sprite's x, v along its y, metres from the eye) are its frame.
-The vertex shader takes the world's sun from the View uniform and projects it and the eye (-corner) onto
+The vertex shader takes the world's sun and moon from the View uniform and projects them and the eye (-corner) onto
 (u, v, up = v x u), normalised. A turret's quad is already turned to its bearing, so its light and view come out in
 its own frame at any bearing with nothing new per quad on the CPU. The eye per vertex also makes the glints slide a
 little as the map pans, as they would under a real camera.
@@ -98,13 +110,15 @@ height by a profile instead of a colour (later draws win, as the painter's order
 
 Only the cover shader learns these; stencil, winding and clip stay as they are. Draws carry the profile from a new
 `Style.Relief` (inherited like the fill), set where the art already knows the part: `TurretArt.Barrels`, the clutter's
-kits, the hull's columns.
+kits, the hull's columns. A draw with no profile leaves the relief alone: paint on a surface (dazzle, deck stripes,
+the hull number, recognition bands, plank lines) must not flatten what's under it.
 
 **Normals and AO** from the relief on the CPU, on the building thread (one implementation, headless, testable):
 blur ~1 px, Sobel, slopes clamped so a 3 m wall reads as a bright or dark rim a pixel or two wide rather than a black
 line. The rim on every block's edge is most of the realism; the cylinders and domes are the rest. AO from the
 relief: how far the surroundings stand above a pixel within a metre or two (the deck darkens along the deckhouse's
-foot, inside gun tubs, round the barbettes).
+foot, inside gun tubs, round the barbettes). Where the sprite is empty the normal is straight up, and the normal
+mips are weighted by coverage, so a silhouette's edge doesn't pick up the empty canvas's normal as it blurs.
 
 Turrets get their own relief (they have no height map now): the body a plateau at its roof over its deck, the barrels
 cylinders, the hoods domes or plateaus. Only the normals and AO use it; the turret shadows stay as they are.
@@ -134,11 +148,19 @@ A stylised sheen on painted steel stays possible per look (its materials table) 
 so `compile_shaders.bat`'s `*.glsl` loop doesn't compile it alone; glslangValidator's `#include` via
 `GL_GOOGLE_include_directive`). The sun in the View uniform, the quad frame in the vertex shader, linear-light
 lighting with a flat normal and one default material (gloss paint, roughness ~0.4), the sRGB round trip, the
-shoulder, the moon and the ambient table. The ship viewer and the poster go through the same shader: the poster's
-"lit" (a fixed sun) or "flat" (albedo as drawn: flat normal, no specular, ambient 1) is a switch in its uniforms, not
-another pipeline. Done when the reference-sun screenshot matches today's within a few levels, a low sun warms and
-dims the ships with the sea, night shows the ships faintly by the moon, and DevRelease frame time is unchanged within
-noise.
+shoulder, the ambient table, the moon (its light function in Sim.Core, with tests: none below the horizon, the phase
+law's half moon at about a tenth) and the shadows by the stronger light. The ship viewer and the poster go through
+the same shader: the viewer's panel gets moon controls beside the sun's (direction and phase, or a date), the
+poster's "lit" (a fixed sun) or "flat" (albedo as drawn: flat normal, no specular, ambient 1) is a switch in its
+uniforms, not another pipeline. Done when the reference-sun screenshot matches today's within a few levels, a low
+sun warms and dims the ships with the sea, a full-moon night shows the ships and their shadows faintly, a moonless
+one keeps them readable, and DevRelease frame time is unchanged within noise.
+
+**L1b. The sea under the moon (proposed, outside the sprites).** Moonlit ships on today's flat `NightSea` will look
+pasted on: the moon's path on the water is the strongest night cue there is. `globe.frag` already has the sun's
+glint; the moon's is the same lines with the moon's direction and light, and the night sea and land a little
+brighter by the moon. A few uniforms and lines in the globe's shader, no pass or pipeline change; it touches the
+globe, so it waits for a yes.
 
 **L2. Relief from the height map.** The relief bake mode, plateaus only, from the existing columns for the hull and
 from the turret drawing's own parts; the normal + AO texture, its mips, the upload, the binding. Block edges, funnels,
@@ -167,10 +189,15 @@ decided ahead.
 1. **Realistic first** (2026-10-14): plausible materials, glossy paint, metal only where it's bare (above).
 2. **The ink outlines** are settled by visual comparison at L2, through the outline knob.
 3. **The poster** is configurable, lit or flat, on the same shader as the sprites.
-4. **Night:** a mild moon and an ambient set by eye; display only.
+4. **Night:** the real moon (2026-10-14), its light one function in Sim.Core the display maps by eye; an ambient set
+   by eye with a readability floor. The display reads the sim's moon, never the reverse.
 5. **PBR-inspired:** a plausible BRDF, lights by eye.
 
 ## Open
 
+- **L1b, the sea under the moon:** yes or later (above).
+- **The sim's night sight and the moon:** sight is starlight only today (`SightNightM`), so a full-moon night shows
+  ships on screen that the sim says can't be seen past 5 km. That's for the night-sight system to settle (reading
+  the same light function); until it does, the display may look brighter than the sim's night.
 - **Spare channels:** the material texture has two free if it goes RGBA8: wetness (spray, rain later) and soot
   would fit there instead of in the scorch quads. Not needed until weather.
