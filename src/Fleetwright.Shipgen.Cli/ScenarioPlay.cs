@@ -115,6 +115,16 @@ static class ScenarioPlay
                     Fleetwright.Sim.Ai.Captains.CaptainReason.OutWater => "flooding",
                     _ => "her steering gone",
                 },
+                PlayEvent.Deployed => $"{SideName(l.Side)}'s {end.GroupName(l.Entity)} deploys into line of battle",
+                PlayEvent.Task => $"{SideName(l.Side)}'s {(l.Entity < 0 ? end.GroupName(-l.Entity) : Name(l.Entity))}: " +
+                                  $"{((Fleetwright.Sim.Ai.Tasks.TaskKind)(l.Other / 256)).ToString().ToLowerInvariant()} " +
+                                  (Fleetwright.Sim.Ai.Tasks.TaskState)l.Count switch
+                                  {
+                                      Fleetwright.Sim.Ai.Tasks.TaskState.InContact => "in contact",
+                                      Fleetwright.Sim.Ai.Tasks.TaskState.Done => "done",
+                                      _ => "can't",
+                                  } + ((Fleetwright.Sim.Ai.Tasks.TaskReason)(l.Other % 256) is var why && why is not (Fleetwright.Sim.Ai.Tasks.TaskReason.None or Fleetwright.Sim.Ai.Tasks.TaskReason.InContact)
+                                      ? $" ({why.ToString().ToLowerInvariant()})" : ""),
                 PlayEvent.End => $"the end: {Why((EndReason)l.Count)}",
                 _ => l.Kind.ToString(),
             });

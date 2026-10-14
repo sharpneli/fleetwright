@@ -573,6 +573,77 @@ of 14); the Jutland to its time (04:00), 15 British and 19 German ships lost, in
   scouting line spaced by the visibility find a crossing enemy in most seeds; Intercept meets a target steering a
   steady course from 50 km.
 
+**5.1c done 2026-10-14,** built in six pieces, each committed when it played:
+
+1. **Tasks, and the first five.** `Sim.Ai/Tasks/TaskLayer`, a layer above the admirals (`AiSystem`'s layers are tasks,
+   admirals, captains): a unit's task, its state (`TaskState`: on task, fighting, in contact, done, can't) and why
+   (`TaskReason`), in the hash and the snapshot (groups' and ships' `Task`, `TaskStatus`; group labels show it). A
+   task turns into orders the chain already has, given to the unit as its own: a new source, `OrderSource.Task`, which
+   the AI system hands the chain as the player's, so the player's own order to the unit ends its task (a speed is the
+   task's speed instead). A unit in a squadron's or force's line is detached (pinned) for its task. A fight doctrine
+   takes up interrupts a task: it waits ("fighting") and goes on once no enemy has been in sight of the unit for
+   `TaskResumeS`; falling out ends it. Done or can't, the unit holds what it was last given and its state is the report
+   up (decided at the start of 5.1c: until 5.1d's commander, nobody gives the next). GoTo (done within `ArrivedM`),
+   Patrol, Intercept (a lead course on the picture's estimate, re-solved each think; done once the contact is in sight
+   within `FightCompareM`, then doctrine), Join (closes at all the unit makes; a ship into a squadron, a group into a
+   force, a squadron alone forms one with the other, one detached from it back in; done within `JoinM`) and Withdraw
+   (from any enemy in sight first, then its point or home; takes up no fight). `TaskTests`: a squadron at a point 20 km
+   off in 34 minutes; intercepting an enemy its scout holds from 50 km, in contact after 43 minutes; a detached
+   squadron rejoins its force and one alone joins it in 22 minutes; a ship withdraws from an enemy and then home.
+2. **The scouting tasks, Screen and Cover.** Scout (a station `ScoutM`, 20 km, ahead of a unit; an enemy too strong for
+   it, by `Strength` against doctrine's outgunned ratio, is shadowed, the task "in contact", no fight taken up, even
+   one doctrine already took up; back to its station on losing him), Search (a group spread abreast at
+   `SearchSpacingShare` of the visibility, in sight of each other, steams to the point and a ladder about it on the
+   course it came in on, its tracks a line's width apart; done on contact or at its end), Shadow and Screen (the
+   player's orders now tasks, with an end), Cover (a station `CoverM` off the unit toward the nearest enemy its navy
+   holds anywhere). `Knowledge/Strength` is the one strength measure (heavy guns, as each contact is taken); Fight's
+   outgunned test reads it, hashes unchanged. Found on the way: a captain's station dead ahead (abeam 0, a negative
+   distance astern) took the line-ahead track and never got there; fixed. `ScoutingTests`: a scout 20 km ahead at 90
+   minutes, shadowing battlecruisers it meets; a scouting line of four light cruisers finds an enemy crossing its area
+   in 5 seeds of 5; a cover keeps 8 km toward the enemy.
+3. **The tactical picture and the deployment.** `Knowledge/TacticalPicture`: a navy's contacts in sight chained into
+   enemy groups within `TacticalGapM` of each other whatever their type, each with its centre, course, strength,
+   capital ships and van; built once a moment a side through the grid. A force in a cruising order with doctrine's
+   `Deploy` (the default preset on, neutral off) meeting the main body (the strongest group with a capital ship) within
+   `DeployM` forms one line ahead, every level of its tree, its groups as far apart as their ships:
+   - *the course:* square across the enemy's course, toward his track, so the line lies across his way ahead of him
+     (his T); across his bearing when he's stopped.
+   - *the leading wing,* changed from the plan's "nearer the enemy's van": the column furthest along that course,
+     the one on the side the line turns to (Jellicoe's port wing). Led by the wing nearer the van the other columns lay
+     ahead of the leader on his new course and had to drop back by speed (30 minutes and more for four columns).
+   - *while it forms,* every column keeps its final place on the line's guide directly, along his track; a chain of
+     stations on the column before lagged column by column. It takes up no fight, and its task waits, until every ship
+     is within `DeployFormedM` of her place (or `DeployMaxMs`); then doctrine takes the line into the fight.
+   `DeploymentTests`: four columns of three dreadnoughts in one line in 14 minutes (Jellicoe's six took about twenty),
+   steering across the enemy's bow, the line's guide dead ahead of his van at 14 km.
+4. **Falling back on the main body.** A unit Fight turns away from a stronger enemy runs for the nearest own force
+   within `FallBackM` that's a match for him, if that's within `FallBackDeg` of straight away (Beatty's run to the
+   north); else straight away. `FallBackTests`: two dreadnoughts outgunned by six to the south-west run north (5°) for
+   their fleet; alone, north-east (52°).
+5. **Opening tasks in the scenario** (agreed at the start of 5.1c: a slice of 5.1d's plan, built early): a top unit's
+   `"task"` (`"do"`: go to, patrol, search, join, scout, screen, cover, shadow, withdraw; `"of"` a unit by its name at
+   any level, `"at"`, `"distance_km"`, `"off_bow"`, `"kn"`), given once every unit is placed; one naming a unit that
+   isn't there (a ladder took part of the Jutland) is a warning. The Jutland's: the 5th Battle Squadron covers the
+   Battlecruiser Fleet, the flotillas screen their fleets, the cruisers, light cruisers, the 3rd BCS and the 2nd and 4th
+   Scouting Groups scout ahead of theirs at their historical distances; the main bodies and Beatty's light cruisers
+   steam as placed, so the first contact is history's. The bench's timeline tells forces deploying and tasks reporting.
+6. **The Jutland,** with its opening tasks (Release, one seed): the light cruisers' fight from 14:24 as before; the 2nd
+   Scouting Group in contact (shadowing) at 15:11, the 3rd BCS's light cruisers at 16:32, the cruiser screen and the
+   3rd BCS at 18:43-44, the 4th LCS at 19:08; the Grand Fleet deploys into line of battle at 19:12 and the High Seas
+   Fleet at 19:43; to its time, 18 British ships lost (225,000 t) and 13 German (95,000 t), in 169 s. Found by it: the
+   deployment fired on every force in a cruising order (Beatty's light cruiser screen, the cruiser screen, both
+   torpedo-boat forces, the 3rd BCS scouting); only a battle force deploys now (two capital ships or more in its line,
+   not scouting, screening, shadowing, searching or withdrawing). With deployment but before the opening tasks, the
+   Grand Fleet deployed at 18:13 (history's 18:15) and Britain lost 38 ships. Ships stationed on another unit (scouts,
+   screens) stay on the fine tick, so the first hour runs at ~900x with ~200 ships fine: for 5.1f's cost.
+   `squadrons`, `flotilla` and Tsushima play as after 5.1b (5 seeds each).
+
+**Still open after 5.1c** (for 5.1d and the fine-tune): nobody gives a finished task its next one (5.1d's commander);
+Intercept can't be given at the start (a contact must be held); the scouts shadow what's too strong for them but report
+only by the picture (instant, decision 2); flotillas screening never attack the enemy's line (the commander sends them
+in); crossing the T is now the deployment's course, but a deployed line's Fight still keeps the enemy on its beam and
+doesn't hold the T.
+
 **5.1d The side's commander.**
 
 - **The layer** (`Sim.Ai/Commanders/`), one commander per side with forces, thinking slowly and on events.

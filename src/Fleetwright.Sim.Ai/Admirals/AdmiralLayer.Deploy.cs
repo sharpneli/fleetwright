@@ -46,7 +46,7 @@ public sealed partial class AdmiralLayer
                 a.Deployed = false;
             return false;
         }
-        if (!near || OneLine(g))
+        if (!near || OneLine(g) || !BattleForce(ctx, g))
             return false;
 
         // the course: square across the enemy's course toward his track, so the line lies across his way ahead of him
@@ -69,17 +69,43 @@ public sealed partial class AdmiralLayer
             course = Math.Abs(Wrap180(right - guide.HeadingDeg)) <= Math.Abs(Wrap180(left - guide.HeadingDeg)) ? right : left;
         }
 
-        // the wing furthest along that course leads (the one on the side the line turns to, as Jellicoe's port wing did),
-        // so the other columns turn after it into its wake, none of them ahead of it to drop back from
-        var along = Earth.Forward(guide.Position, course);
-        bool farWing = Vec3d.Dot(ctx.Ships[ls].Position - ctx.Ships[fs].Position, along) > 0;
-        if (farWing)
-            ctx.Issue(GroupSystem.Reverse(g.GroupId));
-        double gap = groups.Get(g.Line[0]) is { } sub ? sub.SpacingM : g.SpacingM;
-        ctx.Issue(GroupSystem.SetFormation(g.GroupId, Formation.Column, gap));
+        IntoLine(ctx, g, Earth.Forward(guide.Position, course));
         (a.Order, a.CourseDeg, a.RudderDeg, a.RouteCount, a.Loop) = (CaptainOrder.Course, course, 0, 0, false);
         (a.DeployMs, a.HandedTo, a.Met) = (ctx.NowMs, 0, false);   // the new guide is handed the course next think
         return true;
+    }
+
+    /// <summary>A force, and every force in its line, into line ahead along a direction: in each, the member furthest along
+    /// it leads (the one on the side the line turns to, as Jellicoe's port wing did), so the others turn after it into
+    /// its wake, none ahead of it to drop back from; its groups as far apart as the ships of its first squadron.</summary>
+    void IntoLine(in AiContext ctx, GroupSystem.Group g, Vec3d along)
+    {
+        if (!g.IsForce || g.Line.Count == 0)
+            return;
+        int first = groups.Get(g.Line[0]) is { } f0 ? groups.GuideShip(f0) : 0, last = groups.Get(g.Line[^1]) is { } fl ? groups.GuideShip(fl) : 0;
+        if (ctx.Ships.SlotOf(first) is int fs and >= 0 && ctx.Ships.SlotOf(last) is int ls and >= 0 &&
+            Vec3d.Dot(ctx.Ships[ls].Position - ctx.Ships[fs].Position, along) > 0)
+            ctx.Issue(GroupSystem.Reverse(g.GroupId));
+        var squadron = g;
+        while (squadron.IsForce && squadron.Line.Count > 0 && groups.Get(squadron.Line[0]) is { } down)
+            squadron = down;
+        ctx.Issue(GroupSystem.SetFormation(g.GroupId, Formation.Column, squadron.SpacingM));
+        for (int k = 0; k < g.Line.Count; k++)
+            if (groups.Get(g.Line[k]) is { IsForce: true } sub)
+                IntoLine(ctx, sub, along);
+    }
+
+    /// <summary>Whether a group, or a force whose line it's in, up the tree, is deploying.</summary>
+    bool InDeployment(GroupSystem.Group g)
+    {
+        for (var at = g; ;)
+        {
+            if (Find(at.GroupId) is int i and >= 0 && admirals[i].DeployMs != 0)
+                return true;
+            if (!groups.InForceLine(at) || groups.Get(at.Parent) is not { } up)
+                return false;
+            at = up;
+        }
     }
 
     /// <summary>While deploying, the i-th group of the line keeps its place on the line's guide itself, on his track (its
@@ -93,6 +119,20 @@ public sealed partial class AdmiralLayer
             if (s == ship)
                 return (guide, astern, 0);
         return groups.StationOfGroup(g, i);
+    }
+
+    /// <summary>Whether a force is a battle force that deploys: two capital ships or more in its line, and not on a task
+    /// that keeps it apart (scouting, screening, shadowing, searching, withdrawing). Cruiser and flotilla forces don't.</summary>
+    bool BattleForce(in AiContext ctx, GroupSystem.Group g)
+    {
+        if (Tasks?.Of(Unit.Group(g.GroupId)) is { Kind: Ai.Tasks.TaskKind.Scout or Ai.Tasks.TaskKind.Screen or Ai.Tasks.TaskKind.Shadow or Ai.Tasks.TaskKind.Search or Ai.Tasks.TaskKind.Withdraw })
+            return false;
+        groups.LineOffsets(g, line);
+        int capitals = 0;
+        foreach (var (ship, _, _) in line)
+            if (ctx.Ships.SlotOf(ship) is int slot and >= 0 && Sightings.TypeOf(ctx.Ships[slot].Handling.Class) == ShipType.Capital)
+                capitals++;
+        return capitals >= 2;
     }
 
     /// <summary>Whether a force is one line ahead already: in column, and every group of it too.</summary>

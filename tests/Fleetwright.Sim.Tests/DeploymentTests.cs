@@ -46,13 +46,13 @@ public class DeploymentTests(ITestOutputHelper output)
 
     /// <summary>Four columns of three dreadnoughts a mile apart abreast, heading south-east at 14 kn; an enemy line of six
     /// steaming north, its van 26 km to the south-south-west of the force's guide.</summary>
-    static (World W, AiSystem Ai, int Force, int Enemy) Make(bool deploy)
+    static (World W, AiSystem Ai, int Force, int Enemy) Make(bool deploy, string design = "dreadnought")
     {
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Deploy, deploy ? 1 : 0));
-        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+        int bb = w.Ships.AddClass(Fleet.Get(design).Class!), enemyClass = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
         var at = Earth.Position(Lat, Lon);
         int first = Column(w, ai, bb, at, 135, 3);
         w.Apply(GroupSystem.Form(first, Formation.LineAbreast, 1_850));
@@ -64,7 +64,7 @@ public class DeploymentTests(ITestOutputHelper output)
             w.Apply(GroupSystem.Enter(force, g));
         }
         w.Apply(ai.Orders.Speed(Unit.Group(force), 14));
-        int enemy = Column(w, ai, bb, Off(at, 200, 26_000), 0, 6, side: 1, kn: 15);
+        int enemy = Column(w, ai, enemyClass, Off(at, 200, 26_000), 0, 6, side: 1, kn: 15);
         return (w, ai, force, enemy);
     }
 
@@ -109,6 +109,14 @@ public class DeploymentTests(ITestOutputHelper output)
         Assert.Equal(Formation.Column, f.Formation);
         Assert.True(offHisBow < 60, $"{offHisBow:F0}° off his bow");   // across his way, ahead of him
         Assert.True(r < 30_000, $"{r:F0} m");
+    }
+
+    [Fact]
+    public void A_force_of_light_cruisers_keeps_its_columns()
+    {
+        var (w, _, force, _) = Make(deploy: true, design: "light_cruiser");
+        w.AdvanceTo(w.Time + 20 * 60_000);
+        Assert.Equal(Formation.LineAbreast, w.Groups.Get(force)!.Formation);   // a battle force deploys; cruisers don't
     }
 
     [Fact]

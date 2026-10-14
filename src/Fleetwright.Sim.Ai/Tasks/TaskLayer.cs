@@ -134,6 +134,12 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         return period;
     }
 
+    /// <summary>How many units have a task, and the i-th (in unit order): for reports (the play bench's timeline).</summary>
+    public int Count => count;
+
+    public (Unit Unit, TaskKind Kind, TaskState State, TaskReason Reason) At(int i) =>
+        (new Unit(tasks[i].Unit), tasks[i].Kind, tasks[i].Status, tasks[i].Reason);
+
     /// <summary>A unit's task and how it stands; None if it has none.</summary>
     public (TaskKind Kind, TaskState Status, TaskReason Reason) Of(Unit u) =>
         Find(u.Id) is int i and >= 0 ? (tasks[i].Kind, tasks[i].Status, tasks[i].Reason) : (TaskKind.None, TaskState.None, TaskReason.None);

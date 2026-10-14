@@ -1,5 +1,6 @@
 using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Ai.Captains;
+using Fleetwright.Sim.Ai.Tasks;
 using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
@@ -46,6 +47,13 @@ public enum PlayEvent : byte
     /// <summary>A ship fallen out of the fight (Entity the ship, Count its captain's <see cref="CaptainReason"/>).</summary>
     FellOut,
 
+    /// <summary>A force deploying into its line of battle (Entity its group id).</summary>
+    Deployed,
+
+    /// <summary>A task's report (Entity the unit's id, a ship or a negated group id; Other its kind × 256 + its reason;
+    /// Count its state): in contact, done, can't.</summary>
+    Task,
+
     /// <summary>The end (Count its <see cref="EndReason"/>).</summary>
     End,
 }
@@ -67,6 +75,12 @@ public sealed class ScenarioEnd
     readonly World world;
     readonly AiSystem? ai;
     readonly HashSet<int> fellOut = [];   // ships whose falling out is told
+    readonly HashSet<int> deployed = [];  // groups whose deployment is told
+    readonly Dictionary<int, byte> taskStates = [];   // the state each unit's task was last told in
+    readonly Dictionary<int, string> groupNames = [];
+
+    /// <summary>A group's name as it was when the timeline told of it.</summary>
+    public string GroupName(int groupId) => groupNames.TryGetValue(groupId, out var n) ? n : $"group {groupId}";
     readonly long untilMs;
     readonly Aim[][] aims;   // by side
     readonly Dictionary<int, (byte Side, double Tonnes)> ships = [];   // every ship seen, kept after it's gone
@@ -126,6 +140,8 @@ public sealed class ScenarioEnd
         }
         ReadLog();
         Sightings();
+        if (ai != null)
+            CommandEvents(now);
         if (world.Encounters.Count > 0)
         {
             if (!met)
@@ -198,6 +214,35 @@ public sealed class ScenarioEnd
             }
         }
         logRead = log.Written;
+    }
+
+    /// <summary>What the command did since the last check (docs/battle/command.md 5.1c): forces deploying, and tasks
+    /// reporting in contact, done or can't.</summary>
+    void CommandEvents(long now)
+    {
+        var groups = world.Groups;
+        for (int k = 0; k < groups.Count; k++)
+        {
+            var g = groups[k];
+            if (ai!.Admirals.Deploying(g.GroupId) && deployed.Add(g.GroupId))
+            {
+                groupNames[g.GroupId] = g.Name;
+                lines.Add(new PlayLine(now, PlayEvent.Deployed, groups.SideOf(g), g.GroupId));
+            }
+        }
+        for (int i = 0; i < ai!.Tasks.Count; i++)
+        {
+            var (unit, kind, state, why) = ai.Tasks.At(i);
+            if (state is not (TaskState.InContact or TaskState.Done or TaskState.Cant) || taskStates.TryGetValue(unit.Id, out byte told) && told == (byte)state)
+                continue;
+            taskStates[unit.Id] = (byte)state;
+            int side = -1;
+            if (unit.IsGroup && groups.Get(unit.GroupId) is { } g)
+                (side, groupNames[g.GroupId]) = (groups.SideOf(g), g.Name);
+            else if (world.Ships.Store.SlotOf(unit.Entity) is int slot and >= 0)
+                side = world.Ships.Store[slot].Side;
+            lines.Add(new PlayLine(now, PlayEvent.Task, side, unit.Id, (int)kind * 256 + (int)why, (int)state));
+        }
     }
 
     void First(bool[] told, int side, PlayLine line)

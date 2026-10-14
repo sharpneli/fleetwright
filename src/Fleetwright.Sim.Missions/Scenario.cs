@@ -462,6 +462,7 @@ public sealed class Scenario
             Route = route,
             Loop = e.TryGetProperty("loop", out var lp) && lp.GetBoolean(),
             Doctrine = e.TryGetProperty("doctrine", out var dc) ? DoctrineValues(dc, $"{path} doctrine") : [],
+            Task = e.TryGetProperty("task", out var tk) ? ParseTask(tk, $"{path} task", top) : null,
         };
         if (hasUnits)
         {
@@ -480,6 +481,33 @@ public sealed class Scenario
                 throw new ScenarioException($"{path}: a squadron of no ships");
         }
         return unit;
+    }
+
+    static ScenarioTask ParseTask(JsonElement e, string path, bool top)
+    {
+        if (!top)
+            throw new ScenarioException($"{path}: only a top unit has a task");
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException($"{path}: an object, {{ \"do\": \"scout\", \"of\": \"Grand Fleet\" }}");
+        string kind = Str(e, "do", "");
+        if (!ScenarioTask.Kinds.Contains(kind))
+            throw new ScenarioException($"{path}: \"do\": \"{kind}\" isn't one of {string.Join(", ", ScenarioTask.Kinds.Select(k => $"\"{k}\""))}");
+        string? of = e.TryGetProperty("of", out var o) ? o.GetString() : null;
+        (double, double)? at = e.TryGetProperty("at", out var a) ? LatLon(a, path + " at") : e.TryGetProperty("to", out var to) ? LatLon(to, path + " to") : null;
+        bool needsOf = kind is "join" or "scout" or "screen" or "cover" or "shadow", needsAt = kind is "go to" or "patrol" or "search";
+        if (needsOf && string.IsNullOrEmpty(of))
+            throw new ScenarioException($"{path}: \"{kind}\" needs \"of\", a unit's name");
+        if (needsAt && at == null)
+            throw new ScenarioException($"{path}: \"{kind}\" needs {(kind == "patrol" ? "\"to\"" : "\"at\"")}, [lat, lon]");
+        double km = e.TryGetProperty("distance_km", out var d) ? d.GetDouble() : e.TryGetProperty("leg_km", out var l) ? l.GetDouble() : 0;
+        if (km < 0 || km > 500)
+            throw new ScenarioException($"{path}: {km} km");
+        return new ScenarioTask
+        {
+            Kind = kind, Of = of, At = at, DistanceM = km * 1000,
+            OffBowDeg = e.TryGetProperty("off_bow", out var ob) ? ob.GetDouble() : 0,
+            Kn = e.TryGetProperty("kn", out var kn) ? kn.GetDouble() : 0,
+        };
     }
 
     static ScenarioShips ParseShips(JsonElement e, string path)
@@ -557,6 +585,9 @@ public sealed class ScenarioUnit
     /// <summary>Doctrine's values the unit sets for itself (docs/battle/command.md "Doctrine"), over its side's.</summary>
     public List<(DoctrineField Field, double Value)> Doctrine { get; init; } = [];
 
+    /// <summary>A top unit's opening task (docs/battle/command.md 5.1c), or null: it steams its course or route.</summary>
+    public ScenarioTask? Task { get; init; }
+
     public bool IsForce => Units.Count > 0;
     public int ShipCount => IsForce ? Units.Sum(u => u.ShipCount) : Ships.Sum(s => s.Count);
 }
@@ -568,6 +599,23 @@ public sealed class ScenarioShips
     public required string Design { get; init; }
     public int Count { get; init; } = 1;
     public string[] Names { get; init; } = [];
+}
+
+/// <summary>A top unit's opening task (docs/battle/command.md 5.1c): <c>"task": { "do": "scout", "of": "Grand Fleet",
+/// "distance_km": 30 }</c>. Kinds: "go to" (<c>"at"</c>, <c>"kn"</c>), "patrol" (<c>"to"</c>), "search" (<c>"at"</c>,
+/// <c>"leg_km"</c>), "join", "scout" (<c>"off_bow"</c> degrees), "screen", "cover" and "shadow" (<c>"of"</c> a unit's name, any
+/// level of the scenario; <c>"distance_km"</c>), "withdraw" (<c>"at"</c>, else home). The side's commander (5.1d) gives the
+/// tasks after these.</summary>
+public sealed class ScenarioTask
+{
+    public required string Kind { get; init; }
+    public string? Of { get; init; }
+    public (double Lat, double Lon)? At { get; init; }
+    public double DistanceM { get; init; }
+    public double OffBowDeg { get; init; }
+    public double Kn { get; init; }
+
+    public static readonly string[] Kinds = ["go to", "patrol", "search", "join", "scout", "screen", "cover", "shadow", "withdraw"];
 }
 
 public sealed class ScenarioException(string message) : Exception(message);

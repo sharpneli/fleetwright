@@ -335,7 +335,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 }
                 else
                 {
-                    var (target, astern, abeam) = a.DeployMs != 0 ? DeployStation(g, i) : groups.StationOfGroup(g, i);
+                    var (target, astern, abeam) = InDeployment(g) ? DeployStation(g, i) : groups.StationOfGroup(g, i);
                     if (target != 0 && !Holds(members[i], target, astern, abeam))
                         ctx.Issue(ctx.Orders.Station(Unit.Group(members[i]), Unit.Ship(target), astern, abeam, OrderSource.Superior));
                 }

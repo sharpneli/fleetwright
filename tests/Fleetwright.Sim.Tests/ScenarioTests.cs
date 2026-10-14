@@ -134,10 +134,27 @@ public class ScenarioTests
     [InlineData("""{ "scenario": 1, "start": "1916-05-31T14:00", "sides": ["A", "B"], "peace": [["A", "C"]], "units": [] }""", "\"C\" isn't another")]
     [InlineData("""{ "scenario": 1, "start": "1916-05-31T14:00", "sides": ["A", "B"], "peace": [["A", "A"]], "units": [] }""", "\"A\" isn't another")]
     [InlineData("""{ "scenario": 1, "start": "1916-05-31T14:00", "sides": ["A", "B"], "peace": [["A"]], "units": [] }""", "a pair of sides")]
+    [InlineData("""{ "scenario": 1, "start": "1916-05-31T14:00", "units": [ { "at": [56, 3], "course": 0, "kn": 10, "task": { "do": "loiter" }, "ships": [ { "design": "dreadnought" } ] } ] }""", "\"loiter\" isn't one of")]
+    [InlineData("""{ "scenario": 1, "start": "1916-05-31T14:00", "units": [ { "at": [56, 3], "course": 0, "kn": 10, "task": { "do": "scout" }, "ships": [ { "design": "dreadnought" } ] } ] }""", "needs \"of\"")]
     public void A_bad_file_says_what_is_wrong(string json, string expected)
     {
         var x = Assert.Throws<ScenarioException>(() => Scenario.Parse(json));
         Assert.Contains(expected, x.Message);
+    }
+
+    /// <summary>Opening tasks (docs/battle/command.md 5.1c): a top unit's "task" is given once every unit is placed, naming
+    /// another by its name at any level; one naming a unit that isn't there is a warning, and the unit steams on.</summary>
+    [Fact]
+    public void Opening_tasks_are_given_by_the_units_names()
+    {
+        string json = Small
+            .Replace("\"name\": \"Lone\", \"side\": 1,", "\"name\": \"Lone\", \"side\": 1, \"task\": { \"do\": \"scout\", \"of\": \"B\", \"distance_km\": 12 },")
+            .Replace("\"name\": \"Force A\", \"side\": 0,", "\"name\": \"Force A\", \"side\": 0, \"task\": { \"do\": \"cover\", \"of\": \"Nobody\" },");
+        var (w, ai, start) = Load(json);
+        int lone = w.Ships.NewestEntity;
+        Assert.Equal(Ai.Tasks.TaskKind.Scout, ai.Tasks.Of(Unit.Ship(lone)).Kind);
+        Assert.Contains(start.Warnings, x => x.Contains("Nobody"));
+        Assert.Equal(Ai.Tasks.TaskKind.None, ai.Tasks.Of(Unit.Group(1)).Kind);
     }
 
     /// <summary>The shipped Jutland reads, its order of battle is the historical count, and every design it names is

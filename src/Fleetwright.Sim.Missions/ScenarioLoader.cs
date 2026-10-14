@@ -75,6 +75,7 @@ public static class ScenarioLoader
             w.Apply(GunnerySystem.SetCrew(side, quality));
         foreach (var (side, factor) in s.Propellant)
             w.Apply(DamageSystem.SetPropellant(side, factor));
+        var tasked = new List<(ScenarioUnit Top, Unit Unit)>();
         var placed = new List<(ScenarioUnit Squadron, int Index, double AsternM, double AbeamM)>();
         var entities = new Dictionary<(ScenarioUnit, int), int>();   // a unit by identity (it has no Equals of its own)
         foreach (var top in s.Units)
@@ -145,8 +146,49 @@ public static class ScenarioLoader
             else
                 w.Apply(o.Course(unit, top.CourseDeg));
             w.Apply(o.Speed(unit, top.Kn));
+            if (top.Task != null)
+                tasked.Add((top, unit));
         }
+        foreach (var (top, unit) in tasked)
+            Task(top, unit, w, ai, s, start, entities);
         return start;
+    }
+
+    /// <summary>A top unit's opening task (docs/battle/command.md 5.1c), once every unit is placed: its "of" is the first
+    /// group of that name (any level), else a top unit of one ship of that name; one not found (a ladder took only part
+    /// of a scenario) is a warning, and the unit steams on.</summary>
+    static void Task(ScenarioUnit top, Unit unit, World w, AiSystem ai, Scenario s, ScenarioStart start, Dictionary<(ScenarioUnit, int), int> entities)
+    {
+        var t = top.Task!;
+        var o = ai.Orders;
+        Unit of = default;
+        if (t.Of != null)
+        {
+            for (int k = 0; k < w.Groups.Count && of.Id == 0; k++)
+                if (w.Groups[k].Name == t.Of)
+                    of = Unit.Group(w.Groups[k].GroupId);
+            if (of.Id == 0 && s.Units.FirstOrDefault(u => u.Name == t.Of && !u.IsForce && u.ShipCount == 1) is { } lone &&
+                entities.TryGetValue((lone, 0), out int e))
+                of = Unit.Ship(e);
+            if (of.Id == 0)
+            {
+                start.Warnings.Add($"{top.Name}: its task \"{t.Kind}\" of \"{t.Of}\": no such unit here; it steams on");
+                return;
+            }
+        }
+        var (lat, lon) = t.At ?? (0, 0);
+        w.Apply(t.Kind switch
+        {
+            "go to" => o.GoTo(unit, lat, lon, t.Kn),
+            "patrol" => o.Patrol(unit, lat, lon),
+            "search" => o.Search(unit, lat, lon, t.DistanceM),
+            "join" => o.Join(unit, of),
+            "scout" => o.Scout(unit, of, t.DistanceM, t.OffBowDeg),
+            "screen" => o.Screen(unit, of, t.DistanceM),
+            "cover" => o.Cover(unit, of, t.DistanceM),
+            "shadow" => o.Shadow(unit, of, t.DistanceM),
+            _ => t.At != null ? o.Withdraw(unit, lat, lon) : o.WithdrawHome(unit),
+        });
     }
 
     /// <summary>Doctrine's presets for a scenario read from a file: Content/Sim/doctrine.json beside its folder

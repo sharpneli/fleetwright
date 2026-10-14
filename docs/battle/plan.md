@@ -1843,7 +1843,10 @@ plays it with the AI on every side, and the baseline is in `command.md` (every r
 the Jutland yet). **5.1a done 2026-10-14:** doctrine and its presets, fitness and falling out (home), a clear line of
 fire, evasion under fire, torpedoes seen and combed (`command.md` 5.1a). **5.1b done 2026-10-14:** lines of bearing,
 turning together and the battle turn-away, the turn-away from torpedoes, the flotilla's attack, the screen and its
-counter-attack; crossing the T measured and left for 5.1c's long lines (`command.md` 5.1b).
+counter-attack; crossing the T measured and left for 5.1c's long lines (`command.md` 5.1b). **5.1c done 2026-10-14:**
+tasks (go to, patrol, intercept, join, withdraw, scout, search, shadow, screen, cover) as a layer above the admirals,
+the tactical picture, the deployment into line of battle across the enemy's course, falling back on the main body,
+and opening tasks in the scenario file (`command.md` 5.1c).
 
 **5.1 Captains and admirals.** Standing orders for both sides: go to, keep station, shadow, evade, engage, break off
 at x% damage. Admirals' objectives above their squadrons: search an area, cover, intercept, rendezvous. All are more
