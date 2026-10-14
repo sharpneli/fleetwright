@@ -1,0 +1,47 @@
+// Tsushima, 27 May 1905 at 13:40 local (04:40 UTC): the Second Pacific Squadron steams north-north-east up the
+// eastern channel of the Tsushima Strait for Vladivostok, two armoured divisions in column, the cruisers and
+// destroyers with them; Togo's battle divisions come out of the haze to the north-east, crossing ahead to cap the
+// Russian line. The forces are history's, thinned; the classes are stand-ins (Designs/: oslyabya also stands for
+// Sissoi Veliky and Navarin, izumo for Kasuga, Nisshin and the armoured cruisers, aurora for Oleg), set for balance
+// rather than tonnage:
+//   Japan, the hunters: faster (an 18 kn line and 21 kn armoured cruisers), many 6 and 8 in quick-firers, trained
+//   crews, 29 kn destroyers with two tubes; the armoured cruisers' belts are thin and their main guns light.
+//   Russia, the hammer: more heavy guns (twelve 12 in and twelve 10 in against sixteen 12 in and twenty-four 8 in),
+//   the Borodinos' 6 in in turrets, heavier armour; but an old second division that makes 16 kn, average crews,
+//   26 kn destroyers (with three tubes).
+// The weather of the day: haze, about 7 miles' sight, a fresh south-westerly.
+{
+  "scenario": 1,
+  "name": "Tsushima",
+  "brief": "27 May 1905, 13:40. Rozhestvensky's Second Pacific Squadron, black with yellow funnels, steams up the Tsushima Strait for Vladivostok: four Borodinos leading, the old second division astern, cruisers and destroyers in company. Out of the haze to the north-east come Togo's battleships and Kamimura's armoured cruisers, faster, crossing ahead to cap your line. Get through, or make them pay for it.",
+  "start": "1905-05-27T04:40",
+  "seed": 1905,
+  "camera": [34.11, 130.07, 40],
+  "sides": ["Russia", "Japan"],
+  "player": "Russia",
+  "fight": ["Russia", "Japan"],
+  "crews": { "Russia": "average" },
+  "weather": { "visibility_km": 13, "wind_from": 225, "wind_kn": 18 },
+  "units": [
+    // ---------------------------------------------------------------- the Second Pacific Squadron (Rozhestvensky): 13
+    { "name": "Second Pacific Squadron", "side": 0, "at": [34.05, 129.95], "course": 23, "kn": 11, "formation": "column", "spacing": 1200,
+      "units": [
+        { "name": "1st Armoured Division", "spacing": 550, "ships": [
+          { "design": "borodino", "names": ["Knyaz Suvorov", "Imperator Aleksandr III", "Borodino", "Oryol"] } ] },
+        { "name": "2nd Armoured Division", "spacing": 550, "ships": [
+          { "design": "oslyabya", "names": ["Oslyabya", "Sissoi Veliky", "Navarin"] } ] } ] },
+    { "name": "Cruiser Division", "side": 0, "at": [34.03, 129.90], "course": 23, "kn": 11, "spacing": 600,
+      "ships": [ { "design": "aurora", "names": ["Oleg", "Aurora"] } ] },
+    { "name": "1st Destroyer Detachment", "side": 0, "at": [34.06, 129.92], "course": 23, "kn": 11, "spacing": 400,
+      "ships": [ { "design": "buyny", "names": ["Buyny", "Bravy", "Bedovy", "Grozny"] } ] },
+    // ---------------------------------------------------------------- the Combined Fleet (Togo): 14
+    // the 1st Division leading, Kamimura's 2nd Division following in its wake, crossing west ahead of the Russians
+    { "name": "Combined Fleet", "side": 1, "at": [34.17, 130.20], "course": 262, "kn": 15, "formation": "column", "spacing": 1200,
+      "units": [
+        { "name": "1st Division", "spacing": 550, "ships": [
+          { "design": "mikasa", "names": ["Mikasa", "Shikishima", "Fuji", "Asahi"] }, { "design": "izumo", "names": ["Kasuga", "Nisshin"] } ] },
+        { "name": "2nd Division", "spacing": 550, "ships": [ { "design": "izumo", "names": ["Izumo", "Azuma", "Tokiwa", "Iwate"] } ] } ] },
+    { "name": "1st Destroyer Flotilla", "side": 1, "at": [34.21, 130.24], "course": 262, "kn": 15, "spacing": 400,
+      "ships": [ { "design": "ikazuchi", "names": ["Ikazuchi", "Inazuma", "Akebono", "Oboro"] } ] }
+  ]
+}

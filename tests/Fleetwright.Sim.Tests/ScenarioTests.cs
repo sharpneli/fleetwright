@@ -157,6 +157,20 @@ public class ScenarioTests
         Assert.False(Scenario.IsScenario(Path.Combine(Designs[0], "dreadnought.json")));
     }
 
+    /// <summary>The shipped Tsushima reads: its sides, crews and order of battle, and every design it names is there.</summary>
+    [Fact]
+    public void The_Tsushima_reads_with_its_order_of_battle()
+    {
+        var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "tsushima.json"));
+        Assert.Equal(["Russia", "Japan"], s.Sides);
+        Assert.Equal(0, s.Player);
+        Assert.Equal(13, s.Units.Where(u => u.Side == 0).Sum(u => u.ShipCount));
+        Assert.Equal(14, s.Units.Where(u => u.Side == 1).Sum(u => u.ShipCount));
+        Assert.Equal([(0, CrewQuality.Average)], s.Crews);
+        foreach (var n in s.DesignNames())
+            Assert.True(File.Exists(Path.Combine(s.Folder!, "Designs", n + ".json")) || File.Exists(Path.Combine(Designs[0], n + ".json")), n);
+    }
+
     /// <summary>The scale test's world rungs keep their tramps at peace with both fleets (docs/battle/plan.md step 3.1a):
     /// given to a world, the neutral side is hostile to neither, and the fleets still to each other.</summary>
     [Fact]
