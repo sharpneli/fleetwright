@@ -259,7 +259,8 @@ public sealed class ShipDrawList
     }
 
     /// <summary>The sea's plane over a ship's waterline in its own frame (z at the origin, the slopes along and across, and
-    /// 1 when there's anything to drown), and how much of it shows: settled by its attitude; going under, rising over it
+    /// the tallest column over the waterline when there's anything to drown, where the shaders start looking for the
+    /// point of the tilted hull that shows: 0 when there isn't), and how much of it shows: settled by its attitude; going under, rising over it
     /// by how it's lost.</summary>
     static (Vector4 Sea, double Fade) SeaOf(ShipClass c, ShipArt art, ShipsView v, int k, long now)
     {
@@ -290,13 +291,22 @@ public sealed class ShipDrawList
             fade = 1 - SmoothStep(0.85, 1, p);
         }
         bool on = z != 0 || dx != 0 || dy != 0;
-        return (on ? new Vector4((float)z, (float)dx, (float)dy, 1) : Vector4.Zero, fade);
+        double tallest = Math.Max(art.Meta.Shadow.MaxHeightM + art.Meta.Shadow.HeightStepM, 1);
+        return (on ? new Vector4((float)z, (float)dx, (float)dy, (float)tallest) : Vector4.Zero, fade);
     }
 
     void Hull(ref Placed p, ShipArt art)
     {
-        double cw = art.CanvasX, ch = art.CanvasY;
-        Emit(ref p, art, -cw / 2, -ch / 2, cw, 0, 0, ch, mode: 0, opacity: p.SpriteAlpha, roof: 0, Vector4.Zero);
+        var (x0, y0, w, h) = TiltedCanvas(p, art);
+        Emit(ref p, art, x0, y0, w, 0, 0, h, mode: 0, opacity: p.SpriteAlpha, roof: 0, Vector4.Zero);
+    }
+
+    /// <summary>The canvas grown toward where a heeled and trimmed hull shows its tops (each point by its height times the
+    /// sea's slopes), so they aren't cut off at its edge: corner and size, ship metres.</summary>
+    static (double X0, double Y0, double W, double H) TiltedCanvas(in Placed p, ShipArt art)
+    {
+        double cw = art.CanvasX, ch = art.CanvasY, sx = p.Sea.W * p.Sea.Y, sy = p.Sea.W * p.Sea.Z;
+        return (-cw / 2 + Math.Min(0, sx), -ch / 2 + Math.Min(0, sy), cw + Math.Abs(sx), ch + Math.Abs(sy));
     }
 
     /// <summary>A scorch over each wrecked part above the deck (superstructure, funnels, masts and the like: the
@@ -380,9 +390,9 @@ public sealed class ShipDrawList
 
     void SunShadow(ref Placed p, ShipArt art)
     {
-        double cw = art.CanvasX, ch = art.CanvasY;
+        var (x0, y0, cw, ch) = TiltedCanvas(p, art);
         double reach = (art.Meta.Shadow.MaxHeightM + p.SeaSpan) / p.SunTan, dx = -p.SunDir.X * reach, dy = -p.SunDir.Y * reach;   // the canvas and down-light of it
-        Emit(ref p, art, -cw / 2 + Math.Min(0, dx), -ch / 2 + Math.Min(0, dy), cw + Math.Abs(dx), 0, 0, ch + Math.Abs(dy), mode: 0,
+        Emit(ref p, art, x0 + Math.Min(0, dx), y0 + Math.Min(0, dy), cw + Math.Abs(dx), 0, 0, ch + Math.Abs(dy), mode: 0,
             opacity: p.SpriteAlpha * p.Fade, roof: 0, Vector4.Zero, HullMarch(p, art, 0));
     }
 

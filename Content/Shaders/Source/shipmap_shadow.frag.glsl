@@ -10,7 +10,7 @@ layout(location = 3) flat in vec4 fragSun;     // xy: toward the light, ship-loc
 layout(location = 4) flat in vec4 fragMarch;   // x: step, m; y: steps; z: softness, m; w: the height map's mip level
 layout(location = 5) flat in vec4 fragHmap;
 layout(location = 6) flat in vec4 fragTint;
-layout(location = 7) flat in vec4 fragSea;     // the sea's plane over the waterline (z, slopes, on)
+layout(location = 7) flat in vec4 fragSea;     // the sea's plane over the waterline (z, slopes, the tallest column)
 
 layout(set = 2, binding = 0) uniform sampler2D heightTex;
 
@@ -20,7 +20,8 @@ layout(location = 0) out vec4 outColour;
 
 void main()
 {
-    vec2 at = shownAt(heightTex, fragHmap, fragShip, fragSea);
+    vec2 px = fwidth(fragShip);
+    vec2 at = shownAt(heightTex, fragHmap, fragShip, fragSea, max(px.x, px.y));
     float hp = shadowHeight(heightTex, fragHmap, at, fragMarch.w);
     float shade = hullShadow(heightTex, fragHmap, at, hp, fragSun.xy, fragSun.z, fragMarch, fragSea);
     outColour = vec4(0.0, 0.0, 0.0, shade * fragSun.w * fragMode.y);

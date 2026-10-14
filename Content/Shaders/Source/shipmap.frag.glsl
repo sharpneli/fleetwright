@@ -72,10 +72,12 @@ float specAt(float depth)
 void main()
 {
     float opacity = fragMode.y;
+    vec2 px = fwidth(fragShip);   // ship metres a pixel: shownAt's step
+    float pxM = max(px.x, px.y);
     if (fragMode.x > 2.5)
     {
         // a scorch: on the hull's point that shows here (tilted, as the hull), its relief, matte and sooty
-        vec2 at = shownAt(heightTex, fragHmap, fragShip, fragSea);
+        vec2 at = shownAt(heightTex, fragHmap, fragShip, fragSea, pxM);
         float h = heightAt(at);
         if (h <= 0.05)
             discard;
@@ -99,8 +101,8 @@ void main()
         // here, the turret where it stands untilted, both by their heights over the sea's plane.
         vec2 own = turretUv(fragShip, fragTint);
         vec2 gx = dFdx(own), gy = dFdy(own);
-        vec2 at = shownAt(heightTex, fragHmap, fragShip, fragSea);
-        vec4 frame = vec4(fragTint.xy - fragMode.z * fragSea.yz * fragSea.w, fragTint.zw);
+        vec2 at = shownAt(heightTex, fragHmap, fragShip, fragSea, pxM);
+        vec4 frame = vec4(fragTint.xy - fragMode.z * fragSea.yz, fragTint.zw);
         float h = shadowHeight(heightTex, fragHmap, at, fragMarch.w);
         vec2 mid = frame.xy + 0.5 * (frame.zw + vec2(-frame.w, frame.z));
         float over = overSea(fragSea, at, h), roof = fragMode.z - seaAt(fragSea, mid);
@@ -120,12 +122,12 @@ void main()
     if (fragMode.x < 0.5 && fragMode.z <= 0.0 && fragSea.w > 0.5)
     {
         // the hull tilted (its trim and list): the point that shows here
-        at = shownAt(heightTex, fragHmap, fragShip, fragSea);
+        at = shownAt(heightTex, fragHmap, fragShip, fragSea, pxM);
         uv = at * fragHmap.xy + fragHmap.zw;
         if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0))))
             discard;
     }
-    if (fragMode.x < 0.5 && fragMode.w > 0.0 && heightAt(shownAt(heightTex, fragHmap, fragShip, fragSea)) >= fragMode.w)
+    if (fragMode.x < 0.5 && fragMode.w > 0.0 && heightAt(shownAt(heightTex, fragHmap, fragShip, fragSea, pxM)) >= fragMode.w)
         discard;   // a casemate, under the deck over it: hidden where the hull that shows here stands over its cover
     vec4 c = texture(spriteTex, uv);
     if (fragMode.x > 1.5)
@@ -139,7 +141,7 @@ void main()
         vec2 mat = unpackMaterial(texture(materialTex, uv), c.a);
         mat = mix(mat, vec2(1.0, 0.0), fragSoot);
         // a turret stands as high as its roof, where it stands untilted
-        vec2 own = fragMode.z > 0.0 ? fragShip - fragMode.z * fragSea.yz * fragSea.w : at;
+        vec2 own = fragMode.z > 0.0 ? fragShip - fragMode.z * fragSea.yz : at;
         float depth = depthAt(own, max(heightAt(at), fragMode.z));
         rgb = shipShade(rgb, unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, mat.x, mat.y, nt.a * (1.0 - 0.4 * fragSoot),
             specAt(depth));
