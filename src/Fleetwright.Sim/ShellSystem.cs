@@ -194,8 +194,9 @@ public sealed class ShellSystem : IWorldSystem
         if (double.IsNaN(end))
             return false;
         double top = t.Reaches(muzzle, forward, elevationDeg, speed, settings.ShellWindowTopM);
-        if (double.IsNaN(top) || top > end)
-            top = 0;   // it never rises over the window's top: all its flight is in the window
+        if (double.IsNaN(top) || top > end || top < 0)
+            top = 0;   // it never rises over the window's top (or tops out about it, where the solve can step back to
+                       // before it was fired: a low gun at a few degrees, ShellSystemTests): all its flight is in the window
         int i = Allocate();
         ref var s = ref shells[i];
         int gen = s.Generation + 1;

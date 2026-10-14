@@ -104,6 +104,23 @@ public class ShellSystemTests(ITestOutputHelper output)
         }
     }
 
+    /// <summary>A shell whose top is about the window's (a 6" casemate gun 2.7 m over the sea at about 3°, found at
+    /// Tsushima by docs/battle/command.md 5.0's bench): its climb there is near nothing, so finding when it comes down
+    /// through the window's top stepped back to before it was fired, and its window's event was scheduled in the past
+    /// (the schedule threw). Its whole flight is in the window instead. The shell as it was fired there.</summary>
+    [Fact]
+    public void A_shell_topping_out_at_the_window_lands()
+    {
+        var (w, shooter, _) = Make(Settings);
+        int table = w.Shells.Ballistics.Ensure(new BallisticKey(152, 46.413459251199995, 720, 1.8, 13));
+        var muzzle = new Vec3d(-3391908.27189693, 4032822.5949942796, 3580638.9393342827);
+        var forward = new Vec3d(0.8453810760196333, 0.4316345319769659, 0.31467835501176833);
+        int landed = w.Shells.Hits + w.Shells.Misses;
+        Assert.True(w.Shells.Launch(w, table, muzzle, forward, 2.948362581062245, 0.9944378117770383, 0, shooter, 0));
+        w.AdvanceTo(w.Time + 60_000);
+        Assert.Equal(landed + 1, w.Shells.Hits + w.Shells.Misses);
+    }
+
     [Fact]
     public void A_shell_allocates_nothing()
     {
