@@ -894,6 +894,12 @@ odds, not a forecast of the battle.
 - **No escape:** an outmatched unit or side that can't get away doesn't decline. Fight runs only where running gains
   (opens the range, or buys time: night coming, supports near, as the fall-back already looks for), else holds
   doctrine's band and fights.
+- **Ammunition counts** (the user, after the questions): a battery's rate on the enemy is capped by the rounds its
+  mounts have left (what it can still deliver, not only how fast), own ships exactly, enemies at their class's full
+  outfit (rounds fired aren't seen). And **a ship whose magazines are empty withdraws:** main batteries out of rounds and
+  no torpedoes left, she leaves her group and goes home, as falling out does, with her own reason ("out of
+  ammunition"); her secondaries fire at will on the way. A mount with no rounds given (0 in the class: unlimited) never
+  runs out.
 - **Left as they are:** the torpedo-craft classification (Regensburg's 4.1" counts as one, 5.1d), since the turn-away's
   threat test still reads it; `DesignerPlaceholders.HeavyGunMm` (the shell mix), which isn't the commander's.
 
