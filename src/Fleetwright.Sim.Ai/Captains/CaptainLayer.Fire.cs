@@ -92,6 +92,8 @@ public sealed partial class CaptainLayer
             if (own.Tier == ClockTier.Fine)
             {
                 ref var cap = ref Get(own.Entity);
+                if (cap.TorpedoHeld && !groups.InLine(own.Entity))
+                    cap.TorpedoHeld = false;   // out of her flotilla's line: her torpedoes her own again
                 FallOut(ctx, ref cap, own, slot);
                 Comb(ctx, ref cap, own);
                 TakeUpStanding(ctx, ref cap, own, slot);
@@ -163,7 +165,7 @@ public sealed partial class CaptainLayer
         var s = ctx.Settings;
         var cls = own.Handling.Class;
         long now = ctx.NowMs;
-        if (pic == null || cls.Launchers.Length == 0 || cap.Fire == FireOrder.Hold || cap.TorpedoMs != 0 && now - cap.TorpedoMs < s.TorpedoRefireMs)
+        if (pic == null || cls.Launchers.Length == 0 || cap.Fire == FireOrder.Hold || cap.TorpedoHeld || cap.TorpedoMs != 0 && now - cap.TorpedoMs < s.TorpedoRefireMs)
             return;
         bool onOrder = (TorpedoUse)doctrine.Of(own.Entity, own.Side, DoctrineField.Torpedoes) == TorpedoUse.OnOrder;
         if (onOrder && cap.Fire != FireOrder.Engage)
@@ -200,6 +202,39 @@ public sealed partial class CaptainLayer
         cap.TorpedoMs = now;
     }
 
+    /// <summary>His flotilla's admiral holds his torpedoes for its signal, or lets them go (docs/battle/command.md 5.1b).</summary>
+    internal void HoldTorpedoes(int entity, bool held)
+    {
+        if (Find(entity) is int i and >= 0 ? captains[i].TorpedoHeld != held : held)
+            Get(entity).TorpedoHeld = held;
+    }
+
+    /// <summary>His flotilla's signal to fire (docs/battle/command.md 5.1b): a spread at the target from his launchers that
+    /// are ready, aimed where his navy's picture says it'll be, unless a friend is on the track; once for a signal made at
+    /// <paramref name="signalMs"/>. Whether he fired.</summary>
+    internal bool FireOnSignal(in AiContext ctx, int entity, int target, long signalMs)
+    {
+        var s = ctx.Settings;
+        int slot = ctx.Ships.SlotOf(entity);
+        var pic = slot >= 0 ? ctx.World.Sightings.Of(ctx.Ships[slot].Side) : null;
+        if (pic == null || pic.IndexOf(target) is not (int ti and >= 0) || Find(entity) is int ci and >= 0 && captains[ci].TorpedoMs >= signalMs ||
+            ctx.World.Torpedoes.Ready(ctx.World, entity, target) == 0)
+            return false;
+        var own = ctx.Ships[slot];
+        var (range, speed) = FastSetting(own.Handling.Class);
+        var (tq, tv, _) = pic.EstimateAt(ti, ctx.NowMs, s);
+        if (!TorpedoAim.Intercept(own.Position, tq, tv, speed, out double toward, out _))
+            return false;
+        var aim = own.Position;
+        var fwd = Earth.Forward(aim, toward);
+        Earth.Advance(ref aim, ref fwd, 1000);
+        if (lines.TorpedoFoul(ctx, own, aim, range))
+            return false;
+        ctx.Issue(TorpedoSystem.Launch(entity, target, s.TorpedoSpread));
+        Get(entity).TorpedoMs = ctx.NowMs;
+        return true;
+    }
+
     /// <summary>The run a torpedo at a speed needs to meet a contact going on as its navy holds it, m (infinite when it
     /// can't).</summary>
     double Run(in AiContext ctx, Picture pic, ShipState own, int i, double speedMs)
@@ -209,7 +244,7 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>A class's torpedoes' fast setting: the longest range of its launchers' (m), and its speed (m/s).</summary>
-    static (double RangeM, double SpeedMs) FastSetting(ShipClass cls)
+    internal static (double RangeM, double SpeedMs) FastSetting(ShipClass cls)
     {
         double range = 0, speed = 0;
         foreach (ref readonly var l in cls.Launchers)
@@ -225,7 +260,7 @@ public sealed partial class CaptainLayer
     const double TorpedoCraftGunMm = 150;
 
     /// <summary>Whom torpedoes are for: the biggest first.</summary>
-    static int TorpedoRank(ShipType t) => t switch
+    internal static int TorpedoRank(ShipType t) => t switch
     {
         ShipType.Capital => 0,
         ShipType.Cruiser => 1,

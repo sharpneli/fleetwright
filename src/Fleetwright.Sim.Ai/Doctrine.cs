@@ -50,6 +50,14 @@ public enum DoctrineField : byte
     /// <summary>A line that sees a torpedo attack coming (enemy torpedo craft closing on it, or tracks seen) turns away
     /// together through this many degrees, and back once it's past (docs/battle/command.md 5.1b). 0: it holds on.</summary>
     TurnAwayDeg,
+
+    /// <summary>How a group of torpedo craft attacks (<see cref="Ai.TorpedoAttack"/>): each boat alone, or the flotilla
+    /// together (docs/battle/command.md 5.1b).</summary>
+    TorpedoAttack,
+
+    /// <summary>A flotilla attacking together is beaten off (gives up its attack and runs) once this share of the boats it
+    /// came in with is gone from its line.</summary>
+    AttackBreakOffShare,
 }
 
 /// <summary>Doctrine's Engage: carry on with the orders given (firing at will), or Fight (and turn away when outgunned).</summary>
@@ -73,6 +81,14 @@ public enum TorpedoEvasion : byte
     Comb,
 }
 
+/// <summary>Doctrine's TorpedoAttack: each torpedo craft attacks alone (docs/battle/fighting.md 4.6), or a flotilla
+/// attacks together, its admiral leading (docs/battle/command.md 5.1b).</summary>
+public enum TorpedoAttack : byte
+{
+    Alone,
+    Together,
+}
+
 /// <summary>Doctrine's Torpedoes: at will, or only on order.</summary>
 public enum TorpedoUse : byte
 {
@@ -87,7 +103,7 @@ public enum TorpedoUse : byte
 /// per unit; a command sets one value, so it's logged and replays. AI state: only captains and admirals read it.</summary>
 public sealed class Doctrine(GroupSystem groups)
 {
-    public const int FieldCount = (int)DoctrineField.TurnAwayDeg + 1;
+    public const int FieldCount = (int)DoctrineField.AttackBreakOffShare + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -105,6 +121,8 @@ public sealed class Doctrine(GroupSystem groups)
         DoctrineField.EvadeBeyondM => 10_000,
         DoctrineField.TorpedoEvasion => (double)Ai.TorpedoEvasion.None,
         DoctrineField.TurnAwayDeg => 0,
+        DoctrineField.TorpedoAttack => (double)Ai.TorpedoAttack.Alone,
+        DoctrineField.AttackBreakOffShare => 1,   // never
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 
@@ -216,6 +234,7 @@ public sealed class DoctrinePresets
             DoctrineField.Torpedoes when Enum.TryParse<TorpedoUse>(name, ignoreCase: true, out var t) => (f, (double)t),
             DoctrineField.Evasion when Enum.TryParse<Evasion>(name, ignoreCase: true, out var ev) => (f, (double)ev),
             DoctrineField.TorpedoEvasion when Enum.TryParse<TorpedoEvasion>(name, ignoreCase: true, out var te) => (f, (double)te),
+            DoctrineField.TorpedoAttack when Enum.TryParse<TorpedoAttack>(name, ignoreCase: true, out var ta) => (f, (double)ta),
             _ => throw new ArgumentException($"doctrine: \"{v}\" isn't a value of {field}"),
         };
     }

@@ -55,6 +55,10 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public bool Away;               // turned away from torpedoes, AwayDeg, on AwayCourse; his order waits
         public double AwayDeg, AwayCourse;
         public long ThreatMs;           // when he last saw the attack
+        public AttackPhase Attack;      // his flotilla's attack (AdmiralLayer.Attack.cs) on AttackTarget
+        public bool AttackOrdered;      // told to Attack (else by doctrine)
+        public int AttackTarget, AttackShips, AttackSide;   // the ship; the boats it came in with; the side of him it gains (±1)
+        public long AttackMs;           // when the phase began
     }
 
     Admiral[] admirals = new Admiral[8];
@@ -201,7 +205,12 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             case AiCommand.LoopRoute:
                 a.Loop = c.X != 0;
                 break;
+            case AiCommand.Attack:
+                (a.Order, a.Target, a.DistanceM, a.AbeamM) = (CaptainOrder.Fight, Unit.Ship((int)c.A).Id, 0, 0);
+                (a.AttackOrdered, a.Attack, a.AttackTarget) = (true, AttackPhase.None, 0);   // from a fresh start
+                break;
             case AiCommand.Follow or AiCommand.Station or AiCommand.Run or AiCommand.Shadow or AiCommand.Fight:
+                a.AttackOrdered = false;
                 a.Order = code switch
                 {
                     AiCommand.Follow => CaptainOrder.Follow,
@@ -277,7 +286,9 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 TurnStep(ctx, g, a);
             if (Manoeuvring(g))
             {
-                // turning together: every ship has her course; no stations, no new guide's orders until it's done
+                // turning together: every ship has her course; no stations, no new guide's orders until it's done (a
+                // flotilla firing as it turns)
+                FireTogether(ctx, g, a);
                 if (a.Fire == FireOrder.Engage)
                     HandFire(ctx, g, a, fresh: false);
                 Limit(ctx, g, a);
@@ -289,6 +300,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             TakeUpStanding(ctx, g, a, lead);
             if (TurnAway(ctx, g, a, lead))
                 continue;   // turning together: no stations until it's round
+            if (AttackStep(ctx, g, a, lead))
+                continue;   // the flotilla turning together to fire
             if (a.Fire == FireOrder.Engage)
                 HandFire(ctx, g, a, fresh: false);
             Limit(ctx, g, a);
@@ -538,6 +551,15 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 h.Add(a.AwayDeg);
                 h.Add(a.AwayCourse);
                 h.Add(a.ThreatMs);
+            }
+            if (a.Attack != AttackPhase.None || a.AttackOrdered)
+            {
+                h.Add((int)a.Attack);
+                h.Add(a.AttackOrdered);
+                h.Add(a.AttackTarget);
+                h.Add(a.AttackShips);
+                h.Add(a.AttackSide);
+                h.Add(a.AttackMs);
             }
         }
     }

@@ -58,7 +58,7 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Form)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Attack)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         switch ((AiCommand)c.Code)

@@ -600,6 +600,16 @@ public sealed record SimSettings
     public double TorpedoThreatClosingMs { get; init; } = 3;
     public double TurnBackS { get; init; } = 180;
 
+    /// <summary>A flotilla's attack (docs/battle/command.md 5.1b): it first gains a point AttackGainDeg off the target's bow,
+    /// AttackGainShare of its torpedoes' fast range from it, on the side it's on; it runs in from there (or once it's that far
+    /// round the target's bow, or after AttackGainMaxMs). Degrees, a share, ms.</summary>
+    public double AttackGainDeg { get; init; } = 50;
+    public double AttackGainShare { get; init; } = 1.5;
+    public long AttackGainMaxMs { get; init; } = 900_000;
+
+    /// <summary>A flotilla's signal to fire holds this long: each boat fires once as her tubes bear, s.</summary>
+    public double AttackFireS { get; init; } = 60;
+
     /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
     /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>
     public double[] FightTypeGuns { get; init; } = [1, 8, 1, 0.1, 0, 0];

@@ -54,7 +54,7 @@ public enum PlayEvent : byte
 public readonly record struct PlayLine(long Ms, PlayEvent Kind, int Side, int Entity = 0, int Other = 0, int Count = 0);
 
 /// <summary>How a side came out: the facts, not a grade (grading is the missions', docs/battle/plan.md 6.1).</summary>
-public readonly record struct SideResult(string Name, int Ships, double Tonnes, int Lost, double LostTonnes, int Damaged, int Afloat, bool AimsMet, int Hits = 0);
+public readonly record struct SideResult(string Name, int Ships, double Tonnes, int Lost, double LostTonnes, int Damaged, int Afloat, bool AimsMet, int Hits = 0, int Torpedoes = 0);
 
 /// <summary>The judge of a scenario's end (docs/battle/command.md "The end", step 5.0): whether it's over and why, its
 /// timeline and its result, read from the world and its combat log. Not world state: the world never ends, only a
@@ -73,7 +73,7 @@ public sealed class ScenarioEnd
     readonly List<PlayLine> lines = [];
     readonly bool[] sighted, fired, hit, torpedoes;   // by side: its first already told
     readonly int[] afloat;   // by side, at the last check
-    readonly int[] hits;     // by side: the hits it has made
+    readonly int[] hits, torpedoesFired;   // by side: the hits it has made, the torpedoes it has fired
     long logRead, lastBusyMs = long.MinValue;
     bool met;
 
@@ -86,7 +86,7 @@ public sealed class ScenarioEnd
         untilMs = s.Until?.Ms ?? s.Start.Ms + w.Settings.PlayLimitMs;
         int n = s.Sides.Length;
         aims = [.. Enumerable.Range(0, n).Select(side => s.AimsOf(side).ToArray())];
-        (sighted, fired, hit, torpedoes, afloat, hits) = (new bool[n], new bool[n], new bool[n], new bool[n], new int[n], new int[n]);
+        (sighted, fired, hit, torpedoes, afloat, hits, torpedoesFired) = (new bool[n], new bool[n], new bool[n], new bool[n], new int[n], new int[n], new int[n]);
         logRead = w.CombatLog.Written;
     }
 
@@ -189,6 +189,8 @@ public sealed class ScenarioEnd
                     break;
                 case CombatEvent.Torpedoes:
                     First(torpedoes, side, new PlayLine(e.Ms, PlayEvent.Torpedoes, side, e.Shooter, e.Target, e.Count));
+                    if (side >= 0 && side < torpedoesFired.Length)
+                        torpedoesFired[side] += e.Count;
                     break;
                 case CombatEvent.Lost:
                     lines.Add(new PlayLine(e.Ms, PlayEvent.Lost, side, e.Target, e.Shooter, e.Count));
@@ -251,7 +253,7 @@ public sealed class ScenarioEnd
                 }
             }
             bool met = aims[side].All(a => Aims.Met(world, side, a)) && up > 0;
-            r[side] = new SideResult(scenario.Sides[side], count, t, lost, lostT, damaged, up, met, hits[side]);
+            r[side] = new SideResult(scenario.Sides[side], count, t, lost, lostT, damaged, up, met, hits[side], torpedoesFired[side]);
         }
         return r;
     }

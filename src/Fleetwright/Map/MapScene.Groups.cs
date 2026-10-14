@@ -443,6 +443,9 @@ public sealed unsafe partial class MapScene
         ImGui.SameLine();
         if (ImGui.SmallButton($"about>{id}"))
             world.Send(o.BattleTurn(unit, toStarboard: true));
+        ImGui.SameLine();
+        if (ImGui.SmallButton($"torpedo attack{id}"))
+            world.Send(o.Attack(unit));   // a flotilla's, on the biggest in sight
     }
 
     /// <summary>"Held by you", top right: every ship and group the player holds out of its line, with what's become of

@@ -27,6 +27,10 @@
     "TorpedoEvasion": "comb",
     // a line that sees a torpedo attack coming (enemy torpedo craft closing within 8 km, or tracks seen) turns away together
     // through 4 points (the Grand Fleet's answer), and back three minutes after it's past; 0 holds on
-    "TurnAwayDeg": 45
+    "TurnAwayDeg": 45,
+    // torpedo craft in a group attack "together" (gain a position ahead of the target's beam, run in, fire on one signal,
+    // turn away together) or "alone" (each boat on her own); a flotilla that has lost half its boats is beaten off
+    "TorpedoAttack": "together",
+    "AttackBreakOffShare": 0.5
   }
 }

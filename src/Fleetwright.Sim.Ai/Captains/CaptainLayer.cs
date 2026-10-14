@@ -106,6 +106,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool FightAway;          // fighting: outgunned, turned away
         public bool Met;                // doctrine's Engage taken up in this encounter
         public long TorpedoMs;          // when he last fired torpedoes (0: never)
+        public bool TorpedoHeld;        // his flotilla attacking together: his torpedoes wait for its signal
         public CaptainReason Reason;    // why, when it isn't simply his order (fallen out)
         public int FitVersion;          // his ship's condition's version when he last judged its fitness
         public long CombUntilMs;        // combing a torpedo's track until then (0: not)
@@ -322,8 +323,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             case AiCommand.Shadow:
                 (cap.Order, cap.Target, cap.DistanceM, cap.AbeamM) = (CaptainOrder.Shadow, (int)c.A, c.X, 0);
                 break;
-            case AiCommand.Fight:
-                (cap.Order, cap.Target, cap.DistanceM, cap.AbeamM) = (CaptainOrder.Fight, (int)c.A, c.X, 0);
+            case AiCommand.Fight or AiCommand.Attack:
+                (cap.Order, cap.Target, cap.DistanceM, cap.AbeamM) = (CaptainOrder.Fight, (int)c.A, code == AiCommand.Fight ? c.X : 0, 0);
                 (cap.FightSide, cap.FightEnemy, cap.FightAway) = (0, 0, false);
                 break;
             default:
@@ -536,6 +537,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add(c.FightAway);
             h.Add(c.Met);
             h.Add(c.TorpedoMs);
+            if (c.TorpedoHeld)
+                h.Add(true);   // only then: worlds without flotilla attacks hash as before
             h.Add((int)c.Reason);
             h.Add(c.FitVersion);
             h.Add(c.CombUntilMs);

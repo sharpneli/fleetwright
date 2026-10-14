@@ -107,6 +107,11 @@ public enum AiCommand : ushort
     /// <summary>A group's formation (A a <see cref="Formation"/>), spacing (X, m) and a line of bearing's bearing (Y,
     /// degrees): <see cref="GroupSystem.SetFormation"/> through the chain. Nothing to a ship.</summary>
     Form,
+
+    /// <summary>A flotilla's torpedo attack (docs/battle/command.md 5.1b) on A, a ship (an entity, as its navy holds the
+    /// contact; 0: the biggest in sight): ahead of its beam, in together, a spread on one signal, away together, and again
+    /// while it has torpedoes. To a ship alone, Fight on it (4.6's attack, for a torpedo craft).</summary>
+    Attack,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -179,6 +184,9 @@ public readonly struct UnitOrders(byte system)
     /// <summary>A group's formation and spacing (and a line of bearing's bearing).</summary>
     public Command Form(Unit u, Formation formation, double spacingM, double bearingDeg = 0, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Form, u, source, a: (long)formation, x: spacingM, y: bearingDeg);
+
+    /// <summary>A flotilla's torpedo attack on a contact (a ship's entity; 0: the biggest in sight).</summary>
+    public Command Attack(Unit u, int contact = 0, OrderSource source = OrderSource.Player) => Make(AiCommand.Attack, u, source, a: contact);
 
     /// <summary>A value of a unit's doctrine (NaN: back to what it inherits from its group, its side, the default).</summary>
     public Command Doctrine(Unit u, DoctrineField field, double value) => Make(AiCommand.Doctrine, u, OrderSource.Player, a: (long)field, x: value);
