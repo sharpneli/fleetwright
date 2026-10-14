@@ -6,8 +6,9 @@ using Xunit.Abstractions;
 namespace Fleetwright.Sim.Tests;
 
 /// <summary>Falling back on the main body (docs/battle/command.md 5.1c): a squadron of two dreadnoughts told to fight six
-/// turns away, as Fight does when outgunned; with its own battle fleet of eight 60 km to the north it runs for it (the
-/// enemy to the south-west, straight away would be north-east), and alone it runs straight away. Guns held.</summary>
+/// turns away, as Fight does when outmatched; with its own battle fleet of eight 60 km to the north it runs for it (the
+/// enemy to the south-west, straight away would be north-east). Alone it can't get away from ships as fast as itself,
+/// so it fights (5.1g: no escape); two battlecruisers alone, faster, run straight away. Guns held.</summary>
 public class FallBackTests(ITestOutputHelper output)
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 12);
@@ -40,14 +41,14 @@ public class FallBackTests(ITestOutputHelper output)
         return g;
     }
 
-    static double RunCourse(bool support)
+    static double RunCourse(bool support, string own = "dreadnought")
     {
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(25_000));
-        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+        int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!), mine = w.Ships.AddClass(Fleet.Get(own).Class!);
         var at = Earth.Position(56.0, 4.0);
-        int squadron = Column(w, ai, bb, at, 90, 2);
+        int squadron = Column(w, ai, mine, at, 90, 2);
         if (support)
             Column(w, ai, bb, Off(at, 0, 60_000), 180, 8);
         Column(w, ai, bb, Off(at, 225, 18_000), 45, 6, side: 1);
@@ -64,11 +65,12 @@ public class FallBackTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Outgunned_it_runs_for_its_main_body_not_straight_away()
+    public void Outmatched_it_runs_for_its_main_body_or_fights_if_it_cant_get_away()
     {
-        double toSupport = RunCourse(support: true), alone = RunCourse(support: false);
-        output.WriteLine($"running with its fleet to the north it steers {toSupport:F0}°; alone {alone:F0}°");
+        double toSupport = RunCourse(support: true), alone = RunCourse(support: false), faster = RunCourse(support: false, own: "lion");
+        output.WriteLine($"running with its fleet to the north it steers {toSupport:F0}°; alone {alone:F0}°; two battlecruisers alone {faster:F0}°");
         Assert.True(Off(toSupport, 0) < 25, $"{toSupport:F0}°");   // north, for the fleet
-        Assert.True(Off(alone, 45) < 30, $"{alone:F0}°");          // straight away from the south-west
+        Assert.True(Off(alone, 45) > 60, $"{alone:F0}°");          // no escape: it fights
+        Assert.True(Off(faster, 45) < 30, $"{faster:F0}°");        // straight away from the south-west
     }
 }

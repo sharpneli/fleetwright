@@ -167,9 +167,10 @@ public class FireOrderTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Fight_turns_away_when_outgunned()
+    public void Fight_turns_away_when_outmatched()
     {
-        var ships = new List<Placed> { new("dreadnought", 0, 0, 90, 18, 0) };
+        // a battlecruiser, faster than the four battleships she meets (28 kn against 24): she can get away, and does
+        var ships = new List<Placed> { new("lion", 0, 0, 90, 18, 0) };
         for (int i = 0; i < 4; i++)
             ships.Add(new Placed("super_dreadnought", 90 + i * 3, 16_000, 270, 15, 1));
         var (w, ai) = Make([.. ships]);
@@ -182,6 +183,24 @@ public class FireOrderTests(ITestOutputHelper output)
         output.WriteLine($"from {before / 1000:F1} km to {after / 1000:F1} km, heading {s1.HeadingDeg:F0}°");
         Assert.InRange(s1.HeadingDeg, 180, 360);   // turned away, west
         Assert.True(after > before - 2_000, "not closing");
+    }
+
+    [Fact]
+    public void Fight_with_no_escape_fights()
+    {
+        // a dreadnought (21 kn) against four faster battleships (24 kn): she can't get away, and nobody of hers is near to
+        // fall back on, so she fights at her band (docs/battle/command.md 5.1g)
+        var ships = new List<Placed> { new("dreadnought", 0, 0, 90, 18, 0) };
+        for (int i = 0; i < 4; i++)
+            ships.Add(new Placed("super_dreadnought", 90 + i * 3, 16_000, 270, 15, 1));
+        var (w, ai) = Make([.. ships]);
+        w.Apply(ai.Orders.Fight(Unit.Ship(1)));
+        Run(w, 30);
+        double before = Apart(w, 1, 2);
+        Run(w, 8 * 60);
+        double after = Apart(w, 1, 2);
+        output.WriteLine($"from {before / 1000:F1} km to {after / 1000:F1} km");
+        Assert.True(after < before, "she closes to fight");
     }
 
     [Fact]

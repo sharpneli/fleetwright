@@ -148,7 +148,7 @@ public sealed class ScenarioEnd
             if (Aims.Afloat(store, slot) && x.Side < afloat.Length)
             {
                 afloat[x.Side]++;
-                if (ai?.Captains.ReasonOf(x.Entity) is { } why && why is >= CaptainReason.OutSpeed and <= CaptainReason.OutSteering && fellOut.Add(x.Entity))
+                if (ai?.Captains.ReasonOf(x.Entity) is { } why && why is >= CaptainReason.OutSpeed and <= CaptainReason.OutAmmunition && fellOut.Add(x.Entity))
                     lines.Add(new PlayLine(now, PlayEvent.FellOut, x.Side, x.Entity, Count: (int)why));
             }
         }

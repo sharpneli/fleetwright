@@ -114,6 +114,7 @@ static class ScenarioPlay
                     Fleetwright.Sim.Ai.Captains.CaptainReason.OutGuns => "her main guns out",
                     Fleetwright.Sim.Ai.Captains.CaptainReason.OutList => "listing",
                     Fleetwright.Sim.Ai.Captains.CaptainReason.OutWater => "flooding",
+                    Fleetwright.Sim.Ai.Captains.CaptainReason.OutAmmunition => "her magazines empty",
                     _ => "her steering gone",
                 },
                 PlayEvent.Deployed => $"{SideName(l.Side)}'s {end.GroupName(l.Entity)} deploys into line of battle",

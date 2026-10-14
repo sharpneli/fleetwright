@@ -156,6 +156,8 @@ public static class ScenarioLoader
             for (int k = 0, given = 0; k < top.Tasks.Count; k++)
                 if (Task(top, top.Tasks[k], unit, w, ai, s, start, entities) is { } c)
                     w.Apply(given++ == 0 ? c : UnitOrders.Then(c));   // the first at once, the rest one after another
+        // the matchup's profiles and tables for every class at load, not at the first judgement in play (docs/battle/command.md 5.1g)
+        ai.Judge.Matchups.Warm(w);
         return start;
     }
 

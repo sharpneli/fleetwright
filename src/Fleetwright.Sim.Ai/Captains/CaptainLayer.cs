@@ -63,6 +63,9 @@ public enum CaptainReason : byte
     /// <summary>Fallen out: her steering lost or jammed.</summary>
     OutSteering,
 
+    /// <summary>Out of the fight: her main magazines empty and no torpedoes left (docs/battle/command.md 5.1g).</summary>
+    OutAmmunition,
+
     /// <summary>Fallen out and home.</summary>
     Home,
 
@@ -106,7 +109,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public FireOrder Fire;          // at will (the default), hold, or engage FireTarget
         public int FireTarget, FireFrom;   // the ship engaged; the group whose admiral gave the fire order (0: his own)
         public int FightSide, FightEnemy;  // fighting: the side he keeps the enemy on (0: not chosen yet), and whom
-        public bool FightAway;          // fighting: outgunned, turned away
+        public bool FightAway;          // fighting: outmatched, turned away
+        public bool AttackOrdered;      // fighting by an Attack order: a torpedo craft presses it home whatever the matchup
         public bool Met;                // doctrine's Engage taken up in this encounter
         public long TorpedoMs;          // when he last fired torpedoes (0: never)
         public bool TorpedoHeld;        // his flotilla attacking together: his torpedoes wait for its signal
@@ -123,6 +127,12 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
 
     /// <summary>The units' tasks: a withdrawing ship doesn't take up doctrine's fight (set by the AI system).</summary>
     internal Tasks.TaskLayer? Tasks { get; set; }
+
+    /// <summary>How many points a captain's track of the ship ahead holds (<see cref="SimSettings.FollowTrackPoints"/>).</summary>
+    internal int TrailPoints { get; set; } = 512;
+
+    /// <summary>Who can fight whom (docs/battle/command.md 5.1g): Fight's judgement.</summary>
+    internal Knowledge.MatchupJudge Judge { get; set; } = null!;
 
     /// <summary>How many notices captains have raised (a ship's notice going up): a UI shows the new ones.</summary>
     public int Notices { get; private set; }
@@ -335,7 +345,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 break;
             case AiCommand.Fight or AiCommand.Attack:
                 (cap.Order, cap.Target, cap.DistanceM, cap.AbeamM) = (CaptainOrder.Fight, (int)c.A, code == AiCommand.Fight ? c.X : 0, 0);
-                (cap.FightSide, cap.FightEnemy, cap.FightAway) = (0, 0, false);
+                (cap.FightSide, cap.FightEnemy, cap.FightAway, cap.AttackOrdered) = (0, 0, false, code == AiCommand.Attack);
                 break;
             default:
                 throw new ArgumentException($"unknown AI command {c.Code}");
@@ -546,6 +556,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add(c.FightSide);
             h.Add(c.FightEnemy);
             h.Add(c.FightAway);
+            h.Add(c.AttackOrdered);
             h.Add(c.Met);
             h.Add(c.TorpedoMs);
             if (c.TorpedoHeld)
@@ -579,7 +590,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         if (i < 0)
         {
             i = Insert(entity);
-            captains[i] = new Captain { Entity = entity, AskedKn = double.NaN };
+            // his track of the ship ahead made with him, not the first time he follows (that may be in a think)
+            captains[i] = new Captain { Entity = entity, AskedKn = double.NaN, Track = new Trail(TrailPoints) };
         }
         return ref captains[i];
     }

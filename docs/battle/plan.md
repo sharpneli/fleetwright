@@ -1852,7 +1852,11 @@ plans as queued tasks, idle units given their roles' tasks, closing the enemy, s
 off, searching for a lost enemy and giving up, night, a "done" end, and the Jutland's plans; the Jutland meets in every
 seed (`command.md` 5.1d). **The order from here** (the user, 2026-10-14): 5.1g (the matchup: who can fight whom,
 relative, torpedoes counted, replacing the absolute "heavy" rule and `Strength`), then the UI rework (5.2), the VFX
-pass and the detail passes; 5.1e (signals) and 5.1f (the whole) late, after those.
+pass and the detail passes; 5.1e (signals) and 5.1f (the whole) late, after those. **5.1g done 2026-10-15:** the matchup (who
+can fight whom, fitted to the fine model's own benches: the share of the enemy's tonnage each side puts out of the fight
+for the share of its own) read by Fight, the scout, the flotilla's attack and the commander (each enemy group given the
+units that together can take it on; declining only when he can get away); empty magazines send a ship home; Germany
+declines the Grand Fleet at the Jutland (`command.md` 5.1g).
 
 **5.1 Captains and admirals.** Standing orders for both sides: go to, keep station, shadow, evade, engage, break off
 at x% damage. Admirals' objectives above their squadrons: search an area, cover, intercept, rendezvous. All are more

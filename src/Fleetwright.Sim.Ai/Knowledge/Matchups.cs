@@ -30,6 +30,30 @@ public sealed class Matchups
         return p;
     }
 
+    int warmed;
+
+    /// <summary>Every class the world's registry holds profiled, and every gun's table against every class (once, and again
+    /// when it grows): a contact may be taken for any of them, and a profile or a table made then would be garbage in the
+    /// middle of a fight.</summary>
+    public void Warm(World world)
+    {
+        var reg = world.Ships.Registry;
+        int n = reg.Count;
+        if (n == warmed)
+            return;
+        for (int id = warmed; id < n; id++)
+            if (reg.IsReady(id) && reg.Get(id) is { } c)
+                Profile(world, c);
+            else
+                n = Math.Min(n, id);   // one still building: from it again next time
+        warmed = n;
+        // and every gun's table against every class (a few hundred bytes a pair), so none is made in a fight
+        foreach (var a in profiles.Values)
+            foreach (var g in a.Guns)
+                foreach (var t in profiles.Values)
+                    g.Against(t, 0, world.Settings);
+    }
+
     /// <summary>The classes a side has at sea of a type (<see cref="ShipType.Unknown"/>: of any type), and how many ships
     /// they are in all; made once a moment.</summary>
     public (List<(MatchupProfile Profile, int Count)>? Classes, int Total) Census(World world, byte side, ShipType type)
@@ -38,6 +62,25 @@ public sealed class Matchups
             Count(world);
         int i = side * (Types + 1) + (type == ShipType.Unknown ? Types : (int)type);
         return (census[i], censusTotal[i]);
+    }
+
+    /// <summary>A contact's tonnage as it's taken: its class's once made out, else the average of what its side has at sea
+    /// of its type (of any type, before that's made out); 0 with nothing to take it for.</summary>
+    public double TonnageOf(World world, in Contact c)
+    {
+        if (c.Level >= ContactLevel.Class && c.TakenFor >= 0 && world.Ships.Registry.Get(c.TakenFor) is { } taken)
+            return taken.Motion.FullDisplacementT;
+        if (c.Level < ContactLevel.Type)
+            return 0;
+        var (classes, total) = Census(world, c.Side, c.Type);
+        if (classes == null || total == 0)
+            (classes, total) = Census(world, c.Side, ShipType.Unknown);
+        if (classes == null || total == 0)
+            return 0;
+        double t = 0;
+        foreach (var (p, n) in classes)
+            t += p.DisplacementT * n;
+        return t / total;
     }
 
     void Count(World world)
@@ -109,10 +152,11 @@ public sealed class MatchupSide
             Torpedoes(store, slot, cls, k, world.Time.Ms), fit.SpeedShare, Math.Clamp(1 - fit.WaterShare, 0.1, 1)));
     }
 
-    /// <summary>A contact as a navy holds it: the class it's taken for, else (by its type, or any type before that's made
-    /// out) the average of what its side has at sea, as fractional ships; and its condition as seen. One seen going down
-    /// or gone isn't counted.</summary>
-    public void AddContact(World world, Matchups m, in Contact c)
+    /// <summary>A contact as a navy (<paramref name="viewer"/>) holds it: the class it's taken for, else the average of
+    /// what its side has at sea of its type (of any type, if it has none of it), else (before its type and side are made
+    /// out) of what every other side has, as fractional ships; and its condition as seen. One seen going down or gone
+    /// isn't counted.</summary>
+    public void AddContact(World world, Matchups m, byte viewer, in Contact c)
     {
         if ((c.Seen & (SeenFlags.GoingDown | SeenFlags.Gone)) != 0)
             return;
@@ -131,11 +175,24 @@ public sealed class MatchupSide
             Add(new MatchupEntry(m.Profile(world, taken), 1, guns, guns, Speed: speed, Toughness: tough));
             return;
         }
-        var (classes, total) = c.Level >= ContactLevel.Type ? m.Census(world, c.Side, c.Type) : (null, 0);
+        if (c.Level < ContactLevel.Type)
+        {
+            // a ship, not yet a type: any of the others' at sea
+            int all = 0;
+            for (int side = 0; side < 256; side++)
+                if (side != viewer)
+                    all += m.Census(world, (byte)side, ShipType.Unknown).Total;
+            for (int side = 0; side < 256 && all > 0; side++)
+                if (side != viewer && m.Census(world, (byte)side, ShipType.Unknown) is ({ } some, > 0))
+                    foreach (var (p, n) in some)
+                        Add(new MatchupEntry(p, (double)n / all, guns, guns, Speed: speed, Toughness: tough));
+            return;
+        }
+        var (classes, total) = m.Census(world, c.Side, c.Type);
         if (classes == null || total == 0)
-            (classes, total) = c.Level >= ContactLevel.Type ? m.Census(world, c.Side, ShipType.Unknown) : (null, 0);
+            (classes, total) = m.Census(world, c.Side, ShipType.Unknown);
         if (classes == null || total == 0)
-            return;   // nothing to take it for (before its side is made out, v0 counts it as nothing)
+            return;   // nothing at sea to take it for
         foreach (var (p, n) in classes)
             Add(new MatchupEntry(p, (double)n / total, guns, guns, Speed: speed, Toughness: tough));
     }

@@ -77,6 +77,9 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
     /// <summary>The units' tasks: a withdrawing group doesn't take up doctrine's fight (set by the AI system).</summary>
     internal Tasks.TaskLayer? Tasks { get; set; }
 
+    /// <summary>Who can fight whom (docs/battle/command.md 5.1g): whether a flotilla presses its attack home.</summary>
+    internal Knowledge.MatchupJudge Judge { get; set; } = null!;
+
     /// <summary>How many notices admirals have raised (a group's notice going up).</summary>
     public int Notices { get; private set; }
 

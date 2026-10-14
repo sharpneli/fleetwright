@@ -141,10 +141,11 @@ public class TorpedoTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void A_torpedo_boats_fight_closes_fires_and_turns_away()
+    public void A_torpedo_boat_told_to_attack_closes_fires_and_turns_away()
     {
+        // ordered to: by her own judgement a lone boat by day doesn't take on a battleship (docs/battle/command.md 5.1g)
         var w = Pair("destroyer", "super_dreadnought", 12_000, 90, 12, 1, out var ai);
-        w.Apply(ai!.Orders.Fight(Unit.Ship(2), Unit.Ship(1)));
+        w.Apply(ai!.Orders.Attack(Unit.Ship(2), 1));
         long fired = 0;
         double closest = double.MaxValue;
         for (int s = 1; s <= 25 * 60 && fired == 0; s++)
@@ -176,7 +177,19 @@ public class TorpedoTests(ITestOutputHelper output)
         var ai = new AiSystem(w);
         var classes = ScenarioLoader.RequestClasses(s, w.Ships.Registry, designs);
         ScenarioLoader.Apply(s, w, ai, classes);
-        w.AdvanceTo(s.Start + 16 * 60_000);   // closing, firing: pools at their size
+        // six boats against four battleships by day aren't worth an attack by their own judgement (docs/battle/command.md
+        // 5.1g): ordered to, they make it, against a line that holds on (one turning away leaves them astern of its beam)
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
+        for (int k = 0; k < w.Groups.Count; k++)
+            if (w.Groups[k].Name.Contains("Flotilla"))
+                w.Apply(ai.Orders.Attack(Unit.Group(w.Groups[k].GroupId)));
+        // closing, the first attack made (the boats' first turn together, their first torpedoes): pools at their size
+        long warm = 0;
+        while (w.Torpedoes.Fired == 0 && warm < 40 * 60)
+            w.AdvanceTo(s.Start + ++warm * 1000);
+        Assert.True(w.Torpedoes.Fired > 0, "the boats fired");
+        warm += 60;
+        w.AdvanceTo(s.Start + warm * 1000);
         // nothing a second, but in the seconds a ship goes or falls out of her group (one-off events may allocate: the
         // user, 2026-10-14; falling out, docs/battle/command.md 5.1a)
         long allocated = 0;
@@ -187,7 +200,7 @@ public class TorpedoTests(ITestOutputHelper output)
                 n += w.Groups[k].Members.Count;
             return n;
         }
-        for (long t = 16 * 60; t < 50 * 60; t++)
+        for (long t = warm; t < warm + 34 * 60; t++)
         {
             int ships = w.Ships.Store.Count, grouped = Grouped();
             long before = GC.GetAllocatedBytesForCurrentThread();
@@ -195,8 +208,7 @@ public class TorpedoTests(ITestOutputHelper output)
             if (w.Ships.Store.Count == ships && Grouped() == grouped)
                 allocated += GC.GetAllocatedBytesForCurrentThread() - before;
         }
-        output.WriteLine($"torpedoes fired {w.Torpedoes.Fired}, hits {w.Torpedoes.Hits}; {allocated} bytes in 34 minutes");
-        Assert.True(w.Torpedoes.Fired > 0, "the boats fired");
+        output.WriteLine($"first torpedoes at {(warm - 60) / 60.0:F1} min; torpedoes fired {w.Torpedoes.Fired}, hits {w.Torpedoes.Hits}; {allocated} bytes in 34 minutes");
         Assert.Equal(0, allocated);
 
         var r = new World(s.Start, s.Seed, Settings, w.Ships.Registry);

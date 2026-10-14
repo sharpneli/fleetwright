@@ -39,6 +39,9 @@ public class FlotillaAttackTests(ITestOutputHelper output)
     {
         var (w, ai, s) = Load(TorpedoAttack.Together);
         int flotilla = Flotilla(w);
+        // six boats against four battleships by day aren't worth an attack by their own judgement (docs/battle/command.md
+        // 5.1g): ordered to, they make it
+        w.Apply(ai.Orders.Attack(Unit.Group(flotilla)));
         var seen = new List<AttackPhase>();
         long signalMs = -1;
         long firedAtSignal = 0, firedMinuteOn = 0;

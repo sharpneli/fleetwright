@@ -64,10 +64,10 @@ public class MatchupSideTests(ITestOutputHelper output)
         var m = new Matchups();
         MatchupSide a = new(), b = new();
         a.AddOwn(w, m, Slot(w, 1));
-        b.AddContact(w, m, new Contact { Entity = 2, Level = ContactLevel.Class, TakenFor = ids["v25"], Side = 1, Type = ShipType.Destroyer });
+        b.AddContact(w, m, 0, new Contact { Entity = 2, Level = ContactLevel.Class, TakenFor = ids["v25"], Side = 1, Type = ShipType.Destroyer });
         double right = Judge(a, b);
         b.Clear();
-        b.AddContact(w, m, new Contact { Entity = 2, Level = ContactLevel.Class, TakenFor = ids["iron_duke"], Side = 1, Type = ShipType.Capital });
+        b.AddContact(w, m, 0, new Contact { Entity = 2, Level = ContactLevel.Class, TakenFor = ids["iron_duke"], Side = 1, Type = ShipType.Capital });
         double wrong = Judge(a, b);
         Assert.True(right > 2, $"taken rightly {right:0.##}");
         Assert.True(wrong < 0.5, $"taken for a battleship {wrong:0.##}");
@@ -80,17 +80,17 @@ public class MatchupSideTests(ITestOutputHelper output)
         var m = new Matchups();
         MatchupSide b = new();
         // a capital ship, not yet made out: two Iron Dukes and a Derfflinger at sea
-        b.AddContact(w, m, new Contact { Entity = 2, Level = ContactLevel.Type, TakenFor = -1, Side = 1, Type = ShipType.Capital });
+        b.AddContact(w, m, 0, new Contact { Entity = 2, Level = ContactLevel.Type, TakenFor = -1, Side = 1, Type = ShipType.Capital });
         Assert.Equal(2, b.Count);
         Assert.Equal(1, b.Entries.ToArray().Sum(e => e.Count), 6);
         Assert.Equal(2.0 / 3, b.Entries.ToArray().First(e => e.Profile.Class.Name.StartsWith("Iron Duke")).Count, 6);
         // a destroyer: the V25s
         b.Clear();
-        b.AddContact(w, m, new Contact { Entity = 4, Level = ContactLevel.Type, TakenFor = -1, Side = 1, Type = ShipType.Destroyer });
+        b.AddContact(w, m, 0, new Contact { Entity = 4, Level = ContactLevel.Type, TakenFor = -1, Side = 1, Type = ShipType.Destroyer });
         Assert.Equal(1, b.Count);
         Assert.StartsWith("V25", b.Entries[0].Profile.Class.Name);
         // two contacts of a type are two ships, whole: one entry
-        b.AddContact(w, m, new Contact { Entity = 5, Level = ContactLevel.Type, TakenFor = -1, Side = 1, Type = ShipType.Destroyer });
+        b.AddContact(w, m, 0, new Contact { Entity = 5, Level = ContactLevel.Type, TakenFor = -1, Side = 1, Type = ShipType.Destroyer });
         Assert.Equal(1, b.Count);
         Assert.Equal(2, b.Entries[0].Count, 6);
     }
@@ -103,16 +103,16 @@ public class MatchupSideTests(ITestOutputHelper output)
         MatchupSide a = new(), b = new();
         a.AddOwn(w, m, Slot(w, 1));
         var c = new Contact { Entity = 2, Level = ContactLevel.Class, TakenFor = ids["arethusa"], Side = 1, Type = ShipType.Cruiser };
-        b.AddContact(w, m, c);
+        b.AddContact(w, m, 0, c);
         double whole = Judge(a, b);
         b.Clear();
-        b.AddContact(w, m, c with { Seen = SeenFlags.Silent | SeenFlags.Stopped | SeenFlags.Low });
+        b.AddContact(w, m, 0, c with { Seen = SeenFlags.Silent | SeenFlags.Stopped | SeenFlags.Low });
         double cripple = Judge(a, b);
         Assert.InRange(whole, 0.9, 1.1);
         Assert.True(cripple > 10, $"the cripple {cripple:0.#}");
         // and one seen going down isn't there at all
         b.Clear();
-        b.AddContact(w, m, c with { Seen = SeenFlags.GoingDown });
+        b.AddContact(w, m, 0, c with { Seen = SeenFlags.GoingDown });
         Assert.Equal(0, b.Count);
     }
 }

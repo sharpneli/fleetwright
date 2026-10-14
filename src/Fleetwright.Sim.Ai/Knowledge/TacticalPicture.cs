@@ -8,8 +8,8 @@ public struct EnemyGroup
     /// <summary>Where its ships are on the average, and how they go.</summary>
     public Vec3d Centre, Velocity;
 
-    /// <summary>Its strength (<see cref="Strength"/>), as its ships are taken.</summary>
-    public double Strength;
+    /// <summary>Its tonnage, as its ships are taken (<see cref="Matchups.TonnageOf"/>).</summary>
+    public double TonnageT;
 
     /// <summary>How many ships, and how many taken for capital ships.</summary>
     public int Count, Capitals;
@@ -21,10 +21,10 @@ public struct EnemyGroup
 
 /// <summary>What an admiral sees of the enemy (docs/battle/command.md "The tactical picture"): his navy's contacts in sight
 /// chained into groups, each within <see cref="SimSettings.TacticalGapM"/> of the next whatever its type (a battle line
-/// with its screen is one group), with their centre, course, strength, capital ships and van. Built for a side the first
+/// with its screen is one group), with their centre, course, tonnage, capital ships and van. Built for a side the first
 /// time it's asked at a moment, through the contacts' grid (each contact's neighbours, never pairs); not world state.
 /// Nothing allocated once grown.</summary>
-public sealed class TacticalPicture(SeenContacts seen)
+public sealed class TacticalPicture(SeenContacts seen, Matchups matchups)
 {
     sealed class Side
     {
@@ -45,14 +45,14 @@ public sealed class TacticalPicture(SeenContacts seen)
         return v == null ? [] : v.Groups.AsSpan(0, v.Count);
     }
 
-    /// <summary>The enemy's main body near a point: the strongest group with a capital ship whose van or centre is within
-    /// a radius; false if there's none.</summary>
+    /// <summary>The enemy's main body near a point: the biggest group (by tonnage) with a capital ship whose van or centre
+    /// is within a radius; false if there's none.</summary>
     public bool MainBody(World world, byte side, Vec3d near, double radiusM, out EnemyGroup main)
     {
         main = default;
         bool any = false;
         foreach (ref readonly var g in Of(world, side))
-            if (g.Capitals > 0 && (Math.Min((g.Centre - near).Length, (g.VanPosition - near).Length) <= radiusM) && (!any || g.Strength > main.Strength))
+            if (g.Capitals > 0 && (Math.Min((g.Centre - near).Length, (g.VanPosition - near).Length) <= radiusM) && (!any || g.TonnageT > main.TonnageT))
                 (main, any) = (g, true);
         return any;
     }
@@ -103,7 +103,7 @@ public sealed class TacticalPicture(SeenContacts seen)
             ref var g = ref v.Groups[v.Slot[r]];
             g.Centre += seen.Position(side, i);
             g.Velocity += seen.Velocity(side, i);
-            g.Strength += Strength.Of(world, pic[i]);
+            g.TonnageT += matchups.TonnageOf(world, pic[i]);
             g.Count++;
             if (pic[i].Type == ShipType.Capital)
                 g.Capitals++;

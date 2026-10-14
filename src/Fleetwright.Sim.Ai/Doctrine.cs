@@ -13,7 +13,8 @@ public enum DoctrineField : byte
     /// <summary>The range Fight keeps, a share of the main battery's reach.</summary>
     RangeShare,
 
-    /// <summary>The ratio of the enemy's heavy guns to the unit's own past which Fight turns away.</summary>
+    /// <summary>How outmatched a unit fights on: it turns away once its matchup against the enemy (docs/battle/command.md
+    /// 5.1g) is under 1 / this, and a commander declines battle by it.</summary>
     OutgunnedRatio,
 
     /// <summary>A ship falls out of the line under this share of its designed speed...</summary>
@@ -74,6 +75,10 @@ public enum DoctrineField : byte
     /// <summary>Whether a side's torpedo craft attack by night (1) or not (0): attacking, its commander sends them in on
     /// any heavy enemy in reach, engaged or not. A side's value.</summary>
     NightAttack,
+
+    /// <summary>The confidence a unit is sent after an enemy at (docs/battle/command.md 5.1g): its matchup against him
+    /// this much or more (1: it expects to win). A unit that meets an enemy fights him down to 1 / OutgunnedRatio.</summary>
+    SeekRatio,
 
     /// <summary>How aggressive a unit is, -1 (timid) to +1 (bold), 0 as its doctrine is written: it scales the fields
     /// <see cref="SimSettings.AggressionShift"/> lists as they're read, each by (1 + shift x aggression), so a bold
@@ -170,6 +175,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.BreakOffShare => 2,   // never
         DoctrineField.NightAction => (double)Ai.NightAction.Accept,
         DoctrineField.NightAttack => 0,
+        DoctrineField.SeekRatio => 1,
         DoctrineField.Aggression => 0,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };

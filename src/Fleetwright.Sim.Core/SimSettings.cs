@@ -553,13 +553,20 @@ public sealed record SimSettings
     public double FireLineGapM { get; init; } = 3_000;
 
     /// <summary>Fight (a captain's minimal fighting manoeuvre): how far either side of the range he keeps is near enough
-    /// (a share of it); the angle off the line of sight he closes or opens at, degrees; the radius his navy's guns and the
-    /// enemy's are compared in, m; and the share of the outgunned ratio under which he turns back. The range and the ratio
-    /// are doctrine's (docs/battle/command.md "Doctrine": RangeShare, OutgunnedRatio).</summary>
+    /// (a share of it); the angle off the line of sight he closes or opens at, degrees; the radius the enemy round him is
+    /// judged in (the matchup, docs/battle/command.md 5.1g), m; and turned away, the share of doctrine's bar he must be
+    /// over again to turn back (the bar over it). The range and the bar are doctrine's (RangeShare, OutgunnedRatio).</summary>
     public double FightBandShare { get; init; } = 0.15;
     public double FightCloseDeg { get; init; } = 40;
     public double FightCompareM { get; init; } = 30_000;
     public double FightRallyShare { get; init; } = 0.75;
+
+    /// <summary>A fighting unit whose matchup against the enemy round it is this confident or more, and which expects to
+    /// lose under FightFinishLostShare of its tonnage, can hardly be hurt (a cripple, silent or stopped; not torpedo boats,
+    /// whose torpedoes can): it closes to FightFinishShare of its band to finish him (docs/battle/command.md 5.1g).</summary>
+    public double FightFinishConfidence { get; init; } = 10;
+    public double FightFinishLostShare { get; init; } = 0.02;
+    public double FightFinishShare { get; init; } = 0.4;
 
     /// <summary>A clear line of fire (docs/battle/command.md 5.1a): a gun's is foul while a friend is within FireFoulM of
     /// where its shells come down (from FireFoulBeforeM short of the target to FireFoulM past it), a torpedo's while one
@@ -646,18 +653,17 @@ public sealed record SimSettings
     public double FallBackDeg { get; init; } = 100;
 
     /// <summary>The side's commander (docs/battle/command.md 5.1d) thinks every CommanderPeriodMs. A contact out of sight
-    /// longer than ContactFreshMs is lost: an intercept gives it up, and he chooses no target from it. His heavy units
-    /// close the strongest fresh contact, and keep closing it until another is CommanderRetargetShare times as strong; he
-    /// sends a flotilla in on an enemy line his heavy units are engaging within CommanderAttackM of it, one of
-    /// CommanderAttackStrength or more (12" guns' worth: <c>Strength</c>). ms, ms, a ratio, m, guns.</summary>
+    /// longer than ContactFreshMs is lost: an intercept gives it up, and he holds nothing by it. His target (his phases,
+    /// his search) is the biggest ship of the enemy group he's least confident against (5.1g), kept until another group
+    /// is CommanderRetargetShare times graver; he sends a flotilla in on an enemy group within CommanderAttackM of it that
+    /// its matchup has it attacking. ms, ms, a ratio, m.</summary>
     public int CommanderPeriodMs { get; init; } = 60_000;
     public long ContactFreshMs { get; init; } = 1_800_000;
     public double CommanderRetargetShare { get; init; } = 1.5;
     public double CommanderAttackM { get; init; } = 25_000;
-    public double CommanderAttackStrength { get; init; } = 1;
 
-    /// <summary>He declines battle once the strength he holds fresh is past doctrine's outgunned ratio of his own by this
-    /// share more, and accepts it again once it's under the ratio by this share: his margin either way.</summary>
+    /// <summary>He declines battle once his side's matchup against all he holds is under doctrine's bar by this share
+    /// (and he can get away), and accepts it again once it's over the bar by this share: his margin either way.</summary>
     public double CommanderMarginShare { get; init; } = 0.25;
 
     /// <summary>The enemy lost, his main body searches where he was last held on legs this long (m), and gives up after.</summary>
@@ -668,22 +674,15 @@ public sealed record SimSettings
     public double NightSunElevationDeg { get; init; } = -6;
 
     /// <summary>What doctrine's Aggression (-1 timid to +1 bold) does: each listed field is read as its value x (1 + shift
-    /// x aggression). Bold: worse odds taken (OutgunnedRatio up), losses borne longer (BreakOffShare, AttackBreakOffShare
-    /// up), nearer (RangeShare down), in the line longer (the fall-out thresholds), a smaller turn from torpedoes.</summary>
+    /// x aggression). Bold: worse odds taken (OutgunnedRatio up) and sought (SeekRatio down), losses borne longer
+    /// (BreakOffShare, AttackBreakOffShare up), nearer (RangeShare down), in the line longer (the fall-out thresholds), a
+    /// smaller turn from torpedoes.</summary>
     public Dictionary<string, double> AggressionShift { get; init; } = new()
     {
         ["OutgunnedRatio"] = 0.5, ["BreakOffShare"] = 0.5, ["AttackBreakOffShare"] = 0.4, ["RangeShare"] = -0.3,
         ["FallOutSpeedShare"] = -0.3, ["FallOutGunsShare"] = -0.3, ["FallOutListDeg"] = 0.3, ["FallOutWaterShare"] = 0.3,
-        ["TurnAwayDeg"] = -0.5,
+        ["TurnAwayDeg"] = -0.5, ["SeekRatio"] = -0.5,
     };
-
-    /// <summary>A ship with main guns of this calibre or more is one of his heavy ships, capital or not (the commander's
-    /// roles: an armoured cruiser, a pre-dreadnought). mm.</summary>
-    public double HeavyGunMm { get; init; } = 200;
-
-    /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
-    /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>
-    public double[] FightTypeGuns { get; init; } = [1, 8, 1, 0.1, 0, 0];
 
     /// <summary>The salvos the world keeps in flight for spotting (it grows past it), and the combat log's ring.</summary>
     public int SalvoCapacity { get; init; } = 256;
@@ -1000,6 +999,10 @@ public sealed record SimSettings
     /// <summary>A ship is built to make torpedo attacks with this many tubes bearing a thousand tonnes or more.</summary>
     public double MatchupAttackTubesPerKt { get; init; } = 0.5;
     public double MatchupTorpedoFireMin { get; init; } = 2;
+    /// <summary>Attackers running in and out zigzag: the defence's fire on them then hits this share as often
+    /// (docs/battle/command.md 5.1a: a light cruiser running zigzag from a battleship at 14 km took no hits in four
+    /// seeds, four steady; the fine model's flotilla loses about half its boats over a whole run).</summary>
+    public double MatchupRunInHitShare { get; init; } = 0.4;
     public double MatchupSpeedMarginKn { get; init; } = 2;
     public double MatchupFloor { get; init; } = 0.001;
 

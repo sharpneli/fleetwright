@@ -170,7 +170,8 @@ own value, else its group's, else the side's. A command sets it, so it's logged 
 |---|---|---|
 | **Engage** | When a unit fights an enemy it meets: always, if not outgunned, only if attacked, never (evade) | If not outgunned |
 | **Range** | The fighting range, as a share of the main battery's reach (4.2c's `FightRangeShare`) | 0.6 |
-| **Outgunned** | The strength ratio at which it turns away (4.2c's `FightOutgunnedRatio`), and at which a commander declines battle | as 4.2c |
+| **Outgunned** | 1 / it is the matchup under which a unit turns away, and a commander declines battle (5.1g) | 2 |
+| **Seek** (5.1g) | The matchup at which a commander sends units after an enemy | 1 |
 | **Fall out** | When a ship leaves the line: speed under a share of its designed speed, main guns under a share, list over a limit, or water over a share of its reserve | 60% speed, a third of the guns, 10°, half |
 | **Break off** | When a unit gives up the fight: its losses (tonnage or capital ships) past a share of what it came with | A third |
 | **Fire** | What fire at will takes: identified enemies only or any contact (4.2c fires on the unidentified: decision 1), and what secondaries go for (torpedo craft first, as their era's purpose) | Any; torpedo craft first |
@@ -204,20 +205,22 @@ out. The admirals read their units' summed (a squadron's strength left, its spee
 `SeenFlags` and the class as taken for, gives an enemy's fitness as it's seen: "she's low in the water and silent"
 makes her a cripple to finish, not a threat.
 
-### The tactical picture: enemy groups and their strength
+### The tactical picture: enemy groups and who can fight them
 
 What an admiral sees of the enemy, built from his navy's picture once a think per side (`Sim.Ai/Knowledge`, pure):
 
 - **Enemy groups:** contacts chained within a gap (4.2c's `EnemyLine` is this for one line), each group's estimated
   centre, course and speed, its axis (a line ahead or abreast), its van, and its uncertainty. Through the world's grid,
-  never pairs.
-- **Strength:** one number per group, and one per own unit, the same function both ways: the weight of broadside
-  (calibre cubed by guns, by what bears), speed, and the torpedo threat, from the class as taken for (so a mistaken
-  class misleads the admiral, as it should). 4.2c's "heavy guns its navy sees" becomes this.
+  never pairs. In sight (`TacticalPicture`, the deployment's), and held, in sight or not (`HeldGroups`, the
+  commander's, 5.1g).
+- **Who can fight whom** (5.1g, replacing the one-number strength first planned here): a matchup of two sides, each
+  its classes with counts, own ships exactly and the enemy as taken (so a mistaken class misleads, as it should); the
+  share of the enemy's tonnage each side puts out of the fight for the share of its own (`Sim.Combat/Matchup`, the AI's
+  `Knowledge/MatchupJudge`).
 - **Threats:** enemy torpedo craft closing, and torpedo tracks seen (below, 5.1a).
 
-`Fight`'s outgunned test, the fire distribution, the force's deployment and the commander's choice to accept or
-decline battle all read it: one implementation.
+`Fight`'s turn-away, the scout's shadowing, the flotilla's attack and the commander's targets, his declining and his
+flotillas all read the matchup: one implementation.
 
 ### Reports and reasons
 
@@ -780,7 +783,7 @@ the **VFX pass**, then the **detail passes** on the systems (fighting.md's fine-
 playing well). **5.1e** (signals) and **5.1f** (the whole) come late, after those. 5.1g is numbered after them since it
 was added last (as fighting.md's 4.11), and built first.
 
-**5.1g The matchup: who can fight whom.** (Agreed with the user 2026-10-14.)
+**5.1g The matchup: who can fight whom.** (Agreed with the user 2026-10-14; **done 2026-10-15**, below.)
 
 *Why.* Two rules are absolute today. The commander's roles: a unit is heavy by main guns of `HeavyGunMm` (8") or more,
 only heavy units close the enemy, and a side with no heavy unit declines nothing. And `Strength`, one number per ship
@@ -973,6 +976,90 @@ speeds (each its slowest ship's) and who can refuse. What's added is building th
   3.3, taken for a battleship 0.31; a capital-ship contact not made out among two Iron Dukes and a Derfflinger is 2/3 of
   an Iron Duke and 1/3 of a Derfflinger; Arethusa against a sister seen silent, stopped and low 73.
 
+**Piece 3 done 2026-10-15: onto its readers.** `Strength`, `HeavyGunMm`, `FightTypeGuns` and `CommanderAttackStrength`
+are gone; one judgement every layer asks (`Knowledge/MatchupJudge`: a unit against the enemy in sight round it, once a
+moment a unit; or any two sides a layer builds), and the enemy held in groups in sight or not (`Knowledge/HeldGroups`).
+
+- **Fight** turns away under doctrine's bar (1 / `OutgunnedRatio`), back once well over it (`FightRallyShare`). With no
+  escape (the enemy as fast) it runs only to a force of its own that's a match for the enemy (the fall-back, judged
+  the same way), else fights. A torpedo craft attacks when the judgement has its side attacking, or when it's ordered
+  to, or in its flotilla's attack (its torpedoes held for the signal): whoever ordered it judged. One that can hardly be
+  hurt (`FightFinishConfidence` 10, and under `FightFinishLostShare` 2% of its own tonnage lost) closes to
+  `FightFinishShare` 0.4 of its band to finish a cripple.
+- **The scout** shadows what it's no match for.
+- **The flotilla's attack** taken up by doctrine (not ordered) is begun only if its matchup has it attacking at the bar;
+  once begun it's seen through.
+- **The commander:** roles by capital ships (`Sightings.TypeOf`), the main body the most capital tonnage. Each think:
+  his side against all he holds (declined under the bar by his margin, and only if he can get away; accepted again over
+  it, or caught); the held groups gravest first, each given those closing it and then the nearest free units not
+  hopeless against it alone, until together they reach doctrine's `SeekRatio` (1: expected to win), else nobody
+  closes it and those closing it are freed; his target (phases, the lost search) the biggest ship of the gravest group.
+  Flotillas are sent in where their attack's matchup is at the bar (by day on a group his heavy units engage; by night
+  any in reach). A flotilla whose torpedoes are spent goes back to its screen or its force at once.
+- **Empty magazines:** a ship with every main mount out of the rounds it carries and no torpedo left goes home
+  (`CaptainReason.OutAmmunition`, "her magazines empty" on the timeline).
+- **Doctrine:** `SeekRatio` (default preset 1; aggression shifts it by -0.5); the tactical picture's groups carry their
+  tonnage as taken (the deployment's main body is the biggest group with a capital ship).
+
+Found on the way:
+
+- A contact not yet made out to its type counted as nothing, so a lone dreadnought saw no enemy and closed four battleships:
+  it's the average of everything the other sides have at sea now.
+- The matchup's torpedo salvo was a ship's whole broadside; the captains fire `TorpedoSpread` (2) a firing, and so does
+  it now. Attackers running in and out zigzag: the defence's fire on them hits `MatchupRunInHitShare` (0.4) as often.
+  Six boats against four battleships came out at 0.21 before, 0.13 now: the fine model's flotilla loses about half its
+  boats a run and hits little, so by day the matchup keeps it back.
+- Finishing a cripple first fired on any far weaker enemy: a battle line closed on the torpedo boats attacking it and spoilt
+  their attack. Hence the bar on the losses expected too.
+- A captain's track of the ship ahead (512 points, about 13 KB) was made the first time he followed in line ahead,
+  inside a think; it's made with the captain now. The flotilla's replay test warms up to its first attack (the first
+  turn together grows a pool once).
+- Tests whose premise the rules changed, rewritten to the rules: Fight's turn-away needs a faster ship (a battlecruiser
+  from four battleships; a new test has a dreadnought with no escape fight); the fall-back alone, as fast as the enemy,
+  fights (a faster pair runs); the commander declines with two battlecruisers against eight dreadnoughts (a new test:
+  two dreadnoughts can't get away and fight); flotillas are sent in on a line of one dreadnought (a new test: kept back
+  from four); by night the flotilla goes in on one battleship; the torpedo boat and flotilla benches order their attacks.
+- **Ammunition runs out in long fights:** at Tsushima battleships and armoured cruisers on both sides empty their main
+  magazines in 1.5-2 hours of fire at will (about 135 rounds a gun) and go home, so the battle thins out. The fine model's
+  rate of fire (every gun at its reload, fighting at long range) is fire control's to tune (fighting.md 4.5).
+
+- **Cost:** the judgements first cost the commander 32 ms a think (16% of the Jutland's run, 84 ms at the worst) and the
+  captains 33%: the hit and out chances made again for every gun, target class and range. Each gun now keeps a table
+  against each class by range step (the hit chance and the out exponent, linear between 250 m steps), made for every
+  pair of classes at the scenario's load (`Matchups.Warm`): a judgement of three classes against two 82 µs to 13 µs.
+
+Checked (`MatchupPlayTests`): Arethusa told to fight closes a V25 from 16 to 10.6 km in ten minutes, and opens from Iron
+Duke from 16 to 24 km; eight V25s fighting a lone Iron Duke attack together (gain, run, fire, away); a commander sends his
+battle squadron after three Derfflingers and his light cruisers after four V25s. Every sim test passes; allocation-free
+and replaying (the flotilla's bench).
+
+**After 5.1g** (Release, 5 seeds each; before the gun tables, which leave the Jutland's seed 1916 the same):
+
+| Scenario | How it ended | Losses | After 5.1d |
+|---|---|---|---|
+| `squadrons` | time 5 | Britain 1.8 of 4, Germany 0.0 of 5 | 2.2, 0.0 |
+| `flotilla` | time 5 | Britain 0.0 of 4, Germany 0.4 of 6 (4.4 torpedoes a run) | 0.2, 3.2 (6.0) |
+| `tsushima` | quiet 5 (after 13:15) | Russia 4.2 of 13, Japan 3.8 of 14 (582 and 631 hits) | 7.0, 5.0 (1458, 1955) |
+| the Jutland | time 5 | Britain 23.6 of 151 (20-29), Germany 26.6 of 99 (21-34) | 29.4, 27.0 |
+
+- **Germany declines the Grand Fleet:** at 19:15 (seed 1916) its commander, holding the Grand Fleet, judges his side
+  outmatched and faster, and every unit goes home: history's German aim, which 5.1d had left to a preset.
+- **The flotilla is kept back:** six boats against four battleships by day are worth no attack, and the German commander
+  declines.
+- **Tsushima fights less:** its battle lines run out of main rounds (above).
+- **Cost, the Jutland, seed 1916 with the tables:** played in 113 s (5.1d: 114-153 s); the commanders 3.1% of the run (4.2
+  ms a think, at most 11 ms; 5.1d 85 µs), the captains 24.6% (554 µs a second; 5.1d 23%), the admirals 5.1%.
+
+**Still open after 5.1g** (for 5.1f and the fine-tune):
+
+- The commander's think is 4 ms at the Jutland (a judgement for every held group against every free unit, every minute):
+  for 5.1f's cost, a cache of a unit's matchup against a group for a few thinks.
+- The fine model's rate of fire empties magazines in two hours (fire control's tuning, fighting.md 4.5), and its
+  capital ships are very hard to put out of the fight, and a battleship fires AP at light cruisers (both fighting.md 4.5).
+- The matchup's own numbers are the fine model's as of 5.1g: when 4.5 retunes damage or fire, `shipgen matchup` against
+  `shipgen duel`, `hits` and `torpedo` re-fits them.
+- Doctrine presets by navy (the outgunned and seek ratios are where a navy's boldness goes) are the presets' fine-tune.
+
 **5.1e Signals and flagships.**
 
 - **Flagships,** flag delays, searchlights by night, wireless, and missed signals, as above; the order in transit in
@@ -1023,9 +1110,9 @@ As the layers already are:
 
 | Layer | What's new |
 |---|---|
-| `Sim.Combat` | `Fitness` (a ship's, and an enemy's as seen) |
+| `Sim.Combat` | `Fitness` (a ship's, and an enemy's as seen), `FallOutRule`, `Matchup` (5.1g) |
 | `Sim` (world) | Formations as lines of bearing in `GroupSystem`; signals in transit (world state: the AI's orders, on both sides) |
-| `Sim.Ai` | `Doctrine` (AI state: only captains and admirals read it; built in 5.1a) and the sides' homes in `AiSystem`; `Commanders/` (the side's commander, aims, plans); the tasks in `AdmiralLayer` and `CaptainLayer`; `Knowledge/` the tactical picture and strength; `Captains/` evasion, falling out, combing tracks; `Admirals/` manoeuvres, the deployment, the flotilla's attack |
+| `Sim.Ai` | `Doctrine` (AI state: only captains and admirals read it; built in 5.1a) and the sides' homes in `AiSystem`; `Commanders/` (the side's commander, aims, plans); the tasks in `AdmiralLayer` and `CaptainLayer`; `Knowledge/` the tactical picture, the held groups and the matchup's judge; `Captains/` evasion, falling out, combing tracks; `Admirals/` manoeuvres, the deployment, the flotilla's attack |
 | `Sim.Missions` | `"aims"`, `"home"`, `"plan"`, `"doctrine"`, `"until"`; the end and the result |
 | the exe | Placeholders per step on the world tab; 5.2's UI |
 | `shipgen` CLI | `scenario --play [--seeds N]` |

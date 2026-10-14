@@ -205,6 +205,32 @@ public sealed class MatchupGun
         }
     }
 
+    // against each class met: the hit chance and the out exponent by range step (MatchupProfile.RangeStepM), made the
+    // first time the pair is judged (the judgement's cost is these, not the sums over them)
+    readonly Dictionary<MatchupProfile, double[]> pairs = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>Against a class at a range within reach: the hit chance (<see cref="Matchup.HitChance"/>) and the out
+    /// exponent (<see cref="Matchup.OutExponent"/>), from the pair's table, linear between its steps.</summary>
+    public (double Hit, double Exponent) Against(MatchupProfile t, double rangeM, SimSettings s)
+    {
+        if (!pairs.TryGetValue(t, out var tab))
+        {
+            tab = new double[2 * fall.Length];
+            for (int i = 0; i < fall.Length; i++)
+            {
+                double r = Math.Min(Math.Max(i, 0.5) * MatchupProfile.RangeStepM, ReachM);
+                (tab[2 * i], tab[2 * i + 1]) = (Matchup.HitChance(this, t, r, s), Matchup.OutExponent(this, t, r, s));
+            }
+            pairs[t] = tab;
+        }
+        double u = Math.Clamp(rangeM / MatchupProfile.RangeStepM, 0, fall.Length - 1);
+        int k = Math.Min((int)u, fall.Length - 2);
+        if (k < 0)
+            return (tab[0], tab[1]);
+        double w = u - k;
+        return (tab[2 * k] + w * (tab[2 * k + 2] - tab[2 * k]), tab[2 * k + 1] + w * (tab[2 * k + 3] - tab[2 * k + 1]));
+    }
+
     /// <summary>The fall (degrees under the horizontal) and striking speed at a range within reach.</summary>
     public (double FallDeg, double StrikeMs) At(double rangeM)
     {
@@ -332,7 +358,7 @@ public static class Matchup
         double torpOnA = 0, torpOnB = 0;
         if (attackA > 0 || attackB > 0)
         {
-            Phase(a, inA, b, inB, rangeM, midA, midB, inMin, s, outA, outB);
+            Phase(a, inA, b, inB, rangeM, midA, midB, inMin, s, outA, outB, s.MatchupRunInHitShare);
             runIn = Sum(outA, inA) + Sum(outB, inB);
             // the salvos are fired at once: each side's boats still in it as they were before either
             outA.CopyTo(preA);
@@ -342,7 +368,7 @@ public static class Matchup
             if (attackB > 0)
                 torpOnA += Torpedoes(b, inB, a, attackB, s, outA, preB, 1);
             Phase(a, inA, b, inB, rangeM, attackA > 0 ? attackA : rangeM, attackB > 0 ? attackB : rangeM, fireMin, s, outA, outB);
-            Phase(a, inA, b, inB, rangeM, midA, midB, inMin, s, outA, outB);
+            Phase(a, inA, b, inB, rangeM, midA, midB, inMin, s, outA, outB, s.MatchupRunInHitShare);
         }
         // the attackers are out of it: the lines alone for the rest of the fight
         double attackMin = 2 * inMin + fireMin, rest = Math.Max(s.MatchupFightMin - attackMin, 0);
@@ -393,10 +419,10 @@ public static class Matchup
     /// <summary>A stretch of an attack: every ship of both sides fires (the lines at each other at the lines' range, at
     /// an attacker at its side's attack range for the stretch).</summary>
     static void Phase(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<bool> inA, ReadOnlySpan<MatchupEntry> b, ReadOnlySpan<bool> inB, double lineM,
-        double attackAM, double attackBM, double minutes, SimSettings s, Span<double> outA, Span<double> outB)
+        double attackAM, double attackBM, double minutes, SimSettings s, Span<double> outA, Span<double> outB, double evaded = 1)
     {
-        Guns(a, default, inA, b, default, inB, lineM, attackAM, attackBM, minutes, s, outB);
-        Guns(b, default, inB, a, default, inA, lineM, attackBM, attackAM, minutes, s, outA);
+        Guns(a, default, inA, b, default, inB, lineM, attackAM, attackBM, minutes, s, outB, evaded);
+        Guns(b, default, inB, a, default, inA, lineM, attackBM, attackAM, minutes, s, outA, evaded);
     }
 
     /// <summary>The ships of <paramref name="from"/>'s guns put out of <paramref name="to"/> over some minutes (added
@@ -405,7 +431,8 @@ public static class Matchup
     /// <paramref name="inTo"/>), else the lines'. Each battery's shells go over the targets by what they do there (more
     /// where they do more), at most the rounds it has left.</summary>
     static void Guns(ReadOnlySpan<MatchupEntry> from, ReadOnlySpan<bool> fromSel, ReadOnlySpan<bool> inFrom, ReadOnlySpan<MatchupEntry> to,
-        ReadOnlySpan<bool> toSel, ReadOnlySpan<bool> inTo, double lineM, double fromAttackM, double toAttackM, double minutes, SimSettings s, Span<double> outTo)
+        ReadOnlySpan<bool> toSel, ReadOnlySpan<bool> inTo, double lineM, double fromAttackM, double toAttackM, double minutes, SimSettings s, Span<double> outTo,
+        double evaded = 1)
     {
         if (minutes <= 0)
             return;
@@ -431,7 +458,9 @@ public static class Matchup
                     double r = attacking ? fromAttackM : inTo.Length > 0 && inTo[j] ? toAttackM : lineM;
                     if (r > g.ReachM)
                         continue;
-                    k[j] = HitChance(g, to[j].Profile, r, s) * OutChance(g, to[j], r, s);
+                    // an attacker running in or out zigzags (the defence's fire on it spoilt by the share given)
+                    var (hit, exponent) = g.Against(to[j].Profile, r, s);
+                    k[j] = hit * (1 - Math.Exp(-exponent / Math.Max(to[j].Toughness, 1e-3))) * (inTo.Length > 0 && inTo[j] ? evaded : 1);
                     sum += to[j].Count * k[j];
                 }
                 if (sum <= 0)
@@ -465,7 +494,8 @@ public static class Matchup
             if (!sel[i] || pr.TubesBearing == 0 || e.TorpedoesLeft <= 0 || rangeM > reachShare * pr.Torpedo.FastRangeM && rangeM > reachShare * pr.Torpedo.SlowRangeM)
                 continue;
             double left = e.Count * Math.Exp(-outFrom[i] / Math.Max(e.Count, 1e-9));
-            double fired = Math.Min(pr.TubesBearing, pr.Torpedoes * e.TorpedoesLeft) * left;
+            // a firing is the captains' spread (TorpedoSpread), not the whole broadside
+            double fired = Math.Min(Math.Min(pr.TubesBearing, s.TorpedoSpread), pr.Torpedoes * e.TorpedoesLeft) * left;
             // a target turning away outruns a torpedo the faster she is beside it (the bench's target steamed at the reference speed)
             double kn = pr.Torpedo.FastKn, run = Math.Clamp((kn - to[target].SpeedKn) / Math.Max(kn - s.MatchupTorpedoRefKn, 1), 0, 1.5);
             double q = (1 - pr.TorpedoDud) * (1 - Math.Exp(-s.MatchupTorpedoK * pr.Torpedo.ChargeKg / (tp.DisplacementT * to[target].Toughness)));
@@ -495,9 +525,12 @@ public static class Matchup
     /// square root of its mass) and whether it bursts inside, over the side's and deck's armour as the fall angle splits the hits between them (a
     /// side hit in the upperworks reaching the vitals only by its splinters through the deck under them), over the ship's
     /// displacement (and the toughness left in her).</summary>
-    public static double OutChance(MatchupGun g, in MatchupEntry target, double rangeM, SimSettings s)
+    public static double OutChance(MatchupGun g, in MatchupEntry target, double rangeM, SimSettings s) =>
+        1 - Math.Exp(-OutExponent(g, target.Profile, rangeM, s) / Math.Max(target.Toughness, 1e-3));
+
+    /// <summary><see cref="OutChance"/>'s exponent for a whole ship (divided by the toughness left in her).</summary>
+    public static double OutExponent(MatchupGun g, MatchupProfile t, double rangeM, SimSettings s)
     {
-        var t = target.Profile;
         var (fall, strike) = g.At(rangeM);
         double danger = t.HeightM / Math.Tan(double.DegreesToRadians(Math.Max(fall, 0.1)));
         double side = danger / (danger + t.BeamM);
@@ -508,7 +541,7 @@ public static class Matchup
         double upper = (shell.Fuze == Fuze.Nose || t.SidePlatingMm >= Terminal.FuzeArmMm(shell.CalibreMm, fall, s) ? 1 : s.MatchupPassShare) * bare;
         double share = side * (t.UpperShare * upper + (1 - t.UpperShare) * Through(shell, t.Side, penSide, t.SidePlatingMm, fall, bare, s))
                        + (1 - side) * Through(shell, t.Deck, penDeck, t.DeckPlatingMm, 90 - fall, bare, s);
-        return 1 - Math.Exp(-s.MatchupShellK * Math.Sqrt(shell.MassKg) * share / (t.DisplacementT * Math.Max(target.Toughness, 1e-3)));
+        return s.MatchupShellK * Math.Sqrt(shell.MassKg) * share / t.DisplacementT;
     }
 
     /// <summary>The share of a shell's effect that gets in through a face: a plate it passes bursts it inside (a base fuze,

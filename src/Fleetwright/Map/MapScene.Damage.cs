@@ -191,6 +191,7 @@ public sealed partial class MapScene
         CaptainReason.OutList => "falling out: listing",
         CaptainReason.OutWater => "falling out: flooding",
         CaptainReason.OutSteering => "falling out: steering gone",
+        CaptainReason.OutAmmunition => "out of ammunition, home",
         CaptainReason.Home => "out of the fight, home",
         CaptainReason.Combing => "combing a torpedo's track",
         _ => "",

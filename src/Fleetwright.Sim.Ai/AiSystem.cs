@@ -40,6 +40,12 @@ public sealed class AiSystem : IWorldSystem
     /// <summary>Every side's and unit's standing rules (docs/battle/command.md "Doctrine").</summary>
     public Doctrine Doctrine { get; }
 
+    /// <summary>Who can fight whom (docs/battle/command.md 5.1g): the judgements every layer asks (not world state).</summary>
+    public MatchupJudge Judge { get; }
+
+    /// <summary>The enemy groups each navy holds, in sight or not (not world state).</summary>
+    public HeldGroups Held { get; }
+
     // each side's home (docs/battle/command.md "home"): where its ships out of the fight go; null for none
     readonly Vec3d?[] homes = new Vec3d?[256];
 
@@ -53,13 +59,15 @@ public sealed class AiSystem : IWorldSystem
     {
         Seen = new SeenContacts();
         Doctrine = new Doctrine(world.Groups, world.Settings.AggressionShift);
-        Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine, homes);
-        Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine);
-        Tactical = new TacticalPicture(Seen);
+        Judge = new MatchupJudge(world.Groups, Seen, Doctrine);
+        Held = new HeldGroups(Judge.Matchups);
+        Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine, homes) { Judge = Judge, TrailPoints = world.Settings.FollowTrackPoints };
+        Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine) { Judge = Judge };
+        Tactical = new TacticalPicture(Seen, Judge.Matchups);
         Admirals.Tactical = Tactical;
-        Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine };
+        Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine, Judge = Judge };
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
-        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Tactical, Doctrine) { Tasks = Tasks, Captains = Captains };
+        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held };
         layers = [Commanders, Tasks, Admirals, Captains];
         nextTick = new long[layers.Length];
         tickGen = new int[layers.Length];

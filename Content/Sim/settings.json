@@ -191,6 +191,9 @@
   "FightCloseDeg": 40,
   "FightCompareM": 30000,
   "FightRallyShare": 0.75,
+  "FightFinishConfidence": 10,
+  "FightFinishLostShare": 0.02,
+  "FightFinishShare": 0.4,
   "FireFoulM": 400,
   "EvadeSteadyShare": 1.25,
   "FireFoulBeforeM": 2000,
@@ -233,7 +236,6 @@
   "ContactFreshMs": 1800000,
   "CommanderRetargetShare": 1.5,
   "CommanderAttackM": 25000,
-  "CommanderAttackStrength": 1,
   "CommanderMarginShare": 0.25,
   "LostSearchLegM": 20000,
   "NightSunElevationDeg": -6,
@@ -246,10 +248,9 @@
     "FallOutGunsShare": -0.3,
     "FallOutListDeg": 0.3,
     "FallOutWaterShare": 0.3,
-    "TurnAwayDeg": -0.5
+    "TurnAwayDeg": -0.5,
+    "SeekRatio": -0.5
   },
-  "HeavyGunMm": 200,
-  "FightTypeGuns": [1, 8, 1, 0.1, 0, 0],
   "SalvoCapacity": 256,
   "CombatLogCapacity": 4096,
 
@@ -393,6 +394,7 @@
   "MatchupFightMin": 30,
   "MatchupAttackTubesPerKt": 0.5,
   "MatchupTorpedoFireMin": 2,
+  "MatchupRunInHitShare": 0.4,
   "MatchupSpeedMarginKn": 2,
   "MatchupFloor": 0.001,
   "MatchupSeenLowShare": 0.5,

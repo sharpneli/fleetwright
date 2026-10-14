@@ -118,7 +118,9 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
     internal AdmiralLayer? Admirals { get; set; }
     internal CaptainLayer? Captains { get; set; }
     internal Doctrine? Doctrine { get; set; }
-    readonly List<(int Ship, double AsternM, double AbeamM)> line = new(32);
+
+    /// <summary>Who can fight whom (docs/battle/command.md 5.1g): a scout's judgement.</summary>
+    internal Knowledge.MatchupJudge Judge { get; set; } = null!;
 
     static bool Live(TaskState s) => s is TaskState.OnTask or TaskState.Engaged or TaskState.InContact;
 
@@ -479,8 +481,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
     }
 
     /// <summary>Scout: a station <see cref="Task.DistanceM"/> off the unit's guide, <see cref="Task.OffBowDeg"/> off its
-    /// bow. An enemy in sight that's stronger than the scout (by <see cref="Strength"/>, against doctrine's outgunned
-    /// ratio) is shadowed (the task in contact, and no fight taken up); one it can take, doctrine fights. A shadowed enemy
+    /// bow. An enemy in sight the scout is no match for (by the matchup, under doctrine's bar) is shadowed (the task in contact, and no fight taken up); one it can take, doctrine fights. A shadowed enemy
     /// lost, the scout goes back to its station.</summary>
     void Scout(in AiContext ctx, ref Task t, Unit u, ShipState guide)
     {
@@ -505,17 +506,15 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         Station(ctx, ref t, u, on, -t.DistanceM * Math.Cos(off), t.DistanceM * Math.Sin(off));
     }
 
-    /// <summary>Whether a scout meets an enemy in sight stronger than itself (by <see cref="Strength"/>, against doctrine's
-    /// outgunned ratio): then it shadows the nearest, taking up no fight (and leaving one doctrine took up).</summary>
+    /// <summary>Whether a scout meets an enemy in sight it's no match for (its matchup against them under doctrine's bar,
+    /// docs/battle/command.md 5.1g): then it shadows the nearest, taking up no fight (and leaving one doctrine took up).</summary>
     bool Outmatched(in AiContext ctx, ref Task t, Unit u, ShipState guide)
     {
         var s = ctx.Settings;
         int enemy = NearestEnemy(ctx, guide, s.FightCompareM);
         if (enemy == 0)
             return false;
-        double theirs = Strength.Seen(ctx.World, seen, guide.Side, guide.Position, s.FightCompareM);
-        double ours = u.IsGroup && groups.Get(u.GroupId) is { } g ? Strength.OfGroup(groups, ctx.Ships, g, line) : Strength.Of(guide.Handling.Class);
-        if (theirs <= ours * Doctrine!.Of(guide.Entity, guide.Side, DoctrineField.OutgunnedRatio))
+        if (!Judge.Near(ctx, guide, out var m) || m.Confidence >= Judge.Bars(guide.Entity, guide.Side).Accept)
             return false;
         (t.ShadowOf, t.Status, t.Reason) = (enemy, TaskState.InContact, TaskReason.InContact);
         ctx.Issue(ctx.Orders.Shadow(u, Unit.Ship(enemy), 0, OrderSource.Task));

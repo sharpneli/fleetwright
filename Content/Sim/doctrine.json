@@ -6,9 +6,12 @@
   "default": {
     // what a unit does when it first meets an enemy in sight: "fight" (Fight, turning away when outgunned) or "carry on"
     "Engage": "fight",
-    // Fight's range, a share of the main battery's reach; the enemy's heavy guns over the unit's own past which it turns away
+    // Fight's range, a share of the main battery's reach; Fight turns away once the unit's matchup against the enemy
+    // (docs/battle/command.md 5.1g: the share of his tonnage it puts out of the fight for the share of its own) is under
+    // 1 / OutgunnedRatio, and the commander declines battle by it; he sends units after an enemy at SeekRatio or better
     "RangeShare": 0.6,
     "OutgunnedRatio": 2,
+    "SeekRatio": 1,
     // a ship falls out of the line under 60% of its designed speed, a third of its main guns, past 10° of list, or with
     // half its reserve buoyancy flooded
     "FallOutSpeedShare": 0.6,

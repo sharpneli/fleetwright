@@ -156,6 +156,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- duel super_dreadn
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- ballistics dreadnought [--research]   # each battery's range table (range, elevation, time of flight, fall, striking velocity); the research's 16"/50 beside its sourced figures
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- weapons dreadnought [--research]   # weapon facts: batteries, fire-control level, guns' working numbers, shells, plating (placeholders beside the research's guns)
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- hits v25 --shooter lion --battery 1 --range 6000 [--kind he] [--n 2000] [--per-ship 10] [--show 3] [--settle 30]   # the damage model alone: hits spread over a design as falling shells see it, through the damage system; outcomes, parts lost, ships' state after K hits and MIN minutes of flooding and fire
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- matchup arethusa:4 iron_duke [--range M] [--share 0.6] [--sight M]   # who can fight whom (command.md 5.1g): profiles, hit and out chances, the engagements, A's confidence; NAME:N:t0 strips torpedoes
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- torpedo super_dreadnought [--shooter v25] [--at mid|bow|stern|SHARE] [--n 200] [--per-ship K] [--settle 60] [--range M --aspect DEG --spread N --runs N]   # torpedoes: the hit alone (outcomes, water, list, lost and how), or with --range the attack (hit %)
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- flood destroyer [--hole mid:-1:0.5,bow:-1:2:p] [--rooms boiler_room:2] [--minutes 120] [--every 600] [--step 1000] [--cells]   # the flooding model alone: reserve buoyancy, TPC, GM; holes or flooded spaces, then water, sinkage, trim, heel, GM until it goes down
 ```
@@ -278,12 +279,16 @@ src/
                               #   the setting), Functions (what the
                               #   ship can still do, from the class's function table), Flooding (FloodModel: the cells as
                               #   water sees them; the sea in, across the cell graph, pumps, settling, founder and
-                              #   capsize), Fires (burning, spreading, put out, cooking off magazines)
+                              #   capsize), Fires (burning, spreading, put out, cooking off magazines), Fitness (what a
+                              #   ship can still do; FallOutRule, doctrine's fall-out), Matchup (who can fight whom: a
+                              #   class's profile, two sides' engagement and A's confidence; docs/battle/command.md 5.1g)
   Fleetwright.Sim.Ai/         # the AI above the world: AiSystem (layers of command, top-down, each at its rate:
                               #   Commanders/ (CommanderLayer: each side's C-in-C, his aims and phases, tasks to his top
                               #   units by their roles; docs/battle/command.md 5.1d), Tasks/ (TaskLayer: a unit's task
                               #   and its plan, tasks queued one after another), admirals, captains),
-                              #   Knowledge/ (IPicture: the navy's picture; SeenContacts: its contacts in sight, gridded),
+                              #   Knowledge/ (IPicture: the navy's picture; SeenContacts: its contacts in sight, gridded;
+                              #   TacticalPicture and HeldGroups: the enemy in groups, in sight and held; Matchups and
+                              #   MatchupJudge: the matchup's sides from the world, the one judgement every layer asks),
                               #   Captains/ (CaptainLayer, Behaviours: keep course, follow, run, station, fight;
                               #   CaptainLayer.Fire: fire at will, engage, hold fire, torpedoes, a torpedo craft's attack), Admirals/ (AdmiralLayer: formations
                               #   as captains' stations, fire distributed over the enemy's line); admiralties go beside them

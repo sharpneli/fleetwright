@@ -23,8 +23,8 @@ public enum AttackPhase : byte
 }
 
 /// <summary>The flotilla's attack (docs/battle/command.md 5.1b): a squadron of torpedo craft that's told to Attack, or
-/// fights with doctrine's TorpedoAttack "together", attacks as one under its admiral, each boat's torpedoes held for his
-/// signal. It gains a point <see cref="SimSettings.AttackGainDeg"/> off the target's bow, on its side of him, at
+/// fights with doctrine's TorpedoAttack "together" and its matchup has the attack worth making (5.1g), attacks as one
+/// under its admiral, each boat's torpedoes held for his signal. It gains a point <see cref="SimSettings.AttackGainDeg"/> off the target's bow, on its side of him, at
 /// <see cref="SimSettings.AttackGainShare"/> of its torpedoes' fast range, at full speed; runs in from there (its guide
 /// fighting the target, the boats on station about him); fires every boat's spread on one signal when the guide's run is
 /// within <see cref="SimSettings.TorpedoFireShare"/> of the fast range; runs from the target for
@@ -48,6 +48,11 @@ public sealed partial class AdmiralLayer
                 StopAttack(ctx, g, a);
             return false;
         }
+        // taken up by doctrine (not ordered), an attack is begun only if its matchup has it worth making (docs/battle/command.md
+        // 5.1g: it presses in when its numbers saturate the defence); once begun it's seen through
+        if (!a.AttackOrdered && a.Attack == AttackPhase.None &&
+            !(Judge.Near(ctx, guide, out var m) && (m.Terms.Style & MatchupStyle.AttackByA) != 0 && m.Confidence >= Judge.Bars(guide.Entity, guide.Side).Accept))
+            return false;
         var s = ctx.Settings;
         long now = ctx.NowMs;
         var to = GuideUnit(g);

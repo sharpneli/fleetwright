@@ -95,6 +95,7 @@ public sealed partial class CaptainLayer
                 if (cap.TorpedoHeld && !groups.InLine(own.Entity))
                     cap.TorpedoHeld = false;   // out of her flotilla's line: her torpedoes her own again
                 FallOut(ctx, ref cap, own, slot);
+                OutOfRounds(ctx, ref cap, own);
                 Comb(ctx, ref cap, own);
                 TakeUpStanding(ctx, ref cap, own, slot);
                 Aim(ctx, ref cap, own, slot);
@@ -416,9 +417,14 @@ public sealed partial class CaptainLayer
         _ => 5,
     };
 
-    /// <summary>His Fight, each second: the enemy (the one ordered, else the main battery's target, else the nearest in
-    /// sight); away from him if his navy sees far heavier guns than his own unit's, else on the band; nothing while
-    /// there's nobody (he keeps what's ordered).</summary>
+    /// <summary>His Fight, each second (docs/battle/command.md 5.1g): the enemy (the one ordered, else the main battery's
+    /// target, else the nearest in sight), and his unit's matchup against what his navy holds in sight round him. Under
+    /// doctrine's bar (1 / OutgunnedRatio) he turns away, and comes back once he's well over it; but one that can't get
+    /// away (the enemy as fast) runs only to a stronger force of his own, else he fights. A torpedo craft attacks when
+    /// the judgement has its side attacking, or when it's ordered to (whoever ordered it judged): in to its torpedoes'
+    /// range, fire, away, and in again. One that can hardly be
+    /// hurt (<see cref="SimSettings.FightFinishConfidence"/>) closes in to finish the enemy. Nothing while there's nobody
+    /// (he keeps what's ordered).</summary>
     void FightThink(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         var s = ctx.Settings;
@@ -439,75 +445,79 @@ public sealed partial class CaptainLayer
         if (enemy != cap.FightEnemy)
             (cap.FightEnemy, cap.FightSide) = (enemy, 0);
 
-        if (TorpedoCraft(ctx, own, slot))
+        bool judged = Judge.Near(ctx, own, out var m);
+        double accept = Judge.Bars(own.Entity, own.Side).Accept, c = judged ? m.Confidence : double.PositiveInfinity;
+        bool away = cap.FightAway ? c < accept / s.FightRallyShare : c < accept;
+        double fallBack = double.NaN;
+        if (away && !m.ACanRefuse(s) && double.IsNaN(fallBack = FallBack(ctx, own)))
+            away = false;   // no escape: he fights
+
+        // ordered to attack, or in his flotilla's attack (his torpedoes held for its signal): whoever ordered it judged
+        if (TorpedoCraft(ctx, own, slot) && (cap.AttackOrdered || cap.TorpedoHeld || !away && (m.Terms.Style & MatchupStyle.AttackByA) != 0))
         {
-            // the attack: in to the torpedoes' range whatever guns he faces, fire, away, and in again
-            cap.FightAway = cap.TorpedoMs != 0 && ctx.NowMs - cap.TorpedoMs < s.TorpedoTurnAwayMs;
+            // the attack: in to the torpedoes' range, fire, away, and in again
+            bool off = cap.TorpedoMs != 0 && ctx.NowMs - cap.TorpedoMs < s.TorpedoTurnAwayMs;
             double attack = s.TorpedoAttackShare * FastSetting(cls).RangeM;
-            var (course0, kn0) = cap.FightAway ? Behaviours.Run(own, t)
-                : Behaviours.Fight(own, t, attack, s.FightBandShare, s.FightCloseDeg, ref cap.FightSide);
+            var (course0, kn0) = off ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, attack, s.FightBandShare, s.FightCloseDeg, ref cap.FightSide);
             // under fire on the run-in, and away after: evading, but steady for the last of it (the research: hold for the launch)
-            if (cap.FightAway || Earth.Distance(own.Position, t.Position) > s.EvadeSteadyShare * attack)
+            if (off || Earth.Distance(own.Position, t.Position) > s.EvadeSteadyShare * attack)
                 course0 = Evade(ctx, own, slot, course0, attackRun: true);
+            cap.FightAway = false;
             Give(ctx, own, course0, cap.LimitKn > 0 ? Math.Min(kn0, cap.LimitKn) : kn0);
             return;
         }
 
-        var (theirs, ours) = Weigh(ctx, own);
-        double ratio = doctrine.Of(own.Entity, own.Side, DoctrineField.OutgunnedRatio);
-        cap.FightAway = cap.FightAway ? theirs > ours * ratio * s.FightRallyShare : theirs > ours * ratio;
-        var (course, kn) = cap.FightAway ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, band, s.FightBandShare, s.FightCloseDeg, ref cap.FightSide);
-        if (cap.FightAway)
-            course = Evade(ctx, own, slot, FallBack(ctx, own, course, theirs), attackRun: false);
+        cap.FightAway = away;
+        if (!away && c >= s.FightFinishConfidence && m.Terms.LostA < s.FightFinishLostShare)
+            band *= s.FightFinishShare;   // he can hardly be hurt (a cripple, not a torpedo boat): in to finish her
+        var (course, kn) = away ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, band, s.FightBandShare, s.FightCloseDeg, ref cap.FightSide);
+        if (away)
+        {
+            if (double.IsNaN(fallBack))
+                fallBack = FallBack(ctx, own);
+            course = Evade(ctx, own, slot, FallBackCourse(course, fallBack, s), attackRun: false);
+        }
         if (cap.LimitKn > 0)
             kn = Math.Min(kn, cap.LimitKn);
         Give(ctx, own, course, kn);
     }
 
-    /// <summary>Falling back on the main body (docs/battle/command.md 5.1c): turned away from an enemy of a strength, he
-    /// runs for the nearest own force (another top unit of his side) within <see cref="SimSettings.FallBackM"/> that's a
-    /// match for it, if that's within <see cref="SimSettings.FallBackDeg"/> of straight away; else straight away.</summary>
-    double FallBack(in AiContext ctx, ShipState own, double away, double theirs)
+    /// <summary>Falling back on the main body (docs/battle/command.md 5.1c): the bearing of the nearest own force (another
+    /// top unit of his side) within <see cref="SimSettings.FallBackM"/> that's a match for the enemy in sight round him
+    /// (its matchup against them at doctrine's bar or better); NaN if none. Judged once a moment for his unit.</summary>
+    double FallBack(in AiContext ctx, ShipState own)
     {
         var s = ctx.Settings;
-        Forces(ctx);
         var mine = groups.UnitOf(own.Entity);
-        double best = s.FallBackM;
-        double course = away;
-        for (int k = 0; k < forceCount; k++)
-        {
-            ref readonly var f = ref forces[k];
-            if (f.Side != own.Side || f.Strength < theirs || mine != null && f.GroupId == mine.GroupId)
-                continue;
-            double d = Earth.Distance(own.Position, f.At);
-            double toward = Earth.Bearing(own.Position, f.At);
-            double off = toward - away;
-            if (d < best && Math.Abs(off - 360 * Math.Round(off / 360)) <= s.FallBackDeg)
-                (best, course) = (d, toward);
-        }
-        return course;
-    }
-
-    // every side's top groups, where their guides are and their strength: made once a moment it's asked
-    (int GroupId, byte Side, Vec3d At, double Strength)[] forces = new (int, byte, Vec3d, double)[16];
-    int forceCount;
-    long forcesMs = long.MinValue;
-
-    void Forces(in AiContext ctx)
-    {
-        if (forcesMs == ctx.NowMs)
-            return;
-        (forcesMs, forceCount) = (ctx.NowMs, 0);
+        int key = mine != null ? Unit.Group(mine.GroupId).Id : Unit.Ship(own.Entity).Id;
+        if (fallBacks.TryGetValue(key, out var fb) && fb.Ms == ctx.NowMs)
+            return fb.Deg;
+        double accept = Judge.Bars(own.Entity, own.Side).Accept, best = s.FallBackM, deg = double.NaN;
         for (int k = 0; k < groups.Count; k++)
         {
             var g = groups[k];
-            if (g.Parent != 0 && groups.InForceLine(g) || ctx.Ships.SlotOf(groups.GuideShip(g)) is not (int slot and >= 0))
+            if (g.Parent != 0 || mine != null && g.GroupId == mine.GroupId || ctx.Ships.SlotOf(groups.GuideShip(g)) is not (int gs and >= 0))
                 continue;
-            if (forceCount == forces.Length)
-                Array.Resize(ref forces, 2 * forces.Length);
-            var guide = ctx.Ships[slot];
-            forces[forceCount++] = (g.GroupId, guide.Side, guide.Position, Strength.OfGroup(groups, ctx.Ships, g, unitLine));
+            var guide = ctx.Ships[gs];
+            double d = Earth.Distance(own.Position, guide.Position);
+            if (guide.Side != own.Side || d >= best || Judge.GroupAgainstNear(ctx, g, own) < accept)
+                continue;
+            (best, deg) = (d, Earth.Bearing(own.Position, guide.Position));
         }
+        fallBacks[key] = (ctx.NowMs, deg);
+        return deg;
+    }
+
+    readonly Dictionary<int, (long Ms, double Deg)> fallBacks = [];
+
+    /// <summary>The course away: toward the force he falls back on if that's within <see cref="SimSettings.FallBackDeg"/>
+    /// of straight away, else straight away.</summary>
+    static double FallBackCourse(double away, double toward, SimSettings s)
+    {
+        if (double.IsNaN(toward))
+            return away;
+        double off = toward - away;
+        return Math.Abs(off - 360 * Math.Round(off / 360)) <= s.FallBackDeg ? toward : away;
     }
 
     /// <summary>Whether his ship is past doctrine's fall-out (docs/battle/command.md 5.1a), judged when its condition
@@ -541,6 +551,42 @@ public sealed partial class CaptainLayer
         SetLimit(ctx, ref cap, own, 0);
         SetClearance(ctx, ref cap, own.Entity, 0);
         (cap.Order, cap.Target, cap.Source, cap.Watch, cap.Asked, cap.Reason) = (CaptainOrder.Home, 0, OrderSource.Player, false, false, why);
+        Recount();
+    }
+
+    /// <summary>Whether his ship's magazines are empty (docs/battle/command.md 5.1g): every main mount out of the rounds
+    /// it carries (a mount with none given never runs out) and no torpedo left. Then she leaves her group and goes home,
+    /// as one fallen out does, her secondaries firing at will as she goes.</summary>
+    void OutOfRounds(in AiContext ctx, ref Captain cap, ShipState own)
+    {
+        if (cap.Order == CaptainOrder.Home)
+            return;
+        var cls = own.Handling.Class;
+        var combat = ctx.Ships.Combat;
+        int slot = ctx.Ships.SlotOf(own.Entity);
+        bool any = false;
+        for (int m = 0; m < cls.Mounts.Length; m++)
+        {
+            ref readonly var mr = ref cls.Mounts[m];
+            if (mr.Battery < 0 || cls.Batteries[mr.Battery].Kind != Battery.Main)
+                continue;
+            if (mr.Rounds <= 0 || combat.Mount(slot, m).Rounds > 0)
+                return;   // rounds left, or no limit given
+            any = true;
+        }
+        if (!any)
+            return;
+        for (int l = 0; l < cls.Launchers.Length; l++)
+        {
+            var st = combat.Launcher(slot, l, cls.Launchers[l], ctx.NowMs);
+            if (st.Loaded + st.Spare > 0)
+                return;
+        }
+        if (groups.Of(own.Entity) != null)
+            ctx.Issue(GroupSystem.Remove(own.Entity));   // out of the line
+        SetLimit(ctx, ref cap, own, 0);
+        SetClearance(ctx, ref cap, own.Entity, 0);
+        (cap.Order, cap.Target, cap.Source, cap.Watch, cap.Asked, cap.Reason) = (CaptainOrder.Home, 0, OrderSource.Player, false, false, CaptainReason.OutAmmunition);
         Recount();
     }
 
@@ -665,11 +711,6 @@ public sealed partial class CaptainLayer
         t = new Sighting(entity, q, speed > 1e-6 ? v * (1 / speed) : Earth.Forward(q, 0), speed, ctx.NowMs);
         return entity;
     }
-
-    /// <summary>The heavy guns (12" guns' worth) his navy sees within <see cref="SimSettings.FightCompareM"/>, each
-    /// contact as the class it's taken for or by its type, and his own unit's (his group's line, or his ship).</summary>
-    (double Theirs, double Ours) Weigh(in AiContext ctx, ShipState own) =>
-        (Strength.Seen(ctx.World, seen, own.Side, own.Position, ctx.Settings.FightCompareM), Strength.OfUnit(groups, ctx.Ships, own.Entity, unitLine));
 
     /// <summary>A class's main battery (the heaviest gun of its main batteries), -1 for none.</summary>
     static int MainBattery(ShipClass cls)

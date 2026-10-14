@@ -175,11 +175,12 @@ public class CommanderTests(ITestOutputHelper output)
     [Fact]
     public void Flotillas_are_sent_in_on_an_enemy_line_their_heavy_units_engage()
     {
+        // four destroyers against one dreadnought: an attack worth making (docs/battle/command.md 5.1g)
         var (w, ai) = Make();
         int bb = Class(w, "dreadnought"), dd = Class(w, "destroyer");
         var line = Column(w, ai, bb, Earth.Position(Lat, Lon), 180, 4, side: 0);
         var flotilla = Column(w, ai, dd, Off(270, 3_000), 180, 4, side: 0);
-        var enemy = Column(w, ai, bb, Off(90, 16_000), 180, 4, side: 1);
+        var enemy = Column(w, ai, bb, Off(90, 16_000), 180, 1, side: 1);
         w.Apply(ai.Orders.FireAtWill(flotilla));
         w.Apply(ai.Orders.Screen(flotilla, line, 3_000));
         w.Apply(ai.Orders.Commander(0, CommanderMode.On));
@@ -208,11 +209,28 @@ public class CommanderTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Flotillas_are_kept_back_from_a_line_too_strong_for_them()
+    {
+        // four destroyers against four dreadnoughts by day: the defence's guns beat them off (docs/battle/command.md 5.1g)
+        var (w, ai) = Make();
+        int bb = Class(w, "dreadnought"), dd = Class(w, "destroyer");
+        Column(w, ai, bb, Earth.Position(Lat, Lon), 180, 4, side: 0);
+        var flotilla = Column(w, ai, dd, Off(270, 3_000), 180, 4, side: 0);
+        Column(w, ai, bb, Off(90, 16_000), 180, 4, side: 1);
+        w.Apply(ai.Orders.FireAtWill(flotilla));
+        w.Apply(ai.Orders.Commander(0, CommanderMode.On));
+        Run(w, 10 * 60);
+        output.WriteLine($"the flotilla given {ai.Commanders.GivenOf(flotilla)}");
+        Assert.NotEqual(TaskKind.Attack, ai.Commanders.GivenOf(flotilla).Given);
+    }
+
+    [Fact]
     public void An_outmatched_side_declines_and_goes_home()
     {
+        // two battlecruisers against eight dreadnoughts: outmatched, and faster, so they can get away
         var (w, ai) = Make();
-        int bb = Class(w, "dreadnought");
-        var mine = Column(w, ai, bb, Earth.Position(Lat, Lon), 0, 2, side: 1);
+        int bb = Class(w, "dreadnought"), bc = Class(w, "lion");
+        var mine = Column(w, ai, bc, Earth.Position(Lat, Lon), 0, 2, side: 1);
         Column(w, ai, bb, Off(90, 22_000), 0, 8, side: 0, kn: 12);
         var (hla, hlo) = LatLon(Off(270, 150_000));
         w.Apply(ai.Orders.Home(1, hla, hlo));
@@ -228,6 +246,24 @@ public class CommanderTests(ITestOutputHelper output)
         Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), phase);
         Assert.Equal((TaskKind.Withdraw, CommanderWhy.Outmatched), (given.Given, given.Why));
         Assert.True(Away() < before - 20_000);
+    }
+
+    [Fact]
+    public void An_outmatched_side_that_cant_get_away_fights()
+    {
+        // two dreadnoughts against eight of their sisters: as fast as he is, so there's no escape (docs/battle/command.md 5.1g)
+        var (w, ai) = Make();
+        int bb = Class(w, "dreadnought");
+        var mine = Column(w, ai, bb, Earth.Position(Lat, Lon), 0, 2, side: 1);
+        Column(w, ai, bb, Off(90, 22_000), 0, 8, side: 0, kn: 12);
+        var (hla, hlo) = LatLon(Off(270, 150_000));
+        w.Apply(ai.Orders.Home(1, hla, hlo));
+        w.Apply(ai.Orders.Commander(1, CommanderMode.On));
+        Run(w, 3 * 60);
+        var phase = ai.Commanders.PhaseOf(1);
+        output.WriteLine($"phase {phase}, given {ai.Commanders.GivenOf(mine)}");
+        Assert.NotEqual(CommanderPhase.Retiring, phase.Phase);
+        Assert.NotEqual(TaskKind.Withdraw, ai.Commanders.GivenOf(mine).Given);
     }
 
     [Fact]
@@ -298,7 +334,7 @@ public class CommanderTests(ITestOutputHelper output)
         int bb = Class(w, "dreadnought"), dd = Class(w, "destroyer");
         var mine = Column(w, ai, bb, Earth.Position(Lat, Lon), 180, 3, side: 1);
         var flotilla = Column(w, ai, dd, Off(90, 2_000), 180, 4, side: 1);
-        Column(w, ai, bb, Off(90, 7_000), 180, 4, side: 0);
+        Column(w, ai, bb, Off(90, 7_000), 180, 1, side: 0);   // a battleship the flotilla's attack is worth making on
         w.Apply(ai.Orders.FireAtWill(flotilla));
         var (hla, hlo) = LatLon(Off(270, 150_000));
         w.Apply(ai.Orders.Home(1, hla, hlo));
