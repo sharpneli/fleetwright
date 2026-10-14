@@ -90,6 +90,7 @@ static class ScenarioPlay
     {
         string Name(int e) => names.TryGetValue(e, out var n) ? n : $"#{e}";
         string SideName(int side) => side >= 0 && side < s.Sides.Length ? s.Sides[side] : "?";
+        string UnitName(int id) => id < 0 ? end.GroupName(-id) : Name(id);
         Console.WriteLine();
         Console.WriteLine("the timeline:");
         foreach (var l in end.Timeline.OrderBy(l => l.Ms).ThenBy(l => l.Kind))
@@ -125,6 +126,12 @@ static class ScenarioPlay
                                       _ => "can't",
                                   } + ((Fleetwright.Sim.Ai.Tasks.TaskReason)(l.Other % 256) is var why && why is not (Fleetwright.Sim.Ai.Tasks.TaskReason.None or Fleetwright.Sim.Ai.Tasks.TaskReason.InContact)
                                       ? $" ({why.ToString().ToLowerInvariant()})" : ""),
+                PlayEvent.Phase => $"{SideName(l.Side)}'s commander: {Words(((Fleetwright.Sim.Ai.Commanders.CommanderPhase)l.Count).ToString())}" +
+                                   ((Fleetwright.Sim.Ai.Commanders.CommanderReason)l.Other is var r && r != Fleetwright.Sim.Ai.Commanders.CommanderReason.None ? $" ({Words(r.ToString())})" : ""),
+                PlayEvent.Ordered => $"{SideName(l.Side)}'s commander: {UnitName(l.Entity)} to " +
+                                     $"{Words(((Fleetwright.Sim.Ai.Tasks.TaskKind)(l.Other / 256)).ToString())}" +
+                                     (l.Count != 0 ? $" {UnitName(l.Count)}" : "") +
+                                     $" ({Words(((Fleetwright.Sim.Ai.Commanders.CommanderWhy)(l.Other % 256)).ToString())})",
                 PlayEvent.End => $"the end: {Why((EndReason)l.Count)}",
                 _ => l.Kind.ToString(),
             });
@@ -154,6 +161,9 @@ static class ScenarioPlay
                               $"{tonnes.Average():0} t; made {runs.Average(r => r.Result[side].Hits):F0} hits, fired {runs.Average(r => r.Result[side].Torpedoes):F1} torpedoes; aims met {runs.Count(r => r.Result[side].AimsMet)} times");
         }
     }
+
+    /// <summary>An enum's name in words: "NoContact" as "no contact".</summary>
+    static string Words(string name) => string.Concat(name.Select((ch, i) => char.IsUpper(ch) && i > 0 ? " " + char.ToLowerInvariant(ch) : char.ToLowerInvariant(ch).ToString()));
 
     static string Why(EndReason r) => r switch
     {

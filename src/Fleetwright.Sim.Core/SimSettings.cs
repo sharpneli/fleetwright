@@ -645,6 +645,9 @@ public sealed record SimSettings
     public double FallBackM { get; init; } = 150_000;
     public double FallBackDeg { get; init; } = 100;
 
+    /// <summary>The side's commander (docs/battle/command.md 5.1d) thinks every CommanderPeriodMs. ms.</summary>
+    public int CommanderPeriodMs { get; init; } = 60_000;
+
     /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
     /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>
     public double[] FightTypeGuns { get; init; } = [1, 8, 1, 0.1, 0, 0];

@@ -66,9 +66,9 @@ public class RailsRulesTests(ITestOutputHelper output)
             Run(w, 1);
         Assert.False(Ship(w, b).OnRails);
         long now = w.Time.Ms;
-        output.WriteLine($"off rails at {now} ms: admirals think at {ai.NextThinkMs(1)}, captains at {ai.NextThinkMs(2)}");
-        Assert.InRange(ai.NextThinkMs(1), now, now + Settings.AdmiralPeriodMs);
-        Assert.InRange(ai.NextThinkMs(2), now, now + Settings.CaptainPeriodMs);
+        output.WriteLine($"off rails at {now} ms: admirals think at {ai.NextThinkMs(2)}, captains at {ai.NextThinkMs(3)}");
+        Assert.InRange(ai.NextThinkMs(2), now, now + Settings.AdmiralPeriodMs);
+        Assert.InRange(ai.NextThinkMs(3), now, now + Settings.CaptainPeriodMs);
     }
 
     [Fact]

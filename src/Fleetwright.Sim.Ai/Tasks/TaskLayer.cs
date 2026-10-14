@@ -101,6 +101,11 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
     Task[] tasks = new Task[8];
     int count;
 
+    // the tasks still to come (each unit's plan, docs/battle/command.md 5.1d), their commands in the order given; a unit's
+    // next starts when its task ends, done or not
+    Command[] queue = new Command[8];
+    int queued;
+
     internal AdmiralLayer? Admirals { get; set; }
     internal CaptainLayer? Captains { get; set; }
     internal Doctrine? Doctrine { get; set; }
@@ -112,6 +117,8 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
     {
         get
         {
+            if (queued > 0)
+                return true;
             for (int i = 0; i < count; i++)
                 if (Live(tasks[i].Status))
                     return true;
@@ -144,6 +151,23 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
     public (TaskKind Kind, TaskState Status, TaskReason Reason) Of(Unit u) =>
         Find(u.Id) is int i and >= 0 ? (tasks[i].Kind, tasks[i].Status, tasks[i].Reason) : (TaskKind.None, TaskState.None, TaskReason.None);
 
+    /// <summary>How many tasks a unit has still to come after the one it's on.</summary>
+    public int QueuedOf(Unit u)
+    {
+        int n = 0;
+        for (int q = 0; q < queued; q++)
+            if (queue[q].Entity == u.Id)
+                n++;
+        return n;
+    }
+
+    /// <summary>Whether a unit has had a task and is through with it: it ended (done, or it couldn't be), nothing after
+    /// it. A unit that's never had one is on the orders it was given, not idle.</summary>
+    public bool Idle(Unit u) => Find(u.Id) is int i and >= 0 && !Live(tasks[i].Status) && QueuedOf(u) == 0;
+
+    /// <summary>A unit's task's target: the unit or contact it's about (0: a point, or none).</summary>
+    public int TargetOf(Unit u) => Find(u.Id) is int i and >= 0 ? tasks[i].Target : 0;
+
     /// <summary>Whether a unit's task keeps it out of fights doctrine would take up: withdrawing, shadowing, a scout
     /// shadowing what it found.</summary>
     public bool Avoids(Unit u) => Find(u.Id) is int i and >= 0 && tasks[i] is
@@ -153,11 +177,28 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
     } t && (t.Kind != TaskKind.Scout || t.ShadowOf != 0);
 
     /// <summary>Whether a command is a task for this layer: the task kinds, and Shadow and Screen when the player (or a
-    /// scenario) gives them; the same from a task, or a superior handing them down, are the plain orders.</summary>
+    /// scenario) or the side's commander gives them; the same from a task, or a superior handing them down, are the plain
+    /// orders.</summary>
     public static bool IsTask(AiCommand code, OrderSource source) =>
         code is AiCommand.GoTo or AiCommand.Patrol or AiCommand.Intercept or AiCommand.Join or AiCommand.Withdraw or AiCommand.Scout
             or AiCommand.Search or AiCommand.Cover ||
-        code is AiCommand.Shadow or AiCommand.Screen && source == OrderSource.Player;
+        code is AiCommand.Shadow or AiCommand.Screen && source is OrderSource.Player or OrderSource.Commander;
+
+    /// <summary>The task a command gives.</summary>
+    public static TaskKind KindOf(AiCommand code) => code switch
+    {
+        AiCommand.GoTo => TaskKind.GoTo,
+        AiCommand.Patrol => TaskKind.Patrol,
+        AiCommand.Intercept => TaskKind.Intercept,
+        AiCommand.Join => TaskKind.Join,
+        AiCommand.Withdraw => TaskKind.Withdraw,
+        AiCommand.Shadow => TaskKind.Shadow,
+        AiCommand.Screen => TaskKind.Screen,
+        AiCommand.Scout => TaskKind.Scout,
+        AiCommand.Search => TaskKind.Search,
+        AiCommand.Cover => TaskKind.Cover,
+        _ => throw new ArgumentException($"not a task: {code}"),
+    };
 
     /// <summary>The player's own order to a unit: its task ends (a speed is the task's speed).</summary>
     internal void Overridden(Unit u, in Command c)
@@ -170,26 +211,29 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
             Remove(i);
     }
 
-    /// <summary>A task for a unit (its command).</summary>
+    /// <summary>A task for a unit (its command): at once, in place of its task and its plan; or, given as
+    /// <see cref="UnitOrders.Then"/>, after the tasks it already has.</summary>
     public void Order(in AiContext ctx, in Command c)
+    {
+        var u = new Unit(c.Entity);
+        if ((c.B & UnitOrders.Queued) != 0 && (Find(u.Id) is int i and >= 0 && Live(tasks[i].Status) || QueuedOf(u) > 0))
+        {
+            if (queued == queue.Length)
+                Array.Resize(ref queue, queue.Length * 2);
+            queue[queued++] = c with { B = c.B & ~UnitOrders.Queued };
+            return;
+        }
+        Unqueue(u);
+        Begin(ctx, c with { B = c.B & ~UnitOrders.Queued });
+    }
+
+    /// <summary>A unit's next task begun, its command.</summary>
+    void Begin(in AiContext ctx, in Command c)
     {
         var u = new Unit(c.Entity);
         if (Lead(u) == 0)
             return;
-        var kind = (AiCommand)c.Code switch
-        {
-            AiCommand.GoTo => TaskKind.GoTo,
-            AiCommand.Patrol => TaskKind.Patrol,
-            AiCommand.Intercept => TaskKind.Intercept,
-            AiCommand.Join => TaskKind.Join,
-            AiCommand.Withdraw => TaskKind.Withdraw,
-            AiCommand.Shadow => TaskKind.Shadow,
-            AiCommand.Screen => TaskKind.Screen,
-            AiCommand.Scout => TaskKind.Scout,
-            AiCommand.Search => TaskKind.Search,
-            AiCommand.Cover => TaskKind.Cover,
-            _ => throw new ArgumentException($"not a task: {c.Code}"),
-        };
+        var kind = KindOf((AiCommand)c.Code);
         var s = ctx.Settings;
         ref var t = ref Get(u.Id);
         t = new Task
@@ -228,7 +272,33 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
             }
             if (Live(tasks[i].Status))
                 Step(ctx, ref tasks[i]);
+            if (queued > 0 && !Live(tasks[i].Status) && Next(tasks[i].Unit) is int q and >= 0)
+            {
+                var c = queue[q];
+                Array.Copy(queue, q + 1, queue, q, queued - q - 1);
+                queue[--queued] = default;
+                Begin(ctx, c);   // the plan goes on, whether the last was done or couldn't be
+            }
         }
+    }
+
+    int Next(int unit)
+    {
+        for (int q = 0; q < queued; q++)
+            if (queue[q].Entity == unit)
+                return q;
+        return -1;
+    }
+
+    /// <summary>A unit's plan dropped.</summary>
+    void Unqueue(Unit u)
+    {
+        int k = 0;
+        for (int q = 0; q < queued; q++)
+            if (queue[q].Entity != u.Id)
+                queue[k++] = queue[q];
+        Array.Clear(queue, k, queued - k);
+        queued = k;
     }
 
     /// <summary>A task, each think: waiting while its unit fights, else its orders given (once, or as they change) and
@@ -652,6 +722,16 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
 
     public void Hash(ref StateHash h)
     {
+        for (int q = 0; q < queued; q++)
+        {
+            ref readonly var c = ref queue[q];
+            h.Add(c.Code);
+            h.Add(c.Entity);
+            h.Add(c.A);
+            h.Add(c.X);
+            h.Add(c.B);
+            h.Add(c.Y);
+        }
         if (count == 0)
             return;   // a world with no tasks hashes as before them
         h.Add(count);
@@ -728,6 +808,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
 
     void Remove(int i)
     {
+        Unqueue(new Unit(tasks[i].Unit));
         Array.Copy(tasks, i + 1, tasks, i, count - i - 1);
         tasks[--count] = default;
     }

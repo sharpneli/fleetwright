@@ -56,6 +56,14 @@ public sealed class Snapshot
     /// <summary>The sides whose ships (and groups) are in this snapshot, by side.</summary>
     public bool[] ShownSides { get; } = new bool[256];
 
+    /// <summary>Each side's commander (docs/battle/command.md 5.1d), by side: his mode (the AI's <c>CommanderMode</c>, 0 for
+    /// none), whether he's commanding now, and how he sees the battle (<c>CommanderPhase</c>) and why
+    /// (<c>CommanderReason</c>).</summary>
+    public byte[] CommanderMode { get; } = new byte[256];
+    public bool[] CommanderOn { get; } = new bool[256];
+    public byte[] CommanderPhase { get; } = new byte[256];
+    public byte[] CommanderReason { get; } = new byte[256];
+
     /// <summary>The player's navy's contacts (empty with no player side).</summary>
     public ContactsView Contacts { get; } = new();
 
@@ -368,6 +376,9 @@ public sealed class GroupsView
     /// <summary>Its task (the AI's <c>TaskKind</c>, 0 none) and how it stands (<c>TaskState</c>).</summary>
     public byte[] Task = [], TaskStatus = [];
 
+    /// <summary>A top group under its side's commander (1), held from him by the player (2), or neither (0).</summary>
+    public byte[] Commanded = [];
+
     /// <summary>Room for n groups and m members; grows only past the most yet.</summary>
     public void EnsureCapacity(int n, int m)
     {
@@ -383,6 +394,7 @@ public sealed class GroupsView
             Array.Resize(ref BearingDeg, n);
             Array.Resize(ref Task, n);
             Array.Resize(ref TaskStatus, n);
+            Array.Resize(ref Commanded, n);
             Array.Resize(ref Guide, n);
             Array.Resize(ref GuideShip, n);
             Array.Resize(ref Parent, n);
@@ -464,6 +476,9 @@ public sealed class ShipsView
 
     /// <summary>A ship alone's task (the AI's <c>TaskKind</c>, 0 none) and how it stands (<c>TaskState</c>).</summary>
     public byte[] Task = [], TaskStatus = [];
+
+    /// <summary>A ship alone under its side's commander (1), held from him by the player (2), or neither (0).</summary>
+    public byte[] Commanded = [];
 
     /// <summary>Ships and the land (<see cref="Combat.Slide"/>): sliding along a coast (+1 land to port, -1 to
     /// starboard, 0 not), how often the backstop has put it back off the land; its minimum and standoff from the
@@ -572,6 +587,7 @@ public sealed class ShipsView
         Array.Resize(ref Reason, n);
         Array.Resize(ref Task, n);
         Array.Resize(ref TaskStatus, n);
+        Array.Resize(ref Commanded, n);
         Array.Resize(ref LandSide, n);
         Array.Resize(ref Backstops, n);
         Array.Resize(ref MinClearanceM, n);

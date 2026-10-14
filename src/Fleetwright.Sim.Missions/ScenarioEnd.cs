@@ -54,6 +54,14 @@ public enum PlayEvent : byte
     /// Count its state): in contact, done, can't.</summary>
     Task,
 
+    /// <summary>A side's commander sees the battle anew (Count his <see cref="CommanderPhase"/>, Other his
+    /// <see cref="CommanderReason"/>).</summary>
+    Phase,
+
+    /// <summary>A side's commander gives a unit a task (Entity the unit's id; Other its kind × 256 + his
+    /// <see cref="CommanderWhy"/>; Count what it's about: a unit's id, a contact's entity, or 0 for a point).</summary>
+    Ordered,
+
     /// <summary>The end (Count its <see cref="EndReason"/>).</summary>
     End,
 }
@@ -77,6 +85,8 @@ public sealed class ScenarioEnd
     readonly HashSet<int> fellOut = [];   // ships whose falling out is told
     readonly HashSet<int> deployed = [];  // groups whose deployment is told
     readonly Dictionary<int, byte> taskStates = [];   // the state each unit's task was last told in
+    readonly Dictionary<int, long> ordersTold = [];   // when each unit's last commander's order was given, as told
+    readonly int[] phases = new int[256];             // each side's commander's phase and reason as last told
     readonly Dictionary<int, string> groupNames = [];
 
     /// <summary>A group's name as it was when the timeline told of it.</summary>
@@ -242,6 +252,32 @@ public sealed class ScenarioEnd
             else if (world.Ships.Store.SlotOf(unit.Entity) is int slot and >= 0)
                 side = world.Ships.Store[slot].Side;
             lines.Add(new PlayLine(now, PlayEvent.Task, side, unit.Id, (int)kind * 256 + (int)why, (int)state));
+        }
+        var cmd = ai.Commanders;
+        for (int side = 0; side < scenario.Sides.Length; side++)
+        {
+            var (phase, reason) = cmd.PhaseOf(side);
+            int key = (int)phase * 256 + (int)reason;
+            if (phase != CommanderPhase.None && phases[side] != key)
+            {
+                phases[side] = key;
+                lines.Add(new PlayLine(now, PlayEvent.Phase, side, Other: (int)reason, Count: (int)phase));
+            }
+        }
+        for (int i = 0; i < cmd.Count; i++)
+        {
+            var (unit, given, target, why, ms) = cmd.At(i);
+            if (given == TaskKind.None || ordersTold.TryGetValue(unit.Id, out long told) && told == ms)
+                continue;
+            ordersTold[unit.Id] = ms;
+            int side = -1;
+            if (unit.IsGroup && groups.Get(unit.GroupId) is { } g)
+                (side, groupNames[g.GroupId]) = (groups.SideOf(g), g.Name);
+            else if (world.Ships.Store.SlotOf(unit.Entity) is int slot and >= 0)
+                side = world.Ships.Store[slot].Side;
+            if (target < 0 && groups.Get(-target) is { } tg)
+                groupNames[tg.GroupId] = tg.Name;
+            lines.Add(new PlayLine(ms, PlayEvent.Ordered, side, unit.Id, (int)given * 256 + (int)why, target));
         }
     }
 

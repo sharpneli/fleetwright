@@ -462,7 +462,7 @@ public sealed class Scenario
             Route = route,
             Loop = e.TryGetProperty("loop", out var lp) && lp.GetBoolean(),
             Doctrine = e.TryGetProperty("doctrine", out var dc) ? DoctrineValues(dc, $"{path} doctrine") : [],
-            Task = e.TryGetProperty("task", out var tk) ? ParseTask(tk, $"{path} task", top) : null,
+            Tasks = ParseTasks(e, path, top),
         };
         if (hasUnits)
         {
@@ -483,10 +483,26 @@ public sealed class Scenario
         return unit;
     }
 
-    static ScenarioTask ParseTask(JsonElement e, string path, bool top)
+    /// <summary>A top unit's <c>"task"</c>, or its <c>"tasks"</c> one after another (its plan); none if it has neither.</summary>
+    static List<ScenarioTask> ParseTasks(JsonElement e, string path, bool top)
     {
+        bool one = e.TryGetProperty("task", out var tk), many = e.TryGetProperty("tasks", out var ts);
+        if (one && many)
+            throw new ScenarioException($"{path}: \"task\" or \"tasks\", not both");
+        if (!one && !many)
+            return [];
         if (!top)
             throw new ScenarioException($"{path}: only a top unit has a task");
+        if (one)
+            return [ParseTask(tk, $"{path} task")];
+        if (ts.ValueKind != JsonValueKind.Array || ts.GetArrayLength() == 0)
+            throw new ScenarioException($"{path}: \"tasks\", a list of tasks done one after another");
+        int i = 0;
+        return [.. ts.EnumerateArray().Select(t => ParseTask(t, $"{path} tasks[{i++}]"))];
+    }
+
+    static ScenarioTask ParseTask(JsonElement e, string path)
+    {
         if (e.ValueKind != JsonValueKind.Object)
             throw new ScenarioException($"{path}: an object, {{ \"do\": \"scout\", \"of\": \"Grand Fleet\" }}");
         string kind = Str(e, "do", "");
@@ -585,8 +601,9 @@ public sealed class ScenarioUnit
     /// <summary>Doctrine's values the unit sets for itself (docs/battle/command.md "Doctrine"), over its side's.</summary>
     public List<(DoctrineField Field, double Value)> Doctrine { get; init; } = [];
 
-    /// <summary>A top unit's opening task (docs/battle/command.md 5.1c), or null: it steams its course or route.</summary>
-    public ScenarioTask? Task { get; init; }
+    /// <summary>A top unit's opening tasks (docs/battle/command.md 5.1c), one after another (its plan, 5.1d); none: it
+    /// steams its course or route.</summary>
+    public List<ScenarioTask> Tasks { get; init; } = [];
 
     public bool IsForce => Units.Count > 0;
     public int ShipCount => IsForce ? Units.Sum(u => u.ShipCount) : Ships.Sum(s => s.Count);
@@ -604,8 +621,8 @@ public sealed class ScenarioShips
 /// <summary>A top unit's opening task (docs/battle/command.md 5.1c): <c>"task": { "do": "scout", "of": "Grand Fleet",
 /// "distance_km": 30 }</c>. Kinds: "go to" (<c>"at"</c>, <c>"kn"</c>), "patrol" (<c>"to"</c>), "search" (<c>"at"</c>,
 /// <c>"leg_km"</c>), "join", "scout" (<c>"off_bow"</c> degrees), "screen", "cover" and "shadow" (<c>"of"</c> a unit's name, any
-/// level of the scenario; <c>"distance_km"</c>), "withdraw" (<c>"at"</c>, else home). The side's commander (5.1d) gives the
-/// tasks after these.</summary>
+/// level of the scenario; <c>"distance_km"</c>), "withdraw" (<c>"at"</c>, else home). <c>"tasks": [...]</c> gives several, each
+/// begun when the one before it ends (the unit's plan, 5.1d); the side's commander gives the tasks after these.</summary>
 public sealed class ScenarioTask
 {
     public required string Kind { get; init; }

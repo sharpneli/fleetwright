@@ -207,6 +207,8 @@ public sealed unsafe partial class MapScene
                 text += held == Detachment.Pinned ? " · detached" : " · held";
             if (gv.Task[g] != 0)
                 text += $" · {TaskText(gv.Task[g], gv.TaskStatus[g])}";
+            if (gv.Commanded[g] != 0)
+                text += gv.Commanded[g] == 1 ? " · AI" : " · yours";   // its side's commander's, or taken from him (5.1d)
             dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
             dl.AddText(at, ImGui.GetColorU32(gv.Asked[g] ? AskColor : GroupColor), gv.Asked[g] ? text + " !" : text);
         }
@@ -483,6 +485,14 @@ public sealed unsafe partial class MapScene
         ImGui.SameLine();
         if (ImGui.SmallButton($"withdraw home{id}"))
             world.Send(o.WithdrawHome(unit));
+        if (gv.Parent[g] == 0)
+        {
+            // the side's commander (docs/battle/command.md 5.1d): hand a top group to him, or take it back
+            ImGui.SameLine();
+            bool his = gv.Commanded[g] == 1;
+            if (ImGui.SmallButton(his ? $"take it from the admiral{id}" : $"leave it to the admiral{id}"))
+                world.Send(o.Automate(unit, !his));
+        }
     }
 
     /// <summary>"Held by you", top right: every ship and group the player holds out of its line, with what's become of

@@ -1,5 +1,6 @@
 using Fleetwright.Sim.Ai.Admirals;
 using Fleetwright.Sim.Ai.Captains;
+using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Ai.Knowledge;
 using Fleetwright.Sim.Ai.Tasks;
 using Fleetwright.Sim.Core;
@@ -7,7 +8,7 @@ using Fleetwright.Sim.Core;
 namespace Fleetwright.Sim.Ai;
 
 /// <summary>The AI in the world (docs/battle/plan.md steps 2.3b, 2.4 and 2.6): one <see cref="IWorldSystem"/> holding the
-/// chain of command, top-down (admirals, then captains; admiralties later), each layer ticking at its own rate on a
+/// chain of command, top-down (the sides' commanders, the units' tasks, admirals, then captains; admiralties later), each layer ticking at its own rate on a
 /// grid of world time while it has anything to watch. A host registers it after making the world. Every order to a
 /// unit comes in as one of its commands (<see cref="Orders"/>), the player's logged, a layer's to the layer below not:
 /// a replay registers it again and it thinks the same.</summary>
@@ -26,6 +27,9 @@ public sealed class AiSystem : IWorldSystem
 
     /// <summary>The units' tasks (docs/battle/command.md 5.1c), the layer above the admirals.</summary>
     public TaskLayer Tasks { get; }
+
+    /// <summary>The sides' commanders (docs/battle/command.md 5.1d), the top layer.</summary>
+    public CommanderLayer Commanders { get; }
 
     /// <summary>Each navy's contacts in sight, gridded for the layers' questions (not world state).</summary>
     public SeenContacts Seen { get; }
@@ -55,7 +59,8 @@ public sealed class AiSystem : IWorldSystem
         Admirals.Tactical = Tactical;
         Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine };
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
-        layers = [Tasks, Admirals, Captains];
+        Commanders = new CommanderLayer(world.Groups, world.Ships.Store) { Tasks = Tasks, Captains = Captains };
+        layers = [Commanders, Tasks, Admirals, Captains];
         nextTick = new long[layers.Length];
         tickGen = new int[layers.Length];
         Array.Fill(nextTick, -1);
@@ -69,22 +74,37 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Cover)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Automate)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         var code = (AiCommand)c.Code;
-        if (TaskLayer.IsTask(code, (OrderSource)c.B))
+        var source = (OrderSource)(c.B & 0xFF);
+        switch (code)
+        {
+            case AiCommand.Commander:
+                Commanders.SetMode(c.Entity, (CommanderMode)c.A);
+                WakeAll(world);
+                return;
+            case AiCommand.Automate:
+                Commanders.Automate(u, c.X);
+                WakeAll(world);
+                return;
+        }
+        bool task = TaskLayer.IsTask(code, source);
+        if (source == OrderSource.Player && (task || EndsTask(code)))
+            Commanders.PlayerOrdered(Context(world), u);   // the player's now, not the commander's
+        if (task)
         {
             Tasks.Order(Context(world), c);
             WakeAll(world);
             return;
         }
-        if ((OrderSource)c.B == OrderSource.Task)
+        if (source is OrderSource.Task or OrderSource.Commander)
         {
             Route(world, c with { B = (int)OrderSource.Player }, u);   // a task's orders are the unit's own
             return;
         }
-        if ((OrderSource)c.B == OrderSource.Player && EndsTask(code))
+        if (source == OrderSource.Player && EndsTask(code))
             Tasks.Overridden(u, c);
         Route(world, c, u);
     }
@@ -151,7 +171,7 @@ public sealed class AiSystem : IWorldSystem
         world.Schedule(new WorldTime(next), EventTier.Fine, layer - layers.Length, Id, (ushort)layer, tickGen[layer]);   // before the ship tick, the top layer first
     }
 
-    /// <summary>When a layer (top-down: tasks 0, admirals 1, captains 2) next thinks, ms of world time, or -1 (tests).</summary>
+    /// <summary>When a layer (top-down: commanders 0, tasks 1, admirals 2, captains 3) next thinks, ms of world time, or -1 (tests).</summary>
     internal long NextThinkMs(int layer) => nextTick[layer];
 
     public void Handle(World world, in SimEvent e)

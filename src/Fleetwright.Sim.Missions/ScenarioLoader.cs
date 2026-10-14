@@ -1,5 +1,6 @@
 using Fleetwright.Shipgen;
 using Fleetwright.Sim.Ai;
+using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
@@ -65,6 +66,8 @@ public static class ScenarioLoader
         }
         foreach (var (side, lat, lon) in s.Homes)
             w.Apply(ai.Orders.Home(side, lat, lon));
+        for (int side = 0; side < s.Sides.Length; side++)
+            w.Apply(ai.Orders.Commander(side, CommanderMode.Auto));   // every side's commander, on unless it's the player's
         foreach (var (a, b) in s.Peace)
             w.Apply(Command.SetRelation((byte)a, (byte)b, Relation.Peace));
         if (s.Player >= 0)
@@ -146,20 +149,21 @@ public static class ScenarioLoader
             else
                 w.Apply(o.Course(unit, top.CourseDeg));
             w.Apply(o.Speed(unit, top.Kn));
-            if (top.Task != null)
+            if (top.Tasks.Count > 0)
                 tasked.Add((top, unit));
         }
         foreach (var (top, unit) in tasked)
-            Task(top, unit, w, ai, s, start, entities);
+            for (int k = 0, given = 0; k < top.Tasks.Count; k++)
+                if (Task(top, top.Tasks[k], unit, w, ai, s, start, entities) is { } c)
+                    w.Apply(given++ == 0 ? c : UnitOrders.Then(c));   // the first at once, the rest one after another
         return start;
     }
 
     /// <summary>A top unit's opening task (docs/battle/command.md 5.1c), once every unit is placed: its "of" is the first
     /// group of that name (any level), else a top unit of one ship of that name; one not found (a ladder took only part
-    /// of a scenario) is a warning, and the unit steams on.</summary>
-    static void Task(ScenarioUnit top, Unit unit, World w, AiSystem ai, Scenario s, ScenarioStart start, Dictionary<(ScenarioUnit, int), int> entities)
+    /// of a scenario) is a warning, and the task is left out.</summary>
+    static Command? Task(ScenarioUnit top, ScenarioTask t, Unit unit, World w, AiSystem ai, Scenario s, ScenarioStart start, Dictionary<(ScenarioUnit, int), int> entities)
     {
-        var t = top.Task!;
         var o = ai.Orders;
         Unit of = default;
         if (t.Of != null)
@@ -172,12 +176,12 @@ public static class ScenarioLoader
                 of = Unit.Ship(e);
             if (of.Id == 0)
             {
-                start.Warnings.Add($"{top.Name}: its task \"{t.Kind}\" of \"{t.Of}\": no such unit here; it steams on");
-                return;
+                start.Warnings.Add($"{top.Name}: its task \"{t.Kind}\" of \"{t.Of}\": no such unit here; left out");
+                return null;
             }
         }
         var (lat, lon) = t.At ?? (0, 0);
-        w.Apply(t.Kind switch
+        return t.Kind switch
         {
             "go to" => o.GoTo(unit, lat, lon, t.Kn),
             "patrol" => o.Patrol(unit, lat, lon),
@@ -188,7 +192,7 @@ public static class ScenarioLoader
             "cover" => o.Cover(unit, of, t.DistanceM),
             "shadow" => o.Shadow(unit, of, t.DistanceM),
             _ => t.At != null ? o.Withdraw(unit, lat, lon) : o.WithdrawHome(unit),
-        });
+        };
     }
 
     /// <summary>Doctrine's presets for a scenario read from a file: Content/Sim/doctrine.json beside its folder

@@ -28,6 +28,10 @@ public enum OrderSource : byte
     /// <summary>The unit's own task (docs/battle/command.md 5.1c): its orders are the unit's own, as the player's are
     /// (the chain sees them as <see cref="Player"/>'s), but the player's own order ends the task.</summary>
     Task,
+
+    /// <summary>The side's commander (docs/battle/command.md 5.1d): his tasks are tasks as the player's are, but they don't
+    /// take the unit from him, as the player's do.</summary>
+    Commander,
 }
 
 /// <summary>What the AI system understands: an order to a unit (<see cref="UnitOrders"/>). The command's Entity is the
@@ -151,6 +155,13 @@ public enum AiCommand : ushort
 
     /// <summary>A task: cover A (an own unit), X off it (0: the settings') on the side of the threat, to support it.</summary>
     Cover,
+
+    /// <summary>A side's commander (docs/battle/command.md 5.1d): the command's Entity is the side (not a unit), A its
+    /// <see cref="Commanders.CommanderMode"/>.</summary>
+    Commander,
+
+    /// <summary>A unit under its side's commander or not (X 1: his, "leave it to the admiral"; 0: not; NaN: as its side).</summary>
+    Automate,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -166,6 +177,13 @@ public enum FireOrder : byte
 /// a replay runs the AI again. Builders only: they read nothing but the AI system's id, so a UI may call them.</summary>
 public readonly struct UnitOrders(byte system)
 {
+    /// <summary>A task's command with this in its B (over the source) waits for the unit's task before it (its plan,
+    /// docs/battle/command.md 5.1d), and starts when that one ends.</summary>
+    public const int Queued = 1 << 8;
+
+    /// <summary>A task to start when the unit's tasks before it have ended.</summary>
+    public static Command Then(in Command task) => task with { B = task.B | Queued };
+
     public Command Course(Unit u, double headingDeg, double rudderDeg = 0, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Course, u, source, x: headingDeg, y: rudderDeg);
 
@@ -272,6 +290,13 @@ public readonly struct UnitOrders(byte system)
     /// <summary>A value of a side's doctrine (NaN: back to the default).</summary>
     public Command SideDoctrine(int side, DoctrineField field, double value) =>
         new(system, (ushort)AiCommand.SideDoctrine, side, A: (long)field, X: value);
+
+    /// <summary>A side's commander: none, on unless it's the player's side, on, or off.</summary>
+    public Command Commander(int side, Commanders.CommanderMode mode) => new(system, (ushort)AiCommand.Commander, side, A: (long)mode);
+
+    /// <summary>A unit handed to its side's commander (true: "leave it to the admiral"), taken from him (false), or as its
+    /// side (null).</summary>
+    public Command Automate(Unit u, bool? on) => Make(AiCommand.Automate, u, OrderSource.Player, x: on is { } b ? (b ? 1 : 0) : double.NaN);
 
     /// <summary>A side's home: where its cripples go.</summary>
     public Command Home(int side, double latDeg, double lonDeg) => new(system, (ushort)AiCommand.Home, side, A: Earth.PackLatLon(latDeg, lonDeg));

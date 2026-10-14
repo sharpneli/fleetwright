@@ -728,6 +728,17 @@ public sealed unsafe partial class MapScene
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("dev: no side is yours, every side the AI's (docs/battle/command.md 5.0); the spawner's side takes one back.\n" +
                                  "Encounters are then all others': set what they do to the clock in the clock's panel.");
+            if (s.PlayerSide >= 0 && s.CommanderMode[s.PlayerSide] != (byte)Sim.Ai.Commanders.CommanderMode.None)
+            {
+                // the player's side's commander (docs/battle/command.md 5.1d, decision 5): off unless they automate it
+                ImGui.SameLine();
+                bool on = s.CommanderOn[s.PlayerSide];
+                if (ImGui.Checkbox("AI commands", ref on))
+                    world.Send(world.Ai.Orders.Commander(s.PlayerSide, on ? Sim.Ai.Commanders.CommanderMode.On : Sim.Ai.Commanders.CommanderMode.Auto));
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Your side's commander gives your top units their tasks; your own order to a unit takes it from him\n" +
+                                     "(\"leave it to the admiral\" on its group row hands it back).");
+            }
             bool fromDesigner = designPick == FromDesigner;
             if (fromDesigner && placeClass >= 0)
                 FollowDesigner();
