@@ -19,6 +19,7 @@ dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@59.03,5.50,90,15 
 dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@56.5,4.0,0,0 -ships=dreadnought:1:0@56.5,4.13,0,0 -fire=1:56.5,4.13 -map=56.5,4.12,2 -select=1   # a dev salvo (ship[:battery]:lat,lon); the strip's Fire row arms right-click
 dotnet run --project src/Fleetwright -- -ships=super_dreadnought:1:0@56.5,4.0,0,0 -ships=super_dreadnought:1:1@56.5,4.23,0,15 -engage=1:2 -select=1 -speed=30 -map=56.5,4.0,0.45   # fire control: ship[:battery]:target engages (the strip's Fire row: engage, then right-click a ship or contact; cease)
 dotnet run --project src/Fleetwright -- -ships=dreadnought:2 -captain=2:follow:1:800 -select=2   # a captain: follow:target[:m], run:target, keep, none
+dotnet run --project src/Fleetwright -- -ships=super_dreadnought:1:0@56.5,4,0,10 -hole=1:stern:-1:3 -flood=1:engine_room:1 -jam=1:0 -wreck=1:funnel -burn=1:20 [-sink=1:foundered] -select=1 -map=56.5,4,0.3   # dev damage: holes, flooded spaces, a jammed mount, a wrecked part, a fire, going down
 dotnet run --project src/Fleetwright -- -ships=dreadnought:6 -group=1,2,3,4,5,6:column:500 -select=1   # a group: column, abreast, echelon-s, echelon-p
 dotnet run --project src/Fleetwright -- -ships=dreadnought:4:1 -group=1,2,3,4:column:500 -search=1:ladder:10:3:6 -speed=1000   # a search on rails (ladder, square, sector, patrol); :1 the side
 dotnet run --project src/Fleetwright -- -scenario=squadrons [-nopause] [-speed=10]   # two squadrons fight (fire at will, Fight); -nopause: the player's encounters don't pause the clock
@@ -185,9 +186,9 @@ src/
                               #   LandMesh (the coarse levels baked once: tiled fans and a coast mesh), CapRetraction,
                               #   MapScene (input, clock controls, HUD; MapScene.Ships.cs: selection, orders, dev
                               #   spawn; MapScene.Groups.cs: ctrl+click picks, forming groups, labels, collapsed
-                              #   markers), ShipArt (ShipArtLibrary: each class's sprites drawn on the class
+                              #   markers; MapScene.Damage.cs: fires, wrecks, losses, what contacts show), ShipArt (ShipArtLibrary: each class's sprites drawn on the class
                               #   registry's threads, uploaded here), ShipBatchRenderer (ShipDrawList on the CPU,
-                              #   instanced quads in the globe's pass: sprites, shadows, icons)
+                              #   instanced quads in the globe's pass: sprites, shadows, icons; damage drawn through the height map)
     Engine.cs                 #   Sdl3GpuEngine: init, resources, render loop, PbrMaterial
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU

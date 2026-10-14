@@ -4,19 +4,21 @@ using Fleetwright.Gpu;
 using Fleetwright.Shipgen.Render;
 using Fleetwright.Shipgen.Render.Bake;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 using SDL;
 using static SDL.SDL3;
 
 namespace Fleetwright.Map;
 
-/// <summary>One quad the ship shaders draw (shipmap.vert's Quad, std430: 9 vec4s). Corners are metres from the eye, so
+/// <summary>One quad the ship shaders draw (shipmap.vert's Quad, std430: 10 vec4s). Corners are metres from the eye, so
 /// the floats are small numbers and nothing jitters at the ship band.</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct ShipQuad
 {
-    public Vector4 O, U, V, Ship, ShipV, Sun, March, Hmap, Tint;
-    public const int SizeInBytes = 144;
+    public Vector4 O, U, V, Ship, ShipV, Sun, March, Hmap, Tint, Sea;
+    public const int SizeInBytes = 160;
 }
 
 public enum ShipDrawKind : byte
@@ -38,7 +40,13 @@ public struct ShipDraw
 /// the sun's shadow from the height map, sampled through the mip chain); a ship too small for its mips, or whose art
 /// isn't drawn yet, is a stand-in icon a fixed number of pixels long, along its heading. The two cross-fade across a
 /// few pixels. Draws are one per class and layer (per turret type for the turrets), so a fleet of one class is a
-/// handful of draws. Nothing here allocates once the arrays have grown to the fleet.</summary>
+/// handful of draws. Nothing here allocates once the arrays have grown to the fleet.
+/// <para>Damage shows on the sprite (docs/battle/fighting.md 4.4, kept light): the sea's plane in the ship's frame
+/// from its sinkage, trim and heel, against the height map, drowns what's under it, so a ship settling, listing or going
+/// under draws itself (going under, the plane rises over its last minutes by how it's lost: by the bow or stern
+/// foundering, on its side capsizing, straight down for a magazine); turrets damaged, out of action or wrecked are
+/// tinted (a jammed one keeps the bearing it stopped at, the sim's); and wrecked parts above the deck get a scorch over
+/// their hitbox's plan.</para></summary>
 public sealed class ShipDrawList
 {
     /// <summary>The icon's length and width on screen, pixels; and the sprite's length in pixels across which the two
@@ -53,6 +61,13 @@ public sealed class ShipDrawList
     /// <summary>The icons' tint by side (side 0, and any past these, the plain one): a dev aid until missions say who
     /// is whose, like the icons themselves.</summary>
     public static readonly Vector4[] SideTints = [IconTint, new(0.55f, 0.75f, 1f, 1f), new(1f, 0.5f, 0.45f, 1f), new(0.55f, 0.95f, 0.55f, 1f)];
+
+    /// <summary>A turret's tint by its state (damaged, out of action, wrecked; jammed alone), multiplied in by its alpha;
+    /// a scorch's colour and opacity over a wrecked part by its state.</summary>
+    static readonly Vector4 TurretDamaged = new(0.85f, 0.8f, 0.75f, 0.5f), TurretOut = new(0.55f, 0.5f, 0.47f, 0.75f),
+        TurretWrecked = new(0.28f, 0.25f, 0.23f, 0.9f), TurretJammed = new(1f, 0.85f, 0.6f, 0.35f);
+    static readonly Vector4 ScorchDamaged = new(0.42f, 0.36f, 0.3f, 0.3f), ScorchOut = new(0.45f, 0.3f, 0.2f, 0.55f),
+        ScorchWrecked = new(0.4f, 0.24f, 0.14f, 0.85f);
 
     ShipQuad[] quads = new ShipQuad[1024];
     ShipDraw[] draws = new ShipDraw[64];
@@ -71,6 +86,13 @@ public sealed class ShipDrawList
         /// <summary>Its view's mounts' bearings, and where its own start in them (-1: at rest).</summary>
         public double[] Bearings;
         public int MountStart;
+        /// <summary>Its row in its view (damage), its class, the sea's plane over its waterline (z, slopes, on), and how
+        /// much of it still shows (1 until it goes under).</summary>
+        public ShipsView View;
+        public int Row;
+        public ShipClass? Cls;
+        public Vector4 Sea;
+        public double Fade;
     }
 
     Placed[] placed = new Placed[64];
@@ -86,14 +108,14 @@ public sealed class ShipDrawList
     public byte[] DrawnAs { get; private set; } = new byte[64];
 
     /// <param name="artOf">A class's art, or null while it isn't up.</param>
-    /// <param name="lengthOf">A class's length, metres (for the icon's fade before its art is up).</param>
+    /// <param name="classOf">A class by its registry id, or null (its length for the icon's fade, its frame for damage).</param>
     /// <param name="icon">The icon's texture.</param>
     /// <param name="hidden">Per snapshot ship, true to leave it out (drawn as part of its group's marker); may be
     /// shorter than the ships.</param>
     /// <param name="sunMotion"><see cref="SunLapse.Motion"/>: below 1 the light fades to the day's mean and the
     /// shadows out.</param>
     /// <param name="sighted">The enemy ships in sight (<see cref="Snapshot.Sighted"/>), drawn the same after the ships.</param>
-    public void Build(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, double> lengthOf,
+    public void Build(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, ShipClass?> classOf,
         nint icon, int selectedEntity, ReadOnlySpan<bool> hidden = default, double sunMotion = 1, ShipsView? sighted = null)
     {
         this.sunMotion = sunMotion;
@@ -106,9 +128,9 @@ public sealed class ShipDrawList
         int most = ships.Count + (sighted?.Count ?? 0);
         if (placed.Length < most)
             placed = new Placed[Math.Max(most, placed.Length * 2)];
-        Place(view, ships, timeMs, sun, artOf, lengthOf, hidden, DrawnAs);
+        Place(view, ships, timeMs, sun, artOf, classOf, hidden, DrawnAs);
         if (sighted != null)
-            Place(view, sighted, timeMs, sun, artOf, lengthOf, default, default);
+            Place(view, sighted, timeMs, sun, artOf, classOf, default, default);
 
         // the sprites, layer by layer, a draw per class (and turret type)
         foreach (int cls in classes)
@@ -117,6 +139,14 @@ public sealed class ShipDrawList
             int first = quadCount;
             foreach (int i in byClass[cls])
                 Hull(ref placed[i], art);
+            AddDraw(ShipDrawKind.Sprite, art.Hull, art.Height, first);
+        }
+        foreach (int cls in classes)   // scorches over wrecked parts, under the turrets
+        {
+            var art = artOf(cls)!;
+            int first = quadCount;
+            foreach (int i in byClass[cls])
+                Scorches(ref placed[i], art);
             AddDraw(ShipDrawKind.Sprite, art.Hull, art.Height, first);
         }
         for (int layer = 0; layer < 2; layer++)   // turret shadows, then turrets
@@ -152,7 +182,7 @@ public sealed class ShipDrawList
 
     /// <summary>Places a view's ships: where each is, how big on screen, sprite or icon, the sun in its frame; how each
     /// was drawn into <paramref name="drawnAs"/>, if given.</summary>
-    void Place(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, double> lengthOf,
+    void Place(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, ShipClass?> classOf,
         ReadOnlySpan<bool> hidden, Span<byte> drawnAs)
     {
         for (int k = 0; k < ships.Count; k++)
@@ -166,7 +196,8 @@ public sealed class ShipDrawList
                 continue;
             int cls = ships.Class[k];
             var art = artOf(cls);
-            double length = lengthOf(cls);
+            var c = classOf(cls);
+            double length = c?.Length ?? 150;
             var rel = p - view.Eye;
             double pxPerM = 1 / view.MetresPerPixel * view.Altitude / Math.Max(Vec3d.Dot(rel, view.Forward), 1e-3);
             double lengthPx = length * pxPerM, margin = Math.Max(lengthPx, IconLengthPx);
@@ -177,6 +208,7 @@ public sealed class ShipDrawList
             double sx = Vec3d.Dot(sun, f), sy = Vec3d.Dot(sun, s), sz = Vec3d.Dot(sun, up);
             double horiz = Math.Sqrt(sx * sx + sy * sy);
             double sprite = art != null && pxPerM >= art.MinPxPerM ? SmoothStep(FadeFromPx, FadeToPx, lengthPx) : 0;
+            var (sea, fade) = c != null && art != null ? SeaOf(c, art, ships, k, timeMs) : (Vector4.Zero, 1.0);
             placed[placedCount] = new Placed
             {
                 Rel = rel, F = f, S = s, PxPerM = pxPerM, LengthPx = lengthPx,
@@ -184,11 +216,12 @@ public sealed class ShipDrawList
                 Light = 0.3 + 0.7 * (sunMotion < 1
                     ? double.Lerp(SunLapse.DayAverage(up, sun), SmoothStep(-0.10, 0.12, sz), sunMotion)
                     : SmoothStep(-0.10, 0.12, sz)),
-                SpriteAlpha = sprite, IconAlpha = 1 - sprite,
+                SpriteAlpha = sprite * fade, IconAlpha = (1 - sprite) * fade,
                 SunDir = horiz > 1e-9 ? new Vector2((float)(sx / horiz), (float)(sy / horiz)) : Vector2.UnitX,
                 SunTan = Math.Max(sz / Math.Max(horiz, 1e-9), 0.15),
                 Shadows = sz > 0.05 && lengthPx >= ShadowFromPx && sunMotion > 0,   // in time-lapse they'd spin
                 Class = cls, Entity = ships.Entity[k], Side = ships.Side[k], Bearings = ships.MountBearingDeg, MountStart = ships.MountStart[k],
+                View = ships, Row = k, Cls = c, Sea = sea, Fade = fade,
             };
             if (k < drawnAs.Length)
                 drawnAs[k] = (byte)((sprite > 0 ? 2 : 0) | (sprite < 1 ? 1 : 0));
@@ -205,10 +238,89 @@ public sealed class ShipDrawList
 
     }
 
+    /// <summary>The sea's plane over a ship's waterline in its own frame (z at the origin, the slopes along and across, and
+    /// 1 when there's anything to drown), and how much of it shows: settled by its attitude; going under, rising over it
+    /// by how it's lost.</summary>
+    static (Vector4 Sea, double Fade) SeaOf(ShipClass c, ShipArt art, ShipsView v, int k, long now)
+    {
+        var a = v.Attitude[k];
+        var w = HitQuery.WaterOf(c, a);
+        double z = w.Z - c.Vertical.Waterline, dx = w.DzDx, dy = w.DzDy, fade = 1;
+        var loss = v.Loss[k];
+        if (loss != LossKind.None)
+        {
+            double span = Math.Max(v.GoneMs[k] - v.LossMs[k], 1), p = Math.Clamp((now - v.LossMs[k]) / span, 0, 1);
+            double top = art.Meta.Shadow.MaxHeightM + 3, ease = Math.Pow(p, 1.5);
+            switch (loss)
+            {
+                case LossKind.Foundered:   // by the end it's down by (the stern, when it's level)
+                    double along = a.TrimDeg > 0 ? 1 : -1, slope = 0.3;
+                    dx += along * slope * p;
+                    z += ease * (top + slope * c.Length / 2);
+                    break;
+                case LossKind.Capsized:   // over on the side it lists to
+                    double side = a.HeelDeg >= 0 ? 1 : -1;
+                    dy += side * 0.9 * p;
+                    z += ease * (top + 0.9 * c.Beam / 2);
+                    break;
+                default:   // a magazine: straight down, quickly
+                    z += Math.Pow(p, 0.7) * top;
+                    break;
+            }
+            fade = 1 - SmoothStep(0.85, 1, p);
+        }
+        bool on = z != 0 || dx != 0 || dy != 0;
+        return (on ? new Vector4((float)z, (float)dx, (float)dy, 1) : Vector4.Zero, fade);
+    }
+
     void Hull(ref Placed p, ShipArt art)
     {
         double cw = art.CanvasX, ch = art.CanvasY;
         Emit(ref p, art, -cw / 2, -ch / 2, cw, 0, 0, ch, mode: 0, opacity: p.SpriteAlpha, roof: 0, Vector4.Zero);
+    }
+
+    /// <summary>A scorch over each wrecked part above the deck (superstructure, funnels, masts and the like: the
+    /// turrets are tinted instead), its hitbox's plan.</summary>
+    void Scorches(ref Placed p, ShipArt art)
+    {
+        if (p.Cls is not { } c)
+            return;
+        var v = p.View;
+        for (int j = v.PartStart[p.Row], end = j + v.PartCount[p.Row]; j < end; j++)
+        {
+            var st = v.PartStates[j];
+            if (st == PartState.Ok)
+                continue;
+            ref readonly var comp = ref c.Components[v.Parts[j]];
+            if (comp.Bounds.Top <= 0 || comp.Kind is not (ComponentKind.Superstructure or ComponentKind.ConningTower or ComponentKind.Funnel
+                    or ComponentKind.Uptake or ComponentKind.Mast or ComponentKind.Casing or ComponentKind.Sponson or ComponentKind.FlightDeck
+                    or ComponentKind.HangarBay))
+                continue;
+            var b = comp.Bounds;
+            double up = comp.Bounds.Top - c.Vertical.Waterline, sx = up * p.Sea.Y, sy = up * p.Sea.Z;   // tilted with the hull
+            b = b with { X0 = b.X0 + sx, X1 = b.X1 + sx, Y0 = b.Y0 + sy, Y1 = b.Y1 + sy };
+            var tint = st == PartState.Destroyed ? ScorchWrecked : st == PartState.Disabled ? ScorchOut : ScorchDamaged;
+            Emit(ref p, art, b.X0, b.Y0, b.X1 - b.X0, 0, 0, b.Y1 - b.Y0, mode: 3, opacity: p.SpriteAlpha, roof: 0, tint);
+        }
+    }
+
+    /// <summary>A mount's tint by its state, or none.</summary>
+    static Vector4 TurretTint(in Placed p, int classMount)
+    {
+        if (classMount < 0 || p.Cls is not { } c)
+            return Vector4.Zero;
+        int comp = c.Mounts[classMount].Component;
+        var v = p.View;
+        for (int j = v.PartStart[p.Row], end = j + v.PartCount[p.Row]; j < end; j++)
+            if (v.Parts[j] == comp)
+                return v.PartStates[j] switch
+                {
+                    PartState.Destroyed => TurretWrecked,
+                    PartState.Disabled => TurretOut,
+                    PartState.Damaged => TurretDamaged,
+                    _ => (v.PartFlags[j] & PartFlags.Jammed) != 0 ? TurretJammed : Vector4.Zero,
+                };
+        return Vector4.Zero;
     }
 
     void Turrets(ref Placed p, ShipArt art, int type, bool shadow)
@@ -226,7 +338,7 @@ public sealed class ShipDrawList
             double deg = p.MountStart >= 0 && cm >= 0 ? p.Bearings[p.MountStart + cm] : m.RestDeg;
             double a = deg * Math.PI / 180, ca = Math.Cos(a), sa = Math.Sin(a);
             double axx = ca * 2 * e, axy = sa * 2 * e, ayx = -sa * 2 * e, ayy = ca * 2 * e;
-            double ox = m.PosM[0] - axx / 2 - ayx / 2, oy = m.PosM[1] - axy / 2 - ayy / 2;
+            double ox = m.PosM[0] - axx / 2 - ayx / 2 + m.TopM * p.Sea.Y, oy = m.PosM[1] - axy / 2 - ayy / 2 + m.TopM * p.Sea.Z;   // tilted with the hull
             if (shadow)
             {
                 double off = (m.TopM - deck) / p.SunTan;   // shadow.sun_offset_px, in metres
@@ -234,7 +346,7 @@ public sealed class ShipDrawList
                     opacity: 0.4 * p.SpriteAlpha * sunMotion, roof: m.TopM, Vector4.Zero);
             }
             else
-                Emit(ref p, art, ox, oy, axx, axy, ayx, ayy, mode: 0, opacity: p.SpriteAlpha, roof: 0, Vector4.Zero);
+                Emit(ref p, art, ox, oy, axx, axy, ayx, ayy, mode: 0, opacity: p.SpriteAlpha, roof: m.TopM, TurretTint(p, cm));
         }
     }
 
@@ -245,7 +357,7 @@ public sealed class ShipDrawList
         double lod = Math.Clamp(Math.Log2(art.Scale / p.PxPerM), 0, art.MipLevels);
         double step = Math.Max(0.1, Math.Pow(2, lod) / art.Scale);
         double steps = Math.Min(Math.Ceiling(reach / step), 96);
-        Emit(ref p, art, -cw / 2 - reach, -ch / 2 - reach, cw + 2 * reach, 0, 0, ch + 2 * reach, mode: 0, opacity: p.SpriteAlpha, roof: 0,
+        Emit(ref p, art, -cw / 2 - reach, -ch / 2 - reach, cw + 2 * reach, 0, 0, ch + 2 * reach, mode: 0, opacity: p.SpriteAlpha * p.Fade, roof: 0,
             Vector4.Zero, new Vector4((float)step, (float)steps, 0.3f, (float)lod));
     }
 
@@ -280,6 +392,7 @@ public sealed class ShipDrawList
             March = march,
             Hmap = hmap,
             Tint = tint,
+            Sea = p.Sea,
         };
     }
 

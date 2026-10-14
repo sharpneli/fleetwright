@@ -29,6 +29,9 @@ public sealed unsafe partial class MapScene
         (selected, SelectOnce) = (SelectOnce, -1);
         picked.Clear();
         tracks.Clear();
+        going.Clear();
+        wrecks.Clear();
+        wrecked.Clear();
         placing = false;
         if (KeepCameraOnce)
             KeepCameraOnce = false;

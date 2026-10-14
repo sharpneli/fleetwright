@@ -97,19 +97,10 @@ static class FloodBench
         var p = spec.Split(':');
         if (p.Length < 3)
             throw new ArgumentException($"a hole is WHERE:Z:AREA[:p], not {spec}");
-        double x = p[0] switch
-        {
-            "mid" => c.Hydrostatics.Lcf,
-            "bow" => c.Hull.X1 - 0.1 * c.Length,
-            "stern" => c.Hull.X0 + 0.1 * c.Length,
-            var s => double.Parse(s, Inv),
-        };
-        double z = c.Vertical.Waterline + double.Parse(p[1], Inv), area = double.Parse(p[2], Inv);
-        var (cell, y) = FloodModel.SideCell(c, x, z, p.Length < 4 || p[3] != "p");
-        if (cell < 0)
-            throw new ArgumentException($"no hull at {spec}");
-        Console.WriteLine(string.Format(Inv, "  a hole of {0:0.###} m² at x {1:0.0}, {2:0.00} m over the waterline: cell {3}", area, x, z - c.Vertical.Waterline, c.CellId(cell)));
-        w.Apply(DamageSystem.Breach(e, cell, area, y, z));
+        var at = p[0] switch { "mid" => HoleAt.Mid, "bow" => HoleAt.Bow, "stern" => HoleAt.Stern, _ => HoleAt.X };
+        double x = at == HoleAt.X ? double.Parse(p[0], Inv) : 0;
+        Console.WriteLine($"  a hole of {p[2]} m² at {p[0]}, {p[1]} m over the waterline");
+        w.Apply(DamageSystem.SideHole(e, at, x, double.Parse(p[1], Inv), double.Parse(p[2], Inv), p.Length < 4 || p[3] != "p"));
     }
 
     /// <summary>Spaces flooded: KIND[:N], the N (default all) rooms of a kind nearest amidships, each cell holed 1 m² at its
@@ -118,18 +109,7 @@ static class FloodBench
     {
         var p = spec.Split(':');
         var kind = Enum.Parse<RoomKind>(p[0].Replace("_", ""), ignoreCase: true);
-        int n = p.Length > 1 ? int.Parse(p[1], Inv) : int.MaxValue;
-        double mid = c.Hydrostatics.Lcf;
-        var rooms = Enumerable.Range(0, c.Rooms.Length).Where(r => c.Rooms[r].Kind == kind)
-            .OrderBy(r => Math.Abs((c.Rooms[r].X0 + c.Rooms[r].X1) / 2 - mid)).Take(n).ToList();
-        foreach (int r in rooms)
-        {
-            Console.WriteLine($"  {c.RoomId(r)} flooded");
-            foreach (int cell in c.Links(c.Rooms[r].Cells))
-            {
-                var b = c.Cells[cell].Box;
-                w.Apply(DamageSystem.Breach(e, cell, 1, (b.Y0 + b.Y1) / 2, b.Base + 0.05));
-            }
-        }
+        Console.WriteLine($"  {spec} flooded");
+        w.Apply(DamageSystem.FloodRooms(e, kind, p.Length > 1 ? int.Parse(p[1], Inv) : int.MaxValue));
     }
 }

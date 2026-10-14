@@ -11,9 +11,12 @@ namespace Fleetwright.Tests;
 /// allocation per frame.</summary>
 public class ShipDrawListTests
 {
+    static readonly Lazy<Fleetwright.Shipgen.Ship> Built = new(() => ShipDesign.Build(Design.Load(Paths.Shipgen("designs", "dreadnought.json"))));
+    static readonly Lazy<Fleetwright.Sim.Ships.ShipClass> Class = new(() => Fleetwright.Sim.Ships.ShipClassCompiler.Compile(Built.Value));
+
     static readonly Lazy<ShipArt> Art = new(() =>
     {
-        var ship = ShipDesign.Build(Design.Load(Paths.Shipgen("designs", "dreadnought.json")));
+        var ship = Built.Value;
         var sprites = ShipSprites.Build(ship, ShipArtLibrary.SpriteScale, ShipArtLibrary.MipLevels);
         var meta = sprites.Meta;
         var types = meta.TurretTypes.Keys.ToArray();
@@ -23,7 +26,7 @@ public class ShipDrawListTests
             TurretTypes = types, Turrets = [.. types.Select((_, i) => (nint)(10 + i))],
             MountType = [.. meta.Mounts.Select(m => Array.IndexOf(types, m.Type))],
             DrawOrder = [.. Enumerable.Range(0, meta.Mounts.Count).OrderBy(i => meta.Mounts[i].Z)],
-            ClassMount = ShipArt.ClassMounts(meta, Fleetwright.Sim.Ships.ShipClassCompiler.Compile(ship)),
+            ClassMount = ShipArt.ClassMounts(meta, Class.Value),
             MipLevels = ShipArtLibrary.MipLevels,
         };
     });
@@ -44,7 +47,7 @@ public class ShipDrawListTests
     {
         var list = new ShipDrawList();
         var view = new MapView(MapCamera.At(Lat, Lon, mpp), 1600, 900);
-        list.Build(view, v, 0, Noon, _ => art ? Art.Value : null, _ => 160, 99, -1);
+        list.Build(view, v, 0, Noon, _ => art ? Art.Value : null, _ => Class.Value, 99, -1);
         return list;
     }
 
@@ -96,12 +99,12 @@ public class ShipDrawListTests
         var list = new ShipDrawList();
         var view = new MapView(MapCamera.At(Lat + 0.004, Lon + 0.007, 1.5), 1600, 900);
         Func<int, ShipArt?> artOf = _ => Art.Value;
-        Func<int, double> lengthOf = _ => 160;
-        list.Build(view, v, 0, Noon, artOf, lengthOf, 99, 3);
+        Func<int, Fleetwright.Sim.Ships.ShipClass?> classOf = _ => Class.Value;
+        list.Build(view, v, 0, Noon, artOf, classOf, 99, 3);
         int types = Art.Value.Turrets.Length;
         Assert.True(list.Draws.Length <= 2 + 2 * types + 1, $"{list.Draws.Length} draws");
         long before = GC.GetAllocatedBytesForCurrentThread();
-        list.Build(view, v, 1000, Noon, artOf, lengthOf, 99, 3);
+        list.Build(view, v, 1000, Noon, artOf, classOf, 99, 3);
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
     }
 }

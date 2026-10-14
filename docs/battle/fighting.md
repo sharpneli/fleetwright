@@ -1,8 +1,9 @@
 # Plan: fighting (battle module step 4)
 
 2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
-as its steps are built. **4.0, 4.1, 4.2a, 4.2b and 4.2c done 2026-10-13, 4.3a (what a hit does) and 4.3b (fire,
-flooding and going down) 2026-10-14; 4.4, damage seen, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
+as its steps are built. **4.0, 4.1, 4.2a, 4.2b and 4.2c done 2026-10-13, 4.3a (what a hit does), 4.3b (fire,
+flooding and going down) and 4.4 (damage seen) 2026-10-14: the first pass is done; next, 4.5's deepenings as playing
+asks for them, and 4.6 torpedoes.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
 4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
 
 ## The aim
@@ -952,6 +953,49 @@ What plan.md's "Damage on the sprites" section describes, kept light (decision 1
   - the strip's condition row: speed cap, steering, guns working of n, water in tonnes, list, fires, crew lost.
 - **Proof:** screenshots by readback: a ship listing, a jammed turret, a stern-first sinking.
 
+**4.4 done 2026-10-14.** Damage shows, and the first pass is complete. Where it lives:
+
+- **On the sprites** (`ShipBatchRenderer`, `shipmap.frag`): each quad carries the sea's plane in the ship's frame
+  (`ShipQuad.Sea`: from `HitQuery.WaterOf` on the ship's attitude). Against the height map, the hull shows tilted (each
+  point shifted toward the low end and side by its height times the slope, read back through the height map; turrets'
+  and scorches' quads shifted on the CPU), and what's under the sea is drowned: faint and dark by its depth, a pale wash
+  along the new waterline. A ship settling, trimming and listing draws itself. Going down, the plane rises over its last
+  minutes by how it went (foundered: by the end it was down by, the stern when level; capsized: over on its listing side;
+  a magazine: straight down, fast), and it fades out at the end.
+- **Turrets** damaged, out of action or wrecked are tinted darker by state; a jammed one has a faint amber, and keeps the
+  bearing it stopped at: the sim's (a mount that stops working is stopped where it is, `CombatStore.Stop`, and gunnery
+  orders only working mounts).
+- **Scorches** over wrecked parts above the deck (superstructure, funnels, masts, the conning tower...): their hitbox's
+  plan (its bounding box in v0), rust and soot mottled, on the ship only.
+- **Fires** as markers: a flickering flame disc at each burning space and part, smoke drifting off to the north-east (no
+  wind yet).
+- **On the map:** hit flashes were 4.2a's; enemies in sight draw as they are (their sprites are what an observer sees);
+  their contacts' labels add what's seen (burning, low in the water, listing, down by the bow or stern, stopped, guns
+  silent, going down, seen to go down). A ship going down is watched until it's gone, then a wreck marker (a ringed
+  cross, its name and the time) stays where it went: own ships always, an enemy's only when it was seen to go. The
+  encounter's label adds its losses as the player's side knows them ("lost 1, seen sunk 2").
+- **The report:** the strip's condition row (the speed its power drives it at with its water's weight, steering, guns
+  and directors working, water and list, trim, fires, crew lost, going down and how), the water against the reserve
+  buoyancy, and a "Damage report" with the ship's log lines, cause to effect, newest first (hits and its loss).
+- **The snapshot** (`ShipsView`): each ship's attitude, loss and its times, its damaged parts (state and flags) and its
+  burning cells; `ConditionsView.HeldCap`.
+- **Dev damage** (the sim's dev commands, so the benches, the tests and the flags share them): `-hole=ship:mid|bow|stern|x:z:m2[:p]`,
+  `-flood=ship:kind[:n]`, `-jam=ship:mount`, `-wreck=ship:kind[:nth[:state]]`, `-burn=ship:x`,
+  `-sink=ship:foundered|capsized|magazine` (`DamageSystem.SideHole`, `FloodRooms`, `Jam`, `WreckKind`, `Burn`, `Sink`).
+  `shipgen flood` and the flooding tests use the same.
+
+**Proof** (screenshots by readback, 2026-10-14): Lion listing 4-5° to starboard with ~1,300 t aboard, its upper works
+shifted to the low side; QE with its A turret jammed at rest while the others trained on a target, a wrecked turret
+dark, its funnel and a superstructure block scorched; QE foundering stern-first (the stern under, the bow out); Lion
+capsizing (its starboard side going under, its upper works leaning over it); a destroyer's wreck marker and label after
+its magazine.
+
+- **Found on the way:** a mount with no training rate (a torpedo mount) had a NaN bearing (harmless until something
+  stopped it).
+- **Left as it is (v0):** the sun's shadow of a ship isn't drowned with it (it fades only at the very end); a scorch is
+  its part's bounding box; smoke has no wind; the first pass ends without a playable ladder-2 (its forces don't meet in
+  their first hours, 4.2c's note: standing orders or 5.1's admirals will make them).
+
 **The first pass ends here: the first playable fight.** A ladder scenario (ladder-2, Beatty against Hipper) plays
 out at 1x to 100x, under the AI on both sides or the player on one: ships engage, hit, lose guns and speed, flood and
 sink, and the log tells the story.
@@ -1137,9 +1181,8 @@ From 4.3b (2026-10-14):
 6. **Free surface and pumps came forward from 4.5:** without them, destroyers never foundered on their machinery spaces,
    and every holed ship sank through its leaks in the end. Keep them in v0?
 7. **Nothing founders in the squadrons' three hours:** the battlecruisers list 17-21° with 2,000-2,600 t aboard and fight
-   on at a quarter of their power. Holes from shells are small (a heavy shell's 0.1-0.3 m², a burst's a few m² above
-   the waterline), and speed doesn't drive water in yet (4.5). Is that the feel wanted, or should shell holes flood
-   faster?
+   on at a quarter of their power. *The user, 2026-10-14:* fine for now; 4.5 helps with foundering, and torpedoes (4.6)
+   bring the real answer: guns wreck ships, torpedoes finish the immobile ones.
 
 
 ## Decisions

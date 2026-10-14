@@ -42,6 +42,7 @@ public sealed unsafe partial class MapScene : IScene
         shipRenderer = new ShipBatchRenderer(device);
         artOf = art.Get;
         lengthOf = id => world.Classes.TryGet(id)?.Length ?? 150;
+        classOf = world.Classes.TryGet;
         designNames = [.. Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "Content", "Designs"), "*.json")
             .Select(Path.GetFileNameWithoutExtension).Order(StringComparer.Ordinal)!];
         static Land Load(string res) => Land.Load(Path.Combine(AppContext.BaseDirectory, "Content", "World", $"land-{res}.bin"));
@@ -106,7 +107,7 @@ public sealed unsafe partial class MapScene : IScene
         PlaceGroups(view, s);
         probes.Add(probeGroups, t);
         t = Probes.Now;
-        shipRenderer.List.Build(view, s.Ships, world.DrawMs, s.Sun, artOf, lengthOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion, s.Sighted);
+        shipRenderer.List.Build(view, s.Ships, world.DrawMs, s.Sun, artOf, classOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion, s.Sighted);
         probes.Add(probeDrawList, t);
         t = Probes.Now;
         BuildOverlay(view, s);
@@ -129,6 +130,7 @@ public sealed unsafe partial class MapScene : IScene
         GroupLabels(s);
         EncounterLabels(s);
         ContactLabels(s);
+        WreckLabels();
         probes.Add(probeUiLabels, t);
         t = Probes.Now;
         if (Sdl3GpuEngine.StatsShown)

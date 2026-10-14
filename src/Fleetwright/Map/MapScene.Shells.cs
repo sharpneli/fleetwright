@@ -190,40 +190,55 @@ public sealed partial class MapScene
         DamageRow(s, k, cls);
     }
 
-    /// <summary>The selected ship's condition, if it's been hit (docs/battle/fighting.md 4.3a, 4.3b; the full damage report
-    /// is 4.4's): power and the speed it makes, mounts and directors working, steering, crew lost, fires and holes; the
-    /// water aboard and the reserve buoyancy left, its list and trim; and its newest hits, cause to effect.</summary>
+    /// <summary>The selected ship's condition, if it's been hit (docs/battle/fighting.md 4.4, damage-model-research.md §12: the
+    /// best model fails without a report): one row of what it can still do (the speed its power drives it at with its
+    /// water's weight, steering, guns and directors working, water and list, fires, crew lost), its water against what
+    /// buoyancy it has left, and the report: its log's lines, cause to effect, newest first.</summary>
     void DamageRow(Snapshot s, int k, ShipClass cls)
     {
         var c = s.Conditions;
         int i = c.IndexOf(selected);
         if (i < 0)
             return;
-        double top = cls.Motion.MaxSpeedKn, kn = cls.SpeedAt(cls.PowerAt(top) * c.PowerCap[i]);
+        var inv = CultureInfo.InvariantCulture;
+        double top = cls.Motion.MaxSpeedKn, kn = cls.SpeedAt(cls.PowerAt(top) * c.HeldCap[i]);
         string steer = c.Steering[i] switch
         {
-            Steering.Jammed => "; RUDDER JAMMED",
-            Steering.Lost => "; steering lost",
-            _ => "",
+            Steering.Jammed => "RUDDER JAMMED",
+            Steering.Lost => "steering lost",
+            _ => "steering",
         };
-        ImGui.Text(string.Format(CultureInfo.InvariantCulture, "Damage: {0} hits; power {1:0}% ({2:0.0} of {3:0.0} kn); mounts {4} of {5}; directors {6} of {7}{8}; " +
-            "crew lost {9:0}; fires {10}; holes {11:0.00} m²{12}", c.Hits[i], 100 * c.PowerCap[i], kn, top, c.MountsWorking[i], c.Mounts[i], c.DirectorsWorking[i],
-            c.Directors[i], steer, c.CrewLost[i], c.Fires[i], c.BreachM2[i], c.Status[i] == ShipStatus.GoingDown ? $"; GOING DOWN ({c.Loss[i]})" : ""));
-        if (c.WaterT[i] > 0)
+        var a = c.Attitude[i];
+        string list = Math.Abs(a.HeelDeg) >= 0.5 ? string.Format(inv, ", list {0:0}° {1}", Math.Abs(a.HeelDeg), a.HeelDeg >= 0 ? "stbd" : "port") : "";
+        string trim = Math.Abs(a.TrimDeg) >= 0.3 ? string.Format(inv, ", down by the {0}", a.TrimDeg >= 0 ? "bow" : "stern") : "";
+        string down = c.Status[i] == ShipStatus.GoingDown ? c.Loss[i] switch
         {
-            var a = c.Attitude[i];
-            ImGui.Text(string.Format(CultureInfo.InvariantCulture, "Water: {0:0} t aboard, reserve buoyancy {1:0} t left; settled {2:0.00} m, list {3:0.0}° to {4}, trim {5:0.00}° by the {6}",
-                c.WaterT[i], c.ReserveT[i], a.SinkageM, Math.Abs(a.HeelDeg), a.HeelDeg >= 0 ? "starboard" : "port", Math.Abs(a.TrimDeg), a.TrimDeg >= 0 ? "bow" : "stern"));
-        }
+            LossKind.Magazine => " · MAGAZINE: GOING DOWN",
+            LossKind.Capsized => " · CAPSIZING",
+            _ => " · FOUNDERING",
+        } : "";
+        ImGui.TextColored(c.Status[i] == ShipStatus.GoingDown ? new Vector4(1f, 0.4f, 0.3f, 1) : new Vector4(1f, 0.85f, 0.6f, 1), string.Format(inv,
+            "Condition: {0:0.0} of {1:0.0} kn · {2} · guns {3} of {4} · directors {5} of {6} · water {7:0} t{8}{9} · fires {10} · crew lost {11:0}{12}",
+            kn, top, steer, c.MountsWorking[i], c.Mounts[i], c.DirectorsWorking[i], c.Directors[i], c.WaterT[i], list, trim, c.Fires[i], c.CrewLost[i], down));
+        if (c.WaterT[i] > 0)
+            ImGui.TextDisabled(string.Format(inv, "  {0:0} t aboard of {1:0} t reserve buoyancy; settled {2:0.00} m, list {3:0.0}°, trim {4:0.00}°; holes {5:0.00} m²; {6} hits",
+                c.WaterT[i], c.WaterT[i] + c.ReserveT[i], a.SinkageM, a.HeelDeg, a.TrimDeg, c.BreachM2[i], c.Hits[i]));
+        if (!ImGui.TreeNode($"Damage report ({c.Hits[i]} hits)##report"))
+            return;
         var log = s.CombatLog;
-        for (int j = 0, shown = 0; j < log.Count && shown < 3; j++)
+        for (int j = 0, shown = 0; j < log.Count && shown < 12; j++)
         {
             ref readonly var e = ref log.Entries[j];
-            if (e.Kind != CombatEvent.Hit || e.Target != selected)
+            if (e.Target != selected || e.Kind is not (CombatEvent.Hit or CombatEvent.Lost))
                 continue;
             shown++;
-            ImGui.TextDisabled("  " + HitText(e, cls));
+            string when = new WorldTime(e.Ms).ToUtc().ToString("HH:mm:ss", inv);
+            if (e.Kind == CombatEvent.Lost)
+                ImGui.TextColored(new Vector4(1f, 0.4f, 0.3f, 1), $"{when}  {(LossKind)e.Count switch { LossKind.Magazine => "magazine exploded", LossKind.Capsized => "capsized", _ => "foundered" }}");
+            else
+                ImGui.TextDisabled($"{when}  {HitText(e, cls)}");
         }
+        ImGui.TreePop();
     }
 
     /// <summary>A hit's line, cause to effect: "305mm AP · B (main) · defeated · jammed".</summary>

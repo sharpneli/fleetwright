@@ -11,8 +11,10 @@ changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2
 `docs/battle/fighting.md` (agreed 2026-10-13); 4.0 (the weapon facts), 4.1 (the hit query), 4.2a (ballistics and shells
 in flight), 4.2b (mounts, fire control and spotting) and 4.2c (ordering fire: fire at will, engage, hold fire, the
 admirals' distribution, Fight) are done (2026-10-13), 4.3a (what a hit does: terminal, effects, functions, the
-`DamageSystem`, `shipgen hits`) and 4.3b (fire, flooding and going down: `Flooding`, `Fires`, loss by buoyancy, what the
-enemy sees, `shipgen flood`) are done (2026-10-14), and 4.4, damage seen, is next.
+`DamageSystem`, `shipgen hits`), 4.3b (fire, flooding and going down: `Flooding`, `Fires`, loss by buoyancy, what the
+enemy sees, `shipgen flood`) and 4.4 (damage seen: sinking, trim and list drawn through the height map, turret tints,
+scorches, fires, wrecks, the damage report) are done (2026-10-14): the first pass of fighting is complete, and 4.5's
+deepenings and 4.6 (torpedoes) come next.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things

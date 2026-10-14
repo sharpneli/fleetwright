@@ -26,6 +26,7 @@ public static unsafe class Program
         var searches = new List<string>();
         var fires = new List<string>();
         var engages = new List<string>();
+        var damages = new List<string>();
         var devGroups = new List<string>();
         var devForces = new List<string>();
         bool frameTimes = false;
@@ -137,6 +138,11 @@ public static unsafe class Program
             else if (arg.StartsWith("-engage="))   // a dev battery engages: -engage=ship[:battery]:target (docs/battle/fighting.md 4.2b)
             {
                 engages.Add(arg.Substring("-engage=".Length));
+            }
+            else if (arg.StartsWith("-hole=") || arg.StartsWith("-flood=") || arg.StartsWith("-jam=") || arg.StartsWith("-wreck=") ||
+                     arg.StartsWith("-burn=") || arg.StartsWith("-sink="))   // dev damage (docs/battle/fighting.md 4.3b, 4.4): see DevDamage
+            {
+                damages.Add(arg);
             }
             else if (arg.StartsWith("-search="))   // a dev search: -search=1:ladder[:leg nm[:nm apart[:legs]]] (ladder, square, sector, patrol)
             {
@@ -283,6 +289,12 @@ public static unsafe class Program
                     world.Send(order);
                 else
                     Console.Error.WriteLine($"Bad engage: -engage={engage} (want ship[:battery]:target)");
+            foreach (var damage in damages)
+                if (DevDamage(damage) is { } order)
+                    world.Send(order);
+                else
+                    Console.Error.WriteLine($"Bad damage: {damage} (want -hole=ship:mid|bow|stern|x:z:m2[:p], -flood=ship:kind[:n], -jam=ship:mount, " +
+                                            "-wreck=ship:kind[:nth[:damaged|disabled|destroyed]], -burn=ship:x, -sink=ship:foundered|capsized|magazine)");
             worldRef = world;
             if (scenarioArg != null)
             {
@@ -378,6 +390,44 @@ public static unsafe class Program
             return null;
         int battery = p.Length == 3 && int.TryParse(p[1], out int b) ? b : -1;
         return Sim.GunnerySystem.Engage(ship, battery, target);
+    }
+
+    /// <summary>Dev damage, as the damage system's dev commands: -hole=ship:mid|bow|stern|x:z:m2[:p] (a hole in the side, z m
+    /// over the waterline, to port with :p), -flood=ship:kind[:n] (n spaces of a kind flooded: boiler_room, engine_room,
+    /// magazine...), -jam=ship:mount (a mount's index), -wreck=ship:kind[:nth[:state]] (the nth part of a component kind:
+    /// superstructure, funnel, main...), -burn=ship:x (a fire in the highest space at x), -sink=ship:foundered|capsized|magazine (it goes
+    /// down now).</summary>
+    static Sim.Command? DevDamage(string arg)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        int eq = arg.IndexOf('=');
+        string flag = arg[1..eq];
+        var p = arg[(eq + 1)..].Split(':');
+        if (p.Length < 2 || !int.TryParse(p[0], out int ship))
+            return null;
+        static T? Kind<T>(string s) where T : struct, Enum => Enum.TryParse<T>(s.Replace("_", ""), true, out var k) ? k : null;
+        switch (flag)
+        {
+            case "hole" when p.Length >= 4 && double.TryParse(p[2], inv, out double z) && double.TryParse(p[3], inv, out double area):
+                var at = p[1] switch { "mid" => Sim.HoleAt.Mid, "bow" => Sim.HoleAt.Bow, "stern" => Sim.HoleAt.Stern, _ => Sim.HoleAt.X };
+                double x = 0;
+                if (at == Sim.HoleAt.X && !double.TryParse(p[1], inv, out x))
+                    return null;
+                return Sim.DamageSystem.SideHole(ship, at, x, z, area, p.Length < 5 || p[4] != "p");
+            case "flood" when Kind<Sim.Ships.RoomKind>(p[1]) is { } room:
+                return Sim.DamageSystem.FloodRooms(ship, room, p.Length > 2 && int.TryParse(p[2], out int n) ? n : int.MaxValue);
+            case "jam" when int.TryParse(p[1], out int mount):
+                return Sim.DamageSystem.Jam(ship, mount);
+            case "wreck" when Kind<Sim.Ships.ComponentKind>(p[1]) is { } kind:
+                int nth = p.Length > 2 && int.TryParse(p[2], out int i) ? i : 0;
+                var state = p.Length > 3 && Kind<Sim.Combat.PartState>(p[3]) is { } s ? s : Sim.Combat.PartState.Destroyed;
+                return Sim.DamageSystem.WreckKind(ship, kind, nth, state);
+            case "burn" when double.TryParse(p[1], inv, out double bx):
+                return Sim.DamageSystem.Burn(ship, bx);
+            case "sink" when Kind<Sim.Combat.LossKind>(p[1]) is { } how and not Sim.Combat.LossKind.None:
+                return Sim.DamageSystem.Sink(ship, how);
+        }
+        return null;
     }
 
     /// <summary>-search=entity:pattern[:leg nm[:nm apart[:legs]]]: a search pattern for a dev ship, from where it is,

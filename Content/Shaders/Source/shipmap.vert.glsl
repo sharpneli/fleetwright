@@ -5,15 +5,16 @@
 // fails the depth test against the masking sphere. Each corner also carries its ship-local position for the shadows.
 struct Quad
 {
-    vec4 o;      // xyz: corner uv (0, 0), metres from the eye; w: mode (0 sprite, 1 silhouette, 2 icon)
+    vec4 o;      // xyz: corner uv (0, 0), metres from the eye; w: mode (0 sprite, 1 silhouette, 2 icon, 3 scorch)
     vec4 u;      // xyz: the quad's edge along uv.x; w: opacity
-    vec4 v;      // xyz: the edge along uv.y; w: the turret's roof, m (silhouettes)
+    vec4 v;      // xyz: the edge along uv.y; w: the turret's roof, m over the waterline (silhouettes, turrets)
     vec4 ship;   // xy: ship-local metres at corner o; zw: the u edge in ship metres
     vec4 shipV;  // xy: the v edge in ship metres; z: light (1 day, less at night)
     vec4 sun;    // xy: unit vector toward the sun, ship-local; z: tan(elevation); w: shadow opacity
     vec4 march;  // x: step, m; y: steps; z: softness, m; w: the height map's mip level
     vec4 hmap;   // height map uv = ship metres * xy + zw
-    vec4 tint;   // the icon's colour (mode 2)
+    vec4 tint;   // the icon's colour (mode 2); a turret's tint (mode 0, by its alpha); a scorch's colour (mode 3)
+    vec4 sea;    // the sea's plane over the waterline, ship frame: z at the origin, slopes along x and y; w: on
 };
 
 layout(std430, set = 0, binding = 0) readonly buffer Quads { Quad quads[]; };
@@ -33,6 +34,7 @@ layout(location = 3) flat out vec4 fragSun;
 layout(location = 4) flat out vec4 fragMarch;
 layout(location = 5) flat out vec4 fragHmap;
 layout(location = 6) flat out vec4 fragTint;
+layout(location = 7) flat out vec4 fragSea;
 
 void main()
 {
@@ -49,4 +51,5 @@ void main()
     fragMarch = q.march;
     fragHmap = q.hmap;
     fragTint = q.tint;
+    fragSea = q.sea;
 }

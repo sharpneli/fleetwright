@@ -468,8 +468,9 @@ public sealed class GunnerySystem : IWorldSystem
         for (int j = 0; j < mounts.Length; j++)
         {
             ref readonly var mr = ref cls.Mounts[mounts[j]];
-            bool inTraverse = store.Combat.Order(slot, mounts[j], mr, now, bearing, elevation);
-            firing[j] = inTraverse && cond.MountWorks[mounts[j]] && CombatStore.InArcs(cls, mr, bearing) && store.Combat.Mount(slot, mounts[j]).Rounds > 0 &&
+            bool works = cond.MountWorks[mounts[j]];   // one out of action or jammed stays where it stopped
+            bool inTraverse = works && store.Combat.Order(slot, mounts[j], mr, now, bearing, elevation);
+            firing[j] = inTraverse && CombatStore.InArcs(cls, mr, bearing) && store.Combat.Mount(slot, mounts[j]).Rounds > 0 &&
                         elevation <= mr.MaxElevationDeg;
             bears |= firing[j];
         }

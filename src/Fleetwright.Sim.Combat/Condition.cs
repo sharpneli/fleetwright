@@ -89,8 +89,9 @@ public sealed class ShipCondition
 
     public double CrewLost;
     public ShipStatus Status;
-    /// <summary>How it went down (None while afloat).</summary>
+    /// <summary>How it went down (None while afloat), when it began to and when it's gone under (ms).</summary>
     public LossKind Loss;
+    public long LossMs, GoneMs;
     public Attitude Attitude;
     /// <summary>The water aboard, tonnes, and the transverse GM with it in, m (the class's while dry).</summary>
     public double WaterT, GmM;
@@ -147,7 +148,7 @@ public sealed class ShipCondition
         Array.Fill(DirectorWorks, true);
         Array.Fill(EyeWorks, true);
         (CrewLost, Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (0, ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
-        (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0);
+        (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
         Version++;
     }
 

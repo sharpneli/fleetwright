@@ -28,26 +28,11 @@ public class FloodingTests(ITestOutputHelper output)
     static ShipCondition Condition(World w, int e = 1) => w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(e));
 
     /// <summary>A hole on the side at x (ship frame), z metres over the waterline.</summary>
-    static void Hole(World w, ShipClass c, double x, double z, double areaM2, bool starboard = true)
-    {
-        double zz = c.Vertical.Waterline + z;
-        var (cell, y) = FloodModel.SideCell(c, x, zz, starboard);
-        Assert.True(cell >= 0, $"hull at {x:0.0}");
-        w.Apply(DamageSystem.Breach(1, cell, areaM2, y, zz));
-    }
+    static void Hole(World w, ShipClass c, double x, double z, double areaM2, bool starboard = true) =>
+        w.Apply(DamageSystem.SideHole(1, HoleAt.X, x, z, areaM2, starboard));
 
     /// <summary>Every cell of n rooms of a kind (those nearest amidships) holed at its floor.</summary>
-    static void Flood(World w, ShipClass c, RoomKind kind, int n)
-    {
-        double mid = c.Hydrostatics.Lcf;
-        foreach (int r in Enumerable.Range(0, c.Rooms.Length).Where(r => c.Rooms[r].Kind == kind)
-                     .OrderBy(r => Math.Abs((c.Rooms[r].X0 + c.Rooms[r].X1) / 2 - mid)).Take(n))
-            foreach (int cell in c.Links(c.Rooms[r].Cells))
-            {
-                var b = c.Cells[cell].Box;
-                w.Apply(DamageSystem.Breach(1, cell, 1, (b.Y0 + b.Y1) / 2, b.Base + 0.05));
-            }
-    }
+    static void Flood(World w, ShipClass c, RoomKind kind, int n) => w.Apply(DamageSystem.FloodRooms(1, kind, n));
 
     void Report(string what, ShipCondition k) =>
         output.WriteLine($"{what}: {k.WaterT:0} t, sinkage {k.Attitude.SinkageM:0.00} m, trim {k.Attitude.TrimDeg:0.00}°, heel {k.Attitude.HeelDeg:0.0}°, " +
@@ -213,5 +198,36 @@ public class FloodingTests(ITestOutputHelper output)
         var p = w.Sightings.Of(1)!;
         int ci = p.IndexOf(1);
         Assert.True(ci < 0 || (p[ci].Seen & SeenFlags.Gone) != 0, "seen to go");
+    }
+
+    [Fact]
+    public void Damage_shows_in_the_snapshot_and_a_jammed_turret_keeps_its_bearing()
+    {
+        var (w, c) = Ship("super_dreadnought");
+        var p = Earth.Position(56, 4);
+        var f = Earth.Forward(p, 90);
+        Earth.Advance(ref p, ref f, 14000);
+        var (lat, lon) = Earth.LatLon(p);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), lat, lon, 0, 0, side: 1));
+        w.Apply(GunnerySystem.Engage(1, 0, 2));
+        w.AdvanceTo(w.Time + 20_000);
+        int slot = w.Ships.Store.SlotOf(1);
+        double was = w.Ships.Store[slot].MountBearingDeg(0);
+        w.Apply(DamageSystem.Jam(1, 0));
+        w.Apply(DamageSystem.WreckKind(1, ComponentKind.Funnel, 0));
+        w.Apply(DamageSystem.SideHole(1, HoleAt.Stern, 0, -1, 4));
+        w.Apply(DamageSystem.Burn(1, 10));
+        w.Apply(ShipSystem.Course(2, 90));   // the target moves on: the others train after it
+        w.AdvanceTo(w.Time + 5 * 60_000);
+        Assert.Equal(was, w.Ships.Store[slot].MountBearingDeg(0), 6);
+        var snap = new Snapshot();
+        w.Fill(snap, truth: true);
+        var v = snap.Ships;
+        int k = v.IndexOf(1);
+        var parts = Enumerable.Range(v.PartStart[k], v.PartCount[k]).Select(j => (c.Components[v.Parts[j]].Kind, v.PartStates[j], v.PartFlags[j])).ToList();
+        output.WriteLine($"attitude {v.Attitude[k]}, parts: {string.Join(", ", parts)}, fires {v.FireCount[k]}");
+        Assert.Contains(parts, x => x.Kind == ComponentKind.Funnel && x.Item2 == PartState.Destroyed);
+        Assert.Contains(parts, x => x.Kind == ComponentKind.Main && (x.Item3 & PartFlags.Jammed) != 0);
+        Assert.True(v.Attitude[k].TrimDeg < 0, "down by the stern");
     }
 }

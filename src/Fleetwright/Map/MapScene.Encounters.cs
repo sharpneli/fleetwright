@@ -73,7 +73,7 @@ public sealed partial class MapScene
             if (!view.Project(top, out double x, out double y))
                 continue;
             string ships = s.Truth || s.PlayerSide < 0 ? $" · {v.Ships[i]} ships" : "";   // the player knows their own, not the count
-            string text = $"Encounter {v.Id[i]}{ships} · since {new WorldTime(v.OpenedMs[i]).ToUtc():HH:mm}";
+            string text = $"Encounter {v.Id[i]}{ships} · since {new WorldTime(v.OpenedMs[i]).ToUtc():HH:mm}{LossesIn(v.Id[i])}";
             var at = new Vector2(vp.Pos.X + (float)(x * sx) - ImGui.CalcTextSize(text).X / 2, vp.Pos.Y + (float)(y * sy) - ImGui.GetTextLineHeight() - 4);
             dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
             dl.AddText(at, ImGui.GetColorU32(v.Own[i] ? OwnEncounter with { W = 1 } : OthersEncounter with { W = 0.9f }), text);

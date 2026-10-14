@@ -10,6 +10,22 @@ public enum DamageCommand : ushort
     SetPropellant = 1,
     Wreck,
     Breach,
+    SideHole,
+    FloodRooms,
+    Jam,
+    WreckKind,
+    Burn,
+    Sink,
+}
+
+/// <summary>Where along a ship a dev's side hole is (<see cref="DamageSystem.SideHole"/>): x in metres, the centre of
+/// flotation, or a tenth of the length in from the bow or the stern.</summary>
+public enum HoleAt : byte
+{
+    X,
+    Mid,
+    Bow,
+    Stern,
 }
 
 /// <summary>Hits and what they do (docs/battle/fighting.md 4.3a): a hit comes in (<see cref="Strike"/>, from the shell
@@ -89,6 +105,30 @@ public sealed class DamageSystem : IWorldSystem
     public static Command Breach(int entity, int cell, double areaM2, double y, double z) =>
         new(Id, (ushort)DamageCommand.Breach, entity, A: cell, X: areaM2, B: (int)Math.Round(y * 1000), Y: z);
 
+    /// <summary>The dev's hole in the side (the benches', tests' and the -hole flag's): at x along the ship (or the centre
+    /// of flotation, the bow, the stern), z metres over the waterline, to starboard or port, in the cell behind it.</summary>
+    public static Command SideHole(int entity, HoleAt at, double xM, double zOverWaterlineM, double areaM2, bool starboard = true) =>
+        new(Id, (ushort)DamageCommand.SideHole, entity, A: (byte)at + (starboard ? 0 : 256), X: areaM2, B: (int)Math.Round(xM * 1000), Y: zOverWaterlineM);
+
+    /// <summary>The dev's flooded spaces: the n rooms of a kind nearest the centre of flotation, each of their cells holed
+    /// a square metre at its floor.</summary>
+    public static Command FloodRooms(int entity, RoomKind kind, int n = int.MaxValue) =>
+        new(Id, (ushort)DamageCommand.FloodRooms, entity, A: (long)kind, B: n);
+
+    /// <summary>The dev's jammed mount (a mount's index in the class): it stops where it is.</summary>
+    public static Command Jam(int entity, int mount) => new(Id, (ushort)DamageCommand.Jam, entity, A: mount);
+
+    /// <summary>The dev's wreck by kind: the nth part (from 0, in the class's order) of a kind made at least this bad.</summary>
+    public static Command WreckKind(int entity, ComponentKind kind, int nth, PartState state = PartState.Destroyed) =>
+        new(Id, (ushort)DamageCommand.WreckKind, entity, A: (long)kind, B: nth, X: (double)state);
+
+    /// <summary>The dev's sinking: the ship goes down now as if it had foundered, capsized or blown up (the views' check
+    /// of a ship going under).</summary>
+    public static Command Sink(int entity, LossKind how) => new(Id, (ushort)DamageCommand.Sink, entity, A: (long)how);
+
+    /// <summary>The dev's fire: the highest cell at x along the ship (on the centreline) set burning.</summary>
+    public static Command Burn(int entity, double xM) => new(Id, (ushort)DamageCommand.Burn, entity, X: xM);
+
     public void Apply(World world, in Command c)
     {
         switch ((DamageCommand)c.Code)
@@ -127,7 +167,108 @@ public sealed class DamageSystem : IWorldSystem
                 if (k.Status == ShipStatus.Afloat)
                     Wake(world, slot, k);
                 break;
+            case DamageCommand.SideHole:
+            case DamageCommand.FloodRooms:
+            case DamageCommand.Jam:
+            case DamageCommand.WreckKind:
+            case DamageCommand.Burn:
+            case DamageCommand.Sink:
+                slot = ships.Store.SlotOf(c.Entity);
+                if (slot >= 0)
+                    Dev(world, slot, c);
+                break;
         }
+    }
+
+    /// <summary>The dev's damage commands, resolved against the ship's class.</summary>
+    void Dev(World world, int slot, in Command c)
+    {
+        var k = ships.Store.Combat.Condition(slot);
+        var cls = k.Class;
+        if (k.Status != ShipStatus.Afloat)
+            return;
+        k.Damaged = touched = true;
+        switch ((DamageCommand)c.Code)
+        {
+            case DamageCommand.SideHole:
+                double x = (HoleAt)(c.A & 255) switch
+                {
+                    HoleAt.Mid => cls.Hydrostatics.Lcf,
+                    HoleAt.Bow => cls.Hull.X1 - 0.1 * cls.Length,
+                    HoleAt.Stern => cls.Hull.X0 + 0.1 * cls.Length,
+                    _ => c.B / 1000.0,
+                };
+                double z = cls.Vertical.Waterline + c.Y;
+                var (cell, y) = FloodModel.SideCell(cls, x, z, (c.A & 256) == 0);
+                if (cell < 0 || !(c.X > 0))
+                    throw new ArgumentException($"no hull at {x:0.0} m, {c.Y:0.0} m over the waterline on ship {c.Entity}");
+                k.Hole(cell, c.X, new P3(x, y, z));
+                Wake(world, slot, k);
+                break;
+            case DamageCommand.FloodRooms:
+                double mid = cls.Hydrostatics.Lcf;
+                for (int done = 0; done < c.B; done++)
+                {
+                    int best = -1;
+                    for (int r = 0; r < cls.Rooms.Length; r++)
+                        if (cls.Rooms[r].Kind == (RoomKind)c.A && !Holed(cls, k, r) &&
+                            (best < 0 || Math.Abs((cls.Rooms[r].X0 + cls.Rooms[r].X1) / 2 - mid) < Math.Abs((cls.Rooms[best].X0 + cls.Rooms[best].X1) / 2 - mid)))
+                            best = r;
+                    if (best < 0)
+                        break;
+                    foreach (int i in cls.Links(cls.Rooms[best].Cells))
+                    {
+                        var b = cls.Cells[i].Box;
+                        k.Hole(i, 1, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, b.Base + 0.05));
+                    }
+                }
+                Wake(world, slot, k);
+                break;
+            case DamageCommand.Jam:
+                if (c.A < 0 || c.A >= cls.Mounts.Length)
+                    throw new ArgumentException($"no mount {c.A} on ship {c.Entity}");
+                k.Flags[cls.Mounts[(int)c.A].Component] |= PartFlags.Jammed;
+                var rj = stream.Derive(0x3EC5u).Derive((ulong)world.Time.Ms);
+                Recompute(world, slot, k, ref rj);
+                break;
+            case DamageCommand.WreckKind:
+                for (int i = 0, n = 0; i < cls.Components.Length; i++)
+                    if (cls.Components[i].Kind == (ComponentKind)c.A && n++ == c.B)
+                    {
+                        k.Worsen(i, (PartState)(int)c.X);
+                        var rw = stream.Derive(0x3EC6u).Derive((ulong)world.Time.Ms).Derive((ulong)i);
+                        Recompute(world, slot, k, ref rw);
+                        return;
+                    }
+                throw new ArgumentException($"no {(ComponentKind)c.A} {c.B} on ship {c.Entity}");
+            case DamageCommand.Sink:
+                if (c.A is < (int)LossKind.Magazine or > (int)LossKind.Capsized)
+                    throw new ArgumentException($"no way of going down {c.A}");
+                Lose(world, slot, k, (LossKind)c.A);
+                break;
+            case DamageCommand.Burn:
+                int top = -1;
+                for (int i = 0; i < cls.Cells.Length; i++)
+                {
+                    var b = cls.Cells[i].Box;
+                    if (b.X0 <= c.X && b.X1 >= c.X && b.Y0 <= 0 && b.Y1 >= 0 && (top < 0 || b.Top > cls.Cells[top].Box.Top))
+                        top = i;
+                }
+                if (top < 0)
+                    throw new ArgumentException($"no cell at {c.X:0.0} m on ship {c.Entity}");
+                k.CellFire[top] = true;
+                Wake(world, slot, k);
+                break;
+        }
+    }
+
+    /// <summary>Whether any of a room's cells is holed already.</summary>
+    static bool Holed(ShipClass c, ShipCondition k, int room)
+    {
+        foreach (int i in c.Links(c.Rooms[room].Cells))
+            if (k.BreachM2[i] > 0)
+                return true;
+        return false;
     }
 
     /// <summary>A class's flooding model (its cells as water sees them), made when it's first in the world.</summary>
@@ -217,6 +358,7 @@ public sealed class DamageSystem : IWorldSystem
         double cap = k.PowerCap;
         var steering = k.Steering;
         bool steers = Functions.Evaluate(k, settings.DraughtFloor);
+        Freeze(world, slot, k);
         if (!steers && k.Steering == Steering.Free)
         {
             bool jam = rng.NextDouble() < settings.RudderJamChance;
@@ -231,6 +373,15 @@ public sealed class DamageSystem : IWorldSystem
         if (fx != HitEffect.None)
             Hold(world, slot, k, force: true);
         return fx;
+    }
+
+    /// <summary>Its mounts out of action (or jammed) stop where they are: they train no more.</summary>
+    void Freeze(World world, int slot, ShipCondition k)
+    {
+        var mounts = k.Class.Mounts;
+        for (int m = 0; m < mounts.Length; m++)
+            if (!k.MountWorks[m])
+                ships.Store.Combat.Stop(slot, m, mounts[m], world.Time.Ms);
     }
 
     /// <summary>The store holds the ship to the power it can make, less what its water's weight costs (the power a
@@ -256,6 +407,7 @@ public sealed class DamageSystem : IWorldSystem
         k.StepGen++;   // no more steps: its water and attitude stay as they were
         Array.Fill(k.MountWorks, false);
         Array.Fill(k.DirectorWorks, false);
+        Freeze(world, slot, k);
         k.Version++;
         k.HeldCap = 0;
         ships.Damaged(world, slot, 0, k.Steering == Steering.Free ? Steering.Lost : k.Steering, k.JamRudderRad);
@@ -268,7 +420,8 @@ public sealed class DamageSystem : IWorldSystem
             LossKind.Capsized => settings.CapsizeMs,
             _ => settings.FounderMs,
         };
-        world.Schedule(new WorldTime(world.Time.Ms + ms), EventTier.Fine, entity, Id, LossEvent, store[slot].Generation);
+        (k.LossMs, k.GoneMs) = (world.Time.Ms, world.Time.Ms + ms);
+        world.Schedule(new WorldTime(k.GoneMs), EventTier.Fine, entity, Id, LossEvent, store[slot].Generation);
     }
 
     // ------------------------------------------------------------------ fire and flooding
@@ -432,7 +585,7 @@ public sealed class DamageSystem : IWorldSystem
                 (v.Entity[n], v.Hits[n], v.PowerCap[n], v.Steering[n], v.Status[n]) = (store[slot].Entity, k.Hits, k.PowerCap, k.Steering, k.Status);
                 (v.MountsWorking[n], v.Mounts[n], v.DirectorsWorking[n], v.Directors[n]) = (k.MountsWorking, k.MountWorks.Length, directors, k.DirectorWorks.Length);
                 (v.CrewLost[n], v.Fires[n], v.BreachM2[n], v.Conned[n]) = (k.CrewLost, k.Fires, k.BreachTotalM2, k.Conned);
-                (v.WaterT[n], v.ReserveT[n], v.Attitude[n], v.Loss[n]) = (k.WaterT, Flood(k.Class).ReserveT - k.WaterT, k.Attitude, k.Loss);
+                (v.WaterT[n], v.ReserveT[n], v.Attitude[n], v.Loss[n], v.HeldCap[n]) = (k.WaterT, Flood(k.Class).ReserveT - k.WaterT, k.Attitude, k.Loss, k.HeldCap);
                 n++;
             }
         v.Count = n;

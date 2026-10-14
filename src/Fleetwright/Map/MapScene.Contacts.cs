@@ -84,6 +84,7 @@ public sealed partial class MapScene
             },
             _ => "ship",
         };
+        what += SeenText(c.Seen[i]);
         return c.InSight[i] ? what : $"{what} · last seen {new WorldTime(c.SeenMs[i]).ToUtc():HH:mm}";
     }
 

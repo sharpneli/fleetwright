@@ -98,6 +98,8 @@ public sealed class CombatStore
     static double Toward(double from, double to, double rate, long since, long ms)
     {
         double d = to - from, run = rate * Math.Max(ms - since, 0) / 1000;
+        if (d == 0)
+            return to;   // nowhere to go (a mount with no rate, a torpedo mount's, too)
         return Math.Abs(d) <= run ? to : from + Math.Sign(d) * run;
     }
 
@@ -118,6 +120,18 @@ public sealed class CombatStore
         (s.ElevMs, s.ElevFrom, s.ElevTo) = (ms, e, Math.Clamp(elevationDeg, -5, m.MaxElevationDeg));
         moved[slot] = Touched = true;
         return Within(m, to, bearingDeg);
+    }
+
+    /// <summary>A mount stopped where it is now (out of action, jammed: it trains no more), its train and elevation held
+    /// there.</summary>
+    public void Stop(int slot, int mount, in MountRow m, long ms)
+    {
+        ref var s = ref mounts[slot]![mount];
+        double b = BearingAt(s, m, ms), e = ElevationAt(s, m, ms);
+        if (b == s.TrainTo && e == s.ElevTo || !double.IsFinite(b) || !double.IsFinite(e))
+            return;
+        (s.TrainMs, s.TrainFrom, s.TrainTo) = (ms, b, b);
+        (s.ElevMs, s.ElevFrom, s.ElevTo) = (ms, e, e);
     }
 
     /// <summary>A gun fired: its mount loads again for the reload, and its rounds go down.</summary>

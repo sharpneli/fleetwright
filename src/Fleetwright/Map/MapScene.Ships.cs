@@ -22,6 +22,7 @@ public sealed unsafe partial class MapScene
     readonly ShipBatchRenderer shipRenderer;
     readonly Func<int, ShipArt?> artOf;
     readonly Func<int, double> lengthOf;
+    readonly Func<int, ShipClass?> classOf;
     readonly string[] designNames;
     int selected;   // the selected ship's entity, or -1
     double pressX, pressY;
@@ -74,6 +75,7 @@ public sealed unsafe partial class MapScene
         DrawEncounters(view, s);
         DrawContacts(view, s);
         DrawShells(view, s);
+        DrawDamage(view, s);
         for (int k = 0; k < v.Count; k++)
         {
             var (p, f) = v.PoseAt(k, world.DrawMs);

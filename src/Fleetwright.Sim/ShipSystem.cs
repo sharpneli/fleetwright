@@ -322,6 +322,7 @@ public sealed partial class ShipSystem : IWorldSystem
         var s = Store;
         v.EnsureCapacity(s.Count);
         int n = 0, w = 0, mounts = 0;
+        v.PartTotal = v.FireTotal = 0;
         for (int i = 0; i < s.Slots; i++)
             if (s.IsAlive(i) && shownSides[s[i].Side])
                 Put(v, i, n++, ref w, ref mounts, orders: true);
@@ -337,6 +338,7 @@ public sealed partial class ShipSystem : IWorldSystem
     {
         v.EnsureCapacity(contacts.Count);
         int n = 0, w = 0, mounts = 0;
+        v.PartTotal = v.FireTotal = 0;
         for (int j = 0; j < contacts.Count; j++)
         {
             int i = contacts.InSight[j] ? Store.SlotOf(contacts.Entity[j]) : -1;
@@ -396,5 +398,32 @@ public sealed partial class ShipSystem : IWorldSystem
             for (int m = 0; m < count; m++)
                 v.MountBearingDeg[mounts++] = ship.MountBearingDeg(m);
         }
+        PutDamage(v, i, n);
+    }
+
+    /// <summary>What shows of a ship's damage (docs/battle/fighting.md 4.4): its attitude, its going down, its damaged parts
+    /// and its fires.</summary>
+    void PutDamage(ShipsView v, int i, int n)
+    {
+        var k = Store.Combat.Condition(i);
+        (v.PartStart[n], v.PartCount[n], v.FireStart[n], v.FireCount[n]) = (v.PartTotal, 0, v.FireTotal, 0);
+        (v.Attitude[n], v.Loss[n], v.LossMs[n], v.GoneMs[n]) = (k.Attitude, k.Loss, k.LossMs, k.GoneMs);
+        if (!k.Damaged)
+            return;
+        int parts = k.Class.Components.Length, cells = k.CellFire.Length;
+        v.EnsureDamage(v.PartTotal + parts, v.FireTotal + cells);
+        for (int c = 0; c < parts; c++)
+            if (k.State[c] != PartState.Ok || k.Flags[c] != PartFlags.None)
+            {
+                (v.Parts[v.PartTotal], v.PartStates[v.PartTotal], v.PartFlags[v.PartTotal]) = (c, k.State[c], k.Flags[c]);
+                v.PartTotal++;
+                v.PartCount[n]++;
+            }
+        for (int c = 0; c < cells; c++)
+            if (k.CellFire[c])
+            {
+                v.FireCells[v.FireTotal++] = c;
+                v.FireCount[n]++;
+            }
     }
 }

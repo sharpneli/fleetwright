@@ -97,6 +97,8 @@ public sealed class ConditionsView
     public int Count;
     public int[] Entity = [], Hits = [], MountsWorking = [], Mounts = [], DirectorsWorking = [], Directors = [], Fires = [];
     public double[] PowerCap = [], CrewLost = [], BreachM2 = [], WaterT = [], ReserveT = [];
+    /// <summary>The share of its power that drives it, its water's weight taken off (what its speed comes from).</summary>
+    public double[] HeldCap = [];
     public Fleetwright.Sim.Combat.Attitude[] Attitude = [];
     public Fleetwright.Sim.Combat.LossKind[] Loss = [];
     public Fleetwright.Sim.Combat.Steering[] Steering = [];
@@ -128,6 +130,7 @@ public sealed class ConditionsView
         Array.Resize(ref CrewLost, n);
         Array.Resize(ref BreachM2, n);
         Array.Resize(ref WaterT, n);
+        Array.Resize(ref HeldCap, n);
         Array.Resize(ref ReserveT, n);
         Array.Resize(ref Attitude, n);
         Array.Resize(ref Loss, n);
@@ -429,6 +432,35 @@ public sealed class ShipsView
     public double[] MountBearingDeg = [];
     public int MountCount;
 
+    /// <summary>Damage as it shows (docs/battle/fighting.md 4.4): each ship's attitude in the water; how it's going down
+    /// (None while afloat), from when and till when it's gone under, ms; its parts (the class's components) damaged,
+    /// out of action, wrecked, jammed or burning, <see cref="PartCount"/> from <see cref="PartStart"/> in
+    /// <see cref="Parts"/>, <see cref="PartStates"/> and <see cref="PartFlags"/>; and its spaces on fire (the class's
+    /// cells), <see cref="FireCount"/> from <see cref="FireStart"/> in <see cref="FireCells"/>. An enemy in sight shows
+    /// the same: it's what an observer sees of it.</summary>
+    public Combat.Attitude[] Attitude = [];
+    public Combat.LossKind[] Loss = [];
+    public long[] LossMs = [], GoneMs = [];
+    public int[] PartStart = [], PartCount = [], FireStart = [], FireCount = [];
+    public int[] Parts = [], FireCells = [];
+    public Combat.PartState[] PartStates = [];
+    public Combat.PartFlags[] PartFlags = [];
+    public int PartTotal, FireTotal;
+
+    /// <summary>Room for n damaged parts and n fires in all; grows only past the most yet.</summary>
+    public void EnsureDamage(int parts, int fires)
+    {
+        if (parts > Parts.Length)
+        {
+            int n = Math.Max(parts, Math.Max(64, Parts.Length * 2));
+            Array.Resize(ref Parts, n);
+            Array.Resize(ref PartStates, n);
+            Array.Resize(ref PartFlags, n);
+        }
+        if (fires > FireCells.Length)
+            Array.Resize(ref FireCells, Math.Max(fires, Math.Max(16, FireCells.Length * 2)));
+    }
+
     /// <summary>Room for n mounts' bearings in all; grows only past the most yet.</summary>
     public void EnsureMounts(int n)
     {
@@ -486,6 +518,14 @@ public sealed class ShipsView
         Array.Resize(ref RouteStart, n);
         Array.Resize(ref RouteCount, n);
         Array.Resize(ref RouteLoop, n);
+        Array.Resize(ref Attitude, n);
+        Array.Resize(ref Loss, n);
+        Array.Resize(ref LossMs, n);
+        Array.Resize(ref GoneMs, n);
+        Array.Resize(ref PartStart, n);
+        Array.Resize(ref PartCount, n);
+        Array.Resize(ref FireStart, n);
+        Array.Resize(ref FireCount, n);
         int had = MountStart.Length;
         Array.Resize(ref MountStart, n);
         Array.Fill(MountStart, -1, had, n - had);   // at rest, unless filled
