@@ -1,5 +1,6 @@
 using System.Numerics;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Ai.Captains;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
@@ -179,6 +180,40 @@ public sealed partial class MapScene
             var at = new Vector2(vp.Pos.X + (float)(x * sx) + 10, vp.Pos.Y + (float)(y * sy) + 4);
             dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
             dl.AddText(at, ImGui.GetColorU32(WreckColour), text);
+        }
+    }
+
+    /// <summary>Why a captain does what he does, as words (docs/battle/command.md "Reports and reasons"); "" for none.</summary>
+    static string ReasonText(byte reason) => (CaptainReason)reason switch
+    {
+        CaptainReason.OutSpeed => "falling out: too slow",
+        CaptainReason.OutGuns => "falling out: main guns out",
+        CaptainReason.OutList => "falling out: listing",
+        CaptainReason.OutWater => "falling out: flooding",
+        CaptainReason.OutSteering => "falling out: steering gone",
+        CaptainReason.Home => "out of the fight, home",
+        _ => "",
+    };
+
+    /// <summary>The player's ships' reasons (subordinates explain themselves: command-ui.md), beside each, when there's
+    /// room on the screen for them.</summary>
+    void ReasonLabels(Snapshot s)
+    {
+        if (camera.MetresPerPixel > 60)
+            return;
+        var view = View;
+        var vp = ImGui.GetMainViewport();
+        float sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
+        var dl = ImGui.GetBackgroundDrawList();
+        var v = s.Ships;
+        for (int k = 0; k < v.Count; k++)
+        {
+            if (v.Reason[k] == 0 || !view.Project(v.PoseAt(k, world.DrawMs).Position, out double x, out double y))
+                continue;
+            string text = ReasonText(v.Reason[k]);
+            var at = new Vector2(vp.Pos.X + (float)(x * sx) + 10, vp.Pos.Y + (float)(y * sy) - 16);
+            dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
+            dl.AddText(at, ImGui.GetColorU32(FlameColour), text);
         }
     }
 

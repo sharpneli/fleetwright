@@ -88,6 +88,7 @@ public sealed partial class CaptainLayer
             if (own.Tier == ClockTier.Fine)
             {
                 ref var cap = ref Get(own.Entity);
+                FallOut(ctx, ref cap, own, slot);
                 TakeUpStanding(ctx, ref cap, own, slot);
                 Aim(ctx, ref cap, own, slot);
             }
@@ -103,7 +104,7 @@ public sealed partial class CaptainLayer
     /// it first meets an enemy in sight in an encounter; it's armed again once it's out of encounters.</summary>
     void TakeUpStanding(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
-        if ((Engage)doctrine.Of(own.Entity, own.Side, DoctrineField.Engage) != Engage.Fight)
+        if (cap.Order == CaptainOrder.Home || (Engage)doctrine.Of(own.Entity, own.Side, DoctrineField.Engage) != Engage.Fight)
             return;
         if (encounters.Of(slot, own.Entity) == 0)
         {
@@ -383,6 +384,61 @@ public sealed partial class CaptainLayer
         if (cap.LimitKn > 0)
             kn = Math.Min(kn, cap.LimitKn);
         Give(ctx, own, course, kn);
+    }
+
+    /// <summary>Whether his ship is past doctrine's fall-out (docs/battle/command.md 5.1a), judged when its condition
+    /// changes: too slow, too few main guns, listing too far, too much water, or (when doctrine falls out at all) unable to
+    /// steer. Then she leaves her group (the line closes up behind her: going-down ships leave the same way) and goes
+    /// home, his own order, firing at will as she goes.</summary>
+    void FallOut(in AiContext ctx, ref Captain cap, ShipState own, int slot)
+    {
+        var k = ctx.Ships.Combat.Condition(slot);
+        if (cap.Order == CaptainOrder.Home || !k.Damaged || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat)
+            return;
+        cap.FitVersion = k.Version;
+        var cls = own.Handling.Class;
+        var fit = Fitness.Of(cls, k, ctx.World.Damage.Flood(cls).ReserveT);
+        double D(DoctrineField f) => doctrine.Of(own.Entity, own.Side, f);
+        double speedShare = D(DoctrineField.FallOutSpeedShare);
+        var why = speedShare > 0 && fit.Steering != Steering.Free ? CaptainReason.OutSteering
+            : fit.SpeedShare < speedShare ? CaptainReason.OutSpeed
+            : fit.MainGunsShare < D(DoctrineField.FallOutGunsShare) ? CaptainReason.OutGuns
+            : fit.ListDeg > D(DoctrineField.FallOutListDeg) ? CaptainReason.OutList
+            : fit.WaterShare > D(DoctrineField.FallOutWaterShare) ? CaptainReason.OutWater
+            : CaptainReason.None;
+        if (why == CaptainReason.None)
+            return;
+        if (groups.Of(own.Entity) != null)
+            ctx.Issue(GroupSystem.Remove(own.Entity));   // out of the line
+        SetLimit(ctx, ref cap, own, 0);
+        SetClearance(ctx, ref cap, own.Entity, 0);
+        (cap.Order, cap.Target, cap.Source, cap.Watch, cap.Asked, cap.Reason) = (CaptainOrder.Home, 0, OrderSource.Player, false, false, why);
+        Recount();
+    }
+
+    /// <summary>Out of the fight, each second: away from the nearest enemy his navy holds in sight within
+    /// <see cref="SimSettings.FightCompareM"/>, else for his side's home (great circle), at all she can make; stopped
+    /// within <see cref="SimSettings.HomeRadiusM"/> of it. With no home and nobody near he keeps his course.</summary>
+    void HomeThink(in AiContext ctx, ref Captain cap, ShipState own)
+    {
+        var s = ctx.Settings;
+        double flank = own.Handling.Class.Motion.MaxSpeedKn;
+        if (Nearest(ctx, own, s.FightCompareM, out var t) != 0)
+        {
+            var (course, kn) = Behaviours.Run(own, t);
+            Give(ctx, own, course, kn);
+            return;
+        }
+        if (homes[own.Side] is not { } home)
+            return;
+        if (Earth.Distance(own.Position, home) <= s.HomeRadiusM)
+        {
+            if (own.SpeedOrderKn != 0)
+                Give(ctx, own, own.CourseOrderDeg, 0);
+            cap.Reason = CaptainReason.Home;
+            return;
+        }
+        Give(ctx, own, Earth.Bearing(own.Position, home), flank);
     }
 
     /// <summary>The nearest contact his navy holds in sight within a radius, as a sighting; 0 if none.</summary>

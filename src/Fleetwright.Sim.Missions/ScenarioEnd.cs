@@ -1,3 +1,5 @@
+using Fleetwright.Sim.Ai;
+using Fleetwright.Sim.Ai.Captains;
 using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
@@ -41,6 +43,9 @@ public enum PlayEvent : byte
     /// <summary>A ship going down (Entity the ship, Other the ship that hit it last, Count its <see cref="LossKind"/>).</summary>
     Lost,
 
+    /// <summary>A ship fallen out of the fight (Entity the ship, Count its captain's <see cref="CaptainReason"/>).</summary>
+    FellOut,
+
     /// <summary>The end (Count its <see cref="EndReason"/>).</summary>
     End,
 }
@@ -60,6 +65,8 @@ public sealed class ScenarioEnd
 {
     readonly Scenario scenario;
     readonly World world;
+    readonly AiSystem? ai;
+    readonly HashSet<int> fellOut = [];   // ships whose falling out is told
     readonly long untilMs;
     readonly Aim[][] aims;   // by side
     readonly Dictionary<int, (byte Side, double Tonnes)> ships = [];   // every ship seen, kept after it's gone
@@ -69,10 +76,12 @@ public sealed class ScenarioEnd
     long logRead, lastBusyMs = long.MinValue;
     bool met;
 
-    public ScenarioEnd(Scenario s, World w)
+    /// <param name="ai">The AI, whose captains' falling out goes on the timeline; none for a world without one.</param>
+    public ScenarioEnd(Scenario s, World w, AiSystem? ai = null)
     {
         scenario = s;
         world = w;
+        this.ai = ai;
         untilMs = s.Until?.Ms ?? s.Start.Ms + w.Settings.PlayLimitMs;
         int n = s.Sides.Length;
         aims = [.. Enumerable.Range(0, n).Select(side => s.AimsOf(side).ToArray())];
@@ -108,7 +117,11 @@ public sealed class ScenarioEnd
             if (!ships.ContainsKey(x.Entity))
                 ships[x.Entity] = (x.Side, x.Handling.Class.Hydrostatics.DisplacementT);
             if (Aims.Afloat(store, slot) && x.Side < afloat.Length)
+            {
                 afloat[x.Side]++;
+                if (ai?.Captains.ReasonOf(x.Entity) is { } why && why is >= CaptainReason.OutSpeed and <= CaptainReason.OutSteering && fellOut.Add(x.Entity))
+                    lines.Add(new PlayLine(now, PlayEvent.FellOut, x.Side, x.Entity, Count: (int)why));
+            }
         }
         ReadLog();
         Sightings();

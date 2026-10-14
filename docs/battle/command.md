@@ -399,6 +399,29 @@ Bottom-up, so each layer is built on one that already behaves.
   that see tracks comb them and fewer torpedoes hit than in 4.6's run (the same seed); evasion styles measured against
   `fire_control_ref.py`'s hit rates on `shipgen duel` (wide bands); allocation-free; replays.
 
+**5.1a so far (2026-10-14),** built in five pieces, each committed when it plays:
+
+1. **Doctrine, presets, homes.** `Doctrine` is AI state (`Sim.Ai`, held by `AiSystem`; the table above put it in the
+   world), read ship, squadron, forces, side, then a neutral default that behaves as before doctrine (carry on, never
+   fall out), so dev worlds and tests are untouched. `Content/Sim/doctrine.json`'s "default" preset is the gameplay's
+   (Engage: fight), given to every scenario side unless it names another; a scenario sets values per side and per unit,
+   and each side's `"home"`. Engage replaces the `Standing` order and the scenarios' `"fight"` lists (a file with
+   `"fight"` says it's gone); `FightRangeShare` and `FightOutgunnedRatio` moved from settings to doctrine. Proof: the
+   15 seeds of `squadrons`, `flotilla` and Tsushima played the same as 5.0's baseline; the Jutland now fights by
+   doctrine (its first salvo at 14:26, Galatea at B109: history's at 14:28).
+2. **Fitness and falling out.** `Fitness` (`Sim.Combat`): speed, main guns, water against the reserve, list,
+   steering. A fighting captain judges it when his ship's condition changes; past doctrine's fall-out he leaves his
+   group (the line closes up) and goes `Home` (a captain's order): away from the enemy in sight, else for his side's
+   home, stopped within `HomeRadiusM`. His reason (`CaptainReason`) is in the snapshot, on the map beside the ship and
+   in the captain row, and on the bench's timeline. Steering lost counts only where doctrine falls out at all.
+   - Found on the way: the sightings' per-encounter grid grew when a ship running off spread the encounter (48-72
+     bytes, a fight's seconds); it's sized for 250 km now (4 KB a world), and the flotilla's allocation test skips the
+     seconds a ship leaves a group, as it does those a ship goes.
+   - After 1-2: `squadrons` ends by time 5 of 5 (Britain loses 2.6 of 4: cripples get away), `flotilla` 3 of 5,
+     Tsushima quiet 4, time 1; the Jutland loses 75 ships with 65 fallen out (own fire 4).
+   - Dev damage flags (`-wreck` and the rest) reach the dev world, not a `-scenario`'s (they're sent before it loads).
+     Left as it is.
+
 **5.1b The squadron's tactics.**
 
 - **Formations as lines of bearing** (the generalisation above) and the manoeuvres: turn together, turn in

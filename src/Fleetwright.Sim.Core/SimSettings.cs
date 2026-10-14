@@ -561,6 +561,9 @@ public sealed record SimSettings
     public double FightCompareM { get; init; } = 30_000;
     public double FightRallyShare { get; init; } = 0.75;
 
+    /// <summary>A ship out of the fight going home stops this near it, m (docs/battle/command.md 5.1a).</summary>
+    public double HomeRadiusM { get; init; } = 10_000;
+
     /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
     /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>
     public double[] FightTypeGuns { get; init; } = [1, 8, 1, 0.1, 0, 0];

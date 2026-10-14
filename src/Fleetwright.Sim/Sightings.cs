@@ -36,7 +36,10 @@ public sealed class Sightings
 
     // a look's ships (those in encounters), sorted by encounter: slot, side, encounter, position, their place in the
     // encounter's grid
-    int[] slot = [], enc = [], order = [], cellOf = [], cellStart = [], cellShips = [];
+    int[] slot = [], enc = [], order = [], cellOf = [], cellShips = [];
+    // an encounter's grid, per cell: sized for an encounter 250 km across (8 km cells), so one that spreads (a ship falling
+    // out and running) doesn't grow it in a fight; a sprawling one grows it once
+    int[] cellStart = new int[1024];
     byte[] side = [];
     double[] gx = [], gy = [];
     readonly int[] nearIdx = new int[16];

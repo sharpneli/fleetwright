@@ -449,6 +449,10 @@ public sealed class ShipsView
     /// <summary>Held by the player while its superior's orders for it have changed: a notice, "resume?" (the AI's).</summary>
     public bool[] Asked = [];
 
+    /// <summary>Why its captain does what he does, when it isn't simply his order (<c>Fleetwright.Sim.Ai.Captains.CaptainReason</c>:
+    /// fallen out, home), 0 for none (the AI's).</summary>
+    public byte[] Reason = [];
+
     /// <summary>Ships and the land (<see cref="Combat.Slide"/>): sliding along a coast (+1 land to port, -1 to
     /// starboard, 0 not), how often the backstop has put it back off the land; its minimum and standoff from the
     /// coast and the feeler's look-ahead, metres (the map's overlay).</summary>
@@ -553,6 +557,7 @@ public sealed class ShipsView
         Array.Resize(ref Fire, n);
         Array.Resize(ref FireTarget, n);
         Array.Resize(ref Asked, n);
+        Array.Resize(ref Reason, n);
         Array.Resize(ref LandSide, n);
         Array.Resize(ref Backstops, n);
         Array.Resize(ref MinClearanceM, n);

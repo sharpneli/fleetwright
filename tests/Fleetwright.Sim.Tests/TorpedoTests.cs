@@ -177,14 +177,22 @@ public class TorpedoTests(ITestOutputHelper output)
         var classes = ScenarioLoader.RequestClasses(s, w.Ships.Registry, designs);
         ScenarioLoader.Apply(s, w, ai, classes);
         w.AdvanceTo(s.Start + 16 * 60_000);   // closing, firing: pools at their size
-        // nothing a second, but in the seconds a ship goes (dropping one may allocate: the user, 2026-10-14)
+        // nothing a second, but in the seconds a ship goes or falls out of her group (one-off events may allocate: the
+        // user, 2026-10-14; falling out, docs/battle/command.md 5.1a)
         long allocated = 0;
+        int Grouped()
+        {
+            int n = 0;
+            for (int k = 0; k < w.Groups.Count; k++)
+                n += w.Groups[k].Members.Count;
+            return n;
+        }
         for (long t = 16 * 60; t < 30 * 60; t++)
         {
-            int ships = w.Ships.Store.Count;
+            int ships = w.Ships.Store.Count, grouped = Grouped();
             long before = GC.GetAllocatedBytesForCurrentThread();
             w.AdvanceTo(s.Start + (t + 1) * 1000);
-            if (w.Ships.Store.Count == ships)
+            if (w.Ships.Store.Count == ships && Grouped() == grouped)
                 allocated += GC.GetAllocatedBytesForCurrentThread() - before;
         }
         output.WriteLine($"torpedoes fired {w.Torpedoes.Fired}, hits {w.Torpedoes.Hits}; {allocated} bytes in 14 minutes");

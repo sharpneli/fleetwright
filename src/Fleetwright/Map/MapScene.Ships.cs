@@ -571,6 +571,11 @@ public sealed unsafe partial class MapScene
             ImGui.SameLine();
             ImGui.TextDisabled(target != 0 ? $"on {TargetLabel(s, target)}" : "the nearest enemy in sight; turns away when outgunned");
         }
+        else if (v.Reason[k] != 0)
+        {
+            ImGui.SameLine();
+            ImGui.TextColored(FlameColour, ReasonText(v.Reason[k]));
+        }
         else if (shown != 0)
         {
             ImGui.SameLine();

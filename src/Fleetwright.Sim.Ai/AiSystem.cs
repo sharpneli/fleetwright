@@ -42,7 +42,7 @@ public sealed class AiSystem : IWorldSystem
     {
         Seen = new SeenContacts();
         Doctrine = new Doctrine(world.Groups);
-        Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine);
+        Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine, homes);
         Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine);
         layers = [Admirals, Captains];
         nextTick = new long[layers.Length];

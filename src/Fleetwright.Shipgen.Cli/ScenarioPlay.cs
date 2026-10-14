@@ -50,7 +50,7 @@ static class ScenarioPlay
 
             w.Apply(Command.SetPlayerSide(-1));   // watching: every side the AI's
             w.Apply(Command.SetInterest(InterestKind.Others, InterestAction.Slow, fine));   // an encounter opening drops to the fine tier at once
-            var end = new ScenarioEnd(s, w);
+            var end = new ScenarioEnd(s, w, ai);
             var sw = Stopwatch.StartNew();
             try
             {
@@ -107,6 +107,14 @@ static class ScenarioPlay
                     LossKind.BrokeInTwo => "broke in two",
                     _ => "foundered",
                 } + (l.Other != 0 ? $" (last hit by {Name(l.Other)}{(end.SideOf(l.Other) == l.Side ? ", own fire" : "")})" : ""),
+                PlayEvent.FellOut => $"{SideName(l.Side)}'s {Name(l.Entity)} falls out: " + (Fleetwright.Sim.Ai.Captains.CaptainReason)l.Count switch
+                {
+                    Fleetwright.Sim.Ai.Captains.CaptainReason.OutSpeed => "too slow",
+                    Fleetwright.Sim.Ai.Captains.CaptainReason.OutGuns => "her main guns out",
+                    Fleetwright.Sim.Ai.Captains.CaptainReason.OutList => "listing",
+                    Fleetwright.Sim.Ai.Captains.CaptainReason.OutWater => "flooding",
+                    _ => "her steering gone",
+                },
                 PlayEvent.End => $"the end: {Why((EndReason)l.Count)}",
                 _ => l.Kind.ToString(),
             });

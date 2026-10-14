@@ -42,3 +42,10 @@ add what's found.
   the spawn above alone, at 1x and at 1,000x (does coarse escape?); then a release that also asks the course clear past
   the pocket (rails' own `LandClear` horizon), or keeps the side until the ship has passed the point it first met the
   coast. A test of it would bound how long any ship of the islands test stays off rails.
+
+## The app
+
+- [ ] Quitting while ship art is still baking crashes (`0xC0000005` in `SDL_BeginGPURenderPass`, from
+  `ShipArtLibrary.Draw` on the class registry's worker thread). Found 2026-10-14 (command 5.1a) by `-scenario=squadrons
+  -screenshot=60`: the screenshot exits at frame 60 while the scenario's classes still bake. The engine is disposed under
+  a bake in flight. To hunt it: have the exit wait for (or cancel) the registry's bakes before the device goes.

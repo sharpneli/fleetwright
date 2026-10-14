@@ -33,6 +33,35 @@ public enum CaptainOrder : byte
     /// <summary>Close to a range band and hold it with the main battery bearing; turn away when outgunned
     /// (docs/battle/fighting.md 4.2c).</summary>
     Fight,
+
+    /// <summary>Out of the fight (docs/battle/command.md 5.1a, falling out): away from the enemy in sight, else for his
+    /// side's home, at what she can make; stopped once there.</summary>
+    Home,
+}
+
+/// <summary>Why a captain does what he does, when it isn't simply his order (docs/battle/command.md "Reports and
+/// reasons"): shown on the ship's label, and read by his superiors.</summary>
+public enum CaptainReason : byte
+{
+    None,
+
+    /// <summary>Fallen out of the line: under doctrine's share of her speed.</summary>
+    OutSpeed,
+
+    /// <summary>Fallen out: under doctrine's share of her main guns.</summary>
+    OutGuns,
+
+    /// <summary>Fallen out: listing past doctrine's limit.</summary>
+    OutList,
+
+    /// <summary>Fallen out: past doctrine's share of her reserve buoyancy flooded.</summary>
+    OutWater,
+
+    /// <summary>Fallen out: her steering lost or jammed.</summary>
+    OutSteering,
+
+    /// <summary>Fallen out and home.</summary>
+    Home,
 }
 
 /// <summary>The captains (docs/battle/plan.md steps 2.3b and 2.6): one per ship that has been given an order, kept in
@@ -53,7 +82,7 @@ public enum CaptainOrder : byte
 /// ship is handed back or let go.</para>
 /// A captain whose ship is gone is dropped; one whose target is gone holds his course. His guns and Fight are in
 /// CaptainLayer.Fire.cs.</summary>
-public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounters, SeenContacts seen, Doctrine doctrine) : IAiLayer
+public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounters, SeenContacts seen, Doctrine doctrine, Vec3d?[] homes) : IAiLayer
 {
     struct Captain
     {
@@ -74,6 +103,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool FightAway;          // fighting: outgunned, turned away
         public bool Met;                // doctrine's Engage taken up in this encounter
         public long TorpedoMs;          // when he last fired torpedoes (0: never)
+        public CaptainReason Reason;    // why, when it isn't simply his order (fallen out)
+        public int FitVersion;          // his ship's condition's version when he last judged its fitness
     }
 
     Captain[] captains = new Captain[16];
@@ -138,7 +169,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         return period;
     }
 
-    static bool IsActive(in Captain c) => c.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.Fight || c.Watch;
+    static bool IsActive(in Captain c) => c.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.Fight or CaptainOrder.Home || c.Watch;
 
     /// <summary>A ship's captain's order, its target unit and who gave it; None if he has none.</summary>
     public (CaptainOrder Order, int Target, OrderSource Source) Of(int entity)
@@ -146,6 +177,9 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         int i = Find(entity);
         return i >= 0 ? (captains[i].Order, captains[i].Target, captains[i].Source) : (CaptainOrder.None, 0, OrderSource.Player);
     }
+
+    /// <summary>Why a ship's captain does what he does (fallen out, home), or None.</summary>
+    public CaptainReason ReasonOf(int entity) => Find(entity) is int i and >= 0 ? captains[i].Reason : CaptainReason.None;
 
     /// <summary>The speed asked of a ship (NaN if none) and the most it may ring (0: no limit).</summary>
     public (double AskedKn, double LimitKn) SpeedOf(int entity)
@@ -230,6 +264,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         if (source == OrderSource.Superior)
             cap.Asked = false;   // in his superior's hands again
         cap.Source = source;
+        cap.Reason = CaptainReason.None;   // ordered: doing what he's told
         switch (code)
         {
             case AiCommand.Course:
@@ -290,7 +325,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             return;
         ref var cap = ref captains[i];
         var own = ctx.Ships[slot];
-        if (cap.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.Fight or CaptainOrder.None)
+        if (cap.Order is CaptainOrder.Follow or CaptainOrder.Run or CaptainOrder.Station or CaptainOrder.Shadow or CaptainOrder.Fight or CaptainOrder.Home or CaptainOrder.None)
             (cap.Order, cap.Target, cap.AskedKn) = (own.Helm == Helm.Route ? CaptainOrder.Route : CaptainOrder.Course, 0, own.SpeedOrderKn);
         SetLimit(ctx, ref cap, own, 0);
         SetClearance(ctx, ref cap, entity, 0);
@@ -341,6 +376,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             if (cap.Order == CaptainOrder.Fight)
             {
                 FightThink(ctx, ref cap, own, slot);
+                continue;
+            }
+            if (cap.Order == CaptainOrder.Home)
+            {
+                HomeThink(ctx, ref cap, own);
                 continue;
             }
             int target = new Unit(cap.Target).ShipOf(groups);
@@ -476,6 +516,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             h.Add(c.FightAway);
             h.Add(c.Met);
             h.Add(c.TorpedoMs);
+            h.Add((int)c.Reason);
+            h.Add(c.FitVersion);
             c.Track?.Hash(ref h);
         }
     }
@@ -488,6 +530,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             int i = Find(v.Entity[k]);
             (v.Captain[k], v.CaptainTarget[k]) = i >= 0 ? ((byte)captains[i].Order, new Unit(captains[i].Target).ShipOf(groups)) : ((byte)0, 0);
             v.Asked[k] = i >= 0 && captains[i].Asked;
+            v.Reason[k] = i >= 0 ? (byte)captains[i].Reason : (byte)0;
             (v.Fire[k], v.FireTarget[k]) = i >= 0 ? ((byte)captains[i].Fire, captains[i].FireTarget) : ((byte)0, 0);
         }
     }
