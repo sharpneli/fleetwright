@@ -615,6 +615,14 @@ public sealed record SimSettings
     public double ScreenM { get; init; } = 5_000;
     public double ScreenMoveM { get; init; } = 1_000;
 
+    /// <summary>Tasks (docs/battle/command.md 5.1c): the task layer thinks every ForcePeriodMs while any unit on a task is
+    /// on the fine tick; a GoTo is there within ArrivedM; a Join takes its unit in within JoinM of it; a task a fight
+    /// interrupted goes on once its unit has seen no enemy for TaskResumeS. ms, m, m, s.</summary>
+    public int ForcePeriodMs { get; init; } = 10_000;
+    public double ArrivedM { get; init; } = 2_000;
+    public double JoinM { get; init; } = 3_000;
+    public double TaskResumeS { get; init; } = 300;
+
     /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
     /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>
     public double[] FightTypeGuns { get; init; } = [1, 8, 1, 0.1, 0, 0];

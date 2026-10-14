@@ -111,7 +111,7 @@ public sealed partial class CaptainLayer
     /// it first meets an enemy in sight in an encounter; it's armed again once it's out of encounters.</summary>
     void TakeUpStanding(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
-        if (cap.Order == CaptainOrder.Home || (Engage)doctrine.Of(own.Entity, own.Side, DoctrineField.Engage) != Engage.Fight)
+        if (cap.Order == CaptainOrder.Home || Tasks?.Avoids(Unit.Ship(own.Entity)) == true || (Engage)doctrine.Of(own.Entity, own.Side, DoctrineField.Engage) != Engage.Fight)
             return;
         if (encounters.Of(slot, own.Entity) == 0)
         {

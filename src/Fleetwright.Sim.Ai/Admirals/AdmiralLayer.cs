@@ -72,6 +72,9 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
 
     public bool Active => groups.Count > 0 || count > 0 || AnySuperiors();
 
+    /// <summary>The units' tasks: a withdrawing group doesn't take up doctrine's fight (set by the AI system).</summary>
+    internal Tasks.TaskLayer? Tasks { get; set; }
+
     /// <summary>How many notices admirals have raised (a group's notice going up).</summary>
     public int Notices { get; private set; }
 

@@ -205,6 +205,8 @@ public sealed unsafe partial class MapScene
             var held = InForce(gv, g);
             if (held != Detachment.InLine)
                 text += held == Detachment.Pinned ? " · detached" : " · held";
+            if (gv.Task[g] != 0)
+                text += $" · {TaskText(gv.Task[g], gv.TaskStatus[g])}";
             dl.AddText(at + new Vector2(1, 1), 0xC0000000, text);
             dl.AddText(at, ImGui.GetColorU32(gv.Asked[g] ? AskColor : GroupColor), gv.Asked[g] ? text + " !" : text);
         }
@@ -358,13 +360,21 @@ public sealed unsafe partial class MapScene
                     world.Send(GroupSystem.Add(id, e));
                 picked.Clear();
             }
-            // a placeholder until 5.2: this squadron screens the first picked ship's (docs/battle/command.md 5.1b)
+            // placeholders until 5.2: this squadron screens, or joins, the first picked ship's (docs/battle/command.md
+            // 5.1b-c); a squadron in a force joins the force
             if (gv.IndexOfShip(picked[0]) is int sg and >= 0 && sg != g)
             {
                 ImGui.SameLine();
                 if (ImGui.Button($"Screen {gv.Name[sg]}"))
                 {
                     world.Send(o.Screen(Unit.Group(id), Unit.Group(gv.Id[sg])));
+                    picked.Clear();
+                }
+                int joined = gv.Parent[sg] != 0 && gv.IndexOfGroup(gv.Parent[sg]) is int pf and >= 0 ? pf : sg;
+                ImGui.SameLine();
+                if (ImGui.Button($"Join {gv.Name[joined]}"))
+                {
+                    world.Send(o.Join(Unit.Group(id), Unit.Group(gv.Id[joined])));
                     picked.Clear();
                 }
             }
@@ -407,6 +417,19 @@ public sealed unsafe partial class MapScene
         }
         else if (f < 0)
             ImGui.TextDisabled("ctrl+click ships of other squadrons to form a force of the squadrons");
+    }
+
+    /// <summary>A task and how it stands, for a label (docs/battle/command.md 5.1c): "intercept", "go to: there".</summary>
+    static string TaskText(byte task, byte status)
+    {
+        string what = ((Sim.Ai.Tasks.TaskKind)task).ToString().ToLowerInvariant();
+        return (Sim.Ai.Tasks.TaskState)status switch
+        {
+            Sim.Ai.Tasks.TaskState.Engaged => what + ": fighting",
+            Sim.Ai.Tasks.TaskState.Done => what + ": done",
+            Sim.Ai.Tasks.TaskState.Cant => what + ": can't",
+            _ => what,
+        };
     }
 
     /// <summary>A group's formation and spacing, on the line so far.</summary>
@@ -456,6 +479,9 @@ public sealed unsafe partial class MapScene
         ImGui.SameLine();
         if (ImGui.SmallButton($"torpedo attack{id}"))
             world.Send(o.Attack(unit));   // a flotilla's, on the biggest in sight
+        ImGui.SameLine();
+        if (ImGui.SmallButton($"withdraw home{id}"))
+            world.Send(o.WithdrawHome(unit));
     }
 
     /// <summary>"Held by you", top right: every ship and group the player holds out of its line, with what's become of

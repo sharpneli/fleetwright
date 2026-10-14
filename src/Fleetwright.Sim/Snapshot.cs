@@ -365,6 +365,9 @@ public sealed class GroupsView
     /// <summary>A line of bearing's bearing (<see cref="GroupSystem.Group.BearingDeg"/>).</summary>
     public double[] BearingDeg = [];
 
+    /// <summary>Its task (the AI's <c>TaskKind</c>, 0 none) and how it stands (<c>TaskState</c>).</summary>
+    public byte[] Task = [], TaskStatus = [];
+
     /// <summary>Room for n groups and m members; grows only past the most yet.</summary>
     public void EnsureCapacity(int n, int m)
     {
@@ -378,6 +381,8 @@ public sealed class GroupsView
             Array.Resize(ref Formation, n);
             Array.Resize(ref SpacingM, n);
             Array.Resize(ref BearingDeg, n);
+            Array.Resize(ref Task, n);
+            Array.Resize(ref TaskStatus, n);
             Array.Resize(ref Guide, n);
             Array.Resize(ref GuideShip, n);
             Array.Resize(ref Parent, n);
@@ -456,6 +461,9 @@ public sealed class ShipsView
     /// <summary>Why its captain does what he does, when it isn't simply his order (<c>Fleetwright.Sim.Ai.Captains.CaptainReason</c>:
     /// fallen out, home), 0 for none (the AI's).</summary>
     public byte[] Reason = [];
+
+    /// <summary>A ship alone's task (the AI's <c>TaskKind</c>, 0 none) and how it stands (<c>TaskState</c>).</summary>
+    public byte[] Task = [], TaskStatus = [];
 
     /// <summary>Ships and the land (<see cref="Combat.Slide"/>): sliding along a coast (+1 land to port, -1 to
     /// starboard, 0 not), how often the backstop has put it back off the land; its minimum and standoff from the
@@ -562,6 +570,8 @@ public sealed class ShipsView
         Array.Resize(ref FireTarget, n);
         Array.Resize(ref Asked, n);
         Array.Resize(ref Reason, n);
+        Array.Resize(ref Task, n);
+        Array.Resize(ref TaskStatus, n);
         Array.Resize(ref LandSide, n);
         Array.Resize(ref Backstops, n);
         Array.Resize(ref MinClearanceM, n);

@@ -121,6 +121,9 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
 
     public int Count => count;
 
+    /// <summary>The units' tasks: a withdrawing ship doesn't take up doctrine's fight (set by the AI system).</summary>
+    internal Tasks.TaskLayer? Tasks { get; set; }
+
     /// <summary>How many notices captains have raised (a ship's notice going up): a UI shows the new ones.</summary>
     public int Notices { get; private set; }
 

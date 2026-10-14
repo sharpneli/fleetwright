@@ -24,6 +24,10 @@ public enum OrderSource : byte
 {
     Player,
     Superior,
+
+    /// <summary>The unit's own task (docs/battle/command.md 5.1c): its orders are the unit's own, as the player's are
+    /// (the chain sees them as <see cref="Player"/>'s), but the player's own order ends the task.</summary>
+    Task,
 }
 
 /// <summary>What the AI system understands: an order to a unit (<see cref="UnitOrders"/>). The command's Entity is the
@@ -117,6 +121,25 @@ public enum AiCommand : ushort
     /// A group keeps that far off its guide toward the enemy (ahead while none is in sight), and fights enemy torpedo
     /// craft closing on it until they're beaten off. To a ship alone, a station that far ahead of the unit.</summary>
     Screen,
+
+    /// <summary>A task (docs/battle/command.md 5.1c, <see cref="Tasks.TaskLayer"/>): steam to A (a packed lat/lon) at X kn (0:
+    /// as rung); done there.</summary>
+    GoTo,
+
+    /// <summary>A task: up and down the line from where the unit is to A (a packed lat/lon), round and round.</summary>
+    Patrol,
+
+    /// <summary>A task: steer to meet A (a ship's entity, as the navy holds the contact) at X kn (0: all the unit makes),
+    /// re-solved as the picture moves; done once it's in sight and within reach of a fight.</summary>
+    Intercept,
+
+    /// <summary>A task: close on A (an own unit) and join it: a ship its squadron, a group its force (one is formed of a
+    /// squadron alone); a unit detached from A goes back into its line.</summary>
+    Join,
+
+    /// <summary>A task: break off and go to A (a packed lat/lon; 0: the side's home), away from any enemy in sight first;
+    /// done there.</summary>
+    Withdraw,
 }
 
 /// <summary>A ship's fire order (docs/battle/fighting.md 4.2c).</summary>
@@ -195,6 +218,28 @@ public readonly struct UnitOrders(byte system)
     public Command Screen(Unit u, Unit screened, double distanceM = 0, OrderSource source = OrderSource.Player) =>
         Make(AiCommand.Screen, u, source, a: screened.Id, x: distanceM);
 
+    /// <summary>The task: steam to a point (at a speed, 0: as rung), done there.</summary>
+    public Command GoTo(Unit u, double latDeg, double lonDeg, double kn = 0, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.GoTo, u, source, a: Earth.PackLatLon(latDeg, lonDeg), x: kn);
+
+    /// <summary>The task: up and down the line from where the unit is to a point, until told otherwise.</summary>
+    public Command Patrol(Unit u, double latDeg, double lonDeg, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.Patrol, u, source, a: Earth.PackLatLon(latDeg, lonDeg));
+
+    /// <summary>The task: steer to meet a contact (a ship's entity), at a speed (0: all the unit makes).</summary>
+    public Command Intercept(Unit u, int contact, double kn = 0, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.Intercept, u, source, a: contact, x: kn);
+
+    /// <summary>The task: close on an own unit and join it.</summary>
+    public Command Join(Unit u, Unit with, OrderSource source = OrderSource.Player) => Make(AiCommand.Join, u, source, a: with.Id);
+
+    /// <summary>The task: break off and go to a point, away from any enemy first.</summary>
+    public Command Withdraw(Unit u, double latDeg, double lonDeg, OrderSource source = OrderSource.Player) =>
+        Make(AiCommand.Withdraw, u, source, a: Earth.PackLatLon(latDeg, lonDeg));
+
+    /// <summary>The task: break off and go to the side's home.</summary>
+    public Command WithdrawHome(Unit u, OrderSource source = OrderSource.Player) => Make(AiCommand.Withdraw, u, source);
+
     /// <summary>A flotilla's torpedo attack on a contact (a ship's entity; 0: the biggest in sight).</summary>
     public Command Attack(Unit u, int contact = 0, OrderSource source = OrderSource.Player) => Make(AiCommand.Attack, u, source, a: contact);
 
@@ -218,9 +263,9 @@ public readonly struct UnitOrders(byte system)
 
     public Command Clearance(Unit u, double metres) => Make(AiCommand.Clearance, u, OrderSource.Superior, x: metres);
 
-    public Command Detach(Unit u) => Make(AiCommand.Detach, u, OrderSource.Player);
+    public Command Detach(Unit u, OrderSource source = OrderSource.Player) => Make(AiCommand.Detach, u, source);
 
-    public Command Resume(Unit u) => Make(AiCommand.Resume, u, OrderSource.Player);
+    public Command Resume(Unit u, OrderSource source = OrderSource.Player) => Make(AiCommand.Resume, u, source);
 
     Command Make(AiCommand code, Unit u, OrderSource source, long a = 0, double x = 0, double y = 0) =>
         new(system, (ushort)code, u.Id, A: a, X: x, B: (int)source, Y: y);

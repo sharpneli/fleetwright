@@ -1,6 +1,7 @@
 using Fleetwright.Sim.Ai.Admirals;
 using Fleetwright.Sim.Ai.Captains;
 using Fleetwright.Sim.Ai.Knowledge;
+using Fleetwright.Sim.Ai.Tasks;
 using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Sim.Ai;
@@ -23,6 +24,9 @@ public sealed class AiSystem : IWorldSystem
     public AdmiralLayer Admirals { get; }
     public CaptainLayer Captains { get; }
 
+    /// <summary>The units' tasks (docs/battle/command.md 5.1c), the layer above the admirals.</summary>
+    public TaskLayer Tasks { get; }
+
     /// <summary>Each navy's contacts in sight, gridded for the layers' questions (not world state).</summary>
     public SeenContacts Seen { get; }
 
@@ -44,7 +48,9 @@ public sealed class AiSystem : IWorldSystem
         Doctrine = new Doctrine(world.Groups);
         Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine, homes);
         Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine);
-        layers = [Admirals, Captains];
+        Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains };
+        (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
+        layers = [Tasks, Admirals, Captains];
         nextTick = new long[layers.Length];
         tickGen = new int[layers.Length];
         Array.Fill(nextTick, -1);
@@ -58,9 +64,33 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Screen)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Withdraw)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
+        var code = (AiCommand)c.Code;
+        if (code is AiCommand.GoTo or AiCommand.Patrol or AiCommand.Intercept or AiCommand.Join or AiCommand.Withdraw)
+        {
+            Tasks.Order(Context(world), c);
+            WakeAll(world);
+            return;
+        }
+        if ((OrderSource)c.B == OrderSource.Task)
+        {
+            Route(world, c with { B = (int)OrderSource.Player }, u);   // a task's orders are the unit's own
+            return;
+        }
+        if ((OrderSource)c.B == OrderSource.Player && EndsTask(code))
+            Tasks.Overridden(u, c);
+        Route(world, c, u);
+    }
+
+    /// <summary>Whether the player's order to a unit ends its task: every order that moves it (a speed only changes the
+    /// task's), not its guns, doctrine or detachment.</summary>
+    static bool EndsTask(AiCommand code) => code is not (AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage or AiCommand.Doctrine
+        or AiCommand.SideDoctrine or AiCommand.Home or AiCommand.SpeedLimit or AiCommand.Clearance or AiCommand.Detach or AiCommand.Form);
+
+    void Route(World world, in Command c, Unit u)
+    {
         switch ((AiCommand)c.Code)
         {
             case AiCommand.Doctrine or AiCommand.SideDoctrine:
@@ -116,7 +146,7 @@ public sealed class AiSystem : IWorldSystem
         world.Schedule(new WorldTime(next), EventTier.Fine, layer - layers.Length, Id, (ushort)layer, tickGen[layer]);   // before the ship tick, the top layer first
     }
 
-    /// <summary>When a layer (top-down: admirals 0, captains 1) next thinks, ms of world time, or -1 (tests).</summary>
+    /// <summary>When a layer (top-down: tasks 0, admirals 1, captains 2) next thinks, ms of world time, or -1 (tests).</summary>
     internal long NextThinkMs(int layer) => nextTick[layer];
 
     public void Handle(World world, in SimEvent e)
