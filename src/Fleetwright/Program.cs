@@ -316,7 +316,7 @@ public static unsafe class Program
             // opens the others
             view ??= designerFlags ? "designer" : null;
             engine.Scene = new SceneSwitcher(view switch { "designer" => 1, "hitbox" => 2, "ship" => 3, "profile" => 4, _ => 0 },
-                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, selectShip) { KeepCameraOnce = mapGiven && scenarioArg != null, SelectOnce = scenarioArg != null ? selectShip : -1 }),
+                ("World", () => new Map.MapScene((SDL.SDL_GPUDevice*)device, world, mapCamera, shipArt, session, selectShip) { KeepCameraOnce = mapGiven && scenarioArg != null, SelectOnce = scenarioArg != null ? selectShip : -1 }),
                 ("Designer", () => early ?? MakeDesigner()),
                 ("Hitboxes", () => new HitView.HitboxScene((SDL.SDL_GPUDevice*)device, session, camera, show, hitRay)),
                 ("Ship", () => new ShipViewer((SDL.SDL_GPUDevice*)device, session, navy, era)),

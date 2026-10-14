@@ -32,11 +32,12 @@ public sealed unsafe partial class MapScene : IScene
     // the map's parts, timed into the world's instruments (WorldPerf.Ui, docs/battle/plan.md step 2.7b)
     readonly int probeLines, probeUpload, probeGroups, probeDrawList, probeOverlay, probeRender, probeUiShips, probeUiLabels, probeUiRest;
 
-    public MapScene(SDL_GPUDevice* device, WorldSession world, MapCamera camera, ShipArtLibrary art, int selectEntity = -1)
+    public MapScene(SDL_GPUDevice* device, WorldSession world, MapCamera camera, ShipArtLibrary art, DesignSession designer, int selectEntity = -1)
     {
         this.world = world;
         this.camera = camera;
         this.art = art;
+        this.designer = designer;
         selected = selectEntity;
         renderer = new GlobeRenderer(device);
         shipRenderer = new ShipBatchRenderer(device);

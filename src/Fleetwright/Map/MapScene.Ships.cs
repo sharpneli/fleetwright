@@ -13,8 +13,8 @@ namespace Fleetwright.Map;
 /// <summary>The world tab's ships (docs/battle/plan.md step 2.3a): drawn by <see cref="ShipBatchRenderer"/> (sprites
 /// close in, icons further out), selected by a click, ordered from a strip (course, telegraph) or by right-clicking the
 /// sea (steer for it; with shift, add a waypoint). Routes, the selection and short tracks behind each ship are lines.
-/// A dev panel spawns ships of a shipped design where you click, one or a group already in formation: the stand-in
-/// for missions placing forces. All of it
+/// A dev panel spawns ships where you click, one or a group already in formation, of the designer's design (the
+/// default) or a shipped one: the stand-in for missions placing forces. All of it
 /// reads the snapshot and changes the world only by commands.</summary>
 public sealed unsafe partial class MapScene
 {
@@ -29,8 +29,12 @@ public sealed unsafe partial class MapScene
     bool pressed;
 
     // the dev spawn: the design picked, its class id once requested, whether the next click places, and what it places:
-    // how many (more than one a group, each ship on its station), the formation, heading and speed
-    int designPick = -1, placeClass = -1;
+    // how many (more than one a group, each ship on its station), the formation, heading and speed. From the designer,
+    // the class follows the design: asked for again whenever it changes (a class is its design's hash, so an edit is a
+    // new class and ships already out keep theirs), from the first Place on, so a world that never spawns builds none
+    const int FromDesigner = -1;
+    readonly DesignSession designer;
+    int designPick = FromDesigner, placeClass = -1, placeVersion = -1;
     bool placing, keepPlacing;
     int spawnCount = 1, spawnFormation, spawnSpacing = 600, spawnHeading, spawnKn = 10, spawnSide;
     int courseEdit;
@@ -378,6 +382,18 @@ public sealed unsafe partial class MapScene
         Pick(PickShip(view, x, y));
     }
 
+    /// <summary>From the designer: the class of the designer's design as it is now, asked for once a change (a frame's
+    /// check is one int).</summary>
+    void FollowDesigner()
+    {
+        if (placeVersion == designer.DesignVersion)
+            return;
+        placeVersion = designer.DesignVersion;
+        placeClass = designer.Design is { } d ? world.Classes.Request(d) : -1;
+    }
+
+    string DesignerName() => designer.Design is { } d ? (d.Name ?? d.Id ?? "unnamed") + (designer.Edited ? " (edited)" : "") : "none";
+
     /// <summary>The dev panel's ships at a point: the guide there, the rest on their stations behind it (as the rails
     /// reckon them, GroupSystem.OffsetFromGuide), all on one heading and speed; more than one made a group.</summary>
     void Spawn(Vec3d at)
@@ -612,9 +628,21 @@ public sealed unsafe partial class MapScene
                 world.Truth = truth;
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("dev: every ship as it is, not the player's picture");
+            bool fromDesigner = designPick == FromDesigner;
+            if (fromDesigner && placeClass >= 0)
+                FollowDesigner();
             ImGui.SetNextItemWidth(170 * UiFonts.Scale);
-            if (ImGui.BeginCombo("##design", designPick >= 0 ? designNames[designPick] : "pick a design"))
+            if (ImGui.BeginCombo("##design", fromDesigner ? "From designer" : designNames[designPick]))
             {
+                if (ImGui.Selectable("From designer", fromDesigner) && !fromDesigner)
+                {
+                    designPick = FromDesigner;
+                    placeVersion = -1;
+                    FollowDesigner();
+                    placing = false;
+                }
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip($"the designer's design as it is now ({DesignerName()}); spawned after an edit, a new class");
                 for (int i = 0; i < designNames.Length; i++)
                     if (ImGui.Selectable(designNames[i], i == designPick))
                     {
@@ -625,12 +653,22 @@ public sealed unsafe partial class MapScene
                     }
                 ImGui.EndCombo();
             }
+            fromDesigner = designPick == FromDesigner;
+            if (fromDesigner && ImGui.IsItemHovered())
+                ImGui.SetTooltip(DesignerName());
             ImGui.SameLine();
             bool ready = placeClass >= 0 && world.Classes.IsReady(placeClass);
             string? error = ready ? world.Classes.ErrorOf(placeClass) : null;
-            ImGui.BeginDisabled(!ready || error != null);
+            // from the designer the first Place asks for the class; after that, as for a shipped design, it waits
+            // for the build
+            bool canPlace = fromDesigner && placeClass < 0 ? designer.Design != null : ready && error == null;
+            ImGui.BeginDisabled(!canPlace);
             if (ImGui.Button(placing ? "Click the sea..." : "Place"))
+            {
                 placing = !placing;
+                if (placing && fromDesigner)
+                    FollowDesigner();
+            }
             ImGui.EndDisabled();
             ImGui.SameLine();
             ImGui.Checkbox("keep placing", ref keepPlacing);
@@ -660,7 +698,9 @@ public sealed unsafe partial class MapScene
                 spawnSide = Math.Clamp(spawnSide, 0, 3);
             ImGui.SameLine();
             ImGui.TextDisabled("(different sides are opposing)");
-            if (placeClass >= 0 && !ready)
+            if (fromDesigner && designer.Design == null)
+                ImGui.TextColored(new Vector4(1, 0.4f, 0.3f, 1), "the designer has no design");
+            else if (placeClass >= 0 && !ready)
                 ImGui.TextDisabled("building...");
             else if (error != null)
                 ImGui.TextColored(new Vector4(1, 0.4f, 0.3f, 1), error.Split('\n')[0]);
