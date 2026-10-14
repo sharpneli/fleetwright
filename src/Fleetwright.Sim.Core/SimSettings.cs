@@ -561,6 +561,15 @@ public sealed record SimSettings
     public double FightCompareM { get; init; } = 30_000;
     public double FightRallyShare { get; init; } = 0.75;
 
+    /// <summary>A clear line of fire (docs/battle/command.md 5.1a): a gun's is foul while a friend is within FireFoulM of
+    /// where its shells come down (from FireFoulBeforeM short of the target to FireFoulM past it), a torpedo's while one
+    /// is within TorpedoFoulM of its track; neither counts the first FireFoulNearM off the shooter. m; the grid's cube.</summary>
+    public double FireFoulM { get; init; } = 400;
+    public double FireFoulBeforeM { get; init; } = 2_000;
+    public double FireFoulNearM { get; init; } = 300;
+    public double TorpedoFoulM { get; init; } = 400;
+    public double LineOfFireCellM { get; init; } = 5_000;
+
     /// <summary>A ship out of the fight going home stops this near it, m (docs/battle/command.md 5.1a).</summary>
     public double HomeRadiusM { get; init; } = 10_000;
 

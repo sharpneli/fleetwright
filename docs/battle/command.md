@@ -421,6 +421,12 @@ Bottom-up, so each layer is built on one that already behaves.
      Tsushima quiet 4, time 1; the Jutland loses 75 ships with 65 fallen out (own fire 4).
    - Dev damage flags (`-wreck` and the rest) reach the dev world, not a `-scenario`'s (they're sent before it loads).
      Left as it is.
+3. **A clear line of fire.** `LineOfFire` (`Captains/`): the ships off rails in a grid once a think, a segment checked
+   a cube at a time. A battery doesn't take (or keep) a target with a friend within `FireFoulM` of the fall (from
+   `FireFoulBeforeM` short of it to `FireFoulM` past it); torpedoes aren't fired with one within `TorpedoFoulM` of the
+   track out to its run; neither counts the first `FireFoulNearM` off the shooter. A friend is his side, or one at peace
+   with it. The Jutland's own-fire losses 4 → 1 (it plays in 107 s, from 124: fewer shells into its own lines);
+   `squadrons`, `flotilla` and Tsushima much as after piece 2.
 
 **5.1b The squadron's tactics.**
 

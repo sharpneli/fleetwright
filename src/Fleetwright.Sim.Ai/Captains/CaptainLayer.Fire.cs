@@ -36,6 +36,7 @@ namespace Fleetwright.Sim.Ai.Captains;
 public sealed partial class CaptainLayer
 {
     readonly List<int> fighters = new(64);
+    readonly LineOfFire lines = new();
     readonly List<(int Ship, double AsternM, double AbeamM)> unitLine = new(16);
     int fighting;          // ships with a battery engaged after the last pass
     bool fightingFine;     // any of them on the fine tick
@@ -122,6 +123,8 @@ public sealed partial class CaptainLayer
     // range (m), bearing from ahead and the rank of its type for a secondary battery
     int[] candEntity = new int[32], candRank = new int[32];
     double[] candRange = new double[32], candBearing = new double[32];
+    Vec3d[] candPos = new Vec3d[32];
+    sbyte[] candFoul = new sbyte[32];   // its line of fire: -1 not asked yet, 0 clear, 1 foul
     int candCount;
     readonly Dictionary<ShipClass, double[]> reaches = [];
 
@@ -180,6 +183,15 @@ public sealed partial class CaptainLayer
         }
         if (target == 0 || ctx.World.Torpedoes.Ready(ctx.World, own.Entity, target) == 0)
             return;
+        int ti = pic.IndexOf(target);
+        var (tq, tv, _) = pic.EstimateAt(ti, now, s);
+        if (!TorpedoAim.Intercept(own.Position, tq, tv, speed, out double toward, out _))
+            return;
+        var aim = own.Position;
+        var fwd = Earth.Forward(aim, toward);
+        Earth.Advance(ref aim, ref fwd, 1000);
+        if (lines.TorpedoFoul(ctx, own, aim, FastSetting(cls).RangeM))
+            return;   // a friend on the track: not now
         ctx.Issue(TorpedoSystem.Launch(own.Entity, target, s.TorpedoSpread));
         cap.TorpedoMs = now;
     }
@@ -267,6 +279,8 @@ public sealed partial class CaptainLayer
 
         int ci = current != 0 ? pic.IndexOf(current) : -1;
         bool keep = ci >= 0 && now - pic[ci].SeenMs <= s.FireLostMs;
+        if (keep && lines.GunsFoul(ctx, own, pic.EstimateAt(ci, now, s).Position))
+            keep = false;   // a friend in the way: not while he's there
         double curRange = 0;
         bool curBears = false;
         int curRank = 0;
@@ -285,7 +299,7 @@ public sealed partial class CaptainLayer
         for (int k = 0; k < candCount; k++)
         {
             double range = candRange[k];
-            if (range > reach)
+            if (range > reach || Foul(ctx, own, k))
                 continue;
             bool bears = Bears(cls, b, candBearing[k]);
             int rank = secondary ? candRank[k] : 0;
@@ -313,6 +327,7 @@ public sealed partial class CaptainLayer
         {
             int n = Math.Max(near.Length, candEntity.Length * 2);
             (candEntity, candRank, candRange, candBearing) = (new int[n], new int[n], new double[n], new double[n]);
+            (candPos, candFoul) = (new Vec3d[n], new sbyte[n]);
         }
         candCount = 0;
         foreach (int i in near)
@@ -320,8 +335,17 @@ public sealed partial class CaptainLayer
             var q = seen.Position(own.Side, i);
             (candEntity[candCount], candRange[candCount]) = (pic[i].Entity, (q - p).Length);
             (candBearing[candCount], candRank[candCount]) = (Earth.Bearing(p, q) - heading, Rank(pic[i].Type));
+            (candPos[candCount], candFoul[candCount]) = (q, -1);
             candCount++;
         }
+    }
+
+    /// <summary>Whether a candidate's line of fire is foul (a friend near the fall), asked once a think.</summary>
+    bool Foul(in AiContext ctx, ShipState own, int k)
+    {
+        if (candFoul[k] < 0)
+            candFoul[k] = (sbyte)(lines.GunsFoul(ctx, own, candPos[k]) ? 1 : 0);
+        return candFoul[k] == 1;
     }
 
     /// <summary>Whether any mount of a battery has a relative bearing in its arcs.</summary>
