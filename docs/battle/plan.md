@@ -109,8 +109,9 @@ them, and they fight), with what the first cut has. That era asks for things a W
 - **Misidentification.** A contact's class is what the observer could tell, and it can be wrong (a battlecruiser
   taken for a battleship). The picture already holds a classification "as far as known"; this is that, with errors.
 - **Signals, not radio orders.** Flags, searchlights and early wireless: an order takes time to pass down a line and
-  can be missed or misread (Jutland's signal failures). The player's command goes in at once; the group executes it
-  when the signal reaches it. The map mockup already shows orders in transit (◷). It's part of step 5.1.
+  can be missed or misread (Jutland's signal failures). The map mockup already shows orders in transit (◷). It's part
+  of step 5.1. (Changed 2026-10-14, `command.md` decision 6: the player's orders are instant for now, to look at
+  again in playtesting; the AI's own orders go by signal.)
 - **Fire control of its time.** Rangefinders by base length, plotting and clocks (Dreyer table, Argo clock), local
   control before director firing. `research/simulation/fire-control-research/` covers the era.
 - **Torpedo boats in numbers.** The 1890s navies built them by the hundred (the Jeune École), so a fight can have
@@ -1832,7 +1833,7 @@ hits, sinkings and duration. That's a kept test.
 
 ### 5. Command
 
-**Planned in detail in `docs/battle/command.md`** (proposed 2026-10-14, for the user to agree): intent down, reports
+**Planned in detail in `docs/battle/command.md`** (agreed with the user 2026-10-14): intent down, reports
 up, doctrine around; a side's commander above the admirals; tasks as more kinds of the one unit order; signals; and
 the end of a scenario, so that at the end of step 5 a scenario plays itself, AI against AI. Its steps are 5.0 (the
 bench: a scenario that ends), 5.1a-f (doctrine and the captains, the squadron, the force, the commander, signals, the

@@ -1,7 +1,7 @@
 # Plan: command (battle module step 5)
 
-2026-10-14. Status: **proposed, for the user to agree** ("Questions to settle" at the end); decisions 1-3 taken
-2026-10-14 ("Decisions"). It details step 5 of
+2026-10-14. Status: **agreed with the user 2026-10-14** ("Decisions" at the end, folded into the text), and iterated
+as its steps are built. It details step 5 of
 `docs/battle/plan.md` ("Command"), keeping its numbers (other docs cite 5.1 for signals, rules of engagement, flotilla
 attacks, breaking off and evasion, and 5.2 for the command UI) and splitting 5.1 into sessions. Each step starts with
 the usual investigation, and this doc is updated as they're built.
@@ -178,9 +178,12 @@ own value, else its group's, else the side's. A command sets it, so it's logged 
 | **Night** | Capital ships avoid action at night, or don't; torpedo craft attack at night, or don't | Avoid; attack |
 | **Evasion** | Under fire: steady, zigzag, chase salvos (the evasion research's styles), from what range | Steady inside 10 km, zigzag beyond if outgunned |
 
-The fields are where a navy's character goes later (the British fight at long range and turn away from torpedoes;
-the Germans turn away from the whole Grand Fleet; the Japanese at Tsushima close). Presets by navy and year are a
-later fine-tune (question 4).
+**Presets, defined by values** (decision 7): a preset is a named set of these fields' values, as data
+(`Content/Sim/doctrine.json`, beside the settings), never code. A side takes a preset by name in the scenario
+(`"doctrine": { "Britain": "default" }`), and a side or a unit overrides single fields over it. v0 ships one preset,
+`default`, with the values above. The fields are where a navy's character goes later (the British fight at long range
+and turn away from torpedoes; the Germans turn away from the whole Grand Fleet; the Japanese at Tsushima close): more
+presets by navy and year, from the research, are a fine-tune.
 
 ### Fitness: what a ship can still do
 
@@ -216,9 +219,12 @@ out of the player's line, a squadron out of contact) become 2.6's notices, which
 
 ### Signals: orders take time
 
-From plan.md's era list ("Signals, not radio orders"): **the player's command goes in at once; the unit executes it
-when the signal reaches it.** The same for the AI's orders. So an order down the chain has a sent time and a
-received time per unit, and between the two the unit carries on with what it had.
+From plan.md's era list ("Signals, not radio orders"), changed by decision 6: **the player's orders are instant;
+the AI's go by signal.** An order the player gives reaches the unit, and is handed down its tree, at once: it's
+easier for the player, and it's to be looked at again in playtesting. An order an AI layer makes on its own (a
+commander's task, an admiral's turn or attack, on either side, the player's own side's automated commander too) has a
+sent time and a received time per unit, and between the two the unit carries on with what it had. The AI is the
+slower of the two by this; playtesting says whether the player's orders should come to take time as well.
 
 - **Each admiral flies his flag in a ship** (the guide by default; the scenario can name one). Signals go from the
   flagship.
@@ -241,8 +247,10 @@ received time per unit, and between the two the unit carries on with what it had
 The scenario gives each side, besides its forces:
 
 - **Aims,** a small typed set (the same types the missions' objectives use, `docs/missions/plan.md`, so the checks are
-  one implementation):
-  - **Destroy** (a side's ships, a group, a type);
+  one implementation). **v0 has one: destroy everyone** (decision 8): sink every enemy ship. It's met when no enemy
+  is left afloat in the area, and given up when the side breaks off. The rest come one at a time, when a scenario
+  needs them, as more kinds of the same aim:
+  - **Destroy** narrowed (a side's ships, a group, a type);
   - **Reach** (an area, or out of the map by an edge);
   - **Protect** (a unit);
   - **Hold** (an area until a time);
@@ -252,6 +260,12 @@ The scenario gives each side, besides its forces:
 - **A plan,** optionally: each top unit's opening task (Hipper sweeps north, Scheer follows fifty miles astern; Beatty
   sweeps east and joins Jellicoe at a rendezvous). The commander starts from it and changes it when the picture does.
   Without one he makes his own from the aims.
+
+**Who is the commander** (decisions 4 and 5): the player is their side's commander. The AI commander is off for the
+player's side by default, and the player can switch it on, for the whole side or a unit ("automate"; "leave it to
+the admiral"), and off again. The admirals and captains under the player carry out their tasks and doctrine either
+way. For every other side the AI commander is on. For now, the dev can switch which side is the player's (the dev
+toggle, `Command.SetPlayerSide`, and a scenario with no `"player"` to watch both).
 
 The commander, v0, rule by rule:
 
@@ -300,10 +314,12 @@ Before any AI is written, the instrument that says whether it works:
   sight, first salvo, each loss, each break-off, the end and why) and the result; `--seeds N` runs N seeds and prints
   the spread (losses, duration, how often each side's aims were met).
 - **`"until"`, `"home"` and `"aims"`** in the scenario file (aims are read and checked here, and nothing acts on them
-  yet); the four scenarios given them.
+  yet); the four scenarios given them. v0's one aim is destroy everyone (decision 8), so `"aims"` is that for every
+  side until a scenario needs another.
 - **What it shows now** is the baseline: `squadrons`, `flotilla` and `tsushima` fight to a stalemate or a sinking and
   stop by time; the Jutland stops by time without meeting. Each later step moves those numbers.
-- **The app:** a side may be "the AI's" (the player watching): the dev toggle and a scenario with no `"player"`.
+- **The app:** a side may be "the AI's" (the player watching): the dev toggle to switch the player's side, and a
+  scenario with no `"player"`.
 
 ### 5.1 Captains and admirals
 
@@ -311,8 +327,9 @@ Bottom-up, so each layer is built on one that already behaves.
 
 **5.1a Doctrine, fitness and the captain's judgement.**
 
-- **Doctrine** as above, as world state with its command (`SetDoctrine(unit, field, value)`) and its scenario field
-  (`"doctrine"` per side and per unit). `Standing` and the `"fight"` list become doctrine's Engage.
+- **Doctrine** as above, as world state with its command (`SetDoctrine(unit, field, value)`), its presets as values
+  in `Content/Sim/doctrine.json` (`default` only, decision 7) and its scenario field (`"doctrine"`: a preset per side,
+  fields over it per side and per unit). `Standing` and the `"fight"` list become doctrine's Engage.
 - **Fitness** (`Sim.Combat`), and the seen fitness of enemies.
 - **Falling out:** a ship past doctrine's fall out tells its admiral; he detaches it from the line (the line closes
   up, as a nudged ship's does), and it steers away from the enemy and goes home at the speed it has, firing at will
@@ -320,7 +337,7 @@ Bottom-up, so each layer is built on one that already behaves.
 - **Evasion under fire,** from `research/simulation/evasion-research.md` §2 and §10: the styles as captains' behaviours
   about a base course (steady, zigzag, chase salvos), chosen by doctrine, held steady for a torpedo launch's last 30 s.
   A ship on station evades only as its line does (a squadron zigzags together, 5.1b).
-- **Torpedoes seen and avoided:** a torpedo's wake is seen from a ship within a short range by day (a placeholder,
+- **Torpedoes seen and avoided** (decision 10: captains try already): a torpedo's wake is seen from a ship within a short range by day (a placeholder,
   `TorpedoSeenM`, from the light and the sea), into the picture as a track; a captain who sees one bearing on his ship
   turns to comb it (bow or stern on). The admiral's turn-away from a whole attack is 5.1b.
 - **Reasons** in the snapshot, shown on the ship's label.
@@ -370,14 +387,16 @@ Bottom-up, so each layer is built on one that already behaves.
 
 - **The layer** (`Sim.Ai/Commanders/`), one commander per side with forces, thinking slowly and on events.
 - **Aims, home, plan** as above, the plan's opening tasks given at the start.
+- **On or off per side:** off for the player's side by default, switched on (the whole side or a unit) and off by a
+  logged command; the dev's side switch (decisions 4 and 5).
 - **His rules** (no contact, contact, battle, the balance turns, done), each a state with hysteresis and a reason.
 - **Night:** heavy ships avoid action by night (Withdraw from contact, keep in touch by scouts), flotillas Attack by
   doctrine. The sighting already shortens the night's reach (3.2c); the lights of night fighting (searchlights,
   star shell) aren't in yet.
 - **The Jutland's plans:** Hipper's sweep north with Scheer astern, Beatty's sweep east and rendezvous, Jellicoe's
-  approach, from the scenario's history; the aims: Germany to destroy an isolated part of the Grand Fleet and avoid the
-  whole of it, Britain to destroy the High Seas Fleet; both homes. Tsushima: Russia to reach Vladivostok (out of the
-  map by the north-east), Japan to destroy the Russian squadron.
+  approach, from the scenario's history, with both homes. Every side's aim is v0's destroy everyone (decision 8); the
+  aims history had (Germany to destroy an isolated part of the Grand Fleet and avoid the whole of it; Russia at
+  Tsushima to reach Vladivostok) come with Avoid and Reach, when a scenario asks for them.
 - **Checked:** the Jutland meets (the scouts, then the battlecruisers) in most seeds; a side that's outmatched declines
   and goes home; every unit is on a task or home at the end (nothing idle); the commanders cost little (measured).
 
@@ -387,7 +406,10 @@ Bottom-up, so each layer is built on one that already behaves.
   the snapshot (sent, received, executing) for the map's "◷".
 - **Command passing** when a flagship is lost or her signals are wrecked (her bridge or wireless office, placeholders
   until the damage model names them).
-- **The player's orders** go through the same signals: the player commands from a flagship too.
+- **The player's orders are instant** (decision 6): they skip the signals, down the whole tree. Only the AI's own
+  orders travel, on both sides. Revisited in playtesting.
+- **Tuned twice** (decision 9): the tactics of 5.1a-d are tuned without signals first, then again with them, since the
+  delays are the trickier part.
 - **Checked:** a column's turn signalled by flag reaches the rear ship after the hoist and the repeats; a missed signal
   leaves a squadron on its old course until it's repeated (the 5th Battle Squadron at Jutland, in a test); a sunk
   flagship's squadron carries on by doctrine and then takes the next admiral's orders; replays hold (draws from a
@@ -429,7 +451,7 @@ As the layers already are:
 | Layer | What's new |
 |---|---|
 | `Sim.Combat` | `Fitness` (a ship's, and an enemy's as seen) |
-| `Sim` (world) | Doctrine's store and command; formations as lines of bearing in `GroupSystem`; signals in transit (world state, since the player's orders go through them too) |
+| `Sim` (world) | Doctrine's store and command; formations as lines of bearing in `GroupSystem`; signals in transit (world state: the AI's orders, on both sides) |
 | `Sim.Ai` | `Commanders/` (the side's commander, aims, plans); the tasks in `AdmiralLayer` and `CaptainLayer`; `Knowledge/` the tactical picture and strength; `Captains/` evasion, falling out, combing tracks; `Admirals/` manoeuvres, the deployment, the flotilla's attack |
 | `Sim.Missions` | `"aims"`, `"home"`, `"plan"`, `"doctrine"`, `"until"`; the end and the result |
 | the exe | Placeholders per step on the world tab; 5.2's UI |
@@ -482,25 +504,6 @@ guessed numbers and simple rules, and this research tunes them later, in a fine-
 - **Misread signals and delayed reports** (deepenings of 5.1e and of the picture).
 - **An AI that plays well:** a later fine-tune pass.
 
-## Questions to settle (for the user)
-
-1. **The side's commander is a layer of its own** (`Commanders/`, above the admirals), rather than the admiral of a
-   side-wide force: the Battlecruiser Fleet isn't on station on the Grand Fleet, it's on a task. Agree?
-2. **Who commands the player's side:** proposed, the player is its commander (the AI commander is off for it), while
-   the admirals and captains below still carry out their tasks and doctrine; the player can hand a unit, or the whole
-   side, to the AI ("leave it to the admiral"). The AI commander is on for every other side, and for the player's
-   when watching. Or should the AI commander run the player's side by default, the player stepping in?
-3. **Signals delay the player's orders too** (plan.md's era list says so). Keep it? (Reports up: settled, decision
-   2.)
-4. **Doctrine per side in the scenario now,** navy presets by year later (the fine-tune). Or presets now?
-5. **Aims, home and a plan in the scenario file now** (step 5.0), the missions' objectives building on them in 6.1
-   (the same types, one check). Agree, or should 6.1's mission file come first?
-6. **The order:** 5.0, 5.1a-f, then 5.2. Signals (5.1e) after the layers they delay, so the tactics are tuned
-   once without them and again with them; or signals first, so nothing is tuned twice?
-7. **Torpedo tracks seen** by a short range by day (a placeholder) to let ships comb them in 5.1a, or leave torpedo
-   evasion to a later pass?
-8. ~~The self-play bar~~: settled, decision 1.
-
 ## Decisions
 
 The user's, 2026-10-14:
@@ -511,3 +514,16 @@ The user's, 2026-10-14:
    source, and superiors read them through one place, so delays can come later ("Signals").
 3. **The research goes into `research/REQUESTS.md`,** but the first version is built with basic numbers and rules,
    without waiting for it. The research is for a fine-tuning pass.
+
+The user's, 2026-10-14, on the questions:
+
+4. **The side's commander is a layer of its own** (`Commanders/`). The player is their side's commander, and can also
+   automate it; for now the dev can switch which side is the player's.
+5. **The AI commander is off for the player's side by default,** and can be switched on.
+6. **Signals are instant for the player** (a change from plan.md's era list): easier for the player for now, to iterate
+   in playtesting. The AI's own orders still go by signal.
+7. **Doctrine as presets, defined by values:** named sets of the fields' values, as data, overridden per side and unit.
+8. **Aims in the scenario file, starting with "destroy everyone":** the other kinds come when scenarios need them.
+9. **Tune twice:** signals (5.1e) come after the layers they delay, since the delay is the trickier part; the tactics
+   are tuned without them, then with them.
+10. **Captains attempt torpedo evasion already** in 5.1a (wakes seen at short range, combing the tracks).
