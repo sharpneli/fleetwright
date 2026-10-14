@@ -631,6 +631,14 @@ public sealed record SimSettings
     public double SearchSpacingShare { get; init; } = 0.9;
     public double CoverM { get; init; } = 20_000;
 
+    /// <summary>The tactical picture (docs/battle/command.md 5.1c): enemy contacts within TacticalGapM of each other are one
+    /// group. A force deploys (doctrine's Deploy) when the enemy's main body is within DeployM of its guide; it's deployed
+    /// when every ship is within DeployFormedM of her station in the one line, or after DeployMaxMs. m, m, m, ms.</summary>
+    public double TacticalGapM { get; init; } = 6_000;
+    public double DeployM { get; init; } = 30_000;
+    public double DeployFormedM { get; init; } = 1_000;
+    public long DeployMaxMs { get; init; } = 1_800_000;
+
     /// <summary>A contact not yet made out to its class counts for this many heavy guns (12" guns' worth: guns ×
     /// (calibre / 305 mm)³), by <c>ShipType</c> (unknown, capital, cruiser, destroyer, small, merchant).</summary>
     public double[] FightTypeGuns { get; init; } = [1, 8, 1, 0.1, 0, 0];

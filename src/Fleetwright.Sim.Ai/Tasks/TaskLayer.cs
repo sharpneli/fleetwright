@@ -243,6 +243,13 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Vec3d?[] ho
         if (t.Kind == TaskKind.Scout && t.ShadowOf == 0 && Outmatched(ctx, ref t, u, guide))
             return;
 
+        // a force deploying into its line of battle: the task waits for the fight
+        if (u.IsGroup && Admirals!.Deploying(u.GroupId))
+        {
+            (t.Status, t.Issued, t.QuietMs) = (TaskState.Engaged, false, now);
+            return;
+        }
+
         // a fight doctrine took up (or the captain's own: falling out) interrupts it
         var order = u.IsGroup ? Admirals!.Of(u.GroupId).Order : Captains!.Of(u.Entity).Order;
         if (order is CaptainOrder.Fight or CaptainOrder.Home && !(t.Kind == TaskKind.Withdraw && t.RunFrom != 0))

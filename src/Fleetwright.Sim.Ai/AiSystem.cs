@@ -30,6 +30,9 @@ public sealed class AiSystem : IWorldSystem
     /// <summary>Each navy's contacts in sight, gridded for the layers' questions (not world state).</summary>
     public SeenContacts Seen { get; }
 
+    /// <summary>The enemy as each navy sees it: groups and their strength (docs/battle/command.md 5.1c; not world state).</summary>
+    public TacticalPicture Tactical { get; }
+
     /// <summary>Every side's and unit's standing rules (docs/battle/command.md "Doctrine").</summary>
     public Doctrine Doctrine { get; }
 
@@ -48,6 +51,8 @@ public sealed class AiSystem : IWorldSystem
         Doctrine = new Doctrine(world.Groups);
         Captains = new CaptainLayer(world.Groups, world.Encounters, Seen, Doctrine, homes);
         Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine);
+        Tactical = new TacticalPicture(Seen);
+        Admirals.Tactical = Tactical;
         Tasks = new TaskLayer(world.Groups, Seen, homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine };
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
         layers = [Tasks, Admirals, Captains];

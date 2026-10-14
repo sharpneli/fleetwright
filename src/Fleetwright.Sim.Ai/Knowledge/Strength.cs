@@ -24,20 +24,22 @@ public static class Strength
     /// <summary>What a navy sees within a radius of a point: every contact in sight there, as it's taken.</summary>
     public static double Seen(World world, SeenContacts seen, byte side, Vec3d at, double radiusM)
     {
-        var s = world.Settings;
         var pic = world.Sightings.Of(side);
-        var registry = world.Ships.Registry;
         double theirs = 0;
         if (pic == null)
             return 0;
         foreach (int i in seen.Near(world, side, at, radiusM))
-        {
-            ref readonly var c = ref pic[i];
-            theirs += c.Level >= ContactLevel.Class && c.TakenFor >= 0 && registry.Get(c.TakenFor) is { } taken
-                ? Of(taken)
-                : s.FightTypeGuns[Math.Min((int)c.Type, s.FightTypeGuns.Length - 1)];
-        }
+            theirs += Of(world, pic[i]);
         return theirs;
+    }
+
+    /// <summary>A contact as its navy takes it: the class it's taken for once made out, else by its type.</summary>
+    public static double Of(World world, in Contact c)
+    {
+        var s = world.Settings;
+        return c.Level >= ContactLevel.Class && c.TakenFor >= 0 && world.Ships.Registry.Get(c.TakenFor) is { } taken
+            ? Of(taken)
+            : s.FightTypeGuns[Math.Min((int)c.Type, s.FightTypeGuns.Length - 1)];
     }
 
     /// <summary>An own ship's unit: the line of the outermost group she moves with, or herself alone.</summary>

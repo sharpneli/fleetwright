@@ -31,6 +31,8 @@
     // torpedo craft in a group attack "together" (gain a position ahead of the target's beam, run in, fire on one signal,
     // turn away together) or "alone" (each boat on her own); a flotilla that has lost half its boats is beaten off
     "TorpedoAttack": "together",
-    "AttackBreakOffShare": 0.5
+    "AttackBreakOffShare": 0.5,
+    // a force in a cruising order (columns abreast) meeting the enemy's main body forms one line of battle across his course
+    "Deploy": 1
   }
 }

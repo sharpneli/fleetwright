@@ -58,6 +58,10 @@ public enum DoctrineField : byte
     /// <summary>A flotilla attacking together is beaten off (gives up its attack and runs) once this share of the boats it
     /// came in with is gone from its line.</summary>
     AttackBreakOffShare,
+
+    /// <summary>Whether a force in a cruising order deploys into one line of battle on meeting the enemy's main body (1),
+    /// or doesn't (0) (docs/battle/command.md 5.1c).</summary>
+    Deploy,
 }
 
 /// <summary>Doctrine's Engage: carry on with the orders given (firing at will), or Fight (and turn away when outgunned).</summary>
@@ -103,7 +107,7 @@ public enum TorpedoUse : byte
 /// per unit; a command sets one value, so it's logged and replays. AI state: only captains and admirals read it.</summary>
 public sealed class Doctrine(GroupSystem groups)
 {
-    public const int FieldCount = (int)DoctrineField.AttackBreakOffShare + 1;
+    public const int FieldCount = (int)DoctrineField.Deploy + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -123,6 +127,7 @@ public sealed class Doctrine(GroupSystem groups)
         DoctrineField.TurnAwayDeg => 0,
         DoctrineField.TorpedoAttack => (double)Ai.TorpedoAttack.Alone,
         DoctrineField.AttackBreakOffShare => 1,   // never
+        DoctrineField.Deploy => 0,
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 

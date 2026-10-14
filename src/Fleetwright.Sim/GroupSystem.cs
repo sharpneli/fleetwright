@@ -56,6 +56,7 @@ public enum GroupCommand : ushort
     DetachGroup,
     EnterAlongside,
     TurnTogether,
+    Reverse,
 }
 
 /// <summary>The world's groups (docs/battle/plan.md steps 2.4 and 2.6): units that move together, in order, with a
@@ -544,6 +545,10 @@ public sealed class GroupSystem : IWorldSystem
     /// (docs/battle/command.md 5.1b).</summary>
     public static Command TurnTogether(int groupId, double deg) => new(Id, (ushort)GroupCommand.TurnTogether, A: groupId, X: deg);
 
+    /// <summary>A group's members in the reverse order: its far end guides (a force deploying on its other wing,
+    /// docs/battle/command.md 5.1c).</summary>
+    public static Command Reverse(int groupId) => new(Id, (ushort)GroupCommand.Reverse, A: groupId);
+
     /// <summary>A group gone: its members are free (a force's groups stay squadrons and forces of their own), and it
     /// leaves its force.</summary>
     public static Command Disband(int groupId) => new(Id, (ushort)GroupCommand.Disband, A: groupId);
@@ -624,6 +629,9 @@ public sealed class GroupSystem : IWorldSystem
             case GroupCommand.SetFormation:
                 if (Get((int)c.A) is { } f)
                     (f.Formation, f.SpacingM, f.BearingDeg) = (Formed(c.B), Spacing(c.X), (Formation)c.B == Formation.Bearing ? Wrap360(c.Y) : 0);
+                break;
+            case GroupCommand.Reverse:
+                Get((int)c.A)?.Reverse();
                 break;
             case GroupCommand.TurnTogether:
                 if (Get((int)c.A) is { } turned)

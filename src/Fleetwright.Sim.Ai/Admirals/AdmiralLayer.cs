@@ -63,6 +63,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public double ScreenAstern, ScreenAbeam;
         public int ScreenFight;         // the enemy torpedo craft he's counter-attacking (0: none)
         public long ScreenThreatMs;     // when he last saw one closing
+        public long DeployMs;           // deploying into a line of battle since (AdmiralLayer.Deploy.cs; 0: not)
+        public bool Deployed;           // deployed in this encounter
     }
 
     Admiral[] admirals = new Admiral[8];
@@ -174,7 +176,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         if (source == OrderSource.Player)
             Gather(ctx, g);
         a.Source = source;
-        (a.Turning, a.Away) = (false, false);   // a new order ends a turn under way, and a turn-away
+        (a.Turning, a.Away, a.DeployMs) = (false, false, 0);   // a new order ends a turn under way, a turn-away, a deployment
 
         if (code == AiCommand.TurnTogether)
         {
@@ -308,7 +310,11 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             }
             if (a.HandedTo != to.Id)
                 HandOver(ctx, a, to);
-            TakeUpStanding(ctx, g, a, lead);
+            bool deploying = DeployStep(ctx, g, a, lead);
+            if (deploying && a.DeployMs == ctx.NowMs)
+                continue;   // just begun: the line is given its stations, and its guide its course, next think
+            if (!deploying)
+                TakeUpStanding(ctx, g, a, lead);
             if (TurnAway(ctx, g, a, lead))
                 continue;   // turning together: no stations until it's round
             ScreenStep(ctx, g, a);
@@ -329,7 +335,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 }
                 else
                 {
-                    var (target, astern, abeam) = groups.StationOfGroup(g, i);
+                    var (target, astern, abeam) = a.DeployMs != 0 ? DeployStation(g, i) : groups.StationOfGroup(g, i);
                     if (target != 0 && !Holds(members[i], target, astern, abeam))
                         ctx.Issue(ctx.Orders.Station(Unit.Group(members[i]), Unit.Ship(target), astern, abeam, OrderSource.Superior));
                 }
@@ -571,6 +577,11 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 h.Add(a.AwayDeg);
                 h.Add(a.AwayCourse);
                 h.Add(a.ThreatMs);
+            }
+            if (a.DeployMs != 0 || a.Deployed)
+            {
+                h.Add(a.DeployMs);
+                h.Add(a.Deployed);
             }
             if (a.Order == CaptainOrder.Screen)
             {
