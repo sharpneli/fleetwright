@@ -13,8 +13,9 @@ in flight), 4.2b (mounts, fire control and spotting) and 4.2c (ordering fire: fi
 admirals' distribution, Fight) are done (2026-10-13), 4.3a (what a hit does: terminal, effects, functions, the
 `DamageSystem`, `shipgen hits`), 4.3b (fire, flooding and going down: `Flooding`, `Fires`, loss by buoyancy, what the
 enemy sees, `shipgen flood`) and 4.4 (damage seen: sinking, trim and list drawn through the height map, turret tints,
-scorches, fires, wrecks, the damage report) are done (2026-10-14): the first pass of fighting is complete, and 4.5's
-deepenings and 4.6 (torpedoes) come next.
+scorches, fires, wrecks, the damage report) are done (2026-10-14): the first pass of fighting is complete, and 4.6
+(torpedoes and collisions) is next. 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence (the user,
+2026-10-14): a later fine-tune tier of their own, once most of the other components are in.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -116,7 +117,7 @@ them, and they fight), with what the first cut has. That era asks for things a W
   query (step 4.6).
 - **Mines are critical** (the user, 2026-10-12). Mines sank the dreadnought *Audacious* in 1914 and the three
   pre-dreadnoughts lost at the Dardanelles on 18 March 1915. Fields laid by minelayers, swept by sweepers, known or
-  not in each navy's picture (step 4.7).
+  not in each navy's picture (step 4.7, built in the later fine-tune tier with 4.5: `fighting.md` decision 14).
 - **Coal.** Endurance, coaling and the smoke that comes with it. Oil firing (from ~1912) makes less smoke and needs
   fewer stokers. This sits in rails fuel and in the smoke model, and isn't a step of its own.
 
@@ -1788,7 +1789,8 @@ more detailed way.
 
 **4.4 Damage on the sprites** ("Damage on the sprites" below), and a damage report through the watch list.
 
-**4.5 Penetration and the systems.** Penetration, and the systems' dependency graph
+**4.5 Penetration and the systems** (moved out of the sequence 2026-10-14: a later fine-tune tier, `fighting.md`
+decision 13). Penetration, and the systems' dependency graph
 (`research/simulation/damage-model-research.md` §8-9). Then, area by area, each its own small step checked against
 the previous one: leaks through bulkheads and decks, free surface, `sinking.py`'s non-linear settling, pumping and
 counter-flooding, a plunge or capsize that plays out.
@@ -1797,7 +1799,8 @@ counter-flooding, a plunge or capsize that plays out.
 waterline go into the same damage. Torpedo boat and destroyer attacks need them. Then hull against hull: collisions
 and ramming, damage from where the stems struck.
 
-**4.7 Mines.**
+**4.7 Mines** (moved out of the sequence 2026-10-14: built separately in the later tier with 4.5, `fighting.md`
+decision 14).
 - **Fields** are static areas on the sphere with a density, a depth and an owner. They're laid by a mission's file or
   by minelayers at sea (mine stowage and rails are a shipgen export item, `docs/shipgen/TODO.md`), and thinned by
   sweepers.
@@ -2203,7 +2206,8 @@ The user's, 2026-10-12, on the module:
    on a modern machine; if we can't hit it, we'll do brutal ECS tricks.
 6. **Compiled ships on disk,** in an internal cache, before release ("Compiled ships on disk").
 7. **The world is a tab** on the top bar for now, the default one, so the game opens on the world (step 1.2).
-8. **Mines are in the module:** they're critical (step 4.7).
+8. **Mines are in the module:** they're critical (step 4.7). Built separately in a later tier with 4.5's deepenings
+   (the user, 2026-10-14).
 9. **Submarines come after the module and before the campaign,** not with aviation in 2.0.
 10. **The whole era is the goal:** pre-dreadnoughts to early missile ships. The 1890-1925 focus is only what comes
     first. It's built one bite at a time, and each release is a fully working cut that the next one expands ("The

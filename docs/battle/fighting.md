@@ -2,9 +2,11 @@
 
 2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
 as its steps are built. **4.0, 4.1, 4.2a, 4.2b and 4.2c done 2026-10-13, 4.3a (what a hit does), 4.3b (fire,
-flooding and going down) and 4.4 (damage seen) 2026-10-14: the first pass is done; next, 4.5's deepenings as playing
-asks for them, and 4.6 torpedoes.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
-4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
+flooding and going down) and 4.4 (damage seen) 2026-10-14: the first pass is done; 4.6, torpedoes and collisions, is
+next. 4.5 (the deepenings) and 4.7 (mines) are moved out of the sequence (decisions 13 and 14, 2026-10-14): a later
+tier of their own, the fine-tune pass, once most of the other components are in.** It details step 4 of
+`docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite 4.1, 4.3, 4.6, 4.7 and 4.9) and their
+subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
 
 ## The aim
 
@@ -166,9 +168,12 @@ splashes and log entries live in preallocated pools, grown only past their size 
 
 Each step is a session (or a few), starts with the usual investigation, ends with something to run and look at, and
 updates this doc and `plan.md`. **The order** (decision 8: shells first, baby steps): 4.0, 4.1, 4.2a, 4.2b, 4.2c,
-4.3a, 4.3b, 4.4 (the first full pass, ending in the first playable fight), then 4.6, 4.7, 4.8, 4.9 and 4.10. **4.5
-isn't a step in that sequence:** it's the list of deepenings, taken one at a time after the first pass, in whatever
-order playing asks for.
+4.3a, 4.3b, 4.4 (the first full pass, ending in the first playable fight), then 4.6, 4.8, 4.9 and 4.10.
+
+**Moved out: the fine-tune pass** (decisions 13 and 14). 4.5 (the deepenings) and 4.7 (mines) aren't in that sequence.
+They're a separate tier, independent of the rest, taken once most of the other components are in place: the game is
+playable from the damage side after 4.4, so everything else can be built and tested on the damage model as it is. Their
+sections stay below under their numbers (other docs cite them) as the tier's list.
 
 **Each piece arrives with the step that first uses it** (the review, decision 12): a contract, a system, a column or a
 command is made where something runs and is tested with it, never ahead of it as an empty shell.
@@ -1000,7 +1005,10 @@ its magazine.
 out at 1x to 100x, under the AI on both sides or the player on one: ships engage, hit, lose guns and speed, flood and
 sink, and the log tells the story.
 
-### 4.5 The deepenings (one link at a time, after the first pass)
+### 4.5 The deepenings (moved out: the fine-tune pass)
+
+**Not in step 4's sequence** (decision 13): a tier of its own, done once most of the other components are in place.
+Until then the first pass's models stand, and every other step builds and tests on them.
 
 Each is its own session. It reads its research section, replaces the model behind one link, and shows its bench's
 numbers before and after against the anchors. The list, by link, with where the research is:
@@ -1067,7 +1075,10 @@ numbers before and after against the anchors. The list, by link, with where the 
   half-lengths together, through the grid. v0 breaches the struck ship at the stem's contact point, damages the
   rammer's bow, and costs both their speed by the closing energy.
 
-### 4.7 Mines
+### 4.7 Mines (moved out: with the fine-tune pass)
+
+**Not in step 4's sequence** (decision 14): built apart, in the later tier with 4.5's deepenings. Until then there are no
+mines; a mine's hit will come in at TERMINAL as a `Hit`, as a torpedo's does (4.6), so nothing waits on it.
 
 As plan.md has it: static fields with a density, a depth and an owner, laid by a mission or by minelayers, thinned by
 sweepers; crossing a field is an event in every clock tier, solved when a leg is anchored; a navy knows its own fields
@@ -1218,3 +1229,12 @@ The user's, 2026-10-13, for the implementation:
 12. **The plan review's fixes are in:** 4.0 is data only (each piece arrives with its first user); water spreads over
     the cell graph in the first flooding model; a minimal Fight manoeuvre for the AI in 4.2c; 4.3 split into 4.3a and
     4.3b; one shell kind per battery in v0; the tick-independence test runs its targets on rails or scripted tracks.
+
+The user's, 2026-10-14, after the first pass:
+
+13. **4.5 moves out of step 4:** the deepenings are a separate step, independent of the rest: a fine-tune pass done once
+    most of the other components are in place. The game is playable from the damage side, so the rest can be built and
+    tested on it as it is.
+14. **Mines (4.7) move out too,** to be built separately in that later tier.
+15. **Foundering stays as it is for now** (question 7): 4.5 will help, and torpedoes (4.6) are the real answer: guns
+    wreck ships, torpedoes finish the immobile ones.
