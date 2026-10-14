@@ -19,18 +19,30 @@ public static class Sun
     public static (double Lat, double Lon) Subsolar(WorldTime t)
     {
         double d = t.DaysSinceJ2000;
-        double g = Mod360(357.529 + 0.98560028 * d) * Deg;          // mean anomaly
-        double q = Mod360(280.459 + 0.98564736 * d);                // mean longitude (aberration folded in)
-        double lam = (q + 1.915 * Math.Sin(g) + 0.020 * Math.Sin(2 * g)) * Deg;   // apparent ecliptic longitude
-        double eps = (23.439 - 0.00000036 * d) * Deg;               // obliquity of the ecliptic
+        double lam = EclipticLongitude(d);
+        double eps = Obliquity(d);
         double ra = Math.Atan2(Math.Cos(eps) * Math.Sin(lam), Math.Cos(lam)) / Deg;
         double dec = Math.Asin(Math.Sin(eps) * Math.Sin(lam)) / Deg;
-        double gmst = Mod360((18.697374558 + 24.06570982441908 * d) * 15);   // Greenwich mean sidereal time
-        double lon = Mod360(ra - gmst);
+        double lon = Mod360(ra - SiderealTimeDeg(d));
         return (dec, lon > 180 ? lon - 360 : lon);
     }
 
-    static double Mod360(double a)
+    /// <summary>The sun's apparent ecliptic longitude, radians, d days after J2000.0.</summary>
+    internal static double EclipticLongitude(double d)
+    {
+        double g = Mod360(357.529 + 0.98560028 * d) * Deg;          // mean anomaly
+        double q = Mod360(280.459 + 0.98564736 * d);                // mean longitude (aberration folded in)
+        return (q + 1.915 * Math.Sin(g) + 0.020 * Math.Sin(2 * g)) * Deg;
+    }
+
+    /// <summary>The obliquity of the ecliptic, radians, d days after J2000.0.</summary>
+    internal static double Obliquity(double d) => (23.439 - 0.00000036 * d) * Deg;
+
+    /// <summary>Greenwich mean sidereal time, degrees in [0, 360), d days after J2000.0: the turn from the equinox's
+    /// frame to the Earth-fixed one.</summary>
+    internal static double SiderealTimeDeg(double d) => Mod360((18.697374558 + 24.06570982441908 * d) * 15);
+
+    internal static double Mod360(double a)
     {
         a %= 360;
         return a < 0 ? a + 360 : a;

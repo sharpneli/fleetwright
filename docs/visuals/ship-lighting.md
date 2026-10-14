@@ -59,9 +59,9 @@ under today's if we ever need to (a CPU encoder on the building thread).
   day-average path).
 - **Moon:** at night a second directional light takes over as the sun goes, mild and cool, from opposite the sun
   (a full moon's place) raised to a fixed elevation so it never grazes. Enough for the hull's relief and a faint glint
-  on wet-looking paint, never daylight. There is no moon in the sim: the light is display only and changes nothing
-  the sim sees (night sight stays starlight, `SimSettings`). A moon with phases can replace it later behind the same
-  two uniforms (direction, colour).
+  on wet-looking paint, never daylight. The light is display only and changes nothing the sim sees (night sight
+  stays starlight, `SimSettings`). The real moon (`Moon` in Sim.Core: its direction from a place and its phase, added
+  2026-10-14, nothing reads it yet) can replace it behind the same two uniforms (direction, colour).
 - **Diffuse:** Lambert, albedo x (1 - metallic).
 - **Specular:** GGX with Schlick Fresnel and the Smith term, F0 = 0.04 for paint, wood and canvas, the albedo for
   metal. Roughness widened by **Toksvig** from the mip-averaged normal's length, so a barrel's glint is sharp at
