@@ -949,6 +949,60 @@ public sealed record SimSettings
     public double TorpedoAttackShare { get; init; } = 0.7;
     public int TorpedoTurnAwayMs { get; init; } = 180_000;
 
+    // ------------------------------------------------------------------ the matchup (docs/battle/command.md 5.1g)
+    // Who can fight whom, judged analytically from the classes (Sim.Combat/Matchup.cs): fitted to the fine model's own
+    // benches (shipgen duel, hits, torpedo), 2026-10-14.
+
+    /// <summary>A gun's hit chance (fire-control-research.md §8.3's quick formula): the fire control's error by level
+    /// (0 eyeball .. 8 digital; local control counts as 0), 1 sigma, in range as % of the range and across in mils (§12.2,
+    /// salvos 4-8), with the gun's own dispersion; the target's height over the water for the danger space, as a share of
+    /// its freeboard; the muzzle's height, m. Matches shipgen duel's 15-minute hit rates within about 1.5x.</summary>
+    public double[] MatchupMpiPct { get; init; } = [10.9, 4.9, 3.7, 2.9, 2.3, 2.0, 1.8, 1.3, 0.9];
+    public double[] MatchupDeflectionMil { get; init; } = [9.8, 5.4, 5.4, 4.9, 3.8, 2.8, 3.1, 3.1, 2.0];
+    public double MatchupHeightShare { get; init; } = 1.3;
+    public double MatchupMuzzleM { get; init; } = 10;
+
+    /// <summary>What a hit does: the chance it puts the ship out of the fight (lost, or past doctrine's fall-out) is
+    /// 1 - exp(-K x size x share / displacement), tonnes: MatchupShellK with a shell's size the square root of its mass in
+    /// kg (shipgen hits: an 88 mm and a 6" shell on a destroyer, 3.4% and 7.2%, go as that, not as their filler), the share 1 when it
+    /// bursts inside, MatchupKeptShare when the armour keeps it out (or a nose fuze bursts it on the plate),
+    /// MatchupPassShare when it passes through plating too thin to arm its fuze; MatchupTorpedoK by a torpedo's charge in kg.
+    /// Penetration is a probability around the plate, spread by MatchupPenSpread of it (1 sigma). A side hit in the
+    /// upperworks reaches the vitals by its splinters only, exp(-deck armour / MatchupSplinterMm) of it. Fitted to shipgen
+    /// hits and shipgen torpedo with 30 minutes of flooding after (a 2,300 t destroyer 7% a 6" HE hit, Iron Duke 0.85% a
+    /// 12" AP hit at 14 km, a battleship 18% a torpedo).</summary>
+    public double MatchupShellK { get; init; } = 28;
+    public double MatchupKeptShare { get; init; } = 0.15;
+    public double MatchupPassShare { get; init; } = 0.4;
+    public double MatchupTorpedoK { get; init; } = 48;
+    public double MatchupPenSpread { get; init; } = 0.1;
+    public double MatchupSplinterMm { get; init; } = 25;
+    /// <summary>A shell through armour does what its quality's outcome row (<see cref="ShellOutcomes"/>) says: a full
+    /// burst all of it, a burst in the plate and a low-order burst these shares, a dud or a broken shell as one kept out.</summary>
+    public double MatchupInPlateShare { get; init; } = 0.5;
+    public double MatchupLowOrderShare { get; init; } = 0.3;
+
+    /// <summary>A torpedo's hit chance, fired at a range: MatchupTorpedoHitM / range, at most MatchupTorpedoHitMax, by the
+    /// square root of the target's length over MatchupTorpedoLengthM, times MatchupTorpedoEvadedShare for her combing and
+    /// turning away, and by how much slower than the torpedo she is beside a target at MatchupTorpedoRefKn (a fast ship
+    /// turning away outruns its reach): shipgen torpedo against a steady target at 18 kn, 35% at 3 km, 18% at 5 km.</summary>
+    public double MatchupTorpedoHitM { get; init; } = 900;
+    public double MatchupTorpedoHitMax { get; init; } = 0.4;
+    public double MatchupTorpedoLengthM { get; init; } = 150;
+    public double MatchupTorpedoEvadedShare { get; init; } = 0.6;
+    public double MatchupTorpedoRefKn { get; init; } = 18;
+
+    /// <summary>The engagement judged: a gunfight lasts MatchupFightMin minutes; a torpedo attack the run in from the
+    /// defender's reach to the firing range and out again, plus MatchupTorpedoFireMin. A side is faster than the other
+    /// (and so picks the range) by more than MatchupSpeedMarginKn. A side's share lost is never taken under MatchupFloor,
+    /// so a ratio of two small numbers stays finite. Minutes, knots, a share.</summary>
+    public double MatchupFightMin { get; init; } = 30;
+    /// <summary>A ship is built to make torpedo attacks with this many tubes bearing a thousand tonnes or more.</summary>
+    public double MatchupAttackTubesPerKt { get; init; } = 0.5;
+    public double MatchupTorpedoFireMin { get; init; } = 2;
+    public double MatchupSpeedMarginKn { get; init; } = 2;
+    public double MatchupFloor { get; init; } = 0.001;
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its

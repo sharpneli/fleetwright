@@ -35,14 +35,14 @@ static class TorpedoBench
         Console.WriteLine(string.Format(Inv, "{0}'s torpedo: {1:0} mm, {2:0} kg charge; {3:0} kn for {4:0} m or {5:0} kn for {6:0} m; {7} launcher(s), {8} torpedoes",
             sc.Name, torpedo.CalibreMm, torpedo.ChargeKg, torpedo.FastKn, torpedo.FastRangeM, torpedo.SlowKn, torpedo.SlowRangeM, sc.Launchers.Length,
             sc.Launchers.ToArray().Sum(l => l.Torpedoes)));
-        return o.RangeM > 0 ? Attack(sc, tc, settings, o) : Given(tc, torpedo, settings, o);
+        return o.RangeM > 0 ? Attack(sc, tc, settings, o) : Given(tc, torpedo, settings, o, HitsBench.FallOut(settingsPath));
     }
 
-    static int Given(ShipClass tc, TorpedoRow torpedo, SimSettings settings, Options o)
+    static int Given(ShipClass tc, TorpedoRow torpedo, SimSettings settings, Options o, FallOutRule fallOut)
     {
         double depth = o.DepthM > 0 ? o.DepthM : Math.Clamp(settings.TorpedoDepthShare * tc.Vertical.Draught, settings.TorpedoDepthMinM, settings.TorpedoDepthMaxM);
         var sw = Stopwatch.StartNew();
-        var r = GivenTorpedoes(tc, torpedo, depth, o, settings);
+        var r = GivenTorpedoes(tc, torpedo, depth, o, settings, fallOut);
         double secs = sw.Elapsed.TotalSeconds;
         int k = Math.Max(o.PerShip, 1);
         double reach = settings.TorpedoReachK * Math.Cbrt(torpedo.ChargeKg), hole = settings.TorpedoHoleK * Math.Pow(torpedo.ChargeKg, 2.0 / 3);
@@ -62,11 +62,12 @@ static class TorpedoBench
             100 * r.PowerCap / r.Ships, 100 * r.SpeedShare / r.Ships, 100.0 * r.SteeringLost / r.Ships, 100.0 * r.Lost / r.Ships,
             100.0 * r.LostBy[(int)LossKind.BrokeInTwo] / r.Ships, 100.0 * r.LostBy[(int)LossKind.Magazine] / r.Ships,
             100.0 * r.LostBy[(int)LossKind.Foundered] / r.Ships, 100.0 * r.LostBy[(int)LossKind.Capsized] / r.Ships));
+        Console.WriteLine(string.Format(Inv, "  out of the fight (lost, or past the default preset's fall-out) {0:0}%", 100.0 * r.Out / r.Ships));
         return 0;
     }
 
-    static GivenHits.Report GivenTorpedoes(ShipClass tc, TorpedoRow torpedo, double depth, Options o, SimSettings settings) =>
-        GivenHits.Torpedoes(tc, torpedo, depth, o.AtShare, o.N, Math.Max(o.PerShip, 1), (ulong)o.Seed, settings, o.SettleMin * 60);
+    static GivenHits.Report GivenTorpedoes(ShipClass tc, TorpedoRow torpedo, double depth, Options o, SimSettings settings, FallOutRule fallOut) =>
+        GivenHits.Torpedoes(tc, torpedo, depth, o.AtShare, o.N, Math.Max(o.PerShip, 1), (ulong)o.Seed, settings, o.SettleMin * 60, fallOut);
 
     static int Attack(ShipClass sc, ShipClass tc, SimSettings settings, Options o)
     {

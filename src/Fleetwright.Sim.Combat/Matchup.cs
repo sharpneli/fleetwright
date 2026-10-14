@@ -1,0 +1,614 @@
+using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
+
+namespace Fleetwright.Sim.Combat;
+
+/// <summary>A class as the matchup sees it (docs/battle/command.md 5.1g), compiled once from its rows and its guns' range
+/// tables: its size and speed, its armour as falling shells meet it, its broadside's guns and torpedoes. Pure data: the
+/// matchup reads it, nothing changes it.</summary>
+public sealed class MatchupProfile
+{
+    public const double RangeStepM = 250;
+
+    public ShipClass Class { get; }
+    public double DisplacementT { get; }
+    public double LengthM { get; }
+    public double BeamM { get; }
+    /// <summary>Its height over the water for the danger space (its freeboard by <see cref="SimSettings.MatchupHeightShare"/>).</summary>
+    public double HeightM { get; }
+    public double SpeedKn { get; }
+    /// <summary>No gun of a cruiser's 6" (<see cref="TorpedoCraftGunMm"/>) and torpedoes: it fights with its torpedoes.</summary>
+    public bool TorpedoCraft { get; }
+
+    /// <summary>The side and the deck as a falling shell meets them: shares of the face, each with its armour (mm of
+    /// plate as good as the penetration fit's, 0: none), and the hull's own plating there.</summary>
+    public (double Share, double Mm)[] Side { get; }
+    public (double Share, double Mm)[] Deck { get; }
+    public double SidePlatingMm { get; }
+    public double DeckPlatingMm { get; }
+    /// <summary>The share of the side over the main deck (the upperworks: from the silhouette), and the deck armour under
+    /// them on the mean (mm, as the faces'): a burst up there reaches the hull's vitals only through it.</summary>
+    public double UpperShare { get; }
+    public double DeckMeanMm { get; }
+
+    public MatchupGun[] Guns { get; }
+    /// <summary>The main battery's reach (the heaviest gun's), m; 0 without one.</summary>
+    public double MainReachM { get; }
+
+    /// <summary>Its torpedoes: the tubes that bear on a beam (one salvo), all it carries, and the torpedo (the longest-ranged
+    /// one aboard); no tubes, no torpedoes.</summary>
+    public int TubesBearing { get; }
+    public int Torpedoes { get; }
+    public TorpedoRow Torpedo { get; }
+    public double TorpedoDud { get; }
+
+    /// <summary>The gun that makes a ship more than a torpedo craft: a cruiser's 6".</summary>
+    public const double TorpedoCraftGunMm = 150;
+
+    public MatchupProfile(ShipClass c, Func<BallisticKey, BallisticTable> table, SimSettings s)
+    {
+        Class = c;
+        var m = c.Motion;
+        DisplacementT = m.FullDisplacementT;
+        LengthM = m.LengthM;
+        BeamM = m.BeamM;
+        HeightM = Math.Max(c.Vertical.Freeboard, 1) * s.MatchupHeightShare;
+        SpeedKn = m.MaxSpeedKn;
+        var q = Terminal.Qualities(c, s);
+        (Side, Deck) = (SideArmour(c, q), DeckArmour(c, q));
+        (SidePlatingMm, DeckPlatingMm) = (c.Plating.ShellMm, c.Plating.StrengthDeckMm);
+        var area = c.Numbers(c.Silhouette.SideAreaM2);
+        double whole = Sight.AreaAbove(area, 0);
+        UpperShare = whole > 0 ? Math.Clamp(Sight.AreaAbove(area, c.Vertical.Freeboard) / whole, 0, 1) : 0;
+        foreach (var (share, mm) in Deck)
+            DeckMeanMm += share * mm;
+
+        var guns = new List<MatchupGun>();
+        double mainCal = 0;
+        bool craft = true;
+        for (int b = 0; b < c.Batteries.Length; b++)
+        {
+            ref readonly var row = ref c.Batteries[b];
+            if (row.CalibreMm >= TorpedoCraftGunMm)
+                craft = false;
+            if (row.Kind is not (Battery.Main or Battery.Secondary))
+                continue;
+            int bearing = 0, rounds = 0, mounts = 0;
+            double reload = 0, maxElev = 0;
+            foreach (int mi in c.Links(row.Mounts))
+            {
+                ref readonly var mr = ref c.Mounts[mi];
+                maxElev = Math.Max(maxElev, mr.MaxElevationDeg);
+                if (!CombatStore.InArcs(c, mr, 90))
+                    continue;
+                bearing += c.TurretTypes[mr.Type].Barrels;
+                rounds = rounds == int.MaxValue || mr.Rounds <= 0 ? int.MaxValue : rounds + mr.Rounds;
+                reload += mr.ReloadS;
+                mounts++;
+            }
+            if (bearing == 0)
+                continue;
+            var shell = c.ShellTypes[row.Fires];
+            var t = table(BallisticKey.Of(shell, maxElev));
+            var g = new MatchupGun(b, row, bearing, 60 / (reload / mounts), rounds, shell, t, s);
+            guns.Add(g);
+            if (row.Kind == Battery.Main && row.CalibreMm > mainCal)
+                (mainCal, MainReachM) = (row.CalibreMm, g.ReachM);
+        }
+        Guns = [.. guns];
+
+        double fast = 0;
+        int tubes = 0, torpedoes = 0;
+        foreach (ref readonly var l in c.Launchers)
+        {
+            ref readonly var tr = ref c.Torpedoes[l.Torpedo];
+            torpedoes += l.Torpedoes;
+            if (l.Trains || CombatStore.InArcs(c, l.Arcs, 90))
+                tubes += l.Tubes;
+            if (tr.FastRangeM > fast)
+                (fast, Torpedo) = (tr.FastRangeM, tr);
+        }
+        (TubesBearing, Torpedoes) = (tubes, torpedoes);
+        TorpedoDud = s.TorpedoDud[Math.Clamp((int)c.Era, 0, s.TorpedoDud.Length - 1)];
+        TorpedoCraft = craft && c.Launchers.Length > 0;
+    }
+
+    /// <summary>Whether it's built to make torpedo attacks (a destroyer, a light cruiser with a broadside of tubes; not a
+    /// battleship with a few submerged ones): <see cref="SimSettings.MatchupAttackTubesPerKt"/> tubes bearing a thousand
+    /// tonnes or more.</summary>
+    public bool Attacker(SimSettings s) => TubesBearing > 0 && TubesBearing * 1000 / DisplacementT >= s.MatchupAttackTubesPerKt;
+
+    /// <summary>The torpedo attack's firing range (<see cref="SimSettings.TorpedoAttackShare"/> of the fast setting), 0
+    /// for a ship not built to attack with torpedoes.</summary>
+    public double AttackRangeM(SimSettings s) => Attacker(s) ? s.TorpedoAttackShare * Torpedo.FastRangeM : 0;
+
+    /// <summary>The side between the waterline and the main deck, sampled along its length and up it: the thickest plate
+    /// over each point (by its material's quality), shares of the face by thickness.</summary>
+    static (double, double)[] SideArmour(ShipClass c, double[] q)
+    {
+        const int nx = 48, nz = 8;
+        double x0 = -c.Length / 2, wl = c.Vertical.Waterline, top = Math.Max(wl + 0.5, 0);
+        var mm = new double[nx * nz];
+        for (int i = 0; i < nx; i++)
+            for (int k = 0; k < nz; k++)
+            {
+                double x = x0 + (i + 0.5) * c.Length / nx, z = wl + (k + 0.5) * (top - wl) / nz;
+                double best = 0;
+                foreach (ref readonly var p in c.SidePlates)
+                    if (x >= p.X0 && x <= p.X1 && z >= p.Bottom && z <= p.Top)
+                        best = Math.Max(best, p.ThicknessMm * Quality(q, p.Material));
+                mm[i * nz + k] = best;
+            }
+        return Shares(mm);
+    }
+
+    /// <summary>The deck seen from above, sampled along its length: the armour decks over each point added up.</summary>
+    static (double, double)[] DeckArmour(ShipClass c, double[] q)
+    {
+        const int nx = 48;
+        double x0 = -c.Length / 2;
+        var mm = new double[nx];
+        for (int i = 0; i < nx; i++)
+        {
+            double x = x0 + (i + 0.5) * c.Length / nx;
+            foreach (var d in c.ArmourDecks)
+                if (x >= d.X0 && x <= d.X1)
+                    mm[i] += d.ThicknessMm * Quality(q, d.Material);
+        }
+        return Shares(mm);
+    }
+
+    static double Quality(double[] q, int material) => material >= 0 && material < q.Length ? q[material] : 1;
+
+    static (double, double)[] Shares(double[] mm)
+    {
+        var by = new SortedDictionary<double, int>();
+        foreach (double v in mm)
+        {
+            double key = Math.Round(v);
+            by[key] = by.GetValueOrDefault(key) + 1;
+        }
+        return [.. by.Select(kv => ((double)kv.Value / mm.Length, kv.Key))];
+    }
+}
+
+/// <summary>One battery as the matchup sees it: the guns bearing on a beam, how fast each fires, the rounds they carry
+/// (int.MaxValue: no limit given), its fire control, and its shell's fall and striking speed by range.</summary>
+public sealed class MatchupGun
+{
+    public int Battery { get; }
+    public Battery Kind { get; }
+    public double CalibreMm { get; }
+    public int Guns { get; }
+    public double ShellsPerGunMin { get; }
+    public int Rounds { get; }
+    /// <summary>The fire-control level's row in the settings' tables (local control: 0).</summary>
+    public int Level { get; }
+    public double PatternPct { get; }
+    public ShellTypeRow Shell { get; }
+    public double ReachM { get; }
+    readonly double[] fall, strike;
+
+    internal MatchupGun(int battery, in BatteryRow row, int guns, double perMin, int rounds, ShellTypeRow shell, BallisticTable t, SimSettings s)
+    {
+        (Battery, Kind, CalibreMm, Guns, ShellsPerGunMin, Rounds, Shell, PatternPct) = (battery, row.Kind, row.CalibreMm, guns, perMin, rounds, shell, row.PatternPct);
+        Level = row.Local ? 0 : (int)row.Level;
+        double hi = Math.Min(t.Key.MaxElevationDeg, t.MaxElevationDeg - 2 * BallisticTable.ElevationStep);
+        ReachM = t.Fall(hi, s.MatchupMuzzleM).Range;
+        int n = (int)(ReachM / MatchupProfile.RangeStepM) + 1;
+        (fall, strike) = (new double[n], new double[n]);
+        for (int i = 0; i < n; i++)
+        {
+            double e = t.ElevationFor(Math.Max(i, 0.5) * MatchupProfile.RangeStepM, s.MatchupMuzzleM);
+            var f = double.IsNaN(e) ? t.Fall(hi, s.MatchupMuzzleM) : t.Fall(e, s.MatchupMuzzleM);
+            (fall[i], strike[i]) = (f.FallDeg, f.StrikeMs);
+        }
+    }
+
+    /// <summary>The fall (degrees under the horizontal) and striking speed at a range within reach.</summary>
+    public (double FallDeg, double StrikeMs) At(double rangeM)
+    {
+        double u = Math.Clamp(rangeM / MatchupProfile.RangeStepM, 0, fall.Length - 1);
+        int i = Math.Min((int)u, fall.Length - 2);
+        if (i < 0)
+            return (fall[0], strike[0]);
+        double w = u - i;
+        return (fall[i] + w * (fall[i + 1] - fall[i]), strike[i] + w * (strike[i + 1] - strike[i]));
+    }
+}
+
+/// <summary>Ships of one class on a side of a matchup, and what they still have: their guns working (main and the rest,
+/// shares), their rounds left (shares of the outfit), their torpedoes left (a share), their speed (a share of the
+/// designed) and the toughness left in them (a share: less once they're seen low or listing).</summary>
+public readonly record struct MatchupEntry(MatchupProfile Profile, int Count, double MainGuns = 1, double OtherGuns = 1, double MainRounds = 1,
+    double OtherRounds = 1, double TorpedoesLeft = 1, double Speed = 1, double Toughness = 1)
+{
+    public double SpeedKn => Profile.SpeedKn * Speed;
+    public double GunShare(MatchupGun g) => g.Kind == Battery.Main ? MainGuns : OtherGuns;
+    public double RoundsShare(MatchupGun g) => g.Kind == Battery.Main ? MainRounds : OtherRounds;
+}
+
+/// <summary>How the engagement judged is fought: the lines' gunfight, and each side's torpedo attack, if it makes one
+/// (its ships built for it run in on the other's line while the lines fight).</summary>
+[Flags]
+public enum MatchupStyle : byte
+{
+    Gunfight = 0,
+    AttackByA = 1,
+    AttackByB = 2,
+}
+
+/// <summary>An engagement's terms, for the bench and the tests: the lines' range and each side's attack's firing range
+/// (0: none), what each side's guns and torpedoes put out of the fight (ships, expected), the attackers lost on the way
+/// in, how long it lasts, and the shares of each side's tonnage lost.</summary>
+public readonly record struct MatchupTerms(double RangeM, MatchupStyle Style, double AttackA, double AttackB, double Minutes, double GunsOnB,
+    double TorpedoesOnB, double GunsOnA, double TorpedoesOnA, double RunInLost, double LostA, double LostB)
+{
+    /// <summary>A's confidence: the share of B's tonnage it puts out for the share of its own it loses.</summary>
+    public double Confidence(double floor) => Math.Max(LostB, floor) / Math.Max(LostA, floor);
+}
+
+/// <summary>A's judgement against B: its confidence at the range and style the faster side picks (or A's own at about
+/// equal speed), both sides' speeds (each its slowest ship's), and the terms behind it.</summary>
+public readonly record struct MatchupResult(double Confidence, double SpeedA, double SpeedB, MatchupTerms Terms)
+{
+    /// <summary>A can refuse the fight (it's the faster by the margin).</summary>
+    public bool ACanRefuse(SimSettings s) => SpeedA > SpeedB + s.MatchupSpeedMarginKn;
+    /// <summary>B can refuse it, or force it on A.</summary>
+    public bool BCanRefuse(SimSettings s) => SpeedB > SpeedA + s.MatchupSpeedMarginKn;
+}
+
+/// <summary>Who can fight whom (docs/battle/command.md 5.1g): not a strength, a matchup. How fast each side puts the
+/// other's ships out of the fight, from the classes alone (v0 is analytic; the coarse tier's tables, 4.8-4.9, can replace
+/// its numbers later): guns by the quick hit chance and what a hit does through the armour, torpedoes by the boats that
+/// get to their range through the defence's fire (shared among them, so numbers saturate it) and what a hit does. A side's
+/// fire goes where it does most. A's confidence is the share of B's tonnage it puts out against the share of its own it
+/// loses, over the engagement: Lanchester's square law falls out of it (twice the ships, four times the confidence). Pure;
+/// it allocates nothing.</summary>
+public static class Matchup
+{
+    /// <summary>The most classes a side may have in one judgement.</summary>
+    public const int MaxClasses = 64;
+
+    /// <summary>A's judgement of B. Each side's gun range is its doctrine's share of its main guns' reach: the lines fight
+    /// at the faster side's (by the margin) best of the two, else at A's. A side's ships built for torpedo attacks attack
+    /// if that's better for it than not (each judged against the other not attacking). The defence's guns open on an
+    /// attack from their reach, or from <paramref name="sightM"/> if that's less (by night), and the lines fight no further
+    /// off than that.</summary>
+    public static MatchupResult Judge(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, double rangeShareA, double rangeShareB, SimSettings s,
+        double sightM = double.PositiveInfinity)
+    {
+        double speedA = Slowest(a), speedB = Slowest(b);
+        bool aPicks = speedA > speedB + s.MatchupSpeedMarginKn, bPicks = speedB > speedA + s.MatchupSpeedMarginKn;
+        double gunA = Math.Min(rangeShareA * Reach(a), sightM), gunB = Math.Min(rangeShareB * Reach(b), sightM);
+        double line = gunA > 0 ? gunA : gunB;
+        var plain = Engage(a, b, line, MatchupStyle.Gunfight, s, sightM);
+        if ((aPicks || bPicks) && gunB > 0 && gunB != line)
+        {
+            var other = Engage(a, b, gunB, MatchupStyle.Gunfight, s, sightM);
+            double c0 = plain.Confidence(s.MatchupFloor), c1 = other.Confidence(s.MatchupFloor);
+            if (aPicks ? c1 > c0 : c1 < c0)
+                (line, plain) = (gunB, other);
+        }
+        double c = plain.Confidence(s.MatchupFloor);
+        var style = MatchupStyle.Gunfight;
+        if (AttackRange(a, s) > 0 && Engage(a, b, line, MatchupStyle.AttackByA, s, sightM).Confidence(s.MatchupFloor) > c)
+            style |= MatchupStyle.AttackByA;
+        if (AttackRange(b, s) > 0 && Engage(a, b, line, MatchupStyle.AttackByB, s, sightM).Confidence(s.MatchupFloor) < c)
+            style |= MatchupStyle.AttackByB;
+        var t = style == MatchupStyle.Gunfight ? plain : Engage(a, b, line, style, s, sightM);
+        return new MatchupResult(t.Confidence(s.MatchupFloor), speedA, speedB, t);
+    }
+
+    /// <summary>The engagement: the lines' gunfight at a range for <see cref="SimSettings.MatchupFightMin"/>, each ship
+    /// firing one salvo of torpedoes within their range; and the attack of each side the style names: its ships built for
+    /// torpedo attacks run in from where the other's guns open (their reach, or the sight by night) to their firing
+    /// range, under fire at the mean range, fire one salvo from the boats still in it, and run out again, the defence's
+    /// guns choosing between them and the line by what they do. Every gun fires at what it does most to, at the range
+    /// between them (the lines' range, or the attack's).</summary>
+    public static MatchupTerms Engage(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<MatchupEntry> b, double rangeM, MatchupStyle style, SimSettings s,
+        double sightM = double.PositiveInfinity)
+    {
+        if (a.Length > MaxClasses || b.Length > MaxClasses)
+            throw new ArgumentException($"a matchup takes at most {MaxClasses} classes a side");
+        Span<double> outA = stackalloc double[a.Length], outB = stackalloc double[b.Length];
+        Span<bool> inA = stackalloc bool[a.Length], inB = stackalloc bool[b.Length];
+        outA.Clear();
+        outB.Clear();
+        inA.Clear();
+        inB.Clear();
+        double attackA = (style & MatchupStyle.AttackByA) != 0 ? Attackers(a, s, inA) : 0;
+        double attackB = (style & MatchupStyle.AttackByB) != 0 ? Attackers(b, s, inB) : 0;
+
+        // the attacks: in, the salvo, fired, and out; the lines fighting on beside them
+        double inMinA = 0, inMinB = 0, midA = rangeM, midB = rangeM;
+        if (attackA > 0)
+            (inMinA, midA) = RunIn(a, inA, b, attackA, sightM);
+        if (attackB > 0)
+            (inMinB, midB) = RunIn(b, inB, a, attackB, sightM);
+        double inMin = Math.Max(inMinA, inMinB), fireMin = attackA > 0 || attackB > 0 ? s.MatchupTorpedoFireMin : 0, runIn = 0;
+        double torpOnA = 0, torpOnB = 0;
+        if (attackA > 0 || attackB > 0)
+        {
+            Phase(a, inA, b, inB, rangeM, midA, midB, inMin, s, outA, outB);
+            runIn = Sum(outA, inA) + Sum(outB, inB);
+            if (attackA > 0)
+                torpOnB += Torpedoes(a, inA, b, attackA, s, outB, outA, 1);
+            if (attackB > 0)
+                torpOnA += Torpedoes(b, inB, a, attackB, s, outA, outB, 1);
+            Phase(a, inA, b, inB, rangeM, attackA > 0 ? attackA : rangeM, attackB > 0 ? attackB : rangeM, fireMin, s, outA, outB);
+            Phase(a, inA, b, inB, rangeM, midA, midB, inMin, s, outA, outB);
+        }
+        // the attackers are out of it: the lines alone for the rest of the fight
+        double attackMin = 2 * inMin + fireMin, rest = Math.Max(s.MatchupFightMin - attackMin, 0);
+        Span<bool> lineA = stackalloc bool[a.Length], lineB = stackalloc bool[b.Length];
+        for (int i = 0; i < a.Length; i++)
+            lineA[i] = !inA[i];
+        for (int i = 0; i < b.Length; i++)
+            lineB[i] = !inB[i];
+        Guns(a, lineA, default, b, lineB, default, rangeM, rangeM, rangeM, rest, s, outB);
+        Guns(b, lineB, default, a, lineA, default, rangeM, rangeM, rangeM, rest, s, outA);
+        torpOnB += Torpedoes(a, lineA, b, rangeM, s, outB, outA, s.TorpedoFireShare);
+        torpOnA += Torpedoes(b, lineB, a, rangeM, s, outA, outB, s.TorpedoFireShare);
+        double gunsOnA = Sum(outA, default) - torpOnA, gunsOnB = Sum(outB, default) - torpOnB;
+        return new MatchupTerms(rangeM, style, attackA, attackB, Math.Max(attackMin, s.MatchupFightMin), gunsOnB, torpOnB, gunsOnA, torpOnA, runIn,
+            Lost(a, outA), Lost(b, outB));
+    }
+
+    /// <summary>A side's ships built for torpedo attacks with torpedoes left (marked), and their firing range: the
+    /// shortest of theirs; 0 with none.</summary>
+    static double Attackers(ReadOnlySpan<MatchupEntry> side, SimSettings s, Span<bool> mark)
+    {
+        double r = 0;
+        for (int i = 0; i < side.Length; i++)
+        {
+            ref readonly var e = ref side[i];
+            mark[i] = e.Count > 0 && e.TorpedoesLeft > 0 && e.Profile.Attacker(s);
+            if (mark[i])
+                r = r == 0 ? e.Profile.AttackRangeM(s) : Math.Min(r, e.Profile.AttackRangeM(s));
+        }
+        return r;
+    }
+
+    /// <summary>An attack's run in: minutes from where the defence's guns open to the firing range at the attackers'
+    /// speed, and the mean range on the way.</summary>
+    static (double Minutes, double MidM) RunIn(ReadOnlySpan<MatchupEntry> att, ReadOnlySpan<bool> inAtt, ReadOnlySpan<MatchupEntry> def, double fireM,
+        double sightM)
+    {
+        double open = Math.Min(MaxReach(def), sightM), kn = double.MaxValue;
+        for (int i = 0; i < att.Length; i++)
+            if (inAtt[i])
+                kn = Math.Min(kn, att[i].SpeedKn);
+        double ms = Math.Max(kn == double.MaxValue ? 1 : kn, 1) * Handling.MsPerKnot;
+        return (Math.Max(open - fireM, 0) / ms / 60, (Math.Max(open, fireM) + fireM) / 2);
+    }
+
+    /// <summary>A stretch of an attack: every ship of both sides fires (the lines at each other at the lines' range, at
+    /// an attacker at its side's attack range for the stretch).</summary>
+    static void Phase(ReadOnlySpan<MatchupEntry> a, ReadOnlySpan<bool> inA, ReadOnlySpan<MatchupEntry> b, ReadOnlySpan<bool> inB, double lineM,
+        double attackAM, double attackBM, double minutes, SimSettings s, Span<double> outA, Span<double> outB)
+    {
+        Guns(a, default, inA, b, default, inB, lineM, attackAM, attackBM, minutes, s, outB);
+        Guns(b, default, inB, a, default, inA, lineM, attackBM, attackAM, minutes, s, outA);
+    }
+
+    /// <summary>The ships of <paramref name="from"/>'s guns put out of <paramref name="to"/> over some minutes (added
+    /// into <paramref name="outTo"/>, by class), the ships of each that take part marked (empty: all), at the range between
+    /// them: an attacker's side's attack range when either is in an attack (<paramref name="inFrom"/>,
+    /// <paramref name="inTo"/>), else the lines'. Each battery's shells go over the targets by what they do there (more
+    /// where they do more), at most the rounds it has left.</summary>
+    static void Guns(ReadOnlySpan<MatchupEntry> from, ReadOnlySpan<bool> fromSel, ReadOnlySpan<bool> inFrom, ReadOnlySpan<MatchupEntry> to,
+        ReadOnlySpan<bool> toSel, ReadOnlySpan<bool> inTo, double lineM, double fromAttackM, double toAttackM, double minutes, SimSettings s, Span<double> outTo)
+    {
+        if (minutes <= 0)
+            return;
+        Span<double> k = stackalloc double[to.Length];
+        for (int i = 0; i < from.Length; i++)
+        {
+            ref readonly var e = ref from[i];
+            if (e.Count == 0 || fromSel.Length > 0 && !fromSel[i])
+                continue;
+            bool attacking = inFrom.Length > 0 && inFrom[i];
+            foreach (var g in e.Profile.Guns)
+            {
+                double shells = Math.Min(g.Guns * e.GunShare(g) * g.ShellsPerGunMin * minutes,
+                    g.Rounds == int.MaxValue ? double.MaxValue : g.Rounds * e.RoundsShare(g)) * e.Count;
+                if (shells <= 0)
+                    continue;
+                double sum = 0;
+                for (int j = 0; j < to.Length; j++)
+                {
+                    k[j] = 0;
+                    if (to[j].Count == 0 || toSel.Length > 0 && !toSel[j])
+                        continue;
+                    double r = attacking ? fromAttackM : inTo.Length > 0 && inTo[j] ? toAttackM : lineM;
+                    if (r > g.ReachM)
+                        continue;
+                    k[j] = HitChance(g, to[j].Profile, r, s) * OutChance(g, to[j], r, s);
+                    sum += to[j].Count * k[j];
+                }
+                if (sum <= 0)
+                    continue;
+                for (int j = 0; j < to.Length; j++)
+                    outTo[j] += shells * to[j].Count * k[j] / sum * k[j];
+            }
+        }
+    }
+
+    /// <summary>One salvo of torpedoes from every ship of <paramref name="from"/> marked (an attack's, or a line's firing
+    /// at will) with torpedoes left and the range within their reach, from the share of its ships still in the fight (<paramref name="outFrom"/> so far), at the biggest of
+    /// <paramref name="to"/>'s classes; what they put out, added into <paramref name="outTo"/>.</summary>
+    static double Torpedoes(ReadOnlySpan<MatchupEntry> from, ReadOnlySpan<bool> sel, ReadOnlySpan<MatchupEntry> to, double rangeM, SimSettings s,
+        Span<double> outTo, ReadOnlySpan<double> outFrom, double reachShare)
+    {
+        int target = -1;
+        for (int j = 0; j < to.Length; j++)
+            if (to[j].Count > 0 && (target < 0 || to[j].Profile.DisplacementT > to[target].Profile.DisplacementT))
+                target = j;
+        if (target < 0)
+            return 0;
+        var tp = to[target].Profile;
+        double near = Math.Min(s.MatchupTorpedoHitMax, s.MatchupTorpedoHitM / Math.Max(rangeM, 1)) * Math.Sqrt(tp.LengthM / s.MatchupTorpedoLengthM)
+                      * s.MatchupTorpedoEvadedShare;
+        double total = 0;
+        for (int i = 0; i < from.Length; i++)
+        {
+            ref readonly var e = ref from[i];
+            var pr = e.Profile;
+            if (!sel[i] || pr.TubesBearing == 0 || e.TorpedoesLeft <= 0 || rangeM > reachShare * pr.Torpedo.FastRangeM && rangeM > reachShare * pr.Torpedo.SlowRangeM)
+                continue;
+            double left = e.Count * Math.Exp(-outFrom[i] / Math.Max(e.Count, 1));
+            double fired = Math.Min(pr.TubesBearing, pr.Torpedoes * e.TorpedoesLeft) * left;
+            // a target turning away outruns a torpedo the faster she is beside it (the bench's target steamed at the reference speed)
+            double kn = pr.Torpedo.FastKn, run = Math.Clamp((kn - to[target].SpeedKn) / Math.Max(kn - s.MatchupTorpedoRefKn, 1), 0, 1.5);
+            double q = (1 - pr.TorpedoDud) * (1 - Math.Exp(-s.MatchupTorpedoK * pr.Torpedo.ChargeKg / (tp.DisplacementT * to[target].Toughness)));
+            total += fired * near * run * q;
+        }
+        outTo[target] += total;
+        return total;
+    }
+
+    /// <summary>The chance a shell from a battery hits a class at a range (fire-control-research.md §8.3): the fire
+    /// control's error and the salvo's dispersion over the target's hitting space, beam on.</summary>
+    public static double HitChance(MatchupGun g, MatchupProfile t, double rangeM, SimSettings s)
+    {
+        var (fall, _) = g.At(rangeM);
+        double danger = t.HeightM / Math.Tan(double.DegreesToRadians(Math.Max(fall, 0.1)));
+        double depth = t.BeamM, width = t.LengthM;
+        var (dr, dd) = FireControl.Dispersion(g.PatternPct, rangeM, g.Guns, s.DispersionDeflectionRatio);
+        int lvl = Math.Clamp(g.Level, 0, s.MatchupMpiPct.Length - 1);
+        double sr = Math.Sqrt(Sq(s.MatchupMpiPct[lvl] / 100 * rangeM) + dr * dr);
+        double sd = Math.Sqrt(Sq(s.MatchupDeflectionMil[Math.Min(lvl, s.MatchupDeflectionMil.Length - 1)] * FireControl.Mil * rangeM) + dd * dd);
+        double pr = Phi(depth / 2 / sr) - Phi((-depth / 2 - danger) / sr);
+        double pd = 2 * Phi(width / 2 / sd) - 1;
+        return Math.Max(pr * pd, 0);
+    }
+
+    /// <summary>The chance a hit from a battery at a range puts a ship of a class out of the fight: by its shell's size (the
+    /// square root of its mass) and whether it bursts inside, over the side's and deck's armour as the fall angle splits the hits between them (a
+    /// side hit in the upperworks reaching the vitals only by its splinters through the deck under them), over the ship's
+    /// displacement (and the toughness left in her).</summary>
+    public static double OutChance(MatchupGun g, in MatchupEntry target, double rangeM, SimSettings s)
+    {
+        var t = target.Profile;
+        var (fall, strike) = g.At(rangeM);
+        double danger = t.HeightM / Math.Tan(double.DegreesToRadians(Math.Max(fall, 0.1)));
+        double side = danger / (danger + t.BeamM);
+        var shell = g.Shell;
+        double penSide = Terminal.PenMm(shell, strike, fall, deck: false), penDeck = Terminal.PenMm(shell, strike, 90 - fall, deck: true);
+        // a burst where there's no armour (the upperworks, the ends) reaches the vitals by its splinters through the deck
+        double bare = Math.Exp(-t.DeckMeanMm / s.MatchupSplinterMm);
+        double upper = (shell.Fuze == Fuze.Nose || t.SidePlatingMm >= Terminal.FuzeArmMm(shell.CalibreMm, fall, s) ? 1 : s.MatchupPassShare) * bare;
+        double share = side * (t.UpperShare * upper + (1 - t.UpperShare) * Through(shell, t.Side, penSide, t.SidePlatingMm, fall, bare, s))
+                       + (1 - side) * Through(shell, t.Deck, penDeck, t.DeckPlatingMm, 90 - fall, bare, s);
+        return 1 - Math.Exp(-s.MatchupShellK * Math.Sqrt(shell.MassKg) * share / (t.DisplacementT * Math.Max(target.Toughness, 1e-3)));
+    }
+
+    /// <summary>The share of a shell's effect that gets in through a face: a plate it passes bursts it inside (a base fuze,
+    /// as its quality's outcomes have it) or keeps it out; a nose fuze bursts on any plate; where there's only plating it
+    /// bursts there, its splinters reaching the vitals by the share <paramref name="bare"/> (through the deck's armour),
+    /// but a base fuze that the plating can't arm passes through.</summary>
+    static double Through(in ShellTypeRow shell, (double Share, double Mm)[] face, double pen, double platingMm, double obliquityDeg, double bare,
+        SimSettings s)
+    {
+        double sum = 0;
+        foreach (var (share, mm) in face)
+        {
+            double f;
+            if (mm <= 0)
+                f = (shell.Fuze == Fuze.Nose || platingMm >= Terminal.FuzeArmMm(shell.CalibreMm, obliquityDeg, s) ? 1 : s.MatchupPassShare) * bare;
+            else if (shell.Fuze == Fuze.Nose)
+                f = s.MatchupKeptShare;
+            else
+            {
+                double p = Phi((pen - mm) / (s.MatchupPenSpread * mm));
+                f = p * Good(shell, s) + (1 - p) * s.MatchupKeptShare;
+            }
+            sum += share * f;
+        }
+        return sum;
+    }
+
+    /// <summary>What a shell through armour does, by its quality's outcome row: a full burst, a burst in the plate or a
+    /// low-order one at their shares, a dud or a broken shell as one kept out.</summary>
+    static double Good(in ShellTypeRow shell, SimSettings s)
+    {
+        var o = s.ShellOutcomes[Math.Clamp((int)shell.Quality, 0, s.ShellOutcomes.Length - 1)];
+        return o.Burst + o.InPlate * s.MatchupInPlateShare + o.LowOrder * s.MatchupLowOrderShare + (o.Dud + o.Broken) * s.MatchupKeptShare;
+    }
+
+    /// <summary>The share of a side's tonnage out of the fight, from the ships expected out of each class (each ship out
+    /// with the chance a Poisson count gives her).</summary>
+    static double Lost(ReadOnlySpan<MatchupEntry> side, ReadOnlySpan<double> outs)
+    {
+        double all = 0, lost = 0;
+        for (int i = 0; i < side.Length; i++)
+        {
+            double t = side[i].Profile.DisplacementT * side[i].Count;
+            all += t;
+            lost += side[i].Count > 0 ? t * (1 - Math.Exp(-outs[i] / side[i].Count)) : 0;
+        }
+        return all > 0 ? lost / all : 0;
+    }
+
+    static double Slowest(ReadOnlySpan<MatchupEntry> side)
+    {
+        double v = double.MaxValue;
+        foreach (ref readonly var e in side)
+            if (e.Count > 0)
+                v = Math.Min(v, e.SpeedKn);
+        return v == double.MaxValue ? 0 : v;
+    }
+
+    /// <summary>A side's main guns' reach (its best), m.</summary>
+    static double Reach(ReadOnlySpan<MatchupEntry> side)
+    {
+        double r = 0;
+        foreach (ref readonly var e in side)
+            if (e.Count > 0 && e.MainGuns > 0)
+                r = Math.Max(r, e.Profile.MainReachM);
+        return r;
+    }
+
+    /// <summary>A side's longest gun reach, any battery.</summary>
+    static double MaxReach(ReadOnlySpan<MatchupEntry> side)
+    {
+        double r = 0;
+        foreach (ref readonly var e in side)
+            if (e.Count > 0)
+                foreach (var g in e.Profile.Guns)
+                    r = Math.Max(r, g.ReachM);
+        return r;
+    }
+
+    /// <summary>A side's torpedo attack range: the shortest of its ships built to attack with torpedoes, 0 with none that
+    /// have torpedoes left.</summary>
+    static double AttackRange(ReadOnlySpan<MatchupEntry> side, SimSettings s)
+    {
+        double r = double.MaxValue;
+        foreach (ref readonly var e in side)
+            if (e.Count > 0 && e.TorpedoesLeft > 0 && e.Profile.Attacker(s))
+                r = Math.Min(r, e.Profile.AttackRangeM(s));
+        return r == double.MaxValue ? 0 : r;
+    }
+
+    /// <summary>The sum of v, over the marked entries (empty: all).</summary>
+    static double Sum(ReadOnlySpan<double> v, ReadOnlySpan<bool> mark)
+    {
+        double x = 0;
+        for (int i = 0; i < v.Length; i++)
+            if (mark.Length == 0 || mark[i])
+                x += v[i];
+        return x;
+    }
+
+    static double Sq(double x) => x * x;
+
+    /// <summary>The standard normal's distribution function (Abramowitz and Stegun 7.1.26, to 1.5e-7).</summary>
+    public static double Phi(double x)
+    {
+        double z = Math.Abs(x) / Math.Sqrt(2), t = 1 / (1 + 0.3275911 * z);
+        double erf = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.Exp(-z * z);
+        return x >= 0 ? 0.5 * (1 + erf) : 0.5 * (1 - erf);
+    }
+}

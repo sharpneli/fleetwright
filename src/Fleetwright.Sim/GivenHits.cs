@@ -16,7 +16,8 @@ public static class GivenHits
     /// <summary>What the hits did: per hit, where they struck, their outcomes, fires, crew and holes, how often each
     /// part was put out of action (a node: component, then room); per ship after its K hits, its power and the share of
     /// its top speed that makes (slowed: under <see cref="SlowShare"/>), steering, main mounts and directors, and how
-    /// many were lost, and how (by <see cref="LossKind"/>), and the water they took.</summary>
+    /// many were lost, and how (by <see cref="LossKind"/>), the water they took, and how many were out of the fight (Out:
+    /// lost, or past a fall-out rule; the matchup's toughness, docs/battle/command.md 5.1g).</summary>
     public sealed class Report
     {
         public int Hits, Ships;
@@ -26,7 +27,7 @@ public static class GivenHits
         public double CrewLost, BreachM2;
         public int[] PartsOut = [];
         public double PowerCap, SpeedShare, MainWorking, MainMounts, DirectorsWorking, Directors;
-        public int Crippled, Slowed, SteeringLost, Lost, MainSilenced;
+        public int Crippled, Slowed, SteeringLost, Lost, MainSilenced, Out;
         public readonly int[] LostBy = new int[Enum.GetValues<LossKind>().Length];
         public double WaterT, ListDeg;
         public double FallDeg, StrikeMs;
@@ -39,7 +40,8 @@ public static class GivenHits
     public const double SlowShare = 0.85;
 
     public static Report Run(ShipClass target, ShellTypeRow shell, double maxElevationDeg, double rangeM, double aspectDeg, int n, int perShip, ulong seed,
-        SimSettings settings, Action<int, HitPath, TerminalResult, EffectsResult>? each = null, double settleS = 0)
+        SimSettings settings, Action<int, HitPath, TerminalResult, EffectsResult>? each = null, double settleS = 0,
+        FallOutRule? fallOut = null)
     {
         var table = new BallisticTable(BallisticKey.Of(shell, maxElevationDeg));
         double e = table.ElevationFor(rangeM, 10);
@@ -122,7 +124,7 @@ public static class GivenHits
                     if (before[i] < PartState.Disabled && k0.State[i] >= PartState.Disabled)
                         rep.PartsOut[i]++;
             }
-            After(rep, target, w, entity, slot, settleS);
+            After(rep, target, w, entity, slot, settleS, fallOut);
         }
         return rep;
     }
@@ -131,7 +133,7 @@ public static class GivenHits
     /// the waterline (at a share of its length from the stern, 0-1, or anywhere on it: NaN), to starboard, in runs of
     /// perShip hits on one ship, each through the world's own damage system.</summary>
     public static Report Torpedoes(ShipClass target, TorpedoRow torpedo, double depthM, double atShare, int n, int perShip, ulong seed, SimSettings settings,
-        double settleS = 0)
+        double settleS = 0, FallOutRule? fallOut = null)
     {
         var rep = new Report { PartsOut = new int[target.NodeCount] };
         var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), seed, settings);
@@ -181,14 +183,14 @@ public static class GivenHits
                     if (before[i] < PartState.Disabled && k0.State[i] >= PartState.Disabled)
                         rep.PartsOut[i]++;
             }
-            After(rep, target, w, entity, slot, settleS);
+            After(rep, target, w, entity, slot, settleS, fallOut);
         }
         return rep;
     }
 
     /// <summary>A ship after its hits: its flooding and fire run on for a while, then what it can still do into the
     /// report.</summary>
-    static void After(Report rep, ShipClass target, World w, int entity, int slot, double settleS)
+    static void After(Report rep, ShipClass target, World w, int entity, int slot, double settleS, FallOutRule? fallOut)
     {
         // the ship after its hits, and its flooding and fire run on
         if (settleS > 0)
@@ -219,6 +221,7 @@ public static class GivenHits
         rep.MainSilenced += main > 0 && mainOk == 0 ? 1 : 0;
         rep.Crippled += lost || slowed || steer || main > 0 && mainOk == 0 ? 1 : 0;
         rep.ListDeg += Math.Abs(kk.Attitude.HeelDeg);
+        rep.Out += lost || fallOut is { } rule && rule.Of(Fitness.Of(target, kk, w.Damage.Flood(target).ReserveT)) != FallOutCause.None ? 1 : 0;
     }
 
     /// <summary>Where the path met the sea before crossing i, or NaN.</summary>

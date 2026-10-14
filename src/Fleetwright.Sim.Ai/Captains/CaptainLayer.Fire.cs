@@ -523,13 +523,17 @@ public sealed partial class CaptainLayer
         var cls = own.Handling.Class;
         var fit = Fitness.Of(cls, k, ctx.World.Damage.Flood(cls).ReserveT);
         double D(DoctrineField f) => doctrine.Of(own.Entity, own.Side, f);
-        double speedShare = D(DoctrineField.FallOutSpeedShare);
-        var why = speedShare > 0 && fit.Steering != Steering.Free ? CaptainReason.OutSteering
-            : fit.SpeedShare < speedShare ? CaptainReason.OutSpeed
-            : fit.MainGunsShare < D(DoctrineField.FallOutGunsShare) ? CaptainReason.OutGuns
-            : fit.ListDeg > D(DoctrineField.FallOutListDeg) ? CaptainReason.OutList
-            : fit.WaterShare > D(DoctrineField.FallOutWaterShare) ? CaptainReason.OutWater
-            : CaptainReason.None;
+        var rule = new FallOutRule(D(DoctrineField.FallOutSpeedShare), D(DoctrineField.FallOutGunsShare), D(DoctrineField.FallOutListDeg),
+            D(DoctrineField.FallOutWaterShare));
+        var why = rule.Of(fit) switch
+        {
+            FallOutCause.Steering => CaptainReason.OutSteering,
+            FallOutCause.Speed => CaptainReason.OutSpeed,
+            FallOutCause.Guns => CaptainReason.OutGuns,
+            FallOutCause.List => CaptainReason.OutList,
+            FallOutCause.Water => CaptainReason.OutWater,
+            _ => CaptainReason.None,
+        };
         if (why == CaptainReason.None)
             return;
         if (groups.Of(own.Entity) != null)

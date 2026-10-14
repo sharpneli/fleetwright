@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
@@ -55,7 +56,7 @@ static class HitsBench
                 "crew {9:0.0}, holes {10:0.000} m²{11}{12}{13}", i, t.Outcome, t.Burst, t.BurstT, t.Force, t.StopT, Node(tc, e.Part), e.Destroyed + e.Disabled,
                 e.Damaged, e.CrewLost, e.BreachM2, e.Fire ? ", fire" : "", e.Jammed ? ", jammed" : "", e.Magazine ? ", MAGAZINE" : ""));
             Console.Write(path.Text(tc));
-        }, o.SettleMin * 60);
+        }, o.SettleMin * 60, FallOut(settingsPath));
         double secs = sw.Elapsed.TotalSeconds;
 
         Console.WriteLine(string.Format(Inv, "{0} on {1}: {2} ({3:0.#} kg, filler {4:0.##} kg, {5} {6}) at {7:0} m ({8:0.0} kyd) from {9:0}° off the bow",
@@ -81,7 +82,17 @@ static class HitsBench
         Console.WriteLine(string.Format(Inv, "  then {0:0} min of flooding and fire: water {1:0} t a ship; lost to the magazine {2:0.#}%, foundered {3:0.#}%, capsized {4:0.#}%",
             o.SettleMin, r.WaterT / r.Ships, 100.0 * r.LostBy[(int)LossKind.Magazine] / r.Ships, 100.0 * r.LostBy[(int)LossKind.Foundered] / r.Ships,
             100.0 * r.LostBy[(int)LossKind.Capsized] / r.Ships));
+        Console.WriteLine(string.Format(Inv, "  out of the fight (lost, or past the default preset's fall-out) {0:0}%", 100.0 * r.Out / r.Ships));
         return 0;
+    }
+
+    /// <summary>The default doctrine preset's fall-out (Content/Sim/doctrine.json beside the settings): what "out of the
+    /// fight" means to the benches.</summary>
+    public static FallOutRule FallOut(string settingsPath)
+    {
+        var preset = DoctrinePresets.Load(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(settingsPath))!, "doctrine.json"))[DoctrinePresets.DefaultName];
+        double V(DoctrineField f) => preset.Any(p => p.Field == f) ? preset.First(p => p.Field == f).Value : Doctrine.Default(f);
+        return new FallOutRule(V(DoctrineField.FallOutSpeedShare), V(DoctrineField.FallOutGunsShare), V(DoctrineField.FallOutListDeg), V(DoctrineField.FallOutWaterShare));
     }
 
     /// <summary>A node's name: a component's id, or a room's id and kind.</summary>

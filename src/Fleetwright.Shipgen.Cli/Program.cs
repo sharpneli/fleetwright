@@ -96,6 +96,13 @@ public static class Program
             waterline; AREA m²; :p to port) or with N spaces of a kind flooded (boiler_room:2), the world run on: water,
             reserve left, sinkage, trim, heel, GM and spaces out every S seconds, until it goes down; then the water by
             space (--cells: by cell, with its joins); --step sets FloodMs
+        shipgen matchup A[:N][:t0][,C:N...] B[:N][:t0][,...] [--range M] [--share 0.6] [--sight M]
+            who can fight whom (docs/battle/command.md 5.1g): each class's profile as the matchup sees it, each battery's
+            hit chance and out chance a hit on the other side's classes, the engagement at each candidate (either side's
+            gun range, a share of its main guns' reach; either side's torpedo attack) and A's judgement: the range the
+            faster side picks and A's confidence (the share of B's tonnage it puts out of the fight for the share of its
+            own it loses); :t0 takes a class's torpedoes away; --range fixes the range, --sight the defence's guns'
+            opening range on an attack (night)
         shipgen torpedo TARGET [--shooter DESIGN] [--at mid|bow|stern|SHARE] [--depth M] [--n N] [--per-ship K] [--settle MIN] [--seed S]
                         [--range M [--aspect DEG] [--target-speed KN] [--spread N] [--runs N]]
             torpedoes (docs/battle/fighting.md 4.6), the shooter's (default destroyer). Without --range, the hit alone: N
@@ -192,6 +199,9 @@ public static class Program
                     new FloodBench.Options(a.Get("hole"), a.Get("rooms"), D(a, "minutes", 60), D(a, "every", 120), a.Int("step", 0), a.Has("cells"))),
                 "ballistics" => BallisticsBench.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
+                "matchup" => MatchupBench.Run(a.Positional.ElementAtOrDefault(0) ?? "arethusa", a.Positional.ElementAtOrDefault(1) ?? "v25",
+                    n => LoadDesign(Resolve(a, n)), a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), D(a, "range", 0),
+                    D(a, "share", 0.6), D(a, "sight", double.PositiveInfinity)),
                 "trials" => SeaTrials.Run(a.Positional, a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("out")),
                 _ => Fail($"unknown command {args[0]}\n\n{Usage}"),
             };

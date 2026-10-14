@@ -866,11 +866,12 @@ odds, not a forecast of the battle.
 - **The measure.** Guns: the fire-control research's quick hit chance (§8.3: the hitting space from the class's length,
   beam and height and the fall angle from the range table; the MPI error by the battery's fire-control level from §12.2,
   with the gun's dispersion), scaled to `shipgen duel`; a hit's effect is the shell's weight or filler times whether it
-  passes the belt, deck and turret faces at that range (`Terminal.PenMm`). Toughness is the hits that **sink** (doctrine's
-  fall-out tests are sinking kinds of damage, so "out of the fight" is about the same number), from displacement and
-  reserve buoyancy, checked against `shipgen hits` and `shipgen torpedo`.
-- **Confidence follows the square law:** time for B to sink all of A over time for A to sink all of B, so twice the
-  ships is four times the confidence; `OutgunnedRatio` is retuned to it.
+  passes the belt, deck and turret faces at that range (`Terminal.PenMm`). Toughness was to be the hits that sink;
+  **measured, it's the hits that put a ship out of the fight** (lost, or past doctrine's fall-out), since the fine model
+  almost never sinks a ship by gunfire (piece 1 below). From displacement, checked against `shipgen hits` and
+  `shipgen torpedo`.
+- **Confidence follows the square law:** the share of B's tonnage A puts out of the fight over the share of its own it
+  loses in the engagement, so twice the ships is about four times the confidence; `OutgunnedRatio` is retuned to it.
 - **The range is the faster side's:** the matchup is judged at a few candidate ranges (torpedo range, each side's
   doctrine range); the side faster by a margin gets the one best for it, and at about equal speed it's the judge's own
   doctrine range. Destroyers can force torpedo range on a battleship; a battleship can't hold a faster cruiser off.
@@ -902,6 +903,56 @@ odds, not a forecast of the battle.
   runs out.
 - **Left as they are:** the torpedo-craft classification (Regensburg's 4.1" counts as one, 5.1d), since the turn-away's
   threat test still reads it; `DesignerPlaceholders.HeavyGunMm` (the shell mix), which isn't the commander's.
+
+**Piece 1 done 2026-10-15: a class's profile and the matchup** (`Sim.Combat/Matchup.cs`; the bench `shipgen matchup
+A[:n][:t0][,...] B[:n][,...] [--range M] [--share 0.6] [--sight M]`; `MatchupTests`). Fitted to the fine model's own
+benches first, so it judges the game's physics, not history's:
+
+- **The measurements.** `shipgen hits` and `shipgen torpedo` print "out of the fight" now (lost, or past the default
+  preset's fall-out after 30 minutes of flooding and fire). The fall-out test is one implementation for that and the
+  captain (`FallOutRule` beside `Fitness`). Shellfire almost never sinks: three 13.5" hits leave a destroyer afloat, and
+  nearly every loss is a magazine. What it does is cripple, slowly: four 6" HE hits put out a quarter of the V25s, five
+  13.5" AP hits 13% of the Arethusas (they pass through or break up), sixteen 12" AP hits at 9 km 4% of the Iron Dukes.
+  So toughness is a near-constant chance a hit puts her out, and a rate-based matchup suits it.
+- **A hit's chance:** the research's quick formula as it stands (§8.3 with §12.2's errors by level, the gun's pattern,
+  the target's length, beam and 1.3 x freeboard): within about 1.5x of `shipgen duel`'s 15-minute rates on every pair
+  tried, with no fudge factor (Iron Duke on Derfflinger 4.1% at 14 km against the duel's 4.7%).
+- **What a hit does:** 1 - exp(-28 x sqrt(shell kg) x share / displacement t), the share 1 inside, 0.15 kept out, 0.4
+  through plating too thin to arm a base fuze, a shell through armour as its quality's outcome row has it (rn1916's
+  break up 40%), and a burst where there's no armour (upperworks, ends) by its splinters through the deck under it,
+  exp(-deck mm / 25). The shell's size goes as the square root of its mass, not its filler (an 88 mm and a 6" hit on a
+  destroyer, 3.4% and 7.2%). Ten measured pairs within 2x, most within 0.6-1.0x; the weakest is 6" HE on a battleship
+  (0.13% against 0.085%). Torpedoes: 1 - exp(-48 x charge kg / displacement) (one hit puts out 83% of the destroyers,
+  71% of the light cruisers, 18% of the battleships); hit chance 900 m / range (at most 0.4) x sqrt(length / 150 m) x
+  0.6 for combing x how much slower than the torpedo the target is, against an 18 kn one (`shipgen torpedo`: 35% at
+  3 km, 18% at 5 km against a steady target).
+- **The engagement:** the lines fight at a range for 30 minutes, every ship firing one salvo of torpedoes within their
+  range; a side's ships built for torpedo attacks (0.5 tubes bearing a thousand tonnes or more: destroyers and torpedo
+  light cruisers, not battleships with four submerged tubes) may attack: in from where the defence's guns open (their
+  reach, or the sight by night) to their firing range at their speed, one salvo from the boats still in it, and out
+  again, the defence's guns choosing between them and the line by what they do. Each battery fires where it does most,
+  at the range between shooter and target, capped by its rounds. A's confidence is the share of B's tonnage out over
+  the share of its own. The lines fight at the faster side's best gun range (else A's own); each side attacks if that's
+  better for it.
+- **The cases** (`MatchupTests`; A's confidence):
+
+  | A against B | Confidence |
+  |---|---|
+  | Arethusa against a V25; the V25 against her | 3.3; 0.31 (the same answer both ways) |
+  | Arethusa without torpedoes against Iron Duke; four of them | 0.07; 0.63 |
+  | four Arethusas with their torpedoes against Iron Duke | 2.4 |
+  | 1, 2, 4, 8, 16 V25s against Iron Duke | 0.11, 0.34, 0.91, 2.1, 4.4 |
+  | one V25 against her by night (sight 2 km) | 0.26 |
+  | Iron Duke against her sister; with four V25s each | 1.0; 1.0 |
+  | Lion against Derfflinger; Iron Duke against Derfflinger | 1.09; 1.13 |
+  | two Iron Dukes against one | 3.5 |
+  | Iron Duke with her main magazines empty against her sister | 0.04 |
+
+- **Not as hoped:** four gun-only light cruisers against a battleship aren't hopeless (0.63), since in the fine model a
+  13.5" AP hit puts a light cruiser out only 3.5% of the time: the battleship fires AP only. Choosing the shell by target
+  is fighting.md 4.5's, where this and the capital ships' toughness are noted.
+- **Cost:** 11 µs a judgement one class against one, 82 µs three against two; nothing allocated. The readers (piece 3)
+  judge per pair of units and want it cached: a captain's Fight weighs every second.
 
 **5.1e Signals and flagships.**
 

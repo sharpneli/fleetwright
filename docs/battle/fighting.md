@@ -1071,6 +1071,15 @@ numbers before and after against the anchors. The list, by link, with where the 
 - **Night:** searchlights, star shell, gun flashes and fires as light for the sighting model.
 - **Whose splash it is** (`manual-gunnery-research.md` §5): identification falls as 1/(1 + 0.6·N) with N guns of one
   calibre firing independently; salvo firing fixes it. Until then many guns spotting alone are flattered (decision 9).
+- **Found by the matchup's benches** (command.md 5.1g, 2026-10-15), for this pass to weigh:
+  - *capital ships are very hard to put out of the fight:* Iron Duke after sixteen 12" AP hits at 9 km is out (lost, or
+    past the default preset's fall-out) in 4% of ships, after twenty-two at 14 km in 17%; history's 15-20 heavy hits
+    usually did it (`shipgen hits --settle 30`, its "out of the fight" line). Shellfire almost never sinks: nearly every
+    loss is a magazine.
+  - *the shell by target:* a battery fires one kind (AP from heavy guns), and AP on a light cruiser mostly passes through
+    or breaks up (a 13.5" hit puts Arethusa out 3.5% of the time), so four gun-only light cruisers aren't hopeless
+    against a battleship. HE or common at unarmoured targets would change that; the matchup reads the shell a battery
+    fires, so it follows.
 
 ### 4.6 Torpedoes
 
