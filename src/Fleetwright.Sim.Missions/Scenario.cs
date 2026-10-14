@@ -24,7 +24,9 @@ namespace Fleetwright.Sim.Missions;
 ///     { "name": "Patrol", "side": 0, "at": [58, 2], "course": 0, "kn": 10, "route": [[59, 2], [58, 2]], "loop": true,
 ///       "ships": [ { "design": "light_cruiser", "count": 2 } ] } ] }
 /// </code>
-/// <para>A side's gun crews are green, average, trained or elite (<c>"crews"</c>; trained if not listed). The sides in
+/// <para>A side's gun crews are green, average, trained or elite (<c>"crews"</c>; trained if not listed). A side's
+/// propellant (<c>"propellant": { "Britain": 2, "Germany": 0.1 }</c>, 1 if not listed) scales how readily its magazines go
+/// up (docs/battle/fighting.md 4.3a: Jutland's cordite against brass-cased RP C/12). The sides in
 /// <c>"fight": ["Germany"]</c> give each of their top units a standing order to Fight when it first meets an enemy in sight
 /// (docs/battle/fighting.md 4.2c).</para>
 /// <para>Sides are at war with each other unless a pair is listed in <c>"peace"</c>. A unit's side, formation and spacing default to its parent's (side 0, column, 600 m for a squadron, 3 km for
@@ -60,6 +62,9 @@ public sealed class Scenario
 
     /// <summary>The sides' gun crews where they aren't trained (docs/battle/fighting.md 4.2b), by side index.</summary>
     public List<(int Side, CrewQuality Quality)> Crews { get; init; } = [];
+
+    /// <summary>The sides' propellant where it isn't 1 (docs/battle/fighting.md 4.3a), by side index.</summary>
+    public List<(int Side, double Factor)> Propellant { get; init; } = [];
 
     /// <summary>The sides whose top units Fight when they first meet an enemy in sight (by index).</summary>
     public List<int> Fight { get; init; } = [];
@@ -177,6 +182,9 @@ public sealed class Scenario
             // "crews": { "Germany": "elite" }, by the sides' names; taken from "from" (with its sides) unless given
             var crews = r.TryGetProperty("crews", out var cr) ? ParseCrews(cr, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Crews : [];
+            // "propellant": { "Germany": 0.1 }, by the sides' names; taken from "from" (with its sides) unless given
+            var propellant = r.TryGetProperty("propellant", out var pr) ? ParsePropellant(pr, sides)
+                : from != null && !r.TryGetProperty("sides", out _) ? from.Propellant : [];
             // "fight": ["Germany"], by the sides' names; taken from "from" (with its sides) unless given
             var fight = r.TryGetProperty("fight", out var fi) ? ParseSides(fi, sides, "fight")
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Fight : [];
@@ -207,6 +215,7 @@ public sealed class Scenario
                 PlayerName = player,
                 Weather = weather,
                 Crews = crews,
+                Propellant = propellant,
                 Fight = fight,
                 Units = units,
                 Folder = folder,
@@ -242,6 +251,23 @@ public sealed class Scenario
             if (!Enum.TryParse<CrewQuality>(p.Value.GetString(), ignoreCase: true, out var q) || !Enum.IsDefined(q))
                 throw new ScenarioException($"crews: \"{p.Value}\" for {p.Name}: green, average, trained or elite");
             list.Add((side, q));
+        }
+        return list;
+    }
+
+    static List<(int, double)> ParsePropellant(JsonElement e, string[] sides)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ScenarioException("propellant: an object of sides' names, { \"Germany\": 0.1 }");
+        var list = new List<(int, double)>();
+        foreach (var p in e.EnumerateObject())
+        {
+            int side = Array.IndexOf(sides, p.Name);
+            if (side < 0)
+                throw new ScenarioException($"propellant: \"{p.Name}\" isn't one of the sides ({string.Join(", ", sides)})");
+            if (p.Value.ValueKind != JsonValueKind.Number || !(p.Value.GetDouble() >= 0))
+                throw new ScenarioException($"propellant: {p.Value} for {p.Name}: a number, 0 or more");
+            list.Add((side, p.Value.GetDouble()));
         }
         return list;
     }

@@ -10,7 +10,8 @@ against it, agree the step's details with the user, then build. Update this file
 changed from the plan). Steps 1.1 to 1.4 and 2.1 to 2.5 are done (2026-10-12); 2.6 (one chain of command: 2.6a-c) is done; ships and the land (`docs/world/terrain-plan.md`: T1, `Shore`, 2026-10-12; then, reworked into a slide along the coast, S1 the slide in the fine tier, S2 rails off before land and S3 sliding on rails, 2026-10-13) is done up to its S4 (guided areas), which comes after. 2.7, the Jutland scale test, is done for now (2026-10-13: the user, "fast enough for now"): the scenario, the instruments and the ladder, with the fixes the numbers asked for; what it left open is listed under 2.7 ("Carried on"). Step 3, seeing and knowing, was agreed and built 2026-10-13 (3.1 relations, encounters, the player's interest; 3.2 sighting and pictures), with what it leaves open listed after 3.2. The time rework was agreed 2026-10-13 (the asked speed picks the clock tier, `docs/world/architecture.md` "The speed picks the tier") and 2.8, coarse motion, was built the same day (what it leaves open is under 2.8, "Carried on"). Step 4, fighting, is under way: its detailed plan is
 `docs/battle/fighting.md` (agreed 2026-10-13); 4.0 (the weapon facts), 4.1 (the hit query), 4.2a (ballistics and shells
 in flight), 4.2b (mounts, fire control and spotting) and 4.2c (ordering fire: fire at will, engage, hold fire, the
-admirals' distribution, Fight) are done (2026-10-13), and 4.3a, what a hit does, is next.
+admirals' distribution, Fight) are done (2026-10-13), 4.3a (what a hit does: terminal, effects, functions, the
+`DamageSystem`, `shipgen hits`) is done (2026-10-14), and 4.3b, fire, flooding and going down, is next.
 
 **Terms:** a *zoom band* (Globe, Theatre, Operations, Tactical, Ship) is how the map draws things, UI only. A *clock
 tier* (Routine, Rails, Coarse, Fine) is how the sim advances a ship. They're different things
@@ -1741,7 +1742,8 @@ fitted to the research's guns, `shipgen weapons --research`):
 - **A gun's dispersion** (4.2b): its full-salvo pattern, % of range, by calibre and era until then.
 - **Rangefinders** (4.2b): one per director today; turret and spotting-top rangefinders would give a battery the
   several readings the era's ships had (QE's one 15 ft against the reference's three).
-- **Magazines' propellant** and **torpedoes' speed and range**: with 4.3a and 4.6.
+- **Magazines' propellant** (4.3a: a side's factor in the scenario until then), **fillers' TNT equivalence** and
+  **funnels' draught** (4.3a), and **torpedoes' speed and range** (4.6).
 - **No unarmoured barbette over an armour deck** (the user, 2026-10-13: a 0 mm barbette's bore is a hole in the deck).
   Lord Nelson's and Bouvet's secondary mounts stand on 0 mm barbettes that pass through the armour deck, so
   `shell-test --gratings` finds leaks down them. The designer should armour them, or close the deck under a light

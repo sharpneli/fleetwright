@@ -22,6 +22,10 @@ add what's found.
   and `EncounterTests.Two_hundred_ships_in_one_fight_are_one_encounter_without_garbage`, each now and then (running
   just the allocation tests, 1 run in 4 had two failures), each passing alone. Same suspicion as above.
 
+- [ ] `PictureTests.Two_hundred_ships_look_at_each_other_without_garbage` failed once in a full run (2026-10-14, after
+  4.3a) and passed alone and in the next full run. No ship fires in it, so it's not the damage system's; the same
+  suspicion as above.
+
 ## The slide
 
 - [ ] A ship can be trapped in a bay that opens away from its course: decision 7's "boxed in, it follows the coast

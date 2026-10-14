@@ -76,11 +76,22 @@ public sealed class World
         CombatLog = new CombatLog(Settings.CombatLogCapacity);
         Shells = new ShellSystem(Settings, Ships, ShipIndex, CombatLog);
         Register(Shells);
-        Ships.ClassAdded = Shells.Prepare;
         Gunnery = new GunnerySystem(Settings, Ships, Shells, CombatLog, seed);
         Shells.Gunnery = Gunnery;
         Register(Gunnery);
+        Damage = new DamageSystem(Settings, Ships, CombatLog, seed);
+        Shells.Damage = Damage;
+        Ships.ClassAdded = cls =>
+        {
+            Shells.Prepare(cls);
+            Damage.Prepare(cls);
+        };
+        Register(Damage);
     }
+
+    /// <summary>Hits and what they do (docs/battle/fighting.md 4.3a): always registered fifth
+    /// (<see cref="DamageSystem.Id"/>).</summary>
+    public DamageSystem Damage { get; }
 
     /// <summary>The batteries' fire control and firing (docs/battle/fighting.md 4.2b): always registered fourth
     /// (<see cref="GunnerySystem.Id"/>).</summary>

@@ -30,7 +30,7 @@ public sealed class ShipStore
 {
     readonly SimSettings settings;
     readonly int routeCap;
-    readonly Stack<int> free = new();
+    readonly Stack<int> free = new(64);   // dropping ships (losses: fighting.md 4.3) frees slots without growing it, mostly
     int high;   // slots in use or freed: [0, high)
 
     // identity
@@ -47,6 +47,8 @@ public sealed class ShipStore
     // what's ordered
     internal Helm[] helm = [];
     internal double[] rudderOrder = [], courseDeg = [], courseRudder = [], powerOrder = [], speedOrderKn = [], clearance = [];
+    internal double[] powerCap = [], jamRudder = [];   // damage (docs/battle/fighting.md 4.3a): the plant's share left, a jammed rudder's angle
+    internal Steering[] steering = [];
     internal Vec3d[] route = [];   // routeCap per slot
     internal bool[] routeLoop = [];   // past the last waypoint, on to the first again (a patrol)
 
@@ -133,6 +135,7 @@ public sealed class ShipStore
         this.forward[slot] = (forward - up * Vec3d.Dot(forward, up)).Normalized();
         speed[slot] = speedMs;
         yawRate[slot] = rudder[slot] = 0;
+        (powerCap[slot], steering[slot], jamRudder[slot]) = (1, Steering.Free, 0);
         power[slot] = powerOrder[slot] = h.PowerFor(speedMs / Handling.MsPerKnot);
         speedOrderKn[slot] = speedMs / Handling.MsPerKnot;
         poseMs[slot] = timeMs;
@@ -427,7 +430,8 @@ public sealed class ShipStore
     public void TurnTogether(int slot, int guide)
     {
         Coarsen(slot);
-        (powerOrder[slot], speedOrderKn[slot], courseRudder[slot]) = (powerOrder[guide], speedOrderKn[guide], courseRudder[guide]);
+        (speedOrderKn[slot], courseRudder[slot]) = (speedOrderKn[guide], courseRudder[guide]);
+        powerOrder[slot] = Capped(slot, powerOrder[guide]);
         if (helm[guide] is Helm.Rudder or Helm.None)
         {
             (helm[slot], rudderOrder[slot], rudder[slot]) = (helm[guide], rudderOrder[guide], rudder[guide]);
@@ -543,7 +547,7 @@ public sealed class ShipStore
         helm[slot] = Helm.Course;   // its orders the guide's, whatever it steered for before it was gathered in
         courseDeg[slot] = courseDeg[guide];
         speedOrderKn[slot] = railSpeed[guide] / Handling.MsPerKnot;
-        power[slot] = powerOrder[slot] = handling[slot].PowerFor(speedOrderKn[slot]);
+        power[slot] = powerOrder[slot] = PowerFor(slot, speedOrderKn[slot]);
     }
 
     /// <summary>A ship off rails made what its orders ask at once (an order snapped on rails): its engines at the
@@ -748,8 +752,36 @@ public sealed class ShipStore
     public void OrderSpeed(int slot, double kn)
     {
         speedOrderKn[slot] = kn;
-        powerOrder[slot] = handling[slot].PowerFor(kn);
+        powerOrder[slot] = PowerFor(slot, kn);
     }
+
+    /// <summary>The power rung for a speed, within what the ship's plant can still make.</summary>
+    double PowerFor(int slot, double kn) => Capped(slot, handling[slot].PowerFor(kn));
+
+    double Capped(int slot, double powerW)
+    {
+        var h = handling[slot];
+        double cap = powerCap[slot];
+        return Math.Clamp(powerW, -cap * h.AsternPowerW, cap * h.MaxPowerW);
+    }
+
+    // ------------------------------------------------------------------ damage
+
+    /// <summary>What damage left a ship (docs/battle/fighting.md 4.3a): the share of its power its plant can still make
+    /// (what's rung is held within it, so every tier steams no faster), and its steering: free, its rudder jammed at an
+    /// angle, or lost (trailing amidships). Take the ship off rails first; a coarse one is laid again after.</summary>
+    public void SetDamage(int slot, double powerCap, Steering steering, double jamRudderRad)
+    {
+        this.powerCap[slot] = Math.Clamp(powerCap, 0, 1);
+        this.steering[slot] = steering;
+        jamRudder[slot] = steering == Steering.Jammed ? jamRudderRad : 0;
+        powerOrder[slot] = Capped(slot, powerOrder[slot]);
+        if (steering != Steering.Free)
+            rudder[slot] = jamRudder[slot];
+    }
+
+    public double PowerCapOf(int slot) => powerCap[slot];
+    public Steering SteeringOf(int slot) => steering[slot];
 
     public void ClearRoute(int slot)
     {
@@ -815,6 +847,12 @@ public sealed class ShipStore
             h.Add(routeLoop[i]);
             h.Add(landSide[i]);
             h.Add(backstops[i]);
+            if (powerCap[i] != 1 || steering[i] != Steering.Free)
+            {
+                h.Add(powerCap[i]);   // only then, so a world without damage hashes as it did before
+                h.Add((int)steering[i]);
+                h.Add(jamRudder[i]);
+            }
             h.Add(tier[i] != ClockTier.Fine);
             if (tier[i] == ClockTier.Coarse)
                 h.Add(1);   // only then, so a world without coarse ships hashes as it did before the tier
@@ -876,6 +914,9 @@ public sealed class ShipStore
         Array.Resize(ref courseRudder, n);
         Array.Resize(ref clearance, n);
         Array.Resize(ref powerOrder, n);
+        Array.Resize(ref powerCap, n);
+        Array.Resize(ref jamRudder, n);
+        Array.Resize(ref steering, n);
         Array.Resize(ref speedOrderKn, n);
         Array.Resize(ref route, n * routeCap);
         Array.Resize(ref routeCount, n);
@@ -995,6 +1036,9 @@ public readonly struct ShipState(ShipStore store, int slot)
 
     /// <summary>The power rung (what the engines are going to), W.</summary>
     public double PowerOrder => store.powerOrder[slot];
+    /// <summary>The share of its power the plant can still make, and its steering (damage, fighting.md 4.3a).</summary>
+    public double PowerCap => store.powerCap[slot];
+    public Steering Steering => store.steering[slot];
     public int RouteCount => store.routeCount[slot];
     public int RouteNext => store.routeNext[slot];
 

@@ -13,7 +13,7 @@ namespace Fleetwright.Sim.Tests;
 public class GunneryTests(ITestOutputHelper output)
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
-    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
+    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json")) with { HitsDoDamage = false };   // fire control alone
     const double Lat = 56.0, Lon = 4.0, Kyd = 914.4;
 
     static ShipClass Class(string name) => Fleet.Get(name).Class!;

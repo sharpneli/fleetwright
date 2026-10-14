@@ -10,6 +10,7 @@
   "seed": 4,
   "camera": [56.47, 4.18, 40],
   "sides": ["Britain", "Germany"],
+  "propellant": { "Britain": 2, "Germany": 0.1 },
   "player": "Britain",
   "fight": ["Britain", "Germany"],
   "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 },

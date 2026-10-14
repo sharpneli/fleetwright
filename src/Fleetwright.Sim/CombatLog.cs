@@ -1,21 +1,48 @@
+using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim;
 
-/// <summary>What a combat log line records (damage's kinds join in 4.3a).</summary>
+/// <summary>What a combat log line records.</summary>
 public enum CombatEvent : byte
 {
     /// <summary>A battery fired a salvo: Count guns.</summary>
     Fired,
-    /// <summary>A shell hit a ship (Target): its shell type (the shooter's class's), what it hit comes with damage.</summary>
+    /// <summary>A shell hit a ship (Target): Count its shell type (the shooter's class's), and what it did (the damage
+    /// system's line: the part, the outcome, the effects, the shell's kind and calibre).</summary>
     Hit,
     /// <summary>A salvo's fall straddled its target (Count shells), as it truly fell.</summary>
     Straddle,
+    /// <summary>A ship (Target) lost: its magazine blew up (fighting.md 4.3a; foundering and capsizing come in 4.3b).</summary>
+    Lost,
+}
+
+/// <summary>What a hit did, as the log tells it.</summary>
+[Flags]
+public enum HitEffect : ushort
+{
+    None = 0,
+    Destroyed = 1,
+    Disabled = 2,
+    Damaged = 4,
+    /// <summary>Holed near or under the waterline.</summary>
+    Holed = 8,
+    Fire = 16,
+    Jammed = 32,
+    Magazine = 64,
+    /// <summary>Its steering lost or jammed.</summary>
+    Steering = 128,
+    /// <summary>Its power cut.</summary>
+    Power = 256,
 }
 
 /// <summary>A line of the combat log: when, what, who fired (an entity) with which battery, at whom, and a count or a
-/// shell type.</summary>
-public readonly record struct CombatEntry(long Ms, CombatEvent Kind, int Shooter, int Battery, int Target, int Count);
+/// shell type; a hit's line also what it did: the part it's told by (a node of the target's class: a component, then
+/// the rooms; -1 for none), the outcome, its effects, and the shell's kind and calibre (so the line reads after the
+/// shooter is gone).</summary>
+public readonly record struct CombatEntry(long Ms, CombatEvent Kind, int Shooter, int Battery, int Target, int Count, int Part = -1,
+    Outcome Outcome = default, HitEffect Effect = default, ShellKind Shell = default, float CalibreMm = 0);
 
 /// <summary>The world's record of the fighting (docs/world/architecture.md: "who fired first and what each hit did";
 /// docs/battle/fighting.md 4.2b): a ring of plain lines, the newest kept. Encounters, missions and the damage report
@@ -53,6 +80,11 @@ public sealed class CombatLog(int capacity)
             h.Add(e.Shooter);
             h.Add(e.Target);
             h.Add(e.Count);
+            if (e.Kind == CombatEvent.Hit)
+            {
+                h.Add(e.Part);
+                h.Add((int)e.Outcome | (int)e.Effect << 8);
+            }
         }
     }
 

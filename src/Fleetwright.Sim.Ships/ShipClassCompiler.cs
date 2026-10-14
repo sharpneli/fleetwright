@@ -83,6 +83,7 @@ public static class ShipClassCompiler
                 cell.ToFrozenDictionary(StringComparer.Ordinal), room.ToFrozenDictionary(StringComparer.Ordinal), bulkhead.ToFrozenDictionary(StringComparer.Ordinal),
                 deck.ToFrozenDictionary(StringComparer.Ordinal), tier.ToFrozenDictionary(StringComparer.Ordinal), section.ToFrozenDictionary(StringComparer.Ordinal));
             c.Solids = new ShipSolids(c);
+            FunctionTable.Build(c);
             c.LayoutHash = LayoutHash(c);
             return c;
         }
@@ -511,6 +512,7 @@ public static class ShipClassCompiler
         void Weapons(ShipClass c)
         {
             var era = Kinds.EraOf(ship.Design.Look?.Era);
+            c.Era = era;
             string navy = ship.Design.Look?.Navy ?? "generic";
             var mounts = c.mounts;
             var batteries = new List<BatteryRow>();

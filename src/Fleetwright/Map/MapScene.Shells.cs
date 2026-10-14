@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Numerics;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Ai;
+using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Ships;
 using Fleetwright.Sim.Core;
 using ImGuiNET;
@@ -185,7 +187,70 @@ public sealed partial class MapScene
                 ImGui.TextDisabled($"{gun} on {TargetLabel(s, v.Target[i])}: {StateText(v.State[i])}, " +
                                    $"{(v.Local[i] ? "local control" : $"level {v.Level[i]}")}; {v.Salvos[i]} salvos, {v.Hits[i]} hits of {v.Shells[i]}");
         }
+        DamageRow(s, k, cls);
     }
+
+    /// <summary>The selected ship's condition, if it's been hit (docs/battle/fighting.md 4.3a; the full damage report is
+    /// 4.4's): power and the speed it makes, mounts and directors working, steering, crew lost, fires and holes; and its
+    /// newest hits, cause to effect.</summary>
+    void DamageRow(Snapshot s, int k, ShipClass cls)
+    {
+        var c = s.Conditions;
+        int i = c.IndexOf(selected);
+        if (i < 0)
+            return;
+        double top = cls.Motion.MaxSpeedKn, kn = cls.SpeedAt(cls.PowerAt(top) * c.PowerCap[i]);
+        string steer = c.Steering[i] switch
+        {
+            Steering.Jammed => "; RUDDER JAMMED",
+            Steering.Lost => "; steering lost",
+            _ => "",
+        };
+        ImGui.Text(string.Format(CultureInfo.InvariantCulture, "Damage: {0} hits; power {1:0}% ({2:0.0} of {3:0.0} kn); mounts {4} of {5}; directors {6} of {7}{8}; " +
+            "crew lost {9:0}; fires {10}; holes {11:0.00} m²{12}", c.Hits[i], 100 * c.PowerCap[i], kn, top, c.MountsWorking[i], c.Mounts[i], c.DirectorsWorking[i],
+            c.Directors[i], steer, c.CrewLost[i], c.Fires[i], c.BreachM2[i], c.Status[i] == ShipStatus.GoingDown ? "; GOING DOWN" : ""));
+        var log = s.CombatLog;
+        for (int j = 0, shown = 0; j < log.Count && shown < 3; j++)
+        {
+            ref readonly var e = ref log.Entries[j];
+            if (e.Kind != CombatEvent.Hit || e.Target != selected)
+                continue;
+            shown++;
+            ImGui.TextDisabled("  " + HitText(e, cls));
+        }
+    }
+
+    /// <summary>A hit's line, cause to effect: "305mm AP · B (main) · defeated · jammed".</summary>
+    static string HitText(in CombatEntry e, ShipClass target)
+    {
+        string part = e.Part < 0 ? "-" : e.Part < target.Components.Length
+            ? $"{target.ComponentId(e.Part)}"
+            : $"{target.RoomId(e.Part - target.Components.Length)}";
+        string outcome = e.Outcome switch
+        {
+            Outcome.PassedThrough => "passed through",
+            Outcome.BurstInside => "burst inside",
+            Outcome.BurstInPlate => "burst in the plate",
+            Outcome.LowOrder => "low-order burst",
+            Outcome.BurstOutside => "burst outside",
+            Outcome.BrokeUp => "broke up",
+            Outcome.BurstBeyond => "burst beyond",
+            var o => o.ToString().ToLowerInvariant(),
+        };
+        var fx = new List<string>();
+        foreach (var (f, word) in HitWords)
+            if (e.Effect.HasFlag(f))
+                fx.Add(word);
+        string kind = e.Shell switch { ShellKind.Ap => "AP", ShellKind.Common => "common", _ => "HE" };
+        return string.Format(CultureInfo.InvariantCulture, "{0:0}mm {1} · {2} · {3}{4}", e.CalibreMm, kind, part, outcome, fx.Count > 0 ? " · " + string.Join(", ", fx) : "");
+    }
+
+    static readonly (HitEffect, string)[] HitWords =
+    [
+        (HitEffect.Magazine, "MAGAZINE"), (HitEffect.Steering, "steering"), (HitEffect.Power, "power cut"), (HitEffect.Jammed, "turret jammed"),
+        (HitEffect.Destroyed, "wrecked"), (HitEffect.Disabled, "put out of action"), (HitEffect.Damaged, "damaged"), (HitEffect.Holed, "holed"),
+        (HitEffect.Fire, "fire"),
+    ];
 
     /// <summary>A target as the player knows it: a ship on the screen (own side, or all with "truth") by its label, else
     /// its contact (the class it's taken for, or "contact").</summary>

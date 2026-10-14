@@ -18,6 +18,7 @@
   "seed": 1916,
   "camera": [56.95, 5.0, 250],
   "sides": ["Britain", "Germany"],
+  "propellant": { "Britain": 2, "Germany": 0.1 },
   "player": "Britain",
   // the afternoon of 31 May 1916: good early (the battlecruisers sighted each other at ~14 nm), worse later in
   // the haze and smoke (12-16 km); a light SW wind, force 2-3. One weather for now (docs/battle/plan.md 3.2b)

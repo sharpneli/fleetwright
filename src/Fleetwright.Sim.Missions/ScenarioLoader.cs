@@ -58,6 +58,8 @@ public static class ScenarioLoader
             w.Apply(Command.SetWeather(we.VisibilityM, we.WindFromDeg, we.WindMs));
         foreach (var (side, quality) in s.Crews)
             w.Apply(GunnerySystem.SetCrew(side, quality));
+        foreach (var (side, factor) in s.Propellant)
+            w.Apply(DamageSystem.SetPropellant(side, factor));
         var placed = new List<(ScenarioUnit Squadron, int Index, double AsternM, double AbeamM)>();
         var entities = new Dictionary<(ScenarioUnit, int), int>();   // a unit by identity (it has no Equals of its own)
         foreach (var top in s.Units)

@@ -33,7 +33,7 @@ public static class ShipMotion
         // the helm, then the rudder at its gear's rate
         double order = HelmOrder(s, i, h, set, shore);
         double d = s.rudder[i], step = h.RudderRateRadS * dt;
-        s.rudder[i] = d + Math.Clamp(order - d, -step, step);
+        s.rudder[i] = s.steering[i] != Steering.Free ? s.jamRudder[i] : d + Math.Clamp(order - d, -step, step);   // jammed, or trailing
 
         // the engines toward what's rung: power grows at the plant's rate, falls toward none at the throttle's
         double p = s.power[i], want = s.powerOrder[i];

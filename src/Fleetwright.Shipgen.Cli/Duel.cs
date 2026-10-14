@@ -16,7 +16,7 @@ static class Duel
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public record Options(double RangeM, int Level, int Runs, double Minutes, double OwnKn, double TargetKn, double BearingDeg, double TargetCourseDeg,
-        CrewQuality Crew, int Seed, int Battery, bool Trace = false);
+        CrewQuality Crew, int Seed, int Battery, bool Trace = false, bool Damage = false);
 
     public readonly record struct Result(int Shells, int Hits, int Salvos, int Straddles, double FirstHitS, double FirstStraddleS, double GunneryMs,
         double ShellsMs);
@@ -52,7 +52,8 @@ static class Duel
 
     public static int Run(string shooterName, string targetName, Func<string, Design> load, string settingsPath, Options o)
     {
-        var settings = SimSettings.Load(settingsPath);
+        // fire control alone, unless asked: hits do nothing to the target (it would slow, turn and sink under them)
+        var settings = SimSettings.Load(settingsPath) with { HitsDoDamage = o.Damage };
         var shooter = ShipClassCompiler.Compile(ShipDesign.Build(load(shooterName)));
         var target = targetName == shooterName ? shooter : ShipClassCompiler.Compile(ShipDesign.Build(load(targetName)));
         var row = shooter.Batteries[o.Battery];

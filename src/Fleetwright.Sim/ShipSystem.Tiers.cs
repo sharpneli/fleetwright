@@ -125,12 +125,12 @@ public sealed partial class ShipSystem
     }
 
     /// <summary>Whether a ship may be put on rails as its orders say, steady or not: steered on a course or a route,
-    /// its engines ahead or stopped. (Damage, when it comes, will keep a ship off: a flooding or burning ship is
-    /// coarse, 4.8.)</summary>
+    /// its engines ahead or stopped, its rudder answering the helm (damage, docs/battle/fighting.md 4.3a: a jammed or
+    /// lost rudder keeps it off; a flooding or burning ship will be kept off too, 4.3b).</summary>
     bool Placeable(int slot)
     {
         var s = Store[slot];
-        return (s.Helm == Helm.Course || s.Helm == Helm.Route && s.RouteNext < s.RouteCount) && s.PowerOrder >= 0;
+        return (s.Helm == Helm.Course || s.Helm == Helm.Route && s.RouteNext < s.RouteCount) && s.PowerOrder >= 0 && s.Steering == Steering.Free;
     }
 
     /// <summary>Steaming steady: on a course or a route's leg and on it, rudder amidships, no swing, the engines at what
@@ -139,7 +139,7 @@ public sealed partial class ShipSystem
     {
         var s = Store[slot];
         bool coarse = s.Tier == ClockTier.Coarse;   // coarse: its manoeuvre done (its power isn't stepped)
-        if (s.Helm is not (Helm.Course or Helm.Route) || (coarse ? !Store.CoarseSteady(slot) || s.PowerOrder < 0 : !NotSwinging(s) || s.Power < 0 || s.Power != s.PowerOrder))
+        if (s.Helm is not (Helm.Course or Helm.Route) || s.Steering != Steering.Free || (coarse ? !Store.CoarseSteady(slot) || s.PowerOrder < 0 : !NotSwinging(s) || s.Power < 0 || s.Power != s.PowerOrder))
             return false;
         double want = s.Helm == Helm.Course ? s.CourseOrderDeg : Earth.Bearing(s.Position, s.Waypoint(s.RouteNext));
         if (Math.Abs(AngleDeg(want - s.HeadingDeg)) > settings.RailsMaxCourseErrDeg)
@@ -738,6 +738,17 @@ public sealed partial class ShipSystem
             Store.Derail(Store.CoarseSlot(Store.CoarseCount - 1));
         EnsureTick(world);
         world.OffRails();
+    }
+
+    /// <summary>What damage left a ship (docs/battle/fighting.md 4.3a): its power and steering into the store, the ship
+    /// (and its unit) off rails first, and a coarse one laid again from where it is.</summary>
+    internal void Damaged(World world, int slot, double powerCap, Steering steering, double jamRudderRad)
+    {
+        if (Store.OnRails(slot))
+            Derail(world, Store[slot].Entity);
+        Store.SetDamage(slot, powerCap, steering, jamRudderRad);
+        if (Store.TierOf(slot) == ClockTier.Coarse)
+            Recoarsen(world, slot);
     }
 
     /// <summary>A ship into the coarse tier, from rails or the fine tick: riding its guide on rails, it rides it coarse;

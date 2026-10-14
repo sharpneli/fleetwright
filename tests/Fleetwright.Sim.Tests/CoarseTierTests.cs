@@ -16,7 +16,7 @@ public class CoarseTierTests(ITestOutputHelper output)
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
     const double Lat = 56.5, Lon = 4.0, Kn = 15;
-    const byte AiId = 5;   // the world registers ships 1, groups 2, shells 3 and gunnery 4; the AI comes after them
+    const byte AiId = 6;   // the world registers ships 1, groups 2, shells 3, gunnery 4 and damage 5; the AI comes after them
     static readonly UnitOrders O = new(AiId);
 
     static (World W, int Class) Make(SimSettings? s = null)

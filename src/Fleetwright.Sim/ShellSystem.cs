@@ -39,13 +39,16 @@ public sealed class ShellSystem : IWorldSystem
         /// <summary>Seconds after firing: the window's top, and the end (the hit, or the water until the window's run).</summary>
         public double WindowS, EndS;
         public int Salvo, Shooter, Battery, Generation;
-        /// <summary>The gunnery system's record of its salvo (for the spot), or -1 (the dev's fire); the shell type
-        /// (the shooter's class's).</summary>
-        public int Record, ShellType;
+        /// <summary>The gunnery system's record of its salvo (for the spot), or -1 (the dev's fire); the shell type and
+        /// the shooter's class (its registry id) it's of.</summary>
+        public int Record, ShellType, ShooterClass;
         public bool Alive;
         /// <summary>The ship it hits (an entity), or -1; and where it ends.</summary>
         public int Hit;
         public Vec3d End;
+        /// <summary>A hit's point and the shell's direction in that ship's frame, and its speed, m/s.</summary>
+        public P3 HitPoint, HitDirection;
+        public double HitSpeed;
     }
 
     /// <summary>A splash, or a hit's mark (Ship: the ship hit, an entity), at a moment, and the shell's calibre.</summary>
@@ -67,6 +70,7 @@ public sealed class ShellSystem : IWorldSystem
     int[] candidates = new int[16];
     readonly Vec3d[] chordPoint = new Vec3d[Chords + 2];
     readonly double[] chordTime = new double[Chords + 2];
+    double[] bearings = new double[16];
 
     /// <summary>The world's ballistic tables (the renderer looks shells up in them, by the snapshot's table index).</summary>
     public BallisticsRegistry Ballistics { get; } = new();
@@ -78,6 +82,9 @@ public sealed class ShellSystem : IWorldSystem
 
     /// <summary>Told of each shell of a gunnery salvo as it comes down (set by the world).</summary>
     internal GunnerySystem? Gunnery { get; set; }
+
+    /// <summary>Told of each hit as it lands (set by the world).</summary>
+    internal DamageSystem? Damage { get; set; }
 
     internal ShellSystem(SimSettings settings, ShipSystem ships, ShipIndex index, CombatLog log)
     {
@@ -120,6 +127,8 @@ public sealed class ShellSystem : IWorldSystem
     internal void Prepare(ShipClass cls)
     {
         biggest = Math.Max(biggest, cls.Solids.Radius);
+        if (bearings.Length < cls.Mounts.Length)
+            bearings = new double[Math.Max(cls.Mounts.Length, bearings.Length * 2)];
         path.Reserve(cls.Solids.Solids.Length);   // the hit query's room for it, now rather than at its first near miss
         foreach (ref readonly var b in cls.Batteries)
             Ballistics.Ensure(KeyOf(cls, b));
@@ -170,7 +179,7 @@ public sealed class ShellSystem : IWorldSystem
                 var v = (fwd * Math.Cos(er) + up * Math.Sin(er)) * v0 + shipVelocity;
                 double sp = v.Length, vu = Vec3d.Dot(v, up);
                 Launch(world, table, muzzle, (v - up * vu).Normalized(), double.RadiansToDegrees(Math.Asin(vu / sp)), sp / v0, salvo, ship.Entity,
-                    battery, -1, b.Fires);
+                    battery, -1, b.Fires, ship.ClassIndex);
             }
         }
     }
@@ -178,7 +187,7 @@ public sealed class ShellSystem : IWorldSystem
     /// <summary>A shell away: its record, its window and end solved, its window's event scheduled. False if it never
     /// comes down (no shell is made).</summary>
     public bool Launch(World world, int table, Vec3d muzzle, Vec3d forward, double elevationDeg, double speed, int salvo, int shooter, int battery,
-        int record = -1, int shellType = -1)
+        int record = -1, int shellType = -1, int shooterClass = -1)
     {
         var t = Ballistics[table];
         double end = t.Reaches(muzzle, forward, elevationDeg, speed, 0);
@@ -193,7 +202,8 @@ public sealed class ShellSystem : IWorldSystem
         s = new Shell
         {
             Table = table, FiredMs = world.Time.Ms, Muzzle = muzzle, Forward = forward, ElevationDeg = elevationDeg, Speed = speed, WindowS = top,
-            EndS = end, Salvo = salvo, Shooter = shooter, Battery = battery, Record = record, ShellType = shellType, Generation = gen, Alive = true,
+            EndS = end, Salvo = salvo, Shooter = shooter, Battery = battery, Record = record, ShellType = shellType, ShooterClass = shooterClass,
+            Generation = gen, Alive = true,
             Hit = -1,
         };
         alive++;
@@ -231,7 +241,14 @@ public sealed class ShellSystem : IWorldSystem
             if (s.Hit >= 0)
             {
                 Hits++;
-                log.Add(new CombatEntry(world.Time.Ms, CombatEvent.Hit, s.Shooter, s.Battery, s.Hit, s.ShellType));
+                if (Damage != null && settings.HitsDoDamage && s.ShooterClass >= 0 && s.ShellType >= 0)
+                    Damage.Strike(world, new Hit
+                    {
+                        Ship = s.Hit, Ms = world.Time.Ms, Point = s.HitPoint, Direction = s.HitDirection, SpeedMs = s.HitSpeed, Source = HitSource.Shell,
+                        Shell = ships.Class(s.ShooterClass).ShellTypes[s.ShellType], ShellType = s.ShellType, Shooter = s.Shooter, Battery = s.Battery,
+                    });
+                else
+                    log.Add(new CombatEntry(world.Time.Ms, CombatEvent.Hit, s.Shooter, s.Battery, s.Hit, s.ShellType));
             }
             else
                 Misses++;
@@ -255,7 +272,9 @@ public sealed class ShellSystem : IWorldSystem
             chordPoint[j] = t.Position(s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, chordTime[j], out vel);
         }
         double speed = vel.Length;
-        chordPoint[Chords + 1] = chordPoint[Chords] + vel * (settings.ShellUnderwaterM / speed);
+        // on under the water, for a shell that dives (a nose fuze fires on the water: a near miss)
+        bool dives = s.ShooterClass < 0 || s.ShellType < 0 || ships.Class(s.ShooterClass).ShellTypes[s.ShellType].Fuze != Fuze.Nose;
+        chordPoint[Chords + 1] = chordPoint[Chords] + vel * (dives ? settings.ShellUnderwaterM / speed : 0);
         chordTime[Chords + 1] = s.EndS + settings.ShellUnderwaterM / speed;
         (s.End, s.Hit) = (chordPoint[Chords], -1);
 
@@ -277,7 +296,13 @@ public sealed class ShellSystem : IWorldSystem
                     var cls = ships.Class(store[ship].ClassIndex);
                     long midMs = s.FiredMs + (long)Math.Round((chordTime[j] + chordTime[j + 1]) / 2 * 1000);
                     var frame = FrameAt(ship, midMs);
-                    if (!HitQuery.Trace(cls, frame, Attitude.Upright, chordPoint[j], chordPoint[j + 1], [], path))
+                    var attitude = store.Combat.Condition(ship).Attitude;
+                    int mounts = cls.Mounts.Length;
+                    if (bearings.Length < mounts)
+                        bearings = new double[Math.Max(mounts, bearings.Length * 2)];
+                    for (int m = 0; m < mounts; m++)
+                        bearings[m] = CombatStore.BearingAt(store.Combat.Mount(ship, m), cls.Mounts[m], midMs);
+                    if (!HitQuery.Trace(cls, frame, attitude, chordPoint[j], chordPoint[j + 1], bearings.AsSpan(0, mounts), path))
                         continue;
                     foreach (ref readonly var x in path.Crossings)
                         if (x.Kind is CrossingKind.HullIn or CrossingKind.PartIn)
@@ -286,8 +311,11 @@ public sealed class ShellSystem : IWorldSystem
                             {
                                 bestT = x.T;
                                 s.Hit = store[ship].Entity;
-                                s.End = HitQuery.ToWorld(cls, frame, Attitude.Upright, x.Point);
+                                s.End = HitQuery.ToWorld(cls, frame, attitude, x.Point);
                                 s.EndS = chordTime[j] + (chordTime[j + 1] - chordTime[j]) * x.T / Math.Max(path.Length, 1e-9);
+                                double dx = path.End.X - path.Start.X, dy = path.End.Y - path.Start.Y, dz = path.End.Z - path.Start.Z;
+                                double l = Math.Max(Math.Sqrt(dx * dx + dy * dy + dz * dz), 1e-9);
+                                (s.HitPoint, s.HitDirection, s.HitSpeed) = (x.Point, new P3(dx / l, dy / l, dz / l), speed);
                             }
                             break;
                         }

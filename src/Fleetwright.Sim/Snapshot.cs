@@ -83,6 +83,51 @@ public sealed class Snapshot
     /// 4.2b).</summary>
     public BatteriesView Batteries { get; } = new();
     public CombatLogView CombatLog { get; } = new();
+
+    /// <summary>The condition of the shown ships that have been hit (docs/battle/fighting.md 4.3a).</summary>
+    public ConditionsView Conditions { get; } = new();
+}
+
+/// <summary>A damaged ship's condition, as its own side knows it: hits taken, the share of its power left, its
+/// steering, whether it's going down, its mounts and directors working of all, crew lost, fires, the area of its holes
+/// to the sea (m²), and whether it's conned.</summary>
+public sealed class ConditionsView
+{
+    public int Count;
+    public int[] Entity = [], Hits = [], MountsWorking = [], Mounts = [], DirectorsWorking = [], Directors = [], Fires = [];
+    public double[] PowerCap = [], CrewLost = [], BreachM2 = [];
+    public Fleetwright.Sim.Combat.Steering[] Steering = [];
+    public Fleetwright.Sim.Combat.ShipStatus[] Status = [];
+    public bool[] Conned = [];
+
+    /// <summary>The row of a ship (an entity), or -1 (not hit).</summary>
+    public int IndexOf(int entity)
+    {
+        for (int i = 0; i < Count; i++)
+            if (Entity[i] == entity)
+                return i;
+        return -1;
+    }
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Entity.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, Entity.Length * 2));
+        Array.Resize(ref Entity, n);
+        Array.Resize(ref Hits, n);
+        Array.Resize(ref MountsWorking, n);
+        Array.Resize(ref Mounts, n);
+        Array.Resize(ref DirectorsWorking, n);
+        Array.Resize(ref Directors, n);
+        Array.Resize(ref Fires, n);
+        Array.Resize(ref PowerCap, n);
+        Array.Resize(ref CrewLost, n);
+        Array.Resize(ref BreachM2, n);
+        Array.Resize(ref Steering, n);
+        Array.Resize(ref Status, n);
+        Array.Resize(ref Conned, n);
+    }
 }
 
 /// <summary>An engaged battery: its ship (an entity) and battery (the class's index), what it's engaged on (an entity),

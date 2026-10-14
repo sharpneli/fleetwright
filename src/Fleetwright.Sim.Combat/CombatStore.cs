@@ -16,10 +16,11 @@ public struct MountState
 
 /// <summary>Each ship's combat columns beside its <see cref="ShipStore"/> (docs/battle/fighting.md "Where it lives"):
 /// its mounts' state, made at spawn and sized by the class, how many of its batteries are engaged and on what. Reached through
-/// <see cref="ShipState"/>'s accessors and the gunnery system; the damage system's condition joins it in 4.3a.</summary>
+/// <see cref="ShipState"/>'s accessors and the gunnery system; and its condition (the damage system's, 4.3a).</summary>
 public sealed class CombatStore
 {
     MountState[]?[] mounts = [];
+    ShipCondition?[] conditions = [];
     int[]?[] targets = [];
     int[] engaged = [];
     bool[] moved = [];
@@ -33,6 +34,7 @@ public sealed class CombatStore
         {
             int n = Math.Max(slot + 1, Math.Max(16, mounts.Length * 2));
             Array.Resize(ref mounts, n);
+            Array.Resize(ref conditions, n);
             Array.Resize(ref targets, n);
             Array.Resize(ref engaged, n);
             Array.Resize(ref moved, n);
@@ -50,6 +52,7 @@ public sealed class CombatStore
                 Rounds = row.Rounds > 0 ? row.Rounds : int.MaxValue,
             };
         }
+        (conditions[slot] ??= new ShipCondition()).Reset(cls);
         var t = targets[slot];
         if (t == null || t.Length != cls.Batteries.Length)
             targets[slot] = t = new int[cls.Batteries.Length];
@@ -62,6 +65,9 @@ public sealed class CombatStore
 
     /// <summary>The ship (entity) a ship's battery is engaged on, 0 for none.</summary>
     public int Target(int slot, int battery) => targets[slot] is { } t && battery < t.Length ? t[battery] : 0;
+
+    /// <summary>A ship's condition (docs/battle/fighting.md 4.3a): its parts, cells and what it can still do.</summary>
+    public ShipCondition Condition(int slot) => conditions[slot]!;
 
     /// <summary>A ship's mounts (the class's order).</summary>
     public Span<MountState> Mounts(int slot) => mounts[slot];

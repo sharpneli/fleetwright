@@ -1,0 +1,199 @@
+using Fleetwright.Sim.Combat;
+using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
+
+namespace Fleetwright.Sim;
+
+/// <summary>Given hits (docs/battle/fighting.md 4.3a, the bench; a port of research/simulation/damage-research/
+/// gunfire_ref.py <c>mc()</c>): hits from one shell at a range, spread over the target as the falling shells see it
+/// (uniformly over its outline across their line of flight, so side and deck share the hits by the danger space, and
+/// parts by their size), each through the world's own damage system on a ship of the class. A run is K hits on one
+/// ship (1: each hit on a fresh ship); the report sums the hits' outcomes and the ships' state after their K. Not world
+/// state: a tool for <c>shipgen hits</c> and the damage tests.</summary>
+public static class GivenHits
+{
+    /// <summary>What the hits did: per hit, where they struck, their outcomes, fires, crew and holes, how often each
+    /// part was put out of action (a node: component, then room); per ship after its K hits, its power and the share of
+    /// its top speed that makes (slowed: under <see cref="SlowShare"/>), steering, main mounts and directors, and how
+    /// many were lost.</summary>
+    public sealed class Report
+    {
+        public int Hits, Ships;
+        public readonly int[] Outcomes = new int[Enum.GetValues<Outcome>().Length];
+        public readonly Dictionary<string, int> Struck = [];
+        public int Fires, Magazines, Jams;
+        public double CrewLost, BreachM2;
+        public int[] PartsOut = [];
+        public double PowerCap, SpeedShare, MainWorking, MainMounts, DirectorsWorking, Directors;
+        public int Crippled, Slowed, SteeringLost, Lost, MainSilenced;
+        public double FallDeg, StrikeMs;
+
+        public double Share(Outcome o) => Hits > 0 ? (double)Outcomes[(int)o] / Hits : 0;
+    }
+
+    /// <summary>n hits of a shell at a range on a class, the shell coming from a bearing off the target's bow
+    /// (degrees clockwise: 90 from its starboard beam), in runs of perShip hits on one ship.</summary>
+    public const double SlowShare = 0.85;
+
+    public static Report Run(ShipClass target, ShellTypeRow shell, double maxElevationDeg, double rangeM, double aspectDeg, int n, int perShip, ulong seed,
+        SimSettings settings, Action<int, HitPath, TerminalResult, EffectsResult>? each = null)
+    {
+        var table = new BallisticTable(BallisticKey.Of(shell, maxElevationDeg));
+        double e = table.ElevationFor(rangeM, 10);
+        if (double.IsNaN(e))
+            throw new ArgumentException($"{rangeM:0} m is beyond the gun's reach");
+        var fall = table.Fall(e, 10);
+        var rep = new Report { FallDeg = fall.FallDeg, StrikeMs = fall.StrikeMs, PartsOut = new int[target.NodeCount] };
+
+        // the shell's flight in the ship's frame, and two axes across it
+        double b = double.DegreesToRadians(aspectDeg), f = double.DegreesToRadians(fall.FallDeg);
+        var dir = new P3(-Math.Cos(b) * Math.Cos(f), -Math.Sin(b) * Math.Cos(f), -Math.Sin(f));
+        var u = Normalize(Cross(dir, new P3(0, 0, 1)));
+        var v = Cross(u, dir);
+        var box = target.Solids.Bounds;
+        double u0 = double.MaxValue, u1 = double.MinValue, v0 = double.MaxValue, v1 = double.MinValue;
+        foreach (double x in (ReadOnlySpan<double>)[box.X0, box.X1])
+            foreach (double y in (ReadOnlySpan<double>)[box.Y0, box.Y1])
+                foreach (double z in (ReadOnlySpan<double>)[box.Base, box.Top])
+                {
+                    var p = new P3(x, y, z);
+                    (u0, u1, v0, v1) = (Math.Min(u0, Dot(p, u)), Math.Max(u1, Dot(p, u)), Math.Min(v0, Dot(p, v)), Math.Max(v1, Dot(p, v)));
+                }
+        double far = 2 * target.Solids.Radius + 50;
+
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), seed, settings);
+        int cls = w.Ships.AddClass(target);
+        var path = new HitPath();
+        var rng = RandomStream.Named(seed, "given hits");
+        var water = Waterplane.Level(target);
+        int entity = 0;
+        while (rep.Hits < n)
+        {
+            if (entity != 0)
+                w.Apply(ShipSystem.Drop(entity));
+            w.Apply(ShipSystem.Spawn(cls, 56, 4, 0, 15));
+            entity = w.Ships.NewestEntity;
+            int slot = w.Ships.Store.SlotOf(entity);
+            rep.Ships++;
+            for (int k = 0; k < perShip && rep.Hits < n; k++)
+            {
+                // a point across the line of flight, until one meets the ship
+                P3 at;
+                while (true)
+                {
+                    double a = rng.NextDouble(u0, u1), c = rng.NextDouble(v0, v1);
+                    var mid = new P3(u.X * a + v.X * c, u.Y * a + v.Y * c, u.Z * a + v.Z * c);
+                    ShipTracer.Trace(target, Add(mid, dir, -far), Add(mid, dir, far), [], water, path);
+                    int first = First(path);
+                    if (first < 0)
+                        continue;
+                    var x = path.Crossings[first];
+                    // the sea first: a miss, unless a shell that dives meets the ship within the shell system's reach
+                    // under the water (a nose fuze fires on the water)
+                    double wet = WaterIn(path, first);
+                    if (!double.IsNaN(wet) && (shell.Fuze == Fuze.Nose || x.T - wet > settings.ShellUnderwaterM))
+                        continue;
+                    at = x.Point;
+                    string where = Where(target, x);
+                    rep.Struck[where] = rep.Struck.GetValueOrDefault(where) + 1;
+                    break;
+                }
+                var hit = new Hit
+                {
+                    Ship = entity, Ms = w.Time.Ms, Point = at, Direction = dir, SpeedMs = fall.StrikeMs, Source = HitSource.Shell, Shell = shell, ShellType = -1,
+                };
+                var k0 = w.Ships.Store.Combat.Condition(slot);
+                var before = (PartState[])k0.State.Clone();
+                w.Damage.Strike(w, hit);
+                var t = w.Damage.LastTerminal;
+                var fx = w.Damage.LastEffects;
+                each?.Invoke(rep.Hits, w.Damage.LastPath, t, fx);
+                rep.Hits++;
+                rep.Outcomes[(int)t.Outcome]++;
+                rep.Fires += fx.Fire ? 1 : 0;
+                rep.Magazines += fx.Magazine ? 1 : 0;
+                rep.Jams += fx.Jammed ? 1 : 0;
+                rep.CrewLost += fx.CrewLost;
+                rep.BreachM2 += fx.BreachM2;
+                for (int i = 0; i < before.Length; i++)
+                    if (before[i] < PartState.Disabled && k0.State[i] >= PartState.Disabled)
+                        rep.PartsOut[i]++;
+            }
+            // the ship after its hits
+            var kk = w.Ships.Store.Combat.Condition(slot);
+            int main = 0, mainOk = 0, dirs = 0;
+            for (int m = 0; m < target.Mounts.Length; m++)
+                if (target.Mounts[m].Kind == ComponentKind.Main)
+                {
+                    main++;
+                    mainOk += kk.MountWorks[m] ? 1 : 0;
+                }
+            foreach (bool d in kk.DirectorWorks)
+                dirs += d ? 1 : 0;
+            rep.PowerCap += kk.PowerCap;
+            double top = target.Motion.MaxSpeedKn, speed = target.SpeedAt(target.PowerAt(top) * kk.PowerCap) / top;
+            rep.SpeedShare += speed;
+            rep.MainWorking += mainOk;
+            rep.MainMounts += main;
+            rep.DirectorsWorking += dirs;
+            rep.Directors += kk.DirectorWorks.Length;
+            bool lost = kk.Status != ShipStatus.Afloat, slowed = speed < SlowShare, steer = kk.Steering != Steering.Free;
+            rep.Lost += lost ? 1 : 0;
+            rep.Slowed += slowed ? 1 : 0;
+            rep.SteeringLost += steer ? 1 : 0;
+            rep.MainSilenced += main > 0 && mainOk == 0 ? 1 : 0;
+            rep.Crippled += lost || slowed || steer || main > 0 && mainOk == 0 ? 1 : 0;
+        }
+        return rep;
+    }
+
+    /// <summary>Where the path met the sea before crossing i, or NaN.</summary>
+    static double WaterIn(HitPath path, int i)
+    {
+        var xs = path.Crossings;
+        for (int j = 0; j < i; j++)
+            if (xs[j].Kind == CrossingKind.WaterIn)
+                return xs[j].T;
+        return double.NaN;
+    }
+
+    /// <summary>The first crossing into the ship: its hull or a part.</summary>
+    static int First(HitPath path)
+    {
+        var xs = path.Crossings;
+        for (int i = 0; i < xs.Length; i++)
+            if (xs[i].Kind is CrossingKind.HullIn or CrossingKind.PartIn)
+                return i;
+        return -1;
+    }
+
+    /// <summary>Where a hit struck, in a word: the side armour, the hull's side or deck, a turret, a barbette, the
+    /// conning tower, superstructure, a funnel, and so on.</summary>
+    static string Where(ShipClass c, in Crossing x)
+    {
+        if (x.Kind == CrossingKind.PartIn)
+            return c.Components[x.Index].Kind switch
+            {
+                ComponentKind.Main or ComponentKind.Secondary or ComponentKind.Torpedo => "mount",
+                ComponentKind.Superstructure => c.Components[x.Index].Role is ComponentRole.Director ? "director" : "superstructure",
+                var k => k.ToString().ToLowerInvariant(),
+            };
+        return x.Plate switch
+        {
+            PlateKind.SideArmour => "side armour",
+            PlateKind.HullDeck => "hull deck",
+            PlateKind.HullEnd => "hull end",
+            _ => "hull side",
+        };
+    }
+
+    static P3 Add(P3 a, P3 d, double s) => new(a.X + d.X * s, a.Y + d.Y * s, a.Z + d.Z * s);
+    static double Dot(P3 a, P3 b) => a.X * b.X + a.Y * b.Y + a.Z * b.Z;
+    static P3 Cross(P3 a, P3 b) => new(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
+
+    static P3 Normalize(P3 a)
+    {
+        double l = Math.Sqrt(Dot(a, a));
+        return new P3(a.X / l, a.Y / l, a.Z / l);
+    }
+}

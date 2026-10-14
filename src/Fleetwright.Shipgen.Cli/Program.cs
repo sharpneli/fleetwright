@@ -81,7 +81,13 @@ public static class Program
             each design's sea trials on the ship model, headless: turning circles at hard over and standard rudder,
             0 -> full, coasting, a crash stop, each beside the research's band for its kind; --out writes the circles
             as DIR/<design>_turns.svg
-        shipgen duel SHOOTER [TARGET] [--range M] [--level L] [--runs N] [--minutes M] [--speed KN] [--target-speed KN] [--bearing DEG] [--course DEG] [--crew trained] [--battery B] [--seed S]
+        shipgen duel SHOOTER [TARGET] [--range M] [--level L] [--runs N] [--minutes M] [--speed KN] [--target-speed KN] [--bearing DEG] [--course DEG] [--crew trained] [--battery B] [--seed S] [--damage]
+        shipgen hits TARGET [--shooter DESIGN] [--battery B] [--kind ap|common|he] [--range M] [--aspect DEG] [--n N] [--per-ship K] [--seed S] [--show N]
+            the damage model alone (docs/battle/fighting.md 4.3a): N hits of the shooter's battery's shell (the one it
+            fires, or --kind) at a range, spread over the target as the falling shells see it from --aspect degrees off
+            its bow, through the world's damage system: where they struck, the outcome classes, fire, crew and holes a
+            hit, the parts most often put out of action, and each ship's state after K hits (--per-ship); --show prints
+            the first N hits' paths. TARGET and DESIGN are paths or names (shipgen/designs, Content/Scenarios/Designs)
         shipgen ballistics DESIGN... [--research]
             each battery's range table from the shell it fires (docs/battle/fighting.md 4.2a): range, elevation, time
             of flight, angle of fall and striking velocity from a muzzle 10 m up, and the table's size and build time;
@@ -143,7 +149,11 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new Duel.Options(D(a, "range", 16_000 * 0.9144), a.Int("level", -1), a.Int("runs", 20), D(a, "minutes", 15), D(a, "speed", 25),
                         D(a, "target-speed", 25), D(a, "bearing", 90), D(a, "course", 0),
-                        Enum.Parse<Fleetwright.Sim.Core.CrewQuality>(a.Get("crew", "trained")!, ignoreCase: true), a.Int("seed", 1), a.Int("battery", 0), a.Has("trace"))),
+                        Enum.Parse<Fleetwright.Sim.Core.CrewQuality>(a.Get("crew", "trained")!, ignoreCase: true), a.Int("seed", 1), a.Int("battery", 0), a.Has("trace"), a.Has("damage"))),
+                "hits" => HitsBench.Run(a.Positional.ElementAtOrDefault(0) ?? "dreadnought", n => LoadDesign(Resolve(a, n)),
+                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
+                    new HitsBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), D(a, "range", 12_000), D(a, "aspect", 90), a.Int("n", 2000),
+                        a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0))),
                 "ballistics" => BallisticsBench.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "trials" => SeaTrials.Run(a.Positional, a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("out")),
@@ -181,7 +191,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];
@@ -207,6 +217,15 @@ public static class Program
     }
 
     static Shipgen.Design LoadDesign(string path) => Shipgen.Design.Load(path);
+
+    /// <summary>A design by path, or by name among the shipped designs and then the scenarios'.</summary>
+    static string Resolve(Args a, string n)
+    {
+        if (File.Exists(n))
+            return n;
+        string shipped = Path.Combine(Root(a), "designs", n + ".json");
+        return File.Exists(shipped) ? shipped : Path.Combine(Root(a), "..", "Content", "Scenarios", "Designs", n + ".json");
+    }
 
     static double D(Args a, string k, double def) => a.Get(k) is { } v ? double.Parse(v, System.Globalization.CultureInfo.InvariantCulture) : def;
 

@@ -1,3 +1,4 @@
+using Fleetwright.Sim.Combat;
 using System.Diagnostics;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Ai;
@@ -166,6 +167,7 @@ sealed class FightTally(CombatLog log)
     }
 
     readonly SortedDictionary<(int Shooter, int Battery, int Target), Line> lines = [];
+    readonly List<CombatEntry> losses = [];
     long read;
 
     public bool Any => lines.Count > 0;
@@ -191,6 +193,9 @@ sealed class FightTally(CombatLog log)
                 case CombatEvent.Straddle:
                     l.Straddles++;
                     break;
+                case CombatEvent.Lost:
+                    losses.Add(e);
+                    break;
             }
         }
         read = log.Written;
@@ -211,6 +216,26 @@ sealed class FightTally(CombatLog log)
             string Clock(long ms) => ms == long.MaxValue ? "-" : new WorldTime(ms).ToString()[11..19];
             Console.WriteLine($"  {Name(shooter),-16} {gun,-12} on {Name(target),-16} {l.Salvos,4} salvos {l.Shells,5} shells {l.Straddles,4} straddles " +
                               $"{l.Hits,4} hits ({100.0 * l.Hits / Math.Max(l.Shells, 1),4:F1}%)   first {Clock(l.FirstMs)}, hit {Clock(l.FirstHitMs)}");
+        }
+        foreach (var e in losses)
+            Console.WriteLine($"  LOST: {Name(e.Target)} at {new WorldTime(e.Ms).ToString()[11..19]}, her magazine set off by {Name(e.Shooter)}'s battery {e.Battery}");
+
+        // what the hits did (docs/battle/fighting.md 4.3a): the ships still afloat that were hit
+        var store = w.Ships.Store;
+        bool header = false;
+        for (int slot = 0; slot < store.Slots; slot++)
+        {
+            if (!store.IsAlive(slot) || store.Combat.Condition(slot) is not { Damaged: true } k)
+                continue;
+            if (!header)
+                Console.WriteLine("the damage (hits taken, power and the speed it makes, mounts and directors working, steering, crew lost, fires, holes):");
+            header = true;
+            var c = store[slot].Handling.Class;
+            double top = c.Motion.MaxSpeedKn, kn = c.SpeedAt(c.PowerAt(top) * k.PowerCap);
+            int dirs = k.DirectorWorks.Count(x => x);
+            Console.WriteLine($"  {Name(store[slot].Entity),-16} {k.Hits,4} hits   power {100 * k.PowerCap,3:0}% ({kn,4:0.0} of {top:0.0} kn)   mounts {k.MountsWorking,2} of " +
+                              $"{k.MountWorks.Length,-2}  directors {dirs} of {k.DirectorWorks.Length}   {k.Steering,-7}  crew {k.CrewLost,5:0}   fires {k.Fires,2}   holes {k.BreachTotalM2:0.00} m²" +
+                              (k.Status != ShipStatus.Afloat ? "   GOING DOWN" : ""));
         }
     }
 }

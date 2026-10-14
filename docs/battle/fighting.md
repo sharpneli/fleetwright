@@ -1,7 +1,8 @@
 # Plan: fighting (battle module step 4)
 
 2026-10-13. Status: **agreed with the user 2026-10-13** ("Decisions" at the end, folded into the steps), and iterated
-as its steps are built. **4.0, 4.1, 4.2a, 4.2b and 4.2c done 2026-10-13; 4.3a, what a hit does, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
+as its steps are built. **4.0, 4.1, 4.2a, 4.2b and 4.2c done 2026-10-13, 4.3a (what a hit does) 2026-10-14; 4.3b, fire,
+flooding and going down, is next.** It details step 4 of `docs/battle/plan.md` ("Fighting"), keeping its numbers (other docs cite
 4.1, 4.3, 4.6, 4.7 and 4.9) and their subjects, and adds 4.0 (the weapon facts) and 4.10 (scale).
 
 ## The aim
@@ -721,6 +722,98 @@ it meets, whether and where the fuze fires, what is within reach of the burst):
   - replays hold, and there's no allocation per hit.
 - **Playable:** hits knock out guns, directors, speed and steering; a ship circles with its rudder jammed.
 
+**4.3a done 2026-10-14.** Hits do something now. Where it lives:
+
+- **The contract and the condition** (`Sim.Combat/Condition.cs`): `Hit` (the ship, the time, the point and the shell's
+  direction in the ship's frame, the striking speed, the source, the shell, who fired) and `ShipCondition`, one per
+  ship in `CombatStore`, made at spawn. A node is a part damage reaches: the class's components, then its rooms. Each
+  has a state (ok, damaged, disabled, destroyed) and flags (jammed, burning). Each cell has its water (0 until 4.3b),
+  the area of its holes to the sea, a fire, and whether its bulkheads are torn. The ship has its crew lost, a status
+  (afloat, going down), its attitude (upright until 4.3b), the share of its power it can still make, and its
+  steering. No hit points.
+- **The functions as data** (`Sim.Ships/Functions.cs`, `FunctionTable`): `ShipClass.Functions` holds each function's
+  needs as nodes, all of one list and any of another. The rows are each mount (itself, its barbette, its magazine),
+  director, eye, shaft line (its engine room, shaft and propeller), boiler room (itself, any of the funnels it draws
+  through), rudder (itself, the steering room), and the command (any bridge or conning tower).
+  `Sim.Combat/Functions.cs` evaluates them in one generic pass: a function is worth the least of its needs' health
+  times the best of its alternatives'. The service networks (4.5) come in as more rows and kinds of node.
+- **The terminal model** (`Sim.Combat/Terminal.cs`): `resolve()` walked along the hit's own path, plate by plate (see
+  below for what's settled).
+- **The effects** (`Sim.Combat/Effects.cs`): the line of flight, holes, the burst (parts by distance and fragments,
+  the space it bursts in and those beyond bulkheads its fragments get through), crew, fire, jams, seams, magazines.
+- **`DamageSystem`** (world system 5; the AI is 6 now). A hit comes in from the shell system as a shell lands
+  (`Strike`). It traces the hit's own path (the mounts at their bearings), runs terminal, effects and functions, and
+  holds the ship to what's left: the store holds what's rung within the power it can make, in every tier, and a
+  jammed rudder stays where it jammed in the fine step and in coarse motion. A ship whose steering isn't free stays
+  off rails. Each hit writes one line to the combat log: the part, the outcome, the effects, and the shell's kind and
+  calibre. A magazine set off loses the ship: it stops, its guns are silent, and it's dropped `MagazineLossMs` later.
+- **The rest:**
+  - the hit query now sees the turrets at their bearings (until now they were always traced at rest);
+  - gunnery fires only working, unjammed mounts, and picks its rangefinders again when the shooter's condition
+    changes, falling back to local control at level 0 when its directors are gone;
+  - sighting skips wrecked posts;
+  - a nose-fuzed shell isn't carried on under the water (it fires on the sea: a near miss);
+  - the dev's `DamageSystem.Wreck` command (a node at a state; the tests use it);
+  - `DamageSystem.SetPropellant` and a scenario's `"propellant"` (by side).
+- **The bench:** `shipgen hits TARGET --shooter DESIGN [--battery B] [--kind ap|common|he] --range M [--aspect DEG]
+  [--n N] [--per-ship K] [--show N]`, a port of `mc()` on `GivenHits` (`Fleetwright.Sim`, shared with the tests). Hits
+  are spread over the target as the falling shells see it: uniformly across their line of flight, so side and deck
+  share by the danger space, and a shell that meets the sea first counts only if it dives and gets to the hull within
+  `ShellUnderwaterM`. Each hit goes through the world's own damage system. It prints where they struck, the outcome
+  classes, fire, crew and holes a hit, the parts most often put out of action, and each ship's state after K hits.
+  `shipgen scenario` prints the losses and each damaged ship's condition.
+- **On the map** (minimal; the report is 4.4's): the selected ship's condition under its batteries (hits, power and
+  the speed it makes, mounts and directors working, steering, crew lost, fires, holes) and its three newest hits,
+  cause to effect ("280mm AP · B barbette · defeated").
+
+What it settled, beyond the plan:
+
+- **Penetration is the reference's own fit**, Garzke and Dulin with its obliquity terms for side and deck plate,
+  fitted to the navweaps tables. The plan named De Marre (`damage-model-research.md` §8.1), but the reference is what
+  4.3a ports and calibrates against. The plate's material scales its thickness (`ArmourQuality` in settings: Krupp
+  cemented and its kin 1, Harvey 0.8, nickel steel 0.75, high-tensile steel 0.7, steel 0.55, wrought iron 0.45). Every
+  plate on the path counts, the hull's own plating and the decks and bulkheads between cells among them, so fuzes arm
+  on what's really there.
+- **A space's vitals are a share of it** (`RoomVital`, by kind of room). A burst inside a space reaches what matters in
+  it with the chance of the reference's system hit: the vitals' share plus the wreck area over the floor, times the
+  burst's force. A passing shell reaches them with the share. Machinery is 0.5, steering 0.6, a magazine 0.15
+  (propellant lies low, in cases), the rest 0.3. Without this every burst in a boiler room wrecked it, and a destroyer
+  was crippled by 98% of ten 4" hits.
+- **A wrecked funnel costs draught, not steam** (`DraughtFloor` 0.7: a boiler room keeps 70% with every funnel it
+  draws through wrecked). QE has one funnel for both boiler rooms, and medium HE stopped her dead before this.
+- **Only an enclosed turret flashes down to its magazine** (a battleship turret with its hoists), not a destroyer's
+  open mount. Fire at a magazine waits for fire in 4.3b.
+- **Propellant by side:** the research has no number, only the contrast: British cordite in silk bags exploded,
+  German brass-cased RP C/12 "only blazed". The squadrons and the Jutland have Britain 2, Germany 0.1. With 1 for
+  both, the squadrons fight lost three German battlecruisers to their magazines and no British.
+- **Hits do damage unless the settings say not** (`HitsDoDamage`): fire control's calibration (`GunneryTests`,
+  `shipgen duel` without `--damage`) runs without it, as the plan's "with or without damage" bench has it, and so do
+  the rails tests whose opposing ships must pass.
+- **The steering:** lost at the gear or the rudders, it jams where the rudder was (`RudderJamChance` 0.5) or trails
+  amidships. A ship that jams on a steady course jams amidships; one jammed in a turn circles.
+
+**The numbers** (`shipgen hits`, Release, about 200 µs a hit; nothing allocates):
+
+| Case | the sim | the reference / the anchor |
+|---|---|---|
+| 12" AP at 10 km on a V25, on the shipped (WWII) destroyer | 83%, 88% passed through | ~94% (16", 46 cm AP on a Fletcher) |
+| HE on a destroyer | bursts 99.9% | always bursts |
+| 4" HE on a V25: crippled (slowed under 85% speed, steering lost, guns silent) after 1, 3, 10, 40 hits | 5, 18, 62, 100% | crippled 12, 33, 77, 100% (5"/38 on a Fletcher; any machinery space lost) |
+| the same, lost (magazines only until 4.3b) | 0, 1, 2, 6% | lost 1, 5, 17, 74% (with flooding and fire) |
+| 30 6" HE hits on QE | 92% speed, 3.8 of 4 turrets, the director lost in 30% | loses upper works and fire control, keeps speed and turrets |
+| 15" AP on QE at 16 km: main belt hits that get through | 3% | Jutland: 1 in 17 |
+| the same: a turret jammed | 3.3% of hits | ~35% of heavy hits on turrets that don't get in |
+
+- **The squadrons fight with damage** (an hour, seed 4): Princess Royal blows up at 16:03; Lion takes 189 hits and
+  makes 22 kn on 44% power with 12 of 20 mounts; Von der Tann takes 133 and has 12 m² of holes, for 4.3b's water. The
+  fire at will piles onto the nearest ship (4.2c's), so the hits fall unevenly.
+- **Hashes moved** (system 5 is damage, so the AI's events are system 6's; the Jutland has a propellant): after an
+  hour, ladder-2 `C9C2AC0C`, Jutland `332E1471`.
+- **Found on the way:**
+  - `Effects`' fragment table as a collection-expression span property made two arrays a call;
+  - gunnery's and the store's free lists grew on a fight's first losses (they're sized up front now);
+  - gunnery counted salvos in which no shell got away (every one laid past the gun's reach): they're no salvo now.
+
 **4.3b Fire, flooding and going down.**
 
 - **Fire v0:** a burning cell or part is damaged over time, spreads to a neighbour with a chance a minute, and is put
@@ -935,14 +1028,30 @@ Placeholders in `DesignerPlaceholders.cs` until shipgen gives them, listed in pl
   designer gives it from the gun and mount (wear, delay coils, mixed rifling).
 - **Rangefinders** (4.2b): today one per director, the director's own; turret and spotting-top rangefinders (and their
   magnification) would give a battery several readings, as the era's ships had.
-- **Magazines:** the propellant kind and its sensitivity (a navy's and an era's).
+- **Magazines** (4.3a): the propellant kind, its packaging and its sensitivity (a navy's and an era's). Today a side's
+  factor in the scenario, 1 by default.
+- **Fillers** (4.3a): the explosive and its TNT equivalence (lyddite, TNT, Shellite, black powder); `FillerTnt` 1 until
+  then.
+- **Funnels' draught** (4.3a): how much steam a boiler room keeps with its funnel holed or wrecked; `DraughtFloor` 0.7
+  for every ship until then.
 - **Torpedoes:** speed and range settings per calibre and era (the warhead is exported already).
 - **For 4.5's systems:** generators, switchboards and the routes of power, hydraulics and data
   (`06-service-networks.md` §3.3).
 
 ## Questions to settle (for the user)
 
-None open. New ones go here as the steps raise them.
+From 4.3a (2026-10-14), each built one way and easy to change:
+
+1. **Penetration:** the reference's Garzke and Dulin fit, not the plan's De Marre. Keep it?
+2. **A magazine's loss in v0** drops the ship a minute after it blows up. Until then the enemy may still fire at it.
+   4.3b's loss by buoyancy and "seen to go" replace the minute.
+3. **Propellant by side:** Britain 2, Germany 0.1 in the squadrons and the Jutland. Tsushima keeps 1 for both.
+4. **Crippling a destroyer:** ten 4" HE hits cripple 62% of them (61% slowed under 85% of their speed); the reference cripples 77%
+   (any machinery space lost). A damaged space gives half, so one hit in a boiler room of four costs an eighth of the
+   steam. The steam lines that would make one hit matter more are the service networks' (4.5).
+5. **Medium HE on a battleship** costs a little speed, mostly through its funnels' draught (QE: 92% after 30 hits).
+   The research's R4 says such hits don't touch speed; its §8 says funnel hits cost draught.
+
 
 ## Decisions
 

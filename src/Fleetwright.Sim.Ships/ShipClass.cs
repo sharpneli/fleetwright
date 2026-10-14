@@ -41,6 +41,8 @@ public sealed class ShipClass
     internal Neighbour[] neighbours = [];
     internal ArmourLayer[] armourAbove = [];
     internal DeckPlate[] deckPlates = [];
+    internal FunctionRow[] functions = [];
+    internal int[] functionNodes = [], mountOfComponent = [];
     internal double[] powerKn = [], powerShp = [];
     internal string[] componentIds = [], turretTypeIds = [], cellIds = [], roomIds = [], bulkheadIds = [], deckIds = [], tierIds = [],
         sectionIds = [], sidePlateIds = [], armourBulkheadIds = [], materials = [], shellTypeIds = [];
@@ -66,6 +68,9 @@ public sealed class ShipClass
     public Slice DeckOutline { get; internal init; }
     public HydrostaticsRow Hydrostatics { get; internal init; }
     public MotionFacts Motion { get; internal init; }
+    /// <summary>The look's era: what the placeholders for the weapons and the fire load read until the designer gives
+    /// a year.</summary>
+    public Era Era { get; internal set; }
     /// <summary>The hull's own plating, beside the armour (fuzes arm on it, holes open in it).</summary>
     public PlatingRow Plating { get; internal set; }
     /// <summary>The parts and armour as solids for the tracer (ShipTracer), and the cells by section.</summary>
@@ -103,6 +108,17 @@ public sealed class ShipClass
     public ReadOnlySpan<ArmourBulkheadRow> ArmourBulkheads => armourBulkheads;
     public ReadOnlySpan<ArmourDeckRow> ArmourDecks => armourDecks;
 
+    /// <summary>What the damage model asks of the ship's parts (docs/battle/fighting.md 4.3a): each function's needs, as
+    /// nodes (<see cref="FunctionNodes"/>).</summary>
+    public ReadOnlySpan<FunctionRow> Functions => functions;
+
+    /// <summary>The parts damage reaches, as nodes: the components (0 to Components.Length - 1), then the rooms.</summary>
+    public int NodeCount => components.Length + rooms.Length;
+    public int RoomNode(int room) => components.Length + room;
+
+    /// <summary>The mount a component is, or stands on (a barbette); -1 for none.</summary>
+    public int MountOf(int component) => mountOfComponent[component];
+
     // ------------------------------------------------------------------ the pools
 
     public ReadOnlySpan<int> Links(Slice s) => links.AsSpan(s.Start, s.Count);
@@ -112,6 +128,7 @@ public sealed class ShipClass
     public ReadOnlySpan<ArmourLayer> ArmourAbove(Slice s) => armourAbove.AsSpan(s.Start, s.Count);
     public ReadOnlySpan<DeckPlate> DeckPlates(Slice s) => deckPlates.AsSpan(s.Start, s.Count);
     public ReadOnlySpan<ShellLoad> ShellLoads(Slice s) => shellLoads.AsSpan(s.Start, s.Count);
+    public ReadOnlySpan<int> FunctionNodes(Slice s) => functionNodes.AsSpan(s.Start, s.Count);
 
     // ------------------------------------------------------------------ ids
 

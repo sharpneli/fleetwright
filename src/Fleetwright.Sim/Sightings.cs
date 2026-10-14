@@ -252,9 +252,10 @@ public sealed class Sightings
             bool sil = !double.IsNaN(sunBrg) && Math.Abs(Angle(brg - sunBrg)) <= settings.SightSilhouetteArcDeg;
             var line = new SightLine(d, aspect, vis, sunEl, sil);
             int tried = 0;
+            var works = store.Combat.Condition(slot[nearIdx[m]]).EyeWorks;   // damage: a wrecked post sees nothing
             for (int e = 0; e < eyes.Length && tried < settings.SightEyes && !done; e++)
             {
-                if (!eyes[e].Sees(rel))
+                if (!eyes[e].Sees(rel) || !works[e])
                     continue;
                 tried++;
                 double margin = SightModel.Margin(eyes[e].HeightM, SightModel.Magnification(eyes[e], settings), tc, line, settings);

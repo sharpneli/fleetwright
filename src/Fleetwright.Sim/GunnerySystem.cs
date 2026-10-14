@@ -74,6 +74,8 @@ public sealed class GunnerySystem : IWorldSystem
         public double BiasR, BiasD, CorrR, CorrD, SpotHeightM;
         public FireControl.Ladder Ladder;
         public int Salvos, Shells, Hits, Straddles, Arm, SensorCount, PendHead, PendCount;
+        /// <summary>The shooter's condition's version its instruments were picked at (damage: a director lost).</summary>
+        public int Condition;
         public long FirstHitMs, FirstStraddleMs;
         public BatteryState State;
     }
@@ -124,10 +126,10 @@ public sealed class GunnerySystem : IWorldSystem
     Fc[] fcs = new Fc[16];
     Sensor[] sensors = new Sensor[16 * MaxSensors];
     Reading[] pending = new Reading[16 * PendingCap];
-    readonly Stack<int> freeFc = new();
+    readonly Stack<int> freeFc = new(64);
     int highFc;
     Salvo[] salvos;
-    readonly Stack<int> freeSalvo = new();
+    readonly Stack<int> freeSalvo;
     int highSalvo;
     bool ticking, ever;
     readonly CrewQuality[] crews = new CrewQuality[256];
@@ -139,6 +141,7 @@ public sealed class GunnerySystem : IWorldSystem
         (this.settings, this.ships, this.shells, this.log) = (settings, ships, shells, log);
         stream = RandomStream.Named(seed, "gunnery");
         salvos = new Salvo[Math.Max(settings.SalvoCapacity, 16)];
+        freeSalvo = new Stack<int>(salvos.Length);   // as big as the pool, so freeing never grows it
         Array.Fill(crews, CrewQuality.Trained);
     }
 
@@ -227,7 +230,7 @@ public sealed class GunnerySystem : IWorldSystem
             var r = stream.Derive((ulong)f).Derive((ulong)gen);
             fc.BiasR = r.NextGaussian();
             fc.BiasD = r.NextGaussian();
-            AddSensors(ref fc, f, cls, row, now, lvl, ref r);
+            AddSensors(ref fc, f, cls, row, store.Combat.Condition(slot), now, lvl, ref r);
             store.Combat.Engage(slot, b, target);
         }
         ever = true;
@@ -236,17 +239,20 @@ public sealed class GunnerySystem : IWorldSystem
         Tick(world, schedule: true);
     }
 
-    /// <summary>A battery's rangefinders: its directors' eyes, longest base first (as many as <see cref="MaxSensors"/>);
-    /// without one, the highest of its mounts' layers by eye.</summary>
-    void AddSensors(ref Fc fc, int f, ShipClass cls, in BatteryRow row, long now, GunneryLevel lvl, ref RandomStream r)
+    /// <summary>A battery's rangefinders: its working directors' eyes, longest base first (as many as
+    /// <see cref="MaxSensors"/>); without one, the highest of its working mounts' layers by eye, at local control.</summary>
+    void AddSensors(ref Fc fc, int f, ShipClass cls, in BatteryRow row, ShipCondition cond, long now, GunneryLevel lvl, ref RandomStream r)
     {
         int n = 0;
+        fc.Condition = cond.Version;
         if (!row.Local)
             foreach (int d in cls.Links(row.Directors))
             {
                 var eyes = cls.Eyes;
+                if (!cond.DirectorWorks[d])
+                    continue;
                 for (int e = 0; e < eyes.Length && n < MaxSensors; e++)
-                    if (eyes[e].Kind == EyeKind.Director && eyes[e].Component == cls.Directors[d].Component)
+                    if (eyes[e].Kind == EyeKind.Director && eyes[e].Component == cls.Directors[d].Component && cond.EyeWorks[e])
                     {
                         sensors[f * MaxSensors + n++] = new Sensor
                         {
@@ -257,17 +263,21 @@ public sealed class GunnerySystem : IWorldSystem
             }
         if (n == 0)
         {
-            // local control: the highest mount's layer, by eye
+            // local control: the highest working mount's layer, by eye (any mount's, when none works)
             double best = double.MinValue;
+            bool works = false;
             var s = new Sensor { Eye = -1 };
             foreach (int m in cls.Links(row.Mounts))
             {
                 ref readonly var comp = ref cls.Components[cls.Mounts[m].Component];
                 double h = comp.Bounds.Top - cls.Vertical.Waterline;
-                if (h > best)
-                    (best, s.X, s.Y, s.HeightM) = (h, cls.Mounts[m].X, cls.Mounts[m].Y, h);
+                bool w = cond.MountWorks[m];
+                if (w && !works || w == works && h > best)
+                    (best, works, s.X, s.Y, s.HeightM) = (h, w, cls.Mounts[m].X, cls.Mounts[m].Y, h);
             }
             sensors[f * MaxSensors + n++] = s;
+            if (!fc.Local)
+                fc.Level = 0;   // its directors gone: each mount for itself, by eye (the level local control fires at)
             fc.Local = true;
         }
         fc.SensorCount = n;
@@ -376,6 +386,13 @@ public sealed class GunnerySystem : IWorldSystem
         }
         var cls = ship.Handling.Class;
         var target = store[tslot];
+        var cond = store.Combat.Condition(slot);
+        if (cond.Version != fc.Condition)
+        {
+            // damage: its instruments picked again from what still works
+            var rs = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xDA3u).Derive((ulong)cond.Version);
+            AddSensors(ref fc, f, cls, cls.Batteries[fc.Battery], cond, now, settings.GunneryLevels[fc.Level], ref rs);
+        }
         var lvl = settings.GunneryLevels[fc.Level];
         var crew = settings.GunneryCrews[(int)crews[ship.Side]];
         var pic = world.Sightings.Of(ship.Side);
@@ -452,7 +469,8 @@ public sealed class GunnerySystem : IWorldSystem
         {
             ref readonly var mr = ref cls.Mounts[mounts[j]];
             bool inTraverse = store.Combat.Order(slot, mounts[j], mr, now, bearing, elevation);
-            firing[j] = inTraverse && CombatStore.InArcs(cls, mr, bearing) && store.Combat.Mount(slot, mounts[j]).Rounds > 0 && elevation <= mr.MaxElevationDeg;
+            firing[j] = inTraverse && cond.MountWorks[mounts[j]] && CombatStore.InArcs(cls, mr, bearing) && store.Combat.Mount(slot, mounts[j]).Rounds > 0 &&
+                        elevation <= mr.MaxElevationDeg;
             bears |= firing[j];
         }
         fc.State = !laid ? BatteryState.OutOfRange : !bears ? BatteryState.NotBearing : now < fc.OpenMs ? BatteryState.Tracking : BatteryState.Firing;
@@ -535,6 +553,7 @@ public sealed class GunnerySystem : IWorldSystem
         var cls = ship.Handling.Class;
         ref readonly var row = ref cls.Batteries[fc.Battery];
         var mounts = cls.Links(row.Mounts);
+        var cond = store.Combat.Condition(slot);
         if (firing.Length < mounts.Length)
             firing = new bool[Math.Max(mounts.Length, firing.Length * 2)];
         int n = 0;
@@ -544,7 +563,7 @@ public sealed class GunnerySystem : IWorldSystem
             ref readonly var ms = ref store.Combat.Mount(slot, mounts[j]);
             // loaded, with rounds; ordered on the target (not parked at its traverse's end) inside its arcs; and there
             double tol = settings.LayToleranceDeg;
-            firing[j] = ms.LoadedMs <= now && ms.Rounds > 0 && fc.OrderElevationDeg <= mr.MaxElevationDeg && CombatStore.InArcs(cls, mr, fc.OrderBearingDeg) &&
+            firing[j] = ms.LoadedMs <= now && ms.Rounds > 0 && cond.MountWorks[mounts[j]] && fc.OrderElevationDeg <= mr.MaxElevationDeg && CombatStore.InArcs(cls, mr, fc.OrderBearingDeg) &&
                         Math.Abs(Wrap(ms.TrainTo - fc.OrderBearingDeg)) <= tol &&
                         Math.Abs(CombatStore.BearingAt(ms, mr, now) - ms.TrainTo) <= tol && Math.Abs(CombatStore.ElevationAt(ms, mr, now) - ms.ElevTo) <= tol;
             if (firing[j])
@@ -616,17 +635,21 @@ public sealed class GunnerySystem : IWorldSystem
                 var point = centre + u * (sr * r.NextGaussian()) + w * (sd * r.NextGaussian());
                 point = point.Normalized() * Earth.Radius;
                 if (FireControl.Solve(table, muzzle, velocity, point, out var lay, e0) &&
-                    shells.Launch(world, tableIndex, muzzle, lay.Forward, lay.ElevationDeg, lay.Speed, salvo, fc.Shooter, fc.Battery, si, row.Fires))
+                    shells.Launch(world, tableIndex, muzzle, lay.Forward, lay.ElevationDeg, lay.Speed, salvo, fc.Shooter, fc.Battery, si, row.Fires,
+                        ship.ClassIndex))
                     sv.Shells++;
             }
             store.Combat.Fired(slot, mounts[j], mr, barrels, now);
         }
         sv.Left = sv.Shells;
+        if (sv.Shells == 0)
+        {
+            FreeSalvo(si);   // no shell got away (every one laid past its reach): no salvo
+            return;
+        }
         fc.Salvos++;
         fc.Shells += sv.Shells;
         log.Add(new CombatEntry(now, CombatEvent.Fired, fc.Shooter, fc.Battery, fc.Target, sv.Shells));
-        if (sv.Shells == 0)
-            FreeSalvo(si);
     }
 
     int AllocateSalvo()

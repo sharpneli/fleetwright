@@ -558,6 +558,142 @@ public sealed record SimSettings
     public int SalvoCapacity { get; init; } = 256;
     public int CombatLogCapacity { get; init; } = 4096;
 
+    // ------------------------------------------------------------------ damage (docs/battle/fighting.md 4.3a)
+    // research/simulation/damage-research/gunfire_ref.py and 08-gunfire-effects.md: the [INFERRED] numbers are its
+    // tuning values, fitted to the war-damage cases it names.
+
+    /// <summary>Whether hits do anything (the damage system's). Off, they're counted and logged only, as before 4.3a: a
+    /// bench calibrating fire control on its own (the duel, the gunnery tests) turns it off.</summary>
+    public bool HitsDoDamage { get; init; } = true;
+
+    /// <summary>What a shell that arms on armour it can defeat does, a row for each <c>ShellQuality</c> in order
+    /// (gunfire_ref.py OUTCOME: rn1916, km1916, rn1918, ww2, ijn_t91).</summary>
+    public ShellOutcomeRow[] ShellOutcomes { get; init; } =
+    [
+        new() { Name = "rn1916", Burst = 0.10, InPlate = 0.35, LowOrder = 0.10, Dud = 0.05, Broken = 0.40 },
+        new() { Name = "km1916", Burst = 0.40, InPlate = 0.15, LowOrder = 0.10, Dud = 0.15, Broken = 0.20 },
+        new() { Name = "rn1918", Burst = 0.55, InPlate = 0.10, LowOrder = 0.20, Dud = 0.10, Broken = 0.05 },
+        new() { Name = "ww2", Burst = 0.75, InPlate = 0.05, LowOrder = 0.07, Dud = 0.08, Broken = 0.05 },
+        new() { Name = "ijn_t91", Burst = 0.70, InPlate = 0.05, LowOrder = 0.07, Dud = 0.13, Broken = 0.05 },
+    ];
+
+    /// <summary>A plate's resistance as a share of the same thickness of Class A or Krupp cemented armour (the
+    /// penetration fit's plate), by the material's name; a name not listed is <see cref="ArmourQualityOther"/>.</summary>
+    public Dictionary<string, double> ArmourQuality { get; init; } = new()
+    {
+        ["Krupp cemented"] = 1, ["Krupp cemented (KC n/A)"] = 1, ["cemented armour"] = 1, ["Terni cemented"] = 1, ["Vickers cemented"] = 1,
+        ["Witkowitz cemented"] = 1, ["Class A"] = 1, ["Class A armour"] = 1, ["Class B"] = 1, ["STS"] = 1, ["special steel"] = 0.95,
+        ["non-cemented armour"] = 0.9, ["Vickers hardened"] = 0.9, ["Harvey nickel steel"] = 0.8, ["nickel steel"] = 0.75,
+        ["high-tensile steel"] = 0.7, ["compound"] = 0.6, ["steel"] = 0.55, ["mild steel"] = 0.5, ["wrought iron"] = 0.45,
+        ["aluminium alloy"] = 0.25, ["wood"] = 0.05,
+    };
+    public double ArmourQualityOther { get; init; } = 0.6;
+
+    /// <summary>Penetration: a common shell's capability as a share of AP's; an HE shell's nose fuze punches this many
+    /// calibres (times the square root of the obliquity's cosine) and bursts; each plate's resistance is drawn within
+    /// plus or minus this share.</summary>
+    public double CommonPenShare { get; init; } = 0.6;
+    public double HePenCalibres { get; init; } = 0.2;
+    public double PenSpread { get; init; } = 0.1;
+
+    /// <summary>A base fuze arms on a plate of this many calibres at normal impact (Okun's Mk 21; less at obliquity).</summary>
+    public double FuzeArmCalibres { get; init; } = 0.07;
+
+    /// <summary>A shell that can't get through a plate glances off it from this obliquity, surely by this many degrees
+    /// more, degrees.</summary>
+    public double RicochetFromDeg { get; init; } = 45;
+    public double RicochetSpanDeg { get; init; } = 20;
+
+    /// <summary>The fuze's delay distance is the delay times the residual velocity, times a draw between these.</summary>
+    public double DelayLow { get; init; } = 0.7;
+    public double DelayHigh { get; init; } = 1.1;
+
+    /// <summary>A shell crossing a machinery space (a boiler or engine room) is armed by what's in it (turbines, gears,
+    /// boilers: Johnston) with this chance.</summary>
+    public double MachineryArmChance { get; init; } = 0.45;
+
+    /// <summary>A shell that met the water before the hull strikes at this share of its velocity (08 3.8).</summary>
+    public double UnderwaterSpeedShare { get; init; } = 0.4;
+
+    /// <summary>A filler's TNT equivalence (PLACEHOLDER until the designer gives fillers: lyddite and TNT are about 1).</summary>
+    public double FillerTnt { get; init; } = 1;
+
+    /// <summary>The burst's radii, m, times the cube root of its TNT kg: equipment wrecked and most crew hit; light
+    /// structure and people injured; a contact burst's hole in plating, times the square root of 6 mm over the plate.</summary>
+    public double WreckRadiusK { get; init; } = 1.6;
+    public double BlastRadiusK { get; init; } = 3.5;
+    public double HoleRadiusK { get; init; } = 0.45;
+
+    /// <summary>A burst's force as a share of one inside: in the plate, outside on it, and low-order.</summary>
+    public double BurstInPlateK { get; init; } = 0.4;
+    public double BurstOutsideK { get; init; } = 0.15;
+    public double LowOrderK { get; init; } = 0.45;
+
+    /// <summary>A part within this share of the wreck radius is destroyed, within it disabled; a room is disabled by a
+    /// burst inside it whose wreck radius is this share of its length (else damaged, and twice damaged is disabled).</summary>
+    public double DestroyedShare { get; init; } = 0.5;
+    public double RoomDisableShare { get; init; } = 0.4;
+
+    /// <summary>A space's vitals as a share of its floor, by its kind (stores, accommodation, double bottom, magazine,
+    /// bunker, boiler room, engine room, steering, TDS, torpedo room, fuel tank, cargo tank, hold): a burst inside it
+    /// reaches them with this chance and its wreck area's share of the floor (times its force), a shell passing
+    /// through with this chance; a burst's fragments through a bulkhead reach the next space's at
+    /// <see cref="NeighbourShare"/> of that. Boilers and engines fill their rooms; propellant lies low in its magazine,
+    /// in cases.</summary>
+    public double[] RoomVital { get; init; } = [0.3, 0.3, 0.3, 0.15, 0.3, 0.5, 0.5, 0.6, 0.3, 0.3, 0.3, 0.3, 0.3];
+
+    /// <summary>A boiler room keeps this share of its steam with every funnel it draws through wrecked (the draught
+    /// lost; 08-gunfire-effects.md §8: funnel hits cost draught, not the boilers).</summary>
+    public double DraughtFloor { get; init; } = 0.7;
+    public double NeighbourShare { get; init; } = 0.5;
+
+    /// <summary>Holes: a shell that passes through plating leaves a hole this many calibres across; plating holed up to
+    /// this far over the waterline lets water in; a heavy shell (this calibre, mm, and up) defeated by a belt at the
+    /// waterline opens its seams with this chance, a leak of this many square metres.</summary>
+    public double ShellHoleCalibres { get; init; } = 1.5;
+    public double HoleOverWaterlineM { get; init; } = 0.5;
+    public double SeamLeakMinMm { get; init; } = 270;
+    public double SeamLeakChance { get; init; } = 0.4;
+    public double SeamLeakM2 { get; init; } = 0.002;
+
+    /// <summary>Fire: a burst's chance by the shell's kind (AP, common, HE), times the fire load where it bursts (by the
+    /// look's era: Victorian, Great War, treaty, WWII, Cold War; and in superstructure, machinery or the rest of the
+    /// hull), times the burst's size (0.5 + 0.5 times the cube root of W over 10 kg, at most 1.5), and this share when
+    /// it bursts outside; fragments reaching a mount's ready ammunition light it with this chance.</summary>
+    public double[] FireChance { get; init; } = [0.15, 0.30, 0.45];
+    public double[] FireLoadByEra { get; init; } = [1.6, 1.2, 1, 1, 1];
+    public double FireLoadSuperstructure { get; init; } = 1.3;
+    public double FireLoadMachinery { get; init; } = 0.5;
+    public double FireLoadHull { get; init; } = 0.8;
+    public double FireOutsideShare { get; init; } = 0.4;
+    public double ReadyAmmoFireChance { get; init; } = 0.3;
+
+    /// <summary>A hit that doesn't get through a turret or barbette jams its mount (a conning tower: blinds it) with
+    /// these chances by calibre: from <see cref="JamHeavyMm"/>, from <see cref="JamMediumMm"/>, and smaller (08 3.7, R5).</summary>
+    public double JamHeavyMm { get; init; } = 270;
+    public double JamMediumMm { get; init; } = 200;
+    public double[] JamChance { get; init; } = [0.35, 0.05, 0.01];
+
+    /// <summary>A burst in a magazine, or in a turret or its barbette (the handling path to it), sets off the magazine
+    /// with these chances, times the side's propellant (1 by default; <c>DamageSystem.SetPropellant</c>). v0: the ship is
+    /// lost at once and goes under <see cref="MagazineLossMs"/> later (the venting race is fighting.md 4.5's).</summary>
+    public double MagazineFlashChance { get; init; } = 0.25;
+    public double TurretFlashChance { get; init; } = 0.25;
+    public int MagazineLossMs { get; init; } = 60_000;
+
+    /// <summary>Casualties: people per square metre on open decks and in parts with no crew of their own; the share hit
+    /// within the wreck radius and in the blast's ring; a shell passing without bursting hits a lane this wide, m, at
+    /// this share.</summary>
+    public double DeckCrewPerM2 { get; init; } = 0.01;
+    public double CasualtyWreckShare { get; init; } = 0.8;
+    public double CasualtyBlastShare { get; init; } = 0.2;
+    public double PassLaneM { get; init; } = 1;
+    public double PassCasualtyShare { get; init; } = 0.5;
+
+    /// <summary>Steering lost at the steering gear or the rudder jams the rudder where it is with this chance (a ship
+    /// that circles); else it trails amidships, the helm gone.</summary>
+    public double RudderJamChance { get; init; } = 0.5;
+
     // ------------------------------------------------------------------ from data
 
     /// <summary>Reads settings from JSON. Strict: an unknown key is an error (a misspelt key would silently keep its
@@ -603,6 +739,18 @@ public sealed record GunneryLevel
     public double Ladder0M { get; init; }
     public double SalvoPct { get; init; }
     public double SalvoDeflMil { get; init; }
+}
+
+/// <summary>What shells of a quality do when they arm on armour they can defeat (gunfire_ref.py OUTCOME): burst after
+/// the fuze's delay, burst in the plate, burst low-order, fail to burst, or break up; shares adding up to 1.</summary>
+public sealed record ShellOutcomeRow
+{
+    public string Name { get; init; } = "";
+    public double Burst { get; init; }
+    public double InPlate { get; init; }
+    public double LowOrder { get; init; }
+    public double Dud { get; init; }
+    public double Broken { get; init; }
 }
 
 /// <summary>How good a side's gun crews are (docs/battle/fighting.md 4.2b: one per side, a scenario's to give).</summary>

@@ -14,7 +14,7 @@ namespace Fleetwright.Sim.Tests;
 public class FormationRailsTests(ITestOutputHelper output)
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
-    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
+    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json")) with { HitsDoDamage = false };   // rails, not fighting: ships that pass in range fire, and must pass
     const double Lat = 56.5, Lon = 4.0, Kn = 15;
 
     /// <summary>A clock a column of four snaps at: its turn in succession (1,800 m of wake at 15 kn) within a frame from
@@ -29,7 +29,7 @@ public class FormationRailsTests(ITestOutputHelper output)
     }
 
     /// <summary>The AI is registered third, after the ships and groups: its orders' system id.</summary>
-    const byte AiId = 5;   // the world registers ships 1, groups 2, shells 3 and gunnery 4; the AI comes after them
+    const byte AiId = 6;   // the world registers ships 1, groups 2, shells 3, gunnery 4 and damage 5; the AI comes after them
     static readonly UnitOrders O = new(AiId);
 
     /// <summary>The unit a ship's orders go to: its group, if it guides one, or the ship.</summary>
