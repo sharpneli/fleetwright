@@ -102,7 +102,8 @@ under today's if we ever need to (a CPU encoder on the building thread).
 - **Glints in shadow (an approximation):** the shadows are drawn over the lit sprite, darkening it by their opacity,
   so a sun glint inside a shadow is dimmed, not removed. Glints are mostly on the turrets, which stand above most
   shadows. If one shows where it shouldn't, the sprite shader can march the height map a few steps only where the
-  specular is bright, without another pass.
+  specular is bright, without another pass. (Step S puts the hull's shadow under the turrets and has the turrets
+  receive it in their own shader.)
 
 **Frames for free.** The quad's own edges (u along the sprite's x, v along its y, metres from the eye) are its frame.
 The vertex shader takes the world's sun and moon from the View uniform and projects them and the eye (-corner) onto
@@ -257,6 +258,50 @@ roof insets, the face plates' dark shade becoming a slope). Goldens updated. The
   their glint is a soft sheen, at 0.35 a clear line along each barrel and a spark on each cupola: L4's materials give
   barrels their own gloss.
 - **Costs:** bake time as L2 (bismarck 0.14 s); no runtime change (only the bake's shaders and the textures' content).
+
+**S. Shadows reworked** (proposed 2026-10-14, before L4). Light: the same passes, roughly right, nothing new per
+frame on the CPU but a few numbers per turret quad.
+
+What's wrong today (on the map and in the viewer, which draw alike):
+
+- **The hull's shadow is drawn over the turrets.** The height-map shadow is one overlay over the canvas, drawn last.
+  At a turret or barrel pixel it marches from the height *under* it (the deck, or 0 over the sea), so the hull's side
+  shadows a barrel overhanging the water, and a deckhouse lower than a turret's roof shadows the turret.
+- **A turret's shadow is shifted for the deck only:** by (roof - deck) / tan. Over the side (barrels trained abeam) it
+  should fall a further deck / tan out; on a deckhouse, shorter or not at all. Today it's clipped where the hull
+  under it stands above the roof, but never moved.
+- **Shadows stack:** a turret's shadow inside the bridge's comes out darker than either.
+
+The fix, each part a small change to what's there:
+
+1. **Order:** hull, scorches, *the height-map shadow*, the turrets' shadows, the turrets. The overlay then darkens
+   only the hull and the sea; nothing drawn after it can be wrongly shadowed by it.
+2. **Turrets receive the hull's shadow in their own shader:** the same march (the height map is bound to the turret
+   draws already), from the turret's ship position at its *roof* height, darkening the lit colour by the overlay's
+   rule (x (1 - shade x opacity)). The bridge shadows B turret when the sun's behind it; the hull's side never shadows
+   a barrel. The march is short (from the roof up to the tallest column: (max - roof) / tan) and only on the turrets'
+   pixels. Barrels take the roof's height too: close enough.
+3. **A turret's shadow projected per pixel, by the receiver's height:** its quad becomes a ship-aligned box over the
+   turret and as far down-sun as its roof's shadow can fall (roof / tan, the sea). Per pixel: the receiver's height h
+   from the height map; the ray toward the light meets the roof's height t = (roof - h) / tan along; the turret's
+   alpha there is the shadow (t <= 0: the receiver stands above the roof, none). So it lands right on the deck, the
+   sea and a deckhouse alike, in one height sample and one texture sample. The quad carries the turret's frame
+   (corner and u edge, ship metres) in its tint, which silhouettes don't use: still 160 bytes. The texture's mip is
+   picked from the turret's own uv derivatives, not the projected ones (they jump at every deck edge).
+4. **No stacking with the hull's shadow:** where a turret's shadow has alpha, its shader also marches the hull's
+   shadow at that pixel (hs) and adds only the difference, (max(hs, a) - hs) / (1 - hs) (by opacity), so the two come
+   out as the darker of them, not their product. Turret shadows over each other still stack (rare, small).
+5. **One implementation:** the march (now copied in `shipmap_shadow.frag` and `shipview_shadow.frag`) and the
+   projection go into `Include/shipshadow.glsl`, which the four shaders include.
+
+Not in it: turrets shadowing each other (a superfiring B's shadow on A's roof: the turret shadows are drawn under all
+the turrets), barrels' shadows at the barrels' own height, self-shadowing within a turret (its normals and AO carry
+that), shadows tilted with the hull's heel and trim. Each is a later knob if the captures ask for it.
+
+Done when: captures at 10 and 3 px/m, sun high, low and abeam, turrets trained abeam over the side: no barrel darkened
+by the hull's side, the barrels' shadows on the sea further out than on the deck and continuous across the side, the
+bridge's shadow on B turret at a low sun from astern, no darker patches where shadows meet; DevRelease frame times at
+a Jutland unchanged within noise.
 
 **L4. Materials.** `Style.Mat`, the looks' material tables, the material layer, Toksvig, the analytic sky. Brass and
 bare steel shine, decks go matte, eras differ.
