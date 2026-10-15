@@ -108,13 +108,25 @@ public sealed unsafe class MagazineRenderer : IDisposable
     /// is the clock's (0 paused), <paramref name="dtS"/> the frame's real seconds, <paramref name="world"/> the view's
     /// <see cref="WorldView.Factor(in MapView)"/>.</summary>
     public void Build(in MapView view, Snapshot s, long drawMs, double speed, double dtS, double world, ShipLights frameLights,
-        Func<int, ShipClass?> classOf)
+        Func<int, ShipClass?> classOf, FlashLights? flashLights = null, BlastRenderer? blasts = null)
     {
         Book.Update(s.Blasts, drawMs, speed, dtS, classOf, s.Ships, splashes);
         lights = frameLights;
         count = jetCount = trailCount = 0;
         if (world <= 0 || !MagazineLook.On || Book.Count == 0)
             return;
+        try
+        {
+            BuildEvents(view, s, drawMs, world, flashLights, blasts);
+        }
+        finally
+        {
+            flashLights?.Finish(view);
+        }
+    }
+
+    void BuildEvents(in MapView view, Snapshot s, long drawMs, double world, FlashLights? flashLights, BlastRenderer? blasts)
+    {
 
         var up = (-view.Forward).Normalized();
         var (east, north) = (view.Right, view.Up);
@@ -148,6 +160,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
             ref readonly var e = ref book[i];
             if (MagazineLook.AtS >= 0 && i != book.Count - 1)
                 continue;
+            // (perCd and the rest above are this frame's; the lights and the blast are added below for each)
             double age = MagazineLook.AtS >= 0 ? MagazineLook.AtS : book.Clock - e.T0;
             double t = age - MagazineBlast.MainAtS, life = e.FireballS;
             var ev = e.Event;
@@ -156,6 +169,11 @@ public sealed unsafe class MagazineRenderer : IDisposable
                 AddJets(view, e, age, world, mpp, k);
             if (t >= 0 && t < 40 && (MagazineLook.Parts & 8) != 0)
                 AddDebris(view, e, t, world, mpp, k);
+            // the blast on the water (the muzzle blasts' model, spherical), on the sea's clock from the main event
+            double seaAge = MagazineLook.AtS >= 0 ? t : book.SeaClock - e.SeaT0 - MagazineBlast.MainAtS;
+            blasts?.AddSpherical(view, e.At + e.At.Normalized() * deck, deck, ev.BlastLengthM, seaAge, world, e.Seed);
+            if (flashLights != null && (MagazineLook.Parts & 16) != 0)
+                Light(view, e, age, perCd, flashLights);
             if (t < 0 || t > MagazineLook.VolumeS)
                 continue;
             var b = MagazineBlast.BodyAt(e.FireballM, life, ev.MassKg, deck, t);
@@ -366,6 +384,44 @@ public sealed unsafe class MagazineRenderer : IDisposable
             var at = Drawn(p, Vector2.Zero);
             AddJet(baseV, at, at, Math.Max(0.6f, minR), (float)(0.95 - 0.45 * t / life), (float)(world * (1 - t / life)), t);
         }
+    }
+
+    /// <summary>The fire's light (X5), into the frame's point lights with the flashes': while the jets burn, at the
+    /// magazine a few tens of metres up; then the fireball's at its centre, by its heat. Each throws its brightness as
+    /// drawn, compressed as the flashes' halo's source, times its area over pi (FlashRenderer's rule), times
+    /// <see cref="MagazineLook.LightShare"/> (the research: keep it to a local pool, or the night sea goes beige).</summary>
+    void Light(in MapView view, in MagazineBook.Entry e, double age, double perCd, FlashLights into)
+    {
+        var ev = e.Event;
+        var up = e.At.Normalized();
+        double knee = FlashLook.HaloKnee, main = MagazineBlast.MainAtS, t = age - main;
+        double Thrown(double kelvin, double areaM2)
+        {
+            double drawn = perCd * FlashPhotometry.Luminance(kelvin);
+            return drawn / (1 + drawn / knee) * areaM2 / Math.PI * MagazineLook.LightShare;
+        }
+        if (age >= MagazineBlast.HitLeadS && t < 0.5)
+        {
+            double area = 0;
+            foreach (ref readonly var o in ev.Openings)
+            {
+                double len = MagazineBlast.JetLength(o, age);
+                if (len >= 2)
+                    area += len * (0.45 * o.DiameterM + 0.03 * len) * 2;
+            }
+            if (area > 0)
+                into.Add(e.At + up * (ev.DeckZ + 20), Thrown(MagazineLook.ColdK + 0.9 * (MagazineLook.HotK - MagazineLook.ColdK), area) * (1 - SmoothStep(0, 0.5, t)),
+                    FlashPhotometry.Chroma(1900), 30);
+        }
+        if (t < 0 || t > 3 * e.FireballS)
+            return;
+        var b = MagazineBlast.BodyAt(e.FireballM, e.FireballS, ev.MassKg, ev.DeckZ, t);
+        if (b.Heat < 0.05)
+            return;
+        double kel = MagazineLook.ColdK + (MagazineLook.HotK - MagazineLook.ColdK) * b.Heat;
+        // the soot skin hides the fire as it grows over it
+        double rad = Thrown(kel, Math.PI * b.R * b.R) * (1 - 0.7 * b.Skin);
+        into.Add(e.At + up * b.CentreZ, rad, FlashPhotometry.Chroma(kel), b.R);
     }
 
     void AddJet(Vector4 baseV, Vector2 a, Vector2 b, float r, float heat, float strength, double clock)

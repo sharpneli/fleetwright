@@ -29,9 +29,12 @@ public sealed class FlashLights
     }
 
     /// <summary>A flash's light: into one it's within reach of, or a new one, or in place of the dimmest when all are
-    /// taken (unless it's dimmer still).</summary>
+    /// taken (unless it's dimmer still). A light of nothing adds nothing (its weighted place would be 0/0, and a NaN in
+    /// the lights whitened every shader that reads them).</summary>
     public void Add(Vec3d where, double light, Vector3 rgb, double metres)
     {
+        if (!(light > 0))
+            return;
         int k = -1;
         for (int j = 0; j < Count && k < 0; j++)
             if ((at[j] - where).Length < 1.5 * Math.Max(size[j], metres))

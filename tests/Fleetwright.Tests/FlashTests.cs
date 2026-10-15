@@ -184,6 +184,18 @@ public class FlashTests(ITestOutputHelper output)
     /// <summary>Flashes within reach of each other share a light at their weighted centre; apart they're two; past
     /// eight the dimmest goes.</summary>
     [Fact]
+    public void A_light_of_nothing_adds_nothing()
+    {
+        var l = new FlashLights();
+        l.Add(Earth.Position(56.5, 4.0) * 1.0, 0, System.Numerics.Vector3.One, 10);
+        Assert.Equal(0, l.Count);
+        l.Add(Earth.Position(56.5, 4.0), 5, System.Numerics.Vector3.One, 10);
+        l.Add(Earth.Position(56.5, 4.0), 0, System.Numerics.Vector3.One, 10);
+        Assert.Equal(1, l.Count);
+        Assert.False(double.IsNaN(l[0].At.X));
+    }
+
+    [Fact]
     public void Flash_lights_gather_within_reach_and_keep_the_brightest()
     {
         var l = new FlashLights();

@@ -282,6 +282,27 @@ rings, and the gunhouse's big one beside her. The cost at 6.5 s, debris and all:
 Changed on the way: **smaller debris splashes** (as shells of 60 mm per metre of the piece, 6-15 m columns, and the
 gunhouse's as a 300 mm's): at 90 mm the pieces' columns stood round the wreck like candles.
 
+**X5 (2026-10-15).** The water and the light (the shadow came with X2):
+- **The blast on the water**: `BlastRenderer.AddSpherical`, the muzzle blasts' model as is (one implementation) with
+  its bore straight up, so its directivity is a ring (its 0.62 aside undone in λ) and there's no jet lobe; at the event's
+  λ from the deck's height, on the sea's clock from the main event. The blast's uniforms are now set even when no gun
+  has fired.
+- **The fire's light**: `MagazineRenderer.Light` into the frame's point lights with the flashes': while the jets burn,
+  at the magazine 20 m up (their flame's area); then the fireball's at its centre by its heat, hidden as the soot skin
+  grows. Thrown as the flashes' are (the drawn brightness compressed, times the area over pi) at
+  `MagazineLook.LightShare` 0.3 (`-magazine=light:`). The scene now builds the blasts and the magazines before it sets
+  the frame's lights, so the ships, sea, splashes and smoke all see them.
+
+Seen: at noon a frosted disc with its dark leading edge racing out to ~300 m by 2.6 s round Bismarck's bow, the scour
+churned white at the wreck, gone by 6 s. At night the deck and hull by the fire glow orange; at full share the whole
+ship went orange (too much), so 0.3.
+
+**A bug found on the way:** a light of zero added to `FlashLights` made its place 0/0, and the NaN whitened the whole
+sea (every shader reading the lights). `Add` now ignores a light of nothing (test: `FlashTests.A_light_of_nothing_adds_nothing`).
+
+Open, for X7: the fire has no reflection on the night sea. Its glint pool lies under the light, and the light is over
+the wreck, so the ship hides it; the research's mirror image down the screen is the planar reflection (Later).
+
 ## Later
 
 - Tier 1 (the burn-out column the ship survives) and tier 4 (two fireballs along the hull), with the venting race.

@@ -127,10 +127,12 @@ public sealed unsafe partial class MapScene : IScene
         t = Probes.Now;
         // the flashes first: their lights go into the frame's, which the splashes, the ships and the sea read
         shipRenderer.Flashes.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, WorldView.Factor(view), shipRenderer.List.Lights, classOf, selected);
-        shipRenderer.List.SetFlashLights(shipRenderer.Flashes.Lights.Block);
         shipRenderer.Blasts.Build(view, shipRenderer.Flashes.Book, s.Weather.WindMs, WorldView.Factor(view));
+        // the magazines' fire adds to the flashes' lights and their blasts to the water's marks
+        shipRenderer.Magazines.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, WorldView.Factor(view), shipRenderer.List.Lights, classOf,
+            shipRenderer.Flashes.Lights, shipRenderer.Blasts);
+        shipRenderer.List.SetFlashLights(shipRenderer.Flashes.Lights.Block);
         shipRenderer.Smoke.Build(view, shipRenderer.Flashes.Book, s.Weather, WorldView.Factor(view), shipRenderer.List.Lights);
-        shipRenderer.Magazines.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, WorldView.Factor(view), shipRenderer.List.Lights, classOf);
         shipRenderer.Splashes.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, selected, WorldView.Factor(view), shipRenderer.List.Lights);
         probes.Add(probeSplashes, t);
         t = Probes.Now;

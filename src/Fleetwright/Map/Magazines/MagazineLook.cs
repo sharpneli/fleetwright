@@ -47,8 +47,12 @@ public static class MagazineLook
     public static double Steps = 0.6;
 
     /// <summary>Which parts draw, for measuring each's cost: 1 the body, 2 its shadow, 4 the jets and the hit's flash, 8
-    /// the debris, its trails and the sparks.</summary>
-    public static int Parts = 15;
+    /// the debris, its trails and the sparks, 16 the fire's light on the sea and the ships.</summary>
+    public static int Parts = 31;
+
+    /// <summary>The share of the fire's light as drawn that it throws on the sea and the ships (the research: restraint,
+    /// a local pool; at full the night sea went beige).</summary>
+    public static double LightShare = 0.3;
 
     /// <summary>A dev aid for captures: the newest event drawn at this age, s after the hit (-1: off), and kept while it
     /// is.</summary>
@@ -79,6 +83,7 @@ public static class MagazineLook
             case "stemfade": StemFadeS = Math.Max(v, 1); break;
             case "gain": Gain = Math.Max(v, 0); break;
             case "whiten": Whiten = Math.Clamp(v, 0, 1); break;
+            case "light": LightShare = Math.Max(v, 0); break;
             case "steps": Steps = Math.Max(v, 0.1); break;
             case "knee": Effects.KneeM = Math.Max(v, 1); break;
             case "kneehc": Effects.KneeHcM = Math.Max(v, 1); break;
@@ -90,5 +95,5 @@ public static class MagazineLook
         return true;
     }
 
-    public const string Knobs = "scatterd, scatters, life, skin, cold, hot, soot, opacity, mushroom, spin, stem, stemtau, stemfade, gain, whiten, steps, knee, kneehc, parts (1 body, 2 shadow, 4 jets, 8 debris), at (a still at that age, s), on";
+    public const string Knobs = "scatterd, scatters, life, skin, cold, hot, soot, opacity, mushroom, spin, stem, stemtau, stemfade, gain, whiten, steps, knee, kneehc, parts (1 body, 2 shadow, 4 jets, 8 debris, 16 light), light, at (a still at that age, s), on";
 }

@@ -130,11 +130,9 @@ public sealed unsafe class BlastRenderer : IDisposable
     public void Build(in MapView view, ShotBook book, double windMs, double world)
     {
         count = 0;
-        if (world <= 0 || !FlashLook.On || (FlashLook.Parts & 4) == 0)
-            return;
-        var (east, north) = (view.Right, view.Up);
         double pvis = FlashLook.BlastVisPa / Sim.Combat.MuzzleFlash.P0, psat = FlashLook.BlastSatPa / Sim.Combat.MuzzleFlash.P0;
         double frostS = FlashLook.FrostS, foamS = FlashLook.ScourS;
+        xVis = (-0.11 + Math.Sqrt(0.11 * 0.11 + 4 * 0.0061 * pvis)) / (2 * 0.0061);
         prms = new Params
         {
             Arr0 = new Vector4(Arrival[0], Arrival[1], Arrival[2], Arrival[3]),
@@ -144,8 +142,10 @@ public sealed unsafe class BlastRenderer : IDisposable
             Misc0 = new Vector4((float)pvis, (float)psat, (float)frostS, (float)foamS),
             Misc1 = new Vector4((float)(0.003 + 0.00512 * Math.Max(windMs, 0)), (float)FlashLook.ScourK, (float)Math.Log(RhoMin), (float)Math.Log(RhoStep)),
         };
+        if (world <= 0 || !FlashLook.On || (FlashLook.Parts & 4) == 0)
+            return;
+        var (east, north) = (view.Right, view.Up);
         // the frost's reach forward (the overpressure at p_vis on the bore, λ' = 1.78 λ) and the scour's
-        double xVis = (-0.11 + Math.Sqrt(0.11 * 0.11 + 4 * 0.0061 * pvis)) / (2 * 0.0061);
         double clock = book.SeaClock, mpp = view.MetresPerPixel;
         long newest = book.Count > 0 ? book[book.Count - 1].Ms : 0;
         for (int i = 0; i < book.Count; i++)
@@ -185,6 +185,35 @@ public sealed unsafe class BlastRenderer : IDisposable
                 Blast = new Vector4((float)lam, (float)age, (float)(e.SeaStrength * world), e.Seed),
             };
         }
+    }
+
+    double xVis = 1;
+
+    /// <summary>The spherical blast of a magazine going up (docs/visuals/magazine-explosions.md X5), one more mark on the
+    /// water after the frame's build: <paramref name="lambda"/> its λ, <paramref name="heightM"/> its centre over the
+    /// sea, <paramref name="age"/> on the sea's clock. Its "bore" points straight up, so the gun's directivity gives a
+    /// ring (its 0.62 on the side undone in λ) and no jet's lobe.</summary>
+    public void AddSpherical(in MapView view, Vec3d at, double heightM, double lambda, double age, double strength, float seed)
+    {
+        if (strength <= 0 || age < 0 || age > ShotBook.SeaKeepS || (FlashLook.Parts & 4) == 0)
+            return;
+        double lam = lambda / 0.62, scour = 1.3 * FlashLook.ScourK * 1.78 * lam;
+        double half = Math.Max(age < 5 * FlashLook.FrostS ? 1.0 * lam / xVis + heightM : 0, scour);
+        if (!view.Project(at, out double x, out double y))
+            return;
+        double px = half / view.MetresPerPixel;
+        if (x < -px || x > view.Width + px || y < -px || y > view.Height + px)
+            return;
+        var rel = at - view.Eye;
+        if (count == items.Length)
+            Array.Resize(ref items, count * 2);
+        items[count++] = new BlastGpu
+        {
+            Quad = new Vector4((float)half, 0, 0, 0),
+            Base = new Vector4((float)rel.X, (float)rel.Y, (float)rel.Z, (float)heightM),
+            Bore = new Vector4(0, 1, 1, 0),
+            Blast = new Vector4((float)lam, (float)age, (float)strength, seed),
+        };
     }
 
     static double SmoothStep(double a, double b, double x)
