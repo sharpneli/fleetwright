@@ -33,9 +33,11 @@ add what's found.
 
 - [ ] A battleship under medium HE sometimes loses a magazine to fire: super_dreadnought under 30 hits of tiger_1914's
   152 mm HE at 8 km with 30 minutes' settling lost 3 of 200 (old designs) and 2 of 200 (2026-10-15) to `LossKind.Magazine`,
-  with no water aboard. fighting.md 4.3b says such a ship stays afloat; Malaya's casemate cordite fire at Jutland says a
-  small chance is real. Decide whether ~1.5 % is right, and if not, which path (a casemate or secondary magazine beside a
-  fire, the propellant factor) sets it off. `DamageTests` allows up to 4 % until then.
+  with no water aboard. The anchor is fighting.md 4.3b's test list ("a battleship under medium HE stays afloat", measured
+  once as none lost) from 08-gunfire-effects.md rule 5 ("a mission kill, never a sinking"); nothing there is about
+  magazines. 4.3b itself has fire beside a magazine roll for cooking off, and Malaya's 6" battery cordite fire at Jutland
+  says a small chance is real. Decide between "rarely" (~1.5 % now) and "never", and if never, which path (a casemate or
+  secondary magazine beside a fire, the propellant factor) sets it off. `DamageTests` allows up to 4 % until then.
 
 ## Balance and calibration
 
