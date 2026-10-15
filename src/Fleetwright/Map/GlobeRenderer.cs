@@ -51,7 +51,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
 
     struct GlobeParams
     {
-        public Vector4 Right, Up, Fwd, EyeDir, Sun, Depth;
+        public Vector4 Right, Up, Fwd, EyeDir, Sun, Depth, Moon;
     }
 
     struct ViewParams
@@ -190,10 +190,11 @@ public sealed unsafe class GlobeRenderer : IDisposable
     /// <paramref name="overlay"/>: lines rebuilt every frame (routes, selection), apart from the ones rebuilt only when
     /// the view changes. <paramref name="sunMotion"/> is <see cref="SunLapse.Motion"/>: 1 the live sun, 0 the
     /// time-lapse (each latitude at its mean over the day, the sun's track drawn). <paramref name="sea"/>, when the
-    /// world view shows, is the sea's frame and clock; <paramref name="lights"/> the frame's light (the ships').</summary>
+    /// world view shows, is the sea's frame and clock; <paramref name="lights"/> the frame's light (the ships');
+    /// <paramref name="moon"/> the moon for the night side's glow (<see cref="MoonUniform"/>).</summary>
     public void Render(SDL_GPUCommandBuffer* cmd, RenderTarget target, in MapView view, Vec3d sun,
         ReadOnlySpan<Vector2> landFill, int bakedLevel, MapLines lines, MapLines? overlay = null, IMapLayer? layer = null,
-        double sunMotion = 1, SeaView? sea = null, LightUniforms lights = default)
+        double sunMotion = 1, SeaView? sea = null, LightUniforms lights = default, Vector4 moon = default)
     {
         EnsurePipelines(target);
         if (coverage == null)
@@ -222,6 +223,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
             Sea.Simulate(cmd, sea!.ClockS, SeaView.Chop);
 
         var g = GlobeUniforms(view, sun, sunMotion);
+        g.Moon = moon;
         var vp = ViewUniforms(view, target);
 
         // the land's winding count: the masking sphere's depth, then the fans
@@ -287,6 +289,15 @@ public sealed unsafe class GlobeRenderer : IDisposable
             SDL_DrawGPUPrimitives(pass, (uint)over.Length, 1, 0, 0);
         }
         SDL_EndGPURenderPass(pass);
+    }
+
+    /// <summary>The moon for the globe's night side: its position in Earth radii, Earth-fixed, and its phase law times
+    /// (mean distance / distance)² (the part of <see cref="Moon.Light(double, double, double)"/> the same for every place).</summary>
+    public static Vector4 MoonUniform(WorldTime t)
+    {
+        var p = Moon.Position(t);
+        double r = Moon.MeanDistanceM / p.Length;
+        return new Vector4(F(p / Earth.Radius), (float)(Moon.PhaseLaw(Moon.Phase(t).AngleDeg) * r * r));
     }
 
     // the depth range for the baked land and the masking sphere: from half the altitude to past the far side

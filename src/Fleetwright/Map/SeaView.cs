@@ -52,11 +52,15 @@ public sealed class SeaView
     /// <summary>The night's light on the water, tuned away from the real (docs/visuals/sea.md, "Night"): realistic, a
     /// night sea seen from above is black and still, and so is one under a sun too low for its glint to reach the eye;
     /// so as the sun goes (fading in from <see cref="NightFromDeg"/>: 12° over the horizon to 2° under it) the water body
-    /// gets a light of its own, for its waves alone. In twilight it is the sky's glow on the sun's side. While the moon is up at all it comes from
-    /// the moon's bearing, a little brighter than moonlight; with no moon it is starlight, dimmer and bluer, biased to
-    /// where the sun is under the horizon (the sky stays brightest there). Its height is kept where it shades: the
+    /// gets a light of its own, for its waves alone. In twilight it is the sky's glow on the sun's side. With no moon it
+    /// is starlight, bluer, biased to where the sun is under the horizon (the sky stays brightest there); while the moon
+    /// is up at all it comes from the moon's bearing, greyer, and brighter by the moon's light (<see cref="MoonNightGain"/>,
+    /// as the table's night side brightens: a full moon makes a lighter night). Its height is kept where it shades: the
     /// moon's clamped to 25-60°, the stars' at 40°. Linear, by eye: dark and gloomy, yet the waves read.</summary>
-    public static Vector3 MoonNightRad = new(0.21f, 0.235f, 0.275f), StarNightRad = new(0.08f, 0.10f, 0.15f);
+    public static Vector3 StarNightRad = new(0.08f, 0.10f, 0.15f), MoonNightTint = new(0.10f, 0.115f, 0.15f);
+
+    /// <summary>How much brighter the night's light gets by the moon's light (Moon.Light: 1, a full moon overhead).</summary>
+    public static float MoonNightGain = 1.2f;
 
     /// <summary>The sun's elevations, degrees, between which the night's light fades in: from the first down to the second.</summary>
     public static readonly double[] NightFromDeg = [12, -2];
@@ -67,9 +71,9 @@ public sealed class SeaView
     /// <summary>A debug view of the sea: 0 shaded, 1 its normal, 2 its slopes' spread.</summary>
     public static int Debug;
 
-    /// <summary>Sets a knob by name, "facet:0.7", "relief:1", "lowsunrelief:4", "chop:1", "debug:1", "nightrelief:5", and "moonnight:1"
-    /// and "starnight:1" (scales on the night's lights) (the -sea= flag, for side-by-side captures); false for a bad
-    /// one.</summary>
+    /// <summary>Sets a knob by name, "facet:0.7", "relief:1", "lowsunrelief:4", "chop:1", "debug:1", "nightrelief:7",
+    /// "moonnight:1.2" (the moon's gain on the night's light) and "starnight:1" (a scale on the starlight) (the -sea= flag,
+    /// for side-by-side captures); false for a bad one.</summary>
     public static bool Set(string kv)
     {
         var p = kv.Split(':');
@@ -83,7 +87,7 @@ public sealed class SeaView
             case "chop": Chop = v; break;
             case "debug": Debug = (int)v; break;
             case "nightrelief": NightRelief = v; break;
-            case "moonnight": MoonNightRad = new Vector3(0.21f, 0.235f, 0.275f) * v; break;
+            case "moonnight": MoonNightGain = v; break;
             case "starnight": StarNightRad = new Vector3(0.08f, 0.10f, 0.15f) * v; break;
             default: return false;
         }
@@ -106,7 +110,8 @@ public sealed class SeaView
     /// <param name="speed">The world clock's speed, 0 when paused.</param>
     /// <param name="lights">This frame's light (the ships'), for the moon's direction.</param>
     /// <param name="sunMotion"><see cref="SunLapse.Motion"/>: below 1 the glints fade out with the ships' shadows.</param>
-    public void Update(in MapView view, SeaSim sim, double dtS, double speed, in ShipLights lights, double sunMotion)
+    /// <param name="moonLight"><see cref="Moon.Light(Vec3d, WorldTime)"/> at the view's centre.</param>
+    public void Update(in MapView view, SeaSim sim, double dtS, double speed, in ShipLights lights, double sunMotion, double moonLight)
     {
         World = WorldView.Factor(view);
         ClockS = (ClockS + dtS * Math.Clamp(speed, 0, SpeedCap)) % SeaSim.PeriodS;
@@ -159,7 +164,7 @@ public sealed class SeaView
             Body = new Vector4(Body, FacetLight),
             Moon = new Vector4((float)lights.MoonDir.X, (float)lights.MoonDir.Y, (float)lights.MoonDir.Z, DayRelief(target, lights)),
         };
-        var (nightRad, nightDir) = NightLight(target, lights);
+        var (nightRad, nightDir) = NightLight(target, lights, moonLight);
         Uniforms.Night = new Vector4(nightRad, NightRelief);
         Uniforms.NightDir = new Vector4((float)nightDir.X, (float)nightDir.Y, (float)nightDir.Z, 0);
     }
@@ -174,21 +179,27 @@ public sealed class SeaView
 
     /// <summary>The night's light at a place (<see cref="MoonNightRad"/>): its colour, faded in as the sun goes, and
     /// the way toward it, Earth-fixed.</summary>
-    static (Vector3 Rad, Vec3d Dir) NightLight(Vec3d up, in ShipLights lights)
+    static (Vector3 Rad, Vec3d Dir) NightLight(Vec3d up, in ShipLights lights, double moonLight)
     {
         double sunEl = Math.Asin(Math.Clamp(Vec3d.Dot(lights.SunDir, up), -1, 1)) * 180 / Math.PI;
         double night = 1 - SmoothStep(NightFromDeg[1], NightFromDeg[0], sunEl);
         if (night <= 0)
             return (Vector3.Zero, up);
-        var m = lights.Uniforms.MoonRad;
-        double moonUp = SmoothStep(0, 0.003, (m.X + m.Y + m.Z) / 3);   // up at all: even a thin crescent
+        double moonUp = SmoothStep(0, 0.004, moonLight);   // up at all: even a thin crescent gives the direction
         double moonEl = Math.Asin(Math.Clamp(Vec3d.Dot(lights.MoonDir, up), -1, 1)) * 180 / Math.PI;
         var moon = Toward(up, lights.MoonDir, Math.Clamp(moonEl, 25, 60));
         var stars = Toward(up, lights.SunDir, 40);
         var dir = (stars * (1 - moonUp) + moon * moonUp).Normalized();
-        var rad = Vector3.Lerp(StarNightRad, MoonNightRad, (float)moonUp) * (float)night;
+        // the direction shapes the waves, not the level sea's brightness: what a level sea lets in from it is evened
+        // to what it lets in from 40° up, so a low moon doesn't darken the night it should lighten
+        double even = LetIn(Math.Sin(40 * Math.PI / 180)) / Math.Max(LetIn(Vec3d.Dot(dir, up)), 1e-3);
+        var rad = Vector3.Lerp(StarNightRad, MoonNightTint, (float)moonUp) * (float)((1 + MoonNightGain * moonLight) * night * even);
         return (rad, dir);
     }
+
+    /// <summary>What a level sea lets in from a light at an elevation (its sine): its cosine through 1 - Fresnel, as
+    /// seashade.glsl's seaLetIn.</summary>
+    static double LetIn(double c) => c > 0 ? c * (1 - (0.02 + 0.98 * Math.Pow(1 - c, 5))) : 0;
 
     /// <summary>The direction on <paramref name="toward"/>'s bearing from a place, at an elevation.</summary>
     static Vec3d Toward(Vec3d up, Vec3d toward, double elevationDeg)

@@ -21,6 +21,7 @@ layout(set = 3, binding = 0) uniform Globe
     vec4 sun;      // xyz: unit vector toward the sun; w: the sun's motion, 1 live, 0 time-lapse (SunLapse)
     vec4 depth;    // x: |eye|² - r², r the masking sphere's radius (2 km inside), radii²; y: near, z: far, radii;
                    // w: a pixel's angle at the centre, radians
+    vec4 moon;     // xyz: the moon's position, Earth radii, Earth-fixed; w: its phase law times (mean distance / distance)²
 };
 
 #define LIGHTS_BINDING 2
@@ -34,6 +35,28 @@ const vec3 Space = vec3(0.006, 0.008, 0.016);
 const vec3 DaySea = vec3(0.19, 0.31, 0.415);
 const vec3 NightSea = vec3(0.028, 0.074, 0.142);
 const float SeaFloor = 0.35, SeaSun = 0.65;
+// the night side brightens with the moon's light there (1: a full moon overhead), a cue that a moonlit night is
+// lighter, as the sim's night sight reads it: the night colours times 1 + MoonGlow · that light
+const float MoonGlow = 0.35;
+// time-lapse: the moon's light over a night, on average, by its phase (LightTable.MoonNightMean)
+const float MoonNightMean = 0.3;
+
+// The moon's light at a point of the globe (unit n), on a surface facing it: Moon.Light in Sim.Core, the same law
+// (nothing once the disc's top has set, fading in as it rises; the phase and distance in moon.w; the air's extinction,
+// 0.2 magnitudes per air mass by Earth.AirMass). Ported here; the C# is the one the sim reads.
+float moonLightAt(vec3 n)
+{
+    vec3 tm = normalize(moon.xyz - n);
+    float se = dot(tm, n);
+    const float Set = -0.0145;
+    if (se <= Set)
+        return 0.0;
+    float rise = clamp(se / -Set + 1.0, 0.0, 1.0);
+    float s = clamp(se, 0.0, 1.0), h = degrees(asin(s));
+    float air = max(1.0 / (s + 0.50572 * pow(h + 6.07995, -1.6364)), 1.0);
+    return rise * rise * (3.0 - 2.0 * rise) * moon.w * pow(10.0, -0.08 * (air - 1.0));
+}
+
 const vec3 Glow = vec3(0.30, 0.50, 0.85);
 const vec3 DayLand = vec3(0.34, 0.36, 0.27);
 const vec3 NightLand = vec3(0.022, 0.026, 0.022);
@@ -83,7 +106,9 @@ void main()
         float s = dot(n, sun.xyz);
         float day = smoothstep(-0.10, 0.12, s);
         float land = clamp(abs(texelFetch(coverage, ivec2(gl_FragCoord.xy), 0).r), 0.0, 1.0);
-        vec3 col = mix(NightSea, DaySea * (SeaFloor + SeaSun * max(s, 0.0)), day);
+        float moonGlow = 1.0 + MoonGlow * mix(moon.w * MoonNightMean, moonLightAt(n), sun.w);
+        vec3 nightSea = NightSea * moonGlow, nightLand = NightLand * moonGlow;
+        vec3 col = mix(nightSea, DaySea * (SeaFloor + SeaSun * max(s, 0.0)), day);
         col += vec3(1.0, 0.95, 0.85) * pow(max(dot(reflect(d, n), sun.xyz), 0.0), 150.0) * 0.35 * day * sun.w;
         if (seaOn.x > 0.0 && land < 1.0)
         {
@@ -97,14 +122,14 @@ void main()
             vec3 ln = vec3(dot(seaNightDir.xyz, rt), dot(seaNightDir.xyz, upv), dot(seaNightDir.xyz, n));
             col = mix(col, seaShade(local, v, ls, lm, ln), seaOn.x);
         }
-        col = mix(col, mix(NightLand, DayLand * (0.55 + 0.45 * max(s, 0.0)), day), land);
+        col = mix(col, mix(nightLand, DayLand * (0.55 + 0.45 * max(s, 0.0)), day), land);
         if (sun.w < 1.0)
         {
             // time-lapse: each colour's mean over the day (mix is linear in day), and the sun's track along its
             // parallel, like a long exposure; it fades as it grows wider than the view can hold
             vec2 avg = dayAverage(n.z, sun.z, -0.10, 0.12);
-            vec3 sea0 = NightSea * (1.0 - avg.x) + DaySea * (SeaFloor * avg.x + SeaSun * avg.y);
-            vec3 land0 = NightLand * (1.0 - avg.x) + DayLand * (0.55 * avg.x + 0.45 * avg.y);
+            vec3 sea0 = nightSea * (1.0 - avg.x) + DaySea * (SeaFloor * avg.x + SeaSun * avg.y);
+            vec3 land0 = nightLand * (1.0 - avg.x) + DayLand * (0.55 * avg.x + 0.45 * avg.y);
             vec3 lapse = mix(sea0, land0, land);
             float off = (asin(clamp(n.z, -1.0, 1.0)) - asin(clamp(sun.z, -1.0, 1.0))) / 0.0035;   // 0.2° core
             float halo = off * (0.0035 / 0.035);                                                   // 2° halo

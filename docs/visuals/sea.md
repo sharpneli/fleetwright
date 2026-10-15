@@ -239,8 +239,16 @@ a navy. Both moved to meet (median 8-bit RGB, world at 3 m/px against the table 
   (`NightSea` 0.028, 0.074, 0.142, was 0.012, 0.025, 0.05). The globe's night side from orbit is navy against black land.
 - The world: the night's lights halved (`MoonNightRad`, `StarNightRad`), their relief 7 to keep the waves (moonless
   std 2.0, full moon 4.5).
-- Through the fade the median moves 2-6 levels, day or night. The table doesn't know the moon, so a moonlit night is
-  the one left ~5 levels apart.
+- Through the fade the median moves 2-6 levels, day or night.
+
+**The moon on the night side (2026-10-15).** The table's night sea and land brighten by the moon's light at each
+pixel, a subtle cue that a moonlit night is lighter (as the sim's night sight reads it): `globe.frag`'s
+`moonLightAt` ports `Moon.Light` (the rise, the phase law and distance, the air's extinction), and the night colours
+go times 1 + `MoonGlow` 0.35 · that (in time-lapse, the night's mean by the phase). The world's night light follows the
+same light: from the moon's bearing while it is up at all, brighter by 1 + `MoonNightGain` 1.2 · its light, its level-
+sea brightness evened across directions (a low moon used to darken the night it should lighten). Black Sea, 21:30 UTC,
+June 1916 (median 8-bit RGB): moonless world 7 21 39 / table 7 19 36; full moon 10 27 46 / 8 22 43; moonlit waves
+std 4-5, moonless 1.8.
 
 ### Later (not v1)
 
