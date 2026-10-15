@@ -85,8 +85,28 @@ a spawn.
 - two bakes of the same input are identical;
 - a destroyer's and a battleship's bake times.
 
-**A look tool**: `shipgen wake destroyer --kn 15,25,35 --out out` writes η and slope PNGs, to compare with the
-research's images.
+**A look tool**: `-wakebake=destroyer:15,25,35 [-output=DIR]` (an exe flag: the CLI doesn't reference the game)
+writes η and lit-slope PNGs, to compare with the research's images.
+
+**Done 2026-10-15** (`Map/Wakes/`: `Fft`, `WakeBake` with `WakeHull` and `WakeField`, `WakeLook`; `WakeBakeTests`).
+What changed from the research on the way:
+- **A transom's dead water.** The destroyer's waterline ends in a transom 77% of its beam, a step in the forcing,
+  and the linear stern wave came out at 4.7× the bow wave. The forcing alone (`WakeHull.ForcingAt`) now carries the
+  run on behind a transom, closing at 12° in a cosine. The hull mask still uses the true waterline.
+- **A soft limit** at 1.25 Zb (A·tanh(η/A)). At Fr 0.6 the linear trough beside the hull reached 10.8 m against a
+  3 m bow wave. Research §4 suggested a clamp.
+- **Damping by Froude number**: 0.12 g/U up to Fr 0.3, rising to 0.3 by 0.55. The research's 0.08 left the far
+  wedge wrapping round the grid's back edge into streaks beside the bow at 39 kn. 0.3 throughout erased the
+  Kelvin arms at 16 kn, where the grid is sized by the length and the wrap is far off.
+- **Smoothing of at least 1.5 cells**, so waves near the grid's Nyquist don't alias into streaks.
+
+Measured (Release, single thread):
+- Bake times: 12-21 ms on a 512² grid (the destroyer to 26 kn, the dreadnought), 58-69 ms on 1024² (the destroyer at
+  33-39 kn).
+- The envelope's half-angle is 18.5° at Fr 0.25 (Kelvin's is 19.47°).
+- The angle of the highest waves narrows from 17.5° at Fr 0.25 to 13.9° at 0.4 and 8.4° at 0.65. That is narrower
+  than Darmon's 0.147/Fr (13° at 0.65); the constant depends on the hull.
+- The highest water is 1.12 Zb on the dreadnought at Fr 0.3.
 
 ### K2. The library: bakes by class and speed
 

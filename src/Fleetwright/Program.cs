@@ -31,7 +31,7 @@ public static unsafe class Program
         var devGroups = new List<string>();
         var devForces = new List<string>();
         bool frameTimes = false;
-        string? variants = null, scenarioArg = null;
+        string? variants = null, scenarioArg = null, wakeBake = null;
 
         foreach (string arg in args)
         {
@@ -232,6 +232,10 @@ public static unsafe class Program
             {
                 variants = arg.Substring("-variants=".Length);
             }
+            else if (arg.StartsWith("-wakebake="))   // writes a design's wake bakes as PNGs and exits: -wakebake=destroyer:15,25,35 [-output=DIR]
+            {
+                wakeBake = arg.Substring("-wakebake=".Length);
+            }
             else if (arg.StartsWith("-scenario="))   // the world starts with a scenario: a path, or a shipped one's name (-scenario=jutland)
             {
                 scenarioArg = arg.Substring("-scenario=".Length);
@@ -244,6 +248,8 @@ public static unsafe class Program
 
         if (variants != null)
             return Designer.DesignVariants.Write(variants) == 0 ? 0 : 1;
+        if (wakeBake != null)
+            return Map.Wakes.WakeLook.Write(wakeBake, args.Any(a => a.StartsWith("-output=")) ? screenshotPath : null, FindDesign);
 
         // the land the world sails on, built while the window opens (docs/world/terrain-plan.md T1)
         var shore = Map.WorldSession.LoadShore();
