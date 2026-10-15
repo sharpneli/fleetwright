@@ -144,7 +144,7 @@ public class TemplateTests
     {
         Assert.True(Templates.Plants.Count >= 50);
         Assert.True(Templates.Hulls.Count >= 8);
-        Assert.Equal(6, Templates.Crew.Count);
+        Assert.Equal(7, Templates.Crew.Count);
         Assert.True(Templates.Armour.Count >= 20);
         var failures = new List<string>();
         foreach (var name in new[] { "dreadnought", "destroyer", "fleet_carrier" })
