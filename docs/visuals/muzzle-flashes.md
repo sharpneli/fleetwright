@@ -197,10 +197,12 @@ out for good.
 The smoke system (the smoke field: `docs/battle/plan.md`, `research/vfx/unified-smoke-system.md`) comes later as one
 effort, because keeping funnel, gun and screen smoke performant for a Jutland is a lot of work. Until then the world
 view draws gun smoke from the map alone. **It blocks no sight.** That breaks the plan's rule that drawn smoke reads the
-sim's smoke; the exception is logged below, and ends when the smoke system takes over the puffs' source.
+sim's smoke; the exception is logged below.
 
-Built so the handover is a change of source, not a rewrite: the puffs are the research's (A, σ_h, σ_z, rise, drift),
-their state a pure function of age, and the drawing reads only that state.
+**The puffs may stay when the smoke system comes** (the user, 2026-10-15). Its visibility will be low precision by
+necessity, so the drawn puffs can remain the look over its coarser state, rather than be replaced by it. Either way
+the puffs are the research's (A, σ_h, σ_z, rise, drift), their state a pure function of age, and the drawing reads only
+that state, so the smoke system can feed them, take their totals, or leave them be.
 
 - **A puff per mount fired**, born in the `ShotBook` from the shot's record and its gun's A_p and A_w. Its state is
   closed-form (research §5.3): the jet's forward carry `2.5 λ_f (1 − e^(−t/τ_m))` along the bore, the drift with the
@@ -243,7 +245,8 @@ their state a pure function of age, and the drawing reads only that state.
 ## Logged exceptions (approved 2026-10-15)
 
 - **Gun smoke drawn by the map alone** (decision 1), against `plan.md`'s "the smoke that's drawn is a look that reads
-  that state". It blocks no sight. Ends when the smoke system's puffs become its source.
+  that state". It blocks no sight. When the smoke system comes, the puffs may stay as the look over its coarser
+  state (the user, 2026-10-15): the exception is then revisited, not simply ended.
 
 ## Steps
 
@@ -283,7 +286,8 @@ their state a pure function of age, and the drawing reads only that state.
 
 ## Later
 
-- With the smoke system: the puffs move to the sim and sight lines read them; funnel smoke and screens beside them.
+- With the smoke system: its coarse field for sight lines, funnel smoke and screens; the gun puffs kept as the look
+  over it, or fed from it.
 - The vortex ring, the jet punching a tunnel through the gun's own smoke, the flash dimmed by smoke in front of it.
 - Night sighting by gun flashes (the research's Blondel-Rey and Allard ranges), read from the shot record by the sim.
 - Embers and burning bag fragments from bag guns at the closest zoom.
