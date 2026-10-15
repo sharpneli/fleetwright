@@ -43,6 +43,11 @@ public sealed unsafe class SplashRenderer : IDisposable
     /// <see cref="DelayS"/> after the impact. All from its seed, so a splash is the same from frame to frame; scaled by
     /// <see cref="SplashLook.Vary"/>.</summary>
     const double VaryHeight = 0.15, VaryWidth = 0.10, VaryTime = 0.10, DelayS = 0.3;
+    /// <summary>A torpedo's hit (docs/visuals/torpedoes.md R5) on the one column model: its shaft this much wider than a
+    /// shell's of the same height (the plume ~0.4 of its height across), its water greyed by the explosion's smoke
+    /// through the dye's tint.</summary>
+    const double TorpedoWidth = 2.5;
+    static readonly Vector4 TorpedoGrey = new(0.42f, 0.42f, 0.44f, 1);
     /// <summary>The longest shadow, metres per metre of height (a sun at ~7°).</summary>
     const float MaxDrift = 8;
 
@@ -133,7 +138,7 @@ public sealed unsafe class SplashRenderer : IDisposable
             double cal = e.CalibreMm / 1000;
             double steep = SmoothStep(3, 15, e.FallDeg), vary = SplashLook.Vary;
             double h = HeightPerM * cal * (0.5 + 0.5 * steep) * (1 + vary * VaryHeight * SplashBook.Signed(e.Seed, 1));
-            double w0 = WidthPerM * cal * (1 + vary * VaryWidth * SplashBook.Signed(e.Seed, 2));
+            double w0 = WidthPerM * cal * (1 + vary * VaryWidth * SplashBook.Signed(e.Seed, 2)) * (e.TorpedoHit ? TorpedoWidth : 1);
             double ta = Math.Sqrt(2 * h / Gravity) * (1 + vary * VaryTime * SplashBook.Signed(e.Seed, 3));
             double delay = vary * DelayS * (0.5 + 0.5 * SplashBook.Signed(e.Seed, 4));
             double tau = (colClock - e.ColumnT0 - delay) / ta, foamAge = foamClock - e.FoamT0 - delay;
@@ -164,7 +169,7 @@ public sealed unsafe class SplashRenderer : IDisposable
                 Base = new Vector4((float)rel.X, (float)rel.Y, (float)rel.Z, e.Seed),
                 Shape = new Vector4((float)h, (float)(w0 * floor), (float)tau, (float)ta),
                 Lean = new Vector4((float)(lean * Math.Sin(b)), (float)(lean * Math.Cos(b)), (float)(world / floor), column ? 1 : 0),
-                Dye = new Vector4(SplashLook.Palette[(int)dye], dye == Dye.None ? 0 : 1),
+                Dye = e.TorpedoHit ? TorpedoGrey : new Vector4(SplashLook.Palette[(int)dye], dye == Dye.None ? 0 : 1),
                 Foam = new Vector4((float)foamAge, e.FoamStrength, (float)w0, (float)world),
             };
             keys[count] = -(float)Vec3d.Dot(rel, north);   // north first: the effects camera looks north, so they're furthest

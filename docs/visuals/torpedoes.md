@@ -163,6 +163,21 @@ and it's never shorter than `BodyFloorPx` 10 px on the screen. The table's dot f
 40 s: at 0.3 m/px soft dark shapes a hundred metres and more ahead of their tracks; at 1 and 4 m/px dark dashes that
 lead each track.
 
+**R4 and R5 (2026-10-15).** `TorpedoEffects` hands each run, once, to the books already drawn (dated by its moment
+in the world on each book's clock, so seen late it's back-dated; a launch seen more than 30 s late shows nothing):
+- a deck mount's launch: the impulse charge's light grey puff on the gun smoke's book at the mount, and the fall's
+  splash (as a 25 mm shell's, a few metres) 0.8 s later where it falls in, 6 m clear of the side;
+- a submerged tube's: a boil of foam (`SplashBook.Add(column: false)`, as a 100 mm's foam) over the tube;
+- a hit: the column on the splash model as its torpedo kind (`SplashBook.Entry.TorpedoHit`: straight up, 2.5 times a
+  shell's width for its height, its water greyed through the dye's tint, which also leaves a grey stain), its height
+  12 W^⅓ m from the charge (68 m at 180 kg); its smoke and spray on the smoke's book (grey-brown, `Keep`).
+
+The table's hit marks fade out over the cross-fade. Seen (noon, a destroyer's spread at a super-dreadnought, 0.3 and
+0.6 m/px, live at 10x): the entry splash just off the destroyer's side, the puff drifting downwind; two hits' columns
+standing up the screen off the battleship's side over their foam rings, smoke drifting off, then the spray hanging
+over her (halved after the first look: it hid the whole ship). Not done: **the night glow** (decision-free, left for
+R6 if night captures want it); the grey barely shows in the column.
+
 ## Decisions (the user, 2026-10-15)
 
 1. **The hit's column now**, built on the shell splash's column (`splash.glsl`) or closely after it: a torpedo kind of

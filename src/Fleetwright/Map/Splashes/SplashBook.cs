@@ -31,6 +31,9 @@ public sealed class SplashBook
         public ShellKind Kind;
         public Dye Dye;
         public bool Column;
+        /// <summary>A torpedo's hit (docs/visuals/torpedoes.md R5): the column straight up, wider, greyed by the
+        /// explosion's smoke.</summary>
+        public bool TorpedoHit;
         /// <summary>The impact's moment on the column's and the foam's clocks, s.</summary>
         public double ColumnT0, FoamT0;
     }
@@ -111,14 +114,16 @@ public sealed class SplashBook
     }
 
     /// <summary>A splash the map makes itself, not the sim (a magazine's debris coming down: docs/visuals/
-    /// magazine-explosions.md X4): a steep fall, as a shell of <paramref name="calibreMm"/> would throw, its moments on
-    /// the two clocks given (ahead of them: it waits), always with its column.</summary>
-    public void Add(Vec3d point, double calibreMm, double columnT0, double foamT0, float seed)
+    /// magazine-explosions.md X4; a torpedo's fall into the water, its tube's air and its hit: torpedoes.md R4, R5): a
+    /// steep fall, as a shell of <paramref name="calibreMm"/> would throw, its moments on the two clocks given (ahead of
+    /// them: it waits), with its column unless <paramref name="column"/> is false (the foam alone).</summary>
+    public void Add(Vec3d point, double calibreMm, double columnT0, double foamT0, float seed, bool column = true, bool torpedoHit = false)
     {
         ring[head] = new Entry
         {
-            Point = point, Ms = lastMs, Salvo = -1, Shooter = -1, CalibreMm = (float)calibreMm, FallDeg = 70, BearingDeg = 0,
-            Kind = ShellKind.Ap, Dye = Dye.None, Seed = seed, Column = true, FoamStrength = 1, ColumnT0 = columnT0, FoamT0 = foamT0,
+            Point = point, Ms = lastMs, Salvo = -1, Shooter = -1, CalibreMm = (float)calibreMm, FallDeg = torpedoHit ? 90 : 70, BearingDeg = 0,
+            Kind = ShellKind.Ap, Dye = Dye.None, Seed = seed, Column = column, FoamStrength = 1, ColumnT0 = columnT0, FoamT0 = foamT0,
+            TorpedoHit = torpedoHit,
         };
         head = (head + 1) % ring.Length;
         count = Math.Min(count + 1, ring.Length);

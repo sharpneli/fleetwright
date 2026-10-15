@@ -23,6 +23,8 @@ public sealed class TorpedoBook
         public bool Ended;
         public TorpedoEnd How;
         public double ChargeKg;
+        /// <summary>Whether its launch and its hit have been handed to the splashes and the smoke (TorpedoEffects).</summary>
+        public bool LaunchShown, HitShown;
 
         /// <summary>Where it is after running for <paramref name="runS"/> seconds (on the surface over it).</summary>
         public readonly Vec3d At(double runS)
@@ -41,6 +43,9 @@ public sealed class TorpedoBook
 
     /// <summary>The runs kept, in no order.</summary>
     public ref readonly Run this[int i] => ref runs[i];
+
+    /// <summary>A run kept, to mark what's been shown of it.</summary>
+    public ref Run Edit(int i) => ref runs[i];
 
     /// <summary>A new world: nothing seen.</summary>
     public void Clear()

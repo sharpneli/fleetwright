@@ -243,6 +243,10 @@ public sealed partial class MapScene
         // the line gives way to the world view's ribbon (docs/visuals/torpedoes.md R2) over the cross-fade
         float table = Torpedoes.TorpedoLook.On ? (float)(1 - WorldView.Factor(view)) : 1f;
         torpedoBook.Update(s.Torpedoes, s.TorpedoEnds, now, Torpedoes.TorpedoTrack.KeepS);
+        // the launches' and hits' splashes and smoke, once each (docs/visuals/torpedoes.md R4, R5)
+        if (Torpedoes.TorpedoLook.On)
+            Torpedoes.TorpedoEffects.Hand(torpedoBook, now, s.Paused ? 0 : s.AchievedSpeed, shipRenderer.Splashes.Book, shipRenderer.Smoke.Book,
+                shipRenderer.Flashes.Book.SeaClock, classOf);
         now = Torpedoes.TorpedoLook.DrawMs(torpedoBook, now);
         for (int i = 0; i < torpedoBook.Count; i++)
         {
@@ -275,14 +279,15 @@ public sealed partial class MapScene
         for (int i = 0; i < e.Count; i++)
         {
             double age = (now - e.Ms[i]) / 1000.0;
-            if (e.Ship[i] < 0 || age < 0 || !view.Project(e.Point[i], out double x, out double y))
+            // the hit's marks give way to the world view's column (docs/visuals/torpedoes.md R5) over the cross-fade
+            if (e.Ship[i] < 0 || age < 0 || table <= 0 || !view.Project(e.Point[i], out double x, out double y))
                 continue;
             if (age < colS)
-                overlay.Disc(x, y, TorpedoColumnPx * (0.6 + 0.4 * Math.Min(age / 2, 1)) * 1.8, Water with { W = (float)(1 - age / colS) }, 0.6f);
-            Hit(x, y, age, 1, flashS, sparkS, Seed(e.Point[i]), HitPx * 0.8, HitSmokeS);
+                overlay.Disc(x, y, TorpedoColumnPx * (0.6 + 0.4 * Math.Min(age / 2, 1)) * 1.8, Water with { W = (float)(1 - age / colS) * table }, 0.6f);
+            Hit(x, y, age, 1, flashS, sparkS, Seed(e.Point[i]), HitPx * 0.8, HitSmokeS, table);
             double fa = 1 - age / life;
             if (fa > 0)
-                Ring(x, y, TorpedoColumnPx * (1 + Math.Min(1, age / 6)), Water with { W = (float)(0.5 * fa * fa) }, 1.5f);
+                Ring(x, y, TorpedoColumnPx * (1 + Math.Min(1, age / 6)), Water with { W = (float)(0.5 * fa * fa) * table }, 1.5f);
         }
     }
 

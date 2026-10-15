@@ -28,6 +28,10 @@ add what's found.
 - [ ] `ShipMotionTests.A_tick_allocates_nothing` failed in a full `dotnet test` of every assembly at once (2026-10-14,
   lighting L4, which touches no sim code; once with a second Sim failure) and passed alone three times in three. The
   same suspicion as above.
+- [ ] `MapCameraTests.Building_the_grid_allocates_nothing` (`Fleetwright.Tests`) failed once in a full run of that
+  assembly (2026-10-15, torpedoes R5, which doesn't touch the grid) and passed alone three times and in the next full
+  run. `Fleetwright.Tests` still runs with concurrent GC, which the Sim tests stopped doing for this kind of flake
+  (the memory "alloc tests vs background GC"); the likely fix is the same there.
 
 ## Damage
 
@@ -60,6 +64,11 @@ add what's found.
   coast. A test of it would bound how long any ship of the islands test stays off rails.
 
 ## The app
+
+- [ ] Dev ships placed with `-ships=...@lat,lon` didn't show in `-screenshot` captures at `-speed=1` or `2` (frames 120-900),
+  at any zoom, while the same command at `-speed=10` showed them from frame ~130 (2026-10-15, torpedoes R4). Not chased:
+  whether they hadn't spawned yet (their classes compiling) or were drawn nowhere is unknown. To hunt: the same run
+  with `-ui` and F2's ship count.
 
 - [ ] Quitting while ship art is still baking crashes (`0xC0000005` in `SDL_BeginGPURenderPass`, from
   `ShipArtLibrary.Draw` on the class registry's worker thread). Found 2026-10-14 (command 5.1a) by `-scenario=squadrons
