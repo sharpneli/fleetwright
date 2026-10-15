@@ -117,7 +117,8 @@ public sealed unsafe partial class MapScene : IScene
         PlaceGroups(view, s);
         probes.Add(probeGroups, t);
         t = Probes.Now;
-        shipRenderer.List.Build(view, s.Ships, world.DrawMs, s.Sun, artOf, classOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion, s.Sighted);
+        shipRenderer.List.Build(view, s.Ships, world.DrawMs, s.Sun, artOf, classOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion, s.Sighted,
+            shipRenderer.Wakes);
         probes.Add(probeDrawList, t);
         t = Probes.Now;
         BuildOverlay(view, s);

@@ -10,6 +10,7 @@
 //     Cox and Munk's for the wind;
 //  4. lit: the water body from the sun and the sky, the sky's reflection by Fresnel, and the sun's and moon's glints
 //     from the anisotropic Gaussian slope distribution (Cox-Munk, Bruneton). Light from the ships' Lights block.
+//  5. the wakes' slopes and variance added to the sea's (linear waves superpose), before the light.
 
 layout(set = 2, binding = 1) uniform sampler2D seaM0;
 layout(set = 2, binding = 2) uniform sampler2D seaM1;
@@ -17,6 +18,9 @@ layout(set = 2, binding = 3) uniform sampler2D seaM2;
 layout(set = 2, binding = 4) uniform sampler2D seaD0;
 layout(set = 2, binding = 5) uniform sampler2D seaD1;
 layout(set = 2, binding = 6) uniform sampler2D seaD2;
+// the wakes (docs/visuals/wakes.md), per pixel: slopes along the camera's right and up, their unresolved variance,
+// foam (the ships' layer draws it before the pass: ShipBatchRenderer.DrawWake)
+layout(set = 2, binding = 7) uniform sampler2D wakeTex;
 
 layout(set = 3, binding = 1) uniform Sea
 {
@@ -129,8 +133,9 @@ float seaGlint(vec3 l, vec3 v, vec2 m, vec2 var)
 }
 
 // The sea's colour (sRGB-coded) at a pixel: local its offset from the view's centre in metres along the camera's
-// right and up; v toward the eye, lSun, lMoon and lNight toward the lights, in the pixel's frame.
-vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight)
+// right and up; v toward the eye, lSun, lMoon and lNight toward the lights, in the pixel's frame; wake the wakes'
+// texel (slopes in the pixel's frame, their variance, foam).
+vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake)
 {
     float mpp = seaOn.y;
     vec2 p = local.x * seaAxes.xy + local.y * seaAxes.zw;   // in the frame's axes
@@ -167,11 +172,16 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight)
     // into the pixel's frame (the turn between the frame and the camera is the meridians' convergence, a few degrees
     // at most: the variance's axes are left as they are)
     m = vec2(dot(m, seaAxes.xy), dot(m, seaAxes.zw));
+    // the wakes: their slopes on the sea's, their unresolved variance split evenly between the axes
+    m += wake.xy;
+    var += vec2(0.5 * wake.z);
 
     if (seaOn.w > 0.5)
     {
         int view = int(seaOn.w + 0.5);
         vec3 nrm = normalize(vec3(-m, 1.0));
+        if (view == 3)   // 3 the wakes alone: their slopes, red right and green up, blue their spread
+            return vec3(0.5 + wake.xy * 2.5, sqrt(wake.z) * 3.0);
         return view == 1 ? nrm * 0.5 + 0.5 : vec3(sqrt(var) * 3.0, 0.0);   // 1 the normal, 2 the slopes' spread
     }
 

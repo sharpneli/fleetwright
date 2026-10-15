@@ -191,6 +191,21 @@ public unsafe class GpuPipelineBuilder
     }
 
     /// <summary>
+    /// Adds the colour (src + dst) and keeps the larger alpha (max(src, dst)): sums in rgb, a coverage in alpha.
+    /// </summary>
+    public GpuPipelineBuilder EnableBlendingAddMaxAlpha()
+    {
+        _blendEnabled = true;
+        _srcColorBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE;
+        _dstColorBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE;
+        _colorBlendOp = SDL_GPUBlendOp.SDL_GPU_BLENDOP_ADD;
+        _srcAlphaBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE;
+        _dstAlphaBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE;
+        _alphaBlendOp = SDL_GPUBlendOp.SDL_GPU_BLENDOP_MAX;
+        return this;
+    }
+
+    /// <summary>
     /// Clears the vertex input layout.
     /// </summary>
     public GpuPipelineBuilder ClearVertexLayout()

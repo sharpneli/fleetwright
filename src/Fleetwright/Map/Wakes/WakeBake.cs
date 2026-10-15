@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Map.Wakes;
@@ -84,25 +85,83 @@ public sealed class WakeHull
     }
 }
 
-/// <summary>A ship's steady wave field at one speed, near the hull: the crop the stamps draw (docs/visuals/wakes.md K1).
-/// <see cref="Width"/> x <see cref="Height"/> texels over x from <see cref="X0"/> (aft) to <see cref="X1"/> (fore) and
-/// y from -<see cref="HalfY"/> (port, row 0) to +<see cref="HalfY"/> (starboard), ship frame metres, texel centres at
-/// the cells' middles. Per texel: the height (m) and the slope moments ∂η/∂x, ∂η/∂y, their squares (LEAN: the mips
-/// average them into the variance the pixel can't resolve).</summary>
+/// <summary>A ship's steady wave field at one speed, near the hull: the crop the stamps draw (docs/visuals/wakes.md K1,
+/// K2). The field is even across the track, so only its starboard half is kept: <see cref="Width"/> x
+/// <see cref="Height"/> texels over x from <see cref="X0"/> (aft) to <see cref="X1"/> (fore) and y from 0 (row 0's
+/// edge, the track) to <see cref="HalfY"/>, ship frame metres, texel centres at the cells' middles. Per texel the height
+/// (m) and |∇η|², whose mips average into the slope variance a pixel can't resolve (LEAN; the mean slope comes from the
+/// height's own differences at the mip read).</summary>
 public sealed class WakeField
 {
-    public const int Width = 384, Height = 256;
+    public const int Width = 384, Height = 128;
+
+    /// <summary>The mip chain the GPU takes: down to 3 x 1.</summary>
+    public const int Levels = 8;
 
     public readonly float[] Eta = new float[Width * Height];
-    public readonly float[] Moments = new float[Width * Height * 4];
+    public readonly float[] Grad2 = new float[Width * Height];
     public double X0, X1, HalfY;
+    /// <summary>The stem of the hull it was baked for, ship frame x: the stamps line the ship's own stem up with it.</summary>
+    public double StemX;
     public double SpeedMs, Zb, FroudeL, EntranceDeg;
     /// <summary>The bake's own grid: cells, spacing, and how long it took.</summary>
     public int GridX, GridY;
     public double GridDx, BakeMs;
 
     public double TexelX => (X1 - X0) / Width;
-    public double TexelY => 2 * HalfY / Height;
+    public double TexelY => HalfY / Height;
+
+    /// <summary>The whole mip chain as RG16F (η, |∇η|²), level by level, into <paramref name="into"/>
+    /// (<see cref="PackedBytes"/> long): each level the box average of the one above (both channels are linear, so
+    /// those are the right averages). <paramref name="scratch"/> (2·Width·Height floats) holds a level while the next
+    /// is made.</summary>
+    public void Pack(byte[] into, float[] scratch)
+    {
+        var dst = MemoryMarshal.Cast<byte, Half>(into.AsSpan());
+        int w = Width, h = Height, off = 0;
+        for (int i = 0; i < w * h; i++)
+        {
+            scratch[2 * i] = Eta[i];
+            scratch[2 * i + 1] = Grad2[i];
+        }
+        for (int level = 0; level < Levels; level++)
+        {
+            for (int i = 0; i < 2 * w * h; i++)
+                dst[off + i] = (Half)scratch[i];
+            off += 2 * w * h;
+            if (level == Levels - 1)
+                break;
+            var (w2, h2) = LevelSize(level + 1);
+            // in place: the next level's texel (r, q) is written after every texel it reads from is read, since
+            // 2·(r·w2 + q) <= 2·(2r·w + 2q) and both walk forward
+            for (int r = 0; r < h2; r++)
+                for (int q = 0; q < w2; q++)
+                    for (int ch = 0; ch < 2; ch++)
+                    {
+                        int r0 = Math.Min(2 * r, h - 1), r1 = Math.Min(2 * r + 1, h - 1), q0 = Math.Min(2 * q, w - 1), q1 = Math.Min(2 * q + 1, w - 1);
+                        scratch[2 * (r * w2 + q) + ch] = 0.25f * (scratch[2 * (r0 * w + q0) + ch] + scratch[2 * (r0 * w + q1) + ch]
+                            + scratch[2 * (r1 * w + q0) + ch] + scratch[2 * (r1 * w + q1) + ch]);
+                    }
+            (w, h) = (w2, h2);
+        }
+    }
+
+    /// <summary>The packed chain's size in bytes.</summary>
+    public static int PackedBytes => LevelOffset(Levels);
+
+    /// <summary>Where a level starts in the packed chain, bytes.</summary>
+    public static int LevelOffset(int level)
+    {
+        int off = 0;
+        for (int l = 0; l < level; l++)
+        {
+            var (w, h) = LevelSize(l);
+            off += 4 * w * h;
+        }
+        return off;
+    }
+
+    public static (int W, int H) LevelSize(int level) => (Math.Max(Width >> level, 1), Math.Max(Height >> level, 1));
 }
 
 /// <summary>The steady Kelvin wave field of a hull at one speed (docs/visuals/wakes.md K1; research/vfx/wake_bake_ref_v2.py
@@ -297,7 +356,7 @@ public static class WakeBake
                 ti.CopyTo(rb);
         }
 
-        // η on the bake's grid, bilinear (re holds it, unscaled), into the crop's starboard half, mirrored to port
+        // η on the bake's grid, bilinear (re holds it, unscaled), into the crop's starboard half
         double Eta(double x, double y)
         {
             double gx = (x - xm + behind) / dx, gy = y / dx + ny / 2;
@@ -308,28 +367,28 @@ public static class WakeBake
             int c = j * nx + i;
             return (re[c] * (1 - u) + re[c + 1] * u) * (1 - v) + (re[c + nx] * (1 - u) + re[c + nx + 1] * u) * v;
         }
+        const int W = WakeField.Width, H = WakeField.Height;
         double tx = f.TexelX, ty = f.TexelY;
-        for (int r = WakeField.Height / 2; r < WakeField.Height; r++)
+        for (int r = 0; r < H; r++)
         {
-            double y = -f.HalfY + (r + 0.5) * ty;
-            int m = WakeField.Height - 1 - r;
-            for (int q = 0; q < WakeField.Width; q++)
-                f.Eta[m * WakeField.Width + q] = f.Eta[r * WakeField.Width + q] = (float)Eta(f.X0 + (q + 0.5) * tx, y);
+            double y = (r + 0.5) * ty;
+            for (int q = 0; q < W; q++)
+                f.Eta[r * W + q] = (float)Eta(f.X0 + (q + 0.5) * tx, y);
         }
 
         // the stem's crest, positive and scaled to Zb: the highest water just off the hull round the stem
         double stem = xm + 0.5 * L, crest = 0, trough = 0;
-        for (int r = 0; r < WakeField.Height; r++)
+        for (int r = 0; r < H; r++)
         {
-            double y = -f.HalfY + (r + 0.5) * ty;
-            if (Math.Abs(y) > B)
-                continue;
-            for (int q = 0; q < WakeField.Width; q++)
+            double y = (r + 0.5) * ty;
+            if (y > B)
+                break;
+            for (int q = 0; q < W; q++)
             {
                 double x = f.X0 + (q + 0.5) * tx;
-                if (Math.Abs(x - stem) > 0.05 * L || Math.Abs(y) < hull.HalfAt(x))
+                if (Math.Abs(x - stem) > 0.05 * L || y < hull.HalfAt(x))
                     continue;
-                double e = f.Eta[r * WakeField.Width + q];
+                double e = f.Eta[r * W + q];
                 (crest, trough) = (Math.Max(crest, e), Math.Min(trough, e));
             }
         }
@@ -337,36 +396,35 @@ public static class WakeBake
         f.Zb = BowWaveHeight(U, T, hull.EntranceDeg);
         double scale = peak > 1e-12 ? sign * f.Zb / peak : 0;
 
-        // shaping: nothing inside the hull (soft over a texel), faded astern and at the crop's edges
-        for (int r = 0; r < WakeField.Height; r++)
+        // shaping: nothing inside the hull (soft over a texel), faded astern and at the crop's edges (across, the outer
+        // one: the inner is the track)
+        for (int r = 0; r < H; r++)
         {
-            double y = -f.HalfY + (r + 0.5) * ty, ey = Edge(r, WakeField.Height);
-            for (int q = 0; q < WakeField.Width; q++)
+            double y = (r + 0.5) * ty, ey = Edge(H - r - 0.5, 2 * H);
+            for (int q = 0; q < W; q++)
             {
                 double x = f.X0 + (q + 0.5) * tx;
-                double outside = Math.Clamp((Math.Abs(y) - hull.HalfAt(x)) / ty + 0.5, 0, 1);
+                double outside = Math.Clamp((y - hull.HalfAt(x)) / ty + 0.5, 0, 1);
                 double back = Math.Max(xm - 0.5 * L - x, 0), fade = 1 / (1 + back / (FadeL * L));
-                int c = r * WakeField.Width + q;
+                int c = r * W + q;
                 double e = f.Eta[c] * scale, a = LimitZb * f.Zb;
-                f.Eta[c] = (float)(a * Math.Tanh(e / a) * outside * fade * ey * Edge(q, WakeField.Width));
+                f.Eta[c] = (float)(a * Math.Tanh(e / a) * outside * fade * ey * Edge(Math.Min(q + 0.5, W - q - 0.5), W));
             }
         }
 
-        // the slopes and their squares, central differences (one-sided at the edges, where the fade has it at nothing)
-        for (int r = 0; r < WakeField.Height; r++)
-            for (int q = 0; q < WakeField.Width; q++)
+        // |∇η|², central differences: across the track the row under row 0 is row 0 mirrored; one-sided at the other
+        // edges, where the fade has the field at nothing
+        for (int r = 0; r < H; r++)
+            for (int q = 0; q < W; q++)
             {
-                int c = r * WakeField.Width + q;
-                int q0 = Math.Max(q - 1, 0), q1 = Math.Min(q + 1, WakeField.Width - 1);
-                int r0 = Math.Max(r - 1, 0), r1 = Math.Min(r + 1, WakeField.Height - 1);
-                float sx = (float)((f.Eta[r * WakeField.Width + q1] - f.Eta[r * WakeField.Width + q0]) / ((q1 - q0) * tx));
-                float sy = (float)((f.Eta[r1 * WakeField.Width + q] - f.Eta[r0 * WakeField.Width + q]) / ((r1 - r0) * ty));
-                f.Moments[4 * c] = sx;
-                f.Moments[4 * c + 1] = sy;
-                f.Moments[4 * c + 2] = sx * sx;
-                f.Moments[4 * c + 3] = sy * sy;
+                int q0 = Math.Max(q - 1, 0), q1 = Math.Min(q + 1, W - 1);
+                int r0 = Math.Max(r - 1, 0), r1 = Math.Min(r + 1, H - 1);
+                double sx = (f.Eta[r * W + q1] - f.Eta[r * W + q0]) / ((q1 - q0) * tx);
+                double sy = (f.Eta[r1 * W + q] - f.Eta[r0 * W + q]) / ((r == 0 ? 2 : r1 - r0) * ty);
+                f.Grad2[r * W + q] = (float)(sx * sx + sy * sy);
             }
 
+        f.StemX = stem;
         f.SpeedMs = U;
         f.FroudeL = U / Math.Sqrt(G * L);
         f.EntranceDeg = hull.EntranceDeg;
@@ -375,9 +433,10 @@ public static class WakeBake
         return f;
     }
 
-    static double Edge(int i, int n)
+    /// <summary>The fade at <paramref name="d"/> texels in from an edge of a side <paramref name="n"/> texels long.</summary>
+    static double Edge(double d, int n)
     {
-        double t = Math.Min(i + 0.5, n - i - 0.5) / (EdgeShare * n);
+        double t = d / (EdgeShare * n);
         if (t >= 1)
             return 1;
         return t * t * (3 - 2 * t);

@@ -120,7 +120,8 @@ void main()
             vec3 ls = vec3(dot(sun.xyz, rt), dot(sun.xyz, upv), s);
             vec3 lm = vec3(dot(seaMoon.xyz, rt), dot(seaMoon.xyz, upv), dot(seaMoon.xyz, n));
             vec3 ln = vec3(dot(seaNightDir.xyz, rt), dot(seaNightDir.xyz, upv), dot(seaNightDir.xyz, n));
-            col = mix(col, seaShade(local, v, ls, lm, ln), seaOn.x);
+            vec4 wake = texelFetch(wakeTex, ivec2(gl_FragCoord.xy), 0);
+            col = mix(col, seaShade(local, v, ls, lm, ln, wake), seaOn.x);
         }
         col = mix(col, mix(nightLand, DayLand * (0.55 + 0.45 * max(s, 0.0)), day), land);
         if (sun.w < 1.0)

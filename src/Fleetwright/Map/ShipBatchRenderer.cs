@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Fleetwright.Gpu;
+using Fleetwright.Map.Wakes;
 using Fleetwright.Shipgen.Render;
 using Fleetwright.Shipgen.Render.Bake;
 using Fleetwright.Sim;
@@ -25,6 +26,8 @@ public enum ShipDrawKind : byte
 {
     Sprite,
     Shadow,
+    /// <summary>A wake's stamp (docs/visuals/wakes.md K3): drawn into the wake target, its two bakes in Tex0 and Tex1.</summary>
+    Wake,
 }
 
 /// <summary>One instanced draw: <see cref="Count"/> quads from <see cref="First"/>, with these textures (a sprite: its
@@ -76,8 +79,15 @@ public sealed class ShipDrawList
         ScorchWrecked = new(0.4f, 0.24f, 0.14f, 0.85f);
 
     ShipQuad[] quads = new ShipQuad[1024];
-    ShipDraw[] draws = new ShipDraw[64];
-    int quadCount, drawCount;
+    ShipDraw[] draws = new ShipDraw[64], wakeDraws = new ShipDraw[64];
+    int quadCount, drawCount, wakeDrawCount;
+
+    /// <summary>Wakes from this speed, m/s (2 kn), full from <see cref="WakeFullMs"/> (3 kn); none going astern.</summary>
+    public const double WakeFromMs = 2 * WakeLibrary.KnotMs, WakeFullMs = 3 * WakeLibrary.KnotMs;
+
+    /// <summary>How far round the screen a ship is still placed for its wake alone, in its lengths on screen: a stamp
+    /// reaches ~4 lengths astern of its stem.</summary>
+    const double WakeReachLengths = 4.5;
     /// <summary>This frame's light, at the view's centre.</summary>
     public ShipLights Lights { get; private set; } = ShipLights.Flat;
 
@@ -89,6 +99,8 @@ public sealed class ShipDrawList
         public Vector2 SunDir;
         public double SunTan;
         public bool Shadows;
+        /// <summary>Off the screen, placed only for its wake, which reaches into it.</summary>
+        public bool WakeOnly;
         public int Class, Entity, Side;
         /// <summary>Its view's mounts' bearings, and where its own start in them (-1: at rest).</summary>
         public double[] Bearings;
@@ -113,6 +125,9 @@ public sealed class ShipDrawList
     public ReadOnlySpan<ShipQuad> Quads => quads.AsSpan(0, quadCount);
     public ReadOnlySpan<ShipDraw> Draws => draws.AsSpan(0, drawCount);
 
+    /// <summary>The wakes' stamps, drawn into the wake target before the globe's pass.</summary>
+    public ReadOnlySpan<ShipDraw> WakeDraws => wakeDraws.AsSpan(0, wakeDrawCount);
+
     /// <summary>How each of the ships was drawn this frame (not the sighted), by its index in the snapshot: 0 not at all (off screen or the far
     /// side), 1 icon, 2 sprite, 3 both (cross-fading).</summary>
     public byte[] DrawnAs { get; private set; } = new byte[64];
@@ -125,11 +140,14 @@ public sealed class ShipDrawList
     /// <param name="sunMotion"><see cref="SunLapse.Motion"/>: below 1 the light fades to the day's mean (and the moon's to
     /// the night's) and the shadows out.</param>
     /// <param name="sighted">The enemy ships in sight (<see cref="Snapshot.Sighted"/>), drawn the same after the ships.</param>
+    /// <param name="wakes">The wake bakes: in the world view each ship under way gets its wave field's stamp
+    /// (docs/visuals/wakes.md K3); null for none.</param>
     public void Build(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, ShipClass?> classOf,
-        nint icon, int selectedEntity, ReadOnlySpan<bool> hidden = default, double sunMotion = 1, ShipsView? sighted = null)
+        nint icon, int selectedEntity, ReadOnlySpan<bool> hidden = default, double sunMotion = 1, ShipsView? sighted = null,
+        WakeLibrary? wakes = null)
     {
         Lights = LightsAt(view, timeMs, sun, sunMotion);
-        quadCount = drawCount = placedCount = 0;
+        quadCount = drawCount = wakeDrawCount = placedCount = 0;
         foreach (var l in byClass.Values)
             l.Clear();
         classes.Clear();
@@ -139,9 +157,14 @@ public sealed class ShipDrawList
         if (placed.Length < most)
             placed = new Placed[Math.Max(most, placed.Length * 2)];
         double world = WorldView.Factor(view);
-        Place(view, world, ships, timeMs, sun, artOf, classOf, hidden, DrawnAs);
+        bool wakeOn = wakes != null && world > 0 && SeaView.WakeGain > 0;
+        Place(view, world, ships, timeMs, sun, artOf, classOf, hidden, DrawnAs, wakeOn);
         if (sighted != null)
-            Place(view, world, sighted, timeMs, sun, artOf, classOf, default, default);
+            Place(view, world, sighted, timeMs, sun, artOf, classOf, default, default, wakeOn);
+
+        if (wakeOn)
+            for (int i = 0; i < placedCount; i++)
+                Wake(ref placed[i], wakes!, view);
 
         // the sprites, layer by layer, a draw per class (and turret type)
         foreach (int cls in classes)
@@ -206,7 +229,7 @@ public sealed class ShipDrawList
     /// the view's <see cref="WorldView.Factor(in MapView)"/>), the sun in its frame; how each was drawn into
     /// <paramref name="drawnAs"/>, if given.</summary>
     void Place(in MapView view, double world, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, ShipClass?> classOf,
-        ReadOnlySpan<bool> hidden, Span<byte> drawnAs)
+        ReadOnlySpan<bool> hidden, Span<byte> drawnAs, bool wakes = false)
     {
         for (int k = 0; k < ships.Count; k++)
         {
@@ -224,27 +247,29 @@ public sealed class ShipDrawList
             var rel = p - view.Eye;
             double pxPerM = 1 / view.MetresPerPixel * view.Altitude / Math.Max(Vec3d.Dot(rel, view.Forward), 1e-3);
             double lengthPx = length * pxPerM, margin = Math.Max(lengthPx, IconLengthPx);
-            if (x < -margin || y < -margin || x > view.Width + margin || y > view.Height + margin)
+            double reach = wakes ? Math.Max(margin, WakeReachLengths * lengthPx) : margin;
+            if (x < -reach || y < -reach || x > view.Width + reach || y > view.Height + reach)
                 continue;
+            bool wakeOnly = x < -margin || y < -margin || x > view.Width + margin || y > view.Height + margin;
             var up = p.Normalized();
             var s = Vec3d.Cross(f, up);
             var light = Lights.ShadowDir;   // the shadows' light, in the ship's frame
             double sx = Vec3d.Dot(light, f), sy = Vec3d.Dot(light, s), sz = Vec3d.Dot(light, up);
             double horiz = Math.Sqrt(sx * sx + sy * sy);
-            double sprite = art != null && pxPerM >= art.MinPxPerM ? world : 0;
+            double sprite = wakeOnly ? 0 : art != null && pxPerM >= art.MinPxPerM ? world : 0;
             var (sea, fade) = c != null && art != null ? SeaOf(c, art, ships, k, timeMs) : (Vector4.Zero, 1.0);
             placed[placedCount] = new Placed
             {
                 Rel = rel, F = f, S = s, PxPerM = pxPerM, LengthPx = lengthPx,
-                SpriteAlpha = sprite * fade, IconAlpha = (1 - sprite) * fade,
+                SpriteAlpha = sprite * fade, IconAlpha = wakeOnly ? 0 : (1 - sprite) * fade, WakeOnly = wakeOnly,
                 SunDir = horiz > 1e-9 ? new Vector2((float)(sx / horiz), (float)(sy / horiz)) : Vector2.UnitX,
                 SunTan = Math.Max(sz / Math.Max(horiz, 1e-9), 0.15),
-                Shadows = sz > 0.05 && lengthPx >= ShadowFromPx && Lights.ShadowOpacity > 0,   // none in time-lapse: they'd spin
+                Shadows = !wakeOnly && sz > 0.05 && lengthPx >= ShadowFromPx && Lights.ShadowOpacity > 0,   // none in time-lapse: they'd spin
                 Class = cls, Entity = ships.Entity[k], Side = ships.Side[k], Bearings = ships.MountBearingDeg, MountStart = ships.MountStart[k],
                 View = ships, Row = k, Cls = c, Sea = sea, Fade = fade,
                 SeaSpan = c != null ? Math.Abs(sea.X) + Math.Abs(sea.Y) * c.Length / 2 + Math.Abs(sea.Z) * c.Beam / 2 : 0,
             };
-            if (k < drawnAs.Length)
+            if (k < drawnAs.Length && !wakeOnly)
                 drawnAs[k] = (byte)((sprite > 0 ? 2 : 0) | (sprite < 1 ? 1 : 0));
             if (sprite > 0)
             {
@@ -294,6 +319,68 @@ public sealed class ShipDrawList
         bool on = z != 0 || dx != 0 || dy != 0;
         double tallest = Math.Max(art.Meta.Shadow.MaxHeightM + art.Meta.Shadow.HeightStepM, 1);
         return (on ? new Vector4((float)z, (float)dx, (float)dy, (float)tallest) : Vector4.Zero, fade);
+    }
+
+    /// <summary>A ship's wave field (docs/visuals/wakes.md K3): one quad over the bakes' crop in its frame, which
+    /// wakesplat.frag fills from the two bakes round its speed, each scaled about the stem by (its speed / the ship's)²
+    /// so their crests line up, the field bent along a turn. Ahead only, from <see cref="WakeFromMs"/>.</summary>
+    void Wake(ref Placed p, WakeLibrary wakes, in MapView view)
+    {
+        if (p.Cls is not { } c)
+            return;
+        double u = p.View.Speed[p.Row];
+        if (u < WakeFromMs || wakes.HullOf(p.Class, c) is not { } h)
+            return;
+        // nearest the view's centre first; the ordered speed's bucket after every one drawn
+        double along = Vec3d.Dot(p.Rel, view.Forward), priority = Math.Sqrt(Math.Max(p.Rel.LengthSquared - along * along, 0));
+        if (!wakes.Resolve(h, u, priority, out var a, out var b, out double wa))
+            return;
+        double ordered = p.View.SpeedOrderKn[p.Row] * WakeLibrary.KnotMs;
+        if (ordered >= WakeFromMs && Math.Abs(ordered - u) > 0.05 * u)
+            wakes.Prefetch(h, ordered, 1e9 + priority);
+
+        double sa = a.SpeedMs * a.SpeedMs / (u * u), sb = b.SpeedMs * b.SpeedMs / (u * u);
+        double zb = WakeBake.BowWaveHeight(u, h.DraughtM, h.EntranceDeg);
+        double ga = SeaView.WakeGain * zb / Math.Max(a.Zb, 1e-6) * sa, gb = SeaView.WakeGain * zb / Math.Max(b.Zb, 1e-6) * sb;
+        double stem = h.X1, pivot = h.MidX;
+        double x0 = Math.Min(stem + (a.X0 - a.StemX) / sa, stem + (b.X0 - b.StemX) / sb);
+        double x1 = Math.Max(stem + (a.X1 - a.StemX) / sa, stem + (b.X1 - b.StemX) / sb);
+        double y1 = Math.Max(a.HalfY / sa, b.HalfY / sb);
+        // the turn: the field astern of the pivot bent onto the arc the ship has come along, y' = y + κ·x²/2 (κ the
+        // path's curvature, + to starboard), held to a length's offset at the stamp's end
+        double back = Math.Max(pivot - x0, 1), cap = 2 * h.LengthM / (back * back);
+        double kappa = Math.Clamp(p.View.YawRate[p.Row] / u, -cap, cap), shear = 0.5 * Math.Abs(kappa) * back * back;
+        double oy = -y1 - shear, w = x1 - x0, hgt = 2 * (y1 + shear);
+
+        if (quadCount == quads.Length)
+            Array.Resize(ref quads, quads.Length * 2);
+        int first = quadCount;
+        var o = p.Rel + p.F * x0 + p.S * oy;
+        var ue = p.F * w;
+        var ve = p.S * hgt;
+        quads[quadCount++] = new ShipQuad
+        {
+            O = new Vector4((float)o.X, (float)o.Y, (float)o.Z, 0),
+            U = new Vector4((float)ue.X, (float)ue.Y, (float)ue.Z, (float)(SmoothStep(WakeFromMs, WakeFullMs, u) * p.Fade)),
+            V = new Vector4((float)ve.X, (float)ve.Y, (float)ve.Z, 0),
+            Ship = new Vector4((float)x0, (float)oy, (float)w, 0),
+            ShipV = new Vector4(0, (float)hgt, 0, 0),
+            Sun = new Vector4((float)stem, (float)kappa, (float)pivot, (float)wa),
+            March = new Vector4((float)a.X0, (float)(1 / (a.X1 - a.X0)), (float)(1 / a.HalfY), (float)a.StemX),
+            Hmap = new Vector4((float)b.X0, (float)(1 / (b.X1 - b.X0)), (float)(1 / b.HalfY), (float)b.StemX),
+            Tint = new Vector4((float)sa, (float)ga, (float)sb, (float)gb),
+            Sea = new Vector4((float)Vec3d.Dot(p.F, view.Right), (float)Vec3d.Dot(p.F, view.Up), (float)Vec3d.Dot(p.S, view.Right),
+                (float)Vec3d.Dot(p.S, view.Up)),
+        };
+        if (wakeDrawCount > 0 && wakeDraws[wakeDrawCount - 1].Tex0 == a.Texture && wakeDraws[wakeDrawCount - 1].Tex1 == b.Texture
+            && wakeDraws[wakeDrawCount - 1].First + wakeDraws[wakeDrawCount - 1].Count == first)
+        {
+            wakeDraws[wakeDrawCount - 1].Count++;
+            return;
+        }
+        if (wakeDrawCount == wakeDraws.Length)
+            Array.Resize(ref wakeDraws, wakeDraws.Length * 2);
+        wakeDraws[wakeDrawCount++] = new ShipDraw { Kind = ShipDrawKind.Wake, Tex0 = a.Texture, Tex1 = b.Texture, First = first, Count = 1 };
     }
 
     void Hull(ref Placed p, ShipArt art)
@@ -479,16 +566,20 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     const uint QuadBufferBytes = 8 << 20;   // ~58,000 quads
 
     readonly SDL_GPUDevice* device;
-    readonly SDL_GPUShader* vs, fsSprite, fsShadow;
+    readonly SDL_GPUShader* vs, fsSprite, fsShadow, fsWake;
     readonly SDL_GPUSampler* linear, nearest;
     readonly DynamicGpuBuffer quadBuf;
-    SDL_GPUGraphicsPipeline* spritePipe, shadowPipe;
+    SDL_GPUGraphicsPipeline* spritePipe, shadowPipe, wakePipe;
+    SDL_GPUTextureFormat wakeFormat;
     SDL_GPUTextureFormat pipeFormat;
     SDL_GPUSampleCount pipeSamples;
     bool pipeDepth;
     int uploaded;
 
     public ShipDrawList List { get; } = new();
+
+    /// <summary>The wakes' bakes, on threads of their own (docs/visuals/wakes.md K2).</summary>
+    public WakeLibrary Wakes { get; }
 
     /// <summary>The stand-in icon: a hull's plan, white, mipmapped.</summary>
     public nint Icon { get; }
@@ -504,12 +595,14 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         vs = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 0, 1);
         fsSprite = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 4, 0, 0, 1);
         fsShadow = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap_shadow.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 0, 0);
-        if (vs == null || fsSprite == null || fsShadow == null)
+        fsWake = GpuShader.Load(device, "Content/Shaders/Compiled/wakesplat.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 0, 0);
+        if (vs == null || fsSprite == null || fsShadow == null || fsWake == null)
             throw new InvalidOperationException("ship map shaders failed to load");
         linear = Sampler(SDL_GPUFilter.SDL_GPU_FILTER_LINEAR, SDL_GPUSamplerMipmapMode.SDL_GPU_SAMPLERMIPMAPMODE_LINEAR);
         nearest = Sampler(SDL_GPUFilter.SDL_GPU_FILTER_NEAREST, SDL_GPUSamplerMipmapMode.SDL_GPU_SAMPLERMIPMAPMODE_NEAREST);
         quadBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ, QuadBufferBytes);
         Icon = (nint)SpriteTextures.Upload(device, SpriteImages.Chain(IconImage(), false, 5));
+        Wakes = new WakeLibrary(device);
     }
 
     /// <summary>The icon: a hull's plan 128 x 32, bow to the right (+x), a fine bow and a rounded stern.</summary>
@@ -584,6 +677,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
 
     public void Copy(SDL_GPUCommandBuffer* cmd)
     {
+        Wakes.Update(cmd);
         var q = List.Quads;
         uploaded = Math.Min(q.Length, (int)(QuadBufferBytes / ShipQuad.SizeInBytes));
         quadBuf.Upload(cmd, q[..uploaded]);
@@ -639,12 +733,60 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         }
     }
 
+    /// <summary>The wakes' stamps into the wake target (its own format, one sample, no depth): slopes and variance
+    /// added, foam by the most (docs/visuals/wakes.md).</summary>
+    public void DrawWake(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
+    {
+        if (List.WakeDraws.Length == 0 || uploaded == 0)
+            return;
+        if (wakePipe == null || wakeFormat != target.ColorFormat)
+        {
+            if (wakePipe != null)
+                SDL_ReleaseGPUGraphicsPipeline(device, wakePipe);
+            wakeFormat = target.ColorFormat;
+            wakePipe = new GpuPipelineBuilder().SetColorFormat(target.ColorFormat).SetMultisampling(target.SampleCount)
+                .SetCullMode(SDL_GPUCullMode.SDL_GPU_CULLMODE_NONE).EnableBlendingAddMaxAlpha().ClearVertexLayout()
+                .NoDepthTarget().DisableDepthTest().SetShaders(vs, fsWake).Build(device);
+            if (wakePipe == null)
+                throw new InvalidOperationException($"wake pipeline: {SDL_GetError()}");
+        }
+        var (near, far) = GlobeRenderer.DepthRange(view);
+        var sb = quadBuf.Buffer;
+        var lights = List.Lights;
+        SDL_BindGPUGraphicsPipeline(pass, wakePipe);
+        SDL_BindGPUVertexStorageBuffers(pass, 0, &sb, 1);
+        var b2 = stackalloc SDL_GPUTextureSamplerBinding[2];
+        foreach (var d in List.WakeDraws)
+        {
+            if (d.First + d.Count > uploaded)
+                break;
+            var vp = new ViewParams
+            {
+                Right = new Vector4(F(view.Right), (float)view.TanHalfX),
+                Up = new Vector4(F(view.Up), (float)view.TanHalfY),
+                Fwd = new Vector4(F(view.Forward), 0),
+                Depth = new Vector4((float)near, (float)far, d.First, 0),
+                Sun = new Vector4(F(lights.SunDir), 0),
+                Moon = new Vector4(F(lights.MoonDir), 0),
+            };
+            SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&vp), (uint)sizeof(ViewParams));
+            b2[0] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex0, sampler = linear };
+            b2[1] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex1, sampler = linear };
+            SDL_BindGPUFragmentSamplers(pass, 0, b2, 2);
+            SDL_DrawGPUPrimitives(pass, 6, (uint)d.Count, 0, 0);
+        }
+    }
+
     static Vector3 F(Vec3d a) => new((float)a.X, (float)a.Y, (float)a.Z);
 
     public void Dispose()
     {
+        Wakes.Dispose();
         SDL_WaitForGPUIdle(device);
         ReleasePipelines();
+        if (wakePipe != null)
+            SDL_ReleaseGPUGraphicsPipeline(device, wakePipe);
+        SDL_ReleaseGPUShader(device, fsWake);
         quadBuf.Dispose();
         SDL_ReleaseGPUTexture(device, (SDL_GPUTexture*)Icon);
         SDL_ReleaseGPUShader(device, vs);

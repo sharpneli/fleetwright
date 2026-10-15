@@ -34,6 +34,8 @@ public sealed unsafe class GlobeRenderer : IDisposable
     public SeaSim Sea { get; }
     SDL_GPUGraphicsPipeline* globePipe, linePipe, fillPipe, depthPipe, fill3dPipe, coast3dPipe;
     RenderTarget? coverage;   // the land's winding number per pixel, at the target's size, with depth
+    RenderTarget? wake;       // the wakes' slopes, variance and foam per pixel (docs/visuals/wakes.md), at the target's size
+    const SDL_GPUTextureFormat WakeFormat = SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT;
     SDL_GPUTextureFormat pipeFormat;
     SDL_GPUSampleCount pipeSamples;
     bool pipeDepth;
@@ -66,7 +68,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
         SDL_GPUShader* Load(string name, SDL_GPUShaderStage stage, uint samplers, uint uniforms) =>
             GpuShader.Load(device, $"Content/Shaders/Compiled/{name}.spv", stage, samplers, 0, 0, uniforms);
         globeVs = Load("globe.vert", V, 0, 0);
-        globeFs = Load("globe.frag", F, 7, 3);
+        globeFs = Load("globe.frag", F, 8, 3);
         lineVs = Load("mapline.vert", V, 0, 0);
         lineFs = Load("mapline.frag", F, 0, 0);
         fillVs = Load("landfill.vert", V, 0, 0);
@@ -201,6 +203,10 @@ public sealed unsafe class GlobeRenderer : IDisposable
             coverage = new RenderTarget(device, target.Width, target.Height, CoverageFormat, depth: true);
         else
             coverage.Resize(target.Width, target.Height);
+        if (wake == null)
+            wake = new RenderTarget(device, target.Width, target.Height, WakeFormat, depth: false);
+        else
+            wake.Resize(target.Width, target.Height);
         var verts = lines.Vertices;
         int maxVerts = (int)(LineBufferBytes / LineVertex.SizeInBytes);
         if (verts.Length > maxVerts)
@@ -248,17 +254,26 @@ public sealed unsafe class GlobeRenderer : IDisposable
         }
         SDL_EndGPURenderPass(cpass);
 
+        // the wakes, under the sea's shading: only while the world view shows (docs/visuals/wakes.md)
+        if (seaU.On.X > 0)
+        {
+            var wpass = wake.BeginPass(cmd, new SDL_FColor { r = 0, g = 0, b = 0, a = 0 }, depth: false);
+            layer?.DrawWake(cmd, wpass, wake, view);
+            SDL_EndGPURenderPass(wpass);
+        }
+
         // the globe, the baked coast, the lines
         var pass = target.BeginPass(cmd, new SDL_FColor { r = 0, g = 0, b = 0, a = 1 }, depth: target.HasDepth);
         SDL_BindGPUGraphicsPipeline(pass, globePipe);
-        var tex = stackalloc SDL_GPUTextureSamplerBinding[7];
+        var tex = stackalloc SDL_GPUTextureSamplerBinding[8];
         tex[0] = new SDL_GPUTextureSamplerBinding { texture = coverage.Resolve, sampler = nearest };
+        tex[7] = new SDL_GPUTextureSamplerBinding { texture = wake.Resolve, sampler = nearest };
         for (int c = 0; c < 3; c++)
         {
             tex[1 + c] = new SDL_GPUTextureSamplerBinding { texture = Sea.Moments(c), sampler = seaSampler };
             tex[4 + c] = new SDL_GPUTextureSamplerBinding { texture = Sea.Displacement(c), sampler = seaSampler };
         }
-        SDL_BindGPUFragmentSamplers(pass, 0, tex, 7);
+        SDL_BindGPUFragmentSamplers(pass, 0, tex, 8);
         SDL_PushGPUFragmentUniformData(cmd, 0, (nint)(&g), (uint)sizeof(GlobeParams));
         SDL_PushGPUFragmentUniformData(cmd, 1, (nint)(&seaU), (uint)sizeof(SeaUniforms));
         SDL_PushGPUFragmentUniformData(cmd, 2, (nint)(&lights), (uint)sizeof(LightUniforms));
@@ -348,6 +363,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
         overlayBuf.Dispose();
         fillBuf.Dispose();
         coverage?.Dispose();
+        wake?.Dispose();
         SDL_ReleaseGPUSampler(device, nearest);
         SDL_ReleaseGPUSampler(device, seaSampler);
         Sea.Dispose();
@@ -358,9 +374,12 @@ public sealed unsafe class GlobeRenderer : IDisposable
 }
 
 /// <summary>Something drawn on the globe inside its main pass, depth-tested against the masking sphere (the ships).
-/// <see cref="Copy"/> runs before the passes (uploads), <see cref="Draw"/> in the main pass after the map's lines.</summary>
+/// <see cref="Copy"/> runs before the passes (uploads), <see cref="DrawWake"/> into the wake target before the main pass
+/// while the world view shows (what the sea's shading takes in: docs/visuals/wakes.md), <see cref="Draw"/> in the main
+/// pass after the map's lines.</summary>
 public unsafe interface IMapLayer
 {
     void Copy(SDL_GPUCommandBuffer* cmd);
+    void DrawWake(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view);
     void Draw(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view);
 }

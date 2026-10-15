@@ -37,7 +37,7 @@ dotnet run --project src/Fleetwright -- -lights=roughness:0.5,specular:0   # the
 dotnet run --project src/Fleetwright -- -view=ship -viewer=sun:300:30,shade:normal,at:10:0:8 [-outline=0.5]   # the viewer for captures: sun, moon, debug view (lit, albedo, normal, ao, ...), centre and zoom; the plan's ink weight
 dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
 dotnet run --project src/Fleetwright -- -worldview=4                       # the map's table-to-world boundary, m/px at 1080p (Map/WorldView.cs; live in the "where" panel with F2)
-dotnet run --project src/Fleetwright -- -map=-40,100,2 -time=1916-05-31T05:20 -sea=lowsunrelief:4,nightrelief:5   # the sea's look knobs (Map/SeaView.cs: relief, lowsunrelief, facet, chop, nightrelief, moonnight, starnight, debug), for side-by-side captures
+dotnet run --project src/Fleetwright -- -map=-40,100,2 -time=1916-05-31T05:20 -sea=lowsunrelief:4,nightrelief:5   # the sea's look knobs (Map/SeaView.cs: relief, lowsunrelief, facet, chop, nightrelief, moonnight, starnight, debug (3: the wakes), wake (the wakes' gain, 0 none)), for side-by-side captures
 dotnet run --project src/Fleetwright -c Release -- -wakebake=destroyer:16,26,39 [-output=wakes]   # a design's wake bakes (docs/visuals/wakes.md K1) as PNGs: height and lit slopes, bow right, starboard down; exits
 dotnet run --project src/Fleetwright -- -section=2 -designer-ui=secsel:1:2,secmenu  # UI state for screenshots (DesignerScene.ApplyDevUi)
 dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wheel:1160,559:-1;100:type:150  # scripted clicks, wheel, typing, F:drop:PATH, F:drag:X0,Y0:X1,Y1, F:mclick or F:mright:X,Y (SDL clicks the map gets) (window px; Engine.ScriptedInput)
@@ -206,7 +206,10 @@ src/
                               #   spawn; MapScene.Groups.cs: ctrl+click picks, forming groups, labels, collapsed
                               #   markers; MapScene.Damage.cs: fires, wrecks, losses, what contacts show), ShipArt (ShipArtLibrary: each class's sprites drawn on the class
                               #   registry's threads, uploaded here), ShipBatchRenderer (ShipDrawList on the CPU,
-                              #   instanced quads in the globe's pass: sprites, shadows, icons; damage drawn through the height map)
+                              #   instanced quads in the globe's pass: sprites, shadows, icons; damage drawn through the height map;
+                              #   the wakes' stamps into the wake target before it), Wakes/ (docs/visuals/wakes.md: WakeBake, the
+                              #   Kelvin field by FFT from the hitbox model's waterline; WakeLibrary, bakes shared by hull size
+                              #   and speed bucket, baked on threads of its own and pooled on the GPU)
     Engine.cs                 #   Sdl3GpuEngine: init, resources, render loop, PbrMaterial
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
@@ -334,7 +337,7 @@ docs/battle/plan.md           # the battle module (a deliverable: the whole ship
 docs/world/architecture.md    # the world: tiers of time on one clock, the sim thread, commands/snapshot, the scene stack
 docs/missions/plan.md         # missions, the battle module's stand-in for politics and manufacturing (format, objectives, UI, generator)
 docs/visuals/sea.md           # the sea: the table/world boundary, the FFT ocean in the globe's pass (W0-W4 done; foam later)
-docs/visuals/wakes.md         # wakes: the Kelvin field baked per class and speed into the sea's slopes, the trail as foam (agreed 2026-10-15; K1 the bake done)
+docs/visuals/wakes.md         # wakes: the Kelvin field baked per class and speed into the sea's slopes, the trail as foam (agreed 2026-10-15; K1-K3 done: the bake, the library, the stamps)
 docs/visuals/ship-lighting.md # the ship sprites lit: relief and normals, materials, the sun and moon, in the one forward pass (L1 done)
 research/                     # research notes, see below
 ```

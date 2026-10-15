@@ -126,11 +126,11 @@ public static unsafe class Program
                     if (!LightTable.Current.Set(kv))
                         Console.Error.WriteLine($"Bad light knob: {kv} (want roughness, specular, knee, shadow, moon, moonsky)");
             }
-            else if (arg.StartsWith("-sea="))   // the sea's look knobs, for side-by-side captures: -sea=relief:3,facet:0.7
+            else if (arg.StartsWith("-sea="))   // the sea's look knobs, for side-by-side captures: -sea=relief:3,facet:0.7,wake:1
             {
                 foreach (var kv in arg.Substring("-sea=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
                     if (!Map.SeaView.Set(kv))
-                        Console.Error.WriteLine($"Bad sea knob: {kv} (want facet, relief, chop, debug)");
+                        Console.Error.WriteLine($"Bad sea knob: {kv} (want facet, relief, lowsunrelief, chop, debug, nightrelief, moonnight, starnight, wake)");
             }
             else if (arg == "-paused")   // the world starts paused
             {

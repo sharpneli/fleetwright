@@ -37,15 +37,15 @@ public class WakeBakeTests(ITestOutputHelper output)
             if (back < 1.5 * L || back > 3 * L)
                 continue;
             double best = 0, at = 0, edge = 0;
-            for (int r = WakeField.Height / 2; r < WakeField.Height; r++)
+            for (int r = 0; r < WakeField.Height; r++)
             {
-                double y = -f.HalfY + (r + 0.5) * f.TexelY, e = Math.Abs(f.Eta[r * WakeField.Width + q]);
+                double y = (r + 0.5) * f.TexelY, e = Math.Abs(f.Eta[r * WakeField.Width + q]);
                 if (y >= h.BeamM && e > best)
                     (best, at) = (e, y);
             }
-            for (int r = WakeField.Height / 2; r < WakeField.Height; r++)
+            for (int r = 0; r < WakeField.Height; r++)
             {
-                double y = -f.HalfY + (r + 0.5) * f.TexelY;
+                double y = (r + 0.5) * f.TexelY;
                 if (Math.Abs(f.Eta[r * WakeField.Width + q]) > 0.2 * best)
                     edge = y;
             }
@@ -146,9 +146,23 @@ public class WakeBakeTests(ITestOutputHelper output)
     public void TheSameBakeTwiceIsTheSame()
     {
         var h = Destroyer.Value;
-        var a = Bake(h, 0.4).Moments.ToArray();
-        var b = Bake(h, 0.4).Moments;
+        var a = Bake(h, 0.4).Grad2.ToArray();
+        var b = Bake(h, 0.4).Grad2;
         Assert.Equal(a, b);
     }
-}
 
+    [Fact]
+    public void BucketsStepByTheirRatioAndBracketTheSpeed()
+    {
+        for (double kn = 3; kn < 45; kn += 0.37)
+        {
+            double u = kn * WakeLibrary.KnotMs;
+            var (b, toward) = WakeLibrary.BucketOf(u);
+            Assert.InRange(toward, 0, 1);
+            Assert.True(WakeLibrary.BucketSpeedMs(b) <= u + 1e-9 && u < WakeLibrary.BucketSpeedMs(b + 1) + 1e-9, $"{kn} kn in bucket {b}");
+            Assert.Equal(WakeLibrary.BucketRatio, WakeLibrary.BucketSpeedMs(b + 1) / WakeLibrary.BucketSpeedMs(b), 9);
+        }
+        Assert.Equal((0, 0.0), WakeLibrary.BucketOf(1.0));   // under the first: the first, alone
+        Assert.InRange(WakeLibrary.BucketOf(40 * WakeLibrary.KnotMs).Bucket, 30, 36);   // ~34 buckets to 40 kn
+    }
+}

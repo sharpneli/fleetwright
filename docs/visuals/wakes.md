@@ -121,8 +121,8 @@ from growing as classes times speeds:
 - **Buckets in speed, ~8% apart** (from 3 kn: 34 to 40 kn). K3's crest-aligned blend draws any speed from the two
   nearest buckets, so the steps can be coarse: between them only the pattern's shape changes, and slowly.
 - **Shared, not per class.** A request is met by any bake whose hull is within a few metres of the ship's waterline
-  length and beam, at the same speed bucket (the thresholds are knobs, to set by eye). Classes of one type and era
-  mostly share.
+  length, beam and draught (draught too: the user, 2026-10-15), at the same speed bucket (the thresholds are knobs, to
+  set by eye). Classes of one type and era mostly share.
 - **An accelerating ship doesn't bake a frame.** It asks only on entering a bucket nobody has baked. Real ships take
   minutes to work up (a destroyer crosses ~30 buckets from rest to full: a request every few seconds at 1x); the
   bucket of the ordered speed (`SpeedOrderKn`) goes first, and one merely passed through is served by its neighbours.
@@ -136,6 +136,13 @@ from growing as classes times speeds:
   η by differences between neighbouring texels at the mip it reads (averaging and differencing commute), and the
   variance as the second channel's mip less that slope squared. About 260 KB a bake with mips, against ~1 MB.
 - **The pool**: 32 textures, ~8 MB, least recently used out. A budget, never a function of the fleet.
+
+**Done 2026-10-15** (`Map/Wakes/WakeLibrary.cs`; the bake now keeps the starboard half, `WakeField.Pack` builds the
+mips on the worker). Two workers, two bakes in flight each, two uploads a frame; the nearest requests are picked by a
+few linear scans (`Array.Sort` with a comparer made a delegate a call). **Lesson:** uploading a texture's mips with
+`cycle = true` on every level gave it a fresh backing each time, so only the last 3×1 level survived: the stamps
+read zeros. It now cycles on level 0 only (a fresh backing if a frame in flight still reads the old bake), then
+writes every level into that one.
 
 ### K3. The stamps: the wave field in the world view
 
@@ -161,6 +168,20 @@ from growing as classes times speeds:
   - the cross-fade to the table, with no pop.
 
   Then the cost with `-gputime` and DevRelease `-frametimes`.
+
+**Done 2026-10-15** (`ShipDrawList.Wake`, `wakesplat.frag`, the wake target in `GlobeRenderer`, `seaShade` taking it
+in; `-sea=wake:G` the gain, 0 for none; `-sea=debug:3` the wake target alone). A ship off the screen is still placed
+for its wake while that reaches in (4.5 lengths on screen), sprite and icon left out. Seen:
+- a destroyer at 26 kn and a dreadnought at 21 kn, paused at 0.6 m/px: the fields mirrored across their tracks, the
+  bow and stern systems, the Kelvin arms; in the lit sea the destroyer's V reads in the glitter and the dreadnought's
+  longer, gentler waves only just;
+- destroyers at 15 kn, one turning to 135°: the field bends along the turn; lit, a slow ship's wake is faint;
+- 20 destroyers at 26 kn at 2 and 0.5 m/px, 1080p, paused, `-gputime` with `wake:0` and `wake:1`: the scene's p50 was
+  0.86-1.10 ms either way. The run-to-run spread (the GPU's clocks at this light load) is larger than the wakes' cost,
+  so it's under what this measure resolves.
+
+Open, for K5: faint streaks still show beside a destroyer's bow at 26 kn (Fr 0.4) in the debug view, the far wedge
+wrapped round the bake's grid. They're under the glitter when lit.
 
 ### K4. The trail as foam
 
