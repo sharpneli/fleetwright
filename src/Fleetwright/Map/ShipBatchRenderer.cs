@@ -520,8 +520,24 @@ public sealed class ShipDrawList
         // a fixed size on screen, along the heading: metres per pixel at the ship
         double l = IconLengthPx / p.PxPerM, w = IconWidthPx / p.PxPerM;
         Emit(ref p, null, -l / 2, -w / 2, l, 0, 0, w, mode: 2, opacity: p.IconAlpha, roof: 0,
-            selected ? SelectedTint : SideTints[p.Side < SideTints.Length ? p.Side : 0]);
+            selected ? SelectedTint : SideTints[p.Side < SideTints.Length ? p.Side : 0], IconSea(p));
     }
+
+    /// <summary>The sea over the icon's deck (docs/visuals/battle-marks.md M4): the sprite's sea plane (its settling,
+    /// trim, list and going down, <see cref="SeaOf"/>) against the freeboard, over the icon's half length and half beam;
+    /// w 1 when any of it is on. The freeboard is taken at <see cref="IconFreeboard"/> of its own, so a ship low in the
+    /// water already shows it on the table, where the true deck going under would be the first sign.</summary>
+    static Vector4 IconSea(in Placed p)
+    {
+        if (p.Cls is not { } c || p.Sea.W <= 0)
+            return default;
+        double fb = Math.Max(c.Vertical.Freeboard, 1) * IconFreeboard;
+        return new Vector4((float)(p.Sea.X - fb), (float)(p.Sea.Y * c.Length / 2), (float)(p.Sea.Z * c.Beam / 2), 1);
+    }
+
+    /// <summary>The share of the freeboard the icon takes as its deck's height (realistic is 1; tuned down so the
+    /// table shows a ship settling before it's awash).</summary>
+    public const double IconFreeboard = 0.5;
 
     /// <summary>A quad from ship-local metres: corner (ox, oy), edges (ux, uy) and (vx, vy).</summary>
     void Emit(ref Placed p, ShipArt? art, double ox, double oy, double ux, double uy, double vx, double vy, int mode, double opacity,

@@ -1,7 +1,8 @@
 #version 450
 #extension GL_GOOGLE_include_directive : require
 // Ships on the map: a baked sprite (premultiplied alpha, mipmapped, sampled by the hardware), a turret's shadow (its
-// silhouette projected by the receiver's height: Include/shipshadow.glsl), the stand-in icon tinted, or a
+// silhouette projected by the receiver's height: Include/shipshadow.glsl), the icon tinted (the sea over its deck as it
+// settles: docs/visuals/battle-marks.md M4), or a
 // scorch over a wrecked part (on the ship only: where the height map has something). Damage (docs/battle/fighting.md
 // 4.4, docs/visuals/ship-lighting.md L5): a turret's tint multiplies into its albedo by its alpha, and its soot makes it
 // rough, bare of metal and darker in its hollows; with the sea's plane on, the hull shows tilted by its slopes (each
@@ -131,7 +132,22 @@ void main()
         discard;   // a casemate, under the deck over it: hidden where the hull that shows here stands over its cover
     vec4 c = texture(spriteTex, uv);
     if (fragMode.x > 1.5)
-        outColour = vec4(fragTint.rgb, 1.0) * fragTint.a * c.a * opacity;
+    {
+        // the icon; with the sea over its deck (march: how far the sea stands over the deck amidships, its rise to the
+        // bow and to starboard, m; w on), what's under goes faint and sea-dark, with a pale wash along the edge
+        vec3 rgb = fragTint.rgb;
+        float a = fragTint.a * c.a;
+        if (fragMarch.w > 0.5)
+        {
+            float over = fragMarch.x + fragMarch.y * (2.0 * fragUv.x - 1.0) + fragMarch.z * (2.0 * fragUv.y - 1.0);
+            float aa = max(fwidth(over), 1e-4);
+            float under = clamp(over / aa + 0.5, 0.0, 1.0), wash = 1.0 - clamp(abs(over) / (1.5 * aa), 0.0, 1.0);
+            rgb = mix(rgb, vec3(0.16, 0.27, 0.34), 0.7 * under);
+            rgb = mix(rgb, vec3(0.9, 0.95, 1.0), 0.6 * wash);
+            a *= 1.0 - 0.6 * under;
+        }
+        outColour = vec4(rgb, 1.0) * a * opacity;
+    }
     else
     {
         vec3 rgb = c.a > 0.0 ? c.rgb / c.a : vec3(0.0);   // the albedo as drawn, sRGB-coded

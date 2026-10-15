@@ -9,117 +9,283 @@ using ImGuiNET;
 
 namespace Fleetwright.Map;
 
-/// <summary>Shells and splashes on the map (docs/battle/fighting.md 4.2a), in the map's style (decision 10: no effects
-/// yet). Each shell is looked up in its ballistic table at the frame's time, so it flies smoothly at any rate with
-/// nothing but its record in the snapshot: a dot, and a short tracer behind it once it's a few pixels long. A splash is
-/// a ring that widens and fades; a hit, an orange flash; the selected ship's bright, the others' dim. Tracers, rings and
-/// flashes scale with the shell's calibre (<see cref="CalibreScale"/>), so a secondary's fire reads apart from the main's. Fire control (4.2b):
-/// a line from each engaged battery's ship to its target. The strip's fire row (4.2c): the commanded unit's fire order
-/// (at will, hold fire, engage: a right-click on a ship or a contact), each of the selected ship's batteries with its
-/// target and state, and the dev's salvo "at" a point of the sea. Torpedoes (4.6): each running one's wake, a pale line
-/// behind it; a hit, a tall flash; the strip's torpedo row (loaded and left, "torpedoes at" a ship).</summary>
+/// <summary>Shells, splashes and torpedoes on the map (docs/battle/fighting.md 4.2a, 4.6), as the table's marks
+/// (docs/visuals/battle-marks.md): symbols at a pixel size, sized by calibre and timed by the physics, kept in the world
+/// view too until it has effects of its own. What moves is a streak, a head and a tail fading to nothing: a shell's short
+/// and hot in its side's tint, swelling toward its apex; a torpedo's track long and white on the water where it was
+/// laid, fading with age. What happens is a pop, then a trace: a gun's flash at the muzzle; a splash's column as a white
+/// glow over its rise and fall, then a foam ring for the snapshot's while; a hit's warm flash and sparks; a torpedo's
+/// tall white column. The selected ship's fire is bright, the others' dimmer. Pops have a floor in real time, so they
+/// still blink at speed. Each shell is looked up in its ballistic table at the frame's time, so it flies smoothly at any
+/// rate with nothing but its record in the snapshot. Fire control (4.2b): a line from each engaged battery's ship to its
+/// target. The strip's fire row (4.2c): the commanded unit's fire order (at will, hold fire, engage: a right-click on a
+/// ship or a contact), each of the selected ship's batteries with its target and state, and the dev's salvo "at" a point
+/// of the sea; the torpedo row (loaded and left, "torpedoes at" a ship).</summary>
 public sealed partial class MapScene
 {
-    static readonly Vector4 ShellColour = new(1f, 0.95f, 0.6f, 0.95f), SplashColour = new(0.9f, 0.95f, 1f, 0.9f),
-        HitColour = new(1f, 0.55f, 0.15f, 1f), TargetColour = new(1f, 0.35f, 0.25f, 0.55f), WakeColour = new(0.85f, 0.95f, 1f, 0.75f);
-    const double WakeM = 400, WakeMinPx = 14, TorpedoHitM = 30;   // a torpedo's wake behind it; a hit's column
-    const double TracerS = 0.25;      // the tracer's length, seconds of flight
-    const double SplashWideM = 30, SplashFadeMs = 8000, HitFadeMs = 4000;   // a 12" shell's; others by CalibreScale
+    static readonly Vector4 ShellHead = new(1f, 0.93f, 0.72f, 1f), ShellTail = new(1f, 0.8f, 0.45f, 0.8f), GunFlash = new(1f, 0.82f, 0.5f, 0.9f),
+        Water = new(0.92f, 0.96f, 1f, 0.95f), HitCore = new(1f, 0.92f, 0.7f, 1f), HitColour = new(1f, 0.5f, 0.12f, 1f),
+        HitSmoke = new(0.18f, 0.18f, 0.2f, 0.5f), TargetColour = new(1f, 0.35f, 0.25f, 0.55f), TrackWhite = new(0.9f, 0.96f, 1f, 0.8f);
+
+    // the shell: its tail covers this much of its flight, within these lengths on the screen; its head, and its swell at
+    // the apex (seen from above it rises toward the eye)
+    const double TailS = 1.5, TailMinPx = 8, TailMaxPx = 40, HeadPx = 2.4, ApexSwell = 0.6;
+    // the gun's flash: physically a few hundredths of a second, held a little so a broadside reads
+    const double FlashS = 0.35, FlashPx = 7;
+    // the splash: a column H = 180 x calibre (research/vfx/shell-splashes.md), rising in sqrt(2H/g) and down by twice
+    // that and a second; the column's glow and the foam ring, px at a 12"
+    const double ColumnPerM = 180, ColumnPx = 3.2, FoamPx = 7;
+    // a hit: the flash, its sparks and the smoke after it
+    const double HitFlashS = 1.2, HitPx = 7, SparkS = 0.7, SparkPx = 16, HitSmokeS = 6;
+    // a torpedo: its track lasts this long on the water and surfaces this far behind it (the bubbles rise from its
+    // depth: lookouts aimed ahead of the track); its hit's column, px, and how long it stands
+    const double TrackS = 90, TrackLagS = 5, TorpedoColumnPx = 11, TorpedoColumnS = 9;
+    // a pop's least time on the screen, in real seconds, whatever the clock's rate
+    const double PopFloorS = 0.2;
     const double RefCalibreMm = 305;
     bool fireArmed, engageArmed, torpedoArmed;
     int fireBattery;   // the dev's salvo "at": which battery
     readonly Dictionary<int, int> shipIndex = [];   // a frame's ships by entity, for the target lines
+    readonly Dictionary<int, byte> sideOf = [];     // a frame's known shooters' sides, by entity
+
+    /// <summary>A pop's life in world seconds: its own, or the real-time floor at the clock's rate.</summary>
+    static double Floor(Snapshot s, double lifeS) => s.Paused ? lifeS : Math.Max(lifeS, PopFloorS * s.AchievedSpeed);
+
+    /// <summary>The tint of whoever fired: its side's, as its icon is, or <paramref name="unknown"/> when not known.</summary>
+    Vector4 ShooterTint(int shooter, Vector4 unknown)
+    {
+        if (!sideOf.TryGetValue(shooter, out byte side) || side >= ShipDrawList.SideTints.Length)
+            return unknown;
+        return ShipDrawList.SideTints[side];
+    }
+
+    /// <summary>The sides of the frame's ships and of the contacts made out.</summary>
+    void Sides(Snapshot s)
+    {
+        sideOf.Clear();
+        foreach (var v in (ReadOnlySpan<ShipsView>)[s.Ships, s.Sighted])
+            for (int k = 0; k < v.Count; k++)
+                sideOf[v.Entity[k]] = v.Side[k];
+        var c = s.Contacts;
+        for (int i = 0; i < c.Count; i++)
+            if (c.Side[i] != 255)
+                sideOf.TryAdd(c.Entity[i], c.Side[i]);
+    }
 
     void DrawShells(in MapView view, Snapshot s)
     {
+        Sides(s);
         var v = s.Shells;
-        if (v.Ballistics is not { } tables)
-            return;
         long now = world.DrawMs;
-        double mpp = view.MetresPerPixel;
-        for (int i = 0; i < v.Count; i++)
-        {
-            double t = (now - v.FiredMs[i]) / 1000.0;
-            if (t < 0 || t > v.EndS[i] || v.Table[i] >= tables.Count)
-                continue;
-            var table = tables[v.Table[i]];
-            var p = table.Position(v.Muzzle[i], v.Forward[i], v.ElevationDeg[i], v.Speed[i], t, out _);
-            if (!view.Project(p, out double x, out double y) || x < -10 || y < -10 || x > view.Width + 10 || y > view.Height + 10)
-                continue;
-            double f = CalibreScale(table.Key.CalibreMm);
-            var back = table.Position(v.Muzzle[i], v.Forward[i], v.ElevationDeg[i], v.Speed[i], Math.Max(0, t - TracerS * f), out _);
-            bool own = selected < 0 || v.Shooter[i] == selected;
-            overlay.BeginStrip(own ? ShellColour : ShellColour with { W = 0.35f }, (float)((own ? 2 : 1.5) * f));
-            if (view.Project(back, out double bx, out double by) && Math.Abs(bx - x) + Math.Abs(by - y) > 3)
-                overlay.Point(bx, by);
-            else
-                overlay.Point(x - 1, y);
-            overlay.Point(x, y);
-            overlay.End();
-        }
+        double flashS = Floor(s, FlashS);
+        if (v.Ballistics is { } tables)
+            for (int i = 0; i < v.Count; i++)
+            {
+                double t = (now - v.FiredMs[i]) / 1000.0;
+                if (t < 0 || t > v.EndS[i] || v.Table[i] >= tables.Count)
+                    continue;
+                var table = tables[v.Table[i]];
+                double f = CalibreScale(table.Key.CalibreMm);
+                float dim = selected < 0 || v.Shooter[i] == selected ? 1f : 0.45f;
+                if (t < flashS && view.Project(v.Muzzle[i], out double mx, out double my))
+                    overlay.Disc(mx, my, FlashPx * Math.Sqrt(f) * (1 - 0.5 * t / flashS), GunFlash with { W = GunFlash.W * dim * (float)(1 - t / flashS) });
+                var p = table.Position(v.Muzzle[i], v.Forward[i], v.ElevationDeg[i], v.Speed[i], t, out _);
+                if (!view.Project(p, out double x, out double y) || x < -TailMaxPx || y < -TailMaxPx || x > view.Width + TailMaxPx || y > view.Height + TailMaxPx)
+                    continue;
+                // the head swells toward the apex: a parabola's top is g T^2 / 8 over its ends
+                double apex = 9.81 * v.EndS[i] * v.EndS[i] / 8, up = Math.Clamp((p.Length - Earth.Radius) / Math.Max(apex, 1), 0, 1);
+                double head = HeadPx * Math.Sqrt(f) * (1 + ApexSwell * up);
+                Streak(view, table, v, i, t, x, y, f, head, ShooterTint(v.Shooter[i], ShellTail) with { W = ShellTail.W * dim });
+                overlay.Disc(x, y, head * 1.3, ShellHead with { W = dim });
+            }
 
         DrawTargets(view, s);
         DrawTorpedoes(view, s);
+        DrawSplashes(view, s);
+    }
 
+    /// <summary>A shell's tail: back along its flight for <see cref="TailS"/> (further while it's under
+    /// <see cref="TailMinPx"/>, never past <see cref="TailMaxPx"/>), tapering and fading from the head to nothing.</summary>
+    void Streak(in MapView view, BallisticTable table, ShellsView v, int i, double t, double x, double y, double f, double head, Vector4 tint)
+    {
+        const int Max = 12;
+        Span<double> px = stackalloc double[Max * 2];
+        double len = 0, maxPx = TailMaxPx * Math.Sqrt(f), step = TailS / 6;
+        int n = 0;
+        (px[0], px[1]) = (x, y);
+        double lx = x, ly = y;
+        for (int k = 1; k < Max && t - k * step > 0; k++)
+        {
+            var q = table.Position(v.Muzzle[i], v.Forward[i], v.ElevationDeg[i], v.Speed[i], t - k * step, out _);
+            if (!view.Project(q, out double qx, out double qy))
+                break;
+            double d = Math.Sqrt((qx - lx) * (qx - lx) + (qy - ly) * (qy - ly));
+            if (len + d > maxPx)
+            {
+                double a = (maxPx - len) / Math.Max(d, 1e-6);
+                (qx, qy, len) = (lx + (qx - lx) * a, ly + (qy - ly) * a, maxPx);
+            }
+            else
+                len += d;
+            n = k;
+            (px[2 * k], px[2 * k + 1], lx, ly) = (qx, qy, qx, qy);
+            if (len >= maxPx || k * step >= TailS && len >= TailMinPx)
+                break;
+        }
+        if (len < 1)
+            return;
+        double along = 0;
+        for (int k = n; k >= 0; k--)
+        {
+            // from the tail's end (nothing) to the head (whole), by length, so it fades the same at any zoom
+            double u = 1 - along / len;
+            if (k > 0)
+                along += Math.Sqrt(Math.Pow(px[2 * k] - px[2 * k - 2], 2) + Math.Pow(px[2 * k + 1] - px[2 * k - 1], 2));
+            overlay.Point(px[2 * k], px[2 * k + 1], tint with { W = (float)(tint.W * (1 - u) * (1 - u)) }, (float)(head * 1.2 * (1 - u * 0.8)));
+        }
+        overlay.End();
+    }
+
+    /// <summary>The splashes and hits of the snapshot's while: a miss's column as a white glow over its rise and fall,
+    /// then its foam ring, faintly in the shooter's tint (the dye loads); a hit's flash, sparks and smoke.</summary>
+    void DrawSplashes(in MapView view, Snapshot s)
+    {
         var w = s.Splashes;
+        long now = world.DrawMs;
+        double life = world.Settings.SplashLifeMs / 1000.0, hitS = Floor(s, HitFlashS), sparkS = Floor(s, SparkS);
         for (int i = 0; i < w.Count; i++)
         {
-            double age = now - w.Ms[i];
-            bool hit = w.Ship[i] >= 0;
-            double f = CalibreScale(w.CalibreMm[i]);
-            double fade = (hit ? HitFadeMs : SplashFadeMs) * (0.5 + 0.5 * f);
-            if (age < 0 || age > fade || !view.Project(w.Point[i], out double x, out double y))
+            double age = (now - w.Ms[i]) / 1000.0;
+            if (age < 0 || !view.Project(w.Point[i], out double x, out double y) || x < -40 || y < -40 || x > view.Width + 40 || y > view.Height + 40)
                 continue;
-            double grow = Math.Min(1, age / 1500);
-            double r = Math.Max((hit ? 12 : SplashWideM * (0.4 + 0.6 * grow)) * f / mpp, (hit ? 4 : 2.5) * Math.Sqrt(f));
-            bool own = selected < 0 || w.Shooter[i] == selected;
-            var col = (hit ? HitColour : SplashColour) with { W = (float)(1 - age / fade) * (hit ? 1f : 0.9f) * (own || hit ? 1f : 0.4f) };
-            overlay.BeginStrip(col, (float)((hit ? 2.5 : 1.5) * Math.Sqrt(f)));
-            for (int k = 0; k <= 16; k++)
+            double g = Math.Sqrt(CalibreScale(w.CalibreMm[i]));
+            float dim = selected < 0 || w.Shooter[i] == selected ? 1f : 0.5f;
+            if (w.Ship[i] >= 0)
             {
-                double a = k * Math.PI * 2 / 16;
-                overlay.Point(x + Math.Cos(a) * r, y + Math.Sin(a) * r);
+                Hit(x, y, age, g, hitS, sparkS, Seed(w.Point[i]), HitPx, HitSmokeS);
+                continue;
             }
+            // the column: up in sqrt(2H/g), down by twice that and a second (12": 3.3 s, 7.7 s)
+            double rise = Math.Sqrt(2 * ColumnPerM * w.CalibreMm[i] / 1000 / 9.81), fall = Floor(s, 2 * rise + 1);
+            if (age < fall)
+            {
+                double up = Math.Min(age / rise, 1), r = ColumnPx * g * (0.5 + 0.5 * (1 - (1 - up) * (1 - up)));
+                double a = age < rise ? 1 : 1 - (age - rise) / (fall - rise);
+                overlay.Disc(x, y, r * 1.6, Water with { W = (float)(Water.W * a * (0.6 + 0.4 * dim)) }, 0.55f);
+            }
+            // the foam: a thin ring that widens a little and fades over the snapshot's while
+            double fa = 1 - age / life;
+            if (fa > 0)
+            {
+                var tint = Vector4.Lerp(Water, ShooterTint(w.Shooter[i], Water), 0.4f);
+                Ring(x, y, FoamPx * g * (0.5 + 0.5 * Math.Min(1, age / 4)), tint with { W = (float)(0.35 * fa * fa * dim) }, 1.2f);
+            }
+        }
+    }
+
+    /// <summary>A hit's pop: a white-hot core going orange, sparks flying out and fading, then a grey puff.</summary>
+    void Hit(double x, double y, double age, double g, double flashS, double sparkS, uint seed, double size, double smokeS)
+    {
+        if (age < smokeS)
+            overlay.Disc(x, y, size * g * (0.8 + age / smokeS), HitSmoke with { W = (float)(HitSmoke.W * (1 - age / smokeS)) });
+        if (age < flashS)
+        {
+            double a = age / flashS;
+            overlay.Disc(x, y, size * g * (1.4 - 0.6 * a), Vector4.Lerp(HitCore, HitColour, (float)Math.Min(1, a * 2)) with { W = (float)(1 - a * a) });
+        }
+        if (age >= sparkS)
+            return;
+        double sa = age / sparkS, reach = SparkPx * g * (1 - (1 - sa) * (1 - sa));
+        for (int k = 0; k < 5; k++)
+        {
+            seed = seed * 1664525 + 1013904223;
+            double ang = (seed >> 8) / (double)(1 << 24) * Math.PI * 2, rr = reach * (0.6 + 0.4 * ((seed & 255) / 255.0));
+            double cx = Math.Cos(ang), cy = Math.Sin(ang);
+            overlay.Point(x + cx * rr * 0.55, y + cy * rr * 0.55, HitColour with { W = 0 }, 0.5f);
+            overlay.Point(x + cx * rr, y + cy * rr, HitCore with { W = (float)(1 - sa) }, 1.6f);
             overlay.End();
         }
     }
 
-    /// <summary>Each torpedo running, as its wake: a pale line from a little behind it (a few pixels at least) to where it
-    /// is now, the selected ship's bright; and a torpedo's hit, a tall orange flash.</summary>
+    /// <summary>A thin ring of radius r px.</summary>
+    void Ring(double x, double y, double r, Vector4 rgba, float widthPx)
+    {
+        overlay.BeginStrip(rgba, widthPx);
+        int segs = r < 4 ? 8 : r < 10 ? 12 : 20;
+        for (int k = 0; k <= segs; k++)
+        {
+            double a = k * Math.PI * 2 / segs;
+            overlay.Point(x + Math.Cos(a) * r, y + Math.Sin(a) * r);
+        }
+        overlay.End();
+    }
+
+    /// <summary>A mark's own seed, from where it is (the same each frame, whatever its place in the list).</summary>
+    static uint Seed(Vec3d p) => (uint)(BitConverter.DoubleToInt64Bits(p.X) ^ BitConverter.DoubleToInt64Bits(p.Y) >> 7 ^ BitConverter.DoubleToInt64Bits(p.Z) >> 13);
+
+    /// <summary>A torpedo as it was laid: kept past its run, so its track fades where it lies.</summary>
+    record struct Laid(Vec3d Origin, Vec3d Forward, long LaunchMs, double SpeedMs, double EndS, int Shooter);
+
+    readonly Dictionary<(long, int, double), Laid> laid = [];
+    readonly List<(long, int, double)> laidGone = [];
+
+    /// <summary>Each torpedo's track, running or run: a thin white line on the water from where its bubbles surface
+    /// (<see cref="TrackLagS"/> behind it) back, fading with age over <see cref="TrackS"/>; a faint dot at the torpedo
+    /// itself while it runs. A hit: a tall white column with a warm flash at its foot, and its ring.</summary>
     void DrawTorpedoes(in MapView view, Snapshot s)
     {
         var v = s.Torpedoes;
         long now = world.DrawMs;
-        double mpp = view.MetresPerPixel, wake = Math.Max(WakeM, WakeMinPx * mpp);
         for (int i = 0; i < v.Count; i++)
+            laid[(v.LaunchMs[i], v.Shooter[i], v.Forward[i].X)] = new Laid(v.Origin[i], v.Forward[i], v.LaunchMs[i], v.SpeedMs[i], v.EndS[i], v.Shooter[i]);
+        laidGone.Clear();
+        foreach (var (key, t) in laid)
         {
-            var head = v.At(i, now, out double run);
-            if (!view.Project(head, out double x, out double y) || x < -50 || y < -50 || x > view.Width + 50 || y > view.Height + 50)
-                continue;
-            bool own = selected < 0 || v.Shooter[i] == selected;
-            overlay.BeginStrip(own ? WakeColour : WakeColour with { W = 0.35f }, own ? 1.5f : 1f);
-            for (int j = 0; j <= 4; j++)
+            double age = (now - t.LaunchMs) / 1000.0;   // since launch
+            if (age < 0 || age > t.EndS + TrackS)
             {
-                var (p, f) = (v.Origin[i], v.Forward[i]);
-                Earth.Advance(ref p, ref f, Math.Max(run - wake * (1 - j / 4.0), 0));
-                Point(view, p);
+                laidGone.Add(key);
+                continue;
+            }
+            double end = Math.Min(age, t.EndS), start = Math.Max(0, age - TrackS);   // the run's stretch still on the water, s
+            float dim = selected < 0 || t.Shooter == selected ? 1f : 0.5f;
+            const int N = 10;
+            for (int j = 0; j <= N; j++)
+            {
+                double ts = start + (end - start) * j / N;
+                double fade = 1 - (age - ts) / TrackS, lag = Math.Clamp((age - ts) / TrackLagS, 0, 1);
+                var (p, f) = (t.Origin, t.Forward);
+                Earth.Advance(ref p, ref f, t.SpeedMs * ts);
+                if (view.Project(p, out double x, out double y))
+                    overlay.Point(x, y, TrackWhite with { W = (float)(TrackWhite.W * dim * fade * fade * lag) }, (float)(0.8 + 0.9 * fade));
+                else
+                    overlay.End();
             }
             overlay.End();
+            if (age < t.EndS)
+            {
+                var (p, f) = (t.Origin, t.Forward);
+                Earth.Advance(ref p, ref f, t.SpeedMs * age);
+                if (view.Project(p, out double x, out double y))
+                    overlay.Disc(x, y, 2.5, TrackWhite with { W = 0.45f * dim });
+            }
         }
+        foreach (var key in laidGone)
+            laid.Remove(key);
+
         var e = s.TorpedoEnds;
+        double life = world.Settings.SplashLifeMs / 1000.0, colS = Floor(s, TorpedoColumnS), flashS = Floor(s, HitFlashS), sparkS = Floor(s, SparkS);
         for (int i = 0; i < e.Count; i++)
         {
-            double age = now - e.Ms[i];
-            if (e.Ship[i] < 0 || age < 0 || age > HitFadeMs * 2 || !view.Project(e.Point[i], out double x, out double y))
+            double age = (now - e.Ms[i]) / 1000.0;
+            if (e.Ship[i] < 0 || age < 0 || !view.Project(e.Point[i], out double x, out double y))
                 continue;
-            double r = Math.Max(TorpedoHitM * Math.Min(1, 0.4 + age / 1000) / mpp, 5);
-            overlay.BeginStrip(HitColour with { W = (float)(1 - age / (HitFadeMs * 2)) }, 3f);
-            for (int k = 0; k <= 16; k++)
-            {
-                double a = k * Math.PI * 2 / 16;
-                overlay.Point(x + Math.Cos(a) * r, y + Math.Sin(a) * r);
-            }
-            overlay.End();
+            if (age < colS)
+                overlay.Disc(x, y, TorpedoColumnPx * (0.6 + 0.4 * Math.Min(age / 2, 1)) * 1.8, Water with { W = (float)(1 - age / colS) }, 0.6f);
+            Hit(x, y, age, 1, flashS, sparkS, Seed(e.Point[i]), HitPx * 0.8, HitSmokeS);
+            double fa = 1 - age / life;
+            if (fa > 0)
+                Ring(x, y, TorpedoColumnPx * (1 + Math.Min(1, age / 6)), Water with { W = (float)(0.5 * fa * fa) }, 1.5f);
         }
     }
 
