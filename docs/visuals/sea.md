@@ -202,8 +202,23 @@ roughness). That is close to the physics: a straight-down view at a low sun is l
 Done: the water body's sunlight and moonlight now follow the facet they fall on (its cosine through 1 - Fresnel,
 `SeaView.FacetLight` 0.7 of it, the rest as a level sea): physical, a small gain (1.0 at 40°S). A look knob,
 `SeaView.Relief` (`-sea=relief:3`), steepens the slopes for the body's light alone: 1 / 3 / 6 give 1.0 / 2.3 / 3.9 at
-40°S and leave noon nearly as it is (8.3 / 8.6 / 9.2). It stays at 1, physical, until chosen. Dusk and night stay
-dark either way: there's no light to shade with (a readability floor like the ships' is an option).
+40°S and leave noon nearly as it is (8.3 / 8.6 / 9.2).
+
+**Tuned (user, 2026-10-15: realistic is the starting rule, then tune where it fails):** all in `SeaView`, the water
+body's light only (the glints and the ships stay physical).
+- *Low sun:* the relief grows from 1 at a 40° sun to `LowSunRelief` 4 at 15°, where the glint stops showing the waves.
+- *Twilight and night:* a light of the sea's own fades in as the sun goes from 12° to −2° (`NightFromDeg`). While the
+  moon is up at all, it comes from the moon's bearing, a bit brighter than moonlight (`MoonNightRad`); with no moon
+  it is dimmer, bluer starlight biased to the sun's side under the horizon (`StarNightRad`). Its height is kept where it
+  shades (the moon's clamped to 25-60°, the stars' at 40°), its relief `NightRelief` 5. Dark and gloomy, the waves read.
+
+| Black Sea / where | Before | Tuned |
+|---|---|---|
+| 10:00 local / 16:00 / ~18:15 (sun ~13°) | 14.7 / 6.9 / 1.2 | 14.8 / 7.1 / 2.6 |
+| dusk / moonless night / full moon | 0.02 / 0.0 / 0.5 | 2.3 / 2.8 / 6.0 |
+| 60°S noon / 40°S noon / North Sea noon | 0.01 / 0.2 / 8.3 | 1.7 / 1.9 / 8.3 |
+
+Knobs for side-by-side captures: `-sea=lowsunrelief:4,nightrelief:5,moonnight:1,starnight:1` (scales).
 
 ### Later (not v1)
 

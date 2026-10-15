@@ -31,6 +31,8 @@ layout(set = 3, binding = 1) uniform Sea
     vec4 seaMss2;   // xy: cascade 2's mean-square slopes; z: the glints' scale (0 in time-lapse); w: the Earth's radius, m
     vec4 seaBody;   // rgb: the water body's reflectance, linear; w: how much of its light follows the facet (FacetLight)
     vec4 seaMoon;   // xyz: toward the moon, Earth-fixed; w: the slopes' exaggeration for the body's light (Relief)
+    vec4 seaNight;  // rgb: the night's light on the water (SeaView.NightLight: tuned, not real), linear; w: its relief
+    vec4 seaNightDir; // xyz: toward it, Earth-fixed
 };
 
 float seaHash(ivec2 c)
@@ -127,8 +129,8 @@ float seaGlint(vec3 l, vec3 v, vec2 m, vec2 var)
 }
 
 // The sea's colour (sRGB-coded) at a pixel: local its offset from the view's centre in metres along the camera's
-// right and up; v toward the eye, lSun and lMoon toward the lights, in the pixel's frame.
-vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon)
+// right and up; v toward the eye, lSun, lMoon and lNight toward the lights, in the pixel's frame.
+vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight)
 {
     float mpp = seaOn.y;
     vec2 p = local.x * seaAxes.xy + local.y * seaAxes.zw;   // in the frame's axes
@@ -184,6 +186,12 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon)
     vec3 nb = normalize(vec3(-m * seaMoon.w, 1.0));
     vec3 body = seaBody.rgb * (sunRad.rgb * mix(seaLetIn(vec3(0.0, 0.0, 1.0), lSun), seaLetIn(nb, lSun), k)
                              + moonRad.rgb * mix(seaLetIn(vec3(0.0, 0.0, 1.0), lMoon), seaLetIn(nb, lMoon), k) + skyAmb.rgb);
+    // the night's light (tuned: a real night sea from above is black and still), all by the facet, with its own relief
+    if (seaNight.r + seaNight.g + seaNight.b > 0.0)
+    {
+        vec3 nn = normalize(vec3(-m * seaNight.w, 1.0));
+        body += seaBody.rgb * seaNight.rgb * mix(seaLetIn(vec3(0.0, 0.0, 1.0), lNight), seaLetIn(nn, lNight), seaMss2.z);
+    }
     vec3 c = (1.0 - F) * body + F * skyAt(r, vec3(0.0, 0.0, 1.0), 0.0);
     c += (sunRad.rgb * seaGlint(lSun, v, m, var) + moonRad.rgb * seaGlint(lMoon, v, m, var)) * seaMss2.z;
     return linearToSrgb(shoulder(c, look.z));

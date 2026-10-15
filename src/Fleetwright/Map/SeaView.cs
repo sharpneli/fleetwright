@@ -4,11 +4,11 @@ using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Map;
 
-/// <summary>The Sea uniform block of Content/Shaders/Source/Include/seashade.glsl (std140, 11 vec4s).</summary>
+/// <summary>The Sea uniform block of Content/Shaders/Source/Include/seashade.glsl (std140, 13 vec4s).</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct SeaUniforms
 {
-    public Vector4 On, Tiles, Off01, Off23, HexOff, HexS, Axes, VarU, Mss2, Body, Moon;
+    public Vector4 On, Tiles, Off01, Off23, HexOff, HexS, Axes, VarU, Mss2, Body, Moon, Night, NightDir;
 }
 
 /// <summary>The sea's frame and clock for the map (docs/visuals/sea.md W2-W4), on the CPU in double; the shader gets
@@ -42,14 +42,34 @@ public sealed class SeaView
     public static float FacetLight = 0.7f;
 
     /// <summary>How much the slopes are steepened for the body's light alone (1: as they are), like a hillshade's
-    /// vertical exaggeration: a look knob for when the sun is too low for the glint to show the waves from above.</summary>
-    public static float Relief = 1;
+    /// vertical exaggeration, under a high sun; and under a low one (tuned, docs/visuals/sea.md "Low sun and night"):
+    /// below <see cref="LowSunDeg"/>[0] the sun's glint stops reaching a view from above and the waves go flat, so the
+    /// relief grows to <see cref="LowSunRelief"/> by <see cref="LowSunDeg"/>[1].</summary>
+    public static float Relief = 1, LowSunRelief = 4;
+
+    public static readonly double[] LowSunDeg = [40, 15];
+
+    /// <summary>The night's light on the water, tuned away from the real (docs/visuals/sea.md, "Night"): realistic, a
+    /// night sea seen from above is black and still, and so is one under a sun too low for its glint to reach the eye;
+    /// so as the sun goes (fading in from <see cref="NightFromDeg"/>: 12° over the horizon to 2° under it) the water body
+    /// gets a light of its own, for its waves alone. In twilight it is the sky's glow on the sun's side. While the moon is up at all it comes from
+    /// the moon's bearing, a little brighter than moonlight; with no moon it is starlight, dimmer and bluer, biased to
+    /// where the sun is under the horizon (the sky stays brightest there). Its height is kept where it shades: the
+    /// moon's clamped to 25-60°, the stars' at 40°. Linear, by eye: dark and gloomy, yet the waves read.</summary>
+    public static Vector3 MoonNightRad = new(0.42f, 0.47f, 0.55f), StarNightRad = new(0.18f, 0.22f, 0.34f);
+
+    /// <summary>The sun's elevations, degrees, between which the night's light fades in: from the first down to the second.</summary>
+    public static readonly double[] NightFromDeg = [12, -2];
+
+    /// <summary>The slopes' steepening for the night's light (as <see cref="Relief"/> for the day's).</summary>
+    public static float NightRelief = 5;
 
     /// <summary>A debug view of the sea: 0 shaded, 1 its normal, 2 its slopes' spread.</summary>
     public static int Debug;
 
-    /// <summary>Sets a knob by name, "facet:0.7", "relief:3", "chop:1", "debug:1" (the -sea= flag, for side-by-side
-    /// captures); false for a bad one.</summary>
+    /// <summary>Sets a knob by name, "facet:0.7", "relief:1", "lowsunrelief:4", "chop:1", "debug:1", "nightrelief:5", and "moonnight:1"
+    /// and "starnight:1" (scales on the night's lights) (the -sea= flag, for side-by-side captures); false for a bad
+    /// one.</summary>
     public static bool Set(string kv)
     {
         var p = kv.Split(':');
@@ -59,8 +79,12 @@ public sealed class SeaView
         {
             case "facet": FacetLight = v; break;
             case "relief": Relief = v; break;
+            case "lowsunrelief": LowSunRelief = v; break;
             case "chop": Chop = v; break;
             case "debug": Debug = (int)v; break;
+            case "nightrelief": NightRelief = v; break;
+            case "moonnight": MoonNightRad = new Vector3(0.42f, 0.47f, 0.55f) * v; break;
+            case "starnight": StarNightRad = new Vector3(0.18f, 0.22f, 0.34f) * v; break;
             default: return false;
         }
         return true;
@@ -133,8 +157,46 @@ public sealed class SeaView
             VarU = new Vector4((float)ux, (float)uy, (float)kx, (float)ky),
             Mss2 = new Vector4((float)c2.MssX, (float)c2.MssY, (float)Math.Clamp(sunMotion, 0, 1), (float)Earth.Radius),
             Body = new Vector4(Body, FacetLight),
-            Moon = new Vector4((float)lights.MoonDir.X, (float)lights.MoonDir.Y, (float)lights.MoonDir.Z, Relief),
+            Moon = new Vector4((float)lights.MoonDir.X, (float)lights.MoonDir.Y, (float)lights.MoonDir.Z, DayRelief(target, lights)),
         };
+        var (nightRad, nightDir) = NightLight(target, lights);
+        Uniforms.Night = new Vector4(nightRad, NightRelief);
+        Uniforms.NightDir = new Vector4((float)nightDir.X, (float)nightDir.Y, (float)nightDir.Z, 0);
+    }
+
+    /// <summary>The relief for the sun's and moon's light on the body: <see cref="Relief"/> under a high sun, growing to
+    /// <see cref="LowSunRelief"/> as it gets low.</summary>
+    static float DayRelief(Vec3d up, in ShipLights lights)
+    {
+        double sunEl = Math.Asin(Math.Clamp(Vec3d.Dot(lights.SunDir, up), -1, 1)) * 180 / Math.PI;
+        return (float)(Relief + (LowSunRelief - Relief) * (1 - SmoothStep(LowSunDeg[1], LowSunDeg[0], sunEl)));
+    }
+
+    /// <summary>The night's light at a place (<see cref="MoonNightRad"/>): its colour, faded in as the sun goes, and
+    /// the way toward it, Earth-fixed.</summary>
+    static (Vector3 Rad, Vec3d Dir) NightLight(Vec3d up, in ShipLights lights)
+    {
+        double sunEl = Math.Asin(Math.Clamp(Vec3d.Dot(lights.SunDir, up), -1, 1)) * 180 / Math.PI;
+        double night = 1 - SmoothStep(NightFromDeg[1], NightFromDeg[0], sunEl);
+        if (night <= 0)
+            return (Vector3.Zero, up);
+        var m = lights.Uniforms.MoonRad;
+        double moonUp = SmoothStep(0, 0.003, (m.X + m.Y + m.Z) / 3);   // up at all: even a thin crescent
+        double moonEl = Math.Asin(Math.Clamp(Vec3d.Dot(lights.MoonDir, up), -1, 1)) * 180 / Math.PI;
+        var moon = Toward(up, lights.MoonDir, Math.Clamp(moonEl, 25, 60));
+        var stars = Toward(up, lights.SunDir, 40);
+        var dir = (stars * (1 - moonUp) + moon * moonUp).Normalized();
+        var rad = Vector3.Lerp(StarNightRad, MoonNightRad, (float)moonUp) * (float)night;
+        return (rad, dir);
+    }
+
+    /// <summary>The direction on <paramref name="toward"/>'s bearing from a place, at an elevation.</summary>
+    static Vec3d Toward(Vec3d up, Vec3d toward, double elevationDeg)
+    {
+        var h = toward - up * Vec3d.Dot(toward, up);
+        h = h.Length > 1e-9 ? h.Normalized() : Earth.North(up);
+        double e = elevationDeg * Math.PI / 180;
+        return h * Math.Cos(e) + up * Math.Sin(e);
     }
 
     static float Wrap(double v, double period) => (float)(v - Math.Floor(v / period) * period);
