@@ -56,6 +56,7 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Small craft overmanned (PT boat, MTB)
 - [ ] Barbette weight doesn't match the barbette hitbox depth
 - [ ] Bulbous bow tickbox (optional)
+- [ ] Sizing steps on a lighter ship (seen 2026-10-15, destroyer crunch 1): a design that got lighter came out bigger. Moltke +2.3 % (+5.5 m): on the slightly shorter hull its submerged beam tubes miss their slot once and `FailMid` gives the middle a whole tube length (6.9 m) that then stays. all_forward_flush +1.9 %: a deck secondary misses amidships once (secondary placement, crunch step 3). Both are the sizer's needs-only-grow meeting a step in a placement.
 
 ## Powerplant and crew
 - [ ] Generator rooms for electric transmission

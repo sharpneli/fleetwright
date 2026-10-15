@@ -119,13 +119,13 @@ ST4: {name: "Triple/quad expansion + water-tube boilers", years: [1893, 1910], p
                    note: "small-tube Yarrow/Thornycroft/Normand. At s=1 this is the 30-knotter TBD plant (~31 kg/kW)."}},
       note: "Default boilers are large-tube (Belleville/Niclausse/B&W)."}
 ST5: {name: "Direct-drive steam turbines + water-tube", years: [1905, 1918], psi: [200, 280],
-      fuel: [coal, mixed, oil], sfc: [950, 800], w: [120, 95], stress_floor: 0.35, rho_base: 0.30,
+      fuel: [coal, mixed, oil], sfc: [950, 800], w: [120, 95], stress_floor: 0.30, rho_base: 0.30,
       unit_max: [8, 20], P_ref: 10, h_ref: 4.5, w_ref: 4.5, l_ref: 7, boiler_frac: 0.6,
       crew_k: 30, start: 3, curve: DT,
       options: {cruising_turbines: {w_mult: 1.05, curve: GTB}},
       note: "Headline: low height, high unit power, sustained speed. Poor cruise economy without cruising turbines."}
 ST6: {name: "Geared turbines + oil-fired small-tube boilers", years: [1915, 1930], psi: [250, 300],
-      fuel: oil, sfc: [520, 430], w: [75, 52], stress_floor: 0.42, rho_base: 0.32,
+      fuel: oil, sfc: [520, 430], w: [75, 52], stress_floor: 0.33, rho_base: 0.32,
       unit_max: [15, 35], P_ref: 15, h_ref: 4.5, w_ref: 4.5, l_ref: 8, boiler_frac: 0.55,
       crew_k: 12, start: 2, curve: GTB}
 ST7: {name: "High-pressure superheated geared turbines", years: [1930, 1945], psi: [400, 650],
@@ -479,6 +479,10 @@ n_funnels = max(n_area, n_reach, 1)      # diesel or GT may be 0 (side/transom e
 - The optional split of steam into independent boiler × engine axes: boiler choices (Scotch / large-tube / express / oil 3-drum / HP superheat / forced-circulation) combined with engine choices (simple → HP turbine) and a min-pressure compatibility check. The package list above is the collapsed version.
 
 ---
+
+## Changelog (2026-10-15)
+
+- **ST5 `stress_floor` 0.35 → 0.30, ST6 0.42 → 0.33** (docs/shipgen/DECISIONS.md, "Destroyer crunch"). Pushed to the limit, the 1915 destroyer plant was no lighter than the 1900 30-knotter's (~31 kg/kW), which put a WWI destroyer at about twice its displacement. ST6 at s = 1 is now 24.8 kg/kW in 1915 and 17.2 in 1930, still above ST7's mature 17 (rule 3 above).
 
 ## Changelog v2 → v2.1
 

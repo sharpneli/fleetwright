@@ -123,7 +123,7 @@
    "name": "Direct-drive turbines, water-tube boilers, oil-fired (1915)",
    "fuel": "oil",
    "weight_kg_per_kw": 86.7,
-   "stress_floor": 0.35,
+   "stress_floor": 0.3,
    "sfc_g_per_kwh": 573,
    "density_t_per_m3": 0.3,
    "unit_max_mw": 19.4,

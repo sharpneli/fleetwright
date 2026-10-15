@@ -96,7 +96,7 @@ The first turbines (Dreadnought).
 
 **Turbine ships** (`ST5`)
 ```json
-"tech": {"name": "Direct-drive turbines, water-tube boilers (1905)", "fuel": "coal", "weight_kg_per_kw": 120.0, "stress_floor": 0.35, "sfc_g_per_kwh": 950, "density_t_per_m3": 0.3, "unit_max_mw": 8.0, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 30, "part_load": "DT", "draught": {"system": "forced", "velocity_m_s": 9.1, "reach_m": 9.1, "gas_temp_k": 600, "air_fuel_ratio": 16}}
+"tech": {"name": "Direct-drive turbines, water-tube boilers (1905)", "fuel": "coal", "weight_kg_per_kw": 120.0, "stress_floor": 0.3, "sfc_g_per_kwh": 950, "density_t_per_m3": 0.3, "unit_max_mw": 8.0, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 30, "part_load": "DT", "draught": {"system": "forced", "velocity_m_s": 9.1, "reach_m": 9.1, "gas_temp_k": 600, "air_fuel_ratio": 16}}
 ```
 
 **Reciprocating capital ships** (`ST4`)
@@ -120,17 +120,17 @@ Turbines everywhere; oil spray on coal, then all-oil destroyers. Petrol motor bo
 
 **Coal turbine ships** (`ST5`)
 ```json
-"tech": {"name": "Direct-drive turbines, water-tube boilers (1910)", "fuel": "coal", "weight_kg_per_kw": 104.5, "stress_floor": 0.35, "sfc_g_per_kwh": 857, "density_t_per_m3": 0.3, "unit_max_mw": 15.5, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 30, "part_load": "DT", "draught": {"system": "forced", "velocity_m_s": 9.8, "reach_m": 9.8, "gas_temp_k": 600, "air_fuel_ratio": 16}}
+"tech": {"name": "Direct-drive turbines, water-tube boilers (1910)", "fuel": "coal", "weight_kg_per_kw": 104.5, "stress_floor": 0.3, "sfc_g_per_kwh": 857, "density_t_per_m3": 0.3, "unit_max_mw": 15.5, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 30, "part_load": "DT", "draught": {"system": "forced", "velocity_m_s": 9.8, "reach_m": 9.8, "gas_temp_k": 600, "air_fuel_ratio": 16}}
 ```
 
 **Mixed firing** (`ST5`)
 ```json
-"tech": {"name": "Direct-drive turbines, water-tube boilers, mixed firing (coal, oil spray) (1910)", "fuel": "coal", "weight_kg_per_kw": 101.3, "stress_floor": 0.35, "sfc_g_per_kwh": 844, "density_t_per_m3": 0.3, "unit_max_mw": 15.5, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 25.5, "part_load": "DT", "draught": {"system": "forced", "velocity_m_s": 9.8, "reach_m": 9.8, "gas_temp_k": 600, "air_fuel_ratio": 16}}
+"tech": {"name": "Direct-drive turbines, water-tube boilers, mixed firing (coal, oil spray) (1910)", "fuel": "coal", "weight_kg_per_kw": 101.3, "stress_floor": 0.3, "sfc_g_per_kwh": 844, "density_t_per_m3": 0.3, "unit_max_mw": 15.5, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 25.5, "part_load": "DT", "draught": {"system": "forced", "velocity_m_s": 9.8, "reach_m": 9.8, "gas_temp_k": 600, "air_fuel_ratio": 16}}
 ```
 
 **All-oil turbine ships (destroyers, Queen Elizabeth)** (`ST5`)
 ```json
-"tech": {"name": "Direct-drive turbines, water-tube boilers, oil-fired (1910)", "fuel": "oil", "weight_kg_per_kw": 94.0, "stress_floor": 0.35, "sfc_g_per_kwh": 608, "density_t_per_m3": 0.3, "unit_max_mw": 15.5, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 13.5, "part_load": "DT", "draught": {"system": "forced", "velocity_m_s": 11.8, "reach_m": 15.5, "gas_temp_k": 570, "air_fuel_ratio": 15}}
+"tech": {"name": "Direct-drive turbines, water-tube boilers, oil-fired (1910)", "fuel": "oil", "weight_kg_per_kw": 94.0, "stress_floor": 0.3, "sfc_g_per_kwh": 608, "density_t_per_m3": 0.3, "unit_max_mw": 15.5, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 13.5, "part_load": "DT", "draught": {"system": "forced", "velocity_m_s": 11.8, "reach_m": 15.5, "gas_temp_k": 570, "air_fuel_ratio": 15}}
 ```
 
 **Reciprocating (merchants, older designs)** (`ST4`)
@@ -154,22 +154,22 @@ Oil firing standard in new warships; first geared turbines.
 
 **Oil-fired direct turbines** (`ST5`)
 ```json
-"tech": {"name": "Direct-drive turbines, water-tube boilers, oil-fired (1915)", "fuel": "oil", "weight_kg_per_kw": 86.7, "stress_floor": 0.35, "sfc_g_per_kwh": 573, "density_t_per_m3": 0.3, "unit_max_mw": 19.4, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 13.5, "part_load": "DT", "draught": {"system": "forced", "velocity_m_s": 13.0, "reach_m": 18.0, "gas_temp_k": 570, "air_fuel_ratio": 15}}
+"tech": {"name": "Direct-drive turbines, water-tube boilers, oil-fired (1915)", "fuel": "oil", "weight_kg_per_kw": 86.7, "stress_floor": 0.3, "sfc_g_per_kwh": 573, "density_t_per_m3": 0.3, "unit_max_mw": 19.4, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 13.5, "part_load": "DT", "draught": {"system": "forced", "velocity_m_s": 13.0, "reach_m": 18.0, "gas_temp_k": 570, "air_fuel_ratio": 15}}
 ```
 
 **With cruising turbines** (`ST5`)
 ```json
-"tech": {"name": "Direct-drive turbines, water-tube boilers and cruising turbines, oil-fired (1915)", "fuel": "oil", "weight_kg_per_kw": 91.0, "stress_floor": 0.35, "sfc_g_per_kwh": 573, "density_t_per_m3": 0.3, "unit_max_mw": 19.4, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 13.5, "part_load": "GTB", "draught": {"system": "forced", "velocity_m_s": 13.0, "reach_m": 18.0, "gas_temp_k": 570, "air_fuel_ratio": 15}}
+"tech": {"name": "Direct-drive turbines, water-tube boilers and cruising turbines, oil-fired (1915)", "fuel": "oil", "weight_kg_per_kw": 91.0, "stress_floor": 0.3, "sfc_g_per_kwh": 573, "density_t_per_m3": 0.3, "unit_max_mw": 19.4, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 13.5, "part_load": "GTB", "draught": {"system": "forced", "velocity_m_s": 13.0, "reach_m": 18.0, "gas_temp_k": 570, "air_fuel_ratio": 15}}
 ```
 
 **Geared turbines** (`ST6`)
 ```json
-"tech": {"name": "Geared turbines, oil-fired small-tube boilers (1915)", "fuel": "oil", "weight_kg_per_kw": 75.0, "stress_floor": 0.42, "sfc_g_per_kwh": 520, "density_t_per_m3": 0.32, "unit_max_mw": 15.0, "unit": {"mw": 15, "height_m": 4.5, "width_m": 4.5, "length_m": 8}, "boiler_fraction": 0.55, "crew_k": 12, "part_load": "GTB", "draught": {"system": "forced", "velocity_m_s": 13.0, "reach_m": 18.0, "gas_temp_k": 570, "air_fuel_ratio": 15}}
+"tech": {"name": "Geared turbines, oil-fired small-tube boilers (1915)", "fuel": "oil", "weight_kg_per_kw": 75.0, "stress_floor": 0.33, "sfc_g_per_kwh": 520, "density_t_per_m3": 0.32, "unit_max_mw": 15.0, "unit": {"mw": 15, "height_m": 4.5, "width_m": 4.5, "length_m": 8}, "boiler_fraction": 0.55, "crew_k": 12, "part_load": "GTB", "draught": {"system": "forced", "velocity_m_s": 13.0, "reach_m": 18.0, "gas_temp_k": 570, "air_fuel_ratio": 15}}
 ```
 
 **Coal-fired direct turbines** (`ST5`)
 ```json
-"tech": {"name": "Direct-drive turbines, water-tube boilers (1915)", "fuel": "coal", "weight_kg_per_kw": 96.3, "stress_floor": 0.35, "sfc_g_per_kwh": 808, "density_t_per_m3": 0.3, "unit_max_mw": 19.4, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 30, "part_load": "DT", "draught": {"system": "forced", "velocity_m_s": 10.0, "reach_m": 10.0, "gas_temp_k": 600, "air_fuel_ratio": 16}}
+"tech": {"name": "Direct-drive turbines, water-tube boilers (1915)", "fuel": "coal", "weight_kg_per_kw": 96.3, "stress_floor": 0.3, "sfc_g_per_kwh": 808, "density_t_per_m3": 0.3, "unit_max_mw": 19.4, "unit": {"mw": 10, "height_m": 4.5, "width_m": 4.5, "length_m": 7}, "boiler_fraction": 0.6, "crew_k": 30, "part_load": "DT", "draught": {"system": "forced", "velocity_m_s": 10.0, "reach_m": 10.0, "gas_temp_k": 600, "air_fuel_ratio": 16}}
 ```
 
 **Petrol (coastal motor boats)** (`PE1`)
@@ -188,7 +188,7 @@ Geared turbines and oil.
 
 **Geared turbines** (`ST6`)
 ```json
-"tech": {"name": "Geared turbines, oil-fired small-tube boilers (1920)", "fuel": "oil", "weight_kg_per_kw": 62.2, "stress_floor": 0.42, "sfc_g_per_kwh": 470, "density_t_per_m3": 0.32, "unit_max_mw": 26.1, "unit": {"mw": 15, "height_m": 4.5, "width_m": 4.5, "length_m": 8}, "boiler_fraction": 0.55, "crew_k": 12, "part_load": "GTB", "draught": {"system": "forced", "velocity_m_s": 13.8, "reach_m": 19.5, "gas_temp_k": 570, "air_fuel_ratio": 15}}
+"tech": {"name": "Geared turbines, oil-fired small-tube boilers (1920)", "fuel": "oil", "weight_kg_per_kw": 62.2, "stress_floor": 0.33, "sfc_g_per_kwh": 470, "density_t_per_m3": 0.32, "unit_max_mw": 26.1, "unit": {"mw": 15, "height_m": 4.5, "width_m": 4.5, "length_m": 8}, "boiler_fraction": 0.55, "crew_k": 12, "part_load": "GTB", "draught": {"system": "forced", "velocity_m_s": 13.8, "reach_m": 19.5, "gas_temp_k": 570, "air_fuel_ratio": 15}}
 ```
 
 **Merchant triple expansion, oil-fired** (`ST4`)
@@ -212,7 +212,7 @@ Mature geared turbines; high-pressure steam arrives. Light diesels.
 
 **Geared turbines** (`ST6`)
 ```json
-"tech": {"name": "Geared turbines, oil-fired small-tube boilers (1930)", "fuel": "oil", "weight_kg_per_kw": 52.0, "stress_floor": 0.42, "sfc_g_per_kwh": 430, "density_t_per_m3": 0.32, "unit_max_mw": 35.0, "unit": {"mw": 15, "height_m": 4.5, "width_m": 4.5, "length_m": 8}, "boiler_fraction": 0.55, "crew_k": 12, "part_load": "GTB", "draught": {"system": "forced", "velocity_m_s": 14.0, "reach_m": 20.0, "gas_temp_k": 570, "air_fuel_ratio": 15}}
+"tech": {"name": "Geared turbines, oil-fired small-tube boilers (1930)", "fuel": "oil", "weight_kg_per_kw": 52.0, "stress_floor": 0.33, "sfc_g_per_kwh": 430, "density_t_per_m3": 0.32, "unit_max_mw": 35.0, "unit": {"mw": 15, "height_m": 4.5, "width_m": 4.5, "length_m": 8}, "boiler_fraction": 0.55, "crew_k": 12, "part_load": "GTB", "draught": {"system": "forced", "velocity_m_s": 14.0, "reach_m": 20.0, "gas_temp_k": 570, "air_fuel_ratio": 15}}
 ```
 
 **High-pressure geared turbines** (`ST7`)
@@ -280,7 +280,7 @@ The WWII generation.
 
 **Merchant geared turbines (T2, Victory)** (`ST6`)
 ```json
-"tech": {"name": "Geared turbines, oil-fired small-tube boilers (1940)", "fuel": "oil", "weight_kg_per_kw": 52.0, "stress_floor": 0.42, "sfc_g_per_kwh": 430, "density_t_per_m3": 0.32, "unit_max_mw": 35.0, "unit": {"mw": 15, "height_m": 4.5, "width_m": 4.5, "length_m": 8}, "boiler_fraction": 0.55, "crew_k": 12, "part_load": "GTB", "draught": {"system": "forced", "velocity_m_s": 14.0, "reach_m": 20.0, "gas_temp_k": 570, "air_fuel_ratio": 15}}
+"tech": {"name": "Geared turbines, oil-fired small-tube boilers (1940)", "fuel": "oil", "weight_kg_per_kw": 52.0, "stress_floor": 0.33, "sfc_g_per_kwh": 430, "density_t_per_m3": 0.32, "unit_max_mw": 35.0, "unit": {"mw": 15, "height_m": 4.5, "width_m": 4.5, "length_m": 8}, "boiler_fraction": 0.55, "crew_k": 12, "part_load": "GTB", "draught": {"system": "forced", "velocity_m_s": 14.0, "reach_m": 20.0, "gas_temp_k": 570, "air_fuel_ratio": 15}}
 ```
 
 **Merchant slow-speed diesels** (`DIS`)

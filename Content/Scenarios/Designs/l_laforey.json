@@ -104,7 +104,7 @@
    "name": "Geared turbines, oil-fired small-tube boilers (1915)",
    "fuel": "oil",
    "weight_kg_per_kw": 75,
-   "stress_floor": 0.42,
+   "stress_floor": 0.33,
    "sfc_g_per_kwh": 520,
    "density_t_per_m3": 0.32,
    "unit_max_mw": 15,

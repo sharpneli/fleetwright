@@ -136,7 +136,7 @@
    "name": "Direct-drive turbines, water-tube boilers (1905)",
    "fuel": "coal",
    "weight_kg_per_kw": 120,
-   "stress_floor": 0.35,
+   "stress_floor": 0.3,
    "sfc_g_per_kwh": 950,
    "density_t_per_m3": 0.3,
    "unit_max_mw": 8,

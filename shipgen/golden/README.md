@@ -90,6 +90,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   palette colour, and a capstan's drum is drawn in it where the look has one (`Painter.Or`), so 44 cases' hull SVGs
   change only those circles' fill (98 of them). Other looks have no brass and draw as before; design records and
   sprite.json unchanged. The material keys colours now carry (`Rgb.Keyed`) aren't written to the SVG.
+- 2026-10-15, lighter plants at full rating (docs/shipgen/DECISIONS.md, "Destroyer crunch" 1), on purpose: the
+  designs carrying ST5 or ST6 plants have their `stress_floor` lowered (0.35 → 0.30, 0.42 → 0.33). Those 28 design
+  cases change by their rating (tb_destroyer -19 %, fubuki -17 %, battleships under 2 %); every other case unchanged.
 
 ## Layout
 
