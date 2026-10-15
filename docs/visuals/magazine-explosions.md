@@ -1,4 +1,4 @@
-# Magazine explosions in the world view (plan agreed 2026-10-15)
+# Magazine explosions in the world view (plan agreed 2026-10-15; built and approved the same day)
 
 Research: `research/vfx/magazine-explosion-vfx-research.md` (what it looked like, the scalings from the mechanics,
 the jet phase, rendering top-down, the budget), `research/simulation/damage-research/07-magazine-explosions.md` (the
@@ -386,6 +386,8 @@ it moved as a rigid lump. Now:
 
 Tests: the cloud rises at every step from its growth to its fading, and is wider than it stands with its foot near
 the wreck when half faded.
+
+**Approved (the user, 2026-10-15):** "Beautiful, you nailed it." X7's tuning is done as it stands.
 
 ## Later
 
