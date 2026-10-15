@@ -40,8 +40,11 @@ layout(set = 3, binding = 1) uniform Sea
     vec4 seaNightDir; // xyz: toward it, Earth-fixed
 };
 
-// whitewater's reflectance (fresh foam ~0.5-0.8; the lanes are mostly fresh near the ship)
-const float FoamAlbedo = 0.7;
+// The wakes' foam (wakeribbon.frag packs two layers into wake.w): aerated water in 0-0.4, which brightens the water a
+// little toward a pale turquoise (the bubbles under the surface scatter the light back up, still water's colour);
+// surface foam in 0.4-1, white but never wholly opaque (a lacy film over the water, not snow). Reflectances by eye.
+const float FoamAlbedo = 0.65, FoamCover = 0.75, AeratedAlbedo = 0.14;
+const vec3 AeratedTint = vec3(0.55, 0.85, 0.9);
 
 float seaHash(ivec2 c)
 {
@@ -210,13 +213,15 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake)
     }
     vec3 c = (1.0 - F) * body + F * skyAt(r, vec3(0.0, 0.0, 1.0), 0.0);
     c += (sunRad.rgb * seaGlint(lSun, v, m, var) + moonRad.rgb * seaGlint(lMoon, v, m, var)) * seaMss2.z;
-    // the foam: a white, rough surface over the water (it hides the glint), lit as a level one by the sun, the moon,
-    // the sky and the night's light
+    // the foam, lit as a level surface by the sun, the moon, the sky and the night's light: the aerated water under it
+    // brightens the water, the surface foam lays a translucent white over it (hiding most of the glint)
     float foam = clamp(wake.w, 0.0, 1.0);
     if (foam > 0.0)
     {
         vec3 lit = sunRad.rgb * max(lSun.z, 0.0) + moonRad.rgb * max(lMoon.z, 0.0) + skyAmb.rgb + seaNight.rgb * max(lNight.z, 0.0);
-        c = mix(c, FoamAlbedo * lit, foam);
+        float aerated = min(foam / 0.4, 1.0), surface = max((foam - 0.4) / 0.6, 0.0);
+        c += aerated * AeratedAlbedo * AeratedTint * lit;
+        c = mix(c, FoamAlbedo * lit, surface * FoamCover);
     }
     return linearToSrgb(shoulder(c, look.z));
 }

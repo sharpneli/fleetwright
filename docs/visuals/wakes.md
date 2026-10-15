@@ -284,6 +284,16 @@ the foam (one run at 3.1 ms, the GPU's clocks); the lanes are a small share of t
   variance, and through the sharp threshold the foam thinned and filled at each slice's rhythm. It now blends by cos
   and sin of the slice's phase (their squares sum to 1, so the contrast holds).
 
+**The fourth round (2026-10-15): too opaque, snow on the water rather than churning water.** The foam is two layers,
+packed into the wake target's one channel by `wakeribbon.frag`:
+- aerated water in 0-0.4: broad and soft under the whole lane, its strength streaked;
+- surface foam in 0.4-1: the speckle.
+
+`seaShade` brightens the water by the first toward a pale turquoise (`AeratedAlbedo` 0.14, `AeratedTint`: the bubbles
+under the surface scatter light back up, in the water's own colour). By the second it lays a white that's never wholly
+opaque (`FoamCover` 0.75, `FoamAlbedo` 0.65, was a full cover at 0.7). The lane now reads as a translucent film with a
+pale halo, not a white patch.
+
 - The knobs (`-sea=wake:1,foam:1`) set by eye against the research's photos, at Fr_L 0.25, 0.35 and 0.55.
 - A debug view of the wake target: `-sea=debug:3` shows the slopes, `debug:4` the foam.
 - `sea.md`'s "Later", CLAUDE.md's run lines, and this file, with what was done and measured.

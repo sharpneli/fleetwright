@@ -1,7 +1,8 @@
 #version 450
 // The foam lanes (docs/visuals/wakes.md K4): the lane's foam taken across it as a Gaussian, then broken up by a
-// threshold over noise fixed to the water (the lane's own metres: along the trail, across it). Written as coverage in
-// alpha (the most of the lanes crossing), nothing in rgb: the wake target's slopes are the stamps'.
+// threshold over noise fixed to the water (the lane's own metres: along the trail, across it). Written in alpha (the most
+// of the lanes crossing; aerated water and surface foam in one number, at the end), nothing in rgb: the wake target's
+// slopes are the stamps'.
 // The noise, four octaves:
 //  - streaks: cells 20 m along and a share of the lane's width across, so as the water's lane spreads with age its
 //    foam spreads with it;
@@ -67,7 +68,8 @@ void main()
     // a solid lane: the speckle seen from further off)
     float lost = dot(full - amp, vec4(0.29));
     float n = 0.5 * (1.0 - (amp.x + amp.y + amp.z + amp.w));
-    n += amp.x * valueNoise(vec2(s / cell.x, d * 1.6));
+    float streak = valueNoise(vec2(s / cell.x, d * 1.6));
+    n += amp.x * streak;
     if (amp.y > 0.0)
         n += amp.y * octave(vec2(s, y) / cell.y, 0.4, young, 1.0);
     if (amp.z > 0.0)
@@ -88,5 +90,9 @@ void main()
     float core = exp(-fragAge / 6.0) * exp(-2.0 * d * d);
     float t = 1.0 - 0.85 * density - 0.9 * core * density, soft = max(max(fwidth(n), 0.03), 1.6 * lost);
     float broken = smoothstep(t - soft, t + soft, n) * clamp(1.6 * density, 0.0, 1.0) * (0.85 + 0.3 * (fine - 0.5));
-    outWake = vec4(0.0, 0.0, 0.0, broken);
+    // Two layers in the one channel (the user, 2026-10-15: solid white read as snow, not churning water): the aerated
+    // water under the lane, broad and soft, its strength streaked, in 0-0.4; the surface foam's speckle over it in the
+    // rest. seaShade lightens the water by the first and lays translucent white by the second.
+    float aerated = clamp(density, 0.0, 1.0) * (0.75 + 0.5 * (mix(0.5, streak, amp.x / full.x) - 0.5));
+    outWake = vec4(0.0, 0.0, 0.0, 0.4 * aerated + 0.6 * broken);
 }
