@@ -41,7 +41,7 @@ public static class TorpedoRibbons
             bool dives = t.Class >= 0 && t.Launcher >= 0 && classOf(t.Class) is { } c && t.Launcher < c.Launchers.Length
                 && c.Launchers[t.Launcher].Kind == LauncherKind.Mount;
             // from the head back: the surfacing ramp in fine steps, then the fade in coarse ones, finer again over the dive
-            double rampS = (t.DepthM / TorpedoTrack.RiseSlowMs - TorpedoTrack.HeadLagS(t.DepthM)) / RampPoints;
+            double rampS = (TorpedoTrack.FullS(t.DepthM) - TorpedoTrack.HeadLagS(t.DepthM)) / RampPoints;
             double diveTs = dives ? TorpedoTrack.DiveRunM / Math.Max(t.SpeedMs, 1) : 0, diveS = diveTs / DivePoints;
             FoamVertex a0 = default, a1 = default;
             double ts = hi;
@@ -63,7 +63,7 @@ public static class TorpedoRibbons
                 (a0, a1) = (b0, b1);
                 if (ts <= lo)
                     break;
-                double step = since < t.DepthM / TorpedoTrack.RiseSlowMs ? rampS : FadeStepS;
+                double step = since < TorpedoTrack.FullS(t.DepthM) ? rampS : FadeStepS;
                 if (ts <= diveTs + 1e-6)
                     step = Math.Min(step, diveS);
                 ts = Math.Max(ts - Math.Max(step, 0.05), lo);

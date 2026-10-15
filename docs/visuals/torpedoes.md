@@ -37,7 +37,7 @@ seen"). The plan doesn't wait for it; when the note lands its numbers replace th
 
 | What | Estimate | From |
 |---|---|---|
-| Where the track starts | The bubbles rise from the torpedo's depth d (the sim's `DepthM`: a share of the target's draught, ~3-5 m). The first reach the surface after d / w_fast and the bulk by d / w_slow, with w_fast ≈ 0.8 m/s (a bubbly plume drags its water up) and w_slow ≈ 0.25 m/s (mm bubbles on their own). At 4 m and 41 kn: the head 5 s (105 m) behind the torpedo, full strength 16 s (340 m) behind | Bubble terminal velocities; the table's 5 s lag agrees |
+| Where the track starts (drawn at 0.15 of this: decision 5) | The bubbles rise from the torpedo's depth d (the sim's `DepthM`: a share of the target's draught, ~3-5 m). The first reach the surface after d / w_fast and the bulk by d / w_slow, with w_fast ≈ 0.8 m/s (a bubbly plume drags its water up) and w_slow ≈ 0.25 m/s (mm bubbles on their own). At 4 m and 41 kn: the head 5 s (105 m) behind the torpedo, full strength 16 s (340 m) behind | Bubble terminal velocities; the table's 5 s lag agrees |
 | Width | ~1 m + 0.25 d at the surface (the plume spreads as it rises), then spreading as √(age), as the ships' foam lanes do: ~2 m at the head to ~6-8 m after 90 s | Estimate |
 | Look | A pale line of aerated water with sparse, fine surface foam where the bubbles burst. Not the ships' churned white: no streaks, no clumps | Photos of tracks; the wakes' two layers (`wakes.md` K5, fourth round) |
 | Life | Strongest while the bubbles are still surfacing, then fading. The table's 90 s, kept as the one life (R1) | The table's mark |
@@ -196,6 +196,14 @@ runs each, the machine's own load swinging single runs:
 - the launch's puff (it reads as a pale disc 20 m across) and splash;
 - the hit's column (68 m for 180 kg, white more than grey) and its spray cloud; the night glow not built.
 
+**R6, the user's first round (2026-10-15).** "Move the start of the wake significantly closer to the torpedo. Not
+realistic, but we want the ability to gauge the torpedo's location from it. A small gap is good, a larger gap is a bit
+confusing." A departure, the user's: the track's surfacing times are drawn at `TorpedoTrack.LagShare` 0.15 of the
+bubbles' own (`-tracks=lag:`, 1 physical), for the table's line and the world view's ribbon alike. At 6 m down the head
+is ~1.1 s behind the torpedo (~25 m at 41 kn, was ~7.5 s and ~160 m) and the track is full by ~3.6 s (~75 m). Seen at
+1 and 0.3 m/px: each dark dash just ahead of its track's head, a gap of ~25-30 m. The sim's lookouts are untouched
+(they see a torpedo by its range). Test: `TorpedoTrackTests` keeps the physical times and checks the drawn share.
+
 ## Decisions (the user, 2026-10-15)
 
 1. **The hit's column now**, built on the shell splash's column (`splash.glsl`) or closely after it: a torpedo kind of
@@ -204,6 +212,8 @@ runs each, the machine's own load swinging single runs:
    a hundred metres or more behind it. A named departure (`-tracks=body:G`), set by eye in R3.
 3. **The slick is judged** from R2's captures: built behind a knob, kept or dropped by what they show.
 4. **Build on the estimates** now; the research note's numbers replace them when it lands.
+5. **The track starts close behind the torpedo** (R6, first round): its surfacing drawn at 0.15 of the physical times,
+   a departure for readability, so the track's head shows where the torpedo is.
 
 ## Later
 

@@ -51,6 +51,7 @@ public static class TorpedoLook
         {
             case "fast": TorpedoTrack.RiseFastMs = Math.Max(v, 0.01); break;
             case "slow": TorpedoTrack.RiseSlowMs = Math.Clamp(v, 0.01, TorpedoTrack.RiseFastMs); break;
+            case "lag": TorpedoTrack.LagShare = Math.Max(v, 0); break;
             case "life": TorpedoTrack.LifeS = Math.Max(v, 1); break;
             case "width": TorpedoTrack.WidthM0 = Math.Max(v, 0.1); break;
             case "spread": TorpedoTrack.SpreadM2S = Math.Max(v, 0); break;
@@ -67,5 +68,5 @@ public static class TorpedoLook
         return true;
     }
 
-    public const string Knobs = "fast, slow, life, width, spread, dive, gain, floor, slick, body, bodyfloor, at (a still at S after the newest launch), on";
+    public const string Knobs = "fast, slow, lag (the share of the rise's times drawn: 1 physical), life, width, spread, dive, gain, floor, slick, body, bodyfloor, at (a still at S after the newest launch), on";
 }

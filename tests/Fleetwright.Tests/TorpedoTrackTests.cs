@@ -2,20 +2,24 @@ using Fleetwright.Map.Torpedoes;
 
 namespace Fleetwright.Tests;
 
-/// <summary>The torpedo's track as it surfaces (docs/visuals/torpedoes.md R1): its head well behind the torpedo, the
+/// <summary>The torpedo's track as it surfaces (docs/visuals/torpedoes.md R1): its head a little behind the torpedo (drawn closer than physics), the
 /// strength rising and fading and never negative, the tail surfacing on after the run has ended, the dive after a
 /// mount's launch, the width spreading.</summary>
 public class TorpedoTrackTests
 {
     [Fact]
-    public void At_four_metres_the_head_is_five_seconds_behind_and_full_by_sixteen()
+    public void At_four_metres_the_bubbles_take_five_seconds_and_the_track_is_drawn_closer()
     {
-        Assert.Equal(5, TorpedoTrack.HeadLagS(4), 9);
-        Assert.Equal(0, TorpedoTrack.Surfaced(4.9, 4));
-        Assert.True(TorpedoTrack.Surfaced(5.5, 4) > 0);
-        Assert.Equal(1, TorpedoTrack.Surfaced(16, 4));
-        // at 41 kn the head is ~105 m behind the torpedo
-        Assert.InRange(TorpedoTrack.HeadLagS(4) * 41 * 0.5144, 100, 110);
+        // physically the head is 5 s behind at 4 m (105 m at 41 kn) and full by 16 s
+        Assert.Equal(5, 4 / TorpedoTrack.RiseFastMs, 9);
+        Assert.Equal(16, 4 / TorpedoTrack.RiseSlowMs, 9);
+        // drawn at LagShare of that (the user's departure): a small gap behind the torpedo
+        double lag = TorpedoTrack.HeadLagS(4);
+        Assert.Equal(5 * TorpedoTrack.LagShare, lag, 9);
+        Assert.Equal(0, TorpedoTrack.Surfaced(lag * 0.99, 4));
+        Assert.True(TorpedoTrack.Surfaced(lag * 1.1, 4) > 0);
+        Assert.Equal(1, TorpedoTrack.Surfaced(TorpedoTrack.FullS(4), 4));
+        Assert.InRange(lag * 41 * 0.5144, 5, 40);
     }
 
     [Fact]
@@ -40,10 +44,10 @@ public class TorpedoTrackTests
     [Fact]
     public void A_run_that_has_ended_goes_on_surfacing()
     {
-        // the last of the run, passed at its end: 3 s after it, nothing yet; 10 s after, some; then fading
-        double end = 60;
-        Assert.Equal(0, TorpedoTrack.Strength(63 - end, 4));
-        Assert.True(TorpedoTrack.Strength(70 - end, 4) > 0);
+        // the last of the run, passed at its end: before its lag, nothing yet; after it, some; then fading
+        double end = 60, lag = TorpedoTrack.HeadLagS(4);
+        Assert.Equal(0, TorpedoTrack.Strength(lag * 0.9, 4));
+        Assert.True(TorpedoTrack.Strength(TorpedoTrack.FullS(4), 4) > 0);
         Assert.True(TorpedoTrack.Strength(end + TorpedoTrack.KeepS - end + 0.1, 4) == 0);
     }
 
@@ -54,7 +58,7 @@ public class TorpedoTrackTests
         Assert.Equal(8, TorpedoTrack.Depth(TorpedoTrack.DiveRunM / 3, 4, dives: true), 6);
         Assert.Equal(4, TorpedoTrack.Depth(TorpedoTrack.DiveRunM, 4, dives: true));
         Assert.Equal(4, TorpedoTrack.Depth(50, 4, dives: false));
-        Assert.Equal(2, TorpedoTrack.WidthM(5, 4), 6);
+        Assert.Equal(2, TorpedoTrack.WidthM(TorpedoTrack.HeadLagS(4), 4), 6);
         Assert.InRange(TorpedoTrack.WidthM(90, 4), 6, 8);
     }
 }

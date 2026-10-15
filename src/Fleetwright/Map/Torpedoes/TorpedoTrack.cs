@@ -3,16 +3,21 @@ namespace Fleetwright.Map.Torpedoes;
 /// <summary>A torpedo's bubble track as it surfaces (docs/visuals/torpedoes.md R1), the one model the table's line and
 /// the world view's ribbon both read. The exhaust's bubbles are let go at the torpedo's depth and rise at speeds between
 /// <see cref="RiseSlowMs"/> (mm bubbles on their own) and <see cref="RiseFastMs"/> (a bubbly plume dragging its water up),
-/// so the water the torpedo passed <c>since</c> seconds ago shows its track from d / fast and in full by d / slow: the
-/// head well behind the torpedo, soft, and a tail that goes on surfacing after the run has ended. The surfaced film
+/// so the water the torpedo passed <c>since</c> seconds ago shows its track from d / fast and in full by d / slow: a soft
+/// head (physically well behind the torpedo) and a tail that goes on surfacing after the run has ended. The surfaced film
 /// fades over <see cref="LifeS"/>; it's about 1 m + 0.25 d wide where it comes up and spreads as √(age). A mount's
 /// torpedo dives below its set depth after it falls in and recovers over <see cref="DiveRunM"/>, so its track breaks
-/// there. Estimates from physics (no source gives them yet: research/REQUESTS.md, 2026-10-15), set through
-/// <c>-tracks=</c> (<see cref="TorpedoLook"/>). Display only; pure functions.</summary>
+/// there. **Drawn closer than physics** (the user, 2026-10-15: the track must show where the torpedo is, a small gap reads,
+/// a large one confuses): the surfacing times are <see cref="LagShare"/> of the bubbles' own, so at 6 m down the head
+/// is ~1 s (25 m at 41 kn) behind the torpedo, not ~7.5 s, and full by ~3.6 s. Estimates from physics (no source gives
+/// them yet: research/REQUESTS.md, 2026-10-15), set through <c>-tracks=</c> (<see cref="TorpedoLook"/>). Display only; pure functions.</summary>
 public static class TorpedoTrack
 {
     /// <summary>The bubbles' rise, m/s: the first up, and the bulk.</summary>
     public static double RiseFastMs = 0.8, RiseSlowMs = 0.25;
+
+    /// <summary>The share of the bubbles' rise times the track is drawn with (1 physical): a departure for readability.</summary>
+    public static double LagShare = 0.15;
 
     /// <summary>How long the surfaced film lasts, s: the table's 90 s.</summary>
     public static double LifeS = 90;
@@ -40,7 +45,7 @@ public static class TorpedoTrack
     /// it at <paramref name="depthM"/>.</summary>
     public static double Surfaced(double sinceS, double depthM)
     {
-        double a = depthM / RiseFastMs, b = depthM / RiseSlowMs;
+        double a = HeadLagS(depthM), b = FullS(depthM);
         if (sinceS <= a)
             return 0;
         if (sinceS >= b)
@@ -61,11 +66,14 @@ public static class TorpedoTrack
     public static double WidthM(double sinceS, double depthM)
     {
         double w0 = WidthM0 + WidthDepthShare * depthM;
-        return Math.Sqrt(w0 * w0 + SpreadM2S * Math.Max(sinceS - depthM / RiseFastMs, 0));
+        return Math.Sqrt(w0 * w0 + SpreadM2S * Math.Max(sinceS - HeadLagS(depthM), 0));
     }
 
     /// <summary>How long after the torpedo passes its track first shows, s: its head's lag.</summary>
-    public static double HeadLagS(double depthM) => depthM / RiseFastMs;
+    public static double HeadLagS(double depthM) => LagShare * depthM / RiseFastMs;
+
+    /// <summary>How long after the torpedo passes its track shows in full, s.</summary>
+    public static double FullS(double depthM) => LagShare * depthM / RiseSlowMs;
 
     /// <summary>How long a run is kept after its end, s: until the last of it has surfaced and faded.</summary>
     public static double KeepS => LifeS;
