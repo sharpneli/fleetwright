@@ -28,8 +28,12 @@ layout(set = 3, binding = 0) uniform Globe
 #include "Include/seashade.glsl"
 
 const vec3 Space = vec3(0.006, 0.008, 0.016);
-const vec3 DaySea = vec3(0.13, 0.31, 0.43);
-const vec3 NightSea = vec3(0.012, 0.025, 0.05);
+// the chart's sea, matched roughly to the world view's mean (docs/visuals/sea.md, "The cross-fade's colours"), so
+// zooming between the two doesn't jump: the day's colour times (SeaFloor + SeaSun · the sun's sine), the night's a
+// dark navy, as the world's tuned night sea is
+const vec3 DaySea = vec3(0.19, 0.31, 0.415);
+const vec3 NightSea = vec3(0.028, 0.074, 0.142);
+const float SeaFloor = 0.35, SeaSun = 0.65;
 const vec3 Glow = vec3(0.30, 0.50, 0.85);
 const vec3 DayLand = vec3(0.34, 0.36, 0.27);
 const vec3 NightLand = vec3(0.022, 0.026, 0.022);
@@ -79,7 +83,7 @@ void main()
         float s = dot(n, sun.xyz);
         float day = smoothstep(-0.10, 0.12, s);
         float land = clamp(abs(texelFetch(coverage, ivec2(gl_FragCoord.xy), 0).r), 0.0, 1.0);
-        vec3 col = mix(NightSea, DaySea * (0.6 + 0.4 * max(s, 0.0)), day);
+        vec3 col = mix(NightSea, DaySea * (SeaFloor + SeaSun * max(s, 0.0)), day);
         col += vec3(1.0, 0.95, 0.85) * pow(max(dot(reflect(d, n), sun.xyz), 0.0), 150.0) * 0.35 * day * sun.w;
         if (seaOn.x > 0.0 && land < 1.0)
         {
@@ -99,7 +103,7 @@ void main()
             // time-lapse: each colour's mean over the day (mix is linear in day), and the sun's track along its
             // parallel, like a long exposure; it fades as it grows wider than the view can hold
             vec2 avg = dayAverage(n.z, sun.z, -0.10, 0.12);
-            vec3 sea0 = NightSea * (1.0 - avg.x) + DaySea * (0.6 * avg.x + 0.4 * avg.y);
+            vec3 sea0 = NightSea * (1.0 - avg.x) + DaySea * (SeaFloor * avg.x + SeaSun * avg.y);
             vec3 land0 = NightLand * (1.0 - avg.x) + DayLand * (0.55 * avg.x + 0.45 * avg.y);
             vec3 lapse = mix(sea0, land0, land);
             float off = (asin(clamp(n.z, -1.0, 1.0)) - asin(clamp(sun.z, -1.0, 1.0))) / 0.0035;   // 0.2° core

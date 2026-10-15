@@ -56,13 +56,13 @@ public sealed class SeaView
     /// the moon's bearing, a little brighter than moonlight; with no moon it is starlight, dimmer and bluer, biased to
     /// where the sun is under the horizon (the sky stays brightest there). Its height is kept where it shades: the
     /// moon's clamped to 25-60°, the stars' at 40°. Linear, by eye: dark and gloomy, yet the waves read.</summary>
-    public static Vector3 MoonNightRad = new(0.42f, 0.47f, 0.55f), StarNightRad = new(0.18f, 0.22f, 0.34f);
+    public static Vector3 MoonNightRad = new(0.21f, 0.235f, 0.275f), StarNightRad = new(0.08f, 0.10f, 0.15f);
 
     /// <summary>The sun's elevations, degrees, between which the night's light fades in: from the first down to the second.</summary>
     public static readonly double[] NightFromDeg = [12, -2];
 
     /// <summary>The slopes' steepening for the night's light (as <see cref="Relief"/> for the day's).</summary>
-    public static float NightRelief = 5;
+    public static float NightRelief = 7;
 
     /// <summary>A debug view of the sea: 0 shaded, 1 its normal, 2 its slopes' spread.</summary>
     public static int Debug;
@@ -83,8 +83,8 @@ public sealed class SeaView
             case "chop": Chop = v; break;
             case "debug": Debug = (int)v; break;
             case "nightrelief": NightRelief = v; break;
-            case "moonnight": MoonNightRad = new Vector3(0.42f, 0.47f, 0.55f) * v; break;
-            case "starnight": StarNightRad = new Vector3(0.18f, 0.22f, 0.34f) * v; break;
+            case "moonnight": MoonNightRad = new Vector3(0.21f, 0.235f, 0.275f) * v; break;
+            case "starnight": StarNightRad = new Vector3(0.08f, 0.10f, 0.15f) * v; break;
             default: return false;
         }
         return true;

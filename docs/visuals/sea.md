@@ -210,7 +210,8 @@ body's light only (the glints and the ships stay physical).
 - *Twilight and night:* a light of the sea's own fades in as the sun goes from 12° to −2° (`NightFromDeg`). While the
   moon is up at all, it comes from the moon's bearing, a bit brighter than moonlight (`MoonNightRad`); with no moon
   it is dimmer, bluer starlight biased to the sun's side under the horizon (`StarNightRad`). Its height is kept where it
-  shades (the moon's clamped to 25-60°, the stars' at 40°), its relief `NightRelief` 5. Dark and gloomy, the waves read.
+  shades (the moon's clamped to 25-60°, the stars' at 40°), its relief `NightRelief` 5 (7 since the colours were
+  matched, below). Dark and gloomy, the waves read.
 
 | Black Sea / where | Before | Tuned |
 |---|---|---|
@@ -219,6 +220,27 @@ body's light only (the glints and the ships stay physical).
 | 60°S noon / 40°S noon / North Sea noon | 0.01 / 0.2 / 8.3 | 1.7 / 1.9 / 8.3 |
 
 Knobs for side-by-side captures: `-sea=lowsunrelief:4,nightrelief:5,moonnight:1,starnight:1` (scales).
+
+### The cross-fade's colours (2026-10-15)
+
+Zooming between the table and the world jumped at night: the chart's night sea was near black, the tuned world sea
+a navy. Both moved to meet (median 8-bit RGB, world at 3 m/px against the table at 16; Black Sea and 60°S):
+
+| | World before → after | Table before → after |
+|---|---|---|
+| morning | 49 73 95 | 31 75 104 → 44 72 96 |
+| sun ~25° | 24 44 62 | 25 59 82 → 29 47 63 |
+| dusk | 18 33 51 → 17 29 43 | 14 33 48 → 14 26 38 |
+| night | 9 27 50 → 7 21 39 | 3 6 13 → 7 19 36 |
+| full moon | 12 32 51 → 10 26 43 | 3 6 13 → 7 19 36 |
+
+- The table (`globe.frag`): its day colour greyer (`DaySea` 0.19, 0.31, 0.415, as the world's glint and sky greys it),
+  following the sun more steeply (`SeaFloor` 0.35 + `SeaSun` 0.65 · sin, was 0.6 + 0.4), and its night a dark navy
+  (`NightSea` 0.028, 0.074, 0.142, was 0.012, 0.025, 0.05). The globe's night side from orbit is navy against black land.
+- The world: the night's lights halved (`MoonNightRad`, `StarNightRad`), their relief 7 to keep the waves (moonless
+  std 2.0, full moon 4.5).
+- Through the fade the median moves 2-6 levels, day or night. The table doesn't know the moon, so a moonlit night is
+  the one left ~5 levels apart.
 
 ### Later (not v1)
 
