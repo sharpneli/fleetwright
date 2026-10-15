@@ -7,6 +7,7 @@
 //  - the secondary fireball, ragged: its outline broken by a few lobes and value noise that grow with it, its inside
 //    mottled, and redder toward its rim, where it is cooler;
 //  - the halo for the bloom pass we don't have: the parts' compressed brightness, widened by 1.5, 6 and 18 px.
+// The parts come with their peaks already compressed (FlashLook.PeakKnee), and all fade out toward the quad's rim.
 // The sum is in display units (1 a lit white deck); rolled to white on its luminance (the ships' shoulder, then a
 // desaturation above white), never clipped per channel, which would turn every flash flat yellow. Screen-blended.
 #define LIGHTS_BINDING 0
@@ -90,6 +91,10 @@ void main()
         }
         col += f.haloColour.rgb * f.halo.w * h * misc.z;
     }
+
+    // faded out toward the quad's rim, a circle round its centre that holds every part's reach, so no brightness
+    // shows the quad's edge
+    col *= 1.0 - smoothstep(0.75, 1.0, length(p - f.quad.xy) / f.quad.z);
 
     // rolled to white on luminance: the shoulder on Y, then toward white as it passes it
     float y = dot(col, vec3(0.2126, 0.7152, 0.0722));

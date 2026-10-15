@@ -176,6 +176,14 @@ flash flat yellow). `gain` is the one named departure, 1 to start. The night sea
 (`nightrelief`), so the night ratio is applied to that brighter sea: still far into the white, with the halo carrying
 the rest. That is the readable night the realism-then-tune rule asks for.
 
+**Each part's peak is compressed** (user, 2026-10-15: at night the parts blew out to their quads' edges, white
+rectangles): a part's Gaussian is scaled so its peak is x/(1 + x/knee), `FlashLook.PeakKnee` = 40 display units, its
+shape kept. A day flash's core (~25 over the deck) is only softened where it is already past white, the fireball not at
+all; a night one's 10^6-10^8 is held near the knee, so its tails fall to nothing inside the quad. The halo and the light
+keep their own compression from the uncompressed parts, so the night's glare stays. The shader also fades everything
+to zero toward the quad's rim (a circle round its centre that holds every part's reach), so no brightness shows the
+quad again.
+
 **No flash adaptation** (decision 3): a salvo never dims the rest of the scene. The research's eye adaptation is left
 out for good.
 

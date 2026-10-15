@@ -17,6 +17,12 @@ public static class FlashLook
     /// <summary>The compression's knee for the halo's source, in display units (1 a white deck): x/(1 + x/knee).</summary>
     public static double HaloKnee = 6;
 
+    /// <summary>The compression's knee for each part's drawn peak, in display units: x/(1 + x/knee) (the user,
+    /// 2026-10-15: at night the physical 10^6-10^8 over the deck blew the parts out to their quads' edges). A day flash
+    /// is a few tens over the deck, little touched; a night one is held near the knee, its shape kept. The halo and the
+    /// light keep their own compression.</summary>
+    public static double PeakKnee = 40;
+
     /// <summary>Each mount's start after its record, up to this, s, from its seed (the splashes' lesson: a broadside's
     /// flashes all at once read as clones). Display only; the salvo's ripple will come with fire control.</summary>
     public static double OffsetS = 0.04;
@@ -82,6 +88,7 @@ public static class FlashLook
             case "halo": HaloGain = Math.Max(v, 0); break;
             case "haloscale": HaloScale = Math.Max(v, 0.1); break;
             case "knee": HaloKnee = Math.Max(v, 0.1); break;
+            case "peak": PeakKnee = Math.Max(v, 0.1); break;
             case "offset": OffsetS = Math.Max(v, 0); break;
             case "scatter": Scatter = Math.Max(v, 0); break;
             case "rh": Humidity = Math.Clamp(v, 0, 1); break;
@@ -108,5 +115,5 @@ public static class FlashLook
         return true;
     }
 
-    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, frames, smokecap, youth, stretch, billow, churn, warp, stem, pvis, psat, frost, scour, scourk, parts (1 flashes, 2 lights, 4 blast, 8 smoke), at (a still at that age, s), blastat (the blast's), on";
+    public const string Knobs = "gain, halo, haloscale, knee, peak, offset, scatter, rh, air, frames, smokecap, youth, stretch, billow, churn, warp, stem, pvis, psat, frost, scour, scourk, parts (1 flashes, 2 lights, 4 blast, 8 smoke), at (a still at that age, s), blastat (the blast's), on";
 }

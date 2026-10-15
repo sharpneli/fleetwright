@@ -214,9 +214,9 @@ public sealed unsafe class FlashRenderer : IDisposable
                 Base = new Vector4((float)rel.X, (float)rel.Y, (float)rel.Z, e.Seed),
                 Bore = new Vector4(dir, n, e.SpacingM),
                 Quad = new Vector4(centre, (float)half, 0),
-                CoreA = cA, CoreB = new Vector4(cc, qc),
-                DiscA = dA, DiscB = new Vector4(dc, qd),
-                FireA = fA, FireB = new Vector4(fc, qf),
+                CoreA = cA, CoreB = new Vector4(cc, Peaked(qc, cs)),
+                DiscA = dA, DiscB = new Vector4(dc, Peaked(qd, ds)),
+                FireA = fA, FireB = new Vector4(fc, Peaked(qf, fs2)),
                 Halo = new Vector4(centre, (float)sigma, (float)h),
                 HaloColour = new Vector4(hcol, fire.Life),
             };
@@ -252,6 +252,17 @@ public sealed unsafe class FlashRenderer : IDisposable
         double sa = Math.Max(p.A * cosEl / 1.5, floor), sb = Math.Max(p.B / 1.5, floor);
         area = sa * sb;
         return new Vector4(at, (float)sa, (float)sb);
+    }
+
+    /// <summary>A part's brightness as drawn (display units × m²): its Gaussian scaled so its peak is compressed as
+    /// x/(1 + x/<see cref="FlashLook.PeakKnee"/>), its shape kept, so a night flash's tails fall to nothing inside its
+    /// quad.</summary>
+    static float Peaked(float q, double area)
+    {
+        if (q <= 0 || area <= 0)
+            return q;
+        double peak = q / (2 * Math.PI * area);
+        return (float)(q / (1 + peak / FlashLook.PeakKnee));
     }
 
     /// <summary>The integral of x/(1 + x/knee) over a Gaussian of brightness q (display units × m²) and σ_a·σ_b
