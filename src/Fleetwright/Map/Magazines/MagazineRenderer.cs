@@ -15,7 +15,7 @@ namespace Fleetwright.Map.Magazines;
 [StructLayout(LayoutKind.Sequential)]
 public struct MagazineGpu
 {
-    public Vector4 Base, Quad, Shade, Body, BodyB, Stem, Time, Misc;
+    public Vector4 Base, Quad, Shade, Body, BodyB, Drift, Time, Misc;
     public const int SizeInBytes = 128;
 }
 
@@ -29,10 +29,10 @@ public struct MagazineJetGpu
 
 /// <summary>The world view's magazine explosions (docs/visuals/magazine-explosions.md): the book's events in view as
 /// instances, their state built on the CPU each frame (<see cref="MagazineBlast.BodyAt"/>, the wind's drift and shear,
-/// the stem's fires, the fade), placed eye-relative in double, and two instanced draws over them, from the one model in
+/// the fade), placed eye-relative in double, and two instanced draws over them, from the one model in
 /// <c>Include/magazine.glsl</c>:
 /// <list type="bullet">
-/// <item>the shadows on the sea and the decks, then the bodies (fireball, cap, stem) through the effects camera, after
+/// <item>the shadows on the sea and the decks, then the bodies (the fireball and its cloud) through the effects camera, after
 /// the ships and the gun smoke, then the flame jets from the failed openings before the fireball and the hit's flash,
 /// screen-blended (<see cref="Draw"/>).</item>
 /// </list>
@@ -149,7 +149,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
             SunL = new Vector4(sunL, 0), MoonL = new Vector4(moonL, 0), ShadowL = new Vector4(drift, on, 0),
             Misc = new Vector4((float)k, (float)mpp, (float)MagazineLook.Steps, (float)perCd),
             FireK = new Vector4((float)MagazineLook.ColdK, (float)MagazineLook.HotK, (float)MagazineLook.SootAlbedo, 0),
-            More = new Vector4(0, (float)MagazineLook.Mushroom, (float)MagazineLook.Whiten, 0),
+            More = new Vector4(0, 0, (float)MagazineLook.Whiten, 0),
         };
         // the wind, toward where it blows (east, north), and its speed at 10 m
         double toward = (s.Weather.WindFromDeg + 180) * Math.PI / 180;
@@ -178,39 +178,31 @@ public sealed unsafe class MagazineRenderer : IDisposable
                 Light(view, e, age, perCd, flashLights);
             if (t < 0 || t > MagazineLook.FadeTo * life)
                 continue;
-            var b = MagazineBlast.BodyAt(e.FireballM, life, ev.MassKg, deck, t);
-            // downwind: the cap at its height's wind (the shear's power law), once it lifts
+            var b = MagazineBlast.BodyAt(e.FireballM, life, deck, t);
+            // downwind: the cloud at its height's wind (the shear's power law), once it's grown
             double u = u10 * Math.Pow(Math.Max(b.CentreZ, 1) / 10, 0.14);
             var capDrift = windDir * (float)(u * Math.Max(t - 0.3 * life, 0) * 0.8);
             double r = b.R, rv = b.Rv;
-            double stemR = Math.Max(MagazineLook.StemShare * r, 0.12 * e.FireballM);
-            double fires = Math.Exp(-t / MagazineLook.StemFadeS);
-            double stemSigma = MagazineLook.StemTau / (2 * stemR) * fires * SmoothStep(0.2 * life, 0.6 * life, t);
             double sigma = MagazineLook.Opacity * b.Tau / (2 * r);
             double fade = (1 - SmoothStep(MagazineLook.FadeFrom * life, MagazineLook.FadeTo * life, t)) * world;
-            double capShare = SmoothStep(0.6 * life, 1.5 * life, t);
+            double roll = SmoothStep(0.6 * life, 1.5 * life, t);
             double spin = t > life ? 2 * Math.PI * MagazineLook.Spin * 2 * life * (Math.Sqrt(t / life) - 1) : 0;
             // the fire's light on its own smoke: the core's drawn brightness, compressed as the flashes' halo's source
             double kel = MagazineLook.ColdK + (MagazineLook.HotK - MagazineLook.ColdK) * Math.Max(b.Heat, 0);
             double drawn = perCd * FlashPhotometry.Luminance(kel) * Math.Max(b.Heat, 0);
             double glow = 0.3 * drawn / (1 + drawn / FlashLook.HaloKnee);
 
-            // the quads: the body and the stem through the effects camera; their shadow down-sun
-            double zb = Math.Max(Math.Min(deck - 3, b.CentreZ - 1.35 * rv), 0), zt = b.CentreZ + 1.35 * rv;
-            double rr = 1.4 * r, rs = 1.4 * stemR;
+            // the quads: the body through the effects camera, its shadow down-sun
+            double zb = Math.Max(b.CentreZ - 1.35 * rv, 0), zt = b.CentreZ + 1.35 * rv;
+            double rr = 1.4 * r;
             var c = new Vector2(capDrift.X, capDrift.Y);
-            float Dn(double h) => (float)(k * h);
-            var lo = Vector2.Min(c - new Vector2((float)rr) + new Vector2(0, Dn(b.CentreZ - 1.35 * rv - deck)), new Vector2((float)-rs) + new Vector2(0, Dn(zb - deck)));
-            var hi = Vector2.Max(c + new Vector2((float)rr) + new Vector2(0, Dn(zt - deck)), new Vector2((float)rs) + new Vector2(0, Dn(Math.Max(b.CentreZ - deck, 0))));
-            lo = Vector2.Min(lo, c - new Vector2((float)rs));
-            hi = Vector2.Max(hi, c + new Vector2((float)rs));
+            var lo = c - new Vector2((float)rr) + new Vector2(0, (float)(k * (zb - deck)));
+            var hi = c + new Vector2((float)rr) + new Vector2(0, (float)(k * (zt - deck)));
             Vector4 shade = default;
             if (shadows)
             {
                 var sLo = Vector2.Min(c + drift * (float)zb, c + drift * (float)zt) - new Vector2((float)rr);
                 var sHi = Vector2.Max(c + drift * (float)zb, c + drift * (float)zt) + new Vector2((float)rr);
-                sLo = Vector2.Min(sLo, Vector2.Min(drift * (float)deck, c + drift * (float)b.CentreZ) - new Vector2((float)rs));
-                sHi = Vector2.Max(sHi, Vector2.Max(drift * (float)deck, c + drift * (float)b.CentreZ) + new Vector2((float)rs));
                 shade = new Vector4(sLo, sHi.X, sHi.Y);
             }
 
@@ -233,8 +225,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
                 Shade = shade,
                 Body = new Vector4(c, (float)b.CentreZ, (float)r),
                 BodyB = new Vector4((float)rv, (float)sigma, (float)b.Heat, (float)(b.Skin * MagazineLook.Skin * 0.5)),
-                Stem = new Vector4(c, (float)stemR, (float)stemSigma),
-                Time = new Vector4((float)(0.5 * fires), (float)capShare, (float)spin, (float)fade),
+                Time = new Vector4(0, (float)roll, (float)spin, (float)fade),
                 Misc = new Vector4((float)deck, (float)glow, 0, 0),
             };
         }
@@ -417,7 +408,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
         }
         if (t < 0 || t > 3 * e.FireballS)
             return;
-        var b = MagazineBlast.BodyAt(e.FireballM, e.FireballS, ev.MassKg, ev.DeckZ, t);
+        var b = MagazineBlast.BodyAt(e.FireballM, e.FireballS, ev.DeckZ, t);
         if (b.Heat < 0.05)
             return;
         double kel = MagazineLook.ColdK + (MagazineLook.HotK - MagazineLook.ColdK) * b.Heat;

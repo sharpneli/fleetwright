@@ -42,8 +42,8 @@ public sealed class MagazineBook : IThrownTurrets
         /// <summary>What it throws (X4).</summary>
         public MagazineDebris Debris;
         public uint Hash;
-        /// <summary>The after-smoke's puffs given to the smoke so far (X6): the stem's fires', the boilers' steam.</summary>
-        public int Stem, Steam;
+        /// <summary>The after-smoke's puffs given to the smoke so far (X6): the wreck's fires', the boilers' steam.</summary>
+        public int Fires, Steam;
     }
 
     /// <summary>The most kept at once.</summary>
@@ -179,8 +179,8 @@ public sealed class MagazineBook : IThrownTurrets
     }
 
     /// <summary>The after-smoke (X6) into the smoke's book, each puff once, back-dated to its moment on the smoke's
-    /// clock (<paramref name="smokeNow"/>) so an event seen late has its whole plume: the stem's fires every
-    /// <see cref="MagazineLook.StemEveryS"/> while they burn, soot that keeps its colour, fading with them; the nearest
+    /// clock (<paramref name="smokeNow"/>) so an event seen late has its whole plume: the wreck's fires every
+    /// <see cref="MagazineLook.FireEveryS"/> while they burn, soot that keeps its colour, fading with them; the nearest
     /// boiler room's steam over its first seconds, white water fog that evaporates.</summary>
     public void SpawnSmoke(Flashes.SmokeBook smoke, double smokeNow)
     {
@@ -193,16 +193,16 @@ public sealed class MagazineBook : IThrownTurrets
                 continue;
             var up = e.At.Normalized();
             double k = ev.K;
-            int due = (int)Math.Min(since / MagazineLook.StemEveryS, 3 * MagazineLook.StemFadeS / MagazineLook.StemEveryS) + 1;
-            for (; e.Stem < due; e.Stem++)
+            int due = (int)Math.Min(since / MagazineLook.FireEveryS, 3 * MagazineLook.FireFadeS / MagazineLook.FireEveryS) + 1;
+            for (; e.Fires < due; e.Fires++)
             {
-                double at = e.Stem * MagazineLook.StemEveryS;
+                double at = e.Fires * MagazineLook.FireEveryS;
                 smoke.Add(new Flashes.SmokeBook.Puff
                 {
                     Born = smokeNow - (since - at), Origin = e.At + up * ev.DeckZ, Z0 = (float)(ev.DeckZ + 10), Anchor = (float)ev.DeckZ,
                     Lambda = (float)(30 * Math.Sqrt(k)),
-                    Ap = (float)(MagazineLook.StemSmokeM2 * MagazineLook.StemEveryS * k * k * Math.Exp(-at / MagazineLook.StemFadeS)),
-                    Aw0 = 0, FogS = 1, RampS = 1, Tint = Soot, Seed = (Hash(e.Hash + (uint)e.Stem * 977u) & 0xffff) / 65536f,
+                    Ap = (float)(MagazineLook.FireSmokeM2 * MagazineLook.FireEveryS * k * k * Math.Exp(-at / MagazineLook.FireFadeS)),
+                    Aw0 = 0, FogS = 1, RampS = 1, Tint = Soot, Seed = (Hash(e.Hash + (uint)e.Fires * 977u) & 0xffff) / 65536f,
                     Shooter = e.Ship | 1 << 30, Keep = true,
                 });
             }

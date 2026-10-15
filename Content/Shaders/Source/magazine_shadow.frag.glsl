@@ -9,7 +9,7 @@
 
 struct Mag
 {
-    vec4 base, quad, shade, body, bodyB, stem, time, misc;
+    vec4 base, quad, shade, body, bodyB, drift, time, misc;
 };
 
 layout(std430, set = 2, binding = 0) readonly buffer Mags { Mag mags[]; };
@@ -21,7 +21,7 @@ layout(set = 3, binding = 1) uniform Params
     vec4 shadowL; // xy: the shadows' drift per metre of height, away from the light; z: opacity
     vec4 misc;    // y: metres per pixel; z: the steps' scale
     vec4 fireK;
-    vec4 more;    // y: the mushroom
+    vec4 more;
 };
 
 layout(location = 0) in vec2 fragLoc;
@@ -40,25 +40,15 @@ void main()
     s.heat = 0.0;
     s.skin = 0.0;
     s.deck = m.misc.x;
-    s.drift = m.stem.xy;
-    s.stemR = m.stem.z;
-    s.stemSigma = m.stem.w;
-    s.fire = 0.0;
-    s.capShare = m.time.y;
+    s.roll = m.time.y;
     s.spin = m.time.z;
-    s.mushroom = more.y;
     s.seed = m.base.w;
 
     vec2 c = -shadowL.xy;   // the ray toward the light climbs c per metre
-    // only the stretch of the ray inside the body's box or the stem's
-    float rb = 1.35 * s.r, rs = 1.4 * s.stemR;
-    vec2 body = magCut(magCut(magLine(fragLoc.x, c.x, s.c.x - rb, s.c.x + rb), magLine(fragLoc.y, c.y, s.c.y - rb, s.c.y + rb)),
-        vec2(s.c.z - 1.35 * s.rv, s.c.z + 1.35 * s.rv));
-    vec2 stem = vec2(1.0, 0.0);
-    if (s.stemSigma > 0.0)
-        stem = magCut(magCut(magLine(fragLoc.x, c.x, min(0.0, s.drift.x) - rs, max(0.0, s.drift.x) + rs),
-            magLine(fragLoc.y, c.y, min(0.0, s.drift.y) - rs, max(0.0, s.drift.y) + rs)), vec2(s.deck - 3.0, s.c.z));
-    vec2 range = magCut(magJoin(body, stem), vec2(0.0, 1e6));
+    // only the stretch of the ray inside the body's box
+    float rb = 1.35 * s.r;
+    vec2 range = magCut(magCut(magCut(magLine(fragLoc.x, c.x, s.c.x - rb, s.c.x + rb), magLine(fragLoc.y, c.y, s.c.y - rb, s.c.y + rb)),
+        vec2(s.c.z - 1.35 * s.rv, s.c.z + 1.35 * s.rv)), vec2(0.0, 1e6));
     if (range.x >= range.y)
         discard;
     float zTop = range.y, zBot = range.x;

@@ -11,10 +11,9 @@ public static class MagazineLook
     /// lognormal σ, from its seed.</summary>
     public static double ScatterD = 0.15, ScatterS = 0.25;
 
-    /// <summary>When the body (fireball, cap, stem) fades out after the main event, in its fireball's lives (the user,
-    /// 2026-10-15: the cap climbing a kilometre on its stem read as a flower on its stalk, so it goes early): from 1 to
-    /// 1.8 lives, while the cap is still a few hundred metres up (Bismarck's: 12-22 s). The stem's soot plume carries the
-    /// smoke on (X6).</summary>
+    /// <summary>When the body (the fireball and its cloud) fades out after the main event, in its fireball's lives (the
+    /// user, 2026-10-15: the cap climbing a kilometre on its stem read as a flower on its stalk, so it goes early, and
+    /// low): from 1 to 1.8 lives (Bismarck's: 12-22 s). The wreck's fires' soot plume carries the smoke on (X6).</summary>
     public static double FadeFrom = 1.0, FadeTo = 1.8;
 
     /// <summary>The soot skin (research §6: the top and outside cool first, the crimson stays under): how much of the
@@ -30,18 +29,18 @@ public static class MagazineLook
     /// body's own: 6 through the fireball's middle at its end; vidgen drew its particles at 0.4 of the reference's).</summary>
     public static double SootAlbedo = 0.07, Opacity = 1;
 
-    /// <summary>The mushroom: how much of the cap's smoke rides its vortex ring (0 a plain ball), and the ring's turns
-    /// a second at the fireball's end (the advected noise standing in for the circulation, decision 2).</summary>
-    public static double Mushroom = 0.6, Spin = 0.12;
+    /// <summary>The cloud turning over at its edge: its turns a second at the fireball's end (the advected noise standing
+    /// in for the circulation, decision 2).</summary>
+    public static double Spin = 0.12;
 
-    /// <summary>The stem: its width over the cap's, its optical depth, and its fires' fading, s.</summary>
-    public static double StemShare = 0.18, StemTau = 3, StemFadeS = 40;
+    /// <summary>The wreck's fires' fading, s (their soot, X6).</summary>
+    public static double FireFadeS = 40;
 
-    /// <summary>The after-smoke (X6) on the smoke's puffs: a stem puff every so many seconds while the fires burn (three
+    /// <summary>The after-smoke (X6) on the smoke's puffs: a fire's puff every so many seconds while they burn (three
     /// of their fadings; far enough apart that the wind lays them out as a plume, not one blob merged at the wreck), the
     /// fires' smoke at the start for the reference's event, m² of extinction area a second (a heavy oil fire's: a 15"
     /// twin's gun smoke every ~0.7 s), and each of the boilers' four steam puffs', m², as water fog.</summary>
-    public static double StemEveryS = 6, StemSmokeM2 = 15_000, SteamM2 = 8_000;
+    public static double FireEveryS = 6, FireSmokeM2 = 15_000, SteamM2 = 8_000;
 
     /// <summary>A gain on the fire's brightness over the physical contrast (as the flashes': 1 physical).</summary>
     public static double Gain = 1;
@@ -85,13 +84,10 @@ public static class MagazineLook
             case "hot": HotK = Math.Max(v, ColdK + 1); break;
             case "soot": SootAlbedo = Math.Clamp(v, 0, 1); break;
             case "opacity": Opacity = Math.Max(v, 0); break;
-            case "mushroom": Mushroom = Math.Clamp(v, 0, 1); break;
             case "spin": Spin = v; break;
-            case "stem": StemShare = Math.Max(v, 0); break;
-            case "stemtau": StemTau = Math.Max(v, 0); break;
-            case "stemfade": StemFadeS = Math.Max(v, 1); break;
-            case "stemevery": StemEveryS = Math.Max(v, 0.2); break;
-            case "stemsmoke": StemSmokeM2 = Math.Max(v, 0); break;
+            case "firefade": FireFadeS = Math.Max(v, 1); break;
+            case "fireevery": FireEveryS = Math.Max(v, 0.2); break;
+            case "firesmoke": FireSmokeM2 = Math.Max(v, 0); break;
             case "steam": SteamM2 = Math.Max(v, 0); break;
             case "gain": Gain = Math.Max(v, 0); break;
             case "whiten": Whiten = Math.Clamp(v, 0, 1); break;
@@ -105,5 +101,5 @@ public static class MagazineLook
         return true;
     }
 
-    public const string Knobs = "scatterd, scatters, fadefrom, fadeto, skin, cold, hot, soot, opacity, mushroom, spin, stem, stemtau, stemfade, stemevery, stemsmoke, steam, gain, whiten, steps, parts (1 body, 2 shadow, 4 jets, 8 debris, 16 light, 32 after-smoke), light, at (a still at that age, s), on";
+    public const string Knobs = "scatterd, scatters, fadefrom, fadeto, skin, cold, hot, soot, opacity, spin, firefade, fireevery, firesmoke, steam, gain, whiten, steps, parts (1 body, 2 shadow, 4 jets, 8 debris, 16 light, 32 after-smoke), light, at (a still at that age, s), on";
 }

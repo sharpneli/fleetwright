@@ -13,8 +13,8 @@ struct Mag
     vec4 shade;   // the shadow's quad
     vec4 body;    // xyz: the body's centre; w: its radius across
     vec4 bodyB;   // x: its radius up; y: its extinction per metre; z: its heat; w: the skin
-    vec4 stem;    // xy: the cap's drift; z: the stem's radius; w: its extinction per metre
-    vec4 time;    // x: the stem's fires; y: the cap's share; z: the ring's turn, radians; w: opacity (the world's share, the fade)
+    vec4 drift;   // unused (the body's drift is in its centre)
+    vec4 time;    // y: how far the cloud turns over; z: its turn, radians; w: opacity (the world's share, the fade)
     vec4 misc;    // x: the deck's height; y: the fire's light on the smoke, display units
 };
 

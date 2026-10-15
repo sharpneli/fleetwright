@@ -91,7 +91,7 @@ research: use the correlations' spread), the debris' launches, the noise seeds.
 - **Display timeline**, from the loss: the hit's flash and puff at 0, the first opening fails at +0.5 s (the demo's
   `HIT_LEAD`), the roof lifts at +0.95, the fireball at +1.4. The sim's loss is at the hit; the 1.4 s lead is the
   drawing's.
-- **The volumes, jets, debris and sparks** play on the effects clock (`Effects.Rate`: 11x at 60x), so a 12 s fireball
+- **The fireball and its cloud, jets, debris and sparks** play on the effects clock (`Effects.Rate`: 11x at 60x), so a 12 s fireball
   still plays out on the screen. **Never thinned**: a magazine is the event the eye must catch (shell-impacts.md's
   "never culled").
 - **The smoke puffs, frost, scour and debris foam** are on the sea's clock, as all smoke and foam are.
@@ -359,6 +359,18 @@ fades from 1 to 1.8 of its fireball's lives after the main event (`fadefrom`, `f
 the cap ~380 m up when it's gone), replacing the 120 s life and its last-third fade. The book keeps an event at least
 130 s on the effects' clock, so the debris' trails and the after-smoke's spawning outlast the body. The cap's handover
 to puffs (X6's open item) is moot: the cap is gone before it would stall.
+
+**X7, the user's second round (2026-10-15).** "The initial formation looks great but at a certain moment it just starts
+moving upwards and it looks like a growing flower." A departure from the research's lift-off and thermal, the user's
+call: **the cloud stays down.** `MagazineBlast.BodyAt` keeps the formation (grown to its diameter over half its life)
+but lifts it only 0.15 D by the fireball's end and 0.1 D more over the next life (`LiftD`, `LaterLiftD`), its centre
+0.7 of its radius over the deck so its foot stays on the wreck, billowing 35% wider a life after (`Spread`) and
+flattening to 0.7 of its width; it drifts downwind and fades as before (1-1.8 lives). Bismarck's as it goes: centre
+~108 m over the deck, 200 m across, 145 m high. Gone with the lift: **the stem** (no stalk left to draw: its shader
+parts, its quads and the `stem`/`stemtau` knobs) and **the mushroom's hollow underside** (`mushroom`); the noise still
+rolls round the cloud's edge (`spin`). The wreck's fires' soot keeps its knobs, renamed `firefade`, `fireevery`,
+`firesmoke` (they were the stem's). Seen at noon, 1 m/px: the fireball over the bow, the dark cloud billowing on the
+wreck by 12 s, drifting off and gone by ~20 s.
 
 ## Later
 

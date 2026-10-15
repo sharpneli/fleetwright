@@ -134,33 +134,31 @@ public sealed class MagazineBlast
         return Math.Min(45 * o.DiameterM * Math.Sqrt(p), o.MaxM) * Math.Min(1, a / 0.08);
     }
 
-    /// <summary>The cap's rise after lift-off, m by 45 s for the reference's 20 t (research §2.2: a buoyant thermal,
-    /// z ∝ (B t²)^¼, so ∝ M^¼ √t; "thousands of feet", ~1 km, by 30-60 s).</summary>
-    public const double CapRiseM = 1300;
+    /// <summary>How far the cloud lifts by its fireball's end and in the life after it, in diameters, and how much wider
+    /// it billows per life after it.</summary>
+    public const double LiftD = 0.15, LaterLiftD = 0.1, Spread = 0.35;
 
     /// <summary>The fireball and its smoke as one body <paramref name="t"/> s after the main event (research §2.2, §3.4):
     /// <list type="bullet">
-    /// <item>it grows to its diameter <paramref name="d"/> over half its life <paramref name="life"/> and lifts off,
-    /// its centre from the deck to ≈ D by the end of its life;</item>
-    /// <item>then it rises as a buoyant thermal (<see cref="CapRiseM"/>), widening as 0.25 of its height, flattened
-    /// (the mushroom's cap);</item>
+    /// <item>it grows to its diameter <paramref name="d"/> over half its life <paramref name="life"/>, lifting a little
+    /// (<see cref="LiftD"/>), its foot on the wreck;</item>
+    /// <item>then it billows wider (<see cref="Spread"/> a life), flattens and rises a little more, its foot still on
+    /// the wreck: a low, spreading cloud. A departure (the user, 2026-10-15): the research's fireball lifts off to ≈ D
+    /// and climbs as a thermal to a kilometre, which on its stem read as a flower growing on its stalk;</item>
     /// <item>its heat (0-1, the drawing's temperature scale) falls from white-hot over its life, faster at its top and
     /// outside (the soot skin, <paramref name="skin"/>: the share it cools there by the end);</item>
     /// <item>its optical depth through the middle, 8 at the fireball's end, falls only as the square root of its
-    /// radius: its soot spreads wider, but the fires under it feed more, and the research's caps stand dark for minutes
-    /// (a departure from the area's fall, which thinned vidgen's cap to a haze by a minute).</item>
+    /// radius: its soot spreads wider, but the fires under it feed more (a departure from the area's fall, which thinned
+    /// vidgen's cap to a haze).</item>
     /// </list>
     /// Heights are over the waterline from the deck at <paramref name="deckZ"/>; nothing before the main event.</summary>
-    public static Body BodyAt(double d, double life, double massKg, double deckZ, double t)
+    public static Body BodyAt(double d, double life, double deckZ, double t)
     {
-        double rEnd = d / 2, grow = SmoothStep(0, 0.5 * life, t), r = rEnd * (0.35 + 0.65 * grow), zc;
-        if (t <= life)
-            zc = deckZ + 0.6 * r + (d - 0.6 * rEnd) * SmoothStep(0.15 * life, life, t);
-        else
-            zc = deckZ + d + CapRiseM * Math.Pow(Math.Max(massKg, 1) / 20_000, 0.25) * (Math.Sqrt(t / 45) - Math.Sqrt(life / 45));
-        double rise = zc - deckZ;
-        r = Math.Max(r, 0.25 * rise);
-        double flat = t <= life ? 1 - 0.25 * SmoothStep(0.5 * life, life, t) : 0.75 - 0.2 * SmoothStep(life, 4 * life, t);
+        double rEnd = d / 2;
+        double r = t <= life ? rEnd * (0.35 + 0.65 * SmoothStep(0, 0.5 * life, t)) : rEnd * (1 + Spread * (t / life - 1));
+        double flat = 1 - 0.15 * SmoothStep(0.5 * life, life, t) - 0.15 * SmoothStep(life, 2 * life, t);
+        // its foot on the wreck: the centre 0.7 of its radius over the deck, and lifted a little
+        double zc = deckZ + 0.7 * r + d * (LiftD * SmoothStep(0.15 * life, life, t) + LaterLiftD * SmoothStep(life, 2 * life, t));
         double heat = t <= life ? 1 - 0.55 * Math.Pow(t / life, 1.2) : 0.45 * Math.Exp(-(t - life) / (0.3 * life));
         double skin = Math.Min(t / life, 1);
         double tau = 8 * Math.Sqrt(rEnd / r);

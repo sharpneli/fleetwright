@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 namespace Fleetwright.Tests;
 
 /// <summary>The world view's magazine explosions (docs/visuals/magazine-explosions.md X2): the body's laws (continuous
-/// through lift-off, rising and widening, cooling) and the book taking each event once at its own age
+/// through its growth, billowing out low, cooling) and the book taking each event once at its own age
 /// and allocating nothing a frame.</summary>
 public class MagazineTests(ITestOutputHelper output)
 {
@@ -19,27 +19,30 @@ public class MagazineTests(ITestOutputHelper output)
     static ShipClass? ClassOf(int id) => id == 0 ? Dreadnought : null;
 
     [Fact]
-    public void The_body_lifts_off_rises_and_cools_without_a_jump()
+    public void The_body_grows_billows_out_low_and_cools_without_a_jump()
     {
-        const double d = 157, life = 12.2, mass = 20_000, deck = 8;
-        var before = MagazineBlast.BodyAt(d, life, mass, deck, life - 1e-6);
-        var after = MagazineBlast.BodyAt(d, life, mass, deck, life + 1e-6);
+        const double d = 157, life = 12.2, deck = 8;
+        var before = MagazineBlast.BodyAt(d, life, deck, life - 1e-6);
+        var after = MagazineBlast.BodyAt(d, life, deck, life + 1e-6);
         Assert.Equal(before.CentreZ, after.CentreZ, 1e-3);
         Assert.Equal(before.R, after.R, 1e-3);
         Assert.Equal(before.Heat, after.Heat, 1e-3);
-        Assert.Equal(deck + d, after.CentreZ, 1e-3);   // lifted off to about its diameter
-        var prev = MagazineBlast.BodyAt(d, life, mass, deck, 0);
+        Assert.Equal(d / 2, after.R, 1e-3);   // grown to its diameter
+        var prev = MagazineBlast.BodyAt(d, life, deck, 0);
         Assert.Equal(1, prev.Heat, 6);
         for (double t = 0.5; t <= 120; t += 0.5)
         {
-            var b = MagazineBlast.BodyAt(d, life, mass, deck, t);
+            var b = MagazineBlast.BodyAt(d, life, deck, t);
             Assert.True(b.CentreZ >= prev.CentreZ - 1e-9 && b.R >= prev.R - 1e-9, $"rising and widening at {t} s");
             Assert.True(b.Heat <= prev.Heat + 1e-9, $"cooling at {t} s");
             prev = b;
         }
-        var minute = MagazineBlast.BodyAt(d, life, mass, deck, 60);
-        output.WriteLine($"at 60 s: centre {minute.CentreZ:0} m, radius {minute.R:0} m, depth {minute.Tau:0.0}");
-        Assert.InRange(minute.CentreZ, 800, 1300);   // "thousands of feet" by a minute
+        // as it fades (1.8 lives) a low cloud: wider than it stands, its foot still on the wreck
+        var faded = MagazineBlast.BodyAt(d, life, deck, 1.8 * life);
+        output.WriteLine($"faded: centre {faded.CentreZ - deck:0} m over the deck, radius {faded.R:0} m, up {faded.Rv:0} m");
+        Assert.True(faded.R > faded.Rv, "wider than it stands");
+        Assert.True(faded.CentreZ - faded.Rv < deck + 0.3 * d, "its foot near the wreck");
+        Assert.True(faded.CentreZ - deck < d, "no higher than its diameter");
     }
 
     [Fact]
@@ -97,7 +100,7 @@ public class MagazineTests(ITestOutputHelper output)
     {
         var book = new MagazineBook();
         var smoke = new Fleetwright.Map.Flashes.SmokeBook();
-        // first seen 40 s after it went: the stem's puffs of those 40 s come at once, born at their own moments
+        // first seen 40 s after it went: the fires' puffs of those 40 s come at once, born at their own moments
         book.Update(Blasts((1000, 1)), 41_000, 1, 0.016, ClassOf);
         book.SpawnSmoke(smoke, 100);
         int soot = 0, steam = 0;
@@ -112,7 +115,7 @@ public class MagazineTests(ITestOutputHelper output)
         }
         output.WriteLine($"{soot} soot puffs, {steam} steam, the oldest born {100 - oldest:0.0} s ago");
         double since = 40 - MagazineBlast.MainAtS;
-        Assert.Equal((int)(since / MagazineLook.StemEveryS) + 1, soot);
+        Assert.Equal((int)(since / MagazineLook.FireEveryS) + 1, soot);
         Assert.Equal(100 - since, oldest, 2);
         Assert.True(steam > 0, "the boilers' steam");
         // given once: the next frame adds only what's newly due

@@ -1,6 +1,6 @@
 #version 450
 #extension GL_GOOGLE_include_directive : require
-// A magazine's fireball, cap and stem through the effects camera (docs/visuals/magazine-explosions.md X2): the oblique
+// A magazine's fireball and its cloud through the effects camera (docs/visuals/magazine-explosions.md X2): the oblique
 // view from the south, a height z over the deck drawn k z up the screen. A pixel at (x, y) of the draw plane sees the
 // points (x, y - k (z - deck), z): its ray is marched
 // from the top down (front to back) through the one density (Include/magazine.glsl). Each step:
@@ -16,7 +16,7 @@
 
 struct Mag
 {
-    vec4 base, quad, shade, body, bodyB, stem, time, misc;
+    vec4 base, quad, shade, body, bodyB, drift, time, misc;
 };
 
 layout(std430, set = 2, binding = 0) readonly buffer Mags { Mag mags[]; };
@@ -28,7 +28,7 @@ layout(set = 3, binding = 1) uniform Params
     vec4 shadowL; // xy: the shadows' drift per metre of height, away from the light; z: opacity
     vec4 misc;    // x: k; y: metres per pixel; z: the steps' scale; w: display units per cd/m^2 (the fire's scale)
     vec4 fireK;   // x: the cold temperature, K; y: the hot; z: the soot's albedo
-    vec4 more;    // y: the mushroom; z: how far the hottest fire's hue whitens
+    vec4 more;    // z: how far the hottest fire's hue whitens
 };
 
 layout(location = 0) in vec2 fragLoc;
@@ -48,13 +48,8 @@ MagState stateOf(Mag m)
     s.heat = m.bodyB.z;
     s.skin = m.bodyB.w;
     s.deck = m.misc.x;
-    s.drift = m.stem.xy;
-    s.stemR = m.stem.z;
-    s.stemSigma = m.stem.w;
-    s.fire = m.time.x;
-    s.capShare = m.time.y;
+    s.roll = m.time.y;
     s.spin = m.time.z;
-    s.mushroom = more.y;
     s.seed = m.base.w;
     return s;
 }
@@ -64,15 +59,13 @@ void main()
     Mag m = mags[fragIndex];
     MagState s = stateOf(m);
     float k = misc.x, mpp = misc.y;
-    // only the stretch of this pixel's ray that can meet the body or the stem: x is the same all along it, y falls as
-    // its drawn height climbs (an interval of heights for each part's box)
-    float rb = 1.35 * s.r, rs = 1.4 * s.stemR;
-    vec2 body = vec2(1.0, 0.0), stem = vec2(1.0, 0.0);
-    if (abs(fragLoc.x - s.c.x) <= rb)
-        body = magCut(magRayY(fragLoc.y, s.c.y - rb, s.c.y + rb, k, s.deck), vec2(s.c.z - 1.35 * s.rv, s.c.z + 1.35 * s.rv));
-    if (s.stemSigma > 0.0 && fragLoc.x >= min(0.0, s.drift.x) - rs && fragLoc.x <= max(0.0, s.drift.x) + rs)
-        stem = magCut(magRayY(fragLoc.y, min(0.0, s.drift.y) - rs, max(0.0, s.drift.y) + rs, k, s.deck), vec2(s.deck - 3.0, s.c.z));
-    vec2 range = magCut(magJoin(body, stem), vec2(0.0, 1e6));
+    // only the stretch of this pixel's ray that can meet the body: x is the same all along it, y falls as its drawn
+    // height climbs (an interval of heights for the body's box)
+    float rb = 1.35 * s.r;
+    if (abs(fragLoc.x - s.c.x) > rb)
+        discard;
+    vec2 range = magCut(magCut(magRayY(fragLoc.y, s.c.y - rb, s.c.y + rb, k, s.deck), vec2(s.c.z - 1.35 * s.rv, s.c.z + 1.35 * s.rv)),
+        vec2(0.0, 1e6));
     if (range.x >= range.y)
         discard;
     float zTop = range.y, zBot = range.x;
