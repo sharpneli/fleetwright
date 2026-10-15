@@ -129,6 +129,7 @@ public sealed unsafe partial class MapScene : IScene
         var now = new WorldTime(world.DrawMs);
         double moonHere = Moon.Light((-view.Forward).Normalized() * Earth.Radius, now);
         sea.Update(view, renderer.Sea, dt, s.Paused ? 0 : s.AchievedSpeed, lights, sunLapse.Motion, moonHere);
+        shipRenderer.FoamClockS = sea.ClockS;
         renderer.Render(cmd, target, view, s.Sun, land.Fill, baked, lines, overlay, shipRenderer, sunLapse.Motion, sea, lights.Uniforms,
             GlobeRenderer.MoonUniform(now));
         probes.Add(probeRender, t);

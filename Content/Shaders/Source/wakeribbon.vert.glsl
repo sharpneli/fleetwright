@@ -5,13 +5,14 @@ layout(location = 0) in vec3 inRel;
 layout(location = 1) in float inIntensity;
 layout(location = 2) in vec2 inLane;
 layout(location = 3) in float inWidth;
+layout(location = 4) in float inAge;
 
 layout(set = 1, binding = 0) uniform View
 {
     vec4 right;   // xyz: the camera's right; w: tan of half the horizontal field
     vec4 up;      // xyz: the camera's up; w: tan of half the vertical field
     vec4 fwd;     // xyz: the camera's forward
-    vec4 depth;   // x: near, y: far, metres
+    vec4 depth;   // x: near, y: far, metres; w: the sea's clock, s (SeaView: game time, capped, still when paused)
     vec4 sun;
     vec4 moon;
 };
@@ -19,6 +20,8 @@ layout(set = 1, binding = 0) uniform View
 layout(location = 0) out float fragIntensity;
 layout(location = 1) out vec2 fragLane;
 layout(location = 2) out float fragWidth;
+layout(location = 3) out float fragAge;
+layout(location = 4) flat out float fragClock;
 
 void main()
 {
@@ -27,4 +30,6 @@ void main()
     fragIntensity = inIntensity;
     fragLane = inLane;
     fragWidth = inWidth;
+    fragAge = inAge;
+    fragClock = depth.w;
 }

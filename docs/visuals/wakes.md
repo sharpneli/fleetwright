@@ -238,6 +238,23 @@ point (a spawn) cuts square.
 
 ### K5. Tuning and the docs
 
+**The user's first round (2026-10-15):**
+- *The wave field looked silly in a turn: shorten it; unrealistic damping is fine, a subtle field near the ship is
+  enough.* The stamp now fades astern of the pivot as a Gaussian over 1.0 L going straight, down to 0.4 L in a hard
+  turn (κ·L ≥ 0.25, a turning circle's radius ~4 L), and the quad stops at 2.5 of that (`ShipDrawList.WakeFadeL`,
+  `WakeFadeTurnL`, `HardTurnKL`; the shader's `fragMode.w`). Not physical, by decision.
+- *The foam lanes start too thick at a spawn, are too thick near the ship, and look painted on (no animation).*
+  - Thinner: w0 0.2 B (was the research's 0.3), the spreading k 0.06 (was 0.10), the white water's peak 1.0 (was
+    1.6, which saturated the breakup into a solid stripe).
+  - Faded in over the trail's first 8 beams, so a ship that has just come into the world trails no white bar with a
+    square end.
+  - Broken up in its core too: the noise's contrast spread ×1.35, its cells 20 m along the lane (streaks) and a share
+    of the lane's width across, so as the water's lane spreads with age its foam spreads with it. Only the youngest
+    water, a few seconds behind the transom, is solid white down the middle.
+  - Alive: young water churns, the fine octave sliding through time slices on the sea's clock (game time, capped at
+    8x, still when paused), the churn fading over the first half-minute (`FoamVertex.Age`, `wakeribbon.frag`).
+  An over-correction on the way (peak 0.9, contrast ×1.7, 10 m cells) broke the lane into blotches.
+
 - The knobs (`-sea=wake:1,foam:1`) set by eye against the research's photos, at Fr_L 0.25, 0.35 and 0.55.
 - A debug view of the wake target: `-sea=debug:3` shows the slopes, `debug:4` the foam.
 - `sea.md`'s "Later", CLAUDE.md's run lines, and this file, with what was done and measured.

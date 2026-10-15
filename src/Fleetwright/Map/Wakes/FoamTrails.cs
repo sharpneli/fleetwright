@@ -13,21 +13,25 @@ public struct FoamVertex
     public float Intensity;
     public Vector2 Lane;
     public float Width;
-    float pad;
+    /// <summary>How old the water is there, s: the foam churns while it's young.</summary>
+    public float Age;
     public const uint SizeInBytes = 32;
 }
 
 /// <summary>The trails as foam lanes in the world view (docs/visuals/wakes.md K4; research §7.2's lane on the path):
 /// a ribbon along each <see cref="WakeTrail"/> from the stern back, its width w = √(w0² + 2k²·B·distance back),
-/// w0 = 0.3·B·√wash, its foam 1.6·wash·min(U/10, 1)·e^(−age/τ)·(w0/w)^¼ (U the speed when the point was laid), a
-/// faint slick after it to the trail's end, ramped in over the first beam behind the transom (the dead-water hollow).
+/// w0 = 0.2·B·√wash, its foam 1.0·wash·min(U/10, 1)·e^(−age/τ)·(w0/w)^¼ (U the speed when the point was laid), a
+/// faint slick after it to the trail's end, ramped in over the first beam behind the transom (the dead-water hollow)
+/// and over the first <see cref="StartBeams"/> beams of the trail (where a ship came into the world, no square cut).
+/// Thinner and less white than the research's (w0 0.3 B, k 0.10, 1.6: the user, 2026-10-15, too thick by the ship), so the
+/// breakup shows in its core too, not a solid stripe.
 /// The shader takes it across the lane as a Gaussian and breaks it up. Built on the CPU into a grown array, one draw for
 /// them all; nothing allocates once it has grown.</summary>
 public sealed class FoamTrails
 {
     /// <summary>The white water's life, s, and the slick's share and how long the trail keeps it (to its end).</summary>
     public const double WhiteS = 180, SlickShare = 0.12, SlickS = WakeTrail.KeepMs / 1000.0;
-    const double K = 0.10, W0Share = 0.3, Peak = 1.6;
+    const double K = 0.06, W0Share = 0.2, Peak = 1.0, StartBeams = 8;
 
     /// <summary>The lane's half-width drawn, in lane widths (the Gaussian is nothing past it).</summary>
     const double Reach = 2;
@@ -93,18 +97,19 @@ public sealed class FoamTrails
             side[j] = tl > 1e-9 ? Vec3d.Cross(up, t * (1 / tl)) : Vec3d.Zero;
         }
 
+        double first = trail[0].S;
         for (int j = 0; j + 1 < n; j++)
         {
-            double i0 = Foam(kept[j], head, nowMs, B, wash, w0, out double wa) * gain;
-            double i1 = Foam(kept[j + 1], head, nowMs, B, wash, w0, out double wb) * gain;
+            double i0 = Foam(kept[j], head, nowMs, B, wash, w0, first, out double wa) * gain;
+            double i1 = Foam(kept[j + 1], head, nowMs, B, wash, w0, first, out double wb) * gain;
             if (i0 < 1e-3 && i1 < 1e-3)
                 continue;
             if (count + 6 > verts.Length)
                 Array.Resize(ref verts, verts.Length * 2);
-            var a0 = Corner(view, kept[j], side[j], -Reach * wa, i0, wa);
-            var a1 = Corner(view, kept[j], side[j], Reach * wa, i0, wa);
-            var b0 = Corner(view, kept[j + 1], side[j + 1], -Reach * wb, i1, wb);
-            var b1 = Corner(view, kept[j + 1], side[j + 1], Reach * wb, i1, wb);
+            var a0 = Corner(view, kept[j], side[j], -Reach * wa, i0, wa, nowMs);
+            var a1 = Corner(view, kept[j], side[j], Reach * wa, i0, wa, nowMs);
+            var b0 = Corner(view, kept[j + 1], side[j + 1], -Reach * wb, i1, wb, nowMs);
+            var b1 = Corner(view, kept[j + 1], side[j + 1], Reach * wb, i1, wb, nowMs);
             verts[count++] = a0;
             verts[count++] = a1;
             verts[count++] = b1;
@@ -125,24 +130,24 @@ public sealed class FoamTrails
     }
 
     /// <summary>The lane's foam at a point (before the Gaussian across it), and its width there.</summary>
-    static double Foam(in TrailPoint p, in TrailPoint head, long nowMs, double beam, double wash, double w0, out double width)
+    static double Foam(in TrailPoint p, in TrailPoint head, long nowMs, double beam, double wash, double w0, double first, out double width)
     {
         double back = Math.Max(head.S - p.S, 0), age = Math.Max(nowMs - p.Ms, 0) / 1000.0;
         width = Math.Sqrt(w0 * w0 + 2 * K * K * beam * back);
         double under = Math.Min(Math.Abs(p.Speed) / 10, 1) * wash;
         double white = Peak * Math.Exp(-age / WhiteS) * Math.Pow(w0 / width, 0.25);
         double slick = SlickShare * Math.Max(1 - age / SlickS, 0);
-        double ramp = Math.Clamp(back / beam, 0, 1);
-        return under * (white + slick) * ramp * ramp * (3 - 2 * ramp);
+        double ramp = Math.Clamp(back / beam, 0, 1), start = Math.Clamp((p.S - first) / (StartBeams * beam), 0, 1);
+        return under * (white + slick) * ramp * ramp * (3 - 2 * ramp) * start * start * (3 - 2 * start);
     }
 
-    static FoamVertex Corner(in MapView view, in TrailPoint p, Vec3d side, double across, double intensity, double width)
+    static FoamVertex Corner(in MapView view, in TrailPoint p, Vec3d side, double across, double intensity, double width, long nowMs)
     {
         var r = p.P + side * across - view.Eye;
         return new FoamVertex
         {
             Rel = new Vector3((float)r.X, (float)r.Y, (float)r.Z), Intensity = (float)intensity,
-            Lane = new Vector2((float)p.S, (float)across), Width = (float)width,
+            Lane = new Vector2((float)p.S, (float)across), Width = (float)width, Age = Math.Max(nowMs - p.Ms, 0) / 1000f,
         };
     }
 }

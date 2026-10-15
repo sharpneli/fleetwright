@@ -68,6 +68,6 @@ public class WakeTrailTests
         float most = 0;
         foreach (var v in foam.Vertices)
             most = Math.Max(most, v.Intensity);
-        Assert.InRange(most, 1, 2);   // white near the ship (1.6 at its peak)
+        Assert.InRange(most, 0.7, 1.3);   // white near the ship (1.0 at its peak)
     }
 }

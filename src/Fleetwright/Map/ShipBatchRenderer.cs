@@ -86,8 +86,14 @@ public sealed class ShipDrawList
     public const double WakeFromMs = 2 * WakeLibrary.KnotMs, WakeFullMs = 3 * WakeLibrary.KnotMs;
 
     /// <summary>How far round the screen a ship is still placed for its wake alone, in its lengths on screen: a stamp
-    /// reaches ~4 lengths astern of its stem.</summary>
-    const double WakeReachLengths = 4.5;
+    /// reaches ~2.5 lengths astern of its stem.</summary>
+    const double WakeReachLengths = 3;
+
+    /// <summary>The wave field's fade astern of the pivot, a Gaussian over this many lengths, going straight, and in a
+    /// hard turn (the user, 2026-10-15: long arms looked silly in a turn; a subtle field near the ship is enough). Not
+    /// physical: the field is kept to where it reads as the ship's own. A turn is hard at κ·L = <see cref="HardTurnKL"/>
+    /// (a turning circle's radius ~4 lengths).</summary>
+    public const double WakeFadeL = 1.0, WakeFadeTurnL = 0.4, HardTurnKL = 0.25;
     /// <summary>This frame's light, at the view's centre.</summary>
     public ShipLights Lights { get; private set; } = ShipLights.Flat;
 
@@ -348,8 +354,11 @@ public sealed class ShipDrawList
         double y1 = Math.Max(a.HalfY / sa, b.HalfY / sb);
         // the turn: the field astern of the pivot bent onto the arc the ship has come along, y' = y + κ·x²/2 (κ the
         // path's curvature, + to starboard), held to a length's offset at the stamp's end
+        double kappa0 = p.View.YawRate[p.Row] / u, turn = Math.Clamp(Math.Abs(kappa0) * h.LengthM / HardTurnKL, 0, 1);
+        double fadeM = h.LengthM * (WakeFadeL + (WakeFadeTurnL - WakeFadeL) * turn);
+        x0 = Math.Max(x0, pivot - 2.5 * fadeM);   // nothing shows past it
         double back = Math.Max(pivot - x0, 1), cap = 2 * h.LengthM / (back * back);
-        double kappa = Math.Clamp(p.View.YawRate[p.Row] / u, -cap, cap), shear = 0.5 * Math.Abs(kappa) * back * back;
+        double kappa = Math.Clamp(kappa0, -cap, cap), shear = 0.5 * Math.Abs(kappa) * back * back;
         double oy = -y1 - shear, w = x1 - x0, hgt = 2 * (y1 + shear);
 
         if (quadCount == quads.Length)
@@ -364,7 +373,7 @@ public sealed class ShipDrawList
             U = new Vector4((float)ue.X, (float)ue.Y, (float)ue.Z, (float)(SmoothStep(WakeFromMs, WakeFullMs, u) * p.Fade)),
             V = new Vector4((float)ve.X, (float)ve.Y, (float)ve.Z, 0),
             Ship = new Vector4((float)x0, (float)oy, (float)w, 0),
-            ShipV = new Vector4(0, (float)hgt, 0, 0),
+            ShipV = new Vector4(0, (float)hgt, (float)fadeM, 0),
             Sun = new Vector4((float)stem, (float)kappa, (float)pivot, (float)wa),
             March = new Vector4((float)a.X0, (float)(1 / (a.X1 - a.X0)), (float)(1 / a.HalfY), (float)a.StemX),
             Hmap = new Vector4((float)b.X0, (float)(1 / (b.X1 - b.X0)), (float)(1 / b.HalfY), (float)b.StemX),
@@ -587,6 +596,9 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     /// <summary>The foam lanes this frame (docs/visuals/wakes.md K4), built by the map's trails.</summary>
     public FoamTrails Foam { get; } = new();
 
+    /// <summary>The sea's clock, s (SeaView.ClockS), set by the scene each frame: the foam churns on it.</summary>
+    public double FoamClockS { get; set; }
+
     /// <summary>The stand-in icon: a hull's plan, white, mipmapped.</summary>
     public nint Icon { get; }
 
@@ -765,6 +777,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
                 .AddVertexAttribute(1, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT, 12)
                 .AddVertexAttribute(2, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, 16)
                 .AddVertexAttribute(3, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT, 24)
+                .AddVertexAttribute(4, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT, 28)
                 .SetShaders(vsRibbon, fsRibbon).Build(device);
             if (wakePipe == null || ribbonPipe == null)
                 throw new InvalidOperationException($"wake pipelines: {SDL_GetError()}");
@@ -788,6 +801,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
             var vb = new SDL_GPUBufferBinding { buffer = foamBuf.Buffer, offset = 0 };
             SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
             var vf = vp0;
+            vf.Depth.W = (float)FoamClockS;
             SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&vf), (uint)sizeof(ViewParams));
             SDL_DrawGPUPrimitives(pass, (uint)foamUploaded, 1, 0, 0);
         }

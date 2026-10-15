@@ -5,10 +5,11 @@
 // The field comes from the two bakes round the ship's speed (WakeLibrary), the starboard half of each, η and |∇η|²
 // in RG16F with mips. Each is read at the ship's point scaled about the stem by s = (its speed / the ship's)², which
 // lines its crests up with the ship's (the wavelength goes as the speed squared), and its slopes times the bow waves'
-// ratio and s. A turn bends the field astern of the pivot onto the arc the ship has come along.
+// ratio and s. A turn bends the field astern of the pivot onto the arc the ship has come along. Astern of the pivot it
+// fades as a Gaussian over fragMode.w, shorter in a turn (not physical: the field is kept near the ship).
 layout(location = 0) in vec2 fragUv;
 layout(location = 1) in vec2 fragShip;
-layout(location = 2) flat in vec4 fragMode;    // y: the stamp's opacity (the speed's fade, a sinking ship's)
+layout(location = 2) flat in vec4 fragMode;    // y: the stamp's opacity (the speed's fade, a sinking ship's); w: the fade astern, m
 layout(location = 3) flat in vec4 fragSun;     // x: the ship's stem; y: the path's curvature, 1/m, + to starboard; z: the pivot; w: bake a's weight
 layout(location = 4) flat in vec4 fragMarch;   // bake a: X0, 1/(X1 - X0), 1/HalfY, the stem it was baked for
 layout(location = 5) flat in vec4 fragHmap;    // bake b: the same
@@ -61,6 +62,7 @@ void main()
 
     // the ship's frame to the camera's right and up
     vec2 m = vec2(slope.x * fragSea.x + slope.y * fragSea.z, slope.x * fragSea.y + slope.y * fragSea.w);
-    float op = fragMode.y;
+    float behind = max(fragSun.z - fragShip.x, 0.0) / fragMode.w;
+    float op = fragMode.y * exp(-behind * behind);
     outWake = vec4(m * op, variance * op, 0.0);
 }
