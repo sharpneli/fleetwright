@@ -50,6 +50,31 @@
   }
  },
  {
+  "name": "Bunks over the mess tables (destroyers)",
+  "group": "H1",
+  "note": "",
+  "value": {
+   "name": "Bunks over the mess tables (destroyers)",
+   "sleep_rating_m2": 1.2,
+   "sleep_cpo_m2": 2.0,
+   "sleep_officer_m2": 5.0,
+   "mess_seats_per_man": 0.0,
+   "galley_k": 0.3,
+   "galley_min_m2": 4.5,
+   "sanitary_m2": 0.15,
+   "sickbay_beds_per_man": 0.005,
+   "welfare_m2": 0.0,
+   "services_k": 0.04,
+   "passage_factor": 1.15,
+   "deck_height_m": 2.3,
+   "provisions_m3_per_day": 0.008,
+   "water_l_per_day": 30,
+   "hotel_fraction": 0.05,
+   "cpo_fraction": 0.08,
+   "tolerance_days": 30
+  }
+ },
+ {
   "name": "Tiered bunks and separate messdecks",
   "group": "H2",
   "note": "",

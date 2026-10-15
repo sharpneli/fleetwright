@@ -47,6 +47,16 @@ Hammocks slung over the mess tables (14 in per man, RN). 1840s onward; RN destro
 "standard": {"name": "Hammocks over mess tables", "sleep_rating_m2": 1.1, "sleep_cpo_m2": 1.8, "sleep_officer_m2": 5.0, "mess_seats_per_man": 0.0, "galley_k": 0.3, "galley_min_m2": 4.0, "sanitary_m2": 0.1, "sickbay_beds_per_man": 0.01, "welfare_m2": 0.0, "services_k": 0.03, "passage_factor": 1.15, "deck_height_m": 2.3, "provisions_m3_per_day": 0.007, "water_l_per_day": 15, "hotel_fraction": 0.05, "cpo_fraction": 0.08, "tolerance_days": 30}
 ```
 
+## H1: Bunks over the mess tables (destroyers)
+
+Two- and three-tier bunks in compartments that are also the mess, a few heads, no recreation space, water rationed:
+destroyer practice between the hammock messdeck and separate messdecks (2026-10-15, my picks between H1 and H2, not
+from a source). The crew eats where it sleeps, so no mess seats are added.
+
+```json
+"standard": {"name": "Bunks over the mess tables (destroyers)", "sleep_rating_m2": 1.2, "sleep_cpo_m2": 2.0, "sleep_officer_m2": 5.0, "mess_seats_per_man": 0.0, "galley_k": 0.3, "galley_min_m2": 4.5, "sanitary_m2": 0.15, "sickbay_beds_per_man": 0.005, "welfare_m2": 0.0, "services_k": 0.04, "passage_factor": 1.15, "deck_height_m": 2.3, "provisions_m3_per_day": 0.008, "water_l_per_day": 30, "hotel_fraction": 0.05, "cpo_fraction": 0.08, "tolerance_days": 30}
+```
+
 ## H2: Tiered bunks and separate messdecks
 
 Three- and four-tier pipe bunks, separate messdecks, refrigeration (USN WWII). From about 1925.
