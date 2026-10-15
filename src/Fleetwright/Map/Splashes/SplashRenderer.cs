@@ -36,6 +36,11 @@ public sealed unsafe class SplashRenderer : IDisposable
     /// <summary>The column's peak height and the shaft's width per metre of calibre (research/vfx/shell-splashes.md:
     /// a 16" 73 m and 10 m), and the lean at the shallowest fall.</summary>
     const double HeightPerM = 180, WidthPerM = 25, LeanDeg = 25;
+    /// <summary>Each splash's own share (the user, 2026-10-15: identical columns starting together read as clones):
+    /// its height and width up or down by up to these, its rise and fall as much longer or shorter, and its start up to
+    /// <see cref="DelayS"/> after the impact. All from its seed, so a splash is the same from frame to frame; scaled by
+    /// <see cref="SplashLook.Vary"/>.</summary>
+    const double VaryHeight = 0.15, VaryWidth = 0.10, VaryTime = 0.10, DelayS = 0.3;
     /// <summary>The longest shadow, metres per metre of height (a sun at ~7°).</summary>
     const float MaxDrift = 8;
 
@@ -124,10 +129,12 @@ public sealed unsafe class SplashRenderer : IDisposable
         {
             ref readonly var e = ref book[i];
             double cal = e.CalibreMm / 1000;
-            double steep = SmoothStep(3, 15, e.FallDeg);
-            double h = HeightPerM * cal * (0.5 + 0.5 * steep), w0 = WidthPerM * cal;
-            double ta = Math.Sqrt(2 * h / Gravity);
-            double tau = (colClock - e.ColumnT0) / ta, foamAge = foamClock - e.FoamT0;
+            double steep = SmoothStep(3, 15, e.FallDeg), vary = SplashLook.Vary;
+            double h = HeightPerM * cal * (0.5 + 0.5 * steep) * (1 + vary * VaryHeight * SplashBook.Signed(e.Seed, 1));
+            double w0 = WidthPerM * cal * (1 + vary * VaryWidth * SplashBook.Signed(e.Seed, 2));
+            double ta = Math.Sqrt(2 * h / Gravity) * (1 + vary * VaryTime * SplashBook.Signed(e.Seed, 3));
+            double delay = vary * DelayS * (0.5 + 0.5 * SplashBook.Signed(e.Seed, 4));
+            double tau = (colClock - e.ColumnT0 - delay) / ta, foamAge = foamClock - e.FoamT0 - delay;
             bool column = e.Column && tau >= 0 && tau < 4.5;
             if (!column && (foamAge < 0 || foamAge > SplashBook.KeepS))
                 continue;
@@ -139,7 +146,10 @@ public sealed unsafe class SplashRenderer : IDisposable
                 continue;
             // the size floor: a column under FloorPx wide is drawn that wide, as much fainter
             double floor = Math.Max(1, SplashLook.FloorPx * mpp / Math.Max(w0, 1e-3));
-            double lean = Math.Tan(LeanDeg * (1 - steep) * Math.PI / 180), b = e.BearingDeg * Math.PI / 180;
+            // the lean along the shell's path: the most at a shallow fall, eased away at point blank (the user, 2026-10-15:
+            // right from ~6° of fall up, too much under it)
+            double leanDeg = LeanDeg * (1 - steep) * SmoothStep(1.5, 6, e.FallDeg);
+            double lean = Math.Tan(leanDeg * Math.PI / 180), b = e.BearingDeg * Math.PI / 180;
             var dye = e.Dye != Dye.None ? e.Dye : SplashLook.AutoDye ? (Dye)(1 + (uint)e.Shooter % 7) : Dye.None;
             var rel = e.Point - view.Eye;
             if (count == items.Length)

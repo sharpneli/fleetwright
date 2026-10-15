@@ -61,7 +61,7 @@ void main()
     else
     {
         float r = mode == 2 ? 3.4 * p.foam.z : 2.6 * p.foam.z * (1.0 + p.foam.x / 60.0);
-        none = mode == 3 && p.dye.w <= 0.0 || p.foam.y <= 0.0;
+        none = mode == 3 && p.dye.w <= 0.0 || p.foam.y <= 0.0 || p.foam.x < 0.0;   // nothing before its (delayed) start
         lo = vec2(-r);
         hi = vec2(r);
     }

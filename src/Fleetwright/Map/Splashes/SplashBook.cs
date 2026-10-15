@@ -110,6 +110,9 @@ public sealed class SplashBook
             count--;
     }
 
+    /// <summary>A number in [-1, 1] drawn from a splash's seed, one per <paramref name="k"/>: its own size and timing.</summary>
+    public static double Signed(float seed, int k) => Hash((uint)(seed * 65536) * 8u + (uint)k) / 2147483648.0 - 1;
+
     static uint Hash(uint x)
     {
         x ^= x >> 16;

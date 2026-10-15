@@ -199,6 +199,17 @@ Changed on the way:
 - **The shadows** fade out between 7° and 3° of sun and are no longer than 8 m a metre of height. Where the shared
   light gives no shadow (the ships cast none either), neither do the splashes.
 
+**The user's first round (2026-10-15): "very beautiful", but clones.** A salvo's columns started together and reached
+the same height, and the eye caught the repetition. The point-blank lean was too much.
+- **Each splash is its own** (`SplashRenderer.Vary*`, from its seed, so the same from frame to frame; `-splash=vary:G`
+  scales it, 0 for none): its height ±15%, its width ±10%, its rise and fall ±10% longer or shorter, and its start up to
+  0.3 s after the impact (its foam waits with it). This is display-only variation on top of the sim's own spread; the
+  salvo's ripple, when it comes, adds to it.
+- **The lean eases away at point blank.** It's unchanged from ~6° of fall up, where it looked right, and fades to
+  nothing at 1.5° (`SmoothStep(1.5, 6, fall)`). At 1.2 km the columns stand straight.
+- Fixed on the way: before its delayed start, a splash's foam drew as a white disc (a negative age read as the
+  impact's white). It now draws nothing until it starts.
+
 Cost: a stress of 16 dreadnoughts engaged in one 1 m/px view at 60x, 1080p, DevRelease, about 1,500 splashes drawn a
 frame (mostly foam). Three alternating runs:
 - the GPU's scene p50 1.22-1.23 ms with splashes against 1.12-1.43 ms without (about 0.1 ms; the mean and p95 swing

@@ -42,6 +42,10 @@ public static class SplashLook
     /// look shows without a scenario that hands them out. The world's dyes are untouched.</summary>
     public static bool AutoDye;
 
+    /// <summary>A gain on each splash's own variation in size, timing and start (SplashRenderer's Vary*: 1 as set,
+    /// 0 every splash of a calibre alike).</summary>
+    public static double Vary = 1;
+
     /// <summary>Which parts draw, for measuring each's cost: 1 foam, 2 stains, 4 shadows, 8 columns.</summary>
     public static int Parts = 15;
 
@@ -102,10 +106,11 @@ public static class SplashLook
             case "vivid": Vivid = v; break;
             case "on": On = v != 0; break;
             case "parts": Parts = (int)v; break;
+            case "vary": Vary = Math.Max(v, 0); break;
             default: return false;
         }
         return true;
     }
 
-    public const string Knobs = "pitch, floor, knee, power, keep, faint, steps, vivid, on, parts (1 foam, 2 stains, 4 shadows, 8 columns), dye:auto";
+    public const string Knobs = "pitch, floor, knee, power, keep, faint, steps, vivid, vary, on, parts (1 foam, 2 stains, 4 shadows, 8 columns), dye:auto";
 }
