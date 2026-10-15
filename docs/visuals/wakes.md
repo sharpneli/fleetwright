@@ -255,6 +255,24 @@ point (a spawn) cuts square.
     8x, still when paused), the churn fading over the first half-minute (`FoamVertex.Age`, `wakeribbon.frag`).
   An over-correction on the way (peak 0.9, contrast ×1.7, 10 m cells) broke the lane into blotches.
 
+**The second round (2026-10-15): sharper, speckle-like foam, not low-pass.** `wakeribbon.frag` now has four octaves:
+- streaks, 20 m along and a share of the lane's width across;
+- patches, 4 m;
+- bubbles, 1.25 m and 0.5 m, square in metres, the finer churning faster.
+
+How it's drawn:
+- Each octave fades to its mean as its cells near a pixel, and what fades widens the threshold's edge. A pixel too coarse
+  for the specks gets partial coverage, not a solid lane, and nothing shimmers zoomed out.
+- The threshold is sharp: its softness is the noise's change across the pixel (antialiased, not blurred).
+- Foam where the noise clears 1 − 0.85·density, so even the densest water keeps some gaps.
+- The finest octave textures the white itself (coverage 0.7-1).
+- The young-water core is folded into the threshold (it clears more easily down the middle for a few seconds), not laid
+  over as a translucent core, which read as a grey haze between the specks.
+
+Seen: up close, ragged speckled edges and textured white near the ship, breaking into clumps with age; grainy at
+0.8 m/px; an even thin lane at 2 m/px. Cost: four lanes at 0.25 m/px, `-gputime` p50 1.09-1.16 ms with and without
+the foam (one run at 3.1 ms, the GPU's clocks); the lanes are a small share of the screen.
+
 - The knobs (`-sea=wake:1,foam:1`) set by eye against the research's photos, at Fr_L 0.25, 0.35 and 0.55.
 - A debug view of the wake target: `-sea=debug:3` shows the slopes, `debug:4` the foam.
 - `sea.md`'s "Later", CLAUDE.md's run lines, and this file, with what was done and measured.
