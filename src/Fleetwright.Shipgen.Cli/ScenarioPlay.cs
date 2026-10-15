@@ -152,6 +152,15 @@ static class ScenarioPlay
             var (tasked, home, orders, idle, fallen) = ai.Commanders.Census(side);
             Console.WriteLine($"  {s.Sides[side],-12} at the end: {tasked} units on a task, {home} home, {orders} on their first orders, {idle} idle; {fallen} fallen out");
         }
+        // nobody played: nothing is held by the player, nor ever asked back (the AI's own detachments are Tasked)
+        int held = 0, onTask = 0;
+        for (int g = 0; g < w.Groups.Count; g++)
+            for (int i = 0; i < w.Groups[g].Members.Count; i++)
+                if (w.Groups[g].DetachmentAt(i) is Detachment.Nudged or Detachment.Pinned)
+                    held++;
+                else if (w.Groups[g].DetachmentAt(i) == Detachment.Tasked)
+                    onTask++;
+        Console.WriteLine($"  at the end {held} units held by the player, {onTask} out of their lines on tasks; {ai.Captains.Notices + ai.Admirals.Notices} notices raised");
         // what the chain of command cost (docs/battle/command.md 5.1d: the commanders cost little)
         double game = (end.EndMs - s.Start.Ms) / 1000.0;
         Console.WriteLine("the AI's layers (share of the run, calls a game second, each, longest):");

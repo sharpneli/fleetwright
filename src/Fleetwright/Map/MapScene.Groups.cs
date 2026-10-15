@@ -167,11 +167,11 @@ public sealed unsafe partial class MapScene
                 overlay.End();
             }
         }
-        // ships out of their squadron's line: the player's
+        // ships the player holds out of their squadron's line
         for (int g = 0; g < gv.Count; g++)
             if (!gv.Force[g])
                 for (int i = 0; i < gv.MemberCount[g]; i++)
-                    if (gv.Detached[gv.MemberStart[g] + i] != Detachment.InLine && v.IndexOf(gv.Members[gv.MemberStart[g] + i]) is int k and >= 0)
+                    if (Held(gv.Detached[gv.MemberStart[g] + i]) && v.IndexOf(gv.Members[gv.MemberStart[g] + i]) is int k and >= 0)
                         Ring(view, v.PoseAt(k, world.DrawMs).Position, ShipDrawList.IconLengthPx / 2 + 9, v.Asked[k] ? AskColor : HeldColor, 1.2f);
         // the other picked ships
         foreach (int e in picked)
@@ -203,8 +203,8 @@ public sealed unsafe partial class MapScene
                 text += $" ({lineShips.Count})";
             }
             var held = InForce(gv, g);
-            if (held != Detachment.InLine)
-                text += held == Detachment.Pinned ? " · detached" : " · held";
+            if (Held(held))
+                text += $" · {HeldText(held)}";   // out on its task: the task says so
             if (gv.Task[g] != 0)
                 text += $" · {TaskText(gv.Task[g], gv.TaskStatus[g])}";
             if (gv.Commanded[g] != 0)
@@ -335,7 +335,7 @@ public sealed unsafe partial class MapScene
         ImGui.Text($"{gv.Name[g]}:");
         ImGui.SameLine();
         ImGui.TextDisabled(detached != Detachment.InLine
-            ? $"{gv.MemberCount[g]} ships; this one {(detached == Detachment.Pinned ? "detached" : "held (an order to the squadron gathers it in)")}{(s.Ships.Asked[s.Ships.IndexOf(selected)] ? "; its orders changed" : "")}"
+            ? $"{gv.MemberCount[g]} ships; this one {(detached == Detachment.Nudged ? "held (an order to the squadron gathers it in)" : HeldText(detached))}{(s.Ships.Asked[s.Ships.IndexOf(selected)] ? "; its orders changed" : "")}"
             : $"{gv.MemberCount[g]} ships, guide #{guide}{(guide == selected ? " (this)" : "")}");
         ImGui.SameLine();
         if (detached != Detachment.InLine ? ImGui.Button("Rejoin##ship") : ImGui.Button("Detach##ship"))
@@ -390,7 +390,7 @@ public sealed unsafe partial class MapScene
             ImGui.Text($"{gv.Name[f]}:");
             ImGui.SameLine();
             ImGui.TextDisabled(inForce != Detachment.InLine
-                ? $"{gv.MemberCount[f]} groups; this squadron {(inForce == Detachment.Pinned ? "detached" : "held")}{(gv.Asked[g] ? "; its orders changed" : "")}"
+                ? $"{gv.MemberCount[f]} groups; this squadron {HeldText(inForce)}{(gv.Asked[g] ? "; its orders changed" : "")}"
                 : $"{gv.MemberCount[f]} groups, guide {(gv.IndexOfGroup(gv.Guide[f]) is int fg and >= 0 ? gv.Name[fg] : "-")}");
             ImGui.SameLine();
             if (inForce != Detachment.InLine ? ImGui.Button("Rejoin##sq") : ImGui.Button("Detach##sq"))
@@ -495,15 +495,15 @@ public sealed unsafe partial class MapScene
         }
     }
 
-    /// <summary>"Held by you", top right: every ship and group the player holds out of its line, with what's become of
-    /// its superior's orders, Select and Resume. Hidden while there are none.</summary>
+    /// <summary>"Held by you", top right: every ship and group the player holds out of its line (not those out on their
+    /// tasks: the AI's), with what's become of its superior's orders, Select and Resume. Hidden while there are none.</summary>
     void HeldUi(Snapshot s)
     {
         var gv = s.Groups;
         var v = s.Ships;
         int held = 0;
         for (int m = 0; m < MembersEnd(gv); m++)
-            if (gv.Detached[m] != Detachment.InLine)
+            if (Held(gv.Detached[m]))
                 held++;
         if (held == 0)
             return;
@@ -519,7 +519,7 @@ public sealed unsafe partial class MapScene
                 for (int i = 0; i < gv.MemberCount[g]; i++)
                 {
                     int m = gv.MemberStart[g] + i;
-                    if (gv.Detached[m] == Detachment.InLine)
+                    if (!Held(gv.Detached[m]))
                         continue;
                     int member = gv.Members[m];
                     int sub = gv.Force[g] ? gv.IndexOfGroup(member) : -1;
@@ -533,7 +533,7 @@ public sealed unsafe partial class MapScene
                     ImGui.SameLine();
                     ImGui.Text($"{name}");
                     ImGui.SameLine();
-                    ImGui.TextDisabled($"{(gv.Detached[m] == Detachment.Pinned ? "detached" : "held")} from {gv.Name[g]}{(asked ? ", its orders changed" : "")}");
+                    ImGui.TextDisabled($"{HeldText(gv.Detached[m])} from {gv.Name[g]}{(asked ? ", its orders changed" : "")}");
                     ImGui.SameLine();
                     if (ImGui.SmallButton($"Select##h{m}"))
                     {
@@ -547,6 +547,11 @@ public sealed unsafe partial class MapScene
         }
         ImGui.End();
     }
+
+    /// <summary>Out of its line by the player's hand (held or detached), not for its task (the AI's).</summary>
+    static bool Held(Detachment d) => d is Detachment.Nudged or Detachment.Pinned;
+
+    static string HeldText(Detachment d) => d switch { Detachment.Pinned => "detached", Detachment.Tasked => "out on its task", _ => "held" };
 
     static int MembersEnd(GroupsView gv) => gv.Count == 0 ? 0 : gv.MemberStart[gv.Count - 1] + gv.MemberCount[gv.Count - 1];
 }

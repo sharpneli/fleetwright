@@ -40,7 +40,8 @@ weights, the UI and the debrief.
   `Station`, `Run`, `Shadow`, `Fight`, `Standing`, the fire orders (`FireAtWill`, `HoldFire`, `Engage`), and the
   chain's own (`SpeedLimit`, `Clearance`, `Detach`, `Resume`).
 - **Who has a unit:** the player's order holds it (nudged, or pinned by `Detach`); a superior's order for a held unit
-  raises a notice; a route's end hands it back. All of it at every level.
+  raises a notice; a route's end hands it back. All of it at every level. A task's or the commander's order takes a
+  unit out of its line as the AI's (`Detachment.Tasked`, 2026-10-15): never "held by you", no notice.
 - **Groups** (`GroupSystem`): squadrons of ships, forces of groups, four formations (line ahead, line abreast,
   echelon to either side), one geometry (`LineOffsets`) that the captains, the admirals and the rails read.
 - **Fighting behaviours** (4.2c, 4.6): fire at will, the admirals' fire distribution over the enemy's line, `Fight`

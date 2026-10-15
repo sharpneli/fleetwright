@@ -18,7 +18,9 @@ namespace Fleetwright.Sim.Ai.Admirals;
 /// does its captain's: the player's order to it nudges it out of the line, an order to the force gathers it back,
 /// <see cref="AiCommand.Detach"/> pins it out until <see cref="AiCommand.Resume"/>, a route the player gave it hands it
 /// back at its end, and its superior's orders for it are dropped meanwhile, with a notice ("resume?") raised once. A
-/// group's admiral raises one for his held members too when his own orders change.</para>
+/// group's admiral raises one for his held members too when his own orders change. The AI's own orders (a task's, the
+/// side's commander's) take a group out of the line as <see cref="Detachment.Tasked"/>: not the player's, so no notice,
+/// and the player's order takes it from its task.</para>
 /// <para>Ships that left their group or its line get their captains back, groups that left their force their admirals,
 /// and ships that are gone leave their group. He commands his own ships, so he reads them as they are; other ships he'd
 /// see through the picture.</para></summary>
@@ -126,6 +128,9 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             return;
         var code = (AiCommand)c.Code;
         var source = (OrderSource)c.B;
+        bool tasked = source == OrderSource.Task;   // the AI's own order: his, as the player's are, but it doesn't hold the group
+        if (tasked)
+            source = OrderSource.Player;
         var parent = g.Parent != 0 ? groups.Get(g.Parent) : null;
         var detached = parent?.DetachmentOf(g.GroupId) ?? Detachment.InLine;
         var a = Get(g.GroupId);
@@ -148,10 +153,11 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 a.Asked = false;
                 return;
             case AiCommand.Detach:
-                if (parent == null || detached == Detachment.Pinned)
+                var pin = tasked ? Detachment.Tasked : Detachment.Pinned;
+                if (parent == null || detached == pin || tasked && detached != Detachment.InLine)
                     return;
-                ctx.Issue(GroupSystem.DetachGroup(g.GroupId, Detachment.Pinned));
-                Release(ctx, g, a);   // it holds what it was doing, the player's now
+                ctx.Issue(GroupSystem.DetachGroup(g.GroupId, pin));
+                Release(ctx, g, a);   // it holds what it was doing, the player's (or its task's) now
                 return;
             case AiCommand.SpeedLimit:
                 a.LimitAbove = c.X;
@@ -165,14 +171,17 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
 
         if (source == OrderSource.Superior && parent != null && detached != Detachment.InLine)
         {
-            Ask(a);   // the player has it: its superior's order waits for the hand-back, and is given again then
-            return;
+            if (detached != Detachment.Tasked)
+                Ask(a);   // the player has it: its superior's order waits for the hand-back, and is given again then
+            return;   // on its task: the order waits for its end, no notice
         }
-        if (source == OrderSource.Player && parent != null && detached == Detachment.InLine)
+        if (source == OrderSource.Player && parent != null && (detached == Detachment.InLine || !tasked && detached == Detachment.Tasked))
         {
-            ctx.Issue(GroupSystem.DetachGroup(g.GroupId, Detachment.Nudged));   // the player takes it out of the line
-            detached = Detachment.Nudged;
-            (a.LimitAbove, a.ClearAbove) = (0, 0);   // its superior's limits go with its superior
+            // the player takes it out of the line, or from its task; the AI's own order, out for its task
+            if (detached == Detachment.InLine)
+                (a.LimitAbove, a.ClearAbove) = (0, 0);   // its superior's limits go with its superior
+            detached = tasked ? Detachment.Tasked : Detachment.Nudged;
+            ctx.Issue(GroupSystem.DetachGroup(g.GroupId, detached));
         }
         if (source == OrderSource.Superior)
             a.Asked = false;   // in its superior's hands again
@@ -376,11 +385,11 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             ctx.Issue(g.IsForce ? GroupSystem.DetachGroup(m, Detachment.InLine) : GroupSystem.Detach(m, Detachment.InLine));
     }
 
-    /// <summary>A group's orders changed: each member the player holds is asked back.</summary>
+    /// <summary>A group's orders changed: each member the player holds is asked back (not one on its task).</summary>
     void AskHeld(GroupSystem.Group g)
     {
         for (int i = 0; i < g.Members.Count; i++)
-            if (g.DetachmentAt(i) != Detachment.InLine)
+            if (g.DetachmentAt(i) is Detachment.Nudged or Detachment.Pinned)
             {
                 if (g.IsForce)
                     Ask(Get(g.Members[i]));

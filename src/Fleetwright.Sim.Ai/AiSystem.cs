@@ -109,7 +109,7 @@ public sealed class AiSystem : IWorldSystem
         }
         if (source is OrderSource.Task or OrderSource.Commander)
         {
-            Route(world, c with { B = (int)OrderSource.Player }, u);   // a task's orders are the unit's own
+            Route(world, c with { B = (int)OrderSource.Task }, u);   // a task's orders are the unit's own, the AI's (Detachment.Tasked)
             return;
         }
         if (source == OrderSource.Player && EndsTask(code))

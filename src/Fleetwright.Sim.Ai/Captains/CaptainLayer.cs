@@ -235,6 +235,9 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             return;   // dropped or never made: an order that reached no ship
         var code = (AiCommand)c.Code;
         var source = (OrderSource)c.B;
+        bool tasked = source == OrderSource.Task;   // the AI's own order: his, as the player's are, but it doesn't hold him
+        if (tasked)
+            source = OrderSource.Player;
         switch (code)
         {
             case AiCommand.FireAtWill or AiCommand.HoldFire or AiCommand.Engage:
@@ -255,10 +258,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                     captains[ri].Asked = false;
                 return;
             case AiCommand.Detach:
-                if (g == null || detached == Detachment.Pinned)
+                var pin = tasked ? Detachment.Tasked : Detachment.Pinned;
+                if (g == null || detached == pin || tasked && detached != Detachment.InLine)
                     return;
-                ctx.Issue(GroupSystem.Detach(e, Detachment.Pinned));
-                Release(ctx, e);   // he holds what he was doing, the player's now
+                ctx.Issue(GroupSystem.Detach(e, pin));
+                Release(ctx, e);   // he holds what he was doing, the player's (or his task's) now
                 return;
             case AiCommand.SpeedLimit:
                 ref var lim = ref Get(e);
@@ -272,13 +276,15 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
 
         if (source == OrderSource.Superior && g != null && detached != Detachment.InLine)
         {
-            Ask(e);   // the player has him: his superior's order waits for the hand-back, and is given again then
-            return;
+            if (detached != Detachment.Tasked)
+                Ask(e);   // the player has him: his superior's order waits for the hand-back, and is given again then
+            return;   // on his task: the order waits for its end, no notice
         }
-        if (source == OrderSource.Player && g != null && detached == Detachment.InLine)
+        if (source == OrderSource.Player && g != null && (detached == Detachment.InLine || !tasked && detached == Detachment.Tasked))
         {
-            ctx.Issue(GroupSystem.Detach(e, Detachment.Nudged));   // the player takes him out of the line
-            detached = Detachment.Nudged;
+            // the player takes him out of the line, or from his task; the AI's own order, out for his task
+            detached = tasked ? Detachment.Tasked : Detachment.Nudged;
+            ctx.Issue(GroupSystem.Detach(e, detached));
         }
 
         ref var cap = ref Get(e);

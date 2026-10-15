@@ -350,6 +350,49 @@ public class ForceTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_unit_its_task_takes_out_of_the_line_is_the_AIs_not_the_players()
+    {
+        var (w, ai) = Make();
+        int c = Class(w, "dreadnought");
+        int f = Force(w, [c, c, c], 3, Formation.LineAbreast, 3000);
+        var force = w.Groups.Get(f)!;
+        int sq2 = force.Members[1];
+        Run(w, 5);
+
+        // the commander's task takes the second squadron out of the force's line: on its task, not held by the player,
+        // and the force's orders raise no notice for it
+        w.Apply(ai.Orders.GoTo(Unit.Group(sq2), Lat + 0.5, Lon, 15, OrderSource.Commander));
+        Run(w, 2);
+        Assert.Equal(Detachment.Tasked, force.DetachmentOf(sq2));
+        int notices = ai.Admirals.Notices;
+        w.Apply(ai.Orders.Course(Unit.Group(f), 20));
+        Run(w, 60);
+        Assert.False(ai.Admirals.IsAsked(sq2));
+        Assert.Equal(notices, ai.Admirals.Notices);
+        Assert.Equal(Detachment.Tasked, force.DetachmentOf(sq2));   // an order to the force doesn't gather in a tasked one
+
+        // the player's own order takes it from its task: theirs now
+        w.Apply(ai.Orders.Course(Unit.Group(sq2), 90));
+        Assert.Equal(Detachment.Nudged, force.DetachmentOf(sq2));
+
+        // a ship tasked out of its squadron likewise: no notice when the squadron's orders change
+        int sq3 = force.Members[2];
+        w.Apply(ai.Orders.GoTo(Unit.Ship(9), Lat - 0.5, Lon, 15, OrderSource.Commander));
+        Run(w, 2);
+        var squadron = w.Groups.Get(sq3)!;
+        Assert.Equal(Detachment.Tasked, squadron.DetachmentOf(9));
+        w.Apply(ai.Orders.Course(Unit.Group(sq3), 50, 0, OrderSource.Commander));
+        Assert.False(ai.Captains.IsAsked(9));
+        Assert.Equal(Detachment.Tasked, squadron.DetachmentOf(9));
+        Assert.Equal(Detachment.Tasked, force.DetachmentOf(sq3));   // the commander's order to it is the AI's too
+
+        // the player's Rejoin ends its task and hands it back to its line
+        w.Apply(ai.Orders.Resume(Unit.Ship(9)));
+        Run(w, 2);
+        Assert.Equal(Detachment.InLine, squadron.DetachmentOf(9));
+    }
+
+    [Fact]
     public void Limits_and_the_clearance_from_the_coast_come_down_the_tree()
     {
         var (w, ai) = Make();

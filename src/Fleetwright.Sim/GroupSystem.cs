@@ -37,6 +37,10 @@ public enum Detachment : byte
 
     /// <summary>Detached on purpose (a scout, a ship sent home): it stays out until it's handed back.</summary>
     Pinned,
+
+    /// <summary>Out of the line for the AI's own purposes (its task, or its side's commander's order): not the
+    /// player's, so its superior's orders wait for the task's end without a notice, and its group's gather it not.</summary>
+    Tasked,
 }
 
 /// <summary>What the group system understands (<see cref="GroupSystem"/>; its commands are built by its statics).</summary>
@@ -663,7 +667,7 @@ public sealed class GroupSystem : IWorldSystem
 
     static Formation Formed(int b) => (uint)b <= (uint)Formation.Bearing ? (Formation)b : throw new ArgumentException($"no formation {b}");
 
-    static Detachment Detached(int b) => (Detachment)b is Detachment.InLine or Detachment.Nudged or Detachment.Pinned
+    static Detachment Detached(int b) => (Detachment)b is Detachment.InLine or Detachment.Nudged or Detachment.Pinned or Detachment.Tasked
         ? (Detachment)b : throw new ArgumentException($"no detachment {b}");
 
     static double Spacing(double m) => m > 0 ? m : 600;
