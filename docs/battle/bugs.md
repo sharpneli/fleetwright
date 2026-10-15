@@ -37,6 +37,17 @@ add what's found.
   small chance is real. Decide whether ~1.5 % is right, and if not, which path (a casemate or secondary magazine beside a
   fire, the propellant factor) sets it off. `DamageTests` allows up to 4 % until then.
 
+## Balance and calibration
+
+- [ ] The flotilla scenario's day attack (six boats ordered against four battleships) is beaten off before it fires
+  together in half the runs: 4 of 8 seeds both before and after the destroyer crunch's lighter boats (2026-10-15),
+  boats falling out for steering and speed and the line dropping under the break-off share. `FlotillaAttackTests`
+  now runs on seed 7, which gets in. Decide whether half is the balance wanted.
+- [ ] `Matchup.OutExponent` scales a hit's effect by 1/displacement, so it overstates what a hit does to a light ship
+  against the fine model: a 6" HE hit on the V25 puts her out 10.2 % by the matchup, 6.0 % by `shipgen hits` (it was
+  about 8 % against 7.2 % on the old, twice-too-heavy V25). The AI judges destroyers more fragile than they are;
+  `MatchupTests` allows up to 11 % until it's recalibrated.
+
 ## The slide
 
 - [ ] A ship can be trapped in a bay that opens away from its course: decision 7's "boxed in, it follows the coast

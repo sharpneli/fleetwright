@@ -184,10 +184,11 @@ public static class Powerplant
         long shafts = p.Shafts is int n && n != 0 ? n : Math.Max(1L, Math.Min(4L, (long)Math.Ceiling(mw / t.UnitMaxMw)));
         long perShaft = Math.Max(p.UnitsPerShaft, (long)Math.Ceiling(mw / shafts / t.UnitMaxMw));
         bool elec = p.Transmission == "electric";
-        double wSpec = t.WeightKgPerKw * (1 - (1 - t.StressFloor) * s) * (elec ? 1.3 : 1.0);
+        double stressMult = 1 - (1 - t.StressFloor) * s;
+        double wSpec = t.WeightKgPerKw * stressMult * (elec ? 1.3 : 1.0);
         double sfc = t.SfcGPerKwh * (1 + 0.08 * s) * (elec ? 1.06 : 1.0);
         return new RatedPlant(kw, shafts, perShaft, shafts * perShaft, mw / (shafts * perShaft), kw * wSpec / 1000.0, sfc,
-            t.DensityTPerM3 * (0.85 + 0.15 * s), kw * (1 - 0.15 * s), 1 + 0.15 * (1 - s), (long)Math.Round(t.CrewK * Math.Pow(mw, 0.75)),
+            t.DensityTPerM3 * (0.85 + 0.15 * s), kw * (1 - 0.15 * s), 1 + 0.15 * (1 - s), (long)Math.Round(t.CrewK * Math.Pow(mw * stressMult, 0.75)),
             perShaft > p.UnitsPerShaft);
     }
 

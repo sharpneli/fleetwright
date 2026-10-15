@@ -90,7 +90,7 @@ The pre-dreadnought gap is the point of the change. The KGV case runs long. Rais
 
 ## 3. Tech data
 
-`sfc` is in g/kWh at the rated point (intro → mature); SEC = sfc × LHV / 1000. `w` is kg/kW at the **conservative** design point (s = 0). `stress_floor` is the weight multiplier at maximum stress (s = 1): how far this technology can physically be pushed. `unit_max` is MW per prime-mover unit (per engine, or per turbine set on a shaft). `h/w/l_ref` are metres at `P_ref` MW. `crew_k`: engineering crew ≈ `crew_k * P_MW^0.75`. `start` = cold start to full power, in hours. `curve` = part-load curve (§4).
+`sfc` is in g/kWh at the rated point (intro → mature); SEC = sfc × LHV / 1000. `w` is kg/kW at the **conservative** design point (s = 0). `stress_floor` is the weight multiplier at maximum stress (s = 1): how far this technology can physically be pushed. `unit_max` is MW per prime-mover unit (per engine, or per turbine set on a shaft). `h/w/l_ref` are metres at `P_ref` MW. `crew_k`: engineering crew ≈ `crew_k * (P_MW * stress_mult)^0.75` (the plant's size: a plant worked harder makes its power with fewer, smaller boilers, and fewer men tend them). `start` = cold start to full power, in hours. `curve` = part-load curve (§4).
 
 ```yaml
 # ---------- STEAM (lineage ST; each step dominates the previous on its headline stats) ----------
@@ -482,6 +482,7 @@ n_funnels = max(n_area, n_reach, 1)      # diesel or GT may be 0 (side/transom e
 
 ## Changelog (2026-10-15)
 
+- **Engineering crew follows the plant's size**, `crew_k * (P_MW * stress_mult)^0.75`, not its power alone (docs/shipgen/DECISIONS.md, "Destroyer crunch" 4). At s = 0 nothing changes; a destroyer's plant at s = 1 is tended by a third to a half as many men as before (V25 127 -> 54).
 - **ST5 `stress_floor` 0.35 → 0.30, ST6 0.42 → 0.33** (docs/shipgen/DECISIONS.md, "Destroyer crunch"). Pushed to the limit, the 1915 destroyer plant was no lighter than the 1900 30-knotter's (~31 kg/kW), which put a WWI destroyer at about twice its displacement. ST6 at s = 1 is now 24.8 kg/kW in 1915 and 17.2 in 1930, still above ST7's mature 17 (rule 3 above).
 
 ## Changelog v2 → v2.1

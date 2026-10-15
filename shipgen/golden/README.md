@@ -97,6 +97,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   purpose: whether a position has room is read where it stands instead of from the widest block anywhere. 87 cases
   change (19 designs and 68 fuzz cases): positions on narrow decks, beams (Dunkerque 30.95 -> 26.67 m, Impetuoso
   14.6 -> 10.7 m) and what follows from them; where the deck is wide the mounts stand where they did.
+- 2026-10-15, engineering crew follows the plant's size (docs/shipgen/DECISIONS.md, "Destroyer crunch" 4), on
+  purpose: `crew_k * (MW * stress_mult)^0.75`. 293 cases change, every design with a rating over 0: fewer men below,
+  less crew weight and space, and where crew space set the length a shorter ship (destroyer 124.5 -> 112.1 m, Fubuki
+  137 -> 122 m); capital ships about -0.2 %.
 
 ## Layout
 

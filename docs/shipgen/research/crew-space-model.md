@@ -175,7 +175,7 @@ food endurance: T_food = T_end / crowd ; water likewise when there is no distill
 
 ## 7. Hooks into other systems
 
-- **Crew roll-up:** `N_ops` = engineering crew from `powerplant-model.md` (`crew_k · P_MW^0.75`, firing multipliers) + weapons crews + command/deck + air group. The hotel fraction is solved in closed form (§3); there is no iteration.
+- **Crew roll-up:** `N_ops` = engineering crew from `powerplant-model.md` (`crew_k · (P_MW · stress_mult)^0.75`, firing multipliers) + weapons crews + command/deck + air group. The hotel fraction is solved in closed form (§3); there is no iteration.
 - **Hotel load:** refrigeration and distilling scale with N and the standard. A suggested hotel electrical load is `0.25 kW/person (H1) … 1.5 kW/person (H4)`, plus `E_dist`. This feeds the out-of-scope hotel-plant item in the powerplant spec.
 - **Damage:**
   - **Fire load:** accommodation is a fire-load zone. Pre-1940 standards carry wood, linoleum, bedding and paint; give H1/H2 fire load ×1.5. H4 uses low-flammability fittings, ×0.7.

@@ -53,7 +53,7 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Research a real planing power model (`navarch.planing_power`)
 - [ ] stability.py GM uses its own cwp, not the hull form's; cwp doesn't know about transoms
 - [ ] Ballast hint for low light-condition GM
-- [ ] Small craft overmanned (PT boat, MTB)
+- [ ] Small craft overmanned (PT boat, MTB): better since engineering crew follows the plant's size (2026-10-15: MTB 20 -> 16 against 13, PT boat 31 -> 27 against 17); the rest is gun and deck crews
 - [ ] Barbette weight doesn't match the barbette hitbox depth
 - [ ] Bulbous bow tickbox (optional)
 - [ ] Sizing steps on a lighter ship (seen 2026-10-15, destroyer crunch 1): a design that got lighter came out bigger. Moltke +2.3 % (+5.5 m): on the slightly shorter hull its submerged beam tubes miss their slot once and `FailMid` gives the middle a whole tube length (6.9 m) that then stays. all_forward_flush +1.9 %: a deck secondary misses amidships once (secondary placement, crunch step 3). Both are the sizer's needs-only-grow meeting a step in a placement.
