@@ -127,11 +127,13 @@ public class MapCameraTests
     public void Building_the_grid_allocates_nothing()
     {
         var lines = new MapLines();
+        var ticks = new List<Graticule.BorderTick>();
         var views = new[] { 12_000.0, 2000, 20, 0.1 }.Select(z => new MapView(MapCamera.At(56.7, 5.8, z), W, H)).ToArray();
         foreach (var v in views)
         {
             lines.Begin(W, H);
             Graticule.Build(v, lines);
+            Graticule.BorderTicks(v, ticks, lines);
             Assert.True(lines.Vertices.Length > 0);
         }
         long before = GC.GetAllocatedBytesForCurrentThread();
@@ -140,7 +142,29 @@ public class MapCameraTests
             {
                 lines.Begin(W, H);
                 Graticule.Build(v, lines);
+                Graticule.BorderTicks(v, ticks, lines);
             }
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
+
+    [Fact]
+    public void In_the_world_view_the_grid_gives_way_to_ticks_at_the_edges()
+    {
+        var lines = new MapLines();
+        var ticks = new List<Graticule.BorderTick>();
+        var table = new MapView(MapCamera.At(56.7, 5.8, 20), W, H);
+        var world = new MapView(MapCamera.At(56.7, 5.8, 0.5), W, H);
+        lines.Begin(W, H);
+        Graticule.Build(world, lines);
+        Assert.Equal(0, lines.Vertices.Length);
+        Graticule.BorderTicks(world, ticks, lines);
+        Assert.Contains(ticks, t => t.Parallel && t.Edge is 1 or 3);
+        Assert.Contains(ticks, t => !t.Parallel && t.Edge is 0 or 2);
+        double step = Graticule.Spacing(0.5);
+        Assert.All(ticks, t => Assert.Equal(0, Math.IEEERemainder(t.Value / step, 1), 6));
+        Graticule.BorderTicks(table, ticks, lines);
+        Assert.Empty(ticks);
+        Assert.Equal("56°42'10\"N", Graticule.Format(56.7 + 10 / 3600.0, 1 / 360.0, true));
+        Assert.Equal("5°48'W", Graticule.Format(-5.8, 1 / 60.0, false));
     }
 }

@@ -36,6 +36,7 @@ dotnet run --project src/Fleetwright -- -view=profile                      # the
 dotnet run --project src/Fleetwright -- -lights=roughness:0.5,specular:0   # the ships' light table knobs (ShipLight.cs: roughness scales the looks' materials), for side-by-side captures
 dotnet run --project src/Fleetwright -- -view=ship -viewer=sun:300:30,shade:normal,at:10:0:8 [-outline=0.5]   # the viewer for captures: sun, moon, debug view (lit, albedo, normal, ao, ...), centre and zoom; the plan's ink weight
 dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
+dotnet run --project src/Fleetwright -- -worldview=4                       # the map's table-to-world boundary, m/px at 1080p (Map/WorldView.cs; live in the "where" panel with F2)
 dotnet run --project src/Fleetwright -- -section=2 -designer-ui=secsel:1:2,secmenu  # UI state for screenshots (DesignerScene.ApplyDevUi)
 dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wheel:1160,559:-1;100:type:150  # scripted clicks, wheel, typing, F:drop:PATH, F:drag:X0,Y0:X1,Y1, F:mclick or F:mright:X,Y (SDL clicks the map gets) (window px; Engine.ScriptedInput)
 dotnet run --project src/Fleetwright -c DevRelease -- -frametimes -screenshot=1100 -input=100:pan:900,500:400,350:80   # frame times at exit; F:pan is a real SDL drag (the map's input)
@@ -191,7 +192,9 @@ src/
   Fleetwright/                # the game exe
     Program.cs                #   entry point, command-line parsing
     Map/                      #   the world tab: WorldSession (the app's world and sim thread), MapCamera/MapView
-                              #   (double projection), GlobeRenderer (the sphere per pixel, then MapLines), Graticule,
+                              #   (double projection), WorldView (the one boundary between the planning table
+                              #   and the world: ships' icons or sprites, the grid or its edge ticks, the sea;
+                              #   docs/visuals/sea.md), GlobeRenderer (the sphere per pixel, then MapLines), Graticule,
                               #   LandView (the finest land level, brought inside a cap around the view per frame),
                               #   LandMesh (the coarse levels baked once: tiled fans and a coast mesh), CapRetraction,
                               #   MapScene (input, clock controls, HUD; MapScene.Ships.cs: selection, orders, dev
@@ -325,6 +328,7 @@ docs/battle/plan.md           # the battle module (a deliverable: the whole ship
                               #   what done means, ship counts, the build order from a world of water up, the ships' data
 docs/world/architecture.md    # the world: tiers of time on one clock, the sim thread, commands/snapshot, the scene stack
 docs/missions/plan.md         # missions, the battle module's stand-in for politics and manufacturing (format, objectives, UI, generator)
+docs/visuals/sea.md           # the sea: the table/world boundary (W0 done), then the FFT ocean in the globe's pass
 docs/visuals/ship-lighting.md # the ship sprites lit: relief and normals, materials, the sun and moon, in the one forward pass (L1 done)
 research/                     # research notes, see below
 ```

@@ -37,10 +37,10 @@ public struct ShipDraw
 }
 
 /// <summary>The ships of a snapshot as quads and instanced draws, on the CPU, per frame (docs/battle/plan.md step 2.3):
-/// a ship long enough on screen, and whose art is up, is its sprite (the hull, the turrets at rest, their shadows and
-/// the sun's shadow from the height map, sampled through the mip chain); a ship too small for its mips, or whose art
-/// isn't drawn yet, is a stand-in icon a fixed number of pixels long, along its heading. The two cross-fade across a
-/// few pixels. Draws are one per class and layer (per turret type for the turrets), so a fleet of one class is a
+/// in the world view (<see cref="WorldView"/>) a ship whose art is up is its sprite at its true size, however small
+/// (the hull, the turrets at rest, their shadows and the sun's shadow from the height map, sampled through the mip
+/// chain); on the planning table, or while its art isn't drawn yet, it is a stand-in icon a fixed number of pixels
+/// long, along its heading. All ships cross between the two together, with the rest of the map. Draws are one per class and layer (per turret type for the turrets), so a fleet of one class is a
 /// handful of draws. Nothing here allocates once the arrays have grown to the fleet.
 /// <para>The light (docs/visuals/ship-lighting.md) is one per frame, at the view's centre (sprites show only within a
 /// few km, where the sun's elevation varies by hundredths of a degree): the sun, the real moon, the ambient
@@ -55,9 +55,8 @@ public struct ShipDraw
 /// the shadows go by the heights over the sea's plane, so what's under it casts none.</para></summary>
 public sealed class ShipDrawList
 {
-    /// <summary>The icon's length and width on screen, pixels; and the sprite's length in pixels across which the two
-    /// cross-fade (below the first: icon only; above the second: sprite only).</summary>
-    public const double IconLengthPx = 22, IconWidthPx = 8, FadeFromPx = 16, FadeToPx = 28;
+    /// <summary>The icon's length and width on screen, pixels.</summary>
+    public const double IconLengthPx = 22, IconWidthPx = 8;
 
     /// <summary>Sprites shorter than this on screen get no shadows: too small to see, and the march costs.</summary>
     public const double ShadowFromPx = 90;
@@ -139,9 +138,10 @@ public sealed class ShipDrawList
         int most = ships.Count + (sighted?.Count ?? 0);
         if (placed.Length < most)
             placed = new Placed[Math.Max(most, placed.Length * 2)];
-        Place(view, ships, timeMs, sun, artOf, classOf, hidden, DrawnAs);
+        double world = WorldView.Factor(view);
+        Place(view, world, ships, timeMs, sun, artOf, classOf, hidden, DrawnAs);
         if (sighted != null)
-            Place(view, sighted, timeMs, sun, artOf, classOf, default, default);
+            Place(view, world, sighted, timeMs, sun, artOf, classOf, default, default);
 
         // the sprites, layer by layer, a draw per class (and turret type)
         foreach (int cls in classes)
@@ -202,9 +202,10 @@ public sealed class ShipDrawList
         return ShipLights.Compute(LightTable.Current, up, sun, Moon.Direction(at, t), Moon.Light(at, t), phaseLaw, sunMotion, means);
     }
 
-    /// <summary>Places a view's ships: where each is, how big on screen, sprite or icon, the sun in its frame; how each
-    /// was drawn into <paramref name="drawnAs"/>, if given.</summary>
-    void Place(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, ShipClass?> classOf,
+    /// <summary>Places a view's ships: where each is, how big on screen, sprite or icon (by <paramref name="world"/>,
+    /// the view's <see cref="WorldView.Factor(in MapView)"/>), the sun in its frame; how each was drawn into
+    /// <paramref name="drawnAs"/>, if given.</summary>
+    void Place(in MapView view, double world, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, ShipClass?> classOf,
         ReadOnlySpan<bool> hidden, Span<byte> drawnAs)
     {
         for (int k = 0; k < ships.Count; k++)
@@ -230,7 +231,7 @@ public sealed class ShipDrawList
             var light = Lights.ShadowDir;   // the shadows' light, in the ship's frame
             double sx = Vec3d.Dot(light, f), sy = Vec3d.Dot(light, s), sz = Vec3d.Dot(light, up);
             double horiz = Math.Sqrt(sx * sx + sy * sy);
-            double sprite = art != null && pxPerM >= art.MinPxPerM ? SmoothStep(FadeFromPx, FadeToPx, lengthPx) : 0;
+            double sprite = art != null && pxPerM >= art.MinPxPerM ? world : 0;
             var (sea, fade) = c != null && art != null ? SeaOf(c, art, ships, k, timeMs) : (Vector4.Zero, 1.0);
             placed[placedCount] = new Placed
             {

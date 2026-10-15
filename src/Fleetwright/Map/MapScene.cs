@@ -22,6 +22,9 @@ public sealed unsafe partial class MapScene : IScene
     readonly SunLapse sunLapse = new();
     MapCamera camera, built;   // built: the view the lines and the land's fill were last built for
     (double, double) builtSize;
+    double builtBoundary, builtInset;   // WorldView.BoundaryM and the menu bar's height (target px) the lines were built for
+    readonly List<Graticule.BorderTick> ticks = [];   // the grid at the screen's edge, in the world view
+    readonly Dictionary<(double, double, bool), string> tickLabels = [];   // their labels, kept: a pan makes no garbage
     double width = 1, height = 1;   // the target's size at the last draw, pixels
     bool dragging, clamped, dragPending;
     Vec3d grab;
@@ -87,7 +90,10 @@ public sealed unsafe partial class MapScene : IScene
         var view = View;
         var level = land.LevelFor(view);
         int baked = level == land.Coarse ? 0 : level == land.Medium ? 1 : -1;
-        if (camera.Target != built.Target || camera.MetresPerPixel != built.MetresPerPixel || (width, height) != builtSize)
+        var vp = ImGui.GetMainViewport();
+        double inset = (vp.WorkPos.Y - vp.Pos.Y) * height / Math.Max(vp.Size.Y, 1);   // the top edge's marks go under the menu bar
+        if (camera.Target != built.Target || camera.MetresPerPixel != built.MetresPerPixel || (width, height) != builtSize
+            || WorldView.BoundaryM != builtBoundary || inset != builtInset)
         {
             // the grid and the finest level's land change only with the view: a still map rebuilds nothing, and the
             // baked levels never do
@@ -97,7 +103,8 @@ public sealed unsafe partial class MapScene : IScene
                 land.Build(view, lines);
             else
                 land.Clear();
-            (built, builtSize) = (camera, (width, height));
+            Graticule.BorderTicks(view, ticks, lines, inset);
+            (built, builtSize, builtBoundary, builtInset) = (camera, (width, height), WorldView.BoundaryM, inset);
         }
         probes.Add(probeLines, t);
         var s = world.Current;
@@ -134,6 +141,7 @@ public sealed unsafe partial class MapScene : IScene
         ContactLabels(s);
         WreckLabels();
         ReasonLabels(s);
+        TickLabels();
         probes.Add(probeUiLabels, t);
         t = Probes.Now;
         if (Sdl3GpuEngine.StatsShown)
@@ -172,8 +180,16 @@ public sealed unsafe partial class MapScene : IScene
         ImGui.SetNextWindowBgAlpha(0.6f);
         if (ImGui.Begin("##where", Hud))
         {
-            double across = camera.MetresPerPixel * width;
-            ImGui.Text($"{Band(across)} · {Distance(across)} across · {Scale(camera.MetresPerPixel)} · grid {Graticule.Label(Graticule.Spacing(camera.MetresPerPixel))}");
+            double across = camera.MetresPerPixel * width, wf = WorldView.Factor(view);
+            ImGui.Text($"{Band(across)} · {WorldView.Label(wf)} · {Distance(across)} across · {Scale(camera.MetresPerPixel)} · grid {Graticule.Label(Graticule.Spacing(camera.MetresPerPixel))}{(wf >= 1 ? " at the edges" : "")}");
+            ScaleBar(camera.MetresPerPixel * width / Math.Max(vp.Size.X, 1));
+            if (Sdl3GpuEngine.StatsShown)
+            {
+                float b = (float)WorldView.BoundaryM;
+                ImGui.SetNextItemWidth(160 * UiFonts.Scale);
+                if (ImGui.SliderFloat("world below, m/px at 1080p", ref b, 0.5f, 25f, "%.2f", ImGuiSliderFlags.Logarithmic))
+                    WorldView.BoundaryM = b;
+            }
             var (lat, lon) = Earth.LatLon(camera.Target);
             if (sunLapse.Motion < 0.5)   // the hours would only churn
                 ImGui.Text($"centre {LatLon(lat, lon)}, time-lapse sun, {s.AchievedSpeed / 86_400:0.#} days/s");
@@ -265,6 +281,66 @@ public sealed unsafe partial class MapScene : IScene
         else
             return false;
         return true;
+    }
+
+    /// <summary>A scale bar at the length of a round number near 120 UI pixels, with its length beside it.</summary>
+    static void ScaleBar(double metresPerUiPx)
+    {
+        double want = 120 * UiFonts.Scale * metresPerUiPx, pow = Math.Pow(10, Math.Floor(Math.Log10(want))), nice = pow;
+        foreach (double k in (ReadOnlySpan<double>)[1, 2, 5])
+            if (k * pow <= want)
+                nice = k * pow;
+        float w = (float)(nice / metresPerUiPx), hgt = 6 * UiFonts.Scale;
+        var p = ImGui.GetCursorScreenPos() + new Vector2(0, ImGui.GetTextLineHeight() / 2 - hgt / 2);
+        var dl = ImGui.GetWindowDrawList();
+        uint c = ImGui.GetColorU32(ImGuiCol.Text);
+        dl.AddLine(p, p + new Vector2(0, hgt), c, 1.5f);
+        dl.AddLine(p + new Vector2(0, hgt), p + new Vector2(w, hgt), c, 1.5f);
+        dl.AddLine(p + new Vector2(w, 0), p + new Vector2(w, hgt), c, 1.5f);
+        ImGui.Dummy(new Vector2(w, ImGui.GetTextLineHeight()));
+        ImGui.SameLine();
+        ImGui.Text(Distance(nice));
+    }
+
+    /// <summary>The grid's values at the screen's edge in the world view, beside <see cref="Graticule.BorderTicks"/>'
+    /// marks, faded in with it; a label that would overlap the last one on its edge is left out.</summary>
+    void TickLabels()
+    {
+        if (ticks.Count == 0)
+            return;
+        var vp = ImGui.GetMainViewport();
+        float sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
+        var dl = ImGui.GetBackgroundDrawList();
+        uint col = ImGui.GetColorU32(new Vector4(0.85f, 0.92f, 1f, 0.85f * (float)WorldView.Factor(View)));
+        uint shadow = ImGui.GetColorU32(new Vector4(0, 0, 0, 0.75f * (float)WorldView.Factor(View)));
+        double step = Graticule.Spacing(camera.MetresPerPixel);
+        if (tickLabels.Count > 1024)
+            tickLabels.Clear();
+        float pad = 13 * UiFonts.Scale, lh = ImGui.GetTextLineHeight();
+        Span<float> last = stackalloc float[4];
+        last.Fill(float.MinValue);
+        foreach (var t in ticks)
+        {
+            var key = (t.Value, step, t.Parallel);
+            if (!tickLabels.TryGetValue(key, out var text))
+                tickLabels[key] = text = Graticule.Format(t.Value, step, t.Parallel);
+            var size = ImGui.CalcTextSize(text);
+            float x = vp.Pos.X + (float)(t.X * sx), y = vp.Pos.Y + (float)(t.Y * sy);
+            var at = t.Edge switch
+            {
+                0 => new Vector2(x - size.X / 2, y + pad),
+                1 => new Vector2(x - pad - size.X, y - lh / 2),
+                2 => new Vector2(x - size.X / 2, y - pad - lh),
+                _ => new Vector2(x + pad, y - lh / 2),
+            };
+            bool alongX = t.Edge is 0 or 2;
+            float start = alongX ? at.X : at.Y, end = alongX ? at.X + size.X : at.Y + lh;
+            if (start < last[t.Edge] + 8)
+                continue;
+            last[t.Edge] = end;
+            dl.AddText(at + new Vector2(1, 1), shadow, text);
+            dl.AddText(at, col, text);
+        }
     }
 
     /// <summary>The map's zoom bands by the distance across the view (docs/map-ui/README.md).</summary>

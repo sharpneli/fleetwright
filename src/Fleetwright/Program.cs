@@ -190,6 +190,11 @@ public static unsafe class Program
                 units = Designer.UnitSystem.Imperial;
                 designerFlags = true;
             }
+            else if (arg.StartsWith("-worldview="))   // the map's table-to-world boundary, metres per pixel at 1080p (docs/visuals/sea.md W0)
+            {
+                if (double.TryParse(arg.Substring("-worldview=".Length), System.Globalization.CultureInfo.InvariantCulture, out double m) && m > 0)
+                    Map.WorldView.BoundaryM = m;
+            }
             else if (arg.StartsWith("-uiscale="))   // a factor over the UI scale (the window's height over 1080 px)
             {
                 if (float.TryParse(arg.Substring("-uiscale=".Length), System.Globalization.CultureInfo.InvariantCulture, out float f) && f > 0)

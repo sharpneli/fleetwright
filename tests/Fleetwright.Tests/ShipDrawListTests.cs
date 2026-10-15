@@ -6,8 +6,8 @@ using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Tests;
 
-/// <summary>The ships' draw list on the CPU (docs/battle/plan.md step 2.3): a sprite close in, the stand-in icon when
-/// the ship is too small for its mips or its art isn't up, nothing on the far side; one draw per class and layer; no
+/// <summary>The ships' draw list on the CPU (docs/battle/plan.md step 2.3): a sprite in the world view, the stand-in
+/// icon on the planning table (docs/visuals/sea.md W0) or when its art isn't up, nothing on the far side; one draw per class and layer; no
 /// allocation per frame.</summary>
 public class ShipDrawListTests
 {
@@ -78,12 +78,21 @@ public class ShipDrawListTests
         Assert.Empty(far.Draws.ToArray());
     }
 
+    /// <summary>Metres per pixel on the 900 px tall test view for a world view's reference zoom.</summary>
+    static double At900(double referenceMpp) => referenceMpp * WorldView.ReferenceHeightPx / 900;
+
     [Fact]
-    public void Between_the_two_it_cross_fades()
+    public void Between_the_two_it_cross_fades_at_the_world_views_boundary()
     {
-        // 160 m over 22 px: between FadeFromPx and FadeToPx
-        double mpp = 160 / ((ShipDrawList.FadeFromPx + ShipDrawList.FadeToPx) / 2);
-        Assert.Equal(3, Build(mpp, One(Lat, Lon)).DrawnAs[0]);
+        Assert.Equal(3, Build(At900(WorldView.BoundaryM * (1 + WorldView.FadeRatio) / 2), One(Lat, Lon)).DrawnAs[0]);
+    }
+
+    [Fact]
+    public void On_the_table_a_ship_is_its_icon_however_long_on_screen()
+    {
+        // 160 m over ~21 px: once a sprite by its own length, now the table's icon like every ship
+        Assert.Equal(1, Build(At900(WorldView.BoundaryM * WorldView.FadeRatio * 1.05), One(Lat, Lon)).DrawnAs[0]);
+        Assert.Equal(2, Build(At900(WorldView.BoundaryM * 0.95), One(Lat, Lon)).DrawnAs[0]);
     }
 
     [Fact]
