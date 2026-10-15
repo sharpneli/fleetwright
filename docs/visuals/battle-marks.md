@@ -87,7 +87,7 @@ sees (the snapshot's attitude, parts and fires: an enemy in sight shows the same
 
 Knobs live as named constants at the top of each file, with the physical number they start from beside them.
 
-**M1-M4 done 2026-10-15** (first tuning from captures; M5, the live look, is the user's eye next). Where they live:
+**M1-M4 done 2026-10-15**, tuned from captures; the user approved the live look as it is, so M5 has nothing left to do for now. Where they live:
 `MapLines.Point(x, y, rgba, width)` and `MapLines.Disc`; `MapScene.Shells.cs` (streaks, the gun flash, splashes,
 hits, torpedo tracks); `MapScene.Damage.cs` (scorches, fires, smoke, going down, the magazine); the icon's sea in
 `ShipDrawList.IconSea` and `shipmap.frag`'s icon path. Notes from building it:
