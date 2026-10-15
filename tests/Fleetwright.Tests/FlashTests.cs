@@ -205,6 +205,22 @@ public class FlashTests(ITestOutputHelper output)
         Assert.Equal(4, least);   // 2 and 3 gave way to brighter ones
     }
 
+    /// <summary>The blast's front (F5): its arrival by scaled distance against muzzle_blast_ref.py's <c>arrival_lut</c>
+    /// (which starts at 0.05, ours at the muzzle: ~0.01 apart), slower than sound's near the muzzle, sound's far out.</summary>
+    [Theory]
+    [InlineData(0.5, 0.3576)]
+    [InlineData(1, 0.8256)]
+    [InlineData(5, 4.7503)]
+    [InlineData(20, 19.6851)]
+    [InlineData(39, 38.6536)]
+    public void The_blast_arrives_as_the_reference(double rho, double reference)
+    {
+        double t = BlastRenderer.ArrivalAt(rho);
+        output.WriteLine($"rho {rho}: {t:F4} against {reference:F4}");
+        Assert.Equal(reference, t, 0.03);
+        Assert.True(t < rho);   // faster than sound behind the shock
+    }
+
     [Fact]
     public void A_frame_allocates_nothing()
     {

@@ -634,6 +634,9 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     /// <summary>The muzzle flashes in the world view (docs/visuals/muzzle-flashes.md), drawn last.</summary>
     public FlashRenderer Flashes { get; }
 
+    /// <summary>The muzzle blasts' marks on the water (docs/visuals/muzzle-flashes.md F5), drawn with the wakes'.</summary>
+    public BlastRenderer Blasts { get; }
+
     /// <summary>The sea's clock, s (SeaView.ClockS), set by the scene each frame: the foam churns on it.</summary>
     public double FoamClockS { get; set; }
 
@@ -664,6 +667,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         foamBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_VERTEX, FoamBufferBytes);
         Splashes = new SplashRenderer(device);
         Flashes = new FlashRenderer(device);
+        Blasts = new BlastRenderer(device);
     }
 
     /// <summary>The icon: a hull's plan 128 x 32, bow to the right (+x), a fine bow and a rounded stern.</summary>
@@ -741,6 +745,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Wakes.Update(cmd);
         Splashes.Copy(cmd);
         Flashes.Copy(cmd);
+        Blasts.Copy(cmd);
         var fv = Foam.Vertices;
         foamUploaded = Math.Min(fv.Length, (int)(FoamBufferBytes / FoamVertex.SizeInBytes));
         foamUploaded -= foamUploaded % 6;
@@ -856,6 +861,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
             SDL_DrawGPUPrimitives(pass, (uint)foamUploaded, 1, 0, 0);
         }
         Splashes.DrawFoam(cmd, pass, target, view);
+        Blasts.DrawWake(cmd, pass, target, view);
         if (List.WakeDraws.Length == 0 || uploaded == 0)
             return;
         var sb = quadBuf.Buffer;
@@ -883,6 +889,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Wakes.Dispose();
         Splashes.Dispose();
         Flashes.Dispose();
+        Blasts.Dispose();
         SDL_WaitForGPUIdle(device);
         ReleasePipelines();
         if (wakePipe != null)

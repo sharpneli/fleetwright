@@ -336,6 +336,25 @@ Changed on the way, two departures recorded here:
 Seen: at night the decks near the guns warm, nearby splash columns and foam take the orange; at noon a faint warmth on
 the decks by the turrets. Tests: the thrown light's compression, the lights' gathering and cap.
 
+**F5 (2026-10-15).** `BlastRenderer` and `muzzleblast.vert`/`.frag`: one quad per mount fired into the wake target in
+its pre-pass, on the sea's clock (`ShotBook.SeaClock`, kept 25 s for the scour). The front's arrival is a 16-node table
+integrated once on the CPU (`ArrivalAt`, the shader reads the same nodes). Knobs: `pvis`, `psat`, `frost`, `scour`,
+`scourk`, and `blastat:S` for stills. Test: the arrival against the reference's LUT (within 0.02 of λ'/c₀).
+
+Seen at noon, 1 m/px:
+- at 0.2 s: radial scour streaks off each turret and a frosted disc spreading;
+- at 1 s: the two turrets' discs a heart across the ship's side;
+- at 4 s: the frost gone, the streaked scour fading.
+
+Changed on the way:
+- **The leading edge is gentle** (eased in, taking off at most a quarter of the wind's slope variance). From straight
+  above under a high sun, a calmed ring concentrated the glint into bright white arcs, not the photo's dark line.
+- **A shader bug worth remembering:** `pow(x, 2.0)` of a negative x is undefined in GLSL. Its NaN, times a zero
+  weight, still reached the wake target and shaded white.
+
+Open, for tuning: from above the frost reads as a duller, less glittering patch, not the photo's silvery one. That
+needs the sea's diffuse sky scatter to grow with the slopes' spread (`seaShade`), which it doesn't yet.
+
 ## Decisions (the user, 2026-10-15)
 
 1. **Gun smoke now, drawn by the map** (a logged exception). The smoke system comes later as one effort, since keeping

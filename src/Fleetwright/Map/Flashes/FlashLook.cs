@@ -33,12 +33,23 @@ public static class FlashLook
     public static double Humidity = 0.7, AirC = 15;
 
     /// <summary>Which parts draw, for measuring each's cost: 1 the flashes, 2 their light on the sea, the ships and
-    /// the splashes.</summary>
-    public static int Parts = 3;
+    /// the splashes, 4 the blast on the water.</summary>
+    public static int Parts = 7;
+
+    /// <summary>The blast on the water (muzzle-blast-water-vfx.md §3.2): the overpressure where its mark starts to
+    /// show and where it is full, Pa (2.5 kPa reproduces the Iowa photo's footprint; 1 kPa the dramatic one); the
+    /// frost's fading, s (1.5 in a fresh wind, 4 in a calm); the scour foam's, s, and its reach in scaled distance.</summary>
+    public static double BlastVisPa = 2500, BlastSatPa = 5000, FrostS = 2, ScourS = 7, ScourK = 1;
 
     /// <summary>A dev aid for captures: the shots of the newest 2 s in the book drawn at this age, s, instead of their own
     /// (-1: off), and kept while it is.</summary>
     public static double AtS = -1;
+
+    /// <summary>The same for the blasts on the water, on the sea's clock (-1: off).</summary>
+    public static double BlastAtS = -1;
+
+    /// <summary>Is a capture's still held (either)?</summary>
+    public static bool Still => AtS >= 0 || BlastAtS >= 0;
 
     /// <summary>Off: no world view flashes (the table's marks stay).</summary>
     public static bool On = true;
@@ -60,12 +71,18 @@ public static class FlashLook
             case "air": AirC = v; break;
             case "parts": Parts = (int)v; break;
             case "frames": FloorFrames = Math.Max(v, 0); break;
+            case "pvis": BlastVisPa = Math.Max(v, 1); break;
+            case "psat": BlastSatPa = Math.Max(v, BlastVisPa * 1.01); break;
+            case "frost": FrostS = Math.Max(v, 0.1); break;
+            case "scour": ScourS = Math.Max(v, 0.1); break;
+            case "scourk": ScourK = Math.Max(v, 0); break;
             case "at": AtS = v; break;
+            case "blastat": BlastAtS = v; break;
             case "on": On = v != 0; break;
             default: return false;
         }
         return true;
     }
 
-    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, frames, parts (1 flashes, 2 lights), at (a still at that age, s), on";
+    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, frames, pvis, psat, frost, scour, scourk, parts (1 flashes, 2 lights, 4 blast), at (a still at that age, s), blastat (the blast's), on";
 }

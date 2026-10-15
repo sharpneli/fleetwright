@@ -33,13 +33,20 @@ public sealed class ShotBook
         public float FlashLengthM, SecondaryS, Scatter;
         /// <summary>The shot's moment on the flash's clock, s (its start offset included).</summary>
         public double FlashT0;
+        /// <summary>The blast's length λ_b, m (the mount's), and the barrel tips' height over the sea, m.</summary>
+        public float BlastLengthM, HeightM;
+        /// <summary>The shot's moment on the sea's clock, s (the blast's frost and scour), and their strength (fainter
+        /// above the sea's cap, where more lie on the water at once).</summary>
+        public double SeaT0;
+        public float SeaStrength;
         /// <summary>Whether its flash shows: under compression a salvo keeps it with <see cref="Effects.KeepShare"/>, by a
         /// hash of the salvo, so a salvo flashes whole or not at all; the selected ship's always do.</summary>
         public bool Shows;
     }
 
-    /// <summary>How long a shot is kept on the flash's clock, s (its flash is over within ~2 s).</summary>
-    public const double KeepS = 4;
+    /// <summary>How long a shot is kept: on the flash's clock, s (its flash is over within ~2 s), and on the sea's (its
+    /// scour foam, ~3 of its lives).</summary>
+    public const double KeepS = 4, SeaKeepS = 25;
 
     readonly Entry[] ring;
     int head, count;
@@ -49,8 +56,9 @@ public sealed class ShotBook
 
     public ShotBook(int capacity = 8192) => ring = new Entry[capacity];
 
-    /// <summary>The flash's clock, s.</summary>
+    /// <summary>The flash's clock (the effects') and the sea's, s.</summary>
     public double FlashClock { get; private set; }
+    public double SeaClock { get; private set; }
 
     public int Count => count;
 
@@ -67,9 +75,11 @@ public sealed class ShotBook
     /// <paramref name="speed"/> (0 paused), the snapshot's new shots taken (newest first in it), the gone let go.</summary>
     public void Update(ShotsView v, long drawMs, double speed, double dtS, Func<int, ShipClass?> classOf, int selected = -1)
     {
-        double rate = Effects.Rate(speed);
+        double rate = Effects.Rate(speed), seaRate = Effects.SeaRate(speed);
         FlashClock += dtS * rate;
-        double ratio = speed > 0 ? rate / speed : 1;
+        SeaClock += dtS * seaRate;
+        double ratio = speed > 0 ? rate / speed : 1, seaRatio = speed > 0 ? seaRate / speed : 1;
+        double seaStrength = speed > 0 ? Effects.SeaStrength(speed) : 1;
         double keep = speed > 0 ? Effects.KeepShare(speed) : 1;
 
         int skipAt = atLast;
@@ -114,12 +124,14 @@ public sealed class ShotBook
                 Scatter = (float)scatter,
                 FlashT0 = FlashClock - ageS * ratio + FlashLook.OffsetS * U(h, 2),
                 Shows = Hash((uint)v.Salvo[i] ^ 0x5bd1e995u) / 4294967296.0 < keep || v.Shooter[i] == selected,
+                BlastLengthM = (float)gun.BlastLengthM, HeightM = (float)(v.Muzzle[i].Length - Earth.Radius),
+                SeaT0 = SeaClock - ageS * seaRatio, SeaStrength = (float)seaStrength,
             };
             head = (head + 1) % ring.Length;
             count = Math.Min(count + 1, ring.Length);
         }
 
-        while (count > 0 && FlashClock - this[0].FlashT0 > KeepS && FlashLook.AtS < 0)
+        while (count > 0 && FlashClock - this[0].FlashT0 > KeepS && SeaClock - this[0].SeaT0 > SeaKeepS && !FlashLook.Still)
             count--;
     }
 
