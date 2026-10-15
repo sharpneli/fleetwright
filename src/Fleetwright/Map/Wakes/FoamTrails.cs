@@ -62,12 +62,18 @@ public sealed class FoamTrails
         double mpp = view.MetresPerPixel, B = trail.Beam, wash = trail.Wash;
         double w0 = W0Share * B * Math.Sqrt(wash);
 
-        // the points, thinned to a few pixels apart, the head last; a point a beam behind the head for the ramp
+        // the points, thinned to a few pixels apart, none within a beam of the head; then a point a beam behind the
+        // head, where the ramp-in ends, and the head. The ramp's point is always there: when a fresh point had just
+        // been laid at the stern, leaving it out stretched the last segment to the point before (~10 s back) and the
+        // foam by the ship faded out for a moment every 10 s of game time (the user's flicker, 2026-10-15).
         int n = 0;
+        double rampS = head.S - B;
         Keep(ref n, trail[0]);
         for (int i = 1; i < trail.Count; i++)
-            if (Earth.Distance(trail[i].P, kept[n - 1].P) >= MinPx * mpp)
+            if (trail[i].S < rampS && Earth.Distance(trail[i].P, kept[n - 1].P) >= MinPx * mpp)
                 Keep(ref n, trail[i]);
+        if (kept[n - 1].S >= rampS && n > 1)
+            n--;   // the oldest is past the ramp's point only on a trail younger than a beam
         double toHead = head.S - kept[n - 1].S;
         if (toHead > B)
         {
@@ -76,11 +82,9 @@ public sealed class FoamTrails
             Keep(ref n, new TrailPoint
             {
                 P = last.P + (head.P - last.P) * t, Ms = last.Ms + (long)((head.Ms - last.Ms) * t),
-                Speed = (float)(last.Speed + (head.Speed - last.Speed) * t), S = head.S - B,
+                Speed = (float)(last.Speed + (head.Speed - last.Speed) * t), S = rampS,
             });
         }
-        else if (n > 1 && toHead < MinPx * mpp)
-            n--;   // the newest too near the head: the head takes its place
         Keep(ref n, head);
         if (n < 2)
             return;

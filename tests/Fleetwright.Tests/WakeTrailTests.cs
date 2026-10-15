@@ -70,4 +70,21 @@ public class WakeTrailTests
             most = Math.Max(most, v.Intensity);
         Assert.InRange(most, 0.7, 1.3);   // white near the ship (1.0 at its peak)
     }
+
+    [Fact]
+    public void TheFoamByTheShipHoldsWhenAPointIsLaidAtTheStern()
+    {
+        // 60 s at 10 m/s: the trail's newest point (60 s) is where the stern is now, as it is every 10 s of game time
+        var view = new MapView(MapCamera.At(56.5, 4.01, 1), 1920, 1080);
+        var (t, _, _) = Steam(10, 0, 60);
+        var head = t.Newest;   // the stern now, a point just laid there
+        var foam = new FoamTrails();
+        foam.Add(view, t, head, 60_000, 1);
+        // the ramp-in ends a beam behind the stern, at full foam: no segment stretched back to the point before
+        float atRamp = 0;
+        foreach (var v in foam.Vertices)
+            if (Math.Abs(v.Lane.X - (head.S - t.Beam)) < 0.5)
+                atRamp = Math.Max(atRamp, v.Intensity);
+        Assert.InRange(atRamp, 0.7, 1.3);
+    }
 }

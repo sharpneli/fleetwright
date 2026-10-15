@@ -273,6 +273,17 @@ Seen: up close, ragged speckled edges and textured white near the ship, breaking
 0.8 m/px; an even thin lane at 2 m/px. Cost: four lanes at 0.25 m/px, `-gputime` p50 1.09-1.16 ms with and without
 the foam (one run at 3.1 ms, the GPU's clocks); the lanes are a small share of the screen.
 
+**The third round (2026-10-15).**
+- *Too dense:* the bubbles' share is down (octaves 0.30 / 0.30 / 0.22 / 0.12, was 0.20 / 0.25 / 0.30 / 0.25).
+- *A section at the stern flickered on a fixed rhythm* (off for a frame under time compression). Every 10 s of game
+  time the trail lays a point at the stern. For the next beam's travel the ribbon left out its ramp-in point, so the last
+  segment stretched to the point before (~10 s back) and the foam by the ship faded out. The ramp's point is now always
+  there, and points within a beam of the head are skipped (`WakeTrailTests.TheFoamByTheShipHoldsWhenAPointIsLaidAtTheStern`,
+  which fails on the old code).
+- *A weird pulsing without it.* The churn blended two time slices of unrelated noise linearly: midway that halves the
+  variance, and through the sharp threshold the foam thinned and filled at each slice's rhythm. It now blends by cos
+  and sin of the slice's phase (their squares sum to 1, so the contrast holds).
+
 - The knobs (`-sea=wake:1,foam:1`) set by eye against the research's photos, at Fr_L 0.25, 0.35 and 0.55.
 - A debug view of the wake target: `-sea=debug:3` shows the slopes, `debug:4` the foam.
 - `sea.md`'s "Later", CLAUDE.md's run lines, and this file, with what was done and measured.
