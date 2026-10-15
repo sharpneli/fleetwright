@@ -37,9 +37,8 @@ public sealed partial class MapScene
     const double ColumnPerM = 180, ColumnPx = 3.2, FoamPx = 7;
     // a hit: the flash, its sparks and the smoke after it
     const double HitFlashS = 1.2, HitPx = 7, SparkS = 0.7, SparkPx = 16, HitSmokeS = 6;
-    // a torpedo: its track lasts this long on the water and surfaces this far behind it (the bubbles rise from its
-    // depth: lookouts aimed ahead of the track); its hit's column, px, and how long it stands
-    const double TrackS = 90, TrackLagS = 5, TorpedoColumnPx = 11, TorpedoColumnS = 9;
+    // a torpedo's hit: its column, px, and how long it stands (the track itself is Torpedoes.TorpedoTrack's)
+    const double TorpedoColumnPx = 11, TorpedoColumnS = 9;
     // a pop's least time on the screen, in real seconds, whatever the clock's rate
     const double PopFloorS = 0.2;
     const double RefCalibreMm = 305;
@@ -234,28 +233,31 @@ public sealed partial class MapScene
     /// <summary>The torpedoes seen, kept past their runs so their tracks fade where they lie.</summary>
     readonly Torpedoes.TorpedoBook torpedoBook = new();
 
-    /// <summary>Each torpedo's track, running or run: a thin white line on the water from where its bubbles surface
-    /// (<see cref="TrackLagS"/> behind it) back, fading with age over <see cref="TrackS"/>; a faint dot at the torpedo
-    /// itself while it runs. A hit: a tall white column with a warm flash at its foot, and its ring.</summary>
+    /// <summary>Each torpedo's track, running or run: a thin white line on the water as its bubbles surface and fade
+    /// (<see cref="Torpedoes.TorpedoTrack"/>, the world view's model too: the head well behind the torpedo); a faint dot at
+    /// the torpedo itself while it runs. A hit: a tall white column with a warm flash at its foot, and its ring.</summary>
     void DrawTorpedoes(in MapView view, Snapshot s)
     {
         long now = world.DrawMs;
-        torpedoBook.Update(s.Torpedoes, s.TorpedoEnds, now, TrackS);
+        double life = Torpedoes.TorpedoTrack.LifeS;
+        torpedoBook.Update(s.Torpedoes, s.TorpedoEnds, now, Torpedoes.TorpedoTrack.KeepS);
         for (int i = 0; i < torpedoBook.Count; i++)
         {
             ref readonly var t = ref torpedoBook[i];
             double age = (now - t.LaunchMs) / 1000.0;   // since launch
-            if (age < 0 || age > t.EndS + TrackS)
+            if (age < 0 || age > t.EndS + life)
                 continue;
-            double end = Math.Min(age, t.EndS), start = Math.Max(0, age - TrackS);   // the run's stretch still on the water, s
+            double end = Math.Min(age, t.EndS), start = Math.Max(0, age - life);   // the run's stretch still on the water, s
+            bool dives = t.Class >= 0 && t.Launcher >= 0 && classOf(t.Class) is { } tc && t.Launcher < tc.Launchers.Length && tc.Launchers[t.Launcher].Kind == LauncherKind.Mount;
             float dim = selected < 0 || t.Shooter == selected ? 1f : 0.5f;
             const int N = 10;
             for (int j = 0; j <= N; j++)
             {
                 double ts = start + (end - start) * j / N;
-                double fade = 1 - (age - ts) / TrackS, lag = Math.Clamp((age - ts) / TrackLagS, 0, 1);
+                double since = age - ts, fade = 1 - since / life;
+                double strength = Torpedoes.TorpedoTrack.Strength(since, Torpedoes.TorpedoTrack.Depth(t.SpeedMs * ts, t.DepthM, dives));
                 if (view.Project(t.At(ts), out double x, out double y))
-                    overlay.Point(x, y, TrackWhite with { W = (float)(TrackWhite.W * dim * fade * fade * lag) }, (float)(0.8 + 0.9 * fade));
+                    overlay.Point(x, y, TrackWhite with { W = (float)(TrackWhite.W * dim * strength) }, (float)(0.8 + 0.9 * fade));
                 else
                     overlay.End();
             }
@@ -265,7 +267,8 @@ public sealed partial class MapScene
         }
 
         var e = s.TorpedoEnds;
-        double life = world.Settings.SplashLifeMs / 1000.0, colS = Floor(s, TorpedoColumnS), flashS = Floor(s, HitFlashS), sparkS = Floor(s, SparkS);
+        life = world.Settings.SplashLifeMs / 1000.0;
+        double colS = Floor(s, TorpedoColumnS), flashS = Floor(s, HitFlashS), sparkS = Floor(s, SparkS);
         for (int i = 0; i < e.Count; i++)
         {
             double age = (now - e.Ms[i]) / 1000.0;

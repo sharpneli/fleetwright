@@ -133,6 +133,12 @@ run ended (`TorpedoEnd`: hit, run out, failed) and the charge. No hash or result
 TorpedoBook` keeps each run by its serial until its track has faded, and the table's marks read it. Tests:
 `TorpedoTests.The_snapshot_tells_each_torpedo_apart_and_how_its_run_ended`, `TorpedoBookTests`.
 
+**R1 (2026-10-15).** `Map/Torpedoes/TorpedoTrack`: the surfacing (smoothstep from d / 0.8 to d / 0.25 m/s after the
+torpedo passed), the strength (that × the square of the life left, the table's old fade), the width (1 m + 0.25 d,
+spreading 0.5 m²/s), a mount's dive (to twice its depth a third of the way along 150 m), the head's lag and the keep.
+The table's line reads it (its 5 s lag ramp is now the surfacing). `TorpedoLook` and `-tracks=` (fast, slow, life,
+width, spread, dive, on). Tests: `TorpedoTrackTests`.
+
 ## Decisions (the user, 2026-10-15)
 
 1. **The hit's column now**, built on the shell splash's column (`splash.glsl`) or closely after it: a torpedo kind of

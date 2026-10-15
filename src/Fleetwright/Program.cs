@@ -151,6 +151,12 @@ public static unsafe class Program
                     if (!Map.Magazines.MagazineLook.Set(kv))
                         Console.Error.WriteLine($"Bad magazine knob: {kv} (want {Map.Magazines.MagazineLook.Knobs})");
             }
+            else if (arg.StartsWith("-tracks="))   // the world view's torpedoes' knobs (docs/visuals/torpedoes.md): -tracks=fast:0.8,life:90
+            {
+                foreach (var kv in arg.Substring("-tracks=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!Map.Torpedoes.TorpedoLook.Set(kv))
+                        Console.Error.WriteLine($"Bad torpedo knob: {kv} (want {Map.Torpedoes.TorpedoLook.Knobs})");
+            }
             else if (arg == "-paused")   // the world starts paused
             {
                 startPaused = true;
