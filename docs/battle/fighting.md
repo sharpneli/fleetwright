@@ -1066,6 +1066,13 @@ numbers before and after against the anchors. The list, by link, with where the 
   - the hull girder (broken backs).
 - **Magazines** (`07-magazine-explosions.md`): the venting race, the flash chain by doors, propellant by navy,
   flooding a magazine as an order, the hull broken at the magazine.
+  - **Flash discipline as a choice** (user, 2026-10-15: "something wrong with our bloody ships today"): hoist hatches and
+    flash doors propped open, charges stacked in the handling rooms, for a faster rate of fire at the price of a flash
+    reaching the magazine far more often (the battlecruisers at Jutland). A doctrine or order, its rate and its risk
+    both felt.
+  - **Medium HE cooking off a battleship's magazine stays rare, not never** (user, 2026-10-15): about 1.5 % of ships
+    under thirty 6" HE hits (Malaya's 6" battery fire at Jutland came close). Damage control and the better damage model
+    refine it, flash discipline above moves it.
 - **Fire:** spread on the cell graph and the vents, fire load by era, cook-off timers, fires lighting the ship at night.
 - **Crew:** casualties by space, crew as the damage-control resource, the command node (a bridge hit delays orders).
 - **Night:** searchlights, star shell, gun flashes and fires as light for the sighting model.

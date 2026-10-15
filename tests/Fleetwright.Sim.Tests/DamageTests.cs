@@ -69,8 +69,8 @@ public class DamageTests(ITestOutputHelper output)
     {
         var c = Class("super_dreadnought");
         var r = Hits("super_dreadnought", "tiger_1914", 1, 8_000, 1500, 30, settleS: 1800);
-        // and stays afloat (fighting.md 4.3b), but for the rare magazine a fire cooks off: about 1.5 % of them over 200
-        // ships (2026-10-15), so a few in 50 is chance
+        // and stays afloat (fighting.md 4.3b), but for the rare magazine a fire cooks off, rare by design (user,
+        // 2026-10-15): about 1.5 % of them over 200 ships, so a few in 50 is chance
         Assert.InRange((double)r.Lost / r.Ships, 0, 0.04);
         Assert.InRange(r.SpeedShare / r.Ships, 0.85, 1);
         Assert.InRange(r.MainWorking / r.MainMounts, 0.85, 1);
