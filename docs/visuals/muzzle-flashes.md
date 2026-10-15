@@ -56,7 +56,7 @@ then each is a flagged placeholder in `DesignerPlaceholders.cs`.
 | Input | Unit | Placeholder |
 |---|---|---|
 | Charge mass m | kg | `4000·d³·(L_cal/50)` (research §2.1; howitzers and mortars would carry 0.2-0.5× and give their own) |
-| Propellant family, or its parameters below | — | by navy and year: double-base cordite for every navy; single-base for the USN; brown powder for guns designed before ~1893 (by the look's era) |
+| Propellant family, or its parameters below | — | by navy and era (designs carry an era, not a year): brown powder for a Victorian gun under 36 calibres (the brown-powder years' short guns); single-base for the USN, France (poudre B) and Russia (pyroxylin); diglycol for Germany from the treaty years; triple-base in the Cold War; double-base cordite otherwise |
 | Flash-reducer salt fraction (K₂SO₄, KNO₃) | kg/kg | 0 (they came between the wars) |
 | Black-powder igniter fraction | kg/kg | 0.01 bag guns, 0.003 cased |
 | Wear-reducer fraction (TiO₂, wax, talc) | kg/kg | 0 |
@@ -84,7 +84,7 @@ The reference, double-base cordite unless named, 1% igniter:
 
 | Mount | Charge kg | Fireball m | t_s | t_e | x_M m | P_sec | Smoke A m² |
 |---|---|---|---|---|---|---|---|
-| 4"/45 single | 4 | 9.5 | 87 ms | 16 ms | 2.3 | 0.98 | 110 |
+| 4"/45 single (cased, 0.3% igniter) | 4 | 9.5 | 87 ms | 16 ms | 2.3 | 0.98 | 45 |
 | 6"/45 single | 13 | 14 | 130 ms | 23 ms | 3.4 | 0.99 | 370 |
 | 28 cm/50 twin | 181 | 35 | 315 ms | 47 ms | 6.3 | 0.99 | 5,300 |
 | 12"/45 twin | 204 | 36 | 328 ms | 46 ms | 6.7 | 0.99 | 6,000 |
@@ -273,6 +273,41 @@ that state, so the smoke system can feed them, take their totals, or leave them 
   second moment; nothing allocated a frame.
 - **F7. Tuning by eye** against period photos and night footage (the rise first: research §5.3 calls it the most
   sensitive knob), and the cost in a Jutland-sized exchange at 1x and 60x (`-gputime`, DevRelease `-frametimes`).
+
+### Done
+
+**F0 (2026-10-15).** `ShellSystem.Shot`, written per mount by the dev's fire and by `GunnerySystem.Fire`, kept in a ring
+(`ShotCapacity`) and read as `Snapshot.Shots` (`ShotsView`) for `SplashLifeMs`. Tests:
+`ShellSystemTests.A_salvo_records_each_mount_that_fired`, and the gunnery path in
+`GunneryTests.Turrets_train_onto_the_target_and_only_those_that_bear_fire`.
+
+**F1 (2026-10-15).** `PropellantRow`, `ChargeRow` and `MuzzleDevice` (Rows.cs), the six families (`Propellants`),
+`DesignerPlaceholders.Charge` and `ShipClass.Charges` (one per turret type), and `Sim.Combat.MuzzleFlash` (the port of
+`derive()`). The designs carry an era, not a year, so "before ~1893" became a Victorian gun under 36 calibres; France
+and Russia took single-base beside the USN (poudre B, pyroxylin), Germany diglycol from the treaty years. Tests
+(`MuzzleFlashTests`): the reference's numbers to 0.1% for a 16"/50 SPD, a 12"/45 twin, a brown-powder 12"/35 twin, a
+cased 4" and a salted howitzer; the charges by navy and era.
+
+**F2 (2026-10-15).** `Map/Flashes/`:
+- `ShotBook`: the shots seen, the flash's clock (the splashes' column clock), each shot's own draw decided once;
+- `FlashEmitters`: the research's parts per shot and age, averaged over the frame;
+- `FlashPhotometry`: blackbody luminance and colour, a lit white deck's luminance by the sun's and moon's elevations;
+- `FlashRenderer`: the instances (all physics on the CPU, the shader only splats) and one screen-blended draw, last
+  in the ships' layer;
+- `FlashLook`: the knobs, `-flash=` (gain, halo, haloscale, knee, offset, scatter, rh, air, parts, at, on).
+
+The shaders `muzzleflash.vert`/`.frag`. The turret type's row gained `TipM` (Shipgen's `Geometry.BarrelTip`, one
+function for the drawn barrels and the flash), and the pipeline builder a screen blend. Tests (`FlashTests`): the
+photometry against the research's table, the halo's closed form against a numeric integral, a frame's average keeping
+a 15 ms flash, the book taking each mount once, nothing allocated a frame.
+
+Seen (captures with `-engage` and `-flash=at:0.12`, a dev still at that age of the newest salvo):
+- at noon, 0.5 m/px: ragged orange fireballs with white-hot middles, ~40 m, off the trained turrets' muzzles;
+- at dusk: whiter, with deep orange rims;
+- at night: white-hot blocks, the 6" casemates' flashes merged amidships;
+- at 4 m/px: a small warm point by day, a glowing star by night (the halo).
+
+The dev's `-fire` leaves the turrets at rest, so its flashes stand off empty barrels; captures use `-engage`.
 
 ## Decisions (the user, 2026-10-15)
 

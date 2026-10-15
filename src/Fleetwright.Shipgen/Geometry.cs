@@ -305,6 +305,11 @@ public static class Geometry
 
     public static double BarrelShown(TurretType t) => t.BarrelLen * (BarrelShownK.TryGetValue(t.Shape, out var k) ? k : 1.0);
 
+    /// <summary>How far ahead of the mount's pivot its muzzles are, as drawn (the barrels' polygons' far end): where a
+    /// gun's flash starts (docs/visuals/muzzle-flashes.md). 0 for torpedo mounts.</summary>
+    public static double BarrelTip(TurretType t) =>
+        BarrelRoot.TryGetValue(t.Shape, out var root) ? root * t.R + BarrelShown(t) : 0;
+
     // turret_shapes is a pure function of these values; each thread memoises its own (no shared mutable state)
     [ThreadStatic] static Dictionary<(string, double, long, double, double, double), (TurretShapes Shapes, double Reach, double Inscribed)>? shapeCache;
 
@@ -364,7 +369,7 @@ public static class Geometry
             for (long i = 0; i < n; i++)
             {
                 double y = (i - (n - 1) / 2.0) * sp;
-                double xe = x0 + shown;
+                double xe = x0 + shown;   // BarrelTip
                 res.Add([new(x0, y - bw * 0.62), new(xe, y - bw / 2), new(xe, y + bw / 2), new(x0, y + bw * 0.62)]);
             }
             return res;

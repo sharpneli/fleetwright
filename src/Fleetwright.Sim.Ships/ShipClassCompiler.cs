@@ -710,7 +710,7 @@ public static class ShipClassCompiler
                 _ => throw new ShipCompileException($"unknown turret shape \"{t.Shape}\""),
             },
             R = t.R, Barrels = checked((int)t.Barrels), BarrelLen = t.BarrelLen, BarrelW = t.BarrelW, Spacing = t.Spacing, CalibreMm = t.CalibreMm,
-            CalibreLength = Or(t.CalibreLength),
+            CalibreLength = Or(t.CalibreLength), TipM = Geometry.BarrelTip(t),
         };
 
         static HydrostaticsRow HydrostaticsOf(Shipgen.Hydrostatics h) => new()

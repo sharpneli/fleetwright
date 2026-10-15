@@ -138,6 +138,12 @@ public static unsafe class Program
                     if (!Map.Splashes.SplashLook.Set(kv))
                         Console.Error.WriteLine($"Bad splash knob: {kv} (want {Map.Splashes.SplashLook.Knobs})");
             }
+            else if (arg.StartsWith("-flash="))   // the world view's muzzle flashes' knobs (docs/visuals/muzzle-flashes.md): -flash=gain:2
+            {
+                foreach (var kv in arg.Substring("-flash=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!Map.Flashes.FlashLook.Set(kv))
+                        Console.Error.WriteLine($"Bad flash knob: {kv} (want {Map.Flashes.FlashLook.Knobs})");
+            }
             else if (arg == "-paused")   // the world starts paused
             {
                 startPaused = true;

@@ -123,6 +123,9 @@ public readonly record struct TurretTypeRow
     public double Spacing { get; init; }
     public double CalibreMm { get; init; }
     public double CalibreLength { get; init; }
+    /// <summary>How far ahead of the pivot the muzzles are, m, as drawn (Shipgen's Geometry.BarrelTip): where the
+    /// flash starts.</summary>
+    public double TipM { get; init; }
 }
 
 public readonly record struct BarbetteRow(int Component, int Mount, double X, double Y, double R);

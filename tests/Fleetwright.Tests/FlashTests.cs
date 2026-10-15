@@ -1,0 +1,139 @@
+using Fleetwright.Map.Flashes;
+using Fleetwright.Shipgen;
+using Fleetwright.Sim;
+using Fleetwright.Sim.Combat;
+using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
+using Xunit.Abstractions;
+
+namespace Fleetwright.Tests;
+
+/// <summary>The world view's muzzle flashes (docs/visuals/muzzle-flashes.md F2): the photometry against the research's
+/// table, the halo's closed-form integral, the parts' frame average keeping a short flash's energy, and the book taking
+/// each mount fired once, deciding each shot's own draw once, and allocating nothing a frame.</summary>
+public class FlashTests(ITestOutputHelper output)
+{
+    static readonly ShipClass Dreadnought = ShipClassCompiler.Compile(ShipDesign.Build(Design.Load(Paths.Shipgen("designs", "dreadnought.json"))));
+
+    [Fact]
+    public void A_blackbody_is_as_bright_as_the_research_table_and_redder_as_it_cools()
+    {
+        Assert.Equal(141, FlashPhotometry.Luminance(1200), 1);
+        Assert.Equal(1.18e5, FlashPhotometry.Luminance(1800), 0);
+        double l1700 = FlashPhotometry.Luminance(1700);
+        Assert.InRange(l1700, 2.15e4, 1.18e5);
+        Assert.True(FlashPhotometry.Luminance(900) < 2.73);
+        Assert.True(FlashPhotometry.Chroma(1200).Y < FlashPhotometry.Chroma(2000).Y);
+        Assert.Equal(1, FlashPhotometry.Lum(FlashPhotometry.UnitLuminance(FlashPhotometry.Chroma(1800))), 4);
+    }
+
+    [Fact]
+    public void Noon_is_a_hundred_million_times_brighter_than_a_starlit_night()
+    {
+        double noon = FlashPhotometry.Illuminance(Math.Sin(55 * Math.PI / 180), 0, 0);
+        double dusk = FlashPhotometry.Illuminance(Math.Sin(-4 * Math.PI / 180), 0, 0);
+        double night = FlashPhotometry.Illuminance(-0.5, 0, 0);
+        double moon = FlashPhotometry.Illuminance(-0.5, 1, 1);
+        output.WriteLine($"noon {noon:F0} lx, dusk {dusk:F2}, starlight {night:F4}, full moon overhead {moon:F3}");
+        Assert.InRange(noon, 80_000, 110_000);
+        Assert.InRange(night, 1e-3, 2e-3);
+        Assert.InRange(moon, 0.25, 0.26);
+        Assert.True(noon > dusk && dusk > moon && moon > night);
+    }
+
+    /// <summary>The halo's source: x/(1 + x/knee) integrated over a Gaussian, against a numeric integral.</summary>
+    [Theory]
+    [InlineData(0.01)]
+    [InlineData(3)]
+    [InlineData(300)]
+    [InlineData(1e6)]
+    public void The_compressed_integral_is_closed_form(double q)
+    {
+        double sa = 2, sb = 1, knee = 6, sum = 0, h = 0.02;
+        for (double x = -12; x <= 12; x += h)
+            for (double y = -6; y <= 6; y += h)
+            {
+                double v = q * Math.Exp(-0.5 * (x * x / (sa * sa) + y * y / (sb * sb))) / (2 * Math.PI * sa * sb);
+                sum += v / (1 + v / knee) * h * h;
+            }
+        double closed = FlashRenderer.Compressed(q, sa * sb, knee);
+        output.WriteLine($"q {q}: closed {closed:G5}, numeric {sum:G5}");
+        Assert.Equal(sum, closed, sum * 1e-3);
+        Assert.True(closed <= q * (1 + 1e-9));
+    }
+
+    static ShotsView Shots(params (long Ms, int Mount)[] oldestFirst)
+    {
+        var v = new ShotsView();
+        v.EnsureCapacity(oldestFirst.Length);
+        var at = Earth.Position(56.5, 4.0);
+        for (int i = 0; i < oldestFirst.Length; i++)
+        {
+            var (ms, mount) = oldestFirst[oldestFirst.Length - 1 - i];
+            (v.Ms[i], v.Shooter[i], v.Class[i], v.Mount[i], v.Salvo[i], v.Barrels[i]) = (ms, 1, 0, mount, (int)(ms / 1000), 2);
+            (v.Muzzle[i], v.Forward[i], v.ElevationDeg[i]) = (at, Earth.Forward(at, 90), 10);
+        }
+        v.Count = oldestFirst.Length;
+        return v;
+    }
+
+    static ShipClass? ClassOf(int id) => id == 0 ? Dreadnought : null;
+
+    [Fact]
+    public void Each_mount_fired_is_taken_once_with_its_own_draw()
+    {
+        var book = new ShotBook();
+        book.Update(Shots((1000, 0), (1000, 1), (2000, 0)), 2000, 1, 0.016, ClassOf);
+        Assert.Equal(3, book.Count);
+        book.Update(Shots((1000, 0), (1000, 1), (2000, 0), (2000, 1), (3000, 2)), 3000, 1, 0.016, ClassOf);
+        Assert.Equal(5, book.Count);
+        book.Update(Shots((2000, 0), (2000, 1), (3000, 2)), 3000, 1, 0.016, ClassOf);
+        Assert.Equal(5, book.Count);
+
+        var gun = MuzzleFlash.Of(Dreadnought, 0);
+        ref readonly var e = ref book[0];
+        output.WriteLine($"a 12\" twin: λ_f {e.FlashLengthM:F1} m, t_s {e.SecondaryS * 1000:F0} ms, x_M {e.MachDiskM:F1} m, scatter {e.Scatter:F2}");
+        Assert.Equal(gun.MachDiskM, e.MachDiskM, 3);
+        Assert.InRange(e.SecondaryS, 0.2, 0.5);
+        // the tip ahead of the mount's axis by the barrels' reach, on the bore
+        double tip = Earth.Distance(book[0].Tip, Earth.Position(56.5, 4.0));
+        Assert.Equal(Dreadnought.TurretTypes[Dreadnought.Mounts[0].Type].TipM, tip, 0.05);
+        // shots of another moment draw their own scatter
+        Assert.NotEqual(book[0].Scatter, book[2].Scatter);
+        book.Clear();
+        Assert.Equal(0, book.Count);
+    }
+
+    /// <summary>A flash shorter than a frame: the averaged parts carry its intensity's integral over the frame.</summary>
+    [Fact]
+    public void A_frame_average_keeps_a_short_flash()
+    {
+        var book = new ShotBook();
+        book.Update(Shots((1000, 5)), 1000, 1, 0, ClassOf);   // a 3" mount: a 15 ms primary
+        var e = book[0];
+        Assert.True(e.EmptyS < 1 / 60.0);
+        double dt = 1 / 30.0, t = dt;   // the frame [0, dt] holds the whole primary
+        FlashEmitters.Averaged(e, t, dt, out var core, out _, out _);
+        double sum = 0, h = 1e-5;
+        for (double x = 0; x < dt; x += h)
+        {
+            FlashEmitters.At(e, x, out var c, out _, out _);
+            sum += c.Intensity * h;
+        }
+        output.WriteLine($"core: averaged {core.Intensity:G4} cd against the frame's mean {sum / dt:G4}");
+        Assert.True(core.Intensity > 0);
+        Assert.InRange(core.Intensity, 0.5 * sum / dt, 1.5 * sum / dt);
+    }
+
+    [Fact]
+    public void A_frame_allocates_nothing()
+    {
+        var book = new ShotBook();
+        var v = Shots((1000, 0), (1000, 1), (2000, 2));
+        book.Update(v, 2000, 1, 0.016, ClassOf);
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int f = 0; f < 100; f++)
+            book.Update(v, 2000 + f * 16, 1, 0.016, ClassOf);
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
+}

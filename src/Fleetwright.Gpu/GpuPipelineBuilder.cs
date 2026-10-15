@@ -191,6 +191,22 @@ public unsafe class GpuPipelineBuilder
     }
 
     /// <summary>
+    /// Enables screen blending (src + dst * (1 - src)): light added without passing white, for glows on a display-referred
+    /// target. The alpha kept.
+    /// </summary>
+    public GpuPipelineBuilder EnableBlendingScreen()
+    {
+        _blendEnabled = true;
+        _srcColorBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE;
+        _dstColorBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_COLOR;
+        _colorBlendOp = SDL_GPUBlendOp.SDL_GPU_BLENDOP_ADD;
+        _srcAlphaBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ZERO;
+        _dstAlphaBlendFactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE;
+        _alphaBlendOp = SDL_GPUBlendOp.SDL_GPU_BLENDOP_ADD;
+        return this;
+    }
+
+    /// <summary>
     /// Adds the colour (src + dst) and keeps the larger alpha (max(src, dst)): sums in rgb, a coverage in alpha.
     /// </summary>
     public GpuPipelineBuilder EnableBlendingAddMaxAlpha()
