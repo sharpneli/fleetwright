@@ -110,6 +110,20 @@ public sealed class SplashBook
             count--;
     }
 
+    /// <summary>A splash the map makes itself, not the sim (a magazine's debris coming down: docs/visuals/
+    /// magazine-explosions.md X4): a steep fall, as a shell of <paramref name="calibreMm"/> would throw, its moments on
+    /// the two clocks given (ahead of them: it waits), always with its column.</summary>
+    public void Add(Vec3d point, double calibreMm, double columnT0, double foamT0, float seed)
+    {
+        ring[head] = new Entry
+        {
+            Point = point, Ms = lastMs, Salvo = -1, Shooter = -1, CalibreMm = (float)calibreMm, FallDeg = 70, BearingDeg = 0,
+            Kind = ShellKind.Ap, Dye = Dye.None, Seed = seed, Column = true, FoamStrength = 1, ColumnT0 = columnT0, FoamT0 = foamT0,
+        };
+        head = (head + 1) % ring.Length;
+        count = Math.Min(count + 1, ring.Length);
+    }
+
     /// <summary>A number in [-1, 1] drawn from a splash's seed, one per <paramref name="k"/>: its own size and timing.</summary>
     public static double Signed(float seed, int k) => Hash((uint)(seed * 65536) * 8u + (uint)k) / 2147483648.0 - 1;
 

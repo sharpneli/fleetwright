@@ -59,8 +59,24 @@ public struct ShipDraw
 /// scorch over their hitbox's plan. The light (docs/visuals/ship-lighting.md L5) follows: a tilted hull is lit in its own
 /// frame, what's drowned has no glint, the scorches and a damaged turret's soot are matte and dark in their hollows, and
 /// the shadows go by the heights over the sea's plane, so what's under it casts none.</para></summary>
+/// <summary>A mount's gunhouse thrown off its barbette (docs/visuals/magazine-explosions.md X4): where it is now, in
+/// the ship's frame from where it stood, its height gained (drawn up the screen by the effects camera), its turn, its
+/// roof's tilt (the cosine its sprite is squashed by across) and its size's scale; or gone into the sea.</summary>
+public readonly record struct ThrownTurret(bool Gone, double Dx, double Dy, double Dz, double TurnDeg, double Tilt, double Scale);
+
+/// <summary>Who answers for thrown gunhouses (the magazines' book).</summary>
+public interface IThrownTurrets
+{
+    bool Thrown(int entity, int classMount, out ThrownTurret pose);
+}
+
 public sealed class ShipDrawList
 {
+    /// <summary>The gunhouses thrown by magazines going up, drawn on their arcs (null: none).</summary>
+    public IThrownTurrets? Thrown { get; set; }
+
+    Vector2 northInShip;   // the view's north in the frame of the ship being drawn (for a thrown gunhouse's height)
+    Vec3d viewNorth;
     /// <summary>The icon's length and width on screen, pixels.</summary>
     public const double IconLengthPx = 22, IconWidthPx = 8;
 
@@ -169,6 +185,7 @@ public sealed class ShipDrawList
         WakeLibrary? wakes = null)
     {
         Lights = LightsAt(view, timeMs, sun, sunMotion);
+        viewNorth = view.Up;
         quadCount = drawCount = wakeDrawCount = placedCount = 0;
         foreach (var l in byClass.Values)
             l.Clear();
@@ -469,6 +486,8 @@ public sealed class ShipDrawList
     void Turrets(ref Placed p, ShipArt art, int type, bool shadow)
     {
         var meta = art.Meta;
+        var north = viewNorth;
+        northInShip = new Vector2((float)Vec3d.Dot(north, p.F), (float)Vec3d.Dot(north, p.S)) / Math.Max((float)(Vec3d.Dot(p.F, p.F)), 1e-12f);
         var tm = meta.TurretTypes[art.TurretTypes[type]];
         double e = tm.SizePx[0] / art.Scale / 2;
         foreach (int i in art.DrawOrder)
@@ -479,9 +498,26 @@ public sealed class ShipDrawList
             // on its bearing from the snapshot (fire control's), else at rest
             int cm = art.ClassMount[i];
             double deg = p.MountStart >= 0 && cm >= 0 ? p.Bearings[p.MountStart + cm] : m.RestDeg;
+            // thrown off its barbette by its magazine: on its arc, turned and tilted, raised up the screen by its height
+            // (the effects camera), or gone into the sea
+            ThrownTurret th = default;
+            bool thrown = cm >= 0 && Thrown != null && Thrown.Thrown(p.Entity, cm, out th);
+            if (thrown && th.Gone)
+                continue;
+            if (thrown)
+                deg += th.TurnDeg;
             double a = deg * Math.PI / 180, ca = Math.Cos(a), sa = Math.Sin(a);
-            double axx = ca * 2 * e, axy = sa * 2 * e, ayx = -sa * 2 * e, ayy = ca * 2 * e;
+            double sc = thrown ? th.Scale : 1, tilt = thrown ? th.Tilt : 1;
+            double axx = ca * 2 * e * sc, axy = sa * 2 * e * sc, ayx = -sa * 2 * e * sc * tilt, ayy = ca * 2 * e * sc * tilt;
             double ox = m.PosM[0] - axx / 2 - ayx / 2 + m.TopM * p.Sea.Y, oy = m.PosM[1] - axy / 2 - ayy / 2 + m.TopM * p.Sea.Z;   // tilted with the hull
+            if (thrown)
+            {
+                double up = Effects.K * Effects.Drawn(Math.Max(th.Dz, 0));
+                ox += th.Dx + up * northInShip.X;
+                oy += th.Dy + up * northInShip.Y;
+                if (shadow)
+                    continue;   // its shadow off the deck's height map would lie; in the air it casts none here
+            }
             if (shadow)
             {
                 // a box over the turret and as far down-light as its roof's shadow falls (on the sea); the shader projects
@@ -677,7 +713,8 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Flashes = new FlashRenderer(device);
         Blasts = new BlastRenderer(device);
         Smoke = new SmokeRenderer(device);
-        Magazines = new MagazineRenderer(device);
+        Magazines = new MagazineRenderer(device, Splashes.Book);
+        List.Thrown = Magazines.Book;
     }
 
     /// <summary>The icon: a hull's plan 128 x 32, bow to the right (+x), a fine bow and a rounded stern.</summary>

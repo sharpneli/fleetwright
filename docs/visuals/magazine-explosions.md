@@ -263,6 +263,25 @@ swallowing them by 1.9 s. At night they're orange-white tongues; by day pale fla
 Changed on the way: **the jets' brightness is rolled off before their coverage weights it**, so they keep soft edges
 however far past white the gas is (weighted first, every pixel of a night jet saturated: hard-edged sausages).
 
+**X4 (2026-10-15).** `MagazineDebris` (each event's launches from its seed, drawn once: vidgen's pieces, 35-88° up at
+up to √(2g·140 m·k), half burning, their trails' lives 4-10 s; the sparks; the gunhouse thrown 20-30 m/s up and 25-50 m
+off, spinning and tumbling, coming down on the deck or in the sea), all closed-form arcs. Drawn by `MagazineRenderer`:
+the burning pieces as hot flecks and the sparks through the jets' pipeline, the cold pieces and the trails as soot
+ribbons (`magazine_trail.frag` on the jets' vertex shader: each trail eight moments of its arc, spreading, rising a
+little and drifting downwind as they age), premultiplied before the body. Each piece's splash, and the gunhouse's when
+it comes down in the sea, goes into the splash book once at the event's first sight, dated ahead to its landing
+(`SplashBook.Add`: its column and foam wait for it). The gunhouse is the turret type's own sprite: the ships' draw list
+asks the book (`IThrownTurrets`) and emits that mount's quad on its arc, turned, squashed by its tumble, raised up the
+screen by its height and grown 1/150 per metre of it; gone once in the sea, or come to rest on the deck right way up or
+upside down. `-magazine=parts:8` toggles the debris.
+
+Seen (noon, 1 m/px, live): sparks round the young fireball; by 6 s the burning pieces' trails arcing out of it (the
+"octopus"), cold flecks falling; from ~5 s the pieces' splashes coming down round the wreck as small columns and foam
+rings, and the gunhouse's big one beside her. The cost at 6.5 s, debris and all: +0.1-0.2 ms GPU.
+
+Changed on the way: **smaller debris splashes** (as shells of 60 mm per metre of the piece, 6-15 m columns, and the
+gunhouse's as a 300 mm's): at 90 mm the pieces' columns stood round the wreck like candles.
+
 ## Later
 
 - Tier 1 (the burn-out column the ship survives) and tier 4 (two fireballs along the hull), with the venting race.

@@ -48,17 +48,20 @@ public sealed unsafe class MagazineRenderer : IDisposable
     const float MaxDrift = 3;
 
     readonly SDL_GPUDevice* device;
-    readonly SDL_GPUShader* vs, fsBody, fsShadow, vsJet, fsJet;
-    readonly DynamicGpuBuffer buf, jetBuf;
-    SDL_GPUGraphicsPipeline* bodyPipe, shadowPipe, jetPipe;
+    readonly SDL_GPUShader* vs, fsBody, fsShadow, vsJet, fsJet, fsTrail;
+    readonly DynamicGpuBuffer buf, jetBuf, trailBuf;
+    SDL_GPUGraphicsPipeline* bodyPipe, shadowPipe, jetPipe, trailPipe;
+    readonly Splashes.SplashBook? splashes;
     SDL_GPUTextureFormat pipeFormat;
     SDL_GPUSampleCount pipeSamples;
     bool pipeDepth;
-    int uploaded, jetsUploaded;
+    int uploaded, jetsUploaded, trailsUploaded;
 
     MagazineGpu[] items = new MagazineGpu[8];
-    MagazineJetGpu[] jets = new MagazineJetGpu[32];
-    int count, jetCount;
+    MagazineJetGpu[] jets = new MagazineJetGpu[32], trails = new MagazineJetGpu[64];
+    int count, jetCount, trailCount;
+    Vector2 windDir;
+    double windMs;
     ShipLights lights = ShipLights.Flat;
     Params prms;
     bool shadows;
@@ -79,18 +82,24 @@ public sealed unsafe class MagazineRenderer : IDisposable
         public Vector4 SunL, MoonL, ShadowL, Misc, FireK, More;
     }
 
-    public MagazineRenderer(SDL_GPUDevice* device)
+    /// <summary>The trails of the burning debris: how many moments of each arc its ribbon joins.</summary>
+    const int TrailSamples = 8;
+
+    public MagazineRenderer(SDL_GPUDevice* device, Splashes.SplashBook? splashes = null)
     {
         this.device = device;
+        this.splashes = splashes;
         vs = GpuShader.Load(device, "Content/Shaders/Compiled/magazine.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 0, 1);
         fsBody = GpuShader.Load(device, "Content/Shaders/Compiled/magazine_body.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 1, 0, 2);
         fsShadow = GpuShader.Load(device, "Content/Shaders/Compiled/magazine_shadow.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 1, 0, 2);
         vsJet = GpuShader.Load(device, "Content/Shaders/Compiled/magazine_jet.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 1, 0, 1);
         fsJet = GpuShader.Load(device, "Content/Shaders/Compiled/magazine_jet.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 1, 0, 2);
-        if (vs == null || fsBody == null || fsShadow == null || vsJet == null || fsJet == null)
+        fsTrail = GpuShader.Load(device, "Content/Shaders/Compiled/magazine_trail.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 1, 0, 2);
+        if (vs == null || fsBody == null || fsShadow == null || vsJet == null || fsJet == null || fsTrail == null)
             throw new InvalidOperationException("magazine shaders failed to load");
         buf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ, BufferBytes);
         jetBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ, JetBufferBytes);
+        trailBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ, JetBufferBytes);
     }
 
     // ------------------------------------------------------------------ the CPU side
@@ -101,9 +110,9 @@ public sealed unsafe class MagazineRenderer : IDisposable
     public void Build(in MapView view, Snapshot s, long drawMs, double speed, double dtS, double world, ShipLights frameLights,
         Func<int, ShipClass?> classOf)
     {
-        Book.Update(s.Blasts, drawMs, speed, dtS, classOf, s.Ships);
+        Book.Update(s.Blasts, drawMs, speed, dtS, classOf, s.Ships, splashes);
         lights = frameLights;
-        count = jetCount = 0;
+        count = jetCount = trailCount = 0;
         if (world <= 0 || !MagazineLook.On || Book.Count == 0)
             return;
 
@@ -130,8 +139,8 @@ public sealed unsafe class MagazineRenderer : IDisposable
         };
         // the wind, toward where it blows (east, north), and its speed at 10 m
         double toward = (s.Weather.WindFromDeg + 180) * Math.PI / 180;
-        var windDir = new Vector2((float)Math.Sin(toward), (float)Math.Cos(toward));
-        double u10 = s.Weather.WindMs;
+        windDir = new Vector2((float)Math.Sin(toward), (float)Math.Cos(toward));
+        double u10 = windMs = s.Weather.WindMs;
 
         var book = Book;
         for (int i = 0; i < book.Count; i++)
@@ -145,6 +154,8 @@ public sealed unsafe class MagazineRenderer : IDisposable
             double deck = ev.DeckZ;
             if (age >= 0 && t < 2.5 && (MagazineLook.Parts & 4) != 0)
                 AddJets(view, e, age, world, mpp, k);
+            if (t >= 0 && t < 40 && (MagazineLook.Parts & 8) != 0)
+                AddDebris(view, e, t, world, mpp, k);
             if (t < 0 || t > MagazineLook.VolumeS)
                 continue;
             var b = MagazineBlast.BodyAt(e.FireballM, life, ev.MassKg, deck, t);
@@ -285,6 +296,100 @@ public sealed unsafe class MagazineRenderer : IDisposable
         }
     }
 
+    /// <summary>An event's debris now, <paramref name="t"/> s after the main event: each piece on its arc (a hot fleck if
+    /// burning, a dark one if not) until it comes down (its splash is the splash book's), the burning ones' trails as
+    /// ribbons through the last moments of their arcs, spreading, rising a little and drifting downwind as they age;
+    /// and the sparks, burning grains, for their seconds.</summary>
+    void AddDebris(in MapView view, in MagazineBook.Entry e, double t, double world, double mpp, double k)
+    {
+        var ev = e.Event;
+        var d = e.Debris;
+        var (east, north) = (view.Right, view.Up);
+        var f = new Vector2((float)Vec3d.Dot(e.Forward, east), (float)Vec3d.Dot(e.Forward, north));
+        var sb = new Vector2((float)Vec3d.Dot(e.Starboard, east), (float)Vec3d.Dot(e.Starboard, north));
+        double deck = ev.DeckZ;
+        if (!view.Project(e.At, out double px, out double py) || px < -4000 / mpp || py < -4000 / mpp || px > view.Width + 4000 / mpp ||
+            py > view.Height + 4000 / mpp)
+            return;
+        var rel = e.At - view.Eye;
+        var baseV = new Vector4((float)rel.X, (float)rel.Y, (float)rel.Z, e.Seed);
+        // a point of the ship's frame (from the magazine), height over the waterline, drawn through the effects camera,
+        // with a drift over the sea (east, north)
+        Vector2 Drawn(Vector3 p, Vector2 drift) =>
+            f * (float)(p.X - ev.X) + sb * (float)(p.Y - ev.Y) + drift + new Vector2(0, (float)(k * (p.Z - deck >= 0 ? Effects.Drawn(p.Z - deck) : p.Z - deck)));
+        float minR = (float)(0.8 * mpp);
+
+        foreach (var piece in d.Pieces)
+        {
+            double land = MagazineDebris.Landing(d.From.Z, piece.V.Z);
+            if (t < land)
+            {
+                var at = Drawn(MagazineDebris.At(d.From, piece.V, t), Vector2.Zero);
+                float r = Math.Max(piece.Radius, minR);
+                if (piece.Burning)
+                    AddJet(baseV, at, at, 1.4f * r, (float)(0.45 + 0.4 * Math.Exp(-t / 6)), (float)world, t);
+                else
+                    AddTrail(baseV, at, at, r, r, 0.9f, 0.9f, (float)world);
+            }
+            if (!piece.Burning)
+                continue;
+            // the trail: from the piece back through its last TrailS seconds, each moment's smoke aged since
+            double span = Math.Min(Math.Min(t, land), piece.TrailS), head = Math.Min(t, land);
+            if (span <= 0)
+                continue;
+            Vector2 prev = default;
+            float prevR = 0, prevA = 0;
+            for (int j = 0; j <= TrailSamples; j++)
+            {
+                double tj = head - span * j / TrailSamples, aj = t - tj;
+                var p = MagazineDebris.At(d.From, piece.V, tj) + new Vector3(0, 0, (float)(1.5 * aj));
+                double u = windMs * Math.Pow(Math.Max(p.Z, 1) / 10, 0.14);
+                var at = Drawn(p, windDir * (float)(u * aj * 0.7));
+                float r = Math.Max((float)(0.8 + 1.0 * aj), minR);
+                float a = (float)(0.55 * Math.Exp(-aj / (0.5 * piece.TrailS)) * (1 - SmoothStep(0.7 * piece.TrailS, piece.TrailS, aj)));
+                if (j > 0 && (a > 0.01f || prevA > 0.01f))
+                    AddTrail(baseV, prev, at, prevR, r, prevA, a, (float)world);
+                (prev, prevR, prevA) = (at, r, a);
+            }
+        }
+
+        // the sparks
+        int sparks = (int)Math.Round(MagazineDebris.Sparks * Math.Min(1, ev.K));
+        for (int i = 0; i < sparks; i++)
+        {
+            var (v, life) = MagazineDebris.Spark(e.Hash, i);
+            if (t >= life)
+                continue;
+            var p = MagazineDebris.At(d.From, v, t);
+            if (p.Z < 0)
+                continue;
+            var at = Drawn(p, Vector2.Zero);
+            AddJet(baseV, at, at, Math.Max(0.6f, minR), (float)(0.95 - 0.45 * t / life), (float)(world * (1 - t / life)), t);
+        }
+    }
+
+    void AddJet(Vector4 baseV, Vector2 a, Vector2 b, float r, float heat, float strength, double clock)
+    {
+        float pad = 2 * r;
+        Add(new MagazineJetGpu
+        {
+            Base = baseV, Seg = new Vector4(a, b.X, b.Y), Shape = new Vector4(r, r, heat, heat),
+            Look = new Vector4(strength, (float)clock, 0, 0), Quad = new Vector4(Vector2.Min(a, b) - new Vector2(pad), Vector2.Max(a, b).X + pad, Vector2.Max(a, b).Y + pad),
+        });
+    }
+
+    void AddTrail(Vector4 baseV, Vector2 a, Vector2 b, float ra, float rb, float alphaA, float alphaB, float opacity)
+    {
+        float pad = 1.2f * Math.Max(ra, rb);
+        if (trailCount == trails.Length)
+            Array.Resize(ref trails, trailCount * 2);
+        trails[trailCount++] = new MagazineJetGpu
+        {
+            Base = baseV, Seg = new Vector4(a, b.X, b.Y), Shape = new Vector4(ra, rb, alphaA, alphaB),
+            Look = new Vector4(opacity, 0, 0, 0), Quad = new Vector4(Vector2.Min(a, b) - new Vector2(pad), Vector2.Max(a, b).X + pad, Vector2.Max(a, b).Y + pad),
+        };
+    }
+
     void Add(in MagazineJetGpu j)
     {
         if (jetCount == jets.Length)
@@ -308,6 +413,9 @@ public sealed unsafe class MagazineRenderer : IDisposable
         jetsUploaded = Math.Min(jetCount, (int)(JetBufferBytes / MagazineJetGpu.SizeInBytes));
         if (jetsUploaded > 0)
             jetBuf.Upload(cmd, jets.AsSpan(0, jetsUploaded));
+        trailsUploaded = Math.Min(trailCount, (int)(JetBufferBytes / MagazineJetGpu.SizeInBytes));
+        if (trailsUploaded > 0)
+            trailBuf.Upload(cmd, trails.AsSpan(0, trailsUploaded));
     }
 
     void EnsurePipelines(RenderTarget target)
@@ -326,12 +434,13 @@ public sealed unsafe class MagazineRenderer : IDisposable
         }
         bodyPipe = B().SetShaders(vs, fsBody).Build(device);
         shadowPipe = B().SetShaders(vs, fsShadow).Build(device);
+        trailPipe = B().SetShaders(vsJet, fsTrail).Build(device);
         var jb = new GpuPipelineBuilder().SetColorFormat(target.ColorFormat).SetMultisampling(target.SampleCount)
             .SetCullMode(SDL_GPUCullMode.SDL_GPU_CULLMODE_NONE).EnableBlendingScreen().ClearVertexLayout().SetShaders(vsJet, fsJet);
         jetPipe = (target.HasDepth
             ? jb.SetDepthFormat(RenderTarget.DepthFormat).EnableDepthTest(false, SDL_GPUCompareOp.SDL_GPU_COMPAREOP_LESS_OR_EQUAL)
             : jb.NoDepthTarget().DisableDepthTest()).Build(device);
-        if (bodyPipe == null || shadowPipe == null || jetPipe == null)
+        if (bodyPipe == null || shadowPipe == null || jetPipe == null || trailPipe == null)
             throw new InvalidOperationException($"magazine pipelines: {SDL_GetError()}");
     }
 
@@ -343,7 +452,9 @@ public sealed unsafe class MagazineRenderer : IDisposable
             SDL_ReleaseGPUGraphicsPipeline(device, shadowPipe);
         if (jetPipe != null)
             SDL_ReleaseGPUGraphicsPipeline(device, jetPipe);
-        bodyPipe = shadowPipe = jetPipe = null;
+        if (trailPipe != null)
+            SDL_ReleaseGPUGraphicsPipeline(device, trailPipe);
+        bodyPipe = shadowPipe = jetPipe = trailPipe = null;
     }
 
     void Pass(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, SDL_GPUGraphicsPipeline* pipe, in MapView view, int mode,
@@ -374,11 +485,13 @@ public sealed unsafe class MagazineRenderer : IDisposable
     /// <summary>The shadows, then the bodies, then the jets, after the ships and the gun smoke.</summary>
     public void Draw(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
     {
-        if (uploaded == 0 && jetsUploaded == 0)
+        if (uploaded == 0 && jetsUploaded == 0 && trailsUploaded == 0)
             return;
         EnsurePipelines(target);
         if (uploaded > 0 && shadows)
             Pass(cmd, pass, shadowPipe, view, 1);
+        if (trailsUploaded > 0)
+            Pass(cmd, pass, trailPipe, view, 0, trailBuf, trailsUploaded);
         if (uploaded > 0 && (MagazineLook.Parts & 1) != 0)
             Pass(cmd, pass, bodyPipe, view, 0);
         if (jetsUploaded > 0)
@@ -393,10 +506,12 @@ public sealed unsafe class MagazineRenderer : IDisposable
         Release();
         buf.Dispose();
         jetBuf.Dispose();
+        trailBuf.Dispose();
         SDL_ReleaseGPUShader(device, vs);
         SDL_ReleaseGPUShader(device, fsBody);
         SDL_ReleaseGPUShader(device, fsShadow);
         SDL_ReleaseGPUShader(device, vsJet);
         SDL_ReleaseGPUShader(device, fsJet);
+        SDL_ReleaseGPUShader(device, fsTrail);
     }
 }

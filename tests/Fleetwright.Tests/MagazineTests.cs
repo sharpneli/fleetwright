@@ -72,6 +72,37 @@ public class MagazineTests(ITestOutputHelper output)
         Assert.Equal(Dreadnought.Mounts[0].RestDeg, book[0].Bearings[0]);
     }
 
+    [Fact]
+    public void The_debris_comes_down_round_the_wreck_and_the_gunhouse_goes_off_its_barbette()
+    {
+        var splashes = new Fleetwright.Map.Splashes.SplashBook();
+        var book = new MagazineBook();
+        book.Update(Blasts((1000, 1)), 1000, 1, 0.016, ClassOf, null, splashes);
+        var e = book[0];
+        var d = e.Debris;
+        output.WriteLine($"{d.Pieces.Length} pieces, gunhouse {d.Gunhouse} (on deck {d.HouseOnDeck}), {splashes.Count} splashes");
+        Assert.Equal(e.Event.Debris, d.Pieces.Length);
+        Assert.Equal(d.Pieces.Length + (d.Gunhouse && !d.HouseOnDeck ? 1 : 0), splashes.Count);
+        foreach (var p in d.Pieces)
+        {
+            double t = MagazineDebris.Landing(d.From.Z, p.V.Z);
+            var land = MagazineDebris.At(d.From, p.V, t);
+            Assert.Equal(0, land.Z, 3);
+            Assert.InRange(new System.Numerics.Vector2(land.X - d.From.X, land.Y - d.From.Y).Length(), 0, 600);
+        }
+        // every splash waits for its piece: none lands before the main event
+        for (int i = 0; i < splashes.Count; i++)
+            Assert.True(splashes[i].ColumnT0 - splashes.ColumnClock > MagazineBlast.MainAtS - 0.1);
+        Assert.True(d.Gunhouse, "the dreadnought's magazine has a turret over it");
+        // off its barbette 25-50 m away (Vanguard's ~40 m), turning as it flies
+        var land0 = MagazineDebris.At(d.HouseFrom, d.HouseV, MagazineDebris.Landing(d.HouseFrom.Z, d.HouseV.Z));
+        Assert.InRange(new System.Numerics.Vector2(land0.X - d.HouseFrom.X, land0.Y - d.HouseFrom.Y).Length(), 20, 55);
+        // before the roof lifts it stands; in the air it's off its place; come down in the sea it's gone
+        var mount = e.Event.Mount;
+        Assert.False(book.Thrown(1, mount, out _));
+        Assert.False(book.Thrown(1, mount == 0 ? 1 : 0, out _));
+    }
+
     static BlastsView Blasts(params (long Ms, int Ship)[] oldestFirst)
     {
         var v = new BlastsView();

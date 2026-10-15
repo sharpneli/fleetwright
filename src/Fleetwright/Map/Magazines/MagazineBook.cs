@@ -1,3 +1,4 @@
+using Fleetwright.Map.Splashes;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
@@ -13,8 +14,13 @@ namespace Fleetwright.Map.Magazines;
 /// back-dated by its age in the world, so one seen late (zoomed in on, or off screen when it went) is drawn at its own
 /// age.</para>
 /// Nothing allocates once made, but the first sight of a class's magazine.</summary>
-public sealed class MagazineBook
+public sealed class MagazineBook : IThrownTurrets
 {
+    /// <summary>A debris piece's splash, as a shell's of this calibre per metre of the piece would be, mm (plating at
+    /// 30-50 m/s: 36-81 mm, columns of 6-15 m; at 90 they stood round the wreck like candles), and the gunhouse's
+    /// (hundreds of tonnes at ~25 m/s, a heavy shell's energy).</summary>
+    public const double PieceSplashMm = 60, HouseSplashMm = 300;
+
     public struct Entry
     {
         public long Ms;
@@ -33,6 +39,9 @@ public sealed class MagazineBook
         /// <summary>Her mounts' bearings when first seen, degrees clockwise from ahead (the gun ports' jets go along the
         /// trained guns); the class's rests when she wasn't in view.</summary>
         public double[] Bearings;
+        /// <summary>What it throws (X4).</summary>
+        public MagazineDebris Debris;
+        public uint Hash;
     }
 
     /// <summary>The most kept at once.</summary>
@@ -52,7 +61,8 @@ public sealed class MagazineBook
 
     /// <summary>A frame: the clocks advanced by <paramref name="dtS"/> real seconds at the clock's
     /// <paramref name="speed"/> (0 paused), the snapshot's new events taken (newest first in it), the spent let go.</summary>
-    public void Update(BlastsView v, long drawMs, double speed, double dtS, Func<int, ShipClass?> classOf, ShipsView? ships = null)
+    public void Update(BlastsView v, long drawMs, double speed, double dtS, Func<int, ShipClass?> classOf, ShipsView? ships = null,
+        SplashBook? splashes = null)
     {
         double rate = Effects.Rate(speed), seaRate = Effects.SeaRate(speed);
         Clock += dtS * rate;
@@ -90,13 +100,76 @@ public sealed class MagazineBook
                 FireballM = ev.FireballM * scale, FireballS = ev.FireballS * life, Seed = (h & 0xffff) / 65536f,
                 T0 = Clock - ageS * ratio, SeaT0 = SeaClock - ageS * seaRatio,
                 Hit = new P3(hit.X, hit.Y, hit.Z - cls.Vertical.Waterline), Bearings = bearings,
+                Debris = new MagazineDebris(ev, h, cls), Hash = h,
             };
+            if (splashes != null)
+                Splashes(ring[head], splashes, rate > 0 ? seaRate / rate : 1);
             head = (head + 1) % Capacity;
             count = Math.Min(count + 1, Capacity);
         }
 
         while (count > 0 && Clock - this[0].T0 > MagazineBlast.MainAtS + MagazineLook.VolumeS && MagazineLook.AtS < 0)
             count--;
+    }
+
+    /// <summary>Each debris piece's splash, and the gunhouse's if it comes down in the sea, into the splash book once,
+    /// dated ahead on its clocks to when it lands (its column and foam wait for it).</summary>
+    void Splashes(Entry e, SplashBook book, double seaPerEffects)
+    {
+        var d = e.Debris;
+        double main = MagazineBlast.MainAtS;
+        void Add(System.Numerics.Vector3 land, double atS, double calibreMm, int k)
+        {
+            double ahead = e.T0 + atS - Clock;   // on the effects' clock, from now
+            var point = e.At + e.Forward * (land.X - e.Event.X) + e.Starboard * (land.Y - e.Event.Y);
+            book.Add(point, calibreMm, book.ColumnClock + ahead, book.FoamClock + ahead * seaPerEffects, (Hash(e.Hash + (uint)k * 7919u) & 0xffff) / 65536f);
+        }
+        for (int i = 0; i < d.Pieces.Length; i++)
+        {
+            var p = d.Pieces[i];
+            double t = MagazineDebris.Landing(d.From.Z, p.V.Z);
+            Add(MagazineDebris.At(d.From, p.V, t), main + t, PieceSplashMm * p.Radius / 2, i);
+        }
+        if (d.Gunhouse && !d.HouseOnDeck)
+        {
+            double t = MagazineDebris.Landing(d.HouseFrom.Z, d.HouseV.Z), lift = MagazineBlast.HitLeadS + MagazineBlast.LiftS;
+            Add(MagazineDebris.At(d.HouseFrom, d.HouseV, t), lift + t, HouseSplashMm, 9999);
+        }
+    }
+
+    /// <summary>A gunhouse thrown off its barbette by its magazine, now (<see cref="IThrownTurrets"/>): from the roof's
+    /// lifting on its arc, turning and tumbling, until it lands on the deck (it stays there, upright or upside down) or in
+    /// the sea (gone).</summary>
+    public bool Thrown(int entity, int classMount, out ThrownTurret pose)
+    {
+        pose = default;
+        for (int k = count - 1; k >= 0; k--)
+        {
+            ref readonly var e = ref this[k];
+            if (e.Ship != entity || e.Event.Mount != classMount || !e.Debris.Gunhouse)
+                continue;
+            double age = MagazineLook.AtS >= 0 && k == count - 1 ? MagazineLook.AtS : Clock - e.T0;
+            double t = age - MagazineBlast.HitLeadS - MagazineBlast.LiftS;
+            if (t < 0)
+                return false;
+            var d = e.Debris;
+            double land = MagazineDebris.Landing(d.HouseFrom.Z, d.HouseV.Z);
+            if (t >= land && !d.HouseOnDeck)
+            {
+                pose = new ThrownTurret(true, 0, 0, 0, 0, 1, 1);
+                return true;
+            }
+            double tt = Math.Min(t, land);
+            var p = MagazineDebris.At(d.HouseFrom, d.HouseV, tt);
+            double tumble = d.HouseTumble * tt;
+            if (t >= land)   // come to rest on the deck: flat, the right way up or upside down
+                tumble = Math.Round(tumble / 180) * 180;
+            double dz = Math.Max(p.Z - d.HouseFrom.Z, 0);
+            pose = new ThrownTurret(false, p.X - d.HouseFrom.X, p.Y - d.HouseFrom.Y, dz, d.HouseSpin * tt, Math.Cos(tumble * Math.PI / 180),
+                1 + dz / 150);
+            return true;
+        }
+        return false;
     }
 
     bool Seen(long ms, int ship)
