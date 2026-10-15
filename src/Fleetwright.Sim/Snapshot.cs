@@ -95,6 +95,10 @@ public sealed class Snapshot
     /// (docs/visuals/muzzle-flashes.md F0).</summary>
     public ShotsView Shots { get; } = new();
 
+    /// <summary>The magazines set off in the last <see cref="SimSettings.BlastLifeMs"/>, newest first
+    /// (docs/visuals/magazine-explosions.md X0).</summary>
+    public BlastsView Blasts { get; } = new();
+
     /// <summary>Torpedoes running (each where its run puts it at the frame's time) and their ends of the last
     /// <see cref="SimSettings.SplashLifeMs"/>: hits, and those that sank at the end of their run (docs/battle/fighting.md
     /// 4.6).</summary>
@@ -326,6 +330,34 @@ public sealed class ShotsView
         Array.Resize(ref Muzzle, n);
         Array.Resize(ref Forward, n);
         Array.Resize(ref ElevationDeg, n);
+    }
+}
+
+/// <summary>The magazines set off of the last while, newest first (docs/visuals/magazine-explosions.md X0): when, the
+/// ship (an entity) and her class (a registry id), the magazine (a room of the class, or -1), what set it off, where she
+/// was and her heading over the sea, and the hit's point in her frame.</summary>
+public sealed class BlastsView
+{
+    public int Count;
+    public long[] Ms = [];
+    public int[] Ship = [], Class = [], Room = [];
+    public BlastCause[] Cause = [];
+    public Vec3d[] At = [], Forward = [];
+    public P3[] Point = [];
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Ms.Length)
+            return;
+        n = Math.Max(n, Math.Max(4, Ms.Length * 2));
+        Array.Resize(ref Ms, n);
+        Array.Resize(ref Ship, n);
+        Array.Resize(ref Class, n);
+        Array.Resize(ref Room, n);
+        Array.Resize(ref Cause, n);
+        Array.Resize(ref At, n);
+        Array.Resize(ref Forward, n);
+        Array.Resize(ref Point, n);
     }
 }
 

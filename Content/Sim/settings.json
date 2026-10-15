@@ -146,6 +146,8 @@
   "SplashCapacity": 4096,
   "ShotCapacity": 2048,
   "SplashLifeMs": 20000,
+  "BlastCapacity": 64,
+  "BlastLifeMs": 900000,
   "ShipIndexCellM": 5000,
   "ShipIndexMaxAgeMs": 2000,
   "DevFirePatternPct": 0.8,

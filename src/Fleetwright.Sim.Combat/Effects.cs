@@ -13,6 +13,8 @@ public struct EffectsResult
     public int Destroyed, Disabled, Damaged;
     public double CrewLost, BreachM2;
     public bool Jammed, Fire, Magazine;
+    /// <summary>The magazine set off (a room of the class), when <see cref="Magazine"/>; else -1.</summary>
+    public int MagazineRoom;
     /// <summary>The hull girder cut through (an underwater explosion's, 4.6): the ship breaks in two.</summary>
     public bool Broken;
 
@@ -47,7 +49,7 @@ public static class Effects
     public static EffectsResult Apply(ShipClass c, ShipCondition k, in Hit hit, HitPath path, in TerminalResult t, ReadOnlySpan<double> quality,
         SimSettings s, double propellant, ref RandomStream r)
     {
-        var res = new EffectsResult { Part = -1 };
+        var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
         var shell = hit.Shell;
         double calM = shell.CalibreMm / 1000, w = Math.Max(shell.FillerKg * s.FillerTnt, 0), size = Math.Cbrt(w);
         var xs = path.Crossings;
@@ -171,14 +173,15 @@ public static class Effects
         }
         bool inHull = cell >= 0;
         double cellTop = inHull ? c.Cells[cell].Box.Top : double.PositiveInfinity;
-        bool magazine = false, turret = false;
+        int magazine = -1, turret = -1;   // the magazine room it burst in or beside, the enclosed mount it burst in
 
         // the part it burst in
         if (part >= 0)
         {
             res.Part = part;
             Count(ref res, k, part, k.Worsen(part, PartState.Destroyed) ? PartState.Destroyed : PartState.Ok);
-            turret |= c.MountOf(part) is int m and >= 0 && Enclosed(c, m);
+            if (c.MountOf(part) is int m and >= 0 && Enclosed(c, m))
+                turret = m;
         }
 
         // parts within the radii, unless boxed by armour its fragments don't get through there
@@ -225,7 +228,8 @@ public static class Effects
                     continue;   // its fragments missed what matters in it
                 bool worse = rw >= s.RoomDisableShare * Math.Max(rr.X1 - rr.X0, 1) ? k.Worsen(node, PartState.Disabled) : k.Harm(node);
                 Count(ref res, k, node, worse ? k.State[node] : PartState.Ok);
-                magazine |= rr.Kind == RoomKind.Magazine;
+                if (magazine < 0 && rr.Kind == RoomKind.Magazine)
+                    magazine = room;
             }
             foreach (var n in c.Neighbours(c.Cells[cell].Neighbours))
             {
@@ -248,7 +252,8 @@ public static class Effects
                         continue;
                     int node = c.RoomNode(room);
                     Count(ref res, k, node, k.Worsen(node, PartState.Damaged) ? PartState.Damaged : PartState.Ok);
-                    magazine |= c.Rooms[room].Kind == RoomKind.Magazine;
+                    if (magazine < 0 && c.Rooms[room].Kind == RoomKind.Magazine)
+                        magazine = room;
                 }
             }
         }
@@ -276,9 +281,9 @@ public static class Effects
         // the magazine: a burst in it, or in a turret or its barbette (the handling path down to it)
         if (t.Burst != BurstKind.Outside)
         {
-            double flash = magazine ? s.MagazineFlashChance : turret ? s.TurretFlashChance : 0;
+            double flash = magazine >= 0 ? s.MagazineFlashChance : turret >= 0 ? s.TurretFlashChance : 0;
             if (flash > 0 && r.NextDouble() < flash * propellant)
-                res.Magazine = true;
+                (res.Magazine, res.MagazineRoom) = (true, magazine >= 0 ? magazine : c.Mounts[turret].Magazine);
         }
     }
 

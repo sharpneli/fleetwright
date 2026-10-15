@@ -25,7 +25,7 @@ public static class Underwater
 {
     public static EffectsResult Apply(ShipClass c, ShipCondition k, in Hit hit, SimSettings s, double propellant, ref RandomStream r, out Outcome outcome)
     {
-        var res = new EffectsResult { Part = -1 };
+        var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
         var p = hit.Point;
         var cells = c.Cells;
         int first = -1;
@@ -50,7 +50,7 @@ public static class Underwater
         outcome = held ? Outcome.Held : Outcome.Exploded;
 
         // the cells within the reach flood: the struck one through the hole, the others through holes of their own
-        bool magazine = false;
+        int magazine = -1;
         for (int i = 0; i < cells.Length; i++)
         {
             double d = i == first ? 0 : Effects.BoxDistance(cells[i].Box, p);
@@ -68,10 +68,12 @@ public static class Underwater
                 int node = c.RoomNode(room);
                 var state = d <= reach / 2 ? PartState.Disabled : PartState.Damaged;
                 Effects.Count(ref res, k, node, (state == PartState.Damaged ? k.Harm(node) : k.Worsen(node, state)) ? k.State[node] : PartState.Ok);
-                magazine |= c.Rooms[room].Kind == RoomKind.Magazine;
+                if (magazine < 0 && c.Rooms[room].Kind == RoomKind.Magazine)
+                    magazine = room;
             }
         }
-        res.Magazine = magazine && r.NextDouble() < s.TorpedoMagazineChance * propellant;
+        res.Magazine = magazine >= 0 && r.NextDouble() < s.TorpedoMagazineChance * propellant;
+        res.MagazineRoom = res.Magazine ? magazine : -1;
 
         // parts within the reach: what's under the stern, the tubes, whatever stands near (not inside a protection that held)
         if (!held)

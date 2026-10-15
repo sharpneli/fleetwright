@@ -363,7 +363,7 @@ public static unsafe class Program
                     world.Send(order);
                 else
                     Console.Error.WriteLine($"Bad damage: {damage} (want -hole=ship:mid|bow|stern|x:z:m2[:p], -flood=ship:kind[:n], -jam=ship:mount, " +
-                                            "-wreck=ship:kind[:nth[:damaged|disabled|destroyed]], -burn=ship:x, -sink=ship:foundered|capsized|magazine)");
+                                            "-wreck=ship:kind[:nth[:damaged|disabled|destroyed]], -burn=ship:x, -sink=ship:foundered|capsized|magazine[:mount])");
             worldRef = world;
             if (scenarioArg != null)
             {
@@ -487,8 +487,8 @@ public static unsafe class Program
     /// <summary>Dev damage, as the damage system's dev commands: -hole=ship:mid|bow|stern|x:z:m2[:p] (a hole in the side, z m
     /// over the waterline, to port with :p), -flood=ship:kind[:n] (n spaces of a kind flooded: boiler_room, engine_room,
     /// magazine...), -jam=ship:mount (a mount's index), -wreck=ship:kind[:nth[:state]] (the nth part of a component kind:
-    /// superstructure, funnel, main...), -burn=ship:x (a fire in the highest space at x), -sink=ship:foundered|capsized|magazine (it goes
-    /// down now).</summary>
+    /// superstructure, funnel, main...), -burn=ship:x (a fire in the highest space at x), -sink=ship:foundered|capsized|magazine[:mount] (it goes
+    /// down now; a magazine's is the one serving that mount, else the fullest).</summary>
     static Sim.Command? DevDamage(string arg)
     {
         var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -517,7 +517,7 @@ public static unsafe class Program
             case "burn" when double.TryParse(p[1], inv, out double bx):
                 return Sim.DamageSystem.Burn(ship, bx);
             case "sink" when Kind<Sim.Combat.LossKind>(p[1]) is { } how and not Sim.Combat.LossKind.None:
-                return Sim.DamageSystem.Sink(ship, how);
+                return Sim.DamageSystem.Sink(ship, how, p.Length > 2 && int.TryParse(p[2], out int served) ? served : -1);
         }
         return null;
     }

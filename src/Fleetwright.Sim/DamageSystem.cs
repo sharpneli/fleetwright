@@ -18,6 +18,15 @@ public enum DamageCommand : ushort
     Sink,
 }
 
+/// <summary>What set a magazine off (<see cref="DamageSystem.Blast"/>).</summary>
+public enum BlastCause : byte
+{
+    Shell,
+    Torpedo,
+    Fire,
+    Dev,
+}
+
 /// <summary>Where along a ship a dev's side hole is (<see cref="DamageSystem.SideHole"/>): x in metres, the centre of
 /// flotation, or a tenth of the length in from the bow or the stern.</summary>
 public enum HoleAt : byte
@@ -55,6 +64,12 @@ public sealed class DamageSystem : IWorldSystem
     public const byte Id = 5;
     const ushort LossEvent = 1, StepEvent = 2;
 
+    /// <summary>A magazine set off, for the screens (docs/visuals/magazine-explosions.md X0): when, the ship (an entity)
+    /// and her class (a registry id), the magazine (a room of the class; -1 when none is linked to what went up), what
+    /// set it off, where she was and her heading over the sea (unit), and the hit's point in her frame (the origin for a
+    /// fire or the dev's).</summary>
+    public readonly record struct Blast(long Ms, int Ship, int Class, int Room, BlastCause Cause, Vec3d At, Vec3d Forward, P3 Point);
+
     readonly SimSettings settings;
     readonly ShipSystem ships;
     readonly CombatLog log;
@@ -64,6 +79,8 @@ public sealed class DamageSystem : IWorldSystem
     readonly Dictionary<ShipClass, FloodModel> floods = [];
     readonly double[] propellant = new double[256];
     double[] bearings = new double[16];
+    readonly Blast[] blasts;
+    int blastNext, blastCount;
     long hits;
     bool propellantSet, touched;
 
@@ -74,6 +91,7 @@ public sealed class DamageSystem : IWorldSystem
         (this.settings, this.ships, this.log, this.sightings) = (settings, ships, log, sightings);
         stream = RandomStream.Named(seed, "damage");
         Array.Fill(propellant, 1.0);
+        blasts = new Blast[Math.Max(settings.BlastCapacity, 4)];
     }
 
     /// <summary>Hits taken in the world so far.</summary>
@@ -125,8 +143,9 @@ public sealed class DamageSystem : IWorldSystem
         new(Id, (ushort)DamageCommand.WreckKind, entity, A: (long)kind, B: nth, X: (double)state);
 
     /// <summary>The dev's sinking: the ship goes down now as if it had foundered, capsized or blown up (the views' check
-    /// of a ship going under).</summary>
-    public static Command Sink(int entity, LossKind how) => new(Id, (ushort)DamageCommand.Sink, entity, A: (long)how);
+    /// of a ship going under). A magazine is the one serving a mount (an index in the class), or by default the one that
+    /// holds the most.</summary>
+    public static Command Sink(int entity, LossKind how, int mount = -1) => new(Id, (ushort)DamageCommand.Sink, entity, A: (long)how, B: mount);
 
     /// <summary>The dev's fire: the highest cell at x along the ship (on the centreline) set burning.</summary>
     public static Command Burn(int entity, double xM) => new(Id, (ushort)DamageCommand.Burn, entity, X: xM);
@@ -246,7 +265,10 @@ public sealed class DamageSystem : IWorldSystem
             case DamageCommand.Sink:
                 if (c.A is < (int)LossKind.Magazine or > (int)LossKind.BrokeInTwo)
                     throw new ArgumentException($"no way of going down {c.A}");
-                Lose(world, slot, k, (LossKind)c.A);
+                if (c.A == (int)LossKind.Magazine)
+                    Blew(world, slot, k, DevMagazine(cls, (int)c.B), BlastCause.Dev, default);
+                else
+                    Lose(world, slot, k, (LossKind)c.A);
                 break;
             case DamageCommand.Burn:
                 int top = -1;
@@ -262,6 +284,18 @@ public sealed class DamageSystem : IWorldSystem
                 Wake(world, slot, k);
                 break;
         }
+    }
+
+    /// <summary>The dev's magazine: the one serving a mount, else the one that holds the most (-1: none).</summary>
+    static int DevMagazine(ShipClass cls, int mount)
+    {
+        if (mount >= 0)
+            return mount < cls.Mounts.Length ? cls.Mounts[mount].Magazine : throw new ArgumentException($"no mount {mount}");
+        int best = -1;
+        for (int r = 0; r < cls.Rooms.Length; r++)
+            if (cls.Rooms[r].Kind == RoomKind.Magazine && (best < 0 || cls.Rooms[r].Tonnes > cls.Rooms[best].Tonnes))
+                best = r;
+        return best;
     }
 
     /// <summary>Whether any of a room's cells is holed already.</summary>
@@ -361,7 +395,7 @@ public sealed class DamageSystem : IWorldSystem
         log.Add(new CombatEntry(now, CombatEvent.Hit, hit.Shooter, hit.Battery, hit.Ship, hit.ShellType, e.Part, t.Outcome, fx, hit.Shell.Kind,
             (float)(hit.Source == HitSource.Torpedo ? hit.Torpedo.CalibreMm : hit.Shell.CalibreMm), hit.Source));
         if (blew)
-            Lose(world, slot, k, LossKind.Magazine);
+            Blew(world, slot, k, e.MagazineRoom, hit.Source == HitSource.Torpedo ? BlastCause.Torpedo : BlastCause.Shell, hit.Point);
         else if (broke)
             Lose(world, slot, k, LossKind.BrokeInTwo);
         else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || e.Fire))
@@ -410,6 +444,16 @@ public sealed class DamageSystem : IWorldSystem
             return;
         k.HeldCap = cap;
         ships.Damaged(world, slot, cap, k.Steering, k.JamRudderRad);
+    }
+
+    /// <summary>A magazine set off: its record for the screens (<see cref="Blast"/>), and the ship lost.</summary>
+    void Blew(World world, int slot, ShipCondition k, int room, BlastCause cause, P3 point)
+    {
+        var ship = ships.Store[slot];
+        blasts[blastNext] = new Blast(world.Time.Ms, ship.Entity, ship.ClassIndex, room, cause, ship.Position, ship.Forward, point);
+        blastNext = (blastNext + 1) % blasts.Length;
+        blastCount = Math.Min(blastCount + 1, blasts.Length);
+        Lose(world, slot, k, LossKind.Magazine);
     }
 
     /// <summary>The ship going down (its magazine, foundered, capsized): it stops, its guns are silent, it leaves its
@@ -479,7 +523,10 @@ public sealed class DamageSystem : IWorldSystem
         var fs = k.Fires > 0 ? Fires.Step(cls, f, k, dt, settings, propellant[ships.Store[slot].Side], ref rng) : default;
         touched = true;
         if (fs.Magazine)
-            how = LossKind.Magazine;
+        {
+            Blew(world, slot, k, fs.MagazineRoom, BlastCause.Fire, default);
+            return -1;
+        }
         if (how != LossKind.None)
         {
             Lose(world, slot, k, how);
@@ -610,5 +657,20 @@ public sealed class DamageSystem : IWorldSystem
                 n++;
             }
         v.Count = n;
+
+        var b = snap.Blasts;
+        b.EnsureCapacity(blastCount);
+        long oldest = snap.Time.Ms - settings.BlastLifeMs;
+        n = 0;
+        for (int i = 0; i < blastCount; i++)
+        {
+            ref readonly var x = ref blasts[(blastNext - 1 - i + blasts.Length) % blasts.Length];
+            if (x.Ms < oldest)
+                break;
+            (b.Ms[n], b.Ship[n], b.Class[n], b.Room[n], b.Cause[n]) = (x.Ms, x.Ship, x.Class, x.Room, x.Cause);
+            (b.At[n], b.Forward[n], b.Point[n]) = (x.At, x.Forward, x.Point);
+            n++;
+        }
+        b.Count = n;
     }
 }

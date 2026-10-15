@@ -173,8 +173,8 @@ In draw order, all after the ships' layer:
 
 - **X0. The record.** The sim records each magazine lost: ship, class, magazine room, time, cause (shell or fire),
   the hit's point. Carried from `Effects` and `Fires.Step` to `DamageSystem.Lose`, kept in a ring, read as a
-  `Snapshot.Blasts` view; the map keeps a `BlastBook` as `ShotBook` does. A dev path, `-explode=SHIP[,ROOM]`, sets
-  one off through the sim. Tests: a hit in a magazine and a fire into one each record the room; one record per loss.
+  `Snapshot.Blasts` view; the map keeps a `BlastBook` as `ShotBook` does. The dev's `-sink=SHIP:magazine[:MOUNT]`
+  sets one off through the sim. Tests: a hit in a magazine and a fire into one each record the room; one record per loss.
 - **X1. The event.** `MagazineBlast` (the port of `plan` and the correlations), the placeholder, a cache per class
   and room. Tests against `magazine.py` on the same ship (Bismarck's Y: M 22 t, D 163 m, t_fb 12.6 s, λ 76 m) and the
   research's table; the openings' count and fail order.
@@ -194,6 +194,16 @@ In draw order, all after the ships' layer:
   factor)); the cost (`-gputime`, DevRelease `-frametimes`) with the event filling the screen and two at once; tuning
   by eye against the anchors: Lion's 61 m column, Queen Mary's crimson flame to ~240 m and cap to ~1 km, Arizona's
   0.5 s precursor and < 7 s violent phase, Barham's lifted roof and smoke "thousands of feet".
+
+### Done
+
+**X0 (2026-10-15).** `EffectsResult.MagazineRoom` and `FireStep.MagazineRoom` (the room set off; a turret's flash takes
+its mount's magazine), `Underwater` likewise; `DamageSystem.Blast` (ms, ship, class, room, `BlastCause`, where she was,
+her heading, the hit's point), written by `Blew` before the loss, kept in a ring (`BlastCapacity` 64) for
+`BlastLifeMs` (15 min, the pall's while) and read as `Snapshot.Blasts` (`BlastsView`). The dev's `-sink=` takes a
+mount for a magazine's (default: the fullest). Tests (`DamageTests`): a hit records its magazine room once; a fire
+spreading into one records it; the dev's records the mount's magazine, once, and the record outlives the ship for its
+while, then goes.
 
 ## Later
 

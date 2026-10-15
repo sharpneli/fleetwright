@@ -451,6 +451,10 @@ public sealed record SimSettings
     /// <summary>The mounts fired kept for the screens (docs/visuals/muzzle-flashes.md), for <see cref="SplashLifeMs"/>.</summary>
     public int ShotCapacity { get; init; } = 2048;
     public int SplashLifeMs { get; init; } = 20_000;
+    /// <summary>The magazines set off kept for the screens (docs/visuals/magazine-explosions.md), how many and for how
+    /// long, ms: the pall drifts for minutes.</summary>
+    public int BlastCapacity { get; init; } = 64;
+    public int BlastLifeMs { get; init; } = 900_000;
 
     /// <summary>The world's ship index (docs/battle/fighting.md, "One index of where things are"): its cubes' width, m,
     /// and how old it may get before a query rebuilds it, ms (a query's reach grows by the fastest ship's run since).</summary>

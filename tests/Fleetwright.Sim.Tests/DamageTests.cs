@@ -197,6 +197,79 @@ public class DamageTests(ITestOutputHelper output)
         Assert.InRange(turned, 20, 359);
     }
 
+    // ------------------------------------------------------------------ magazines set off, for the screens
+
+    static Snapshot Snap(World w)
+    {
+        var snap = new Snapshot();
+        w.Fill(snap, truth: true);
+        return snap;
+    }
+
+    [Fact]
+    public void A_magazine_set_off_by_a_hit_records_its_room_once()
+    {
+        var w = World("dreadnought", out int c, Settings with { MagazineFlashChance = 1, TurretFlashChance = 1 });
+        var cls = Class("dreadnought");
+        var (shell, _) = Shell(Class("super_dreadnought"), 0);
+        w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
+        w.AdvanceTo(w.Time + 1000);
+        var rng = RandomStream.Named(2, "test magazine hits");
+        int n = 0;
+        for (; n < 2000 && Ship(w, 1).Alive && w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(1)).Status == ShipStatus.Afloat; n++)
+            w.Damage.Strike(w, new Hit
+            {
+                Ship = 1, Ms = w.Time.Ms, Point = new P3(rng.NextDouble(-60, 60), cls.Beam / 2 + 1, rng.NextDouble(-2, 10)),
+                Direction = new P3(0, -0.8, -0.6), SpeedMs = 500, Shell = shell, ShellType = 0,
+            });
+        var b = Snap(w).Blasts;
+        output.WriteLine($"blew after {n} hits: room {b.Room[0]}, {b.Cause[0]}");
+        Assert.Equal(1, b.Count);
+        Assert.Equal(RoomKind.Magazine, cls.Rooms[b.Room[0]].Kind);
+        Assert.Equal(BlastCause.Shell, b.Cause[0]);
+        Assert.Equal(1, b.Ship[0]);
+        Assert.True((b.At[0] - Ship(w, 1).Position).Length < 1);
+    }
+
+    [Fact]
+    public void A_magazine_set_off_by_a_fire_records_its_room()
+    {
+        var w = World("dreadnought", out int c, Settings with { FireSpreadPerMin = 1, FireOutPerMin = 0, FireMagazineInPerMin = 1, FireMagazineNextPerMin = 1 });
+        var cls = Class("dreadnought");
+        w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
+        int mag = Enumerable.Range(0, cls.Rooms.Length).First(r => cls.Rooms[r].Kind == RoomKind.Magazine);
+        w.Apply(DamageSystem.Burn(1, (cls.Rooms[mag].X0 + cls.Rooms[mag].X1) / 2));
+        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(1));
+        for (int min = 0; min < 30 && k.Status == ShipStatus.Afloat; min++)
+            w.AdvanceTo(w.Time + 60_000);
+        var b = Snap(w).Blasts;
+        output.WriteLine($"{k.Loss}, {b.Count} blasts");
+        Assert.Equal(LossKind.Magazine, k.Loss);
+        Assert.Equal(1, b.Count);
+        Assert.Equal(RoomKind.Magazine, cls.Rooms[b.Room[0]].Kind);
+        Assert.Equal(BlastCause.Fire, b.Cause[0]);
+    }
+
+    [Fact]
+    public void The_dev_sets_off_a_mounts_magazine_and_the_record_outlives_the_ship_for_its_while()
+    {
+        var w = World("dreadnought", out int c, Settings with { BlastLifeMs = 120_000 });
+        var cls = Class("dreadnought");
+        w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
+        int mount = Enumerable.Range(0, cls.Mounts.Length).First(m => cls.Mounts[m].Magazine >= 0);
+        w.Apply(DamageSystem.Sink(1, LossKind.Magazine, mount));
+        w.Apply(DamageSystem.Sink(1, LossKind.Magazine, mount));   // going down already: nothing more
+        var b = Snap(w).Blasts;
+        Assert.Equal(1, b.Count);
+        Assert.Equal(cls.Mounts[mount].Magazine, b.Room[0]);
+        Assert.Equal(BlastCause.Dev, b.Cause[0]);
+        w.AdvanceTo(w.Time + 90_000);
+        Assert.Equal(-1, w.Ships.Store.SlotOf(1));   // gone under
+        Assert.Equal(1, Snap(w).Blasts.Count);
+        w.AdvanceTo(w.Time + 60_000);
+        Assert.Equal(0, Snap(w).Blasts.Count);
+    }
+
     [Fact]
     public void Hits_replay_and_allocate_nothing()
     {

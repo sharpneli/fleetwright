@@ -8,6 +8,8 @@ namespace Fleetwright.Sim.Combat;
 public struct FireStep
 {
     public bool Changed, Magazine;
+    /// <summary>The magazine set off (a room of the class), when <see cref="Magazine"/>; else -1.</summary>
+    public int MagazineRoom;
     public int Spread, Out;
     public double CrewLost;
 }
@@ -22,7 +24,7 @@ public static class Fires
 {
     public static FireStep Step(ShipClass c, FloodModel f, ShipCondition k, double dt, SimSettings s, double propellant, ref RandomStream r)
     {
-        var res = new FireStep();
+        var res = new FireStep { MagazineRoom = -1 };
         double crew = Math.Clamp(1 - k.CrewLost / f.Complement, 0, 1);
         double harm = Chance(s.FireHarmPerMin, dt), spread = Chance(s.FireSpreadPerMin, dt), put = Chance(s.FireOutPerMin * crew, dt);
         double magIn = Chance(s.FireMagazineInPerMin * propellant, dt), magNext = Chance(s.FireMagazineNextPerMin * propellant, dt);
@@ -41,12 +43,12 @@ public static class Fires
             if (r.NextDouble() < harm)
                 foreach (int room in c.RoomsIn(i))
                     res.Changed |= k.Harm(c.RoomNode(room));
-            if (!res.Magazine && Magazine(c, f, k, i, s) && r.NextDouble() < magIn)
-                res.Magazine = true;
+            if (!res.Magazine && Magazine(c, f, k, i, s) is int mi and >= 0 && r.NextDouble() < magIn)
+                (res.Magazine, res.MagazineRoom) = (true, mi);
             foreach (var n in c.Neighbours(cells[i].Neighbours))
             {
-                if (!res.Magazine && Magazine(c, f, k, n.Cell, s) && r.NextDouble() < magNext)
-                    res.Magazine = true;
+                if (!res.Magazine && Magazine(c, f, k, n.Cell, s) is int mn and >= 0 && r.NextDouble() < magNext)
+                    (res.Magazine, res.MagazineRoom) = (true, mn);
                 if (!k.CellFire[n.Cell] && !Drowned(f, k, n.Cell, s) && r.NextDouble() < spread)
                 {
                     k.CellFire[n.Cell] = true;
@@ -77,14 +79,14 @@ public static class Fires
 
     static bool Drowned(FloodModel f, ShipCondition k, int cell, SimSettings s) => k.WaterM3[cell] >= s.FireDrownShare * f.Capacity[cell];
 
-    /// <summary>Whether a cell holds a magazine dry enough to go up.</summary>
-    static bool Magazine(ShipClass c, FloodModel f, ShipCondition k, int cell, SimSettings s)
+    /// <summary>The magazine (a room) a cell holds, dry enough to go up; else -1.</summary>
+    static int Magazine(ShipClass c, FloodModel f, ShipCondition k, int cell, SimSettings s)
     {
         if (Drowned(f, k, cell, s))
-            return false;
+            return -1;
         foreach (int room in c.RoomsIn(cell))
             if (c.Rooms[room].Kind == RoomKind.Magazine)
-                return true;
-        return false;
+                return room;
+        return -1;
     }
 }
