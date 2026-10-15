@@ -36,8 +36,8 @@ public struct SmokeGpu
 public sealed unsafe class SmokeRenderer : IDisposable
 {
     const uint BufferBytes = 1 << 20;
-    /// <summary>A puff is drawn out to where its optical depth falls to this.</summary>
-    const double EdgeTau = 0.004;
+    /// <summary>A puff is drawn out to where its optical depth falls to this (5% opaque).</summary>
+    const double EdgeTau = 0.05;
     /// <summary>The longest shadow, metres per metre of height (a sun at ~7°), as the splashes'.</summary>
     const double MaxDrift = 8;
 
@@ -113,7 +113,7 @@ public sealed unsafe class SmokeRenderer : IDisposable
             double peak = area * world / (2 * Math.PI * sigma * sigma);
             if (peak < EdgeTau)
                 continue;
-            double half = 1.3 * sigma * Math.Sqrt(2 * Math.Log(peak / EdgeTau));
+            double half = 1.15 * sigma * Math.Sqrt(2 * Math.Log(peak / EdgeTau));
             half = Math.Max(half, sigma);
             var at = centre.Normalized() * (Earth.Radius + p.Anchor);
             if (!view.Project(at, out double x, out double y))
@@ -136,7 +136,8 @@ public sealed unsafe class SmokeRenderer : IDisposable
                 Shape = new Vector4((float)sigma, (float)(area * world), (float)lift, (float)half),
                 Light = new Vector4((float)dz, (float)age, (float)(1 - Math.Exp(-age / 5)), (float)fog),
                 Tint = new Vector4(p.Tint, 0),
-                Shadow = new Vector4(shadowOff, shadowOn, 0),
+                // its shadow only where it falls clear of the puff (under a high sun it lies beneath it: half the fragments)
+                Shadow = new Vector4(shadowOff, shadowOff.Length() > 0.5 * sigma ? shadowOn : 0, 0),
             };
             keys[count] = -(float)(Vec3d.Dot(rel, north) + lift);   // north first: the effects camera looks north
             count++;

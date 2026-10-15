@@ -79,6 +79,8 @@ void main()
     float low = smoothstep(0.17, 0.05, b.bore.z);   // under ~10 degrees
     float lobe = low * step(0.0, along) * clamp(1.0 - along / (4.0 * lam * b.bore.w), 0.0, 1.0) * exp(-(across * across) / (0.16 * lam * lam));
     dens = max(dens, lobe) * exp(-since / misc0.w);
+    if (dens <= 0.0 && abs(dvar) < 1e-6)
+        discard;   // no mark here: skip the noise
     // streaked radially: noise in angle and scaled distance round the muzzle
     float ang = atan(fragLoc.y, fragLoc.x);
     float n = splashNoise(vec3(ang * 18.0 + seed * 50.0, zf * 3.0, seed * 7.0)) * 0.6 + splashNoise(vec3(fragLoc * 0.4, seed * 13.0)) * 0.4;

@@ -18,7 +18,7 @@ public struct BlastGpu
     /// <summary>x: the blast's length λ, m (the Mach stem's share in); y: its age on the sea's clock, s; z: its strength
     /// (the sea's, the world's share); w: seed.</summary>
     public Vector4 Blast;
-    /// <summary>x: the quad's half size, m.</summary>
+    /// <summary>x: the quad's half size, m; y: its centre's shift ahead along the bore, m.</summary>
     public Vector4 Quad;
     public const int SizeInBytes = 64;
 }
@@ -151,8 +151,8 @@ public sealed unsafe class BlastRenderer : IDisposable
         for (int i = 0; i < book.Count; i++)
         {
             ref readonly var e = ref book[i];
-            if (FlashLook.BlastAtS >= 0 && e.Ms < newest - 2000)
-                continue;   // a still: the newest salvos only
+            if (FlashLook.BlastAtS >= 0 ? e.Ms < newest - 2000 : !e.Shows)
+                continue;   // a still: the newest salvos only; else thinned by the salvo's share, as the flashes are
             double age = FlashLook.BlastAtS >= 0 ? FlashLook.BlastAtS : clock - e.SeaT0;
             if (age < 0 || age > ShotBook.SeaKeepS)
                 continue;
@@ -160,8 +160,13 @@ public sealed unsafe class BlastRenderer : IDisposable
             // over the water the blast acts as if doubled inside the Mach stem: low-elevation fire (blast-wave research §0.7)
             double lam = e.BlastLengthM * (1 + 0.26 * SmoothStep(20, 5, e.ElevationDeg));
             bool frost = age < 5 * frostS;
+            // the quad over the mark: the frost reaches 1.78 λ/x ahead (Fansler's directivity), 0.22 λ/x behind, 1 λ/x
+            // aside; the scour 1.3 k λ' and the jet's lobe 4 λ along the bore
             double scour = 1.3 * FlashLook.ScourK * 1.78 * lam + 4 * lam * Math.Cos(el);
-            double half = frost ? Math.Max(1.78 * lam / xVis + e.HeightM, scour) : scour;
+            double ahead = frost ? Math.Max(1.78 * lam / xVis + e.HeightM, scour) : scour;
+            double behind = frost ? Math.Max(0.22 * lam / xVis + e.HeightM, 0.4 * scour) : 0.4 * scour;
+            double side = frost ? Math.Max(1.0 * lam / xVis + e.HeightM, 0.6 * scour) : 0.6 * scour;
+            double half = Math.Max((ahead + behind) / 2, side), shift = (ahead - behind) / 2;
             if (!view.Project(e.Tip, out double x, out double y))
                 continue;
             double px = half / mpp;
@@ -174,10 +179,10 @@ public sealed unsafe class BlastRenderer : IDisposable
                 Array.Resize(ref items, count * 2);
             items[count++] = new BlastGpu
             {
+                Quad = new Vector4((float)half, (float)shift, 0, 0),
                 Base = new Vector4((float)rel.X, (float)rel.Y, (float)rel.Z, e.HeightM),
                 Bore = new Vector4(dir, (float)Math.Sin(el), (float)Math.Cos(el)),
                 Blast = new Vector4((float)lam, (float)age, (float)(e.SeaStrength * world), e.Seed),
-                Quad = new Vector4((float)half, 0, 0, 0),
             };
         }
     }

@@ -6,7 +6,7 @@
 //  - mode 0, the puff: lit by the sky, the sun and the moon (a dome seen from above, wrapped, its far side from the
 //    light a little darker), and by the flashes' lights; white (salts, the water fog) or a little warm near the muzzle
 //    for nitrocellulose powders, whitening over ~5 s. Premultiplied, through the ships' shoulder.
-//  - mode 1, its shadow on the sea and the decks: black at the shadows' opacity times its alpha.
+//  - mode 1, its shadow on the sea and the decks: black at the shadows' opacity times its (smooth) alpha.
 #define LIGHTS_BINDING 0
 #include "Include/shiplight.glsl"
 #include "Include/splash.glsl"
@@ -32,38 +32,54 @@ layout(location = 0) out vec4 outColor;
 
 const float TwoPi = 6.2831853;
 
-// the puff's optical depth at d (east, north, from its centre), billowed
+// the puff's smooth optical depth at d (east, north, from its centre)
+float smoothTau(Puff p, vec2 d)
+{
+    float s = p.shape.x;
+    return exp(-0.5 * dot(d, d) / (s * s)) * p.shape.y / (TwoPi * s * s);
+}
+
+// and billowed: the size of the puff and smaller, fixed to it, drifting slowly as it ages, their mean 1; the finer
+// octave only where the puff is big enough on the screen to show it (the noise is most of a puff's cost)
 float tauAt(Puff p, vec2 d)
 {
     float s = p.shape.x;
-    float g = exp(-0.5 * dot(d, d) / (s * s)) * p.shape.y / (TwoPi * s * s);
-    // billows the size of the puff and smaller, fixed to it, drifting slowly as it ages; their mean is 1
     vec3 q = vec3(d / s * 1.3 + p.centre.w * 61.0, p.light.y * 0.02 + p.centre.w * 17.0);
-    float n = 0.6 * splashNoise(q) + 0.4 * splashNoise(q * 2.7 + 5.0);
-    return g * (0.45 + 1.1 * n);
+    float fine = smoothstep(15.0, 40.0, s / sunL.w);
+    float n = splashNoise(q);
+    if (fine > 0.0)
+        n = mix(n, 0.6 * n + 0.4 * splashNoise(q * 2.7 + 5.0), fine);
+    return smoothTau(p, d) * (0.45 + 1.1 * n);
 }
 
 // how much of the smoke round d lies toward the light (h toward it) rather than away: 0 on the near side, up to 1 on
-// the far side; a share, so a thick puff's centre isn't darkened by its depth
+// the far side; a share, so a thick puff's centre isn't darkened by its depth. The smooth Gaussian alone (no billows:
+// the noise is most of a puff's cost)
 float farSide(Puff p, vec2 d, vec2 h)
 {
-    float toward = tauAt(p, d + h), away = tauAt(p, d - h);
-    return clamp((toward - away) / (toward + away + 0.2), 0.0, 1.0);
+    float s2 = 2.0 * p.shape.x * p.shape.x;
+    float toward = exp(-dot(d + h, d + h) / s2), away = exp(-dot(d - h, d - h) / s2);
+    return clamp((toward - away) / (toward + away + 1e-3), 0.0, 1.0);
 }
 
 void main()
 {
     Puff p = puffs[fragIndex];
-    float tau = tauAt(p, fragLoc);
-    float alpha = 1.0 - exp(-tau);
-    if (alpha < 0.002)
-        discard;
     if (fragMode == 1)
     {
-        float a = alpha * p.shadow.z;
+        // the shadow: the smooth Gaussian is enough under a puff's billows
+        float a = (1.0 - exp(-smoothTau(p, fragLoc) * (1.0 - smoothstep(0.7 * p.shape.w, p.shape.w, length(fragLoc))))) * p.shadow.z;
+        if (a < 0.002)
+            discard;
         outColor = vec4(0.0, 0.0, 0.0, a);
         return;
     }
+    // faded to nothing inside the quad (it ends where the smooth depth is down to a few percent: cut there, a wide old
+    // puff showed its box's edges)
+    float tau = tauAt(p, fragLoc) * (1.0 - smoothstep(0.7 * p.shape.w, p.shape.w, length(fragLoc)));
+    float alpha = 1.0 - exp(-tau);
+    if (alpha < 0.002)
+        discard;
     // the light: the sky's and sea's ambient, and the sun and the moon on the puff as a dome seen from above (its
     // normal tilting out with the distance from its centre, wrapped), its far side from the light a little darker (two
     // taps, a sigma apart); the flashes' lights from where they are

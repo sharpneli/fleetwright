@@ -376,6 +376,39 @@ Changed on the way: the puff is shaded as a dome seen from above, with its far s
 by the share of its depth toward the light. A self-shadow by the depth itself darkened every thick puff's centre into a
 ring.
 
+**F7, the cost (2026-10-15).** The stress, as the splashes': 16 battleships at 1.1 km pairwise engaged in one 2 m/px
+view at 60x, 1080p, DevRelease, a 12-knot wind, 2,400 frames, alternating runs with `-flash=on:0`. The first
+measurement was far over budget: +0.8-1.5 ms GPU. At 60x the 6" secondaries fire hundreds of mount-shots a real
+second, and the blasts and puffs piled up on the slower sea clock.
+
+Fixed:
+- the blasts are thinned by the salvo's share, as the flashes are; their quad sits over the mark's footprint (ahead
+  of the bore); pixels with no mark are discarded before the noise;
+- the smoke's side shading uses the smooth Gaussian; the second noise octave runs only on puffs big on the screen;
+  puffs are cut at 5% opacity, faded by a radial window so no quad's edge shows; their shadows are drawn only where
+  they fall clear of the puff; merging is within 1.5σ.
+
+The last clean set (three runs each; a later set was disturbed by load outside the runs):
+
+| | Effects off | Effects on | Added |
+|---|---|---|---|
+| GPU, scene, mean | 1.12 ms | 1.53 ms | +0.41 ms |
+| GPU, scene, p50 | 1.13 ms | 1.41 ms | +0.28 ms |
+| GPU, scene, p95 | 1.18 ms | 2.2 ms | +1.0 ms |
+| CPU, the effects' build | 0.15 ms | 0.24 ms | +0.09 ms |
+
+Nearly all of the GPU's share is the smoke (everything else together +0.04 ms): about 400 puffs covering 1.7 screens
+at the peak. The mean is inside the budget (0.45 ms); the p95, in the heaviest smoke, is not. Nothing allocates a
+frame. **Open, for the user:** accept it, or take the half-resolution smoke target as a logged exception
+(the plan's fallback).
+
+**Still to do in F7: tuning by the user's eye.** Things to look at:
+- the flash's size and brightness by day, and the white-out of its core by night;
+- the frost's look (duller, not silvery);
+- the smoke's density over the ships (a broadside's own smoke hides much of the line in the stress);
+- the rise and spread (research §5.3 calls the rise the most sensitive knob);
+- live at 10x-240x.
+
 ## Decisions (the user, 2026-10-15)
 
 1. **Gun smoke now, drawn by the map** (a logged exception). The smoke system comes later as one effort, since keeping

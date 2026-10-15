@@ -15,7 +15,7 @@ namespace Fleetwright.Map.Flashes;
 /// <item>its extinction area A ramping in after the flash (full A at once haloes the young flash), the water fog
 /// evaporating over τ_w.</item>
 /// </list>
-/// The count is held down by merging (research §5.5): a ship's settled puffs that overlap (within the larger σ) become
+/// The count is held down by merging (research §5.5): a ship's settled puffs that overlap (within 1.5 times the larger σ) become
 /// one, keeping their A, their centre and their second moment; the merged puff carries on from an age that gives its
 /// σ. A puff goes when its peak optical depth falls under <see cref="GoneTau"/>. Over <see cref="Capacity"/>, it merges
 /// harder, then the oldest go. O(n) a frame; nothing allocates once made.</summary>
@@ -68,9 +68,9 @@ public sealed class SmokeBook
         (WindToDeg, WindMs) = ((windFromDeg + 180) % 360, Math.Max(windMs, 0));
         for (int k = shots.Count - shots.Added; k < shots.Count; k++)
             Spawn(shots[k]);
-        Merge(now, 1.0);
-        if (count > Capacity * 3 / 4)
-            Merge(now, 2.0);
+        Merge(now, 1.5);
+        if (count > Capacity / 2)
+            Merge(now, 3.0);
         Sweep(now);
     }
 
