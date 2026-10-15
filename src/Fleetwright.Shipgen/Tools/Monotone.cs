@@ -57,7 +57,7 @@ public static class Monotone
     public static readonly Lever[] Levers =
     [
         new("speed", 0.5, d => d.SpeedKn, (d, v) => d with { SpeedKn = v }, Lo: 8),
-        new("range", 500, d => d.RangeNm ?? 6000, (d, v) => d with { RangeNm = v }, Lo: 500),
+        new("range", 500, d => d.RangeNm ?? Navarch.DefaultRangeNm, (d, v) => d with { RangeNm = v }, Lo: 500),
         new("stress", 0.1, d => d.Machinery?.Stress, (d, v) => d with { Machinery = d.Machinery! with { Stress = Math.Min(1, v) } }, -1),
         new("belt", 10, d => d.Armour?.BeltMm, (d, v) => Arm(d, a => a with { BeltMm = v })),
         new("upper_belt", 10, d => d.Armour?.UpperBelt?.Mm, (d, v) => Arm(d, a => a with { UpperBelt = a.UpperBelt! with { Mm = v } })),

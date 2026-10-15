@@ -397,7 +397,7 @@ public sealed unsafe partial class DesignerScene : IScene
             mainGuns.Length > 0 ? mainGuns : "none",
             secGuns.Length > 0 ? secGuns : (d.Aa?.Heavy ?? 0) + (d.Aa?.Light ?? 0) > 0 ? "AA only" : "none",
             belt > 0 || deck > 0 ? $"belt {Fmt(belt, Quantity.Armour, unit: false)} · deck {Fmt(deck, Quantity.Armour)}" : "none",
-            $"{d.SpeedKn:0.#} kn · {N0(d.RangeNm ?? 6000)} nm",
+            $"{d.SpeedKn:0.#} kn · {N0(d.RangeNm ?? Navarch.DefaultRangeNm)} nm",
             res != null ? $"Cb {res.BlockCoefficient:0.00} · tower {ship!.Report.Bridge?.TowerLevels}" : "",
             (ship?.Report.FireControl.Count ?? 0) switch { 0 => "no directors", 1 => "1 director", var n => $"{n} directors" },
             res != null ? $"{N0(res.Crew)} men" : "",
@@ -412,7 +412,7 @@ public sealed unsafe partial class DesignerScene : IScene
             stats.Add(("BEAM", Fmt(res.BeamM, Quantity.Length, 0.1)));
             stats.Add(("DRAUGHT", Fmt(res.DraughtM, Quantity.Length, 0.1)));
             stats.Add(("SPEED", $"{d.SpeedKn:0.0} kn"));
-            stats.Add(("RANGE", N0(d.RangeNm ?? 6000) + " nm"));
+            stats.Add(("RANGE", N0(d.RangeNm ?? Navarch.DefaultRangeNm) + " nm"));
             stats.Add(("POWER", N0(res.PowerShp) + " shp"));
             stats.Add(("GM", $"{res.GmFullM:0.00} m"));
             stats.Add(("CREW", N0(res.Crew)));
@@ -425,7 +425,7 @@ public sealed unsafe partial class DesignerScene : IScene
                                     $"{Fmt(res.DraughtM, Quantity.Length, 0.1)}"));
             part.Add(("Displacement", $"{N0(res.StandardDisplacementT)} t std · {N0(res.FullDisplacementT)} t full"));
             part.Add(("Machinery", $"{N0(res.PowerShp)} shp · {d.SpeedKn:0.#} kn"));
-            part.Add(("Range", $"{N0(d.RangeNm ?? 6000)} nm"));
+            part.Add(("Range", $"{N0(d.RangeNm ?? Navarch.DefaultRangeNm)} nm"));
             part.Add(("Armament", mainGuns.Length + secGuns.Length > 0 ? string.Join(" · ", new[] { mainGuns, secGuns }.Where(s => s.Length > 0)) : "none"));
             part.Add(("Protection", belt > 0 || deck > 0 ? $"belt {Fmt(belt, Quantity.Armour, unit: false)} · deck {Fmt(deck, Quantity.Armour)}" : "none"));
             part.Add(("Complement", N0(res.Crew)));
@@ -605,6 +605,7 @@ public sealed unsafe partial class DesignerScene : IScene
             case 5:
                 items.Add(new Header("Hull"));
                 items.Add(HullPick(d, ship));
+                Num(Knobs.Scantlings);
                 Num(Knobs.BlockCoefficient);
                 Num(Knobs.Freeboard);
                 if (Knobs.Raised.AppliesTo(d))
@@ -688,7 +689,7 @@ public sealed unsafe partial class DesignerScene : IScene
 
     PickRow HullPick(Design d, Ship? ship) => Pick("Construction", Templates.Hulls, t => t.Note, t => t.Name == d.Hull?.Construction?.Name,
         d.Hull?.Construction is { } hc ? $"custom: {hc.Name}" : $"default: {ship?.Report.Hull.Construction}",
-        (x, v) => x with { Hull = (x.Hull ?? new HullInput()) with { Construction = v } });
+        (x, v) => x with { Hull = (x.Hull ?? new HullInput()) with { Construction = v with { Standard = x.Hull?.Construction?.Standard ?? v.Standard } } });   // the scantlings chosen stay
 
     PickRow CrewPick(Design d, Ship? ship) => Pick("Crew standard", Templates.Crew, t => $"{t.Group}: {t.Name}", t => t.Name == d.Crew?.Standard?.Name,
         d.Crew?.Standard is { } cs ? $"custom: {cs.Name}" : $"default: {ship?.Report.Crew?.Standard}",

@@ -68,7 +68,7 @@ public sealed record ShipCard(string Name, string Subtitle, (string Value, strin
         if (belt > 0)
             heroes.Add((Fmt(belt, Quantity.Armour, u), "belt armour"));
         else
-            heroes.Add((N0(d.RangeNm ?? 6000) + " nm", "range"));
+            heroes.Add((N0(d.RangeNm ?? Navarch.DefaultRangeNm) + " nm", "range"));
 
         var rows = new List<(string, string)>
         {
@@ -77,7 +77,7 @@ public sealed record ShipCard(string Name, string Subtitle, (string Value, strin
                            Fmt(res.DraughtM, Quantity.Length, u, 0.1)),
             ("Machinery", $"{N0(res.PowerShp)} shp, {ship.Report.Plant.Shafts} shafts"),
             ("Plant", ship.Report.Plant.Name),
-            ("Range", N0(d.RangeNm ?? 6000) + " nm"),
+            ("Range", N0(d.RangeNm ?? Navarch.DefaultRangeNm) + " nm"),
         };
         if (main.Length > 0 && main != first)
             rows.Add(("Main battery", main));

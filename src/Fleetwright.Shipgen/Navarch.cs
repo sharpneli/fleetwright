@@ -58,6 +58,11 @@ public static class Navarch
         public List<string> Warnings = [], Errors = [];
     }
 
+    /// <summary>The range a design gets when it gives none, nm at cruise: the middle of the era's warships (destroyers
+    /// about 2,000-6,500, battleships 5,000-8,000). 6,000 put a new design that picked an early plant on a cruiser's
+    /// bunkers.</summary>
+    public const double DefaultRangeNm = 4000;
+
     public static double Froude(double vKn, double L) => vKn * 0.5144 / Math.Sqrt(9.81 * L);
 
     public static double AdmiraltyC(double vKn, double L, double B, double cb, Tuning tun)
@@ -105,7 +110,7 @@ public static class Navarch
         var plant = Powerplant.Spec(design, style.DefaultTech);
         double L = design.HullLength, B = design.HullBeam, cb = design.BlockCoefficient;
         double V = design.SpeedKn!.Value;
-        double rng = design.RangeNm ?? 6000;
+        double rng = design.RangeNm ?? DefaultRangeNm;
         geo ??= new Geo();
         var res = new Result();
 

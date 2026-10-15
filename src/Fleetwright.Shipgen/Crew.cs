@@ -252,7 +252,7 @@ public static class Crew
     public static void Apply(Layout lay, Design design, Navarch.Result res, Style style)
     {
         var c = Spec(design, style.CrewStandard);
-        long rangeDays = (long)Math.Ceiling((design.RangeNm ?? 6000) / Math.Max(res.CruiseKn, 1.0) / 24.0 - 1e-9);
+        long rangeDays = (long)Math.Ceiling((design.RangeNm ?? Navarch.DefaultRangeNm) / Math.Max(res.CruiseKn, 1.0) / 24.0 - 1e-9);
         double endurance = c.EnduranceDays ?? Math.Max(1L, rangeDays);
         var s = c.Standard;
         var (deps, n, officers) = Complement(lay, res, style.CrewExtra(design), style.CrewDeckK, c.OfficerFraction, s.HotelFraction);

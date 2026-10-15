@@ -21,7 +21,7 @@ volume law (`hull_k`) until wooden and light-alloy hulls are researched.
 |---|---|
 | `yield_mpa` | Yield stress of the hull-girder steel mix (high-tensile steel in the strength deck and sheer strake, mild steel elsewhere). The allowable stress is yield / 2.1, capped at 185 MPa. It only matters where the hull is strength driven: big, long ships. Small ships are built to minimum plate gauge whatever the steel. |
 | `join_factor` | Multiplies all structure: riveted laps and butt straps (1.08-1.12) against all welded (1.0). |
-| `standard` | Scales the minimum plate gauge: 0.85 light, 1.0 naval, 1.25 robust. Light structure saves weight on small ships. |
+| `standard` | Scales the minimum plate gauge: 0.75 a torpedo craft's, 0.85 light, 1.0 naval, 1.25 robust. Light structure saves weight on small ships and leaves thinner plate. The designer's Scantlings knob; picking a template keeps it. |
 
 A continuous armour deck over amidships is part of the hull girder, so it saves strength plating: more the
 thicker it is and the farther it is from the neutral axis (0.45 of the depth above the keel).

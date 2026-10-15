@@ -579,6 +579,19 @@ public static class Knobs
         LimitPath = ["hull", "freeboard"],
     };
 
+    /// <summary>The construction standard (hull.construction.standard): the minimum plate gauge, x a naval hull's. Light
+    /// scantlings (0.85, a torpedo craft's 0.75) save weight on a small ship and leave thinner plate for splinters and
+    /// shells to go through; robust ones (1.25) the other way.</summary>
+    public static readonly NumberKnob Scantlings = new("scantlings", "Scantlings (x naval gauge)", Quantity.Ratio, 0.05, 0.05)
+    {
+        Get = d => d.Hull?.Construction?.Standard,
+        Set = (d, v) => Hull(d, h => h with { Construction = (h.Construction ?? new ConstructionInput()) with { Standard = v } }),
+        Auto = (d, s) => 1,
+        CanAuto = true,
+        Lo = 0.6,
+        Hi = 1.5,
+    };
+
     /// <summary>The forecastle presets (hull.raised); a custom list shows as its own entry.</summary>
     public static readonly ChoiceKnob Raised = new("raised", "Raised hull",
         ["flush", "forecastle_bridge", "forecastle_funnels", "forecastle_poop", "breastwork"],
@@ -1143,7 +1156,7 @@ public static class Knobs
         [
             Speed, Range, Belt, BeltBottom, UpperBelt, ArmourDeck, Bulkheads, Tds, AaHeavy, AaLight, TorpedoMounts, TorpedoTubes,
             SubPerSide, SubBow, SubStern, SubPerTube,
-            Stress, Shafts, Arrangement, BlockCoefficient, Freeboard, Raised, TowerLevels, DeckhouseLevels, AftControl,
+            Stress, Shafts, Arrangement, BlockCoefficient, Freeboard, Scantlings, Raised, TowerLevels, DeckhouseLevels, AftControl,
             Endurance, Distiller,
             Topside, TumblehomeStrength, TumblehomeKnuckle, TumblehomeExtent, DeckFinish, ShellMm, DeckWoodMm, LevelsOverBridge,
             SuperstructurePlating, ControlPlating, BeltDepth, BeltHeight, UpperBeltToDeck, UpperBeltExtent, SteeringSides,
