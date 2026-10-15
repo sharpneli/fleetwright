@@ -103,6 +103,35 @@ public class MagazineTests(ITestOutputHelper output)
         Assert.False(book.Thrown(1, mount == 0 ? 1 : 0, out _));
     }
 
+    [Fact]
+    public void The_after_smoke_is_given_once_back_dated_as_soot_that_keeps_its_colour()
+    {
+        var book = new MagazineBook();
+        var smoke = new Fleetwright.Map.Flashes.SmokeBook();
+        // first seen 40 s after it went: the stem's puffs of those 40 s come at once, born at their own moments
+        book.Update(Blasts((1000, 1)), 41_000, 1, 0.016, ClassOf);
+        book.SpawnSmoke(smoke, 100);
+        int soot = 0, steam = 0;
+        double oldest = double.MaxValue;
+        for (int i = 0; i < smoke.Count; i++)
+        {
+            if (smoke[i].Keep)
+                soot++;
+            else
+                steam++;
+            oldest = Math.Min(oldest, smoke[i].Born);
+        }
+        output.WriteLine($"{soot} soot puffs, {steam} steam, the oldest born {100 - oldest:0.0} s ago");
+        double since = 40 - MagazineBlast.MainAtS;
+        Assert.Equal((int)(since / MagazineLook.StemEveryS) + 1, soot);
+        Assert.Equal(100 - since, oldest, 2);
+        Assert.True(steam > 0, "the boilers' steam");
+        // given once: the next frame adds only what's newly due
+        book.Update(Blasts((1000, 1)), 41_016, 1, 0.016, ClassOf);
+        book.SpawnSmoke(smoke, 100.016);
+        Assert.Equal(soot + steam, smoke.Count);
+    }
+
     static BlastsView Blasts(params (long Ms, int Ship)[] oldestFirst)
     {
         var v = new BlastsView();

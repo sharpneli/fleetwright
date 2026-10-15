@@ -35,6 +35,12 @@ public static class MagazineLook
     /// <summary>The stem: its width over the cap's, its optical depth, and its fires' fading, s.</summary>
     public static double StemShare = 0.18, StemTau = 3, StemFadeS = 40;
 
+    /// <summary>The after-smoke (X6) on the smoke's puffs: a stem puff every so many seconds while the fires burn (three
+    /// of their fadings; far enough apart that the wind lays them out as a plume, not one blob merged at the wreck), the
+    /// fires' smoke at the start for the reference's event, m² of extinction area a second (a heavy oil fire's: a 15"
+    /// twin's gun smoke every ~0.7 s), and each of the boilers' four steam puffs', m², as water fog.</summary>
+    public static double StemEveryS = 6, StemSmokeM2 = 15_000, SteamM2 = 8_000;
+
     /// <summary>A gain on the fire's brightness over the physical contrast (as the flashes': 1 physical).</summary>
     public static double Gain = 1;
 
@@ -47,8 +53,8 @@ public static class MagazineLook
     public static double Steps = 0.6;
 
     /// <summary>Which parts draw, for measuring each's cost: 1 the body, 2 its shadow, 4 the jets and the hit's flash, 8
-    /// the debris, its trails and the sparks, 16 the fire's light on the sea and the ships.</summary>
-    public static int Parts = 31;
+    /// the debris, its trails and the sparks, 16 the fire's light on the sea and the ships, 32 the after-smoke.</summary>
+    public static int Parts = 63;
 
     /// <summary>The share of the fire's light as drawn that it throws on the sea and the ships (the research: restraint,
     /// a local pool; at full the night sea went beige).</summary>
@@ -81,6 +87,9 @@ public static class MagazineLook
             case "stem": StemShare = Math.Max(v, 0); break;
             case "stemtau": StemTau = Math.Max(v, 0); break;
             case "stemfade": StemFadeS = Math.Max(v, 1); break;
+            case "stemevery": StemEveryS = Math.Max(v, 0.2); break;
+            case "stemsmoke": StemSmokeM2 = Math.Max(v, 0); break;
+            case "steam": SteamM2 = Math.Max(v, 0); break;
             case "gain": Gain = Math.Max(v, 0); break;
             case "whiten": Whiten = Math.Clamp(v, 0, 1); break;
             case "light": LightShare = Math.Max(v, 0); break;
@@ -95,5 +104,5 @@ public static class MagazineLook
         return true;
     }
 
-    public const string Knobs = "scatterd, scatters, life, skin, cold, hot, soot, opacity, mushroom, spin, stem, stemtau, stemfade, gain, whiten, steps, knee, kneehc, parts (1 body, 2 shadow, 4 jets, 8 debris, 16 light), light, at (a still at that age, s), on";
+    public const string Knobs = "scatterd, scatters, life, skin, cold, hot, soot, opacity, mushroom, spin, stem, stemtau, stemfade, stemevery, stemsmoke, steam, gain, whiten, steps, knee, kneehc, parts (1 body, 2 shadow, 4 jets, 8 debris, 16 light, 32 after-smoke), light, at (a still at that age, s), on";
 }

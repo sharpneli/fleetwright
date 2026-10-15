@@ -42,6 +42,8 @@ public sealed class MagazineBook : IThrownTurrets
         /// <summary>What it throws (X4).</summary>
         public MagazineDebris Debris;
         public uint Hash;
+        /// <summary>The after-smoke's puffs given to the smoke so far (X6): the stem's fires', the boilers' steam.</summary>
+        public int Stem, Steam;
     }
 
     /// <summary>The most kept at once.</summary>
@@ -171,6 +173,55 @@ public sealed class MagazineBook : IThrownTurrets
         }
         return false;
     }
+
+    /// <summary>The after-smoke (X6) into the smoke's book, each puff once, back-dated to its moment on the smoke's
+    /// clock (<paramref name="smokeNow"/>) so an event seen late has its whole plume: the stem's fires every
+    /// <see cref="MagazineLook.StemEveryS"/> while they burn, soot that keeps its colour, fading with them; the nearest
+    /// boiler room's steam over its first seconds, white water fog that evaporates.</summary>
+    public void SpawnSmoke(Flashes.SmokeBook smoke, double smokeNow)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            ref var e = ref ring[(head - count + i + Capacity) % Capacity];
+            var ev = e.Event;
+            double since = SeaClock - e.SeaT0 - MagazineBlast.MainAtS;   // on the sea's clock, from the main event
+            if (since < 0)
+                continue;
+            var up = e.At.Normalized();
+            double k = ev.K;
+            int due = (int)Math.Min(since / MagazineLook.StemEveryS, 3 * MagazineLook.StemFadeS / MagazineLook.StemEveryS) + 1;
+            for (; e.Stem < due; e.Stem++)
+            {
+                double at = e.Stem * MagazineLook.StemEveryS;
+                smoke.Add(new Flashes.SmokeBook.Puff
+                {
+                    Born = smokeNow - (since - at), Origin = e.At + up * ev.DeckZ, Z0 = (float)(ev.DeckZ + 10), Anchor = (float)ev.DeckZ,
+                    Lambda = (float)(30 * Math.Sqrt(k)),
+                    Ap = (float)(MagazineLook.StemSmokeM2 * MagazineLook.StemEveryS * k * k * Math.Exp(-at / MagazineLook.StemFadeS)),
+                    Aw0 = 0, FogS = 1, RampS = 1, Tint = Soot, Seed = (Hash(e.Hash + (uint)e.Stem * 977u) & 0xffff) / 65536f,
+                    Shooter = e.Ship | 1 << 30, Keep = true,
+                });
+            }
+            if (double.IsNaN(ev.SteamX))
+                continue;
+            var boiler = e.At + e.Forward * (ev.SteamX - ev.X) - e.Starboard * ev.Y;
+            int steamDue = (int)Math.Min(since / 2, 3) + 1;
+            for (; e.Steam < steamDue; e.Steam++)
+            {
+                double at = e.Steam * 2.0;
+                smoke.Add(new Flashes.SmokeBook.Puff
+                {
+                    Born = smokeNow - (since - at), Origin = boiler + up * ev.DeckZ, Z0 = (float)(ev.DeckZ + 5), Anchor = (float)ev.DeckZ,
+                    Lambda = (float)(30 * Math.Sqrt(k)), Ap = 0, Aw0 = (float)(MagazineLook.SteamM2 * k), FogS = 8, RampS = 1,
+                    Tint = System.Numerics.Vector3.One, Seed = (Hash(e.Hash + (uint)e.Steam * 7907u) & 0xffff) / 65536f,
+                    Shooter = e.Ship | 1 << 29,
+                });
+            }
+        }
+    }
+
+    /// <summary>Soot, linear: very dark, a little warm (research §1.2).</summary>
+    static readonly System.Numerics.Vector3 Soot = new(0.075f, 0.068f, 0.062f);
 
     bool Seen(long ms, int ship)
     {

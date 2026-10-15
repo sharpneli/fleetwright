@@ -39,7 +39,12 @@ public sealed class SmokeBook
         public float Ap, Aw0, FogS, RampS;
         public Vector3 Tint;
         public float Seed;
+        /// <summary>Who it belongs to: puffs merge only with their own's (a ship's gun smoke; a magazine's soot, its
+        /// steam, each keyed apart).</summary>
         public int Shooter;
+        /// <summary>It keeps its tint as it ages (a magazine's soot, docs/visuals/magazine-explosions.md X6), where gun
+        /// smoke whitens from its muzzle's tint.</summary>
+        public bool Keep;
     }
 
     public const int Capacity = 4096;
@@ -72,6 +77,20 @@ public sealed class SmokeBook
         if (count > Capacity / 2)
             Merge(now, 3.0);
         Sweep(now);
+    }
+
+    /// <summary>A puff from elsewhere than a gun (a magazine's after-smoke): kept as given, merged and swept with the
+    /// rest. Its <see cref="Puff.Born"/> is on this book's clock (the sea's), and may lie in the past.</summary>
+    public void Add(in Puff p)
+    {
+        if (p.Ap + p.Aw0 <= 0)
+            return;
+        if (count == Capacity)
+        {
+            Array.Copy(puffs, 1, puffs, 0, count - 1);
+            count--;
+        }
+        puffs[count++] = p;
     }
 
     void Spawn(in ShotBook.Entry e)
@@ -154,7 +173,7 @@ public sealed class SmokeBook
                 Z0 = (float)(z - 0.6 * lambda * (1 - Math.Exp(-ageEff / (3 + 0.05 * lambda)))), JetZ = 0,
                 Anchor = (float)(q.Anchor * wj + p.Anchor * wi), Lambda = (float)lambda,
                 Ap = (float)particles, Aw0 = (float)(fogNow * Math.Exp(ageEff / fogS)), FogS = (float)fogS, RampS = 0,
-                Tint = q.Tint * (float)wj + p.Tint * (float)wi, Seed = q.Seed, Shooter = q.Shooter,
+                Tint = q.Tint * (float)wj + p.Tint * (float)wi, Seed = q.Seed, Shooter = q.Shooter, Keep = q.Keep,
             };
             p.Ap = p.Aw0 = 0;   // merged away: swept below
         }

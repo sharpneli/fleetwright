@@ -303,6 +303,30 @@ sea (every shader reading the lights). `Add` now ignores a light of nothing (tes
 Open, for X7: the fire has no reflection on the night sea. Its glint pool lies under the light, and the light is over
 the wreck, so the ship hides it; the research's mirror image down the screen is the planar reflection (Later).
 
+**X6 (2026-10-15).** The after-smoke on the gun smoke's book (decision 4): `SmokeBook.Add` (puffs from elsewhere than a
+gun, merged and swept with the rest, each kind keyed apart) and `Puff.Keep` (its tint stays: the gun smoke's whitening
+with age would bleach soot). `MagazineBook.SpawnSmoke` gives each puff once, back-dated to its moment on the smoke's
+clock, so an event seen late has its whole plume:
+- **the stem's fires**: a soot puff (linear 0.075, 0.068, 0.062) every 6 s while they burn (three of their 40 s
+  fadings), 15,000 m² of extinction area a second at the start for the reference's event, × k²;
+- **the boilers' steam**: four white water-fog puffs over the first 6 s from the nearest boiler room, 8,000 m² each × k,
+  evaporating over 8 s.
+
+Seen (noon, 2 m/px, live at 2x): the cap overhead and its stem, a dark-brown plume from the wreck laid downwind, the
+steam a white burst at the wreck early on; by ~160 s the body is gone and the pall drifts as a brown wedge some 300 m
+downwind of the wreck.
+
+Changed on the way:
+- **Puffs 6 s apart, from a 10 m core**: every 2 s, each new one lay within the merge's reach of the last and the
+  fires' smoke was one blob dragging at the wreck.
+- **Far less steam, gone faster** (8,000 m² a puff over 8 s, not 40,000 over 20): it sat at the waterline as a white
+  ball for a minute.
+
+**The cap's handover to puffs is not done.** A puff born now, back-dated to the age that gives the cap's spread (the
+merging's trick), would appear at full strength at once: the handover popped. The body instead fades over its last
+third (80-120 s on the effects' clock) while the stem's plume carries the pall on. For X7: a ramp for back-dated puffs,
+if the fade reads wrong.
+
 ## Later
 
 - Tier 1 (the burn-out column the ship survives) and tier 4 (two fireballs along the hull), with the venting race.

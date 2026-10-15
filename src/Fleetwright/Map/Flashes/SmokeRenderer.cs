@@ -157,7 +157,7 @@ public sealed unsafe class SmokeRenderer : IDisposable
             {
                 Centre = new Vector4((float)rel.X, (float)rel.Y, (float)rel.Z, p.Seed),
                 Shape = new Vector4((float)sigma, (float)(area * world), (float)lift, (float)half),
-                Light = new Vector4((float)dz, (float)age, (float)(1 - Math.Exp(-age / 5)), (float)fog),
+                Light = new Vector4((float)dz, (float)age, p.Keep ? 0 : (float)(1 - Math.Exp(-age / 5)), (float)fog),
                 Tint = new Vector4(p.Tint, bore.X),
                 // its shadow only where it falls clear of the puff (under a high sun it lies beneath it: half the fragments)
                 Shadow = new Vector4(shadowOff, shadowOff.Length() > 0.5 * sigma ? shadowOn : 0, bore.Y),

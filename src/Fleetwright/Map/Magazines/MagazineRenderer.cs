@@ -108,9 +108,11 @@ public sealed unsafe class MagazineRenderer : IDisposable
     /// is the clock's (0 paused), <paramref name="dtS"/> the frame's real seconds, <paramref name="world"/> the view's
     /// <see cref="WorldView.Factor(in MapView)"/>.</summary>
     public void Build(in MapView view, Snapshot s, long drawMs, double speed, double dtS, double world, ShipLights frameLights,
-        Func<int, ShipClass?> classOf, FlashLights? flashLights = null, BlastRenderer? blasts = null)
+        Func<int, ShipClass?> classOf, FlashLights? flashLights = null, BlastRenderer? blasts = null, SmokeBook? smoke = null, double smokeNow = 0)
     {
         Book.Update(s.Blasts, drawMs, speed, dtS, classOf, s.Ships, splashes);
+        if (smoke != null && MagazineLook.On && (MagazineLook.Parts & 32) != 0)
+            Book.SpawnSmoke(smoke, smokeNow);
         lights = frameLights;
         count = jetCount = trailCount = 0;
         if (world <= 0 || !MagazineLook.On || Book.Count == 0)
