@@ -12,6 +12,21 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-15 - Torpedo tracks, launches and hits as seen, 1890-1945
+- Question: what a torpedo looked like from a ship's bridge or aloft, and from above. The bubble track: how far behind
+  the torpedo it surfaced (by depth and speed), how wide it was and how it spread, how long it stayed visible, how it
+  read in sun, overcast, a seaway and at night (phosphorescence?), cold-air against wet-heater against steam, and how
+  little oxygen and electric ones left. Whether the track was also a slick (smoother water darkening the glint). The
+  launch: a deck mount's impulse charge (smoke, flash), the drop and splash, the dive and recovery; a submerged tube's
+  air. The hit: the column's height and width by charge (100-300 kg), its timing, its colour (water, smoke), what
+  shows at night. Period photos with scale (Pearl Harbor, Jutland, the Dardanelles, the Adriatic) are the best anchors.
+- Context / relevant files: `docs/visuals/torpedoes.md` (the plan, whose numbers are physics estimates: bubbles rising
+  at 0.25-0.8 m/s from 3-5 m, a track 2 m wide spreading to ~7 m over 90 s, a column of 12 W^⅓ m),
+  `docs/visuals/battle-marks.md` (the table's torpedo marks), `src/Fleetwright.Sim/TorpedoSystem.cs`. Not blocking:
+  the plan builds on its estimates and tunes by eye; this replaces them.
+- Wanted output: the numbers with sources and their spread, against the plan's estimates; what the look should show
+  that the plan leaves out.
+
 ### 2026-10-14 - When ships fell out and fleets broke off, 1890-1925
 - Question: what damage made a captain leave the line (speed lost, guns out, list, flooding, fire), and what losses
   or circumstances made an admiral break off an action, across the era's actions (Yalu, Santiago, Yellow Sea,

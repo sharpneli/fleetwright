@@ -348,6 +348,7 @@ docs/missions/plan.md         # missions, the battle module's stand-in for polit
 docs/visuals/sea.md           # the sea: the table/world boundary, the FFT ocean in the globe's pass (W0-W4 done; foam later)
 docs/visuals/wakes.md         # wakes: the Kelvin field baked per class and speed into the sea's slopes, the trail as foam (agreed 2026-10-15; K1-K4 done: the bake, the library, the stamps, the foam lanes)
 docs/visuals/magazine-explosions.md   # magazine explosions in the world view: the sim's record, the event per class, the analytic body, jets, debris, the blast and light, the after-smoke (X0-X7 done and approved 2026-10-15)
+docs/visuals/torpedoes.md     # torpedoes in the world view: the bubble track as foam, the torpedo, launches, the hit's column on the splash model (agreed 2026-10-15)
 docs/visuals/splashes.md      # shell splashes in the world view: columns through the 3/4 effects camera, foam, shadow, dye, time compression (P0-P5 done 2026-10-15)
 docs/visuals/ship-lighting.md # the ship sprites lit: relief and normals, materials, the sun and moon, in the one forward pass (L1 done)
 research/                     # research notes, see below
