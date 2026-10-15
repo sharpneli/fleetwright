@@ -10,7 +10,8 @@
 //     Cox and Munk's for the wind;
 //  4. lit: the water body from the sun and the sky, the sky's reflection by Fresnel, and the sun's and moon's glints
 //     from the anisotropic Gaussian slope distribution (Cox-Munk, Bruneton). Light from the ships' Lights block.
-//  5. the wakes' slopes and variance added to the sea's (linear waves superpose), before the light.
+//  5. the wakes' slopes and variance added to the sea's (linear waves superpose), before the light; their foam (the
+//     trails' lanes) over the water after it, lit by the same lights.
 
 layout(set = 2, binding = 1) uniform sampler2D seaM0;
 layout(set = 2, binding = 2) uniform sampler2D seaM1;
@@ -38,6 +39,9 @@ layout(set = 3, binding = 1) uniform Sea
     vec4 seaNight;  // rgb: the night's light on the water (SeaView.NightLight: tuned, not real), linear; w: its relief
     vec4 seaNightDir; // xyz: toward it, Earth-fixed
 };
+
+// whitewater's reflectance (fresh foam ~0.5-0.8; the lanes are mostly fresh near the ship)
+const float FoamAlbedo = 0.7;
 
 float seaHash(ivec2 c)
 {
@@ -182,6 +186,8 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake)
         vec3 nrm = normalize(vec3(-m, 1.0));
         if (view == 3)   // 3 the wakes alone: their slopes, red right and green up, blue their spread
             return vec3(0.5 + wake.xy * 2.5, sqrt(wake.z) * 3.0);
+        if (view == 4)   // 4 the foam's coverage
+            return vec3(wake.w);
         return view == 1 ? nrm * 0.5 + 0.5 : vec3(sqrt(var) * 3.0, 0.0);   // 1 the normal, 2 the slopes' spread
     }
 
@@ -204,5 +210,13 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake)
     }
     vec3 c = (1.0 - F) * body + F * skyAt(r, vec3(0.0, 0.0, 1.0), 0.0);
     c += (sunRad.rgb * seaGlint(lSun, v, m, var) + moonRad.rgb * seaGlint(lMoon, v, m, var)) * seaMss2.z;
+    // the foam: a white, rough surface over the water (it hides the glint), lit as a level one by the sun, the moon,
+    // the sky and the night's light
+    float foam = clamp(wake.w, 0.0, 1.0);
+    if (foam > 0.0)
+    {
+        vec3 lit = sunRad.rgb * max(lSun.z, 0.0) + moonRad.rgb * max(lMoon.z, 0.0) + skyAmb.rgb + seaNight.rgb * max(lNight.z, 0.0);
+        c = mix(c, FoamAlbedo * lit, foam);
+    }
     return linearToSrgb(shoulder(c, look.z));
 }

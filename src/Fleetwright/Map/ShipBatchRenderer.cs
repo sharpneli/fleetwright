@@ -566,10 +566,13 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     const uint QuadBufferBytes = 8 << 20;   // ~58,000 quads
 
     readonly SDL_GPUDevice* device;
-    readonly SDL_GPUShader* vs, fsSprite, fsShadow, fsWake;
+    readonly SDL_GPUShader* vs, fsSprite, fsShadow, fsWake, vsRibbon, fsRibbon;
+    readonly DynamicGpuBuffer foamBuf;
+    int foamUploaded;
+    const uint FoamBufferBytes = 4 << 20;   // ~131,000 corners
     readonly SDL_GPUSampler* linear, nearest;
     readonly DynamicGpuBuffer quadBuf;
-    SDL_GPUGraphicsPipeline* spritePipe, shadowPipe, wakePipe;
+    SDL_GPUGraphicsPipeline* spritePipe, shadowPipe, wakePipe, ribbonPipe;
     SDL_GPUTextureFormat wakeFormat;
     SDL_GPUTextureFormat pipeFormat;
     SDL_GPUSampleCount pipeSamples;
@@ -580,6 +583,9 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
 
     /// <summary>The wakes' bakes, on threads of their own (docs/visuals/wakes.md K2).</summary>
     public WakeLibrary Wakes { get; }
+
+    /// <summary>The foam lanes this frame (docs/visuals/wakes.md K4), built by the map's trails.</summary>
+    public FoamTrails Foam { get; } = new();
 
     /// <summary>The stand-in icon: a hull's plan, white, mipmapped.</summary>
     public nint Icon { get; }
@@ -596,13 +602,16 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         fsSprite = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 4, 0, 0, 1);
         fsShadow = GpuShader.Load(device, "Content/Shaders/Compiled/shipmap_shadow.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 0, 0);
         fsWake = GpuShader.Load(device, "Content/Shaders/Compiled/wakesplat.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 0, 0);
-        if (vs == null || fsSprite == null || fsShadow == null || fsWake == null)
+        vsRibbon = GpuShader.Load(device, "Content/Shaders/Compiled/wakeribbon.vert.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX, 0, 0, 0, 1);
+        fsRibbon = GpuShader.Load(device, "Content/Shaders/Compiled/wakeribbon.frag.spv", SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT, 0, 0, 0, 0);
+        if (vs == null || fsSprite == null || fsShadow == null || fsWake == null || vsRibbon == null || fsRibbon == null)
             throw new InvalidOperationException("ship map shaders failed to load");
         linear = Sampler(SDL_GPUFilter.SDL_GPU_FILTER_LINEAR, SDL_GPUSamplerMipmapMode.SDL_GPU_SAMPLERMIPMAPMODE_LINEAR);
         nearest = Sampler(SDL_GPUFilter.SDL_GPU_FILTER_NEAREST, SDL_GPUSamplerMipmapMode.SDL_GPU_SAMPLERMIPMAPMODE_NEAREST);
         quadBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ, QuadBufferBytes);
         Icon = (nint)SpriteTextures.Upload(device, SpriteImages.Chain(IconImage(), false, 5));
         Wakes = new WakeLibrary(device);
+        foamBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_VERTEX, FoamBufferBytes);
     }
 
     /// <summary>The icon: a hull's plan 128 x 32, bow to the right (+x), a fine bow and a rounded stern.</summary>
@@ -678,6 +687,10 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     public void Copy(SDL_GPUCommandBuffer* cmd)
     {
         Wakes.Update(cmd);
+        var fv = Foam.Vertices;
+        foamUploaded = Math.Min(fv.Length, (int)(FoamBufferBytes / FoamVertex.SizeInBytes));
+        foamUploaded -= foamUploaded % 6;
+        foamBuf.Upload(cmd, fv[..foamUploaded]);
         var q = List.Quads;
         uploaded = Math.Min(q.Length, (int)(QuadBufferBytes / ShipQuad.SizeInBytes));
         quadBuf.Upload(cmd, q[..uploaded]);
@@ -737,22 +750,50 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     /// added, foam by the most (docs/visuals/wakes.md).</summary>
     public void DrawWake(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
     {
-        if (List.WakeDraws.Length == 0 || uploaded == 0)
-            return;
         if (wakePipe == null || wakeFormat != target.ColorFormat)
         {
             if (wakePipe != null)
                 SDL_ReleaseGPUGraphicsPipeline(device, wakePipe);
+            if (ribbonPipe != null)
+                SDL_ReleaseGPUGraphicsPipeline(device, ribbonPipe);
             wakeFormat = target.ColorFormat;
-            wakePipe = new GpuPipelineBuilder().SetColorFormat(target.ColorFormat).SetMultisampling(target.SampleCount)
-                .SetCullMode(SDL_GPUCullMode.SDL_GPU_CULLMODE_NONE).EnableBlendingAddMaxAlpha().ClearVertexLayout()
-                .NoDepthTarget().DisableDepthTest().SetShaders(vs, fsWake).Build(device);
-            if (wakePipe == null)
-                throw new InvalidOperationException($"wake pipeline: {SDL_GetError()}");
+            GpuPipelineBuilder B() => new GpuPipelineBuilder().SetColorFormat(target.ColorFormat).SetMultisampling(target.SampleCount)
+                .SetCullMode(SDL_GPUCullMode.SDL_GPU_CULLMODE_NONE).EnableBlendingAddMaxAlpha().NoDepthTarget().DisableDepthTest();
+            wakePipe = B().ClearVertexLayout().SetShaders(vs, fsWake).Build(device);
+            ribbonPipe = B().ClearVertexLayout().AddVertexBuffer(0, FoamVertex.SizeInBytes)
+                .AddVertexAttribute(0, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, 0)
+                .AddVertexAttribute(1, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT, 12)
+                .AddVertexAttribute(2, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, 16)
+                .AddVertexAttribute(3, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT, 24)
+                .SetShaders(vsRibbon, fsRibbon).Build(device);
+            if (wakePipe == null || ribbonPipe == null)
+                throw new InvalidOperationException($"wake pipelines: {SDL_GetError()}");
         }
         var (near, far) = GlobeRenderer.DepthRange(view);
-        var sb = quadBuf.Buffer;
         var lights = List.Lights;
+        var vp0 = new ViewParams
+        {
+            Right = new Vector4(F(view.Right), (float)view.TanHalfX),
+            Up = new Vector4(F(view.Up), (float)view.TanHalfY),
+            Fwd = new Vector4(F(view.Forward), 0),
+            Depth = new Vector4((float)near, (float)far, 0, 0),
+            Sun = new Vector4(F(lights.SunDir), 0),
+            Moon = new Vector4(F(lights.MoonDir), 0),
+        };
+
+        // the foam lanes, then the stamps (each to its own channels: the order doesn't matter)
+        if (foamUploaded > 0)
+        {
+            SDL_BindGPUGraphicsPipeline(pass, ribbonPipe);
+            var vb = new SDL_GPUBufferBinding { buffer = foamBuf.Buffer, offset = 0 };
+            SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
+            var vf = vp0;
+            SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&vf), (uint)sizeof(ViewParams));
+            SDL_DrawGPUPrimitives(pass, (uint)foamUploaded, 1, 0, 0);
+        }
+        if (List.WakeDraws.Length == 0 || uploaded == 0)
+            return;
+        var sb = quadBuf.Buffer;
         SDL_BindGPUGraphicsPipeline(pass, wakePipe);
         SDL_BindGPUVertexStorageBuffers(pass, 0, &sb, 1);
         var b2 = stackalloc SDL_GPUTextureSamplerBinding[2];
@@ -760,15 +801,8 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         {
             if (d.First + d.Count > uploaded)
                 break;
-            var vp = new ViewParams
-            {
-                Right = new Vector4(F(view.Right), (float)view.TanHalfX),
-                Up = new Vector4(F(view.Up), (float)view.TanHalfY),
-                Fwd = new Vector4(F(view.Forward), 0),
-                Depth = new Vector4((float)near, (float)far, d.First, 0),
-                Sun = new Vector4(F(lights.SunDir), 0),
-                Moon = new Vector4(F(lights.MoonDir), 0),
-            };
+            var vp = vp0;
+            vp.Depth.Z = d.First;
             SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&vp), (uint)sizeof(ViewParams));
             b2[0] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex0, sampler = linear };
             b2[1] = new SDL_GPUTextureSamplerBinding { texture = (SDL_GPUTexture*)d.Tex1, sampler = linear };
@@ -786,7 +820,12 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         ReleasePipelines();
         if (wakePipe != null)
             SDL_ReleaseGPUGraphicsPipeline(device, wakePipe);
+        if (ribbonPipe != null)
+            SDL_ReleaseGPUGraphicsPipeline(device, ribbonPipe);
+        foamBuf.Dispose();
         SDL_ReleaseGPUShader(device, fsWake);
+        SDL_ReleaseGPUShader(device, vsRibbon);
+        SDL_ReleaseGPUShader(device, fsRibbon);
         quadBuf.Dispose();
         SDL_ReleaseGPUTexture(device, (SDL_GPUTexture*)Icon);
         SDL_ReleaseGPUShader(device, vs);

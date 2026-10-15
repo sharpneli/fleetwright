@@ -219,6 +219,23 @@ wrapped round the bake's grid. They're under the glitter when lit.
   - a ship stopping (the lane fades from where it slowed);
   - Jutland at 4 m/px for cost.
 
+**Done 2026-10-15** (`Map/Wakes/WakeTrail.cs`, `FoamTrails.cs`, `wakeribbon.vert/.frag`; the foam lit in `seaShade`,
+`FoamAlbedo` 0.7; `-sea=foam:G` the gain, 0 for none; `-sea=debug:4` the foam alone; `WakeTrailTests`). The map's
+`Track` became `WakeTrail`, the one trail for the line and the lane, sampled at the stern (`WakeHull.X0`). The white
+water lives `WhiteS` 180 s, the slick (12%) to the trail's end; the ribbon reaches two lane widths each side; points
+closer than 3 px are skipped, and one is put in a beam behind the transom so the ramp-in is that short. Seen:
+- a destroyer at 26 kn: the lane starts just behind the transom, solid white near the ship, broken and fading with
+  age back along the trail; the wave field shows beside it;
+- destroyers turning: the lane is a smooth curve; at 1.2 m/px the noise has faded to an even lane (no shimmer);
+- at 4 m/px the lanes read as the paths' cue, at night dimly; at 5 m/px, in the cross-fade, line and lane blend.
+
+Cost, Jutland at 4 m/px, 1080p, 30x, two runs each, `wake:0,foam:0` against `wake:1,foam:1`: the GPU's scene p50
+2.80 / 2.92 against 2.68 / 2.87 ms (within the spread); on the CPU the overlay (where the ribbons are built) 0.085 →
+0.137 ms a frame and the ship draw list 0.043 → 0.057 ms.
+
+Open, for K5: near the ship the lane reads a bit like a painted stripe (too even, too opaque); the trail's first
+point (a spawn) cuts square.
+
 ### K5. Tuning and the docs
 
 - The knobs (`-sea=wake:1,foam:1`) set by eye against the research's photos, at Fr_L 0.25, 0.35 and 0.55.

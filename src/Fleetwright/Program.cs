@@ -130,7 +130,7 @@ public static unsafe class Program
             {
                 foreach (var kv in arg.Substring("-sea=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
                     if (!Map.SeaView.Set(kv))
-                        Console.Error.WriteLine($"Bad sea knob: {kv} (want facet, relief, lowsunrelief, chop, debug, nightrelief, moonnight, starnight, wake)");
+                        Console.Error.WriteLine($"Bad sea knob: {kv} (want facet, relief, lowsunrelief, chop, debug, nightrelief, moonnight, starnight, wake, foam)");
             }
             else if (arg == "-paused")   // the world starts paused
             {

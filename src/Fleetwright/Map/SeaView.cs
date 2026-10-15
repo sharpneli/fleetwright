@@ -74,6 +74,9 @@ public sealed class SeaView
     /// <summary>The wakes' gain over the bakes' realistic slopes (docs/visuals/wakes.md K5); 0 draws none.</summary>
     public static float WakeGain = 1;
 
+    /// <summary>The foam lanes' gain over their realistic white water (docs/visuals/wakes.md K4); 0 draws none.</summary>
+    public static float FoamGain = 1;
+
     /// <summary>Sets a knob by name, "facet:0.7", "relief:1", "lowsunrelief:4", "chop:1", "debug:1", "nightrelief:7",
     /// "moonnight:1.2" (the moon's gain on the night's light) and "starnight:1" (a scale on the starlight) (the -sea= flag,
     /// for side-by-side captures); false for a bad one.</summary>
@@ -90,6 +93,7 @@ public sealed class SeaView
             case "chop": Chop = v; break;
             case "debug": Debug = (int)v; break;
             case "wake": WakeGain = v; break;
+            case "foam": FoamGain = v; break;
             case "nightrelief": NightRelief = v; break;
             case "moonnight": MoonNightGain = v; break;
             case "starnight": StarNightRad = new Vector3(0.08f, 0.10f, 0.15f) * v; break;

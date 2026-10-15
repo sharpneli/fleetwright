@@ -1,3 +1,4 @@
+using Fleetwright.Map.Wakes;
 using System.Numerics;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Ai;
@@ -50,21 +51,9 @@ public sealed unsafe partial class MapScene
 
     static readonly string[] CaptainNames = ["Course and speed", "Follow", "Run from", "Fight"];
 
-    /// <summary>A short wake of positions behind each ship, sampled in game time; made when a ship is first seen.</summary>
-    sealed class Track
-    {
-        // grows as it fills, up to TrackPoints (2.7c: 2,000 full-size tracks made at once on a scenario's first frame
-        // were 11.5 MB and a collection)
-        public Vec3d[] Points = new Vec3d[16];
-        public int Count, Head;
-        public long LastMs;
-        public long Seen;
-    }
-
     static readonly int[] CourseSteps = [-90, -10, 10, 90];
-    const int TrackPoints = 60;
-    const long TrackEveryMs = 10_000;   // 10 minutes of track (the user, 2026-10-13: 40 was too long)
-    readonly Dictionary<int, Track> tracks = [];
+    // each ship's trail (Wakes.WakeTrail): a line on the table, the foam lane in the world view (docs/visuals/wakes.md K4)
+    readonly Dictionary<int, WakeTrail> tracks = [];
     readonly List<int> gone = [];
     long frame;
 
@@ -92,36 +81,13 @@ public sealed unsafe partial class MapScene
             var (p, f) = v.PoseAt(k, world.DrawMs);
             int e = v.Entity[k];
 
-            // the track: sampled here, drawn last (TrackLines)
+            // the trail: sampled here, drawn last (TrackLines); at the stern, so the foam lane starts at the transom
             if (!tracks.TryGetValue(e, out var tr))
-                tracks[e] = tr = new Track();
+                tracks[e] = tr = new WakeTrail();
             tr.Seen = frame;
-            long now = world.DrawMs;
-            if (tr.Count > 0)
-            {
-                // a jump no ship could have steamed (a unit snapped onto its stations on rails, or round to a new
-                // course): the track starts again where it is, not drawn across the jump (a fan of lines to the new
-                // stations, the user's 2026-10-13)
-                var last = tr.Points[(tr.Head - 1 + tr.Points.Length) % tr.Points.Length];
-                double could = (Math.Abs(v.Speed[k]) + 3) * Math.Abs(now - tr.LastMs) / 1000 + 100;
-                if (Earth.Distance(p, last) > could)
-                    (tr.Count, tr.Head) = (0, 0);
-            }
-            if (tr.Count == 0 || now - tr.LastMs >= TrackEveryMs)
-            {
-                if (tr.Count == tr.Points.Length && tr.Points.Length < TrackPoints)
-                {
-                    // full and never wrapped (it grows before it would), so in order from 0, the head back at 0: the
-                    // next point goes after the old ones, not over the oldest (that left zeros read as points, every
-                    // track starting at the globe's centre)
-                    Array.Resize(ref tr.Points, Math.Min(tr.Points.Length * 2, TrackPoints));
-                    tr.Head = tr.Count;
-                }
-                tr.Points[tr.Head] = p;
-                tr.Head = (tr.Head + 1) % tr.Points.Length;
-                tr.Count = Math.Min(tr.Count + 1, tr.Points.Length);
-                tr.LastMs = now;
-            }
+            if (!tr.Known && classOf(v.Class[k]) is { } tc && shipRenderer.Wakes.HullOf(v.Class[k], tc) is { } hull)
+                (tr.SternX, tr.Beam, tr.Wash, tr.Known) = (hull.X0, hull.BeamM, FoamTrails.WashOf(tc.Motion.Shafts), true);
+            tr.Sample(p, f, v.Speed[k], world.DrawMs);
 
             // the route still to steam
             bool sel = e == selected;
@@ -211,27 +177,37 @@ public sealed unsafe partial class MapScene
         overlay.End();
     }
 
-    /// <summary>Every ship's track, as cheaply as it reads (docs/battle/plan.md step 2.7b: 250 ships' tracks were
-    /// ~60,000 segments a frame, past the overlay's buffer): none for a ship further off the screen than its track
-    /// reaches, and the points thinned to about three pixels apart at its speed.</summary>
+    /// <summary>Every ship's trail, as cheaply as it reads (docs/battle/plan.md step 2.7b: 250 ships' tracks were
+    /// ~60,000 segments a frame, past the overlay's buffer): none for a ship further off the screen than its trail
+    /// reaches, and the points thinned to about three pixels apart. On the table a line; in the world view the foam lane
+    /// instead (docs/visuals/wakes.md K4, the user's: it is the path's cue there), the two crossing with the grid.</summary>
     void TrackLines(in MapView view, Snapshot s)
     {
         var v = s.Ships;
-        double mpp = view.MetresPerPixel;
+        double mpp = view.MetresPerPixel, w = WorldView.Factor(view);
+        var foam = shipRenderer.Foam;
+        foam.Begin();
+        long now = world.DrawMs;
         for (int k = 0; k < v.Count; k++)
         {
             if (!tracks.TryGetValue(v.Entity[k], out var tr) || tr.Count == 0)
                 continue;
-            var (p, _) = v.PoseAt(k, world.DrawMs);
-            double reachPx = (tr.Count * (double)TrackEveryMs / 1000 * Math.Max(v.Speed[k], 2) + 1000) / mpp;
+            var (p, f) = v.PoseAt(k, now);
+            double reachPx = (tr.Count > 0 ? tr.Newest.S - tr[0].S : 0) / mpp + 1000 / mpp;
             if (!view.Project(p, out double x, out double y) || x < -reachPx || y < -reachPx || x > width + reachPx || y > height + reachPx)
                 continue;
-            double spacingPx = Math.Max(v.Speed[k], 0.5) * TrackEveryMs / 1000 / mpp;
-            int stride = Math.Max(1, (int)(3 / spacingPx));
-            overlay.BeginStrip(TrackColor, 1.5f);
-            for (int i = (tr.Count - 1) % stride; i < tr.Count; i += stride)   // ends on the newest
-                Point(view, tr.Points[(tr.Head - tr.Count + i + tr.Points.Length) % tr.Points.Length]);
-            Point(view, p);
+            var head = tr.Head(p, f, v.Speed[k], now);
+            if (w > 0 && SeaView.FoamGain > 0)
+                foam.Add(view, tr, head, now, SeaView.FoamGain);
+            if (w >= 1)
+                continue;
+            overlay.BeginStrip(TrackColor with { W = TrackColor.W * (float)(1 - w) }, 1.5f);
+            var last = tr[0].P;
+            Point(view, last);
+            for (int i = 1; i < tr.Count; i++)
+                if (Earth.Distance(tr[i].P, last) >= 3 * mpp)
+                    Point(view, last = tr[i].P);
+            Point(view, head.P);
             overlay.End();
         }
     }
