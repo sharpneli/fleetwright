@@ -32,8 +32,9 @@ public struct SmokeGpu
 
 /// <summary>The world view's gun smoke (docs/visuals/muzzle-flashes.md F6): the smoke book's puffs as instances, built on
 /// the CPU each frame (placed eye-relative in double, sorted north to south), and two instanced draws after the ships:
-/// their shadows on the sea and the decks, then the puffs through the effects camera (anchored at the height they were
-/// born at, so they leave the guns without a jump and climb up the screen as they rise). Each puff's alpha is
+/// their shadows on the sea and the decks (<see cref="DrawShadows"/>), then, over the splash columns, the puffs through the
+/// effects camera (anchored at the height they were born at, so they leave the guns without a jump and climb up the
+/// screen as they rise; <see cref="Draw"/>). Each puff's alpha is
 /// 1 − e^(−τ) of its Gaussian's optical depth (the research's, so a later smoke system's sight lines would see what is
 /// drawn), its outline billowed by noise, lit by the sun, the moon and the flashes' lights with a two-tap self-shadow.
 /// Display only; nothing allocates once its arrays have grown.</summary>
@@ -199,11 +200,22 @@ public sealed unsafe class SmokeRenderer : IDisposable
             throw new InvalidOperationException($"gun smoke pipeline: {SDL_GetError()}");
     }
 
-    /// <summary>The shadows, then the puffs, after the ships.</summary>
+    /// <summary>The shadows on the sea and the decks, after the ships and before any column or cloud stands over them.</summary>
+    public void DrawShadows(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
+    {
+        if (uploaded > 0 && shadows)
+            Pass(cmd, pass, target, view, 1);
+    }
+
+    /// <summary>The puffs, after the splash columns: a cloud hides the columns behind it.</summary>
     public void Draw(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
     {
-        if (uploaded == 0)
-            return;
+        if (uploaded > 0)
+            Pass(cmd, pass, target, view, 0);
+    }
+
+    void Pass(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view, int mode)
+    {
         EnsurePipeline(target);
         SDL_BindGPUGraphicsPipeline(pass, pipe);
         var sb = buf.Buffer;
@@ -214,20 +226,17 @@ public sealed unsafe class SmokeRenderer : IDisposable
         SDL_PushGPUFragmentUniformData(cmd, 0, (nint)(&lu), (uint)sizeof(LightUniforms));
         SDL_PushGPUFragmentUniformData(cmd, 1, (nint)(&pr), (uint)sizeof(Params));
         var (near, far) = GlobeRenderer.DepthRange(view);
-        for (int mode = shadows ? 1 : 0; mode >= 0; mode--)
+        var vp = new ViewParams
         {
-            var vp = new ViewParams
-            {
-                Right = new Vector4(F(view.Right), (float)view.TanHalfX),
-                Up = new Vector4(F(view.Up), (float)view.TanHalfY),
-                Fwd = new Vector4(F(view.Forward), 0),
-                Depth = new Vector4((float)near, (float)far, 0, mode),
-                East = new Vector4(F(view.Right), 0),
-                North = new Vector4(F(view.Up), 0),
-            };
-            SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&vp), (uint)sizeof(ViewParams));
-            SDL_DrawGPUPrimitives(pass, 6, (uint)uploaded, 0, 0);
-        }
+            Right = new Vector4(F(view.Right), (float)view.TanHalfX),
+            Up = new Vector4(F(view.Up), (float)view.TanHalfY),
+            Fwd = new Vector4(F(view.Forward), 0),
+            Depth = new Vector4((float)near, (float)far, 0, mode),
+            East = new Vector4(F(view.Right), 0),
+            North = new Vector4(F(view.Up), 0),
+        };
+        SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&vp), (uint)sizeof(ViewParams));
+        SDL_DrawGPUPrimitives(pass, 6, (uint)uploaded, 0, 0);
     }
 
     static Vector3 F(Vec3d a) => new((float)a.X, (float)a.Y, (float)a.Z);

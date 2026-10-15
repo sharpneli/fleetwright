@@ -32,9 +32,10 @@ public struct MagazineJetGpu
 /// the fade), placed eye-relative in double, and two instanced draws over them, from the one model in
 /// <c>Include/magazine.glsl</c>:
 /// <list type="bullet">
-/// <item>the shadows on the sea and the decks, then the bodies (the fireball and its cloud) through the effects camera, after
-/// the ships and the gun smoke, then the flame jets from the failed openings before the fireball and the hit's flash,
-/// screen-blended (<see cref="Draw"/>).</item>
+/// <item>the shadows on the sea and the decks, with the other effects' shadows, after the ships (<see cref="DrawShadows"/>);</item>
+/// <item>the bodies (the fireball and its cloud) through the effects camera, after the splash columns and the gun smoke, so
+/// the boom hides the splashes round its ship, then the flame jets from the failed openings before the fireball and the
+/// hit's flash, screen-blended (<see cref="Draw"/>).</item>
 /// </list>
 /// It reads the snapshot's events and the frame's lights, never the world; nothing allocates once its arrays have grown.</summary>
 public sealed unsafe class MagazineRenderer : IDisposable
@@ -532,14 +533,22 @@ public sealed unsafe class MagazineRenderer : IDisposable
         SDL_DrawGPUPrimitives(pass, 6, (uint)(n >= 0 ? n : uploaded), 0, 0);
     }
 
-    /// <summary>The shadows, then the bodies, then the jets, after the ships and the gun smoke.</summary>
+    /// <summary>The shadows on the sea and the decks, after the ships and before any column or cloud stands over them.</summary>
+    public void DrawShadows(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
+    {
+        if (uploaded == 0 || !shadows)
+            return;
+        EnsurePipelines(target);
+        Pass(cmd, pass, shadowPipe, view, 1);
+    }
+
+    /// <summary>The debris trails, then the bodies, then the jets, after the splash columns and the gun smoke: the
+    /// boom hides the splashes falling round the ship it is destroying.</summary>
     public void Draw(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
     {
         if (uploaded == 0 && jetsUploaded == 0 && trailsUploaded == 0)
             return;
         EnsurePipelines(target);
-        if (uploaded > 0 && shadows)
-            Pass(cmd, pass, shadowPipe, view, 1);
         if (trailsUploaded > 0)
             Pass(cmd, pass, trailPipe, view, 0, trailBuf, trailsUploaded);
         if (uploaded > 0 && (MagazineLook.Parts & 1) != 0)

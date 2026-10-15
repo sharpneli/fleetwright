@@ -41,7 +41,9 @@ projection is oblique:
   height cue beside the column, and the one that agrees with the ships' shadows.
 - **Ordering is a 3/4 view's.** A column covers what is north of it (further from the effects camera) and never what
   is south of it, so drawing all columns after the ships is right. The columns themselves are drawn north to south
-  (back to front), sorted on the CPU without allocation.
+  (back to front), sorted on the CPU without allocation. They draw before the gun smoke and the magazine explosions
+  (user, 2026-10-15): a ship blows up while being fired on, and the splashes round her belong behind the boom, not
+  through it. Every effect's shadow goes down first, before any column or cloud.
 - **Overdraw is moderate.** A column covers a strip: its crown's width by its height up the screen. At 1 m/px a 12"
   is ~20 × 55 px; at 0.25 m/px ~80 × 220 px. A few hundred in view is a few hundred thousand pixels, so there is
   **no half-resolution buffer**, which would also have been a new target and an upsample pass (against `sea.md`'s
@@ -66,11 +68,12 @@ projection is oblique:
 2. **The dye stain** (dyed shells only). The wake target has no channel for a colour, so the stain is its own
    instanced draw in the main pass, after the sea and before the ships: a soft, noise-broken disc over the foam's
    footprint that tints the shaded water toward the dye, fading over 30-60 s. With no dyed shells it draws nothing.
-3. **The shadow.** One quad per splash, laid on the sea down-sun, drawn after the ships and before the columns. Per
+3. **The shadow.** One quad per splash, laid on the sea down-sun, drawn after the ships and before the columns
+   (with the smoke's and the magazine explosions' shadows). Per
    pixel it marches the sun's ray through the same density as the column, and darkens the sea and the decks under it,
    as the ships' shadows darken by opacity. It follows the stronger light (the moon at night), as the ships' do.
-4. **The column**, through the effects camera. One instanced, premultiplied-alpha draw after the ships' layer, north
-   to south. A near miss south of a ship stands over her hull and deck; one north of her stands clear. Each splash is a
+4. **The column**, through the effects camera. One instanced, premultiplied-alpha draw after the ships' layer and
+   before the gun smoke and the magazine explosions, north to south. A near miss south of a ship stands over her hull and deck; one north of her stands clear. Each splash is a
    quad from its base up the screen by its height × tan φ, as wide as its widest part. Per pixel:
    - the effects camera's parallel ray is marched through an analytic density (4-16 steps by screen size);
    - the density has a radius profile r(z, τ): the impact crown's thin cone, the shaft about 25 × calibre wide, and the

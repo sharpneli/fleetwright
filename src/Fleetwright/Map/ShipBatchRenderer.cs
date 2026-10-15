@@ -808,9 +808,14 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     {
         Splashes.DrawStains(cmd, pass, target, view);
         DrawShips(cmd, pass, target, view);
+        // Every shadow lies on the sea and the decks, so all go down before anything stands over them; then the
+        // columns, and the clouds over them: a splash falling round a ship that blows up hides behind the boom.
+        Splashes.DrawShadows(cmd, pass, target, view);
+        Smoke.DrawShadows(cmd, pass, target, view);
+        Magazines.DrawShadows(cmd, pass, target, view);
+        Splashes.DrawColumns(cmd, pass, target, view);
         Smoke.Draw(cmd, pass, target, view);
         Magazines.Draw(cmd, pass, target, view);
-        Splashes.DrawColumns(cmd, pass, target, view);
         Flashes.Draw(cmd, pass, target, view);
     }
 

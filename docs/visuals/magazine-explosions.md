@@ -115,9 +115,11 @@ ship, only the height gained goes up the screen. Jets anchor at their openings, 
 
 In draw order, all after the ships' layer:
 
-1. **The shadow**: one quad laid down-sun on the sea and the decks, marching the sun's ray through the volumes'
+1. **The shadow**: drawn with the splashes' and the gun smoke's shadows, before any column or cloud. One quad laid
+   down-sun on the sea and the decks, marching the sun's ray through the volumes'
    density; darkens to ~30 % under full shadow. Follows the stronger light, fades at low sun.
-2. **The volumes** (`Include/magazineblast.glsl`, the one model): one quad per event, from the deck up the screen by
+2. **The volumes** (`Include/magazineblast.glsl`, the one model), after the splash columns and the gun smoke (user,
+   2026-10-15: the splashes falling round a ship that blows up hide behind the boom): one quad per event, from the deck up the screen by
    the height of the cap, as wide as its widest part. Per pixel, the effects camera's parallel ray marched
    through the stem, fireball and cap (8-32 steps by screen size, the splashes' LOD), each step:
    - density from the analytic shapes, broken by noise fixed to the volume and growing with it, the cap's advected

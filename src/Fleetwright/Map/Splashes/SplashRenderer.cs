@@ -24,8 +24,10 @@ public struct SplashGpu
 /// <item>the foam, into the wake target in its pre-pass, flat on the water, lit by the sea's shading
 /// (<see cref="DrawFoam"/>);</item>
 /// <item>the dye's stains, in the main pass after the sea and before the ships (<see cref="DrawStains"/>);</item>
-/// <item>the shadows, then the columns through the effects camera, after the ships (<see cref="DrawColumns"/>): a
-/// column covers what's north of it, never what's south, so it stands over a ship it's south of.</item>
+/// <item>the shadows, with the other effects' shadows, after the ships (<see cref="DrawShadows"/>);</item>
+/// <item>the columns through the effects camera, after the ships and before the gun smoke and the magazine explosions
+/// (<see cref="DrawColumns"/>): a column covers what's north of it, never what's south, so it stands over a ship it's
+/// south of, but a cloud hides it.</item>
 /// </list>
 /// The ships' layer calls it (<see cref="ShipBatchRenderer"/>). It reads the snapshot's splashes and the frame's
 /// lights, never the world; nothing allocates once its arrays have grown.</summary>
@@ -276,14 +278,21 @@ public sealed unsafe class SplashRenderer : IDisposable
             Pass(cmd, pass, stainPipe, view, 3, true);
     }
 
-    /// <summary>The shadows, then the columns, after the ships.</summary>
+    /// <summary>The shadows on the sea and the decks, after the ships and before any column or cloud stands over them.</summary>
+    public void DrawShadows(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
+    {
+        if (uploaded == 0 || shadowView.Z <= 0 || (SplashLook.Parts & 4) == 0)
+            return;
+        EnsurePipelines(target);
+        Pass(cmd, pass, shadowPipe, view, 1, true);
+    }
+
+    /// <summary>The columns, after the ships and before the smoke and the magazine explosions, which hide them.</summary>
     public void DrawColumns(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
     {
         if (uploaded == 0)
             return;
         EnsurePipelines(target);
-        if (shadowView.Z > 0 && (SplashLook.Parts & 4) != 0)
-            Pass(cmd, pass, shadowPipe, view, 1, true);
         if ((SplashLook.Parts & 8) != 0)
             Pass(cmd, pass, columnPipe, view, 0, true);
     }
