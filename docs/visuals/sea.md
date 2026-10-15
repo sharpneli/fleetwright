@@ -253,7 +253,7 @@ std 4-5, moonless 1.8.
 ### Later (not v1)
 
 - **Foam:** the lab's whitecaps, with the cost listed above coming back.
-- **Wakes:** `research/vfx/wake-vfx-research.md`, through the shared channels (mean slope, variance, foam).
+- **Wakes:** `docs/visuals/wakes.md` (from `research/vfx/wake-vfx-research.md`), through the shared channels (mean slope, variance, foam).
 - **Shallow water and the coast's look in the world view** (the land is still the chart's fill and coastline).
 - **Gusts and wind streaks**, if the 4 m/px end looks too even.
 - **Ship heave/pitch/roll** from the CPU bins.
