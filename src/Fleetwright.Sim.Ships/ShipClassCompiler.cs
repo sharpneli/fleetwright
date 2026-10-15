@@ -514,6 +514,8 @@ public static class ShipClassCompiler
             var era = Kinds.EraOf(ship.Design.Look?.Era);
             c.Era = era;
             string navy = ship.Design.Look?.Navy ?? "generic";
+            c.charges = c.turretTypes.Select(t => t.Shape is TurretShape.Torp or TurretShape.Tube || !(t.CalibreLength > 0) ? default
+                : DesignerPlaceholders.Charge(t.CalibreMm, t.CalibreLength, era, navy)).ToArray();
             var mounts = c.mounts;
             var batteries = new List<BatteryRow>();
             var members = new List<List<int>>();

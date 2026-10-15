@@ -23,6 +23,7 @@ public sealed class ShipClass
     internal DirectorRow[] directors = [];
     internal BatteryRow[] batteries = [];
     internal ShellTypeRow[] shellTypes = [];
+    internal ChargeRow[] charges = [];
     internal ShellLoad[] shellLoads = [];
     internal EyeRow[] eyes = [];
     internal TubeRow[] tubes = [];
@@ -93,6 +94,9 @@ public sealed class ShipClass
     public ReadOnlySpan<BatteryRow> Batteries => batteries;
     /// <summary>The shells the batteries carry, each kind once.</summary>
     public ReadOnlySpan<ShellTypeRow> ShellTypes => shellTypes;
+    /// <summary>The charge each turret type's guns fire (docs/visuals/muzzle-flashes.md: the flash and the smoke), by
+    /// turret type; a torpedo mount's is empty.</summary>
+    public ReadOnlySpan<ChargeRow> Charges => charges;
 
     /// <summary>The observation posts, highest first (docs/battle/plan.md step 3.2a).</summary>
     public ReadOnlySpan<EyeRow> Eyes => eyes;

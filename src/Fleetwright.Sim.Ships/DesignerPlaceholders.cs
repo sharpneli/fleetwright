@@ -153,6 +153,38 @@ public static class DesignerPlaceholders
         return (Math.Max(reload, 0.5), train, Math.Clamp(2 * train, 2, 20), maxElev);
     }
 
+    /// <summary>PLACEHOLDER (docs/visuals/muzzle-flashes.md, "What the model takes", decision 4): a gun's charge, from its
+    /// calibre and length, the look's era and navy.
+    /// <list type="bullet">
+    /// <item>its mass 4000·d³·(L/50) kg (d in m; research/vfx/muzzle-flash-smoke-research.md §2.1: the 20 mm to the 80 cm
+    /// within ~15%: 5"/38 6.3 against 7, 16"/50 268 against 297);</item>
+    /// <item>its propellant: black (brown) powder for a Victorian gun under 36 calibres, the short guns of the
+    /// brown-powder years (the 12"/35, the 13.5"/30; the designs carry an era, not a year, and the long guns came with
+    /// smokeless powder); single-base for the USN (brooklyn), France (toulon, poudre B) and Russia (kronstadt,
+    /// pyroxylin); diglycol for Germany (kiel) from the treaty years (RPC/38); triple-base in the Cold War; double-base
+    /// cordite and its kin otherwise (the RN's MD and SC, the German RPC/12, Japan's and Italy's);</item>
+    /// <item>no flash-reducer salt or wear reducer (they came between the wars and later), a black-powder igniter of 1%
+    /// for a bag gun and 0.3% for a cased one (120 mm and under), and no muzzle device.</item>
+    /// </list>
+    /// The designer, or a later ammunition system, should give the charge per gun and the propellant by navy and
+    /// year, and the flashless night charge as a choice.</summary>
+    public static ChargeRow Charge(double calibreMm, double calibreLength, Era era, string navy)
+    {
+        double d = calibreMm / 1000;
+        var propellant = era switch
+        {
+            Era.Victorian when calibreLength < 36 => Propellants.BlackPowder,
+            Era.ColdWar => Propellants.TripleBase,
+            _ when navy is "brooklyn" or "toulon" or "kronstadt" => Propellants.SingleBase,
+            Era.Treaty or Era.Wwii when navy == "kiel" => Propellants.Diglycol,
+            _ => Propellants.DoubleBase,
+        };
+        return new ChargeRow
+        {
+            MassKg = 4000 * d * d * d * (calibreLength / 50), Propellant = propellant, Igniter = calibreMm <= 120 ? 0.003 : 0.01,
+        };
+    }
+
     /// <summary>PLACEHOLDER: a gun's full-salvo pattern, % of the range (fire-control-research.md §7, fire_control_ref.py
     /// GUNS): the Great War's heavy guns 3.3·(305 mm/d)³ (the 12" 3.3-3.5%, the 13.5" 2.5, the 15" 1.7, "the most
     /// accurate battleship gun"), its lighter guns 2.5; before 1906 3.5; from the treaty years 1.9 for the heavy guns

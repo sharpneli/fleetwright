@@ -127,6 +127,53 @@ public readonly record struct TurretTypeRow
 
 public readonly record struct BarbetteRow(int Component, int Mount, double X, double Y, double R);
 
+/// <summary>A propellant's facts for its flash and smoke (docs/visuals/muzzle-flashes.md, "What the model takes";
+/// research/vfx/muzzle-flash-smoke-research.md §3.1). A family is a named set of these (<see cref="Propellants"/>); a
+/// later propellant system gives its own.</summary>
+public readonly record struct PropellantRow
+{
+    /// <summary>Its energy, MJ/kg: 0.45 of it goes into the blast.</summary>
+    public double EnergyMJkg { get; init; }
+    /// <summary>The energy of its fuel-rich gas burning in air, MJ/kg: the secondary flash's.</summary>
+    public double AfterburnMJkg { get; init; }
+    /// <summary>Its secondary flash's propensity, logit (with the bore, the barrel, salt and the muzzle device).</summary>
+    public double Flash0 { get; init; }
+    /// <summary>The secondary flash's peak temperature, K: its brightness (≈ T¹⁵) and colour.</summary>
+    public double SecondaryK { get; init; }
+    /// <summary>Its own solid products, kg/kg: the smoke's particles.</summary>
+    public double Solids { get; init; }
+    /// <summary>Those solids' mass extinction, m²/g.</summary>
+    public double ExtinctionM2g { get; init; }
+    /// <summary>The water in its gas, the afterburn's included, kg/kg: the water fog in damp, cold air.</summary>
+    public double Water { get; init; }
+    /// <summary>Its smoke's tint near the muzzle, linear RGB albedo.</summary>
+    public double TintR { get; init; }
+    public double TintG { get; init; }
+    public double TintB { get; init; }
+}
+
+/// <summary>A device on the muzzle: a hider (small arms) cuts the secondary flash, a brake adds to it.</summary>
+public enum MuzzleDevice : byte
+{
+    None,
+    Hider,
+    Brake,
+}
+
+/// <summary>A gun's charge (docs/visuals/muzzle-flashes.md, "What the model takes"): its mass, kg, its propellant, the
+/// mass fractions of flash-reducer salt (K₂SO₄, KNO₃), black-powder igniter and wear reducer (TiO₂, wax, talc), and the
+/// gun's muzzle device. One per turret type (<see cref="ShipClass.Charges"/>); a later ammunition system gives several
+/// (the night charge).</summary>
+public readonly record struct ChargeRow
+{
+    public double MassKg { get; init; }
+    public PropellantRow Propellant { get; init; }
+    public double Salt { get; init; }
+    public double Igniter { get; init; }
+    public double Liner { get; init; }
+    public MuzzleDevice Device { get; init; }
+}
+
 /// <summary>A funnel, its uptake under the deck (a component, or -1) and the boiler rooms it serves (Links: rooms).</summary>
 public readonly record struct FunnelRow(int Component, int Uptake, int Pipes, Slice BoilerRooms);
 
