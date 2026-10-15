@@ -333,7 +333,7 @@ docs/battle/plan.md           # the battle module (a deliverable: the whole ship
 docs/world/architecture.md    # the world: tiers of time on one clock, the sim thread, commands/snapshot, the scene stack
 docs/missions/plan.md         # missions, the battle module's stand-in for politics and manufacturing (format, objectives, UI, generator)
 docs/visuals/sea.md           # the sea: the table/world boundary, the FFT ocean in the globe's pass (W0-W4 done; foam later)
-docs/visuals/wakes.md         # wakes: the Kelvin field baked per class and speed into the sea's slopes, the trail as foam (K1-K5 proposed)
+docs/visuals/wakes.md         # wakes: the Kelvin field baked per class and speed into the sea's slopes, the trail as foam (agreed 2026-10-15; K1-K5)
 docs/visuals/ship-lighting.md # the ship sprites lit: relief and normals, materials, the sun and moon, in the one forward pass (L1 done)
 research/                     # research notes, see below
 ```

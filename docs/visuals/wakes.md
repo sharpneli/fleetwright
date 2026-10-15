@@ -1,4 +1,4 @@
-# Wakes: the ships' wave field on the sea, and the trail as foam (plan proposed 2026-10-15)
+# Wakes: the ships' wave field on the sea, and the trail as foam (plan agreed 2026-10-15)
 
 Research: `research/vfx/wake-vfx-research.md` (§3 the bake and the stamp, §6 the v2 thin-ship forcing, §7.2 the foam
 lane on the path). It builds on the sea (`docs/visuals/sea.md`), whose "Later" list names wakes "through the shared
@@ -37,7 +37,7 @@ from those slopes through the glint and the Fresnel term, which isn't linear. So
   target and the pass, as it does the coverage target.
 
 `sea.md`'s "no new target" was about the sea's shading, and the shading stays in one pass. The wake target is a new
-target all the same, and the decision list below names it.
+target all the same: a logged exception, approved (decision 1).
 
 ## Restrictions
 
@@ -153,7 +153,8 @@ research's images.
 - **Lit as the sea is lit.** In `seaShade`, the foam is mixed over the water. Its colour is a foam albedo (~0.8)
   times the sun's and the moon's light on a level surface, plus the sky's ambient and the night's tuned light, through
   the ships' shoulder. Foam hides the glint under it.
-- **Line or ribbon.** The line's alpha times (1 − world factor), the ribbon's times the world factor.
+- **The ribbon replaces the line** (decision 2): the line's alpha times (1 − world factor), the ribbon's times the
+  world factor.
 - **Checks:**
   - captures at 1 and 4 m/px, noon and night;
   - a ship turning circles;
@@ -176,13 +177,13 @@ research's images.
 - **High Froude craft** (Fr_L > 0.6, torpedo boats at speed): whiskers and a wider wash (research §4).
 - **The turn slick and the knuckle** (research §7.3), and a bow wave lifted by the speed's history.
 
-## Decisions to take
+## Decisions (the user, 2026-10-15)
 
-1. **"The ships' layer" means the wakes are built and placed with the ships, under the hull, in the world view.** The
-   wave field goes into the sea's own slopes through a screen-sized wake target, not alpha-blended over the sea as a
-   sprite is. Proposed, for the lighting's sake.
-2. **In the world view the foam ribbon replaces the track line** (the line fades out with the world factor). The
-   alternative is to keep a faint line for the selected ship.
+1. **The ships' layer builds the wakes, the sea shades them.** They are placed with the ships, under the hull, in the
+   world view, and their slopes and foam reach the sea's shading through a screen-sized wake target. This is a logged
+   exception to `sea.md`'s "no new target", approved: those rules ask that an exception be named and agreed, not
+   that the design bend round them.
+2. **In the world view the foam lane replaces the track line completely.** It is the visual cue for the ship's path.
 3. **The foam lane lasts the track's 10 minutes**: white for ~3, then a faint slick.
-4. **Turns use the shear for now**, and the spectral sim comes later.
+4. **Turns use the cheap shear**; the spectral sim comes later.
 5. **Wakes only ahead at 2 kn or more**; a ship going astern draws none.
