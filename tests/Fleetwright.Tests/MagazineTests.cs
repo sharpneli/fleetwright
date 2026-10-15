@@ -27,7 +27,7 @@ public class MagazineTests(ITestOutputHelper output)
         Assert.Equal(before.CentreZ, after.CentreZ, 1e-3);
         Assert.Equal(before.R, after.R, 1e-3);
         Assert.Equal(before.Heat, after.Heat, 1e-3);
-        Assert.Equal(d / 2, after.R, 1e-3);   // grown to its diameter
+        Assert.InRange(after.R, d / 2, 0.65 * d);   // grown to its diameter, billowing on
         var prev = MagazineBlast.BodyAt(d, life, deck, 0);
         Assert.Equal(1, prev.Heat, 6);
         for (double t = 0.5; t <= 120; t += 0.5)
@@ -37,12 +37,16 @@ public class MagazineTests(ITestOutputHelper output)
             Assert.True(b.Heat <= prev.Heat + 1e-9, $"cooling at {t} s");
             prev = b;
         }
-        // as it fades (1.8 lives) a low cloud: wider than it stands, its foot still on the wreck
-        var faded = MagazineBlast.BodyAt(d, life, deck, 1.8 * life);
-        output.WriteLine($"faded: centre {faded.CentreZ - deck:0} m over the deck, radius {faded.R:0} m, up {faded.Rv:0} m");
-        Assert.True(faded.R > faded.Rv, "wider than it stands");
-        Assert.True(faded.CentreZ - faded.Rv < deck + 0.3 * d, "its foot near the wreck");
-        Assert.True(faded.CentreZ - deck < d, "no higher than its diameter");
+        // half faded (1.4 lives): wider than it stands, its foot near the wreck (no stalk wanted), still rising
+        var mid = MagazineBlast.BodyAt(d, life, deck, 1.4 * life);
+        output.WriteLine($"half faded: centre {mid.CentreZ - deck:0} m over the deck, radius {mid.R:0} m, up {mid.Rv:0} m, foot {mid.CentreZ - mid.Rv - deck:0} m");
+        Assert.True(mid.R > mid.Rv, "wider than it stands");
+        Assert.True(mid.CentreZ - mid.Rv < deck + 0.35 * d, "its foot near the wreck");
+        Assert.True(MagazineBlast.BodyAt(d, life, deck, 1.5 * life).CentreZ > mid.CentreZ + 1, "still rising");
+        // never a pause in its rise from the fireball's growth to its fading
+        for (double t = 0.3 * life; t < 1.8 * life; t += 0.05 * life)
+            Assert.True(MagazineBlast.BodyAt(d, life, deck, t + 0.05 * life).CentreZ - MagazineBlast.BodyAt(d, life, deck, t).CentreZ > 0.5,
+                $"rising at {t:0.0} s");
     }
 
     [Fact]

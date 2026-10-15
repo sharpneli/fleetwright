@@ -372,6 +372,21 @@ rolls round the cloud's edge (`spin`). The wreck's fires' soot keeps its knobs, 
 `firesmoke` (they were the stem's). Seen at noon, 1 m/px: the fireball over the bow, the dark cloud billowing on the
 wreck by 12 s, drifting off and gone by ~20 s.
 
+**X7, the user's third round (2026-10-15).** "Have it rise somewhat, but not so much that the stalk would be needed.
+Now the natural rise feels stopped; before it felt forcefully stretched, partly because it looked static while rising.
+Rise it while it's still changing." Two causes found: the radius stopped growing at half the fireball's life and the
+two lift phases met at zero speed at its end, so the cloud stood still in between; and its billows were fixed to it, so
+it moved as a rigid lump. Now:
+- **one motion**: it grows to its diameter over half its life and billows on 50% wider a life after
+  (`MagazineBlast.Spread`), flattens to 0.7 over two lives, and rises half its diameter over two lives on a single
+  smooth curve (`LiftD`), never pausing; Bismarck's half faded (1.4 lives): centre 139 m over the deck, 228 m across,
+  its foot 47 m up (within a third of its diameter: no stalk needed);
+- **the billows boil on** as it rises (`MagazineLook.Churn`, `-magazine=churn:`): the noise runs up through the cloud by
+  1.5 cells × ln(1 + t / 0.3 life), fast at first and slowing, as the gun smoke's churn does.
+
+Tests: the cloud rises at every step from its growth to its fading, and is wider than it stands with its foot near
+the wreck when half faded.
+
 ## Later
 
 - Tier 1 (the burn-out column the ship survives) and tier 4 (two fireballs along the hull), with the venting race.

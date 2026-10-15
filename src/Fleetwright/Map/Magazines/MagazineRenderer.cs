@@ -186,6 +186,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
             double sigma = MagazineLook.Opacity * b.Tau / (2 * r);
             double fade = (1 - SmoothStep(MagazineLook.FadeFrom * life, MagazineLook.FadeTo * life, t)) * world;
             double roll = SmoothStep(0.6 * life, 1.5 * life, t);
+            double churn = MagazineLook.Churn * Math.Log(1 + t / (0.3 * life));
             double spin = t > life ? 2 * Math.PI * MagazineLook.Spin * 2 * life * (Math.Sqrt(t / life) - 1) : 0;
             // the fire's light on its own smoke: the core's drawn brightness, compressed as the flashes' halo's source
             double kel = MagazineLook.ColdK + (MagazineLook.HotK - MagazineLook.ColdK) * Math.Max(b.Heat, 0);
@@ -225,7 +226,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
                 Shade = shade,
                 Body = new Vector4(c, (float)b.CentreZ, (float)r),
                 BodyB = new Vector4((float)rv, (float)sigma, (float)b.Heat, (float)(b.Skin * MagazineLook.Skin * 0.5)),
-                Time = new Vector4(0, (float)roll, (float)spin, (float)fade),
+                Time = new Vector4((float)churn, (float)roll, (float)spin, (float)fade),
                 Misc = new Vector4((float)deck, (float)glow, 0, 0),
             };
         }

@@ -49,6 +49,7 @@ MagState stateOf(Mag m)
     s.skin = m.bodyB.w;
     s.deck = m.misc.x;
     s.roll = m.time.y;
+    s.churn = m.time.x;
     s.spin = m.time.z;
     s.seed = m.base.w;
     return s;

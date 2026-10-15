@@ -19,6 +19,7 @@ struct MagState
     float skin;    // the soot skin's share of its cooling, 0-1 (times the knob)
     float deck;    // the deck's height over the sea, m
     float roll;    // how far the cloud turns over at its edge, 0 the young fireball to 1
+    float churn;   // how far its billows have boiled on, in noise cells
     float spin;    // its turn so far, radians
     float seed;
 };
@@ -46,6 +47,8 @@ float magDensity(MagState s, vec3 q, float fine, vec3 l, out float heat, out flo
     vec2 dir = rho > 1e-3 ? d.xy / rho : vec2(1.0, 0.0);
     vec3 turned = vec3(dir * (ring + rot.x), rot.y * s.rv / s.r);
     vec3 adv = mix(d, turned, near) / (0.28 * s.r) + s.seed * 97.0;
+    // the billows boil on as it rises, up through it, fast at first: fixed to the body, it looked rigid moving
+    adv.z -= s.churn;
     float n = 0.5;
     if (fine >= 0.0)
     {

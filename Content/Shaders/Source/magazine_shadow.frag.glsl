@@ -41,6 +41,7 @@ void main()
     s.skin = 0.0;
     s.deck = m.misc.x;
     s.roll = m.time.y;
+    s.churn = m.time.x;
     s.spin = m.time.z;
     s.seed = m.base.w;
 

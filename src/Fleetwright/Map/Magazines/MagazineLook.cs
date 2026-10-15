@@ -33,6 +33,10 @@ public static class MagazineLook
     /// in for the circulation, decision 2).</summary>
     public static double Spin = 0.12;
 
+    /// <summary>The billows boiling on as the cloud rises (an effect, as the gun smoke's churn): noise cells over
+    /// ln(1 + t / 0.3 life), fast at first and slowing.</summary>
+    public static double Churn = 1.5;
+
     /// <summary>The wreck's fires' fading, s (their soot, X6).</summary>
     public static double FireFadeS = 40;
 
@@ -85,6 +89,7 @@ public static class MagazineLook
             case "soot": SootAlbedo = Math.Clamp(v, 0, 1); break;
             case "opacity": Opacity = Math.Max(v, 0); break;
             case "spin": Spin = v; break;
+            case "churn": Churn = Math.Max(v, 0); break;
             case "firefade": FireFadeS = Math.Max(v, 1); break;
             case "fireevery": FireEveryS = Math.Max(v, 0.2); break;
             case "firesmoke": FireSmokeM2 = Math.Max(v, 0); break;
@@ -101,5 +106,5 @@ public static class MagazineLook
         return true;
     }
 
-    public const string Knobs = "scatterd, scatters, fadefrom, fadeto, skin, cold, hot, soot, opacity, spin, firefade, fireevery, firesmoke, steam, gain, whiten, steps, parts (1 body, 2 shadow, 4 jets, 8 debris, 16 light, 32 after-smoke), light, at (a still at that age, s), on";
+    public const string Knobs = "scatterd, scatters, fadefrom, fadeto, skin, cold, hot, soot, opacity, spin, churn, firefade, fireevery, firesmoke, steam, gain, whiten, steps, parts (1 body, 2 shadow, 4 jets, 8 debris, 16 light, 32 after-smoke), light, at (a still at that age, s), on";
 }
