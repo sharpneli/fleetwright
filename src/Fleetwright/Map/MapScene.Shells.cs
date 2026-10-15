@@ -231,30 +231,22 @@ public sealed partial class MapScene
     /// <summary>A mark's own seed, from where it is (the same each frame, whatever its place in the list).</summary>
     static uint Seed(Vec3d p) => (uint)(BitConverter.DoubleToInt64Bits(p.X) ^ BitConverter.DoubleToInt64Bits(p.Y) >> 7 ^ BitConverter.DoubleToInt64Bits(p.Z) >> 13);
 
-    /// <summary>A torpedo as it was laid: kept past its run, so its track fades where it lies.</summary>
-    record struct Laid(Vec3d Origin, Vec3d Forward, long LaunchMs, double SpeedMs, double EndS, int Shooter);
-
-    readonly Dictionary<(long, int, double), Laid> laid = [];
-    readonly List<(long, int, double)> laidGone = [];
+    /// <summary>The torpedoes seen, kept past their runs so their tracks fade where they lie.</summary>
+    readonly Torpedoes.TorpedoBook torpedoBook = new();
 
     /// <summary>Each torpedo's track, running or run: a thin white line on the water from where its bubbles surface
     /// (<see cref="TrackLagS"/> behind it) back, fading with age over <see cref="TrackS"/>; a faint dot at the torpedo
     /// itself while it runs. A hit: a tall white column with a warm flash at its foot, and its ring.</summary>
     void DrawTorpedoes(in MapView view, Snapshot s)
     {
-        var v = s.Torpedoes;
         long now = world.DrawMs;
-        for (int i = 0; i < v.Count; i++)
-            laid[(v.LaunchMs[i], v.Shooter[i], v.Forward[i].X)] = new Laid(v.Origin[i], v.Forward[i], v.LaunchMs[i], v.SpeedMs[i], v.EndS[i], v.Shooter[i]);
-        laidGone.Clear();
-        foreach (var (key, t) in laid)
+        torpedoBook.Update(s.Torpedoes, s.TorpedoEnds, now, TrackS);
+        for (int i = 0; i < torpedoBook.Count; i++)
         {
+            ref readonly var t = ref torpedoBook[i];
             double age = (now - t.LaunchMs) / 1000.0;   // since launch
             if (age < 0 || age > t.EndS + TrackS)
-            {
-                laidGone.Add(key);
                 continue;
-            }
             double end = Math.Min(age, t.EndS), start = Math.Max(0, age - TrackS);   // the run's stretch still on the water, s
             float dim = selected < 0 || t.Shooter == selected ? 1f : 0.5f;
             const int N = 10;
@@ -262,24 +254,15 @@ public sealed partial class MapScene
             {
                 double ts = start + (end - start) * j / N;
                 double fade = 1 - (age - ts) / TrackS, lag = Math.Clamp((age - ts) / TrackLagS, 0, 1);
-                var (p, f) = (t.Origin, t.Forward);
-                Earth.Advance(ref p, ref f, t.SpeedMs * ts);
-                if (view.Project(p, out double x, out double y))
+                if (view.Project(t.At(ts), out double x, out double y))
                     overlay.Point(x, y, TrackWhite with { W = (float)(TrackWhite.W * dim * fade * fade * lag) }, (float)(0.8 + 0.9 * fade));
                 else
                     overlay.End();
             }
             overlay.End();
-            if (age < t.EndS)
-            {
-                var (p, f) = (t.Origin, t.Forward);
-                Earth.Advance(ref p, ref f, t.SpeedMs * age);
-                if (view.Project(p, out double x, out double y))
-                    overlay.Disc(x, y, 2.5, TrackWhite with { W = 0.45f * dim });
-            }
+            if (age < t.EndS && view.Project(t.At(age), out double hx, out double hy))
+                overlay.Disc(hx, hy, 2.5, TrackWhite with { W = 0.45f * dim });
         }
-        foreach (var key in laidGone)
-            laid.Remove(key);
 
         var e = s.TorpedoEnds;
         double life = world.Settings.SplashLifeMs / 1000.0, colS = Floor(s, TorpedoColumnS), flashS = Floor(s, HitFlashS), sparkS = Floor(s, SparkS);

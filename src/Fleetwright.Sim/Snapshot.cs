@@ -103,7 +103,7 @@ public sealed class Snapshot
     /// <see cref="SimSettings.SplashLifeMs"/>: hits, and those that sank at the end of their run (docs/battle/fighting.md
     /// 4.6).</summary>
     public TorpedoesView Torpedoes { get; } = new();
-    public SplashesView TorpedoEnds { get; } = new();
+    public TorpedoEndsView TorpedoEnds { get; } = new();
 
     /// <summary>The engaged batteries of the ships shown, and the newest lines of the combat log (docs/battle/fighting.md
     /// 4.2b).</summary>
@@ -239,14 +239,16 @@ public sealed class ShellsView
 }
 
 /// <summary>Torpedoes running: where each entered the water (on the sea's surface) and its heading there, when, its
-/// speed, m/s, how long its run lasts, s (to its end, or the hit), who fired it and the ship it'll hit (an entity, or -1).</summary>
+/// speed, m/s, how long its run lasts, s (to its end, or the hit), who fired it and the ship it'll hit (an entity, or -1);
+/// for the world view (docs/visuals/torpedoes.md R0) its serial, the depth it runs at, m, and where it came from: the
+/// shooter's class (an index, -1 unknown), its launcher and its torpedo (the class's rows).</summary>
 public sealed class TorpedoesView
 {
     public int Count;
     public Vec3d[] Origin = [], Forward = [];
-    public long[] LaunchMs = [];
-    public double[] SpeedMs = [], EndS = [];
-    public int[] Shooter = [], Hit = [];
+    public long[] LaunchMs = [], Serial = [];
+    public double[] SpeedMs = [], EndS = [], DepthM = [];
+    public int[] Shooter = [], Hit = [], Class = [], Launcher = [], Row = [];
 
     public void EnsureCapacity(int n)
     {
@@ -260,6 +262,11 @@ public sealed class TorpedoesView
         Array.Resize(ref EndS, n);
         Array.Resize(ref Shooter, n);
         Array.Resize(ref Hit, n);
+        Array.Resize(ref Serial, n);
+        Array.Resize(ref DepthM, n);
+        Array.Resize(ref Class, n);
+        Array.Resize(ref Launcher, n);
+        Array.Resize(ref Row, n);
     }
 
     /// <summary>Where torpedo i is at a moment (on the surface over it), and how far it has run, m.</summary>
@@ -269,6 +276,34 @@ public sealed class TorpedoesView
         var (p, f) = (Origin[i], Forward[i]);
         Earth.Advance(ref p, ref f, runM);
         return p;
+    }
+}
+
+/// <summary>Torpedoes' ends of the last while, newest first: where (on the surface over it), when, the ship hit (an
+/// entity, -1 for none), who fired it, its calibre and charge (kg of TNT's worth), its serial (as it ran) and how it ended
+/// (docs/visuals/torpedoes.md R0).</summary>
+public sealed class TorpedoEndsView
+{
+    public int Count;
+    public Vec3d[] Point = [];
+    public long[] Ms = [], Serial = [];
+    public int[] Ship = [], Shooter = [];
+    public double[] CalibreMm = [], ChargeKg = [];
+    public TorpedoEnd[] How = [];
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Point.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, Point.Length * 2));
+        Array.Resize(ref Point, n);
+        Array.Resize(ref Ms, n);
+        Array.Resize(ref Serial, n);
+        Array.Resize(ref Ship, n);
+        Array.Resize(ref Shooter, n);
+        Array.Resize(ref CalibreMm, n);
+        Array.Resize(ref ChargeKg, n);
+        Array.Resize(ref How, n);
     }
 }
 

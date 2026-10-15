@@ -10,6 +10,14 @@ public enum TorpedoCommand : ushort
     Launch = 1,
 }
 
+/// <summary>How a torpedo's run ended: it hit a ship, ran to its range and sank, or failed and sank on the way.</summary>
+public enum TorpedoEnd : byte
+{
+    Hit,
+    RunOut,
+    Failed,
+}
+
 /// <summary>Torpedoes (docs/battle/fighting.md 4.6). A launch is ordered at a ship its navy holds in sight: each working,
 /// loaded launcher that bears (a trained mount within its arcs, a fixed one within its gyro angle of its own bearing)
 /// takes a share of the spread; a mount trains to the course first. At the launch the aim is solved again from the navy's
@@ -42,6 +50,10 @@ public sealed class TorpedoSystem : IWorldSystem
         /// or the hit).</summary>
         public double SpeedMs, DepthM, EndS;
         public int Shooter, Launcher, ShooterClass, Row;
+        /// <summary>Its number among all fired (the snapshot's, so the screens tell the torpedoes of a spread apart), and
+        /// whether it fails on the way (its end short of its range).</summary>
+        public long Serial;
+        public bool Failed;
         /// <summary>The ship it hits (an entity), or -1; the hit's point and the torpedo's way through the water in that
         /// ship's frame, and its speed against it.</summary>
         public int Hit;
@@ -69,7 +81,11 @@ public sealed class TorpedoSystem : IWorldSystem
     Pending[] pending = new Pending[16];
     readonly Stack<int> freePending = new(16);
     int highPending;
-    readonly ShellSystem.Splash[] ends;
+    /// <summary>A torpedo's end as the screens read it: where (on the surface over it), when, the ship hit (or -1), who
+    /// fired it, its calibre and charge, its serial and how it ended.</summary>
+    readonly record struct Ending(Vec3d Point, long Ms, int Ship, int Shooter, double CalibreMm, double ChargeKg, long Serial, TorpedoEnd How);
+
+    readonly Ending[] ends;
     int endNext, endCount;
     long serial;
     bool fired;
@@ -93,7 +109,7 @@ public sealed class TorpedoSystem : IWorldSystem
         stream = RandomStream.Named(seed, "torpedoes");
         torpedoes = new Torpedo[Math.Max(settings.TorpedoCapacity, 16)];
         free = new int[torpedoes.Length];
-        ends = new ShellSystem.Splash[Math.Max(settings.TorpedoEndCapacity, 16)];
+        ends = new Ending[Math.Max(settings.TorpedoEndCapacity, 16)];
     }
 
     /// <summary>A torpedo's record by its slot (the snapshot's), for tests and tools.</summary>
@@ -326,10 +342,12 @@ public sealed class TorpedoSystem : IWorldSystem
         var origin = ship.Frame.ToWorld(row.X, row.Y, 0).Normalized() * Earth.Radius;
         for (int j = 0; j < count; j++)
         {
+            long id = serial;
             var r = stream.Derive((ulong)serial++);
             double off = (pe.First + j - (pe.Spread - 1) / 2.0) * spacing;
             double h = heading + double.RadiansToDegrees(off) + r.NextGaussian() * settings.TorpedoCourseSigmaDeg;
-            double end = r.NextDouble() < settings.TorpedoFail[era] ? range * r.NextDouble() : range;
+            bool failed = r.NextDouble() < settings.TorpedoFail[era];
+            double end = failed ? range * r.NextDouble() : range;
             int i = Allocate();
             ref var t = ref torpedoes[i];
             int gen = t.Generation + 1;
@@ -337,6 +355,7 @@ public sealed class TorpedoSystem : IWorldSystem
             {
                 Alive = true, Generation = gen, LaunchMs = now, Origin = origin, Forward = Earth.Forward(origin, h), SpeedMs = speed, DepthM = depth,
                 EndS = end / speed, Shooter = pe.Shooter, Launcher = pe.Launcher, ShooterClass = ship.ClassIndex, Row = row.Torpedo, Hit = -1,
+                Serial = id, Failed = failed,
             };
             alive++;
             world.Schedule(new WorldTime(now), EventTier.Fine, i, Id, CheckEvent, gen);
@@ -470,8 +489,9 @@ public sealed class TorpedoSystem : IWorldSystem
     /// <summary>A torpedo's end, a hit or sunk: its mark in the ring the screens read, and its record freed.</summary>
     void End(World world, ref Torpedo t, int i)
     {
-        double calibre = t.ShooterClass >= 0 ? ships.Class(t.ShooterClass).Torpedoes[t.Row].CalibreMm : 533;
-        ends[endNext] = new ShellSystem.Splash(At(t, t.SpeedMs * t.EndS), world.Time.Ms, t.Hit, -1, t.Shooter, calibre);
+        var row = t.ShooterClass >= 0 ? ships.Class(t.ShooterClass).Torpedoes[t.Row] : new TorpedoRow { CalibreMm = 533, ChargeKg = 180 };
+        var how = t.Hit >= 0 ? TorpedoEnd.Hit : t.Failed ? TorpedoEnd.Failed : TorpedoEnd.RunOut;
+        ends[endNext] = new Ending(At(t, t.SpeedMs * t.EndS), world.Time.Ms, t.Hit, t.Shooter, row.CalibreMm, row.ChargeKg, t.Serial, how);
         endNext = (endNext + 1) % ends.Length;
         endCount = Math.Min(endCount + 1, ends.Length);
         t.Alive = false;
@@ -528,6 +548,7 @@ public sealed class TorpedoSystem : IWorldSystem
                 ref readonly var t = ref torpedoes[i];
                 (v.Origin[n], v.Forward[n], v.LaunchMs[n], v.SpeedMs[n], v.EndS[n], v.Shooter[n], v.Hit[n]) =
                     (t.Origin, t.Forward, t.LaunchMs, t.SpeedMs, t.EndS, t.Shooter, t.Hit);
+                (v.Serial[n], v.DepthM[n], v.Class[n], v.Launcher[n], v.Row[n]) = (t.Serial, t.DepthM, t.ShooterClass, t.Launcher, t.Row);
                 n++;
             }
         v.Count = n;
@@ -541,6 +562,7 @@ public sealed class TorpedoSystem : IWorldSystem
             if (e.Ms < oldest)
                 break;
             (w.Point[n], w.Ms[n], w.Ship[n], w.Shooter[n], w.CalibreMm[n]) = (e.Point, e.Ms, e.Ship, e.Shooter, e.CalibreMm);
+            (w.ChargeKg[n], w.Serial[n], w.How[n]) = (e.ChargeKg, e.Serial, e.How);
             n++;
         }
         w.Count = n;

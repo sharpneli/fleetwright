@@ -124,6 +124,15 @@ one spread could share.
 - **R6. Time, cost, tuning.** Live at 1x, 10x, 60x and 240x, and through the zoom boundary; the cost with 64 tracks in
   view (`-gputime`, DevRelease `-frametimes`); tuning by the user's eye.
 
+### Done
+
+**R0 (2026-10-15).** The sim's torpedo takes its `Serial` and whether it `Failed` when fired. `TorpedoesView` gains
+the serial, the depth, the shooter's class, the launcher and the torpedo's row (the map reads the launcher's kind and
+place, and the charge, from the class). `Snapshot.TorpedoEnds` is now a `TorpedoEndsView` with the serial, how the
+run ended (`TorpedoEnd`: hit, run out, failed) and the charge. No hash or result moved. The map's `Map/Torpedoes/
+TorpedoBook` keeps each run by its serial until its track has faded, and the table's marks read it. Tests:
+`TorpedoTests.The_snapshot_tells_each_torpedo_apart_and_how_its_run_ended`, `TorpedoBookTests`.
+
 ## Decisions (the user, 2026-10-15)
 
 1. **The hit's column now**, built on the shell splash's column (`splash.glsl`) or closely after it: a torpedo kind of

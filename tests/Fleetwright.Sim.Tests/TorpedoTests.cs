@@ -25,9 +25,10 @@ public class TorpedoTests(ITestOutputHelper output)
     static World Pair(string shooter, string target, double rangeM, double bearingDeg, double targetKn, double speed = 1) =>
         Pair(shooter, target, rangeM, bearingDeg, targetKn, speed, out _, withAi: false);
 
-    static World Pair(string shooter, string target, double rangeM, double bearingDeg, double targetKn, double speed, out AiSystem? ai, bool withAi = true)
+    static World Pair(string shooter, string target, double rangeM, double bearingDeg, double targetKn, double speed, out AiSystem? ai, bool withAi = true,
+        SimSettings? settings = null)
     {
-        var w = new World(Start, 3, Settings);
+        var w = new World(Start, 3, settings ?? Settings);
         ai = withAi ? new AiSystem(w) : null;
         w.Apply(Command.SetWeather(25_000));
         if (speed != 1)
@@ -98,6 +99,59 @@ public class TorpedoTests(ITestOutputHelper output)
         Assert.True(k.BreachTotalM2 > 10 || k.Status != ShipStatus.Afloat);
         Assert.Contains(Enumerable.Range(0, w.CombatLog.Count).Select(i => w.CombatLog.Newest(i)),
             e => e.Kind == CombatEvent.Hit && e.Source == HitSource.Torpedo && e.Target == 1);
+    }
+
+    [Fact]
+    public void The_snapshot_tells_each_torpedo_apart_and_how_its_run_ended()
+    {
+        // docs/visuals/torpedoes.md R0: a spread's torpedoes each with a serial of their own, their depth, class and
+        // launcher; each end with its serial, how it ended and (a hit's) the charge
+        var w = Pair("destroyer", "super_dreadnought", 2_500, 90, 12);
+        w.Apply(TorpedoSystem.Launch(2, 1, 4, truth: true));
+        var snap = new Snapshot();
+        var serials = new HashSet<long>();
+        var ends = new Dictionary<long, (int Ship, TorpedoEnd How, double ChargeKg)>();
+        var cls = Class("destroyer");
+        for (int s = 1; s <= 300; s++)
+        {
+            w.AdvanceTo(Start + s * 1000L);
+            w.Fill(snap);
+            var v = snap.Torpedoes;
+            for (int i = 0; i < v.Count; i++)
+            {
+                serials.Add(v.Serial[i]);
+                Assert.Equal(w.Ships.Store[w.Ships.Store.SlotOf(2)].ClassIndex, v.Class[i]);
+                Assert.InRange(v.Launcher[i], 0, cls.Launchers.Length - 1);
+                Assert.InRange(v.DepthM[i], Settings.TorpedoDepthMinM, Settings.TorpedoDepthMaxM);
+            }
+            var e = snap.TorpedoEnds;
+            for (int i = 0; i < e.Count; i++)
+                ends[e.Serial[i]] = (e.Ship[i], e.How[i], e.ChargeKg[i]);
+        }
+        Assert.Equal(w.Torpedoes.Fired, serials.Count);
+        Assert.Equal(serials.Order(), ends.Keys.Order());
+        foreach (var (ship, how, charge) in ends.Values)
+        {
+            Assert.Equal(ship >= 0, how == TorpedoEnd.Hit);
+            Assert.Equal(cls.Torpedoes[0].ChargeKg, charge);
+        }
+        Assert.Contains(ends.Values, x => x.How == TorpedoEnd.Hit);
+
+        // every one failing: each ends short of its range, and says so
+        var failing = Settings with { TorpedoFail = [1, 1, 1, 1, 1] };
+        w = Pair("destroyer", "super_dreadnought", 2_500, 90, 12, 1, out _, withAi: false, settings: failing);
+        w.Apply(TorpedoSystem.Launch(2, 1, 4, truth: true));
+        var hows = new Dictionary<long, TorpedoEnd>();
+        for (int s = 1; s <= 300; s++)
+        {
+            w.AdvanceTo(Start + s * 1000L);
+            w.Fill(snap);
+            for (int i = 0; i < snap.TorpedoEnds.Count; i++)
+                hows[snap.TorpedoEnds.Serial[i]] = snap.TorpedoEnds.How[i];
+        }
+        Assert.Equal(w.Torpedoes.Fired, hows.Count);
+        Assert.All(hows.Values, h => Assert.True(h is TorpedoEnd.Failed or TorpedoEnd.Hit));   // a failure may still meet her first
+        Assert.Contains(hows.Values, h => h == TorpedoEnd.Failed);
     }
 
     [Fact]
