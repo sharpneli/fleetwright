@@ -41,6 +41,17 @@ public static class FlashLook
     /// frost's fading, s (1.5 in a fresh wind, 4 in a calm); the scour foam's, s, and its reach in scaled distance.</summary>
     public static double BlastVisPa = 2500, BlastSatPa = 5000, FrostS = 2, ScourS = 7, ScourK = 1;
 
+    /// <summary>The gun smoke's look (the user, 2026-10-15: the young puff read as an opaque ball), each a departure
+    /// from the research's Gaussian puff:
+    /// <list type="bullet">
+    /// <item>its drawn optical depth compressed as τ/(1 + τ/cap), so a young core is at most ~1 − e^(−cap) opaque (old,
+    /// thin smoke is untouched);</item>
+    /// <item>while young (over <see cref="SmokeYouthS"/>), stretched along the bore by up to 1 + stretch (the gas jet
+    /// carried it there), its area kept;</item>
+    /// <item>and its billows' contrast raised by up to billow, so it tears into lobes and holes before it settles.</item>
+    /// </list></summary>
+    public static double SmokeCap = 1.5, SmokeYouthS = 8, SmokeStretch = 1.2, SmokeBillow = 1.6;
+
     /// <summary>A dev aid for captures: the shots of the newest 2 s in the book drawn at this age, s, instead of their own
     /// (-1: off), and kept while it is.</summary>
     public static double AtS = -1;
@@ -71,6 +82,10 @@ public static class FlashLook
             case "air": AirC = v; break;
             case "parts": Parts = (int)v; break;
             case "frames": FloorFrames = Math.Max(v, 0); break;
+            case "smokecap": SmokeCap = Math.Max(v, 0.05); break;
+            case "youth": SmokeYouthS = Math.Max(v, 0.1); break;
+            case "stretch": SmokeStretch = Math.Max(v, 0); break;
+            case "billow": SmokeBillow = Math.Max(v, 0); break;
             case "pvis": BlastVisPa = Math.Max(v, 1); break;
             case "psat": BlastSatPa = Math.Max(v, BlastVisPa * 1.01); break;
             case "frost": FrostS = Math.Max(v, 0.1); break;
@@ -84,5 +99,5 @@ public static class FlashLook
         return true;
     }
 
-    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, frames, pvis, psat, frost, scour, scourk, parts (1 flashes, 2 lights, 4 blast, 8 smoke), at (a still at that age, s), blastat (the blast's), on";
+    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, frames, smokecap, youth, stretch, billow, pvis, psat, frost, scour, scourk, parts (1 flashes, 2 lights, 4 blast, 8 smoke), at (a still at that age, s), blastat (the blast's), on";
 }

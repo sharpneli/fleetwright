@@ -9,8 +9,8 @@
 //  - its strength s from p_vis to p_sat on a log scale; behind the front a thin dark edge (the ripples laid down, the
 //    variance taken off) and then the frost (roughened, added), fading over tau_frost: the slopes' spread scaled by
 //    1 + 2.5 frost - 0.7 edge on the wind's own (Cox-Munk);
-//  - the scour foam within the scaled distance k_foam (and a jet lobe along the bore at low elevation), streaked
-//    radially, fading over tau_foam.
+//  - the scour foam within the scaled distance k_foam (and a jet lobe along the bore at low elevation), broken as
+//    the splashes' foam is and streaked radially, fading over tau_foam.
 #include "Include/splash.glsl"
 
 struct Blast
@@ -52,6 +52,7 @@ void main()
 {
     Blast b = blasts[fragIndex];
     float lam = b.blast.x, age = b.blast.y, strength = b.blast.z, seed = b.blast.w;
+    float mpp = max(fwidth(fragLoc.x), fwidth(fragLoc.y));   // here, before any discard
     vec2 u = b.bore.xy;
     vec3 d = vec3(fragLoc, -b.base.w);
     float r = max(length(d), 1e-3);
@@ -81,10 +82,22 @@ void main()
     dens = max(dens, lobe) * exp(-since / misc0.w);
     if (dens <= 0.0 && abs(dvar) < 1e-6)
         discard;   // no mark here: skip the noise
-    // streaked radially: noise in angle and scaled distance round the muzzle
+    // broken as the splashes' foam is (splash_foam.frag): patches 4 m, clumps 1.5 m and bubbles 0.6 m fixed to the
+    // water, each faded to its mean as its cells near a pixel, with the blast's radial streaks (noise in angle and
+    // scaled distance round the muzzle) through them; a sharp threshold over that, the churned water under it patchy
+    vec2 pw = fragLoc + seed * 911.0;
+    vec3 cell = vec3(4.0, 1.5, 0.6), full = vec3(0.4, 0.35, 0.25);
+    vec3 amp = full * (1.0 - smoothstep(vec3(0.3), vec3(0.8), mpp / cell));
+    float lost = dot(full - amp, vec3(0.29));
+    float n = 0.5 * (1.0 - (amp.x + amp.y + amp.z));
+    n += amp.x * splashNoise(vec3(pw / cell.x, 1.0)) + amp.y * splashNoise(vec3(pw / cell.y, 2.0)) + amp.z * splashNoise(vec3(pw / cell.z, 3.0));
     float ang = atan(fragLoc.y, fragLoc.x);
-    float n = splashNoise(vec3(ang * 18.0 + seed * 50.0, zf * 3.0, seed * 7.0)) * 0.6 + splashNoise(vec3(fragLoc * 0.4, seed * 13.0)) * 0.4;
-    float surface = clamp((dens - (1.0 - n) * 0.8) / 0.2, 0.0, 1.0);
-    float foam = (surface > 0.0 ? 0.4 + 0.6 * surface : 0.4 * clamp(dens * 1.5, 0.0, 1.0)) * strength;
+    float streak = splashNoise(vec3(ang * 24.0 + seed * 50.0, zf * 9.0, seed * 7.0));
+    n = clamp((0.75 * n + 0.25 * streak - 0.5) * 2.4 + 0.5, 0.0, 1.0);
+    float white = smoothstep(0.0, 0.6, dens);
+    float t = 1.0 - 0.55 * white, soft = max(0.05, 1.6 * lost);
+    float broken = smoothstep(t - soft, t + soft, n) * clamp(1.6 * white, 0.0, 1.0);
+    float aerated = clamp(1.5 * dens, 0.0, 1.0) * smoothstep(0.4, 0.8, n);
+    float foam = (0.4 * aerated + 0.6 * broken) * strength;
     outWake = vec4(0.0, 0.0, dvar, foam);
 }

@@ -22,6 +22,7 @@ layout(set = 3, binding = 1) uniform Params
 {
     vec4 sunL;    // xyz: toward the sun, east, north, up; w: metres per pixel
     vec4 moonL;   // xyz: toward the moon
+    vec4 smokeLook;   // x: the opacity cap; y: the youth's time, s; z: the stretch along the bore; w: the young billows
 };
 
 layout(location = 0) in vec2 fragLoc;
@@ -32,11 +33,25 @@ layout(location = 0) out vec4 outColor;
 
 const float TwoPi = 6.2831853;
 
-// the puff's smooth optical depth at d (east, north, from its centre)
-float smoothTau(Puff p, vec2 d)
+// how young the puff is, 1 at its birth
+float youth(Puff p)
 {
-    float s = p.shape.x;
-    return exp(-0.5 * dot(d, d) / (s * s)) * p.shape.y / (TwoPi * s * s);
+    return exp(-p.light.y / smokeLook.y);
+}
+
+// the puff's smooth optical depth at d (east, north, from its centre), as drawn: while young stretched along the bore
+// (the gas jet carried it there), its area kept; and capped, tau / (1 + tau / cap), so a thick young core isn't a solid
+// ball (old, thin smoke is untouched). blur widens it (the shadow's penumbra).
+float smoothTau(Puff p, vec2 d, float blur)
+{
+    float s = p.shape.x * blur;
+    vec2 b = vec2(p.tint.w, p.shadow.w);
+    float st = 1.0 + smokeLook.z * youth(p) * length(b);
+    vec2 u = length(b) > 0.5 ? normalize(b) : vec2(1.0, 0.0);
+    float sa = s * sqrt(st), sc = s / sqrt(st);
+    float da = dot(d, u), dc = dot(d, vec2(-u.y, u.x));
+    float tau = exp(-0.5 * (da * da / (sa * sa) + dc * dc / (sc * sc))) * p.shape.y / (TwoPi * sa * sc);
+    return tau / (1.0 + tau / smokeLook.x);
 }
 
 // and billowed: the size of the puff and smaller, fixed to it, drifting slowly as it ages, their mean 1; the finer
@@ -45,11 +60,17 @@ float tauAt(Puff p, vec2 d)
 {
     float s = p.shape.x;
     vec3 q = vec3(d / s * 1.3 + p.centre.w * 61.0, p.light.y * 0.02 + p.centre.w * 17.0);
+    // two lookups turned 37 degrees against each other: value noise's grid hidden (alone, at a young puff's contrast,
+    // its cells showed as blocks); their spread restored
+    const mat2 Turn = mat2(0.7986, 0.6018, -0.6018, 0.7986);
     float fine = smoothstep(15.0, 40.0, s / sunL.w);
-    float n = splashNoise(q);
+    float n = 0.5 + 1.35 * (0.5 * (splashNoise(q) + splashNoise(vec3(Turn * q.xy * 1.13 + 7.0, q.z))) - 0.5);
     if (fine > 0.0)
-        n = mix(n, 0.6 * n + 0.4 * splashNoise(q * 2.7 + 5.0), fine);
-    return smoothTau(p, d) * (0.45 + 1.1 * n);
+        n = mix(n, 0.6 * n + 0.4 * splashNoise(vec3(Turn * q.xy * 2.7 + 5.0, q.z)), fine);
+    // the billows' contrast, raised while young (it tears into lobes), their mean kept where it can be; never quite
+    // empty (small round holes through a white puff read as dark dirt from above)
+    float k = 1.1 + smokeLook.w * youth(p);
+    return smoothTau(p, d, 1.0) * max(1.0 + k * (n - 0.5), 0.3);
 }
 
 // how much of the smoke round d lies toward the light (h toward it) rather than away: 0 on the near side, up to 1 on
@@ -67,8 +88,9 @@ void main()
     Puff p = puffs[fragIndex];
     if (fragMode == 1)
     {
-        // the shadow: the smooth Gaussian is enough under a puff's billows
-        float a = (1.0 - exp(-smoothTau(p, fragLoc) * (1.0 - smoothstep(0.7 * p.shape.w, p.shape.w, length(fragLoc))))) * p.shadow.z;
+        // the shadow: the smooth Gaussian is enough under a puff's billows, softened (a penumbra, and the light the
+        // billows let through); faint while the puff is young (seen through its holes from above it read as dirt)
+        float a = 0.7 * (1.0 - 0.8 * youth(p)) * (1.0 - exp(-smoothTau(p, fragLoc, 1.3) * (1.0 - smoothstep(0.7 * p.shape.w, p.shape.w, length(fragLoc))))) * p.shadow.z;
         if (a < 0.002)
             discard;
         outColor = vec4(0.0, 0.0, 0.0, a);

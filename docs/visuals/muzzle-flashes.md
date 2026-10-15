@@ -402,6 +402,20 @@ at the peak. The mean is inside the budget (0.45 ms); the p95, in the heaviest s
 frame. **Open, for the user:** accept it, or take the half-resolution smoke target as a logged exception
 (the plan's fallback).
 
+**F7, the user's first round (2026-10-15).**
+- **"The gun blast's foam a tad more broken."** It is broken now as the splashes' foam is: patches, clumps and
+  bubbles (4, 1.5 and 0.6 m), each faded as it nears a pixel, the radial streaks a quarter of the pattern, a sharp
+  threshold over that, and the churned water under it patchy too. Before, it read as flat pale wedges.
+- **"The original puff looks too much like an opaque ball."** Three named departures (`FlashLook.Smoke*`, `-flash=`
+  `smokecap`, `youth`, `stretch`, `billow`):
+  - the drawn depth capped, τ/(1 + τ/1.5), before the billows, so a young core is ~78% opaque with lobes through it;
+  - stretched along the bore by up to 2.2 while young (over ~8 s, the gas jet's carry), its area kept;
+  - its billows' contrast raised by 1.6 while young.
+
+  Old smoke is unchanged. Small round holes read as dark dirt, so the billows never empty a spot below 30% of its
+  depth, and a young puff's shadow is faint. Value noise at that contrast showed its grid, so two lookups turned 37°
+  are averaged.
+
 **Still to do in F7: tuning by the user's eye.** Things to look at:
 - the flash's size and brightness by day, and the white-out of its core by night;
 - the frost's look (duller, not silvery);
