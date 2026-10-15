@@ -252,7 +252,7 @@ public sealed partial class MapScene
         {
             ref readonly var t = ref torpedoBook[i];
             double age = (now - t.LaunchMs) / 1000.0;   // since launch
-            if (age < 0 || age > t.EndS + life)
+            if (age < 0 || age > t.EndS + life || table <= 0)
                 continue;
             double end = Math.Min(age, t.EndS), start = Math.Max(0, age - life);   // the run's stretch still on the water, s
             bool dives = t.Class >= 0 && t.Launcher >= 0 && classOf(t.Class) is { } tc && t.Launcher < tc.Launchers.Length && tc.Launchers[t.Launcher].Kind == LauncherKind.Mount;

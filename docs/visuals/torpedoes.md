@@ -178,6 +178,24 @@ standing up the screen off the battleship's side over their foam rings, smoke dr
 over her (halved after the first look: it hid the whole ship). Not done: **the night glow** (decision-free, left for
 R6 if night captures want it); the grey barely shows in the column.
 
+**R6, the cost (2026-10-15).** Ten destroyers' spreads at one battleship, ~60 tracks in view at 1 m/px, 1080p, DevRelease,
+`-tracks=at:60` against `on:0`, splashes and smoke off in both (so the hits' columns don't count), three alternating
+runs each, the machine's own load swinging single runs:
+- first: **+0.8 ms CPU, +0.12 ms GPU** (p50), over the 0.05 ms budgets. The ribbons laid a point every 3 px (up to 96
+  a track, 1.5 MB of corners a frame), and the table's invisible line was still built in the world view;
+- now **+0.07 ms CPU, +0.03 ms GPU** (the steadier runs' p50s): the points only where the track changes (8 over the
+  head's surfacing, 6 over a mount's dive, one every 8 s of the fade), the ribbon reaching 1.6 of its widths (was 2),
+  the shader out early where there's no film, the table's line skipped where it's faded out. The look is unchanged in
+  captures.
+
+**Still to do in R6: tuning by the user's eye.** Things to look at:
+- the track: its strength and width (a pale film, the speckle barely showing up close), its head's lag (~150-200 m at
+  a big ship's 6 m depth) and its life (90 s);
+- the slick (decision 3): `-tracks=slick:0.1` and `0.4` against `0`, in the glint;
+- the torpedo's emphasis (`body` 3.5, `bodyfloor` 10 px);
+- the launch's puff (it reads as a pale disc 20 m across) and splash;
+- the hit's column (68 m for 180 kg, white more than grey) and its spray cloud; the night glow not built.
+
 ## Decisions (the user, 2026-10-15)
 
 1. **The hit's column now**, built on the shell splash's column (`splash.glsl`) or closely after it: a torpedo kind of

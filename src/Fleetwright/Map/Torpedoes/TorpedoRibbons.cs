@@ -10,11 +10,14 @@ namespace Fleetwright.Map.Torpedoes;
 /// (<see cref="TorpedoTrack"/>), in the foam lanes' draw with the bubble kind (wakeribbon.frag's own branch). Its
 /// half-width spans two of the Gaussian's widths, as the lanes'; under <see cref="TorpedoLook.FloorPx"/> it's drawn that
 /// wide and thinner, by the square root of how much it was widened (not by all of it, which would keep its coverage: a
-/// departure, so the track still reads zoomed out, where it's the player's cue). Points every few pixels, at most <see cref="MaxPoints"/> a run. Nothing allocates.</summary>
+/// departure, so the track still reads zoomed out, where it's the player's cue). The track is straight (a great circle a
+/// few km long), so its points go only where its strength and width change: <see cref="RampPoints"/> over the head's
+/// surfacing, <see cref="DivePoints"/> over a mount's dive, and one every <see cref="FadeStepS"/> over the slow fade
+/// (R6: points every few pixels cost 0.8 ms of CPU for 60 tracks). Nothing allocates.</summary>
 public static class TorpedoRibbons
 {
-    const int MaxPoints = 96;
-    const double Reach = 2, MinPx = 3;
+    const int RampPoints = 8, DivePoints = 6;
+    const double Reach = 1.6, FadeStepS = 8;
 
     public static void Add(in MapView view, TorpedoBook book, FoamTrails foam, long nowMs, Func<int, ShipClass?> classOf)
     {
@@ -37,12 +40,14 @@ public static class TorpedoRibbons
                 continue;
             bool dives = t.Class >= 0 && t.Launcher >= 0 && classOf(t.Class) is { } c && t.Launcher < c.Launchers.Length
                 && c.Launchers[t.Launcher].Kind == LauncherKind.Mount;
-            int n = Math.Clamp((int)Math.Ceiling(t.SpeedMs * (hi - lo) / (MinPx * mpp)), 1, MaxPoints - 1);
+            // from the head back: the surfacing ramp in fine steps, then the fade in coarse ones, finer again over the dive
+            double rampS = (t.DepthM / TorpedoTrack.RiseSlowMs - TorpedoTrack.HeadLagS(t.DepthM)) / RampPoints;
+            double diveTs = dives ? TorpedoTrack.DiveRunM / Math.Max(t.SpeedMs, 1) : 0, diveS = diveTs / DivePoints;
             FoamVertex a0 = default, a1 = default;
-            for (int j = 0; j <= n; j++)
+            double ts = hi;
+            for (int j = 0; ; j++)
             {
-                // from the head back: the head's ramp and the dive are where the points are needed
-                double ts = hi - (hi - lo) * j / n, since = age - ts, run = t.SpeedMs * ts;
+                double since = age - ts, run = t.SpeedMs * ts;
                 double depth = TorpedoTrack.Depth(run, t.DepthM, dives);
                 double strength = TorpedoTrack.Strength(since, depth) * TorpedoLook.Gain;
                 double w = TorpedoTrack.WidthM(since, depth) / 2;
@@ -56,6 +61,12 @@ public static class TorpedoRibbons
                 if (j > 0)
                     foam.AddQuad(a0, a1, b0, b1);
                 (a0, a1) = (b0, b1);
+                if (ts <= lo)
+                    break;
+                double step = since < t.DepthM / TorpedoTrack.RiseSlowMs ? rampS : FadeStepS;
+                if (ts <= diveTs + 1e-6)
+                    step = Math.Min(step, diveS);
+                ts = Math.Max(ts - Math.Max(step, 0.05), lo);
             }
         }
     }

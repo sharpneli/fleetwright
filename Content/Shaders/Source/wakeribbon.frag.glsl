@@ -60,8 +60,10 @@ vec4 bubbleTrack()
     float d = fragLane.y / max(fragWidth, 1e-3);
     float density = clamp(fragIntensity * exp(-d * d), 0.0, 1.5);
     float s = mod(fragLane.x, 81920.0), y = fragLane.y;
-    float mpp = max(fwidth(s), fwidth(y));
+    float mpp = max(fwidth(s), fwidth(y));   // before any early out: derivatives need the whole quad
     float young = exp(-fragAge / 20.0);
+    if (density < 0.004)
+        return vec4(0.0);
 
     // the film: patches some metres along and across (the gas comes up unevenly), their contrast fading as they near a
     // pixel
