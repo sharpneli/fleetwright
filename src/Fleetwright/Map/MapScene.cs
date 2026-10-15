@@ -134,6 +134,8 @@ public sealed unsafe partial class MapScene : IScene
         shipRenderer.List.SetFlashLights(shipRenderer.Flashes.Lights.Block);
         shipRenderer.Smoke.Build(view, shipRenderer.Flashes.Book, s.Weather, WorldView.Factor(view), shipRenderer.List.Lights);
         shipRenderer.Splashes.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, selected, WorldView.Factor(view), shipRenderer.List.Lights);
+        shipRenderer.Torpedoes.Build(view, torpedoBook, Torpedoes.TorpedoLook.DrawMs(torpedoBook, world.DrawMs), WorldView.Factor(view),
+            shipRenderer.List.Lights, classOf);
         probes.Add(probeSplashes, t);
         t = Probes.Now;
         renderer.Sea.SetState(SeaState.Of(s.Weather));   // rebuilt only when the weather changes

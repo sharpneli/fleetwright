@@ -155,6 +155,14 @@ Seen (a destroyer's spread at a super-dreadnought, 2.4 km):
 - the slick at 0.1-0.4 in the glint: the track darker and smoother, the glint breaking into sparkles along it. For the
   user to judge (decision 3); off until then.
 
+**R3 (2026-10-15).** `TorpedoRenderer` (`torpedo.vert/.frag`): each torpedo running a dark, soft shape the colour of
+deep water under the surface at its place and heading, 13.5 calibres long (a 21-inch 7.2 m), blunt head and tapering
+tail, its edge blurred by its depth; one instanced draw after the sea and before the ships. Emphasised (decision 2):
+its darkness is `Body` 3.5 times the water's physical contrast e^(−2·0.25·d) (0.47 at 4 m, 0.35 at 6 m, at most 0.75),
+and it's never shorter than `BodyFloorPx` 10 px on the screen. The table's dot fades out over the cross-fade. Seen at
+40 s: at 0.3 m/px soft dark shapes a hundred metres and more ahead of their tracks; at 1 and 4 m/px dark dashes that
+lead each track.
+
 ## Decisions (the user, 2026-10-15)
 
 1. **The hit's column now**, built on the shell splash's column (`splash.glsl`) or closely after it: a torpedo kind of

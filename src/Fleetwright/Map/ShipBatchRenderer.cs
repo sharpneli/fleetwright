@@ -4,6 +4,7 @@ using Fleetwright.Gpu;
 using Fleetwright.Map.Flashes;
 using Fleetwright.Map.Magazines;
 using Fleetwright.Map.Splashes;
+using Fleetwright.Map.Torpedoes;
 using Fleetwright.Map.Wakes;
 using Fleetwright.Shipgen.Render;
 using Fleetwright.Shipgen.Render.Bake;
@@ -681,6 +682,9 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     /// smoke.</summary>
     public MagazineRenderer Magazines { get; }
 
+    /// <summary>The torpedoes under the water (docs/visuals/torpedoes.md R3).</summary>
+    public TorpedoRenderer Torpedoes { get; }
+
     /// <summary>The sea's clock, s (SeaView.ClockS), set by the scene each frame: the foam churns on it.</summary>
     public double FoamClockS { get; set; }
 
@@ -715,6 +719,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Smoke = new SmokeRenderer(device);
         Magazines = new MagazineRenderer(device, Splashes.Book);
         List.Thrown = Magazines.Book;
+        Torpedoes = new TorpedoRenderer(device);
     }
 
     /// <summary>The icon: a hull's plan 128 x 32, bow to the right (+x), a fine bow and a rounded stern.</summary>
@@ -795,6 +800,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Blasts.Copy(cmd);
         Smoke.Copy(cmd);
         Magazines.Copy(cmd);
+        Torpedoes.Copy(cmd);
         var fv = Foam.Vertices;
         foamUploaded = Math.Min(fv.Length, (int)(FoamBufferBytes / FoamVertex.SizeInBytes));
         foamUploaded -= foamUploaded % 6;
@@ -807,6 +813,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     public void Draw(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
     {
         Splashes.DrawStains(cmd, pass, target, view);
+        Torpedoes.Draw(cmd, pass, target, view);
         DrawShips(cmd, pass, target, view);
         // Every shadow lies on the sea and the decks, so all go down before anything stands over them; then the
         // columns, and the clouds over them: a splash falling round a ship that blows up hides behind the boom.
@@ -914,7 +921,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
             SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
             var vf = vp0;
             vf.Depth.W = (float)FoamClockS;
-            vf.Depth.Z = (float)Torpedoes.TorpedoLook.Slick;   // the torpedoes' tracks' slick (docs/visuals/torpedoes.md R2)
+            vf.Depth.Z = (float)TorpedoLook.Slick;   // the torpedoes' tracks' slick (docs/visuals/torpedoes.md R2)
             SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&vf), (uint)sizeof(ViewParams));
             SDL_DrawGPUPrimitives(pass, (uint)foamUploaded, 1, 0, 0);
         }
@@ -950,6 +957,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Blasts.Dispose();
         Smoke.Dispose();
         Magazines.Dispose();
+        Torpedoes.Dispose();
         SDL_WaitForGPUIdle(device);
         ReleasePipelines();
         if (wakePipe != null)

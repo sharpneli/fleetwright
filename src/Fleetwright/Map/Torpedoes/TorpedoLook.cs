@@ -23,6 +23,10 @@ public static class TorpedoLook
     /// captures judge it: decision 3).</summary>
     public static double Slick;
 
+    /// <summary>The torpedo's darkness under the water over its physical contrast (decision 2: emphasised, a named
+    /// departure; 1 is physical, e^(−2Kd) ≈ 0.1-0.14 at 4-6 m), and the least length it draws on the screen, px.</summary>
+    public static double Body = 3.5, BodyFloorPx = 10;
+
     /// <summary>A dev aid for captures: every torpedo drawn as it is <c>at</c> seconds after the newest launch (NaN: as
     /// it is), so stills of the track are the same run to run.</summary>
     public static double AtS = double.NaN;
@@ -56,10 +60,12 @@ public static class TorpedoLook
             case "floor": FloorPx = Math.Max(v, 0); break;
             case "slick": Slick = Math.Max(v, 0); break;
             case "at": AtS = v; break;
+            case "body": Body = Math.Max(v, 0); break;
+            case "bodyfloor": BodyFloorPx = Math.Max(v, 0); break;
             default: return false;
         }
         return true;
     }
 
-    public const string Knobs = "fast, slow, life, width, spread, dive, gain, floor, slick, at (a still at S after the newest launch), on";
+    public const string Knobs = "fast, slow, life, width, spread, dive, gain, floor, slick, body, bodyfloor, at (a still at S after the newest launch), on";
 }

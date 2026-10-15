@@ -265,8 +265,8 @@ public sealed partial class MapScene
                     overlay.End();
             }
             overlay.End();
-            if (age < t.EndS && view.Project(t.At(age), out double hx, out double hy))
-                overlay.Disc(hx, hy, 2.5, TrackWhite with { W = 0.45f * dim });
+            if (age < t.EndS && table > 0 && view.Project(t.At(age), out double hx, out double hy))
+                overlay.Disc(hx, hy, 2.5, TrackWhite with { W = 0.45f * dim * table });
         }
 
         var e = s.TorpedoEnds;
