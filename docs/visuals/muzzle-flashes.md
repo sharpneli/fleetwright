@@ -318,6 +318,24 @@ world's share). Tests: the floor against the research's 4 ms example (14% of the
 whole at about the keep share at 60x, the selected ship's always. **Not yet checked live** at 10x-240x and through
 the zoom boundary: for the user's eye.
 
+**F4 (2026-10-15).** `LightUniforms` gained the flash lights (count, the view's axes, 8 positions eye-relative and 8
+intensities); `shiplight.glsl` declares them with `flashAt()`. `FlashLights` gathers them (within reach of each other
+summed, the brightest 8 kept); the scene sets them into the frame's light before the splashes, ships and sea build.
+- the ships: diffuse on the sprites' normals (`shipShade`'s new extra light), the hull's tilt left out;
+- the sea: the glints through its own slope distribution, and the foam;
+- the splash columns: along their march.
+
+Changed on the way, two departures recorded here:
+- **The light thrown is the flash as drawn** (`FlashRenderer.Thrown`): its displayed brightness, compressed as the
+  halo's source, times a·b. A surface d away sees the flash's drawn brightness × a·b/d², at any exposure. The physical
+  light, with no eye adaptation (decision 3), lit the night sea white-green for kilometres.
+- **No light into the water's body**: under the guns it came out a teal glow.
+- **Clustered by distance, not by ship**: a ship's merged light sat between her turrets, its glint a bright spot on
+  empty water.
+
+Seen: at night the decks near the guns warm, nearby splash columns and foam take the orange; at noon a faint warmth on
+the decks by the turrets. Tests: the thrown light's compression, the lights' gathering and cap.
+
 ## Decisions (the user, 2026-10-15)
 
 1. **Gun smoke now, drawn by the map** (a logged exception). The smoke system comes later as one effort, since keeping

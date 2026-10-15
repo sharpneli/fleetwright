@@ -11,7 +11,9 @@
 //  4. lit: the water body from the sun and the sky, the sky's reflection by Fresnel, and the sun's and moon's glints
 //     from the anisotropic Gaussian slope distribution (Cox-Munk, Bruneton). Light from the ships' Lights block.
 //  5. the wakes' slopes and variance added to the sea's (linear waves superpose), before the light; their foam (the
-//     trails' lanes) over the water after it, lit by the same lights.
+//     trails' lanes) over the water after it, lit by the same lights;
+//  6. the muzzle flashes' lights (docs/visuals/muzzle-flashes.md F4): point lights, their glints through the same
+//     slope distribution (so they break up as the sun's do), and on the foam.
 
 layout(set = 2, binding = 1) uniform sampler2D seaM0;
 layout(set = 2, binding = 2) uniform sampler2D seaM1;
@@ -141,8 +143,9 @@ float seaGlint(vec3 l, vec3 v, vec2 m, vec2 var)
 
 // The sea's colour (sRGB-coded) at a pixel: local its offset from the view's centre in metres along the camera's
 // right and up; v toward the eye, lSun, lMoon and lNight toward the lights, in the pixel's frame; wake the wakes'
-// texel (slopes in the pixel's frame, their variance, foam).
-vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake)
+// texel (slopes in the pixel's frame, their variance, foam); pEye where it is, metres from the eye, and the pixel's
+// frame's axes (rt, upv, nrm), Earth-fixed, for the flashes' lights.
+vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake, vec3 pEye, vec3 rt, vec3 upv, vec3 nrm)
 {
     float mpp = seaOn.y;
     vec2 p = local.x * seaAxes.xy + local.y * seaAxes.zw;   // in the frame's axes
@@ -211,14 +214,26 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake)
         vec3 nn = normalize(vec3(-m * seaNight.w, 1.0));
         body += seaBody.rgb * seaNight.rgb * mix(seaLetIn(vec3(0.0, 0.0, 1.0), lNight), seaLetIn(nn, lNight), seaMss2.z);
     }
+    // the flashes: each a point light, so its direction is the pixel's own; on the glints and the foam alone (in the
+    // water's body their orange came out a teal glow under the guns)
+    vec3 fGlint = vec3(0.0), fLevel = vec3(0.0);
+    int nf = flashCount();
+    for (int i = 0; i < nf; i++)
+    {
+        vec3 lw;
+        vec3 rad = flashAt(i, pEye, lw);
+        vec3 l = vec3(dot(lw, rt), dot(lw, upv), dot(lw, nrm));
+        fGlint += rad * seaGlint(l, v, m, var);
+        fLevel += rad * max(l.z, 0.0);
+    }
     vec3 c = (1.0 - F) * body + F * skyAt(r, vec3(0.0, 0.0, 1.0), 0.0);
-    c += (sunRad.rgb * seaGlint(lSun, v, m, var) + moonRad.rgb * seaGlint(lMoon, v, m, var)) * seaMss2.z;
+    c += (sunRad.rgb * seaGlint(lSun, v, m, var) + moonRad.rgb * seaGlint(lMoon, v, m, var) + fGlint) * seaMss2.z;
     // the foam, lit as a level surface by the sun, the moon, the sky and the night's light: the aerated water under it
     // brightens the water, the surface foam lays a translucent white over it (hiding most of the glint)
     float foam = clamp(wake.w, 0.0, 1.0);
     if (foam > 0.0)
     {
-        vec3 lit = sunRad.rgb * max(lSun.z, 0.0) + moonRad.rgb * max(lMoon.z, 0.0) + skyAmb.rgb + seaNight.rgb * max(lNight.z, 0.0);
+        vec3 lit = sunRad.rgb * max(lSun.z, 0.0) + moonRad.rgb * max(lMoon.z, 0.0) + skyAmb.rgb + seaNight.rgb * max(lNight.z, 0.0) + fLevel;
         float aerated = min(foam / 0.4, 1.0), surface = max((foam - 0.4) / 0.6, 0.0);
         c += aerated * AeratedAlbedo * AeratedTint * lit;
         c = mix(c, FoamAlbedo * lit, surface * FoamCover);

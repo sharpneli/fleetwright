@@ -169,6 +169,42 @@ public class FlashTests(ITestOutputHelper output)
         Assert.InRange(kept / 180.0, Map.Effects.KeepShare(60) - 0.12, Map.Effects.KeepShare(60) + 0.12);
     }
 
+    /// <summary>A part's light (F4): its drawn brightness compressed, times a·b: a dim flash throws what it physically
+    /// would, a blinding one at most knee × a·b however bright.</summary>
+    [Fact]
+    public void A_flash_throws_its_drawn_brightness()
+    {
+        var p = new FlashEmitters.Part { A = 18, B = 11, Intensity = (float)(1e5 * Math.PI * 18 * 11) };
+        double dim = FlashRenderer.Thrown(p, 1e-9, 6), bright = FlashRenderer.Thrown(p, 1e3, 6);
+        Assert.Equal(1e-9 * p.Intensity / Math.PI, dim, dim * 1e-3);
+        Assert.InRange(bright, 0.99 * 6 * 18 * 11, 6 * 18 * 11);
+        Assert.Equal(0, FlashRenderer.Thrown(default, 1, 6));
+    }
+
+    /// <summary>Flashes within reach of each other share a light at their weighted centre; apart they're two; past
+    /// eight the dimmest goes.</summary>
+    [Fact]
+    public void Flash_lights_gather_within_reach_and_keep_the_brightest()
+    {
+        var l = new FlashLights();
+        var at = Earth.Position(56.5, 4.0);
+        var east = Earth.Forward(at, 90);
+        l.Add(at, 10, System.Numerics.Vector3.One, 10);
+        l.Add(at + east * 5, 30, System.Numerics.Vector3.One, 10);
+        Assert.Equal(1, l.Count);
+        Assert.Equal(40, l[0].Rad, 9);
+        Assert.Equal(3.75, (l[0].At - at).Length, 6);
+        l.Add(at + east * 100, 5, System.Numerics.Vector3.One, 10);
+        Assert.Equal(2, l.Count);
+        for (int i = 2; i < 10; i++)
+            l.Add(at + east * (200 * i), i, System.Numerics.Vector3.One, 10);
+        Assert.Equal(LightUniforms.MaxFlashes, l.Count);
+        double least = double.MaxValue;
+        for (int i = 0; i < l.Count; i++)
+            least = Math.Min(least, l[i].Rad);
+        Assert.Equal(4, least);   // 2 and 3 gave way to brighter ones
+    }
+
     [Fact]
     public void A_frame_allocates_nothing()
     {

@@ -46,6 +46,9 @@ layout(location = 8) flat out vec3 fragLightSun;    // toward the sun, in the qu
 layout(location = 9) flat out vec3 fragLightMoon;
 layout(location = 10) out vec3 fragEye;             // toward the eye, in the quad's frame (not unit)
 layout(location = 11) flat out float fragSoot;
+layout(location = 12) out vec3 fragPos;             // metres from the eye, Earth-fixed (the flashes' lights)
+layout(location = 13) flat out vec3 fragAxisU;      // the quad's u, Earth-fixed, unit
+layout(location = 14) flat out vec3 fragAxisV;      // and its v
 
 // v turned by the rotation that takes up (0, 0, 1) to the unit n, the shortest way: a level frame's vector in a hull
 // heeled and trimmed so that the level's up is n in its own frame
@@ -76,6 +79,9 @@ void main()
     fragLightMoon = vec3(dot(moon.xyz, fu), dot(moon.xyz, fv), dot(moon.xyz, fz));
     fragEye = -vec3(dot(r, fu), dot(r, fv), dot(r, fz));
     fragSoot = q.shipV.w;
+    fragPos = r;
+    fragAxisU = fu;
+    fragAxisV = fv;
     if (q.sea.w > 0.5)
     {
         // heeled and trimmed: the level's up in the hull's frame is the sea plane's normal, its slopes taken along the

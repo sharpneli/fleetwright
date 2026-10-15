@@ -72,6 +72,13 @@ public sealed unsafe class FlashRenderer : IDisposable
     /// <summary>Display units per cd/m² this frame: the display's white deck over the real one's, times the gain.</summary>
     public double Scale { get; private set; }
 
+    /// <summary>The flashes' lights this frame (F4), set into the frame's lights by the scene.</summary>
+    public FlashLights Lights { get; } = new();
+
+    /// <summary>A flash light is left out when it lights a white surface 20 m off by under this share of the display's
+    /// white deck.</summary>
+    public const double LightCut = 0.01, LightCutM = 20;
+
     struct ViewParams
     {
         public Vector4 Right, Up, Fwd, Depth, East, North;
@@ -106,12 +113,15 @@ public sealed unsafe class FlashRenderer : IDisposable
         double frame = Book.FlashClock - before;
         lights = frameLights;
         count = 0;
+        Lights.Clear();
         if (world <= 0 || !FlashLook.On)
             return;
 
         var up = (-view.Forward).Normalized();
         var (east, north) = (view.Right, view.Up);
-        Scale = FlashLook.Gain * DisplayWhite(lights, up) / FlashPhotometry.WhiteDeck(Illuminance(s.Sun, up, drawMs, lights));
+        double white = DisplayWhite(lights, up);
+        Scale = FlashLook.Gain * white / FlashPhotometry.WhiteDeck(Illuminance(s.Sun, up, drawMs, lights));
+        double lightFloor = (FlashLook.Parts & 2) != 0 ? LightCut * white * LightCutM * LightCutM : double.PositiveInfinity;
         double mpp = view.MetresPerPixel, k = Effects.K, floor = MinSigmaPx * mpp;
         prms = new Params { Misc = new Vector4((float)mpp, (float)FlashLook.HaloScale, (float)FlashLook.HaloGain, (float)FlashLook.HaloKnee) };
         double haloOut = HaloRadii[^1].Px * FlashLook.HaloScale * mpp;
@@ -180,6 +190,22 @@ public sealed unsafe class FlashRenderer : IDisposable
                     half = Math.Max(half, (new Vector2(a.X, a.Y) - centre).Length() + reach * Math.Max(a.Z, a.W) + across);
             half = Math.Max(half, 3.2 * Math.Sqrt(sigma * sigma + haloOut * haloOut));
 
+            // its light (F4): the parts at their true places (no effects camera), summed per ship. Each throws its
+            // brightness as drawn (compressed as the halo's source: with no eye adaptation the physical 10^8 at night
+            // would light the sea white for kilometres) times its area over pi: a surface d away facing it is lit by
+            // its drawn brightness times a b / d^2, at any exposure
+            double gain = Scale * world * keepIe;
+            double rad = n * (Thrown(core, gain, knee) + Thrown(disc, gain, knee)) + Thrown(fire, gain, knee);
+            if (rad > lightFloor)
+            {
+                var (tip, fwd, tipUp) = (e.Tip, e.Forward, e.Tip.Normalized());
+                Vec3d True(in FlashEmitters.Part p) => tip + fwd * (p.Along * ce) + tipUp * (p.Along * se + p.Lift);
+                double ic = n * core.Intensity, id = n * disc.Intensity, ifi = fire.Intensity, isum = ic + id + ifi;
+                var at = (True(core) * ic + True(disc) * id + True(fire) * ifi) / isum;
+                var colour = (cc * (float)ic + dc * (float)id + fc * (float)ifi) / (float)isum;
+                Lights.Add(at, rad, colour, Math.Max(fire.B, core.B));
+            }
+
             var rel = e.Tip - view.Eye;
             if (count == items.Length)
                 Array.Resize(ref items, count * 2);
@@ -195,6 +221,17 @@ public sealed unsafe class FlashRenderer : IDisposable
                 HaloColour = new Vector4(hcol, fire.Life),
             };
         }
+        Lights.Finish(view);
+    }
+
+    /// <summary>A part's light as thrown (display units × m²): its brightness as drawn, compressed as x/(1 + x/knee),
+    /// times its semi-axes' product (its area over pi).</summary>
+    public static double Thrown(in FlashEmitters.Part p, double gain, double knee)
+    {
+        if (p.Intensity <= 0 || p.A <= 0 || p.B <= 0)
+            return 0;
+        double ab = (double)p.A * p.B, drawn = gain * p.Intensity / (Math.PI * ab);
+        return drawn / (1 + drawn / knee) * ab;
     }
 
     /// <summary>The intensity's factor that keeps a flash of <paramref name="seconds"/> (real) at its Blondel-Rey

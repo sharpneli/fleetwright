@@ -17,6 +17,7 @@ layout(location = 2) flat in vec4 fragLean;
 layout(location = 3) flat in vec4 fragDye;
 layout(location = 4) flat in vec4 fragFoam;
 layout(location = 5) flat in float fragSeed;
+layout(location = 6) flat in vec3 fragBase;
 
 layout(set = 3, binding = 1) uniform Params
 {
@@ -57,6 +58,7 @@ void main()
 
     vec3 col = vec3(0.0);
     float trans = 1.0;
+    int nf = flashCount();
     for (int i = 0; i < n && trans > 0.01; i++)
     {
         float z = range.y - (float(i) + jitter) * dz;
@@ -77,6 +79,14 @@ void main()
         vec3 light = amb;
         light += sunRad.rgb * (max(dot(nrm, sunL.xyz) + 0.3, 0.0) / 1.3 * lit + 1.2 * hg * (1.0 - share));
         light += moonRad.rgb * (max(dot(nrm, moonL.xyz) + 0.3, 0.0) / 1.3 * lit + 1.2 * hgm);
+        // the flashes' lights (docs/visuals/muzzle-flashes.md F4), from where this water is
+        for (int f = 0; f < nf; f++)
+        {
+            vec3 lw;
+            vec3 rad = flashAt(f, fragBase + flashEast.xyz * q.x + flashNorth.xyz * q.y + flashUp.xyz * q.z, lw);
+            vec3 ll = vec3(dot(lw, flashEast.xyz), dot(lw, flashNorth.xyz), dot(lw, flashUp.xyz));
+            light += rad * max(dot(nrm, ll) + 0.3, 0.0) / 1.3;
+        }
         // the dye: little at the base and in the falling curtain, most in the upper column and the crown, more as
         // the column thins
         float t = fragDye.w * (0.1 + 0.4 * clamp(q.z / max(s.h, 1.0), 0.0, 1.0) + 0.2 * share) * (0.5 + 0.5 * smoothstep(0.5, 1.5, s.tau));

@@ -96,8 +96,21 @@ public sealed class ShipDrawList
     /// physical: the field is kept to where it reads as the ship's own. A turn is hard at κ·L = <see cref="HardTurnKL"/>
     /// (a turning circle's radius ~4 lengths).</summary>
     public const double WakeFadeL = 1.0, WakeFadeTurnL = 0.4, HardTurnKL = 0.25;
-    /// <summary>This frame's light, at the view's centre.</summary>
+    /// <summary>This frame's light, at the view's centre; the muzzle flashes' lights are set into it after the build
+    /// (<see cref="SetFlashLights"/>).</summary>
     public ShipLights Lights { get; private set; } = ShipLights.Flat;
+
+    /// <summary>The muzzle flashes' lights this frame (docs/visuals/muzzle-flashes.md F4), into the frame's light block
+    /// every map shader reads.</summary>
+    public void SetFlashLights(in LightUniforms flashes)
+    {
+        var l = Lights;
+        l.Uniforms.FlashInfo = flashes.FlashInfo;
+        (l.Uniforms.FlashEast, l.Uniforms.FlashNorth, l.Uniforms.FlashUp) = (flashes.FlashEast, flashes.FlashNorth, flashes.FlashUp);
+        l.Uniforms.FlashPos = flashes.FlashPos;
+        l.Uniforms.FlashRad = flashes.FlashRad;
+        Lights = l;
+    }
 
     // per ship this frame
     struct Placed

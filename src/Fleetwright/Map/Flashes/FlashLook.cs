@@ -32,8 +32,9 @@ public static class FlashLook
     /// <summary>The air's relative humidity and temperature, °C, until the weather has them (the smoke's water fog).</summary>
     public static double Humidity = 0.7, AirC = 15;
 
-    /// <summary>Which parts draw, for measuring each's cost: 1 the flashes.</summary>
-    public static int Parts = 1;
+    /// <summary>Which parts draw, for measuring each's cost: 1 the flashes, 2 their light on the sea, the ships and
+    /// the splashes.</summary>
+    public static int Parts = 3;
 
     /// <summary>A dev aid for captures: the shots of the newest 2 s in the book drawn at this age, s, instead of their own
     /// (-1: off), and kept while it is.</summary>
@@ -66,5 +67,5 @@ public static class FlashLook
         return true;
     }
 
-    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, frames, parts (1 flashes), at (a still at that age, s), on";
+    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, frames, parts (1 flashes, 2 lights), at (a still at that age, s), on";
 }

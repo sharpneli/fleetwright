@@ -39,6 +39,7 @@ layout(location = 2) flat out vec4 fragLean;
 layout(location = 3) flat out vec4 fragDye;
 layout(location = 4) flat out vec4 fragFoam;
 layout(location = 5) flat out float fragSeed;
+layout(location = 6) flat out vec3 fragBase;   // the impact, metres from the eye (the flashes' lights)
 
 void main()
 {
@@ -77,4 +78,5 @@ void main()
     fragDye = p.dye;
     fragFoam = p.foam;
     fragSeed = p.base.w;
+    fragBase = p.base.xyz;
 }

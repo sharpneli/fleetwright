@@ -26,6 +26,9 @@ layout(location = 8) flat in vec3 fragLightSun;
 layout(location = 9) flat in vec3 fragLightMoon;
 layout(location = 10) in vec3 fragEye;
 layout(location = 11) flat in float fragSoot;
+layout(location = 12) in vec3 fragPos;
+layout(location = 13) flat in vec3 fragAxisU;
+layout(location = 14) flat in vec3 fragAxisV;
 
 layout(set = 2, binding = 0) uniform sampler2D spriteTex;
 layout(set = 2, binding = 1) uniform sampler2D heightTex;
@@ -37,6 +40,24 @@ layout(location = 0) out vec4 outColour;
 #define LIGHTS_BINDING 0
 #include "Include/shiplight.glsl"
 #include "Include/shipshadow.glsl"
+
+// the flashes' light on a normal in the quad's frame (docs/visuals/muzzle-flashes.md F4), by its cosine; the hull's
+// tilt left out
+vec3 flashLit(vec3 n)
+{
+    int nf = flashCount();
+    if (nf == 0)
+        return vec3(0.0);
+    n = normalize(n);
+    vec3 fz = cross(fragAxisV, fragAxisU), sum = vec3(0.0);
+    for (int i = 0; i < nf; i++)
+    {
+        vec3 lw;
+        vec3 rad = flashAt(i, fragPos, lw);
+        sum += rad * max(dot(n, vec3(dot(lw, fragAxisU), dot(lw, fragAxisV), dot(lw, fz))), 0.0);
+    }
+    return sum;
+}
 
 float heightAt(vec2 ship)
 {
@@ -90,7 +111,7 @@ void main()
         vec4 nt = texture(normalTex, at * fragHmap.xy + fragHmap.zw);
         float depth = depthAt(at, h);
         vec3 rgb = shipShade(fragTint.rgb * (0.55 + 0.9 * n), unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, 1.0, 0.0,
-            nt.a * (0.45 + 0.35 * n), specAt(depth));
+            nt.a * (0.45 + 0.35 * n), specAt(depth), flashLit(unpackNormal(nt)));
         vec4 c = vec4(rgb, 1.0) * fragTint.a * edge * (0.7 + 0.3 * n);
         outColour = drown(c, depth) * opacity;
         return;
@@ -160,7 +181,7 @@ void main()
         vec2 own = fragMode.z > 0.0 ? fragShip - fragMode.z * fragSea.yz : at;
         float depth = depthAt(own, max(heightAt(at), fragMode.z));
         rgb = shipShade(rgb, unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, mat.x, mat.y, nt.a * (1.0 - 0.4 * fragSoot),
-            specAt(depth));
+            specAt(depth), flashLit(unpackNormal(nt)));
         if (fragMode.z > 0.0 && fragMarch.y > 0.0)   // a turret, in the hull's shadow at its roof's height
             rgb *= 1.0 - hullShadow(heightTex, fragHmap, own, fragMode.z, fragSun.xy, fragSun.z, fragMarch, fragSea) * fragSun.w;
         outColour = drown(vec4(rgb * c.a, c.a), depth) * opacity;

@@ -15,7 +15,29 @@ layout(set = 3, binding = LIGHTS_BINDING) uniform Lights
     vec4 seaAmb;    // rgb: the ambient from below; w: the horizon's brightness over the zenith's (the analytic sky)
     vec4 look;      // x: 1 lit, 0 flat (the albedo as drawn), 2-5 debug views (normal, AO, roughness, metallic); y: a
                     // scale on the materials' roughness; z: the shoulder's knee; w: specular
+    // the muzzle flashes' lights (docs/visuals/muzzle-flashes.md F4)
+    vec4 flashInfo;     // x: how many (0-8)
+    vec4 flashEast;     // xyz: east at the view's centre, Earth-fixed (for shaders in a local frame)
+    vec4 flashNorth;    // xyz: north there
+    vec4 flashUp;       // xyz: up there
+    vec4 flashPos[8];   // xyz: metres from the eye, Earth-fixed; w: its size, m (the falloff softened inside it)
+    vec4 flashRad[8];   // rgb: its intensity, display units x m^2 (a white surface facing it d away is lit by rgb / d^2)
 };
+
+int flashCount()
+{
+    return int(flashInfo.x + 0.5);
+}
+
+// flash light i at p (metres from the eye, Earth-fixed): toward it, l (unit, Earth-fixed), and its light there in the
+// lights' units
+vec3 flashAt(int i, vec3 p, out vec3 l)
+{
+    vec3 d = flashPos[i].xyz - p;
+    float s = flashPos[i].w, d2 = dot(d, d);
+    l = d * inversesqrt(max(d2, 1e-6));
+    return flashRad[i].rgb / (d2 + s * s);
+}
 
 // a sprite's normal + AO texel (biased xyz, AO in a; ReliefMaps) as its normal, not renormalised: the mips average
 // it, and how much shorter than 1 it came out is how varied the surface under the pixel is (Toksvig, in shipShade)
@@ -81,7 +103,8 @@ vec3 specularPi(vec3 n, vec3 v, vec3 l, float nl, float a, vec3 f0)
 // the lights (unit, in the sprite's frame); its material's roughness and metallic; ambient occlusion. Flat (look.x
 // 0): the albedo as drawn; the debug views show one input as grey (the normal biased, as colour; the roughness as
 // shaded, Toksvig's and the scale's included). spec scales the specular and the sky's reflection (0: under the sea).
-vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float roughness, float metallic, float ao, float spec)
+// extra: more light on the diffuse alone, already by its cosine (the flashes' lights).
+vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float roughness, float metallic, float ao, float spec, vec3 extra)
 {
     if (look.x < 0.5)
         return albedoSrgb;
@@ -114,7 +137,13 @@ vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float rou
     nl = dot(n, lMoon);
     if (nl > 0.0)
         c += (diffuse + spec * look.w * specularPi(n, v, lMoon, nl, a, f0)) * moonRad.rgb * nl;
+    c += diffuse * extra;
     return linearToSrgb(shoulder(c, look.z));
+}
+
+vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float roughness, float metallic, float ao, float spec)
+{
+    return shipShade(albedoSrgb, n, v, lSun, lMoon, roughness, metallic, ao, spec, vec3(0.0));
 }
 
 vec3 shipShade(vec3 albedoSrgb, vec3 n, vec3 v, vec3 lSun, vec3 lMoon, float roughness, float metallic, float ao)
