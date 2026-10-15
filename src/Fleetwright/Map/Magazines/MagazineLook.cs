@@ -46,8 +46,8 @@ public static class MagazineLook
     /// <summary>The march's steps' scale (1: one every ~3 px of the stretch of the ray on the screen, 8 to 40).</summary>
     public static double Steps = 0.6;
 
-    /// <summary>Which parts draw, for measuring each's cost: 1 the body, 2 its shadow.</summary>
-    public static int Parts = 3;
+    /// <summary>Which parts draw, for measuring each's cost: 1 the body, 2 its shadow, 4 the jets and the hit's flash.</summary>
+    public static int Parts = 7;
 
     /// <summary>A dev aid for captures: the newest event drawn at this age, s after the hit (-1: off), and kept while it
     /// is.</summary>
@@ -89,5 +89,5 @@ public static class MagazineLook
         return true;
     }
 
-    public const string Knobs = "scatterd, scatters, life, skin, cold, hot, soot, opacity, mushroom, spin, stem, stemtau, stemfade, gain, whiten, steps, knee, kneehc, parts (1 body, 2 shadow), at (a still at that age, s), on";
+    public const string Knobs = "scatterd, scatters, life, skin, cold, hot, soot, opacity, mushroom, spin, stem, stemtau, stemfade, gain, whiten, steps, knee, kneehc, parts (1 body, 2 shadow, 4 jets), at (a still at that age, s), on";
 }

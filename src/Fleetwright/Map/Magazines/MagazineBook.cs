@@ -28,6 +28,11 @@ public sealed class MagazineBook
         public float Seed;
         /// <summary>The hit on the effects' clock and the sea's, s.</summary>
         public double T0, SeaT0;
+        /// <summary>The hit's point in the ship's frame, its height over the waterline (the hit's flash).</summary>
+        public P3 Hit;
+        /// <summary>Her mounts' bearings when first seen, degrees clockwise from ahead (the gun ports' jets go along the
+        /// trained guns); the class's rests when she wasn't in view.</summary>
+        public double[] Bearings;
     }
 
     /// <summary>The most kept at once.</summary>
@@ -47,7 +52,7 @@ public sealed class MagazineBook
 
     /// <summary>A frame: the clocks advanced by <paramref name="dtS"/> real seconds at the clock's
     /// <paramref name="speed"/> (0 paused), the snapshot's new events taken (newest first in it), the spent let go.</summary>
-    public void Update(BlastsView v, long drawMs, double speed, double dtS, Func<int, ShipClass?> classOf)
+    public void Update(BlastsView v, long drawMs, double speed, double dtS, Func<int, ShipClass?> classOf, ShipsView? ships = null)
     {
         double rate = Effects.Rate(speed), seaRate = Effects.SeaRate(speed);
         Clock += dtS * rate;
@@ -70,12 +75,21 @@ public sealed class MagazineBook
             var stbd = Vec3d.Cross(fwd, up).Normalized();
             double scale = Math.Exp(MagazineLook.ScatterD * Gaussian(h, 1)), life = Math.Exp(MagazineLook.ScatterS * Gaussian(h, 3));
             double ageS = (drawMs - ms) / 1000.0;
+            // her mounts' bearings, if she's in view (a new event's array: the start may allocate, the frames don't)
+            var bearings = new double[cls.Mounts.Length];
+            int k = ships?.IndexOf(v.Ship[i]) ?? -1, start = k >= 0 ? ships!.MountStart[k] : -1;
+            for (int m = 0; m < bearings.Length; m++)
+                bearings[m] = start >= 0 ? ships!.MountBearingDeg[start + m] : cls.Mounts[m].RestDeg;
+            // a shell's or torpedo's hit where it landed; a fire's or the dev's over the magazine, on its barbette's top
+            var hit = v.Cause[i] is BlastCause.Shell or BlastCause.Torpedo ? v.Point[i]
+                : new P3(ev.X, ev.Y, (double.IsNaN(ev.BarbetteR) ? ev.DeckZ : ev.BarbetteZ) + cls.Vertical.Waterline);
             ring[head] = new Entry
             {
                 Ms = ms, Ship = v.Ship[i], Event = ev,
                 At = v.At[i] + fwd * ev.X + stbd * ev.Y, Forward = fwd, Starboard = stbd,
                 FireballM = ev.FireballM * scale, FireballS = ev.FireballS * life, Seed = (h & 0xffff) / 65536f,
                 T0 = Clock - ageS * ratio, SeaT0 = SeaClock - ageS * seaRatio,
+                Hit = new P3(hit.X, hit.Y, hit.Z - cls.Vertical.Waterline), Bearings = bearings,
             };
             head = (head + 1) % Capacity;
             count = Math.Min(count + 1, Capacity);

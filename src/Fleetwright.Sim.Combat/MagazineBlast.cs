@@ -90,6 +90,12 @@ public sealed class MagazineBlast
     readonly Opening[] openings;
     public ReadOnlySpan<Opening> Openings => openings;
 
+    readonly double[] mountX, mountY;
+
+    /// <summary>A mount's pivot in the ship's frame (its ports' and hood's jets turn about it).</summary>
+    public double MountX(int mount) => mountX[mount];
+    public double MountY(int mount) => mountY[mount];
+
     /// <summary>The main event (the fireball, the blast, the debris), s after the hit.</summary>
     public static double MainAtS => HitLeadS + MainS;
 
@@ -181,6 +187,10 @@ public sealed class MagazineBlast
             throw new ArgumentException($"room {room} of {c.Name} isn't a magazine");
         Room = room;
         double wl = c.Vertical.Waterline;
+        mountX = new double[c.Mounts.Length];
+        mountY = new double[c.Mounts.Length];
+        for (int m = 0; m < c.Mounts.Length; m++)
+            (mountX[m], mountY[m]) = (c.Mounts[m].X, c.Mounts[m].Y);
 
         // the mounts it serves, and the propellant's share of their rounds
         Span<int> served = stackalloc int[Math.Max(c.Mounts.Length, 1)];

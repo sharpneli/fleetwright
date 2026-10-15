@@ -247,6 +247,22 @@ the machine's other load made single runs swing by ±1 ms): **+0.6 ms GPU** (1.6
 budget. The first version cost +1.3 ms; marching only the stretch of each ray that can meet the body or the stem (the
 knee inverted analytically), the noiseless shadow, the swirl and fewer steps brought it down.
 
+**X3 (2026-10-15).** The jets (`magazine_jet.vert`/`.frag`, `MagazineRenderer.AddJets`): one quad per opening jetting,
+its length `MagazineBlast.JetLength` under the stand-in pressure, from its fail time until the fireball swallows it
+(faded over 0.5 s from the main event); the gun ports' along the guns as trained (the book keeps the mounts' bearings
+from the ship's first sight, the rests otherwise), the hood's, the hatches' and the vents' up the screen, the scuttles'
+sideways, the barbette's column (capped at 120 m) from the roof's lifting. Each a narrow cone (0.45 d at the root,
++0.06 of its length at the tip), hot on its axis at the root, cooler at its rim and tip, torn into tongues by noise
+that runs out along it; screen-blended, as the flashes. The hit's flash comes first: 8 m, 0.35 s, where a shell hit, or
+over the magazine on its barbette's top for a fire or the dev's. `-magazine=parts:4` toggles them.
+
+Seen at 0.6 m/px on Bismarck's forward magazine: the flash on A turret at 0.1 s; the ports' tongues along the guns
+and the hood's and hatches' rising from 0.5 s; the barbette's column ~120 m up the screen by 1.3 s; the fireball
+swallowing them by 1.9 s. At night they're orange-white tongues; by day pale flames over the deck.
+
+Changed on the way: **the jets' brightness is rolled off before their coverage weights it**, so they keep soft edges
+however far past white the gas is (weighted first, every pixel of a night jet saturated: hard-edged sausages).
+
 ## Later
 
 - Tier 1 (the burn-out column the ship survives) and tier 4 (two fireballs along the hull), with the venting race.

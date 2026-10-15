@@ -53,6 +53,25 @@ public class MagazineTests(ITestOutputHelper output)
         Assert.True(Effects.Drawn(1000) > Effects.Drawn(900));
     }
 
+    [Fact]
+    public void A_shells_flash_is_where_it_hit_and_a_fires_over_the_magazine()
+    {
+        var shell = Blasts((1000, 1));
+        shell.Point[0] = new P3(12, 3, Dreadnought.Vertical.Waterline + 6);
+        var fire = Blasts((1000, 2));
+        fire.Cause[0] = BlastCause.Fire;
+        var book = new MagazineBook();
+        book.Update(shell, 1000, 1, 0.016, ClassOf);
+        book.Update(fire, 1000, 1, 0.016, ClassOf);
+        Assert.Equal(new P3(12, 3, 6), book[0].Hit);
+        var ev = book[1].Event;
+        Assert.Equal(ev.X, book[1].Hit.X, 6);
+        Assert.Equal(ev.Y, book[1].Hit.Y, 6);
+        Assert.True(book[1].Hit.Z >= ev.DeckZ - 1e-6, "on the barbette's top or the deck");
+        // the mounts' bearings: the class's rests when she isn't in view
+        Assert.Equal(Dreadnought.Mounts[0].RestDeg, book[0].Bearings[0]);
+    }
+
     static BlastsView Blasts(params (long Ms, int Ship)[] oldestFirst)
     {
         var v = new BlastsView();
