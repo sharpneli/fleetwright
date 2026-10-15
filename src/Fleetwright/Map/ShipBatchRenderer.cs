@@ -512,7 +512,7 @@ public sealed class ShipDrawList
             double ox = m.PosM[0] - axx / 2 - ayx / 2 + m.TopM * p.Sea.Y, oy = m.PosM[1] - axy / 2 - ayy / 2 + m.TopM * p.Sea.Z;   // tilted with the hull
             if (thrown)
             {
-                double up = Effects.K * Effects.Drawn(Math.Max(th.Dz, 0));
+                double up = Effects.K * Math.Max(th.Dz, 0);
                 ox += th.Dx + up * northInShip.X;
                 oy += th.Dy + up * northInShip.Y;
                 if (shadow)

@@ -5,13 +5,12 @@ using Fleetwright.Sim;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
-using Effects = Fleetwright.Map.Effects;
 using Xunit.Abstractions;
 
 namespace Fleetwright.Tests;
 
 /// <summary>The world view's magazine explosions (docs/visuals/magazine-explosions.md X2): the body's laws (continuous
-/// through lift-off, rising and widening, cooling), the height knee, and the book taking each event once at its own age
+/// through lift-off, rising and widening, cooling) and the book taking each event once at its own age
 /// and allocating nothing a frame.</summary>
 public class MagazineTests(ITestOutputHelper output)
 {
@@ -41,16 +40,6 @@ public class MagazineTests(ITestOutputHelper output)
         var minute = MagazineBlast.BodyAt(d, life, mass, deck, 60);
         output.WriteLine($"at 60 s: centre {minute.CentreZ:0} m, radius {minute.R:0} m, depth {minute.Tau:0.0}");
         Assert.InRange(minute.CentreZ, 800, 1300);   // "thousands of feet" by a minute
-    }
-
-    [Fact]
-    public void Heights_are_true_to_the_knee_and_bounded_above_it()
-    {
-        Assert.Equal(80, Effects.Drawn(80));
-        Assert.Equal(Effects.KneeM, Effects.Drawn(Effects.KneeM));
-        Assert.Equal(Effects.KneeM + 1e-3, Effects.Drawn(Effects.KneeM + 1e-3), 1e-6);   // no kink's jump
-        Assert.True(Effects.Drawn(1000) < Effects.KneeM + Effects.KneeHcM);
-        Assert.True(Effects.Drawn(1000) > Effects.Drawn(900));
     }
 
     [Fact]

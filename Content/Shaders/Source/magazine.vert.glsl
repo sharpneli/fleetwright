@@ -3,7 +3,7 @@
 // a storage buffer, 6 vertices from gl_VertexIndex. The event's origin (the sea under the magazine) is in metres from
 // the eye (formed in double on the CPU); the quad lies in the sea's plane there, spanned by the view's east and north,
 // and is projected as the splashes' are (splash.vert). Its bounds come from the CPU: mode 0 the body through the effects
-// camera (heights drawn up the screen, compressed above the knee), mode 1 its shadow down-sun. Its corners carry their
+// camera (heights drawn up the screen), mode 1 its shadow down-sun. Its corners carry their
 // place in metres east and north of the origin.
 
 struct Mag

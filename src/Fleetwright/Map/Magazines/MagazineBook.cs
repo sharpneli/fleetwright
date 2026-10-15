@@ -49,6 +49,10 @@ public sealed class MagazineBook : IThrownTurrets
     /// <summary>The most kept at once.</summary>
     public const int Capacity = 32;
 
+    /// <summary>How long an event is kept after its main event at least, s on the effects' clock: its debris' trails and
+    /// the after-smoke's spawning outlast the body.</summary>
+    public const double KeepS = 3 * 40 + 10;
+
     readonly Entry[] ring = new Entry[Capacity];
     int head, count;
     long lastMs = long.MinValue;
@@ -110,7 +114,7 @@ public sealed class MagazineBook : IThrownTurrets
             count = Math.Min(count + 1, Capacity);
         }
 
-        while (count > 0 && Clock - this[0].T0 > MagazineBlast.MainAtS + MagazineLook.VolumeS && MagazineLook.AtS < 0)
+        while (count > 0 && Clock - this[0].T0 > MagazineBlast.MainAtS + Math.Max(MagazineLook.FadeTo * this[0].FireballS, KeepS) && MagazineLook.AtS < 0)
             count--;
     }
 

@@ -3,7 +3,7 @@ using System.Globalization;
 namespace Fleetwright.Map.Magazines;
 
 /// <summary>The world view's magazine explosions' knobs (docs/visuals/magazine-explosions.md), one place, for
-/// side-by-side captures: <c>-magazine=at:20,knee:300</c>. Each departure from the research is named here, beside the
+/// side-by-side captures: <c>-magazine=at:20,fadeto:2</c>. Each departure from the research is named here, beside the
 /// number it departs from.</summary>
 public static class MagazineLook
 {
@@ -11,9 +11,11 @@ public static class MagazineLook
     /// lognormal σ, from its seed.</summary>
     public static double ScatterD = 0.15, ScatterS = 0.25;
 
-    /// <summary>How long the body (fireball, cap, stem) is drawn after the main event, s on the effects' clock; it fades
-    /// over the last third (the after-smoke's puffs take the pall on, X6).</summary>
-    public static double VolumeS = 120;
+    /// <summary>When the body (fireball, cap, stem) fades out after the main event, in its fireball's lives (the user,
+    /// 2026-10-15: the cap climbing a kilometre on its stem read as a flower on its stalk, so it goes early): from 1 to
+    /// 1.8 lives, while the cap is still a few hundred metres up (Bismarck's: 12-22 s). The stem's soot plume carries the
+    /// smoke on (X6).</summary>
+    public static double FadeFrom = 1.0, FadeTo = 1.8;
 
     /// <summary>The soot skin (research §6: the top and outside cool first, the crimson stays under): how much of the
     /// heat it takes off there by the fireball's end. Vidgen's 1.8 (the reference's 0.9 was tuned at night; by day the
@@ -76,7 +78,8 @@ public static class MagazineLook
         {
             case "scatterd": ScatterD = Math.Max(v, 0); break;
             case "scatters": ScatterS = Math.Max(v, 0); break;
-            case "life": VolumeS = Math.Max(v, 1); break;
+            case "fadefrom": FadeFrom = Math.Max(v, 0); break;
+            case "fadeto": FadeTo = Math.Max(v, FadeFrom + 0.01); break;
             case "skin": Skin = Math.Max(v, 0); break;
             case "cold": ColdK = Math.Max(v, 300); break;
             case "hot": HotK = Math.Max(v, ColdK + 1); break;
@@ -94,8 +97,6 @@ public static class MagazineLook
             case "whiten": Whiten = Math.Clamp(v, 0, 1); break;
             case "light": LightShare = Math.Max(v, 0); break;
             case "steps": Steps = Math.Max(v, 0.1); break;
-            case "knee": Effects.KneeM = Math.Max(v, 1); break;
-            case "kneehc": Effects.KneeHcM = Math.Max(v, 1); break;
             case "parts": Parts = (int)v; break;
             case "at": AtS = v; break;
             case "on": On = v != 0; break;
@@ -104,5 +105,5 @@ public static class MagazineLook
         return true;
     }
 
-    public const string Knobs = "scatterd, scatters, life, skin, cold, hot, soot, opacity, mushroom, spin, stem, stemtau, stemfade, stemevery, stemsmoke, steam, gain, whiten, steps, knee, kneehc, parts (1 body, 2 shadow, 4 jets, 8 debris, 16 light, 32 after-smoke), light, at (a still at that age, s), on";
+    public const string Knobs = "scatterd, scatters, fadefrom, fadeto, skin, cold, hot, soot, opacity, mushroom, spin, stem, stemtau, stemfade, stemevery, stemsmoke, steam, gain, whiten, steps, parts (1 body, 2 shadow, 4 jets, 8 debris, 16 light, 32 after-smoke), light, at (a still at that age, s), on";
 }

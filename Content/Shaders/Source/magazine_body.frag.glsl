@@ -1,8 +1,8 @@
 #version 450
 #extension GL_GOOGLE_include_directive : require
 // A magazine's fireball, cap and stem through the effects camera (docs/visuals/magazine-explosions.md X2): the oblique
-// view from the south, a height z over the deck drawn k Drawn(z) up the screen (Drawn: true to the knee, compressed
-// above it). A pixel at (x, y) of the draw plane sees the points (x, y - k Drawn(z - deck), z): its ray is marched
+// view from the south, a height z over the deck drawn k z up the screen. A pixel at (x, y) of the draw plane sees the
+// points (x, y - k (z - deck), z): its ray is marched
 // from the top down (front to back) through the one density (Include/magazine.glsl). Each step:
 //  - the smoke, soot (albedo ~0.07), lit by the sky's and sea's ambient, the sun and the moon (wrapped round the body,
 //    dimmed by the body's own depth toward the light: the chord out of its ellipsoid, softened for the light it
@@ -27,8 +27,8 @@ layout(set = 3, binding = 1) uniform Params
     vec4 moonL;   // xyz: toward the moon
     vec4 shadowL; // xy: the shadows' drift per metre of height, away from the light; z: opacity
     vec4 misc;    // x: k; y: metres per pixel; z: the steps' scale; w: display units per cd/m^2 (the fire's scale)
-    vec4 fireK;   // x: the cold temperature, K; y: the hot; z: the soot's albedo; w: the knee, m
-    vec4 more;    // x: the knee's H_c, m; y: the mushroom; z: how far the hottest fire's hue whitens
+    vec4 fireK;   // x: the cold temperature, K; y: the hot; z: the soot's albedo
+    vec4 more;    // y: the mushroom; z: how far the hottest fire's hue whitens
 };
 
 layout(location = 0) in vec2 fragLoc;
@@ -63,21 +63,20 @@ void main()
 {
     Mag m = mags[fragIndex];
     MagState s = stateOf(m);
-    float k = misc.x, mpp = misc.y, knee = fireK.w, hc = more.x;
+    float k = misc.x, mpp = misc.y;
     // only the stretch of this pixel's ray that can meet the body or the stem: x is the same all along it, y falls as
     // its drawn height climbs (an interval of heights for each part's box)
     float rb = 1.35 * s.r, rs = 1.4 * s.stemR;
     vec2 body = vec2(1.0, 0.0), stem = vec2(1.0, 0.0);
     if (abs(fragLoc.x - s.c.x) <= rb)
-        body = magCut(magRayY(fragLoc.y, s.c.y - rb, s.c.y + rb, k, s.deck, knee, hc), vec2(s.c.z - 1.35 * s.rv, s.c.z + 1.35 * s.rv));
+        body = magCut(magRayY(fragLoc.y, s.c.y - rb, s.c.y + rb, k, s.deck), vec2(s.c.z - 1.35 * s.rv, s.c.z + 1.35 * s.rv));
     if (s.stemSigma > 0.0 && fragLoc.x >= min(0.0, s.drift.x) - rs && fragLoc.x <= max(0.0, s.drift.x) + rs)
-        stem = magCut(magRayY(fragLoc.y, min(0.0, s.drift.y) - rs, max(0.0, s.drift.y) + rs, k, s.deck, knee, hc), vec2(s.deck - 3.0, s.c.z));
+        stem = magCut(magRayY(fragLoc.y, min(0.0, s.drift.y) - rs, max(0.0, s.drift.y) + rs, k, s.deck), vec2(s.deck - 3.0, s.c.z));
     vec2 range = magCut(magJoin(body, stem), vec2(0.0, 1e6));
     if (range.x >= range.y)
         discard;
     float zTop = range.y, zBot = range.x;
-    float dTop = magDrawn(zTop - s.deck, knee, hc), dBot = zBot >= s.deck ? magDrawn(zBot - s.deck, knee, hc) : zBot - s.deck;
-    float px = (k * (dTop - dBot) + (zTop - zBot) * 0.2) / mpp;
+    float px = (k + 0.2) * (zTop - zBot) / mpp;
     int n = int(clamp(px / 3.0 * misc.z, 8.0, 40.0));
     float dz = (zTop - zBot) / float(n);
     float jitter = splashHash(vec3(gl_FragCoord.xy, 5.0));
@@ -92,16 +91,13 @@ void main()
     for (int i = 0; i < n && trans > 0.01; i++)
     {
         float z = zTop - (float(i) + jitter) * dz;
-        float h = z - s.deck;
-        float dy = h >= 0.0 ? magDrawn(h, knee, hc) : h;
-        vec3 q = vec3(fragLoc.x, fragLoc.y - k * dy, z);
+        vec3 q = vec3(fragLoc.x, fragLoc.y - k * (z - s.deck), z);
         float heat, relief;
         float sigma = magDensity(s, q, fine, sunL.z > moonL.z ? sunL.xyz : moonL.xyz, heat, relief);
         if (sigma <= 1e-5)
             continue;
-        // the step along the ray: dz up, k Drawn' dz across the screen
-        float slope = k * (h >= 0.0 ? magDrawnSlope(h, knee, hc) : 1.0);
-        float ds = dz * sqrt(1.0 + slope * slope);
+        // the step along the ray: dz up, k dz across the screen
+        float ds = dz * sqrt(1.0 + k * k);
         float alpha = 1.0 - exp(-sigma * ds);
         // the light on the smoke: a normal out of the ellipsoid, wrapped; the body's depth toward the light
         vec3 d = q - s.c;

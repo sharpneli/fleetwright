@@ -101,14 +101,12 @@ research: use the correlations' spread), the debris' launches, the noise seeds.
 
 ## The effects camera, and very tall things (decision 3)
 
-The effects camera (`Effects.PitchDeg` 45°) puts a height h at h up the screen. The splashes stop at ~80 m and the
-flashes at ~50; a magazine's cap reaches ~1 km, a screen's height at 1 m/px with the ship off its bottom. The research
-compresses height (`z' = H_c(1 − e^(−z/H_c))`), which would also shrink every splash.
-
-So **a soft knee**, in `Effects` for every tall effect: heights up to the knee drawn true, above it
-`knee + H_c(1 − e^(−(z−knee)/H_c))`. The knee is **300 m** to start (the user: "for the heck of it", to iterate on),
-H_c 450 m; both are knobs. A 1 km cap goes 655 m up the screen; splashes and flashes are unchanged. Shadows and
-light use the true height.
+The effects camera (`Effects.PitchDeg` 45°) puts a height h at h up the screen, as for the splashes and flashes. A
+magazine's cap would climb ~1 km by a minute: a screen's height at 1 m/px, on a long stem. The plan first compressed
+heights above a 300 m knee to keep it on the screen; the user rescinded that (2026-10-15): the cap on its stem read as
+a flower on its stalk. **Heights are drawn true, and the body fades out early instead** (1 to 1.8 fireball lives after
+the main event, `MagazineLook.FadeFrom`/`FadeTo`), while the cap is still a few hundred metres up; the stem's soot
+plume (X6) carries the smoke on.
 
 **The anchor is the deck** over the magazine (the demo measured lift from the deck): the fireball's base sits on the
 ship, only the height gained goes up the screen. Jets anchor at their openings, as flashes at their barrel tips.
@@ -120,7 +118,7 @@ In draw order, all after the ships' layer:
 1. **The shadow**: one quad laid down-sun on the sea and the decks, marching the sun's ray through the volumes'
    density; darkens to ~30 % under full shadow. Follows the stronger light, fades at low sun.
 2. **The volumes** (`Include/magazineblast.glsl`, the one model): one quad per event, from the deck up the screen by
-   the knee'd height of the cap, as wide as its widest part. Per pixel, the effects camera's parallel ray marched
+   the height of the cap, as wide as its widest part. Per pixel, the effects camera's parallel ray marched
    through the stem, fireball and cap (8-32 steps by screen size, the splashes' LOD), each step:
    - density from the analytic shapes, broken by noise fixed to the volume and growing with it, the cap's advected
      round its ring; soot albedo 0.07, a little warm;
@@ -164,7 +162,8 @@ In draw order, all after the ships' layer:
    so the look comes from tricks that are cheap. The mushroom's circulation is imitated by advected noise. If X2's
    captures read as smooth balls (the demo's weak spot too), the fallback is a pool of ~200 closed-form puffs for the
    fireball and cap, before any particle sim.
-3. **The height knee** at 300 m with H_c 450 m, shared by every tall effect; to be iterated on.
+3. ~~The height knee at 300 m with H_c 450 m~~ (rescinded 2026-10-15, after X7's first look: the cap on its stem read as
+   a flower on its stalk). Heights are drawn true; the body fades early instead.
 4. **The after-smoke on the `SmokeBook`**, which gains a soot albedo and a steam tint per puff. This is one more kind
    of smoke drawn by the map: the unification research (with the smoke system) takes it in later.
 5. **No camera shake and no exposure flash**, as no flash adaptation (muzzle-flashes.md decision 3).
@@ -346,13 +345,20 @@ do, so two can be measured together.
 **Still to do in X7: tuning by the user's eye**, against the anchors (Lion's 61 m column, Queen Mary's crimson flame to
 ~240 m and cap to ~1 km, Arizona's 0.5 s precursor and < 7 s violent phase, Barham's lifted roof and smoke "thousands
 of feet"). Things to look at:
-- the knee (300 m) and how high the cap stands on the screen;
-- the cap's darkness and size, the mushroom's read from above, its fade at 80-120 s;
+- the cap's darkness and size, and its early fade (1-1.8 fireball lives);
 - the fireball's colour by day (it goes peach early) and by night (orange to crimson);
 - the jets' width and brightness; the gunhouse's flight (mostly hidden in the fireball, as in vidgen);
 - the debris splashes' count and size; the blast's frost ring;
 - the fire's light (0.3 of its drawn brightness) and the missing reflection on the night sea;
 - the stem's plume and the steam.
+
+**X7, the user's first round (2026-10-15).** "It looks awesome, but I want to rescind my original 300 m thing. The smoke
+starts to look like a flower stalk, so let's fade it out quite early." The knee is gone (`Effects.Drawn`, the shaders'
+inverse and slope, the `knee`/`kneehc` knobs): every height is drawn true again. The body (fireball, cap and stem)
+fades from 1 to 1.8 of its fireball's lives after the main event (`fadefrom`, `fadeto`; Bismarck's from 12 to 22 s,
+the cap ~380 m up when it's gone), replacing the 120 s life and its last-third fade. The book keeps an event at least
+130 s on the effects' clock, so the debris' trails and the after-smoke's spawning outlast the body. The cap's handover
+to puffs (X6's open item) is moot: the cap is gone before it would stall.
 
 ## Later
 

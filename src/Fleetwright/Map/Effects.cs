@@ -27,14 +27,6 @@ public static class Effects
 
     public static double FaintPower = 0.5, FaintMin = 0.3;
 
-    /// <summary>Very tall effects (docs/visuals/magazine-explosions.md decision 3): heights up to the knee are drawn
-    /// true, above it compressed as knee + H_c(1 − e^(−(z − knee)/H_c)), so a 1 km smoke cap stays on the screen with
-    /// its ship. 300 m to start (the user: to iterate on); splashes and flashes stay under it.</summary>
-    public static double KneeM = 300, KneeHcM = 450;
-
-    /// <summary>A height over an effect's anchor as drawn, m (before the pitch's k).</summary>
-    public static double Drawn(double z) => z <= KneeM ? z : KneeM + KneeHcM * (1 - Math.Exp(-(z - KneeM) / KneeHcM));
-
     /// <summary>The effects' clock's rate at a clock speed.</summary>
     public static double Rate(double speed) =>
         speed <= ClockKnee ? speed : ClockKnee * Math.Pow(speed / ClockKnee, ClockPower);

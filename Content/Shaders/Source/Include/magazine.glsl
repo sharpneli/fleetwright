@@ -125,26 +125,11 @@ float magChord(MagState s, vec3 q, vec3 l)
     return max((-b + sqrt(disc)) / a, 0.0);
 }
 
-// the drawn height over the deck (Effects.Drawn): true up to the knee, compressed above it; below the deck, true
-float magDrawn(float z, float knee, float hc)
-{
-    return z <= knee ? z : knee + hc * (1.0 - exp(-(z - knee) / hc));
-}
-
-// its inverse: the height drawn at D (past the compression's top, any height)
-float magUndrawn(float dd, float knee, float hc)
-{
-    if (dd <= knee)
-        return dd;
-    float f = (dd - knee) / hc;
-    return f >= 0.999 ? 1e6 : knee - hc * log(1.0 - f);
-}
-
 // the heights z where an effects-camera ray from the draw plane's y meets drawn ys in [lo, hi] (the ray's y falls as
-// k Drawn(z - deck)): an interval, empty (x > y) when it misses
-vec2 magRayY(float y, float lo, float hi, float k, float deck, float knee, float hc)
+// k (z - deck)): an interval, empty (x > y) when it misses
+vec2 magRayY(float y, float lo, float hi, float k, float deck)
 {
-    return vec2(deck + magUndrawn((y - hi) / k, knee, hc), deck + magUndrawn((y - lo) / k, knee, hc));
+    return vec2(deck + (y - hi) / k, deck + (y - lo) / k);
 }
 
 // the heights z where a straight ray a + b z stays within [lo, hi] on one axis
@@ -169,11 +154,6 @@ vec2 magJoin(vec2 a, vec2 b)
     if (b.x >= b.y)
         return a;
     return vec2(min(a.x, b.x), max(a.y, b.y));
-}
-
-float magDrawnSlope(float z, float knee, float hc)
-{
-    return z <= knee ? 1.0 : exp(-(z - knee) / hc);
 }
 
 // a blackbody's luminance, cd/m^2, by its temperature (FlashPhotometry's table: log10 L = 10.902 - 10466 / K within

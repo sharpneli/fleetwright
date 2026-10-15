@@ -148,8 +148,8 @@ public sealed unsafe class MagazineRenderer : IDisposable
         {
             SunL = new Vector4(sunL, 0), MoonL = new Vector4(moonL, 0), ShadowL = new Vector4(drift, on, 0),
             Misc = new Vector4((float)k, (float)mpp, (float)MagazineLook.Steps, (float)perCd),
-            FireK = new Vector4((float)MagazineLook.ColdK, (float)MagazineLook.HotK, (float)MagazineLook.SootAlbedo, (float)Effects.KneeM),
-            More = new Vector4((float)Effects.KneeHcM, (float)MagazineLook.Mushroom, (float)MagazineLook.Whiten, 0),
+            FireK = new Vector4((float)MagazineLook.ColdK, (float)MagazineLook.HotK, (float)MagazineLook.SootAlbedo, 0),
+            More = new Vector4(0, (float)MagazineLook.Mushroom, (float)MagazineLook.Whiten, 0),
         };
         // the wind, toward where it blows (east, north), and its speed at 10 m
         double toward = (s.Weather.WindFromDeg + 180) * Math.PI / 180;
@@ -176,7 +176,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
             blasts?.AddSpherical(view, e.At + e.At.Normalized() * deck, deck, ev.BlastLengthM, seaAge, world, e.Seed);
             if (flashLights != null && (MagazineLook.Parts & 16) != 0)
                 Light(view, e, age, perCd, flashLights);
-            if (t < 0 || t > MagazineLook.VolumeS)
+            if (t < 0 || t > MagazineLook.FadeTo * life)
                 continue;
             var b = MagazineBlast.BodyAt(e.FireballM, life, ev.MassKg, deck, t);
             // downwind: the cap at its height's wind (the shear's power law), once it lifts
@@ -187,7 +187,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
             double fires = Math.Exp(-t / MagazineLook.StemFadeS);
             double stemSigma = MagazineLook.StemTau / (2 * stemR) * fires * SmoothStep(0.2 * life, 0.6 * life, t);
             double sigma = MagazineLook.Opacity * b.Tau / (2 * r);
-            double fade = (1 - SmoothStep(0.67 * MagazineLook.VolumeS, MagazineLook.VolumeS, t)) * world;
+            double fade = (1 - SmoothStep(MagazineLook.FadeFrom * life, MagazineLook.FadeTo * life, t)) * world;
             double capShare = SmoothStep(0.6 * life, 1.5 * life, t);
             double spin = t > life ? 2 * Math.PI * MagazineLook.Spin * 2 * life * (Math.Sqrt(t / life) - 1) : 0;
             // the fire's light on its own smoke: the core's drawn brightness, compressed as the flashes' halo's source
@@ -199,7 +199,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
             double zb = Math.Max(Math.Min(deck - 3, b.CentreZ - 1.35 * rv), 0), zt = b.CentreZ + 1.35 * rv;
             double rr = 1.4 * r, rs = 1.4 * stemR;
             var c = new Vector2(capDrift.X, capDrift.Y);
-            float Dn(double h) => (float)(k * (h >= 0 ? Effects.Drawn(h) : h));
+            float Dn(double h) => (float)(k * h);
             var lo = Vector2.Min(c - new Vector2((float)rr) + new Vector2(0, Dn(b.CentreZ - 1.35 * rv - deck)), new Vector2((float)-rs) + new Vector2(0, Dn(zb - deck)));
             var hi = Vector2.Max(c + new Vector2((float)rr) + new Vector2(0, Dn(zt - deck)), new Vector2((float)rs) + new Vector2(0, Dn(Math.Max(b.CentreZ - deck, 0))));
             lo = Vector2.Min(lo, c - new Vector2((float)rs));
@@ -253,7 +253,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
         Vector2 Plan(double x, double y) => f * (float)(x - ev.X) + sb * (float)(y - ev.Y);
         Vector2 Way(double x, double y) => f * (float)x + sb * (float)y;
         double deck = ev.DeckZ;
-        float Dn(double z) => (float)(k * (z - deck >= 0 ? Effects.Drawn(z - deck) : z - deck));
+        float Dn(double z) => (float)(k * (z - deck));
         if (!view.Project(e.At, out double px, out double py) || px < -4000 / mpp || py < -4000 / mpp || px > view.Width + 4000 / mpp ||
             py > view.Height + 4000 / mpp)
             return;
@@ -336,7 +336,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
         // a point of the ship's frame (from the magazine), height over the waterline, drawn through the effects camera,
         // with a drift over the sea (east, north)
         Vector2 Drawn(Vector3 p, Vector2 drift) =>
-            f * (float)(p.X - ev.X) + sb * (float)(p.Y - ev.Y) + drift + new Vector2(0, (float)(k * (p.Z - deck >= 0 ? Effects.Drawn(p.Z - deck) : p.Z - deck)));
+            f * (float)(p.X - ev.X) + sb * (float)(p.Y - ev.Y) + drift + new Vector2(0, (float)(k * (p.Z - deck)));
         float minR = (float)(0.8 * mpp);
 
         foreach (var piece in d.Pieces)
