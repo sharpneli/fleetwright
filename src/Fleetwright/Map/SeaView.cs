@@ -30,14 +30,41 @@ public sealed class SeaView
     public const double SpeedCap = 8;
 
     /// <summary>Choppiness λ: how far the crests lean in toward each other.</summary>
-    public const float Chop = 1.0f;
+    public static float Chop = 1.0f;
 
     /// <summary>The water body's reflectance, linear: a deep open-ocean blue, by eye, so that at a high sun the sea's
     /// mean comes near the chart's day sea and the cross-fade doesn't flash.</summary>
     public static Vector3 Body = new(0.010f, 0.050f, 0.105f);
 
+    /// <summary>How much of the water body's light follows the facet it falls on (the rest goes by a level sea, the
+    /// light diffusing under the surface): what shows the waves when the sun is too low for its glint to reach a view
+    /// from above. By eye.</summary>
+    public static float FacetLight = 0.7f;
+
+    /// <summary>How much the slopes are steepened for the body's light alone (1: as they are), like a hillshade's
+    /// vertical exaggeration: a look knob for when the sun is too low for the glint to show the waves from above.</summary>
+    public static float Relief = 1;
+
     /// <summary>A debug view of the sea: 0 shaded, 1 its normal, 2 its slopes' spread.</summary>
     public static int Debug;
+
+    /// <summary>Sets a knob by name, "facet:0.7", "relief:3", "chop:1", "debug:1" (the -sea= flag, for side-by-side
+    /// captures); false for a bad one.</summary>
+    public static bool Set(string kv)
+    {
+        var p = kv.Split(':');
+        if (p.Length != 2 || !float.TryParse(p[1], System.Globalization.CultureInfo.InvariantCulture, out float v))
+            return false;
+        switch (p[0])
+        {
+            case "facet": FacetLight = v; break;
+            case "relief": Relief = v; break;
+            case "chop": Chop = v; break;
+            case "debug": Debug = (int)v; break;
+            default: return false;
+        }
+        return true;
+    }
 
     Vec3d anchor, east, north;
     bool anchored;
@@ -105,8 +132,8 @@ public sealed class SeaView
             Axes = new Vector4(r.X, r.Y, u.X, u.Y),
             VarU = new Vector4((float)ux, (float)uy, (float)kx, (float)ky),
             Mss2 = new Vector4((float)c2.MssX, (float)c2.MssY, (float)Math.Clamp(sunMotion, 0, 1), (float)Earth.Radius),
-            Body = new Vector4(Body, 0),
-            Moon = new Vector4((float)lights.MoonDir.X, (float)lights.MoonDir.Y, (float)lights.MoonDir.Z, 0),
+            Body = new Vector4(Body, FacetLight),
+            Moon = new Vector4((float)lights.MoonDir.X, (float)lights.MoonDir.Y, (float)lights.MoonDir.Z, Relief),
         };
     }
 

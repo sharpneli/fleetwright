@@ -29,8 +29,8 @@ layout(set = 3, binding = 1) uniform Sea
     vec4 seaAxes;   // the camera's right (xy) and up (zw) in the frame's axes
     vec4 seaVarU;   // xy: the slope variance no cascade resolves (Cox-Munk's remainder); zw: the ripples' amplitude
     vec4 seaMss2;   // xy: cascade 2's mean-square slopes; z: the glints' scale (0 in time-lapse); w: the Earth's radius, m
-    vec4 seaBody;   // rgb: the water body's reflectance, linear
-    vec4 seaMoon;   // xyz: toward the moon, Earth-fixed
+    vec4 seaBody;   // rgb: the water body's reflectance, linear; w: how much of its light follows the facet (FacetLight)
+    vec4 seaMoon;   // xyz: toward the moon, Earth-fixed; w: the slopes' exaggeration for the body's light (Relief)
 };
 
 float seaHash(ivec2 c)
@@ -106,6 +106,13 @@ float seaFresnel(float c)
     return 0.02 + 0.98 * pow(1.0 - c, 5.0);
 }
 
+// the light a facet with normal n lets into the water from a light toward l: its cosine through 1 - Fresnel
+float seaLetIn(vec3 n, vec3 l)
+{
+    float c = dot(n, l);
+    return c > 0.0 ? c * (1.0 - seaFresnel(c)) : 0.0;
+}
+
 // Cox-Munk's glint for a light toward l: pi times the reflected radiance per unit of the light (the lights' units:
 // their irradiance across the beam), v toward the eye, the mean slope m and its variance var, all in the pixel's
 // frame (x right, y up the screen, z the local vertical)
@@ -170,7 +177,13 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon)
     vec3 n = normalize(vec3(-m, 1.0));
     float F = seaFresnel(dot(v, n));
     vec3 r = reflect(-v, n);
-    vec3 body = seaBody.rgb * (sunRad.rgb * max(lSun.z, 0.0) + moonRad.rgb * max(lMoon.z, 0.0) + skyAmb.rgb);
+    // the body's light: what the surface lets in (cosine and 1 - Fresnel), part by the facet it falls on, part by a
+    // level sea (it diffuses under the surface). The facet's part is what shows the waves when the sun is too low
+    // for its glint to reach a view from above. In time-lapse it fades with the glints (the sun would spin).
+    float k = seaBody.w * seaMss2.z;
+    vec3 nb = normalize(vec3(-m * seaMoon.w, 1.0));
+    vec3 body = seaBody.rgb * (sunRad.rgb * mix(seaLetIn(vec3(0.0, 0.0, 1.0), lSun), seaLetIn(nb, lSun), k)
+                             + moonRad.rgb * mix(seaLetIn(vec3(0.0, 0.0, 1.0), lMoon), seaLetIn(nb, lMoon), k) + skyAmb.rgb);
     vec3 c = (1.0 - F) * body + F * skyAt(r, vec3(0.0, 0.0, 1.0), 0.0);
     c += (sunRad.rgb * seaGlint(lSun, v, m, var) + moonRad.rgb * seaGlint(lMoon, v, m, var)) * seaMss2.z;
     return linearToSrgb(shoulder(c, look.z));

@@ -180,6 +180,31 @@ in view is consistent, and panning is seamless; scrolled out to the table and ba
 - Not a function of place, so CPU ship motion (research §5.2) would sample the field in its own frame; it only needs
   the statistics to match, not this view's pattern.
 
+### Low sun and night (found 2026-10-15)
+
+"No waves in the Black Sea" was the time of day, not the place: point checks round the world (texture as the std of
+a capture's grey levels, 2 m/px) gave the same sea everywhere at a high sun, and nearly none at a low one or at night.
+
+| Where, when | Sun | Std |
+|---|---|---|
+| Black Sea, 10:00 local | ~57° | 14.7 |
+| Black Sea, 16:00 local | ~35° | 6.9 |
+| Arctic 70°N, noon | ~42° | 2.8 |
+| Indian Ocean 40°S, noon (winter) | ~28° | 1.0 |
+| 60°S, noon (winter) | ~8° | 0.35 |
+| Black Sea, sunset / night / full moon | ≤ 2° | 0.0-0.5 |
+
+Why: from straight above, slopes show mostly through the sun's glint, which needs a facet tilted halfway between the
+eye and the sun; below ~30° of sun that's beyond the sea's slopes. The sky's reflection is ~2% at near-vertical
+incidence and nearly uniform round the zenith, and at 2 m/px the resolved waves are gentle (the steep short ones are
+roughness). That is close to the physics: a straight-down view at a low sun is low in contrast.
+
+Done: the water body's sunlight and moonlight now follow the facet they fall on (its cosine through 1 - Fresnel,
+`SeaView.FacetLight` 0.7 of it, the rest as a level sea): physical, a small gain (1.0 at 40°S). A look knob,
+`SeaView.Relief` (`-sea=relief:3`), steepens the slopes for the body's light alone: 1 / 3 / 6 give 1.0 / 2.3 / 3.9 at
+40°S and leave noon nearly as it is (8.3 / 8.6 / 9.2). It stays at 1, physical, until chosen. Dusk and night stay
+dark either way: there's no light to shade with (a readability floor like the ships' is an option).
+
 ### Later (not v1)
 
 - **Foam:** the lab's whitecaps, with the cost listed above coming back.

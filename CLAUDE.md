@@ -37,6 +37,7 @@ dotnet run --project src/Fleetwright -- -lights=roughness:0.5,specular:0   # the
 dotnet run --project src/Fleetwright -- -view=ship -viewer=sun:300:30,shade:normal,at:10:0:8 [-outline=0.5]   # the viewer for captures: sun, moon, debug view (lit, albedo, normal, ao, ...), centre and zoom; the plan's ink weight
 dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
 dotnet run --project src/Fleetwright -- -worldview=4                       # the map's table-to-world boundary, m/px at 1080p (Map/WorldView.cs; live in the "where" panel with F2)
+dotnet run --project src/Fleetwright -- -map=-40,100,2 -time=1916-05-31T05:20 -sea=relief:3,facet:0.7   # the sea's look knobs (Map/SeaView.cs: relief, facet, chop, debug), for side-by-side captures
 dotnet run --project src/Fleetwright -- -section=2 -designer-ui=secsel:1:2,secmenu  # UI state for screenshots (DesignerScene.ApplyDevUi)
 dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wheel:1160,559:-1;100:type:150  # scripted clicks, wheel, typing, F:drop:PATH, F:drag:X0,Y0:X1,Y1, F:mclick or F:mright:X,Y (SDL clicks the map gets) (window px; Engine.ScriptedInput)
 dotnet run --project src/Fleetwright -c DevRelease -- -frametimes -screenshot=1100 -input=100:pan:900,500:400,350:80   # frame times at exit; F:pan is a real SDL drag (the map's input)
