@@ -125,6 +125,50 @@ public class FlashTests(ITestOutputHelper output)
         Assert.InRange(core.Intensity, 0.5 * sum / dt, 1.5 * sum / dt);
     }
 
+    /// <summary>The floor (docs/visuals/muzzle-flashes.md "Time"): a 4 ms flash shown over 33 ms keeps 14% of its peak
+    /// (research §7.2), which keeps its Blondel-Rey effective intensity.</summary>
+    [Fact]
+    public void A_stretched_flash_keeps_its_effective_intensity()
+    {
+        double t = 0.004, t2 = 0.033, k = FlashRenderer.BlondelRey(t, t2 / t);
+        Assert.InRange(k, 0.13, 0.145);
+        Assert.Equal(t / (0.2 + t), k * t2 / (0.2 + t2), 9);
+        Assert.Equal(1, FlashRenderer.BlondelRey(0.3, 1));
+    }
+
+    /// <summary>Under compression a salvo flashes whole or not at all, about the effects' keep share of them; the
+    /// selected ship's always.</summary>
+    [Fact]
+    public void A_salvo_keeps_its_flash_whole_and_the_selected_ships_always()
+    {
+        var book = new ShotBook();
+        var v = new ShotsView();
+        v.EnsureCapacity(400);
+        var at = Earth.Position(56.5, 4.0);
+        for (int i = 0; i < 400; i++)
+        {
+            // 200 salvos of two mounts, newest first; the shooter 1, or 2 (the selected) every tenth salvo
+            int salvo = 199 - i / 2;
+            (v.Ms[i], v.Shooter[i], v.Class[i], v.Mount[i], v.Salvo[i], v.Barrels[i]) = (1000 + salvo * 10, salvo % 10 == 0 ? 2 : 1, 0, i % 2, salvo, 2);
+            (v.Muzzle[i], v.Forward[i], v.ElevationDeg[i]) = (at, Earth.Forward(at, 90), 10);
+        }
+        v.Count = 400;
+        book.Update(v, 4000, 60, 1 / 60.0, ClassOf, selected: 2);
+        Assert.Equal(400, book.Count);
+        int kept = 0;
+        for (int i = 0; i < book.Count; i += 2)
+        {
+            Assert.Equal(book[i].Salvo, book[i + 1].Salvo);
+            Assert.Equal(book[i].Shows, book[i + 1].Shows);
+            if (book[i].Shooter == 2)
+                Assert.True(book[i].Shows);
+            else if (book[i].Shows)
+                kept++;
+        }
+        output.WriteLine($"{kept} of 180 salvos flash at 60x (the share {Map.Effects.KeepShare(60):F2})");
+        Assert.InRange(kept / 180.0, Map.Effects.KeepShare(60) - 0.12, Map.Effects.KeepShare(60) + 0.12);
+    }
+
     [Fact]
     public void A_frame_allocates_nothing()
     {

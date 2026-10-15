@@ -78,6 +78,8 @@ public sealed partial class MapScene
         var v = s.Shells;
         long now = world.DrawMs;
         double flashS = Floor(s, FlashS);
+        // the gun's flash gives way to the world view's (docs/visuals/muzzle-flashes.md) over the cross-fade
+        float tableFlash = Flashes.FlashLook.On ? (float)(1 - WorldView.Factor(view)) : 1f;
         if (v.Ballistics is { } tables)
             for (int i = 0; i < v.Count; i++)
             {
@@ -88,7 +90,7 @@ public sealed partial class MapScene
                 double f = CalibreScale(table.Key.CalibreMm);
                 float dim = selected < 0 || v.Shooter[i] == selected ? 1f : 0.45f;
                 if (t < flashS && view.Project(v.Muzzle[i], out double mx, out double my))
-                    overlay.Disc(mx, my, FlashPx * Math.Sqrt(f) * (1 - 0.5 * t / flashS), GunFlash with { W = GunFlash.W * dim * (float)(1 - t / flashS) });
+                    overlay.Disc(mx, my, FlashPx * Math.Sqrt(f) * (1 - 0.5 * t / flashS), GunFlash with { W = GunFlash.W * dim * tableFlash * (float)(1 - t / flashS) });
                 var p = table.Position(v.Muzzle[i], v.Forward[i], v.ElevationDeg[i], v.Speed[i], t, out _);
                 if (!view.Project(p, out double x, out double y) || x < -TailMaxPx || y < -TailMaxPx || x > view.Width + TailMaxPx || y > view.Height + TailMaxPx)
                     continue;

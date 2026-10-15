@@ -309,6 +309,15 @@ Seen (captures with `-engage` and `-flash=at:0.12`, a dev still at that age of t
 
 The dev's `-fire` leaves the turrets at rest, so its flashes stand off empty barrels; captures use `-engage`.
 
+**F3 (2026-10-15).** The halo was built with F2. The effects camera's pitch and the two display clocks moved out of
+`SplashLook` into `Map/Effects.cs` (`Rate`, `SeaRate`, `KeepShare`, `SeaStrength`), which splashes and flashes both
+read; `-splash=` still sets them. A shot's flash shows by its salvo's share, decided when it is first seen (the
+selected ship's always). The floor (`FlashLook.FloorFrames`, 2, `-flash=frames:`): a flash shorter than two frames
+plays over them at its Blondel-Rey intensity (`FlashRenderer.BlondelRey`). The table's gun flash is drawn × (1 − the
+world's share). Tests: the floor against the research's 4 ms example (14% of the peak over 33 ms), a salvo flashing
+whole at about the keep share at 60x, the selected ship's always. **Not yet checked live** at 10x-240x and through
+the zoom boundary: for the user's eye.
+
 ## Decisions (the user, 2026-10-15)
 
 1. **Gun smoke now, drawn by the map** (a logged exception). The smoke system comes later as one effort, since keeping

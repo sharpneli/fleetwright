@@ -116,7 +116,7 @@ public sealed unsafe class SplashRenderer : IDisposable
         if (drift.Length() > MaxDrift)
             drift *= MaxDrift / drift.Length();
         shadowView = new Vector4(drift, on > 0.002f ? 1 : 0, 0);
-        double mpp = view.MetresPerPixel, k = SplashLook.EffectK;
+        double mpp = view.MetresPerPixel, k = Effects.K;
         prms = new Params
         {
             SunL = new Vector4(sunL, 0), MoonL = new Vector4(moonL, 0), ShadowL = new Vector4(drift, on, 0),
@@ -224,7 +224,7 @@ public sealed unsafe class SplashRenderer : IDisposable
             Up = new Vector4(F(view.Up), (float)view.TanHalfY),
             Fwd = new Vector4(F(view.Forward), 0),
             Depth = new Vector4((float)near, (float)far, 0, mode),
-            East = new Vector4(F(view.Right), (float)SplashLook.EffectK),
+            East = new Vector4(F(view.Right), (float)Effects.K),
             North = new Vector4(F(view.Up), 0),
             Shadow = shadowView,
         };

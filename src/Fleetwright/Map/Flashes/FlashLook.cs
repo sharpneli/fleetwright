@@ -21,6 +21,11 @@ public static class FlashLook
     /// flashes all at once read as clones). Display only; the salvo's ripple will come with fire control.</summary>
     public static double OffsetS = 0.04;
 
+    /// <summary>The fewest frames a flash shows over, its intensity scaled to keep its Blondel-Rey effective intensity
+    /// (research §7.2: the eye sees a short flash by its integral over ~0.2 s), so a 4" flash at 1x or a 12" at 60x is
+    /// never a one-frame blink. Departs from the true duration there.</summary>
+    public static double FloorFrames = 2;
+
     /// <summary>A shot's secondary flash's intensity scatter, lognormal σ (the research's 0.25).</summary>
     public static double Scatter = 0.25;
 
@@ -53,6 +58,7 @@ public static class FlashLook
             case "rh": Humidity = Math.Clamp(v, 0, 1); break;
             case "air": AirC = v; break;
             case "parts": Parts = (int)v; break;
+            case "frames": FloorFrames = Math.Max(v, 0); break;
             case "at": AtS = v; break;
             case "on": On = v != 0; break;
             default: return false;
@@ -60,5 +66,5 @@ public static class FlashLook
         return true;
     }
 
-    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, parts (1 flashes), at (a still at that age, s), on";
+    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, frames, parts (1 flashes), at (a still at that age, s), on";
 }

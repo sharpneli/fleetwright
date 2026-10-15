@@ -7,14 +7,14 @@ namespace Fleetwright.Map.Splashes;
 /// <summary>The splashes the map has seen (docs/visuals/splashes.md P0, P5), kept past the snapshot's while so their
 /// foam and stains last, and the two display clocks they're drawn on. Display only: nothing here reaches the sim.
 /// <list type="bullet">
-/// <item><b>The column's clock</b> runs at the world's speed up to <see cref="SplashLook.ClockKnee"/>, slower than it
-/// above (<see cref="SplashLook.ColumnRate"/>), so at 60x a column still rises and falls in most of a second. Accumulated
+/// <item><b>The column's clock</b> runs at the world's speed up to <see cref="Effects.ClockKnee"/>, slower than it
+/// above (<see cref="Effects.Rate"/>), so at 60x a column still rises and falls in most of a second. Accumulated
 /// frame by frame, so a change of speed never makes a live column jump.</item>
-/// <item><b>The foam's clock</b> is the sea's: the world's speed, capped (<see cref="SplashLook.FoamRate"/>).</item>
+/// <item><b>The foam's clock</b> is the sea's: the world's speed, capped (<see cref="Effects.SeaRate"/>).</item>
 /// <item>Each splash is placed on both when first seen, back-dated by its age in the world at the rates of the moment,
-/// and two things are decided then and kept: whether its salvo shows a column (<see cref="SplashLook.KeepShare"/>, by a
+/// and two things are decided then and kept: whether its salvo shows a column (<see cref="Effects.KeepShare"/>, by a
 /// hash of the salvo, so a salvo shows whole or not at all; the selected ship's always do) and its foam's strength
-/// (<see cref="SplashLook.FoamStrength"/>). Nothing pops when the speed changes.</item>
+/// (<see cref="Effects.SeaStrength"/>). Nothing pops when the speed changes.</item>
 /// <item>Each animates from its own impact time, so nothing assumes a salvo lands together (decision 5: the ripple
 /// comes later).</item>
 /// </list>
@@ -64,11 +64,11 @@ public sealed class SplashBook
     /// <paramref name="speed"/> (0 paused), the snapshot's new splashes taken (newest first in it), the gone let go.</summary>
     public void Update(SplashesView v, long drawMs, double speed, double dtS, int selected)
     {
-        double colRate = SplashLook.ColumnRate(speed), foamRate = SplashLook.FoamRate(speed);
+        double colRate = Effects.Rate(speed), foamRate = Effects.SeaRate(speed);
         ColumnClock += dtS * colRate;
         FoamClock += dtS * foamRate;
         double colRatio = speed > 0 ? colRate / speed : 1, foamRatio = speed > 0 ? foamRate / speed : 1;
-        double keep = speed > 0 ? SplashLook.KeepShare(speed) : 1, foam = speed > 0 ? SplashLook.FoamStrength(speed) : 1;
+        double keep = speed > 0 ? Effects.KeepShare(speed) : 1, foam = speed > 0 ? Effects.SeaStrength(speed) : 1;
 
         // the oldest first, skipping what was taken: everything before lastMs, and the first atLast at it (a moment's
         // splashes all come in the same step, so a snapshot has all of them or none)

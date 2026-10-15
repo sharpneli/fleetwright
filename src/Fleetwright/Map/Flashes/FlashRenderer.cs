@@ -99,10 +99,10 @@ public sealed unsafe class FlashRenderer : IDisposable
     /// <paramref name="speed"/> is the clock's (0 paused), <paramref name="dtS"/> the frame's real seconds,
     /// <paramref name="world"/> the view's <see cref="WorldView.Factor(in MapView)"/>.</summary>
     public void Build(in MapView view, Snapshot s, long drawMs, double speed, double dtS, double world, ShipLights frameLights,
-        Func<int, ShipClass?> classOf)
+        Func<int, ShipClass?> classOf, int selected = -1)
     {
         double before = Book.FlashClock;
-        Book.Update(s.Shots, drawMs, speed, dtS, classOf);
+        Book.Update(s.Shots, drawMs, speed, dtS, classOf, selected);
         double frame = Book.FlashClock - before;
         lights = frameLights;
         count = 0;
@@ -112,7 +112,7 @@ public sealed unsafe class FlashRenderer : IDisposable
         var up = (-view.Forward).Normalized();
         var (east, north) = (view.Right, view.Up);
         Scale = FlashLook.Gain * DisplayWhite(lights, up) / FlashPhotometry.WhiteDeck(Illuminance(s.Sun, up, drawMs, lights));
-        double mpp = view.MetresPerPixel, k = SplashLook.EffectK, floor = MinSigmaPx * mpp;
+        double mpp = view.MetresPerPixel, k = Effects.K, floor = MinSigmaPx * mpp;
         prms = new Params { Misc = new Vector4((float)mpp, (float)FlashLook.HaloScale, (float)FlashLook.HaloGain, (float)FlashLook.HaloKnee) };
         double haloOut = HaloRadii[^1].Px * FlashLook.HaloScale * mpp;
 
@@ -124,17 +124,27 @@ public sealed unsafe class FlashRenderer : IDisposable
             ref readonly var e = ref book[i];
             if (FlashLook.AtS >= 0 && e.Ms < newest - 2000)
                 continue;   // a still: the newest salvos only, not every one kept
-            double t = FlashLook.AtS >= 0 ? FlashLook.AtS : clock - e.FlashT0;
-            if (FlashLook.AtS >= 0)
-                frame = 0;
-            if (t < 0 || t - frame > FlashEmitters.Life(e))
+            if (!e.Shows && FlashLook.AtS < 0)
+                continue;
+            double t = FlashLook.AtS >= 0 ? FlashLook.AtS : clock - e.FlashT0, dt = FlashLook.AtS >= 0 ? 0 : frame;
+            // the floor: a flash shorter than a few frames plays over them, its intensity scaled to keep its
+            // Blondel-Rey effective intensity (both times in real seconds)
+            double life = FlashEmitters.Life(e), stretch = 1, keepIe = 1;
+            if (dt > 0 && dtS > 0 && life < FlashLook.FloorFrames * dt)
+            {
+                stretch = FlashLook.FloorFrames * dt / life;
+                double real = life * dtS / dt;
+                keepIe = BlondelRey(real, stretch);
+                (t, dt) = (t / stretch, dt / stretch);
+            }
+            if (t < 0 || t - dt > life)
                 continue;
             if (!view.Project(e.Tip, out double x, out double y))
                 continue;
             double reachPx = (e.MachDiskM + 2 * e.FlashLengthM + 3 * haloOut) / mpp + 8;
             if (x < -reachPx || x > view.Width + reachPx || y < -reachPx || y > view.Height + reachPx)
                 continue;
-            FlashEmitters.Averaged(e, t, frame, out var core, out var disc, out var fire);
+            FlashEmitters.Averaged(e, t, dt, out var core, out var disc, out var fire);
             if (core.Intensity <= 0 && disc.Intensity <= 0 && fire.Intensity <= 0)
                 continue;
 
@@ -143,7 +153,7 @@ public sealed unsafe class FlashRenderer : IDisposable
             dir = dir.LengthSquared() > 1e-12f ? Vector2.Normalize(dir) : Vector2.UnitY;
             double el = e.ElevationDeg * Math.PI / 180, ce = Math.Cos(el), se = Math.Sin(el);
             Vector2 At(in FlashEmitters.Part p) => dir * (float)(p.Along * ce) + new Vector2(0, (float)(k * (p.Along * se + p.Lift)));
-            float scale = (float)(Scale * world);
+            float scale = (float)(Scale * world * keepIe);
             int n = e.Barrels;
 
             var cA = Splat(At(core), core, ce, floor, out double cs);
@@ -186,6 +196,12 @@ public sealed unsafe class FlashRenderer : IDisposable
             };
         }
     }
+
+    /// <summary>The intensity's factor that keeps a flash of <paramref name="seconds"/> (real) at its Blondel-Rey
+    /// effective intensity I·t/(0.2 s + t) when it is shown <paramref name="stretch"/> times as long (research §7.2,
+    /// <c>stretch_for_frames</c>).</summary>
+    public static double BlondelRey(double seconds, double stretch) =>
+        stretch <= 1 ? 1 : (0.2 + seconds * stretch) / (stretch * (0.2 + seconds));
 
     /// <summary>A part as a Gaussian at its drawn centre: σ along the bore its semi-axis × cos(el) / 1.5, across its
     /// semi-axis / 1.5 (the reference renderer's), neither under the floor; <paramref name="area"/> σ_a·σ_b.</summary>

@@ -5,32 +5,14 @@ using Fleetwright.Sim.Ships;
 namespace Fleetwright.Map.Splashes;
 
 /// <summary>The world view's splashes' knobs (docs/visuals/splashes.md), one place, for side-by-side captures:
-/// <c>-splash=pitch:45,floor:2,dye:auto</c>. Each departure from the physical is named here, beside the number it
+/// <c>-splash=pitch:45,floor:2,dye:auto</c>; the knobs every effect shares (pitch, knee, power, keep, faint) set
+/// <see cref="Effects"/>. Each departure from the physical is named here, beside the number it
 /// departs from.</summary>
 public static class SplashLook
 {
-    /// <summary>The effects camera's pitch, degrees from straight down (decision 1, approved): tall effects are drawn as
-    /// from a 3/4 view looking north, a height h going h·tan(pitch) up the screen. One for every zoom (decision 2), and
-    /// every tall effect to come.</summary>
-    public static double EffectPitchDeg = 45;
-
-    /// <summary>tan of <see cref="EffectPitchDeg"/>: screen metres north per metre up.</summary>
-    public static double EffectK => Math.Tan(EffectPitchDeg * Math.PI / 180);
-
     /// <summary>A column narrower than this on the screen, px, is drawn this wide with its opacity scaled down by as
     /// much (the size floor: it fades with altitude and never pops). Departs from the true size there.</summary>
     public static double FloorPx = 2;
-
-    /// <summary>The column's clock under compression (decision 4, approved): it plays at the world's speed up to
-    /// <see cref="ClockKnee"/>, then at knee·(speed/knee)^<see cref="ClockPower"/> (60x: 11x, a 12" column 0.73 s on the
-    /// screen). Above the knee a salvo keeps its column with share <see cref="KeepK"/>·rate/speed, so about that many
-    /// times the live columns of 1x at most.</summary>
-    public static double ClockKnee = 2, ClockPower = 0.5, KeepK = 2;
-
-    /// <summary>The foam's clock: the sea's, the world's speed capped (<see cref="SeaView.SpeedCap"/>). Above the cap
-    /// the foam lasts longer than the world's time, so many more patches lie on the water at once: each is fainter by
-    /// (cap/speed)^<see cref="FoamFaintPower"/>, never under <see cref="FoamFaintMin"/>.</summary>
-    public static double FoamFaintPower = 0.5, FoamFaintMin = 0.3;
 
     /// <summary>The steps' scale in the marches (1: about one every 3 px of a column on the screen).</summary>
     public static double Steps = 1;
@@ -68,20 +50,6 @@ public static class SplashLook
         new(0.08f, 0.08f, 0.09f),
     ];
 
-    /// <summary>The column's playback rate at a clock speed.</summary>
-    public static double ColumnRate(double speed) =>
-        speed <= ClockKnee ? speed : ClockKnee * Math.Pow(speed / ClockKnee, ClockPower);
-
-    /// <summary>The foam's clock rate at a clock speed.</summary>
-    public static double FoamRate(double speed) => Math.Min(speed, SeaView.SpeedCap);
-
-    /// <summary>The share of salvos that keep their column at a clock speed.</summary>
-    public static double KeepShare(double speed) => speed <= ClockKnee ? 1 : Math.Min(1, KeepK * ColumnRate(speed) / speed);
-
-    /// <summary>A splash's foam's strength at the clock speed it landed at.</summary>
-    public static double FoamStrength(double speed) =>
-        speed <= SeaView.SpeedCap ? 1 : Math.Max(FoamFaintMin, Math.Pow(SeaView.SpeedCap / speed, FoamFaintPower));
-
     public static bool Set(string kv)
     {
         var p = kv.Split(':');
@@ -96,12 +64,12 @@ public static class SplashLook
             return false;
         switch (p[0])
         {
-            case "pitch": EffectPitchDeg = Math.Clamp(v, 0, 80); break;
+            case "pitch": Effects.PitchDeg = Math.Clamp(v, 0, 80); break;
             case "floor": FloorPx = v; break;
-            case "knee": ClockKnee = Math.Max(v, 1); break;
-            case "power": ClockPower = Math.Clamp(v, 0, 1); break;
-            case "keep": KeepK = v; break;
-            case "faint": FoamFaintPower = v; break;
+            case "knee": Effects.ClockKnee = Math.Max(v, 1); break;
+            case "power": Effects.ClockPower = Math.Clamp(v, 0, 1); break;
+            case "keep": Effects.KeepK = v; break;
+            case "faint": Effects.FaintPower = v; break;
             case "steps": Steps = v; break;
             case "vivid": Vivid = v; break;
             case "on": On = v != 0; break;

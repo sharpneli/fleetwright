@@ -11,9 +11,10 @@ namespace Fleetwright.Map.Flashes;
 /// (<see cref="MuzzleFlash"/>, cached per class and turret type), where its barrel tips were, and its own draw (the
 /// secondary flash burning or not, its intensity's scatter, its start offset, a seed). Display only: nothing here
 /// reaches the sim.
-/// <para>The flash plays on the splashes' column clock (<see cref="SplashLook.ColumnRate"/>): the world's speed up to
-/// the knee, slower above, accumulated frame by frame so a change of speed never makes a live flash jump. Each shot is
-/// placed on it when first seen, back-dated by its age in the world.</para>
+/// <para>The flash plays on the effects' clock (<see cref="Effects.Rate"/>): the world's speed up to the knee, slower
+/// above, accumulated frame by frame so a change of speed never makes a live flash jump. Each shot is placed on it when
+/// first seen, back-dated by its age in the world, and whether its flash shows is decided then and kept (the salvo's
+/// share under compression).</para>
 /// A fixed ring: past its size the oldest go first. Nothing allocates once made, but the first sight of a class's gun.</summary>
 public sealed class ShotBook
 {
@@ -32,6 +33,9 @@ public sealed class ShotBook
         public float FlashLengthM, SecondaryS, Scatter;
         /// <summary>The shot's moment on the flash's clock, s (its start offset included).</summary>
         public double FlashT0;
+        /// <summary>Whether its flash shows: under compression a salvo keeps it with <see cref="Effects.KeepShare"/>, by a
+        /// hash of the salvo, so a salvo flashes whole or not at all; the selected ship's always do.</summary>
+        public bool Shows;
     }
 
     /// <summary>How long a shot is kept on the flash's clock, s (its flash is over within ~2 s).</summary>
@@ -61,11 +65,12 @@ public sealed class ShotBook
 
     /// <summary>A frame: the clock advanced by <paramref name="dtS"/> real seconds at the clock's
     /// <paramref name="speed"/> (0 paused), the snapshot's new shots taken (newest first in it), the gone let go.</summary>
-    public void Update(ShotsView v, long drawMs, double speed, double dtS, Func<int, ShipClass?> classOf)
+    public void Update(ShotsView v, long drawMs, double speed, double dtS, Func<int, ShipClass?> classOf, int selected = -1)
     {
-        double rate = SplashLook.ColumnRate(speed);
+        double rate = Effects.Rate(speed);
         FlashClock += dtS * rate;
         double ratio = speed > 0 ? rate / speed : 1;
+        double keep = speed > 0 ? Effects.KeepShare(speed) : 1;
 
         int skipAt = atLast;
         for (int i = v.Count - 1; i >= 0; i--)
@@ -108,6 +113,7 @@ public sealed class ShotBook
                 SpacingM = (float)tt.Spacing, FlashLengthM = (float)lf, SecondaryS = burns ? (float)MuzzleFlash.SecondaryS(lf) : 0,
                 Scatter = (float)scatter,
                 FlashT0 = FlashClock - ageS * ratio + FlashLook.OffsetS * U(h, 2),
+                Shows = Hash((uint)v.Salvo[i] ^ 0x5bd1e995u) / 4294967296.0 < keep || v.Shooter[i] == selected,
             };
             head = (head + 1) % ring.Length;
             count = Math.Min(count + 1, ring.Length);

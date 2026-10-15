@@ -1,3 +1,4 @@
+using Fleetwright.Map;
 using Fleetwright.Map.Splashes;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Core;
@@ -46,13 +47,13 @@ public class SplashBookTests
     [Fact]
     public void The_columns_clock_is_slower_than_the_worlds_above_the_knee_and_the_foams_is_capped()
     {
-        Assert.Equal(1, SplashLook.ColumnRate(1));
-        Assert.Equal(2, SplashLook.ColumnRate(2));
-        Assert.InRange(SplashLook.ColumnRate(60), 10.9, 11.0);   // the plan's 11x at 60x
-        Assert.Equal(Map.SeaView.SpeedCap, SplashLook.FoamRate(60));
-        Assert.Equal(1, SplashLook.FoamStrength(8));
-        Assert.InRange(SplashLook.FoamStrength(60), 0.36, 0.37);
-        Assert.InRange(SplashLook.KeepShare(60), 0.36, 0.37);
+        Assert.Equal(1, Effects.Rate(1));
+        Assert.Equal(2, Effects.Rate(2));
+        Assert.InRange(Effects.Rate(60), 10.9, 11.0);   // the plan's 11x at 60x
+        Assert.Equal(Map.SeaView.SpeedCap, Effects.SeaRate(60));
+        Assert.Equal(1, Effects.SeaStrength(8));
+        Assert.InRange(Effects.SeaStrength(60), 0.36, 0.37);
+        Assert.InRange(Effects.KeepShare(60), 0.36, 0.37);
 
         var book = new SplashBook();
         for (int f = 0; f < 60; f++)
@@ -78,7 +79,7 @@ public class SplashBookTests
                 Assert.Equal(first, book[salvo * 8 + g].Column);
             kept += first ? 1 : 0;
         }
-        Assert.InRange(kept / 200.0, SplashLook.KeepShare(60) - 0.12, SplashLook.KeepShare(60) + 0.12);
+        Assert.InRange(kept / 200.0, Effects.KeepShare(60) - 0.12, Effects.KeepShare(60) + 0.12);
 
         var mine = new SplashBook();
         mine.Update(View([.. shots]), 4000, 60, 0.016, selected: 1);

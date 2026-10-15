@@ -126,7 +126,7 @@ public sealed unsafe partial class MapScene : IScene
         probes.Add(probeOverlay, t);
         t = Probes.Now;
         shipRenderer.Splashes.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, selected, WorldView.Factor(view), shipRenderer.List.Lights);
-        shipRenderer.Flashes.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, WorldView.Factor(view), shipRenderer.List.Lights, classOf);
+        shipRenderer.Flashes.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, WorldView.Factor(view), shipRenderer.List.Lights, classOf, selected);
         probes.Add(probeSplashes, t);
         t = Probes.Now;
         renderer.Sea.SetState(SeaState.Of(s.Weather));   // rebuilt only when the weather changes
