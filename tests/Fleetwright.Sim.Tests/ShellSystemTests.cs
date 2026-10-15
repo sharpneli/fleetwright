@@ -93,6 +93,47 @@ public class ShellSystemTests(ITestOutputHelper output)
         }
     }
 
+    /// <summary>A mount fired, for the screens (docs/visuals/muzzle-flashes.md F0): a salvo makes one record per mount of
+    /// the battery, at the moment it's fired, with the mount's barrels, the salvo, and the way and elevation the shells
+    /// left; a second salvo makes its own.</summary>
+    [Fact]
+    public void A_salvo_records_each_mount_that_fired()
+    {
+        var (w, shooter, _) = Make(Settings with { DevFirePatternPct = 0 });
+        var from = Ship(w, shooter).Position;
+        var aim = Destination(from, 0, 9000);   // north, away from the target
+        var (lat, lon) = Earth.LatLon(aim);
+        long first = w.Time.Ms;
+        w.Apply(ShellSystem.FireAt(shooter, 0, lat, lon));
+        w.AdvanceTo(w.Time + 30_000);
+        long second = w.Time.Ms;
+        w.Apply(ShellSystem.FireAt(shooter, 0, lat, lon));
+        w.AdvanceTo(w.Time + 1000);
+        var snap = new Snapshot();
+        w.Fill(snap, truth: true);
+        var s = snap.Shots;
+
+        var cls = w.Ships.Class(Ship(w, shooter).ClassIndex);
+        var mounts = cls.Links(cls.Batteries[0].Mounts).ToArray();
+        Assert.Equal(2 * mounts.Length, s.Count);
+        var table = w.Shells.Ballistics[w.Shells.TableOf(cls, 0)];
+        double e = table.ElevationFor(9000, 10);
+        for (int i = 0; i < s.Count; i++)
+        {
+            double bearing = Earth.Heading(s.Muzzle[i], s.Forward[i]);
+            output.WriteLine($"mount {s.Mount[i]} at {s.Ms[i]}: {s.Barrels[i]} barrels, salvo {s.Salvo[i]}, bearing {bearing:F1}, elevation {s.ElevationDeg[i]:F2} (the table {e:F2})");
+            Assert.Equal(i < mounts.Length ? second : first, s.Ms[i]);   // newest first
+            Assert.Equal(shooter, s.Shooter[i]);
+            Assert.Equal(Ship(w, shooter).ClassIndex, s.Class[i]);
+            Assert.Contains(s.Mount[i], mounts);
+            Assert.Equal(cls.TurretTypes[cls.Mounts[s.Mount[i]].Type].Barrels, s.Barrels[i]);
+            Assert.True(Math.Min(bearing, 360 - bearing) < 2, $"bearing {bearing}");
+            Assert.InRange(s.ElevationDeg[i], e - 0.5, e + 0.5);
+        }
+        Assert.Equal(mounts.Length, Enumerable.Range(0, mounts.Length).Select(i => s.Mount[i]).Distinct().Count());
+        Assert.NotEqual(s.Salvo[0], s.Salvo[s.Count - 1]);
+    }
+
     [Fact]
     public void A_salvo_lands_round_its_aim_and_hits_what_is_in_its_way()
     {

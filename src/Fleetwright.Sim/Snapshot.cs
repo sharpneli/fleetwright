@@ -91,6 +91,10 @@ public sealed class Snapshot
     public ShellsView Shells { get; } = new();
     public SplashesView Splashes { get; } = new();
 
+    /// <summary>The mounts fired in the last <see cref="SimSettings.SplashLifeMs"/>, newest first
+    /// (docs/visuals/muzzle-flashes.md F0).</summary>
+    public ShotsView Shots { get; } = new();
+
     /// <summary>Torpedoes running (each where its run puts it at the frame's time) and their ends of the last
     /// <see cref="SimSettings.SplashLifeMs"/>: hits, and those that sank at the end of their run (docs/battle/fighting.md
     /// 4.6).</summary>
@@ -294,6 +298,34 @@ public sealed class SplashesView
         Array.Resize(ref BearingDeg, n);
         Array.Resize(ref Kind, n);
         Array.Resize(ref Dye, n);
+    }
+}
+
+/// <summary>The mounts fired of the last while, newest first (docs/visuals/muzzle-flashes.md F0): when, who fired (an
+/// entity) and her class (a registry id), which of its mounts, the salvo, how many barrels got a shell away, the
+/// mount's axis point, and the way its first shell left (its heading over the sea, unit) and its elevation, degrees.</summary>
+public sealed class ShotsView
+{
+    public int Count;
+    public long[] Ms = [];
+    public int[] Shooter = [], Class = [], Mount = [], Salvo = [], Barrels = [];
+    public Vec3d[] Muzzle = [], Forward = [];
+    public float[] ElevationDeg = [];
+
+    public void EnsureCapacity(int n)
+    {
+        if (n <= Ms.Length)
+            return;
+        n = Math.Max(n, Math.Max(16, Ms.Length * 2));
+        Array.Resize(ref Ms, n);
+        Array.Resize(ref Shooter, n);
+        Array.Resize(ref Class, n);
+        Array.Resize(ref Mount, n);
+        Array.Resize(ref Salvo, n);
+        Array.Resize(ref Barrels, n);
+        Array.Resize(ref Muzzle, n);
+        Array.Resize(ref Forward, n);
+        Array.Resize(ref ElevationDeg, n);
     }
 }
 

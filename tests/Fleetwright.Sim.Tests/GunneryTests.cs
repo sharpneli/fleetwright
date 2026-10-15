@@ -102,7 +102,7 @@ public class GunneryTests(ITestOutputHelper output)
     {
         // the target dead ahead: a QE's after turrets can't bear, so salvos are the forward turrets' four guns
         var qe = Class("super_dreadnought");
-        var w = Make(qe, qe, 14_000, 0, 0, 10, 3);
+        var w = Make(qe, qe, 14_000, 0, 0, 10, 3, settings: Settings with { SplashLifeMs = 3_600_000 });   // every mount fired kept
         w.AdvanceTo(Start + 6 * 60_000);
         var ship = w.Ships.Store[w.Ships.Store.SlotOf(1)];
         var mounts = qe.Links(qe.Batteries[0].Mounts).ToArray();
@@ -122,6 +122,19 @@ public class GunneryTests(ITestOutputHelper output)
         Assert.True(t.Salvos > 0, "it fired");
         Assert.Equal(t.Salvos * forward, t.Shells);
         output.WriteLine($"{t.Salvos} salvos of {forward} guns");
+
+        // the mounts fired, for the screens (docs/visuals/muzzle-flashes.md F0): only the forward turrets, all barrels
+        var snap = new Snapshot();
+        w.Fill(snap, truth: true);
+        var s = snap.Shots;
+        Assert.True(s.Count > 0, "mounts recorded");
+        for (int i = 0; i < s.Count; i++)
+        {
+            Assert.True(qe.Mounts[s.Mount[i]].X > 0, $"mount {s.Mount[i]} is forward");
+            Assert.Equal(qe.TurretTypes[qe.Mounts[s.Mount[i]].Type].Barrels, s.Barrels[i]);
+            double brg = Earth.Heading(s.Muzzle[i], s.Forward[i]);
+            Assert.True(Math.Min(brg, 360 - brg) < 3, $"fired ahead: {brg:F1}°");
+        }
     }
 
     [Fact]

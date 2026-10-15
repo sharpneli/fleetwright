@@ -59,6 +59,13 @@ public sealed class ShellSystem : IWorldSystem
     public readonly record struct Splash(Vec3d Point, long Ms, int Ship, int Salvo, int Shooter, double CalibreMm,
         float FallDeg = 90, float BearingDeg = 0, ShellKind Kind = ShellKind.Ap, Dye Dye = Dye.None);
 
+    /// <summary>A mount fired, for the screens (docs/visuals/muzzle-flashes.md F0): when, who (an entity, and its class's
+    /// registry id), which of the class's mounts, the salvo, how many of its barrels got a shell away, the mount's axis
+    /// point and the way its first shell left (its heading over the sea, unit, and its elevation, degrees). Each mount
+    /// has its own time, so a salvo's ripple (later) needs nothing new here.</summary>
+    public readonly record struct Shot(long Ms, int Shooter, int Class, int Mount, int Salvo, int Barrels, Vec3d Muzzle, Vec3d Forward,
+        float ElevationDeg);
+
     readonly SimSettings settings;
     readonly ShipSystem ships;
     readonly ShipIndex index;
@@ -69,6 +76,8 @@ public sealed class ShellSystem : IWorldSystem
     int freeCount, high, alive;
     readonly Splash[] splashes;
     int splashNext, splashCount;
+    readonly Shot[] shots;
+    int shotNext, shotCount;
     int nextSalvo;
     bool fired;
     double biggest;   // the biggest class's reach in the world (ShipSolids.Radius)
@@ -97,6 +106,7 @@ public sealed class ShellSystem : IWorldSystem
         shells = new Shell[Math.Max(settings.ShellCapacity, 16)];
         free = new int[shells.Length];
         splashes = new Splash[Math.Max(settings.SplashCapacity, 16)];
+        shots = new Shot[Math.Max(settings.ShotCapacity, 16)];
     }
 
     /// <summary>A shell's record by its slot (the snapshot's), for tests and tools.</summary>
@@ -162,6 +172,9 @@ public sealed class ShellSystem : IWorldSystem
         int k = 0;
         foreach (int m in cls.Links(b.Mounts))
         {
+            int away = 0;
+            Vec3d first = default;
+            double firstEl = 0;
             ref readonly var mount = ref cls.Mounts[m];
             ref readonly var comp = ref cls.Components[mount.Component];
             // the guns' axis, as Armament.BarrelBand has it, over the sea
@@ -183,10 +196,22 @@ public sealed class ShellSystem : IWorldSystem
                 double er = double.DegreesToRadians(e);
                 var v = (fwd * Math.Cos(er) + up * Math.Sin(er)) * v0 + shipVelocity;
                 double sp = v.Length, vu = Vec3d.Dot(v, up);
-                Launch(world, table, muzzle, (v - up * vu).Normalized(), double.RadiansToDegrees(Math.Asin(vu / sp)), sp / v0, salvo, ship.Entity,
-                    battery, -1, b.Fires, ship.ClassIndex);
+                var dir = (v - up * vu).Normalized();
+                double el = double.RadiansToDegrees(Math.Asin(vu / sp));
+                if (Launch(world, table, muzzle, dir, el, sp / v0, salvo, ship.Entity, battery, -1, b.Fires, ship.ClassIndex) && away++ == 0)
+                    (first, firstEl) = (dir, el);
             }
+            if (away > 0)
+                Fired(world, ship.Entity, ship.ClassIndex, m, salvo, away, muzzle, first, firstEl);
         }
+    }
+
+    /// <summary>A mount fired (<see cref="Shot"/>): into the ring the screens read. Its shells are launched apart.</summary>
+    public void Fired(World world, int shooter, int classId, int mount, int salvo, int barrels, Vec3d muzzle, Vec3d forward, double elevationDeg)
+    {
+        shots[shotNext] = new Shot(world.Time.Ms, shooter, classId, mount, salvo, barrels, muzzle, forward, (float)elevationDeg);
+        shotNext = (shotNext + 1) % shots.Length;
+        shotCount = Math.Min(shotCount + 1, shots.Length);
     }
 
     /// <summary>A shell away: its record, its window and end solved, its window's event scheduled. False if it never
@@ -394,5 +419,19 @@ public sealed class ShellSystem : IWorldSystem
             n++;
         }
         w.Count = n;
+
+        var f = snap.Shots;
+        f.EnsureCapacity(shotCount);
+        n = 0;
+        for (int k = 0; k < shotCount; k++)
+        {
+            ref readonly var sh = ref shots[(shotNext - 1 - k + shots.Length) % shots.Length];
+            if (sh.Ms < oldest)
+                break;
+            (f.Ms[n], f.Shooter[n], f.Class[n], f.Mount[n], f.Salvo[n]) = (sh.Ms, sh.Shooter, sh.Class, sh.Mount, sh.Salvo);
+            (f.Barrels[n], f.Muzzle[n], f.Forward[n], f.ElevationDeg[n]) = (sh.Barrels, sh.Muzzle, sh.Forward, sh.ElevationDeg);
+            n++;
+        }
+        f.Count = n;
     }
 }

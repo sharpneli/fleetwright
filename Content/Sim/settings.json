@@ -144,6 +144,7 @@
   "ShellUnderwaterM": 10,
   "ShellCapacity": 512,
   "SplashCapacity": 4096,
+  "ShotCapacity": 2048,
   "SplashLifeMs": 20000,
   "ShipIndexCellM": 5000,
   "ShipIndexMaxAgeMs": 2000,

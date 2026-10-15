@@ -448,6 +448,8 @@ public sealed record SimSettings
     /// the screens: how many, and for how long, ms.</summary>
     public int ShellCapacity { get; init; } = 512;
     public int SplashCapacity { get; init; } = 4096;
+    /// <summary>The mounts fired kept for the screens (docs/visuals/muzzle-flashes.md), for <see cref="SplashLifeMs"/>.</summary>
+    public int ShotCapacity { get; init; } = 2048;
     public int SplashLifeMs { get; init; } = 20_000;
 
     /// <summary>The world's ship index (docs/battle/fighting.md, "One index of where things are"): its cubes' width, m,

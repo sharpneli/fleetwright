@@ -631,6 +631,9 @@ public sealed class GunnerySystem : IWorldSystem
             ref readonly var mr = ref cls.Mounts[mounts[j]];
             int barrels = cls.TurretTypes[mr.Type].Barrels;
             var muzzle = Muzzle(cls, frame, mounts[j]);
+            int away = 0;
+            Vec3d first = default;
+            double firstEl = 0;
             for (int g = 0; g < barrels; g++)
             {
                 var point = centre + u * (sr * r.NextGaussian()) + w * (sd * r.NextGaussian());
@@ -638,8 +641,14 @@ public sealed class GunnerySystem : IWorldSystem
                 if (FireControl.Solve(table, muzzle, velocity, point, out var lay, e0) &&
                     shells.Launch(world, tableIndex, muzzle, lay.Forward, lay.ElevationDeg, lay.Speed, salvo, fc.Shooter, fc.Battery, si, row.Fires,
                         ship.ClassIndex))
+                {
                     sv.Shells++;
+                    if (away++ == 0)
+                        (first, firstEl) = (lay.Forward, lay.ElevationDeg);
+                }
             }
+            if (away > 0)
+                shells.Fired(world, fc.Shooter, ship.ClassIndex, mounts[j], salvo, away, muzzle, first, firstEl);
             store.Combat.Fired(slot, mounts[j], mr, barrels, now);
         }
         sv.Left = sv.Shells;
