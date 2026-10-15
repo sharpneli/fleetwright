@@ -416,6 +416,20 @@ frame. **Open, for the user:** accept it, or take the half-resolution smoke targ
   depth, and a young puff's shadow is faint. Value noise at that contrast showed its grid, so two lookups turned 37°
   are averaged.
 
+**F7, the user's second round (2026-10-15).** "The smoke has a fixed noise pattern, so it still looks like a brick
+coming out of the barrel; as an effect it may sacrifice some realism." Three effect departures (`FlashLook.Smoke*`;
+`-flash=churn`, `warp`, `stem`):
+- **The billows churn.** The noise turns over by 2.2 ln(1 + age/0.4 s): fast at first, slowing as the puff ages. A
+  second noise warps it, so the billows roll instead of sliding.
+- **The billows grow slower than the puff while it's young** (cells 0.9 σ^0.8 against old smoke's σ/1.3), so it gains
+  billows rather than magnifying them. They're strongest at the edge: lobes out of a cloud, only a mottling inside.
+  The young contrast and warp are 1.0.
+- **A stem of gas joins the puff back to the muzzle** while the jet runs, tapering toward the barrel and fading over
+  ~1.5 s. The puff reads as expelled rather than a block leaving the gun.
+
+Seen at 0.5 m/px over the first seconds: ragged puffs streaming back to their barrels, churning frame to frame, that
+settle into the round cloud. The cost is unchanged in the stress (+0.34 ms GPU mean on a clean pair).
+
 **Still to do in F7: tuning by the user's eye.** Things to look at:
 - the flash's size and brightness by day, and the white-out of its core by night;
 - the frost's look (duller, not silvery);

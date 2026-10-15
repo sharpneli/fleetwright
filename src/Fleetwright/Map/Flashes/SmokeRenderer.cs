@@ -24,7 +24,10 @@ public struct SmokeGpu
     /// <summary>xy: its shadow's offset on the sea (east, north), m; z: the shadow's opacity (0: none); w: the bore's way
     /// north.</summary>
     public Vector4 Shadow;
-    public const int SizeInBytes = 80;
+    /// <summary>The gas's stem while the jet is spent (an effect, not the research's): xy from the puff's drawn centre
+    /// back to the muzzle, m; z: its strength (0: none).</summary>
+    public Vector4 Stem;
+    public const int SizeInBytes = 96;
 }
 
 /// <summary>The world view's gun smoke (docs/visuals/muzzle-flashes.md F6): the smoke book's puffs as instances, built on
@@ -75,6 +78,8 @@ public sealed unsafe class SmokeRenderer : IDisposable
         public Vector4 MoonL;
         /// <summary>The look's knobs: x the opacity cap; y the youth's time, s; z the stretch; w the billows.</summary>
         public Vector4 Look;
+        /// <summary>x: the churn; y: the warp.</summary>
+        public Vector4 Motion;
     }
 
     public SmokeRenderer(SDL_GPUDevice* device)
@@ -111,6 +116,7 @@ public sealed unsafe class SmokeRenderer : IDisposable
         {
             SunL = new Vector4(sunL, (float)mpp), MoonL = new Vector4(Local(lights.MoonDir), 0),
             Look = new Vector4((float)FlashLook.SmokeCap, (float)FlashLook.SmokeYouthS, (float)FlashLook.SmokeStretch, (float)FlashLook.SmokeBillow),
+            Motion = new Vector4((float)FlashLook.SmokeChurn, (float)FlashLook.SmokeWarp, 0, 0),
         };
 
         for (int i = 0; i < Book.Count; i++)
@@ -131,6 +137,12 @@ public sealed unsafe class SmokeRenderer : IDisposable
                 continue;
             double dz = z - p.Anchor, lift = k * dz;
             var shadowOff = drift * (float)z;
+            // the stem back to the muzzle (drawn: the muzzle at the anchor's height, the puff lifted), while the jet runs
+            double jet = p.JetS > 0 ? 1 - Math.Exp(-age / p.JetS) : 1, along = p.Jet0 + p.Jet * jet;
+            var stem = -bore * (float)along - new Vector2(0, (float)lift);
+            float stemOn = bore.LengthSquared() > 0 ? (float)Math.Exp(-age / FlashLook.SmokeStemS) : 0;
+            if (stemOn > 0.01f)
+                half = Math.Max(half, stem.Length() + 1.5 * sigma);
             double reach = (half + Math.Max(lift, shadowOff.Length())) / mpp;
             if (x < -reach || x > view.Width + reach || y < -reach || y > view.Height + reach)
                 continue;
@@ -149,6 +161,7 @@ public sealed unsafe class SmokeRenderer : IDisposable
                 Tint = new Vector4(p.Tint, bore.X),
                 // its shadow only where it falls clear of the puff (under a high sun it lies beneath it: half the fragments)
                 Shadow = new Vector4(shadowOff, shadowOff.Length() > 0.5 * sigma ? shadowOn : 0, bore.Y),
+                Stem = new Vector4(stem, stemOn > 0.01f ? stemOn : 0, 0),
             };
             keys[count] = -(float)(Vec3d.Dot(rel, north) + lift);   // north first: the effects camera looks north
             count++;

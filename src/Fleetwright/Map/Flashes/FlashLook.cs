@@ -50,7 +50,13 @@ public static class FlashLook
     /// carried it there), its area kept;</item>
     /// <item>and its billows' contrast raised by up to billow, so it tears into lobes and holes before it settles.</item>
     /// </list></summary>
-    public static double SmokeCap = 1.5, SmokeYouthS = 8, SmokeStretch = 1.2, SmokeBillow = 1.6;
+    public static double SmokeCap = 1.5, SmokeYouthS = 8, SmokeStretch = 1.2, SmokeBillow = 1.0;
+
+    /// <summary>The young smoke's motion (the user, 2026-10-15: a fixed pattern read as a brick leaving the barrel; an
+    /// effect, so realism may give): its billows churn, fast at first (<see cref="SmokeChurn"/>, the noise's turns over
+    /// ln(1 + age/0.4 s)) and warped by a second noise; while young they grow slower than the puff, so it gains billows
+    /// rather than magnifying them; and a stem of gas joins it back to the muzzle, fading over <see cref="SmokeStemS"/>.</summary>
+    public static double SmokeChurn = 2.2, SmokeWarp = 1.0, SmokeStemS = 1.5;
 
     /// <summary>A dev aid for captures: the shots of the newest 2 s in the book drawn at this age, s, instead of their own
     /// (-1: off), and kept while it is.</summary>
@@ -86,6 +92,9 @@ public static class FlashLook
             case "youth": SmokeYouthS = Math.Max(v, 0.1); break;
             case "stretch": SmokeStretch = Math.Max(v, 0); break;
             case "billow": SmokeBillow = Math.Max(v, 0); break;
+            case "churn": SmokeChurn = Math.Max(v, 0); break;
+            case "warp": SmokeWarp = Math.Max(v, 0); break;
+            case "stem": SmokeStemS = Math.Max(v, 0.01); break;
             case "pvis": BlastVisPa = Math.Max(v, 1); break;
             case "psat": BlastSatPa = Math.Max(v, BlastVisPa * 1.01); break;
             case "frost": FrostS = Math.Max(v, 0.1); break;
@@ -99,5 +108,5 @@ public static class FlashLook
         return true;
     }
 
-    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, frames, smokecap, youth, stretch, billow, pvis, psat, frost, scour, scourk, parts (1 flashes, 2 lights, 4 blast, 8 smoke), at (a still at that age, s), blastat (the blast's), on";
+    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, frames, smokecap, youth, stretch, billow, churn, warp, stem, pvis, psat, frost, scour, scourk, parts (1 flashes, 2 lights, 4 blast, 8 smoke), at (a still at that age, s), blastat (the blast's), on";
 }

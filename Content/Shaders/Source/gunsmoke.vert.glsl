@@ -10,8 +10,9 @@ struct Puff
     vec4 centre;   // xyz: the centre at its anchor height, metres from the eye; w: seed
     vec4 shape;    // x: sigma_h, m; y: extinction area, m^2; z: lift up the screen, m; w: half size, m
     vec4 light;    // x: height over its anchor, m; y: age, s; z: tint gone to white; w: the fog's share
-    vec4 tint;     // rgb: tint near the muzzle, linear
-    vec4 shadow;   // xy: the shadow's offset, m; z: its opacity
+    vec4 tint;     // rgb: tint near the muzzle, linear; w: the bore's way east
+    vec4 shadow;   // xy: the shadow's offset, m; z: its opacity; w: the bore's way north
+    vec4 stem;     // xy: back to the muzzle from the drawn centre, m; z: the stem's strength
 };
 
 layout(std430, set = 0, binding = 0) readonly buffer Puffs { Puff puffs[]; };
