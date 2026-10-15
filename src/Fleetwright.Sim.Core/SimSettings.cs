@@ -273,6 +273,12 @@ public sealed record SimSettings
     /// <summary>The visibility of a world whose scenario gives none, metres: a clear day at sea.</summary>
     public double DefaultVisibilityM { get; init; } = 40_000;
 
+    /// <summary>The wind of a world whose scenario gives none: the way it blows from (degrees) and its speed (m/s). A
+    /// moderate breeze, Beaufort 4, so the sea (docs/visuals/sea.md) isn't glassy.</summary>
+    public double DefaultWindFromDeg { get; init; } = 250;
+
+    public double DefaultWindMs { get; init; } = 7.9;
+
     // ------------------------------------------------------------------ sighting (docs/battle/plan.md step 3.2c)
 
     /// <summary>The refraction factor on the Earth's radius for sight lines (the standard 7/6: d = 3.86 √h km).</summary>

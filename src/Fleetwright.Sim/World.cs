@@ -64,7 +64,7 @@ public sealed class World
         log = new List<StampedCommand>(Settings.CommandLogCapacity);
         commandsProbe = Probes.Register("Commands");
         fillProbe = Probes.Register("Snapshot fill");
-        weather = new UniformWeather(new WeatherHere(Settings.DefaultVisibilityM, 0, 0));
+        weather = new UniformWeather(new WeatherHere(Settings.DefaultVisibilityM, Settings.DefaultWindFromDeg, Settings.DefaultWindMs));
         Encounters = new Encounters(Settings, Relations);
         Sightings = new Sightings(Settings, Relations, Encounters, seed);
         Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations, Encounters, Sightings);

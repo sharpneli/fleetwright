@@ -95,9 +95,14 @@ The tests the research asks for:
 - Hs against the research's table;
 - the Cox-Munk slope variances.
 
-For v1 the state is one for the whole world. It comes from a dev flag (`-sea=5:250,1.2:13:300`, Beaufort and wind
-from, swell Hs:Tp:from) and a scenario field. A sea state that varies by place and hour waits for weather in the sim.
+The wind comes from the world's weather (`WeatherHere`, which scenarios already set; a world without a scenario
+now has a moderate breeze, Beaufort 4 from 250°, `SimSettings.DefaultWind*`). The swell is a low one 50° off the
+wind until the weather knows swell (`SeaState.Of`). A sea that varies by place and hour waits for weather that does.
 When the state changes, h0 is rebuilt; the phases stay, so nothing pops.
+
+**Done 2026-10-15.** `Sim.Core/SeaSpectrum.cs` (`SeaState`, `SeaSpectrum`), tested in `SeaSpectrumTests`: heights
+against the research's table, the uploaded variance, waves travelling downwind, Cox-Munk, stable phases, no
+allocation.
 
 ### W2. The wave sim on the GPU (compute)
 
@@ -110,7 +115,9 @@ The engine has no compute pipeline yet, so this step adds a small one (`GpuCompu
 - **Mips.** `SDL_GenerateMipmapsForGPUTexture`, if it does array layers on our backend; otherwise a reduction
   dispatch of our own. To be checked first.
 - **The sea's clock.** It advances by real frame time times the clock's achieved speed, capped at 8x (lower if the
-  waves look choppy there), and stops when paused. It is integrated, so speed changes never jump the phase.
+  waves look choppy there), and stops when paused. It is integrated, so speed changes never jump the phase. The
+  frequencies are quantised to multiples of 2π/1024 s (the lab's "loopable dispersion": invisible at 64 s already),
+  so the clock wraps at 1024 s and the phases stay exact in float.
 - **Cost.** Measured with Tracy GPU zones. A Gpu-trait test reads back the realised height variance against the
   spectrum's (the lab's `heightStats`).
 
@@ -120,8 +127,8 @@ The engine has no compute pipeline yet, so this step adds a small one (`GpuCompu
   today. Between the two zooms, the chart sea and the world sea are mixed by the factor.
 - **Pixel position.** In metres relative to the view's centre, from the ray in eye space (t·d − altitude·forward,
   float, exact to millimetres at these altitudes). The sea frame's offset and rotation come from the CPU (W4).
-- **Mip footprint.** Taken from each pixel's real size. The camera has perspective (40°), so a pixel at the corner
-  covers ~13% more sea than one at the centre; the lab assumed one size.
+- **Mip footprint.** One size for the whole view: a pinhole camera looking straight down at a level sea maps it
+  affinely, so every pixel covers the same metres (the curvature is nothing at these widths).
 - **What carries over from the lab:** the hex tiling on cascades 0-1, the choppy inversion (kept in v1; it and its
   like can become graphics settings later), the LEAN moments with the Cox-Munk top-up, the cascade-2
   pattern-to-statistics fade, and the free cascade-3 ripples.
@@ -137,21 +144,19 @@ The engine has no compute pipeline yet, so this step adds a small one (`GpuCompu
 
 ### W4. The sea frame on the sphere
 
-The FFT field is flat and the Earth isn't, so it needs a frame. Two choices:
+The FFT field is flat and the Earth isn't, so it needs a frame. **Camera-relative (decided 2026-10-15):** whatever is
+in view is consistent, and panning is seamless; scrolled out to the table and back, the water may be different.
 
-- **(a) Fixed patches (chosen).** CubeSphere faces cut into ~600 km patches, each with its own tangent plane at
-  its centre and its own seed. The wave scale is off by ≤ 0.3% at a patch's edge.
-  - The CPU, in double, gives the shader the view centre's position in its patch's plane, wrapped on each cascade's
-    and the hex lattice's periods (the lab's rule, so precision never decays), and the 2x2 turn from the camera's
-    east/north to the patch's axes.
-  - **v1: the patch under the view's centre frames the whole view.** No seam on screen; the sea changes once when
-    the centre crosses a border (every ~600 km). This costs no more to build than (b).
-  - **Later, only if that change shows:** a border inside the view blends across a ~500 m band (the second
-    patch's lookups, only on those pixels). That is the part that isn't trivial.
-  - The sea is then a pure function of place and time: the same everywhere you look, reproducible in captures, and
-    the field CPU ship motion can sample later.
-- **(b) Anchored to the camera.** Simpler, but not a function of place: the sea differs per visit, and the sim could
-  never read it. Not recommended.
+- An anchor on the globe with its tangent plane (east and north at the anchor). On the table it follows the camera
+  every frame; while the world view shows it stays put.
+- The CPU, in double, gives the shader the view centre's position in the anchor's plane (gnomonic), wrapped on each
+  cascade's and the hex lattice's periods (the lab's rule, so precision never decays), and the 2x2 turn from the
+  camera's east/north to the anchor's axes (the meridians' convergence). Pixels add their offset from the centre in
+  metres, from the ray in eye space.
+- Far from the anchor the plane's scale drifts by (d/R)²: about a metre of creep over a 4 km pan 100 km from it. The
+  world view is never that far from where it was entered.
+- Not a function of place, so CPU ship motion (research §5.2) would sample the field in its own frame; it only needs
+  the statistics to match, not this view's pattern.
 
 ### Later (not v1)
 
@@ -173,6 +178,6 @@ The FFT field is flat and the Earth isn't, so it needs a frame. Two choices:
 3. The battle's marks (shells, splashes, fires, contacts, orders) stay in the world view in today's stylised icon
    style; their realism comes zoomed in.
 4. The sea's clock follows the game clock: frozen when paused, capped at 8x, capped lower if it looks choppy.
-5. The sea frame is fixed patches, the view's centre picking the patch, since that is as cheap as anchoring to the
-   camera. The border blend waits until it's needed.
+5. The sea frame is camera-relative: consistent in view and while panning, free to change between visits (a
+   patch border would likely look jarring).
 6. Choppy displacement is in v1; such costs can become graphics settings later.

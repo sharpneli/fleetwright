@@ -82,6 +82,8 @@
   "PlayLimitMs": 86400000,
   "QuietEndMs": 7200000,
   "DefaultVisibilityM": 40000,
+  "DefaultWindFromDeg": 250,
+  "DefaultWindMs": 7.9,
   "SightRefraction": 1.1666666666666667,
   "SightContrastDay": 0.35,
   "SightContrastSilhouette": 0.8,
