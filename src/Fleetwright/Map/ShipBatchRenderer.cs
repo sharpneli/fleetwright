@@ -637,6 +637,9 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     /// <summary>The muzzle blasts' marks on the water (docs/visuals/muzzle-flashes.md F5), drawn with the wakes'.</summary>
     public BlastRenderer Blasts { get; }
 
+    /// <summary>The gun smoke (docs/visuals/muzzle-flashes.md F6), its shadows and puffs after the ships.</summary>
+    public SmokeRenderer Smoke { get; }
+
     /// <summary>The sea's clock, s (SeaView.ClockS), set by the scene each frame: the foam churns on it.</summary>
     public double FoamClockS { get; set; }
 
@@ -668,6 +671,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Splashes = new SplashRenderer(device);
         Flashes = new FlashRenderer(device);
         Blasts = new BlastRenderer(device);
+        Smoke = new SmokeRenderer(device);
     }
 
     /// <summary>The icon: a hull's plan 128 x 32, bow to the right (+x), a fine bow and a rounded stern.</summary>
@@ -746,6 +750,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Splashes.Copy(cmd);
         Flashes.Copy(cmd);
         Blasts.Copy(cmd);
+        Smoke.Copy(cmd);
         var fv = Foam.Vertices;
         foamUploaded = Math.Min(fv.Length, (int)(FoamBufferBytes / FoamVertex.SizeInBytes));
         foamUploaded -= foamUploaded % 6;
@@ -759,6 +764,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     {
         Splashes.DrawStains(cmd, pass, target, view);
         DrawShips(cmd, pass, target, view);
+        Smoke.Draw(cmd, pass, target, view);
         Splashes.DrawColumns(cmd, pass, target, view);
         Flashes.Draw(cmd, pass, target, view);
     }
@@ -890,6 +896,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Splashes.Dispose();
         Flashes.Dispose();
         Blasts.Dispose();
+        Smoke.Dispose();
         SDL_WaitForGPUIdle(device);
         ReleasePipelines();
         if (wakePipe != null)

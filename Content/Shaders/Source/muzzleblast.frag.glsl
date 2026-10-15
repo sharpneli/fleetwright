@@ -66,12 +66,10 @@ void main()
     // the frost and the leading edge
     float s = clamp(log(dp / misc0.x) / log(misc0.y / misc0.x), 0.0, 1.0);
     float band = C0 * 0.0009 * lam, behind = since * C0;
-    float edge = s * exp(-(behind / band) * (behind / band)) * smoothstep(0.0, 0.5 * band, behind);
+    float edge = s * exp(-(behind / band) * (behind / band));
     float frost = s * (1.0 - exp(-(behind / (2.0 * band)) * (behind / (2.0 * band)))) * exp(-since / misc0.z);
-    // (the edge eased in and taking off at most a quarter of the wind's variance: from straight above under a high sun a
-    // calmed ring concentrates the glint into bright arcs, not the photo's dark line; the wake target can't know the
-    // sea's own variance either)
-    float k = max(1.0 + 2.5 * frost - 0.7 * edge, 0.85);
+    // (the edge takes off at most half the wind's variance: the wake target can't know the sea's own)
+    float k = max(1.0 + 2.5 * frost - 0.7 * edge, 0.71);
     float dvar = misc1.x * (k * k - 1.0) * strength;
 
     // the scour foam: by scaled distance, and the jet's lobe along the bore's track at low elevation

@@ -347,13 +347,34 @@ Seen at noon, 1 m/px:
 - at 4 s: the frost gone, the streaked scour fading.
 
 Changed on the way:
-- **The leading edge is gentle** (eased in, taking off at most a quarter of the wind's slope variance). From straight
-  above under a high sun, a calmed ring concentrated the glint into bright white arcs, not the photo's dark line.
+- **The leading edge takes off at most half the wind's slope variance.** The wake target can't know the sea's own
+  variance, and the clamp keeps a calmed ring from going mirror-flat.
 - **A shader bug worth remembering:** `pow(x, 2.0)` of a negative x is undefined in GLSL. Its NaN, times a zero
-  weight, still reached the wake target and shaded white.
+  weight, still reached the wake target and shaded as white arcs at the front.
+- **A process lesson:** `--no-build` runs the binaries' copy of the shaders, so recompiled `.spv` files only count
+  after a build. Two of the arcs' tests had compared stale shaders.
 
 Open, for tuning: from above the frost reads as a duller, less glittering patch, not the photo's silvery one. That
 needs the sea's diffuse sky scatter to grow with the slopes' spread (`seaShade`), which it doesn't yet.
+
+**F6 (2026-10-15).** `SmokeBook` (the puffs: spawned from the shot book's new shots, closed-form in their age on the
+sea's clock, merged per ship by moments, swept when their peak τ falls under 0.01), `SmokeRenderer` and
+`gunsmoke.vert`/`.frag`. One premultiplied draw for the shadows, then one for the puffs, after the ships and before
+the splash columns, sorted north to south. The book entry gained the gun's smoke (A_p, A_w, τ_w, tint). A dev flag for
+captures: `-weather=wind_from,kn[,visibility_km]`. Tests: a puff's spread against the research's §5.3 formula (67 m at
+120 s in 5 m/s) and its drift (608 m north); ten calm puffs merging into two, their area kept; six windy ones apart;
+nothing allocated a frame.
+
+Seen (noon, 2 m/px, a 12-knot southerly):
+- a 15" twin's salvo: two dense white puffs off the muzzles, then a plume widening downwind for over a kilometre,
+  about 30 puffs after merging;
+- Devastation's 12" muzzle-loaders on brown powder: a huge billowing white cloud each round, drifting off between her
+  slow shots;
+- at night: a faint dark-grey plume over the moonlit sea, lit orange by the flashes.
+
+Changed on the way: the puff is shaded as a dome seen from above, with its far side from the light a little darker
+by the share of its depth toward the light. A self-shadow by the depth itself darkened every thick puff's centre into a
+ring.
 
 ## Decisions (the user, 2026-10-15)
 

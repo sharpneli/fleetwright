@@ -221,15 +221,87 @@ public class FlashTests(ITestOutputHelper output)
         Assert.True(t < rho);   // faster than sound behind the shock
     }
 
+    /// <summary>A mount firing every <paramref name="everyMs"/> for <paramref name="n"/> shots, into a shot book and a
+    /// smoke book stepped frame by frame at 1x; the wind from the south at <paramref name="windMs"/>.</summary>
+    static (ShotBook Shots, SmokeBook Smoke) Fire(int n, long everyMs, double windMs, double afterS)
+    {
+        var shots = new ShotBook();
+        var smoke = new SmokeBook();
+        var at = Earth.Position(56.5, 4.0);
+        long end = n * everyMs + (long)(afterS * 1000);
+        for (long ms = 0; ms <= end; ms += 100)
+        {
+            int fired = (int)Math.Min(ms / everyMs + 1, n);
+            var v = new ShotsView();
+            v.EnsureCapacity(fired);
+            for (int i = 0; i < fired; i++)
+            {
+                int k = fired - 1 - i;   // newest first
+                (v.Ms[i], v.Shooter[i], v.Class[i], v.Mount[i], v.Salvo[i], v.Barrels[i]) = (k * everyMs, 1, 0, 0, k, 2);
+                (v.Muzzle[i], v.Forward[i], v.ElevationDeg[i]) = (at, Earth.Forward(at, 90), 10);
+            }
+            v.Count = fired;
+            shots.Update(v, ms, 1, 0.1, ClassOf);
+            smoke.Update(shots, shots.SeaClock, 180, windMs);
+        }
+        return (shots, smoke);
+    }
+
+    /// <summary>A puff spreads as the research's table (§5.3: a 16" SPD's σ_h at 5, 30 and 120 s in a 5 m/s wind: 10, 20
+    /// and 67 m; here a 12" twin's λ_f, so its core is a little smaller) and drifts with the wind.</summary>
+    [Fact]
+    public void A_puff_spreads_and_drifts_as_the_research_says()
+    {
+        var (shots, smoke) = Fire(1, 1000, 5, 120);
+        Assert.Equal(1, smoke.Count);
+        smoke.State(0, shots.SeaClock, out var c, out double z, out double sigma, out double area, out double age);
+        var p = smoke[0];
+        double core = 0.35 * p.Lambda, g = 0.07 * 5 + 0.2;
+        output.WriteLine($"at {age:F0} s: sigma {sigma:F1} m, {area:F0} m², {z:F1} m up, {Earth.Distance(c, p.Origin):F0} m from its start");
+        Assert.Equal(Math.Sqrt(core * core + g * g * age * age + 0.5 * age), sigma, 6);
+        Assert.InRange(sigma, 60, 75);
+        // drifted north with the wind, some 600 m in 120 s, and carried a little east by the jet
+        double north = Vec3d.Dot(c - p.Origin, Earth.Forward(p.Origin, 0)), east = Vec3d.Dot(c - p.Origin, Earth.Forward(p.Origin, 90));
+        Assert.InRange(north, 5 * age - 5, 5 * age + 5);
+        Assert.InRange(east, 50, 100);
+    }
+
+    /// <summary>A ship's settled puffs that overlap merge, keeping their extinction area and centre; apart, they don't.</summary>
+    [Fact]
+    public void Overlapping_puffs_merge_keeping_their_smoke()
+    {
+        // every 2 s in a calm: the puffs lie on each other
+        var (shots, calm) = Fire(10, 2000, 0, 10);
+        double now = shots.SeaClock, total = 0;
+        for (int i = 0; i < calm.Count; i++)
+        {
+            calm.State(i, now, out _, out _, out _, out double a, out _);
+            total += a;
+        }
+        output.WriteLine($"calm: {calm.Count} puffs of 10, {total:F0} m² against {10 * shots[0].SmokeM2:F0}");
+        Assert.True(calm.Count <= 2);
+        Assert.Equal(10 * (shots[0].SmokeM2 + shots[0].FogM2 * 0), total, 0.05 * total + 10 * shots[0].FogM2);
+        // every 40 s in a fresh wind: each its own, a trail downwind
+        var (_, windy) = Fire(6, 40_000, 8, 5);
+        output.WriteLine($"windy: {windy.Count} puffs of 6");
+        Assert.Equal(6, windy.Count);
+    }
+
     [Fact]
     public void A_frame_allocates_nothing()
     {
         var book = new ShotBook();
+        var smoke = new SmokeBook();
         var v = Shots((1000, 0), (1000, 1), (2000, 2));
         book.Update(v, 2000, 1, 0.016, ClassOf);
+        smoke.Update(book, book.SeaClock, 180, 5);
         long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int f = 0; f < 100; f++)
+        for (int f = 0; f < 600; f++)
+        {
             book.Update(v, 2000 + f * 16, 1, 0.016, ClassOf);
+            smoke.Update(book, book.SeaClock, 180, 5);
+        }
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+        Assert.True(smoke.Count > 0);
     }
 }

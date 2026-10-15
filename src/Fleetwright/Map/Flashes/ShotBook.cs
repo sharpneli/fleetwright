@@ -35,6 +35,10 @@ public sealed class ShotBook
         public double FlashT0;
         /// <summary>The blast's length λ_b, m (the mount's), and the barrel tips' height over the sea, m.</summary>
         public float BlastLengthM, HeightM;
+        /// <summary>The smoke (F6): its particles' and water fog's extinction areas, m², the fog's evaporation, s, and its
+        /// tint near the muzzle, linear.</summary>
+        public float SmokeM2, FogM2, FogS;
+        public System.Numerics.Vector3 Tint;
         /// <summary>The shot's moment on the sea's clock, s (the blast's frost and scour), and their strength (fainter
         /// above the sea's cap, where more lie on the water at once).</summary>
         public double SeaT0;
@@ -62,6 +66,9 @@ public sealed class ShotBook
 
     public int Count => count;
 
+    /// <summary>How many of the newest entries the last update added (the smoke takes its puffs from them).</summary>
+    public int Added { get; private set; }
+
     /// <summary>The kept entries, oldest first, by index 0..Count-1.</summary>
     public ref readonly Entry this[int i] => ref ring[(head - count + i + ring.Length) % ring.Length];
 
@@ -83,6 +90,7 @@ public sealed class ShotBook
         double keep = speed > 0 ? Effects.KeepShare(speed) : 1;
 
         int skipAt = atLast;
+        Added = 0;
         for (int i = v.Count - 1; i >= 0; i--)
         {
             long ms = v.Ms[i];
@@ -126,7 +134,10 @@ public sealed class ShotBook
                 Shows = Hash((uint)v.Salvo[i] ^ 0x5bd1e995u) / 4294967296.0 < keep || v.Shooter[i] == selected,
                 BlastLengthM = (float)gun.BlastLengthM, HeightM = (float)(v.Muzzle[i].Length - Earth.Radius),
                 SeaT0 = SeaClock - ageS * seaRatio, SeaStrength = (float)seaStrength,
+                SmokeM2 = (float)gun.SmokeM2, FogM2 = (float)gun.FogM2, FogS = (float)gun.FogS,
+                Tint = new System.Numerics.Vector3((float)gun.TintR, (float)gun.TintG, (float)gun.TintB),
             };
+            Added = Math.Min(Added + 1, ring.Length);
             head = (head + 1) % ring.Length;
             count = Math.Min(count + 1, ring.Length);
         }

@@ -33,8 +33,8 @@ public static class FlashLook
     public static double Humidity = 0.7, AirC = 15;
 
     /// <summary>Which parts draw, for measuring each's cost: 1 the flashes, 2 their light on the sea, the ships and
-    /// the splashes, 4 the blast on the water.</summary>
-    public static int Parts = 7;
+    /// the splashes, 4 the blast on the water, 8 the gun smoke.</summary>
+    public static int Parts = 15;
 
     /// <summary>The blast on the water (muzzle-blast-water-vfx.md §3.2): the overpressure where its mark starts to
     /// show and where it is full, Pa (2.5 kPa reproduces the Iowa photo's footprint; 1 kPa the dramatic one); the
@@ -84,5 +84,5 @@ public static class FlashLook
         return true;
     }
 
-    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, frames, pvis, psat, frost, scour, scourk, parts (1 flashes, 2 lights, 4 blast), at (a still at that age, s), blastat (the blast's), on";
+    public const string Knobs = "gain, halo, haloscale, knee, offset, scatter, rh, air, frames, pvis, psat, frost, scour, scourk, parts (1 flashes, 2 lights, 4 blast, 8 smoke), at (a still at that age, s), blastat (the blast's), on";
 }

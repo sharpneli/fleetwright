@@ -26,6 +26,7 @@ public static unsafe class Program
         var searches = new List<string>();
         var fires = new List<string>();
         var engages = new List<string>();
+        string? weather = null;
         var torpedoes = new List<string>();
         var damages = new List<string>();
         var devGroups = new List<string>();
@@ -171,6 +172,10 @@ public static unsafe class Program
             else if (arg.StartsWith("-fire="))   // a dev salvo: -fire=ship[:battery]:lat,lon (docs/battle/fighting.md 4.2a)
             {
                 fires.Add(arg.Substring("-fire=".Length));
+            }
+            else if (arg.StartsWith("-weather="))   // the dev world's weather: -weather=wind_from,kn[,visibility_km]
+            {
+                weather = arg.Substring("-weather=".Length);
             }
             else if (arg.StartsWith("-engage="))   // a dev battery engages: -engage=ship[:battery]:target (docs/battle/fighting.md 4.2b)
             {
@@ -336,6 +341,13 @@ public static unsafe class Program
                     world.Send(shot);
                 else
                     Console.Error.WriteLine($"Bad fire: -fire={fire} (want ship[:battery]:lat,lon)");
+            if (weather != null)
+            {
+                if (DevWeather(weather) is { } w)
+                    world.Send(w);
+                else
+                    Console.Error.WriteLine($"Bad weather: -weather={weather} (want wind_from,kn[,visibility_km])");
+            }
             foreach (var engage in engages)
                 if (DevEngage(engage) is { } order)
                     world.Send(order);
@@ -437,6 +449,18 @@ public static unsafe class Program
             return null;
         int battery = p.Length == 3 && int.TryParse(p[1], out int b) ? b : 0;
         return Sim.ShellSystem.FireAt(ship, battery, lat, lon);
+    }
+
+    /// <summary>-weather=wind_from,kn[,visibility_km]: the dev world's weather (degrees the wind is from, its knots, and
+    /// the visibility, 25 km without it).</summary>
+    static Sim.Command? DevWeather(string arg)
+    {
+        var p = arg.Split(',');
+        var ci = System.Globalization.CultureInfo.InvariantCulture;
+        if (p.Length is < 2 or > 3 || !double.TryParse(p[0], ci, out double from) || !double.TryParse(p[1], ci, out double kn))
+            return null;
+        double km = p.Length == 3 && double.TryParse(p[2], ci, out double v) ? v : 25;
+        return Sim.Command.SetWeather(km * 1000, from, kn * 0.514444);
     }
 
     /// <summary>-engage=ship[:battery]:target: a dev ship's battery (all of them without one) engages a ship.</summary>
