@@ -42,6 +42,11 @@ public sealed record FunnelPlan(List<long> Counts, double Width, double Length, 
 public static class Powerplant
 {
     public const double KwPerShp = 0.7457;
+
+    /// <summary>The design rating a design gets when it gives none: the middle, a cruiser's (research: capital ships
+    /// 0-0.2, cruisers 0.5, destroyers 0.8-1). Not 0: a new design that picks an older plant would get the most
+    /// conservative one, and with it a destroyer twice its size.</summary>
+    public const double DefaultStress = 0.5;
     const double CasingK = 3.0;
     const int MaxFunnels = 60;
     static readonly Dictionary<string, string[]> Arrangements = new(StringComparer.Ordinal)
@@ -110,7 +115,7 @@ public static class Powerplant
     {
         var m = design.Machinery ?? new MachineryInput();
         var tech = TechOf(m.Tech, defaultTech ?? DefaultTech);
-        return new PlantSpec(tech, m.Stress ?? 0.0, m.Shafts, m.UnitsPerShaft ?? 1, m.Transmission ?? "mechanical",
+        return new PlantSpec(tech, m.Stress ?? DefaultStress, m.Shafts, m.UnitsPerShaft ?? 1, m.Transmission ?? "mechanical",
             m.Arrangement ?? new Arrangement("grouped", null), m.CentrelineBulkhead ?? false,
             m.Bunkers ?? (tech.Fuel == "coal" ? "wing" : "ends"), m.WingBunkerM ?? 2.0, m.Rudders ?? 1);
     }
