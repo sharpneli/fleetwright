@@ -35,7 +35,7 @@ public sealed unsafe partial class MapScene : IScene
     double cursorX = -1, cursorY = -1;   // the cursor in target pixels
 
     // the map's parts, timed into the world's instruments (WorldPerf.Ui, docs/battle/plan.md step 2.7b)
-    readonly int probeLines, probeUpload, probeGroups, probeDrawList, probeOverlay, probeRender, probeUiShips, probeUiLabels, probeUiRest;
+    readonly int probeLines, probeUpload, probeGroups, probeDrawList, probeSplashes, probeOverlay, probeRender, probeUiShips, probeUiLabels, probeUiRest;
 
     public MapScene(SDL_GPUDevice* device, WorldSession world, MapCamera camera, ShipArtLibrary art, DesignSession designer, int selectEntity = -1)
     {
@@ -60,6 +60,7 @@ public sealed unsafe partial class MapScene : IScene
         probeUpload = ui.Register("Art upload");
         probeGroups = ui.Register("Groups placed");
         probeDrawList = ui.Register("Ship draw list");
+        probeSplashes = ui.Register("Splashes");
         probeOverlay = ui.Register("Overlay (tracks, routes)");
         probeRender = ui.Register("Globe render (CPU)");
         probeUiShips = ui.Register("UI: panels");
@@ -123,6 +124,9 @@ public sealed unsafe partial class MapScene : IScene
         t = Probes.Now;
         BuildOverlay(view, s);
         probes.Add(probeOverlay, t);
+        t = Probes.Now;
+        shipRenderer.Splashes.Build(view, s, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, selected, WorldView.Factor(view), shipRenderer.List.Lights);
+        probes.Add(probeSplashes, t);
         t = Probes.Now;
         renderer.Sea.SetState(SeaState.Of(s.Weather));   // rebuilt only when the weather changes
         var lights = shipRenderer.List.Lights;

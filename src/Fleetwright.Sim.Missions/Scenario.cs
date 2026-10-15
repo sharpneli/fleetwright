@@ -3,6 +3,7 @@ using System.Text.Json;
 using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Ai.Commanders;
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Missions;
 
@@ -26,6 +27,8 @@ namespace Fleetwright.Sim.Missions;
 ///     { "name": "Patrol", "side": 0, "at": [58, 2], "course": 0, "kn": 10, "route": [[59, 2], [58, 2]], "loop": true,
 ///       "ships": [ { "design": "light_cruiser", "count": 2 } ] } ] }
 /// </code>
+/// <para>A ship entry may give her shells a dye (<c>"dye": "orange"</c>, or <c>"dyes": [...]</c> one a ship; none if not
+/// given; docs/visuals/splashes.md "Dye").</para>
 /// <para>A side's gun crews are green, average, trained or elite (<c>"crews"</c>; trained if not listed). A side's
 /// propellant (<c>"propellant": { "Britain": 2, "Germany": 0.1 }</c>, 1 if not listed) scales how readily its magazines go
 /// up (docs/battle/fighting.md 4.3a: Jutland's cordite against brass-cased RP C/12).</para>
@@ -537,8 +540,18 @@ public sealed class Scenario
         int count = e.TryGetProperty("count", out var c) ? c.GetInt32() : Math.Max(names.Length, 1);
         if (count < 1 || count > 10_000 || names.Length > count)
             throw new ScenarioException($"{path}: count {count} (and {names.Length} names)");
-        return new ScenarioShips { Design = design, Count = count, Names = names };
+        // the dye loads (docs/visuals/splashes.md "Dye"): one for all of them, or each ship's in order
+        var dyes = e.TryGetProperty("dyes", out var ds) ? ds.EnumerateArray().Select(d => ParseDye(d.GetString(), path)).ToArray()
+            : e.TryGetProperty("dye", out var d1) ? Enumerable.Repeat(ParseDye(d1.GetString(), path), count).ToArray()
+            : [];
+        if (dyes.Length > count)
+            throw new ScenarioException($"{path}: {dyes.Length} dyes for {count} ships");
+        return new ScenarioShips { Design = design, Count = count, Names = names, Dyes = dyes };
     }
+
+    static Dye ParseDye(string? s, string path) =>
+        Enum.TryParse<Dye>(s, ignoreCase: true, out var d) && Enum.IsDefined(d) && !int.TryParse(s, out _) ? d
+            : throw new ScenarioException($"{path}: no dye \"{s}\" ({string.Join(", ", Enum.GetNames<Dye>().Select(n => n.ToLowerInvariant()))})");
 
     static Formation ParseFormation(string s, string path) => s switch
     {
@@ -616,6 +629,9 @@ public sealed class ScenarioShips
     public required string Design { get; init; }
     public int Count { get; init; } = 1;
     public string[] Names { get; init; } = [];
+
+    /// <summary>Each ship's dye load in order (<c>"dye"</c> for all, <c>"dyes"</c> each); those past its end carry none.</summary>
+    public Dye[] Dyes { get; init; } = [];
 }
 
 /// <summary>A top unit's opening task (docs/battle/command.md 5.1c): <c>"task": { "do": "scout", "of": "Grand Fleet",

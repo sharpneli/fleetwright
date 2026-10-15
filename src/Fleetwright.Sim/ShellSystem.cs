@@ -42,6 +42,8 @@ public sealed class ShellSystem : IWorldSystem
         /// <summary>The gunnery system's record of its salvo (for the spot), or -1 (the dev's fire); the shell type and
         /// the shooter's class (its registry id) it's of.</summary>
         public int Record, ShellType, ShooterClass;
+        /// <summary>The shooter's dye when it was fired (her load, so it outlives her).</summary>
+        public Dye Dye;
         public bool Alive;
         /// <summary>The ship it hits (an entity), or -1; and where it ends.</summary>
         public int Hit;
@@ -51,8 +53,11 @@ public sealed class ShellSystem : IWorldSystem
         public double HitSpeed;
     }
 
-    /// <summary>A splash, or a hit's mark (Ship: the ship hit, an entity), at a moment, and the shell's calibre.</summary>
-    public readonly record struct Splash(Vec3d Point, long Ms, int Ship, int Salvo, int Shooter, double CalibreMm);
+    /// <summary>A splash, or a hit's mark (Ship: the ship hit, an entity), at a moment, and the shell's calibre; for the
+    /// screens (docs/visuals/splashes.md), the angle it fell at (degrees under the horizontal), the bearing it was going
+    /// (degrees from north), its kind and its dye.</summary>
+    public readonly record struct Splash(Vec3d Point, long Ms, int Ship, int Salvo, int Shooter, double CalibreMm,
+        float FallDeg = 90, float BearingDeg = 0, ShellKind Kind = ShellKind.Ap, Dye Dye = Dye.None);
 
     readonly SimSettings settings;
     readonly ShipSystem ships;
@@ -206,6 +211,7 @@ public sealed class ShellSystem : IWorldSystem
             EndS = end, Salvo = salvo, Shooter = shooter, Battery = battery, Record = record, ShellType = shellType, ShooterClass = shooterClass,
             Generation = gen, Alive = true,
             Hit = -1,
+            Dye = ships.Store.SlotOf(shooter) is int ss and >= 0 ? ships.Store[ss].Dye : Dye.None,
         };
         alive++;
         fired = true;
@@ -236,7 +242,14 @@ public sealed class ShellSystem : IWorldSystem
             Window(world, ref s, e.Entity);
         else if (e.Code == EndEvent)
         {
-            splashes[splashNext] = new Splash(s.End, world.Time.Ms, s.Hit, s.Salvo, s.Shooter, Ballistics[s.Table].Key.CalibreMm);
+            var table = Ballistics[s.Table];
+            table.Position(s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, s.EndS, out var vel);
+            var up = s.End.Normalized();
+            double vu = Vec3d.Dot(vel, up), vl = Math.Max(vel.Length, 1e-9);
+            float fall = (float)double.RadiansToDegrees(Math.Asin(Math.Clamp(-vu / vl, -1, 1)));
+            float bearing = (float)Earth.Heading(s.End, vel - up * vu);
+            var kind = s.ShooterClass >= 0 && s.ShellType >= 0 ? ships.Class(s.ShooterClass).ShellTypes[s.ShellType].Kind : ShellKind.Ap;
+            splashes[splashNext] = new Splash(s.End, world.Time.Ms, s.Hit, s.Salvo, s.Shooter, table.Key.CalibreMm, fall, bearing, kind, s.Dye);
             splashNext = (splashNext + 1) % splashes.Length;
             splashCount = Math.Min(splashCount + 1, splashes.Length);
             if (s.Hit >= 0)
@@ -377,6 +390,7 @@ public sealed class ShellSystem : IWorldSystem
             if (sp.Ms < oldest)
                 break;
             (w.Point[n], w.Ms[n], w.Ship[n], w.Shooter[n], w.CalibreMm[n]) = (sp.Point, sp.Ms, sp.Ship, sp.Shooter, sp.CalibreMm);
+            (w.Salvo[n], w.FallDeg[n], w.BearingDeg[n], w.Kind[n], w.Dye[n]) = (sp.Salvo, sp.FallDeg, sp.BearingDeg, sp.Kind, sp.Dye);
             n++;
         }
         w.Count = n;

@@ -32,6 +32,7 @@ public sealed unsafe partial class MapScene
         going.Clear();
         wrecks.Clear();
         wrecked.Clear();
+        shipRenderer.Splashes.Book.Clear();
         (placing, placeDrag) = (false, false);
         // the spawner's side is the player's: the scenario's (any of its sides), else the dev world's 0
         maxSide = Math.Max(3, (world.Scenario?.Sides.Length ?? 0) - 1);

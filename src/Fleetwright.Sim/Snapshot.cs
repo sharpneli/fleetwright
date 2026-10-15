@@ -1,4 +1,5 @@
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim;
 
@@ -264,14 +265,19 @@ public sealed class TorpedoesView
 }
 
 /// <summary>The splashes and hits of the last while, newest first: where, when, the ship hit (an entity, -1 for a
-/// splash), who fired and the shell's calibre (the torpedo's, for a torpedo's end).</summary>
+/// splash), who fired and the shell's calibre (the torpedo's, for a torpedo's end); for the world view's splashes
+/// (docs/visuals/splashes.md) the salvo, the angle of fall (degrees under the horizontal), the bearing it was going
+/// (degrees from north), the shell's kind and its dye.</summary>
 public sealed class SplashesView
 {
     public int Count;
     public Vec3d[] Point = [];
     public long[] Ms = [];
-    public int[] Ship = [], Shooter = [];
+    public int[] Ship = [], Shooter = [], Salvo = [];
     public double[] CalibreMm = [];
+    public float[] FallDeg = [], BearingDeg = [];
+    public ShellKind[] Kind = [];
+    public Dye[] Dye = [];
 
     public void EnsureCapacity(int n)
     {
@@ -283,6 +289,11 @@ public sealed class SplashesView
         Array.Resize(ref Ship, n);
         Array.Resize(ref Shooter, n);
         Array.Resize(ref CalibreMm, n);
+        Array.Resize(ref Salvo, n);
+        Array.Resize(ref FallDeg, n);
+        Array.Resize(ref BearingDeg, n);
+        Array.Resize(ref Kind, n);
+        Array.Resize(ref Dye, n);
     }
 }
 

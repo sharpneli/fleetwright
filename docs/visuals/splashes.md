@@ -1,4 +1,4 @@
-# Shell splashes in the world view (plan, 2026-10-15)
+# Shell splashes in the world view (plan 2026-10-15; P0-P5 done the same day)
 
 Research: `research/vfx/shell-splashes.md` (anatomy, sizes and timings by calibre, angle of fall, dye, the LOD tiers),
 `docs/visuals/shell-impacts.md` (outcomes, the top-down reads). The table already has its splash marks
@@ -117,8 +117,10 @@ piles them up, since splashes arrive 60 times as fast. The column gets a clock o
   the live columns of 1x; at 60x a 37% share). The choice is a hash of the **salvo**, so a salvo shows whole or not at
   all, and the selected ship's salvos always show. A salvo near the threshold fades rather than pops. Every splash
   keeps its foam and dye stain, in world time, so the fall of shot is complete on the water.
-- **Speed changes ease.** The rate and the share follow an eased speed (about half a second), so + and − don't make
-  every live column jump in age or pop in and out.
+- **Speed changes don't jump.** Both clocks are accumulated frame by frame, and the share and the foam's strength
+  are decided once, when a splash is first seen, so + and − never make a live column jump in age or pop in or out.
+- **The foam's clock is the sea's** (the world's speed, capped at 8x; the user's note). Above the cap the foam outlives
+  the world's time, so more patches lie on the water at once. Each is fainter by √(8/speed), at least 0.3.
 - **The coarse tier shows none.** Above 240x there are no shells to splash; nothing is drawn.
 - **Knobs:** the knee (2x), the exponent (0.5) and k (2), in `-splash=`.
 
@@ -163,6 +165,46 @@ A test: splashes of one salvo landing apart animate apart, and are kept or dropp
   10x, 60x and 240x; the floor, zooming through the boundary in a live fight.
 - **P6. Tuning by eye** against period photos, and the cost in a Jutland-sized exchange at 1x and 60x (`-gputime`,
   DevRelease `-frametimes`).
+
+### Done (2026-10-15)
+
+**P0-P5 built**; P6, tuning by the user's eye, is next.
+
+Where it lives:
+- **The sim:** `Dye` (Rows.cs), a ship's dye (`ShipStore`, `ShipSystem.Dye`), a scenario's `"dye"`/`"dyes"`. Each shell
+  takes its shooter's dye at launch. `ShellSystem.Splash` and `SplashesView` carry the salvo, the angle of fall, the
+  bearing, the kind and the dye.
+- **The map:** `Map/Splashes/`:
+  - `SplashBook`: the splashes seen, the two clocks, the thinning;
+  - `SplashRenderer`: the instances and the four draws, called by the ships' layer;
+  - `SplashLook`: the knobs, `-splash=`.
+- **The shaders:** `Include/splash.glsl` (the one model), `splash.vert`, and `splash_column`, `_shadow`, `_foam`,
+  `_stain` `.frag`.
+- **The table:** its miss marks are drawn × (1 − the world's share). Its foam ring takes a splash's dye.
+- **Tests:** `ShellSystemTests.A_splash_knows_how_it_fell_and_whose_dye_it_carries`,
+  `ScenarioTests.Dyes_go_to_the_ships_they_are_given`, `SplashBookTests`.
+
+Seen (captures at 0.5, 2 and 4 m/px; noon, 19:30 and 23:30):
+- the impact's cone and the rising pillars, with their roots flared and their true shadows;
+- the crown opening over the surge ring, then breaking into clumps as it falls, the curtain streaking under it;
+- the foam's disc and ring flat on the water, fading;
+- with `dye:auto`, red crowns over white bases, and red stains lingering after the foam;
+- at night, grey moonlit columns;
+- at 60x, whole salvos standing round the ships, and older fall of shot as faint foam.
+
+Changed on the way:
+- **Opaque, not translucent.** A noisy translucent volume, marched obliquely, smeared into vertical streaks. The water
+  is now nearly opaque (about 6 optical depths across a shaft), and the noise shapes the outlines instead.
+- **No mist.** As a smooth volume it read as grey domes; it waits for the drift downwind.
+- **The shadows** fade out between 7° and 3° of sun and are no longer than 8 m a metre of height. Where the shared
+  light gives no shadow (the ships cast none either), neither do the splashes.
+
+Cost: a stress of 16 dreadnoughts engaged in one 1 m/px view at 60x, 1080p, DevRelease, about 1,500 splashes drawn a
+frame (mostly foam). Three alternating runs:
+- the GPU's scene p50 1.22-1.23 ms with splashes against 1.12-1.43 ms without (about 0.1 ms; the mean and p95 swing
+  more between runs than between the two);
+- the CPU's build 0.10 ms a frame, for a book of ~4,000;
+- nothing allocated a frame (`SplashBookTests`).
 
 ## Decisions (the user, 2026-10-15)
 

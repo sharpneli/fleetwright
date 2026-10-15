@@ -1,4 +1,5 @@
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Combat;
 
@@ -36,6 +37,7 @@ public sealed class ShipStore
     // identity
     internal int[] entity = [], generation = [], classIndex = [];
     internal byte[] side = [];
+    internal Dye[] dye = [];   // her shells' splash colour (docs/visuals/splashes.md): nothing reads it but the screens yet
     internal bool[] alive = [];
     internal Handling[] handling = [];
 
@@ -129,6 +131,7 @@ public sealed class ShipStore
         }
         this.classIndex[slot] = classIndex;
         this.side[slot] = side;
+        dye[slot] = Dye.None;
         alive[slot] = true;
         handling[slot] = h;
         this.position[slot] = up * Earth.Radius;
@@ -512,6 +515,9 @@ public sealed class ShipStore
     /// <summary>A ship no longer sliding along a coast: the side forgotten, its rails as they are.</summary>
     public void LetGoOfCoast(int slot) => landSide[slot] = 0;
 
+    /// <summary>The dye her shells carry from now on.</summary>
+    public void SetDye(int slot, Dye d) => dye[slot] = d;
+
     /// <summary>Re-anchors a ship on rails at a point on a rhumb line at a course (past a route's last waypoint).</summary>
     public void ReanchorRhumb(int slot, Vec3d at, double courseDeg)
     {
@@ -828,6 +834,8 @@ public sealed class ShipStore
             h.Add(entity[i]);
             h.Add(classIndex[i]);
             h.Add(side[i]);
+            if (dye[i] != Dye.None)
+                h.Add((int)dye[i]);   // only then, so a world without dye hashes as it did before
             h.Add(position[i]);
             h.Add(forward[i]);
             h.Add(speed[i]);
@@ -899,6 +907,7 @@ public sealed class ShipStore
         Array.Resize(ref generation, n);
         Array.Resize(ref classIndex, n);
         Array.Resize(ref side, n);
+        Array.Resize(ref dye, n);
         Array.Resize(ref alive, n);
         Array.Resize(ref handling, n);
         Array.Resize(ref position, n);
@@ -963,6 +972,9 @@ public readonly struct ShipState(ShipStore store, int slot)
 
     /// <summary>The side it's on: ships of different sides are opposing (relations between sides come in step 3.1).</summary>
     public byte Side => store.side[slot];
+
+    /// <summary>The dye her shells carry (<see cref="Dye.None"/> before the 1930s).</summary>
+    public Dye Dye => store.dye[slot];
 
     /// <summary>Where the ship is now (on rails, evaluated at the world's time).</summary>
     public Vec3d Position

@@ -162,6 +162,21 @@ public enum ShellKind : byte
     He,
 }
 
+/// <summary>A ship's splash colour (docs/visuals/splashes.md "Dye"): the dye load her heavy shells carry so she can
+/// spot her own fall of shot among others' (from about 1930; the research's table). A sim fact, on the ship and carried
+/// by each shell onto its splash; the colours themselves are the display's.</summary>
+public enum Dye : byte
+{
+    None,
+    Orange,
+    Red,
+    Pink,
+    Yellow,
+    Green,
+    Blue,
+    Black,
+}
+
 public enum Fuze : byte
 {
     /// <summary>In the base, firing after a delay (FuzeDelayS) once armed.</summary>

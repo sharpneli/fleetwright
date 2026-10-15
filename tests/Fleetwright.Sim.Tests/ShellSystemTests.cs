@@ -58,6 +58,41 @@ public class ShellSystemTests(ITestOutputHelper output)
         return Enumerable.Range(0, s.Count).Select(i => (s.Point[i], s.Ms[i], s.Ship[i])).ToList();
     }
 
+    /// <summary>The splash's facts for the screens (docs/visuals/splashes.md P0): the angle it fell at is the range
+    /// table's at that range, the bearing the way it flew, the kind its shell's; and the dye its shooter loaded, kept by
+    /// shells already flying when she's gone.</summary>
+    [Theory]
+    [InlineData(4000)]
+    [InlineData(9000)]
+    [InlineData(16000)]
+    public void A_splash_knows_how_it_fell_and_whose_dye_it_carries(double range)
+    {
+        var (w, shooter, _) = Make(Settings with { DevFirePatternPct = 0 });
+        w.Apply(ShipSystem.Dye(shooter, Ships.Dye.Orange));
+        var from = Ship(w, shooter).Position;
+        var aim = Destination(from, 0, range);   // north, away from the target
+        var (lat, lon) = Earth.LatLon(aim);
+        w.Apply(ShellSystem.FireAt(shooter, 0, lat, lon));
+        w.AdvanceTo(w.Time + 1000);
+        w.Apply(ShipSystem.Drop(shooter));   // gone while her shells fly
+        w.AdvanceTo(w.Time + 90_000);
+        var snap = new Snapshot();
+        w.Fill(snap, truth: true);
+        var s = snap.Splashes;
+        Assert.True(s.Count > 0);
+        var cls = w.Ships.Class(0);
+        var table = w.Shells.Ballistics[w.Shells.TableOf(cls, 0)];
+        double e = table.ElevationFor(range, 10), fall = table.Fall(e, 10).FallDeg;
+        for (int i = 0; i < s.Count; i++)
+        {
+            output.WriteLine($"{range} m: fell at {s.FallDeg[i]:F2} deg (the table {fall:F2}), bearing {s.BearingDeg[i]:F1}, {s.Kind[i]}, {s.Dye[i]}");
+            Assert.InRange(s.FallDeg[i], fall * 0.9 - 0.2, fall * 1.1 + 0.2);
+            Assert.True(Math.Min(s.BearingDeg[i], 360 - s.BearingDeg[i]) < 2, $"bearing {s.BearingDeg[i]}");
+            Assert.Equal(cls.ShellTypes[cls.Batteries[0].Fires].Kind, s.Kind[i]);
+            Assert.Equal(Ships.Dye.Orange, s.Dye[i]);
+        }
+    }
+
     [Fact]
     public void A_salvo_lands_round_its_aim_and_hits_what_is_in_its_way()
     {

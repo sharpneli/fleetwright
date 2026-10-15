@@ -17,6 +17,7 @@ public enum ShipCommand : ushort
     LoopRoute,
     Clearance,
     LookNow,
+    Dye,
 }
 
 /// <summary>The world's ships (docs/battle/plan.md step 2.2), in their clock tiers (ShipSystem.Tiers.cs): on the fine
@@ -158,6 +159,10 @@ public sealed partial class ShipSystem : IWorldSystem
     /// movement: it takes nothing off rails.</summary>
     public static Command Clearance(int entity, double metres) => new(Id, (ushort)ShipCommand.Clearance, entity, X: metres);
 
+    /// <summary>The dye a ship's shells carry from now on (docs/visuals/splashes.md "Dye"). A load, not a movement: it
+    /// takes nothing off rails.</summary>
+    public static Command Dye(int entity, Ships.Dye dye) => new(Id, (ushort)ShipCommand.Dye, entity, B: (int)dye);
+
     public void Apply(World world, in Command c)
     {
         const double Deg = Math.PI / 180;
@@ -191,6 +196,12 @@ public sealed partial class ShipSystem : IWorldSystem
         int slot = Store.SlotOf(c.Entity);
         if (slot < 0)
             return;   // dropped or never made: an order that reached no ship
+        if (code == ShipCommand.Dye)
+        {
+            if (c.B is >= 0 and <= (int)Ships.Dye.Black)
+                Store.SetDye(slot, (Ships.Dye)c.B);
+            return;
+        }
 
         // an order to a ship on rails: back to the fine tick first, its group with it; or carried out at once on rails
         // (the ship alone comes off for the moment, its group riding it as it is): ShipSystem.Tiers.cs

@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Fleetwright.Gpu;
+using Fleetwright.Map.Splashes;
 using Fleetwright.Map.Wakes;
 using Fleetwright.Shipgen.Render;
 using Fleetwright.Shipgen.Render.Bake;
@@ -612,6 +613,10 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     /// <summary>The foam lanes this frame (docs/visuals/wakes.md K4), built by the map's trails.</summary>
     public FoamTrails Foam { get; } = new();
 
+    /// <summary>The shell splashes in the world view (docs/visuals/splashes.md): their foam drawn with the wakes', their
+    /// stains before the ships, their shadows and columns after.</summary>
+    public SplashRenderer Splashes { get; }
+
     /// <summary>The sea's clock, s (SeaView.ClockS), set by the scene each frame: the foam churns on it.</summary>
     public double FoamClockS { get; set; }
 
@@ -640,6 +645,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
         Icon = (nint)SpriteTextures.Upload(device, SpriteImages.Chain(IconImage(), false, 5));
         Wakes = new WakeLibrary(device);
         foamBuf = new DynamicGpuBuffer(device, SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_VERTEX, FoamBufferBytes);
+        Splashes = new SplashRenderer(device);
     }
 
     /// <summary>The icon: a hull's plan 128 x 32, bow to the right (+x), a fine bow and a rounded stern.</summary>
@@ -715,6 +721,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     public void Copy(SDL_GPUCommandBuffer* cmd)
     {
         Wakes.Update(cmd);
+        Splashes.Copy(cmd);
         var fv = Foam.Vertices;
         foamUploaded = Math.Min(fv.Length, (int)(FoamBufferBytes / FoamVertex.SizeInBytes));
         foamUploaded -= foamUploaded % 6;
@@ -725,6 +732,13 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     }
 
     public void Draw(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
+    {
+        Splashes.DrawStains(cmd, pass, target, view);
+        DrawShips(cmd, pass, target, view);
+        Splashes.DrawColumns(cmd, pass, target, view);
+    }
+
+    void DrawShips(SDL_GPUCommandBuffer* cmd, SDL_GPURenderPass* pass, RenderTarget target, in MapView view)
     {
         if (uploaded == 0)
             return;
@@ -821,6 +835,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
             SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&vf), (uint)sizeof(ViewParams));
             SDL_DrawGPUPrimitives(pass, (uint)foamUploaded, 1, 0, 0);
         }
+        Splashes.DrawFoam(cmd, pass, target, view);
         if (List.WakeDraws.Length == 0 || uploaded == 0)
             return;
         var sb = quadBuf.Buffer;
@@ -846,6 +861,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
     public void Dispose()
     {
         Wakes.Dispose();
+        Splashes.Dispose();
         SDL_WaitForGPUIdle(device);
         ReleasePipelines();
         if (wakePipe != null)

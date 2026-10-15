@@ -122,6 +122,8 @@ public static class ScenarioLoader
                 start.Ships++;
                 if (nth < spec.Names.Length && spec.Names[nth].Length > 0)
                     start.ShipNames[e] = spec.Names[nth];
+                if (nth < spec.Dyes.Length && spec.Dyes[nth] != Dye.None)
+                    w.Apply(ShipSystem.Dye(e, spec.Dyes[nth]));
             }
 
             // the groups bottom-up, then the top unit's orders

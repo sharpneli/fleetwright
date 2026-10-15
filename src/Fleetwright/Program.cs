@@ -132,6 +132,12 @@ public static unsafe class Program
                     if (!Map.SeaView.Set(kv))
                         Console.Error.WriteLine($"Bad sea knob: {kv} (want facet, relief, lowsunrelief, chop, debug, nightrelief, moonnight, starnight, wake, foam)");
             }
+            else if (arg.StartsWith("-splash="))   // the world view's splashes' knobs (docs/visuals/splashes.md): -splash=pitch:45,floor:2,dye:auto
+            {
+                foreach (var kv in arg.Substring("-splash=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!Map.Splashes.SplashLook.Set(kv))
+                        Console.Error.WriteLine($"Bad splash knob: {kv} (want {Map.Splashes.SplashLook.Knobs})");
+            }
             else if (arg == "-paused")   // the world starts paused
             {
                 startPaused = true;

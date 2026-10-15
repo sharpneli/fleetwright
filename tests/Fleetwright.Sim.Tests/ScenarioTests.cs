@@ -219,6 +219,23 @@ public class ScenarioTests
     }
 
     /// <summary>A side's gun crews by its name (docs/battle/fighting.md 4.2b), trained where not given.</summary>
+    /// <summary>Dye loads (docs/visuals/splashes.md "Dye"): one for a whole entry, or each ship's in order, onto the
+    /// ships; a colour the palette hasn't is named.</summary>
+    [Fact]
+    public void Dyes_go_to_the_ships_they_are_given()
+    {
+        var (w, _, start) = Load(Small
+            .Replace("\"names\": [\"Alpha\", \"Bravo\"] }", "\"names\": [\"Alpha\", \"Bravo\"], \"dyes\": [\"orange\", \"Blue\"] }")
+            .Replace("\"name\": \"Picket\" }", "\"name\": \"Picket\", \"dye\": \"pink\" }"));
+        int Named(string n) => start.ShipNames.First(kv => kv.Value == n).Key;
+        Assert.Equal(Ships.Dye.Orange, Ship(w, Named("Alpha")).Dye);
+        Assert.Equal(Ships.Dye.Blue, Ship(w, Named("Bravo")).Dye);
+        Assert.Equal(Ships.Dye.Pink, Ship(w, Named("Picket")).Dye);
+        Assert.Equal(Ships.Dye.None, Ship(w, Named("Alpha") + 2).Dye);   // the next entry's
+        var x = Assert.Throws<ScenarioException>(() => Scenario.Parse(Small.Replace("\"name\": \"Picket\" }", "\"name\": \"Picket\", \"dye\": \"mauve\" }")));
+        Assert.Contains("orange", x.Message);
+    }
+
     [Fact]
     public void Crews_are_a_sides_by_name_and_go_to_the_world()
     {

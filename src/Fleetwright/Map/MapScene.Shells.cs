@@ -147,11 +147,14 @@ public sealed partial class MapScene
     }
 
     /// <summary>The splashes and hits of the snapshot's while: a miss's column as a white glow over its rise and fall,
-    /// then its foam ring, faintly in the shooter's tint (the dye loads); a hit's flash, sparks and smoke.</summary>
+    /// then its foam ring, faintly in its dye or else the shooter's tint; a hit's flash, sparks and smoke. A miss's marks
+    /// give way to the world view's splashes (docs/visuals/splashes.md) over the cross-fade, as the track line does to the
+    /// foam lane.</summary>
     void DrawSplashes(in MapView view, Snapshot s)
     {
         var w = s.Splashes;
         long now = world.DrawMs;
+        float table = Splashes.SplashLook.On ? (float)(1 - WorldView.Factor(view)) : 1f;
         double life = world.Settings.SplashLifeMs / 1000.0, hitS = Floor(s, HitFlashS), sparkS = Floor(s, SparkS);
         for (int i = 0; i < w.Count; i++)
         {
@@ -167,18 +170,21 @@ public sealed partial class MapScene
             }
             // the column: up in sqrt(2H/g), down by twice that and a second (12": 3.3 s, 7.7 s)
             double rise = Math.Sqrt(2 * ColumnPerM * w.CalibreMm[i] / 1000 / 9.81), fall = Floor(s, 2 * rise + 1);
+            if (table <= 0)
+                continue;
             if (age < fall)
             {
                 double up = Math.Min(age / rise, 1), r = ColumnPx * g * (0.5 + 0.5 * (1 - (1 - up) * (1 - up)));
                 double a = age < rise ? 1 : 1 - (age - rise) / (fall - rise);
-                overlay.Disc(x, y, r * 1.6, Water with { W = (float)(Water.W * a * (0.6 + 0.4 * dim)) }, 0.55f);
+                overlay.Disc(x, y, r * 1.6, Water with { W = (float)(Water.W * a * (0.6 + 0.4 * dim)) * table }, 0.55f);
             }
             // the foam: a thin ring that widens a little and fades over the snapshot's while
             double fa = 1 - age / life;
             if (fa > 0)
             {
-                var tint = Vector4.Lerp(Water, ShooterTint(w.Shooter[i], Water), 0.4f);
-                Ring(x, y, FoamPx * g * (0.5 + 0.5 * Math.Min(1, age / 4)), tint with { W = (float)(0.35 * fa * fa * dim) }, 1.2f);
+                var dye = w.Dye[i] != Dye.None ? new Vector4(Splashes.SplashLook.Palette[(int)w.Dye[i]], 1) : ShooterTint(w.Shooter[i], Water);
+                var tint = Vector4.Lerp(Water, dye, 0.4f);
+                Ring(x, y, FoamPx * g * (0.5 + 0.5 * Math.Min(1, age / 4)), tint with { W = (float)(0.35 * fa * fa * dim) * table }, 1.2f);
             }
         }
     }
