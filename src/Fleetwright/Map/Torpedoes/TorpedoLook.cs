@@ -19,9 +19,9 @@ public static class TorpedoLook
     /// track still reads at 4 m/px.</summary>
     public static double FloorPx = 2;
 
-    /// <summary>How much of the small waves' slope variance the track's film takes away (0 none, the default until R2's
-    /// captures judge it: decision 3).</summary>
-    public static double Slick;
+    /// <summary>How much of the small waves' slope variance the track's film takes away (0 none): 0.1, judged by the user
+    /// from the side-by-side (2026-10-16, decision 3), the track a little darker and smoother in the glint.</summary>
+    public static double Slick = 0.1;
 
     /// <summary>The torpedo's darkness under the water over its physical contrast (decision 2: emphasised, a named
     /// departure; 1 is physical, e^(−2Kd) ≈ 0.1-0.14 at 4-6 m), and the least length it draws on the screen, px.</summary>

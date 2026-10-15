@@ -210,7 +210,8 @@ is ~1.1 s behind the torpedo (~25 m at 41 kn, was ~7.5 s and ~160 m) and the tra
    the one model, not a model of its own.
 2. **The torpedo is emphasised** beyond its physical contrast: where it is matters to the player, and the track runs
    a hundred metres or more behind it. A named departure (`-tracks=body:G`), set by eye in R3.
-3. **The slick is judged** from R2's captures: built behind a knob, kept or dropped by what they show.
+3. **The slick is judged** from R2's captures: built behind a knob, kept or dropped by what they show. Judged
+   2026-10-16 from a side-by-side of 0, 0.1 and 0.4 in the glint: **0.1**, the default (0.4 read as tinsel).
 4. **Build on the estimates** now; the research note's numbers replace them when it lands.
 5. **The track starts close behind the torpedo** (R6, first round): its surfacing drawn at 0.15 of the physical times,
    a departure for readability, so the track's head shows where the torpedo is.
