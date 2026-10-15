@@ -959,24 +959,48 @@ public sealed partial class Layout
                 ? lay.DeckZ(x, rsReach) >= LevelH || RiderOk(x)
                 : riders.All(r => Apart(r, x, YAt(x), rsReach));
             double xLo = midAft + rsReach + 0.5, xHi = midFwd - rsReach - 0.5;
-            double inner = (blocks.Where(b => b.Level >= 2).Select(b => b.W / 2).Append(fw / 2)
-                .Concat(M.Select(g => g.Reach))).Max() + rsReach + 0.4;
+            // what a mount must stand outboard of where it stands: the superstructure over level 1 and the funnels beside
+            // it, not the widest anywhere (a gun abreast the after funnel needn't clear the bridge, and a beam asked
+            // of the bridge's width, a share of the beam, would never be enough), and the midships turrets' reach
+            double innerMain = M.Select(g => g.Reach).Append(0.0).Max();
+            double InnerAt(double x)
+            {
+                double hw = innerMain;
+                foreach (var b in blocks)
+                    if (b.Level >= 2 && b.X0 - rsReach - 0.4 < x && x < b.X1 + rsReach + 0.4)
+                        hw = Math.Max(hw, Math.Abs(b.Y) + b.W / 2);
+                foreach (var f in funnels)
+                    if (Math.Abs(f.X - x) < f.L / 2 + rsReach + 0.4)
+                        hw = Math.Max(hw, f.W / 2);
+                return hw + rsReach + 0.4;
+            }
 
             double OuterAt(double x) => Math.Min(Math.Min(lay.MountHalfWidth(x + -rsReach), Math.Min(lay.MountHalfWidth(x + 0.0), lay.MountHalfWidth(x + rsReach))) - rsReach - 0.6,
                 lay.BarbetteLimit(x, BarbetteOf(ts)));
 
-            double YAt(double x) => Math.Max(inner, inner + 0.55 * (OuterAt(x) - inner));
+            bool Room(double x) => OuterAt(x) >= InnerAt(x);
+            // where across the deck: past the widest block anywhere, a share of the way to the edge, where the deck is
+            // wide enough for that; on a narrower deck, as far out as it goes (a spot with Room stays clear of what's
+            // beside it)
+            double clearAll = blocks.Where(b => b.Level >= 2).Select(b => b.W / 2).Append(fw / 2).Append(innerMain).Max()
+                              + rsReach + 0.4;
+            double YAt(double x)
+            {
+                double outer = OuterAt(x);
+                return Math.Min(outer, clearAll + 0.55 * (outer - clearAll));
+            }
             var xsProbe = Enumerable.Range(0, 41).Select(k => xLo + (xHi - xLo) * k / 40).ToList();
             double xLo0 = xLo, xHi0 = xHi;
-            if (xsProbe.Select(OuterAt).Max() < inner)
+            if (!xsProbe.Any(Room))
             {
+                double inner = xsProbe.Min(InnerAt);   // where they'd need the least
                 lay.NeedB = Math.Max(lay.NeedB, 2 * (inner + rsReach + 0.6) / deckRatio);
                 lay.Fail("beam", $"Hull too narrow for {cal} secondary mounts: they need about " +
                                  $"{2 * (inner + rsReach + 0.6):F1} m of beam amidships.");
             }
             else
             {
-                var fitsX = xsProbe.Where(x => OuterAt(x) >= inner).ToList();
+                var fitsX = xsProbe.Where(Room).ToList();
                 (xLo, xHi) = (fitsX.Min(), fitsX.Max());
             }
 
@@ -1013,12 +1037,14 @@ public sealed partial class Layout
             double step = Math.Min((xHi - xLo) / Math.Max(nsec - 1, 1), 2.2 * rs + 4.0);
             double c = (xLo + xHi) / 2;
             var sxs = Enumerable.Range(0, (int)nsec).Select(i => nsec > 1 ? c + (i - (nsec - 1) / 2.0) * step : c).ToList();
-            bool spreadOk = Enumerable.Range(0, sxs.Count).All(i => PitchOk(sxs[i], sxs.Take(i), 0.0) && BarrelsOk(sxs[i])
+            bool spreadOk = Enumerable.Range(0, sxs.Count).All(i => Room(sxs[i]) && PitchOk(sxs[i], sxs.Take(i), 0.0) && BarrelsOk(sxs[i])
                                                                     && ApartOk(sxs[i]));
             if (nw != 0 || !first || !spreadOk)
             {
                 bool SpotOk(double x)
                 {
+                    if (!Room(x))
+                        return false;   // abreast something too wide here: the deck beside it is too narrow
                     for (int s = 1; s >= -1; s -= 2)
                     {
                         var fp = Footprint.Circle(x, s * YAt(x), rsReach);

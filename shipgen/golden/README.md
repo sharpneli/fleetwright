@@ -93,6 +93,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-15, lighter plants at full rating (docs/shipgen/DECISIONS.md, "Destroyer crunch" 1), on purpose: the
   designs carrying ST5 or ST6 plants have their `stress_floor` lowered (0.35 → 0.30, 0.42 → 0.33). Those 28 design
   cases change by their rating (tb_destroyer -19 %, fubuki -17 %, battleships under 2 %); every other case unchanged.
+- 2026-10-15, deck secondaries clear what stands beside them (docs/shipgen/DECISIONS.md, "Destroyer crunch" 3), on
+  purpose: whether a position has room is read where it stands instead of from the widest block anywhere. 87 cases
+  change (19 designs and 68 fuzz cases): positions on narrow decks, beams (Dunkerque 30.95 -> 26.67 m, Impetuoso
+  14.6 -> 10.7 m) and what follows from them; where the deck is wide the mounts stand where they did.
 
 ## Layout
 
