@@ -29,6 +29,14 @@ add what's found.
   lighting L4, which touches no sim code; once with a second Sim failure) and passed alone three times in three. The
   same suspicion as above.
 
+## Damage
+
+- [ ] A battleship under medium HE sometimes loses a magazine to fire: super_dreadnought under 30 hits of tiger_1914's
+  152 mm HE at 8 km with 30 minutes' settling lost 3 of 200 (old designs) and 2 of 200 (2026-10-15) to `LossKind.Magazine`,
+  with no water aboard. fighting.md 4.3b says such a ship stays afloat; Malaya's casemate cordite fire at Jutland says a
+  small chance is real. Decide whether ~1.5 % is right, and if not, which path (a casemate or secondary magazine beside a
+  fire, the propellant factor) sets it off. `DamageTests` allows up to 4 % until then.
+
 ## The slide
 
 - [ ] A ship can be trapped in a bay that opens away from its course: decision 7's "boxed in, it follows the coast

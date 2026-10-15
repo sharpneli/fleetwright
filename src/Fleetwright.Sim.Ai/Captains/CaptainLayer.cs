@@ -623,6 +623,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     {
         if (count == captains.Length)
             Array.Resize(ref captains, captains.Length * 2);
+        fallBacks.EnsureCapacity(captains.Length);
         int i = count;
         while (i > 0 && captains[i - 1].Entity > entity)
         {

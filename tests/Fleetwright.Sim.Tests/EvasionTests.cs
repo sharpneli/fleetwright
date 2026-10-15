@@ -36,16 +36,21 @@ public class EvasionTests(ITestOutputHelper output)
 
     static ShipState Ship(World w, int e) => w.Ships.Store[w.Ships.Store.SlotOf(e)];
 
-    /// <summary>The spread of the course ordered over a stretch, degrees, and the hits taken by the end of it.</summary>
+    /// <summary>The spread of the course ordered over a stretch while she runs, degrees, and the hits taken by the end of
+    /// it. Once a hit takes away the speed to refuse action she turns to fight ("no escape"), and that's no evasion.</summary>
     static (double Spread, int Hits) Run(World w, double minutes)
     {
         double lo = double.MaxValue, hi = double.MinValue, first = double.NaN;
         for (int s = 0; s < minutes * 60; s += 5)
         {
             w.AdvanceTo(w.Time + 5_000);
-            if (w.Ships.Store.SlotOf(1) < 0)
+            if (w.Ships.Store.SlotOf(1) < 0 || w.Ships.Store.SlotOf(2) < 0)
                 break;
-            double c = Ship(w, 1).CourseOrderDeg;
+            var own = Ship(w, 1);
+            double away = Earth.Bearing(Ship(w, 2).Position, own.Position);
+            if (Math.Abs(Math.IEEERemainder(own.CourseOrderDeg - away, 360)) > 90)
+                break;   // turned to fight
+            double c = own.CourseOrderDeg;
             first = double.IsNaN(first) ? c : first;
             double d = c - first;
             d -= 360 * Math.Round(d / 360);

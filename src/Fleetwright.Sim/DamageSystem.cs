@@ -555,8 +555,10 @@ public sealed class DamageSystem : IWorldSystem
     /// <summary>A ship gone under: every navy that has it in sight saw it go (its contact says so until it's forgotten).</summary>
     void Gone(int entity)
     {
-        foreach (var pic in sightings.All)
+        var all = sightings.All;
+        for (int p = 0; p < all.Count; p++)   // by index: a foreach over the interface boxes its enumerator
         {
+            var pic = all[p];
             int i = pic.IndexOf(entity);
             if (i >= 0 && pic[i].InSight)
                 pic.At(i).Seen |= SeenFlags.Gone;

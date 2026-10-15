@@ -48,12 +48,13 @@ public enum FallOutCause : byte
 
 /// <summary>Doctrine's fall-out (docs/battle/command.md 5.1a): under a share of her designed speed, of her main guns, past
 /// a list, or with a share of her reserve flooded; and her steering gone, where she falls out at all (a speed share over
-/// 0). The one test: the captain's, and the matchup's toughness (the hits that put a ship out of the fight, 5.1g).</summary>
+/// 0). Dead in the water she's out whatever the doctrine: a ship that can't steam can't keep a line, nor lead one. The one
+/// test: the captain's, and the matchup's toughness (the hits that put a ship out of the fight, 5.1g).</summary>
 public readonly record struct FallOutRule(double SpeedShare, double GunsShare, double ListDeg, double WaterShare)
 {
     public FallOutCause Of(in Fitness f) =>
         SpeedShare > 0 && f.Steering != Steering.Free ? FallOutCause.Steering
-        : f.SpeedShare < SpeedShare ? FallOutCause.Speed
+        : f.SpeedShare <= 0 || f.SpeedShare < SpeedShare ? FallOutCause.Speed
         : f.MainGunsShare < GunsShare ? FallOutCause.Guns
         : f.ListDeg > ListDeg ? FallOutCause.List
         : f.WaterShare > WaterShare ? FallOutCause.Water

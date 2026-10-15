@@ -490,8 +490,13 @@ public sealed partial class CaptainLayer
         var s = ctx.Settings;
         var mine = groups.UnitOf(own.Entity);
         int key = mine != null ? Unit.Group(mine.GroupId).Id : Unit.Ship(own.Entity).Id;
-        if (fallBacks.TryGetValue(key, out var fb) && fb.Ms == ctx.NowMs)
-            return fb.Deg;
+        if (fallBacksMs != ctx.NowMs)
+        {
+            fallBacks.Clear();   // a moment's judgements only: at most one a captain
+            fallBacksMs = ctx.NowMs;
+        }
+        if (fallBacks.TryGetValue(key, out double fb))
+            return fb;
         double accept = Judge.Bars(own.Entity, own.Side).Accept, best = s.FallBackM, deg = double.NaN;
         for (int k = 0; k < groups.Count; k++)
         {
@@ -504,11 +509,14 @@ public sealed partial class CaptainLayer
                 continue;
             (best, deg) = (d, Earth.Bearing(own.Position, guide.Position));
         }
-        fallBacks[key] = (ctx.NowMs, deg);
+        fallBacks[key] = deg;
         return deg;
     }
 
-    readonly Dictionary<int, (long Ms, double Deg)> fallBacks = [];
+    /// <summary>This moment's fall-back bearings by unit, sized with the captains (<see cref="Insert"/>), so the first
+    /// captain to fall back in a fight allocates nothing.</summary>
+    readonly Dictionary<int, double> fallBacks = [];
+    long fallBacksMs = -1;
 
     /// <summary>The course away: toward the force he falls back on if that's within <see cref="SimSettings.FallBackDeg"/>
     /// of straight away, else straight away.</summary>
