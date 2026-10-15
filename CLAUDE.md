@@ -40,6 +40,7 @@ dotnet run --project src/Fleetwright -- -worldview=4                       # the
 dotnet run --project src/Fleetwright -- -map=-40,100,2 -time=1916-05-31T05:20 -sea=lowsunrelief:4,nightrelief:5   # the sea's look knobs (Map/SeaView.cs: relief, lowsunrelief, facet, chop, nightrelief, moonnight, starnight, debug (3: the wakes, 4: their foam), wake (the wakes' gain, 0 none), foam (the trails' foam lanes' gain, 0 none)), for side-by-side captures
 dotnet run --project src/Fleetwright -- -ships=dreadnought:1:0@56.5,4.0,0,0 -ships=dreadnought:1:0@56.5,4.13,0,0 -fire=1:56.5,4.126 -map=56.5,4.126,0.5 -splash=dye:auto,pitch:45   # the world view's splashes (docs/visuals/splashes.md; Map/Splashes/SplashLook.cs: pitch, floor, knee, power, keep, faint, steps, vivid, vary, on, parts, dye:auto)
 dotnet run --project src/Fleetwright -- -ships=super_dreadnought:1:0@56.5,4.0,0,0 -ships=super_dreadnought:1:1@56.5,4.05,0,15 -engage=1:2 -nopause -speed=30 -map=56.5,4.0,0.5 -weather=180,12 -flash=at:0.12 -screenshot=900   # the world view's muzzle flashes, blasts and gun smoke (docs/visuals/muzzle-flashes.md; Map/Flashes/FlashLook.cs: gain, halo, haloscale, knee, offset, scatter, rh, air, frames, pvis, psat, frost, scour, scourk, parts (1 flashes, 2 lights, 4 blast, 8 smoke), on; at:S and blastat:S stills of the newest salvo at that age); -weather=wind_from,kn[,visibility_km] the dev world's weather)
+dotnet run --project src/Fleetwright -- -ships=bismarck:1:0@56.5,4.0,90,0 -sink=1:magazine[:mount] -map=56.5025,4.0,1.5 -weather=270,8 -magazine=at:15 -screenshot=40   # the world view's magazine explosions (docs/visuals/magazine-explosions.md; Map/Magazines/MagazineLook.cs: scatterd, scatters, life, skin, cold, hot, soot, opacity, mushroom, spin, stem, stemtau, stemfade, gain, whiten, steps, knee, kneehc, parts (1 body, 2 shadow); at:S a still of the newest at that age after the hit)
 dotnet run --project src/Fleetwright -c Release -- -wakebake=destroyer:16,26,39 [-output=wakes]   # a design's wake bakes (docs/visuals/wakes.md K1) as PNGs: height and lit slopes, bow right, starboard down; exits
 dotnet run --project src/Fleetwright -- -section=2 -designer-ui=secsel:1:2,secmenu  # UI state for screenshots (DesignerScene.ApplyDevUi)
 dotnet run --project src/Fleetwright -- -section=1 -input=60:click:597,539;80:wheel:1160,559:-1;100:type:150  # scripted clicks, wheel, typing, F:drop:PATH, F:drag:X0,Y0:X1,Y1, F:mclick or F:mright:X,Y (SDL clicks the map gets) (window px; Engine.ScriptedInput)
@@ -214,7 +215,10 @@ src/
                               #   and speed bucket, baked on threads of its own and pooled on the GPU; WakeTrail, each ship's stern path:
                               #   the table's line and the world's foam lane, FoamTrails), Splashes/ (docs/visuals/splashes.md:
                               #   SplashBook, the splashes seen and their display clocks; SplashRenderer, columns through the
-                              #   3/4 effects camera, shadows, foam into the wake target, dye stains; SplashLook, the knobs)
+                              #   3/4 effects camera, shadows, foam into the wake target, dye stains; SplashLook, the knobs),
+                              #   Flashes/ (docs/visuals/muzzle-flashes.md: flashes, their lights, blasts on the water, gun
+                              #   smoke), Magazines/ (docs/visuals/magazine-explosions.md: MagazineBook, MagazineRenderer: the
+                              #   fireball, cap and stem marched through the effects camera, their shadow; MagazineLook)
     Engine.cs                 #   Sdl3GpuEngine: init, resources, render loop, PbrMaterial
     GltfLoader.cs             #   glTF/GLB loader (SharpGLTF), not wired to the command line
     ImGuiRenderer.cs          #   Dear ImGui backend on SDL3 GPU
@@ -343,6 +347,7 @@ docs/world/architecture.md    # the world: tiers of time on one clock, the sim t
 docs/missions/plan.md         # missions, the battle module's stand-in for politics and manufacturing (format, objectives, UI, generator)
 docs/visuals/sea.md           # the sea: the table/world boundary, the FFT ocean in the globe's pass (W0-W4 done; foam later)
 docs/visuals/wakes.md         # wakes: the Kelvin field baked per class and speed into the sea's slopes, the trail as foam (agreed 2026-10-15; K1-K4 done: the bake, the library, the stamps, the foam lanes)
+docs/visuals/magazine-explosions.md   # magazine explosions in the world view: the sim's record, the event per class, the analytic body (X0-X2 done 2026-10-15)
 docs/visuals/splashes.md      # shell splashes in the world view: columns through the 3/4 effects camera, foam, shadow, dye, time compression (P0-P5 done 2026-10-15)
 docs/visuals/ship-lighting.md # the ship sprites lit: relief and normals, materials, the sun and moon, in the one forward pass (L1 done)
 research/                     # research notes, see below

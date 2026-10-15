@@ -192,14 +192,14 @@ public sealed partial class MapScene
     }
 
     /// <summary>A hit's pop: a white-hot core going orange, sparks flying out and fading, then a grey puff.</summary>
-    void Hit(double x, double y, double age, double g, double flashS, double sparkS, uint seed, double size, double smokeS)
+    void Hit(double x, double y, double age, double g, double flashS, double sparkS, uint seed, double size, double smokeS, float fade = 1)
     {
         if (age < smokeS)
-            overlay.Disc(x, y, size * g * (0.8 + age / smokeS), HitSmoke with { W = (float)(HitSmoke.W * (1 - age / smokeS)) });
+            overlay.Disc(x, y, size * g * (0.8 + age / smokeS), HitSmoke with { W = (float)(HitSmoke.W * (1 - age / smokeS)) * fade });
         if (age < flashS)
         {
             double a = age / flashS;
-            overlay.Disc(x, y, size * g * (1.4 - 0.6 * a), Vector4.Lerp(HitCore, HitColour, (float)Math.Min(1, a * 2)) with { W = (float)(1 - a * a) });
+            overlay.Disc(x, y, size * g * (1.4 - 0.6 * a), Vector4.Lerp(HitCore, HitColour, (float)Math.Min(1, a * 2)) with { W = (float)(1 - a * a) * fade });
         }
         if (age >= sparkS)
             return;
@@ -210,7 +210,7 @@ public sealed partial class MapScene
             double ang = (seed >> 8) / (double)(1 << 24) * Math.PI * 2, rr = reach * (0.6 + 0.4 * ((seed & 255) / 255.0));
             double cx = Math.Cos(ang), cy = Math.Sin(ang);
             overlay.Point(x + cx * rr * 0.55, y + cy * rr * 0.55, HitColour with { W = 0 }, 0.5f);
-            overlay.Point(x + cx * rr, y + cy * rr, HitCore with { W = (float)(1 - sa) }, 1.6f);
+            overlay.Point(x + cx * rr, y + cy * rr, HitCore with { W = (float)(1 - sa) * fade }, 1.6f);
             overlay.End();
         }
     }

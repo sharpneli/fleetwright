@@ -145,6 +145,12 @@ public static unsafe class Program
                     if (!Map.Flashes.FlashLook.Set(kv))
                         Console.Error.WriteLine($"Bad flash knob: {kv} (want {Map.Flashes.FlashLook.Knobs})");
             }
+            else if (arg.StartsWith("-magazine="))   // the world view's magazine explosions' knobs (docs/visuals/magazine-explosions.md): -magazine=at:20
+            {
+                foreach (var kv in arg.Substring("-magazine=".Length).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    if (!Map.Magazines.MagazineLook.Set(kv))
+                        Console.Error.WriteLine($"Bad magazine knob: {kv} (want {Map.Magazines.MagazineLook.Knobs})");
+            }
             else if (arg == "-paused")   // the world starts paused
             {
                 startPaused = true;

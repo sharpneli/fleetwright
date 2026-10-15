@@ -229,18 +229,20 @@ public sealed partial class MapScene
     }
 
     /// <summary>A magazine's blast where a ship was, <paramref name="age"/> seconds after: a white-hot flash with sparks,
-    /// its shock ring, and a dark pall drifting off downwind and spreading.</summary>
+    /// its shock ring, and a dark pall drifting off downwind and spreading. Faded out where the world view draws the
+    /// explosion itself (docs/visuals/magazine-explosions.md).</summary>
     void Magazine(in MapView view, Vec3d at, double age, Snapshot s, double windDeg)
     {
-        if (age < 0 || age > MagazinePallS || !view.Project(at, out double x, out double y) || x < -100 || y < -100 || x > view.Width + 100 || y > view.Height + 100)
+        float table = Magazines.MagazineLook.On ? (float)(1 - WorldView.Factor(view)) : 1f;
+        if (table <= 0 || age < 0 || age > MagazinePallS || !view.Project(at, out double x, out double y) || x < -100 || y < -100 || x > view.Width + 100 || y > view.Height + 100)
             return;
         double mpp = view.MetresPerPixel, drift = age / MagazinePallS;
         if (view.Project(at + Earth.Forward(at, windDeg) * (Math.Max(SmokeM / mpp, SmokePx) * mpp * drift), out double px, out double py))
-            overlay.Disc(px, py, MagazinePallPx * (0.4 + 0.6 * Math.Sqrt(drift)), PallColour with { W = (float)(0.75 * (1 - drift) * Math.Min(1, age / 1.5)) });
-        Hit(x, y, age, 1.8, Floor(s, MagazineFlashS), Floor(s, 1.5), Seed(at), HitPx * 1.6, 0);
+            overlay.Disc(px, py, MagazinePallPx * (0.4 + 0.6 * Math.Sqrt(drift)), PallColour with { W = (float)(0.75 * (1 - drift) * Math.Min(1, age / 1.5)) * table });
+        Hit(x, y, age, 1.8, Floor(s, MagazineFlashS), Floor(s, 1.5), Seed(at), HitPx * 1.6, 0, table);
         double shock = Floor(s, 2);
         if (age < shock)
-            Ring(x, y, MagazineRingPx * Math.Sqrt(age / shock), HitCore with { W = (float)(1 - age / shock) }, 2f);
+            Ring(x, y, MagazineRingPx * Math.Sqrt(age / shock), HitCore with { W = (float)(1 - age / shock) * table }, 2f);
     }
 
     static readonly Vector4 PallColour = new(0.4f, 0.38f, 0.37f, 1f);

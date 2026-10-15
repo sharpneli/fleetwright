@@ -173,7 +173,7 @@ In draw order, all after the ships' layer:
 
 - **X0. The record.** The sim records each magazine lost: ship, class, magazine room, time, cause (shell or fire),
   the hit's point. Carried from `Effects` and `Fires.Step` to `DamageSystem.Lose`, kept in a ring, read as a
-  `Snapshot.Blasts` view; the map keeps a `BlastBook` as `ShotBook` does. The dev's `-sink=SHIP:magazine[:MOUNT]`
+  `Snapshot.Blasts` view; the map keeps a `MagazineBook` as `ShotBook` does. The dev's `-sink=SHIP:magazine[:MOUNT]`
   sets one off through the sim. Tests: a hit in a magazine and a fire into one each record the room; one record per loss.
 - **X1. The event.** `MagazineBlast` (the port of `plan` and the correlations), the placeholder, a cache per class
   and room. Tests against `magazine.py` on the same ship (Bismarck's Y: M 22 t, D 163 m, t_fb 12.6 s, λ 76 m) and the
@@ -213,6 +213,39 @@ the class's charge and shell rows, not vidgen's fits: Bismarck's aft magazines (
 12.2 s, λ 73 m against vidgen's 22 t, 163 m, 12.6 s, 76 m; the destroyer's 0.3 t, 39 m. Tests
 (`MagazineBlastTests`): the research's table, Bismarck within 15% of vidgen, every design's magazines build, the
 openings' order and a port's jet (74 m at the main event, gone 3 s after; the barbette capped at 120 m).
+
+**X2 (2026-10-15).** `Map/Magazines/`: `MagazineBook` (the events seen, on the effects' and the sea's clocks,
+back-dated by their age, each one's scatter and seed), `MagazineRenderer` (the state per frame on the CPU, two draws
+after the gun smoke: the shadow, then the body), `MagazineLook` (`-magazine=`: scatterd, scatters, life, skin, cold,
+hot, soot, opacity, mushroom, spin, stem, stemtau, stemfade, gain, whiten, steps, knee, kneehc, parts, at, on). The
+body's laws are `MagazineBlast.BodyAt` (the model's, one implementation); the shapes `Include/magazine.glsl`, marched
+by `magazine_body.frag` and `magazine_shadow.frag`. `Effects.Drawn` is the height knee (300 m, H_c 450 m). The table's
+magazine mark fades out where the world view draws the event, as the gun flash's does.
+
+Seen (Bismarck's fullest magazine, captures at 1.5 m/px, an 8 m/s westerly):
+- noon: a white-yellow fireball at 2 s, orange billows by 4 s, dark soot patches over a crimson inside by 8 s; a dark
+  cap lifting off on its stem by 15 s, ~1 km up and drifting ~300 m downwind by 60 s, its shadow on the sea;
+- dusk: the same, the fireball white for longer against the dimmer sea;
+- night: orange through crimson, the stem's fires glowing at the wreck, the cap dark against the sea;
+- a destroyer's (0.3 t): a 39 m fireball gone in 3 s, a smaller cap.
+
+Changed on the way, the departures recorded here and in `MagazineLook`:
+- **The cap stays dark.** Its optical depth falls as the square root of its radius (8 at the fireball's end), not its
+  area: the fires below feed it, and the research's caps stand for minutes. By the area it was a haze within a
+  minute.
+- **The fire's hue is kept past white** (`whiten` 0.7): the hue goes toward a warm white by the gas's temperature, not
+  its brightness. Rolled to white as the flashes are, the night fireball (thousands of times the moonlit deck) was a
+  flat white blob; whitened by brightness, it went salmon (the flashes' research's warning for a pure blackbody).
+- **The young fireball is thinner** (its hot gas 0.3 of its soot's depth) and cools less toward its rim, so its
+  white-hot core shows; soot patches form as its skin grows.
+- **The mushroom's hollow is under the cap only**: from above the dome stays solid. The ring's turning noise is held to
+  the rim: turned everywhere, the coordinates pinched toward the axis and the dome showed ribs.
+- **Billows by a closed-form swirl** and a one-lookup relief toward the light, for cost.
+
+The cost (DevRelease, 1080p, 1 m/px, the 60 s cap filling much of the screen, minimum p50 of three alternating runs;
+the machine's other load made single runs swing by ±1 ms): **+0.6 ms GPU** (1.60 against 0.99), inside the 1.0 ms
+budget. The first version cost +1.3 ms; marching only the stretch of each ray that can meet the body or the stem (the
+knee inverted analytically), the noiseless shadow, the swirl and fewer steps brought it down.
 
 ## Later
 
