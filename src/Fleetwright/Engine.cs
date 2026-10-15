@@ -446,6 +446,11 @@ public unsafe class Sdl3GpuEngine : IDisposable
             $"mean {v.Average():F2}, p50 {v[v.Length / 2]:F2}, p95 {v[(int)(v.Length * 0.95)]:F2}, p99 {v[(int)(v.Length * 0.99)]:F2}, max {v[^1]:F2} ms";
         Console.WriteLine($"frame times over {t.Length} frames: {Stats(Sorted(x => x.Frame))}; {t.Count(x => x.Frame > 20)} over 20 ms");
         Console.WriteLine($"  CPU work (frame start to submit, less the swapchain wait): {Stats(Sorted(x => x.Work))}");
+        if (GpuTime && _gpuTimes.Count > 60)
+        {
+            var g = _gpuTimes.Skip(60).OrderBy(x => x).ToArray();
+            Console.WriteLine($"  scene on the GPU (submit to done, -gputime): {Stats(g)}");
+        }
     }
 
     /// <summary>
@@ -1091,7 +1096,11 @@ public unsafe class Sdl3GpuEngine : IDisposable
             FrameNumber++;
             DeltaTime = (float)_frameTimer.Elapsed.TotalSeconds;
             if (RecordFrameTimes)
+            {
                 _frameTimes.Add((DeltaTime * 1000, _workMs));
+                if (GpuTime)
+                    _gpuTimes.Add(_gpuMs);
+            }
             _waitMs = _workMs = 0;
             FrameTime = DeltaTime * 1000.0f; // Convert to milliseconds
 
@@ -1300,7 +1309,18 @@ public unsafe class Sdl3GpuEngine : IDisposable
         using (new ProfileScope("DrawGeometry", ZoneC.ORANGE))
         {
             _drawGeometryTimer.Restart();
-            if (Scene != null)
+            if (Scene != null && GpuTime)
+            {
+                // measuring: the scene in a command buffer of its own, no swapchain in it, waited for
+                var sceneCmd = SDL_AcquireGPUCommandBuffer(_device);
+                Scene.Draw(sceneCmd, _mainTarget, DeltaTime);
+                _gpuTimer.Restart();
+                var fence = SDL_SubmitGPUCommandBufferAndAcquireFence(sceneCmd);
+                SDL_WaitForGPUFences(_device, true, &fence, 1);
+                _gpuMs = (float)_gpuTimer.Elapsed.TotalMilliseconds;
+                SDL_ReleaseGPUFence(_device, fence);
+            }
+            else if (Scene != null)
                 Scene.Draw(commandBuffer, _mainTarget, DeltaTime);
             else
                 DrawGeometry(commandBuffer);
@@ -1332,6 +1352,14 @@ public unsafe class Sdl3GpuEngine : IDisposable
         else
             SDL_SubmitGPUCommandBuffer(commandBuffer);
     }
+
+    /// <summary>With -gputime: the scene is drawn in a command buffer of its own, with no swapchain in it, submitted
+    /// and waited for, so -frametimes can report its GPU time (submit to done; the display's pacing stays out of it,
+    /// which the swapchain's present would bring in).</summary>
+    public static bool GpuTime { get; set; }
+    readonly Stopwatch _gpuTimer = new();
+    float _gpuMs;
+    readonly List<float> _gpuTimes = new(100_000);
 
     private void BuildImGuiUI()
     {

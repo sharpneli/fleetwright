@@ -12,7 +12,8 @@ namespace Fleetwright.Map;
 /// Earth, then the baked fans of a coarse level (<see cref="LandMesh"/>, static, depth-tested so the far side
 /// doesn't count) or the finest level's fans from <see cref="LandView"/> (in NDC, already clipped to the view).</item>
 /// <item>The sphere, ray-cast per pixel: sea or land by that count, day and night from the sun, and the masking
-/// sphere's depth.</item>
+/// sphere's depth. In the world view the open sea is the FFT ocean (<see cref="Sea"/>, simulated first by compute;
+/// docs/visuals/sea.md), shaded in the same pass.</item>
 /// <item>The baked coast (depth-tested the same way), then the lines built on the CPU (<see cref="MapLines"/>: the grid,
 /// and the finest level's coast).</item>
 /// </list>
@@ -27,7 +28,10 @@ public sealed unsafe class GlobeRenderer : IDisposable
     /// <summary>The overlay's vertices last frame, and how many fit: past it, the last drawn are dropped.</summary>
     public int OverlayVertices { get; private set; }
     public static int OverlayCapacity => (int)(OverlayBufferBytes / LineVertex.SizeInBytes);
-    readonly SDL_GPUSampler* nearest;
+    readonly SDL_GPUSampler* nearest, seaSampler;
+
+    /// <summary>The sea's waves on the GPU: its state is set by the scene, it runs only while the world view shows.</summary>
+    public SeaSim Sea { get; }
     SDL_GPUGraphicsPipeline* globePipe, linePipe, fillPipe, depthPipe, fill3dPipe, coast3dPipe;
     RenderTarget? coverage;   // the land's winding number per pixel, at the target's size, with depth
     SDL_GPUTextureFormat pipeFormat;
@@ -62,7 +66,7 @@ public sealed unsafe class GlobeRenderer : IDisposable
         SDL_GPUShader* Load(string name, SDL_GPUShaderStage stage, uint samplers, uint uniforms) =>
             GpuShader.Load(device, $"Content/Shaders/Compiled/{name}.spv", stage, samplers, 0, 0, uniforms);
         globeVs = Load("globe.vert", V, 0, 0);
-        globeFs = Load("globe.frag", F, 1, 1);
+        globeFs = Load("globe.frag", F, 7, 3);
         lineVs = Load("mapline.vert", V, 0, 0);
         lineFs = Load("mapline.frag", F, 0, 0);
         fillVs = Load("landfill.vert", V, 0, 0);
@@ -84,6 +88,17 @@ public sealed unsafe class GlobeRenderer : IDisposable
             address_mode_v = SDL_GPUSamplerAddressMode.SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
         };
         nearest = SDL_CreateGPUSampler(device, &si);
+        var ss = new SDL_GPUSamplerCreateInfo
+        {
+            min_filter = SDL_GPUFilter.SDL_GPU_FILTER_LINEAR,
+            mag_filter = SDL_GPUFilter.SDL_GPU_FILTER_LINEAR,
+            mipmap_mode = SDL_GPUSamplerMipmapMode.SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
+            address_mode_u = SDL_GPUSamplerAddressMode.SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
+            address_mode_v = SDL_GPUSamplerAddressMode.SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
+            max_lod = SeaSim.Levels,
+        };
+        seaSampler = SDL_CreateGPUSampler(device, &ss);
+        Sea = new SeaSim(device);
     }
 
     /// <summary>Uploads the baked levels once: 0 the coarse (1:110M), 1 the medium (1:50M).</summary>
@@ -174,10 +189,11 @@ public sealed unsafe class GlobeRenderer : IDisposable
     /// (triangles in NDC). <paramref name="lines"/> go on top, then <paramref name="layer"/> (the ships), then
     /// <paramref name="overlay"/>: lines rebuilt every frame (routes, selection), apart from the ones rebuilt only when
     /// the view changes. <paramref name="sunMotion"/> is <see cref="SunLapse.Motion"/>: 1 the live sun, 0 the
-    /// time-lapse (each latitude at its mean over the day, the sun's track drawn).</summary>
+    /// time-lapse (each latitude at its mean over the day, the sun's track drawn). <paramref name="sea"/>, when the
+    /// world view shows, is the sea's frame and clock; <paramref name="lights"/> the frame's light (the ships').</summary>
     public void Render(SDL_GPUCommandBuffer* cmd, RenderTarget target, in MapView view, Vec3d sun,
         ReadOnlySpan<Vector2> landFill, int bakedLevel, MapLines lines, MapLines? overlay = null, IMapLayer? layer = null,
-        double sunMotion = 1)
+        double sunMotion = 1, SeaView? sea = null, LightUniforms lights = default)
     {
         EnsurePipelines(target);
         if (coverage == null)
@@ -201,6 +217,9 @@ public sealed unsafe class GlobeRenderer : IDisposable
         layer?.Copy(cmd);
         fillBuf.Upload(cmd, landFill);
         bool baked = bakedLevel is 0 or 1 && meshFill[bakedLevel] != null;
+        var seaU = sea != null && sea.World > 0 ? sea.Uniforms : default;
+        if (seaU.On.X > 0)
+            Sea.Simulate(cmd, sea!.ClockS, SeaView.Chop);
 
         var g = GlobeUniforms(view, sun, sunMotion);
         var vp = ViewUniforms(view, target);
@@ -230,9 +249,17 @@ public sealed unsafe class GlobeRenderer : IDisposable
         // the globe, the baked coast, the lines
         var pass = target.BeginPass(cmd, new SDL_FColor { r = 0, g = 0, b = 0, a = 1 }, depth: target.HasDepth);
         SDL_BindGPUGraphicsPipeline(pass, globePipe);
-        var cov = new SDL_GPUTextureSamplerBinding { texture = coverage.Resolve, sampler = nearest };
-        SDL_BindGPUFragmentSamplers(pass, 0, &cov, 1);
+        var tex = stackalloc SDL_GPUTextureSamplerBinding[7];
+        tex[0] = new SDL_GPUTextureSamplerBinding { texture = coverage.Resolve, sampler = nearest };
+        for (int c = 0; c < 3; c++)
+        {
+            tex[1 + c] = new SDL_GPUTextureSamplerBinding { texture = Sea.Moments(c), sampler = seaSampler };
+            tex[4 + c] = new SDL_GPUTextureSamplerBinding { texture = Sea.Displacement(c), sampler = seaSampler };
+        }
+        SDL_BindGPUFragmentSamplers(pass, 0, tex, 7);
         SDL_PushGPUFragmentUniformData(cmd, 0, (nint)(&g), (uint)sizeof(GlobeParams));
+        SDL_PushGPUFragmentUniformData(cmd, 1, (nint)(&seaU), (uint)sizeof(SeaUniforms));
+        SDL_PushGPUFragmentUniformData(cmd, 2, (nint)(&lights), (uint)sizeof(LightUniforms));
         SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
         if (baked && coast3dPipe != null)
         {
@@ -311,6 +338,8 @@ public sealed unsafe class GlobeRenderer : IDisposable
         fillBuf.Dispose();
         coverage?.Dispose();
         SDL_ReleaseGPUSampler(device, nearest);
+        SDL_ReleaseGPUSampler(device, seaSampler);
+        Sea.Dispose();
         foreach (var s in new[] { (nint)globeVs, (nint)globeFs, (nint)lineVs, (nint)lineFs, (nint)fillVs, (nint)fillFs,
                      (nint)land3dVs, (nint)coast3dVs, (nint)depthFs })
             SDL_ReleaseGPUShader(device, (SDL_GPUShader*)s);

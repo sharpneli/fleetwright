@@ -1,10 +1,12 @@
 #version 450
+#extension GL_GOOGLE_include_directive : require
 // The globe of water (GlobeRenderer): each pixel's ray against the sphere, in units of the Earth's radius with the
 // camera at the origin. The one large quantity, |eye|² - 1, comes from doubles on the CPU, and the nearer root is
 // taken without cancellation, so the hit holds from orbit down to a few metres over the sea. Nothing here places
 // anything that must stay put (that's done in double on the CPU): it shades plain water and the land, day and night
 // from the sun, and the limb with its glow. Where the land is comes from the winding count LandView's fill left in
-// the coverage target, pixel for pixel.
+// the coverage target, pixel for pixel. In the world view the open sea is the FFT ocean instead (seashade.glsl,
+// docs/visuals/sea.md), mixed in by the world factor.
 layout(location = 0) in vec2 fragNdc;
 layout(location = 0) out vec4 outColor;
 
@@ -20,6 +22,10 @@ layout(set = 3, binding = 0) uniform Globe
     vec4 depth;    // x: |eye|² - r², r the masking sphere's radius (2 km inside), radii²; y: near, z: far, radii;
                    // w: a pixel's angle at the centre, radians
 };
+
+#define LIGHTS_BINDING 2
+#include "Include/shiplight.glsl"
+#include "Include/seashade.glsl"
 
 const vec3 Space = vec3(0.006, 0.008, 0.016);
 const vec3 DaySea = vec3(0.13, 0.31, 0.43);
@@ -75,6 +81,17 @@ void main()
         float land = clamp(abs(texelFetch(coverage, ivec2(gl_FragCoord.xy), 0).r), 0.0, 1.0);
         vec3 col = mix(NightSea, DaySea * (0.6 + 0.4 * max(s, 0.0)), day);
         col += vec3(1.0, 0.95, 0.85) * pow(max(dot(reflect(d, n), sun.xyz), 0.0), 150.0) * 0.35 * day * sun.w;
+        if (seaOn.x > 0.0 && land < 1.0)
+        {
+            // the pixel's frame: the camera's right and up, the local vertical; its offset from the view's centre in
+            // metres (t·d along right and up: exact to millimetres this close)
+            vec3 rt = right.xyz, upv = up.xyz;
+            vec2 local = t * vec2(dot(d, rt), dot(d, upv)) * seaMss2.w;
+            vec3 v = vec3(dot(-d, rt), dot(-d, upv), dot(-d, n));
+            vec3 ls = vec3(dot(sun.xyz, rt), dot(sun.xyz, upv), s);
+            vec3 lm = vec3(dot(seaMoon.xyz, rt), dot(seaMoon.xyz, upv), dot(seaMoon.xyz, n));
+            col = mix(col, seaShade(local, v, ls, lm), seaOn.x);
+        }
         col = mix(col, mix(NightLand, DayLand * (0.55 + 0.45 * max(s, 0.0)), day), land);
         if (sun.w < 1.0)
         {

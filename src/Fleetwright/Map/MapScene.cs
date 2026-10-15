@@ -20,6 +20,7 @@ public sealed unsafe partial class MapScene : IScene
     readonly MapLines lines = new(), overlay = new();   // overlay: rebuilt every frame (routes, tracks, the selection)
     readonly LandView land;
     readonly SunLapse sunLapse = new();
+    readonly SeaView sea = new();
     MapCamera camera, built;   // built: the view the lines and the land's fill were last built for
     (double, double) builtSize;
     double builtBoundary, builtInset;   // WorldView.BoundaryM and the menu bar's height (target px) the lines were built for
@@ -122,7 +123,10 @@ public sealed unsafe partial class MapScene : IScene
         BuildOverlay(view, s);
         probes.Add(probeOverlay, t);
         t = Probes.Now;
-        renderer.Render(cmd, target, view, s.Sun, land.Fill, baked, lines, overlay, shipRenderer, sunLapse.Motion);
+        renderer.Sea.SetState(SeaState.Of(s.Weather));   // rebuilt only when the weather changes
+        var lights = shipRenderer.List.Lights;
+        sea.Update(view, renderer.Sea, dt, s.Paused ? 0 : s.AchievedSpeed, lights, sunLapse.Motion);
+        renderer.Render(cmd, target, view, s.Sun, land.Fill, baked, lines, overlay, shipRenderer, sunLapse.Motion, sea, lights.Uniforms);
         probes.Add(probeRender, t);
     }
 

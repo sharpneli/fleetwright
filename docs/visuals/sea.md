@@ -1,4 +1,4 @@
-# The sea: an FFT ocean in the world view (plan, agreed 2026-10-15)
+# The sea: an FFT ocean in the world view (plan agreed 2026-10-15; W0-W4 done the same day)
 
 The sea of `docs/visuals/sea-state-lab.html` (research: `research/vfx/ocean-surface-research.md`) brought into the
 globe's pass, shown only where the map is the world and not the planning table. Foam is left out of the first
@@ -118,8 +118,13 @@ The engine has no compute pipeline yet, so this step adds a small one (`GpuCompu
   waves look choppy there), and stops when paused. It is integrated, so speed changes never jump the phase. The
   frequencies are quantised to multiples of 2π/1024 s (the lab's "loopable dispersion": invisible at 64 s already),
   so the clock wraps at 1024 s and the phases stay exact in float.
-- **Cost.** Measured with Tracy GPU zones. A Gpu-trait test reads back the realised height variance against the
-  spectrum's (the lab's `heightStats`).
+- **Cost.** Measured with `-gputime` (below). A Gpu-trait test reading back the realised height variance against the
+  spectrum's (the lab's `heightStats`) is still to write.
+
+**Done 2026-10-15** with W3 and W4: `Map/SeaSim.cs`, `sea_rows.comp.glsl`, `sea_columns.comp.glsl`. Six compute-written
+textures (moments and displacement per cascade), each mipped by `SDL_GenerateMipmapsForGPUTexture`. **Lesson:** written
+with `cycle = true`, the mip blits stalled every frame (8.3 → 15.6 ms at 120 Hz); written in place they cost nothing
+measurable.
 
 ### W3. The sea in `globe.frag`
 
@@ -142,7 +147,24 @@ The engine has no compute pipeline yet, so this step adds a small one (`GpuCompu
 - **Checks.** `-screenshot` captures at the lab's zoom presets, Beaufort 2 / 5 / 8, beside the lab. Frame times in
   DevRelease.
 
-### W4. The sea frame on the sphere
+**Done 2026-10-15** (`Include/seashade.glsl`, `Map/SeaView.cs`): in `globe.frag`, after the chart sea and before the
+land, mixed in by the world factor. Captured at 0.12, 0.5, 2 and 4.8 m/px (Beaufort 4 at noon): glitter at deck
+zoom, the sun's glint path, no tiling seen, no flash through the cross-fade. Two frames half a second apart, phase
+correlated: the pattern moves toward 63° (downwind of a wind from 250°) at ~4 m/s, the wind sea's short waves.
+
+**Cost** (`-gputime -frametimes`: the scene alone on the GPU, RTX 4090, 1920x1080, 8x MSAA target; the GPU's clocks
+at this light load make single numbers rough):
+
+| View | Scene, p50 |
+|---|---|
+| Table, 8 m/px (no sea) | 0.60 ms |
+| World, 2 m/px | 0.76 ms |
+| World, 0.3 m/px (the choppy inversion on) | 1.01 ms |
+
+So the sea, its sim included, adds ~0.15-0.4 ms here; a modest GPU, 6-8x slower, ~1-3 ms. The research's next savings
+if needed: gate the hex tiling by tile size at close zoom, skip cascades that are pure statistics.
+
+### W4. The sea frame on the sphere (done 2026-10-15, in `SeaView`)
 
 The FFT field is flat and the Earth isn't, so it needs a frame. **Camera-relative (decided 2026-10-15):** whatever is
 in view is consistent, and panning is seamless; scrolled out to the table and back, the water may be different.

@@ -108,6 +108,10 @@ public static unsafe class Program
             {
                 frameTimes = true;
             }
+            else if (arg == "-gputime")   // each frame waits for its GPU work; -frametimes reports submit to done
+            {
+                Sdl3GpuEngine.GpuTime = true;
+            }
             else if (arg.StartsWith("-viewer="))   // the ship viewer's view for captures: -viewer=sun:300:30,moon:120:40:0,shade:normal,at:20:0:10
             {
                 ShipViewer.Dev = arg.Substring("-viewer=".Length);
