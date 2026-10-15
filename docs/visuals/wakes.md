@@ -48,7 +48,7 @@ target all the same: a logged exception, approved (decision 1).
   aft to fore), its length, beam and draught. The deck drawn over it is bigger than the waterline, so the wake seems
   to start just aft of the stem and outboard of the deck edge, as photos show (research §3.2 item 7).
 - **Lightweight**, measured at each step: the pre-pass and the shading together under 0.15 ms at 1080p in the world
-  view on the 4090 (`-gputime`), with ~20 ships in view. A bake under ~30 ms on a worker thread, never on the render
+  view on the 4090 (`-gputime`), with ~20 ships in view. A bake under ~30 ms on a worker thread (a few workers, one bake each), never on the render
   thread. Zero per-frame allocation: the ribbon's vertices and the stamps go into grown arrays, and the bake's scratch
   is pooled per worker.
 - **Realistic, then tune**: Noblesse's bow-wave height for the amplitude, the research's lane widths and lifetimes for
@@ -102,23 +102,40 @@ What changed from the research on the way:
 
 Measured (Release, single thread):
 - Bake times: 12-21 ms on a 512² grid (the destroyer to 26 kn, the dreadnought), 58-69 ms on 1024² (the destroyer at
-  33-39 kn).
+  33-39 kn). Then the two symmetries (below): 5.6-8.1 ms and 23.8 ms, the same field to 10⁻⁶ in slope.
 - The envelope's half-angle is 18.5° at Fr 0.25 (Kelvin's is 19.47°).
 - The angle of the highest waves narrows from 17.5° at Fr 0.25 to 13.9° at 0.4 and 8.4° at 0.65. That is narrower
   than Darmon's 0.147/Fr (13° at 0.65); the constant depends on the hull.
 - The highest water is 1.12 Zb on the dreadnought at Fr 0.3.
 
-### K2. The library: bakes by class and speed
+**The symmetries (2026-10-15, the user's choice over threads within a bake).** The waterplane is real, so its spectrum
+is Hermitian: only the columns kx ≥ 0 are transformed, and two real rows share one complex FFT each way. It is even
+across the track, as is the response, so the factor is computed once for ±ky and only the starboard half comes back,
+mirrored to port. Threads go to whole bakes instead (K2): splitting one bake over cores would mostly be sync.
 
-`Map/Wakes/WakeLibrary.cs`, beside `ShipArtLibrary`.
+### K2. The library: bakes shared by size and speed
 
-- **Buckets.** Geometric steps of 4% from 3 kn. A 30 kn ship has ~60 of them, and only the ones visited get baked.
-- **Requests.** The draw list asks for (class, bucket) each frame for each ship it places. A worker thread of the
-  library's own bakes the nearest requests first. The render thread uploads each finished bake to a pooled texture and
-  mips it (`SDL_GenerateMipmapsForGPUTexture`, written in place, without `cycle`: sea.md's lesson).
-- **The pool.** 32 textures of 384×256 RGBA16F, about 33 MB with mips, least recently used out.
-- **While a bucket bakes**, its nearest baked neighbour stands in (K3's scaling makes it fit). With none at all, the
-  ship has no wake until the first bake arrives: it fades in over half a second.
+`Map/Wakes/WakeLibrary.cs`, beside `ShipArtLibrary`. Decided with the user, 2026-10-15, to keep the VRAM and the baking
+from growing as classes times speeds:
+
+- **Buckets in speed, ~8% apart** (from 3 kn: 34 to 40 kn). K3's crest-aligned blend draws any speed from the two
+  nearest buckets, so the steps can be coarse: between them only the pattern's shape changes, and slowly.
+- **Shared, not per class.** A request is met by any bake whose hull is within a few metres of the ship's waterline
+  length and beam, at the same speed bucket (the thresholds are knobs, to set by eye). Classes of one type and era
+  mostly share.
+- **An accelerating ship doesn't bake a frame.** It asks only on entering a bucket nobody has baked. Real ships take
+  minutes to work up (a destroyer crosses ~30 buckets from rest to full: a request every few seconds at 1x); the
+  bucket of the ordered speed (`SpeedOrderKn`) goes first, and one merely passed through is served by its neighbours.
+  Until a bucket lands, its nearest baked neighbour stands in (K3's scaling makes it fit). With none at all, the ship
+  has no wake until the first bake arrives: it fades in over half a second.
+- **One bake per thread**, a few workers, nearest requests first; a bake never splits over cores. The render thread
+  uploads each finished bake to a pooled texture and mips it (`SDL_GenerateMipmapsForGPUTexture`, written in place,
+  without `cycle`: sea.md's lesson).
+- **Half the size, a quarter the channels.** The field is mirror-symmetric, so only the starboard half is stored
+  (384×128) and the shader mirrors it. Per texel, RG16F: η, and |∇η|² for LEAN. The shader takes the mean slope from
+  η by differences between neighbouring texels at the mip it reads (averaging and differencing commute), and the
+  variance as the second channel's mip less that slope squared. About 260 KB a bake with mips, against ~1 MB.
+- **The pool**: 32 textures, ~8 MB, least recently used out. A budget, never a function of the fleet.
 
 ### K3. The stamps: the wave field in the world view
 

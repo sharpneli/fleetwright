@@ -140,7 +140,7 @@ public static class WakeBake
     /// <summary>Scratch for one baker at a time: the grids and the FFTs by size.</summary>
     public sealed class Scratch
     {
-        internal float[] Re = [], Im = [], ColRe = [], ColIm = [];
+        internal float[] Re = [], Im = [], ColRe = [], ColIm = [], RowRe = [], RowIm = [];
         readonly Dictionary<int, Fft> ffts = [];
 
         internal Fft FftOf(int n)
@@ -155,7 +155,7 @@ public static class WakeBake
             if (Re.Length < cells)
                 (Re, Im) = (new float[cells], new float[cells]);
             if (ColRe.Length < side)
-                (ColRe, ColIm) = (new float[side], new float[side]);
+                (ColRe, ColIm, RowRe, RowIm) = (new float[side], new float[side], new float[side], new float[side]);
         }
     }
 
@@ -204,53 +204,100 @@ public static class WakeBake
                 }
             }
 
-        // forward: the rows that hold the hull (the rest are zero), then every column
+        // Two symmetries halve the work. The waterplane is real, so its spectrum is Hermitian: the columns kx > 0 are
+        // the conjugates of kx < 0, and two real rows go through one complex FFT. And it is even across the track
+        // (row j is row ny - j), as is the response, so η is too: only the starboard half is brought back.
         var fx = s.FftOf(nx);
         var fy = s.FftOf(ny);
-        for (int j = jLo; j <= jHi; j++)
-            fx.Transform(re.AsSpan(j * nx, nx), im.AsSpan(j * nx, nx), false);
-        Columns(fy, re, im, nx, ny, s, false);
+        int half = nx / 2;
+
+        // forward along x: the rows that hold the hull (the rest are zero), two real rows at a time
+        for (int j = jLo; j <= jHi; j += 2)
+        {
+            int j2 = j + 1;
+            Span<float> ra = re.AsSpan(j * nx, nx), ia = im.AsSpan(j * nx, nx);
+            if (j2 <= jHi)
+                re.AsSpan(j2 * nx, nx).CopyTo(ia);
+            fx.Transform(ra, ia, false);
+            if (j2 > jHi)
+                continue;
+            // Z = A + iB: A[k] = (Z[k] + conj Z[-k]) / 2, B[k] = (Z[k] - conj Z[-k]) / 2i
+            Span<float> rb = re.AsSpan(j2 * nx, nx), ib = im.AsSpan(j2 * nx, nx);
+            Span<float> tr = s.RowRe.AsSpan(0, nx), ti = s.RowIm.AsSpan(0, nx);
+            for (int k = 0; k < nx; k++)
+            {
+                int nk = (nx - k) & (nx - 1);
+                float zr = ra[k], zi = ia[k], wr = ra[nk], wi = ia[nk];
+                (tr[k], ti[k]) = (0.5f * (zr + wr), 0.5f * (zi - wi));
+                (rb[k], ib[k]) = (0.5f * (zi + wi), 0.5f * (wr - zr));
+            }
+            tr.CopyTo(ra);
+            ti.CopyTo(ia);
+        }
+        // along y: the columns kx = 0 ... nx/2 (the rest are their conjugates)
+        Columns(fy, re, im, nx, ny, half + 1, s, false);
 
         // the response, in place: η̂ = g·U·kx²·m̂·smooth·att / D, D = g|k| - U²kx² - i·ε·U·kx. The light smoothing
         // (σ ≈ 0.04 B, research §6, and at least 1.5 cells: the waves near the grid's Nyquist alias into streaks) and
-        // q = U ∂m/∂x are taken here, free.
+        // q = U ∂m/∂x are taken here, free. The factor depends on |ky| alone: one for row j and row ny - j.
         double fr = Math.Clamp((U / Math.Sqrt(G * L) - DampingFromFr) / (DampingToFr - DampingFromFr), 0, 1);
         double sigma = Math.Max(1.5 * dx, 0.04 * B), eps = (DampingSlow + (DampingFast - DampingSlow) * fr * fr * (3 - 2 * fr)) * G / U;
         double dkx = 2 * Math.PI / (nx * dx), dky = 2 * Math.PI / (ny * dx);
-        for (int j = 0; j < ny; j++)
+        var smoothX = s.RowRe.AsSpan(0, half + 1);
+        for (int i = 0; i <= half; i++)
+            smoothX[i] = (float)Math.Exp(-0.5 * sigma * sigma * (i * dkx) * (i * dkx));
+        for (int j = 0; j <= ny / 2; j++)
         {
-            double ky = (j < ny / 2 ? j : j - ny) * dky;
-            for (int i = 0; i < nx; i++)
+            double ky = j * dky, smoothY = Math.Exp(-0.5 * sigma * sigma * ky * ky);
+            int jm = (ny - j) & (ny - 1);
+            for (int i = 0; i <= half; i++)
             {
-                int c = j * nx + i;
-                double kx = (i < nx / 2 ? i : i - nx) * dkx, k = Math.Sqrt(kx * kx + ky * ky);
-                if (k < 1e-9)
+                double kx = i * dkx, k = Math.Sqrt(kx * kx + ky * ky);
+                double fr2 = 0, fi2 = 0;
+                if (k > 1e-9)
                 {
-                    re[c] = im[c] = 0;
-                    continue;
+                    // num / (dr + i·di)
+                    double att = (1 - Math.Exp(-k * T)) / k;
+                    double num = G * U * kx * kx * att * smoothX[i] * smoothY;
+                    double dr = G * k - U * U * kx * kx, di = -eps * U * kx, den = dr * dr + di * di;
+                    (fr2, fi2) = (num * dr / den, -num * di / den);
                 }
-                double att = (1 - Math.Exp(-k * T)) / k, smooth = Math.Exp(-0.5 * sigma * sigma * k * k);
-                double num = G * U * kx * kx * att * smooth;
-                double dr = G * k - U * U * kx * kx, di = -eps * U * kx;
-                // (a + ib)·num / (dr + i·di)
-                double a = re[c] * num, b = im[c] * num, den = dr * dr + di * di;
-                re[c] = (float)((a * dr + b * di) / den);
-                im[c] = (float)((b * dr - a * di) / den);
+                Mul(re, im, j * nx + i, fr2, fi2);
+                if (jm != j)
+                    Mul(re, im, jm * nx + i, fr2, fi2);
             }
         }
 
-        // inverse: every column, then the rows the crop needs
+        // inverse: the same columns, then the starboard rows the crop needs, two at a time (each one's transform is
+        // real, so Z = Pa + i·Pb comes back as ηa + i·ηb)
         var f = into ?? new WakeField();
         f.X0 = xm - 0.5 * L - CropAsternL * L;
         f.X1 = xm + 0.5 * L + CropAheadSpan * span;
         f.HalfY = 0.36 * (f.X1 - f.X0) + B;
-        Columns(fy, re, im, nx, ny, s, true);
-        int rLo = Math.Clamp((int)Math.Floor(-f.HalfY / dx) + ny / 2 - 2, 0, ny - 1);
-        int rHi = Math.Clamp((int)Math.Ceiling(f.HalfY / dx) + ny / 2 + 2, 0, ny - 1);
-        for (int j = rLo; j <= rHi; j++)
-            fx.Transform(re.AsSpan(j * nx, nx), im.AsSpan(j * nx, nx), true);
+        Columns(fy, re, im, nx, ny, half + 1, s, true);
+        int rLo = ny / 2;
+        int rHi = Math.Clamp((int)Math.Ceiling(f.HalfY / dx) + ny / 2 + 2, rLo + 1, ny - 1);
+        for (int j = rLo; j <= rHi; j += 2)
+        {
+            int j2 = Math.Min(j + 1, rHi);
+            Span<float> ra = re.AsSpan(j * nx, nx), ia = im.AsSpan(j * nx, nx);
+            Span<float> rb = re.AsSpan(j2 * nx, nx), ib = im.AsSpan(j2 * nx, nx);
+            Span<float> tr = s.RowRe.AsSpan(0, nx), ti = s.RowIm.AsSpan(0, nx);
+            for (int i = 0; i < nx; i++)
+            {
+                // the conjugate half of each row: P[nx - i] = conj P[i]
+                int src = i <= half ? i : nx - i;
+                float sg = i <= half ? 1 : -1;
+                float ar = ra[src], ai = sg * ia[src], br = j2 != j ? rb[src] : 0, bi = j2 != j ? sg * ib[src] : 0;
+                (tr[i], ti[i]) = (ar - bi, ai + br);
+            }
+            fx.Transform(tr, ti, true);
+            tr.CopyTo(ra);
+            if (j2 != j)
+                ti.CopyTo(rb);
+        }
 
-        // η on the bake's grid, bilinear (re holds it, unscaled), into the crop
+        // η on the bake's grid, bilinear (re holds it, unscaled), into the crop's starboard half, mirrored to port
         double Eta(double x, double y)
         {
             double gx = (x - xm + behind) / dx, gy = y / dx + ny / 2;
@@ -262,11 +309,12 @@ public static class WakeBake
             return (re[c] * (1 - u) + re[c + 1] * u) * (1 - v) + (re[c + nx] * (1 - u) + re[c + nx + 1] * u) * v;
         }
         double tx = f.TexelX, ty = f.TexelY;
-        for (int r = 0; r < WakeField.Height; r++)
+        for (int r = WakeField.Height / 2; r < WakeField.Height; r++)
         {
             double y = -f.HalfY + (r + 0.5) * ty;
+            int m = WakeField.Height - 1 - r;
             for (int q = 0; q < WakeField.Width; q++)
-                f.Eta[r * WakeField.Width + q] = (float)Eta(f.X0 + (q + 0.5) * tx, y);
+                f.Eta[m * WakeField.Width + q] = f.Eta[r * WakeField.Width + q] = (float)Eta(f.X0 + (q + 0.5) * tx, y);
         }
 
         // the stem's crest, positive and scaled to Zb: the highest water just off the hull round the stem
@@ -343,10 +391,18 @@ public static class WakeBake
         return n;
     }
 
-    static void Columns(Fft f, float[] re, float[] im, int nx, int ny, Scratch s, bool inverse)
+    static void Mul(float[] re, float[] im, int c, double fr, double fi)
+    {
+        double a = re[c], b = im[c];
+        re[c] = (float)(a * fr - b * fi);
+        im[c] = (float)(a * fi + b * fr);
+    }
+
+    /// <summary>The first <paramref name="count"/> columns transformed along y.</summary>
+    static void Columns(Fft f, float[] re, float[] im, int nx, int ny, int count, Scratch s, bool inverse)
     {
         Span<float> cr = s.ColRe.AsSpan(0, ny), ci = s.ColIm.AsSpan(0, ny);
-        for (int i = 0; i < nx; i++)
+        for (int i = 0; i < count; i++)
         {
             for (int j = 0; j < ny; j++)
                 (cr[j], ci[j]) = (re[j * nx + i], im[j * nx + i]);
