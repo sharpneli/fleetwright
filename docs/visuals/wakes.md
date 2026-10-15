@@ -238,6 +238,27 @@ point (a spawn) cuts square.
 
 ### K5. Tuning and the docs
 
+**A spawned ship had no wave field (the user, 2026-10-15).** Every ship took the same path (draw list, library, bake).
+What set the spawned one apart was its class and speed: the panel's default, bismarck at 10 kn (Fr_L 0.11). The bake
+was sized for fast ships:
+- its grid was sized by the hull alone (L/80: 2.6 m cells, where 10 kn's waves are 17 m and the divergent ones
+  shorter), and the smoothing of at least 1.5 cells took most of what was left;
+- its damping was set per wave (as g/U), and a slow ship is many wavelengths long (bismarck at 10 kn: 14), so its
+  bow's waves were gone before amidships.
+
+Now, for every hull and speed, with no special case:
+- cells at most min(L/80, λ/12) up to the cap, the domain astern shrinking first (to no less than the crop and a length
+  beyond);
+- under Fr 0.15 the damping decays over about two lengths (ε = U/2L), blending back to the per-wave damping by Fr 0.3
+  (the fast ships' damping, and their wrap, are as they were);
+- the stamps' crop reaches 1.5 lengths astern (was 3), where the fade has it at nothing anyway, so its texels are
+  finer. The angle test bakes a 3-length crop for the far field (`WakeBake.Bake(asternL:)`).
+
+`WakeBakeTests.ASlowShipHasItsField`: the RMS slope a quarter to a whole length astern was 0.0005 / 0.0003 / 0.008
+(bismarck 10 kn, dreadnought 8 kn, destroyer 10 kn) before, and is 0.029 / 0.028 / 0.028 now. Bakes: 8-44 ms (the
+slow big ships take a 1024² grid). In the lit sea a slow battleship's field is faint, as it should be;
+`-sea=wake:G` scales it.
+
 **The user's first round (2026-10-15):**
 - *The wave field looked silly in a turn: shorten it; unrealistic damping is fine, a subtle field near the ship is
   enough.* The stamp now fades astern of the pivot as a Gaussian over 1.0 L going straight, down to 0.4 L in a hard

@@ -177,18 +177,29 @@ public static class WakeBake
     public const int MaxCells = 1024;
     const double CellsPerLength = 80;
 
+    /// <summary>The waves resolved too: at least this many cells to the transverse wavelength 2πU²/g. Sized by the hull
+    /// alone, a slow big ship's short waves fell under the grid and its smoothing (bismarck at 10 kn: 17 m waves on
+    /// 2.6 m cells, its field all but flat: the user's "a spawned ship gets no wave field", 2026-10-15).</summary>
+    const double CellsPerWave = 12;
+
     /// <summary>Rayleigh damping, as a fraction of g/U: enforces waves astern, and fades the far wedge before it wraps
     /// round the grid's back edge to show beside the bow. Slow, the grid is sized by the length and the wrap is far off,
     /// so it is light and the Kelvin arms keep their reach; fast, the grid is sized by the waves and the wrap comes
     /// close, so it is heavier (the research's 0.08 showed streaks at 39 kn; 0.3 throughout erased the arms at 16).</summary>
     const double DampingSlow = 0.12, DampingFast = 0.3, DampingFromFr = 0.3, DampingToFr = 0.55;
 
+    /// <summary>Slow, a damping set per wave (as g/U) kills the field within a fraction of the hull: a slow ship is many
+    /// wavelengths long (bismarck at 10 kn: 14), so its bow's waves were gone before amidships. Under
+    /// <see cref="SlowToFr"/> the damping is held to a decay over about this many lengths instead (ε = U/(n·L)), wholly
+    /// under <see cref="SlowFromFr"/>; from there up the per-wave damping stands as it was (the wrap needs it).</summary>
+    const double DecayLengths = 2, SlowFromFr = 0.15, SlowToFr = 0.3;
+
     /// <summary>The linear model overshoots at a transom and at high Froude (a trough of 10 m beside a destroyer at
     /// 39 kn, research §4): η is limited softly, A·tanh(η/A), at this many bow-wave heights.</summary>
     const double LimitZb = 1.25;
 
     /// <summary>The crop: this many lengths astern of the stern, and the share of the span ahead of the stem.</summary>
-    public const double CropAsternL = 3, CropAheadSpan = 0.3;
+    public const double CropAsternL = 1.5, CropAheadSpan = 0.3;
 
     /// <summary>The fade astern, 1/(1 + behind/(FadeL·L)): the Kelvin arms read near the ship and soften further back.</summary>
     const double FadeL = 1.5;
@@ -225,15 +236,24 @@ public static class WakeBake
         return 2.2 * speedMs * speedMs / G * Math.Tan(beta) / (Math.Cos(beta) * (1 + frD));
     }
 
-    public static WakeField Bake(WakeHull hull, double speedMs, Scratch s, WakeField? into = null)
+    /// <param name="asternL">How far astern of the stern the crop reaches, lengths: the stamps' <see cref="CropAsternL"/>
+    /// (their fade is done by then); longer for the tests that measure the far field's angles.</param>
+    public static WakeField Bake(WakeHull hull, double speedMs, Scratch s, WakeField? into = null, double asternL = CropAsternL)
     {
         long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         double L = hull.LengthM, B = hull.BeamM, T = hull.DraughtM, U = Math.Max(speedMs, 0.5), xm = hull.MidX;
         double lambda = 2 * Math.PI * U * U / G, span = Math.Max(L, lambda);
 
-        // the domain (research §2.4), x and y from the waterline's middle
-        double ahead = 0.5 * L + 0.6 * span, behind = 0.5 * L + 4 * span, halfW = 0.45 * behind + B;
-        int nx = Pow2(Math.Min((ahead + behind) * CellsPerLength / L, MaxCells));
+        // the domain (research §2.4), x and y from the waterline's middle; cells fine enough for the hull and the waves.
+        // Where that would pass MaxCells (slow: short waves) the domain astern shrinks first, to no less than the crop
+        // and a length beyond it: slow, the damping (as g/U) is strong and the far wedge is gone before the wrap.
+        double ahead = 0.5 * L + 0.6 * span, behind = 0.5 * L + 4 * span;
+        double want = Math.Min(L / CellsPerLength, lambda / CellsPerWave);
+        if ((ahead + behind) / want > MaxCells)
+            behind = Math.Max(0.5 * L + (asternL + 1) * L, MaxCells * want - ahead);
+        double cropHalf = 0.36 * (L + asternL * L + CropAheadSpan * span) + B;
+        double halfW = Math.Max(0.45 * behind + B, 1.3 * cropHalf);
+        int nx = Pow2(Math.Min((ahead + behind) / want, MaxCells));
         double dx = (ahead + behind) / nx;
         int ny = Pow2(Math.Min(2 * halfW / dx, MaxCells));
         s.Ensure(nx * ny, Math.Max(nx, ny));
@@ -300,7 +320,11 @@ public static class WakeBake
         // (σ ≈ 0.04 B, research §6, and at least 1.5 cells: the waves near the grid's Nyquist alias into streaks) and
         // q = U ∂m/∂x are taken here, free. The factor depends on |ky| alone: one for row j and row ny - j.
         double fr = Math.Clamp((U / Math.Sqrt(G * L) - DampingFromFr) / (DampingToFr - DampingFromFr), 0, 1);
-        double sigma = Math.Max(1.5 * dx, 0.04 * B), eps = (DampingSlow + (DampingFast - DampingSlow) * fr * fr * (3 - 2 * fr)) * G / U;
+        double ramp = fr * fr * (3 - 2 * fr), byWave = (DampingSlow + (DampingFast - DampingSlow) * ramp) * G / U;
+        double slow = 1 - Math.Clamp((U / Math.Sqrt(G * L) - SlowFromFr) / (SlowToFr - SlowFromFr), 0, 1);
+        slow = slow * slow * (3 - 2 * slow);
+        double eps = byWave + (Math.Min(byWave, U / (DecayLengths * L)) - byWave) * slow;
+        double sigma = Math.Max(1.5 * dx, 0.04 * B);
         double dkx = 2 * Math.PI / (nx * dx), dky = 2 * Math.PI / (ny * dx);
         var smoothX = s.RowRe.AsSpan(0, half + 1);
         for (int i = 0; i <= half; i++)
@@ -330,7 +354,7 @@ public static class WakeBake
         // inverse: the same columns, then the starboard rows the crop needs, two at a time (each one's transform is
         // real, so Z = Pa + i·Pb comes back as ηa + i·ηb)
         var f = into ?? new WakeField();
-        f.X0 = xm - 0.5 * L - CropAsternL * L;
+        f.X0 = xm - 0.5 * L - asternL * L;
         f.X1 = xm + 0.5 * L + CropAheadSpan * span;
         f.HalfY = 0.36 * (f.X1 - f.X0) + B;
         Columns(fy, re, im, nx, ny, half + 1, s, true);

@@ -17,10 +17,10 @@ public class WakeBakeTests(ITestOutputHelper output)
     static WakeHull Hull(string name) =>
         WakeHull.Of(ShipClassCompiler.Compile(ShipDesign.Build(Design.Load(Paths.Shipgen("designs", name + ".json")))));
 
-    static WakeField Bake(WakeHull h, double froude)
+    static WakeField Bake(WakeHull h, double froude, double asternL = WakeBake.CropAsternL)
     {
         lock (Lock)
-            return WakeBake.Bake(h, froude * Math.Sqrt(9.81 * h.LengthM), Scratch);
+            return WakeBake.Bake(h, froude * Math.Sqrt(9.81 * h.LengthM), Scratch, asternL: asternL);
     }
 
     /// <summary>The wake's half-angles astern, degrees, as slopes fitted along the columns 1.5 to 3 lengths behind the
@@ -122,13 +122,42 @@ public class WakeBakeTests(ITestOutputHelper output)
     public void KelvinsAngleAndItsNarrowingAtHighFroude()
     {
         var h = Destroyer.Value;
-        var low = Angles(Bake(h, 0.25), h);
-        var mid = Angles(Bake(h, 0.4), h);
-        var high = Angles(Bake(h, 0.65), h);
+        // the far field: a crop 3 lengths astern (the stamps' is shorter, their fade done by then)
+        var low = Angles(Bake(h, 0.25, 3), h);
+        var mid = Angles(Bake(h, 0.4, 3), h);
+        var high = Angles(Bake(h, 0.65, 3), h);
         output.WriteLine($"the wake's angles (peak, envelope): Fr 0.25 {low.Peak:0.0}° {low.Envelope:0.0}°, 0.4 {mid.Peak:0.0}° {mid.Envelope:0.0}°, 0.65 {high.Peak:0.0}° {high.Envelope:0.0}°");
         Assert.InRange(low.Envelope, 15, 24);   // Kelvin's 19.47°
         Assert.True(high.Peak < low.Peak - 2, "the visible angle narrows at high Froude (Rabaud & Moisy; Darmon et al.)");
         Assert.InRange(high.Peak, 4, 15);       // about 0.16 / Fr rad, 14° at 0.65 (research §2.2)
+    }
+
+    /// <summary>Every hull gets its field at any speed it steams: a slow big ship's short waves are resolved and reach
+    /// past its stern (bismarck at 10 kn came out all but flat: 17 m waves on 2.6 m cells, damped out within the hull;
+    /// the user's spawned ship with no field, 2026-10-15). Measured as the RMS slope over a band a quarter to a whole
+    /// length astern of the stern, half a length either side of the track: what the sea's glints show there.</summary>
+    [Theory]
+    [InlineData("bismarck", 10)]
+    [InlineData("dreadnought", 8)]
+    [InlineData("destroyer", 10)]
+    public void ASlowShipHasItsField(string name, double kn)
+    {
+        var h = name == "destroyer" ? Destroyer.Value : name == "dreadnought" ? Battleship.Value : Hull(name);
+        WakeField f;
+        lock (Lock)
+            f = WakeBake.Bake(h, kn * WakeLibrary.KnotMs, Scratch);
+        double sum = 0, L = h.LengthM;
+        int n = 0;
+        for (int r = 0; r < WakeField.Height; r++)
+            for (int q = 0; q < WakeField.Width; q++)
+            {
+                double x = f.X0 + (q + 0.5) * f.TexelX, y = (r + 0.5) * f.TexelY;
+                if (x < h.X0 - 0.25 * L && x > h.X0 - L && y < 0.5 * L)
+                    (sum, n) = (sum + f.Grad2[r * WakeField.Width + q], n + 1);
+            }
+        double rms = Math.Sqrt(sum / n);
+        output.WriteLine($"{name} {kn} kn: Fr {f.FroudeL:0.00}, Zb {f.Zb:0.00} m, grid {f.GridX} at {f.GridDx:0.00} m, RMS slope astern {rms:0.0000}");
+        Assert.True(rms > 0.02, "a field the glints show astern");
     }
 
     [Fact]
