@@ -153,6 +153,21 @@ public static class DesignerPlaceholders
         return (Math.Max(reload, 0.5), train, Math.Clamp(2 * train, 2, 20), maxElev);
     }
 
+    // ------------------------------------------------------------------ magazines going up (docs/visuals/magazine-explosions.md)
+
+    /// <summary>PLACEHOLDER: the share of a magazine's propellant that burns in the cascade window, the fireball's M
+    /// (research/vfx/magazine-explosion-vfx-research.md §2.2: "not the whole magazine"). Vidgen's tuning value: Queen
+    /// Mary's forward group fits ~0.45, Invincible's ~0.17. The venting race (fighting.md 4.5) should give M.</summary>
+    public const double MagazineFastShare = 0.3;
+
+    /// <summary>PLACEHOLDER: the propellant's share of a round's weight when a magazine serves no gun with a charge
+    /// (vidgen's 380/52's, 23%).</summary>
+    public const double MagazinePropellantShare = 0.23;
+
+    /// <summary>PLACEHOLDER: what a magazine holds, tonnes, when the design doesn't say: 0.5 t a cubic metre of its
+    /// volume (charges and shells stowed with their racks and passages).</summary>
+    public static double MagazineTonnes(double volumeM3) => 0.5 * Math.Max(volumeM3, 0);
+
     /// <summary>PLACEHOLDER (docs/visuals/muzzle-flashes.md, "What the model takes", decision 4): a gun's charge, from its
     /// calibre and length, the look's era and navy.
     /// <list type="bullet">

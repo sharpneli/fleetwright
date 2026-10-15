@@ -205,6 +205,15 @@ mount for a magazine's (default: the fullest). Tests (`DamageTests`): a hit reco
 spreading into one records it; the dev's records the mount's magazine, once, and the record outlives the ship for its
 while, then goes.
 
+**X1 (2026-10-15).** `Sim.Combat.MagazineBlast` (the port of `magazine.plan` and its correlations: M, the fireball,
+λ, the scale k, the debris count, the openings with their fail times, the barbette, the mount over the magazine, the
+nearest boiler room; the stand-in pressure and the jets' length) and its placeholders (`MagazineFastShare` 0.3,
+`MagazinePropellantShare` 0.23, `MagazineTonnes` 0.5 t/m³ for a room without tonnes). The propellant's share comes from
+the class's charge and shell rows, not vidgen's fits: Bismarck's aft magazines (321 t) give M 19.8 t, D 157 m for
+12.2 s, λ 73 m against vidgen's 22 t, 163 m, 12.6 s, 76 m; the destroyer's 0.3 t, 39 m. Tests
+(`MagazineBlastTests`): the research's table, Bismarck within 15% of vidgen, every design's magazines build, the
+openings' order and a port's jet (74 m at the main event, gone 3 s after; the barbette capped at 120 m).
+
 ## Later
 
 - Tier 1 (the burn-out column the ship survives) and tier 4 (two fireballs along the hull), with the venting race.
