@@ -327,6 +327,33 @@ merging's trick), would appear at full strength at once: the handover popped. Th
 third (80-120 s on the effects' clock) while the stem's plume carries the pall on. For X7: a ramp for back-dated puffs,
 if the fade reads wrong.
 
+**X7, time and cost (2026-10-15).** `-magazine=at:` stills now hold every event of the newest 2 s, as the flashes'
+do, so two can be measured together.
+- **Cost** (DevRelease, 1080p, 1 m/px, minimum p50 of three alternating runs against `on:0`; this machine's other load
+  swings single runs by ±1 ms):
+
+  | | Added, p50 |
+  |---|---|
+  | One event, its 60 s cap filling much of the screen | +0.6 ms |
+  | Two at once, their caps side by side | +1.1 ms |
+  | One at 6.5 s: fireball, debris, trails, sparks, splashes | +0.1-0.2 ms |
+
+  Inside the budget (1.0 for one, 1.5 for two). The two's mean has a heavier tail than its p50.
+- **Time**: live at 60x the event plays through on the effects' clock (the fireball's 12 s in about a second) while the
+  ship, on the world's, is gone; the after-smoke and foam on the sea's.
+- **The zoom boundary**: at 3 and 5 m/px the world view draws it; by 8 m/px the table's mark has taken over.
+
+**Still to do in X7: tuning by the user's eye**, against the anchors (Lion's 61 m column, Queen Mary's crimson flame to
+~240 m and cap to ~1 km, Arizona's 0.5 s precursor and < 7 s violent phase, Barham's lifted roof and smoke "thousands
+of feet"). Things to look at:
+- the knee (300 m) and how high the cap stands on the screen;
+- the cap's darkness and size, the mushroom's read from above, its fade at 80-120 s;
+- the fireball's colour by day (it goes peach early) and by night (orange to crimson);
+- the jets' width and brightness; the gunhouse's flight (mostly hidden in the fireball, as in vidgen);
+- the debris splashes' count and size; the blast's frost ring;
+- the fire's light (0.3 of its drawn brightness) and the missing reflection on the night sea;
+- the stem's plume and the steam.
+
 ## Later
 
 - Tier 1 (the burn-out column the ship survives) and tier 4 (two fireballs along the hull), with the venting race.

@@ -150,7 +150,7 @@ public sealed class MagazineBook : IThrownTurrets
             ref readonly var e = ref this[k];
             if (e.Ship != entity || e.Event.Mount != classMount || !e.Debris.Gunhouse)
                 continue;
-            double age = MagazineLook.AtS >= 0 && k == count - 1 ? MagazineLook.AtS : Clock - e.T0;
+            double age = MagazineLook.AtS >= 0 && InStill(e) ? MagazineLook.AtS : Clock - e.T0;
             double t = age - MagazineBlast.HitLeadS - MagazineBlast.LiftS;
             if (t < 0)
                 return false;
@@ -222,6 +222,10 @@ public sealed class MagazineBook : IThrownTurrets
 
     /// <summary>Soot, linear: very dark, a little warm (research §1.2).</summary>
     static readonly System.Numerics.Vector3 Soot = new(0.075f, 0.068f, 0.062f);
+
+    /// <summary>Whether a still (<see cref="MagazineLook.AtS"/>) holds an event: those of the newest 2 s, as the
+    /// flashes' stills do.</summary>
+    public bool InStill(in Entry e) => count > 0 && e.Ms >= this[count - 1].Ms - 2000;
 
     bool Seen(long ms, int ship)
     {

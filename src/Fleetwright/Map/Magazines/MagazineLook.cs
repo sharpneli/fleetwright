@@ -60,8 +60,8 @@ public static class MagazineLook
     /// a local pool; at full the night sea went beige).</summary>
     public static double LightShare = 0.3;
 
-    /// <summary>A dev aid for captures: the newest event drawn at this age, s after the hit (-1: off), and kept while it
-    /// is.</summary>
+    /// <summary>A dev aid for captures: the events of the newest 2 s drawn at this age, s after the hit (-1: off), and
+    /// kept while it is.</summary>
     public static double AtS = -1;
 
     /// <summary>Off: no world view magazine explosions (the table's mark stays).</summary>

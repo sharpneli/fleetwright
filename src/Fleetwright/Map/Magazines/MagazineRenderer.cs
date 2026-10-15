@@ -160,7 +160,7 @@ public sealed unsafe class MagazineRenderer : IDisposable
         for (int i = 0; i < book.Count; i++)
         {
             ref readonly var e = ref book[i];
-            if (MagazineLook.AtS >= 0 && i != book.Count - 1)
+            if (MagazineLook.AtS >= 0 && !book.InStill(e))
                 continue;
             // (perCd and the rest above are this frame's; the lights and the blast are added below for each)
             double age = MagazineLook.AtS >= 0 ? MagazineLook.AtS : book.Clock - e.T0;
