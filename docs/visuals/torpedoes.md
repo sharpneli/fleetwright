@@ -139,6 +139,22 @@ spreading 0.5 m²/s), a mount's dive (to twice its depth a third of the way alon
 The table's line reads it (its 5 s lag ramp is now the surfacing). `TorpedoLook` and `-tracks=` (fast, slow, life,
 width, spread, dive, on). Tests: `TorpedoTrackTests`.
 
+**R2 (2026-10-15).** `TorpedoRibbons` lays each run in the book as a ribbon along its great circle, from its head (d / 0.8
+behind the torpedo) back to where it has faded, in the foam lanes' draw: `FoamVertex` gained a kind (36 bytes), and
+`wakeribbon.frag` a bubble branch: a patchy film of aerated water (the lanes' 0-0.4 layer), a sparse fine speckle of
+bursting bubbles churning while young, and the slick (negative variance; `seaShade` keeps a quarter of the sea's own).
+The table's line fades out over the cross-fade. Knobs: `gain`, `floor` (2 px), `slick` (0 until judged), `at:S` (every
+torpedo drawn S seconds after the newest launch, for stills).
+
+Seen (a destroyer's spread at a super-dreadnought, 2.4 km):
+- at 1 m/px noon: thin pale lines, their heads soft, starting ~150-200 m behind the torpedoes (a 6 m depth for a big
+  ship's draught); at 0.3 m/px a soft pale turquoise film a few metres wide, patchy; the speckle barely shows;
+- at 4 m/px: faint lines; under the floor the film thinned by all of its widening was nearly gone, so it's thinned by
+  the square root of it (a named departure: the track is the player's cue zoomed out);
+- at night: dim grey lines under the moon (the lookouts' 400 m by night agrees);
+- the slick at 0.1-0.4 in the glint: the track darker and smoother, the glint breaking into sparkles along it. For the
+  user to judge (decision 3); off until then.
+
 ## Decisions (the user, 2026-10-15)
 
 1. **The hit's column now**, built on the shell splash's column (`splash.glsl`) or closely after it: a torpedo kind of

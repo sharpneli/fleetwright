@@ -182,9 +182,10 @@ vec3 seaShade(vec2 local, vec3 v, vec3 lSun, vec3 lMoon, vec3 lNight, vec4 wake,
     // into the pixel's frame (the turn between the frame and the camera is the meridians' convergence, a few degrees
     // at most: the variance's axes are left as they are)
     m = vec2(dot(m, seaAxes.xy), dot(m, seaAxes.zw));
-    // the wakes: their slopes on the sea's, their unresolved variance split evenly between the axes
+    // the wakes: their slopes on the sea's, their unresolved variance split evenly between the axes; a torpedo track's
+    // slick takes some away (negative), never below a quarter of the sea's own
     m += wake.xy;
-    var += vec2(0.5 * wake.z);
+    var = max(var + vec2(0.5 * wake.z), 0.25 * var);
 
     if (seaOn.w > 0.5)
     {

@@ -6,13 +6,15 @@ layout(location = 1) in float inIntensity;
 layout(location = 2) in vec2 inLane;
 layout(location = 3) in float inWidth;
 layout(location = 4) in float inAge;
+layout(location = 5) in float inKind;   // 0 a ship's foam lane, 1 a torpedo's bubble track (docs/visuals/torpedoes.md R2)
 
 layout(set = 1, binding = 0) uniform View
 {
     vec4 right;   // xyz: the camera's right; w: tan of half the horizontal field
     vec4 up;      // xyz: the camera's up; w: tan of half the vertical field
     vec4 fwd;     // xyz: the camera's forward
-    vec4 depth;   // x: near, y: far, metres; w: the sea's clock, s (SeaView: game time, capped, still when paused)
+    vec4 depth;   // x: near, y: far, metres; z: the torpedo tracks' slick; w: the sea's clock, s (SeaView: game time,
+                  // capped, still when paused)
     vec4 sun;
     vec4 moon;
 };
@@ -22,6 +24,7 @@ layout(location = 1) out vec2 fragLane;
 layout(location = 2) out float fragWidth;
 layout(location = 3) out float fragAge;
 layout(location = 4) flat out float fragClock;
+layout(location = 5) flat out vec2 fragKind;   // x: the kind; y: the slick
 
 void main()
 {
@@ -32,4 +35,5 @@ void main()
     fragWidth = inWidth;
     fragAge = inAge;
     fragClock = depth.w;
+    fragKind = vec2(inKind, depth.z);
 }

@@ -11,6 +11,33 @@ public static class TorpedoLook
     /// <summary>Off: no world view torpedoes (the table's marks stay).</summary>
     public static bool On = true;
 
+    /// <summary>The track's film at full strength (1: its surfaced share as the ribbon's foam).</summary>
+    public static double Gain = 1;
+
+    /// <summary>A track narrower than this on the screen, px, is drawn this wide, its foam thinned by the square root of
+    /// as much (the size floor, as the splashes', but brighter than its true coverage): a departure zoomed out, so a 2 m
+    /// track still reads at 4 m/px.</summary>
+    public static double FloorPx = 2;
+
+    /// <summary>How much of the small waves' slope variance the track's film takes away (0 none, the default until R2's
+    /// captures judge it: decision 3).</summary>
+    public static double Slick;
+
+    /// <summary>A dev aid for captures: every torpedo drawn as it is <c>at</c> seconds after the newest launch (NaN: as
+    /// it is), so stills of the track are the same run to run.</summary>
+    public static double AtS = double.NaN;
+
+    /// <summary>The moment the torpedoes are drawn at: the frame's, or the still's (<see cref="AtS"/>).</summary>
+    public static long DrawMs(TorpedoBook book, long nowMs)
+    {
+        if (double.IsNaN(AtS) || book.Count == 0)
+            return nowMs;
+        long newest = long.MinValue;
+        for (int i = 0; i < book.Count; i++)
+            newest = Math.Max(newest, book[i].LaunchMs);
+        return newest + (long)(AtS * 1000);
+    }
+
     public static bool Set(string kv)
     {
         var p = kv.Split(':');
@@ -25,10 +52,14 @@ public static class TorpedoLook
             case "spread": TorpedoTrack.SpreadM2S = Math.Max(v, 0); break;
             case "dive": TorpedoTrack.DiveShare = Math.Max(v, 0); break;
             case "on": On = v != 0; break;
+            case "gain": Gain = Math.Max(v, 0); break;
+            case "floor": FloorPx = Math.Max(v, 0); break;
+            case "slick": Slick = Math.Max(v, 0); break;
+            case "at": AtS = v; break;
             default: return false;
         }
         return true;
     }
 
-    public const string Knobs = "fast, slow, life, width, spread, dive, on";
+    public const string Knobs = "fast, slow, life, width, spread, dive, gain, floor, slick, at (a still at S after the newest launch), on";
 }

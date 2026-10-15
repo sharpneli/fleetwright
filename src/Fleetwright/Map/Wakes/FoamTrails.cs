@@ -5,7 +5,8 @@ using Fleetwright.Sim.Core;
 namespace Fleetwright.Map.Wakes;
 
 /// <summary>A corner of the foam lane's ribbon (wakeribbon.vert): metres from the eye; the lane's foam there (before
-/// the Gaussian across it); the distance along the trail and the offset across it, m; the lane's width, m.</summary>
+/// the Gaussian across it); the distance along the trail and the offset across it, m; the lane's width, m; its kind
+/// (0 a ship's foam lane, 1 a torpedo's bubble track: docs/visuals/torpedoes.md R2).</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct FoamVertex
 {
@@ -15,7 +16,8 @@ public struct FoamVertex
     public float Width;
     /// <summary>How old the water is there, s: the foam churns while it's young.</summary>
     public float Age;
-    public const uint SizeInBytes = 32;
+    public float Kind;
+    public const uint SizeInBytes = 36;
 }
 
 /// <summary>The trails as foam lanes in the world view (docs/visuals/wakes.md K4; research §7.2's lane on the path):
@@ -121,6 +123,20 @@ public sealed class FoamTrails
             verts[count++] = b1;
             verts[count++] = b0;
         }
+    }
+
+    /// <summary>One quad of a ribbon laid elsewhere (a torpedo's track), its corners along it first (a0, a1) then
+    /// further on (b0, b1), each pair port then starboard.</summary>
+    public void AddQuad(in FoamVertex a0, in FoamVertex a1, in FoamVertex b0, in FoamVertex b1)
+    {
+        if (count + 6 > verts.Length)
+            Array.Resize(ref verts, verts.Length * 2);
+        verts[count++] = a0;
+        verts[count++] = a1;
+        verts[count++] = b1;
+        verts[count++] = a0;
+        verts[count++] = b1;
+        verts[count++] = b0;
     }
 
     void Keep(ref int n, in TrailPoint p)

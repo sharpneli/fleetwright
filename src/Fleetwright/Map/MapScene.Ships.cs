@@ -210,6 +210,9 @@ public sealed unsafe partial class MapScene
             Point(view, head.P);
             overlay.End();
         }
+        // the torpedoes' bubble tracks, in the same draw (docs/visuals/torpedoes.md R2)
+        if (w > 0 && Torpedoes.TorpedoLook.On)
+            Torpedoes.TorpedoRibbons.Add(view, torpedoBook, foam, Torpedoes.TorpedoLook.DrawMs(torpedoBook, now), classOf);
     }
 
     void Point(in MapView view, Vec3d p)

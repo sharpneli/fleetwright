@@ -240,7 +240,10 @@ public sealed partial class MapScene
     {
         long now = world.DrawMs;
         double life = Torpedoes.TorpedoTrack.LifeS;
+        // the line gives way to the world view's ribbon (docs/visuals/torpedoes.md R2) over the cross-fade
+        float table = Torpedoes.TorpedoLook.On ? (float)(1 - WorldView.Factor(view)) : 1f;
         torpedoBook.Update(s.Torpedoes, s.TorpedoEnds, now, Torpedoes.TorpedoTrack.KeepS);
+        now = Torpedoes.TorpedoLook.DrawMs(torpedoBook, now);
         for (int i = 0; i < torpedoBook.Count; i++)
         {
             ref readonly var t = ref torpedoBook[i];
@@ -257,7 +260,7 @@ public sealed partial class MapScene
                 double since = age - ts, fade = 1 - since / life;
                 double strength = Torpedoes.TorpedoTrack.Strength(since, Torpedoes.TorpedoTrack.Depth(t.SpeedMs * ts, t.DepthM, dives));
                 if (view.Project(t.At(ts), out double x, out double y))
-                    overlay.Point(x, y, TrackWhite with { W = (float)(TrackWhite.W * dim * strength) }, (float)(0.8 + 0.9 * fade));
+                    overlay.Point(x, y, TrackWhite with { W = (float)(TrackWhite.W * dim * strength) * table }, (float)(0.8 + 0.9 * fade));
                 else
                     overlay.End();
             }

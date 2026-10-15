@@ -13,11 +13,16 @@
 // softness the noise's own change across the pixel (antialiased, not blurred). Young water churns (the user: it looked
 // painted on): the finer octaves slide through time slices on the sea's clock, the finest fastest, the churn fading
 // over the first half-minute.
+// A torpedo's bubble track (docs/visuals/torpedoes.md R2) takes its own branch: the exhaust's bubbles surfacing as a pale
+// film of aerated water, patchy along the track, with a sparse fine speckle where they burst (churning while young), not
+// the ships' churned white; and, by the slick knob, less of the small waves' slope variance under it (the bubbles'
+// outflow smoothing the surface), in the wake target's variance channel.
 layout(location = 0) in float fragIntensity;
 layout(location = 1) in vec2 fragLane;
 layout(location = 2) in float fragWidth;
 layout(location = 3) in float fragAge;
 layout(location = 4) flat in float fragClock;
+layout(location = 5) flat in vec2 fragKind;
 
 layout(location = 0) out vec4 outWake;
 
@@ -49,8 +54,44 @@ float octave(vec2 p, float rate, float young, float salt)
     return young > 0.01 ? mix(valueNoise(p + vec2(salt * 37.0, salt * 11.0)), churned, young) : valueNoise(p + vec2(salt * 37.0, salt * 11.0));
 }
 
+// a torpedo's track: the film and the speckle in the foam's two layers, the slick as negative variance
+vec4 bubbleTrack()
+{
+    float d = fragLane.y / max(fragWidth, 1e-3);
+    float density = clamp(fragIntensity * exp(-d * d), 0.0, 1.5);
+    float s = mod(fragLane.x, 81920.0), y = fragLane.y;
+    float mpp = max(fwidth(s), fwidth(y));
+    float young = exp(-fragAge / 20.0);
+
+    // the film: patches some metres along and across (the gas comes up unevenly), their contrast fading as they near a
+    // pixel
+    float ap = 1.0 - smoothstep(0.3, 0.8, mpp / 6.0);
+    float patchy = valueNoise(vec2(s / 6.0, y / 2.0 + 17.0)) * 0.6 + valueNoise(vec2(s / 2.0, y / 1.0 + 31.0)) * 0.4;
+    float film = clamp(density * (1.0 + 0.8 * ap * (patchy - 0.5)), 0.0, 1.0);
+
+    // the speckle: bubbles bursting, 0.6 m and 0.25 m cells, sparse; each octave to its mean as its cells near a pixel,
+    // what's lost softening the edge (coverage, not a solid line)
+    vec4 cell = vec4(0.6, 0.25, 0.0, 0.0);
+    float a1 = 1.0 - smoothstep(0.3, 0.8, mpp / cell.x), a2 = 1.0 - smoothstep(0.3, 0.8, mpp / cell.y);
+    float n = 0.5 + 0.6 * a1 * (octave(vec2(s, y) / cell.x, 1.5, young, 4.0) - 0.5) + 0.4 * a2 * (octave(vec2(s, y) / cell.y, 3.0, young, 5.0) - 0.5);
+    n = clamp((n - 0.5) * 1.8 + 0.5, 0.0, 1.0);
+    float lost = 0.6 * (1.0 - a1) + 0.4 * (1.0 - a2);
+    float t = 1.0 - 0.45 * density * (0.6 + 0.4 * young), soft = max(max(fwidth(n), 0.03), 0.5 * lost);
+    float speck = smoothstep(t - soft, t + soft, n) * clamp(density, 0.0, 1.0) * (1.0 - 0.6 * lost);
+
+    // packed as the lanes' two layers: the film in 0-0.4, a speck taking its pixel up to surface foam (a burst is
+    // aerated water too); the slick: less of the small waves' variance (the sea's shading keeps a floor), as much as the
+    // film is there
+    return vec4(0.0, 0.0, -fragKind.y * film, mix(0.4 * film, 0.82, speck));
+}
+
 void main()
 {
+    if (fragKind.x > 0.5)
+    {
+        outWake = bubbleTrack();
+        return;
+    }
     float d = fragLane.y / max(fragWidth, 1e-3);
     float density = clamp(fragIntensity * exp(-d * d), 0.0, 1.5);
 

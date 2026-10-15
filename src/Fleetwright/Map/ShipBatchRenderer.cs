@@ -889,6 +889,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
                 .AddVertexAttribute(2, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, 16)
                 .AddVertexAttribute(3, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT, 24)
                 .AddVertexAttribute(4, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT, 28)
+                .AddVertexAttribute(5, 0, SDL_GPUVertexElementFormat.SDL_GPU_VERTEXELEMENTFORMAT_FLOAT, 32)
                 .SetShaders(vsRibbon, fsRibbon).Build(device);
             if (wakePipe == null || ribbonPipe == null)
                 throw new InvalidOperationException($"wake pipelines: {SDL_GetError()}");
@@ -913,6 +914,7 @@ public sealed unsafe class ShipBatchRenderer : IMapLayer, IDisposable
             SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
             var vf = vp0;
             vf.Depth.W = (float)FoamClockS;
+            vf.Depth.Z = (float)Torpedoes.TorpedoLook.Slick;   // the torpedoes' tracks' slick (docs/visuals/torpedoes.md R2)
             SDL_PushGPUVertexUniformData(cmd, 0, (nint)(&vf), (uint)sizeof(ViewParams));
             SDL_DrawGPUPrimitives(pass, (uint)foamUploaded, 1, 0, 0);
         }
