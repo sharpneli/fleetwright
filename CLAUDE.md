@@ -339,6 +339,7 @@ docs/world/architecture.md    # the world: tiers of time on one clock, the sim t
 docs/missions/plan.md         # missions, the battle module's stand-in for politics and manufacturing (format, objectives, UI, generator)
 docs/visuals/sea.md           # the sea: the table/world boundary, the FFT ocean in the globe's pass (W0-W4 done; foam later)
 docs/visuals/wakes.md         # wakes: the Kelvin field baked per class and speed into the sea's slopes, the trail as foam (agreed 2026-10-15; K1-K4 done: the bake, the library, the stamps, the foam lanes)
+docs/visuals/splashes.md      # shell splashes in the world view: columns through the 3/4 effects camera, foam, shadow, dye, time compression (plan 2026-10-15)
 docs/visuals/ship-lighting.md # the ship sprites lit: relief and normals, materials, the sun and moon, in the one forward pass (L1 done)
 research/                     # research notes, see below
 ```
