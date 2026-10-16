@@ -233,6 +233,9 @@ material row per name (the class's material table exists, with names only). `set
   the Bd.Z. 38, Yamato the Type 91), and the parity `mass_kg` overrides go.
   - This moves numbers: masses (k from 0.42–0.66 lb/in³ instead of one curve), the drag form factor, filler. The
     `outcomes` field stays as S0 set it.
+  - **The filler's TNT equivalent:** `Effects` sizes every burst by W = filler kg × `FillerTnt`, which is 1 for every
+    explosive today. The block's `filler.re` replaces it (black powder 0.55, lyddite 1.17, TNT 1, armor/04 §2.1), so a
+    Victorian powder-filled common shell bursts smaller than its kilograms say.
 - **S2 Default outfits and the magazine order** (decision 7).
   - **Outfits:** every design's default loadout is 70% AP and 30% HE on its main batteries and 30% AP and 70% HE on its
     secondaries, replacing `ShellMix`'s mix by calibre and era. Common shell leaves the defaults; its templates stay for
