@@ -1054,6 +1054,9 @@ numbers before and after against the anchors. The list, by link, with where the 
   - diving shells and underwater hits;
   - near-miss splinters;
   - a ricochet table.
+
+  Planned in `shells-armour-damage.md` (draft 2026-10-16): shells as design data, materials as physical blocks with
+  templates, then the shell's state plate by plate, then its effects.
 - **Systems** (`06-service-networks.md` Model B): power, hydraulics, steam and data as routes through the cells with
   fault states (tripped, severed, flooded), casualty power, damage-control parties and repair; Model C for the coarse
   tier. Needs the designer to emit the networks.
