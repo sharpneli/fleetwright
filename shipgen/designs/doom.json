@@ -160,7 +160,7 @@
   "wing": 1,
   "echelon": true,
   "cross_deck": true,
-  "amidships_stands_on": "deck"
+  "amidships_stands_on": "deck", "shells": [{"ammo": "AP victorian rn1916", "share": 0.5, "mass_kg": 1194.1989138431998}, {"ammo": "common victorian rn1916", "share": 0.5, "mass_kg": 1194.1989138431998}]
  }],
  "secondary": [
   {
@@ -170,7 +170,7 @@
    "rounds_per_gun": 200,
    "per_side": 4,
    "mount": "casemate",
-   "armour_mm": 76
+   "armour_mm": 76, "shells": [{"ammo": "AP victorian rn1916", "share": 0.2, "mass_kg": 46.413459251199995}, {"ammo": "common victorian rn1916", "share": 0.8, "mass_kg": 46.413459251199995}]
   },
   {
    "calibre_mm": 120,
@@ -180,7 +180,7 @@
    "per_side": 4,
    "mount": "casemate",
    "tier": "upper",
-   "armour_mm": 51
+   "armour_mm": 51, "shells": [{"ammo": "AP victorian rn1916", "share": 0.2, "mass_kg": 22.522751999999993}, {"ammo": "common victorian rn1916", "share": 0.8, "mass_kg": 22.522751999999993}]
   },
   {
    "calibre_mm": 76,
@@ -189,7 +189,7 @@
    "rounds_per_gun": 350,
    "per_side": 6,
    "mount": "casemate",
-   "armour_mm": 25
+   "armour_mm": 25, "shells": [{"ammo": "AP victorian rn1916", "share": 0.2, "mass_kg": 5.611518003199999}, {"ammo": "common victorian rn1916", "share": 0.8, "mass_kg": 5.611518003199999}]
   },
   {
    "calibre_mm": 57,
@@ -199,7 +199,7 @@
    "per_side": 5,
    "mount": "casemate",
    "tier": "upper",
-   "armour_mm": 0
+   "armour_mm": 0, "shells": [{"ammo": "AP victorian rn1916", "share": 0.2, "mass_kg": 2.3473027557}, {"ammo": "common victorian rn1916", "share": 0.8, "mass_kg": 2.3473027557}]
   },
   {
    "calibre_mm": 47,
@@ -208,7 +208,7 @@
    "rounds_per_gun": 350,
    "per_side": 6,
    "mount": "casemate",
-   "armour_mm": 0
+   "armour_mm": 0, "shells": [{"ammo": "AP victorian rn1916", "share": 0.2, "mass_kg": 1.3100282316999998}, {"ammo": "common victorian rn1916", "share": 0.8, "mass_kg": 1.3100282316999998}]
   }
  ],
  "funnels": 2,
@@ -245,5 +245,6 @@
    "computer_t": 0.0
   },
   "search_radar_t": 0.0
- }
+ },
+ "ammunition": {"AP victorian rn1916": {"kind": "ap", "mass_k_kg_m3": 14812, "form_factor": 1.8, "filler": {"share": 0.03, "explosive": {"re": 1}}, "fuze": {"position": "base", "delay_s": 0}, "outcomes": "rn1916"}, "common victorian rn1916": {"kind": "common", "mass_k_kg_m3": 14812, "form_factor": 1.8, "filler": {"share": 0.07, "explosive": {"re": 1}}, "fuze": {"position": "base", "delay_s": 0}, "outcomes": "rn1916"}}
 }

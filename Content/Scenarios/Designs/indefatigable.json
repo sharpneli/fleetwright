@@ -34,7 +34,24 @@
    "wing": 1,
    "echelon": true,
    "cross_deck": true,
-   "amidships_stands_on": "deckhouse"
+   "amidships_stands_on": "deckhouse",
+   "shells": [
+    {
+     "ammo": "AP great_war rn1916",
+     "share": 0.4,
+     "mass_kg": 420.76602875
+    },
+    {
+     "ammo": "common great_war rn1916",
+     "share": 0.3,
+     "mass_kg": 420.76602875
+    },
+    {
+     "ammo": "HE great_war rn1916",
+     "share": 0.3,
+     "mass_kg": 420.76602875
+    }
+   ]
   }
  ],
  "secondary": [
@@ -45,7 +62,19 @@
    "armour_mm": 25,
    "rounds_per_gun": 350,
    "per_side": 6,
-   "stands_on": "deckhouse"
+   "stands_on": "deckhouse",
+   "shells": [
+    {
+     "ammo": "common great_war rn1916",
+     "share": 0.3,
+     "mass_kg": 14.445163295999999
+    },
+    {
+     "ammo": "HE great_war rn1916",
+     "share": 0.7,
+     "mass_kg": 14.445163295999999
+    }
+   ]
   }
  ],
  "torpedoes": {
@@ -211,5 +240,55 @@
  "look": {
   "navy": "portsmouth",
   "era": "great_war"
+ },
+ "ammunition": {
+  "AP great_war rn1916": {
+   "kind": "ap",
+   "mass_k_kg_m3": 14830,
+   "form_factor": 1.5,
+   "filler": {
+    "share": 0.03,
+    "explosive": {
+     "re": 1
+    }
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.025
+   },
+   "outcomes": "rn1916"
+  },
+  "common great_war rn1916": {
+   "kind": "common",
+   "mass_k_kg_m3": 14830,
+   "form_factor": 1.5,
+   "filler": {
+    "share": 0.06,
+    "explosive": {
+     "re": 1
+    }
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01
+   },
+   "outcomes": "rn1916"
+  },
+  "HE great_war rn1916": {
+   "kind": "he",
+   "mass_k_kg_m3": 14830,
+   "form_factor": 1.5,
+   "filler": {
+    "share": 0.07,
+    "explosive": {
+     "re": 1
+    }
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0
+   },
+   "outcomes": "rn1916"
+  }
  }
 }

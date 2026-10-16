@@ -35,7 +35,19 @@
    "armour_mm": 0,
    "rounds_per_gun": 350,
    "fore": 1,
-   "aft": 1
+   "aft": 1,
+   "shells": [
+    {
+     "ammo": "common great_war rn1916",
+     "share": 0.3,
+     "mass_kg": 14.445163295999999
+    },
+    {
+     "ammo": "HE great_war rn1916",
+     "share": 0.7,
+     "mass_kg": 14.445163295999999
+    }
+   ]
   }
  ],
  "torpedoes": {
@@ -190,5 +202,39 @@
  "look": {
   "navy": "portsmouth",
   "era": "great_war"
+ },
+ "ammunition": {
+  "common great_war rn1916": {
+   "kind": "common",
+   "mass_k_kg_m3": 13612,
+   "form_factor": 1.5,
+   "filler": {
+    "share": 0.06,
+    "explosive": {
+     "re": 1
+    }
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01
+   },
+   "outcomes": "rn1916"
+  },
+  "HE great_war rn1916": {
+   "kind": "he",
+   "mass_k_kg_m3": 13612,
+   "form_factor": 1.5,
+   "filler": {
+    "share": 0.07,
+    "explosive": {
+     "re": 1
+    }
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0
+   },
+   "outcomes": "rn1916"
+  }
  }
 }

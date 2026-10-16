@@ -26,6 +26,8 @@ public sealed class Report
     public CrewReport? Crew { get; init; }
     public required List<DirectorReport> FireControl { get; init; }
     public BridgeReport? Bridge { get; init; }
+    /// <summary>The batteries' resolved shells (Ammunition.Resolve), those that give them; null when none does.</summary>
+    public List<BatteryShells>? Shells { get; init; }
     public required OrderedDictionary<string, long> WeightGroupsT { get; init; }
     public required List<WeightReport> Weights { get; init; }
 }

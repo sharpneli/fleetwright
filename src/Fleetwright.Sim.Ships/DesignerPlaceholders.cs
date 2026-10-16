@@ -27,7 +27,9 @@ public static class DesignerPlaceholders
 
     // ------------------------------------------------------------------ the weapons (docs/battle/fighting.md 4.0)
 
-    /// <summary>PLACEHOLDER: a gun's shells, from its calibre and length, the look's era and navy. Fitted to the
+    /// <summary>PLACEHOLDER, for a battery whose design gives no `shells` (shipgen's Ammunition; the shipped and
+    /// scenario designs carry this placeholder's numbers as data since S0 of docs/battle/shells-armour-damage.md, and
+    /// S1's default template replaces it): a gun's shells, from its calibre and length, the look's era and navy. Fitted to the
     /// research's gun tables (research/simulation/fire_control_ref.py GUNS, damage-research/gunfire_ref.py SHELLS):
     /// <list type="bullet">
     /// <item>AP mass k·d³, k = (13,000 + 6,000·d) kg/m³ (d in m): the Great War's guns within 10% (12"/45 386 kg, 13.5"
@@ -51,7 +53,7 @@ public static class DesignerPlaceholders
     {
         double d = calibreMm / 1000;
         double apKg = (13_000 + 6_000 * d) * d * d * d * era switch { Era.Victorian => 0.95, Era.GreatWar => 1.0, _ => 1.05 };
-        double apMs = Math.Clamp(280 + 11 * calibreLength, 380, 1000);
+        double apMs = Shipgen.Ammunition.DefaultMuzzleVelocity(calibreLength);
         var quality = era switch
         {
             Era.Victorian => ShellQuality.Rn1916,
@@ -110,17 +112,19 @@ public static class DesignerPlaceholders
         LightGreatWar = [(ShellKind.Common, 0.3), (ShellKind.He, 0.7)],
         LightLater = [(ShellKind.Common, 0.2), (ShellKind.He, 0.8)];
 
-    /// <summary>The kind a battery fires in v0 (fighting.md 4.0, one kind per battery): AP from a heavy gun, else HE
-    /// when it carries any, else common.</summary>
-    public static ShellKind Fires(double calibreMm, Era era)
+    /// <summary>The shell type a battery fires in v0 (fighting.md 4.0, one kind per battery), of those it carries
+    /// (loads from l0 on): AP first from a heavy gun, else HE, else common, else its first. The magazine order (S2 of
+    /// docs/battle/shells-armour-damage.md) replaces it.</summary>
+    public static int Fires(double calibreMm, List<ShellLoad> loads, int l0, List<ShellTypeRow> types)
     {
-        if (calibreMm >= HeavyGunMm)
-            return ShellKind.Ap;
-        foreach (var (k, _) in ShellMix(calibreMm, era))
-            if (k == ShellKind.He)
-                return k;
-        return ShellKind.Common;
+        foreach (var kind in calibreMm >= HeavyGunMm ? HeavyFirst : LightFirst)
+            for (int i = l0; i < loads.Count; i++)
+                if (types[loads[i].ShellType].Kind == kind)
+                    return loads[i].ShellType;
+        return loads[l0].ShellType;
     }
+
+    static readonly ShellKind[] HeavyFirst = [ShellKind.Ap, ShellKind.He, ShellKind.Common], LightFirst = [ShellKind.He, ShellKind.Common, ShellKind.Ap];
 
     /// <summary>PLACEHOLDER: working a gun, from its calibre and length, its mount's shape and the era.
     /// <list type="bullet">

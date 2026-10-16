@@ -1744,7 +1744,9 @@ visibility they light up. Fire control's own sight lines (4.2) are per engaged p
 fitted to the research's guns, `shipgen weapons --research`):
 - **Shells per gun:** mass, muzzle velocity, drag form factor, the kinds carried and their shares, filler, fuze, and
   a navy's shell quality by year. The placeholders read the look's era and navy, and an era is a paint scheme, not a
-  year: a design drawn in the wrong era gets the wrong guns.
+  year: a design drawn in the wrong era gets the wrong guns. Since 2026-10-16 (S0 of `shells-armour-damage.md`) the
+  designs carry them as data (`ammunition`, each battery's `shells`); the placeholder fills only a battery that gives
+  none, until S1's templates.
 - **Working the guns per mount type:** reload, training and elevating rates, the highest elevation.
 - **The fire-control level per battery** (fighting.md decision 6), read from the fit (directors, rangefinder, computer
   and radar tonnage) until the designer offers it.

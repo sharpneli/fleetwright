@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10)    Updated: 2026-10-16
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); S0 done    Updated: 2026-10-16
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -305,6 +305,34 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
   - Checks: the sim's hashes, `shipgen ballistics`, `duel` and `weapons` unchanged; the goldens gain the new keys only
     (`golden-update`, no value moves).
   - The magazine weight keeps `ShellK` in this step.
+  - **Done 2026-10-16.** What it came to:
+    - Shipgen: `Ammunition.cs` validates the table and the outfits and resolves each battery's shells into the report
+      (`report.shells`: kind, mass, muzzle velocity, form factor, cap, filler kg and `re`, fuze, outcome row). The
+      schema is S0's part of the block: `kind`, `mass_k_kg_m3`, `form_factor`, `cap`, `filler {share, explosive {re}}`,
+      `fuze {position, delay_s}`, `outcomes`; the rest of the table above comes with S1. `docs/shipgen/README.md` has
+      the keys.
+    - **The placeholder stays as the fallback** for a battery that gives no `shells` (the fuzz mutants, `-new`, players'
+      saves, a battery added in the designer): the compiler fills it from `DesignerPlaceholders.Shell` and `ShellMix`
+      as before, the way `DesignerPlaceholders.Fill` fills the motion facts. Shipgen stays free of the look's era.
+      S1's default template takes the fallback and deletes them.
+    - `muzzle_velocity_ms` isn't written: the default (`Ammunition.DefaultMuzzleVelocity`, the placeholder's 280 + 11·L,
+      which the placeholder now calls) gives the same, and it follows the gun's length in the designer.
+    - **The designer:** a calibre change drops the battery's `shells` (`Knobs.Calibre`), since its written masses
+      belong to the old gun; it falls back to the placeholder, as before S0.
+    - `Fires` reads the outfit (AP first from a heavy gun, else HE, else common): the same choices as before.
+    - Blocks are named `<kind> <era> <row>` ("AP great_war rn1916"), so the shell type ids (`305/45 AP great_war
+      rn1916`) and the layout hash didn't move. 123 designs written (70 shipped, 53 scenario; the escort carrier and the
+      tanker have no guns); `shipgen ammo-parity` compiled each before and after and found every shell, share and fired
+      type identical. `WeaponFactsTests.Shells_from_the_design_are_the_placeholders` holds it until S1.
+    - **Benches, before and after:** `weapons`, `ballistics` (dreadnought, yamato, bismarck, destroyer, seydlitz, lion,
+      iron_duke, v25, warrior, queen_mary), `duel` (super_dreadnought, lion), `hits` (v25 by lion, iron_duke by
+      seydlitz), `matchup` (arethusa:4 against iron_duke, lion against seydlitz): identical. The scenarios' fights
+      (squadrons, flotilla, tsushima --play two seeds) identical shot for shot. **The state hash moved** (squadrons
+      F8B07AA06799665A to FD771774D00B565F, flotilla D5EBC2B65B4F4E10 to BF27290A7C2ABF71): `ShipSystem.Hash` folds in
+      each class's design hash, and the designs' JSON changed. With that term left out, squadrons, flotilla and 20
+      minutes of Jutland hash the same before and after.
+    - Goldens: 70 cases gained `ammunition`, `shells` and `report.shells`, nothing else (golden-update, ShipDesign.Version
+      7). 372 of 372 match.
 - **S1 The templates.** The catalogue's ammunition, `shell-templates.md` and `shells.json`; the designs' blocks are
   switched to the templates of their navy and year (Dreadnought gets the RN's 1906 APC, Bismarck the 38 cm L/4,4 with
   the Bd.Z. 38, Yamato the Type 91), and the parity `mass_kg` overrides go.
@@ -316,6 +344,10 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
     common shell bursts smaller than its kilograms say. `FillerTnt` goes.
   - **The new fields ride along unread:** `steel`, `casing`, the heats, Gurney and brisance, `fuze.water_ms`. E1, E5
     and E7 read them; S1 only writes them, so they move nothing yet.
+  - **What S0 left for S1 to end:** the compiler's fallback to `DesignerPlaceholders.Shell` and `ShellMix` (a battery
+    without shells gets the default template instead, and both go), `shipgen ammo-parity`, the designer dropping a
+    battery's shells on a calibre change (`Knobs.Calibre`: blocks scale with the calibre once `mass_kg` goes), and
+    `WeaponFactsTests.Shells_from_the_design_are_the_placeholders`.
 - **S2 Default outfits and the magazine order** (decision 7).
   - **Outfits:** every design's default loadout is 70% AP and 30% HE on its main batteries and 30% AP and 70% HE on its
     secondaries, replacing `ShellMix`'s mix by calibre and era. Common shell leaves the defaults; its templates stay for

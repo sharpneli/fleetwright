@@ -129,6 +129,11 @@ public static class Knobs
         return d with { Secondary = l };
     }
 
+    /// <summary>A battery on another calibre: its shells go with the old gun (their masses were written for it, S0 of
+    /// docs/battle/shells-armour-damage.md), so it falls back to the sim's placeholder for the new one, as before the
+    /// shells were data. S1's blocks scale with the calibre and end this.</summary>
+    static BatteryInput Calibre(BatteryInput b, double? v) => b with { CalibreMm = v, Shells = v == b.CalibreMm ? b.Shells : null };
+
     static Design Mach(Design d, Func<MachineryInput, MachineryInput> f) => d with { Machinery = f(d.Machinery ?? new MachineryInput()) };
     static Design Hull(Design d, Func<HullInput, HullInput> f) => d with { Hull = f(d.Hull ?? new HullInput()) };
     static Design Sup(Design d, Func<SuperstructureInput, SuperstructureInput> f) => d with { Superstructure = f(d.Superstructure ?? new SuperstructureInput()) };
@@ -297,7 +302,7 @@ public static class Knobs
     public static NumberKnob MainCalibre(int i) => new($"main{i}_cal", "Calibre", Quantity.Calibre, 10, 0.5)
     {
         Get = d => d.Main?.ElementAtOrDefault(i)?.CalibreMm,
-        Set = (d, v) => MainBattery(d, i, b => b with { CalibreMm = v }),
+        Set = (d, v) => MainBattery(d, i, b => Calibre(b, v)),
         LimitPath = ["main", "calibre_mm"],
     };
 
@@ -393,7 +398,7 @@ public static class Knobs
     public static NumberKnob SecCalibre(int i) => new($"sec{i}_cal", "Calibre", Quantity.Calibre, 5, 0.5)
     {
         Get = d => d.Secondary?.ElementAtOrDefault(i)?.CalibreMm,
-        Set = (d, v) => Sec(d, i, b => b with { CalibreMm = v }),
+        Set = (d, v) => Sec(d, i, b => Calibre(b, v)),
         LimitPath = ["secondary", "calibre_mm"],
     };
 
@@ -1250,7 +1255,7 @@ public static class Knobs
         b => b.ArmourMm, (b, v) => b with { ArmourMm = v }, ["main", "armour_mm"], (d, s) => 0);
 
     public static readonly NumberKnob MainCalibres = AllMain("main_calibres", "Main calibre", Quantity.Calibre, 10, 0.5,
-        b => b.CalibreMm, (b, v) => b with { CalibreMm = v }, ["main", "calibre_mm"]);
+        b => b.CalibreMm, Calibre, ["main", "calibre_mm"]);
 
     public static readonly NumberKnob MainRoundsAll = AllMain("main_rounds", "Main rounds per gun", Quantity.Count, 10, 10,
         b => b.RoundsPerGun, (b, v) => b with { RoundsPerGun = v }, ["main", "rounds_per_gun"],

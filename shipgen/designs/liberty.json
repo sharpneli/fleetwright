@@ -29,8 +29,9 @@
         "rounds_per_gun": 350,
         "armour_mm": 0,
         "count": 1,
-        "where": "ends"
+        "where": "ends", "shells": [{"ammo": "common wwii ww2", "share": 0.2, "mass_kg": 29.599339188300007}, {"ammo": "HE wwii ww2", "share": 0.8, "mass_kg": 25.159438310055005}]
     },
     "superstructure": {"t_per_m2": 0.32, "material": "steel", "plating_mm": 0, "control_mm": 13},
-    "fire_control": {"main": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "computer_t": 0.0}, "secondary": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "computer_t": 0.0}, "aa": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "computer_t": 0.0}, "search_radar_t": 0.0}
+    "fire_control": {"main": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "computer_t": 0.0}, "secondary": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "computer_t": 0.0}, "aa": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "computer_t": 0.0}, "search_radar_t": 0.0},
+ "ammunition": {"common wwii ww2": {"kind": "common", "mass_k_kg_m3": 14450, "form_factor": 1.05, "filler": {"share": 0.04, "explosive": {"re": 1}}, "fuze": {"position": "base", "delay_s": 0.01}, "outcomes": "ww2"}, "HE wwii ww2": {"kind": "he", "mass_k_kg_m3": 12283, "form_factor": 1.05, "filler": {"share": 0.08, "explosive": {"re": 1}}, "fuze": {"position": "nose", "delay_s": 0}, "outcomes": "ww2"}}
 }

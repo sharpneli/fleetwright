@@ -282,6 +282,32 @@ static class Kinds
         _ => throw Unknown("battery", s),
     };
 
+    public static ShellKind ShellKindOf(string s) => s switch
+    {
+        "ap" => ShellKind.Ap,
+        "common" => ShellKind.Common,
+        "he" => ShellKind.He,
+        _ => throw Unknown("shell kind", s),
+    };
+
+    public static Fuze FuzeOf(string s) => s switch
+    {
+        "base" => Fuze.Base,
+        "nose" => Fuze.Nose,
+        _ => throw Unknown("fuze position", s),
+    };
+
+    /// <summary>TRANSITIONAL (S0 to P3 of docs/battle/shells-armour-damage.md): a shell's outcome-table row.</summary>
+    public static ShellQuality ShellQualityOf(string s) => s switch
+    {
+        "rn1916" => ShellQuality.Rn1916,
+        "km1916" => ShellQuality.Km1916,
+        "rn1918" => ShellQuality.Rn1918,
+        "ww2" => ShellQuality.Ww2,
+        "ijn_t91" => ShellQuality.IjnT91,
+        _ => throw Unknown("shell outcome row", s),
+    };
+
     /// <summary>A look's era; none is wwii, as Shipgen's own default.</summary>
     public static Era EraOf(string? s) => s switch
     {

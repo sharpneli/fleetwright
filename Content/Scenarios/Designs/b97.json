@@ -35,7 +35,19 @@
    "armour_mm": 0,
    "rounds_per_gun": 350,
    "fore": 2,
-   "aft": 2
+   "aft": 2,
+   "shells": [
+    {
+     "ammo": "common great_war km1916",
+     "share": 0.3,
+     "mass_kg": 15.778428749999998
+    },
+    {
+     "ammo": "HE great_war km1916",
+     "share": 0.7,
+     "mass_kg": 15.778428749999998
+    }
+   ]
   }
  ],
  "torpedoes": {
@@ -190,5 +202,39 @@
  "look": {
   "navy": "kiel",
   "era": "great_war"
+ },
+ "ammunition": {
+  "common great_war km1916": {
+   "kind": "common",
+   "mass_k_kg_m3": 13630,
+   "form_factor": 1.5,
+   "filler": {
+    "share": 0.06,
+    "explosive": {
+     "re": 1
+    }
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01
+   },
+   "outcomes": "km1916"
+  },
+  "HE great_war km1916": {
+   "kind": "he",
+   "mass_k_kg_m3": 13630,
+   "form_factor": 1.5,
+   "filler": {
+    "share": 0.07,
+    "explosive": {
+     "re": 1
+    }
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0
+   },
+   "outcomes": "km1916"
+  }
  }
 }

@@ -24,6 +24,9 @@ public sealed record Design
     public List<BatteryInput>? Main { get; init; }
     [JsonConverter(typeof(OneOrManyConverter<BatteryInput>))]
     public List<BatteryInput>? Secondary { get; init; }
+    /// <summary>The shell tech blocks the batteries' shells name, keyed by name (Ammunition; docs/battle/
+    /// shells-armour-damage.md phase S).</summary>
+    public Dictionary<string, AmmoInput>? Ammunition { get; init; }
     public TorpedoInput? Torpedoes { get; init; }
     public AaInput? Aa { get; init; }
     public ArmourInput? Armour { get; init; }
@@ -118,6 +121,11 @@ public sealed record BatteryInput
     public double? ArmourMm { get; init; }
     public double? RoundsPerGun { get; init; }
     public string? Material { get; init; }
+    /// <summary>The gun's muzzle velocity with its heaviest shell, m/s (Ammunition.DefaultMuzzleVelocity when absent).</summary>
+    public double? MuzzleVelocityMs { get; init; }
+    /// <summary>The outfit: the ammunition blocks it carries and their shares of the rounds (none: the sim's placeholder
+    /// by the look, until the default template).</summary>
+    public List<ShellEntryInput>? Shells { get; init; }
     // main batteries
     public int? Fore { get; init; }
     public int? Aft { get; init; }
@@ -144,6 +152,67 @@ public sealed record BatteryInput
 
     /// <summary>A secondary battery's mounts per side: per_side, else half the count.</summary>
     [JsonIgnore] public int MountsPerSide => PerSide ?? MountCount / 2;
+}
+
+/// <summary>A battery's shells[k]: an ammunition block by name and its share of the rounds; mass_kg and
+/// muzzle_velocity_ms give this battery's own shell over the block's k·D³ and the fourth-root rule.</summary>
+public sealed record ShellEntryInput
+{
+    public string? Ammo { get; init; }
+    public double? Share { get; init; }
+    public double? MassKg { get; init; }
+    public double? MuzzleVelocityMs { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>ammunition.NAME: a shell tech block, calibre-free like machinery.tech (docs/battle/
+/// shells-armour-damage.md, "Ammunition, per battery").</summary>
+public sealed record AmmoInput
+{
+    /// <summary>ap, common or he.</summary>
+    public string? Kind { get; init; }
+    /// <summary>Mass = k·D³, D in m, kg/m³ (1 lb/in³ = 27,680).</summary>
+    public double? MassKKgM3 { get; init; }
+    /// <summary>The drag form factor over the standard Cd(Mach) curve.</summary>
+    public double? FormFactor { get; init; }
+    public CapInput? Cap { get; init; }
+    public FillerInput? Filler { get; init; }
+    public FuzeInput? Fuze { get; init; }
+    /// <summary>TRANSITIONAL (S0 to P3): the sim's outcome-table row, rn1916, km1916, rn1918, ww2 or ijn_t91.</summary>
+    public string? Outcomes { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>ammunition.NAME.cap: none, soft, hard, hard2 or break_away (the diving shell's), and its share of the
+/// mass.</summary>
+public sealed record CapInput
+{
+    public string? Kind { get; init; }
+    public double? Share { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>ammunition.NAME.filler: its share of the mass and the explosive (inline until S1's catalogue).</summary>
+public sealed record FillerInput
+{
+    public double? Share { get; init; }
+    public ExplosiveInput? Explosive { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>An explosive's numbers: re, its TNT equivalent for the blast.</summary>
+public sealed record ExplosiveInput
+{
+    public double? Re { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>ammunition.NAME.fuze: base or nose, and the delay once it starts, s.</summary>
+public sealed record FuzeInput
+{
+    public string? Position { get; init; }
+    public double? DelayS { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 /// <summary>main[k].superfire: true (every turret of an end group steps up), false (none), or how many step up at

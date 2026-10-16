@@ -556,18 +556,32 @@ public static class ShipClassCompiler
             var typeIds = new List<string>();
             var typeIndex = new Dictionary<string, int>(StringComparer.Ordinal);
             var loads = new List<ShellLoad>();
-            int TypeOf(ShellKind kind, BatteryRow b)
+            // one id, one row: a battery's own shell under a block another battery of the gun names too gets an id of its own
+            int TypeOf(string id, in ShellTypeRow t)
+            {
+                string key = id;
+                for (int n = 2; typeIndex.TryGetValue(key, out int k); n++)
+                {
+                    if (types[k] == t)
+                        return k;
+                    key = FormattableString.Invariant($"{id} #{n}");
+                }
+                typeIndex[key] = types.Count;
+                types.Add(t);
+                typeIds.Add(key);
+                return types.Count - 1;
+            }
+            int Placeholder(ShellKind kind, BatteryRow b)
             {
                 var t = DesignerPlaceholders.Shell(kind, b.CalibreMm, b.CalibreLength, era, navy);
-                string id = FormattableString.Invariant($"{b.CalibreMm:0.#}/{b.CalibreLength:0.#} {KindName(kind)} {EraName(era)} {QualityName(t.Quality)}");
-                if (!typeIndex.TryGetValue(id, out int k))
-                {
-                    typeIndex[id] = k = types.Count;
-                    types.Add(t);
-                    typeIds.Add(id);
-                }
-                return k;
+                return TypeOf(FormattableString.Invariant($"{b.CalibreMm:0.#}/{b.CalibreLength:0.#} {KindName(kind)} {EraName(era)} {QualityName(t.Quality)}"), t);
             }
+            ShellTypeRow Given(ShellReport s, BatteryRow b) => new()
+            {
+                CalibreMm = b.CalibreMm, MassKg = s.MassKg, MuzzleVelocityMs = s.MuzzleVelocityMs, FormFactor = s.FormFactor, Kind = Kinds.ShellKindOf(s.Kind),
+                FillerKg = s.FillerKg, Fuze = Kinds.FuzeOf(s.Fuze), FuzeDelayS = s.FuzeDelayS, Quality = Kinds.ShellQualityOf(s.Outcomes),
+                Diving = s.Cap == "break_away",
+            };
 
             for (int b = 0; b < batteries.Count; b++)
             {
@@ -597,14 +611,21 @@ public static class ShipClassCompiler
                 }
                 int dirs = links.Count - d0;
                 var spec = FireControl.Spec(ship.Design, row.Kind == Battery.Main ? "main" : "secondary");
+                // the design's shells for the gun, else the placeholder's by the look
                 int l0 = loads.Count;
-                foreach (var (kind, share) in DesignerPlaceholders.ShellMix(row.CalibreMm, era))
-                    loads.Add(new ShellLoad(TypeOf(kind, row), share));
+                string which = row.Kind == Battery.Main ? "main" : "secondary";
+                where = $"{which} {row.CalibreMm}/{row.CalibreLength}";
+                if (ship.Report.Shells?.FirstOrDefault(s => s.Battery == which && s.CalibreMm == row.CalibreMm && s.CalibreLength == row.CalibreLength) is { } given)
+                    foreach (var s in given.Shells)
+                        loads.Add(new ShellLoad(TypeOf(FormattableString.Invariant($"{row.CalibreMm:0.#}/{row.CalibreLength:0.#} {s.Ammo}"), Given(s, row)), s.Share));
+                else
+                    foreach (var (kind, share) in DesignerPlaceholders.ShellMix(row.CalibreMm, era))
+                        loads.Add(new ShellLoad(Placeholder(kind, row), share));
                 batteries[b] = row with
                 {
                     Mounts = new Slice(m0, d0 - m0), Guns = guns, Directors = new Slice(d0, dirs),
                     Level = DesignerPlaceholders.FireControl(dirs, rf, spec.ComputerT, radar || spec.RadarT > 0, era),
-                    Shells = new Slice(l0, loads.Count - l0), Fires = TypeOf(DesignerPlaceholders.Fires(row.CalibreMm, era), row),
+                    Shells = new Slice(l0, loads.Count - l0), Fires = DesignerPlaceholders.Fires(row.CalibreMm, loads, l0, types),
                     PatternPct = DesignerPlaceholders.Pattern(row.CalibreMm, era),
                 };
             }

@@ -1,3 +1,4 @@
+using Fleetwright.Shipgen;
 using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Tests;
@@ -90,6 +91,47 @@ public class WeaponFactsTests
         if (!Pos(pl.ShellMm) || !Pos(pl.ShellEndMm) || !Pos(pl.StrengthDeckMm) || !(pl.MidX0 < pl.MidX1) || !Pos(pl.SuperstructureMm))
             p.Add($"plating {pl}");
         return p;
+    }
+
+    /// <summary>S0 of docs/battle/shells-armour-damage.md: the designs carry the placeholder's shells as data, and the
+    /// class reads them; the same design without them falls back to the placeholder and gets the same shells, so
+    /// nothing moved. (S1's templates end the placeholder and this.)</summary>
+    [Fact]
+    public void Shells_from_the_design_are_the_placeholders()
+    {
+        var problems = new List<string>();
+        int given = 0;
+        foreach (var b in Fleet.All.Where(b => b.Ship != null && b.Class != null))
+        {
+            var d = b.Ship!.Design;
+            if (d.Ammunition is null)
+                continue;
+            given++;
+            var bare = ShipClassCompiler.Compile(ShipDesign.Build(d with
+            {
+                Ammunition = null, Main = d.Main?.Select(x => x with { Shells = null }).ToList(),
+                Secondary = d.Secondary?.Select(x => x with { Shells = null }).ToList(),
+            }));
+            var c = b.Class!;
+            for (int i = 0; i < c.Batteries.Length; i++)
+            {
+                var (x, y) = (c.ShellLoads(c.Batteries[i].Shells).ToArray(), bare.ShellLoads(bare.Batteries[i].Shells).ToArray());
+                if (!x.Select(l => (c.ShellTypeId(l.ShellType), c.ShellTypes[l.ShellType], l.Share))
+                        .SequenceEqual(y.Select(l => (bare.ShellTypeId(l.ShellType), bare.ShellTypes[l.ShellType], l.Share)))
+                    || c.ShellTypeId(c.Batteries[i].Fires) != bare.ShellTypeId(bare.Batteries[i].Fires))
+                    problems.Add($"{b.Case.Name} battery {i}");
+            }
+        }
+        Assert.True(problems.Count == 0, string.Join("\n", problems.Take(20)));
+        Assert.True(given > 60, $"{given} designs give their shells");
+
+        // and the class reads the data: a block's drag shows in its shell
+        var dn = Fleet.Get("dreadnought").Ship!.Design;
+        var faster = ShipClassCompiler.Compile(ShipDesign.Build(dn with
+        {
+            Ammunition = dn.Ammunition!.ToDictionary(kv => kv.Key, kv => kv.Value with { FormFactor = 0.9 }),
+        }));
+        Assert.Equal(0.9, faster.ShellTypes[faster.Batteries[0].Fires].FormFactor);
     }
 
     /// <summary>The placeholders against the research's guns of the Great War (fire_control_ref.py GUNS, and the QF
