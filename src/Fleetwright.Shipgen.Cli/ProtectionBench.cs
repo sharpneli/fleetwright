@@ -205,8 +205,7 @@ static class ProtectionBench
                     parts.Add(string.Format(Inv, "{0} {1:0.#}", x.Plate switch { PlateKind.HullDeck => "deck", PlateKind.HullEnd => "end", _ => "shell" }, x.Mm));
                     break;
                 case CrossingKind.WaterIn:
-                    inT = x.T;
-                    space = "sea";
+                    space = null;   // the sea outside: the shots' "sea first" says what it does
                     break;
                 case CrossingKind.WaterOut:
                     break;
@@ -227,11 +226,6 @@ static class ProtectionBench
                     space = null;
                     break;
                 case CrossingKind.Plate when x.Mm > 0:
-                    if (space == "sea")
-                    {
-                        parts.Add(string.Format(Inv, "[sea {0:0.0} m]", x.T - inT));
-                        space = null;
-                    }
                     parts.Add(string.Format(Inv, "{0} {1:0.#}", Plate(c, x), x.Mm));
                     break;
             }

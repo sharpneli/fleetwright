@@ -61,6 +61,12 @@ moving underwater shells to a 3-decay reach), which now runs with hits doing no 
   for the whole 80 s window (`TorpedoSystem.Ready`). Not yet known which check in `CaptainLayer.FireOnSignal` stops
   the rest: likely `TorpedoFoul` (own boats on the track: the line is still swinging through its turn together), or
   the guide (crippled, 7-11 kn, turning on her own) dragging the line. Seen before this change too.
+  2026-10-16 (docs/shipgen/protection-plan.md H2): it is `TorpedoFoul`. In the flotilla scenario's seed 1 the two
+  healthy boats were foul for 58 and 56 of their checks in the Fire window (and not ready for the rest), with two of
+  their friends crippled and lying in the line (power 0, 1,000 t of water; before the magazines went under the
+  waterline such boats mostly blew up). Holding fire through a friend is right; what's missing is the admiral's side:
+  make the signal only with the tracks clear, or leave the crippled boats out of the line first.
+  FlotillaAttackTests counts a fouled signal as beaten off.
 
 ## The slide
 

@@ -162,7 +162,7 @@ public sealed partial class Layout
             .Concat(waBack.Select((g, k) => ($"W{waFront.Count + WE.Count + k + 1}", "aft", g))).ToList();
         var magPlan = MagazinePlan(design, groupedWings);
         var magL = magPlan.ToDictionary(kv => kv.Key, kv => kv.Value.Count > 0
-            ? Ordnance.ZoneLength(kv.Value.Select(v => v.N * v.V).Sum(), 2 * Ordnance.GroupHalfWidth(plant, 0.8 * B / 2), plant) : 0.0);
+            ? Ordnance.ZoneLength(kv.Value.Select(v => v.N * v.V).Sum(), 2 * Ordnance.GroupHalfWidth(plant, 0.8 * B / 2, B, Armour.MagazineWingM(design, B)), plant) : 0.0);
         if (magL["fore"] > 0)
         {
             segs.Insert(0, ("magazine", magL["fore"]));
@@ -1432,7 +1432,7 @@ public sealed partial class Layout
             magGroups["fore"] = magX[0];
         if (magL["aft"] > 0)
             magGroups["aft"] = magX[^1];
-        AddMagazines(lay, mounts, innerHw, magGroups, machPlaced.Select(p => (p.X0, p.X1)).ToList());
+        AddMagazines(lay, mounts, innerHw, magGroups, machPlaced.Select(p => (p.X0, p.X1)).ToList(), Armour.MagazineWingM(design, B));
         var toPlant = new Dictionary<long, long>();
         int kk2 = 0;
         for (int i = 0; i < machPlaced.Count; i++)

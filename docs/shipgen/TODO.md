@@ -78,7 +78,7 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Torpedo placement full check (Japanese-cruiser-size batteries, funnel spacing, swing room) (deferred by user)
 - [ ] Export ammunition per battery (propellant family, flash-reducer salt, bag or cased) for the battle's magazine and fire damage; vidgen guessed it from the navy
 - [ ] Undecided (user): should MTB guns become secondaries? Planing craft still have a main battery
-- [ ] Small ships' magazine protection (user, 2026-10-16): a destroyer has one layer of steel with the magazine straight behind it, so HE hits set off magazines often (DamageTests' destroyer anchor widened to 20% lost in shells-armour-damage.md S1); better protection schemes come with the hull generator's tuning (`protection-plan.md`, H1-H2); H1 done 2026-10-16 (V25 7.5 -> 4 % lost to the magazine), H2 next
+- [x] Small ships' magazine protection (user, 2026-10-16): a destroyer has one layer of steel with the magazine straight behind it, so HE hits set off magazines often (DamageTests' destroyer anchor widened to 20% lost in shells-armour-damage.md S1); better protection schemes come with the hull generator's tuning (`protection-plan.md`, H1-H2); H1-H2 done 2026-10-16: no hit sets a destroyer's magazine off any more, the anchor is back to 8 %
 
 ## Superstructure
 - [ ] Upper levels growing, gated by director/AA roof need, not crew (historically towers grew for director platforms; terraces as the cap, width ≤ bridge width, need carried between sizing passes and only growing)

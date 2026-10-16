@@ -111,6 +111,9 @@ public static class Subdivision
         return result;
     }
 
+    /// <summary>A magazine's crown this close to a deck is on the deck: no platform, the deck is its crown.</summary>
+    const double PlatformTol = 0.05;
+
     /// <summary>Platform decks (protection-plan.md H1): a deck at a magazine's crown where it falls inside a tier, over the
     /// magazines with that crown (Spans, merged). Inserted into dks (keel up) in height order.</summary>
     static void Platforms(List<SubDeck> dks, IEnumerable<RoomBox> rooms)
@@ -121,7 +124,7 @@ public static class Subdivision
             if (r.Kind != "magazine")
                 continue;
             double z = Math.Round(r.Top, 3);
-            if (dks.Any(d => Math.Abs(d.Z - z) < 0.05) || z <= dks[0].Z || z >= 0)
+            if (dks.Any(d => Math.Abs(d.Z - z) < PlatformTol) || z <= dks[0].Z || z >= 0)
                 continue;
             if (!at.TryGetValue(z, out var spans))
                 at[z] = spans = [];
@@ -313,6 +316,10 @@ public static class Subdivision
 
         double tds = plan?.Tds ?? 0.0;
         double wingM = plan?.WingM ?? 0.0;
+        double magWing = design.StyleName == "planing" ? 0.0 : Armour.MagazineWingM(design, B);
+        var mags = rooms.Where(r => r.Kind == "magazine").ToList();
+        var magWingCells = new HashSet<Cell>();   // wing cells a magazine may not take
+        var crowns = new Dictionary<int, double>();   // by section: the magazines' crown there
         bool centreline = design.Machinery?.CentrelineBulkhead ?? false;
 
         List<double> XsIn(double x0, double x1, int n = 8) => Enumerable.Range(0, n).Select(j => x0 + (x1 - x0) * (j + 0.5) / n).ToList();
@@ -360,6 +367,25 @@ public static class Subdivision
                 split = Math.Max(0.5, SteelFrame * XsIn(sx0, sx1).Select(form.Waterline).Min() - tds);
                 (sKind, sTop) = ("tds", under);
             }
+            else if (magWing > 0)
+            {
+                // a magazine here: a wing of stores between it and the side, up to its crown (protection-plan.md H2)
+                double crown = double.NegativeInfinity;
+                foreach (var m in mags)
+                {
+                    double o = Ov(m.X0, m.X1, sx0, sx1);
+                    if (o > 1e-6 && o >= 0.5 * Math.Min(m.X1 - m.X0, sx1 - sx0) - 1e-6)
+                        crown = Math.Max(crown, Math.Round(m.Top, 3));   // as the platform deck's height
+                }
+                // the wing measured in from the side halfway up the magazine: a fine end narrows fast under the waterline,
+                // and a box cell can't follow it, so the wing is full width there and thins toward the floor
+                if (crown > ib)
+                {
+                    crowns[si] = crown;
+                    double zm = (ib + crown) / 2 + D;
+                    (split, sKind, sTop) = (Math.Max(0.5, SteelFrame * XsIn(sx0, sx1).Min(x => form.HalfWidth(x, zm)) - magWing), "wing", crown);
+                }
+            }
             if (split >= hwmax - 0.3)
                 split = null;
             if (split is double sp)
@@ -398,7 +424,7 @@ public static class Subdivision
                 double trTop = trUp.Top, trBase = tr.Base;
                 bool centreSplit = cl && !bottom && trTop <= under + 1e-6;
                 double hwT = Math.Min(hwmax, WidestIn(x0, x1, trBase, trTop));
-                bool banded = split is not null && !bottom && trTop <= sTop + 1e-6 && split.Value < hwT - 0.3;
+                bool banded = split is not null && !bottom && trTop <= sTop + PlatformTol && split.Value < hwT - 0.3;
                 if (banded)
                     loBase[sec.Id] = Math.Min(loBase.GetValueOrDefault(sec.Id, trBase), trBase);
                 List<(string Band, double Y0, double Y1)> ys;
@@ -443,6 +469,8 @@ public static class Subdivision
                         mergedCells.Add(c);
                     if (inCit && armoured)
                         c.Citadel = true;
+                    if (banded && band is "P" or "S" && !(wingM > 0 && inMach))
+                        magWingCells.Add(c);   // the side protection or a magazine's wing: never the magazine's own
                     var above = adecks.Where(d => trTop <= d.Z + 1e-6 && d.X0 <= xm && xm <= d.X1).ToList();
                     if (above.Count > 0)
                     {
@@ -486,6 +514,9 @@ public static class Subdivision
                 continue;
             foreach (int dt in new[] { 1, -1 })
             {
+                if (platform[dt > 0 ? c.Ti + 1 : c.T0] is not null ||
+                    crowns.TryGetValue(c.Si, out double cz) && Math.Abs((dt > 0 ? tiers[c.Ti].Top : tiers[c.T0].Base) - cz) < PlatformTol)
+                    continue;   // never through a magazine's crown
                 var d = cells.FirstOrDefault(d => d.Si == c.Si && !d.Merged && Flat(d.Ti) && (dt > 0 ? d.T0 == c.Ti + 1 : d.Ti == c.T0 - 1) &&
                                                   d.Y0 <= c.Y0 + 1e-6 && d.Y1 >= c.Y1 - 1e-6);
                 if (d is null)
@@ -508,7 +539,7 @@ public static class Subdivision
             ((int, double) Key, RoomBox R)? best = null;
             foreach (var r in rooms)
             {
-                if (!Claims(r, c))
+                if (!Claims(r, c) || r.Kind == "magazine" && magWingCells.Contains(c))
                     continue;
                 var key = (RoomPriority.GetValueOrDefault(r.Kind, 4), BoxOverlap(r, c));
                 if (best is null || key.CompareTo(best.Value.Key) > 0)

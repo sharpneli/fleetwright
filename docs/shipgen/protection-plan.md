@@ -154,6 +154,35 @@ this plan builds the layers so E1 has something to work on.
 - **Expected:** the magazine moves from "behind the shell" to "behind the shell, stores and a wall". The gain is modest
   until E1 (see above), and the bench says how modest.
 
+- **Done 2026-10-16.** What was built:
+  - `armour.magazine_wing_m` (null: `Armour.MagazineWingShare` 0.1 × B; 0: none; limits 0-20 m). A designer knob comes
+    with H8's Protection tab session.
+  - The subdivision bands a magazine's section (one the magazine overlaps by half the shorter, as rooms claim cells) like
+    a wing-bunker section: `wing` bulkheads `split` in from the side, up to the crown. The wing is measured halfway up
+    the magazine: a box cell can't follow a fine end's V, so measured at the crown (the first try) the stern magazines
+    still met the shell lower down. The wing cells are `stores`; a magazine may never own a wing or TDS cell (the fleet
+    carrier's aviation magazines, 0.4 B wide, had taken their TDS cells since before H1).
+  - The layout sizes magazines inside their wings (`Ordnance.GroupHalfWidth`, `OwnZones`), so they come out a little
+    longer.
+  - Slivers never merge through a magazine's crown, a platform deck or the deck the crown stands on: at the fine ends
+    the narrowed magazine cell was a sliver and took the magazine up through its crown (the Fleet Destroyer's Y to
+    0.9 m over the waterline), and one merged across a platform left a hold and a magazine overlapping with no deck
+    between (the Q-ship). A crown within 5 cm of a deck is on the deck, for the platform and the bands alike.
+  - Sizes against H1: median 0.0 %, -2.1 to +1.4 % standard (victory_1944 +1.1 %, Seydlitz +0.5 m, Nassau +0.6 m).
+    mono-check 33 → 34 reversals and 13 → 14 lumps: a 3 t reversal on Mikasa's armour deck (0.1 × its usual step,
+    noise), and Dreadnought's secondaries 1 → 2 a side (+245 t, 1.0 %: the aft secondary magazine segment that appears
+    then, a step that was there and is a little bigger now the magazines are narrower).
+  - `protection --summary`: magazines against the side 485 → 10 of 558 (Gangut's long midships groups 9, the
+    Liberty type's stern locker); none open but the planing craft's lockers.
+  - `hits` (lion 4" HE at 6 km, 10 a ship, 30 min): no hit sets off a destroyer's magazine any more (V25, the TB
+    destroyer and the Fleet Destroyer 0 % a hit); lost to the magazine V25 5 % (all a fire later, 1.5 at H1: the wing
+    stores are new cells that burn beside it), TB destroyer 3 %, Fleet Destroyer 1.5 %. Heavy cruiser 8" AP 8.5 → 5 %
+    (mostly the turret path), dreadnought 5 → 4.5 % (all the turret path).
+  - Decision 4: DamageTests' destroyer anchor narrowed from 20 % to 8 % lost (measured 2 and 3 %).
+  - FlotillaAttackTests no longer pins a seed: it takes the first of seeds 1-12 where two boats or more fire on the
+    signal. Seed 1 now gives the signal with two crippled boats lying in the line and the others' tracks foul, and fires
+    nothing (docs/battle/bugs.md: the admiral should signal only with the tracks clear).
+
 ### H3. Bulkheads by kind (§7.1, §7.4.1)
 - Each kind gets its own plate: main transverse at today's gauge with the lowest tier 1.3× and the top 0.8× (a
   `plate_low_mm` on the row); collision 1.5×; wing and centreline at the structural gauge.

@@ -60,6 +60,11 @@ public sealed class ArmourLayout
 public static class Armour
 {
     public const double TdsMmPerM = 12.0;
+    /// <summary>The magazine wing's default width, a share of the beam (protection-plan.md H2) [INFERRED].</summary>
+    public const double MagazineWingShare = 0.1;
+
+    /// <summary>The wing between a magazine and the side, each side, m.</summary>
+    public static double MagazineWingM(Design design, double B) => Math.Max(0.0, design.Armour?.MagazineWingM ?? MagazineWingShare * B);
     const double BeltHA = 0.30, BeltHB = 2.4;
     /// <summary>The citadel bulkheads' thickness under the belt, as a share of theirs above. A shell gets that low at
     /// the citadel's end only by falling through the unarmoured end (lower, it meets water first), so it strikes the

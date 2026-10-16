@@ -388,13 +388,14 @@ public sealed partial class Layout
     }
 
     /// <summary>The warship's magazines (ordnance.stow), linked both ways, and a handling room over each mount's own.
-    /// taken: the stretches of the hold already spoken for (the machinery and its magazine segments).</summary>
+    /// taken: the stretches of the hold already spoken for (the machinery and its magazine segments);
+    /// wing: the magazine wing each side (Armour.MagazineWingM).</summary>
     public static void AddMagazines(Layout lay, List<Mount> mounts, double innerHw, Dictionary<string, (double X0, double X1)>? groups = null,
-        IReadOnlyList<(double X0, double X1)>? taken = null)
+        IReadOnlyList<(double X0, double X1)>? taken = null, double wing = 0.0)
     {
         groups ??= [];
         var plan = lay.Geo.Plant;
-        double ghw = plan is null ? innerHw : Ordnance.GroupHalfWidth(plan, innerHw);
+        double ghw = plan is null ? innerHw : Ordnance.GroupHalfWidth(plan, innerHw, lay.Hull.B, wing);
         var zones = new List<Zone>();
         var own = new List<Mount>();
         var batteries = new OrderedDictionary<string, List<Mount>>(StringComparer.Ordinal);
@@ -412,7 +413,7 @@ public sealed partial class Layout
             }
             own.Add(m);
         }
-        zones.AddRange(plan is null ? own.Select(m => Ordnance.OwnZone(m, innerHw)) : Ordnance.OwnZones(lay, own, innerHw, taken ?? []));
+        zones.AddRange(plan is null ? own.Select(m => Ordnance.OwnZone(m, innerHw)) : Ordnance.OwnZones(lay, own, innerHw, taken ?? [], wing));
         var rooms = new Dictionary<string, List<ZoneRoom>> { ["fore"] = [], ["aft"] = [] };
         foreach (var (bat, ms) in batteries)
         {

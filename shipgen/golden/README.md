@@ -111,6 +111,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   design waterline, longer instead of taller, platform decks over them and handling rooms above. 293 design cases
   change (median 0.0 %, -1.4 to +2.4 % standard: victory_1944 +2.4 %, Daring and Impetuoso -1.7 m), and the SVGs and
   sprite.json of the 126 and 29 whose trim or sizes moved.
+- 2026-10-16, magazine wings (docs/shipgen/protection-plan.md H2), on purpose: a wing of stores 0.1 B wide between each
+  magazine and the side, magazines narrower and a little longer. 286 design cases change (median 0.0 %, -2.1 to +1.4 %
+  standard), and the SVGs and sprite.json of the 170 and 37 whose sizes or trim moved.
 
 ## Layout
 

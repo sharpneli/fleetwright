@@ -381,16 +381,19 @@ public static class Ordnance
         return new Zone(m.X - r, m.X + r, Math.Min(r, innerHw), [new ZoneRoom($"Magazine {m.Id}", [m.Id])], Own: true);
     }
 
-    /// <summary>How wide a group of magazines stowed together may be (the machinery's width between its wing bunkers,
-    /// else no wider than innerHw), half of it.</summary>
-    public static double GroupHalfWidth(PlantPlan plan, double innerHw) => plan.WingM != 0 ? plan.Width / 2 : Math.Min(innerHw, plan.Width / 2);
+    /// <summary>How wide a group of magazines stowed together may be, half of it: the machinery's width between its
+    /// wing bunkers, else no wider than innerHw, and inside a wing each side (protection-plan.md H2) of the hull amidships
+    /// (beam B).</summary>
+    public static double GroupHalfWidth(PlantPlan plan, double innerHw, double B, double wing) =>
+        Math.Max(0.5, Math.Min(plan.WingM != 0 ? plan.Width / 2 : Math.Min(innerHw, plan.Width / 2), Powerplant.SteelFrame * B / 2 - wing));
 
     /// <summary>The mounts' own magazines under the crown (protection-plan.md H1): each under its mount, its diameter long,
     /// or longer where the height under the crown won't hold its ammunition; each inside the free stretch of hold its mount
     /// stands over (between what's taken, the collision bulkhead and the steering gear), and those that would overlap
     /// stowed together in one zone, end to end. A stretch too short for its magazines gives them all of it, and they rise
     /// above the crown (Stow's warning).</summary>
-    public static List<Zone> OwnZones(Layout lay, IReadOnlyList<Mount> mounts, double innerHw, IReadOnlyList<(double X0, double X1)> taken)
+    public static List<Zone> OwnZones(Layout lay, IReadOnlyList<Mount> mounts, double innerHw, IReadOnlyList<(double X0, double X1)> taken,
+        double wing = 0.0)
     {
         var plan = lay.Geo.Plant!;
         double L = lay.Hull.L, h = Math.Max(Height(plan, int.MaxValue), 0.5);
@@ -401,7 +404,7 @@ public static class Ordnance
         var items = new List<(Mount M, double Need, double Hw, double Lo, double Hi)>();
         foreach (var m in mounts.OrderBy(m => m.X))
         {
-            double r = m.T.R, hw = Math.Min(r, innerHw);
+            double r = m.T.R, hw = Math.Max(0.5, Math.Min(Math.Min(r, innerHw), Powerplant.SteelFrame * lay.Hull.HalfWidth(m.X) - wing));
             double need = Math.Max(2 * r, BookedM3(lay, [m.Id]) / (2 * hw * h));
             double lo = aft, hi = fore;
             bool inside = false;

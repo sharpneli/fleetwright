@@ -336,6 +336,9 @@ public sealed record ArmourInput
     public double? BeltHeightM { get; init; }
     public double? BulkheadMm { get; init; }
     public double? TdsM { get; init; }
+    /// <summary>The wing of stores between a magazine and the side, each side (protection-plan.md H2); null: 0.1 of the
+    /// beam, 0: none. Where a TDS or wing bunkers already stand there, they are the wing.</summary>
+    public double? MagazineWingM { get; init; }
     public double? FlightDeckMm { get; init; }
     public List<ArmourDeckInput>? Decks { get; init; }
     public UpperBeltInput? UpperBelt { get; init; }
