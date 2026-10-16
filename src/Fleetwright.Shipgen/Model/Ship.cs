@@ -471,6 +471,9 @@ public sealed class Bulkhead
     public double? ArmourLowerTop { get; set; }
     public string? ArmourMaterial { get; set; }
     public double? PlateMm { get; set; }
+    /// <summary>A main bulkhead's lowest strake, thicker, up to PlateLowTop (protection-plan.md H3).</summary>
+    public double? PlateLowMm { get; set; }
+    public double? PlateLowTop { get; set; }
 }
 
 /// <summary>A watertight cell: one section x tier x band.</summary>

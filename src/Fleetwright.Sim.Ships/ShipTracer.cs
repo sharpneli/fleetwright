@@ -353,7 +353,7 @@ public static class ShipTracer
                         ref readonly var w = ref c.Bulkheads[e.Through];
                         var n = w.Side == Side.None ? new P3(Math.Sign(w.X == 0 || double.IsNaN(w.X) ? 1 : w.X), 0, 0)
                             : new P3(0, w.Side == Side.Port ? -1 : 1, 0);
-                        Add(CrossingKind.Plate, PlateKind.Bulkhead, e.Through, s, w.PlateMm, c.Plating.Material, n);
+                        Add(CrossingKind.Plate, PlateKind.Bulkhead, e.Through, s, w.PlateAt(Z(s)), c.Plating.Material, n);
                     }
                     break;
                 }

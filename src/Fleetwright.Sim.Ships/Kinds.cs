@@ -276,6 +276,8 @@ static class Kinds
         "S" => Band.Starboard,
         "CP" => Band.CentrePort,
         "CS" => Band.CentreStarboard,
+        ['P', >= '1' and <= '9'] => Band.Port,   // a layered TDS's (protection-plan.md H3)
+        ['S', >= '1' and <= '9'] => Band.Starboard,
         _ => throw Unknown("cell band", s),
     };
 

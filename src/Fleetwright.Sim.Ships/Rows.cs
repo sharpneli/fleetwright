@@ -499,6 +499,12 @@ public readonly record struct BulkheadRow
     public double ArmourLowerMm { get; init; }
     public double ArmourLowerTop { get; init; }
     public int ArmourMaterial { get; init; }
+    /// <summary>The lowest strake's plate, up to PlateLowTop (NaN: one plate all the way).</summary>
+    public double PlateLowMm { get; init; }
+    public double PlateLowTop { get; init; }
+
+    /// <summary>The plate at a height.</summary>
+    public double PlateAt(double z) => z < PlateLowTop ? PlateLowMm : PlateMm;
 }
 
 public readonly record struct DeckRow

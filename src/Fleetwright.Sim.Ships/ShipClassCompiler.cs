@@ -421,7 +421,7 @@ public static class ShipClassCompiler
                 Kind = Kinds.Bulkhead(x.Kind), X = Or(x.X), Section = Section(x.Section), Side = Kinds.SideOf(x.Side), Y = Or(x.Y), X0 = Or(x.X0),
                 X1 = Or(x.X1), Base = x.Base, Top = x.Top, PlateMm = x.PlateMm ?? 0, ArmourMm = x.ArmourMm ?? 0, ArmourBottom = Or(x.ArmourBottom),
                 ArmourTop = Or(x.ArmourTop), ArmourLowerMm = Or(x.ArmourLowerMm), ArmourLowerTop = Or(x.ArmourLowerTop),
-                ArmourMaterial = Material(x.ArmourMaterial),
+                ArmourMaterial = Material(x.ArmourMaterial), PlateLowMm = Or(x.PlateLowMm), PlateLowTop = Or(x.PlateLowTop),
             };
         }
 

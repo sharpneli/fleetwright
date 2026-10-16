@@ -114,6 +114,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-16, magazine wings (docs/shipgen/protection-plan.md H2), on purpose: a wing of stores 0.1 B wide between each
   magazine and the side, magazines narrower and a little longer. 286 design cases change (median 0.0 %, -2.1 to +1.4 %
   standard), and the SVGs and sprite.json of the 170 and 37 whose sizes or trim moved.
+- 2026-10-16, bulkheads by kind and TDS layers (docs/shipgen/protection-plan.md H3), on purpose: collision bulkheads
+  1.5 × the gauge, main and armoured ones with a 1.3 × lowest strake (`plate_low_mm`, `plate_low_top`). 326 design
+  cases' hitboxes change; sizes, SVGs and sprite.json don't (one TDS layer by default: as before).
 
 ## Layout
 

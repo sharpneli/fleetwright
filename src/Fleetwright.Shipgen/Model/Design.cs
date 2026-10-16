@@ -336,6 +336,14 @@ public sealed record ArmourInput
     public double? BeltHeightM { get; init; }
     public double? BulkheadMm { get; init; }
     public double? TdsM { get; init; }
+    /// <summary>The TDS's layers each side (protection-plan.md H3): 1 (the default) is one space behind one wall, the
+    /// holding bulkhead; more part it with thinner walls, evenly from the holding bulkhead out to the shell.</summary>
+    public int? TdsLayers { get; init; }
+    /// <summary>The holding bulkhead's plate (null: all the TDS's steel with one layer, half of it with more), and each
+    /// layer wall's (null: the rest of the steel shared among them), mm. The steel is Armour.TdsMmPerM per metre of depth
+    /// unless both are given.</summary>
+    public double? TdsHoldingMm { get; init; }
+    public double? TdsLayerMm { get; init; }
     /// <summary>The wing of stores between a magazine and the side, each side (protection-plan.md H2); null: 0.1 of the
     /// beam, 0: none. Where a TDS or wing bunkers already stand there, they are the wing.</summary>
     public double? MagazineWingM { get; init; }

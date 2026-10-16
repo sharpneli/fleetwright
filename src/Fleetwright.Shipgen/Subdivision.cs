@@ -316,6 +316,7 @@ public static class Subdivision
 
         double tds = plan?.Tds ?? 0.0;
         double wingM = plan?.WingM ?? 0.0;
+        var tdsSpec = Armour.Tds(design);
         double magWing = design.StyleName == "planing" ? 0.0 : Armour.MagazineWingM(design, B);
         var mags = rooms.Where(r => r.Kind == "magazine").ToList();
         var magWingCells = new HashSet<Cell>();   // wing cells a magazine may not take
@@ -360,12 +361,16 @@ public static class Subdivision
             double? split = null;
             string sKind = "";
             double sTop = 0;
+            var layerYs = new List<double>();   // a layered TDS's walls outboard of the holding bulkhead, inside out
             if (wingM > 0 && inMach)
                 (split, sKind, sTop) = (plan!.Width / 2, "wing", 0.0);
             else if (tds > 0 && inCit)
             {
-                split = Math.Max(0.5, SteelFrame * XsIn(sx0, sx1).Select(form.Waterline).Min() - tds);
+                double shell = SteelFrame * XsIn(sx0, sx1).Select(form.Waterline).Min();
+                split = Math.Max(0.5, shell - tds);
                 (sKind, sTop) = ("tds", under);
+                for (int k = 1; k < tdsSpec.Layers; k++)
+                    layerYs.Add(split.Value + (shell - split.Value) * k / tdsSpec.Layers);
             }
             else if (magWing > 0)
             {
@@ -390,12 +395,21 @@ public static class Subdivision
                 split = null;
             if (split is double sp)
                 foreach (var (side, sgn) in new[] { ("S", 1), ("P", -1) })
+                {
                     longi.Add(new Bulkhead
                     {
                         Id = $"{(sKind == "wing" ? "Wing" : "Torpedo")} bulkhead {sec.Id} {side}", Kind = sKind, Section = sec.Id, Side = side,
                         Y = Math.Round(sgn * sp, 3), X0 = Math.Round(sx0, 3), X1 = Math.Round(sx1, 3), Base = Math.Round(ib, 2),
-                        Top = Math.Round(sTop, 2),
+                        Top = Math.Round(sTop, 2), PlateMm = sKind == "tds" ? Math.Round(tdsSpec.HoldingMm, 1) : null,
                     });
+                    for (int k = 0; k < layerYs.Count; k++)
+                        longi.Add(new Bulkhead
+                        {
+                            Id = $"Torpedo bulkhead {sec.Id} {side}{k + 1}", Kind = "tds", Section = sec.Id, Side = side, Y = Math.Round(sgn * layerYs[k], 3),
+                            X0 = Math.Round(sx0, 3), X1 = Math.Round(sx1, 3), Base = Math.Round(ib, 2), Top = Math.Round(sTop, 2),
+                            PlateMm = Math.Round(tdsSpec.LayerMm, 1),
+                        });
+                }
             bool cl = centreline && inMach;
             if (cl)
                 longi.Add(new Bulkhead
@@ -431,12 +445,18 @@ public static class Subdivision
                 if (banded)
                 {
                     double s2 = split!.Value;
-                    ys = [("P", -hwT, -s2)];
+                    // a layered TDS: a band a layer, P1 against the holding bulkhead out to the shell; the walls the hull at
+                    // this height doesn't reach past leave the outer layers out
+                    var walls = layerYs.Where(y => y < hwT - 0.1).ToList();
+                    ys = [];
+                    for (int k = walls.Count; k >= 0; k--)
+                        ys.Add((walls.Count == 0 && layerYs.Count == 0 ? "P" : $"P{k + 1}", -(k < walls.Count ? walls[k] : hwT), -(k > 0 ? walls[k - 1] : s2)));
                     if (centreSplit)
                         ys.AddRange([("CP", -s2, 0.0), ("CS", 0.0, s2)]);
                     else
                         ys.Add(("C", -s2, s2));
-                    ys.Add(("S", s2, hwT));
+                    for (int k = 0; k <= walls.Count; k++)
+                        ys.Add((walls.Count == 0 && layerYs.Count == 0 ? "S" : $"S{k + 1}", k > 0 ? walls[k - 1] : s2, k < walls.Count ? walls[k] : hwT));
                 }
                 else
                     ys = centreSplit ? [("CP", -hwT, 0.0), ("CS", 0.0, hwT)] : [("C", -hwT, hwT)];
@@ -469,7 +489,7 @@ public static class Subdivision
                         mergedCells.Add(c);
                     if (inCit && armoured)
                         c.Citadel = true;
-                    if (banded && band is "P" or "S" && !(wingM > 0 && inMach))
+                    if (banded && Wing(band) && !(wingM > 0 && inMach))
                         magWingCells.Add(c);   // the side protection or a magazine's wing: never the magazine's own
                     var above = adecks.Where(d => trTop <= d.Z + 1e-6 && d.X0 <= xm && xm <= d.X1).ToList();
                     if (above.Count > 0)
@@ -478,7 +498,7 @@ public static class Subdivision
                         if (above.Any(d => !string.IsNullOrEmpty(d.Material)))
                             c.ArmourAboveMaterial = above.Select(d => d.Material).ToList();
                     }
-                    bool outer = band is "P" or "S" or "C" || (band is "CP" or "CS" && !banded);
+                    bool outer = Math.Abs(y1 - hwT) < 1e-6 || Math.Abs(y0 + hwT) < 1e-6;   // against the shell
                     var side = belts.Where(b => outer && b.X0 <= xm && xm <= b.X1 && Ov(b.Bottom, b.Top, trBase, trTop) > 0)
                         .Select(b => (Mm: Armour.BeltMmAt(b, xm, Math.Min(b.Top, trTop)), B: b)).ToList();
                     if (side.Count > 0)
@@ -487,7 +507,7 @@ public static class Subdivision
                         c.BeltMm = (long)Math.Round(mm);
                         c.BeltMaterial = string.IsNullOrEmpty(b.Material) ? null : b.Material;
                     }
-                    if (banded && band is "P" or "S" && inCit && tds > 0)
+                    if (banded && Wing(band) && inCit && tds > 0)
                     {
                         double zm = (trBase + trTop) / 2 + D;
                         c.TdsM = Math.Round(Math.Max(0.0, SteelFrame * xsI.Min(x => form.HalfWidth(x, zm)) - split!.Value), 2);
@@ -606,7 +626,7 @@ public static class Subdivision
             string use, name;
             if (hasBottom && c.Ti == 0)
                 (use, name) = ("double_bottom", "Double bottom");
-            else if (c.TdsM != null && c.Band is "P" or "S")
+            else if (c.TdsM != null && Wing(c.Band))
                 (use, name) = ("tds", "Torpedo protection");
             else if ((mergedCells.Contains(c) ? Math.Clamp((wl - c.Base) / (c.Top - c.Base), 0.0, 1.0) : tiers[c.Ti].Submerged) >= 0.5)
                 (use, name) = ("stores", "Stores");
@@ -653,7 +673,7 @@ public static class Subdivision
         }
         var grid = cells.GroupBy(c => c.Si).ToDictionary(g => g.Key, g => g.ToList());
         static bool Meets(Cell c, Cell d) => d.T0 <= c.Ti && c.T0 <= d.Ti;
-        var lon = longi.ToDictionary(l_ => (l_.Section!, l_.Side!), l_ => l_.Id);
+        var lon = longi.ToDictionary(l_ => (l_.Section!, Math.Round(l_.Y ?? 0.0, 3)), l_ => l_.Id);
         foreach (var c in cells)
         {
             var nb = new List<(Cell D, string Via)>();
@@ -668,7 +688,7 @@ public static class Subdivision
                     y = c.Y0;
                 else
                     continue;
-                nb.Add((d, lon[(c.Section, Math.Abs(y) < 1e-6 ? "C" : y > 0 ? "S" : "P")]));
+                nb.Add((d, lon[(c.Section, Math.Round(y, 3))]));
             }
             foreach (var (dt, dk) in new[] { (-1, tiers[c.T0].Floor), (1, tiers[c.Ti].Ceiling) })
                 foreach (var d in grid[c.Si])
@@ -712,6 +732,13 @@ public static class Subdivision
 
     static double? Round(double? v, int n) => v is double d ? Math.Round(d, n) : null;
 
+    /// <summary>A wing band: outboard of a longitudinal bulkhead (P, S, or a layered TDS's P1, S2, ...).</summary>
+    static bool Wing(string band) => band.Length > 0 && band[0] is 'P' or 'S';
+
+    /// <summary>A main bulkhead's lowest strake, thicker for the water's head at its foot (protection-plan.md H3: about
+    /// 1.3 times, [INFERRED]); a collision bulkhead's plate, heavier than a main one's and without openings.</summary>
+    const double LowStrake = 1.3, CollisionPlate = 1.5;
+
     /// <summary>plate_mm on the subdivision's decks and unarmoured bulkheads, and deck planking. Returns the ids of the
     /// layout's decks (a flight deck) that take the planking.</summary>
     public static List<string> DeckPlates(SubdivisionData sub, HullPlates plating, Design design, Layout lay)
@@ -740,8 +767,24 @@ public static class Subdivision
         if (wood != 0 && planked.Count == 0)
             foreach (var d in sub.Decks.Where(d => d.Kind is "main" or "raised"))
                 d.WoodMm = plating.DeckWoodMm;
+        // the lowest strake up to the hold's top (the tier over the double bottom)
+        double lowTop = sub.Tiers.Count > 1 && sub.Tiers[0].Id == "bottom" ? sub.Tiers[1].Top : sub.Tiers[0].Top;
         foreach (var b in sub.Bulkheads)
-            b.PlateMm = b.Kind == "tds" ? Math.Round(Armour.TdsMmPerM * tds, 1) : plating.BulkheadMm;
+            switch (b.Kind)
+            {
+                case "tds":
+                    b.PlateMm ??= Math.Round(Armour.TdsMmPerM * tds, 1);   // set by the layers; this only for an old build
+                    break;
+                case "collision":
+                    b.PlateMm = Math.Round(CollisionPlate * plating.BulkheadMm, 1);
+                    break;
+                case "main" or "armoured":
+                    (b.PlateMm, b.PlateLowMm, b.PlateLowTop) = (plating.BulkheadMm, Math.Round(LowStrake * plating.BulkheadMm, 1), lowTop);
+                    break;
+                default:
+                    b.PlateMm = plating.BulkheadMm;
+                    break;
+            }
         return planked;
     }
 }

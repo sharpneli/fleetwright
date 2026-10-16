@@ -63,6 +63,18 @@ public static class Armour
     /// <summary>The magazine wing's default width, a share of the beam (protection-plan.md H2) [INFERRED].</summary>
     public const double MagazineWingShare = 0.1;
 
+    /// <summary>The torpedo protection's layers (protection-plan.md H3): its depth each side, how many spaces, the
+    /// holding bulkhead's plate and each layer wall's, mm. One layer by default: one wall carrying all its steel.</summary>
+    public static (double DepthM, int Layers, double HoldingMm, double LayerMm) Tds(Design design)
+    {
+        var a = design.Armour;
+        double depth = a?.TdsM ?? 0.0, steel = TdsMmPerM * depth;
+        int n = Math.Max(1, a?.TdsLayers ?? 1);
+        double holding = a?.TdsHoldingMm ?? (n == 1 ? steel : steel / 2);
+        double layer = n == 1 ? 0.0 : a?.TdsLayerMm ?? Math.Max(0.0, steel - holding) / (n - 1);
+        return (depth, n, holding, layer);
+    }
+
     /// <summary>The wing between a magazine and the side, each side, m.</summary>
     public static double MagazineWingM(Design design, double B) => Math.Max(0.0, design.Armour?.MagazineWingM ?? MagazineWingShare * B);
     const double BeltHA = 0.30, BeltHB = 2.4;
@@ -407,12 +419,12 @@ public static class Armour
             result.Add(new Weight(s.Id, "armour", 2 * (s.X1 - s.X0) * (s.Top - s.Bottom) * Slant(s.Bottom, s.Top) * (a + b) / 2 / 1000 * Weight.Steel,
                 s.X0 + f * (s.X1 - s.X0), Zf(s.Top, s.Bottom)));
         }
-        double tds = design.Armour?.TdsM ?? 0.0;
+        var (tds, layers, holding, layerMm) = Tds(design);
         if (tds > 0 && lc > 0)
         {
             double floor = Powerplant.DoubleBottom(D);
             double top = g.RoofZ ?? g.Waterline;
-            double mm = TdsMmPerM * tds;
+            double mm = holding + (layers - 1) * layerMm;
             result.Add(new Weight("Torpedo protection", "armour", 2 * lc * Math.Max(0.0, top - floor) * mm / 1000 * Weight.Steel, xc, Zf(top, floor)));
         }
         double cb = design.BlockCoefficient;

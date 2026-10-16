@@ -193,6 +193,26 @@ this plan builds the layers so E1 has something to work on.
   holding plus layers.
 - The tracer sees each wall as a plate already; this only gives them their real thicknesses.
 
+- **Done 2026-10-16.** What was built (a change from the text above: flat keys beside `tds_m`, as the belt's are, not
+  an `armour.tds` block, so no format version and the designer's ~30 uses of `tds_m` stand):
+  - `armour.tds_layers` (1-8, default 1), `armour.tds_holding_mm` and `armour.tds_layer_mm` (`Armour.Tds`). One layer is
+    today's TDS (one wall with all the steel, 12 mm a metre of depth); with more, the holding bulkhead is the innermost
+    wall (default half the steel), the layer walls stand evenly from it to the shell (default the rest shared), and each
+    layer is a band of cells and its own room (`P1` against the holding bulkhead out to the shell; `Torpedo protection
+    7 S2`), so a shell meets each wall and the flooding each space. The weight is the walls' sum: unchanged by default.
+  - Neighbours across a longitudinal wall are found by the wall's position (several a side now).
+  - Plates by kind: collision bulkheads 1.5 × the gauge; main and armoured transverse bulkheads 1.3 × in their lowest
+    strake, up to the hold's top (`plate_low_mm`, `plate_low_top`; the tracer reads `BulkheadRow.PlateAt`); wing and
+    centreline at the gauge. Bulkhead weight stays the hull's parametric one, so no weight moves.
+  - Not done: the layers' `fill` (liquid or void): the flooding has no initial contents yet (TODO "Double-bottom
+    contents"); it comes with them.
+  - Every shipped design keeps one layer, so sizes, `protection` and `hits` are as at H2 (V25 lost to the magazine 5 %,
+    dreadnought 4.5 %). A Bismarck with 3 layers and a 45 mm holding bulkhead (her own): from the side 11 mm shell,
+    three spaces of 0.8-2.3 m behind 10.5 mm walls, the 45 mm bulkhead, the magazine; same weight. Torpedoes on it
+    (`torpedo`, 200 hits, 2 a ship, 60 min): holes 136 → 178 m² a hit, water 3,216 → 3,637 t, lost 18 → 21 %: the
+    torpedo model holes every cell within its reach, each layer now one, where the walls should take the blast in
+    turn. To settle before H8 gives designs layers (the flooding session, or E5's blast).
+
 ### H4. The inner line behind the belt (§6.4)
 - `armour.inner_bulkhead {mm, magazines_mm, inboard_m, extent}`: a longitudinal armoured wall from the inner bottom to
   the armour deck. Defaults: on a coal ship with wing bunkers it is the bunkers' inner wall (the German torpedo bulkhead,
