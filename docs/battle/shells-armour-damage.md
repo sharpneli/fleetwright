@@ -50,9 +50,11 @@ better burst points and states; it doesn't rebuild them.
    construction quality; that's not wanted yet, and the table can change to it later.
 3. **Choosing the shell by target belongs to the AI's pass.** This plan builds the tools (the ammunition, the
    outcomes); the AI's pass decides how to use them.
+4. **The shell tech scales with calibre** (S, "How a block scales"): a default template, plus more beside it ("we may
+   want to have silly shells later"). Nothing in the block is limited by period or plausibility, only by what can
+   physically be (memory: allow silliness), so a player's odd shell is a block like any other.
 
-Proposed, for the user to confirm: the shell tech that scales with calibre (S, "How a block scales"), and Thompson as
-the engine from P1 (P1, "The formula").
+Proposed, for the user to confirm: Thompson as the engine from P1 (P1, "The formula").
 
 ## What shipgen needs
 
@@ -191,6 +193,13 @@ material row per name (the class's material table exists, with names only). `set
   - Structural steels get their own Q instead of the 0.6 catch-all.
   - **The plate-only bench** (`shipgen pen-check`): the game's `Terminal` plate step against `armor/07-*.csv` (the USN
     16″ table, NPG 1946–47, the Italian obliquity tables, Annapolis, Indian Head, Beardmore, Baden). No rolls.
+  - **Why the game has the thickness form today:** no decision was made. The damage research's game shortcut
+    (`05-mechanics-and-games.md` §A3: "precompute per gun `pen_belt(range)`, `pen_deck(range)` ... penetrates if pen ×
+    rand > eff") and `gunfire_ref.py`'s `pen_mm` both ask what thickness a shell beats, because the tables they were
+    fitted to (navweaps') are printed that way, as RTW's and the tabletop games' are. Garzke & Dulin is itself a fit of
+    thickness, so it has no limit-velocity form. 4.3a ported the reference as it was (fighting.md 4.3a, "Penetration is
+    the reference's own fit") and asked the user to keep it or not (fighting.md question 1). The thickness form stays
+    right for readouts ("400 mm at 15 km"); the plate step wants the velocity.
   - **The formula: Thompson** (proposed). It is the basis the Q table is on, and it gives the same answers as today's
     fit except on thin decks under small shells (+13%). It's cheaper per plate:
     - `V_L = 0.024056·D·√(T/W)·F / cos Ob`, with `F = 6·(T/D − 0.45)·(Ob² + 2000) + 40000` (Ob in degrees): one
@@ -257,9 +266,7 @@ material row per name (the class's material table exists, with names only). `set
 
 ## Questions for the user
 
-1. **The shell tech that scales with calibre** ("How a block scales"): two or three blocks a navy and year, a
-   battery's `mass_kg` overriding. Agreed?
-2. **Thompson from P1**, checked by the plate bench first. Agreed?
+1. **Thompson from P1**, checked by the plate bench first. Agreed?
 
 ## Steps at a glance
 
