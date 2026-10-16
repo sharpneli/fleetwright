@@ -236,13 +236,7 @@ public static class Hitbox
             bulkheads.AddRange(Armour.CitadelBulkheads(ag).Select(BulkheadReport));
         // the magazine boxes on the magazines as the subdivision gave them their cells: each room's stretch, floor, crown and
         // its cells' width (inside the wing walls the box's sides armour)
-        var subCells = inner.Subdivision.Cells.ToDictionary(c => c.Id, StringComparer.Ordinal);
-        var (boxDecks, boxEnds) = Armour.BoxPlates(design, Armour.MagazineRuns(inner.Subdivision.Rooms.Where(r => r.Kind == "magazine" && r.Cells.Count > 0)
-            .Select(r =>
-            {
-                var own = r.Cells.Where(subCells.ContainsKey).Select(id => subCells[id]).Where(c => c.Room == r.Id).ToList();
-                return (r.X0, r.X1, own.Count > 0 ? own.Max(c => Math.Max(Math.Abs(c.Y0), Math.Abs(c.Y1))) : 0.0, r.Base, r.Top);
-            })), D);
+        var (boxDecks, boxEnds) = Armour.BoxPlates(design, Armour.MagazineRuns(Subdivision.MagazineRooms(inner.Subdivision)), D);
         bulkheads.AddRange(ag.EndBulkheads.Concat(ag.EndPlates).Concat(boxEnds).Select(BulkheadReport));
         if (bulkheads.Count > 0)
             armour.Bulkheads = bulkheads;

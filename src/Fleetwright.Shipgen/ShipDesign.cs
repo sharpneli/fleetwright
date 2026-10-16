@@ -6,7 +6,7 @@ public static class ShipDesign
 {
     /// <summary>The generator's version: bumped whenever its output changes on purpose (each `golden-update` commit), so
     /// anything compiled from a build (a ShipClass, a cache entry) knows it's stale.</summary>
-    public const int Version = 17;
+    public const int Version = 18;
 
     /// <summary>Input errors. limits false skips the numeric ranges (--no-limits); structural checks stay.</summary>
     public static List<string> Validate(Design design, bool limits = true)
@@ -433,11 +433,33 @@ public static class ShipDesign
         return new BridgeReport(b.Level, b.Tower, Math.Round(eye, 2), Math.Round(FireControl.HorizonKm(eye), 1), b.Level >= b.Need, b.Need);
     }
 
+    static bool SameSpans(List<(double X0, double X1, double HalfWidth, double Base, double Top)> a,
+        List<(double X0, double X1, double HalfWidth, double Base, double Top)> b)
+    {
+        var (sa, sb) = (Armour.MagazineRuns(a), Armour.MagazineRuns(b));
+        if (sa.Count != sb.Count)
+            return false;
+        for (int i = 0; i < sa.Count; i++)
+            if (Math.Abs(sa[i].X0 - sb[i].X0) > 0.05 || Math.Abs(sa[i].X1 - sb[i].X1) > 0.05)
+                return false;
+        return true;
+    }
+
     /// <summary>Design the ship.</summary>
     public static Ship Build(Design design)
     {
         var (lay, r, sized) = Solve(Ammunition.WithShellMasses(design));
         var inner = InteriorOf(lay, sized, r);
+        // the armour that goes by the magazines (zones, the inner bulkhead's and the boxes' weights) was solved on Stow's
+        // magazines; where the subdivision gave a room more of the hull (a short magazine takes its whole section), solve once
+        // more on the rooms. The sections don't move with it: they stand where the rooms and the citadel put them
+        if (Armour.GoesByMagazines(sized) && Subdivision.MagazineRooms(inner.Subdivision) is { Count: > 0 } rooms
+            && !SameSpans(rooms, lay.Geo.MagazineBoxes ?? []))
+        {
+            lay.Geo.MagazineRooms = rooms;
+            r = Navarch.Solve(sized, lay.Weights, lay.Geo);
+            inner = InteriorOf(lay, sized, r);
+        }
         return new Ship(design, ReportOf(design, lay, r, sized, inner), Hitbox.ExportHitboxes(lay, sized, r, inner), lay.Dressing);
     }
 }

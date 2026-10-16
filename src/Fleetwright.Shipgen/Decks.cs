@@ -101,9 +101,16 @@ public sealed class Geo
     /// <summary>The magazines as Ordnance.Stow put them (heights above the main deck): the inner bulkhead, the belt's zones
     /// and the magazine boxes go by them.</summary>
     public List<(double X0, double X1, double HalfWidth, double Base, double Top)>? MagazineBoxes;
+    /// <summary>The magazine rooms as the subdivision gave them their cells (Subdivision.MagazineRooms), once a build has
+    /// one: a short magazine takes its whole section, so a room can be longer than Stow made it. The zones, the inner
+    /// bulkhead's and the boxes' weights go by these when set (ShipDesign.Build solves once more with them).</summary>
+    public List<(double X0, double X1, double HalfWidth, double Base, double Top)>? MagazineRooms;
+
+    /// <summary>The magazines as the armour goes by them: the rooms' cells when known, else as Stow put them.</summary>
+    public List<(double X0, double X1, double HalfWidth, double Base, double Top)> Magazines => MagazineRooms ?? MagazineBoxes ?? [];
 
     /// <summary>The magazines' stretches along the hull.</summary>
-    public IEnumerable<(double X0, double X1)> MagazineSpans => (MagazineBoxes ?? []).Select(m => (m.X0, m.X1));
+    public IEnumerable<(double X0, double X1)> MagazineSpans => Magazines.Select(m => (m.X0, m.X1));
     public (double X, double Z)? Magazine;
     public (double X, double Z)? Avgas;
 

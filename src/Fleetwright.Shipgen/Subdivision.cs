@@ -244,6 +244,26 @@ public static class Subdivision
         return result;
     }
 
+    /// <summary>The magazine rooms as the subdivision gave them their cells: each room's stretch, its cells' widest
+    /// half-width, floor and crown (above the main deck). A short magazine takes its whole section, so a room can be longer
+    /// than Stow made it (protection-layers.md finding 1).</summary>
+    public static List<(double X0, double X1, double HalfWidth, double Base, double Top)> MagazineRooms(SubdivisionData sub)
+    {
+        var byId = sub.Cells.ToDictionary(c => c.Id, StringComparer.Ordinal);
+        var result = new List<(double X0, double X1, double HalfWidth, double Base, double Top)>();
+        foreach (var r in sub.Rooms)
+        {
+            if (r.Kind != "magazine" || r.Cells.Count == 0)
+                continue;
+            double hw = 0.0;
+            foreach (var id in r.Cells)
+                if (byId.TryGetValue(id, out var c) && c.Room == r.Id)
+                    hw = Math.Max(hw, Math.Max(Math.Abs(c.Y0), Math.Abs(c.Y1)));
+            result.Add((r.X0, r.X1, hw, r.Base, r.Top));
+        }
+        return result;
+    }
+
     /// <summary>The subdivision of the laid-out ship.</summary>
     public static SubdivisionData Build(Layout lay, Design design, Navarch.Result res, ArmourLayout ag, bool armoured, HullForm form)
     {

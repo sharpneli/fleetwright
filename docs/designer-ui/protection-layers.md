@@ -179,6 +179,8 @@ sides on the wing wall, wings never fuel.
    2 m slivers (`protection-layers-kgv.png`). Proposed fix: zones (and the inner bulkhead's `magazines_mm`) from the
    magazine rooms' cells. That changes only KGV's golden, a few tonnes. To fix before or in the port; it is the same
    root as the plan's open "box weight from Stow's compartments".
+   **Fixed 2026-10-16** (protection-plan.md, H8): the zones and the weights now go by the magazine rooms; KGV's S
+   aft zone runs −52.9 to −43.9 m with its room.
 2. **Wings in the fine ends look wider than asked.** On the destroyer, the 1.2 m wing is 2.3 m wide in its forward
    magazine's cut. H2 measures the wing halfway up the magazine, and box cells can't follow the V. That is right, but
    the section shows it plainly. The wing handle sets the input, not the cell; its tooltip should say so.

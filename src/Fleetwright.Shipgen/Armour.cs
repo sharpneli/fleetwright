@@ -128,6 +128,19 @@ public static class Armour
         return (mm, Math.Max(0.0, ib?.MagazinesMm ?? mm), ib?.InboardM);
     }
 
+    /// <summary>Does any armour go by where the magazines are: a belt or citadel deck zone, an inner bulkhead thicker or
+    /// thinner beside them, a magazine box.</summary>
+    public static bool GoesByMagazines(Design design)
+    {
+        var a = design.Armour;
+        if (a is null)
+            return false;
+        var (mm, mags, _) = InnerBulkhead(design);
+        var box = MagazineBox(design);
+        return a.BeltMagazinesMm is double bm && bm != (a.BeltMm ?? 0) || (a.Decks ?? []).Any(d => d.MagazinesMm is double m && m != (d.Mm ?? 0))
+               || mags != mm || box.SideMm + box.CrownMm + box.EndMm + box.FloorMm > 0;
+    }
+
     /// <summary>The wing between a magazine and the side, each side, m.</summary>
     public static double MagazineWingM(Design design, double B) => Math.Max(0.0, design.Armour?.MagazineWingM ?? MagazineWingShare * B);
     const double BeltHA = 0.30, BeltHB = 2.4;
@@ -334,14 +347,7 @@ public static class Armour
         var roof = over.MinBy(d => d.Z);
         // zones (protection-plan.md H5): a citadel deck and the belt thicker (or thinner) beside the magazines, where the
         // last layout pass stowed them
-        var mags = new List<(double X0, double X1)>();
-        foreach (var (m0, m1) in geo.MagazineSpans.OrderBy(m => m.X0))
-        {
-            if (mags.Count > 0 && m0 <= mags[^1].X1 + 1e-6)
-                mags[^1] = (mags[^1].X0, Math.Max(mags[^1].X1, m1));
-            else
-                mags.Add((m0, m1));
-        }
+        var mags = MergedSpans(geo.MagazineSpans);
         decks = decks.SelectMany(d => Zoned(d, mags)).ToList();
         double h0 = BeltHA * T + BeltHB;
         double below = a.BeltDepthM ?? h0 / 2, above = a.BeltHeightM ?? h0 / 2;
@@ -565,9 +571,9 @@ public static class Armour
     }
 
     /// <summary>The magazines as runs of those that touch end to end on the same floor and under the same crown: each
-    /// run's stretch, its widest half-width, floor and crown (above the main deck). From Stow's magazines (geo, for the
-    /// weights) or the subdivision's (for the plates).</summary>
-    public static List<(double X0, double X1, double HalfWidth, double Base, double Top)> MagazineRuns(Geo? geo) => MagazineRuns(geo?.MagazineBoxes ?? []);
+    /// run's stretch, its widest half-width, floor and crown (above the main deck). From geo (the rooms' cells once a build
+    /// has them, else Stow's magazines; for the weights) or the subdivision's (for the plates).</summary>
+    public static List<(double X0, double X1, double HalfWidth, double Base, double Top)> MagazineRuns(Geo? geo) => MagazineRuns(geo?.Magazines ?? []);
 
     public static List<(double X0, double X1, double HalfWidth, double Base, double Top)> MagazineRuns(
         IEnumerable<(double X0, double X1, double HalfWidth, double Base, double Top)> mags)
@@ -584,6 +590,20 @@ public static class Armour
                 runs.Add(m);
         }
         return runs;
+    }
+
+    /// <summary>Stretches along the hull as their union, aft to forward.</summary>
+    static List<(double X0, double X1)> MergedSpans(IEnumerable<(double X0, double X1)> spans)
+    {
+        var merged = new List<(double X0, double X1)>();
+        foreach (var (m0, m1) in spans.OrderBy(m => m.X0))
+        {
+            if (merged.Count > 0 && m0 <= merged[^1].X1 + 1e-6)
+                merged[^1] = (merged[^1].X0, Math.Max(merged[^1].X1, m1));
+            else
+                merged.Add((m0, m1));
+        }
+        return merged;
     }
 
     /// <summary>A deck piece cut where the magazines are when it's thicker or thinner over them: the pieces over the
@@ -698,8 +718,9 @@ public static class Armour
         {
             // each side over the citadel, from the inner bottom to the armour deck; thicker beside the magazines
             double floor = Powerplant.DoubleBottom(D), top = g.RoofZ ?? g.Waterline;
+            // their union: magazines side by side or one over another share a stretch of wall
             double mag = 0;
-            foreach (var (m0, m1) in geo?.MagazineSpans ?? [])
+            foreach (var (m0, m1) in MergedSpans(geo?.MagazineSpans ?? []))
                 mag += Math.Max(0.0, Math.Min(g.X1, m1) - Math.Max(g.X0, m0));
             mag = Math.Min(mag, lc);
             double area = 2 * Math.Max(0.0, top - floor);

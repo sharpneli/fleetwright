@@ -279,8 +279,8 @@ this plan builds the layers so E1 has something to work on.
   deck pieces on the subdivision's deck at their height (a platform deck, the inner bottom), and the ends are armour
   bulkheads, one where two boxes meet. All are as wide as the magazines' cells. The plates are laid on the subdivision's
   magazine rooms (`Armour.BoxPlates` in the hitbox export), because a short grouped magazine takes its whole section. The
-  weight comes from Stow's compartments (`Geo.MagazineBoxes`), so it runs a little under where a cell outgrows its
-  compartment: open.
+  weight came from Stow's compartments (`Geo.MagazineBoxes`), so it ran a little under where a cell outgrows its
+  compartment; fixed 2026-10-16 with H8b's zones fix (below, H8).
   - Two bugs fixed on the way: armour decks and bulkheads narrower than the hull (the steering gear's box) had lost their
     width in the export, so in the sim they covered the whole beam (now `w` on both, kept to by the tracer, the
     matchup's deck by its share of the beam); and fragments through a deck saw the deck row's armour only, 0 on a deck
@@ -405,6 +405,16 @@ this plan builds the layers so E1 has something to work on.
   family, with the weight changes reported.
 - The Protection tab shows the new parts (platform deck, wing, holding and inner bulkheads, boxes, slopes) in its
   elevation and midship section. That is a UI session of its own, mockup then port (memory).
+
+- **The magazines' stretch fixed 2026-10-16** (H8b's mockup, finding 1 in `docs/designer-ui/protection-layers.md`): the
+  zones, the inner bulkhead's weight and the boxes' weight went by Stow's magazines (`Geo.MagazineBoxes`), while the
+  inner bulkhead's and the boxes' plates went by the subdivision's magazine rooms, and a short magazine takes its whole
+  section: KGV's S magazines had 2 m of zone on a 9 m room. Now `ShipDesign.Build`, once the interior is built, takes
+  the rooms (`Subdivision.MagazineRooms`, `Geo.MagazineRooms`) and solves once more on them where they differ, for a
+  design whose armour goes by the magazines (`Armour.GoesByMagazines`); the sections don't move with it (re-solving on
+  Stow's own spans matches all 372 goldens). Fixed on the way: the inner bulkhead's weight summed magazines that share a
+  stretch (Mikasa's four secondary magazines over one 8.7 m) instead of their union. 22 goldens move, +0.0 to +0.85 %
+  standard (Kent +0.85, Dunkerque +0.71, KGV +0.49, Lion +0.63, Nassau +0.01). `ShipDesign.Version` 18.
 
 - **H8a done 2026-10-16** (the templates and the designs moved; the Protection tab is H8b, a session of its own, the
   user). What was built:
