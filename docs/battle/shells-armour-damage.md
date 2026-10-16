@@ -37,18 +37,22 @@ better burst points and states; it doesn't rebuild them.
 - **One implementation** (memory): the benches run the game's `Terminal`; `armor_pen_ref.py` stays a reference, not
   a second engine.
 
-## A decision to approve first
+## Decided (the user, 2026-10-16)
 
-**DECISIONS.md, 2026-10-03**, says armour materials are "a plain string ... the user wants only a string reference
-here, with no yield strengths or other properties in this pipeline", and that armour weighs 7.85 t/m³ whatever it is.
-This plan reverses it (the user, 2026-10-16: "the armor name templates may be switched to physical/model parameters").
-What changes:
+1. **Materials become data.** DECISIONS.md's 2026-10-03 "plain string" for armour materials is reversed: "it was more
+   of a placeholder at that point. Now that we have the research we have some actual values to input to the designer
+   side." Recorded in DECISIONS.md. What changes:
+   - A material becomes a block of numbers (below). Its name is still the label the parts use.
+   - **Mass follows the material's density.** Steel armours differ under 0.5%, so most ships don't move. Wrought iron
+     (7.7), compound (7.75), wood (0.65–0.75) and aluminium alloy (2.7) do. Wooden PT boats, aluminium deckhouses and
+     the ironclads shift, and they're reported (memory: weights follow physics).
+2. **A design-level `materials` table**, keyed by name. A block per part would be the way to model variance in
+   construction quality; that's not wanted yet, and the table can change to it later.
+3. **Choosing the shell by target belongs to the AI's pass.** This plan builds the tools (the ammunition, the
+   outcomes); the AI's pass decides how to use them.
 
-- A material becomes a block of numbers (below). Its name is still the label the parts use.
-- **Mass follows the material's density.** Steel armours differ under 0.5%, so most ships don't move. Wrought iron
-  (7.7), compound (7.75), wood (0.65–0.75) and aluminium alloy (2.7) do. Wooden PT boats, aluminium deckhouses and the
-  ironclads shift, and they're reported (memory: weights follow physics).
-- Once agreed, the decision gets a dated entry in DECISIONS.md that supersedes the old one.
+Proposed, for the user to confirm: the shell tech that scales with calibre (S, "How a block scales"), and Thompson as
+the engine from P1 (P1, "The formula").
 
 ## What shipgen needs
 
@@ -71,6 +75,29 @@ A **shell tech** block, calibre-free like `machinery.tech`, so one block serves 
 Per battery: `shells` (the kinds carried, each a tech block or a template name, with the outfit's shares), and an
 optional `muzzle_velocity_ms` (the gun's, until a gun tech exists; the placeholder's 280 + 11·L meanwhile).
 `rounds_per_gun` is already there.
+
+**How a block scales with calibre.** Everything in it is either a share or a calibre-relative number, because that's
+how the physics works and how the sources quote it:
+
+- **Mass = `w_d3` × D³.** Within one navy's generation of shells, W/D³ is nearly flat from about 8″ up
+  (armour-and-damage research tables, lb/in³): the IJN's Type 91 0.54 at 20, 36 and 46 cm; the Kriegsmarine's 0.53 at
+  20.3, 28 and 38 cm; the RN's WWII APC 0.57–0.58 at 14″ and 15″ (Nelson's light 16″ 0.50, a choice); the USN's
+  super-heavy 0.65–0.66 at 8″ and 16″.
+- **Filler, cap and windscreen are shares of the mass:** AP 1.5–3.5%, a hard cap 9–12%.
+- **The fuze's start threshold, the decap thresholds and the break-up limits are in calibres or T/D.** A fuze starting
+  on 0.07 calibre starts on 28 mm for a 16″ shell and 11 mm for a 6″, which is why big AP passes through destroyers.
+- **The delay is in seconds**, the same for every calibre (the burst distance follows the residual velocity).
+- **The nose (crh) and the drag form factor are shapes.**
+
+What doesn't fit one block:
+- **Light, hand-worked guns ran lighter:** the USN 5″/38 0.44, the IJN 12.7 cm 0.41, the KM 15 cm 0.49. They are their
+  own templates ("USN 1941 5″ AA common"), as the plant templates have a destroyer's block beside a battleship's.
+- **A new generation is a new block:** the USN 14″/45's older AP at 0.55 beside the Mk 8 at 0.66.
+- **One battery's own shell:** `mass_kg` on the battery overrides `w_d3` (the 6″/47's 59 kg super-heavy, a Nelson
+  shell).
+
+So a navy and year has two or three blocks (heavy AP, heavy HE or common, light guns), and a design picks one per kind
+for each battery. That's the same count as its plant templates.
 
 Two more things the ammunition carries, used by later sessions rather than this one:
 
@@ -148,9 +175,9 @@ material row per name (the class's material table exists, with names only). `set
   run `golden-update` with a `ShipDesign.Version` bump and `mono-check`.
 - **S3 The designer.** A shell template picker in the Main battery and Secondary tabs (the template column); the
   battery table shows the kind, mass and fuze. Light, in the tabs' existing style.
-- **Optional, S4 the shell by target.** A battery fires one kind in v0 (AP from heavy guns). Firing HE or common at
-  unarmoured targets is a captain's rule (fire control's side). The matchup bench showed it matters (four light cruisers
-  against a battleship). In this plan, or with the AI's pass?
+- **Not here: the shell by target** (decided). A battery fires one kind in v0 (AP from heavy guns). This plan gives
+  every battery its outfit of kinds; firing HE or common at unarmoured targets is the AI's pass (the matchup bench showed
+  it matters: four light cruisers against a battleship).
 
 ## Phase P: how it hits
 
@@ -164,8 +191,17 @@ material row per name (the class's material table exists, with names only). `set
   - Structural steels get their own Q instead of the 0.6 catch-all.
   - **The plate-only bench** (`shipgen pen-check`): the game's `Terminal` plate step against `armor/07-*.csv` (the USN
     16″ table, NPG 1946–47, the Italian obliquity tables, Annapolis, Indian Head, Beardmore, Baden). No rolls.
-  - **The formula:** the bench decides whether to switch to Thompson. It is on the same basis as the Q table, at about
-    the same cost, and gives the same answers today except thin decks under small shells (+13%).
+  - **The formula: Thompson** (proposed). It is the basis the Q table is on, and it gives the same answers as today's
+    fit except on thin decks under small shells (+13%). It's cheaper per plate:
+    - `V_L = 0.024056·D·√(T/W)·F / cos Ob`, with `F = 6·(T/D − 0.45)·(Ob² + 2000) + 40000` (Ob in degrees): one
+      square root and a few multiplies. Today's fit takes four `Math.Pow` calls.
+    - It gives the limit *velocity* of a plate, which is what the plate step wants: compare the shell's speed with
+      `V_L`, and the residual follows from both.
+    - The inverse (how thick a plate a shell beats at a range) needs a few Newton steps. Only readouts want it: the
+      matchup's profiles (`Matchup.cs`), `shipgen matchup`, and the designer's immune zone later. A hit never does.
+    - Valid to 75° of obliquity; past it the cosine carries on, and the ricochet gate (P5) takes over from 80°.
+    - Either way it's noise: a hit costs about 200 µs in all (fighting.md 4.3a).
+    - The plate bench still checks it against the trials before the old fit goes.
 - **P2 Caps, decapping, shatter and break-up as states.**
   - The cap is lost on face-hardened plate or past its threshold, with a gap test before the next face-hardened plate.
   - Shatter of uncapped or decapped shells on face-hardened plate: +30–40% at normal, fading to nothing by 55°.
@@ -216,17 +252,14 @@ material row per name (the class's material table exists, with names only). `set
 - Bombs: the deck physics serves them, but bomb shapes and fuzes aren't researched yet.
 - The magazines' venting race, flooding, fire spread and the service networks: their own 4.5 sessions, fed by the
   ammunition's `charge` (S0) and better burst points (P3).
-- The AI choosing the shell by target, unless S4 is taken in.
+- The AI choosing the shell by target (the AI's pass).
+- Variance in construction quality per part (a block per part; decision 2).
 
 ## Questions for the user
 
-1. **Approve reversing the 2026-10-03 decision** (materials as data, mass by density)?
-2. **Where the material blocks live:** a design-level `materials` table keyed by name (recommended: the parts keep
-   their names, a scheme template stays a map, and a block is written once), or a block inline at each part?
-3. **The shell as calibre-free tech** (`w_d3`, filler share, cap share: one block per navy family, recommended), or
-   explicit shells per battery (mass, filler kg)? The battery may override the mass either way.
-4. **S4, the shell by target:** in this plan, or with the AI's pass?
-5. **Thompson or the current fit:** decide at P1 by the plate bench, or switch now for one basis?
+1. **The shell tech that scales with calibre** ("How a block scales"): two or three blocks a navy and year, a
+   battery's `mass_kg` overriding. Agreed?
+2. **Thompson from P1**, checked by the plate bench first. Agreed?
 
 ## Steps at a glance
 
