@@ -82,7 +82,7 @@ Ship motion and speed in [simulation/ship-motion/](simulation/ship-motion/) (202
 | [stabilisation-tech.md](simulation/ship-motion/stabilisation-tech.md) | Level, cross-level and trunnion tilt; each navy's stabilisation; selected-level firing; loading angles |
 | [heavy-weather-cases.md](simulation/ship-motion/heavy-weather-cases.md) | Coronel, Lofoten, Denmark Strait, Bismarck's end, North Cape and other actions where weather decided the shooting |
 
-Ballistics has no note of its own: the point-mass ballistics fitted to each gun live in [fire_control_ref.py](simulation/fire_control_ref.py) and are summarised in the companion-code paragraph of [fire-control-research.md](simulation/fire-control-research.md); penetration formulas are in [05-mechanics-and-games.md](simulation/damage-research/05-mechanics-and-games.md).
+Ballistics has no note of its own: the point-mass ballistics fitted to each gun live in [fire_control_ref.py](simulation/fire_control_ref.py) and are summarised in the companion-code paragraph of [fire-control-research.md](simulation/fire-control-research.md); penetration formulas were first gathered in [05-mechanics-and-games.md](simulation/damage-research/05-mechanics-and-games.md) and are superseded by [simulation/armor/](simulation/armor/00-overview.md).
 
 **Damage**
 
@@ -97,6 +97,19 @@ Ballistics has no note of its own: the point-mass ballistics fitted to each gun 
 | [06-service-networks.md](simulation/damage-research/06-service-networks.md) | Hydraulics, electrics, electronics: designer outputs and damage/repair models (draft) | — |
 | [07-magazine-explosions.md](simulation/damage-research/07-magazine-explosions.md) | Magazine explosions after ignition | — |
 | [08-gunfire-effects.md](simulation/damage-research/08-gunfire-effects.md) | What a shell does when it hits | [gunfire_ref.py](simulation/damage-research/gunfire_ref.py) |
+
+**Armour penetration** in [simulation/armor/](simulation/armor/) (2026-10-16)
+
+| Note | What it covers | Scripts / data |
+|---|---|---|
+| [00-overview.md](simulation/armor/00-overview.md) | Synthesis: what "penetration" means, the formula landscape (Thompson F as the reference engine), armour quality on one basis by era and nation, shells, fuzing, obliquity and multiple layers, a suggested model, calibration targets, what changes in 05/08 | [armor_pen_ref.py](simulation/armor/armor_pen_ref.py) |
+| [01-physics-formulas.md](simulation/armor/01-physics-formulas.md) | Ballistic-limit definitions, failure physics vs T/D, every historical formula, residual velocity, decks, scatter | — |
+| [02-facehardened-caps.md](simulation/armor/02-facehardened-caps.md) | Face-hardened armour, scaling, Okun's FACEHARD, shatter and the shatter gap, caps and decapping, shell quality by navy | — |
+| [03-materials.md](simulation/armor/03-materials.md) | 35 armour materials 1859–1945: composition, density, hardness, face depth, thickness range, quality, nation timelines, costs | — |
+| [04-shells-fuzes.md](simulation/armor/04-shells-fuzes.md) | Projectiles by era, caps, fillers, fuze arming / start threshold / delay, burst location, dud statistics | — |
+| [05-obliquity-multilayer.md](simulation/armor/05-obliquity-multilayer.md) | Obliquity laws, normalisation, ricochet, decks, spaced and laminated plates, slope-behind-belt, joints, underwater hits | — |
+| [06-early-era.md](simulation/armor/06-early-era.md) | 1860–1910: period formulas, inches of wrought iron, plate equivalences, trials, combat evidence | — |
+| [07-calibration-notes.md](simulation/armor/07-calibration-notes.md) | The calibration dataset: 41 guns' penetration tables, 225 trial rows, how each was produced and how far to trust it | `07-*.csv` |
 
 **Ship design model**
 
