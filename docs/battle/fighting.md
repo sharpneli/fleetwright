@@ -388,7 +388,8 @@ between cells), its thickness, material and normal.
     149 m firing east on the equator). The full variational equations would close that for ~50% more memory: a
     deepening if fire control ever cares.
 - **Shells** (`Sim/ShellSystem.cs`, system 3):
-  - **Records** are pooled, with two events each: the window (where `ShellWindowTopM` is crossed) and the end.
+  - **Records** are pooled, with two events each: the window (where `ShellWindowTopM` is crossed) and the end. A hit
+    the shell runs on to under the water has a third between them, when it meets the water: its splash there.
   - **At the window,** the track to the water and on under it as far as `WaterRun.ReachM`, in four chords, goes through
     `HitQuery` against the ships the index finds. A ship on the fine tick is carried on along its course for the
     window's fraction of a second; one on rails or coarse is where its own function puts it.

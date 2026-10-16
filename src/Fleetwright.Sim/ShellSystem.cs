@@ -18,6 +18,7 @@ public enum ShellCommand : ushort
 /// <item>its danger window, when it comes down through <see cref="SimSettings.ShellWindowTopM"/>: its track from there
 /// to the water (and on under it as far as <see cref="WaterRun.ReachM"/>), in chords, goes through the hit query
 /// against the ships the world's index finds near the fall, each where it is then; the first ship it meets is hit;</item>
+/// <item>a hit it runs on under the water to has a third, when it meets the water: its splash there;</item>
 /// <item>its end, the hit or the water: a splash (or a hit's mark) goes into the ring the screens read, and the shell's
 /// record is freed.</item>
 /// </list>
@@ -26,7 +27,7 @@ public enum ShellCommand : ushort
 public sealed class ShellSystem : IWorldSystem
 {
     public const byte Id = 3;
-    const ushort WindowEvent = 1, EndEvent = 2;
+    const ushort WindowEvent = 1, EndEvent = 2, WaterEvent = 3;
     const int Chords = 4;
 
     /// <summary>A shell in flight.</summary>
@@ -269,19 +270,11 @@ public sealed class ShellSystem : IWorldSystem
             return;
         if (e.Code == WindowEvent)
             Window(world, ref s, e.Entity);
+        else if (e.Code == WaterEvent)
+            AddSplash(SplashOf(ref s, s.WaterPoint, world.Time.Ms, -1));   // a hit under the water: its splash, as it met it
         else if (e.Code == EndEvent)
         {
-            var table = Ballistics[s.Table];
-            table.Position(s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, s.EndS, out var vel);
-            var up = s.End.Normalized();
-            double vu = Vec3d.Dot(vel, up), vl = Math.Max(vel.Length, 1e-9);
-            float fall = (float)double.RadiansToDegrees(Math.Asin(Math.Clamp(-vu / vl, -1, 1)));
-            float bearing = (float)Earth.Heading(s.End, vel - up * vu);
-            var kind = s.ShooterClass >= 0 && s.ShellType >= 0 ? ships.Class(s.ShooterClass).ShellTypes[s.ShellType].Kind : ShellKind.Ap;
-            // a hit under the water splashed where it met it (at the hit's moment: a moment's splashes come together)
-            if (s.Hit >= 0 && s.WaterRunM > 0)
-                AddSplash(new Splash(s.WaterPoint, world.Time.Ms, -1, s.Salvo, s.Shooter, table.Key.CalibreMm, fall, bearing, kind, s.Dye));
-            AddSplash(new Splash(s.End, world.Time.Ms, s.Hit, s.Salvo, s.Shooter, table.Key.CalibreMm, fall, bearing, kind, s.Dye));
+            AddSplash(SplashOf(ref s, s.End, world.Time.Ms, s.Hit));
             if (s.Hit >= 0)
             {
                 Hits++;
@@ -303,6 +296,20 @@ public sealed class ShellSystem : IWorldSystem
             if (s.Record >= 0)
                 Gunnery?.Landed(world, s.Record, s.End, s.Hit);
         }
+    }
+
+    /// <summary>A shell's splash (or a hit's mark) at a point and moment: the angle it fell at and the way it flew where it
+    /// came down to the water (or the hull, in the air).</summary>
+    Splash SplashOf(ref Shell s, Vec3d at, long ms, int ship)
+    {
+        var table = Ballistics[s.Table];
+        table.Position(s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, Math.Min(s.EndS, s.WaterS), out var vel);
+        var up = at.Normalized();
+        double vu = Vec3d.Dot(vel, up), vl = Math.Max(vel.Length, 1e-9);
+        float fall = (float)double.RadiansToDegrees(Math.Asin(Math.Clamp(-vu / vl, -1, 1)));
+        float bearing = (float)Earth.Heading(at, vel - up * vu);
+        var kind = s.ShooterClass >= 0 && s.ShellType >= 0 ? ships.Class(s.ShooterClass).ShellTypes[s.ShellType].Kind : ShellKind.Ap;
+        return new Splash(at, ms, ship, s.Salvo, s.Shooter, table.Key.CalibreMm, fall, bearing, kind, s.Dye);
     }
 
     void AddSplash(in Splash sp)
@@ -382,6 +389,9 @@ public sealed class ShellSystem : IWorldSystem
                 }
             }
         }
+        // a hit under the water: its splash when it met the water, then the hit when it gets to the hull
+        if (s.Hit >= 0 && s.WaterRunM > 0)
+            world.Schedule(new WorldTime(Math.Max(world.Time.Ms, s.FiredMs + (long)Math.Floor(s.WaterS * 1000))), EventTier.Fine, slot, Id, WaterEvent, s.Generation);
         world.Schedule(new WorldTime(Math.Max(world.Time.Ms, s.FiredMs + (long)Math.Floor(s.EndS * 1000))), EventTier.Fine, slot, Id, EndEvent, s.Generation);
     }
 

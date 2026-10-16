@@ -178,6 +178,7 @@ public class ShellSystemTests(ITestOutputHelper output)
         w.Apply(ShellSystem.FireAt(shooter, 0, lat, lon));
         bool seen = false;
         var snap = new Snapshot();
+        var met = new HashSet<long>();   // the moments shells met the water on their way to a hit
         for (int k = 0; k < 600 && (k == 0 || w.Shells.InFlight > 0); k++)
         {
             w.AdvanceTo(w.Time + 50);
@@ -187,6 +188,7 @@ public class ShellSystemTests(ITestOutputHelper output)
                 if (v.Hit[i] >= 0 && v.WaterS[i] < v.EndS[i])
                 {
                     seen = true;
+                    met.Add(v.FiredMs[i] + (long)Math.Floor(v.WaterS[i] * 1000));
                     Assert.True(Earth.Distance(v.Water[i], water) < 15, "met the water short of the side");
                     Assert.True((v.End[i] - v.Water[i]).Length > 1, "ran on to the hull");
                     Assert.True(v.End[i].Length < Earth.Radius, "the hull under the water");
@@ -202,9 +204,12 @@ public class ShellSystemTests(ITestOutputHelper output)
         Assert.True(hits > 0, "some ran on under the water to the hull");
         Assert.True(seen);
         Assert.Equal(guns, splashes);   // every shell splashed, hit or not
-        for (int i = 0; i < s.Count; i++)
-            if (s.Ship[i] >= 0)
-                Assert.Contains(Enumerable.Range(0, s.Count), j => s.Ship[j] < 0 && s.Ms[j] == s.Ms[i] && s.Salvo[j] == s.Salvo[i]);
+        // each hit's splash comes when its shell met the water, ahead of the hit
+        var splashMs = Enumerable.Range(0, s.Count).Where(i => s.Ms[i] > fired && s.Ship[i] < 0).Select(i => s.Ms[i]).ToList();
+        var hitMs = Enumerable.Range(0, s.Count).Where(i => s.Ms[i] > fired && s.Ship[i] >= 0).Select(i => s.Ms[i]).ToList();
+        output.WriteLine($"splashes at {string.Join(", ", splashMs.Order().Select(m => m - fired))} ms, hits at {string.Join(", ", hitMs.Order().Select(m => m - fired))} ms");
+        Assert.All(splashMs, m => Assert.Contains(m, met));
+        Assert.True(splashMs.Max() < hitMs.Max() && splashMs.Min() < hitMs.Min(), "the splashes before the hits");
     }
 
     [Fact]
