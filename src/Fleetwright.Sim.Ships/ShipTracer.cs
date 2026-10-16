@@ -353,7 +353,12 @@ public static class ShipTracer
                         ref readonly var w = ref c.Bulkheads[e.Through];
                         var n = w.Side == Side.None ? new P3(Math.Sign(w.X == 0 || double.IsNaN(w.X) ? 1 : w.X), 0, 0)
                             : new P3(0, w.Side == Side.Port ? -1 : 1, 0);
-                        Add(CrossingKind.Plate, PlateKind.Bulkhead, e.Through, s, w.PlateAt(Z(s)), c.Plating.Material, n);
+                        // a longitudinal wall's armour (the inner bulkhead behind the belt) in the same crossing; a
+                        // transverse one's is crossed as its own plane (Planes)
+                        double z = Z(s);
+                        bool armour = w.Side != Side.None && w.ArmourMm > 0 && z >= w.ArmourBottom - Eps && z <= w.ArmourTop + Eps;
+                        Add(CrossingKind.Plate, PlateKind.Bulkhead, e.Through, s, w.PlateAt(z) + (armour ? w.ArmourMm : 0),
+                            armour && w.ArmourMaterial >= 0 ? w.ArmourMaterial : c.Plating.Material, n);
                     }
                     break;
                 }

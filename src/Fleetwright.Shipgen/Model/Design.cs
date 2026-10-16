@@ -352,6 +352,8 @@ public sealed record ArmourInput
     public UpperBeltInput? UpperBelt { get; init; }
     public EndBeltsInput? EndBelts { get; init; }
     public SteeringBoxInput? SteeringBox { get; init; }
+    /// <summary>An armoured longitudinal wall behind the belt, each side over the citadel (protection-plan.md H4).</summary>
+    public InnerBulkheadInput? InnerBulkhead { get; init; }
     /// <summary>The armour material per part (Armour.ArmourParts).</summary>
     public Dictionary<string, string>? Materials { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
@@ -391,6 +393,18 @@ public sealed record EndBeltInput
     public double? Reach { get; init; }
     public double? BulkheadMm { get; init; }
     public string? Material { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>The inner line behind the belt (protection-plan.md H4): an armoured longitudinal wall from the inner bottom to
+/// the citadel's armour deck, each side. It is the wall a TDS (its holding bulkhead), wing bunkers or a magazine's wing
+/// already put there, or one InboardM in from the side (null: the magazine wing's width). Mm over the citadel,
+/// MagazinesMm beside the magazines (null: Mm); 0 for none.</summary>
+public sealed record InnerBulkheadInput
+{
+    public double? Mm { get; init; }
+    public double? MagazinesMm { get; init; }
+    public double? InboardM { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

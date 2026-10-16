@@ -65,6 +65,9 @@ public abstract class Style
         }
         foreach (var k in new[] { "mm", "deck_mm", "bulkhead_mm" })
             l.Add(Lim(0, 2000, "armour", "steering_box", k));
+        l.Add(Lim(0, 2000, "armour", "inner_bulkhead", "mm"));
+        l.Add(Lim(0, 2000, "armour", "inner_bulkhead", "magazines_mm"));
+        l.Add(Lim(0, 20, "armour", "inner_bulkhead", "inboard_m"));
         l.Add(Lim(0, 5, "superstructure", "t_per_m2"));
         l.Add(Lim(1, 30, "superstructure", "tower_levels"));
         l.Add(Lim(0, 30, "superstructure", "levels_over_bridge"));

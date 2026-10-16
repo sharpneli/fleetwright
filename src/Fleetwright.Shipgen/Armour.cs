@@ -75,6 +75,15 @@ public static class Armour
         return (depth, n, holding, layer);
     }
 
+    /// <summary>The inner bulkhead behind the belt (protection-plan.md H4): its armour over the citadel and beside the
+    /// magazines, mm, and how far in from the side it stands where nothing else puts a wall (null: the magazine wing's).</summary>
+    public static (double Mm, double MagazinesMm, double? InboardM) InnerBulkhead(Design design)
+    {
+        var ib = design.Armour?.InnerBulkhead;
+        double mm = Math.Max(0.0, ib?.Mm ?? 0.0);
+        return (mm, Math.Max(0.0, ib?.MagazinesMm ?? mm), ib?.InboardM);
+    }
+
     /// <summary>The wing between a magazine and the side, each side, m.</summary>
     public static double MagazineWingM(Design design, double B) => Math.Max(0.0, design.Armour?.MagazineWingM ?? MagazineWingShare * B);
     const double BeltHA = 0.30, BeltHB = 2.4;
@@ -157,6 +166,8 @@ public static class Armour
             errs.Add("armour.end_belts: use {\"fore\": {\"mm\", \"tip_mm\", \"reach\", \"bulkhead_mm\"}, \"aft\": {...}}");
         if (a.SteeringBox?.Extra is { Count: > 0 })
             errs.Add("armour.steering_box: use {\"mm\", \"deck_mm\", \"bulkhead_mm\"} (0 for none)");
+        if (a.InnerBulkhead?.Extra is { Count: > 0 })
+            errs.Add("armour.inner_bulkhead: use {\"mm\", \"magazines_mm\", \"inboard_m\"} (0 for none)");
         return errs;
     }
 
@@ -382,7 +393,7 @@ public static class Armour
     /// <param name="topside">the side above the widest point: a full-width armour deck is its breadth at its height,
     /// side armour as long as the side it lies on, an armoured bulkhead as wide as the hull up its height (null:
     /// wall-sided).</param>
-    public static List<Weight> ArmourWeights(Design design, double L, double B, double D, ArmourLayout g, Topside? topside = null)
+    public static List<Weight> ArmourWeights(Design design, double L, double B, double D, ArmourLayout g, Topside? topside = null, Geo? geo = null)
     {
         double lc = g.X1 - g.X0;
         double xc = (g.X0 + g.X1) / 2;
@@ -418,6 +429,18 @@ public static class Armour
             double f = a + b > 0 ? (a + 2 * b) / (3 * (a + b)) : 0.5;
             result.Add(new Weight(s.Id, "armour", 2 * (s.X1 - s.X0) * (s.Top - s.Bottom) * Slant(s.Bottom, s.Top) * (a + b) / 2 / 1000 * Weight.Steel,
                 s.X0 + f * (s.X1 - s.X0), Zf(s.Top, s.Bottom)));
+        }
+        var (inMm, inMag, _) = InnerBulkhead(design);
+        if (g.Armoured && lc > 0 && Math.Max(inMm, inMag) > 0)
+        {
+            // each side over the citadel, from the inner bottom to the armour deck; thicker beside the magazines
+            double floor = Powerplant.DoubleBottom(D), top = g.RoofZ ?? g.Waterline;
+            double mag = 0;
+            foreach (var (m0, m1) in geo?.MagazineSpans ?? [])
+                mag += Math.Max(0.0, Math.Min(g.X1, m1) - Math.Max(g.X0, m0));
+            mag = Math.Min(mag, lc);
+            double area = 2 * Math.Max(0.0, top - floor);
+            result.Add(new Weight("Inner bulkhead", "armour", area * ((lc - mag) * inMm + mag * inMag) / 1000 * Weight.Steel, xc, Zf(top, floor)));
         }
         var (tds, layers, holding, layerMm) = Tds(design);
         if (tds > 0 && lc > 0)

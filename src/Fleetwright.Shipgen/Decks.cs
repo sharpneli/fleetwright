@@ -98,6 +98,8 @@ public sealed class Geo
     public Windage? Windage;
     public BridgePlan? Bridge;
     public List<(double X0, double X1)>? Holds;
+    /// <summary>Where the magazines are along the hull (Ordnance.Stow): the inner bulkhead is weighed thicker there.</summary>
+    public List<(double X0, double X1)>? MagazineSpans;
     public (double X, double Z)? Magazine;
     public (double X, double Z)? Avgas;
 

@@ -146,7 +146,7 @@ public static class Navarch
                 ownAt = items.Count;
                 items.AddRange(placed);
             }
-            items.AddRange(Armour.ArmourWeights(design, L, B, D, arm, side));
+            items.AddRange(Armour.ArmourWeights(design, L, B, D, arm, side, geo));
             items.AddRange(style.StructureWeights(design, L, B, T, D, geo, tun));
             double wood = HullWeight.PlatingOf(design).DeckWoodMm;
             if (wood != 0)

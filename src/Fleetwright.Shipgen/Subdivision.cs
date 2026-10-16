@@ -317,6 +317,8 @@ public static class Subdivision
         double tds = plan?.Tds ?? 0.0;
         double wingM = plan?.WingM ?? 0.0;
         var tdsSpec = Armour.Tds(design);
+        var inner = armoured ? Armour.InnerBulkhead(design) : (Mm: 0.0, MagazinesMm: 0.0, InboardM: (double?)null);
+        bool innerLine = Math.Max(inner.Mm, inner.MagazinesMm) > 0;
         double magWing = design.StyleName == "planing" ? 0.0 : Armour.MagazineWingM(design, B);
         var mags = rooms.Where(r => r.Kind == "magazine").ToList();
         var magWingCells = new HashSet<Cell>();   // wing cells a magazine may not take
@@ -372,7 +374,7 @@ public static class Subdivision
                 for (int k = 1; k < tdsSpec.Layers; k++)
                     layerYs.Add(split.Value + (shell - split.Value) * k / tdsSpec.Layers);
             }
-            else if (magWing > 0)
+            else if (magWing > 0 || innerLine && inCit)
             {
                 // a magazine here: a wing of stores between it and the side, up to its crown (protection-plan.md H2)
                 double crown = double.NegativeInfinity;
@@ -390,9 +392,16 @@ public static class Subdivision
                     double zm = (ib + crown) / 2 + D;
                     (split, sKind, sTop) = (Math.Max(0.5, SteelFrame * XsIn(sx0, sx1).Min(x => form.HalfWidth(x, zm)) - magWing), "wing", crown);
                 }
+                else if (innerLine && inCit)
+                    // the inner bulkhead where nothing else stands: its own wall in from the side, up to the armour deck
+                    (split, sKind, sTop) = (Math.Max(0.5, SteelFrame * XsIn(sx0, sx1).Select(form.Waterline).Min() - (inner.InboardM ?? magWing)), "wing", under);
+                if (split is not null && innerLine && inCit)
+                    sTop = Math.Max(sTop, under);
             }
             if (split >= hwmax - 0.3)
                 split = null;
+            // the inner bulkhead's armour on this section's wall: thicker beside a magazine (protection-plan.md H4)
+            double innerMm = innerLine && inCit ? crowns.ContainsKey(si) ? inner.MagazinesMm : inner.Mm : 0.0;
             if (split is double sp)
                 foreach (var (side, sgn) in new[] { ("S", 1), ("P", -1) })
                 {
@@ -401,6 +410,9 @@ public static class Subdivision
                         Id = $"{(sKind == "wing" ? "Wing" : "Torpedo")} bulkhead {sec.Id} {side}", Kind = sKind, Section = sec.Id, Side = side,
                         Y = Math.Round(sgn * sp, 3), X0 = Math.Round(sx0, 3), X1 = Math.Round(sx1, 3), Base = Math.Round(ib, 2),
                         Top = Math.Round(sTop, 2), PlateMm = sKind == "tds" ? Math.Round(tdsSpec.HoldingMm, 1) : null,
+                        ArmourMm = innerMm > 0 ? Math.Round(innerMm, 1) : null, ArmourBottom = innerMm > 0 ? Math.Round(ib, 2) : null,
+                        ArmourTop = innerMm > 0 ? Math.Round(under, 2) : null,
+                        ArmourMaterial = innerMm > 0 && !string.IsNullOrEmpty(ag.BulkheadMaterial) ? ag.BulkheadMaterial : null,
                     });
                     for (int k = 0; k < layerYs.Count; k++)
                         longi.Add(new Bulkhead

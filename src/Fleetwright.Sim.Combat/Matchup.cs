@@ -140,7 +140,12 @@ public sealed class MatchupProfile
                 foreach (ref readonly var p in c.SidePlates)
                     if (x >= p.X0 && x <= p.X1 && z >= p.Bottom && z <= p.Top)
                         best = Math.Max(best, p.ThicknessMm * Quality(q, p.Material));
-                mm[i * nz + k] = best;
+                // the inner bulkhead behind it (docs/shipgen/protection-plan.md H4), as the tracer adds it
+                double inner = 0;
+                foreach (ref readonly var b in c.Bulkheads)
+                    if (b.Side == Fleetwright.Sim.Ships.Side.Starboard && b.ArmourMm > 0 && x >= b.X0 && x <= b.X1 && z >= b.ArmourBottom && z <= b.ArmourTop)
+                        inner = Math.Max(inner, b.ArmourMm * Quality(q, b.ArmourMaterial));
+                mm[i * nz + k] = best + inner;
             }
         return Shares(mm);
     }

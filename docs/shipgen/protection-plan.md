@@ -223,6 +223,21 @@ this plan builds the layers so E1 has something to work on.
 - Bismarck's splinter cells above the armour deck (30 mm walls between the decks) are the same wall over another tier
   range: `extent` takes a tier range. Later in this step, or left out if it doesn't pay.
 
+- **Done 2026-10-16.** `armour.inner_bulkhead {mm, magazines_mm, inboard_m}` (0 by default: no shipped design has one
+  until H8): the armour goes on the wall a section already has inside the citadel (a TDS's holding bulkhead, the wing
+  bunkers' inner wall, a magazine's wing, now carried up to the armour deck), or on one of its own `inboard_m` in from
+  the side (default the magazine wing's width), from the inner bottom to the armour deck; `magazines_mm` beside the
+  magazines. Weighed from its area, thicker over `Geo.MagazineSpans` (where `Stow` put the magazines). The tracer adds a
+  longitudinal wall's armour to its crossing (a transverse one's is its own plane already), and the matchup counts it
+  behind the side, as the rules ask. Bismarck's splinter cells over the armour deck are left out (not worth it yet).
+  - Nassau with 30 mm, 40 at the magazines: +838 t standard (the wall 537 t), from the side 8.6 mm shell, 4 m of stores,
+    46 mm, the magazine; steel before a magazine at 10° 15 → 55 mm (median). Lion's 13.5" AP at 12 km, 10 hits:
+    crippled 22 → 16 %, lost 10 → 7 % (nearly all through the turrets). Matchup lion against it: lost 13.6 → 13.2 %.
+    Dreadnought with 38/51 mm: +1,534 t, 16 → 67 mm.
+  - Along the whole citadel the wall makes wing compartments, so the ship floods one side when holed there: the
+    asymmetric flooding shelved for the everyday hull (TODO), here only for designs that ask, as wing bunkers already do.
+  - Goldens unchanged (372 of 372 match); no version bump.
+
 ### H5. Zones and boxes (§6.5)
 - **Per-zone thickness:** `belt_mm` and a deck's `mm` may be `{magazines, machinery}` (KGV 374/348, Belfast's deck 3 in/2
   in). The layout already knows each stretch.

@@ -368,6 +368,8 @@ public static class Ordnance
                     w.ZRel = ZRel.Deck((bse + top) / 2);
                 }
                 result[r.Id] = (x - l, x, bse, top);
+                if (c.Kind == "magazine")
+                    (lay.Geo.MagazineSpans ??= []).Add((x - l, x));
                 x -= l;
             }
         }
