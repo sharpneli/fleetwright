@@ -1,0 +1,304 @@
+gun,nation,year,cal_mm,shell,shell_type,shell_kg,mv_ms,range_m,strike_v_ms,fall_deg,belt_pen_mm,deck_pen_mm,plate_type,src,note
+"16""/50 Mark 7",USA,1943,406.4,AP Mark 8,APC (super-heavy),1225,762,0,762.0,0,829,,not stated (USN Class A implied),S01,"muzzle; orig: range 0 yd, SV 2500 fps, belt 32.62 in"
+"16""/50 Mark 7",USA,1943,406.4,AP Mark 8,APC (super-heavy),1225,762,4572,694.6,2.5,747,17,not stated (USN Class A implied),S01,"orig: range 5000 yd, SV 2279 fps, belt 29.39 in, deck 0.67 in"
+"16""/50 Mark 7",USA,1943,406.4,AP Mark 8,APC (super-heavy),1225,762,9144,632.2,5.01,664,43,not stated (USN Class A implied),S01,"orig: range 10000 yd, SV 2074 fps, belt 26.16 in, deck 1.71 in"
+"16""/50 Mark 7",USA,1943,406.4,AP Mark 8,APC (super-heavy),1225,762,13716,576.7,9.78,585,71,not stated (USN Class A implied),S01,"orig: range 15000 yd, SV 1892 fps, belt 23.04 in, deck 2.79 in"
+"16""/50 Mark 7",USA,1943,406.4,AP Mark 8,APC (super-heavy),1225,762,18288,530.4,14.92,509,99,not stated (USN Class A implied),S01,"orig: range 20000 yd, SV 1740 fps, belt 20.04 in, deck 3.9 in"
+"16""/50 Mark 7",USA,1943,406.4,AP Mark 8,APC (super-heavy),1225,762,22860,497.4,21.12,441,131,not stated (USN Class A implied),S01,"orig: range 25000 yd, SV 1632 fps, belt 17.36 in, deck 5.17 in"
+"16""/50 Mark 7",USA,1943,406.4,AP Mark 8,APC (super-heavy),1225,762,27432,477.6,28.25,380,169,not stated (USN Class A implied),S01,"orig: range 30000 yd, SV 1567 fps, belt 14.97 in, deck 6.65 in"
+"16""/50 Mark 7",USA,1943,406.4,AP Mark 8,APC (super-heavy),1225,762,32004,474.3,36.27,329,215,not stated (USN Class A implied),S01,"orig: range 35000 yd, SV 1556 fps, belt 12.97 in, deck 8.48 in"
+"16""/50 Mark 7",USA,1943,406.4,AP Mark 8,APC (super-heavy),1225,762,36576,489.8,47.73,280,286,not stated (USN Class A implied),S01,"orig: range 40000 yd, SV 1607 fps, belt 11.02 in, deck 11.26 in"
+"16""/50 Mark 7",USA,1943,406.4,AP Mark 8,APC (super-heavy),1225,762,38720,513.9,51.23,242,357,not stated (USN Class A implied),S01,"max range; orig: range 42345 yd, SV 1686 fps, belt 9.51 in, deck 14.05 in"
+"16""/45 Mark 6",USA,1941,406.4,AP Mark 8,APC (super-heavy),1225,701,0,701.0,0,755,,not stated (USN Class A implied),S02,"muzzle; orig: range 0 yd, SV 2300 fps, belt 29.74 in"
+"16""/45 Mark 6",USA,1941,406.4,AP Mark 8,APC (super-heavy),1225,701,4572,637.0,2.93,676,19,not stated (USN Class A implied),S02,"orig: range 5000 yd, SV 2090 fps, belt 26.6 in, deck 0.76 in"
+"16""/45 Mark 6",USA,1941,406.4,AP Mark 8,APC (super-heavy),1225,701,9144,579.1,6.8,597,47,not stated (USN Class A implied),S02,"page prints deck as 1.87"" (28 mm) - mm is a page typo; inches used; orig: range 10000 yd, SV 1900 fps, belt 23.51 in, deck 1.87 in"
+"16""/45 Mark 6",USA,1941,406.4,AP Mark 8,APC (super-heavy),1225,701,13716,528.2,11.72,520,77,not stated (USN Class A implied),S02,"orig: range 15000 yd, SV 1733 fps, belt 20.47 in, deck 3.04 in"
+"16""/45 Mark 6",USA,1941,406.4,AP Mark 8,APC (super-heavy),1225,701,18288,488.9,17.93,448,109,not stated (USN Class A implied),S02,"orig: range 20000 yd, SV 1604 fps, belt 17.62 in, deck 4.29 in"
+"16""/45 Mark 6",USA,1941,406.4,AP Mark 8,APC (super-heavy),1225,701,22860,463.3,25.38,382,146,not stated (USN Class A implied),S02,"orig: range 25000 yd, SV 1520 fps, belt 15.05 in, deck 5.76 in"
+"16""/45 Mark 6",USA,1941,406.4,AP Mark 8,APC (super-heavy),1225,701,27432,454.2,34.07,324,194,not stated (USN Class A implied),S02,"orig: range 30000 yd, SV 1490 fps, belt 12.77 in, deck 7.62 in"
+"16""/45 Mark 6",USA,1941,406.4,AP Mark 8,APC (super-heavy),1225,701,32004,465.7,44.88,266,268,not stated (USN Class A implied),S02,"orig: range 35000 yd, SV 1528 fps, belt 10.49 in, deck 10.57 in"
+"16""/45 Mark 6",USA,1941,406.4,AP Mark 5 (originally planned),APC,,768,0,768.1,0,754,,not stated,S03,"muzzle; orig: range 0 yd, SV 2520 fps, belt 29.68 in"
+"16""/45 Mark 6",USA,1941,406.4,AP Mark 5 (originally planned),APC,,768,18288,,,412,,not stated,S03,"orig: range 20000 yd, belt 16.24 in"
+"16""/45 Mark 6",USA,1941,406.4,AP Mark 5 (originally planned),APC,,768,32004,,,255,,not stated,S03,"page mm value 210 inconsistent; orig: range 35000 yd, belt 10.02 in"
+"14""/50 Mark 11 (Mk 7/11)",USA,1940,355.6,AP Mark 16,APC,680.4,823,0,823.0,0,712,,not stated,S04,"muzzle, new gun; orig: range 0 yd, SV 2700 fps, belt 28.03 in"
+"14""/50 Mark 11 (Mk 7/11)",USA,1940,355.6,AP Mark 16,APC,680.4,823,0,800.1,0,690,,not stated,S04,"muzzle, average gun; orig: range 0 yd, SV 2625 fps, belt 27.17 in"
+"14""/50 Mark 11 (Mk 7/11)",USA,1940,355.6,AP Mark 16,APC,680.4,823,4572,709.0,2.36,601,12,not stated,S04,"orig: range 5000 yd, SV 2326 fps, belt 23.66 in, deck 0.48 in"
+"14""/50 Mark 11 (Mk 7/11)",USA,1940,355.6,AP Mark 16,APC,680.4,823,9144,621.8,5.61,511,32,not stated,S04,"orig: range 10000 yd, SV 2040 fps, belt 20.12 in, deck 1.27 in"
+"14""/50 Mark 11 (Mk 7/11)",USA,1940,355.6,AP Mark 16,APC,680.4,823,13716,545.3,10.23,426,54,not stated,S04,"orig: range 15000 yd, SV 1789 fps, belt 16.76 in, deck 2.13 in"
+"14""/50 Mark 11 (Mk 7/11)",USA,1940,355.6,AP Mark 16,APC,680.4,823,18288,484.0,16.33,349,77,not stated,S04,"orig: range 20000 yd, SV 1588 fps, belt 13.75 in, deck 3.02 in"
+"14""/50 Mark 11 (Mk 7/11)",USA,1940,355.6,AP Mark 16,APC,680.4,823,22860,443.5,24.08,286,103,not stated,S04,"orig: range 25000 yd, SV 1455 fps, belt 11.27 in, deck 4.05 in"
+"14""/50 Mark 11 (Mk 7/11)",USA,1940,355.6,AP Mark 16,APC,680.4,823,27432,423.7,33.0,236,135,not stated,S04,"orig: range 30000 yd, SV 1390 fps, belt 9.29 in, deck 5.31 in"
+"14""/50 Mark 11 (Mk 7/11)",USA,1940,355.6,AP Mark 16,APC,680.4,823,32004,427.3,42.5,199,177,not stated,S04,"orig: range 35000 yd, SV 1402 fps, belt 7.82 in, deck 6.97 in"
+"5""/38 Mark 12",USA,1934,127,Special Common Mark 38/46,SAP (Special Common),25.0,792,3658,,,127,,not stated,S05,"orig: range 4000 yd, belt 5.0 in"
+"5""/38 Mark 12",USA,1934,127,Special Common Mark 38/46,SAP (Special Common),25.0,792,4938,,,102,,not stated,S05,"orig: range 5400 yd, belt 4.0 in"
+"5""/38 Mark 12",USA,1934,127,Special Common Mark 38/46,SAP (Special Common),25.0,792,6767,,,76,,not stated,S05,"orig: range 7400 yd, belt 3.0 in"
+"5""/38 Mark 12",USA,1934,127,Special Common Mark 38/46,SAP (Special Common),25.0,792,10058,,,51,,not stated,S05,"orig: range 11000 yd, belt 2.0 in"
+"5""/38 Mark 12",USA,1934,127,Special Common Mark 38/46,SAP (Special Common),25.0,792,12619,,,,25,not stated,S05,"orig: range 13800 yd, deck 1.0 in"
+"5""/38 Mark 12",USA,1934,127,AA Common,HE/Common,25.0,792,9144,,,38,,not stated,S06,"orig: range 10000 yd, belt 1.5 in"
+"15""/42 Mark I",UK,1915,381,"APC 4crh (early WWI, pre-Greenboy probably)",APC,871,,7890,,,406,,"WWI-era armour (KC implied), 0 deg obliquity",S07,"orig: range 8629 yd, belt 16.0 in"
+"15""/42 Mark I",UK,1915,381,"APC 4crh (early WWI, pre-Greenboy probably)",APC,871,,13582,,,305,,"WWI-era armour (KC implied), 0 deg obliquity",S07,"orig: range 14853 yd, belt 12.0 in"
+"15""/42 Mark I",UK,1915,381,"APC 4crh (early WWI, pre-Greenboy probably)",APC,871,,18020,,,279,,"WWI-era armour (KC implied), 0 deg obliquity",S07,"orig: range 19707 yd, belt 11.0 in"
+"15""/42 Mark I",UK,1915,381,"APC 4crh (early WWI, pre-Greenboy probably)",APC,871,,21702,,,229,,"WWI-era armour (KC implied), 0 deg obliquity",S07,"orig: range 23734 yd, belt 9.0 in"
+"15""/42 Mark I",UK,1915,381,uncapped AP 1920 lb,AP (uncapped),871,747,0,746.8,0,457,,KC,S08,"obliquity 0; orig: range 0 yd, SV 2450 fps, belt 18.0 in"
+"15""/42 Mark I",UK,1915,381,uncapped AP 1920 lb,AP (uncapped),871,747,9144,563.9,,356,,KC,S08,"obliquity 0; orig: range 10000 yd, SV 1850 fps, belt 14.0 in"
+"15""/42 Mark I",UK,1915,381,uncapped AP 1920 lb,AP (uncapped),871,747,9144,563.9,,335,,KC,S08,"obliquity 20 deg; orig: range 10000 yd, SV 1850 fps, belt 13.2 in"
+"15""/42 Mark I",UK,1915,381,uncapped AP 1920 lb,AP (uncapped),871,747,9144,563.9,,310,,KC,S08,"obliquity 30 deg; orig: range 10000 yd, SV 1850 fps, belt 12.2 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh (Mk XVIIb/XXIIb era),APC,879,,15728,,,356,,not stated (British cemented implied); 90 deg inclination,S09,"orig: range 17200 yd, belt 14.0 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh (Mk XVIIb/XXIIb era),APC,879,,16459,,,,51,not stated (British cemented implied); 90 deg inclination,S09,"orig: range 18000 yd, deck 2.0 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh (Mk XVIIb/XXIIb era),APC,879,,17739,,,330,,not stated (British cemented implied); 90 deg inclination,S09,"orig: range 19400 yd, belt 13.0 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh (Mk XVIIb/XXIIb era),APC,879,,19842,,,305,,not stated (British cemented implied); 90 deg inclination,S09,"orig: range 21700 yd, belt 12.0 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh (Mk XVIIb/XXIIb era),APC,879,,21946,,,,76,not stated (British cemented implied); 90 deg inclination,S09,"orig: range 24000 yd, deck 3.0 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh (Mk XVIIb/XXIIb era),APC,879,,22403,,,279,,not stated (British cemented implied); 90 deg inclination,S09,"orig: range 24500 yd, belt 11.0 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh (Mk XVIIb/XXIIb era),APC,879,,25603,,,254,102,not stated (British cemented implied); 90 deg inclination,S09,"orig: range 28000 yd, belt 10.0 in, deck 4.0 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh (Mk XVIIb/XXIIb era),APC,879,,26975,,,,127,not stated (British cemented implied); 90 deg inclination,S09,"orig: range 29500 yd, deck 5.0 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh (Mk XVIIb/XXIIb era),APC,879,,29718,,,,152,not stated (British cemented implied); 90 deg inclination,S09,"orig: range 32500 yd, deck 6.0 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh,APC,879,732,0,731.5,0,688,,not stated,S10,"muzzle; orig: range 0 yd, SV 2400 fps, belt 27.1 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh,APC,879,732,9144,581.9,6.58,419,32,not stated,S10,"orig: range 10000 yd, SV 1909 fps, belt 16.5 in, deck 1.25 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh,APC,879,732,13716,520.9,11.67,353,50,not stated,S10,"orig: range 15000 yd, SV 1709 fps, belt 13.9 in, deck 1.95 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh,APC,879,732,18288,474.3,18.33,297,79,not stated,S10,"page mm 72 inconsistent; orig: range 20000 yd, SV 1556 fps, belt 11.7 in, deck 3.1 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh,APC,879,732,22860,445.3,26.28,259,109,not stated,S10,"page mm 121 inconsistent; orig: range 25000 yd, SV 1461 fps, belt 10.2 in, deck 4.3 in"
+"15""/42 Mark I",UK,1915,381,APC 1938 lb 6crh,APC,879,732,27432,436.8,35.65,229,145,not stated,S10,"orig: range 30000 yd, SV 1433 fps, belt 9.0 in, deck 5.7 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,732,0,731.5,0,683,,not stated,S11,"muzzle; page mm 668 (26.9""=683) inconsistent; orig: range 0 yd, SV 2400 fps, belt 26.9 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,732,9144,587.3,6.5,396,29,not stated,S11,"orig: range 10000 yd, SV 1927 fps, belt 15.6 in, deck 1.15 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,732,13716,526.1,11.5,335,50,not stated,S11,"orig: range 15000 yd, SV 1726 fps, belt 13.2 in, deck 1.95 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,732,18288,476.4,18.2,284,72,not stated,S11,"orig: range 20000 yd, SV 1563 fps, belt 11.2 in, deck 2.85 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,732,22860,444.7,26.4,241,102,not stated,S11,"orig: range 25000 yd, SV 1459 fps, belt 9.5 in, deck 4.0 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,732,25603,,,,121,not stated,S11,"orig: range 28000 yd, deck 4.75 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,,12527,,,356,,not stated; 90 deg inclination,S12,"orig: range 13700 yd, belt 14.0 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,,14448,,,330,,not stated; 90 deg inclination,S12,"orig: range 15800 yd, belt 13.0 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,,16459,,,305,,not stated; 90 deg inclination,S12,"orig: range 18000 yd, belt 12.0 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,,18288,,,,51,not stated; 90 deg inclination,S12,"orig: range 20000 yd, deck 2.0 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,,18745,,,279,,not stated; 90 deg inclination,S12,"orig: range 20500 yd, belt 11.0 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,,21671,,,254,,not stated; 90 deg inclination,S12,"orig: range 23700 yd, belt 10.0 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,,21946,,,,76,not stated; 90 deg inclination,S12,"orig: range 24000 yd, deck 3.0 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,,25603,,,,102,not stated; 90 deg inclination,S12,"orig: range 28000 yd, deck 4.0 in"
+"14""/45 Mark VII",UK,1940,356,APC Mark VIIb 6crh,APC,721.2,,29261,,,,127,not stated; 90 deg inclination,S12,"orig: range 32000 yd, deck 5.0 in"
+"16""/45 Mark I",UK,1927,406.4,APC Mark IB,APC,929,770,13716,541.9,10.2,366,50,not stated,S13,"orig: range 15000 yd, SV 1778 fps, belt 14.4 in, deck 1.95 in"
+"16""/45 Mark I",UK,1927,406.4,APC Mark IB,APC,929,770,18288,489.5,16.5,310,72,not stated,S13,"orig: range 20000 yd, SV 1606 fps, belt 12.2 in, deck 2.85 in"
+"16""/45 Mark I",UK,1927,406.4,APC Mark IB,APC,929,770,22860,452.9,24.6,262,99,not stated,S13,"orig: range 25000 yd, SV 1486 fps, belt 10.3 in, deck 3.9 in"
+"16""/45 Mark I",UK,1927,406.4,APC Mark IB,APC,929,770,27432,436.2,33.5,224,130,not stated,S13,"orig: range 30000 yd, SV 1431 fps, belt 8.8 in, deck 5.1 in"
+"16""/45 Mark I",UK,1927,406.4,APC Mark IB,APC,929,770,32004,442.9,43.7,193,165,not stated,S13,"orig: range 35000 yd, SV 1453 fps, belt 7.6 in, deck 6.5 in"
+"13.5""/45 Mark V(L)",UK,1912,343,uncapped AP 1250 lb,AP (uncapped),567,823,0,823.0,0,439,,"KC-type, 90 deg",S14,"muzzle; orig: range 0 yd, SV 2700 fps, belt 17.3 in"
+"13.5""/45 Mark V(L)",UK,1912,343,uncapped AP 1250 lb,AP (uncapped),567,823,9144,579.1,,310,,"KC-type, 90 deg",S14,"orig: range 10000 yd, SV 1900 fps, belt 12.2 in"
+"13.5""/45 Mark V(H)",UK,1912,343,uncapped AP 1400 lb,AP (uncapped),635,762,0,762.0,0,439,,"KC-type, 90 deg",S15,"muzzle; orig: range 0 yd, SV 2500 fps, belt 17.3 in"
+"13.5""/45 Mark V(H)",UK,1912,343,uncapped AP 1400 lb,AP (uncapped),635,762,9144,563.9,,318,,"KC-type, 90 deg",S15,"orig: range 10000 yd, SV 1850 fps, belt 12.5 in"
+"12""/45 Mark X",UK,1908,305,AP (uncapped),AP (uncapped),386,869,0,868.7,0,406,,"KC, 90 deg",S16,"muzzle; orig: range 0 yd, SV 2850 fps, belt 16.0 in"
+"12""/45 Mark X",UK,1908,305,AP (uncapped),AP (uncapped),386,869,9144,579.1,,269,,"KC, 90 deg",S16,"orig: range 10000 yd, SV 1900 fps, belt 10.6 in"
+"12""/45 Mark X",UK,1908,305,AP (possibly APC),AP/APC,386,,6949,,,305,,KC,S17,"orig: range 7600 yd, belt 12.0 in"
+"12""/45 Mark X",UK,1908,305,AP 2crh,AP,386,,10058,,,127,,KC,S18,"band 10,000-12,000 yd; 5/12 cal; orig: range 11000 yd, belt 5.0 in"
+"12""/45 Mark X",UK,1908,305,AP 2crh,AP,386,,8230,,,178,,KC,S18,"band 8,000-10,000 yd; 7/12 cal; orig: range 9000 yd, belt 7.0 in"
+"12""/45 Mark X",UK,1908,305,AP 2crh,AP,386,,6401,,,229,,KC,S18,"band 6,000-8,000 yd; 3/4 cal; orig: range 7000 yd, belt 9.0 in"
+"12""/45 Mark X",UK,1908,305,AP 2crh,AP,386,,5486,,,406,,KC,S18,"6,000 yd and below; 4/3 cal (as printed - suspicious, >1 cal); orig: range 6000 yd, belt 16.0 in"
+"12""/45 Mark X",UK,1908,305,AP 4crh,AP/APC 4crh,389.8,,10058,,,203,,KC,S19,"band 10,000-12,000 yd; 2/3 cal; orig: range 11000 yd, belt 8.0 in"
+"12""/45 Mark X",UK,1908,305,AP 4crh,AP/APC 4crh,389.8,,8230,,,229,,KC,S19,"band 8,000-10,000 yd; 3/4 cal; orig: range 9000 yd, belt 9.0 in"
+"12""/45 Mark X",UK,1908,305,AP 4crh,AP/APC 4crh,389.8,,6401,,,267,,KC,S19,"band 6,000-8,000 yd; 7/8 cal; orig: range 7000 yd, belt 10.5 in"
+"12""/45 Mark X",UK,1908,305,AP 4crh,AP/APC 4crh,389.8,,5486,,,305,,KC,S19,"6,000 yd and below; 1 cal; orig: range 6000 yd, belt 12.0 in"
+"12""/45 Mark X",UK,1908,305,CPC 4crh (common pointed capped),CPC,389.8,,10058,,,102,,KC,S19,"band 10,000-12,000 yd; 1/3 cal; orig: range 11000 yd, belt 4.0 in"
+"12""/45 Mark X",UK,1908,305,CPC 4crh (common pointed capped),CPC,389.8,,8230,,,203,,KC,S19,"band 8,000-10,000 yd; 2/3 cal; orig: range 9000 yd, belt 8.0 in"
+"12""/45 Mark X",UK,1908,305,CPC 4crh (common pointed capped),CPC,389.8,,6401,,,229,,KC,S19,"band 6,000-8,000 yd; 3/4 cal; orig: range 7000 yd, belt 9.0 in"
+"12""/45 Mark X",UK,1908,305,CPC 4crh (common pointed capped),CPC,389.8,,5486,,,244,,KC,S19,"6,000 yd and below; 4/5 cal; orig: range 6000 yd, belt 9.6 in"
+"12""/40 Mark IX",UK,1901,305,AP,AP,386,796,4389,,,305,,KC,S20,"orig: range 4800 yd, belt 12.0 in"
+"12""/40 Mark IX",UK,1901,305,"CPC (blind, salt-filled)",CPC,386,,2743,581.3,,246,,KC,S21,"obliquity 30 deg; orig: range 3000 yd, SV 1907 fps, belt 9.7 in"
+"12""/40 Marks 3 and 4",USA,1902,305,"AP ""old-style""",AP,394.6,792,5486,,,371,,"""face-hardened Harvey plates""",S22,"orig: range 6000 yd, belt 14.6 in"
+"12""/40 Marks 3 and 4",USA,1902,305,"AP ""old-style""",AP,394.6,792,8230,,,295,,"""face-hardened Harvey plates""",S22,"orig: range 9000 yd, belt 11.6 in"
+"12""/40 Marks 3 and 4",USA,1902,305,"AP ""old-style""",AP,394.6,792,10973,,,239,,"""face-hardened Harvey plates""",S22,"orig: range 12000 yd, belt 9.4 in"
+"12""/40 Marks 3 and 4",USA,1902,305,"AP ""new-style"" 7crh",APC,394.6,732,5486,,,328,,"not stated (navweaps: ""may refer to harder armor than the 1905 data""; KC era)",S23,"orig: range 6000 yd, belt 12.9 in"
+"12""/40 Marks 3 and 4",USA,1902,305,"AP ""new-style"" 7crh",APC,394.6,732,8230,,,272,,"not stated (navweaps: ""may refer to harder armor than the 1905 data""; KC era)",S23,"orig: range 9000 yd, belt 10.7 in"
+"12""/40 Marks 3 and 4",USA,1902,305,"AP ""new-style"" 7crh",APC,394.6,732,10973,,,221,,"not stated (navweaps: ""may refer to harder armor than the 1905 data""; KC era)",S23,"orig: range 12000 yd, belt 8.7 in"
+"13""/35 Marks 1 and 2",USA,1895,330,AP Mark 3/5/9,AP,512.6,610,5486,,,308,,not stated (1905 - Harvey/KC era),S24,"orig: range 6000 yd, belt 12.13 in"
+"13""/35 Marks 1 and 2",USA,1895,330,AP Mark 3/5/9,AP,512.6,610,8230,,,256,,not stated (1905 - Harvey/KC era),S24,"orig: range 9000 yd, belt 10.09 in"
+"13""/35 Marks 1 and 2",USA,1895,330,AP Mark 3/5/9,AP,512.6,610,10973,,,231,,not stated (1905 - Harvey/KC era),S24,"orig: range 12000 yd, belt 9.11 in"
+"13""/35 Marks 1 and 2",USA,1895,330,AP,AP/APC,512.6,610,5486,,,262,,not stated (may be harder armour than 1905 data),S25,"orig: range 6000 yd, belt 10.3 in"
+"13""/35 Marks 1 and 2",USA,1895,330,AP,AP/APC,512.6,610,8230,,,206,,not stated (may be harder armour than 1905 data),S25,"orig: range 9000 yd, belt 8.1 in"
+"13""/35 Marks 1 and 2",USA,1895,330,AP,AP/APC,512.6,610,10973,,,155,,not stated (may be harder armour than 1905 data),S25,"orig: range 12000 yd, belt 6.1 in"
+"12""/50 Mark 7",USA,1912,305,"AP ""old-style"" (WWI)",AP/APC,394.6,884,5486,,,442,,not stated,S26,"orig: range 6000 yd, belt 17.4 in"
+"12""/50 Mark 7",USA,1912,305,"AP ""old-style"" (WWI)",AP/APC,394.6,884,8230,,,373,,not stated,S26,"orig: range 9000 yd, belt 14.7 in"
+"12""/50 Mark 7",USA,1912,305,"AP ""old-style"" (WWI)",AP/APC,394.6,884,10973,,,312,,not stated,S26,"orig: range 12000 yd, belt 12.3 in"
+"12""/50 Mark 7",USA,1912,305,AP Mark 15,APC,394.6,884,0,883.9,0,643,,not stated,S27,"muzzle; orig: range 0 yd, SV 2900 fps, belt 25.3 in"
+"12""/50 Mark 7",USA,1912,305,AP Mark 15,APC,394.6,884,12802,,,330,38,not stated,S27,"orig: range 14000 yd, belt 13.0 in, deck 1.5 in"
+"12""/50 Mark 7",USA,1912,305,AP Mark 15,APC,394.6,884,16002,,,279,51,not stated,S27,"orig: range 17500 yd, belt 11.0 in, deck 2.0 in"
+"12""/50 Mark 7",USA,1912,305,AP Mark 15,APC,394.6,884,18288,440.4,18.12,254,,not stated,S27,"orig: range 20000 yd, SV 1445 fps, belt 10.0 in"
+"14""/45 Marks 1-5",USA,1914,355.6,AP Mark 8,APC,635,792,5486,,,437,,face-hardened (Harvey) plates [as stated by navweaps; 1918 USN face-hardened = KC-type Class A],S28,"orig: range 6000 yd, belt 17.2 in"
+"14""/45 Marks 1-5",USA,1914,355.6,AP Mark 8,APC,635,792,8230,,,366,,face-hardened (Harvey) plates [as stated by navweaps; 1918 USN face-hardened = KC-type Class A],S28,"orig: range 9000 yd, belt 14.4 in"
+"14""/45 Marks 1-5",USA,1914,355.6,AP Mark 8,APC,635,792,10973,547.7,8.18,302,,face-hardened (Harvey) plates [as stated by navweaps; 1918 USN face-hardened = KC-type Class A],S28,"orig: range 12000 yd, SV 1797 fps, belt 11.9 in"
+"14""/45 Marks 1-5",USA,1914,355.6,AP Mark 8,APC,635,792,14630,488.9,13.02,226,,face-hardened (Harvey) plates [as stated by navweaps; 1918 USN face-hardened = KC-type Class A],S28,"orig: range 16000 yd, SV 1604 fps, belt 8.9 in"
+"14""/45 Marks 1-5",USA,1914,355.6,AP Mark 8,APC,635,792,18288,444.1,19.12,170,,face-hardened (Harvey) plates [as stated by navweaps; 1918 USN face-hardened = KC-type Class A],S28,"orig: range 20000 yd, SV 1457 fps, belt 6.7 in"
+"12""/50 Mark 8",USA,1944,305,AP Mark 18 (super-heavy),APC,517.1,762,0,762.0,0.0,622,,not stated,S29,"muzzle; orig: range 0 yd, SV 2500 fps, belt 24.48 in"
+"12""/50 Mark 8",USA,1944,305,AP Mark 18 (super-heavy),APC,517.1,762,4572,675.1,2.6,542,13,not stated,S29,"orig: range 5000 yd, SV 2215 fps, belt 21.34 in, deck 0.51 in"
+"12""/50 Mark 8",USA,1944,305,AP Mark 18 (super-heavy),APC,517.1,762,9144,593.8,6.0,463,32,not stated,S29,"orig: range 10000 yd, SV 1948 fps, belt 18.23 in, deck 1.26 in"
+"12""/50 Mark 8",USA,1944,305,AP Mark 18 (super-heavy),APC,517.1,762,13716,531.9,11.0,395,54,not stated,S29,"orig: range 15000 yd, SV 1745 fps, belt 15.56 in, deck 2.14 in"
+"12""/50 Mark 8",USA,1944,305,AP Mark 18 (super-heavy),APC,517.1,762,18288,472.4,17.5,323,77,not stated,S29,"orig: range 20000 yd, SV 1550 fps, belt 12.73 in, deck 3.02 in"
+"12""/50 Mark 8",USA,1944,305,AP Mark 18 (super-heavy),APC,517.1,762,22860,437.4,25.3,267,102,not stated,S29,"orig: range 25000 yd, SV 1435 fps, belt 10.52 in, deck 4.02 in"
+"12""/50 Mark 8",USA,1944,305,AP Mark 18 (super-heavy),APC,517.1,762,27432,426.7,32.8,231,130,not stated,S29,"orig: range 30000 yd, SV 1400 fps, belt 9.08 in, deck 5.11 in"
+"12""/50 Mark 8",USA,1944,305,AP Mark 18 (super-heavy),APC,517.1,762,32004,434.9,44.5,187,182,not stated,S29,"orig: range 35000 yd, SV 1427 fps, belt 7.35 in, deck 7.18 in"
+"8""/55 Marks 12 and 15",USA,1939,203,AP Mark 21 (super-heavy),APC,152,762,9876,,,254,,not stated,S30,"orig: range 10800 yd, belt 10.0 in"
+"8""/55 Marks 12 and 15",USA,1939,203,AP Mark 21 (super-heavy),APC,152,762,14082,,,203,,not stated,S30,"orig: range 15400 yd, belt 8.0 in"
+"8""/55 Marks 12 and 15",USA,1939,203,AP Mark 21 (super-heavy),APC,152,762,16825,,,,51,not stated,S30,"orig: range 18400 yd, deck 2.0 in"
+"8""/55 Marks 12 and 15",USA,1939,203,AP Mark 21 (super-heavy),APC,152,762,19020,,,152,,not stated,S30,"orig: range 20800 yd, belt 6.0 in"
+"8""/55 Marks 12 and 15",USA,1939,203,AP Mark 21 (super-heavy),APC,152,762,21763,,,,76,not stated,S30,"orig: range 23800 yd, deck 3.0 in"
+"8""/55 Marks 12 and 15",USA,1939,203,AP Mark 21 (super-heavy),APC,152,762,22311,,,127,,not stated,S30,"orig: range 24400 yd, belt 5.0 in"
+"8""/55 Marks 12 and 15",USA,1939,203,AP Mark 21 (super-heavy),APC,152,762,25237,,,,102,not stated,S30,"orig: range 27600 yd, deck 4.0 in"
+"8""/55 Marks 12 and 15",USA,1939,203,AP Mark 21 (super-heavy),APC,152,762,26152,,,102,,not stated,S30,"orig: range 28600 yd, belt 4.0 in"
+"12""/35 Mark VIII",UK,1895,305,AP 2crh (solid shot),"AP (uncapped, solid)",386,716,914,,,838,,see row note (wrought iron / steel / KC),S31,"vertical wrought IRON; orig: range 1000 yd, belt 33 in"
+"12""/35 Mark VIII",UK,1895,305,AP 2crh (solid shot),"AP (uncapped, solid)",386,716,2835,,,305,,see row note (wrought iron / steel / KC),S31,"vertical STEEL (presumably compound/all-steel, not KC); orig: range 3100 yd, belt 12 in"
+"12""/35 Mark VIII",UK,1895,305,AP 2crh (solid shot),"AP (uncapped, solid)",386,716,9144,,,216,,see row note (wrought iron / steel / KC),S31,"vertical KC; orig: range 10000 yd, belt 8.5 in"
+"12""/35 Mark VIII",UK,1895,305,"CPC (blind, salt-filled)",CPC,386,,2743,524.0,,224,,KC,S32,"obliquity 30 deg; orig: range 3000 yd, SV 1719 fps, belt 8.8 in"
+30.5 cm/50 SK L/50,Germany,1911,305,"Psgr. L/3,4 (APC)",APC,405.0,855,12802,,,254,,not stated,S33,"orig: range 14000 yd, belt 10.0 in"
+30.5 cm/50 SK L/50,Germany,1911,305,"Psgr. L/3,4 (APC)",APC,405.0,855,14630,,,229,,not stated,S33,"orig: range 16000 yd, belt 9.0 in"
+30.5 cm/50 SK L/50,Germany,1911,305,"Psgr. L/3,4 (APC)",APC,405.0,855,10000,,,345,,not stated,S34,13.6 in
+30.5 cm/50 SK L/50,Germany,1911,305,"Psgr. L/3,4 (APC)",APC,405.0,855,12000,,,305,,not stated,S34,12.0 in
+38 cm/45 SK L/45,Germany,1916,380,"Psgr. L/3,5 / L/3,6 (APC)",APC,750,800,10000,,,390,,not stated,S35,
+38 cm/45 SK L/45,Germany,1916,380,"Psgr. L/3,5 / L/3,6 (APC)",APC,750,800,12500,,,350,,not stated,S35,
+38 cm/45 SK L/45,Germany,1916,380,"Psgr. L/3,5 / L/3,6 (APC)",APC,750,800,20000,,,265,,not stated,S35,
+38 cm/45 SK L/45,Germany,1916,380,"Psgr. L/3,5 / L/3,6 (APC)",APC,750,800,25000,,,220,,not stated,S35,
+38 cm/45 SK L/45,Germany,1916,380,"Psgr. L/3,5 (APC)",APC,750,800,8700,,,356,,improved WWI-era KC (not original 1890s KC/a); 30 deg obliquity,S36,"obliquity 30 deg, fit to burst"
+38 cm/45 SK L/45,Germany,1916,380,"Psgr. L/3,5 (APC)",APC,750,800,9400,,,343,,improved WWI-era KC (not original 1890s KC/a); 30 deg obliquity,S36,"obliquity 30 deg, fit to burst"
+28 cm/40 SK L/40,Germany,1904,283,"Psgr. L/2,6 (AP)",AP,240.7,820,12000,,,160,,not stated,S37,
+28 cm/45 SK L/45,Germany,1909,283,"Psgr. L/3,2 (APC)",APC,300.7,855,12000,,,200,,not stated,S38,
+28 cm/45 SK L/45,Germany,1909,283,"Psgr. L/3,2 (APC)",APC,300.7,855,10000,,,280,,"""nickel-steel plate"" (as quoted)",S39,
+28 cm/45 SK L/45,Germany,1909,283,"Psgr. L/3,2 (APC)",APC,300.7,855,12000,,,200,,"""nickel-steel plate"" (as quoted)",S39,
+38 cm/52 SK C/34,Germany,1940,380,"Psgr. L/4,4 (m.Hb) APC",APC,800,820,0,820,0,742,,not stated,S40,muzzle; 29.23 in
+38 cm/52 SK C/34,Germany,1940,380,"Psgr. L/4,4 (m.Hb) APC",APC,800,820,4572,,,616,19,not stated,S40,"5,000 yd; 24.26 in / 0.76 in"
+38 cm/52 SK C/34,Germany,1940,380,"Psgr. L/4,4 (m.Hb) APC",APC,800,820,18000,,,419,75,not stated,S40,16.50 in / 2.96 in
+38 cm/52 SK C/34,Germany,1940,380,"Psgr. L/4,4 (m.Hb) APC",APC,800,820,22000,,,393,104,not stated,S40,15.49 in / 4.15 in (page mm 104; 4.15in=105)
+38 cm/52 SK C/34,Germany,1940,380,"Psgr. L/4,4 (m.Hb) APC",APC,800,820,27000,,,304,126,not stated,S40,11.98 in / 5.02 in (page mm 126; 5.02in=127.5)
+38 cm/52 SK C/34,Germany,1940,380,"Psgr. L/4,4 (m.Hb) APC",APC,800,820,10000,641,5.8,510,,"German face-hardened (side, KC n/A implied) and homogeneous (deck, Wh)",S41,
+38 cm/52 SK C/34,Germany,1940,380,"Psgr. L/4,4 (m.Hb) APC",APC,800,820,20000,511,16.4,364,,"German face-hardened (side, KC n/A implied) and homogeneous (deck, Wh)",S41,
+38 cm/52 SK C/34,Germany,1940,380,"Psgr. L/4,4 (m.Hb) APC",APC,800,820,21000,,,350,,"German face-hardened (side, KC n/A implied) and homogeneous (deck, Wh)",S41,
+38 cm/52 SK C/34,Germany,1940,380,"Psgr. L/4,4 (m.Hb) APC",APC,800,820,25000,473,23.8,308,,"German face-hardened (side, KC n/A implied) and homogeneous (deck, Wh)",S41,
+38 cm/52 SK C/34,Germany,1940,380,"Psgr. L/4,4 (m.Hb) APC",APC,800,820,30000,457,31.9,,120,"German face-hardened (side, KC n/A implied) and homogeneous (deck, Wh)",S41,"deck ""about"""
+38 cm/52 SK C/34,Germany,1940,380,"Psgr. L/4,4 (m.Hb) APC",APC,800,820,35000,462,40.3,,170,"German face-hardened (side, KC n/A implied) and homogeneous (deck, Wh)",S41,"deck ""about"""
+28 cm/54.5 SK C/34,Germany,1938,283,"Psgr. L/4,4 (m.Hb) APC",APC,330,890,0,890,0,604,,not stated,S42,muzzle; 23.79 in
+28 cm/54.5 SK C/34,Germany,1938,283,"Psgr. L/4,4 (m.Hb) APC",APC,330,890,7900,,,460,19,not stated,S42,18.09/0.76 in
+28 cm/54.5 SK C/34,Germany,1938,283,"Psgr. L/4,4 (m.Hb) APC",APC,330,890,15100,,,335,41,not stated,S42,13.18/1.63 in
+28 cm/54.5 SK C/34,Germany,1938,283,"Psgr. L/4,4 (m.Hb) APC",APC,330,890,18288,,,291,48,not stated,S42,"20,000 yd; 11.47/1.87 in"
+28 cm/54.5 SK C/34,Germany,1938,283,"Psgr. L/4,4 (m.Hb) APC",APC,330,890,27432,,,205,76,not stated,S42,"30,000 yd; 8.08/2.99 in"
+28 cm/54.5 SK C/34,Germany,1938,283,"Psgr. L/4,4 (m.Hb) APC",APC,330,890,10000,652,5.7,348,,"KC-type armour, impact angle 70 deg (= 20 deg obliquity)",S43,obliquity 20 deg
+28 cm/54.5 SK C/34,Germany,1938,283,"Psgr. L/4,4 (m.Hb) APC",APC,330,890,15000,556,10.3,280,,"KC-type armour, impact angle 70 deg (= 20 deg obliquity)",S43,obliquity 20 deg
+28 cm/54.5 SK C/34,Germany,1938,283,"Psgr. L/4,4 (m.Hb) APC",APC,330,890,20000,481,17.2,225,,"KC-type armour, impact angle 70 deg (= 20 deg obliquity)",S43,obliquity 20 deg
+28 cm/54.5 SK C/34,Germany,1938,283,"Psgr. L/4,4 (m.Hb) APC",APC,330,890,25000,436,25.7,194,,"KC-type armour, impact angle 70 deg (= 20 deg obliquity)",S43,obliquity 20 deg
+20.3 cm/60 SK C/34,Germany,1939,203,"Psgr. L/4,4 (m.Hb) APC",APC,122,925,9500,,,240,,German face-hardened (vertical),S44,9.4 in
+20.3 cm/60 SK C/34,Germany,1939,203,"Psgr. L/4,4 (m.Hb) APC",APC,122,925,18300,,,100,,German face-hardened (vertical),S44,3.9 in
+20.3 cm/60 SK C/34,Germany,1939,203,"Spgr. L/4,7 Kz (m.Hb) (HE nose+base fuze)",HE,122,925,9500,,,,50,German homogeneous,S45,2.0 in homogeneous (listed as deck/homog)
+"12""/40 Pattern 1895",Russia,1895,305,"APC mod 1907 (""old model"" weight)",APC,331.7,792,0,792.5,0,381,,KC-type,S46,"muzzle; orig: range 0 yd, SV 2600 fps, belt 15.0 in"
+"12""/40 Pattern 1895",Russia,1895,305,"APC mod 1907 (""old model"" weight)",APC,331.7,792,1829,685.8,0.98,311,,KC-type,S46,"orig: range 2000 yd, SV 2250 fps, belt 12.25 in"
+"12""/40 Pattern 1895",Russia,1895,305,"APC mod 1907 (""old model"" weight)",APC,331.7,792,3658,591.3,2.24,251,,KC-type,S46,"orig: range 4000 yd, SV 1940 fps, belt 9.88 in"
+"12""/40 Pattern 1895",Russia,1895,305,"APC mod 1907 (""old model"" weight)",APC,331.7,792,5486,506.0,4.53,201,,KC-type,S46,"orig: range 6000 yd, SV 1660 fps, belt 7.91 in"
+"12""/40 Pattern 1895",Russia,1895,305,"APC mod 1907 (""old model"" weight)",APC,331.7,792,7315,435.9,7.54,159,,KC-type,S46,"orig: range 8000 yd, SV 1430 fps, belt 6.26 in"
+"12""/40 Pattern 1895",Russia,1895,305,"APC mod 1907 (""old model"" weight)",APC,331.7,792,9144,378.0,8.9,129,,KC-type,S46,"orig: range 10000 yd, SV 1240 fps, belt 5.08 in"
+"12""/40 Pattern 1895",Russia,1895,305,"APC mod 1907 (""old model"" weight)",APC,331.7,792,10973,344.4,17.53,93,,KC-type,S46,"orig: range 12000 yd, SV 1130 fps, belt 3.66 in"
+"12""/52 Pattern 1907",Russia,1910,305,APC mod 1911 (heavy),APC,470.9,762,9144,,,352,17,not stated,S47,"orig: range 10000 yd, belt 13.85 in, deck 0.67 in"
+"12""/52 Pattern 1907",Russia,1910,305,APC mod 1911 (heavy),APC,470.9,762,18288,,,207,60,not stated,S47,"orig: range 20000 yd, belt 8.15 in, deck 2.36 in"
+"12""/52 Pattern 1907",Russia,1910,305,APC mod 1911 (heavy),APC,470.9,762,27432,,,127,140,not stated,S47,"orig: range 30000 yd, belt 5.0 in, deck 5.5 in"
+20 cm/50 3rd Year Type No. 2,Japan,1932,203,Type 91 AP,APC,125.85,840,10000,498,7.5,190,,"NVNC (Japanese new Vickers non-cemented, homogeneous)",S48,
+20 cm/50 3rd Year Type No. 2,Japan,1932,203,Type 91 AP,APC,125.85,840,18000,,,120,,"NVNC (Japanese new Vickers non-cemented, homogeneous)",S48,
+20 cm/50 3rd Year Type No. 2,Japan,1932,203,Type 91 AP,APC,125.85,840,29400,,,74,,"NVNC (Japanese new Vickers non-cemented, homogeneous)",S48,max range
+41 cm/45 3rd Year Type,Japan,1921,410,Type 91 APC,APC,1020,780,20000,495,17.5,269,,not stated,S49,
+41 cm/45 3rd Year Type,Japan,1921,410,Type 91 APC,APC,1020,780,30000,462,34.0,203,,not stated,S49,
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,0,850,0,814,,not stated,S50,muzzle
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,18000,,,510,73,not stated,S50,
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,28000,,,380,130,not stated,S50,
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,26000,,,325,124,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 0
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,26000,,,318,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 10
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,26000,,,299,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 20
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,26000,,,266,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 30
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,26000,,,223,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 40
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,24000,,,348,105,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 0
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,24000,,,340,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 10
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,24000,,,320,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 20
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,24000,,,285,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 30
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,24000,,,238,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 40
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,20000,563,13.4,402,74,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 0
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,20000,563,13.4,392,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 10
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,20000,563,13.4,367,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 20
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,20000,563,13.4,326,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 30
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,20000,563,13.4,260,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 40
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,19000,,,416,67,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 0
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,19000,,,406,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 10
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,19000,,,380,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 20
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,19000,,,338,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 30
+381 mm/50 Ansaldo M1934,Italy,1940,381,APC (Palla),APC,884.8,850,19000,,,260,,KC (Italian official); obliquity per row (Italian convention: 90 deg = normal),S51,obliquity 40
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,26000,,,189,,KC (Italian official); obliquity per row,S52,obliquity 0
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,26000,,,186,,KC (Italian official); obliquity per row,S52,obliquity 10
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,26000,,,183,,KC (Italian official); obliquity per row,S52,obliquity 20
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,26000,,,181,,KC (Italian official); obliquity per row,S52,obliquity 30
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,26000,,,180,,KC (Italian official); obliquity per row,S52,obliquity 40
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,24000,,,196,,KC (Italian official); obliquity per row,S52,obliquity 0
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,24000,,,189,,KC (Italian official); obliquity per row,S52,obliquity 10
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,24000,,,184,,KC (Italian official); obliquity per row,S52,obliquity 20
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,24000,,,181,,KC (Italian official); obliquity per row,S52,obliquity 30
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,24000,,,180,,KC (Italian official); obliquity per row,S52,obliquity 40
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,20000,,,213,,KC (Italian official); obliquity per row,S52,obliquity 0
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,20000,,,201,,KC (Italian official); obliquity per row,S52,obliquity 10
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,20000,,,186,,KC (Italian official); obliquity per row,S52,obliquity 20
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,20000,,,182,,KC (Italian official); obliquity per row,S52,obliquity 30
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,20000,,,180,,KC (Italian official); obliquity per row,S52,obliquity 40
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,19000,,,215,,KC (Italian official); obliquity per row,S52,obliquity 0
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,19000,,,203,,KC (Italian official); obliquity per row,S52,obliquity 10
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,19000,,,186,,KC (Italian official); obliquity per row,S52,obliquity 20
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,19000,,,182,,KC (Italian official); obliquity per row,S52,obliquity 30
+381 mm/50 Ansaldo M1934,Italy,1940,381,SAPBC (Granata Perforante),SAPC,824.3,880,19000,,,180,,KC (Italian official); obliquity per row,S52,obliquity 40
+380 mm/45 Modele 1935,France,1941,380,APC Mle 1936,APC,884,830,0,,,748,,not stated,S53,muzzle
+380 mm/45 Modele 1935,France,1941,380,APC Mle 1936,APC,884,830,22000,,19.3,393,105,not stated,S53,
+380 mm/45 Modele 1935,France,1941,380,APC Mle 1936,APC,884,830,27000,,26.8,331,138,not stated,S53,
+380 mm/45 Modele 1935,France,1941,380,APC Mle 1936,APC,884,830,35000,,40.4,280,211,not stated,S53,
+380 mm/45 Modele 1935,France,1941,380,APC Mle 1936,APC,884,830,38000,,43.8,249,270,not stated,S53,
+330 mm/50 Modele 1931,France,1939,330,OPf Mle 1935 (SAPC per navweaps),APC/SAPC,560,870,0,870,0,713,,not stated,S54,muzzle
+330 mm/50 Modele 1931,France,1939,330,OPf Mle 1935 (SAPC per navweaps),APC/SAPC,560,870,23000,,,342,87,not stated,S54,
+330 mm/50 Modele 1931,France,1939,330,OPf Mle 1935 (SAPC per navweaps),APC/SAPC,560,870,27500,,,292,110,not stated,S54,
+330 mm/50 Modele 1931,France,1939,330,OPf Mle 1935 (SAPC per navweaps),APC/SAPC,560,870,28000,,,300,,not stated,S54,unsourced statement in G&D p.57
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,0,768.1,0,754,,not stated,S55,"muzzle; orig: range 0 yd, SV 2520 fps, belt 29.68 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,4572,,,660,,not stated,S55,"orig: range 5000 yd, belt 26.0 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,9144,611.7,5.92,572,,not stated,S55,"orig: range 10000 yd, SV 2007 fps, belt 22.5 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,15362,,,457,,not stated,S55,"orig: range 16800 yd, belt 18.0 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,18562,,,406,,not stated,S55,"orig: range 20300 yd, belt 16.0 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,20117,,,,102,not stated,S55,"orig: range 22000 yd, deck 4.0 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,22403,,,356,,not stated,S55,"orig: range 24500 yd, belt 14.0 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,25786,,,,152,not stated,S55,"orig: range 28200 yd, deck 6.0 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,26975,,,305,,not stated,S55,"orig: range 29500 yd, belt 12.0 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,31547,,,,203,not stated,S55,"orig: range 34500 yd, deck 8.0 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,32461,,,254,,not stated,S55,"orig: range 35500 yd, belt 10.0 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,35204,,,,254,not stated,S55,"orig: range 38500 yd, deck 10.0 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,0,768.1,0,754,,not stated,S56,"muzzle; page prints SV 2,600 fps (768 mps); orig: range 0 yd, SV 2520 fps, belt 29.68 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,4572,686.7,3.03,661,19,not stated,S56,"orig: range 5000 yd, SV 2253 fps, belt 26.04 in, deck 0.75 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,9144,611.7,5.92,572,39,not stated,S56,"orig: range 10000 yd, SV 2007 fps, belt 22.53 in, deck 1.52 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,13716,547.4,10.5,488,64,not stated,S56,"orig: range 15000 yd, SV 1796 fps, belt 19.22 in, deck 2.51 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,18288,496.5,16.33,412,90,not stated,S56,"orig: range 20000 yd, SV 1629 fps, belt 16.24 in, deck 3.56 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,22860,463.9,23.55,349,121,not stated,S56,"orig: range 25000 yd, SV 1522 fps, belt 13.74 in, deck 4.78 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,27432,448.7,31.68,297,158,not stated,S56,"orig: range 30000 yd, SV 1472 fps, belt 11.68 in, deck 6.24 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,32004,452.9,49.47,255,207,not stated,S56,"fall as printed; orig: range 35000 yd, SV 1486 fps, belt 10.02 in, deck 8.15 in"
+"16""/45 Marks 5 and 8",USA,1938,406.4,AP Mark 5,APC,1016,768,36576,483.4,51.86,210,289,not stated,S56,"orig: range 40000 yd, SV 1586 fps, belt 8.27 in, deck 11.39 in"
+46 cm/45 Type 94,Japan,1941,460,APC (G&D),APC,1460.1,780,0,780.0,0,864,,not stated (G&D USN-empirical),S57,"muzzle (point-blank); orig: range 0 yd, SV 2559 fps, belt 34.01 in"
+"40.6 cm/52 SK C/34 (H-class, not built)",Germany,1940,406,APC (G&D),APC,1030.1,810,0,809.9,0,805,,not stated (G&D USN-empirical),S58,"muzzle (point-blank); orig: range 0 yd, SV 2657 fps, belt 31.7 in"
+"16""/45 Mark II (Lion class, not built)",UK,1939,406.4,APC (G&D),APC,1077.3,732,0,731.5,0,737,,not stated (G&D USN-empirical),S59,"muzzle (point-blank); orig: range 0 yd, SV 2400 fps, belt 29.03 in"
+"6""/50 BL Mark XXIII",UK,1933,152.4,CPBC 112 lb,CPBC (common pointed ballistic cap),50.8,841,11430,,,76,,NC (non-cemented) side,S60,"NC side; orig: range 12500 yd, belt 3.0 in"
+"6""/50 BL Mark XXIII",UK,1933,152.4,CPBC 112 lb,CPBC (common pointed ballistic cap),50.8,841,20117,,,,51,NC (non-cemented) side,S60,"orig: range 22000 yd, deck 2.0 in"
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,20000,,,100,,"KC; obliquity per row (converted from Italian convention, 90 = normal)",S61,obliquity 0
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,18000,,,117,,"KC; obliquity per row (converted from Italian convention, 90 = normal)",S61,obliquity 0
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,18000,,,115,,"KC; obliquity per row (converted from Italian convention, 90 = normal)",S61,obliquity 10
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,18000,,,107,,"KC; obliquity per row (converted from Italian convention, 90 = normal)",S61,obliquity 20
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,16000,,,137,,"KC; obliquity per row (converted from Italian convention, 90 = normal)",S61,obliquity 0
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,16000,,,135,,"KC; obliquity per row (converted from Italian convention, 90 = normal)",S61,obliquity 10
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,16000,,,127,,"KC; obliquity per row (converted from Italian convention, 90 = normal)",S61,obliquity 20
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,16000,,,112,,"KC; obliquity per row (converted from Italian convention, 90 = normal)",S61,obliquity 30
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,22000,,,96,,homogeneous (vertical); obliquity per row,S62,obliquity 0
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,22000,,,94,,homogeneous (vertical); obliquity per row,S62,obliquity 10
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,22000,,,88,,homogeneous (vertical); obliquity per row,S62,obliquity 20
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,22000,,,79,,homogeneous (vertical); obliquity per row,S62,obliquity 30
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,20000,,,109,,homogeneous (vertical); obliquity per row,S62,obliquity 0
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,20000,,,107,,homogeneous (vertical); obliquity per row,S62,obliquity 10
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,20000,,,100,,homogeneous (vertical); obliquity per row,S62,obliquity 20
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,20000,,,89,,homogeneous (vertical); obliquity per row,S62,obliquity 30
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,20000,,,74,,homogeneous (vertical); obliquity per row,S62,obliquity 40
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,18000,,,127,,homogeneous (vertical); obliquity per row,S62,obliquity 0
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,18000,,,123,,homogeneous (vertical); obliquity per row,S62,obliquity 10
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,18000,,,116,,homogeneous (vertical); obliquity per row,S62,obliquity 20
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,18000,,,100,,homogeneous (vertical); obliquity per row,S62,obliquity 30
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,18000,,,87,,homogeneous (vertical); obliquity per row,S62,obliquity 40
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,16000,,,150,,homogeneous (vertical); obliquity per row,S62,obliquity 0
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,16000,,,146,,homogeneous (vertical); obliquity per row,S62,obliquity 10
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,16000,,,137,,homogeneous (vertical); obliquity per row,S62,obliquity 20
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,16000,,,121,,homogeneous (vertical); obliquity per row,S62,obliquity 30
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,16000,,,102,,homogeneous (vertical); obliquity per row,S62,obliquity 40
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,22000,,,,43,homogeneous (vertical); obliquity per row,S62,"deck, X1"
+203 mm/53 Ansaldo M1927 (also 203/50),Italy,1931,203,SAP (Granata Perforante) 125.3 kg,SAP,125.3,900,20000,,,,91,homogeneous (vertical); obliquity per row,S62,"deck X2; page prints ""91 mm (1.54 in)"" - inconsistent (1.54in=39mm)"
