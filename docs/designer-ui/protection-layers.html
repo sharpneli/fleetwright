@@ -573,6 +573,10 @@ const STOPS = stops();
 const stopX = v => v == null ? null : (STOPS.find(q => q.id === v)?.x ?? (isNaN(+v) ? null : +v));
 let cuts = [stopX(params.get('cut1')) ?? STOPS.find(q => q.id === 'mach')?.x ?? 0,
   stopX(params.get('cut2')) ?? (STOPS.find(q => q.id === 'mag:A') || STOPS.find(q => q.id.startsWith('mag:')) || {x: X1 - 5}).x];
+let linked = params.get('link') === '1', cut2Free = cuts[1];   // linked: section 2 follows section 1 (one whole section)
+function setCut(k, x) { cuts[k] = x; if (linked) cuts[1 - k] = x; }
+function toggleLink() { linked = !linked; if (linked) { cut2Free = cuts[1]; cuts[1] = cuts[0]; } else cuts[1] = Math.abs(cut2Free - cuts[0]) < 0.01 ? (STOPS.find(q => Math.abs(q.x - cuts[0]) > 0.01 && q.id.startsWith('mag:')) || STOPS[0]).x : cut2Free; }
+if (linked) cuts[1] = cuts[0];
 function cutName(x) {
   const q = STOPS.find(t => Math.abs(t.x - x) < 0.01);
   if (q) return q.id === 'mach' ? `Machinery · ${q.sub.toLowerCase()}` : q.lab;
@@ -845,10 +849,11 @@ function elevation() {
   compOverlay();
   // the two cuts: flags along the top, dragged along the ship, snapping to the stops
   cuts.forEach((x, k) => {
+    if (linked && k === 1) return;
     const px = ex(x), cg = s('g', {style: 'cursor:ew-resize'});
     cg.append(s('line', {x1: px, x2: px, y1: EL.t - 10, y2: EL.h - EL.b, stroke: '#D9B868', 'stroke-width': 1, 'stroke-dasharray': '4 3', 'pointer-events': 'none'}));
     cg.append(s('path', {d: `M${px - 8},${EL.t - 13} h16 v11 h-5 l-3,4 l-3,-4 h-5 z`, fill: '#4A3E20', stroke: '#D9B868', 'stroke-width': 1}));
-    cg.append(s('text', {x: px, y: EL.t - 4.5, 'text-anchor': 'middle', 'font-size': 9.5, fill: '#FFE7A8', 'pointer-events': 'none'}, String(k + 1)));
+    cg.append(s('text', {x: px, y: EL.t - 4.5, 'text-anchor': 'middle', 'font-size': 9.5, fill: '#FFE7A8', 'pointer-events': 'none'}, linked ? '◆' : String(k + 1)));
     cg.append(s('rect', {x: px - 9, y: EL.t - 14, width: 18, height: EL.h - EL.b - EL.t + 14, fill: 'transparent',
       onmousedown: ev => { ev.preventDefault(); dragging = {kind: 'cut', k, svg}; },
       onmousemove: ev => { if (!dragging) tip(ev, `<b>Section ${k + 1}</b>: ${cutName(cuts[k])}, x ${sx1(cuts[k])} m<br><span class="dim">Drag along the ship; it snaps to the machinery, each magazine and the ends.</span>`); },
@@ -978,9 +983,13 @@ function sections() {
   for (const hd of handles) svg.append(hd);
   // the header: the two cuts' pickers
   const pick = k => h('span', {class: 'dd', style: 'width:150px', onclick: ev => { ev.stopPropagation(); const r = ev.currentTarget.getBoundingClientRect(), a = $('app').getBoundingClientRect(); menu(ev, cutItems(k), [r.left - a.left, r.bottom - a.top + 1]); }}, h('span', {}, cutName(cuts[k])), h('i', {}, '▼'));
+  const link = h('button', {class: 'tog' + (linked ? ' on' : ''), onclick: ev => { ev.stopPropagation(); edit(toggleLink); },
+    onmousemove: ev => tip(ev, linked ? '<b>One whole section</b>, at section 1’s station: the flag and the dropdown move both halves.<br><span class="dim">Click to compare two stations again (2 goes back where it was).</span>'
+      : '<b>Whole section</b>: the right half takes the left’s station and stays with it as you move it.'), onmouseleave: untip}, linked ? '◆ Whole section' : 'Whole section');
+  const p2 = linked ? h('span', {class: 'dd', style: 'width:150px;opacity:0.45;cursor:default'}, h('span', {}, 'as 1'), h('i', {}, '▼')) : pick(1);
   const hd = h('div', {class: 'bh'}, 'Sections',
     h('span', {class: 'cut'}, h('span', {class: 'n'}, '1'), pick(0)),
-    h('b', {}, h('span', {class: 'cut'}, pick(1), h('span', {class: 'n'}, '2'))));
+    h('b', {}, link, h('span', {class: 'cut'}, p2, h('span', {class: 'n', style: linked ? 'opacity:0.45' : ''}, '2'))));
   const lg = h('div', {class: 'legend', style: 'position:absolute;left:6px;bottom:2px'},
     ...[['magazine', 'magazine'], ['handling', 'handling'], ['stores', 'stores · wing'], ['tds', 'TDS'], ['engine_room', 'machinery'], ['bunker', 'coal']]
       .filter(([k]) => k !== 'tds' || HAS_TDS()).filter(([k]) => k !== 'bunker' || S.cells.some(c => c[6] === 'bunker'))
@@ -990,9 +999,8 @@ function sections() {
 }
 function cutItems(k) {
   const items = [{head: `Section ${k + 1}: cut at`}];
-  const o = cuts[1 - k];
-  items.push({lab: `Same as ${2 - k}: one whole section`, key: cutName(o), cur: oneCut(), fn: () => { cuts[k] = o; }}, 'sep');
-  for (const q of STOPS) items.push({lab: q.id === 'mach' ? `Machinery (${q.sub.toLowerCase()})` : q.lab, key: `x ${sx1(q.x)}`, cur: Math.abs(cuts[k] - q.x) < 0.01, fn: () => { cuts[k] = q.x; }});
+
+  for (const q of STOPS) items.push({lab: q.id === 'mach' ? `Machinery (${q.sub.toLowerCase()})` : q.lab, key: `x ${sx1(q.x)}`, cur: Math.abs(cuts[k] - q.x) < 0.01, fn: () => { setCut(k, q.x); }});
   return items;
 }
 // a brass handle: drag along one axis; the value follows (the game: preview while held, one edit on release)
@@ -1050,7 +1058,7 @@ window.addEventListener('mousemove', ev => {
   if (dragging.kind === 'cut') {
     const r = $('elev').getBoundingClientRect(); let x = clamp(exInv(ev.clientX - r.left), -L / 2, L / 2);
     const near = STOPS.find(q => Math.abs(q.x - x) < 3); if (near) x = near.x;
-    cuts[dragging.k] = Math.round(x * 100) / 100; render();
+    setCut(dragging.k, Math.round(x * 100) / 100); render();
     tip(ev, `<b>Section ${dragging.k + 1}</b>: ${cutName(cuts[dragging.k])}, x ${sx1(cuts[dragging.k])} m`);
     return;
   }

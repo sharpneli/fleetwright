@@ -45,9 +45,12 @@ they differ: a zone, a box, the inner bulkhead's thicker plate beside the magazi
   convention for a cut-away), and a numbered badge on each side carries that half's name, matching the flags on the
   elevation. Each half's x stands at its outer top corner. Without it, two stations read like a broken profile (review,
   2026-10-16): the deck steps where one cut has the forecastle and the other doesn't, and the finer bow side flares.
-- **One whole section when you want it.** Each dropdown's first item is "Same as the other: one whole section". Both
-  halves then cut at one station, the gutter closes to a plain centreline, and the handles draw once, on the starboard
-  side (`protection-layers-bismarck-whole.png`). Moving either flag apart splits them again.
+- **One whole section when you want it: `Whole section`.** A toggle in the header locks section 2 to section 1. The
+  gutter closes to a plain centreline, the elevation shows one flag (`◆`), section 2's dropdown greys to "as 1", and
+  dragging the flag or picking a station moves both halves together, so you can flip along the ship and stay
+  symmetric. The handles draw once, on the starboard side. Toggling it off puts section 2 back where it was
+  (`protection-layers-linked.png`; `protection-layers-bismarck-whole.png` is the same at the machinery). Decided at
+  review, 2026-10-16: two cuts by default, with this toggle.
 - **Choosing the cuts.** Each half has a dropdown in the header (Machinery · each magazine · fore end · aft end). On the
   elevation, two brass flags `1` `2` mark the cuts; you drag them along the ship and they snap to those stops within 3 m.
 - **The cells,** from the build: each space tinted by what it holds (magazine, handling room, stores, TDS, machinery,
@@ -192,7 +195,7 @@ sides on the wing wall, wings never fuel.
 
 ## Questions for the review
 
-1. ~~Two half-sections or one full section?~~ Settled 2026-10-16: two cuts by default, the split made unmistakable (gutter, break line, badges), and "Same as the other" for one whole section.
+1. ~~Two half-sections or one full section?~~ Settled 2026-10-16: two cuts by default, the split made unmistakable (gutter, break line, badges), and a Whole section toggle that keeps 2 locked to 1.
 2. Sub-rows for zones and slopes in the table, as well as Shape. Or Shape only, keeping the table one row per part?
 3. The Compartments toggle here. Or on the Hull tab later?
 4. Layout in the sub-bar and in the Templates panel. Or only one of them?
@@ -216,7 +219,7 @@ sides on the wing wall, wings never fuel.
 end_aft, bulk, deckN, slopeN, dzoneN, tds, inner, box, wings, steer, main0, barb, ct), `&cut1=` and `&cut2=` (mach,
 mag:A, fore, aft, or x in m), `&do=` edits, comma-separated `path:value` on the armour input
 (`belt_incline_deg:15`, `tds_layers:3`, `magazine_box.side_mm:25`, `layout:german_bulkhead`, `KEY:del`),
-`&cut2=mach` with the default `cut1` gives one whole section; `&menu=layout|cut1|cut2|ID`, `&tip=layout:N|cell:K:N|handle|comp`, `&rooms=0`, `&comp=1`.
+`&link=1` locks section 2 to section 1 (Whole section); `&menu=layout|cut1|cut2|ID`, `&tip=layout:N|cell:K:N|handle|comp`, `&rooms=0`, `&comp=1`.
 
 Screenshots (`png/protection-layers-*.png`):
 
@@ -231,4 +234,5 @@ Screenshots (`png/protection-layers-*.png`):
 - `layout-menu`: the Layout list, hovering German bulkhead.
 - `dread-german`: German bulkhead applied.
 - `bismarck-whole`: both cuts at the machinery, one whole section, the slopes selected.
-- `cutmenu`: section 2's dropdown, with "Same as 1" first.
+- `cutmenu`: section 2's dropdown, the stops.
+- `linked`: Whole section on, cut at magazine A, one flag on the elevation.
