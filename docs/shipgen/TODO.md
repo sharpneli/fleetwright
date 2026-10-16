@@ -105,7 +105,7 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Double-bottom contents (oil, water)
 - [ ] Merchants' holds still span the full height of the deck stack (carriers' magazines and avgas were lowered)
 - [ ] Component ids repeat across kinds (seaplane carrier's `Hangar` block and hangar bay): the game must key by kind and id, or ids become unique
-- [ ] TDS layers in detail: layers, holding and layer walls done (protection-plan.md H3, `tds_layers`); left: their fill (liquid or void, with the double bottom's contents), and the torpedo model holing every layer within reach at once
+- [ ] TDS layers in detail: layers, holding and layer walls done (protection-plan.md H3, `tds_layers`); left: their fill (liquid or void, with the double bottom's contents), and the torpedo model holing every layer within reach at once (protection-plan.md H3, 2026-10-16: the flat leak a link and the holes to the sea; a room taking the layers fixed)
 - [ ] Clean up remaining shared cells
 - [ ] Links and flags: engine room → shaft, generators → power networks, grouped vs alternating machinery, fuel type, bottom layers, riveted/welded, centreline bulkhead, TDS depth along length
 - [ ] Carrier extras: flight-deck segments, lifts, hangar bays, avgas fore and aft

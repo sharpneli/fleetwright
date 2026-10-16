@@ -577,8 +577,8 @@ public static class Subdivision
             ((int, double) Key, RoomBox R)? best = null;
             foreach (var r in rooms)
             {
-                if (!Claims(r, c) || r.Kind == "magazine" && magWingCells.Contains(c))
-                    continue;
+                if (!Claims(r, c) || r.Kind == "magazine" && magWingCells.Contains(c) || c.TdsM != null && Wing(c.Band))
+                    continue;   // a torpedo protection's layers are its own, outboard of the holding bulkhead
                 var key = (RoomPriority.GetValueOrDefault(r.Kind, 4), BoxOverlap(r, c));
                 if (best is null || key.CompareTo(best.Value.Key) > 0)
                     best = (key, r);

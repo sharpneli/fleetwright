@@ -120,6 +120,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-16, armour widths exported (docs/shipgen/protection-plan.md H5b), on purpose: armour decks and bulkheads
   narrower than the hull carry `w` (the steering gear's box, the end belts' stern faces). 131 design cases' hitboxes
   change; nothing else.
+- 2026-10-16, TDS cells are the TDS's own, a bug fix: a room whose box reached past the holding bulkhead took the TDS
+  cells there (Richelieu's engine room 3, the carriers' aviation fuel; with layers, a boiler room took the innermost
+  layer, so a hit that flooded it flooded the boiler room through an open join). 14 design cases' hitboxes change
+  (rooms' cells, battle crew); nothing else.
 
 ## Layout
 

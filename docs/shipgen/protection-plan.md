@@ -212,6 +212,19 @@ this plan builds the layers so E1 has something to work on.
     (`torpedo`, 200 hits, 2 a ship, 60 min): holes 136 → 178 m² a hit, water 3,216 → 3,637 t, lost 18 → 21 %: the
     torpedo model holes every cell within its reach, each layer now one, where the walls should take the blast in
     turn. To settle before H8 gives designs layers (the flooding session, or E5's blast).
+  - 2026-10-16, looked into: three causes, one fixed. (1) A room whose box reached past the holding bulkhead took the
+    TDS cells there: with layers a boiler room took the innermost layer, so water reaching it ran into the boiler room
+    through an open join (and one-layer Richelieu's engine room 3 and the carriers' aviation fuel had TDS cells too).
+    Fixed: TDS cells are the TDS's own. The 3-layer Bismarck: water 3,637 → 3,357 t, lost 21 → 20 % (one layer 3,216 t,
+    18 %; seeds 2-3 at 400 hits: lost equal, 17/17 and 20/19 %), out of the fight 41 % (one layer 52 %). (2) On a hit
+    the TDS holds, layers already flood less: the layers past the reach stay dry where one cell floods whole (amidships
+    1,327 against 1,799 t). Where the TDS is shallower than the reach (by the end turrets) they flood more, and the
+    rest of the excess is the flooding's flat leak a link (`FloodLeakBulkheadM2`, 5 cm² whatever the wall's size): more
+    cells, more links, more leak, and small layer cells fill from it; on one hit that cascaded (3,128 → 5,890 t, the
+    ship sinking level until the accommodation deck went under). (3) The inner layers in reach get holes to the sea
+    rather than through the wall outboard of them: the same water in the end, faster, and the hole area a hit counts
+    them (136 → 178 m²). (2)'s leak by a wall's area is the flooding session's (`17_structural_leakage.md`), (3)'s walls
+    as openings E5's (ruptured boundaries as ¼ of the wall); both before H8.
 
 ### H4. The inner line behind the belt (§6.4)
 - `armour.inner_bulkhead {mm, magazines_mm, inboard_m, extent}`: a longitudinal armoured wall from the inner bottom to
