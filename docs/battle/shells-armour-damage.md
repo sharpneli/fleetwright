@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: draft, for the user to agree    Updated: 2026-10-16
+Status: agreed, steps reviewed for implementation    Updated: 2026-10-16
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -53,7 +53,7 @@ better burst points and states; it doesn't rebuild them.
 4. **The shell tech scales with calibre** (S, "How a block scales"): a default template, plus more beside it ("we may
    want to have silly shells later"). Nothing in the block is limited by period or plausibility, only by what can
    physically be (memory: allow silliness), so a player's odd shell is a block like any other.
-5. **Thompson is the engine from P1** (P1, "The formula"), on Claude's recommendation: the same answers as today's fit
+5. **Thompson is the engine from P1a** (P1a, "The formula"), on Claude's recommendation: the same answers as today's fit
    within 1–4% where tried, cheaper, the basis the material table is rated on, and in the limit velocity V_L that P2–P5's
    rules are written in (holed and effective limits, shatter and break-up near the limit, the ricochet gate, the
    residual). The plate bench checks it against the trials before the old fit goes.
@@ -62,23 +62,30 @@ better burst points and states; it doesn't rebuild them.
 
 ### Ammunition, per battery (phase S)
 
-A **shell tech** block, calibre-free like `machinery.tech`, so one block serves a navy's whole family of guns:
+A **shell tech** block, calibre-free like `machinery.tech`, so one block serves a navy's whole family of guns. The
+blocks live in a design-level **`ammunition`** table keyed by name, as the materials do (decision 2's reasoning: a
+navy's 15″ main and 6″ secondary share one block, written once):
 
 | Field | Example (RN 15″ Greenboy, 1918) | Used for |
 |---|---|---|
-| `name` | "Greenboy APC, Shellite (1918)" | label |
 | `kind` | `ap` / `common` / `he` | which fuze, filler share |
-| `w_d3` | 0.57 lb/in³ (or `mass_kg` per battery) | mass: flight, penetration, **magazine weight** |
+| `mass_k_kg_m3` | 15,800 (0.57 lb/in³; 1 lb/in³ = 27,680 kg/m³) | mass = k·D³ (D in m): flight, penetration, **magazine weight** |
 | `nose_crh`, `form_factor` | 4 crh, 1.1 | drag (fire control's tables); nose ±10–15% |
-| `cap` | `{kind: hard, share: 0.116}` (`none`, `soft`, `hard`, `hard2`, `break_away`) | decapping, shatter, the cap's lost mass |
+| `cap` | `{kind: hard, share: 0.116}` (`none`, `soft`, `hard`, `hard2`, `break_away`) | decapping, shatter, the cap's lost mass; `break_away` is the diving shell (`ShellTypeRow.Diving`, P6) |
 | `windscreen` | true | lost on any impact |
 | `body` | `{break_ob_deg: 20, break_t_d: 0.67, quality: 1.0}` | when it breaks up; the thickness multiplier (armor/00 §5.4: 0.85–1.11) |
-| `filler` | `{share: 0.024, explosive: "Shellite", re: 1.0, sensitive: false, booster: true}` | burst size, bursts in the plate, low-order rate |
+| `filler` | `{share: 0.024, explosive: "Shellite", re: 1.0, in_plate: 0.0, low_order: 0.1}` | burst size; the rates of bursting in the plate (lyddite's 0.35) and low-order, each sourced (armor/04 §6, §8.2) |
 | `fuze` | `{position: base, delay_s: 0.025, start_cal: 0.07, oblique: 0.25, plates: single, scatter: 0.25, blind: 0.05}` | start threshold, burst point, duds |
 
-Per battery: `shells` (the kinds carried, each a tech block or a template name, with the outfit's shares), and an
-optional `muzzle_velocity_ms` (the gun's, until a gun tech exists; the placeholder's 280 + 11·L meanwhile).
-`rounds_per_gun` is already there.
+Metric like the rest of shipgen; the templates' notes give lb/in³, the literature's unit.
+
+Per battery, **`shells`**: the outfit, entries `{ammo: <name in the table>, share}`, each with an optional `mass_kg`
+(one battery's own shell, over k·D³). And the battery's **`muzzle_velocity_ms`**, the gun's with its heaviest shell
+(the placeholder's 280 + 11·L when absent, until a gun tech exists); a lighter kind goes faster by the placeholder's
+rule, (m_heavy/m)^0.25, unless its entry gives its own. `rounds_per_gun` is already there.
+
+A design carries the blocks it uses; templates are copied in (by the designer, by a tool), never referenced by name,
+as `machinery.tech` is.
 
 **How a block scales with calibre.** Everything in it is either a share or a calibre-relative number, because that's
 how the physics works and how the sources quote it:
@@ -103,18 +110,27 @@ What doesn't fit one block:
 So a navy and year has two or three blocks (heavy AP, heavy HE or common, light guns), and a design picks one per kind
 for each battery. That's the same count as its plant templates.
 
-Two more things the ammunition carries, used by later sessions rather than this one:
+**Not added in this plan** (the schema leaves room; each is its own step later):
 
-- `charge`: `{kg, propellant, packaging: bag | case}`, for the magazines' venting race (`07-magazine-explosions.md`;
-  today `DesignerPlaceholders.Charge` and a side's propellant factor in the scenario).
-- The dye (already a sim fact) could move here too.
+- `charge`: `{kg, propellant, packaging: bag | case}`, for the magazines' venting race (`07-magazine-explosions.md`).
+  Today it's `DesignerPlaceholders.Charge`, which the muzzle flashes read too (`docs/visuals/muzzle-flashes.md`), and a
+  side's propellant factor in the scenario. Moving it touches the VFX, so it stays out.
+- The dye (already a sim fact).
 
 **Shipgen's own use:** the magazines are weighed with one W/D³ for every gun and era (`Batteries.ShellK`, the 16″
-Mk 8's). The block's W/D³ and the charge's mass replace it, so a light Victorian shell weighs less than a super-heavy
-one (memory: weights follow physics; reported, goldens updated).
+Mk 8's). The outfit's mean shell mass replaces it (the charge keeps its share in `AmmoMult` until the charge is added),
+so a light Victorian shell weighs less than a super-heavy one (memory: weights follow physics; reported, goldens
+updated).
 
-**Out of shipgen** (`report.json`, then `ShipClassCompiler`): each battery's resolved shells (masses in kg, fuze,
-filler kg), which `DesignerPlaceholders.Shell`, `ShellMix` and `Fires` give today. Those three placeholders are deleted.
+**Out of shipgen** (`report.json`, then `ShipClassCompiler`): each battery's resolved shells (kind, mass in kg, muzzle
+velocity, form factor, cap, body, filler kg and rates, fuze) and the outfit's shares. `DesignerPlaceholders.Shell` and
+`ShellMix` are deleted. `Fires` (heavy guns fire AP) isn't a designer fact but v0's firing rule: it stays in the sim,
+reading the outfit, until the AI's pass (decision 3).
+
+**One source for the catalogues.** The built-in blocks (ammunition and materials) live in shipgen as C# tables, as the
+crew standards (`Crew.cs`) and the default plant (`Powerplant.cs`) do, because `DesignFormat`'s upgrade and the defaults
+need them and shipgen reads no game assets. `Content/Templates/*.json` and the templates pages are written from them by
+the tool, never edited by hand (memory: single implementation).
 
 ### Materials (phase P)
 
@@ -131,8 +147,9 @@ per-battery `material`, `hull.plating.material`, `superstructure.material`):
 | `backing` | 0 (teak 0.01, cement 0.04) | weight-only layers that count little | armor/05 §5 |
 | `fragments` | `mild` / `hard` / `fh` | THOR's constants (phase E) | armor/01 §3.10 |
 
-Unknown names are an error once the table exists. Old designs are upgraded by `DesignFormat` (version 2): every name
-the catalogue knows becomes its block.
+Old designs (shipped, fuzz, scenario and the players' saves) are upgraded by `DesignFormat` (version 2): every name the
+catalogue knows becomes its block. A name nobody knows gets the steel block and a warning in the report, never an error
+(DECISIONS.md: the generator is permissive; a missing anchor falls back with a warning).
 
 Two more armour inputs:
 
@@ -159,26 +176,47 @@ material row per name (the class's material table exists, with names only). `set
 - **`armour.json`** stays the *scheme* templates (part → material name). Applying one adds the blocks it names to the
   design's table.
 - The designer's template column (`DesignerScene.Layout.cs`: Plant, Hull, Crew, Armour) gains **Shells** and
-  **Materials**.
+  **Materials**. The material knobs (`Knobs.SchemeMaterial` and its kin) list the design's table and the catalogue
+  instead of `Templates.MaterialNames`. UI work follows the designer's way (memory: one tab a session, mockup then port).
+
+## Phase S: what's hitting
+
+## Rules for every step
+
+- **Benches before and after,** in the step's commit message and its section here: the step's own benches, plus
+  `shipgen hits`, the matchup bench and the squadrons' scenario for any step that moves outcomes.
+- **The matchup mirrors the terminal.** `Matchup.cs` estimates outcomes analytically from the same facts (`PenMm`,
+  `ShellOutcomes`). Every step that changes `Terminal` changes the matchup's estimate in the same commit, so the AI's
+  judgement never reads a different model from the one that fights.
+- **Test bands are the anchors.** A step that moves a `DamageTests` anchor out of its band reports it; the band is
+  widened only with the user's say, as P6's outcomes were (user, 2026-10-16: accepted, not tuned, until damage control).
+- **No allocation per hit,** and no new per-hit cost worth measuring (about 200 µs a hit today).
 
 ## Phase S: what's hitting
 
 - **S0 Shells as design data (parity).**
-  - Shipgen reads `main[k].shells` and the secondaries', validates them, and writes the resolved shells to the report.
-  - The compiler reads them instead of `DesignerPlaceholders.Shell`.
-  - A tool writes every shipped design's shells *from today's placeholder*, so every number holds: hashes, `shipgen
-    ballistics`, `duel`, and the goldens apart from the new keys.
+  - Shipgen reads `ammunition` and the batteries' `shells`, validates them, and writes the resolved shells to the
+    report. The compiler reads them instead of `DesignerPlaceholders.Shell` and `ShellMix`.
+  - A tool writes every shipped and scenario design's ammunition *from today's placeholder*, so every number holds:
+    - each battery's `mass_kg` per entry (the placeholder's k varies with calibre, so one block's k can't hold it yet),
+      `muzzle_velocity_ms`, the form factor, filler shares and fuze delays, and the Type 91's `break_away` cap;
+    - **a transitional `outcomes` field** naming today's `ShellOutcomes` row (`rn1916`, `km1916`, `rn1918`, `ww2`,
+      `ijn_t91`), until P3 replaces the rows with the fuze's and filler's rates and deletes it.
+  - Checks: the sim's hashes, `shipgen ballistics`, `duel` and `weapons` unchanged; the goldens gain the new keys only
+    (`golden-update`, no value moves).
   - The magazine weight keeps `ShellK` in this step.
-- **S1 The templates.** `shell-templates.md` and `shells.json`; the designs' blocks are switched to the templates of
-  their navy and year (Dreadnought gets the RN's 1906 APC, Bismarck the 38 cm L/4,4 with the Bd.Z. 38, Yamato the Type
-  91).
-  - This moves numbers: masses (W/D³ 0.42–0.66 instead of one curve), the drag form factor, filler.
+- **S1 The templates.** The catalogue's ammunition, `shell-templates.md` and `shells.json`; the designs' blocks are
+  switched to the templates of their navy and year (Dreadnought gets the RN's 1906 APC, Bismarck the 38 cm L/4,4 with
+  the Bd.Z. 38, Yamato the Type 91), and the parity `mass_kg` overrides go.
+  - This moves numbers: masses (k from 0.42–0.66 lb/in³ instead of one curve), the drag form factor, filler. The
+    `outcomes` field stays as S0 set it.
   - Report `shipgen ballistics` (range tables), `duel` (fire control's calibration, hit % and time to first hit) and
     `weapons`, before and after.
 - **S2 Ammunition weight.** The magazines weighed from the block's W/D³ and the charge. Report the displacement shifts,
   run `golden-update` with a `ShipDesign.Version` bump and `mono-check`.
 - **S3 The designer.** A shell template picker in the Main battery and Secondary tabs (the template column); the
-  battery table shows the kind, mass and fuze. Light, in the tabs' existing style.
+  battery table shows the kind, mass and fuze. A UI session of its own (mockup, then port); it can run any time after
+  S1, alongside phase P.
 - **Not here: the shell by target** (decided). A battery fires one kind in v0 (AP from heavy guns). This plan gives
   every battery its outfit of kinds; firing HE or common at unarmoured targets is the AI's pass (the matchup bench showed
   it matters: four light cruisers against a battleship).
@@ -187,14 +225,15 @@ material row per name (the class's material table exists, with names only). `set
 
 - **P0 Materials as data (parity).**
   - The `materials` table in the design, the `DesignFormat` upgrade, the catalogue's blocks with `q` set to today's
-    `ArmourQuality` values, and the compiler's material rows.
-  - Mass still 7.85 in this step. Nothing moves.
-- **P1 Densities and the real Q.**
-  - Mass by the material's density (report the shifts: the ironclads, PT boats, aluminium houses).
-  - `q` from armor/00 §4.2 with Q(D) and the thin face-hardened rule. WWI KC goes from 1.0 to about 0.85–0.88.
-  - Structural steels get their own Q instead of the 0.6 catch-all.
+    `ArmourQuality` values, and the compiler's material rows. `ArmourQuality` leaves the settings.
+  - Mass still 7.85 in this step. Nothing moves: hashes and golden values hold (the goldens gain the table).
+- **P1a Thompson and the plate bench** (sim only; the materials' `q` as P0 left them).
+  - `Terminal`'s plate step on Thompson's V_L, the residual from V and V_L (the game's rule, P5), the deck multiplier
+    below, and the inverse for `Matchup.cs` and the bench's readouts.
   - **The plate-only bench** (`shipgen pen-check`): the game's `Terminal` plate step against `armor/07-*.csv` (the USN
-    16″ table, NPG 1946–47, the Italian obliquity tables, Annapolis, Indian Head, Beardmore, Baden). No rolls.
+    16″ table, NPG 1946–47, the Italian obliquity tables, Annapolis, Indian Head, Beardmore, Baden), and both models'
+    decks. No rolls. It reads the CSVs from the repo, as a tool may; nothing the release needs.
+  - Expect small moves (1–4%, thin decks under small shells 13%).
   - **Why the game has the thickness form today:** no decision was made. The damage research's game shortcut
     (`05-mechanics-and-games.md` §A3: "precompute per gun `pen_belt(range)`, `pen_deck(range)` ... penetrates if pen ×
     rand > eff") and `gunfire_ref.py`'s `pen_mm` both ask what thickness a shell beats, because the tables they were
@@ -220,17 +259,29 @@ material row per name (the class's material table exists, with names only). `set
       Thompson's own, so it can't decide. So: a settings multiplier on a deck's V_L by obliquity, 1 (pure Thompson) by
       default; the bench prints both models' decks; the battle anchors (Scharnhorst's boiler room, Jean Bart's decks,
       cruiser decks) move it if they ask. It shifts the immune zone's far edge by 1–3 km.
+- **P1b The real Q** (sim only).
+  - `q` from armor/00 §4.2 with Q(D), the ductility penalty and the thin face-hardened rule. WWI KC goes from 1.0 to
+    about 0.85–0.88.
+  - Structural steels get their own Q instead of the 0.6 catch-all.
+  - The plate bench before and after.
+- **P1c Densities** (shipgen only).
+  - Mass by the material's density: report the shifts (the ironclads, PT boats, aluminium houses), `golden-update`
+    with a `ShipDesign.Version` bump, `mono-check`.
 - **P2 Caps, decapping, shatter and break-up as states.**
   - The cap is lost on face-hardened plate or past its threshold, with a gap test before the next face-hardened plate.
   - Shatter of uncapped or decapped shells on face-hardened plate: +30–40% at normal, fading to nothing by 55°.
   - Break-up by the body's obliquity and T/D limits, most likely near the limit around 45°.
-  - `Broken` leaves `ShellOutcomes`.
+  - `Broken` leaves `ShellOutcomes`. A broken shell is still `Outcome.BrokeUp` here; P4 splits it into holed and
+    through.
   - Benches: the matchup (Arethusa, Iron Duke), Jutland's 1/13 on more than 9″, the 1894–1905 battles, `shipgen hits`
     on the destroyers.
 - **P3 Fuzes per fuze.**
   - Start threshold and obliquity factor per fuze; the two-plate fuzes adding up thin plates in quick succession; face-hardened plate always starts it.
   - Delay scatter per fuze; blinds per fuze.
-  - The `ShellOutcomes` rows are gone: what's left lives in the shell's `fuze.blind` and `filler`.
+  - The `ShellOutcomes` rows and the transitional `outcomes` field are gone: what's left lives in the shell's
+    `fuze.blind`, `filler.in_plate` and `filler.low_order`. The templates carry the sourced rates; S0's parity designs
+    get them from their row.
+  - `FuzeStartsOnWater` on (P6's scaffold).
   - Benches: bursts behind the plate (Baden 38 ft), Iowa's bomb deck moving bursts up, South Dakota's pass-throughs.
 - **P4 Three limits.** Holed (a hole, the shell broken, fragments only), Navy (the whole shell through) and effective (through,
   whole, fuze working), with a new `Outcome` for holed-but-broken.
@@ -241,8 +292,9 @@ material row per name (the class's material table exists, with names only). `set
   - Normalisation toward the plate's normal on the way through.
   - The residual-velocity rule stays the game's (it fits the spaced deck better); its burst distances are checked
     against Baden and the Hood deck series.
-- **P6 Under water.** The shell's speed by the distance it travels in the water (`e^(−x/L)`), the fuze clock starting
-  at the water, and the Type 91 as the exception that keeps going. This replaces `UnderwaterSpeedShare`'s flat 0.4.
+- **P6 Under water** (mostly done; what's left is P3's switch). The shell's speed by the distance it travels in the
+  water (`e^(−x/L)`), the fuze clock starting at the water, and the Type 91 as the exception that keeps going. This
+  replaces `UnderwaterSpeedShare`'s flat 0.4.
   - **Done ahead of the pass (2026-10-16):** the speed by the run (`Sim.Combat/WaterRun.cs`: L 25 calibres pointed,
     50 diving; `ShellTypeRow.Diving`, set by `DesignerPlaceholders.Shell` for Type 91 AP until the shell block's
     `cap: break_away` gives it), the run carried on the hit (`Hit.WaterRunM`, measured to the ship's waterplane at its
@@ -271,10 +323,12 @@ material row per name (the class's material table exists, with names only). `set
   - THOR's equations for fragments against the plating, by the material's `fragments` class.
   - This replaces Okun's table in `Effects.FragPenMm` for parts boxed by armour and splinter decks.
   - **Near-miss splinters:** a shell bursting on the water near a ship sends fragments into its side and upper works
-    (`08-gunfire-effects.md` §8). The splash system has the miss's position already.
+    (`08-gunfire-effects.md` §8). The splash system has the miss's position already. It needs a new `Hit` source, a
+    burst at a point outside the hull, which `DamageSystem` takes like any hit and `Effects` handles from its burst
+    on (no terminal walk). A step of its own, after the THOR fragments.
 - **E4 The battle anchors.** With S and P in, the whole chain against the battles: Jutland, Bismarck's ~3 belt holes in
   ~400 hits, South Dakota, Samar, the 1894–1905 battles, the destroyer benches. The leftover rolls are tuned only within
-  their sourced bands. `fighting.md` question 1 (the penetration fit) is answered here.
+  their sourced bands, and the deck multiplier (P1a) only if an anchor asks.
 
 ## What stays out
 
@@ -290,19 +344,26 @@ None open (2026-10-16).
 
 ## Steps at a glance
 
-| Step | Shipgen | Sim | Moves numbers? |
-|---|---|---|---|
-| S0 | shells read, reported | compiler reads them | no |
-| S1 | shell templates | — | ballistics, fire control |
-| S2 | ammunition weight | — | displacement |
-| S3 | designer picker | — | no |
-| P0 | materials table, upgrade | material rows | no |
-| P1 | densities | Q(D), pen-check bench | weights, penetration |
-| P2 | — | caps, shatter, break-up | outcomes |
-| P3 | — | fuzes | burst points |
-| P4 | — | three limits | outcomes |
-| P5 | — | angles | ricochets, paths |
-| P6 | — | under water | underwater hits |
-| P7 | gratings, backing | scatter | plates |
-| E1–E3 | — | effects | damage |
-| E4 | — | tuning | the anchors |
+| Step | Needs | Shipgen | Sim | Moves numbers? |
+|---|---|---|---|---|
+| S0 | — | ammunition read, reported | compiler reads it | no |
+| S1 | S0 | ammunition catalogue, templates | — | ballistics, fire control |
+| S2 | S1 | ammunition weight | — | displacement |
+| S3 | S1 | designer picker (UI session) | — | no |
+| P0 | — | materials table, upgrade | material rows | no |
+| P1a | P0 | — | Thompson, pen-check bench, deck multiplier | penetration (1–4%) |
+| P1b | P1a | material catalogue | Q(D) | penetration |
+| P1c | P0 | densities | — | weights |
+| P2 | S1, P1b | — | caps, shatter, break-up | outcomes |
+| P3 | P2 | — | fuzes; rows gone; water fuze on | burst points |
+| P4 | P2 | — | three limits | outcomes |
+| P5 | P1a | — | angles | ricochets, paths |
+| P6 | — | — | under water (done but P3's switch) | underwater hits |
+| P7 | P0 | gratings, backing | scatter | plates |
+| E1 | P4 | — | holed-but-broken effects, flash | damage |
+| E2 | P2 | — | spall | damage |
+| E3 | P0 | — | THOR fragments; then near misses (new hit source) | damage |
+| E4 | all | — | tuning | the anchors |
+
+S and P0 are independent, so P0 can come first or between S steps; P1a needs no shells. Everything after P1b needs
+both phases' data.
