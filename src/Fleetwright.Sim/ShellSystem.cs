@@ -36,8 +36,11 @@ public sealed class ShellSystem : IWorldSystem
         public long FiredMs;
         public Vec3d Muzzle, Forward;
         public double ElevationDeg, Speed;
-        /// <summary>Seconds after firing: the window's top, and the end (the hit, or the water until the window's run).</summary>
-        public double WindowS, EndS;
+        /// <summary>Seconds after firing: the window's top, where it met the water (its end, unless it ran on under it to
+        /// a hit), and the end (the hit, or the water until the window's run).</summary>
+        public double WindowS, WaterS, EndS;
+        /// <summary>Where it met the water (a hit under it splashes there too).</summary>
+        public Vec3d WaterPoint;
         public int Salvo, Shooter, Battery, Generation;
         /// <summary>The gunnery system's record of its salvo (for the spot), or -1 (the dev's fire); the shell type and
         /// the shooter's class (its registry id) it's of.</summary>
@@ -234,7 +237,7 @@ public sealed class ShellSystem : IWorldSystem
         s = new Shell
         {
             Table = table, FiredMs = world.Time.Ms, Muzzle = muzzle, Forward = forward, ElevationDeg = elevationDeg, Speed = speed, WindowS = top,
-            EndS = end, Salvo = salvo, Shooter = shooter, Battery = battery, Record = record, ShellType = shellType, ShooterClass = shooterClass,
+            WaterS = end, EndS = end, Salvo = salvo, Shooter = shooter, Battery = battery, Record = record, ShellType = shellType, ShooterClass = shooterClass,
             Generation = gen, Alive = true,
             Hit = -1,
             Dye = ships.Store.SlotOf(shooter) is int ss and >= 0 ? ships.Store[ss].Dye : Dye.None,
@@ -275,9 +278,10 @@ public sealed class ShellSystem : IWorldSystem
             float fall = (float)double.RadiansToDegrees(Math.Asin(Math.Clamp(-vu / vl, -1, 1)));
             float bearing = (float)Earth.Heading(s.End, vel - up * vu);
             var kind = s.ShooterClass >= 0 && s.ShellType >= 0 ? ships.Class(s.ShooterClass).ShellTypes[s.ShellType].Kind : ShellKind.Ap;
-            splashes[splashNext] = new Splash(s.End, world.Time.Ms, s.Hit, s.Salvo, s.Shooter, table.Key.CalibreMm, fall, bearing, kind, s.Dye);
-            splashNext = (splashNext + 1) % splashes.Length;
-            splashCount = Math.Min(splashCount + 1, splashes.Length);
+            // a hit under the water splashed where it met it (at the hit's moment: a moment's splashes come together)
+            if (s.Hit >= 0 && s.WaterRunM > 0)
+                AddSplash(new Splash(s.WaterPoint, world.Time.Ms, -1, s.Salvo, s.Shooter, table.Key.CalibreMm, fall, bearing, kind, s.Dye));
+            AddSplash(new Splash(s.End, world.Time.Ms, s.Hit, s.Salvo, s.Shooter, table.Key.CalibreMm, fall, bearing, kind, s.Dye));
             if (s.Hit >= 0)
             {
                 Hits++;
@@ -301,6 +305,13 @@ public sealed class ShellSystem : IWorldSystem
         }
     }
 
+    void AddSplash(in Splash sp)
+    {
+        splashes[splashNext] = sp;
+        splashNext = (splashNext + 1) % splashes.Length;
+        splashCount = Math.Min(splashCount + 1, splashes.Length);
+    }
+
     /// <summary>The danger window: the track from its top to the water, and on under it, in chords through the hit query
     /// against the ships near the fall, each where it is at the chord's middle; the first ship met is hit.</summary>
     void Window(World world, ref Shell s, int slot)
@@ -318,7 +329,7 @@ public sealed class ShellSystem : IWorldSystem
         double reach = WaterRun.ReachM(shell, speed, settings);
         chordPoint[Chords + 1] = chordPoint[Chords] + vel * (reach / speed);
         chordTime[Chords + 1] = s.EndS + WaterRun.TimeS(speed, reach, WaterRun.DecayM(shell, settings));
-        (s.End, s.Hit, s.WaterRunM) = (chordPoint[Chords], -1, 0);
+        (s.End, s.Hit, s.WaterRunM, s.WaterS, s.WaterPoint) = (chordPoint[Chords], -1, 0, s.EndS, chordPoint[Chords]);
 
         // the ships that can be under it: within the window's span and the biggest ship's reach of the fall
         var near = index.Near(chordPoint[Chords], (chordPoint[0] - chordPoint[Chords]).Length + biggest);
@@ -409,6 +420,7 @@ public sealed class ShellSystem : IWorldSystem
                 ref readonly var s = ref shells[i];
                 (v.Table[n], v.FiredMs[n], v.Muzzle[n], v.Forward[n], v.ElevationDeg[n], v.Speed[n], v.EndS[n], v.Hit[n], v.Shooter[n]) =
                     (s.Table, s.FiredMs, s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, s.EndS, s.Hit, s.Shooter);
+                (v.WaterS[n], v.Water[n], v.End[n]) = (s.WaterS, s.WaterPoint, s.End);
                 n++;
             }
         v.Count = n;

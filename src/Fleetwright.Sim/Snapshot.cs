@@ -211,14 +211,15 @@ public sealed class CombatLogView
 /// screens may read from their thread), when it was fired, its muzzle and heading, the elevation and muzzle velocity
 /// (a fraction of the shell's own) it left with, when its flight ends (seconds after firing), the ship it hits (an
 /// entity, -1 for the water) and who fired it. Its position at any moment is
-/// <c>Ballistics[Table].Position(Muzzle, Forward, ElevationDeg, Speed, t)</c>.</summary>
+/// <c>Ballistics[Table].Position(Muzzle, Forward, ElevationDeg, Speed, t)</c> until it meets the water at WaterS (its end,
+/// unless it runs on under it to a hit); then straight on from Water to End, the hit's point.</summary>
 public sealed class ShellsView
 {
     public int Count;
     public int[] Table = [], Hit = [], Shooter = [];
     public long[] FiredMs = [];
-    public Vec3d[] Muzzle = [], Forward = [];
-    public double[] ElevationDeg = [], Speed = [], EndS = [];
+    public Vec3d[] Muzzle = [], Forward = [], Water = [], End = [];
+    public double[] ElevationDeg = [], Speed = [], WaterS = [], EndS = [];
     public Combat.BallisticsRegistry? Ballistics;
 
     public void EnsureCapacity(int n)
@@ -235,6 +236,9 @@ public sealed class ShellsView
         Array.Resize(ref ElevationDeg, n);
         Array.Resize(ref Speed, n);
         Array.Resize(ref EndS, n);
+        Array.Resize(ref WaterS, n);
+        Array.Resize(ref Water, n);
+        Array.Resize(ref End, n);
     }
 }
 

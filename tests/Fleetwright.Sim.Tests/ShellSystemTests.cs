@@ -157,6 +157,56 @@ public class ShellSystemTests(ITestOutputHelper output)
         output.WriteLine($"at the target: {w2.Shells.Hits} hits of {guns}");
     }
 
+    /// <summary>Every shell that meets the water splashes there: a miss, and a hit it ran on under the water to (its
+    /// splash where it met the water, at the hit's moment, beside the hit's mark); in flight, the snapshot knows when it
+    /// met the water and where, short of its end.</summary>
+    [Fact]
+    public void A_hit_under_the_water_splashes_where_it_met_it()
+    {
+        var (w, shooter, target) = Make(Settings with { DevFirePatternPct = 0 });
+        var cls = w.Ships.Class(Ship(w, shooter).ClassIndex);
+        int guns = cls.Batteries[0].Guns;
+        var from = Ship(w, shooter).Position;
+        // the dev's salvo doesn't allow for the earth's turning (east, it carries ~0.5% long: Eotvos); measured on a
+        // salvo well short, then aimed to meet the water a few metres short of the target's side
+        var far = Destination(Ship(w, target).Position, 270, 300);
+        double over = Fire(w, shooter, far, 1).Average(x => Earth.Distance(x.Point, from) - Earth.Distance(far, from));
+        var water = Destination(Ship(w, target).Position, 270, cls.Beam / 2 + 5);
+        var at = Destination(water, 270, over);
+        var (lat, lon) = Earth.LatLon(at);
+        long fired = w.Time.Ms;
+        w.Apply(ShellSystem.FireAt(shooter, 0, lat, lon));
+        bool seen = false;
+        var snap = new Snapshot();
+        for (int k = 0; k < 600 && (k == 0 || w.Shells.InFlight > 0); k++)
+        {
+            w.AdvanceTo(w.Time + 50);
+            w.Fill(snap, truth: true);
+            var v = snap.Shells;
+            for (int i = 0; i < v.Count; i++)
+                if (v.Hit[i] >= 0 && v.WaterS[i] < v.EndS[i])
+                {
+                    seen = true;
+                    Assert.True(Earth.Distance(v.Water[i], water) < 15, "met the water short of the side");
+                    Assert.True((v.End[i] - v.Water[i]).Length > 1, "ran on to the hull");
+                    Assert.True(v.End[i].Length < Earth.Radius, "the hull under the water");
+                }
+        }
+        w.Fill(snap, truth: true);
+        var s = snap.Splashes;
+        int hits = 0, splashes = 0;
+        for (int i = 0; i < s.Count; i++)
+            if (s.Ms[i] > fired)
+                (hits, splashes) = s.Ship[i] >= 0 ? (hits + 1, splashes) : (hits, splashes + 1);
+        output.WriteLine($"{over:0.0} m long east; {guns} shells: {hits} hits, {splashes} splashes; one seen under the water in flight: {seen}");
+        Assert.True(hits > 0, "some ran on under the water to the hull");
+        Assert.True(seen);
+        Assert.Equal(guns, splashes);   // every shell splashed, hit or not
+        for (int i = 0; i < s.Count; i++)
+            if (s.Ship[i] >= 0)
+                Assert.Contains(Enumerable.Range(0, s.Count), j => s.Ship[j] < 0 && s.Ms[j] == s.Ms[i] && s.Salvo[j] == s.Salvo[i]);
+    }
+
     [Fact]
     public void Splashes_and_hits_do_not_depend_on_the_tick()
     {

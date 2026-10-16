@@ -30,6 +30,10 @@ public sealed partial class MapScene
     // the shell: its tail covers this much of its flight, within these lengths on the screen; its head, and its swell at
     // the apex (seen from above it rises toward the eye)
     const double TailS = 1.5, TailMinPx = 8, TailMaxPx = 40, HeadPx = 2.4, ApexSwell = 0.6;
+    // a shell under the water: a torpedo's body, dark and soft (its contrast e^(-2Kd) through the water over it, K the
+    // North Sea's 0.25 /m), a short shape behind the head along its flight, px at a 12"
+    static readonly Vector4 UnderwaterDark = new(0.03f, 0.06f, 0.08f, 1f);
+    const double UnderwaterBody = 0.8, UnderwaterAttenuation = 0.25, UnderwaterMaxOpacity = 0.7, UnderwaterLengthPx = 6;
     // the gun's flash: physically a few hundredths of a second, held a little so a broadside reads
     const double FlashS = 0.35, FlashPx = 7;
     // the splash: a column H = 180 x calibre (research/vfx/shell-splashes.md), rising in sqrt(2H/g) and down by twice
@@ -90,6 +94,11 @@ public sealed partial class MapScene
                 float dim = selected < 0 || v.Shooter[i] == selected ? 1f : 0.45f;
                 if (t < flashS && view.Project(v.Muzzle[i], out double mx, out double my))
                     overlay.Disc(mx, my, FlashPx * Math.Sqrt(f) * (1 - 0.5 * t / flashS), GunFlash with { W = GunFlash.W * dim * tableFlash * (float)(1 - t / flashS) });
+                if (t > v.WaterS[i])
+                {
+                    Underwater(view, v, i, t, f, dim);
+                    continue;
+                }
                 var p = table.Position(v.Muzzle[i], v.Forward[i], v.ElevationDeg[i], v.Speed[i], t, out _);
                 if (!view.Project(p, out double x, out double y) || x < -TailMaxPx || y < -TailMaxPx || x > view.Width + TailMaxPx || y > view.Height + TailMaxPx)
                     continue;
@@ -103,6 +112,31 @@ public sealed partial class MapScene
         DrawTargets(view, s);
         DrawTorpedoes(view, s);
         DrawSplashes(view, s);
+    }
+
+    /// <summary>A shell running on under the water to its hit (its splash is where it met it): no glow, but a soft dark
+    /// shape, as a torpedo's body is drawn (Torpedoes.TorpedoRenderer), straight on from where it met the water to the
+    /// hit, along its line of flight, fading through the water over it.</summary>
+    void Underwater(in MapView view, ShellsView v, int i, double t, double f, float dim)
+    {
+        double u = Math.Clamp((t - v.WaterS[i]) / Math.Max(v.EndS[i] - v.WaterS[i], 1e-6), 0, 1);
+        var p = v.Water[i] + (v.End[i] - v.Water[i]) * u;
+        if (!view.Project(p, out double x, out double y) || !view.Project(v.Water[i], out double wx, out double wy) ||
+            !view.Project(v.End[i], out double ex, out double ey))
+            return;
+        // its axis on the screen: the way from the water to the hit (straight down: no way, a round shape)
+        double dx = ex - wx, dy = ey - wy, l = Math.Sqrt(dx * dx + dy * dy);
+        (dx, dy) = l > 1e-6 ? (dx / l, dy / l) : (0, 0);
+        double depth = Math.Max(Earth.Radius - p.Length, 0);
+        float a = (float)(Math.Min(UnderwaterBody * Math.Exp(-2 * UnderwaterAttenuation * depth), UnderwaterMaxOpacity) * dim);
+        double r = HeadPx * Math.Sqrt(f), len = UnderwaterLengthPx * Math.Sqrt(f);
+        var dark = UnderwaterDark with { W = a };
+        overlay.BeginStrip(dark, (float)(2 * r));
+        overlay.Point(x - dx * len, y - dy * len, dark with { W = 0 }, (float)r);
+        overlay.Point(x - dx * len * 0.4, y - dy * len * 0.4, dark, (float)(2 * r));
+        overlay.Point(x, y, dark, (float)(1.6 * r));
+        overlay.End();
+        overlay.Disc(x, y, r * 1.6, dark with { W = a * 0.6f }, 0.6f);
     }
 
     /// <summary>A shell's tail: back along its flight for <see cref="TailS"/> (further while it's under
