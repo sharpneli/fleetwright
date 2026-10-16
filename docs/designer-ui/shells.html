@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shell picker</title>
+<link rel="stylesheet" href="assets/fonts/dense-fonts.css">
+<style>
+:root{
+  --ground:#0E1215;--panel:#1C2329;--panel2:#20282F;--inset:#11161A;--line:#20292F;--edge:#090C0E;--bevel:#2C3640;
+  --tt:#36434F;--tb:#27313A;--hd:#161C21;--text:#C9D3DB;--bright:#EAF0F4;--muted:#7F8B95;--brass:#D9B868;
+  --brassd:#5A4A24;--ok:#86C77E;--amber:#E3A452;--blue:#5B9BE0;--plan:#14243A;--planline:#9CC2E2;
+  --ap:#8FB3D9;--common:#D9B868;--he:#E07A5F;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--text);font-family:'Archivo Narrow',sans-serif;font-size:12px;user-select:none}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:'IBM Plex Mono',monospace}
+.dim{color:var(--muted)}.gold{color:var(--brass)}
+#app{position:relative;width:1280px;height:600px;margin:0;overflow:hidden}
+.tabs{position:absolute;left:4px;top:0;height:22px;display:flex;gap:2px;align-items:flex-end}
+.tab{height:20px;padding:0 9px 0 5px;border:1px solid var(--edge);border-bottom:none;background:linear-gradient(#2A333C,#20282F);color:var(--muted);font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:5px;cursor:pointer}
+.tab.on{height:22px;background:linear-gradient(var(--tt),var(--panel));color:var(--brass)}
+.tab .k{border:1px solid #4A5764;border-radius:2px;font-size:9.5px;line-height:11px;padding:0 3px}
+.tab.on .k{border-color:var(--brass)}
+.pane{position:absolute;left:0;top:22px;width:1280px;height:578px;background:var(--panel);border:1px solid var(--edge);box-shadow:inset 0 1px 0 var(--tt)}
+.sub{height:18px;display:flex;align-items:center;gap:8px;padding:0 6px;background:var(--hd);border-bottom:1px solid var(--edge);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)}
+.sub b{margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0}
+/* battery table, as the game's, the material column now SHELLS */
+.bt{display:grid;align-items:center}
+.bt>div{height:21px;display:flex;align-items:center;padding:0 4px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden}
+.bt .h{height:17px;background:var(--hd);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--edge)}
+.bt .r.sel{background:rgba(217,184,104,0.10)}
+.right{justify-content:flex-end}
+.sp{display:inline-flex;align-items:center;height:16px;border:1px solid #0A0D10;background:var(--inset)}
+.sp button{width:14px;height:14px;border:none;padding:0;background:linear-gradient(#3A4651,#2A333C);color:#C9D3DB;font-size:8px;line-height:14px}
+.sp button:hover{background:linear-gradient(#4E5D6B,#38434E);color:#FFF}
+.sp span{min-width:40px;text-align:right;padding:0 4px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--bright)}
+.sp.auto span{color:var(--muted)}
+.seg{display:inline-flex;border:1px solid #0A0D10}
+.seg button{height:16px;min-width:18px;padding:0 4px;border:none;border-right:1px solid #0A0D10;background:linear-gradient(#2E3842,#232B33);color:var(--muted);font-size:11px;font-family:'IBM Plex Mono',monospace}
+.seg button:last-child{border-right:none}
+.seg button.on{background:linear-gradient(#6B5A30,#4A3E20);color:#FFE7A8}
+.sw{width:9px;height:9px;display:inline-block;margin-right:6px;border:1px solid rgba(0,0,0,0.5)}
+.tagl{font-family:'IBM Plex Mono',monospace;font-size:11px}
+/* the shells cell: a combo like the material one, its loads as chips */
+.shc{height:16px;width:100%;display:flex;align-items:center;gap:4px;padding:0 3px 0 4px;border:1px solid #0A0D10;background:var(--inset);cursor:pointer}
+.shc:hover{border-color:#4A5764}
+.shc.open{border-color:var(--brass)}
+.shc .fam{margin-left:auto;color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.shc .arr{color:var(--muted);font-size:9px;margin-left:3px}
+.chip{display:inline-flex;align-items:center;height:12px;padding:0 3px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#0E1215;border-radius:1px}
+.chip.ap{background:var(--ap)}.chip.common{background:var(--common)}.chip.he{background:var(--he)}
+.chip.ghost{background:none;border:1px solid var(--muted);color:var(--muted)}
+.kd{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600}
+.kd.ap{color:var(--ap)}.kd.common{color:var(--common)}.kd.he{color:var(--he)}
+/* the picker */
+#pick{position:absolute;display:none;width:800px;background:#161C21;border:1px solid #4A5764;box-shadow:0 4px 16px rgba(0,0,0,0.65);z-index:8}
+#pick .ph{height:20px;display:flex;align-items:center;gap:8px;padding:0 8px;background:var(--hd);border-bottom:1px solid var(--edge);font-size:11.5px}
+#pick .ph b{color:var(--bright)}
+#pick .row{display:flex;align-items:center;gap:8px;padding:5px 8px}
+.combo{height:17px;display:inline-flex;align-items:center;justify-content:space-between;gap:6px;padding:0 5px;border:1px solid #0A0D10;background:var(--inset);color:var(--text);font-size:11.5px;cursor:pointer}
+.combo:hover{border-color:#4A5764}
+.combo .arr{color:var(--muted);font-size:9px}
+.lt{display:grid;grid-template-columns:20px 46px 220px 88px 50px 64px 50px 118px 104px 20px;align-items:center;margin:0 8px}
+.lt>div{height:22px;display:flex;align-items:center;padding:0 3px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden}
+.lt .h{height:16px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--edge)}
+.lt .n{font-family:'IBM Plex Mono',monospace;font-size:11px;justify-content:flex-end}
+.ord{width:14px;height:14px;border-radius:7px;border:1px solid #4A5764;color:var(--muted);font-size:9.5px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace}
+.ord.first{border-color:var(--brass);color:var(--brass)}
+.x{border:none;background:none;color:var(--muted);font-size:12px;padding:0}
+.x:hover{color:var(--he)}
+.act{height:17px;padding:0 8px;border:1px solid #0A0D10;background:linear-gradient(#2E3842,#232B33);color:var(--text);font-size:11.5px}
+.act:hover{color:var(--bright);background:linear-gradient(#3A4651,#2A333C)}
+.act:disabled{opacity:0.4;cursor:default}
+.foot{padding:5px 8px 7px;color:var(--muted);font-size:11px;line-height:1.45;border-top:1px solid var(--line);margin-top:4px}
+/* the block list */
+#list{position:absolute;display:none;width:330px;max-height:330px;overflow-y:auto;background:#12171B;border:1px solid #4A5764;z-index:9;padding:2px 0;box-shadow:0 2px 10px rgba(0,0,0,0.6)}
+#list .g{padding:3px 8px 1px;color:var(--muted);font-size:10px;letter-spacing:0.05em;text-transform:uppercase}
+#list .it{display:flex;gap:8px;padding:1px 8px 1px 14px;font-size:11.5px;cursor:pointer}
+#list .it span:last-child{margin-left:auto;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10.5px}
+#list .it:hover{background:rgba(217,184,104,0.15);color:var(--bright)}
+#list .it.cur{color:var(--brass)}
+#list .it.lt2{color:var(--muted)}
+/* context: the panes below the table, unchanged */
+.ctx{position:absolute;border:1px solid var(--edge);background:var(--plan);color:#5F7A93;display:flex;align-items:center;justify-content:center;font-size:12px;
+  background-image:linear-gradient(rgba(150,190,230,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(150,190,230,0.05) 1px,transparent 1px);background-size:24px 24px}
+/* the templates column, as in the outliner's bottom */
+#tpl{position:absolute;left:0;top:356px;width:300px;border:1px solid var(--edge);background:var(--panel)}
+#tpl .r{height:20px;display:grid;grid-template-columns:56px 1fr 14px;align-items:center;padding:0 6px;border-bottom:1px solid var(--line);font-size:11.5px}
+#tpl .r span:first-child{color:var(--muted)}
+#tpl .r.new{background:rgba(217,184,104,0.08)}
+#tip{position:absolute;pointer-events:none;display:none;max-width:420px;padding:5px 7px;background:#0F1418;border:1px solid #4A5764;color:var(--text);font-size:11.5px;line-height:1.4;z-index:12;box-shadow:0 2px 8px rgba(0,0,0,0.6)}
+#tip b{color:var(--brass)}
+#tip table{border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:10.5px;margin-top:3px}
+#tip td{padding:0 6px 0 0;white-space:nowrap}
+.hint{position:absolute;left:0;bottom:0;width:100%;height:18px;display:flex;gap:14px;align-items:center;padding:0 8px;background:var(--hd);border-top:1px solid var(--edge);color:var(--muted);font-size:11px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="tabs" id="tabs"></div>
+  <div class="pane" id="pane">
+    <div class="sub" id="sub"></div>
+    <div class="bt" id="bt"></div>
+    <div class="ctx" id="ctx" style="left:6px;top:96px;width:1266px;height:250px">arrangement · broadside · guns bearing: unchanged</div>
+    <div id="tpl"></div>
+    <div class="ctx" style="left:308px;top:356px;width:964px;height:196px">presets · selected: unchanged</div>
+    <div class="hint"><span>click the SHELLS cell for the picker · hover for the shells as fired</span><span>the Shells template sets every battery's family at once</span></div>
+  </div>
+  <div id="pick"></div>
+  <div id="list"></div>
+  <div id="tip"></div>
+</div>
+
+<script>
+// ------------------------------------------------------------------ the catalogue (Content/Templates/shells.json, written by `shipgen templates`)
+const CATALOGUE = [{"name": "Palliser shell (1867)", "group": "1867 chilled iron", "note": "Palliser chilled cast iron: the 12\" RML's 714 lb shot, W/D³ 0.41. ~1.5% powder ignited by the impact, no fuze. Shatters on any steel face.", "kind": "ap", "k": 11350, "filler": 0.015, "explosive": "Black powder", "fuze": "base", "delay": 0}, {"name": "Common shell, cast iron (1867)", "group": "1867 chilled iron", "note": "Cast iron, ~6% powder, a percussion nose fuze (instant: useless for penetration). W/D³ [EST].", "kind": "common", "k": 9960, "filler": 0.06, "explosive": "Black powder", "fuze": "nose", "delay": 0}, {"name": "Forged steel APC, soft cap (1895)", "group": "1895 forged steel", "note": "Water-hardened Ni steel under a Makarov soft cap (~+15% below 15°, gone above 20°). W/D³ between Russia's 0.42 and the RN's 0.50 [EST]; filler and the inertial tube's ~0.005 s [EST].", "kind": "ap", "k": 13010, "filler": 0.025, "explosive": "Black powder", "fuze": "base", "delay": 0.005}, {"name": "Common shell, forged steel (1895)", "group": "1895 forged steel", "note": "Forged steel common, ~7% powder, base percussion fuze. [EST] from the RN's and Japan's.", "kind": "common", "k": 12460, "filler": 0.07, "explosive": "Black powder", "fuze": "base", "delay": 0}, {"name": "RU 1895 AP (pyroxylin)", "group": "RU 1895", "note": "12\" AP 'old model' 331.7 kg (W/D³ 0.42), uncapped, 5.3 kg wet pyroxylin, Brink delayed tube (delay [EST]). Light shells did little (Tsushima).", "kind": "ap", "k": 11630, "filler": 0.016, "explosive": "Wet guncotton", "fuze": "base", "delay": 0.01}, {"name": "RU 1895 HE (pyroxylin)", "group": "RU 1895", "note": "12\" HE 'old model': thin-walled, base-fuzed (the 1894 tube, ~0.005 s), 12.4 kg pyroxylin. A common shell by its fuze.", "kind": "common", "k": 11630, "filler": 0.037, "explosive": "Wet guncotton", "fuze": "base", "delay": 0.005}, {"name": "JP 1904 AP (Shimose)", "group": "JP 1904", "note": "12\" 'Furoshiki' 386 kg (W/D³ 0.49), 19.3 kg Shimose, the sensitive Ijuin base fuze: bursts on contact. No 12\" known to pierce over ~6\".", "kind": "ap", "k": 13560, "filler": 0.05, "explosive": "Shimose", "fuze": "base", "delay": 0}, {"name": "JP 1904 common (powder)", "group": "JP 1904", "note": "12\" common, 39 kg powder (10%): the upper-works fires of Tsushima.", "kind": "common", "k": 13560, "filler": 0.1, "explosive": "Black powder", "fuze": "base", "delay": 0}, {"name": "US 1906 AP (Explosive D)", "group": "US 1906", "note": "12\"/45 870 lb (W/D³ 0.50). Explosive D from 1907, the pre-1920s non-delay TNT-boosted base fuze (~0.003 s). Cap and filler share [EST].", "kind": "ap", "k": 13840, "filler": 0.025, "explosive": "Explosive D", "fuze": "base", "delay": 0.003}, {"name": "US 1906 common (powder)", "group": "US 1906", "note": "Common shell for 1/3-1/2 calibre plate (NOG). Filler [EST].", "kind": "common", "k": 13840, "filler": 0.06, "explosive": "Black powder", "fuze": "base", "delay": 0.003}, {"name": "DE 1902 Psgr (TNT)", "group": "DE 1902", "note": "28 cm/40 240 kg (W/D³ 0.40). TNT from 1902; non-delay before the 1911 Bdz. Cap, filler and fuze [EST].", "kind": "ap", "k": 11070, "filler": 0.027, "explosive": "TNT", "fuze": "base", "delay": 0.003}, {"name": "DE 1902 Sprgr Bdz (TNT)", "group": "DE 1902", "note": "Base-fuzed shell. Filler [EST].", "kind": "common", "k": 11070, "filler": 0.05, "explosive": "TNT", "fuze": "base", "delay": 0.003}, {"name": "DE 1902 Sprgr Kz (TNT)", "group": "DE 1902", "note": "Nose-fuzed shell. Filler [EST].", "kind": "he", "k": 11070, "filler": 0.07, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "FR 1893 AP (powder)", "group": "FR 1893", "note": "Light shells: the 305 Mle 1887's 292 kg (0.37), the 340's 490 kg (0.45). Forged steel, uncapped; filler and fuze [EST].", "kind": "ap", "k": 11350, "filler": 0.025, "explosive": "Black powder", "fuze": "base", "delay": 0.003}, {"name": "FR 1893 common (Melinite)", "group": "FR 1893", "note": "Melinite (picric acid, catalogued as Lyddite) from 1887. Filler [EST].", "kind": "common", "k": 11350, "filler": 0.06, "explosive": "Lyddite", "fuze": "base", "delay": 0}, {"name": "RN 1906 APC (powder)", "group": "RN 1906", "note": "12\" APC Mk VI 2crh 850 lb (W/D³ 0.49), Hadfield soft cap 73 lb (8.6%), powder-filled (lyddite from 1909-10), No. 16 non-delay. Lord Nelsons kept 2crh.", "kind": "ap", "k": 13560, "filler": 0.031, "explosive": "Black powder", "fuze": "base", "delay": 0.003}, {"name": "RN 1906 CPC (powder)", "group": "RN 1906", "note": "12\" CPC Mk VIIa: 80 lb powder (9.4%), base fuze.", "kind": "common", "k": 13560, "filler": 0.094, "explosive": "Black powder", "fuze": "base", "delay": 0.003}, {"name": "RN 1906 HE (lyddite)", "group": "RN 1906", "note": "12\" HE Mk IIa: 106.5 lb lyddite (12.5%), No. 13 instantaneous nose fuze.", "kind": "he", "k": 13560, "filler": 0.125, "explosive": "Lyddite", "fuze": "nose", "delay": 0}, {"name": "RN 1906 light CP (powder)", "group": "RN 1906", "note": "The 4\"-6\" guns' common pointed (4\"/50 31 lb, 6\" 100 lb: W/D³ 0.47-0.48). Filler [EST]. Also the RN 1909 and 1912 families' light guns.", "kind": "common", "k": 13150, "filler": 0.07, "explosive": "Black powder", "fuze": "base", "delay": 0.003}, {"name": "RN 1906 light HE (lyddite)", "group": "RN 1906", "note": "The 4\"-6\" guns' lyddite HE. Filler [EST]. Also the RN 1909 and 1912 families' light guns.", "kind": "he", "k": 13150, "filler": 0.09, "explosive": "Lyddite", "fuze": "nose", "delay": 0}, {"name": "RN 1909 APC (lyddite)", "group": "RN 1909", "note": "12\" APC Mk VIa 4crh 859 lb (W/D³ 0.50), soft cap 4%, 27.3 lb lyddite, No. 16 non-delay. Breaks up at 15-20° on 0.4 calibre; bursts in the plate (Jutland).", "kind": "ap", "k": 13840, "filler": 0.032, "explosive": "Lyddite", "fuze": "base", "delay": 0.003}, {"name": "RN 1909 CPC (powder)", "group": "RN 1909", "note": "12\" CPC Mk VIIa 4crh: 80 lb powder (9.4%).", "kind": "common", "k": 13560, "filler": 0.094, "explosive": "Black powder", "fuze": "base", "delay": 0.003}, {"name": "RN 1909 HE (lyddite)", "group": "RN 1909", "note": "12\" HE: lyddite 12.5%, No. 13 nose fuze (withdrawn from ships after Jutland).", "kind": "he", "k": 13560, "filler": 0.125, "explosive": "Lyddite", "fuze": "nose", "delay": 0}, {"name": "RN 1912 APC (lyddite)", "group": "RN 1912", "note": "15\" APC Mk Ia 4crh 1,920 lb (W/D³ 0.57; the 13.5\" heavy 1,400 lb the same), 60.5 lb lyddite (3.2%), No. 16 non-delay.", "kind": "ap", "k": 15780, "filler": 0.032, "explosive": "Lyddite", "fuze": "base", "delay": 0.003}, {"name": "RN 1912 CPC (powder)", "group": "RN 1912", "note": "15\" CPC Mk IIa 1,929 lb, 129.3 lb powder (6.7%).", "kind": "common", "k": 15780, "filler": 0.067, "explosive": "Black powder", "fuze": "base", "delay": 0.003}, {"name": "RN 1912 HE (lyddite)", "group": "RN 1912", "note": "15\" HE, lyddite. Filler [EST].", "kind": "he", "k": 15780, "filler": 0.1, "explosive": "Lyddite", "fuze": "nose", "delay": 0}, {"name": "DE 1911 Psgr L/3,4 (TNT)", "group": "DE 1911", "note": "30.5 cm Psgr. L/3,4 405 kg (W/D³ 0.52), Krupp Type 2 cap (share [EST]), 10.8 kg TNT, Bdz ~0.025 s nominal: at most half came near it, many duds.", "kind": "ap", "k": 14390, "filler": 0.027, "explosive": "TNT", "fuze": "base", "delay": 0.025}, {"name": "DE 1911 Spgr L/3,8 Bdz (TNT)", "group": "DE 1911", "note": "30.5 cm Spgr. L/3,8 Bdz 405 kg, 24.8 kg TNT: base-fuzed, bursts 2-6 m into unarmoured structure.", "kind": "common", "k": 14390, "filler": 0.061, "explosive": "TNT", "fuze": "base", "delay": 0.025}, {"name": "DE 1911 Spgr Kz (TNT)", "group": "DE 1911", "note": "Nose-fuzed Sprenggranate (the 15 cm's 45.3 kg, 3.0 kg TNT). German light shells ran 0.49-0.54, so the family's blocks serve every gun.", "kind": "he", "k": 14390, "filler": 0.066, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "FR 1910 OPf (Melinite)", "group": "FR 1910", "note": "305 Mle 1906 OPf 432 kg (W/D³ 0.55), melinite. Cap, filler and fuze [EST]: French fuzes weren't found.", "kind": "ap", "k": 15220, "filler": 0.03, "explosive": "Lyddite", "fuze": "base", "delay": 0.003}, {"name": "FR 1910 OEA (Melinite)", "group": "FR 1910", "note": "Semi-AP explosive shell. [EST].", "kind": "common", "k": 15220, "filler": 0.06, "explosive": "Lyddite", "fuze": "base", "delay": 0.003}, {"name": "FR 1910 HE (Melinite)", "group": "FR 1910", "note": "[EST].", "kind": "he", "k": 15220, "filler": 0.1, "explosive": "Lyddite", "fuze": "nose", "delay": 0}, {"name": "Standard APC (1912)", "group": "1912 standard", "note": "A middling Great War APC: W/D³ 0.52, soft cap, TNT 2.5%, a short delay. [EST] throughout, from the RN's and Germany's.", "kind": "ap", "k": 14390, "filler": 0.025, "explosive": "TNT", "fuze": "base", "delay": 0.02}, {"name": "Standard common (1912)", "group": "1912 standard", "note": "[EST].", "kind": "common", "k": 14390, "filler": 0.05, "explosive": "TNT", "fuze": "base", "delay": 0.02}, {"name": "Standard HE (1912)", "group": "1912 standard", "note": "[EST].", "kind": "he", "k": 14390, "filler": 0.08, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "US 1916 AP (Explosive D)", "group": "US 1916", "note": "14\"/45 1,400 lb (W/D³ 0.51), contractor caps, non-delay TNT-boosted base fuze. Filler [EST].", "kind": "ap", "k": 14120, "filler": 0.025, "explosive": "Explosive D", "fuze": "base", "delay": 0.003}, {"name": "US 1916 common (Explosive D)", "group": "US 1916", "note": "[EST].", "kind": "common", "k": 14120, "filler": 0.05, "explosive": "Explosive D", "fuze": "base", "delay": 0.003}, {"name": "US 1916 HE (TNT)", "group": "US 1916", "note": "[EST].", "kind": "he", "k": 14120, "filler": 0.07, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "US 1916 5in common (Explosive D)", "group": "US 1916", "note": "5\"/51's 50 lb (W/D³ 0.40). Filler [EST]. Also the 1921 family's.", "kind": "common", "k": 11070, "filler": 0.03, "explosive": "Explosive D", "fuze": "base", "delay": 0.003}, {"name": "US 1916 5in HE (TNT)", "group": "US 1916", "note": "[EST]. Also the 1921 family's.", "kind": "he", "k": 11070, "filler": 0.06, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "US 1921 AP Mk 3 (Explosive D)", "group": "US 1921", "note": "16\"/45 Mk 3 2,110 lb (W/D³ 0.52), 57.5 lb Explosive D (2.7%), non-delay until the late 1920s.", "kind": "ap", "k": 14390, "filler": 0.027, "explosive": "Explosive D", "fuze": "base", "delay": 0.003}, {"name": "US 1921 HC (Explosive D)", "group": "US 1921", "note": "[EST] from the later HC.", "kind": "he", "k": 12730, "filler": 0.07, "explosive": "Explosive D", "fuze": "nose", "delay": 0}, {"name": "RN 1927 APC (Shellite)", "group": "RN 1927", "note": "Greenboy practice (hard cap 11.6%, Shellite 2.4%, No. 16D 0.025 s) at the light W/D³ of Nelson's 16\" (2,048 lb, 0.50) and the 8\" (256 lb, 0.50). CE booster only from the late 1920s.", "kind": "ap", "k": 13840, "filler": 0.024, "explosive": "Shellite", "fuze": "base", "delay": 0.025}, {"name": "RN 1927 HE (TNT)", "group": "RN 1927", "note": "[EST].", "kind": "he", "k": 13840, "filler": 0.07, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "RN 1927 light SAP (TNT/wax)", "group": "RN 1927", "note": "6\" CPBC 100 lb (W/D³ 0.47), TNT/beeswax. Filler [EST].", "kind": "common", "k": 13010, "filler": 0.033, "explosive": "TNT/wax", "fuze": "base", "delay": 0.01}, {"name": "RN 1927 light HE (TNT)", "group": "RN 1927", "note": "[EST].", "kind": "he", "k": 13010, "filler": 0.06, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "JP 1913 APC (Shimose)", "group": "JP 1913", "note": "Vickers 14\"/45 1,400 lb (W/D³ 0.51). Shimose to the 1920s. Filler and fuze [EST].", "kind": "ap", "k": 14120, "filler": 0.03, "explosive": "Shimose", "fuze": "base", "delay": 0.003}, {"name": "JP 1913 common (Shimose)", "group": "JP 1913", "note": "[EST].", "kind": "common", "k": 14120, "filler": 0.06, "explosive": "Shimose", "fuze": "base", "delay": 0.003}, {"name": "JP 1913 HE (Shimose)", "group": "JP 1913", "note": "[EST].", "kind": "he", "k": 14120, "filler": 0.1, "explosive": "Shimose", "fuze": "nose", "delay": 0}, {"name": "JP 1925 APC (TNT/wax)", "group": "JP 1925", "note": "APC Model 1925 on the German pattern (wax-TNT, buffered cavity, 1922): 41 cm 1,020 kg (W/D³ 0.54). Still prematures and low-order bursts. Cap and filler [EST]; delay 0.025-0.035 (Okun).", "kind": "ap", "k": 14950, "filler": 0.025, "explosive": "TNT/wax", "fuze": "base", "delay": 0.03}, {"name": "JP 1925 HE (TNT)", "group": "JP 1925", "note": "[EST].", "kind": "he", "k": 13840, "filler": 0.06, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "JP 1925 light common (TNT/wax)", "group": "JP 1925", "note": "12.7 cm 23 kg (W/D³ 0.41) and 14 cm 38 kg (0.46). Filler [EST].", "kind": "common", "k": 11900, "filler": 0.03, "explosive": "TNT/wax", "fuze": "base", "delay": 0.01}, {"name": "JP 1925 light HE (TNT)", "group": "JP 1925", "note": "[EST].", "kind": "he", "k": 11900, "filler": 0.08, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "RU 1911 AP (TNT)", "group": "RU 1911", "note": "12\" AP mod 1911 470.9 kg (W/D³ 0.60, super-heavy), 12.84 kg. Cap, explosive and fuze [EST].", "kind": "ap", "k": 16610, "filler": 0.027, "explosive": "TNT", "fuze": "base", "delay": 0.025}, {"name": "RU 1911 HE (TNT)", "group": "RU 1911", "note": "12\" HE mod 1911 471 kg, 58.8 kg TNT.", "kind": "he", "k": 16610, "filler": 0.125, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "RU 1911 light common (TNT)", "group": "RU 1911", "note": "120/50 28.97 kg (W/D³ 0.53). Filler [EST].", "kind": "common", "k": 14670, "filler": 0.04, "explosive": "TNT", "fuze": "base", "delay": 0.01}, {"name": "RU 1911 light HE (TNT)", "group": "RU 1911", "note": "[EST].", "kind": "he", "k": 14670, "filler": 0.08, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "RN 1938 APC (Shellite)", "group": "RN 1938", "note": "14\" APC Mk VIIb 6crh 1,590 lb (W/D³ 0.58), Shellite 2.5% with CE, No. 159 (1\" at normal on a 16\": 0.0625 cal), 0.025 s. Cap share [EST].", "kind": "ap", "k": 16050, "filler": 0.025, "explosive": "Shellite", "fuze": "base", "delay": 0.025}, {"name": "RN 1938 HE (TNT)", "group": "RN 1938", "note": "15\" HE Mk VII 879 kg, 59 kg TNT (6.7%).", "kind": "he", "k": 16050, "filler": 0.067, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "RN 1938 light SAP (TNT/wax)", "group": "RN 1938", "note": "6\" CPBC 112 lb (W/D³ 0.52), 5.25\" 80 lb (0.56). Filler [EST].", "kind": "common", "k": 14670, "filler": 0.03, "explosive": "TNT/wax", "fuze": "base", "delay": 0.01}, {"name": "RN 1938 light HE (TNT)", "group": "RN 1938", "note": "[EST].", "kind": "he", "k": 14670, "filler": 0.07, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "DE 1939 Psgr L/4,4 m.Hb (TNT/wax)", "group": "DE 1939", "note": "38 cm Psgr. L/4,4 m.Hb 800 kg (W/D³ 0.53), hard cap and 10-calibre ballistic cap, 20.3 kg Fp, Bd.Z. 38 0.035 s; a picric booster to 1945. Cap share [EST].", "kind": "ap", "k": 14670, "filler": 0.025, "explosive": "TNT/wax", "fuze": "base", "delay": 0.035}, {"name": "DE 1939 Spgr L/4,5 Kz (TNT)", "group": "DE 1939", "note": "38 cm nose-fuzed HE 800 kg, 66.2 kg TNT.", "kind": "he", "k": 14670, "filler": 0.083, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "DE 1939 15cm Spgr Bdz (TNT)", "group": "DE 1939", "note": "15 cm 45.3 kg (W/D³ 0.485), 10.5 cm 15.1 kg (0.47); Bd.Z. KV 0.015 s. Filler [EST].", "kind": "common", "k": 13290, "filler": 0.05, "explosive": "TNT", "fuze": "base", "delay": 0.015}, {"name": "DE 1939 15cm Spgr Kz (TNT)", "group": "DE 1939", "note": "15 cm Sprgr. L/4,6 KZ, 3.9 kg TNT.", "kind": "he", "k": 13290, "filler": 0.086, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "IT 1940 APC (TNT)", "group": "IT 1940", "note": "381 mm APC 884.8 kg (W/D³ 0.58), cast TNT 10.16 kg (1.15%). Uneven makers: quality 0.95. Cap and fuze [EST].", "kind": "ap", "k": 16050, "filler": 0.0115, "explosive": "TNT", "fuze": "base", "delay": 0.03}, {"name": "IT 1940 HE (TNT)", "group": "IT 1940", "note": "[EST].", "kind": "he", "k": 14950, "filler": 0.07, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "IT 1940 light SAP (TNT)", "group": "IT 1940", "note": "152/55 50 kg (W/D³ 0.51), 90/50 and 100/47 0.50. Filler [EST].", "kind": "common", "k": 13840, "filler": 0.03, "explosive": "TNT", "fuze": "base", "delay": 0.01}, {"name": "IT 1940 light HE (TNT)", "group": "IT 1940", "note": "[EST].", "kind": "he", "k": 13840, "filler": 0.07, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "FR 1936 OPfK (TNT)", "group": "FR 1936", "note": "380 mm OPfK Mle 1936 884 kg (W/D³ 0.58), cap 84 kg (9.5%), 21.9 kg filler (explosive [EST]). Fuze [EST].", "kind": "ap", "k": 16050, "filler": 0.025, "explosive": "TNT", "fuze": "base", "delay": 0.03}, {"name": "FR 1936 OEA (Melinite)", "group": "FR 1936", "note": "[EST].", "kind": "he", "k": 15220, "filler": 0.08, "explosive": "Lyddite", "fuze": "nose", "delay": 0}, {"name": "FR 1936 light SAP (TNT)", "group": "FR 1936", "note": "152/55 Mle 1930 54 kg (W/D³ 0.555), 130/45 32 kg (0.53), 100/45 13.5 kg (0.49). Filler [EST].", "kind": "common", "k": 14670, "filler": 0.03, "explosive": "TNT", "fuze": "base", "delay": 0.01}, {"name": "FR 1936 light HE (TNT)", "group": "FR 1936", "note": "[EST].", "kind": "he", "k": 14670, "filler": 0.07, "explosive": "TNT", "fuze": "nose", "delay": 0}, {"name": "US 1941 AP Mk 8 (Explosive D)", "group": "US 1941", "note": "16\"/50 Mk 8 2,700 lb (W/D³ 0.66, super-heavy; the 8\" and 6\" SH the same), 9crh under a windscreen, 40.9 lb Explosive D (1.5%), Mk 21 BDF 0.033 s (1.5\" at 0°, 0.375\" at 65°). Cap share [EST].", "kind": "ap", "k": 18270, "filler": 0.015, "explosive": "Explosive D", "fuze": "base", "delay": 0.033}, {"name": "US 1941 HC (Explosive D)", "group": "US 1941", "note": "16\" HC Mk 13 1,900 lb (W/D³ 0.46), 8\" 0.51, 6\" 0.49: 0.48 between. 8.1% Explosive D, PDF Mk 29.", "kind": "he", "k": 13290, "filler": 0.081, "explosive": "Explosive D", "fuze": "nose", "delay": 0}, {"name": "US 1941 5in Common (Explosive D)", "group": "US 1941", "note": "5\"/38 Common 24.5 kg (W/D³ 0.44), 1.2 kg Explosive D, 0.01 s.", "kind": "common", "k": 12180, "filler": 0.049, "explosive": "Explosive D", "fuze": "base", "delay": 0.01}, {"name": "US 1941 5in AAC (Explosive D)", "group": "US 1941", "note": "5\"/38 AAC 25 kg, 3.3 kg Explosive D.", "kind": "he", "k": 12180, "filler": 0.13, "explosive": "Explosive D", "fuze": "nose", "delay": 0}, {"name": "JP 1931 Type 91 AP (TNA)", "group": "JP 1931", "note": "46 cm Type 91 1,460 kg (W/D³ 0.54), the break-away cap head (diving: off above 45°), 23.9 kg TNA with its liner, 0.4 s quoted [UNCERTAIN]. Cap share and booster [EST].", "kind": "ap", "k": 14950, "filler": 0.016, "explosive": "TNA", "fuze": "base", "delay": 0.4}, {"name": "JP 1931 Type 0 HE (TNA)", "group": "JP 1931", "note": "46 cm Type 0 HE 1,360 kg, 61.7 kg TNA.", "kind": "he", "k": 14120, "filler": 0.045, "explosive": "TNA", "fuze": "nose", "delay": 0}, {"name": "JP 1931 light common (TNA)", "group": "JP 1931", "note": "15.5 cm and 12.7 cm (W/D³ 0.41-0.48). Filler [EST].", "kind": "common", "k": 12180, "filler": 0.03, "explosive": "TNA", "fuze": "base", "delay": 0.01}, {"name": "JP 1931 light HE (TNA)", "group": "JP 1931", "note": "12.7 cm Type 0 HE 23 kg, 1.88 kg TNA.", "kind": "he", "k": 12180, "filler": 0.08, "explosive": "TNA", "fuze": "nose", "delay": 0}, {"name": "DP SAP (1950)", "group": "1950 dual-purpose", "note": "The post-war 4.5\"-6\" dual-purpose guns' shells (5\"/54 31.75 kg, W/D³ 0.56). [EST].", "kind": "common", "k": 15500, "filler": 0.04, "explosive": "TNT", "fuze": "base", "delay": 0.01}, {"name": "DP HE (1950)", "group": "1950 dual-purpose", "note": "Comp B filled, nose fuzed. [EST].", "kind": "he", "k": 15500, "filler": 0.1, "explosive": "Comp B", "fuze": "nose", "delay": 0}];
+const byName = Object.fromEntries(CATALOGUE.map(t => [t.name, t]));
+const FAMILIES = [...new Set(CATALOGUE.map(t => t.group))];
+const KINDS = ['ap', 'common', 'he'];
+const KIND = {ap: 'AP', common: 'common', he: 'HE'};
+
+// ------------------------------------------------------------------ the design: dreadnought.json's batteries as given
+const DESIGN = {
+  main: [{cal: 305, len: 45, barrels: 2, turrets: 5, positions: 'A · W1 abreast · X Y', faces: 279, rounds: 100, shells: [
+    {ammo: 'RN 1906 APC (powder)', share: 0.7}, {ammo: 'RN 1906 HE (lyddite)', share: 0.3}]}],
+  secondary: [{cal: 76, len: 50, barrels: 1, perSide: 5, where: 'deck', shields: 25, rounds: 350, shells: [
+    {ammo: 'RN 1906 APC (powder)', share: 0.3}, {ammo: 'RN 1906 light HE (lyddite)', share: 0.7}]}],
+};
+const params = new URLSearchParams(location.search);
+let tab = params.get('tab') || 'main';
+let open = params.get('open') === '1';
+let listFor = params.has('list') ? +params.get('list') : -1;
+const bats = () => DESIGN[tab];
+let active = 0;
+
+// ------------------------------------------------------------------ shipgen's rules (Ammunition.Resolve)
+const mass = (t, cal) => t.k * Math.pow(cal / 1000, 3);
+const gunMs = len => Math.min(1000, Math.max(380, 280 + 11 * len));
+const magOrder = (main, kind) => main ? {ap: 0, common: 1, he: 2}[kind] : {he: 0, common: 1, ap: 2}[kind];
+function resolve(b, main) {
+  const loads = b.shells.map(e => ({...e, t: byName[e.ammo]}));
+  const heavy = Math.max(...loads.map(l => mass(l.t, b.cal)));
+  return loads.map((l, i) => {
+    const m = mass(l.t, b.cal);
+    return {...l, i, kind: l.t.kind, m, ms: gunMs(b.len) * Math.pow(heavy / m, 0.25), filler: m * l.t.filler, rounds: 0};
+  }).sort((a, c) => magOrder(main, a.kind) - magOrder(main, c.kind) || a.i - c.i)
+    .map((l, _, all) => l);
+}
+// a battery's rounds by load: largest remainder, as the class splits them
+function split(b, res) {
+  const exact = res.map(l => b.rounds * l.share), n = exact.map(Math.floor);
+  let rest = b.rounds - n.reduce((a, c) => a + c, 0);
+  exact.map((x, k) => [x - n[k], k]).sort((a, c) => c[0] - a[0] || a[1] - c[1]).slice(0, rest).forEach(([, k]) => n[k]++);
+  res.forEach((l, k) => l.rounds = n[k]);
+}
+const familyOf = b => { const f = new Set(b.shells.map(e => byName[e.ammo].group)); return f.size === 1 ? [...f][0] : 'mixed'; };
+const light = t => /light|5in|15cm/.test(t.name);
+// a family's block of a kind for a gun: its light block under 200 mm where it has one (shipgen ammo-templates' rule)
+function blockOf(family, kind, cal) {
+  const ts = CATALOGUE.filter(t => t.group === family && t.kind === kind);
+  return (cal < 200 ? ts.find(light) : null) || ts.find(t => !light(t)) || ts[0];
+}
+function fuzeText(t) { return t.fuze === 'nose' ? 'nose' : t.delay < 0.006 ? `base ${t.delay.toFixed(3)} s` : `base ${t.delay.toFixed(3)} s`; }
+const r0 = x => Math.round(x).toLocaleString('en-US');
+const kg = x => x < 100 ? x.toFixed(1) : r0(x);
+
+// ------------------------------------------------------------------ edits (each one undo step in the game)
+function setFamily(b, fam) {
+  b.shells = b.shells.map(e => { const t = blockOf(fam, byName[e.ammo].kind, b.cal); return t ? {...e, ammo: t.name} : e; })
+    .filter(e => byName[e.ammo].group === fam || true);
+  // a kind the family lacks (HE before HE shells): its common takes HE's place, as S2's outfits did
+  b.shells = b.shells.map(e => byName[e.ammo].group === fam ? e : {...e, ammo: (blockOf(fam, 'common', b.cal) || blockOf(fam, 'ap', b.cal)).name});
+}
+function setShare(b, idx, pct) {
+  const n = b.shells.length; if (n < 2) return;
+  pct = Math.max(5, Math.min(100 - 5 * (n - 1), pct));
+  const others = b.shells.map((_, k) => k).filter(k => k !== idx);
+  const rest = 100 - pct, had = others.reduce((a, k) => a + b.shells[k].share * 100, 0);
+  others.forEach(k => b.shells[k].share = had > 0 ? b.shells[k].share * 100 / had * rest / 100 : rest / others.length / 100);
+  b.shells[idx].share = pct / 100;
+  // round to whole percents, the largest taking the remainder
+  b.shells.forEach(e => e.share = Math.round(e.share * 100) / 100);
+  const s = b.shells.reduce((a, e) => a + e.share, 0), big = b.shells.reduce((a, e, k) => e.share > b.shells[a].share ? k : a, 0);
+  b.shells[big].share = Math.round((b.shells[big].share + 1 - s) * 100) / 100;
+}
+function addKind(b, kind) {
+  const fam = familyOf(b) === 'mixed' ? byName[b.shells[0].ammo].group : familyOf(b);
+  const t = blockOf(fam, kind, b.cal) || CATALOGUE.find(x => x.kind === kind);
+  b.shells.push({ammo: t.name, share: 0}); setShare(b, b.shells.length - 1, 20);
+}
+function removeLoad(b, idx) {
+  if (b.shells.length < 2) return;
+  const gone = b.shells.splice(idx, 1)[0];
+  const big = b.shells.reduce((a, e, k) => e.share > b.shells[a].share ? k : a, 0);
+  b.shells[big].share = Math.round((b.shells[big].share + gone.share) * 100) / 100;
+}
+
+// ------------------------------------------------------------------ drawing
+const $ = id => document.getElementById(id);
+function tabs() {
+  $('tabs').innerHTML = [['0', 'Overview'], ['1', 'Main battery', 'main'], ['2', 'Secondary · AA · TT', 'secondary'], ['3', 'Protection'],
+    ['4', 'Speed & machinery'], ['5', 'Hull & upperworks'], ['6', 'Fire control'], ['7', 'Crew']]
+    .map(([k, n, id]) => `<div class="tab ${id === tab ? 'on' : ''}" data-tab="${id || ''}"><span class="k">${k}</span>${n}</div>`).join('');
+  document.querySelectorAll('.tab').forEach(e => e.onclick = () => { if (e.dataset.tab) { tab = e.dataset.tab; open = false; draw(); } });
+}
+function cell(b, k) {
+  const res = resolve(b, tab === 'main');
+  const chips = res.map(l => `<span class="chip ${l.kind}">${KIND[l.kind]} ${Math.round(l.share * 100)}</span>`).join('');
+  return `<div class="shc ${open && k === active ? 'open' : ''}" data-k="${k}">${chips}<span class="fam">${familyOf(b)}</span><span class="arr">▼</span></div>`;
+}
+function table() {
+  const main = tab === 'main';
+  const cols = main
+    ? '34px 40px 140px 110px 132px minmax(0,1fr) 40px 40px 116px 146px 212px 56px 30px'
+    : '34px 40px 132px 104px 132px 124px 104px 92px 40px 110px 116px 212px 40px';
+  const head = main
+    ? ['', '', 'Calibre', 'Length', 'Guns / turret', 'Positions · bow to stern', 'Turr.', 'Guns', 'Faces', 'Rounds / gun', 'Shells <span class="gold">&nbsp;(was material)</span>', 'Turret t', '']
+    : ['', '', 'Calibre', 'Length', 'Guns / mount', 'Turret on', 'Casemate', 'Per side', 'Guns', 'Shields', 'Rounds / gun', 'Shells <span class="gold">&nbsp;(was material)</span>', 't'];
+  let h = head.map(x => `<div class="h">${x}</div>`).join('');
+  bats().forEach((b, k) => {
+    const sp = (v, u) => `<span class="sp"><button>◀</button><span>${v}${u ? ` <small class="dim">${u}</small>` : ''}</span><button>▶</button></span>`;
+    const seg = n => `<span class="seg">${[1, 2, 3, 4, 5, 6].map(i => `<button class="${i === n ? 'on' : ''}">${i}</button>`).join('')}</span>`;
+    const sel = k === active ? 'sel' : '';
+    if (main)
+      h += [`<div class="r ${sel}">▴▾</div>`, `<div class="r ${sel}"><span class="sw" style="background:#5B9BE0"></span>A</div>`, `<div class="r ${sel}">${sp(b.cal, 'mm')}</div>`,
+        `<div class="r ${sel}">${sp(b.len)}</div>`, `<div class="r ${sel}">${seg(b.barrels)}</div>`, `<div class="r ${sel}"><span class="tagl">${b.positions}</span></div>`,
+        `<div class="r ${sel} right mono">${b.turrets}</div>`, `<div class="r ${sel} right mono">${b.turrets * b.barrels}</div>`, `<div class="r ${sel}">${sp(b.faces, 'mm')}</div>`,
+        `<div class="r ${sel}">${sp(b.rounds)} <span class="dim" style="margin-left:4px">auto</span></div>`, `<div class="r ${sel}">${cell(b, k)}</div>`,
+        `<div class="r ${sel} right mono dim">2,380</div>`, `<div class="r ${sel} dim">+ ×</div>`].join('');
+    else
+      h += [`<div class="r ${sel}">▴▾</div>`, `<div class="r ${sel}"><span class="sw" style="background:#D98B5F"></span>S</div>`, `<div class="r ${sel}">${sp(b.cal, 'mm')}</div>`,
+        `<div class="r ${sel}">${sp(b.len)}</div>`, `<div class="r ${sel}">${seg(b.barrels)}</div>`, `<div class="r ${sel}"><span class="seg w"><button>deckhouse</button><button class="on">deck</button></span></div>`,
+        `<div class="r ${sel}"><span class="seg w"><button>upper</button><button>lower</button></span></div>`, `<div class="r ${sel}">${sp(b.perSide)}</div>`,
+        `<div class="r ${sel} right mono">${2 * b.perSide}</div>`, `<div class="r ${sel}">${sp(b.shields, 'mm')}</div>`, `<div class="r ${sel}">${sp(b.rounds)}</div>`,
+        `<div class="r ${sel}">${cell(b, k)}</div>`, `<div class="r ${sel} right mono dim">173</div>`].join('');
+  });
+  $('bt').style.gridTemplateColumns = cols;
+  $('bt').innerHTML = h;
+  $('sub').innerHTML = main
+    ? 'Main batteries <span class="dim" style="text-transform:none;letter-spacing:0">· order = outboard first at each end</span><b>click a row to make it the battery the <span class="gold">+</span> slots add</b>'
+    : 'Secondary batteries <b>or click a track\'s + in the strip below to start a battery there with the selected gun</b>';
+  document.querySelectorAll('.shc').forEach(e => {
+    e.onclick = ev => { ev.stopPropagation(); active = +e.dataset.k; open = !open || listFor >= 0; listFor = -1; draw(); };
+    e.onmousemove = ev => showTip(ev, cellTip(bats()[+e.dataset.k]));
+    e.onmouseleave = hideTip;
+  });
+}
+function cellTip(b) {
+  const res = resolve(b, tab === 'main'); split(b, res);
+  return `<b>${b.cal}/${b.len}: the shells as fired</b>, in the magazine order` +
+    `<table>${res.map(l => `<tr><td class="kd ${l.kind}">${KIND[l.kind]}</td><td>${l.t.name}</td><td>${kg(l.m)} kg</td><td>${r0(l.ms)} m/s</td><td>${fuzeText(l.t)}</td><td>${l.rounds} a gun</td></tr>`).join('')}</table>`;
+}
+function picker() {
+  const p = $('pick');
+  if (!open) { p.style.display = 'none'; $('list').style.display = 'none'; return; }
+  const b = bats()[active], main = tab === 'main';
+  const res = resolve(b, main); split(b, res);
+  const fam = familyOf(b);
+  const cellEl = document.querySelector(`.shc[data-k="${active}"]`).getBoundingClientRect(), app = $('app').getBoundingClientRect();
+  p.style.display = 'block';
+  p.style.left = Math.max(4, Math.min(cellEl.right - app.left - 800, 1280 - 804)) + 'px';
+  p.style.top = (cellEl.bottom - app.top + 3) + 'px';
+  const order = res.map(l => KIND[l.kind]).join(', then ');
+  let h = `<div class="ph"><b>${main ? 'A' : 'S'} · ${b.cal}/${b.len} · shells</b><span class="dim">the design's own outfit: what the magazines are weighed with, and what a ship gets unless her admiral loads another</span>` +
+    `<span style="margin-left:auto" class="dim mono">${b.rounds} rounds a gun</span></div>`;
+  h += `<div class="row"><span class="dim">Family</span><span class="combo" id="fam" style="width:210px">${fam}<span class="arr">▼</span></span>` +
+    `<span class="dim">sets each kind below to the family's block${b.cal < 200 ? ' (its light guns\' where it has them)' : ''}</span>` +
+    `<button class="act" style="margin-left:auto" id="def">Default outfit</button></div>`;
+  h += `<div class="lt">${['', 'Kind', 'Shell', 'Share', 'Rounds', 'Mass', 'm/s', 'Filler', 'Fuze', ''].map(x => `<div class="h">${x}</div>`).join('')}`;
+  res.forEach((l, o) => {
+    const ord = `<span class="ord ${o === 0 ? 'first' : ''}" title="fires ${o === 0 ? 'first' : 'after the ones above'}">${o + 1}</span>`;
+    h += `<div>${ord}</div><div><span class="kd ${l.kind}">${KIND[l.kind]}</span></div>` +
+      `<div><span class="combo blk" data-i="${l.i}" style="width:228px"><span style="overflow:hidden;text-overflow:ellipsis">${l.t.name}</span><span class="arr">▼</span></span></div>` +
+      `<div><span class="sp"><button data-i="${l.i}" data-d="-5">◀</button><span>${Math.round(l.share * 100)}%</span><button data-i="${l.i}" data-d="5">▶</button></span></div>` +
+      `<div class="n">${l.rounds}</div><div class="n">${kg(l.m)} kg</div><div class="n">${r0(l.ms)}</div>` +
+      `<div class="n" style="justify-content:flex-start;font-family:'Archivo Narrow'">${(l.t.filler * 100).toFixed(1)}% ${l.t.explosive}</div>` +
+      `<div class="mono" style="font-size:11px">${fuzeText(l.t)}</div><div><button class="x" data-i="${l.i}" title="remove: its share goes to the largest">×</button></div>`;
+  });
+  h += `</div><div class="row">` + KINDS.map(kd => `<button class="act add" data-k="${kd}" ${res.some(l => l.kind === kd) ? 'disabled' : ''}>+ ${KIND[kd]}</button>`).join('') +
+    `<span class="dim" style="margin-left:8px">fires ${order} (the magazine order: ${main ? 'a main battery AP first' : 'a secondary HE first'})</span></div>`;
+  h += `<div class="foot">The gun leaves at ${r0(gunMs(b.len))} m/s with its heaviest shell; a lighter one leaves faster by the ¼ power of the masses. ` +
+    `Mass is the block's k·D³ at ${b.cal} mm. A block keeps working at any calibre, so a calibre change keeps the outfit. ` +
+    `Picking a template copies its block into the design's ammunition, as plant templates are copied; blocks no battery names are dropped on save.</div>`;
+  p.innerHTML = h;
+  $('fam').onclick = ev => { ev.stopPropagation(); showList(ev.currentTarget, 'family', -1); };
+  $('def').onclick = () => { b.shells = tab === 'main' ? [{ammo: 'Standard APC (1912)', share: 0.7}, {ammo: 'Standard HE (1912)', share: 0.3}]
+    : [{ammo: 'Standard APC (1912)', share: 0.3}, {ammo: 'Standard HE (1912)', share: 0.7}]; draw(); };
+  p.querySelectorAll('.blk').forEach(e => e.onclick = ev => { ev.stopPropagation(); showList(e, 'block', +e.dataset.i); });
+  p.querySelectorAll('.sp button').forEach(e => e.onclick = () => { const i = +e.dataset.i; setShare(b, i, Math.round(b.shells[i].share * 100) + +e.dataset.d); draw(); });
+  p.querySelectorAll('.x').forEach(e => e.onclick = () => { removeLoad(b, +e.dataset.i); draw(); });
+  p.querySelectorAll('.add').forEach(e => e.onclick = () => { addKind(b, e.dataset.k); draw(); });
+  p.onclick = ev => ev.stopPropagation();
+  if (listFor >= 0) showList(p.querySelector(`.blk[data-i="${listFor}"]`), 'block', listFor);
+}
+function showList(anchor, what, i) {
+  const l = $('list'), b = bats()[active], app = $('app').getBoundingClientRect(), a = anchor.getBoundingClientRect();
+  let h = '';
+  if (what === 'family')
+    h = FAMILIES.map(f => `<div class="it ${f === familyOf(b) ? 'cur' : ''}" data-f="${f}"><span>${f}</span><span>${CATALOGUE.filter(t => t.group === f).map(t => KIND[t.kind]).filter((x, j, all) => all.indexOf(x) === j).join(' · ')}</span></div>`).join('');
+  else {
+    const kind = byName[b.shells[i].ammo].kind;
+    FAMILIES.forEach(f => {
+      const ts = CATALOGUE.filter(t => t.group === f && t.kind === kind);
+      if (!ts.length) return;
+      h += `<div class="g">${f}</div>` + ts.map(t => `<div class="it ${t.name === b.shells[i].ammo ? 'cur' : ''} ${light(t) && b.cal >= 200 ? 'lt2' : ''}" data-n="${t.name}">` +
+        `<span>${t.name}</span><span>${kg(mass(t, b.cal))} kg · ${t.fuze === 'nose' ? 'nose' : 'base'}</span></div>`).join('');
+    });
+  }
+  l.innerHTML = h;
+  l.style.display = 'block';
+  l.style.left = (a.left - app.left) + 'px';
+  l.style.top = (a.bottom - app.top + 2) + 'px';
+  l.querySelectorAll('.it').forEach(e => {
+    e.onclick = ev => { ev.stopPropagation(); if (what === 'family') setFamily(b, e.dataset.f); else b.shells[i].ammo = e.dataset.n; listFor = -1; l.style.display = 'none'; draw(); };
+    if (what === 'block') { e.onmousemove = ev => showTip(ev, `<b>${e.dataset.n}</b><br>${byName[e.dataset.n].note}`); e.onmouseleave = hideTip; }
+  });
+  const cur = l.querySelector('.cur'); if (cur) l.scrollTop = cur.offsetTop - 60;
+}
+function templates() {
+  const fams = new Set(Object.values(DESIGN).flat().map(familyOf));
+  const f = fams.size === 1 ? [...fams][0] : 'mixed';
+  $('tpl').innerHTML = `<div class="sub">Templates<b>click to change</b></div>` +
+    [['Plant', 'Direct-drive turbines, water-tube boilers (1905)'], ['Hull', 'Mild steel hull, high-tensile strength deck, riveted'], ['Crew', 'H1: Hammocks over mess tables'],
+     ['Armour', 'Krupp cemented, high-tensile steel decks'], ['Shells', `${f} <span class="dim">· every battery's family</span>`, 'new']]
+      .map(([k, v, n]) => `<div class="r ${n || ''}"><span>${k}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v}</span><span class="dim">▼</span></div>`).join('');
+}
+function showTip(ev, html) { const t = $('tip'), a = $('app').getBoundingClientRect(); t.innerHTML = html; t.style.display = 'block'; t.style.left = Math.min(ev.clientX - a.left + 12, 1280 - 430) + 'px'; t.style.top = (ev.clientY - a.top + 14) + 'px'; }
+function hideTip() { $('tip').style.display = 'none'; }
+function draw() { tabs(); table(); templates(); picker(); }
+document.addEventListener('click', () => { if (open) { open = false; listFor = -1; $('list').style.display = 'none'; draw(); } });
+draw();
+if (params.has('tip')) { const e = document.querySelector('.shc'); const r = e.getBoundingClientRect(); showTip({clientX: r.left + 20, clientY: r.bottom}, cellTip(bats()[0])); }
+</script>
+</body>
+</html>
