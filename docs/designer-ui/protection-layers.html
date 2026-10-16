@@ -868,14 +868,17 @@ function elevation() {
 }
 
 // ------------------------------------------------------------------ 2. the sections: two halves, each its own station, to scale, plates ×3
-const SE = {w: 524, h: 300, l: 36, r: 8, t: 38, b: 18};
+const SE = {w: 524, h: 300, l: 36, r: 8, t: 44, b: 18};
 const SZT = Math.max(0, raised ? raised.z : 0) + 1.6, SZB = KEEL - 0.3;
-const sk = Math.min((SE.w - SE.l - SE.r) / 2 / (B / 2 + 0.7), (SE.h - SE.t - SE.b) / (SZT - SZB));
+const GAP = 16;   // the gutter between two different cuts; none when both halves are one station (a whole section)
+const sk = Math.min((SE.w - SE.l - SE.r - GAP) / 2 / (B / 2 + 0.7), (SE.h - SE.t - SE.b) / (SZT - SZB));
 const scx = SE.l + (SE.w - SE.l - SE.r) / 2;
-const sy = (side, y) => scx + side * y * sk;
+const oneCut = () => Math.abs(cuts[0] - cuts[1]) < 0.01;
+const gap = () => oneCut() ? 0 : GAP;
+const sy = (side, y) => scx + side * (gap() / 2 + y * sk);
 const sz = z => SE.t + (SZT - z) * sk;
 const szInv = py => SZT - (py - SE.t) / sk;
-const syInv = px => Math.abs(px - scx) / sk;
+const syInv = px => Math.max(0, Math.abs(px - scx) - gap() / 2) / sk;
 function polyPts(side, pts) { return pts.map(([y, z]) => `${sy(side, y)},${sz(z)}`).join(' '); }
 function cellTip(c, x, cut) {
   const f = KIND[c.k] || KIND.void, wdt = c.y1 - c.y0;
@@ -954,15 +957,27 @@ function sections() {
       svg.append(s('text', {x: sy(side, yb) + side * 4, y: sz(zt - 2.2), 'text-anchor': side > 0 ? 'start' : 'end', 'font-size': 9, fill: '#D9B868', 'pointer-events': 'none'}, `${N0(lean())}°`));
     }
     // the selected part's handles
-    handles.push(...handlesFor(x, side, cut, AP));
+    if (!oneCut() || side > 0) handles.push(...handlesFor(x, side, cut, AP));
     // the half's title: which cut, where
-    svg.append(s('text', {x: k === 0 ? SE.l + 2 : SE.w - SE.r - 2, y: 30, 'text-anchor': k === 0 ? 'start' : 'end', 'font-size': 9.5, fill: '#9CB4CA'}, `x ${sx1(x)} m`));
+    if (!oneCut() || k === 1) svg.append(s('text', {x: k === 0 ? SE.l + 2 : SE.w - SE.r - 2, y: 24, 'text-anchor': k === 0 ? 'start' : 'end', 'font-size': 9.5, fill: '#9CB4CA'}, `x ${sx1(x)} m`));
   });
-  svg.append(s('line', {x1: scx, x2: scx, y1: SE.t - 6, y2: SE.h - SE.b + 4, stroke: 'rgba(156,194,226,0.35)', 'stroke-dasharray': '8 3 2 3'}));
-  svg.append(s('text', {x: scx, y: SE.h - 5, 'text-anchor': 'middle', 'font-size': 9, fill: '#5E7A96'}, 'CL'));
+  if (oneCut()) {   // one station: a whole section, its centreline
+    svg.append(s('line', {x1: scx, x2: scx, y1: SE.t - 6, y2: SE.h - SE.b + 4, stroke: 'rgba(156,194,226,0.35)', 'stroke-dasharray': '8 3 2 3'}));
+    svg.append(s('text', {x: scx, y: SE.t - 9, 'text-anchor': 'middle', 'font-size': 9, fill: '#5E7A96'}, 'CL'));
+  } else {   // two stations: a gutter with a break line, a numbered badge each side
+    const y0 = SE.t - 16, y1 = SE.h - SE.b + 4, ym = (y0 + y1) / 2, a = scx - 2.5, b = scx + 2.5;
+    svg.append(s('rect', {x: scx - GAP / 2, y: y0, width: GAP, height: y1 - y0, fill: '#0E1621', opacity: 0.9}));
+    for (const xx of [a, b]) svg.append(s('path', {d: `M${xx},${y0} V${ym - 9} l5,4 l-10,10 l5,4 V${y1}`, fill: 'none', stroke: '#D9B868', 'stroke-width': 1.3, 'stroke-linejoin': 'round'}));
+    for (const [k, side] of [[0, -1], [1, 1]]) {
+      const cx = scx + side * (GAP / 2 + 11), cy = SE.t - 14;
+      svg.append(s('circle', {cx, cy, r: 7, fill: '#4A3E20', stroke: '#D9B868', 'stroke-width': 1}));
+      svg.append(s('text', {x: cx, y: cy + 3.5, 'text-anchor': 'middle', 'font-size': 9.5, fill: '#FFE7A8'}, String(k + 1)));
+      svg.append(s('text', {x: cx + side * 11, y: cy + 3.5, 'text-anchor': side < 0 ? 'end' : 'start', 'font-size': 9.5, fill: '#D9B868'}, cutName(cuts[k])));
+    }
+  }
   for (const hd of handles) svg.append(hd);
   // the header: the two cuts' pickers
-  const pick = k => h('span', {class: 'dd', style: 'width:150px', onclick: ev => { ev.stopPropagation(); menu(ev, cutItems(k)); }}, h('span', {}, cutName(cuts[k])), h('i', {}, '▼'));
+  const pick = k => h('span', {class: 'dd', style: 'width:150px', onclick: ev => { ev.stopPropagation(); const r = ev.currentTarget.getBoundingClientRect(), a = $('app').getBoundingClientRect(); menu(ev, cutItems(k), [r.left - a.left, r.bottom - a.top + 1]); }}, h('span', {}, cutName(cuts[k])), h('i', {}, '▼'));
   const hd = h('div', {class: 'bh'}, 'Sections',
     h('span', {class: 'cut'}, h('span', {class: 'n'}, '1'), pick(0)),
     h('b', {}, h('span', {class: 'cut'}, pick(1), h('span', {class: 'n'}, '2'))));
@@ -975,6 +990,8 @@ function sections() {
 }
 function cutItems(k) {
   const items = [{head: `Section ${k + 1}: cut at`}];
+  const o = cuts[1 - k];
+  items.push({lab: `Same as ${2 - k}: one whole section`, key: cutName(o), cur: oneCut(), fn: () => { cuts[k] = o; }}, 'sep');
   for (const q of STOPS) items.push({lab: q.id === 'mach' ? `Machinery (${q.sub.toLowerCase()})` : q.lab, key: `x ${sx1(q.x)}`, cur: Math.abs(cuts[k] - q.x) < 0.01, fn: () => { cuts[k] = q.x; }});
   return items;
 }

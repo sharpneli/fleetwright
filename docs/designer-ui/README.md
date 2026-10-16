@@ -208,7 +208,8 @@ the port plan and the open questions are in `protection.md`. `?ship=dreadnought|
 H8b of `docs/shipgen/protection-plan.md`: the tab learns slopes, inclined and internal belts, zones, belt extent, the
 inner bulkhead, magazine boxes and wings, TDS layers, platform decks, the layout templates and the compartment check.
 The midship section becomes two half-sections, each cut at its own station (machinery and a magazine by default, flags
-`1` `2` on the elevation), with the cells' contents tinted. The table gains sub-rows (zones, slopes) and an Inboard
+`1` `2` on the elevation), split by a gutter with a break line, or one whole section when both pick the same station;
+the cells' contents tinted. The table gains sub-rows (zones, slopes) and an Inboard
 group; the selected plate gains a Shape column; the sub-bar gains Layout. Real builds of seven designs
 (`protection-layers-data.js`); `?ship=bismarck|dreadnought|nelson|kent|dunkerque|kgv|destroyer`. The reasoning, the
 findings, the review questions and the port plan are in `protection-layers.md`.
@@ -225,6 +226,8 @@ findings, the review questions and the port plan are in `protection-layers.md`.
 | `png/protection-layers-destroyer-box.png` | a destroyer given a 25 mm box and 1.6 m wings |
 | `png/protection-layers-layout-menu.png` | the Layout list, hovering German bulkhead |
 | `png/protection-layers-dread-german.png` | Dreadnought after German bulkhead |
+| `png/protection-layers-bismarck-whole.png` | both cuts at one station: a whole section |
+| `png/protection-layers-cutmenu.png` | section 2's dropdown, "Same as 1" first |
 
 ## Screenshots (`png/`)
 
