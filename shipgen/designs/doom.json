@@ -160,7 +160,7 @@
   "wing": 1,
   "echelon": true,
   "cross_deck": true,
-  "amidships_stands_on": "deck", "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.5}, {"ammo": "Common shell, forged steel (1895)", "share": 0.5}]
+  "amidships_stands_on": "deck", "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.7}, {"ammo": "Common shell, forged steel (1895)", "share": 0.3}]
  }],
  "secondary": [
   {
@@ -170,7 +170,7 @@
    "rounds_per_gun": 200,
    "per_side": 4,
    "mount": "casemate",
-   "armour_mm": 76, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.2}, {"ammo": "Common shell, forged steel (1895)", "share": 0.8}]
+   "armour_mm": 76, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.3}, {"ammo": "Common shell, forged steel (1895)", "share": 0.7}]
   },
   {
    "calibre_mm": 120,
@@ -180,7 +180,7 @@
    "per_side": 4,
    "mount": "casemate",
    "tier": "upper",
-   "armour_mm": 51, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.2}, {"ammo": "Common shell, forged steel (1895)", "share": 0.8}]
+   "armour_mm": 51, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.3}, {"ammo": "Common shell, forged steel (1895)", "share": 0.7}]
   },
   {
    "calibre_mm": 76,
@@ -189,7 +189,7 @@
    "rounds_per_gun": 350,
    "per_side": 6,
    "mount": "casemate",
-   "armour_mm": 25, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.2}, {"ammo": "Common shell, forged steel (1895)", "share": 0.8}]
+   "armour_mm": 25, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.3}, {"ammo": "Common shell, forged steel (1895)", "share": 0.7}]
   },
   {
    "calibre_mm": 57,
@@ -199,7 +199,7 @@
    "per_side": 5,
    "mount": "casemate",
    "tier": "upper",
-   "armour_mm": 0, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.2}, {"ammo": "Common shell, forged steel (1895)", "share": 0.8}]
+   "armour_mm": 0, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.3}, {"ammo": "Common shell, forged steel (1895)", "share": 0.7}]
   },
   {
    "calibre_mm": 47,
@@ -208,7 +208,7 @@
    "rounds_per_gun": 350,
    "per_side": 6,
    "mount": "casemate",
-   "armour_mm": 0, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.2}, {"ammo": "Common shell, forged steel (1895)", "share": 0.8}]
+   "armour_mm": 0, "shells": [{"ammo": "Forged steel APC, soft cap (1895)", "share": 0.3}, {"ammo": "Common shell, forged steel (1895)", "share": 0.7}]
   }
  ],
  "funnels": 2,

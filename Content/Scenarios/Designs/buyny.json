@@ -36,7 +36,7 @@
    "armour_mm": 0,
    "rounds_per_gun": 200,
    "fore": 1,
-   "aft": 0, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.2}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.8}]
+   "aft": 0, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.7}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.3}]
   },
   {
    "calibre_mm": 47,
@@ -45,7 +45,7 @@
    "armour_mm": 0,
    "rounds_per_gun": 400,
    "fore": 0,
-   "aft": 1, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.2}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.8}]
+   "aft": 1, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.7}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.3}]
   }
  ],
  "torpedoes": {

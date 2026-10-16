@@ -63,17 +63,29 @@ static class AmmoTemplates
 
     /// <summary>The block a battery of the family fires for a kind: a light gun's light block where there is one, else
     /// the family's.</summary>
-    static ShellTemplates.Template Pick(string heavy, string light, string kind, double calibreMm)
+    static ShellTemplates.Template Pick(string heavy, string light, string kind, double calibreMm) =>
+        Find(heavy, light, kind, calibreMm) ?? throw new InvalidOperationException($"the {heavy} family has no {kind} block");
+
+    static ShellTemplates.Template? Find(string heavy, string light, string kind, double calibreMm)
     {
         if (calibreMm >= 330 && heavy == "RN 1909")
             heavy = "RN 1912";
         bool small = calibreMm < 200;
         return (small ? ShellTemplates.All.FirstOrDefault(t => t.Group == light && t.Light && t.Value.Kind == kind) : null)
-            ?? ShellTemplates.All.FirstOrDefault(t => t.Group == heavy && !t.Light && t.Value.Kind == kind)
-            ?? throw new InvalidOperationException($"the {heavy} family has no {kind} block");
+            ?? ShellTemplates.All.FirstOrDefault(t => t.Group == heavy && !t.Light && t.Value.Kind == kind);
     }
 
-    public static int Run(IEnumerable<string> paths, bool dry)
+    /// <summary>The default outfit (S2, decision 7): a main battery 70% AP and 30% HE, a secondary 30% and 70%. Either
+    /// is the family's common shell where it has none of that kind: HE in the families before HE shells (~1900), AP in
+    /// the post-war dual-purpose family (its SAP).</summary>
+    static (string Kind, double Share)[] Outfit(bool main, string heavy, string light, double calibreMm)
+    {
+        string Or(string kind) => Find(heavy, light, kind, calibreMm) != null ? kind : "common";
+        string ap = Or("ap"), he = Or("he");
+        return main ? [(ap, 0.7), (he, 0.3)] : [(ap, 0.3), (he, 0.7)];
+    }
+
+    public static int Run(IEnumerable<string> paths, bool dry, bool outfits = false)
     {
         int written = 0, skipped = 0;
         foreach (var p in paths)
@@ -88,16 +100,18 @@ static class AmmoTemplates
             var blocks = new SortedDictionary<string, AmmoInput>(StringComparer.Ordinal);
             var shells = new List<JsonArray>();
             var lines = new List<string>();
-            foreach (var b in design.MainBatteries.Concat(design.Secondary ?? []))
+            foreach (var (b, main) in design.MainBatteries.Select(b => (b, true)).Concat((design.Secondary ?? []).Select(b => (b, false))))
             {
                 var list = new JsonArray();
-                foreach (var e in b.Shells ?? [])
+                // the outfit's kinds and shares: the design's (S1), or the default outfit (S2's --outfits)
+                var kinds = outfits ? Outfit(main, fam.Heavy, fam.Light, b.CalibreMm!.Value)
+                    : (b.Shells ?? []).Select(e => (design.Ammunition[e.Ammo!].Kind!, e.Share!.Value)).ToArray();
+                foreach (var (kind, share) in kinds)
                 {
-                    var old = design.Ammunition[e.Ammo!];
-                    var t = Pick(fam.Heavy, fam.Light, old.Kind!, b.CalibreMm!.Value);
+                    var t = Pick(fam.Heavy, fam.Light, kind, b.CalibreMm!.Value);
                     blocks[t.Name] = t.Value;
-                    list.Add((JsonNode)new JsonObject { ["ammo"] = t.Name, ["share"] = e.Share!.Value });
-                    lines.Add($"  {b.CalibreMm}/{b.CalibreLength} {e.Ammo} ({old.Outcomes}) -> {t.Name} ({t.Value.Outcomes})");
+                    list.Add((JsonNode)new JsonObject { ["ammo"] = t.Name, ["share"] = share });
+                    lines.Add($"  {b.CalibreMm}/{b.CalibreLength} {(main ? "main" : "secondary")} {share:0.##} {t.Name}");
                 }
                 shells.Add(list);
             }

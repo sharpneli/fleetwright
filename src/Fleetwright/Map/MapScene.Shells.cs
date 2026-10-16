@@ -48,6 +48,8 @@ public sealed partial class MapScene
     const double RefCalibreMm = 305;
     bool fireArmed, engageArmed, torpedoArmed;
     int fireBattery;   // the dev's salvo "at": which battery
+    ShellKind? fireKind;   // and which kind (null: the magazine order)
+    static readonly ShellKind[] KindsInOrder = [ShellKind.Ap, ShellKind.Common, ShellKind.He];
     readonly Dictionary<int, int> shipIndex = [];   // a frame's ships by entity, for the target lines
     readonly Dictionary<int, byte> sideOf = [];     // a frame's known shooters' sides, by entity
 
@@ -409,6 +411,47 @@ public sealed partial class MapScene
                     fireBattery = b;
             ImGui.EndCombo();
         }
+        // the kind: the magazine order, or a kind the battery carries, with its rounds left
+        var bat = cls.Batteries[fireBattery];
+        bool Carries(ShellKind kind)
+        {
+            foreach (var l in cls.ShellLoads(bat.Shells))
+                if (cls.ShellTypes[l.ShellType].Kind == kind)
+                    return true;
+            return false;
+        }
+        int Left(ShellKind kind)
+        {
+            int start = s.Ships.LoadStart[k], sum = 0;
+            var loads = cls.ShellLoads(bat.Shells);
+            for (int l = 0; l < loads.Length && start >= 0; l++)
+                if (cls.ShellTypes[loads[l].ShellType].Kind == kind)
+                {
+                    int r = s.Ships.LoadRounds[start + bat.Shells.Start + l];
+                    sum = r == int.MaxValue || sum == int.MaxValue ? int.MaxValue : sum + r;
+                }
+            return sum;
+        }
+        static string KindName(ShellKind kind) => kind switch { ShellKind.Ap => "AP", ShellKind.Common => "common", _ => "HE" };
+        string LeftText(ShellKind kind) => Left(kind) is var n && n == int.MaxValue ? "" : $" ({n})";
+        if (fireKind is { } fk && !Carries(fk))
+            fireKind = null;
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(130 * UiFonts.Scale);
+        if (ImGui.BeginCombo("##fk", fireKind is { } chosen ? KindName(chosen) + LeftText(chosen) : "magazine order"))
+        {
+            if (ImGui.Selectable("magazine order##fk", fireKind is null))
+                fireKind = null;
+            foreach (var kind in KindsInOrder)
+                if (Carries(kind) && ImGui.Selectable($"{KindName(kind)}{LeftText(kind)}##fk{kind}", fireKind == kind))
+                    fireKind = kind;
+            ImGui.EndCombo();
+        }
+        if (fireKind is { } none && Left(none) == 0)
+        {
+            ImGui.SameLine();
+            ImGui.TextDisabled($"no {KindName(none)} left");
+        }
         ImGui.SameLine();
         if (ImGui.Checkbox("salvo at (right-click the sea)##fire", ref fireArmed) && fireArmed)
             (engageArmed, torpedoArmed) = (false, false);
@@ -602,7 +645,7 @@ public sealed partial class MapScene
         if (!fireArmed || !View.Pick(x, y, out var at))
             return false;
         var (lat, lon) = Earth.LatLon(at);
-        world.Send(ShellSystem.FireAt(selected, fireBattery, lat, lon));
+        world.Send(ShellSystem.FireAt(selected, fireBattery, lat, lon, fireKind));
         return true;
     }
 

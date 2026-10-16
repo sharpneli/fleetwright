@@ -147,7 +147,7 @@
    "rounds_per_gun": 120,
    "armour_mm": 152,
    "fore": 1,
-   "aft": 1, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.5}, {"ammo": "JP 1904 common (powder)", "share": 0.5}]
+   "aft": 1, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.7}, {"ammo": "JP 1904 common (powder)", "share": 0.3}]
   }
  ],
  "secondary": [
@@ -158,7 +158,7 @@
    "rounds_per_gun": 200,
    "per_side": 5,
    "mount": "casemate",
-   "armour_mm": 152, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.2}, {"ammo": "JP 1904 common (powder)", "share": 0.8}]
+   "armour_mm": 152, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.3}, {"ammo": "JP 1904 common (powder)", "share": 0.7}]
   },
   {
    "calibre_mm": 152,
@@ -168,7 +168,7 @@
    "per_side": 2,
    "mount": "casemate",
    "tier": "upper",
-   "armour_mm": 152, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.2}, {"ammo": "JP 1904 common (powder)", "share": 0.8}]
+   "armour_mm": 152, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.3}, {"ammo": "JP 1904 common (powder)", "share": 0.7}]
   },
   {
    "calibre_mm": 76,
@@ -178,7 +178,7 @@
    "per_side": 6,
    "mount": "casemate",
    "tier": "upper",
-   "armour_mm": 0, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.2}, {"ammo": "JP 1904 common (powder)", "share": 0.8}]
+   "armour_mm": 0, "shells": [{"ammo": "JP 1904 AP (Shimose)", "share": 0.3}, {"ammo": "JP 1904 common (powder)", "share": 0.7}]
   }
  ],
  "superstructure": {

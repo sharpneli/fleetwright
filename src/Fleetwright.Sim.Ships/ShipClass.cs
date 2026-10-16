@@ -25,6 +25,7 @@ public sealed class ShipClass
     internal ShellTypeRow[] shellTypes = [];
     internal ChargeRow[] charges = [];
     internal ShellLoad[] shellLoads = [];
+    internal int[] mountLoadStart = [], loadRounds = [];
     internal EyeRow[] eyes = [];
     internal TubeRow[] tubes = [];
     internal LauncherRow[] launchers = [];
@@ -151,6 +152,17 @@ public sealed class ShipClass
     public ReadOnlySpan<ArmourLayer> ArmourAbove(Slice s) => armourAbove.AsSpan(s.Start, s.Count);
     public ReadOnlySpan<DeckPlate> DeckPlates(Slice s) => deckPlates.AsSpan(s.Start, s.Count);
     public ReadOnlySpan<ShellLoad> ShellLoads(Slice s) => shellLoads.AsSpan(s.Start, s.Count);
+
+    /// <summary>All the batteries' loads, the ShellLoads pool's length (a ship's rounds left by load in the snapshot).</summary>
+    public int ShellLoadCount => shellLoads.Length;
+
+    /// <summary>Where a mount's rounds by load start in <see cref="LoadRounds"/> (its battery's loads in order, a ship's
+    /// own copy in CombatStore); the next mount's start ends them. Torpedo mounts have none.</summary>
+    public int MountLoadStart(int mount) => mountLoadStart[mount];
+
+    /// <summary>Each mount's rounds of each of its battery's loads at the start: its rounds split by the outfit's shares
+    /// (largest remainder, so they add up), int.MaxValue each for a mount that counts none.</summary>
+    public ReadOnlySpan<int> LoadRounds => loadRounds;
     public ReadOnlySpan<int> FunctionNodes(Slice s) => functionNodes.AsSpan(s.Start, s.Count);
 
     // ------------------------------------------------------------------ ids

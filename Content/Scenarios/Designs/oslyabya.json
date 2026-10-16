@@ -36,7 +36,7 @@
    "armour_mm": 229,
    "rounds_per_gun": 80,
    "fore": 1,
-   "aft": 1, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.5}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.5}]
+   "aft": 1, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.7}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.3}]
   }
  ],
  "secondary": [
@@ -47,7 +47,7 @@
    "armour_mm": 127,
    "rounds_per_gun": 180,
    "per_side": 5,
-   "mount": "casemate", "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.2}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.8}]
+   "mount": "casemate", "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.3}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.7}]
   },
   {
    "calibre_mm": 75,
@@ -56,7 +56,7 @@
    "armour_mm": 51,
    "rounds_per_gun": 300,
    "per_side": 6,
-   "mount": "casemate", "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.2}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.8}]
+   "mount": "casemate", "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.3}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.7}]
   },
   {
    "calibre_mm": 75,
@@ -66,7 +66,7 @@
    "rounds_per_gun": 300,
    "per_side": 4,
    "mount": "casemate",
-   "tier": "upper", "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.2}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.8}]
+   "tier": "upper", "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.3}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.7}]
   }
  ],
  "armour": {

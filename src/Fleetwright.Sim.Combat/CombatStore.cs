@@ -5,7 +5,8 @@ namespace Fleetwright.Sim.Combat;
 
 /// <summary>A mount's state (docs/battle/fighting.md 4.2b): its train and elevation as analytic anchors (at the
 /// anchor's time it was at From, moving toward To at the mount's rate, so its bearing at any instant is closed form and
-/// nothing steps it), when its guns are next loaded, and the rounds it has left. Bearings are degrees clockwise from
+/// nothing steps it), when its guns are next loaded, and the rounds it has left (all kinds; by kind in
+/// <see cref="CombatStore.LoadRounds"/>). Bearings are degrees clockwise from
 /// ahead, unwrapped inside the mount's traverse (an interval that never wraps: shipgen's <c>traverse_deg</c>).</summary>
 public struct MountState
 {
@@ -28,6 +29,7 @@ public struct LauncherState
 public sealed class CombatStore
 {
     MountState[]?[] mounts = [];
+    int[]?[] loadRounds = [];
     LauncherState[]?[] launchers = [];
     ShipCondition?[] conditions = [];
     int[]?[] targets = [];
@@ -43,6 +45,7 @@ public sealed class CombatStore
         {
             int n = Math.Max(slot + 1, Math.Max(16, mounts.Length * 2));
             Array.Resize(ref mounts, n);
+            Array.Resize(ref loadRounds, n);
             Array.Resize(ref launchers, n);
             Array.Resize(ref conditions, n);
             Array.Resize(ref targets, n);
@@ -62,6 +65,10 @@ public sealed class CombatStore
                 Rounds = row.Rounds > 0 ? row.Rounds : int.MaxValue,
             };
         }
+        var lr = loadRounds[slot];
+        if (lr == null || lr.Length != cls.LoadRounds.Length)
+            loadRounds[slot] = lr = new int[cls.LoadRounds.Length];
+        cls.LoadRounds.CopyTo(lr);
         var l = launchers[slot];
         if (l == null || l.Length != cls.Launchers.Length)
             launchers[slot] = l = new LauncherState[cls.Launchers.Length];
@@ -191,13 +198,55 @@ public sealed class CombatStore
         (s.ElevMs, s.ElevFrom, s.ElevTo) = (ms, e, e);
     }
 
-    /// <summary>A gun fired: its mount loads again for the reload, and its rounds go down.</summary>
-    public void Fired(int slot, int mount, in MountRow m, int guns, long ms)
+    /// <summary>A mount fired its guns of a load (its index in the battery's loads, <see cref="NextLoad"/>): it loads
+    /// again for the reload, and its rounds go down.</summary>
+    public void Fired(int slot, ShipClass cls, int mount, int load, int guns, long ms)
     {
         ref var s = ref mounts[slot]![mount];
-        s.LoadedMs = ms + (long)Math.Round(m.ReloadS * 1000);
-        s.Rounds = s.Rounds == int.MaxValue ? s.Rounds : Math.Max(s.Rounds - guns, 0);
+        s.LoadedMs = ms + (long)Math.Round(cls.Mounts[mount].ReloadS * 1000);
+        Spend(slot, cls, mount, load, guns);
+    }
+
+    /// <summary>Rounds of a mount's load go (the dev's salvo spends them without a reload).</summary>
+    public void Spend(int slot, ShipClass cls, int mount, int load, int guns)
+    {
+        ref var s = ref mounts[slot]![mount];
+        ref int left = ref loadRounds[slot]![cls.MountLoadStart(mount) + load];
+        int spent = left == int.MaxValue ? guns : Math.Min(left, guns);
+        if (left != int.MaxValue)
+            left -= spent;
+        s.Rounds = s.Rounds == int.MaxValue ? s.Rounds : Math.Max(s.Rounds - spent, 0);
         Touched = true;
+    }
+
+    /// <summary>A mount's rounds left of its battery's load k.</summary>
+    public int LoadRounds(int slot, ShipClass cls, int mount, int k) => loadRounds[slot]![cls.MountLoadStart(mount) + k];
+
+    /// <summary>The load a mount fires next: the first of its battery's loads (in the magazine order) it has rounds of, or
+    /// -1 when it has none left.</summary>
+    public int NextLoad(int slot, ShipClass cls, int mount)
+    {
+        int s0 = cls.MountLoadStart(mount), n = cls.MountLoadStart(mount + 1) - s0;
+        var r = loadRounds[slot]!;
+        for (int k = 0; k < n; k++)
+            if (r[s0 + k] > 0)
+                return k;
+        return -1;
+    }
+
+    /// <summary>The load of a kind a mount has rounds of (the first such in the order), or -1.</summary>
+    public int LoadOf(int slot, ShipClass cls, int mount, ShellKind kind)
+    {
+        ref readonly var m = ref cls.Mounts[mount];
+        if (m.Battery < 0)
+            return -1;
+        var loads = cls.ShellLoads(cls.Batteries[m.Battery].Shells);
+        int s0 = cls.MountLoadStart(mount);
+        var r = loadRounds[slot]!;
+        for (int k = 0; k < loads.Length; k++)
+            if (cls.ShellTypes[loads[k].ShellType].Kind == kind && r[s0 + k] > 0)
+                return k;
+        return -1;
     }
 
     /// <summary>A bearing in a mount's traverse: the turn of it inside the interval (nearest the current bearing for a
@@ -259,6 +308,8 @@ public sealed class CombatStore
                 h.Add(s.LoadedMs);
                 h.Add(s.Rounds);
             }
+            foreach (int r in loadRounds[slot].AsSpan())
+                h.Add(r);
             foreach (ref readonly var l in launchers[slot].AsSpan())
             {
                 h.Add(l.Loaded);

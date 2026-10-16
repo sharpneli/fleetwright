@@ -1,6 +1,7 @@
 using Fleetwright.Sim.Ai;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 using Xunit.Abstractions;
 
 namespace Fleetwright.Sim.Tests;
@@ -132,6 +133,41 @@ public class ShellSystemTests(ITestOutputHelper output)
         }
         Assert.Equal(mounts.Length, Enumerable.Range(0, mounts.Length).Select(i => s.Mount[i]).Distinct().Count());
         Assert.NotEqual(s.Salvo[0], s.Salvo[s.Count - 1]);
+    }
+
+    /// <summary>Rounds by kind (docs/battle/shells-armour-damage.md S2): the dev's salvo of a kind spends that kind's
+    /// rounds; a battery out of it fires nothing of it, and by the magazine order fires what it has.</summary>
+    [Fact]
+    public void A_battery_spends_its_rounds_by_kind_and_runs_out_of_one()
+    {
+        var (w, shooter, _) = Make(Settings);
+        var cls = w.Ships.Class(Ship(w, shooter).ClassIndex);
+        var main = cls.Batteries[0];
+        var loads = cls.ShellLoads(main.Shells).ToArray();
+        Assert.Equal([ShellKind.Ap, ShellKind.He], loads.Select(l => cls.ShellTypes[l.ShellType].Kind));
+        var (lat, lon) = Earth.LatLon(Destination(Ship(w, shooter).Position, 0, 9000));
+        (int Ap, int He, int Shots) Count()
+        {
+            var snap = new Snapshot();
+            w.Fill(snap, truth: true);
+            int k = snap.Ships.IndexOf(shooter), start = snap.Ships.LoadStart[k] + main.Shells.Start;
+            return (snap.Ships.LoadRounds[start], snap.Ships.LoadRounds[start + 1], snap.Shots.Count);
+        }
+        var (ap0, he0, _) = Count();
+        int mounts = cls.Links(main.Mounts).Length, barrels = cls.TurretTypes[cls.Mounts[cls.Links(main.Mounts)[0]].Type].Barrels;
+        output.WriteLine($"{mounts} mounts of {barrels}: {ap0} AP, {he0} HE");
+        // every HE round away, salvo after salvo
+        for (int k = 0; k < he0 / (mounts * barrels); k++)
+            w.Apply(ShellSystem.FireAt(shooter, 0, lat, lon, ShellKind.He));
+        var (ap1, he1, shots1) = Count();
+        Assert.Equal((ap0, 0), (ap1, he1));
+        // HE asked for: nothing goes
+        w.Apply(ShellSystem.FireAt(shooter, 0, lat, lon, ShellKind.He));
+        Assert.Equal((ap0, 0, shots1), Count());
+        // by the order: AP, a round from each gun
+        w.Apply(ShellSystem.FireAt(shooter, 0, lat, lon));
+        var (ap2, he2, _) = Count();
+        Assert.Equal((ap0 - mounts * barrels, 0), (ap2, he2));
     }
 
     [Fact]

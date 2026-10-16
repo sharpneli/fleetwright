@@ -80,8 +80,9 @@ public class WeaponFactsTests
             if (!Pos(s.MassKg) || !Pos(s.MuzzleVelocityMs) || !Pos(s.FormFactor) || !Pos(s.FillerKg) || !(s.FuzeDelayS >= 0)
                 || s.FillerKg > 0.2 * s.MassKg || s.Kind == ShellKind.He && s.Fuze != Fuze.Nose || !(s.FillerRe > 0))
                 p.Add($"shell type {c.ShellTypeId(t)}: {s}");
-            // shared by id: one id, one row, whichever class it's in
-            if (shared.TryGetValue(c.ShellTypeId(t), out var other) && other != s)
+            // shared by id: one id, one shell, whichever class it's in (but for its muzzle velocity, which follows the
+            // outfit's heaviest shell: a template beside a heavier AP leaves the gun faster)
+            if (shared.TryGetValue(c.ShellTypeId(t), out var other) && other with { MuzzleVelocityMs = 0 } != s with { MuzzleVelocityMs = 0 })
                 p.Add($"shell type {c.ShellTypeId(t)} differs from another class's");
             else
                 shared[c.ShellTypeId(t)] = s;
@@ -114,8 +115,46 @@ public class WeaponFactsTests
         Assert.Equal([(ShellKind.Ap, 0.7), (ShellKind.He, 0.3)], main.Select(l => (bare.ShellTypes[l.ShellType].Kind, l.Share)));
         Assert.Equal(ShellTemplates.Get("Standard APC (1912)")!.Value.MassKKgM3!.Value * 0.305 * 0.305 * 0.305,
             bare.ShellTypes[bare.Batteries[0].Fires].MassKg, 9);
+        // in the magazine order: a secondary fires HE first
         var sec = bare.ShellLoads(bare.Batteries[1].Shells).ToArray();
-        Assert.Equal([0.3, 0.7], sec.Select(l => l.Share));
+        Assert.Equal([(ShellKind.He, 0.7), (ShellKind.Ap, 0.3)], sec.Select(l => (bare.ShellTypes[l.ShellType].Kind, l.Share)));
+    }
+
+    /// <summary>Rounds by kind (docs/battle/shells-armour-damage.md S2): every battery's loads in the magazine order (main
+    /// AP first, secondary HE first) and its lead the first of them; every mount's rounds split over its battery's loads,
+    /// adding up to its rounds, each near its share.</summary>
+    [Fact]
+    public void Each_mount_counts_its_rounds_by_kind_in_the_magazine_order()
+    {
+        var problems = new List<string>();
+        foreach (var b in Fleet.All.Where(b => b.Ship != null && b.Class != null))
+        {
+            var c = b.Class!;
+            for (int i = 0; i < c.Batteries.Length; i++)
+            {
+                var row = c.Batteries[i];
+                var loads = c.ShellLoads(row.Shells).ToArray();
+                var ranks = loads.Select(l => MagazineOrder.Rank(row.Kind, c.ShellTypes[l.ShellType].Kind)).ToArray();
+                if (!ranks.SequenceEqual(ranks.Order()) || row.Fires != loads[0].ShellType)
+                    problems.Add($"{b.Case.Name} battery {i}: loads out of the magazine order");
+            }
+            for (int m = 0; m < c.Mounts.Length; m++)
+            {
+                var mr = c.Mounts[m];
+                int s0 = c.MountLoadStart(m), n = c.MountLoadStart(m + 1) - s0;
+                if (mr.Battery < 0)
+                {
+                    if (n != 0)
+                        problems.Add($"{b.Case.Name} torpedo mount {m} has {n} loads");
+                    continue;
+                }
+                var loads = c.ShellLoads(c.Batteries[mr.Battery].Shells).ToArray();
+                var rounds = c.LoadRounds.Slice(s0, n).ToArray();
+                if (n != loads.Length || mr.Rounds > 0 && (rounds.Sum() != mr.Rounds || rounds.Where((r, k) => Math.Abs(r - mr.Rounds * loads[k].Share) >= 1).Any()))
+                    problems.Add($"{b.Case.Name} mount {m}: {mr.Rounds} rounds as {string.Join("/", rounds)}");
+            }
+        }
+        Assert.True(problems.Count == 0, string.Join("\n", problems.Take(20)));
     }
 
     /// <summary>The templates and the placeholders against the research's guns of the Great War (fire_control_ref.py
@@ -189,10 +228,11 @@ public class WeaponFactsTests
         Assert.True(sec.Local);
         Assert.Equal(ShellKind.He, dn.ShellTypes[sec.Fires].Kind);
 
-        // a destroyer's main guns are light guns: HE, as a battleship's secondaries
+        // the magazine order (decision 7): a destroyer's main guns fire AP first, as a battleship's main battery, and its
+        // secondaries HE first; no size threshold
         var tb = Fleet.Get("tb_destroyer").Class!;
         Assert.Equal(Battery.Main, tb.Batteries[0].Kind);
-        Assert.Equal(ShellKind.He, tb.ShellTypes[tb.Batteries[0].Fires].Kind);
+        Assert.Equal(ShellKind.Ap, tb.ShellTypes[tb.Batteries[0].Fires].Kind);
 
         // Mikasa's rangefinders and no clock: level 1
         Assert.Equal(FireControlLevel.Rangefinder, Fleet.Get("mikasa").Class!.Batteries[0].Level);

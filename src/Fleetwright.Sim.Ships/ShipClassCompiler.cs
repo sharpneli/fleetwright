@@ -614,11 +614,16 @@ public static class ShipClassCompiler
                     ?? throw new ShipCompileException($"{where}: no shells in the report");
                 foreach (var s in given.Shells)
                     loads.Add(new ShellLoad(TypeOf(FormattableString.Invariant($"{row.CalibreMm:0.#}/{row.CalibreLength:0.#} {s.Ammo}"), Given(s, row)), s.Share));
+                // in the magazine order (stable: a kind's loads keep the design's order)
+                var ordered = loads.Skip(l0).Select((l, i) => (l, i)).OrderBy(x => MagazineOrder.Rank(row.Kind, types[x.l.ShellType].Kind)).ThenBy(x => x.i)
+                    .Select(x => x.l).ToList();
+                loads.RemoveRange(l0, loads.Count - l0);
+                loads.AddRange(ordered);
                 batteries[b] = row with
                 {
                     Mounts = new Slice(m0, d0 - m0), Guns = guns, Directors = new Slice(d0, dirs),
                     Level = DesignerPlaceholders.FireControl(dirs, rf, spec.ComputerT, radar || spec.RadarT > 0, era),
-                    Shells = new Slice(l0, loads.Count - l0), Fires = DesignerPlaceholders.Fires(row.CalibreMm, loads, l0, types),
+                    Shells = new Slice(l0, loads.Count - l0), Fires = loads[l0].ShellType,
                     PatternPct = DesignerPlaceholders.Pattern(row.CalibreMm, era),
                 };
             }
@@ -626,7 +631,46 @@ public static class ShipClassCompiler
             c.shellTypes = types.ToArray();
             c.shellTypeIds = typeIds.ToArray();
             c.shellLoads = loads.ToArray();
+            LoadRounds(c);
             Launchers(c, era);
+        }
+
+        /// <summary>Each mount's rounds by its battery's loads: its rounds split by the shares, the largest remainders
+        /// rounded up so they add up to its rounds.</summary>
+        static void LoadRounds(ShipClass c)
+        {
+            var starts = new int[c.mounts.Length + 1];
+            var rounds = new List<int>();
+            for (int i = 0; i < c.mounts.Length; i++)
+            {
+                starts[i] = rounds.Count;
+                ref readonly var m = ref c.mounts[i];
+                if (m.Battery < 0)
+                    continue;
+                var loads = c.ShellLoads(c.batteries[m.Battery].Shells);
+                if (m.Rounds <= 0)
+                {
+                    for (int k = 0; k < loads.Length; k++)
+                        rounds.Add(int.MaxValue);
+                    continue;
+                }
+                int r0 = rounds.Count, given = 0, total = m.Rounds;
+                var rest = new double[loads.Length];
+                for (int k = 0; k < loads.Length; k++)
+                {
+                    double exact = total * loads[k].Share;
+                    int n = (int)Math.Floor(exact);
+                    rounds.Add(n);
+                    rest[k] = exact - n;
+                    given += n;
+                }
+                // the rest one each to the largest remainders, the earlier first on a tie
+                foreach (int k in Enumerable.Range(0, rest.Length).OrderByDescending(k => rest[k]).ThenBy(k => k).Take(Math.Max(total - given, 0)))
+                    rounds[r0 + k]++;
+            }
+            starts[c.mounts.Length] = rounds.Count;
+            c.mountLoadStart = starts;
+            c.loadRounds = rounds.ToArray();
         }
 
         /// <summary>The torpedo mounts and the submerged tubes as one table, and the torpedoes they fire (docs/battle/

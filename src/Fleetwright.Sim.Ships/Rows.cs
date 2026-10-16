@@ -274,6 +274,17 @@ public readonly record struct ShellTypeRow
 /// <summary>A shell type a battery carries, and its share of the rounds.</summary>
 public readonly record struct ShellLoad(int ShellType, double Share);
 
+/// <summary>The magazine order (docs/battle/shells-armour-damage.md decision 7): a main battery fires AP until it's
+/// spent, then common, then HE; a secondary battery HE first, then common, then AP. A battery's loads are kept in this
+/// order, so a mount fires the first it has rounds of. The AI's choice by target replaces it later (decision 3).</summary>
+public static class MagazineOrder
+{
+    /// <summary>A kind's place in a battery's order: lower fires first.</summary>
+    public static int Rank(Battery battery, ShellKind kind) => battery == Battery.Main
+        ? kind switch { ShellKind.Ap => 0, ShellKind.Common => 1, _ => 2 }
+        : kind switch { ShellKind.He => 0, ShellKind.Common => 1, _ => 2 };
+}
+
 /// <summary>How a battery's fire is controlled, the rungs of research/simulation/fire_control_ref.py's LEVELS (0-8;
 /// local control is a battery without a director, not a level). The design's choice (fighting.md decision 6); a
 /// placeholder reads it from the fit until the designer offers it.</summary>
@@ -318,8 +329,8 @@ public readonly record struct BatteryRow
     public FireControlLevel Level { get; init; }
     /// <summary>The shells it carries (the ShellLoads pool), shares adding up to 1.</summary>
     public Slice Shells { get; init; }
-    /// <summary>The shell type it fires: v0 fires one kind per battery (AP from a heavy gun, HE or common from a light
-    /// one); choosing by target is a deepening (fighting.md 4.5).</summary>
+    /// <summary>The shell type it fires first, its lead: the first of its loads in the magazine order
+    /// (<see cref="MagazineOrder"/>). Each mount moves on to the next kind as it runs out.</summary>
     public int Fires { get; init; }
 
     /// <summary>The gun's full-salvo pattern, its 100% spread in range as a percentage of the range (fire_control_ref.py

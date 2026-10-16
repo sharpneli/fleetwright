@@ -51,7 +51,7 @@ static class Weapons
                 var s = c.ShellTypes[l.ShellType];
                 Line(string.Format(Inv, "    {0,3:0}%  {1,-32} {2,7:0.#} kg {3,4:0} m/s  i {4:0.00}  filler {5:0.##} kg  {6}{7}{8}", l.Share * 100,
                     c.ShellTypeId(l.ShellType), s.MassKg, s.MuzzleVelocityMs, s.FormFactor, s.FillerKg, s.Fuze == Fuze.Nose ? "nose" : "base",
-                    s.Fuze == Fuze.Base ? string.Format(Inv, " {0:0.###} s", s.FuzeDelayS) : "", l.ShellType == row.Fires ? "   <- fires (v0)" : ""));
+                    s.Fuze == Fuze.Base ? string.Format(Inv, " {0:0.###} s", s.FuzeDelayS) : "", l.ShellType == row.Fires ? "   <- first (the magazine order)" : ""));
             }
         }
         if (c.Batteries.Length == 0)

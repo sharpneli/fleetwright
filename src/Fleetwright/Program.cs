@@ -181,7 +181,7 @@ public static unsafe class Program
             {
                 captains.Add(arg.Substring("-captain=".Length));
             }
-            else if (arg.StartsWith("-fire="))   // a dev salvo: -fire=ship[:battery]:lat,lon (docs/battle/fighting.md 4.2a)
+            else if (arg.StartsWith("-fire="))   // a dev salvo: -fire=ship[:battery][:kind]:lat,lon (docs/battle/fighting.md 4.2a)
             {
                 fires.Add(arg.Substring("-fire=".Length));
             }
@@ -352,7 +352,7 @@ public static unsafe class Program
                 if (DevFire(fire) is { } shot)
                     world.Send(shot);
                 else
-                    Console.Error.WriteLine($"Bad fire: -fire={fire} (want ship[:battery]:lat,lon)");
+                    Console.Error.WriteLine($"Bad fire: -fire={fire} (want ship[:battery][:ap|common|he]:lat,lon)");
             if (weather != null)
             {
                 if (DevWeather(weather) is { } w)
@@ -450,17 +450,26 @@ public static unsafe class Program
                 w.Apply(Sim.ShipSystem.Course(e, 135));
     }
 
-    /// <summary>-fire=ship[:battery]:lat,lon: a dev ship's battery (0, the main, by default) fires a salvo at a point.</summary>
+    /// <summary>-fire=ship[:battery][:kind]:lat,lon: a dev ship's battery (0, the main, by default) fires a salvo at a
+    /// point, of a kind (ap, common, he) or by the magazine order.</summary>
     static Sim.Command? DevFire(string arg)
     {
         var p = arg.Split(':');
         var ll = p[^1].Split(',');
         var inv = System.Globalization.CultureInfo.InvariantCulture;
-        if (p.Length is < 2 or > 3 || ll.Length != 2 || !int.TryParse(p[0], out int ship) || !double.TryParse(ll[0], inv, out double lat)
+        if (p.Length is < 2 or > 4 || ll.Length != 2 || !int.TryParse(p[0], out int ship) || !double.TryParse(ll[0], inv, out double lat)
             || !double.TryParse(ll[1], inv, out double lon))
             return null;
-        int battery = p.Length == 3 && int.TryParse(p[1], out int b) ? b : 0;
-        return Sim.ShellSystem.FireAt(ship, battery, lat, lon);
+        int battery = 0;
+        Sim.Ships.ShellKind? kind = null;
+        foreach (var x in p[1..^1])
+            if (int.TryParse(x, out int b))
+                battery = b;
+            else if (x is "ap" or "common" or "he")
+                kind = x switch { "ap" => Sim.Ships.ShellKind.Ap, "common" => Sim.Ships.ShellKind.Common, _ => Sim.Ships.ShellKind.He };
+            else
+                return null;
+        return Sim.ShellSystem.FireAt(ship, battery, lat, lon, kind);
     }
 
     /// <summary>-weather=wind_from,kn[,visibility_km]: the dev world's weather (degrees the wind is from, its knots, and

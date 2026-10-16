@@ -27,23 +27,6 @@ public static class DesignerPlaceholders
 
     // ------------------------------------------------------------------ the weapons (docs/battle/fighting.md 4.0)
 
-    /// <summary>The calibre from which a gun is a heavy one, mm: it carries mostly AP and fires it in v0.</summary>
-    public const double HeavyGunMm = 200;
-
-    /// <summary>The shell type a battery fires in v0 (fighting.md 4.0, one kind per battery), of those it carries
-    /// (loads from l0 on): AP first from a heavy gun, else HE, else common, else its first. The magazine order (S2 of
-    /// docs/battle/shells-armour-damage.md) replaces it.</summary>
-    public static int Fires(double calibreMm, List<ShellLoad> loads, int l0, List<ShellTypeRow> types)
-    {
-        foreach (var kind in calibreMm >= HeavyGunMm ? HeavyFirst : LightFirst)
-            for (int i = l0; i < loads.Count; i++)
-                if (types[loads[i].ShellType].Kind == kind)
-                    return loads[i].ShellType;
-        return loads[l0].ShellType;
-    }
-
-    static readonly ShellKind[] HeavyFirst = [ShellKind.Ap, ShellKind.He, ShellKind.Common], LightFirst = [ShellKind.He, ShellKind.Common, ShellKind.Ap];
-
     /// <summary>PLACEHOLDER: working a gun, from its calibre and length, its mount's shape and the era.
     /// <list type="bullet">
     /// <item>reload 7·(d/102 mm)^1.5 s, at most 36 s: the 4"'s ~8 rounds a minute, the 8"'s ~3, the heavy guns' ~2

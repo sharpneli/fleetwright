@@ -36,11 +36,7 @@
    "shells": [
     {
      "ammo": "DE 1911 Psgr L/3,4 (TNT)",
-     "share": 0.4
-    },
-    {
-     "ammo": "DE 1911 Spgr L/3,8 Bdz (TNT)",
-     "share": 0.3
+     "share": 0.7
     },
     {
      "ammo": "DE 1911 Spgr Kz (TNT)",
@@ -60,7 +56,7 @@
    "stands_on": "deckhouse",
    "shells": [
     {
-     "ammo": "DE 1911 Spgr L/3,8 Bdz (TNT)",
+     "ammo": "DE 1911 Psgr L/3,4 (TNT)",
      "share": 0.3
     },
     {
@@ -318,49 +314,6 @@
     "plates": "single",
     "scatter": 0,
     "blind": 0.05,
-    "water_ms": 0.5,
-    "water_fires": 1
-   },
-   "outcomes": "km1916"
-  },
-  "DE 1911 Spgr L/3,8 Bdz (TNT)": {
-   "kind": "common",
-   "mass_k_kg_m3": 14390,
-   "nose_crh": 3,
-   "form_factor": 1.5,
-   "cap": {
-    "kind": "none"
-   },
-   "windscreen": false,
-   "body": {
-    "break_ob_deg": 10,
-    "break_t_d": 0.33,
-    "quality": 0.9
-   },
-   "filler": {
-    "share": 0.061,
-    "explosive": "TNT",
-    "booster": "basic"
-   },
-   "steel": {
-    "size": 1,
-    "speed": 1
-   },
-   "casing": {
-    "nose": 0.25,
-    "ogive": 0,
-    "body": 0.63,
-    "plug": 0.08,
-    "tail": 0.04
-   },
-   "fuze": {
-    "position": "base",
-    "delay_s": 0.025,
-    "start_cal": 0.05,
-    "oblique": 0.45,
-    "plates": "two",
-    "scatter": 0.5,
-    "blind": 0.15,
     "water_ms": 0.5,
     "water_fires": 1
    },

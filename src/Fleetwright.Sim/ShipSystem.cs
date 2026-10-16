@@ -371,7 +371,7 @@ public sealed partial class ShipSystem : IWorldSystem
         var s = Store;
         v.EnsureCapacity(s.Count);
         int n = 0, w = 0, mounts = 0;
-        v.PartTotal = v.FireTotal = 0;
+        v.PartTotal = v.FireTotal = v.LoadTotal = 0;
         for (int i = 0; i < s.Slots; i++)
             if (s.IsAlive(i) && shownSides[s[i].Side])
                 Put(v, i, n++, ref w, ref mounts, orders: true);
@@ -387,7 +387,7 @@ public sealed partial class ShipSystem : IWorldSystem
     {
         v.EnsureCapacity(contacts.Count);
         int n = 0, w = 0, mounts = 0;
-        v.PartTotal = v.FireTotal = 0;
+        v.PartTotal = v.FireTotal = v.LoadTotal = 0;
         for (int j = 0; j < contacts.Count; j++)
         {
             int i = contacts.InSight[j] ? Store.SlotOf(contacts.Entity[j]) : -1;
@@ -455,7 +455,29 @@ public sealed partial class ShipSystem : IWorldSystem
             v.TorpedoesLoaded[n] += st.Loaded;
             v.TorpedoesLeft[n] += st.Loaded + st.Spare;
         }
+        PutLoads(v, i, n, orders);
         PutDamage(v, i, n);
+    }
+
+    /// <summary>A ship's rounds left by load, summed over each battery's mounts (own ships only).</summary>
+    void PutLoads(ShipsView v, int i, int n, bool orders)
+    {
+        v.LoadStart[n] = -1;
+        var cls = Store[i].Handling.Class;
+        if (!orders || cls.ShellLoadCount == 0)
+            return;
+        v.EnsureLoads(v.LoadTotal + cls.ShellLoadCount);
+        int start = v.LoadStart[n] = v.LoadTotal;
+        v.LoadRounds.AsSpan(start, cls.ShellLoadCount).Clear();
+        v.LoadTotal += cls.ShellLoadCount;
+        foreach (ref readonly var b in cls.Batteries)
+            foreach (int m in cls.Links(b.Mounts))
+                for (int k = 0; k < b.Shells.Count; k++)
+                {
+                    ref int sum = ref v.LoadRounds[start + b.Shells.Start + k];
+                    int r = Store.Combat.LoadRounds(i, cls, m, k);
+                    sum = r == int.MaxValue || sum == int.MaxValue ? int.MaxValue : sum + r;
+                }
     }
 
     /// <summary>What shows of a ship's damage (docs/battle/fighting.md 4.4): its attitude, its going down, its damaged parts

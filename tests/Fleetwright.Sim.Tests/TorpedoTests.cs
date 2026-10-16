@@ -227,7 +227,10 @@ public class TorpedoTests(ITestOutputHelper output)
     {
         var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "flotilla.json"));
         var designs = new[] { Path.Combine(Fleet.Shipgen, "designs") };
-        var w = new World(s.Start, s.Seed, Settings);
+        // the test needs an attack made, and whether the boats get in is chance: seed 5 makes it in about 19 minutes (8
+        // seeds tried 2026-10-16, docs/battle/shells-armour-damage.md S2: 7 of them do; the scenario's own 9 doesn't)
+        const ulong seed = 5;
+        var w = new World(s.Start, seed, Settings);
         var ai = new AiSystem(w);
         var classes = ScenarioLoader.RequestClasses(s, w.Ships.Registry, designs);
         ScenarioLoader.Apply(s, w, ai, classes);
@@ -265,7 +268,7 @@ public class TorpedoTests(ITestOutputHelper output)
         output.WriteLine($"first torpedoes at {(warm - 60) / 60.0:F1} min; torpedoes fired {w.Torpedoes.Fired}, hits {w.Torpedoes.Hits}; {allocated} bytes in 34 minutes");
         Assert.Equal(0, allocated);
 
-        var r = new World(s.Start, s.Seed, Settings, w.Ships.Registry);
+        var r = new World(s.Start, seed, Settings, w.Ships.Registry);
         _ = new AiSystem(r);
         foreach (var c in w.CommandLog)
         {

@@ -161,7 +161,7 @@
   "wing": 1,
   "echelon": true,
   "cross_deck": true,
-  "amidships_stands_on": "deck", "shells": [{"ammo": "Palliser shell (1867)", "share": 0.5}, {"ammo": "Common shell, cast iron (1867)", "share": 0.5}]
+  "amidships_stands_on": "deck", "shells": [{"ammo": "Palliser shell (1867)", "share": 0.7}, {"ammo": "Common shell, cast iron (1867)", "share": 0.3}]
  }],
  "secondary": [],
  "funnels": 2,

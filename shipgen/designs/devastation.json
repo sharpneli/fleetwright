@@ -157,7 +157,7 @@
   "rounds_per_gun": 100,
   "armour_mm": 356,
   "fore": 1,
-  "aft": 1, "shells": [{"ammo": "Palliser shell (1867)", "share": 0.5}, {"ammo": "Common shell, cast iron (1867)", "share": 0.5}]
+  "aft": 1, "shells": [{"ammo": "Palliser shell (1867)", "share": 0.7}, {"ammo": "Common shell, cast iron (1867)", "share": 0.3}]
  }],
  "secondary": [],
  "funnels": 1,

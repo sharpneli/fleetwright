@@ -135,6 +135,7 @@ public sealed class GunnerySystem : IWorldSystem
     readonly CrewQuality[] crews = new CrewQuality[256];
     bool crewsSet;
     bool[] firing = new bool[64];
+    int[] fireLoad = new int[64];
 
     internal GunnerySystem(SimSettings settings, ShipSystem ships, ShellSystem shells, CombatLog log, ulong seed)
     {
@@ -557,7 +558,9 @@ public sealed class GunnerySystem : IWorldSystem
         var cond = store.Combat.Condition(slot);
         if (firing.Length < mounts.Length)
             firing = new bool[Math.Max(mounts.Length, firing.Length * 2)];
-        int n = 0;
+        if (fireLoad.Length < mounts.Length)
+            fireLoad = new int[Math.Max(mounts.Length, fireLoad.Length * 2)];
+        int n = 0, lead = -1;
         for (int j = 0; j < mounts.Length; j++)
         {
             ref readonly var mr = ref cls.Mounts[mounts[j]];
@@ -567,11 +570,20 @@ public sealed class GunnerySystem : IWorldSystem
             firing[j] = ms.LoadedMs <= now && ms.Rounds > 0 && cond.MountWorks[mounts[j]] && fc.OrderElevationDeg <= mr.MaxElevationDeg && CombatStore.InArcs(cls, mr, fc.OrderBearingDeg) &&
                         Math.Abs(Wrap(ms.TrainTo - fc.OrderBearingDeg)) <= tol &&
                         Math.Abs(CombatStore.BearingAt(ms, mr, now) - ms.TrainTo) <= tol && Math.Abs(CombatStore.ElevationAt(ms, mr, now) - ms.ElevTo) <= tol;
+            // each mount fires the first load of the magazine order it has rounds of
+            fireLoad[j] = firing[j] ? store.Combat.NextLoad(slot, cls, mounts[j]) : -1;
+            firing[j] &= fireLoad[j] >= 0;
             if (firing[j])
+            {
                 n += cls.TurretTypes[mr.Type].Barrels;
+                if (lead < 0)
+                    lead = cls.ShellLoads(row.Shells)[fireLoad[j]].ShellType;
+            }
         }
         if (n == 0)
             return;
+        // the battery's computer works in its lead shell's table: the first firing mount's (the next salvos lay with it)
+        fc.Table = shells.TableOf(cls, fc.Battery, lead);
 
         var lvl = settings.GunneryLevels[fc.Level];
         var crew = settings.GunneryCrews[(int)crews[ship.Side]];
@@ -631,6 +643,9 @@ public sealed class GunnerySystem : IWorldSystem
             ref readonly var mr = ref cls.Mounts[mounts[j]];
             int barrels = cls.TurretTypes[mr.Type].Barrels;
             var muzzle = Muzzle(cls, frame, mounts[j]);
+            // its own shell, laid with its own table (a mount out of the lead's kind fires its next one in the salvo)
+            int type = cls.ShellLoads(row.Shells)[fireLoad[j]].ShellType, own = type == lead ? tableIndex : shells.TableOf(cls, fc.Battery, type);
+            var ownTable = shells.Ballistics[own];
             int away = 0;
             Vec3d first = default;
             double firstEl = 0;
@@ -638,8 +653,8 @@ public sealed class GunnerySystem : IWorldSystem
             {
                 var point = centre + u * (sr * r.NextGaussian()) + w * (sd * r.NextGaussian());
                 point = point.Normalized() * Earth.Radius;
-                if (FireControl.Solve(table, muzzle, velocity, point, out var lay, e0) &&
-                    shells.Launch(world, tableIndex, muzzle, lay.Forward, lay.ElevationDeg, lay.Speed, salvo, fc.Shooter, fc.Battery, si, row.Fires,
+                if (FireControl.Solve(ownTable, muzzle, velocity, point, out var lay, e0) &&
+                    shells.Launch(world, own, muzzle, lay.Forward, lay.ElevationDeg, lay.Speed, salvo, fc.Shooter, fc.Battery, si, type,
                         ship.ClassIndex))
                 {
                     sv.Shells++;
@@ -649,7 +664,7 @@ public sealed class GunnerySystem : IWorldSystem
             }
             if (away > 0)
                 shells.Fired(world, fc.Shooter, ship.ClassIndex, mounts[j], salvo, away, muzzle, first, firstEl);
-            store.Combat.Fired(slot, mounts[j], mr, barrels, now);
+            store.Combat.Fired(slot, cls, mounts[j], fireLoad[j], barrels, now);
         }
         sv.Left = sv.Shells;
         if (sv.Shells == 0)

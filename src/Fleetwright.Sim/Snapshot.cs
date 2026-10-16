@@ -623,6 +623,19 @@ public sealed class ShipsView
     /// <summary>Each ship's torpedoes (docs/battle/fighting.md 4.6): in its tubes now, and all it has left.</summary>
     public int[] TorpedoesLoaded = [], TorpedoesLeft = [];
 
+    /// <summary>Each own ship's rounds left by load (docs/battle/shells-armour-damage.md S2): from <see cref="LoadStart"/>
+    /// in <see cref="LoadRounds"/>, one per entry of the class's ShellLoads pool (a battery's loads at its Shells slice),
+    /// summed over the battery's mounts; int.MaxValue for a load nobody counts; -1 start for a ship not shown with orders.</summary>
+    public int[] LoadStart = [], LoadRounds = [];
+    public int LoadTotal;
+
+    /// <summary>Room for n loads' rounds in all; grows only past the most yet.</summary>
+    public void EnsureLoads(int n)
+    {
+        if (n > LoadRounds.Length)
+            Array.Resize(ref LoadRounds, Math.Max(n, Math.Max(64, LoadRounds.Length * 2)));
+    }
+
     /// <summary>Damage as it shows (docs/battle/fighting.md 4.4): each ship's attitude in the water; how it's going down
     /// (None while afloat), from when and till when it's gone under, ms; its parts (the class's components) damaged,
     /// out of action, wrecked, jammed or burning, <see cref="PartCount"/> from <see cref="PartStart"/> in
@@ -723,6 +736,7 @@ public sealed class ShipsView
         Array.Resize(ref FireCount, n);
         Array.Resize(ref TorpedoesLoaded, n);
         Array.Resize(ref TorpedoesLeft, n);
+        Array.Resize(ref LoadStart, n);
         int had = MountStart.Length;
         Array.Resize(ref MountStart, n);
         Array.Fill(MountStart, -1, had, n - had);   // at rest, unless filled

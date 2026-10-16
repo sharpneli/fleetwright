@@ -120,9 +120,10 @@ public static class Program
             fire-control level, a gun's reload, training and elevation, the shells and their shares, the plating; most
             are placeholders until the designer gives them. DESIGN is a path or a shipped design's name. --research
             adds the placeholders beside the research's guns
-        shipgen ammo-templates DESIGN.json... [--dry]
+        shipgen ammo-templates DESIGN.json... [--outfits] [--dry]
             S1 of docs/battle/shells-armour-damage.md, one-off: switches each design's shells to the templates of its
-            navy and year (the outfits' kinds and shares kept); --dry lists the switch
+            navy and year (the outfits' kinds and shares kept); --outfits (S2) gives each battery the default outfit
+            instead, main 70% AP / 30% HE, secondary 30 / 70 (common for HE in the families before HE); --dry lists it
         shipgen templates
             writes the shell and explosive catalogues (ShellTemplates, Explosives) out: Content/Templates/shells.json and
             explosives.json, docs/shipgen/shell-templates.md and explosive-templates.md
@@ -204,7 +205,7 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new FloodBench.Options(a.Get("hole"), a.Get("rooms"), D(a, "minutes", 60), D(a, "every", 120), a.Int("step", 0), a.Has("cells"))),
                 "ballistics" => BallisticsBench.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
-                "ammo-templates" => AmmoTemplates.Run(a.Positional, a.Has("dry")),
+                "ammo-templates" => AmmoTemplates.Run(a.Positional, a.Has("dry"), a.Has("outfits")),
                 "templates" => TemplatesWriter.Run(Path.Combine(Root(a), "..")),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "matchup" => MatchupBench.Run(a.Positional.ElementAtOrDefault(0) ?? "arethusa", a.Positional.ElementAtOrDefault(1) ?? "v25",
@@ -245,7 +246,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--outfits")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

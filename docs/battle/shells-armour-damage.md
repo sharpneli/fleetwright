@@ -425,6 +425,39 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
     pairs most), the squadrons and the flotilla scenarios.
   - Report `shipgen ballistics` (range tables), `duel` (fire control's calibration, hit % and time to first hit) and
     `weapons`, before and after.
+  - **Done 2026-10-16.** What it came to:
+    - **Outfits:** `shipgen ammo-templates --outfits` wrote decision 7's outfit into the 123 designs from each design's
+      family. Where a family has no HE (the ones before HE shells: 1867, 1895, RU 1895, JP 1904, US 1906, FR 1893) its
+      common shell takes HE's place, the era's explosive shell; where it has no AP (1950 dual-purpose) its SAP takes AP's.
+      A light gun of a family without a light AP block takes the family's AP (the 12-pounders' soft-capped APC).
+    - **The order** (`MagazineOrder` in Sim.Ships): main AP, common, HE; secondary HE, common, AP. The compiler keeps each
+      battery's loads in it, so `Fires` is the lead, the first load. `DesignerPlaceholders.Fires` and `HeavyGunMm` are
+      gone.
+    - **Rounds by kind:** the class splits each mount's rounds over its battery's loads (largest remainder;
+      `ShipClass.LoadRounds`, `MountLoadStart`), CombatStore keeps each ship's own copy, hashed. `MountState.Rounds` stays
+      the total for the AI and the matchup. A mount fires the first load it has rounds of; each gun is laid with its own
+      shell's table, so a mount out of AP fires HE in the same salvo, and the battery's computer works in its lead's
+      table (the first firing mount's). The tables for every load are built when the class enters the world.
+    - **The dev toggle:** the strip's Fire row picks the magazine order or a kind the battery carries, with its rounds
+      left, and says "no AP left"; `ShellSystem.FireAt` takes the kind (the command's X, kind + 1: 0 is the order, as
+      every old log), and `-fire=ship[:battery][:kind]:lat,lon`. The dev salvo now spends its rounds (no reload).
+    - **Shell ids:** a template's muzzle velocity follows the outfit's heaviest shell, so the same id on the same gun can
+      leave faster in another class (Colorado's 5" beside a heavier AP than Pennsylvania's); the shared-id test compares
+      all but the velocity. Ballistic tables are keyed by value, not id.
+    - **Tests:** the flotilla replay-and-allocation test pinned to seed 5 (it needs an attack made: over seeds 1-8 the
+      boats got in 7 times in S2, 6 in S1; the scenario's own 9 now doesn't); its replay with the same seed; zero
+      allocations held with the per-mount tables.
+    - **Benches, S1 to S2:**
+      - **Light cruisers on destroyers (the expected move):** a 6" main battery now fires AP first and it passes through.
+        `hits` v25 by Arethusa at 6 km: crew 2.8 to 0.1 a hit, fire 43% to 1%; tb_destroyer by v25's 88 mm: crew 0.8
+        to 0.1, out of the fight after 5 hits 17% to 6%. `matchup` arethusa:4 against v25:6 3.46 to 1.68, town_chatham
+        against v25:3 1.13 to 0.51; arethusa:4 against iron_duke 1.92 to 2.01, lion against seydlitz unchanged. The
+        shell by target is the AI's pass (decision 3); until then light cruisers fight destroyers poorly.
+      - `duel` unchanged (4.8%, 5.1%). `weapons` shows the new outfits in the order.
+      - Squadrons (40 min): Britain lost 2 (Princess Royal, then Queen Mary rather than Lion), Germany none (Von der
+        Tann survives). Flotilla: S51 2 hits. Tsushima --play (4 seeds): Russia lost 6/8/4/4, now 4/8/6/8; Japan
+        3/2/4/3, now 5/4/4/3.
+    - Goldens: the designs' shells only (70 cases); ShipDesign.Version 9.
 - **S3 Ammunition weight.** The magazines weighed from the default outfit's mean shell mass (the charge stays in
   `AmmoMult`). Report the displacement shifts,
   run `golden-update` with a `ShipDesign.Version` bump and `mono-check`.
