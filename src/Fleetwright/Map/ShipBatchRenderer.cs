@@ -330,32 +330,12 @@ public sealed class ShipDrawList
     /// by how it's lost.</summary>
     static (Vector4 Sea, double Fade) SeaOf(ShipClass c, ShipArt art, ShipsView v, int k, long now)
     {
-        var a = v.Attitude[k];
+        // going down, the sim's own attitude for the moment (the one the hit queries see)
+        var a = Attitude.At(c, v.Attitude[k], v.Loss[k], v.LossMs[k], v.GoneMs[k], now);
         var w = HitQuery.WaterOf(c, a);
         double z = w.Z - c.Vertical.Waterline, dx = w.DzDx, dy = w.DzDy, fade = 1;
-        var loss = v.Loss[k];
-        if (loss != LossKind.None)
-        {
-            double span = Math.Max(v.GoneMs[k] - v.LossMs[k], 1), p = Math.Clamp((now - v.LossMs[k]) / span, 0, 1);
-            double top = art.Meta.Shadow.MaxHeightM + 3, ease = Math.Pow(p, 1.5);
-            switch (loss)
-            {
-                case LossKind.Foundered:   // by the end it's down by (the stern, when it's level)
-                    double along = a.TrimDeg > 0 ? 1 : -1, slope = 0.3;
-                    dx += along * slope * p;
-                    z += ease * (top + slope * c.Length / 2);
-                    break;
-                case LossKind.Capsized:   // over on the side it lists to
-                    double side = a.HeelDeg >= 0 ? 1 : -1;
-                    dy += side * 0.9 * p;
-                    z += ease * (top + 0.9 * c.Beam / 2);
-                    break;
-                default:   // a magazine: straight down, quickly
-                    z += Math.Pow(p, 0.7) * top;
-                    break;
-            }
-            fade = 1 - SmoothStep(0.85, 1, p);
-        }
+        if (v.Loss[k] != LossKind.None)
+            fade = 1 - SmoothStep(0.85, 1, Math.Clamp((now - v.LossMs[k]) / (double)Math.Max(v.GoneMs[k] - v.LossMs[k], 1), 0, 1));
         bool on = z != 0 || dx != 0 || dy != 0;
         double tallest = Math.Max(art.Meta.Shadow.MaxHeightM + art.Meta.Shadow.HeightStepM, 1);
         return (on ? new Vector4((float)z, (float)dx, (float)dy, (float)tallest) : Vector4.Zero, fade);

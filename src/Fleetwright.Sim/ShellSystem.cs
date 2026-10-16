@@ -337,7 +337,7 @@ public sealed class ShellSystem : IWorldSystem
                     var cls = ships.Class(store[ship].ClassIndex);
                     long midMs = s.FiredMs + (long)Math.Round((chordTime[j] + chordTime[j + 1]) / 2 * 1000);
                     var frame = ships.FrameAt(ship, midMs);
-                    var attitude = store.Combat.Condition(ship).Attitude;
+                    var attitude = store.Combat.Condition(ship).AttitudeAt(midMs);   // a ship going down sinks under it
                     int mounts = cls.Mounts.Length;
                     if (bearings.Length < mounts)
                         bearings = new double[Math.Max(mounts, bearings.Length * 2)];

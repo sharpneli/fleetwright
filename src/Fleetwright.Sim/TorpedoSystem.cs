@@ -438,7 +438,7 @@ public sealed class TorpedoSystem : IWorldSystem
         {
             int slot = candidates[c];
             var cls = ships.Class(store[slot].ClassIndex);
-            var attitude = store.Combat.Condition(slot).Attitude;
+            var attitude = store.Combat.Condition(slot).AttitudeAt(midMs);
             var l0 = HitQuery.ToShip(cls, ships.FrameAt(slot, ta), attitude, w0);
             var l1 = HitQuery.ToShip(cls, ships.FrameAt(slot, t1), attitude, w1);
             if (!HitQuery.Near(cls, l0, l1))

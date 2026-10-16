@@ -10,6 +10,34 @@ namespace Fleetwright.Sim.Combat;
 public readonly record struct Attitude(double SinkageM, double TrimDeg, double HeelDeg)
 {
     public static readonly Attitude Upright = default;
+
+    /// <summary>A lost ship's attitude at a moment (ms) as it goes under, from the attitude it settled to when lost
+    /// (<paramref name="lossMs"/>) to its top under the sea when it's gone (<paramref name="goneMs"/>): foundered, down
+    /// by the end it was trimmed to (the stern, when level); capsized, over on the side it listed to; a magazine,
+    /// straight down, quickly. Afloat (<see cref="LossKind.None"/>), the settled attitude as it is. The one model the
+    /// hit queries and the screens both read.</summary>
+    public static Attitude At(ShipClass c, in Attitude settled, LossKind loss, long lossMs, long goneMs, long ms)
+    {
+        if (loss == LossKind.None)
+            return settled;
+        double p = Math.Clamp((ms - lossMs) / (double)Math.Max(goneMs - lossMs, 1), 0, 1);
+        double top = c.Solids.Bounds.Top - c.Vertical.Waterline + 3, ease = Math.Pow(p, 1.5);
+        switch (loss)
+        {
+            case LossKind.Foundered:
+                const double Trim = 0.3;   // the slope it ends at
+                double along = settled.TrimDeg > 0 ? 1 : -1;
+                return new Attitude(settled.SinkageM + ease * (top + Trim * c.Length / 2),
+                    settled.TrimDeg + along * double.RadiansToDegrees(Math.Atan(Trim * p)), settled.HeelDeg);
+            case LossKind.Capsized:
+                const double Heel = 0.9;
+                double side = settled.HeelDeg >= 0 ? 1 : -1;
+                return new Attitude(settled.SinkageM + ease * (top + Heel * c.Beam / 2), settled.TrimDeg,
+                    settled.HeelDeg + side * double.RadiansToDegrees(Math.Atan(Heel * p)));
+            default:
+                return settled with { SinkageM = settled.SinkageM + Math.Pow(p, 0.7) * top };
+        }
+    }
 }
 
 /// <summary>Where a shell that didn't meet a ship met the sea, ship-local (Water, on the waterplane), and how far it

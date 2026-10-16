@@ -180,6 +180,30 @@ public class ShellSystemTests(ITestOutputHelper output)
         }
     }
 
+    /// <summary>A ship going down sinks in the hit query as on the screen (<see cref="Attitude.At"/>): a salvo with no
+    /// spread at a foundering ship hits it as it begins to go, and passes into the sea over it once it's under, before
+    /// it's dropped.</summary>
+    [Fact]
+    public void A_ship_gone_under_is_not_hit()
+    {
+        var s = Settings with { DevFirePatternPct = 0 };
+        int guns = 0;
+        int HitsOn(long beforeGoneMs)
+        {
+            var (w, shooter, target) = Make(s);
+            guns = w.Ships.Class(Ship(w, shooter).ClassIndex).Batteries[0].Guns;
+            var at = Ship(w, target).Position;
+            w.Apply(DamageSystem.Sink(target, LossKind.Foundered));
+            w.AdvanceTo(w.Time + s.FounderMs - beforeGoneMs);
+            var splashes = Fire(w, shooter, at, 1);
+            return splashes.Count(x => x.Ship == target);
+        }
+        int early = HitsOn(s.FounderMs), late = HitsOn(30_000);
+        output.WriteLine($"hits of {guns}: as it begins to go down {early}, 30 s before it's gone {late}");
+        Assert.Equal(guns, early);
+        Assert.Equal(0, late);
+    }
+
     /// <summary>A shell whose top is about the window's (a 6" casemate gun 2.7 m over the sea at about 3°, found at
     /// Tsushima by docs/battle/command.md 5.0's bench): its climb there is near nothing, so finding when it comes down
     /// through the window's top stepped back to before it was fired, and its window's event was scheduled in the past

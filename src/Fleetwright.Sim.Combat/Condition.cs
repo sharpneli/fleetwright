@@ -96,6 +96,10 @@ public sealed class ShipCondition
     public LossKind Loss;
     public long LossMs, GoneMs;
     public Attitude Attitude;
+
+    /// <summary>Its attitude at a moment (ms): the one it settled to, or going down, how far under it is then
+    /// (<see cref="Attitude.At"/>).</summary>
+    public Attitude AttitudeAt(long ms) => Attitude.At(Class, Attitude, Loss, LossMs, GoneMs, ms);
     /// <summary>The water aboard, tonnes, and the transverse GM with it in, m (the class's while dry).</summary>
     public double WaterT, GmM;
     /// <summary>The share of its power the plant can still make (boilers and shafts), 0-1.</summary>
