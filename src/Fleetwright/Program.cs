@@ -69,6 +69,10 @@ public static unsafe class Program
             {
                 show = arg.Substring("-show=".Length);
             }
+            else if (arg.StartsWith("-clip="))   // the hitbox viewer's clip box at start: AFT,FORE[,port][,cut] in m
+            {
+                HitView.HitboxScene.DevClip = arg.Substring("-clip=".Length);
+            }
             else if (arg == "-hitray")   // the hitbox viewer starts with a click firing a ray (step 4.1's tracer)
             {
                 hitRay = true;

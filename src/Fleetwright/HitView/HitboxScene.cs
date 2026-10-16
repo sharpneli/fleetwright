@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Diagnostics;
 using System.Numerics;
 using Fleetwright.Gpu;
@@ -19,6 +20,10 @@ namespace Fleetwright.HitView;
 /// </summary>
 public sealed unsafe class HitboxScene : IScene
 {
+    /// <summary>A dev hook (-clip=AFT,FORE[,port][,cut]): the clip box at start, from AFT to FORE along the ship (the prisms
+    /// it touches whole, or cut with "cut"), only the port half with "port" (a section seen from ahead).</summary>
+    public static string? DevClip { get; set; }
+
     readonly DesignSession session;
     readonly HitboxRenderer renderer;
     HitboxCamera cam;
@@ -43,7 +48,7 @@ public sealed unsafe class HitboxScene : IScene
         "boiler_room", "engine_room", "bunker", "magazine", "handling", "accommodation", "steering", "hold", "cargo_tank", "fuel_tank",
         "stores", "double_bottom", "tds", "torpedo_room",
     ];
-    static readonly string[] Armour = ["belt", "strake", "armour_deck", "armoured_bulkhead"];
+    static readonly string[] Armour = ["belt", "strake", "armour_deck", "armoured_bulkhead", "inner_bulkhead"];
     static readonly string[] Guides = ["waterline", "hull_lines"];
 
     /// <summary>The presets: hitview's two modes, and narrower ones.</summary>
@@ -98,6 +103,13 @@ public sealed unsafe class HitboxScene : IScene
         renderer.Upload(mesh);
         tiers = ship.Hitboxes.Tiers;
         (state.ClipMin, state.ClipMax) = (mesh.Min - Vector3.One, mesh.Max + Vector3.One);
+        if (DevClip?.Split(',') is { Length: >= 2 } dc && float.TryParse(dc[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float c0)
+            && float.TryParse(dc[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float c1))
+        {
+            (state.Clip, state.ClipCut, state.ClipMin.X, state.ClipMax.X) = (true, dc.Contains("cut"), Math.Min(c0, c1), Math.Max(c0, c1));
+            if (dc.Contains("port"))
+                state.ClipMax.Y = 0;
+        }
         status = $"{ship.Design.Name}\n{mesh.Prisms.Length} prisms, {mesh.Vertices.Length} vertices, {mesh.Indices.Length / 3} triangles\n" +
                  $"{session.Status}, upload {sw.Elapsed.TotalSeconds * 1000:F0} ms";
         frame = true;
@@ -110,7 +122,10 @@ public sealed unsafe class HitboxScene : IScene
             Rebuild();
         if (frame && renderer.Mesh is { Prisms.Length: > 0 } m)   // the ship fills the view; the direction stays
         {
-            cam.Fit(m.Vertices, aspect);
+            if (state.Clip)
+                cam.Fit(m.Vertices, aspect, clipMin: state.ClipMin, clipMax: state.ClipMax);   // what the clip box keeps
+            else
+                cam.Fit(m.Vertices, aspect);
             frame = false;
         }
         renderer.Render(cmd, target, cam, state);

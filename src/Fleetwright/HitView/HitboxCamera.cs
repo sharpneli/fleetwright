@@ -25,15 +25,18 @@ public struct HitboxCamera
     public const float FovY = 40f;
 
     /// <summary>Aims at the points and zooms so they fill the view from the current direction, with a margin. Only
-    /// the kinds in <paramref name="kindMask"/> count (what the view shows: masts it hides don't shrink the hull).</summary>
-    public void Fit(ReadOnlySpan<HitVertex> points, float aspect, ulong kindMask = ulong.MaxValue)
+    /// the kinds in <paramref name="kindMask"/> count (what the view shows: masts it hides don't shrink the hull), and
+    /// with a clip box only the points inside it.</summary>
+    public void Fit(ReadOnlySpan<HitVertex> points, float aspect, ulong kindMask = ulong.MaxValue, Vector3? clipMin = null, Vector3? clipMax = null)
     {
+        var lo = clipMin ?? new Vector3(float.MinValue);
+        var hi = clipMax ?? new Vector3(float.MaxValue);
         var (r, s, f) = Basis();
         float u0 = float.MaxValue, u1 = float.MinValue, v0 = float.MaxValue, v1 = float.MinValue, d = 0;
         int n = 0;
         foreach (ref readonly var p in points)
         {
-            if ((kindMask & (1UL << (int)p.Kind)) == 0)
+            if ((kindMask & (1UL << (int)p.Kind)) == 0 || p.Position != Vector3.Clamp(p.Position, lo, hi))
                 continue;
             float u = Vector3.Dot(p.Position, r), v = Vector3.Dot(p.Position, s);
             (u0, u1, v0, v1) = (Math.Min(u0, u), Math.Max(u1, u), Math.Min(v0, v), Math.Max(v1, v));

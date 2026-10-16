@@ -34,7 +34,7 @@ public static class HitKinds
         K("hold", 200, 170, 110, 200), K("cargo_tank", 150, 120, 70, 200), K("fuel_tank", 90, 80, 60, 220),
         K("hangar_bay", 200, 200, 210, 120), K("stores", 150, 150, 120, 55, filler: true),
         K("double_bottom", 80, 95, 110, 40, filler: true), K("tds", 90, 140, 160, 45, filler: true),
-        K("armoured_bulkhead", 60, 70, 90, 255),
+        K("armoured_bulkhead", 60, 70, 90, 255), K("inner_bulkhead", 176, 138, 84, 255),
         K("shaft", 225, 225, 120, 255), K("shaft_alley", 200, 190, 120, 150), K("propeller", 215, 160, 60, 255),
         K("rudder", 240, 110, 190, 255),
         K("torpedo_room", 60, 130, 210, 235), K("torpedo_tube", 120, 200, 245, 255),

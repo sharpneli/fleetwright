@@ -682,13 +682,21 @@ public sealed class HitboxMesh
                         return [.. outer, .. inner];
                     });
             }
-            // a plate across the hull at x, inside its side at every height
-            void Across(string id, object src, double x, double lo, double hi) =>
+            // a plate across the hull at x, inside its side at every height (or narrower: halfWidth about the centreline)
+            void Across(string id, object src, double x, double lo, double hi, double halfWidth = double.MaxValue) =>
                 AddLoft("armoured_bulkhead", id, src, ZsOver(x - 0.15, x + 0.15, lo, hi), z =>
                 {
-                    double w = Math.Max(HalfWidth(x, z) - 0.2, 0.0);
+                    double w = Math.Max(Math.Min(HalfWidth(x, z) - 0.2, halfWidth), 0.0);
                     return [new(x - 0.15, -w, z), new(x + 0.15, -w, z), new(x + 0.15, w, z), new(x - 0.15, w, z)];
                 });
+            foreach (var p in arm.Bulkheads ?? [])   // a box's ends (the magazines', the steering gear's): as wide as the box
+                if (p.W is double bw && bw > 0 && Math.Abs(p.X) < hb.Length / 2 - 0.01)
+                    Across(p.Id, p, p.X, p.Bottom, p.Top, bw / 2);
+            // the armour on longitudinal walls (protection-plan.md H4-H5): the inner bulkhead behind the belt, a magazine
+            // box's sides on its wing walls; a slab 0.2 m thick at the wall, over its stretch and the armour's height
+            foreach (var w in hb.Bulkheads)
+                if (w is { Y: { } y, X0: { } x0, X1: { } x1, ArmourMm: > 0 })
+                    Add("inner_bulkhead", $"{w.Id} armour", w, Box(x0, x1, y - 0.1, y + 0.1), w.ArmourBottom ?? w.Base, w.ArmourTop ?? w.Top);
             foreach (var bh in hb.Bulkheads)   // the citadel's armoured ends, across the hull
                 if (bh is { Kind: "armoured", X: { } x, ArmourBottom: { } lo, ArmourTop: { } hi })
                     Across(bh.Id, bh, x, lo, hi);
@@ -701,6 +709,16 @@ public sealed class HitboxMesh
                 }
             foreach (var d in arm.Decks ?? [])
             {
+                if (d.W is double dw && dw > 0)
+                {
+                    // a box's crown or floor, or the steering gear's roof: as wide as the box, inside the side
+                    var box = Enumerable.Range(0, 13).Select(k => d.X0 + (d.X1 - d.X0) * k / 12)
+                        .Select(x => (X: x, W: Math.Min(dw / 2, HalfWidth(x, d.Z) - 0.2))).Where(p => p.W > 0.01).ToList();
+                    if (box.Count >= 2)
+                        Add("armour_deck", $"{d.Deck} armour ({d.Extent})", d,
+                            box.Select(p => new Pt(p.X, p.W)).Concat(Enumerable.Reverse(box).Select(p => new Pt(p.X, -p.W))).ToList(), d.Z - 0.15, d.Z);
+                    continue;
+                }
                 // inset from the side; stations where the hull is too narrow there are left out (hitview let the two
                 // sides cross into a bow tie)
                 var row = Enumerable.Range(0, 13).Select(k => d.X0 + (d.X1 - d.X0) * k / 12)
