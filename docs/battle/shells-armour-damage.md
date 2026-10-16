@@ -213,6 +213,13 @@ material row per name (the class's material table exists, with names only). `set
     - Valid to 75° of obliquity; past it the cosine carries on, and the ricochet gate (P5) takes over from 80°.
     - Either way it's noise: a hit costs about 200 µs in all (fighting.md 4.3a).
     - The plate bench still checks it against the trials before the old fit goes.
+    - **Decks hit at 50–90° of obliquity** (fall under 40°, nearly every battleship deck hit at fighting range, and
+      cruiser decks under 8″ fire at 15–25 km) are where Thompson and Okun's M79 disagree: M79 has an STS deck holding
+      15–20% more there, and 10–16% less on truly plunging hits at 30–50° (`armor_pen_ref.py` §N). Which is right is
+      open: Thompson has no scale term, but the Hood 1919 deck trials lean the other way, and the Iowa immune zone is
+      Thompson's own, so it can't decide. So: a settings multiplier on a deck's V_L by obliquity, 1 (pure Thompson) by
+      default; the bench prints both models' decks; the battle anchors (Scharnhorst's boiler room, Jean Bart's decks,
+      cruiser decks) move it if they ask. It shifts the immune zone's far edge by 1–3 km.
 - **P2 Caps, decapping, shatter and break-up as states.**
   - The cap is lost on face-hardened plate or past its threshold, with a gap test before the next face-hardened plate.
   - Shatter of uncapped or decapped shells on face-hardened plate: +30–40% at normal, fading to nothing by 55°.
