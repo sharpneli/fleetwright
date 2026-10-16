@@ -1059,7 +1059,8 @@ numbers before and after against the anchors. The list, by link, with where the 
 
   Planned in `shells-armour-damage.md` (agreed 2026-10-16): shells as design data, materials as physical blocks with
   templates, then the shell's state plate by plate, then its effects. Its phase E also takes casualties per hit and
-  what a plate that held does (jams, belt leaks, shock), from the research in `docs/battle/damage/`.
+  what a plate that held does (jams, belt leaks, shock), from the research in `docs/battle/damage/`. Phase S is done
+  (2026-10-16). Its "What stays out" lists what it hands the systems, flooding, the magazines, fire and the crew below.
 - **Systems** (`06-service-networks.md` Model B): power, hydraulics, steam and data as routes through the cells with
   fault states (tripped, severed, flooded), casualty power, damage-control parties and repair; Model C for the coarse
   tier. Needs the designer to emit the networks.

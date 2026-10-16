@@ -22,7 +22,7 @@ gave:
 3. **E, what it does:** the new states into the effects (fragments without a burst, flash through a holed turret, spall,
    splinters).
 
-Flooding, fire, magazines' venting race and the service networks stay their own 4.5 sessions. This plan feeds them
+Flooding, fire, the magazines and the service networks stay their own 4.5 sessions. This plan feeds them
 better burst points and states; it doesn't rebuild them. Casualties per hit and what a plate that held does (jams, belt
 leaks, shock) come into phase E (decision 8): they're `Effects`, and they read the same fragments and blast.
 
@@ -789,15 +789,25 @@ squadrons, and changes `Matchup.cs` with it.
 - **E8 The battle anchors.** With S and P in, the whole chain against the battles: Jutland, Bismarck's ~3 belt holes in
   ~400 hits, South Dakota, Samar, the 1894–1905 battles, the destroyer benches; and the notes' own: 16's killed and
   wounded per hit by group, 13's turret-minutes lost per 100 heavy hits (about half to non-penetrations), 15's
-  near misses per heavy-HE hit on a destroyer. The leftover rolls are tuned only within their sourced bands, and the
+  near misses per heavy-HE hit on a destroyer; and the user's: medium HE cooking off a battleship's magazine stays
+  rare, not never (about 1.5% of ships under thirty 6″ HE hits; fighting.md 4.5, Magazines), which E2, E3 and E5 all
+  move. The leftover rolls are tuned only within their sourced bands, and the
   deck multiplier (P1a) only if an anchor asks. The anchors are the damage *done* (holes, parts, crew, outcomes per
   hit), not who survived it: losses and sinkings above history are expected until damage control (the rules above).
 
 ## What stays out
 
 - Bombs: the deck physics serves them, but bomb shapes and fuzes aren't researched yet.
-- The magazines' venting race, flooding, fire spread and the service networks: their own 4.5 sessions, fed by the
-  ammunition's `charge` (S0) and better burst points (P3). Their research is in, and this plan hands each a seam:
+- The magazines, flooding, fire spread and the service networks: their own 4.5 sessions (`fighting.md` 4.5 lists
+  them), fed by better burst points (P3) and the states phase E adds. Their research is in, and this plan hands each a
+  seam:
+  - **Magazines** (`07-magazine-explosions.md`; fighting.md 4.5: the venting race, the flash chain by doors, propellant
+    by navy, flooding a magazine as an order, the hull broken at the magazine, flash discipline as a choice): E2's
+    flash source at a holed gunhouse, working chamber or barbette and E3's flash roll where charges lie open are the
+    chain's first link; E5's trunks (hoists, uptakes, vent trunks) are the low-pressure edges it runs along; E6 kills
+    by propellant flash. Flash discipline decides where charges lie open, so it moves E3's roll without a change here.
+    The venting race needs the ammunition's `charge`, its own later step (Ammunition: "Not added in this plan"); until
+    then it's `DesignerPlaceholders.Charge` and a side's propellant factor.
   - **Fire** (`17_fire.md`: growth to flashover, burning by the openings, fire load as design numbers, the fire main
     deciding quick or never, hose water left aboard): phase E gives it the seat, the explosive's `fire`, and the
     boundaries the blast opened and the holes that ventilate.

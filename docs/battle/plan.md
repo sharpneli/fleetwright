@@ -1798,7 +1798,9 @@ more detailed way.
 **4.4 Damage on the sprites** ("Damage on the sprites" below), and a damage report through the watch list.
 
 **4.5 Penetration and the systems** (moved out of the sequence 2026-10-14: a later fine-tune tier, `fighting.md`
-decision 13). Penetration, and the systems' dependency graph
+decision 13). Penetration and what a hit does (the burst's pieces, spall, blast, near misses, casualties, what a plate
+that held shakes) are planned in detail in `shells-armour-damage.md` (phase S done 2026-10-16), which also names what
+it hands the sessions below. The systems' dependency graph
 (`research/simulation/damage-model-research.md` §8-9). Then, area by area, each its own small step checked against
 the previous one: leaks through bulkheads and decks, free surface, `sinking.py`'s non-linear settling, pumping and
 counter-flooding, a plunge or capsize that plays out.
