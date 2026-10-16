@@ -66,6 +66,9 @@ static class HitsBench
             r.StrikeMs, r.Hits, r.Ships, secs, secs * 1e6 / Math.Max(r.Hits, 1)));
         Console.WriteLine("  where they struck: " + string.Join(", ", r.Struck.OrderByDescending(kv => kv.Value)
             .Select(kv => string.Format(Inv, "{0} {1:0}%", kv.Key, 100.0 * kv.Value / r.Hits))));
+        if (r.Underwater > 0)
+            Console.WriteLine(string.Format(Inv, "  under water: {0:0.#}% of hits, after {1:0.0} m in the water at {2:0} m/s on average (reach {3:0.0} m)",
+                100.0 * r.Underwater / r.Hits, r.UnderwaterRunM / r.Underwater, r.UnderwaterStrikeMs / r.Underwater, WaterRun.ReachM(shell, r.StrikeMs, settings)));
         Console.WriteLine("  outcomes: " + string.Join(", ", Enum.GetValues<Outcome>().Where(x => r.Outcomes[(int)x] > 0)
             .Select(x => string.Format(Inv, "{0} {1:0.#}%", x, 100 * r.Share(x)))));
         Console.WriteLine(string.Format(Inv, "  a hit: fire {0:0}%, crew {1:0.0}, holes {2:0.000} m², jammed {3:0.#}%, magazine {4:0.##}%", 100.0 * r.Fires / r.Hits,

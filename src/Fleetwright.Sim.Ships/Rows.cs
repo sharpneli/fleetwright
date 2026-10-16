@@ -263,6 +263,9 @@ public readonly record struct ShellTypeRow
     public Fuze Fuze { get; init; }
     public double FuzeDelayS { get; init; }
     public ShellQuality Quality { get; init; }
+    /// <summary>A diving shell (the IJN's Type 88/91): its cap head comes off on the water, leaving a flat nose that runs
+    /// true under it instead of tumbling, so it keeps its speed there longer (WaterRun).</summary>
+    public bool Diving { get; init; }
 }
 
 /// <summary>A shell type a battery carries, and its share of the rounds.</summary>

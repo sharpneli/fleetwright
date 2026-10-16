@@ -113,6 +113,74 @@ public class DamageTests(ITestOutputHelper output)
         Assert.InRange((double)r.Jams / r.Hits, 0.005, 0.2);
     }
 
+    // ------------------------------------------------------------------ under water (shells-armour-damage.md P6)
+
+    [Fact]
+    public void A_shell_under_water_bleeds_speed_by_its_run_and_a_diving_one_keeps_it_longer()
+    {
+        var (shell, _) = Shell(Class("super_dreadnought"), 0);
+        double l = WaterRun.DecayM(shell, Settings), ld = WaterRun.DecayM(shell with { Diving = true }, Settings);
+        Assert.Equal(shell.CalibreMm / 1000 * Settings.UnderwaterDecayCalibres, l, 9);
+        Assert.Equal(2 * l, ld, 9);
+        Assert.Equal(500, WaterRun.Speed(500, 0, l));
+        Assert.Equal(500 / Math.E, WaterRun.Speed(500, l, l), 9);
+        Assert.True(WaterRun.Speed(500, 10, ld) > WaterRun.Speed(500, 10, l));
+        // the run in a time and the time for a run are one law
+        double t = WaterRun.TimeS(500, 12, l);
+        Assert.Equal(12, WaterRun.RunInM(500, t, l), 9);
+        Assert.True(t > 12.0 / 500);
+        // the reach: decay lengths for a base fuze, none for a nose fuze
+        Assert.Equal(Settings.UnderwaterReachDecays * l, WaterRun.ReachM(shell, 500, Settings), 9);
+        Assert.Equal(0, WaterRun.ReachM(shell with { Fuze = Fuze.Nose }, 500, Settings));
+        // a fuze started on the water cuts the reach to where it fires
+        var on = Settings with { FuzeStartsOnWater = true };
+        Assert.Equal(WaterRun.RunInM(500, shell.FuzeDelayS, l), WaterRun.ReachM(shell, 500, on), 9);
+        Assert.True(double.IsPositiveInfinity(WaterRun.FuzeRunM(shell, 500, Settings)));
+    }
+
+    /// <summary>A hit on the dreadnought's side 2 m under its waterline, having run runM under the water first.</summary>
+    static TerminalResult UnderwaterHit(World w, ShellTypeRow shell, double runM)
+    {
+        var cls = Class("dreadnought");
+        w.Damage.Strike(w, new Hit
+        {
+            Ship = 1, Ms = w.Time.Ms, Point = new P3(0, cls.Beam / 2 + 1, cls.Vertical.Waterline - 2), Direction = new P3(0, -0.94, -0.34),
+            SpeedMs = 500, WaterRunM = runM, Shell = shell, ShellType = 0,
+        });
+        return w.Damage.LastTerminal;
+    }
+
+    [Fact]
+    public void An_underwater_hit_strikes_at_what_its_run_left_it()
+    {
+        var w = World("dreadnought", out int c);
+        var (shell, _) = Shell(Class("super_dreadnought"), 0);
+        w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
+        double l = WaterRun.DecayM(shell, Settings), last = double.PositiveInfinity;
+        foreach (double run in new[] { 0.0, 2, 5, 10, 20 })
+        {
+            var t = UnderwaterHit(w, shell, run);
+            output.WriteLine($"run {run} m: {t.StrikeMs:0} m/s, {t.Outcome}");
+            Assert.Equal(run > 0, t.Underwater);
+            Assert.Equal(500 * Math.Exp(-run / l), t.StrikeMs, 6);
+            Assert.True(t.StrikeMs < last || run == 0);
+            last = t.StrikeMs;
+        }
+    }
+
+    [Fact]
+    public void A_fuze_started_on_the_water_arms_the_shell_at_the_hull()
+    {
+        var w = World("dreadnought", out int c, Settings with { FuzeStartsOnWater = true });
+        var (shell, _) = Shell(Class("super_dreadnought"), 0);
+        w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
+        for (int i = 0; i < 40; i++)
+        {
+            var t = UnderwaterHit(w, shell, 3);
+            Assert.True(t.Outcome is not (Outcome.PassedThrough or Outcome.Defeated or Outcome.Ricochet), $"{t.Outcome}: armed at the hull");
+        }
+    }
+
     // ------------------------------------------------------------------ the hooks
 
     static World World(string design, out int cls, SimSettings? s = null)

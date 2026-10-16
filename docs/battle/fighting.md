@@ -389,7 +389,7 @@ between cells), its thickness, material and normal.
     deepening if fire control ever cares.
 - **Shells** (`Sim/ShellSystem.cs`, system 3):
   - **Records** are pooled, with two events each: the window (where `ShellWindowTopM` is crossed) and the end.
-  - **At the window,** the track to the water and `ShellUnderwaterM` on under it, in four chords, goes through
+  - **At the window,** the track to the water and on under it as far as `WaterRun.ReachM`, in four chords, goes through
     `HitQuery` against the ships the index finds. A ship on the fine tick is carried on along its course for the
     window's fraction of a second; one on rails or coarse is where its own function puts it.
   - **At the end,** a splash or a hit goes into a ring the snapshot carries for `SplashLifeMs`.
@@ -776,9 +776,10 @@ it meets, whether and where the fuze fires, what is within reach of the burst):
 - **The bench:** `shipgen hits TARGET --shooter DESIGN [--battery B] [--kind ap|common|he] --range M [--aspect DEG]
   [--n N] [--per-ship K] [--show N]`, a port of `mc()` on `GivenHits` (`Fleetwright.Sim`, shared with the tests). Hits
   are spread over the target as the falling shells see it: uniformly across their line of flight, so side and deck
-  share by the danger space, and a shell that meets the sea first counts only if it dives and gets to the hull within
-  `ShellUnderwaterM`. Each hit goes through the world's own damage system. It prints where they struck, the outcome
-  classes, fire, crew and holes a hit, the parts most often put out of action, and each ship's state after K hits.
+  share by the danger space, and a shell that meets the sea first counts only if it gets to the hull within
+  `WaterRun.ReachM`. Each hit goes through the world's own damage system. It prints where they struck, the share
+  under water (their run and striking speed), the outcome classes, fire, crew and holes a hit, the parts most often
+  put out of action, and each ship's state after K hits.
   `shipgen scenario` prints the losses and each damaged ship's condition.
 - **On the map** (minimal; the report is 4.4's): the selected ship's condition under its batteries (hits, power and
   the speed it makes, mounts and directors working, steering, crew lost, fires, holes) and its three newest hits,

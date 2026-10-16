@@ -236,6 +236,14 @@ material row per name (the class's material table exists, with names only). `set
     against Baden and the Hood deck series.
 - **P6 Under water.** The shell's speed by the distance it travels in the water (`e^(−x/L)`), the fuze clock starting
   at the water, and the Type 91 as the exception that keeps going. This replaces `UnderwaterSpeedShare`'s flat 0.4.
+  - **Done ahead of the pass (2026-10-16):** the speed by the run (`Sim.Combat/WaterRun.cs`: L 25 calibres pointed,
+    50 diving; `ShellTypeRow.Diving`, set by `DesignerPlaceholders.Shell` for Type 91 AP until the shell block's
+    `cap: break_away` gives it), the run carried on the hit (`Hit.WaterRunM`, measured to the ship's waterplane at its
+    flotation), and no half-calibre cap. The flat sea and the straight line stay.
+  - **Scaffolded, off:** `FuzeStartsOnWater`. On, a base fuze's delay runs from the water: the reach is cut to where
+    it fires (`WaterRun.FuzeRunM`, L·ln(1 + v·t/L)) and the shell arms at the hull with what's left (`Terminal`). The
+    pass turns it on with P3's fuzes and raises `UnderwaterReachDecays` from its stand-in 1 to about 3, so the fuze,
+    not the reach, ends an ordinary shell's run. Check the hits bench's underwater share against 08 §3.8 then.
 - **P7 Gratings, backing and scatter.**
   - `armour.gratings` and `armour.backing` in the tracer.
   - Plate quality drawn per ship (about N(1, 0.06)) and per shot (N(0, 0.03)), instead of the ±10% per shot.

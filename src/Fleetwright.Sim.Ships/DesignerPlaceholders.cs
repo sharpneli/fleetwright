@@ -42,7 +42,8 @@ public static class DesignerPlaceholders
     /// 762);</item>
     /// <item>fuzes: base with a delay (0.025 s in the Great War, 0.035 later, the IJN's Type 91 0.4), HE nose;</item>
     /// <item>quality: the outcome table's rows by era and navy (portsmouth for the RN, kiel for Germany, kure for
-    /// Japan): Victorian shells as the worst row (rn1916).</item>
+    /// Japan): Victorian shells as the worst row (rn1916);</item>
+    /// <item>diving: the IJN's Type 91 AP (its quality row).</item>
     /// </list>
     /// Each kind carried is one row; the designer should give shells per gun (mass, velocity, kinds, filler, fuze)
     /// from its ordnance tech, and a navy's shell quality by year.</summary>
@@ -80,6 +81,7 @@ public static class DesignerPlaceholders
                 _ => quality == ShellQuality.IjnT91 ? 0.4 : era switch { Era.Victorian => 0, Era.GreatWar => 0.025, _ => 0.035 },
             },
             Quality = quality,
+            Diving = kind == ShellKind.Ap && quality == ShellQuality.IjnT91,
         };
     }
 

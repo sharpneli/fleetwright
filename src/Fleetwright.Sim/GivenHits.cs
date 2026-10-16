@@ -31,6 +31,9 @@ public static class GivenHits
         public readonly int[] LostBy = new int[Enum.GetValues<LossKind>().Length];
         public double WaterT, ListDeg;
         public double FallDeg, StrikeMs;
+        /// <summary>The hits that ran under the water to the hull: how many, and their runs and striking speeds summed.</summary>
+        public int Underwater;
+        public double UnderwaterRunM, UnderwaterStrikeMs;
 
         public double Share(Outcome o) => Hits > 0 ? (double)Outcomes[(int)o] / Hits : 0;
     }
@@ -70,7 +73,7 @@ public static class GivenHits
         int cls = w.Ships.AddClass(target);
         var path = new HitPath();
         var rng = RandomStream.Named(seed, "given hits");
-        var water = Waterplane.Level(target);
+        double reach = WaterRun.ReachM(shell, fall.StrikeMs, settings);
         int entity = 0;
         while (rep.Hits < n)
         {
@@ -82,8 +85,10 @@ public static class GivenHits
             rep.Ships++;
             for (int k = 0; k < perShip && rep.Hits < n; k++)
             {
-                // a point across the line of flight, until one meets the ship
+                // a point across the line of flight, until one meets the ship, its waterline where it floats now
+                var water = HitQuery.WaterOf(target, w.Ships.Store.Combat.Condition(slot).Attitude);
                 P3 at;
+                double run;
                 while (true)
                 {
                     double a = rng.NextDouble(u0, u1), c = rng.NextDouble(v0, v1);
@@ -93,10 +98,9 @@ public static class GivenHits
                     if (first < 0)
                         continue;
                     var x = path.Crossings[first];
-                    // the sea first: a miss, unless a shell that dives meets the ship within the shell system's reach
-                    // under the water (a nose fuze fires on the water)
-                    double wet = WaterIn(path, first);
-                    if (!double.IsNaN(wet) && (shell.Fuze == Fuze.Nose || x.T - wet > settings.ShellUnderwaterM))
+                    // the sea first: a miss, unless it meets the ship within the shell system's reach under the water
+                    run = WaterRun.RunM(path, first);
+                    if (run > reach)
                         continue;
                     at = x.Point;
                     string where = Where(target, x);
@@ -105,7 +109,8 @@ public static class GivenHits
                 }
                 var hit = new Hit
                 {
-                    Ship = entity, Ms = w.Time.Ms, Point = at, Direction = dir, SpeedMs = fall.StrikeMs, Source = HitSource.Shell, Shell = shell, ShellType = -1,
+                    Ship = entity, Ms = w.Time.Ms, Point = at, Direction = dir, SpeedMs = fall.StrikeMs, WaterRunM = run, Source = HitSource.Shell, Shell = shell,
+                    ShellType = -1,
                 };
                 var k0 = w.Ships.Store.Combat.Condition(slot);
                 var before = (PartState[])k0.State.Clone();
@@ -115,6 +120,8 @@ public static class GivenHits
                 each?.Invoke(rep.Hits, w.Damage.LastPath, t, fx);
                 rep.Hits++;
                 rep.Outcomes[(int)t.Outcome]++;
+                if (t.Underwater)
+                    (rep.Underwater, rep.UnderwaterRunM, rep.UnderwaterStrikeMs) = (rep.Underwater + 1, rep.UnderwaterRunM + run, rep.UnderwaterStrikeMs + t.StrikeMs);
                 rep.Fires += fx.Fire ? 1 : 0;
                 rep.Magazines += fx.Magazine ? 1 : 0;
                 rep.Jams += fx.Jammed ? 1 : 0;
@@ -222,16 +229,6 @@ public static class GivenHits
         rep.Crippled += lost || slowed || steer || main > 0 && mainOk == 0 ? 1 : 0;
         rep.ListDeg += Math.Abs(kk.Attitude.HeelDeg);
         rep.Out += lost || fallOut is { } rule && rule.Of(Fitness.Of(target, kk, w.Damage.Flood(target).ReserveT)) != FallOutCause.None ? 1 : 0;
-    }
-
-    /// <summary>Where the path met the sea before crossing i, or NaN.</summary>
-    static double WaterIn(HitPath path, int i)
-    {
-        var xs = path.Crossings;
-        for (int j = 0; j < i; j++)
-            if (xs[j].Kind == CrossingKind.WaterIn)
-                return xs[j].T;
-        return double.NaN;
     }
 
     /// <summary>The first crossing into the ship: its hull or a part.</summary>

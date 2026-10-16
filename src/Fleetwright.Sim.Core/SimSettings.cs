@@ -440,10 +440,6 @@ public sealed record SimSettings
     /// below it can hit a ship (docs/battle/plan.md "Shells").</summary>
     public double ShellWindowTopM { get; init; } = 60;
 
-    /// <summary>How far a shell's track is followed on under the water, metres along it, for the hit query (water is a
-    /// crossing, not a stop: the damage model decides what the shell does there).</summary>
-    public double ShellUnderwaterM { get; init; } = 10;
-
     /// <summary>The shells in flight the world starts with room for (it grows past it), and the splashes it keeps for
     /// the screens: how many, and for how long, ms.</summary>
     public int ShellCapacity { get; init; } = 512;
@@ -754,8 +750,21 @@ public sealed record SimSettings
     /// boilers: Johnston) with this chance.</summary>
     public double MachineryArmChance { get; init; } = 0.45;
 
-    /// <summary>A shell that met the water before the hull strikes at this share of its velocity (08 3.8).</summary>
-    public double UnderwaterSpeedShare { get; init; } = 0.4;
+    /// <summary>A shell under the water (water is a crossing, not a stop; WaterRun) slows as e^(−x/L), L this many
+    /// calibres: a pointed shell, its tumbling folded in (a stable ogive ~150, armor/05 §6; 25 fits 08 §3.8's 30-50% of
+    /// its velocity a few metres down and Tosa's 76 mm), and a diving one's flat nose (~45-60).</summary>
+    public double UnderwaterDecayCalibres { get; init; } = 25;
+    public double UnderwaterDecayCalibresDiving { get; init; } = 50;
+
+    /// <summary>The hit query follows a shell this many decay lengths on under the water (1: down to 37% of its speed,
+    /// about the old 10 m for a heavy gun). A stand-in for what really ends the run, the fuze started on the water
+    /// (<see cref="FuzeStartsOnWater"/>) and tumbling: at 3 (5% of its speed) a 15" shell reaches 29 m, a quarter more
+    /// hits count and the squadrons' Germans start losing ships to flooding (2026-10-16).</summary>
+    public double UnderwaterReachDecays { get; init; } = 1;
+
+    /// <summary>A base fuze starts on the water, its delay running from there (armor/04 §3.5; scaffolding for the
+    /// shell rework's P6: off until then, when only plates and machinery start it).</summary>
+    public bool FuzeStartsOnWater { get; init; }
 
     /// <summary>A filler's TNT equivalence (PLACEHOLDER until the designer gives fillers: lyddite and TNT are about 1).</summary>
     public double FillerTnt { get; init; } = 1;

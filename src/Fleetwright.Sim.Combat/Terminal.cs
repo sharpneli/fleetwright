@@ -73,8 +73,9 @@ public struct TerminalResult
 /// plate, low-order, a dud, or broken up. A plate it can't get through stops it: about to burst, it bursts there; not
 /// armed, it's defeated, or glances off past <see cref="SimSettings.RicochetFromDeg"/>, bursting outside or not as the
 /// reference rolls; out of the far side before its delay runs out, it bursts beyond;</item>
-/// <item><b>under water:</b> a shell that met the sea before the hull strikes at
-/// <see cref="SimSettings.UnderwaterSpeedShare"/> of its velocity, and gets through half a calibre at most.</item>
+/// <item><b>under water:</b> a shell that met the sea before the hull strikes at the speed its run there left it
+/// (<see cref="WaterRun"/>, <see cref="Hit.WaterRunM"/>); a fuze started on the water arms it at the hull, with what's
+/// left of its delay (<see cref="SimSettings.FuzeStartsOnWater"/>).</item>
 /// </list>
 /// Pure and allocation-free; the draws come from the stream it's given.</summary>
 public static class Terminal
@@ -90,19 +91,12 @@ public static class Terminal
         double burstT = double.NaN, force = 1;
         var xs = path.Crossings;
 
-        // under water first: the shell met the sea before the ship
-        foreach (ref readonly var x in xs)
-        {
-            if (x.Kind is CrossingKind.HullIn or CrossingKind.PartIn)
-                break;
-            if (x.Kind == CrossingKind.WaterIn)
-            {
-                res.Underwater = true;
-                v *= s.UnderwaterSpeedShare;
-                break;
-            }
-        }
+        // under water first: the shell met the sea before the ship, and ran on through it to the hull
+        double decayM = WaterRun.DecayM(shell, s);
+        res.Underwater = hit.WaterRunM > 0;
+        v = WaterRun.Speed(v, hit.WaterRunM, decayM);
         res.StrikeMs = v;
+        bool waterFuze = res.Underwater && WaterRun.FuzeStarts(shell, s);
 
         for (int i = 0; i < xs.Length; i++)
         {
@@ -113,6 +107,14 @@ public static class Terminal
             {
                 case CrossingKind.HullIn or CrossingKind.PartIn:
                     inside = true;
+                    if (waterFuze && !armed)
+                    {
+                        // started on the water: armed at the hull, with what's left of its delay
+                        armed = true;
+                        double left = Math.Max(shell.FuzeDelayS - WaterRun.TimeS(hit.SpeedMs, hit.WaterRunM, decayM), 0);
+                        if (Arm(ref res, ref r, s, shell with { FuzeDelayS = left }, x.T, v, i, ref burstT, ref force))
+                            return res;
+                    }
                     break;
                 case CrossingKind.WaterIn when inside:
                     return Gone(ref res, armed, x.T);   // out of the ship into the sea: the shell's gone
@@ -133,8 +135,6 @@ public static class Terminal
             if (nose)
             {
                 double punch = s.HePenCalibres * calMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(ob)), 1e-3));
-                if (res.Underwater)
-                    punch = Math.Min(punch, 0.5 * calMm);
                 res.Plate = i;
                 return t <= punch
                     ? Burst(ref res, x.T + 0.5, 1, Outcome.BurstInside, BurstKind.Inside)
@@ -142,8 +142,6 @@ public static class Terminal
             }
 
             double cap = PenMm(shell, v, ob, deck) * (shell.Kind == ShellKind.Common ? s.CommonPenShare : 1);
-            if (res.Underwater)
-                cap = Math.Min(cap, 0.5 * calMm);
             if (t > cap * r.NextDouble(1 - s.PenSpread, 1 + s.PenSpread))
             {
                 // stopped here: about to burst, it bursts against the plate, this side of it; a dud lies there; never

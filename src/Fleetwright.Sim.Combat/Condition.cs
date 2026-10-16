@@ -27,6 +27,10 @@ public readonly record struct Hit
     /// <summary>A unit vector along the shell's flight.</summary>
     public P3 Direction { get; init; }
     public double SpeedMs { get; init; }
+    /// <summary>How far the shell ran under the water before it met the hull, m (0: it struck in the air), its
+    /// <see cref="SpeedMs"/> where it met the water (<see cref="WaterRun"/>). Its own path starts just short of the hull,
+    /// so only the shell's flight knows it.</summary>
+    public double WaterRunM { get; init; }
     public HitSource Source { get; init; }
     public ShellTypeRow Shell { get; init; }
     /// <summary>A torpedo's hit (<see cref="HitSource.Torpedo"/>): the torpedo, its charge and calibre.</summary>

@@ -16,7 +16,7 @@ public enum ShellCommand : ushort
 /// nothing until two events:
 /// <list type="bullet">
 /// <item>its danger window, when it comes down through <see cref="SimSettings.ShellWindowTopM"/>: its track from there
-/// to the water (and <see cref="SimSettings.ShellUnderwaterM"/> on under it), in chords, goes through the hit query
+/// to the water (and on under it as far as <see cref="WaterRun.ReachM"/>), in chords, goes through the hit query
 /// against the ships the world's index finds near the fall, each where it is then; the first ship it meets is hit;</item>
 /// <item>its end, the hit or the water: a splash (or a hit's mark) goes into the ring the screens read, and the shell's
 /// record is freed.</item>
@@ -48,9 +48,10 @@ public sealed class ShellSystem : IWorldSystem
         /// <summary>The ship it hits (an entity), or -1; and where it ends.</summary>
         public int Hit;
         public Vec3d End;
-        /// <summary>A hit's point and the shell's direction in that ship's frame, and its speed, m/s.</summary>
+        /// <summary>A hit's point and the shell's direction in that ship's frame, its speed where it met the water (or
+        /// the hull, in the air), m/s, and how far it ran under the water to the hull, m.</summary>
         public P3 HitPoint, HitDirection;
-        public double HitSpeed;
+        public double HitSpeed, WaterRunM;
     }
 
     /// <summary>A splash, or a hit's mark (Ship: the ship hit, an entity), at a moment, and the shell's calibre; for the
@@ -283,7 +284,8 @@ public sealed class ShellSystem : IWorldSystem
                 if (Damage != null && settings.HitsDoDamage && s.ShooterClass >= 0 && s.ShellType >= 0)
                     Damage.Strike(world, new Hit
                     {
-                        Ship = s.Hit, Ms = world.Time.Ms, Point = s.HitPoint, Direction = s.HitDirection, SpeedMs = s.HitSpeed, Source = HitSource.Shell,
+                        Ship = s.Hit, Ms = world.Time.Ms, Point = s.HitPoint, Direction = s.HitDirection, SpeedMs = s.HitSpeed, WaterRunM = s.WaterRunM,
+                        Source = HitSource.Shell,
                         Shell = ships.Class(s.ShooterClass).ShellTypes[s.ShellType], ShellType = s.ShellType, Shooter = s.Shooter, Battery = s.Battery,
                     });
                 else
@@ -311,11 +313,12 @@ public sealed class ShellSystem : IWorldSystem
             chordPoint[j] = t.Position(s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, chordTime[j], out vel);
         }
         double speed = vel.Length;
-        // on under the water, for a shell that dives (a nose fuze fires on the water: a near miss)
-        bool dives = s.ShooterClass < 0 || s.ShellType < 0 || ships.Class(s.ShooterClass).ShellTypes[s.ShellType].Fuze != Fuze.Nose;
-        chordPoint[Chords + 1] = chordPoint[Chords] + vel * (dives ? settings.ShellUnderwaterM / speed : 0);
-        chordTime[Chords + 1] = s.EndS + settings.ShellUnderwaterM / speed;
-        (s.End, s.Hit) = (chordPoint[Chords], -1);
+        // on under the water, straight along its flight, as far as it gets (a nose fuze fires on the water: a near miss)
+        var shell = s.ShooterClass >= 0 && s.ShellType >= 0 ? ships.Class(s.ShooterClass).ShellTypes[s.ShellType] : new ShellTypeRow { CalibreMm = t.Key.CalibreMm };
+        double reach = WaterRun.ReachM(shell, speed, settings);
+        chordPoint[Chords + 1] = chordPoint[Chords] + vel * (reach / speed);
+        chordTime[Chords + 1] = s.EndS + WaterRun.TimeS(speed, reach, WaterRun.DecayM(shell, settings));
+        (s.End, s.Hit, s.WaterRunM) = (chordPoint[Chords], -1, 0);
 
         // the ships that can be under it: within the window's span and the biggest ship's reach of the fall
         var near = index.Near(chordPoint[Chords], (chordPoint[0] - chordPoint[Chords]).Length + biggest);
@@ -345,7 +348,10 @@ public sealed class ShellSystem : IWorldSystem
                         bearings[m] = CombatStore.BearingAt(store.Combat.Mount(ship, m), cls.Mounts[m], midMs);
                     if (!HitQuery.Trace(cls, frame, attitude, chordPoint[j], chordPoint[j + 1], bearings.AsSpan(0, mounts), path))
                         continue;
-                    foreach (ref readonly var x in path.Crossings)
+                    var xs = path.Crossings;
+                    for (int i = 0; i < xs.Length; i++)
+                    {
+                        ref readonly var x = ref xs[i];
                         if (x.Kind is CrossingKind.HullIn or CrossingKind.PartIn)
                         {
                             if (x.T < bestT)
@@ -357,9 +363,11 @@ public sealed class ShellSystem : IWorldSystem
                                 double dx = path.End.X - path.Start.X, dy = path.End.Y - path.Start.Y, dz = path.End.Z - path.Start.Z;
                                 double l = Math.Max(Math.Sqrt(dx * dx + dy * dy + dz * dz), 1e-9);
                                 (s.HitPoint, s.HitDirection, s.HitSpeed) = (x.Point, new P3(dx / l, dy / l, dz / l), speed);
+                                s.WaterRunM = WaterRun.RunM(path, i);   // the ship's own waterplane, at its flotation
                             }
                             break;
                         }
+                    }
                 }
             }
         }
