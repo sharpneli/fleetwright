@@ -439,6 +439,38 @@ public sealed record InnerBulkheadInput
 /// <summary>An armoured box round each run of magazines (protection-plan.md H5; a treaty cruiser's, an up-armoured
 /// destroyer's): its sides on the magazines' wing walls, its crown on their crown, its ends, and a floor plate on the inner
 /// bottom (against mines); 0 for none.</summary>
+/// <summary>A protection scheme (protection-plan.md H8; docs/shipgen/protection-templates.md, the designer's
+/// Content/Templates/protection.json): the layout a family of ships shared, as the armour inputs it sets, applied to a
+/// design by ProtectionSchemes.Apply. No year inside. Thicknesses that scale with the ship are shares of the design's
+/// own; the rest (torpedo and splinter bulkheads, boxes) are typical plates. Null: left as the design has it.</summary>
+public sealed record ProtectionSchemeInput
+{
+    public string? BeltPosition { get; init; }
+    public double? BeltInclineDeg { get; init; }
+    public string? BeltExtent { get; init; }
+    /// <summary>The belt's lower edge as a share of its thickness (belt_bottom_mm): an internal belt's taper.</summary>
+    public double? BeltBottomShare { get; init; }
+    /// <summary>Slopes on the citadel's main armour deck (its thickest): their angle, and the flat's plate as a share
+    /// of the slopes'. The deck's thickness goes to the slopes, the flat takes the share of it.</summary>
+    public double? SlopeDeg { get; init; }
+    public double? FlatShare { get; init; }
+    /// <summary>A light armour deck one deck under the main armour deck, with slopes (the French "upper deck stops, lower deck
+    /// catches").</summary>
+    public LowerDeckScheme? LowerDeck { get; init; }
+    public InnerBulkheadInput? InnerBulkhead { get; init; }
+    public MagazineBoxInput? MagazineBox { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>A scheme's lower deck: its flat's and slopes' plates, mm, and the slopes' angle.</summary>
+public sealed record LowerDeckScheme
+{
+    public double? Mm { get; init; }
+    public double? SlopeMm { get; init; }
+    public double? SlopeDeg { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
 public sealed record MagazineBoxInput
 {
     public double? SideMm { get; init; }

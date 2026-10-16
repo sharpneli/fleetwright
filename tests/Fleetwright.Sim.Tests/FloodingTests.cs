@@ -115,7 +115,9 @@ public class FloodingTests(ITestOutputHelper output)
     public void A_capital_ship_lives_through_thousands_of_tonnes()
     {
         var (w, c) = Ship("super_dreadnought");
-        Hole(w, c, c.Hydrostatics.Lcf, -1.5, 0.5);   // its engine room
+        // its engine room (a hole in the side there opens the wing over the deck's slope since protection-plan.md H8:
+        // the room is flooded as the destroyer's are)
+        Flood(w, c, RoomKind.EngineRoom, 1);
         var status = w.Damage.Settle(w, 1, 4 * 3600);
         var k = Condition(w);
         Report("QE, an engine room flooded", k);

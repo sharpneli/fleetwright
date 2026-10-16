@@ -156,7 +156,16 @@ public static class HullWeight
         double nInt = StackDeck * Math.Max(0.0, (D - Powerplant.DoubleBottom(D) - Decks.MinTier) / Geometry.DeckPitch);
         var (lo, hi) = InnerBottomT;
         double inner = Math.Min(1.0, Math.Max(0.0, (full - lo) / (hi - lo)));
-        var plates = arm.Decks.Where(d => d.X0 <= 0.0 && 0.0 <= d.X1).Select(d => (d.Mm, d.Z)).ToList();
+        // the armour decks amidships, each as the plate it is over the breadth: a sloped deck's flat only over its share,
+        // its slopes at their mid-height (longer by their angle; protection-plan.md H6), a narrow deck by its width
+        var plates = new List<(double Mm, double Z)>();
+        foreach (var d in arm.Decks.Where(d => d.X0 <= 0.0 && 0.0 <= d.X1))
+        {
+            double share = d.W is double w && w > 0 ? Math.Min(1.0, w / B) : 1.0, sloped = d.Reach > 0 ? Math.Min(1.0, 2 * d.Reach / B) : 0.0;
+            plates.Add((d.Mm * share * (1 - sloped), d.Z));
+            if (sloped > 0)
+                plates.Add((d.SlopeMm * sloped / Math.Cos(double.DegreesToRadians(d.SlopeDeg)), (d.Z + d.FootZ) / 2));
+        }
         double depth = D;
         if (above != null)
         {

@@ -6,6 +6,7 @@
 - armour.json:  the `armour.materials` maps the shipped designs use (shipgen/designs/*.json), one per distinct scheme,
                 weakest first (SIDE and DECK below)
 - materials.json: material names for the pickers (structure: hull plating, superstructure; armour: per-part overrides)
+- protection.json: docs/shipgen/protection-templates.md, the protection schemes (`scheme` blocks: the layout a family shared)
 
 Each entry is {"name", "group", "note", "value"}: value is the block as the design JSON takes it.
 Run from the repo root after editing a source: python -I tools/designer_templates.py
@@ -43,6 +44,11 @@ def plants():
 
 def hulls():
     return [{"name": v["name"], "group": "", "note": sec, "value": v} for sec, lab, v in blocks("hull-templates.md", "construction")]
+
+
+def protection():
+    return [{"name": lab[0] if lab else sec, "group": sec, "note": (lab[1] or "") if lab else "", "value": v}
+            for sec, lab, v in blocks("protection-templates.md", "scheme")]
 
 
 def crew():
@@ -128,7 +134,8 @@ def materials():
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    for name, entries in [("plants", plants()), ("hulls", hulls()), ("crew", crew()), ("armour", armour()), ("materials", materials())]:
+    for name, entries in [("plants", plants()), ("hulls", hulls()), ("crew", crew()), ("armour", armour()), ("materials", materials()),
+                          ("protection", protection())]:
         path = os.path.join(OUT, name + ".json")
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             json.dump(entries, f, indent=1, ensure_ascii=False)

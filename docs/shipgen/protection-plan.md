@@ -1,6 +1,6 @@
 # Plan: subdivision and protection schemes
 
-2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Done: H0-H7 (2026-10-16). Next: H8 (templates, designs, the designer tab). Research: `research/09_protection_schemes.md`
+2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Done: H0-H7, H8a (2026-10-16). Next: H8b, the Protection tab (a UI session of its own). Research: `research/09_protection_schemes.md`
 (the families, the layers, the bulkhead kinds), on top of `01_capital_subdivision.md` and `03_small_vessels.md`.
 
 This comes before phase P of `docs/battle/shells-armour-damage.md` (materials as data). The user wants the subdivision
@@ -405,6 +405,41 @@ this plan builds the layers so E1 has something to work on.
   family, with the weight changes reported.
 - The Protection tab shows the new parts (platform deck, wing, holding and inner bulkheads, boxes, slopes) in its
   elevation and midship section. That is a UI session of its own, mockup then port (memory).
+
+- **H8a done 2026-10-16** (the templates and the designs moved; the Protection tab is H8b, a session of its own, the
+  user). What was built:
+  - The schemes are their own catalogue, `Content/Templates/protection.json` (from `docs/shipgen/protection-templates.md`
+    by `tools/designer_templates.py`), not entries in armour.json: a scheme's value is a block of armour inputs, not a
+    materials map, and each catalogue is one type. `ProtectionSchemeInput` holds what a scheme sets; thicknesses that
+    scale with the ship are shares of the design's own (the slopes keep the main deck's plate, the flat takes
+    `flat_share` of it; an internal belt's lower edge `belt_bottom_share` of the belt), the rest typical plates.
+    `ProtectionSchemes.Apply` is the one implementation (the designer's templates, `Templates.Protection`, and `shipgen
+    scheme`), and applying a scheme twice gives what once did (tested on every template).
+  - Eight schemes: belt_and_slope, german_bulkhead, turtleback_modern, inclined_internal, inclined_external,
+    french_modern, protected_deck, cruiser_box. Left out: the ones that need no new inputs (unarmoured, all or nothing,
+    the structural cruiser belt) and the ones the model can't make yet (spaced decapping belts, cellulose cofferdams).
+    No scheme gives TDS layers yet: the torpedo model holes every layer at once (H3, open).
+  - `shipgen scheme SCHEME DESIGN... [--write]` reports the displacement before and after and rewrites the design's
+    armour value in place (untouched values keep their text, the rest of the file untouched).
+  - 30 shipped designs moved (the table in protection-templates.md): +0.3 to +9.4 % standard, Bismarck −0.7 % on her
+    own 80/110 mm deck; seven designs keep their own figures (named there). Littorio and the super-dreadnought become two-compartment
+    ships, Kongo goes 3 → 2. The scenarios' designs stay (tuned for balance).
+  - Fixed on the way:
+    - The hull girder credited a sloped deck's flat over the whole breadth: thicker flat, less strength plating, a
+      lighter ship (Kongo's armour-deck lever reversed at every step, mono-check 34 → 37). The flat now counts over its
+      share and the slopes at their mid-height; mono-check 29 reversals and 12 lumps (34 and 14 at H7).
+    - An inner bulkhead only beside the magazines (Dreadnought's screens, `mm` 0) built a wall the length of the
+      citadel; now only the magazines' wings carry it.
+    - The designer's armour scale (`Knobs.ScaleArmour`) left the H3-H6 plates out (zones, slopes, inner bulkhead,
+      boxes); it scales them now.
+    - Shell-test found no roof on a deck zoned in pieces (KGV): pieces end to end at one height count.
+    - `--write` and `--rooms` weren't registered as CLI switches.
+  - Benches: shell-test leaks on the moved designs as before (the uptake gratings), Deutschland 572 → 0, Karlsruhe
+    3,020 → 6; Kent's "through the side" (7,436 of 100,000) is the scheme, the citadel's sides over the magazines bare
+    and the magazines boxed: steel before a magazine at a 10° fall 16 → 118 mm. Lion's 13.5" AP at 12 km, 10 hits:
+    Nassau out of the fight 19 → 14 %, lost to the magazine 10 → 5.5 %; Dreadnought 12 → 11 %, 7 → 6 %; both take
+    more water (the wing spaces over the slopes flood). FloodingTests' QE anchor floods its engine room directly (a hole
+    in the side there now opens the wing over the slope).
 
 ## What stays out
 

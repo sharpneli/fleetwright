@@ -78,16 +78,16 @@
   "value": "high-tensile steel"
  },
  {
-  "name": "Terni cemented",
-  "group": "armour",
-  "note": "",
-  "value": "Terni cemented"
- },
- {
   "name": "Harvey nickel steel",
   "group": "armour",
   "note": "",
   "value": "Harvey nickel steel"
+ },
+ {
+  "name": "Terni cemented",
+  "group": "armour",
+  "note": "",
+  "value": "Terni cemented"
  },
  {
   "name": "wrought iron",
@@ -102,16 +102,16 @@
   "value": "Class A armour"
  },
  {
-  "name": "Vickers cemented",
-  "group": "armour",
-  "note": "",
-  "value": "Vickers cemented"
- },
- {
   "name": "nickel steel",
   "group": "armour",
   "note": "",
   "value": "nickel steel"
+ },
+ {
+  "name": "Vickers cemented",
+  "group": "armour",
+  "note": "",
+  "value": "Vickers cemented"
  },
  {
   "name": "compound",

@@ -15,6 +15,7 @@ namespace Fleetwright.Shipgen;
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(Ship))]
 [JsonSerializable(typeof(Dressing))]
+[JsonSerializable(typeof(ProtectionSchemeInput))]
 public sealed partial class ShipgenJson : JsonSerializerContext
 {
     /// <summary>The same, indented one space per level.</summary>

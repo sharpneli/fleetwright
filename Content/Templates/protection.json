@@ -1,0 +1,97 @@
+[
+ {
+  "name": "Belt and slope",
+  "group": "Capital ships",
+  "note": "belt_and_slope",
+  "value": {
+   "slope_deg": 30,
+   "flat_share": 0.65,
+   "inner_bulkhead": {
+    "mm": 0,
+    "magazines_mm": 38
+   }
+  }
+ },
+ {
+  "name": "German bulkhead",
+  "group": "Capital ships",
+  "note": "german_bulkhead",
+  "value": {
+   "slope_deg": 30,
+   "flat_share": 0.65,
+   "inner_bulkhead": {
+    "mm": 30,
+    "magazines_mm": 40
+   }
+  }
+ },
+ {
+  "name": "Turtleback, modern",
+  "group": "Capital ships",
+  "note": "turtleback_modern",
+  "value": {
+   "slope_deg": 22,
+   "flat_share": 0.73
+  }
+ },
+ {
+  "name": "Inclined, internal",
+  "group": "Capital ships",
+  "note": "inclined_internal",
+  "value": {
+   "belt_position": "internal",
+   "belt_incline_deg": 19,
+   "belt_bottom_share": 0.3
+  }
+ },
+ {
+  "name": "Inclined, external",
+  "group": "Capital ships",
+  "note": "inclined_external",
+  "value": {
+   "belt_incline_deg": 15
+  }
+ },
+ {
+  "name": "French modern",
+  "group": "Capital ships",
+  "note": "french_modern",
+  "value": {
+   "belt_incline_deg": 11,
+   "lower_deck": {
+    "mm": 40,
+    "slope_mm": 40,
+    "slope_deg": 30
+   },
+   "inner_bulkhead": {
+    "mm": 0,
+    "magazines_mm": 20
+   },
+   "magazine_box": {
+    "floor_mm": 30
+   }
+  }
+ },
+ {
+  "name": "Protected deck",
+  "group": "Cruisers",
+  "note": "protected_deck",
+  "value": {
+   "slope_deg": 30,
+   "flat_share": 0.45
+  }
+ },
+ {
+  "name": "Machinery belt and magazine boxes",
+  "group": "Cruisers",
+  "note": "cruiser_box",
+  "value": {
+   "belt_extent": "machinery",
+   "magazine_box": {
+    "side_mm": 102,
+    "crown_mm": 64,
+    "end_mm": 64
+   }
+  }
+ }
+]

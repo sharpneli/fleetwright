@@ -1292,9 +1292,10 @@ public static class Knobs
         return n > 0 ? Math.Round(sum / n, 3) : null;
     }
 
-    /// <summary>Every armour thickness the design gives, times <paramref name="f"/> to the nearest mm: belt (and its lower
-    /// edge), upper belt, end belts (and tips and bulkheads), citadel bulkheads, decks, flight deck, the steering gear box
-    /// and the main turret faces (the barbettes follow the faces). Thicknesses the design leaves to the engine stay so.</summary>
+    /// <summary>Every armour thickness the design gives, times <paramref name="f"/> to the nearest mm: belt (its lower
+    /// edge, its zone over the magazines), upper belt, end belts (and tips and bulkheads), citadel bulkheads, decks (their
+    /// slopes and magazine zones), flight deck, the steering gear box, the inner bulkhead, the magazine boxes and the main
+    /// turret faces (the barbettes follow the faces). Thicknesses the design leaves to the engine stay so.</summary>
     public static Design ScaleArmour(Design d, double f)
     {
         static double? M(double? mm, double f) => mm is { } x ? Math.Round(x * f) : null;
@@ -1305,9 +1306,15 @@ public static class Knobs
                 {
                     BeltMm = M(a.BeltMm, f),
                     BeltBottomMm = M(a.BeltBottomMm, f),
+                    BeltMagazinesMm = M(a.BeltMagazinesMm, f),
                     BulkheadMm = M(a.BulkheadMm, f),
                     FlightDeckMm = M(a.FlightDeckMm, f),
-                    Decks = a.Decks?.Select(x => x with { Mm = M(x.Mm, f) }).ToList(),
+                    Decks = a.Decks?.Select(x => x with { Mm = M(x.Mm, f), SlopeMm = M(x.SlopeMm, f), MagazinesMm = M(x.MagazinesMm, f) }).ToList(),
+                    InnerBulkhead = a.InnerBulkhead is { } ib ? ib with { Mm = M(ib.Mm, f), MagazinesMm = M(ib.MagazinesMm, f) } : null,
+                    MagazineBox = a.MagazineBox is { } mb ? mb with
+                    {
+                        SideMm = M(mb.SideMm, f), CrownMm = M(mb.CrownMm, f), EndMm = M(mb.EndMm, f), FloorMm = M(mb.FloorMm, f),
+                    } : null,
                     UpperBelt = a.UpperBelt is { } u ? u with { Mm = M(u.Mm, f) } : null,
                     EndBelts = a.EndBelts is { } eb ? eb with
                     {

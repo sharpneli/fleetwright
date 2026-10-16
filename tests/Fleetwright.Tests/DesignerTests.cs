@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Fleetwright.Designer;
 using Fleetwright.Shipgen;
 
@@ -146,6 +147,7 @@ public class TemplateTests
         Assert.True(Templates.Hulls.Count >= 8);
         Assert.Equal(7, Templates.Crew.Count);
         Assert.True(Templates.Armour.Count >= 20);
+        Assert.True(Templates.Protection.Count >= 8);
         var failures = new List<string>();
         foreach (var name in new[] { "dreadnought", "destroyer", "fleet_carrier" })
         {
@@ -173,6 +175,16 @@ public class TemplateTests
                 Check(t.Name, d with { Crew = (d.Crew ?? new CrewInput()) with { Standard = t.Value } }, build: false);
             foreach (var t in Templates.Armour)
                 Check(t.Name, d with { Armour = (d.Armour ?? new ArmourInput()) with { Materials = Templates.MaterialsFor(d, t.Value) } }, build: false);
+            foreach (var t in Templates.Protection)
+            {
+                failures.AddRange(ProtectionSchemes.Errors(t.Value, t.Name));
+                var once = ProtectionSchemes.Apply(d, t.Value);
+                Check(t.Name, once, build: name != "fleet_carrier");
+                // applied twice, as once: the slopes keep the deck's thickness, the flat its share of it
+                var twice = ProtectionSchemes.Apply(once, t.Value);
+                if (JsonSerializer.Serialize(twice.Armour, ShipgenJson.Default.ArmourInput) != JsonSerializer.Serialize(once.Armour, ShipgenJson.Default.ArmourInput))
+                    failures.Add($"{name} {t.Name}: applied twice differs from once");
+            }
         }
         Assert.True(failures.Count == 0, string.Join("\n", failures.Take(20)));
     }

@@ -91,7 +91,8 @@ public class OverviewTests
         Assert.Equal(153, x.Armour.BeltBottomMm);
         Assert.Equal(198, x.Armour.BulkheadMm);
         Assert.Equal(130, x.Armour.UpperBelt!.Mm);   // 145 × 0.9 rounds down: 130.4999…
-        Assert.Equal([45.0, 90.0], x.Armour.Decks!.Select(k => k.Mm!.Value));
+        Assert.Equal([45.0, 72.0], x.Armour.Decks!.Select(k => k.Mm!.Value));
+        Assert.Equal(99, x.Armour.Decks![1].SlopeMm);   // the slopes with them
         Assert.Equal(324, x.Main![0].ArmourMm);
         Assert.Equal(d.SpeedKn, x.SpeedKn);
         Assert.Equal(d.Secondary![0].ArmourMm, x.Secondary![0].ArmourMm);   // gun shields aren't protection plates

@@ -73,10 +73,27 @@ public sealed class ShellTest
                 if (p.Kind != InclinedKind.Slope && p.ThicknessMm > 0 && p.X0 < cx1 && p.X1 > cx0)
                     side = Math.Max(side, p.Z1);
             double? reached = null, lowest = null;
+            // a deck over the whole citadel: one piece, or pieces end to end at one height (a deck zoned thicker over the
+            // magazines, protection-plan.md H5)
+            bool Spans(double z)
+            {
+                double x = cx0;
+                for (bool grew = true; grew && x < cx1 - 0.01;)
+                {
+                    grew = false;
+                    foreach (int e in g.Decks)
+                    {
+                        var q = c.ArmourDecks[e];
+                        if (Math.Abs(q.Z - z) < 0.01 && double.IsNaN(q.W) && q.X0 <= x + 0.01 && q.X1 > x + 0.01)
+                            (x, grew) = (q.X1, true);
+                    }
+                }
+                return x >= cx1 - 0.01;
+            }
             foreach (int d in g.Decks)
             {
                 var dk = c.ArmourDecks[d];
-                if (dk.X0 <= cx0 + 0.01 && dk.X1 >= cx1 - 0.01)
+                if (dk.X0 <= cx0 + 0.01 && dk.X1 >= cx1 - 0.01 || dk.X0 <= cx0 + 0.01 && Spans(dk.Z))
                 {
                     lowest = lowest is double l ? Math.Min(l, dk.Z) : dk.Z;
                     if (dk.Z <= side + 0.01)

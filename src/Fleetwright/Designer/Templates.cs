@@ -5,7 +5,7 @@ using Fleetwright.Shipgen;
 namespace Fleetwright.Designer;
 
 /// <summary>A ready-made block for a part of the design: a plant's technology, a hull construction, a crew standard,
-/// an armour material scheme. <see cref="Value"/> is the block as the design takes it.</summary>
+/// an armour material scheme, a protection scheme. <see cref="Value"/> is the block as the design takes it.</summary>
 public sealed record Template<T>(string Name, string Group, string Note, T Value);
 
 /// <summary>
@@ -25,6 +25,13 @@ public static class Templates
     public static IReadOnlyList<Template<ConstructionInput>> Hulls => hulls.Value;
     public static IReadOnlyList<Template<CrewStandardInput>> Crew => crew.Value;
     public static IReadOnlyList<Template<Dictionary<string, string>>> Armour => armour.Value;
+
+    static readonly Lazy<IReadOnlyList<Template<ProtectionSchemeInput>>> protection =
+        new(() => Load("protection.json", ShipgenJson.Default.ProtectionSchemeInput));
+
+    /// <summary>The protection schemes (docs/shipgen/protection-templates.md): a family's layout, put on a design by
+    /// ProtectionSchemes.Apply.</summary>
+    public static IReadOnlyList<Template<ProtectionSchemeInput>> Protection => protection.Value;
 
     static readonly Lazy<IReadOnlyList<Template<string>>> materials = new(() => Load("materials.json", ShipgenJson.Default.String));
 

@@ -19,28 +19,28 @@
    "clutter": 72
   },
   "armoured_cruiser": {
-   "max_height_m": 23.65,
-   "clutter": 37
+   "max_height_m": 23.66,
+   "clutter": 36
   },
   "babel": {
    "max_height_m": 25.58,
    "clutter": 62
   },
   "battlecruiser": {
-   "max_height_m": 25.59,
-   "clutter": 65
+   "max_height_m": 25.6,
+   "clutter": 73
   },
   "battleship": {
    "max_height_m": 28.21,
    "clutter": 90
   },
   "battleship_layered": {
-   "max_height_m": 28.73,
-   "clutter": 112
+   "max_height_m": 28.74,
+   "clutter": 104
   },
   "bismarck": {
-   "max_height_m": 25.49,
-   "clutter": 112
+   "max_height_m": 25.48,
+   "clutter": 92
   },
   "bouvet": {
    "max_height_m": 26,
@@ -64,15 +64,15 @@
   },
   "courbet": {
    "max_height_m": 24.02,
-   "clutter": 59
+   "clutter": 53
   },
   "dante": {
    "max_height_m": 24.77,
-   "clutter": 62
+   "clutter": 63
   },
   "danton": {
-   "max_height_m": 24.42,
-   "clutter": 59
+   "max_height_m": 24.43,
+   "clutter": 56
   },
   "daring": {
    "max_height_m": 22.72,
@@ -87,8 +87,8 @@
    "clutter": 16
   },
   "deutschland": {
-   "max_height_m": 24.18,
-   "clutter": 42
+   "max_height_m": 24.19,
+   "clutter": 38
   },
   "devastation": {
    "max_height_m": 26.14,
@@ -99,7 +99,7 @@
    "clutter": 29
   },
   "dreadnought": {
-   "max_height_m": 24.2,
+   "max_height_m": 24.21,
    "clutter": 67
   },
   "duilio": {
@@ -107,8 +107,8 @@
    "clutter": 39
   },
   "dunkerque": {
-   "max_height_m": 24.88,
-   "clutter": 34
+   "max_height_m": 24.94,
+   "clutter": 33
   },
   "erebus": {
    "max_height_m": 21.49,
@@ -147,24 +147,24 @@
    "clutter": 35
   },
   "invincible": {
-   "max_height_m": 24.49,
+   "max_height_m": 24.52,
    "clutter": 58
   },
   "karlsruhe": {
-   "max_height_m": 23.67,
+   "max_height_m": 23.69,
    "clutter": 22
   },
   "kent": {
-   "max_height_m": 25.89,
-   "clutter": 45
+   "max_height_m": 25.96,
+   "clutter": 47
   },
   "kgv": {
-   "max_height_m": 27.75,
-   "clutter": 106
+   "max_height_m": 27.76,
+   "clutter": 108
   },
   "kongo": {
    "max_height_m": 25.79,
-   "clutter": 73
+   "clutter": 71
   },
   "liberty": {
    "max_height_m": 23.65,
@@ -175,19 +175,19 @@
    "clutter": 20
   },
   "lion": {
-   "max_height_m": 25.85,
-   "clutter": 67
+   "max_height_m": 25.87,
+   "clutter": 72
   },
   "littorio": {
    "max_height_m": 28.08,
-   "clutter": 116
+   "clutter": 114
   },
   "lord_nelson": {
    "max_height_m": 24.04,
-   "clutter": 59
+   "clutter": 60
   },
   "mikasa": {
-   "max_height_m": 23.23,
+   "max_height_m": 23.24,
    "clutter": 51
   },
   "mtb": {
@@ -203,12 +203,12 @@
    "clutter": 42
   },
   "nassau": {
-   "max_height_m": 23.65,
-   "clutter": 71
+   "max_height_m": 23.66,
+   "clutter": 73
   },
   "nassau_casemates": {
-   "max_height_m": 23.69,
-   "clutter": 67
+   "max_height_m": 23.7,
+   "clutter": 71
   },
   "nelson": {
    "max_height_m": 29.86,
@@ -231,7 +231,7 @@
    "clutter": 30
   },
   "richelieu": {
-   "max_height_m": 27.96,
+   "max_height_m": 28.04,
    "clutter": 64
   },
   "seaplane_carrier": {
@@ -239,12 +239,12 @@
    "clutter": 26
   },
   "seydlitz": {
-   "max_height_m": 24.79,
-   "clutter": 51
+   "max_height_m": 24.8,
+   "clutter": 50
   },
   "super_dreadnought": {
-   "max_height_m": 24.67,
-   "clutter": 52
+   "max_height_m": 24.7,
+   "clutter": 51
   },
   "supercarrier": {
    "max_height_m": 36.49,
@@ -263,15 +263,15 @@
    "clutter": 9
   },
   "tegetthoff": {
-   "max_height_m": 23.3,
-   "clutter": 54
+   "max_height_m": 23.33,
+   "clutter": 56
   },
   "tiger": {
    "max_height_m": 23.71,
    "clutter": 36
   },
   "tiger_1914": {
-   "max_height_m": 25.56,
+   "max_height_m": 25.57,
    "clutter": 51
   },
   "tramp_1914": {
@@ -283,7 +283,7 @@
    "clutter": 24
   },
   "yamato": {
-   "max_height_m": 28.1,
+   "max_height_m": 28.11,
    "clutter": 108
   },
   "zara": {
@@ -1353,7 +1353,7 @@
   },
   "fuzz_free_149": "invalid",
   "borodino": {
-   "max_height_m": 23.7,
+   "max_height_m": 23.71,
    "clutter": 53
   }
  }

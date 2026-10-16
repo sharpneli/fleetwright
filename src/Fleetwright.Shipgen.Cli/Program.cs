@@ -99,6 +99,9 @@ public static class Program
             it, and N shells a fall (5, 10, 20, 35 degrees from the beam) aimed inside it: the share meeting the sea first,
             the steel before it, and the share "open" (from above the water through the skin alone); several designs or
             --summary end with a line a ship
+        shipgen scheme SCHEME DESIGN... [--write] [--catalogue Content/Templates/protection.json]
+            put a protection scheme (docs/shipgen/protection-templates.md; its id or name) on each design: standard
+            displacement and length before and after; --write rewrites the design file's armour line
         shipgen subdivision DESIGN... [--rooms]
             the main compartments (docs/shipgen/protection-plan.md H7): how many sections and the longest, and how many
             adjacent ones the ship floats with, flooded to the sea, before the margin line (76 mm under the bulkhead
@@ -206,6 +209,8 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new HitsBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), D(a, "range", 12_000), D(a, "aspect", 90), a.Int("n", 2000),
                         a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0), D(a, "settle", 30), a.Get("loadout"))),
+                "scheme" => SchemeCommand.Run(a.Get("catalogue") ?? Path.Combine(Root(a), "..", "Content", "Templates", "protection.json"),
+                    a.Positional.ElementAtOrDefault(0) ?? "", [.. a.Positional.Skip(1).Select(n => Resolve(a, n))], a.Has("write")),
                 "subdivision" => SubdivisionBench.Run(a.Positional.Count > 0 ? a.Positional : ["destroyer"], n => LoadDesign(Resolve(a, n)), a.Has("rooms")),
                 "protection" => ProtectionBench.Run(a.Positional.Count > 0 ? a.Positional : ["destroyer"], n => LoadDesign(Resolve(a, n)), a.Int("shells", 400),
                     a.Int("seed", 1), a.Has("summary")),
@@ -262,7 +267,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--outfits" or "--summary")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--outfits" or "--summary" or "--rooms" or "--write")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

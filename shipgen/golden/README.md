@@ -128,6 +128,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   long (a station merged a few cm off a room's end had split engine rooms and long magazines in two), the report gains
   `compartment_standard` and, where she floats with fewer adjacent compartments flooded than her type should, a
   warning; the hitboxes gain `doors_below`. 326 design cases change; no size moves. ShipDesign.Version 16.
+- 2026-10-16, the shipped designs on their protection schemes (docs/shipgen/protection-plan.md H8a), on purpose: 30
+  designs' armour moves (slopes, inclined and internal belts, inner bulkheads, Kent's boxes, KGV's zones), and they grow
+  (docs/shipgen/protection-templates.md has the table); the hull girder counts a sloped deck's flat over its share.
+  30 design cases with their SVGs and sprite.json change. ShipDesign.Version 17.
 
 ## Layout
 

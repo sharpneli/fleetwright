@@ -398,8 +398,9 @@ public static class Subdivision
                     double zm = (ib + crown) / 2 + D;
                     (split, sKind, sTop) = (Math.Max(0.5, SteelFrame * XsIn(sx0, sx1).Min(x => form.HalfWidth(x, zm)) - magWing), "wing", crown);
                 }
-                else if (innerLine && inCit)
+                else if (inner.Mm > 0 && inCit)
                     // the inner bulkhead where nothing else stands: its own wall in from the side, up to the armour deck
+                    // (one only beside the magazines, Dreadnought's screens, has no wall of its own elsewhere)
                     (split, sKind, sTop) = (Math.Max(0.5, SteelFrame * XsIn(sx0, sx1).Select(form.Waterline).Min() - (inner.InboardM ?? magWing)), "wing", under);
                 if (split is not null && innerLine && inCit)
                     sTop = Math.Max(sTop, under);
