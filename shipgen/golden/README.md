@@ -117,6 +117,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-10-16, bulkheads by kind and TDS layers (docs/shipgen/protection-plan.md H3), on purpose: collision bulkheads
   1.5 × the gauge, main and armoured ones with a 1.3 × lowest strake (`plate_low_mm`, `plate_low_top`). 326 design
   cases' hitboxes change; sizes, SVGs and sprite.json don't (one TDS layer by default: as before).
+- 2026-10-16, armour widths exported (docs/shipgen/protection-plan.md H5b), on purpose: armour decks and bulkheads
+  narrower than the hull carry `w` (the steering gear's box, the end belts' stern faces). 131 design cases' hitboxes
+  change; nothing else.
 
 ## Layout
 

@@ -358,6 +358,8 @@ public sealed record ArmourInput
     public SteeringBoxInput? SteeringBox { get; init; }
     /// <summary>An armoured longitudinal wall behind the belt, each side over the citadel (protection-plan.md H4).</summary>
     public InnerBulkheadInput? InnerBulkhead { get; init; }
+    /// <summary>An armoured box round each run of magazines (protection-plan.md H5).</summary>
+    public MagazineBoxInput? MagazineBox { get; init; }
     /// <summary>The armour material per part (Armour.ArmourParts).</summary>
     public Dictionary<string, string>? Materials { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
@@ -411,6 +413,18 @@ public sealed record InnerBulkheadInput
     public double? Mm { get; init; }
     public double? MagazinesMm { get; init; }
     public double? InboardM { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>An armoured box round each run of magazines (protection-plan.md H5; a treaty cruiser's, an up-armoured
+/// destroyer's): its sides on the magazines' wing walls, its crown on their crown, its ends, and a floor plate on the inner
+/// bottom (against mines); 0 for none.</summary>
+public sealed record MagazineBoxInput
+{
+    public double? SideMm { get; init; }
+    public double? CrownMm { get; init; }
+    public double? EndMm { get; init; }
+    public double? FloorMm { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

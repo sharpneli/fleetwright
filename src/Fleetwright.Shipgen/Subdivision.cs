@@ -319,7 +319,10 @@ public static class Subdivision
         var tdsSpec = Armour.Tds(design);
         var inner = armoured ? Armour.InnerBulkhead(design) : (Mm: 0.0, MagazinesMm: 0.0, InboardM: (double?)null);
         bool innerLine = Math.Max(inner.Mm, inner.MagazinesMm) > 0;
+        var boxSpec = Armour.MagazineBox(design);
         double magWing = design.StyleName == "planing" ? 0.0 : Armour.MagazineWingM(design, B);
+        if (boxSpec.SideMm > 0 && magWing <= 0)
+            magWing = Armour.MagazineWingShare * B;   // the box's sides need a wall to stand on
         var mags = rooms.Where(r => r.Kind == "magazine").ToList();
         var magWingCells = new HashSet<Cell>();   // wing cells a magazine may not take
         var crowns = new Dictionary<int, double>();   // by section: the magazines' crown there
@@ -402,6 +405,9 @@ public static class Subdivision
                 split = null;
             // the inner bulkhead's armour on this section's wall: thicker beside a magazine (protection-plan.md H4)
             double innerMm = innerLine && inCit ? crowns.ContainsKey(si) ? inner.MagazinesMm : inner.Mm : 0.0;
+            double innerTop = under;
+            if (boxSpec.SideMm > 0 && crowns.TryGetValue(si, out double boxTop) && boxSpec.SideMm > innerMm)
+                (innerMm, innerTop) = (boxSpec.SideMm, innerMm > 0 ? Math.Max(under, boxTop) : boxTop);   // the box's side
             if (split is double sp)
                 foreach (var (side, sgn) in new[] { ("S", 1), ("P", -1) })
                 {
@@ -411,7 +417,7 @@ public static class Subdivision
                         Y = Math.Round(sgn * sp, 3), X0 = Math.Round(sx0, 3), X1 = Math.Round(sx1, 3), Base = Math.Round(ib, 2),
                         Top = Math.Round(sTop, 2), PlateMm = sKind == "tds" ? Math.Round(tdsSpec.HoldingMm, 1) : null,
                         ArmourMm = innerMm > 0 ? Math.Round(innerMm, 1) : null, ArmourBottom = innerMm > 0 ? Math.Round(ib, 2) : null,
-                        ArmourTop = innerMm > 0 ? Math.Round(under, 2) : null,
+                        ArmourTop = innerMm > 0 ? Math.Round(innerTop, 2) : null,
                         ArmourMaterial = innerMm > 0 && !string.IsNullOrEmpty(ag.BulkheadMaterial) ? ag.BulkheadMaterial : null,
                     });
                     for (int k = 0; k < layerYs.Count; k++)

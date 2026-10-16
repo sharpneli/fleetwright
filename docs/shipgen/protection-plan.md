@@ -1,6 +1,6 @@
 # Plan: subdivision and protection schemes
 
-2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Research: `research/09_protection_schemes.md`
+2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Done: H0-H5 (2026-10-16). Next: H6, in a session of its own. Research: `research/09_protection_schemes.md`
 (the families, the layers, the bulkhead kinds), on top of `01_capital_subdivision.md` and `03_small_vessels.md`.
 
 This comes before phase P of `docs/battle/shells-armour-damage.md` (materials as data). The user wants the subdivision
@@ -259,6 +259,26 @@ this plan builds the layers so E1 has something to work on.
     51 at the magazines (Brooklyn): +537 t.
   - The zones follow the magazines exactly, so a gap between two magazine stretches keeps the belt's own thickness;
     real ships ran one thickness over the whole magazine stretch. Left as it is.
+
+- **H5b done 2026-10-16** (magazine boxes). `armour.magazine_box {side_mm, crown_mm, end_mm, floor_mm}` (0 by default):
+  round each run of magazines that touch on the same floor and under the same crown. The sides are armour on the
+  magazines' wing walls (a wing of the default width even when `magazine_wing_m` is 0); the crown and floor are armour
+  deck pieces on the subdivision's deck at their height (a platform deck, the inner bottom), and the ends are armour
+  bulkheads, one where two boxes meet. All are as wide as the magazines' cells. The plates are laid on the subdivision's
+  magazine rooms (`Armour.BoxPlates` in the hitbox export), because a short grouped magazine takes its whole section. The
+  weight comes from Stow's compartments (`Geo.MagazineBoxes`), so it runs a little under where a cell outgrows its
+  compartment: open.
+  - Two bugs fixed on the way: armour decks and bulkheads narrower than the hull (the steering gear's box) had lost their
+    width in the export, so in the sim they covered the whole beam (now `w` on both, kept to by the tracer, the
+    matchup's deck by its share of the beam); and fragments through a deck saw the deck row's armour only, 0 on a deck
+    armoured in several pieces (now `Effects.DeckMm` sums the armour pieces over the cell beyond). 131 goldens gain
+    `w` (the steering boxes and the end belts' stern faces); no size moves. `ShipDesign.Version` 14.
+  - Kent with the County class's boxes (102 mm sides, 64 crown and ends): +1,020 t; the two boxes cover the fore and
+    aft magazine groups whole (26.8-54.2 m, -58.4 to -33.3 m), steel before a magazine at a 10° fall 20 → 118 mm;
+    8" AP at 12 km, 10 hits: lost to the magazine 3.5 → 0.5 %, no hit sets one off. A destroyer with a 25 mm box:
+    +45 t, 13 → 38 mm, its losses (fires reaching the magazine later) as before.
+- **Phase P may start now** (decision 5). H6 (slopes, inclined belts) is next in this plan, in its own session
+  (user, 2026-10-16).
 
 ### H6. Sloped decks and inclined belts (§6.2, §6.3)
 - **One new plate primitive:** a longitudinal inclined plate (y linear in z between two heights, over x0..x1), crossed

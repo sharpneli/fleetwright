@@ -263,8 +263,8 @@ public static class ShipTracer
                     if (s < 0 || s > len)
                         continue;
                     double x = X(s), y = Y(s);
-                    if (x < d.X0 - Eps || x > d.X1 + Eps || Math.Abs(y) > hull.HalfWidth(x, d.Z) + Eps)
-                        continue;
+                    if (x < d.X0 - Eps || x > d.X1 + Eps || Math.Abs(y) > hull.HalfWidth(x, d.Z) + Eps || Math.Abs(y) > d.W / 2 + Eps)
+                        continue;   // (a box's deck: only as wide as the box)
                     var kind = PlateKind.ArmourDeck;
                     foreach (int t in g.Tubes)
                     {
@@ -290,7 +290,8 @@ public static class ShipTracer
                     if (s < 0 || s > len)
                         continue;
                     double y = Y(s), z = Z(s), xh = b.X - Math.Sign(b.X) * 0.01;   // a plate on an end face: the hull just inside it
-                    if (z < b.Bottom - Eps || z > b.Top + Eps || z > hull.DeckTop(xh) + Eps || Math.Abs(y) > hull.HalfWidth(xh, z) + Eps)
+                    if (z < b.Bottom - Eps || z > b.Top + Eps || z > hull.DeckTop(xh) + Eps || Math.Abs(y) > hull.HalfWidth(xh, z) + Eps ||
+                        Math.Abs(y) > b.W / 2 + Eps)
                         continue;
                     double mm = !double.IsNaN(b.LowerTop) && !double.IsNaN(b.LowerMm) && z < b.LowerTop ? b.LowerMm : b.ThicknessMm;
                     Add(CrossingKind.Plate, PlateKind.ArmourBulkhead, i, s, mm, b.Material, new P3(Math.Sign(b.X == 0 ? 1 : b.X), 0, 0));

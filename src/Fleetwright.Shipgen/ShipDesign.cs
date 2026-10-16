@@ -6,7 +6,7 @@ public static class ShipDesign
 {
     /// <summary>The generator's version: bumped whenever its output changes on purpose (each `golden-update` commit), so
     /// anything compiled from a build (a ShipClass, a cache entry) knows it's stale.</summary>
-    public const int Version = 13;
+    public const int Version = 14;
 
     /// <summary>Input errors. limits false skips the numeric ranges (--no-limits); structural checks stay.</summary>
     public static List<string> Validate(Design design, bool limits = true)

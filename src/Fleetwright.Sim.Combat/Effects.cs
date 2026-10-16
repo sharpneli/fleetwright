@@ -251,7 +251,7 @@ public static class Effects
                     continue;
                 double join = n.Join switch
                 {
-                    JoinKind.Deck => DeckMm(c, n.Through),
+                    JoinKind.Deck => DeckMm(c, n.Through, c.Cells[n.Cell].Box),
                     JoinKind.Bulkhead => c.Bulkheads[n.Through].PlateMm + c.Bulkheads[n.Through].ArmourMm,
                     _ => 0,
                 };
@@ -398,7 +398,16 @@ public static class Effects
 
     static double Q(ReadOnlySpan<double> quality, int material) => material >= 0 && material < quality.Length ? quality[material] : 1;
 
-    static double DeckMm(ShipClass c, int deck) => c.Decks[deck].PlateMm + c.Decks[deck].ArmourMm;
+    /// <summary>A deck between two cells, over the cell beyond: its plate, and the armour on it there (each piece of a
+    /// deck armoured in several, a magazine box's crown or floor).</summary>
+    static double DeckMm(ShipClass c, int deck, in Box beyond)
+    {
+        double mm = c.Decks[deck].PlateMm, x = (beyond.X0 + beyond.X1) / 2, y = (beyond.Y0 + beyond.Y1) / 2;
+        foreach (ref readonly var a in c.ArmourDecks)
+            if (a.Deck == deck && a.Covers(x, y))
+                mm += a.ThicknessMm;
+        return mm;
+    }
 
     /// <summary>How far a point is from a part: a mount's turret (a cylinder about its pivot), else its box.</summary>
     internal static double Distance(ShipClass c, int i, P3 p)

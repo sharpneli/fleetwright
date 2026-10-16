@@ -490,12 +490,12 @@ public static class ShipClassCompiler
             c.sidePlates = sides.ToArray();
             c.sidePlateIds = ids.ToArray();
             var bh = a.Bulkheads ?? [];
-            c.armourBulkheads = bh.Select(x => new ArmourBulkheadRow(x.X, x.ThicknessMm, x.Bottom, x.Top, Material(x.Material), Or(x.LowerMm), Or(x.LowerTop)))
-                .ToArray();
+            c.armourBulkheads = bh.Select(x => new ArmourBulkheadRow(x.X, x.ThicknessMm, x.Bottom, x.Top, Material(x.Material), Or(x.LowerMm), Or(x.LowerTop),
+                Or(x.W))).ToArray();
             c.armourBulkheadIds = [.. bh.Select(x => x.Id)];
             Index(c.armourBulkheadIds, "armour bulkhead");
             c.armourDecks = (a.Decks ?? []).Select(x =>
-                new ArmourDeckRow(Deck(x.Deck), x.ThicknessMm, ExtentOf(x.Extent), x.X0, x.X1, x.Z, x.Main, x.Roof, Material(x.Material))).ToArray();
+                new ArmourDeckRow(Deck(x.Deck), x.ThicknessMm, ExtentOf(x.Extent), x.X0, x.X1, x.Z, x.Main, x.Roof, Material(x.Material), Or(x.W))).ToArray();
         }
 
         PlatingRow PlatingOf(HullPlates p) => new()
@@ -654,6 +654,7 @@ public static class ShipClassCompiler
             "aft" => Extent.Aft,
             "full" => Extent.Full,
             "steering" => Extent.Steering,
+            "box" => Extent.Box,
             _ => throw new ShipCompileException($"unknown armour extent \"{s}\""),
         };
 

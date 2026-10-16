@@ -553,6 +553,8 @@ public enum Extent : byte
     Aft,
     Full,
     Steering,
+    /// <summary>A magazine box's crown or floor (protection-plan.md H5).</summary>
+    Box,
 }
 
 /// <summary>Side armour: the belt or a strake, on the hull's side over X0..X1 and Bottom..Top.</summary>
@@ -574,10 +576,17 @@ public readonly record struct SidePlateRow
 }
 
 /// <summary>An armoured transverse bulkhead: ThicknessMm from Top down, LowerMm under LowerTop.</summary>
-public readonly record struct ArmourBulkheadRow(double X, double ThicknessMm, double Bottom, double Top, int Material, double LowerMm, double LowerTop);
+/// <summary>An armoured transverse bulkhead's plane at X; W: as wide as that about the centreline (NaN: the hull's width).</summary>
+public readonly record struct ArmourBulkheadRow(double X, double ThicknessMm, double Bottom, double Top, int Material, double LowerMm, double LowerTop,
+    double W = double.NaN);
 
 /// <summary>An armour deck's plate: Deck (an index) at Z over X0..X1.</summary>
-public readonly record struct ArmourDeckRow(int Deck, double ThicknessMm, Extent Extent, double X0, double X1, double Z, bool Main, bool Roof, int Material);
+public readonly record struct ArmourDeckRow(int Deck, double ThicknessMm, Extent Extent, double X0, double X1, double Z, bool Main, bool Roof, int Material,
+    double W = double.NaN)
+{
+    /// <summary>Whether it covers (x, y): its stretch, and its width when it has one.</summary>
+    public bool Covers(double x, double y) => x >= X0 && x <= X1 && !(Math.Abs(y) > W / 2);
+}
 
 // ------------------------------------------------------------------ the hull
 

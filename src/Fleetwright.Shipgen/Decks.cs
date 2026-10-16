@@ -98,8 +98,12 @@ public sealed class Geo
     public Windage? Windage;
     public BridgePlan? Bridge;
     public List<(double X0, double X1)>? Holds;
-    /// <summary>Where the magazines are along the hull (Ordnance.Stow): the inner bulkhead is weighed thicker there.</summary>
-    public List<(double X0, double X1)>? MagazineSpans;
+    /// <summary>The magazines as Ordnance.Stow put them (heights above the main deck): the inner bulkhead, the belt's zones
+    /// and the magazine boxes go by them.</summary>
+    public List<(double X0, double X1, double HalfWidth, double Base, double Top)>? MagazineBoxes;
+
+    /// <summary>The magazines' stretches along the hull.</summary>
+    public IEnumerable<(double X0, double X1)> MagazineSpans => (MagazineBoxes ?? []).Select(m => (m.X0, m.X1));
     public (double X, double Z)? Magazine;
     public (double X, double Z)? Avgas;
 

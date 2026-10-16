@@ -178,6 +178,8 @@ public static class Armour
             errs.Add("armour.end_belts: use {\"fore\": {\"mm\", \"tip_mm\", \"reach\", \"bulkhead_mm\"}, \"aft\": {...}}");
         if (a.SteeringBox?.Extra is { Count: > 0 })
             errs.Add("armour.steering_box: use {\"mm\", \"deck_mm\", \"bulkhead_mm\"} (0 for none)");
+        if (a.MagazineBox?.Extra is { Count: > 0 })
+            errs.Add("armour.magazine_box: use {\"side_mm\", \"crown_mm\", \"end_mm\", \"floor_mm\"} (0 for none)");
         if (a.InnerBulkhead?.Extra is { Count: > 0 })
             errs.Add("armour.inner_bulkhead: use {\"mm\", \"magazines_mm\", \"inboard_m\"} (0 for none)");
         return errs;
@@ -285,7 +287,7 @@ public static class Armour
         // zones (protection-plan.md H5): a citadel deck and the belt thicker (or thinner) beside the magazines, where the
         // last layout pass stowed them
         var mags = new List<(double X0, double X1)>();
-        foreach (var (m0, m1) in (geo.MagazineSpans ?? []).OrderBy(m => m.X0))
+        foreach (var (m0, m1) in geo.MagazineSpans.OrderBy(m => m.X0))
         {
             if (mags.Count > 0 && m0 <= mags[^1].X1 + 1e-6)
                 mags[^1] = (mags[^1].X0, Math.Max(mags[^1].X1, m1));
@@ -423,6 +425,73 @@ public static class Armour
         };
     }
 
+    /// <summary>The magazine box's plates, mm (protection-plan.md H5).</summary>
+    public static (double SideMm, double CrownMm, double EndMm, double FloorMm) MagazineBox(Design design)
+    {
+        var b = design.Armour?.MagazineBox;
+        return (Math.Max(0.0, b?.SideMm ?? 0.0), Math.Max(0.0, b?.CrownMm ?? 0.0), Math.Max(0.0, b?.EndMm ?? 0.0), Math.Max(0.0, b?.FloorMm ?? 0.0));
+    }
+
+    /// <summary>The magazine boxes' plates round the runs of magazines (heights above the main deck; protection-plan.md H5):
+    /// their crowns and floors (Z above the keel, W their width) and their ends, one where two boxes meet. Their sides are
+    /// the subdivision's wing walls.</summary>
+    public static (List<ArmourDeck> Decks, List<ArmourBulkhead> Ends) BoxPlates(Design design,
+        IEnumerable<(double X0, double X1, double HalfWidth, double Base, double Top)> runs, double D)
+    {
+        var decks = new List<ArmourDeck>();
+        var ends = new List<ArmourBulkhead>();
+        var mb = MagazineBox(design);
+        if (mb.CrownMm + mb.EndMm + mb.FloorMm <= 0)
+            return (decks, ends);
+        int k = 0;
+        foreach (var r in runs)
+        {
+            k++;
+            double w = 2 * r.HalfWidth;
+            if (mb.CrownMm > 0)
+                decks.Add(new ArmourDeck { Deck = -1, Mm = mb.CrownMm, Extent = "box", Z = r.Top + D, X0 = r.X0, X1 = r.X1, W = w,
+                    Material = ArmourMaterial(design, "decks") });
+            if (mb.FloorMm > 0)
+                decks.Add(new ArmourDeck { Deck = -1, Mm = mb.FloorMm, Extent = "box", Z = r.Base + D, X0 = r.X0, X1 = r.X1, W = w,
+                    Material = ArmourMaterial(design, "decks") });
+            if (mb.EndMm <= 0)
+                continue;
+            foreach (var (end, x) in new[] { ("forward", r.X1), ("aft", r.X0) })
+            {
+                // where two boxes meet, one plate between them, the taller's height and the wider's width
+                int j = ends.FindIndex(e => Math.Abs(e.X - x) < 0.05);
+                var plate = new ArmourBulkhead($"Magazine box {k} {end} end", x, mb.EndMm, r.Base + D, r.Top + D, w, ArmourMaterial(design, "bulkheads"));
+                if (j < 0)
+                    ends.Add(plate);
+                else
+                    ends[j] = ends[j] with { Bottom = Math.Min(ends[j].Bottom, plate.Bottom), Top = Math.Max(ends[j].Top, plate.Top), W = Math.Max(ends[j].W ?? 0, w) };
+            }
+        }
+        return (decks, ends);
+    }
+
+    /// <summary>The magazines as runs of those that touch end to end on the same floor and under the same crown: each
+    /// run's stretch, its widest half-width, floor and crown (above the main deck). From Stow's magazines (geo, for the
+    /// weights) or the subdivision's (for the plates).</summary>
+    public static List<(double X0, double X1, double HalfWidth, double Base, double Top)> MagazineRuns(Geo? geo) => MagazineRuns(geo?.MagazineBoxes ?? []);
+
+    public static List<(double X0, double X1, double HalfWidth, double Base, double Top)> MagazineRuns(
+        IEnumerable<(double X0, double X1, double HalfWidth, double Base, double Top)> mags)
+    {
+        var runs = new List<(double X0, double X1, double HalfWidth, double Base, double Top)>();
+        foreach (var m in mags.OrderBy(m => m.X0))
+        {
+            if (runs.Count > 0 && m.X0 <= runs[^1].X1 + 0.05 && Math.Abs(m.Top - runs[^1].Top) < 0.05 && Math.Abs(m.Base - runs[^1].Base) < 0.05)
+            {
+                var r = runs[^1];
+                runs[^1] = (r.X0, Math.Max(r.X1, m.X1), Math.Max(r.HalfWidth, m.HalfWidth), Math.Min(r.Base, m.Base), Math.Max(r.Top, m.Top));
+            }
+            else
+                runs.Add(m);
+        }
+        return runs;
+    }
+
     /// <summary>A deck piece cut where the magazines are when it's thicker or thinner over them: the pieces over the
     /// magazines take MagazinesMm (none at 0).</summary>
     static List<ArmourDeck> Zoned(ArmourDeck d, List<(double X0, double X1)> mags)
@@ -502,6 +571,22 @@ public static class Armour
             double f = a + b > 0 ? (a + 2 * b) / (3 * (a + b)) : 0.5;
             result.Add(new Weight(s.Id, "armour", 2 * (s.X1 - s.X0) * (s.Top - s.Bottom) * Slant(s.Bottom, s.Top) * (a + b) / 2 / 1000 * Weight.Steel,
                 s.X0 + f * (s.X1 - s.X0), Zf(s.Top, s.Bottom)));
+        }
+        var box = MagazineBox(design);
+        if (box.SideMm + box.CrownMm + box.EndMm + box.FloorMm > 0)
+        {
+            // each run's sides, crown, floor and ends, as Stow made the magazines: the plates stand on the subdivision's
+            // cells, which may be longer (a short magazine takes its whole section) and a little wider, so this is a little under
+            double t = 0, mx = 0, mz = 0;
+            foreach (var r in MagazineRuns(geo))
+            {
+                // (an end where two boxes meet is weighed with each: a little over)
+                double len = r.X1 - r.X0, h = r.Top - r.Base, w = 2 * r.HalfWidth;
+                double one = (2 * len * h * box.SideMm + len * w * (box.CrownMm + box.FloorMm) + 2 * w * h * box.EndMm) / 1000 * Weight.Steel;
+                (t, mx, mz) = (t + one, mx + one * (r.X0 + r.X1) / 2, mz + one * ((r.Base + r.Top) / 2 + D));
+            }
+            if (t > 0)
+                result.Add(new Weight("Magazine boxes", "armour", t, mx / t, ZRel.Frac(D != 0 ? mz / t / D : 0.5)));
         }
         var (inMm, inMag, _) = InnerBulkhead(design);
         if (g.Armoured && lc > 0 && Math.Max(inMm, inMag) > 0)

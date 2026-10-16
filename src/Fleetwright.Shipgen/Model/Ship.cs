@@ -328,10 +328,16 @@ public sealed record ArmourBulkheadReport(string Id, double X, double ThicknessM
 {
     public double? LowerMm { get; init; }
     public double? LowerTop { get; init; }
+    /// <summary>Narrower than the hull: this wide about the centreline (the steering gear's box, a magazine box).</summary>
+    public double? W { get; init; }
 }
 
 public sealed record ArmourDeckReport(string Deck, double ThicknessMm, string Extent, double X0, double X1, double Z, bool Main, bool Roof,
-    string? Material);
+    string? Material)
+{
+    /// <summary>Narrower than the hull: this wide about the centreline (the steering gear's box, a magazine box).</summary>
+    public double? W { get; init; }
+}
 
 /// <summary>One hitbox component. Kind says which it is and so which of the optional fields it has: a gun or torpedo
 /// mount, barbette, superstructure block, conning tower, funnel, uptake, casing, deck, sponson, AA mount, mast, hangar

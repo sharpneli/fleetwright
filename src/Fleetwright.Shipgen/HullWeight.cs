@@ -369,7 +369,7 @@ public static class Ordnance
                 }
                 result[r.Id] = (x - l, x, bse, top);
                 if (c.Kind == "magazine")
-                    (lay.Geo.MagazineSpans ??= []).Add((x - l, x));
+                    (lay.Geo.MagazineBoxes ??= []).Add((x - l, x, z.HalfWidth, bse, top));
                 x -= l;
             }
         }

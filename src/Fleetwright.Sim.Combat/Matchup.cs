@@ -167,8 +167,8 @@ public sealed class MatchupProfile
         {
             double x = x0 + (i + 0.5) * c.Length / nx;
             foreach (var d in c.ArmourDecks)
-                if (x >= d.X0 && x <= d.X1)
-                    mm[i] += d.ThicknessMm * Quality(q, d.Material);
+                if (x >= d.X0 && x <= d.X1)   // a box's deck by its share of the beam
+                    mm[i] += d.ThicknessMm * Quality(q, d.Material) * (double.IsNaN(d.W) ? 1 : Math.Min(1, d.W / c.Beam));
         }
         return Shares(mm);
     }
