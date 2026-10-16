@@ -12,6 +12,33 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-10-16 - Shell bursts in confined spaces aboard ship
+- Question: how much harder does a shell's burst hit inside a closed compartment than on an open deck, and how should a
+  model scale it? The quasi-static pressure from a confined burst against the room's volume and its vents (doors,
+  hatches, ducts, the hole the shell made), what it does to bulkheads, decks and doors (blown in, bulged, torn from
+  their frames), how far it reaches into neighbouring spaces, and its effect on the people inside. War-damage cases with
+  the charge, the room's size and what failed are the best anchors.
+- Context / relevant files: `src/Fleetwright.Sim.Combat/Effects.cs` (bursts sized only by the charge: wreck radius
+  1.6·W^⅓ m, blast 3.5·W^⅓ m, a bulkhead breached when the wreck radius passes 0.4 of the room's length, the same in a
+  small room as on a deck), `research/simulation/damage-research/08-gunfire-effects.md` §3.6 (the radii, fitted to 2-3
+  holes), `07-magazine-explosions.md` §2 (the venting balance, for propellant), `docs/battle/shells-armour-damage.md`
+  "Open questions". Not blocking: the plan's steps go ahead on today's radii.
+- Wanted output: a rule for a burst's reach and damage by charge, room volume and venting, with the cases it's fitted to.
+
+### 2026-10-16 - Explosive fillers as parameters, 1860-1970
+- Question: which bursting charges did shells (and torpedoes and bombs, briefly) carry, and what numbers describe each
+  for a game: TNT equivalence for blast, detonation velocity or brisance (how it breaks the shell body into fragments),
+  incendiary effect, sensitivity to the shock of striking armour (bursting in the plate), how often it went low-order
+  or failed and what booster it needed, stability in storage, and when and by whom it was used. Black powder, wet
+  guncotton, picric fillers (lyddite, melinite, Shimose), TNT, Explosive D, Shellite, TNA, trotyl/hexanite and the
+  later RDX mixes and Torpex, and any others in naval service.
+- Context / relevant files: `research/simulation/armor/04-shells-fuzes.md` §2 (a first table: RE, detonation velocity,
+  sensitivity, AP suitability; several REs not found), `Content/Sim/settings.json` `FillerTnt` (1 for every explosive
+  today), `docs/battle/shells-armour-damage.md` (the shell block's `filler`, and "Open questions"),
+  `src/Fleetwright.Sim.Combat/Effects.cs`.
+- Wanted output: a parameter table per explosive with sources, and what each parameter should drive in the model
+  (blast, fragments, fire, in-plate bursts, low-order rates).
+
 ### 2026-10-15 - Torpedo tracks, launches and hits as seen, 1890-1945
 - Question: what a torpedo looked like from a ship's bridge or aloft, and from above. The bubble track: how far behind
   the torpedo it surfaced (by depth and speed), how wide it was and how it spread, how long it stayed visible, how it

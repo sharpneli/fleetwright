@@ -397,6 +397,20 @@ material row per name (the class's material table exists, with names only). `set
 
 None open (2026-10-16).
 
+## Open questions (research coming)
+
+The user will write research notes on these (2026-10-16; requested in `research/REQUESTS.md`). Neither blocks a step:
+each lands where it says once its note is in.
+
+1. **Confinement.** A burst is sized by its charge alone today (`Effects`: the same radii in a small closed room as on
+   an open deck). A confined burst hits harder: pressure against the room's volume and vents, bulkheads and doors blown
+   out, neighbouring spaces reached. Lands in phase E, beside the burst's other effects.
+2. **Explosives as parameters.** The shell block's `filler` names an explosive and carries its `re`. A catalogue of
+   explosives with their own numbers would replace that: TNT equivalence for blast, brisance for fragments,
+   incendiary effect, sensitivity (bursting in the plate), low-order and failure rates with their booster, and the
+   years they served. The block would then name an explosive from the catalogue (overridable), like the materials. Lands
+   with S1's templates or as a step of its own after them; until then `filler.re` and the rates stand in.
+
 ## Steps at a glance
 
 | Step | Needs | Shipgen | Sim | Moves numbers? |
