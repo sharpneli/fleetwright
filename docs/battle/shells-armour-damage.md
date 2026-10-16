@@ -1,10 +1,14 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation    Updated: 2026-10-16
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10)    Updated: 2026-10-16
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
 near-miss splinters; a ricochet table"). Its research is `research/simulation/armor/` and `damage-research/`, read
-together in `research/simulation/armour-and-damage.md`.
+together in `research/simulation/armour-and-damage.md`, and the notes asked for this pass in `docs/battle/damage/`
+(11 blast and confinement, 12 fillers, 13 fragmentation and non-penetrating hits, 14 spall, 15 near misses, 16
+casualties; 17's fire, leakage and service networks belong to the other sessions). Each note has a `*_ref.py` that makes
+its tables: references to check against, never a second engine. They're a source of detail where a step needs it, not
+a spec to follow line by line.
 
 ## The aim
 
@@ -19,7 +23,8 @@ gave:
    splinters).
 
 Flooding, fire, magazines' venting race and the service networks stay their own 4.5 sessions. This plan feeds them
-better burst points and states; it doesn't rebuild them.
+better burst points and states; it doesn't rebuild them. Casualties per hit and what a plate that held does (jams, belt
+leaks, shock) come into phase E (decision 8): they're `Effects`, and they read the same fragments and blast.
 
 ## The principles
 
@@ -36,6 +41,10 @@ better burst points and states; it doesn't rebuild them.
   the whole chain against battles, where the remaining roll is only fuze and filler failure, each with a sourced rate.
 - **One implementation** (memory): the benches run the game's `Terminal`; `armor_pen_ref.py` stays a reference, not
   a second engine.
+- **The research's era tables become design numbers.** Several notes tabulate by period (13's shock columns, 17's
+  breaker grades and fire loads). Each column becomes a template default for one number in the design: the shock grade,
+  the joints, the explosive and its booster. A WWI ship trips less because it carries little to trip, not because of
+  its year.
 
 ## Decided (the user, 2026-10-16)
 
@@ -63,6 +72,15 @@ better burst points and states; it doesn't rebuild them.
 7. **Default outfits and the magazine order** (user, 2026-10-16): main batteries 70% AP and 30% HE, secondaries 30% AP
    and 70% HE. Magazines empty AP first on the main battery and HE first on the secondaries; the AI's behaviour is
    otherwise as it is. A dev toggle on the right-click fire picks the kind to shoot (S2).
+8. **Casualties and the non-penetrating effects join phase E** (user, 2026-10-16). Casualties per hit (16) were
+   fighting.md 4.5's "Crew" link, and jams, belt leaks and shock (13) were 4.3a's guesses; both are `Effects`, reading
+   the burst's pieces and blast. The crew link keeps the rest: crew as the damage-control resource, the command node,
+   posture.
+9. **The explosives catalogue comes in S1** (user, 2026-10-16), not as a later step: the shell block's `filler` names
+   an explosive from it from the start, so `filler.re` is never written and then migrated.
+10. **This plan adds the shock grade and the joints to shipgen** (user, 2026-10-16): `fittings.shock_grade` (G0-G3)
+    and `construction`'s riveted or welded shell and internals (E0), read by E4, E5 and E7 and later by the service
+    networks and the flooding.
 
 ## What shipgen needs
 
@@ -80,8 +98,10 @@ navy's 15″ main and 6″ secondary share one block, written once):
 | `cap` | `{kind: hard, share: 0.116}` (`none`, `soft`, `hard`, `hard2`, `break_away`) | decapping, shatter, the cap's lost mass; `break_away` is the diving shell (`ShellTypeRow.Diving`, P6) |
 | `windscreen` | true | lost on any impact |
 | `body` | `{break_ob_deg: 20, break_t_d: 0.67, quality: 1.0}` | when it breaks up; the thickness multiplier (armor/00 §5.4: 0.85–1.11) |
-| `filler` | `{share: 0.024, explosive: "Shellite", re: 1.0, in_plate: 0.0, low_order: 0.1}` | burst size; the rates of bursting in the plate (lyddite's 0.35) and low-order, each sourced (armor/04 §6, §8.2) |
-| `fuze` | `{position: base, delay_s: 0.025, start_cal: 0.07, oblique: 0.25, plates: single, scatter: 0.25, blind: 0.05}` | start threshold, burst point, duds |
+| `filler` | `{share: 0.024, explosive: "Shellite", booster: ce}` | the explosive by name from the catalogue below (its numbers copied in, overridable inline); the booster picks its full-detonation rate (decision 9) |
+| `steel` | `{size: 1.25, speed: 1.0}` (Ni-Cr AP body) | Mott's B and Gurney's V multipliers: forged carbon 1/1, cast iron 0.6/0.8, cast steel 0.85/0.95, HF-1 0.65/1 (13 §3.2) |
+| `casing` | `{nose: 0.33, ogive: 0, body: 0.55, plug: 0.08, tail: 0.04}` | how the shell breaks: the nose slug, the ogive's spray (HE 0.20), the side spray, the base plug (13 §2.5) |
+| `fuze` | `{position: base, delay_s: 0.025, start_cal: 0.07, oblique: 0.25, plates: single, scatter: 0.25, blind: 0.05, water_ms: 0.5, water_fires: 1.0}` | start threshold, burst point, duds; on the water, how fast a nose fuze fires (the surface burst's depth) and whether it fires at all (15 §6.2) |
 
 Metric like the rest of shipgen; the templates' notes give lb/in³, the literature's unit.
 
@@ -132,6 +152,30 @@ What doesn't fit one block:
 So a navy and year has two or three blocks (heavy AP, heavy HE or common, light guns), and a design picks one per kind
 for each battery. That's the same count as its plant templates.
 
+**The explosives catalogue** (decision 9; 12 §4.1, 11 §2.4, 13 §2.1 and §3.1). A built-in table keyed by name, like
+the materials, written out to `Content/Templates/explosives.json` and `docs/shipgen/explosive-templates.md` by the tool.
+The eleven fillers of 12 (black powder, wet guncotton, lyddite, Shimose, TNT, TNT/wax, Explosive D, Shellite, TNA,
+amatol 60/40 and 80/20), plus RDX/TNT and Comp B for late HE. Each row (TNT as the example):
+
+| Field | TNT | Used for | Source |
+|---|---|---|---|
+| `re` | 1.00 | the shock: W = filler kg × re (`Effects`; was `FillerTnt`) | 12 (armor/04 where sourced) |
+| `q_det`, `q_comb`, `air_m3_kg`, `eta` | 4.5, 15.0, 2.66, 1.0 MJ/kg | the gas pressure in a closed space and its afterburn (E5) | 11 §2.4 |
+| `gurney_ms` | 2,438 | the fragments' speed (E1) | 13 §2.1 |
+| `brisance` | 1.00 | B_TNT / B_Mott: the fragments' size, mean mass ∝ 1/brisance² (E1) | 13 §3.1 |
+| `in_plate` | 0.10 | bursting in the plate, at the limit (P3) | 12 |
+| `full` | `{basic: 0.60, ce: 0.95}` | full detonation by booster; the rest low-order 75%, dud 25% (P3) | 12 |
+| `fire` | 0.25 | the fire start's multiplier | 12 |
+| `from` | 1902 | a template's label; the tech tree filters by it, the sim never reads it | 12 §6 |
+
+- **Reconcile at S1.** 11 and 12 disagree on four `re` values (black powder 0.40 against 0.55, lyddite 1.12 against
+  1.17, Explosive D 0.90 against 0.95, Shellite 1.05 against 1.00). Take 12's (armor/04 sourced) for `re`, 11's heats
+  for the gas: black powder's weakness in a closed space then comes from its heats and η, not from a second RE.
+- **Unsourced:** Explosive D's and TNA's `re`, and every Gurney constant but TNT's, Comp B's and tetryl's (scaled by
+  detonation velocity). Marked in the templates' notes.
+- **Not in the catalogue:** storage hazards, dud drift with age and Shimose's bore prematures (12 §4, hidden stats):
+  a campaign's, later. Underwater fillers (Torpex, Minol) belong to the torpedoes.
+
 **Not added in this plan** (the schema leaves room; each is its own step later):
 
 - `charge`: `{kg, propellant, packaging: bag | case}`, for the magazines' venting race (`07-magazine-explosions.md`).
@@ -167,7 +211,8 @@ per-battery `material`, `hull.plating.material`, `superstructure.material`):
 | `face_hardened` | `{share: 0.41, min_mm: 100}` | shatter, always decaps, always starts a fuze; homogeneous below min | armor/00 §4.2, 03 §5 |
 | `elongation_pct` | 18 (Wotan Hart) | Okun's penalty for homogeneous plate against shells over 8″ | armor/00 §4.2 |
 | `backing` | 0 (teak 0.01, cement 0.04) | weight-only layers that count little | armor/05 §5 |
-| `fragments` | `mild` / `hard` / `fh` | THOR's constants (phase E) | armor/01 §3.10 |
+| `fragments` | `mild` / `ductile` / `fh` / `brittle` | THOR's constants (phase E); `brittle` for compound, cast and high-hardness plate | armor/01 §3.10, 14 §2.1 |
+| `back` | `{spall_u: 0.85, holed_u: 0.94, big: 0.5}` | where spall starts and the plate is holed, in u = V/V_L, and the big piece's share (P4, E3); defaults by `fragments` class: fh 0.85/0.94, ductile and mild 0.90/1.00, brittle 0.75/0.95 (big 0.3) | 14 §2.1 [EST], armor/00 §1 |
 
 Old designs (shipped, fuzz, scenario and the players' saves) are upgraded by `DesignFormat` (version 2): every name the
 catalogue knows becomes its block. A name nobody knows gets the steel block and a warning in the report, never an error
@@ -179,7 +224,24 @@ Two more armour inputs:
   holed grating stops what 6″ of solid plate does, O.S. 751). The open gratings design input (memory) gets its first
   number. Today the tracer makes a grating as thick as the deck (`HitPath.cs`).
 - **`armour.backing`** per belt: `{material, mm}` (Littorio's oak, US Class A's 2″ of concrete, the ironclads' teak).
-  Weight, and a near-zero plate in the path.
+  Weight, a near-zero plate in the path, and what catches spall (14 §4.3: a backing of the scab's mass per area takes
+  the flakes, twice that the big piece too).
+
+### Hull and fittings (phase E, decision 10)
+
+- **`construction.shell` and `construction.internals`:** `riveted` or `welded`. The hull templates already name them
+  ("riveted shell, welded internals", 1933-42), but only `join_factor` carries it. Used by the blast (riveted
+  boundaries ×0.85, 11 §3.2), the belt's seep (welded skin ×0.6, 13 §2.3), and the flooding session's seam leak
+  (welded ×0.4, 17 leakage §1.4).
+- **`fittings.shock_grade`:** G0 unsecured, G1 secured, G2 shock-tested, G3 post-war (17 service §2.2). Templates by
+  navy and year (G0 to 1940, RN late 1940 and USN 1942 G1, USN 1943+ G2). One number for 13's armour shock, 15's near
+  misses and later the service networks' breakers. The block leaves room for the systems session's lock-in,
+  selectivity and LVR.
+- Weight: none in v0 (G2's +1-2% of electrical weight is flagged, not built).
+
+**Sim tables, not design** (`settings.json`, until the designer emits them): cover by room kind (16 §4.1), vents by
+room kind (11 §5.3: a boiler room's share of its funnel, a casemate's ports), parts' pressure classes (11 §4.3) and
+fragility in joules (14 §5.2), the turret outcome table (13 §1.4), shock rates by zone and grade (13 §3.4).
 
 **Out of shipgen:** the materials table in `report.json`; hitboxes keep the names; `ShipClassCompiler` compiles a
 material row per name (the class's material table exists, with names only). `settings.json` `ArmourQuality` and
@@ -196,13 +258,13 @@ material row per name (the class's material table exists, with names only). `set
 - **`docs/shipgen/material-templates.md`** and `materials.json` become blocks: the 35 materials of armor/00 §4.2 and 03
   §8 (00's reconciled Q where the two disagree), plus the structural ones (mild steel, HT, Ducol, STS, aluminium alloy,
   wood).
+- **`docs/shipgen/explosive-templates.md`** and `explosives.json`: the explosives catalogue above. A shell template names
+  its explosive and booster.
 - **`armour.json`** stays the *scheme* templates (part → material name). Applying one adds the blocks it names to the
   design's table.
 - The designer's template column (`DesignerScene.Layout.cs`: Plant, Hull, Crew, Armour) gains **Shells** and
   **Materials**. The material knobs (`Knobs.SchemeMaterial` and its kin) list the design's table and the catalogue
   instead of `Templates.MaterialNames`. UI work follows the designer's way (memory: one tab a session, mockup then port).
-
-## Phase S: what's hitting
 
 ## Rules for every step
 
@@ -223,6 +285,8 @@ material row per name (the class's material table exists, with names only). `set
   - A tool writes every shipped and scenario design's ammunition *from today's placeholder*, so every number holds:
     - each battery's `mass_kg` per entry (the placeholder's k varies with calibre, so one block's k can't hold it yet),
       `muzzle_velocity_ms`, the form factor, filler shares and fuze delays, and the Type 91's `break_away` cap;
+    - the filler's explosive as an inline block with `re` 1 (today's `FillerTnt` for every explosive), until S1 names
+      the catalogue's;
     - **a transitional `outcomes` field** naming today's `ShellOutcomes` row (`rn1916`, `km1916`, `rn1918`, `ww2`,
       `ijn_t91`), until P3 replaces the rows with the fuze's and filler's rates and deletes it.
   - Checks: the sim's hashes, `shipgen ballistics`, `duel` and `weapons` unchanged; the goldens gain the new keys only
@@ -233,9 +297,12 @@ material row per name (the class's material table exists, with names only). `set
   the Bd.Z. 38, Yamato the Type 91), and the parity `mass_kg` overrides go.
   - This moves numbers: masses (k from 0.42–0.66 lb/in³ instead of one curve), the drag form factor, filler. The
     `outcomes` field stays as S0 set it.
-  - **The filler's TNT equivalent:** `Effects` sizes every burst by W = filler kg × `FillerTnt`, which is 1 for every
-    explosive today. The block's `filler.re` replaces it (black powder 0.55, lyddite 1.17, TNT 1, armor/04 §2.1), so a
-    Victorian powder-filled common shell bursts smaller than its kilograms say.
+  - **The explosives catalogue** (decision 9) and `explosive-templates.md`; each template names its explosive and
+    booster. `Effects` sizes every burst by W = filler kg × `FillerTnt`, which is 1 for every explosive today; the
+    explosive's `re` replaces it (black powder 0.55, lyddite 1.17, TNT 1, armor/04 §2.1), so a Victorian powder-filled
+    common shell bursts smaller than its kilograms say. `FillerTnt` goes.
+  - **The new fields ride along unread:** `steel`, `casing`, the heats, Gurney and brisance, `fuze.water_ms`. E1, E5
+    and E7 read them; S1 only writes them, so they move nothing yet.
 - **S2 Default outfits and the magazine order** (decision 7).
   - **Outfits:** every design's default loadout is 70% AP and 30% HE on its main batteries and 30% AP and 70% HE on its
     secondaries, replacing `ShellMix`'s mix by calibre and era. Common shell leaves the defaults; its templates stay for
@@ -334,12 +401,19 @@ material row per name (the class's material table exists, with names only). `set
   - Start threshold and obliquity factor per fuze; the two-plate fuzes adding up thin plates in quick succession; face-hardened plate always starts it.
   - Delay scatter per fuze; blinds per fuze.
   - The `ShellOutcomes` rows and the transitional `outcomes` field are gone: what's left lives in the shell's
-    `fuze.blind`, `filler.in_plate` and `filler.low_order`. The templates carry the sourced rates; S0's parity designs
-    get them from their row.
+    `fuze.blind` and its explosive's `in_plate` and `full` (12 §4). S0's parity designs get them from their row.
+  - **The filler's three stages** (12 §4):
+    - in the plate: `P = min(1, in_plate · r²)` with r the plate over what the shell beats. In the plate step's terms
+      r ≈ (V_L/V)², so `P ≈ min(1, in_plate / u⁴)`; the exponent is 12's knob to settle against Jutland and Baden;
+    - initiation: full by the booster's rate, else low-order 75% (30% of the blast, no fragment bonus) or dud 25%;
+      black powder is always "full" (its `re` prices it);
+    - the outcome per hit in the log: "burst on plate", "low-order", "dud".
   - `FuzeStartsOnWater` on (P6's scaffold).
   - Benches: bursts behind the plate (Baden 38 ft), Iowa's bomb deck moving bursts up, South Dakota's pass-throughs.
 - **P4 Three limits.** Holed (a hole, the shell broken, fragments only), Navy (the whole shell through) and effective (through,
   whole, fuze working), with a new `Outcome` for holed-but-broken.
+  - The holed limit is the material's `back.holed_u` (face-hardened holed 2-12% below the Navy limit, armor/00; 14
+    §2.1), and the spall band below it (`back.spall_u`) is marked on the outcome for E3.
   - The damage report's line says which.
 - **P5 Angles.**
   - The ricochet gate at 65–80°, by V/V_L, certain from 80°, none for broken shells.
@@ -358,65 +432,200 @@ material row per name (the class's material table exists, with names only). `set
     it fires (`WaterRun.FuzeRunM`, L·ln(1 + v·t/L)) and the shell arms at the hull with what's left (`Terminal`). The
     pass turns it on with P3's fuzes, so the fuze, not the reach (`UnderwaterReachDecays` 3: 5% of the speed), ends an
     ordinary shell's run.
+  - **The straight path, again (15 §4):** with the fuze on, E7's under-hull bursts come from where the run ends. A
+    Type 91 on its straight 55 m run (0.4 s delay, [UNCERTAIN]) ends 14 m down, under or beside a destroyer: most of a
+    46 cm AP salvo's structural shock. The real shell flattened, so the straight line errs toward under-keel bursts
+    and away from hull hits. E7's AP shock numbers for diving shells are an upper bound until the path is revisited.
   - **Outcomes accepted, not tuned (user, 2026-10-16):** with the 3-decay reach about a quarter more hits count and
     more ships flood and sink (the squadrons' Germans lose ~0.7 ships a run, none before). Without damage control
     that's expected; tuning to historical rates now would make ships immortal once it comes.
 - **P7 Gratings, backing and scatter.**
-  - `armour.gratings` and `armour.backing` in the tracer.
+  - `armour.gratings` and `armour.backing` in the tracer (the backing's spall catch is E3's).
   - Plate quality drawn per ship (about N(1, 0.06)) and per shot (N(0, 0.03)), instead of the ±10% per shot.
 - **Later, if wanted:** edges and joints (up to 15% within 1.5 calibres of a plate's edge, from the hitbox's extents),
-  and a hole as a free edge for repeated hits.
+  and a hole as a free edge for repeated hits. Phase E has three more readers for the same plate grid: a belt hit on a
+  joint leaks worse and a repeat hit loosens the plate (13 §2.3), and a contact burst at an opening or edge holes the
+  plate inboard (14 §3.4, Tiger's Q roof). Until then: a joint is a 25% draw, an opening is a component kind
+  (sighting hood, port), and a loosened plate is a flag per plate box.
 
 ## Phase E: what it does
 
-- **E1 Holed but broken.**
-  - Fragments at about 0.15× through the hole, no full burst.
+Renumbered after the research (2026-10-16): the burst's pieces come first, because every later step reads them. The
+notes use the old numbers: their E2 (spall) is E3 here, their E3 (fragments, near misses) is E1 and E7. Each
+step names the `settings.json` numbers it retires and the note whose §-tests it adopts (wide bands, as the notes give
+them). Every step that moves outcomes runs `shipgen hits` (with killed and wounded once E6 is in), the matchup and the
+squadrons, and changes `Matchup.cs` with it.
+
+- **E0 Hull data (parity).** `construction.shell`/`internals` and `fittings.shock_grade` (decision 10) read, validated,
+  reported and compiled; the templates set them (hull templates' joints, shock grades by navy and year); `DesignFormat`
+  upgrades old designs from their construction's name and their year label, with a warning when it can't tell. Goldens
+  gain the keys only.
+- **E1 The burst's pieces** (13).
+  - **At compile, per shell type:** the body's own charge-to-metal ratio (80-90% of the filler against 55-65% of the
+    metal), the bore and wall that follow from it, then:
+    - the side spray: Gurney's speed (the explosive's `gurney_ms` × the steel's speed), Mott's ~6 mass classes of
+      1 g and up (B from the brisance × the steel's size);
+    - HE's ogive spray in a forward cone (30-80° off the nose), the slow tail spray;
+    - two single pieces: the nose slug (AP, SAP: a third of the casing) and the base plug;
+    - low-order: 0.4× Gurney, 3× B; black powder by its own constants.
+  - **At the burst:** the ring ±7.5° square to the path, leaning forward by atan(V₀/v) with the shell's speed then,
+    0.15 of the pieces outside it. Per part: density × presented area, a Poisson draw, THOR through its box by the
+    material's `fragments` class with linear subtraction (Okun). Drag V₀·e^(−R/(247·m^⅓)).
+  - **The nose slug and the base plug** go on through the terminal walk as pieces of their own: the slug a blunt shell
+    without filler (quality ~0.6, 0.75 calibre), the plug slowed by its kick and stopped if the shell was slow at the
+    burst.
+  - **A line-target query,** hits = n·w/(2πR), for cables, pipes and trunks: the service networks' cut rule reads it
+    (17 service §4).
+  - **Replaces** `FragPenMm` and Okun's constants (`FragDist`, `FragT50`) for parts. Parts take the free field; people
+    take E6's scale on it.
+  - **Bench** `shipgen frag SHELL`: Okun's 8″ HE table regenerated (13 §4.1: the 50% and 1% columns within ~10% at
+    4-20 m), WDR 51's splinter knee (13 §4.3: 25-30 lb STS against 5-8″ HE, 1-1.5″ against capital-ship HE), WDR 51's
+    3,200 ft/s for the 6″ HC, Boise's largest piece.
+  - **Open:** THOR above 53 g (AP and black-powder pieces of 0.2-20 kg): one rule for pieces over ~0.5 kg, THOR or a
+    blunt-fragment Thompson walk.
+- **E2 Holed but broken.**
+  - The broken shell's pieces through the hole: E1's field at about 0.15×, no full burst (16 §4.3: a weak burst at the
+    plate).
   - On a gunhouse, working chamber or barbette, a flash source for the magazine roll (Seydlitz at Dogger Bank).
-- **E2 Behind a plate that held.** Spall and a plug off thin or face-hardened plate near its limit: a 30–45° cone, 3–5
-  m, as a weaker burst inside (Tiger's roof).
-- **E3 Fragments.**
-  - THOR's equations for fragments against the plating, by the material's `fragments` class.
-  - This replaces Okun's table in `Effects.FragPenMm` for parts boxed by armour and splinter decks.
-  - **Near-miss splinters:** a shell bursting on the water near a ship sends fragments into its side and upper works
-    (`08-gunfire-effects.md` §8). The splash system has the miss's position already. It needs a new `Hit` source, a
-    burst at a point outside the hull, which `DamageSystem` takes like any hit and `Effects` handles from its burst
-    on (no terminal walk). A step of its own, after the THOR fragments.
-- **E4 The battle anchors.** With S and P in, the whole chain against the battles: Jutland, Bismarck's ~3 belt holes in
-  ~400 hits, South Dakota, Samar, the 1894–1905 battles, the destroyer benches. The leftover rolls are tuned only within
-  their sourced bands, and the deck multiplier (P1a) only if an anchor asks.
+- **E3 Behind a plate that held** (14). Not a burst: no gas, no shock, no fire, no breach.
+  - **Triggers:** a shell stopped or shattered with u between the material's `back.spall_u` and `back.holed_u`
+    (severity s through the band; shattered against its shattered limit); a heavy ricochet off a thin roof (about 30%
+    for D ≥ 2.5 T, Dunkerque); a contact burst at an opening (until the edges step, by component kind: Tiger's Q roof,
+    the hole's own plate half inboard at ~150 m/s). A contact burst on an intact face throws little (14 §3.3) and v0
+    may skip it.
+  - **The cloud:** a disc D + T across and 0.2 T deep, × s; half of it one big piece once s ≥ 0.5 (0.3 brittle), the
+    rest flakes; axial speed 0.25·V·cos Ob·(0.4 + 0.6 s); the axis halfway between the plate's normal and the shot
+    line; the edge at 45°, densest at 18°, speed cos(1.92θ).
+  - **It stops** at the first boundary of 5 mm or more, but for chunks THOR passes (plates over ~250 mm); backing (P7)
+    thins the flakes by its mass per area over the scab's.
+  - **Its effects:** parts in the cone by λ = N·f(θ)·A/r² against their fragility (instrument ~100 J, cable or pipe
+    ~500 J, a machine's casing ~5 kJ); the big piece on the nearest part within 15° of the axis; crew through E6; a
+    flash roll (~20% at s ≥ 0.5) where charges lie open, as E2's.
+  - **Replaces** the plan's "weaker burst inside" and 12's flat 15% behind an in-plate burst.
+  - **Matchup:** a spall term per (gun, plate) profile. **Tests:** 14 §6.5.
+- **E4 What a plate that held shakes** (13 non-penetrating). For `Defeated`, `Ricochet` and `BurstOutside`, from the
+  plate, the margin (r, or u) and the impulse I = m·v:
+  - **Turrets and barbettes:** the sub-location from the hit point (exposed barbette near the ring, barbette at the deck
+    or glacis, face, side, roof); the outcome by 13 §1.4's table × size(I) × margin(r); new mount states: **stiff**
+    (trains at 0.4×), **one gun out**, **sights out** (needs a director, else degraded), **stunned** (skips salvoes);
+    a jam's length by its cause (debris 3-40 min, deck heaved 1-10 h, ring for the battle; 44% last the action). Thin
+    turrets: the barbette row ×1.5 (Savo, Boise). Replaces `JamChance` and the jam repair's 10-60 min.
+  - **The belt at the waterline:** the zone by the *current* waterline (heel, trim, sinkage); P(leak) 0.5 within ±1 m,
+    0.25 above, 0.8 at the lower edge; a joint ×1.5, a repeat hit ×2 and the plate loosened (defends at 0.85), a welded
+    skin ×0.6; the regime (seep 55%, moderate 30%, major 12%, lost 3%) as a hole into the cell behind with its damage
+    control row and its reopening above 15 kn; a feed or oil tank behind: a boiler or engine casualty 15% of the time.
+    Replaces `SeamLeakMinMm`, `SeamLeakChance` and `SeamLeakM2`.
+  - **Shock through the structure** (zone A the struck structure, B its neighbours, C the ship): timed outages on the
+    function table (local power, rangefinder, director gyro, gyrocompass, radar, phones and FC circuits; turret or CT
+    crew stunned), by the shock grade, scaled by (I / 4×10⁵ N·s)^0.7. A device the ship doesn't carry can't fail, so the
+    era columns fall out of the design. The ship-wide cascade stays rare (0.02 a heavy hit at G0). Own guns: radar and
+    breaker events per 20 min of main-battery fire.
+  - **Tests:** 13 §5.3. **Log:** 13 §5.2's lines.
+- **E5 Blast** (11). Open question 1.
+  - **Open** (outside the hull, a weather deck, an open mount, a space vented by 0.6·V^⅔ or more): wrecked within
+    1.0·W^⅓ (was 1.6), people killed by blast within 1.3·W^⅓, injured to 3.5·W^⅓ as now; the contact hole's `R_hole` as
+    now (unbiased against 13 measured holes, 11 §3.1); no bulkhead breach.
+  - **Confined:** a near zone of 1.0·W^⅓, boundaries in it holed to 0.5·W^⅓; then the cascade over the cell graph: the
+    quasi-static pressure from the explosive's heats, W/V and the space's air (the water in it takes some); the
+    blowdown through its vents; what a panel feels; boundaries rupture at 0.06 MPa per mm, doors at half that, deform
+    from 0.012 (riveted ×0.85, joiner partitions between a cell's rooms 0.025 MPa/mm); a ruptured boundary joins the
+    next space and the pressure falls; repeat until nothing more gives.
+  - **What it leaves:** ruptured boundaries as openings in the flooding (¼ of a bulkhead or deck, 1.2 m² for a door,
+    shell plating to the sea or air); deformed ones as a seam leak, `r(D)·area` with D = P_felt / P_deform (17
+    leakage's curve, lognormal σ 0.8, welded ×0.4), and their doors jammed; parts in every reached space by pressure
+    class (fittings 0.03, electrical 0.10, auxiliary 0.25, machinery 0.6 MPa); people through E6 (Bowen).
+  - **HE bursting in a thin plate** is near-wall: the contact hole, fragments inward, the cascade vented by the hole.
+  - **Needs per cell:** volume (the flooding has it), vents (by room kind until the designer emits them), doors on WT
+    bulkheads, trunks (hoists, uptakes, vent trunks) as low-pressure edges that the magazine chain reads too.
+  - **Replaces** `WreckRadiusK` as one radius for every burst, `RoomDisableShare` and the breach rule; `RoomVital` keeps
+    only its share of what in a room matters.
+  - **Matchup:** a burst's effect by the class's typical space volume. **Bench** `shipgen burst DESIGN SPACE SHELL`:
+    11 §4.2's cases on our ships. **Tests:** 11 §5.5. Fumes later.
+- **E6 Casualties** (16, decision 8).
+  - **Men, not area:** per group (a cell's or part's `battle_crew`, in distance bands), the man-stopping flux
+    λ = S·N(r)·g·A·T·band/(4πr²), with N(r) E1's pieces still carrying 80 J; a cover share by room kind (the rest take
+    0.1 λ); P(casualty) = 1 − e^(−λ), P(killed) = 1 − e^(−qλ). Blast (E5) and spall (E3) as independent risks.
+  - **A shell that doesn't burst** kills in its path and drives each perforated plate's disc ahead (1.5 calibres, 10 g
+    pieces, a 35° cone, q 0.35): Saumarez's director, and nobody in an empty flat.
+  - **Propellant flash** kills a share of everyone it reaches: a turret train 0.92 killed / 0.06 wounded, an open
+    casemate battery 0.54 / 0.32.
+  - **Condition** keeps killed and wounded apart: 45% of the wounded are out for the action, the rest back at their
+    station in 15-45 min.
+  - **Fit:** S 8.7 and q 0.04 to start; refit S with `shipgen hits` on one ship per record group (16 §5.3), q only if
+    the killed share is off by more than 0.1; check the shape (share of hits killing nobody, the 99th percentile).
+  - **Replaces** `CasualtyWreckShare`, `CasualtyBlastShare`, `PassLaneM`, `PassCasualtyShare` and the U(0.3, 1.7).
+  - **Tests:** 16 §5.4.
+- **E7 Near misses** (15).
+  - **A new `Hit` source,** `NearMiss`: a burst point outside the hull, no terminal walk. On a miss, a broadphase of
+    R_near = max(15·W^⅓, 7.5·√W) m against the ships' waterplanes; most misses cost that one test.
+  - **Nose fuze:** fires with `water_fires`, at z_b = v·`water_ms`·sin(fall) under the surface. Splinters by E1's field,
+    the sea as a floor (water drag L₁ 0.3 m/kg^⅓) and the depth as a lid; the lean analytic (15 §6.3); THOR per face;
+    perforations in the waterline band become flooding holes; exposed parts and their crew (E6).
+  - **Base fuze** (P3's water fuze on): P6's run reaching the hull is P6's hit; otherwise the burst where the run ends,
+    shock only.
+  - **Shock:** NSF = √W/R·(1 + sin a)/2·√(1 − e^(−2Δt/θ)) at the nearest wetted hull and per machinery space. The
+    structure's seam leaks by `r(D)` with D = 5·NSF (× t_bottom/9 mm; replaces 15's two bands); machinery and gear by
+    their own NSF and the shock grade; a stern burst rolls the rudder and shafts.
+  - **Water ricochet** below ~6.4° of fall: a nose fuze bursts on the graze, a base fuze doesn't (v0).
+  - **Tests:** 15 §6.7. **Bench:** 15 §5's salvos at a Fletcher; the River Plate DCT (8× under the record: try the fuze
+    time and the geometry before the band).
+- **E8 The battle anchors.** With S and P in, the whole chain against the battles: Jutland, Bismarck's ~3 belt holes in
+  ~400 hits, South Dakota, Samar, the 1894–1905 battles, the destroyer benches; and the notes' own: 16's killed and
+  wounded per hit by group, 13's turret-minutes lost per 100 heavy hits (about half to non-penetrations), 15's
+  near misses per heavy-HE hit on a destroyer. The leftover rolls are tuned only within their sourced bands, and the
+  deck multiplier (P1a) only if an anchor asks.
 
 ## What stays out
 
 - Bombs: the deck physics serves them, but bomb shapes and fuzes aren't researched yet.
 - The magazines' venting race, flooding, fire spread and the service networks: their own 4.5 sessions, fed by the
-  ammunition's `charge` (S0) and better burst points (P3).
+  ammunition's `charge` (S0) and better burst points (P3). Their research is in, and this plan hands each a seam:
+  - **Fire** (`17_fire.md`: growth to flashover, burning by the openings, fire load as design numbers, the fire main
+    deciding quick or never, hose water left aboard): phase E gives it the seat, the explosive's `fire`, and the
+    boundaries the blast opened and the holes that ventilate.
+  - **Flooding** (`17_structural_leakage.md`: fittings, head, working, caulking and shoring on sprung boundaries): E4,
+    E5 and E7 already set the seam area by its `r(D)` curve; the rest of the note is the session's.
+  - **Service networks** (`17_service_network_faults.md`: breaker fragility by grade, cable cuts per wireway, faults
+    walking up the protection): E1's line-target query and E4's and E7's shock (timed outages until then) are what it
+    replaces with devices; the shock grade is already on the design (E0).
+  - **Crew** (fighting.md 4.5): crew as the damage-control resource, the command node, and posture ("closed up" or
+    "under cover", 16 §4.9) stay there; casualties per hit are E6.
 - The AI choosing the shell by target (the AI's pass).
 - Variance in construction quality per part (a block per part; decision 2).
+- The campaign's sides of the explosives: availability by feedstock, filling rates, storage and age (12 §5).
 
 ## Questions for the user
 
 None open (2026-10-16).
 
-## Open questions (research coming)
+## Open questions (from the research)
 
-The user will write research notes on these (2026-10-16; requested in `research/REQUESTS.md`). Neither blocks a step:
-each lands where it says once its note is in.
+None blocks a step; each is settled by its step's bench.
 
-1. **Confinement.** A burst is sized by its charge alone today (`Effects`: the same radii in a small closed room as on
-   an open deck). A confined burst hits harder: pressure against the room's volume and vents, bulkheads and doors blown
-   out, neighbouring spaces reached. Lands in phase E, beside the burst's other effects.
-2. **Explosives as parameters.** The shell block's `filler` names an explosive and carries its `re`. A catalogue of
-   explosives with their own numbers would replace that: TNT equivalence for blast, brisance for fragments,
-   incendiary effect, sensitivity (bursting in the plate), low-order and failure rates with their booster, and the
-   years they served. The block would then name an explosive from the catalogue (overridable), like the materials. Lands
-   with S1's templates or as a step of its own after them; until then `filler.re` and the rates stand in.
+1. **The filler's in-plate curve** (P3): 12's r², here u⁻⁴, against the Jutland sample and Baden.
+2. **THOR above 53 g** (E1): the heavy AP and black-powder pieces.
+3. **The casing shares and steel multipliers** (S1, E1) are [EST]: navweaps' cross-sections of the 16″ Mk 8 and Mk 13
+   and the 6″ Mk 34 would pin them.
+4. **The spall onsets** (E3): no naval measurement exists; 0.80-0.92 is defensible for each class.
+5. **The nose fuze's time on water** (E7, 0.5 ms): the most sensitive near-miss number.
+6. **The Type 91's path and delay** (P6, E7).
+7. **The rupture and deform capacities** (E5, 0.06 and 0.012 MPa/mm): fitted to a handful of cases; the destroyer
+   benches may move them within 0.04-0.08.
+8. **S and q** (E6): S's ~9× over the free field is fitted, not shown; the refit on our ships says how much of it is
+   placement.
+
+## Done with: the research asked for on 2026-10-16
+
+1. **Confinement** came in as `11_blast_confinement.md`: step E5.
+2. **Explosives as parameters** came in as `12_explosive_fillers.md` (with 11 §2.4 and 13 §3.1): the catalogue in S1
+   (decision 9).
 
 ## Steps at a glance
 
 | Step | Needs | Shipgen | Sim | Moves numbers? |
 |---|---|---|---|---|
 | S0 | — | ammunition read, reported | compiler reads it | no |
-| S1 | S0 | ammunition catalogue, templates | — | ballistics, fire control |
+| S1 | S0 | ammunition and explosives catalogues, templates | the explosive's `re` | ballistics, fire control, burst size |
 | S2 | S0 | default outfits | rounds by kind, the magazine order, the dev fire's kind | who fires what |
 | S3 | S2 | ammunition weight | — | displacement |
 | S4 | S1 | designer picker (UI session) | — | no |
@@ -431,10 +640,15 @@ each lands where it says once its note is in.
 | P5 | P1a | — | angles | ricochets, paths |
 | P6 | — | — | under water (done but P3's switch) | underwater hits |
 | P7 | P0 | gratings, backing | scatter | plates |
-| E1 | P4 | — | holed-but-broken effects, flash | damage |
-| E2 | P2 | — | spall | damage |
-| E3 | P0 | — | THOR fragments; then near misses (new hit source) | damage |
-| E4 | all | — | tuning | the anchors |
+| E0 | — | joints, shock grade | compiled | no |
+| E1 | S1, P0 | — | the burst's pieces, THOR, `frag` bench | fragments |
+| E2 | P4, E1 | — | holed-but-broken, flash | damage |
+| E3 | P4, E1 | — | spall | damage behind armour |
+| E4 | E0, P1a | — | turret states, belt leaks, armour shock | jams, leaks, outages |
+| E5 | E0, E1 | — | open and confined blast, `burst` bench | wreck reach, openings, leaks |
+| E6 | E1, E3, E5 | — | casualties, killed and wounded | crew |
+| E7 | E1, E5, P3 | — | near misses (new hit source), shock | near misses |
+| E8 | all | — | tuning | the anchors |
 
 S and P0 are independent, so P0 can come first or between S steps; P1a needs no shells. Everything after P1b needs
-both phases' data.
+both phases' data. E0 can go any time; E4 and E5 need only S1, P0 and P1a, so they can run alongside P2-P5.

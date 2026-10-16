@@ -1057,8 +1057,9 @@ numbers before and after against the anchors. The list, by link, with where the 
   - near-miss splinters;
   - a ricochet table.
 
-  Planned in `shells-armour-damage.md` (draft 2026-10-16): shells as design data, materials as physical blocks with
-  templates, then the shell's state plate by plate, then its effects.
+  Planned in `shells-armour-damage.md` (agreed 2026-10-16): shells as design data, materials as physical blocks with
+  templates, then the shell's state plate by plate, then its effects. Its phase E also takes casualties per hit and
+  what a plate that held does (jams, belt leaks, shock), from the research in `docs/battle/damage/`.
 - **Systems** (`06-service-networks.md` Model B): power, hydraulics, steam and data as routes through the cells with
   fault states (tripped, severed, flooded), casualty power, damage-control parties and repair; Model C for the coarse
   tier. Needs the designer to emit the networks.
@@ -1079,7 +1080,10 @@ numbers before and after against the anchors. The list, by link, with where the 
     under thirty 6" HE hits (Malaya's 6" battery fire at Jutland came close). Damage control and the better damage model
     refine it, flash discipline above moves it.
 - **Fire:** spread on the cell graph and the vents, fire load by era, cook-off timers, fires lighting the ship at night.
-- **Crew:** casualties by space, crew as the damage-control resource, the command node (a bridge hit delays orders).
+- **Crew:** crew as the damage-control resource, the command node (a bridge hit delays orders), posture (closed up or
+  under cover, `damage/16_casualties.md` §4.9). Casualties per hit moved to `shells-armour-damage.md` E6.
+- **Fire, flooding's leaks and the systems** have their research in `docs/battle/damage/17_*.md` (fire after it
+  starts; leaks through damaged structure; breaker trips and cable cuts).
 - **Night:** searchlights, star shell, gun flashes and fires as light for the sighting model.
 - **Whose splash it is** (`manual-gunnery-research.md` §5): identification falls as 1/(1 + 0.6·N) with N guns of one
   calibre firing independently; salvo firing fixes it. Until then many guns spotting alone are flattered (decision 9).
