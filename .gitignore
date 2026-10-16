@@ -12,3 +12,4 @@ fuzz_out/
 
 # release.bat output
 release/
+__pycache__/

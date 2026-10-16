@@ -4,6 +4,8 @@
 
 *Reference implementation: `claude/damage_control_ref.py` (runnable, ~600 lines, results in §8).*
 
+*See also `10_damage_control_holistic.md`: fire, smoke, ammunition, the fire main, firefighting water and how all threats couple, with `dc_holistic_ref.py` building on this file's flooding engine.*
+
 Markers: **[EST]** = my estimate or designer choice. **(?)** = weakly sourced.
 
 ---

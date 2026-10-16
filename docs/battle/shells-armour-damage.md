@@ -276,6 +276,11 @@ material row per name (the class's material table exists, with names only). `set
 - **Test bands are the anchors.** A step that moves a `DamageTests` anchor out of its band reports it; the band is
   widened only with the user's say, as P6's outcomes were (user, 2026-10-16: accepted, not tuned, until damage control).
 - **No allocation per hit,** and no new per-hit cost worth measuring (about 200 µs a hit today).
+- **More sinkings than history are fine** (user, 2026-10-16: "first we break stuff then we try to desperately fix
+  stuff"). Damage control comes after this plan (`09_damage_control.md`, `10_damage_control_holistic.md`), so the ships
+  here fight without sailors patching them. Don't tune flooding, fire or losses to the historical rates: a ship tuned to
+  history now becomes too sturdy once damage control is in. Keep every number physical and sourced, report the losses,
+  and leave the record's survival rates for after damage control.
 
 ## Phase S: what's hitting
 
@@ -573,7 +578,8 @@ squadrons, and changes `Matchup.cs` with it.
   ~400 hits, South Dakota, Samar, the 1894–1905 battles, the destroyer benches; and the notes' own: 16's killed and
   wounded per hit by group, 13's turret-minutes lost per 100 heavy hits (about half to non-penetrations), 15's
   near misses per heavy-HE hit on a destroyer. The leftover rolls are tuned only within their sourced bands, and the
-  deck multiplier (P1a) only if an anchor asks.
+  deck multiplier (P1a) only if an anchor asks. The anchors are the damage *done* (holes, parts, crew, outcomes per
+  hit), not who survived it: losses and sinkings above history are expected until damage control (the rules above).
 
 ## What stays out
 
@@ -590,6 +596,8 @@ squadrons, and changes `Matchup.cs` with it.
     replaces with devices; the shock grade is already on the design (E0).
   - **Crew** (fighting.md 4.5): crew as the damage-control resource, the command node, and posture ("closed up" or
     "under cover", 16 §4.9) stay there; casualties per hit are E6.
+- **Damage control** (`09_damage_control.md`, `10_damage_control_holistic.md`): after this plan. Phase E breaks the
+  ships; damage control is what then fights it.
 - The AI choosing the shell by target (the AI's pass).
 - Variance in construction quality per part (a block per part; decision 2).
 - The campaign's sides of the explosives: availability by feedstock, filling rates, storage and age (12 §5).
