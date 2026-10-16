@@ -132,7 +132,7 @@ admiral's screen can show the difference later.
 **How a block scales with calibre.** Everything in it is either a share or a calibre-relative number, because that's
 how the physics works and how the sources quote it:
 
-- **Mass = `w_d3` × D³.** Within one navy's generation of shells, W/D³ is nearly flat from about 8″ up
+- **Mass = `mass_k_kg_m3` × D³.** Within one navy's generation of shells, W/D³ is nearly flat from about 8″ up
   (armour-and-damage research tables, lb/in³): the IJN's Type 91 0.54 at 20, 36 and 46 cm; the Kriegsmarine's 0.53 at
   20.3, 28 and 38 cm; the RN's WWII APC 0.57–0.58 at 14″ and 15″ (Nelson's light 16″ 0.50, a choice); the USN's
   super-heavy 0.65–0.66 at 8″ and 16″.
@@ -146,7 +146,7 @@ What doesn't fit one block:
 - **Light, hand-worked guns ran lighter:** the USN 5″/38 0.44, the IJN 12.7 cm 0.41, the KM 15 cm 0.49. They are their
   own templates ("USN 1941 5″ AA common"), as the plant templates have a destroyer's block beside a battleship's.
 - **A new generation is a new block:** the USN 14″/45's older AP at 0.55 beside the Mk 8 at 0.66.
-- **One battery's own shell:** `mass_kg` on the battery overrides `w_d3` (the 6″/47's 59 kg super-heavy, a Nelson
+- **One battery's own shell:** `mass_kg` on the battery overrides `mass_k_kg_m3` (the 6″/47's 59 kg super-heavy, a Nelson
   shell).
 
 So a navy and year has two or three blocks (heavy AP, heavy HE or common, light guns), and a design picks one per kind
@@ -265,6 +265,14 @@ material row per name (the class's material table exists, with names only). `set
 - The designer's template column (`DesignerScene.Layout.cs`: Plant, Hull, Crew, Armour) gains **Shells** and
   **Materials**. The material knobs (`Knobs.SchemeMaterial` and its kin) list the design's table and the catalogue
   instead of `Templates.MaterialNames`. UI work follows the designer's way (memory: one tab a session, mockup then port).
+
+## Where to start
+
+**S0**, then down phase S; P0 and E0 are parity steps that can slot in anywhere (Steps at a glance has the order each
+step needs). Each step reads only its own section here plus the research it cites; a step's section gains its benches
+before and after when it's done. Today's code for the three phases: `DesignerPlaceholders.Shell`, `ShellMix` and
+`Fires` (`Fleetwright.Sim.Ships`), `Terminal.cs` (`ShellOutcomes` by `ShellQuality`, `ArmourQuality`), `Effects.cs`,
+`WaterRun.cs`, and their settings in `Content/Sim/settings.json`.
 
 ## Rules for every step
 
