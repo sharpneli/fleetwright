@@ -37,7 +37,7 @@ public sealed unsafe partial class DesignerScene
     // ------------------------------------------------------------------ the snapshot's part
 
     sealed record SecRow(int K, NumRow Cal, NumRow Len, int Barrels, Pos Pos, string Axis, NumRow Per, int Placed, int Wanted,
-        string Guns, NumRow Shields, NumRow Rounds, ChoiceRow Material, string Tonnes, string ShortTip);
+        string Guns, NumRow Shields, NumRow Rounds, ShellCell? Shells, string Tonnes, string ShortTip);
 
     /// <summary>A built secondary mount (the starboard one of a pair, or an end mount): battery, pair number, plan place,
     /// its track, gun axis above the waterline, body radius and barrel length (m), barrels, tooltip.</summary>
@@ -128,10 +128,7 @@ public sealed unsafe partial class DesignerScene
         for (int k = 0; k < secs.Count; k++)
         {
             var b = secs[k];
-            var mat = Knobs.SecMaterial(k);
-            string? mv = mat.Get(d) ?? mat.Default;
-            int mi = Array.IndexOf(mat.Values, mv);
-            var mlabels = mi < 0 ? [.. mat.Labels, mv ?? "custom"] : mat.Labels;
+            var rounds = Row(Knobs.SecRounds(k), d, ship) with { Delta = "" };
             bool byCount = b.Count != null;
             int placed = byCount ? placedMounts[k] : placedPairs[k], wanted = SA.Wanted(b);
             var pos = SA.Of(b);
@@ -140,8 +137,8 @@ public sealed unsafe partial class DesignerScene
                 b.Barrels ?? 1, pos, $"{trackAxis[(int)pos]:0.0} m",
                 Row(byCount ? Knobs.SecCount(k) : Knobs.SecPerSide(k), d, ship) with { Delta = "" }, placed, wanted,
                 (placedMounts[k] * (b.Barrels ?? 1)).ToString(CultureInfo.InvariantCulture),
-                Row(Knobs.SecArmour(k), d, ship) with { Delta = "" }, Row(Knobs.SecRounds(k), d, ship) with { Delta = "" },
-                new ChoiceRow(mat, mlabels, mi < 0 ? mlabels.Length - 1 : mi, true), ship != null ? N0(tonnes[k]) : "–",
+                Row(Knobs.SecArmour(k), d, ship) with { Delta = "" }, rounds, ShellCellOf(d, false, k, SecName(k), rounds.Num),
+                ship != null ? N0(tonnes[k]) : "–",
                 $"Only {placed} of {wanted} {(byCount ? "mounts" : "per side")} fit {where}.\n" +
                 "Fewer or smaller mounts, another position, or a longer hull. The ledger counts only what fits.");
         }
@@ -281,10 +278,10 @@ public sealed unsafe partial class DesignerScene
 
     // ------------------------------------------------------------------ drawing
 
-    static readonly float[] SecColW = [34, 40, 138, 104, 128, 0, 74, 50, 44, 104, 120, 150, 46, 46];   // 0: the position takes what's left
+    static readonly float[] SecColW = [34, 40, 138, 104, 128, 0, 74, 50, 44, 104, 120, 232, 46, 46];   // 0: the position takes what's left
     readonly float[] secX = new float[SecColW.Length + 1];
     static readonly string[] SecHead = ["", "", "CALIBRE", "LENGTH", "GUNS / MOUNT", "TURRET ON", "PER SIDE", "PLACED", "GUNS", "SHIELDS",
-        "ROUNDS / GUN", "MATERIAL", "T", ""];
+        "ROUNDS / GUN", "SHELLS", "T", ""];
 
     void SecondaryPane(Vector2 size)
     {
@@ -441,10 +438,7 @@ public sealed unsafe partial class DesignerScene
             At(10);
             Spinner(r.Rounds, P(40), extras: true);
             At(11);
-            ImGui.SetNextItemWidth(P(142));
-            int mi = r.Material.Index;
-            if (ImGui.Combo("##mat", ref mi, r.Material.Labels, r.Material.Labels.Length) && mi < r.Material.Knob.Values.Length)
-                Edit(r.Material.Knob.Set(d, r.Material.Knob.Values[mi]), $"Battery {SecName(k)} material: {r.Material.Labels[mi]}");
+            ShellCellUi(r.Shells, P(222));   // where the material was: the mounts' material stays the scheme's, hidden (user, 2026-10-16)
             Text(dl, UiFonts.Mono, new Vector2(x[13] - P(6) - Width(UiFonts.Mono, r.Tonnes), ty), T.Muted, r.Tonnes);
             At(13, 2);
             ImGui.PushFont(UiFonts.SansSmall);
@@ -1169,7 +1163,7 @@ public sealed unsafe partial class DesignerScene
         var ms = sp.Mounts.Where(m => m.K == r.K).ToList();
         string span = ms.Count > 0 ? $"x {ms.Min(m => m.X):0} … {ms.Max(m => m.X):0} m" : "not placed";
         string kind = SA.Casemate(r.Pos) ? "casemate" : (b.CalibreMm ?? 0) >= 150 ? "turret on a barbette" : (b.CalibreMm ?? 0) >= 76 ? "shielded mount" : "open mount";
-        KeyValue(dl, x, ref y, "Mount", $"{kind} · shields {r.Shields.Value} {r.Material.Labels[r.Material.Index]}");
+        KeyValue(dl, x, ref y, "Mount", $"{kind} · shields {r.Shields.Value}");
         KeyValue(dl, x, ref y, "Place", sp.Built ? $"{r.Placed} of {r.Wanted} {(b.Count != null ? "mounts" : "per side")} · {span}" : "after the build");
         KeyValue(dl, x, ref y, "Height", $"gun axis {r.Axis} above the full-load waterline");
         KeyValue(dl, x, ref y, "Weight", $"{r.Tonnes} t: mounts, magazines ({r.Rounds.Value} rounds a gun), barbettes");
@@ -1238,6 +1232,9 @@ public sealed unsafe partial class DesignerScene
                     break;
                 case "sectip" when p.Length == 3:
                     secForceTip = $"{p[1]}:{p[2]}";
+                    break;
+                case "shells" when p.Length >= 3:   // shells:main|sec:K[:fam | :blk:E] opens a battery's shell picker (and a list in it)
+                    shellOpen = string.Join(':', p[1..]);
                     break;
                 case "ovlimit":
                     limitPick = Int(1);

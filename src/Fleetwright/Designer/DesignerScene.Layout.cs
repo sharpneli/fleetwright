@@ -29,7 +29,7 @@ public sealed unsafe partial class DesignerScene
     static float RowH => P(20);
 
     static readonly string[] DigitText = ["0", "1", "2", "3", "4", "5", "6", "7"];
-    static readonly string[] TemplateLabels = ["Plant", "Hull", "Crew", "Armour"];
+    static readonly string[] TemplateLabels = ["Plant", "Hull", "Crew", "Armour", "Shells"];
 
     // the plan and profile's overlays: arcs of fire, armour plates, magazines, tags (A, R, M, T)
     bool showArcs = true, showArmour = true, showMags, showTags = true;
@@ -643,10 +643,11 @@ public sealed unsafe partial class DesignerScene
             {
                 ImGui.TextColored(T.Muted, t.Label);
                 ImGui.Separator();
+                t.Popup?.Invoke();
                 for (int k = 0; k < t.Count; k++)
                     if (ImGui.Selectable(t.Names[k], k == t.Index) && k != t.Index)
                         t.Apply(k);
-                if (t.Index >= t.Count)
+                if (t.Index >= t.Count && t.Popup == null)
                     ImGui.TextColored(T.Muted, t.Names[t.Index]);
                 ImGui.EndPopup();
             }

@@ -1,4 +1,27 @@
-# Shell picker (mockup, 2026-10-16)
+# Shell picker (mockup, 2026-10-16; in the game since the same day)
+
+**Status:** the picker is in both battery tabs, built in `Designer/DesignerScene.Shells.cs` with its edits in
+`Designer/ShellEdits.cs`. The user's answers to the questions below (2026-10-16):
+
+1. **The turret material is hidden** at its default (the armour scheme's). "I don't really see any use for selecting
+   turret armor in that detail, at least for now. We'll come back to it later, shells are more important."
+2. **5% steps** are fine.
+3. **Templates only.** Custom blocks come later as "copy and edit".
+4. **The families sort by the design's navy and year, in a tree.** The navy is the look's dockyard (portsmouth RN,
+   kiel DE, and so on) and the year is the look's era (victorian 1890, great war 1912, treaty 1928, WWII 1940, cold
+   war 1955). The design's navy comes first and is open, then any navy's families, then the rest. Within each navy
+   the families run oldest first, and "her era" marks the latest one not after the design's year. The block combo is
+   the same tree one level deeper, navy then family then block, each block with its mass at this calibre and its fuze.
+
+How the game differs from the mockup:
+
+- The picker opens under the cell, right-aligned to it. The trees open under their combos.
+- A family change that makes two kinds the same block merges them into one load.
+- The read-outs are shipgen's (`Ammunition.ResolveBattery`). The rounds use the class's own split (`Loadout.Split`).
+- `-designer-ui=shells:main:0` opens a battery's picker for screenshots. Add `:fam` for its family tree or `:blk:E`
+  for entry E's block tree; use `sec` for a secondary.
+
+The rest of this note is the mockup's reasoning.
 
 Step S4 of `docs/battle/shells-armour-damage.md`: the designer picks each gun battery's shells from the shell
 templates. This is the design's own outfit, so it decides what the magazines are weighed with and what a ship gets

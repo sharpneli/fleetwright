@@ -204,23 +204,7 @@ public static class Ammunition
                 var b = list![i];
                 if (b.CalibreMm is not { } cal || b.CalibreLength is not { } len)
                     continue;
-                var outfit = Outfit(design, b, which == "main");
-                var masses = outfit.Select(e => e.MassKg).ToArray();
-                var anchor = gun is null ? outfit : Outfit(gun, (which == "main" ? gun.Main : gun.Secondary)![i], which == "main");
-                double heavyKg = anchor.Max(e => e.MassKg), heavyMs = b.MuzzleVelocityMs ?? DefaultMuzzleVelocity(len);
-                var resolved = new List<ShellReport>();
-                for (int k = 0; k < outfit.Count; k++)
-                {
-                    var (a, name, share, _, mv) = outfit[k];
-                    var x = Explosives.Resolve(design, a.Filler!.Explosive)!;
-                    resolved.Add(new ShellReport
-                    {
-                        Ammo = name, Kind = a.Kind!, Share = share, MassKg = masses[k], MuzzleVelocityMs = mv ?? MuzzleVelocity(heavyMs, heavyKg, masses[k]),
-                        FormFactor = a.FormFactor!.Value, Cap = a.Cap?.Kind ?? "none", FillerKg = masses[k] * a.Filler.Share!.Value,
-                        Explosive = x.Name ?? "", FillerRe = x.Re ?? 1, Booster = a.Filler.Booster ?? "basic", Fuze = a.Fuze!.Position!,
-                        FuzeDelayS = a.Fuze.DelayS ?? 0, Outcomes = a.Outcomes!,
-                    });
-                }
+                var resolved = ResolveBattery(design, which, i, gun);
                 var same = res.FirstOrDefault(r => r.Battery == which && r.CalibreMm == cal && r.CalibreLength == len);
                 if (same is null)
                     res.Add(new BatteryShells(which, i, cal, len, resolved));
@@ -229,6 +213,31 @@ public static class Ammunition
                                  $"{which}[{same.Index}]'s are used");
             }
         return res;
+    }
+
+    /// <summary>One gun battery's resolved shells (main or secondary, its index; it has a calibre and length), in its
+    /// outfit's order: what <see cref="Resolve"/> reports for it, and the designer shows.</summary>
+    public static List<ShellReport> ResolveBattery(Design design, string which, int i, Design? gun = null)
+    {
+        var b = (which == "main" ? design.Main : design.Secondary)![i];
+        var outfit = Outfit(design, b, which == "main");
+        var masses = outfit.Select(e => e.MassKg).ToArray();
+        var anchor = gun is null ? outfit : Outfit(gun, (which == "main" ? gun.Main : gun.Secondary)![i], which == "main");
+        double heavyKg = anchor.Max(e => e.MassKg), heavyMs = b.MuzzleVelocityMs ?? DefaultMuzzleVelocity(b.CalibreLength!.Value);
+        var resolved = new List<ShellReport>();
+        for (int k = 0; k < outfit.Count; k++)
+        {
+            var (a, name, share, _, mv) = outfit[k];
+            var x = Explosives.Resolve(design, a.Filler!.Explosive)!;
+            resolved.Add(new ShellReport
+            {
+                Ammo = name, Kind = a.Kind!, Share = share, MassKg = masses[k], MuzzleVelocityMs = mv ?? MuzzleVelocity(heavyMs, heavyKg, masses[k]),
+                FormFactor = a.FormFactor!.Value, Cap = a.Cap?.Kind ?? "none", FillerKg = masses[k] * a.Filler.Share!.Value,
+                Explosive = x.Name ?? "", FillerRe = x.Re ?? 1, Booster = a.Filler.Booster ?? "basic", Fuze = a.Fuze!.Position!,
+                FuzeDelayS = a.Fuze.DelayS ?? 0, Outcomes = a.Outcomes!,
+            });
+        }
+        return resolved;
     }
 
     /// <summary>A loadout (docs/battle/shells-armour-damage.md S5, decision 6): the design with the given batteries'

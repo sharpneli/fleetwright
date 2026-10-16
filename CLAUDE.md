@@ -70,7 +70,7 @@ asset, below). `-ship=` also takes the path without `.json`, or just a shipped d
 picked in the ship viewer's list opens in the designer.
 
 The designer (`Designer/`, `docs/designer-ui/designer-plan.md`) edits the design, or the empty 8 kn hull with `-new`,
-with knobs, templates (plant, hull construction, crew standard, armour schemes, material names) and a style (View
+with knobs, templates (plant, hull construction, crew standard, armour schemes, shell families, material names) and a style (View
 menu: navy, era, pennant number), tried on every view or kept in the design. The layout is the dense one in
 `docs/designer-ui/bureau.html`: outliner and templates, plan and profile with overlays (A R M T), section tabs (0-7),
 ledger, particulars and remarks. The name and type label edit in place in the resource bar. The Main battery tab is its own pane (`docs/designer-ui/mainbattery.md`): a battery table, a
@@ -78,7 +78,9 @@ clickable turret arrangement (`+` slots add, the step between turrets toggles su
 move and split), guns bearing by bearing, and presets. The Secondary · AA · TT tab is too
 (`docs/designer-ui/secondary.md`): a battery table whose position (deckhouse, deck, upper or lower casemate) is one
 click, the broadside strip (a half-plan over one schematic track per position, a + at each track's head), the
-secondaries' guns bearing, and AA, torpedo and selected-battery panels. The Protection tab (`docs/designer-ui/protection.md`) is the
+secondaries' guns bearing, and AA, torpedo and selected-battery panels. Both battery tables have a SHELLS column (`docs/designer-ui/shells.md`): the
+outfit's kinds and shares, and a picker for the family (a tree by navy, the design's first) and each load's block and
+share; the Templates panel's Shells row sets every battery's family. The Protection tab (`docs/designer-ui/protection.md`) is the
 elevation (the side deck by deck, heights stretched, every built plate, `+` ghosts where a missing part goes), the midship
 section to scale, a table of the parts the ship has (a `+` in each group's header adds one with values from the belt, `x`
 removes), the selected plate, and coverage presets; brass handles drag belt edges, reach, decks and the torpedo bulkhead,

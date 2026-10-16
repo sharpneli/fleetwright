@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); S0-S3 and S5 done    Updated: 2026-10-16
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S done    Updated: 2026-10-16
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -488,6 +488,31 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
 - **S4 The designer.** A shell template picker in the Main battery and Secondary tabs (the template column); the
   battery table shows the kind, mass and fuze. A UI session of its own (mockup, then port); it can run any time after
   S1, alongside phase P.
+  - **Done 2026-10-16** (`docs/designer-ui/shells.md`, the mockup and the user's answers):
+    - **The SHELLS column** takes the material column's place in both tabs (the user's suggestion). The turrets' and
+      mounts' material is hidden at the scheme's default ("we'll come back to it later, shells are more important").
+    - **The cell** shows the loads as kind chips with their shares, plus the family. Its hover shows the shells as
+      fired: block, mass, velocity, fuze and rounds a gun.
+    - **The picker:**
+      - the family, a tree with the design's navy first and her era marked;
+      - a row per load in the magazine order: the block (the same tree, with each block's mass at this calibre and
+        its fuze), the share in 5% steps, rounds, mass, m/s, filler and fuze;
+      - + a kind, × a load, and the default outfit.
+    - **The Templates panel** gains Shells, which sets every battery's family.
+    - **One implementation:**
+      - The edits (`ShellEdits`) copy the picked templates into the design's `ammunition` and drop the blocks nobody
+        names.
+      - The read-outs are shipgen's `Ammunition.ResolveBattery`, factored out of `Resolve`.
+      - The rounds are `Loadout.Split`, factored out of the class's split.
+    - **Tests:** `ShellEditsTests`. Every edit on every shipped design's batteries leaves it valid, its shares at 1 and
+      its ammunition exactly what it names; plus the light-block rule, shares, the default outfit written out, and
+      the tree's order.
+    - Checked by clicks (`-input`):
+      - the cell opens the picker;
+      - AP's share ▶ makes 75/25, and "+ common" makes 60/20/20;
+      - the block tree's RN 1912 APC makes AP 448 kg, so the lighter HE leaves at 805 m/s rather than 775, and the
+        family reads "mixed";
+      - the Templates row's RN 1912 sets both batteries.
 - **S5 Loadouts, ship by ship** (decision 6).
   - **In the sim:** shell types already live in a table shared across classes by id (a gun's trajectory table is built
     once); a loadout registers the types it brings there. Each ship holds its own loads per battery (in `CombatStore`),
@@ -823,7 +848,7 @@ None blocks a step; each is settled by its step's bench.
 | S1 | S0 | ammunition and explosives catalogues, templates | the explosive's `re` | ballistics, fire control, burst size |
 | S2 | S0 | default outfits | rounds by kind, the magazine order, the dev fire's kind | who fires what |
 | S3 | S2 | ammunition weight | — | displacement |
-| S4 | S1 | designer picker (UI session) | — | no |
+| S4 | S1 | designer picker (UI session; done) | — | no |
 | S5 | S2 | the loadout applied and resolved | per-ship loadouts: scenarios, dev flag, bench (done) | only for ships given one |
 | P0 | — | materials table, upgrade | material rows | no |
 | P1a | P0 | — | Thompson, pen-check bench, deck multiplier | penetration (1–4%) |

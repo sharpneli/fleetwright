@@ -37,7 +37,7 @@ public sealed unsafe partial class DesignerScene
     // ------------------------------------------------------------------ the snapshot's part
 
     sealed record BatteryRow(int K, NumRow Cal, NumRow Len, int Barrels, string Positions, string Turrets, string Guns, NumRow Faces,
-        NumRow Rounds, ChoiceRow Material, string Tonnes);
+        NumRow Rounds, ShellCell? Shells, string Tonnes);
 
     /// <summary>A turret (or a + slot) on the schematic, in its 940 × 280 units: bow right, starboard down.</summary>
     /// A + slot's InsertX: where between the turrets the new one actually goes, when that isn't the slot itself (NaN).
@@ -94,15 +94,11 @@ public sealed unsafe partial class DesignerScene
         for (int k = 0; k < mains.Count; k++)
         {
             var b = mains[k];
-            var mat = Knobs.MainMaterial(k);
-            string? mv = mat.Get(d) ?? mat.Default;
-            int mi = Array.IndexOf(mat.Values, mv);
-            var mlabels = mi < 0 ? [.. mat.Labels, mv ?? "custom"] : mat.Labels;
+            var rounds = Row(Knobs.MainRounds(k), d, ship) with { Delta = "" };
             rows[k] = new BatteryRow(k, Row(Knobs.MainCalibre(k), d, ship) with { Delta = "" }, Row(Knobs.MainLength(k), d, ship) with { Delta = "" },
                 b.Barrels ?? 1, MainArrangement.Positions(d, k, slots), b.Turrets.ToString(CultureInfo.InvariantCulture),
                 (b.Turrets * (b.Barrels ?? 1)).ToString(CultureInfo.InvariantCulture), Row(Knobs.MainArmour(k), d, ship) with { Delta = "" },
-                Row(Knobs.MainRounds(k), d, ship) with { Delta = "" }, new ChoiceRow(mat, mlabels, mi < 0 ? mlabels.Length - 1 : mi, true),
-                ship != null ? N0(tonnes[k]) : "–");
+                rounds, ShellCellOf(d, true, k, Letter(k), rounds.Num), ship != null ? N0(tonnes[k]) : "–");
         }
 
         // the schematic: the ends from the bow and stern inwards (the active battery's + slots in their true places), the
@@ -260,10 +256,10 @@ public sealed unsafe partial class DesignerScene
 
     // ------------------------------------------------------------------ drawing
 
-    static readonly float[] ColW = [34, 40, 138, 104, 128, 0, 42, 40, 104, 130, 168, 54, 46];   // 0: the positions take what's left
+    static readonly float[] ColW = [34, 40, 138, 104, 128, 0, 42, 40, 104, 130, 232, 54, 46];   // 0: the positions take what's left
     readonly float[] colX = new float[ColW.Length + 1];   // the table's column edges, laid out each frame
     static readonly string[] ColHead = ["", "", "CALIBRE", "LENGTH", "GUNS / TURRET", "POSITIONS · BOW TO STERN (↑ SUPERFIRES)", "TURR.", "GUNS",
-        "FACES", "ROUNDS / GUN", "MATERIAL", "TURRET T", ""];
+        "FACES", "ROUNDS / GUN", "SHELLS", "TURRET T", ""];
 
     void MainBatteryPane(Vector2 size)
     {
@@ -381,10 +377,7 @@ public sealed unsafe partial class DesignerScene
             At(9);
             Spinner(r.Rounds, P(40), extras: true);
             At(10);
-            ImGui.SetNextItemWidth(P(160));
-            int mi = r.Material.Index;
-            if (ImGui.Combo("##mat", ref mi, r.Material.Labels, r.Material.Labels.Length) && mi < r.Material.Knob.Values.Length)
-                Edit(r.Material.Knob.Set(d, r.Material.Knob.Values[mi]), $"Battery {Letter(k)} material: {r.Material.Labels[mi]}");
+            ShellCellUi(r.Shells, P(222));   // where the material was: the turrets' material stays the scheme's, hidden (user, 2026-10-16)
             Text(dl, UiFonts.Mono, new Vector2(x[12] - P(6) - Width(UiFonts.Mono, r.Tonnes), ty), T.Muted, r.Tonnes);
             At(12, 2);
             ImGui.PushFont(UiFonts.SansSmall);

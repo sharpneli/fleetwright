@@ -362,7 +362,11 @@ public sealed unsafe partial class DesignerScene : IScene
     }
     sealed record ChoiceRow(ChoiceKnob Knob, string[] Labels, int Index, bool Applies) : Item;
     /// <summary>A template picker: <see cref="Count"/> catalogue entries, then maybe the design's own block ("custom").</summary>
-    sealed record PickRow(string Label, string[] Names, int Index, int Count, Action<int> Apply) : Item;
+    sealed record PickRow(string Label, string[] Names, int Index, int Count, Action<int> Apply) : Item
+    {
+        /// <summary>A picker of its own in place of the list (the shells' family tree).</summary>
+        public Action? Popup { get; init; }
+    }
     sealed record ToggleRow(ToggleKnob Knob, bool Value, bool Applies) : Item;
 
     string Fmt(double metric, Quantity q, double? stepMetric = null, bool unit = true)
@@ -480,7 +484,7 @@ public sealed unsafe partial class DesignerScene : IScene
             FullT = res != null ? N0(res.FullDisplacementT) : "–",
             RemarkCount = remarks.Count == 0 ? "none" : remarks.Count.ToString(CultureInfo.InvariantCulture),
             Outline = Outline(ship, summaries),
-            Templates = [PlantPick(d, ship), HullPick(d, ship), CrewPick(d, ship), ArmourPick(d)],
+            Templates = [PlantPick(d, ship), HullPick(d, ship), CrewPick(d, ship), ArmourPick(d), ShellsPick(d)],
             Remarks = remarks.ToArray(),
             Panel = PanelItems(d, ship),
             HistoryLabels = doc.History.Select(h => h.Label).ToArray(),
@@ -698,6 +702,19 @@ public sealed unsafe partial class DesignerScene : IScene
     PickRow ArmourPick(Design d) => Pick("Armour", Templates.Armour, t => t.Name, t => Templates.SameMaterials(d.Armour?.Materials, t.Value),
         d.Armour?.Materials is { } am ? $"custom: {am.GetValueOrDefault("belt", "?")}" : "default",
         (x, v) => x with { Armour = (x.Armour ?? new ArmourInput()) with { Materials = Templates.MaterialsFor(x, v) } });
+
+    /// <summary>Every gun battery's shell family at once (docs/designer-ui/shells.md): the family they share, "mixed", or
+    /// "default"; picked from the family tree.</summary>
+    PickRow ShellsPick(Design d)
+    {
+        bool any = (d.Main ?? []).Concat(d.Secondary ?? []).Any(b => b.CalibreMm != null);
+        bool dflt = !(d.Main ?? []).Concat(d.Secondary ?? []).Any(b => b.Shells is { Count: > 0 });
+        string fam = !any ? "no guns" : dflt ? $"default: {ShellTemplates.DefaultFamily}" : ShellEdits.FamilyOfAll(d);
+        return new PickRow("Shells: every battery's family", [fam], 0, 0, _ => { })
+        {
+            Popup = any ? () => FamilyTree(d, ShellEdits.FamilyOfAll(d), f => Edit(ShellEdits.SetFamilyAll(doc.Current, f), $"Shells: {f}")) : null,
+        };
+    }
 
     // ------------------------------------------------------------------ the outliner and the ledger
 

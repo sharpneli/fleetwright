@@ -122,8 +122,26 @@ public sealed class Loadout
         return l;
     }
 
-    /// <summary>Each mount's rounds by its battery's loads: its rounds split by the shares, the largest remainders
-    /// rounded up so they add up to its rounds.</summary>
+    /// <summary>Rounds split by shares: each its share rounded down, the rest one each to the largest remainders (the
+    /// earlier first on a tie), so they add up to the total.</summary>
+    public static int[] Split(int total, IReadOnlyList<double> shares)
+    {
+        var n = new int[shares.Count];
+        var rest = new double[shares.Count];
+        int given = 0;
+        for (int k = 0; k < shares.Count; k++)
+        {
+            double exact = total * shares[k];
+            n[k] = (int)Math.Floor(exact);
+            rest[k] = exact - n[k];
+            given += n[k];
+        }
+        foreach (int k in Enumerable.Range(0, rest.Length).OrderByDescending(k => rest[k]).ThenBy(k => k).Take(Math.Max(total - given, 0)))
+            n[k]++;
+        return n;
+    }
+
+    /// <summary>Each mount's rounds by its battery's loads: its rounds split by the shares (<see cref="Split"/>).</summary>
     void Rounds()
     {
         var mounts = Class.Mounts;
@@ -142,19 +160,10 @@ public sealed class Loadout
                     rounds.Add(int.MaxValue);
                 continue;
             }
-            int r0 = rounds.Count, given = 0, total = m.Rounds;
-            var rest = new double[loads.Length];
+            var shares = new double[loads.Length];
             for (int k = 0; k < loads.Length; k++)
-            {
-                double exact = total * loads[k].Share;
-                int n = (int)Math.Floor(exact);
-                rounds.Add(n);
-                rest[k] = exact - n;
-                given += n;
-            }
-            // the rest one each to the largest remainders, the earlier first on a tie
-            foreach (int k in Enumerable.Range(0, rest.Length).OrderByDescending(k => rest[k]).ThenBy(k => k).Take(Math.Max(total - given, 0)))
-                rounds[r0 + k]++;
+                shares[k] = loads[k].Share;
+            rounds.AddRange(Split(m.Rounds, shares));
         }
         starts[mounts.Length] = rounds.Count;
         mountLoadStart = starts;
