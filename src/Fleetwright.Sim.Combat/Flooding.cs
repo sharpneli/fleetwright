@@ -1,3 +1,4 @@
+using Fleetwright.Shipgen;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
@@ -34,7 +35,7 @@ public sealed class FloodModel
     public readonly double ReserveT, DisplacementT, DeckAtLcf, Complement;
 
     /// <summary>Tonnes a cubic metre of sea water.</summary>
-    public const double SeaT = 1.025;
+    public const double SeaT = Flotation.SeaT;
 
     public FloodModel(ShipClass c)
     {
@@ -310,8 +311,7 @@ public static class Flooding
             return LossKind.None;
         }
         double d = h.DisplacementT, d1 = d + wt;
-        double sink = wt / (100 * Math.Max(h.TpcT, 1e-6));
-        double trim = Math.Atan(mx / Math.Max(h.MctTm, 1e-6) / 100 / Math.Max(c.Length, 1));
+        double sink = Flotation.SinkageM(wt, h.TpcT), trim = Flotation.TrimRad(mx, h.MctTm, c.Length);
         double kg1 = (d * h.Kg + mz) / d1;
         k.GmM = h.GmT + h.Kg - kg1 - fs * FloodModel.SeaT / d1;
         double heel = Heel(k.GmM, h.ITM4 * FloodModel.SeaT / d1, my / d1), was = double.DegreesToRadians(k.Attitude.HeelDeg);

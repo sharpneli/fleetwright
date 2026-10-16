@@ -284,6 +284,7 @@ public static class Hitbox
                 s.Z.Select(z => Math.Round(z - D, 2)).ToArray(), s.Y.Select(y => Math.Round(y, 3)).ToArray())).ToList()),
             Armour = armour, Plating = inner.Plating, TurretTypes = lay.TurretTypes, Components = comps,
             Decks = sub.Decks, Tiers = sub.Tiers, Sections = sub.Sections, Bulkheads = sub.Bulkheads, Cells = sub.Cells, Rooms = sub.Rooms,
+            DoorsBelow = design.Subdivision?.DoorsBelow ?? Styles.Get(design).DoorsBelow,
         };
     }
 }

@@ -230,7 +230,9 @@ public static class Subdivision
             double xa = pts[k].X;
             var (xb, _, kb) = pts[k + 1];
             double gap = xa - xb;
-            bool inside = rooms.Any(r => r.X0 <= xb + 1e-6 && r.X1 >= xa - 1e-6);
+            // one room (an engine room) is one compartment however long: a room covers the gap when what it leaves is too
+            // short to be a section of its own (a station merged a few cm off its end)
+            bool inside = rooms.Any(r => Ov(r.X0, r.X1, xb, xa) >= gap - minGap);
             if (gap > maxGap && !inside)
             {
                 long n = (long)Math.Ceiling(gap / maxGap - 1e-9);

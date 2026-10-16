@@ -32,6 +32,8 @@ public sealed record Design
     public TorpedoInput? Torpedoes { get; init; }
     public AaInput? Aa { get; init; }
     public ArmourInput? Armour { get; init; }
+    /// <summary>How the hull is divided (protection-plan.md H7).</summary>
+    public SubdivisionInput? Subdivision { get; init; }
     public SuperstructureInput? Superstructure { get; init; }
     public MachineryInput? Machinery { get; init; }
     public CrewInput? Crew { get; init; }
@@ -382,6 +384,15 @@ public sealed record ArmourDeckInput
     public double? SlopeDeg { get; init; }
     public string? Extent { get; init; }
     public string? Material { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>subdivision: whether the main bulkheads have doors below the damage-control deck (null: the style's way,
+/// merchants yes, warships no). Doors make a ship easier to live in and are the classic path for flooding to spread
+/// when they stand open (Victoria, Audacious); without them the spaces down there are reached from above.</summary>
+public sealed record SubdivisionInput
+{
+    public bool? DoorsBelow { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

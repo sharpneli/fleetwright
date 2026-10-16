@@ -59,6 +59,9 @@ public sealed class ShipClass
     public ContentHash DesignHash { get; internal init; }
     /// <summary>The structure's hash (ids, kinds and links in index order): equal means the indices mean the same.</summary>
     public ContentHash LayoutHash { get; internal set; }
+    /// <summary>Whether the main bulkheads have doors below the damage-control deck (the hitboxes' doors_below): the
+    /// open-door path for flooding, for damage control to read (protection-plan.md H7).</summary>
+    public bool DoorsBelow { get; internal set; }
     /// <summary>The shipgen it was built by (<see cref="ShipDesign.Version"/>).</summary>
     public int ShipgenVersion { get; internal init; }
 

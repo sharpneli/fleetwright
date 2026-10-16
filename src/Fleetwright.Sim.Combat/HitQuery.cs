@@ -117,9 +117,9 @@ public static class HitQuery
     {
         if (a == Attitude.Upright)
             return Waterplane.Level(c);
-        Trig(a, out double ct, out double st, out double cp, out double sp);
-        double tan = st / ct;
-        return new Waterplane(c.Vertical.Waterline + a.SinkageM / (ct * cp) - c.Hydrostatics.Lcf * tan, tan, sp / (ct * cp));
+        var (z0, dzdx, dzdy) = Flotation.Sea(c.Vertical.Waterline, c.Hydrostatics.Lcf, a.SinkageM, double.DegreesToRadians(a.TrimDeg),
+            double.DegreesToRadians(a.HeelDeg));
+        return new Waterplane(z0, dzdx, dzdy);
     }
 
     static void Trig(in Attitude a, out double ct, out double st, out double cp, out double sp)

@@ -1,6 +1,6 @@
 # Plan: subdivision and protection schemes
 
-2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Done: H0-H6 (2026-10-16). Next: H7 (subdivision checks). Research: `research/09_protection_schemes.md`
+2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Done: H0-H7 (2026-10-16). Next: H8 (templates, designs, the designer tab). Research: `research/09_protection_schemes.md`
 (the families, the layers, the bulkhead kinds), on top of `01_capital_subdivision.md` and `03_small_vessels.md`.
 
 This comes before phase P of `docs/battle/shells-armour-damage.md` (materials as data). The user wants the subdivision
@@ -369,6 +369,34 @@ this plan builds the layers so E1 has something to work on.
   magazines' new lengths.
 - `subdivision.doors_below` exported (the damage model's open-door path comes with damage control). Frame snap left out
   unless the user wants the names.
+
+- **Done 2026-10-16.** What was built:
+  - `Floodable.Check`: each run of 1 to 4 adjacent sections, every cell under the bulkhead deck flooded to the sea
+    outside (its volume by its permeability), the ship settled to that water, round after round until it stops
+    changing; she fails when the margin line (76 mm under the main deck at the side, the standard) goes under at
+    either end. The settling is the damage model's own: its two formulas (sinkage from TPC, trim from the moment over MCT)
+    and the sea's plane moved into shipgen's `Flotation`, which `Flooding.Settle` and `HitQuery.WaterOf` now call (one
+    implementation; the sim's numbers are the same to the bit, tests unchanged).
+  - The report's `results.compartment_standard` (0 to 4) and a warning when it's under the type's
+    (`Style.CompartmentStandard`: warships 2, merchants and planing craft 1): the worst run, its length, the rooms that
+    matter in it and how far the margin line went under. It warns, never refuses.
+  - `subdivision.doors_below` (default merchants true, warships false), exported as the hitboxes' `doors_below` and
+    compiled into `ShipClass.DoorsBelow` for damage control. Frame snap left out.
+  - Sections: a station merged a few cm off a room's end made the long-gap rule (over 0.07 L) cut the room in two,
+    since "inside one room" was tested to a millionth of a metre. A room is one compartment now when what it leaves
+    of the gap is shorter than a minimum section. The cut never held water (a room's cells join open) but it named a
+    bulkhead that wasn't there. The destroyer 20 → 18 sections (the rest: a magazine per mount, and the 0.07 L splits
+    in empty stretches; TODO). Wing bunkers are cut per section, so this could have lengthened them (the 2026-10-07
+    pass cut them on purpose): measured on all 26 coal ships with wing bunkers, none changed.
+  - The fleet (`shipgen subdivision`, the 72 shipped designs): 4 at 0, 21 at 1, 22 at 2, 15 at 3, 10 at 4 or more.
+    Every destroyer and torpedo boat 4 or more (the "four-compartment ship"). Warned (a warship at 1 or 0, a merchant
+    at 0): the battleship, Yamato, KGV, Nelson, Richelieu, Colorado, Pennsylvania, the super-dreadnought, Tegetthoff,
+    Connecticut, the all-forward pair, Doom, Duilio, Murica, Devastation (0), Erebus (0), Inflexible (0), the tanker
+    (0). The merchants, the Q-ship and the planing craft at 1 meet their type's. The worst run is mostly the forward
+    magazines (H1 made them longer, not taller, and near the bow the floodable length is shortest): Yamato's A and B,
+    38.5 m, put the margin line 2.3 m under; KGV and the super-dreadnought miss by 4-6 cm. TODO: split long magazine
+    compartments. Sizes unchanged, mono-check 34 reversals and 14 lumps as at H6,
+    `hits` as before (V25 lost to the magazine 5 %, the destroyer 1 %, Dreadnought 4.5 %). ShipDesign.Version 16.
 
 ### H8. Scheme templates and the designer
 - `armour.json` gains layout schemes beside its material schemes: §6.8's table (`protected_deck`, `belt_and_slope`,

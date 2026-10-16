@@ -6,7 +6,7 @@ public static class ShipDesign
 {
     /// <summary>The generator's version: bumped whenever its output changes on purpose (each `golden-update` commit), so
     /// anything compiled from a build (a ShipClass, a cache entry) knows it's stale.</summary>
-    public const int Version = 15;
+    public const int Version = 16;
 
     /// <summary>Input errors. limits false skips the numeric ranges (--no-limits); structural checks stay.</summary>
     public static List<string> Validate(Design design, bool limits = true)
@@ -343,8 +343,12 @@ public static class ShipDesign
     }
 
     /// <summary>design: the player's input (echoed in Inputs); sized: the same with the hull the designer chose.</summary>
-    static Report ReportOf(Design design, Layout lay, Navarch.Result r, Design sized)
+    static Report ReportOf(Design design, Layout lay, Navarch.Result r, Design sized, Interior inner)
     {
+        // the subdivision check (protection-plan.md H7)
+        var sub = inner.Subdivision;
+        var (standard, worst) = Floodable.Check(sub.Sections, sub.Cells, inner.Hydrostatics, lay.Hull.L, -(r.Depth - r.Draught));
+        string? flooded = Floodable.Warning(sub, standard, worst, Styles.Get(design).CompartmentStandard);
         var results = new Results
         {
             LengthM = sized.HullLength, BeamM = sized.HullBeam, BlockCoefficient = sized.BlockCoefficient,
@@ -352,7 +356,7 @@ public static class ShipDesign
             DepthM = Math.Round(r.Depth, 2), FreeboardM = Math.Round(r.Freeboard, 2), PowerShp = Math.Round(r.PowerShp / 100.0) * 100,
             FuelT = (long)Math.Round(r.Fuel), Crew = lay.Crew!.Complement, GmFullM = Math.Round(r.GmFull, 2), GmLightM = Math.Round(r.GmLight, 2),
             RollPeriodS = Math.Round(r.RollS, 1), TrimM = Math.Round(r.TrimM, 2), LcgM = Math.Round(r.Lcg, 2), LcbM = Math.Round(r.Lcb, 2),
-            LayoutShiftM = Math.Round(lay.Geo.Shift, 2),
+            LayoutShiftM = Math.Round(lay.Geo.Shift, 2), CompartmentStandard = standard,
         };
         if (r.Wind is { } wind)
         {
@@ -371,7 +375,8 @@ public static class ShipDesign
         return new Report
         {
             Id = design.Id, Name = design.Name ?? design.Id, Valid = lay.Errors.Count == 0 && r.Errors.Count == 0,
-            Errors = [.. lay.Errors, .. r.Errors], Warnings = [.. DesignFormat.Warnings(design), .. lay.Warnings, .. r.Warnings, .. shellWarnings],
+            Errors = [.. lay.Errors, .. r.Errors],
+            Warnings = [.. DesignFormat.Warnings(design), .. lay.Warnings, .. r.Warnings, .. shellWarnings, .. flooded is null ? [] : new[] { flooded }],
             Inputs = design, Results = results, Shells = shells.Count > 0 ? shells : null,
             Summary = Styles.Get(design).Summary(sized, lay, r),
             Plant = PlantReport(lay, r), Hull = HullReport(design, r), Crew = lay.Crew, FireControl = FireControl.Report(lay, r.Freeboard),
@@ -433,7 +438,7 @@ public static class ShipDesign
     {
         var (lay, r, sized) = Solve(Ammunition.WithShellMasses(design));
         var inner = InteriorOf(lay, sized, r);
-        return new Ship(design, ReportOf(design, lay, r, sized), Hitbox.ExportHitboxes(lay, sized, r, inner), lay.Dressing);
+        return new Ship(design, ReportOf(design, lay, r, sized, inner), Hitbox.ExportHitboxes(lay, sized, r, inner), lay.Dressing);
     }
 }
 

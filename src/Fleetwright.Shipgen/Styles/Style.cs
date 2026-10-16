@@ -16,6 +16,10 @@ public abstract class Style
     protected virtual IEnumerable<Limit> StyleLimits => [];
 
     public virtual double DefaultBlockCoefficient => 0.55;
+    /// <summary>The adjacent main compartments the style's ships should float with flooded (protection-plan.md H7), and
+    /// whether their main bulkheads have doors below the damage-control deck by default.</summary>
+    public virtual int CompartmentStandard => Floodable.Standard;
+    public virtual bool DoorsBelow => false;
 
     /// <summary>How ShipDesign sizes the hull.</summary>
     public virtual SizeRules Sizing => new((30.0, 1000.0), 100.0, 0.06, 0.36, 10.5, true);
@@ -272,6 +276,7 @@ public abstract class Style
         errs.AddRange(Ammunition.Validate(design));
         errs.AddRange(SuperstructureErrors(design, this));
         errs.AddRange(RaisedErrors(design, this));
+        errs.AddRange(design.Subdivision?.Extra.KeysOrEmpty().Select(k => $"subdivision.{k}: not a subdivision setting (doors_below)") ?? []);
         var secondary = design.Secondary ?? [];
         if (secondary.Count > 1 && !TakesSecondaryList)
             errs.Add($"secondary: the {Name} style takes one secondary battery, not a list");

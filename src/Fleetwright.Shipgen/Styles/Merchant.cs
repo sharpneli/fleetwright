@@ -63,6 +63,9 @@ public sealed class MerchantStyle : Style
 
     public override string Name => "merchant";
     public override bool TakesSecondaryList => true;
+    /// <summary>A merchant is a one-compartment ship, with doors in her bulkheads.</summary>
+    public override int CompartmentStandard => 1;
+    public override bool DoorsBelow => true;
 
     protected override IEnumerable<Limit> StyleLimits =>
     [

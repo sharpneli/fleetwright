@@ -124,6 +124,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   cells there (Richelieu's engine room 3, the carriers' aviation fuel; with layers, a boiler room took the innermost
   layer, so a hit that flooded it flooded the boiler room through an open join). 14 design cases' hitboxes change
   (rooms' cells, battle crew); nothing else.
+- 2026-10-16, subdivision checks (docs/shipgen/protection-plan.md H7), on purpose: a room is one compartment however
+  long (a station merged a few cm off a room's end had split engine rooms and long magazines in two), the report gains
+  `compartment_standard` and, where she floats with fewer adjacent compartments flooded than her type should, a
+  warning; the hitboxes gain `doors_below`. 326 design cases change; no size moves. ShipDesign.Version 16.
 
 ## Layout
 

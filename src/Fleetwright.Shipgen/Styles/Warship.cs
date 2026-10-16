@@ -25,6 +25,8 @@ public sealed class PlaningStyle : Style
     const double WoodTPerM2 = 0.10, PlankMm = 25.0;
 
     public override string Name => "planing";
+    /// <summary>A planing craft is a few compartments long: one flooded is its standard.</summary>
+    public override int CompartmentStandard => 1;
 
     public override TechInput DefaultTech { get; } = new()
     {

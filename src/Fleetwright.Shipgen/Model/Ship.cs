@@ -58,6 +58,8 @@ public sealed class Results
     public double LcgM { get; set; }
     public double LcbM { get; set; }
     public double LayoutShiftM { get; set; }
+    /// <summary>How many adjacent main compartments she floats with flooded, up to Floodable.MaxRun (protection-plan.md H7).</summary>
+    public long CompartmentStandard { get; set; }
 
     // carriers
     public double? Aircraft { get; set; }
@@ -179,6 +181,9 @@ public sealed class Hitboxes
     public required List<SubDeck> Decks { get; init; }
     public required List<Tier> Tiers { get; init; }
     public required List<Section> Sections { get; init; }
+    /// <summary>Whether the main bulkheads have doors below the damage-control deck (subdivision.doors_below): the open-door
+    /// path for flooding, for the damage model's damage control (protection-plan.md H7).</summary>
+    public bool DoorsBelow { get; init; }
     public required List<Bulkhead> Bulkheads { get; init; }
     public required List<Cell> Cells { get; init; }
     public required List<Room> Rooms { get; init; }

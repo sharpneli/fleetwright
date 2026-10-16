@@ -99,6 +99,10 @@ public static class Program
             it, and N shells a fall (5, 10, 20, 35 degrees from the beam) aimed inside it: the share meeting the sea first,
             the steel before it, and the share "open" (from above the water through the skin alone); several designs or
             --summary end with a line a ship
+        shipgen subdivision DESIGN... [--rooms]
+            the main compartments (docs/shipgen/protection-plan.md H7): how many sections and the longest, and how many
+            adjacent ones the ship floats with, flooded to the sea, before the margin line (76 mm under the bulkhead
+            deck at the side) goes under; the worst run that sinks her (--rooms: the rooms in it). A line a design
         shipgen flood DESIGN [--hole WHERE:Z:AREA[:p],...] [--rooms KIND[:N],...] [--minutes M] [--every S] [--step MS] [--cells]
             the flooding model alone (docs/battle/fighting.md 4.3b): the class's facts (reserve buoyancy, freeboard, TPC,
             MCT, GM), then a ship of it stopped at sea, holed on the side (WHERE mid, bow, stern or x in m; Z m over the
@@ -202,6 +206,7 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new HitsBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), D(a, "range", 12_000), D(a, "aspect", 90), a.Int("n", 2000),
                         a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0), D(a, "settle", 30), a.Get("loadout"))),
+                "subdivision" => SubdivisionBench.Run(a.Positional.Count > 0 ? a.Positional : ["destroyer"], n => LoadDesign(Resolve(a, n)), a.Has("rooms")),
                 "protection" => ProtectionBench.Run(a.Positional.Count > 0 ? a.Positional : ["destroyer"], n => LoadDesign(Resolve(a, n)), a.Int("shells", 400),
                     a.Int("seed", 1), a.Has("summary")),
                 "torpedo" => TorpedoBench.Run(a.Positional.ElementAtOrDefault(0) ?? "super_dreadnought", n => LoadDesign(Resolve(a, n)),
