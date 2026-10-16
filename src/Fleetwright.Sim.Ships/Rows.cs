@@ -260,6 +260,9 @@ public readonly record struct ShellTypeRow
     public double FormFactor { get; init; }
     public ShellKind Kind { get; init; }
     public double FillerKg { get; init; }
+    /// <summary>The filler's explosive's TNT equivalent for the blast: W = FillerKg × FillerRe (black powder 0.55,
+    /// picric 1.17, TNT 1; docs/shipgen/explosive-templates.md).</summary>
+    public double FillerRe { get; init; }
     public Fuze Fuze { get; init; }
     public double FuzeDelayS { get; init; }
     public ShellQuality Quality { get; init; }

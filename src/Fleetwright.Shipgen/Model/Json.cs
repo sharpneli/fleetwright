@@ -49,6 +49,23 @@ public sealed class PtConverter : JsonConverter<Pt>
     }
 }
 
+/// <summary>A filler's explosive: a name ("TNT") or a block (its fields over the named one's). A block with only a
+/// name is written as the name.</summary>
+public sealed class ExplosiveRefConverter : JsonConverter<ExplosiveInput>
+{
+    public override ExplosiveInput? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        reader.TokenType == JsonTokenType.String ? new ExplosiveInput { Name = reader.GetString() }
+            : JsonSerializer.Deserialize(ref reader, (JsonTypeInfo<ExplosiveInput>)options.GetTypeInfo(typeof(ExplosiveInput)));
+
+    public override void Write(Utf8JsonWriter writer, ExplosiveInput value, JsonSerializerOptions options)
+    {
+        if (value.Name is { } n && value with { Extra = null } == new ExplosiveInput { Name = n } && value.Extra is not { Count: > 0 })
+            writer.WriteStringValue(n);
+        else
+            JsonSerializer.Serialize(writer, value, (JsonTypeInfo<ExplosiveInput>)options.GetTypeInfo(typeof(ExplosiveInput)));
+    }
+}
+
 /// <summary>A list that the JSON may also give as its one item on its own (main and secondary batteries). Written as a
 /// list.</summary>
 public sealed class OneOrManyConverter<T> : JsonConverter<List<T>>

@@ -571,15 +571,10 @@ public static class ShipClassCompiler
                 typeIds.Add(key);
                 return types.Count - 1;
             }
-            int Placeholder(ShellKind kind, BatteryRow b)
-            {
-                var t = DesignerPlaceholders.Shell(kind, b.CalibreMm, b.CalibreLength, era, navy);
-                return TypeOf(FormattableString.Invariant($"{b.CalibreMm:0.#}/{b.CalibreLength:0.#} {KindName(kind)} {EraName(era)} {QualityName(t.Quality)}"), t);
-            }
             ShellTypeRow Given(ShellReport s, BatteryRow b) => new()
             {
                 CalibreMm = b.CalibreMm, MassKg = s.MassKg, MuzzleVelocityMs = s.MuzzleVelocityMs, FormFactor = s.FormFactor, Kind = Kinds.ShellKindOf(s.Kind),
-                FillerKg = s.FillerKg, Fuze = Kinds.FuzeOf(s.Fuze), FuzeDelayS = s.FuzeDelayS, Quality = Kinds.ShellQualityOf(s.Outcomes),
+                FillerKg = s.FillerKg, FillerRe = s.FillerRe, Fuze = Kinds.FuzeOf(s.Fuze), FuzeDelayS = s.FuzeDelayS, Quality = Kinds.ShellQualityOf(s.Outcomes),
                 Diving = s.Cap == "break_away",
             };
 
@@ -611,16 +606,14 @@ public static class ShipClassCompiler
                 }
                 int dirs = links.Count - d0;
                 var spec = FireControl.Spec(ship.Design, row.Kind == Battery.Main ? "main" : "secondary");
-                // the design's shells for the gun, else the placeholder's by the look
+                // the gun's shells, as shipgen resolved them (the design's, or the default outfit)
                 int l0 = loads.Count;
                 string which = row.Kind == Battery.Main ? "main" : "secondary";
                 where = $"{which} {row.CalibreMm}/{row.CalibreLength}";
-                if (ship.Report.Shells?.FirstOrDefault(s => s.Battery == which && s.CalibreMm == row.CalibreMm && s.CalibreLength == row.CalibreLength) is { } given)
-                    foreach (var s in given.Shells)
-                        loads.Add(new ShellLoad(TypeOf(FormattableString.Invariant($"{row.CalibreMm:0.#}/{row.CalibreLength:0.#} {s.Ammo}"), Given(s, row)), s.Share));
-                else
-                    foreach (var (kind, share) in DesignerPlaceholders.ShellMix(row.CalibreMm, era))
-                        loads.Add(new ShellLoad(Placeholder(kind, row), share));
+                var given = ship.Report.Shells?.FirstOrDefault(s => s.Battery == which && s.CalibreMm == row.CalibreMm && s.CalibreLength == row.CalibreLength)
+                    ?? throw new ShipCompileException($"{where}: no shells in the report");
+                foreach (var s in given.Shells)
+                    loads.Add(new ShellLoad(TypeOf(FormattableString.Invariant($"{row.CalibreMm:0.#}/{row.CalibreLength:0.#} {s.Ammo}"), Given(s, row)), s.Share));
                 batteries[b] = row with
                 {
                     Mounts = new Slice(m0, d0 - m0), Guns = guns, Directors = new Slice(d0, dirs),
@@ -687,26 +680,6 @@ public static class ShipClassCompiler
 
         /// <summary>The side a point athwartships stands on (+y starboard); none given is the centreline.</summary>
         static Side SideOf(double y) => !(Math.Abs(y) >= CentrelineM) ? Side.Centre : y > 0 ? Side.Starboard : Side.Port;
-
-        static string KindName(ShellKind k) => k switch { ShellKind.Ap => "AP", ShellKind.Common => "common", _ => "HE" };
-
-        static string EraName(Era e) => e switch
-        {
-            Era.Victorian => "victorian",
-            Era.GreatWar => "great_war",
-            Era.Treaty => "treaty",
-            Era.Wwii => "wwii",
-            _ => "cold_war",
-        };
-
-        static string QualityName(ShellQuality q) => q switch
-        {
-            ShellQuality.Rn1916 => "rn1916",
-            ShellQuality.Km1916 => "km1916",
-            ShellQuality.Rn1918 => "rn1918",
-            ShellQuality.Ww2 => "ww2",
-            _ => "ijn_t91",
-        };
 
         static Extent ExtentOf(string s) => s switch
         {

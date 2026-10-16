@@ -1,0 +1,4007 @@
+[
+ {
+  "name": "Palliser shell (1867)",
+  "group": "1867 chilled iron",
+  "note": "Palliser chilled cast iron: the 12\" RML's 714 lb shot, W/D³ 0.41. ~1.5% powder ignited by the impact, no fuze. Shatters on any steel face.",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 11350,
+   "nose_crh": 1.5,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.3,
+    "quality": 0.85
+   },
+   "filler": {
+    "share": 0.015,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 0.6,
+    "speed": 0.8
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "Common shell, cast iron (1867)",
+  "group": "1867 chilled iron",
+  "note": "Cast iron, ~6% powder, a percussion nose fuze (instant: useless for penetration). W/D³ [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 9960,
+   "nose_crh": 1.5,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.15,
+    "quality": 0.85
+   },
+   "filler": {
+    "share": 0.06,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 0.6,
+    "speed": 0.8
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "Forged steel APC, soft cap (1895)",
+  "group": "1895 forged steel",
+  "note": "Water-hardened Ni steel under a Makarov soft cap (~+15% below 15°, gone above 20°). W/D³ between Russia's 0.42 and the RN's 0.50 [EST]; filler and the inertial tube's ~0.005 s [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 13010,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "soft",
+    "share": 0.06
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.5,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.025,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.005,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "Common shell, forged steel (1895)",
+  "group": "1895 forged steel",
+  "note": "Forged steel common, ~7% powder, base percussion fuze. [EST] from the RN's and Japan's.",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 12460,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.07,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RU 1895 AP (pyroxylin)",
+  "group": "RU 1895",
+  "note": "12\" AP 'old model' 331.7 kg (W/D³ 0.42), uncapped, 5.3 kg wet pyroxylin, Brink delayed tube (delay [EST]). Light shells did little (Tsushima).",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 11630,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.5,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.016,
+    "explosive": "Wet guncotton",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.1,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RU 1895 HE (pyroxylin)",
+  "group": "RU 1895",
+  "note": "12\" HE 'old model': thin-walled, base-fuzed (the 1894 tube, ~0.005 s), 12.4 kg pyroxylin. A common shell by its fuze.",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 11630,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.25,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.037,
+    "explosive": "Wet guncotton",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.005,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.1,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "JP 1904 AP (Shimose)",
+  "group": "JP 1904",
+  "note": "12\" 'Furoshiki' 386 kg (W/D³ 0.49), 19.3 kg Shimose, the sensitive Ijuin base fuze: bursts on contact. No 12\" known to pierce over ~6\".",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 13560,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.5,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.05,
+    "explosive": "Shimose",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "JP 1904 common (powder)",
+  "group": "JP 1904",
+  "note": "12\" common, 39 kg powder (10%): the upper-works fires of Tsushima.",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 13560,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.1,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "US 1906 AP (Explosive D)",
+  "group": "US 1906",
+  "note": "12\"/45 870 lb (W/D³ 0.50). Explosive D from 1907, the pre-1920s non-delay TNT-boosted base fuze (~0.003 s). Cap and filler share [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 13840,
+   "nose_crh": 2,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "soft",
+    "share": 0.06
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.5,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.025,
+    "explosive": "Explosive D",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "US 1906 common (powder)",
+  "group": "US 1906",
+  "note": "Common shell for 1/3-1/2 calibre plate (NOG). Filler [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 13840,
+   "nose_crh": 2,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.06,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "DE 1902 Psgr (TNT)",
+  "group": "DE 1902",
+  "note": "28 cm/40 240 kg (W/D³ 0.40). TNT from 1902; non-delay before the 1911 Bdz. Cap, filler and fuze [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 11070,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "soft",
+    "share": 0.06
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 20,
+    "break_t_d": 0.6,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.027,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.05,
+    "oblique": 0.45,
+    "plates": "two",
+    "scatter": 0.1,
+    "blind": 0.1,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "DE 1902 Sprgr Bdz (TNT)",
+  "group": "DE 1902",
+  "note": "Base-fuzed shell. Filler [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 11070,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.05,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.05,
+    "oblique": 0.45,
+    "plates": "two",
+    "scatter": 0.1,
+    "blind": 0.1,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "DE 1902 Sprgr Kz (TNT)",
+  "group": "DE 1902",
+  "note": "Nose-fuzed shell. Filler [EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 11070,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.07,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "FR 1893 AP (powder)",
+  "group": "FR 1893",
+  "note": "Light shells: the 305 Mle 1887's 292 kg (0.37), the 340's 490 kg (0.45). Forged steel, uncapped; filler and fuze [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 11350,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.5,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.025,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "FR 1893 common (Melinite)",
+  "group": "FR 1893",
+  "note": "Melinite (picric acid, catalogued as Lyddite) from 1887. Filler [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 11350,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.06,
+    "explosive": "Lyddite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RN 1906 APC (powder)",
+  "group": "RN 1906",
+  "note": "12\" APC Mk VI 2crh 850 lb (W/D³ 0.49), Hadfield soft cap 73 lb (8.6%), powder-filled (lyddite from 1909-10), No. 16 non-delay. Lord Nelsons kept 2crh.",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 13560,
+   "nose_crh": 2,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "soft",
+    "share": 0.086
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.4,
+    "quality": 0.85
+   },
+   "filler": {
+    "share": 0.031,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RN 1906 CPC (powder)",
+  "group": "RN 1906",
+  "note": "12\" CPC Mk VIIa: 80 lb powder (9.4%), base fuze.",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 13560,
+   "nose_crh": 2,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.094,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RN 1906 HE (lyddite)",
+  "group": "RN 1906",
+  "note": "12\" HE Mk IIa: 106.5 lb lyddite (12.5%), No. 13 instantaneous nose fuze.",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 13560,
+   "nose_crh": 2,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.125,
+    "explosive": "Lyddite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RN 1906 light CP (powder)",
+  "group": "RN 1906",
+  "note": "The 4\"-6\" guns' common pointed (4\"/50 31 lb, 6\" 100 lb: W/D³ 0.47-0.48). Filler [EST]. Also the RN 1909 and 1912 families' light guns.",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 13150,
+   "nose_crh": 2,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.07,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RN 1906 light HE (lyddite)",
+  "group": "RN 1906",
+  "note": "The 4\"-6\" guns' lyddite HE. Filler [EST]. Also the RN 1909 and 1912 families' light guns.",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 13150,
+   "nose_crh": 2,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.09,
+    "explosive": "Lyddite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RN 1909 APC (lyddite)",
+  "group": "RN 1909",
+  "note": "12\" APC Mk VIa 4crh 859 lb (W/D³ 0.50), soft cap 4%, 27.3 lb lyddite, No. 16 non-delay. Breaks up at 15-20° on 0.4 calibre; bursts in the plate (Jutland).",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 13840,
+   "nose_crh": 4,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "soft",
+    "share": 0.04
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.4,
+    "quality": 0.85
+   },
+   "filler": {
+    "share": 0.032,
+    "explosive": "Lyddite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RN 1909 CPC (powder)",
+  "group": "RN 1909",
+  "note": "12\" CPC Mk VIIa 4crh: 80 lb powder (9.4%).",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 13560,
+   "nose_crh": 4,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.094,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RN 1909 HE (lyddite)",
+  "group": "RN 1909",
+  "note": "12\" HE: lyddite 12.5%, No. 13 nose fuze (withdrawn from ships after Jutland).",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 13560,
+   "nose_crh": 4,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.125,
+    "explosive": "Lyddite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RN 1912 APC (lyddite)",
+  "group": "RN 1912",
+  "note": "15\" APC Mk Ia 4crh 1,920 lb (W/D³ 0.57; the 13.5\" heavy 1,400 lb the same), 60.5 lb lyddite (3.2%), No. 16 non-delay.",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 15780,
+   "nose_crh": 4,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "soft",
+    "share": 0.04
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.4,
+    "quality": 0.85
+   },
+   "filler": {
+    "share": 0.032,
+    "explosive": "Lyddite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RN 1912 CPC (powder)",
+  "group": "RN 1912",
+  "note": "15\" CPC Mk IIa 1,929 lb, 129.3 lb powder (6.7%).",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 15780,
+   "nose_crh": 4,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.067,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "RN 1912 HE (lyddite)",
+  "group": "RN 1912",
+  "note": "15\" HE, lyddite. Filler [EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 15780,
+   "nose_crh": 4,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.1,
+    "explosive": "Lyddite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1916"
+  }
+ },
+ {
+  "name": "DE 1911 Psgr L/3,4 (TNT)",
+  "group": "DE 1911",
+  "note": "30.5 cm Psgr. L/3,4 405 kg (W/D³ 0.52), Krupp Type 2 cap (share [EST]), 10.8 kg TNT, Bdz ~0.025 s nominal: at most half came near it, many duds.",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 14390,
+   "nose_crh": 3,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "hard2",
+    "share": 0.08
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 20,
+    "break_t_d": 0.6,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.027,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.025,
+    "start_cal": 0.05,
+    "oblique": 0.45,
+    "plates": "two",
+    "scatter": 0.5,
+    "blind": 0.15,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "DE 1911 Spgr L/3,8 Bdz (TNT)",
+  "group": "DE 1911",
+  "note": "30.5 cm Spgr. L/3,8 Bdz 405 kg, 24.8 kg TNT: base-fuzed, bursts 2-6 m into unarmoured structure.",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 14390,
+   "nose_crh": 3,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.061,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.025,
+    "start_cal": 0.05,
+    "oblique": 0.45,
+    "plates": "two",
+    "scatter": 0.5,
+    "blind": 0.15,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "DE 1911 Spgr Kz (TNT)",
+  "group": "DE 1911",
+  "note": "Nose-fuzed Sprenggranate (the 15 cm's 45.3 kg, 3.0 kg TNT). German light shells ran 0.49-0.54, so the family's blocks serve every gun.",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 14390,
+   "nose_crh": 3,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.066,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "FR 1910 OPf (Melinite)",
+  "group": "FR 1910",
+  "note": "305 Mle 1906 OPf 432 kg (W/D³ 0.55), melinite. Cap, filler and fuze [EST]: French fuzes weren't found.",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 15220,
+   "nose_crh": 3,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "soft",
+    "share": 0.06
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.5,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.03,
+    "explosive": "Lyddite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "FR 1910 OEA (Melinite)",
+  "group": "FR 1910",
+  "note": "Semi-AP explosive shell. [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 15220,
+   "nose_crh": 3,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.06,
+    "explosive": "Lyddite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "FR 1910 HE (Melinite)",
+  "group": "FR 1910",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 15220,
+   "nose_crh": 3,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.1,
+    "explosive": "Lyddite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "Standard APC (1912)",
+  "group": "1912 standard",
+  "note": "A middling Great War APC: W/D³ 0.52, soft cap, TNT 2.5%, a short delay. [EST] throughout, from the RN's and Germany's.",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 14390,
+   "nose_crh": 3,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "soft",
+    "share": 0.06
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 20,
+    "break_t_d": 0.6,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.025,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.02,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "Standard common (1912)",
+  "group": "1912 standard",
+  "note": "[EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 14390,
+   "nose_crh": 3,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.05,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.02,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "Standard HE (1912)",
+  "group": "1912 standard",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 14390,
+   "nose_crh": 3,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.08,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "US 1916 AP (Explosive D)",
+  "group": "US 1916",
+  "note": "14\"/45 1,400 lb (W/D³ 0.51), contractor caps, non-delay TNT-boosted base fuze. Filler [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 14120,
+   "nose_crh": 4,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "soft",
+    "share": 0.06
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.5,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.025,
+    "explosive": "Explosive D",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "US 1916 common (Explosive D)",
+  "group": "US 1916",
+  "note": "[EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 14120,
+   "nose_crh": 4,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.05,
+    "explosive": "Explosive D",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "US 1916 HE (TNT)",
+  "group": "US 1916",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 14120,
+   "nose_crh": 4,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.07,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "US 1916 5in common (Explosive D)",
+  "group": "US 1916",
+  "note": "5\"/51's 50 lb (W/D³ 0.40). Filler [EST]. Also the 1921 family's.",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 11070,
+   "nose_crh": 3,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.03,
+    "explosive": "Explosive D",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "US 1916 5in HE (TNT)",
+  "group": "US 1916",
+  "note": "[EST]. Also the 1921 family's.",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 11070,
+   "nose_crh": 3,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.06,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "US 1921 AP Mk 3 (Explosive D)",
+  "group": "US 1921",
+  "note": "16\"/45 Mk 3 2,110 lb (W/D³ 0.52), 57.5 lb Explosive D (2.7%), non-delay until the late 1920s.",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 14390,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "soft",
+    "share": 0.06
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.5,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.027,
+    "explosive": "Explosive D",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "US 1921 HC (Explosive D)",
+  "group": "US 1921",
+  "note": "[EST] from the later HC.",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 12730,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.07,
+    "explosive": "Explosive D",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "RN 1927 APC (Shellite)",
+  "group": "RN 1927",
+  "note": "Greenboy practice (hard cap 11.6%, Shellite 2.4%, No. 16D 0.025 s) at the light W/D³ of Nelson's 16\" (2,048 lb, 0.50) and the 8\" (256 lb, 0.50). CE booster only from the late 1920s.",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 13840,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "hard",
+    "share": 0.116
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 20,
+    "break_t_d": 0.67,
+    "quality": 0.96
+   },
+   "filler": {
+    "share": 0.024,
+    "explosive": "Shellite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.025,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "RN 1927 HE (TNT)",
+  "group": "RN 1927",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 13840,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.07,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "RN 1927 light SAP (TNT/wax)",
+  "group": "RN 1927",
+  "note": "6\" CPBC 100 lb (W/D³ 0.47), TNT/beeswax. Filler [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 13010,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.033,
+    "explosive": "TNT/wax",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "RN 1927 light HE (TNT)",
+  "group": "RN 1927",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 13010,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.06,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "JP 1913 APC (Shimose)",
+  "group": "JP 1913",
+  "note": "Vickers 14\"/45 1,400 lb (W/D³ 0.51). Shimose to the 1920s. Filler and fuze [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 14120,
+   "nose_crh": 4,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "soft",
+    "share": 0.04
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.5,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.03,
+    "explosive": "Shimose",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "JP 1913 common (Shimose)",
+  "group": "JP 1913",
+  "note": "[EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 14120,
+   "nose_crh": 4,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.06,
+    "explosive": "Shimose",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "JP 1913 HE (Shimose)",
+  "group": "JP 1913",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 14120,
+   "nose_crh": 4,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.1,
+    "explosive": "Shimose",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ {
+  "name": "JP 1925 APC (TNT/wax)",
+  "group": "JP 1925",
+  "note": "APC Model 1925 on the German pattern (wax-TNT, buffered cavity, 1922): 41 cm 1,020 kg (W/D³ 0.54). Still prematures and low-order bursts. Cap and filler [EST]; delay 0.025-0.035 (Okun).",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 14950,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "hard",
+    "share": 0.09
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 20,
+    "break_t_d": 0.6,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.025,
+    "explosive": "TNT/wax",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.03,
+    "start_cal": 0.05,
+    "oblique": 0.45,
+    "plates": "two",
+    "scatter": 0.1,
+    "blind": 0.1,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "JP 1925 HE (TNT)",
+  "group": "JP 1925",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 13840,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.06,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "JP 1925 light common (TNT/wax)",
+  "group": "JP 1925",
+  "note": "12.7 cm 23 kg (W/D³ 0.41) and 14 cm 38 kg (0.46). Filler [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 11900,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.03,
+    "explosive": "TNT/wax",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "JP 1925 light HE (TNT)",
+  "group": "JP 1925",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 11900,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.08,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "RU 1911 AP (TNT)",
+  "group": "RU 1911",
+  "note": "12\" AP mod 1911 470.9 kg (W/D³ 0.60, super-heavy), 12.84 kg. Cap, explosive and fuze [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 16610,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "hard",
+    "share": 0.08
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 20,
+    "break_t_d": 0.6,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.027,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.025,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "RU 1911 HE (TNT)",
+  "group": "RU 1911",
+  "note": "12\" HE mod 1911 471 kg, 58.8 kg TNT.",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 16610,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.125,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "RU 1911 light common (TNT)",
+  "group": "RU 1911",
+  "note": "120/50 28.97 kg (W/D³ 0.53). Filler [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 14670,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.04,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "RU 1911 light HE (TNT)",
+  "group": "RU 1911",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 14670,
+   "nose_crh": 4,
+   "form_factor": 1.15,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.08,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "rn1918"
+  }
+ },
+ {
+  "name": "RN 1938 APC (Shellite)",
+  "group": "RN 1938",
+  "note": "14\" APC Mk VIIb 6crh 1,590 lb (W/D³ 0.58), Shellite 2.5% with CE, No. 159 (1\" at normal on a 16\": 0.0625 cal), 0.025 s. Cap share [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 16050,
+   "nose_crh": 6,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "hard",
+    "share": 0.1
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 30,
+    "break_t_d": 1,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.025,
+    "explosive": "Shellite",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.025,
+    "start_cal": 0.0625,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "RN 1938 HE (TNT)",
+  "group": "RN 1938",
+  "note": "15\" HE Mk VII 879 kg, 59 kg TNT (6.7%).",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 16050,
+   "nose_crh": 6,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.067,
+    "explosive": "TNT",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "RN 1938 light SAP (TNT/wax)",
+  "group": "RN 1938",
+  "note": "6\" CPBC 112 lb (W/D³ 0.52), 5.25\" 80 lb (0.56). Filler [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 14670,
+   "nose_crh": 6,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.03,
+    "explosive": "TNT/wax",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "RN 1938 light HE (TNT)",
+  "group": "RN 1938",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 14670,
+   "nose_crh": 6,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.07,
+    "explosive": "TNT",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "DE 1939 Psgr L/4,4 m.Hb (TNT/wax)",
+  "group": "DE 1939",
+  "note": "38 cm Psgr. L/4,4 m.Hb 800 kg (W/D³ 0.53), hard cap and 10-calibre ballistic cap, 20.3 kg Fp, Bd.Z. 38 0.035 s; a picric booster to 1945. Cap share [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 14670,
+   "nose_crh": 4.4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "hard",
+    "share": 0.1
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 20,
+    "break_t_d": 0.8,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.025,
+    "explosive": "TNT/wax",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.035,
+    "start_cal": 0.05,
+    "oblique": 0.45,
+    "plates": "two",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "DE 1939 Spgr L/4,5 Kz (TNT)",
+  "group": "DE 1939",
+  "note": "38 cm nose-fuzed HE 800 kg, 66.2 kg TNT.",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 14670,
+   "nose_crh": 4.4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.083,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "DE 1939 15cm Spgr Bdz (TNT)",
+  "group": "DE 1939",
+  "note": "15 cm 45.3 kg (W/D³ 0.485), 10.5 cm 15.1 kg (0.47); Bd.Z. KV 0.015 s. Filler [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 13290,
+   "nose_crh": 4.4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.05,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.015,
+    "start_cal": 0.05,
+    "oblique": 0.45,
+    "plates": "two",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "DE 1939 15cm Spgr Kz (TNT)",
+  "group": "DE 1939",
+  "note": "15 cm Sprgr. L/4,6 KZ, 3.9 kg TNT.",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 13290,
+   "nose_crh": 4.4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.086,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "IT 1940 APC (TNT)",
+  "group": "IT 1940",
+  "note": "381 mm APC 884.8 kg (W/D³ 0.58), cast TNT 10.16 kg (1.15%). Uneven makers: quality 0.95. Cap and fuze [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 16050,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "hard",
+    "share": 0.1
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 25,
+    "break_t_d": 0.9,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.0115,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.03,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "IT 1940 HE (TNT)",
+  "group": "IT 1940",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 14950,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.07,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "IT 1940 light SAP (TNT)",
+  "group": "IT 1940",
+  "note": "152/55 50 kg (W/D³ 0.51), 90/50 and 100/47 0.50. Filler [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 13840,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.03,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "IT 1940 light HE (TNT)",
+  "group": "IT 1940",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 13840,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.07,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "FR 1936 OPfK (TNT)",
+  "group": "FR 1936",
+  "note": "380 mm OPfK Mle 1936 884 kg (W/D³ 0.58), cap 84 kg (9.5%), 21.9 kg filler (explosive [EST]). Fuze [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 16050,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "hard",
+    "share": 0.095
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 30,
+    "break_t_d": 1,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.025,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.03,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "FR 1936 OEA (Melinite)",
+  "group": "FR 1936",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 15220,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.08,
+    "explosive": "Lyddite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "FR 1936 light SAP (TNT)",
+  "group": "FR 1936",
+  "note": "152/55 Mle 1930 54 kg (W/D³ 0.555), 130/45 32 kg (0.53), 100/45 13.5 kg (0.49). Filler [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 14670,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.03,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "FR 1936 light HE (TNT)",
+  "group": "FR 1936",
+  "note": "[EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 14670,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.07,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "US 1941 AP Mk 8 (Explosive D)",
+  "group": "US 1941",
+  "note": "16\"/50 Mk 8 2,700 lb (W/D³ 0.66, super-heavy; the 8\" and 6\" SH the same), 9crh under a windscreen, 40.9 lb Explosive D (1.5%), Mk 21 BDF 0.033 s (1.5\" at 0°, 0.375\" at 65°). Cap share [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 18270,
+   "nose_crh": 9,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "hard",
+    "share": 0.12
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 45,
+    "break_t_d": 1.2,
+    "quality": 1.1
+   },
+   "filler": {
+    "share": 0.015,
+    "explosive": "Explosive D",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.033,
+    "start_cal": 0.094,
+    "oblique": 0.25,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "US 1941 HC (Explosive D)",
+  "group": "US 1941",
+  "note": "16\" HC Mk 13 1,900 lb (W/D³ 0.46), 8\" 0.51, 6\" 0.49: 0.48 between. 8.1% Explosive D, PDF Mk 29.",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 13290,
+   "nose_crh": 9,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.081,
+    "explosive": "Explosive D",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "US 1941 5in Common (Explosive D)",
+  "group": "US 1941",
+  "note": "5\"/38 Common 24.5 kg (W/D³ 0.44), 1.2 kg Explosive D, 0.01 s.",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 12180,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.049,
+    "explosive": "Explosive D",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "US 1941 5in AAC (Explosive D)",
+  "group": "US 1941",
+  "note": "5\"/38 AAC 25 kg, 3.3 kg Explosive D.",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 12180,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.13,
+    "explosive": "Explosive D",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "JP 1931 Type 91 AP (TNA)",
+  "group": "JP 1931",
+  "note": "46 cm Type 91 1,460 kg (W/D³ 0.54), the break-away cap head (diving: off above 45°), 23.9 kg TNA with its liner, 0.4 s quoted [UNCERTAIN]. Cap share and booster [EST].",
+  "value": {
+   "kind": "ap",
+   "mass_k_kg_m3": 14950,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "break_away",
+    "share": 0.1
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 20,
+    "break_t_d": 0.67,
+    "quality": 0.96
+   },
+   "filler": {
+    "share": 0.016,
+    "explosive": "TNA",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.4,
+    "start_cal": 0.05,
+    "oblique": 0.45,
+    "plates": "two",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ijn_t91"
+  }
+ },
+ {
+  "name": "JP 1931 Type 0 HE (TNA)",
+  "group": "JP 1931",
+  "note": "46 cm Type 0 HE 1,360 kg, 61.7 kg TNA.",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 14120,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.045,
+    "explosive": "TNA",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ijn_t91"
+  }
+ },
+ {
+  "name": "JP 1931 light common (TNA)",
+  "group": "JP 1931",
+  "note": "15.5 cm and 12.7 cm (W/D³ 0.41-0.48). Filler [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 12180,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.03,
+    "explosive": "TNA",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ijn_t91"
+  }
+ },
+ {
+  "name": "JP 1931 light HE (TNA)",
+  "group": "JP 1931",
+  "note": "12.7 cm Type 0 HE 23 kg, 1.88 kg TNA.",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 12180,
+   "nose_crh": 4,
+   "form_factor": 1.05,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.08,
+    "explosive": "TNA",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ijn_t91"
+  }
+ },
+ {
+  "name": "DP SAP (1950)",
+  "group": "1950 dual-purpose",
+  "note": "The post-war 4.5\"-6\" dual-purpose guns' shells (5\"/54 31.75 kg, W/D³ 0.56). [EST].",
+  "value": {
+   "kind": "common",
+   "mass_k_kg_m3": 15500,
+   "nose_crh": 6,
+   "form_factor": 1,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.04,
+    "explosive": "TNT",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.01,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ },
+ {
+  "name": "DP HE (1950)",
+  "group": "1950 dual-purpose",
+  "note": "Comp B filled, nose fuzed. [EST].",
+  "value": {
+   "kind": "he",
+   "mass_k_kg_m3": 15500,
+   "nose_crh": 6,
+   "form_factor": 1,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": true,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
+   "filler": {
+    "share": 0.1,
+    "explosive": "Comp B",
+    "booster": "ce"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
+   },
+   "fuze": {
+    "position": "nose",
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "ww2"
+  }
+ }
+]

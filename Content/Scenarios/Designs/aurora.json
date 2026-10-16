@@ -37,7 +37,7 @@
    "rounds_per_gun": 180,
    "fore": 1,
    "aft": 1,
-   "superfire": false, "shells": [{"ammo": "AP victorian rn1916", "share": 0.2, "mass_kg": 46.413459251199995}, {"ammo": "common victorian rn1916", "share": 0.8, "mass_kg": 46.413459251199995}]
+   "superfire": false, "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.2}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.8}]
   }
  ],
  "secondary": [
@@ -49,7 +49,7 @@
    "rounds_per_gun": 180,
    "per_side": 3,
    "mount": "casemate",
-   "tier": "upper", "shells": [{"ammo": "AP victorian rn1916", "share": 0.2, "mass_kg": 46.413459251199995}, {"ammo": "common victorian rn1916", "share": 0.8, "mass_kg": 46.413459251199995}]
+   "tier": "upper", "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.2}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.8}]
   },
   {
    "calibre_mm": 75,
@@ -58,7 +58,7 @@
    "armour_mm": 0,
    "rounds_per_gun": 300,
    "per_side": 6,
-   "mount": "casemate", "shells": [{"ammo": "AP victorian rn1916", "share": 0.2, "mass_kg": 5.390507812499999}, {"ammo": "common victorian rn1916", "share": 0.8, "mass_kg": 5.390507812499999}]
+   "mount": "casemate", "shells": [{"ammo": "RU 1895 AP (pyroxylin)", "share": 0.2}, {"ammo": "RU 1895 HE (pyroxylin)", "share": 0.8}]
   }
  ],
  "torpedoes": {
@@ -220,5 +220,6 @@
   "navy": "kronstadt",
   "era": "victorian"
  },
- "ammunition": {"AP victorian rn1916": {"kind": "ap", "mass_k_kg_m3": 13216, "form_factor": 1.8, "filler": {"share": 0.03, "explosive": {"re": 1}}, "fuze": {"position": "base", "delay_s": 0}, "outcomes": "rn1916"}, "common victorian rn1916": {"kind": "common", "mass_k_kg_m3": 13216, "form_factor": 1.8, "filler": {"share": 0.07, "explosive": {"re": 1}}, "fuze": {"position": "base", "delay_s": 0}, "outcomes": "rn1916"}}
+ "ammunition": {"RU 1895 AP (pyroxylin)": {"kind": "ap", "mass_k_kg_m3": 11630, "nose_crh": 2, "form_factor": 1.8, "cap": {"kind": "none"}, "windscreen": false, "body": {"break_ob_deg": 15, "break_t_d": 0.5, "quality": 0.95}, "filler": {"share": 0.016, "explosive": "Wet guncotton", "booster": "basic"}, "steel": {"size": 1, "speed": 1}, "casing": {"nose": 0.33, "ogive": 0, "body": 0.55, "plug": 0.08, "tail": 0.04}, "fuze": {"position": "base", "delay_s": 0.01, "start_cal": 0.07, "oblique": 0.45, "plates": "single", "scatter": 0.1, "blind": 0.1, "water_ms": 0.5, "water_fires": 1}, "outcomes": "rn1916"}, "RU 1895 HE (pyroxylin)": {"kind": "common", "mass_k_kg_m3": 11630, "nose_crh": 2, "form_factor": 1.8, "cap": {"kind": "none"}, "windscreen": false, "body": {"break_ob_deg": 10, "break_t_d": 0.25, "quality": 0.9}, "filler": {"share": 0.037, "explosive": "Wet guncotton", "booster": "basic"}, "steel": {"size": 1, "speed": 1}, "casing": {"nose": 0.25, "ogive": 0, "body": 0.63, "plug": 0.08, "tail": 0.04}, "fuze": {"position": "base", "delay_s": 0.005, "start_cal": 0.07, "oblique": 0.45, "plates": "single", "scatter": 0.1, "blind": 0.1, "water_ms": 0.5, "water_fires": 1}, "outcomes": "rn1916"}},
+ "explosives": {"Wet guncotton": {"name": "Wet guncotton", "re": 0.85, "q_det": 3, "q_comb": 7, "air_m3_kg": 1, "eta": 1, "gurney_ms": 2100, "brisance": 0.9, "in_plate": 0.08, "full": {"basic": 0.55, "ce": 0.85}, "fire": 0.2, "from": 1890}}
 }

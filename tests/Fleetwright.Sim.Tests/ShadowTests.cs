@@ -32,6 +32,9 @@ public class ShadowTests(ITestOutputHelper output)
         var (la, lo) = Earth.LatLon(p);
         w.Apply(ShipSystem.Spawn(cruiser, la, lo, 0, 15, 1));
         w.Apply(ShipSystem.Spawn(bb, 56, 4, 0, 15, 2));
+        // the scene is about keeping station on an enemy, not fighting her: neither fires (a hit can sink either)
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(1)));
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(2)));
         return (w, ai);
     }
 

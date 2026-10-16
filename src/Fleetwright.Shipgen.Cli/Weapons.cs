@@ -93,15 +93,15 @@ static class Weapons
     static string ResearchTable()
     {
         var sb = new StringBuilder();
-        sb.AppendLine("The placeholders beside the research's guns (AP shell; the research's own shell mass, which is HE for some):");
-        sb.AppendLine($"  {"gun",-20} {"era",-10} {"kg",14} {"m/s",12} {"train °/s",14}  reload s");
+        sb.AppendLine("The placeholders beside the research's guns (the muzzle velocity with the heaviest shell; the shells themselves are the");
+        sb.AppendLine("templates', docs/shipgen/shell-templates.md, and the research's mass here is HE for some):");
+        sb.AppendLine($"  {"gun",-20} {"era",-10} {"kg",6} {"m/s",12} {"train °/s",14}  reload s");
         foreach (var g in Guns)
         {
-            var s = DesignerPlaceholders.Shell(ShellKind.Ap, g.Mm, g.Cal, g.Era, g.Navy);
+            double ms = Ammunition.DefaultMuzzleVelocity(g.Cal);
             var (reload, train, _, _) = DesignerPlaceholders.Gun(g.Mm, g.Cal, g.Name.Contains("DP") ? TurretShape.Dp : TurretShape.Bb, g.Era);
-            sb.AppendLine(string.Format(Inv, "  {0,-20} {1,-10} {2,6:0.#} ({3,4:+0;-0}%) {4,4:0} ({5,3:+0;-0}%) {6,5:0.#} ({7,5})  {8,6:0.#}", g.Name, g.Era,
-                s.MassKg, 100 * (s.MassKg / g.Kg - 1), s.MuzzleVelocityMs, 100 * (s.MuzzleVelocityMs / g.Ms - 1), train,
-                double.IsNaN(g.Train) ? "-" : g.Train.ToString("0.#", Inv), reload));
+            sb.AppendLine(string.Format(Inv, "  {0,-20} {1,-10} {2,6:0.#} {3,4:0} ({4,3:+0;-0}%) {5,5:0.#} ({6,5})  {7,6:0.#}", g.Name, g.Era,
+                g.Kg, ms, 100 * (ms / g.Ms - 1), train, double.IsNaN(g.Train) ? "-" : g.Train.ToString("0.#", Inv), reload));
         }
         return sb.ToString();
     }

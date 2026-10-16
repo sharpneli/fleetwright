@@ -28,7 +28,10 @@ public class AmmunitionTests
         var warnings = new List<string>();
         var all = Ammunition.Resolve(design, warnings);
         Assert.Empty(warnings);
-        var main = Assert.Single(all);   // the secondary gives none: the sim's placeholder fills it
+        Assert.Equal(2, all.Count);   // the secondary gives none: it carries the default outfit
+        Assert.Equal(["Standard APC (1912)", "Standard HE (1912)"], all[1].Shells.Select(s => s.Ammo));
+        Assert.Equal([0.3, 0.7], all[1].Shells.Select(s => s.Share));
+        var main = all[0];
         Assert.Equal(("main", 305.0, 45.0), (main.Battery, main.CalibreMm, main.CalibreLength));
         var (ap, he) = (main.Shells[0], main.Shells[1]);
         double d3 = 0.305 * 0.305 * 0.305;
@@ -38,6 +41,7 @@ public class AmmunitionTests
         Assert.Equal(ap.MuzzleVelocityMs * Math.Pow(15.0 / 12, 0.25), he.MuzzleVelocityMs, 9);
         Assert.Equal(0.025 * ap.MassKg, ap.FillerKg, 9);
         Assert.Equal(("nose", "none", "rn1918"), (he.Fuze, he.Cap, he.Outcomes));
+        Assert.Equal(("TNT", 1.0, "basic"), (ap.Explosive, ap.FillerRe, ap.Booster));
 
         // a battery's own shell and the gun's own velocity
         design = WithMain(new ShellEntryInput { Ammo = "heavy AP", Share = 1, MassKg = 390 });
@@ -67,7 +71,28 @@ public class AmmunitionTests
         design = design with { Main = [design.Main![0], design.Main[0] with { Shells = [new ShellEntryInput { Ammo = "light HE", Share = 1 }] }] };
         var warnings = new List<string>();
         var all = Ammunition.Resolve(design, warnings);
-        Assert.Equal("ap", Assert.Single(all).Shells[0].Kind);
+        Assert.Equal("ap", all[0].Shells[0].Kind);
         Assert.Contains(warnings, w => w.Contains("main[1]"));
+    }
+
+    /// <summary>Every template and explosive in the catalogues is a valid block, the explosives its fillers name are in
+    /// the catalogue, and a filler naming a design's own explosive takes its numbers, what it gives inline over them.</summary>
+    [Fact]
+    public void The_catalogues_are_valid()
+    {
+        var errs = ShellTemplates.All.SelectMany(t => Ammunition.BlockErrors(Dreadnought, t.Value, t.Name))
+            .Concat(Explosives.All.SelectMany(e => Explosives.Errors(e.Value, e.Value.Name!))).ToList();
+        Assert.True(errs.Count == 0, string.Join("\n", errs));
+        Assert.Equal(ShellTemplates.All.Count, ShellTemplates.All.Select(t => t.Name).Distinct().Count());
+        Assert.Contains(ShellTemplates.All, t => t.Group == ShellTemplates.DefaultFamily && t.Value.Kind == "ap");
+        Assert.Contains(ShellTemplates.All, t => t.Group == ShellTemplates.DefaultFamily && t.Value.Kind == "he");
+
+        var design = Dreadnought with { Explosives = new() { ["Ballistite"] = Explosives.Tnt with { Name = "Ballistite", Re = 0.7 } } };
+        Assert.Equal(0.7, Explosives.Resolve(design, new ExplosiveInput { Name = "Ballistite" })!.Re);
+        Assert.Equal((0.8, 4.5), Explosives.Resolve(design, new ExplosiveInput { Name = "Ballistite", Re = 0.8 }) is { } x ? (x.Re!.Value, x.QDet!.Value) : default);
+        Assert.Equal(1.17, Explosives.Resolve(design, new ExplosiveInput { Name = "Lyddite" })!.Re);
+        Assert.Null(Explosives.Resolve(design, new ExplosiveInput { Name = "Unobtainium" }));
+        var named = Dreadnought with { Ammunition = new() { ["x"] = Block() with { Filler = new FillerInput { Share = 0.02, Explosive = new ExplosiveInput { Name = "Unobtainium" } } } } };
+        Assert.Contains(Ammunition.BlockErrors(named, named.Ammunition!["x"], "x"), e => e.Contains("Unobtainium"));
     }
 }

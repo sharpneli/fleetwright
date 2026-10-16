@@ -1,20 +1,23 @@
 namespace Fleetwright.Shipgen;
 
 /// <summary>The shells as design data (docs/battle/shells-armour-damage.md phase S): the design's `ammunition` table of
-/// shell tech blocks, calibre-free like machinery.tech, and each battery's outfit (`shells`) naming them. Validated
-/// here and resolved per battery into the report (kind, mass, muzzle velocity, filler, fuze), which the sim's compiler
-/// reads. A battery that gives no shells is left out: the sim fills it from its placeholder until the default
-/// template (S1).</summary>
+/// shell tech blocks, calibre-free like machinery.tech, its `explosives`, and each battery's outfit (`shells`) naming
+/// the blocks. Validated here and resolved per battery into the report (kind, mass, muzzle velocity, filler and its
+/// explosive, fuze), which the sim's compiler reads. A battery that gives no shells carries the default outfit of the
+/// default template (ShellTemplates.DefaultOutfit).</summary>
 public static class Ammunition
 {
     public static readonly string[] Kinds = ["ap", "common", "he"];
     public static readonly string[] Caps = ["none", "soft", "hard", "hard2", "break_away"];
     public static readonly string[] FuzePositions = ["base", "nose"];
+    public static readonly string[] Boosters = ["basic", "ce"];
+    public static readonly string[] FuzePlates = ["single", "two"];
     /// <summary>TRANSITIONAL (S0 to P3): the sim's outcome-table rows (gunfire_ref.py OUTCOME), until the fuze's and
     /// filler's own rates replace them.</summary>
     public static readonly string[] OutcomeRows = ["rn1916", "km1916", "rn1918", "ww2", "ijn_t91"];
 
-    static readonly string[] BlockFields = ["kind", "mass_k_kg_m3", "form_factor", "cap", "filler", "fuze", "outcomes"];
+    static readonly string[] BlockFields =
+        ["kind", "mass_k_kg_m3", "nose_crh", "form_factor", "cap", "windscreen", "body", "filler", "steel", "casing", "fuze", "outcomes"];
     static readonly string[] EntryFields = ["ammo", "share", "mass_kg", "muzzle_velocity_ms"];
 
     /// <summary>PLACEHOLDER (until a gun tech exists): a gun's muzzle velocity with its heaviest shell from its length
@@ -28,56 +31,19 @@ public static class Ammunition
     public static List<string> Validate(Design design)
     {
         var errs = new List<string>();
+        foreach (var (name, x) in design.Explosives ?? [])
+            if (x is null)
+                errs.Add($"explosives.\"{name}\": give its numbers");
+            else
+                errs.AddRange(Explosives.Errors(x, $"explosives.\"{name}\""));
         var table = design.Ammunition ?? [];
         foreach (var (name, a) in table)
         {
             string at = $"ammunition.\"{name}\"";
             if (a is null)
-            {
                 errs.Add($"{at}: give the block's numbers");
-                continue;
-            }
-            errs.AddRange(a.Extra.KeysOrEmpty().Select(k => $"{at}.{k}: not a shell field ({string.Join(", ", BlockFields)})"));
-            if (a.Kind is null || !Kinds.Contains(a.Kind))
-                errs.Add($"{at}.kind = {Style.Quote(a.Kind)}: use {string.Join(", ", Kinds)}");
-            if (!(a.MassKKgM3 > 0))
-                errs.Add($"{at}.mass_k_kg_m3: give the shell's mass over D³ (kg/m³, D in m), more than 0");
-            if (!(a.FormFactor > 0))
-                errs.Add($"{at}.form_factor: give the drag form factor, more than 0");
-            if (a.Cap is { } cap)
-            {
-                errs.AddRange(cap.Extra.KeysOrEmpty().Select(k => $"{at}.cap.{k}: not a cap field (kind, share)"));
-                if (cap.Kind is null || !Caps.Contains(cap.Kind))
-                    errs.Add($"{at}.cap.kind = {Style.Quote(cap.Kind)}: use {string.Join(", ", Caps)}");
-                if (cap.Share is < 0 or >= 1)
-                    errs.Add($"{at}.cap.share: a share of the mass, 0 up to 1");
-            }
-            if (a.Filler is not { } f)
-                errs.Add($"{at}.filler: give the filler's share of the mass and its explosive");
             else
-            {
-                errs.AddRange(f.Extra.KeysOrEmpty().Select(k => $"{at}.filler.{k}: not a filler field (share, explosive)"));
-                if (f.Share is not (>= 0 and < 1))
-                    errs.Add($"{at}.filler.share: a share of the mass, 0 up to 1");
-                if (f.Explosive is { } x)
-                {
-                    errs.AddRange(x.Extra.KeysOrEmpty().Select(k => $"{at}.filler.explosive.{k}: not an explosive field (re)"));
-                    if (x.Re is < 0)
-                        errs.Add($"{at}.filler.explosive.re: its TNT equivalent, 0 or more");
-                }
-            }
-            if (a.Fuze is not { } z)
-                errs.Add($"{at}.fuze: give its position (base or nose) and delay");
-            else
-            {
-                errs.AddRange(z.Extra.KeysOrEmpty().Select(k => $"{at}.fuze.{k}: not a fuze field (position, delay_s)"));
-                if (z.Position is null || !FuzePositions.Contains(z.Position))
-                    errs.Add($"{at}.fuze.position = {Style.Quote(z.Position)}: use base or nose");
-                if (z.DelayS is < 0)
-                    errs.Add($"{at}.fuze.delay_s: seconds, 0 or more");
-            }
-            if (a.Outcomes is null || !OutcomeRows.Contains(a.Outcomes))
-                errs.Add($"{at}.outcomes = {Style.Quote(a.Outcomes)}: use {string.Join(", ", OutcomeRows)}");
+                errs.AddRange(BlockErrors(design, a, at));
         }
         foreach (var (which, list) in new[] { ("main", design.Main), ("secondary", design.Secondary) })
             for (int i = 0; i < (list?.Count ?? 0); i++)
@@ -113,9 +79,99 @@ public static class Ammunition
         return errs;
     }
 
-    /// <summary>Each battery's resolved shells, main batteries first, in the design's order: those that give `shells`.
-    /// Two batteries of one gun (kind, calibre and length) that carry different shells: the first's are used, with a
-    /// warning, since the sim fires one gun's shells from one battery. Expects a valid design.</summary>
+    /// <summary>One block's errors: what it must give (kind, k, form factor, filler, fuze, the outcome row), and every
+    /// number it gives in its range.</summary>
+    public static IEnumerable<string> BlockErrors(Design design, AmmoInput a, string at)
+    {
+        foreach (var k in a.Extra.KeysOrEmpty())
+            yield return $"{at}.{k}: not a shell field ({string.Join(", ", BlockFields)})";
+        if (a.Kind is null || !Kinds.Contains(a.Kind))
+            yield return $"{at}.kind = {Style.Quote(a.Kind)}: use {string.Join(", ", Kinds)}";
+        if (!(a.MassKKgM3 > 0))
+            yield return $"{at}.mass_k_kg_m3: give the shell's mass over D³ (kg/m³, D in m), more than 0";
+        if (!(a.FormFactor > 0))
+            yield return $"{at}.form_factor: give the drag form factor, more than 0";
+        if (a.NoseCrh is { } crh && !(crh > 0))
+            yield return $"{at}.nose_crh: calibres, more than 0";
+        static bool Share(double? v) => v is null or (>= 0 and <= 1);
+        if (a.Cap is { } cap)
+        {
+            foreach (var k in cap.Extra.KeysOrEmpty())
+                yield return $"{at}.cap.{k}: not a cap field (kind, share)";
+            if (cap.Kind is null || !Caps.Contains(cap.Kind))
+                yield return $"{at}.cap.kind = {Style.Quote(cap.Kind)}: use {string.Join(", ", Caps)}";
+            if (cap.Share is < 0 or >= 1)
+                yield return $"{at}.cap.share: a share of the mass, 0 up to 1";
+        }
+        if (a.Body is { } body)
+        {
+            foreach (var k in body.Extra.KeysOrEmpty())
+                yield return $"{at}.body.{k}: not a body field (break_ob_deg, break_t_d, quality)";
+            if (body.BreakObDeg is < 0 or > 90)
+                yield return $"{at}.body.break_ob_deg: degrees, 0-90";
+            if (body.BreakTD is < 0)
+                yield return $"{at}.body.break_t_d: calibres, 0 or more";
+            if (body.Quality is { } q && !(q > 0))
+                yield return $"{at}.body.quality: a multiplier, more than 0";
+        }
+        if (a.Filler is not { } f)
+            yield return $"{at}.filler: give the filler's share of the mass and its explosive";
+        else
+        {
+            foreach (var k in f.Extra.KeysOrEmpty())
+                yield return $"{at}.filler.{k}: not a filler field (share, explosive, booster)";
+            if (f.Share is not (>= 0 and < 1))
+                yield return $"{at}.filler.share: a share of the mass, 0 up to 1";
+            if (f.Booster is { } boost && !Boosters.Contains(boost))
+                yield return $"{at}.filler.booster = {Style.Quote(boost)}: use basic or ce";
+            if (f.Explosive is { } x)
+            {
+                if (x.Name is { } n && design.Explosives?.ContainsKey(n) != true && Explosives.Get(n) is null)
+                    yield return $"{at}.filler.explosive = {Style.Quote(n)}: not in the design's explosives or the catalogue " +
+                                 $"({string.Join(", ", Explosives.All.Select(e => e.Value.Name))})";
+                foreach (var e in Explosives.Errors(x, $"{at}.filler.explosive"))
+                    yield return e;
+            }
+        }
+        if (a.Steel is { } st)
+        {
+            foreach (var k in st.Extra.KeysOrEmpty())
+                yield return $"{at}.steel.{k}: not a steel field (size, speed)";
+            if (st.Size is { } sz && !(sz > 0) || st.Speed is { } sp && !(sp > 0))
+                yield return $"{at}.steel: multipliers, more than 0";
+        }
+        if (a.Casing is { } c)
+        {
+            foreach (var k in c.Extra.KeysOrEmpty())
+                yield return $"{at}.casing.{k}: not a casing share (nose, ogive, body, plug, tail)";
+            double?[] parts = [c.Nose, c.Ogive, c.Body, c.Plug, c.Tail];
+            if (!parts.All(Share))
+                yield return $"{at}.casing: shares of the casing, 0 to 1";
+            else if (parts.All(p => p != null) && Math.Abs(parts.Sum(p => p!.Value) - 1) > 0.01)
+                yield return $"{at}.casing: the shares add up to {parts.Sum(p => p!.Value):0.###}, not 1";
+        }
+        if (a.Fuze is not { } z)
+            yield return $"{at}.fuze: give its position (base or nose) and delay";
+        else
+        {
+            foreach (var k in z.Extra.KeysOrEmpty())
+                yield return $"{at}.fuze.{k}: not a fuze field (position, delay_s, start_cal, oblique, plates, scatter, blind, water_ms, water_fires)";
+            if (z.Position is null || !FuzePositions.Contains(z.Position))
+                yield return $"{at}.fuze.position = {Style.Quote(z.Position)}: use base or nose";
+            if (z.DelayS is < 0 || z.StartCal is < 0 || z.WaterMs is < 0)
+                yield return $"{at}.fuze: delay_s, start_cal and water_ms are 0 or more";
+            if (z.Plates is { } pl && !FuzePlates.Contains(pl))
+                yield return $"{at}.fuze.plates = {Style.Quote(pl)}: use single or two";
+            if (!Share(z.Oblique) || !Share(z.Scatter) || !Share(z.Blind) || !Share(z.WaterFires))
+                yield return $"{at}.fuze: oblique, scatter, blind and water_fires are shares, 0 to 1";
+        }
+        if (a.Outcomes is null || !OutcomeRows.Contains(a.Outcomes))
+            yield return $"{at}.outcomes = {Style.Quote(a.Outcomes)}: use {string.Join(", ", OutcomeRows)}";
+    }
+
+    /// <summary>Each gun battery's resolved shells, main batteries first, in the design's order: its `shells`, else the
+    /// default outfit. Two batteries of one gun (kind, calibre and length) that carry different shells: the first's are
+    /// used, with a warning, since the sim fires one gun's shells from one battery. Expects a valid design.</summary>
     public static List<BatteryShells> Resolve(Design design, List<string> warnings)
     {
         var res = new List<BatteryShells>();
@@ -124,22 +180,26 @@ public static class Ammunition
             for (int i = 0; i < (list?.Count ?? 0); i++)
             {
                 var b = list![i];
-                if (b.Shells is not { Count: > 0 } shells || b.CalibreMm is not { } cal || b.CalibreLength is not { } len)
+                if (b.CalibreMm is not { } cal || b.CalibreLength is not { } len)
                     continue;
+                var outfit = b.Shells is { Count: > 0 } shells
+                    ? shells.Select(e => (Block: table[e.Ammo!], Name: e.Ammo!, Share: e.Share!.Value, e.MassKg, e.MuzzleVelocityMs)).ToList()
+                    : ShellTemplates.DefaultOutfit(which == "main").Select(o => (o.Block, o.Name, o.Share, MassKg: (double?)null, MuzzleVelocityMs: (double?)null))
+                        .ToList();
                 double d = cal / 1000;
-                var masses = shells.Select(e => e.MassKg ?? table[e.Ammo!].MassKKgM3!.Value * d * d * d).ToArray();
+                var masses = outfit.Select(e => e.MassKg ?? e.Block.MassKKgM3!.Value * d * d * d).ToArray();
                 double heavyKg = masses.Max(), heavyMs = b.MuzzleVelocityMs ?? DefaultMuzzleVelocity(len);
                 var resolved = new List<ShellReport>();
-                for (int k = 0; k < shells.Count; k++)
+                for (int k = 0; k < outfit.Count; k++)
                 {
-                    var e = shells[k];
-                    var a = table[e.Ammo!];
+                    var (a, name, share, _, mv) = outfit[k];
+                    var x = Explosives.Resolve(design, a.Filler!.Explosive)!;
                     resolved.Add(new ShellReport
                     {
-                        Ammo = e.Ammo!, Kind = a.Kind!, Share = e.Share!.Value, MassKg = masses[k],
-                        MuzzleVelocityMs = e.MuzzleVelocityMs ?? MuzzleVelocity(heavyMs, heavyKg, masses[k]), FormFactor = a.FormFactor!.Value,
-                        Cap = a.Cap?.Kind ?? "none", FillerKg = masses[k] * a.Filler!.Share!.Value, FillerRe = a.Filler.Explosive?.Re ?? 1,
-                        Fuze = a.Fuze!.Position!, FuzeDelayS = a.Fuze.DelayS ?? 0, Outcomes = a.Outcomes!,
+                        Ammo = name, Kind = a.Kind!, Share = share, MassKg = masses[k], MuzzleVelocityMs = mv ?? MuzzleVelocity(heavyMs, heavyKg, masses[k]),
+                        FormFactor = a.FormFactor!.Value, Cap = a.Cap?.Kind ?? "none", FillerKg = masses[k] * a.Filler.Share!.Value,
+                        Explosive = x.Name ?? "", FillerRe = x.Re ?? 1, Booster = a.Filler.Booster ?? "basic", Fuze = a.Fuze!.Position!,
+                        FuzeDelayS = a.Fuze.DelayS ?? 0, Outcomes = a.Outcomes!,
                     });
                 }
                 var same = res.FirstOrDefault(r => r.Battery == which && r.CalibreMm == cal && r.CalibreLength == len);
@@ -158,7 +218,7 @@ public static class Ammunition
 public sealed record BatteryShells(string Battery, int Index, double CalibreMm, double CalibreLength, List<ShellReport> Shells);
 
 /// <summary>One shell of a battery's outfit, resolved: its share of the rounds, mass, muzzle velocity, drag, cap,
-/// filler (kg and TNT equivalent), fuze and (transitional) outcome row.</summary>
+/// filler (kg, the explosive, its TNT equivalent and the booster), fuze and (transitional) outcome row.</summary>
 public sealed record ShellReport
 {
     public required string Ammo { get; init; }
@@ -169,7 +229,9 @@ public sealed record ShellReport
     public double FormFactor { get; init; }
     public required string Cap { get; init; }
     public double FillerKg { get; init; }
+    public required string Explosive { get; init; }
     public double FillerRe { get; init; }
+    public required string Booster { get; init; }
     public required string Fuze { get; init; }
     public double FuzeDelayS { get; init; }
     public required string Outcomes { get; init; }

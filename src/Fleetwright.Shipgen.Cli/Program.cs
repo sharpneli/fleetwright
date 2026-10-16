@@ -120,9 +120,12 @@ public static class Program
             fire-control level, a gun's reload, training and elevation, the shells and their shares, the plating; most
             are placeholders until the designer gives them. DESIGN is a path or a shipped design's name. --research
             adds the placeholders beside the research's guns
-        shipgen ammo-parity DESIGN.json...
-            S0 of docs/battle/shells-armour-damage.md, one-off: writes today's placeholder shells into each design as
-            data (ammunition blocks, each battery's shells), compiling it before and after: no shell may move
+        shipgen ammo-templates DESIGN.json... [--dry]
+            S1 of docs/battle/shells-armour-damage.md, one-off: switches each design's shells to the templates of its
+            navy and year (the outfits' kinds and shares kept); --dry lists the switch
+        shipgen templates
+            writes the shell and explosive catalogues (ShellTemplates, Explosives) out: Content/Templates/shells.json and
+            explosives.json, docs/shipgen/shell-templates.md and explosive-templates.md
         shipgen scenario [SCENARIO.json] [--minutes 60] [--every 5] [--threads N] [--at 10] [--no-land] [--replay]
             a scenario headless at full tilt (default Content/Scenarios/jutland.json): its classes' build time (no
             art), the land and the placing, then game minutes on the sim's work alone: ships on the fine tick and on
@@ -201,7 +204,8 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new FloodBench.Options(a.Get("hole"), a.Get("rooms"), D(a, "minutes", 60), D(a, "every", 120), a.Int("step", 0), a.Has("cells"))),
                 "ballistics" => BallisticsBench.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
-                "ammo-parity" => AmmoParity.Run(a.Positional),
+                "ammo-templates" => AmmoTemplates.Run(a.Positional, a.Has("dry")),
+                "templates" => TemplatesWriter.Run(Path.Combine(Root(a), "..")),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "matchup" => MatchupBench.Run(a.Positional.ElementAtOrDefault(0) ?? "arethusa", a.Positional.ElementAtOrDefault(1) ?? "v25",
                     n => LoadDesign(Resolve(a, n)), a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), D(a, "range", 0),
@@ -241,7 +245,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

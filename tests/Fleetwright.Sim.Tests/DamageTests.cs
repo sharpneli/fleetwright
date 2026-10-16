@@ -54,12 +54,15 @@ public class DamageTests(ITestOutputHelper output)
     [Fact]
     public void Ten_4in_HE_hits_usually_cripple_a_destroyer_and_seldom_sink_it()
     {
-        // with half an hour of flooding and fire after: crippled more often than sunk (fighting.md 4.3b)
+        // with half an hour of flooding and fire after: crippled more often than sunk (fighting.md 4.3b). Lost up to 20%
+        // (user, 2026-10-16, docs/battle/shells-armour-damage.md S1: the sourced lyddite HE took the V-class from 10 to
+        // 17%, all magazines): shipgen's destroyers have one layer of steel with the magazine straight behind it, and
+        // better protection schemes come with the hull generator's tuning later, so high losses are expected until then
         foreach (string dd in new[] { "destroyer", "tb_destroyer" })
         {
             var r = Hits(dd, "lion", 1, 6_000, 600, 10, settleS: 1800);
             Assert.InRange((double)r.Crippled / r.Ships, 0.5, 1);
-            Assert.InRange((double)r.Lost / r.Ships, 0, 0.15);
+            Assert.InRange((double)r.Lost / r.Ships, 0, 0.20);
             Assert.True(r.Crippled > 3 * r.Lost, "crippled far more often than sunk");
         }
     }

@@ -48,19 +48,16 @@
    "amidships_stands_on": "deck",
    "shells": [
     {
-     "ammo": "AP great_war km1916",
-     "share": 0.4,
-     "mass_kg": 322.2553600000001
+     "ammo": "DE 1911 Psgr L/3,4 (TNT)",
+     "share": 0.4
     },
     {
-     "ammo": "common great_war km1916",
-     "share": 0.3,
-     "mass_kg": 322.2553600000001
+     "ammo": "DE 1911 Spgr L/3,8 Bdz (TNT)",
+     "share": 0.3
     },
     {
-     "ammo": "HE great_war km1916",
-     "share": 0.3,
-     "mass_kg": 322.2553600000001
+     "ammo": "DE 1911 Spgr Kz (TNT)",
+     "share": 0.3
     }
    ]
   }
@@ -76,14 +73,12 @@
    "mount": "casemate",
    "shells": [
     {
-     "ammo": "common great_war km1916",
-     "share": 0.3,
-     "mass_kg": 46.9125
+     "ammo": "DE 1911 Spgr L/3,8 Bdz (TNT)",
+     "share": 0.3
     },
     {
-     "ammo": "HE great_war km1916",
-     "share": 0.7,
-     "mass_kg": 46.9125
+     "ammo": "DE 1911 Spgr Kz (TNT)",
+     "share": 0.7
     }
    ]
   },
@@ -97,14 +92,12 @@
    "stands_on": "deck",
    "shells": [
     {
-     "ammo": "common great_war km1916",
-     "share": 0.3,
-     "mass_kg": 9.218953216
+     "ammo": "DE 1911 Spgr L/3,8 Bdz (TNT)",
+     "share": 0.3
     },
     {
-     "ammo": "HE great_war km1916",
-     "share": 0.7,
-     "mass_kg": 9.218953216
+     "ammo": "DE 1911 Spgr Kz (TNT)",
+     "share": 0.7
     }
    ]
   }
@@ -275,53 +268,154 @@
   "era": "great_war"
  },
  "ammunition": {
-  "AP great_war km1916": {
+  "DE 1911 Psgr L/3,4 (TNT)": {
    "kind": "ap",
-   "mass_k_kg_m3": 14680,
+   "mass_k_kg_m3": 14390,
+   "nose_crh": 3,
    "form_factor": 1.5,
+   "cap": {
+    "kind": "hard2",
+    "share": 0.08
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 20,
+    "break_t_d": 0.6,
+    "quality": 0.95
+   },
    "filler": {
-    "share": 0.03,
-    "explosive": {
-     "re": 1
-    }
+    "share": 0.027,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
    },
    "fuze": {
     "position": "base",
-    "delay_s": 0.025
+    "delay_s": 0.025,
+    "start_cal": 0.05,
+    "oblique": 0.45,
+    "plates": "two",
+    "scatter": 0.5,
+    "blind": 0.15,
+    "water_ms": 0.5,
+    "water_fires": 1
    },
    "outcomes": "km1916"
   },
-  "common great_war km1916": {
-   "kind": "common",
-   "mass_k_kg_m3": 14680,
-   "form_factor": 1.5,
-   "filler": {
-    "share": 0.06,
-    "explosive": {
-     "re": 1
-    }
-   },
-   "fuze": {
-    "position": "base",
-    "delay_s": 0.01
-   },
-   "outcomes": "km1916"
-  },
-  "HE great_war km1916": {
+  "DE 1911 Spgr Kz (TNT)": {
    "kind": "he",
-   "mass_k_kg_m3": 14680,
+   "mass_k_kg_m3": 14390,
+   "nose_crh": 3,
    "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
    "filler": {
-    "share": 0.07,
-    "explosive": {
-     "re": 1
-    }
+    "share": 0.066,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
    },
    "fuze": {
     "position": "nose",
-    "delay_s": 0
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
    },
    "outcomes": "km1916"
+  },
+  "DE 1911 Spgr L/3,8 Bdz (TNT)": {
+   "kind": "common",
+   "mass_k_kg_m3": 14390,
+   "nose_crh": 3,
+   "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.061,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.025,
+    "start_cal": 0.05,
+    "oblique": 0.45,
+    "plates": "two",
+    "scatter": 0.5,
+    "blind": 0.15,
+    "water_ms": 0.5,
+    "water_fires": 1
+   },
+   "outcomes": "km1916"
+  }
+ },
+ "explosives": {
+  "TNT": {
+   "name": "TNT",
+   "re": 1,
+   "q_det": 4.5,
+   "q_comb": 15,
+   "air_m3_kg": 2.66,
+   "eta": 1,
+   "gurney_ms": 2438,
+   "brisance": 1,
+   "in_plate": 0.1,
+   "full": {
+    "basic": 0.6,
+    "ce": 0.95
+   },
+   "fire": 0.25,
+   "from": 1902
   }
  }
 }

@@ -33,14 +33,12 @@
    "aft": 1,
    "shells": [
     {
-     "ammo": "AP victorian rn1916",
-     "share": 0.5,
-     "mass_kg": 306.1425920000001
+     "ammo": "DE 1902 Psgr (TNT)",
+     "share": 0.5
     },
     {
-     "ammo": "common victorian rn1916",
-     "share": 0.5,
-     "mass_kg": 306.1425920000001
+     "ammo": "DE 1902 Sprgr Bdz (TNT)",
+     "share": 0.5
     }
    ]
   }
@@ -56,14 +54,12 @@
    "mount": "casemate",
    "shells": [
     {
-     "ammo": "AP victorian rn1916",
-     "share": 0.2,
-     "mass_kg": 46.413459251199995
+     "ammo": "DE 1902 Psgr (TNT)",
+     "share": 0.2
     },
     {
-     "ammo": "common victorian rn1916",
-     "share": 0.8,
-     "mass_kg": 46.413459251199995
+     "ammo": "DE 1902 Sprgr Bdz (TNT)",
+     "share": 0.8
     }
    ]
   },
@@ -78,14 +74,12 @@
    "tier": "upper",
    "shells": [
     {
-     "ammo": "AP victorian rn1916",
-     "share": 0.2,
-     "mass_kg": 46.413459251199995
+     "ammo": "DE 1902 Psgr (TNT)",
+     "share": 0.2
     },
     {
-     "ammo": "common victorian rn1916",
-     "share": 0.8,
-     "mass_kg": 46.413459251199995
+     "ammo": "DE 1902 Sprgr Bdz (TNT)",
+     "share": 0.8
     }
    ]
   },
@@ -99,14 +93,12 @@
    "mount": "casemate",
    "shells": [
     {
-     "ammo": "AP victorian rn1916",
-     "share": 0.2,
-     "mass_kg": 5.611518003199999
+     "ammo": "DE 1902 Psgr (TNT)",
+     "share": 0.2
     },
     {
-     "ammo": "common victorian rn1916",
-     "share": 0.8,
-     "mass_kg": 5.611518003199999
+     "ammo": "DE 1902 Sprgr Bdz (TNT)",
+     "share": 0.8
     }
    ]
   },
@@ -121,14 +113,12 @@
    "tier": "upper",
    "shells": [
     {
-     "ammo": "AP victorian rn1916",
-     "share": 0.2,
-     "mass_kg": 5.611518003199999
+     "ammo": "DE 1902 Psgr (TNT)",
+     "share": 0.2
     },
     {
-     "ammo": "common victorian rn1916",
-     "share": 0.8,
-     "mass_kg": 5.611518003199999
+     "ammo": "DE 1902 Sprgr Bdz (TNT)",
+     "share": 0.8
     }
    ]
   }
@@ -290,37 +280,111 @@
   "era": "victorian"
  },
  "ammunition": {
-  "AP victorian rn1916": {
+  "DE 1902 Psgr (TNT)": {
    "kind": "ap",
-   "mass_k_kg_m3": 13946,
+   "mass_k_kg_m3": 11070,
+   "nose_crh": 2,
    "form_factor": 1.8,
+   "cap": {
+    "kind": "soft",
+    "share": 0.06
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 20,
+    "break_t_d": 0.6,
+    "quality": 0.95
+   },
    "filler": {
-    "share": 0.03,
-    "explosive": {
-     "re": 1
-    }
+    "share": 0.027,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
    },
    "fuze": {
     "position": "base",
-    "delay_s": 0
+    "delay_s": 0.003,
+    "start_cal": 0.05,
+    "oblique": 0.45,
+    "plates": "two",
+    "scatter": 0.1,
+    "blind": 0.1,
+    "water_ms": 0.5,
+    "water_fires": 1
    },
-   "outcomes": "rn1916"
+   "outcomes": "km1916"
   },
-  "common victorian rn1916": {
+  "DE 1902 Sprgr Bdz (TNT)": {
    "kind": "common",
-   "mass_k_kg_m3": 13946,
+   "mass_k_kg_m3": 11070,
+   "nose_crh": 2,
    "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
    "filler": {
-    "share": 0.07,
-    "explosive": {
-     "re": 1
-    }
+    "share": 0.05,
+    "explosive": "TNT",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
    },
    "fuze": {
     "position": "base",
-    "delay_s": 0
+    "delay_s": 0.003,
+    "start_cal": 0.05,
+    "oblique": 0.45,
+    "plates": "two",
+    "scatter": 0.1,
+    "blind": 0.1,
+    "water_ms": 0.5,
+    "water_fires": 1
    },
-   "outcomes": "rn1916"
+   "outcomes": "km1916"
+  }
+ },
+ "explosives": {
+  "TNT": {
+   "name": "TNT",
+   "re": 1,
+   "q_det": 4.5,
+   "q_comb": 15,
+   "air_m3_kg": 2.66,
+   "eta": 1,
+   "gurney_ms": 2438,
+   "brisance": 1,
+   "in_plate": 0.1,
+   "full": {
+    "basic": 0.6,
+    "ce": 0.95
+   },
+   "fire": 0.25,
+   "from": 1902
   }
  }
 }

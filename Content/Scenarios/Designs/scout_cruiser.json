@@ -39,14 +39,12 @@
    "mid": 1,
    "shells": [
     {
-     "ammo": "common great_war rn1916",
-     "share": 0.3,
-     "mass_kg": 14.445163295999999
+     "ammo": "RN 1906 light CP (powder)",
+     "share": 0.3
     },
     {
-     "ammo": "HE great_war rn1916",
-     "share": 0.7,
-     "mass_kg": 14.445163295999999
+     "ammo": "RN 1906 light HE (lyddite)",
+     "share": 0.7
     }
    ]
   }
@@ -211,37 +209,127 @@
   "era": "great_war"
  },
  "ammunition": {
-  "common great_war rn1916": {
+  "RN 1906 light CP (powder)": {
    "kind": "common",
-   "mass_k_kg_m3": 13612,
+   "mass_k_kg_m3": 13150,
+   "nose_crh": 2,
    "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
    "filler": {
-    "share": 0.06,
-    "explosive": {
-     "re": 1
-    }
+    "share": 0.07,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
    },
    "fuze": {
     "position": "base",
-    "delay_s": 0.01
+    "delay_s": 0.003,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
    },
    "outcomes": "rn1916"
   },
-  "HE great_war rn1916": {
+  "RN 1906 light HE (lyddite)": {
    "kind": "he",
-   "mass_k_kg_m3": 13612,
+   "mass_k_kg_m3": 13150,
+   "nose_crh": 2,
    "form_factor": 1.5,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 0,
+    "break_t_d": 0.2,
+    "quality": 1
+   },
    "filler": {
-    "share": 0.07,
-    "explosive": {
-     "re": 1
-    }
+    "share": 0.09,
+    "explosive": "Lyddite",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.02,
+    "ogive": 0.2,
+    "body": 0.63,
+    "plug": 0.07,
+    "tail": 0.08
    },
    "fuze": {
     "position": "nose",
-    "delay_s": 0
+    "delay_s": 0,
+    "start_cal": 0,
+    "oblique": 1,
+    "plates": "single",
+    "scatter": 0,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
    },
    "outcomes": "rn1916"
+  }
+ },
+ "explosives": {
+  "Black powder": {
+   "name": "Black powder",
+   "re": 0.55,
+   "q_det": 2.9,
+   "q_comb": 2.9,
+   "air_m3_kg": 0,
+   "eta": 0.55,
+   "gurney_ms": 640,
+   "brisance": 0.15,
+   "in_plate": 0.15,
+   "full": {
+    "basic": 1,
+    "ce": 1
+   },
+   "fire": 1,
+   "from": 1860
+  },
+  "Lyddite": {
+   "name": "Lyddite",
+   "re": 1.17,
+   "q_det": 4.4,
+   "q_comb": 11.4,
+   "air_m3_kg": 1.63,
+   "eta": 1,
+   "gurney_ms": 2550,
+   "brisance": 1.15,
+   "in_plate": 0.35,
+   "full": {
+    "basic": 0.95,
+    "ce": 0.97
+   },
+   "fire": 0.4,
+   "from": 1888
   }
  }
 }

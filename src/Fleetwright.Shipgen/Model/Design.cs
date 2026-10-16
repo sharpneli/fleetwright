@@ -27,6 +27,8 @@ public sealed record Design
     /// <summary>The shell tech blocks the batteries' shells name, keyed by name (Ammunition; docs/battle/
     /// shells-armour-damage.md phase S).</summary>
     public Dictionary<string, AmmoInput>? Ammunition { get; init; }
+    /// <summary>The explosives the fillers name, keyed by name (copied from the catalogue, Explosives.cs).</summary>
+    public Dictionary<string, ExplosiveInput>? Explosives { get; init; }
     public TorpedoInput? Torpedoes { get; init; }
     public AaInput? Aa { get; init; }
     public ArmourInput? Armour { get; init; }
@@ -166,17 +168,25 @@ public sealed record ShellEntryInput
 }
 
 /// <summary>ammunition.NAME: a shell tech block, calibre-free like machinery.tech (docs/battle/
-/// shells-armour-damage.md, "Ammunition, per battery").</summary>
+/// shells-armour-damage.md, "Ammunition, per battery"; docs/shipgen/shell-templates.md has the catalogue). Every share
+/// is of the shell's mass, every threshold in calibres or T/D, so one block serves a navy's family of guns.</summary>
 public sealed record AmmoInput
 {
     /// <summary>ap, common or he.</summary>
     public string? Kind { get; init; }
     /// <summary>Mass = k·D³, D in m, kg/m³ (1 lb/in³ = 27,680).</summary>
     public double? MassKKgM3 { get; init; }
+    /// <summary>The nose's ogive radius in calibres (2 crh pre-1909 RN to 9 crh the USN Mk 8): penetration ±10-15%.</summary>
+    public double? NoseCrh { get; init; }
     /// <summary>The drag form factor over the standard Cd(Mach) curve.</summary>
     public double? FormFactor { get; init; }
     public CapInput? Cap { get; init; }
+    /// <summary>A false ogive over the penetrating nose, lost on any impact.</summary>
+    public bool? Windscreen { get; init; }
+    public BodyInput? Body { get; init; }
     public FillerInput? Filler { get; init; }
+    public SteelInput? Steel { get; init; }
+    public CasingInput? Casing { get; init; }
     public FuzeInput? Fuze { get; init; }
     /// <summary>TRANSITIONAL (S0 to P3): the sim's outcome-table row, rn1916, km1916, rn1918, ww2 or ijn_t91.</summary>
     public string? Outcomes { get; init; }
@@ -192,26 +202,94 @@ public sealed record CapInput
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
-/// <summary>ammunition.NAME.filler: its share of the mass and the explosive (inline until S1's catalogue).</summary>
+/// <summary>ammunition.NAME.body: when it breaks up (past break_ob_deg of obliquity on a plate of break_t_d calibres or
+/// more) and its quality, the multiplier on what it defeats (armor/00 §5.4: 0.85-1.11).</summary>
+public sealed record BodyInput
+{
+    public double? BreakObDeg { get; init; }
+    [JsonPropertyName("break_t_d")] public double? BreakTD { get; init; }
+    public double? Quality { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>ammunition.NAME.filler: its share of the mass, the explosive (a name in the design's `explosives` or the
+/// catalogue, or a block, whose numbers override the named one's) and the booster (basic or ce) that picks its
+/// full-detonation rate.</summary>
 public sealed record FillerInput
 {
     public double? Share { get; init; }
-    public ExplosiveInput? Explosive { get; init; }
+    [JsonConverter(typeof(ExplosiveRefConverter))] public ExplosiveInput? Explosive { get; init; }
+    public string? Booster { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
-/// <summary>An explosive's numbers: re, its TNT equivalent for the blast.</summary>
+/// <summary>An explosive (docs/shipgen/explosive-templates.md): its TNT equivalent for the blast (re), the heats of
+/// detonation and combustion, MJ/kg, the air it burns, m³/kg, and the afterburn's efficiency (eta) for a closed space,
+/// the Gurney constant, m/s, and brisance (B_TNT/B_Mott) for the fragments, the in-plate rate at the limit, the
+/// full-detonation rates by booster, the fire start's multiplier, and the year it came in (a label; the sim never reads
+/// it). As a filler's `explosive`, its name picks the design's or the catalogue's block and what it gives overrides.</summary>
 public sealed record ExplosiveInput
 {
+    public string? Name { get; init; }
     public double? Re { get; init; }
+    public double? QDet { get; init; }
+    public double? QComb { get; init; }
+    public double? AirM3Kg { get; init; }
+    public double? Eta { get; init; }
+    public double? GurneyMs { get; init; }
+    public double? Brisance { get; init; }
+    public double? InPlate { get; init; }
+    public FullInput? Full { get; init; }
+    public double? Fire { get; init; }
+    public int? From { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
-/// <summary>ammunition.NAME.fuze: base or nose, and the delay once it starts, s.</summary>
+/// <summary>An explosive's full-detonation rate with a basic booster and with a CE (tetryl) one; the rest go low-order
+/// or dud.</summary>
+public sealed record FullInput
+{
+    public double? Basic { get; init; }
+    public double? Ce { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>ammunition.NAME.steel: the body's steel as Mott's fragment-size (B) and Gurney's speed multipliers: forged
+/// carbon 1/1, Ni-Cr AP 1.25/1, cast steel 0.85/0.95, cast iron 0.6/0.8 (13 §3.2).</summary>
+public sealed record SteelInput
+{
+    public double? Size { get; init; }
+    public double? Speed { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>ammunition.NAME.casing: how the casing breaks, as shares of its metal: the nose slug, the ogive's spray, the
+/// body's side spray, the base plug and the tail (13 §2.5).</summary>
+public sealed record CasingInput
+{
+    public double? Nose { get; init; }
+    public double? Ogive { get; init; }
+    public double? Body { get; init; }
+    public double? Plug { get; init; }
+    public double? Tail { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>ammunition.NAME.fuze: base or nose and the delay once it starts, s; the plate that starts it (start_cal
+/// calibres at normal, times `oblique` at high obliquity), whether thin plates in quick succession add up (plates:
+/// single or two), the delay's scatter (a share), the blinds and duds (a share), and on the water how long a nose fuze
+/// takes, ms, and whether it fires at all (a share; 15 §6.2).</summary>
 public sealed record FuzeInput
 {
     public string? Position { get; init; }
     public double? DelayS { get; init; }
+    public double? StartCal { get; init; }
+    public double? Oblique { get; init; }
+    public string? Plates { get; init; }
+    public double? Scatter { get; init; }
+    public double? Blind { get; init; }
+    public double? WaterMs { get; init; }
+    public double? WaterFires { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

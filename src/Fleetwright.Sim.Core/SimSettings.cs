@@ -766,9 +766,6 @@ public sealed record SimSettings
     /// shell rework's P6: off until then, when only plates and machinery start it).</summary>
     public bool FuzeStartsOnWater { get; init; }
 
-    /// <summary>A filler's TNT equivalence (PLACEHOLDER until the designer gives fillers: lyddite and TNT are about 1).</summary>
-    public double FillerTnt { get; init; } = 1;
-
     /// <summary>The burst's radii, m, times the cube root of its TNT kg: equipment wrecked and most crew hit; light
     /// structure and people injured; a contact burst's hole in plating, times the square root of 6 mm over the plate.</summary>
     public double WreckRadiusK { get; init; } = 1.6;

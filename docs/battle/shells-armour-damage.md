@@ -348,6 +348,65 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
     without shells gets the default template instead, and both go), `shipgen ammo-parity`, the designer dropping a
     battery's shells on a calibre change (`Knobs.Calibre`: blocks scale with the calibre once `mass_kg` goes), and
     `WeaponFactsTests.Shells_from_the_design_are_the_placeholders`.
+  - **Done 2026-10-16.** What it came to:
+    - **The catalogues:** `ShellTemplates.cs` (83 templates in 26 families, Palliser 1867 to the post-war dual-purpose
+      guns) and `Explosives.cs` (the 13 explosives), C# tables in shipgen; `shipgen templates` writes
+      `Content/Templates/shells.json` and `explosives.json`, `docs/shipgen/shell-templates.md` and
+      `explosive-templates.md`. Every template's note gives its sources; [EST] marks what no source gives (most of the
+      French, Italian and Russian blocks, many fillers of the light guns, every cap share but the sourced ones).
+    - **The schema** is the whole block of the table above; `explosives` is a design-level table like `ammunition`, and
+      a filler names one (or gives a block overriding the named one's numbers). The new fields ride along unread.
+    - **The default** (user, 2026-10-16): the **1912 standard** family, main 70% AP / 30% HE, secondary 30 / 70, for a
+      battery with no shells (new designs, the fuzz mutants, saves). "We'll add a selector in ship designer so that one
+      can toss in what they want" (S4), and a scenario may override, the loadout being the Admiralty's decision (S5).
+    - **The mapping** (user, approved as proposed): `shipgen ammo-templates` (one-off) switched the 123 designs, each
+      battery keeping its outfit's kinds and shares, each kind taking its family's block (a gun under 200 mm the
+      family's light block where it has one):
+      - 1867 chilled iron: devastation, inflexible, duilio. 1895 forged steel: doom. RU 1895: borodino, aurora, buyny,
+        oslyabya. JP 1904: mikasa, izumo, ikazuchi. US 1906: connecticut. DE 1902: armoured_cruiser, hessen,
+        deutschland_1906. FR 1893: babel, bouvet, brennus.
+      - RN 1906: dreadnought, invincible, lord_nelson. RN 1909 (12" and under) or RN 1912 (13.5" and up), the light
+        guns RN 1906's: every RN Great War ship else (lion, super_dreadnought, tiger_1914, erebus, light_cruiser,
+        tb_destroyer and the 29 Jutland ships). DE 1911: seydlitz, karlsruhe, nassau, nassau_casemates (1909 ships in
+        a WWII look) and the 16 Jutland Germans. FR 1910: courbet, danton. 1912 standard: battlecruiser, dante,
+        tegetthoff, tramp_1914, engadine. US 1916: pennsylvania; US 1921: colorado (its 5" US 1916's). JP 1913: kongo.
+      - RN 1927: kent, nelson. JP 1925: nagato, fubuki. RU 1911: gangut. RN 1938: kgv, victory_1944. DE 1939: bismarck,
+        deutschland (its 28 cm at the Bismarck generation's 0.53: 330 kg, not the C/28's 300). IT 1940: littorio, zara.
+        FR 1936: dunkerque, richelieu. US 1941: the generic WWII designs. JP 1931: yamato. 1950 dual-purpose:
+        akizuki_1960, colbert, daring, hamburg, impetuoso, sverdlov, tiger.
+    - **The outcome rows** (user, 2026-10-16): the template family's row, not S0's. 14 designs changed row: colorado,
+      connecticut, hessen, deutschland_1906, nassau, nassau_casemates to km1916; deutschland, dunkerque, zara,
+      victory_1944, akizuki_1960 to ww2; gangut, nagato, fubuki to rn1918 (S0 had given the last two the Type 91's
+      row, and its diving, years early).
+    - The sim: `ShellTypeRow.FillerRe` (the explosive's `re`) sizes the burst; `FillerTnt` left the settings.
+      `DesignerPlaceholders.Shell` and `ShellMix` are deleted; the compiler reads only the report. A light block is
+      flagged as such in the catalogue (`Template.Light`).
+    - **Benches, S0 to S1:**
+      - The shells land on the sourced ones: Dreadnought's 12" APC 384.7 kg (386), Yamato's Type 91 1,455 kg (1,460)
+        and Type 0 HE filler 61.9 kg (61.7). The main battery's fired shell by family: RN Great War -7% to +5%, DE 1911
+        -7% to +6%, the Victorian Russian, German and French -9% to -22%, Palliser about -20%, Dreadnought -9%,
+        Yamato -10%, Colorado -11%, Bismarck -9%; the generic WWII designs up to +22% (US super-heavy), the post-war
+        dual-purpose guns about +25%.
+      - Fuzes: the RN's pre-1918 No. 16, the USN's pre-1920s base fuze and the early French ones are non-delay
+        (~0.003 s) where the placeholder had 0.025 s, so their shells burst sooner. Fillers by the sources: the RN
+        CPC 9.4% powder at re 0.55, the lyddite HE 12.5% at 1.17, against the placeholder's 6-7% at 1.
+      - `duel`: super_dreadnought 4.7 to 4.8% hits, lion 5.0 to 5.1%; first hits unchanged. `ballistics` follows the
+        masses.
+      - `hits` v25 by lion's 4" at 6 km, one hit: crew 0.9 to 1.1, holes 0.056 to 0.072 m²; iron_duke by seydlitz at
+        14 km: water 86 to 92 t, magazines 0.4 to 0.6%.
+      - `matchup` (it reads mass, not filler): arethusa:4 against iron_duke 1.98 to 1.92, lion against seydlitz 0.99
+        to 1.07.
+      - Squadrons (40 min, one seed): Britain lost 4 by magazines in S0, 2 now, and Germany 1 (Von der Tann). Flotilla:
+        a hit or two either way. Tsushima --play: Russia lost 4 and 4 of 13 (seeds 1905, 1906), now 6 and 8; Japan 2
+        and 4, now 3 and 2.
+      - `ShadowTests` now hold fire (the shadower could be sunk mid-test; the test is about station keeping).
+      - **DamageTests anchor** (10 hits of a 4" HE on a destroyer, fighting.md 4.3b): tb_destroyer lost 10% to 17%,
+        all of it magazines (lyddite's burst ~46% bigger than the placeholder's); the fleet destroyer 0 to 2%. **Band
+        widened to 0-20%** (user, 2026-10-16): "we'll do tuning of the actual hull generator later. Right now we have
+        just a single layer of steel and magazine straight behind it. We'll have better protection schemes later so
+        high casualty figures are to be expected."
+    - Goldens: the designs' shells and `report.shells` only (the fuzz cases gained the default outfit); nothing else
+      moved. ShipDesign.Version 8.
 - **S2 Default outfits and the magazine order** (decision 7).
   - **Outfits:** every design's default loadout is 70% AP and 30% HE on its main batteries and 30% AP and 70% HE on its
     secondaries, replacing `ShellMix`'s mix by calibre and era. Common shell leaves the defaults; its templates stay for

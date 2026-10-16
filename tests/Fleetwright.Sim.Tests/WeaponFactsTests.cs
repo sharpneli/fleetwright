@@ -78,7 +78,7 @@ public class WeaponFactsTests
         {
             var s = c.ShellTypes[t];
             if (!Pos(s.MassKg) || !Pos(s.MuzzleVelocityMs) || !Pos(s.FormFactor) || !Pos(s.FillerKg) || !(s.FuzeDelayS >= 0)
-                || s.FillerKg > 0.2 * s.MassKg || (s.Fuze == Fuze.Nose) != (s.Kind == ShellKind.He))
+                || s.FillerKg > 0.2 * s.MassKg || s.Kind == ShellKind.He && s.Fuze != Fuze.Nose || !(s.FillerRe > 0))
                 p.Add($"shell type {c.ShellTypeId(t)}: {s}");
             // shared by id: one id, one row, whichever class it's in
             if (shared.TryGetValue(c.ShellTypeId(t), out var other) && other != s)
@@ -93,61 +93,44 @@ public class WeaponFactsTests
         return p;
     }
 
-    /// <summary>S0 of docs/battle/shells-armour-damage.md: the designs carry the placeholder's shells as data, and the
-    /// class reads them; the same design without them falls back to the placeholder and gets the same shells, so
-    /// nothing moved. (S1's templates end the placeholder and this.)</summary>
+    /// <summary>The class reads the design's shells: a block's drag shows in its shell, and a battery that gives none
+    /// carries the default outfit (docs/battle/shells-armour-damage.md S1).</summary>
     [Fact]
-    public void Shells_from_the_design_are_the_placeholders()
+    public void Shells_come_from_the_design()
     {
-        var problems = new List<string>();
-        int given = 0;
-        foreach (var b in Fleet.All.Where(b => b.Ship != null && b.Class != null))
-        {
-            var d = b.Ship!.Design;
-            if (d.Ammunition is null)
-                continue;
-            given++;
-            var bare = ShipClassCompiler.Compile(ShipDesign.Build(d with
-            {
-                Ammunition = null, Main = d.Main?.Select(x => x with { Shells = null }).ToList(),
-                Secondary = d.Secondary?.Select(x => x with { Shells = null }).ToList(),
-            }));
-            var c = b.Class!;
-            for (int i = 0; i < c.Batteries.Length; i++)
-            {
-                var (x, y) = (c.ShellLoads(c.Batteries[i].Shells).ToArray(), bare.ShellLoads(bare.Batteries[i].Shells).ToArray());
-                if (!x.Select(l => (c.ShellTypeId(l.ShellType), c.ShellTypes[l.ShellType], l.Share))
-                        .SequenceEqual(y.Select(l => (bare.ShellTypeId(l.ShellType), bare.ShellTypes[l.ShellType], l.Share)))
-                    || c.ShellTypeId(c.Batteries[i].Fires) != bare.ShellTypeId(bare.Batteries[i].Fires))
-                    problems.Add($"{b.Case.Name} battery {i}");
-            }
-        }
-        Assert.True(problems.Count == 0, string.Join("\n", problems.Take(20)));
-        Assert.True(given > 60, $"{given} designs give their shells");
-
-        // and the class reads the data: a block's drag shows in its shell
         var dn = Fleet.Get("dreadnought").Ship!.Design;
         var faster = ShipClassCompiler.Compile(ShipDesign.Build(dn with
         {
             Ammunition = dn.Ammunition!.ToDictionary(kv => kv.Key, kv => kv.Value with { FormFactor = 0.9 }),
         }));
         Assert.Equal(0.9, faster.ShellTypes[faster.Batteries[0].Fires].FormFactor);
+
+        var bare = ShipClassCompiler.Compile(ShipDesign.Build(dn with
+        {
+            Ammunition = null, Main = dn.Main!.Select(b => b with { Shells = null }).ToList(),
+            Secondary = dn.Secondary!.Select(b => b with { Shells = null }).ToList(),
+        }));
+        var main = bare.ShellLoads(bare.Batteries[0].Shells).ToArray();
+        Assert.Equal([(ShellKind.Ap, 0.7), (ShellKind.He, 0.3)], main.Select(l => (bare.ShellTypes[l.ShellType].Kind, l.Share)));
+        Assert.Equal(ShellTemplates.Get("Standard APC (1912)")!.Value.MassKKgM3!.Value * 0.305 * 0.305 * 0.305,
+            bare.ShellTypes[bare.Batteries[0].Fires].MassKg, 9);
+        var sec = bare.ShellLoads(bare.Batteries[1].Shells).ToArray();
+        Assert.Equal([0.3, 0.7], sec.Select(l => l.Share));
     }
 
-    /// <summary>The placeholders against the research's guns of the Great War (fire_control_ref.py GUNS, and the QF
-    /// 4"/45 Mk V from navweaps: 14.06 kg HE at 716 m/s): AP mass and muzzle velocity within 10%, and the mount's
-    /// numbers in the research's ranges.</summary>
+    /// <summary>The templates and the placeholders against the research's guns of the Great War (fire_control_ref.py
+    /// GUNS, and the QF 4"/45 Mk V from navweaps: 14.06 kg HE at 716 m/s): the RN family's shell mass and the default
+    /// muzzle velocity within 10%, and the mount's numbers in the research's ranges.</summary>
     [Theory]
-    [InlineData(305, 45, 386, 831)]    // 12"/45 Mk X
-    [InlineData(343, 45, 635, 757)]    // 13.5"/45 Mk V(H)
-    [InlineData(381, 42, 871, 749)]    // 15"/42 Mk I
-    [InlineData(102, 45, 14.06, 716)]  // 4"/45 QF Mk V
-    public void Placeholders_land_near_the_research_guns(double mm, double cal, double kg, double ms)
+    [InlineData(305, 45, 386, 831, "RN 1909 APC (lyddite)")]    // 12"/45 Mk X
+    [InlineData(343, 45, 635, 757, "RN 1912 APC (lyddite)")]    // 13.5"/45 Mk V(H)
+    [InlineData(381, 42, 871, 749, "RN 1912 APC (lyddite)")]    // 15"/42 Mk I
+    [InlineData(102, 45, 14.06, 716, "RN 1906 light HE (lyddite)")]  // 4"/45 QF Mk V
+    public void Placeholders_land_near_the_research_guns(double mm, double cal, double kg, double ms, string template)
     {
-        var s = DesignerPlaceholders.Shell(ShellKind.Ap, mm, cal, Era.GreatWar, "portsmouth");
-        Assert.InRange(s.MassKg / kg, 0.9, 1.1);
-        Assert.InRange(s.MuzzleVelocityMs / ms, 0.9, 1.1);
-        Assert.Equal(ShellQuality.Rn1916, s.Quality);
+        double d = mm / 1000;
+        Assert.InRange(ShellTemplates.Get(template)!.Value.MassKKgM3!.Value * d * d * d / kg, 0.9, 1.1);
+        Assert.InRange(Ammunition.DefaultMuzzleVelocity(cal) / ms, 0.9, 1.1);
 
         // reload: the 4"'s 6-10 rounds a minute, the heavy guns' 1-2; training 2-3 °/s for the big turrets
         var (reload, train, _, maxElev) = DesignerPlaceholders.Gun(mm, cal, TurretShape.Bb, Era.GreatWar);
@@ -201,7 +184,7 @@ public class WeaponFactsTests
         var main = dn.Batteries[0];
         Assert.Equal((Battery.Main, FireControlLevel.Director), (main.Kind, main.Level));
         Assert.Equal(ShellKind.Ap, dn.ShellTypes[main.Fires].Kind);
-        Assert.Equal("305/45 AP great_war rn1916", dn.ShellTypeId(main.Fires));
+        Assert.Equal("305/45 RN 1906 APC (powder)", dn.ShellTypeId(main.Fires));
         var sec = dn.Batteries[1];
         Assert.True(sec.Local);
         Assert.Equal(ShellKind.He, dn.ShellTypes[sec.Fires].Kind);

@@ -1,0 +1,288 @@
+[
+ {
+  "name": "Black powder",
+  "group": "1860",
+  "note": "Burns, never detonates: always 'full', its re prices it. Gurney 640 m/s (MSIAC L-295, 90th percentile). Few big slow pieces; the most fires.",
+  "value": {
+   "name": "Black powder",
+   "re": 0.55,
+   "q_det": 2.9,
+   "q_comb": 2.9,
+   "air_m3_kg": 0,
+   "eta": 0.55,
+   "gurney_ms": 640,
+   "brisance": 0.15,
+   "in_plate": 0.15,
+   "full": {
+    "basic": 1,
+    "ce": 1
+   },
+   "fire": 1,
+   "from": 1860
+  }
+ },
+ {
+  "name": "Wet guncotton",
+  "group": "1890",
+  "note": "Nitrocellulose at 25-30% water (Russia 1890s-1905). Heats and air [EST]: dry NC's less the water. Under-initiated by weak primers: many duds.",
+  "value": {
+   "name": "Wet guncotton",
+   "re": 0.85,
+   "q_det": 3,
+   "q_comb": 7,
+   "air_m3_kg": 1,
+   "eta": 1,
+   "gurney_ms": 2100,
+   "brisance": 0.9,
+   "in_plate": 0.08,
+   "full": {
+    "basic": 0.55,
+    "ce": 0.85
+   },
+   "fire": 0.2,
+   "from": 1890
+  }
+ },
+ {
+  "name": "Lyddite",
+  "group": "1888",
+  "note": "Picric acid (also Melinite). in_plate 0.35 sourced (armor/04 §6, Jutland). Fine splinters.",
+  "value": {
+   "name": "Lyddite",
+   "re": 1.17,
+   "q_det": 4.4,
+   "q_comb": 11.4,
+   "air_m3_kg": 1.63,
+   "eta": 1,
+   "gurney_ms": 2550,
+   "brisance": 1.15,
+   "in_plate": 0.35,
+   "full": {
+    "basic": 0.95,
+    "ce": 0.97
+   },
+   "fire": 0.4,
+   "from": 1888
+  }
+ },
+ {
+  "name": "Shimose",
+  "group": "1893",
+  "note": "Picric acid undiluted, lacquer and wax lined (Japan). Bore prematures and bursts on the water are 12's hidden stats, not modelled.",
+  "value": {
+   "name": "Shimose",
+   "re": 1.17,
+   "q_det": 4.4,
+   "q_comb": 11.4,
+   "air_m3_kg": 1.63,
+   "eta": 1,
+   "gurney_ms": 2600,
+   "brisance": 1.2,
+   "in_plate": 0.45,
+   "full": {
+    "basic": 0.95,
+    "ce": 0.97
+   },
+   "fire": 0.5,
+   "from": 1893
+  }
+ },
+ {
+  "name": "TNT",
+  "group": "1902",
+  "note": "Trotyl, Fp 02. Heats measured (LLNL 4.57, 14.96 MJ/kg), Gurney IATG 01.80. Needs a strong booster.",
+  "value": {
+   "name": "TNT",
+   "re": 1,
+   "q_det": 4.5,
+   "q_comb": 15,
+   "air_m3_kg": 2.66,
+   "eta": 1,
+   "gurney_ms": 2438,
+   "brisance": 1,
+   "in_plate": 0.1,
+   "full": {
+    "basic": 0.6,
+    "ce": 0.95
+   },
+   "fire": 0.25,
+   "from": 1902
+  }
+ },
+ {
+  "name": "TNT/wax",
+  "group": "1905",
+  "note": "TNT with ~10% wax (Germany's Fp 5-20, the RN's post-war TNT/beeswax). Heats and air [EST]: TNT's with the wax's combustion.",
+  "value": {
+   "name": "TNT/wax",
+   "re": 0.9,
+   "q_det": 4.1,
+   "q_comb": 17.7,
+   "air_m3_kg": 3.6,
+   "eta": 1,
+   "gurney_ms": 2300,
+   "brisance": 0.9,
+   "in_plate": 0.04,
+   "full": {
+    "basic": 0.55,
+    "ce": 0.93
+   },
+   "fire": 0.25,
+   "from": 1905
+  }
+ },
+ {
+  "name": "Explosive D",
+  "group": "1911",
+  "note": "Ammonium picrate (Dunnite, USN). re [EST, unsourced]; 11 has 0.90. The most impact-insensitive filler in quantity.",
+  "value": {
+   "name": "Explosive D",
+   "re": 0.95,
+   "q_det": 3.2,
+   "q_comb": 11.5,
+   "air_m3_kg": 1.87,
+   "eta": 1,
+   "gurney_ms": 2350,
+   "brisance": 0.9,
+   "in_plate": 0.02,
+   "full": {
+    "basic": 0.5,
+    "ce": 0.92
+   },
+   "fire": 0.2,
+   "from": 1911
+  }
+ },
+ {
+  "name": "Shellite",
+  "group": "1918",
+  "note": "Picric acid with dinitrophenol (RN Greenboy on). Full 0.90 with CE sourced; low-order without it until the late 1920s.",
+  "value": {
+   "name": "Shellite",
+   "re": 1,
+   "q_det": 4.2,
+   "q_comb": 12.3,
+   "air_m3_kg": 2,
+   "eta": 1,
+   "gurney_ms": 2450,
+   "brisance": 1.05,
+   "in_plate": 0,
+   "full": {
+    "basic": 0.6,
+    "ce": 0.9
+   },
+   "fire": 0.35,
+   "from": 1918
+  }
+ },
+ {
+  "name": "TNA",
+  "group": "1931",
+  "note": "Trinitroanisole, Type 91 bakuyaku (IJN). re [EST, unsourced]. Needed a liner of 1/3-1/2 of the cavity.",
+  "value": {
+   "name": "TNA",
+   "re": 1,
+   "q_det": 4.4,
+   "q_comb": 13.6,
+   "air_m3_kg": 2.25,
+   "eta": 1,
+   "gurney_ms": 2440,
+   "brisance": 1,
+   "in_plate": 0.05,
+   "full": {
+    "basic": 0.6,
+    "ce": 0.93
+   },
+   "fire": 0.25,
+   "from": 1931
+  }
+ },
+ {
+  "name": "Amatol 60/40",
+  "group": "1915",
+  "note": "TNT 60, ammonium nitrate 40: the shortage filler. Heats and air [EST] between TNT and 80/20.",
+  "value": {
+   "name": "Amatol 60/40",
+   "re": 1,
+   "q_det": 4.2,
+   "q_comb": 9,
+   "air_m3_kg": 1,
+   "eta": 1,
+   "gurney_ms": 2150,
+   "brisance": 0.85,
+   "in_plate": 0.1,
+   "full": {
+    "basic": 0.6,
+    "ce": 0.93
+   },
+   "fire": 0.15,
+   "from": 1915
+  }
+ },
+ {
+  "name": "Amatol 80/20",
+  "group": "1915",
+  "note": "Ammonium nitrate 80, TNT 20: about five times the shells per ton of TNT. Oxygen-balanced: no afterburn. Brisance 0.62 from NOL's fragments.",
+  "value": {
+   "name": "Amatol 80/20",
+   "re": 0.95,
+   "q_det": 4,
+   "q_comb": 4,
+   "air_m3_kg": 0,
+   "eta": 1,
+   "gurney_ms": 1900,
+   "brisance": 0.65,
+   "in_plate": 0.12,
+   "full": {
+    "basic": 0.55,
+    "ce": 0.9
+   },
+   "fire": 0.1,
+   "from": 1915
+  }
+ },
+ {
+  "name": "RDX/TNT",
+  "group": "1943",
+  "note": "Late-war HE (the RN's 15\" HE Mk VII TNT/RDX). Gurney, brisance, in_plate and full [EST]; too sensitive for AP unless phlegmatised.",
+  "value": {
+   "name": "RDX/TNT",
+   "re": 1.35,
+   "q_det": 5,
+   "q_comb": 12,
+   "air_m3_kg": 1.7,
+   "eta": 1,
+   "gurney_ms": 2700,
+   "brisance": 1.35,
+   "in_plate": 0.3,
+   "full": {
+    "basic": 0.65,
+    "ce": 0.97
+   },
+   "fire": 0.25,
+   "from": 1943
+  }
+ },
+ {
+  "name": "Comp B",
+  "group": "1943",
+  "note": "RDX 60, TNT 40. Gurney 2,774 and brisance 1.41 (IATG) sourced; heats [EST] as RDX/TNT.",
+  "value": {
+   "name": "Comp B",
+   "re": 1.33,
+   "q_det": 5,
+   "q_comb": 12,
+   "air_m3_kg": 1.7,
+   "eta": 1,
+   "gurney_ms": 2774,
+   "brisance": 1.41,
+   "in_plate": 0.3,
+   "full": {
+    "basic": 0.65,
+    "ce": 0.97
+   },
+   "fire": 0.25,
+   "from": 1943
+  }
+ }
+]

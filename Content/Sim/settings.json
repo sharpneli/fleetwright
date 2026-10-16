@@ -288,7 +288,6 @@
   "UnderwaterDecayCalibresDiving": 50,
   "UnderwaterReachDecays": 3,
   "FuzeStartsOnWater": false,
-  "FillerTnt": 1,
   "WreckRadiusK": 1.6,
   "BlastRadiusK": 3.5,
   "HoleRadiusK": 0.45,
