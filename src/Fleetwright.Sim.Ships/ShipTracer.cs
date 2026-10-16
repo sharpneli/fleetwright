@@ -195,7 +195,16 @@ public static class ShipTracer
             if (forwardIn)
                 Add(CrossingKind.HullIn, face, -1, s, mm, pl.Material, n);
             if (side >= 0)
-                Add(CrossingKind.Plate, PlateKind.SideArmour, side, s, armourMm, c.SidePlates[side].Material, n);
+            {
+                // a leaning belt (protection-plan.md H6): its top outboard, so its face looks down as well as out
+                var na = n;
+                if (c.SidePlates[side].InclineDeg > 0)
+                {
+                    double nz = n.Z - Math.Abs(n.Y) * Math.Tan(double.DegreesToRadians(c.SidePlates[side].InclineDeg)), l = Math.Sqrt(n.X * n.X + n.Y * n.Y + nz * nz);
+                    na = new P3(n.X / l, n.Y / l, nz / l);
+                }
+                Add(CrossingKind.Plate, PlateKind.SideArmour, side, s, armourMm, c.SidePlates[side].Material, na);
+            }
             if (!forwardIn)
                 Add(CrossingKind.HullOut, face, -1, s, mm, pl.Material, n);
         }
@@ -347,8 +356,9 @@ public static class ShipTracer
         void InclinedAt(int i, int sgn, double ku, double s, double wx)
         {
             ref readonly var p = ref c.Inclined[i];
-            if (sgn * Y(s) < (sgn > 0 ? -Eps : Eps))
-                return;   // (a fine end narrower than its reach: none past the centreline, where the two meet one plate)
+            if (sgn * Y(s) < (sgn > 0 ? -Eps : Eps) || Math.Abs(Y(s)) > hull.HalfWidth(X(s), Z(s)))
+                return;   // (a fine end narrower than its reach: none past the centreline, where the two meet one plate; none
+                          // outside a bilge it would cut)
             double l = Math.Sqrt(wx * wx + 1 + ku * ku);
             Add(CrossingKind.Plate, PlateKind.Inclined, i, s, p.MmAt(Z(s)), p.Material, new P3(-wx / l, sgn / l, ku / l));
         }

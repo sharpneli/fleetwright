@@ -69,6 +69,9 @@ public sealed class ShellTest
             foreach (int s in g.Sides)
                 if (c.SidePlates[s].X0 < cx1 && c.SidePlates[s].X1 > cx0)
                     side = Math.Max(side, c.SidePlates[s].Top);
+            foreach (ref readonly var p in c.Inclined)   // an internal belt
+                if (p.Kind != InclinedKind.Slope && p.ThicknessMm > 0 && p.X0 < cx1 && p.X1 > cx0)
+                    side = Math.Max(side, p.Z1);
             double? reached = null, lowest = null;
             foreach (int d in g.Decks)
             {
@@ -125,18 +128,18 @@ public sealed class ShellTest
             {
                 double x = b.X0 + (b.X1 - b.X0) * rng.NextDouble(), y = b.Y0 + (b.Y1 - b.Y0) * rng.NextDouble();
                 double z = b.Base + (b.Top - b.Base) * rng.NextDouble();
-                if (InHull(x, y, z) && !OverSlope(x, y, z))
+                if (InHull(x, y, z) && !Outboard(x, y, z))
                     return new Shot(cell, x, y, z, 360 * rng.NextDouble(), MaxFall * rng.NextDouble());
             }
         }
     }
 
-    /// <summary>Whether a point lies over a deck's slope, between it and the side: outside the armour (the wing cells
-    /// there are boxes, so part of them is).</summary>
-    bool OverSlope(double x, double y, double z)
+    /// <summary>Whether a point lies between an inclined plate and the side (over a deck's slope, outside an internal
+    /// belt): outside the armour (the wing cells there are boxes, so part of them is).</summary>
+    bool Outboard(double x, double y, double z)
     {
         foreach (ref readonly var p in c.Inclined)
-            if (p.Kind == InclinedKind.Slope && x >= p.X0 && x <= p.X1 && z >= p.Z0 && z <= p.Z1 && Math.Abs(y) > p.YAt(hull, x, z))
+            if (x >= p.X0 && x <= p.X1 && z >= p.Z0 && z <= p.Z1 && Math.Abs(y) > p.YAt(hull, x, z))
                 return true;
         return false;
     }

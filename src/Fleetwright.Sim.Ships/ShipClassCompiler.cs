@@ -460,12 +460,13 @@ public static class ShipClassCompiler
             where = "armour";
             var sides = new List<SidePlateRow>();
             var ids = new List<string>();
-            if (a.Belt is { } b)
+            if (a.Belt is { Position: not "internal" } b)   // (an internal one is inclined plates)
             {
                 sides.Add(new SidePlateRow
                 {
                     Kind = StrakeKind.Belt, Extent = Extent.Citadel, ThicknessMm = b.ThicknessMm, X0 = b.X0, X1 = b.X1, Bottom = b.Bottom, Top = b.Top,
                     Material = Material(b.Material), BottomMm = Or(b.BottomMm), TaperFrom = Or(b.TaperFrom), TipMm = double.NaN,
+                    InclineDeg = b.InclineDeg ?? 0,
                 });
                 ids.Add("Belt");
             }
@@ -483,6 +484,7 @@ public static class ShipClassCompiler
                     },
                     Extent = ExtentOf(s.Extent), ThicknessMm = s.ThicknessMm, X0 = s.X0, X1 = s.X1, Bottom = s.Bottom, Top = s.Top,
                     Material = Material(s.Material), BottomMm = Or(s.BottomMm), TaperFrom = Or(s.TaperFrom), TipMm = Or(s.TipMm),
+                    InclineDeg = s.InclineDeg ?? 0,
                 });
                 ids.Add(s.Id);
             }
@@ -503,6 +505,8 @@ public static class ShipClassCompiler
                 Kind = x.Kind switch
                 {
                     "slope" => InclinedKind.Slope,
+                    "belt" => InclinedKind.Belt,
+                    "zone" => InclinedKind.Zone,
                     _ => throw new ShipCompileException($"unknown inclined plate kind \"{x.Kind}\""),
                 },
                 ThicknessMm = x.ThicknessMm, X0 = x.X0, X1 = x.X1, Z0 = x.Z0, Z1 = x.Z1, U0 = x.U0, U1 = x.U1, SideZ = x.SideZ,

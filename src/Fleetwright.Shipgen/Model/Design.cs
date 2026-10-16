@@ -335,6 +335,11 @@ public sealed record ArmourInput
     /// "citadel" (the default) or "machinery" (a treaty cruiser's, the magazines boxed instead).</summary>
     public double? BeltMagazinesMm { get; init; }
     public string? BeltExtent { get; init; }
+    /// <summary>The belt's lean off the upright, its top outboard (protection-plan.md H6; null or 0: upright), and where it
+    /// stands: "external" (the default: on the side) or "internal" (inside the shell, Armour.InternalBeltInsetM in at its
+    /// top and further in below by its lean).</summary>
+    public double? BeltInclineDeg { get; init; }
+    public string? BeltPosition { get; init; }
     public double? BeltBottomMm { get; init; }
     public double? BeltDepthM { get; init; }
     public double? BeltHeightM { get; init; }

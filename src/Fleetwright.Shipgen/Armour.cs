@@ -67,6 +67,10 @@ public sealed class ArmourLayout
     public double X0, X1, BeltMm, BeltBottomMm, Waterline, BeltBottom, BeltTop;
     /// <summary>Where the main belt runs: the citadel, or the machinery only (armour.belt_extent).</summary>
     public double BeltX0, BeltX1;
+    /// <summary>The belt's lean off the upright, its top outboard, and whether it stands inside the shell (then it and its
+    /// zones are inclined plates, in Inclined; protection-plan.md H6).</summary>
+    public double BeltInclineDeg;
+    public bool BeltInternal;
     public List<ArmourDeck> Decks = [];
     public List<Strake> Strakes = [];
     public double? MainZ, RoofZ;
@@ -80,7 +84,7 @@ public sealed class ArmourLayout
     /// <summary>The end belts' plates across the hull's end face (a transom), where a belt runs all the way to it: the
     /// belt carried round the stern, as the complete belts were. Not bulkheads: the subdivision doesn't stop at them.</summary>
     public List<ArmourBulkhead> EndPlates = [];
-    /// <summary>The inclined plates: the decks' slopes (protection-plan.md H6).</summary>
+    /// <summary>The inclined plates: the decks' slopes, an internal belt (protection-plan.md H6).</summary>
     public List<InclinedPlate> Inclined = [];
 }
 
@@ -97,6 +101,11 @@ public static class Armour
     /// <summary>A slope needs at least this much height between the flat and the belt's lower edge, m; lower, the deck
     /// stays flat to the side (with a warning).</summary>
     public const double MinSlopeRiseM = 0.3;
+    /// <summary>How far inside the shell an internal belt's top stands, m: the side's framing [INFERRED].</summary>
+    public const double InternalBeltInsetM = 0.3;
+    /// <summary>An internal belt's lower belt, its plane carried on down to the inner bottom (South Dakota's, Iowa's): the
+    /// belt's bottom thickness at its top, tapering to this at its foot, mm (South Dakota's 1 in) [INFERRED].</summary>
+    public const double LowerBeltFootMm = 25.0;
 
     /// <summary>The torpedo protection's layers (protection-plan.md H3): its depth each side, how many spaces, the
     /// holding bulkhead's plate and each layer wall's, mm. One layer by default: one wall carrying all its steel.</summary>
@@ -180,6 +189,10 @@ public static class Armour
         }
         if (a.BeltExtent is { } be && be is not ("citadel" or "machinery"))
             errs.Add($"armour.belt_extent = {Style.Quote(be)}: use citadel or machinery");
+        if (a.BeltPosition is { } bp && bp is not ("external" or "internal"))
+            errs.Add($"armour.belt_position = {Style.Quote(bp)}: use external or internal");
+        if (a.BeltInclineDeg is double bi && !(bi >= 0 && bi < 60))
+            errs.Add("armour.belt_incline_deg: use a lean off the upright of 0 or more and under 60");
         if (a.UpperBelt is { } ub && !ArmourExtents.Contains(ub.Extent ?? "citadel"))
             errs.Add($"armour.upper_belt.extent = {Style.Quote(ub.Extent)}: use {string.Join(" or ", ArmourExtents)}");
         if (a.Materials is { } md)
@@ -369,6 +382,34 @@ public static class Armour
                         ArmourMaterial(design, "belt")) { BottomMm = bm * bb / belt, Wl = T });
             }
         }
+        // an internal belt (protection-plan.md H6): the belt and its zones inside the shell, leaning in toward their foot
+        double incline = belt > 0 ? Math.Max(0.0, a.BeltInclineDeg ?? 0.0) : 0.0;
+        bool inside = belt > 0 && a.BeltPosition == "internal";
+        if (inside)
+        {
+            double u1 = InternalBeltInsetM, u0 = u1 + (top - bot) * Math.Tan(double.DegreesToRadians(incline)), bb = a.BeltBottomMm ?? belt;
+            var zones = strakes.Where(s => s.Kind == "zone").OrderBy(s => s.X0).ToList();
+            var pieces = new List<(double X0, double X1)>();
+            double x = bx0;
+            foreach (var zn in zones)
+            {
+                pieces.Add((x, zn.X0));
+                x = zn.X1;
+            }
+            pieces.Add((x, bx1));
+            pieces.RemoveAll(p => p.X1 - p.X0 <= 0.05);
+            for (int k = 0; k < pieces.Count; k++)
+                inclined.Add(new InclinedPlate(pieces.Count > 1 ? $"Belt {k + 1}" : "Belt", "belt", pieces[k].X0, pieces[k].X1, bot, top, u0, u1, top, belt,
+                    ArmourMaterial(design, "belt")) { BottomMm = bb, TaperFrom = T });
+            foreach (var zn in zones)
+                inclined.Add(new InclinedPlate(zn.Id, "zone", zn.X0, zn.X1, bot, top, u0, u1, top, zn.Mm, zn.Material) { BottomMm = zn.BottomMm, TaperFrom = T });
+            // the lower belt: the same plane on down to the inner bottom, so a shell falling into the space outboard of the
+            // belt can't pass under its edge
+            double ibz = Powerplant.DoubleBottom(D);
+            if (bot - ibz > 0.1)
+                inclined.Add(new InclinedPlate("Lower belt", "belt", bx0, bx1, ibz, bot, u0 + (bot - ibz) * Math.Tan(double.DegreesToRadians(incline)), u0, top,
+                    bb, ArmourMaterial(design, "belt")) { BottomMm = Math.Min(bb, LowerBeltFootMm), TaperFrom = bot });
+        }
         var endBhs = new List<ArmourBulkhead>();
         var endPlates = new List<ArmourBulkhead>();
         double bhBot = Math.Max(0.0, bot - 0.4 * h);
@@ -469,7 +510,7 @@ public static class Armour
                 bhTop = s.Top;
         return new ArmourLayout
         {
-            X0 = x0, X1 = x1, BeltX0 = bx0, BeltX1 = bx1, BeltMm = belt, BeltBottomMm = a.BeltBottomMm ?? belt, Waterline = T, BeltBottom = bot, BeltTop = top,
+            X0 = x0, X1 = x1, BeltX0 = bx0, BeltX1 = bx1, BeltInclineDeg = incline, BeltInternal = inside, BeltMm = belt, BeltBottomMm = a.BeltBottomMm ?? belt, Waterline = T, BeltBottom = bot, BeltTop = top,
             Decks = decks, Strakes = strakes, MainZ = main?.Z, RoofZ = roof?.Z, RoofMm = roof?.Mm ?? 0, RoofMaterial = roof?.Material,
             BeltMaterial = ArmourMaterial(design, "belt"), BulkheadMaterial = ArmourMaterial(design, "bulkheads"),
             Armoured = belt > 0 || over.Count > 0, BulkheadMm = bhMm, BulkheadLowerMm = BulkheadLowerShare * bhMm,
@@ -593,12 +634,16 @@ public static class Armour
         double Slant(double lo, double hi) => topside?.SlantFactor(B, lo - D, hi - D) ?? 1.0;
         double Across(double x, double lo, double hi) => topside?.BandRatio(x, lo - D, hi - D) ?? 1.0;
         var result = new List<Weight>();
-        // a belt mm thick (mb at its lower edge, tapering from the waterline down), len long: its weight and height
+        // a belt mm thick (mb at its lower edge, tapering from the waterline down), len long: its weight and height. A
+        // leaning belt is longer up its face (protection-plan.md H6): inside the shell by its lean alone, on the side by
+        // that or the side's own slant, whichever is more
+        double lean = 1 / Math.Cos(double.DegreesToRadians(g.BeltInclineDeg));
+        double Lean(double lo, double hi) => g.BeltInternal ? lean : Math.Max(lean, Slant(lo, hi));
         Weight BeltOf(string name, double len, double x, double mm, double mb)
         {
             double bot = g.BeltBottom, top = g.BeltTop;
             double t0 = Math.Min(top, Math.Max(bot, g.Waterline));
-            double aUp = (top - t0) * mm * Slant(t0, top), aLo = (t0 - bot) * (mm + mb) / 2 * Slant(bot, t0);
+            double aUp = (top - t0) * mm * Lean(t0, top), aLo = (t0 - bot) * (mm + mb) / 2 * Lean(bot, t0);
             double zLo = mb + mm > 0 ? bot + (t0 - bot) * (mb + 2 * mm) / (3 * (mb + mm)) : bot;
             double zc = aUp + aLo > 0 ? ((top + t0) / 2 * aUp + zLo * aLo) / (aUp + aLo) : (top + bot) / 2;
             return new Weight(name, "armour", 2 * len * (aUp + aLo) / 1000 * Weight.Steel, x, ZRel.Frac(D != 0 ? zc / D : 0.5));
@@ -610,6 +655,9 @@ public static class Armour
         }
         foreach (var s in g.Strakes.Where(s => s.Kind == "zone"))
             result.Add(BeltOf(s.Id, s.X1 - s.X0, (s.X0 + s.X1) / 2, s.Mm, s.BottomMm ?? s.Mm));
+        foreach (var p in g.Inclined.Where(p => p.Id == "Lower belt"))
+            result.Add(new Weight(p.Id, "armour", 2 * (p.X1 - p.X0) * (p.Z1 - p.Z0) * lean * (p.Mm + (p.BottomMm ?? p.Mm)) / 2 / 1000 * Weight.Steel, (p.X0 + p.X1) / 2,
+                Zf(p.Z0, p.Z1)));
         if (g.Armoured && g.BulkheadMm > 0)
         {
             // full thickness down to the step, thinner under it

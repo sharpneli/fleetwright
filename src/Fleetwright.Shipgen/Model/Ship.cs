@@ -310,7 +310,8 @@ public sealed class ArmourReport
 }
 
 /// <summary>An inclined longitudinal plate each side (protection-plan.md H6): over X0..X1 from Z0 up to Z1, U0 in from
-/// the side at Z0 and U1 at Z1 (linear between), the side's half-breadth taken at SideZ; Kind slope (a deck's).</summary>
+/// the side at Z0 and U1 at Z1 (linear between), the side's half-breadth taken at SideZ; Kind slope (a deck's), belt or
+/// zone (an internal belt's).</summary>
 public sealed record InclinedReport(string Id, string Kind, double ThicknessMm, double X0, double X1, double Z0, double Z1, double U0, double U1,
     double SideZ)
 {
@@ -324,15 +325,21 @@ public sealed record BeltReport(double ThicknessMm, double X0, double X1, double
     public string? Material { get; init; }
     public double? BottomMm { get; init; }
     public double? TaperFrom { get; init; }
+    /// <summary>Its lean off the upright, its top outboard (protection-plan.md H6); "internal" when it stands inside the
+    /// shell, where it and its zones are inclined plates (Inclined) rather than side armour.</summary>
+    public double? InclineDeg { get; init; }
+    public string? Position { get; init; }
 }
 
 public sealed record StrakeReport(string Id, string Kind, string Extent, double ThicknessMm, double X0, double X1, double Bottom, double Top)
 {
     public double? TipMm { get; init; }
     public string? Material { get; init; }
-    /// <summary>A zone of the belt (kind "zone": over the magazines, in place of the belt there) tapers as the belt does.</summary>
+    /// <summary>A zone of the belt (kind "zone": over the magazines, in place of the belt there) tapers as the belt does,
+    /// and leans as it does.</summary>
     public double? BottomMm { get; init; }
     public double? TaperFrom { get; init; }
+    public double? InclineDeg { get; init; }
 }
 
 /// <summary>An armoured transverse bulkhead: ThicknessMm from Top down, LowerMm under LowerTop when it's thinner there.</summary>

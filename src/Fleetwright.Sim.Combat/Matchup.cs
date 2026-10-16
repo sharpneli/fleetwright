@@ -140,10 +140,12 @@ public sealed class MatchupProfile
                 foreach (ref readonly var p in c.SidePlates)
                     if (x >= p.X0 && x <= p.X1 && z >= p.Bottom && z <= p.Top)
                     {
+                        // a leaning belt as thick as a level line through it (protection-plan.md H6)
+                        double t = p.ThicknessMm * Quality(q, p.Material) / Math.Cos(double.DegreesToRadians(p.InclineDeg));
                         if (p.Kind == StrakeKind.Zone)
-                            zone = p.ThicknessMm * Quality(q, p.Material);   // in the belt's place over the magazines
+                            zone = t;   // in the belt's place over the magazines
                         else
-                            best = Math.Max(best, p.ThicknessMm * Quality(q, p.Material));
+                            best = Math.Max(best, t);
                     }
                 if (!double.IsNaN(zone))
                     best = zone;
@@ -152,7 +154,8 @@ public sealed class MatchupProfile
                 foreach (ref readonly var b in c.Bulkheads)
                     if (b.Side == Fleetwright.Sim.Ships.Side.Starboard && b.ArmourMm > 0 && x >= b.X0 && x <= b.X1 && z >= b.ArmourBottom && z <= b.ArmourTop)
                         inner = Math.Max(inner, b.ArmourMm * Quality(q, b.ArmourMaterial));
-                // and the inclined plates (a deck's slopes, protection-plan.md H6), as thick as a flat shell's line through them
+                // and the inclined plates (a deck's slopes, an internal belt: protection-plan.md H6), as thick as a level line
+                // through them
                 foreach (ref readonly var p in c.Inclined)
                     if (x >= p.X0 && x <= p.X1 && z >= p.Z0 && z <= p.Z1 && p.YAt(c.Hull, x, z) > 0)
                         inner += p.MmAt(z) * Quality(q, p.Material) / Rise(p);

@@ -575,6 +575,8 @@ public readonly record struct SidePlateRow
     public double TaperFrom { get; init; }
     /// <summary>An end strake's thickness at the ship's end (NaN: none).</summary>
     public double TipMm { get; init; }
+    /// <summary>The belt's (and its zones') lean off the upright, its top outboard, degrees (protection-plan.md H6).</summary>
+    public double InclineDeg { get; init; }
 }
 
 /// <summary>An armoured transverse bulkhead: ThicknessMm from Top down, LowerMm under LowerTop.</summary>
@@ -596,7 +598,7 @@ public readonly record struct ArmourDeckRow(int Deck, double ThicknessMm, Extent
         x >= X0 && x <= X1 && !(Math.Abs(y) > W / 2) && (double.IsNaN(SlopeReach) || Math.Abs(y) <= hull.HalfWidth(x, SlopeFoot) - SlopeReach);
 }
 
-/// <summary>An inclined longitudinal plate each side (protection-plan.md H6): a deck's slope. Over X0..X1 from Z0 up to
+/// <summary>An inclined longitudinal plate each side (protection-plan.md H6): a deck's slope, an internal belt. Over X0..X1 from Z0 up to
 /// Z1, U0 in from the side at Z0 and U1 at Z1, linear between, the side's half-breadth taken at SideZ; ThicknessMm thick,
 /// BottomMm at Z0 tapering from TaperFrom down (NaN: one thickness).</summary>
 public readonly record struct InclinedRow
@@ -631,6 +633,9 @@ public enum InclinedKind : byte
 {
     /// <summary>A deck's slope.</summary>
     Slope,
+    /// <summary>An internal belt, and its zones over the magazines.</summary>
+    Belt,
+    Zone,
 }
 
 // ------------------------------------------------------------------ the hull

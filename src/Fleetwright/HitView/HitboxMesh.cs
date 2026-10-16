@@ -654,7 +654,7 @@ public sealed class HitboxMesh
         {
             var arm = hb.Armour;
             var slabs = new List<(string Kind, string Id, object Src, double X0, double X1, double Bottom, double Top)>();
-            if (arm.Belt is { } belt)
+            if (arm.Belt is { Position: not "internal" } belt)   // (an internal one is drawn with the inclined plates)
                 slabs.Add(("belt", "belt", belt, belt.X0, belt.X1, belt.Bottom, belt.Top));
             foreach (var s in arm.Strakes ?? [])
                 slabs.Add(("strake", s.Id, s, s.X0, s.X1, s.Bottom, s.Top));
@@ -716,7 +716,7 @@ public sealed class HitboxMesh
                 double U(double z) => p.U0 + (z - p.Z0) * (p.U1 - p.U0) / (p.Z1 - p.Z0);
                 var zs = Enumerable.Range(0, 9).Select(k => p.Z0 + (p.Z1 - p.Z0) * k / 8).ToList();
                 foreach (int side in new[] { 1, -1 })
-                    AddLoft("armour_deck", $"{p.Id}, {(side > 0 ? "starboard" : "port")}", p, zs, z =>
+                    AddLoft(p.Kind == "slope" ? "armour_deck" : "belt", $"{p.Id}, {(side > 0 ? "starboard" : "port")}", p, zs, z =>
                     {
                         var ys = xs.Select(x => Math.Max(HalfWidth(x, p.SideZ) - U(z), 0.0)).ToList();
                         var outer = xs.Select((x, k) => new P3(x, side * (ys[k] + 0.1), z));

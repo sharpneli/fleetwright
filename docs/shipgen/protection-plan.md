@@ -1,6 +1,6 @@
 # Plan: subdivision and protection schemes
 
-2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Done: H0-H5, H6a (2026-10-16). Next: H6b (inclined belts). Research: `research/09_protection_schemes.md`
+2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Done: H0-H6 (2026-10-16). Next: H7 (subdivision checks). Research: `research/09_protection_schemes.md`
 (the families, the layers, the bulkhead kinds), on top of `01_capital_subdivision.md` and `03_small_vessels.md`.
 
 This comes before phase P of `docs/battle/shells-armour-damage.md` (materials as data). The user wants the subdivision
@@ -336,6 +336,30 @@ this plan builds the layers so E1 has something to work on.
     no leaks; against a 51 mm flat deck, +789 t; 6" at 6 km moves little (power after 10 HE hits 93 → 96 %).
   - The default 30° gives long slopes on hulls whose belt reaches deep (the reach is the rise over tan 30°); H8's
     templates should give each family its angle.
+
+- **H6b done 2026-10-16** (inclined belts). `armour.belt_incline_deg` (0-30°, its top outboard) and `armour.belt_position:
+  external | internal`, off by default: goldens unchanged (372 of 372), no version bump.
+  - External: the belt and its zones stay on the side; the tracer tilts the plate's normal (the face looks down as well
+    as out), the weight is longer by 1/cos of the lean (or the side's own slant where that's more), the matchup counts it
+    as thick as a level line through it.
+  - Internal: the belt and its zones are inclined plates inside the shell, `Armour.InternalBeltInsetM` (0.3 m) in at
+    their top and further in below by the lean, and the hitboxes' `belt` says `position: internal` (it isn't side
+    armour). A first try stopped at the belt's lower edge and leaked: a shell falling into the space outboard of the
+    belt passed under its foot (458 of 200,000 on the battleship). So, as the text above has it, the plane goes on down
+    to the inner bottom as a `Lower belt`, tapering from the belt's bottom thickness to `Armour.LowerBeltFootMm` (25 mm,
+    South Dakota's 1 in) [INFERRED], weighed as its own item. It is a plate of its own through the TDS's cells, not the
+    holding bulkhead itself: the TDS keeps its upright walls. Shell-test then shows only the uptake gratings it always
+    had. The space between the belt and the shell is a wing, tier by tier as a slope's; an inclined plate counts only
+    inside the hull (a plane in a fine section can cut a bilge).
+  - Yamato with her 20° lean: +612 t standard; 16" AP at 20 km, 10 hits: out of the fight 40 → 38 %, lost to the
+    magazine 10 → 7 %. The battleship with an internal 19° belt: +4,768 t, because its belt doesn't taper (bottom_mm =
+    belt_mm), so the lower belt starts at 307 mm; 18" AP at 20 km: out of the fight 38 → 42 %, lost to the magazine 2 →
+    4 % (2 to 4 ships of 200, noise), more water (3,459 → 3,635 t: the space outboard of the belt floods). The heavy
+    cruiser with an internal 12° belt: +949 t; 8" AP at 12 km: out 13 → 17 %, water 275 → 424 t. The internal belt gains
+    nothing yet: the outer shell's decapping and fuzing (phase P/E) is what it was for; until then it costs weight and
+    flooding. Near the ends the lower belt's plane meets the shell where the hull narrows under the waterline, and
+    there it is side armour.
+  - H8's templates should give an internal belt's family a tapered belt (`belt_bottom_mm`), or the lower belt is heavy.
 
 ### H7. Subdivision checks (§7.4.5)
 - A warning when two adjacent main compartments flood past the floodable length at the design draught. It reproduces

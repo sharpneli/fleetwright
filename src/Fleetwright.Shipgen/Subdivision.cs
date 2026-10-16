@@ -407,15 +407,11 @@ public static class Subdivision
             // foot: what's over the slope is the wing's, and a little under it too (a burst just under the slope is booked to
             // the wing, never one on it to the vitals); the walls a design asked for (a TDS, the inner line, a magazine's
             // wing up to its crown) stay where they are
-            var slope = ag.Decks.FirstOrDefault(d => d.Reach > 0 && d.X0 <= xm && xm <= d.X1);
-            double slopeFoot = 0, slopeTop = 0, slopeHw = 0, fixedTop = double.NegativeInfinity;
-            if (slope is not null)
-            {
-                (slopeFoot, slopeTop) = (Rz(slope.FootZ), Rz(slope.Z));
-                slopeHw = SteelFrame * XsIn(sx0, sx1).Min(x => form.HalfWidth(x, slope.FootZ));
-                fixedTop = split is null || sKind == "wing" && wingM > 0 && inMach ? double.NegativeInfinity
-                    : sKind == "tds" || innerLine && inCit ? double.PositiveInfinity : crowns.GetValueOrDefault(si, double.NegativeInfinity);
-            }
+            // (an internal belt the same: the wedge between it and the shell is the wing)
+            var slopes = ag.Inclined.Where(p => p.X0 <= xm && xm <= p.X1)
+                .Select(p => (P: p, Z0: Rz(p.Z0), Z1: Rz(p.Z1), Hw: SteelFrame * XsIn(sx0, sx1).Min(x => form.HalfWidth(x, p.SideZ)))).ToList();
+            double fixedTop = split is null || sKind == "wing" && wingM > 0 && inMach ? double.NegativeInfinity
+                : sKind == "tds" || innerLine && inCit ? double.PositiveInfinity : crowns.GetValueOrDefault(si, double.NegativeInfinity);
             var stairs = new List<(string Tier, double Base, double Top, double Y)>();   // the slope's wing walls, tier by tier
             if (split >= hwmax - 0.3)
                 split = null;
@@ -473,13 +469,17 @@ public static class Subdivision
                 bool centreSplit = cl && !bottom && trTop <= under + 1e-6;
                 double hwT = Math.Min(hwmax, WidestIn(x0, x1, trBase, trTop));
                 double? ts = split;
-                if (slope is not null && !bottom && trTop > slopeFoot + PlatformTol && trBase < slopeTop - PlatformTol && trBase >= fixedTop - PlatformTol)
-                {
-                    double zm = Math.Min(trTop, slopeTop);
-                    double ys0 = Math.Max(0.5, slopeHw - slope.Reach * (zm - slopeFoot) / (slopeTop - slopeFoot));
-                    if (split is null || ys0 < split.Value - 0.05)
-                        ts = ys0;
-                }
+                if (!bottom && trBase >= fixedTop - PlatformTol)
+                    foreach (var (p, z0, z1, hw) in slopes)
+                    {
+                        if (trTop <= z0 + PlatformTol || trBase >= z1 - PlatformTol)
+                            continue;
+                        // where the plate stands furthest in over the tier: a slope at its top, a belt at its foot
+                        double U(double z) => p.U0 + (Math.Clamp(z, z0, z1) - z0) * (p.U1 - p.U0) / (z1 - z0);
+                        double ys0 = Math.Max(0.5, hw - Math.Max(U(trBase), U(trTop)));
+                        if ((ts ?? double.PositiveInfinity) > ys0 && (split is null || ys0 < split.Value - 0.05))
+                            ts = ys0;
+                    }
                 bool stair = ts != split;
                 bool banded = ts is not null && !bottom && (stair || trTop <= sTop + PlatformTol) && ts.Value < hwT - 0.3;
                 if (banded && !stair)
