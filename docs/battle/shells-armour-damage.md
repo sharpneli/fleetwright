@@ -59,7 +59,10 @@ better burst points and states; it doesn't rebuild them.
    residual). The plate bench checks it against the trials before the old fit goes.
 6. **The loadout is the admiral's, the armour the designer's** (user, 2026-10-16: "Admiral naturally may want to change
    the ammunition loadouts of their ships even ship by ship basis, whereas they can't just change armor willy nilly").
-   The design carries a **default loadout**; each ship may carry another, set outside the design (S4).
+   The design carries a **default loadout**; each ship may carry another, set outside the design (S5).
+7. **Default outfits and the magazine order** (user, 2026-10-16): main batteries 70% AP and 30% HE, secondaries 30% AP
+   and 70% HE. Magazines empty AP first on the main battery and HE first on the secondaries; the AI's behaviour is
+   otherwise as it is. A dev toggle on the right-click fire picks the kind to shoot (S2).
 
 ## What shipgen needs
 
@@ -143,8 +146,8 @@ updated).
 
 **Out of shipgen** (`report.json`, then `ShipClassCompiler`): each battery's resolved shells (kind, mass in kg, muzzle
 velocity, form factor, cap, body, filler kg and rates, fuze) and the outfit's shares. `DesignerPlaceholders.Shell` and
-`ShellMix` are deleted. `Fires` (heavy guns fire AP) isn't a designer fact but v0's firing rule: it stays in the sim,
-reading the outfit, until the AI's pass (decision 3).
+`ShellMix` are deleted. `Fires` (guns of 200 mm and up fire AP) gives way to the magazine order (decision 7, S2): a
+firing rule in the sim, reading the outfit, until the AI's pass (decision 3).
 
 **One source for the catalogues.** The built-in blocks (ammunition and materials) live in shipgen as C# tables, as the
 crew standards (`Crew.cs`) and the default plant (`Powerplant.cs`) do, because `DesignFormat`'s upgrade and the defaults
@@ -230,14 +233,31 @@ material row per name (the class's material table exists, with names only). `set
   the Bd.Z. 38, Yamato the Type 91), and the parity `mass_kg` overrides go.
   - This moves numbers: masses (k from 0.42–0.66 lb/in³ instead of one curve), the drag form factor, filler. The
     `outcomes` field stays as S0 set it.
+- **S2 Default outfits and the magazine order** (decision 7).
+  - **Outfits:** every design's default loadout is 70% AP and 30% HE on its main batteries and 30% AP and 70% HE on its
+    secondaries, replacing `ShellMix`'s mix by calibre and era. Common shell leaves the defaults; its templates stay for
+    loadouts and players.
+  - **Rounds by kind:** a mount counts its rounds of each kind (today one count a mount, `CombatStore` `Rounds`), out of
+    the battery's `rounds_per_gun` by the outfit's shares.
+  - **The magazine order:** a main battery fires AP until it's spent, then HE; a secondary battery HE first, then AP.
+    This replaces `Fires`' 200 mm rule, a hidden size threshold (DECISIONS.md: no arbitrary size cutoffs). The AI is
+    otherwise unchanged.
+  - **The dev toggle:** the strip's Fire row (`MapScene.Shells.cs`, `fireArmed`; right-click to shoot) gets a kind:
+    the magazine order (the default), AP, HE, or common when the battery carries it. `ShellSystem.FireAt` takes it, and
+    so does the flag: `-fire=ship[:battery][:kind]:lat,lon`. A kind the battery has none of left fires nothing, and the
+    strip says so.
+  - **What moves:** small guns on a destroyer's or cruiser's *main* battery now fire AP first (today HE, under 200 mm),
+    and heavy secondaries HE first. Before and after: `shipgen hits`, the matchup bench (the destroyer and light-cruiser
+    pairs most), the squadrons and the flotilla scenarios.
   - Report `shipgen ballistics` (range tables), `duel` (fire control's calibration, hit % and time to first hit) and
     `weapons`, before and after.
-- **S2 Ammunition weight.** The magazines weighed from the block's W/D³ and the charge. Report the displacement shifts,
+- **S3 Ammunition weight.** The magazines weighed from the default outfit's mean shell mass (the charge stays in
+  `AmmoMult`). Report the displacement shifts,
   run `golden-update` with a `ShipDesign.Version` bump and `mono-check`.
-- **S3 The designer.** A shell template picker in the Main battery and Secondary tabs (the template column); the
+- **S4 The designer.** A shell template picker in the Main battery and Secondary tabs (the template column); the
   battery table shows the kind, mass and fuze. A UI session of its own (mockup, then port); it can run any time after
   S1, alongside phase P.
-- **S4 Loadouts, ship by ship** (decision 6).
+- **S5 Loadouts, ship by ship** (decision 6).
   - **In the sim:** shell types already live in a table shared across classes by id (a gun's trajectory table is built
     once); a loadout registers the types it brings there. Each ship holds its own loads per battery (in `CombatStore`),
     defaulting to its class's, and its rounds by kind. Gunnery, the terminal and `Matchup.cs` read the ship's loads, not
@@ -249,7 +269,7 @@ material row per name (the class's material table exists, with names only). `set
     then at spawn). The admiral's screen for it belongs to the command UI, not this plan.
   - Checks: a ship with the default loadout is byte-identical to S1's; one with HE in its heavy guns shows it in the
     hits bench (passes through destroyers far less).
-- **Not here: the shell by target** (decided). A battery fires one kind in v0 (AP from heavy guns). This plan gives
+- **Not here: the shell by target** (decided). A battery fires by the magazine order (S2). This plan gives
   every battery its outfit of kinds and every ship its loadout; firing HE or common at unarmoured targets is the AI's
   pass (the matchup bench showed it matters: four light cruisers against a battleship).
 
@@ -380,14 +400,15 @@ None open (2026-10-16).
 |---|---|---|---|---|
 | S0 | — | ammunition read, reported | compiler reads it | no |
 | S1 | S0 | ammunition catalogue, templates | — | ballistics, fire control |
-| S2 | S1 | ammunition weight | — | displacement |
-| S3 | S1 | designer picker (UI session) | — | no |
-| S4 | S1 | — | per-ship loadouts: scenarios, dev flag, bench | only for ships given one |
+| S2 | S0 | default outfits | rounds by kind, the magazine order, the dev fire's kind | who fires what |
+| S3 | S2 | ammunition weight | — | displacement |
+| S4 | S1 | designer picker (UI session) | — | no |
+| S5 | S2 | — | per-ship loadouts: scenarios, dev flag, bench | only for ships given one |
 | P0 | — | materials table, upgrade | material rows | no |
 | P1a | P0 | — | Thompson, pen-check bench, deck multiplier | penetration (1–4%) |
 | P1b | P1a | material catalogue | Q(D) | penetration |
 | P1c | P0 | densities | — | weights |
-| P2 | S1, P1b | — | caps, shatter, break-up | outcomes |
+| P2 | S2, P1b | — | caps, shatter, break-up | outcomes |
 | P3 | P2 | — | fuzes; rows gone; water fuze on | burst points |
 | P4 | P2 | — | three limits | outcomes |
 | P5 | P1a | — | angles | ricochets, paths |
