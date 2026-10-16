@@ -65,10 +65,11 @@ public sealed record RaisedStretch(string Id, double X0, double X1, long Levels)
 /// <summary>The machinery space as the layout planned it: the fuel, the space, its segments forward to aft (boiler,
 /// engine, bunker), the wing bunkers' tonnes and width, the end bunkers' length, the space's width and height, the inner
 /// bottom and roof (above the keel), whether an armour deck roofs it and how thick, the side protection, and the deck
-/// stack (heights above the keel, the main deck first).</summary>
+/// stack (heights above the keel, the main deck first); Crown: the highest a magazine's top may stand, above the keel
+/// (Ordnance.CrownMarginM under the design waterline).</summary>
 public sealed record PlantPlan(string Fuel, MachinerySpace Space, List<(string Kind, double Len)> Segments, double WingT,
     double WingM, double EndM, double Width, double Height, double InnerBottom, double Top, bool Armoured, double DeckMm,
-    double Tds, List<double> Decks);
+    double Tds, List<double> Decks, double Crown);
 
 /// <summary>The navigating bridge: its level and floor (m above the main deck), the level it needs to see over the
 /// forward turrets, the tower's top level and that turret roof's height.</summary>

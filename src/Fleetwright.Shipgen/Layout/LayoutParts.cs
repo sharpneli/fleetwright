@@ -387,13 +387,16 @@ public sealed partial class Layout
         return result;
     }
 
-    /// <summary>The warship's magazines (ordnance.stow), linked both ways.</summary>
-    public static void AddMagazines(Layout lay, List<Mount> mounts, double innerHw, Dictionary<string, (double X0, double X1)>? groups = null)
+    /// <summary>The warship's magazines (ordnance.stow), linked both ways, and a handling room over each mount's own.
+    /// taken: the stretches of the hold already spoken for (the machinery and its magazine segments).</summary>
+    public static void AddMagazines(Layout lay, List<Mount> mounts, double innerHw, Dictionary<string, (double X0, double X1)>? groups = null,
+        IReadOnlyList<(double X0, double X1)>? taken = null)
     {
         groups ??= [];
         var plan = lay.Geo.Plant;
-        double ghw = plan is { WingM: not 0 } ? plan.Width / 2 : Math.Min(innerHw, (plan?.Width ?? 2 * innerHw) / 2);
+        double ghw = plan is null ? innerHw : Ordnance.GroupHalfWidth(plan, innerHw);
         var zones = new List<Zone>();
+        var own = new List<Mount>();
         var batteries = new OrderedDictionary<string, List<Mount>>(StringComparer.Ordinal);
         foreach (var m in mounts)
         {
@@ -407,8 +410,9 @@ public sealed partial class Layout
                 l.Add(m);
                 continue;
             }
-            zones.Add(Ordnance.OwnZone(m, innerHw));
+            own.Add(m);
         }
+        zones.AddRange(plan is null ? own.Select(m => Ordnance.OwnZone(m, innerHw)) : Ordnance.OwnZones(lay, own, innerHw, taken ?? []));
         var rooms = new Dictionary<string, List<ZoneRoom>> { ["fore"] = [], ["aft"] = [] };
         foreach (var (bat, ms) in batteries)
         {
@@ -429,7 +433,9 @@ public sealed partial class Layout
         foreach (var grp in new[] { "fore", "aft" })
             if (rooms[grp].Count > 0)
                 zones.Add(new Zone(groups[grp].X0, groups[grp].X1, ghw, rooms[grp]));
-        Ordnance.Stow(lay, mounts, zones);
+        var stowed = Ordnance.Stow(lay, mounts, zones);
+        if (plan is not null)
+            Ordnance.AddHandlingRooms(lay, own, stowed, innerHw);
     }
 
     /// <summary>The machinery space for the solved ship res, centred near x. Stores the plan in lay.geo.plant and
@@ -463,7 +469,7 @@ public sealed partial class Layout
                              $"{Math.Max(w, 0.0):F1} m across. Use more shafts (smaller units) or less side protection.");
         }
         lay.Geo.Plant = new PlantPlan(p.Tech.Fuel, sp, segs, wingT, wing, end, w, h, db, top, ag.Armoured, ag.RoofMm, tds,
-            Shipgen.Decks.DeckStack(design, D).Select(s => s.Z).ToList());
+            Shipgen.Decks.DeckStack(design, D).Select(s => s.Z).ToList(), T - Ordnance.CrownMarginM);
         return segs.Sum(s => s.Len);
     }
 

@@ -65,6 +65,8 @@ public enum RoomKind : byte
     FuelTank,
     CargoTank,
     Hold,
+    /// <summary>Over a mount's own magazine, under its turret: the flash path's first space (protection-plan.md H1).</summary>
+    Handling,
 }
 
 public enum Fuel : byte
@@ -101,6 +103,8 @@ public enum DeckKind : byte
     Deck,
     Main,
     Raised,
+    /// <summary>A deck over part of the hold only: the magazines' crowns (protection-plan.md H1).</summary>
+    Platform,
 }
 
 /// <summary>A cell's band across the hull: the centre, a wing, or the centre and one wing merged.</summary>
@@ -221,6 +225,7 @@ static class Kinds
         "fuel_tank" => RoomKind.FuelTank,
         "cargo_tank" => RoomKind.CargoTank,
         "hold" => RoomKind.Hold,
+        "handling" => RoomKind.Handling,
         _ => throw Unknown("room kind", s),
     };
 
@@ -260,6 +265,7 @@ static class Kinds
         "deck" => DeckKind.Deck,
         "main" => DeckKind.Main,
         "raised" => DeckKind.Raised,
+        "platform" => DeckKind.Platform,
         _ => throw Unknown("deck kind", s),
     };
 

@@ -179,6 +179,7 @@ public static class Crew
         return new Needs(live, prov, water, qDist, 0.06 * qDist, aNet, aSleep / Math.Max(1, n), hEff, beds, nr, nc);
     }
 
+    // not "handling": the deck over a magazine was always its handling space (Ordnance.TPerM3), shared with the crew
     static readonly string[] Taken = ["magazine", "boiler_room", "engine_room", "bunker", "hold", "cargo_tank", "fuel_tank", "steering"];
 
     /// <summary>The ship's volume and what of it is free for the crew, m3; the superstructure's by block.</summary>

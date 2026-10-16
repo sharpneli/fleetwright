@@ -185,7 +185,9 @@ public sealed class Compartment
 
 /// <summary>A zone ordnance is stowed in (Ordnance.Stow): X0..X1, HalfWidth about the centreline, its rooms aft to
 /// forward, and whether it is one mount's own magazine.</summary>
-public sealed record Zone(double X0, double X1, double HalfWidth, List<ZoneRoom> Rooms, bool Own = false);
+/// <summary>A stretch of the hold for stowed rooms, HalfWidth either side of the centreline. Own: each room its mount's
+/// own; Low: under the plan's crown (protection-plan.md H1; planing craft keep their lockers above the water).</summary>
+public sealed record Zone(double X0, double X1, double HalfWidth, List<ZoneRoom> Rooms, bool Own = false, bool Low = true);
 
 /// <summary>A room in a zone: the mounts whose ammunition it holds and/or tonnes of something else at TPerM3.</summary>
 public sealed record ZoneRoom(string Id, List<string>? Mounts = null, double Tonnes = 0, string? Kind = null, double? TPerM3 = null);

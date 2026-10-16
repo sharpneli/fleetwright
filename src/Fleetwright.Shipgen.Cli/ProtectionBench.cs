@@ -8,12 +8,12 @@ namespace Fleetwright.Shipgen.Cli;
 /// through the game's tracer, with no damage model: each magazine's crown against the waterline, the layers a level line
 /// from the side and a plumb line from above cross to reach it, and shells at falls of 5° to 35° from the beam aimed at
 /// points inside it: the share that meets the sea first (and how far they'd run in it), the steel they cross before it,
-/// and the share that meets nothing but under 10 mm of steel from above the water ("open").</summary>
+/// and the share that gets in from above the water through the ship's skin alone, no deck or wall inside it ("open").</summary>
 static class ProtectionBench
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     static readonly double[] Falls = [5, 10, 20, 35];
-    const double Far = 400, OpenMm = 10;
+    const double Far = 400;
 
     sealed record Line(string Name, double CrownM, bool AtSide, double[] Water, double[] Open, double[] SteelMm, double VolumeM3);
 
@@ -111,13 +111,13 @@ static class ProtectionBench
                     if (p.Z < c.Hull.Keel || Math.Abs(p.Y) >= c.Hull.HalfWidth(p.X, p.Z))
                         continue;   // a cell is a box: its corners stand out of the hull's round bilge
                     ShipTracer.Trace(c, new P3(p.X - dir.X * Far, p.Y - dir.Y * Far, p.Z - dir.Z * Far), p, [], water, path);
-                    if (!Shot(c, path, room, out double mm, out double run))
+                    if (!Shot(c, path, room, out double mm, out double run, out int inner))
                         continue;
                     n++;
                     mms.Add(mm);
                     if (run > 0.05)
                         wetRuns.Add(run);
-                    else if (mm < OpenMm)
+                    else if (inner == 0)
                         open[f]++;
                 }
                 wet[f] = (double)wetRuns.Count / Math.Max(mms.Count, 1);
@@ -156,11 +156,11 @@ static class ProtectionBench
 
     static bool Into(ShipClass c, in Crossing x, int room) => x.Kind == CrossingKind.CellIn && c.Cells[x.Index].Room == room;
 
-    /// <summary>The steel a shot crosses before it gets into the room, and the metres it ran in the sea before the ship;
-    /// false if it never got in.</summary>
-    static bool Shot(ShipClass c, HitPath path, int room, out double mm, out double run)
+    /// <summary>The steel a shot crosses before it gets into the room, the metres it ran in the sea before the ship, and
+    /// the plates inside the hull it crossed (decks, walls, armour behind the skin); false if it never got in.</summary>
+    static bool Shot(ShipClass c, HitPath path, int room, out double mm, out double run, out int inner)
     {
-        (mm, run) = (0, 0);
+        (mm, run, inner) = (0, 0, 0);
         var xs = path.Crossings;
         bool inShip = false;
         for (int i = 0; i < xs.Length; i++)
@@ -175,6 +175,8 @@ static class ProtectionBench
             }
             if (x.Kind is CrossingKind.Plate or CrossingKind.HullIn or CrossingKind.HullOut or CrossingKind.PartIn or CrossingKind.PartOut && x.Mm > 0)
                 mm += x.Mm;
+            if (x.Kind == CrossingKind.Plate && x.Plate is PlateKind.Deck or PlateKind.Bulkhead or PlateKind.ArmourDeck or PlateKind.ArmourBulkhead or PlateKind.Grating)
+                inner++;
         }
         return false;
     }

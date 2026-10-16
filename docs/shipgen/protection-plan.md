@@ -87,12 +87,13 @@ this plan builds the layers so E1 has something to work on.
 - The baselines above become the bench's first table.
 - **Done 2026-10-16.** `shipgen protection` and the split in `hits` ("magazines set off by: a burst in it, a burst
   beside it, the turret or barbette, under water"; "to the magazine: set off by a hit, by a fire later"). Before H1:
-  - `protection --summary` (200 shells a fall, every shipped and scenario design): every WWI destroyer and torpedo boat
-    (V25, V1, G101, B97, M, R... K, L, Faulknor, Abdiel, Buyny, Ikazuchi) has 40-98% of shells reaching a magazine from
-    above the water through 6-8 mm ("open"), and every magazine against the side. The WWII-and-later destroyers Daring,
-    Akizuki, Hamburg, Impetuoso and Fubuki 9-39% open; the seaplane carriers and Q-ship up to 85%. The R class (crown
-    1.8 m under) 0-12%, the WW2 Fleet Destroyer 0%. No armoured ship is open anywhere; the heavy cruiser, Des Moines,
-    Sverdlov and Deutschland's crowns stand 1.8-2.4 m over the waterline behind their belts and decks.
+  - `protection --summary` (200 shells a fall, every shipped and scenario design; "open": in from above the water
+    through the skin alone, no deck or wall inside it, a definition settled during H1): every WWI destroyer and
+    torpedo boat (V25, V1, G101, B97, M, K, L, Faulknor, Abdiel, Buyny, Ikazuchi) 22-44 % open at a 5° fall, 6-11 % at
+    35°, every magazine against the side; the WWII-and-later destroyers Daring, Akizuki, Hamburg, Impetuoso and Fubuki
+    27-39 % at 5°; the seaplane carriers 57-58 %, the Q-ship 59-85 %; the heavy cruiser, Des Moines, Sverdlov and
+    Deutschland 9-21 % (crowns 1.8-2.4 m over the waterline). The R class and the Fleet Destroyer (crowns 1.7-1.8 m
+    under) 0-4 %, and no other armoured ship is open anywhere.
   - `hits`, lion 4" HE at 6 km, 10 a ship, 30 min: V25 magazine 0.45% a hit (in it 0.15%, beside it 0.3%), lost to the
     magazine 7.5% (a hit 4.5%, a fire later 3%); TB destroyer 0.6% (0.3/0.3), 9.5% (6/3.5). "Beside it" is mostly a
     burst in the quarters over the 3.6 mm second deck: H1 moves bursts out of the magazine, the neighbour rule still
@@ -110,6 +111,38 @@ this plan builds the layers so E1 has something to work on.
 - **Expected:** heavy cruisers, Sverdlov, Deutschland and Fubuki get longer magazines and grow a little (reported).
   Destroyers' waterline hits burst over a deck instead of inside the magazine. pt_boat and mtb can't comply (draught 1 m)
   and keep a warning. Carriers' and merchants' magazines follow the same rule.
+
+- **Done 2026-10-16.** What was built:
+  - `PlantPlan.Crown` (T − `Ordnance.CrownMarginM`, above the keel). `Ordnance.Span(..., low)` caps a stowed zone's
+    top there unless the zone needs more height than that leaves (then it keeps its deck and `Stow` warns: "X rises
+    1.2 m above the waterline: there's no room to lengthen it under it"). The crown is never snapped to a nearby deck,
+    which would step the magazine's height as the draught moved: a deck just over the crown leaves a thin cofferdam.
+    Planing craft (`Zone.Low` false) keep their lockers above the water.
+  - Grouped magazine segments are sized at the width `Stow` fills (`Ordnance.GroupHalfWidth`); before, the layout used
+    the plant's full width and `Stow` a narrower one, so the heavy cruiser's 5-inch magazine climbed three tiers.
+  - `Ordnance.OwnZones`: a mount's own magazine is its diameter long, or longer where the height under the crown won't
+    hold it, inside the free stretch of hold around its mount (between the machinery, the collision bulkhead and the
+    steering gear); overlapping ones stow end to end in one zone.
+  - Platform decks (`Subdivision.Platforms`): a deck at a magazine's crown where it falls inside a tier, over the
+    magazines with that crown; where it doesn't run, the tiers it parts are one cell. It covers a section by the rooms'
+    claim rule (half the shorter), so a magazine shorter than its section still gets it.
+  - Handling rooms (`handling`, `RoomKind.Handling`): over each mount's own magazine, from its crown to the deck over it.
+    They don't take crew space or keep a submerged torpedo room out: the deck over a magazine was always its handling
+    space (`Ordnance.TPerM3` 0.6 counts on it). A first try with both made Kongo 17 m longer (its beam tubes lost their
+    place, the middle got a tube length).
+  - Sizes: 297 valid cases, median 0.0 %, −1.4 to +2.4 % standard; designs: victory_1944 +2.4 %, doom +1.0 m,
+    heavy_cruiser +0.2 %, Daring and Impetuoso −1.7 m (−1.0, −0.8 %); everything else within 0.3 %. mono-check 35 → 33
+    reversals, lumps 13 → 13. One new warning: the escort carrier's aviation fuel stands 0.8 m over the waterline (its
+    zone is fixed by the hangar's layout).
+  - `protection --summary`: no ship is open any more (0 % at every fall; Buyny 2 % at 5°, before 44 %), every crown at
+    least 0.4 m under the waterline but Buyny's (0.0) and Ikazuchi's (−0.3), whose holds are too shallow. Every
+    magazine still lies against the side: H2.
+  - `hits` (lion 4" HE at 6 km, 10 a ship, 30 min): V25 lost to the magazine 7.5 → 4 % (a hit 2.5, fire 1.5; no burst
+    in it any more, beside it 0.25 % a hit), TB destroyer 9.5 → 2 %, Fleet Destroyer 1.5 → 1.5 %; heavy cruiser 8"
+    AP 9 → 8.5 %, HE 0.5 → 0 %; dreadnought 12" AP 5 → 5 %. What's left on the big ships comes all through the turret
+    and barbette (the flash path, §6.7), none through the hull.
+  - Matchup (arethusa:4 v25:8) within 0.5 % of its confidence; squadrons 155 hits in 30 min against 169 (the runs
+    diverge). FlotillaAttackTests' pinned seed 1 → 4: 7 of seeds 1-30 get in, against 10 at H0, within the noise.
 
 ### H2. Magazines inboard (§6.1)
 - A **wing** between the magazine and the side on every ship that doesn't already have a TDS or wing bunker there:

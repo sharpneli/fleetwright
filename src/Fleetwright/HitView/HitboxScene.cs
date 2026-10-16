@@ -40,7 +40,7 @@ public sealed unsafe class HitboxScene : IScene
 
     static readonly string[] Rooms =
     [
-        "boiler_room", "engine_room", "bunker", "magazine", "accommodation", "steering", "hold", "cargo_tank", "fuel_tank",
+        "boiler_room", "engine_room", "bunker", "magazine", "handling", "accommodation", "steering", "hold", "cargo_tank", "fuel_tank",
         "stores", "double_bottom", "tds", "torpedo_room",
     ];
     static readonly string[] Armour = ["belt", "strake", "armour_deck", "armoured_bulkhead"];

@@ -30,7 +30,7 @@ public static class HitKinds
         K("flight_deck", 130, 140, 150, 200),
         K("belt", 60, 70, 90, 255), K("strake", 135, 145, 165, 255), K("armour_deck", 60, 70, 90, 110),
         K("boiler_room", 240, 140, 40, 235), K("engine_room", 190, 70, 40, 235), K("bunker", 70, 60, 55, 235),
-        K("magazine", 230, 40, 40, 240), K("accommodation", 110, 180, 235, 55, filler: true), K("steering", 160, 90, 200, 235),
+        K("magazine", 230, 40, 40, 240), K("handling", 230, 120, 110, 200), K("accommodation", 110, 180, 235, 55, filler: true), K("steering", 160, 90, 200, 235),
         K("hold", 200, 170, 110, 200), K("cargo_tank", 150, 120, 70, 200), K("fuel_tank", 90, 80, 60, 220),
         K("hangar_bay", 200, 200, 210, 120), K("stores", 150, 150, 120, 55, filler: true),
         K("double_bottom", 80, 95, 110, 40, filler: true), K("tds", 90, 140, 160, 45, filler: true),

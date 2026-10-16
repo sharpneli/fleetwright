@@ -229,10 +229,17 @@ public static class Ordnance
     const double ReadyK = 17000.0, ReadyP = 1.4, WarheadK = 2.0e-6;
     const double TorpedoMm = 533;
 
+    /// <summary>How far under the design waterline a magazine's crown stands at least (docs/shipgen/protection-plan.md H1):
+    /// a flat-trajectory shell then meets the sea, or a deck, before it. A tuning value.</summary>
+    public const double CrownMarginM = 0.4;
+
     /// <summary>(base, top) above the main deck of a room standing on the inner bottom, top on a deck of the stack
-    /// (decks: heights above the keel, the main deck first) and never above the roof.</summary>
+    /// (decks: heights above the keel, the main deck first) and never above the roof. Under a crown (above the keel), the
+    /// top comes down to it, or to a deck just under it, unless the room needs more height than that leaves (needH): then
+    /// it keeps the deck it needs and stands above the crown. The crown is never snapped to a deck near it (a step in the
+    /// magazine's height as the draught moves): a deck just over it leaves a thin space between, a cofferdam.</summary>
     public static (double Base, double Top) Span(IReadOnlyList<double> decks, double innerBottom, double roof, double? needH = null,
-        int tiers = Tiers)
+        int tiers = Tiers, double crown = double.PositiveInfinity)
     {
         double D = decks[0], ib = innerBottom;
         using var _ = Scratch<double>.Rent(out var ups);
@@ -256,16 +263,23 @@ public static class Ordnance
                     break;
                 }
         }
+        if (top > crown + 1e-6)
+        {
+            double low = Math.Max(crown, ib + Decks.MinTier);
+            if (needH is not double h || ib + h <= low + 1e-6)
+                top = low;
+        }
         return (ib - D, top - D);
     }
 
-    public static (double Base, double Top) Span(PlantPlan plan, double? needH = null, int tiers = Tiers) =>
-        Span(plan.Decks, plan.InnerBottom, plan.Top, needH, tiers);
+    /// <summary>A room's span in the plant's deck stack; low: a stowed room (magazines, avgas), under the plan's crown.</summary>
+    public static (double Base, double Top) Span(PlantPlan plan, double? needH = null, int tiers = Tiers, bool low = false) =>
+        Span(plan.Decks, plan.InnerBottom, plan.Top, needH, tiers, low ? plan.Crown : double.PositiveInfinity);
 
-    /// <summary>The height of a room given `tiers` deck spaces.</summary>
-    public static double Height(PlantPlan plan, int tiers = Tiers)
+    /// <summary>The height of a stowed room given `tiers` deck spaces (low: under the crown).</summary>
+    public static double Height(PlantPlan plan, int tiers = Tiers, bool low = true)
     {
-        var (b, t) = Span(plan, tiers: tiers);
+        var (b, t) = Span(plan, tiers: tiers, low: low);
         return t - b;
     }
 
@@ -295,8 +309,8 @@ public static class Ordnance
     }
 
     /// <summary>The length a zone `width` across needs for volume_m3 at `tiers` deck spaces tall.</summary>
-    public static double ZoneLength(double volumeM3, double width, PlantPlan plan, int tiers = Tiers, double least = MinRoom) =>
-        Math.Max(least, volumeM3 / Math.Max(width * Height(plan, tiers), 1.0));
+    public static double ZoneLength(double volumeM3, double width, PlantPlan plan, int tiers = Tiers, double least = MinRoom, bool low = true) =>
+        Math.Max(least, volumeM3 / Math.Max(width * Height(plan, tiers, low), 1.0));
 
     /// <summary>Stow the ordnance in zones. Adds the compartments, sets each mount's Magazine, and moves its
     /// "Magazine &lt;id&gt;" weight to its room. Returns {room id: (x0, x1, base, top)}.</summary>
@@ -325,7 +339,11 @@ public static class Ordnance
             if (vol <= 0)
                 continue;
             double L = z.X1 - z.X0;
-            var (bse, top) = Span(plan, vol / Math.Max(1.0, L * 2 * z.HalfWidth));
+            var (bse, top) = Span(plan, vol / Math.Max(1.0, L * 2 * z.HalfWidth), low: z.Low);
+            if (z.Low && top > plan.Crown - plan.Decks[0] + 1e-6)
+                lay.Warnings.Add($"{string.Join(", ", z.Rooms.Select(r => r.Id))} rise{(z.Rooms.Count == 1 ? "s" : "")} " +
+                                 $"{top - (plan.Crown - plan.Decks[0]) + Ordnance.CrownMarginM:F1} m above the waterline: there's no room to " +
+                                 $"lengthen {(z.Rooms.Count == 1 ? "it" : "them")} under it.");
             double x = z.X1;
             foreach (var (r, ms, t, v) in rooms)
             {
@@ -361,5 +379,107 @@ public static class Ordnance
     {
         double r = m.T.R;
         return new Zone(m.X - r, m.X + r, Math.Min(r, innerHw), [new ZoneRoom($"Magazine {m.Id}", [m.Id])], Own: true);
+    }
+
+    /// <summary>How wide a group of magazines stowed together may be (the machinery's width between its wing bunkers,
+    /// else no wider than innerHw), half of it.</summary>
+    public static double GroupHalfWidth(PlantPlan plan, double innerHw) => plan.WingM != 0 ? plan.Width / 2 : Math.Min(innerHw, plan.Width / 2);
+
+    /// <summary>The mounts' own magazines under the crown (protection-plan.md H1): each under its mount, its diameter long,
+    /// or longer where the height under the crown won't hold its ammunition; each inside the free stretch of hold its mount
+    /// stands over (between what's taken, the collision bulkhead and the steering gear), and those that would overlap
+    /// stowed together in one zone, end to end. A stretch too short for its magazines gives them all of it, and they rise
+    /// above the crown (Stow's warning).</summary>
+    public static List<Zone> OwnZones(Layout lay, IReadOnlyList<Mount> mounts, double innerHw, IReadOnlyList<(double X0, double X1)> taken)
+    {
+        var plan = lay.Geo.Plant!;
+        double L = lay.Hull.L, h = Math.Max(Height(plan, int.MaxValue), 0.5);
+        double fore = L / 2 - Subdivision.Collision * L, aft = -L / 2 + Propulsion.Steering.X1 * L;
+        var busy = taken.Concat(lay.Compartments.Where(c => c.Kind is not ("citadel" or "hangar" or "accommodation")).Select(c => (c.X0, c.X1)))
+            .Where(t => t.Item2 > t.Item1).ToList();
+        // each mount's stretch: from the nearest taken end aft of it to the nearest forward of it
+        var items = new List<(Mount M, double Need, double Hw, double Lo, double Hi)>();
+        foreach (var m in mounts.OrderBy(m => m.X))
+        {
+            double r = m.T.R, hw = Math.Min(r, innerHw);
+            double need = Math.Max(2 * r, BookedM3(lay, [m.Id]) / (2 * hw * h));
+            double lo = aft, hi = fore;
+            bool inside = false;
+            foreach (var (t0, t1) in busy)
+            {
+                if (t0 < m.X && m.X < t1)
+                    inside = true;
+                else if (t1 <= m.X)
+                    lo = Math.Max(lo, t1);
+                else
+                    hi = Math.Min(hi, t0);
+            }
+            if (inside || hi - lo < 2 * r)
+                (lo, hi) = (m.X - r, m.X + r);   // over something already there: under the mount, as before
+            items.Add((m, need, hw, lo, hi));
+        }
+        // magazines that would overlap in one stretch stow together, end to end, centred on their mounts
+        var runs = new List<(List<int> Ix, double X0, double X1)>();
+        for (int i = 0; i < items.Count; i++)
+        {
+            var run = Place([i]);
+            while (runs.Count > 0 && Same(runs[^1].Ix[0], i) && runs[^1].X1 > run.X0 + 1e-6)
+            {
+                var prev = runs[^1];
+                runs.RemoveAt(runs.Count - 1);
+                prev.Ix.AddRange(run.Ix);
+                run = Place(prev.Ix);
+            }
+            runs.Add(run);
+        }
+        var zones = new List<Zone>();
+        foreach (var (ix, x0, x1) in runs)
+        {
+            double need = ix.Sum(i => items[i].Need);
+            zones.Add(new Zone(x0, x1, ix.Sum(i => items[i].Need * items[i].Hw) / need,
+                ix.OrderByDescending(i => items[i].M.X).Select(i => new ZoneRoom($"Magazine {items[i].M.Id}", [items[i].M.Id])).ToList(), Own: true));
+        }
+        return zones;
+
+        bool Same(int a, int b) => items[a].Lo == items[b].Lo && items[a].Hi == items[b].Hi;
+
+        // a run's extent: its magazines' lengths end to end, centred on their mounts (by length), inside their stretch
+        (List<int> Ix, double X0, double X1) Place(List<int> ix)
+        {
+            double len = 0, mid = 0;
+            foreach (int i in ix)
+                (len, mid) = (len + items[i].Need, mid + items[i].Need * items[i].M.X);
+            mid /= len;
+            var (lo, hi) = (items[ix[0]].Lo, items[ix[0]].Hi);
+            if (len >= hi - lo)
+                return (ix, lo, hi);
+            double a = Math.Clamp(mid - len / 2, lo, hi - len);
+            return (ix, a, a + len);
+        }
+    }
+
+    /// <summary>A handling room over each mount's own magazine (protection-plan.md H1): from its crown to the deck over
+    /// it, as long as the magazine. The flash path's first space; nothing stowed in it.</summary>
+    public static void AddHandlingRooms(Layout lay, IReadOnlyList<Mount> mounts, Dictionary<string, (double X0, double X1, double Base, double Top)> stowed,
+        double innerHw)
+    {
+        var plan = lay.Geo.Plant!;
+        double D = plan.Decks[0];
+        foreach (var m in mounts)
+        {
+            if (m.Magazine is not string id || !stowed.TryGetValue(id, out var mg))
+                continue;
+            double over = double.NaN;
+            foreach (double z in plan.Decks)
+                if (z - D > mg.Top + 0.05 && z <= plan.Top + 1e-6 && !(z - D >= over))
+                    over = z - D;
+            if (double.IsNaN(over))
+                continue;
+            lay.Compartments.Add(new Compartment
+            {
+                Id = $"Handling room {m.Id}", Kind = "handling", X0 = mg.X0, X1 = mg.X1, HalfWidth = Math.Min(m.T.R, innerHw), Base = mg.Top, Top = over,
+                Mount = m.Id,
+            });
+        }
     }
 }

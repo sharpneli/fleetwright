@@ -10,12 +10,12 @@ public static class Subdivision
     const double SliverM3 = 1.0, SliverFrac = 0.05;
     static readonly Dictionary<string, int> RoomPriority = new()
     {
-        ["magazine"] = 9, ["torpedo_room"] = 8, ["steering"] = 6, ["boiler_room"] = 7, ["engine_room"] = 7, ["fuel_tank"] = 7, ["bunker"] = 6,
+        ["magazine"] = 9, ["torpedo_room"] = 8, ["handling"] = 8, ["steering"] = 6, ["boiler_room"] = 7, ["engine_room"] = 7, ["fuel_tank"] = 7, ["bunker"] = 6,
         ["cargo_tank"] = 5, ["hold"] = 5, ["accommodation"] = 2,
     };
     static readonly Dictionary<string, double> Permeability = new()
     {
-        ["magazine"] = 0.6, ["torpedo_room"] = 0.85, ["steering"] = 0.85, ["boiler_room"] = 0.85, ["engine_room"] = 0.85, ["fuel_tank"] = 0.95,
+        ["magazine"] = 0.6, ["torpedo_room"] = 0.85, ["handling"] = 0.85, ["steering"] = 0.85, ["boiler_room"] = 0.85, ["engine_room"] = 0.85, ["fuel_tank"] = 0.95,
         ["bunker"] = 0.95, ["cargo_tank"] = 0.95, ["hold"] = 0.6, ["accommodation"] = 0.95, ["stores"] = 0.6,
         ["double_bottom"] = 0.95, ["tds"] = 0.95,
     };
@@ -111,6 +111,57 @@ public static class Subdivision
         return result;
     }
 
+    /// <summary>Platform decks (protection-plan.md H1): a deck at a magazine's crown where it falls inside a tier, over the
+    /// magazines with that crown (Spans, merged). Inserted into dks (keel up) in height order.</summary>
+    static void Platforms(List<SubDeck> dks, IEnumerable<RoomBox> rooms)
+    {
+        var at = new SortedDictionary<double, List<double[]>>();
+        foreach (var r in rooms)
+        {
+            if (r.Kind != "magazine")
+                continue;
+            double z = Math.Round(r.Top, 3);
+            if (dks.Any(d => Math.Abs(d.Z - z) < 0.05) || z <= dks[0].Z || z >= 0)
+                continue;
+            if (!at.TryGetValue(z, out var spans))
+                at[z] = spans = [];
+            spans.Add([r.X0, r.X1]);
+        }
+        int k = 0;
+        foreach (var (z, spans) in at)
+        {
+            var merged = new List<double[]>();
+            foreach (var s in spans.OrderBy(s => s[0]))
+            {
+                if (merged.Count > 0 && s[0] <= merged[^1][1] + 1e-6)
+                    merged[^1][1] = Math.Max(merged[^1][1], s[1]);
+                else
+                    merged.Add([s[0], s[1]]);
+            }
+            k++;
+            var deck = new SubDeck
+            {
+                Id = at.Count > 1 ? $"Platform deck {k}" : "Platform deck", Kind = "platform", Z = z,
+                Spans = merged.Select(s => new[] { Math.Round(s[0], 3), Math.Round(s[1], 3) }).ToList(),
+            };
+            int i = dks.FindIndex(d => d.Z > z);
+            dks.Insert(i < 0 ? dks.Count : i, deck);
+        }
+    }
+
+    /// <summary>Does a platform deck run over the section: over half the shorter of the two, as a room claims a cell (a
+    /// magazine shorter than its section takes all of it).</summary>
+    static bool Covers(SubDeck d, double x0, double x1)
+    {
+        foreach (var s in d.Spans!)
+        {
+            double o = Math.Min(x1, s[1]) - Math.Max(x0, s[0]);
+            if (o > 1e-6 && o >= 0.5 * Math.Min(x1 - x0, s[1] - s[0]) - 1e-6)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>A tier is named after the deck it stands on: bottom, hold, then second, third, ...</summary>
     static string TierName(SubDeck floor)
     {
@@ -202,6 +253,13 @@ public static class Subdivision
 
         var dks = DecksOf(design, D, ag, lay.Raised);
         bool hasBottom = dks[1].Kind == "inner_bottom";
+        double ib = hasBottom ? dks[1].Z : -D;
+        double under = ag.RoofZ is double roofZ ? roofZ - D : 0.0;
+        var adecks = ag.Decks.Select(d => (Z: Rz(d.Z), d.X0, d.X1, d.Mm, d.Material)).ToList();
+
+        var rooms = lay.Compartments.Where(c => c.Kind is not ("citadel" or "hangar")).Select(c =>
+            new RoomBox(c, c.X0, c.X1, (c.Y ?? 0.0) - c.HalfWidth, (c.Y ?? 0.0) + c.HalfWidth, c.Base ?? ib, c.Top ?? under)).ToList();
+        Platforms(dks, rooms);
         var tiers = new List<Tier>();
         for (int i = 0; i < dks.Count - 1; i++)
         {
@@ -210,15 +268,12 @@ public static class Subdivision
             tiers.Add(new Tier
             {
                 Id = lo.Kind == "keel" && !hasBottom ? "hold" : TierName(lo), Base = lo.Z, Top = hi.Z, BelowWaterline = sub_ >= 1.0 - 1e-6,
-                Submerged = sub_, Floor = lo.Id, Ceiling = hi.Id, Spans = hi.Spans,
+                Submerged = sub_, Floor = lo.Id, Ceiling = hi.Id, Spans = hi.Kind == "raised" ? hi.Spans : null,
             });
         }
-        double ib = hasBottom ? dks[1].Z : -D;
-        double under = ag.RoofZ is double roofZ ? roofZ - D : 0.0;
-        var adecks = ag.Decks.Select(d => (Z: Rz(d.Z), d.X0, d.X1, d.Mm, d.Material)).ToList();
-
-        var rooms = lay.Compartments.Where(c => c.Kind is not ("citadel" or "hangar")).Select(c =>
-            new RoomBox(c, c.X0, c.X1, (c.Y ?? 0.0) - c.HalfWidth, (c.Y ?? 0.0) + c.HalfWidth, c.Base ?? ib, c.Top ?? under)).ToList();
+        // a platform deck stands only over its spans: elsewhere the tiers it parts are one space
+        var platform = dks.Select(d => d.Kind == "platform" ? d : null).ToList();   // by deck: tier i stands on deck i, under deck i + 1
+        var mergedCells = new HashSet<Cell>();
 
         (double X0, double X1, string Kind)? cit = null;
         if (armoured)
@@ -325,6 +380,12 @@ public static class Subdivision
             for (int ti = 0; ti < tiers.Count; ti++)
             {
                 var tr = tiers[ti];
+                if (platform[ti] is { } pf && !Covers(pf, sx0, sx1))
+                    continue;   // the space under it reaches up through
+                int tj = ti;
+                while (tj + 1 < tiers.Count && platform[tj + 1] is { } up && !Covers(up, sx0, sx1))
+                    tj++;
+                var trUp = tiers[tj];
                 double x0 = sx0, x1 = sx1;
                 if (tr.Spans != null)
                 {
@@ -334,7 +395,7 @@ public static class Subdivision
                     (x0, x1) = (best.A, best.B);
                 }
                 bool bottom = hasBottom && ti == 0;
-                double trTop = tr.Top, trBase = tr.Base;
+                double trTop = trUp.Top, trBase = tr.Base;
                 bool centreSplit = cl && !bottom && trTop <= under + 1e-6;
                 double hwT = Math.Min(hwmax, WidestIn(x0, x1, trBase, trTop));
                 bool banded = split is not null && !bottom && trTop <= sTop + 1e-6 && split.Value < hwT - 0.3;
@@ -376,8 +437,10 @@ public static class Subdivision
                     var c = new Cell
                     {
                         Id = $"{sec.Id} {tr.Id} {band}", Section = sec.Id, Tier = tr.Id, Band = band, X0 = x0, X1 = x1, Y0 = y0, Y1 = y1,
-                        Base = tr.Base, Top = tr.Top, BelowWaterline = tr.BelowWaterline, VUnder = vUnder, VOver = vOver, Si = si, Ti = ti, T0 = ti,
+                        Base = tr.Base, Top = trUp.Top, BelowWaterline = trUp.BelowWaterline, VUnder = vUnder, VOver = vOver, Si = si, Ti = tj, T0 = ti,
                     };
+                    if (tj > ti)
+                        mergedCells.Add(c);
                     if (inCit && armoured)
                         c.Citadel = true;
                     var above = adecks.Where(d => trTop <= d.Z + 1e-6 && d.X0 <= xm && xm <= d.X1).ToList();
@@ -514,7 +577,7 @@ public static class Subdivision
                 (use, name) = ("double_bottom", "Double bottom");
             else if (c.TdsM != null && c.Band is "P" or "S")
                 (use, name) = ("tds", "Torpedo protection");
-            else if (tiers[c.Ti].Submerged >= 0.5)
+            else if ((mergedCells.Contains(c) ? Math.Clamp((wl - c.Base) / (c.Top - c.Base), 0.0, 1.0) : tiers[c.Ti].Submerged) >= 0.5)
                 (use, name) = ("stores", "Stores");
             else
                 (use, name) = ("accommodation", "Quarters");

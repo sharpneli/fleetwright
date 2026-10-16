@@ -190,8 +190,8 @@ public sealed class PlaningStyle : Style
         if (guns.Count > 0)
         {
             double lx1 = L / 2 - 0.08 * L, lw = 0.5 * innerHw;
-            Ordnance.Stow(lay, mounts, [new Zone(lx1 - Ordnance.ZoneLength(Ordnance.BookedM3(lay, guns), 2 * lw, lay.Geo.Plant!, 1, 0.5),
-                lx1, lw, [new ZoneRoom("Ammunition locker", guns)])]);
+            Ordnance.Stow(lay, mounts, [new Zone(lx1 - Ordnance.ZoneLength(Ordnance.BookedM3(lay, guns), 2 * lw, lay.Geo.Plant!, 1, 0.5, low: false),
+                lx1, lw, [new ZoneRoom("Ammunition locker", guns)], Low: false)]);
         }
         Layout.FinishLayout(lay, design, hs, mounts, turretTypes, blocks, [], masts, aaOut, 0.0);
         lay.Dressing.Boats = boats;

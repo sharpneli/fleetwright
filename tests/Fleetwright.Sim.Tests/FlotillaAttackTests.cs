@@ -39,9 +39,9 @@ public class FlotillaAttackTests(ITestOutputHelper output)
     {
         // six boats against four battleships by day aren't worth an attack by their own judgement (docs/battle/command.md
         // 5.1g): ordered to, they make it, or about half the time they're beaten off first (docs/battle/bugs.md), as the
-        // scenario's own seed is since the boats' crews shrank (2026-10-15): a seed where they get in (1 since the magazines
-        // weigh the real shells and the ships' sizes moved, docs/battle/shells-armour-damage.md S3: 7 of seeds 1-12 do)
-        var (w, ai, s) = Load(TorpedoAttack.Together, seed: 1);
+        // scenario's own seed is since the boats' crews shrank (2026-10-15): a seed where they get in (4 since the magazines
+        // went under the waterline, docs/shipgen/protection-plan.md H1: 7 of seeds 1-30 do, 10 before it, within the noise)
+        var (w, ai, s) = Load(TorpedoAttack.Together, seed: 4);
         int flotilla = Flotilla(w);
         w.Apply(ai.Orders.Attack(Unit.Group(flotilla)));
         var seen = new List<AttackPhase>();

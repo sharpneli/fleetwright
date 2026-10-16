@@ -107,6 +107,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   every shipped design lighter, median -1.5 % standard (victory_1944 -5.3 %, doom -4.7 %, duilio -3.6 %, colorado
   -2.8 %), and the SVGs and sprite.json of the 311 and 69 whose hulls moved. One valid fuzz mutant grows by a sizing
   jump (fuzz_lim_014 +5.8 %, 256 -> 269 m) and one invalid one (fuzz_lim_139).
+- 2026-10-16, magazines under the waterline (docs/shipgen/protection-plan.md H1), on purpose: crowns 0.4 m under the
+  design waterline, longer instead of taller, platform decks over them and handling rooms above. 293 design cases
+  change (median 0.0 %, -1.4 to +2.4 % standard: victory_1944 +2.4 %, Daring and Impetuoso -1.7 m), and the SVGs and
+  sprite.json of the 126 and 29 whose trim or sizes moved.
 
 ## Layout
 

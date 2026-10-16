@@ -319,8 +319,8 @@ public static class SubmergedTubes
         var busy = new List<(double, double)>();
         foreach (var c in lay.Compartments)
         {
-            if (c.Kind is "citadel" or "hangar")
-                continue;
+            if (c.Kind is "citadel" or "hangar" or "handling")
+                continue;   // a handling room is the deck over its magazine, shared (Ordnance.TPerM3): a torpedo room may stand in it
             double cb = c.Base ?? ib, ct = c.Top ?? roof;
             if (cb < top - 0.05 && bse + 0.05 < ct)
                 busy.Add((c.X0, c.X1));

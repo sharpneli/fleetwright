@@ -97,7 +97,7 @@ public static class Program
             what stands between the sea and each magazine (docs/shipgen/protection-plan.md H0), through the tracer alone:
             its crown against the waterline, the layers a level line from the side and a plumb line from above cross to
             it, and N shells a fall (5, 10, 20, 35 degrees from the beam) aimed inside it: the share meeting the sea first,
-            the steel before it, and the share "open" (from above the water, under 10 mm of steel); several designs or
+            the steel before it, and the share "open" (from above the water through the skin alone); several designs or
             --summary end with a line a ship
         shipgen flood DESIGN [--hole WHERE:Z:AREA[:p],...] [--rooms KIND[:N],...] [--minutes M] [--every S] [--step MS] [--cells]
             the flooding model alone (docs/battle/fighting.md 4.3b): the class's facts (reserve buoyancy, freeboard, TPC,
