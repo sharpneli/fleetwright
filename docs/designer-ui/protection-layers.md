@@ -197,8 +197,8 @@ sides on the wing wall, wings never fuel.
 
 1. ~~Two half-sections or one full section?~~ Settled 2026-10-16: two cuts by default, the split made unmistakable (gutter, break line, badges), and a Whole section toggle that keeps 2 locked to 1.
 2. Sub-rows for zones and slopes in the table, as well as Shape. Or Shape only, keeping the table one row per part?
-3. The Compartments toggle here. Or on the Hull tab later?
-4. Layout in the sub-bar and in the Templates panel. Or only one of them?
+3. ~~The Compartments toggle here?~~ Settled 2026-10-16: here (a visual toggle, nothing lost).
+4. ~~Layout where?~~ Settled 2026-10-16: both, the sub-bar and the Templates panel.
 
 ## Port plan
 
