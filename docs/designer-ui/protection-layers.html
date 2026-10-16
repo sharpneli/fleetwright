@@ -1,0 +1,1321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Protection layers</title>
+<link rel="stylesheet" href="assets/fonts/dense-fonts.css">
+<style>
+:root{
+  --ground:#0E1215;--panel:#1C2329;--panel2:#20282F;--inset:#11161A;--line:#20292F;--edge:#090C0E;--bevel:#2C3640;
+  --tt:#36434F;--tb:#27313A;--hd:#161C21;--text:#C9D3DB;--bright:#EAF0F4;--muted:#7F8B95;--brass:#D9B868;
+  --brassd:#5A4A24;--ok:#86C77E;--amber:#E3A452;--blue:#5B9BE0;--plan:#14243A;--planline:#9CC2E2;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--text);font-family:'Archivo Narrow',sans-serif;font-size:12px;user-select:none}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:'IBM Plex Mono',monospace}
+.dim{color:var(--muted)}.gold{color:var(--brass)}.amb{color:var(--amber)}.okc{color:var(--ok)}
+#app{position:relative;width:1280px;height:600px;margin:0;overflow:hidden}
+.tabs{position:absolute;left:4px;top:0;height:22px;display:flex;gap:2px;align-items:flex-end}
+.tab{height:20px;padding:0 9px 0 5px;border:1px solid var(--edge);border-bottom:none;background:linear-gradient(#2A333C,#20282F);color:var(--muted);font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:5px}
+.tab.on{height:22px;background:linear-gradient(var(--tt),var(--panel));color:var(--brass)}
+.tab .k{border:1px solid #4A5764;border-radius:2px;font-size:9.5px;line-height:11px;padding:0 3px}
+.tab.on .k{border-color:var(--brass)}
+.pane{position:absolute;left:0;top:22px;width:1280px;height:578px;background:var(--panel);border:1px solid var(--edge);box-shadow:inset 0 1px 0 var(--tt)}
+.sub{height:18px;display:flex;align-items:center;gap:8px;padding:0 6px;background:var(--hd);border-bottom:1px solid var(--edge);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.sub .n{text-transform:none;letter-spacing:0;font-size:11.5px}
+.sub b{margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0;font-size:11.5px;display:flex;align-items:center;gap:4px}
+.box{position:absolute;border:1px solid var(--edge);background:var(--panel2);overflow:hidden}
+.box .bh{position:absolute;left:0;top:0;right:0;height:16px;display:flex;align-items:center;gap:8px;padding:0 6px;font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);background:rgba(9,12,14,0.55);z-index:2;white-space:nowrap}
+.box .bh b{margin-left:auto;font-weight:400;text-transform:none;letter-spacing:0;font-size:11px}
+.plan{background:var(--plan);background-image:linear-gradient(rgba(150,190,230,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(150,190,230,0.05) 1px,transparent 1px);background-size:24px 24px}
+/* plate table */
+.pt{position:absolute;display:grid;grid-template-columns:10px 124px 96px 108px minmax(0,1fr) 124px 52px 92px 20px;grid-auto-rows:min-content;align-content:start;overflow:hidden}
+.pt>div{height:17px;display:flex;align-items:center;padding:0 4px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;gap:5px}
+.pt .h{height:17px;background:var(--hd);font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--edge)}
+.pt .g{height:14px;grid-column:1/-1;background:rgba(9,12,14,0.35);font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#6D7983;border-bottom:1px solid var(--edge);padding-left:6px}
+.pt .g a{margin-left:10px;text-transform:none;letter-spacing:0;font-size:11px;color:var(--brass);cursor:pointer}
+.pt .g a:hover{color:#FFE7A8}
+.pt .r{cursor:pointer}
+.pt .r.sel{background:rgba(217,184,104,0.10)}
+.pt .r.first.sel{box-shadow:inset 3px 0 0 var(--brass)}
+.pt .r.hov{background:rgba(255,255,255,0.045)}
+.pt .r.sel.hov{background:rgba(217,184,104,0.14)}
+.pt .r.none{color:#59646E}
+.right{justify-content:flex-end}
+.sw{width:8px;height:12px;display:inline-block;border:1px solid rgba(0,0,0,0.5)}
+.sp{display:inline-flex;align-items:center;height:15px;border:1px solid #0A0D10;background:var(--inset)}
+.sp button{width:13px;height:13px;border:none;padding:0;background:linear-gradient(#3A4651,#2A333C);color:#C9D3DB;font-size:7.5px;line-height:13px}
+.sp button:hover{background:linear-gradient(#4E5D6B,#38434E);color:#FFF}
+.sp span{min-width:52px;text-align:right;padding:0 3px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bright)}
+.sp.s span{min-width:34px}
+.sp.auto span{color:var(--muted)}
+.sp .pre{min-width:0;color:var(--muted);font-family:'Archivo Narrow',sans-serif;font-size:10.5px;padding:0 0 0 3px;text-align:left}
+.sp input{width:52px;height:13px;border:none;background:#0A0E11;color:#FFE7A8;font-family:'IBM Plex Mono',monospace;font-size:11px;text-align:right;outline:1px solid var(--brass);padding:0 3px}
+.ro{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);min-width:52px;text-align:right;display:inline-block;padding-right:16px}
+.seg{display:inline-flex;border:1px solid #0A0D10}
+.seg button{height:15px;min-width:18px;padding:0 4px;border:none;border-right:1px solid #0A0D10;background:linear-gradient(#2E3842,#232B33);color:var(--muted);font-size:10.5px}
+.seg button:last-child{border-right:none}
+.seg button.on{background:linear-gradient(#6B5A30,#4A3E20);color:#FFE7A8}
+.seg button:hover:not(.on):not(:disabled){color:var(--bright)}
+.seg button:disabled{color:#3E4A54;cursor:default}
+.dd{height:15px;display:inline-flex;align-items:center;gap:4px;padding:0 4px;border:1px solid #0A0D10;background:var(--inset);color:var(--text);font-size:11px;justify-content:space-between;cursor:pointer;overflow:hidden;white-space:nowrap}
+.dd:hover{color:var(--bright);border-color:#3A4651}
+.dd.sch{color:var(--muted)}
+.dd i{font-style:normal;font-size:8px;color:var(--muted)}
+.num{font-family:'IBM Plex Mono',monospace;font-size:11px;justify-content:flex-end}
+.stp{font-family:'IBM Plex Mono',monospace;font-size:11px;justify-content:flex-end;cursor:default}
+.stp.est{color:#8A949C;font-style:italic}
+.stp.big{color:var(--amber)}
+.act{height:16px;padding:0 7px;border:1px solid #0A0D10;background:linear-gradient(#2E3842,#232B33);color:var(--text);font-size:11px}
+.act:hover{color:var(--bright);background:linear-gradient(#3A4651,#2A333C)}
+.act:disabled{color:#4E5A64;cursor:default}
+/* inspector */
+.insp{position:absolute;left:0;top:16px;right:0;bottom:0;padding:4px 8px;font-size:11.5px;line-height:1.45;overflow:hidden}
+.insp .t{font-weight:700;color:var(--bright);font-size:13px;display:flex;align-items:center;gap:8px}
+.insp .t .sw{height:11px}
+.insp .l{display:grid;grid-template-columns:86px 1fr;gap:0 8px}
+.insp .l>span:nth-child(odd){color:var(--muted)}
+.insp .l .v{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text)}
+.insp .note{color:var(--muted);font-size:11px;margin-top:3px;line-height:1.35}
+.insp .kn{margin-top:4px;border-top:1px solid var(--line);padding-top:3px}
+.insp .kn .hd{font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#6D7983}
+.insp .kn .row{display:grid;grid-template-columns:1fr 58px 58px;gap:0 6px;font-size:11px}
+.insp .kn .row span:nth-child(n+2){font-family:'IBM Plex Mono',monospace;text-align:right}
+.ask{border:1px dashed #55606A;padding:3px 6px;margin:5px 0 0;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);line-height:1.3}
+.ask .tg{font-size:9.5px;letter-spacing:0.05em;text-transform:uppercase;color:#8C7B55;border:1px solid #5A4A24;padding:0 3px;margin-left:auto;white-space:nowrap}
+.hint{position:absolute;left:0;bottom:0;width:100%;height:18px;display:flex;gap:14px;align-items:center;padding:0 8px;background:var(--hd);border-top:1px solid var(--edge);color:var(--muted);font-size:11px}
+.hint .tot{margin-left:auto;color:var(--text)}
+.kbd{display:inline-block;padding:0 3px;border:1px solid #4A5764;border-bottom-width:2px;border-radius:2px;font-size:9.5px;line-height:11px;color:#AEB9C3;font-family:'IBM Plex Mono',monospace;margin-right:3px}
+#tip{position:absolute;pointer-events:none;display:none;max-width:320px;padding:5px 7px;background:#0F1418;border:1px solid #4A5764;color:var(--text);font-size:11.5px;line-height:1.35;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,0.6)}
+#tip b{color:var(--brass)}
+#tip .a{color:var(--amber)}
+#tip .m{font-family:'IBM Plex Mono',monospace;font-size:11px}
+#tip table{border-collapse:collapse;margin-top:2px}
+#tip td{padding:0 0 0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;text-align:right}
+#tip td:first-child{padding:0;font-family:'Archivo Narrow',sans-serif;font-size:11.5px;text-align:left;color:var(--muted)}
+#menu{position:absolute;display:none;min-width:200px;background:#161C21;border:1px solid #4A5764;z-index:11;padding:2px 0;box-shadow:0 2px 10px rgba(0,0,0,0.6)}
+#menu div{padding:2px 10px;font-size:11.5px;display:flex;justify-content:space-between;gap:16px;cursor:pointer}
+#menu div:hover{background:rgba(217,184,104,0.15);color:var(--bright)}
+#menu div.off{color:#4E5A64;cursor:default}
+#menu div.off:hover{background:none;color:#4E5A64}
+#menu .sep{height:1px;padding:0;margin:2px 0;background:var(--line);cursor:default}
+#menu .lab{color:var(--muted);cursor:default;font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em}
+#menu .lab:hover{background:none;color:var(--muted)}
+svg text{font-family:'IBM Plex Mono',monospace}
+.pl{cursor:pointer}
+.gh{cursor:copy}
+.chip{position:absolute;z-index:3}
+.ico{border:none;background:none;color:#56636F;padding:0 3px;font-size:13px;line-height:13px}
+.ico:hover{color:var(--amber)}
+.add{display:inline-flex;align-items:center;height:12px;margin-left:6px;padding:0 5px;border:1px dashed #6B5A30;color:var(--brass);font-size:10.5px;text-transform:none;letter-spacing:0;cursor:pointer;border-radius:2px}
+.add:hover{background:rgba(217,184,104,0.14);color:#FFE7A8;border-style:solid}
+.hdl{cursor:ns-resize}.hdl.h{cursor:ew-resize}
+.imm{position:absolute;left:8px;right:8px;bottom:6px;border:1px dashed #55606A;padding:4px 6px;color:#5E6A74;font-size:11px;line-height:1.35}
+.imm .r{display:flex;align-items:center;gap:6px;margin-top:3px}
+.imm .dd,.imm .act{opacity:0.55;cursor:default}
+.imm .tg{font-size:9.5px;letter-spacing:0.05em;text-transform:uppercase;color:#8C7B55;border:1px solid #5A4A24;padding:0 3px;margin-left:auto;white-space:nowrap}
+/* ---- protection layers (H8b): additions to the Protection tab's styles ---- */
+.pt{grid-template-columns:10px 124px 96px 106px minmax(0,1fr) 96px 48px 38px 18px}
+.pt .r.kid:nth-child(9n+2){padding-left:14px;color:#AEB9C3}
+.pt .r.kid{background:rgba(9,12,14,0.18)}
+.pt .r.kid.sel{background:rgba(217,184,104,0.10)}
+.tag{font-size:10px;color:#9C8A5E;border:1px solid #3E3420;padding:0 3px;border-radius:2px;line-height:11px}
+.tog{height:13px;padding:0 5px;border:1px solid #0A0D10;background:linear-gradient(#2A333C,#20282F);color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;cursor:pointer;font-family:inherit}
+.tog.on{background:linear-gradient(#3B4A57,#2C3842);color:var(--bright)}
+.tog .ok{color:var(--ok)}.tog .wn{color:var(--amber)}
+.cut{display:inline-flex;align-items:center;gap:4px;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text)}
+.cut .n{display:inline-block;width:13px;height:13px;line-height:12px;text-align:center;border:1px solid var(--brass);color:var(--brass);border-radius:7px;font-size:9.5px;font-family:'IBM Plex Mono',monospace}
+.ins2{position:absolute;left:0;top:16px;right:0;bottom:0}
+.ins2 .facts{position:absolute;left:8px;top:4px;width:236px;bottom:32px;font-size:11.5px;line-height:1.45;overflow:hidden}
+.ins2 .facts .t{font-weight:700;color:var(--bright);font-size:13px;display:flex;align-items:center;gap:7px;margin-bottom:2px}
+.ins2 .facts .l{display:grid;grid-template-columns:62px 1fr;gap:0 6px}
+.ins2 .facts .l>span:nth-child(odd){color:var(--muted)}
+.ins2 .facts .l .v{font-family:'IBM Plex Mono',monospace;font-size:11px}
+.ins2 .facts .note{color:var(--muted);font-size:11px;margin-top:4px;line-height:1.35}
+.shape{position:absolute;left:252px;top:4px;right:8px;bottom:32px;border-left:1px solid var(--line);padding-left:10px;overflow:hidden}
+.shape .hd{font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#6D7983;height:16px;display:flex;align-items:center;gap:6px}
+.shape .hd .dd{margin-left:auto;text-transform:none;letter-spacing:0;width:150px}
+.shape .row{display:grid;grid-template-columns:104px 1fr;align-items:center;min-height:20px;gap:0 6px;font-size:11.5px}
+.shape .row>span:first-child{color:var(--muted)}
+.shape .row .c{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.shape .note{color:var(--muted);font-size:11px;line-height:1.35;margin-top:4px}
+.shape .warn{color:var(--amber);font-size:11px;line-height:1.35;margin-top:4px}
+.imm2{position:absolute;left:8px;right:8px;bottom:5px;height:22px;border:1px dashed #55606A;padding:0 6px;color:#5E6A74;font-size:11px;display:flex;align-items:center;gap:8px}
+.imm2 .tg{font-size:9.5px;letter-spacing:0.05em;text-transform:uppercase;color:#8C7B55;border:1px solid #5A4A24;padding:0 3px;margin-left:auto;white-space:nowrap}
+#tip{z-index:12}
+#menu .it{display:block;padding:2px 10px 3px}
+#menu .it .nm{display:flex;justify-content:space-between;gap:12px}
+#menu .it .ds{color:var(--muted);font-size:10.5px;line-height:1.25;white-space:normal;max-width:300px}
+#menu .it.cur .nm{color:var(--brass)}
+.legend{display:flex;gap:7px;align-items:center;text-transform:none;letter-spacing:0;font-size:10px;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:8px;border:1px solid rgba(0,0,0,0.5);margin-right:2px;vertical-align:-1px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="tabs" id="tabs"></div>
+  <div class="pane" id="pane">
+    <div class="sub">Protection <span class="n dim" id="reads"></span>
+      <b id="scheme"></b></div>
+    <div class="box plan" id="elev" style="left:6px;top:24px;width:738px;height:200px"></div>
+    <div class="box" id="tbl" style="left:6px;top:230px;width:738px;height:328px"></div>
+    <div class="box plan" id="sect" style="left:750px;top:24px;width:524px;height:300px"></div>
+    <div class="box" id="ins" style="left:750px;top:330px;width:524px;height:228px"></div>
+    <div class="hint"><span><span class="kbd">drag</span>brass handles · the cut flags <b class="gold">1</b> <b class="gold">2</b> along the elevation</span>
+      <span><span class="kbd">wheel</span>a plate or value: one step (Shift ×4)</span>
+      <span><span class="kbd">RMB</span>zones, slopes, position · material</span>
+      <span><span class="kbd">+</span>adds a part, <span class="kbd">×</span>removes it</span></div>
+  </div>
+  <div id="tip"></div>
+  <div id="menu"></div>
+</div>
+<script src="protection-layers-data.js"></script>
+<script>
+// ================================================================== the ship: a real build (shipgen design --out), see protection-layers.md
+const params = new URLSearchParams(location.search);
+const SID = DATA[params.get('ship')] ? params.get('ship') : 'bismarck';
+const S = DATA[SID];
+const L = S.L, B = S.B, WL = S.v.waterline, KEEL = S.v.keel, AR = S.armour;
+const A0 = structuredClone(S.A);
+let A = structuredClone(S.A);
+let faces = S.main.map(m => m.mm || 0); const F0 = [...faces];
+let sel = params.get('sel') || ((A.belt_mm || 0) > 0 ? 'belt' : 'wings'), hot = null, editing = null, dragging = null;
+let showRooms = params.get('rooms') !== '0', showComp = params.get('comp') === '1';
+let layoutTouched = false;
+
+const RAMP = ['#F3E3A1', '#E9B66B', '#DE9455', '#CC6F43', '#B24E36', '#8E3328'];
+const ramp = mm => RAMP[mm >= 260 ? 5 : mm >= 190 ? 4 : mm >= 140 ? 3 : mm >= 95 ? 2 : mm >= 60 ? 1 : 0];
+const ink = mm => mm >= 140 ? '#F6EFE2' : '#26221C';
+const N0 = v => Math.round(v).toLocaleString('en-US');
+const f1 = v => (Math.round(v * 10) / 10).toFixed(1);
+const sx1 = v => (v < 0 ? '−' : v > 0 ? '+' : '') + f1(Math.abs(v));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const $ = id => document.getElementById(id);
+const rad = d => d * Math.PI / 180;
+
+// ------------------------------------------------------------------ decks, spans, the hull's form
+const ORD = ['Main deck', 'Second deck', 'Third deck', 'Fourth deck', 'Fifth deck', 'Sixth deck', 'Seventh deck'];
+const SHORT = {'Main deck': 'Main', 'Second deck': '2nd', 'Third deck': '3rd', 'Fourth deck': '4th', 'Fifth deck': '5th', 'Sixth deck': '6th',
+  'Seventh deck': '7th', 'Raised deck 1': 'F’c’sle', 'Inner bottom': 'Inner btm'};
+const SHORTS = {...SHORT, 'Inner bottom': 'IB'};
+const DECKS = S.decks.filter(d => d.kind !== 'inner_bottom').map(d => ({...d, n: d.kind === 'raised' ? -1 : ORD.indexOf(d.id)}));
+const IB = (S.decks.find(d => d.kind === 'inner_bottom') || {z: KEEL + 1}).z;
+const deckOf = n => DECKS.find(d => d.n === n);
+const deckZ = n => (deckOf(n) || {z: -2.6 * n}).z;
+const deckName = n => (deckOf(n) || {id: `deck ${n}`}).id;
+const deckShort = n => SHORT[deckName(n)] || deckName(n);
+const raised = DECKS.find(d => d.kind === 'raised');
+const topAt = x => raised && (raised.spans || []).some(([a, b]) => x >= a && x <= b) ? raised.z : 0;
+const fbk = AR.bulkheads || [];
+const X0 = (fbk.find(b => b.id === 'Aft bulkhead') || {x: AR.belt ? AR.belt.x0 : -0.3 * L}).x;
+const X1 = (fbk.find(b => b.id === 'Forward bulkhead') || {x: AR.belt ? AR.belt.x1 : 0.3 * L}).x;
+function merge(sp) {
+  const o = [];
+  for (const [a, b] of sp.slice().sort((p, q) => p[0] - q[0])) {
+    if (o.length && a <= o[o.length - 1][1] + 0.05) o[o.length - 1][1] = Math.max(o[o.length - 1][1], b); else o.push([a, b]);
+  }
+  return o;
+}
+const MAGS = merge(S.rooms.filter(r => r.k === 'magazine').map(r => [r.x0, r.x1]));
+const MACHR = S.rooms.filter(r => r.k === 'engine_room' || r.k === 'boiler_room');
+const MACH = MACHR.length ? [Math.min(...MACHR.map(r => r.x0)), Math.max(...MACHR.map(r => r.x1))] : [-0.1 * L, 0.1 * L];
+const inSp = (x, sp) => sp.some(([a, b]) => x >= a - 1e-6 && x <= b + 1e-6);
+const inMag = x => inSp(x, MAGS);
+const ZB = (AR.strakes || []).filter(q => q.kind === 'zone').map(q => [q.x0, q.x1]);
+const ZSP = () => ZB.length ? ZB : MAGS;   // the zones' stretches: the build's (Geo.MagazineSpans), else the magazines
+const inZone = x => inSp(x, ZSP());
+const lenOf = sp => sp.reduce((s, [a, b]) => s + Math.max(0, b - a), 0);
+const clipSp = (sp, [a, b]) => sp.map(([p, q]) => [Math.max(p, a), Math.min(q, b)]).filter(([p, q]) => q > p);
+function minus(sp, cut) {   // spans less other spans
+  let out = sp.map(s => [...s]);
+  for (const [c0, c1] of cut) out = out.flatMap(([a, b]) => c1 <= a || c0 >= b ? [[a, b]] : [[a, c0], [c1, b]].filter(([p, q]) => q - p > 0.01));
+  return out;
+}
+const EXT = {citadel: 'citadel', full: 'full length', fore: 'fore end', aft: 'aft end', ends: 'both ends', machinery: 'machinery'};
+function spans(ext) {
+  const h = L / 2;
+  return ext === 'full' ? [[-h, h]] : ext === 'fore' ? [[X1, h]] : ext === 'aft' ? [[-h, X0]] : ext === 'ends' ? [[-h, X0], [X1, h]] : [[X0, X1]];
+}
+const beltTop = () => WL + (A.belt_height_m ?? 2);
+const beltBot = () => WL - (A.belt_depth_m ?? 1.5);
+const beltSpan = () => A.belt_extent === 'machinery' ? [MACH] : [[X0, X1]];
+const internal = () => A.belt_position === 'internal';
+const lean = () => A.belt_incline_deg || 0;
+const wingAuto = () => A.magazine_wing_m == null;
+const wingW = () => A.magazine_wing_m ?? 0.1 * B;
+const citDecks = () => (A.decks || []).map((d, i) => ({...d, i})).filter(d => ['citadel', 'full'].includes(d.extent || 'citadel') && (d.mm || 0) + (d.slope_mm || 0) > 0);
+const roofZ = () => { const c = citDecks(); return c.length ? Math.min(...c.map(d => deckZ(d.deck))) : WL; };
+const mainDeckIdx = () => { const c = citDecks(); return c.length ? c.reduce((a, b) => ((b.slope_mm || b.mm || 0) > (a.slope_mm || a.mm || 0) ? b : a)).i : -1; };
+const ST = S.stations;
+function yAt(st, z) {
+  const Z = st.z, Y = st.y;
+  if (z < Z[0]) return 0;
+  for (let i = 1; i < Z.length; i++) if (z <= Z[i]) { const t = (z - Z[i - 1]) / ((Z[i] - Z[i - 1]) || 1); return Y[i - 1] + t * (Y[i] - Y[i - 1]); }
+  return Y[Y.length - 1];
+}
+function bracket(x) { let i = ST.findIndex(s => s.x >= x); if (i < 0) i = ST.length - 1; if (i === 0) i = 1; const a = ST[i - 1], b = ST[i]; return [a, b, clamp((x - a.x) / ((b.x - a.x) || 1), 0, 1)]; }
+function halfB(x, z) { const [a, b, t] = bracket(x); return yAt(a, z) * (1 - t) + yAt(b, z) * t; }
+function keelAt(x) { const [a, b, t] = bracket(x); return a.z[0] * (1 - t) + b.z[0] * t; }
+
+// ------------------------------------------------------------------ the parts: one row each, from the design's ArmourInput (as the game's table)
+const HAS_TDS = () => (A.tds_m || 0) > 0;
+const zoneLen = () => lenOf(ZSP().flatMap(q => clipSp([q], [X0, X1])));
+function slopeGeo(d) {   // a deck's slopes: the flat stops `reach` in from the side; the slope meets the side at the belt's lower edge
+  const z = deckZ(d.deck), foot = beltBot(), deg = d.slope_deg ?? 30;
+  return {z, foot, deg, reach: Math.max(0, (z - foot) / Math.tan(rad(deg)))};
+}
+function rows() {
+  const R = [];
+  const ub = A.upper_belt || {}, eb = A.end_belts || {}, sb = A.steering_box || {}, ib = A.inner_bulkhead, mb = A.magazine_box;
+  const belt = (A.belt_mm || 0) > 0;
+  R.push({id: 'belt', g: 'side', name: 'Belt', mm: A.belt_mm || 0, has: belt, mat: 'belt'});
+  if (belt && A.belt_magazines_mm != null) R.push({id: 'beltzone', g: 'side', sub: true, name: 'at the magazines', mm: A.belt_magazines_mm, has: true, mat: 'belt', parent: 'belt'});
+  R.push({id: 'upper', g: 'side', name: 'Upper belt', mm: ub.mm || 0, has: (ub.mm || 0) > 0, mat: 'upper_belt'});
+  for (const end of ['fore', 'aft']) { const e = eb[end] || {}; R.push({id: 'end_' + end, g: 'side', name: `End belt, ${end}`, mm: e.mm || 0, has: (e.mm || 0) > 0, mat: 'end_belts', end}); }
+  R.push({id: 'bulk', g: 'side', name: 'Citadel bulkheads', mm: A.bulkhead_mm || 0, has: (A.bulkhead_mm || 0) > 0, mat: 'bulkheads'});
+  (A.decks || []).forEach((d, i) => {
+    const ext = d.extent || 'citadel';
+    R.push({id: 'deck' + i, i, g: 'decks', name: `${deckName(d.deck)}${ext !== 'citadel' ? ', ' + EXT[ext] : ''}`, mm: d.mm || 0, has: true, mat: 'decks', deck: d.deck, ext});
+    if ((d.slope_mm || 0) > 0) R.push({id: 'slope' + i, i, g: 'decks', sub: true, name: 'slopes', mm: d.slope_mm, has: true, mat: 'decks', deck: d.deck, ext, parent: 'deck' + i});
+    if (d.magazines_mm != null) R.push({id: 'dzone' + i, i, g: 'decks', sub: true, name: 'at the magazines', mm: d.magazines_mm, has: true, mat: 'decks', deck: d.deck, ext, parent: 'deck' + i});
+  });
+  R.push({id: 'tds', g: 'inboard', name: 'Torpedo protection', m: A.tds_m || 0, has: HAS_TDS()});
+  R.push({id: 'inner', g: 'inboard', name: 'Inner bulkhead', mm: ib ? ib.mm || 0 : 0, mags: ib ? ib.magazines_mm ?? ib.mm ?? 0 : 0,
+    has: !!ib && ((ib.mm || 0) > 0 || (ib.magazines_mm || 0) > 0), mat: 'bulkheads'});
+  R.push({id: 'box', g: 'inboard', name: 'Magazine boxes', mm: mb ? mb.side_mm || 0 : 0,
+    has: !!mb && ['side_mm', 'crown_mm', 'end_mm', 'floor_mm'].some(k => (mb[k] || 0) > 0), mat: 'bulkheads'});
+  R.push({id: 'wings', g: 'inboard', name: 'Magazine wings', m: wingW(), has: wingW() > 0, ro: HAS_TDS()});
+  R.push({id: 'steer', g: 'ends', name: 'Steering gear box', mm: sb.mm || 0, has: (sb.mm || 0) > 0, mat: 'belt'});
+  S.main.forEach((m, k) => R.push({id: 'main' + k, g: 'guns', name: `Turrets, battery ${String.fromCharCode(65 + k)}`, mm: faces[k] || 0, has: (faces[k] || 0) > 0, mat: 'turrets', k}));
+  R.push({id: 'barb', g: 'guns', name: 'Barbettes', mm: Math.round(0.8 * (faces[0] || 0)), has: (faces[0] || 0) > 0, mat: 'barbettes', ro: true});
+  R.push({id: 'ct', g: 'guns', name: 'Conning tower', mm: A.belt_mm || 0, has: (A.belt_mm || 0) > 0, mat: 'conning_tower', ro: true});
+  return R;
+}
+const rowOf = id => rows().find(r => r.id === id);
+
+// ------------------------------------------------------------------ weights: the build's lines; after an edit a stand-in scaled by area and thickness
+const W = S.w;
+const sumW = pred => Object.entries(W).filter(([n]) => pred(n)).reduce((s, [, t]) => s + t, 0);
+const deckLine = d => `Deck armour (${deckName(d.deck).toLowerCase()}${(d.extent || 'citadel') !== 'citadel' ? ', ' + d.extent : ''})`;
+function measure(r, a = A) {   // plate area (m²) × thickness (mm)
+  const hgt = beltTop() - WL, dp = WL - beltBot();
+  const cit = X1 - X0, zl = zoneLen();
+  switch (true) {
+    case r.id === 'belt': {
+      const bot = a.belt_bottom_mm ?? a.belt_mm, len = lenOf(beltSpan()) - (a.belt_magazines_mm != null ? zl : 0);
+      let m = 2 * len * (hgt * a.belt_mm + dp * (a.belt_mm + bot) / 2) / Math.cos(rad(a.belt_incline_deg || 0));
+      if (a.belt_position === 'internal') m += 2 * lenOf(beltSpan()) * (beltBot() - IB) * (bot + 25) / 2;
+      return m;
+    }
+    case r.id === 'beltzone': return 2 * zl * (hgt + dp * 0.85) * a.belt_magazines_mm;
+    case r.id === 'upper': return 2 * lenOf(spans(a.upper_belt?.extent || 'citadel')) * Math.max(0, deckZ(a.upper_belt?.to_deck ?? 0) - beltTop()) * (a.upper_belt?.mm || 0);
+    case !!r.end: { const e = a.end_belts?.[r.end] || {}; return 2 * lenOf(spans(r.end)) * (e.reach ?? 1) * (hgt + dp) * ((e.mm || 0) + (e.tip_mm ?? e.mm ?? 0)) / 2; }
+    case r.id === 'bulk': return 2 * 0.8 * B * (0 - IB) * (a.bulkhead_mm || 0) * 0.8;
+    case r.id.startsWith('deck'): {
+      const d = a.decks[r.i]; if (!d) return 0;
+      const len = lenOf(spans(d.extent || 'citadel')) - (d.magazines_mm != null ? zl : 0);
+      const wd = (d.slope_mm || 0) > 0 ? Math.max(0, B - 2 * slopeGeo(d).reach) : B * (r.ext === 'citadel' ? 0.92 : 0.62);
+      return len * wd * (d.mm || 0);
+    }
+    case r.id.startsWith('slope'): { const d = a.decks[r.i], g = slopeGeo(d); return 2 * lenOf(spans(d.extent || 'citadel')) * (g.z - g.foot) / Math.sin(rad(g.deg)) * d.slope_mm; }
+    case r.id.startsWith('dzone'): { const d = a.decks[r.i]; return zl * B * 0.85 * d.magazines_mm; }
+    case r.id === 'tds': return (X1 - X0) * (a.tds_m || 0) * 1000 * Math.max(1, ((a.tds_holding_mm || 0) + ((a.tds_layers || 1) - 1) * (a.tds_layer_mm || 0)) / Math.max(1, 12 * (a.tds_m || 1)));
+    case r.id === 'inner': { const ib = a.inner_bulkhead || {}, ht = roofZ() - IB; return 2 * ht * ((cit - zl) * (ib.mm || 0) + zl * (ib.magazines_mm ?? ib.mm ?? 0)); }
+    case r.id === 'box': {
+      const mb = a.magazine_box || {}, ht = Math.max(2, (MAGTOP - IB)), w = 2 * Math.max(1, 0.5 * B - wingW());
+      return clipSp(MAGS, [X0 - 30, X1 + 30]).reduce((s, [p, q]) => s + 2 * (q - p) * ht * (mb.side_mm || 0) + (q - p) * w * ((mb.crown_mm || 0) + (mb.floor_mm || 0)) + 2 * w * ht * (mb.end_mm || 0), 0);
+    }
+    case r.id === 'steer': { const sb = a.steering_box || {}; return 2 * 0.06 * L * 4 * (sb.mm || 0) + 0.06 * L * 0.3 * B * (sb.deck_mm || 0); }
+  }
+  return 0;
+}
+const MAGTOP = Math.max(IB + 2, ...S.rooms.filter(r => r.k === 'magazine').map(r => r.t));
+function lines0(r) {
+  switch (true) {
+    case r.id === 'belt': return sumW(n => n === 'Belt armour' || n === 'Lower belt');
+    case r.id === 'beltzone': return sumW(n => n.startsWith('Belt (magazines)'));
+    case r.id === 'upper': return sumW(n => n === 'Upper belt');
+    case r.id === 'end_fore': return sumW(n => n === 'Fore end belt');
+    case r.id === 'end_aft': return sumW(n => n.startsWith('Aft end belt'));
+    case r.id === 'bulk': return sumW(n => n === 'Bulkheads');
+    case r.id === 'tds': return sumW(n => n === 'Torpedo protection');
+    case r.id === 'inner': return sumW(n => n === 'Inner bulkhead');
+    case r.id === 'box': return sumW(n => n === 'Magazine boxes');
+    case r.id === 'steer': return sumW(n => n.startsWith('Steering gear box') || n.includes(', steering)'));
+    case r.id === 'ct': return sumW(n => n === 'Conning tower');
+    case r.id === 'barb': return sumW(n => S.comps.some(c => c.k === 'main' && n === 'Barbette ' + c.id));
+    case r.id.startsWith('slope'): { const d = A0.decks[r.i]; return d ? sumW(n => n === deckLine(d).replace(')', ', slopes)')) : 0; }
+    case r.id.startsWith('deck') || r.id.startsWith('dzone'): {
+      const d = A0.decks[r.i]; if (!d) return 0;
+      const tot = sumW(n => n === deckLine(d));
+      if (d.magazines_mm == null) return r.id.startsWith('deck') ? tot : 0;
+      const zl = zoneLen(), rest = (X1 - X0 - zl) * d.mm, zone = zl * d.magazines_mm, share = zone / (zone + rest);
+      return r.id.startsWith('dzone') ? tot * share : tot * (1 - share);
+    }
+  }
+  return 0;
+}
+const wkey = r => r.id;
+const BASE = (() => { const a = A; A = A0; const m = Object.fromEntries(rows().map(r => [wkey(r), {t: lines0(r), m: measure(r, A0)}])); A = a; return m; })();
+function tOf(r) {
+  if (r.id.startsWith('main') || r.id === 'wings') return null;
+  if (r.id === 'barb' || r.id === 'ct') return BASE[r.id]?.t ?? 0;
+  const b = BASE[wkey(r)], m = measure(r);
+  if (b && b.m > 0 && b.t > 0) return b.t * m / b.m;
+  return m / 1000 * 7.85 * 0.95;
+}
+const pristine = () => JSON.stringify(A) === JSON.stringify(A0) && faces.every((f, k) => f === F0[k]);
+function deltaT() {
+  let d = 0;
+  const now = rows(), ids = new Set([...now.map(wkey), ...Object.keys(BASE)]);
+  for (const id of ids) { const r = now.find(q => wkey(q) === id); d += (r ? tOf(r) || 0 : 0) - (BASE[id]?.t || 0); }
+  return d;
+}
+const armourT = () => (S.groups.armour || 0) + (pristine() ? 0 : deltaT());
+const stdNow = () => pristine() ? S.std : S.std + deltaT() * 1.15;   // the knock-on: hull, machinery and fuel for the weight
+
+// ------------------------------------------------------------------ the layout templates (Content/Templates/protection.json): ProtectionSchemes.Apply, as the engine does it
+const r5 = v => Math.round(v / 5) * 5;
+function applyLayout(a, v) {
+  a = structuredClone(a);
+  for (const k of ['belt_position', 'belt_incline_deg', 'belt_extent']) delete a[k];
+  delete a.inner_bulkhead; delete a.magazine_box;
+  a.decks = (a.decks || []).filter(d => !d.layout_lower);
+  if (v === null) {   // plain: the layout keys gone, the slopes' plate back on the flat
+    a.decks = a.decks.map(d => { const o = {...d}; if (o.slope_mm) o.mm = o.slope_mm; delete o.slope_mm; delete o.slope_deg; return o; });
+    return a;
+  }
+  const c = a.decks.map((d, i) => ({...d, i})).filter(d => ['citadel', 'full'].includes(d.extent || 'citadel') && (d.mm || 0) > 0);
+  const main = c.length ? c.reduce((p, q) => ((q.slope_mm || q.mm) > (p.slope_mm || p.mm) ? q : p)) : null;
+  a.decks = a.decks.map(d => { const o = {...d}; delete o.slope_mm; delete o.slope_deg; if (d.slope_mm) o.mm = d.slope_mm; return o; });
+  if (v.slope_deg && main) { const d = a.decks[main.i], full = d.mm; a.decks[main.i] = {...d, mm: r5(full * v.flat_share), slope_mm: full, slope_deg: v.slope_deg}; }
+  if (v.lower_deck && main) a.decks.push({deck: a.decks[main.i].deck + 1, mm: v.lower_deck.mm, slope_mm: v.lower_deck.slope_mm, slope_deg: v.lower_deck.slope_deg, extent: 'citadel'});
+  a.decks.sort((p, q) => p.deck - q.deck);
+  if (v.belt_position) a.belt_position = v.belt_position;
+  if (v.belt_incline_deg) a.belt_incline_deg = v.belt_incline_deg;
+  if (v.belt_extent) a.belt_extent = v.belt_extent;
+  if (v.belt_bottom_share) a.belt_bottom_mm = r5((a.belt_mm || 0) * v.belt_bottom_share);
+  if (v.inner_bulkhead) a.inner_bulkhead = {...v.inner_bulkhead};
+  if (v.magazine_box) a.magazine_box = {...v.magazine_box};
+  return a;
+}
+function layoutWords(a) {   // what a layout does on this ship, in words
+  const w = [];
+  for (const d of a.decks || []) if (d.slope_mm) w.push(`${deckName(d.deck)}: slopes ${d.slope_mm} mm at ${d.slope_deg ?? 30}°, flat ${d.mm} mm`);
+  if (a.belt_position === 'internal') w.push(`belt inside the shell, leaning ${a.belt_incline_deg || 0}°, lower edge ${a.belt_bottom_mm} mm, a lower belt to the inner bottom`);
+  else if (a.belt_incline_deg) w.push(`belt on the side, leaning ${a.belt_incline_deg}°`);
+  if (a.belt_extent === 'machinery') w.push('belt over the machinery only');
+  if (a.inner_bulkhead) w.push(`inner bulkhead ${a.inner_bulkhead.mm || 0} mm${a.inner_bulkhead.magazines_mm != null ? `, ${a.inner_bulkhead.magazines_mm} at the magazines` : ''}`);
+  if (a.magazine_box) w.push('magazine boxes: ' + ['side', 'crown', 'end', 'floor'].filter(k => a.magazine_box[k + '_mm']).map(k => `${k} ${a.magazine_box[k + '_mm']}`).join(', '));
+  return w;
+}
+const LAYOUT_KEYS = a => JSON.stringify([a.belt_position, a.belt_incline_deg, a.belt_extent, a.inner_bulkhead, a.magazine_box, (a.decks || []).map(d => [d.slope_mm, d.slope_deg])]);
+function layoutNow() {
+  const t = LAYOUTS.find(l => l.note === S.scheme);
+  const changed = LAYOUT_KEYS(A) !== LAYOUT_KEYS(A0);
+  if (!t && !changed) return {name: (A.belt_magazines_mm != null) ? 'Plain · zones' : 'Plain', own: false, t: null};
+  if (!t || changed && layoutTouched !== 'applied') return {name: t ? `${t.name} · edited` : 'Custom', own: true, t};
+  const same = LAYOUT_KEYS(applyLayout(A, t.value)) === LAYOUT_KEYS(A);
+  return {name: t.name + (same ? '' : ' · own values'), own: !same, t};
+}
+
+// ------------------------------------------------------------------ setters
+function setVal(r, field, v) {
+  v = Math.max(0, Math.round(v * 100) / 100);
+  const id = r.id;
+  if (id === 'belt') { if (field === 'mm') A.belt_mm = v; else if (field === 'bot') A.belt_bottom_mm = v; }
+  else if (id === 'beltzone') A.belt_magazines_mm = v;
+  else if (id === 'upper') A.upper_belt = {to_deck: 0, extent: 'citadel', ...(A.upper_belt || {}), mm: v};
+  else if (r.end) { const e = {...(A.end_belts?.[r.end] || {reach: 1, bulkhead_mm: 0})}; e.mm = v; A.end_belts = {...(A.end_belts || {}), [r.end]: e}; }
+  else if (id === 'bulk') A.bulkhead_mm = v;
+  else if (id.startsWith('deck')) A.decks[r.i] = {...A.decks[r.i], mm: v};
+  else if (id.startsWith('slope')) A.decks[r.i] = {...A.decks[r.i], [field === 'deg' ? 'slope_deg' : 'slope_mm']: field === 'deg' ? clamp(Math.round(v), 10, 60) : v};
+  else if (id.startsWith('dzone')) A.decks[r.i] = {...A.decks[r.i], magazines_mm: v};
+  else if (id === 'tds') { if (field === 'layers') A.tds_layers = clamp(Math.round(v), 1, 8); else if (field === 'hold') A.tds_holding_mm = v; else if (field === 'wall') A.tds_layer_mm = v; else A.tds_m = v; }
+  else if (id === 'inner') { A.inner_bulkhead = {...(A.inner_bulkhead || {mm: 0}), [field === 'mags' ? 'magazines_mm' : field === 'in' ? 'inboard_m' : 'mm']: v}; }
+  else if (id === 'box') A.magazine_box = {...(A.magazine_box || {}), [(field === 'mm' ? 'side' : field) + '_mm']: v};
+  else if (id === 'wings') A.magazine_wing_m = clamp(v, 0, 20);
+  else if (id === 'steer') A.steering_box = {...(A.steering_box || {}), mm: v};
+  else if (id.startsWith('main')) faces[r.k] = v;
+}
+function edit(fn) { fn(); render(); }
+const r10 = v => Math.round(v / 10) * 10;
+const ADD = {
+  upper: () => { A.upper_belt = {mm: r10((A.belt_mm || 200) * 0.5), to_deck: 0, extent: 'citadel'}; },
+  end_fore: () => { A.end_belts = {...(A.end_belts || {}), fore: {mm: r10((A.belt_mm || 200) * 0.4), reach: 1, bulkhead_mm: 0}}; },
+  end_aft: () => { A.end_belts = {...(A.end_belts || {}), aft: {mm: r10((A.belt_mm || 200) * 0.4), reach: 1, bulkhead_mm: 0}}; },
+  steer: () => { A.steering_box = {mm: r10((A.belt_mm || 100) * 0.8), deck_mm: A.decks?.[0]?.mm || 50, bulkhead_mm: A.bulkhead_mm || 0}; },
+  tds: () => { A.tds_m = Math.round(0.15 * B * 2) / 2; },
+  inner: () => { A.inner_bulkhead = {mm: r5(Math.max(20, (A.belt_mm || 100) * 0.1)), magazines_mm: r5(Math.max(25, (A.belt_mm || 100) * 0.14))}; },
+  box: () => { const t = r5(Math.max(25, (A.belt_mm || 60) * 0.4)); A.magazine_box = {side_mm: t, crown_mm: r5(t * 0.6), end_mm: r5(t * 0.6), floor_mm: 0}; },
+  wings: () => { A.magazine_wing_m = null; },
+  beltzone: () => { A.belt_magazines_mm = r10((A.belt_mm || 100) * 1.08); },
+};
+function addSlopes(i) { const d = A.decks[i]; A.decks[i] = {...d, slope_mm: r5((d.mm || 50) * 1.4), slope_deg: 30}; }
+function addDeckZone(i) { const d = A.decks[i]; A.decks[i] = {...d, magazines_mm: r5((d.mm || 50) * 1.2)}; }
+function removeRow(r) {
+  const id = r.id;
+  if (id.startsWith('deck')) { A.decks.splice(r.i, 1); sel = 'belt'; return; }
+  if (id.startsWith('slope')) { const d = {...A.decks[r.i]}; delete d.slope_mm; delete d.slope_deg; A.decks[r.i] = d; sel = 'deck' + r.i; return; }
+  if (id.startsWith('dzone')) { const d = {...A.decks[r.i]}; delete d.magazines_mm; A.decks[r.i] = d; sel = 'deck' + r.i; return; }
+  if (id === 'beltzone') { delete A.belt_magazines_mm; sel = 'belt'; return; }
+  if (id === 'inner') { delete A.inner_bulkhead; } else if (id === 'box') { delete A.magazine_box; } else if (id === 'wings') A.magazine_wing_m = 0;
+  else if (id === 'tds') A.tds_m = 0; else setVal(r, 'mm', 0);
+  if (sel === id) sel = 'belt';
+}
+const STEP = {belt: 10, beltzone: 10, upper: 10, end_fore: 10, end_aft: 10, bulk: 10, tds: 0.5, steer: 10, inner: 5, box: 5, wings: 0.1};
+const stepOf = r => r.id.startsWith('deck') || r.id.startsWith('slope') || r.id.startsWith('dzone') ? 5 : r.id.startsWith('main') ? 10 : STEP[r.id] || 10;
+const removable = r => !r.ro && !r.id.startsWith('main') && r.has && r.id !== 'belt';
+
+// ------------------------------------------------------------------ dom helpers (as protection.html)
+function h(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null) continue;
+    if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (k === 'style') e.style.cssText = v; else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+const NS = 'http://www.w3.org/2000/svg';
+function s(tag, attrs = {}, ...kids) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null) continue;
+    if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+}
+function tip(ev, html) {
+  if (!html) return untip();
+  const t = $('tip'), r = $('app').getBoundingClientRect();
+  t.innerHTML = html; t.style.display = 'block';
+  let x = ev.clientX - r.left + 14, y = ev.clientY - r.top + 14;
+  if (x + t.offsetWidth > 1276) x = ev.clientX - r.left - t.offsetWidth - 10;
+  if (y + t.offsetHeight > 598) y = ev.clientY - r.top - t.offsetHeight - 10;
+  t.style.left = x + 'px'; t.style.top = y + 'px';
+}
+function tipAt(x, y, html) { tip({clientX: x + $('app').getBoundingClientRect().left, clientY: y + $('app').getBoundingClientRect().top}, html); }
+function untip() { $('tip').style.display = 'none'; }
+function tabs() {
+  const names = ['Overview', 'Main battery', 'Secondary · AA · TT', 'Protection', 'Speed & machinery', 'Hull & upperworks', 'Fire control', 'Crew'];
+  $('tabs').replaceChildren(...names.map((n, i) => h('div', {class: 'tab' + (i === 3 ? ' on' : '')}, h('span', {class: 'k mono'}, String(i)), n)));
+}
+function spinner(id, val, fmt, step, set, {auto = false, pre = null, cls = ''} = {}) {
+  const box = h('span', {class: 'sp ' + cls + (auto ? ' auto' : '')});
+  const dec = h('button', {onclick: ev => { ev.stopPropagation(); edit(() => set(val - step * (ev.shiftKey ? 4 : 1))); }}, '◀');
+  const inc = h('button', {onclick: ev => { ev.stopPropagation(); edit(() => set(val + step * (ev.shiftKey ? 4 : 1))); }}, '▶');
+  let mid;
+  if (editing === id) {
+    mid = h('input', {value: String(val), onkeydown: ev => {
+      if (ev.key === 'Enter') { const v = parseFloat(ev.target.value); editing = null; edit(() => { if (!isNaN(v)) set(v); }); }
+      if (ev.key === 'Escape') { editing = null; render(); }
+    }, onclick: ev => ev.stopPropagation()});
+    setTimeout(() => { mid.focus(); mid.select(); });
+  } else mid = h('span', {onclick: ev => { ev.stopPropagation(); editing = id; render(); }}, fmt(val));
+  box.append(...(pre ? [h('span', {class: 'pre'}, pre)] : []), dec, mid, inc);
+  box.addEventListener('wheel', ev => { ev.preventDefault(); edit(() => set(val + (ev.deltaY < 0 ? 1 : -1) * step * (ev.shiftKey ? 4 : 1))); });
+  return box;
+}
+function seg(opts, cur, set) {
+  return h('span', {class: 'seg'}, opts.map(([v, lab, t]) => {
+    const b = h('button', {class: v === cur ? 'on' : '', onclick: ev => { ev.stopPropagation(); edit(() => set(v)); }}, lab);
+    if (t) { b.addEventListener('mousemove', ev => tip(ev, t)); b.addEventListener('mouseleave', untip); }
+    return b;
+  }));
+}
+const addChip = (lab, fn, t) => h('a', {class: 'add', onclick: ev => { ev.stopPropagation(); edit(fn); },
+  onmousemove: t ? ev => tip(ev, t) : null, onmouseleave: t ? untip : null}, '+ ' + lab);
+const mmF = v => N0(v) + ' mm', mF = v => f1(v) + ' m', degF = v => N0(v) + '°', nF = v => String(Math.round(v));
+function menu(ev, items, at) {
+  const m = $('menu'), r = $('app').getBoundingClientRect();
+  m.replaceChildren(...items.map(it => {
+    if (it === 'sep') return h('div', {class: 'sep'});
+    if (it.head) return h('div', {class: 'lab'}, it.head);
+    const e = h('div', {class: (it.ds ? 'it' : '') + (it.cur ? ' cur' : '') + (it.off ? ' off' : ''), onclick: e2 => { e2.stopPropagation(); if (it.off) return; m.style.display = 'none'; untip(); edit(it.fn); },
+      onmousemove: it.tip ? e2 => tip(e2, it.tip) : null, onmouseleave: it.tip ? untip : null},
+      it.ds ? [h('div', {class: 'nm'}, h('span', {}, (it.cur ? '✓ ' : '') + it.lab), h('span', {class: 'dim'}, it.key || '')), h('div', {class: 'ds'}, it.ds)]
+            : [h('span', {}, it.lab), h('span', {class: 'dim'}, it.key || '')]);
+    return e;
+  }));
+  m.style.display = 'block';
+  let x = at ? at[0] : ev.clientX - r.left, y = at ? at[1] : ev.clientY - r.top;
+  if (x + m.offsetWidth > 1278) x = 1278 - m.offsetWidth;
+  if (y + m.offsetHeight > 598) y = Math.max(2, 598 - m.offsetHeight);
+  m.style.left = x + 'px'; m.style.top = y + 'px';
+}
+document.addEventListener('click', () => { $('menu').style.display = 'none'; });
+const hoverable = id => ({onmouseenter: () => { hot = id; paintHot(); }, onmouseleave: () => { hot = null; paintHot(); untip(); }});
+function paintHot() {
+  document.querySelectorAll('[data-id]').forEach(e => {
+    const on = e.dataset.id === hot || e.dataset.id === sel;
+    if (e.tagName === 'DIV') e.classList.toggle('hov', e.dataset.id === hot);
+    else e.setAttribute('filter', on ? 'url(#lift)' : '');
+  });
+}
+
+// ------------------------------------------------------------------ the cuts: two stations, one a half-section each
+function stops() {
+  const st = [];
+  const m = MACHR.slice().sort((a, b) => Math.abs((a.x0 + a.x1) / 2 - (MACH[0] + MACH[1]) / 2) - Math.abs((b.x0 + b.x1) / 2 - (MACH[0] + MACH[1]) / 2))[0];
+  if (m) st.push({id: 'mach', lab: 'Machinery', sub: m.id, x: (m.x0 + m.x1) / 2});
+  for (const r of S.rooms.filter(r => r.k === 'magazine').sort((a, b) => b.x0 - a.x0)) {
+    const x = (r.x0 + r.x1) / 2;
+    if (st.some(q => Math.abs(q.x - x) < 0.6)) continue;
+    st.push({id: 'mag:' + r.id.replace('Magazine ', ''), lab: r.id, x});
+  }
+  st.push({id: 'fore', lab: 'Fore end', x: X1 + 0.3 * (L / 2 - X1)}, {id: 'aft', lab: 'Aft end', x: X0 - 0.3 * (X0 + L / 2)});
+  return st;
+}
+const STOPS = stops();
+const stopX = v => v == null ? null : (STOPS.find(q => q.id === v)?.x ?? (isNaN(+v) ? null : +v));
+let cuts = [stopX(params.get('cut1')) ?? STOPS.find(q => q.id === 'mach')?.x ?? 0,
+  stopX(params.get('cut2')) ?? (STOPS.find(q => q.id === 'mag:A') || STOPS.find(q => q.id.startsWith('mag:')) || {x: X1 - 5}).x];
+function cutName(x) {
+  const q = STOPS.find(t => Math.abs(t.x - x) < 0.01);
+  if (q) return q.id === 'mach' ? `Machinery · ${q.sub.toLowerCase()}` : q.lab;
+  const r = S.rooms.find(r => x >= r.x0 && x <= r.x1 && r.k !== 'handling');
+  return r ? r.id : x > X1 ? 'Fore end' : x < X0 ? 'Aft end' : 'Citadel';
+}
+
+// ------------------------------------------------------------------ what a cut meets: cells and walls from the build, moved for edits the build hasn't seen (stand-in)
+const KIND = {magazine: ['#B24E36', 0.62, 'magazine'], handling: ['#CC6F43', 0.24, 'handling room'], stores: ['#D7C79A', 0.16, 'stores'],
+  tds: ['#4FA3B8', 0.30, 'torpedo protection'], bunker: ['#05070A', 0.62, 'coal'], engine_room: ['#6F92B5', 0.34, 'engine room'],
+  boiler_room: ['#6F92B5', 0.34, 'boiler room'], double_bottom: ['#2E4A66', 0.0, 'double bottom'], accommodation: ['#9CC2E2', 0.04, 'quarters'],
+  steering: ['#7F8B95', 0.2, 'steering gear'], torpedo_room: ['#8E9AA4', 0.22, 'torpedo room'], fuel: ['#5B4A2A', 0.4, 'oil'], void: ['#000', 0.2, 'void']};
+const SHORTK = {magazine: 'mag', handling: 'handling', stores: 'stores', tds: 'TDS', bunker: 'coal', engine_room: 'engines', boiler_room: 'boilers', accommodation: '', double_bottom: ''};
+function cutAt(x) {
+  const C = S.cells.filter(c => c[0] <= x && x < c[1]).map(c => ({y0: c[2], y1: c[3], b: c[4], t: c[5], k: c[6], id: c[7]}));
+  let Wl = S.walls.filter(w => w.x0 <= x && x < w.x1).map(w => ({...w}));
+  const near = (a, b) => Math.abs(a - b) < 0.03;
+  const move = (pred, ny) => { for (const w of Wl.filter(pred)) { const old = w.y, y = ny(w);
+    for (const c of C) if (c.b >= w.base - 0.05 && c.t <= w.top + 0.05) { if (near(c.y1, old)) c.y1 = y; if (near(c.y0, old)) c.y0 = y; } w.y = y; } };
+  const magWall = w => w.kind === 'wing' && C.some(c => c.k === 'magazine' && near(c.y1, w.y) && c.b >= w.base - 0.05 && c.t <= w.top + 0.05);
+  if (JSON.stringify(A.magazine_wing_m ?? null) !== JSON.stringify(A0.magazine_wing_m ?? null)) {
+    if (wingW() <= 0.05) {
+      for (const w of Wl.filter(magWall)) for (const c of C) if (near(c.y0, w.y) && c.k === 'stores' && c.b >= w.base - 0.05 && c.t <= w.top + 0.05) c.k = 'magazine', c.id = 'Magazine';
+      Wl = Wl.filter(w => !magWall(w));
+    } else move(magWall, w => Math.max(0.6, halfB(x, (w.base + w.top) / 2) - wingW()));
+  }
+  if ((A.tds_m || 0) > 0 && A.tds_m !== A0.tds_m) move(w => w.kind === 'tds', w => Math.max(0.6, halfB(x, (w.base + w.top) / 2) - A.tds_m));
+  return {C, Wl};
+}
+
+// ------------------------------------------------------------------ armour at a station: polygons in (y, z), starboard; each names its row
+function armourAt(x, cut) {
+  const P = [];
+  const push = (id, mm, pts, lab, kind = 'plate') => P.push({id, mm, pts, lab, kind});
+  const T = mm => mm * 3 / 1000;   // drawn three times as thick
+  const bt = beltTop(), bb = beltBot();
+  // the belt (or its zone at the magazines)
+  if ((A.belt_mm || 0) > 0 && inSp(x, beltSpan())) {
+    const zone = A.belt_magazines_mm != null && inZone(x);
+    const mm = zone ? A.belt_magazines_mm : A.belt_mm, bot = (A.belt_bottom_mm ?? A.belt_mm) * mm / A.belt_mm;
+    const th = z => z >= WL ? mm : mm + (bot - mm) * (WL - z) / Math.max(0.1, WL - bb);
+    const zs = Array.from({length: 11}, (_, i) => bb + (bt - bb) * i / 10);
+    if (internal()) {
+      const yT = halfB(x, bt) - 0.3, tn = Math.tan(rad(lean())), y = z => yT - (bt - z) * tn;
+      push(zone ? 'beltzone' : 'belt', mm, [...zs.map(z => [y(z), z]), ...zs.slice().reverse().map(z => [y(z) - T(th(z)), z])], {y: y(WL) - T(mm), z: WL, t: N0(mm)});
+      const zl = Array.from({length: 9}, (_, i) => IB + (bb - IB) * i / 8), lt = z => 25 + (bot - 25) * (z - IB) / Math.max(0.1, bb - IB);
+      push('belt', bot, [...zl.map(z => [y(z), z]), ...zl.slice().reverse().map(z => [y(z) - T(lt(z)), z])], {y: y((IB + bb) / 2) - T(bot), z: (IB + bb) / 2, t: `${N0(bot)}→25`, small: true}, 'lower');
+    } else {
+      push(zone ? 'beltzone' : 'belt', mm, [...zs.map(z => [halfB(x, z), z]), ...zs.slice().reverse().map(z => [halfB(x, z) - T(th(z)), z])], {y: halfB(x, WL) - T(mm), z: WL, t: N0(mm)});
+    }
+  }
+  // the upper belt and the end belts, on the side
+  const ub = A.upper_belt || {};
+  if ((ub.mm || 0) > 0 && inSp(x, spans(ub.extent || 'citadel'))) {
+    const z1 = deckZ(ub.to_deck ?? 0), zs = Array.from({length: 6}, (_, i) => bt + (z1 - bt) * i / 5);
+    push('upper', ub.mm, [...zs.map(z => [halfB(x, z), z]), ...zs.slice().reverse().map(z => [halfB(x, z) - T(ub.mm), z])], {y: halfB(x, (bt + z1) / 2) - T(ub.mm), z: (bt + z1) / 2, t: N0(ub.mm)});
+  }
+  for (const end of ['fore', 'aft']) {
+    const e = (A.end_belts || {})[end] || {}; if (!(e.mm > 0)) continue;
+    const reach = e.reach ?? 1, sp = end === 'fore' ? [X1, X1 + reach * (L / 2 - X1)] : [-L / 2 + (1 - reach) * (X0 + L / 2), X0];
+    if (x < sp[0] || x > sp[1]) continue;
+    const zs = Array.from({length: 8}, (_, i) => bb + (bt - bb) * i / 7);
+    push('end_' + end, e.mm, [...zs.map(z => [halfB(x, z), z]), ...zs.slice().reverse().map(z => [halfB(x, z) - T(e.mm), z])], {y: halfB(x, WL) - T(e.mm), z: WL, t: N0(e.mm)});
+  }
+  // armour decks: a flat, and slopes down to the side at the belt's lower edge
+  (A.decks || []).forEach((d, i) => {
+    const ext = d.extent || 'citadel';
+    if (!inSp(x, spans(ext)) || (d.mm || 0) + (d.slope_mm || 0) <= 0) return;
+    const z = deckZ(d.deck), zone = d.magazines_mm != null && inZone(x) && ext === 'citadel';
+    const mm = zone ? d.magazines_mm : d.mm || 0, id = zone ? 'dzone' + i : 'deck' + i;
+    if ((d.slope_mm || 0) > 0) {
+      const g = slopeGeo(d), ys = halfB(x, g.foot), y0 = ys - g.reach;
+      const kneeY = Math.max(0, y0), kneeZ = y0 >= 0 ? z : g.foot + ys * Math.tan(rad(g.deg));
+      if (y0 > 0 && mm > 0) push(id, mm, [[0, z], [y0, z], [y0, z - T(mm)], [0, z - T(mm)]], {y: y0 / 2, z: z - T(mm), t: N0(mm), under: true});
+      const t2 = T(d.slope_mm) / Math.cos(rad(g.deg));
+      push('slope' + i, d.slope_mm, [[kneeY, kneeZ], [ys, g.foot], [ys, g.foot - t2], [kneeY, kneeZ - t2]], {y: (kneeY + ys) / 2, z: (kneeZ + g.foot) / 2 - t2, t: N0(d.slope_mm), under: true});
+      P.knees = [...(P.knees || []), {i, y: kneeY, z: kneeZ, ys, foot: g.foot, deg: g.deg}];
+    } else if (mm > 0) {
+      const y1 = halfB(x, z);
+      push(id, mm, [[0, z], [y1, z], [y1, z - T(mm)], [0, z - T(mm)]], {y: y1 * 0.45, z: z - T(mm), t: N0(mm), under: true});
+    }
+  });
+  // the inner bulkhead: on a wall the section already has, or its own
+  const ib = A.inner_bulkhead;
+  if (ib && x >= X0 && x <= X1) {
+    const mm = inZone(x) ? ib.magazines_mm ?? ib.mm ?? 0 : ib.mm || 0, top = roofZ();
+    if (mm > 0) {
+      const tds = cut.Wl.filter(w => w.kind === 'tds'), wing = cut.Wl.filter(w => w.kind === 'wing');
+      const on = tds.length ? [tds.reduce((a, b) => (b.y < a.y ? b : a))] : wing;
+      if (on.length) for (const w of on) { const z0 = Math.max(w.base, IB), z1 = Math.min(w.top, top); if (z1 > z0) push('inner', mm, [[w.y, z0], [w.y, z1], [w.y - T(mm), z1], [w.y - T(mm), z0]], {y: w.y - T(mm), z: (z0 + z1) / 2, t: N0(mm), side: true}); }
+      else { const y = halfB(x, (IB + top) / 2) - (ib.inboard_m ?? wingW()); push('inner', mm, [[y, IB], [y, top], [y - T(mm), top], [y - T(mm), IB]], {y: y - T(mm), z: (IB + top) / 2, t: N0(mm), side: true}); P.ownInner = y; }
+      P.innerOn = tds.length ? 'tds' : wing.length ? 'wing' : 'own';
+    }
+  }
+  // magazine boxes: sides on the magazine's wing wall, crown on its platform, floor on the inner bottom
+  const mb = A.magazine_box, mc = cut.C.filter(c => c.k === 'magazine');
+  if (mb && mc.length) {
+    const wy = Math.max(...mc.map(c => c.y1)), zc = Math.max(...mc.map(c => c.t)), zf = Math.min(...mc.map(c => c.b));
+    if (mb.side_mm > 0) push('box', mb.side_mm, [[wy, zf], [wy, zc], [wy + T(mb.side_mm), zc], [wy + T(mb.side_mm), zf]], {y: wy + T(mb.side_mm), z: (zf + zc) / 2, t: N0(mb.side_mm), side: true, out: true});
+    if (mb.crown_mm > 0) push('box', mb.crown_mm, [[0, zc], [wy + T(mb.side_mm || 0), zc], [wy + T(mb.side_mm || 0), zc + T(mb.crown_mm)], [0, zc + T(mb.crown_mm)]], {y: wy * 0.5, z: zc + T(mb.crown_mm), t: N0(mb.crown_mm), over: true});
+    if (mb.floor_mm > 0) push('box', mb.floor_mm, [[0, zf], [wy, zf], [wy, zf + T(mb.floor_mm)], [0, zf + T(mb.floor_mm)]], {y: wy * 0.5, z: zf + T(mb.floor_mm), t: N0(mb.floor_mm), over: true});
+    P.box = {wy, zc, zf};
+  }
+  // barbettes the cut passes through
+  for (const c of S.comps.filter(c => c.k === 'barbette' && (c.y || 0) >= 0)) {
+    const dx = x - c.x; if (Math.abs(dx) >= c.r) continue;
+    const half = Math.sqrt(c.r * c.r - dx * dx), mm = c.mm || 0, z1 = Math.min(c.t, SZT - 0.15);
+    for (const y of (c.y || 0) > 0 ? [c.y - half, c.y + half] : [half]) push('barb', mm, [[y, c.b], [y, z1], [y - T(mm), z1], [y - T(mm), c.b]], null, 'barbette');
+  }
+  return P;
+}
+
+// ------------------------------------------------------------------ 1. the elevation
+const EL = {w: 738, h: 200, l: 58, r: 8, t: 30, b: 14};
+const zTopE = Math.max(...S.comps.filter(c => c.k === 'main').map(c => c.t), raised ? raised.z : 0, 1) + 0.6;
+const zBotE = KEEL - 0.3;
+const ex = x => EL.l + (x + L / 2) / L * (EL.w - EL.l - EL.r);
+const ez = z => EL.t + (zTopE - z) / (zTopE - zBotE) * (EL.h - EL.t - EL.b);
+const exInv = px => (px - EL.l) / (EL.w - EL.l - EL.r) * L - L / 2;
+function defs(svg) {
+  svg.append(s('defs', {},
+    s('pattern', {id: 'hatch', width: 5, height: 5, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)'}, s('line', {x1: 0, y1: 0, x2: 0, y2: 5, stroke: 'rgba(156,194,226,0.35)', 'stroke-width': 1})),
+    s('pattern', {id: 'hatchT', width: 4, height: 4, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(-45)'}, s('line', {x1: 0, y1: 0, x2: 0, y2: 4, stroke: 'rgba(79,163,184,0.55)', 'stroke-width': 1})),
+    s('pattern', {id: 'hatchA', width: 5, height: 5, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)'}, s('line', {x1: 0, y1: 0, x2: 0, y2: 5, stroke: 'rgba(227,164,82,0.55)', 'stroke-width': 1.4})),
+    s('pattern', {id: 'hatchI', width: 4, height: 4, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)'}, s('line', {x1: 0, y1: 0, x2: 0, y2: 4, stroke: 'rgba(14,18,21,0.55)', 'stroke-width': 1.2})),
+    s('pattern', {id: 'coal', width: 4, height: 4, patternUnits: 'userSpaceOnUse'}, s('circle', {cx: 1, cy: 1, r: 0.7, fill: 'rgba(156,194,226,0.25)'})),
+    s('filter', {id: 'lift'}, s('feDropShadow', {dx: 0, dy: 0, stdDeviation: 1.6, 'flood-color': '#FFE7A8', 'flood-opacity': 0.9}))));
+}
+function plateEv(id) {
+  return {'data-id': id, class: 'pl', ...hoverable(id),
+    onmousemove: ev => tip(ev, plateTip(id)),
+    onclick: ev => { ev.stopPropagation(); sel = id; render(); },
+    oncontextmenu: ev => { ev.preventDefault(); ev.stopPropagation(); sel = id; render(); menu(ev, ctxItems(id)); },
+    onwheel: ev => { const r = rowOf(id); if (!r || r.ro || id === 'barb') return; ev.preventDefault();
+      const st = stepOf(r) * (ev.shiftKey ? 4 : 1) * (ev.deltaY < 0 ? 1 : -1); edit(() => setVal(r, 'mm', (r.m ?? r.mm) + st)); }};
+}
+function tagBox(g, x, y, txt, mm, id, anchor = 'start') {
+  const w = txt.length * 6.1 + 6, x0 = anchor === 'end' ? x - w : anchor === 'middle' ? x - w / 2 : x;
+  const e = s('g', id ? plateEv(id) : {});
+  e.append(s('rect', {x: x0, y: y - 6.5, width: w, height: 12, rx: 1.5, fill: ramp(mm), stroke: 'rgba(0,0,0,0.6)', 'stroke-width': 0.6}),
+    s('text', {x: x0 + w / 2, y: y + 3, 'text-anchor': 'middle', 'font-size': 9.5, fill: ink(mm), 'pointer-events': 'none'}, txt));
+  g.append(e);
+}
+function elevation() {
+  const root = $('elev');
+  const svg = s('svg', {width: EL.w, height: EL.h, style: 'position:absolute;left:0;top:0'});
+  defs(svg);
+  // the hull's side from its stations
+  const xs = [...new Set([...ST.map(q => q.x), ...((raised && raised.spans) || []).flatMap(([a, b]) => [a - 0.01, a + 0.01, b - 0.01, b + 0.01])])].sort((a, b) => a - b).filter(x => x >= -L / 2 && x <= L / 2);
+  const hullPts = [...xs.map(x => [x, keelAt(x)]), ...xs.slice().reverse().map(x => [x, topAt(x)])];
+  const hp = hullPts.map(([x, z]) => `${ex(x)},${ez(z)}`).join(' ');
+  svg.append(s('clipPath', {id: 'ehull'}, s('polygon', {points: hp})));
+  svg.append(s('polygon', {points: hp, fill: '#1A2D44', stroke: '#6F93B5', 'stroke-width': 1}));
+  const inside = s('g', {'clip-path': 'url(#ehull)'});
+  svg.append(inside);
+  // the rooms that matter: magazines, handling rooms, machinery
+  if (showRooms) for (const r of S.rooms) {
+    const f = KIND[r.k]; if (!f) continue;
+    inside.append(s('rect', {x: ex(r.x0), y: ez(r.t), width: ex(r.x1) - ex(r.x0), height: ez(r.b) - ez(r.t), fill: f[0], opacity: r.k === 'magazine' ? 0.5 : f[1] * 0.9,
+      onmousemove: ev => tip(ev, `<b>${r.id}</b> · ${f1(r.x1 - r.x0)} m · ${sx1(r.b - WL)} to ${sx1(r.t - WL)} m on the waterline`), onmouseleave: untip}));
+  }
+  // compartments: the main bulkheads, and the worst run that sinks her (drawn last, over the plates)
+  const compOverlay = () => { if (!showComp) return;
+    const inside = s('g', {'clip-path': 'url(#ehull)'}); svg.append(inside);
+    for (const [k, x, b, t] of S.trans) inside.append(s('line', {x1: ex(x), x2: ex(x), y1: ez(t), y2: ez(b), stroke: k === 'collision' ? '#E3A452' : 'rgba(234,240,244,0.55)', 'stroke-width': 1}));
+    const m = (S.cwarn[0] || '').match(/sections (\d+)-(\d+)/);
+    if (m) {
+      const a = S.sections.find(q => q[0] === m[1]), b = S.sections.find(q => q[0] === m[2]);
+      const x0 = Math.min(a[1], b[1]), x1 = Math.max(a[2], b[2]);
+      inside.append(s('rect', {x: ex(x0), y: ez(0), width: ex(x1) - ex(x0), height: ez(KEEL) - ez(0), fill: 'url(#hatchA)', stroke: '#E3A452', 'stroke-width': 1.2,
+        onmousemove: ev => tip(ev, `<b class="a">Two compartments flooded sink her</b><br>${S.cwarn[0].replace(/^Two adjacent compartments flooded sink her past the margin line: /, '')}`), onmouseleave: untip}));
+      inside.append(s('text', {x: (ex(x0) + ex(x1)) / 2, y: ez(KEEL) - 4, 'text-anchor': 'middle', 'font-size': 9.5, fill: '#E3A452', stroke: '#14243A', 'stroke-width': 2.4, 'paint-order': 'stroke', 'pointer-events': 'none'}, 'these two flooded sink her'));
+    }
+  };
+  // decks: lanes, names in the margin
+  for (const d of [...DECKS, {id: 'Inner bottom', z: IB, kind: 'inner_bottom'}]) {
+    const y = ez(d.z), span = d.kind === 'raised' ? d.spans[0] : [-L / 2, L / 2];
+    inside.append(s('line', {x1: ex(span[0]), x2: ex(span[1]), y1: y, y2: y, stroke: 'rgba(156,194,226,0.28)', 'stroke-dasharray': '3 3'}));
+    svg.append(s('text', {x: EL.l - 5, y: y + 3.5, 'text-anchor': 'end', 'font-size': 9.5, fill: '#7F9CB8'}, SHORT[d.id] || d.id));
+  }
+  svg.append(s('line', {x1: ex(-L / 2) - 4, x2: ex(L / 2) + 4, y1: ez(WL), y2: ez(WL), stroke: '#5B9BE0', 'stroke-width': 1}));
+  svg.append(s('text', {x: 4, y: ez(WL) + 3.5, 'font-size': 9.5, fill: '#5B9BE0'}, 'WL'));
+  const hasCit = (A.belt_mm || 0) > 0 || (A.bulkhead_mm || 0) > 0 || (A.decks || []).length > 0;
+  if (hasCit) for (const x of [X0, X1]) svg.append(s('line', {x1: ex(x), x2: ex(x), y1: EL.t - 4, y2: EL.h - EL.b, stroke: 'rgba(217,184,104,0.22)', 'stroke-dasharray': '2 3'}));
+  if (hasCit) svg.append(s('text', {x: (ex(X0) + ex(X1)) / 2, y: EL.h - 3, 'text-anchor': 'middle', 'font-size': 9.5, fill: '#8C7B55'}, `citadel ${f1(X1 - X0)} m · ${Math.round((X1 - X0) / L * 100)} % of length`));
+  svg.append(s('text', {x: EL.l, y: EL.h - 3, 'font-size': 9.5, fill: '#5E7A96'}, 'aft'));
+  svg.append(s('text', {x: EL.w - EL.r, y: EL.h - 3, 'text-anchor': 'end', 'font-size': 9.5, fill: '#5E7A96'}, 'fore'));
+  const g = s('g'); svg.append(g);
+  const R = (id, x0, x1, z0, z1, mm, extra = {}) => { const e = s('rect', {x: ex(x0), y: ez(z1), width: Math.max(1.5, ex(x1) - ex(x0)), height: Math.max(2, ez(z0) - ez(z1)),
+    fill: ramp(mm), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.6, ...plateEv(id), ...extra}); g.append(e); return e; };
+  const lab = (x, z, t, mm) => g.append(s('text', {x: ex(x), y: ez(z) + 3.5, 'text-anchor': 'middle', 'font-size': 9.5, fill: ink(mm), 'pointer-events': 'none'}, t));
+  const bt = beltTop(), bb = beltBot(), rz = roofZ();
+  // torpedo protection: a band from the inner bottom to the roof deck
+  if (HAS_TDS()) {
+    g.append(s('rect', {x: ex(X0), y: ez(rz), width: ex(X1) - ex(X0), height: ez(IB) - ez(rz), fill: 'url(#hatchT)', ...plateEv('tds')}));
+    g.append(s('text', {x: ex(X0) + 5, y: ez(IB) - 4, 'font-size': 9.5, fill: '#7FC3D3', 'pointer-events': 'none'}, `TDS ${f1(A.tds_m)} m${(A.tds_layers || 1) > 1 ? ` · ${A.tds_layers} layers` : ''}`));
+  }
+  // the inner bulkhead: drawn dashed, behind the side; solid where it's thicker at the magazines
+  const ib = A.inner_bulkhead;
+  if (ib && ((ib.mm || 0) > 0 || (ib.magazines_mm || 0) > 0)) {
+    const e = s('g', plateEv('inner'));
+    if ((ib.mm || 0) > 0) e.append(s('rect', {x: ex(X0), y: ez(rz), width: ex(X1) - ex(X0), height: ez(IB) - ez(rz), fill: 'none', stroke: ramp(ib.mm), 'stroke-width': 1.3, 'stroke-dasharray': '5 3'}));
+    const mmM = ib.magazines_mm ?? ib.mm;
+    if (mmM > 0) for (const [a, b] of clipSp(ZSP(), [X0, X1])) e.append(s('rect', {x: ex(a), y: ez(rz), width: ex(b) - ex(a), height: ez(IB) - ez(rz), fill: ramp(mmM), opacity: 0.32, stroke: ramp(mmM), 'stroke-width': 1}));
+    g.append(e);
+  }
+  // magazine boxes: round each run of magazines
+  const mb = A.magazine_box;
+  if (mb && ['side_mm', 'crown_mm', 'end_mm', 'floor_mm'].some(k => mb[k] > 0)) {
+    for (const [a, b] of MAGS) {
+      const mr = S.rooms.filter(r => r.k === 'magazine' && r.x0 < b && r.x1 > a), zc = Math.max(...mr.map(r => r.t)), zf = Math.min(...mr.map(r => r.b));
+      const e = s('g', plateEv('box'));
+      if (mb.side_mm > 0) e.append(s('rect', {x: ex(a), y: ez(zc), width: ex(b) - ex(a), height: ez(zf) - ez(zc), fill: ramp(mb.side_mm), opacity: 0.38}));
+      if (mb.crown_mm > 0) e.append(s('rect', {x: ex(a), y: ez(zc) - 1.5, width: ex(b) - ex(a), height: 3, fill: ramp(mb.crown_mm), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.5}));
+      if (mb.floor_mm > 0) e.append(s('rect', {x: ex(a), y: ez(zf) - 1.5, width: ex(b) - ex(a), height: 3, fill: ramp(mb.floor_mm), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.5}));
+      if (mb.end_mm > 0) for (const x of [a, b]) e.append(s('rect', {x: ex(x) - 1.5, y: ez(zc), width: 3, height: ez(zf) - ez(zc), fill: ramp(mb.end_mm), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.5}));
+      g.append(e);
+      if (ex(b) - ex(a) > 30 && mb.side_mm > 0) g.append(s('text', {x: (ex(a) + ex(b)) / 2, y: (ez(zc) + ez(zf)) / 2 + 3.5, 'text-anchor': 'middle', 'font-size': 9.5, fill: '#F6EFE2', 'pointer-events': 'none'}, N0(mb.side_mm)));
+    }
+  }
+  // the belt, its zones over the magazines, and an internal belt's lower belt
+  if ((A.belt_mm || 0) > 0) {
+    const bsp = beltSpan(), zone = A.belt_magazines_mm != null, op = internal() ? {opacity: 0.6} : {};
+    const pieces = zone ? minus(bsp, ZSP()) : bsp;
+    for (const [a, b] of pieces) { R('belt', a, b, bb, bt, A.belt_mm, op); if (ex(b) - ex(a) > 34) lab((a + b) / 2, (bb + bt) / 2, N0(A.belt_mm), A.belt_mm); }
+    if (zone) for (const [a, b] of clipSp(ZSP(), bsp[0])) { R('beltzone', a, b, bb, bt, A.belt_magazines_mm, op); if (ex(b) - ex(a) > 26) lab((a + b) / 2, (bb + bt) / 2, N0(A.belt_magazines_mm), A.belt_magazines_mm); }
+    if (internal()) {
+      for (const [a, b] of bsp) {
+        g.append(s('rect', {x: ex(a), y: ez(bt), width: ex(b) - ex(a), height: ez(bb) - ez(bt), fill: 'url(#hatchI)', 'pointer-events': 'none'}));
+        const bot = A.belt_bottom_mm ?? A.belt_mm;
+        R('belt', a, b, IB, bb, bot, {opacity: 0.38});
+        if (ex(b) - ex(a) > 80) g.append(s('text', {x: (ex(a) + ex(b)) / 2, y: (ez(bb) + ez(IB)) / 2 + 3.5, 'text-anchor': 'middle', 'font-size': 9.5, fill: '#F3E3A1', 'pointer-events': 'none'}, `lower belt ${N0(bot)} to 25`));
+      }
+    }
+    if (lean()) tagBox(g, ex(bsp[0][1]) - 3, ez(bt) - 9, `${internal() ? 'inside · ' : ''}${N0(lean())}°`, A.belt_mm, 'belt', 'end');
+    else if (internal()) tagBox(g, ex(bsp[0][1]) - 3, ez(bt) - 9, 'inside', A.belt_mm, 'belt', 'end');
+  }
+  const ub = A.upper_belt || {};
+  if ((ub.mm || 0) > 0) for (const [a, b] of spans(ub.extent || 'citadel')) { R('upper', a, b, bt, deckZ(ub.to_deck ?? 0), ub.mm); if (ex(b) - ex(a) > 34) lab((a + b) / 2, (bt + deckZ(ub.to_deck ?? 0)) / 2, N0(ub.mm), ub.mm); }
+  for (const end of ['fore', 'aft']) {
+    const e = (A.end_belts || {})[end] || {}; if (!(e.mm > 0)) continue;
+    const reach = e.reach ?? 1, sp = end === 'fore' ? [X1, X1 + reach * (L / 2 - X1)] : [-L / 2 + (1 - reach) * (X0 + L / 2), X0];
+    R('end_' + end, sp[0], sp[1], bb, bt, e.mm); lab((sp[0] + sp[1]) / 2, (bb + bt) / 2, N0(e.mm), e.mm);
+  }
+  if ((A.bulkhead_mm || 0) > 0) for (const x of [X0, X1]) g.append(s('rect', {x: ex(x) - 2, y: ez(ub.mm > 0 ? deckZ(ub.to_deck ?? 0) : bt), width: 4, height: ez(IB) - ez(ub.mm > 0 ? deckZ(ub.to_deck ?? 0) : bt),
+    fill: ramp(A.bulkhead_mm), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.6, ...plateEv('bulk')}));
+  // armour decks, their slopes (a band from the deck down to the belt's lower edge), their zones
+  (A.decks || []).forEach((d, i) => {
+    const ext = d.extent || 'citadel', z = deckZ(d.deck), sp = spans(ext);
+    if ((d.slope_mm || 0) > 0) for (const [a, b] of sp) {
+      g.append(s('rect', {x: ex(a), y: ez(z), width: ex(b) - ex(a), height: ez(beltBot()) - ez(z), fill: ramp(d.slope_mm), opacity: 0.22, ...plateEv('slope' + i)}));
+      g.append(s('line', {x1: ex(a), x2: ex(b), y1: ez(beltBot()), y2: ez(beltBot()), stroke: ramp(d.slope_mm), 'stroke-width': 1.2, 'stroke-dasharray': '4 2', 'pointer-events': 'none'}));
+      tagBox(g, ex(a) + 3, (ez(z) + ez(beltBot())) / 2 + 2, `slopes ${N0(d.slope_mm)} · ${N0(d.slope_deg ?? 30)}°`, d.slope_mm, 'slope' + i);
+    }
+    const zone = d.magazines_mm != null && ext === 'citadel';
+    for (const [a, b] of zone ? minus(sp, ZSP()) : sp) if ((d.mm || 0) > 0) g.append(s('rect', {x: ex(a), y: ez(z) - 1.5, width: ex(b) - ex(a), height: 3, fill: ramp(d.mm), stroke: 'rgba(0,0,0,0.6)', 'stroke-width': 0.5, ...plateEv('deck' + i)}));
+    if (zone) for (const [a, b] of clipSp(ZSP(), sp[0])) g.append(s('rect', {x: ex(a), y: ez(z) - 2, width: ex(b) - ex(a), height: 4, fill: ramp(d.magazines_mm), stroke: 'rgba(0,0,0,0.6)', 'stroke-width': 0.5, ...plateEv('dzone' + i)}));
+    if ((d.mm || 0) > 0) tagBox(g, ex(sp[0][0]) + 3, ez(z) - 9, N0(d.mm), d.mm, 'deck' + i);
+  });
+  // barbettes, turrets, conning tower
+  for (const c of S.comps) {
+    if (c.k === 'barbette' && (c.y || 0) >= 0) g.append(s('rect', {x: ex(c.x - c.r), y: ez(c.t), width: ex(c.x + c.r) - ex(c.x - c.r), height: ez(c.b) - ez(c.t), fill: 'none', stroke: ramp(c.mm || 0), 'stroke-width': 1.2, 'stroke-dasharray': c.b < 0 ? '3 2' : null, ...plateEv('barb')}));
+    if (c.k === 'main' && (c.y || 0) >= 0) {
+      const bb2 = S.comps.find(q => q.k === 'barbette' && Math.abs(q.x - c.x) < 0.1 && Math.abs((q.y || 0) - (c.y || 0)) < 0.1), r = bb2 ? bb2.r * 1.1 : 4;
+      g.append(s('rect', {x: ex(c.x - r), y: ez(c.t), width: ex(c.x + r) - ex(c.x - r), height: ez(c.b) - ez(c.t), fill: ramp(faces[0] || 0), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.6, ...plateEv('main0')}));
+      g.append(s('text', {x: ex(c.x), y: ez(c.t) - 3, 'text-anchor': 'middle', 'font-size': 9, fill: '#9CB4CA', 'pointer-events': 'none'}, c.id));
+    }
+    if (c.k === 'conning_tower') g.append(s('rect', {x: ex(c.x - c.r), y: ez(c.t), width: ex(c.x + c.r) - ex(c.x - c.r), height: ez(c.b) - ez(c.t), fill: ramp(A.belt_mm || 0), stroke: 'rgba(0,0,0,0.5)', 'stroke-width': 0.6, ...plateEv('ct')}));
+  }
+  compOverlay();
+  // the two cuts: flags along the top, dragged along the ship, snapping to the stops
+  cuts.forEach((x, k) => {
+    const px = ex(x), cg = s('g', {style: 'cursor:ew-resize'});
+    cg.append(s('line', {x1: px, x2: px, y1: EL.t - 10, y2: EL.h - EL.b, stroke: '#D9B868', 'stroke-width': 1, 'stroke-dasharray': '4 3', 'pointer-events': 'none'}));
+    cg.append(s('path', {d: `M${px - 8},${EL.t - 13} h16 v11 h-5 l-3,4 l-3,-4 h-5 z`, fill: '#4A3E20', stroke: '#D9B868', 'stroke-width': 1}));
+    cg.append(s('text', {x: px, y: EL.t - 4.5, 'text-anchor': 'middle', 'font-size': 9.5, fill: '#FFE7A8', 'pointer-events': 'none'}, String(k + 1)));
+    cg.append(s('rect', {x: px - 9, y: EL.t - 14, width: 18, height: EL.h - EL.b - EL.t + 14, fill: 'transparent',
+      onmousedown: ev => { ev.preventDefault(); dragging = {kind: 'cut', k, svg}; },
+      onmousemove: ev => { if (!dragging) tip(ev, `<b>Section ${k + 1}</b>: ${cutName(cuts[k])}, x ${sx1(cuts[k])} m<br><span class="dim">Drag along the ship; it snaps to the machinery, each magazine and the ends.</span>`); },
+      onmouseleave: untip}));
+    svg.append(cg);
+  });
+  // the header: what's drawn, two toggles
+  const cstd = S.cstd, ok = cstd >= (S.type === 'DD' || S.type === 'TB' ? 2 : 2);
+  const hd = h('div', {class: 'bh'}, 'Elevation', h('span', {class: 'dim', style: 'text-transform:none;letter-spacing:0'}, 'heights stretched · deck by deck'),
+    h('b', {style: 'gap:6px'},
+      h('button', {class: 'tog' + (showRooms ? ' on' : ''), onclick: () => { showRooms = !showRooms; render(); },
+        onmousemove: ev => tip(ev, 'Magazines, handling rooms and machinery, tinted'), onmouseleave: untip}, 'Rooms'),
+      h('button', {class: 'tog' + (showComp ? ' on' : ''), onclick: () => { showComp = !showComp; render(); },
+        onmousemove: ev => tip(ev, `The main watertight bulkheads. <b>${cstd}-compartment ship</b>: any ${cstd} adjacent compartments flooded, she floats with the margin line clear.${S.cwarn.length ? '<br><span class="a">' + S.cwarn[0] + '</span>' : ''}`), onmouseleave: untip},
+        'Compartments ', h('span', {class: ok ? 'ok' : 'wn'}, `${cstd}${ok ? ' ✓' : ' ⚠'}`))));
+  root.replaceChildren(svg, hd);
+}
+
+// ------------------------------------------------------------------ 2. the sections: two halves, each its own station, to scale, plates ×3
+const SE = {w: 524, h: 300, l: 36, r: 8, t: 38, b: 18};
+const SZT = Math.max(0, raised ? raised.z : 0) + 1.6, SZB = KEEL - 0.3;
+const sk = Math.min((SE.w - SE.l - SE.r) / 2 / (B / 2 + 0.7), (SE.h - SE.t - SE.b) / (SZT - SZB));
+const scx = SE.l + (SE.w - SE.l - SE.r) / 2;
+const sy = (side, y) => scx + side * y * sk;
+const sz = z => SE.t + (SZT - z) * sk;
+const szInv = py => SZT - (py - SE.t) / sk;
+const syInv = px => Math.abs(px - scx) / sk;
+function polyPts(side, pts) { return pts.map(([y, z]) => `${sy(side, y)},${sz(z)}`).join(' '); }
+function cellTip(c, x, cut) {
+  const f = KIND[c.k] || KIND.void, wdt = c.y1 - c.y0;
+  let extra = '';
+  if (c.k === 'stores' && cut.C.some(m => m.k === 'magazine' && Math.abs(m.y1 - c.y0) < 0.05 && m.b <= c.b + 0.05 && m.t >= c.t - 0.05)) extra = '<br><span class="dim">The magazine’s wing: stores between it and the side.</span>';
+  if (c.k === 'handling') extra = '<br><span class="dim">Over the magazine, under the deck: the flash path’s node (the magazine session).</span>';
+  if (c.k === 'tds') extra = `<br><span class="dim">A space of the torpedo protection${(A.tds_layers || 1) > 1 ? `, one of ${A.tds_layers} layers` : ''}.</span>`;
+  if (c.k === 'magazine') { const plat = !DECKS.some(d => Math.abs(d.z - c.t) < 0.05); extra = `<br><span class="dim">Crown ${f1(WL - c.t)} m under the waterline${plat ? ', a platform deck over it' : ''}.</span>`; }
+  return `<b>${c.id || f[2]}</b> · ${f[2]}<br><span class="m">${f1(c.y0)}–${f1(c.y1)} m out · ${sx1(c.b - WL)} to ${sx1(c.t - WL)} m on the WL</span>${extra}`;
+}
+function sections() {
+  const root = $('sect');
+  const svg = s('svg', {width: SE.w, height: SE.h, style: 'position:absolute;left:0;top:0'});
+  defs(svg);
+  // deck names in the margin (heights are the same in both halves), the waterline across
+  for (const d of [...DECKS, {id: 'Inner bottom', z: IB, kind: 'inner_bottom'}]) svg.append(s('text', {x: SE.l - 5, y: sz(d.z) + 3.5, 'text-anchor': 'end', 'font-size': 9.5, fill: '#7F9CB8'}, SHORTS[d.id] || d.id));
+  const handles = [];
+  cuts.forEach((x, k) => {
+    const side = k === 0 ? -1 : 1, cut = cutAt(x), AP = armourAt(x, cut);
+    const kz = keelAt(x), top = topAt(x);
+    const zs = Array.from({length: 41}, (_, i) => kz + (top - kz) * i / 40);
+    const hull = [[0, kz], ...zs.map(z => [halfB(x, z), z]), [0, top]];
+    svg.append(s('clipPath', {id: 'shull' + k}, s('polygon', {points: polyPts(side, hull)})));
+    svg.append(s('polygon', {points: polyPts(side, hull), fill: '#1A2D44'}));
+    const cg = s('g', {'clip-path': `url(#shull${k})`});
+    svg.append(cg);
+    // the cells: what's in each space
+    for (const c of cut.C) {
+      const f = KIND[c.k] || KIND.void, a = sy(side, c.y0), b = sy(side, c.y1), x0 = Math.min(a, b), w = Math.abs(b - a), y0 = sz(c.t), hh = sz(c.b) - sz(c.t);
+      const ev = {onmousemove: e => tip(e, cellTip(c, x, cut)), onmouseleave: untip};
+      cg.append(s('rect', {x: x0, y: y0, width: w, height: hh, fill: f[0], 'fill-opacity': f[1], stroke: 'rgba(156,194,226,0.16)', 'stroke-width': 0.6, ...ev}));
+      if (c.k === 'tds') cg.append(s('rect', {x: x0, y: y0, width: w, height: hh, fill: 'url(#hatchT)', 'pointer-events': 'none'}));
+      if (c.k === 'bunker') cg.append(s('rect', {x: x0, y: y0, width: w, height: hh, fill: 'url(#coal)', 'pointer-events': 'none'}));
+      if (c.k === 'double_bottom') cg.append(s('rect', {x: x0, y: y0, width: w, height: hh, fill: 'url(#hatch)', 'pointer-events': 'none'}));
+      const t = c.k === 'magazine' ? (c.id || '').replace('Magazine ', 'mag ') : SHORTK[c.k] ?? '';
+      if (t && w > t.length * 5.6 + 4 && hh > 11) cg.append(s('text', {x: x0 + w / 2, y: y0 + hh / 2 + 3.5, 'text-anchor': 'middle', 'font-size': 9, fill: c.k === 'magazine' ? '#FFE3D6' : '#B9CBDB', 'pointer-events': 'none', opacity: 0.9}, t));
+    }
+    // platform decks: a cell's crown that isn't a deck
+    const plats = cut.C.filter(c => c.k === 'magazine' && !DECKS.some(d => Math.abs(d.z - c.t) < 0.05) && Math.abs(c.t - IB) > 0.05);
+    for (const c of plats) cg.append(s('line', {x1: sy(side, 0), x2: sy(side, halfB(x, c.t)), y1: sz(c.t), y2: sz(c.t), stroke: '#D7C79A', 'stroke-width': 1.2,
+      onmousemove: e => tip(e, `<b>Platform deck</b> at the magazine’s crown, ${f1(WL - c.t)} m under the waterline`), onmouseleave: untip}));
+    // decks, the walls (thin plating), the tds layers' stand-in
+    for (const d of [...DECKS.filter(d => d.kind !== 'raised' || top > 0.1), {z: IB}]) cg.append(s('line', {x1: sy(side, 0), x2: sy(side, B / 2 + 1), y1: sz(d.z), y2: sz(d.z), stroke: 'rgba(156,194,226,0.32)', 'stroke-width': 0.8}));
+    for (const w of cut.Wl) {
+      const isT = w.kind === 'tds', wt = Math.max(1, (w.plate_mm || 6) * 3 / 1000 * sk);
+      cg.append(s('line', {x1: sy(side, w.y), x2: sy(side, w.y), y1: sz(w.top), y2: sz(w.base), stroke: isT ? '#8FC3D6' : 'rgba(200,220,236,0.75)', 'stroke-width': isT ? Math.max(1.5, wt) : 1,
+        ...(isT ? plateEv('tds') : {onmousemove: e => tip(e, `<b>${w.kind === 'wing' ? 'Wing bulkhead' : 'Bulkhead'}</b> · ${f1(w.plate_mm)} mm plating, ${f1(w.y)} m out`), onmouseleave: untip})}));
+    }
+    if (HAS_TDS() && (A.tds_layers || 1) > 1) for (const w of cut.Wl.filter(w => w.kind === 'tds')) {
+      const n = A.tds_layers;
+      for (let j = 1; j < n; j++) {
+        const pts = Array.from({length: 9}, (_, i) => { const z = w.base + (w.top - w.base) * i / 8; return [w.y + (halfB(x, z) - w.y) * j / n, z]; });
+        cg.append(s('polyline', {points: polyPts(side, pts), fill: 'none', stroke: '#8FC3D6', 'stroke-width': 1, 'stroke-dasharray': '3 2', ...plateEv('tds')}));
+      }
+    }
+    // the armour
+    for (const p of AP) {
+      const e = s('polygon', {points: polyPts(side, p.pts), fill: ramp(p.mm), stroke: 'rgba(0,0,0,0.6)', 'stroke-width': 0.6, opacity: p.kind === 'lower' ? 0.75 : 1, ...plateEv(p.id)});
+      svg.append(e);
+      if (p.lab && p.lab.t) {
+        const lx = sy(side, p.lab.y) + (p.lab.out ? side * 3 : -side * 3), ly = p.lab.under ? sz(p.lab.z) + 9 : p.lab.over ? sz(p.lab.z) - 3 : sz(p.lab.z) + 3.5;
+        const anchor = p.lab.under || p.lab.over ? 'middle' : (side < 0) === !p.lab.out ? 'start' : 'end';
+        svg.append(s('text', {x: p.lab.under || p.lab.over ? sy(side, p.lab.y) : lx, y: ly, 'text-anchor': anchor, 'font-size': p.lab.small ? 8.5 : 9.5, fill: '#F3E3A1', 'pointer-events': 'none',
+          stroke: '#14243A', 'stroke-width': 2.4, 'paint-order': 'stroke'}, p.lab.t));
+      }
+    }
+    // the hull's outline on top, the waterline
+    svg.append(s('polygon', {points: polyPts(side, hull), fill: 'none', stroke: '#6F93B5', 'stroke-width': 1, 'pointer-events': 'none'}));
+    svg.append(s('line', {x1: sy(side, 0), x2: sy(side, halfB(x, WL) + 0.6), y1: sz(WL), y2: sz(WL), stroke: '#5B9BE0', 'stroke-width': 1, 'pointer-events': 'none'}));
+    // a lean shown where the belt leans
+    if (lean() > 0 && (A.belt_mm || 0) > 0 && inSp(x, beltSpan())) {
+      const yb = internal() ? halfB(x, beltTop()) - 0.3 : halfB(x, beltTop()), zt = beltTop(), r = 1.6;
+      svg.append(s('line', {x1: sy(side, yb), x2: sy(side, yb), y1: sz(zt), y2: sz(zt - 2.4), stroke: '#D9B868', 'stroke-width': 0.8, 'stroke-dasharray': '2 2', 'pointer-events': 'none'}));
+      const a1 = rad(lean()), px = sy(side, yb - Math.sin(a1) * r), pz = sz(zt - Math.cos(a1) * r);
+      svg.append(s('path', {d: `M${sy(side, yb)},${sz(zt - r)} A${r * sk},${r * sk} 0 0 ${side > 0 ? 1 : 0} ${px},${pz}`, fill: 'none', stroke: '#D9B868', 'stroke-width': 0.9, 'pointer-events': 'none'}));
+      svg.append(s('text', {x: sy(side, yb) + side * 4, y: sz(zt - 2.2), 'text-anchor': side > 0 ? 'start' : 'end', 'font-size': 9, fill: '#D9B868', 'pointer-events': 'none'}, `${N0(lean())}°`));
+    }
+    // the selected part's handles
+    handles.push(...handlesFor(x, side, cut, AP));
+    // the half's title: which cut, where
+    svg.append(s('text', {x: k === 0 ? SE.l + 2 : SE.w - SE.r - 2, y: 30, 'text-anchor': k === 0 ? 'start' : 'end', 'font-size': 9.5, fill: '#9CB4CA'}, `x ${sx1(x)} m`));
+  });
+  svg.append(s('line', {x1: scx, x2: scx, y1: SE.t - 6, y2: SE.h - SE.b + 4, stroke: 'rgba(156,194,226,0.35)', 'stroke-dasharray': '8 3 2 3'}));
+  svg.append(s('text', {x: scx, y: SE.h - 5, 'text-anchor': 'middle', 'font-size': 9, fill: '#5E7A96'}, 'CL'));
+  for (const hd of handles) svg.append(hd);
+  // the header: the two cuts' pickers
+  const pick = k => h('span', {class: 'dd', style: 'width:150px', onclick: ev => { ev.stopPropagation(); menu(ev, cutItems(k)); }}, h('span', {}, cutName(cuts[k])), h('i', {}, '▼'));
+  const hd = h('div', {class: 'bh'}, 'Sections',
+    h('span', {class: 'cut'}, h('span', {class: 'n'}, '1'), pick(0)),
+    h('b', {}, h('span', {class: 'cut'}, pick(1), h('span', {class: 'n'}, '2'))));
+  const lg = h('div', {class: 'legend', style: 'position:absolute;left:6px;bottom:2px'},
+    ...[['magazine', 'magazine'], ['handling', 'handling'], ['stores', 'stores · wing'], ['tds', 'TDS'], ['engine_room', 'machinery'], ['bunker', 'coal']]
+      .filter(([k]) => k !== 'tds' || HAS_TDS()).filter(([k]) => k !== 'bunker' || S.cells.some(c => c[6] === 'bunker'))
+      .map(([k, t]) => h('span', {}, h('i', {style: `background:${KIND[k][0]};opacity:${Math.max(0.5, KIND[k][1] + 0.3)}`}), t)),
+    h('span', {style: 'margin-left:6px'}, 'to scale · plates ×3'));
+  root.replaceChildren(svg, hd, lg);
+}
+function cutItems(k) {
+  const items = [{head: `Section ${k + 1}: cut at`}];
+  for (const q of STOPS) items.push({lab: q.id === 'mach' ? `Machinery (${q.sub.toLowerCase()})` : q.lab, key: `x ${sx1(q.x)}`, cur: Math.abs(cuts[k] - q.x) < 0.01, fn: () => { cuts[k] = q.x; }});
+  return items;
+}
+// a brass handle: drag along one axis; the value follows (the game: preview while held, one edit on release)
+function handle(px, py, axis, val, fn, label) {
+  const g = s('g', {style: `cursor:${axis === 'h' ? 'ew-resize' : axis === 'r' ? 'grab' : 'ns-resize'}`});
+  g.append(axis === 'r' ? s('circle', {cx: px, cy: py, r: 4.2, fill: '#D9B868', stroke: '#2A2210', 'stroke-width': 1})
+    : s('rect', {x: px - (axis === 'h' ? 3 : 5), y: py - (axis === 'h' ? 5 : 3), width: axis === 'h' ? 6 : 10, height: axis === 'h' ? 10 : 6, rx: 1, fill: '#D9B868', stroke: '#2A2210', 'stroke-width': 1}));
+  g.append(s('rect', {x: px - 7, y: py - 7, width: 14, height: 14, fill: 'transparent',
+    onmousedown: ev => { ev.preventDefault(); ev.stopPropagation(); dragging = {kind: 'handle', fn, label}; },
+    onmousemove: ev => { if (!dragging) tip(ev, label()); }, onmouseleave: () => { if (!dragging) untip(); }}));
+  g.dataset.handle = '1';
+  return g;
+}
+function handlesFor(x, side, cut, AP) {
+  const H = [], id = sel;
+  const at = (y, z) => [sy(side, y), sz(z)];
+  if ((id === 'belt' || id === 'beltzone') && (A.belt_mm || 0) > 0 && inSp(x, beltSpan())) {
+    const yo = internal() ? z => halfB(x, beltTop()) - 0.3 - (beltTop() - z) * Math.tan(rad(lean())) : z => halfB(x, z);
+    H.push(handle(...at(yo(beltTop()), beltTop()), 'v', 0, z => { A.belt_height_m = Math.max(0, Math.round((z - WL) * 10) / 10); }, () => `<b>Belt’s top edge</b> · <span class="m">${sx1(beltTop() - WL)} m</span> on the waterline`));
+    H.push(handle(...at(yo(beltBot()), beltBot()), 'v', 0, z => { A.belt_depth_m = Math.max(0, Math.round((WL - z) * 10) / 10); }, () => `<b>Belt’s lower edge</b> · <span class="m">${sx1(beltBot() - WL)} m</span>; slopes meet the side here`));
+    if (side > 0) {
+      const [px, py] = at(yo(beltTop()) + 0.9, beltTop() + 0.9);
+      H.push(handle(px, py, 'r', 0, (z, y) => { const yb = internal() ? halfB(x, beltTop()) - 0.3 : halfB(x, beltTop()); A.belt_incline_deg = clamp(Math.round(Math.atan2(Math.max(0, y - yb + 0.0001), 2.0) * 180 / Math.PI), 0, 30); },
+        () => `<b>Belt’s lean</b> · <span class="m">${N0(lean())}°</span>, its top outboard (0-30°)<br><span class="dim">Drag out to lean it.</span>`));
+    }
+  }
+  const sm = /^(deck|slope|dzone)(\d+)$/.exec(id);
+  if (sm) {
+    const i = +sm[2], d = A.decks[i], kn = (AP.knees || []).find(q => q.i === i);
+    if (d && kn) H.push(handle(...at(kn.y, kn.z), 'h', 0, (z, y) => { const reach = Math.max(0.3, halfB(x, kn.foot) - y); A.decks[i] = {...A.decks[i], slope_deg: clamp(Math.round(Math.atan2(deckZ(d.deck) - kn.foot, reach) * 180 / Math.PI), 10, 60)}; },
+      () => `<b>Where the slope starts</b> · ${N0(A.decks[i].slope_deg ?? 30)}°, ${f1(slopeGeo(A.decks[i]).reach)} m in from the side<br><span class="dim">Its foot stays on the belt’s lower edge.</span>`));
+  }
+  if (id === 'tds' && HAS_TDS()) for (const w of cut.Wl.filter(w => w.kind === 'tds').slice(0, 1)) {
+    const zm = (w.base + w.top) / 2;
+    H.push(handle(...at(w.y, zm), 'h', 0, (z, y) => { A.tds_m = clamp(Math.round((halfB(x, zm) - y) * 10) / 10, 1, 9); }, () => `<b>Holding bulkhead</b> · TDS <span class="m">${f1(A.tds_m)} m</span> deep`));
+  }
+  if (id === 'inner' && AP.ownInner != null) {
+    const zm = (IB + roofZ()) / 2;
+    H.push(handle(...at(AP.ownInner, zm), 'h', 0, (z, y) => { A.inner_bulkhead = {...A.inner_bulkhead, inboard_m: clamp(Math.round((halfB(x, zm) - y) * 10) / 10, 0.5, 8)}; },
+      () => `<b>Inner bulkhead</b> · <span class="m">${f1(A.inner_bulkhead.inboard_m ?? wingW())} m</span> in from the side`));
+  }
+  if ((id === 'wings' || id === 'box') && !HAS_TDS()) {
+    const mc = cut.C.filter(c => c.k === 'magazine');
+    if (mc.length && wingW() > 0) {
+      const wy = Math.max(...mc.map(c => c.y1)), zm = (Math.min(...mc.map(c => c.b)) + Math.max(...mc.map(c => c.t))) / 2;
+      H.push(handle(...at(wy, zm), 'h', 0, (z, y) => { A.magazine_wing_m = clamp(Math.round((halfB(x, zm) - y) * 10) / 10, 0.3, 0.3 * B); },
+        () => `<b>Magazine wing</b> · <span class="m">${f1(wingW())} m</span> of stores each side${wingAuto() ? ' (0.1 of the beam)' : ''}${A.magazine_box?.side_mm ? '<br><span class="dim">The box’s sides stand on this wall.</span>' : ''}`));
+    }
+  }
+  return H;
+}
+window.addEventListener('mousemove', ev => {
+  if (!dragging) return;
+  const app = $('app').getBoundingClientRect();
+  if (dragging.kind === 'cut') {
+    const r = $('elev').getBoundingClientRect(); let x = clamp(exInv(ev.clientX - r.left), -L / 2, L / 2);
+    const near = STOPS.find(q => Math.abs(q.x - x) < 3); if (near) x = near.x;
+    cuts[dragging.k] = Math.round(x * 100) / 100; render();
+    tip(ev, `<b>Section ${dragging.k + 1}</b>: ${cutName(cuts[dragging.k])}, x ${sx1(cuts[dragging.k])} m`);
+    return;
+  }
+  const r = $('sect').getBoundingClientRect();
+  dragging.fn(szInv(ev.clientY - r.top), syInv(ev.clientX - r.left));
+  render(); tip(ev, dragging.label());
+});
+window.addEventListener('mouseup', () => { if (dragging) { dragging = null; untip(); render(); } });
+
+// ------------------------------------------------------------------ 3. the plate table
+const GROUPS = [['side', 'Side'], ['decks', 'Armour decks'], ['inboard', 'Inboard: behind the side'], ['ends', 'Ends'], ['guns', 'Guns and conning tower']];
+function matCell(r) {
+  if (!r.mat || r.id === 'wings' || r.id === 'tds') return h('div', {class: 'dim'}, r.id === 'tds' ? 'steel walls' : r.id === 'wings' ? 'stores' : '');
+  if (r.ro) return h('div', {class: 'dim'}, r.id === 'barb' ? 'as the turrets' : '');
+  const m = (A.materials || {})[r.mat] || '';
+  return h('div', {}, h('span', {class: 'dd sch', style: 'width:96px'}, h('span', {style: 'overflow:hidden;text-overflow:ellipsis'}, r.sub ? 'as above' : 'scheme'), h('i', {}, '▼')));
+}
+function nameTag(r) {
+  if (r.id === 'belt') {
+    const t = [internal() ? 'inside' : null, lean() ? `${N0(lean())}°` : null, A.belt_extent === 'machinery' ? 'machinery' : null].filter(Boolean);
+    return t.length ? h('span', {class: 'tag'}, t.join(' · ')) : null;
+  }
+  return null;
+}
+function whereCell(r) {
+  const c = h('div', {});
+  const id = r.id;
+  if (id === 'belt') c.append(spinner('bdp', A.belt_depth_m ?? 1.5, mF, 0.1, v => { A.belt_depth_m = Math.max(0, v); }, {pre: '↓', cls: 's'}), spinner('bht', A.belt_height_m ?? 2, mF, 0.1, v => { A.belt_height_m = Math.max(0, v); }, {pre: '↑', cls: 's'}));
+  else if (id === 'beltzone') c.append(h('span', {class: 'dim'}, `${ZSP().length} magazine stretch${ZSP().length > 1 ? 'es' : ''} · ${f1(zoneLen())} m`));
+  else if (id === 'upper') c.append(h('span', {class: 'dd', style: 'width:58px'}, 'to ' + deckShort(A.upper_belt?.to_deck ?? 0), h('i', {}, '▼')),
+    seg([['citadel', 'cit'], ['full', 'full'], ['fore', 'fore'], ['aft', 'aft'], ['ends', 'ends']], A.upper_belt?.extent || 'citadel', v => { A.upper_belt = {...A.upper_belt, extent: v}; }));
+  else if (r.end) c.append(spinner('reach' + r.end, A.end_belts?.[r.end]?.reach ?? 1, f1, 0.1, v => { const e = {...A.end_belts[r.end], reach: clamp(v, 0.1, 1)}; A.end_belts = {...A.end_belts, [r.end]: e}; }, {pre: 'reach', cls: 's'}), h('span', {class: 'dim'}, `to the ${r.end === 'fore' ? 'stem' : 'stern'}`));
+  else if (id === 'bulk') c.append(h('span', {class: 'dim'}, `at both citadel ends · ${N0(Math.round(A.bulkhead_mm / 2))} below the belt`));
+  else if (id.startsWith('deck')) c.append(h('span', {class: 'dd', style: 'width:46px'}, deckShort(r.deck), h('i', {}, '▼')),
+    seg([['citadel', 'cit'], ['full', 'full'], ['fore', 'fore'], ['aft', 'aft'], ['ends', 'ends']], r.ext, v => { A.decks[r.i] = {...A.decks[r.i], extent: v}; }));
+  else if (id.startsWith('slope')) { const g = slopeGeo(A.decks[r.i]); c.append(h('span', {class: 'dim'}, `to the belt’s lower edge · flat ${f1(g.reach)} m in`)); }
+  else if (id.startsWith('dzone')) c.append(h('span', {class: 'dim'}, `over the magazines · ${f1(zoneLen())} m`));
+  else if (id === 'tds') c.append(h('span', {class: 'dim'}, (A.tds_layers || 1) > 1 ? `${A.tds_layers} spaces · holding ${N0(A.tds_holding_mm ?? 6 * A.tds_m)} mm` : `one space · holding ${N0(12 * A.tds_m)} mm`));
+  else if (id === 'inner') c.append(h('span', {class: 'dim'}, innerOnText()));
+  else if (id === 'box') { const mb = A.magazine_box || {}; c.append(spinner('boxend', mb.end_mm || 0, nF, 5, v => setVal(r, 'end', v), {pre: 'ends', cls: 's'}), spinner('boxfl', mb.floor_mm || 0, nF, 5, v => setVal(r, 'floor', v), {pre: 'floor', cls: 's'})); }
+  else if (id === 'wings') c.append(h('span', {class: 'dim'}, r.ro ? 'the torpedo protection stands there' : 'stores between magazine and side'));
+  else if (id.startsWith('main')) c.append(h('span', {class: 'dim'}, `faces · side ${N0(faces[r.k] * 0.55)} · rear ${N0(faces[r.k] * 0.5)} · roof ${N0(faces[r.k] * 0.4)}`));
+  else if (id === 'barb') c.append(h('span', {class: 'dim'}, '0.8 × the faces'));
+  else if (id === 'ct') c.append(h('span', {class: 'dim'}, 'the belt’s thickness'));
+  else if (id === 'steer') c.append(h('span', {class: 'dim'}, 'over the rudders'));
+  return c;
+}
+function innerOnText() {
+  if (HAS_TDS()) return 'the TDS’s holding bulkhead';
+  const ib = A.inner_bulkhead || {};
+  if (!(ib.mm > 0)) return 'the magazines’ wing walls';
+  if (S.cells.some(c => c[6] === 'bunker')) return 'the wing bunkers’ inner wall';
+  return `its own wall, ${f1(ib.inboard_m ?? wingW())} m in`;
+}
+function secondCell(r) {
+  const id = r.id;
+  if (id === 'belt') return spinner('bbot', A.belt_bottom_mm ?? A.belt_mm, nF, 10, v => setVal(r, 'bot', v), {pre: 'lower', auto: A.belt_bottom_mm == null, cls: 's'});
+  if (id.startsWith('slope')) return spinner('sdeg' + r.i, A.decks[r.i].slope_deg ?? 30, degF, 1, v => setVal(r, 'deg', v), {pre: 'at', cls: 's'});
+  if (id === 'tds') return spinner('tdsl', A.tds_layers || 1, nF, 1, v => setVal(r, 'layers', v), {pre: 'layers', cls: 's'});
+  if (id === 'inner') return spinner('innm', r.mags, nF, 5, v => setVal(r, 'mags', v), {pre: 'mags', cls: 's'});
+  if (id === 'box') return spinner('boxcr', A.magazine_box?.crown_mm || 0, nF, 5, v => setVal(r, 'crown', v), {pre: 'crown', cls: 's'});
+  if (r.end) return h('span', {class: 'ro', style: 'padding-right:0'}, 'tip ' + N0(A.end_belts?.[r.end]?.tip_mm ?? r.mm));
+  return null;
+}
+function thickCell(r) {
+  if (r.id === 'barb' || r.id === 'ct') return h('span', {class: 'ro'}, mmF(r.mm));
+  if (r.id === 'wings') return r.ro ? h('span', {class: 'ro'}, '—') : spinner('wing', wingW(), mF, 0.1, v => setVal(r, 'm', v), {auto: wingAuto()});
+  if (r.id === 'tds') return spinner('tdsm', A.tds_m || 0, mF, 0.5, v => setVal(r, 'm', v));
+  return spinner('mm' + r.id, r.mm, mmF, stepOf(r), v => setVal(r, 'mm', v));
+}
+function table() {
+  const root = $('tbl');
+  const R = rows(), tot = armourT();
+  const g = h('div', {class: 'pt', style: 'left:0;top:0;right:0;bottom:0'});
+  for (const t of ['', 'Plate', 'Thickness', 'Lower · tip · …', 'Where', 'Material', 't', 'of arm.', '']) g.append(h('div', {class: 'h' + (t === 't' || t === 'of arm.' ? ' right' : '')}, t));
+  const missing = {side: ['upper', 'end_fore', 'end_aft'], inboard: ['tds', 'inner', 'box', 'wings'], ends: ['steer']};
+  const MISSLAB = {upper: 'upper belt', end_fore: 'end belt fore', end_aft: 'end belt aft', tds: 'torpedo protection', inner: 'inner bulkhead', box: 'magazine boxes', wings: 'magazine wings', steer: 'steering gear box'};
+  const MISSTIP = {tds: 'Spaces between the side and the holding bulkhead, inner bottom to the roof deck', inner: 'An armoured wall behind the belt over the citadel, on the wall a section already has (TDS, wing bunkers, a magazine’s wing) or its own',
+    box: 'Armour round each run of magazines: sides on their wing walls, crown on their platform deck, ends, floor on the inner bottom', wings: 'Stores between each magazine and the side, 0.1 of the beam'};
+  for (const [gid, gname] of GROUPS) {
+    const head = h('div', {class: 'g'}, gname);
+    for (const id of missing[gid] || []) { const r = R.find(q => q.id === id); if (r && !r.has && !(id === 'wings' && HAS_TDS())) head.append(addChip(MISSLAB[id], () => { ADD[id](); sel = id; }, MISSTIP[id])); }
+    if (gid === 'decks') for (const n of [0, 1, 2, 3, 4, 5].filter(n => deckOf(n) && !(A.decks || []).some(d => d.deck === n))) head.append(addChip(deckShort(n), () => { A.decks = [...(A.decks || []), {deck: n, mm: 25, extent: 'citadel'}].sort((a, b) => a.deck - b.deck); sel = 'deck' + A.decks.findIndex(d => d.deck === n); }));
+    g.append(head);
+    for (const r of R.filter(q => q.g === gid && (q.has || q.id.startsWith('main') || q.id === 'barb' || q.id === 'ct'))) {
+      const t = tOf(r), cls = 'r' + (r.sub ? ' kid' : '') + (sel === r.id ? ' sel' : '') + (hot === r.id ? ' hov' : '') + (r.ro && r.id === 'wings' ? ' none' : '');
+      const ev = {'data-id': r.id, ...hoverable(r.id), onclick: () => { sel = r.id; render(); }, oncontextmenu: e => { e.preventDefault(); sel = r.id; render(); menu(e, ctxItems(r.id)); }};
+      const cells = [
+        h('div', {}, h('span', {class: 'sw', style: `background:${r.id === 'tds' ? '#4FA3B8' : r.id === 'wings' ? '#D7C79A' : ramp(r.mm || 0)}`})),
+        h('div', {}, r.sub ? '↳ ' + r.name : r.name, nameTag(r)),
+        h('div', {}, thickCell(r)),
+        h('div', {}, secondCell(r)),
+        whereCell(r),
+        matCell(r),
+        h('div', {class: 'num'}, t == null ? h('span', {class: 'dim'}, r.id === 'wings' ? '—' : 'turret') : N0(t)),
+        h('div', {class: 'num dim'}, t == null || tot <= 0 ? '' : `${Math.round(t / tot * 100)} %`),
+        h('div', {}, removable(r) ? h('button', {class: 'ico', onclick: e => { e.stopPropagation(); edit(() => removeRow(r)); }, onmousemove: e => tip(e, 'Remove: it comes back as a +'), onmouseleave: untip}, '×') : null),
+      ];
+      cells.forEach(c => { c.className = (c.className ? c.className + ' ' : '') + cls; Object.entries(ev).forEach(([k, v]) => { if (k.startsWith('on')) c.addEventListener(k.slice(2), v); else c.setAttribute(k, v); }); });
+      g.append(...cells);
+    }
+  }
+  root.replaceChildren(g);
+}
+function ctxItems(id) {
+  const r = rowOf(id), it = [];
+  if (!r) return [{head: id}];
+  it.push({head: r.sub ? `${rowOf(r.parent).name}, ${r.name}` : r.name});
+  if (id === 'belt' || id === 'beltzone') {
+    it.push({lab: A.belt_magazines_mm != null ? 'Remove the zone at the magazines' : 'Zone at the magazines', fn: () => { if (A.belt_magazines_mm != null) delete A.belt_magazines_mm; else { ADD.beltzone(); sel = 'beltzone'; } }});
+    it.push({lab: internal() ? 'On the side' : 'Inside the shell', fn: () => { if (internal()) delete A.belt_position; else A.belt_position = 'internal'; }});
+    it.push({lab: A.belt_extent === 'machinery' ? 'Over the citadel' : 'Over the machinery only', fn: () => { if (A.belt_extent === 'machinery') delete A.belt_extent; else A.belt_extent = 'machinery'; }});
+  }
+  const dm = /^(deck|slope|dzone)(\d+)$/.exec(id);
+  if (dm) {
+    const i = +dm[2], d = A.decks[i];
+    if ((d.extent || 'citadel') === 'citadel' || d.extent === 'full') {
+      it.push({lab: d.slope_mm ? 'Remove the slopes' : 'Slopes to the belt’s lower edge', fn: () => { if (d.slope_mm) removeRow({id: 'slope' + i, i}); else { addSlopes(i); sel = 'slope' + i; } }});
+      it.push({lab: d.magazines_mm != null ? 'Remove the zone at the magazines' : 'Zone at the magazines', fn: () => { if (d.magazines_mm != null) removeRow({id: 'dzone' + i, i}); else { addDeckZone(i); sel = 'dzone' + i; } }});
+    }
+  }
+  if (r.mat && !r.ro) { it.push('sep', {lab: 'Material…', key: 'scheme', off: true}); }
+  if (removable(r)) it.push('sep', {lab: 'Remove', key: 'Del', fn: () => removeRow(r)});
+  return it;
+}
+
+// ------------------------------------------------------------------ 4. the selected plate: what it is, and its shape
+function plateTip(id) {
+  const r = rowOf(id); if (!r) return '';
+  const t = tOf(r);
+  const v = r.id === 'tds' ? `${f1(A.tds_m)} m` : r.id === 'wings' ? `${f1(wingW())} m` : `${N0(r.mm)} mm`;
+  return `<b>${r.sub ? rowOf(r.parent).name + ', ' + r.name : r.name}</b> · <span class="m">${v}</span>${t != null ? ` · <span class="m">${N0(t)} t</span>` : ''}<br><span class="dim">Wheel: one step · right-click: ${/^(belt|deck|slope|dzone)/.test(id) ? 'zones, slopes, position' : 'its menu'}</span>`;
+}
+const row = (lab, ...c) => h('div', {class: 'row'}, h('span', {}, lab), h('span', {class: 'c'}, ...c));
+function shapeOf(r) {
+  const out = [];
+  const id = r.id;
+  if (id === 'belt' || id === 'beltzone') {
+    out.push(row('Stands', seg([['external', 'on the side'], ['internal', 'inside the shell']], internal() ? 'internal' : 'external', v => { if (v === 'internal') A.belt_position = 'internal'; else delete A.belt_position; })));
+    out.push(row('Leans', spinner('lean', lean(), degF, 1, v => { A.belt_incline_deg = clamp(Math.round(v), 0, 30); if (!A.belt_incline_deg) delete A.belt_incline_deg; }), h('span', {class: 'dim'}, 'top outboard')));
+    out.push(row('Runs over', seg([['citadel', 'the citadel'], ['machinery', 'the machinery']], A.belt_extent === 'machinery' ? 'machinery' : 'citadel', v => { if (v === 'machinery') A.belt_extent = 'machinery'; else delete A.belt_extent; })));
+    out.push(row('At the magazines', A.belt_magazines_mm != null
+      ? [spinner('bz', A.belt_magazines_mm, mmF, 10, v => { A.belt_magazines_mm = Math.max(0, v); }), h('button', {class: 'ico', onclick: e => { e.stopPropagation(); edit(() => { delete A.belt_magazines_mm; sel = 'belt'; }); }}, '×')]
+      : addChip('zone', () => { ADD.beltzone(); sel = 'beltzone'; }, 'A thickness of its own beside the magazines (KGV 374 against 348; Brooklyn thinner)')));
+    if (internal()) out.push(h('div', {class: 'note'}, `Inside the shell, ${f1(0.3)} m in at its top; carried on down as a lower belt to the inner bottom, ${N0(A.belt_bottom_mm ?? A.belt_mm)} tapering to 25 mm. The space outboard of it is a wing.`));
+    if (internal() && A.belt_bottom_mm == null) out.push(h('div', {class: 'warn'}, 'Untapered: the lower belt starts at the belt’s full thickness and weighs heavy. Set a lower edge.'));
+    if (A.belt_extent === 'machinery' && !(A.magazine_box?.side_mm > 0)) out.push(h('div', {class: 'warn'}, 'The magazines’ sides are bare: give them boxes.'));
+  } else if (/^(deck|slope|dzone)\d+$/.test(id)) {
+    const i = r.i, d = A.decks[i], cit = ['citadel', 'full'].includes(d.extent || 'citadel');
+    if (!cit) { out.push(h('div', {class: 'note'}, 'An end deck: flat, side to side. Slopes and zones are for citadel decks.')); return out; }
+    out.push(row('Slopes', (d.slope_mm || 0) > 0
+      ? [spinner('sl', d.slope_mm, mmF, 5, v => setVal({id: 'slope' + i, i}, 'mm', v)), spinner('sd', d.slope_deg ?? 30, degF, 1, v => setVal({id: 'slope' + i, i}, 'deg', v), {cls: 's'}),
+         h('button', {class: 'ico', onclick: e => { e.stopPropagation(); edit(() => removeRow({id: 'slope' + i, i})); }}, '×')]
+      : addChip('slopes', () => { addSlopes(i); sel = 'slope' + i; }, 'The deck turns down each side to meet the side at the belt’s lower edge')));
+    if ((d.slope_mm || 0) > 0) { const g = slopeGeo(d); out.push(row('Flat', h('span', {class: 'mono'}, `${N0(d.mm)} mm, stops ${f1(g.reach)} m in from the side`))); }
+    out.push(row('At the magazines', d.magazines_mm != null
+      ? [spinner('dz', d.magazines_mm, mmF, 5, v => setVal({id: 'dzone' + i, i}, 'mm', v)), h('button', {class: 'ico', onclick: e => { e.stopPropagation(); edit(() => removeRow({id: 'dzone' + i, i})); }}, '×')]
+      : addChip('zone', () => { addDeckZone(i); sel = 'dzone' + i; })));
+    if ((d.slope_mm || 0) > 0) out.push(h('div', {class: 'note'}, 'The slope’s foot is on the belt’s lower edge: move that edge and the slope follows. Drag the brass knee on the section to change the angle.'));
+  } else if (id === 'tds') {
+    const n = A.tds_layers || 1, steel = 12 * (A.tds_m || 0);
+    out.push(row('Depth', spinner('td', A.tds_m || 0, mF, 0.5, v => setVal(r, 'm', v)), h('span', {class: 'dim'}, 'side to holding bulkhead')));
+    out.push(row('Layers', spinner('tl', n, nF, 1, v => setVal(r, 'layers', v), {cls: 's'}), h('span', {class: 'dim'}, n > 1 ? 'each a space of its own' : 'one space')));
+    out.push(row('Holding bulkhead', spinner('th', A.tds_holding_mm ?? (n > 1 ? steel / 2 : steel), mmF, 5, v => setVal(r, 'hold', v), {auto: A.tds_holding_mm == null})));
+    if (n > 1) out.push(row('Layer walls', spinner('tw', A.tds_layer_mm ?? steel / 2 / (n - 1), mmF, 1, v => setVal(r, 'wall', v), {auto: A.tds_layer_mm == null})));
+    out.push(h('div', {class: 'note'}, `Steel: ${N0(steel)} mm a side by default (12 mm a metre of depth), the same weight however it’s split.`));
+    if (n > 1) out.push(h('div', {class: 'warn'}, 'Torpedoes still hole every layer in reach at once (open: the flooding session).'));
+  } else if (id === 'inner') {
+    const ib = A.inner_bulkhead || {};
+    out.push(row('Over the citadel', spinner('im', ib.mm || 0, mmF, 5, v => setVal(r, 'mm', v)), h('span', {class: 'dim'}, (ib.mm || 0) > 0 ? '' : 'none')));
+    out.push(row('At the magazines', spinner('ig', ib.magazines_mm ?? ib.mm ?? 0, mmF, 5, v => setVal(r, 'mags', v), {auto: ib.magazines_mm == null})));
+    const own = !HAS_TDS() && !S.cells.some(c => c[6] === 'bunker') && (ib.mm || 0) > 0;
+    out.push(row('Stands on', h('span', {}, innerOnText())));
+    if (own) out.push(row('In from the side', spinner('ii', ib.inboard_m ?? wingW(), mF, 0.1, v => setVal(r, 'in', v), {auto: ib.inboard_m == null})));
+    out.push(h('div', {class: 'note'}, 'From the inner bottom to the armour deck. It rides on the wall the section already has; only where there is none does it stand on its own, and that makes wing compartments (one side floods).'));
+  } else if (id === 'box') {
+    const mb = A.magazine_box || {};
+    out.push(row('Sides', spinner('bs', mb.side_mm || 0, mmF, 5, v => setVal(r, 'mm', v)), h('span', {class: 'dim'}, 'wing walls')));
+    out.push(row('Crown', spinner('bc', mb.crown_mm || 0, mmF, 5, v => setVal(r, 'crown', v)), h('span', {class: 'dim'}, 'platform')));
+    out.push(row('Ends', spinner('be', mb.end_mm || 0, mmF, 5, v => setVal(r, 'end', v))));
+    out.push(row('Floor', spinner('bf', mb.floor_mm || 0, mmF, 5, v => setVal(r, 'floor', v)), h('span', {class: 'dim'}, 'inner bottom')));
+    out.push(h('div', {class: 'note'}, `Round ${MAGS.length} run${MAGS.length > 1 ? 's' : ''} of magazines: ${MAGS.map(([a, b]) => `${sx1(a)} to ${sx1(b)} m`).join(', ')}. As wide as their cells; a wing of 0.1 B stands outside them even with wings off.`));
+  } else if (id === 'wings') {
+    if (r.ro) out.push(h('div', {class: 'note'}, 'The torpedo protection stands between the magazines and the side, so it is their wing. The value counts where it doesn’t reach (the ends).'));
+    out.push(row('Width', spinner('ww', wingW(), mF, 0.1, v => setVal(r, 'm', v), {auto: wingAuto()}), h('span', {class: 'dim'}, wingAuto() ? 'auto (0.1 B)' : 'each side'),
+      wingAuto() ? null : h('a', {class: 'add', onclick: e => { e.stopPropagation(); edit(() => { A.magazine_wing_m = null; }); }}, 'auto')));
+    out.push(h('div', {class: 'note'}, 'Stores (refrigerated rooms, the crew’s) between each magazine and the side, never fuel: a tank there gets a void cofferdam. In the fine ends the magazine grows longer for its volume.'));
+  } else {
+    out.push(h('div', {class: 'note'}, 'As on the Protection tab today: its values are in the table.'));
+  }
+  return out;
+}
+function inspector() {
+  const root = $('ins');
+  const r = rowOf(sel) || rows()[0];
+  const t = tOf(r), std = stdNow();
+  const v = r.id === 'tds' ? `${f1(A.tds_m || 0)} m` : r.id === 'wings' ? `${f1(wingW())} m` : `${N0(r.mm)} mm`;
+  const facts = h('div', {class: 'facts'},
+    h('div', {class: 't'}, h('span', {class: 'sw', style: `background:${r.id === 'tds' ? '#4FA3B8' : r.id === 'wings' ? '#D7C79A' : ramp(r.mm || 0)}`}), r.sub ? `${rowOf(r.parent).name}, ${r.name}` : r.name, h('span', {class: 'mono dim', style: 'font-weight:400;font-size:11px'}, v)));
+  const L2 = h('div', {class: 'l'});
+  const add = (k, val) => L2.append(h('span', {}, k), h('span', {class: 'v'}, val));
+  const span = r.id === 'belt' ? beltSpan() : r.id === 'beltzone' || r.id.startsWith('dzone') ? ZSP() : /^(deck|slope)/.test(r.id) ? spans(r.ext) : r.id === 'box' ? MAGS : ['tds', 'inner'].includes(r.id) ? [[X0, X1]] : r.id === 'wings' ? MAGS : null;
+  if (span) add('Covers', `${span.length > 1 ? span.length + ' stretches, ' : `${sx1(span[0][0])} to ${sx1(span[0][1])} m, `}${f1(lenOf(span))} m`);
+  if (r.id === 'belt' || r.id === 'beltzone') add('Height', `${sx1(beltBot() - WL)} to ${sx1(beltTop() - WL)} m on WL`);
+  if (/^(deck|dzone)/.test(r.id)) add('Height', `${deckName(r.deck)}, ${sx1(deckZ(r.deck) - WL)} m`);
+  if (/^slope/.test(r.id)) { const g = slopeGeo(A.decks[r.i]); add('Height', `${sx1(g.z - WL)} down to ${sx1(g.foot - WL)} m`); }
+  if (['tds', 'inner'].includes(r.id)) add('Height', `inner bottom to ${deckShort(DECKS.find(d => Math.abs(d.z - roofZ()) < 0.05)?.n ?? 2)}`);
+  if (t != null) add('Weight', `${N0(t)} t · ${f1(t / std * 100)} % of std`);
+  if (r.mat && !r.ro && !['tds', 'wings'].includes(r.id)) add('Material', (A.materials || {})[r.mat] || '—');
+  if (r.id === 'belt') add('Taper', `${N0(A.belt_mm)} at WL to ${N0(A.belt_bottom_mm ?? A.belt_mm)} at its edge`);
+  facts.append(L2);
+  if (/^(deck|slope|dzone)/.test(r.id)) facts.append(h('div', {class: 'note'}, 'Decks merge where they overlap on one deck; a built plate belongs to the first design deck there.'));
+  if (r.id === 'belt') facts.append(h('div', {class: 'note'}, 'The citadel runs between the outermost barbettes; the layout places it, so its length moves when the turrets do.'));
+  const shape = h('div', {class: 'shape'}, h('div', {class: 'hd'}, 'Shape', r.mat && !r.ro && !['tds', 'wings'].includes(r.id) ? h('span', {class: 'dd sch'}, h('span', {}, (A.materials || {})[r.mat] || 'from the scheme'), h('i', {}, '▼')) : null), ...shapeOf(r));
+  const imm = h('div', {class: 'imm2'}, 'Immune zone and shells fired in anger · against ', h('span', {class: 'dd', style: 'width:110px;opacity:0.55'}, `her own ${S.main[0]?.cal || ''} mm`, h('i', {}, '▼')), h('span', {class: 'tg'}, 'needs the penetration model'));
+  root.replaceChildren(h('div', {class: 'bh'}, 'Selected plate', h('b', {class: 'dim'}, 'drag its brass handles on the drawings')), h('div', {class: 'ins2'}, facts, shape), imm);
+}
+
+// ------------------------------------------------------------------ the sub-bar: reads as, coverage, the layout template, the materials
+const MATSCHEME = () => { const m = A.materials || {}; return m.decks && m.decks !== m.belt ? `${m.belt}, ${m.decks} decks` : m.belt || ''; };
+function reading() {
+  const ends = (A.end_belts?.fore?.mm || 0) + (A.end_belts?.aft?.mm || 0) > 0 || (A.decks || []).some(d => ['fore', 'aft', 'ends'].includes(d.extent));
+  return (A.belt_mm || 0) === 0 && !(A.decks || []).length ? 'unarmoured' : ends ? 'armoured ends' : 'all-or-nothing';
+}
+function layoutItems() {
+  const cur = layoutNow();
+  const items = [{head: 'Layout: how the protection is laid out'}];
+  let grp = null;
+  for (const t of LAYOUTS) {
+    if (t.group !== grp) { grp = t.group; items.push({head: grp}); }
+    const a = applyLayout(A, t.value), words = layoutWords(a);
+    items.push({lab: t.name, key: t.note, ds: DESC[t.note] || '', cur: cur.t === t && !cur.own,
+      tip: `<b>${t.name}</b> on this ship:<br>${words.length ? words.map(w => '· ' + w).join('<br>') : 'nothing to change'}<br><span class="dim">Thicknesses scale with the design’s own; what it doesn’t set stays.</span>`,
+      fn: () => { A = applyLayout(A, t.value); layoutTouched = 'applied'; S.scheme = t.note; }});
+  }
+  items.push('sep', {lab: 'Plain', key: 'none', ds: 'No slopes, an upright belt on the side, no inner bulkhead or boxes; zones and plates stay.', cur: !cur.t && !cur.own,
+    fn: () => { A = applyLayout(A, null); S.scheme = null; layoutTouched = 'applied'; }});
+  return items;
+}
+const DESC = {belt_and_slope: 'Pre-1915 two lines: a turtleback behind the belt, screens beside the magazines. Dreadnought, the battlecruisers.',
+  german_bulkhead: 'The turtleback with a torpedo bulkhead behind the coal, the citadel’s length. Nassau, Kaiser, Derfflinger.',
+  turtleback_modern: 'A low armour deck with shallow slopes behind the belt. Bismarck, Scharnhorst, Hipper.',
+  inclined_internal: 'The belt inside the shell, leaning, carried down as a lower belt. Nelson, South Dakota, Iowa.',
+  inclined_external: 'All-or-nothing belt on the side, leaning out at its top. Hood, Yamato, Littorio.',
+  french_modern: 'Inclined belt, heavy upper deck, light sloped lower deck, a plate under the magazines. Dunkerque, Richelieu.',
+  protected_deck: 'The deck alone, flat amidships, sloping below the waterline at the sides. Olympia, the scouts.',
+  cruiser_box: 'A belt over the machinery only, the magazines in armoured boxes. Kent, Leander, New Orleans.'};
+function subbar() {
+  const cur = layoutNow(), at = armourT();
+  $('reads').replaceChildren(`reads as ${reading()}${cur.t ? ' · ' + cur.t.name.toLowerCase() : ''} · armour ${N0(at)} t, ${f1(at / stdNow() * 100)} % of standard`);
+  const lay = h('span', {class: 'dd', style: 'width:196px', onclick: ev => { ev.stopPropagation(); const r = ev.currentTarget.getBoundingClientRect(), a = $('app').getBoundingClientRect(); menu(ev, layoutItems(), [r.left - a.left, r.bottom - a.top + 1]); }},
+    h('span', {style: cur.own ? 'color:var(--amber)' : ''}, cur.name), h('i', {}, '▼'));
+  lay.addEventListener('mousemove', ev => tip(ev, cur.t ? `<b>${cur.t.name}</b>${cur.own ? ' with the design’s own values' : ''}<br><span class="dim">${DESC[cur.t.note]}</span>` : 'No layout template: the plain inputs.'));
+  lay.addEventListener('mouseleave', untip);
+  $('scheme').replaceChildren(
+    h('span', {class: 'dim', style: 'font-size:10.5px'}, 'Coverage'),
+    seg([['aon', 'All-or-nothing'], ['ends', 'Armoured ends'], ['complete', 'Complete belt']], reading() === 'armoured ends' ? 'ends' : 'aon', () => {}),
+    h('span', {class: 'dim', style: 'font-size:10.5px;margin-left:8px'}, 'Layout'), lay,
+    h('span', {class: 'dim', style: 'font-size:10.5px;margin-left:8px'}, 'Materials'),
+    h('span', {class: 'dd sch', style: 'width:178px'}, h('span', {style: 'overflow:hidden;text-overflow:ellipsis'}, MATSCHEME()), h('i', {}, '▼')));
+}
+
+// ------------------------------------------------------------------ render, and the URL's states for screenshots
+function render() { subbar(); elevation(); sections(); table(); inspector(); paintHot(); }
+function setPath(path, v) {
+  if (path === 'layout') { const t = LAYOUTS.find(l => l.note === v); A = applyLayout(A, t ? t.value : null); layoutTouched = 'applied'; S.scheme = t ? t.note : null; return; }
+  const ks = path.split('.'); let o = A;
+  for (let i = 0; i < ks.length - 1; i++) { o[ks[i]] ??= {}; o = o[ks[i]]; }
+  const last = ks[ks.length - 1];
+  if (v === 'del') delete o[last]; else o[last] = isNaN(+v) ? v : +v;
+}
+tabs();
+for (const d of (params.get('do') || '').split(',').filter(Boolean)) { const k = d.indexOf(':'); setPath(d.slice(0, k), d.slice(k + 1)); }
+render();
+const M = params.get('menu'), TP = params.get('tip');
+if (M === 'layout') setTimeout(() => document.querySelector('#scheme .dd:not(.sch)').click());
+else if (M === 'cut1' || M === 'cut2') setTimeout(() => document.querySelectorAll('#sect .bh .dd')[M === 'cut1' ? 0 : 1].click());
+else if (M) setTimeout(() => { const e = document.querySelector(`#tbl [data-id="${M}"]`); const r = e.getBoundingClientRect(); e.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, clientX: r.left + 60, clientY: r.top + 8})); });
+if (TP && TP.startsWith('layout:')) setTimeout(() => { const n = +TP.slice(7), it = document.querySelectorAll('#menu .it')[n]; if (it) { const r = it.getBoundingClientRect(); it.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: r.right - 4, clientY: r.top + 6})); } }, 30);
+if (TP && TP.startsWith('cell:')) setTimeout(() => { const [k, n] = TP.slice(5).split(':').map(Number); const els = [...document.querySelectorAll(`#sect svg g[clip-path="url(#shull${k})"] rect`)].filter(e => e.getAttribute('fill-opacity')); const e = els[n]; if (e) { const r = e.getBoundingClientRect(); e.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2})); } });
+if (TP === 'handle') setTimeout(() => { const e = document.querySelector('#sect g[data-handle] rect[fill="transparent"]'); if (e) { const r = e.getBoundingClientRect(); e.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: r.left + 7, clientY: r.top + 7})); } });
+if (TP === 'comp') setTimeout(() => { const e = document.querySelectorAll('#elev .tog')[1]; const r = e.getBoundingClientRect(); e.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: r.left + 10, clientY: r.top + 6})); });
+</script>
+</body>
+</html>

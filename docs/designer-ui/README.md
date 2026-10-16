@@ -203,6 +203,29 @@ the port plan and the open questions are in `protection.md`. `?ship=dreadnought|
 | `png/protection-game-dreadnought-menu.png` | in the game: right-click on Dreadnought's third deck, fore end |
 | `png/protection-game-yamato-cover.png` | in the game: Yamato, hovering "Armoured ends" |
 
+## Protection tab: the layers (`protection-layers.html`, 2026-10-16, mockup for review)
+
+H8b of `docs/shipgen/protection-plan.md`: the tab learns slopes, inclined and internal belts, zones, belt extent, the
+inner bulkhead, magazine boxes and wings, TDS layers, platform decks, the layout templates and the compartment check.
+The midship section becomes two half-sections, each cut at its own station (machinery and a magazine by default, flags
+`1` `2` on the elevation), with the cells' contents tinted. The table gains sub-rows (zones, slopes) and an Inboard
+group; the selected plate gains a Shape column; the sub-bar gains Layout. Real builds of seven designs
+(`protection-layers-data.js`); `?ship=bismarck|dreadnought|nelson|kent|dunkerque|kgv|destroyer`. The reasoning, the
+findings, the review questions and the port plan are in `protection-layers.md`.
+
+| File | State |
+|---|---|
+| `png/protection-layers-bismarck.png` | Bismarck as opened: machinery and magazine A |
+| `png/protection-layers-dreadnought.png` | the magazine screens on the wing walls, coal in the machinery cut |
+| `png/protection-layers-nelson-comp.png` | internal belt and lower belt; Compartments on, the warned run hatched |
+| `png/protection-layers-kent.png` | boxes and the machinery belt |
+| `png/protection-layers-dunkerque.png` | lean, sloped lower deck, floor plate |
+| `png/protection-layers-kgv.png` | zones, with the 2 m slivers at the secondary magazines (finding 1) |
+| `png/protection-layers-bismarck-layers.png` | three TDS layers, cut at X and A |
+| `png/protection-layers-destroyer-box.png` | a destroyer given a 25 mm box and 1.6 m wings |
+| `png/protection-layers-layout-menu.png` | the Layout list, hovering German bulkhead |
+| `png/protection-layers-dread-german.png` | Dreadnought after German bulkhead |
+
 ## Screenshots (`png/`)
 
 | File | State |
