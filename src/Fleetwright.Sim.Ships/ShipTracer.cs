@@ -205,23 +205,30 @@ public static class ShipTracer
         readonly int SidePlate(double x, double z, out double mm)
         {
             mm = 0;
-            foreach (int i in g.Sides)
+            int found = -1;
+            foreach (int j in g.Sides)
             {
-                ref readonly var p = ref c.SidePlates[i];
-                if (x < p.X0 - Eps || x > p.X1 + Eps || z < p.Bottom - Eps || z > p.Top + Eps)
+                ref readonly var q = ref c.SidePlates[j];
+                if (x < q.X0 - Eps || x > q.X1 + Eps || z < q.Bottom - Eps || z > q.Top + Eps)
                     continue;
-                mm = p.ThicknessMm;
-                if (!double.IsNaN(p.BottomMm) && !double.IsNaN(p.TaperFrom) && z < p.TaperFrom && p.TaperFrom > p.Bottom)
-                    mm = p.BottomMm + (p.ThicknessMm - p.BottomMm) * Math.Clamp((z - p.Bottom) / (p.TaperFrom - p.Bottom), 0, 1);
-                else if (!double.IsNaN(p.TipMm) && p.X1 > p.X0)
-                {
-                    // from the inner end (nearer amidships) to the tip at the ship's end
-                    double f = Math.Abs(p.X1) > Math.Abs(p.X0) ? (x - p.X0) / (p.X1 - p.X0) : (p.X1 - x) / (p.X1 - p.X0);
-                    mm = p.ThicknessMm + (p.TipMm - p.ThicknessMm) * Math.Clamp(f, 0, 1);
-                }
-                return i;
+                if (found < 0 || q.Kind == StrakeKind.Zone)
+                    found = j;   // the first that covers it, unless a zone of the belt (over the magazines) does
+                if (q.Kind == StrakeKind.Zone)
+                    break;
             }
-            return -1;
+            if (found < 0)
+                return -1;
+            ref readonly var p = ref c.SidePlates[found];
+            mm = p.ThicknessMm;
+            if (!double.IsNaN(p.BottomMm) && !double.IsNaN(p.TaperFrom) && z < p.TaperFrom && p.TaperFrom > p.Bottom)
+                mm = p.BottomMm + (p.ThicknessMm - p.BottomMm) * Math.Clamp((z - p.Bottom) / (p.TaperFrom - p.Bottom), 0, 1);
+            else if (!double.IsNaN(p.TipMm) && p.X1 > p.X0)
+            {
+                // from the inner end (nearer amidships) to the tip at the ship's end
+                double f = Math.Abs(p.X1) > Math.Abs(p.X0) ? (x - p.X0) / (p.X1 - p.X0) : (p.X1 - x) / (p.X1 - p.X0);
+                mm = p.ThicknessMm + (p.TipMm - p.ThicknessMm) * Math.Clamp(f, 0, 1);
+            }
+            return found;
         }
 
         /// <summary>Into or out of the sea in the step to s: where the hull changed (sh), just on the sea's side of it,

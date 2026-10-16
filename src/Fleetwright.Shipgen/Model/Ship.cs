@@ -318,6 +318,9 @@ public sealed record StrakeReport(string Id, string Kind, string Extent, double 
 {
     public double? TipMm { get; init; }
     public string? Material { get; init; }
+    /// <summary>A zone of the belt (kind "zone": over the magazines, in place of the belt there) tapers as the belt does.</summary>
+    public double? BottomMm { get; init; }
+    public double? TaperFrom { get; init; }
 }
 
 /// <summary>An armoured transverse bulkhead: ThicknessMm from Top down, LowerMm under LowerTop when it's thinner there.</summary>

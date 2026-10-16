@@ -542,6 +542,8 @@ public enum StrakeKind : byte
     End,
     Upper,
     Box,
+    /// <summary>The belt over the magazines, in place of the belt there (protection-plan.md H5).</summary>
+    Zone,
 }
 
 public enum Extent : byte

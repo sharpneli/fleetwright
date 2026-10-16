@@ -348,7 +348,7 @@ public static class Subdivision
         var loBase = new Dictionary<string, double>(StringComparer.Ordinal);
         var belts = new List<Strake>();
         if (ag.BeltMm > 0)
-            belts.Add(new Strake("Belt", "belt", "citadel", ag.BeltMm, ag.BeltMm, ag.X0, ag.X1, ag.BeltBottom, ag.BeltTop, ag.BeltMaterial)
+            belts.Add(new Strake("Belt", "belt", "citadel", ag.BeltMm, ag.BeltMm, ag.BeltX0, ag.BeltX1, ag.BeltBottom, ag.BeltTop, ag.BeltMaterial)
                 { BottomMm = ag.BeltBottomMm, Wl = Rz(ag.Waterline) });
         belts.AddRange(ag.Strakes);
         belts = belts.Select(b => b with { Bottom = Rz(b.Bottom), Top = Rz(b.Top) }).ToList();
@@ -515,7 +515,7 @@ public static class Subdivision
                         .Select(b => (Mm: Armour.BeltMmAt(b, xm, Math.Min(b.Top, trTop)), B: b)).ToList();
                     if (side.Count > 0)
                     {
-                        var (mm, b) = side.MaxBy(v => v.Mm);
+                        var (mm, b) = side.Any(v => v.B.Kind == "zone") ? side.First(v => v.B.Kind == "zone") : side.MaxBy(v => v.Mm);
                         c.BeltMm = (long)Math.Round(mm);
                         c.BeltMaterial = string.IsNullOrEmpty(b.Material) ? null : b.Material;
                     }

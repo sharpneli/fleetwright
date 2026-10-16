@@ -136,10 +136,17 @@ public sealed class MatchupProfile
             for (int k = 0; k < nz; k++)
             {
                 double x = x0 + (i + 0.5) * c.Length / nx, z = wl + (k + 0.5) * (top - wl) / nz;
-                double best = 0;
+                double best = 0, zone = double.NaN;
                 foreach (ref readonly var p in c.SidePlates)
                     if (x >= p.X0 && x <= p.X1 && z >= p.Bottom && z <= p.Top)
-                        best = Math.Max(best, p.ThicknessMm * Quality(q, p.Material));
+                    {
+                        if (p.Kind == StrakeKind.Zone)
+                            zone = p.ThicknessMm * Quality(q, p.Material);   // in the belt's place over the magazines
+                        else
+                            best = Math.Max(best, p.ThicknessMm * Quality(q, p.Material));
+                    }
+                if (!double.IsNaN(zone))
+                    best = zone;
                 // the inner bulkhead behind it (docs/shipgen/protection-plan.md H4), as the tracer adds it
                 double inner = 0;
                 foreach (ref readonly var b in c.Bulkheads)

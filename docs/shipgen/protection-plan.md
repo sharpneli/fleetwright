@@ -248,6 +248,18 @@ this plan builds the layers so E1 has something to work on.
   Leander, New Orleans and Brooklyn (a belt plus a box), Dunkerque's floor plate, and an up-armoured destroyer for
   players who'll pay for it.
 
+- **H5a done 2026-10-16** (zones and belt extent; boxes are H5b). Flat keys again: `armour.belt_magazines_mm`, a deck's
+  `magazines_mm` (citadel decks), `armour.belt_extent: citadel | machinery`. Where the last layout pass stowed the
+  magazines (`Geo.MagazineSpans`, merged), the belt gets `zone` strakes in its place (tapering as it does; weighed with
+  the belt's own formula, the belt over its stretch less them) and a citadel deck is cut into pieces. A zone overrides
+  the belt wherever it covers, in the subdivision, the tracer (`SidePlate`) and the matchup alike, so a belt thinner at
+  the magazines (Brooklyn) works as well as a thicker one. Off by default: goldens unchanged.
+  - KGV with 348/374 mm and a 127/152 mm deck: +167 t; the zones over each magazine stretch, shell-test no leaks. Kent
+    with the 1930s refit's 114 mm machinery belt: +695 t, the belt from −33 to +26 m. A light cruiser with 127 mm,
+    51 at the magazines (Brooklyn): +537 t.
+  - The zones follow the magazines exactly, so a gap between two magazine stretches keeps the belt's own thickness;
+    real ships ran one thickness over the whole magazine stretch. Left as it is.
+
 ### H6. Sloped decks and inclined belts (§6.2, §6.3)
 - **One new plate primitive:** a longitudinal inclined plate (y linear in z between two heights, over x0..x1), crossed
   exactly in the tracer like the armour decks, weighed by its area.

@@ -331,6 +331,10 @@ public sealed record AaInput
 public sealed record ArmourInput
 {
     public double? BeltMm { get; init; }
+    /// <summary>The belt beside the magazines (protection-plan.md H5; null: belt_mm), and how far the belt runs:
+    /// "citadel" (the default) or "machinery" (a treaty cruiser's, the magazines boxed instead).</summary>
+    public double? BeltMagazinesMm { get; init; }
+    public string? BeltExtent { get; init; }
     public double? BeltBottomMm { get; init; }
     public double? BeltDepthM { get; init; }
     public double? BeltHeightM { get; init; }
@@ -363,6 +367,8 @@ public sealed record ArmourDeckInput
 {
     public int? Deck { get; init; }
     public double? Mm { get; init; }
+    /// <summary>A citadel deck's plate over the magazines (protection-plan.md H5; null: mm).</summary>
+    public double? MagazinesMm { get; init; }
     public string? Extent { get; init; }
     public string? Material { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }

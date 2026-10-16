@@ -478,10 +478,11 @@ public static class ShipClassCompiler
                         "end" => StrakeKind.End,
                         "upper" => StrakeKind.Upper,
                         "box" => StrakeKind.Box,
+                        "zone" => StrakeKind.Zone,
                         _ => throw new ShipCompileException($"unknown strake kind \"{s.Kind}\""),
                     },
                     Extent = ExtentOf(s.Extent), ThicknessMm = s.ThicknessMm, X0 = s.X0, X1 = s.X1, Bottom = s.Bottom, Top = s.Top,
-                    Material = Material(s.Material), BottomMm = double.NaN, TaperFrom = double.NaN, TipMm = Or(s.TipMm),
+                    Material = Material(s.Material), BottomMm = Or(s.BottomMm), TaperFrom = Or(s.TaperFrom), TipMm = Or(s.TipMm),
                 });
                 ids.Add(s.Id);
             }

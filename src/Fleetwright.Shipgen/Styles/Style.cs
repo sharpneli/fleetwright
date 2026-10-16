@@ -50,7 +50,7 @@ public abstract class Style
             Lim(0, 10, "torpedoes", "submerged", "per_side"), Lim(0, 4, "torpedoes", "submerged", "bow"),
             Lim(0, 4, "torpedoes", "submerged", "stern"), Lim(1, 20, "torpedoes", "submerged", "torpedoes_per_tube"),
             Lim(0, 500, "aa", "heavy"), Lim(0, 500, "aa", "light"),
-            Lim(0, 2000, "armour", "belt_mm"),
+            Lim(0, 2000, "armour", "belt_mm"), Lim(0, 2000, "armour", "belt_magazines_mm"),
             Lim(0, 20, "armour", "tds_m"), Lim(0, 20, "armour", "magazine_wing_m"), Lim(1, 8, "armour", "tds_layers"),
             Lim(0, 2000, "armour", "tds_holding_mm"), Lim(0, 2000, "armour", "tds_layer_mm"), Lim(0, 2000, "armour", "bulkhead_mm"),
             Lim(0, 2000, "armour", "belt_bottom_mm"), Lim(0, 30, "armour", "belt_depth_m"), Lim(0, 30, "armour", "belt_height_m"),

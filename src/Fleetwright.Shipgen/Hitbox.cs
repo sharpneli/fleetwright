@@ -206,7 +206,7 @@ public static class Hitbox
 
         var armour = new ArmourReport();
         if (ag.BeltMm > 0)
-            armour.Belt = new BeltReport(ag.BeltMm, Math.Round(ag.X0, 3), Math.Round(ag.X1, 3), Rz(ag.BeltBottom), Rz(ag.BeltTop))
+            armour.Belt = new BeltReport(ag.BeltMm, Math.Round(ag.BeltX0, 3), Math.Round(ag.BeltX1, 3), Rz(ag.BeltBottom), Rz(ag.BeltTop))
             {
                 Material = NonEmpty(ag.BeltMaterial),
                 BottomMm = ag.BeltBottomMm != ag.BeltMm ? ag.BeltBottomMm : null,
@@ -214,7 +214,12 @@ public static class Hitbox
             };
         if (ag.Strakes.Count > 0)
             armour.Strakes = ag.Strakes.Select(st => new StrakeReport(st.Id, st.Kind, st.Extent, st.Mm, Math.Round(st.X0, 3), Math.Round(st.X1, 3),
-                Rz(st.Bottom), Rz(st.Top)) { TipMm = st.TipMm != st.Mm ? st.TipMm : null, Material = NonEmpty(st.Material) }).ToList();
+                Rz(st.Bottom), Rz(st.Top))
+            {
+                TipMm = st.TipMm != st.Mm ? st.TipMm : null, Material = NonEmpty(st.Material),
+                BottomMm = st.Kind == "zone" && st.BottomMm != st.Mm ? Math.Round(st.BottomMm ?? st.Mm, 1) : null,
+                TaperFrom = st.Kind == "zone" && st.BottomMm != st.Mm ? Rz(Math.Min(ag.BeltTop, ag.Waterline)) : null,
+            }).ToList();
         var bulkheads = new List<ArmourBulkheadReport>();
         ArmourBulkheadReport BulkheadReport(ArmourBulkhead b) => new(b.Id, Math.Round(b.X, 3), Math.Round(b.Mm), Rz(b.Bottom), Rz(b.Top),
             NonEmpty(b.Material))

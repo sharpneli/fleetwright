@@ -2,7 +2,11 @@ namespace Fleetwright.Shipgen;
 
 /// <summary>A design's armour deck placed on the deck stack: the deck it lies on (asked: the one the design named),
 /// its thickness, extent and height above the keel.</summary>
-public sealed record PlannedArmourDeck(long Deck, double Mm, string Extent, double Z, long Asked, string? Material);
+public sealed record PlannedArmourDeck(long Deck, double Mm, string Extent, double Z, long Asked, string? Material)
+{
+    /// <summary>Its plate over the magazines (a citadel deck's, protection-plan.md H5), or null.</summary>
+    public double? MagazinesMm { get; init; }
+}
 
 /// <summary>An armour deck over one stretch: Extent citadel, full, fore, aft or steering; W a narrower width than the
 /// beam (the steering box).</summary>
@@ -16,6 +20,8 @@ public sealed class ArmourDeck
     public string? Material;
     public double X0, X1;
     public double? W;
+    /// <summary>Its plate over the magazines, while the pieces are gathered (protection-plan.md H5); null: Mm.</summary>
+    public double? MagazinesMm;
 }
 
 /// <summary>A strake of side armour: Kind end, upper or box (the steering gear's); Mm at its root tapering to TipMm at
@@ -40,6 +46,8 @@ public sealed record ArmourBulkhead(string Id, double X, double Mm, double Botto
 public sealed class ArmourLayout
 {
     public double X0, X1, BeltMm, BeltBottomMm, Waterline, BeltBottom, BeltTop;
+    /// <summary>Where the main belt runs: the citadel, or the machinery only (armour.belt_extent).</summary>
+    public double BeltX0, BeltX1;
     public List<ArmourDeck> Decks = [];
     public List<Strake> Strakes = [];
     public double? MainZ, RoofZ;
@@ -127,6 +135,8 @@ public static class Armour
             }
             if (!(d.Mm >= 0))
                 errs.Add($"armour.decks[{k}].mm: use a thickness of 0 or more");
+            if (d.MagazinesMm is double mg && !(mg >= 0))
+                errs.Add($"armour.decks[{k}].magazines_mm: use a thickness of 0 or more");
             if (!ArmourExtents.Contains(d.Extent))
                 errs.Add($"armour.decks[{k}].extent = {Style.Quote(d.Extent)}: use {string.Join(" or ", ArmourExtents)}");
             if (last is long l && deck < l)
@@ -137,6 +147,8 @@ public static class Armour
             last = last is long l3 ? Math.Max(l3, deck) : deck;
             prev = d.Extent;
         }
+        if (a.BeltExtent is { } be && be is not ("citadel" or "machinery"))
+            errs.Add($"armour.belt_extent = {Style.Quote(be)}: use citadel or machinery");
         if (a.UpperBelt is { } ub && !ArmourExtents.Contains(ub.Extent ?? "citadel"))
             errs.Add($"armour.upper_belt.extent = {Style.Quote(ub.Extent)}: use {string.Join(" or ", ArmourExtents)}");
         if (a.Materials is { } md)
@@ -187,7 +199,7 @@ public static class Armour
             long asked = d.Deck ?? 0;
             long n = Math.Max(top, Math.Min(asked, stack[^1].N));
             result.Add(new PlannedArmourDeck(n, d.Mm ?? 0, d.Extent ?? "citadel", n >= 0 ? stack[(int)n].Z : D - n * Geometry.DeckPitch,
-                asked, ArmourMaterial(design, "decks", d.Material)));
+                asked, ArmourMaterial(design, "decks", d.Material)) { MagazinesMm = d.MagazinesMm });
         }
         return result;
     }
@@ -255,18 +267,32 @@ public static class Armour
                 if (p != null)
                 {
                     string? pm = p.Material, dm = d.Material;
+                    if (p.MagazinesMm is not null || d.MagazinesMm is not null)
+                        p.MagazinesMm = (p.MagazinesMm ?? p.Mm) + (d.MagazinesMm ?? d.Mm);
                     p.Mm += d.Mm;
                     (p.X0, p.X1) = (Math.Min(p.X0, p0), Math.Max(p.X1, p1));
                     p.Extent = p.Extent == "full" || ext == "full" ? "full" : p.Extent;
                     p.Material = dm is null || dm == pm ? pm : pm is null ? dm : $"{pm} + {dm}";
                     continue;
                 }
-                decks.Add(new ArmourDeck { Deck = dn, Mm = d.Mm, Extent = ext, Z = d.Z, Asked = d.Asked, Material = d.Material, X0 = p0, X1 = p1 });
+                decks.Add(new ArmourDeck { Deck = dn, Mm = d.Mm, Extent = ext, Z = d.Z, Asked = d.Asked, Material = d.Material, X0 = p0, X1 = p1,
+                    MagazinesMm = ext == "citadel" ? d.MagazinesMm : null });
             }
         }
         var over = decks.Where(d => d.Extent is "citadel" or "full" && d.Deck >= 0).ToList();
         var main = over.MaxBy(d => (d.Mm, d.Z));
         var roof = over.MinBy(d => d.Z);
+        // zones (protection-plan.md H5): a citadel deck and the belt thicker (or thinner) beside the magazines, where the
+        // last layout pass stowed them
+        var mags = new List<(double X0, double X1)>();
+        foreach (var (m0, m1) in (geo.MagazineSpans ?? []).OrderBy(m => m.X0))
+        {
+            if (mags.Count > 0 && m0 <= mags[^1].X1 + 1e-6)
+                mags[^1] = (mags[^1].X0, Math.Max(mags[^1].X1, m1));
+            else
+                mags.Add((m0, m1));
+        }
+        decks = decks.SelectMany(d => Zoned(d, mags)).ToList();
         double h0 = BeltHA * T + BeltHB;
         double below = a.BeltDepthM ?? h0 / 2, above = a.BeltHeightM ?? h0 / 2;
         double h = below + above;
@@ -275,6 +301,19 @@ public static class Armour
         double top = Math.Min(D, Math.Max(band, main?.Z ?? 0.0));
 
         var strakes = new List<Strake>();
+        var (bx0, bx1) = a.BeltExtent == "machinery" && geo.Machinery is var (mx0, mx1) ? (Math.Max(x0, mx0), Math.Min(x1, mx1)) : (x0, x1);
+        if (belt > 0 && a.BeltMagazinesMm is double bm && bm != belt)
+        {
+            double bb = a.BeltBottomMm ?? belt;
+            int k = 0;
+            foreach (var (m0, m1) in mags)
+            {
+                double s0 = Math.Max(bx0, m0), s1 = Math.Min(bx1, m1);
+                if (s1 - s0 > 0.05)
+                    strakes.Add(new Strake($"Belt (magazines){(mags.Count > 1 ? $" {++k}" : "")}", "zone", "citadel", bm, bm, s0, s1, bot, top,
+                        ArmourMaterial(design, "belt")) { BottomMm = bm * bb / belt, Wl = T });
+            }
+        }
         var endBhs = new List<ArmourBulkhead>();
         var endPlates = new List<ArmourBulkhead>();
         double bhBot = Math.Max(0.0, bot - 0.4 * h);
@@ -375,13 +414,39 @@ public static class Armour
                 bhTop = s.Top;
         return new ArmourLayout
         {
-            X0 = x0, X1 = x1, BeltMm = belt, BeltBottomMm = a.BeltBottomMm ?? belt, Waterline = T, BeltBottom = bot, BeltTop = top,
+            X0 = x0, X1 = x1, BeltX0 = bx0, BeltX1 = bx1, BeltMm = belt, BeltBottomMm = a.BeltBottomMm ?? belt, Waterline = T, BeltBottom = bot, BeltTop = top,
             Decks = decks, Strakes = strakes, MainZ = main?.Z, RoofZ = roof?.Z, RoofMm = roof?.Mm ?? 0, RoofMaterial = roof?.Material,
             BeltMaterial = ArmourMaterial(design, "belt"), BulkheadMaterial = ArmourMaterial(design, "bulkheads"),
             Armoured = belt > 0 || over.Count > 0, BulkheadMm = bhMm, BulkheadLowerMm = BulkheadLowerShare * bhMm,
             BulkheadBottom = citBot, BulkheadStep = Math.Max(citBot, Math.Min(bot, bhTop)), BulkheadTop = bhTop,
             EndBulkheads = endBhs, EndPlates = endPlates,
         };
+    }
+
+    /// <summary>A deck piece cut where the magazines are when it's thicker or thinner over them: the pieces over the
+    /// magazines take MagazinesMm (none at 0).</summary>
+    static List<ArmourDeck> Zoned(ArmourDeck d, List<(double X0, double X1)> mags)
+    {
+        if (d.MagazinesMm is not double mm || mm == d.Mm)
+            return [d];
+        var result = new List<ArmourDeck>();
+        void Piece(double a, double b, double t)
+        {
+            if (b - a > 0.05 && t > 0)
+                result.Add(new ArmourDeck { Deck = d.Deck, Mm = t, Extent = d.Extent, Z = d.Z, Asked = d.Asked, Material = d.Material, X0 = a, X1 = b, W = d.W });
+        }
+        double x = d.X0;
+        foreach (var (m0, m1) in mags)
+        {
+            double a = Math.Max(d.X0, m0), b = Math.Min(d.X1, m1);
+            if (b <= a)
+                continue;
+            Piece(x, a, d.Mm);
+            Piece(a, b, mm);
+            x = b;
+        }
+        Piece(x, d.X1, d.Mm);
+        return result;
     }
 
     /// <summary>The citadel's two armoured bulkheads, forward then aft.</summary>
@@ -402,15 +467,23 @@ public static class Armour
         double Slant(double lo, double hi) => topside?.SlantFactor(B, lo - D, hi - D) ?? 1.0;
         double Across(double x, double lo, double hi) => topside?.BandRatio(x, lo - D, hi - D) ?? 1.0;
         var result = new List<Weight>();
-        if (g.BeltMm > 0)
+        // a belt mm thick (mb at its lower edge, tapering from the waterline down), len long: its weight and height
+        Weight BeltOf(string name, double len, double x, double mm, double mb)
         {
-            double bot = g.BeltBottom, top = g.BeltTop, mm = g.BeltMm, mb = g.BeltBottomMm;
+            double bot = g.BeltBottom, top = g.BeltTop;
             double t0 = Math.Min(top, Math.Max(bot, g.Waterline));
             double aUp = (top - t0) * mm * Slant(t0, top), aLo = (t0 - bot) * (mm + mb) / 2 * Slant(bot, t0);
             double zLo = mb + mm > 0 ? bot + (t0 - bot) * (mb + 2 * mm) / (3 * (mb + mm)) : bot;
             double zc = aUp + aLo > 0 ? ((top + t0) / 2 * aUp + zLo * aLo) / (aUp + aLo) : (top + bot) / 2;
-            result.Add(new Weight("Belt armour", "armour", 2 * lc * (aUp + aLo) / 1000 * Weight.Steel, xc, ZRel.Frac(D != 0 ? zc / D : 0.5)));
+            return new Weight(name, "armour", 2 * len * (aUp + aLo) / 1000 * Weight.Steel, x, ZRel.Frac(D != 0 ? zc / D : 0.5));
         }
+        if (g.BeltMm > 0)
+        {
+            double zones = g.Strakes.Where(s => s.Kind == "zone").Sum(s => s.X1 - s.X0);
+            result.Add(BeltOf("Belt armour", Math.Max(0.0, g.BeltX1 - g.BeltX0 - zones), (g.BeltX0 + g.BeltX1) / 2, g.BeltMm, g.BeltBottomMm));
+        }
+        foreach (var s in g.Strakes.Where(s => s.Kind == "zone"))
+            result.Add(BeltOf(s.Id, s.X1 - s.X0, (s.X0 + s.X1) / 2, s.Mm, s.BottomMm ?? s.Mm));
         if (g.Armoured && g.BulkheadMm > 0)
         {
             // full thickness down to the step, thinner under it
@@ -423,7 +496,7 @@ public static class Armour
         foreach (var b in g.EndBulkheads.Concat(g.EndPlates))
             result.Add(new Weight(b.Id, "armour", (b.W is double w && w != 0 ? w : B * Across(b.X, b.Bottom, b.Top)) * (b.Top - b.Bottom) * b.Mm / 1000 * Weight.Steel, b.X,
                 Zf(b.Top, b.Bottom)));
-        foreach (var s in g.Strakes)
+        foreach (var s in g.Strakes.Where(s => s.Kind != "zone"))
         {
             var (a, b) = s.Extent != "aft" ? (s.Mm, s.TipMm) : (s.TipMm, s.Mm);
             double f = a + b > 0 ? (a + 2 * b) / (3 * (a + b)) : 0.5;
