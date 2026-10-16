@@ -893,6 +893,167 @@ public static class Knobs
         Applies = d => d.StyleName == "carrier",
     };
 
+    // ------------------------------------------------------------------ protection: the layers (protection-plan.md H2-H6,
+    // docs/designer-ui/protection-layers.md)
+
+    public static readonly NumberKnob BeltMagazines = new("belt_magazines", "Belt at the magazines", Quantity.Armour, 10, 0.5)
+    {
+        Get = d => d.Armour?.BeltMagazinesMm,
+        Set = (d, v) => Arm(d, a => a with { BeltMagazinesMm = v }),
+        LimitPath = ["armour", "belt_magazines_mm"],
+        Applies = d => (d.Armour?.BeltMm ?? 0) > 0,
+    };
+
+    public static readonly NumberKnob BeltIncline = new("belt_incline", "Belt's lean", Quantity.Angle, 1, 1)
+    {
+        Get = d => d.Armour?.BeltInclineDeg,
+        Set = (d, v) => Arm(d, a => a with { BeltInclineDeg = v is > 0 ? v : null }),
+        Auto = (d, s) => 0,
+        LimitPath = ["armour", "belt_incline_deg"],
+        Applies = d => (d.Armour?.BeltMm ?? 0) > 0,
+    };
+
+    public static readonly ChoiceKnob BeltPosition = new("belt_position", "Belt stands", ["external", "internal"], ["on the side", "inside the shell"])
+    {
+        Get = d => d.Armour?.BeltPosition,
+        Set = (d, v) => Arm(d, a => a with { BeltPosition = v == "internal" ? v : null }),
+        Default = "external",
+        Applies = d => (d.Armour?.BeltMm ?? 0) > 0,
+    };
+
+    public static readonly ChoiceKnob BeltExtent = new("belt_extent", "Belt runs over", ["citadel", "machinery"], ["the citadel", "the machinery"])
+    {
+        Get = d => d.Armour?.BeltExtent,
+        Set = (d, v) => Arm(d, a => a with { BeltExtent = v == "machinery" ? v : null }),
+        Default = "citadel",
+        Applies = d => (d.Armour?.BeltMm ?? 0) > 0,
+    };
+
+    public static NumberKnob DeckSlopeMm(int i) => new($"deck{i}_slope_mm", "Slopes", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.Armour?.Decks?.ElementAtOrDefault(i)?.SlopeMm,
+        Set = (d, v) => Arm(d, a => a with { Decks = Replace(a.Decks!, i, x => x with { SlopeMm = v }) }),
+        LimitPath = ["armour", "decks", "slope_mm"],
+    };
+
+    public static NumberKnob DeckSlopeDeg(int i) => new($"deck{i}_slope_deg", "Slopes' angle", Quantity.Angle, 1, 1)
+    {
+        Get = d => d.Armour?.Decks?.ElementAtOrDefault(i)?.SlopeDeg,
+        Set = (d, v) => Arm(d, a => a with { Decks = Replace(a.Decks!, i, x => x with { SlopeDeg = v }) }),
+        Auto = (d, s) => Armour.SlopeDegDefault,
+        CanAuto = true,
+        LimitPath = ["armour", "decks", "slope_deg"],
+    };
+
+    public static NumberKnob DeckMagazinesMm(int i) => new($"deck{i}_magazines_mm", "At the magazines", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.Armour?.Decks?.ElementAtOrDefault(i)?.MagazinesMm,
+        Set = (d, v) => Arm(d, a => a with { Decks = Replace(a.Decks!, i, x => x with { MagazinesMm = v }) }),
+        Lo = 0,
+        Hi = 2000,
+    };
+
+    public static readonly NumberKnob TdsLayers = new("tds_layers", "Torpedo protection layers", Quantity.Count, 1, 1)
+    {
+        Get = d => d.Armour?.TdsLayers,
+        Set = (d, v) => Arm(d, a => a with { TdsLayers = I(v) is > 1 ? I(v) : null }),
+        Auto = (d, s) => 1,
+        LimitPath = ["armour", "tds_layers"],
+        Applies = d => (d.Armour?.TdsM ?? 0) > 0,
+    };
+
+    public static readonly NumberKnob TdsHolding = new("tds_holding", "Holding bulkhead", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.Armour?.TdsHoldingMm,
+        Set = (d, v) => Arm(d, a => a with { TdsHoldingMm = v }),
+        Auto = (d, s) => Armour.Tds(d).HoldingMm,
+        CanAuto = true,
+        LimitPath = ["armour", "tds_holding_mm"],
+        Applies = d => (d.Armour?.TdsM ?? 0) > 0,
+    };
+
+    public static readonly NumberKnob TdsLayerWall = new("tds_layer_mm", "Layer walls", Quantity.Armour, 1, 0.05)
+    {
+        Get = d => d.Armour?.TdsLayerMm,
+        Set = (d, v) => Arm(d, a => a with { TdsLayerMm = v }),
+        Auto = (d, s) => Armour.Tds(d).LayerMm,
+        CanAuto = true,
+        LimitPath = ["armour", "tds_layer_mm"],
+        Applies = d => (d.Armour?.TdsM ?? 0) > 0 && (d.Armour?.TdsLayers ?? 1) > 1,
+    };
+
+    static Design Inner(Design d, Func<InnerBulkheadInput, InnerBulkheadInput> f) =>
+        Arm(d, a => a with { InnerBulkhead = f(a.InnerBulkhead ?? new InnerBulkheadInput { Mm = 0 }) });
+
+    public static readonly NumberKnob InnerMm = new("inner_mm", "Inner bulkhead", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.Armour?.InnerBulkhead?.Mm,
+        Set = (d, v) => Inner(d, x => x with { Mm = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["armour", "inner_bulkhead", "mm"],
+    };
+
+    public static readonly NumberKnob InnerMagazines = new("inner_mags", "Inner bulkhead at the magazines", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.Armour?.InnerBulkhead?.MagazinesMm,
+        Set = (d, v) => Inner(d, x => x with { MagazinesMm = v }),
+        Auto = (d, s) => d.Armour?.InnerBulkhead?.Mm ?? 0,
+        CanAuto = true,
+        LimitPath = ["armour", "inner_bulkhead", "magazines_mm"],
+    };
+
+    public static readonly NumberKnob InnerInboard = new("inner_inboard", "Inner bulkhead in from the side", Quantity.Length, 0.1, 0.5)
+    {
+        Get = d => d.Armour?.InnerBulkhead?.InboardM,
+        Set = (d, v) => Inner(d, x => x with { InboardM = v }),
+        Auto = (d, s) => s != null ? Armour.MagazineWingM(d, s.Hitboxes.Beam) : null,
+        CanAuto = true,
+        LimitPath = ["armour", "inner_bulkhead", "inboard_m"],
+    };
+
+    static Design Box(Design d, Func<MagazineBoxInput, MagazineBoxInput> f) => Arm(d, a => a with { MagazineBox = f(a.MagazineBox ?? new MagazineBoxInput()) });
+
+    public static readonly NumberKnob BoxSide = new("box_side", "Magazine boxes, sides", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.Armour?.MagazineBox?.SideMm,
+        Set = (d, v) => Box(d, x => x with { SideMm = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["armour", "magazine_box", "side_mm"],
+    };
+
+    public static readonly NumberKnob BoxCrown = new("box_crown", "Magazine boxes, crown", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.Armour?.MagazineBox?.CrownMm,
+        Set = (d, v) => Box(d, x => x with { CrownMm = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["armour", "magazine_box", "crown_mm"],
+    };
+
+    public static readonly NumberKnob BoxEnd = new("box_end", "Magazine boxes, ends", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.Armour?.MagazineBox?.EndMm,
+        Set = (d, v) => Box(d, x => x with { EndMm = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["armour", "magazine_box", "end_mm"],
+    };
+
+    public static readonly NumberKnob BoxFloor = new("box_floor", "Magazine boxes, floor", Quantity.Armour, 5, 0.25)
+    {
+        Get = d => d.Armour?.MagazineBox?.FloorMm,
+        Set = (d, v) => Box(d, x => x with { FloorMm = v }),
+        Auto = (d, s) => 0,
+        LimitPath = ["armour", "magazine_box", "floor_mm"],
+    };
+
+    public static readonly NumberKnob MagazineWing = new("magazine_wing", "Magazine wings", Quantity.Length, 0.1, 0.5)
+    {
+        Get = d => d.Armour?.MagazineWingM,
+        Set = (d, v) => Arm(d, a => a with { MagazineWingM = v }),
+        Auto = (d, s) => s != null ? Armour.MagazineWingShare * s.Hitboxes.Beam : null,
+        CanAuto = true,
+        LimitPath = ["armour", "magazine_wing_m"],
+    };
+
     // ------------------------------------------------------------------ batteries: details
 
     public static ToggleKnob MainCrossDeck(int i) => new($"main{i}_cross", "Cross-deck fire (echelon)")
@@ -1164,6 +1325,8 @@ public static class Knobs
             WingBunker, Rudders, SearchRadar, BufferDays, WaterRation, BerthRatio, OfficerFraction,
             HullMaterial, SuperstructureMaterial, UpperBeltMaterial, SteeringMaterial, SteeringRoofMaterial,
             MainFaces, MainCalibres, MainRoundsAll, EndBelts,
+            BeltMagazines, BeltIncline, BeltPosition, BeltExtent, TdsLayers, TdsHolding, TdsLayerWall, InnerMm, InnerMagazines, InnerInboard,
+            BoxSide, BoxCrown, BoxEnd, BoxFloor, MagazineWing,
         ];
         foreach (var k in fixedKnobs)
             yield return k;
@@ -1181,6 +1344,9 @@ public static class Knobs
             yield return DeckLevel(i);
             yield return DeckExtent(i);
             yield return DeckMaterial(i);
+            yield return DeckSlopeMm(i);
+            yield return DeckSlopeDeg(i);
+            yield return DeckMagazinesMm(i);
         }
         for (int i = 0; i < (d.Main?.Count ?? 0); i++)
         {

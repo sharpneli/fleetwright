@@ -9,33 +9,44 @@ using T = Fleetwright.Designer.DesignerTheme;
 namespace Fleetwright.Designer;
 
 /// <summary>
-/// The Protection tab, after docs/designer-ui/protection.md: the elevation (the ship's side deck by deck, heights
-/// stretched, every plate where the build put it, + ghosts where a missing part would go), the midship section to scale,
-/// the plate table (only the parts the ship has; a + in each group's header adds a missing one, × removes), the selected
-/// plate, and the coverage presets. Drags preview on screen and edit once, on release: a build is expensive.
+/// The Protection tab, after docs/designer-ui/protection.md and protection-layers.md: the elevation (the ship's side deck
+/// by deck, heights stretched, every plate where the build put it, + ghosts where a missing part would go, the rooms
+/// and the compartments, two flags for the sections' cuts), two half-sections at their own stations to scale
+/// (ProtectionSection), the plate table (only the parts the ship has, sub-rows for a part's zone and slopes; a + in each
+/// group's header adds a missing one, × removes), the selected plate's facts and Shape, and the sub-bar's coverage
+/// presets, layout templates and materials. Drags preview on screen and edit once, on release: a build is expensive.
 /// </summary>
 public sealed unsafe partial class DesignerScene
 {
-    /// <summary>What a plate, row or ghost is: a part, an armour deck (I: its index in the design), a battery's turrets
-    /// (I: the battery), the barbettes, the conning tower, the flight deck.</summary>
-    enum PK { Belt, Upper, EndFore, EndAft, Bulkheads, Tds, Deck, Steering, Main, Barbettes, Ct, FlightDeck }
+    /// <summary>What a plate, row or ghost is: a part, an armour deck (I: its index in the design) and its slopes and zone,
+    /// a battery's turrets (I: the battery), the barbettes, the conning tower, the flight deck.</summary>
+    enum PK { Belt, BeltZone, Upper, EndFore, EndAft, Bulkheads, Tds, Inner, Box, Wings, Deck, Slope, DeckZone, Steering, Main, Barbettes, Ct, FlightDeck }
 
     readonly record struct PRef(PK Kind, int I = 0);
 
-    enum DragKind { None, BeltTop, BeltBottom, Reach, UpperTop, DeckMove, TdsDepth }
+    enum DragKind { None, BeltTop, BeltBottom, Reach, UpperTop, DeckMove, TdsDepth, Lean, Knee, Wing, InnerWall, Cut }
 
     PRef protSel = new(PK.Belt);
     PRef? protHot;   // hovered this frame (row or plate): both drawings and the table light it
     PRef? protHotNext;
     PRef protMenuFor;
-    bool openProtMenu;
+    bool openProtMenu, openLayoutMenu;
+    int openCutMenu = -1;
     DragKind protDrag;
-    int protDragI;   // the deck, or the end belt (0 fore, 1 aft)
+    int protDragI;   // the deck, the end belt (0 fore, 1 aft), the cut, or 9 for the section's drags
     double protDragValue = double.NaN;   // the snapped value under the mouse
     string protDragTip = "";
     double protDragTipFor = double.NaN;
-    string? protForceTip;   // dev hook: "cover:N", "ghost:N:EXT", "handle:N"
+    string? protForceTip;   // dev hook: "cover:N", "ghost:N:EXT", "handle:N", "sechandle:N", "layout:N", "cell:K:N", "comp"
     readonly List<(Vector2 A, Vector2 B, PRef R)> protHits = [];   // this frame's plates on the elevation, topmost last
+    bool protRooms = true, protComp;
+    // the sections' cuts: a stop's id ("mach", "mag:A", "fore", "aft") or a free station; Whole section locks 2 to 1
+    readonly string?[] protCutStop = ["mach", null];
+    readonly float[] protCutX = [0, 0];
+    bool protLinked;
+    (string? Stop, float X) protCut2Saved;
+    // the layout template last applied here, and the layout as it left it (an edit after it reads "· edited")
+    (int Index, string Key)? protLayoutApplied;
 
     // the drawings' frame (ship metres) and the top area's height, kept while the ship changes inside them, so a wheel
     // step on a plate doesn't rescale the view: reset for another design or pane size, grown when the ship outgrows it,
@@ -46,14 +57,16 @@ public sealed unsafe partial class DesignerScene
 
     static readonly string[] ExtentValues = ["citadel", "full", "fore", "aft", "ends"];
     static readonly string[] ExtentShort = ["cit", "full", "fore", "aft", "ends"];
-    static readonly string[] GroupTitle = ["SIDE", "ARMOUR DECKS", "ENDS", "GUNS AND CONNING TOWER"];
+    static readonly string[] GroupTitle = ["SIDE", "ARMOUR DECKS", "INBOARD: BEHIND THE SIDE", "ENDS", "GUNS AND CONNING TOWER"];
+    const int ProtGroups = 5;
 
     // ------------------------------------------------------------------ the snapshot's part
 
     /// <summary>A plate on the elevation, in ship metres (z above the main deck): its rectangle, thickness and label.
-    /// Flat: an armour deck, drawn a few pixels thick at Z0; Inside: a barbette's part under the deck, dashed.</summary>
+    /// Flat: an armour deck, drawn a few pixels thick at Z0; Inside: a barbette's part under the deck, dashed; Hatched:
+    /// an internal belt, behind the shell; Faint: a band (an internal belt's lower belt).</summary>
     sealed record PPlate(PRef Ref, float X0, float X1, float Z0, float Z1, double Mm, string Label, bool Flat = false, bool Inside = false,
-        bool Bulkhead = false);
+        bool Bulkhead = false, bool Hatched = false, bool Faint = false);
 
     /// <summary>A + where a missing part or a deck's bare stretch would go.</summary>
     sealed record PGhost(PRef Ref, int Deck, string Extent, float X0, float X1, float Z0, float Z1, string Tip)
@@ -62,34 +75,109 @@ public sealed unsafe partial class DesignerScene
         public string Force { get; } = $"ghost:{Deck}:{Extent}";
     }
 
-    sealed record ProtRow(PRef Ref, int Group, string Name, Vector4 Swatch, NumRow? Thick, string ThickText, NumRow? Second, string SecondPre,
-        NumRow? WhereA, string WhereAPre, NumRow? WhereB, ChoiceKnob? Extent, string ExtentNow, NumberKnob? DeckKnob, long DeckNow, string DeckLabel,
-        string WhereText, ChoiceRow? Material, string MaterialText, string T, float Share, string WeightTip, bool Removable,
-        (string Label, string Value)[] Lines, string Note)
+    /// <summary>A line of the selected plate's Shape: a choice, a number, a + that adds a zone or slopes, a read-only value
+    /// (with its × when it can go), a note or a warning.</summary>
+    abstract record ShapeItem(string Label);
+    sealed record ShapeSeg(string Label, ChoiceRow Row, string[] Tips) : ShapeItem(Label);
+    sealed record ShapeNum(string Label, NumRow Row, string Note) : ShapeItem(Label);
+    sealed record ShapeAdd(string Label, string Chip, Action Add, string Tip) : ShapeItem(Label);
+    sealed record ShapeRead(string Label, string Text, Action? Remove = null, string RemoveTip = "") : ShapeItem(Label);
+    sealed record ShapeNote(string Text, bool Warn = false) : ShapeItem("");
+
+    sealed class ProtRow
     {
+        public required PRef Ref { get; init; }
+        public int Group { get; init; }
+        public required string Name { get; init; }
+        public Vector4 Swatch { get; init; }
+        public NumRow? Thick { get; init; }
+        public string ThickText { get; init; } = "";
+        public NumRow? Second { get; init; }
+        public string SecondPre { get; init; } = "";
+        /// <summary>A read-only value in the second column (a slope's angle, an end belt's tip).</summary>
+        public string SecondText { get; init; } = "";
+        public NumRow? WhereA { get; init; }
+        public string WhereAPre { get; init; } = "";
+        public NumRow? WhereB { get; init; }
+        public string WhereBPre { get; init; } = "↑";
+        public ChoiceKnob? Extent { get; init; }
+        public string ExtentNow { get; init; } = "";
+        public NumberKnob? DeckKnob { get; init; }
+        public long DeckNow { get; init; }
+        public string DeckLabel { get; init; } = "";
+        public string WhereText { get; init; } = "";
+        public ChoiceRow? Material { get; init; }
+        public string MaterialText { get; init; } = "";
+        public string T { get; init; } = "–";
+        public float Share { get; init; }
+        public string WeightTip { get; init; } = "";
+        public bool Removable { get; init; }
+        public (string Label, string Value)[] Lines { get; init; } = [];
+        public string Note { get; init; } = "";
+        /// <summary>A sub-row (↳) under its part: a zone or slopes.</summary>
+        public bool Sub { get; init; }
+        /// <summary>The belt's shape after its name: "inside · 18°".</summary>
+        public string Tag { get; init; } = "";
+        /// <summary>Shown but not in force (wings on a TDS ship: the torpedo protection stands there).</summary>
+        public bool Greyed { get; init; }
+        public ShapeItem[] Shape { get; init; } = [];
         /// <summary>The plate's tooltip on the drawings.</summary>
-        public string Hover { get; init; } = "";
+        public string Hover { get; set; } = "";
+        public string Title => Name;
+        /// <summary>Its name with its parent's, for the selected plate ("Belt, at the magazines").</summary>
+        public string Full { get; init; } = "";
+        public string ThickShown => Thick?.Value ?? ThickText;
     }
 
     sealed record PChip(Part? Part, int Deck, string Label, string Tip);
 
-    sealed record ProtPane(ProtRow[] Rows, PChip[][] Chips, PPlate[] Plates, PGhost[] Ghosts, (string Short, float Z, float X0, float X1)[] Lanes,
-        Vector2[] Profile, float L, float B, float Wl, float Keel, float Ib, float ZTop, float X0, float X1, float BeltTop, float BeltBottom,
-        float RoofZ, string Citadel, (long N, string Name, float Z)[] DeckChoices,
-        // the midship section: its station, the half-breadths at heights, the plates that cross it
-        float SecX, float[] SecZ, float[] SecY, (float Z0, float Z1, double Mm, double Lower, PRef R)[] SecSide,
-        (float Z, double Mm, PRef R, string Label)[] SecDecks, float Tds,
-        string Reads, PE.Coverage Coverage, string[] CoverTips, PickRow Scheme, string ImmuneGun, NumRow BeltHeight, NumRow BeltDepth, NumRow TdsRow,
-        bool Built)
+    /// <summary>A stop the sections' cuts snap to: the machinery, each magazine, the fore and aft ends.</summary>
+    sealed record CutStop(string Id, string Label, float X);
+
+    /// <summary>A room on the elevation (magazines, handling rooms, machinery), tinted; its tooltip.</summary>
+    sealed record PRoom(string Kind, string Name, float X0, float X1, float Z0, float Z1, string Tip);
+
+    sealed class ProtPane
     {
-        public string BeltTip { get; init; } = "";
-        public string TdsTip { get; init; } = "";
+        public required ProtRow[] Rows;
+        public required PChip[][] Chips;
+        public required PPlate[] Plates;
+        public required PGhost[] Ghosts;
+        public required (string Short, float Z, float X0, float X1)[] Lanes;
+        public required Vector2[] Profile;
+        public float L, B, Wl, Keel, Ib, ZTop, X0, X1, BeltTop, BeltBottom, RoofZ, SecTop;
+        public string Citadel = "";
+        public bool HasCitadel;
+        public required (long N, string Name, float Z)[] DeckChoices;
+        public required CutStop[] Stops;
+        public required PRoom[] Rooms;
+        /// <summary>The main transverse bulkheads (x, kind) and the run that sinks her, when warned.</summary>
+        public required (float X, string Kind)[] Compartments;
+        public (float X0, float X1, string Tip)? Warned;
+        public string CompChip = "", CompTip = "", CompLabel = "", ImmuneLine = "";
+        public bool CompOk = true;
+        public required (string Tag, float X, float Z, double Mm, PRef R)[] Tags;
+        public string Reads = "";
+        public PE.Coverage Coverage;
+        public required string[] CoverTips;
+        public required PickRow Materials;
+        /// <summary>The layout templates: the one the design reads as, its name in the dropdown (amber when it keeps its own
+        /// values or is custom), and each template's words on this ship.</summary>
+        public string LayoutName = "";
+        public bool LayoutOwn;
+        public int LayoutIndex = -1;
+        public required string[] LayoutTips;
+        public string PlainTip = "";
+        public string ImmuneGun = "";
+        public required NumRow BeltHeight, BeltDepth, TdsRow;
+        public bool Built;
+        public string BeltTip = "", TdsTip = "";
         /// <summary>The end belts' tips and the upper belt's span and top edge, for the handles (NaN: none).</summary>
-        public float EndTipFore { get; init; } = float.NaN;
-        public float EndTipAft { get; init; } = float.NaN;
-        public float UpX0 { get; init; } = float.NaN;
-        public float UpX1 { get; init; } = float.NaN;
-        public float UpTop { get; init; } = float.NaN;
+        public float EndTipFore = float.NaN, EndTipAft = float.NaN, UpX0 = float.NaN, UpX1 = float.NaN, UpTop = float.NaN;
+        public Ship? Ship;
+        /// <summary>The design's armour deck for a built one, by deck name and extent.</summary>
+        public required Func<string, string, int> DeckRow;
+        public required string[] CutLabels;
     }
 
     static readonly string[] CoverForce = ["cover:0", "cover:1", "cover:2"];
@@ -103,6 +191,20 @@ public sealed unsafe partial class DesignerScene
         _ => $"{n + 1}th",
     };
 
+    static string Sx1(double v) => (v < 0 ? "−" : v > 0 ? "+" : "") + Math.Abs(v).ToString("0.0", CultureInfo.InvariantCulture);
+
+    /// <summary>Stretches as their union, aft to forward.</summary>
+    static List<(float X0, float X1)> Merged(IEnumerable<(float X0, float X1)> spans)
+    {
+        var o = new List<(float X0, float X1)>();
+        foreach (var (a, b) in spans.OrderBy(s => s.X0))
+            if (o.Count > 0 && a <= o[^1].X1 + 0.05f)
+                o[^1] = (o[^1].X0, MathF.Max(o[^1].X1, b));
+            else
+                o.Add((a, b));
+        return o;
+    }
+
     ProtPane ProtPaneOf(Design d, Ship? ship)
     {
         var a = d.Armour ?? new ArmourInput();
@@ -112,12 +214,16 @@ public sealed unsafe partial class DesignerScene
         var belt = hb?.Armour.Belt;
         var fwd = hb?.Armour.Bulkheads?.FirstOrDefault(b => b.Id == "Forward bulkhead");
         var aft = hb?.Armour.Bulkheads?.FirstOrDefault(b => b.Id == "Aft bulkhead");
-        float X0 = (float)(belt?.X0 ?? aft?.X ?? -0.3 * L), X1 = (float)(belt?.X1 ?? fwd?.X ?? 0.3 * L);
+        float X0 = (float)(aft?.X ?? belt?.X0 ?? -0.3 * L), X1 = (float)(fwd?.X ?? belt?.X1 ?? 0.3 * L);
+        if (belt != null && a.BeltExtent != "machinery")
+            (X0, X1) = ((float)Math.Min(X0, belt.X0), (float)Math.Max(X1, belt.X1));
         float beltTop = (float)(belt?.Top ?? wl + (a.BeltHeightM ?? 2)), beltBot = (float)(belt?.Bottom ?? wl - (a.BeltDepthM ?? 1.5));
         var decks = hb?.Decks ?? [];
         float ib = (float)(decks.FirstOrDefault(x => x.Kind == "inner_bottom")?.Z ?? keel + 1.1);
         float roofZ = (float)(hb?.Vertical.ArmourDeck ?? wl);
         var raised = hb?.Vertical.Raised ?? [];
+        bool inside = a.BeltPosition == "internal" && PE.Has(d, Part.Belt);
+        double lean = PE.Has(d, Part.Belt) ? a.BeltInclineDeg ?? 0 : 0;
 
         // the decks an armour deck can lie on: the stack (not the inner bottom) and the raised decks, top first
         var choices = new List<(long N, string Name, float Z)>();
@@ -140,6 +246,13 @@ public sealed unsafe partial class DesignerScene
         double std = ship?.Report.Results.StandardDisplacementT ?? 0;
         double Sum(Func<string, bool> f) => w.Where(kv => f(kv.Key)).Sum(kv => kv.Value);
 
+        // the magazines and machinery as the build placed them
+        var rooms = hb?.Rooms ?? [];
+        var magSpans = Merged(rooms.Where(r => r.Kind == "magazine" && r.Cells.Count > 0).Select(r => ((float)r.X0, (float)r.X1)));
+        var zoneSpans = magSpans.Select(s => (Math.Max(s.X0, X0), Math.Min(s.X1, X1))).Where(s => s.Item2 > s.Item1 + 0.05f).ToList();
+        float zoneLen = zoneSpans.Sum(s => s.Item2 - s.Item1);
+        var mach = rooms.Where(r => r.Kind is "engine_room" or "boiler_room" && r.Cells.Count > 0).ToList();
+
         // the built plates, each traced to its row
         var mainIds = hb?.Components.Where(c => c.Kind == "main").Select(c => c.Id).ToHashSet() ?? [];
         var designDecks = a.Decks ?? [];
@@ -147,26 +260,44 @@ public sealed unsafe partial class DesignerScene
         {
             static bool Covers(string? e, string rep) => (e ?? "citadel") == rep || e == "ends" && rep is "fore" or "aft" || rep == "full" && e == "full";
             for (int i = 0; i < designDecks.Count; i++)
-                if ((designDecks[i].Mm ?? 0) > 0 && Decks.DeckName(designDecks[i].Deck ?? 0) == name && Covers(designDecks[i].Extent, ext))
+                if (((designDecks[i].Mm ?? 0) > 0 || (designDecks[i].SlopeMm ?? 0) > 0) && Decks.DeckName(designDecks[i].Deck ?? 0) == name && Covers(designDecks[i].Extent, ext))
                     return i;
             for (int i = 0; i < designDecks.Count; i++)
-                if ((designDecks[i].Mm ?? 0) > 0 && Covers(designDecks[i].Extent, ext))
+                if (((designDecks[i].Mm ?? 0) > 0 || (designDecks[i].SlopeMm ?? 0) > 0) && Covers(designDecks[i].Extent, ext))
                     return i;
             return -1;
         }
         string Mm(double mm) => Fmt(mm, Quantity.Armour, unit: false);
         var plates = new List<PPlate>();
-        var deckT = new double[designDecks.Count];
-        var sec = new List<(float, float, double, double, PRef)>();
-        var secDecks = new List<(float, double, PRef, string)>();
-        float secX = (X0 + X1) / 2;
+        var tags = new List<(string, float, float, double, PRef)>();
+        // each design deck's weight: its lines once, then shared between the flat and its zone by the built pieces' plate
+        var deckLine = new double[designDecks.Count];
+        var deckZoneShare = new double[designDecks.Count];
+        var deckFlatArea = new double[designDecks.Count];
+        var deckZoneArea = new double[designDecks.Count];
+        var slopeT = new double[designDecks.Count];
+        for (int i = 0; i < designDecks.Count; i++)
+        {
+            var x = designDecks[i];
+            string ext = x.Extent ?? "citadel";
+            string name = $"Deck armour ({Decks.DeckNameLower(x.Deck ?? 0)}" + (ext is "fore" or "aft" ? $", {ext})" : ")");
+            if (designDecks.Take(i).Any(p => (p.Deck ?? 0) == (x.Deck ?? 0) && (p.Extent ?? "citadel") == ext))
+                continue;   // a second entry on the same deck and stretch merges with the first: its weight is there
+            deckLine[i] = ext == "ends" ? w.GetValueOrDefault(name[..^1] + ", fore)") + w.GetValueOrDefault(name[..^1] + ", aft)") : w.GetValueOrDefault(name);
+            slopeT[i] = w.GetValueOrDefault(name[..^1] + ", slopes)");
+        }
         if (hb != null)
         {
             if (a.TdsM is > 0)
-                plates.Add(new PPlate(new PRef(PK.Tds), X0, X1, ib, Math.Min(roofZ, wl), 0, $"TDS {a.TdsM:0.0} m"));
+                plates.Add(new PPlate(new PRef(PK.Tds), X0, X1, ib, Math.Min(roofZ, wl), 0,
+                    $"TDS {a.TdsM:0.0} m" + ((a.TdsLayers ?? 1) > 1 ? $" · {a.TdsLayers} layers" : "")));
             foreach (var s in hb.Armour.Strakes ?? [])
             {
-                var r = s.Kind switch { "upper" => new PRef(PK.Upper), "box" => new PRef(PK.Steering), _ => new PRef(s.Extent == "fore" ? PK.EndFore : PK.EndAft) };
+                var r = s.Kind switch
+                {
+                    "upper" => new PRef(PK.Upper), "box" => new PRef(PK.Steering), "zone" => new PRef(PK.BeltZone),
+                    _ => new PRef(s.Extent == "fore" ? PK.EndFore : PK.EndAft),
+                };
                 if (s.Kind == "end" && s.TipMm is { } tip && Math.Abs(tip - s.ThicknessMm) > 0.5)
                 {
                     // root and tip halves, so the taper shows
@@ -176,29 +307,46 @@ public sealed unsafe partial class DesignerScene
                     plates.Add(new PPlate(r, m, (float)s.X1, (float)s.Bottom, (float)s.Top, fore ? tip : s.ThicknessMm, Mm(fore ? tip : s.ThicknessMm)));
                 }
                 else
-                    plates.Add(new PPlate(r, (float)s.X0, (float)s.X1, (float)s.Bottom, (float)s.Top, s.ThicknessMm, s.Kind == "box" ? "" : Mm(s.ThicknessMm)));
-                if (s.Kind == "upper" && s.X0 <= secX && secX <= s.X1)
-                    sec.Add(((float)s.Bottom, (float)s.Top, s.ThicknessMm, s.ThicknessMm, r));
+                    plates.Add(new PPlate(r, (float)s.X0, (float)s.X1, (float)s.Bottom, (float)s.Top, s.ThicknessMm, s.Kind == "box" ? "" : Mm(s.ThicknessMm),
+                        Hatched: s.Kind == "zone" && inside));
             }
             if (belt != null)
             {
+                // the belt where no zone takes its place
                 float tf = (float)(belt.TaperFrom ?? belt.Bottom);
                 double low = belt.BottomMm ?? belt.ThicknessMm;
-                plates.Add(new PPlate(new PRef(PK.Belt), (float)belt.X0, (float)belt.X1, tf, (float)belt.Top, belt.ThicknessMm, Mm(belt.ThicknessMm)));
-                if (tf > belt.Bottom + 0.05)
-                    plates.Add(new PPlate(new PRef(PK.Belt), (float)belt.X0, (float)belt.X1, (float)belt.Bottom, tf, (belt.ThicknessMm + low) / 2,
-                        Math.Abs(low - belt.ThicknessMm) > 0.5 ? "to " + Mm(low) : ""));
-                sec.Add(((float)belt.Bottom, (float)belt.Top, belt.ThicknessMm, low, new PRef(PK.Belt)));
+                var pieces = new List<(float, float)> { ((float)belt.X0, (float)belt.X1) };
+                foreach (var z in (hb.Armour.Strakes ?? []).Where(s => s.Kind == "zone"))
+                    pieces = pieces.SelectMany(p => z.X1 <= p.Item1 || z.X0 >= p.Item2 ? [p]
+                        : new[] { (p.Item1, (float)z.X0), ((float)z.X1, p.Item2) }.Where(q => q.Item2 - q.Item1 > 0.05f)).ToList();
+                foreach (var (p0, p1) in pieces)
+                {
+                    plates.Add(new PPlate(new PRef(PK.Belt), p0, p1, tf, (float)belt.Top, belt.ThicknessMm, Mm(belt.ThicknessMm), Hatched: inside));
+                    if (tf > belt.Bottom + 0.05)
+                        plates.Add(new PPlate(new PRef(PK.Belt), p0, p1, (float)belt.Bottom, tf, (belt.ThicknessMm + low) / 2,
+                            Math.Abs(low - belt.ThicknessMm) > 0.5 ? "to " + Mm(low) : "", Hatched: inside));
+                }
+                if (hb.Armour.Inclined?.FirstOrDefault(p => p.Id == "Lower belt") is { } lb)
+                    plates.Add(new PPlate(new PRef(PK.Belt), (float)lb.X0, (float)lb.X1, (float)lb.Z0, (float)lb.Z1, lb.ThicknessMm,
+                        $"lower belt {Mm(lb.ThicknessMm)} to {Mm(lb.BottomMm ?? lb.ThicknessMm)}", Faint: true));
+                string shape = inside ? lean > 0 ? $"inside · {lean:0}°" : "inside" : lean > 0 ? $"{lean:0}°" : "";
+                if (shape.Length > 0)
+                    tags.Add((shape, (float)belt.X1, (float)belt.Top, belt.ThicknessMm, new PRef(PK.Belt)));
             }
             foreach (var bh in hb.Armour.Bulkheads ?? [])
             {
                 var r = bh.Id.Contains("Steering", StringComparison.Ordinal) ? new PRef(PK.Steering)
+                    : bh.Id.StartsWith("Magazine box", StringComparison.Ordinal) ? new PRef(PK.Box)
                     : bh.Id.Contains("end belt", StringComparison.Ordinal) ? new PRef(PK.EndAft) : new PRef(PK.Bulkheads);
                 float lt = (float)(bh.LowerTop ?? bh.Bottom);
                 plates.Add(new PPlate(r, (float)bh.X, (float)bh.X, Math.Max(lt, (float)bh.Bottom), (float)bh.Top, bh.ThicknessMm, "", Bulkhead: true));
                 if (lt > bh.Bottom + 0.05)
                     plates.Add(new PPlate(r, (float)bh.X, (float)bh.X, (float)bh.Bottom, lt, bh.LowerMm ?? bh.ThicknessMm / 2, "", Bulkhead: true, Inside: true));
             }
+            // the magazine boxes' sides: a fill between their crown and floor over each room
+            if (a.MagazineBox?.SideMm is > 0 && PE.Has(d, Part.Box))
+                foreach (var r in rooms.Where(r => r.Kind == "magazine" && r.Cells.Count > 0))
+                    plates.Add(new PPlate(new PRef(PK.Box), (float)r.X0, (float)r.X1, (float)r.Base, (float)r.Top, a.MagazineBox.SideMm.Value, "", Faint: true));
             var barbR = new Dictionary<string, double>(StringComparer.Ordinal);
             foreach (var c in hb.Components)
             {
@@ -226,19 +374,46 @@ public sealed unsafe partial class DesignerScene
                     float r = (float)(barbR.GetValueOrDefault(c.Id, 5) * 1.15);
                     plates.Add(new PPlate(new PRef(PK.Main, 0), (float)x - r, (float)x + r, (float)c.Base, (float)c.Top, face, c.Id.Length <= 3 ? c.Id : ""));
                 }
+            // the slopes: a band from the deck down to the belt's lower edge, tagged
+            foreach (var p in hb.Armour.Inclined ?? [])
+            {
+                if (p.Kind != "slope")
+                    continue;
+                int a0 = p.Id.IndexOf('('), a1 = p.Id.IndexOf(')');
+                var parts = a0 >= 0 && a1 > a0 ? p.Id[(a0 + 1)..a1].Split(", ") : [""];
+                int row = DeckRow(parts[0].Length > 0 ? char.ToUpperInvariant(parts[0][0]) + parts[0][1..] : "", parts.Length > 1 ? parts[1] : "citadel");
+                var r = new PRef(PK.Slope, row);
+                plates.Add(new PPlate(r, (float)p.X0, (float)p.X1, (float)p.Z0, (float)p.Z1, p.ThicknessMm, "", Faint: true));
+                double deg = Math.Atan2(p.Z1 - p.Z0, Math.Max(1e-3, p.U1 - p.U0)) * 180 / Math.PI;
+                if (!tags.Any(t => t.Item5 == r))
+                    tags.Add(($"slopes {Mm(p.ThicknessMm)} · {deg:0}°", (float)p.X0, (float)(p.Z0 + p.Z1) / 2, p.ThicknessMm, r));
+            }
             foreach (var dk in hb.Armour.Decks ?? [])
             {
-                var r = dk.Extent == "steering" ? new PRef(PK.Steering) : new PRef(PK.Deck, DeckRow(dk.Deck, dk.Extent));
-                plates.Add(new PPlate(r, (float)dk.X0, (float)dk.X1, (float)dk.Z, (float)dk.Z, dk.ThicknessMm, Mm(dk.ThicknessMm), Flat: true));
-                if (r.Kind == PK.Deck && r.I >= 0)
+                PRef r;
+                if (dk.Extent == "steering")
+                    r = new PRef(PK.Steering);
+                else if (dk.Extent == "box")
+                    r = new PRef(PK.Box);
+                else
                 {
-                    string name = $"Deck armour ({dk.Deck.ToLowerInvariant()}" + (dk.Extent is "fore" or "aft" ? $", {dk.Extent})" : ")");
-                    deckT[r.I] += w.GetValueOrDefault(name);
-                    if (dk.X0 <= secX && secX <= dk.X1)
-                        secDecks.Add(((float)dk.Z, dk.ThicknessMm, r, Mm(dk.ThicknessMm)));
+                    int row = DeckRow(dk.Deck, dk.Extent);
+                    bool zone = row >= 0 && designDecks[row] is { MagazinesMm: { } zm } dd && Math.Abs(zm - dk.ThicknessMm) < 0.5 && Math.Abs((dd.Mm ?? 0) - zm) > 0.5;
+                    r = new PRef(zone ? PK.DeckZone : PK.Deck, row);
+                    if (row >= 0)
+                    {
+                        double area = (dk.X1 - dk.X0) * dk.ThicknessMm;
+                        if (zone)
+                            deckZoneArea[row] += area;
+                        else
+                            deckFlatArea[row] += area;
+                    }
                 }
+                plates.Add(new PPlate(r, (float)dk.X0, (float)dk.X1, (float)dk.Z, (float)dk.Z, dk.ThicknessMm, Mm(dk.ThicknessMm), Flat: true));
             }
         }
+        for (int i = 0; i < designDecks.Count; i++)
+            deckZoneShare[i] = deckZoneArea[i] + deckFlatArea[i] > 0 ? deckZoneArea[i] / (deckZoneArea[i] + deckFlatArea[i]) : 0;
 
         // + ghosts: a deck's bare stretch, and the side parts the ship lacks
         var ghosts = new List<PGhost>();
@@ -250,7 +425,7 @@ public sealed unsafe partial class DesignerScene
             for (int s = 0; s < 3; s++)
             {
                 float m = (bare.X0[s] + bare.X1[s]) / 2;
-                if (bare.X1[s] - bare.X0[s] < 4 || plates.Any(p => p.Flat && p.Ref.Kind == PK.Deck && Math.Abs(p.Z0 - z) < 0.05 && p.X0 <= m && m <= p.X1))
+                if (bare.X1[s] - bare.X0[s] < 4 || plates.Any(p => p.Flat && p.Ref.Kind is PK.Deck or PK.DeckZone && Math.Abs(p.Z0 - z) < 0.05 && p.X0 <= m && m <= p.X1))
                     continue;
                 string ext = bare.Ext[s];
                 double t = (bare.X1[s] - bare.X0[s]) * B * (ext == "citadel" ? 0.92 : 0.62) * 25 / 1000 * Weight.Steel;
@@ -259,6 +434,7 @@ public sealed unsafe partial class DesignerScene
                     "Then: full length or both ends in its row."));
             }
         }
+        double beltMm = a.BeltMm is > 0 ? a.BeltMm.Value : 100;
         string AddTip(Part p) => $"+ {PE.Name(p).ToLowerInvariant()}: " + p switch
         {
             Part.Belt => $"over the citadel, {Fmt(100, Quantity.Armour)}",
@@ -266,7 +442,13 @@ public sealed unsafe partial class DesignerScene
             Part.EndFore => $"from the citadel to the stem, {Fmt(Math.Round((a.BeltMm ?? 200) * 0.04, MidpointRounding.AwayFromZero) * 10, Quantity.Armour)}",
             Part.EndAft => $"from the citadel to the stern, {Fmt(Math.Round((a.BeltMm ?? 200) * 0.04, MidpointRounding.AwayFromZero) * 10, Quantity.Armour)}",
             Part.Bulkheads => $"across both citadel ends, {Fmt(Math.Round((a.BeltMm ?? 200) * 0.07, MidpointRounding.AwayFromZero) * 10, Quantity.Armour)}",
-            Part.Tds => "4.0 m deep, from the inner bottom to the roof deck",
+            Part.Tds => "4.0 m deep: spaces between the side and the holding bulkhead, inner bottom to the roof deck",
+            Part.Inner => $"an armoured wall behind the belt over the citadel, {Fmt(Math.Round(Math.Max(20, beltMm * 0.10) / 5) * 5, Quantity.Armour)}, " +
+                          $"{Fmt(Math.Round(Math.Max(25, beltMm * 0.14) / 5) * 5, Quantity.Armour)} at the magazines; on the wall a section already has " +
+                          "(TDS, wing bunkers, a magazine's wing) or its own",
+            Part.Box => $"armour round each run of magazines, {Fmt(Math.Round(Math.Max(25, (a.BeltMm is > 0 ? a.BeltMm.Value : 60) * 0.4) / 5) * 5, Quantity.Armour)} sides: " +
+                        "on their wing walls, crown on their platform deck, ends, floor on the inner bottom",
+            Part.Wings => "stores between each magazine and the side, 0.1 of the beam",
             _ => "over the rudders: sides, roof and ends",
         } + "\nStarting values from the belt.";
         bool hasBelt = PE.Has(d, Part.Belt);
@@ -288,23 +470,9 @@ public sealed unsafe partial class DesignerScene
         var profile = new List<Vector2>();
         float zTop = 1.2f + (float)Math.Max(raised.Select(r => r.Top).DefaultIfEmpty(0).Max(),
             hb?.Components.Where(c => c.Kind is "main" or "conning_tower").Select(c => c.Top).DefaultIfEmpty(0).Max() ?? 0);
-        float secKeel = keel;
-        var secZ = new List<float>();
-        var secY = new List<float>();
         if (hb != null)
-        {
             foreach (var st in hb.HullForm.Stations)
                 profile.Add(new Vector2((float)st.X, (float)st.Z[0]));
-            var mid = hb.HullForm.Stations.MinBy(s => Math.Abs(s.X - secX))!;
-            secX = (float)mid.X;
-            secKeel = (float)mid.Z[0];
-            for (int i = 0; i <= 24; i++)
-            {
-                float z = secKeel + (0 - secKeel) * i / 24f;
-                secZ.Add(z);
-                secY.Add((float)hb.HullForm.HalfWidth(secX, z + 1e-4));
-            }
-        }
         var lanes = new List<(string, float, float, float)>();
         foreach (var (n, name, z) in choices)
         {
@@ -312,7 +480,50 @@ public sealed unsafe partial class DesignerScene
             lanes.Add((DeckShort(n, rs?.Id ?? name), z, rs != null ? (float)rs.X0 : -L / 2, rs != null ? (float)Math.Min(rs.X1, L / 2) : L / 2));
         }
 
-        // the rows, group by group: only the parts the ship has; the rest are + chips
+        // the rooms on the elevation, the compartments and the run that sinks her
+        var proom = new List<PRoom>();
+        foreach (var r in rooms)
+            if (r.Cells.Count > 0 && r.Kind is "magazine" or "handling" or "engine_room" or "boiler_room")
+                proom.Add(new PRoom(r.Kind, r.Id, (float)r.X0, (float)r.X1, (float)r.Base, (float)r.Top,
+                    $"{r.Id} · {r.X1 - r.X0:0.0} m · {Sx1(r.Base - wl)} to {Sx1(r.Top - wl)} m on the waterline"));
+        var comps = new List<(float, string)>();
+        foreach (var b in hb?.Bulkheads ?? [])
+            if (b.X is { } bx && b.Y is null)
+                comps.Add(((float)bx, b.Kind));
+        (float, float, string)? warned = null;
+        string? warning = ship?.Report.Warnings.FirstOrDefault(x => x.Contains("flooded sink", StringComparison.Ordinal));
+        if (warning != null && hb != null)
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(warning, @"sections? (\d+)(?:-(\d+))?");
+            var s0 = hb.Sections.FirstOrDefault(s => s.Id == m.Groups[1].Value);
+            var s1 = m.Groups[2].Success ? hb.Sections.FirstOrDefault(s => s.Id == m.Groups[2].Value) : s0;
+            if (s0 != null && s1 != null)
+                warned = ((float)Math.Min(s0.X0, s1.X0), (float)Math.Max(s0.X1, s1.X1), warning);
+        }
+        long cstd = ship?.Report.Results.CompartmentStandard ?? 0;
+        int need = Styles.Get(d).CompartmentStandard;
+        string Count(long k) => k switch { 0 => "no", 1 => "one", 2 => "two", 3 => "three", _ => k.ToString(CultureInfo.InvariantCulture) };
+
+        // the cuts' stops
+        var stops = new List<CutStop>();
+        if (mach.Count > 0)
+        {
+            float mm0 = (float)mach.Min(r => r.X0), mm1 = (float)mach.Max(r => r.X1), mid = (mm0 + mm1) / 2;
+            var m = mach.MinBy(r => Math.Abs((r.X0 + r.X1) / 2 - mid))!;
+            stops.Add(new CutStop("mach", $"Machinery · {m.Id.ToLowerInvariant()}", (float)(m.X0 + m.X1) / 2));
+        }
+        foreach (var r in rooms.Where(r => r.Kind == "magazine" && r.Cells.Count > 0).OrderByDescending(r => r.X0))
+        {
+            float x = (float)(r.X0 + r.X1) / 2;
+            if (stops.Any(q => Math.Abs(q.X - x) < 0.6f))
+                continue;
+            stops.Add(new CutStop("mag:" + r.Id.Replace("Magazine ", "", StringComparison.Ordinal), r.Id, x));
+        }
+        stops.Add(new CutStop("fore", "Fore end", X1 + 0.3f * (L / 2 - X1)));
+        stops.Add(new CutStop("aft", "Aft end", X0 - 0.3f * (X0 + L / 2)));
+
+        // ---------------------------------------------------------------- the rows, group by group: only the parts the
+        // ship has; the rest are + chips
         var rows = new List<ProtRow>();
         Vector4 Ramp(double mm) => T.Armour(mm);
         float Share(double t) => armourT > 0 ? (float)(t / armourT) : 0;
@@ -325,37 +536,87 @@ public sealed unsafe partial class DesignerScene
             var labels = i < 0 ? [.. k.Labels, v ?? "custom"] : k.Labels;
             return new ChoiceRow(k, labels, i < 0 ? labels.Length - 1 : i, true);
         }
+        NumRow R(NumberKnob k) => Row(k, d, ship) with { Delta = "" };
         string Covers(float x0, float x1) => $"{N0(x0)} to {N0(x1)} m · {x1 - x0:0.0} m, {100 * (x1 - x0) / L:0} %";
-        string WlSpan(float z0, float z1) => $"{z0 - wl:+0.0;−0.0} to {z1 - wl:+0.0;−0.0} m on the waterline";
+        string Stretches(List<(float, float)> sp) => sp.Count == 0 ? "–" : sp.Count == 1 ? Covers(sp[0].Item1, sp[0].Item2)
+            : $"{sp.Count} stretches, {sp.Sum(s => s.Item2 - s.Item1):0.0} m";
+        string WlSpan(float z0, float z1) => $"{z0 - wl:+0.0;−0.0} to {z1 - wl:+0.0;−0.0} m on WL";
         string Weights(string title, Func<string, bool> f)
         {
             var parts = w.Where(kv => f(kv.Key)).Select(kv => $"{kv.Key}  {N0(kv.Value)} t").ToList();
             return parts.Count == 0 ? title : title + "\n" + string.Join("\n", parts);
         }
         string Scheme(string part) => a.Materials?.GetValueOrDefault(part) ?? "the engine's default";
+        string roofName = choices.Where(c => c.N >= 0).OrderBy(c => Math.Abs(c.Z - roofZ)).Select(c => c.Name).FirstOrDefault() ?? "armour deck";
 
         if (PE.Has(d, Part.Belt))
         {
-            double t = w.GetValueOrDefault("Belt armour");
-            rows.Add(new ProtRow(new PRef(PK.Belt), 0, "Belt", Ramp(a.BeltMm ?? 0), Row(Knobs.Belt, d, ship) with { Delta = "" }, "",
-                Row(Knobs.BeltBottom, d, ship) with { Delta = "" }, "lower", Row(Knobs.BeltDepth, d, ship) with { Delta = "" }, "↓",
-                Row(Knobs.BeltHeight, d, ship) with { Delta = "" }, null, "", null, 0, "", "", Choice(Knobs.SchemeMaterial("belt", "Belt")), "",
-                Tn(t), Share(t), Weights("Belt", n => n == "Belt armour"), true,
-                [("Covers", Covers(X0, X1)), ("Height", WlSpan(beltBot, beltTop)), ("Weight", Pct(t)), ("Material", Scheme("belt")),
-                 ("Taper", $"{Mm(a.BeltMm ?? 0)} at the waterline to {Mm(a.BeltBottomMm ?? a.BeltMm ?? 0)} at the lower edge")],
-                "The citadel runs between the outermost barbettes; the layout places it, so its length moves when the turrets do."));
+            double t = w.GetValueOrDefault("Belt armour") + w.GetValueOrDefault("Lower belt");
+            var tag = new List<string>();
+            if (inside)
+                tag.Add("inside");
+            if (lean > 0)
+                tag.Add($"{lean:0}°");
+            if (a.BeltExtent == "machinery")
+                tag.Add("machinery");
+            var span = belt != null ? ((float)belt.X0, (float)belt.X1) : (X0, X1);
+            var shape = new List<ShapeItem>
+            {
+                new ShapeSeg("Stands", Choice(Knobs.BeltPosition), ["On the side: the hull's plating outside it", "Inside the shell, 0.3 m in at its top, leaning in below; carried on down as a lower belt to the inner bottom"]),
+                new ShapeNum("Leans", R(Knobs.BeltIncline), "top outboard"),
+                new ShapeSeg("Runs over", Choice(Knobs.BeltExtent), ["Between the outermost barbettes", "Over the machinery only: the magazines boxed instead (a treaty cruiser's)"]),
+                a.BeltMagazinesMm is { } bz
+                    ? new ShapeRead("At the magazines", $"{Fmt(bz, Quantity.Armour)}, its row", () => RemoveSub(new PRef(PK.BeltZone)), "Remove the zone: the belt's own thickness there")
+                    : new ShapeAdd("At the magazines", "+ zone", () => AddSub(new PRef(PK.BeltZone)), "A thickness of its own beside the magazines (KGV 374 against 348; Brooklyn thinner)"),
+            };
+            if (inside)
+                shape.Add(new ShapeNote($"Inside the shell, 0.3 m in at its top; carried on down as a lower belt to the inner bottom, " +
+                                        $"{Fmt(a.BeltBottomMm ?? a.BeltMm ?? 0, Quantity.Armour)} tapering to 25 mm. The space outboard of it is a wing."));
+            if (inside && a.BeltBottomMm == null)
+                shape.Add(new ShapeNote("Untapered: the lower belt starts at the belt's full thickness and weighs heavy. Set a lower edge.", true));
+            if (a.BeltExtent == "machinery" && !(a.MagazineBox?.SideMm > 0))
+                shape.Add(new ShapeNote("The magazines' sides are bare: give them boxes.", true));
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.Belt), Group = 0, Name = "Belt", Full = "Belt", Swatch = Ramp(a.BeltMm ?? 0), Thick = R(Knobs.Belt),
+                Second = R(Knobs.BeltBottom), SecondPre = "lower", WhereA = R(Knobs.BeltDepth), WhereAPre = "↓", WhereB = R(Knobs.BeltHeight),
+                Material = Choice(Knobs.SchemeMaterial("belt", "Belt")), T = Tn(t), Share = Share(t),
+                WeightTip = Weights("Belt", n => n is "Belt armour" or "Lower belt"), Removable = true, Tag = string.Join(" · ", tag),
+                Lines = [("Covers", Covers(span.Item1, span.Item2)), ("Height", WlSpan(beltBot, beltTop)), ("Weight", Pct(t)), ("Material", Scheme("belt")),
+                         ("Taper", $"{Mm(a.BeltMm ?? 0)} at WL to {Mm(a.BeltBottomMm ?? a.BeltMm ?? 0)} at its edge")],
+                Note = "The citadel runs between the outermost barbettes; the layout places it, so its length moves when the turrets do.",
+                Shape = shape.ToArray(),
+            });
+            if (a.BeltMagazinesMm is { } bm)
+            {
+                double tz = Sum(n => n.StartsWith("Belt (magazines)", StringComparison.Ordinal));
+                rows.Add(new ProtRow
+                {
+                    Ref = new PRef(PK.BeltZone), Group = 0, Name = "at the magazines", Full = "Belt, at the magazines", Sub = true, Swatch = Ramp(bm),
+                    Thick = R(Knobs.BeltMagazines), WhereText = $"{zoneSpans.Count} magazine stretch{(zoneSpans.Count == 1 ? "" : "es")} · {zoneLen:0.0} m",
+                    MaterialText = "as above", T = Tn(tz), Share = Share(tz), WeightTip = Weights("Belt at the magazines", n => n.StartsWith("Belt (magazines)", StringComparison.Ordinal)),
+                    Removable = true,
+                    Lines = [("Covers", Stretches(zoneSpans)), ("Height", WlSpan(beltBot, beltTop)), ("Weight", Pct(tz)), ("Material", Scheme("belt"))],
+                    Note = "The belt beside the magazines, in its place there: where the magazine rooms are, as the subdivision gave them their cells.",
+                    Shape = rows[^1].Shape,
+                });
+            }
         }
         if (PE.Has(d, Part.Upper))
         {
             double t = w.GetValueOrDefault("Upper belt");
             var s = hb?.Armour.Strakes?.FirstOrDefault(x => x.Kind == "upper");
             long to = a.UpperBelt!.ToDeck ?? 0;
-            rows.Add(new ProtRow(new PRef(PK.Upper), 0, "Upper belt", Ramp(a.UpperBelt.Mm ?? 0), Row(Knobs.UpperBelt, d, ship) with { Delta = "" }, "",
-                null, "", null, "", null, Knobs.UpperBeltExtent, a.UpperBelt.Extent ?? "citadel", Knobs.UpperBeltToDeck, to, "to " + DeckShort(to, Decks.DeckName(to)),
-                "", Choice(Knobs.UpperBeltMaterial), "", Tn(t), Share(t), Weights("Upper belt", n => n == "Upper belt"), true,
-                [("Covers", s != null ? Covers((float)s.X0, (float)s.X1) : "–"), ("Height", s != null ? WlSpan((float)s.Bottom, (float)s.Top) : "–"), ("Weight", Pct(t)),
-                 ("Material", a.UpperBelt.Material ?? Scheme("upper_belt"))],
-                "From the belt's top edge up to the chosen deck."));
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.Upper), Group = 0, Name = "Upper belt", Full = "Upper belt", Swatch = Ramp(a.UpperBelt.Mm ?? 0), Thick = R(Knobs.UpperBelt),
+                Extent = Knobs.UpperBeltExtent, ExtentNow = a.UpperBelt.Extent ?? "citadel", DeckKnob = Knobs.UpperBeltToDeck, DeckNow = to,
+                DeckLabel = "to " + DeckShort(to, Decks.DeckName(to)), Material = Choice(Knobs.UpperBeltMaterial), T = Tn(t), Share = Share(t),
+                WeightTip = Weights("Upper belt", n => n == "Upper belt"), Removable = true,
+                Lines = [("Covers", s != null ? Covers((float)s.X0, (float)s.X1) : "–"), ("Height", s != null ? WlSpan((float)s.Bottom, (float)s.Top) : "–"),
+                         ("Weight", Pct(t)), ("Material", a.UpperBelt.Material ?? Scheme("upper_belt"))],
+                Note = "From the belt's top edge up to the chosen deck.",
+            });
         }
         foreach (var (p, end) in new[] { (Part.EndFore, "fore"), (Part.EndAft, "aft") })
         {
@@ -366,32 +627,31 @@ public sealed unsafe partial class DesignerScene
             double t = Sum(n => n.StartsWith(prefix, StringComparison.Ordinal));
             var s = hb?.Armour.Strakes?.FirstOrDefault(x => x.Kind == "end" && x.Extent == end);
             double reach = e.Reach ?? 1;
-            rows.Add(new ProtRow(new PRef(end == "fore" ? PK.EndFore : PK.EndAft), 0, PE.Name(p), Ramp(e.Mm ?? 0), Row(Knobs.EndBeltMm(end), d, ship) with { Delta = "" }, "",
-                Row(Knobs.EndBeltTip(end), d, ship) with { Delta = "" }, "tip", Row(Knobs.EndBeltReach(end), d, ship) with { Delta = "" }, "reach", null, null, "", null, 0, "",
-                reach >= 0.995 ? $"to the {(end == "fore" ? "stem" : "stern")}" : $"{reach * 100:0} % of the way",
-                Choice(Knobs.EndBeltMaterial(end)), "", Tn(t), Share(t), Weights(PE.Name(p), n => n.StartsWith(prefix, StringComparison.Ordinal)), true,
-                [("Covers", s != null ? Covers((float)s.X0, (float)s.X1) : "–"), ("Height", WlSpan(beltBot, beltTop)), ("Weight", Pct(t)),
-                 ("Material", e.Material ?? Scheme("end_belts"))],
-                end == "fore" ? "Same height as the belt; tapers from the root to the tip. Reach is the share of the way to the stem."
-                    : "Same height as the belt; tapers from the root to the tip. At reach 1.0 it turns across the stern face."));
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(end == "fore" ? PK.EndFore : PK.EndAft), Group = 0, Name = PE.Name(p), Full = PE.Name(p), Swatch = Ramp(e.Mm ?? 0),
+                Thick = R(Knobs.EndBeltMm(end)), Second = R(Knobs.EndBeltTip(end)), SecondPre = "tip", WhereA = R(Knobs.EndBeltReach(end)), WhereAPre = "reach",
+                WhereText = reach >= 0.995 ? $"to the {(end == "fore" ? "stem" : "stern")}" : $"{reach * 100:0} % of the way",
+                Material = Choice(Knobs.EndBeltMaterial(end)), T = Tn(t), Share = Share(t),
+                WeightTip = Weights(PE.Name(p), n => n.StartsWith(prefix, StringComparison.Ordinal)), Removable = true,
+                Lines = [("Covers", s != null ? Covers((float)s.X0, (float)s.X1) : "–"), ("Height", WlSpan(beltBot, beltTop)), ("Weight", Pct(t)),
+                         ("Material", e.Material ?? Scheme("end_belts"))],
+                Note = end == "fore" ? "Same height as the belt; tapers from the root to the tip. Reach is the share of the way to the stem."
+                    : "Same height as the belt; tapers from the root to the tip. At reach 1.0 it turns across the stern face.",
+            });
         }
         if (PE.Has(d, Part.Bulkheads))
         {
             double t = w.GetValueOrDefault("Bulkheads");
-            rows.Add(new ProtRow(new PRef(PK.Bulkheads), 0, "Citadel bulkheads", Ramp(a.BulkheadMm ?? 0), Row(Knobs.Bulkheads, d, ship) with { Delta = "" }, "",
-                null, "", null, "", null, null, "", null, 0, "", $"at both citadel ends · {Mm((a.BulkheadMm ?? 0) / 2)} below the belt",
-                Choice(Knobs.SchemeMaterial("bulkheads", "Bulkheads")), "", Tn(t), Share(t), Weights("Citadel bulkheads", n => n == "Bulkheads"), true,
-                [("Where", $"at {N0(X0)} and {N0(X1)} m"), ("Weight", Pct(t)), ("Material", Scheme("bulkheads"))],
-                "Full thickness down to the belt's lower edge, half below it to the inner bottom."));
-        }
-        if (PE.Has(d, Part.Tds))
-        {
-            double t = w.GetValueOrDefault("Torpedo protection");
-            rows.Add(new ProtRow(new PRef(PK.Tds), 0, "Torpedo protection", T.Blue, Row(Knobs.Tds, d, ship) with { Delta = "" }, "",
-                null, "", null, "", null, null, "", null, 0, "", "from the roof deck down to the inner bottom", null, "layered bulkheads",
-                Tn(t), Share(t), Weights("Torpedo protection", n => n == "Torpedo protection"), true,
-                [("Depth", $"{a.TdsM:0.0} m from the shell to the holding bulkhead"), ("Covers", Covers(X0, X1)), ("Weight", Pct(t))],
-                "Its spaces count in the subdivision (liquid layers, holding bulkhead); the depth also takes beam."));
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.Bulkheads), Group = 0, Name = "Citadel bulkheads", Full = "Citadel bulkheads", Swatch = Ramp(a.BulkheadMm ?? 0),
+                Thick = R(Knobs.Bulkheads), WhereText = $"at both citadel ends · {Mm((a.BulkheadMm ?? 0) / 2)} below the belt",
+                Material = Choice(Knobs.SchemeMaterial("bulkheads", "Bulkheads")), T = Tn(t), Share = Share(t),
+                WeightTip = Weights("Citadel bulkheads", n => n == "Bulkheads"), Removable = true,
+                Lines = [("Where", $"at {N0(X0)} and {N0(X1)} m"), ("Weight", Pct(t)), ("Material", Scheme("bulkheads"))],
+                Note = "Full thickness down to the belt's lower edge, half below it to the inner bottom.",
+            });
         }
         for (int i = 0; i < designDecks.Count; i++)
         {
@@ -400,70 +660,256 @@ public sealed unsafe partial class DesignerScene
             string ext = x.Extent ?? "citadel";
             string name = Decks.DeckName(n) + (ext == "citadel" ? "" : ", " + PE.ExtentText(ext));
             bool roof = n == PE.RoofDeck(d) && ext is "citadel" or "full";
+            bool cit = PE.CitadelDeck(d, i);
             float z = DeckZ(n);
-            rows.Add(new ProtRow(new PRef(PK.Deck, i), 1, name, Ramp(x.Mm ?? 0), Row(Knobs.DeckMm(i), d, ship) with { Delta = "" }, "",
-                null, "", null, "", null, Knobs.DeckExtent(i), ext, Knobs.DeckLevel(i), n, DeckShort(n, Decks.DeckName(n)), "",
-                Choice(Knobs.DeckMaterial(i)), "", Tn(deckT[i]), Share(deckT[i]), $"{name}\n{N0(deckT[i])} t", true,
-                [("On", $"{Decks.DeckNameLower(n)} · {-z:0.0} m under the main deck, {z - wl:+0.0;−0.0} m on the WL"),
-                 ("Over", PE.ExtentText(ext)), ("Weight", Pct(deckT[i])), ("Material", x.Material ?? Scheme("decks"))],
-                roof ? "The citadel's roof: the lowest armour deck over it, the one the belt's top edge meets."
-                    : "Over or beside the roof deck: a capping deck to start shells, or a splinter deck below."));
+            var dk = hb?.Armour.Decks?.FirstOrDefault(k => DeckRow(k.Deck, k.Extent) == i && k.SlopeReach != null);
+            double reach = dk?.SlopeReach ?? 0;
+            double tFlat = deckLine[i] * (1 - deckZoneShare[i]), tZone = deckLine[i] * deckZoneShare[i];
+            string mat = x.Material ?? Scheme("decks");
+            int di = i;
+            var shape = new List<ShapeItem>();
+            if (!cit)
+                shape.Add(new ShapeNote("An end deck: flat, side to side. Slopes and zones are for citadel decks."));
+            else
+            {
+                if (x.SlopeMm is > 0)
+                {
+                    shape.Add(new ShapeNum("Slopes", R(Knobs.DeckSlopeDeg(i)), ""));
+                    shape.Add(new ShapeRead("", $"{Fmt(x.SlopeMm.Value, Quantity.Armour)}, its row", () => RemoveSub(new PRef(PK.Slope, di)), "Remove the slopes: the deck flat to the side"));
+                    shape.Add(new ShapeRead("Flat", $"{Fmt(x.Mm ?? 0, Quantity.Armour)}, stops {reach:0.0} m in from the side"));
+                }
+                else
+                    shape.Add(new ShapeAdd("Slopes", "+ slopes", () => AddSub(new PRef(PK.Slope, di)), "The deck turns down each side to meet the side at the belt's lower edge"));
+                if (ext == "citadel")
+                    shape.Add(x.MagazinesMm is { } zm
+                        ? new ShapeRead("At the magazines", $"{Fmt(zm, Quantity.Armour)}, its row", () => RemoveSub(new PRef(PK.DeckZone, di)), "Remove the zone: the deck's own thickness there")
+                        : new ShapeAdd("At the magazines", "+ zone", () => AddSub(new PRef(PK.DeckZone, di)), "A thickness of its own over the magazines"));
+                if (x.SlopeMm is > 0)
+                    shape.Add(new ShapeNote("The slope's foot is on the belt's lower edge: move that edge and the slope follows. Drag the brass knee on the section to change the angle."));
+            }
+            var deckShape = shape.ToArray();
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.Deck, i), Group = 1, Name = name, Full = name, Swatch = Ramp(x.Mm ?? 0), Thick = R(Knobs.DeckMm(i)),
+                Extent = Knobs.DeckExtent(i), ExtentNow = ext, DeckKnob = Knobs.DeckLevel(i), DeckNow = n, DeckLabel = DeckShort(n, Decks.DeckName(n)),
+                Material = Choice(Knobs.DeckMaterial(i)), T = Tn(tFlat), Share = Share(tFlat), WeightTip = $"{name}\n{N0(tFlat)} t", Removable = true,
+                Lines = [("On", $"{Decks.DeckNameLower(n)} · {-z:0.0} m under the main deck, {z - wl:+0.0;−0.0} m on the WL"),
+                         ("Over", PE.ExtentText(ext)), ("Weight", Pct(tFlat)), ("Material", mat)],
+                Note = roof ? "The citadel's roof: the lowest armour deck over it, the one the belt's top edge meets."
+                    : "Over or beside the roof deck: a capping deck to start shells, or a splinter deck below.",
+                Shape = deckShape,
+            });
+            if (x.SlopeMm is > 0 && cit)
+            {
+                double deg = x.SlopeDeg ?? Armour.SlopeDegDefault;
+                rows.Add(new ProtRow
+                {
+                    Ref = new PRef(PK.Slope, i), Group = 1, Name = "slopes", Full = name + ", slopes", Sub = true, Swatch = Ramp(x.SlopeMm.Value),
+                    Thick = R(Knobs.DeckSlopeMm(i)), SecondText = $"at {deg:0}°", WhereText = $"to the belt's lower edge · flat {reach:0.0} m in",
+                    MaterialText = "as above", T = Tn(slopeT[i]), Share = Share(slopeT[i]), WeightTip = $"{name}, slopes\n{N0(slopeT[i])} t", Removable = true,
+                    Lines = [("Height", $"{z - wl:+0.0;−0.0} down to {beltBot - wl:+0.0;−0.0} m on the WL"), ("Angle", $"{deg:0}° from the horizontal"),
+                             ("Weight", Pct(slopeT[i])), ("Material", mat)],
+                    Note = "Each side the deck turns down to meet the side at the belt's lower edge: a shell through the belt meets it at a steep angle.",
+                    Shape = deckShape,
+                });
+            }
+            if (x.MagazinesMm is { } mz && ext == "citadel")
+            {
+                rows.Add(new ProtRow
+                {
+                    Ref = new PRef(PK.DeckZone, i), Group = 1, Name = "at the magazines", Full = name + ", at the magazines", Sub = true, Swatch = Ramp(mz),
+                    Thick = R(Knobs.DeckMagazinesMm(i)), WhereText = $"over the magazines · {zoneLen:0.0} m", MaterialText = "as above",
+                    T = Tn(tZone), Share = Share(tZone), WeightTip = $"{name}, at the magazines\n{N0(tZone)} t", Removable = true,
+                    Lines = [("Covers", Stretches(zoneSpans)), ("On", Decks.DeckNameLower(n)), ("Weight", Pct(tZone)), ("Material", mat)],
+                    Note = "The deck over the magazines, in its place there.",
+                    Shape = deckShape,
+                });
+            }
         }
         if (d.StyleName == "carrier")
         {
             double t = w.GetValueOrDefault("Flight deck armour");
-            rows.Add(new ProtRow(new PRef(PK.FlightDeck), 1, "Flight deck", Ramp(a.FlightDeckMm ?? 0), Row(Knobs.FlightDeckArmour, d, ship) with { Delta = "" }, "",
-                null, "", null, "", null, null, "", null, 0, "", "the flight deck's plating", null, Scheme("flight_deck"), Tn(t), Share(t),
-                "Flight deck armour", false, [("Weight", Pct(t))], "The flight deck's own armour, over the hangar."));
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.FlightDeck), Group = 1, Name = "Flight deck", Full = "Flight deck", Swatch = Ramp(a.FlightDeckMm ?? 0), Thick = R(Knobs.FlightDeckArmour),
+                WhereText = "the flight deck's plating", MaterialText = Scheme("flight_deck"), T = Tn(t), Share = Share(t), WeightTip = "Flight deck armour",
+                Lines = [("Weight", Pct(t))], Note = "The flight deck's own armour, over the hangar.",
+            });
         }
+
+        // inboard: behind the side
+        bool tds = PE.Has(d, Part.Tds);
+        // wing bunkers: coal beside the machinery (fuel at the ends doesn't stand behind the belt)
+        bool bunkers = false;
+        if (hb != null && mach.Count > 0)
+        {
+            var bunkerRooms = rooms.Where(r => r.Kind == "bunker").Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
+            double m0 = mach.Min(r => r.X0) - 0.5, m1 = mach.Max(r => r.X1) + 0.5;
+            bunkers = bunkerRooms.Count > 0 && hb.Cells.Any(c => c.X0 >= m0 && c.X1 <= m1 && bunkerRooms.Contains(c.Room));
+        }
+        double wingAuto = Armour.MagazineWingShare * B;
+        string innerOn = tds ? "the TDS's holding bulkhead" : !((a.InnerBulkhead?.Mm ?? 0) > 0) ? "the magazines' wing walls"
+            : bunkers ? "the wing bunkers' inner wall" : $"its own wall, {a.InnerBulkhead?.InboardM ?? Armour.MagazineWingM(d, B):0.0} m in";
+        if (tds)
+        {
+            double t = w.GetValueOrDefault("Torpedo protection");
+            var spec = Armour.Tds(d);
+            double steel = Armour.TdsMmPerM * spec.DepthM;
+            var shape = new List<ShapeItem>
+            {
+                new ShapeNum("Depth", R(Knobs.Tds), "to the holding wall"),
+                new ShapeNum("Layers", R(Knobs.TdsLayers), spec.Layers > 1 ? "a space each" : "one space"),
+                new ShapeNum("Holding bulkhead", R(Knobs.TdsHolding), ""),
+            };
+            if (spec.Layers > 1)
+                shape.Add(new ShapeNum("Layer walls", R(Knobs.TdsLayerWall), ""));
+            shape.Add(new ShapeNote($"Steel: {Fmt(steel, Quantity.Armour)} a side by default ({Fmt(Armour.TdsMmPerM, Quantity.Armour)} a metre of depth), the same weight however it's split."));
+            if (spec.Layers > 1)
+                shape.Add(new ShapeNote("Torpedoes still hole every layer in reach at once (open: the flooding session).", true));
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.Tds), Group = 2, Name = "Torpedo protection", Full = "Torpedo protection", Swatch = T.Blue, Thick = R(Knobs.Tds),
+                Second = R(Knobs.TdsLayers), SecondPre = "layers",
+                WhereText = spec.Layers > 1 ? $"{spec.Layers} spaces · holding {Fmt(spec.HoldingMm, Quantity.Armour)}" : $"one space · holding {Fmt(spec.HoldingMm, Quantity.Armour)}",
+                MaterialText = "steel walls", T = Tn(t), Share = Share(t), WeightTip = Weights("Torpedo protection", n => n == "Torpedo protection"), Removable = true,
+                Lines = [("Depth", $"{a.TdsM:0.0} m, shell to holding bulkhead"), ("Covers", Covers(X0, X1)),
+                         ("Height", $"inner bottom to the {roofName.ToLowerInvariant()}"), ("Weight", Pct(t))],
+                Note = "Its spaces count in the subdivision (liquid layers, holding bulkhead); the depth also takes beam.",
+                Shape = shape.ToArray(),
+            });
+        }
+        if (PE.Has(d, Part.Inner))
+        {
+            double t = w.GetValueOrDefault("Inner bulkhead");
+            var ib0 = a.InnerBulkhead!;
+            bool own = !tds && !bunkers && (ib0.Mm ?? 0) > 0;
+            var shape = new List<ShapeItem>
+            {
+                new ShapeNum("Over the citadel", R(Knobs.InnerMm), (ib0.Mm ?? 0) > 0 ? "" : "none"),
+                new ShapeNum("At the magazines", R(Knobs.InnerMagazines), ""),
+                new ShapeRead("Stands on", innerOn),
+            };
+            if (own)
+                shape.Add(new ShapeNum("In from the side", R(Knobs.InnerInboard), ""));
+            shape.Add(new ShapeNote("From the inner bottom to the armour deck. It rides on the wall the section already has; only where there is none does it stand on its own, and that makes wing compartments (one side floods)."));
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.Inner), Group = 2, Name = "Inner bulkhead", Full = "Inner bulkhead", Swatch = Ramp(ib0.Mm ?? ib0.MagazinesMm ?? 0),
+                Thick = R(Knobs.InnerMm), Second = R(Knobs.InnerMagazines), SecondPre = "mags", WhereText = innerOn, MaterialText = "as the bulkheads",
+                T = Tn(t), Share = Share(t), WeightTip = Weights("Inner bulkhead", n => n == "Inner bulkhead"), Removable = true,
+                Lines = [("Covers", Covers(X0, X1)), ("Height", $"inner bottom to the {roofName.ToLowerInvariant()}"), ("Stands on", innerOn), ("Weight", Pct(t)),
+                         ("Material", Scheme("bulkheads"))],
+                Note = "An armoured wall behind the belt, each side over the citadel, thicker (or thinner) beside the magazines.",
+                Shape = shape.ToArray(),
+            });
+        }
+        if (PE.Has(d, Part.Box))
+        {
+            double t = w.GetValueOrDefault("Magazine boxes");
+            var runs = Merged(rooms.Where(r => r.Kind == "magazine" && r.Cells.Count > 0).Select(r => ((float)r.X0, (float)r.X1)));
+            string runText = string.Join(", ", runs.Select(s => $"{Sx1(s.X0)} to {Sx1(s.X1)} m"));
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.Box), Group = 2, Name = "Magazine boxes", Full = "Magazine boxes", Swatch = Ramp(a.MagazineBox!.SideMm ?? 0),
+                Thick = R(Knobs.BoxSide), Second = R(Knobs.BoxCrown), SecondPre = "crown",
+                WhereText = $"ends {Mm(a.MagazineBox.EndMm ?? 0)} · floor {Mm(a.MagazineBox.FloorMm ?? 0)} · {runs.Count} run{(runs.Count == 1 ? "" : "s")}",
+                MaterialText = "as the bulkheads", T = Tn(t), Share = Share(t),
+                WeightTip = Weights("Magazine boxes", n => n == "Magazine boxes"), Removable = true,
+                Lines = [("Covers", Stretches(runs)), ("Weight", Pct(t)), ("Material", Scheme("bulkheads"))],
+                Note = "Round each run of magazines, as wide as their cells.",
+                Shape =
+                [
+                    new ShapeNum("Sides", R(Knobs.BoxSide), "wing walls"), new ShapeNum("Crown", R(Knobs.BoxCrown), "platform"), new ShapeNum("Ends", R(Knobs.BoxEnd), ""),
+                    new ShapeNum("Floor", R(Knobs.BoxFloor), "inner bottom"),
+                    new ShapeNote($"Round {runs.Count} run{(runs.Count == 1 ? "" : "s")} of magazines: {runText}. As wide as their cells; a wing of 0.1 B stands outside them even with wings off."),
+                ],
+            });
+        }
+        if (PE.Has(d, Part.Wings) || tds)
+        {
+            var shape = new List<ShapeItem>();
+            if (tds)
+                shape.Add(new ShapeNote("The torpedo protection stands between the magazines and the side, so it is their wing. The value counts where it doesn't reach (the ends)."));
+            shape.Add(new ShapeNum("Width", R(Knobs.MagazineWing), a.MagazineWingM == null ? "0.1 of the beam" : "each side"));
+            shape.Add(new ShapeNote("Stores (refrigerated rooms, the crew's) between each magazine and the side, never fuel: a tank there gets a void cofferdam. In the fine ends the magazine grows longer for its volume."));
+            double ww = a.MagazineWingM ?? wingAuto;
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.Wings), Group = 2, Name = "Magazine wings", Full = "Magazine wings", Swatch = ProtectionSection.Rgb(0xD7C79A, 1),
+                Thick = tds ? null : R(Knobs.MagazineWing), ThickText = tds ? "—" : "", Greyed = tds,
+                WhereText = tds ? "the torpedo protection stands there" : "stores between magazine and side", MaterialText = "stores", T = "—",
+                Removable = !tds && PE.Has(d, Part.Wings),
+                Lines = [("Width", $"{ww:0.0} m each side" + (a.MagazineWingM == null ? " (0.1 B)" : "")), ("Holds", "stores, never fuel")],
+                Note = "The wing handle sets the input, not the cell: in a fine end the wing is measured halfway up the magazine, so its cells can look wider.",
+                Shape = shape.ToArray(),
+            });
+        }
+
         if (PE.Has(d, Part.Steering))
         {
             double t = Sum(n => n.StartsWith("Steering gear box", StringComparison.Ordinal) || n.EndsWith(", steering)", StringComparison.Ordinal));
-            rows.Add(new ProtRow(new PRef(PK.Steering), 2, "Steering gear box", Ramp(a.SteeringBox!.Mm ?? 0), Row(Knobs.SteeringSides, d, ship) with { Delta = "" }, "",
-                Row(Knobs.SteeringRoof, d, ship) with { Delta = "" }, "roof", Row(Knobs.SteeringEnds, d, ship) with { Delta = "" }, "ends", null, null, "", null, 0, "",
-                "over the rudders", Choice(Knobs.SteeringMaterial), "", Tn(t), Share(t),
-                Weights("Steering gear box", n => n.StartsWith("Steering gear box", StringComparison.Ordinal) || n.EndsWith(", steering)", StringComparison.Ordinal)), true,
-                [("Sides", Fmt(a.SteeringBox.Mm ?? 0, Quantity.Armour)), ("Roof", Fmt(a.SteeringBox.DeckMm ?? 0, Quantity.Armour)),
-                 ("Ends", Fmt(a.SteeringBox.BulkheadMm ?? 0, Quantity.Armour)), ("Weight", Pct(t))],
-                "A box over the steering gear: sides, a roof on its own deck and two ends."));
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.Steering), Group = 3, Name = "Steering gear box", Full = "Steering gear box", Swatch = Ramp(a.SteeringBox!.Mm ?? 0),
+                Thick = R(Knobs.SteeringSides), Second = R(Knobs.SteeringRoof), SecondPre = "roof", WhereA = R(Knobs.SteeringEnds), WhereAPre = "ends",
+                WhereText = "over the rudders", Material = Choice(Knobs.SteeringMaterial), T = Tn(t), Share = Share(t),
+                WeightTip = Weights("Steering gear box", n => n.StartsWith("Steering gear box", StringComparison.Ordinal) || n.EndsWith(", steering)", StringComparison.Ordinal)),
+                Removable = true,
+                Lines = [("Sides", Fmt(a.SteeringBox.Mm ?? 0, Quantity.Armour)), ("Roof", Fmt(a.SteeringBox.DeckMm ?? 0, Quantity.Armour)),
+                         ("Ends", Fmt(a.SteeringBox.BulkheadMm ?? 0, Quantity.Armour)), ("Weight", Pct(t))],
+                Note = "A box over the steering gear: sides, a roof on its own deck and two ends.",
+            });
         }
         var mains = d.Main ?? [];
         for (int k = 0; k < mains.Count; k++)
         {
             double f = mains[k].ArmourMm ?? 0;
-            rows.Add(new ProtRow(new PRef(PK.Main, k), 3, mains.Count == 1 ? "Turrets" : $"Turrets, battery {(char)('A' + k)}", Ramp(f),
-                Row(Knobs.MainArmour(k), d, ship) with { Delta = "" }, "", null, "", null, "", null, null, "", null, 0, "",
-                $"faces · side {Mm(f * 0.55)} · rear {Mm(f * 0.5)} · roof {Mm(f * 0.4)}", Choice(Knobs.MainMaterial(k)), "", "turret", 0,
-                "The gunhouse armour is part of each turret's weight (armament), so it has no line of its own here.", false,
-                [("Gunhouse", $"face {Mm(f)} · side {Mm(f * 0.55)} · rear {Mm(f * 0.5)} · roof {Mm(f * 0.4)}"), ("Material", mains[k].Material ?? Scheme("turrets"))],
-                "Also on the Main battery tab. The side, rear and roof are fixed shares of the face."));
+            string nm = mains.Count == 1 ? "Turrets" : $"Turrets, battery {(char)('A' + k)}";
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.Main, k), Group = 4, Name = nm, Full = nm, Swatch = Ramp(f), Thick = R(Knobs.MainArmour(k)),
+                WhereText = $"faces · side {Mm(f * 0.55)} · rear {Mm(f * 0.5)} · roof {Mm(f * 0.4)}", Material = Choice(Knobs.MainMaterial(k)), T = "turret",
+                WeightTip = "The gunhouse armour is part of each turret's weight (armament), so it has no line of its own here.",
+                Lines = [("Gunhouse", $"face {Mm(f)} · side {Mm(f * 0.55)} · rear {Mm(f * 0.5)} · roof {Mm(f * 0.4)}"), ("Material", mains[k].Material ?? Scheme("turrets"))],
+                Note = "Also on the Main battery tab. The side, rear and roof are fixed shares of the face.",
+            });
         }
         if (mains.Count > 0 && (mains[0].ArmourMm ?? 0) > 0)
         {
             double t = Sum(n => n.StartsWith("Barbette ", StringComparison.Ordinal) && mainIds.Contains(n[9..]));
             double mm = 0.8 * (mains[0].ArmourMm ?? 0);
-            rows.Add(new ProtRow(new PRef(PK.Barbettes), 3, "Barbettes", Ramp(mm), null, Fmt(mm, Quantity.Armour), null, "", null, "", null, null, "", null, 0, "",
-                "0.8 × the faces", null, "as the turrets", Tn(t), Share(t), Weights("Barbettes", n => n.StartsWith("Barbette ", StringComparison.Ordinal) && mainIds.Contains(n[9..])),
-                false, [("Thickness", Fmt(mm, Quantity.Armour)), ("Weight", Pct(t))], "Barbettes follow the turret faces at 0.8 ×, from the armour deck up to the gunhouse."));
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.Barbettes), Group = 4, Name = "Barbettes", Full = "Barbettes", Swatch = Ramp(mm), ThickText = Fmt(mm, Quantity.Armour),
+                WhereText = "0.8 × the faces", MaterialText = "as the turrets", T = Tn(t), Share = Share(t),
+                WeightTip = Weights("Barbettes", n => n.StartsWith("Barbette ", StringComparison.Ordinal) && mainIds.Contains(n[9..])),
+                Lines = [("Thickness", Fmt(mm, Quantity.Armour)), ("Weight", Pct(t))],
+                Note = "Barbettes follow the turret faces at 0.8 ×, from the armour deck up to the gunhouse.",
+            });
         }
         if (hasBelt && hb?.Components.Any(c => c.Kind == "conning_tower") == true)
         {
             double t = w.GetValueOrDefault("Conning tower");
-            rows.Add(new ProtRow(new PRef(PK.Ct), 3, "Conning tower", Ramp(a.BeltMm ?? 0), null, Fmt(a.BeltMm ?? 0, Quantity.Armour), null, "", null, "", null, null, "",
-                null, 0, "", "the belt's thickness", Choice(Knobs.SchemeMaterial("conning_tower", "Conning tower")), "", Tn(t), Share(t),
-                Weights("Conning tower", n => n == "Conning tower"), false, [("Thickness", Fmt(a.BeltMm ?? 0, Quantity.Armour)), ("Weight", Pct(t))],
-                "The conning tower takes the belt's thickness: set the belt."));
+            rows.Add(new ProtRow
+            {
+                Ref = new PRef(PK.Ct), Group = 4, Name = "Conning tower", Full = "Conning tower", Swatch = Ramp(a.BeltMm ?? 0), ThickText = Fmt(a.BeltMm ?? 0, Quantity.Armour),
+                WhereText = "the belt's thickness", Material = Choice(Knobs.SchemeMaterial("conning_tower", "Conning tower")), T = Tn(t), Share = Share(t),
+                WeightTip = Weights("Conning tower", n => n == "Conning tower"), Lines = [("Thickness", Fmt(a.BeltMm ?? 0, Quantity.Armour)), ("Weight", Pct(t))],
+                Note = "The conning tower takes the belt's thickness: set the belt.",
+            });
         }
 
-        var chips = new PChip[4][];
-        chips[0] = new[] { Part.Belt, Part.Upper, Part.EndFore, Part.EndAft, Part.Bulkheads, Part.Tds }.Where(p => !PE.Has(d, p))
+        var chips = new PChip[ProtGroups][];
+        chips[0] = new[] { Part.Belt, Part.Upper, Part.EndFore, Part.EndAft, Part.Bulkheads }.Where(p => !PE.Has(d, p))
             .Select(p => new PChip(p, 0, "+ " + PE.Name(p).ToLowerInvariant().Replace("end belt, ", "end belt "), AddTip(p))).ToArray();
         chips[1] = choices.Where(c => c.N >= 0 && !designDecks.Any(x => (x.Deck ?? 0) == c.N))
             .Select(c => new PChip(null, (int)c.N, "+ " + DeckShort(c.N, c.Name),
                 $"+ armour deck on the {c.Name.ToLowerInvariant()}, over the citadel, {Fmt(25, Quantity.Armour)}\n" +
                 $"about {N0((X1 - X0) * B * 0.92 * 25 / 1000 * Weight.Steel)} t\nThen: its extent in the row, or drag it to another deck.")).ToArray();
-        chips[2] = PE.Has(d, Part.Steering) ? [] : [new PChip(Part.Steering, 0, "+ steering gear box", AddTip(Part.Steering))];
-        chips[3] = [];
+        chips[2] = new[] { Part.Tds, Part.Inner, Part.Box, Part.Wings }.Where(p => !PE.Has(d, p) && !(p == Part.Wings && tds))
+            .Select(p => new PChip(p, 0, "+ " + PE.Name(p).ToLowerInvariant(), AddTip(p))).ToArray();
+        chips[3] = PE.Has(d, Part.Steering) ? [] : [new PChip(Part.Steering, 0, "+ steering gear box", AddTip(Part.Steering))];
+        chips[4] = [];
 
         var cov = PE.Reads(d);
         var coverTips = PE.Coverages.Select(c =>
@@ -472,29 +918,71 @@ public sealed unsafe partial class DesignerScene
             return $"{PE.Name(c)}\n{PE.Purpose(c)}\n\n" + (lines.Count > 0 ? string.Join("\n", lines) : "No change: the design is already this.") +
                    "\n\nThicknesses stay; new plates start from the belt's.";
         }).ToArray();
-        string reads = ship != null ? $"reads as {PE.Name(cov).ToLowerInvariant()} · armour {N0(armourT)} t, {100 * armourT / Math.Max(1, std):0.0} % of standard"
-            : $"reads as {PE.Name(cov).ToLowerInvariant()}";
+
+        // the layout: which template the design reads as, and what each would make of it
+        var schemes = Templates.Protection.Select(t => t.Value).ToList();
+        var (li, exact) = PE.LayoutOf(d, schemes);
+        // two templates can put the same inputs on a ship: the one applied here names it
+        if (exact && protLayoutApplied is var (pa, _) && pa != li && pa < schemes.Count && PE.LayoutKey(PE.ApplyLayout(d, schemes[pa])) == PE.LayoutKey(d))
+            li = pa;
+        string layoutName;
+        bool layoutOwn = false;
+        if (protLayoutApplied is var (ai, akey) && ai < schemes.Count && PE.LayoutKey(d) != akey && !exact)
+            (layoutName, layoutOwn, li) = ($"{Templates.Protection[ai].Name} · edited", true, ai);
+        else if (li >= 0)
+            (layoutName, layoutOwn) = exact ? (Templates.Protection[li].Name, false) : ($"{Templates.Protection[li].Name} · own values", true);
+        else if (!PE.HasLayout(d))
+            layoutName = "Plain";
+        else
+            (layoutName, layoutOwn) = ("Custom", true);
+        var layoutTips = Templates.Protection.Select(t =>
+        {
+            var words = PE.DescribeLayout(PE.ApplyLayout(d, t.Value));
+            return $"{t.Name} on this ship:\n" + (words.Count > 0 ? string.Join("\n", words.Select(x => "· " + x)) : "nothing to change") +
+                   "\nThicknesses scale with the design's own; what it doesn't set stays.";
+        }).ToArray();
+        string reads = $"reads as {PE.Name(cov).ToLowerInvariant()}" + (li >= 0 && !layoutName.EndsWith("· edited", StringComparison.Ordinal)
+            ? $" · {Templates.Protection[li].Name.ToLowerInvariant()}" : "");
+        if (ship != null)
+            reads += $" · armour {N0(armourT)} t, {100 * armourT / Math.Max(1, std):0.0} % of standard";
 
         var upper = hb?.Armour.Strakes?.FirstOrDefault(x => x.Kind == "upper");
         var tipF = hb?.Armour.Strakes?.FirstOrDefault(x => x.Kind == "end" && x.Extent == "fore");
         var tipA = hb?.Armour.Strakes?.FirstOrDefault(x => x.Kind == "end" && x.Extent == "aft");
-        return new ProtPane(rows.Select(r => r with { Hover = PlateTip(r, r.Ref) }).ToArray(), chips, plates.ToArray(), ghosts.ToArray(), lanes.ToArray(), profile.ToArray(), L, B, wl, keel, ib, zTop, X0, X1,
-            beltTop, beltBot, Math.Min(roofZ, wl), $"citadel {X1 - X0:0.0} m · {100 * (X1 - X0) / L:0} % of length", choices.ToArray(),
-            secX, secZ.ToArray(), secY.ToArray(), sec.ToArray(), secDecks.ToArray(), (float)(a.TdsM ?? 0),
-            reads, cov, coverTips, ArmourPick(d), mains.Count > 0 ? $"her own {Fmt(mains[0].CalibreMm ?? 0, Quantity.Calibre)}" : "a gun",
-            Row(Knobs.BeltHeight, d, ship) with { Delta = "" }, Row(Knobs.BeltDepth, d, ship) with { Delta = "" }, Row(Knobs.Tds, d, ship) with { Delta = "" },
-            ship != null)
+        foreach (var r in rows)
+            r.Hover = PlateTip(r);
+        float secTop = (float)Math.Max(0, raised.Select(r => r.Top).DefaultIfEmpty(0).Max()) + 1.6f;
+        return new ProtPane
         {
+            Rows = rows.ToArray(), Chips = chips, Plates = plates.ToArray(), Ghosts = ghosts.ToArray(), Lanes = lanes.ToArray(), Profile = profile.ToArray(),
+            L = L, B = B, Wl = wl, Keel = keel, Ib = ib, ZTop = zTop, X0 = X0, X1 = X1, BeltTop = beltTop, BeltBottom = beltBot, RoofZ = Math.Min(roofZ, wl),
+            SecTop = secTop, Citadel = $"citadel {X1 - X0:0.0} m · {100 * (X1 - X0) / L:0} % of length",
+            HasCitadel = hasBelt || PE.Has(d, Part.Bulkheads) || designDecks.Count > 0, DeckChoices = choices.ToArray(), Stops = stops.ToArray(),
+            Rooms = proom.ToArray(), Compartments = comps.ToArray(), Warned = warned,
+            CompChip = $"{cstd}", CompLabel = $"Compartments {cstd}     ", CompOk = cstd >= need,
+            ImmuneLine = "Immune zone and shells fired in anger · against " + (mains.Count > 0 ? $"her own {Fmt(mains[0].CalibreMm ?? 0, Quantity.Calibre)}" : "a gun"),
+            CompTip = $"The main watertight bulkheads. A {Count(cstd)}-compartment ship: any {Count(cstd)} adjacent compartments flooded, she floats " +
+                      $"with the margin line clear (her type asks {need})." + (warning != null ? "\n\n" + warning : ""),
+            Tags = tags.ToArray(), Reads = reads, Coverage = cov, CoverTips = coverTips, Materials = ArmourPick(d),
+            LayoutName = layoutName, LayoutOwn = layoutOwn, LayoutIndex = exact ? li : -1, LayoutTips = layoutTips,
+            PlainTip = "Plain: no slopes, an upright belt on the side, no inner bulkhead or boxes; zones and plates stay.",
+            ImmuneGun = mains.Count > 0 ? $"her own {Fmt(mains[0].CalibreMm ?? 0, Quantity.Calibre)}" : "a gun",
+            BeltHeight = R(Knobs.BeltHeight), BeltDepth = R(Knobs.BeltDepth), TdsRow = R(Knobs.Tds), Built = ship != null,
             BeltTip = "Drag the belt's top or bottom edge (0.1 m steps)\n" +
                       $"now {beltBot - wl:+0.0;−0.0} to {beltTop - wl:+0.0;−0.0} m on the waterline · the end belts share the heights",
             TdsTip = $"Drag the holding bulkhead: the torpedo protection's depth, now {a.TdsM ?? 0:0.0} m (0.1 m steps)",
-            EndTipFore = tipF != null ? (float)tipF.X1 : float.NaN,
-            EndTipAft = tipA != null ? (float)tipA.X0 : float.NaN,
-            UpX0 = upper != null ? (float)upper.X0 : float.NaN,
-            UpX1 = upper != null ? (float)upper.X1 : float.NaN,
-            UpTop = upper != null ? (float)upper.Top : float.NaN,
+            EndTipFore = tipF != null ? (float)tipF.X1 : float.NaN, EndTipAft = tipA != null ? (float)tipA.X0 : float.NaN,
+            UpX0 = upper != null ? (float)upper.X0 : float.NaN, UpX1 = upper != null ? (float)upper.X1 : float.NaN, UpTop = upper != null ? (float)upper.Top : float.NaN,
+            Ship = ship, DeckRow = DeckRow,
+            CutLabels = stops.Select(s => s.Id == "mach" ? $"Machinery ({s.Label[12..]})" : s.Label).ToArray(),
         };
     }
+
+    static string PlateTip(ProtRow row) =>
+        $"{row.Full} {row.ThickShown}" + (row.T is "turret" or "–" or "—" ? "" : $" · {row.T} t") +
+        (row.Ref.Kind is PK.Barbettes or PK.Ct ? "\n" + row.WhereText
+            : row.Ref.Kind is PK.Belt or PK.BeltZone or PK.Deck or PK.Slope or PK.DeckZone ? "\nclick: select · wheel: one step · right-click: zones, slopes, position"
+            : "\nclick: select · wheel: one step · right-click: more");
 
     // ------------------------------------------------------------------ the pane
 
@@ -512,73 +1000,153 @@ public sealed unsafe partial class DesignerScene
 
         ProtBar(dl, o, w, pp);
         float rowH = ProtRowH, groupH = P(15);
-        float tableH = P(17) + pp.Rows.Length * rowH + 4 * groupH + P(2);
+        int groups = 0;
+        for (int g = 0; g < ProtGroups; g++)
+            if (pp.Chips[g].Length > 0 || pp.Rows.Any(r => r.Group == g))
+                groups++;
+        float tableH = P(17) + pp.Rows.Length * rowH + groups * groupH + P(2);
         float topY = o.Y + P(18) + gap;
-        float wantTop = Math.Clamp(size.Y - P(18) - 3 * gap - tableH, P(170), MathF.Max(P(170), size.Y * 0.46f));   // the lower half keeps room
+        float avail = size.Y - P(18) - 3 * gap;
+        float wantTop = Math.Clamp(avail - tableH, P(170), MathF.Max(P(170), avail * 0.42f));   // the lower half keeps room
         if (!ReferenceEquals(protFrameDoc, doc) || protFrameSize != size)
         {
             (protFrameDoc, protFrameSize, protTopH, protFrameL) = (doc, size, wantTop, 0);
+            protLayoutApplied = null;
         }
         protTopH = MathF.Min(protTopH, wantTop);   // more rows take room from the drawings; fewer don't give it back
         if (pp.Built && (protFrameL <= 0 || pp.L > protFrameL || pp.ZTop > protFrameTop || pp.Keel - 0.4f < protFrameBot || pp.B > protFrameB
                          || pp.L < 0.8f * protFrameL))
             (protFrameL, protFrameTop, protFrameBot, protFrameB) = (pp.L * 1.03f, pp.ZTop + 0.6f, pp.Keel - 0.9f, pp.B * 1.03f);
-        float topH = protTopH;
-        float secW = MathF.Round(Math.Clamp(w * 0.33f, P(330), P(470)));
-        float elevW = w - secW - 3 * gap;
-        ProtElevation(dl, new Vector2(o.X + gap, topY), new Vector2(elevW, topH), pp);
-        ProtSection(dl, new Vector2(o.X + 2 * gap + elevW, topY), new Vector2(secW, topH), pp);
-        float lowY = topY + topH + gap, lowH = o.Y + size.Y - gap - lowY;
-        ProtTable(dl, new Vector2(o.X + gap, lowY), new Vector2(elevW, lowH), pp);
-        ProtInspector(dl, new Vector2(o.X + 2 * gap + elevW, lowY), new Vector2(secW, lowH), pp);
+        float elevH = protTopH;
+        float rightW = MathF.Round(Math.Clamp(w * 0.41f, P(400), P(640)));
+        float leftW = w - rightW - 3 * gap;
+        float secH = MathF.Round(Math.Clamp(avail * 0.57f, P(240), MathF.Max(P(240), avail - P(200))));
+        ResolveCuts(pp);
+        ProtElevation(dl, new Vector2(o.X + gap, topY), new Vector2(leftW, elevH), pp);
+        ProtSections(dl, new Vector2(o.X + 2 * gap + leftW, topY), new Vector2(rightW, secH), pp);
+        float lowY = topY + elevH + gap;
+        ProtTable(dl, new Vector2(o.X + gap, lowY), new Vector2(leftW, o.Y + size.Y - gap - lowY), pp);
+        float insY = topY + secH + gap;
+        ProtInspector(dl, new Vector2(o.X + 2 * gap + leftW, insY), new Vector2(rightW, o.Y + size.Y - gap - insY), pp);
         ProtMenu(pp);
+        LayoutMenu(pp);
+        CutMenu(pp);
         ImGui.EndChild();
     }
 
     static float ProtRowH => MathF.Max(P(18), ImGui.GetFrameHeight() + P(2));
 
-    /// <summary>The sub-bar: what the scheme reads as, the coverage presets, the armour scheme.</summary>
+    /// <summary>The sub-bar: what the scheme reads as, the coverage presets, the layout template, the materials.</summary>
     void ProtBar(ImDrawListPtr dl, Vector2 o, float w, ProtPane pp)
     {
         float h = P(18);
         dl.AddRectFilled(o, o + new Vector2(w, h), T.U32(T.HeaderBg));
         dl.AddLine(o + new Vector2(0, h - 1), o + new Vector2(w, h - 1), T.U32(T.Edge));
-        float ty = o.Y + (h - UiFonts.SansSmall.FontSize) / 2;
-        Text(dl, UiFonts.SansSmall, new Vector2(o.X + P(6), ty), T.Muted, "PROTECTION");
-        Text(dl, UiFonts.SansSmall, new Vector2(o.X + P(6) + Width(UiFonts.SansSmall, "PROTECTION") + P(10), ty), T.Text, pp.Reads);
+        var font = UiFonts.SansSmall;
+        float ty = o.Y + (h - font.FontSize) / 2;
+        Text(dl, font, new Vector2(o.X + P(6), ty), T.Muted, "PROTECTION");
 
         var d = doc.Current;
-        ImGui.PushFont(UiFonts.SansSmall);
+        ImGui.PushFont(font);
         ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(P(5), 0));
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(1, 0));
-        float schemeW = P(260);
+        float matW = P(220), layW = P(200);
         float segsW = 0;
         foreach (var c in PE.Coverages)
-            segsW += Width(UiFonts.SansSmall, PE.Name(c)) + P(10) + 1;
-        float x = o.X + w - P(4) - schemeW - P(6) - Width(UiFonts.SansSmall, "Scheme") - P(14) - segsW - P(6) - Width(UiFonts.SansSmall, "Coverage");
-        Text(dl, UiFonts.SansSmall, new Vector2(x, ty), T.Muted, "Coverage");
-        ImGui.SetCursorScreenPos(new Vector2(x + Width(UiFonts.SansSmall, "Coverage") + P(6), o.Y + P(1)));
+            segsW += Width(font, PE.Name(c)) + P(10) + 1;
+        float right = o.X + w - P(4);
+        float matX = right - matW, matL = matX - P(6) - Width(font, "Materials");
+        float layX = matL - P(12) - layW, layL = layX - P(6) - Width(font, "Layout");
+        float segX = layL - P(12) - segsW, covL = segX - P(6) - Width(font, "Coverage");
+        float readsX = o.X + P(6) + Width(font, "PROTECTION") + P(10);
+        dl.PushClipRect(new Vector2(readsX, o.Y), new Vector2(covL - P(8), o.Y + h), true);
+        Text(dl, font, new Vector2(readsX, ty), T.Text, pp.Reads);
+        dl.PopClipRect();
+        Text(dl, font, new Vector2(covL, ty), T.Muted, "Coverage");
+        ImGui.SetCursorScreenPos(new Vector2(segX, o.Y + P(1)));
         for (int i = 0; i < PE.Coverages.Length; i++)
         {
             var c = PE.Coverages[i];
             if (i > 0)
                 ImGui.SameLine();
-            if (Seg(PE.Name(c), pp.Coverage == c, Width(UiFonts.SansSmall, PE.Name(c)) + P(10)))
+            if (Seg(PE.Name(c), pp.Coverage == c, Width(font, PE.Name(c)) + P(10)))
                 Edit(PE.Apply(d, c, DeepestDeck(pp)), $"Coverage: {PE.Name(c).ToLowerInvariant()}");
             if (ImGui.IsItemHovered())
                 Tip(pp.CoverTips[i]);
             if (protForceTip != null && protForceTip == CoverForce[i])
                 TipAt(pp.CoverTips[i], ImGui.GetItemRectMin() + new Vector2(-P(120), P(20)));
         }
-        float sx = o.X + w - P(4) - schemeW - P(6) - Width(UiFonts.SansSmall, "Scheme");
-        Text(dl, UiFonts.SansSmall, new Vector2(sx, ty), T.Muted, "Scheme");
-        ImGui.SetCursorScreenPos(new Vector2(o.X + w - P(4) - schemeW, o.Y + P(1)));
-        ImGui.SetNextItemWidth(schemeW);
-        int si = pp.Scheme.Index;
-        if (ImGui.Combo("##scheme", ref si, pp.Scheme.Names, pp.Scheme.Names.Length) && si != pp.Scheme.Index && si < pp.Scheme.Count)
-            pp.Scheme.Apply(si);
+        // the layout: a dropdown of the templates, the one in force named (amber with its own values, edited or custom)
+        Text(dl, font, new Vector2(layL, ty), T.Muted, "Layout");
+        ImGui.SetCursorScreenPos(new Vector2(layX, o.Y + P(1)));
+        ImGui.PushStyleColor(ImGuiCol.Text, pp.LayoutOwn ? T.Amber : T.Text);
+        ImGui.PushStyleVar(ImGuiStyleVar.ButtonTextAlign, new Vector2(0, 0.5f));
+        ImGui.PushID("layout");
+        if (ImGui.Button(pp.LayoutName, new Vector2(layW, 0)))
+            openLayoutMenu = true;
+        ImGui.PopID();
+        ImGui.PopStyleVar();
+        ImGui.PopStyleColor();
+        var lr = (ImGui.GetItemRectMin(), ImGui.GetItemRectMax());
+        Twisty(dl, new Vector2(lr.Item2.X - P(7), (lr.Item1.Y + lr.Item2.Y) / 2), true, T.Muted);
+        if (ImGui.IsItemHovered())
+            Tip(pp.LayoutIndex >= 0 ? pp.LayoutTips[pp.LayoutIndex] : pp.LayoutName == "Plain" ? pp.PlainTip
+                : $"{pp.LayoutName}: the design's own layout inputs. Pick a template to put its layout on.");
+        layoutAnchor = new Vector2(lr.Item1.X, lr.Item2.Y + 1);
+        Text(dl, font, new Vector2(matL, ty), T.Muted, "Materials");
+        ImGui.SetCursorScreenPos(new Vector2(matX, o.Y + P(1)));
+        ImGui.SetNextItemWidth(matW);
+        int si = pp.Materials.Index;
+        if (ImGui.Combo("##materials", ref si, pp.Materials.Names, pp.Materials.Names.Length) && si != pp.Materials.Index && si < pp.Materials.Count)
+            pp.Materials.Apply(si);
+        if (ImGui.IsItemHovered())
+            Tip("The armour material scheme: the plate each part is made of (the Templates panel's Armour row).");
         ImGui.PopStyleVar(2);
         ImGui.PopFont();
+    }
+
+    Vector2 layoutAnchor;
+
+    /// <summary>The layout templates as a plain list of names; hovering one says what it makes of this ship, a click puts
+    /// it on. Plain at the foot clears the layout.</summary>
+    void LayoutMenu(ProtPane pp)
+    {
+        if (openLayoutMenu)
+        {
+            ImGui.SetNextWindowPos(layoutAnchor);
+            ImGui.OpenPopup("##layoutmenu");
+            openLayoutMenu = false;
+        }
+        if (!ImGui.BeginPopup("##layoutmenu"))
+            return;
+        var d = doc.Current;
+        ImGui.TextColored(T.Muted, "Layout");
+        ImGui.Separator();
+        var list = Templates.Protection;
+        int forced = protForceTip is { } ft && ft.StartsWith("layout:", StringComparison.Ordinal) ? int.Parse(ft[7..], CultureInfo.InvariantCulture) : -1;
+        for (int i = 0; i < list.Count; i++)
+        {
+            bool cur = pp.LayoutIndex == i;
+            if (ImGui.Selectable(list[i].Name + "##lay" + i, cur))
+            {
+                var next = PE.ApplyLayout(d, list[i].Value);
+                Edit(next, $"Layout: {list[i].Name}");
+                protLayoutApplied = (i, PE.LayoutKey(next));
+            }
+            if (ImGui.IsItemHovered())
+                Tip(pp.LayoutTips[i]);
+            if (i == forced)
+                TipAt(pp.LayoutTips[i], ImGui.GetItemRectMax() + new Vector2(P(8), -P(14)));
+        }
+        ImGui.Separator();
+        if (ImGui.Selectable("Plain##layplain", pp.LayoutName == "Plain"))
+        {
+            Edit(PE.Plain(d), "Layout: plain");
+            protLayoutApplied = null;
+        }
+        if (ImGui.IsItemHovered())
+            Tip(pp.PlainTip);
+        ImGui.EndPopup();
     }
 
     static int DeepestDeck(ProtPane pp)
@@ -593,12 +1161,18 @@ public sealed unsafe partial class DesignerScene
     NumberKnob? ThickKnob(PRef r) => r.Kind switch
     {
         PK.Belt => Knobs.Belt,
+        PK.BeltZone => Knobs.BeltMagazines,
         PK.Upper => Knobs.UpperBelt,
         PK.EndFore => Knobs.EndBeltMm("fore"),
         PK.EndAft => Knobs.EndBeltMm("aft"),
         PK.Bulkheads => Knobs.Bulkheads,
         PK.Tds => Knobs.Tds,
+        PK.Inner => Knobs.InnerMm,
+        PK.Box => Knobs.BoxSide,
+        PK.Wings => Knobs.MagazineWing,
         PK.Deck when r.I >= 0 => Knobs.DeckMm(r.I),
+        PK.Slope when r.I >= 0 => Knobs.DeckSlopeMm(r.I),
+        PK.DeckZone when r.I >= 0 => Knobs.DeckMagazinesMm(r.I),
         PK.Steering => Knobs.SteeringSides,
         PK.Main => Knobs.MainArmour(r.I),
         PK.FlightDeck => Knobs.FlightDeckArmour,
@@ -607,503 +1181,7 @@ public sealed unsafe partial class DesignerScene
 
     bool ProtLit(PRef r) => r == protSel || protHot == r;
 
-    // ------------------------------------------------------------------ the elevation
-
-    /// <summary>Ship metres to the elevation's pixels: x to scale, heights stretched to fill.</summary>
-    readonly record struct ElevMap(float Left, float Top, float Kx, float Kz, float L, float ZTop)
-    {
-        public float X(float x) => Left + (x + L / 2) * Kx;
-        public float Z(float z) => Top + (ZTop - z) * Kz;
-        public float InvX(float px) => (px - Left) / Kx - L / 2;
-        public float InvZ(float py) => ZTop - (py - Top) / Kz;
-    }
-
-    void ProtElevation(ImDrawListPtr dl, Vector2 pos, Vector2 size, ProtPane pp)
-    {
-        dl.AddRectFilled(pos, pos + size, T.U32(T.Plan));
-        dl.AddRect(pos, pos + size, T.U32(T.Edge));
-        ImGui.SetCursorScreenPos(pos);
-        SubHeader(dl, size.X, "ELEVATION", "heights stretched, deck by deck · + on a bare deck or side adds armour there");
-        var io = ImGui.GetIO();
-        float left = P(58), right = P(8), top = P(26), bottom = P(16);
-        float fl = protFrameL > 0 ? protFrameL : pp.L, ft = protFrameL > 0 ? protFrameTop : pp.ZTop, fb = protFrameL > 0 ? protFrameBot : pp.Keel - 0.4f;
-        float kx = (size.X - left - right) / fl;
-        float kz = (size.Y - top - bottom) / Math.Max(1, ft - fb);
-        var m = new ElevMap(pos.X + left, pos.Y + top, kx, kz, fl, ft);
-        var font = UiFonts.SansSmall;
-        var mono = UiFonts.Mono;
-
-        // the hull side: quads from the deck line down to each station's keel
-        for (int i = 0; i + 1 < pp.Profile.Length; i++)
-        {
-            var (p0, p1) = (pp.Profile[i], pp.Profile[i + 1]);
-            float t0 = HullTop(pp, p0.X), t1 = HullTop(pp, p1.X);
-            dl.AddQuadFilled(new Vector2(m.X(p0.X), m.Z(t0)), new Vector2(m.X(p1.X), m.Z(t1)), new Vector2(m.X(p1.X), m.Z(p1.Y)),
-                new Vector2(m.X(p0.X), m.Z(p0.Y)), T.U32(new Vector4(0.10f, 0.176f, 0.267f, 1)));
-        }
-        uint hullLine = T.U32(new Vector4(0.435f, 0.576f, 0.71f, 1));
-        for (int i = 0; i + 1 < pp.Profile.Length; i++)
-        {
-            var (p0, p1) = (pp.Profile[i], pp.Profile[i + 1]);
-            dl.AddLine(new Vector2(m.X(p0.X), m.Z(p0.Y)), new Vector2(m.X(p1.X), m.Z(p1.Y)), hullLine);
-            dl.AddLine(new Vector2(m.X(p0.X), m.Z(HullTop(pp, p0.X))), new Vector2(m.X(p1.X), m.Z(HullTop(pp, p1.X))), hullLine);
-        }
-        // deck lanes, dashed, named in the margin
-        uint lane = T.U32(new Vector4(0.61f, 0.76f, 0.886f, 0.28f));
-        foreach (var (name, z, x0, x1) in pp.Lanes)
-        {
-            Dashed(dl, new Vector2(m.X(x0), m.Z(z)), new Vector2(m.X(x1), m.Z(z)), lane, P(3));
-            Text(dl, font, new Vector2(pos.X + left - P(6) - Width(font, name), m.Z(z) - font.FontSize / 2), new Vector4(0.5f, 0.61f, 0.72f, 1), name);
-        }
-        Dashed(dl, new Vector2(m.X(-pp.L / 2 + 0.05f * pp.L), m.Z(pp.Ib)), new Vector2(m.X(pp.L / 2 - 0.06f * pp.L), m.Z(pp.Ib)), lane, P(3));
-        Text(dl, font, new Vector2(pos.X + left - P(6) - Width(font, "Inner btm"), m.Z(pp.Ib) - font.FontSize / 2), new Vector4(0.5f, 0.61f, 0.72f, 1), "Inner btm");
-        dl.AddLine(new Vector2(m.X(-pp.L / 2) - P(4), m.Z(pp.Wl)), new Vector2(m.X(pp.L / 2) + P(4), m.Z(pp.Wl)), T.U32(T.Blue));
-        Text(dl, font, new Vector2(pos.X + P(4), m.Z(pp.Wl) - font.FontSize / 2), T.Blue, "WL");
-        // the citadel's brackets
-        uint brk = T.U32(T.Brass with { W = 0.22f });
-        Dashed(dl, new Vector2(m.X(pp.X0), pos.Y + P(20)), new Vector2(m.X(pp.X0), pos.Y + size.Y - bottom), brk, P(3), vertical: true);
-        Dashed(dl, new Vector2(m.X(pp.X1), pos.Y + P(20)), new Vector2(m.X(pp.X1), pos.Y + size.Y - bottom), brk, P(3), vertical: true);
-        Text(dl, font, new Vector2((m.X(pp.X0) + m.X(pp.X1) - Width(font, pp.Citadel)) / 2, pos.Y + size.Y - bottom + P(1)), new Vector4(0.55f, 0.48f, 0.33f, 1), pp.Citadel);
-        Text(dl, font, new Vector2(MathF.Max(pos.X + left, m.X(-pp.L / 2)), pos.Y + size.Y - bottom + P(1)), new Vector4(0.37f, 0.48f, 0.59f, 1), "aft");
-        Text(dl, font, new Vector2(m.X(pp.L / 2) - Width(font, "fore"), pos.Y + size.Y - bottom + P(1)), new Vector4(0.37f, 0.48f, 0.59f, 1), "fore");
-
-        // the interaction area under everything drawn from here
-        var area0 = new Vector2(pos.X + 1, pos.Y + P(18));
-        ImGui.SetCursorScreenPos(area0);
-        ImGui.SetNextItemAllowOverlap();
-        ImGui.InvisibleButton("##elev", new Vector2(size.X - 2, size.Y - P(18) - 1), ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight);
-        bool hover = ImGui.IsItemHovered();
-        bool clickL = ImGui.IsItemClicked(ImGuiMouseButton.Left), clickR = ImGui.IsItemClicked(ImGuiMouseButton.Right);
-        if (hover)
-            ImGui.SetItemKeyOwner(ImGuiKey.MouseWheelY);
-        var mouse = io.MousePos;
-
-        // the plates
-        protHits.Clear();
-        dl.PushClipRect(pos + new Vector2(1, P(18)), pos + size - new Vector2(1, 1), true);
-        foreach (var pl in pp.Plates)
-            DrawPlate(dl, m, pl, pp);
-        // the + ghosts: on hover a dashed outline and its +
-        PGhost? ghostHot = null;
-        foreach (var g in pp.Ghosts)
-        {
-            var (a, b) = GhostRect(m, g);
-            bool on = protDrag == DragKind.None && hover && Inside(mouse, a, b) && !HitPlate(mouse).HasValue
-                      || protForceTip != null && g.Ref.Kind == PK.Deck && protForceTip == g.Force;
-            if (!on)
-                continue;
-            ghostHot = g;
-            dl.AddRectFilled(a, b, T.U32(T.Brass with { W = 0.12f }));
-            dl.AddRect(a, b, T.U32(T.Brass with { W = 0.75f }));
-            Text(dl, UiFonts.SansBold, (a + b) / 2 - new Vector2(Width(UiFonts.SansBold, "+") / 2, UiFonts.SansBold.FontSize / 2), new Vector4(1, 0.906f, 0.659f, 1), "+");
-            if (protForceTip != null)
-                TipAt(g.Tip, b + new Vector2(P(6), P(-4)));
-            else
-                Tip(g.Tip);
-        }
-        // the selected plate's handles, and a drag in progress
-        var plateHot = protDrag == DragKind.None && hover && ghostHot == null ? HitPlate(mouse) : null;
-        var handleHot = ElevHandles(dl, m, pp, mouse, hover, clickL);
-        dl.PopClipRect();
-        if (plateHot is { } ph && handleHot == DragKind.None)
-        {
-            protHotNext = ph;
-            if (ProtRowOf(pp, ph) is { } row)
-                Tip(row.Hover);
-            if (clickL)
-            {
-                protSel = ph;
-                stale = true;
-            }
-            if (clickR)
-            {
-                protSel = ph;
-                protMenuFor = ph;
-                openProtMenu = true;
-            }
-            if (io.MouseWheel != 0 && ThickKnob(ph) is { } k)
-                Step(Row(k, doc.Current, shown?.Ship), Math.Sign(io.MouseWheel) * (io.KeyShift ? 4 : 1));
-        }
-        else if (ghostHot is { } gh && clickL)
-            AddFromGhost(gh);
-    }
-
-    static bool Inside(Vector2 p, Vector2 a, Vector2 b) => p.X >= Math.Min(a.X, b.X) && p.X <= Math.Max(a.X, b.X) && p.Y >= Math.Min(a.Y, b.Y) && p.Y <= Math.Max(a.Y, b.Y);
-
-    PRef? HitPlate(Vector2 p)
-    {
-        for (int i = protHits.Count - 1; i >= 0; i--)
-            if (Inside(p, protHits[i].A, protHits[i].B))
-                return protHits[i].R;
-        return null;
-    }
-
-    static float HullTop(ProtPane pp, float x)
-    {
-        float t = 0;
-        foreach (var l in pp.Lanes)
-            if (l.Z > 0 && x >= l.X0 && x <= l.X1)
-                t = MathF.Max(t, l.Z);
-        return t;
-    }
-
-    static (Vector2, Vector2) GhostRect(ElevMap m, PGhost g) => g.Ref.Kind == PK.Deck
-        ? (new Vector2(m.X(g.X0) + 1, m.Z(g.Z0) - P(5)), new Vector2(m.X(g.X1) - 1, m.Z(g.Z0) + P(5)))
-        : (new Vector2(m.X(g.X0) + 1, m.Z(g.Z1)), new Vector2(m.X(g.X1) - 1, m.Z(g.Z0)));
-
-    void DrawPlate(ImDrawListPtr dl, ElevMap m, PPlate pl, ProtPane pp)
-    {
-        var col = T.Armour(pl.Mm);
-        bool lit = ProtLit(pl.Ref);
-        bool dim = protHot is { } h && !lit;
-        if (dim)
-            col = col with { W = 0.55f };
-        if (protDrag == DragKind.DeckMove && pl.Ref == protSel)
-            col = col with { W = 0.45f };
-        uint edge = T.U32(lit ? new Vector4(1, 0.906f, 0.659f, 0.95f) : new Vector4(0, 0, 0, 0.45f));
-        var font = UiFonts.SansSmall;
-        if (pl.Ref.Kind == PK.Tds)
-        {
-            var a = new Vector2(m.X(pl.X0), m.Z(pl.Z1));
-            var b = new Vector2(m.X(pl.X1), m.Z(pl.Z0));
-            dl.PushClipRect(a, b, true);
-            uint hatch = T.U32(T.Blue with { W = lit ? 0.4f : 0.22f });
-            for (float x = a.X - (b.Y - a.Y); x < b.X; x += P(6))
-                dl.AddLine(new Vector2(x, b.Y), new Vector2(x + (b.Y - a.Y), a.Y), hatch, P(2));
-            dl.PopClipRect();
-            dl.AddRect(a, b, T.U32(T.Blue with { W = lit ? 0.8f : 0.35f }));
-            Text(dl, font, new Vector2(a.X + P(6), b.Y - font.FontSize - P(3)), new Vector4(0.5f, 0.69f, 0.88f, 1), pl.Label);
-            protHits.Add((a, b, pl.Ref));
-            return;
-        }
-        if (pl.Flat)
-        {
-            float th = Math.Clamp((float)pl.Mm / 25 * S, P(2.5f), P(6));
-            var a = new Vector2(m.X(pl.X0), m.Z(pl.Z0));
-            var b = new Vector2(m.X(pl.X1), a.Y + th);
-            dl.AddRectFilled(a, b, T.U32(col));
-            dl.AddRect(a, b, edge);
-            float lx = MathF.Min(a.X + P(24), (a.X + b.X) / 2), ly = b.Y + P(2);
-            float lw = Width(font, pl.Label) + P(6);
-            dl.AddRectFilled(new Vector2(lx - lw / 2, ly), new Vector2(lx + lw / 2, ly + font.FontSize + P(1)), T.U32(new Vector4(0.055f, 0.07f, 0.082f, 0.82f)), P(2));
-            Text(dl, font, new Vector2(lx - lw / 2 + P(3), ly), T.Armour(pl.Mm), pl.Label);
-            protHits.Add((a - new Vector2(0, P(4)), b + new Vector2(0, P(4)), pl.Ref));
-            return;
-        }
-        if (pl.Bulkhead)
-        {
-            float x = m.X(pl.X0), hw = pl.Inside ? P(1.5f) : P(2.5f);
-            var a = new Vector2(x - hw, m.Z(pl.Z1));
-            var b = new Vector2(x + hw, m.Z(pl.Z0));
-            dl.AddRectFilled(a, b, T.U32(col));
-            dl.AddRect(a, b, edge);
-            protHits.Add((new Vector2(x - P(6), a.Y), new Vector2(x + P(6), b.Y), pl.Ref));
-            return;
-        }
-        {
-            var a = new Vector2(m.X(pl.X0), m.Z(pl.Z1));
-            var b = new Vector2(MathF.Max(m.X(pl.X1), a.X + 1.5f), MathF.Max(m.Z(pl.Z0), a.Y + 2));
-            if (pl.Inside)
-            {
-                Dashed(dl, a, new Vector2(a.X, b.Y), T.U32(col with { W = 0.8f }), P(3), vertical: true);
-                Dashed(dl, new Vector2(b.X, a.Y), b, T.U32(col with { W = 0.8f }), P(3), vertical: true);
-                return;
-            }
-            if (pl.Ref.Kind == PK.Main)
-            {
-                // the gunhouse: its sides in the side's thickness, the face toward its end
-                dl.AddRectFilled(a, b, T.U32(T.Armour(pl.Mm * 0.55) with { W = col.W }));
-                dl.AddRect(a, b, edge);
-                bool fore = pl.X0 + pl.X1 > 0;
-                float fx = fore ? b.X - P(3) : a.X;
-                dl.AddRectFilled(new Vector2(fx, a.Y), new Vector2(fx + P(3), b.Y), T.U32(col));
-                if (pl.Label.Length > 0)
-                    Text(dl, font, new Vector2((a.X + b.X - Width(font, pl.Label)) / 2, a.Y - font.FontSize - P(1)), T.Text, pl.Label);
-            }
-            else
-            {
-                dl.AddRectFilled(a, b, T.U32(col));
-                dl.AddRect(a, b, edge);
-                float lw = Width(font, pl.Label);
-                if (pl.Label.Length > 0 && pl.Ref.Kind == PK.Ct)
-                    Text(dl, font, new Vector2((a.X + b.X - lw) / 2, a.Y - font.FontSize - P(1)), T.Text, pl.Label);
-                else if (pl.Label.Length > 0 && b.X - a.X > lw + P(8) && b.Y - a.Y >= font.FontSize)
-                    Text(dl, font, (a + b) / 2 - new Vector2(lw / 2, font.FontSize / 2), pl.Mm >= 140 ? new Vector4(0.965f, 0.937f, 0.886f, 1) : new Vector4(0.149f, 0.133f, 0.11f, 1), pl.Label);
-            }
-            protHits.Add((a, b, pl.Ref));
-        }
-    }
-
-    static void Dashed(ImDrawListPtr dl, Vector2 a, Vector2 b, uint col, float dash, bool vertical = false)
-    {
-        float len = vertical ? b.Y - a.Y : b.X - a.X;
-        for (float t = 0; t < len; t += 2 * dash)
-        {
-            float e = MathF.Min(t + dash, len);
-            if (vertical)
-                dl.AddLine(new Vector2(a.X, a.Y + t), new Vector2(a.X, a.Y + e), col);
-            else
-                dl.AddLine(new Vector2(a.X + t, a.Y), new Vector2(a.X + e, a.Y), col);
-        }
-    }
-
-    /// <summary>The selected plate's brass handles on the elevation; a press starts a drag, which previews and edits on
-    /// release. Returns the handle under the mouse.</summary>
-    DragKind ElevHandles(ImDrawListPtr dl, ElevMap m, ProtPane pp, Vector2 mouse, bool hover, bool press)
-    {
-        var hot = DragKind.None;
-        var d = doc.Current;
-        var sel = protSel;
-        int forced = protForceTip is { } ft && ft.StartsWith("handle:", StringComparison.Ordinal) ? int.Parse(ft[7..], CultureInfo.InvariantCulture) : -1;
-        int n = 0;
-        void H(DragKind kind, int i, Vector2 at, bool horizontal, string tip)
-        {
-            bool on = hover && Vector2.Distance(mouse, at) <= P(8) && protDrag == DragKind.None;
-            Handle(dl, at, horizontal, on || protDrag == kind && protDragI == i);
-            if (on)
-            {
-                hot = kind;
-                Tip(tip);
-                if (press)
-                    StartDrag(kind, i);
-            }
-            if (n++ == forced)
-                TipAt(tip, at + new Vector2(P(10), P(8)));
-        }
-        var row = ProtRowOf(pp, sel);
-        if (row != null && sel.Kind is PK.Belt or PK.EndFore or PK.EndAft && PE.Has(d, Part.Belt))
-        {
-            float xa = sel.Kind == PK.Belt ? pp.X0 : sel.Kind == PK.EndFore ? pp.X1 : -pp.L / 2;
-            float xb = sel.Kind == PK.Belt ? pp.X1 : sel.Kind == PK.EndFore ? pp.L / 2 : pp.X0;
-            float hx = m.X(xa) + MathF.Min(P(70), (m.X(xb) - m.X(xa)) * 0.25f);
-            H(DragKind.BeltTop, 0, new Vector2(hx, m.Z(pp.BeltTop)), false, pp.BeltTip);
-            H(DragKind.BeltBottom, 0, new Vector2(hx, m.Z(pp.BeltBottom)), false, pp.BeltTip);
-        }
-        if (sel.Kind is PK.EndFore or PK.EndAft)
-        {
-            bool fore = sel.Kind == PK.EndFore;
-            float tipX = fore ? pp.EndTipFore : pp.EndTipAft;
-            if (!float.IsNaN(tipX))
-                H(DragKind.Reach, fore ? 0 : 1, new Vector2(m.X(tipX), (m.Z(pp.BeltTop) + m.Z(pp.BeltBottom)) / 2), true,
-                    fore ? "Drag the tip: the end belt's reach, in tenths of the way to the stem" : "Drag the tip: the end belt's reach, in tenths of the way to the stern");
-        }
-        if (sel.Kind == PK.Upper && !float.IsNaN(pp.UpTop))
-            H(DragKind.UpperTop, 0, new Vector2(m.X(pp.UpX0) + MathF.Min(P(70), (m.X(pp.UpX1) - m.X(pp.UpX0)) * 0.25f), m.Z(pp.UpTop)), false,
-                "Drag the top edge: the upper belt up to another deck");
-        if (sel.Kind == PK.Deck && sel.I >= 0)
-            foreach (var pl in pp.Plates)
-                if (pl.Flat && pl.Ref == sel)
-                {
-                    H(DragKind.DeckMove, sel.I, new Vector2((m.X(pl.X0) + m.X(pl.X1)) / 2, m.Z(pl.Z0) + P(2)), false, "Drag the deck to another deck");
-                    break;
-                }
-        // a drag in progress: the snapped edge under the mouse, applied once on release
-        if (protDrag is DragKind.BeltTop or DragKind.BeltBottom or DragKind.Reach or DragKind.UpperTop or DragKind.DeckMove)
-        {
-            var io = ImGui.GetIO();
-            double v = protDrag switch
-            {
-                DragKind.BeltTop => Math.Clamp(Math.Round((m.InvZ(io.MousePos.Y) - pp.Wl) * 10) / 10, 0.3, -pp.Wl),
-                DragKind.BeltBottom => Math.Clamp(Math.Round((pp.Wl - m.InvZ(io.MousePos.Y)) * 10) / 10, 0, pp.Wl - pp.Ib - 0.2),
-                DragKind.Reach => Math.Clamp(Math.Round(10 * (protDragI == 0 ? (m.InvX(io.MousePos.X) - pp.X1) / (pp.L / 2 - pp.X1)
-                    : (pp.X0 - m.InvX(io.MousePos.X)) / (pp.X0 + pp.L / 2))) / 10, 0.1, 1),
-                DragKind.UpperTop => NearestDeck(pp, m.InvZ(io.MousePos.Y), upper: true),
-                _ => NearestDeck(pp, m.InvZ(io.MousePos.Y), upper: false),
-            };
-            protDragValue = v;
-            DragPreview(dl, m, pp, v);
-            DragTip(pp);
-            EndDragIfReleased();
-        }
-        return hot;
-    }
-
-    static readonly Vector4 Light = new(1, 0.906f, 0.659f, 1);
-
-    /// <summary>A plate's outline where the drag would put it: brass, over a faint fill.</summary>
-    static void Target(ImDrawListPtr dl, Vector2 a, Vector2 b)
-    {
-        dl.AddRectFilled(a, b, T.U32(T.Brass with { W = 0.16f }));
-        dl.AddRect(a, b, T.U32(Light), 0, ImDrawFlags.None, P(1.5f));
-    }
-
-    /// <summary>The deck lane at height z lit in brass, its name in the margin.</summary>
-    static void LitLane(ImDrawListPtr dl, ElevMap m, ProtPane pp, float z)
-    {
-        foreach (var (name, lz, x0, x1) in pp.Lanes)
-        {
-            if (Math.Abs(lz - z) > 0.01f)
-                continue;
-            Dashed(dl, new Vector2(m.X(x0), m.Z(z)), new Vector2(m.X(x1), m.Z(z)), T.U32(T.Brass with { W = 0.8f }), P(3));
-            var font = UiFonts.SansSmall;
-            var at = new Vector2(m.Left - P(6) - Width(font, name), m.Z(z) - font.FontSize / 2);
-            dl.AddRectFilled(at - new Vector2(P(3), P(1)), at + new Vector2(Width(font, name) + P(3), font.FontSize + P(1)), T.U32(T.BrassDark), P(2));
-            Text(dl, font, at, Light, name);
-            return;
-        }
-    }
-
-    /// <summary>What the drag would do, drawn at its target: the belt (and the end belts, which share its heights) at its
-    /// new edges, the end belt to its new tip, the upper belt to its new deck, the armour deck on its new deck with that
-    /// deck's lane lit. The plate where it is now is left as it is, so both show.</summary>
-    void DragPreview(ImDrawListPtr dl, ElevMap m, ProtPane pp, double v)
-    {
-        uint light = T.U32(Light);
-        switch (protDrag)
-        {
-            case DragKind.BeltTop or DragKind.BeltBottom:
-            {
-                float top = protDrag == DragKind.BeltTop ? pp.Wl + (float)v : pp.BeltTop;
-                float bot = protDrag == DragKind.BeltBottom ? pp.Wl - (float)v : pp.BeltBottom;
-                float a = !float.IsNaN(pp.EndTipAft) ? pp.EndTipAft : pp.X0, b = !float.IsNaN(pp.EndTipFore) ? pp.EndTipFore : pp.X1;
-                Target(dl, new Vector2(m.X(a), m.Z(top)), new Vector2(m.X(b), m.Z(bot)));
-                float edge = protDrag == DragKind.BeltTop ? top : bot;
-                dl.AddLine(new Vector2(m.X(a), m.Z(edge)), new Vector2(m.X(b), m.Z(edge)), light, P(2.5f));
-                break;
-            }
-            case DragKind.Reach:
-            {
-                float x = protDragI == 0 ? pp.X1 + (float)v * (pp.L / 2 - pp.X1) : pp.X0 - (float)v * (pp.X0 + pp.L / 2);
-                float a = protDragI == 0 ? pp.X1 : x, b = protDragI == 0 ? x : pp.X0;
-                Target(dl, new Vector2(m.X(a), m.Z(pp.BeltTop)), new Vector2(m.X(b), m.Z(pp.BeltBottom)));
-                dl.AddLine(new Vector2(m.X(x), m.Z(pp.BeltTop) - P(4)), new Vector2(m.X(x), m.Z(pp.BeltBottom) + P(4)), light, P(2.5f));
-                break;
-            }
-            case DragKind.UpperTop:
-            {
-                float z = DeckZOf(pp, (long)v);
-                LitLane(dl, m, pp, z);
-                Target(dl, new Vector2(m.X(pp.UpX0), m.Z(z)), new Vector2(m.X(pp.UpX1), m.Z(pp.BeltTop)));
-                dl.AddLine(new Vector2(m.X(pp.UpX0), m.Z(z)), new Vector2(m.X(pp.UpX1), m.Z(z)), light, P(2.5f));
-                break;
-            }
-            case DragKind.DeckMove:
-            {
-                float z = DeckZOf(pp, (long)v);
-                LitLane(dl, m, pp, z);
-                foreach (var pl in pp.Plates)
-                {
-                    if (!pl.Flat || pl.Ref != protSel)
-                        continue;
-                    float th = Math.Clamp((float)pl.Mm / 25 * S, P(2.5f), P(6));
-                    var a = new Vector2(m.X(pl.X0), m.Z(z));
-                    var b = new Vector2(m.X(pl.X1), a.Y + th);
-                    dl.AddRectFilled(a, b, T.U32(T.Armour(pl.Mm) with { W = 0.85f }));
-                    dl.AddRect(a - new Vector2(1, 1), b + new Vector2(1, 1), light, 0, ImDrawFlags.None, P(1.5f));
-                    // from where it is to where it would go
-                    float cx = (a.X + b.X) / 2;
-                    if (Math.Abs(pl.Z0 - z) > 0.01f)
-                        Dashed(dl, new Vector2(cx, MathF.Min(m.Z(pl.Z0), a.Y)), new Vector2(cx, MathF.Max(m.Z(pl.Z0), a.Y)), light, P(2), vertical: true);
-                }
-                break;
-            }
-        }
-    }
-
-    static void Handle(ImDrawListPtr dl, Vector2 at, bool horizontal, bool on)
-    {
-        var half = horizontal ? new Vector2(P(3), P(7)) : new Vector2(P(7), P(3));
-        dl.AddRectFilled(at - half, at + half, T.U32(on ? new Vector4(1, 0.906f, 0.659f, 1) : T.Brass), P(1.5f));
-        dl.AddRect(at - half, at + half, T.U32(T.Ground), P(1.5f));
-        if (horizontal)
-            dl.AddLine(at - new Vector2(0, P(4)), at + new Vector2(0, P(4)), T.U32(T.BrassDark));
-        else
-            dl.AddLine(at - new Vector2(P(4), 0), at + new Vector2(P(4), 0), T.U32(T.BrassDark));
-    }
-
-    static float DeckZOf(ProtPane pp, long n)
-    {
-        foreach (var c in pp.DeckChoices)
-            if (c.N == n)
-                return c.Z;
-        return 0;
-    }
-
-    /// <summary>The deck nearest height z: any of the stack for an armour deck, one over the belt and no lower than the
-    /// main deck for the upper belt's top.</summary>
-    static double NearestDeck(ProtPane pp, float z, bool upper)
-    {
-        long best = 0;
-        float bd = float.MaxValue;
-        foreach (var c in pp.DeckChoices)
-            if ((upper ? c.N <= 0 && c.Z > pp.BeltTop + 0.3f : c.N >= 0) && Math.Abs(c.Z - z) < bd)
-                (best, bd) = (c.N, Math.Abs(c.Z - z));
-        return best;
-    }
-
-    void StartDrag(DragKind kind, int i)
-    {
-        protDrag = kind;
-        protDragI = i;
-        protDragValue = double.NaN;
-        protDragTipFor = double.NaN;
-    }
-
-    void DragTip(ProtPane pp)
-    {
-        if (double.IsNaN(protDragValue))
-            return;
-        if (protDragValue != protDragTipFor)   // the text only when the snapped value changes
-        {
-            protDragTipFor = protDragValue;
-            protDragTip = protDrag switch
-            {
-                DragKind.BeltTop => $"Belt top {protDragValue:+0.0} m over the waterline",
-                DragKind.BeltBottom => $"Belt bottom {protDragValue:0.0} m under the waterline",
-                DragKind.Reach => $"End belt reach {protDragValue:0.0}" + (protDragValue >= 0.995 ? ": to the end" : $": {protDragValue * 100:0} % of the way"),
-                DragKind.UpperTop => $"Upper belt up to the {Decks.DeckNameLower((long)protDragValue)}",
-                DragKind.DeckMove => $"Armour deck on the {Decks.DeckNameLower((long)protDragValue)}",
-                _ => $"Torpedo protection {protDragValue:0.0} m deep",
-            } + "\nlet go to apply";
-        }
-        Tip(protDragTip);
-    }
-
-    /// <summary>On release, the drag's one edit (none if the value didn't move).</summary>
-    void EndDragIfReleased()
-    {
-        if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
-            return;
-        var kind = protDrag;
-        protDrag = DragKind.None;
-        if (double.IsNaN(protDragValue))
-            return;
-        var d = doc.Current;
-        NumberKnob k = kind switch
-        {
-            DragKind.BeltTop => Knobs.BeltHeight,
-            DragKind.BeltBottom => Knobs.BeltDepth,
-            DragKind.Reach => Knobs.EndBeltReach(protDragI == 0 ? "fore" : "aft"),
-            DragKind.UpperTop => Knobs.UpperBeltToDeck,
-            DragKind.DeckMove => Knobs.DeckLevel(protDragI),
-            _ => Knobs.Tds,
-        };
-        if (k.Value(d, shown?.Ship) is { } now && Math.Abs(now - protDragValue) < 1e-6)
-            return;
-        long deck = (long)protDragValue;
-        if (kind == DragKind.DeckMove)
-            Edit(k.Apply(d, deck), $"Armour deck {protDragI + 1} moved to the {Decks.DeckNameLower(deck)}");
-        else if (kind == DragKind.UpperTop)
-            Edit(k.Apply(d, deck), $"Upper belt up to the {Decks.DeckNameLower(deck)}");
-        else
-            SetValue(k, protDragValue);
-        doc.Seal();
-    }
-
-    void AddFromGhost(PGhost g)
-    {
-        var d = doc.Current;
-        switch (g.Ref.Kind)
-        {
-            case PK.Deck:
-                Edit(PE.AddDeck(d, g.Deck, g.Extent, 25, out int i), $"Armour deck added: {Decks.DeckNameLower(g.Deck)}, {PE.ExtentText(g.Extent)}");
-                protSel = new PRef(PK.Deck, i);
-                break;
-            default:
-                AddPart(PartOf(g.Ref.Kind));
-                break;
-        }
-    }
+    // ------------------------------------------------------------------ parts: add and remove
 
     static Part PartOf(PK k) => k switch
     {
@@ -1113,6 +1191,9 @@ public sealed unsafe partial class DesignerScene
         PK.EndAft => Part.EndAft,
         PK.Bulkheads => Part.Bulkheads,
         PK.Tds => Part.Tds,
+        PK.Inner => Part.Inner,
+        PK.Box => Part.Box,
+        PK.Wings => Part.Wings,
         _ => Part.Steering,
     };
 
@@ -1124,6 +1205,9 @@ public sealed unsafe partial class DesignerScene
         Part.EndAft => PK.EndAft,
         Part.Bulkheads => PK.Bulkheads,
         Part.Tds => PK.Tds,
+        Part.Inner => PK.Inner,
+        Part.Box => PK.Box,
+        Part.Wings => PK.Wings,
         _ => PK.Steering,
     };
 
@@ -1133,14 +1217,62 @@ public sealed unsafe partial class DesignerScene
         protSel = new PRef(KindOf(p));
     }
 
+    /// <summary>A part's zone or slopes added: the belt's zone, a deck's slopes or zone.</summary>
+    void AddSub(PRef r)
+    {
+        var d = doc.Current;
+        string deck = r.I >= 0 && d.Armour?.Decks?.ElementAtOrDefault(r.I) is { } x ? Decks.DeckNameLower(x.Deck ?? 0) : "";
+        switch (r.Kind)
+        {
+            case PK.BeltZone:
+                Edit(PE.AddBeltZone(d), "Belt: a zone at the magazines");
+                break;
+            case PK.Slope:
+                Edit(PE.AddSlopes(d, r.I), $"Slopes on the {deck}");
+                break;
+            case PK.DeckZone:
+                Edit(PE.AddDeckZone(d, r.I), $"The {deck}: a zone at the magazines");
+                break;
+            default:
+                return;
+        }
+        protSel = r;
+    }
+
+    void RemoveSub(PRef r)
+    {
+        var d = doc.Current;
+        string deck = r.I >= 0 && d.Armour?.Decks?.ElementAtOrDefault(r.I) is { } x ? Decks.DeckNameLower(x.Deck ?? 0) : "";
+        switch (r.Kind)
+        {
+            case PK.BeltZone:
+                Edit(PE.RemoveBeltZone(d), "Belt: no zone at the magazines");
+                protSel = new PRef(PK.Belt);
+                break;
+            case PK.Slope:
+                Edit(PE.RemoveSlopes(d, r.I), $"No slopes on the {deck}");
+                protSel = new PRef(PK.Deck, r.I);
+                break;
+            case PK.DeckZone:
+                Edit(PE.RemoveDeckZone(d, r.I), $"The {deck}: no zone at the magazines");
+                protSel = new PRef(PK.Deck, r.I);
+                break;
+        }
+    }
+
     void RemovePart(PRef r)
     {
         var d = doc.Current;
+        if (r.Kind is PK.BeltZone or PK.Slope or PK.DeckZone)
+        {
+            RemoveSub(r);
+            return;
+        }
         if (r.Kind == PK.Deck)
             Edit(PE.RemoveDeck(d, r.I), $"Armour deck {r.I + 1} removed");
         else
             Edit(PE.Remove(d, PartOf(r.Kind)), $"{PE.Name(PartOf(r.Kind))} removed");
-        if (protSel == r || r.Kind == PK.Deck && protSel.Kind == PK.Deck)
+        if (protSel == r || r.Kind == PK.Deck && protSel.Kind is PK.Deck or PK.Slope or PK.DeckZone)
             protSel = new PRef(PK.Belt);
     }
 
@@ -1152,235 +1284,11 @@ public sealed unsafe partial class DesignerScene
         return null;
     }
 
-    static string PlateTip(ProtRow row, PRef r) =>
-        $"{row.Name} {row.Thick?.Value ?? row.ThickText}" + (row.T is "turret" or "–" ? "" : $" · {row.T} t") +
-        (r.Kind is PK.Barbettes or PK.Ct ? "\n" + row.WhereText : "\nclick: select · wheel: one step · right-click: more");
-
-    // ------------------------------------------------------------------ the midship section
-
-    void ProtSection(ImDrawListPtr dl, Vector2 pos, Vector2 size, ProtPane pp)
-    {
-        dl.AddRectFilled(pos, pos + size, T.U32(T.Plan));
-        dl.AddRect(pos, pos + size, T.U32(T.Edge));
-        ImGui.SetCursorScreenPos(pos);
-        SubHeader(dl, size.X, "MIDSHIP SECTION", $"to scale, plates ×3");
-        if (pp.SecZ.Length < 2)
-            return;
-        var io = ImGui.GetIO();
-        var font = UiFonts.SansSmall;
-        const float th = 3;   // plate thickness stretch
-        float chipsW = P(122), top = P(24), bottom = P(10);
-        float zHi = 1.0f, zLo = protFrameL > 0 ? protFrameBot : pp.SecZ[0] - 0.3f, fB = protFrameL > 0 ? protFrameB : pp.B;
-        float k = MathF.Min((size.X - chipsW - P(56)) / fB, (size.Y - top - bottom) / (zHi - zLo));
-        float cx = pos.X + P(46) + fB / 2 * k;
-        float oy = pos.Y + top + ((size.Y - top - bottom) - (zHi - zLo) * k) / 2;
-        float Y(float z) => oy + (zHi - z) * k;
-        float Half(float z)
-        {
-            var zs = pp.SecZ;
-            if (z <= zs[0])
-                return pp.SecY[0];
-            for (int i = 1; i < zs.Length; i++)
-                if (z <= zs[i])
-                    return pp.SecY[i - 1] + (pp.SecY[i] - pp.SecY[i - 1]) * (z - zs[i - 1]) / MathF.Max(1e-4f, zs[i] - zs[i - 1]);
-            return pp.SecY[^1];
-        }
-        // the hull
-        uint fill = T.U32(new Vector4(0.10f, 0.176f, 0.267f, 1)), line = T.U32(new Vector4(0.435f, 0.576f, 0.71f, 1));
-        for (int i = 0; i + 1 < pp.SecZ.Length; i++)
-        {
-            float y0 = Y(pp.SecZ[i]), y1 = Y(pp.SecZ[i + 1]), h0 = pp.SecY[i] * k, h1 = pp.SecY[i + 1] * k;
-            dl.AddQuadFilled(new Vector2(cx - h0, y0), new Vector2(cx + h0, y0), new Vector2(cx + h1, y1), new Vector2(cx - h1, y1), fill);
-            dl.AddLine(new Vector2(cx - h0, y0), new Vector2(cx - h1, y1), line);
-            dl.AddLine(new Vector2(cx + h0, y0), new Vector2(cx + h1, y1), line);
-        }
-        dl.AddLine(new Vector2(cx - pp.SecY[^1] * k, Y(0)), new Vector2(cx + pp.SecY[^1] * k, Y(0)), line);
-        // decks, named
-        uint lane = T.U32(new Vector4(0.61f, 0.76f, 0.886f, 0.25f));
-        foreach (var (name, z, x0, x1) in pp.Lanes)
-        {
-            if (z > 0.01f || z < pp.SecZ[0])
-                continue;
-            float hw = Half(z) * k;
-            Dashed(dl, new Vector2(cx - hw, Y(z)), new Vector2(cx + hw, Y(z)), lane, P(3));
-            Text(dl, font, new Vector2(cx - pp.B / 2 * k - P(6) - Width(font, name), Y(z) - font.FontSize / 2), new Vector4(0.5f, 0.61f, 0.72f, 1), name);
-        }
-        dl.AddLine(new Vector2(cx - pp.B / 2 * k - P(8), Y(pp.Wl)), new Vector2(cx + pp.B / 2 * k + P(8), Y(pp.Wl)), T.U32(T.Blue));
-        Text(dl, font, new Vector2(pos.X + P(4), Y(pp.Wl) - font.FontSize / 2), T.Blue, "WL");
-
-        var mouse = io.MousePos;
-        ImGui.SetCursorScreenPos(pos + new Vector2(1, P(18)));
-        ImGui.SetNextItemAllowOverlap();
-        ImGui.InvisibleButton("##sect", new Vector2(size.X - chipsW - P(4), size.Y - P(18) - 1), ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight);
-        bool hover = ImGui.IsItemHovered(), clickL = ImGui.IsItemClicked(ImGuiMouseButton.Left), clickR = ImGui.IsItemClicked(ImGuiMouseButton.Right);
-        if (hover)
-            ImGui.SetItemKeyOwner(ImGuiKey.MouseWheelY);
-        PRef? hot = null;
-
-        // torpedo protection: the holding bulkhead tds in from the shell, inner bottom to the roof deck, hatched
-        if (pp.Tds > 0)
-        {
-            bool lit = ProtLit(new PRef(PK.Tds));
-            uint hatch = T.U32(T.Blue with { W = lit ? 0.45f : 0.25f });
-            for (int side = -1; side <= 1; side += 2)
-            {
-                for (float z = pp.Ib; z < pp.RoofZ; z += 0.5f)
-                {
-                    float z1 = MathF.Min(pp.RoofZ, z + 0.5f);
-                    float o0 = Half(z) * k, i0 = MathF.Max(0.5f, Half(z) - pp.Tds) * k;
-                    for (float t = 0; t < o0 - i0; t += P(5))
-                        dl.AddLine(new Vector2(cx + side * (i0 + t), Y(z)), new Vector2(cx + side * MathF.Min(o0, i0 + t + (Y(z) - Y(z1))), Y(z1)), hatch, P(1.5f));
-                }
-                float zm = (pp.Ib + pp.RoofZ) / 2, ix = cx + side * MathF.Max(0.5f, Half(zm) - pp.Tds) * k;
-                Dashed(dl, new Vector2(ix, Y(pp.RoofZ)), new Vector2(ix, Y(pp.Ib)), T.U32(new Vector4(0.5f, 0.69f, 0.88f, 1)), P(3), vertical: true);
-                if (hover && Math.Abs(mouse.X - ix) < P(5) && mouse.Y > Y(pp.RoofZ) && mouse.Y < Y(pp.Ib))
-                    hot = new PRef(PK.Tds);
-            }
-        }
-        // armour decks across
-        foreach (var (z, mm, r, label) in pp.SecDecks)
-        {
-            float hw = Half(z) * k, t = MathF.Max(P(2), (float)mm / 1000 * k * th);
-            bool lit = ProtLit(r);
-            var a = new Vector2(cx - hw, Y(z));
-            var b = new Vector2(cx + hw, Y(z) + t);
-            dl.AddRectFilled(a, b, T.U32(T.Armour(mm)));
-            dl.AddRect(a, b, T.U32(lit ? new Vector4(1, 0.906f, 0.659f, 0.95f) : new Vector4(0, 0, 0, 0.5f)));
-            float lw = Width(font, label) + P(6);
-            dl.AddRectFilled(new Vector2(cx - lw / 2, b.Y + P(1)), new Vector2(cx + lw / 2, b.Y + P(2) + font.FontSize), T.U32(new Vector4(0.055f, 0.07f, 0.082f, 0.82f)), P(2));
-            Text(dl, font, new Vector2(cx - lw / 2 + P(3), b.Y + P(1)), T.Armour(mm), label);
-            if (hover && Inside(mouse, a - new Vector2(0, P(4)), b + new Vector2(0, P(4))))
-                hot = r;
-        }
-        // belt and upper belt on both sides, the belt tapering below the waterline
-        foreach (var (z0, z1, mm, lower, r) in pp.SecSide)
-        {
-            bool lit = ProtLit(r);
-            for (int side = -1; side <= 1; side += 2)
-            {
-                const int n = 10;
-                for (int i = 0; i < n; i++)
-                {
-                    float za = z0 + (z1 - z0) * i / n, zb = z0 + (z1 - z0) * (i + 1) / n;
-                    double ma = za >= pp.Wl ? mm : lower + (mm - lower) * (za - z0) / MathF.Max(0.01f, pp.Wl - z0);
-                    double mb = zb >= pp.Wl ? mm : lower + (mm - lower) * (zb - z0) / MathF.Max(0.01f, pp.Wl - z0);
-                    float oa = Half(za) * k, ob = Half(zb) * k;
-                    float ia = oa - MathF.Max(P(2), (float)ma / 1000 * k * th), ib = ob - MathF.Max(P(2), (float)mb / 1000 * k * th);
-                    dl.AddQuadFilled(new Vector2(cx + side * oa, Y(za)), new Vector2(cx + side * ob, Y(zb)), new Vector2(cx + side * ib, Y(zb)),
-                        new Vector2(cx + side * ia, Y(za)), T.U32(T.Armour((ma + mb) / 2)));
-                }
-                if (lit)
-                    dl.AddLine(new Vector2(cx + side * Half(z0) * k, Y(z0)), new Vector2(cx + side * Half(z1) * k, Y(z1)), T.U32(new Vector4(1, 0.906f, 0.659f, 0.95f)), P(1.5f));
-                float hx = cx + side * Half((z0 + z1) / 2) * k;
-                if (hover && Math.Abs(mouse.X - hx) < P(8) && mouse.Y >= Y(z1) && mouse.Y <= Y(z0))
-                    hot = r;
-            }
-        }
-
-        // the belt's edges and the holding bulkhead as handles; the same values as spinners beside them
-        bool beltOn = false;
-        foreach (var s in pp.SecSide)
-            beltOn |= s.R.Kind == PK.Belt;
-        int forced = protForceTip is { } ft && ft.StartsWith("sechandle:", StringComparison.Ordinal) ? int.Parse(ft[10..], CultureInfo.InvariantCulture) : -1;
-        var handleHot = DragKind.None;
-        void H(DragKind kind, Vector2 at, bool horizontal, string tip, int n)
-        {
-            bool on = hover && Vector2.Distance(mouse, at) <= P(8) && protDrag == DragKind.None;
-            Handle(dl, at, horizontal, on || protDrag == kind && protDragI == 9);
-            if (on)
-            {
-                handleHot = kind;
-                Tip(tip);
-                if (clickL)
-                {
-                    StartDrag(kind, 9);
-                    protDragI = 9;   // the section's drag
-                }
-            }
-            if (n == forced)
-                TipAt(tip, at + new Vector2(P(10), P(8)));
-        }
-        if (beltOn)
-        {
-            H(DragKind.BeltTop, new Vector2(cx + Half(pp.BeltTop) * k - P(4), Y(pp.BeltTop)), false, pp.BeltTip, 0);
-            H(DragKind.BeltBottom, new Vector2(cx + Half(pp.BeltBottom) * k - P(4), Y(pp.BeltBottom)), false, pp.BeltTip, 1);
-        }
-        if (pp.Tds > 0)
-        {
-            float zm = (pp.Ib + pp.RoofZ) / 2;
-            H(DragKind.TdsDepth, new Vector2(cx + MathF.Max(0.5f, Half(zm) - pp.Tds) * k, Y(zm)), true, pp.TdsTip, 2);
-        }
-        if (protDrag != DragKind.None && protDragI == 9)
-        {
-            uint brass = T.U32(new Vector4(1, 0.906f, 0.659f, 1));
-            float zAt = zHi - (mouse.Y - oy) / k;
-            if (protDrag == DragKind.TdsDepth)
-            {
-                float zm = (pp.Ib + pp.RoofZ) / 2;
-                protDragValue = Math.Clamp(Math.Round((Half(zm) - (mouse.X - cx) / k) * 10) / 10, 0.5, pp.B / 2 - 2);
-                for (int side = -1; side <= 1; side += 2)
-                {
-                    float ix = cx + side * MathF.Max(0.5f, Half(zm) - (float)protDragValue) * k, ox = cx + side * Half(zm) * k;
-                    Target(dl, new Vector2(MathF.Min(ix, ox), Y(pp.RoofZ)), new Vector2(MathF.Max(ix, ox), Y(pp.Ib)));
-                    dl.AddLine(new Vector2(ix, Y(pp.RoofZ)), new Vector2(ix, Y(pp.Ib)), brass, P(2.5f));
-                }
-            }
-            else
-            {
-                protDragValue = protDrag == DragKind.BeltTop ? Math.Clamp(Math.Round((zAt - pp.Wl) * 10) / 10, 0.3, -pp.Wl)
-                    : Math.Clamp(Math.Round((pp.Wl - zAt) * 10) / 10, 0, pp.Wl - pp.Ib - 0.2);
-                float z = protDrag == DragKind.BeltTop ? pp.Wl + (float)protDragValue : pp.Wl - (float)protDragValue;
-                float zt = protDrag == DragKind.BeltTop ? z : pp.BeltTop, zb = protDrag == DragKind.BeltBottom ? z : pp.BeltBottom;
-                for (int side = -1; side <= 1; side += 2)
-                {
-                    float o = cx + side * Half((zt + zb) / 2) * k, i = o - side * P(10);
-                    Target(dl, new Vector2(MathF.Min(o, i), Y(zt)), new Vector2(MathF.Max(o, i), Y(zb)));
-                }
-                dl.AddLine(new Vector2(cx - Half(z) * k, Y(z)), new Vector2(cx + Half(z) * k, Y(z)), brass, P(2.5f));
-            }
-            DragTip(pp);
-            EndDragIfReleased();
-        }
-        else if (hot is { } h && handleHot == DragKind.None && protDrag == DragKind.None)
-        {
-            protHotNext = h;
-            if (ProtRowOf(pp, h) is { } row)
-                Tip(row.Hover);
-            if (clickL)
-            {
-                protSel = h;
-                stale = true;
-            }
-            if (clickR)
-                (protSel, protMenuFor, openProtMenu) = (h, h, true);
-            if (io.MouseWheel != 0 && ThickKnob(h) is { } kk)
-                Step(Row(kk, doc.Current, shown?.Ship), Math.Sign(io.MouseWheel) * (io.KeyShift ? 4 : 1));
-        }
-
-        // the spinners, at the right edge
-        float sxp = pos.X + size.X - chipsW;
-        void Chip(NumRow r, float y, string pre)
-        {
-            Text(dl, font, new Vector2(sxp, y + (ImGui.GetFrameHeight() - font.FontSize) / 2), T.Muted, pre);
-            ImGui.SetCursorScreenPos(new Vector2(sxp + P(18), y));
-            Spinner(r, P(54), extras: false);
-        }
-        if (beltOn)
-        {
-            float fh = ImGui.GetFrameHeight();
-            Chip(pp.BeltHeight, Y(pp.BeltTop) - fh / 2, "↑");
-            Chip(pp.BeltDepth, MathF.Max(Y(pp.BeltBottom) - fh / 2, Y(pp.BeltTop) + fh / 2 + P(2)), "↓");
-            dl.AddLine(new Vector2(sxp - P(6), Y(pp.BeltTop)), new Vector2(sxp - P(6), Y(pp.BeltBottom)), T.U32(T.BrassDark));
-        }
-        if (pp.Tds > 0)
-            Chip(pp.TdsRow, Y((pp.Ib + pp.RoofZ) / 2) + P(4), "TDS");
-    }
-
     // ------------------------------------------------------------------ the plate table
 
-    static readonly float[] ProtColW = [12, 124, 100, 124, 0, 132, 56, 96, 22];   // 0: "where" takes what's left
+    static readonly float[] ProtColW = [12, 126, 96, 118, 0, 90, 46, 62, 20];   // 0: "where" takes what's left
     readonly float[] protX = new float[ProtColW.Length + 1];
-    static readonly string[] ProtHead = ["", "PLATE", "THICKNESS", "LOWER · TIP · ROOF", "WHERE", "MATERIAL", "T", "OF THE ARMOUR", ""];
+    static readonly string[] ProtHead = ["", "PLATE", "THICKNESS", "LOWER · TIP · …", "WHERE", "MATERIAL", "T", "OF ARM.", ""];
 
     void ProtTable(ImDrawListPtr dl, Vector2 o, Vector2 size, ProtPane pp)
     {
@@ -1393,7 +1301,7 @@ public sealed unsafe partial class DesignerScene
             fixedW += P(c);
         x[0] = o.X;
         for (int i = 0; i < ProtColW.Length; i++)
-            x[i + 1] = x[i] + (ProtColW[i] > 0 ? P(ProtColW[i]) : Math.Max(P(200), w - fixedW));
+            x[i + 1] = x[i] + (ProtColW[i] > 0 ? P(ProtColW[i]) : Math.Max(P(150), w - fixedW));
         float hh = P(17), rowH = ProtRowH, gh = P(15);
         var font = UiFonts.SansSmall;
         dl.AddRectFilled(o, o + new Vector2(w, hh), T.U32(T.HeaderBg));
@@ -1407,10 +1315,17 @@ public sealed unsafe partial class DesignerScene
         }
         var d = doc.Current;
         float y = o.Y + hh;
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(ImGui.GetStyle().FramePadding.X, P(1)));
         float fh = ImGui.GetFrameHeight();
         int n = 0;
-        for (int g = 0; g < 4; g++)
+        dl.PushClipRect(o, o + size, true);
+        for (int g = 0; g < ProtGroups; g++)
         {
+            bool any = pp.Chips[g].Length > 0;
+            foreach (var r in pp.Rows)
+                any |= r.Group == g;
+            if (!any)
+                continue;
             // the group's header, with its + chips
             dl.AddRectFilled(new Vector2(o.X, y), new Vector2(o.X + w, y + gh), T.U32(new Vector4(0.035f, 0.047f, 0.055f, 0.35f)));
             dl.AddLine(new Vector2(o.X, y + gh - 1), new Vector2(o.X + w, y + gh - 1), T.U32(T.Edge));
@@ -1446,7 +1361,7 @@ public sealed unsafe partial class DesignerScene
                 cxp = b.X + P(5);
             }
             ImGui.PopID();
-            if (g == 3)
+            if (g == 4)
                 Text(dl, font, new Vector2(cxp + P(4), y + (gh - font.FontSize) / 2), T.Muted, "turret faces also on the Main battery tab; secondary shields on Secondary");
             y += gh;
             foreach (var r in pp.Rows)
@@ -1457,6 +1372,8 @@ public sealed unsafe partial class DesignerScene
                 y += rowH;
             }
         }
+        dl.PopClipRect();
+        ImGui.PopStyleVar();
     }
 
     void ProtTableRow(ImDrawListPtr dl, Vector2 p, float w, float rowH, float fh, ProtRow r, int n)
@@ -1488,23 +1405,41 @@ public sealed unsafe partial class DesignerScene
             dl.AddRectFilled(p, p + new Vector2(w, rowH), T.U32(new Vector4(1, 1, 1, 0.045f)));
         float cy = p.Y + (rowH - fh) / 2, ty = p.Y + (rowH - UiFonts.Sans.FontSize) / 2, tys = p.Y + (rowH - font.FontSize) / 2;
         void At(int col, float dx = 4) => ImGui.SetCursorScreenPos(new Vector2(x[col] + P(dx), cy));
+        var dim = r.Greyed ? T.Muted with { W = 0.6f } : T.Muted;
 
-        var swp = new Vector2(x[0] + P(4), p.Y + (rowH - P(11)) / 2);
-        dl.AddRectFilled(swp, swp + new Vector2(P(7), P(11)), T.U32(r.Swatch));
-        Text(dl, UiFonts.Sans, new Vector2(x[1] + P(4), ty), on ? T.Brass : T.Bright, r.Name);
+        var swp = new Vector2(x[0] + P(4) + (r.Sub ? P(6) : 0), p.Y + (rowH - P(11)) / 2);
+        dl.AddRectFilled(swp, swp + new Vector2(P(r.Sub ? 5 : 7), P(11)), T.U32(r.Swatch with { W = r.Greyed ? 0.4f : 1 }));
+        float nx = x[1] + P(4) + (r.Sub ? P(14) : 0);
+        if (r.Sub)
+        {
+            uint elbow = T.U32(T.Muted);
+            float ex = x[1] + P(6), ey = p.Y + rowH / 2;
+            dl.AddLine(new Vector2(ex, ey - P(6)), new Vector2(ex, ey), elbow);
+            dl.AddLine(new Vector2(ex, ey), new Vector2(ex + P(6), ey), elbow);
+        }
+        Text(dl, r.Sub ? font : UiFonts.Sans, new Vector2(nx, r.Sub ? tys : ty), on ? T.Brass : r.Greyed ? dim : r.Sub ? T.Text : T.Bright, r.Title);
+        if (r.Tag.Length > 0)
+        {
+            float tx = nx + Width(UiFonts.Sans, r.Title) + P(6);
+            float tw = Width(font, r.Tag) + P(8);
+            dl.AddRect(new Vector2(tx, tys - P(1)), new Vector2(tx + tw, tys + font.FontSize + P(1)), T.U32(T.BrassDark), P(2));
+            Text(dl, font, new Vector2(tx + P(4), tys), T.Brass, r.Tag);
+        }
         if (r.Thick is { } th)
         {
             At(2);
-            Spinner(th, P(52), extras: false);
+            Spinner(th, P(50), extras: false);
         }
         else
-            Text(dl, UiFonts.Mono, new Vector2(x[3] - P(22) - Width(UiFonts.Mono, r.ThickText), p.Y + (rowH - UiFonts.Mono.FontSize) / 2), T.Muted, r.ThickText);
+            Text(dl, UiFonts.Mono, new Vector2(x[3] - P(22) - Width(UiFonts.Mono, r.ThickText), p.Y + (rowH - UiFonts.Mono.FontSize) / 2), dim, r.ThickText);
         if (r.Second is { } s2)
         {
             Text(dl, font, new Vector2(x[3] + P(4), tys), T.Muted, r.SecondPre);
-            ImGui.SetCursorScreenPos(new Vector2(x[4] - P(4) - P(48) - 2 * fh, cy));
-            Spinner(s2, P(48), extras: false);
+            ImGui.SetCursorScreenPos(new Vector2(x[4] - P(4) - P(46) - 2 * fh, cy));
+            Spinner(s2, P(46), extras: false);
         }
+        else if (r.SecondText.Length > 0)
+            Text(dl, UiFonts.Mono, new Vector2(x[4] - P(6) - Width(UiFonts.Mono, r.SecondText), p.Y + (rowH - UiFonts.Mono.FontSize) / 2), T.Muted, r.SecondText);
 
         // where
         float wx = x[4] + P(4);
@@ -1513,21 +1448,21 @@ public sealed unsafe partial class DesignerScene
             Text(dl, font, new Vector2(wx, tys), T.Muted, r.WhereAPre);
             wx += Width(font, r.WhereAPre) + P(4);
             ImGui.SetCursorScreenPos(new Vector2(wx, cy));
-            Spinner(wa, P(46), extras: false);
-            wx = ImGui.GetItemRectMax().X + P(8);
+            Spinner(wa, P(40), extras: false);
+            wx = ImGui.GetItemRectMax().X + P(6);
         }
         if (r.WhereB is { } wb)
         {
-            Text(dl, font, new Vector2(wx, tys), T.Muted, "↑");
-            wx += Width(font, "↑") + P(4);
+            Text(dl, font, new Vector2(wx, tys), T.Muted, r.WhereBPre);
+            wx += Width(font, r.WhereBPre) + P(4);
             ImGui.SetCursorScreenPos(new Vector2(wx, cy));
-            Spinner(wb, P(46), extras: false);
-            wx = ImGui.GetItemRectMax().X + P(8);
+            Spinner(wb, P(40), extras: false);
+            wx = ImGui.GetItemRectMax().X + P(6);
         }
         if (r.DeckKnob is { } dk)
         {
             ImGui.SetCursorScreenPos(new Vector2(wx, cy));
-            ImGui.SetNextItemWidth(P(64));
+            ImGui.SetNextItemWidth(P(52));
             ImGui.PushFont(font);
             if (ImGui.BeginCombo("##deck", r.DeckLabel))
             {
@@ -1552,7 +1487,7 @@ public sealed unsafe partial class DesignerScene
             ImGui.SetCursorScreenPos(new Vector2(wx, cy));
             ImGui.PushFont(font);
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(1, 0));
-            ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(P(4), ImGui.GetStyle().FramePadding.Y));
+            ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(P(3), ImGui.GetStyle().FramePadding.Y));
             for (int i = 0; i < ExtentValues.Length; i++)
             {
                 if (i > 0)
@@ -1567,13 +1502,17 @@ public sealed unsafe partial class DesignerScene
             wx = ImGui.GetItemRectMax().X + P(8);
         }
         if (r.WhereText.Length > 0)
-            Text(dl, font, new Vector2(wx, tys), T.Muted, r.WhereText);
+        {
+            dl.PushClipRect(new Vector2(wx, p.Y), new Vector2(x[5] - P(4), p.Y + rowH), true);
+            Text(dl, font, new Vector2(wx, tys), dim, r.WhereText);
+            dl.PopClipRect();
+        }
 
         // material
         if (r.Material is { } mat)
         {
             At(5);
-            ImGui.SetNextItemWidth(P(124));
+            ImGui.SetNextItemWidth(P(88));
             ImGui.PushFont(font);
             int mi = mat.Index;
             if (ImGui.Combo("##mat", ref mi, mat.Labels, mat.Labels.Length) && mi < mat.Knob.Values.Length && mi != mat.Index)
@@ -1581,18 +1520,19 @@ public sealed unsafe partial class DesignerScene
             ImGui.PopFont();
         }
         else
-            Text(dl, font, new Vector2(x[5] + P(6), tys), T.Muted, r.MaterialText);
+            Text(dl, font, new Vector2(x[5] + P(6), tys), dim, r.MaterialText);
 
         // weight and its share
         var tp = new Vector2(x[7] - P(6) - Width(UiFonts.Mono, r.T), p.Y + (rowH - UiFonts.Mono.FontSize) / 2);
-        Text(dl, UiFonts.Mono, tp, r.T == "turret" ? T.Muted : T.Bright, r.T);
-        if (ImGui.IsMouseHoveringRect(new Vector2(x[6], p.Y), new Vector2(x[7], p.Y + rowH)))
+        Text(dl, UiFonts.Mono, tp, r.T is "turret" or "—" ? T.Muted : T.Bright, r.T);
+        if (r.WeightTip.Length > 0 && ImGui.IsMouseHoveringRect(new Vector2(x[6], p.Y), new Vector2(x[7], p.Y + rowH)))
             Tip(r.WeightTip);
         if (r.Share > 0)
         {
             var bp = new Vector2(x[7] + P(4), p.Y + (rowH - P(6)) / 2);
-            Bar(dl, bp, new Vector2(P(50), P(6)), Math.Min(1, r.Share * 2), T.Group("armour"));
-            Text(dl, UiFonts.Mono, new Vector2(bp.X + P(56), p.Y + (rowH - UiFonts.Mono.FontSize) / 2), T.Muted, PctText(r.Share));
+            Bar(dl, bp, new Vector2(P(22), P(6)), Math.Min(1, r.Share * 2), T.Group("armour"));
+            var pct = PctText(r.Share);
+            Text(dl, UiFonts.Mono, new Vector2(x[8] - P(2) - Width(UiFonts.Mono, pct), p.Y + (rowH - UiFonts.Mono.FontSize) / 2), T.Muted, pct);
         }
         if (r.Removable)
         {
@@ -1605,7 +1545,8 @@ public sealed unsafe partial class DesignerScene
             ImGui.PopStyleColor(2);
             ImGui.PopFont();
             if (ImGui.IsItemHovered())
-                Tip($"Remove the {r.Name.ToLowerInvariant()}: it comes back as a + in its group, and on the elevation");
+                Tip(r.Sub ? $"Remove the {r.Name}: it comes back as a + in its part's Shape, or from the right-click menu"
+                    : $"Remove the {r.Name.ToLowerInvariant()}: it comes back as a + in its group, and on the elevation");
         }
         ImGui.PopID();
     }
@@ -1613,7 +1554,7 @@ public sealed unsafe partial class DesignerScene
     static readonly string[] PctCache = Enumerable.Range(0, 101).Select(i => $"{i} %").ToArray();
     static string PctText(float share) => PctCache[Math.Clamp((int)MathF.Round(share * 100), 0, 100)];
 
-    // ------------------------------------------------------------------ the selected plate
+    // ------------------------------------------------------------------ the selected plate: facts and Shape
 
     void ProtInspector(ImDrawListPtr dl, Vector2 pos, Vector2 size, ProtPane pp)
     {
@@ -1622,56 +1563,186 @@ public sealed unsafe partial class DesignerScene
         ImGui.SetCursorScreenPos(pos);
         SubHeader(dl, size.X, "SELECTED PLATE", "drag its brass handles on the drawings");
         var r = ProtRowOf(pp, protSel);
+        var font = UiFonts.SansSmall;
+        float ih = P(22);
         float x = pos.X + P(8), y = pos.Y + P(22);
-        float ih = P(64);
-        ImGui.PushClipRect(pos, new Vector2(pos.X + size.X, pos.Y + size.Y - ih - P(8)), true);
+        float factsW = MathF.Round(size.X * 0.46f);
+        float bottom = pos.Y + size.Y - ih - P(6);
         if (r != null)
         {
+            // the facts, on the left
+            ImGui.PushClipRect(pos, new Vector2(pos.X + factsW, bottom), true);
             dl.AddRectFilled(new Vector2(x, y + P(2)), new Vector2(x + P(8), y + P(13)), T.U32(r.Swatch));
-            Text(dl, UiFonts.SansBold, new Vector2(x + P(14), y), T.Bright, r.Name);
-            string th = r.Thick?.Value ?? r.ThickText;
-            Text(dl, UiFonts.Sans, new Vector2(x + P(22) + Width(UiFonts.SansBold, r.Name), y), T.Muted, th);
+            Text(dl, UiFonts.SansBold, new Vector2(x + P(14), y), T.Bright, r.Full);
+            Text(dl, UiFonts.Sans, new Vector2(x + P(22) + Width(UiFonts.SansBold, r.Full), y), T.Muted, r.ThickShown);
             y += P(20);
             foreach (var (label, value) in r.Lines)
             {
-                Text(dl, UiFonts.Sans, new Vector2(x, y), T.Muted, label);
-                Text(dl, UiFonts.Mono, new Vector2(x + P(82), y + P(1)), T.Text, value);
-                y += P(17);
+                Text(dl, font, new Vector2(x, y + P(1)), T.Muted, label);
+                Text(dl, UiFonts.Mono, new Vector2(x + P(66), y + P(1)), T.Text, value);
+                y += P(16);
             }
             y += P(4);
             ImGui.SetCursorScreenPos(new Vector2(x, y));
-            ImGui.PushTextWrapPos(pos.X + size.X - P(8) - ImGui.GetWindowPos().X);   // window-local
-            ImGui.PushFont(UiFonts.SansSmall);
+            ImGui.PushTextWrapPos(pos.X + factsW - P(10) - ImGui.GetWindowPos().X);   // window-local
+            ImGui.PushFont(font);
             ImGui.TextColored(T.Muted, r.Note);
             ImGui.PopFont();
             ImGui.PopTextWrapPos();
+            ImGui.PopClipRect();
+            dl.AddLine(new Vector2(pos.X + factsW, pos.Y + P(24)), new Vector2(pos.X + factsW, bottom - P(2)), T.U32(T.Edge));
+            ShapePanel(dl, new Vector2(pos.X + factsW + P(8), pos.Y + P(22)), new Vector2(size.X - factsW - P(16), bottom - pos.Y - P(22)), r);
         }
-        ImGui.PopClipRect();
-        // the immune zone: a greyed placeholder until the penetration model
-        var a = new Vector2(pos.X + P(8), pos.Y + size.Y - ih - P(6));
-        var b = new Vector2(pos.X + size.X - P(8), pos.Y + size.Y - P(6));
+        // the immune zone: a one-line placeholder until the penetration model
+        var a = new Vector2(pos.X + P(8), pos.Y + size.Y - ih - P(4));
+        var b = new Vector2(pos.X + size.X - P(8), pos.Y + size.Y - P(4));
         dl.AddRect(a, b, T.U32(new Vector4(0.333f, 0.376f, 0.416f, 1)));
-        var font = UiFonts.SansSmall;
         var grey = new Vector4(0.37f, 0.416f, 0.455f, 1);
-        Text(dl, font, a + new Vector2(P(6), P(4)), grey, "Immune zone and shells fired in anger");
+        float ly = a.Y + (ih - font.FontSize) / 2;
+        Text(dl, font, new Vector2(a.X + P(6), ly), grey, pp.ImmuneLine);
         string tag = "NEEDS THE PENETRATION MODEL";
-        var tg = new Vector2(b.X - P(6) - Width(font, tag) - P(6), a.Y + P(4));
+        var tg = new Vector2(b.X - P(6) - Width(font, tag) - P(6), ly);
         dl.AddRect(tg - new Vector2(0, P(1)), tg + new Vector2(Width(font, tag) + P(6), font.FontSize + P(1)), T.U32(T.BrassDark));
         Text(dl, font, tg + new Vector2(P(3), 0), new Vector4(0.55f, 0.48f, 0.33f, 1), tag);
-        ImGui.SetCursorScreenPos(a + new Vector2(P(6), P(22)));
-        ImGui.BeginDisabled();
-        ImGui.PushFont(font);
-        ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted("Against");
-        ImGui.SameLine(0, P(6));
-        ImGui.SetNextItemWidth(P(160));
-        if (ImGui.BeginCombo("##immgun", pp.ImmuneGun))
-            ImGui.EndCombo();
-        ImGui.SetCursorScreenPos(new Vector2(b.X - P(6) - Width(font, "Fire 1,000 shells…") - P(12), a.Y + P(22)));
-        ImGui.Button("Fire 1,000 shells…");
-        ImGui.PopFont();
-        ImGui.EndDisabled();
-        Text(dl, font, a + new Vector2(P(6), P(44)), grey, "belt holds beyond — km · deck holds inside — km");
+    }
+
+    /// <summary>Shape: what changes the part's form rather than its thickness (a zone, slopes, the belt's lean and place),
+    /// with the material at its head.</summary>
+    void ShapePanel(ImDrawListPtr dl, Vector2 pos, Vector2 size, ProtRow r)
+    {
+        var font = UiFonts.SansSmall;
+        var d = doc.Current;
+        float fh = ImGui.GetFrameHeight();
+        ImGui.PushClipRect(pos, pos + size, true);
+        Text(dl, font, pos + new Vector2(0, P(2)), T.Muted, "SHAPE");
+        float y = pos.Y;
+        if (r.Material is { } mat)
+        {
+            ImGui.SetCursorScreenPos(new Vector2(pos.X + size.X - P(150), y));
+            ImGui.SetNextItemWidth(P(150));
+            ImGui.PushFont(font);
+            int mi = mat.Index;
+            if (ImGui.Combo("##shapemat", ref mi, mat.Labels, mat.Labels.Length) && mi < mat.Knob.Values.Length && mi != mat.Index)
+                Edit(mat.Knob.Set(d, mat.Knob.Values[mi]), $"{r.Name} material: {mat.Labels[mi]}");
+            ImGui.PopFont();
+        }
+        y += P(22);
+        float lx = pos.X, cx = pos.X + P(86);
+        float rowH = MathF.Max(P(20), fh + P(3));
+        ImGui.PushID("shape");
+        int n = 0;
+        foreach (var it in r.Shape)
+        {
+            ImGui.PushID(n++);
+            float ty = y + (rowH - font.FontSize) / 2, cy = y + (rowH - fh) / 2;
+            switch (it)
+            {
+                case ShapeSeg s:
+                    Text(dl, font, new Vector2(lx, ty), T.Muted, s.Label);
+                    ImGui.SetCursorScreenPos(new Vector2(cx, cy));
+                    ImGui.PushFont(font);
+                    ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(1, 0));
+                    for (int i = 0; i < s.Row.Knob.Values.Length; i++)
+                    {
+                        if (i > 0)
+                            ImGui.SameLine();
+                        if (Seg(s.Row.Labels[i], s.Row.Index == i) && s.Row.Index != i)
+                            Edit(s.Row.Knob.Set(d, s.Row.Knob.Values[i]), $"{s.Row.Knob.Label}: {s.Row.Labels[i]}");
+                        if (ImGui.IsItemHovered() && i < s.Tips.Length)
+                            Tip(s.Tips[i]);
+                    }
+                    ImGui.PopStyleVar();
+                    ImGui.PopFont();
+                    break;
+                case ShapeNum s:
+                    Text(dl, font, new Vector2(lx, ty), T.Muted, s.Label);
+                    ImGui.SetCursorScreenPos(new Vector2(cx, cy));
+                    Spinner(s.Row, P(50), extras: false);
+                    float nx = ImGui.GetItemRectMax().X + P(8);
+                    if (s.Row.Knob.CanAuto)
+                    {
+                        ImGui.SetCursorScreenPos(new Vector2(nx, cy));
+                        ImGui.PushFont(font);
+                        if (s.Row.IsAuto)
+                        {
+                            Text(dl, font, new Vector2(nx, ty), T.Muted, "auto");
+                            nx += Width(font, "auto") + P(8);
+                        }
+                        else
+                        {
+                            if (ImGui.SmallButton("auto"))
+                            {
+                                SetValue(s.Row.Knob, null);
+                                doc.Seal();
+                            }
+                            if (ImGui.IsItemHovered())
+                                Tip("Back to the engine's own value");
+                            nx = ImGui.GetItemRectMax().X + P(6);
+                        }
+                        ImGui.PopFont();
+                    }
+                    if (s.Note.Length > 0)
+                        Text(dl, font, new Vector2(nx, ty), T.Muted, s.Note);
+                    break;
+                case ShapeAdd s:
+                    Text(dl, font, new Vector2(lx, ty), T.Muted, s.Label);
+                    {
+                        float cw = Width(font, s.Chip) + P(10);
+                        var a = new Vector2(cx, y + (rowH - P(14)) / 2);
+                        var b = a + new Vector2(cw, P(14));
+                        ImGui.SetCursorScreenPos(a);
+                        bool click = ImGui.InvisibleButton("##add", b - a);
+                        bool hov = ImGui.IsItemHovered();
+                        dl.AddRectFilled(a, b, T.U32(T.Brass with { W = hov ? 0.16f : 0.05f }), P(2));
+                        dl.AddRect(a, b, T.U32(hov ? T.Brass : T.BrassDark), P(2));
+                        Text(dl, font, new Vector2(a.X + P(5), a.Y + (P(14) - font.FontSize) / 2), hov ? new Vector4(1, 0.906f, 0.659f, 1) : T.Brass, s.Chip);
+                        if (hov)
+                            Tip(s.Tip);
+                        if (click)
+                            s.Add();
+                    }
+                    break;
+                case ShapeRead s:
+                    Text(dl, font, new Vector2(lx, ty), T.Muted, s.Label);
+                    Text(dl, UiFonts.Mono, new Vector2(cx, y + (rowH - UiFonts.Mono.FontSize) / 2), s.Remove != null ? T.Muted : T.Text, s.Text);
+                    if (s.Remove != null)
+                    {
+                        ImGui.SetCursorScreenPos(new Vector2(cx + Width(UiFonts.Mono, s.Text) + P(6), cy));
+                        ImGui.PushFont(font);
+                        ImGui.PushStyleColor(ImGuiCol.Button, Vector4.Zero);
+                        ImGui.PushStyleColor(ImGuiCol.Text, T.Muted);
+                        if (ImGui.SmallButton("x"))
+                            s.Remove();
+                        ImGui.PopStyleColor(2);
+                        ImGui.PopFont();
+                        if (ImGui.IsItemHovered())
+                            Tip(s.RemoveTip);
+                    }
+                    break;
+                case ShapeNote s:
+                {
+                    ImGui.SetCursorScreenPos(new Vector2(lx, y + P(3)));
+                    ImGui.PushTextWrapPos(pos.X + size.X - ImGui.GetWindowPos().X);
+                    ImGui.PushFont(font);
+                    ImGui.TextColored(s.Warn ? T.Amber : T.Muted, s.Text);
+                    ImGui.PopFont();
+                    ImGui.PopTextWrapPos();
+                    y = ImGui.GetItemRectMax().Y + P(2) - rowH;
+                    break;
+                }
+            }
+            ImGui.PopID();
+            y += rowH;
+        }
+        ImGui.PopID();
+        if (r.Shape.Length == 0)
+        {
+            ImGui.SetCursorScreenPos(new Vector2(lx, y));
+            ImGui.PushFont(font);
+            ImGui.TextColored(T.Muted, "Its values are in the table.");
+            ImGui.PopFont();
+        }
+        ImGui.PopClipRect();
     }
 
     // ------------------------------------------------------------------ the context menu
@@ -1692,14 +1763,50 @@ public sealed unsafe partial class DesignerScene
             ImGui.EndPopup();
             return;
         }
-        ImGui.TextColored(T.Muted, r.Name);
+        ImGui.TextColored(T.Muted, r.Full);
         ImGui.Separator();
-        if (r.Extent is { } ek)
+        var a = d.Armour;
+        if (r.Ref.Kind is PK.Belt or PK.BeltZone)
+        {
+            if (ImGui.MenuItem(a?.BeltMagazinesMm != null ? "Remove the zone at the magazines" : "Zone at the magazines"))
+            {
+                if (a?.BeltMagazinesMm != null)
+                    RemoveSub(new PRef(PK.BeltZone));
+                else
+                    AddSub(new PRef(PK.BeltZone));
+            }
+            bool inside = a?.BeltPosition == "internal";
+            if (ImGui.MenuItem(inside ? "On the side" : "Inside the shell"))
+                Edit(Knobs.BeltPosition.Set(d, inside ? null : "internal"), inside ? "Belt on the side" : "Belt inside the shell");
+            bool mach = a?.BeltExtent == "machinery";
+            if (ImGui.MenuItem(mach ? "Over the citadel" : "Over the machinery only"))
+                Edit(Knobs.BeltExtent.Set(d, mach ? null : "machinery"), mach ? "Belt over the citadel" : "Belt over the machinery only");
+        }
+        if (r.Ref.Kind is PK.Deck or PK.Slope or PK.DeckZone && r.Ref.I >= 0 && PE.CitadelDeck(d, r.Ref.I))
+        {
+            var x = a!.Decks![r.Ref.I];
+            if (ImGui.MenuItem(x.SlopeMm is > 0 ? "Remove the slopes" : "Slopes to the belt's lower edge"))
+            {
+                if (x.SlopeMm is > 0)
+                    RemoveSub(new PRef(PK.Slope, r.Ref.I));
+                else
+                    AddSub(new PRef(PK.Slope, r.Ref.I));
+            }
+            if ((x.Extent ?? "citadel") == "citadel" && ImGui.MenuItem(x.MagazinesMm != null ? "Remove the zone at the magazines" : "Zone at the magazines"))
+            {
+                if (x.MagazinesMm != null)
+                    RemoveSub(new PRef(PK.DeckZone, r.Ref.I));
+                else
+                    AddSub(new PRef(PK.DeckZone, r.Ref.I));
+            }
+            ImGui.Separator();
+        }
+        if (r.Extent is { } ek && !r.Sub)
             for (int i = 0; i < ExtentValues.Length; i++)
                 if (ImGui.MenuItem($"Over {(ExtentValues[i] == "ends" ? "" : "the ")}{PE.ExtentText(ExtentValues[i])}", r.ExtentNow == ExtentValues[i] ? "now" : null, false,
                         r.ExtentNow != ExtentValues[i]))
                     Edit(ek.Set(d, ExtentValues[i]), $"{r.Name}: over the {PE.ExtentText(ExtentValues[i])}");
-        if (r.Ref.Kind == PK.Deck && r.Ref.I < (d.Armour?.Decks?.Count ?? 0))
+        if (r.Ref.Kind == PK.Deck && r.Ref.I < (a?.Decks?.Count ?? 0))
         {
             ImGui.Separator();
             var stack = pp.DeckChoices.Where(c => c.N >= 0).Select(c => c.N).OrderBy(c => c).ToList();
@@ -1710,7 +1817,7 @@ public sealed unsafe partial class DesignerScene
                 Edit(PE.SetDeck(d, r.Ref.I, x => x with { Deck = (int)stack[k + 1] }), $"{r.Name} down to the {Decks.DeckNameLower(stack[k + 1])}");
             if (ImGui.MenuItem("Duplicate onto the deck below", null, false, k >= 0 && k + 1 < stack.Count))
             {
-                var x = d.Armour!.Decks![r.Ref.I];
+                var x = a!.Decks![r.Ref.I];
                 Edit(PE.AddDeck(d, (int)stack[k + 1], x.Extent ?? "citadel", Math.Max(5, Math.Round((x.Mm ?? 0) / 10) * 5), out int i),
                     $"Armour deck added: {Decks.DeckNameLower(stack[k + 1])}");
                 protSel = new PRef(PK.Deck, i);
@@ -1719,7 +1826,7 @@ public sealed unsafe partial class DesignerScene
         if (r.Ref.Kind is PK.EndFore or PK.EndAft)
         {
             string end = r.Ref.Kind == PK.EndFore ? "fore" : "aft";
-            double mm = d.Armour?.EndBelts?.Of(end)?.Mm ?? 0;
+            double mm = a?.EndBelts?.Of(end)?.Mm ?? 0;
             if (ImGui.MenuItem("Taper to the tip: 2/3 of the root"))
                 Edit(Knobs.EndBeltTip(end).Apply(d, Math.Round(mm * 2 / 30) * 10), $"End belt, {end}: tapered");
             if (ImGui.MenuItem("No taper"))
@@ -1741,8 +1848,10 @@ public sealed unsafe partial class DesignerScene
             RemovePart(r.Ref);
     }
 
-    /// <summary>The dev hook's protection states: protsel:ID (belt, upper, end_fore, end_aft, bulk, tds, deckN, steer,
-    /// mainN, barb, ct), protmenu, protcover:N, protghost:DECK:EXT, prothandle:N, protsechandle:N.</summary>
+    /// <summary>The dev hook's protection states: protsel:ID (belt, beltzone, upper, end_fore, end_aft, bulk, tds, inner,
+    /// box, wings, deckN, slopeN, dzoneN, steer, mainN, barb, ct), protmenu, protcover:N, protghost:DECK:EXT,
+    /// prothandle:N, protsechandle:N, protcut:K:STOP (K 1 or 2; STOP mach, mag:A, fore, aft or x in m), protlink,
+    /// protlayout (the menu open), prottip:layout:N | cell:K:N | comp, protcomp, protrooms:0.</summary>
     bool ApplyProtDevUi(string[] p)
     {
         switch (p[0])
@@ -1752,15 +1861,21 @@ public sealed unsafe partial class DesignerScene
                 int num = int.TryParse(new string(id.Where(char.IsDigit).ToArray()), out int v) ? v : 0;
                 protSel = id switch
                 {
+                    "beltzone" => new PRef(PK.BeltZone),
                     "upper" => new PRef(PK.Upper),
                     "end_fore" => new PRef(PK.EndFore),
                     "end_aft" => new PRef(PK.EndAft),
                     "bulk" => new PRef(PK.Bulkheads),
                     "tds" => new PRef(PK.Tds),
+                    "inner" => new PRef(PK.Inner),
+                    "box" => new PRef(PK.Box),
+                    "wings" => new PRef(PK.Wings),
                     "steer" => new PRef(PK.Steering),
                     "barb" => new PRef(PK.Barbettes),
                     "ct" => new PRef(PK.Ct),
                     _ when id.StartsWith("deck", StringComparison.Ordinal) => new PRef(PK.Deck, num),
+                    _ when id.StartsWith("slope", StringComparison.Ordinal) => new PRef(PK.Slope, num),
+                    _ when id.StartsWith("dzone", StringComparison.Ordinal) => new PRef(PK.DeckZone, num),
                     _ when id.StartsWith("main", StringComparison.Ordinal) => new PRef(PK.Main, num),
                     _ => new PRef(PK.Belt),
                 };
@@ -1779,6 +1894,35 @@ public sealed unsafe partial class DesignerScene
                 return true;
             case "protsechandle" when p.Length > 1:
                 protForceTip = $"sechandle:{p[1]}";
+                return true;
+            case "protcut" when p.Length > 2:
+            {
+                int k = p[1] == "2" ? 1 : 0;
+                string stop = string.Join(':', p[2..]);
+                if (float.TryParse(stop, NumberStyles.Float, CultureInfo.InvariantCulture, out float xs))
+                    (protCutStop[k], protCutX[k]) = (null, xs);
+                else
+                    protCutStop[k] = stop;
+                if (protLinked)
+                    (protCutStop[1 - k], protCutX[1 - k]) = (protCutStop[k], protCutX[k]);
+                protCutsDoc = doc;   // the defaults for a new design leave these cuts alone
+                return true;
+            }
+            case "protlink":
+                protCutsDoc = doc;
+                ToggleLinked();
+                return true;
+            case "protlayout":
+                openLayoutMenu = true;
+                return true;
+            case "prottip" when p.Length > 1:
+                protForceTip = string.Join(':', p[1..]);
+                return true;
+            case "protcomp":
+                protComp = true;
+                return true;
+            case "protrooms":
+                protRooms = p.Length < 2 || p[1] != "0";
                 return true;
         }
         return false;

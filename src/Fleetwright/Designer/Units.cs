@@ -35,6 +35,9 @@ public enum Quantity
     Ratio,
 
     Days,
+
+    /// <summary>Degrees in either system (a belt's lean, a slope).</summary>
+    Angle,
 }
 
 public static class Units
@@ -56,6 +59,7 @@ public static class Units
         Quantity.Armour or Quantity.Calibre => u == UnitSystem.Metric ? "mm" : "in",
         Quantity.Length => u == UnitSystem.Metric ? "m" : "ft",
         Quantity.Days => "days",
+        Quantity.Angle => "°",
         _ => "",
     };
 
@@ -68,7 +72,7 @@ public static class Units
         double v = metric / Factor(q, u);
         string s = v.ToString("N" + Decimals(displayStep), CultureInfo.InvariantCulture);
         string unit = Unit(q, u);
-        return withUnit && unit.Length > 0 ? s + " " + unit : s;
+        return withUnit && unit.Length > 0 ? q == Quantity.Angle ? s + unit : s + " " + unit : s;
     }
 
     /// <summary>A typed value back to metric: a bare number is in the displayed unit; "12in", "12\"", "305mm",
@@ -76,7 +80,7 @@ public static class Units
     public static bool TryParse(string text, Quantity q, UnitSystem u, out double metric)
     {
         metric = 0;
-        var t = text.Trim().ToLowerInvariant().Replace(" ", "");
+        var t = text.Trim().ToLowerInvariant().Replace(" ", "").TrimEnd('°');
         double factor = Factor(q, u);
         foreach (var (suffix, f) in new[] { ("mm", 1.0), ("nm", 1.0), ("kn", 1.0), ("in", MmPerIn), ("\"", MmPerIn), ("ft", MPerFt),
                      ("'", MPerFt), ("m", 1.0) })   // longest first: "nm" and "mm" before "m"

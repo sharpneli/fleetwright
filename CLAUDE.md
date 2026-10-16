@@ -80,11 +80,15 @@ move and split), guns bearing by bearing, and presets. The Secondary · AA · TT
 click, the broadside strip (a half-plan over one schematic track per position, a + at each track's head), the
 secondaries' guns bearing, and AA, torpedo and selected-battery panels. Both battery tables have a SHELLS column (`docs/designer-ui/shells.md`): the
 outfit's kinds and shares, and a picker for the family (a tree by navy, the design's first) and each load's block and
-share; the Templates panel's Shells row sets every battery's family. The Protection tab (`docs/designer-ui/protection.md`) is the
-elevation (the side deck by deck, heights stretched, every built plate, `+` ghosts where a missing part goes), the midship
-section to scale, a table of the parts the ship has (a `+` in each group's header adds one with values from the belt, `x`
-removes), the selected plate, and coverage presets; brass handles drag belt edges, reach, decks and the torpedo bulkhead,
-and a drag edits once, on release. The Overview tab (`docs/designer-ui/overview.md`) is a trim sheet of
+share; the Templates panel's Shells row sets every battery's family. The Protection tab (`docs/designer-ui/protection.md`,
+the layers in `protection-layers.md`) is the elevation (the side deck by deck, heights stretched, every built plate, `+`
+ghosts where a missing part goes, Rooms and Compartments toggles, two flags for the sections' cuts), two half-sections at
+their own stations to scale (`ProtectionSection`, from the build's cells, walls and armour; a Whole section toggle locks
+them), a table of the parts the ship has with sub-rows for zones and slopes (a `+` in each group's header adds one with
+values from the belt, `x` removes), the selected plate's facts and Shape, and the sub-bar's coverage presets, Layout
+templates and Materials; brass handles drag belt edges and lean, reach, decks, a slope's knee and the torpedo, wing and
+inner walls, and a drag edits once, on release. Its dev hooks: `-designer-ui=protsel:ID,protcut:K:STOP,protlink,protlayout,
+prottip:layout:N,protcomp,protrooms:0` (`DesignerScene.ApplyProtDevUi`). The Overview tab (`docs/designer-ui/overview.md`) is a trim sheet of
 18 broad-stroke levers, each with what one step down and up does to the standard displacement, measured by real builds
 in the background (`DesignProbes`: validate and build only, on several threads, a newer batch supersedes); limits
 (mocked in `DesignLimits` until the gameplay layer hands them in) only report, never refuse; Fit is greyed out until the

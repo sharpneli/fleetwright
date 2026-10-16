@@ -10,14 +10,7 @@ public static class ProtectionSchemes
     {
         var a = design.Armour ?? new ArmourInput();
         var decks = (a.Decks ?? []).ToList();
-        // the citadel's main armour deck: its thickest over the citadel (or the whole length), slopes counted, the lower of
-        // equals; a scheme's own light lower deck under it never takes its place, so applying it again finds the same deck
-        int roof = -1;
-        double Plate(ArmourDeckInput d) => Math.Max(d.Mm ?? 0, d.SlopeMm ?? 0);
-        for (int i = 0; i < decks.Count; i++)
-            if (decks[i].Deck is int n && n >= 0 && (decks[i].Extent ?? "citadel") is "citadel" or "full" &&
-                (roof < 0 || Plate(decks[i]) > Plate(decks[roof]) || Plate(decks[i]) == Plate(decks[roof]) && n > decks[roof].Deck))
-                roof = i;
+        int roof = MainDeck(decks);
         if (roof >= 0 && (s.SlopeDeg is not null || s.FlatShare is not null))
         {
             var d = decks[roof];
@@ -50,6 +43,20 @@ public static class ProtectionSchemes
                 InnerBulkhead = s.InnerBulkhead ?? a.InnerBulkhead, MagazineBox = s.MagazineBox ?? a.MagazineBox,
             },
         };
+    }
+
+    /// <summary>The citadel's main armour deck among the design's decks (-1 without one): its thickest over the citadel
+    /// (or the whole length), slopes counted, the lower of equals. A scheme's own light lower deck under it never takes its
+    /// place, so applying the scheme again finds the same deck.</summary>
+    public static int MainDeck(IReadOnlyList<ArmourDeckInput> decks)
+    {
+        int roof = -1;
+        static double Plate(ArmourDeckInput d) => Math.Max(d.Mm ?? 0, d.SlopeMm ?? 0);
+        for (int i = 0; i < decks.Count; i++)
+            if (decks[i].Deck is int n && n >= 0 && (decks[i].Extent ?? "citadel") is "citadel" or "full" &&
+                (roof < 0 || Plate(decks[i]) > Plate(decks[roof]) || Plate(decks[i]) == Plate(decks[roof]) && n > decks[roof].Deck))
+                roof = i;
+        return roof;
     }
 
     /// <summary>A scheme's unknown keys, as validation names them.</summary>

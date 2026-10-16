@@ -1,6 +1,8 @@
 # Protection tab: the layers (H8b mockup, 2026-10-16)
 
-**Status:** mockup for review. It is H8b of `docs/shipgen/protection-plan.md`: the Protection tab learns the parts that
+**Status:** ported 2026-10-16 (`DesignerScene.Protection.cs`, `DesignerScene.ProtectionDrawings.cs`, `ProtectionSection.cs`,
+`ProtectionEdits.cs`, the layer knobs in `Knobs.cs`); see "The port" at the end. Mockup reviewed and settled the same day.
+It is H8b of `docs/shipgen/protection-plan.md`: the Protection tab learns the parts that
 H1-H8a added to the engine (platform decks, handling rooms, magazine wings, TDS layers, the inner bulkhead, zones,
 belt extent, magazine boxes, sloped decks, inclined and internal belts, layout templates, the compartment check). The
 tab as it is (`protection.md`, `DesignerScene.Protection.cs`) stays the base: what isn't mentioned here works as it does
@@ -242,3 +244,39 @@ Screenshots (`png/protection-layers-*.png`):
 - `bismarck-whole`: both cuts at the machinery, one whole section, the slopes selected.
 - `cutmenu`: section 2's dropdown, the stops.
 - `linked`: Whole section on, cut at magazine A, one flag on the elevation.
+
+## The port (2026-10-16)
+
+Built as the mockup has it, from the build rather than re-derived from the inputs: `ProtectionSection.Build(ship, x)` takes
+the hull form's half-breadths, the cells and their rooms, the longitudinal walls (and the armour the subdivision put on
+them: the inner bulkhead, a box's sides), the belt and its zones, the inclined plates (an internal belt, its lower belt,
+the slopes), the armour decks (box crowns and floors by their width) and the barbettes at one station. It is cached per
+ship and station, so a frame draws without allocating; the Protection tab's CPU work in DevRelease is p50 0.54 ms (the
+Main battery tab 0.38), no GCs over 400 frames.
+
+Where the port differs from the mockup:
+
+- **Glyphs drawn, not typed.** The UI font has Latin-1, dashes, the simple arrows and the minus only, so the sub-row's
+  `↳`, the compartments chip's `✓`/`⚠` and the Whole section's `◆` are drawn as shapes.
+- **The box's ends and floor** are text in the table's Where (`ends 64 · floor 0 · 2 runs`); the four plates are spinners
+  in Shape. The game's spinners are wider than the mockup's, and two more didn't fit the 738 px table.
+- **Wall handles measure from where the build put the wall** plus its value now (the engine measures a TDS's depth from
+  the waterline's half-breadth, a wing's halfway up the magazine), so a drag starts at the current value.
+- **The layout's reading** is worked out from the design (`ProtectionEdits.LayoutOf`): the template whose inputs it has
+  exactly, else the one whose form it has ("· own values", amber), "Custom" when none fits, "Plain" without any layout
+  input; a hand edit after a template applied here reads "· edited". Putting a layout on first makes the design plain
+  (`ProtectionEdits.Plain`: no slopes on the main deck, the slopes' plate back on its flat, a sloped deck under it
+  dropped, belt upright on the side over the citadel, no inner bulkhead or box), then applies the scheme, so layouts
+  replace each other rather than mixing.
+- **Finding 1 fixed in the engine** (above): the zones and the magazine weights follow the rooms.
+- **Fixed on the way:** the weight column summed a zoned deck's line once per built piece (KGV's second deck, five
+  times); a deck's weight is now its line once, shared between the flat and its zone by the built pieces' plate.
+
+Verified with `-input=` clicks and drags on Bismarck, Dreadnought, Kent and the destroyer: the Rooms and Compartments
+toggles, a group's `+` chip, Whole section, the cut dropdown, the Layout menu (German bulkhead on Dreadnought), Shape's
+`+ zone`, the right-click menu, and drags of the belt's top, its lean, a slope's knee, the TDS's holding bulkhead and a
+magazine wing's wall, each one edit on release. A row's right-click needs a frame of hover first in a script (the rows
+allow overlap; memory), as with the other tabs' rows.
+
+Game screenshots: `png/protection-layers-game-bismarck.png` (as opened), `-game-nelson.png`, `-game-dread-german.png`,
+`-game-destroyer-box.png`.

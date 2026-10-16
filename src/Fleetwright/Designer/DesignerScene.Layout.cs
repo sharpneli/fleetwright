@@ -29,7 +29,7 @@ public sealed unsafe partial class DesignerScene
     static float RowH => P(20);
 
     static readonly string[] DigitText = ["0", "1", "2", "3", "4", "5", "6", "7"];
-    static readonly string[] TemplateLabels = ["Plant", "Hull", "Crew", "Armour", "Shells"];
+    static readonly string[] TemplateLabels = ["Plant", "Hull", "Crew", "Armour", "Protection", "Shells"];
 
     // the plan and profile's overlays: arcs of fire, armour plates, magazines, tags (A, R, M, T)
     bool showArcs = true, showArmour = true, showMags, showTags = true;
@@ -633,8 +633,8 @@ public sealed unsafe partial class DesignerScene
                 dl.AddRectFilled(p, p + new Vector2(w, RowH), T.U32(new Vector4(0.85f, 0.72f, 0.41f, 0.08f)));
             float ty = p.Y + (RowH - UiFonts.Sans.FontSize) / 2;
             Text(dl, UiFonts.Sans, new Vector2(p.X + P(6), ty), T.Muted, TemplateLabels[i]);
-            dl.PushClipRect(p + new Vector2(P(64), 0), p + new Vector2(w - P(14), RowH), true);
-            Text(dl, UiFonts.Sans, new Vector2(p.X + P(64), ty), hover ? T.Brass : T.Text, t.Names[t.Index]);
+            dl.PushClipRect(p + new Vector2(P(72), 0), p + new Vector2(w - P(14), RowH), true);
+            Text(dl, UiFonts.Sans, new Vector2(p.X + P(72), ty), hover ? T.Brass : T.Text, t.Names[t.Index]);
             dl.PopClipRect();
             Twisty(dl, new Vector2(p.X + w - P(8), p.Y + RowH / 2), true, T.Muted);
             if (hover)

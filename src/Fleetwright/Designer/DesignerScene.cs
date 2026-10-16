@@ -484,7 +484,7 @@ public sealed unsafe partial class DesignerScene : IScene
             FullT = res != null ? N0(res.FullDisplacementT) : "–",
             RemarkCount = remarks.Count == 0 ? "none" : remarks.Count.ToString(CultureInfo.InvariantCulture),
             Outline = Outline(ship, summaries),
-            Templates = [PlantPick(d, ship), HullPick(d, ship), CrewPick(d, ship), ArmourPick(d), ShellsPick(d)],
+            Templates = [PlantPick(d, ship), HullPick(d, ship), CrewPick(d, ship), ArmourPick(d), ProtectionPick(d), ShellsPick(d)],
             Remarks = remarks.ToArray(),
             Panel = PanelItems(d, ship),
             HistoryLabels = doc.History.Select(h => h.Label).ToArray(),
@@ -702,6 +702,24 @@ public sealed unsafe partial class DesignerScene : IScene
     PickRow ArmourPick(Design d) => Pick("Armour", Templates.Armour, t => t.Name, t => Templates.SameMaterials(d.Armour?.Materials, t.Value),
         d.Armour?.Materials is { } am ? $"custom: {am.GetValueOrDefault("belt", "?")}" : "default",
         (x, v) => x with { Armour = (x.Armour ?? new ArmourInput()) with { Materials = Templates.MaterialsFor(x, v) } });
+
+    /// <summary>The protection layout (docs/designer-ui/protection-layers.md): the template the design is on, or Plain or
+    /// Custom; a pick puts the template's layout on (ProtectionEdits.ApplyLayout). The same list as the Protection tab's
+    /// Layout.</summary>
+    PickRow ProtectionPick(Design d)
+    {
+        var list = Templates.Protection;
+        var (i, exact) = ProtectionEdits.LayoutOf(d, list.Select(t => t.Value).ToList());
+        var names = list.Select(t => t.Name).ToList();
+        if (!exact)
+            names.Add(i >= 0 ? $"{list[i].Name} · own values" : ProtectionEdits.HasLayout(d) ? "Custom" : "Plain");
+        return new PickRow("Protection layout", names.ToArray(), exact ? i : names.Count - 1, list.Count, k =>
+        {
+            var next = ProtectionEdits.ApplyLayout(doc.Current, list[k].Value);
+            Edit(next, $"Layout: {list[k].Name}");
+            protLayoutApplied = (k, ProtectionEdits.LayoutKey(next));
+        });
+    }
 
     /// <summary>Every gun battery's shell family at once (docs/designer-ui/shells.md): the family they share, "mixed", or
     /// "default"; picked from the family tree.</summary>

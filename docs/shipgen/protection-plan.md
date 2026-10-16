@@ -1,6 +1,6 @@
 # Plan: subdivision and protection schemes
 
-2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Done: H0-H7, H8a (2026-10-16). Next: H8b, the Protection tab (a UI session of its own). Research: `research/09_protection_schemes.md`
+2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Done: H0-H7, H8a, H8b (2026-10-16). Next: the thorough testing with the UI (the user). Research: `research/09_protection_schemes.md`
 (the families, the layers, the bulkhead kinds), on top of `01_capital_subdivision.md` and `03_small_vessels.md`.
 
 This comes before phase P of `docs/battle/shells-armour-damage.md` (materials as data). The user wants the subdivision
@@ -405,6 +405,13 @@ this plan builds the layers so E1 has something to work on.
   family, with the weight changes reported.
 - The Protection tab shows the new parts (platform deck, wing, holding and inner bulkheads, boxes, slopes) in its
   elevation and midship section. That is a UI session of its own, mockup then port (memory).
+
+- **H8b done 2026-10-16** (the Protection tab: `docs/designer-ui/protection-layers.md`, mockup and port). The tab draws
+  two half-sections at their own stations from the build (`ProtectionSection`), the zones, slopes, internal belts, inner
+  bulkhead, boxes and wings on the elevation and in a table with sub-rows, Shape for a part's form, the Layout templates
+  in the sub-bar and the Templates panel (`ProtectionEdits.ApplyLayout`, `LayoutOf`, `Plain`), the Compartments toggle
+  with H7's standard and warned run, and handles for the belt's edges and lean, a slope's knee and the TDS, wing and
+  inner walls. One knob per new input (`Knobs.BeltMagazines` ... `MagazineWing`).
 
 - **The magazines' stretch fixed 2026-10-16** (H8b's mockup, finding 1 in `docs/designer-ui/protection-layers.md`): the
   zones, the inner bulkhead's weight and the boxes' weight went by Stow's magazines (`Geo.MagazineBoxes`), while the
