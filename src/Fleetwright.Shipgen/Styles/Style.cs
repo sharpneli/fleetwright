@@ -67,6 +67,8 @@ public abstract class Style
             l.Add(Lim(0, 2000, "armour", "steering_box", k));
         foreach (var k in new[] { "side_mm", "crown_mm", "end_mm", "floor_mm" })
             l.Add(Lim(0, 2000, "armour", "magazine_box", k));
+        l.Add(Lim(0, 2000, "armour", "decks", "slope_mm"));
+        l.Add(Lim(10, 60, "armour", "decks", "slope_deg"));
         l.Add(Lim(0, 2000, "armour", "inner_bulkhead", "mm"));
         l.Add(Lim(0, 2000, "armour", "inner_bulkhead", "magazines_mm"));
         l.Add(Lim(0, 20, "armour", "inner_bulkhead", "inboard_m"));

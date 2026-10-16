@@ -125,10 +125,20 @@ public sealed class ShellTest
             {
                 double x = b.X0 + (b.X1 - b.X0) * rng.NextDouble(), y = b.Y0 + (b.Y1 - b.Y0) * rng.NextDouble();
                 double z = b.Base + (b.Top - b.Base) * rng.NextDouble();
-                if (InHull(x, y, z))
+                if (InHull(x, y, z) && !OverSlope(x, y, z))
                     return new Shot(cell, x, y, z, 360 * rng.NextDouble(), MaxFall * rng.NextDouble());
             }
         }
+    }
+
+    /// <summary>Whether a point lies over a deck's slope, between it and the side: outside the armour (the wing cells
+    /// there are boxes, so part of them is).</summary>
+    bool OverSlope(double x, double y, double z)
+    {
+        foreach (ref readonly var p in c.Inclined)
+            if (p.Kind == InclinedKind.Slope && x >= p.X0 && x <= p.X1 && z >= p.Z0 && z <= p.Z1 && Math.Abs(y) > p.YAt(hull, x, z))
+                return true;
+        return false;
     }
 
     // ------------------------------------------------------------------ the trace
@@ -183,7 +193,7 @@ public sealed class ShellTest
         foreach (ref readonly var x in xs)
             switch (x.Kind)
             {
-                case CrossingKind.Plate when x.Plate is PlateKind.ArmourDeck or PlateKind.ArmourBulkhead or PlateKind.SideArmour
+                case CrossingKind.Plate when x.Plate is PlateKind.ArmourDeck or PlateKind.ArmourBulkhead or PlateKind.SideArmour or PlateKind.Inclined
                                              || x.Plate == PlateKind.Grating && gratings:
                     return Outcome.Armour;
                 case CrossingKind.WaterIn when underwaterM <= 0:

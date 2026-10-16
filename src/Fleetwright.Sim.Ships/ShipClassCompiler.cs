@@ -495,7 +495,21 @@ public static class ShipClassCompiler
             c.armourBulkheadIds = [.. bh.Select(x => x.Id)];
             Index(c.armourBulkheadIds, "armour bulkhead");
             c.armourDecks = (a.Decks ?? []).Select(x =>
-                new ArmourDeckRow(Deck(x.Deck), x.ThicknessMm, ExtentOf(x.Extent), x.X0, x.X1, x.Z, x.Main, x.Roof, Material(x.Material), Or(x.W))).ToArray();
+                new ArmourDeckRow(Deck(x.Deck), x.ThicknessMm, ExtentOf(x.Extent), x.X0, x.X1, x.Z, x.Main, x.Roof, Material(x.Material), Or(x.W))
+                    { SlopeReach = Or(x.SlopeReach), SlopeFoot = Or(x.SlopeFoot) }).ToArray();
+            var inc = a.Inclined ?? [];
+            c.inclined = [.. inc.Select(x => new InclinedRow
+            {
+                Kind = x.Kind switch
+                {
+                    "slope" => InclinedKind.Slope,
+                    _ => throw new ShipCompileException($"unknown inclined plate kind \"{x.Kind}\""),
+                },
+                ThicknessMm = x.ThicknessMm, X0 = x.X0, X1 = x.X1, Z0 = x.Z0, Z1 = x.Z1, U0 = x.U0, U1 = x.U1, SideZ = x.SideZ,
+                Material = Material(x.Material), BottomMm = Or(x.BottomMm), TaperFrom = Or(x.TaperFrom),
+            })];
+            c.inclinedIds = [.. inc.Select(x => x.Id)];
+            Index(c.inclinedIds, "inclined plate");
         }
 
         PlatingRow PlatingOf(HullPlates p) => new()
@@ -863,6 +877,12 @@ public static class ShipClassCompiler
             h.Add(c.armourDecks.Length);
             foreach (var d in c.armourDecks)
                 h.Add(d.Deck);
+            if (c.inclinedIds.Length > 0)   // (so a class without them keeps the hash it had before them)
+            {
+                h.Add(c.inclinedIds.Length);
+                foreach (var id in c.inclinedIds)
+                    h.Add(id);
+            }
             h.Add(c.materials.Length);
             foreach (var m in c.materials)
                 h.Add(m);

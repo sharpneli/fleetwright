@@ -305,6 +305,18 @@ public sealed class ArmourReport
     public List<StrakeReport>? Strakes { get; set; }
     public List<ArmourBulkheadReport>? Bulkheads { get; set; }
     public List<ArmourDeckReport>? Decks { get; set; }
+    /// <summary>The inclined plates each side: the decks' slopes (protection-plan.md H6).</summary>
+    public List<InclinedReport>? Inclined { get; set; }
+}
+
+/// <summary>An inclined longitudinal plate each side (protection-plan.md H6): over X0..X1 from Z0 up to Z1, U0 in from
+/// the side at Z0 and U1 at Z1 (linear between), the side's half-breadth taken at SideZ; Kind slope (a deck's).</summary>
+public sealed record InclinedReport(string Id, string Kind, double ThicknessMm, double X0, double X1, double Z0, double Z1, double U0, double U1,
+    double SideZ)
+{
+    public string? Material { get; init; }
+    public double? BottomMm { get; init; }
+    public double? TaperFrom { get; init; }
 }
 
 public sealed record BeltReport(double ThicknessMm, double X0, double X1, double Bottom, double Top)
@@ -337,6 +349,10 @@ public sealed record ArmourDeckReport(string Deck, double ThicknessMm, string Ex
 {
     /// <summary>Narrower than the hull: this wide about the centreline (the steering gear's box, a magazine box).</summary>
     public double? W { get; init; }
+    /// <summary>A deck with slopes (protection-plan.md H6): the flat stops SlopeReach in from the side, the side's
+    /// half-breadth taken at SlopeFoot, where the slope (in Inclined) meets it.</summary>
+    public double? SlopeReach { get; init; }
+    public double? SlopeFoot { get; init; }
 }
 
 /// <summary>One hitbox component. Kind says which it is and so which of the optional fields it has: a gun or torpedo

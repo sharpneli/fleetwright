@@ -6,6 +6,9 @@ public sealed record PlannedArmourDeck(long Deck, double Mm, string Extent, doub
 {
     /// <summary>Its plate over the magazines (a citadel deck's, protection-plan.md H5), or null.</summary>
     public double? MagazinesMm { get; init; }
+    /// <summary>Its slopes' plate (0: flat to the side) and angle from the horizontal (protection-plan.md H6).</summary>
+    public double SlopeMm { get; init; }
+    public double SlopeDeg { get; init; } = Armour.SlopeDegDefault;
 }
 
 /// <summary>An armour deck over one stretch: Extent citadel, full, fore, aft or steering; W a narrower width than the
@@ -22,6 +25,22 @@ public sealed class ArmourDeck
     public double? W;
     /// <summary>Its plate over the magazines, while the pieces are gathered (protection-plan.md H5); null: Mm.</summary>
     public double? MagazinesMm;
+    /// <summary>Its slopes (protection-plan.md H6): SlopeMm thick at SlopeDeg, down to the side at FootZ (above the keel);
+    /// the flat stands Reach in from the side as measured there. Reach 0: flat to the side.</summary>
+    public double SlopeMm, SlopeDeg = Armour.SlopeDegDefault, FootZ, Reach;
+
+    public ArmourDeck Clone() => (ArmourDeck)MemberwiseClone();
+}
+
+/// <summary>An inclined longitudinal armour plate each side (protection-plan.md H6): a deck's slope, or a belt inside the
+/// hull. It runs over X0..X1 from Z0 up to Z1 (above the keel), U0 in from the side at Z0 and U1 at Z1, linear between,
+/// the side measured at SideZ (so it follows the hull along its length but not its flare). Mm thick, BottomMm at Z0
+/// tapering from TaperFrom down (null: one thickness). Kind slope, belt or zone (a belt's over the magazines).</summary>
+public sealed record InclinedPlate(string Id, string Kind, double X0, double X1, double Z0, double Z1, double U0, double U1, double SideZ,
+    double Mm, string? Material)
+{
+    public double? BottomMm { get; init; }
+    public double? TaperFrom { get; init; }
 }
 
 /// <summary>A strake of side armour: Kind end, upper or box (the steering gear's); Mm at its root tapering to TipMm at
@@ -61,6 +80,8 @@ public sealed class ArmourLayout
     /// <summary>The end belts' plates across the hull's end face (a transom), where a belt runs all the way to it: the
     /// belt carried round the stern, as the complete belts were. Not bulkheads: the subdivision doesn't stop at them.</summary>
     public List<ArmourBulkhead> EndPlates = [];
+    /// <summary>The inclined plates: the decks' slopes (protection-plan.md H6).</summary>
+    public List<InclinedPlate> Inclined = [];
 }
 
 /// <summary>The design's armour: its validation, where the armour is (the one source for its weights, the subdivision
@@ -70,6 +91,12 @@ public static class Armour
     public const double TdsMmPerM = 12.0;
     /// <summary>The magazine wing's default width, a share of the beam (protection-plan.md H2) [INFERRED].</summary>
     public const double MagazineWingShare = 0.1;
+    /// <summary>A deck's slopes' angle from the horizontal when the design gives none (protection-plan.md H6): the
+    /// research's 25-45° and Bismarck's 22°, about the middle [INFERRED].</summary>
+    public const double SlopeDegDefault = 30.0;
+    /// <summary>A slope needs at least this much height between the flat and the belt's lower edge, m; lower, the deck
+    /// stays flat to the side (with a warning).</summary>
+    public const double MinSlopeRiseM = 0.3;
 
     /// <summary>The torpedo protection's layers (protection-plan.md H3): its depth each side, how many spaces, the
     /// holding bulkhead's plate and each layer wall's, mm. One layer by default: one wall carrying all its steel.</summary>
@@ -137,6 +164,10 @@ public static class Armour
                 errs.Add($"armour.decks[{k}].mm: use a thickness of 0 or more");
             if (d.MagazinesMm is double mg && !(mg >= 0))
                 errs.Add($"armour.decks[{k}].magazines_mm: use a thickness of 0 or more");
+            if (d.SlopeMm is double sm && !(sm >= 0))
+                errs.Add($"armour.decks[{k}].slope_mm: use a thickness of 0 or more");
+            if (d.SlopeDeg is double sd && !(sd > 0 && sd < 90))
+                errs.Add($"armour.decks[{k}].slope_deg: use an angle from the horizontal over 0 and under 90");
             if (!ArmourExtents.Contains(d.Extent))
                 errs.Add($"armour.decks[{k}].extent = {Style.Quote(d.Extent)}: use {string.Join(" or ", ArmourExtents)}");
             if (last is long l && deck < l)
@@ -201,7 +232,8 @@ public static class Armour
             long asked = d.Deck ?? 0;
             long n = Math.Max(top, Math.Min(asked, stack[^1].N));
             result.Add(new PlannedArmourDeck(n, d.Mm ?? 0, d.Extent ?? "citadel", n >= 0 ? stack[(int)n].Z : D - n * Geometry.DeckPitch,
-                asked, ArmourMaterial(design, "decks", d.Material)) { MagazinesMm = d.MagazinesMm });
+                asked, ArmourMaterial(design, "decks", d.Material))
+                { MagazinesMm = d.MagazinesMm, SlopeMm = Math.Max(0.0, d.SlopeMm ?? 0.0), SlopeDeg = d.SlopeDeg ?? SlopeDegDefault });
         }
         return result;
     }
@@ -275,10 +307,13 @@ public static class Armour
                     (p.X0, p.X1) = (Math.Min(p.X0, p0), Math.Max(p.X1, p1));
                     p.Extent = p.Extent == "full" || ext == "full" ? "full" : p.Extent;
                     p.Material = dm is null || dm == pm ? pm : pm is null ? dm : $"{pm} + {dm}";
+                    if (d.SlopeMm > 0 && dn >= 0)
+                        (p.SlopeMm, p.SlopeDeg) = (p.SlopeMm + d.SlopeMm, p.SlopeMm > 0 ? p.SlopeDeg : d.SlopeDeg);
                     continue;
                 }
+                // (a raised deck has no slopes: its side is above the belt)
                 decks.Add(new ArmourDeck { Deck = dn, Mm = d.Mm, Extent = ext, Z = d.Z, Asked = d.Asked, Material = d.Material, X0 = p0, X1 = p1,
-                    MagazinesMm = ext == "citadel" ? d.MagazinesMm : null });
+                    MagazinesMm = ext == "citadel" ? d.MagazinesMm : null, SlopeMm = dn >= 0 ? d.SlopeMm : 0.0, SlopeDeg = d.SlopeDeg });
             }
         }
         var over = decks.Where(d => d.Extent is "citadel" or "full" && d.Deck >= 0).ToList();
@@ -300,6 +335,24 @@ public static class Armour
         double h = below + above;
         double bot = Math.Max(0.0, T - below);
         double band = Math.Min(D, Math.Max(bot, T + above));
+        // the slopes (protection-plan.md H6): from the flat's edge down to the side at the belt's lower edge (on a beltless
+        // ship as deep as a belt would reach); each piece of a zoned deck has its own
+        var inclined = new List<InclinedPlate>();
+        foreach (var d in decks)
+        {
+            if (d.SlopeMm <= 0)
+                continue;
+            if (d.Z - bot < MinSlopeRiseM)
+            {
+                d.SlopeMm = 0;
+                continue;
+            }
+            (d.FootZ, d.Reach) = (bot, (d.Z - bot) / Math.Tan(double.DegreesToRadians(d.SlopeDeg)));
+            string name = $"Slopes ({Decks.DeckNameLower(d.Deck)}{(d.Extent is "fore" or "aft" ? $", {d.Extent}" : "")})";
+            int same = inclined.Count(p => p.Id == name || p.Id.StartsWith(name + " ", StringComparison.Ordinal));
+            inclined.Add(new InclinedPlate(same > 0 ? $"{name} {same + 1}" : name, "slope", d.X0, d.X1, bot, d.Z, 0.0, d.Reach, bot, d.SlopeMm,
+                d.Material));
+        }
         double top = Math.Min(D, Math.Max(band, main?.Z ?? 0.0));
 
         var strakes = new List<Strake>();
@@ -421,7 +474,7 @@ public static class Armour
             BeltMaterial = ArmourMaterial(design, "belt"), BulkheadMaterial = ArmourMaterial(design, "bulkheads"),
             Armoured = belt > 0 || over.Count > 0, BulkheadMm = bhMm, BulkheadLowerMm = BulkheadLowerShare * bhMm,
             BulkheadBottom = citBot, BulkheadStep = Math.Max(citBot, Math.Min(bot, bhTop)), BulkheadTop = bhTop,
-            EndBulkheads = endBhs, EndPlates = endPlates,
+            EndBulkheads = endBhs, EndPlates = endPlates, Inclined = inclined,
         };
     }
 
@@ -502,7 +555,11 @@ public static class Armour
         void Piece(double a, double b, double t)
         {
             if (b - a > 0.05 && t > 0)
-                result.Add(new ArmourDeck { Deck = d.Deck, Mm = t, Extent = d.Extent, Z = d.Z, Asked = d.Asked, Material = d.Material, X0 = a, X1 = b, W = d.W });
+            {
+                var piece = d.Clone();
+                (piece.Mm, piece.X0, piece.X1, piece.MagazinesMm) = (t, a, b, null);
+                result.Add(piece);
+            }
         }
         double x = d.X0;
         foreach (var (m0, m1) in mags)
@@ -616,7 +673,13 @@ public static class Armour
             double area = (ext == "full" ? L * Geometry.Cwp(cb) : d.X1 - d.X0) * (d.W is double w && w != 0 ? w : wide) * 0.9;
             string name = $"Deck armour ({Decks.DeckNameLower(d.Deck)}" +
                           (ext is "fore" or "aft" or "steering" ? $", {ext})" : ")");
-            result.Add(new Weight(name, "armour", area * d.Mm / 1000 * Weight.Steel, ext == "full" ? 0.0 : (d.X0 + d.X1) / 2, ZRel.Deck(d.Z - D)));
+            double xw = ext == "full" ? 0.0 : (d.X0 + d.X1) / 2;
+            // the slopes take the outer Reach each side of the breadth, longer by their angle (protection-plan.md H6)
+            double sloped = d.Reach > 0 && wide > 0 ? Math.Min(1.0, 2 * d.Reach / wide) : 0.0;
+            result.Add(new Weight(name, "armour", area * (1 - sloped) * d.Mm / 1000 * Weight.Steel, xw, ZRel.Deck(d.Z - D)));
+            if (sloped > 0)
+                result.Add(new Weight(name[..^1] + ", slopes)", "armour",
+                    area * sloped / Math.Cos(double.DegreesToRadians(d.SlopeDeg)) * d.SlopeMm / 1000 * Weight.Steel, xw, Zf(d.Z, d.FootZ)));
         }
         return result;
     }
@@ -629,6 +692,10 @@ public static class Armour
             if (d.Asked != d.Deck)
                 result.Add($"The hull has no {Decks.DeckNameLower(d.Asked)} ({res.Depth:F1} m deep): its " +
                          $"{d.Mm} mm deck armour lies on the {Decks.DeckNameLower(d.Deck)}.");
+        foreach (var d in ArmourDecks(design, res.Depth, geo.Raised))
+            if (d.SlopeMm > 0 && d.Deck >= 0 && !res.Armour.Decks.Any(p => p.Deck == d.Deck && p.Reach > 0))
+                result.Add($"The {Decks.DeckNameLower(d.Deck)}'s {d.SlopeMm} mm slopes have no height: the deck lies at the belt's lower " +
+                           "edge, so it runs flat to the side.");
         var arm = design.Armour ?? new ArmourInput();
         if ((arm.BeltMm ?? 0) > 0 && (arm.BeltDepthM ?? 1.0) < 1.0)
             result.Add($"The belt reaches only {arm.BeltDepthM:F1} m below the waterline: rolling or " +

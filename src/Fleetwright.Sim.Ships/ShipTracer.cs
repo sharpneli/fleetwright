@@ -265,6 +265,8 @@ public static class ShipTracer
                     double x = X(s), y = Y(s);
                     if (x < d.X0 - Eps || x > d.X1 + Eps || Math.Abs(y) > hull.HalfWidth(x, d.Z) + Eps || Math.Abs(y) > d.W / 2 + Eps)
                         continue;   // (a box's deck: only as wide as the box)
+                    if (!double.IsNaN(d.SlopeReach) && Math.Abs(y) > hull.HalfWidth(x, d.SlopeFoot) - d.SlopeReach)
+                        continue;   // over its slopes (Inclined)
                     var kind = PlateKind.ArmourDeck;
                     foreach (int t in g.Tubes)
                     {
@@ -296,6 +298,59 @@ public static class ShipTracer
                     double mm = !double.IsNaN(b.LowerTop) && !double.IsNaN(b.LowerMm) && z < b.LowerTop ? b.LowerMm : b.ThicknessMm;
                     Add(CrossingKind.Plate, PlateKind.ArmourBulkhead, i, s, mm, b.Material, new P3(Math.Sign(b.X == 0 ? 1 : b.X), 0, 0));
                 }
+            for (int i = 0; i < c.Inclined.Length; i++)
+                if (c.Inclined[i].ThicknessMm > 0)
+                {
+                    Inclined(i, 1);
+                    Inclined(i, -1);
+                }
+        }
+
+        /// <summary>Inclined plate i on side sgn (a deck's slope), crossed exactly: its surface is sgn·y = hw(x) - u(z), the
+        /// half-breadth hw taken at its SideZ and u linear in z. At one height the hull's half-breadth is linear between
+        /// its stations, so along the segment G(s) = sgn·Y - hw + u is linear strip by strip: each strip's crossing is one
+        /// division (near a fine end, where the two sides' slopes meet, a segment may cross one more than once).</summary>
+        void Inclined(int i, int sgn)
+        {
+            ref readonly var p = ref c.Inclined[i];
+            double sa = 0, sb = len;
+            if (!Clip(o.X, bx, p.X0, p.X1, ref sa, ref sb) || !Clip(o.Z, bz, p.Z0, p.Z1, ref sa, ref sb))
+                return;
+            double ku = (p.U1 - p.U0) / (p.Z1 - p.Z0), den = sgn * by + bz * ku;
+            double rest = sgn * o.Y + p.U0 + (o.Z - p.Z0) * ku;   // G(s) = den·s + rest - hw(X(s)), 0 on the plate
+            double s0 = sa, g0 = den * sa + rest - hull.HalfWidth(X(sa), p.SideZ);
+            int n = hull.StripCount;
+            for (int k = 0; k <= n + 1; k++)
+            {
+                // the next station along the segment (stations ascending in x; the walk may go either way)
+                double s1 = sb;
+                if (k <= n && Math.Abs(bx) > 1e-12)
+                {
+                    double sk = (hull.StationX(bx > 0 ? k : n - k) - o.X) / bx;
+                    if (sk <= s0)
+                        continue;
+                    s1 = Math.Min(sk, sb);
+                }
+                else if (k <= n)
+                    continue;
+                double g1 = den * s1 + rest - hull.HalfWidth(X(s1), p.SideZ);
+                if (g0 < 0 != g1 < 0)
+                    InclinedAt(i, sgn, ku, s0 + (s1 - s0) * g0 / (g0 - g1), Math.Abs(bx) > 1e-9 && s1 > s0
+                        ? (hull.HalfWidth(X(s1), p.SideZ) - hull.HalfWidth(X(s0), p.SideZ)) / (bx * (s1 - s0)) : 0);
+                (s0, g0) = (s1, g1);
+                if (s0 >= sb)
+                    break;
+            }
+        }
+
+        /// <summary>Inclined plate i crossed at s on side sgn, where the hull's half-breadth changes by wx a metre along it.</summary>
+        void InclinedAt(int i, int sgn, double ku, double s, double wx)
+        {
+            ref readonly var p = ref c.Inclined[i];
+            if (sgn * Y(s) < (sgn > 0 ? -Eps : Eps))
+                return;   // (a fine end narrower than its reach: none past the centreline, where the two meet one plate)
+            double l = Math.Sqrt(wx * wx + 1 + ku * ku);
+            Add(CrossingKind.Plate, PlateKind.Inclined, i, s, p.MmAt(Z(s)), p.Material, new P3(-wx / l, sgn / l, ku / l));
         }
 
         // ------------------------------------------------------------------ the cells

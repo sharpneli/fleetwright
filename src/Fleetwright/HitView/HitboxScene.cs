@@ -280,7 +280,7 @@ public sealed unsafe class HitboxScene : IScene
             {
                 CrossingKind.Plate when x.Plate is PlateKind.Deck or PlateKind.Bulkhead => (new Vector4(0.7f, 0.7f, 0.7f, 0.9f), 2.5f),
                 CrossingKind.Plate or CrossingKind.PartIn or CrossingKind.PartOut when x.Plate is PlateKind.SideArmour or PlateKind.ArmourDeck
-                    or PlateKind.ArmourBulkhead or PlateKind.Grating or PlateKind.Barbette or PlateKind.TurretFace or PlateKind.TurretSide
+                    or PlateKind.ArmourBulkhead or PlateKind.Inclined or PlateKind.Grating or PlateKind.Barbette or PlateKind.TurretFace or PlateKind.TurretSide
                     or PlateKind.TurretRear or PlateKind.TurretRoof or PlateKind.PartArmour => (new Vector4(1, 0.2f, 0.2f, 1), 6f),
                 CrossingKind.HullIn or CrossingKind.HullOut => (new Vector4(1, 0.6f, 0.1f, 1), 5f),
                 CrossingKind.PartIn or CrossingKind.PartOut => (new Vector4(0.4f, 0.6f, 1, 1), 4f),

@@ -152,6 +152,10 @@ public sealed class MatchupProfile
                 foreach (ref readonly var b in c.Bulkheads)
                     if (b.Side == Fleetwright.Sim.Ships.Side.Starboard && b.ArmourMm > 0 && x >= b.X0 && x <= b.X1 && z >= b.ArmourBottom && z <= b.ArmourTop)
                         inner = Math.Max(inner, b.ArmourMm * Quality(q, b.ArmourMaterial));
+                // and the inclined plates (a deck's slopes, protection-plan.md H6), as thick as a flat shell's line through them
+                foreach (ref readonly var p in c.Inclined)
+                    if (x >= p.X0 && x <= p.X1 && z >= p.Z0 && z <= p.Z1 && p.YAt(c.Hull, x, z) > 0)
+                        inner += p.MmAt(z) * Quality(q, p.Material) / Rise(p);
                 mm[i * nz + k] = best + inner;
             }
         return Shares(mm);
@@ -167,10 +171,25 @@ public sealed class MatchupProfile
         {
             double x = x0 + (i + 0.5) * c.Length / nx;
             foreach (var d in c.ArmourDecks)
-                if (x >= d.X0 && x <= d.X1)   // a box's deck by its share of the beam
-                    mm[i] += d.ThicknessMm * Quality(q, d.Material) * (double.IsNaN(d.W) ? 1 : Math.Min(1, d.W / c.Beam));
+                if (x >= d.X0 && x <= d.X1)   // a box's deck by its share of the beam, a sloped deck's flat by its own
+                    mm[i] += d.ThicknessMm * Quality(q, d.Material) * (double.IsNaN(d.W) ? 1 : Math.Min(1, d.W / c.Beam))
+                             * (double.IsNaN(d.SlopeReach) ? 1 : Math.Max(0, 1 - 2 * d.SlopeReach / c.Beam));
+            // the slopes by theirs, as thick as a line straight down through them
+            foreach (var p in c.Inclined)
+                if (x >= p.X0 && x <= p.X1 && p.Kind == InclinedKind.Slope)
+                {
+                    double reach = Math.Abs(p.U1 - p.U0), along = Math.Sqrt(reach * reach + (p.Z1 - p.Z0) * (p.Z1 - p.Z0));
+                    mm[i] += p.ThicknessMm * Quality(q, p.Material) * along / reach * Math.Min(1, 2 * reach / c.Beam);
+                }
         }
         return Shares(mm);
+    }
+
+    /// <summary>An inclined plate's rise over its width up its face (the sine of its angle off the horizontal).</summary>
+    static double Rise(in InclinedRow p)
+    {
+        double dz = p.Z1 - p.Z0, du = p.U1 - p.U0;
+        return dz / Math.Sqrt(dz * dz + du * du);
     }
 
     static double Quality(double[] q, int material) => material >= 0 && material < q.Length ? q[material] : 1;

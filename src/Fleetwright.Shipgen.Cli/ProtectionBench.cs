@@ -175,7 +175,8 @@ static class ProtectionBench
             }
             if (x.Kind is CrossingKind.Plate or CrossingKind.HullIn or CrossingKind.HullOut or CrossingKind.PartIn or CrossingKind.PartOut && x.Mm > 0)
                 mm += x.Mm;
-            if (x.Kind == CrossingKind.Plate && x.Plate is PlateKind.Deck or PlateKind.Bulkhead or PlateKind.ArmourDeck or PlateKind.ArmourBulkhead or PlateKind.Grating)
+            if (x.Kind == CrossingKind.Plate && x.Plate is PlateKind.Deck or PlateKind.Bulkhead or PlateKind.ArmourDeck or PlateKind.ArmourBulkhead or PlateKind.Grating
+                or PlateKind.Inclined)
                 inner++;
         }
         return false;
@@ -238,6 +239,7 @@ static class ProtectionBench
         PlateKind.SideArmour => c.SidePlateId(x.Index).ToLowerInvariant(),
         PlateKind.ArmourDeck => "armour deck",
         PlateKind.ArmourBulkhead => "armour bulkhead",
+        PlateKind.Inclined => c.InclinedId(x.Index).ToLowerInvariant(),
         PlateKind.Grating => "grating",
         PlateKind.Deck => c.DeckId(x.Index).ToLowerInvariant(),
         PlateKind.Bulkhead => c.Bulkheads[x.Index].Kind.ToString().ToLowerInvariant() + " bulkhead",

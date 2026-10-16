@@ -1,6 +1,6 @@
 # Plan: subdivision and protection schemes
 
-2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Done: H0-H5 (2026-10-16). Next: H6, in a session of its own. Research: `research/09_protection_schemes.md`
+2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Done: H0-H5, H6a (2026-10-16). Next: H6b (inclined belts). Research: `research/09_protection_schemes.md`
 (the families, the layers, the bulkhead kinds), on top of `01_capital_subdivision.md` and `03_small_vessels.md`.
 
 This comes before phase P of `docs/battle/shells-armour-damage.md` (materials as data). The user wants the subdivision
@@ -307,6 +307,35 @@ this plan builds the layers so E1 has something to work on.
   is the bunker. This is a stated simplification: the tracer gets the plate and its angle exactly, and only a burst just
   under the slope is booked to the wing instead of the vitals. A finer split can come later if the bench shows it matters.
 - This reverses the 2026-10-03 shelving of turtlebacks (TODO "Shelved by the user"), so it needs the user's yes.
+
+- **H6a done 2026-10-16** (deck slopes; inclined belts are H6b). Flat keys again: a deck's `slope_mm` and `slope_deg`
+  (default `Armour.SlopeDegDefault` 30° [INFERRED]; limits 10-60°). Off by default: goldens unchanged (372 of 372), no
+  version bump.
+  - The primitive is `InclinedPlate` (`armour.inclined` in the hitboxes): over x0..x1 from z0 up to z1, u0 in from the
+    side at z0 and u1 at z1, the side's half-breadth taken at `side_z`, so it follows the hull along its length (a plane
+    in a fine end would gape or stand outside it). A slope runs from the flat's edge down to the side at the belt's lower
+    edge; the flat stops `slope_reach` in from the side (measured at `slope_foot`). In a fine end narrower than the
+    reach the two slopes meet at the centreline, a ridge, and the flat is gone.
+  - The tracer crosses it exactly: at one height the hull's half-breadth is linear between stations, so along a segment
+    the plate's equation is linear strip by strip (a first try with fixed-point steps, then Newton's, missed crossings
+    near the ridge, where a segment can meet one side's slope twice).
+  - Weight: the slopes take the outer reach each side of the deck's breadth, longer by 1/cos of their angle.
+  - Cells stay boxes, but a single wing wall can't follow a slope that moves several metres inboard over one tier
+    (Dreadnought's: 8.5 m at 30° over 4.9 m of height). Each tier the slope passes through gets its wing wall where the
+    slope stands at the tier's top, a staircase: what's over the slope is the wing's, and a little under it too (the
+    stated simplification, never the other way). A TDS, the inner line and a magazine's wing up to its crown keep their
+    walls; wing bunkers' wall moves in where the slope is inboard of it.
+  - Effects: fragments through a deck see its armour only where the flat is over the meeting of the two cells, and any
+    inclined plate on the line from the burst to the neighbour counts (`Effects.InclinedMm`). The matchup adds a slope
+    behind the side as thick as a level line through it, and on the deck by its share of the beam as thick as a plumb
+    line. Shell-test aims only under the armour (a point over a slope is outside it).
+  - Dreadnought with her 44 mm flat and 70 mm slopes (for the 76 mm deck): +102 t standard (the shell plating thickens
+    3.6 mm: the flat deck is narrower in the girder). Shell-test leaks as before (the uptake gratings only). 12" AP at 12
+    km, 10 hits: crippled 13 → 10 %, out of the fight 9 → 6 %, lost to the magazine 4.5 → 2 % (all through the turrets).
+    A protected cruiser (the armoured cruiser with no belt, a 51 mm flat and 76 mm slopes the whole length): shell-test
+    no leaks; against a 51 mm flat deck, +789 t; 6" at 6 km moves little (power after 10 HE hits 93 → 96 %).
+  - The default 30° gives long slopes on hulls whose belt reaches deep (the reach is the rise over tan 30°); H8's
+    templates should give each family its angle.
 
 ### H7. Subdivision checks (§7.4.5)
 - A warning when two adjacent main compartments flood past the floodable length at the design draught. It reproduces

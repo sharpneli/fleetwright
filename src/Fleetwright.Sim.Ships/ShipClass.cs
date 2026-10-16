@@ -37,6 +37,7 @@ public sealed class ShipClass
     internal SidePlateRow[] sidePlates = [];
     internal ArmourBulkheadRow[] armourBulkheads = [];
     internal ArmourDeckRow[] armourDecks = [];
+    internal InclinedRow[] inclined = [];
     internal int[] links = [];
     internal Pt[] points = [];
     internal double[] numbers = [];
@@ -47,7 +48,7 @@ public sealed class ShipClass
     internal int[] functionNodes = [], mountOfComponent = [];
     internal double[] powerKn = [], powerShp = [];
     internal string[] componentIds = [], turretTypeIds = [], cellIds = [], roomIds = [], bulkheadIds = [], deckIds = [], tierIds = [],
-        sectionIds = [], sidePlateIds = [], armourBulkheadIds = [], materials = [];
+        sectionIds = [], sidePlateIds = [], armourBulkheadIds = [], inclinedIds = [], materials = [];
     internal FrozenDictionary<string, int> componentIndex = null!, cellIndex = null!, roomIndex = null!, bulkheadIndex = null!,
         deckIndex = null!, tierIndex = null!, sectionIndex = null!;
 
@@ -149,6 +150,8 @@ public sealed class ShipClass
     public ReadOnlySpan<SidePlateRow> SidePlates => sidePlates;
     public ReadOnlySpan<ArmourBulkheadRow> ArmourBulkheads => armourBulkheads;
     public ReadOnlySpan<ArmourDeckRow> ArmourDecks => armourDecks;
+    /// <summary>The inclined plates: the decks' slopes (protection-plan.md H6).</summary>
+    public ReadOnlySpan<InclinedRow> Inclined => inclined;
 
     /// <summary>What the damage model asks of the ship's parts (docs/battle/fighting.md 4.3a): each function's needs, as
     /// nodes (<see cref="FunctionNodes"/>).</summary>
@@ -186,6 +189,7 @@ public sealed class ShipClass
     public string SectionId(int i) => sectionIds[i];
     public string SidePlateId(int i) => sidePlateIds[i];
     public string ArmourBulkheadId(int i) => armourBulkheadIds[i];
+    public string InclinedId(int i) => inclinedIds[i];
     /// <summary>A material's name (armour and plating: "Krupp cemented", "STS", "steel"), or null for -1.</summary>
     public string? Material(int i) => i < 0 ? null : materials[i];
     public int MaterialCount => materials.Length;

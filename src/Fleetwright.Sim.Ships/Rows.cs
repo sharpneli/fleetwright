@@ -1,3 +1,5 @@
+using Fleetwright.Shipgen;
+
 namespace Fleetwright.Sim.Ships;
 
 // The rows of ShipClass's tables: immutable structs of numbers and indices, nothing that can't be written as it is
@@ -584,8 +586,51 @@ public readonly record struct ArmourBulkheadRow(double X, double ThicknessMm, do
 public readonly record struct ArmourDeckRow(int Deck, double ThicknessMm, Extent Extent, double X0, double X1, double Z, bool Main, bool Roof, int Material,
     double W = double.NaN)
 {
-    /// <summary>Whether it covers (x, y): its stretch, and its width when it has one.</summary>
-    public bool Covers(double x, double y) => x >= X0 && x <= X1 && !(Math.Abs(y) > W / 2);
+    /// <summary>A deck with slopes (protection-plan.md H6): the flat stops SlopeReach in from the side, its half-breadth
+    /// taken at SlopeFoot (NaN: flat to the side).</summary>
+    public double SlopeReach { get; init; } = double.NaN;
+    public double SlopeFoot { get; init; } = double.NaN;
+
+    /// <summary>Whether it covers (x, y): its stretch, and its width when it has one, and its flat's when it has slopes.</summary>
+    public bool Covers(double x, double y, HullField hull) =>
+        x >= X0 && x <= X1 && !(Math.Abs(y) > W / 2) && (double.IsNaN(SlopeReach) || Math.Abs(y) <= hull.HalfWidth(x, SlopeFoot) - SlopeReach);
+}
+
+/// <summary>An inclined longitudinal plate each side (protection-plan.md H6): a deck's slope. Over X0..X1 from Z0 up to
+/// Z1, U0 in from the side at Z0 and U1 at Z1, linear between, the side's half-breadth taken at SideZ; ThicknessMm thick,
+/// BottomMm at Z0 tapering from TaperFrom down (NaN: one thickness).</summary>
+public readonly record struct InclinedRow
+{
+    public InclinedKind Kind { get; init; }
+    public double ThicknessMm { get; init; }
+    public double X0 { get; init; }
+    public double X1 { get; init; }
+    public double Z0 { get; init; }
+    public double Z1 { get; init; }
+    public double U0 { get; init; }
+    public double U1 { get; init; }
+    public double SideZ { get; init; }
+    public int Material { get; init; }
+    public double BottomMm { get; init; }
+    public double TaperFrom { get; init; }
+
+    /// <summary>How far in from the side it stands at a height.</summary>
+    public double InboardAt(double z) => U0 + (z - Z0) * (U1 - U0) / (Z1 - Z0);
+
+    /// <summary>Its thickness at a height: tapering below TaperFrom to BottomMm at Z0.</summary>
+    public double MmAt(double z) => !double.IsNaN(BottomMm) && !double.IsNaN(TaperFrom) && z < TaperFrom && TaperFrom > Z0
+        ? BottomMm + (ThicknessMm - BottomMm) * Math.Clamp((z - Z0) / (TaperFrom - Z0), 0, 1)
+        : ThicknessMm;
+
+    /// <summary>How far out from the centreline the plate stands at (x, z), either side (negative: none there, a fine end
+    /// narrower than its reach).</summary>
+    public double YAt(HullField hull, double x, double z) => hull.HalfWidth(x, SideZ) - InboardAt(z);
+}
+
+public enum InclinedKind : byte
+{
+    /// <summary>A deck's slope.</summary>
+    Slope,
 }
 
 // ------------------------------------------------------------------ the hull

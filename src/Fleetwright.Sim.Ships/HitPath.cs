@@ -33,6 +33,8 @@ public enum PlateKind : byte
     Grating,
     /// <summary>An armoured transverse bulkhead (Index: ShipClass.ArmourBulkheads).</summary>
     ArmourBulkhead,
+    /// <summary>An inclined plate, a deck's slope (Index: ShipClass.Inclined).</summary>
+    Inclined,
     /// <summary>A barbette's wall (Index: the component).</summary>
     Barbette,
     /// <summary>A turret's face, side, rear or roof (Index: the component).</summary>
@@ -129,6 +131,7 @@ public sealed class HitPath
                 PlateKind.ArmourDeck => $"armour deck on {c.DeckId(c.ArmourDecks[x.Index].Deck)}",
                 PlateKind.Grating => $"grating in the armour deck on {c.DeckId(c.ArmourDecks[x.Index].Deck)}",
                 PlateKind.ArmourBulkhead => c.ArmourBulkheadId(x.Index),
+                PlateKind.Inclined => c.InclinedId(x.Index),
                 PlateKind.Deck => $"deck {c.DeckId(x.Index)}",
                 PlateKind.Bulkhead => $"bulkhead {c.BulkheadId(x.Index)}",
                 PlateKind.HullSide => "hull side",

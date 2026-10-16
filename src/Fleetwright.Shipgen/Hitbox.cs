@@ -246,9 +246,20 @@ public static class Hitbox
         string BoxDeck(double zKeel) => inner.Subdivision.Decks.MinBy(sd => Math.Abs(sd.Z - Rz(zKeel)))!.Id;
         if (ag.Decks.Count + boxDecks.Count > 0)
             armour.Decks = ag.Decks.Select(d => new ArmourDeckReport(Decks.DeckName(d.Deck), d.Mm, d.Extent, Math.Round(d.X0, 3), Math.Round(d.X1, 3),
-                    Rz(d.Z), d.Z == ag.MainZ, d.Z == ag.RoofZ, NonEmpty(d.Material)) { W = d.W is double w && w > 0 ? Math.Round(w, 3) : null })
+                    Rz(d.Z), d.Z == ag.MainZ, d.Z == ag.RoofZ, NonEmpty(d.Material))
+                {
+                    W = d.W is double w && w > 0 ? Math.Round(w, 3) : null,
+                    SlopeReach = d.Reach > 0 ? Math.Round(d.Reach, 3) : null, SlopeFoot = d.Reach > 0 ? Rz(d.FootZ) : null,
+                })
                 .Concat(boxDecks.Select(d => new ArmourDeckReport(BoxDeck(d.Z), d.Mm, d.Extent, Math.Round(d.X0, 3), Math.Round(d.X1, 3), Rz(d.Z),
                     false, false, NonEmpty(d.Material)) { W = Math.Round(d.W ?? 0, 3) })).ToList();
+        if (ag.Inclined.Count > 0)
+            armour.Inclined = ag.Inclined.Select(p => new InclinedReport(p.Id, p.Kind, Math.Round(p.Mm, 1), Math.Round(p.X0, 3), Math.Round(p.X1, 3),
+                Rz(p.Z0), Rz(p.Z1), Math.Round(p.U0, 3), Math.Round(p.U1, 3), Rz(p.SideZ))
+            {
+                Material = NonEmpty(p.Material), BottomMm = p.BottomMm is double bm && bm != p.Mm ? Math.Round(bm, 1) : null,
+                TaperFrom = p.BottomMm is double bm2 && bm2 != p.Mm && p.TaperFrom is double tf ? Rz(tf) : null,
+            }).ToList();
 
         var form = inner.Form;
         var sub = inner.Subdivision;

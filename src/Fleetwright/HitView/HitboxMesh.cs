@@ -704,9 +704,25 @@ public sealed class HitboxMesh
                 // inset from the side; stations where the hull is too narrow there are left out (hitview let the two
                 // sides cross into a bow tie)
                 var row = Enumerable.Range(0, 13).Select(k => d.X0 + (d.X1 - d.X0) * k / 12)
-                    .Select(x => (X: x, W: HalfWidth(x, d.Z) - 0.2)).Where(p => p.W > 0.01).ToList();
+                    .Select(x => (X: x, W: d.SlopeReach is double r && d.SlopeFoot is double f ? HalfWidth(x, f) - r : HalfWidth(x, d.Z) - 0.2))
+                    .Where(p => p.W > 0.01).ToList();
                 var pts = row.Select(p => new Pt(p.X, p.W)).Concat(Enumerable.Reverse(row).Select(p => new Pt(p.X, -p.W))).ToList();
                 Add("armour_deck", $"{d.Deck} armour", d, pts, d.Z - 0.15, d.Z);
+            }
+            foreach (var p in arm.Inclined ?? [])
+            {
+                // a strip each side at every height, in from the side as the plate is there (none past the centreline)
+                var xs = XsOver(p.X0, p.X1);
+                double U(double z) => p.U0 + (z - p.Z0) * (p.U1 - p.U0) / (p.Z1 - p.Z0);
+                var zs = Enumerable.Range(0, 9).Select(k => p.Z0 + (p.Z1 - p.Z0) * k / 8).ToList();
+                foreach (int side in new[] { 1, -1 })
+                    AddLoft("armour_deck", $"{p.Id}, {(side > 0 ? "starboard" : "port")}", p, zs, z =>
+                    {
+                        var ys = xs.Select(x => Math.Max(HalfWidth(x, p.SideZ) - U(z), 0.0)).ToList();
+                        var outer = xs.Select((x, k) => new P3(x, side * (ys[k] + 0.1), z));
+                        var inner = xs.Select((x, k) => new P3(x, side * Math.Max(ys[k] - 0.1, 0.0), z)).Reverse();
+                        return [.. outer, .. inner];
+                    });
             }
         }
 

@@ -326,6 +326,7 @@ public static class Subdivision
         var mags = rooms.Where(r => r.Kind == "magazine").ToList();
         var magWingCells = new HashSet<Cell>();   // wing cells a magazine may not take
         var crowns = new Dictionary<int, double>();   // by section: the magazines' crown there
+        var stairWalls = new HashSet<Bulkhead>();   // a slope's wing walls, tier by tier
         bool centreline = design.Machinery?.CentrelineBulkhead ?? false;
 
         List<double> XsIn(double x0, double x1, int n = 8) => Enumerable.Range(0, n).Select(j => x0 + (x1 - x0) * (j + 0.5) / n).ToList();
@@ -401,6 +402,21 @@ public static class Subdivision
                 if (split is not null && innerLine && inCit)
                     sTop = Math.Max(sTop, under);
             }
+            // a sloped deck over it (protection-plan.md H6): the space over the slope is a wing. Cells stay boxes, so each tier
+            // the slope passes through gets its wing wall where the slope stands at the tier's top, a staircase down to its
+            // foot: what's over the slope is the wing's, and a little under it too (a burst just under the slope is booked to
+            // the wing, never one on it to the vitals); the walls a design asked for (a TDS, the inner line, a magazine's
+            // wing up to its crown) stay where they are
+            var slope = ag.Decks.FirstOrDefault(d => d.Reach > 0 && d.X0 <= xm && xm <= d.X1);
+            double slopeFoot = 0, slopeTop = 0, slopeHw = 0, fixedTop = double.NegativeInfinity;
+            if (slope is not null)
+            {
+                (slopeFoot, slopeTop) = (Rz(slope.FootZ), Rz(slope.Z));
+                slopeHw = SteelFrame * XsIn(sx0, sx1).Min(x => form.HalfWidth(x, slope.FootZ));
+                fixedTop = split is null || sKind == "wing" && wingM > 0 && inMach ? double.NegativeInfinity
+                    : sKind == "tds" || innerLine && inCit ? double.PositiveInfinity : crowns.GetValueOrDefault(si, double.NegativeInfinity);
+            }
+            var stairs = new List<(string Tier, double Base, double Top, double Y)>();   // the slope's wing walls, tier by tier
             if (split >= hwmax - 0.3)
                 split = null;
             // the inner bulkhead's armour on this section's wall: thicker beside a magazine (protection-plan.md H4)
@@ -456,25 +472,41 @@ public static class Subdivision
                 double trTop = trUp.Top, trBase = tr.Base;
                 bool centreSplit = cl && !bottom && trTop <= under + 1e-6;
                 double hwT = Math.Min(hwmax, WidestIn(x0, x1, trBase, trTop));
-                bool banded = split is not null && !bottom && trTop <= sTop + PlatformTol && split.Value < hwT - 0.3;
-                if (banded)
+                double? ts = split;
+                if (slope is not null && !bottom && trTop > slopeFoot + PlatformTol && trBase < slopeTop - PlatformTol && trBase >= fixedTop - PlatformTol)
+                {
+                    double zm = Math.Min(trTop, slopeTop);
+                    double ys0 = Math.Max(0.5, slopeHw - slope.Reach * (zm - slopeFoot) / (slopeTop - slopeFoot));
+                    if (split is null || ys0 < split.Value - 0.05)
+                        ts = ys0;
+                }
+                bool stair = ts != split;
+                bool banded = ts is not null && !bottom && (stair || trTop <= sTop + PlatformTol) && ts.Value < hwT - 0.3;
+                if (banded && !stair)
                     loBase[sec.Id] = Math.Min(loBase.GetValueOrDefault(sec.Id, trBase), trBase);
+                if (banded && stair)
+                {
+                    if (stairs.Count > 0 && Math.Abs(stairs[^1].Y - ts!.Value) < 1e-3 && Math.Abs(stairs[^1].Top - trBase) < 1e-6)
+                        stairs[^1] = stairs[^1] with { Top = trUp.Top };
+                    else
+                        stairs.Add((tr.Id, trBase, trUp.Top, ts!.Value));
+                }
                 List<(string Band, double Y0, double Y1)> ys;
                 if (banded)
                 {
-                    double s2 = split!.Value;
+                    double s2 = ts!.Value;
                     // a layered TDS: a band a layer, P1 against the holding bulkhead out to the shell; the walls the hull at
                     // this height doesn't reach past leave the outer layers out
-                    var walls = layerYs.Where(y => y < hwT - 0.1).ToList();
+                    var walls = stair ? [] : layerYs.Where(y => y < hwT - 0.1).ToList();
                     ys = [];
                     for (int k = walls.Count; k >= 0; k--)
-                        ys.Add((walls.Count == 0 && layerYs.Count == 0 ? "P" : $"P{k + 1}", -(k < walls.Count ? walls[k] : hwT), -(k > 0 ? walls[k - 1] : s2)));
+                        ys.Add((walls.Count == 0 && (stair || layerYs.Count == 0) ? "P" : $"P{k + 1}", -(k < walls.Count ? walls[k] : hwT), -(k > 0 ? walls[k - 1] : s2)));
                     if (centreSplit)
                         ys.AddRange([("CP", -s2, 0.0), ("CS", 0.0, s2)]);
                     else
                         ys.Add(("C", -s2, s2));
                     for (int k = 0; k <= walls.Count; k++)
-                        ys.Add((walls.Count == 0 && layerYs.Count == 0 ? "S" : $"S{k + 1}", k > 0 ? walls[k - 1] : s2, k < walls.Count ? walls[k] : hwT));
+                        ys.Add((walls.Count == 0 && (stair || layerYs.Count == 0) ? "S" : $"S{k + 1}", k > 0 ? walls[k - 1] : s2, k < walls.Count ? walls[k] : hwT));
                 }
                 else
                     ys = centreSplit ? [("CP", -hwT, 0.0), ("CS", 0.0, hwT)] : [("C", -hwT, hwT)];
@@ -525,7 +557,7 @@ public static class Subdivision
                         c.BeltMm = (long)Math.Round(mm);
                         c.BeltMaterial = string.IsNullOrEmpty(b.Material) ? null : b.Material;
                     }
-                    if (banded && Wing(band) && inCit && tds > 0)
+                    if (banded && !stair && Wing(band) && inCit && tds > 0)
                     {
                         double zm = (trBase + trTop) / 2 + D;
                         c.TdsM = Math.Round(Math.Max(0.0, SteelFrame * xsI.Min(x => form.HalfWidth(x, zm)) - split!.Value), 2);
@@ -533,15 +565,28 @@ public static class Subdivision
                     cells.Add(c);
                 }
             }
+            // the slope's walls, one a tier (protection-plan.md H6)
+            foreach (var (tid, b0, b1, y) in stairs)
+                foreach (var (side, sgn) in new[] { ("S", 1), ("P", -1) })
+                {
+                    var w = new Bulkhead
+                    {
+                        Id = $"Wing bulkhead {sec.Id} {side} ({tid})",
+                        Kind = "wing", Section = sec.Id, Side = side, Y = Math.Round(sgn * y, 3), X0 = Math.Round(sx0, 3), X1 = Math.Round(sx1, 3),
+                        Base = Math.Round(b0, 2), Top = Math.Round(b1, 2),
+                    };
+                    longi.Add(w);
+                    stairWalls.Add(w);
+                }
         }
         double vU = cells.Sum(c => c.VUnder);
         double underK = vU > 0 ? cb * L * B * T / vU : 1.0;
         foreach (var c in cells)
             c.VolumeM3 = c.VUnder * underK + c.VOver;
         foreach (var l_ in longi)
-            if (loBase.TryGetValue(l_.Section!, out var lb) && l_.Kind != "centreline")
+            if (loBase.TryGetValue(l_.Section!, out var lb) && l_.Kind != "centreline" && !stairWalls.Contains(l_))
                 l_.Base = Math.Round(lb, 2);
-        longi = longi.Where(l_ => l_.Kind == "centreline" || loBase.ContainsKey(l_.Section!)).ToList();
+        longi = longi.Where(l_ => l_.Kind == "centreline" || stairWalls.Contains(l_) || loBase.ContainsKey(l_.Section!)).ToList();
 
         // ---------------- slivers join the cell above (or below) ----------------
         bool Flat(int t) => tiers[t].Spans == null;

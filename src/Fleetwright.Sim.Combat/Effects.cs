@@ -251,10 +251,10 @@ public static class Effects
                     continue;
                 double join = n.Join switch
                 {
-                    JoinKind.Deck => DeckMm(c, n.Through, c.Cells[n.Cell].Box),
+                    JoinKind.Deck => DeckMm(c, n.Through, c.Cells[cell].Box, c.Cells[n.Cell].Box),
                     JoinKind.Bulkhead => c.Bulkheads[n.Through].PlateMm + c.Bulkheads[n.Through].ArmourMm,
                     _ => 0,
-                };
+                } + InclinedMm(c, p, Nearest(c.Cells[n.Cell].Box, p));
                 if (join >= FragPenMm(shell, Math.Max(d, 0.1)))
                     continue;
                 if (n.Join != JoinKind.Open)
@@ -398,16 +398,39 @@ public static class Effects
 
     static double Q(ReadOnlySpan<double> quality, int material) => material >= 0 && material < quality.Length ? quality[material] : 1;
 
-    /// <summary>A deck between two cells, over the cell beyond: its plate, and the armour on it there (each piece of a
-    /// deck armoured in several, a magazine box's crown or floor).</summary>
-    static double DeckMm(ShipClass c, int deck, in Box beyond)
+    /// <summary>A deck between two cells, where they meet: its plate, and the armour on it there (each piece of a deck
+    /// armoured in several, a magazine box's crown or floor; none over a sloped deck's slopes, which InclinedMm finds).</summary>
+    static double DeckMm(ShipClass c, int deck, in Box here, in Box beyond)
     {
-        double mm = c.Decks[deck].PlateMm, x = (beyond.X0 + beyond.X1) / 2, y = (beyond.Y0 + beyond.Y1) / 2;
+        double mm = c.Decks[deck].PlateMm;
+        double x = (Math.Max(here.X0, beyond.X0) + Math.Min(here.X1, beyond.X1)) / 2, y = (Math.Max(here.Y0, beyond.Y0) + Math.Min(here.Y1, beyond.Y1)) / 2;
         foreach (ref readonly var a in c.ArmourDecks)
-            if (a.Deck == deck && a.Covers(x, y))
+            if (a.Deck == deck && a.Covers(x, y, c.Hull))
                 mm += a.ThicknessMm;
         return mm;
     }
+
+    /// <summary>The inclined plates (a deck's slopes) between two points: those whose surface the line between them
+    /// crosses, on the first point's side of the ship.</summary>
+    static double InclinedMm(ShipClass c, P3 a, P3 b)
+    {
+        double mm = 0;
+        int sgn = a.Y < 0 ? -1 : 1;
+        foreach (ref readonly var p in c.Inclined)
+        {
+            // the plate's surface where the side is: G = sgn·y - (hw - u), its sign each end
+            double ga = sgn * a.Y - p.YAt(c.Hull, a.X, a.Z), gb = sgn * b.Y - p.YAt(c.Hull, b.X, b.Z);
+            if (ga * gb >= 0)
+                continue;
+            double f = ga / (ga - gb), x = a.X + f * (b.X - a.X), z = a.Z + f * (b.Z - a.Z);
+            if (x >= p.X0 && x <= p.X1 && z >= p.Z0 && z <= p.Z1 && sgn * (a.Y + f * (b.Y - a.Y)) >= 0)
+                mm += p.MmAt(z);
+        }
+        return mm;
+    }
+
+    /// <summary>The point of a box nearest p.</summary>
+    static P3 Nearest(in Box b, P3 p) => new(Math.Clamp(p.X, b.X0, b.X1), Math.Clamp(p.Y, b.Y0, b.Y1), Math.Clamp(p.Z, b.Base, b.Top));
 
     /// <summary>How far a point is from a part: a mount's turret (a cylinder about its pivot), else its box.</summary>
     internal static double Distance(ShipClass c, int i, P3 p)

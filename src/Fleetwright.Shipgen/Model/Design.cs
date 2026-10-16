@@ -371,6 +371,10 @@ public sealed record ArmourDeckInput
     public double? Mm { get; init; }
     /// <summary>A citadel deck's plate over the magazines (protection-plan.md H5; null: mm).</summary>
     public double? MagazinesMm { get; init; }
+    /// <summary>Its slopes (protection-plan.md H6): each side the deck turns down at SlopeDeg from the horizontal (null:
+    /// Armour.SlopeDegDefault) to meet the side at the belt's lower edge, SlopeMm thick (null or 0: flat to the side).</summary>
+    public double? SlopeMm { get; init; }
+    public double? SlopeDeg { get; init; }
     public string? Extent { get; init; }
     public string? Material { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
