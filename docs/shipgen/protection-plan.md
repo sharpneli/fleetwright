@@ -1,6 +1,6 @@
 # Plan: subdivision and protection schemes
 
-2026-10-16. Status: proposal, waiting on the user's decisions (end of the doc). Research: `research/09_protection_schemes.md`
+2026-10-16. Status: agreed 2026-10-16 (decisions at the end). Research: `research/09_protection_schemes.md`
 (the families, the layers, the bulkhead kinds), on top of `01_capital_subdivision.md` and `03_small_vessels.md`.
 
 This comes before phase P of `docs/battle/shells-armour-damage.md` (materials as data). The user wants the subdivision
@@ -199,13 +199,10 @@ this plan builds the layers so E1 has something to work on.
 H1–H2 are the destroyer fix and can ship first. H3–H5 are independent of each other once H0 exists. Phase P can start
 after H5, or after H6 if slopes are in.
 
-## Questions for the user
+## Decisions (user, 2026-10-16)
 
-1. **Turtlebacks (H6):** un-shelve sloped decks? The research says the protected cruiser can't be made without them and
-   the 1890–1915 ships lack their second line. Recommended: yes, after H1–H5.
-2. **Wing width (H2):** 0.1 B by default, on destroyers too? The ends are narrow, so their magazines grow longer and
-   the ships grow a little.
-3. **Crown margin (H1):** 0.4 m under the full-load waterline to start; the bench can show the spread.
-4. **The destroyer anchor:** `DamageTests` allows 20% lost (widened for this gap). Narrow it back after H2 to the
-   measured figure plus a margin?
-5. **Phase P's place:** after H5 (recommended), or after the whole plan?
+1. **Turtlebacks come back** (H6): "now it's time for them to come back". DECISIONS.md's 2026-10-03 shelving is reversed.
+2. **Wing width** (H2): 0.1 B by default, destroyers included, configurable as usual.
+3. **Crown margin** (H1): 0.4 m under the full-load waterline to start.
+4. **The destroyer anchor**: narrowed back after H2 to the measured figure plus a margin ("we'll see what happens").
+5. **Phase P** comes after H5.

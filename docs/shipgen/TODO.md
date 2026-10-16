@@ -130,5 +130,3 @@ Open shipgen items, one line each (details in DECISIONS.md, which was shipgen's 
 - [ ] Baked light rim on blocks and funnels
 - [ ] Missiles, helicopters and electronics for Cold War ships
 
-## Shelved by the user
-- Turtleback (sloped) armour decks (`protection-plan.md` H6 asks to un-shelve them)
