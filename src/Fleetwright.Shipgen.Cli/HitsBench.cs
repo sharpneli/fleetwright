@@ -16,7 +16,8 @@ static class HitsBench
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-    public record Options(string? Shooter, int Battery, string? Kind, double RangeM, double AspectDeg, int N, int PerShip, int Seed, int Trace, double SettleMin);
+    public record Options(string? Shooter, int Battery, string? Kind, double RangeM, double AspectDeg, int N, int PerShip, int Seed, int Trace, double SettleMin,
+        string? Loadout = null);
 
     public static int Run(string target, Func<string, Design> load, string settingsPath, Options o)
     {
@@ -26,7 +27,14 @@ static class HitsBench
         if (o.Battery < 0 || o.Battery >= sc.Batteries.Length)
             throw new ArgumentException($"{sc.Name} has no battery {o.Battery}");
         var b = sc.Batteries[o.Battery];
-        int type = b.Fires;
+        // the shooter's loadout: her design's, or one given (docs/battle/shells-armour-damage.md S5)
+        var lo = sc.Loadout;
+        if (o.Loadout != null)
+        {
+            var errors = new List<string>();
+            lo = sc.Load(LoadoutSpec.Parse(o.Loadout), errors) ?? throw new ArgumentException($"--loadout: {string.Join("; ", errors)}");
+        }
+        int type = lo.Fires(o.Battery);
         if (o.Kind != null)
         {
             var kind = o.Kind.ToLowerInvariant() switch
@@ -37,13 +45,13 @@ static class HitsBench
                 _ => throw new ArgumentException($"no shell kind {o.Kind} (ap, common, he)"),
             };
             type = -1;
-            foreach (var l in sc.ShellLoads(b.Shells))
-                if (sc.ShellTypes[l.ShellType].Kind == kind)
+            foreach (var l in lo.Loads(o.Battery))
+                if (lo.ShellTypes[l.ShellType].Kind == kind)
                     type = l.ShellType;
             if (type < 0)
                 throw new ArgumentException($"{sc.Name}'s battery {o.Battery} carries no {o.Kind}");
         }
-        var shell = sc.ShellTypes[type];
+        var shell = lo.ShellTypes[type];
         double maxElev = sc.Mounts[sc.Links(b.Mounts)[0]].MaxElevationDeg;
         int traced = 0;
         var sw = Stopwatch.StartNew();
@@ -60,7 +68,7 @@ static class HitsBench
         double secs = sw.Elapsed.TotalSeconds;
 
         Console.WriteLine(string.Format(Inv, "{0} on {1}: {2} ({3:0.#} kg, filler {4:0.##} kg, {5} {6}) at {7:0} m ({8:0.0} kyd) from {9:0}° off the bow",
-            sc.Name, tc.Name, sc.ShellTypeId(type), shell.MassKg, shell.FillerKg, shell.Fuze, shell.Fuze == Fuze.Base ? $"{shell.FuzeDelayS:0.###} s" : "",
+            sc.Name, tc.Name, lo.ShellTypeId(type), shell.MassKg, shell.FillerKg, shell.Fuze, shell.Fuze == Fuze.Base ? $"{shell.FuzeDelayS:0.###} s" : "",
             o.RangeM, o.RangeM / 914.4, o.AspectDeg));
         Console.WriteLine(string.Format(Inv, "  falling at {0:0.0}°, striking at {1:0} m/s: {2} hits on {3} ship(s) in {4:0.00} s ({5:0} µs a hit)", r.FallDeg,
             r.StrikeMs, r.Hits, r.Ships, secs, secs * 1e6 / Math.Max(r.Hits, 1)));

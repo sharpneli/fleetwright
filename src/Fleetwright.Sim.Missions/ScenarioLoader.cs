@@ -79,6 +79,7 @@ public static class ScenarioLoader
         foreach (var (side, factor) in s.Propellant)
             w.Apply(DamageSystem.SetPropellant(side, factor));
         var tasked = new List<(ScenarioUnit Top, Unit Unit)>();
+        var loadouts = new Dictionary<(int Class, LoadoutSpec Spec), int>();   // a loadout of a class, made once (-1: it didn't fit)
         var placed = new List<(ScenarioUnit Squadron, int Index, double AsternM, double AbeamM)>();
         var entities = new Dictionary<(ScenarioUnit, int), int>();   // a unit by identity (it has no Equals of its own)
         foreach (var top in s.Units)
@@ -124,6 +125,19 @@ public static class ScenarioLoader
                     start.ShipNames[e] = spec.Names[nth];
                 if (nth < spec.Dyes.Length && spec.Dyes[nth] != Dye.None)
                     w.Apply(ShipSystem.Dye(e, spec.Dyes[nth]));
+                if (spec.Loadout is { } ls)
+                {
+                    if (!loadouts.TryGetValue((cls, ls), out int lo))
+                    {
+                        var errors = new List<string>();
+                        var made = w.Ships.Registry.Get(cls)!.Load(ls, errors);
+                        loadouts[(cls, ls)] = lo = made == null ? -1 : w.Ships.Registry.AddLoadout(made);
+                        if (made == null)
+                            start.Warnings.Add($"{spec.Design}: {ls.Name}: {string.Join("; ", errors)} (her design's shells kept)");
+                    }
+                    if (lo >= 0)
+                        w.Apply(ShipSystem.Load(e, lo));
+                }
             }
 
             // the groups bottom-up, then the top unit's orders

@@ -191,8 +191,11 @@ public static class Ammunition
 
     /// <summary>Each gun battery's resolved shells, main batteries first, in the design's order: its `shells`, else the
     /// default outfit. Two batteries of one gun (kind, calibre and length) that carry different shells: the first's are
-    /// used, with a warning, since the sim fires one gun's shells from one battery. Expects a valid design.</summary>
-    public static List<BatteryShells> Resolve(Design design, List<string> warnings)
+    /// used, with a warning, since the sim fires one gun's shells from one battery. Expects a valid design.
+    /// <para><paramref name="gun"/> is the design whose outfit sets each gun's muzzle velocity (its heaviest shell's), when
+    /// that isn't this one: a loadout's (<see cref="WithLoadout"/>), so a heavier shell than the design's leaves the gun
+    /// slower by the fourth-root rule, as a lighter kind leaves it faster.</para></summary>
+    public static List<BatteryShells> Resolve(Design design, List<string> warnings, Design? gun = null)
     {
         var res = new List<BatteryShells>();
         foreach (var (which, list) in new[] { ("main", design.Main), ("secondary", design.Secondary) })
@@ -203,7 +206,8 @@ public static class Ammunition
                     continue;
                 var outfit = Outfit(design, b, which == "main");
                 var masses = outfit.Select(e => e.MassKg).ToArray();
-                double heavyKg = masses.Max(), heavyMs = b.MuzzleVelocityMs ?? DefaultMuzzleVelocity(len);
+                var anchor = gun is null ? outfit : Outfit(gun, (which == "main" ? gun.Main : gun.Secondary)![i], which == "main");
+                double heavyKg = anchor.Max(e => e.MassKg), heavyMs = b.MuzzleVelocityMs ?? DefaultMuzzleVelocity(len);
                 var resolved = new List<ShellReport>();
                 for (int k = 0; k < outfit.Count; k++)
                 {
@@ -225,6 +229,95 @@ public static class Ammunition
                                  $"{which}[{same.Index}]'s are used");
             }
         return res;
+    }
+
+    /// <summary>A loadout (docs/battle/shells-armour-damage.md S5, decision 6): the design with the given batteries'
+    /// `shells` in place of its own. A battery is "main" or "secondary" (all of that kind) or "main[i]", "secondary[i]"
+    /// (one, by its index in the design). Each entry's ammo is a block of <paramref name="blocks"/> (given with the
+    /// loadout), of the design's own table, or a catalogue template by name (copied in, as the designer copies them); or
+    /// a kind (ap, common, he): the battery's own block of it, else the design's first of it. Only the shells change:
+    /// the guns, the magazines' rounds and the armour stay the design's, and nothing checks that a shell suits the gun
+    /// beyond its calibre (memory: allow silliness). Null, with the errors, when a battery or block isn't there or the
+    /// loaded design doesn't validate. Resolve the result with <c>gun: design</c>.</summary>
+    public static Design? WithLoadout(Design design, IReadOnlyList<(string Battery, List<ShellEntryInput> Shells)> batteries,
+        IReadOnlyDictionary<string, AmmoInput>? blocks, List<string> errors)
+    {
+        int had = errors.Count;
+        var table = new Dictionary<string, AmmoInput>(design.Ammunition ?? [], StringComparer.Ordinal);
+        var main = design.Main?.ToList();
+        var secondary = design.Secondary?.ToList();
+        foreach (var (key, shells) in batteries)
+        {
+            string at = $"loadout.{key}";
+            int open = key.IndexOf('[');
+            string which = open < 0 ? key : key[..open];
+            int index = -1;
+            if (which is not ("main" or "secondary") || open >= 0 && (!key.EndsWith(']') ||
+                !int.TryParse(key.AsSpan(open + 1, key.Length - open - 2), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out index)))
+            {
+                errors.Add($"{at}: name a battery as main, secondary, main[i] or secondary[i]");
+                continue;
+            }
+            var list = which == "main" ? main : secondary;
+            if (list is not { Count: > 0 } || index >= list.Count)
+            {
+                errors.Add($"{at}: the design has no {(index < 0 ? which + " battery" : $"{which}[{index}]")}");
+                continue;
+            }
+            if (shells.Count == 0)
+                errors.Add($"{at}: give at least one shell");
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (index >= 0 && i != index)
+                    continue;
+                var mine = new List<ShellEntryInput>(shells.Count);
+                foreach (var e in shells)
+                {
+                    string? name = e.Ammo;
+                    if (name is null)
+                        errors.Add($"{at}: a shell without its ammo");
+                    else if (blocks?.TryGetValue(name, out var given) == true)
+                        table[name] = given;
+                    else if (!table.ContainsKey(name))
+                    {
+                        if (ShellTemplates.Get(name) is { } t)
+                            table[name] = t.Value;
+                        else if (Kinds.Contains(name))
+                        {
+                            name = OwnOfKind(list[i], which == "main", name, table);
+                            if (name is null)
+                                errors.Add($"{at}: the design has no {e.Ammo} shell to carry");
+                        }
+                        else
+                            errors.Add($"{at}: no shell \"{name}\" in the loadout, the design's ammunition or the catalogue");
+                    }
+                    mine.Add(e with { Ammo = name });
+                }
+                list[i] = list[i] with { Shells = mine };
+            }
+        }
+        if (errors.Count > had)
+            return null;
+        var loaded = design with { Ammunition = table, Main = main, Secondary = secondary };
+        errors.AddRange(Validate(loaded).Select(e => "loadout: " + e));
+        return errors.Count > had ? null : loaded;
+    }
+
+    /// <summary>A battery's own block of a kind (its outfit's, or the default outfit's when it gives none, copied into the
+    /// table), else the table's first of the kind; null for none.</summary>
+    static string? OwnOfKind(BatteryInput b, bool main, string kind, Dictionary<string, AmmoInput> table)
+    {
+        if (b.Shells is { Count: > 0 } shells)
+        {
+            if (shells.FirstOrDefault(e => e.Ammo is { } n && table.TryGetValue(n, out var a) && a.Kind == kind) is { Ammo: { } own })
+                return own;
+        }
+        else if (ShellTemplates.DefaultOutfit(main).FirstOrDefault(o => o.Block.Kind == kind) is { Block: not null } d)
+        {
+            table[d.Name] = d.Block;
+            return d.Name;
+        }
+        return table.FirstOrDefault(kv => kv.Value.Kind == kind).Key;
     }
 }
 

@@ -163,14 +163,15 @@ public sealed class GunnerySystem : IWorldSystem
 
     readonly Dictionary<(int Table, double Elevation), double> reach = [];
 
-    /// <summary>How far a ship's battery reaches: its range table's fall at its mounts' highest elevation from a muzzle
-    /// 10 m up, m (worked out once per gun and elevation).</summary>
-    public double ReachM(ShipClass cls, int battery)
+    /// <summary>How far a ship's battery reaches with its loadout's lead shell: its range table's fall at its mounts'
+    /// highest elevation from a muzzle 10 m up, m (worked out once per gun and elevation).</summary>
+    public double ReachM(Loadout lo, int battery)
     {
+        var cls = lo.Class;
         double top = 0;
         foreach (int m in cls.Links(cls.Batteries[battery].Mounts))
             top = Math.Max(top, cls.Mounts[m].MaxElevationDeg);
-        int table = shells.TableOf(cls, battery);
+        int table = shells.TableOf(lo, battery);
         if (!reach.TryGetValue((table, top), out double r))
         {
             var t = shells.Ballistics[table];
@@ -224,7 +225,7 @@ public sealed class GunnerySystem : IWorldSystem
             {
                 Alive = true, Generation = gen, Shooter = shooter, Battery = b, Target = target, StartMs = now,
                 Level = Math.Clamp(lv, 0, settings.GunneryLevels.Length - 1), Local = row.Local, FirstHitMs = -1, FirstStraddleMs = -1,
-                Table = shells.TableOf(cls, b), ElevationDeg = double.NaN,
+                Table = shells.TableOf(store.Combat.Loadout(slot), b), ElevationDeg = double.NaN,
             };
             var lvl = settings.GunneryLevels[fc.Level];
             fc.Ladder.Step = lvl.Ladder0M;
@@ -556,6 +557,7 @@ public sealed class GunnerySystem : IWorldSystem
         ref readonly var row = ref cls.Batteries[fc.Battery];
         var mounts = cls.Links(row.Mounts);
         var cond = store.Combat.Condition(slot);
+        var loads = store.Combat.Loadout(slot);
         if (firing.Length < mounts.Length)
             firing = new bool[Math.Max(mounts.Length, firing.Length * 2)];
         if (fireLoad.Length < mounts.Length)
@@ -571,19 +573,19 @@ public sealed class GunnerySystem : IWorldSystem
                         Math.Abs(Wrap(ms.TrainTo - fc.OrderBearingDeg)) <= tol &&
                         Math.Abs(CombatStore.BearingAt(ms, mr, now) - ms.TrainTo) <= tol && Math.Abs(CombatStore.ElevationAt(ms, mr, now) - ms.ElevTo) <= tol;
             // each mount fires the first load of the magazine order it has rounds of
-            fireLoad[j] = firing[j] ? store.Combat.NextLoad(slot, cls, mounts[j]) : -1;
+            fireLoad[j] = firing[j] ? store.Combat.NextLoad(slot, mounts[j]) : -1;
             firing[j] &= fireLoad[j] >= 0;
             if (firing[j])
             {
                 n += cls.TurretTypes[mr.Type].Barrels;
                 if (lead < 0)
-                    lead = cls.ShellLoads(row.Shells)[fireLoad[j]].ShellType;
+                    lead = loads.Loads(fc.Battery)[fireLoad[j]].ShellType;
             }
         }
         if (n == 0)
             return;
         // the battery's computer works in its lead shell's table: the first firing mount's (the next salvos lay with it)
-        fc.Table = shells.TableOf(cls, fc.Battery, lead);
+        fc.Table = shells.TableOf(loads, fc.Battery, lead);
 
         var lvl = settings.GunneryLevels[fc.Level];
         var crew = settings.GunneryCrews[(int)crews[ship.Side]];
@@ -644,7 +646,7 @@ public sealed class GunnerySystem : IWorldSystem
             int barrels = cls.TurretTypes[mr.Type].Barrels;
             var muzzle = Muzzle(cls, frame, mounts[j]);
             // its own shell, laid with its own table (a mount out of the lead's kind fires its next one in the salvo)
-            int type = cls.ShellLoads(row.Shells)[fireLoad[j]].ShellType, own = type == lead ? tableIndex : shells.TableOf(cls, fc.Battery, type);
+            int type = loads.Loads(fc.Battery)[fireLoad[j]].ShellType, own = type == lead ? tableIndex : shells.TableOf(loads, fc.Battery, type);
             var ownTable = shells.Ballistics[own];
             int away = 0;
             Vec3d first = default;
@@ -654,8 +656,7 @@ public sealed class GunnerySystem : IWorldSystem
                 var point = centre + u * (sr * r.NextGaussian()) + w * (sd * r.NextGaussian());
                 point = point.Normalized() * Earth.Radius;
                 if (FireControl.Solve(ownTable, muzzle, velocity, point, out var lay, e0) &&
-                    shells.Launch(world, own, muzzle, lay.Forward, lay.ElevationDeg, lay.Speed, salvo, fc.Shooter, fc.Battery, si, type,
-                        ship.ClassIndex))
+                    shells.Launch(world, own, muzzle, lay.Forward, lay.ElevationDeg, lay.Speed, salvo, fc.Shooter, fc.Battery, si, type, loads))
                 {
                     sv.Shells++;
                     if (away++ == 0)

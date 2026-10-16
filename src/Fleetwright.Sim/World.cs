@@ -90,6 +90,7 @@ public sealed class World
             Damage.Prepare(cls);
             Torpedoes.Prepare(cls);
         };
+        Ships.LoadoutTaken = Shells.Prepare;
     }
 
     /// <summary>Torpedoes running (docs/battle/fighting.md 4.6): always registered sixth (<see cref="TorpedoSystem.Id"/>).</summary>

@@ -18,6 +18,7 @@ public enum ShipCommand : ushort
     Clearance,
     LookNow,
     Dye,
+    Load,
 }
 
 /// <summary>The world's ships (docs/battle/plan.md step 2.2), in their clock tiers (ShipSystem.Tiers.cs): on the fine
@@ -111,6 +112,9 @@ public sealed partial class ShipSystem : IWorldSystem
     /// <summary>Told the first time a class is in the world (the shells build its ballistic tables then).</summary>
     internal Action<ShipClass>? ClassAdded { get; set; }
 
+    /// <summary>Told when a ship takes a loadout other than her class's (its ballistic tables are built then).</summary>
+    internal Action<Loadout>? LoadoutTaken { get; set; }
+
     /// <summary>The entity id the latest spawn got (ids are given in order, one per ship made), 0 before any.</summary>
     public int NewestEntity => nextEntity - 1;
 
@@ -163,6 +167,12 @@ public sealed partial class ShipSystem : IWorldSystem
     /// takes nothing off rails.</summary>
     public static Command Dye(int entity, Ships.Dye dye) => new(Id, (ushort)ShipCommand.Dye, entity, B: (int)dye);
 
+    /// <summary>A ship takes a loadout of her class (its registry id, <see cref="ShipClassRegistry.AddLoadout"/>;
+    /// docs/battle/shells-armour-damage.md S5), her magazines filled with it: only in port, which until the campaign's
+    /// ports means before she's fired a round (CombatStore.Load); otherwise, or for another class's loadout, nothing.
+    /// A load, not a movement: it takes nothing off rails.</summary>
+    public static Command Load(int entity, int loadout) => new(Id, (ushort)ShipCommand.Load, entity, B: loadout);
+
     public void Apply(World world, in Command c)
     {
         const double Deg = Math.PI / 180;
@@ -200,6 +210,12 @@ public sealed partial class ShipSystem : IWorldSystem
         {
             if (c.B is >= 0 and <= (int)Ships.Dye.Black)
                 Store.SetDye(slot, (Ships.Dye)c.B);
+            return;
+        }
+        if (code == ShipCommand.Load)
+        {
+            if (Registry.LoadoutOf(c.B) is { } lo && Store.Combat.Load(slot, lo) && !lo.IsDefault)
+                LoadoutTaken?.Invoke(lo);
             return;
         }
 
@@ -463,19 +479,22 @@ public sealed partial class ShipSystem : IWorldSystem
     void PutLoads(ShipsView v, int i, int n, bool orders)
     {
         v.LoadStart[n] = -1;
-        var cls = Store[i].Handling.Class;
-        if (!orders || cls.ShellLoadCount == 0)
+        v.Loadout[n] = null;
+        var lo = Store.Combat.Loadout(i);
+        var cls = lo.Class;
+        if (!orders || lo.LoadCount == 0)
             return;
-        v.EnsureLoads(v.LoadTotal + cls.ShellLoadCount);
+        v.Loadout[n] = lo;
+        v.EnsureLoads(v.LoadTotal + lo.LoadCount);
         int start = v.LoadStart[n] = v.LoadTotal;
-        v.LoadRounds.AsSpan(start, cls.ShellLoadCount).Clear();
-        v.LoadTotal += cls.ShellLoadCount;
-        foreach (ref readonly var b in cls.Batteries)
-            foreach (int m in cls.Links(b.Mounts))
-                for (int k = 0; k < b.Shells.Count; k++)
+        v.LoadRounds.AsSpan(start, lo.LoadCount).Clear();
+        v.LoadTotal += lo.LoadCount;
+        for (int b = 0; b < cls.Batteries.Length; b++)
+            foreach (int m in cls.Links(cls.Batteries[b].Mounts))
+                for (int k = 0; k < lo.Shells(b).Count; k++)
                 {
-                    ref int sum = ref v.LoadRounds[start + b.Shells.Start + k];
-                    int r = Store.Combat.LoadRounds(i, cls, m, k);
+                    ref int sum = ref v.LoadRounds[start + lo.Shells(b).Start + k];
+                    int r = Store.Combat.LoadRounds(i, m, k);
                     sum = r == int.MaxValue || sum == int.MaxValue ? int.MaxValue : sum + r;
                 }
     }

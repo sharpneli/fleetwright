@@ -18,11 +18,12 @@ static class BallisticsBench
         {
             var cls = ShipClassCompiler.Compile(ShipDesign.Build(load(p)));
             Console.WriteLine(cls);
-            foreach (var b in cls.Batteries)
+            for (int i = 0; i < cls.Batteries.Length; i++)
             {
-                var shell = cls.ShellTypes[b.Fires];
-                var key = BallisticKey.Of(shell, cls.Mounts[cls.Links(b.Mounts)[0]].MaxElevationDeg);
-                Table($"{b.Kind.ToString().ToLowerInvariant()} {b.CalibreMm:0}/{b.CalibreLength:0}: {cls.ShellTypeId(b.Fires)}", key);
+                var b = cls.Batteries[i];
+                int fires = cls.Loadout.Fires(i);
+                var key = BallisticKey.Of(cls.Loadout.ShellTypes[fires], cls.Mounts[cls.Links(b.Mounts)[0]].MaxElevationDeg);
+                Table($"{b.Kind.ToString().ToLowerInvariant()} {b.CalibreMm:0}/{b.CalibreLength:0}: {cls.Loadout.ShellTypeId(fires)}", key);
             }
         }
         if (research)

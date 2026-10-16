@@ -12,6 +12,7 @@ namespace Fleetwright.Sim.Ai.Knowledge;
 public sealed class Matchups
 {
     readonly Dictionary<ShipClass, MatchupProfile> profiles = new(ReferenceEqualityComparer.Instance);
+    readonly Dictionary<Loadout, MatchupProfile> given = new(ReferenceEqualityComparer.Instance);
 
     // the census: per side and type, the classes at sea and how many of each; per side, all of them (any type)
     const int Types = 6;
@@ -30,7 +31,21 @@ public sealed class Matchups
         return p;
     }
 
-    int warmed;
+    /// <summary>An own ship's profile with her loadout (docs/battle/shells-armour-damage.md S5): her class's, unless she
+    /// was given another. Others are judged by their class's own: nobody sees what's in another navy's magazines.</summary>
+    public MatchupProfile Profile(World world, Loadout lo)
+    {
+        if (lo.IsDefault)
+            return Profile(world, lo.Class);
+        if (!given.TryGetValue(lo, out var p))
+        {
+            var reg = world.Shells.Ballistics;
+            given[lo] = p = new MatchupProfile(lo.Class, k => reg[reg.Ensure(k)], world.Settings, lo);
+        }
+        return p;
+    }
+
+    int warmed, warmedLoadouts;
 
     /// <summary>Every class the world's registry holds profiled, and every gun's table against every class (once, and again
     /// when it grows): a contact may be taken for any of them, and a profile or a table made then would be garbage in the
@@ -38,9 +53,11 @@ public sealed class Matchups
     public void Warm(World world)
     {
         var reg = world.Ships.Registry;
-        int n = reg.Count;
-        if (n == warmed)
+        int n = reg.Count, loadouts = reg.LoadoutCount;
+        if (n == warmed && loadouts == warmedLoadouts)
             return;
+        for (; warmedLoadouts < loadouts; warmedLoadouts++)
+            Profile(world, reg.LoadoutOf(warmedLoadouts)!);   // the loadouts given, as their ships' own
         for (int id = warmed; id < n; id++)
             if (reg.IsReady(id) && reg.Get(id) is { } c)
                 Profile(world, c);
@@ -48,7 +65,7 @@ public sealed class Matchups
                 n = Math.Min(n, id);   // one still building: from it again next time
         warmed = n;
         // and every gun's table against every class (a few hundred bytes a pair), so none is made in a fight
-        foreach (var a in profiles.Values)
+        foreach (var a in profiles.Values.Concat(given.Values))
             foreach (var g in a.Guns)
                 foreach (var t in profiles.Values)
                     g.Against(t, 0, world.Settings);
@@ -140,7 +157,7 @@ public sealed class MatchupSide
         if (k.Status != ShipStatus.Afloat)
             return;
         var cls = store[slot].Handling.Class;
-        var p = m.Profile(world, cls);
+        var p = m.Profile(world, store.Combat.Loadout(slot));
         if (!k.Damaged && Full(store, slot, cls, world.Time.Ms))
         {
             Add(new MatchupEntry(p, 1));

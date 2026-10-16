@@ -11,6 +11,8 @@ public sealed class MatchupProfile
     public const double RangeStepM = 250;
 
     public ShipClass Class { get; }
+    /// <summary>The shells it's judged with: a ship's own (an own ship's given loadout), else the design's.</summary>
+    public Loadout Loadout { get; }
     public double DisplacementT { get; }
     public double LengthM { get; }
     public double BeamM { get; }
@@ -45,9 +47,10 @@ public sealed class MatchupProfile
     /// <summary>The gun that makes a ship more than a torpedo craft: a cruiser's 6".</summary>
     public const double TorpedoCraftGunMm = 150;
 
-    public MatchupProfile(ShipClass c, Func<BallisticKey, BallisticTable> table, SimSettings s)
+    public MatchupProfile(ShipClass c, Func<BallisticKey, BallisticTable> table, SimSettings s, Loadout? loadout = null)
     {
         Class = c;
+        Loadout = loadout ?? c.Loadout;
         var m = c.Motion;
         DisplacementT = m.FullDisplacementT;
         LengthM = m.LengthM;
@@ -88,7 +91,7 @@ public sealed class MatchupProfile
             }
             if (bearing == 0)
                 continue;
-            var shell = c.ShellTypes[row.Fires];
+            var shell = Loadout.ShellTypes[Loadout.Fires(b)];
             var t = table(BallisticKey.Of(shell, maxElev));
             var g = new MatchupGun(b, row, bearing, 60 / (reload / mounts), rounds, shell, t, s);
             guns.Add(g);

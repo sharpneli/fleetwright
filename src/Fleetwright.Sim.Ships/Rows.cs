@@ -311,7 +311,7 @@ public enum FireControlLevel : byte
 }
 
 /// <summary>A gun battery: the mounts of one kind (main or secondary) firing one gun (calibre and length), so one
-/// range table, one set of shells and one fall of shot to spot. Its directors are the ship's directors of its kind;
+/// fall of shot to spot; its shells are a loadout's (<see cref="Loadout"/>). Its directors are the ship's directors of its kind;
 /// none means local control (each mount aims for itself).</summary>
 public readonly record struct BatteryRow
 {
@@ -327,11 +327,6 @@ public readonly record struct BatteryRow
     /// <summary>Its directors (Links: director indices), best first; empty: local control.</summary>
     public Slice Directors { get; init; }
     public FireControlLevel Level { get; init; }
-    /// <summary>The shells it carries (the ShellLoads pool), shares adding up to 1.</summary>
-    public Slice Shells { get; init; }
-    /// <summary>The shell type it fires first, its lead: the first of its loads in the magazine order
-    /// (<see cref="MagazineOrder"/>). Each mount moves on to the next kind as it runs out.</summary>
-    public int Fires { get; init; }
 
     /// <summary>The gun's full-salvo pattern, its 100% spread in range as a percentage of the range (fire_control_ref.py
     /// Gun.pattern_pct): the shells' own dispersion, before any fire control. A placeholder until the designer gives it

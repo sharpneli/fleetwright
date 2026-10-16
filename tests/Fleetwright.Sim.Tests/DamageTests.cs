@@ -21,12 +21,12 @@ public class DamageTests(ITestOutputHelper output)
     static (ShellTypeRow Shell, double MaxElev) Shell(ShipClass c, int battery, ShellKind? kind = null)
     {
         var b = c.Batteries[battery];
-        int type = b.Fires;
+        int type = c.Loadout.Fires(battery);
         if (kind is { } k)
-            foreach (var l in c.ShellLoads(b.Shells))
-                if (c.ShellTypes[l.ShellType].Kind == k)
+            foreach (var l in c.Loadout.Loads(battery))
+                if (c.Loadout.ShellTypes[l.ShellType].Kind == k)
                     type = l.ShellType;
-        return (c.ShellTypes[type], c.Mounts[c.Links(b.Mounts)[0]].MaxElevationDeg);
+        return (c.Loadout.ShellTypes[type], c.Mounts[c.Links(b.Mounts)[0]].MaxElevationDeg);
     }
 
     GivenHits.Report Hits(string target, string shooter, int battery, double rangeM, int n, int perShip, ShellKind? kind = null,

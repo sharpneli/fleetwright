@@ -92,6 +92,38 @@ public sealed class ShipClassRegistry : IDisposable
         }
     }
 
+    readonly List<Loadout> loadouts = [];
+
+    /// <summary>Adds a loadout (a ship's shells other than her design's, docs/battle/shells-armour-damage.md S5): its id,
+    /// the one a <c>ShipSystem.Load</c> command carries; the same loadout of the same class gets the same id.</summary>
+    public int AddLoadout(Loadout l)
+    {
+        lock (gate)
+        {
+            for (int i = 0; i < loadouts.Count; i++)
+                if (ReferenceEquals(loadouts[i].Class, l.Class) && loadouts[i].Hash == l.Hash)
+                    return i;
+            loadouts.Add(l);
+            return loadouts.Count - 1;
+        }
+    }
+
+    public int LoadoutCount
+    {
+        get
+        {
+            lock (gate)
+                return loadouts.Count;
+        }
+    }
+
+    /// <summary>A loadout by its id, or null for none.</summary>
+    public Loadout? LoadoutOf(int id)
+    {
+        lock (gate)
+            return id >= 0 && id < loadouts.Count ? loadouts[id] : null;
+    }
+
     public int Count
     {
         get

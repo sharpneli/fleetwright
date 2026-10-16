@@ -25,6 +25,7 @@ public static unsafe class Program
         var captains = new List<string>();
         var searches = new List<string>();
         var fires = new List<string>();
+        var loadouts = new List<string>();
         var engages = new List<string>();
         string? weather = null;
         var torpedoes = new List<string>();
@@ -185,6 +186,10 @@ public static unsafe class Program
             {
                 fires.Add(arg.Substring("-fire=".Length));
             }
+            else if (arg.StartsWith("-loadout="))   // a dev ship's shells: -loadout=ship:battery:shell[@share][+shell...][|battery:...] (shells-armour-damage.md S5)
+            {
+                loadouts.Add(arg.Substring("-loadout=".Length));
+            }
             else if (arg.StartsWith("-weather="))   // the dev world's weather: -weather=wind_from,kn[,visibility_km]
             {
                 weather = arg.Substring("-weather=".Length);
@@ -333,7 +338,11 @@ public static unsafe class Program
             // the classes in play and their art, the app's: the world and the map share them
             using var classes = new Sim.Ships.ShipClassRegistry();
             using var shipArt = new Map.ShipArtLibrary((SDL.SDL_GPUDevice*)device, classes);
-            using var world = new Map.WorldSession(start, 1, classes, shore.Result, devShips.Count > 0 ? w => devShips.ForEach(d => SpawnDevShips(w, d)) : null);
+            using var world = new Map.WorldSession(start, 1, classes, shore.Result, devShips.Count > 0 ? w =>
+            {
+                devShips.ForEach(d => SpawnDevShips(w, d));
+                loadouts.ForEach(l => DevLoadout(w, l));
+            } : null);
             foreach (var grp in devGroups)
                 foreach (var c in DevGroup(grp))
                     world.Send(c);
@@ -448,6 +457,35 @@ public static unsafe class Program
         if (!placed)
             for (int e = first + 1; e < first + count; e += 2)
                 w.Apply(Sim.ShipSystem.Course(e, 135));
+    }
+
+    /// <summary>-loadout=ship:battery:shell[@share][+shell[@share]...][|battery:...]: a dev ship's shells other than her
+    /// design's (docs/battle/shells-armour-damage.md S5), as she's spawned: a battery is main, secondary, main[i] or
+    /// secondary[i], a shell a template's name (docs/shipgen/shell-templates.md), a block of the design's, or ap, common
+    /// or he (the battery's own of that kind), shares left out splitting the rest.</summary>
+    static void DevLoadout(Sim.World w, string arg)
+    {
+        int colon = arg.IndexOf(':');
+        int ship = colon > 0 && int.TryParse(arg[..colon], out int e) ? e : 0, slot = ship > 0 ? w.Ships.Store.SlotOf(ship) : -1;
+        if (slot < 0)
+        {
+            Console.Error.WriteLine($"Bad loadout: -loadout={arg} (want ship:battery:shell[@share][+shell...][|battery:...], a dev ship's entity)");
+            return;
+        }
+        var errors = new List<string>();
+        Sim.Ships.Loadout? lo = null;
+        try
+        {
+            lo = w.Ships.Class(w.Ships.Store[slot].ClassIndex).Load(Sim.Ships.LoadoutSpec.Parse(arg[(colon + 1)..]), errors);
+        }
+        catch (FormatException x)
+        {
+            errors.Add(x.Message);
+        }
+        if (lo == null)
+            Console.Error.WriteLine($"Bad loadout: -loadout={arg}: {string.Join("; ", errors)}");
+        else
+            w.Apply(Sim.ShipSystem.Load(ship, w.Ships.Registry.AddLoadout(lo)));
     }
 
     /// <summary>-fire=ship[:battery][:kind]:lat,lon: a dev ship's battery (0, the main, by default) fires a salvo at a

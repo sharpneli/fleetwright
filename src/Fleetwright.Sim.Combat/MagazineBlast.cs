@@ -204,7 +204,7 @@ public sealed class MagazineBlast
             ref readonly var mt = ref c.Mounts[served[i]];
             if (mt.Battery < 0 || mt.Type >= c.Charges.Length)
                 continue;
-            double charge = c.Charges[mt.Type].MassKg, shell = c.ShellTypes[c.Batteries[mt.Battery].Fires].MassKg;
+            double charge = c.Charges[mt.Type].MassKg, shell = c.Loadout.ShellTypes[c.Loadout.Fires(mt.Battery)].MassKg;   // the design's magazines
             if (charge > 0 && shell > 0)
             {
                 share += charge / (charge + shell);

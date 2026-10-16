@@ -29,6 +29,12 @@ namespace Fleetwright.Sim.Missions;
 /// </code>
 /// <para>A ship entry may give her shells a dye (<c>"dye": "orange"</c>, or <c>"dyes": [...]</c> one a ship; none if not
 /// given; docs/visuals/splashes.md "Dye").</para>
+/// <para>A ship entry or a unit (for every ship below it that doesn't give its own) may give the ships a loadout other
+/// than their design's (docs/battle/shells-armour-damage.md S5: the Admiralty's choice, not the designer's):
+/// <c>"loadout": { "main": [{ "ammo": "RN 1912 HE (lyddite)", "share": 0.5 }, { "ammo": "ap" }] }</c>, by battery (main,
+/// secondary, main[i], secondary[i]); an ammo a template's name (docs/shipgen/shell-templates.md), a block of the
+/// design's, a kind (ap, common, he: the battery's own of it), or a block written out; shares left out split the
+/// rest. One that doesn't fit a design is a warning, and her design's own shells are kept.</para>
 /// <para>A side's gun crews are green, average, trained or elite (<c>"crews"</c>; trained if not listed). A side's
 /// propellant (<c>"propellant": { "Britain": 2, "Germany": 0.1 }</c>, 1 if not listed) scales how readily its magazines go
 /// up (docs/battle/fighting.md 4.3a: Jutland's cordite against brass-cased RP C/12).</para>
@@ -416,7 +422,7 @@ public sealed class Scenario
         return pairs;
     }
 
-    static ScenarioUnit ParseUnit(JsonElement e, string path, bool top, int parentSide, int sides)
+    static ScenarioUnit ParseUnit(JsonElement e, string path, bool top, int parentSide, int sides, LoadoutSpec? parentLoadout = null)
     {
         if (e.ValueKind != JsonValueKind.Object)
             throw new ScenarioException($"{path}: not an object");
@@ -431,6 +437,7 @@ public sealed class Scenario
         if (hasUnits == hasShips)
             throw new ScenarioException($"{path}: a unit has \"units\" (a force) or \"ships\" (a squadron), one of them");
         var formation = ParseFormation(Str(e, "formation", "column"), path);
+        var loadout = ParseLoadout(e, path) ?? parentLoadout;
         double spacing = e.TryGetProperty("spacing", out var sp) ? sp.GetDouble() : hasUnits ? 3000 : 600;
         if (spacing is <= 0 or > 100_000)
             throw new ScenarioException($"{path}: spacing {spacing} m (want 0 to 100 km)");
@@ -466,12 +473,13 @@ public sealed class Scenario
             Loop = e.TryGetProperty("loop", out var lp) && lp.GetBoolean(),
             Doctrine = e.TryGetProperty("doctrine", out var dc) ? DoctrineValues(dc, $"{path} doctrine") : [],
             Tasks = ParseTasks(e, path, top),
+            Loadout = loadout,
         };
         if (hasUnits)
         {
             int i = 0;
             foreach (var u in us.EnumerateArray())
-                unit.Units.Add(ParseUnit(u, $"{path} units[{i++}]", top: false, side, sides));
+                unit.Units.Add(ParseUnit(u, $"{path} units[{i++}]", top: false, side, sides, loadout));
             if (unit.Units.Count == 0)
                 throw new ScenarioException($"{path}: a force of no units");
         }
@@ -479,7 +487,7 @@ public sealed class Scenario
         {
             int i = 0;
             foreach (var x in ss.EnumerateArray())
-                unit.Ships.Add(ParseShips(x, $"{path} ships[{i++}]"));
+                unit.Ships.Add(ParseShips(x, $"{path} ships[{i++}]", loadout));
             if (unit.ShipCount == 0)
                 throw new ScenarioException($"{path}: a squadron of no ships");
         }
@@ -529,7 +537,22 @@ public sealed class Scenario
         };
     }
 
-    static ScenarioShips ParseShips(JsonElement e, string path)
+    /// <summary>A unit's or ship entry's <c>"loadout"</c>, or null for none.</summary>
+    static LoadoutSpec? ParseLoadout(JsonElement e, string path)
+    {
+        if (!e.TryGetProperty("loadout", out var l))
+            return null;
+        try
+        {
+            return LoadoutSpec.FromJson(l, path);
+        }
+        catch (Exception x) when (x is FormatException or JsonException or InvalidOperationException)
+        {
+            throw new ScenarioException($"{path}: {x.Message}");
+        }
+    }
+
+    static ScenarioShips ParseShips(JsonElement e, string path, LoadoutSpec? unitLoadout = null)
     {
         string design = Str(e, "design", "");
         if (design.Length == 0)
@@ -546,7 +569,7 @@ public sealed class Scenario
             : [];
         if (dyes.Length > count)
             throw new ScenarioException($"{path}: {dyes.Length} dyes for {count} ships");
-        return new ScenarioShips { Design = design, Count = count, Names = names, Dyes = dyes };
+        return new ScenarioShips { Design = design, Count = count, Names = names, Dyes = dyes, Loadout = ParseLoadout(e, path) ?? unitLoadout };
     }
 
     static Dye ParseDye(string? s, string path) =>
@@ -618,6 +641,9 @@ public sealed class ScenarioUnit
     /// steams its course or route.</summary>
     public List<ScenarioTask> Tasks { get; init; } = [];
 
+    /// <summary>The loadout its ships carry (its own <c>"loadout"</c>, else its parent's), unless a ship entry gives one.</summary>
+    public LoadoutSpec? Loadout { get; init; }
+
     public bool IsForce => Units.Count > 0;
     public int ShipCount => IsForce ? Units.Sum(u => u.ShipCount) : Ships.Sum(s => s.Count);
 }
@@ -632,6 +658,10 @@ public sealed class ScenarioShips
 
     /// <summary>Each ship's dye load in order (<c>"dye"</c> for all, <c>"dyes"</c> each); those past its end carry none.</summary>
     public Dye[] Dyes { get; init; } = [];
+
+    /// <summary>The loadout they carry (docs/battle/shells-armour-damage.md S5): the entry's, else its unit's; null for
+    /// their design's own.</summary>
+    public LoadoutSpec? Loadout { get; init; }
 }
 
 /// <summary>A top unit's opening task (docs/battle/command.md 5.1c): <c>"task": { "do": "scout", "of": "Grand Fleet",

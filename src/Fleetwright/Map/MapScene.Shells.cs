@@ -411,23 +411,24 @@ public sealed partial class MapScene
                     fireBattery = b;
             ImGui.EndCombo();
         }
-        // the kind: the magazine order, or a kind the battery carries, with its rounds left
-        var bat = cls.Batteries[fireBattery];
+        // the kind: the magazine order, or a kind the battery carries (her loadout's), with its rounds left
+        var lo = s.Ships.Loadout[k] ?? cls.Loadout;
+        int fb = fireBattery;
         bool Carries(ShellKind kind)
         {
-            foreach (var l in cls.ShellLoads(bat.Shells))
-                if (cls.ShellTypes[l.ShellType].Kind == kind)
+            foreach (var l in lo.Loads(fb))
+                if (lo.ShellTypes[l.ShellType].Kind == kind)
                     return true;
             return false;
         }
         int Left(ShellKind kind)
         {
             int start = s.Ships.LoadStart[k], sum = 0;
-            var loads = cls.ShellLoads(bat.Shells);
+            var loads = lo.Loads(fb);
             for (int l = 0; l < loads.Length && start >= 0; l++)
-                if (cls.ShellTypes[loads[l].ShellType].Kind == kind)
+                if (lo.ShellTypes[loads[l].ShellType].Kind == kind)
                 {
-                    int r = s.Ships.LoadRounds[start + bat.Shells.Start + l];
+                    int r = s.Ships.LoadRounds[start + lo.Shells(fb).Start + l];
                     sum = r == int.MaxValue || sum == int.MaxValue ? int.MaxValue : sum + r;
                 }
             return sum;

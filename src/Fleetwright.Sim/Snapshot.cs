@@ -624,9 +624,13 @@ public sealed class ShipsView
     public int[] TorpedoesLoaded = [], TorpedoesLeft = [];
 
     /// <summary>Each own ship's rounds left by load (docs/battle/shells-armour-damage.md S2): from <see cref="LoadStart"/>
-    /// in <see cref="LoadRounds"/>, one per entry of the class's ShellLoads pool (a battery's loads at its Shells slice),
-    /// summed over the battery's mounts; int.MaxValue for a load nobody counts; -1 start for a ship not shown with orders.</summary>
+    /// in <see cref="LoadRounds"/>, one per entry of her loadout's pool (<see cref="Loadout"/>: a battery's loads at its
+    /// Shells slice), summed over the battery's mounts; int.MaxValue for a load nobody counts; -1 start for a ship not
+    /// shown with orders.</summary>
     public int[] LoadStart = [], LoadRounds = [];
+    /// <summary>Each own ship's loadout (S5: her class's own, or the one she was given; immutable, so shared); null for a
+    /// ship not shown with orders.</summary>
+    public Ships.Loadout?[] Loadout = [];
     public int LoadTotal;
 
     /// <summary>Room for n loads' rounds in all; grows only past the most yet.</summary>
@@ -737,6 +741,7 @@ public sealed class ShipsView
         Array.Resize(ref TorpedoesLoaded, n);
         Array.Resize(ref TorpedoesLeft, n);
         Array.Resize(ref LoadStart, n);
+        Array.Resize(ref Loadout, n);
         int had = MountStart.Length;
         Array.Resize(ref MountStart, n);
         Array.Fill(MountStart, -1, had, n - had);   // at rest, unless filled

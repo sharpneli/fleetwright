@@ -133,7 +133,7 @@ public sealed partial class CaptainLayer
     Vec3d[] candPos = new Vec3d[32];
     sbyte[] candFoul = new sbyte[32];   // its line of fire: -1 not asked yet, 0 clear, 1 foul
     int candCount;
-    readonly Dictionary<ShipClass, double[]> reaches = [];
+    readonly Dictionary<Loadout, double[]> reaches = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>His ship's batteries on what his fire order wants.</summary>
     void Aim(in AiContext ctx, ref Captain cap, ShipState own, int slot)
@@ -142,7 +142,7 @@ public sealed partial class CaptainLayer
         var pic = ctx.World.Sightings.Of(own.Side);
         if (cap.Fire == FireOrder.Engage && (pic == null || pic.IndexOf(cap.FireTarget) < 0))
             (cap.Fire, cap.FireTarget) = (FireOrder.AtWill, 0);   // gone from the picture: at will again
-        var reach = Reaches(ctx, cls);
+        var reach = Reaches(ctx, ctx.Ships.Combat.Loadout(slot));
         candCount = -1;   // found when a battery first needs them
         for (int b = 0; b < cls.Batteries.Length; b++)
         {
@@ -299,18 +299,18 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>Each battery's reach for fire at will (<see cref="SimSettings.FireReachShare"/> of the range table's), and
-    /// the widest last: worked out once a class.</summary>
-    double[] Reaches(in AiContext ctx, ShipClass cls)
+    /// the widest last: worked out once a loadout (her class's own, or the one she was given).</summary>
+    double[] Reaches(in AiContext ctx, Loadout lo)
     {
-        if (reaches.TryGetValue(cls, out var r))
+        if (reaches.TryGetValue(lo, out var r))
             return r;
-        r = new double[cls.Batteries.Length + 1];
-        for (int b = 0; b < cls.Batteries.Length; b++)
+        r = new double[lo.Class.Batteries.Length + 1];
+        for (int b = 0; b < lo.Class.Batteries.Length; b++)
         {
-            r[b] = ctx.World.Gunnery.ReachM(cls, b) * ctx.Settings.FireReachShare;
+            r[b] = ctx.World.Gunnery.ReachM(lo, b) * ctx.Settings.FireReachShare;
             r[^1] = Math.Max(r[^1], r[b]);
         }
-        return reaches[cls] = r;
+        return reaches[lo] = r;
     }
 
     /// <summary>A battery's target at will: the current one while it's held and in reach, unless another is better by
@@ -430,7 +430,7 @@ public sealed partial class CaptainLayer
         var s = ctx.Settings;
         var cls = own.Handling.Class;
         int main = MainBattery(cls);
-        double reach = main >= 0 ? ctx.World.Gunnery.ReachM(cls, main) : s.ShadowMinM;
+        double reach = main >= 0 ? ctx.World.Gunnery.ReachM(ctx.Ships.Combat.Loadout(slot), main) : s.ShadowMinM;
         double band = cap.DistanceM > 0 ? cap.DistanceM : doctrine.Of(own.Entity, own.Side, DoctrineField.RangeShare) * reach;
 
         int enemy = new Unit(cap.Target).ShipOf(groups);

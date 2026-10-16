@@ -46,12 +46,12 @@ static class Weapons
                         c.Directors[d].Radar ? ", radar" : ""))));
             Line(string.Format(Inv, "    a gun: reload {0:0.#} s ({1:0.#} a minute), trains {2:0.#}°/s, elevates {3:0.#}°/s to {4:0}°; pattern {5:0.#}% of the range",
                 m.ReloadS, 60 / m.ReloadS, m.TrainDegS, m.ElevateDegS, m.MaxElevationDeg, row.PatternPct));
-            foreach (var l in c.ShellLoads(row.Shells))
+            foreach (var l in c.Loadout.Loads(b))
             {
-                var s = c.ShellTypes[l.ShellType];
+                var s = c.Loadout.ShellTypes[l.ShellType];
                 Line(string.Format(Inv, "    {0,3:0}%  {1,-32} {2,7:0.#} kg {3,4:0} m/s  i {4:0.00}  filler {5:0.##} kg  {6}{7}{8}", l.Share * 100,
-                    c.ShellTypeId(l.ShellType), s.MassKg, s.MuzzleVelocityMs, s.FormFactor, s.FillerKg, s.Fuze == Fuze.Nose ? "nose" : "base",
-                    s.Fuze == Fuze.Base ? string.Format(Inv, " {0:0.###} s", s.FuzeDelayS) : "", l.ShellType == row.Fires ? "   <- first (the magazine order)" : ""));
+                    c.Loadout.ShellTypeId(l.ShellType), s.MassKg, s.MuzzleVelocityMs, s.FormFactor, s.FillerKg, s.Fuze == Fuze.Nose ? "nose" : "base",
+                    s.Fuze == Fuze.Base ? string.Format(Inv, " {0:0.###} s", s.FuzeDelayS) : "", l.ShellType == c.Loadout.Fires(b) ? "   <- first (the magazine order)" : ""));
             }
         }
         if (c.Batteries.Length == 0)

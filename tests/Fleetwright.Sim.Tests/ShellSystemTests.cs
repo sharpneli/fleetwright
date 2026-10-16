@@ -82,14 +82,14 @@ public class ShellSystemTests(ITestOutputHelper output)
         var s = snap.Splashes;
         Assert.True(s.Count > 0);
         var cls = w.Ships.Class(0);
-        var table = w.Shells.Ballistics[w.Shells.TableOf(cls, 0)];
+        var table = w.Shells.Ballistics[w.Shells.TableOf(cls.Loadout, 0)];
         double e = table.ElevationFor(range, 10), fall = table.Fall(e, 10).FallDeg;
         for (int i = 0; i < s.Count; i++)
         {
             output.WriteLine($"{range} m: fell at {s.FallDeg[i]:F2} deg (the table {fall:F2}), bearing {s.BearingDeg[i]:F1}, {s.Kind[i]}, {s.Dye[i]}");
             Assert.InRange(s.FallDeg[i], fall * 0.9 - 0.2, fall * 1.1 + 0.2);
             Assert.True(Math.Min(s.BearingDeg[i], 360 - s.BearingDeg[i]) < 2, $"bearing {s.BearingDeg[i]}");
-            Assert.Equal(cls.ShellTypes[cls.Batteries[0].Fires].Kind, s.Kind[i]);
+            Assert.Equal(cls.Loadout.ShellTypes[cls.Loadout.Fires(0)].Kind, s.Kind[i]);
             Assert.Equal(Ships.Dye.Orange, s.Dye[i]);
         }
     }
@@ -117,7 +117,7 @@ public class ShellSystemTests(ITestOutputHelper output)
         var cls = w.Ships.Class(Ship(w, shooter).ClassIndex);
         var mounts = cls.Links(cls.Batteries[0].Mounts).ToArray();
         Assert.Equal(2 * mounts.Length, s.Count);
-        var table = w.Shells.Ballistics[w.Shells.TableOf(cls, 0)];
+        var table = w.Shells.Ballistics[w.Shells.TableOf(cls.Loadout, 0)];
         double e = table.ElevationFor(9000, 10);
         for (int i = 0; i < s.Count; i++)
         {
@@ -143,14 +143,14 @@ public class ShellSystemTests(ITestOutputHelper output)
         var (w, shooter, _) = Make(Settings);
         var cls = w.Ships.Class(Ship(w, shooter).ClassIndex);
         var main = cls.Batteries[0];
-        var loads = cls.ShellLoads(main.Shells).ToArray();
-        Assert.Equal([ShellKind.Ap, ShellKind.He], loads.Select(l => cls.ShellTypes[l.ShellType].Kind));
+        var loads = cls.Loadout.Loads(0).ToArray();
+        Assert.Equal([ShellKind.Ap, ShellKind.He], loads.Select(l => cls.Loadout.ShellTypes[l.ShellType].Kind));
         var (lat, lon) = Earth.LatLon(Destination(Ship(w, shooter).Position, 0, 9000));
         (int Ap, int He, int Shots) Count()
         {
             var snap = new Snapshot();
             w.Fill(snap, truth: true);
-            int k = snap.Ships.IndexOf(shooter), start = snap.Ships.LoadStart[k] + main.Shells.Start;
+            int k = snap.Ships.IndexOf(shooter), start = snap.Ships.LoadStart[k] + cls.Loadout.Shells(0).Start;
             return (snap.Ships.LoadRounds[start], snap.Ships.LoadRounds[start + 1], snap.Shots.Count);
         }
         var (ap0, he0, _) = Count();

@@ -29,6 +29,7 @@ public struct LauncherState
 public sealed class CombatStore
 {
     MountState[]?[] mounts = [];
+    Loadout?[] loadouts = [];
     int[]?[] loadRounds = [];
     LauncherState[]?[] launchers = [];
     ShipCondition?[] conditions = [];
@@ -45,6 +46,7 @@ public sealed class CombatStore
         {
             int n = Math.Max(slot + 1, Math.Max(16, mounts.Length * 2));
             Array.Resize(ref mounts, n);
+            Array.Resize(ref loadouts, n);
             Array.Resize(ref loadRounds, n);
             Array.Resize(ref launchers, n);
             Array.Resize(ref conditions, n);
@@ -65,10 +67,7 @@ public sealed class CombatStore
                 Rounds = row.Rounds > 0 ? row.Rounds : int.MaxValue,
             };
         }
-        var lr = loadRounds[slot];
-        if (lr == null || lr.Length != cls.LoadRounds.Length)
-            loadRounds[slot] = lr = new int[cls.LoadRounds.Length];
-        cls.LoadRounds.CopyTo(lr);
+        Fill(slot, cls.Loadout);
         var l = launchers[slot];
         if (l == null || l.Length != cls.Launchers.Length)
             launchers[slot] = l = new LauncherState[cls.Launchers.Length];
@@ -88,6 +87,30 @@ public sealed class CombatStore
     }
 
     internal void Drop(int slot) => engaged[slot] = 0;
+
+    /// <summary>A ship's loadout (docs/battle/shells-armour-damage.md S5): her class's own unless she was given another.
+    /// What her guns fire, her rounds by load and the matchup's judgement of her read it.</summary>
+    public Loadout Loadout(int slot) => loadouts[slot]!;
+
+    /// <summary>A ship takes another loadout of her class, her magazines filled with it: only while she has fired nothing
+    /// of the one she has (in port; until the campaign's ports, at spawn). False, and nothing changed, otherwise.</summary>
+    public bool Load(int slot, Loadout l)
+    {
+        var now = loadouts[slot]!;
+        if (!ReferenceEquals(l.Class, now.Class) || !now.LoadRounds.SequenceEqual(loadRounds[slot]))
+            return false;
+        Fill(slot, l);
+        return true;
+    }
+
+    void Fill(int slot, Loadout l)
+    {
+        loadouts[slot] = l;
+        var lr = loadRounds[slot];
+        if (lr == null || lr.Length != l.LoadRounds.Length)
+            loadRounds[slot] = lr = new int[l.LoadRounds.Length];
+        l.LoadRounds.CopyTo(lr);
+    }
 
     /// <summary>The ship (entity) a ship's battery is engaged on, 0 for none.</summary>
     public int Target(int slot, int battery) => targets[slot] is { } t && battery < t.Length ? t[battery] : 0;
@@ -204,14 +227,14 @@ public sealed class CombatStore
     {
         ref var s = ref mounts[slot]![mount];
         s.LoadedMs = ms + (long)Math.Round(cls.Mounts[mount].ReloadS * 1000);
-        Spend(slot, cls, mount, load, guns);
+        Spend(slot, mount, load, guns);
     }
 
     /// <summary>Rounds of a mount's load go (the dev's salvo spends them without a reload).</summary>
-    public void Spend(int slot, ShipClass cls, int mount, int load, int guns)
+    public void Spend(int slot, int mount, int load, int guns)
     {
         ref var s = ref mounts[slot]![mount];
-        ref int left = ref loadRounds[slot]![cls.MountLoadStart(mount) + load];
+        ref int left = ref loadRounds[slot]![loadouts[slot]!.MountLoadStart(mount) + load];
         int spent = left == int.MaxValue ? guns : Math.Min(left, guns);
         if (left != int.MaxValue)
             left -= spent;
@@ -219,14 +242,15 @@ public sealed class CombatStore
         Touched = true;
     }
 
-    /// <summary>A mount's rounds left of its battery's load k.</summary>
-    public int LoadRounds(int slot, ShipClass cls, int mount, int k) => loadRounds[slot]![cls.MountLoadStart(mount) + k];
+    /// <summary>A mount's rounds left of its battery's load k (of the ship's loadout).</summary>
+    public int LoadRounds(int slot, int mount, int k) => loadRounds[slot]![loadouts[slot]!.MountLoadStart(mount) + k];
 
     /// <summary>The load a mount fires next: the first of its battery's loads (in the magazine order) it has rounds of, or
     /// -1 when it has none left.</summary>
-    public int NextLoad(int slot, ShipClass cls, int mount)
+    public int NextLoad(int slot, int mount)
     {
-        int s0 = cls.MountLoadStart(mount), n = cls.MountLoadStart(mount + 1) - s0;
+        var lo = loadouts[slot]!;
+        int s0 = lo.MountLoadStart(mount), n = lo.MountLoadStart(mount + 1) - s0;
         var r = loadRounds[slot]!;
         for (int k = 0; k < n; k++)
             if (r[s0 + k] > 0)
@@ -235,16 +259,17 @@ public sealed class CombatStore
     }
 
     /// <summary>The load of a kind a mount has rounds of (the first such in the order), or -1.</summary>
-    public int LoadOf(int slot, ShipClass cls, int mount, ShellKind kind)
+    public int LoadOf(int slot, int mount, ShellKind kind)
     {
-        ref readonly var m = ref cls.Mounts[mount];
+        var lo = loadouts[slot]!;
+        ref readonly var m = ref lo.Class.Mounts[mount];
         if (m.Battery < 0)
             return -1;
-        var loads = cls.ShellLoads(cls.Batteries[m.Battery].Shells);
-        int s0 = cls.MountLoadStart(mount);
+        var loads = lo.Loads(m.Battery);
+        int s0 = lo.MountLoadStart(mount);
         var r = loadRounds[slot]!;
         for (int k = 0; k < loads.Length; k++)
-            if (cls.ShellTypes[loads[k].ShellType].Kind == kind && r[s0 + k] > 0)
+            if (lo.ShellTypes[loads[k].ShellType].Kind == kind && r[s0 + k] > 0)
                 return k;
         return -1;
     }
@@ -291,6 +316,14 @@ public sealed class CombatStore
 
     public void Hash(ref StateHash h, ShipStore store)
     {
+        // the loadouts given (only those, so a world of the designs' own hashes as before loadouts)
+        for (int slot = 0; slot < store.Slots; slot++)
+            if (store.IsAlive(slot) && !loadouts[slot]!.IsDefault)
+            {
+                h.Add(slot);
+                h.Add(loadouts[slot]!.Hash.A);
+                h.Add(loadouts[slot]!.Hash.B);
+            }
         if (!Touched)
             return;
         for (int slot = 0; slot < store.Slots; slot++)

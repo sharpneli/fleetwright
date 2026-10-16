@@ -61,12 +61,12 @@ public class WeaponFactsTests
                 p.Add($"battery {b}: local {row.Local} at level {row.Level}");
             double share = 0;
             bool fires = false;
-            foreach (var l in c.ShellLoads(row.Shells))
+            foreach (var l in c.Loadout.Loads(b))
             {
                 share += l.Share;
-                fires |= l.ShellType == row.Fires;
-                if (c.ShellTypes[l.ShellType].CalibreMm != row.CalibreMm)
-                    p.Add($"battery {b} carries a {c.ShellTypes[l.ShellType].CalibreMm} mm shell");
+                fires |= l.ShellType == c.Loadout.Fires(b);
+                if (c.Loadout.ShellTypes[l.ShellType].CalibreMm != row.CalibreMm)
+                    p.Add($"battery {b} carries a {c.Loadout.ShellTypes[l.ShellType].CalibreMm} mm shell");
             }
             if (Math.Abs(share - 1) > 1e-9 || !fires)
                 p.Add($"battery {b}: shares add to {share}, fires a shell it {(fires ? "carries" : "doesn't carry")}");
@@ -74,18 +74,18 @@ public class WeaponFactsTests
         if (inBatteries != c.Mounts.ToArray().Count(m => m.Kind != ComponentKind.Torpedo))
             p.Add($"{inBatteries} mounts in batteries");
 
-        for (int t = 0; t < c.ShellTypes.Length; t++)
+        for (int t = 0; t < c.Loadout.ShellTypes.Length; t++)
         {
-            var s = c.ShellTypes[t];
+            var s = c.Loadout.ShellTypes[t];
             if (!Pos(s.MassKg) || !Pos(s.MuzzleVelocityMs) || !Pos(s.FormFactor) || !Pos(s.FillerKg) || !(s.FuzeDelayS >= 0)
                 || s.FillerKg > 0.2 * s.MassKg || s.Kind == ShellKind.He && s.Fuze != Fuze.Nose || !(s.FillerRe > 0))
-                p.Add($"shell type {c.ShellTypeId(t)}: {s}");
+                p.Add($"shell type {c.Loadout.ShellTypeId(t)}: {s}");
             // shared by id: one id, one shell, whichever class it's in (but for its muzzle velocity, which follows the
             // outfit's heaviest shell: a template beside a heavier AP leaves the gun faster)
-            if (shared.TryGetValue(c.ShellTypeId(t), out var other) && other with { MuzzleVelocityMs = 0 } != s with { MuzzleVelocityMs = 0 })
-                p.Add($"shell type {c.ShellTypeId(t)} differs from another class's");
+            if (shared.TryGetValue(c.Loadout.ShellTypeId(t), out var other) && other with { MuzzleVelocityMs = 0 } != s with { MuzzleVelocityMs = 0 })
+                p.Add($"shell type {c.Loadout.ShellTypeId(t)} differs from another class's");
             else
-                shared[c.ShellTypeId(t)] = s;
+                shared[c.Loadout.ShellTypeId(t)] = s;
         }
 
         var pl = c.Plating;
@@ -104,20 +104,20 @@ public class WeaponFactsTests
         {
             Ammunition = dn.Ammunition!.ToDictionary(kv => kv.Key, kv => kv.Value with { FormFactor = 0.9 }),
         }));
-        Assert.Equal(0.9, faster.ShellTypes[faster.Batteries[0].Fires].FormFactor);
+        Assert.Equal(0.9, faster.Loadout.ShellTypes[faster.Loadout.Fires(0)].FormFactor);
 
         var bare = ShipClassCompiler.Compile(ShipDesign.Build(dn with
         {
             Ammunition = null, Main = dn.Main!.Select(b => b with { Shells = null }).ToList(),
             Secondary = dn.Secondary!.Select(b => b with { Shells = null }).ToList(),
         }));
-        var main = bare.ShellLoads(bare.Batteries[0].Shells).ToArray();
-        Assert.Equal([(ShellKind.Ap, 0.7), (ShellKind.He, 0.3)], main.Select(l => (bare.ShellTypes[l.ShellType].Kind, l.Share)));
+        var main = bare.Loadout.Loads(0).ToArray();
+        Assert.Equal([(ShellKind.Ap, 0.7), (ShellKind.He, 0.3)], main.Select(l => (bare.Loadout.ShellTypes[l.ShellType].Kind, l.Share)));
         Assert.Equal(ShellTemplates.Get("Standard APC (1912)")!.Value.MassKKgM3!.Value * 0.305 * 0.305 * 0.305,
-            bare.ShellTypes[bare.Batteries[0].Fires].MassKg, 9);
+            bare.Loadout.ShellTypes[bare.Loadout.Fires(0)].MassKg, 9);
         // in the magazine order: a secondary fires HE first
-        var sec = bare.ShellLoads(bare.Batteries[1].Shells).ToArray();
-        Assert.Equal([(ShellKind.He, 0.7), (ShellKind.Ap, 0.3)], sec.Select(l => (bare.ShellTypes[l.ShellType].Kind, l.Share)));
+        var sec = bare.Loadout.Loads(1).ToArray();
+        Assert.Equal([(ShellKind.He, 0.7), (ShellKind.Ap, 0.3)], sec.Select(l => (bare.Loadout.ShellTypes[l.ShellType].Kind, l.Share)));
     }
 
     /// <summary>Rounds by kind (docs/battle/shells-armour-damage.md S2): every battery's loads in the magazine order (main
@@ -133,23 +133,23 @@ public class WeaponFactsTests
             for (int i = 0; i < c.Batteries.Length; i++)
             {
                 var row = c.Batteries[i];
-                var loads = c.ShellLoads(row.Shells).ToArray();
-                var ranks = loads.Select(l => MagazineOrder.Rank(row.Kind, c.ShellTypes[l.ShellType].Kind)).ToArray();
-                if (!ranks.SequenceEqual(ranks.Order()) || row.Fires != loads[0].ShellType)
+                var loads = c.Loadout.Loads(i).ToArray();
+                var ranks = loads.Select(l => MagazineOrder.Rank(row.Kind, c.Loadout.ShellTypes[l.ShellType].Kind)).ToArray();
+                if (!ranks.SequenceEqual(ranks.Order()) || c.Loadout.Fires(i) != loads[0].ShellType)
                     problems.Add($"{b.Case.Name} battery {i}: loads out of the magazine order");
             }
             for (int m = 0; m < c.Mounts.Length; m++)
             {
                 var mr = c.Mounts[m];
-                int s0 = c.MountLoadStart(m), n = c.MountLoadStart(m + 1) - s0;
+                int s0 = c.Loadout.MountLoadStart(m), n = c.Loadout.MountLoadStart(m + 1) - s0;
                 if (mr.Battery < 0)
                 {
                     if (n != 0)
                         problems.Add($"{b.Case.Name} torpedo mount {m} has {n} loads");
                     continue;
                 }
-                var loads = c.ShellLoads(c.Batteries[mr.Battery].Shells).ToArray();
-                var rounds = c.LoadRounds.Slice(s0, n).ToArray();
+                var loads = c.Loadout.Loads(mr.Battery).ToArray();
+                var rounds = c.Loadout.LoadRounds.Slice(s0, n).ToArray();
                 if (n != loads.Length || mr.Rounds > 0 && (rounds.Sum() != mr.Rounds || rounds.Where((r, k) => Math.Abs(r - mr.Rounds * loads[k].Share) >= 1).Any()))
                     problems.Add($"{b.Case.Name} mount {m}: {mr.Rounds} rounds as {string.Join("/", rounds)}");
             }
@@ -222,17 +222,17 @@ public class WeaponFactsTests
         var dn = Fleet.Get("dreadnought").Class!;
         var main = dn.Batteries[0];
         Assert.Equal((Battery.Main, FireControlLevel.Director), (main.Kind, main.Level));
-        Assert.Equal(ShellKind.Ap, dn.ShellTypes[main.Fires].Kind);
-        Assert.Equal("305/45 RN 1906 APC (powder)", dn.ShellTypeId(main.Fires));
+        Assert.Equal(ShellKind.Ap, dn.Loadout.ShellTypes[dn.Loadout.Fires(0)].Kind);
+        Assert.Equal("305/45 RN 1906 APC (powder)", dn.Loadout.ShellTypeId(dn.Loadout.Fires(0)));
         var sec = dn.Batteries[1];
         Assert.True(sec.Local);
-        Assert.Equal(ShellKind.He, dn.ShellTypes[sec.Fires].Kind);
+        Assert.Equal(ShellKind.He, dn.Loadout.ShellTypes[dn.Loadout.Fires(1)].Kind);
 
         // the magazine order (decision 7): a destroyer's main guns fire AP first, as a battleship's main battery, and its
         // secondaries HE first; no size threshold
         var tb = Fleet.Get("tb_destroyer").Class!;
         Assert.Equal(Battery.Main, tb.Batteries[0].Kind);
-        Assert.Equal(ShellKind.Ap, tb.ShellTypes[tb.Batteries[0].Fires].Kind);
+        Assert.Equal(ShellKind.Ap, tb.Loadout.ShellTypes[tb.Loadout.Fires(0)].Kind);
 
         // Mikasa's rangefinders and no clock: level 1
         Assert.Equal(FireControlLevel.Rangefinder, Fleet.Get("mikasa").Class!.Batteries[0].Level);

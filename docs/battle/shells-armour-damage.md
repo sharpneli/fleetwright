@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); S0 done    Updated: 2026-10-16
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); S0-S3 and S5 done    Updated: 2026-10-16
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -500,6 +500,37 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
     then at spawn). The admiral's screen for it belongs to the command UI, not this plan.
   - Checks: a ship with the default loadout is byte-identical to S1's; one with HE in its heavy guns shows it in the
     hits bench (passes through destroyers far less).
+  - **Done 2026-10-16.** What it came to:
+    - **A loadout is the design with other shells, resolved by shipgen** (one implementation): `Ammunition.WithLoadout`
+      puts the given batteries' `shells` into a copy of the design (a battery is `main`, `secondary`, `main[i]` or
+      `secondary[i]`; an ammo a template's name from `ShellTemplates`, a block of the design's, a block given with the
+      loadout, or a kind, `ap`, `common` or `he`, for the battery's own block of it), validates it, and
+      `Ammunition.Resolve(loaded, gun: design)` resolves it with each gun's velocity anchored on the design's own
+      heaviest shell, so a heavier shell leaves slower by the fourth-root rule (the dreadnought's 12" firing the US
+      1941 Mk 8 block: heavier, slower). The catalogue is read from `ShellTemplates.cs`, the source `shells.json` is
+      written from, rather than the JSON.
+    - **`Loadout`** (Sim.Ships) holds what the class held: the shell types and ids, each battery's loads in the magazine
+      order and its lead, each mount's rounds by load. `ShipClass.Loadout` is the design's own; `ShipClass.Load(spec)`
+      makes another (the class keeps its design for it). `BatteryRow.Shells` and `Fires` and the class's shell tables
+      are gone, so every reader chose: the sim reads the ship's (`CombatStore.Loadout(slot)`: gunnery, the dev's fire,
+      the shells in flight, which carry the loadout they were fired from, the AI's reach for fire at will, the snapshot
+      and the strip's Fire row), the tools and the magazine blast's look the class's own.
+    - **The matchup:** an own ship is judged with her loadout (`Matchups.Profile(world, loadout)`); every other ship by
+      her class's own, since nobody sees another navy's magazines. `Warm` profiles the loadouts given.
+    - **Where it's set:** `ShipClassRegistry.AddLoadout` gives an id (the same loadout of a class, the same id) and
+      `ShipSystem.Load(entity, id)` fills her magazines with it, only while she's fired nothing (until the campaign's
+      ports); refused otherwise. A scenario's unit (for every ship below it) or ship entry takes `"loadout"`; one that
+      doesn't fit is a warning and the design's shells stay. The dev flag is
+      `-loadout=ship:battery:shell[@share][+shell...]` with `|` between batteries (template names hold commas, so
+      the plan's `name[:share],...` couldn't carry them), and `shipgen hits --loadout` takes the same.
+    - **The hydrostatics stay on the design's weight** (as planned, flagged): a loadout doesn't reweigh the magazines.
+    - **Hash:** a ship of her design's own hashes as before; a given loadout's hash is folded in per ship.
+    - **Benches, S3 to S5:** squadrons (40 min) 51158595913FDF99 and flotilla (30 min) 89DDB801FA11445B before and
+      after; the layout hashes unchanged. `hits` v25 by Lion's 13.5" at 8 km, the design's APC against `main:he`:
+      passed through 85.5% to 0.1% (burst inside 1.4% to 99.9%), crew 0.3 to 16.2 a hit, fire 1% to 70%, holes 0.26 to
+      0.87 m², magazines 0 to 2.3%.
+    - Tests: `LoadoutTests` (a kind, a template and shares; the fourth-root velocity; errors; a ship fires her loadout
+      and refuses another after firing; a scenario unit's loadout and a ship entry's over it).
 - **Not here: the shell by target** (decided). A battery fires by the magazine order (S2). This plan gives
   every battery its outfit of kinds and every ship its loadout; firing HE or common at unarmoured targets is the AI's
   pass (the matchup bench showed it matters: four light cruisers against a battleship).
@@ -793,7 +824,7 @@ None blocks a step; each is settled by its step's bench.
 | S2 | S0 | default outfits | rounds by kind, the magazine order, the dev fire's kind | who fires what |
 | S3 | S2 | ammunition weight | — | displacement |
 | S4 | S1 | designer picker (UI session) | — | no |
-| S5 | S2 | — | per-ship loadouts: scenarios, dev flag, bench | only for ships given one |
+| S5 | S2 | the loadout applied and resolved | per-ship loadouts: scenarios, dev flag, bench (done) | only for ships given one |
 | P0 | — | materials table, upgrade | material rows | no |
 | P1a | P0 | — | Thompson, pen-check bench, deck multiplier | penetration (1–4%) |
 | P1b | P1a | material catalogue | Q(D) | penetration |

@@ -43,9 +43,10 @@ public sealed class ShellSystem : IWorldSystem
         /// <summary>Where it met the water (a hit under it splashes there too).</summary>
         public Vec3d WaterPoint;
         public int Salvo, Shooter, Battery, Generation;
-        /// <summary>The gunnery system's record of its salvo (for the spot), or -1 (the dev's fire); the shell type and
-        /// the shooter's class (its registry id) it's of.</summary>
-        public int Record, ShellType, ShooterClass;
+        /// <summary>The gunnery system's record of its salvo (for the spot), or -1 (the dev's fire); and the shell type,
+        /// of the shooter's loadout when it was fired (so it outlives her), null for none.</summary>
+        public int Record, ShellType;
+        public Loadout? Loadout;
         /// <summary>The shooter's dye when it was fired (her load, so it outlives her).</summary>
         public Dye Dye;
         public bool Alive;
@@ -151,20 +152,27 @@ public sealed class ShellSystem : IWorldSystem
         if (bearings.Length < cls.Mounts.Length)
             bearings = new double[Math.Max(cls.Mounts.Length, bearings.Length * 2)];
         path.Reserve(cls.Solids.Solids.Length);   // the hit query's room for it, now rather than at its first near miss
-        foreach (ref readonly var b in cls.Batteries)
-            foreach (var l in cls.ShellLoads(b.Shells))
-                Ballistics.Ensure(KeyOf(cls, b, l.ShellType));
+        Prepare(cls.Loadout);
     }
 
-    static BallisticKey KeyOf(ShipClass cls, in BatteryRow b, int shellType) =>
-        BallisticKey.Of(cls.ShellTypes[shellType], cls.Mounts[cls.Links(b.Mounts)[0]].MaxElevationDeg);
+    /// <summary>The tables for every load of a loadout's batteries (a class's own, or one a ship is given), made when it
+    /// comes into the world.</summary>
+    internal void Prepare(Loadout lo)
+    {
+        for (int b = 0; b < lo.Class.Batteries.Length; b++)
+            foreach (var l in lo.Loads(b))
+                Ballistics.Ensure(KeyOf(lo, b, l.ShellType));
+    }
 
-    /// <summary>The index of a class's battery's table in <see cref="Ballistics"/> for its lead shell (built now if it's
+    static BallisticKey KeyOf(Loadout lo, int battery, int shellType) =>
+        BallisticKey.Of(lo.ShellTypes[shellType], lo.Class.Mounts[lo.Class.Links(lo.Class.Batteries[battery].Mounts)[0]].MaxElevationDeg);
+
+    /// <summary>The index of a battery's table in <see cref="Ballistics"/> for a loadout's lead shell (built now if it's
     /// new).</summary>
-    public int TableOf(ShipClass cls, int battery) => TableOf(cls, battery, cls.Batteries[battery].Fires);
+    public int TableOf(Loadout lo, int battery) => TableOf(lo, battery, lo.Fires(battery));
 
     /// <summary>The same for one of its shells.</summary>
-    public int TableOf(ShipClass cls, int battery, int shellType) => Ballistics.Ensure(KeyOf(cls, cls.Batteries[battery], shellType));
+    public int TableOf(Loadout lo, int battery, int shellType) => Ballistics.Ensure(KeyOf(lo, battery, shellType));
 
     /// <summary>A new salvo's number.</summary>
     public int NewSalvo() => nextSalvo++;
@@ -180,15 +188,16 @@ public sealed class ShellSystem : IWorldSystem
         var stream = world.Stream("fire").Derive((ulong)salvo);
         int k = 0;
         var combat = ships.Store.Combat;
+        var lo = combat.Loadout(slot);
         foreach (int m in cls.Links(b.Mounts))
         {
-            int load = kind is { } want ? combat.LoadOf(slot, cls, m, want) : combat.NextLoad(slot, cls, m);
+            int load = kind is { } want ? combat.LoadOf(slot, m, want) : combat.NextLoad(slot, m);
             if (load < 0)
             {
                 k += cls.TurretTypes[cls.Mounts[m].Type].Barrels;   // the same stream for the guns that do fire
                 continue;
             }
-            int type = cls.ShellLoads(b.Shells)[load].ShellType, table = Ballistics.Ensure(KeyOf(cls, b, type));
+            int type = lo.Loads(battery)[load].ShellType, table = TableOf(lo, battery, type);
             var t = Ballistics[table];
             double v0 = t.Key.MuzzleVelocityMs;
             int away = 0;
@@ -217,10 +226,10 @@ public sealed class ShellSystem : IWorldSystem
                 double sp = v.Length, vu = Vec3d.Dot(v, up);
                 var dir = (v - up * vu).Normalized();
                 double el = double.RadiansToDegrees(Math.Asin(vu / sp));
-                if (Launch(world, table, muzzle, dir, el, sp / v0, salvo, ship.Entity, battery, -1, type, ship.ClassIndex) && away++ == 0)
+                if (Launch(world, table, muzzle, dir, el, sp / v0, salvo, ship.Entity, battery, -1, type, lo) && away++ == 0)
                     (first, firstEl) = (dir, el);
             }
-            combat.Spend(slot, cls, m, load, cls.TurretTypes[mount.Type].Barrels);
+            combat.Spend(slot, m, load, cls.TurretTypes[mount.Type].Barrels);
             if (away > 0)
                 Fired(world, ship.Entity, ship.ClassIndex, m, salvo, away, muzzle, first, firstEl);
         }
@@ -237,7 +246,7 @@ public sealed class ShellSystem : IWorldSystem
     /// <summary>A shell away: its record, its window and end solved, its window's event scheduled. False if it never
     /// comes down (no shell is made).</summary>
     public bool Launch(World world, int table, Vec3d muzzle, Vec3d forward, double elevationDeg, double speed, int salvo, int shooter, int battery,
-        int record = -1, int shellType = -1, int shooterClass = -1)
+        int record = -1, int shellType = -1, Loadout? loadout = null)
     {
         var t = Ballistics[table];
         double end = t.Reaches(muzzle, forward, elevationDeg, speed, 0);
@@ -253,7 +262,7 @@ public sealed class ShellSystem : IWorldSystem
         s = new Shell
         {
             Table = table, FiredMs = world.Time.Ms, Muzzle = muzzle, Forward = forward, ElevationDeg = elevationDeg, Speed = speed, WindowS = top,
-            WaterS = end, EndS = end, Salvo = salvo, Shooter = shooter, Battery = battery, Record = record, ShellType = shellType, ShooterClass = shooterClass,
+            WaterS = end, EndS = end, Salvo = salvo, Shooter = shooter, Battery = battery, Record = record, ShellType = shellType, Loadout = loadout,
             Generation = gen, Alive = true,
             Hit = -1,
             Dye = ships.Store.SlotOf(shooter) is int ss and >= 0 ? ships.Store[ss].Dye : Dye.None,
@@ -293,12 +302,12 @@ public sealed class ShellSystem : IWorldSystem
             if (s.Hit >= 0)
             {
                 Hits++;
-                if (Damage != null && settings.HitsDoDamage && s.ShooterClass >= 0 && s.ShellType >= 0)
+                if (Damage != null && settings.HitsDoDamage && s.Loadout != null && s.ShellType >= 0)
                     Damage.Strike(world, new Hit
                     {
                         Ship = s.Hit, Ms = world.Time.Ms, Point = s.HitPoint, Direction = s.HitDirection, SpeedMs = s.HitSpeed, WaterRunM = s.WaterRunM,
                         Source = HitSource.Shell,
-                        Shell = ships.Class(s.ShooterClass).ShellTypes[s.ShellType], ShellType = s.ShellType, Shooter = s.Shooter, Battery = s.Battery,
+                        Shell = s.Loadout.ShellTypes[s.ShellType], ShellType = s.ShellType, Shooter = s.Shooter, Battery = s.Battery,
                     });
                 else
                     log.Add(new CombatEntry(world.Time.Ms, CombatEvent.Hit, s.Shooter, s.Battery, s.Hit, s.ShellType));
@@ -323,7 +332,7 @@ public sealed class ShellSystem : IWorldSystem
         double vu = Vec3d.Dot(vel, up), vl = Math.Max(vel.Length, 1e-9);
         float fall = (float)double.RadiansToDegrees(Math.Asin(Math.Clamp(-vu / vl, -1, 1)));
         float bearing = (float)Earth.Heading(at, vel - up * vu);
-        var kind = s.ShooterClass >= 0 && s.ShellType >= 0 ? ships.Class(s.ShooterClass).ShellTypes[s.ShellType].Kind : ShellKind.Ap;
+        var kind = s.Loadout != null && s.ShellType >= 0 ? s.Loadout.ShellTypes[s.ShellType].Kind : ShellKind.Ap;
         return new Splash(at, ms, ship, s.Salvo, s.Shooter, table.Key.CalibreMm, fall, bearing, kind, s.Dye);
     }
 
@@ -347,7 +356,7 @@ public sealed class ShellSystem : IWorldSystem
         }
         double speed = vel.Length;
         // on under the water, straight along its flight, as far as it gets (a nose fuze fires on the water: a near miss)
-        var shell = s.ShooterClass >= 0 && s.ShellType >= 0 ? ships.Class(s.ShooterClass).ShellTypes[s.ShellType] : new ShellTypeRow { CalibreMm = t.Key.CalibreMm };
+        var shell = s.Loadout != null && s.ShellType >= 0 ? s.Loadout.ShellTypes[s.ShellType] : new ShellTypeRow { CalibreMm = t.Key.CalibreMm };
         double reach = WaterRun.ReachM(shell, speed, settings);
         chordPoint[Chords + 1] = chordPoint[Chords] + vel * (reach / speed);
         chordTime[Chords + 1] = s.EndS + WaterRun.TimeS(speed, reach, WaterRun.DecayM(shell, settings));
