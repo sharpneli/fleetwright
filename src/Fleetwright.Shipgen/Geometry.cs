@@ -271,11 +271,11 @@ public static class Geometry
         });
     }
 
-    /// <summary>MakeTurretType for a battery, carrying its rounds_per_gun when it gives one.</summary>
+    /// <summary>MakeTurretType for a battery, carrying its rounds_per_gun when it gives one and its mean shell mass.</summary>
     public static (string Id, TurretType T) BatteryType(BatteryInput b, string kind = "auto")
     {
         var (tid, t) = MakeTurretType(b.CalibreMm!.Value, b.CalibreLength!.Value, b.Barrels!.Value, kind);
-        return (tid, t with { RoundsPerGun = b.RoundsPerGun });
+        return (tid, t with { RoundsPerGun = b.RoundsPerGun, ShellKg = b.ShellKg });
     }
 
     public static (string Id, TurretType T) MakeTorpedoType(int n, bool fixed_ = false)

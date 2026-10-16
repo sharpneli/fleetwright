@@ -40,9 +40,12 @@ public class MagazineBlastTests(ITestOutputHelper output)
         // (23% for the 380/52), this the charge and shell rows (21%), so within 15%
         int y = Magazines(c).Where(r => c.Rooms[r].Tonnes > 100).MinBy(r => c.Rooms[r].X0);
         var aft = MagazineBlast.Of(c, y);
-        Assert.InRange(aft.MassKg, 0.85 * 22_000, 1.15 * 22_000);
-        Assert.InRange(aft.FireballM, 150, 170);
-        Assert.InRange(aft.BlastLengthM, 70, 80);
+        // (from 0.75 since the magazines weigh the real shells, user 2026-10-16, docs/battle/shells-armour-damage.md S3: the
+        // round's charge is still 0.6 of its shell (Batteries.AmmoMult), so a lighter shell took its propellant with it;
+        // the ammunition's `charge` gives it as rounds x charge, and the band closes again)
+        Assert.InRange(aft.MassKg, 0.75 * 22_000, 1.15 * 22_000);
+        Assert.InRange(aft.FireballM, 140, 170);   // both follow M (from 150 and 70)
+        Assert.InRange(aft.BlastLengthM, 65, 80);
         Assert.True(aft.Mount >= 0 && !double.IsNaN(aft.BarbetteR), "a turret over it, with its barbette");
     }
 

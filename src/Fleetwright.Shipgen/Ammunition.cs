@@ -169,25 +169,40 @@ public static class Ammunition
             yield return $"{at}.outcomes = {Style.Quote(a.Outcomes)}: use {string.Join(", ", OutcomeRows)}";
     }
 
+    /// <summary>The design with each gun battery stamped with its outfit's mean shell mass, kg (BatteryInput.ShellKg, the
+    /// shares by the masses Resolve gives): what its magazines weigh (S3). Expects a valid design.</summary>
+    public static Design WithShellMasses(Design design)
+    {
+        List<BatteryInput>? Stamp(List<BatteryInput>? list, bool main) => list?.Select(b =>
+            b.CalibreMm is { } cal && b.CalibreLength is not null ? b with { ShellKg = Outfit(design, b, main).Sum(o => o.Share * o.MassKg) } : b).ToList();
+        return design with { Main = Stamp(design.Main, true), Secondary = Stamp(design.Secondary, false) };
+    }
+
+    /// <summary>A battery's outfit: its shells (block, name, share, mass, its own velocity if given), or the default
+    /// outfit's.</summary>
+    static List<(AmmoInput Block, string Name, double Share, double MassKg, double? MuzzleVelocityMs)> Outfit(Design design, BatteryInput b, bool main)
+    {
+        var table = design.Ammunition ?? [];
+        double d = b.CalibreMm!.Value / 1000;
+        return b.Shells is { Count: > 0 } shells
+            ? shells.Select(e => (table[e.Ammo!], e.Ammo!, e.Share!.Value, e.MassKg ?? table[e.Ammo!].MassKKgM3!.Value * d * d * d, e.MuzzleVelocityMs)).ToList()
+            : ShellTemplates.DefaultOutfit(main).Select(o => (o.Block, o.Name, o.Share, o.Block.MassKKgM3!.Value * d * d * d, (double?)null)).ToList();
+    }
+
     /// <summary>Each gun battery's resolved shells, main batteries first, in the design's order: its `shells`, else the
     /// default outfit. Two batteries of one gun (kind, calibre and length) that carry different shells: the first's are
     /// used, with a warning, since the sim fires one gun's shells from one battery. Expects a valid design.</summary>
     public static List<BatteryShells> Resolve(Design design, List<string> warnings)
     {
         var res = new List<BatteryShells>();
-        var table = design.Ammunition ?? [];
         foreach (var (which, list) in new[] { ("main", design.Main), ("secondary", design.Secondary) })
             for (int i = 0; i < (list?.Count ?? 0); i++)
             {
                 var b = list![i];
                 if (b.CalibreMm is not { } cal || b.CalibreLength is not { } len)
                     continue;
-                var outfit = b.Shells is { Count: > 0 } shells
-                    ? shells.Select(e => (Block: table[e.Ammo!], Name: e.Ammo!, Share: e.Share!.Value, e.MassKg, e.MuzzleVelocityMs)).ToList()
-                    : ShellTemplates.DefaultOutfit(which == "main").Select(o => (o.Block, o.Name, o.Share, MassKg: (double?)null, MuzzleVelocityMs: (double?)null))
-                        .ToList();
-                double d = cal / 1000;
-                var masses = outfit.Select(e => e.MassKg ?? e.Block.MassKKgM3!.Value * d * d * d).ToArray();
+                var outfit = Outfit(design, b, which == "main");
+                var masses = outfit.Select(e => e.MassKg).ToArray();
                 double heavyKg = masses.Max(), heavyMs = b.MuzzleVelocityMs ?? DefaultMuzzleVelocity(len);
                 var resolved = new List<ShellReport>();
                 for (int k = 0; k < outfit.Count; k++)

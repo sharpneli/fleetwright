@@ -6,7 +6,7 @@ public static class ShipDesign
 {
     /// <summary>The generator's version: bumped whenever its output changes on purpose (each `golden-update` commit), so
     /// anything compiled from a build (a ShipClass, a cache entry) knows it's stale.</summary>
-    public const int Version = 9;
+    public const int Version = 10;
 
     /// <summary>Input errors. limits false skips the numeric ranges (--no-limits); structural checks stay.</summary>
     public static List<string> Validate(Design design, bool limits = true)
@@ -431,7 +431,7 @@ public static class ShipDesign
     /// <summary>Design the ship.</summary>
     public static Ship Build(Design design)
     {
-        var (lay, r, sized) = Solve(design);
+        var (lay, r, sized) = Solve(Ammunition.WithShellMasses(design));
         var inner = InteriorOf(lay, sized, r);
         return new Ship(design, ReportOf(design, lay, r, sized), Hitbox.ExportHitboxes(lay, sized, r, inner), lay.Dressing);
     }

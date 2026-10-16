@@ -461,6 +461,30 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
 - **S3 Ammunition weight.** The magazines weighed from the default outfit's mean shell mass (the charge stays in
   `AmmoMult`). Report the displacement shifts,
   run `golden-update` with a `ShipDesign.Version` bump and `mono-check`.
+  - **Done 2026-10-16.** What it came to:
+    - `ShipDesign.Build` stamps each gun battery with its outfit's mean shell mass (`Ammunition.WithShellMasses`, the
+      shares by the masses `Resolve` gives; `BatteryInput.ShellKg`, not serialized); the turret type carries it
+      (`TurretType.ShellKg`) as it carries `rounds_per_gun`, and `Batteries.MountWeights` and the ready-use rounds weigh
+      it times `AmmoMult`. A mount with no outfit (AA guns) keeps `ShellK`'s curve.
+    - **Displacement:** every shipped design lighter, median -1.5% standard: victory_1944 2,261 -> 2,141 t (-5.3%), doom
+      -4.7%, duilio -3.6%, brennus -3.4%, borodino -2.9%, colorado -2.8%, devastation -2.8%, armoured_cruiser -2.7%;
+      the least moved the merchants and carriers (-0.1 to -0.6%). `ShellK` was the 16" Mk 8's super-heavy W/D³, the top
+      of the range, so nearly every real shell is lighter (Bismarck's 38 cm 1,004 -> 805 kg). The fuzz mutants: median
+      -1.5%, from -7.0%; one valid mutant grows by a sizing jump (fuzz_lim_014 +5.8%, its hull 256 -> 269 m), and one
+      invalid build (fuzz_lim_139, out of trim before and after) jumps 76 -> 108 m.
+    - **mono-check:** 27 reversals and 15 lumps before, 35 and 13 after. The big ones are the same discontinuities moved
+      by the lighter weights (Kongo's 17 m hull jump on main_rounds 130->140 is now on main_calibre 326->336 as a
+      -5.8% reversal; the dreadnought's freeboard lump and the fleet carrier's AA lumps unchanged); the added reversals
+      are small (range +3, freeboard +2, stress, tower and AA light +1 each, mostly under 1.5%). The sizer's lumpiness is
+      the monotone rework's (memory: monotone sizing rework), not this step's.
+    - **MagazineBlastTests** (user, 2026-10-16): Bismarck's aft magazine 321 -> 258 t, its fireball's M 21.3 -> 17.1 t
+      against vidgen's 22 t: `AmmoMult` counts the round's charge as 0.6 of its shell, so a lighter shell took its
+      propellant with it although a gun's charge doesn't depend on it. The band widened to 0.75-1.15 of 22 t (the
+      fireball 140-170 m and λ 65-80 m with it) until the ammunition's `charge` gives the propellant as rounds × charge.
+    - **FlotillaAttackTests** pinned to seed 1 (seed 7 no longer gets in with the ships' sizes moved; 7 of seeds 1-12
+      do, "about half the time" as its comment says).
+    - Squadrons (40 min): Britain lost 2 (Princess Royal, Lion), Germany none. Goldens: 315 design, 311 SVG and 69
+      sprite.json cases (shipgen/golden/README.md), ShipDesign.Version 10.
 - **S4 The designer.** A shell template picker in the Main battery and Secondary tabs (the template column); the
   battery table shows the kind, mass and fuze. A UI session of its own (mockup, then port); it can run any time after
   S1, alongside phase P.

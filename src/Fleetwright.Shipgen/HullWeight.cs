@@ -272,12 +272,12 @@ public static class Ordnance
     public static double AmmoT(TurretType t) => Batteries.MountWeights(t, 0.0, 0.0, 0).Ammo;
 
     /// <summary>Ready-use ammunition at a gun mount at action stations: (rounds, tonnes).</summary>
-    public static (long N, double T) ReadyUse(double calibreMm, double barrels, double? cap = null)
+    public static (long N, double T) ReadyUse(double calibreMm, double barrels, double? cap = null, double? shellKg = null)
     {
         double n = barrels * Math.Max(1L, (long)Math.Round(ReadyK * Math.Pow(calibreMm, -ReadyP)));
         if (cap is double c)
             n = Math.Min(n, c);
-        return ((long)n, n * Batteries.ShellK * Math.Pow(calibreMm, 3) / 1000.0 * Batteries.AmmoMult);
+        return ((long)n, n * (shellKg ?? Batteries.ShellK * Math.Pow(calibreMm, 3)) / 1000.0 * Batteries.AmmoMult);
     }
 
     public static double WarheadKg(double diameterMm = TorpedoMm) => WarheadK * Math.Pow(diameterMm, 3);

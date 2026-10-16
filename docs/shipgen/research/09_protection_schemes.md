@@ -12,7 +12,8 @@ It builds on, and doesn't repeat, `01_capital_subdivision.md` §1.4 and §2–3 
 2. **Magazines are put where shells can't easily reach, before any armour is added**: low (crowns at or under the waterline, so a flat-trajectory shell has to pass through water or a deck to get there), inboard (behind wing spaces), and away from the side at the ends where the hull is narrow. Unarmoured ships rely on this alone. A destroyer's magazine sits on the hold level under its mount, below the waterline. It is not behind the side plating at gun height.
 3. **Protection varied along the citadel.** Magazines usually got more than machinery: a thicker belt (KGV 374 vs 348 mm, Nelson 14 vs 13 in, Takao 127 vs 102 mm), a thicker deck (Belfast 3 in vs 2 in), a thicker holding bulkhead (Dunkerque 40–50 vs 30 mm). Treaty cruisers often skipped the belt at the magazines entirely and armoured them as **boxes**.
 4. **There are about a dozen recognisable families** (§1–§5). Most are combinations of a small number of parts the generator already has or nearly has: belt (with inclination and position), upper belt, end belts, decks (flat, or flat plus slopes), bulkheads, TDS, plus four parts it lacks: **sloped deck edges, a splinter/holding bulkhead behind the belt, magazine boxes, and wing spaces on non-TDS ships**.
-5. **Not all protection is plate.** Water above the magazine crown, coal in wing bunkers, cellulose cofferdams, flooding and sprinkling, and flash-tight handling rooms all did real work. Some belong in the generator (where things go), some in the damage model (what fire and flash do).
+5. **Internal bulkheads come in about ten kinds** (§7) with very different jobs and thicknesses: 5–15 mm watertight bulkheads sized for the water head, 25–50 mm holding and splinter bulkheads sized against weapons, and light partitions that only arm fuzes and catch fragments. Watertight bulkheads deflect a metre and hold beyond about 5 m from a torpedo burst, and are destroyed within about 3 m.
+6. **Not all protection is plate.** Water above the magazine crown, coal in wing bunkers, cellulose cofferdams, flooding and sprinkling, and flash-tight handling rooms all did real work. Some belong in the generator (where things go), some in the damage model (what fire and flash do).
 
 ---
 
@@ -230,9 +231,100 @@ Like `plant-templates.md`: named blocks a design copies, no year inside. Values 
 
 ---
 
+## 7. Internal bulkheads: kinds, spacing, thickness and strength
+
+Added 2026-10-16 (second pass). `01_capital_subdivision.md` §1.1–1.7 already has compartment counts, the centreline-bulkhead danger, bottoms and leak paths; this section adds **what each kind of bulkhead was built to do, how thick and how far apart, and how strong it proved**, so the generator can give them different values instead of one gauge for all.
+
+### 7.1 The kinds of bulkhead
+
+A warship's interior is divided by several families of bulkhead with very different jobs. Only the first is designed against flooding alone.
+
+| Kind | Job | Typical plate | Runs | Notes |
+|---|---|---|---|---|
+| **Main watertight transverse** | stop flooding spreading along the ship | thin, ductile structural steel; thicker low down | keel/inner bottom → bulkhead deck (main deck or second deck) | sized for the water head, not for weapons |
+| **Collision bulkhead** | the first main bulkhead abaft the stem | heavier than main, no openings | keel → weather deck | ~0.05 L abaft the bow (the generator already places one) |
+| **Armoured transverse** | close the citadel ends against raking fire | armour (100–350 mm on capital ships, 25–150 mm cruisers) | inner bottom → top of belt | `armour.bulkhead_mm`; Bismarck's citadel ends 100–145 mm with 45 mm continuing to the bottom aft (Okun) |
+| **Holding / torpedo bulkhead** (longitudinal) | the last line of the TDS; must deflect without tearing | 25–50 mm ductile STS / Ww | inner bottom → armour deck | Bismarck 45 mm Ww; SoDak 1.5 in STS inner bulkhead with a 1 in extension upward; Richelieu 30 mm HT (Okun) |
+| **TDS layer bulkheads** (longitudinal) | bound the liquid and void layers outboard of the holding bulkhead | thin: ~6–16 mm | bottom → third deck or so | SoDak's torpedo bulkhead No. 2 was **10 lb STS (~6 mm)**; a 14 in shell bursting against it blew the part above the third deck outboard (WDR BB-57) |
+| **Wing / bunker bulkhead** (longitudinal) | inner boundary of coal bunkers or wing tanks | structural gauge, oil-tight where tanks | bottom → main deck | the generator's `wing` kind |
+| **Centreline bulkhead** (longitudinal) | split machinery rooms port/starboard | structural gauge | bottom → armour deck | a design choice with a capsizing penalty (`01` §1.2); the USN avoided it, Japan kept it |
+| **Splinter bulkhead / magazine shield** | catch fragments and shell pieces short of a vital space | 25–30 mm STS / Ww | between decks, around magazines, plotting rooms, switchboards | Bismarck's 30 mm cells (`01` §1.4); SoDak had a **1 in STS magazine shield** (Okun) |
+| **Oil-tight / tank boundary** | bound fuel and water tanks; a cofferdam pair round a magazine | structural gauge, tested tighter | inside the double bottom, wings, ends | magazines are separated from oil by a void cofferdam (fire) |
+| **Flash-tight bulkhead** | stop a cordite flash spreading from the handling room and hoists | light, but no openings without flash-tight doors or scuttles | around magazines, handling rooms, hoists | the Jutland lesson (§2.4); a damage-model property more than a strength one |
+| **Non-watertight (joiner) partition** | divide quarters, offices, storerooms inside one compartment | 2–5 mm steel, expanded metal, (early) wood | deck to deck | no flooding role, but every one is a plate a fuze can arm on and a fragment must pass |
+
+### 7.2 How the main bulkheads were laid out
+
+**Spacing along the hull**
+- **Main transverse bulkheads every 0.05–0.07 L** on capital ships (Kaiser about 10 m, Bismarck about 11 m; `01` §1.1). The generator's sections (snapped to rooms, merged under 0.03 L, split over 0.07 L) already fall in that band.
+- **The longest compartments are the machinery rooms**, and that is where designers fought hardest. Iowa's first unit-machinery plan had four rooms of 64 ft (each two boilers and a turbine), so one breach could flood 128 ft. The redesign split them into separate **engine and boiler rooms of 32 ft each** (Naval Gazing, Survivability: Flooding). So for a fast battleship, **about 10 m is the practical length of a machinery compartment**, and a hit flooding two adjacent ones floods about 20 m.
+- **Destroyers** were "four-compartment ships" (four adjacent main compartments floodable), with in practice "somewhat greater than two machinery spaces" for the smaller classes and three for the larger (`03` §0). HAMBLETON's bulkheads 86½ and 103, and STRONG's 91½, 92½ and 110 (USN torpedo/mine report), suggest machinery compartments of roughly 10–12 m on a 100–115 m hull **[INFERRED: assumes about 2 ft frame spacing on these destroyers, not confirmed]**.
+- **Bulkheads stand on frames.** Bulkheads are named by the frame they stand on (SoDak's "bulkhead 136", "bulkhead 129"; HAMBLETON's "bulkhead 103"), so their spacing is a whole number of frames. USN capital ships used 4 ft frames (frame number × 4 ft from the forward perpendicular), which fits SoDak's turret III at frame 123½ about 490 ft from the bow and Iowa's 32 ft rooms as 8 frames **[INFERRED from frame numbers, not stated in the reports]**. German compartments were numbered with Roman numerals **from the stern** (Bismarck I–XXII; XX and XXI flooded in the bow; INRO).
+
+**Height**
+- Main bulkheads run from the inner bottom to the **bulkhead deck**, usually the main deck amidships; above it, the hull is open fore and aft except at a few bulkheads carried higher.
+- Inside that height a lower deck acts as the **damage-control deck**: on Iowa there is no passage between the engine rooms below it, and pipes and cables cross bulkheads above it where possible (Naval Gazing). Below the DC deck, access is from above (ladders, trunks), not through doors in the main bulkheads. RN dreadnoughts are usually described as having no doors in the main bulkheads below the main deck (`01` §1.6, unverified). Earlier ships and merchant-influenced designs had doors low down, and open doors were the classic progressive-flooding path (Victoria, Audacious).
+- Decks are about 8–8.5 ft (2.4–2.6 m) apart (Okun: about 8.5 ft between Bismarck's decks), so the generator's 2.6 m `DECK_PITCH` is right.
+
+**Width**
+- Longitudinal bulkheads divide each section into wings and centre: TDS layers (capital ships, inside the citadel), wing bunkers or tanks, and optionally a centreline bulkhead. In the ends and on small ships most main compartments are the full width of the hull.
+
+**How many**
+- Main compartments: 15–22 on capital ships, about 14 on a Hipper, about 12–16 on a destroyer (`01` §1.1, `03` §2.3, §4.3).
+- Watertight compartments of every size: a 10,000 t treaty cruiser had **about 187 compartments tested during construction** (Pierce, USNI 1931); Tennessee 948; Yamato 1,147. Most of that count is decks and small longitudinal divisions inside the main compartments.
+
+### 7.3 How strong
+
+**Designed against water, not weapons**
+- A watertight bulkhead is sized to hold the head of water from flooding on one side: "equal to or greater than that which would result from flooding" (Pierce, USNI 1931). With the bulkhead deck as the design limit, that is roughly the hull depth: 10–15 m of water, **100–150 kPa (15–22 psi) at the bottom edge**, falling to zero at the top. So the plating is graded, **thickest in the lowest strake and thinnest at the top**, on vertical stiffeners.
+- Plate thicknesses for ordinary watertight bulkheads aren't in the sources fetched here. From the hull-weight model and general practice: about the hull's minimum gauge or a little under, **roughly 5–8 mm on a destroyer and 8–15 mm on a capital ship, thicker low down [INFERRED]**. The generator's 0.7 × minimum gauge (about 5 mm on a destroyer, 8 mm on a battleship) is at the light end of that.
+- The USN gave thicknesses in pounds per square foot of STS (40.8 lb/ft² per inch): **10 lb ≈ 6 mm, 15 lb ≈ 9 mm, 20 lb ≈ 12.5 mm, 25 lb ≈ 16 mm, 30 lb ≈ 19 mm, 35 lb ≈ 22 mm, 50 lb ≈ 31 mm, 60 lb ≈ 37 mm.**
+- **Testing:** each compartment was strength-tested during construction (water head or air pressure from a test sheet), air-tested after fitting out, and air-tested at least yearly in service, allowed to lose no more than 10 % of its gauge pressure in ten minutes (at 5 psi, about 0.04 sq in of leak in a typical storeroom). Bulkheads in service leaked through neglected penetrations, cable-clip holes and uncapped voice tubes "like a kitchen sieve" (Pierce).
+
+**Against blast: ductile, deflects, mostly holds at a distance**
+- The USN destroyer torpedo report: main transverse bulkheads "remained effective under severe conditions," with large deflections and only minor leaks.
+  - HAMBLETON: bulkhead 86½, **about 18 ft from the detonation, deflected about 36 in** without failing (shored, renewed in repair). Bulkhead 103, **about 10.5 ft away, had its port side destroyed**.
+  - LA VALLETTE: bulkhead 110, **about 30.5 ft away, deflected 18 in at mid-height**, stiffeners tipped, a 16 × 2½ in rupture and a fragment hole: partial flooding, stopped with wedges and shoring.
+  - STRONG: the forward bulkhead of the after engine room, **about 35 ft away, was split open by blast pressure** even with another bulkhead between.
+  - Failures came at **welds and seams** (a 6 in weld crack at the turn of the bilge; welds to deck longitudinals broken), **penetrations** (cracked piping connections, shaft glands), **shafts displaced sideways** (CHEVALIER, BEATTY), and **hatches blown open** even when secured.
+- A rule of thumb for the generator: against a destroyer-sized torpedo hit, the bulkheads **within about 10 ft (3 m) of the burst are destroyed**, those **about 15–35 ft (5–11 m) away bulge and leak, and may split**, and those beyond hold, leaking at seams and penetrations **[INFERRED from the four cases above]**. Riveted bulkheads failed at rivets rather than plate (North Carolina's holding bulkhead, `01` §1.1).
+- Under sustained head after the fight, strained bulkheads were shored with timber and nursed: Seydlitz steamed astern to relieve them (`01` §1.1); SELFRIDGE's shored bulkhead 68 held at 10 kn with the bow gone.
+
+**Against shells and fragments: a fuze trigger and a fragment screen, not a stop**
+- WDR BB-57 (South Dakota, Guadalcanal): two 60 lb (37 mm) STS bulkheads were passed straight through by a heavy shell that didn't burst; a 30 lb (19 mm) clipping-room bulkhead was pierced and the shell burst just beyond it; a 10 lb (6 mm) TDS bulkhead was pierced, holed by fragments, and blown out.
+- WDR CA-38 (San Francisco): a 10 lb STS bulkhead was holed by splinters; 6 in hits went through two thicknesses of 35 lb STS.
+- USN policy (1945): **25 lb STS (~16 mm) is the least reasonably effective against fragments of close bursts**; 10 lb mainly keeps out weather and distant fragments (destroyer gunfire report, §5.1 above).
+- So ordinary bulkheads and partitions **don't stop shells, but they arm fuzes and soak up fragments**: each one a shell crosses brings its burst nearer the point of entry, and each one between a burst and a vital space takes energy out of the fragments. This is why a magazine three bulkheads deep is safer than one behind the shell, even with no armour anywhere.
+
+### 7.4 What this means for the generator
+
+What exists today: sections between transverse bulkheads (collision, armoured, main), longitudinal `wing`, `tds` and `centreline` bulkheads, every watertight bulkhead at one `plate_mm` (0.7 × minimum gauge), the TDS as one thickness for all its layers, a leak rate on face area, and the inside of a room `open`.
+
+1. **Thickness per kind.** Give each bulkhead kind its own `plate_mm`:
+   - main transverse: the gauge as now, optionally graded (e.g. 1.3× in the bottom tier, 0.8× at the top) so the lower strakes are what they were;
+   - collision: about 1.5× main;
+   - the TDS split into its layers: thin outer layers (~6–16 mm) and a **holding bulkhead** of its own thickness (25–50 mm) rather than 12 mm × depth spread evenly; the holding bulkhead is the one that matters for torpedoes and, per §6.4, for shells;
+   - splinter bulkheads and magazine shields (25–30 mm) as an option (§6.4–6.5).
+2. **Partitions inside rooms.** Today a room's cells are `open` to each other. For the damage model, a light partition (2–5 mm) at room boundaries that aren't watertight gives fuzes and fragments something to meet without changing the flooding. Quarters and stores between the side and a magazine then do their protective work (§6.1).
+3. **Blast response by distance.** Each watertight bulkhead gets a strength figure so a burst can grade its effect by distance: destroyed close in, bulged and leaking (raised leak rate) further out, intact beyond (§7.3's rule of thumb, scaled by charge). Welded bulkheads fail at seams, riveted ones at rivets; `hull.construction` already says which.
+4. **Doors below the DC deck.** A design flag for whether main bulkheads below the damage-control deck have doors (`subdivision.doors_below: true | false`): doors make the ship easier to live in and give the damage model an open-door progressive-flooding path when not at action stations; no doors means access only from above. Pipes and cables crossing below that deck raise the leak rate.
+5. **Compartment length limit.** The 0.07 L split rule is about right in general; machinery rooms are the exception that matters. A check (or a warning) that **any two adjacent compartments together stay under the floodable length** at the design draught would reproduce the Iowa redesign and the destroyers' four-compartment standard, and gives the unit-machinery choice a measurable payoff.
+6. **Frame snap.** Snapping stations to a frame spacing (about 1.2 m on large ships, about 0.6 m on small ones [INFERRED]) is cosmetic for the physics, but lets the game name bulkheads by frame, as damage reports did.
+
+---
+
 ## Sources
 
-Fetched in this session:
+Fetched in this session (second pass, §7):
+- [Pierce, "Water Tightness", USNI Proceedings, March 1931](https://www.usni.org/magazines/proceedings/1931/march/water-tightness) (design head, test procedure, allowable leak, 187 compartments on a treaty cruiser, flow through holes)
+- [Naval Gazing — Survivability: Flooding](https://www.navalgazing.net/Survivability-Flooding) (Iowa 64 ft → 32 ft machinery rooms, damage-control deck, centreline bulkheads)
+- [Okun — Armor Protection of KM Bismarck](https://www.combinedfleet.com/okun_biz.htm) (Bismarck, South Dakota and Richelieu bulkhead thicknesses, deck spacing)
+- [INRO — Bismarck](https://navweaps.com/index_inro/INRO_Bismarck.php) (compartment numbering, citadel bulkheads, torpedo bulkhead)
+- [USS South Dakota War Damage Report BB-57](http://ibiblio.org/hyperwar/USN/WarDamageReports/WarDamageReportBB57/WarDamageReportBB57.html) (bulkhead plate weights and how they performed)
+- [USS San Francisco War Damage Report CA-38](https://ibiblio.org/hyperwar/NHC/WarDamageReports/WarDamageReportCA38/WarDamageReportCA38.html)
+- [USN Destroyer Report — Torpedo and Mine Damage](https://www.history.navy.mil/research/library/online-reading-room/title-list-alphabetically/w/war-damage-reports/destroyer-report-torpedo-mine-damage.html) (bulkhead deflection and failure by distance)
+
+Fetched in this session (first pass, §0–6):
 - [County-class cruiser — Wikipedia](https://en.wikipedia.org/wiki/County-class_cruiser) (box citadels 4 in / 2.5 in / 2.5 in, later belts)
 - [Leander-class cruiser (1931) — Wikipedia](https://en.wikipedia.org/wiki/Leander-class_cruiser_(1931)) (3 in magazine box, belt lengthened for unit machinery)
 - [Dunkerque-class battleship — Wikipedia](https://en.wikipedia.org/wiki/Dunkerque-class_battleship) (inclined belt, two decks with slopes, bulkhead thickened at magazines, magazine floor plate)

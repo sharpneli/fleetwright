@@ -101,6 +101,12 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   purpose: `crew_k * (MW * stress_mult)^0.75`. 293 cases change, every design with a rating over 0: fewer men below,
   less crew weight and space, and where crew space set the length a shorter ship (destroyer 124.5 -> 112.1 m, Fubuki
   137 -> 122 m); capital ships about -0.2 %.
+- 2026-10-16, the magazines weigh the real shells (docs/battle/shells-armour-damage.md S3), on purpose: a battery's
+  rounds weigh its outfit's mean shell (the templates' k·D³, or the default 1912 standard family's) times AmmoMult,
+  instead of the 16" Mk 8's W/D³ for every gun; ready-use rounds the same. 315 cases change (68 designs, 247 fuzz):
+  every shipped design lighter, median -1.5 % standard (victory_1944 -5.3 %, doom -4.7 %, duilio -3.6 %, colorado
+  -2.8 %), and the SVGs and sprite.json of the 311 and 69 whose hulls moved. One valid fuzz mutant grows by a sizing
+  jump (fuzz_lim_014 +5.8 %, 256 -> 269 m) and one invalid one (fuzz_lim_139).
 
 ## Layout
 

@@ -20,6 +20,9 @@ public sealed record TurretType
     public required double CalibreMm { get; init; }
     public double? CalibreLength { get; init; }
     public double? RoundsPerGun { get; init; }
+    /// <summary>Its battery's mean shell mass, kg (the outfit's, BatteryInput.ShellKg); null: the old curve by calibre
+    /// (AA mounts, which have no outfit).</summary>
+    [JsonIgnore] public double? ShellKg { get; init; }
 
     /// <summary>Does a mount of this type stand on a barbette?</summary>
     [JsonIgnore] public bool HasBarbette => Barbette ?? true;

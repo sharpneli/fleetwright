@@ -4,7 +4,13 @@ namespace Fleetwright.Shipgen;
 /// and a torpedo mount weigh, rounds per gun, and the first-pass armament estimate.</summary>
 public static class Batteries
 {
+    /// <summary>ShellK: a shell's kg over calibre³ (mm), the 16" Mk 8's, for a mount with no outfit (AA guns); a
+    /// battery's magazines weigh its outfit's mean shell (docs/battle/shells-armour-damage.md S3). AmmoMult: a round's
+    /// weight over its shell's (the charge and handling, until the ammunition gives the charge).</summary>
     public const double GunK = 1.9e-6, MountK = 2.2, TurretTAvg = 0.65, ShellK = 1.83e-5, AmmoMult = 1.6;
+
+    /// <summary>A shell's mass for a mount, kg: its battery's outfit's mean, else the curve by calibre.</summary>
+    public static double ShellKg(TurretType t) => t.ShellKg ?? ShellK * Math.Pow(t.CalibreMm, 3);
     static readonly (double Cal, double Rounds)[] Rounds = [(127, 350), (152, 200), (203, 100)];
     const double MountFixedT = 4.0, TorpMountT = 5.0, TorpTubeT = 3.0, TorpFixedTubeT = 1.0;
     /// <summary>A 533 mm torpedo, tonnes.</summary>
@@ -45,7 +51,7 @@ public static class Batteries
         double turret = guns + mech + area * tAvg * Weight.Steel;
         double bh = 0.45 * depth + deck + level * Geometry.SuperfireStep(th);
         double barbette = t.HasBarbette ? 2 * Math.PI * Geometry.BarbetteR(t) * bh * (0.8 * armourMm / 1000.0) * Weight.Steel : 0.0;
-        double ammo = n * GunRounds(t) * ShellK * Math.Pow(cal, 3) / 1000.0 * AmmoMult;
+        double ammo = n * GunRounds(t) * ShellKg(t) / 1000.0 * AmmoMult;
         return (turret, barbette, ammo);
     }
 

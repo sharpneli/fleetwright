@@ -81,7 +81,7 @@ public static class Hitbox
             else
             {
                 long rounds = (long)Math.Round(Batteries.GunRounds(t) * t.Barrels);
-                var (n, w) = Ordnance.ReadyUse(t.CalibreMm, t.Barrels, rounds);
+                var (n, w) = Ordnance.ReadyUse(t.CalibreMm, t.Barrels, rounds, t.ShellKg);
                 (c.Rounds, c.ReadyRounds, c.ReadyT) = (rounds, n, Math.Round(w, 2));
             }
             yield return c;
