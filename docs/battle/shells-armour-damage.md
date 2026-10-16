@@ -57,6 +57,9 @@ better burst points and states; it doesn't rebuild them.
    within 1–4% where tried, cheaper, the basis the material table is rated on, and in the limit velocity V_L that P2–P5's
    rules are written in (holed and effective limits, shatter and break-up near the limit, the ricochet gate, the
    residual). The plate bench checks it against the trials before the old fit goes.
+6. **The loadout is the admiral's, the armour the designer's** (user, 2026-10-16: "Admiral naturally may want to change
+   the ammunition loadouts of their ships even ship by ship basis, whereas they can't just change armor willy nilly").
+   The design carries a **default loadout**; each ship may carry another, set outside the design (S4).
 
 ## What shipgen needs
 
@@ -86,6 +89,22 @@ rule, (m_heavy/m)^0.25, unless its entry gives its own. `rounds_per_gun` is alre
 
 A design carries the blocks it uses; templates are copied in (by the designer, by a tool), never referenced by name,
 as `machinery.tech` is.
+
+**Design default and loadout (decision 6).** What the design fixes and what the admiral may change:
+
+| The design's (fixed with the ship) | The loadout's (per ship, changeable in port) |
+|---|---|
+| the guns: calibre, length, mounts | which shell blocks each battery carries (any block of the gun's calibre) |
+| the magazines: `rounds_per_gun` (DECISIONS.md, 2026-10-07) | the shares of the outfit within those rounds |
+| the armour and its materials | — |
+
+So `ammunition` and the batteries' `shells` in a design are its **default loadout**: what shipgen weighs the magazines
+with, and what a ship gets when nobody says otherwise. Nothing checks that a loadout's shell suits the gun beyond its
+calibre (memory: allow silliness); a heavier shell leaves the gun slower by the same fourth-root rule as the kinds.
+
+A loadout heavier or lighter than the default changes the ship's displacement: Iowa's 1,170 rounds all AP rather than
+all HC is about 425 t on 48,000 t, under 1%. v0 leaves the sim's hydrostatics on the design's weight, flagged; the
+admiral's screen can show the difference later.
 
 **How a block scales with calibre.** Everything in it is either a share or a calibre-relative number, because that's
 how the physics works and how the sources quote it:
@@ -165,7 +184,8 @@ material row per name (the class's material table exists, with names only). `set
 
 ### Templates
 
-- **`docs/shipgen/shell-templates.md`** and `Content/Templates/shells.json`: shell tech by navy and year, from
+- **`docs/shipgen/shell-templates.md`** and `Content/Templates/shells.json`: shell tech by navy and year, the
+  designer's templates and the game's loadout catalogue both (the tech tree filters it in the game), from
   armor/04 §1.7 (the representative shell table), armor/02 §4.6 and armor/00 §5.4 (shell quality by family), and
   gunfire_ref.py's SHELLS. Examples: Palliser (1867), uncapped forged steel (1890), Makarov soft-capped (1895),
   RN lyddite APC (1914), German APC with the C/11 fuze (1914), Greenboy (1918), USN Mk 8 with the Mk 21 (1941), IJN
@@ -217,9 +237,21 @@ material row per name (the class's material table exists, with names only). `set
 - **S3 The designer.** A shell template picker in the Main battery and Secondary tabs (the template column); the
   battery table shows the kind, mass and fuze. A UI session of its own (mockup, then port); it can run any time after
   S1, alongside phase P.
+- **S4 Loadouts, ship by ship** (decision 6).
+  - **In the sim:** shell types already live in a table shared across classes by id (a gun's trajectory table is built
+    once); a loadout registers the types it brings there. Each ship holds its own loads per battery (in `CombatStore`),
+    defaulting to its class's, and its rounds by kind. Gunnery, the terminal and `Matchup.cs` read the ship's loads, not
+    the class's.
+  - **Where it's set:** a scenario's or mission's ship or unit takes `"loadout": {battery: [{ammo, share}, ...]}`, the
+    ammo a catalogue name (`Content/Templates/shells.json`: the game reads its assets, unlike shipgen) or an inline
+    block; a dev flag `-loadout=ship:battery:name[:share],...` for benches and screenshots; `shipgen hits --loadout`.
+  - **Changed in port only:** the command sets it on a ship that isn't at sea (the campaign's ports come later; until
+    then at spawn). The admiral's screen for it belongs to the command UI, not this plan.
+  - Checks: a ship with the default loadout is byte-identical to S1's; one with HE in its heavy guns shows it in the
+    hits bench (passes through destroyers far less).
 - **Not here: the shell by target** (decided). A battery fires one kind in v0 (AP from heavy guns). This plan gives
-  every battery its outfit of kinds; firing HE or common at unarmoured targets is the AI's pass (the matchup bench showed
-  it matters: four light cruisers against a battleship).
+  every battery its outfit of kinds and every ship its loadout; firing HE or common at unarmoured targets is the AI's
+  pass (the matchup bench showed it matters: four light cruisers against a battleship).
 
 ## Phase P: how it hits
 
@@ -350,6 +382,7 @@ None open (2026-10-16).
 | S1 | S0 | ammunition catalogue, templates | — | ballistics, fire control |
 | S2 | S1 | ammunition weight | — | displacement |
 | S3 | S1 | designer picker (UI session) | — | no |
+| S4 | S1 | — | per-ship loadouts: scenarios, dev flag, bench | only for ships given one |
 | P0 | — | materials table, upgrade | material rows | no |
 | P1a | P0 | — | Thompson, pen-check bench, deck multiplier | penetration (1–4%) |
 | P1b | P1a | material catalogue | Q(D) | penetration |
