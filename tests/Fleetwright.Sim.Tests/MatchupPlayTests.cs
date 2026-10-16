@@ -81,7 +81,9 @@ public class MatchupPlayTests(ITestOutputHelper output)
     [Fact]
     public void A_pack_of_destroyers_presses_its_attack_home_on_a_battleship()
     {
-        var (w, ai, ids) = Make();
+        // the attack alone: hits do no damage, so neither side's luck with the guns decides it (a battleship blown up by
+        // the boats' 4" before they're in, or the guide crippled; docs/battle/bugs.md "The AI")
+        var (w, ai, ids) = Make(Settings with { HitsDoDamage = false });
         w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.TorpedoAttack, (double)TorpedoAttack.Together));
         var bb = Column(w, ids["iron_duke"], Earth.Position(Lat, Lon), 180, 1, side: 0, kn: 15);
         var pack = Column(w, ids["v25"], Off(90, 15_000), 270, 8, side: 1, kn: 25, Formation.LineAbreast);

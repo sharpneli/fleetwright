@@ -217,11 +217,11 @@ public class FireOrderTests(ITestOutputHelper output)
         long before = GC.GetAllocatedBytesForCurrentThread();
         w.AdvanceTo(s.Start + 20 * 60_000);
         long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        // every salvo fired, from the combat log (a battery's tally is its engagement's: a new target restarts it)
         int british = 0, german = 0;
-        for (int e = 1; e <= 9; e++)
-            for (int b = 0; b < 3; b++)
-                if (w.Gunnery.TallyOf(e, b) is { } t)
-                    (british, german) = e <= 4 ? (british + t.Salvos, german) : (british, german + t.Salvos);
+        for (int i = 0; i < w.CombatLog.Count; i++)
+            if (w.CombatLog.Newest(i) is { Kind: CombatEvent.Fired } f)
+                (british, german) = f.Shooter <= 4 ? (british + 1, german) : (british, german + 1);
         output.WriteLine($"salvos: British {british}, German {german}; hits so far {w.Shells.Hits}; {allocated} bytes in eight minutes");
         Assert.True(british > 20 && german > 20, "both sides fire");
         Assert.True(w.Shells.Hits > 0);

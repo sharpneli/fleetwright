@@ -756,11 +756,11 @@ public sealed record SimSettings
     public double UnderwaterDecayCalibres { get; init; } = 25;
     public double UnderwaterDecayCalibresDiving { get; init; } = 50;
 
-    /// <summary>The hit query follows a shell this many decay lengths on under the water (1: down to 37% of its speed,
-    /// about the old 10 m for a heavy gun). A stand-in for what really ends the run, the fuze started on the water
-    /// (<see cref="FuzeStartsOnWater"/>) and tumbling: at 3 (5% of its speed) a 15" shell reaches 29 m, a quarter more
-    /// hits count and the squadrons' Germans start losing ships to flooding (2026-10-16).</summary>
-    public double UnderwaterReachDecays { get; init; } = 1;
+    /// <summary>The hit query follows a shell this many decay lengths on under the water (3: down to 5% of its speed; a
+    /// 15" shell 29 m). Physical, not tuned to historical loss rates: without damage control more ships flood and sink
+    /// than history saw, and that's accepted (user, 2026-10-16). The fuze started on the water
+    /// (<see cref="FuzeStartsOnWater"/>) is what ends an ordinary shell's run sooner.</summary>
+    public double UnderwaterReachDecays { get; init; } = 3;
 
     /// <summary>A base fuze starts on the water, its delay running from there (armor/04 §3.5; scaffolding for the
     /// shell rework's P6: off until then, when only plates and machinery start it).</summary>

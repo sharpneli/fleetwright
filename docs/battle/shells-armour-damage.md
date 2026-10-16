@@ -249,8 +249,11 @@ material row per name (the class's material table exists, with names only). `set
     flotation), and no half-calibre cap. The flat sea and the straight line stay.
   - **Scaffolded, off:** `FuzeStartsOnWater`. On, a base fuze's delay runs from the water: the reach is cut to where
     it fires (`WaterRun.FuzeRunM`, L·ln(1 + v·t/L)) and the shell arms at the hull with what's left (`Terminal`). The
-    pass turns it on with P3's fuzes and raises `UnderwaterReachDecays` from its stand-in 1 to about 3, so the fuze,
-    not the reach, ends an ordinary shell's run. Check the hits bench's underwater share against 08 §3.8 then.
+    pass turns it on with P3's fuzes, so the fuze, not the reach (`UnderwaterReachDecays` 3: 5% of the speed), ends an
+    ordinary shell's run.
+  - **Outcomes accepted, not tuned (user, 2026-10-16):** with the 3-decay reach about a quarter more hits count and
+    more ships flood and sink (the squadrons' Germans lose ~0.7 ships a run, none before). Without damage control
+    that's expected; tuning to historical rates now would make ships immortal once it comes.
 - **P7 Gratings, backing and scatter.**
   - `armour.gratings` and `armour.backing` in the tracer.
   - Plate quality drawn per ship (about N(1, 0.06)) and per shot (N(0, 0.03)), instead of the ±10% per shot.

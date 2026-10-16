@@ -49,6 +49,19 @@ add what's found.
   about 8 % against 7.2 % on the old, twice-too-heavy V25). The AI judges destroyers more fragile than they are;
   `MatchupTests` allows up to 11 % until it's recalibrated.
 
+## The AI
+
+Both seen in `MatchupPlayTests.A_pack_of_destroyers_presses_its_attack_home_on_a_battleship` (2026-10-16, while
+moving underwater shells to a 3-decay reach), which now runs with hits doing no damage so it tests the attack alone.
+
+- [ ] A flotilla's attack goes on against a target already going down: the Iron Duke blew up (a magazine, after 21
+  4" hits) at 780 s, and the eight V25s still ran in, signalled Fire at a ship no longer there, then turned away. The
+  attack should end (or pick the next ship, `Biggest`) once its target is lost or sinking.
+- [ ] On the Fire signal only one boat of eight launches (4 torpedoes), though five to seven have 3-6 tubes bearing
+  for the whole 80 s window (`TorpedoSystem.Ready`). Not yet known which check in `CaptainLayer.FireOnSignal` stops
+  the rest: likely `TorpedoFoul` (own boats on the track: the line is still swinging through its turn together), or
+  the guide (crippled, 7-11 kn, turning on her own) dragging the line. Seen before this change too.
+
 ## The slide
 
 - [ ] A ship can be trapped in a bay that opens away from its course: decision 7's "boxed in, it follows the coast

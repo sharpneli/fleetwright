@@ -286,7 +286,7 @@
   "MachineryArmChance": 0.45,
   "UnderwaterDecayCalibres": 25,
   "UnderwaterDecayCalibresDiving": 50,
-  "UnderwaterReachDecays": 1,
+  "UnderwaterReachDecays": 3,
   "FuzeStartsOnWater": false,
   "FillerTnt": 1,
   "WreckRadiusK": 1.6,
