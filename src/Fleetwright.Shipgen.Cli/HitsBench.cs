@@ -81,6 +81,9 @@ static class HitsBench
             .Select(x => string.Format(Inv, "{0} {1:0.#}%", x, 100 * r.Share(x)))));
         Console.WriteLine(string.Format(Inv, "  a hit: fire {0:0}%, crew {1:0.0}, holes {2:0.000} m², jammed {3:0.#}%, magazine {4:0.##}%", 100.0 * r.Fires / r.Hits,
             r.CrewLost / r.Hits, r.BreachM2 / r.Hits, 100.0 * r.Jams / r.Hits, 100.0 * r.Magazines / r.Hits));
+        if (r.Magazines > 0)
+            Console.WriteLine("  magazines set off by: " + string.Join(", ", Enum.GetValues<MagazineVia>().Where(v => r.MagazinesBy[(int)v] > 0)
+                .Select(v => string.Format(Inv, "{0} {1:0.##}%", Via(v), 100.0 * r.MagazinesBy[(int)v] / r.Hits))) + " of hits");
         Console.WriteLine("  put out of action (per 100 hits):");
         foreach (var (node, count) in r.PartsOut.Select((c, i) => (i, c)).Where(x => x.c > 0).OrderByDescending(x => x.c).Take(15))
             Console.WriteLine(string.Format(Inv, "    {0,6:0.0}  {1}", 100.0 * count / r.Hits, Node(tc, node)));
@@ -93,6 +96,9 @@ static class HitsBench
         Console.WriteLine(string.Format(Inv, "  then {0:0} min of flooding and fire: water {1:0} t a ship; lost to the magazine {2:0.#}%, foundered {3:0.#}%, capsized {4:0.#}%",
             o.SettleMin, r.WaterT / r.Ships, 100.0 * r.LostBy[(int)LossKind.Magazine] / r.Ships, 100.0 * r.LostBy[(int)LossKind.Foundered] / r.Ships,
             100.0 * r.LostBy[(int)LossKind.Capsized] / r.Ships));
+        if (r.LostBy[(int)LossKind.Magazine] > 0)
+            Console.WriteLine(string.Format(Inv, "    to the magazine: set off by a hit {0:0.#}%, by a fire later {1:0.#}%",
+                100.0 * (r.LostBy[(int)LossKind.Magazine] - r.MagazineByFire) / r.Ships, 100.0 * r.MagazineByFire / r.Ships));
         Console.WriteLine(string.Format(Inv, "  out of the fight (lost, or past the default preset's fall-out) {0:0}%", 100.0 * r.Out / r.Ships));
         return 0;
     }
@@ -105,6 +111,15 @@ static class HitsBench
         double V(DoctrineField f) => preset.Any(p => p.Field == f) ? preset.First(p => p.Field == f).Value : Doctrine.Default(f);
         return new FallOutRule(V(DoctrineField.FallOutSpeedShare), V(DoctrineField.FallOutGunsShare), V(DoctrineField.FallOutListDeg), V(DoctrineField.FallOutWaterShare));
     }
+
+    static string Via(MagazineVia v) => v switch
+    {
+        MagazineVia.In => "a burst in it",
+        MagazineVia.Beside => "a burst beside it",
+        MagazineVia.Turret => "the turret or barbette",
+        MagazineVia.Underwater => "under water",
+        _ => "-",
+    };
 
     /// <summary>A node's name: a component's id, or a room's id and kind.</summary>
     static string Node(ShipClass c, int node) => node < 0 ? "-" : node < c.Components.Length

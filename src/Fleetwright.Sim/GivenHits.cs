@@ -24,6 +24,10 @@ public static class GivenHits
         public readonly int[] Outcomes = new int[Enum.GetValues<Outcome>().Length];
         public readonly Dictionary<string, int> Struck = [];
         public int Fires, Magazines, Jams;
+        /// <summary>The hits that set a magazine off, by how (<see cref="MagazineVia"/>); and the ships lost to a magazine
+        /// that no hit set off: a fire reached it while it burned on.</summary>
+        public readonly int[] MagazinesBy = new int[Enum.GetValues<MagazineVia>().Length];
+        public int MagazineByFire;
         public double CrewLost, BreachM2;
         public int[] PartsOut = [];
         public double PowerCap, SpeedShare, MainWorking, MainMounts, DirectorsWorking, Directors;
@@ -83,6 +87,7 @@ public static class GivenHits
             entity = w.Ships.NewestEntity;
             int slot = w.Ships.Store.SlotOf(entity);
             rep.Ships++;
+            bool hitMagazine = false;
             for (int k = 0; k < perShip && rep.Hits < n; k++)
             {
                 // a point across the line of flight, until one meets the ship, its waterline where it floats now
@@ -124,6 +129,8 @@ public static class GivenHits
                     (rep.Underwater, rep.UnderwaterRunM, rep.UnderwaterStrikeMs) = (rep.Underwater + 1, rep.UnderwaterRunM + run, rep.UnderwaterStrikeMs + t.StrikeMs);
                 rep.Fires += fx.Fire ? 1 : 0;
                 rep.Magazines += fx.Magazine ? 1 : 0;
+                rep.MagazinesBy[(int)fx.MagazineVia] += fx.Magazine ? 1 : 0;
+                hitMagazine |= fx.Magazine;
                 rep.Jams += fx.Jammed ? 1 : 0;
                 rep.CrewLost += fx.CrewLost;
                 rep.BreachM2 += fx.BreachM2;
@@ -131,7 +138,7 @@ public static class GivenHits
                     if (before[i] < PartState.Disabled && k0.State[i] >= PartState.Disabled)
                         rep.PartsOut[i]++;
             }
-            After(rep, target, w, entity, slot, settleS, fallOut);
+            After(rep, target, w, entity, slot, settleS, fallOut, hitMagazine);
         }
         return rep;
     }
@@ -159,6 +166,7 @@ public static class GivenHits
             entity = w.Ships.NewestEntity;
             int slot = w.Ships.Store.SlotOf(entity);
             rep.Ships++;
+            bool hitMagazine = false;
             for (int k = 0; k < perShip && rep.Hits < n; k++)
             {
                 int cell;
@@ -182,6 +190,8 @@ public static class GivenHits
                 rep.Hits++;
                 rep.Outcomes[(int)w.Damage.LastTerminal.Outcome]++;
                 rep.Magazines += fx.Magazine ? 1 : 0;
+                rep.MagazinesBy[(int)fx.MagazineVia] += fx.Magazine ? 1 : 0;
+                hitMagazine |= fx.Magazine;
                 rep.CrewLost += fx.CrewLost;
                 rep.BreachM2 += fx.BreachM2;
                 string where = fx.Part >= target.Components.Length ? target.Rooms[fx.Part - target.Components.Length].Kind.ToString() : "-";
@@ -190,14 +200,14 @@ public static class GivenHits
                     if (before[i] < PartState.Disabled && k0.State[i] >= PartState.Disabled)
                         rep.PartsOut[i]++;
             }
-            After(rep, target, w, entity, slot, settleS, fallOut);
+            After(rep, target, w, entity, slot, settleS, fallOut, hitMagazine);
         }
         return rep;
     }
 
     /// <summary>A ship after its hits: its flooding and fire run on for a while, then what it can still do into the
     /// report.</summary>
-    static void After(Report rep, ShipClass target, World w, int entity, int slot, double settleS, FallOutRule? fallOut)
+    static void After(Report rep, ShipClass target, World w, int entity, int slot, double settleS, FallOutRule? fallOut, bool hitMagazine)
     {
         // the ship after its hits, and its flooding and fire run on
         if (settleS > 0)
@@ -205,6 +215,7 @@ public static class GivenHits
         var kk = w.Ships.Store.Combat.Condition(slot);
         rep.WaterT += kk.WaterT;
         rep.LostBy[(int)kk.Loss]++;
+        rep.MagazineByFire += kk.Loss == LossKind.Magazine && !hitMagazine ? 1 : 0;
         int main = 0, mainOk = 0, dirs = 0;
         for (int m = 0; m < target.Mounts.Length; m++)
             if (target.Mounts[m].Kind == ComponentKind.Main)

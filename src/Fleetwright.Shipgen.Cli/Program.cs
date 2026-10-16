@@ -93,6 +93,12 @@ public static class Program
             --loadout gives the shooter other shells (docs/battle/shells-armour-damage.md S5): BATTERY:SHELL[@SHARE][+SHELL...]
             with | between batteries; a battery is main, secondary, main[i] or secondary[i], a shell a template's name
             (docs/shipgen/shell-templates.md), a block of the design's, or ap, common or he (the battery's own of that kind)
+        shipgen protection DESIGN... [--shells N] [--seed S] [--summary]
+            what stands between the sea and each magazine (docs/shipgen/protection-plan.md H0), through the tracer alone:
+            its crown against the waterline, the layers a level line from the side and a plumb line from above cross to
+            it, and N shells a fall (5, 10, 20, 35 degrees from the beam) aimed inside it: the share meeting the sea first,
+            the steel before it, and the share "open" (from above the water, under 10 mm of steel); several designs or
+            --summary end with a line a ship
         shipgen flood DESIGN [--hole WHERE:Z:AREA[:p],...] [--rooms KIND[:N],...] [--minutes M] [--every S] [--step MS] [--cells]
             the flooding model alone (docs/battle/fighting.md 4.3b): the class's facts (reserve buoyancy, freeboard, TPC,
             MCT, GM), then a ship of it stopped at sea, holed on the side (WHERE mid, bow, stern or x in m; Z m over the
@@ -196,6 +202,8 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new HitsBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), D(a, "range", 12_000), D(a, "aspect", 90), a.Int("n", 2000),
                         a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0), D(a, "settle", 30), a.Get("loadout"))),
+                "protection" => ProtectionBench.Run(a.Positional.Count > 0 ? a.Positional : ["destroyer"], n => LoadDesign(Resolve(a, n)), a.Int("shells", 400),
+                    a.Int("seed", 1), a.Has("summary")),
                 "torpedo" => TorpedoBench.Run(a.Positional.ElementAtOrDefault(0) ?? "super_dreadnought", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new TorpedoBench.Options(a.Get("shooter") ?? "destroyer", a.Get("at") switch
@@ -249,7 +257,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--outfits")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--outfits" or "--summary")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

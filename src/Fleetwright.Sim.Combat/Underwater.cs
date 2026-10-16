@@ -73,7 +73,7 @@ public static class Underwater
             }
         }
         res.Magazine = magazine >= 0 && r.NextDouble() < s.TorpedoMagazineChance * propellant;
-        res.MagazineRoom = res.Magazine ? magazine : -1;
+        (res.MagazineRoom, res.MagazineVia) = res.Magazine ? (magazine, MagazineVia.Underwater) : (-1, MagazineVia.None);
 
         // parts within the reach: what's under the stern, the tubes, whatever stands near (not inside a protection that held)
         if (!held)

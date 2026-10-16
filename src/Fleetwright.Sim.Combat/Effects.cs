@@ -7,6 +7,17 @@ namespace Fleetwright.Sim.Combat;
 /// stopped by, else the first it entered; -1 for none), how many parts it wrecked, put out of action or damaged, the
 /// crew it hit, the holes it opened to the sea (m²), and whether it jammed a mount, started a fire, set off a magazine
 /// or broke the ship's back.</summary>
+/// <summary>How a hit set a magazine off: a burst in it, beside it (fragments through a wall or deck), in a turret or
+/// its barbette (the handling path down), or an explosion under water within its reach.</summary>
+public enum MagazineVia : byte
+{
+    None,
+    In,
+    Beside,
+    Turret,
+    Underwater,
+}
+
 public struct EffectsResult
 {
     public int Part;
@@ -15,6 +26,7 @@ public struct EffectsResult
     public bool Jammed, Fire, Magazine;
     /// <summary>The magazine set off (a room of the class), when <see cref="Magazine"/>; else -1.</summary>
     public int MagazineRoom;
+    public MagazineVia MagazineVia;
     /// <summary>The hull girder cut through (an underwater explosion's, 4.6): the ship breaks in two.</summary>
     public bool Broken;
 
@@ -174,6 +186,7 @@ public static class Effects
         bool inHull = cell >= 0;
         double cellTop = inHull ? c.Cells[cell].Box.Top : double.PositiveInfinity;
         int magazine = -1, turret = -1;   // the magazine room it burst in or beside, the enclosed mount it burst in
+        var via = MagazineVia.None;
 
         // the part it burst in
         if (part >= 0)
@@ -229,7 +242,7 @@ public static class Effects
                 bool worse = rw >= s.RoomDisableShare * Math.Max(rr.X1 - rr.X0, 1) ? k.Worsen(node, PartState.Disabled) : k.Harm(node);
                 Count(ref res, k, node, worse ? k.State[node] : PartState.Ok);
                 if (magazine < 0 && rr.Kind == RoomKind.Magazine)
-                    magazine = room;
+                    (magazine, via) = (room, MagazineVia.In);
             }
             foreach (var n in c.Neighbours(c.Cells[cell].Neighbours))
             {
@@ -253,7 +266,7 @@ public static class Effects
                     int node = c.RoomNode(room);
                     Count(ref res, k, node, k.Worsen(node, PartState.Damaged) ? PartState.Damaged : PartState.Ok);
                     if (magazine < 0 && c.Rooms[room].Kind == RoomKind.Magazine)
-                        magazine = room;
+                        (magazine, via) = (room, MagazineVia.Beside);
                 }
             }
         }
@@ -283,7 +296,7 @@ public static class Effects
         {
             double flash = magazine >= 0 ? s.MagazineFlashChance : turret >= 0 ? s.TurretFlashChance : 0;
             if (flash > 0 && r.NextDouble() < flash * propellant)
-                (res.Magazine, res.MagazineRoom) = (true, magazine >= 0 ? magazine : c.Mounts[turret].Magazine);
+                (res.Magazine, res.MagazineRoom, res.MagazineVia) = magazine >= 0 ? (true, magazine, via) : (true, c.Mounts[turret].Magazine, MagazineVia.Turret);
         }
     }
 

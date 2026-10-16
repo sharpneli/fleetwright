@@ -85,6 +85,18 @@ this plan builds the layers so E1 has something to work on.
 - `shipgen hits` splits "magazine" by path: burst in it, burst beside it (neighbour), turret or barbette (handling path),
   fire later. Then each later step shows what it moved.
 - The baselines above become the bench's first table.
+- **Done 2026-10-16.** `shipgen protection` and the split in `hits` ("magazines set off by: a burst in it, a burst
+  beside it, the turret or barbette, under water"; "to the magazine: set off by a hit, by a fire later"). Before H1:
+  - `protection --summary` (200 shells a fall, every shipped and scenario design): every WWI destroyer and torpedo boat
+    (V25, V1, G101, B97, M, R... K, L, Faulknor, Abdiel, Buyny, Ikazuchi) has 40-98% of shells reaching a magazine from
+    above the water through 6-8 mm ("open"), and every magazine against the side. The WWII-and-later destroyers Daring,
+    Akizuki, Hamburg, Impetuoso and Fubuki 9-39% open; the seaplane carriers and Q-ship up to 85%. The R class (crown
+    1.8 m under) 0-12%, the WW2 Fleet Destroyer 0%. No armoured ship is open anywhere; the heavy cruiser, Des Moines,
+    Sverdlov and Deutschland's crowns stand 1.8-2.4 m over the waterline behind their belts and decks.
+  - `hits`, lion 4" HE at 6 km, 10 a ship, 30 min: V25 magazine 0.45% a hit (in it 0.15%, beside it 0.3%), lost to the
+    magazine 7.5% (a hit 4.5%, a fire later 3%); TB destroyer 0.6% (0.3/0.3), 9.5% (6/3.5). "Beside it" is mostly a
+    burst in the quarters over the 3.6 mm second deck: H1 moves bursts out of the magazine, the neighbour rule still
+    reaches through a thin deck within the wreck radius.
 
 ### H1. Magazines below the waterline (§6.1)
 - **Crown rule:** a magazine's top at most `WL − margin` at the design draught (`margin` a tuning value, 0.4 m to start
