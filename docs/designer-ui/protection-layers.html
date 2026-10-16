@@ -1116,7 +1116,7 @@ function innerOnText() {
 function secondCell(r) {
   const id = r.id;
   if (id === 'belt') return spinner('bbot', A.belt_bottom_mm ?? A.belt_mm, nF, 10, v => setVal(r, 'bot', v), {pre: 'lower', auto: A.belt_bottom_mm == null, cls: 's'});
-  if (id.startsWith('slope')) return spinner('sdeg' + r.i, A.decks[r.i].slope_deg ?? 30, degF, 1, v => setVal(r, 'deg', v), {pre: 'at', cls: 's'});
+  if (id.startsWith('slope')) return h('span', {class: 'ro', style: 'padding-right:0'}, `at ${N0(A.decks[r.i].slope_deg ?? 30)}°`);   // the angle is form: Shape edits it
   if (id === 'tds') return spinner('tdsl', A.tds_layers || 1, nF, 1, v => setVal(r, 'layers', v), {pre: 'layers', cls: 's'});
   if (id === 'inner') return spinner('innm', r.mags, nF, 5, v => setVal(r, 'mags', v), {pre: 'mags', cls: 's'});
   if (id === 'box') return spinner('boxcr', A.magazine_box?.crown_mm || 0, nF, 5, v => setVal(r, 'crown', v), {pre: 'crown', cls: 's'});
@@ -1201,7 +1201,7 @@ function shapeOf(r) {
     out.push(row('Leans', spinner('lean', lean(), degF, 1, v => { A.belt_incline_deg = clamp(Math.round(v), 0, 30); if (!A.belt_incline_deg) delete A.belt_incline_deg; }), h('span', {class: 'dim'}, 'top outboard')));
     out.push(row('Runs over', seg([['citadel', 'the citadel'], ['machinery', 'the machinery']], A.belt_extent === 'machinery' ? 'machinery' : 'citadel', v => { if (v === 'machinery') A.belt_extent = 'machinery'; else delete A.belt_extent; })));
     out.push(row('At the magazines', A.belt_magazines_mm != null
-      ? [spinner('bz', A.belt_magazines_mm, mmF, 10, v => { A.belt_magazines_mm = Math.max(0, v); }), h('button', {class: 'ico', onclick: e => { e.stopPropagation(); edit(() => { delete A.belt_magazines_mm; sel = 'belt'; }); }}, '×')]
+      ? [h('span', {class: 'mono dim'}, `${N0(A.belt_magazines_mm)} mm, its row`), h('button', {class: 'ico', onclick: e => { e.stopPropagation(); edit(() => { delete A.belt_magazines_mm; sel = 'belt'; }); }}, '×')]
       : addChip('zone', () => { ADD.beltzone(); sel = 'beltzone'; }, 'A thickness of its own beside the magazines (KGV 374 against 348; Brooklyn thinner)')));
     if (internal()) out.push(h('div', {class: 'note'}, `Inside the shell, ${f1(0.3)} m in at its top; carried on down as a lower belt to the inner bottom, ${N0(A.belt_bottom_mm ?? A.belt_mm)} tapering to 25 mm. The space outboard of it is a wing.`));
     if (internal() && A.belt_bottom_mm == null) out.push(h('div', {class: 'warn'}, 'Untapered: the lower belt starts at the belt’s full thickness and weighs heavy. Set a lower edge.'));
@@ -1210,12 +1210,12 @@ function shapeOf(r) {
     const i = r.i, d = A.decks[i], cit = ['citadel', 'full'].includes(d.extent || 'citadel');
     if (!cit) { out.push(h('div', {class: 'note'}, 'An end deck: flat, side to side. Slopes and zones are for citadel decks.')); return out; }
     out.push(row('Slopes', (d.slope_mm || 0) > 0
-      ? [spinner('sl', d.slope_mm, mmF, 5, v => setVal({id: 'slope' + i, i}, 'mm', v)), spinner('sd', d.slope_deg ?? 30, degF, 1, v => setVal({id: 'slope' + i, i}, 'deg', v), {cls: 's'}),
+      ? [spinner('sd', d.slope_deg ?? 30, degF, 1, v => setVal({id: 'slope' + i, i}, 'deg', v), {cls: 's'}), h('span', {class: 'mono dim'}, `${N0(d.slope_mm)} mm`),
          h('button', {class: 'ico', onclick: e => { e.stopPropagation(); edit(() => removeRow({id: 'slope' + i, i})); }}, '×')]
       : addChip('slopes', () => { addSlopes(i); sel = 'slope' + i; }, 'The deck turns down each side to meet the side at the belt’s lower edge')));
     if ((d.slope_mm || 0) > 0) { const g = slopeGeo(d); out.push(row('Flat', h('span', {class: 'mono'}, `${N0(d.mm)} mm, stops ${f1(g.reach)} m in from the side`))); }
     out.push(row('At the magazines', d.magazines_mm != null
-      ? [spinner('dz', d.magazines_mm, mmF, 5, v => setVal({id: 'dzone' + i, i}, 'mm', v)), h('button', {class: 'ico', onclick: e => { e.stopPropagation(); edit(() => removeRow({id: 'dzone' + i, i})); }}, '×')]
+      ? [h('span', {class: 'mono dim'}, `${N0(d.magazines_mm)} mm, its row`), h('button', {class: 'ico', onclick: e => { e.stopPropagation(); edit(() => removeRow({id: 'dzone' + i, i})); }}, '×')]
       : addChip('zone', () => { addDeckZone(i); sel = 'dzone' + i; })));
     if ((d.slope_mm || 0) > 0) out.push(h('div', {class: 'note'}, 'The slope’s foot is on the belt’s lower edge: move that edge and the slope follows. Drag the brass knee on the section to change the angle.'));
   } else if (id === 'tds') {
@@ -1285,33 +1285,23 @@ function reading() {
 }
 function layoutItems() {
   const cur = layoutNow();
-  const items = [{head: 'Layout: how the protection is laid out'}];
-  let grp = null;
+  const items = [{head: 'Layout'}];
   for (const t of LAYOUTS) {
-    if (t.group !== grp) { grp = t.group; items.push({head: grp}); }
     const a = applyLayout(A, t.value), words = layoutWords(a);
-    items.push({lab: t.name, key: t.note, ds: DESC[t.note] || '', cur: cur.t === t && !cur.own,
+    items.push({lab: (cur.t === t && !cur.own ? '✓ ' : '') + t.name, cur: cur.t === t && !cur.own,
       tip: `<b>${t.name}</b> on this ship:<br>${words.length ? words.map(w => '· ' + w).join('<br>') : 'nothing to change'}<br><span class="dim">Thicknesses scale with the design’s own; what it doesn’t set stays.</span>`,
       fn: () => { A = applyLayout(A, t.value); layoutTouched = 'applied'; S.scheme = t.note; }});
   }
-  items.push('sep', {lab: 'Plain', key: 'none', ds: 'No slopes, an upright belt on the side, no inner bulkhead or boxes; zones and plates stay.', cur: !cur.t && !cur.own,
+  items.push('sep', {lab: (!cur.t && !cur.own ? '✓ ' : '') + 'Plain', cur: !cur.t && !cur.own, tip: '<b>Plain</b>: no slopes, an upright belt on the side, no inner bulkhead or boxes; zones and plates stay.',
     fn: () => { A = applyLayout(A, null); S.scheme = null; layoutTouched = 'applied'; }});
   return items;
 }
-const DESC = {belt_and_slope: 'Pre-1915 two lines: a turtleback behind the belt, screens beside the magazines. Dreadnought, the battlecruisers.',
-  german_bulkhead: 'The turtleback with a torpedo bulkhead behind the coal, the citadel’s length. Nassau, Kaiser, Derfflinger.',
-  turtleback_modern: 'A low armour deck with shallow slopes behind the belt. Bismarck, Scharnhorst, Hipper.',
-  inclined_internal: 'The belt inside the shell, leaning, carried down as a lower belt. Nelson, South Dakota, Iowa.',
-  inclined_external: 'All-or-nothing belt on the side, leaning out at its top. Hood, Yamato, Littorio.',
-  french_modern: 'Inclined belt, heavy upper deck, light sloped lower deck, a plate under the magazines. Dunkerque, Richelieu.',
-  protected_deck: 'The deck alone, flat amidships, sloping below the waterline at the sides. Olympia, the scouts.',
-  cruiser_box: 'A belt over the machinery only, the magazines in armoured boxes. Kent, Leander, New Orleans.'};
 function subbar() {
   const cur = layoutNow(), at = armourT();
   $('reads').replaceChildren(`reads as ${reading()}${cur.t ? ' · ' + cur.t.name.toLowerCase() : ''} · armour ${N0(at)} t, ${f1(at / stdNow() * 100)} % of standard`);
   const lay = h('span', {class: 'dd', style: 'width:196px', onclick: ev => { ev.stopPropagation(); const r = ev.currentTarget.getBoundingClientRect(), a = $('app').getBoundingClientRect(); menu(ev, layoutItems(), [r.left - a.left, r.bottom - a.top + 1]); }},
     h('span', {style: cur.own ? 'color:var(--amber)' : ''}, cur.name), h('i', {}, '▼'));
-  lay.addEventListener('mousemove', ev => tip(ev, cur.t ? `<b>${cur.t.name}</b>${cur.own ? ' with the design’s own values' : ''}<br><span class="dim">${DESC[cur.t.note]}</span>` : 'No layout template: the plain inputs.'));
+  lay.addEventListener('mousemove', ev => tip(ev, cur.t ? `<b>${cur.t.name}</b>${cur.own ? ' with the design’s own values' : ''}` : 'No layout template: the plain inputs.'));
   lay.addEventListener('mouseleave', untip);
   $('scheme').replaceChildren(
     h('span', {class: 'dim', style: 'font-size:10.5px'}, 'Coverage'),
@@ -1337,7 +1327,7 @@ const M = params.get('menu'), TP = params.get('tip');
 if (M === 'layout') setTimeout(() => document.querySelector('#scheme .dd:not(.sch)').click());
 else if (M === 'cut1' || M === 'cut2') setTimeout(() => document.querySelectorAll('#sect .bh .dd')[M === 'cut1' ? 0 : 1].click());
 else if (M) setTimeout(() => { const e = document.querySelector(`#tbl [data-id="${M}"]`); const r = e.getBoundingClientRect(); e.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, clientX: r.left + 60, clientY: r.top + 8})); });
-if (TP && TP.startsWith('layout:')) setTimeout(() => { const n = +TP.slice(7), it = document.querySelectorAll('#menu .it')[n]; if (it) { const r = it.getBoundingClientRect(); it.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: r.right - 4, clientY: r.top + 6})); } }, 30);
+if (TP && TP.startsWith('layout:')) setTimeout(() => { const n = +TP.slice(7), it = document.querySelectorAll('#menu > div:not(.lab):not(.sep)')[n]; if (it) { const r = it.getBoundingClientRect(); it.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: r.right - 4, clientY: r.top + 6})); } }, 30);
 if (TP && TP.startsWith('cell:')) setTimeout(() => { const [k, n] = TP.slice(5).split(':').map(Number); const els = [...document.querySelectorAll(`#sect svg g[clip-path="url(#shull${k})"] rect`)].filter(e => e.getAttribute('fill-opacity')); const e = els[n]; if (e) { const r = e.getBoundingClientRect(); e.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2})); } });
 if (TP === 'handle') setTimeout(() => { const e = document.querySelector('#sect g[data-handle] rect[fill="transparent"]'); if (e) { const r = e.getBoundingClientRect(); e.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: r.left + 7, clientY: r.top + 7})); } });
 if (TP === 'comp') setTimeout(() => { const e = document.querySelectorAll('#elev .tog')[1]; const r = e.getBoundingClientRect(); e.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: r.left + 10, clientY: r.top + 6})); });

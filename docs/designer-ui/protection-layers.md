@@ -101,7 +101,7 @@ The same drawing, plus:
   its shape: `inside · 18°`, `11°`, `machinery`.
 - **Sub-rows** (`↳`) under their part, each with its own thickness, weight and `×`:
   - the belt's **↳ at the magazines** (`belt_magazines_mm`);
-  - a deck's **↳ slopes** (`slope_mm`, and the angle in the second column: `at 22°`);
+  - a deck's **↳ slopes** (`slope_mm`; the angle shown read-only, `at 22°`, and edited in Shape or by the knee handle);
   - a deck's **↳ at the magazines** (`magazines_mm`).
 - A new group, **Inboard: behind the side**:
   - **Torpedo protection** (moved here): depth, `layers N`, "3 spaces · holding 45 mm".
@@ -116,14 +116,18 @@ The same drawing, plus:
 
 ## 4. The selected plate: facts, and the part's Shape
 
+Thicknesses live in the table only (review 2026-10-16: sub-rows kept, without duplication). Shape holds what changes a
+plate's form: adding or removing a zone or slopes, a slope's angle, the belt's lean and position; a zone's or slope's
+thickness shows there read-only, "374 mm, its row".
+
 The panel splits in two. On the left are the facts (covers, height, weight, material, taper). On the right is
 **Shape**, the controls that change what the part is rather than how thick it is. The material dropdown moves to
 Shape's header.
 
 | Part | Shape |
 |---|---|
-| Belt | Stands: on the side · inside the shell. Leans: ° (top outboard). Runs over: the citadel · the machinery. At the magazines: `+ zone` or mm `×`. Warnings: an untapered internal belt ("the lower belt starts at full thickness"), a machinery belt without boxes ("the magazines' sides are bare") |
-| Citadel deck | Slopes: `+ slopes`, or mm and ° `×`. Flat: "80 mm, stops 6.1 m in from the side". At the magazines: `+ zone` or mm `×`. End decks: "flat, side to side" |
+| Belt | Stands: on the side · inside the shell. Leans: ° (top outboard). Runs over: the citadel · the machinery. At the magazines: `+ zone`, or its mm (read-only) `×`. Warnings: an untapered internal belt ("the lower belt starts at full thickness"), a machinery belt without boxes ("the magazines' sides are bare") |
+| Citadel deck | Slopes: `+ slopes`, or ° and its mm (read-only) `×`. Flat: "80 mm, stops 6.1 m in from the side". At the magazines: `+ zone`, or its mm (read-only) `×`. End decks: "flat, side to side" |
 | Torpedo protection | Depth, layers, holding bulkhead mm (auto), layer walls mm (auto); "same weight however it's split"; amber while layers are holed at once (H3, open) |
 | Inner bulkhead | Over the citadel mm, at the magazines mm, stands on (read-only), in from the side (only for its own wall) |
 | Magazine boxes | Sides, crown, ends, floor; the runs it boxes |
@@ -134,8 +138,8 @@ The immune-zone placeholder shrinks to one line at the foot.
 ## 5. The sub-bar: Layout
 
 `Coverage [All-or-nothing | Armoured ends | Complete belt]` stays. **Layout** is new: the protection scheme templates
-(`Content/Templates/protection.json`), in groups (Capital ships, Cruisers), each with its one-line family and
-examples. Hovering one lists what it does to *this* ship ("Second deck: slopes 76 mm at 30°, flat 50 mm · inner
+(`Content/Templates/protection.json`) as a plain list of names, no groups and no descriptions (review 2026-10-16: a
+cruiser's layout on a battleship is the player's call). Hovering one lists what it does to *this* ship ("Second deck: slopes 76 mm at 30°, flat 50 mm · inner
 bulkhead 30 mm, 40 at the magazines"); a click applies it (`ProtectionSchemes.Apply`). **Plain** at the foot clears the
 layout keys. The dropdown shows the template the design is on, "· own values" in amber where the design keeps its own
 figures (Nelson's 18°), "· edited" after a hand edit, and **Custom** when no template fits. The old "Scheme" dropdown is
@@ -196,7 +200,7 @@ sides on the wing wall, wings never fuel.
 ## Questions for the review
 
 1. ~~Two half-sections or one full section?~~ Settled 2026-10-16: two cuts by default, the split made unmistakable (gutter, break line, badges), and a Whole section toggle that keeps 2 locked to 1.
-2. Sub-rows for zones and slopes in the table, as well as Shape. Or Shape only, keeping the table one row per part?
+2. ~~Sub-rows or Shape only?~~ Settled 2026-10-16: sub-rows, with thickness only in the table; Shape keeps form.
 3. ~~The Compartments toggle here?~~ Settled 2026-10-16: here (a visual toggle, nothing lost).
 4. ~~Layout where?~~ Settled 2026-10-16: both, the sub-bar and the Templates panel.
 
@@ -231,7 +235,7 @@ Screenshots (`png/protection-layers-*.png`):
 - `kgv`: zones, showing finding 1.
 - `bismarck-layers`: three TDS layers with a 45 mm holding bulkhead, cut at X and A.
 - `destroyer-box`: a 25 mm box and 1.6 m wings added.
-- `layout-menu`: the Layout list, hovering German bulkhead.
+- `layout-menu`: the Layout list (names only), hovering German bulkhead.
 - `dread-german`: German bulkhead applied.
 - `bismarck-whole`: both cuts at the machinery, one whole section, the slopes selected.
 - `cutmenu`: section 2's dropdown, the stops.
