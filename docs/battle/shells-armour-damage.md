@@ -53,8 +53,10 @@ better burst points and states; it doesn't rebuild them.
 4. **The shell tech scales with calibre** (S, "How a block scales"): a default template, plus more beside it ("we may
    want to have silly shells later"). Nothing in the block is limited by period or plausibility, only by what can
    physically be (memory: allow silliness), so a player's odd shell is a block like any other.
-
-Proposed, for the user to confirm: Thompson as the engine from P1 (P1, "The formula").
+5. **Thompson is the engine from P1** (P1, "The formula"), on Claude's recommendation: the same answers as today's fit
+   within 1–4% where tried, cheaper, the basis the material table is rated on, and in the limit velocity V_L that P2–P5's
+   rules are written in (holed and effective limits, shatter and break-up near the limit, the ricochet gate, the
+   residual). The plate bench checks it against the trials before the old fit goes.
 
 ## What shipgen needs
 
@@ -200,7 +202,7 @@ material row per name (the class's material table exists, with names only). `set
     thickness, so it has no limit-velocity form. 4.3a ported the reference as it was (fighting.md 4.3a, "Penetration is
     the reference's own fit") and asked the user to keep it or not (fighting.md question 1). The thickness form stays
     right for readouts ("400 mm at 15 km"); the plate step wants the velocity.
-  - **The formula: Thompson** (proposed). It is the basis the Q table is on, and it gives the same answers as today's
+  - **The formula: Thompson** (decided, 2026-10-16). It is the basis the Q table is on, and it gives the same answers as today's
     fit except on thin decks under small shells (+13%). It's cheaper per plate:
     - `V_L = 0.024056·D·√(T/W)·F / cos Ob`, with `F = 6·(T/D − 0.45)·(Ob² + 2000) + 40000` (Ob in degrees): one
       square root and a few multiplies. Today's fit takes four `Math.Pow` calls.
@@ -266,7 +268,7 @@ material row per name (the class's material table exists, with names only). `set
 
 ## Questions for the user
 
-1. **Thompson from P1**, checked by the plate bench first. Agreed?
+None open (2026-10-16).
 
 ## Steps at a glance
 

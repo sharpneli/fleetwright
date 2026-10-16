@@ -1333,6 +1333,8 @@ Placeholders in `DesignerPlaceholders.cs` until shipgen gives them, listed in pl
 From 4.3a (2026-10-14), each built one way and easy to change:
 
 1. **Penetration:** the reference's Garzke and Dulin fit, not the plan's De Marre. Keep it?
+   *The user, 2026-10-16:* no: Thompson's F formula, in `shells-armour-damage.md` P1 (the same answers within 1-4% where
+   tried, cheaper, on the material table's basis, and in the limit velocity the later steps are written in).
 2. **A magazine's loss in v0** drops the ship a minute after it blows up (4.3b kept the minute, beside 3 for a capsize
    and 10 for a founder). A ship seen going down is no longer a target.
 3. **Propellant by side:** Britain 2, Germany 0.1 in the squadrons and the Jutland. Tsushima keeps 1 for both.
