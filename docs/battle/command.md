@@ -440,6 +440,14 @@ Bottom-up, so each layer is built on one that already behaves.
    track out to its run; neither counts the first `FireFoulNearM` off the shooter. A friend is his side, or one at peace
    with it. The Jutland's own-fire losses 4 → 1 (it plays in 107 s, from 124: fewer shells into its own lines);
    `squadrons`, `flotilla` and Tsushima much as after piece 2.
+   - 2026-10-16: a torpedo's track is judged as the ships move: a friend fouls it if she'll come within `TorpedoFoulM`
+     (400 → 200 m, two and a half destroyer lengths: the spread's fan, a degree's course error) of the torpedoes on
+     their run, each going on as she is, the margin growing by as far as she could turn off her course by
+     `TorpedoFoulTurnDeg` (20°) by then (a boat astern in the flotilla is passed in seconds, a ship in a mêlée minutes
+     on). Seen from a flotilla turned together the tracks fall astern by the boats' speed against the torpedoes', clear
+     of the boats ahead and onto those astern; the static check held every boat but the leading one. Without the
+     growing margin the Jutland's own-fire losses went 1 → 5 (destroyers torpedoed by their own flotillas in the
+     mêlée); with it, 0.
 4. **Evasion under fire.** Doctrine's `Evasion` (steady or zigzag), `EvadeDeg` (30°), `EvadeLegS` (75 s) and
    `EvadeBeyondM` (10 km); the default preset zigzags. Who's under fire, and from how near, is read once a think from
    the batteries' targets (a ship knows she's shot at). A ship running from fire beyond the range (Fight turned away,
@@ -551,6 +559,17 @@ piece 2):
    run, alone 20.4 (each attack takes a quarter of an hour to set up under fire), Britain losing 0.2 ships either way
    (0.3 alone); with the turn-away, 1.9 torpedoes. Runs now end by their own rules: 7-10 of 10 quiet, where alone
    ended by time. Placeholder: the group row's "torpedo attack".
+   - **Fixed 2026-10-16** (docs/battle/bugs.md, "On the Fire signal only one boat of eight launches"): a signal often
+     fired nothing, for three reasons, none of them the crippled boats first blamed. The tubes rest on one beam and
+     trained across from it after the turn (a V25's 120° took 75-95 s, past `AttackFireS`), so now the admiral trains
+     every boat's tubes out on the beam the turn will bring toward the target as they run in (`TorpedoSystem.Train`;
+     a boat holds her fire until the turn brings the aim to that side). A launch whose tubes no longer bore once
+     trained was dropped while the captain counted the signal answered: it's answered now only once torpedoes have
+     gone (`LauncherState.FiredMs`) or while one waits for its tubes. And the track's check counted the boats steaming
+     beside her as on it: it's judged as the ships move now (`LineOfFire.TorpedoFoul`, below). `flotilla` with the
+     line holding on, seeds 1-30: the signal made in 17 (as before); two boats or more firing on it in 6 → 15 (of the
+     other two, one's signal comes as the 30 minutes end); torpedoes 85 → 116. The Jutland (one seed): torpedoes 263 →
+     509, own-fire losses 1 → 0.
 5. **The screen and its counter-attack.** The unit order `Screen` (a unit, a distance; `ScreenM` 5 km), a group's
    (`AdmiralLayer.Screen.cs`; the task proper, with its end and hand-back, is 5.1c's): it keeps station off the screened
    unit's guide toward the nearest enemy in sight (ahead while there's none), given anew only when that moves it more

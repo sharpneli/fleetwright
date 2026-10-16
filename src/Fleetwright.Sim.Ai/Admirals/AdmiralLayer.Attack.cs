@@ -97,7 +97,7 @@ public sealed partial class AdmiralLayer
         if (a.Attack == AttackPhase.None)
         {
             var starboard = Vec3d.Cross(t.Forward, t.Position.Normalized());
-            (a.Attack, a.AttackMs, a.AttackShips) = (AttackPhase.Gain, now, g.Line.Count);
+            (a.Attack, a.AttackMs, a.AttackShips, a.AttackTubes) = (AttackPhase.Gain, now, g.Line.Count, 0);
             a.AttackSide = Vec3d.Dot(guide.Position - t.Position, starboard) >= 0 ? 1 : -1;
         }
         // where the boats are on the target: how far round his bow, and the run their torpedoes would need to meet him
@@ -137,13 +137,22 @@ public sealed partial class AdmiralLayer
                     (a.Attack, a.AttackMs) = (AttackPhase.Gain, now);   // he's turned away: abaft his beam, a stern chase; ahead of him again first
                     break;
                 }
+                // the signal will turn the flotilla together through 8 points away from his path: the tubes trained out
+                // on the beam that turn puts toward him, as they run in (else they swing round after it, too late)
+                var starboard = Vec3d.Cross(guide.Forward, guide.Position.Normalized());
+                int turn = Vec3d.Dot(t.Forward, starboard) > 0 ? -90 : 90;
+                if (a.AttackTubes != -turn)
+                {
+                    a.AttackTubes = -turn;
+                    for (int i = 0; i < g.Line.Count; i++)
+                        ctx.Issue(TorpedoSystem.Train(g.Line[i], a.AttackTubes));
+                }
                 if (inReach)
                 {
-                    // the signal: turn together through 8 points, the beam tubes to bear and every track clear of the
-                    // line (square to the line of sight now), away from his path; each boat fires as hers bear
-                    var starboard = Vec3d.Cross(guide.Forward, guide.Position.Normalized());
+                    // the signal: turn together, the beam tubes to bear and every track clear of the line (square to the
+                    // line of sight now); each boat fires as hers bear
                     (a.Attack, a.AttackMs) = (AttackPhase.Fire, now);
-                    StartTurn(ctx, g, a, Vec3d.Dot(t.Forward, starboard) > 0 ? -90 : 90, rearFirst: false, keep: true);
+                    StartTurn(ctx, g, a, turn, rearFirst: false, keep: true);
                     return true;
                 }
                 if (now - a.AttackMs > s.AttackGainMaxMs)
@@ -186,14 +195,14 @@ public sealed partial class AdmiralLayer
         if (a.Attack != AttackPhase.Fire)
             return;
         for (int i = 0; i < g.Line.Count; i++)
-            captains.FireOnSignal(ctx, g.Line[i], a.AttackTarget, a.AttackMs);
+            captains.FireOnSignal(ctx, g.Line[i], a.AttackTarget, a.AttackMs, a.AttackTubes);
     }
 
     /// <summary>The attack over (done, given up, or no longer the order): the boats' torpedoes their own again, and the
     /// guide handed his order afresh (Fight: the guns now).</summary>
     void StopAttack(in AiContext ctx, GroupSystem.Group g, Admiral a)
     {
-        (a.Attack, a.AttackTarget, a.AttackOrdered) = (AttackPhase.None, 0, false);
+        (a.Attack, a.AttackTarget, a.AttackOrdered, a.AttackTubes) = (AttackPhase.None, 0, false, 0);
         for (int i = 0; i < g.Line.Count; i++)
             captains.HoldTorpedoes(g.Line[i], false);
         if (GuideUnit(g) is { Id: not 0 } to)

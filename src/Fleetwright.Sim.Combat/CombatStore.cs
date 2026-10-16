@@ -16,11 +16,11 @@ public struct MountState
 }
 
 /// <summary>A torpedo launcher's state (docs/battle/fighting.md 4.6): the torpedoes in its tubes, the spares it carries
-/// beside them, and when its tubes are loaded again from them (they load all at once).</summary>
+/// beside them, when its tubes are loaded again from them (they load all at once), and when it last fired (0: never).</summary>
 public struct LauncherState
 {
     public int Loaded, Spare;
-    public long LoadedMs;
+    public long LoadedMs, FiredMs;
 }
 
 /// <summary>Each ship's combat columns beside its <see cref="ShipStore"/> (docs/battle/fighting.md "Where it lives"):
@@ -141,7 +141,7 @@ public sealed class CombatStore
     {
         ref var l = ref launchers[slot]![launcher];
         l = Launcher(slot, launcher, row, ms);
-        l.Loaded = Math.Max(l.Loaded - n, 0);
+        (l.Loaded, l.FiredMs) = (Math.Max(l.Loaded - n, 0), ms);
         if (l.Spare > 0)
             l.LoadedMs = ms + (long)Math.Round(row.ReloadS * 1000);
         Touched = true;
@@ -348,6 +348,7 @@ public sealed class CombatStore
                 h.Add(l.Loaded);
                 h.Add(l.Spare);
                 h.Add(l.LoadedMs);
+                h.Add(l.FiredMs);
             }
         }
     }

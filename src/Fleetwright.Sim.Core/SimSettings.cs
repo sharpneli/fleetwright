@@ -578,7 +578,9 @@ public sealed record SimSettings
 
     /// <summary>A clear line of fire (docs/battle/command.md 5.1a): a gun's is foul while a friend is within FireFoulM of
     /// where its shells come down (from FireFoulBeforeM short of the target to FireFoulM past it), a torpedo's while one
-    /// is within TorpedoFoulM of its track; neither counts the first FireFoulNearM off the shooter. m; the grid's cube.</summary>
+    /// will come within TorpedoFoulM of the torpedoes on their run, each going on as she is (and her margin growing with
+    /// TorpedoFoulTurnDeg); neither counts the first
+    /// FireFoulNearM off the shooter. m; the grid's cube.</summary>
     public double FireFoulM { get; init; } = 400;
 
     /// <summary>A torpedo craft holds steady (stops evading) within this share of her attack range, to fire
@@ -586,7 +588,12 @@ public sealed record SimSettings
     public double EvadeSteadyShare { get; init; } = 1.25;
     public double FireFoulBeforeM { get; init; } = 2_000;
     public double FireFoulNearM { get; init; } = 300;
-    public double TorpedoFoulM { get; init; } = 400;
+    public double TorpedoFoulM { get; init; } = 200;
+
+    /// <summary>A friend's margin from a torpedo grows with the time it takes to reach her: as far as she could have
+    /// turned off her course by this much (a ship manoeuvres; a flotilla's boat astern is passed in seconds, a ship in a
+    /// mêlée minutes on). Degrees.</summary>
+    public double TorpedoFoulTurnDeg { get; init; } = 20;
     public double LineOfFireCellM { get; init; } = 5_000;
 
     /// <summary>Torpedoes seen (docs/battle/command.md 5.1a): a wake is seen within TorpedoSeenM of a ship while the sun is

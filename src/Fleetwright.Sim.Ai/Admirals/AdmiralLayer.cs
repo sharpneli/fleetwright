@@ -60,6 +60,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         public AttackPhase Attack;      // his flotilla's attack (AdmiralLayer.Attack.cs) on AttackTarget
         public bool AttackOrdered;      // told to Attack (else by doctrine)
         public int AttackTarget, AttackShips, AttackSide;   // the ship; the boats it came in with; the side of him it gains (±1)
+        public int AttackTubes;                             // the beam the boats' tubes are trained on (±90), 0 none yet
         public long AttackMs;           // when the phase began
         public int ScreenOn;            // screening (AdmiralLayer.Screen.cs): the ship his station was given on (0: none yet)
         public double ScreenAstern, ScreenAbeam;
@@ -610,6 +611,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 h.Add(a.AttackTarget);
                 h.Add(a.AttackShips);
                 h.Add(a.AttackSide);
+                h.Add(a.AttackTubes);
                 h.Add(a.AttackMs);
             }
         }

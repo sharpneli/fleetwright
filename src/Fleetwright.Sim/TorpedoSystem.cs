@@ -8,6 +8,9 @@ namespace Fleetwright.Sim;
 public enum TorpedoCommand : ushort
 {
     Launch = 1,
+
+    /// <summary>A ship's trained tube mounts to a bearing, ready (<see cref="TorpedoSystem.Train"/>).</summary>
+    Train = 2,
 }
 
 /// <summary>How a torpedo's run ended: it hit a ship, ran to its range and sank, or failed and sank on the way.</summary>
@@ -132,10 +135,37 @@ public sealed class TorpedoSystem : IWorldSystem
     public static Command Launch(int shooter, int target, int n, bool truth = false) =>
         new(Id, (ushort)TorpedoCommand.Launch, shooter, A: target, B: n, X: truth ? 1 : 0);
 
+    /// <summary>A ship's tube mounts that train (and have no launch waiting) trained toward a bearing from ahead, degrees,
+    /// ahead of a launch: a flotilla's on the beam it will fire from (docs/battle/command.md 5.1b).</summary>
+    public static Command Train(int shooter, double relDeg) => new(Id, (ushort)TorpedoCommand.Train, shooter, X: relDeg);
+
     public void Apply(World world, in Command c)
     {
-        if ((TorpedoCommand)c.Code == TorpedoCommand.Launch)
-            Order(world, c.Entity, (int)c.A, c.B, c.X != 0);
+        switch ((TorpedoCommand)c.Code)
+        {
+            case TorpedoCommand.Launch:
+                Order(world, c.Entity, (int)c.A, c.B, c.X != 0);
+                break;
+            case TorpedoCommand.Train:
+                TrainTo(world, c.Entity, c.X);
+                break;
+        }
+    }
+
+    void TrainTo(World world, int shooter, double relDeg)
+    {
+        var store = ships.Store;
+        int slot = store.SlotOf(shooter);
+        if (slot < 0)
+            return;
+        var cls = store[slot].Handling.Class;
+        var k = store.Combat.Condition(slot);
+        for (int l = 0; l < cls.Launchers.Length; l++)
+        {
+            ref readonly var row = ref cls.Launchers[l];
+            if (row.Kind == LauncherKind.Mount && row.Trains && k.LauncherWorks(l) && !Busy(shooter, l))
+                store.Combat.Train(slot, row.Index, cls.Mounts[row.Index], world.Time.Ms, relDeg, out _);
+        }
     }
 
     /// <summary>How many torpedoes a ship could fire at a target now: in its working, loaded launchers that bear on the
@@ -207,6 +237,16 @@ public sealed class TorpedoSystem : IWorldSystem
         for (int j = 0; j < made; j++)
             pending[launched[j]].Spread = first;   // the fan is centred on what was fired
         fired |= made > 0;
+    }
+
+    /// <summary>Whether a ship has a launch waiting for its mounts to train (it may yet hold its fire, if they no longer
+    /// bear by then).</summary>
+    public bool Launching(int shooter)
+    {
+        for (int p = 0; p < highPending; p++)
+            if (pending[p].Alive && pending[p].Shooter == shooter)
+                return true;
+        return false;
     }
 
     /// <summary>Whether a launcher has a launch waiting for its mount.</summary>

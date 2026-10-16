@@ -43,7 +43,8 @@ add what's found.
 - [ ] The flotilla scenario's day attack (six boats ordered against four battleships) is beaten off before it fires
   together in half the runs: 4 of 8 seeds both before and after the destroyer crunch's lighter boats (2026-10-15),
   boats falling out for steering and speed and the line dropping under the break-off share. `FlotillaAttackTests`
-  now runs on seed 7, which gets in. Decide whether half is the balance wanted.
+  takes the first of seeds 1-12 that gets in. 2026-10-16 (the signal fixed): 17 of seeds 1-30 get in, and 15 of those
+  fire two boats or more on the signal. Decide whether half is the balance wanted.
 - [ ] `Matchup.OutExponent` scales a hit's effect by 1/displacement, so it overstates what a hit does to a light ship
   against the fine model: a 6" HE hit on the V25 puts her out 10.2 % by the matchup, 6.0 % by `shipgen hits` (it was
   about 8 % against 7.2 % on the old, twice-too-heavy V25). The AI judges destroyers more fragile than they are;
@@ -57,7 +58,7 @@ moving underwater shells to a 3-decay reach), which now runs with hits doing no 
 - [ ] A flotilla's attack goes on against a target already going down: the Iron Duke blew up (a magazine, after 21
   4" hits) at 780 s, and the eight V25s still ran in, signalled Fire at a ship no longer there, then turned away. The
   attack should end (or pick the next ship, `Biggest`) once its target is lost or sinking.
-- [ ] On the Fire signal only one boat of eight launches (4 torpedoes), though five to seven have 3-6 tubes bearing
+- [x] On the Fire signal only one boat of eight launches (4 torpedoes), though five to seven have 3-6 tubes bearing
   for the whole 80 s window (`TorpedoSystem.Ready`). Not yet known which check in `CaptainLayer.FireOnSignal` stops
   the rest: likely `TorpedoFoul` (own boats on the track: the line is still swinging through its turn together), or
   the guide (crippled, 7-11 kn, turning on her own) dragging the line. Seen before this change too.
@@ -67,6 +68,10 @@ moving underwater shells to a 3-decay reach), which now runs with hits doing no 
   waterline such boats mostly blew up). Holding fire through a friend is right; what's missing is the admiral's side:
   make the signal only with the tracks clear, or leave the crippled boats out of the line first.
   FlotillaAttackTests counts a fouled signal as beaten off.
+  Fixed 2026-10-16, and not the crippled boats (they had fallen out and lay well off every track): the tubes trained
+  across from their rest after the turn, too late for the Fire window; a launch dropped when its tubes no longer bore
+  counted as the signal answered; and the track's check held the boats steaming beside the shooter as on it. All three
+  in docs/battle/command.md 5.1b piece 4. FlotillaAttackTests now asks two boats or more to fire on the signal.
 
 ## The slide
 

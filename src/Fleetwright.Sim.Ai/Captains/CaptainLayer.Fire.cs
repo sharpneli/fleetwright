@@ -197,7 +197,7 @@ public sealed partial class CaptainLayer
         var aim = own.Position;
         var fwd = Earth.Forward(aim, toward);
         Earth.Advance(ref aim, ref fwd, 1000);
-        if (lines.TorpedoFoul(ctx, own, aim, FastSetting(cls).RangeM))
+        if (lines.TorpedoFoul(ctx, own, aim, FastSetting(cls).RangeM, speed))
             return;   // a friend on the track: not now
         ctx.Issue(TorpedoSystem.Launch(own.Entity, target, s.TorpedoSpread));
         cap.TorpedoMs = now;
@@ -212,13 +212,16 @@ public sealed partial class CaptainLayer
 
     /// <summary>His flotilla's signal to fire (docs/battle/command.md 5.1b): a spread at the target from his launchers that
     /// are ready, aimed where his navy's picture says it'll be, unless a friend is on the track; once for a signal made at
-    /// <paramref name="signalMs"/>. Whether he fired.</summary>
-    internal bool FireOnSignal(in AiContext ctx, int entity, int target, long signalMs)
+    /// <paramref name="signalMs"/>: once torpedoes have gone since, or while a launch waits for its tubes to train (one
+    /// that no longer bears by then holds its fire, and he tries again). With his tubes trained out on a beam
+    /// (<paramref name="tubesDeg"/>, from ahead; 0 none) he waits for the turn to bring the aim on that side of him,
+    /// rather than swing them round. Whether he fired.</summary>
+    internal bool FireOnSignal(in AiContext ctx, int entity, int target, long signalMs, double tubesDeg)
     {
         var s = ctx.Settings;
         int slot = ctx.Ships.SlotOf(entity);
         var pic = slot >= 0 ? ctx.World.Sightings.Of(ctx.Ships[slot].Side) : null;
-        if (pic == null || pic.IndexOf(target) is not (int ti and >= 0) || Find(entity) is int ci and >= 0 && captains[ci].TorpedoMs >= signalMs ||
+        if (pic == null || pic.IndexOf(target) is not (int ti and >= 0) || FiredSince(ctx, slot, signalMs) || ctx.World.Torpedoes.Launching(entity) ||
             ctx.World.Torpedoes.Ready(ctx.World, entity, target) == 0)
             return false;
         var own = ctx.Ships[slot];
@@ -226,14 +229,28 @@ public sealed partial class CaptainLayer
         var (tq, tv, _) = pic.EstimateAt(ti, ctx.NowMs, s);
         if (!TorpedoAim.Intercept(own.Position, tq, tv, speed, out double toward, out _))
             return false;
+        if (tubesDeg != 0 && Math.Abs(Wrap180(Wrap180(toward - own.HeadingDeg) - tubesDeg)) > 90)
+            return false;   // the turn not yet round far enough
         var aim = own.Position;
         var fwd = Earth.Forward(aim, toward);
         Earth.Advance(ref aim, ref fwd, 1000);
-        if (lines.TorpedoFoul(ctx, own, aim, range))
+        if (lines.TorpedoFoul(ctx, own, aim, range, speed))
             return false;
         ctx.Issue(TorpedoSystem.Launch(entity, target, s.TorpedoSpread));
         Get(entity).TorpedoMs = ctx.NowMs;
         return true;
+    }
+
+    static double Wrap180(double d) => d - 360 * Math.Round(d / 360);
+
+    /// <summary>Whether a ship's launchers have fired since a moment.</summary>
+    static bool FiredSince(in AiContext ctx, int slot, long ms)
+    {
+        var cls = ctx.Ships[slot].Handling.Class;
+        for (int l = 0; l < cls.Launchers.Length; l++)
+            if (ctx.Ships.Combat.Launcher(slot, l, cls.Launchers[l], ctx.NowMs).FiredMs >= ms)
+                return true;
+        return false;
     }
 
     /// <summary>The run a torpedo at a speed needs to meet a contact going on as its navy holds it, m (infinite when it
