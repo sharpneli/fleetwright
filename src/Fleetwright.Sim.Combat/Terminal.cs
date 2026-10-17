@@ -72,6 +72,9 @@ public struct TerminalResult
     /// pieces (<see cref="Outcome.Holed"/>, <see cref="Outcome.BrokeUp"/>), its pieces' speed through the hole.</summary>
     public double BurstMs;
 
+    /// <summary>E3: the shell's speed at the plate that stopped it, or that it glanced off: what drives a spall cloud.</summary>
+    public double PlateMs;
+
     /// <summary>E2: a shell that holed a plate in pieces, which go on through the hole (<see cref="Plate"/>).</summary>
     public readonly bool Broken => Outcome is Outcome.Holed or Outcome.BrokeUp && Plate >= 0;
 
@@ -229,7 +232,7 @@ public static class Terminal
                 // glanced: the plate soaks up its motion across it (a dent), whether it would have got through or not, and
                 // it skids off along the plate's face, its fuze started as on a plate that held; the path bends at once,
                 // so nothing behind the plate is crossed
-                res.Glance = i;
+                (res.Glance, res.PlateMs) = (i, v);
                 if (!started && StartsOn(shell, mat.SteelMm(x.Mm), ob, hard, x.T, ref impulse, ref impulseT, s))
                 {
                     started = true;
@@ -248,7 +251,7 @@ public static class Terminal
                 // else stopped here, its back giving spall in the band below that. Stopped, running since an earlier
                 // plate, it bursts against this one (a dud lies there); else it's defeated, the impact starting its fuze
                 // if the plate's enough, and then it bursts on the plate's face
-                (res.Plate, res.StopT) = (i, x.T);
+                (res.Plate, res.StopT, res.PlateMs) = (i, x.T, v);
                 double u = v / vl;
                 if (u >= mat.HoledU)
                 {

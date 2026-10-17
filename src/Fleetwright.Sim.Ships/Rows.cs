@@ -501,6 +501,9 @@ public readonly record struct MaterialRow(double Q, double QScale, double FaceSh
     /// <summary>How fragments see it (THOR's class, E1): mild unless given.</summary>
     public FragmentClass Fragments { get; init; }
 
+    /// <summary>E3: the share of its spall that leaves as one big piece once the severity is 0.5 or more.</summary>
+    public double BigShare { get; init; } = 0.5;
+
     /// <summary>Its density, t/m³ (steel's 7.85 unless given).</summary>
     public double Density { get; init; } = Steel;
 
@@ -512,7 +515,7 @@ public readonly record struct MaterialRow(double Q, double QScale, double FaceSh
 
     public static MaterialRow Of(MaterialInput m) => new(m.Q ?? 1, m.QScale ?? 0, m.FaceHardened?.Share ?? double.NaN,
         m.FaceHardened is { } f ? f.MinMm ?? 0 : double.NaN, m.ElongationPct ?? 25, m.FaceHardened?.Shatters ?? true, m.Back?.SpallU ?? 0.90,
-        m.Back?.HoledU ?? 1.00) { Density = m.DensityTPerM3 ?? Steel, Fragments = FragmentsOf(m.Fragments) };
+        m.Back?.HoledU ?? 1.00) { Density = m.DensityTPerM3 ?? Steel, Fragments = FragmentsOf(m.Fragments), BigShare = m.Back?.Big ?? 0.5 };
 
     static FragmentClass FragmentsOf(string? c) => c switch
     {

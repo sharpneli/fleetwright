@@ -25,6 +25,8 @@ public static class GivenHits
         public readonly int[] Outcomes = new int[Enum.GetValues<Outcome>().Length];
         public readonly Dictionary<string, int> Struck = [];
         public int Fires, Magazines, Jams;
+        /// <summary>E3: the hits whose plate threw spall off its back.</summary>
+        public int Spalls;
         /// <summary>The hits that set a magazine off, by how (<see cref="MagazineVia"/>); and the ships lost to a magazine
         /// that no hit set off: a fire reached it while it burned on.</summary>
         public readonly int[] MagazinesBy = new int[Enum.GetValues<MagazineVia>().Length];
@@ -158,6 +160,7 @@ public static class GivenHits
                     (rep.Underwater, rep.UnderwaterRunM, rep.UnderwaterStrikeMs) = (rep.Underwater + 1, rep.UnderwaterRunM + run, rep.UnderwaterStrikeMs + t.StrikeMs);
                 rep.Fires += fx.Fire ? 1 : 0;
                 rep.Magazines += fx.Magazine ? 1 : 0;
+                rep.Spalls += fx.Spall ? 1 : 0;
                 rep.MagazinesBy[(int)fx.MagazineVia] += fx.Magazine ? 1 : 0;
                 hitMagazine |= fx.Magazine;
                 rep.Jams += fx.Jammed ? 1 : 0;
@@ -232,6 +235,7 @@ public static class GivenHits
                 rep.Hits++;
                 rep.Outcomes[(int)w.Damage.LastTerminal.Outcome]++;
                 rep.Magazines += fx.Magazine ? 1 : 0;
+                rep.Spalls += fx.Spall ? 1 : 0;
                 rep.MagazinesBy[(int)fx.MagazineVia] += fx.Magazine ? 1 : 0;
                 hitMagazine |= fx.Magazine;
                 rep.CrewLost += fx.CrewLost;

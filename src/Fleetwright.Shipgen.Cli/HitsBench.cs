@@ -94,6 +94,8 @@ static class HitsBench
                 r.DelayedM / r.Delayed));
         Console.WriteLine(string.Format(Inv, "  a hit: fire {0:0}%, crew {1:0.0}, holes {2:0.000} m², jammed {3:0.#}%, magazine {4:0.##}%", 100.0 * r.Fires / r.Hits,
             r.CrewLost / r.Hits, r.BreachM2 / r.Hits, 100.0 * r.Jams / r.Hits, 100.0 * r.Magazines / r.Hits));
+        if (r.Spalls > 0)
+            Console.WriteLine(string.Format(Inv, "  spall off the back of a plate that held: {0:0.#}% of hits", 100.0 * r.Spalls / r.Hits));
         if (r.Magazines > 0)
             Console.WriteLine("  magazines set off by: " + string.Join(", ", Enum.GetValues<MagazineVia>().Where(v => r.MagazinesBy[(int)v] > 0)
                 .Select(v => string.Format(Inv, "{0} {1:0.##}%", Via(v), 100.0 * r.MagazinesBy[(int)v] / r.Hits))) + " of hits");
@@ -131,6 +133,7 @@ static class HitsBench
         MagazineVia.Beside => "a burst beside it",
         MagazineVia.Turret => "the turret or barbette",
         MagazineVia.Underwater => "under water",
+        MagazineVia.Spall => "spall among open charges",
         _ => "-",
     };
 

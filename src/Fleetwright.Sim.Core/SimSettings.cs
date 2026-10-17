@@ -842,6 +842,20 @@ public sealed record SimSettings
     /// flash source for the magazine as a burst there is (Seydlitz at Dogger Bank).</summary>
     public double BrokenShare { get; init; } = 0.15;
 
+    /// <summary>E3, spall behind a plate that held (damage/14): a heavy shell (the plate under SpallRoofTD of its
+    /// calibre) glancing off a turret roof drives it in with this chance (Dunkerque, one case [EST]); charges lying open
+    /// in a cloud's way light with SpallFlashChance at severity 0.5 and up (in proportion below), and the flash then runs
+    /// to the magazine as from a fire in the turret (TurretFlashChance) [EST]; a boundary of SpallStopMm or more stops
+    /// the flakes unless THOR lets them through (14 §4.3). What a flake or the big piece must carry to harm a part, J, by
+    /// its kind (as PartVital's list), and a space's vitals (pipes, cables, gauges) [EST, 14 §5.2: instrument or sight
+    /// ~100 J, cable or pipe ~500 J, a machine's casing ~5 kJ].</summary>
+    public double SpallRoofTD { get; init; } = 0.4;
+    public double SpallRoofChance { get; init; } = 0.3;
+    public double SpallFlashChance { get; init; } = 0.2;
+    public double SpallStopMm { get; init; } = 5;
+    public double[] PartFragilityJ { get; init; } = [100, 100, 500, 100, 5000, 100, 100, 5000, 5000, 5000, 5000, 500, 5000, 500, 5000, 5000, 500, 500, 500];
+    public double RoomFragilityJ { get; init; } = 500;
+
     /// <summary>Fire: a burst's chance by the shell's kind (AP, common, HE), times the fire load where it bursts (by the
     /// look's era: Victorian, Great War, treaty, WWII, Cold War; and in superstructure, machinery or the rest of the
     /// hull), times the burst's size (0.5 + 0.5 times the cube root of W over 10 kg, at most 1.5), and this share when
@@ -1032,6 +1046,9 @@ public sealed record SimSettings
     public double MatchupPassShare { get; init; } = 0.4;
     public double MatchupTorpedoK { get; init; } = 48;
     public double MatchupPenSpread { get; init; } = 0.1;
+    /// <summary>E3: a shell its plate holds within the spall band adds this share of a burst inside to what a kept one
+    /// does: the cloud behind a turret face or a roof, rarely a flash [EST; the balance pass fits it].</summary>
+    public double MatchupSpallShare { get; init; } = 0.05;
     /// <summary>A shell through armour does what its fuze and filler give it (<see cref="LowOrderShare"/>): a full burst
     /// all of it, a burst in the plate and a low-order burst these shares, a blind fuze or a dud as one kept out (a
     /// broken shell too, the plate's doing).</summary>

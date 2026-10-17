@@ -408,7 +408,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   },
@@ -417,7 +418,8 @@
    "q": 0.8,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "fragments": "mild"
   },
@@ -426,7 +428,8 @@
    "q": 0.7,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "fragments": "mild"
   }

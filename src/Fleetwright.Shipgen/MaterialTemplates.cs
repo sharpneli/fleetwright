@@ -22,8 +22,8 @@ public static class MaterialTemplates
 
     /// <summary>Where a plate's back gives, by its class (damage/14 §2.1 [EST], armor/00 §1): spall from u = V/V_L of
     /// spall_u, holed by a breaking shell from holed_u.</summary>
-    static readonly BackInput Ductile = new() { SpallU = 0.90, HoledU = 1.00 }, Hard = new() { SpallU = 0.85, HoledU = 0.94 },
-        Brittle = new() { SpallU = 0.75, HoledU = 0.95 };
+    static readonly BackInput Ductile = new() { SpallU = 0.90, HoledU = 1.00, Big = 0.5 }, Hard = new() { SpallU = 0.85, HoledU = 0.94, Big = 0.5 },
+        Brittle = new() { SpallU = 0.75, HoledU = 0.95, Big = 0.3 };
 
     /// <summary>The fragments' classes (THOR's constants by class, E1).</summary>
     public static readonly string[] FragmentClasses = ["mild", "ductile", "fh", "brittle"];
@@ -112,7 +112,9 @@ public static class MaterialTemplates
         {
             DensityTPerM3 = given?.DensityTPerM3 ?? basis.DensityTPerM3, Q = given?.Q ?? basis.Q, QScale = given?.QScale ?? basis.QScale,
             FaceHardened = face, ElongationPct = given?.ElongationPct ?? basis.ElongationPct,
-            Back = given?.Back is { } b ? new BackInput { SpallU = b.SpallU ?? basis.Back?.SpallU, HoledU = b.HoledU ?? basis.Back?.HoledU } : basis.Back,
+            Back = given?.Back is { } b
+                ? new BackInput { SpallU = b.SpallU ?? basis.Back?.SpallU, HoledU = b.HoledU ?? basis.Back?.HoledU, Big = b.Big ?? basis.Back?.Big }
+                : basis.Back,
             Fragments = given?.Fragments ?? basis.Fragments,
         };
     }
@@ -202,7 +204,9 @@ public static class MaterialTemplates
             if (x.Back is { } b)
             {
                 foreach (var k in b.Extra.KeysOrEmpty())
-                    errs.Add($"{at}.back.{k}: not a back field (spall_u, holed_u)");
+                    errs.Add($"{at}.back.{k}: not a back field (spall_u, holed_u, big)");
+                if (b.Big is < 0 or > 1)
+                    errs.Add($"{at}.back.big: a share of the cloud, 0 to 1");
                 if (b.SpallU is <= 0 or > 1 || b.HoledU is <= 0 or > 1)
                     errs.Add($"{at}.back: spall_u and holed_u are shares of the Navy limit, more than 0 up to 1");
                 else if (b.SpallU is double su && b.HoledU is double hu && su > hu)

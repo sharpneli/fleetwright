@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E2 done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E3 done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1287,6 +1287,42 @@ squadrons, and changes `Matchup.cs` with it.
     flash roll (~20% at s ≥ 0.5) where charges lie open, as E2's.
   - **Replaces** the plan's "weaker burst inside" and 12's flat 15% behind an in-plate burst.
   - **Matchup:** a spall term per (gun, plate) profile. **Tests:** 14 §6.5.
+  - **Done 2026-10-17.** What it came to (with the user's ask: no run of magazines going up under plates that held over
+    them):
+    - **The triggers:** a shell stopped or shattered with u in the plate's band (P4's `TerminalResult.Spall`, now with
+      `PlateMs`, its speed at the plate), and a heavy shell (the roof under 0.4 calibre) glancing off a turret roof at
+      `SpallRoofChance` (0.3, s 0.5, a disc 2D across; Dunkerque). A burst on a face it doesn't hole throws next to
+      nothing (14 §3.3) and makes no cloud, so a burst over a crown or a box doesn't rain spall into the magazine. The
+      contact burst at an opening (Tiger's Q roof) waits for the edges step: the hitboxes don't have hoods or ports yet.
+    - **The cloud** (`Spall.cs`, Sim.Combat): 14 §3.2's numbers to the kilogram (a 15" Greenboy at u 0.90 on 330 mm
+      KC: 115 kg, half one piece of 48 kJ, 11 flakes of 5 kg at 68 m/s; a 6" on 3" STS: 29 flakes of 62 g, 126 J). The
+      big piece's share is the material's new `back.big` (0.5, brittle 0.3; catalogue and every design's table). The
+      layers right behind the plate (backing, the inner skin, the hull's plating behind a belt) take the flakes by their
+      mass over the scab's, the big piece at twice.
+    - **Where it goes:** the space behind the plate (the cell the path enters within 1.5 m), or, on a turret, a barbette
+      or a conning tower, the part itself (the gunhouse, the working chamber). Its boundaries stop the flakes from
+      `SpallStopMm` (5 mm) unless THOR lets them through; past one, the next space's vitals take NeighbourShare of them.
+    - **What it does:** a part in the space takes the flakes that strike it with at least its fragility's energy
+      (`PartFragilityJ` by kind: sights and instruments 100 J, pipes and cables 500 J, a machine's casing 5 kJ [EST, 14
+      §5.2]) at its vital share; the space's rooms take the whole cloud's over `RoomFragilityJ` (500 J) at RoomVital;
+      the big piece wrecks the nearest part within 15° of the axis if it carries its fragility (else the room's
+      vitals). No blast, fire, breach or opened bulkhead. People are E6's.
+    - **The magazines:** spall into a magazine damages the space and nothing more; its charges are in their cases and
+      racks. Where charges lie open (an enclosed turret's gunhouse or working chamber, a handling room by its mount),
+      the cloud lights them with `SpallFlashChance` (0.2 at s ≥ 0.5, less below; 14 §6.3) and the flash then reaches the
+      magazine as from a fire in the turret (TurretFlashChance 0.25 × the side's propellant): about 5% of such clouds.
+      `MagazineVia.Spall` names it. KGV under Bismarck's 38 cm at 32 km: spall on 7.3% of hits, magazines set off by it
+      0.03% of hits (by everything 1.6%, nearly all through the turrets and barbettes).
+    - **Matchup:** a kept shell inside its plate's spall band (face-hardened 0.85-0.94, homogeneous 0.90-1.00, by the
+      plate a shell beats at V/u going as V^1.4) adds `MatchupSpallShare` (0.05 [EST], the balance pass's to fit).
+    - **Benches, before and after** (2,000 hits; outcomes identical): spall 3.7-15% of hits; Iron Duke under Seydlitz's
+      28 cm crippled 1 → 3%, Lion under Derfflinger's 30.5 cm 2 → 3%; magazines by spall 0.05-0.1% of hits where it
+      happens; the rest within a point. Matchup lion v seydlitz 1.267 → 1.270, arethusa:4 v iron_duke 1.173 → 1.170.
+      Squadrons' 30 minutes 158 → 149 hits, Princess Royal and Lion still lost to their magazines (now both to
+      Derfflinger), hash 819E0F52B7BCB4A4 → B465811A2B06CD4D.
+    - **Tests:** `SpallTests` (the Greenboy's cloud, the 6" too weak for pipes, the cone's shares, backing, no garbage,
+      and plunging fire on KGV setting magazines off by spall under 0.3% of hits). Goldens gain `back.big`
+      (ShipDesign.Version 27), 372 of 372.
 - **E4 What a plate that held shakes** (13 non-penetrating). For `Defeated`, `Ricochet` and `BurstOutside`, from the
   plate, the margin (r, or u) and the impulse I = m·v:
   - **Turrets and barbettes:** the sub-location from the hit point (exposed barbette near the ring, barbette at the deck
@@ -1405,7 +1441,8 @@ None blocks a step; each is settled by its step's bench.
    Thompson for the nose slug and base plug.
 3. **The casing shares and steel multipliers** (S1, E1) are [EST]: navweaps' cross-sections of the 16″ Mk 8 and Mk 13
    and the 6″ Mk 34 would pin them.
-4. **The spall onsets** (E3): no naval measurement exists; 0.80-0.92 is defensible for each class.
+4. **The spall onsets** (E3): no naval measurement exists; 0.80-0.92 is defensible for each class. E3 kept P4's (fh
+   0.85, homogeneous 0.90, brittle 0.75).
 5. **The nose fuze's time on water** (E7, 0.5 ms): the most sensitive near-miss number.
 6. **The Type 91's path and delay** (P6, E7).
 7. **The rupture and deform capacities** (E5, 0.06 and 0.012 MPa/mm): fitted to a handful of cases; the destroyer
@@ -1442,7 +1479,7 @@ None blocks a step; each is settled by its step's bench.
 | E0 | — | joints, shock grade (done) | compiled (done) | no |
 | E1 | S1, P0 | `filler.body`, the material's `fragments` (done) | the burst's pieces, THOR, `frag` bench (done) | fragments |
 | E2 | P4, E1 | — | holed-but-broken, flash (done) | damage |
-| E3 | P4, E1 | — | spall | damage behind armour |
+| E3 | P4, E1 | the material's `back.big` (done) | spall (done) | damage behind armour |
 | E4 | E0, P1a | — | turret states, belt leaks, armour shock | jams, leaks, outages |
 | E5 | E0, E1 | — | open and confined blast, `burst` bench | wreck reach, openings, leaks |
 | E6 | E1, E3, E5 | — | casualties, killed and wounded | crew |

@@ -18,41 +18,42 @@ is armor/03 §7's: every plate is weighed with its own (the hull's structure wit
 structure group is the plating's and superstructure's picker; the armour picker offers every material.
 The back (P4; damage/14 §2.1 [EST]): a stopped shell throws spall from u = V/V_L of spall_u, and from
 holed_u it holes the plate, breaking in it (face-hardened 0.85/0.94, homogeneous 0.90/1.00, brittle
-0.75/0.95).
+0.75/0.95); big is the share of its spall that leaves as one piece (E3: 0.5, brittle 0.3). Fragments is
+how a burst's fragments see it (E1: THOR's class).
 
-| Material | Group | q | q at 16" | k | Face (share, from mm) | Elongation % | Back (spall, holed) | Density t/m³ |
+| Material | Group | q | q at 16" | k | Face (share, from mm) | Elongation % | Back (spall, holed, big) | Density t/m³ |
 |---|---|---|---|---|---|---|---|---|
-| steel | structure | 0.70 | 0.70 | - | - | - | 0.90, 1.00 | 7.85 |
-| mild steel | structure | 0.70 | 0.70 | - | - | - | 0.90, 1.00 | 7.85 |
-| high-tensile steel | structure | 0.80 | 0.80 | - | - | - | 0.90, 1.00 | 7.85 |
-| wrought iron | structure | 0.53 | 0.53 | - | - | - | 0.90, 1.00 | 7.70 |
-| wood | structure | 0.01 | 0.01 | - | - | - | 0.90, 1.00 | 0.70 |
-| cement | structure | 0.04 | 0.04 | - | - | - | 0.90, 1.00 | 2.30 |
-| aluminium alloy | structure | 0.33 | 0.33 | - | - | - | 0.90, 1.00 | 2.70 |
-| compound | armour | 0.72 | 0.72 | 0.00 | 0.30, 0; shatters no steel shell | - | 0.75, 0.95 | 7.75 |
-| nickel steel | armour | 0.85 | 0.85 | - | - | - | 0.90, 1.00 | 7.85 |
-| Harvey nickel steel | armour | 0.82 | 0.82 | 0.00 | 0.08, 81 | - | 0.85, 0.94 | 7.85 |
-| Krupp cemented | armour | 0.88 | 0.85 | 0.05 | 0.34, 81 | - | 0.85, 0.94 | 7.85 |
-| Krupp cemented (KC n/A) | armour | 1.01 | 0.99 | 0.03 | 0.41, 99 | - | 0.85, 0.94 | 7.85 |
-| cemented armour | armour | 0.85 | 0.85 | 0.00 | 0.30, 102 | - | 0.85, 0.94 | 7.85 |
-| cemented armour (CA) | armour | 0.99 | 1.02 | -0.05 | 0.30, 102 | - | 0.85, 0.94 | 7.85 |
-| Vickers cemented | armour | 0.85 | 0.85 | 0.00 | 0.30, 102 | - | 0.85, 0.94 | 7.85 |
-| Terni cemented | armour | 0.85 | 0.85 | 0.00 | 0.30, 102 | - | 0.85, 0.94 | 7.85 |
-| Terni cemented (1930s) | armour | 1.03 | 1.09 | -0.08 | 0.45, 102 | - | 0.85, 0.94 | 7.85 |
-| Witkowitz cemented | armour | 0.97 | 0.97 | 0.00 | 0.34, 81 | - | 0.85, 0.94 | 7.85 |
-| French cemented (1930s) | armour | 0.95 | 0.92 | 0.05 | 0.35, 102 | - | 0.85, 0.94 | 7.85 |
-| Class A armour | armour | 0.88 | 0.85 | 0.05 | 0.34, 81 | - | 0.85, 0.94 | 7.85 |
-| Class A | armour | 1.03 | 0.92 | 0.17 | 0.55, 127 | - | 0.85, 0.94 | 7.85 |
-| Vickers hardened | armour | 0.89 | 0.89 | 0.00 | 0.35, 279 | - | 0.85, 0.94 | 7.85 |
-| Krupp non-cemented | armour | 0.92 | 0.86 | - | - | 22 | 0.90, 1.00 | 7.85 |
-| special treatment steel | armour | 0.95 | 0.91 | - | - | 23 | 0.90, 1.00 | 7.85 |
-| Class B | armour | 1.00 | 1.00 | - | - | 25 | 0.90, 1.00 | 7.85 |
-| STS | armour | 1.00 | 1.00 | - | - | 25 | 0.90, 1.00 | 7.85 |
-| non-cemented armour | armour | 1.00 | 1.00 | - | - | 25 | 0.90, 1.00 | 7.85 |
-| Wotan hart | armour | 1.00 | 0.85 | - | - | 18 | 0.90, 1.00 | 7.85 |
-| Wotan | armour | 0.95 | 0.89 | - | - | 22 | 0.90, 1.00 | 7.85 |
-| Molybdenum steel | armour | 0.97 | 0.93 | - | - | 23 | 0.90, 1.00 | 7.85 |
-| special steel | armour | 0.97 | 0.93 | - | - | 23 | 0.90, 1.00 | 7.85 |
+| steel | structure | 0.70 | 0.70 | - | - | - | 0.90, 1.00, 0.5 | 7.85 |
+| mild steel | structure | 0.70 | 0.70 | - | - | - | 0.90, 1.00, 0.5 | 7.85 |
+| high-tensile steel | structure | 0.80 | 0.80 | - | - | - | 0.90, 1.00, 0.5 | 7.85 |
+| wrought iron | structure | 0.53 | 0.53 | - | - | - | 0.90, 1.00, 0.5 | 7.70 |
+| wood | structure | 0.01 | 0.01 | - | - | - | 0.90, 1.00, 0.5 | 0.70 |
+| cement | structure | 0.04 | 0.04 | - | - | - | 0.90, 1.00, 0.5 | 2.30 |
+| aluminium alloy | structure | 0.33 | 0.33 | - | - | - | 0.90, 1.00, 0.5 | 2.70 |
+| compound | armour | 0.72 | 0.72 | 0.00 | 0.30, 0; shatters no steel shell | - | 0.75, 0.95, 0.3 | 7.75 |
+| nickel steel | armour | 0.85 | 0.85 | - | - | - | 0.90, 1.00, 0.5 | 7.85 |
+| Harvey nickel steel | armour | 0.82 | 0.82 | 0.00 | 0.08, 81 | - | 0.85, 0.94, 0.5 | 7.85 |
+| Krupp cemented | armour | 0.88 | 0.85 | 0.05 | 0.34, 81 | - | 0.85, 0.94, 0.5 | 7.85 |
+| Krupp cemented (KC n/A) | armour | 1.01 | 0.99 | 0.03 | 0.41, 99 | - | 0.85, 0.94, 0.5 | 7.85 |
+| cemented armour | armour | 0.85 | 0.85 | 0.00 | 0.30, 102 | - | 0.85, 0.94, 0.5 | 7.85 |
+| cemented armour (CA) | armour | 0.99 | 1.02 | -0.05 | 0.30, 102 | - | 0.85, 0.94, 0.5 | 7.85 |
+| Vickers cemented | armour | 0.85 | 0.85 | 0.00 | 0.30, 102 | - | 0.85, 0.94, 0.5 | 7.85 |
+| Terni cemented | armour | 0.85 | 0.85 | 0.00 | 0.30, 102 | - | 0.85, 0.94, 0.5 | 7.85 |
+| Terni cemented (1930s) | armour | 1.03 | 1.09 | -0.08 | 0.45, 102 | - | 0.85, 0.94, 0.5 | 7.85 |
+| Witkowitz cemented | armour | 0.97 | 0.97 | 0.00 | 0.34, 81 | - | 0.85, 0.94, 0.5 | 7.85 |
+| French cemented (1930s) | armour | 0.95 | 0.92 | 0.05 | 0.35, 102 | - | 0.85, 0.94, 0.5 | 7.85 |
+| Class A armour | armour | 0.88 | 0.85 | 0.05 | 0.34, 81 | - | 0.85, 0.94, 0.5 | 7.85 |
+| Class A | armour | 1.03 | 0.92 | 0.17 | 0.55, 127 | - | 0.85, 0.94, 0.5 | 7.85 |
+| Vickers hardened | armour | 0.89 | 0.89 | 0.00 | 0.35, 279 | - | 0.85, 0.94, 0.5 | 7.85 |
+| Krupp non-cemented | armour | 0.92 | 0.86 | - | - | 22 | 0.90, 1.00, 0.5 | 7.85 |
+| special treatment steel | armour | 0.95 | 0.91 | - | - | 23 | 0.90, 1.00, 0.5 | 7.85 |
+| Class B | armour | 1.00 | 1.00 | - | - | 25 | 0.90, 1.00, 0.5 | 7.85 |
+| STS | armour | 1.00 | 1.00 | - | - | 25 | 0.90, 1.00, 0.5 | 7.85 |
+| non-cemented armour | armour | 1.00 | 1.00 | - | - | 25 | 0.90, 1.00, 0.5 | 7.85 |
+| Wotan hart | armour | 1.00 | 0.85 | - | - | 18 | 0.90, 1.00, 0.5 | 7.85 |
+| Wotan | armour | 0.95 | 0.89 | - | - | 22 | 0.90, 1.00, 0.5 | 7.85 |
+| Molybdenum steel | armour | 0.97 | 0.93 | - | - | 23 | 0.90, 1.00, 0.5 | 7.85 |
+| special steel | armour | 0.97 | 0.93 | - | - | 23 | 0.90, 1.00, 0.5 | 7.85 |
 
 - **steel:** Shipbuilding (mild) steel, the plating's default name: Okun's backing ladder 0.7 (MS).
 - **mild steel:** Mild steel: hull plate, and the splinter decks of the 1890s on. Okun's ladder 0.7 (MS).

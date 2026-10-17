@@ -106,9 +106,10 @@ static class TemplatesWriter
             structure group is the plating's and superstructure's picker; the armour picker offers every material.
             The back (P4; damage/14 §2.1 [EST]): a stopped shell throws spall from u = V/V_L of spall_u, and from
             holed_u it holes the plate, breaking in it (face-hardened 0.85/0.94, homogeneous 0.90/1.00, brittle
-            0.75/0.95).
+            0.75/0.95); big is the share of its spall that leaves as one piece (E3: 0.5, brittle 0.3). Fragments is
+            how a burst's fragments see it (E1: THOR's class).
 
-            | Material | Group | q | q at 16" | k | Face (share, from mm) | Elongation % | Back (spall, holed) | Density t/m³ |
+            | Material | Group | q | q at 16" | k | Face (share, from mm) | Elongation % | Back (spall, holed, big) | Density t/m³ |
             |---|---|---|---|---|---|---|---|---|
 
             """.Replace("\r\n", "\n"));
@@ -118,7 +119,7 @@ static class TemplatesWriter
             double q16 = Fleetwright.Sim.Ships.MaterialRow.Of(v).Against(1000, 16 * 25.4);
             string face = v.FaceHardened is { } f ? $"{N(f.Share, "0.00")}, {N(f.MinMm, "0")}{(f.Shatters == false ? "; shatters no steel shell" : "")}" : "-";
             sb.Append(CultureInfo.InvariantCulture,
-                $"| {m.Name} | {m.Group} | {N(v.Q, "0.00")} | {N(q16, "0.00")} | {N(v.QScale, "0.00")} | {face} | {N(v.ElongationPct, "0")} | {N(v.Back?.SpallU, "0.00")}, {N(v.Back?.HoledU, "0.00")} | {N(v.DensityTPerM3, "0.00")} |\n");
+                $"| {m.Name} | {m.Group} | {N(v.Q, "0.00")} | {N(q16, "0.00")} | {N(v.QScale, "0.00")} | {face} | {N(v.ElongationPct, "0")} | {N(v.Back?.SpallU, "0.00")}, {N(v.Back?.HoledU, "0.00")}, {N(v.Back?.Big, "0.0")} | {N(v.DensityTPerM3, "0.00")} |\n");
         }
         sb.Append('\n');
         foreach (var m in MaterialTemplates.All)

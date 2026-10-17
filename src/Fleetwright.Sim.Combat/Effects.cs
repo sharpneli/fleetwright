@@ -17,6 +17,9 @@ public enum MagazineVia : byte
     Beside,
     Turret,
     Underwater,
+    /// <summary>E3: spall off the back of a plate that held, among charges lying open (a gunhouse, a working chamber, a
+    /// handling room), the flash running down to the magazine.</summary>
+    Spall,
 }
 
 public struct EffectsResult
@@ -30,6 +33,8 @@ public struct EffectsResult
     public MagazineVia MagazineVia;
     /// <summary>The hull girder cut through (an underwater explosion's, 4.6): the ship breaks in two.</summary>
     public bool Broken;
+    /// <summary>E3: a plate that held threw spall off its back.</summary>
+    public bool Spall;
 
     public readonly bool Changed => Destroyed + Disabled + Damaged > 0 || BreachM2 > 0 || Jammed || Fire || Magazine || Broken;
 }
@@ -154,6 +159,14 @@ public static class Effects
                 }
             }
         }
+
+        // E3: behind a plate that held, the spall off its back: a shell it stopped within its band, or a heavy shell
+        // glancing off a thin turret roof (Dunkerque); a burst on a face it doesn't hole throws next to nothing (14 §3.3)
+        if (!double.IsNaN(t.Spall) && t.Plate >= 0)
+            Spall(c, k, path, t.Plate, t.Spall, false, shell, t.PlateMs, s, propellant, ref res, ref r);
+        else if (t.Glance >= 0 && xs[t.Glance].Plate == PlateKind.TurretRoof && xs[t.Glance].Mm <= s.SpallRoofTD * shell.CalibreMm &&
+                 r.NextDouble() < s.SpallRoofChance)
+            Spall(c, k, path, t.Glance, 0.5, true, shell, t.PlateMs, s, propellant, ref res, ref r);
 
         if (t.Bursts)
         {
@@ -348,6 +361,129 @@ public static class Effects
                 (res.Magazine, res.MagazineRoom, res.MagazineVia) = magazine >= 0 ? (true, magazine, via) : (true, c.Mounts[turret].Magazine, MagazineVia.Turret);
         }
     }
+
+    /// <summary>The spall off the back of a plate that held (E3; damage/14 §6): its cloud (<see cref="SpallCloud"/>) thinned
+    /// by the layers right behind the plate (backing, the inner skin), into the space behind it, and no further than its
+    /// boundaries (5 mm stops the flakes; a chunk THOR lets through goes on into the space next door). In it, the parts
+    /// and the spaces' vitals take the flakes over their fragility, the big piece the nearest part within 15° of the axis.
+    /// Where charges lie open (an enclosed turret's gunhouse or working chamber, a handling room) the cloud may light them
+    /// (<see cref="SimSettings.SpallFlashChance"/>) and the flash run down to the magazine; in a magazine it doesn't, the
+    /// charges there are in their cases and racks. People are E6's. Not a burst: no blast, no fire, no breach.</summary>
+    static void Spall(ShipClass c, ShipCondition k, HitPath path, int plate, double severity, bool roof, in ShellTypeRow shell, double v,
+        SimSettings s, double propellant, ref EffectsResult res, ref RandomStream r)
+    {
+        var xs = path.Crossings;
+        ref readonly var x = ref xs[plate];
+        var d = path.LegOf(path.Leg(x.T)).Direction;
+        var n = x.Normal;
+        if (n.X * d.X + n.Y * d.Y + n.Z * d.Z < 0)
+            n = new P3(-n.X, -n.Y, -n.Z);
+        double ax = n.X + d.X, ay = n.Y + d.Y, az = n.Z + d.Z, al = Math.Sqrt(ax * ax + ay * ay + az * az);
+        var axis = al > 1e-9 ? new P3(ax / al, ay / al, az / al) : n;
+        var origin = new P3(x.Point.X + 0.05 * axis.X, x.Point.Y + 0.05 * axis.Y, x.Point.Z + 0.05 * axis.Z);
+        double ob = Terminal.Obliquity(d, x.Normal);
+        ref readonly var mat = ref c.MaterialOf(x.Material);
+        var cloud = roof ? Combat.Spall.Roof(origin, axis, shell.CalibreMm, x.Mm, v, ob, mat.BigShare)
+            : Combat.Spall.Stopped(origin, axis, shell.CalibreMm, x.Mm, v, ob, severity, mat.BigShare);
+        // the layers right behind it, and the space it flies into
+        double backing = 0;
+        int cell = -1;
+        for (int i = plate + 1; i < xs.Length && xs[i].T <= x.T + 1.5; i++)
+        {
+            if (xs[i].Kind == CrossingKind.CellIn)
+            {
+                cell = xs[i].Index;
+                break;
+            }
+            if (xs[i].Plate != PlateKind.None && xs[i].Mm > 0)
+                backing += c.MaterialOf(xs[i].Material).SteelMm(xs[i].Mm);
+        }
+        cloud = Combat.Spall.Backed(cloud, x.Mm, backing);
+        if (!(cloud.Flakes > 0) && !(cloud.BigKg > 0))
+            return;
+        res.Spall = true;
+        int open = -1;   // the mount whose charges lie open where the cloud flies
+        var comps = c.Components;
+        // a gunhouse, a working chamber, a conning tower: the whole cloud inside the part, its contents take it
+        int space = cell < 0 && x.Plate is PlateKind.TurretFace or PlateKind.TurretSide or PlateKind.TurretRear or PlateKind.TurretRoof
+            or PlateKind.Barbette or PlateKind.PartArmour ? x.Index : -1;
+        if (space >= 0)
+        {
+            if (res.Part < 0)
+                res.Part = space;
+            double fragility = PartFragility(c, space, s);
+            double hits = Combat.Spall.Counted(cloud, fragility) * PartVital(c, space, s) + (cloud.BigJ >= fragility ? 1 : 0);
+            if (hits > 1e-4 && r.NextDouble() < 1 - Math.Exp(-hits))
+                Harm(ref res, k, space);
+            if (c.MountOf(space) is int m and >= 0 && Enclosed(c, m))
+                open = m;
+        }
+        else if (cell >= 0)
+        {
+            var box = c.Cells[cell].Box;
+            int big = -1;
+            double bigR = double.PositiveInfinity, bigCone = double.DegreesToRadians(Combat.Spall.BigConeDeg);
+            for (int i = 0; i < comps.Length; i++)
+            {
+                ref readonly var comp = ref comps[i];
+                if (!Overlaps(comp.Bounds, box))
+                    continue;
+                double into = Combat.Spall.Hits(cloud, comp.Bounds, PartFragility(c, i, s)) * PartVital(c, i, s);
+                if (into > 1e-4 && r.NextDouble() < 1 - Math.Exp(-into))
+                    Harm(ref res, k, i);
+                // the big piece's mark: the nearest part near the axis
+                var b = comp.Bounds;
+                double rx = (b.X0 + b.X1) / 2 - origin.X, ry = (b.Y0 + b.Y1) / 2 - origin.Y, rz = (b.Base + b.Top) / 2 - origin.Z;
+                double rc = Math.Sqrt(rx * rx + ry * ry + rz * rz), dist = BoxDistance(b, origin);
+                if (rc > 1e-6 && Combat.Spall.Theta(cloud, rx / rc, ry / rc, rz / rc) <= bigCone && dist < bigR)
+                    (big, bigR) = (i, dist);
+            }
+            // the space's own vitals: the whole cloud lands in it
+            double counted = Combat.Spall.Counted(cloud, s.RoomFragilityJ);
+            foreach (int room in c.RoomsIn(cell))
+            {
+                ref readonly var rr = ref c.Rooms[room];
+                int node = c.RoomNode(room);
+                if (res.Part < 0)
+                    res.Part = node;
+                double into = counted * Vital(c, room, s) + (big < 0 && cloud.BigJ >= s.RoomFragilityJ ? Vital(c, room, s) : 0);
+                if (into > 1e-4 && r.NextDouble() < 1 - Math.Exp(-into))
+                    Harm(ref res, k, node);
+                if (rr.Kind == RoomKind.Handling && rr.Mount >= 0 && c.MountOf(rr.Mount) is int m and >= 0 && Enclosed(c, m))
+                    open = m;
+            }
+            if (big >= 0 && cloud.BigJ >= PartFragility(c, big, s))
+                Count(ref res, k, big, k.Worsen(big, PartState.Disabled) ? PartState.Disabled : PartState.Ok);
+            // through the space's boundaries only what THOR lets through them (5 mm stops the flakes, 14 §4.3)
+            foreach (var nb in c.Neighbours(c.Cells[cell].Neighbours))
+            {
+                double join = nb.Join switch
+                {
+                    JoinKind.Deck => DeckMild(c, nb.Through, box, c.Cells[nb.Cell].Box),
+                    JoinKind.Bulkhead => c.Bulkheads[nb.Through].PlateMm + Fragments.MildMm(c.Bulkheads[nb.Through].ArmourMm, FragmentClass.Ductile),
+                    _ => 0,
+                };
+                if (join >= s.SpallStopMm && Fragments.LimitMs(cloud.FlakeKg, join) >= cloud.AxialMs)
+                    continue;
+                foreach (int room in c.RoomsIn(nb.Cell))
+                {
+                    double into = s.NeighbourShare * counted * Vital(c, room, s);
+                    if (into > 1e-4 && r.NextDouble() < 1 - Math.Exp(-into))
+                        Harm(ref res, k, c.RoomNode(room));
+                }
+            }
+        }
+        // charges lying open in the cloud's way may light, and the flash run down to the magazine: as likely as from a fire in
+        // the turret, once lit (14 §6.3: about 20% at s >= 0.5; Dunkerque lit, Tiger didn't)
+        if (open >= 0 && !res.Magazine && r.NextDouble() < s.SpallFlashChance * Math.Min(1, cloud.Severity / 0.5) * s.TurretFlashChance * propellant)
+            (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, c.Mounts[open].Magazine, MagazineVia.Spall);
+    }
+
+    static void Harm(ref EffectsResult res, ShipCondition k, int node) => Count(ref res, k, node, k.Harm(node) ? k.State[node] : PartState.Ok);
+
+    static double PartVital(ShipClass c, int i, SimSettings s) => s.PartVital[Math.Min((int)c.Components[i].Kind, s.PartVital.Length - 1)];
+
+    static double PartFragility(ShipClass c, int i, SimSettings s) => s.PartFragilityJ[Math.Min((int)c.Components[i].Kind, s.PartFragilityJ.Length - 1)];
 
     /// <summary>A burst's single pieces (E1; damage/13 §2.5), on through the ship along the shell's line from the burst:
     /// an AP or common shell's nose slug, at the shell's speed plus its kick, and the base plug, at the shell's speed less

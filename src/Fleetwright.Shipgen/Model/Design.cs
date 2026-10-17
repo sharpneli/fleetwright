@@ -304,6 +304,9 @@ public sealed record BackInput
 {
     public double? SpallU { get; init; }
     public double? HoledU { get; init; }
+    /// <summary>The share of a spall cloud that leaves as one big piece (the plug or the scab) once its severity is 0.5 or
+    /// more (E3; damage/14 §3.2: 0.5, brittle plate 0.3) [EST].</summary>
+    public double? Big { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

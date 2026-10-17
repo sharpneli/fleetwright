@@ -665,11 +665,21 @@ public static class Matchup
                 // the filler bursting in the plate, by the plate over what the shell beats (damage/12's ρ, at its mean)
                 double rho = mm / Math.Max(pen, 1e-9), ip = Math.Min(1, shell.FillerInPlate * rho * rho);
                 double whole = ip * inPlate + (1 - ip) * good;
-                f = (1 - shatter) * ((p - broke) * whole + (1 - p + broke) * kept) + shatter * kept;
+                f = (1 - shatter) * ((p - broke) * whole + (1 - p + broke) * kept + SpallBand(pen, mm, x.HardMm > 0, s) * s.MatchupSpallShare) + shatter * kept;
             }
             sum += x.Share * f;
         }
         return sum;
+    }
+
+    /// <summary>E3: the chance a plate holds the shell within its spall band (u from spall_u to holed_u: face-hardened
+    /// 0.85-0.94, homogeneous 0.90-1.00, the catalogue's classes), its thickness spread as the penetration's: the plate
+    /// between what the shell beats at V/holed_u and at V/spall_u, the plate a shell beats going as V^1.4 (Thompson's,
+    /// near T/D 0.5).</summary>
+    static double SpallBand(double pen, double mm, bool hard, SimSettings s)
+    {
+        double us = hard ? 0.85 : 0.90, uh = hard ? 0.94 : 1.00, sd = s.MatchupPenSpread * mm;
+        return Math.Max(Phi((pen * Math.Pow(us, -1.4) - mm) / sd) - Phi((pen * Math.Pow(uh, -1.4) - mm) / sd), 0);
     }
 
     /// <summary>What a shell through armour whole, its fuze started, does (as the terminal's <c>Start</c>): a blind fuze

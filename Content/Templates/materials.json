@@ -8,7 +8,8 @@
    "q": 0.7,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "fragments": "mild"
   }
@@ -22,7 +23,8 @@
    "q": 0.7,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "fragments": "mild"
   }
@@ -36,7 +38,8 @@
    "q": 0.8,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "fragments": "mild"
   }
@@ -50,7 +53,8 @@
    "q": 0.53,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "fragments": "mild"
   }
@@ -64,7 +68,8 @@
    "q": 0.01,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "fragments": "mild"
   }
@@ -78,7 +83,8 @@
    "q": 0.04,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "fragments": "mild"
   }
@@ -92,7 +98,8 @@
    "q": 0.33,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "fragments": "mild"
   }
@@ -112,7 +119,8 @@
    },
    "back": {
     "spall_u": 0.75,
-    "holed_u": 0.95
+    "holed_u": 0.95,
+    "big": 0.3
    },
    "fragments": "brittle"
   }
@@ -126,7 +134,8 @@
    "q": 0.85,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "fragments": "ductile"
   }
@@ -145,7 +154,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -164,7 +174,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -183,7 +194,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -202,7 +214,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -221,7 +234,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -240,7 +254,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -259,7 +274,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -278,7 +294,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -297,7 +314,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -316,7 +334,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -335,7 +354,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -354,7 +374,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -373,7 +394,8 @@
    },
    "back": {
     "spall_u": 0.85,
-    "holed_u": 0.94
+    "holed_u": 0.94,
+    "big": 0.5
    },
    "fragments": "fh"
   }
@@ -387,7 +409,8 @@
    "q": 0.92,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "elongation_pct": 22,
    "fragments": "ductile"
@@ -402,7 +425,8 @@
    "q": 0.95,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "elongation_pct": 23,
    "fragments": "ductile"
@@ -417,7 +441,8 @@
    "q": 1,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "elongation_pct": 25,
    "fragments": "ductile"
@@ -432,7 +457,8 @@
    "q": 1,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "elongation_pct": 25,
    "fragments": "ductile"
@@ -447,7 +473,8 @@
    "q": 1,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "elongation_pct": 25,
    "fragments": "ductile"
@@ -462,7 +489,8 @@
    "q": 1,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "elongation_pct": 18,
    "fragments": "ductile"
@@ -477,7 +505,8 @@
    "q": 0.95,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "elongation_pct": 22,
    "fragments": "ductile"
@@ -492,7 +521,8 @@
    "q": 0.97,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "elongation_pct": 23,
    "fragments": "ductile"
@@ -507,7 +537,8 @@
    "q": 0.97,
    "back": {
     "spall_u": 0.9,
-    "holed_u": 1
+    "holed_u": 1,
+    "big": 0.5
    },
    "elongation_pct": 23,
    "fragments": "ductile"
