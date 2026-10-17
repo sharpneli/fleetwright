@@ -39,6 +39,10 @@ Stages (each a commit, checked with the snapshot), in `partial class Layout` fil
 
 Done when `BuildLayout` is a page, and no stage method is over about 200 lines.
 
+**Done 2026-10-17** (1a-1i, each byte-identical): `BuildLayout` is 98 lines, the stages in `Layout/Warship/`.
+The longest are the middle row's constructor and `PlaceDeckBattery`, about 200 lines each, both one rule
+throughout. mono-check and `dotnet test` unchanged.
+
 ## 2. Each rule in one home
 
 The single-implementation rule, applied to what the review found:

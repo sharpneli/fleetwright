@@ -262,6 +262,7 @@ src/
   Fleetwright.Shipgen/        # ship design library (ported, see below). No package references.
     Model/                    #   the typed data: Design (the input), Ship (the output), the JSON context and JsonFile
     Layout/                   #   layout.py: the Layout object, parts, superstructure levels, the warship layout
+                              #   (BuildLayout: its stages, each in Warship/ with its inputs and outputs)
     Styles/                   #   the style hooks and the warship, carrier, merchant and planing styles
     Golden/                   #   the golden comparer and case runner
     Tools/                    #   the fuzz mutator

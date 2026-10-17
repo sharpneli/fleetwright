@@ -2,6 +2,23 @@ namespace Fleetwright.Shipgen;
 
 public sealed partial class Layout
 {
+    /// <summary>The length the deck secondaries need amidships, each battery's mounts at their pitch in a row with
+    /// room for the first and last; the batteries one after another (the layout may well fit them closer).</summary>
+    static double SecondarySpan(IEnumerable<BatteryInput> secs)
+    {
+        double span = 0.0;
+        foreach (var sec in secs)
+        {
+            long n = sec.MountsPerSide;
+            if ((sec.Mount ?? "deck") != "deck" || n == 0)
+                continue;
+            var ts = Geometry.BatteryType(sec).T;
+            double reach = Math.Max(ts.R, Geometry.TurretReach(ts, 0.0)), pitch = 2.1 * reach + 1.0;
+            span += span == 0.0 ? (n - 1) * pitch + 2 * (reach + 0.5) : n * pitch;
+        }
+        return span;
+    }
+
     /// <summary>A secondary battery on deck (BuildLayout), mounts in pairs abreast amidships: outboard of the
     /// superstructure and funnels beside them, kept apart from the turrets and from what stands on the other level
     /// (deck or deckhouse), barrels clear when stowed, spread evenly or (beside wing turrets, after the first battery,
