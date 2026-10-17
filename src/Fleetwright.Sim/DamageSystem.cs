@@ -75,6 +75,8 @@ public sealed class DamageSystem : IWorldSystem
     readonly ShipSystem ships;
     readonly CombatLog log;
     readonly RandomStream stream;
+    /// <summary>Each ship's plates' lots (P7): derived by her entity, never advanced, so a plate keeps its quality.</summary>
+    readonly RandomStream lotStream;
     readonly HitPath path = new();
     readonly PathBender bender = new();
     readonly Dictionary<ShipClass, FloodModel> floods = [];
@@ -91,6 +93,7 @@ public sealed class DamageSystem : IWorldSystem
     {
         (this.settings, this.ships, this.log, this.sightings) = (settings, ships, log, sightings);
         stream = RandomStream.Named(seed, "damage");
+        lotStream = RandomStream.Named(seed, "plate lots");
         Array.Fill(propellant, 1.0);
         blasts = new Blast[Math.Max(settings.BlastCapacity, 4)];
     }
@@ -367,7 +370,8 @@ public sealed class DamageSystem : IWorldSystem
             ShipTracer.Trace(cls, p0, p1, bearings.AsSpan(0, n), water, path);
 
             bender.Set(bearings, n, water);
-            t = Terminal.Resolve(cls, hit, path, bender, settings, ref rng);
+            var lots = lotStream.Derive((ulong)hit.Ship);
+            t = Terminal.Resolve(cls, hit, path, bender, lots, settings, ref rng);
             e = Effects.Apply(cls, k, hit, path, t, settings, propellant[ship.Side], ref rng);
         }
 

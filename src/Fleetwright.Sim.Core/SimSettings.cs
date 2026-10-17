@@ -737,11 +737,15 @@ public sealed record SimSettings
     public double BreakSpanDeg { get; init; } = 5;
 
     /// <summary>Penetration: a common shell's capability as a share of AP's; an HE shell's nose fuze punches this many
-    /// calibres (times the square root of the obliquity's cosine) and bursts; each plate's resistance is drawn within
-    /// plus or minus this share.</summary>
+    /// calibres (times the square root of the obliquity's cosine) and bursts.</summary>
     public double CommonPenShare { get; init; } = 0.6;
     public double HePenCalibres { get; init; } = 0.2;
-    public double PenSpread { get; init; } = 0.1;
+
+    /// <summary>A plate's quality on a ship, drawn once for each plate of hers (its lot: a normal draw of this sigma
+    /// about 1, on its limit velocity), and each shot's scatter about it (docs/battle/shells-armour-damage.md P7;
+    /// armor/00 §3: 7% through at 0.9 of the limit, 50% at it, 93% at 1.1).</summary>
+    public double PlateLotSigma { get; init; } = 0.06;
+    public double PlateShotSigma { get; init; } = 0.03;
 
 
     /// <summary>A whole shell may glance off a plate from this obliquity, degrees (the biting angle: below it the nose

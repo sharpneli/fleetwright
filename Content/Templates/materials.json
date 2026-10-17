@@ -65,6 +65,19 @@
   }
  },
  {
+  "name": "cement",
+  "group": "structure",
+  "note": "Cement and concrete, armour backing (US Class A's 2\"). Okun counts cement at 1/25 of its thickness.",
+  "value": {
+   "density_t_per_m3": 2.3,
+   "q": 0.04,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   }
+  }
+ },
+ {
   "name": "aluminium alloy",
   "group": "structure",
   "note": "Light alloy deckhouses. [EST] about steel's protection per weight (2.7/7.85); no research row.",

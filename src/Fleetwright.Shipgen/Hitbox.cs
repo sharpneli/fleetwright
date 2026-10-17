@@ -211,7 +211,9 @@ public static class Hitbox
                 BottomMm = ag.BeltBottomMm != ag.BeltMm ? ag.BeltBottomMm : null,
                 TaperFrom = ag.BeltBottomMm != ag.BeltMm ? Rz(Math.Min(ag.BeltTop, ag.Waterline)) : null,
                 InclineDeg = ag.BeltInclineDeg > 0 ? Math.Round(ag.BeltInclineDeg, 1) : null, Position = ag.BeltInternal ? "internal" : null,
+                Backing = ag.BeltInternal ? null : Armour.Backing(design, "belt"),
             };
+        armour.Gratings = design.Armour?.Gratings;
         // an internal belt's zones are inclined plates with it (Inclined)
         var strakes = ag.Strakes.Where(st => !(ag.BeltInternal && st.Kind == "zone")).ToList();
         if (strakes.Count > 0)
@@ -222,6 +224,7 @@ public static class Hitbox
                 BottomMm = st.Kind == "zone" && st.BottomMm != st.Mm ? Math.Round(st.BottomMm ?? st.Mm, 1) : null,
                 TaperFrom = st.Kind == "zone" && st.BottomMm != st.Mm ? Rz(Math.Min(ag.BeltTop, ag.Waterline)) : null,
                 InclineDeg = st.Kind == "zone" && ag.BeltInclineDeg > 0 ? Math.Round(ag.BeltInclineDeg, 1) : null,
+                Backing = Armour.Backing(design, st),
             }).ToList();
         var bulkheads = new List<ArmourBulkheadReport>();
         ArmourBulkheadReport BulkheadReport(ArmourBulkhead b) => new(b.Id, Math.Round(b.X, 3), Math.Round(b.Mm), Rz(b.Bottom), Rz(b.Top),

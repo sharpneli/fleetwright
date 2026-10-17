@@ -45,6 +45,7 @@ public static class MaterialTemplates
         M("high-tensile steel", "structure", 7.85, 0.80, "HT and Krupp low-nickel structural steel, the laminated decks of 1900-1925: Okun's ladder 0.8 (HT)."),
         M("wrought iron", "structure", 7.7, 0.53, "The ironclads' plate and hulls (s.g. 7.6-7.9). Spezia 1876 ~0.50, Tresidder/Thompson 0.56, Okun 0.6 (WI)."),
         M("wood", "structure", 0.7, 0.01, "Planking and wooden hulls (oak and teak 0.65-0.75). Okun counts teak at 1/100 of its thickness."),
+        M("cement", "structure", 2.3, 0.04, "Cement and concrete, armour backing (US Class A's 2\"). Okun counts cement at 1/25 of its thickness."),
         M("aluminium alloy", "structure", 2.7, 0.33, "Light alloy deckhouses. [EST] about steel's protection per weight (2.7/7.85); no research row."),
         Fh("compound", 0.72, 0, 0.30, 0, "Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP): no bare steel shell. Its back is brittle.", 7.75, false, Brittle),
         M("nickel steel", "armour", 7.85, 0.85, "Homogeneous nickel steel (1889-1896). Annapolis > 0.77-0.83, Johnson's limit 0.92 (NIS)."),
@@ -134,6 +135,8 @@ public static class MaterialTemplates
             Add(a.EndBelts?.Of("aft")?.Material);
             Add(a.SteeringBox?.Material);
             Add(a.SteeringBox?.DeckMaterial);
+            foreach (var part in (ReadOnlySpan<string>)["belt", "upper", "fore", "aft"])
+                Add(Armour.Backing(design, part)?.Material);
         }
         return names;
     }

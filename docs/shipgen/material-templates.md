@@ -27,6 +27,7 @@ holed_u it holes the plate, breaking in it (face-hardened 0.85/0.94, homogeneous
 | high-tensile steel | structure | 0.80 | 0.80 | - | - | - | 0.90, 1.00 | 7.85 |
 | wrought iron | structure | 0.53 | 0.53 | - | - | - | 0.90, 1.00 | 7.70 |
 | wood | structure | 0.01 | 0.01 | - | - | - | 0.90, 1.00 | 0.70 |
+| cement | structure | 0.04 | 0.04 | - | - | - | 0.90, 1.00 | 2.30 |
 | aluminium alloy | structure | 0.33 | 0.33 | - | - | - | 0.90, 1.00 | 2.70 |
 | compound | armour | 0.72 | 0.72 | 0.00 | 0.30, 0; shatters no steel shell | - | 0.75, 0.95 | 7.75 |
 | nickel steel | armour | 0.85 | 0.85 | - | - | - | 0.90, 1.00 | 7.85 |
@@ -58,6 +59,7 @@ holed_u it holes the plate, breaking in it (face-hardened 0.85/0.94, homogeneous
 - **high-tensile steel:** HT and Krupp low-nickel structural steel, the laminated decks of 1900-1925: Okun's ladder 0.8 (HT).
 - **wrought iron:** The ironclads' plate and hulls (s.g. 7.6-7.9). Spezia 1876 ~0.50, Tresidder/Thompson 0.56, Okun 0.6 (WI).
 - **wood:** Planking and wooden hulls (oak and teak 0.65-0.75). Okun counts teak at 1/100 of its thickness.
+- **cement:** Cement and concrete, armour backing (US Class A's 2"). Okun counts cement at 1/25 of its thickness.
 - **aluminium alloy:** Light alloy deckhouses. [EST] about steel's protection per weight (2.7/7.85); no research row.
 - **compound:** Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP): no bare steel shell. Its back is brittle.
 - **nickel steel:** Homogeneous nickel steel (1889-1896). Annapolis > 0.77-0.83, Johnson's limit 0.92 (NIS).

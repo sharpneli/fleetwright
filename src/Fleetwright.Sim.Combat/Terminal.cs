@@ -76,8 +76,9 @@ public struct TerminalResult
 /// each at its obliquity:
 /// <list type="bullet">
 /// <item><b>penetration:</b> Thompson's limit velocity (<see cref="LimitMs(in ShellTypeRow, double, double)"/>, the
-/// same for belts and decks) of the plate's thickness times its material's q, drawn within
-/// <see cref="SimSettings.PenSpread"/>, and for a common shell over <see cref="SimSettings.CommonPenShare"/>: through at
+/// same for belts and decks) of the plate's thickness times its material's q, for a common shell over
+/// <see cref="SimSettings.CommonPenShare"/>, times the plate's quality on this ship and this shot's scatter
+/// (<see cref="PlateQuality"/>, <see cref="SimSettings.PlateShotSigma"/>; P7): through at
 /// or above it, slowed by Lambert-Jonas, √(v² − V_L²) (<see cref="Residual"/>: the plate costs the energy that just
 /// gets through it) and times the cosine of its turn: through, it turns toward the plate's normal by Okun's M79
 /// (<see cref="Turn"/>), and the path is traced again on its new line (<see cref="PathBender"/>);</item>
@@ -119,7 +120,8 @@ public static class Terminal
 {
     /// <summary>The hit's path through its class (traced from just outside the hit point along the shell's flight) to
     /// its outcome; the bender bends the path where the shell turns or glances.</summary>
-    public static TerminalResult Resolve(ShipClass c, in Hit hit, HitPath path, PathBender bender, SimSettings s, ref RandomStream r)
+    public static TerminalResult Resolve(ShipClass c, in Hit hit, HitPath path, PathBender bender, in RandomStream lots, SimSettings s,
+        ref RandomStream r)
     {
         var shell = hit.Shell;
         var res = new TerminalResult
@@ -192,11 +194,13 @@ public static class Terminal
             if (nose)
                 return Nose(ref res, ref r, shell, s, x.T, i, t <= s.HePenCalibres * calMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(ob)), 1e-3)));
 
-            // the plate as this shell meets it: its resistance drawn, and a common shell's weaker body; on face-hardened
-            // plate the body's quality, and the face shattering a bare nose or a body past its limits
-            double te = t * r.NextDouble(1 - s.PenSpread, 1 + s.PenSpread) / (shell.Kind == ShellKind.Common ? s.CommonPenShare : 1);
-            double td = x.Mm / calMm;
+            // the plate as this shell meets it: a common shell's weaker body; on face-hardened plate the body's quality,
+            // and the face shattering a bare nose or a body past its limits; its limit by the plate's lot on this ship and
+            // this shot's scatter (P7). Its thickness in calibres, for its cap and its body, is its mass's in steel
+            double te = t / (shell.Kind == ShellKind.Common ? s.CommonPenShare : 1);
             ref readonly var mat = ref c.MaterialOf(x.Material);
+            double td = mat.SteelMm(x.Mm) / calMm;
+            double quality = PlateQuality(lots, x.Plate, x.Index, s) * Math.Max(1 + s.PlateShotSigma * r.NextGaussian(), MinQuality);
             bool hard = mat.FaceHardened, shatter = false;
             if (hard)
             {
@@ -204,7 +208,7 @@ public static class Terminal
                 shatter = p >= 1 || p > 0 && r.NextDouble() < p;
                 te = FaceHardMm(te, shell, ob, shatter, s);
             }
-            double vl = LimitMs(te, calMm, massKg, ob);
+            double vl = LimitMs(te, calMm, massKg, ob) * quality;
             if (cap != Cap.None && (hard || Decaps(cap, td, ob, ref r)))
             {
                 // the cap's knocked off, whether the plate holds or not
@@ -213,13 +217,13 @@ public static class Terminal
                 res.Decapped = true;
             }
             res.Shattered |= shatter;
-            if (!shatter && Glances(v, te, calMm, massKg, ob, s))
+            if (!shatter && Glances(v, te, calMm, massKg, ob, s, quality))
             {
                 // glanced: the plate soaks up its motion across it (a dent), whether it would have got through or not, and
                 // it skids off along the plate's face, its fuze started as on a plate that held; the path bends at once,
                 // so nothing behind the plate is crossed
                 res.Glance = i;
-                if (!started && StartsOn(shell, x.Mm, ob, hard, x.T, ref impulse, ref impulseT, s))
+                if (!started && StartsOn(shell, mat.SteelMm(x.Mm), ob, hard, x.T, ref impulse, ref impulseT, s))
                 {
                     started = true;
                     Start(ref res, ref r, shell, s, x.T, v * Math.Sin(double.DegreesToRadians(ob)), i, 0, ref burstT, ref force);
@@ -250,7 +254,7 @@ public static class Terminal
                     return Burst(ref res, Math.Max(x.T - 0.3, 0), force, res.Outcome, BurstKind.Inside);
                 if (started)
                     return res;
-                if (StartsOn(shell, x.Mm, ob, hard, x.T, ref impulse, ref impulseT, s))
+                if (StartsOn(shell, mat.SteelMm(x.Mm), ob, hard, x.T, ref impulse, ref impulseT, s))
                 {
                     Start(ref res, ref r, shell, s, x.T, 0, i, 0, ref burstT, ref force);
                     if (res.Outcome != Outcome.Dud)
@@ -286,7 +290,7 @@ public static class Terminal
                 res.Plate = i;
                 return Burst(ref res, x.T + 0.01, s.BurstInPlateK, Outcome.BurstInPlate, BurstKind.InPlate);
             }
-            if (!started && StartsOn(shell, x.Mm, ob, hard, x.T, ref impulse, ref impulseT, s))
+            if (!started && StartsOn(shell, mat.SteelMm(x.Mm), ob, hard, x.T, ref impulse, ref impulseT, s))
             {
                 started = true;
                 Start(ref res, ref r, shell, s, x.T, v, i, 0, ref burstT, ref force);
@@ -463,8 +467,20 @@ public static class Terminal
     /// stop square on (its limit at 0°, times <see cref="SimSettings.GlanceShare"/>). So a thin plate never turns a big
     /// shell away (an 18" at 460 m/s goes through 5 mm at 85°), a thick one glances anything grazing it. tMm is the plate
     /// as the shell meets it (its material, quality and draw).</summary>
-    public static bool Glances(double v, double tMm, double calibreMm, double massKg, double obliquityDeg, SimSettings s) =>
-        obliquityDeg >= s.RicochetFromDeg && v * Cos(obliquityDeg) < s.GlanceShare * LimitMs(tMm, calibreMm, massKg, 0);
+    public static bool Glances(double v, double tMm, double calibreMm, double massKg, double obliquityDeg, SimSettings s, double quality = 1) =>
+        obliquityDeg >= s.RicochetFromDeg && v * Cos(obliquityDeg) < s.GlanceShare * quality * LimitMs(tMm, calibreMm, massKg, 0);
+
+    /// <summary>The quality of a ship's plate (P7): its lot's, drawn once for the ship from her own stream (lots) by the
+    /// plate (its kind and row), a normal draw about 1 of <see cref="SimSettings.PlateLotSigma"/> on its limit velocity;
+    /// the same every time she's hit there.</summary>
+    public static double PlateQuality(in RandomStream lots, PlateKind kind, int index, SimSettings s)
+    {
+        var lot = lots.Derive(((ulong)kind << 32) | (uint)index);
+        return Math.Max(1 + s.PlateLotSigma * lot.NextGaussian(), MinQuality);
+    }
+
+    /// <summary>The least a quality draw gives: a plate no worse than half its kind (far past any sigma used).</summary>
+    const double MinQuality = 0.5;
 
     /// <summary>The thickest plate (the formula's, mm) a shell at v doesn't glance off at an obliquity: <see cref="Glances"/>
     /// the other way round (none under <see cref="SimSettings.RicochetFromDeg"/>: infinity). For readouts and the

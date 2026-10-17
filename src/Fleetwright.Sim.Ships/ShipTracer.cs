@@ -191,19 +191,24 @@ public static class ShipTracer
                 (face, mm, n) = (PlateKind.HullEnd, pl.ShellEndMm, new P3(Math.Sign(x == 0 ? 1 : x), 0, 0));
             double armourMm = 0;
             int side = face == PlateKind.HullSide ? SidePlate(x, z, out armourMm) : -1;
-            // added in the reverse of their order along the path: armour outside the plating
+            // added in the reverse of their order along the path: armour outside its backing (P7), both outside the plating
             if (forwardIn)
                 Add(CrossingKind.HullIn, face, -1, s, mm, pl.Material, n);
             if (side >= 0)
             {
+                ref readonly var sp = ref c.SidePlates[side];
                 // a leaning belt (protection-plan.md H6): its top outboard, so its face looks down as well as out
                 var na = n;
-                if (c.SidePlates[side].InclineDeg > 0)
+                if (sp.InclineDeg > 0)
                 {
-                    double nz = n.Z - Math.Abs(n.Y) * Math.Tan(double.DegreesToRadians(c.SidePlates[side].InclineDeg)), l = Math.Sqrt(n.X * n.X + n.Y * n.Y + nz * nz);
+                    double nz = n.Z - Math.Abs(n.Y) * Math.Tan(double.DegreesToRadians(sp.InclineDeg)), l = Math.Sqrt(n.X * n.X + n.Y * n.Y + nz * nz);
                     na = new P3(n.X / l, n.Y / l, nz / l);
                 }
-                Add(CrossingKind.Plate, PlateKind.SideArmour, side, s, armourMm, c.SidePlates[side].Material, na);
+                if (forwardIn && sp.BackingMm > 0)
+                    Add(CrossingKind.Plate, PlateKind.Backing, side, s, sp.BackingMm, sp.BackingMaterial, na);
+                Add(CrossingKind.Plate, PlateKind.SideArmour, side, s, armourMm, sp.Material, na);
+                if (!forwardIn && sp.BackingMm > 0)
+                    Add(CrossingKind.Plate, PlateKind.Backing, side, s, sp.BackingMm, sp.BackingMaterial, na);
             }
             if (!forwardIn)
                 Add(CrossingKind.HullOut, face, -1, s, mm, pl.Material, n);
@@ -291,7 +296,7 @@ public static class ShipTracer
                         if (up.Box.Base < d.Z + 0.01 && up.Box.Top > d.Z - 0.01 && g.InPlan(up, x, y))
                             kind = PlateKind.Grating;
                     }
-                    Add(CrossingKind.Plate, kind, i, s, d.ThicknessMm, d.Material, new P3(0, 0, 1));
+                    Add(CrossingKind.Plate, kind, i, s, kind == PlateKind.Grating ? d.ThicknessMm * c.GratingShare : d.ThicknessMm, d.Material, new P3(0, 0, 1));
                 }
             if (Math.Abs(bx) > 1e-9)
                 foreach (int i in g.Bulkheads)

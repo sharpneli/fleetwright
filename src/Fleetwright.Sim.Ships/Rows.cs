@@ -495,9 +495,18 @@ public readonly record struct MaterialRow(double Q, double QScale, double FaceSh
 
     public bool FaceHardened => !double.IsNaN(FaceMinMm);
 
+    /// <summary>Its density, t/m³ (steel's 7.85 unless given).</summary>
+    public double Density { get; init; } = Steel;
+
+    /// <summary>A plate of it mm thick as steel of the same weight, mm: what starts a fuze or knocks a cap off is the
+    /// plate's mass in the way (a backing of teak or cement is a thin plate to them; P7).</summary>
+    public double SteelMm(double mm) => mm * Density / Steel;
+
+    const double Steel = 7.85;
+
     public static MaterialRow Of(MaterialInput m) => new(m.Q ?? 1, m.QScale ?? 0, m.FaceHardened?.Share ?? double.NaN,
         m.FaceHardened is { } f ? f.MinMm ?? 0 : double.NaN, m.ElongationPct ?? 25, m.FaceHardened?.Shatters ?? true, m.Back?.SpallU ?? 0.90,
-        m.Back?.HoledU ?? 1.00);
+        m.Back?.HoledU ?? 1.00) { Density = m.DensityTPerM3 ?? Steel };
 
     /// <summary>The plate's worth as a share of its thickness against a shell of a calibre (00 §4.2's rules, all by the
     /// material's numbers): face-hardened plate q·(D/8")^−k past 8" (held at q below), and no face-hardened advantage
@@ -627,6 +636,9 @@ public readonly record struct SidePlateRow
     public double TipMm { get; init; }
     /// <summary>The belt's (and its zones') lean off the upright, its top outboard, degrees (protection-plan.md H6).</summary>
     public double InclineDeg { get; init; }
+    /// <summary>Its backing behind it (docs/battle/shells-armour-damage.md P7): mm (0: none) of a material.</summary>
+    public double BackingMm { get; init; }
+    public int BackingMaterial { get; init; }
 }
 
 /// <summary>An armoured transverse bulkhead: ThicknessMm from Top down, LowerMm under LowerTop.</summary>

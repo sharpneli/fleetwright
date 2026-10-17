@@ -28,8 +28,8 @@ public enum PlateKind : byte
     SideArmour,
     /// <summary>An armour deck (Index: ShipClass.ArmourDecks).</summary>
     ArmourDeck,
-    /// <summary>An armour deck's opening over an uptake, closed by an armoured grating as thick as the deck (Index:
-    /// ShipClass.ArmourDecks). A placeholder until the designer gives gratings their own thickness.</summary>
+    /// <summary>An armour deck's opening over an uptake, closed by an armoured grating (Index: ShipClass.ArmourDecks), its
+    /// plate the deck's times <see cref="ShipClass.GratingShare"/> (armour.gratings; docs/battle/shells-armour-damage.md P7).</summary>
     Grating,
     /// <summary>An armoured transverse bulkhead (Index: ShipClass.ArmourBulkheads).</summary>
     ArmourBulkhead,
@@ -53,6 +53,9 @@ public enum PlateKind : byte
     /// <summary>A deck or bulkhead between two cells, its structural plate (Index: ShipClass.Decks or Bulkheads).</summary>
     Deck,
     Bulkhead,
+    /// <summary>The backing behind side armour, wood or cement (Index: ShipClass.SidePlates; docs/battle/shells-armour-damage.md
+    /// P7).</summary>
+    Backing,
 }
 
 /// <summary>One crossing along a segment: where (T, metres from the segment's start, and the point, ship-local), what
@@ -151,6 +154,7 @@ public sealed class HitPath
                 PlateKind.HullSide => "hull side",
                 PlateKind.HullEnd => "hull end",
                 PlateKind.HullDeck => "hull deck",
+                PlateKind.Backing => $"backing of {c.SidePlateId(x.Index)}",
                 _ => x.Plate.ToString(),
             };
             if (x.Plate != PlateKind.None)

@@ -473,7 +473,7 @@ public static class ShipClassCompiler
                 {
                     Kind = StrakeKind.Belt, Extent = Extent.Citadel, ThicknessMm = b.ThicknessMm, X0 = b.X0, X1 = b.X1, Bottom = b.Bottom, Top = b.Top,
                     Material = Material(b.Material), BottomMm = Or(b.BottomMm), TaperFrom = Or(b.TaperFrom), TipMm = double.NaN,
-                    InclineDeg = b.InclineDeg ?? 0,
+                    InclineDeg = b.InclineDeg ?? 0, BackingMm = b.Backing?.Mm ?? 0, BackingMaterial = Material(b.Backing?.Material),
                 });
                 ids.Add("Belt");
             }
@@ -491,12 +491,13 @@ public static class ShipClassCompiler
                     },
                     Extent = s.Extent, ThicknessMm = s.ThicknessMm, X0 = s.X0, X1 = s.X1, Bottom = s.Bottom, Top = s.Top,
                     Material = Material(s.Material), BottomMm = Or(s.BottomMm), TaperFrom = Or(s.TaperFrom), TipMm = Or(s.TipMm),
-                    InclineDeg = s.InclineDeg ?? 0,
+                    InclineDeg = s.InclineDeg ?? 0, BackingMm = s.Backing?.Mm ?? 0, BackingMaterial = Material(s.Backing?.Material),
                 });
                 ids.Add(s.Id);
             }
             Index(ids, "side plate");
             c.sidePlates = sides.ToArray();
+            c.GratingShare = a.Gratings ?? Shipgen.Armour.GratingShareDefault;
             c.sidePlateIds = ids.ToArray();
             var bh = a.Bulkheads ?? [];
             c.armourBulkheads = bh.Select(x => new ArmourBulkheadRow(x.X, x.ThicknessMm, x.Bottom, x.Top, Material(x.Material), Or(x.LowerMm), Or(x.LowerTop),

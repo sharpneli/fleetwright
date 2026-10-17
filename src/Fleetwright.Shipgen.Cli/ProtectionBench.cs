@@ -173,7 +173,8 @@ static class ProtectionBench
                 inShip = true;
                 run = WaterRun.RunM(path, i);
             }
-            if (x.Kind is CrossingKind.Plate or CrossingKind.HullIn or CrossingKind.HullOut or CrossingKind.PartIn or CrossingKind.PartOut && x.Mm > 0)
+            if (x.Kind is CrossingKind.Plate or CrossingKind.HullIn or CrossingKind.HullOut or CrossingKind.PartIn or CrossingKind.PartOut && x.Mm > 0
+                && x.Plate != PlateKind.Backing)   // (wood or cement: not steel)
                 mm += x.Mm;
             if (x.Kind == CrossingKind.Plate && x.Plate is PlateKind.Deck or PlateKind.Bulkhead or PlateKind.ArmourDeck or PlateKind.ArmourBulkhead or PlateKind.Grating
                 or PlateKind.Inclined)

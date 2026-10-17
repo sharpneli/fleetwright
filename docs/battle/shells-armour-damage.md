@@ -1074,9 +1074,47 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
   - **Outcomes accepted, not tuned (user, 2026-10-16):** with the 3-decay reach about a quarter more hits count and
     more ships flood and sink (the squadrons' Germans lose ~0.7 ships a run, none before). Without damage control
     that's expected; tuning to historical rates now would make ships immortal once it comes.
-- **P7 Gratings, backing and scatter.**
+- **P7 Gratings, backing and scatter** (done 2026-10-17).
   - `armour.gratings` and `armour.backing` in the tracer (the backing's spall catch is E3's).
   - Plate quality drawn per ship (about N(1, 0.06)) and per shot (N(0, 0.03)), instead of the ±10% per shot.
+  - **How (2026-10-17):**
+    - **`armour.gratings`** (0-1, null: `Armour.GratingShareDefault` 0.4): reported as `armour.gratings` when given,
+      compiled to `ShipClass.GratingShare`; the tracer's `Grating` crossing is the deck's plate times it (it was the
+      whole deck). Its weight stays the funnel plan's 0.6 t/m² (`LayoutParts.AddFunnelWeights`): a grating's own
+      weight wants the designer's gratings first.
+    - **`armour.backing {material, mm}`** behind the belt and its zones; `upper_belt.backing` and
+      `end_belts.fore/aft.backing` take it unless they give their own (`Armour.Backing`), the steering box none, an
+      internal belt none. Material default `wood`; the catalogue gains `cement` (2.3 t/m³, q 0.04: Okun's 1/25). Weighed
+      over the plates' faces (`Belt backing`, `<strake> backing`), reported on the belt and strakes
+      (`BackingReport`), compiled onto `SidePlateRow` (`BackingMm`, `BackingMaterial`), and crossed as
+      `PlateKind.Backing` between the armour and the plating, going in and coming out. The material table's
+      `backing` field the inputs table named is its material's q, so no new field.
+    - **A plate's mass, not its millimetres, starts a fuze or knocks a cap off:** `MaterialRow.SteelMm` (its thickness
+      times its density over steel's) for `StartsOn` and the cap's T/D. Steel plates don't move; 100 mm of teak is
+      8.9 mm, and wrought iron (7.7) 2% thinner, aluminium alloy a third.
+    - **Scatter:** `PenSpread` (±10% on the thickness, a uniform draw a plate) goes. A plate's quality on a ship is its
+      lot's, `Terminal.PlateQuality`: N(1, `PlateLotSigma` 0.06) on its limit velocity, drawn from the ship's own
+      stream ("plate lots", by her entity) by the plate's kind and row, so it's the same each time she's hit there;
+      each shot scatters about it by N(0, `PlateShotSigma` 0.03) (floor 0.5). The glance gate takes the same
+      quality. Through at 0.9/1.0/1.1 of the limit: 6.3/50.2/92.7% (armor/00 §3: 7/50/93). A row is the lot: a
+      belt's plates share one, its zones theirs. The matchup keeps its own `MatchupPenSpread` (0.1 on the
+      thickness, about the same); its refit is PM's.
+  - **Done (2026-10-17).** As above.
+    - **Tests:** `PlateTests`: a grating is its share of the deck (dreadnought's uptakes, 0.4 and 0.25); a belt's
+      backing weighs over its face (100 mm of wood on dreadnought: 102 t, standard 25,510 → 25,808 t with the upper and
+      end belts' and the redesign), lies on every belt, and is crossed armour → backing → plating in and the reverse
+      out; the lots are stable per ship and plate, N(1, 0.06), and the through shares above. Goldens 372/372 (no
+      design gives the keys; the materials pages gain cement).
+    - **Benches (P5 → P7; `shipgen hits` 2000 hits, 10 a ship, 30 min after):** small moves, inside the runs' noise
+      but for one: Lion on Seydlitz out of the fight 16 → 14% at 8 km, 7 → 9% at 14 km, 14 → 16% at 20 km; Borodino on
+      Mikasa 7 → 10%; Yamato on Colorado 94 → 93%, on Yamato 90 → 91%. Seydlitz on Iron Duke's magazines 0.5 →
+      0.85% of hits; over 4000 hits 0.53 → 0.63% (6.3% of ships lost to one), and 0.70% with the scatter off: the
+      thinner gratings let a few more shells down the uptakes. The matchup doesn't move (arethusa:4 v iron_duke
+      1.295, lion v seydlitz 1.063).
+    - **Scenarios:** squadrons 40 min Britain lost 1 (Lion → Princess Royal, a magazine), Germany 0; tsushima --play 2
+      seeds Russia lost 2 → 4, Japan 3 → 4; flotilla's hash moves.
+    - **Left for later:** no design gives a backing yet (the ironclads' teak, Littorio's oak and the US Class A's
+      concrete want their numbers; each adds weight, so the designs move); the designer has no knob for either key.
 - **Later, if wanted:** edges and joints (up to 15% within 1.5 calibres of a plate's edge, from the hitbox's extents),
   and a hole as a free edge for repeated hits. Phase E has three more readers for the same plate grid: a belt hit on a
   joint leaks worse and a repeat hit loosens the plate (13 §2.3), and a contact burst at an opening or edge holes the

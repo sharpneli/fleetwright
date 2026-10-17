@@ -409,6 +409,22 @@ public sealed record ArmourInput
     public MagazineBoxInput? MagazineBox { get; init; }
     /// <summary>The armour material per part (Armour.ArmourParts).</summary>
     public Dictionary<string, string>? Materials { get; init; }
+    /// <summary>The armoured gratings closing the uptakes' openings in the armour decks, as a share of the deck's plate:
+    /// what a shell meets there (docs/battle/shells-armour-damage.md P7; null: Armour.GratingShareDefault, O.S. 751's
+    /// holed grating worth 0.4 of its depth in solid plate).</summary>
+    public double? Gratings { get; init; }
+    /// <summary>The backing behind the belt and its zones (P7): Littorio's oak, US Class A's concrete, the ironclads'
+    /// teak. The upper and end belts take it unless they give their own.</summary>
+    public BackingInput? Backing { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>A side armour's backing (P7): a layer of a material (wood, cement) mm thick behind the plate. Weight, and a
+/// near-zero plate in a shell's path (its material's q: wood 0.01, cement 0.04); what catches spall comes with E3.</summary>
+public sealed record BackingInput
+{
+    public string? Material { get; init; }
+    public double? Mm { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
@@ -442,6 +458,8 @@ public sealed record UpperBeltInput
     public int? ToDeck { get; init; }
     public string? Extent { get; init; }
     public string? Material { get; init; }
+    /// <summary>Its backing (null: the belt's, armour.backing).</summary>
+    public BackingInput? Backing { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
@@ -461,6 +479,8 @@ public sealed record EndBeltInput
     public double? Reach { get; init; }
     public double? BulkheadMm { get; init; }
     public string? Material { get; init; }
+    /// <summary>Its backing (null: the belt's, armour.backing).</summary>
+    public BackingInput? Backing { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

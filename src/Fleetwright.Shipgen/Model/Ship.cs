@@ -314,7 +314,13 @@ public sealed class ArmourReport
     public List<ArmourDeckReport>? Decks { get; set; }
     /// <summary>The inclined plates each side: the decks' slopes (protection-plan.md H6).</summary>
     public List<InclinedReport>? Inclined { get; set; }
+    /// <summary>The uptakes' gratings in the armour decks as a share of the deck's plate (armour.gratings; null: the
+    /// default, Armour.GratingShareDefault).</summary>
+    public double? Gratings { get; set; }
 }
+
+/// <summary>A side plate's backing (docs/battle/shells-armour-damage.md P7): Mm of Material behind it.</summary>
+public sealed record BackingReport(double Mm, string? Material);
 
 /// <summary>An inclined longitudinal plate each side (protection-plan.md H6): over X0..X1 from Z0 up to Z1, U0 in from
 /// the side at Z0 and U1 at Z1 (linear between), the side's half-breadth taken at SideZ; Kind slope (a deck's), belt or
@@ -336,6 +342,7 @@ public sealed record BeltReport(double ThicknessMm, double X0, double X1, double
     /// shell, where it and its zones are inclined plates (Inclined) rather than side armour.</summary>
     public double? InclineDeg { get; init; }
     public string? Position { get; init; }
+    public BackingReport? Backing { get; init; }
 }
 
 public sealed record StrakeReport(string Id, string Kind, Extent Extent, double ThicknessMm, double X0, double X1, double Bottom, double Top)
@@ -347,6 +354,7 @@ public sealed record StrakeReport(string Id, string Kind, Extent Extent, double 
     public double? BottomMm { get; init; }
     public double? TaperFrom { get; init; }
     public double? InclineDeg { get; init; }
+    public BackingReport? Backing { get; init; }
 }
 
 /// <summary>An armoured transverse bulkhead: ThicknessMm from Top down, LowerMm under LowerTop when it's thinner there.</summary>

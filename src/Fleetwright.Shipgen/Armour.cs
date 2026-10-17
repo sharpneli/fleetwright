@@ -230,6 +230,22 @@ public static class Armour
             errs.Add($"armour.belt_position = {Style.Quote(bp)}: use external or internal");
         if (a.BeltInclineDeg is double bi && !(bi >= 0 && bi < 60))
             errs.Add("armour.belt_incline_deg: use a lean off the upright of 0 or more and under 60");
+        if (a.Gratings is double gr && !(gr >= 0 && gr <= 1))
+            errs.Add("armour.gratings: use a share of the deck's plate from 0 to 1");
+        var backings = new List<(string Where, BackingInput? B)> { ("armour.backing", a.Backing), ("armour.upper_belt.backing", a.UpperBelt?.Backing) };
+        foreach (var end in BeltEnds)
+            backings.Add(($"armour.end_belts.{end}.backing", a.EndBelts?.Of(end)?.Backing));
+        foreach (var (where, b) in backings)
+        {
+            if (b is null)
+                continue;
+            if (b.Mm is double bm && !(bm >= 0))
+                errs.Add($"{where}.mm: use a thickness of 0 or more");
+            if (b.Material is "")
+                errs.Add($"{where}.material: name the material as a string");
+            if (b.Extra is { Count: > 0 })
+                errs.Add($"{where}: use {{\"material\", \"mm\"}}");
+        }
         if (a.UpperBelt is { } ub && !ArmourExtents.Contains(ub.Extent ?? "citadel"))
             errs.Add($"armour.upper_belt.extent = {Style.Quote(ub.Extent)}: use {string.Join(" or ", ArmourExtents)}");
         if (a.Materials is { } md)
@@ -265,6 +281,36 @@ public static class Armour
             errs.Add("armour.inner_bulkhead: use {\"mm\", \"magazines_mm\", \"inboard_m\"} (0 for none)");
         return errs;
     }
+
+    /// <summary>The uptakes' armoured gratings as a share of the deck's plate, when armour.gratings doesn't say
+    /// (docs/battle/shells-armour-damage.md P7): a 15" holed grating stopped what 6" of solid plate does (O.S. 751).</summary>
+    public const double GratingShareDefault = 0.4;
+
+    /// <summary>The gratings' share of the deck (armour.gratings, else the default).</summary>
+    public static double GratingShare(Design design) => design.Armour?.Gratings ?? GratingShareDefault;
+
+    /// <summary>The backing behind a side plate (P7): "belt" (and its zones), "upper", "fore" or "aft" (the end belts),
+    /// each the belt's unless it gives its own; null for none.</summary>
+    public static BackingReport? Backing(Design design, string part)
+    {
+        var a = design.Armour;
+        var b = part switch
+        {
+            "upper" => a?.UpperBelt?.Backing,
+            "fore" or "aft" => a?.EndBelts?.Of(part)?.Backing,
+            _ => null,
+        } ?? a?.Backing;
+        return b is { Mm: > 0 } ? new BackingReport(b.Mm.Value, string.IsNullOrEmpty(b.Material) ? "wood" : b.Material) : null;
+    }
+
+    /// <summary>A strake's backing by its kind (a zone the belt's, an end belt its end's; the steering box none).</summary>
+    public static BackingReport? Backing(Design design, Strake s) => s.Kind switch
+    {
+        "zone" => Backing(design, "belt"),
+        "upper" => Backing(design, "upper"),
+        "end" => Backing(design, s.Extent == Extent.Aft ? "aft" : "fore"),
+        _ => null,
+    };
 
     /// <summary>The armour material named for a part (a deck or battery may give its own), or null.</summary>
     public static string? ArmourMaterial(Design design, string part, string? own = null) =>
@@ -714,6 +760,10 @@ public static class Armour
         }
         foreach (var s in g.Strakes.Where(s => s.Kind == "zone"))
             result.Add(BeltOf(s.Id, s.X1 - s.X0, (s.X0 + s.X1) / 2, s.Mm, s.BottomMm ?? s.Mm, s.Material));
+        // the backing behind the belt and its zones (P7; an internal belt has none), one thickness over its face
+        if (g.BeltMm > 0 && !g.BeltInternal && Backing(design, "belt") is { } bb)
+            result.Add(new Weight("Belt backing", "armour", 2 * (g.BeltX1 - g.BeltX0) * (g.BeltTop - g.BeltBottom) * Lean(g.BeltBottom, g.BeltTop) * bb.Mm / 1000
+                * Rho(bb.Material), (g.BeltX0 + g.BeltX1) / 2, Zf(g.BeltBottom, g.BeltTop)));
         foreach (var p in g.Inclined.Where(p => p.Id == "Lower belt"))
             result.Add(new Weight(p.Id, "armour", 2 * (p.X1 - p.X0) * (p.Z1 - p.Z0) * lean * (p.Mm + (p.BottomMm ?? p.Mm)) / 2 / 1000 * Rho(p.Material), (p.X0 + p.X1) / 2,
                 Zf(p.Z0, p.Z1)));
@@ -735,6 +785,9 @@ public static class Armour
             double f = a + b > 0 ? (a + 2 * b) / (3 * (a + b)) : 0.5;
             result.Add(new Weight(s.Id, "armour", 2 * (s.X1 - s.X0) * (s.Top - s.Bottom) * Slant(s.Bottom, s.Top) * (a + b) / 2 / 1000 * Rho(s.Material),
                 s.X0 + f * (s.X1 - s.X0), Zf(s.Top, s.Bottom)));
+            if (Backing(design, s) is { } sb)
+                result.Add(new Weight($"{s.Id} backing", "armour", 2 * (s.X1 - s.X0) * (s.Top - s.Bottom) * Slant(s.Bottom, s.Top) * sb.Mm / 1000 * Rho(sb.Material),
+                    (s.X0 + s.X1) / 2, Zf(s.Top, s.Bottom)));
         }
         var box = MagazineBox(design);
         if (box.SideMm + box.CrownMm + box.EndMm + box.FloorMm > 0)

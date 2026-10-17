@@ -78,6 +78,10 @@ public sealed class ShipClass
     /// <summary>The look's era: what the placeholders for the weapons and the fire load read until the designer gives
     /// a year.</summary>
     public Era Era { get; internal set; }
+
+    /// <summary>The uptakes' armoured gratings in the armour decks, as a share of the deck's plate
+    /// (docs/battle/shells-armour-damage.md P7).</summary>
+    public double GratingShare { get; internal set; } = Shipgen.Armour.GratingShareDefault;
     /// <summary>The hull's own plating, beside the armour (fuzes arm on it, holes open in it).</summary>
     public PlatingRow Plating { get; internal set; }
     /// <summary>The parts and armour as solids for the tracer (ShipTracer), and the cells by section.</summary>
