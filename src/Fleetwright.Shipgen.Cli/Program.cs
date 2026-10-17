@@ -25,6 +25,10 @@ public static class Program
             turrets/<type>.png, each layer's _mips.png; --previews adds preview_rest.png and preview_starboard.png
         shipgen capture [--root DIR] [--out DIR] [--jobs N] [CASE...]
             golden.py's design capture from our side: DIR/<case>.json.gz for each golden case (default all)
+        shipgen snapshot --out DIR [--root DIR] [--jobs N] [CASE|PREFIX*...]
+            every golden case's output as plain files, for a byte-exact diff -r before and after a refactor:
+            DIR/design/<case>.json (the capture, build_s left out), DIR/svg/<case>/ (hull, height, turrets) and
+            DIR/sprite/<case>.json, for each case that builds
         shipgen golden-diff GOLDEN OUT [--show N]
             compare two captures (directories of <case>.json.gz, or two files) by the golden rules
         shipgen golden-check [--root DIR] [--jobs N] [--show N] [CASE|PREFIX*...]
@@ -171,6 +175,7 @@ public static class Program
                 "validate" => Validate(a),
                 "design" => Design(a),
                 "capture" => Capture(a),
+                "snapshot" => Snapshot(a),
                 "golden-diff" => GoldenDiffCmd(a),
                 "golden-check" => GoldenCheck(a),
                 "golden-update" => GoldenUpdate(a),
@@ -417,6 +422,35 @@ public static class Program
                 var rec = GoldenCases.Capture(LoadDesign(c.DesignPath));
                 JsonFile.Save(Path.Combine(outDir, c.Name + ".json.gz"), rec);
                 Console.WriteLine($"[{Interlocked.Increment(ref n),3}/{cases.Count}] {c.Name}");
+            });
+        Console.WriteLine($"{cases.Count} cases in {sw.Elapsed.TotalSeconds:F1} s -> {outDir}");
+        return 0;
+    }
+
+    /// <summary>Every case's output as plain files (the golden rules' tolerance left out): a refactor that must not
+    /// change the output diffs two snapshots byte for byte.</summary>
+    static int Snapshot(Args a)
+    {
+        string root = Root(a);
+        string outDir = a.Get("out") ?? throw new ArgumentException("snapshot --out DIR");
+        var cases = SelectCases(root, a.Positional);
+        var sw = Stopwatch.StartNew();
+        Parallel.ForEach(cases, new ParallelOptions { MaxDegreeOfParallelism = a.Int("jobs", Environment.ProcessorCount / 2) },
+            c =>
+            {
+                var rec = GoldenCases.Capture(LoadDesign(c.DesignPath));
+                rec.Remove("build_s");
+                JsonFile.Save(Path.Combine(outDir, "design", c.Name + ".json"), rec);
+                if (rec["build"] is not JsonObject b || b.ContainsKey("raised"))
+                    return;
+                var sp = RenderGolden.Draw(c);
+                string dir = Path.Combine(outDir, "svg", c.Name);
+                Directory.CreateDirectory(Path.Combine(dir, "turrets"));
+                File.WriteAllText(Path.Combine(dir, "hull.svg"), SvgWriter.Write(sp.Hull));
+                File.WriteAllText(Path.Combine(dir, "height.svg"), SvgWriter.Write(sp.Height));
+                foreach (var (tid, sc) in sp.Turrets)
+                    File.WriteAllText(Path.Combine(dir, "turrets", tid + ".svg"), SvgWriter.Write(sc));
+                JsonFile.Save(Path.Combine(outDir, "sprite", c.Name + ".json"), sp.Meta, RenderJson.Default.SpriteMeta);
             });
         Console.WriteLine($"{cases.Count} cases in {sw.Elapsed.TotalSeconds:F1} s -> {outDir}");
         return 0;
