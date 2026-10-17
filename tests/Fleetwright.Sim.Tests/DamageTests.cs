@@ -54,6 +54,32 @@ public class DamageTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Plates_hold_hole_or_let_through_by_three_limits()
+    {
+        // P4: under a face-hardened belt's holing limit a shell is stopped (spall from its band), from it up to the Navy
+        // limit it holes the plate in pieces, past that it's through; a shattered one through holes it in pieces too
+        int holed = 0, spalled = 0;
+        var r = Hits("dreadnought", "seydlitz", 0, 12_000, 1000, 10, each: (_, path, t, _) =>
+        {
+            if (t.Outcome == Outcome.Holed)
+            {
+                holed++;
+                Assert.False(t.Bursts);
+                Assert.True(t.Plate >= 0 && t.StopT > path.Crossings[t.Plate].T, "its pieces go through the hole");
+            }
+            if (!double.IsNaN(t.Spall))
+            {
+                spalled++;
+                Assert.InRange(t.Spall, 0, 1);
+                Assert.True(t.Plate >= 0 && t.StopT <= path.Crossings[t.Plate].T, $"{t.Outcome}: stopped at the plate");
+            }
+        });
+        output.WriteLine($"holed {holed}, in the spall band {spalled}");
+        Assert.True(holed > 0 && spalled > 0);
+        Assert.Equal(holed, r.Outcomes[(int)Outcome.Holed]);
+    }
+
+    [Fact]
     public void Ten_4in_HE_hits_usually_cripple_a_destroyer_and_seldom_sink_it()
     {
         // with half an hour of flooding and fire after: crippled more often than sunk (fighting.md 4.3b). Lost up to 8%:

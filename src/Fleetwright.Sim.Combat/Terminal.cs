@@ -31,6 +31,9 @@ public enum Outcome : byte
     Exploded,
     /// <summary>An underwater charge went off against the hull, and the torpedo protection held it.</summary>
     Held,
+    /// <summary>Holed the plate, but in pieces: between the plate's holing limit and its Navy limit, or shattered on it
+    /// (P4). Its pieces go through the hole; no burst.</summary>
+    Holed,
 }
 
 /// <summary>Where a burst was, as the effects need it: none, outside a plate, in it, or inside.</summary>
@@ -47,7 +50,9 @@ public enum BurstKind : byte
 /// that stopped it, or where it left the ship), the crossing that decided it (the plate that stopped, armed or burst
 /// it; -1 for none), whether it struck under water, and its speed there; and what the plates did to the shell on the
 /// way (P2): its cap knocked off, shattered on a face-hardened plate (its nose bare there, or the plate past its
-/// body's limits: whether it then got through or not), or broken getting through just over a plate's limit.</summary>
+/// body's limits: whether it then got through or not), or broken getting through just over a plate's limit; and for a
+/// shell a plate stopped within its spall band, the band's severity s, 0 to 1 (damage/14 §2.1: (u − spall_u)/(holed_u −
+/// spall_u), u = V/V_L; E3's), NaN outside it.</summary>
 public struct TerminalResult
 {
     public Outcome Outcome;
@@ -57,6 +62,7 @@ public struct TerminalResult
     public bool Underwater;
     public double StrikeMs;
     public bool Decapped, Shattered, BrokeNearLimit;
+    public double Spall;
 
     public readonly bool Bursts => Burst != BurstKind.None;
 }
@@ -75,8 +81,13 @@ public struct TerminalResult
 /// behind (<see cref="CapGapCalibres"/>) the nose still meets the next plate as if capped. A face-hardened plate
 /// shatters a bare nose (uncapped, decapped, a soft cap past 15-20°, the cap head past 45°: <see cref="BareShare"/>) or
 /// a body past its proof (<see cref="ShatterChance"/>): the plate holds as if <see cref="ShatterBonus"/> thicker, and a
-/// shell that still gets through is broken up. The body's quality divides a face-hardened plate's thickness. Just over a
-/// plate's limit, a body may break getting through (<see cref="NearLimitBreak"/>, most at 45°);</item>
+/// shell that still gets through holes it in pieces. The body's quality divides a face-hardened plate's thickness.
+/// Just over a plate's limit, a body may break getting through (<see cref="NearLimitBreak"/>, most at 45°): the
+/// effective limit, above which it's through whole with its fuze working;</item>
+/// <item><b>three limits</b> (P4; armor/00 §1): from the plate's holing limit (its material's <c>HoledU</c> times V_L:
+/// face-hardened 0.94) up to the Navy limit V_L the plate is holed by a shell that breaks in it (<c>Holed</c>); from V_L
+/// whole through; past the near-limit band, through and effective. Under the holing limit it's stopped, and from
+/// <c>SpallU</c> its back throws spall (the severity on the result, E3's);</item>
 /// <item><b>the filler</b> (P3; damage/12 §4) may burst in a plate the shell gets through, the more likely the nearer the
 /// plate came to holding (<see cref="InPlateChance"/>), whatever the fuze;</item>
 /// <item><b>a nose fuze</b> fires on the first plate: just inside it if it's under <see cref="SimSettings.HePenCalibres"/>
@@ -103,7 +114,7 @@ public static class Terminal
     public static TerminalResult Resolve(ShipClass c, in Hit hit, HitPath path, SimSettings s, ref RandomStream r)
     {
         var shell = hit.Shell;
-        var res = new TerminalResult { Outcome = Outcome.PassedThrough, BurstT = double.NaN, StopT = path.Length, Plate = -1 };
+        var res = new TerminalResult { Outcome = Outcome.PassedThrough, BurstT = double.NaN, StopT = path.Length, Plate = -1, Spall = double.NaN };
         double calMm = shell.CalibreMm, v = hit.SpeedMs;
         bool nose = shell.Fuze == Fuze.Nose, inside = false, started = false;
         double burstT = double.NaN, force = 1;
@@ -161,10 +172,11 @@ public static class Terminal
             // plate the body's quality, and the face shattering a bare nose or a body past its limits
             double te = t * r.NextDouble(1 - s.PenSpread, 1 + s.PenSpread) / (shell.Kind == ShellKind.Common ? s.CommonPenShare : 1);
             double td = x.Mm / calMm;
-            bool hard = x.Material >= 0 && c.MaterialOf(x.Material).FaceHardened, shatter = false;
+            ref readonly var mat = ref c.MaterialOf(x.Material);
+            bool hard = mat.FaceHardened, shatter = false;
             if (hard)
             {
-                double p = ShatterChance(shell, c.MaterialOf(x.Material).FaceShatters, td, ob, x.T - capOffT < capGapM ? 0 : BareShare(cap, ob), s);
+                double p = ShatterChance(shell, mat.FaceShatters, td, ob, x.T - capOffT < capGapM ? 0 : BareShare(cap, ob), s);
                 shatter = p >= 1 || p > 0 && r.NextDouble() < p;
                 te = FaceHardMm(te, shell, ob, shatter, s);
             }
@@ -179,10 +191,19 @@ public static class Terminal
             res.Shattered |= shatter;
             if (v < vl)
             {
-                // stopped here: running since an earlier plate, it bursts against this one (a dud lies there); else it's
-                // defeated or glances off, the impact starting its fuze if the plate's enough, and then it bursts on the
-                // plate's face
+                // under the Navy limit: from the plate's holing limit it holes it, breaking in it (its pieces through);
+                // else stopped here, its back giving spall in the band below that. Stopped, running since an earlier
+                // plate, it bursts against this one (a dud lies there); else it's defeated or glances off, the impact
+                // starting its fuze if the plate's enough, and then it bursts on the plate's face
                 (res.Plate, res.StopT) = (i, x.T);
+                double u = v / vl;
+                if (u >= mat.HoledU)
+                {
+                    (res.Outcome, res.Burst, res.BurstT, res.StopT) = (Outcome.Holed, BurstKind.None, double.NaN, x.T + 0.5);
+                    return res;
+                }
+                if (u >= mat.SpallU)
+                    res.Spall = (u - mat.SpallU) / Math.Max(mat.HoledU - mat.SpallU, 1e-9);
                 if (!double.IsNaN(burstT))
                     return Burst(ref res, Math.Max(x.T - 0.3, 0), force, res.Outcome, BurstKind.Inside);
                 if (started)
@@ -205,8 +226,10 @@ public static class Terminal
             v = Residual(v, vl);
             if (shatter || near)
             {
+                // shattered, only its pieces pass the hole; broken just over the limit, the body goes on in pieces
                 res.BrokeNearLimit = near;
-                (res.Plate, res.Outcome, res.Burst, res.BurstT, res.StopT) = (i, Outcome.BrokeUp, BurstKind.None, double.NaN, x.T + 1);
+                (res.Plate, res.Outcome, res.Burst, res.BurstT, res.StopT) =
+                    (i, shatter ? Outcome.Holed : Outcome.BrokeUp, BurstKind.None, double.NaN, x.T + (shatter ? 0.5 : 1));
                 return res;
             }
             if (inPlate)

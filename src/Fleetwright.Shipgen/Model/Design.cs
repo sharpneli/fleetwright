@@ -262,7 +262,19 @@ public sealed record MaterialInput
     public double? Q { get; init; }
     public double? QScale { get; init; }
     public FaceInput? FaceHardened { get; init; }
+    public BackInput? Back { get; init; }
     public double? ElongationPct { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>materials.NAME.back: where the plate's back gives (docs/battle/shells-armour-damage.md P4; damage/14 §2.1), as
+/// u = V/V_L of a shell it stops: spall comes off from spall_u, and from holed_u the plate is holed by a shell that
+/// breaks in it (the holing limit: face-hardened plate 2-12% below the Navy limit). By class: face-hardened 0.85/0.94,
+/// homogeneous and structural 0.90/1.00 (holed only at the limit), brittle (compound, cast) 0.75/0.95 [EST].</summary>
+public sealed record BackInput
+{
+    public double? SpallU { get; init; }
+    public double? HoledU { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

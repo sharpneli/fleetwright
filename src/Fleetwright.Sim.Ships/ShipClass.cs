@@ -198,7 +198,7 @@ public sealed class ShipClass
     public string? Material(int i) => i < 0 ? null : materials[i];
     public int MaterialCount => materials.Length;
     /// <summary>A material's numbers (its block's, from report.materials).</summary>
-    public ref readonly MaterialRow MaterialOf(int i) => ref materialRows[i];
+    public ref readonly MaterialRow MaterialOf(int i) => ref i < 0 ? ref MaterialRow.None : ref materialRows[i];
     /// <summary>A plate of a material, tMm thick, as a share of its thickness of the formula's plate against a shell of a
     /// calibre (<see cref="MaterialRow.Against"/>); 1 for -1, a plate with no material named.</summary>
     public double MaterialQ(int i, double tMm, double calibreMm) => i < 0 ? 1 : materialRows[i].Against(tMm, calibreMm);

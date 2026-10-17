@@ -43,6 +43,9 @@ public static class GivenHits
         /// shattered on face-hardened plate, bodies broken just over a plate's limit; and the hits that met a plate over 9"
         /// (229 mm), and of those the ones that got through it and burst inside (Jutland's British 1 in 13).</summary>
         public int Decapped, Shattered, BrokeNearLimit, Heavy, HeavyBurst;
+        /// <summary>The hits a plate stopped within its spall band (P4, E3's), and their severities summed.</summary>
+        public int Spalled;
+        public double SpallS;
         /// <summary>The bursts inside after a fuze's delay (full or low-order): how many, and how far behind the crossing
         /// that started the fuze they went off, summed (P3; Baden's 15" burst 11.6 m behind the belt).</summary>
         public int Delayed;
@@ -136,6 +139,8 @@ public static class GivenHits
                 rep.Outcomes[(int)t.Outcome]++;
                 (rep.Decapped, rep.Shattered, rep.BrokeNearLimit) =
                     (rep.Decapped + (t.Decapped ? 1 : 0), rep.Shattered + (t.Shattered ? 1 : 0), rep.BrokeNearLimit + (t.BrokeNearLimit ? 1 : 0));
+                if (!double.IsNaN(t.Spall))
+                    (rep.Spalled, rep.SpallS) = (rep.Spalled + 1, rep.SpallS + t.Spall);
                 double heavyT = HeavyPlateT(w.Damage.LastPath, t.StopT);
                 if (!double.IsNaN(heavyT))
                     (rep.Heavy, rep.HeavyBurst) = (rep.Heavy + 1, rep.HeavyBurst + (t.Burst == BurstKind.Inside && t.BurstT > heavyT ? 1 : 0));

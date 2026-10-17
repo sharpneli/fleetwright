@@ -483,14 +483,21 @@ public readonly record struct ArmourLayer(double Mm, int Material);
 /// share of the formula's plate (WWII STS) it's worth against an 8" capped shell; face-hardened plate's calibre scaling
 /// k and its face (share, and the thinnest plate made so, mm); homogeneous plate's elongation, %. Absent: no scaling
 /// (k 0), not face-hardened (FaceMinMm NaN), elongation 25.</summary>
-public readonly record struct MaterialRow(double Q, double QScale, double FaceShare, double FaceMinMm, double ElongationPct, bool FaceShatters)
+/// <summary>A material as the terminal reads it: q and its rules (<see cref="Against"/>), the face, and where its back gives
+/// to a shell it stops (SpallU, HoledU: u = V/V_L; docs/battle/shells-armour-damage.md P4).</summary>
+public readonly record struct MaterialRow(double Q, double QScale, double FaceShare, double FaceMinMm, double ElongationPct, bool FaceShatters,
+    double SpallU, double HoledU)
 {
+    /// <summary>A plate with no material named: the formula's own (q 1), homogeneous.</summary>
+    public static readonly MaterialRow None = new(1, 0, double.NaN, double.NaN, 25, true, 0.90, 1.00);
+
     const double EightIn = 8 * 25.4;
 
     public bool FaceHardened => !double.IsNaN(FaceMinMm);
 
     public static MaterialRow Of(MaterialInput m) => new(m.Q ?? 1, m.QScale ?? 0, m.FaceHardened?.Share ?? double.NaN,
-        m.FaceHardened is { } f ? f.MinMm ?? 0 : double.NaN, m.ElongationPct ?? 25, m.FaceHardened?.Shatters ?? true);
+        m.FaceHardened is { } f ? f.MinMm ?? 0 : double.NaN, m.ElongationPct ?? 25, m.FaceHardened?.Shatters ?? true, m.Back?.SpallU ?? 0.90,
+        m.Back?.HoledU ?? 1.00);
 
     /// <summary>The plate's worth as a share of its thickness against a shell of a calibre (00 §4.2's rules, all by the
     /// material's numbers): face-hardened plate q·(D/8")^−k past 8" (held at q below), and no face-hardened advantage

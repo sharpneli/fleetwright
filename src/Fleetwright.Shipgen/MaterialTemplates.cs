@@ -20,14 +20,21 @@ public static class MaterialTemplates
 
     const double In = 25.4;
 
+    /// <summary>Where a plate's back gives, by its class (damage/14 §2.1 [EST], armor/00 §1): spall from u = V/V_L of
+    /// spall_u, holed by a breaking shell from holed_u.</summary>
+    static readonly BackInput Ductile = new() { SpallU = 0.90, HoledU = 1.00 }, Hard = new() { SpallU = 0.85, HoledU = 0.94 },
+        Brittle = new() { SpallU = 0.75, HoledU = 0.95 };
+
     static Entry M(string name, string group, double density, double q, string note, double? elongation = null) =>
-        new(name, group, new MaterialInput { DensityTPerM3 = density, Q = q, ElongationPct = elongation }, note);
+        new(name, group, new MaterialInput { DensityTPerM3 = density, Q = q, ElongationPct = elongation, Back = Ductile }, note);
 
     /// <summary>Face-hardened: q at 8", k past it, the face's share and the thinnest plate made so (inches).</summary>
-    static Entry Fh(string name, double q, double k, double face, double minIn, string note, double density = 7.85, bool? shatters = null) =>
+    static Entry Fh(string name, double q, double k, double face, double minIn, string note, double density = 7.85, bool? shatters = null,
+        BackInput? back = null) =>
         new(name, "armour", new MaterialInput
         {
             DensityTPerM3 = density, Q = q, QScale = k, FaceHardened = new FaceInput { Share = face, MinMm = Math.Round(minIn * In, 1), Shatters = shatters },
+            Back = back ?? Hard,
         }, note);
 
     /// <summary>The catalogue: the structural materials, then the armour, roughly by its age.</summary>
@@ -39,7 +46,7 @@ public static class MaterialTemplates
         M("wrought iron", "structure", 7.7, 0.53, "The ironclads' plate and hulls (s.g. 7.6-7.9). Spezia 1876 ~0.50, Tresidder/Thompson 0.56, Okun 0.6 (WI)."),
         M("wood", "structure", 0.7, 0.01, "Planking and wooden hulls (oak and teak 0.65-0.75). Okun counts teak at 1/100 of its thickness."),
         M("aluminium alloy", "structure", 2.7, 0.33, "Light alloy deckhouses. [EST] about steel's protection per weight (2.7/7.85); no research row."),
-        Fh("compound", 0.72, 0, 0.30, 0, "Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP): no bare steel shell.", 7.75, false),
+        Fh("compound", 0.72, 0, 0.30, 0, "Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP): no bare steel shell. Its back is brittle.", 7.75, false, Brittle),
         M("nickel steel", "armour", 7.85, 0.85, "Homogeneous nickel steel (1889-1896). Annapolis > 0.77-0.83, Johnson's limit 0.92 (NIS)."),
         Fh("Harvey nickel steel", 0.82, 0, 0.08, 3.2, "Harveyized: carburized nickel steel, a thin hard face (1891-1899). NO 1937's limit 0.79 (HRV)."),
         Fh("Krupp cemented", 0.88, 0.05, 0.34, 3.2, "KC a/A and its licensees (1894-1918): decremental face-hardened Ni-Cr. Capped trials 0.87-0.97, Okun 0.83 of WWII FH (KCA)."),
@@ -98,6 +105,7 @@ public static class MaterialTemplates
         {
             DensityTPerM3 = given?.DensityTPerM3 ?? basis.DensityTPerM3, Q = given?.Q ?? basis.Q, QScale = given?.QScale ?? basis.QScale,
             FaceHardened = face, ElongationPct = given?.ElongationPct ?? basis.ElongationPct,
+            Back = given?.Back is { } b ? new BackInput { SpallU = b.SpallU ?? basis.Back?.SpallU, HoledU = b.HoledU ?? basis.Back?.HoledU } : basis.Back,
         };
     }
 
@@ -148,7 +156,7 @@ public static class MaterialTemplates
         return table;
     }
 
-    static readonly string[] Fields = ["density_t_per_m3", "q", "q_scale", "face_hardened", "elongation_pct"];
+    static readonly string[] Fields = ["density_t_per_m3", "q", "q_scale", "face_hardened", "elongation_pct", "back"];
 
     public static List<string> Validate(Design design)
     {
@@ -178,6 +186,15 @@ public static class MaterialTemplates
                     errs.Add($"{at}.face_hardened.share: a share, 0 to 1");
                 if (f.MinMm is double m && !(m >= 0 && double.IsFinite(m)))
                     errs.Add($"{at}.face_hardened.min_mm: 0 or more");
+            }
+            if (x.Back is { } b)
+            {
+                foreach (var k in b.Extra.KeysOrEmpty())
+                    errs.Add($"{at}.back.{k}: not a back field (spall_u, holed_u)");
+                if (b.SpallU is <= 0 or > 1 || b.HoledU is <= 0 or > 1)
+                    errs.Add($"{at}.back: spall_u and holed_u are shares of the Navy limit, more than 0 up to 1");
+                else if (b.SpallU is double su && b.HoledU is double hu && su > hu)
+                    errs.Add($"{at}.back: spall_u ({su}) comes before holed_u ({hu})");
             }
         }
         return errs;

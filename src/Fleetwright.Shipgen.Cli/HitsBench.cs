@@ -83,6 +83,9 @@ static class HitsBench
             "on plate over 9\" {3:0.#}% of hits, of those through it and burst inside {4:0.#}% (1 in {5:0.#})", 100.0 * r.Decapped / r.Hits,
             100.0 * r.Shattered / r.Hits, 100.0 * r.BrokeNearLimit / r.Hits, 100.0 * r.Heavy / r.Hits, 100.0 * r.HeavyBurst / Math.Max(r.Heavy, 1),
             r.HeavyBurst > 0 ? (double)r.Heavy / r.HeavyBurst : double.PositiveInfinity));
+        if (r.Spalled > 0)
+            Console.WriteLine(string.Format(Inv, "  stopped in the spall band: {0:0.#}% of hits, severity {1:0.00} on average", 100.0 * r.Spalled / r.Hits,
+                r.SpallS / r.Spalled));
         if (r.Delayed > 0)
             Console.WriteLine(string.Format(Inv, "  bursts after the delay: {0:0.#}% of hits, {1:0.0} m on average behind where the fuze started", 100.0 * r.Delayed / r.Hits,
                 r.DelayedM / r.Delayed));

@@ -5,7 +5,11 @@
   "note": "Shipbuilding (mild) steel, the plating's default name: Okun's backing ladder 0.7 (MS).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 0.7
+   "q": 0.7,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   }
   }
  },
  {
@@ -14,7 +18,11 @@
   "note": "Mild steel: hull plate, and the splinter decks of the 1890s on. Okun's ladder 0.7 (MS).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 0.7
+   "q": 0.7,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   }
   }
  },
  {
@@ -23,7 +31,11 @@
   "note": "HT and Krupp low-nickel structural steel, the laminated decks of 1900-1925: Okun's ladder 0.8 (HT).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 0.8
+   "q": 0.8,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   }
   }
  },
  {
@@ -32,7 +44,11 @@
   "note": "The ironclads' plate and hulls (s.g. 7.6-7.9). Spezia 1876 ~0.50, Tresidder/Thompson 0.56, Okun 0.6 (WI).",
   "value": {
    "density_t_per_m3": 7.7,
-   "q": 0.53
+   "q": 0.53,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   }
   }
  },
  {
@@ -41,7 +57,11 @@
   "note": "Planking and wooden hulls (oak and teak 0.65-0.75). Okun counts teak at 1/100 of its thickness.",
   "value": {
    "density_t_per_m3": 0.7,
-   "q": 0.01
+   "q": 0.01,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   }
   }
  },
  {
@@ -50,13 +70,17 @@
   "note": "Light alloy deckhouses. [EST] about steel's protection per weight (2.7/7.85); no research row.",
   "value": {
    "density_t_per_m3": 2.7,
-   "q": 0.33
+   "q": 0.33,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   }
   }
  },
  {
   "name": "compound",
   "group": "armour",
-  "note": "Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP): no bare steel shell.",
+  "note": "Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP): no bare steel shell. Its back is brittle.",
   "value": {
    "density_t_per_m3": 7.75,
    "q": 0.72,
@@ -65,6 +89,10 @@
     "share": 0.3,
     "min_mm": 0,
     "shatters": false
+   },
+   "back": {
+    "spall_u": 0.75,
+    "holed_u": 0.95
    }
   }
  },
@@ -74,7 +102,11 @@
   "note": "Homogeneous nickel steel (1889-1896). Annapolis > 0.77-0.83, Johnson's limit 0.92 (NIS).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 0.85
+   "q": 0.85,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   }
   }
  },
  {
@@ -88,6 +120,10 @@
    "face_hardened": {
     "share": 0.08,
     "min_mm": 81.3
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -102,6 +138,10 @@
    "face_hardened": {
     "share": 0.34,
     "min_mm": 81.3
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -116,6 +156,10 @@
    "face_hardened": {
     "share": 0.41,
     "min_mm": 99.1
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -130,6 +174,10 @@
    "face_hardened": {
     "share": 0.3,
     "min_mm": 101.6
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -144,6 +192,10 @@
    "face_hardened": {
     "share": 0.3,
     "min_mm": 101.6
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -158,6 +210,10 @@
    "face_hardened": {
     "share": 0.3,
     "min_mm": 101.6
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -172,6 +228,10 @@
    "face_hardened": {
     "share": 0.3,
     "min_mm": 101.6
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -186,6 +246,10 @@
    "face_hardened": {
     "share": 0.45,
     "min_mm": 101.6
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -200,6 +264,10 @@
    "face_hardened": {
     "share": 0.34,
     "min_mm": 81.3
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -214,6 +282,10 @@
    "face_hardened": {
     "share": 0.35,
     "min_mm": 101.6
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -228,6 +300,10 @@
    "face_hardened": {
     "share": 0.34,
     "min_mm": 81.3
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -242,6 +318,10 @@
    "face_hardened": {
     "share": 0.55,
     "min_mm": 127
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -256,6 +336,10 @@
    "face_hardened": {
     "share": 0.35,
     "min_mm": 279.4
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94
    }
   }
  },
@@ -266,6 +350,10 @@
   "value": {
    "density_t_per_m3": 7.85,
    "q": 0.92,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   },
    "elongation_pct": 22
   }
  },
@@ -276,6 +364,10 @@
   "value": {
    "density_t_per_m3": 7.85,
    "q": 0.95,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   },
    "elongation_pct": 23
   }
  },
@@ -286,6 +378,10 @@
   "value": {
    "density_t_per_m3": 7.85,
    "q": 1,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   },
    "elongation_pct": 25
   }
  },
@@ -296,6 +392,10 @@
   "value": {
    "density_t_per_m3": 7.85,
    "q": 1,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   },
    "elongation_pct": 25
   }
  },
@@ -306,6 +406,10 @@
   "value": {
    "density_t_per_m3": 7.85,
    "q": 1,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   },
    "elongation_pct": 25
   }
  },
@@ -316,6 +420,10 @@
   "value": {
    "density_t_per_m3": 7.85,
    "q": 1,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   },
    "elongation_pct": 18
   }
  },
@@ -326,6 +434,10 @@
   "value": {
    "density_t_per_m3": 7.85,
    "q": 0.95,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   },
    "elongation_pct": 22
   }
  },
@@ -336,6 +448,10 @@
   "value": {
    "density_t_per_m3": 7.85,
    "q": 0.97,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   },
    "elongation_pct": 23
   }
  },
@@ -346,6 +462,10 @@
   "value": {
    "density_t_per_m3": 7.85,
    "q": 0.97,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   },
    "elongation_pct": 23
   }
  }

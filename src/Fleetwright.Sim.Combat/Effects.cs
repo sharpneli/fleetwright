@@ -67,7 +67,7 @@ public static class Effects
         double calM = shell.CalibreMm / 1000, w = Math.Max(shell.FillerKg * shell.FillerRe, 0), size = Math.Cbrt(w);
         var xs = path.Crossings;
         var water = HitQuery.WaterOf(c, k.Attitude);
-        bool passed = !t.Bursts && t.Outcome is Outcome.PassedThrough or Outcome.Dud or Outcome.BrokeUp or Outcome.BurstBeyond;
+        bool passed = !t.Bursts && t.Outcome is Outcome.PassedThrough or Outcome.Dud or Outcome.BrokeUp or Outcome.Holed or Outcome.BurstBeyond;
 
         // the line of flight: what its body went into before it stopped
         int cell = -1;

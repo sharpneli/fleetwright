@@ -207,16 +207,17 @@ static class PenCheck
                 te = Terminal.FaceHardMm(te, shell, ob, shatter, s);
             }
             double vl = Terminal.LimitMs(te, cal, kg, ob), implied = Terminal.PenMm(v, cal, kg, ob) / mm;
-            string game = v >= vl ? shatter ? "broken" : "through" : "held";
+            // the three limits (P4): whole through from V_L, holed in pieces from the material's holing limit (or shattered)
+            string game = v >= vl ? shatter ? "holed" : "through" : v >= m.HoledU * vl ? "holed" : "held";
             string actual = rel switch { "<" => "through", ">" => "held", "=" => "limit", _ => "-" };
             if (rel is "<" or ">")
             {
                 judged++;
-                agree += game == actual || game == "broken" && actual == "held" ? 1 : 0;
+                agree += game == actual || game == "holed" && actual == "held" ? 1 : 0;
             }
             Console.WriteLine($"| {name} | {mat} | {sh}{(shatter ? ", shatters" : "")} | {S(te / mm, "0.00")} | {S(t / d, "0.00")} | {S(v)} | {S(vl)} | {game} | {actual} | {rel} {S(implied, "0.00")} |");
         }
-        Console.WriteLine($"\nThe game agrees with {agree} of the {judged} trials that went one way (q: the plate's worth against this shell, shatter and the body's quality in; broken: holed by a shell in pieces, which counts as held).");
+        Console.WriteLine($"\nThe game agrees with {agree} of the {judged} trials that went one way (q: the plate's worth against this shell, shatter and the body's quality in; holed: holed by a shell in pieces, from the plate's holing limit or shattered, which counts as held).");
     }
 
     /// <summary>E: Okun's M79 deck columns (US Class B/STS and German Wotan hart) over the game's deck (Thompson at Ob =

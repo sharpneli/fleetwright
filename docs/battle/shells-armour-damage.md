@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, P0, P1a-c, P2, P3 and P6 done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, P0, P1a-c, P2-P4 and P6 done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -938,11 +938,43 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       water's fuze off where they test the run or the splash; the lone torpedo boat's attack test runs with hits doing
       no damage (since P3 she was often stopped 20 hits in, short of her torpedoes' range: the test is her attack's
       steps). New: the format 2 → 3 step.
-- **P4 Three limits.** Holed (a hole, the shell broken, fragments only), Navy (the whole shell through) and effective (through,
-  whole, fuze working), with a new `Outcome` for holed-but-broken.
+- **P4 Three limits** (done 2026-10-17). Holed (a hole, the shell broken, fragments only), Navy (the whole shell through) and
+  effective (through, whole, fuze working), with a new `Outcome` for holed-but-broken.
   - The holed limit is the material's `back.holed_u` (face-hardened holed 2-12% below the Navy limit, armor/00; 14
     §2.1), and the spall band below it (`back.spall_u`) is marked on the outcome for E3.
   - The damage report's line says which.
+  - **How (2026-10-17):**
+    - **Shipgen:** the material block gains `back {spall_u, holed_u}` (`big` comes with E3). The catalogue sets it by
+      14 §2.1's class, until E1's `fragments` names the class: face-hardened 0.85/0.94, homogeneous armour and the
+      structural steels, wrought iron and wood 0.90/1.00, compound (brittle) 0.75/0.95. Validation: shares, more than 0
+      up to 1, spall_u not past holed_u. `shipgen upgrade --materials` refreshed the 125 designs' copies
+      (`ShipDesign.Version` 24, goldens 326 cases); `MaterialRow` carries both, and `MaterialRow.None` is a plate with
+      no material named (q 1, homogeneous).
+    - **The limits in `Terminal`:** u = v/V_L at the plate (V_L after the shatter rule, as 14 §2.2 asks). From
+      `holed_u` up to 1 the plate is holed by a shell that breaks in it: `Outcome.Holed`, no burst, the pieces 0.5 m on
+      through the hole (the line of flight and a hole in the plating to there; E2 gives the pieces their own effects).
+      A shattered shell that gets through is `Holed` too (P2 had it `BrokeUp`). From 1, whole through; P2's near-limit
+      band (under 1.1 V_L, a break chance by obliquity) is the effective limit: broken there it's `BrokeUp`, now "through,
+      broken up", the body going on 1 m in pieces; past it, through with its fuze working. Under `holed_u` it's stopped;
+      from `spall_u` the result carries the spall band's severity `Spall`, (u − spall_u)/(holed_u − spall_u), for E3
+      (NaN outside it; a stopped dud, a defeated shell or one bursting on the plate alike).
+    - **No burst for a holed shell** here: E2's weak burst at the plate and its pieces come with E1's fragments.
+    - **The matchup** doesn't move: a shell under the Navy limit, holed or stopped, already counted as one kept out.
+    - **The log:** "holed the plate, in pieces" and "through, broken up" (`MapScene.Shells.cs`).
+    - **Benches:** `shipgen hits` prints the share stopped in the spall band and its mean severity; pen-check D reads
+      holed from the material's holing limit or a shatter, as held.
+  - **Done (2026-10-17).** As above. New test: `Plates_hold_hole_or_let_through_by_three_limits` (Seydlitz on
+    Dreadnought: 80 holed, 90 in the spall band of 1000; holed without a burst, the pieces past the plate; the spall
+    band only on shells stopped at the plate).
+    - **Benches (P3 → P4; `shipgen hits` 2000 hits, 10 a ship, 30 min after):** Lion on Seydlitz holed 17.8% (BrokeUp
+      11.6 → 0.6%, Defeated 18.4 → 12.4%), the spall band 5% of hits at severity 0.44, water 46 → 53 t, out of the
+      fight 6%; Seydlitz on Iron Duke holed 4.3%, spall band 7.3%, out 8%; Borodino on Mikasa holed 30.9% (shattered
+      uncapped shells), spall band 10.9%, out 4%; a Greenboy on Seydlitz holed 8.9%, out 21 → 20%; Yamato on Colorado
+      holed 16.1%, out 67 → 66%; Yamato on Yamato holed 0.9%; the light targets unchanged. Matchup unchanged (arethusa:4
+      v iron_duke 1.231, lion v seydlitz 2.257). Squadrons Britain lost 1 (Princess Royal), Germany 0, as before;
+      tsushima --play 2 seeds identical in its losses; flotilla's hash moves. pen-check D 10 of 12, as before; the
+      trials at the limit (the 1897 Harvey, NO 1937's Harvey problem, Beardmore's uncapped 6″) now read holed, and
+      Meppen's held plate holed (counted held).
 - **P5 Angles.**
   - The ricochet gate at 65–80°, by V/V_L, certain from 80°, none for broken shells.
   - Compound obliquity with heel and barbette curvature.
@@ -1179,7 +1211,7 @@ None blocks a step; each is settled by its step's bench.
 | P1c | P0 | densities (done) | — | weights |
 | P2 | S2, P1b | shells' cap and body in the report, the face's `shatters` (done) | caps, shatter, break-up (done) | outcomes |
 | P3 | P2 | fuze and filler numbers in the report; `outcomes` gone, format 3 (done) | fuzes; rows gone; water fuze on (done) | burst points |
-| P4 | P2 | — | three limits | outcomes |
+| P4 | P2 | the material's `back` (done) | three limits (done) | outcomes |
 | P5 | P1a | — | angles | ricochets, paths |
 | P6 | — | — | under water (done) | underwater hits |
 | P7 | P0 | gratings, backing | scatter | plates |

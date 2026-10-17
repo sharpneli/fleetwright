@@ -317,11 +317,19 @@
  "materials": {
   "high-tensile steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.8
+   "q": 0.8,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   }
   },
   "steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.7
+   "q": 0.7,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1
+   }
   }
  }
 }

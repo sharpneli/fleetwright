@@ -568,7 +568,8 @@ public sealed partial class MapScene
             Outcome.BurstInPlate => "burst in the plate",
             Outcome.LowOrder => "low-order burst",
             Outcome.BurstOutside => "burst outside",
-            Outcome.BrokeUp => "broke up",
+            Outcome.BrokeUp => "through, broken up",
+            Outcome.Holed => "holed the plate, in pieces",
             Outcome.BurstBeyond => "burst beyond",
             var o => o.ToString().ToLowerInvariant(),
         };
