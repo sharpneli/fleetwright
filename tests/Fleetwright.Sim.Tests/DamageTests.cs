@@ -80,6 +80,45 @@ public class DamageTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_turned_or_glanced_shell_bends_its_path_and_the_path_follows_it()
+    {
+        // P5: a plate a shell gets through turns it, one it glances off sends it skidding, and the path bends with it:
+        // every crossing in order along the bent path and on it (At(T) is its point), the glance's plate kept, and every
+        // cell it leaves one it entered (a bend once lost the cell behind the belt, and the hole with it)
+        int bent = 0, glanced = 0;
+        Hits("super_dreadnought", "lion", 0, 12_000, 600, 10, each: (_, path, t, _) =>
+        {
+            if (path.Legs > 1)
+                bent++;
+            if (t.Glance >= 0)
+            {
+                glanced++;
+                Assert.True(t.Glance < path.Count && path.Crossings[t.Glance].Plate != PlateKind.None, "the plate it glanced off");
+                Assert.True(path.Legs > 1, "a glance bends the path");
+            }
+            double last = double.NegativeInfinity;
+            int cell = -1;
+            foreach (var x in path.Crossings)
+            {
+                Assert.True(x.T >= last - 1e-9, "in order along the path");
+                last = x.T;
+                if (x.Kind == CrossingKind.CellIn)
+                    cell = x.Index;
+                else if (x.Kind == CrossingKind.CellOut)
+                {
+                    Assert.True(x.Index == cell, $"out of cell {x.Index} at {x.T:0.00} m, in {cell}");
+                    cell = -1;
+                }
+                var p = path.At(x.T);
+                double d = Math.Sqrt((p.X - x.Point.X) * (p.X - x.Point.X) + (p.Y - x.Point.Y) * (p.Y - x.Point.Y) + (p.Z - x.Point.Z) * (p.Z - x.Point.Z));
+                Assert.True(d < 1e-6, $"crossing at {x.T:0.000} m is {d:E1} m off the path");
+            }
+        });
+        output.WriteLine($"bent {bent}, glanced {glanced} of 600");
+        Assert.True(bent > 0 && glanced > 0);
+    }
+
+    [Fact]
     public void Ten_4in_HE_hits_usually_cripple_a_destroyer_and_seldom_sink_it()
     {
         // with half an hour of flooding and fire after: crippled more often than sunk (fighting.md 4.3b). Lost up to 8%:

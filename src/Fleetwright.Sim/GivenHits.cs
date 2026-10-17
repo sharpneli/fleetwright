@@ -46,6 +46,10 @@ public static class GivenHits
         /// <summary>The hits a plate stopped within its spall band (P4, E3's), and their severities summed.</summary>
         public int Spalled;
         public double SpallS;
+        /// <summary>P5: the hits that glanced off a plate, and those a plate turned enough to bend their path, with their
+        /// turns summed (degrees).</summary>
+        public int Glanced, Bent;
+        public double TurnDeg;
         /// <summary>The bursts inside after a fuze's delay (full or low-order): how many, and how far behind the crossing
         /// that started the fuze they went off, summed (P3; Baden's 15" burst 11.6 m behind the belt).</summary>
         public int Delayed;
@@ -141,6 +145,10 @@ public static class GivenHits
                     (rep.Decapped + (t.Decapped ? 1 : 0), rep.Shattered + (t.Shattered ? 1 : 0), rep.BrokeNearLimit + (t.BrokeNearLimit ? 1 : 0));
                 if (!double.IsNaN(t.Spall))
                     (rep.Spalled, rep.SpallS) = (rep.Spalled + 1, rep.SpallS + t.Spall);
+                if (t.Glance >= 0)
+                    rep.Glanced++;
+                if (t.TurnDeg > 0)
+                    (rep.Bent, rep.TurnDeg) = (rep.Bent + 1, rep.TurnDeg + t.TurnDeg);
                 double heavyT = HeavyPlateT(w.Damage.LastPath, t.StopT);
                 if (!double.IsNaN(heavyT))
                     (rep.Heavy, rep.HeavyBurst) = (rep.Heavy + 1, rep.HeavyBurst + (t.Burst == BurstKind.Inside && t.BurstT > heavyT ? 1 : 0));

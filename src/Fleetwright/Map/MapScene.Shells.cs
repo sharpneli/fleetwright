@@ -571,6 +571,7 @@ public sealed partial class MapScene
             Outcome.BrokeUp => "through, broken up",
             Outcome.Holed => "holed the plate, in pieces",
             Outcome.BurstBeyond => "burst beyond",
+            Outcome.Ricochet => "glanced off",
             var o => o.ToString().ToLowerInvariant(),
         };
         var fx = new List<string>();

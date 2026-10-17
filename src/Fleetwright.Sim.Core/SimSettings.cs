@@ -744,10 +744,16 @@ public sealed record SimSettings
     public double PenSpread { get; init; } = 0.1;
 
 
-    /// <summary>A shell that can't get through a plate glances off it from this obliquity, surely by this many degrees
-    /// more, degrees.</summary>
-    public double RicochetFromDeg { get; init; } = 45;
-    public double RicochetSpanDeg { get; init; } = 20;
+    /// <summary>A whole shell may glance off a plate from this obliquity, degrees (the biting angle: below it the nose
+    /// digs in; docs/battle/shells-armour-damage.md P5): when its motion across the plate is under this share of what
+    /// the plate stops square on (Terminal.Glances). It skids off this many degrees off the plate's face.</summary>
+    public double RicochetFromDeg { get; init; } = 65;
+    public double GlanceShare { get; init; } = 1;
+    public double GlanceLiftDeg { get; init; } = 1;
+
+    /// <summary>A plate's turn of a shell through it (Terminal.Turn) bends the hit's path from this many degrees; a
+    /// smaller one only costs it speed.</summary>
+    public double NormaliseMinDeg { get; init; } = 0.5;
 
 
     /// <summary>A shell crossing a machinery space (a boiler or engine room) is armed by what's in it (turbines, gears,

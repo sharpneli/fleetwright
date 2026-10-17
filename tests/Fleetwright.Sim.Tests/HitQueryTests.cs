@@ -167,6 +167,52 @@ public class HitQueryTests(ITestOutputHelper output)
         }
     }
 
+    /// <summary>Compound obliquity comes from the geometry (docs/battle/shells-armour-damage.md P5): a level shot meets a
+    /// belt at the ship's heel more than upright, and a barbette at asin(b/R) off its centre line.</summary>
+    [Fact]
+    public void Obliquity_comes_from_the_heel_and_a_barbettes_curve()
+    {
+        var c = Fleet.Get("bismarck").Class!;
+        var f = Frame();
+        var path = new HitPath();
+        double Belt(Attitude a)
+        {
+            Assert.True(HitQuery.Trace(c, f, a, f.ToWorld(0, 80, 1), f.ToWorld(0, 0, 1), [], path));
+            foreach (ref readonly var x in path.Crossings)
+                if (x.Plate == PlateKind.SideArmour)
+                    return Terminal.Obliquity(path.LegOf(0).Direction, x.Normal);
+            throw new Xunit.Sdk.XunitException("no belt crossing");
+        }
+        double upright = Belt(Attitude.Upright), heeled = Belt(new Attitude(0, 0, 10));
+        output.WriteLine($"belt: upright {upright:F2}°, heeled 10° {heeled:F2}°");
+        Assert.InRange(Math.Abs(heeled - upright), 9.5, 10.5);
+
+        var d = Fleet.Get("super_dreadnought").Class!;
+        var g = d.Solids;
+        int tubes = 0;
+        foreach (var s in g.Solids)
+        {
+            if (s.Shape != ShipSolids.Shape.Tube)
+                continue;
+            tubes++;
+            double z = (s.Box.Base + s.Box.Top) / 2;
+            foreach (double b in new[] { 0.0, 0.5, 0.866 })
+            {
+                double x0 = s.Cx + b * s.R;
+                ShipTracer.Trace(d, new P3(x0, s.Cy + 60, z), new P3(x0, s.Cy, z), [], Waterplane.Level(d), path);
+                double ob = double.NaN;
+                foreach (ref readonly var x in path.Crossings)
+                    if (x.Kind == CrossingKind.PartIn && x.Plate == PlateKind.Barbette && x.Index == s.Component)
+                    {
+                        ob = Terminal.Obliquity(new P3(0, -1, 0), x.Normal);
+                        break;
+                    }
+                Assert.Equal(double.RadiansToDegrees(Math.Asin(b)), ob, 1);
+            }
+        }
+        Assert.True(tubes > 0);
+    }
+
     [Fact]
     public void A_miss_says_where_it_fell()
     {

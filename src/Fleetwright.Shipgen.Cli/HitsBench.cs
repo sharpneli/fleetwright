@@ -86,6 +86,9 @@ static class HitsBench
         if (r.Spalled > 0)
             Console.WriteLine(string.Format(Inv, "  stopped in the spall band: {0:0.#}% of hits, severity {1:0.00} on average", 100.0 * r.Spalled / r.Hits,
                 r.SpallS / r.Spalled));
+        if (r.Glanced > 0 || r.Bent > 0)
+            Console.WriteLine(string.Format(Inv, "  glanced off a plate {0:0.#}% of hits; turned by the plates they got through {1:0.#}%, by {2:0.0}° on average",
+                100.0 * r.Glanced / r.Hits, 100.0 * r.Bent / r.Hits, r.TurnDeg / Math.Max(r.Bent, 1)));
         if (r.Delayed > 0)
             Console.WriteLine(string.Format(Inv, "  bursts after the delay: {0:0.#}% of hits, {1:0.0} m on average behind where the fuze started", 100.0 * r.Delayed / r.Hits,
                 r.DelayedM / r.Delayed));

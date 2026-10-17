@@ -123,10 +123,12 @@ public static class Effects
             res.BreachM2 += a;
         }
 
-        // armour that held: a heavy hit's shock on a turret, a barbette, a conning tower; a belt's seams at the waterline
-        if (t.Outcome is Outcome.Defeated or Outcome.Ricochet or Outcome.BurstOutside && t.Plate >= 0)
+        // armour that held, or that a shell glanced off (P5): a heavy hit's shock on a turret, a barbette, a conning tower; a
+        // belt's seams at the waterline
+        int held = t.Glance >= 0 ? t.Glance : t.Outcome is Outcome.Defeated or Outcome.BurstOutside ? t.Plate : -1;
+        if (held >= 0)
         {
-            ref readonly var x = ref xs[t.Plate];
+            ref readonly var x = ref xs[held];
             double jam = shell.CalibreMm >= s.JamHeavyMm ? s.JamChance[0] : shell.CalibreMm >= s.JamMediumMm ? s.JamChance[1] : s.JamChance[2];
             if (x.Plate is PlateKind.TurretFace or PlateKind.TurretSide or PlateKind.TurretRear or PlateKind.TurretRoof or PlateKind.Barbette)
             {
@@ -147,7 +149,7 @@ public static class Effects
             else if (x.Plate == PlateKind.SideArmour && shell.CalibreMm >= s.SeamLeakMinMm &&
                      x.Point.Z <= water.At(x.Point.X, x.Point.Y) + s.HoleOverWaterlineM && r.NextDouble() < s.SeamLeakChance)
             {
-                int behind = CellAt(xs, t.Plate, inward: true);
+                int behind = CellAt(xs, held, inward: true);
                 if (behind >= 0)
                 {
                     k.Hole(behind, s.SeamLeakM2, x.Point);

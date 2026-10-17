@@ -975,13 +975,87 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       tsushima --play 2 seeds identical in its losses; flotilla's hash moves. pen-check D 10 of 12, as before; the
       trials at the limit (the 1897 Harvey, NO 1937's Harvey problem, Beardmore's uncapped 6″) now read holed, and
       Meppen's held plate holed (counted held).
-- **P5 Angles.**
+- **P5 Angles** (done 2026-10-17).
   - The ricochet gate at 65–80°, by V/V_L, certain from 80°, none for broken shells.
   - Compound obliquity with heel and barbette curvature.
   - Normalisation toward the plate's normal on the way through.
   - The residual is Lambert-Jonas since P1a (it fits the spaced deck: 0.75 against 0.74); with the turn toward the
     normal and Okun's energy factor above 45° added here, its burst distances are checked against Baden and the Hood
     deck series.
+  - **Decided (user, 2026-10-17)**, after the numbers below:
+    - **Compound obliquity is already in.** The hit is traced in the ship's frame with its sinkage, trim and heel taken
+      out, and every crossing carries its surface's own normal: a barbette's is radial at the hit point (the research's
+      θ = asin(b/R) falls out of the geometry), leaning belts and slopes have theirs tilted. P5 adds tests only. Roll
+      in a seaway waits for weather.
+    - **The turn: Okun's M79, unscaled at every obliquity.** `DF = atan((1 − √K3)/(2·K2))`, K1 = VR² + VR·√(VR² − 1),
+      K2 = sin Ob·cos Ob/K1, K3 = 1 − 4·K2², VR = V/V_L. The research's ×(1 + (Ob − 45)/45) above 45° is dropped: on
+      Bismarck's 2" upper deck at 68° it gives 4.0-13.7° against Okun's own 2.65° (unscaled: 2.7° at 2× V_L).
+    - **The residual: `Vr = cos DF·√(V² − V_L²)`**, no energy factor (E4). On the spaced deck (2+1+2" STS at 68°, a
+      14"): Lambert-Jonas alone 0.75 of the solid 5", with the turn 0.66, with E4 too 0.59 (measured 0.74). By ratio
+      the turn costs 0.08; in ft/s it's exact (0.66 × Thompson's 1,885 for the solid 5" = 1,244 against 1,250
+      measured: Thompson holds the solid plate 11% high, so the datum can't tell the turn from Thompson's deck bias).
+    - **The path bends for real:** each turn re-traces the path from the plate on its new line, so the rooms crossed
+      and the burst point follow the shell.
+    - **The glance (ricochet) gate, by the plate's thickness:** from 65° (the biting angle: below it the nose digs
+      in), a whole shell glances when `v·cos Ob < V_L(T, 0°)`, the plate as drawn for the shell (its material,
+      quality and spread): the plate soaks up the shell's motion across it only if it could stop that square on. The
+      research's `r(Ob) = 1 + 0.08·(Ob − 65)` and "certain from 80°" had no thickness in them: 5 mm would glance an
+      18" at 80° (user). Here an 18" at 1,500 ft/s goes through 5 mm at 80° and 85°, glances off 25 mm at 80°; Hood
+      1919 test 3 (15" on 3" at 79.2°) glances. Never a shattered or broken shell. A share on V_L(T, 0°) is a setting
+      (1).
+    - **After a glance the shell skids:** the normal motion is gone (the plate dented), it leaves along the plate's
+      surface at `v·sin Ob`, a degree off it, and the walk goes on along that line: a glance inside the ship (Hood
+      test 3, off the deck behind the belt) keeps going in there; one on the open deck flies off or into what's above.
+  - **How (2026-10-17):**
+    - **`HitPath` as a polyline:** up to 8 legs, each from its bend (T, point, direction); `At(t)` follows them, T is
+      the distance along the bent path, so `Effects` reads crossings and the burst point as before. `Splice` keeps the
+      crossings up to a bend and appends the new line's past it: the line is traced whole through the bend's point,
+      outside the ship to outside, so its own crossings say which cell the shell is in there (a change is added at the
+      bend if the kept crossings leave it in another); crossings within 1 mm (`HitPath.SameM`) are at one point.
+    - **`PathBender`** (`Sim.Combat`): the mounts' bearings and the sea as the first trace had them, and the leg's
+      buffer; `DamageSystem` owns one. `Terminal.Resolve` takes it.
+    - **`Terminal`:** the walk keeps its own direction. Through a plate it turns by `Turn(v, V_L, ob)` (re-traced
+      once every plate at that point is crossed, from 0.5° up: `NormaliseMinDeg`); its residual is `cos DF` times
+      Lambert-Jonas. Before the plate's outcome, `Glances(v, V_L0, ob)` gates it: glanced, its fuze starts as on a
+      plate that held, the path is re-traced at once along the skid, and a shell that then leaves the ship unburst is
+      a `Ricochet` (`TerminalResult.Glance`, the plate it glanced off, for the held plate's shock in `Effects`).
+      `RicochetSpanDeg` and the random label go; `RicochetFromDeg` 45 → 65; new `GlanceShare` 1,
+      `NormaliseMinDeg` 0.5, `GlanceLiftDeg` 1.
+    - **`Matchup`:** the deck profile reads the gate too (`Terminal.GlanceMm`: the thickest plate a shell doesn't
+      glance off, the inverse of the gate), the deck it beats the lesser of that and `PenMm`.
+    - **Benches:** `shipgen hits` (the turns and glances), the matchup, squadrons and tsushima; pen-check unchanged
+      (no turns in it). Tests: the spaced deck with the turn, the glance cases above, a bent path's rooms.
+  - **Done (2026-10-17).** As above, and:
+    - **A bug on the way:** the first version traced each new leg from 1 cm past the bend. The cell entered behind a belt
+      sat a hair past the belt's T (the tracer's bisection), so the bend dropped it, and a leg starting inside the
+      ship records no cell for its start: `Effects` found no cell behind the plating and made no hole (Lion on Seydlitz
+      at 8 km: water 730 → 113 t). Hence the whole-line trace and `SameM`; the bent-path test checks every cell left
+      is one entered.
+    - **Tests:** `Stacked_plates_hold_less_than_one_of_their_sum` with the turn (0.66; 1,244 ft/s), the M79 table
+      (`A_plate_turns_a_shell_toward_its_normal_by_how_far_over_it_is`), the gate's cases and its inverse
+      (`A_shell_glances_off_a_plate_only_if_it_could_stop_it_square_on`), the heel and the barbette's curve in the
+      geometry (`Obliquity_comes_from_the_heel_and_a_barbettes_curve`: 10° of heel puts 10.0° on the belt, a barbette
+      asin(b/R)), and a bent path's crossings on it, in order, its cells paired
+      (`A_turned_or_glanced_shell_bends_its_path_and_the_path_follows_it`: 600 Lion hits on the super-dreadnought at
+      12 km, about half bent, 13 glanced).
+    - **Benches (P4 → P5; `shipgen hits` 2000 hits, 10 a ship, 30 min after; both from the same commands):**
+      - Lion on Seydlitz: at 8 km (fall 5.8°) 13.6% glance (the old label 2.4%), 40% turned by 2.0° on average,
+        burst beyond 8 → 16%, burst inside 33 → 27%, water 730 → 907 t, out of the fight 15 → 16%; at 14 km 1.9%
+        glance, 44% turned by 2.4°, out 8 → 7%; at 20 km none glance, out 15 → 14%.
+      - Seydlitz on Iron Duke at 12 km: 10.2% glance, 61% turned by 3.7°, out 10 → 8%; water 117 → 33 t over 4000
+        hits with the holes (0.028 m² a hit) and magazines (0.53%) unchanged: the mean was one capsize in 400 ships.
+      - Borodino on Mikasa at 6 km: 22.5% glance (deck hits at 84°), out 8 → 7%.
+      - Yamato on Colorado at 20 km: 18.7% glance (the 46 cm at 73° off a 3.5" deck: 149 m/s across it against the
+        deck's 161 square on; the research's r(Ob) agrees), burst inside 10 → 5%, out 96 → 94%; Yamato on Yamato at
+        25 km: 22% glance (the 200 mm deck at 66.5°), out 90 → 90%.
+      - Hit cost unchanged within the runs' noise.
+    - **Matchup:** arethusa:4 v iron_duke 1.231 → 1.295; **lion v seydlitz 2.257 → 1.063**. At 12 km Lion's shells
+      meet decks at 79°, and the profile had them through Seydlitz's deck there (Thompson's limit, the USN tables'
+      "upper bound below 15° of fall"): most of Lion's rating came from those. The gate keeps them out. The terminal
+      moves less (out 8 → 7% at 14 km): a shell meets the thin upper deck first, goes through it turned toward the
+      vertical, and one that glances inside still bursts there. The refit is PM's.
+    - **Scenarios:** squadrons 40 min Britain lost 1 (Princess Royal → Lion, a magazine), Germany 0; tsushima --play
+      2 seeds Russia lost 4 → 2, Japan 2.5 → 3; flotilla's hash moves.
 - **P6 Under water** (done; P3 turned the water's fuze on, 2026-10-17). The shell's speed by the distance it travels in the
   water (`e^(−x/L)`), the fuze clock starting at the water, and the Type 91 as the exception that keeps going. This
   replaces `UnderwaterSpeedShare`'s flat 0.4.

@@ -63,6 +63,10 @@ public struct TerminalResult
     public double StrikeMs;
     public bool Decapped, Shattered, BrokeNearLimit;
     public double Spall;
+    /// <summary>P5: the crossing of the plate it glanced off (-1: none), and how far the plates it got through turned it
+    /// toward their normals in all, degrees.</summary>
+    public int Glance;
+    public double TurnDeg;
 
     public readonly bool Bursts => Burst != BurstKind.None;
 }
@@ -75,7 +79,12 @@ public struct TerminalResult
 /// same for belts and decks) of the plate's thickness times its material's q, drawn within
 /// <see cref="SimSettings.PenSpread"/>, and for a common shell over <see cref="SimSettings.CommonPenShare"/>: through at
 /// or above it, slowed by Lambert-Jonas, √(v² − V_L²) (<see cref="Residual"/>: the plate costs the energy that just
-/// gets through it);</item>
+/// gets through it) and times the cosine of its turn: through, it turns toward the plate's normal by Okun's M79
+/// (<see cref="Turn"/>), and the path is traced again on its new line (<see cref="PathBender"/>);</item>
+/// <item><b>the glance</b> (P5): from <see cref="SimSettings.RicochetFromDeg"/>, a whole shell glances off a plate that
+/// could stop its motion across the plate square on (<see cref="Glances"/>), whether it would get through or not; it
+/// skids off along the plate's face at v·sin ob and the walk goes on along that line, its fuze started as on a plate
+/// that held;</item>
 /// <item><b>the shell's state</b> (docs/battle/shells-armour-damage.md P2): a cap is knocked off by any face-hardened
 /// plate, or a homogeneous one over its threshold (<see cref="Decaps"/>), and its mass goes with it; within the gap
 /// behind (<see cref="CapGapCalibres"/>) the nose still meets the next plate as if capped. A face-hardened plate
@@ -99,9 +108,8 @@ public struct TerminalResult
 /// <c>FuzeBlind</c>), and the filler detonates fully by its explosive's rate with the booster, else goes low-order
 /// (<see cref="SimSettings.LowOrderShare"/>) or is a dud (<see cref="Start"/>); it bursts the delay (scattered by the
 /// fuze's own share) times the residual velocity on. A plate it can't get through stops it: running since an earlier
-/// plate, it bursts against this one; started on this one, it bursts on its face; not started, it's defeated, or glances
-/// off past <see cref="SimSettings.RicochetFromDeg"/>. Out of the far side before its delay runs out, it bursts
-/// beyond;</item>
+/// plate, it bursts against this one; started on this one, it bursts on its face; not started, it's defeated. Out of the
+/// far side before its delay runs out, it bursts beyond; a shell that glanced and leaves unburst is a ricochet;</item>
 /// <item><b>under water:</b> a shell that met the sea before the hull strikes at the speed its run there left it
 /// (<see cref="WaterRun"/>, <see cref="Hit.WaterRunM"/>); a fuze started on the water arms it at the hull, with what's
 /// left of its delay (<see cref="SimSettings.FuzeStartsOnWater"/>).</item>
@@ -110,17 +118,24 @@ public struct TerminalResult
 public static class Terminal
 {
     /// <summary>The hit's path through its class (traced from just outside the hit point along the shell's flight) to
-    /// its outcome.</summary>
-    public static TerminalResult Resolve(ShipClass c, in Hit hit, HitPath path, SimSettings s, ref RandomStream r)
+    /// its outcome; the bender bends the path where the shell turns or glances.</summary>
+    public static TerminalResult Resolve(ShipClass c, in Hit hit, HitPath path, PathBender bender, SimSettings s, ref RandomStream r)
     {
         var shell = hit.Shell;
-        var res = new TerminalResult { Outcome = Outcome.PassedThrough, BurstT = double.NaN, StopT = path.Length, Plate = -1, Spall = double.NaN };
+        var res = new TerminalResult
+        {
+            Outcome = Outcome.PassedThrough, BurstT = double.NaN, StopT = path.Length, Plate = -1, Spall = double.NaN, Glance = -1,
+        };
         double calMm = shell.CalibreMm, v = hit.SpeedMs;
         bool nose = shell.Fuze == Fuze.Nose, inside = false, started = false;
         double burstT = double.NaN, force = 1;
         // a two-plate fuze's impulse so far, and where it last took a plate
         double impulse = 0, impulseT = double.NegativeInfinity;
         var xs = path.Crossings;
+        // the shell's line now, and a turn waiting for the plates at its point to be crossed before the path bends
+        var dir = hit.Direction;
+        bool turned = false;
+        double turnT = 0;
 
         // under water first: the shell met the sea before the ship, and ran on through it to the hull
         double decayM = WaterRun.DecayM(shell, s);
@@ -137,6 +152,15 @@ public static class Terminal
 
         for (int i = 0; i < xs.Length; i++)
         {
+            if (turned && xs[i].T > turnT + HitPath.SameM)
+            {
+                // past the plates the turn was made at: the path bends there, onto the shell's new line
+                turned = false;
+                bender.Bend(c, path, i, turnT, dir);
+                xs = path.Crossings;
+                if (i >= xs.Length)
+                    break;
+            }
             ref readonly var x = ref xs[i];
             if (x.T >= burstT)
                 return Burst(ref res, burstT, force, res.Outcome, BurstKind.Inside);
@@ -164,7 +188,7 @@ public static class Terminal
                 continue;
 
             double t = x.Mm > 0 ? x.Mm * c.MaterialQ(x.Material, x.Mm, calMm) : 0;
-            double ob = Obliquity(hit.Direction, x.Normal);
+            double ob = Obliquity(dir, x.Normal);
             if (nose)
                 return Nose(ref res, ref r, shell, s, x.T, i, t <= s.HePenCalibres * calMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(ob)), 1e-3)));
 
@@ -189,12 +213,30 @@ public static class Terminal
                 res.Decapped = true;
             }
             res.Shattered |= shatter;
+            if (!shatter && Glances(v, te, calMm, massKg, ob, s))
+            {
+                // glanced: the plate soaks up its motion across it (a dent), whether it would have got through or not, and
+                // it skids off along the plate's face, its fuze started as on a plate that held; the path bends at once,
+                // so nothing behind the plate is crossed
+                res.Glance = i;
+                if (!started && StartsOn(shell, x.Mm, ob, hard, x.T, ref impulse, ref impulseT, s))
+                {
+                    started = true;
+                    Start(ref res, ref r, shell, s, x.T, v * Math.Sin(double.DegreesToRadians(ob)), i, 0, ref burstT, ref force);
+                }
+                v *= Math.Sin(double.DegreesToRadians(ob));
+                dir = Skid(dir, x.Normal, s.GlanceLiftDeg);
+                turned = false;
+                bender.Bend(c, path, i + 1, x.T, dir);
+                xs = path.Crossings;
+                continue;
+            }
             if (v < vl)
             {
                 // under the Navy limit: from the plate's holing limit it holes it, breaking in it (its pieces through);
                 // else stopped here, its back giving spall in the band below that. Stopped, running since an earlier
-                // plate, it bursts against this one (a dud lies there); else it's defeated or glances off, the impact
-                // starting its fuze if the plate's enough, and then it bursts on the plate's face
+                // plate, it bursts against this one (a dud lies there); else it's defeated, the impact starting its fuze
+                // if the plate's enough, and then it bursts on the plate's face
                 (res.Plate, res.StopT) = (i, x.T);
                 double u = v / vl;
                 if (u >= mat.HoledU)
@@ -208,22 +250,29 @@ public static class Terminal
                     return Burst(ref res, Math.Max(x.T - 0.3, 0), force, res.Outcome, BurstKind.Inside);
                 if (started)
                     return res;
-                bool ric = ob >= s.RicochetFromDeg && r.NextDouble() < Math.Min(1, (ob - s.RicochetFromDeg) / s.RicochetSpanDeg);
-                var held = ric ? Outcome.Ricochet : Outcome.Defeated;
                 if (StartsOn(shell, x.Mm, ob, hard, x.T, ref impulse, ref impulseT, s))
                 {
                     Start(ref res, ref r, shell, s, x.T, 0, i, 0, ref burstT, ref force);
                     if (res.Outcome != Outcome.Dud)
                         (res.Burst, res.BurstT, res.Force) = (BurstKind.Outside, Math.Max(x.T - 0.3, 0), s.BurstOutsideK * force);
                 }
-                res.Outcome = held;
+                res.Outcome = Outcome.Defeated;
                 return res;
             }
             // through: shattered, it's in pieces; just over the limit, the body may give way; whole, the filler, shocked by
             // the plate, may burst in it, the likelier the nearer the plate came to holding
             bool near = !shatter && v < s.NearLimitBand * vl && td >= s.BreakFromTD && r.NextDouble() < NearLimitBreak(ob, s);
             bool inPlate = !shatter && !near && InPlate(shell, v, vl, ref r);
-            v = Residual(v, vl);
+            // whole and through, it turns toward the plate's normal, the turn costing it a little more (P5); the path
+            // bends once the plates at this point are crossed
+            double df = Turn(v, vl, ob);
+            v = Residual(v, vl) * Math.Cos(double.DegreesToRadians(df));
+            if (!shatter && !near && !inPlate && df >= s.NormaliseMinDeg)
+            {
+                dir = TurnToward(dir, x.Normal, df);
+                (turned, turnT) = (true, x.T);
+                res.TurnDeg += df;
+            }
             if (shatter || near)
             {
                 // shattered, only its pieces pass the hole; broken just over the limit, the body goes on in pieces
@@ -243,6 +292,9 @@ public static class Terminal
                 Start(ref res, ref r, shell, s, x.T, v, i, 0, ref burstT, ref force);
             }
         }
+        // a turn at the path's last plates: bent there all the same, so the line beyond (a burst out there) is the shell's
+        if (turned)
+            bender.Bend(c, path, xs.Length, turnT, dir);
         return Gone(ref res, started, path.Length);
     }
 
@@ -336,7 +388,9 @@ public static class Terminal
     {
         res.StopT = Math.Min(res.StopT, t);
         if (res.Outcome != Outcome.Dud)
-            res.Outcome = started ? Outcome.BurstBeyond : Outcome.PassedThrough;
+            res.Outcome = started ? Outcome.BurstBeyond : res.Glance >= 0 ? Outcome.Ricochet : Outcome.PassedThrough;
+        if (res.Outcome == Outcome.Ricochet && res.Plate < 0)
+            res.Plate = res.Glance;
         return res;
     }
 
@@ -387,6 +441,67 @@ public static class Terminal
     /// thickness, so plates stacked hold less than one of their sum (2+1+2″ STS at 68° against a 14″: 0.75 of a solid
     /// 5″, 0.74 measured; armour-and-damage.md §3.8).</summary>
     public static double Residual(double v, double vl) => v > vl ? Math.Sqrt(v * v - vl * vl) : 0;
+
+    /// <summary>How far a plate turns a shell that gets through it toward its normal, degrees (P5; Okun's M79, armor/05
+    /// §1.5): DF = atan((1 − √K3)/(2·K2)) with K1 = VR² + VR·√(VR² − 1), K2 = sin Ob·cos Ob/K1, K3 = 1 − 4·K2², VR = v/V_L.
+    /// Most for a shell barely through (30° at 45°), little for one far over (4° at twice V_L). The same at every
+    /// obliquity: the research's stretch above 45° turned 16" shells 4-14° on Bismarck's 2" deck at 68°, Okun 2.65°.</summary>
+    public static double Turn(double v, double vl, double obliquityDeg)
+    {
+        if (!(vl > 0) || v <= vl)
+            return 0;
+        double vr = v / vl, k1 = vr * vr + vr * Math.Sqrt(vr * vr - 1), o = double.DegreesToRadians(obliquityDeg);
+        double k2 = Math.Sin(o) * Math.Cos(o) / k1;
+        if (!(k2 > 1e-12))
+            return 0;
+        double k3 = Math.Max(1 - 4 * k2 * k2, 0);
+        return double.RadiansToDegrees(Math.Atan((1 - Math.Sqrt(k3)) / (2 * k2)));
+    }
+
+    /// <summary>Whether a whole shell at v glances off a plate (P5): from <see cref="SimSettings.RicochetFromDeg"/> (the
+    /// biting angle: below it the nose digs in), when its motion across the plate, v·cos ob, is less than the plate could
+    /// stop square on (its limit at 0°, times <see cref="SimSettings.GlanceShare"/>). So a thin plate never turns a big
+    /// shell away (an 18" at 460 m/s goes through 5 mm at 85°), a thick one glances anything grazing it. tMm is the plate
+    /// as the shell meets it (its material, quality and draw).</summary>
+    public static bool Glances(double v, double tMm, double calibreMm, double massKg, double obliquityDeg, SimSettings s) =>
+        obliquityDeg >= s.RicochetFromDeg && v * Cos(obliquityDeg) < s.GlanceShare * LimitMs(tMm, calibreMm, massKg, 0);
+
+    /// <summary>The thickest plate (the formula's, mm) a shell at v doesn't glance off at an obliquity: <see cref="Glances"/>
+    /// the other way round (none under <see cref="SimSettings.RicochetFromDeg"/>: infinity). For readouts and the
+    /// matchup.</summary>
+    public static double GlanceMm(double v, double calibreMm, double massKg, double obliquityDeg, SimSettings s) =>
+        obliquityDeg < s.RicochetFromDeg ? double.PositiveInfinity
+            : PenMm(v * Cos(obliquityDeg) / Math.Max(s.GlanceShare, 1e-9), calibreMm, massKg, 0);
+
+    /// <summary>The unit direction d turned by df degrees toward the plate's normal n (either way up: the side d goes
+    /// toward), in the plane of the two.</summary>
+    public static P3 TurnToward(P3 d, P3 n, double df)
+    {
+        double dn = d.X * n.X + d.Y * n.Y + d.Z * n.Z;
+        if (dn < 0)
+            (n, dn) = (new P3(-n.X, -n.Y, -n.Z), -dn);
+        var (tx, ty, tz) = (d.X - dn * n.X, d.Y - dn * n.Y, d.Z - dn * n.Z);
+        double tl = Math.Sqrt(tx * tx + ty * ty + tz * tz);
+        if (!(tl > 1e-9))
+            return d;
+        double ob = Math.Atan2(tl, dn), to = Math.Max(ob - double.DegreesToRadians(df), 0);
+        double cn = Math.Cos(to), ct = Math.Sin(to) / tl;
+        return new P3(cn * n.X + ct * tx, cn * n.Y + ct * ty, cn * n.Z + ct * tz);
+    }
+
+    /// <summary>A glance's way off the plate: d's part along the plate's face, lifted liftDeg off it back to the side the
+    /// shell came from (so the next trace doesn't run in the plate's plane).</summary>
+    public static P3 Skid(P3 d, P3 n, double liftDeg)
+    {
+        double dn = d.X * n.X + d.Y * n.Y + d.Z * n.Z;
+        var (tx, ty, tz) = (d.X - dn * n.X, d.Y - dn * n.Y, d.Z - dn * n.Z);
+        double tl = Math.Sqrt(tx * tx + ty * ty + tz * tz);
+        if (!(tl > 1e-9))
+            return new P3(-d.X, -d.Y, -d.Z);
+        double a = double.DegreesToRadians(liftDeg), back = dn > 0 ? -1 : 1;
+        double ct = Math.Cos(a) / tl, cn = back * Math.Sin(a);
+        return new P3(ct * tx + cn * n.X, ct * ty + cn * n.Y, ct * tz + cn * n.Z);
+    }
 
     static double Cos(double obliquityDeg) => Math.Max(Math.Cos(double.DegreesToRadians(obliquityDeg)), 1e-6);
 

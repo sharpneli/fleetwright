@@ -76,6 +76,7 @@ public sealed class DamageSystem : IWorldSystem
     readonly CombatLog log;
     readonly RandomStream stream;
     readonly HitPath path = new();
+    readonly PathBender bender = new();
     readonly Dictionary<ShipClass, FloodModel> floods = [];
     readonly double[] propellant = new double[256];
     double[] bearings = new double[16];
@@ -362,9 +363,11 @@ public sealed class DamageSystem : IWorldSystem
             double far = 2 * cls.Solids.Radius + 10;
             var p0 = new P3(hit.Point.X - d.X, hit.Point.Y - d.Y, hit.Point.Z - d.Z);
             var p1 = new P3(hit.Point.X + d.X * far, hit.Point.Y + d.Y * far, hit.Point.Z + d.Z * far);
-            ShipTracer.Trace(cls, p0, p1, bearings.AsSpan(0, n), HitQuery.WaterOf(cls, k.Attitude), path);
+            var water = HitQuery.WaterOf(cls, k.Attitude);
+            ShipTracer.Trace(cls, p0, p1, bearings.AsSpan(0, n), water, path);
 
-            t = Terminal.Resolve(cls, hit, path, settings, ref rng);
+            bender.Set(bearings, n, water);
+            t = Terminal.Resolve(cls, hit, path, bender, settings, ref rng);
             e = Effects.Apply(cls, k, hit, path, t, settings, propellant[ship.Side], ref rng);
         }
 

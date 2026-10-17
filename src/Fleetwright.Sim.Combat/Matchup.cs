@@ -596,6 +596,11 @@ public static class Matchup
     public static double OutChance(MatchupGun g, in MatchupEntry target, double rangeM, SimSettings s) =>
         1 - Math.Exp(-OutExponent(g, target.Profile, rangeM, s) / Math.Max(target.Toughness, 1e-3));
 
+    /// <summary>The deck a shell at v falling at fall beats, mm: what it gets through (<see cref="Terminal.PenMm(in
+    /// ShellTypeRow, double, double)"/>) up to the thickest it doesn't glance off (<see cref="Terminal.GlanceMm"/>).</summary>
+    public static double DeckMm(in ShellTypeRow shell, double v, double fall, SimSettings s) =>
+        Math.Min(Terminal.PenMm(shell, v, 90 - fall), Terminal.GlanceMm(v, shell.CalibreMm, shell.MassKg, 90 - fall, s));
+
     /// <summary><see cref="OutChance"/>'s exponent for a whole ship (divided by the toughness left in her).</summary>
     public static double OutExponent(MatchupGun g, MatchupProfile t, double rangeM, SimSettings s)
     {
@@ -605,10 +610,11 @@ public static class Matchup
         var shell = g.Shell;
         // as the terminal has it: a common shell beats the plate its capability's share of an AP's
         double common = shell.Kind == ShellKind.Common ? s.CommonPenShare : 1;
-        double penSide = Terminal.PenMm(shell, strike, fall) * common, penDeck = Terminal.PenMm(shell, strike, 90 - fall) * common;
+        // a deck it would beat but glances off is kept out (P5)
+        double penSide = Terminal.PenMm(shell, strike, fall) * common, penDeck = DeckMm(shell, strike, fall, s) * common;
         // and what it beats just over its limit, where a body may break getting through (P2)
         double near = strike / s.NearLimitBand;
-        double nearSide = Terminal.PenMm(shell, near, fall) * common, nearDeck = Terminal.PenMm(shell, near, 90 - fall) * common;
+        double nearSide = Terminal.PenMm(shell, near, fall) * common, nearDeck = DeckMm(shell, near, fall, s) * common;
         // a burst where there's no armour (the upperworks, the ends) reaches the vitals by its splinters through the deck
         double bare = Math.Exp(-t.DeckMeanMm / s.MatchupSplinterMm);
         double upper = (shell.Fuze == Fuze.Nose || t.SidePlatingMm >= Terminal.FuzeStartMm(shell, fall) ? 1 : s.MatchupPassShare) * bare;

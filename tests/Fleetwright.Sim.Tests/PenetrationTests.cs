@@ -1,5 +1,6 @@
 using Fleetwright.Shipgen;
 using Fleetwright.Sim.Combat;
+using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Tests;
@@ -46,24 +47,29 @@ public class PenetrationTests
         }
     }
 
-    /// <summary>Lambert-Jonas on Thompson's limit: a plate costs the energy that just gets through it, and plates
-    /// stacked hold less than one of their sum (the spaced 2+1+2" STS deck at 68° against a 14": 0.74 of a solid 5"
-    /// measured; armour-and-damage.md §3.8).</summary>
+    /// <summary>Lambert-Jonas on Thompson's limit, times the cosine of the turn toward each plate's normal, which meets
+    /// the next one squarer (P5): a plate costs the energy that just gets through it, and plates stacked hold less than
+    /// one of their sum. The spaced 2+1+2" STS deck at 68° against a 14": 0.74 of a solid 5" measured, 0.66 here (0.75
+    /// without the turn); in ft/s, 1,244 against the 1,250 measured, Thompson holding the solid plate 11% high
+    /// (docs/battle/shells-armour-damage.md P5).</summary>
     [Fact]
     public void Stacked_plates_hold_less_than_one_of_their_sum()
     {
         Assert.Equal(400, Terminal.Residual(500, 300), 9);
         Assert.Equal(0, Terminal.Residual(300, 300));
-        const double cal = 355.6, kg = 680.4, ob = 68;
+        const double cal = 355.6, kg = 680.4;
         double[] stack = [50.8, 25.4, 50.8];
         bool Through(double v)
         {
+            double ob = 68;
             foreach (double t in stack)
             {
                 double vl = Terminal.LimitMs(t, cal, kg, ob);
                 if (v < vl)
                     return false;
-                v = Terminal.Residual(v, vl);
+                double df = Terminal.Turn(v, vl, ob);
+                v = Terminal.Residual(v, vl) * Math.Cos(double.DegreesToRadians(df));
+                ob -= df;
             }
             return true;
         }
@@ -73,8 +79,57 @@ public class PenetrationTests
             double mid = (lo + hi) / 2;
             (lo, hi) = Through(mid) ? (lo, mid) : (mid, hi);
         }
-        double ratio = hi / Terminal.LimitMs(stack.Sum(), cal, kg, ob);
-        Assert.InRange(ratio, 0.70, 0.80);
+        double ratio = hi / Terminal.LimitMs(stack.Sum(), cal, kg, 68);
+        Assert.InRange(ratio, 0.63, 0.69);
+        Assert.InRange(hi / 0.3048, 1200, 1300);
+    }
+
+    /// <summary>Okun's M79 turn (armor/05 §1.5's table: the same at every obliquity, P5): most for a shell barely
+    /// through, little for one far over; Bismarck's 2" upper deck turns a 16" at twice its limit 2.7° at 68° (Okun:
+    /// 2.65°).</summary>
+    [Fact]
+    public void A_plate_turns_a_shell_toward_its_normal_by_how_far_over_it_is()
+    {
+        (double Ob, double Vr, double Df)[] table =
+        [
+            (15, 1.01, 12.7), (15, 1.5, 3.7), (30, 1.1, 15.2), (30, 2, 3.3), (45, 1.01, 29.6), (45, 1.25, 11.8), (45, 3, 1.6),
+            (68, 2, 2.7),
+        ];
+        foreach (var (ob, vr, df) in table)
+            Assert.Equal(df, Terminal.Turn(vr * 300, 300, ob), 1);
+        Assert.Equal(0, Terminal.Turn(299, 300, 45));
+        Assert.Equal(0, Terminal.Turn(600, 300, 0));
+        // the direction: 40° off a deck's normal (falling at 50°), turned 10°, falls at 60°
+        double f = double.DegreesToRadians(50);
+        var d = Terminal.TurnToward(new P3(Math.Cos(f), 0, -Math.Sin(f)), new P3(0, 0, 1), 10);
+        Assert.Equal(60, double.RadiansToDegrees(Math.Asin(-d.Z)), 9);
+        Assert.Equal(1, Math.Sqrt(d.X * d.X + d.Y * d.Y + d.Z * d.Z), 12);
+        // a glance skids off along the face, a degree off it, back up from a deck
+        var g = Terminal.Skid(new P3(Math.Cos(0.2), 0, -Math.Sin(0.2)), new P3(0, 0, 1), 1);
+        Assert.Equal(1, double.RadiansToDegrees(Math.Asin(g.Z)), 9);
+    }
+
+    /// <summary>The glance gate (P5): from 65°, a shell glances when its motion across the plate is less than the plate
+    /// stops square on, so thickness counts. An 18" (1,460 kg) at 1,500 ft/s goes through 5 mm at 80° and 85° (the
+    /// user's case: no 5 mm turns an 18" away), glances off 25 mm at 80°; Hood 1919 test 3, a 15" (871 kg) on a 3" deck
+    /// at 79.2° and 634 ft/s, glances; a 16" (1,225 kg) at 2,000 ft/s goes through 50 mm at 72°; never under 65°. The
+    /// gate's inverse, GlanceMm, splits the thicknesses the same way.</summary>
+    [Fact]
+    public void A_shell_glances_off_a_plate_only_if_it_could_stop_it_square_on()
+    {
+        var s = new SimSettings();
+        (double Cal, double Kg, double Mm, double Ob, double Fps, bool Glances)[] cases =
+        [
+            (460, 1460, 5, 80, 1500, false), (460, 1460, 5, 85, 1500, false), (460, 1460, 25, 80, 1500, true),
+            (381, 871, 76.2, 79.2, 634, true), (406.4, 1225, 50, 72, 2000, false), (406.4, 1225, 50, 64.9, 100, false),
+            (152.4, 47.6, 25.4, 80, 2000, true),
+        ];
+        foreach (var (cal, kg, mm, ob, fps, glances) in cases)
+        {
+            double v = fps * 0.3048;
+            Assert.True(Terminal.Glances(v, mm, cal, kg, ob, s) == glances, $"{cal} mm on {mm} mm at {ob}°, {fps} ft/s");
+            Assert.True(mm > Terminal.GlanceMm(v, cal, kg, ob, s) == glances, $"GlanceMm: {cal} mm on {mm} mm at {ob}°");
+        }
     }
 
     /// <summary>The catalogue through the material rules gives armor/00 §4.2's table: q at 8" and below, the 16" column

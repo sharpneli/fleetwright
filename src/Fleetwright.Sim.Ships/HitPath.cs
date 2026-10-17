@@ -72,11 +72,22 @@ public readonly record struct Crossing
 
 /// <summary>What a segment crossed through a ship, in order from its start (docs/battle/fighting.md 4.1): the contract
 /// between the hit query and the terminal model. A fixed buffer, reused query after query, so tracing allocates
-/// nothing once it's grown to the ship's size; one per thread.</summary>
+/// nothing once it's grown to the ship's size; one per thread.
+/// <para>A path may bend where a plate turned the shell or it glanced off one (docs/battle/shells-armour-damage.md P5):
+/// <see cref="Splice"/> keeps the crossings up to the bend and appends a new leg's. T stays the distance along the bent
+/// path, and <see cref="At"/> follows its legs.</para></summary>
 public sealed class HitPath
 {
+    /// <summary>The most legs a path takes: a bend past them isn't made.</summary>
+    public const int MaxLegs = 8;
+
     Crossing[] items;
     int count;
+
+    // the legs, once the path has bent: leg k from legT[k] at legAt[k] along legDir[k] (none: the straight segment)
+    readonly double[] legT = new double[MaxLegs];
+    readonly P3[] legAt = new P3[MaxLegs], legDir = new P3[MaxLegs];
+    int legs;
 
     // the tracer's scratch: the parts the segment may meet, the stretch of the walk inside each one's box, and whether
     // the walk is inside it
@@ -116,6 +127,9 @@ public sealed class HitPath
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         sb.AppendLine(string.Format(inv, "  from ({0:0.00}, {1:0.00}, {2:0.00}) to ({3:0.00}, {4:0.00}, {5:0.00}), {6:0.0} m{7}", Start.X, Start.Y, Start.Z,
             End.X, End.Y, End.Z, Length, Overflowed ? " (OVERFLOWED: crossings dropped)" : ""));
+        for (int k = 1; k < legs; k++)
+            sb.AppendLine(string.Format(inv, "  bent at {0:0.00} m, on along ({1:0.000}, {2:0.000}, {3:0.000})", legT[k], legDir[k].X, legDir[k].Y,
+                legDir[k].Z));
         foreach (ref readonly var x in Crossings)
         {
             string what = x.Kind switch
@@ -147,11 +161,90 @@ public sealed class HitPath
         return sb.ToString();
     }
 
-    /// <summary>The point at T along the segment.</summary>
+    /// <summary>The point at T along the path (along its legs once it's bent).</summary>
     public P3 At(double t)
     {
-        double f = Length > 0 ? t / Length : 0;
-        return new P3(Start.X + (End.X - Start.X) * f, Start.Y + (End.Y - Start.Y) * f, Start.Z + (End.Z - Start.Z) * f);
+        if (legs == 0)
+        {
+            double f = Length > 0 ? t / Length : 0;
+            return new P3(Start.X + (End.X - Start.X) * f, Start.Y + (End.Y - Start.Y) * f, Start.Z + (End.Z - Start.Z) * f);
+        }
+        int k = Leg(t);
+        double d = t - legT[k];
+        return new P3(legAt[k].X + legDir[k].X * d, legAt[k].Y + legDir[k].Y * d, legAt[k].Z + legDir[k].Z * d);
+    }
+
+    /// <summary>The legs: 1 for a straight path.</summary>
+    public int Legs => Math.Max(legs, 1);
+
+    /// <summary>Leg k: where along the path it starts, its point there and its direction (unit).</summary>
+    public (double T, P3 At, P3 Direction) LegOf(int k)
+    {
+        if (legs > 0)
+            return (legT[k], legAt[k], legDir[k]);
+        double l = Length > 0 ? Length : 1;
+        return (0, Start, new P3((End.X - Start.X) / l, (End.Y - Start.Y) / l, (End.Z - Start.Z) / l));
+    }
+
+    /// <summary>The leg T is on.</summary>
+    public int Leg(double t)
+    {
+        int k = 0;
+        while (k + 1 < legs && legT[k + 1] <= t)
+            k++;
+        return k;
+    }
+
+    /// <summary>Crossings this close along a path, m, are at one point (the tracer's bisection leaves them a hair apart).</summary>
+    public const double SameM = 1e-3;
+
+    /// <summary>Bend the path at T: keep its first <paramref name="keep"/> crossings, then the crossings of the leg (a
+    /// straight trace through the bend's point, which is <paramref name="atT"/> along it) past that point. The cell the
+    /// shell is in there is the leg's: if it isn't the one the kept crossings leave it in, the change is made at the bend.
+    /// False, and the path unchanged, when it has all its legs.</summary>
+    public bool Splice(int keep, double t, HitPath leg, double atT)
+    {
+        if (legs >= MaxLegs)
+            return false;
+        if (legs == 0)
+        {
+            var (_, a, d) = LegOf(0);
+            (legT[0], legAt[0], legDir[0], legs) = (0, a, d, 1);
+        }
+        var (_, _, dir) = leg.LegOf(0);
+        var at = leg.At(atT);
+        (legT[legs], legAt[legs], legDir[legs]) = (t, at, dir);
+        legs++;
+        count = Math.Min(keep, count);
+        var xs = leg.Crossings;
+        int from = 0;
+        while (from < xs.Length && xs[from].T <= atT + SameM)
+            from++;
+        int was = OpenCell(Crossings), now = OpenCell(xs[..from]);
+        if (was != now)
+        {
+            if (was >= 0)
+                Add(new Crossing { T = t, Point = at, Kind = CrossingKind.CellOut, Index = was, Material = -1 });
+            if (now >= 0)
+                Add(new Crossing { T = t, Point = at, Kind = CrossingKind.CellIn, Index = now, Material = -1 });
+        }
+        foreach (ref readonly var x in xs[from..])
+            Add(x with { T = t + x.T - atT });
+        Overflowed |= leg.Overflowed;
+        (End, Length) = (leg.End, t + leg.Length - atT);
+        return true;
+    }
+
+    /// <summary>The cell the crossings leave the shell in (-1: none).</summary>
+    static int OpenCell(ReadOnlySpan<Crossing> xs)
+    {
+        int cell = -1;
+        foreach (ref readonly var x in xs)
+            if (x.Kind == CrossingKind.CellIn)
+                cell = x.Index;
+            else if (x.Kind == CrossingKind.CellOut && x.Index == cell)
+                cell = -1;
+        return cell;
     }
 
     /// <summary>Empty, for the segment start to end (a query that didn't come near the ship).</summary>
@@ -163,7 +256,7 @@ public sealed class HitPath
 
     internal void Begin(P3 start, P3 end, double length)
     {
-        (Start, End, Length, count, Overflowed) = (start, end, length, 0, false);
+        (Start, End, Length, count, Overflowed, legs) = (start, end, length, 0, false, 0);
     }
 
     internal void Add(in Crossing x)
