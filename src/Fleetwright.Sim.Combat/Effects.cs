@@ -17,8 +17,8 @@ public enum MagazineVia : byte
     Beside,
     Turret,
     Underwater,
-    /// <summary>E3: spall off the back of a plate that held, among charges lying open (a gunhouse, a working chamber, a
-    /// handling room), the flash running down to the magazine.</summary>
+    /// <summary>E3: spall off the back of a plate that held, lighting charges where it reached them (a gunhouse, a working
+    /// chamber, a handling room, a magazine).</summary>
     Spall,
 }
 
@@ -366,9 +366,10 @@ public static class Effects
     /// by the layers right behind the plate (backing, the inner skin), into the space behind it, and no further than its
     /// boundaries (5 mm stops the flakes; a chunk THOR lets through goes on into the space next door). In it, the parts
     /// and the spaces' vitals take the flakes over their fragility, the big piece the nearest part within 15° of the axis.
-    /// Where charges lie open (an enclosed turret's gunhouse or working chamber, a handling room) the cloud may light them
-    /// (<see cref="SimSettings.SpallFlashChance"/>) and the flash run down to the magazine; in a magazine it doesn't, the
-    /// charges there are in their cases and racks. People are E6's. Not a burst: no blast, no fire, no breach.</summary>
+    /// Where it reaches charges (an enclosed turret's gunhouse or working chamber, a handling room, a magazine) it may
+    /// light them (<see cref="SimSettings.SpallFlashChance"/>, 14 §6.3), a flash source for the magazine chain as E2's
+    /// pieces are. How the charges are packed and handled (bags, cases open or closed, brass; flash discipline) isn't in
+    /// the model yet: the magazine chain's session. People are E6's. Not a burst: no blast, no fire, no breach.</summary>
     static void Spall(ShipClass c, ShipCondition k, HitPath path, int plate, double severity, bool roof, in ShellTypeRow shell, double v,
         SimSettings s, double propellant, ref EffectsResult res, ref RandomStream r)
     {
@@ -402,7 +403,7 @@ public static class Effects
         if (!(cloud.Flakes > 0) && !(cloud.BigKg > 0))
             return;
         res.Spall = true;
-        int open = -1;   // the mount whose charges lie open where the cloud flies
+        int open = -1, magazine = -1;   // the mount whose charges the cloud reaches in its turret or handling room; a magazine it reaches
         var comps = c.Components;
         // a gunhouse, a working chamber, a conning tower: the whole cloud inside the part, its contents take it
         int space = cell < 0 && x.Plate is PlateKind.TurretFace or PlateKind.TurretSide or PlateKind.TurretRear or PlateKind.TurretRoof
@@ -451,6 +452,8 @@ public static class Effects
                     Harm(ref res, k, node);
                 if (rr.Kind == RoomKind.Handling && rr.Mount >= 0 && c.MountOf(rr.Mount) is int m and >= 0 && Enclosed(c, m))
                     open = m;
+                else if (rr.Kind == RoomKind.Magazine && magazine < 0)
+                    magazine = room;
             }
             if (big >= 0 && cloud.BigJ >= PartFragility(c, big, s))
                 Count(ref res, k, big, k.Worsen(big, PartState.Disabled) ? PartState.Disabled : PartState.Ok);
@@ -470,12 +473,18 @@ public static class Effects
                     double into = s.NeighbourShare * counted * Vital(c, room, s);
                     if (into > 1e-4 && r.NextDouble() < 1 - Math.Exp(-into))
                         Harm(ref res, k, c.RoomNode(room));
+                    if (c.Rooms[room].Kind == RoomKind.Magazine && magazine < 0)
+                        magazine = room;
                 }
             }
         }
-        // charges lying open in the cloud's way may light, and the flash run down to the magazine: as likely as from a fire in
-        // the turret, once lit (14 §6.3: about 20% at s >= 0.5; Dunkerque lit, Tiger didn't)
-        if (open >= 0 && !res.Magazine && r.NextDouble() < s.SpallFlashChance * Math.Min(1, cloud.Severity / 0.5) * s.TurretFlashChance * propellant)
+        // charges in the cloud's way may light (14 §6.3: about 20% at s >= 0.5, less below; Dunkerque lit, Tiger didn't),
+        // a flash source for the magazine chain as E2's pieces are: in a magazine its own chance, in a turret or handling
+        // room the turret's
+        double lights = s.SpallFlashChance * Math.Min(1, cloud.Severity / 0.5);
+        if (magazine >= 0 && !res.Magazine && r.NextDouble() < lights * s.MagazineFlashChance * propellant)
+            (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, magazine, MagazineVia.Spall);
+        if (open >= 0 && !res.Magazine && r.NextDouble() < lights * s.TurretFlashChance * propellant)
             (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, c.Mounts[open].Magazine, MagazineVia.Spall);
     }
 

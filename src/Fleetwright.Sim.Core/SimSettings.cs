@@ -843,9 +843,10 @@ public sealed record SimSettings
     public double BrokenShare { get; init; } = 0.15;
 
     /// <summary>E3, spall behind a plate that held (damage/14): a heavy shell (the plate under SpallRoofTD of its
-    /// calibre) glancing off a turret roof drives it in with this chance (Dunkerque, one case [EST]); charges lying open
-    /// in a cloud's way light with SpallFlashChance at severity 0.5 and up (in proportion below), and the flash then runs
-    /// to the magazine as from a fire in the turret (TurretFlashChance) [EST]; a boundary of SpallStopMm or more stops
+    /// calibre) glancing off a turret roof drives it in with this chance (Dunkerque, one case [EST]); charges in a cloud's
+    /// way (a gunhouse, a working chamber, a handling room, a magazine) light with SpallFlashChance at severity 0.5 and up
+    /// (14 §6.3 [EST]; in proportion below, the ramp the code's), a flash source for the magazine chain as E2's pieces
+    /// are (MagazineFlashChance in a magazine, TurretFlashChance in a turret or handling room); a boundary of SpallStopMm or more stops
     /// the flakes unless THOR lets them through (14 §4.3). What a flake or the big piece must carry to harm a part, J, by
     /// its kind (as PartVital's list), and a space's vitals (pipes, cables, gauges) [EST, 14 §5.2: instrument or sight
     /// ~100 J, cable or pipe ~500 J, a machine's casing ~5 kJ].</summary>

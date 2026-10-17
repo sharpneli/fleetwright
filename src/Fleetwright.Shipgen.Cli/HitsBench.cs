@@ -133,7 +133,7 @@ static class HitsBench
         MagazineVia.Beside => "a burst beside it",
         MagazineVia.Turret => "the turret or barbette",
         MagazineVia.Underwater => "under water",
-        MagazineVia.Spall => "spall among open charges",
+        MagazineVia.Spall => "spall among its charges",
         _ => "-",
     };
 

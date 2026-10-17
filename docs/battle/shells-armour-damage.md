@@ -1287,13 +1287,17 @@ squadrons, and changes `Matchup.cs` with it.
     flash roll (~20% at s ≥ 0.5) where charges lie open, as E2's.
   - **Replaces** the plan's "weaker burst inside" and 12's flat 15% behind an in-plate burst.
   - **Matchup:** a spall term per (gun, plate) profile. **Tests:** 14 §6.5.
-  - **Done 2026-10-17.** What it came to (with the user's ask: no run of magazines going up under plates that held over
-    them):
+  - **Done 2026-10-17.** What it came to (the user asked that plates holding over the magazines not set them off time
+    after time; then, on review, that the step stay physical and sourced, the combined results looked at later):
     - **The triggers:** a shell stopped or shattered with u in the plate's band (P4's `TerminalResult.Spall`, now with
       `PlateMs`, its speed at the plate), and a heavy shell (the roof under 0.4 calibre) glancing off a turret roof at
-      `SpallRoofChance` (0.3, s 0.5, a disc 2D across; Dunkerque). A burst on a face it doesn't hole throws next to
-      nothing (14 §3.3) and makes no cloud, so a burst over a crown or a box doesn't rain spall into the magazine. The
-      contact burst at an opening (Tiger's Q roof) waits for the edges step: the hitboxes don't have hoods or ports yet.
+      `SpallRoofChance` (0.3, s 0.5, a disc 2D across; Dunkerque). The contact burst at an opening (Tiger's Q roof)
+      waits for the edges step: the hitboxes don't have hoods or ports yet.
+    - **A simplification, kept and named:** a burst on a face it doesn't hole makes no cloud. 14 §3.3 gives it under
+      4 kg at under 80 J a piece (an 11" HE on 64 mm 0.6 kg at ~40 J, a 14" HE on 76 mm 3 kg at 0.1 kJ, nothing past
+      1.5 t_h, t_h = 0.156 D for HE, ~0.10 D for AP), consistent with South Dakota's barbette III and Jean Bart's turret
+      hits, and §6.2 lets v0 skip it. Not measured here: the scab (14 §2.2's window, `spall_ref.py` `cloud_contact`) can
+      come in with no new numbers if the combined results ask for it.
     - **The cloud** (`Spall.cs`, Sim.Combat): 14 §3.2's numbers to the kilogram (a 15" Greenboy at u 0.90 on 330 mm
       KC: 115 kg, half one piece of 48 kJ, 11 flakes of 5 kg at 68 m/s; a 6" on 3" STS: 29 flakes of 62 g, 126 J). The
       big piece's share is the material's new `back.big` (0.5, brittle 0.3; catalogue and every design's table). The
@@ -1307,12 +1311,22 @@ squadrons, and changes `Matchup.cs` with it.
       §5.2]) at its vital share; the space's rooms take the whole cloud's over `RoomFragilityJ` (500 J) at RoomVital;
       the big piece wrecks the nearest part within 15° of the axis if it carries its fragility (else the room's
       vitals). No blast, fire, breach or opened bulkhead. People are E6's.
-    - **The magazines:** spall into a magazine damages the space and nothing more; its charges are in their cases and
-      racks. Where charges lie open (an enclosed turret's gunhouse or working chamber, a handling room by its mount),
-      the cloud lights them with `SpallFlashChance` (0.2 at s ≥ 0.5, less below; 14 §6.3) and the flash then reaches the
-      magazine as from a fire in the turret (TurretFlashChance 0.25 × the side's propellant): about 5% of such clouds.
-      `MagazineVia.Spall` names it. KGV under Bismarck's 38 cm at 32 km: spall on 7.3% of hits, magazines set off by it
-      0.03% of hits (by everything 1.6%, nearly all through the turrets and barbettes).
+    - **The charges:** wherever the cloud reaches charges (an enclosed turret's gunhouse or working chamber, a handling
+      room by its mount, a magazine, in the space behind the plate or one the cloud gets into), it lights them with
+      `SpallFlashChance` (0.2 at s ≥ 0.5, 14 §6.3 [EST]; in proportion below, the code's ramp, kept by the user's
+      choice, 2026-10-17), a flash source for the magazine chain as E2's pieces are: in a magazine MagazineFlashChance,
+      in a turret or handling room TurretFlashChance, × the side's propellant. `MagazineVia.Spall` names it. A first cut
+      exempted the magazines (their charges cased and racked) and was reverted on review: how the charges are packed and
+      handled (bags, Clarkson cases opened before battle as the RN's at Jutland, brass; flash discipline) is the
+      magazine chain's session, not a rule here.
+    - **Where the cloud lands, measured** (4,000 hits each, the space behind the plate by its rooms): KGV under
+      Bismarck's 38 cm at 32 km, 294 clouds, behind her armour deck into accommodation 116, the torpedo protection 90,
+      engine rooms 27, boiler rooms 10, a barbette 14, a handling room 1, no magazine; Yamato under the generic
+      battleship's 16" at 34 km, 485, one into a magazine; Seydlitz under Lion's 13.5" at 16 km, 302, behind the belt
+      into bunkers 111 and accommodation 88, barbettes 27, turret roofs 13; Bismarck under KGV's 14" at 25 km, 299, the
+      turret roofs 67. The decks and bulkheads between an armour deck and the magazines stop the flakes (5 mm), so the
+      magazines are seldom reached: the exemption changed nothing measurable. Magazines set off by spall, % of hits:
+      KGV 0.05, Yamato 0.03, Seydlitz 0.05, Bismarck 0.13, all by way of a barbette, gunhouse or handling room.
     - **Matchup:** a kept shell inside its plate's spall band (face-hardened 0.85-0.94, homogeneous 0.90-1.00, by the
       plate a shell beats at V/u going as V^1.4) adds `MatchupSpallShare` (0.05 [EST], the balance pass's to fit).
     - **Benches, before and after** (2,000 hits; outcomes identical): spall 3.7-15% of hits; Iron Duke under Seydlitz's
@@ -1321,7 +1335,7 @@ squadrons, and changes `Matchup.cs` with it.
       Squadrons' 30 minutes 158 → 149 hits, Princess Royal and Lion still lost to their magazines (now both to
       Derfflinger), hash 819E0F52B7BCB4A4 → B465811A2B06CD4D.
     - **Tests:** `SpallTests` (the Greenboy's cloud, the 6" too weak for pipes, the cone's shares, backing, no garbage,
-      and plunging fire on KGV setting magazines off by spall under 0.3% of hits). Goldens gain `back.big`
+      and plunging fire on KGV measured, with a wide guard of 2% of hits). Goldens gain `back.big`
       (ShipDesign.Version 27), 372 of 372.
 - **E4 What a plate that held shakes** (13 non-penetrating). For `Defeated`, `Ricochet` and `BurstOutside`, from the
   plate, the margin (r, or u) and the impulse I = m·v:
