@@ -50,318 +50,14 @@ public sealed partial class Layout
         var (ttId, tt, tSweep, tEdges) = (torp.TypeId, torp.T, torp.Sweep, torp.Edges);
 
         // ---------------- the middle's plan ----------------
-        var segs = PlanSegments(plant).Select(s => (Kind: s.Kind, Len: s.Len)).ToList();
-        var segGroup = Enumerable.Range(0, segs.Count).ToList();
-        int nGaps = nm + WE.Count;
-        string mainKind = segs.Any(s => s.Kind == "boiler") ? "boiler" : "engine";
-
-        List<int> Candidates() => Enumerable.Range(1, Math.Max(0, segs.Count - 1))
-            .Where(i => segs[i - 1].Kind == mainKind || segs[i].Kind == mainKind).ToList();
-
-        bool BetweenGroups(int i)
-        {
-            int a = i - 1, b = i;
-            while (a >= 0 && segs[a].Kind == "bunker")
-                a--;
-            while (b < segs.Count && segs[b].Kind == "bunker")
-                b++;
-            return a >= 0 && b < segs.Count && segs[a].Kind == mainKind && segs[b].Kind == mainKind && segGroup[a] != segGroup[b];
-        }
-
-        List<int> SpreadOver(List<int> cands, int n)
-        {
-            var set = new SortedSet<int>(Enumerable.Range(0, n).Select(k => cands[Math.Min(cands.Count - 1, (int)(long)((k + 0.5) * cands.Count / n))]));
-            var result = set.ToList();
-            foreach (var c in cands)
-            {
-                if (result.Count >= n)
-                    break;
-                if (!result.Contains(c))
-                {
-                    result.Add(c);
-                    result.Sort();
-                }
-            }
-            return result;
-        }
-
-        while (Candidates().Count < nGaps)
-        {
-            int i = Enumerable.Range(0, segs.Count).Where(i => segs[i].Kind == mainKind).MaxBy(i => segs[i].Len);
-            var half = (mainKind, segs[i].Len / 2);
-            segs.RemoveAt(i);
-            segs.InsertRange(i, [half, half]);
-            int sg = segGroup[i];
-            segGroup.RemoveAt(i);
-            segGroup.InsertRange(i, [sg, sg]);
-        }
-        var cands0 = Candidates();
-        var pref = nGaps != 0 ? cands0.Where(BetweenGroups).ToList() : [];
-        List<int> gaps;
-        if (pref.Count >= nGaps)
-            gaps = nGaps != 0 ? SpreadOver(pref, nGaps) : [];
-        else
-        {
-            var rest = cands0.Where(c => !pref.Contains(c)).ToList();
-            gaps = pref.Concat(SpreadOver(rest, nGaps - pref.Count)).ToList();
-            gaps.Sort();
-        }
-        var gapKind = new Dictionary<int, string>();
-        var gapGun = new Dictionary<int, Gun>();
-        var tGaps = nm != 0 ? Enumerable.Range(0, nm).Select(k => gaps[(int)(long)Math.Round((k + 0.5) * gaps.Count / nm - 0.5)]).ToList() : [];
-        var tLeft = M.ToList();
-        var wLeft = WE.ToList();
-        foreach (var g in gaps)
-        {
-            gapKind[g] = tGaps.Contains(g) ? "T" : "W";
-            var src = tGaps.Contains(g) ? tLeft : wLeft;
-            gapGun[g] = src[0];
-            src.RemoveAt(0);
-        }
-        var waFront = Enumerable.Range(0, WA.Count).Where(k => k % 2 == 0).Select(k => WA[k]).Reverse().ToList();
-        var waBack = Enumerable.Range(0, WA.Count).Where(k => k % 2 == 1).Select(k => WA[k]).ToList();
-        var groupedWings = waFront.Select((g, k) => ($"W{k + 1}", "fore", g))
-            .Concat(waBack.Select((g, k) => ($"W{waFront.Count + WE.Count + k + 1}", "aft", g))).ToList();
-        var magPlan = MagazinePlan(design, groupedWings);
-        var magL = magPlan.ToDictionary(kv => kv.Key, kv => kv.Value.Count > 0
-            ? Ordnance.ZoneLength(kv.Value.Select(v => v.N * v.V).Sum(), 2 * Ordnance.GroupHalfWidth(plant, 0.8 * B / 2, B, Armour.MagazineWingM(design, B)), plant) : 0.0);
-        if (magL["fore"] > 0)
-        {
-            segs.Insert(0, ("magazine", magL["fore"]));
-            gapKind = gapKind.ToDictionary(kv => kv.Key + 1, kv => kv.Value);
-            gapGun = gapGun.ToDictionary(kv => kv.Key + 1, kv => kv.Value);
-        }
-        if (magL["aft"] > 0)
-            segs.Add(("magazine", magL["aft"]));
-        double funTop = LevelH * Math.Min(nTower, 4) + FunnelAbove;
-        double belowDeck = depth - plant.InnerBottom - 1.0;
-        if (res.Plant.Tech.Draught.System is "natural" or "forced_boost")
-            funTop = Math.Max(funTop, StackNatural - belowDeck);
-        var groups = segs.Where(s => s.Kind == "boiler").Select(s => s.Len).ToList();
-        var (nfun, fw, fl) = PlanFunnels(lay, design, res, B, funTop, groups);
-        var fplan = lay.Geo.FunnelPlan!;
-        fw = Math.Min(fw, 0.3 * B);
-        double beamTan = Math.Tan(double.DegreesToRadians(90.0 - Arcs.ArcBeam));
-        double fMin = fl + (ntp != 0 && !tEdges ? 9.6 : 2.0);
-
-        var seq = new List<string>();
-        var segOf = new List<int?>();
-        var widths0 = new List<double?>();
-        var seqGun = new List<Gun?>();
-        int gI = 0;
-        var fCounts = fplan.Counts;
-        for (int si = 0; si < segs.Count; si++)
-        {
-            var (kind, segL) = segs[si];
-            if (gapKind.TryGetValue(si, out var gk))
-            {
-                seq.Add(gk);
-                segOf.Add(null);
-                widths0.Add(null);
-                seqGun.Add(gapGun[si]);
-            }
-            if (kind == "boiler")
-            {
-                long nG = fCounts[gI];
-                gI++;
-                for (long j = 0; j < nG; j++)
-                {
-                    seq.Add("F");
-                    segOf.Add(si);
-                    widths0.Add(Math.Max(segL / nG, fMin));
-                    seqGun.Add(null);
-                }
-            }
-            else
-            {
-                seq.Add("E");
-                segOf.Add(si);
-                widths0.Add(segL);
-                seqGun.Add(null);
-            }
-        }
-        if (groups.Count == 0 && nfun != 0)
-        {
-            var eItems = Enumerable.Range(0, seq.Count).Where(i => seq[i] == "E" && segs[segOf[i]!.Value].Kind == "engine").ToList();
-            if (eItems.Count == 0)
-                eItems = [0];
-            for (long j = 0; j < nfun; j++)
-            {
-                seq.Insert(eItems[0], "F");
-                segOf.Insert(eItems[0], null);
-                widths0.Insert(eItems[0], fMin);
-                seqGun.Insert(eItems[0], null);
-            }
-        }
-        var lead = new List<int>();
-        var trail = new List<int>();
-        if (groups.Count > 0)
-        {
-            while (seq.Count > 0 && seq[0] == "E")
-            {
-                lead.Add(segOf[0]!.Value);
-                segOf.RemoveAt(0);
-                seq.RemoveAt(0);
-                widths0.RemoveAt(0);
-                seqGun.RemoveAt(0);
-            }
-            while (seq.Count > 0 && seq[^1] == "E")
-            {
-                trail.Insert(0, segOf[^1]!.Value);
-                segOf.RemoveAt(segOf.Count - 1);
-                seq.RemoveAt(seq.Count - 1);
-                widths0.RemoveAt(widths0.Count - 1);
-                seqGun.RemoveAt(seqGun.Count - 1);
-            }
-        }
-        for (int k = 0; k < WA.Count; k++)
-        {
-            int at = k % 2 == 0 ? 0 : seq.Count;
-            seq.Insert(at, "W");
-            segOf.Insert(at, null);
-            widths0.Insert(at, null);
-            seqGun.Insert(at, WA[k]);
-        }
-        var core = Enumerable.Range(0, seq.Count).Where(i => !(seq[i] == "W" && !seqGun[i]!.Echelon)).ToList();
-        double underBridge = 0.0;
-        int? ubSeg = null;
-        if (core.Count > 0 && seq[core[0]] == "F" && segOf[core[0]] is int us0)
-        {
-            ubSeg = us0;
-            var fItems = Enumerable.Range(0, seq.Count).Where(i => seq[i] == "F" && segOf[i] == ubSeg).ToList();
-            double ubL = segs[us0].Len;
-            underBridge = Math.Max(0.0, Math.Min(ubL - fItems.Count * fMin, BridgeOverBoilers * (lb + 1.5)));
-            foreach (var i in fItems)
-                widths0[i] = Math.Max(fMin, (ubL - underBridge) / fItems.Count);
-        }
-        double leadL = lead.Select(si => segs[si].Len).Sum() + underBridge;
-        double trailL = trail.Select(si => segs[si].Len).Sum();
-        double w2 = Clamp(0.36 * B, 4.5, 12);
-        var endsHalf = new Dictionary<int, double> { [-1] = w2 / 2, [seq.Count] = la != 0 ? 0.14 * B : 0.0 };
-
-        double HalfOf(int j, double y)
-        {
-            if (endsHalf.TryGetValue(j, out var v))
-                return v;
-            if (seq[j] == "W")
-            {
-                var g = seqGun[j]!;
-                return Wy(g, y) + g.Reach;
-            }
-            return seq[j] == "F" ? fw / 2 : 0.0;
-        }
-
-        double WingGap(Gun g, double y, double half)
-        {
-            y = Wy(g, y);
-            if (half >= y - 0.2)
-                return g.RR + 0.5;
-            return Math.Max(0.5, Math.Sqrt(Math.Max(0.0, Math.Pow(g.Reach + 0.5, 2) - Math.Pow(y - half, 2))));
-        }
-
-        double WingStagger(Gun g, double y)
-        {
-            double reach = g.Reach;
-            y = Wy(g, y);
-            if (reach - y > y - 0.3)
-                return g.RR + reach + 0.5;
-            double s = Math.Max(2 * reach + 1.0, Math.Sqrt(Math.Max(0.0, Math.Pow(2 * reach + 0.5, 2) - 4 * y * y)));
-            if (g.Cross)
-            {
-                double c = double.DegreesToRadians(Arcs.ArcCross);
-                s = Math.Max(s, (reach + 0.5 + 2 * y * Math.Sin(c)) / Math.Cos(c));
-            }
-            return s;
-        }
-
-        double WingSide(int i, int step, double y)
-        {
-            var w = seqGun[i]!;
-            int j = i + step;
-            double g = WingGap(w, y, HalfOf(j, y));
-            while (0 <= j && j < seq.Count && (seq[j] == "F" || seq[j] == "E"))
-                j += step;
-            g = Math.Max(g, WingGap(w, y, HalfOf(j, y)));
-            if ((step < 0 && nf != 0) || (step > 0 && na != 0))
-            {
-                var e = step < 0 ? F[^1] : A[^1];
-                bool flush = step < 0 ? flushF : flushA;
-                double beyond = (flush ? e.RR + 1.0 : e.R + e.Gap) + (step < 0 ? lb + 1.5 : (la != 0 ? la + 1.5 : 1.0));
-                double yw = Wy(w, y);
-                double need = e.Reach > yw - 0.3 || w.Cross ? w.RR + e.Reach + 0.5
-                    : Math.Sqrt(Math.Max(0.0, Math.Pow(w.Reach + e.Reach + 0.5, 2) - yw * yw));
-                g = Math.Max(g, need - beyond);
-            }
-            if (w.Cross)
-            {
-                int jj = i + step;
-                double openL = 0.0;
-                while (0 <= jj && jj < seq.Count && seq[jj] == "E")
-                {
-                    openL += widths0[jj]!.Value;
-                    jj += step;
-                }
-                if (0 <= jj && jj < seq.Count && (HalfOf(jj, y) > 0 || seq[jj] == "T"))
-                    g = Math.Max(g, w.RR + 0.5 + (seq[jj] == "T" ? seqGun[jj]!.Reach : 0.0) - openL);
-            }
-            return g;
-        }
-
-        (double Ef, double Ea) CrossEnds(double y)
-        {
-            var result = new List<double>();
-            foreach (var (step, order) in new[] { (-1, Enumerable.Range(0, seq.Count)), (1, Enumerable.Range(0, seq.Count).Reverse()) })
-            {
-                int? k = order.Cast<int?>().FirstOrDefault(kk => seq[kk!.Value] != "E");
-                if (k is null || seq[k.Value] != "W" || !seqGun[k.Value]!.Cross || HalfOf(step < 0 ? -1 : seq.Count, y) <= 0)
-                {
-                    result.Add(0.0);
-                    continue;
-                }
-                double openL = ((step < 0 ? Enumerable.Range(0, k.Value) : Enumerable.Range(k.Value + 1, seq.Count - k.Value - 1))
-                    .Select(e => widths0[e]!.Value)).Sum();
-                result.Add(Math.Max(0.0, seqGun[k.Value]!.RR + 0.5 - WingSide(k.Value, step, y) - openL));
-            }
-            return (result[0], result[1]);
-        }
-
-        Dictionary<int, double> WingWidths(double y) =>
-            Enumerable.Range(0, seq.Count).Where(i => seq[i] == "W").ToDictionary(i => i,
-                i => WingSide(i, -1, y) + WingSide(i, 1, y) + (seqGun[i]!.Echelon ? WingStagger(seqGun[i]!, y) : 0.0));
-
-        List<double> PlanWidths(double y)
-        {
-            var ww = WingWidths(y);
-            var result = new List<double>();
-            for (int i = 0; i < seq.Count; i++)
-            {
-                if (seq[i] == "W")
-                    result.Add(ww[i]);
-                else if (seq[i] == "T")
-                {
-                    int stow = i + 1 < seq.Count && seq[i + 1] == "T" ? 0 : 180;
-                    int j = stow == 180 ? i - 1 : i + 1;
-                    double margin = Math.Max(seqGun[i]!.Reach + 1.0, HalfOf(j, y) / beamTan + 0.5);
-                    result.Add(margin + seqGun[i]!.RR + 1.5);
-                }
-                else
-                    result.Add(widths0[i]!.Value);
-            }
-            return result;
-        }
-
-        double aftL = la != 0 ? la + 1.5 : 1.0;
-
-        double MiddleNeeds(List<double> ws, (double Ef, double Ea) ext)
-        {
-            double before = core.Count > 0 ? ws.Take(core[0]).Sum() : 0.0;
-            double cL = core.Select(i => ws[i]).Sum();
-            var (ef, ea) = ext;
-            return Math.Max(lb + 1.5 + ef + ws.Sum() + ea + aftL, Math.Max(leadL + cL + trailL + 2.0, Math.Max(lb + 1.5 + ef + before + cL + trailL + 1.0, leadL + 1.0 + ws.Sum() - before + ea + aftL)));
-        }
+        var row = new MiddleRow(site, plant, mg, control, torp);
+        var (segs, magL, fplan) = (row.Segs, row.MagL, row.Fplan);
+        long nfun = row.NFun;
+        double fw = row.Fw, fl = row.Fl, funTop = row.FunTop, beamTan = row.BeamTan, w2 = row.W2;
+        var (seq, segOf, seqGun, core, lead, trail, ubSeg) = (row.Seq, row.SegOf, row.SeqGun, row.Core, row.Lead, row.Trail, row.UbSeg);
 
         double y0 = nw != 0 ? deckHw - gRef!.Reach - 0.6 : 0.0;
-        double MReq = Math.Max(MiddleNeeds(PlanWidths(y0), CrossEnds(y0)), SecondarySpan(secs.Select(s => s.Sec))) + midExtra;
+        double MReq = Math.Max(row.MiddleNeeds(row.PlanWidths(y0), row.CrossEnds(y0)), SecondarySpan(secs.Select(s => s.Sec))) + midExtra;
 
         var big = bats.Count > 0 ? bats.MaxBy(g => g.Reach) : null;
         double deckRatio = deckHw / (B / 2);
@@ -481,31 +177,23 @@ public sealed partial class Layout
         double yW = nw != 0 ? Enumerable.Range(0, 21).Select(k => fz0 + (fz1 - fz0) * k / 20)
             .Min(x => Math.Min(lay.MountHalfWidth(x) - gRef!.Reach - 0.6, lay.BarbetteLimit(x, BarbetteOf(gRef.T)))) : 0.0;
 
-        (double LoX, double HiX, double X) PlanFront(List<double> widths, double y)
-        {
-            double beforeCore = core.Count > 0 ? widths.Take(core[0]).Sum() : 0.0;
-            double coreL = core.Select(i => widths[i]).Sum();
-            var (ef, ea) = CrossEnds(y);
-            double loX = Math.Max(fz0 + ea + widths.Sum(), midAft + 1.0 + trailL + coreL + beforeCore);
-            double hiX = Math.Min(fz1 - ef, midFwd - 1.0 - leadL + beforeCore);
-            return (loX, hiX, hiX >= loX ? (loX + hiX) / 2 : hiX);
-        }
+        (double LoX, double HiX, double X) PlanFront(List<double> widths, double y) => row.PlanFront(widths, y, fz0, fz1, midAft, midFwd);
 
         double WingRoom(double y)
         {
-            var widths = PlanWidths(y);
+            var widths = row.PlanWidths(y);
             double xx = PlanFront(widths, y).X, room = B - gRef!.Reach - 0.6;
             for (int i = 0; i < seq.Count; i++)
             {
                 if (seq[i] == "W")
                 {
                     var g = seqGun[i]!;
-                    double x = xx - WingSide(i, -1, y);
+                    double x = xx - row.WingSide(i, -1, y);
                     double hw = B;
-                    foreach (var xw in g.Echelon ? new[] { x, x - WingStagger(g, y) } : [x])
+                    foreach (var xw in g.Echelon ? new[] { x, x - row.WingStagger(g, y) } : [x])
                         hw = Math.Min(hw, Math.Min(lay.MountHalfWidth(xw + -g.Reach), Math.Min(lay.MountHalfWidth(xw + 0.0), lay.MountHalfWidth(xw + g.Reach))));
                     double lim = hw - g.Reach - 0.6;
-                    foreach (var xw in g.Echelon ? new[] { x, x - WingStagger(g, y) } : [x])
+                    foreach (var xw in g.Echelon ? new[] { x, x - row.WingStagger(g, y) } : [x])
                         lim = Math.Min(lim, lay.BarbetteLimit(xw, BarbetteOf(g.T)));
                     room = Math.Min(room, g.Reach == gRef.Reach ? lim : lim + g.Reach - gRef.Reach);
                 }
@@ -542,7 +230,7 @@ public sealed partial class Layout
                 break;
             }
         }
-        var widthsF = PlanWidths(yW);
+        var widthsF = row.PlanWidths(yW);
         double beforeCoreF = core.Count > 0 ? widthsF.Take(core[0]).Sum() : 0.0;
         double coreLF = core.Select(i => widthsF[i]).Sum();
         var (loX, hiX, xx0) = PlanFront(widthsF, yW);
@@ -576,14 +264,14 @@ public sealed partial class Layout
             else if (it == "W")
             {
                 var g = seqGun[i]!;
-                double x = xx - WingSide(i, -1, yW);
-                wings.Add((g, Wy(g, yW), g.Echelon ? [(x, -1), (x - WingStagger(g, yW), 1)] : [(x, -1), (x, 1)]));
+                double x = xx - row.WingSide(i, -1, yW);
+                wings.Add((g, Wy(g, yW), g.Echelon ? [(x, -1), (x - row.WingStagger(g, yW), 1)] : [(x, -1), (x, 1)]));
             }
             else if (it == "T")
             {
                 int stow = i + 1 < seq.Count && seq[i + 1] == "T" ? 0 : 180;
                 int j = stow == 180 ? i - 1 : i + 1;
-                double margin = Math.Max(seqGun[i]!.Reach + 1.0, HalfOf(j, yW) / beamTan + 0.5);
+                double margin = Math.Max(seqGun[i]!.Reach + 1.0, row.HalfOf(j, yW) / beamTan + 0.5);
                 mids.Add((seqGun[i]!, stow == 180 ? xx - margin : xx - w_ + margin, stow));
             }
             if (segOf[i] is int so)
