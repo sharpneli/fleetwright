@@ -463,23 +463,3 @@ public static class ShipDesign
         return new Ship(design, ReportOf(design, lay, r, sized, inner), Hitbox.ExportHitboxes(lay, sized, r, inner), lay.Dressing);
     }
 }
-
-/// <summary>looks.validate: the design's look (navy, era). The rest of looks.py is the renderer's (Step 4).</summary>
-public static class Looks
-{
-    static readonly string[] Navies = ["generic", "brooklyn", "kure", "portsmouth", "kiel", "la_spezia", "toulon", "kronstadt"];
-    static readonly string[] Eras = ["victorian", "great_war", "treaty", "wwii", "cold_war"];
-
-    public static List<string> Validate(Design design)
-    {
-        var lk = design.Look ?? new LookInput();
-        var extra = lk.Extra.KeysOrEmpty().Order(StringComparer.Ordinal).ToList();
-        var errs = extra.Count > 0 ? new List<string> { $"look has unknown keys: {string.Join(", ", extra)}" } : [];
-        string navy = lk.Navy ?? "generic", era = lk.Era ?? "wwii";
-        if (!Navies.Contains(navy))
-            errs.Add($"look.navy = {Style.Quote(navy)}: use {string.Join(", ", Navies)}");
-        if (!Eras.Contains(era))
-            errs.Add($"look.era = {Style.Quote(era)}: use {string.Join(", ", Eras)}");
-        return errs;
-    }
-}

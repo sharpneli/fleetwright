@@ -419,7 +419,7 @@ public static class Program
         Parallel.ForEach(cases, new ParallelOptions { MaxDegreeOfParallelism = a.Int("jobs", Environment.ProcessorCount / 2) },
             c =>
             {
-                var rec = GoldenCases.Capture(LoadDesign(c.DesignPath));
+                var rec = GoldenCases.Capture(LoadDesign(c.DesignPath), Looks.Validate);
                 JsonFile.Save(Path.Combine(outDir, c.Name + ".json.gz"), rec);
                 Console.WriteLine($"[{Interlocked.Increment(ref n),3}/{cases.Count}] {c.Name}");
             });
@@ -438,7 +438,7 @@ public static class Program
         Parallel.ForEach(cases, new ParallelOptions { MaxDegreeOfParallelism = a.Int("jobs", Environment.ProcessorCount / 2) },
             c =>
             {
-                var rec = GoldenCases.Capture(LoadDesign(c.DesignPath));
+                var rec = GoldenCases.Capture(LoadDesign(c.DesignPath), Looks.Validate);
                 rec.Remove("build_s");
                 JsonFile.Save(Path.Combine(outDir, "design", c.Name + ".json"), rec);
                 if (rec["build"] is not JsonObject b || b.ContainsKey("raised"))
@@ -577,7 +577,7 @@ public static class Program
             {
                 try
                 {
-                    results[i] = (cases[i], GoldenCases.Check(root, cases[i], show), null);
+                    results[i] = (cases[i], GoldenCases.Check(root, cases[i], Looks.Validate, show), null);
                 }
                 catch (Exception e)
                 {
@@ -612,7 +612,7 @@ public static class Program
         var design = new System.Collections.Concurrent.ConcurrentBag<string>();
         Parallel.ForEach(cases, new ParallelOptions { MaxDegreeOfParallelism = a.Int("jobs", Environment.ProcessorCount / 2) }, c =>
         {
-            if (GoldenCases.Update(root, c))
+            if (GoldenCases.Update(root, c, Looks.Validate))
                 design.Add(c.Name);
         });
         var (svg, sprite) = RenderGolden.Update(root, cases);

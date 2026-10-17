@@ -228,7 +228,7 @@ public sealed class DesignWorker : IDisposable
         {
             if (ship == null)
             {
-                var errs = ShipDesign.Validate(design, limits).Concat(Shipgen.Looks.Validate(design)).ToList();
+                var errs = ShipDesign.Validate(design, limits).Concat(Shipgen.Render.Looks.Validate(design)).ToList();
                 if (errs.Count > 0)
                     return Remember(key, new DesignResult { Id = id, Design = design, Look = look, Errors = ["invalid design:", .. errs] });
                 ship = ShipDesign.Build(design);

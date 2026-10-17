@@ -35,6 +35,21 @@ public static class Looks
     /// <summary>The navies that have looks, as looks.jsonc lists them.</summary>
     public static IEnumerable<string> Navies => NavyTable.Select(kv => kv.Key);
 
+    /// <summary>looks.validate: the design's look (navy, era) against looks.jsonc's navies and the eras below. The
+    /// one list: validation, the designer's pickers and the drawing all read the table.</summary>
+    public static List<string> Validate(Design design)
+    {
+        var lk = design.Look ?? new LookInput();
+        var extra = lk.Extra.KeysOrEmpty().Order(StringComparer.Ordinal).ToList();
+        var errs = extra.Count > 0 ? new List<string> { $"look has unknown keys: {string.Join(", ", extra)}" } : [];
+        string navy = lk.Navy ?? "generic", era = lk.Era ?? "wwii";
+        if (!Navies.Contains(navy))
+            errs.Add($"look.navy = {Shipgen.Style.Quote(navy)}: use {string.Join(", ", Navies)}");
+        if (!Eras.Contains(era))
+            errs.Add($"look.era = {Shipgen.Style.Quote(era)}: use {string.Join(", ", Eras)}");
+        return errs;
+    }
+
     /// <summary>The eras a navy has a look for.</summary>
     public static IEnumerable<string> ErasOf(string navy) => LooksOf(navy).Select(kv => kv.Key);
 

@@ -65,11 +65,12 @@ The single-implementation rule, applied to what the review found:
   limits, as the arrows do. Before: 29 reversals and 12 lumps over 228 sweeps; after: 27 and 16 over 237. The
   aa_heavy pair is gone; the new lumps are Cb (3, sense 0), endurance stepped from its Auto 1 day to the 5-day grid
   (2), and an armour deck added where a ship has none (pt_boat, tanker).
-- **Navy and era names** (bug 3): one list. Shipgen can't read the renderer's `looks.jsonc`, so the list moves to
-  where both can see it, or validation is handed the names by its caller; worked out when we get there.
-- **Small duplicates**: sea-water density (`Weight.Seawater`, `Flotation.SeaT`) and the sideways helpers the review
-  lists (`CarrierStyle.Vdc`, `GunsAreSecondaries`, `ShipDesign.Interior`/`FormOf`, `Powerplant.DoubleBottom`), moved
-  to where their callers expect them. Byte-identical.
+- **Navy and era names** (bug 3): `Shipgen.Render.Looks.Validate` reads looks.jsonc's navies (and the renderer's
+  era list), the one list the designer's pickers and the drawing read too; Shipgen's copy is gone, and the golden
+  capture is handed the check by its caller. Byte-identical. **Done 2026-10-17.**
+- **Small duplicates**: sea-water density once (`Weight.Seawater`); `Vdc` and the double bottom in `Geometry`,
+  `GunsAreSecondaries` in `Style`. Byte-identical. **Done 2026-10-17.** `ShipDesign.Interior`/`FormOf` stay: moving
+  them is churn the review rates as not mattering much.
 
 ## 3. Who sets and reads `Geo`
 

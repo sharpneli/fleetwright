@@ -92,7 +92,7 @@ public class RenderTests
                 }
             }
         var bad = new Design { Look = new LookInput { Navy = "nowhere", Era = "wwii" } };
-        var msg = Assert.Single(Shipgen.Looks.Validate(bad));
+        var msg = Assert.Single(Render.Looks.Validate(bad));
         Assert.Contains(string.Join(", ", Render.Looks.Navies), msg);
     }
 

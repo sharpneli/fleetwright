@@ -41,14 +41,14 @@ public static class GoldenCases
     static JsonArray Strings(List<string> xs) => new(xs.Select(x => (JsonNode?)x).ToArray());
 
     /// <summary>golden.py's capture_case: validation strings, the build (when validate(limits=False) passes), the
-    /// build time.</summary>
-    public static JsonObject Capture(Design design)
+    /// build time. looks: the look's validation (Shipgen.Render.Looks.Validate: the looks are the renderer's).</summary>
+    public static JsonObject Capture(Design design, Func<Design, List<string>> looks)
     {
         var rec = new JsonObject
         {
             ["validate_limits"] = Try(() => Strings(ShipDesign.Validate(design, limits: true))),
             ["validate_no_limits"] = Try(() => Strings(ShipDesign.Validate(design, limits: false))),
-            ["looks_validate"] = Try(() => Strings(Looks.Validate(design))),
+            ["looks_validate"] = Try(() => Strings(looks(design))),
         };
         if (rec["validate_no_limits"] is JsonArray { Count: 0 })
         {
@@ -60,9 +60,9 @@ public static class GoldenCases
         return rec;
     }
 
-    static JsonObject Ours(GoldenCase c)
+    static JsonObject Ours(GoldenCase c, Func<Design, List<string>> looks)
     {
-        var ours = Capture(Design.Load(c.DesignPath));
+        var ours = Capture(Design.Load(c.DesignPath), looks);
         ours.Remove("build_s");
         return ours;
     }
@@ -76,9 +76,9 @@ public static class GoldenCases
 
     /// <summary>Rewrite the case's golden record from ours when the two differ by the golden rules (after a deliberate
     /// change to the output), or write it for a new case that has none yet. Returns whether it was written.</summary>
-    public static bool Update(string root, GoldenCase c)
+    public static bool Update(string root, GoldenCase c, Func<Design, List<string>> looks)
     {
-        var ours = Ours(c);
+        var ours = Ours(c, looks);
         if (File.Exists(GoldenFile(root, c.Name)) && GoldenDiff.Compare(Golden(root, c), ours, 1).Count == 0)
             return false;
         JsonFile.Save(GoldenFile(root, c.Name), ours);
@@ -86,5 +86,6 @@ public static class GoldenCases
     }
 
     /// <summary>The differences between the golden record for a case and ours (build_s left out).</summary>
-    public static List<Difference> Check(string root, GoldenCase c, int max = 20) => GoldenDiff.Compare(Golden(root, c), Ours(c), max);
+    public static List<Difference> Check(string root, GoldenCase c, Func<Design, List<string>> looks, int max = 20) =>
+        GoldenDiff.Compare(Golden(root, c), Ours(c, looks), max);
 }

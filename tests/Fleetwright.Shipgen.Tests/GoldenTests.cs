@@ -18,7 +18,7 @@ public class GoldenTests
         {
             try
             {
-                var d = GoldenCases.Check(Root, c, 3);
+                var d = GoldenCases.Check(Root, c, Render.Looks.Validate, 3);
                 if (d.Count > 0)
                     failures.Add($"{c.Name}:\n  " + string.Join("\n  ", d));
             }
