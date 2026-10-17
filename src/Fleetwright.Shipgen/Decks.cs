@@ -26,7 +26,7 @@ public static class Decks
     /// <summary>The hull's decks, every DeckPitch down from the main deck, as heights above the keel, top down.</summary>
     public static List<(long N, double Z)> DeckStack(Design design, double D)
     {
-        double floor = design.StyleName == "planing" ? 0.0 : Powerplant.DoubleBottom(D);
+        double floor = design.StyleName == "planing" ? 0.0 : Geometry.DoubleBottom(D);
         var result = new List<(long, double)> { (0, D) };
         while (D - result.Count * Geometry.DeckPitch >= floor + MinTier - 1e-9 && result.Count <= MaxDecks)
             result.Add((result.Count, D - result.Count * Geometry.DeckPitch));

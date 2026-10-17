@@ -44,7 +44,7 @@ public static class Propulsion
         long n = Math.Max(1L, res.PlantRated.Shafts);
         long nR = Math.Max(1L, design.Machinery?.Rudders ?? 1);
         bool planing = design.StyleName == "planing";
-        double ib = planing ? 0.0 : Powerplant.DoubleBottom(D);
+        double ib = planing ? 0.0 : Geometry.DoubleBottom(D);
         double mw = res.PowerShp * 0.7457 / 1000.0 / n;
         double dp = Math.Max(DpMin, (planing ? DpKPlaning : DpK) * Math.Pow(mw, 0.4));
         if (!planing)

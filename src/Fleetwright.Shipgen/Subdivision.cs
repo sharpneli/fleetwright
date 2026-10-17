@@ -74,7 +74,7 @@ public static class Subdivision
     {
         var result = new List<SubDeck> { new() { Id = "Keel", Kind = "keel", Z = -D } };
         if (design.StyleName != "planing")
-            result.Add(new SubDeck { Id = "Inner bottom", Kind = "inner_bottom", Z = -D + Powerplant.DoubleBottom(D) });
+            result.Add(new SubDeck { Id = "Inner bottom", Kind = "inner_bottom", Z = -D + Geometry.DoubleBottom(D) });
         var armour = ag.Decks.GroupBy(d => d.Deck).ToDictionary(g => g.Key, g => g.ToList());
 
         void Armour(SubDeck d, long n)

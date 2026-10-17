@@ -86,7 +86,7 @@ public sealed class MerchantStyle : Style
     public override List<string> Validate(Design design)
     {
         var errs = base.Validate(design);
-        errs.AddRange(CarrierStyle.GunsAreSecondaries(this, design));
+        errs.AddRange(GunsAreSecondaries(this, design));
         if (Cargo(design).Kind is not ("dry" or "tanker"))
             errs.Add($"cargo.kind = {Quote(Cargo(design).Kind)}: use dry or tanker");
         if (MachineryPosition(design) is not ("amidships" or "aft"))
@@ -239,7 +239,7 @@ public sealed class MerchantStyle : Style
 
         var mounts = new List<Mount>();
         var turretTypes = new OrderedDictionary<string, TurretType>(StringComparer.Ordinal);
-        var xs = CarrierStyle.Vdc(64).Select(v => -L / 2 + 0.06 * L + v * 0.88 * L).ToList();
+        var xs = Geometry.Vdc(64).Select(v => -L / 2 + 0.06 * L + v * 0.88 * L).ToList();
         Armament.PlaceBatteries(lay, mounts, turretTypes, design,
             [new Armament.EndLine(-L / 2 + 0.025 * L, +1, 0.0, 180, x => DeckH(x) + 0.3, houseIds.ToList()),
              new Armament.EndLine(L / 2 - 0.035 * L, -1, 0.0, 0, x => DeckH(x) + 0.3, [])],

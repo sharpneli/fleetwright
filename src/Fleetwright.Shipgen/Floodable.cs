@@ -86,7 +86,7 @@ public static class Floodable
             foreach (var c in cells)
             {
                 double x = (c.X0 + c.X1) / 2, f = Math.Clamp((z0 + dzdx * x - c.Base) / Math.Max(c.Top - c.Base, 1e-6), 0, 1);
-                double t = c.VolumeM3 * Math.Clamp(c.Permeability, 0, 1) * f * Flotation.SeaT;
+                double t = c.VolumeM3 * Math.Clamp(c.Permeability, 0, 1) * f * Weight.Seawater;
                 (wt, m) = (wt + t, m + t * (x - h.Lcf));
             }
             double s1 = Flotation.SinkageM(wt, h.TpcT), t1 = Flotation.TrimRad(m, h.MctTm, length);

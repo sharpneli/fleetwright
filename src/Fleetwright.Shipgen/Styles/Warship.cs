@@ -129,7 +129,7 @@ public sealed class PlaningStyle : Style
                 0.0, 180, x => 0.2, armourMm: gun.ArmourMm ?? 0, depth: depth);
         }
 
-        var xs2 = CarrierStyle.Vdc(48).Select(v => -L / 2 + 0.1 * L + v * 0.7 * L).ToList();
+        var xs2 = Geometry.Vdc(48).Select(v => -L / 2 + 0.1 * L + v * 0.7 * L).ToList();
         var secs = Batteries.SecondaryBatteries(design);
         Armament.WarnUnpaired(lay, secs);
         if (secs.Count > 0 && secs[0].MountsPerSide != 0)

@@ -5,9 +5,6 @@ namespace Fleetwright.Shipgen;
 /// and the design's subdivision check (<see cref="Floodable"/>) floods its compartments by it.</summary>
 public static class Flotation
 {
-    /// <summary>Tonnes a cubic metre of sea water.</summary>
-    public const double SeaT = 1.025;
-
     /// <summary>The sinkage water aboard gives, m.</summary>
     public static double SinkageM(double waterT, double tpcT) => waterT / (100 * Math.Max(tpcT, 1e-6));
 

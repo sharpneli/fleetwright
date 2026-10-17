@@ -450,7 +450,7 @@ public sealed partial class Layout
         double w = Powerplant.SteelFrame * 2 * hull.HalfWidth(x) - 2 * tds - 2 * wing;
         var ag = Armour.ArmourGeometry(design, hull.L, T, D, lay.Geo);
         double top = ag.RoofZ ?? D;
-        double db = Powerplant.DoubleBottom(D);
+        double db = Geometry.DoubleBottom(D);
         double h = Math.Max(1.0, top - db);
         var sp = Powerplant.Space(p, res.PowerShp, w, h);
         var (wingT, end) = Powerplant.Bunkers(p, res.Fuel, sp.Length, w, h, hull.L, hull.B, design.BlockCoefficient, D, T, tds);

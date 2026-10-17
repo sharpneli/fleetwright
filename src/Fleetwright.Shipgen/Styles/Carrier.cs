@@ -40,26 +40,6 @@ public sealed class CarrierStyle : Style
 
     static double SpotM2(AviationSpec av) => SpotK * Math.Pow(av.AircraftT, 2.0 / 3);
 
-    /// <summary>0, 1/2, 1/4, 3/4, 1/8, ...: positions that spread evenly however many get used.</summary>
-    public static List<double> Vdc(int n)
-    {
-        var result = new List<double>();
-        for (int i = 0; i < n; i++)
-        {
-            int k = i;
-            long d = 2;
-            double v = 0.0;
-            while (k != 0)
-            {
-                v += (double)(k & 1) / d;
-                k >>= 1;
-                d *= 2;
-            }
-            result.Add(v);
-        }
-        return result;
-    }
-
     /// <summary>Flight deck and hangar geometry, from the design alone (so navarch and the layout agree).</summary>
     public sealed record DeckPlanData(string Kind, double FdH, (double X0, double X1, double Hhw) Hangar, double HangarArea, double FdArea,
         long Capacity, double X0 = 0, double X1 = 0, double Tap = 0, double Hw = 0, List<Pt>? Points = null, Land? Land = null,
@@ -177,19 +157,6 @@ public sealed class CarrierStyle : Style
             Planks = new FlightDeckPlanks(x0, x1, ys.Min(), ys.Max(), 1.4), Wires = wires, Marks = marks,
             Number = !string.IsNullOrEmpty(av.Number) ? new DeckNumber(x1 - 0.6 * tap - lc - 0.04 * L, 0, av.Number, 0.035 * L) : null,
         };
-    }
-
-    /// <summary>Carriers and merchants are built around something else; guns are fitted where they suit.</summary>
-    public static List<string> GunsAreSecondaries(Style style, Design design)
-    {
-        var errs = new List<string>();
-        if (design.Main is { Count: > 0 })
-            errs.Add($"The {style.Name} style has no main battery: its guns are secondaries fitted where they suit. " +
-                     "Give them as \"secondary\": a battery or a list of batteries, each with \"count\" (or " +
-                     "\"per_side\") and \"where\": \"ends\" or \"sides\".");
-        errs.AddRange(Armament.BatteriesOf(design).Where(b => b.Where is not ("ends" or "sides"))
-            .Select(b => $"secondary.where = {Quote(b.Where)}: use ends or sides"));
-        return errs;
     }
 
     public override string Name => "carrier";
@@ -496,7 +463,7 @@ public sealed class CarrierStyle : Style
         if (placed < av.DeckEdgeElevators)
             lay.Fail("length", $"Only {placed} of {av.DeckEdgeElevators} deck-edge elevators fit.");
 
-        var xs = Vdc(64).Select(v => dp.X0 + 6 + v * (dp.X1 - dp.Tap - 10 - dp.X0)).ToList();
+        var xs = Geometry.Vdc(64).Select(v => dp.X0 + 6 + v * (dp.X1 - dp.Tap - 10 - dp.X0)).ToList();
 
         List<Slot> SponsonSlots(double reach, double bse)
         {
@@ -624,7 +591,7 @@ public sealed class CarrierStyle : Style
             lay.Occupy(Footprint.Circle(cx, cy, 1.6), 0, roof + 6.0, $"Crane {k + 1}");
         }
 
-        var xs = Vdc(48).Select(v => hx0 + v * (bx1 - hx0)).ToList();
+        var xs = Geometry.Vdc(48).Select(v => hx0 + v * (bx1 - hx0)).ToList();
         Armament.PlaceBatteries(lay, mounts, turretTypes, design,
             [new Armament.EndLine(L / 2 - 0.08 * L, -1, 0.0, 0, x => 0.3, []), new Armament.EndLine(hx0 + 0.5, +1, 0.0, 180, x => roof, hangarIds)],
             t => xs.Select(x => new Slot(x, lay.DeckHalfWidth(x) - Armament.BodyReach(t) - 0.6, 0.0)), depth);
@@ -640,7 +607,7 @@ public sealed class CarrierStyle : Style
         foreach (var (kind, count) in new[] { ("quad40", design.Aa?.Heavy ?? 0), ("single20", design.Aa?.Light ?? 0) })
         {
             double rr = Geometry.AaCfg[kind].R;
-            var cands = Vdc(24).Select(v => new Slot(hx0 + v * (hx1 - hx0), hhw - rr - 0.3, roof)).ToList();
+            var cands = Geometry.Vdc(24).Select(v => new Slot(hx0 + v * (hx1 - hx0), hhw - rr - 0.3, roof)).ToList();
             cands.AddRange(xs.Select(x => new Slot(x, lay.DeckHalfWidth(x) - rr - 0.5, 0.0)));
             Armament.PlaceAa(lay, aaOut, kind, count, cands, ignore: _ => hangarIds);
         }

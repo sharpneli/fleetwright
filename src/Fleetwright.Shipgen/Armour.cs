@@ -411,7 +411,7 @@ public static class Armour
                 inclined.Add(new InclinedPlate(zn.Id, "zone", zn.X0, zn.X1, bot, top, u0, u1, top, zn.Mm, zn.Material) { BottomMm = zn.BottomMm, TaperFrom = T });
             // the lower belt: the same plane on down to the inner bottom, so a shell falling into the space outboard of the
             // belt can't pass under its edge
-            double ibz = Powerplant.DoubleBottom(D);
+            double ibz = Geometry.DoubleBottom(D);
             if (bot - ibz > 0.1)
                 inclined.Add(new InclinedPlate("Lower belt", "belt", bx0, bx1, ibz, bot, u0 + (bot - ibz) * Math.Tan(double.DegreesToRadians(incline)), u0, top,
                     bb, ArmourMaterial(design, "belt")) { BottomMm = Math.Min(bb, LowerBeltFootMm), TaperFrom = bot });
@@ -462,7 +462,7 @@ public static class Armour
             {
                 foreach (var s in stack)
                     zs.Add(s.Z);
-                rz = Ordnance.Span(zs, Powerplant.DoubleBottom(D), roof?.Z ?? D).Top + D;
+                rz = Ordnance.Span(zs, Geometry.DoubleBottom(D), roof?.Z ?? D).Top + D;
             }
             // the deck nearest rz (MinBy: the first of equals)
             long n = stack[0].N;
@@ -473,7 +473,7 @@ public static class Armour
             if (sbDeck > 0)
                 decks.Add(new ArmourDeck { Deck = n, Mm = sbDeck, Extent = "steering", Z = rz, Asked = n, X0 = b0, X1 = b1, W = wbox,
                     Material = ArmourMaterial(design, "decks", sb.DeckMaterial) });
-            double floor = Math.Min(Powerplant.DoubleBottom(D), rz);
+            double floor = Math.Min(Geometry.DoubleBottom(D), rz);
             if (sbMm > 0)
                 strakes.Add(new Strake("Steering gear box", "box", "aft", sbMm, sbMm, b0, b1, floor, rz,
                     ArmourMaterial(design, "end_belts", sb.Material)));
@@ -510,7 +510,7 @@ public static class Armour
         // to the inner bottom: a shell falling through an unarmoured end stays inside the dry hull, so stopping them
         // short of the vital spaces' floor would leave a way in under them. Under the belt they're thinner
         // (BulkheadLowerShare)
-        double bhTop = top, citBot = Math.Min(bhBot, Powerplant.DoubleBottom(D)), bhMm = a.BulkheadMm ?? 0.6 * belt;
+        double bhTop = top, citBot = Math.Min(bhBot, Geometry.DoubleBottom(D)), bhMm = a.BulkheadMm ?? 0.6 * belt;
         foreach (var s in strakes)
             if (s.Kind == "upper" && s.Extent == "citadel" && (double.IsNaN(bhTop) || s.Top > bhTop))
                 bhTop = s.Top;
@@ -717,7 +717,7 @@ public static class Armour
         if (g.Armoured && lc > 0 && Math.Max(inMm, inMag) > 0)
         {
             // each side over the citadel, from the inner bottom to the armour deck; thicker beside the magazines
-            double floor = Powerplant.DoubleBottom(D), top = g.RoofZ ?? g.Waterline;
+            double floor = Geometry.DoubleBottom(D), top = g.RoofZ ?? g.Waterline;
             // their union: magazines side by side or one over another share a stretch of wall
             double mag = 0;
             foreach (var (m0, m1) in MergedSpans(geo?.MagazineSpans ?? []))
@@ -729,7 +729,7 @@ public static class Armour
         var (tds, layers, holding, layerMm) = Tds(design);
         if (tds > 0 && lc > 0)
         {
-            double floor = Powerplant.DoubleBottom(D);
+            double floor = Geometry.DoubleBottom(D);
             double top = g.RoofZ ?? g.Waterline;
             double mm = holding + (layers - 1) * layerMm;
             result.Add(new Weight("Torpedo protection", "armour", 2 * lc * Math.Max(0.0, top - floor) * mm / 1000 * Weight.Steel, xc, Zf(top, floor)));

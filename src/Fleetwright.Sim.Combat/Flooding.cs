@@ -35,7 +35,7 @@ public sealed class FloodModel
     public readonly double ReserveT, DisplacementT, DeckAtLcf, Complement;
 
     /// <summary>Tonnes a cubic metre of sea water.</summary>
-    public const double SeaT = Flotation.SeaT;
+    public const double SeaT = Weight.Seawater;
 
     public FloodModel(ShipClass c)
     {

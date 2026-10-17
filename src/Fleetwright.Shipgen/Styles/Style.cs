@@ -256,6 +256,19 @@ public abstract class Style
     }
 
     /// <summary>A string as validation messages quote it.</summary>
+    /// <summary>Carriers and merchants are built around something else; guns are fitted where they suit.</summary>
+    protected static List<string> GunsAreSecondaries(Style style, Design design)
+    {
+        var errs = new List<string>();
+        if (design.Main is { Count: > 0 })
+            errs.Add($"The {style.Name} style has no main battery: its guns are secondaries fitted where they suit. " +
+                     "Give them as \"secondary\": a battery or a list of batteries, each with \"count\" (or " +
+                     "\"per_side\") and \"where\": \"ends\" or \"sides\".");
+        errs.AddRange(Armament.BatteriesOf(design).Where(b => b.Where is not ("ends" or "sides"))
+            .Select(b => $"secondary.where = {Quote(b.Where)}: use ends or sides"));
+        return errs;
+    }
+
     public static string Quote(string? s) => s is null ? "null" : $"'{s}'";
 
     /// <summary>Checks beyond the numeric limits.</summary>

@@ -192,7 +192,7 @@ public static class Crew
         double L = hull.L, B = hull.B;
         double cb = design.BlockCoefficient;
         double D = res.Depth, T = res.Draught;
-        double db = Powerplant.DoubleBottom(D);
+        double db = Geometry.DoubleBottom(D);
         var plan = lay.Geo.Plant;
         double low = (plan is { Armoured: true } ? plan.Top : D) - db;
         double hullV = L * B * (T * cb + Math.Max(0.0, D - T) * Geometry.Cwp(cb)) - db * L * B * Geometry.Cwp(cb) * 0.9;
@@ -244,7 +244,7 @@ public static class Crew
     {
         string fuel = res.Plant.Tech.Fuel;
         double oil = fuel == "coal" ? 0.0 : res.Fuel * Powerplant.Fuels[fuel].Stowage;
-        double tank = Powerplant.DoubleBottom(res.Depth) * lay.Hull.L * lay.Hull.B * design.BlockCoefficient * 0.6;
+        double tank = Geometry.DoubleBottom(res.Depth) * lay.Hull.L * lay.Hull.B * design.BlockCoefficient * 0.6;
         return Math.Max(0.0, tank - oil);
     }
 
@@ -257,7 +257,7 @@ public static class Crew
         double endurance = c.EnduranceDays ?? Math.Max(1L, rangeDays);
         var s = c.Standard;
         var (deps, n, officers) = Complement(lay, res, style.CrewExtra(design), style.CrewDeckK, c.OfficerFraction, s.HotelFraction);
-        double hAvail = res.Depth - Powerplant.DoubleBottom(res.Depth);
+        double hAvail = res.Depth - Geometry.DoubleBottom(res.Depth);
         var nd = NeedsOf(c, endurance, n, officers, hAvail);
         var room = SpaceOf(lay, design, res);
         double waterTanks = TankRoom(lay, design, res);

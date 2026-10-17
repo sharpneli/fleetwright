@@ -456,6 +456,32 @@ public static class Geometry
     /// <summary>m between decks: the deck stack, raised stretches of hull and superstructure levels share it.</summary>
     public const double DeckPitch = 2.6;
 
+    const double DoubleBottomFrac = 0.07;
+    const double DoubleBottomMin = 1.0;
+
+    /// <summary>The inner bottom's height above the keel in a hull depth deep.</summary>
+    public static double DoubleBottom(double depth) => Math.Max(DoubleBottomMin, DoubleBottomFrac * depth);
+
+    /// <summary>0, 1/2, 1/4, 3/4, 1/8, ...: positions that spread evenly however many get used.</summary>
+    public static List<double> Vdc(int n)
+    {
+        var result = new List<double>();
+        for (int i = 0; i < n; i++)
+        {
+            int k = i;
+            long d = 2;
+            double v = 0.0;
+            while (k != 0)
+            {
+                v += (double)(k & 1) / d;
+                k >>= 1;
+                d *= 2;
+            }
+            result.Add(v);
+        }
+        return result;
+    }
+
     /// <summary>How much higher each superfiring tier stands than the one it fires over, for a turret th tall.</summary>
     public static double SuperfireStep(double th) => 2.0 + 0.2 * th;
 

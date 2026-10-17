@@ -58,8 +58,6 @@ public static class Powerplant
     const double GroupK = 0.05;
     const double RoomGangway = 2.0;
     public const double SteelFrame = 0.92;
-    const double DoubleBottomFrac = 0.07;
-    const double DoubleBottomMin = 1.0;
 
     public static readonly IReadOnlyDictionary<string, (double Lhv, double Stowage)> Fuels =
         new Dictionary<string, (double, double)>(StringComparer.Ordinal)
@@ -226,8 +224,6 @@ public static class Powerplant
         return kw * r.Sfc * CurveMult(curve, f) / 1000.0;
     }
 
-    public static double DoubleBottom(double depth) => Math.Max(DoubleBottomMin, DoubleBottomFrac * depth);
-
     /// <summary>The machinery space for an inside width w_avail and a height h_avail.</summary>
     public static MachinerySpace Space(PlantSpec p, double shp, double wAvail, double hAvail)
     {
@@ -275,14 +271,14 @@ public static class Powerplant
         {
             if (p.Bunkers == "wing")
             {
-                wing = Math.Min(left, 2 * p.WingBunkerM * length * (depth - DoubleBottom(depth)) * 0.9 / stow);
+                wing = Math.Min(left, 2 * p.WingBunkerM * length * (depth - Geometry.DoubleBottom(depth)) * 0.9 / stow);
                 left -= wing;
             }
             wEnd = wAvail + (p.Bunkers == "wing" ? 2 * p.WingBunkerM : 0.0);
         }
         else
         {
-            double db = DoubleBottom(depth) * shipL * shipB * cb * 0.6 / stow;
+            double db = Geometry.DoubleBottom(depth) * shipL * shipB * cb * 0.6 / stow;
             double layers = 2 * 0.5 * tds * 0.6 * shipL * draught / stow;
             left = Math.Max(0.0, left - db - layers);
             wEnd = wAvail;

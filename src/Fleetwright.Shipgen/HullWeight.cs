@@ -153,7 +153,7 @@ public static class HullWeight
     public static HullStructure HullStructure(Design design, double L, double B, double cb, double D, double full, ArmourLayout arm,
         StrengthDeck? above, IReadOnlyList<RaisedStretch> raised, Topside? topside = null)
     {
-        double nInt = StackDeck * Math.Max(0.0, (D - Powerplant.DoubleBottom(D) - Decks.MinTier) / Geometry.DeckPitch);
+        double nInt = StackDeck * Math.Max(0.0, (D - Geometry.DoubleBottom(D) - Decks.MinTier) / Geometry.DeckPitch);
         var (lo, hi) = InnerBottomT;
         double inner = Math.Min(1.0, Math.Max(0.0, (full - lo) / (hi - lo)));
         // the armour decks amidships, each as the plate it is over the breadth: a sloped deck's flat only over its share,
