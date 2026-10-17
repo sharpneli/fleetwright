@@ -161,18 +161,28 @@ public static class Effects
             if (t.Burst != BurstKind.Outside && shell.Fragments is { } f)
                 Pieces(c, k, path, t, f.Of(t.Outcome == Outcome.LowOrder), shell, s, water, ref res, ref r);
         }
+        else if (t.Broken && shell.Fragments is not null)
+        {
+            // E2: holed in pieces, which go on through the hole: a weak burst just behind the plate, no blast
+            var weak = t;
+            (weak.BurstT, weak.Force, weak.Burst) = (xs[t.Plate].T + 0.1, s.BrokenShare, BurstKind.Inside);
+            Burst(c, k, hit, path, weak, s, propellant, w, size, ref res, ref r, broken: true);
+        }
         k.CrewLost += res.CrewLost;
         return res;
     }
 
-    /// <summary>A burst at its point along the path, with its force.</summary>
+    /// <summary>A burst at its point along the path, with its force. Broken (E2): a shell's pieces through a plate it
+    /// holed, a weak burst of its fragments at the force's share and nothing else: no blast, no crew in its radii (E6's),
+    /// no fire; the part they're in takes them, and an enclosed turret or barbette they're in is a flash source.</summary>
     static void Burst(ShipClass c, ShipCondition k, in Hit hit, HitPath path, in TerminalResult t, SimSettings s,
-        double propellant, double w, double size, ref EffectsResult res, ref RandomStream r)
+        double propellant, double w, double size, ref EffectsResult res, ref RandomStream r, bool broken = false)
     {
         var shell = hit.Shell;
         var xs = path.Crossings;
         var p = path.At(t.BurstT);
-        double force = t.Force, rw = s.WreckRadiusK * size * Math.Sqrt(force), rb = s.BlastRadiusK * size * Math.Sqrt(force);
+        double force = t.Force, rw = broken ? 0 : s.WreckRadiusK * size * Math.Sqrt(force), rb = broken ? 0 : s.BlastRadiusK * size * Math.Sqrt(force);
+        double share = broken ? force : 1;   // the fragments' share of a full burst's
         int cell = -1, part = -1;
         foreach (ref readonly var x in xs)
         {
@@ -192,14 +202,22 @@ public static class Effects
         // the burst's fragments (E1): a low-order burst's are fewer, slower and larger; they fly with the shell's motion
         var frag = shell.Fragments?.Of(t.Outcome == Outcome.LowOrder);
         var fdir = path.LegOf(path.Leg(t.BurstT)).Direction;
+        var comps = c.Components;
         int magazine = -1, turret = -1;   // the magazine room it burst in or beside, the enclosed mount it burst in
         var via = MagazineVia.None;
 
-        // the part it burst in
+        // the part it burst in: wrecked; or the part its pieces got into, struck by them from inside its plates
         if (part >= 0)
         {
             res.Part = part;
-            Count(ref res, k, part, k.Worsen(part, PartState.Destroyed) ? PartState.Destroyed : PartState.Ok);
+            if (!broken)
+                Count(ref res, k, part, k.Worsen(part, PartState.Destroyed) ? PartState.Destroyed : PartState.Ok);
+            else if (frag is not null)
+            {
+                double inside = share * frag.Hits(p, fdir, t.BurstMs, comps[part].Bounds, 0);
+                if (inside > 1e-4 && r.NextDouble() < 1 - Math.Exp(-inside * s.PartVital[Math.Min((int)comps[part].Kind, s.PartVital.Length - 1)]))
+                    Count(ref res, k, part, k.Harm(part) ? k.State[part] : PartState.Ok);
+            }
             if (c.MountOf(part) is int m and >= 0 && Enclosed(c, m))
                 turret = m;
         }
@@ -207,8 +225,9 @@ public static class Effects
         // parts: within the wreck radius wrecked or out of action, unless armour its fragments don't get through boxes
         // them; beyond it, damaged by the fragments that get into them: in the hull those in the burst's own space (a
         // space's next door, through its join, below), outside it those on deck
-        var comps = c.Components;
         var cellBox = inHull ? c.Cells[cell].Box : default;
+        // burst inside a part (a gunhouse, a barbette, a superstructure block), its fragments leave through its own walls
+        double around = part >= 0 ? PartMild(c, part, Armour(c, part)) : 0;
         for (int i = 0; i < comps.Length; i++)
         {
             if (i == part)
@@ -222,7 +241,7 @@ public static class Effects
             double raw = Armour(c, i);
             // the fragments into it, through its armour and its own plating: any at all and its armour doesn't box it; its
             // vitals' share of them damage it (one draw for both, the second a subset of the first)
-            double into = frag?.Hits(p, fdir, t.BurstMs, comp.Bounds, PartMild(c, i, raw)) ?? 0;
+            double into = share * (frag?.Hits(p, fdir, t.BurstMs, comp.Bounds, around + PartMild(c, i, raw)) ?? 0);
             double u = into > 1e-4 ? r.NextDouble() : 1;
             bool pierced = u < 1 - Math.Exp(-into), struck = u < 1 - Math.Exp(-into * s.PartVital[Math.Min((int)comp.Kind, s.PartVital.Length - 1)]);
             if (raw > 0 && !pierced)
@@ -273,7 +292,7 @@ public static class Effects
                     _ => 0,
                 } + InclinedMild(c, p, Nearest(there, p));
                 var normal = n.Join == JoinKind.Deck ? new P3(0, 0, 1) : Touch(c.Cells[cell].Box, there) ? new P3(0, 1, 0) : new P3(1, 0, 0);
-                double into = frag?.Hits(p, fdir, t.BurstMs, there, join, normal) ?? 0;
+                double into = share * (frag?.Hits(p, fdir, t.BurstMs, there, join, normal) ?? 0);
                 if (!(into > 1e-4 && r.NextDouble() < 1 - Math.Exp(-into)))
                     continue;
                 if (n.Join != JoinKind.Open)
@@ -285,7 +304,7 @@ public static class Effects
                     ref readonly var comp = ref comps[j];
                     if (j == part || !Overlaps(comp.Bounds, there) || Overlaps(comp.Bounds, cellBox) || Distance(c, j, p) <= rw)
                         continue;
-                    double hits = frag?.Hits(p, fdir, t.BurstMs, comp.Bounds, join + PartMild(c, j, Armour(c, j)), normal) ?? 0;
+                    double hits = share * (frag?.Hits(p, fdir, t.BurstMs, comp.Bounds, join + PartMild(c, j, Armour(c, j)), normal) ?? 0);
                     if (hits > 1e-4 && r.NextDouble() < 1 - Math.Exp(-hits * s.PartVital[Math.Min((int)comp.Kind, s.PartVital.Length - 1)]))
                         Count(ref res, k, j, k.Harm(j) ? k.State[j] : PartState.Ok);
                 }
@@ -308,7 +327,7 @@ public static class Effects
         // fire, by what burns where it burst
         double load = part >= 0 ? s.FireLoadSuperstructure : inHull ? (Terminal.IsMachinery(c, cell) ? s.FireLoadMachinery : s.FireLoadHull) : s.FireLoadHull;
         double era = s.FireLoadByEra[Math.Clamp((int)c.Era, 0, s.FireLoadByEra.Length - 1)];
-        double chance = s.FireChance[Math.Clamp((int)shell.Kind, 0, s.FireChance.Length - 1)] * load * era * Math.Min(1.5, 0.5 + 0.5 * Math.Cbrt(w / 10)) *
+        double chance = broken ? 0 : s.FireChance[Math.Clamp((int)shell.Kind, 0, s.FireChance.Length - 1)] * load * era * Math.Min(1.5, 0.5 + 0.5 * Math.Cbrt(w / 10)) *
                         (t.Burst == BurstKind.Outside ? s.FireOutsideShare : 1);
         if (r.NextDouble() < chance)
         {

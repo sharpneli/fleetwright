@@ -43,6 +43,32 @@ public class DamageTests(ITestOutputHelper output)
         return r;
     }
 
+    /// <summary>E2 of docs/battle/shells-armour-damage.md: a shell that holes a plate in pieces bursts weakly behind it;
+    /// into an enclosed turret or its barbette its pieces are a flash source for the magazine (Seydlitz at Dogger Bank),
+    /// as a burst there is.</summary>
+    [Fact]
+    public void A_shell_holed_through_in_pieces_bursts_weakly_and_can_flash_a_turret()
+    {
+        int broken = 0, brokenHarm = 0, turret = 0, flashed = 0;
+        Hits("seydlitz", "lion", 0, 10_000, 3000, 1, each: (_, path, t, e) =>
+        {
+            if (!t.Broken)
+                return;
+            broken++;
+            brokenHarm += e.Damaged + e.Disabled + e.Destroyed;
+            if (path.Crossings[t.Plate].Plate is PlateKind.TurretFace or PlateKind.TurretSide or PlateKind.TurretRear or PlateKind.TurretRoof or PlateKind.Barbette)
+            {
+                turret++;
+                flashed += e.Magazine && e.MagazineVia == MagazineVia.Turret ? 1 : 0;
+            }
+        });
+        output.WriteLine($"  broken {broken}: {brokenHarm} parts harmed; into a turret or barbette {turret}, flashed {flashed}");
+        Assert.True(broken > 30, "Lion's 13.5\" holes Seydlitz's armour in pieces now and then");
+        Assert.True(brokenHarm > broken / 4, "the pieces do something behind the plate");
+        Assert.True(turret > 10);
+        Assert.InRange((double)flashed / turret, 0.05, 0.5);   // the turret's flash chance, 0.25
+    }
+
     [Fact]
     public void Heavy_AP_mostly_passes_through_a_destroyer_and_HE_bursts()
     {

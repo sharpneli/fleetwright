@@ -305,6 +305,7 @@
   "PlugCalibres": 0.7,
   "PieceQuality": 0.6,
   "PieceMinMs": 30,
+  "BrokenShare": 0.15,
   "FireChance": [0.15, 0.30, 0.45],
   "FireLoadByEra": [1.6, 1.2, 1, 1, 1],
   "FireLoadSuperstructure": 1.3,

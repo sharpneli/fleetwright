@@ -68,8 +68,12 @@ public struct TerminalResult
     public int Glance;
     public double TurnDeg;
     /// <summary>E1: the shell's speed when it burst, m/s (0 against a plate that stopped it): its fragments fly with it,
-    /// the side ring leaning forward, and the nose slug and base plug go on at it.</summary>
+    /// the side ring leaning forward, and the nose slug and base plug go on at it. E2: for a shell that holed a plate in
+    /// pieces (<see cref="Outcome.Holed"/>, <see cref="Outcome.BrokeUp"/>), its pieces' speed through the hole.</summary>
     public double BurstMs;
+
+    /// <summary>E2: a shell that holed a plate in pieces, which go on through the hole (<see cref="Plate"/>).</summary>
+    public readonly bool Broken => Outcome is Outcome.Holed or Outcome.BrokeUp && Plate >= 0;
 
     public readonly bool Bursts => Burst != BurstKind.None;
 }
@@ -248,7 +252,7 @@ public static class Terminal
                 double u = v / vl;
                 if (u >= mat.HoledU)
                 {
-                    (res.Outcome, res.Burst, res.BurstT, res.StopT) = (Outcome.Holed, BurstKind.None, double.NaN, x.T + 0.5);
+                    (res.Outcome, res.Burst, res.BurstT, res.StopT, res.BurstMs) = (Outcome.Holed, BurstKind.None, double.NaN, x.T + 0.5, 0);
                     return res;
                 }
                 if (u >= mat.SpallU)
@@ -284,8 +288,8 @@ public static class Terminal
             {
                 // shattered, only its pieces pass the hole; broken just over the limit, the body goes on in pieces
                 res.BrokeNearLimit = near;
-                (res.Plate, res.Outcome, res.Burst, res.BurstT, res.StopT) =
-                    (i, shatter ? Outcome.Holed : Outcome.BrokeUp, BurstKind.None, double.NaN, x.T + (shatter ? 0.5 : 1));
+                (res.Plate, res.Outcome, res.Burst, res.BurstT, res.StopT, res.BurstMs) =
+                    (i, shatter ? Outcome.Holed : Outcome.BrokeUp, BurstKind.None, double.NaN, x.T + (shatter ? 0.5 : 1), v);
                 return res;
             }
             if (inPlate)

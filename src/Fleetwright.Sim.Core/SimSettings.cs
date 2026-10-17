@@ -836,6 +836,12 @@ public sealed record SimSettings
     public double PieceQuality { get; init; } = 0.6;
     public double PieceMinMs { get; init; } = 30;
 
+    /// <summary>E2: a shell that holed a plate in pieces (holed, shattered through, or broken just over the limit) bursts
+    /// weakly at the plate: its fragments (E1's field) at this share of a full burst's, from just behind the plate at its
+    /// pieces' speed, no blast and no fire (damage/16 §4.3: "about 0.15×"). Into an enclosed turret or its barbette, a
+    /// flash source for the magazine as a burst there is (Seydlitz at Dogger Bank).</summary>
+    public double BrokenShare { get; init; } = 0.15;
+
     /// <summary>Fire: a burst's chance by the shell's kind (AP, common, HE), times the fire load where it bursts (by the
     /// look's era: Victorian, Great War, treaty, WWII, Cold War; and in superstructure, machinery or the rest of the
     /// hull), times the burst's size (0.5 + 0.5 times the cube root of W over 10 kg, at most 1.5), and this share when

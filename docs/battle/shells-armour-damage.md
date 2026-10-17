@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0 and E1 done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E2 done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1238,13 +1238,39 @@ squadrons, and changes `Matchup.cs` with it.
       crew a hit 1.8 → 1.5, magazines set off by the hit 0.85 → 0.55%; Lion under Derfflinger's 30.5 cm magazines
       0.45 → 0.15%; the battleship under thirty 6" HE hits speed 91 → 90%, power 75 → 69%, directors 0.6 → 0.3 of 1.
       Matchup: lion v seydlitz 1.063 → 1.267, arethusa:4 v iron_duke 1.295 → 1.173 (the splinter plate). Squadrons'
-      30 minutes: hits 175 → 200, Princess Royal no longer lost to her magazine, hash 972F94C3DFA06E70 → B788B53E9CFE8A60.
+      30 minutes: hits 175 → 172, Princess Royal no longer lost to her magazine, hash 972F94C3DFA06E70 →
+      2E3BE648293AB0DF (E1's commit message gave an earlier build's 200 hits and B788B53E9CFE8A60).
       Cost a hit: V25 −8%, Iron Duke −14% (the old radius loop ran over every part), the battleship under HE +10%.
     - **Goldens** gain `filler.body`, the materials' `fragments` and version 5 (ShipDesign.Version 26); 372 of 372.
 - **E2 Holed but broken.**
   - The broken shell's pieces through the hole: E1's field at about 0.15×, no full burst (16 §4.3: a weak burst at the
     plate).
   - On a gunhouse, working chamber or barbette, a flash source for the magazine roll (Seydlitz at Dogger Bank).
+  - **Done 2026-10-17.** What it came to:
+    - **Which shells:** `Holed` (holed between the plate's holing limit and its Navy limit, or shattered through) and
+      `BrokeUp` (broken getting through just over the limit): `TerminalResult.Broken`, with `BurstMs` their pieces'
+      speed (0 for one holed under the limit, the residual for one through).
+    - **The weak burst:** `Effects.Burst` with `broken`, 0.1 m behind the plate: E1's fragments at `BrokenShare`
+      (0.15) of their count, at the pieces' speed; no wreck or blast radius (so no crew from it until E6), no fire, no
+      slug or plug. The part the pieces are in takes them from inside (at its vital share); the rooms of the space
+      they're in at 0.15 of their vitals (RoomChance at force 0.15, no wreck area).
+    - **The flash:** pieces in an enclosed turret or its barbette roll the turret's flash (`TurretFlashChance` ×
+      the side's propellant), as a burst there does; in a magazine, the magazine's. No new chance: the roll is the
+      charges', and hot pieces among them are a source as a burst is (Seydlitz: a 13.5" holed the barbette and its
+      pieces fired the working chamber's charges).
+    - **On the way, for bursts too:** fragments from inside a part (a gunhouse, a barbette, a superstructure block)
+      leave through its own walls: its armour and plating stand before every other part (E1 let them out through
+      nothing).
+    - **Matchup:** unchanged. It already counts a shell the armour keeps out, shattered ones included, at
+      MatchupKeptShare (0.15), which is what a broken shell's pieces do; it has no turret flash of its own.
+    - **Benches, before and after** (2,000 hits each; outcomes identical): magazines set off by the turret or barbette,
+      Seydlitz under Lion's 13.5" at 10 km 0.65 → 1.15% of hits, Iron Duke under Seydlitz's 28 cm 0.55 → 1.05%, Lion
+      under Derfflinger's 30.5 cm 0.15 → 0.65% (Jutland's British battlecruisers lost three to the flash in about 55
+      heavy hits, ~5%: more flash than this is still history's); everything else within a point. Matchup identical.
+      Squadrons' 30 minutes: 172 → 158 hits, Princess Royal and Lion both lost to their magazines (Lützow's and
+      Derfflinger's hits), hash 2E3BE648293AB0DF → 819E0F52B7BCB4A4.
+    - **Test:** `DamageTests.A_shell_holed_through_in_pieces_bursts_weakly_and_can_flash_a_turret` (Lion on Seydlitz,
+      3,000 hits: 579 broken, 462 parts harmed by them; 121 into a turret or barbette, 17 flashed).
 - **E3 Behind a plate that held** (14). Not a burst: no gas, no shock, no fire, no breach.
   - **Triggers:** a shell stopped or shattered with u between the material's `back.spall_u` and `back.holed_u`
     (severity s through the band; shattered against its shattered limit); a heavy ricochet off a thin roof (about 30%
@@ -1415,7 +1441,7 @@ None blocks a step; each is settled by its step's bench.
 | P7 | P0 | gratings, backing | scatter | plates |
 | E0 | — | joints, shock grade (done) | compiled (done) | no |
 | E1 | S1, P0 | `filler.body`, the material's `fragments` (done) | the burst's pieces, THOR, `frag` bench (done) | fragments |
-| E2 | P4, E1 | — | holed-but-broken, flash | damage |
+| E2 | P4, E1 | — | holed-but-broken, flash (done) | damage |
 | E3 | P4, E1 | — | spall | damage behind armour |
 | E4 | E0, P1a | — | turret states, belt leaks, armour shock | jams, leaks, outages |
 | E5 | E0, E1 | — | open and confined blast, `burst` bench | wreck reach, openings, leaks |
