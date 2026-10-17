@@ -268,12 +268,15 @@ public sealed record MaterialInput
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
-/// <summary>materials.NAME.face_hardened: the hard face's share of the plate's thickness, and the thinnest plate made
-/// face-hardened, mm (under max(it, 0.3 calibres) the plate has no face-hardened advantage).</summary>
+/// <summary>materials.NAME.face_hardened: the hard face's share of the plate's thickness, the thinnest plate made
+/// face-hardened, mm (under max(it, 0.3 calibres) the plate has no face-hardened advantage), and whether the face
+/// shatters a bare-nosed steel shell (true when not given; compound's steel face shatters only chilled shot, which its
+/// own body's limits break).</summary>
 public sealed record FaceInput
 {
     public double? Share { get; init; }
     public double? MinMm { get; init; }
+    public bool? Shatters { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

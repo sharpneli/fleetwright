@@ -218,6 +218,16 @@ static class Kinds
         _ => throw Unknown("fuze position", s),
     };
 
+    public static Cap CapOf(string s) => s switch
+    {
+        "none" => Cap.None,
+        "soft" => Cap.Soft,
+        "hard" => Cap.Hard,
+        "hard2" => Cap.Hard2,
+        "break_away" => Cap.BreakAway,
+        _ => throw Unknown("cap", s),
+    };
+
     /// <summary>TRANSITIONAL (S0 to P3 of docs/battle/shells-armour-damage.md): a shell's outcome-table row.</summary>
     public static ShellQuality ShellQualityOf(string s) => s switch
     {

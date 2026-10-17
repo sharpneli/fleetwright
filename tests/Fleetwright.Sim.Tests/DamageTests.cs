@@ -123,7 +123,7 @@ public class DamageTests(ITestOutputHelper output)
     public void A_shell_under_water_bleeds_speed_by_its_run_and_a_diving_one_keeps_it_longer()
     {
         var (shell, _) = Shell(Class("super_dreadnought"), 0);
-        double l = WaterRun.DecayM(shell, Settings), ld = WaterRun.DecayM(shell with { Diving = true }, Settings);
+        double l = WaterRun.DecayM(shell, Settings), ld = WaterRun.DecayM(shell with { Cap = Cap.BreakAway }, Settings);
         Assert.Equal(shell.CalibreMm / 1000 * Settings.UnderwaterDecayCalibres, l, 9);
         Assert.Equal(2 * l, ld, 9);
         Assert.Equal(500, WaterRun.Speed(500, 0, l));
@@ -284,7 +284,8 @@ public class DamageTests(ITestOutputHelper output)
     {
         var w = World("dreadnought", out int c, Settings with { MagazineFlashChance = 1, TurretFlashChance = 1 });
         var cls = Class("dreadnought");
-        var (shell, _) = Shell(Class("super_dreadnought"), 0);
+        // a WWII shell (proofed to 30° on a calibre of plate): a WWI British one shatters on her belt at this fall (P2)
+        var (shell, _) = Shell(Class("kgv"), 0);
         w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
         w.AdvanceTo(w.Time + 1000);
         var rng = RandomStream.Named(2, "test magazine hits");

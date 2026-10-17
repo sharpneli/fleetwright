@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Fleetwright.Shipgen;
 
 /// <summary>The shells as design data (docs/battle/shells-armour-damage.md phase S): the design's `ammunition` table of
@@ -232,7 +234,8 @@ public static class Ammunition
             resolved.Add(new ShellReport
             {
                 Ammo = name, Kind = a.Kind!, Share = share, MassKg = masses[k], MuzzleVelocityMs = mv ?? MuzzleVelocity(heavyMs, heavyKg, masses[k]),
-                FormFactor = a.FormFactor!.Value, Cap = a.Cap?.Kind ?? "none", FillerKg = masses[k] * a.Filler.Share!.Value,
+                FormFactor = a.FormFactor!.Value, Cap = a.Cap?.Kind ?? "none", CapShare = a.Cap?.Share ?? 0, BreakObDeg = a.Body?.BreakObDeg ?? 90,
+                BreakTD = a.Body?.BreakTD ?? 0, BodyQuality = a.Body?.Quality ?? 1, FillerKg = masses[k] * a.Filler.Share!.Value,
                 Explosive = x.Name ?? "", FillerRe = x.Re ?? 1, Booster = a.Filler.Booster ?? "basic", Fuze = a.Fuze!.Position!,
                 FuzeDelayS = a.Fuze.DelayS ?? 0, Outcomes = a.Outcomes!,
             });
@@ -334,8 +337,10 @@ public static class Ammunition
 /// its gun, and the outfit.</summary>
 public sealed record BatteryShells(string Battery, int Index, double CalibreMm, double CalibreLength, List<ShellReport> Shells);
 
-/// <summary>One shell of a battery's outfit, resolved: its share of the rounds, mass, muzzle velocity, drag, cap,
-/// filler (kg, the explosive, its TNT equivalent and the booster), fuze and (transitional) outcome row.</summary>
+/// <summary>One shell of a battery's outfit, resolved: its share of the rounds, mass, muzzle velocity, drag, cap (its
+/// kind and share of the mass), body (the obliquity and T/D past which it breaks up on face-hardened plate, 90° and 0
+/// when the block gives none, and its quality on that plate), filler (kg, the explosive, its TNT equivalent and the
+/// booster), fuze and (transitional) outcome row.</summary>
 public sealed record ShellReport
 {
     public required string Ammo { get; init; }
@@ -345,6 +350,10 @@ public sealed record ShellReport
     public double MuzzleVelocityMs { get; init; }
     public double FormFactor { get; init; }
     public required string Cap { get; init; }
+    public double CapShare { get; init; }
+    public double BreakObDeg { get; init; }
+    [JsonPropertyName("break_t_d")] public double BreakTD { get; init; }
+    public double BodyQuality { get; init; }
     public double FillerKg { get; init; }
     public required string Explosive { get; init; }
     public double FillerRe { get; init; }

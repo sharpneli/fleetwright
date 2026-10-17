@@ -237,9 +237,21 @@ public enum Fuze : byte
     Nose,
 }
 
-/// <summary>How well a navy's shells of a time behave on armour: a row of the outcome table (duds, breaking up,
-/// bursting in the plate), named as in research/simulation/damage-research/gunfire_ref.py OUTCOME. The numbers come
-/// with the terminal model (4.3a), in its settings.</summary>
+/// <summary>A shell's cap (docs/battle/shells-armour-damage.md P2): none, soft (Makarov's, torn off past 15-20° of
+/// obliquity), a hard cap soldered on (Type 1) or with Krupp's strong solder (Type 2: about twice the plate to knock
+/// off), or the IJN's break-away cap head (a hard cap that comes off on the water, and gives way past 45°).</summary>
+public enum Cap : byte
+{
+    None,
+    Soft,
+    Hard,
+    Hard2,
+    BreakAway,
+}
+
+/// <summary>How well a navy's shells of a time behave on armour: a row of the outcome table (duds, bursting in the
+/// plate, low-order), named as in research/simulation/damage-research/gunfire_ref.py OUTCOME. The numbers come with the
+/// terminal model (4.3a), in its settings.</summary>
 public enum ShellQuality : byte
 {
     Rn1916,
@@ -268,9 +280,18 @@ public readonly record struct ShellTypeRow
     public Fuze Fuze { get; init; }
     public double FuzeDelayS { get; init; }
     public ShellQuality Quality { get; init; }
+    /// <summary>Its cap, and the cap's share of the mass (lost with the cap).</summary>
+    public Cap Cap { get; init; }
+    public double CapShare { get; init; }
+    /// <summary>The body: past this obliquity on face-hardened plate of this many calibres or more it breaks up (the proof
+    /// it was made to: RN 1914 15° on 0.4, Greenboy 20° on 0.67, US late 45° on 1.2), and its quality there, the
+    /// multiplier on the plate it beats (armor/02 §4.6, 0.85-1.11).</summary>
+    public double BreakObDeg { get; init; }
+    public double BreakTD { get; init; }
+    public double BodyQuality { get; init; }
     /// <summary>A diving shell (the IJN's Type 88/91): its cap head comes off on the water, leaving a flat nose that runs
     /// true under it instead of tumbling, so it keeps its speed there longer (WaterRun).</summary>
-    public bool Diving { get; init; }
+    public bool Diving => Cap == Cap.BreakAway;
 }
 
 /// <summary>A shell type a battery carries, and its share of the rounds.</summary>
@@ -462,14 +483,14 @@ public readonly record struct ArmourLayer(double Mm, int Material);
 /// share of the formula's plate (WWII STS) it's worth against an 8" capped shell; face-hardened plate's calibre scaling
 /// k and its face (share, and the thinnest plate made so, mm); homogeneous plate's elongation, %. Absent: no scaling
 /// (k 0), not face-hardened (FaceMinMm NaN), elongation 25.</summary>
-public readonly record struct MaterialRow(double Q, double QScale, double FaceShare, double FaceMinMm, double ElongationPct)
+public readonly record struct MaterialRow(double Q, double QScale, double FaceShare, double FaceMinMm, double ElongationPct, bool FaceShatters)
 {
     const double EightIn = 8 * 25.4;
 
     public bool FaceHardened => !double.IsNaN(FaceMinMm);
 
     public static MaterialRow Of(MaterialInput m) => new(m.Q ?? 1, m.QScale ?? 0, m.FaceHardened?.Share ?? double.NaN,
-        m.FaceHardened is { } f ? f.MinMm ?? 0 : double.NaN, m.ElongationPct ?? 25);
+        m.FaceHardened is { } f ? f.MinMm ?? 0 : double.NaN, m.ElongationPct ?? 25, m.FaceHardened?.Shatters ?? true);
 
     /// <summary>The plate's worth as a share of its thickness against a shell of a calibre (00 §4.2's rules, all by the
     /// material's numbers): face-hardened plate q·(D/8")^−k past 8" (held at q below), and no face-hardened advantage

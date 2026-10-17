@@ -84,8 +84,10 @@ public class MatchupTests(ITestOutputHelper output)
     {
         Assert.InRange(Judge([E("iron_duke")], [E("iron_duke")]), 0.999, 1.001);
         Assert.InRange(Judge([E("iron_duke"), E("v25", 4)], [E("iron_duke"), E("v25", 4)]), 0.999, 1.001);
-        Assert.InRange(Judge([E("lion")], [E("derfflinger")]), 0.5, 2);
-        Assert.InRange(Judge([E("iron_duke")], [E("derfflinger")]), 0.5, 2);
+        // widened from 2 at P2 (user, 2026-10-17): British WWI shells no longer break up on plates that don't break them;
+        // their fuzes and in-plate bursts are P3's, which should pull these back (docs/battle/shells-armour-damage.md P2)
+        Assert.InRange(Judge([E("lion")], [E("derfflinger")]), 0.5, 2.5);
+        Assert.InRange(Judge([E("iron_duke")], [E("derfflinger")]), 0.5, 2.5);
         // two against one: about four times as confident (Lanchester's square law), a little less as the losses saturate
         Assert.InRange(Judge([E("iron_duke", 2)], [E("iron_duke")]), 2.5, 4.5);
     }

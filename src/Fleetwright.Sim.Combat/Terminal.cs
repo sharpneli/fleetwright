@@ -23,7 +23,7 @@ public enum Outcome : byte
     BurstOutside,
     /// <summary>Armed, but didn't burst.</summary>
     Dud,
-    /// <summary>Holed the plate and broke up.</summary>
+    /// <summary>Holed the plate and broke up: shattered on a face-hardened plate, or its body gave way.</summary>
     BrokeUp,
     /// <summary>Armed, but out of the far side before its delay ran out.</summary>
     BurstBeyond,
@@ -45,7 +45,9 @@ public enum BurstKind : byte
 /// <summary>The terminal model's answer for one hit: the outcome, the burst (where along the path, its kind and its
 /// force as a share of one inside), where the shell's body stopped (the line of flight's end: its burst, the plate
 /// that stopped it, or where it left the ship), the crossing that decided it (the plate that stopped, armed or burst
-/// it; -1 for none), whether it struck under water, and its speed there.</summary>
+/// it; -1 for none), whether it struck under water, and its speed there; and what the plates did to the shell on the
+/// way (P2): its cap knocked off, shattered on a face-hardened plate (its nose bare there, or the plate past its
+/// body's limits: whether it then got through or not), or broken getting through just over a plate's limit.</summary>
 public struct TerminalResult
 {
     public Outcome Outcome;
@@ -54,6 +56,7 @@ public struct TerminalResult
     public int Plate;
     public bool Underwater;
     public double StrikeMs;
+    public bool Decapped, Shattered, BrokeNearLimit;
 
     public readonly bool Bursts => Burst != BurstKind.None;
 }
@@ -67,12 +70,19 @@ public struct TerminalResult
 /// <see cref="SimSettings.PenSpread"/>, and for a common shell over <see cref="SimSettings.CommonPenShare"/>: through at
 /// or above it, slowed by Lambert-Jonas, √(v² − V_L²) (<see cref="Residual"/>: the plate costs the energy that just
 /// gets through it);</item>
+/// <item><b>the shell's state</b> (docs/battle/shells-armour-damage.md P2): a cap is knocked off by any face-hardened
+/// plate, or a homogeneous one over its threshold (<see cref="Decaps"/>), and its mass goes with it; within the gap
+/// behind (<see cref="CapGapCalibres"/>) the nose still meets the next plate as if capped. A face-hardened plate
+/// shatters a bare nose (uncapped, decapped, a soft cap past 15-20°, the cap head past 45°: <see cref="BareShare"/>) or
+/// a body past its proof (<see cref="ShatterChance"/>): the plate holds as if <see cref="ShatterBonus"/> thicker, and a
+/// shell that still gets through is broken up. The body's quality divides a face-hardened plate's thickness. Just over a
+/// plate's limit, a body may break getting through (<see cref="NearLimitBreak"/>, most at 45°);</item>
 /// <item><b>a nose fuze</b> bursts on the first plate: just inside it if it's under <see cref="SimSettings.HePenCalibres"/>
 /// (times √cos ob), outside if not;</item>
 /// <item><b>a base fuze</b> arms on a plate over Okun's threshold (<see cref="SimSettings.FuzeArmCalibres"/> at normal
 /// impact, less at obliquity), or on the machinery of a space it crosses (<see cref="SimSettings.MachineryArmChance"/>).
 /// Armed, the quality row decides: a burst after the delay distance (the delay times the residual velocity), in the
-/// plate, low-order, a dud, or broken up. A plate it can't get through stops it: about to burst, it bursts there; not
+/// plate, low-order, or a dud. A plate it can't get through stops it: about to burst, it bursts there; not
 /// armed, it's defeated, or glances off past <see cref="SimSettings.RicochetFromDeg"/>, bursting outside or not as the
 /// reference rolls; out of the far side before its delay runs out, it bursts beyond;</item>
 /// <item><b>under water:</b> a shell that met the sea before the hull strikes at the speed its run there left it
@@ -99,6 +109,12 @@ public static class Terminal
         v = WaterRun.Speed(v, hit.WaterRunM, decayM);
         res.StrikeMs = v;
         bool waterFuze = res.Underwater && WaterRun.FuzeStarts(shell, s);
+
+        // the cap: on (a diving shell's cap head comes off on the water), or lost at a plate, with the gap behind it in
+        // which the nose still meets a plate as if capped
+        var cap = res.Underwater && shell.Cap == Cap.BreakAway ? Cap.None : shell.Cap;
+        double massKg = cap == shell.Cap ? shell.MassKg : shell.MassKg * (1 - shell.CapShare);
+        double capOffT = double.NaN, capGapM = 0;
 
         for (int i = 0; i < xs.Length; i++)
         {
@@ -142,9 +158,26 @@ public static class Terminal
                     : Burst(ref res, Math.Max(x.T - 0.3, 0), s.BurstOutsideK, Outcome.BurstOutside, BurstKind.Outside);
             }
 
-            // the plate as this shell meets it: its resistance drawn, and a common shell's weaker body
+            // the plate as this shell meets it: its resistance drawn, and a common shell's weaker body; on face-hardened
+            // plate the body's quality, and the face shattering a bare nose or a body past its limits
             double te = t * r.NextDouble(1 - s.PenSpread, 1 + s.PenSpread) / (shell.Kind == ShellKind.Common ? s.CommonPenShare : 1);
-            double vl = LimitMs(shell, te, ob);
+            double td = x.Mm / calMm;
+            bool hard = x.Material >= 0 && c.MaterialOf(x.Material).FaceHardened, shatter = false;
+            if (hard)
+            {
+                double p = ShatterChance(shell, c.MaterialOf(x.Material).FaceShatters, td, ob, x.T - capOffT < capGapM ? 0 : BareShare(cap, ob), s);
+                shatter = p >= 1 || p > 0 && r.NextDouble() < p;
+                te = FaceHardMm(te, shell, ob, shatter, s);
+            }
+            double vl = LimitMs(te, calMm, massKg, ob);
+            if (cap != Cap.None && (hard || Decaps(cap, td, ob, ref r)))
+            {
+                // the cap's knocked off, whether the plate holds or not
+                (capOffT, capGapM, cap) = (x.T, CapGapCalibres(cap, ob) * calMm / 1000, Cap.None);
+                massKg *= 1 - shell.CapShare;
+                res.Decapped = true;
+            }
+            res.Shattered |= shatter;
             if (v < vl)
             {
                 // stopped here: about to burst, it bursts against the plate, this side of it; a dud lies there; never
@@ -161,7 +194,15 @@ public static class Terminal
                     (res.Burst, res.BurstT, res.Force) = (BurstKind.Outside, Math.Max(x.T - 0.3, 0), s.BurstOutsideK);
                 return res;
             }
+            // through: shattered, it's in pieces; just over the limit, the body may give way
+            bool near = !shatter && v < s.NearLimitBand * vl && td >= s.BreakFromTD && r.NextDouble() < NearLimitBreak(ob, s);
             v = Residual(v, vl);
+            if (shatter || near)
+            {
+                res.BrokeNearLimit = near;
+                (res.Plate, res.Outcome, res.Burst, res.BurstT, res.StopT) = (i, Outcome.BrokeUp, BurstKind.None, double.NaN, x.T + 1);
+                return res;
+            }
             if (!armed && t >= FuzeArmMm(calMm, ob, s))
             {
                 armed = true;
@@ -172,8 +213,9 @@ public static class Terminal
         return Gone(ref res, armed, path.Length);
     }
 
-    /// <summary>Armed at T with velocity v: the quality row's roll. A burst in the plate or a break-up decides now
-    /// (true); a burst after the delay (or low-order) sets where; a dud goes on.</summary>
+    /// <summary>Armed at T with velocity v: the quality row's roll (the fuze's and the filler's failures; the body's are
+    /// the plates'). A burst in the plate decides now (true); a burst after the delay (or low-order) sets where; a dud
+    /// goes on.</summary>
     static bool Arm(ref TerminalResult res, ref RandomStream r, SimSettings s, in ShellTypeRow shell, double t, double v, int i, ref double burstT,
         ref double force)
     {
@@ -193,14 +235,8 @@ public static class Terminal
             Burst(ref res, t + 0.01, s.BurstInPlateK, Outcome.BurstInPlate, BurstKind.InPlate);
             return true;
         }
-        x -= row.InPlate;
-        if (x < row.Dud)
-        {
-            res.Outcome = Outcome.Dud;
-            return false;
-        }
-        (res.Outcome, res.StopT) = (Outcome.BrokeUp, t + 1);
-        return true;
+        res.Outcome = Outcome.Dud;
+        return false;
     }
 
     /// <summary>The walk's end with nothing more in the way: about to burst, beyond the far side; a dud, as it is;
@@ -269,6 +305,64 @@ public static class Terminal
         double r = double.DegreesToRadians(Math.Min(obliquityDeg, 61));
         return s.FuzeArmCalibres * calibreMm * ((1 + Math.Cos(2 * r)) / 2 + 0.4537 * Math.Pow(Math.Sin(r), 5.7019));
     }
+
+    // ------------------------------------------------------------------ caps, shatter and break-up (P2)
+    // research/simulation/armor/00-overview.md §5.2-5.3, 02 §3, 05 §4d and §4g; armor_pen_ref.py resolve_plate
+
+    /// <summary>Whether a homogeneous plate of td calibres at an obliquity knocks a cap off (Okun's tech-085, T/D): a soft
+    /// or Type 1 hard cap (and the cap head) 0.105-0.12 under 15° (an even chance by where it falls between), 0.0805 from
+    /// 15°; a Type 2 hard cap 0.155-0.17 under 45°, 0.12-0.14 from it. Face-hardened plate always does.</summary>
+    public static bool Decaps(Cap cap, double td, double obliquityDeg, ref RandomStream r)
+    {
+        var (lo, hi) = cap == Cap.Hard2
+            ? obliquityDeg < 45 ? (0.155, 0.17) : (0.12, 0.14)
+            : obliquityDeg < 15 ? (0.105, 0.12) : (0.0805, 0.0805);
+        return td >= hi || td >= lo && r.NextDouble() < (td - lo) / (hi - lo);
+    }
+
+    /// <summary>The gap behind a plate that knocked a cap off, calibres, before the bare nose meets the next plate bare
+    /// (tech-085): 2.3 at normal (1.6-3 by the plate) down to 1 from 30°; a soft cap's 0.5.</summary>
+    public static double CapGapCalibres(Cap cap, double obliquityDeg) =>
+        cap == Cap.Soft ? 0.5 : Math.Max(1, 2.3 - 1.3 * Math.Min(obliquityDeg, 30) / 30);
+
+    /// <summary>The share of hits at an obliquity a cap leaves the nose bare: all with none; a soft cap tears off from 15°
+    /// and surely by 20° (between, by the angle); the cap head gives way past 45°; a hard cap holds while it's on.</summary>
+    public static double BareShare(Cap cap, double obliquityDeg) => cap switch
+    {
+        Cap.None => 1,
+        Cap.Soft => Math.Clamp((obliquityDeg - 15) / 5, 0, 1),
+        Cap.BreakAway => obliquityDeg > 45 ? 1 : 0,
+        _ => 0,
+    };
+
+    /// <summary>The chance a face-hardened plate of td calibres shatters the shell (the terminal draws it, the matchup takes
+    /// it as a share): a bare nose (<paramref name="bare"/>, the share of hits it meets the plate bare) on a face that
+    /// shatters steel shot (<paramref name="faceShatters"/>, <see cref="MaterialRow.FaceShatters"/>), from <see cref="SimSettings.BreakFromTD"/>; or a body past its proof (the obliquity it was made
+    /// to survive on plate of its T/D or thicker), surely <see cref="SimSettings.BreakSpanDeg"/> past it (RN 1914 APC,
+    /// proofed at 15° on 0.4 calibres, broke up at 15-20°; Greenboy degrades past 20°).</summary>
+    public static double ShatterChance(in ShellTypeRow shell, bool faceShatters, double td, double obliquityDeg, double bare, SimSettings s)
+    {
+        double body = td >= shell.BreakTD ? Math.Clamp((obliquityDeg - shell.BreakObDeg) / s.BreakSpanDeg, 0, 1) : 0;
+        double nose = faceShatters && td >= s.BreakFromTD ? bare : 0;
+        return 1 - (1 - body) * (1 - nose);
+    }
+
+    /// <summary>A face-hardened plate's thickness (mm, rated) as this shell meets it: over the body's quality, and times
+    /// <see cref="ShatterBonus"/> if it shatters the shell (<see cref="ShatterChance"/>).</summary>
+    public static double FaceHardMm(double mm, in ShellTypeRow shell, double obliquityDeg, bool shatter, SimSettings s) =>
+        mm * (shatter ? ShatterBonus(obliquityDeg, s) : 1) / shell.BodyQuality;
+
+    /// <summary>What a shattering shell makes of a face-hardened plate: <see cref="SimSettings.ShatterBonus"/> times its
+    /// thickness at normal, fading to none at <see cref="SimSettings.ShatterToDeg"/> (Okun; the early trials' ×1.4).</summary>
+    public static double ShatterBonus(double obliquityDeg, SimSettings s) =>
+        obliquityDeg < s.ShatterToDeg ? 1 + (s.ShatterBonus - 1) * (1 - obliquityDeg / s.ShatterToDeg) : 1;
+
+    /// <summary>The chance a body breaks getting through a plate just over its limit (under
+    /// <see cref="SimSettings.NearLimitBand"/> times V_L), by the obliquity: <see cref="SimSettings.NearLimitBreakFloor"/>
+    /// under 30° and past 60°, rising to <see cref="SimSettings.NearLimitBreakPeak"/> at 45° (the middle body's bending:
+    /// armor/05 §1.2 and its plate-sequence outline).</summary>
+    public static double NearLimitBreak(double obliquityDeg, SimSettings s) =>
+        s.NearLimitBreakFloor + (s.NearLimitBreakPeak - s.NearLimitBreakFloor) * Math.Max(0, 1 - Math.Abs(obliquityDeg - 45) / 15);
 
     /// <summary>The angle between the flight and a plate's normal, degrees (0 square on; no normal: square on).</summary>
     public static double Obliquity(P3 d, P3 n)

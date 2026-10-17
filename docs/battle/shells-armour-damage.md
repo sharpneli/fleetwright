@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, P0, P1a, P1b and P1c done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, P0, P1a, P1b, P1c and P2 done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -785,7 +785,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       more than the density's 1.3–1.9% as the lighter ship sizes down; their fuzz mutants with them. Goldens 16 design,
       16 SVG and 4 sprite cases (`ShipDesign.Version` 21), 372/372; `svg-check` and `sprite-check` 372/372; `mono-check`
       27 reversals and 16 lumps, as before. The sim's scenarios don't move (squadrons' hash identical).
-- **P2 Caps, decapping, shatter and break-up as states.**
+- **P2 Caps, decapping, shatter and break-up as states** (done 2026-10-17).
   - The cap is lost on face-hardened plate or past its threshold, with a gap test before the next face-hardened plate.
   - Shatter of uncapped or decapped shells on face-hardened plate: +30–40% at normal, fading to nothing by 55°.
   - Break-up by the body's obliquity and T/D limits, most likely near the limit around 45°.
@@ -793,6 +793,72 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
     through.
   - Benches: the matchup (Arethusa, Iron Duke), Jutland's 1/13 on more than 9″, the 1894–1905 battles, `shipgen hits`
     on the destroyers.
+  - **How (2026-10-17):** the shell's state is walked plate by plate in `Terminal` (armor_pen_ref.py's
+    `resolve_plate`, 00 §8, 05's plate-sequence outline), with no allocation and a draw only where a rule is a band:
+    - **Shipgen:** the report's shells gain the cap's share and the body (`cap_share`, `break_ob_deg`, `break_t_d`,
+      `body_quality`; none given: 90°, 0, 1), and `ShellTypeRow` carries them (`Cap` as an enum; `Diving` is the cap
+      head's). The material's face gains `shatters` (true when not given): compound's steel face breaks only chilled
+      shot (armor_pen_ref.py's `shatter_vs`), and Palliser's body limits (0°, 0.3) do that. Not in the plan's table:
+      both were needed to carry the blocks' numbers to the sim (goldens, `ShipDesign.Version` 22).
+    - **The cap:** a face-hardened plate always knocks it off, a homogeneous one by tech-085's T/D (soft, Type 1 and the
+      cap head 0.105-0.12 under 15°, 0.0805 from it; Type 2 0.155-0.17 under 45°, 0.12-0.14 from it; within a band, a
+      chance by where it falls). The plate is fought with the cap on; its mass goes after. Behind it the nose still
+      meets a plate as if capped for the gap (2.3 calibres at normal down to 1 from 30°; a soft cap 0.5). A soft cap
+      leaves the nose bare from 15° (surely by 20°), the cap head past 45°, and the cap head is gone on the water.
+    - **Shatter, on face-hardened plate** (`Terminal.ShatterChance` and `FaceHardMm`, the rules pen-check and the
+      matchup call too): a bare nose on a face that shatters steel, from 0.25 calibres (`BreakFromTD`), or a body past
+      its proof (on `break_t_d` calibres or more, a chance rising from `break_ob_deg` to sure `BreakSpanDeg` 5° past
+      it: RN 1914 APC "broke up at 15-20°", Greenboy survives its proof's 20° and degrades past it). One draw a
+      face-hardened plate. The plate holds as if `ShatterBonus` 1.4 times thicker at normal, fading to none at 55°; a
+      shell that still gets through is `BrokeUp`. This also carries 02 §4.6's "RN pre-1917: treat as shatter at
+      15-20° on 0.4 calibre". A hard cut at the proof angle was tried first: Queen Elizabeth's 15″ then shattered on
+      46% of hits on a dreadnought at 15 km (1 in 47 through plate over 9″ and burst, against Jutland's 1 in 13).
+    - **The body's quality** (the block's `body.quality`, 0.85-1.10) divides the face-hardened plate's thickness only:
+      02 §4.6's multipliers are against face-hardened plate, and on homogeneous plate the USN's tables (pen-check A, the
+      Mk 8 at 1.00) are the formula's own. Unassigned in the plan; P2 is the body's step.
+    - **Near the limit:** a whole shell through any plate of 0.25 calibres or more at under 1.1 V_L breaks with a chance
+      of 0.1 under 30° and past 60°, rising to 0.5 at 45° (05 §1.2, `NearLimitBreak*`) [INFERRED].
+    - **`Broken` leaves `ShellOutcomes`;** its share goes to the full burst, since what the research leaves the roll is
+      the fuze's and the filler's failures (armour-and-damage.md §5): rn1916 50/35/10/5, km1916 60/15/10/15, rn1918
+      60/10/20/10, ww2 80/5/7/8, ijn_t91 75/5/7/13 (burst, in plate, low-order, dud).
+    - **The matchup** mirrors it: each face's points carry their face-hardened plate (rated and as thick as it is, and
+      whether it shatters), so its estimate divides that plate by the body's quality, keeps out the shattering share (a
+      body past its proof, or a bare nose by the cap's share at the angle), and breaks the near-limit share (between
+      what the shell beats at its speed and at its speed over 1.1). It takes the cap as on: decapping by plating ahead
+      is the terminal's.
+    - **Benches:** `shipgen hits` prints decapped, shattered and broken-near-the-limit shares, and Jutland's measure: of
+      the hits that met plate over 9″, those through it that burst inside. pen-check D runs each trial's shell (cap and
+      body by its family) through `ShatterChance` (at even odds) and `FaceHardMm`.
+  - **Done (2026-10-17).** As above. Goldens: 317 design cases gain the shells' four keys and compound's `shatters`
+    (`ShipDesign.Version` 22), 372/372; brennus and inflexible's material tables refreshed (`upgrade --materials`).
+    Per-hit cost unchanged (iron_duke by seydlitz 540 → 382 µs, yamato 1167 → 1161: noise); a matchup judgement 0.7-3.4 µs.
+    - **pen-check D:** 10 of 12 early trials agree (8 before): the uncapped shells now shatter on Harvey and KC
+      (Indian Head, Meppen held), Baden's 30° conning tower holds (Greenboy past its proof). The misses: Annapolis's
+      all-steel plate (P1b's mapping to structural steel) and the 6″ Holtzer on 10.72″ compound, held by 1% (the
+      uncapped body's 0.95 quality on the face).
+    - **`shipgen hits`** (before → after; n 2000, 10 a ship, 30 min settle): Jutland's measure, through plate over 9″
+      and burst inside: Lion on Seydlitz at 14 km **1 in 9.4**, Queen Elizabeth on Dreadnought at 15 km 1 in 12.4
+      (record 1 in 13); Seydlitz on Iron Duke at 12 km 1 in 118 (shattered 18%: the Germans' Type 2 cap holds, their
+      body breaks past 20° on 0.6 calibres), defeated 38.8 → 40%, burst inside 9.5 → 12.9%, water 44 → 48 t. Iron
+      Duke on the light cruiser: BrokeUp 25.6 → 0%, burst inside 5.3 → 29.5%, water 678 → 892 t, out of the fight 36 →
+      53% (her 3″ belt is under 0.25 calibres of a 13.5″: the research's Arethusa case). The 1905 shells: Borodino's
+      uncapped 12″ on Mikasa shattered on 70% of hits, water 226 → 10 t, out of the fight 7 → 1% (1894-1905 belts never
+      holed). Yamato by Yamato: shattered 25% (the Type 91 past its 20° proof on VH), bursts beyond 11.7 → 11.6%,
+      water 2,751 → 2,819 t, magazine 3 → 0%. tb_destroyer by light cruiser AP: BrokeUp 3.8 → 0%, burst inside 0.8 →
+      5.3%, out 7 → 11%. v25 by lion's HE: identical.
+    - **Matchup:** Iron Duke's hit puts Arethusa out 3.74 → 6.23% (arethusa:4 v iron_duke's judgement 1.988 → 1.415,
+      the gunfight at 11.5 km 0.543 → 0.339); lion v seydlitz 1.228 → 1.903; lion v derfflinger 2.39 and iron_duke v
+      derfflinger 2.32, out of MatchupTests' even band (0.5-2): **widened to 2.5 on the user's say (2026-10-17),
+      revisit at P3**, whose fuzes and in-plate bursts are the British shells' other failures. The cause is the rows:
+      rn1916's 40% broken went to the full burst, and now British shells break only where the plates break them (on
+      German decks and beam-on belt hits they stay whole). The matchup judges side hits beam-on, where few strike past
+      15°; averaging over target angles 50-90° was tried and only brought lion v derfflinger to 2.14, so it stays out.
+    - **Scenarios:** squadrons 40 min Britain lost 1 → 2 (Lion and Princess Royal, both magazines), Germany 1 → 0 (Von
+      der Tann survives); flotilla moves (state hash 17475F16 → F1FCB5BF); tsushima --play 2 seeds Russia lost 4.5 →
+      2, Japan 3 → 3.5: the Japanese 1904 shells (uncapped AP and base-fuzed common) shatter on the Russians' KC and
+      Harvey, so the belts hold; Tsushima's damage was the upperworks and fires (P3's fuzes, the fire session).
+    - **The magazine test** (`DamageTests`) fired Queen Elizabeth's shells at 37° below the horizontal; they now always
+      shatter on Dreadnought's belt, so it takes KGV's WWII shell (the test is about the blast's record).
 - **P3 Fuzes per fuze.**
   - Start threshold and obliquity factor per fuze; the two-plate fuzes adding up thin plates in quick succession; face-hardened plate always starts it.
   - Delay scatter per fuze; blinds per fuze.
@@ -806,6 +872,8 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
     - the outcome per hit in the log: "burst on plate", "low-order", "dud".
   - `FuzeStartsOnWater` on (P6's scaffold).
   - Benches: bursts behind the plate (Baden 38 ft), Iowa's bomb deck moving bursts up, South Dakota's pass-throughs.
+  - **Revisit MatchupTests' even band** (widened 2 → 2.5 at P2, user 2026-10-17): with the British fuzes and lyddite's
+    in-plate bursts as causes, lion and iron_duke v derfflinger should come back under 2.
 - **P4 Three limits.** Holed (a hole, the shell broken, fragments only), Navy (the whole shell through) and effective (through,
   whole, fuze working), with a new `Outcome` for holed-but-broken.
   - The holed limit is the material's `back.holed_u` (face-hardened holed 2-12% below the Navy limit, armor/00; 14
@@ -1044,7 +1112,7 @@ None blocks a step; each is settled by its step's bench.
 | P1a | P0 | — | vanilla Thompson, Cardano inverse, Lambert-Jonas, pen-check bench (done) | penetration (−2 to −6% big guns, more for small) |
 | P1b | P1a | material catalogue, split names (done) | Q(D) (done) | penetration |
 | P1c | P0 | densities (done) | — | weights |
-| P2 | S2, P1b | — | caps, shatter, break-up | outcomes |
+| P2 | S2, P1b | shells' cap and body in the report, the face's `shatters` (done) | caps, shatter, break-up (done) | outcomes |
 | P3 | P2 | — | fuzes; rows gone; water fuze on | burst points |
 | P4 | P2 | — | three limits | outcomes |
 | P5 | P1a | — | angles | ricochets, paths |

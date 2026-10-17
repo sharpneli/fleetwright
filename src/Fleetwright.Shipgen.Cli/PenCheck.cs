@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using Fleetwright.Shipgen;
 using Fleetwright.Sim.Combat;
+using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Shipgen.Cli;
@@ -12,7 +13,7 @@ namespace Fleetwright.Shipgen.Cli;
 /// with the materials' q from the catalogue, over research/simulation/armor/07-*.csv (read from the repo, as a tool may:
 /// nothing the release needs). armor_pen_ref.py makes the same tables from the same data, a reference to check
 /// against. Sections: A the range tables' belts and decks, B NPG 1946-47's measured limits, C the Italian 1942
-/// obliquity ratios, D the early trials, E Okun's M79 deck columns.</summary>
+/// obliquity ratios, D the early trials (with the shells' caps, bodies and shatter: P2), E Okun's M79 deck columns.</summary>
 static class PenCheck
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -29,7 +30,7 @@ static class PenCheck
         RangeTables(tables, sources);
         Npg(trials);
         Italian(tables);
-        Early();
+        Early(SimSettings.Load(Path.Combine(repo, "Content", "Sim", "settings.json")));
         Decks(okun);
         return 0;
     }
@@ -152,53 +153,70 @@ static class PenCheck
     }
 
     /// <summary>D: the early trials (armor_pen_ref.py EARLY_TRIALS, sourced in armor/06 and 07): the game's V_L on the
-    /// plate times its catalogue material's q, beside what happened; and the q the trial implies (the STS the shot beats
-    /// over the plate: '<' the plate was beaten, so its q is below; '>' it held, above; '=' at the limit). Uncapped
-    /// shells and shatter aren't modelled until P2.</summary>
-    static void Early()
+    /// plate times its catalogue material's q, through the game's face-hardened rule with each trial's shell (its cap, and
+    /// its body as the shell templates' family has it: <see cref="Terminal.ShatterChance"/>, shattering at even odds or
+    /// more, and <see cref="Terminal.FaceHardMm"/>; a capped shell's cap is on at the plate), beside what happened; and the q the trial implies (the STS the shot beats over the plate: '<' the
+    /// plate was beaten, so its q is below; '>' it held, above; '=' at the limit).</summary>
+    static void Early(SimSettings s)
     {
-        Header("D. Early trials through the game's V_L with the catalogue's materials (q by calibre and plate; shatter and caps are P2's)");
-        Console.WriteLine("| trial | material | q | T/D | V m/s | game V_L | game | actual | q implied |");
-        Console.WriteLine("|---|---|---|---|---|---|---|---|---|");
-        (string Name, double D, double W, double V, double T, double Ob, string Mat, string Rel)[] rows =
+        Header("D. Early trials through the game's V_L with the catalogue's materials (q by calibre and plate) and the shells' caps and bodies (P2)");
+        Console.WriteLine("| trial | material | shell | q | T/D | V m/s | game V_L | game | actual | q implied |");
+        Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|");
+        // the shells: their caps, and their bodies' proofs (obliquity, T/D) and quality, as ShellTemplates' families
+        var shells = new Dictionary<string, (Cap Cap, double Ob, double TD, double Q)>
+        {
+            ["chilled"] = (Cap.None, 0, 0.3, 0.85), ["uncapped"] = (Cap.None, 15, 0.5, 0.95), ["soft"] = (Cap.Soft, 15, 0.5, 0.95),
+            ["krupp1911"] = (Cap.Hard, 20, 0.6, 0.95), ["greenboy"] = (Cap.Hard, 20, 0.67, 0.96), ["ww2"] = (Cap.Hard, 30, 1.0, 1.0),
+        };
+        (string Name, double D, double W, double V, double T, double Ob, string Mat, string Shell, string Rel)[] rows =
         [
-            ("Spezia 1876: 22in WI perforated (100-ton Palliser)", 17.72, 2000, 1446, 22, 0, "wrought iron", "<"),
-            ("Annapolis 1890: 6in Holtzer 100lb perforated 10.72in compound", 6, 100, 2075, 10.72, 0, "compound", "<"),
-            ("Annapolis 1890: 6in stopped by 10.57in all-steel", 6, 100, 2075, 10.57, 0, "steel", ">"),
-            ("Annapolis 1890: 6in stopped by 10.42in nickel steel", 6, 100, 2075, 10.42, 0, "nickel steel", ">"),
-            ("Annapolis 1890: 8in Firth 210lb perforated compound", 8, 210, 1850, 10.72, 0, "compound", "<"),
-            ("Annapolis 1890: 8in stopped (broke) by nickel steel", 8, 210, 1850, 10.42, 0, "nickel steel", ">"),
-            ("Johnson 1894: 10in 500lb lodged in 10in NiS at 1490", 10, 500, 1490, 10, 0, "nickel steel", "="),
-            ("Indian Head 1893: 14in Harvey not perf. by uncapped 10in", 10, 500, 2059, 14, 0, "Harvey nickel steel", ">"),
-            ("1897: 12in Holtzer 850lb just perf. 12in Harvey (uncapped)", 12, 850, 1811, 12, 0, "Harvey nickel steel", "="),
-            ("NO 1937 prob. VII: 10in 500lb, Harvey 13in limit 1620", 10, 500, 1620, 13, 0, "Harvey nickel steel", "="),
-            ("Meppen 1895: 11.8in KC not perf. by 12in 716lb (uncapped)", 12, 716, 1993, 11.8, 0, "Krupp cemented", ">"),
-            ("Beardmore 1901: 6in KC limit 2261, 100lb uncapped", 6, 100, 2261, 6, 0, "Krupp cemented", "="),
-            ("Beardmore 1901: 6in KC perforated by capped 105.9lb at 1945", 6, 105.9, 1945, 6, 0, "Krupp cemented", "<"),
-            ("Krupp 250mm KC: capped 150mm limit ~2240", 5.9, 112, 2240, 9.84, 0, "Krupp cemented", "="),
-            ("NO 1937 prob. V: 12in 870lb vs 12in KC limit 1420", 12, 870, 1420, 12, 0, "Krupp cemented", "="),
-            ("NO 1937 prob. VII: 10in 500lb vs 12in KC limit 1685", 10, 500, 1685, 12, 0, "Krupp cemented", "="),
-            ("NO 1937 prob. VI: 12in 870lb vs 14in Class A limit 1570", 12, 870, 1570, 14, 0, "Class A", "="),
-            ("Baden 1921: 15in Greenboy perforated 350mm KC a/A at 18.5", 15, 1910, 1550, 13.78, 18.5, "Krupp cemented", "<"),
-            ("Baden 1921: 15in Greenboy stopped by 350mm KC CT at 30", 15, 1910, 1550, 13.78, 30, "Krupp cemented", ">"),
-            ("1918-19: Russian 12in 1038lb intact through 8in British KC at 20", 12, 1038, 1615, 8, 20, "cemented armour", "<"),
-            ("1918-19: same shell broke on the 8in plate at 1447", 12, 1038, 1447, 8, 20, "cemented armour", "~"),
+            ("Spezia 1876: 22in WI perforated (100-ton Palliser)", 17.72, 2000, 1446, 22, 0, "wrought iron", "chilled", "<"),
+            ("Annapolis 1890: 6in Holtzer 100lb perforated 10.72in compound", 6, 100, 2075, 10.72, 0, "compound", "uncapped", "<"),
+            ("Annapolis 1890: 6in stopped by 10.57in all-steel", 6, 100, 2075, 10.57, 0, "steel", "uncapped", ">"),
+            ("Annapolis 1890: 6in stopped by 10.42in nickel steel", 6, 100, 2075, 10.42, 0, "nickel steel", "uncapped", ">"),
+            ("Annapolis 1890: 8in Firth 210lb perforated compound", 8, 210, 1850, 10.72, 0, "compound", "uncapped", "<"),
+            ("Annapolis 1890: 8in stopped (broke) by nickel steel", 8, 210, 1850, 10.42, 0, "nickel steel", "uncapped", ">"),
+            ("Johnson 1894: 10in 500lb lodged in 10in NiS at 1490", 10, 500, 1490, 10, 0, "nickel steel", "soft", "="),
+            ("Indian Head 1893: 14in Harvey not perf. by uncapped 10in", 10, 500, 2059, 14, 0, "Harvey nickel steel", "uncapped", ">"),
+            ("1897: 12in Holtzer 850lb just perf. 12in Harvey (uncapped)", 12, 850, 1811, 12, 0, "Harvey nickel steel", "uncapped", "="),
+            ("NO 1937 prob. VII: 10in 500lb, Harvey 13in limit 1620", 10, 500, 1620, 13, 0, "Harvey nickel steel", "ww2", "="),
+            ("Meppen 1895: 11.8in KC not perf. by 12in 716lb (uncapped)", 12, 716, 1993, 11.8, 0, "Krupp cemented", "uncapped", ">"),
+            ("Beardmore 1901: 6in KC limit 2261, 100lb uncapped", 6, 100, 2261, 6, 0, "Krupp cemented", "uncapped", "="),
+            ("Beardmore 1901: 6in KC perforated by capped 105.9lb at 1945", 6, 105.9, 1945, 6, 0, "Krupp cemented", "soft", "<"),
+            ("Krupp 250mm KC: capped 150mm limit ~2240", 5.9, 112, 2240, 9.84, 0, "Krupp cemented", "soft", "="),
+            ("NO 1937 prob. V: 12in 870lb vs 12in KC limit 1420", 12, 870, 1420, 12, 0, "Krupp cemented", "ww2", "="),
+            ("NO 1937 prob. VII: 10in 500lb vs 12in KC limit 1685", 10, 500, 1685, 12, 0, "Krupp cemented", "ww2", "="),
+            ("NO 1937 prob. VI: 12in 870lb vs 14in Class A limit 1570", 12, 870, 1570, 14, 0, "Class A", "ww2", "="),
+            ("Baden 1921: 15in Greenboy perforated 350mm KC a/A at 18.5", 15, 1910, 1550, 13.78, 18.5, "Krupp cemented", "greenboy", "<"),
+            ("Baden 1921: 15in Greenboy stopped by 350mm KC CT at 30", 15, 1910, 1550, 13.78, 30, "Krupp cemented", "greenboy", ">"),
+            ("1918-19: Russian 12in 1038lb intact through 8in British KC at 20", 12, 1038, 1615, 8, 20, "cemented armour", "krupp1911", "<"),
+            ("1918-19: same shell broke on the 8in plate at 1447", 12, 1038, 1447, 8, 20, "cemented armour", "krupp1911", "~"),
         ];
         int agree = 0, judged = 0;
-        foreach (var (name, d, w, vf, t, ob, mat, rel) in rows)
+        foreach (var (name, d, w, vf, t, ob, mat, sh, rel) in rows)
         {
-            double cal = d * In, kg = w * Lb, v = vf * Fps, mm = t * In, q = MaterialRow.Of(MaterialTemplates.Get(mat)!).Against(mm, cal);
-            double vl = Terminal.LimitMs(q * mm, cal, kg, ob), implied = Terminal.PenMm(v, cal, kg, ob) / mm;
-            string game = v >= vl ? "through" : "held";
+            double cal = d * In, kg = w * Lb, v = vf * Fps, mm = t * In;
+            var m = MaterialRow.Of(MaterialTemplates.Get(mat)!);
+            var (cap, bob, btd, bq) = shells[sh];
+            var shell = new ShellTypeRow { CalibreMm = cal, MassKg = kg, Cap = cap, BreakObDeg = bob, BreakTD = btd, BodyQuality = bq };
+            double q = m.Against(mm, cal), te = q * mm;
+            bool shatter = false;
+            if (m.FaceHardened)
+            {
+                shatter = Terminal.ShatterChance(shell, m.FaceShatters, t / d, ob, Terminal.BareShare(cap, ob), s) >= 0.5;
+                te = Terminal.FaceHardMm(te, shell, ob, shatter, s);
+            }
+            double vl = Terminal.LimitMs(te, cal, kg, ob), implied = Terminal.PenMm(v, cal, kg, ob) / mm;
+            string game = v >= vl ? shatter ? "broken" : "through" : "held";
             string actual = rel switch { "<" => "through", ">" => "held", "=" => "limit", _ => "-" };
             if (rel is "<" or ">")
             {
                 judged++;
-                agree += game == actual ? 1 : 0;
+                agree += game == actual || game == "broken" && actual == "held" ? 1 : 0;
             }
-            Console.WriteLine($"| {name} | {mat} | {S(q, "0.00")} | {S(t / d, "0.00")} | {S(v)} | {S(vl)} | {game} | {actual} | {rel} {S(implied, "0.00")} |");
+            Console.WriteLine($"| {name} | {mat} | {sh}{(shatter ? ", shatters" : "")} | {S(te / mm, "0.00")} | {S(t / d, "0.00")} | {S(v)} | {S(vl)} | {game} | {actual} | {rel} {S(implied, "0.00")} |");
         }
-        Console.WriteLine($"\nThe game agrees with {agree} of the {judged} trials that went one way.");
+        Console.WriteLine($"\nThe game agrees with {agree} of the {judged} trials that went one way (q: the plate's worth against this shell, shatter and the body's quality in; broken: holed by a shell in pieces, which counts as held).");
     }
 
     /// <summary>E: Okun's M79 deck columns (US Class B/STS and German Wotan hart) over the game's deck (Thompson at Ob =

@@ -56,14 +56,15 @@
  {
   "name": "compound",
   "group": "armour",
-  "note": "Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP).",
+  "note": "Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP): no bare steel shell.",
   "value": {
    "density_t_per_m3": 7.75,
    "q": 0.72,
    "q_scale": 0,
    "face_hardened": {
     "share": 0.3,
-    "min_mm": 0
+    "min_mm": 0,
+    "shatters": false
    }
   }
  },

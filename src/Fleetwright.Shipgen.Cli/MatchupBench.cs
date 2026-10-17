@@ -56,7 +56,7 @@ static class MatchupBench
 
     static void Profile(MatchupProfile p, SimSettings s)
     {
-        string Face((double Share, double Mm)[] f) => string.Join(" ", f.Select(x => string.Format(Inv, "{0:0}%@{1:0}", 100 * x.Share, x.Mm)));
+        string Face(MatchupFace[] f) => string.Join(" ", f.Select(x => string.Format(Inv, "{0:0}%@{1:0}{2}", 100 * x.Share, x.Mm, x.HardMm > 0 ? "h" : "")));
         Console.WriteLine(string.Format(Inv, "{0}: {1:0} t, {2:0} x {3:0.0} m, height {4:0.0} m, {5:0.#} kn{6}", p.Class.Name, p.DisplacementT, p.LengthM,
             p.BeamM, p.HeightM, p.SpeedKn, p.TorpedoCraft ? ", torpedo craft" : ""));
         Console.WriteLine(string.Format(Inv, "  side {0} (plating {1:0.#} mm); deck {2} (plating {3:0.#} mm)", Face(p.Side), p.SidePlatingMm, Face(p.Deck), p.DeckPlatingMm));

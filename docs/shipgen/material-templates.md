@@ -10,8 +10,10 @@ them from here). `q` is the plate's resistance as a share of the same thickness 
 plate (Thompson's scale, WWII STS 1) against an 8" capped shell: `research/simulation/armor/00-overview.md`
 §4.2's reconciled table (P1b of docs/battle/shells-armour-damage.md; the research's id ends each note).
 Face-hardened plate is × (D/8")^−k past 8" (held below), with no face-hardened advantage (×0.9) under max(the
-thinnest made, 0.3 calibres). Homogeneous plate under 25% elongation loses to shells over 8" by Okun's M79
-penalty, 1 − (1 − √(El/25))·min(D − 8", 8")/8". Both rules are the sim's (`MaterialRow.Against`). The density
+thinnest made, 0.3 calibres); its face shatters a bare-nosed shell (P2) unless the column says it doesn't
+(compound's steel face breaks only chilled shot, by that shot's own limits). Homogeneous plate under 25%
+elongation loses to shells over 8" by Okun's M79 penalty, 1 − (1 − √(El/25))·min(D − 8", 8")/8". Both rules
+are the sim's (`MaterialRow.Against`, `Terminal.FaceHardMm`). The density
 is armor/03 §7's: every plate is weighed with its own (the hull's structure with its plating's). The
 structure group is the plating's and superstructure's picker; the armour picker offers every material.
 
@@ -23,7 +25,7 @@ structure group is the plating's and superstructure's picker; the armour picker 
 | wrought iron | structure | 0.53 | 0.53 | - | - | - | 7.70 |
 | wood | structure | 0.01 | 0.01 | - | - | - | 0.70 |
 | aluminium alloy | structure | 0.33 | 0.33 | - | - | - | 2.70 |
-| compound | armour | 0.72 | 0.72 | 0.00 | 0.30, 0 | - | 7.75 |
+| compound | armour | 0.72 | 0.72 | 0.00 | 0.30, 0; shatters no steel shell | - | 7.75 |
 | nickel steel | armour | 0.85 | 0.85 | - | - | - | 7.85 |
 | Harvey nickel steel | armour | 0.82 | 0.82 | 0.00 | 0.08, 81 | - | 7.85 |
 | Krupp cemented | armour | 0.88 | 0.85 | 0.05 | 0.34, 81 | - | 7.85 |
@@ -54,7 +56,7 @@ structure group is the plating's and superstructure's picker; the armour picker 
 - **wrought iron:** The ironclads' plate and hulls (s.g. 7.6-7.9). Spezia 1876 ~0.50, Tresidder/Thompson 0.56, Okun 0.6 (WI).
 - **wood:** Planking and wooden hulls (oak and teak 0.65-0.75). Okun counts teak at 1/100 of its thickness.
 - **aluminium alloy:** Light alloy deckhouses. [EST] about steel's protection per weight (2.7/7.85); no research row.
-- **compound:** Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP).
+- **compound:** Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP): no bare steel shell.
 - **nickel steel:** Homogeneous nickel steel (1889-1896). Annapolis > 0.77-0.83, Johnson's limit 0.92 (NIS).
 - **Harvey nickel steel:** Harveyized: carburized nickel steel, a thin hard face (1891-1899). NO 1937's limit 0.79 (HRV).
 - **Krupp cemented:** KC a/A and its licensees (1894-1918): decremental face-hardened Ni-Cr. Capped trials 0.87-0.97, Okun 0.83 of WWII FH (KCA).

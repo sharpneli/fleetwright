@@ -22,14 +22,14 @@ public sealed class MatchupProfile
     /// <summary>No gun of a cruiser's 6" (<see cref="TorpedoCraftGunMm"/>) and torpedoes: it fights with its torpedoes.</summary>
     public bool TorpedoCraft { get; }
 
-    /// <summary>The side and the deck as a falling shell meets them: shares of the face, each with its armour (mm of
-    /// plate as good as the penetration formula's, 0: none), and the hull's own plating there. A material's worth depends
-    /// on the shell's calibre (MaterialRow.Against), so each face is taken against an 8" shell and a 16" one, and a shell
+    /// <summary>The side and the deck as a falling shell meets them: shares of the face, each with its armour and its
+    /// face-hardened plate (<see cref="MatchupFace"/>), and the hull's own plating there. A material's worth depends on
+    /// the shell's calibre (MaterialRow.Against), so each face is taken against an 8" shell and a 16" one, and a shell
     /// between reads both (<see cref="Matchup.OutExponent"/>; held outside).</summary>
-    public (double Share, double Mm)[] Side { get; }
-    public (double Share, double Mm)[] Deck { get; }
-    public (double Share, double Mm)[] Side16 { get; }
-    public (double Share, double Mm)[] Deck16 { get; }
+    public MatchupFace[] Side { get; }
+    public MatchupFace[] Deck { get; }
+    public MatchupFace[] Side16 { get; }
+    public MatchupFace[] Deck16 { get; }
     public double SidePlatingMm { get; }
     public double DeckPlatingMm { get; }
     /// <summary>The share of the side over the main deck (the upperworks: from the silhouette), and the deck armour under
@@ -70,8 +70,8 @@ public sealed class MatchupProfile
         var area = c.Numbers(c.Silhouette.SideAreaM2);
         double whole = Sight.AreaAbove(area, 0);
         UpperShare = whole > 0 ? Math.Clamp(Sight.AreaAbove(area, c.Vertical.Freeboard) / whole, 0, 1) : 0;
-        foreach (var (share, mm) in Deck)
-            DeckMeanMm += share * mm;
+        foreach (var f in Deck)
+            DeckMeanMm += f.Share * f.Mm;
 
         var guns = new List<MatchupGun>();
         double mainCal = 0;
@@ -134,28 +134,32 @@ public sealed class MatchupProfile
 
     /// <summary>The side between the waterline and the main deck, sampled along its length and up it: the thickest plate
     /// over each point (by its material's quality), shares of the face by thickness.</summary>
-    static (double, double)[] SideArmour(ShipClass c, double cal)
+    static MatchupFace[] SideArmour(ShipClass c, double cal)
     {
         const int nx = 48, nz = 8;
         double x0 = -c.Length / 2, wl = c.Vertical.Waterline, top = Math.Max(wl + 0.5, 0);
-        var mm = new double[nx * nz];
+        var mm = new MatchupFace[nx * nz];
         for (int i = 0; i < nx; i++)
             for (int k = 0; k < nz; k++)
             {
                 double x = x0 + (i + 0.5) * c.Length / nx, z = wl + (k + 0.5) * (top - wl) / nz;
                 double best = 0, zone = double.NaN;
-                foreach (ref readonly var p in c.SidePlates)
+                int bestOf = -1, zoneOf = -1;
+                for (int j = 0; j < c.SidePlates.Length; j++)
+                {
+                    ref readonly var p = ref c.SidePlates[j];
                     if (x >= p.X0 && x <= p.X1 && z >= p.Bottom && z <= p.Top)
                     {
                         // a leaning belt as thick as a level line through it (protection-plan.md H6)
                         double t = p.ThicknessMm * c.MaterialQ(p.Material, p.ThicknessMm, cal) / Math.Cos(double.DegreesToRadians(p.InclineDeg));
                         if (p.Kind == StrakeKind.Zone)
-                            zone = t;   // in the belt's place over the magazines
-                        else
-                            best = Math.Max(best, t);
+                            (zone, zoneOf) = (t, j);   // in the belt's place over the magazines
+                        else if (t > best)
+                            (best, bestOf) = (t, j);
                     }
+                }
                 if (!double.IsNaN(zone))
-                    best = zone;
+                    (best, bestOf) = (zone, zoneOf);
                 // the inner bulkhead behind it (docs/shipgen/protection-plan.md H4), as the tracer adds it
                 double inner = 0;
                 foreach (ref readonly var b in c.Bulkheads)
@@ -166,24 +170,38 @@ public sealed class MatchupProfile
                 foreach (ref readonly var p in c.Inclined)
                     if (x >= p.X0 && x <= p.X1 && z >= p.Z0 && z <= p.Z1 && p.YAt(c.Hull, x, z) > 0)
                         inner += p.MmAt(z) * c.MaterialQ(p.Material, p.MmAt(z), cal) / Rise(p);
-                mm[i * nz + k] = best + inner;
+                mm[i * nz + k] = bestOf >= 0 ? Face(c, best + inner, best, c.SidePlates[bestOf].ThicknessMm, c.SidePlates[bestOf].Material) : new MatchupFace(1, inner, 0, 0, false);
             }
         return Shares(mm);
     }
 
+    /// <summary>A point of a face: its armour, and its outer plate if that's face-hardened.</summary>
+    static MatchupFace Face(ShipClass c, double mm, double outerMm, double outerRawMm, int material) =>
+        material >= 0 && c.MaterialOf(material) is { FaceHardened: true } m
+            ? new MatchupFace(1, mm, outerMm, outerRawMm, m.FaceShatters)
+            : new MatchupFace(1, mm, 0, 0, false);
+
     /// <summary>The deck seen from above, sampled along its length: the armour decks over each point added up.</summary>
-    static (double, double)[] DeckArmour(ShipClass c, double cal)
+    static MatchupFace[] DeckArmour(ShipClass c, double cal)
     {
         const int nx = 48;
         double x0 = -c.Length / 2;
         var mm = new double[nx];
+        var faces = new MatchupFace[nx];
         for (int i = 0; i < nx; i++)
         {
             double x = x0 + (i + 0.5) * c.Length / nx;
+            double hard = 0, hardRaw = 0;
+            int hardOf = -1;
             foreach (var d in c.ArmourDecks)
                 if (x >= d.X0 && x <= d.X1)   // a box's deck by its share of the beam, a sloped deck's flat by its own
-                    mm[i] += d.ThicknessMm * c.MaterialQ(d.Material, d.ThicknessMm, cal) * (double.IsNaN(d.W) ? 1 : Math.Min(1, d.W / c.Beam))
-                             * (double.IsNaN(d.SlopeReach) ? 1 : Math.Max(0, 1 - 2 * d.SlopeReach / c.Beam));
+                {
+                    double t = d.ThicknessMm * c.MaterialQ(d.Material, d.ThicknessMm, cal) * (double.IsNaN(d.W) ? 1 : Math.Min(1, d.W / c.Beam))
+                               * (double.IsNaN(d.SlopeReach) ? 1 : Math.Max(0, 1 - 2 * d.SlopeReach / c.Beam));
+                    mm[i] += t;
+                    if (d.Material >= 0 && c.MaterialOf(d.Material).FaceHardened && t > hard)
+                        (hard, hardRaw, hardOf) = (t, d.ThicknessMm, d.Material);
+                }
             // the slopes by theirs, as thick as a line straight down through them
             foreach (var p in c.Inclined)
                 if (x >= p.X0 && x <= p.X1 && p.Kind == InclinedKind.Slope)
@@ -191,8 +209,9 @@ public sealed class MatchupProfile
                     double reach = Math.Abs(p.U1 - p.U0), along = Math.Sqrt(reach * reach + (p.Z1 - p.Z0) * (p.Z1 - p.Z0));
                     mm[i] += p.ThicknessMm * c.MaterialQ(p.Material, p.ThicknessMm, cal) * along / reach * Math.Min(1, 2 * reach / c.Beam);
                 }
+            faces[i] = hardOf >= 0 ? new MatchupFace(1, mm[i], hard, hardRaw, c.MaterialOf(hardOf).FaceShatters) : new MatchupFace(1, mm[i], 0, 0, false);
         }
-        return Shares(mm);
+        return Shares(faces);
     }
 
     /// <summary>An inclined plate's rise over its width up its face (the sine of its angle off the horizontal).</summary>
@@ -203,17 +222,23 @@ public sealed class MatchupProfile
     }
 
 
-    static (double, double)[] Shares(double[] mm)
+    /// <summary>The points of a face as shares of it, by their armour to the millimetre (and their face-hardened plate's).</summary>
+    static MatchupFace[] Shares(MatchupFace[] points)
     {
-        var by = new SortedDictionary<double, int>();
-        foreach (double v in mm)
+        var by = new SortedDictionary<(double, double, double, bool), int>();
+        foreach (var p in points)
         {
-            double key = Math.Round(v);
+            var key = (Math.Round(p.Mm), Math.Round(p.HardMm), Math.Round(p.HardRawMm), p.Shatters);
             by[key] = by.GetValueOrDefault(key) + 1;
         }
-        return [.. by.Select(kv => ((double)kv.Value / mm.Length, kv.Key))];
+        return [.. by.Select(kv => new MatchupFace((double)kv.Value / points.Length, kv.Key.Item1, kv.Key.Item2, kv.Key.Item3, kv.Key.Item4))];
     }
 }
+
+/// <summary>A share of a face (the side or the deck as a falling shell meets it): its armour, mm of plate as good as the
+/// penetration formula's (0: none), and of that its face-hardened plate's, as rated and as thick as it is (0: none), and
+/// whether that plate's face shatters a bare-nosed shell (docs/battle/shells-armour-damage.md P2).</summary>
+public readonly record struct MatchupFace(double Share, double Mm, double HardMm, double HardRawMm, bool Shatters);
 
 /// <summary>One battery as the matchup sees it: the guns bearing on a beam, how fast each fires, the rounds they carry
 /// (int.MaxValue: no limit given), its fire control, and its shell's fall and striking speed by range.</summary>
@@ -581,53 +606,66 @@ public static class Matchup
         // as the terminal has it: a common shell beats the plate its capability's share of an AP's
         double common = shell.Kind == ShellKind.Common ? s.CommonPenShare : 1;
         double penSide = Terminal.PenMm(shell, strike, fall) * common, penDeck = Terminal.PenMm(shell, strike, 90 - fall) * common;
+        // and what it beats just over its limit, where a body may break getting through (P2)
+        double near = strike / s.NearLimitBand;
+        double nearSide = Terminal.PenMm(shell, near, fall) * common, nearDeck = Terminal.PenMm(shell, near, 90 - fall) * common;
         // a burst where there's no armour (the upperworks, the ends) reaches the vitals by its splinters through the deck
         double bare = Math.Exp(-t.DeckMeanMm / s.MatchupSplinterMm);
         double upper = (shell.Fuze == Fuze.Nose || t.SidePlatingMm >= Terminal.FuzeArmMm(shell.CalibreMm, fall, s) ? 1 : s.MatchupPassShare) * bare;
         // the faces as this calibre meets them: between the 8" and the 16" profiles
         double w = Math.Clamp((shell.CalibreMm - MatchupProfile.Eight) / MatchupProfile.Eight, 0, 1);
-        double sideIn = Through(shell, t.Side, penSide, t.SidePlatingMm, fall, bare, s),
-               deckIn = Through(shell, t.Deck, penDeck, t.DeckPlatingMm, 90 - fall, bare, s);
+        double sideIn = Through(shell, t.Side, penSide, nearSide, t.SidePlatingMm, fall, bare, s),
+               deckIn = Through(shell, t.Deck, penDeck, nearDeck, t.DeckPlatingMm, 90 - fall, bare, s);
         if (w > 0)
         {
-            sideIn += w * (Through(shell, t.Side16, penSide, t.SidePlatingMm, fall, bare, s) - sideIn);
-            deckIn += w * (Through(shell, t.Deck16, penDeck, t.DeckPlatingMm, 90 - fall, bare, s) - deckIn);
+            sideIn += w * (Through(shell, t.Side16, penSide, nearSide, t.SidePlatingMm, fall, bare, s) - sideIn);
+            deckIn += w * (Through(shell, t.Deck16, penDeck, nearDeck, t.DeckPlatingMm, 90 - fall, bare, s) - deckIn);
         }
         double share = side * (t.UpperShare * upper + (1 - t.UpperShare) * sideIn) + (1 - side) * deckIn;
         return s.MatchupShellK * Math.Sqrt(shell.MassKg) * share / t.DisplacementT;
     }
 
-    /// <summary>The share of a shell's effect that gets in through a face: a plate it passes bursts it inside (a base fuze,
-    /// as its quality's outcomes have it) or keeps it out; a nose fuze bursts on any plate; where there's only plating it
-    /// bursts there, its splinters reaching the vitals by the share <paramref name="bare"/> (through the deck's armour),
-    /// but a base fuze that the plating can't arm passes through.</summary>
-    static double Through(in ShellTypeRow shell, (double Share, double Mm)[] face, double pen, double platingMm, double obliquityDeg, double bare,
+    /// <summary>The share of a shell's effect that gets in through a face: a plate it passes whole bursts it inside (a
+    /// base fuze, as its quality's outcomes have it) or keeps it out; a nose fuze bursts on any plate; where there's only
+    /// plating it bursts there, its splinters reaching the vitals by the share <paramref name="bare"/> (through the deck's
+    /// armour), but a base fuze that the plating can't arm passes through. As the terminal has it (P2): a face-hardened
+    /// plate is thicker by the body's quality, and one that shatters the shell (a bare nose, by the cap's share at the
+    /// angle, or a body past its limits) keeps it out whether it gets through or not; just over the limit
+    /// (<paramref name="penNear"/>, what it beats at its speed over the band) a body may break. The cap is taken as on:
+    /// what plating ahead knocks off is the terminal's.</summary>
+    static double Through(in ShellTypeRow shell, MatchupFace[] face, double pen, double penNear, double platingMm, double obliquityDeg, double bare,
         SimSettings s)
     {
-        double sum = 0;
-        foreach (var (share, mm) in face)
+        double sum = 0, good = Good(shell, s), kept = s.MatchupKeptShare;
+        double bareNose = Terminal.BareShare(shell.Cap, obliquityDeg), breaks = Terminal.NearLimitBreak(obliquityDeg, s);
+        foreach (var x in face)
         {
             double f;
-            if (mm <= 0)
+            if (x.Mm <= 0)
                 f = (shell.Fuze == Fuze.Nose || platingMm >= Terminal.FuzeArmMm(shell.CalibreMm, obliquityDeg, s) ? 1 : s.MatchupPassShare) * bare;
             else if (shell.Fuze == Fuze.Nose)
-                f = s.MatchupKeptShare;
+                f = kept;
             else
             {
+                double shatter = x.HardMm <= 0 ? 0
+                    : Terminal.ShatterChance(shell, x.Shatters, x.HardRawMm / shell.CalibreMm, obliquityDeg, bareNose, s);
+                double mm = x.Mm + x.HardMm * (1 / shell.BodyQuality - 1);
                 double p = Phi((pen - mm) / (s.MatchupPenSpread * mm));
-                f = p * Good(shell, s) + (1 - p) * s.MatchupKeptShare;
+                double broke = Math.Max(x.HardRawMm, x.Mm) / shell.CalibreMm >= s.BreakFromTD
+                    ? Math.Max(p - Phi((penNear - mm) / (s.MatchupPenSpread * mm)), 0) * breaks : 0;
+                f = (1 - shatter) * ((p - broke) * good + (1 - p + broke) * kept) + shatter * kept;
             }
-            sum += share * f;
+            sum += x.Share * f;
         }
         return sum;
     }
 
-    /// <summary>What a shell through armour does, by its quality's outcome row: a full burst, a burst in the plate or a
-    /// low-order one at their shares, a dud or a broken shell as one kept out.</summary>
+    /// <summary>What a shell through armour whole does, by its quality's outcome row: a full burst, a burst in the plate or
+    /// a low-order one at their shares, a dud as one kept out.</summary>
     static double Good(in ShellTypeRow shell, SimSettings s)
     {
         var o = s.ShellOutcomes[Math.Clamp((int)shell.Quality, 0, s.ShellOutcomes.Length - 1)];
-        return o.Burst + o.InPlate * s.MatchupInPlateShare + o.LowOrder * s.MatchupLowOrderShare + (o.Dud + o.Broken) * s.MatchupKeptShare;
+        return o.Burst + o.InPlate * s.MatchupInPlateShare + o.LowOrder * s.MatchupLowOrderShare + o.Dud * s.MatchupKeptShare;
     }
 
     /// <summary>The share of a side's tonnage out of the fight, from the ships expected out of each class (each ship out

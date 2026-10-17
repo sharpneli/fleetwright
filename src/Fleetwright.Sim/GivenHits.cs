@@ -39,6 +39,10 @@ public static class GivenHits
         /// <summary>The hits that ran under the water to the hull: how many, and their runs and striking speeds summed.</summary>
         public int Underwater;
         public double UnderwaterRunM, UnderwaterStrikeMs;
+        /// <summary>What the plates did to the shells (docs/battle/shells-armour-damage.md P2): caps knocked off, shells
+        /// shattered on face-hardened plate, bodies broken just over a plate's limit; and the hits that met a plate over 9"
+        /// (229 mm), and of those the ones that got through it and burst inside (Jutland's British 1 in 13).</summary>
+        public int Decapped, Shattered, BrokeNearLimit, Heavy, HeavyBurst;
 
         public double Share(Outcome o) => Hits > 0 ? (double)Outcomes[(int)o] / Hits : 0;
     }
@@ -126,6 +130,11 @@ public static class GivenHits
                 each?.Invoke(rep.Hits, w.Damage.LastPath, t, fx);
                 rep.Hits++;
                 rep.Outcomes[(int)t.Outcome]++;
+                (rep.Decapped, rep.Shattered, rep.BrokeNearLimit) =
+                    (rep.Decapped + (t.Decapped ? 1 : 0), rep.Shattered + (t.Shattered ? 1 : 0), rep.BrokeNearLimit + (t.BrokeNearLimit ? 1 : 0));
+                double heavyT = HeavyPlateT(w.Damage.LastPath, t.StopT);
+                if (!double.IsNaN(heavyT))
+                    (rep.Heavy, rep.HeavyBurst) = (rep.Heavy + 1, rep.HeavyBurst + (t.Burst == BurstKind.Inside && t.BurstT > heavyT ? 1 : 0));
                 if (t.Underwater)
                     (rep.Underwater, rep.UnderwaterRunM, rep.UnderwaterStrikeMs) = (rep.Underwater + 1, rep.UnderwaterRunM + run, rep.UnderwaterStrikeMs + t.StrikeMs);
                 rep.Fires += fx.Fire ? 1 : 0;
@@ -142,6 +151,19 @@ public static class GivenHits
             After(rep, target, w, entity, slot, settleS, fallOut, hitMagazine);
         }
         return rep;
+    }
+
+    /// <summary>Where along the path the shell first met armour over 9" (229 mm) before it stopped; NaN for none.</summary>
+    static double HeavyPlateT(HitPath path, double stopT)
+    {
+        foreach (ref readonly var x in path.Crossings)
+        {
+            if (x.T > stopT)
+                break;
+            if (x.Plate is >= PlateKind.SideArmour and <= PlateKind.PartArmour && x.Mm > 228.6)
+                return x.T;
+        }
+        return double.NaN;
     }
 
     /// <summary>Torpedo hits (docs/battle/fighting.md 4.6): n of a torpedo on a class, at its set depth on its side, along

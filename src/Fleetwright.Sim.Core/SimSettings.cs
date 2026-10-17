@@ -712,15 +712,32 @@ public sealed record SimSettings
     public bool HitsDoDamage { get; init; } = true;
 
     /// <summary>What a shell that arms on armour it can defeat does, a row for each <c>ShellQuality</c> in order
-    /// (gunfire_ref.py OUTCOME: rn1916, km1916, rn1918, ww2, ijn_t91).</summary>
+    /// (gunfire_ref.py OUTCOME: rn1916, km1916, rn1918, ww2, ijn_t91): the fuze's and the filler's failures. The body's
+    /// are the plates' since P2 (docs/battle/shells-armour-damage.md), so the rows' old broken share went to the full
+    /// burst: what the research leaves the roll is fuze and filler failure (armour-and-damage.md §5).</summary>
     public ShellOutcomeRow[] ShellOutcomes { get; init; } =
     [
-        new() { Name = "rn1916", Burst = 0.10, InPlate = 0.35, LowOrder = 0.10, Dud = 0.05, Broken = 0.40 },
-        new() { Name = "km1916", Burst = 0.40, InPlate = 0.15, LowOrder = 0.10, Dud = 0.15, Broken = 0.20 },
-        new() { Name = "rn1918", Burst = 0.55, InPlate = 0.10, LowOrder = 0.20, Dud = 0.10, Broken = 0.05 },
-        new() { Name = "ww2", Burst = 0.75, InPlate = 0.05, LowOrder = 0.07, Dud = 0.08, Broken = 0.05 },
-        new() { Name = "ijn_t91", Burst = 0.70, InPlate = 0.05, LowOrder = 0.07, Dud = 0.13, Broken = 0.05 },
+        new() { Name = "rn1916", Burst = 0.50, InPlate = 0.35, LowOrder = 0.10, Dud = 0.05 },
+        new() { Name = "km1916", Burst = 0.60, InPlate = 0.15, LowOrder = 0.10, Dud = 0.15 },
+        new() { Name = "rn1918", Burst = 0.60, InPlate = 0.10, LowOrder = 0.20, Dud = 0.10 },
+        new() { Name = "ww2", Burst = 0.80, InPlate = 0.05, LowOrder = 0.07, Dud = 0.08 },
+        new() { Name = "ijn_t91", Burst = 0.75, InPlate = 0.05, LowOrder = 0.07, Dud = 0.13 },
     ];
+
+    /// <summary>The shell's state on the plates (docs/battle/shells-armour-damage.md P2; armor/00 §5.3, 02 §3.1, 05
+    /// §4g): a face-hardened plate that shatters the shell holds as if ShatterBonus times thicker at normal (Okun's
+    /// +30% on velocity; the early trials fit ×1.4 in thickness), fading to none at ShatterToDeg; neither a bare nose
+    /// shatters nor a body breaks near its limit on a plate under BreakFromTD calibres (armor_pen_ref.py's gate). A body
+    /// getting through under NearLimitBand times the plate's limit breaks with NearLimitBreakFloor's chance under 30° and
+    /// past 60°, NearLimitBreakPeak's at 45° [INFERRED]. A body past its proof's obliquity breaks on face-hardened plate
+    /// with a chance rising to sure BreakSpanDeg past it (RN 1914 APC broke at 15-20°, armour-and-damage.md §3.1).</summary>
+    public double ShatterBonus { get; init; } = 1.4;
+    public double ShatterToDeg { get; init; } = 55;
+    public double BreakFromTD { get; init; } = 0.25;
+    public double NearLimitBand { get; init; } = 1.1;
+    public double NearLimitBreakFloor { get; init; } = 0.1;
+    public double NearLimitBreakPeak { get; init; } = 0.5;
+    public double BreakSpanDeg { get; init; } = 5;
 
     /// <summary>Penetration: a common shell's capability as a share of AP's; an HE shell's nose fuze punches this many
     /// calibres (times the square root of the obliquity's cosine) and bursts; each plate's resistance is drawn within
@@ -990,7 +1007,8 @@ public sealed record SimSettings
     public double MatchupPenSpread { get; init; } = 0.1;
     public double MatchupSplinterMm { get; init; } = 25;
     /// <summary>A shell through armour does what its quality's outcome row (<see cref="ShellOutcomes"/>) says: a full
-    /// burst all of it, a burst in the plate and a low-order burst these shares, a dud or a broken shell as one kept out.</summary>
+    /// burst all of it, a burst in the plate and a low-order burst these shares, a dud as one kept out (a broken shell
+    /// too, the plate's doing).</summary>
     public double MatchupInPlateShare { get; init; } = 0.5;
     public double MatchupLowOrderShare { get; init; } = 0.3;
 
@@ -1082,7 +1100,6 @@ public sealed record ShellOutcomeRow
     public double InPlate { get; init; }
     public double LowOrder { get; init; }
     public double Dud { get; init; }
-    public double Broken { get; init; }
 }
 
 /// <summary>How good a side's gun crews are (docs/battle/fighting.md 4.2b: one per side, a scenario's to give).</summary>

@@ -59,8 +59,10 @@ static class TemplatesWriter
             plate (Thompson's scale, WWII STS 1) against an 8" capped shell: `research/simulation/armor/00-overview.md`
             §4.2's reconciled table (P1b of docs/battle/shells-armour-damage.md; the research's id ends each note).
             Face-hardened plate is × (D/8")^−k past 8" (held below), with no face-hardened advantage (×0.9) under max(the
-            thinnest made, 0.3 calibres). Homogeneous plate under 25% elongation loses to shells over 8" by Okun's M79
-            penalty, 1 − (1 − √(El/25))·min(D − 8", 8")/8". Both rules are the sim's (`MaterialRow.Against`). The density
+            thinnest made, 0.3 calibres); its face shatters a bare-nosed shell (P2) unless the column says it doesn't
+            (compound's steel face breaks only chilled shot, by that shot's own limits). Homogeneous plate under 25%
+            elongation loses to shells over 8" by Okun's M79 penalty, 1 − (1 − √(El/25))·min(D − 8", 8")/8". Both rules
+            are the sim's (`MaterialRow.Against`, `Terminal.FaceHardMm`). The density
             is armor/03 §7's: every plate is weighed with its own (the hull's structure with its plating's). The
             structure group is the plating's and superstructure's picker; the armour picker offers every material.
 
@@ -72,7 +74,7 @@ static class TemplatesWriter
         {
             var v = m.Value;
             double q16 = Fleetwright.Sim.Ships.MaterialRow.Of(v).Against(1000, 16 * 25.4);
-            string face = v.FaceHardened is { } f ? $"{N(f.Share, "0.00")}, {N(f.MinMm, "0")}" : "-";
+            string face = v.FaceHardened is { } f ? $"{N(f.Share, "0.00")}, {N(f.MinMm, "0")}{(f.Shatters == false ? "; shatters no steel shell" : "")}" : "-";
             sb.Append(CultureInfo.InvariantCulture,
                 $"| {m.Name} | {m.Group} | {N(v.Q, "0.00")} | {N(q16, "0.00")} | {N(v.QScale, "0.00")} | {face} | {N(v.ElongationPct, "0")} | {N(v.DensityTPerM3, "0.00")} |\n");
         }

@@ -91,7 +91,7 @@ public sealed class Loadout
         {
             CalibreMm = b.CalibreMm, MassKg = s.MassKg, MuzzleVelocityMs = s.MuzzleVelocityMs, FormFactor = s.FormFactor, Kind = Kinds.ShellKindOf(s.Kind),
             FillerKg = s.FillerKg, FillerRe = s.FillerRe, Fuze = Kinds.FuzeOf(s.Fuze), FuzeDelayS = s.FuzeDelayS, Quality = Kinds.ShellQualityOf(s.Outcomes),
-            Diving = s.Cap == "break_away",
+            Cap = Kinds.CapOf(s.Cap), CapShare = s.CapShare, BreakObDeg = s.BreakObDeg, BreakTD = s.BreakTD, BodyQuality = s.BodyQuality,
         };
 
         var batteries = c.Batteries;

@@ -79,6 +79,10 @@ static class HitsBench
                 100.0 * r.Underwater / r.Hits, r.UnderwaterRunM / r.Underwater, r.UnderwaterStrikeMs / r.Underwater, WaterRun.ReachM(shell, r.StrikeMs, settings)));
         Console.WriteLine("  outcomes: " + string.Join(", ", Enum.GetValues<Outcome>().Where(x => r.Outcomes[(int)x] > 0)
             .Select(x => string.Format(Inv, "{0} {1:0.#}%", x, 100 * r.Share(x)))));
+        Console.WriteLine(string.Format(Inv, "  the shells on the plates: decapped {0:0.#}%, shattered {1:0.#}%, broken just over the limit {2:0.#}%; " +
+            "on plate over 9\" {3:0.#}% of hits, of those through it and burst inside {4:0.#}% (1 in {5:0.#})", 100.0 * r.Decapped / r.Hits,
+            100.0 * r.Shattered / r.Hits, 100.0 * r.BrokeNearLimit / r.Hits, 100.0 * r.Heavy / r.Hits, 100.0 * r.HeavyBurst / Math.Max(r.Heavy, 1),
+            r.HeavyBurst > 0 ? (double)r.Heavy / r.HeavyBurst : double.PositiveInfinity));
         Console.WriteLine(string.Format(Inv, "  a hit: fire {0:0}%, crew {1:0.0}, holes {2:0.000} m², jammed {3:0.#}%, magazine {4:0.##}%", 100.0 * r.Fires / r.Hits,
             r.CrewLost / r.Hits, r.BreachM2 / r.Hits, 100.0 * r.Jams / r.Hits, 100.0 * r.Magazines / r.Hits));
         if (r.Magazines > 0)
