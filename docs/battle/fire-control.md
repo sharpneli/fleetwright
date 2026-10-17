@@ -54,7 +54,9 @@ pass makes each system do what it could and couldn't do, from the physical fit t
 | **Masts** | funnel + 6 m on every ship, 19.4 m over the deck on a destroyer and on Bismarck | battleship mastheads 45-55 m, destroyers 25-30 m; foretops and foretop directors (Iron Duke, Bismarck's 31 m) | spotting, the horizon, the sighting model's lookouts |
 | **The level by tonnage and era** | a paint scheme picks the ceiling | the designer note: tech values, no years; levels become presets (§3.3: tech-built fits reproduce the levels within ~3%) | the shells and materials already left "by period" for "physics as numbers in the design" |
 | **Instrument kinds** | coincidence only, magnification from base | eye, stadimeter, coincidence, stereo, radar, laser; effective base and magnification (haze, vibration, mast stiffness) | stereo in haze, coincidence end-on, light pole masts shake |
-| **Fire discipline** | a salvo whenever the bearing mounts are loaded | ranging salvos wait for the fall (TOF buzzer), fire for effect on a straddle, half-salvos, two in flight after Jutland (§6, §9); battle rates 30-60% of drill | the time to first hit, and the magazines that empty in two hours (`command.md` 5.1g) |
+| **Fire discipline** | a salvo whenever the bearing mounts are loaded, so two or three salvos fly at the same uncorrected aim before the first spot | ranging salvos wait for the fall (TOF buzzer) or go as a deliberate ladder, fire for effect on a straddle, half-salvos, two in flight after Jutland (§6, §9); battle rates 30-60% of drill | the time to first hit, shells wasted while ranging, and the magazines that empty in two hours (`command.md` 5.1g) |
+| **The bracket** | the ladder keeps only the last sign seen | a bracket found and split, never below a pattern; rate spots with range spots (`computing.md` §2.5) | spots out of order or from a ladder; the rate error a hand plot carries |
+| **What the AI knows of its fire** | the matchup's fixed MPI table by level | — (the game's need) | captains can't tell whether their fire is working, or what a range change would buy |
 | **Spotting rules** | the RN ladder for everyone | USN bracket-and-halve never below a pattern, the rocking ladder, the German three-salvo ladder, magnitude spots at half gain with a dead band (§9) | navies differ; radar spots need the magnitude rule |
 | **Whose splash** | each battery spots as if alone (decision 9) | 1/(1 + 0.6·N); dyed shells; KGV ranging on Rodney's splashes | concentration's cost; the eyeball ship's advantage goes |
 | **Radar, night** | radar is a tonnage that lifts the level | a sensor with an envelope, range-only sets needing optical bearing, splash spotting by range or both (§3.6) | blind fire, North Cape, Surigao; no solution at night without light |
@@ -182,26 +184,92 @@ updates this doc and `fighting.md`.
 - **Anchors:** the designer note's base study (D6: the knee by range, the eye at 10-20% of a 4.6 m set's hits, 15 m
   +20-30% at 20 kyd), its arrangement study (D8: a second instrument +7-10%), and §3.3's per-reading errors.
 
-### F6 Firing and spotting by the navy's rules
+### F6 Fire discipline: finding the bracket, then hitting
 
-- **Fire discipline:** ranging salvos wait for the fall (the TOF buzzer) unless doctrine allows two in flight; fire for
-  effect on a straddle at the loading rate; half-salvos alternating; the salvo's ripple time per mount (the record
-  already takes one, `muzzle-flashes.md`). Rates of fire in battle come out of this, not a factor.
+**What goes wrong today.** A battery fires whenever its bearing mounts are loaded and laid, from the first second the
+track opens. The placeholder 6" reloads in ~13 s against a ~20 s flight at 10 km, the 4" in ~7 s: two or three salvos
+are in the air at the same uncorrected aim before the first one's spot is in, and heavy guns at 18-20 km fire their
+second before the first falls. Those salvos carry the same error, their spots say the same thing, and the shells are
+gone. The spot itself is right (each is applied against the correction its salvo was fired with, so they don't pile up);
+what's wrong is firing salvos that can't carry anything new. The research's rule: a ranging salvo is information
+(§9, `computing.md` §2.5; pyramiding happens "when the salvo interval < TOF + spotting time").
+
+**A battery's phase** (per fire-control unit, world state, hashed, shown in the strip and the snapshot):
+
+1. **Opening.** The track settles (today's latency + `GunneryOpenS`, later the tracker's own uncertainty below a
+   doctrine's bound); the guns are loaded and laid, and wait.
+2. **Ranging: finding the bracket.** Each salvo must carry something new, in one of the doctrine's two ways:
+   - **Single salvos, each waiting for the last one's fall** (the RN in 1914-16, the USN ladder spotted salvo by
+     salvo): the next goes when the spot is in (fired + time of flight + the spot's delay, the TOF buzzer), on the
+     corrected aim. Loading goes on meanwhile; the guns wait loaded. The interval comes out near TOF + spot + the
+     director's cycle, as New York's 66 s (31 s of it loading) did.
+   - **A ladder in flight,** several salvos before the first falls, each deliberately offset by the step (the German
+     ladder, successive turrets ~400 yd apart; the RN's two salvos in flight after Jutland; Bismarck's three partial
+     salvos 2 s apart at three ranges): their falls bracket the target in one flight time, at the cost of shells.
+   - **Partial salvos:** enough guns to spot a wild shot (3, better 4 or more: `navalgazing Spotting`), the rest held
+     loaded; groups alternate, so the spotter gets falls twice as often.
+3. **The bracket kept in correction space.** Each spotted salvo says "the target is beyond (or short of) the correction
+   this salvo was fired with, plus its ladder offset". The battery keeps the bracket those spots make, a low and a high,
+   instead of today's "last sign" (`FireControl.Ladder`), so spots that arrive out of order or from one ladder all fit:
+   - no bracket yet: the step beyond the side seen; a bracket: into it by the doctrine's rule (the RN's 400, 200, 100 yd;
+     the USN's halving, never below a pattern);
+   - **the bracket isn't hard:** the spotter misjudges and the target moves, so a spot against it widens it, and it
+     widens with time by the track's rate uncertainty (the truth drifts in range as the rate error carries it);
+   - **spots one way in a row correct the rate,** not only the range: the RN's "down 200, rate down 100" (a rate
+     correction about half the range correction) goes into the tracker's range rate. The plot-based machines needed it
+     most; it's where a hand plot's ±5-8 kn shows.
+   - **the first step scales** with what the computer expects its own error to be (the track's covariance and the
+     residual bias over the time of flight), within the doctrine's step; point blank (F7) has none.
+4. **Fire for effect.** On the spotter's straddle (his judgement, not the truth: a misread straddle fires for effect
+   on a wrong mean until the spots say so), the battery fires as fast as it loads and lays: full salvos, or alternating
+   halves to keep the spotter fed. The spots keep correcting at the doctrine's gain: the USN's deflection spots, with an
+   add-spot of a pattern every 3-4 salvos to check for overs; the rocking ladder (+100, 0, -100 yd) against a target that
+   manoeuvres.
+5. **Back to ranging** when the doctrine's run of salvos (2-3) isn't a straddle, the tracker sees the target turn
+   (F2's detection, or the spots drifting one way), own ship turns hard (every turn for a machine that isn't helm-free),
+   or the target changes. A shift of target starts at opening, from the new contact's track.
+6. **The rate in fire for effect** comes from the parts, not a factor laid on top: the mount's drill reload; a battle
+   loading factor from the crew (fatigue, heat) and the supply (ready-use rounds first, then the hoists: the Majestics'
+   70 s from ready rounds against 100 s after, Delhi's 5"/38 25 against 15 rounds a minute); the director's cycle (the
+   layer's settle; firing on the roll when ship motion comes); the doctrine's ceiling (deliberate fire at long range,
+   rapid close in). The research's battle rates, 30-60% of drill and USN main batteries at 30-84 s a salvo, are the check.
+7. **Ammunition as a choice:** the doctrine holds fire, unless ordered, while the battery's own estimate of its hits
+   per shell (F10) is under a floor, and keeps a reserve of the magazine; firing on regardless is an order (the
+   secondaries at the edge of their reach, `fighting.md` 4.2c's "left as it is").
+8. **Pyramiding as a crew's error:** a trained crew applies each spot against the correction its salvo carried, as now;
+   a green one sometimes adds it to the correction in force instead, a chance by crew quality (the TOF buzzer is the
+   cure, so it's a fit too).
+9. **Independent fire** for quick-firers close in: each gun at its own rate, spotted by its own layer, with whose splash
+   it is (F7) as the cost; salvo fire beyond the range the doctrine sets (the pre-dreadnoughts' shift at 5-6 km).
+
+The doctrine picks among these per navy and year as data (the side's, question 3); defaults from the research: the RN
+of 1914 single salvos and the 400-200-100 bracket, of 1917 two in flight; the German ladder; the USN ladder with the
+pattern floor and the rocking ladder; the IJN's ladder.
+
+- **The bench:** `duel --trace` prints each salvo's phase, its offset and the bracket after its spot; the summary
+  gives salvos and shells to the first straddle, the rate in fire for effect, and shells per hit.
+- **Anchors:** salvos and time to first straddle and hit (§10: practice hits from salvo 2-5, Tennessee's first hit on
+  salvo 4 at 3 min 42 s, Lion ~10 salvos at Dogger Bank, Bismarck's fifth on Hood); hits per gun a minute (the WWI
+  ~0.165, 1940's 0.75-0.84 for a 14" battery at 12.7 kyd); the salvo intervals above; ammunition: a battle line's
+  magazines last the hours of a Jutland, not two hours at the loading rate (`command.md` 5.1g).
+
+### F7 Spotting by the navy's rules
+
 - **Spotting:** the spotter is the battery's highest working eye that sees the fall (a top now, F4), `σ = k·R²/h` with k
   tuned against NavPers' "500 yd obvious at 12 kyd, barely at 19 kyd from 120 ft" once the heights are real.
-- **The rules as doctrine:** the RN bracket (400, 200, 100 yd), the USN bracket-and-halve never below a pattern and the
-  rocking ladder after a straddle, the German ladder of partial salvos; magnitude spots (radar, later aircraft) at half
-  gain with a dead band of half a pattern.
+- **What a spot says:** by eye over, short or straddling in range and the deflection to a mil (F6's bracket takes
+  them); a measured miss (radar, later aircraft) as a magnitude, corrected at half gain with a dead band of half a
+  pattern (full corrections chase the random salvo error, §9).
 - **Whose splash:** from the shell system's splashes near the target within a few seconds of one's own, by calibre:
   identification 1/(1 + 0.6·N), dyed shells lower; a salvo of 3 or more is identified (`manual-gunnery-research.md`
   §5). The eyeball ship loses the advantage decision 9 gave it.
-- **Point blank:** inside the range where the danger space exceeds the range error, lay by sight; the first ladder step
-  scales with the range.
-- **Anchors:** time and salvos to first straddle and hit (§10: practice 2-5 salvos, Lion ~10, Bismarck 5); the
-  1912 Thunderer-Orion trial (director ~4.5x the hits of independent laying in poor visibility); Santiago and Tsushima
-  for the pre-dreadnoughts (`early-hit-rates.md`).
+- **Point blank:** inside the range where the danger space exceeds the range error (`emergency-eyeball.md` §6: heavy
+  guns under ~4-5 km, the 5"/38 under ~2.5-3 km), no ranging: lay by sight on the waterline and fire for effect.
+- **Anchors:** the 1912 Thunderer-Orion trial (director ~4.5x the hits of independent laying in poor visibility, about
+  even in clear weather); optical spotting falling off beyond ~18 kyd; Santiago and Tsushima for the pre-dreadnoughts
+  (`early-hit-rates.md`).
 
-### F7 Damage reaches fire control
+### F8 Damage reaches fire control
 
 The research's hooks (§13.2), on the parts F4 made: a director lost hands the unit to the next control with that
 position's height and instruments; the transmitting station lost drops the computer to a hand plot (`polar`, the eye's
@@ -209,27 +277,54 @@ prior, a long latency); fire-control circuits cut put the turrets in local contr
 turret's rangefinder lost leaves that turret in local control without a range. E4's timed outages (gyros, rangefinders
 out of adjustment, power) map onto the new rows.
 
-### F8 Radar and night
+### F9 Radar and night
 
 Radar as a sensor (§3.6, designer §3.2): its envelope from the set's physical numbers, capped by the 4/3-earth horizon
 and scaled by the target's size to the ¼; range-only sets need an optical bearing, so no solution at night unless the
 target is lit; splash spotting by range or both within its reach; fragility (its own guns' blast, its aerial hit). The
 first cut of the game (1890-1925) has none, so this step could go later; the data's shape is there from F3.
 
-### F9 The quick measure
+### F10 What the captain knows: estimated hit chances (scaffolding)
 
-The matchup's `MatchupMpiPct` by level goes: each battery gets a profile of its fire-control error by range, worked out
-analytically from its own rows (rangefinders, computer, salvo error) and checked against `duel`, so the matchup now and
-coarse fire later (4.9) read the design's fire control, not a level.
+The captains and admirals today know whom they can shoot (`Matchup`, by a level's fixed MPI table) but not how well
+it's going, or how well it would go somewhere else. This step gives them the contract and a first model, and uses it
+only where this plan needs it (F6's floor); the tactics that read it are the AI's passes (`command.md`).
 
-### F10 Calibration
+- **One estimate, `FireEstimate`** (`Sim.Combat`, pure, allocation-free): from a battery's guns and rate, its fire
+  control's error budget, the gun's dispersion, the range table's fall, and the target's hitting space (danger space
+  plus presented depth, presented width: §8.1), the per-shell hit chance by §8.3's closed form, the chance of at least
+  one hit a salvo, expected hits a minute, and the time to the first straddle still to come. The error budget comes
+  from the battery's own state: while ranging, the bracket's width and the salvos still needed; in fire for effect, the
+  salvo-to-salvo error, the residual drift and the track's rate error over the time of flight. One implementation:
+  the matchup's guns measure becomes a call of it, and coarse fire (4.9) will be.
+- **Two ways to ask it:**
+  - **now:** the gunnery system fills each engaged battery's estimate every fire-control tick, beside its phase, and the
+    AI reads it as it reads `CombatStore.Target` today;
+  - **what if:** the same function for a range, an aspect and a state that aren't the present one (settled, ranging
+    afresh, own ship turning), so a captain can ask what closing to 12 km would buy, or what turning away costs his own
+    fire. The matchup's `MatchupMpiPct` by level goes: its profile comes from the class's own rows.
+- **Only what the side knows:** the target's size and aspect from the picture (the class it's taken for, by type until
+  it's made out), never the truth; its own fire control's error as its computer believes it, which can be wrong (a
+  misread straddle shows as confidence).
+- **The other way round, under fire:** the same estimate for the enemy's batteries as the picture holds them (the class
+  taken for and its fit), and the evidence at own ship: splashes from the shell system within a pattern of her, enemy
+  straddles seen, hits taken, by shooter where it's known. A captain gets "under effective fire from X" as a fact, so the
+  evasion doctrine (today's zigzag, the chase later) and Fight's turn-away can read it instead of counting guns.
+- **What it enables, later and not here:** the range band a ship fights at from the hits each side gets there; target
+  choice by expected effect per shell; when to open fire; turning away when out-hit; an admiral's fire distribution by
+  value rather than counting from the van.
+- **Tests:** the estimator calibrated against itself: over `duel` runs across levels, ranges and target policies, the
+  estimated hits per salvo against the hits that came, within a band, and the estimate's ordering always right; the
+  matchup's numbers before and after (reported); no allocation; its cost a battery-second.
+
+### F11 Calibration
 
 The whole chain against the record (§11, `dispersion-and-hits.md` §5): Tsushima, Jutland by squadron, Dogger Bank,
 Denmark Strait, the 1932 LRBP, the 1944 study, North Cape, Guadalcanal, Komandorski. Kept tests with wide bands, the
 ladder's order, local control at 60-70% of director fire by day. The record's combat factor (1.5) stays one number;
 tuning for gameplay waits for the balance pass, as the damage plan's did.
 
-### F11 The designer's Fire control tab
+### F12 The designer's Fire control tab
 
 Mockup, then port, as the other tabs (`docs/designer-ui/`). The fit per battery from the catalogue, instruments
 placed on the plan and profile, mast and top heights, and the sizing rule as a live readout ("unit of error at 15 kyd 62
@@ -252,15 +347,21 @@ m, your salvo's spread 73 m: adequate", designer §5) with the curve for the shi
 
 1. **Fire control as tech blocks, levels as presets** (F3), as the shells and materials went? Recommended: yes; the
    enum survives only as a preset's label.
-2. **Radar in this pass (F8) or later?** The first cut has no radar. Recommended: the data's shape in F3, the model as
+2. **Radar in this pass (F9) or later?** The first cut has no radar. Recommended: the data's shape in F3, the model as
    the plan's last model step, cheap from the reference, so the later cuts don't need a second pass.
 3. **Spotting rules and fire discipline as the side's doctrine** (the admiral's, like the loadout), not the design's?
    Recommended: doctrine.
-4. **Fire discipline changes rates of fire** (F6): fewer shells, later first hits for slow systems, magazines that last.
-   It moves the matchup and every scenario's numbers. Wanted?
+4. **Fire discipline changes rates of fire** (F6): fewer shells while ranging, fire for effect at the loading rate once
+   straddling, magazines that last. It moves the matchup and every scenario's numbers. Wanted?
 5. **The AFCT's turn setting** is unconfirmed in the sources (§14). Recommended: a computer option anyone may fit (allow
    silliness), off in the RN templates by default.
 6. **Masts and tops from the design** (F4) with template defaults by type and year, costed in topweight and stiffness,
    rather than a rule from the ship's size? Recommended: from the design.
-7. **Order:** F0-F2 first (the prediction logic on presets, no shipgen change), then F3-F4 (shipgen), F5-F7, then F8-F11.
-   Or shipgen first?
+7. **Order:** F0-F2 first (the prediction logic on presets, no shipgen change), then F3-F4 (shipgen), F5-F8, then F9-F12.
+   Or shipgen first? (F6 needs only F2's tracker, and its hit-chance floor only a first cut of F10's estimate, so F6
+   could come straight after F2 if the wasted salvos are the most urgent.)
+8. **The hit-chance floor** (F6 item 7, from F10's estimate): should a battery hold fire by default while its
+   estimated hits per shell are under a floor (the secondaries at the edge of their reach go quiet), with "fire anyway"
+   an order? Recommended: yes, the floor in doctrine.
+9. **F10's scope:** the estimate, "now" and "what if", and "under effective fire" as facts the AI reads, with only F6's
+   floor using them in this pass; the tactics that use them in the AI's passes. Recommended: as written.
