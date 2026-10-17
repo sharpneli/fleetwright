@@ -804,6 +804,14 @@ public sealed record SimSettings
     /// in cases.</summary>
     public double[] RoomVital { get; init; } = [0.3, 0.3, 0.3, 0.15, 0.3, 0.5, 0.5, 0.6, 0.3, 0.3, 0.3, 0.3, 0.3];
 
+    /// <summary>A part's vitals as a share of it, by its kind (main, secondary and torpedo mounts, AA, barbette,
+    /// superstructure, conning tower, funnel, uptake, casing, sponson, mast, shaft, shaft alley, propeller, rudder,
+    /// torpedo tube, flight deck, hangar bay): a burst's fragments that get into it damage it at this share of their
+    /// count (docs/battle/shells-armour-damage.md E1, the user's choice: like RoomVital). A funnel or uptake holed by
+    /// splinters keeps its draught; an open mount's crew and sights, a conning tower's instruments and a tube's
+    /// torpedoes don't [EST].</summary>
+    public double[] PartVital { get; init; } = [0.3, 0.3, 0.5, 0.5, 0.2, 0.2, 0.5, 0.05, 0.05, 0.1, 0.1, 0.1, 0.05, 0.2, 0.05, 0.05, 0.5, 0.1, 0.2];
+
     /// <summary>A boiler room keeps this share of its steam with every funnel it draws through wrecked (the draught
     /// lost; 08-gunfire-effects.md §8: funnel hits cost draught, not the boilers).</summary>
     public double DraughtFloor { get; init; } = 0.7;
@@ -817,6 +825,16 @@ public sealed record SimSettings
     public double SeamLeakMinMm { get; init; } = 270;
     public double SeamLeakChance { get; init; } = 0.4;
     public double SeamLeakM2 { get; init; } = 0.002;
+
+    /// <summary>A burst's single pieces (docs/battle/shells-armour-damage.md E1; damage/13 §2.5), walked on through the
+    /// ship from the burst like a shell: an AP or common shell's nose slug, a blunt broken penetrator SlugCalibres of the
+    /// calibre across, and the base plug, PlugCalibres across (Ralph Talbot's 8" plugs 5.6" across), both of
+    /// PieceQuality (a plate is that share as hard to them as to a whole shell) [EST]; slower than PieceMinMs a piece
+    /// falls where it is.</summary>
+    public double SlugCalibres { get; init; } = 0.75;
+    public double PlugCalibres { get; init; } = 0.7;
+    public double PieceQuality { get; init; } = 0.6;
+    public double PieceMinMs { get; init; } = 30;
 
     /// <summary>Fire: a burst's chance by the shell's kind (AP, common, HE), times the fire load where it bursts (by the
     /// look's era: Victorian, Great War, treaty, WWII, Cold War; and in superstructure, machinery or the rest of the
@@ -999,7 +1017,8 @@ public sealed record SimSettings
     /// bursts inside, MatchupKeptShare when the armour keeps it out (or a nose fuze bursts it on the plate),
     /// MatchupPassShare when it passes through plating too thin to arm its fuze; MatchupTorpedoK by a torpedo's charge in kg.
     /// Penetration is a probability around the plate, spread by MatchupPenSpread of it (1 sigma). A side hit in the
-    /// upperworks reaches the vitals by its splinters only, exp(-deck armour / MatchupSplinterMm) of it. Fitted to shipgen
+    /// upperworks reaches the vitals by its splinters only, exp(-deck armour / the shell's splinter plate) of it (the
+    /// armour its best 10% beat 5 m off: Fragments.SplinterMm, E1). Fitted to shipgen
     /// hits and shipgen torpedo with 30 minutes of flooding after (a 2,300 t destroyer 7% a 6" HE hit, Iron Duke 0.85% a
     /// 12" AP hit at 14 km, a battleship 18% a torpedo).</summary>
     public double MatchupShellK { get; init; } = 28;
@@ -1007,7 +1026,6 @@ public sealed record SimSettings
     public double MatchupPassShare { get; init; } = 0.4;
     public double MatchupTorpedoK { get; init; } = 48;
     public double MatchupPenSpread { get; init; } = 0.1;
-    public double MatchupSplinterMm { get; init; } = 25;
     /// <summary>A shell through armour does what its fuze and filler give it (<see cref="LowOrderShare"/>): a full burst
     /// all of it, a burst in the plate and a low-order burst these shares, a blind fuze or a dud as one kept out (a
     /// broken shell too, the plate's doing).</summary>

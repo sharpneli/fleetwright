@@ -1,5 +1,5 @@
 {
- "version": 4,
+ "version": 5,
  "id": "indefatigable",
  "name": "Indefatigable-like (1911)",
  "type": "BC",
@@ -252,7 +252,8 @@
    "filler": {
     "share": 0.09,
     "explosive": "Lyddite",
-    "booster": "basic"
+    "booster": "basic",
+    "body": 0.75
    },
    "steel": {
     "size": 1,
@@ -295,7 +296,8 @@
    "filler": {
     "share": 0.032,
     "explosive": "Lyddite",
-    "booster": "basic"
+    "booster": "basic",
+    "body": 0.9
    },
    "steel": {
     "size": 1.25,
@@ -337,7 +339,8 @@
    "filler": {
     "share": 0.125,
     "explosive": "Lyddite",
-    "booster": "basic"
+    "booster": "basic",
+    "body": 0.75
    },
    "steel": {
     "size": 1,
@@ -394,7 +397,8 @@
    "back": {
     "spall_u": 0.85,
     "holed_u": 0.94
-   }
+   },
+   "fragments": "fh"
   },
   "high-tensile steel": {
    "density_t_per_m3": 7.85,
@@ -402,7 +406,8 @@
    "back": {
     "spall_u": 0.9,
     "holed_u": 1
-   }
+   },
+   "fragments": "mild"
   },
   "steel": {
    "density_t_per_m3": 7.85,
@@ -410,7 +415,8 @@
    "back": {
     "spall_u": 0.9,
     "holed_u": 1
-   }
+   },
+   "fragments": "mild"
   }
  },
  "fittings": {

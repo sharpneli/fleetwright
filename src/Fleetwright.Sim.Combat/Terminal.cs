@@ -67,6 +67,9 @@ public struct TerminalResult
     /// toward their normals in all, degrees.</summary>
     public int Glance;
     public double TurnDeg;
+    /// <summary>E1: the shell's speed when it burst, m/s (0 against a plate that stopped it): its fragments fly with it,
+    /// the side ring leaning forward, and the nose slug and base plug go on at it.</summary>
+    public double BurstMs;
 
     public readonly bool Bursts => Burst != BurstKind.None;
 }
@@ -165,7 +168,7 @@ public static class Terminal
             }
             ref readonly var x = ref xs[i];
             if (x.T >= burstT)
-                return Burst(ref res, burstT, force, res.Outcome, BurstKind.Inside);
+                return Burst(ref res, burstT, force, res.Outcome, BurstKind.Inside, v);
             switch (x.Kind)
             {
                 case CrossingKind.HullIn or CrossingKind.PartIn:
@@ -192,7 +195,7 @@ public static class Terminal
             double t = x.Mm > 0 ? x.Mm * c.MaterialQ(x.Material, x.Mm, calMm) : 0;
             double ob = Obliquity(dir, x.Normal);
             if (nose)
-                return Nose(ref res, ref r, shell, s, x.T, i, t <= s.HePenCalibres * calMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(ob)), 1e-3)));
+                return Nose(ref res, ref r, shell, s, x.T, i, t <= s.HePenCalibres * calMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(ob)), 1e-3)), v);
 
             // the plate as this shell meets it: a common shell's weaker body; on face-hardened plate the body's quality,
             // and the face shattering a bare nose or a body past its limits; its limit by the plate's lot on this ship and
@@ -251,7 +254,7 @@ public static class Terminal
                 if (u >= mat.SpallU)
                     res.Spall = (u - mat.SpallU) / Math.Max(mat.HoledU - mat.SpallU, 1e-9);
                 if (!double.IsNaN(burstT))
-                    return Burst(ref res, Math.Max(x.T - 0.3, 0), force, res.Outcome, BurstKind.Inside);
+                    return Burst(ref res, Math.Max(x.T - 0.3, 0), force, res.Outcome, BurstKind.Inside, 0);
                 if (started)
                     return res;
                 if (StartsOn(shell, mat.SteelMm(x.Mm), ob, hard, x.T, ref impulse, ref impulseT, s))
@@ -288,7 +291,7 @@ public static class Terminal
             if (inPlate)
             {
                 res.Plate = i;
-                return Burst(ref res, x.T + 0.01, s.BurstInPlateK, Outcome.BurstInPlate, BurstKind.InPlate);
+                return Burst(ref res, x.T + 0.01, s.BurstInPlateK, Outcome.BurstInPlate, BurstKind.InPlate, v);
             }
             if (!started && StartsOn(shell, mat.SteelMm(x.Mm), ob, hard, x.T, ref impulse, ref impulseT, s))
             {
@@ -305,7 +308,7 @@ public static class Terminal
     /// <summary>A nose fuze on the first solid thing it meets, the crossing at T: blind, the shell goes on through a plate it
     /// punches (a dud) or lies against one it doesn't; else the filler (<see cref="Initiate"/>) bursts just inside a plate
     /// it punches, or outside one it doesn't, or is a dud.</summary>
-    static TerminalResult Nose(ref TerminalResult res, ref RandomStream r, in ShellTypeRow shell, SimSettings s, double t, int i, bool punches)
+    static TerminalResult Nose(ref TerminalResult res, ref RandomStream r, in ShellTypeRow shell, SimSettings s, double t, int i, bool punches, double v)
     {
         res.Plate = i;
         var (o, force) = r.NextDouble() < shell.FuzeBlind ? (Outcome.Dud, 0.0) : Initiate(shell, s, ref r);
@@ -317,8 +320,8 @@ public static class Terminal
             return res;
         }
         return punches
-            ? Burst(ref res, t + 0.5, force, o, BurstKind.Inside)
-            : Burst(ref res, Math.Max(t - 0.3, 0), s.BurstOutsideK * force, Outcome.BurstOutside, BurstKind.Outside);
+            ? Burst(ref res, t + 0.5, force, o, BurstKind.Inside, v)
+            : Burst(ref res, Math.Max(t - 0.3, 0), s.BurstOutsideK * force, Outcome.BurstOutside, BurstKind.Outside, v);
     }
 
     /// <summary>A base fuze started at T with velocity v (spentS of its delay already run, on the water): blind (its
@@ -398,9 +401,9 @@ public static class Terminal
         return res;
     }
 
-    static TerminalResult Burst(ref TerminalResult res, double t, double force, Outcome o, BurstKind kind)
+    static TerminalResult Burst(ref TerminalResult res, double t, double force, Outcome o, BurstKind kind, double v)
     {
-        (res.Outcome, res.Burst, res.BurstT, res.StopT, res.Force) = (o, kind, t, t, force);
+        (res.Outcome, res.Burst, res.BurstT, res.StopT, res.Force, res.BurstMs) = (o, kind, t, t, force, v);
         return res;
     }
 

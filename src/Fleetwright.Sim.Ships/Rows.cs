@@ -289,6 +289,9 @@ public readonly record struct ShellTypeRow
     public double BreakObDeg { get; init; }
     public double BreakTD { get; init; }
     public double BodyQuality { get; init; }
+    /// <summary>Its burst's pieces (docs/battle/shells-armour-damage.md E1; <see cref="Ships.Fragments"/>): null for a
+    /// shell without filler. Equal when made of the same numbers.</summary>
+    public Fragments? Fragments { get; init; }
     /// <summary>A diving shell (the IJN's Type 88/91): its cap head comes off on the water, leaving a flat nose that runs
     /// true under it instead of tumbling, so it keeps its speed there longer (WaterRun).</summary>
     public bool Diving => Cap == Cap.BreakAway;
@@ -495,6 +498,9 @@ public readonly record struct MaterialRow(double Q, double QScale, double FaceSh
 
     public bool FaceHardened => !double.IsNaN(FaceMinMm);
 
+    /// <summary>How fragments see it (THOR's class, E1): mild unless given.</summary>
+    public FragmentClass Fragments { get; init; }
+
     /// <summary>Its density, t/m³ (steel's 7.85 unless given).</summary>
     public double Density { get; init; } = Steel;
 
@@ -506,7 +512,18 @@ public readonly record struct MaterialRow(double Q, double QScale, double FaceSh
 
     public static MaterialRow Of(MaterialInput m) => new(m.Q ?? 1, m.QScale ?? 0, m.FaceHardened?.Share ?? double.NaN,
         m.FaceHardened is { } f ? f.MinMm ?? 0 : double.NaN, m.ElongationPct ?? 25, m.FaceHardened?.Shatters ?? true, m.Back?.SpallU ?? 0.90,
-        m.Back?.HoledU ?? 1.00) { Density = m.DensityTPerM3 ?? Steel };
+        m.Back?.HoledU ?? 1.00) { Density = m.DensityTPerM3 ?? Steel, Fragments = FragmentsOf(m.Fragments) };
+
+    static FragmentClass FragmentsOf(string? c) => c switch
+    {
+        "ductile" => FragmentClass.Ductile,
+        "fh" => FragmentClass.Fh,
+        "brittle" => FragmentClass.Brittle,
+        _ => FragmentClass.Mild,
+    };
+
+    /// <summary>A plate of it mm thick at an obliquity as the mild steel that stops fragments as it does (E1).</summary>
+    public double FragmentMildMm(double mm, double obliquityDeg = 0) => Ships.Fragments.MildMm(SteelMm(mm), Fragments, obliquityDeg);
 
     /// <summary>The plate's worth as a share of its thickness against a shell of a calibre (00 §4.2's rules, all by the
     /// material's numbers): face-hardened plate q·(D/8")^−k past 8" (held at q below), and no face-hardened advantage

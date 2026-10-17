@@ -118,9 +118,11 @@ public static class Ammunition
         else
         {
             foreach (var k in f.Extra.KeysOrEmpty())
-                yield return $"{at}.filler.{k}: not a filler field (share, explosive, booster)";
+                yield return $"{at}.filler.{k}: not a filler field (share, body, explosive, booster)";
             if (f.Share is not (>= 0 and < 1))
                 yield return $"{at}.filler.share: a share of the mass, 0 up to 1";
+            if (f.Body is { } fb && !(fb > 0 && fb <= 1))
+                yield return $"{at}.filler.body: the filler's share alongside the body, more than 0 up to 1";
             if (f.Booster is { } boost && !Boosters.Contains(boost))
                 yield return $"{at}.filler.booster = {Style.Quote(boost)}: use basic or ce";
             if (f.Explosive is { } x)
@@ -236,9 +238,20 @@ public static class Ammunition
                 Fuze = a.Fuze!.Position!, FuzeDelayS = a.Fuze.DelayS ?? 0, FuzeStartCal = a.Fuze.StartCal ?? FuzeDefaults.StartCal,
                 FuzeOblique = a.Fuze.Oblique ?? FuzeDefaults.Oblique, FuzePlates = a.Fuze.Plates ?? "single",
                 FuzeScatter = a.Fuze.Scatter ?? FuzeDefaults.Scatter, FuzeBlind = a.Fuze.Blind ?? FuzeDefaults.Blind,
+                GurneyMs = x.GurneyMs ?? 2438, Brisance = x.Brisance ?? 1, SteelSize = a.Steel?.Size ?? 1, SteelSpeed = a.Steel?.Speed ?? 1,
+                Casing = Casing(a), FillerBody = a.Filler.Body ?? ShellTemplates.FillerBodyOf(a.Kind!),
             });
         }
         return resolved;
+    }
+
+    /// <summary>A block's casing shares, its kind's (ShellTemplates.CasingOf) where it gives none.</summary>
+    static CasingReport Casing(AmmoInput a)
+    {
+        var k = ShellTemplates.CasingOf(a.Kind!);
+        var c = a.Casing;
+        return new CasingReport(c?.Nose ?? k.Nose!.Value, c?.Ogive ?? k.Ogive!.Value, c?.Body ?? k.Body!.Value, c?.Plug ?? k.Plug!.Value,
+            c?.Tail ?? k.Tail!.Value);
     }
 
     /// <summary>A loadout (docs/battle/shells-armour-damage.md S5, decision 6): the design with the given batteries'
@@ -340,7 +353,9 @@ public sealed record BatteryShells(string Battery, int Index, double CalibreMm, 
 /// when the block gives none, and its quality on that plate), filler (kg, the explosive, its TNT equivalent, the
 /// booster, and the explosive's rates: bursting in the plate at the limit, and full detonation with this booster) and
 /// fuze (position, delay, the plate that starts it in calibres at normal and its share at high obliquity, single or
-/// two plates, the delay's scatter and the blinds; <see cref="FuzeDefaults"/> where the block gives none).</summary>
+/// two plates, the delay's scatter and the blinds; <see cref="FuzeDefaults"/> where the block gives none), and what its
+/// fragments are made of (E1; damage/13): the explosive's Gurney constant and brisance, the steel's size and speed
+/// multipliers, the casing's shares and the filler's share alongside the body (the kind's where the block gives none).</summary>
 public sealed record ShellReport
 {
     public required string Ammo { get; init; }
@@ -367,7 +382,17 @@ public sealed record ShellReport
     public required string FuzePlates { get; init; }
     public double FuzeScatter { get; init; }
     public double FuzeBlind { get; init; }
+    public double GurneyMs { get; init; }
+    public double Brisance { get; init; }
+    public double SteelSize { get; init; }
+    public double SteelSpeed { get; init; }
+    public required CasingReport Casing { get; init; }
+    public double FillerBody { get; init; }
 }
+
+/// <summary>A shell's casing as shares of its metal: the nose slug, the ogive's spray, the body's side spray, the base
+/// plug and the tail (13 §2.5).</summary>
+public sealed record CasingReport(double Nose, double Ogive, double Body, double Plug, double Tail);
 
 /// <summary>A fuze's numbers where its block gives none (armor/00 §6.2-6.3): Okun's single-plate start, 0.07 calibres at
 /// normal and 0.45 of it from 61° (his formula's own), a delay scattered by a quarter (σ 20-30%), 5% blind.</summary>

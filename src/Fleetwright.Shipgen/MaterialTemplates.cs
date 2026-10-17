@@ -25,8 +25,14 @@ public static class MaterialTemplates
     static readonly BackInput Ductile = new() { SpallU = 0.90, HoledU = 1.00 }, Hard = new() { SpallU = 0.85, HoledU = 0.94 },
         Brittle = new() { SpallU = 0.75, HoledU = 0.95 };
 
+    /// <summary>The fragments' classes (THOR's constants by class, E1).</summary>
+    public static readonly string[] FragmentClasses = ["mild", "ductile", "fh", "brittle"];
+
     static Entry M(string name, string group, double density, double q, string note, double? elongation = null) =>
-        new(name, group, new MaterialInput { DensityTPerM3 = density, Q = q, ElongationPct = elongation, Back = Ductile }, note);
+        new(name, group, new MaterialInput
+        {
+            DensityTPerM3 = density, Q = q, ElongationPct = elongation, Back = Ductile, Fragments = group == "armour" ? "ductile" : "mild",
+        }, note);
 
     /// <summary>Face-hardened: q at 8", k past it, the face's share and the thinnest plate made so (inches).</summary>
     static Entry Fh(string name, double q, double k, double face, double minIn, string note, double density = 7.85, bool? shatters = null,
@@ -34,7 +40,7 @@ public static class MaterialTemplates
         new(name, "armour", new MaterialInput
         {
             DensityTPerM3 = density, Q = q, QScale = k, FaceHardened = new FaceInput { Share = face, MinMm = Math.Round(minIn * In, 1), Shatters = shatters },
-            Back = back ?? Hard,
+            Back = back ?? Hard, Fragments = back == Brittle ? "brittle" : "fh",
         }, note);
 
     /// <summary>The catalogue: the structural materials, then the armour, roughly by its age.</summary>
@@ -107,6 +113,7 @@ public static class MaterialTemplates
             DensityTPerM3 = given?.DensityTPerM3 ?? basis.DensityTPerM3, Q = given?.Q ?? basis.Q, QScale = given?.QScale ?? basis.QScale,
             FaceHardened = face, ElongationPct = given?.ElongationPct ?? basis.ElongationPct,
             Back = given?.Back is { } b ? new BackInput { SpallU = b.SpallU ?? basis.Back?.SpallU, HoledU = b.HoledU ?? basis.Back?.HoledU } : basis.Back,
+            Fragments = given?.Fragments ?? basis.Fragments,
         };
     }
 
@@ -159,7 +166,7 @@ public static class MaterialTemplates
         return table;
     }
 
-    static readonly string[] Fields = ["density_t_per_m3", "q", "q_scale", "face_hardened", "elongation_pct", "back"];
+    static readonly string[] Fields = ["density_t_per_m3", "q", "q_scale", "face_hardened", "elongation_pct", "back", "fragments"];
 
     public static List<string> Validate(Design design)
     {
@@ -181,6 +188,8 @@ public static class MaterialTemplates
                     errs.Add($"{at}.{k}: a number, more than 0");
             if (x.QScale is double qs && !double.IsFinite(qs))
                 errs.Add($"{at}.q_scale: a number");
+            if (x.Fragments is { } fc && !FragmentClasses.Contains(fc))
+                errs.Add($"{at}.fragments = {Style.Quote(fc)}: use {string.Join(", ", FragmentClasses)}");
             if (x.FaceHardened is { } f)
             {
                 foreach (var k in f.Extra.KeysOrEmpty())

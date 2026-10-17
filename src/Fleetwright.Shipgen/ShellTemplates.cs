@@ -33,12 +33,17 @@ public static class ShellTemplates
         _ => (1.00, 1.00),
     };
 
-    static CasingInput CasingOf(string kind) => kind switch
+    /// <summary>A kind's casing shares (13 §2.5: the nose and plug [SRC Okun], the rest [EST]).</summary>
+    public static CasingInput CasingOf(string kind) => kind switch
     {
         "ap" => new() { Nose = 0.33, Ogive = 0, Body = 0.55, Plug = 0.08, Tail = 0.04 },
         "common" => new() { Nose = 0.25, Ogive = 0, Body = 0.63, Plug = 0.08, Tail = 0.04 },
         _ => new() { Nose = 0.02, Ogive = 0.20, Body = 0.63, Plug = 0.07, Tail = 0.08 },
     };
+
+    /// <summary>A kind's share of the filler alongside the cylindrical body (13 §2.5 [EST]): a common or AP shell's cavity
+    /// is mostly in the body, an HE shell's runs up into the ogive.</summary>
+    public static double FillerBodyOf(string kind) => kind switch { "ap" => 0.90, "common" => 0.85, _ => 0.75 };
 
     /// <summary>A fuze: base with a delay, or nose (fires on first contact, so no start plate).</summary>
     sealed record F(string Position, double DelayS, double StartCal = 0.07, double Oblique = 0.45, string Plates = "single", double Scatter = 0.1,
@@ -59,7 +64,7 @@ public static class ShellTemplates
             Kind = kind, MassKKgM3 = Math.Round(lbIn3 * LbIn3 / 10) * 10, NoseCrh = crh, FormFactor = formFactor,
             Cap = new CapInput { Kind = cap, Share = cap == "none" ? null : capShare }, Windscreen = windscreen,
             Body = new BodyInput { BreakObDeg = body.Ob, BreakTD = body.TD, Quality = body.Q },
-            Filler = new FillerInput { Share = filler, Explosive = new ExplosiveInput { Name = explosive }, Booster = booster },
+            Filler = new FillerInput { Share = filler, Body = FillerBodyOf(kind), Explosive = new ExplosiveInput { Name = explosive }, Booster = booster },
             Steel = new SteelInput { Size = size, Speed = speed }, Casing = CasingOf(kind),
             Fuze = new FuzeInput
             {

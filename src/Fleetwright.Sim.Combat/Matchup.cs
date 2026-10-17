@@ -615,8 +615,9 @@ public static class Matchup
         // and what it beats just over its limit, where a body may break getting through (P2)
         double near = strike / s.NearLimitBand;
         double nearSide = Terminal.PenMm(shell, near, fall) * common, nearDeck = DeckMm(shell, near, fall, s) * common;
-        // a burst where there's no armour (the upperworks, the ends) reaches the vitals by its splinters through the deck
-        double bare = Math.Exp(-t.DeckMeanMm / s.MatchupSplinterMm);
+        // a burst where there's no armour (the upperworks, the ends) reaches the vitals by its splinters through the deck:
+        // the plate its best fragments beat (E1)
+        double bare = shell.Fragments is { } frag ? Math.Exp(-t.DeckMeanMm / Math.Max(frag.SplinterMm, 1e-3)) : 0;
         double upper = (shell.Fuze == Fuze.Nose || t.SidePlatingMm >= Terminal.FuzeStartMm(shell, fall) ? 1 : s.MatchupPassShare) * bare;
         // the faces as this calibre meets them: between the 8" and the 16" profiles
         double w = Math.Clamp((shell.CalibreMm - MatchupProfile.Eight) / MatchupProfile.Eight, 0, 1);

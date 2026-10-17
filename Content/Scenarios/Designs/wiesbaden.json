@@ -1,5 +1,5 @@
 {
- "version": 4,
+ "version": 5,
  "id": "wiesbaden",
  "name": "Wiesbaden-like (1915)",
  "type": "CL",
@@ -251,7 +251,8 @@
    "filler": {
     "share": 0.027,
     "explosive": "TNT",
-    "booster": "basic"
+    "booster": "basic",
+    "body": 0.9
    },
    "steel": {
     "size": 1.25,
@@ -293,7 +294,8 @@
    "filler": {
     "share": 0.066,
     "explosive": "TNT",
-    "booster": "basic"
+    "booster": "basic",
+    "body": 0.75
    },
    "steel": {
     "size": 1,
@@ -345,7 +347,8 @@
    "back": {
     "spall_u": 0.9,
     "holed_u": 1
-   }
+   },
+   "fragments": "ductile"
   },
   "steel": {
    "density_t_per_m3": 7.85,
@@ -353,7 +356,8 @@
    "back": {
     "spall_u": 0.9,
     "holed_u": 1
-   }
+   },
+   "fragments": "mild"
   }
  },
  "fittings": {

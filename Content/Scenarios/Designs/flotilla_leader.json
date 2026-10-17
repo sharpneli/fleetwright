@@ -1,5 +1,5 @@
 {
- "version": 4,
+ "version": 5,
  "id": "flotilla_leader",
  "name": "Faulknor-like flotilla leader (1914)",
  "type": "DD",
@@ -221,7 +221,8 @@
    "filler": {
     "share": 0.09,
     "explosive": "Lyddite",
-    "booster": "basic"
+    "booster": "basic",
+    "body": 0.75
    },
    "steel": {
     "size": 1,
@@ -264,7 +265,8 @@
    "filler": {
     "share": 0.032,
     "explosive": "Lyddite",
-    "booster": "basic"
+    "booster": "basic",
+    "body": 0.9
    },
    "steel": {
     "size": 1.25,
@@ -316,7 +318,8 @@
    "back": {
     "spall_u": 0.9,
     "holed_u": 1
-   }
+   },
+   "fragments": "mild"
   },
   "steel": {
    "density_t_per_m3": 7.85,
@@ -324,7 +327,8 @@
    "back": {
     "spall_u": 0.9,
     "holed_u": 1
-   }
+   },
+   "fragments": "mild"
   }
  },
  "fittings": {

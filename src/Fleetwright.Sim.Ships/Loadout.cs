@@ -94,6 +94,7 @@ public sealed class Loadout
             FuzeDelayS = s.FuzeDelayS, FuzeStartCal = s.FuzeStartCal, FuzeOblique = s.FuzeOblique, FuzeTwoPlate = s.FuzePlates == "two",
             FuzeScatter = s.FuzeScatter, FuzeBlind = s.FuzeBlind,
             Cap = Kinds.CapOf(s.Cap), CapShare = s.CapShare, BreakObDeg = s.BreakObDeg, BreakTD = s.BreakTD, BodyQuality = s.BodyQuality,
+            Fragments = Fragments.Of(s, b.CalibreMm),
         };
 
         var batteries = c.Batteries;

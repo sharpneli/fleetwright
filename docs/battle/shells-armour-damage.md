@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass) and E0 done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0 and E1 done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1182,6 +1182,65 @@ squadrons, and changes `Matchup.cs` with it.
     3,200 ft/s for the 6″ HC, Boise's largest piece.
   - **Open:** THOR above 53 g (AP and black-powder pieces of 0.2-20 kg): one rule for pieces over ~0.5 kg, THOR or a
     blunt-fragment Thompson walk.
+  - **Done 2026-10-17.** What it came to:
+    - **The generator** (`Fragments.cs`, Sim.Ships): per shell type at compile, a full detonation's and a low-order
+      one's (`FragmentBurst`). The body's own C/M (`filler.body`, new: AP 0.90, common 0.85, HE 0.75 by kind; design
+      format 5 adds it to every block) gives the bore and the wall, Gurney the side spray's speed (× the steel's),
+      Mott's M_k and N₀ its masses (B = B_TNT/brisance × the steel's size); the ogive and tail sprays, the nose slug
+      and the base plug with their Gurney end-plate kicks. It reproduces 13 §3.2's table to the gram (6" HC: 25 mm wall,
+      934 m/s, 786 pieces of 1 g and up, 25 g mean; 16" AP: 136 mm, 370 m/s, 303, 2.1 kg, nose 398 kg, plug 97 kg).
+    - **Mott's law, not classes:** a heavier fragment always gets through more (THOR's limit goes as m^−0.36 and it
+      slows later), so the count through a plate is exactly N(>m*), m* the lightest that gets through, solved by
+      Newton in ln m (concave and rising: it climbs to the root from the drag-free one). Eight mass classes were
+      tried first: the knee came out in steps of 50/25/10%; this is exact and no slower (0.7 µs a box).
+    - **At the burst:** `FragmentBurst.Hits(point, the shell's line, its speed there, a box, the plate)`: the ring
+      ±7.5° leaning forward by atan(v/V₀) with 0.15 over the rest of the sphere, the ogive's and tail's cones leaned
+      the same way, the box's presented area over its centre distance squared as its share of what it overlaps in the
+      polar angle, drag to its nearest point, the plate at its obliquity on the face square to the fragments (or the
+      face given: a deck's, a bulkhead's). Linear subtraction by summing the plates as mild steel against fragments.
+      `TerminalResult.BurstMs` is the shell's speed at the burst (0 against a plate that stopped it).
+    - **The material's `fragments` class** (`mild`, `ductile`, `fh`, `brittle`): THOR's c₁ by class, mild's 6.523
+      for structural steel and (by their mass in steel) wood and cement, hard steel's +0.076 (its residual law's
+      offset) for homogeneous armour and, lacking a limit of its own, face-hardened [EST], mild for brittle [EST]. In
+      the catalogue and every design's table (`upgrade --materials`).
+    - **The effects** (`Effects.Burst`): `FragPenMm` and Okun's table are gone.
+      - **Parts:** within the wreck radius as before (destroyed or disabled by distance) unless their armour keeps
+        every fragment out. Beyond it, damaged by the fragments that get in through their armour and own plating
+        (the superstructure's for blocks, funnels, casings, masts), at their vitals' share: `PartVital` by component
+        kind, as RoomVital is for rooms (the user's choice, 2026-10-17, of three options: a funnel or uptake 0.05,
+        superstructure 0.2, a mount 0.3, AA, a tube or the conning tower 0.5 [EST]). One draw serves both.
+      - **Reach follows the spaces:** in the hull, beyond the wreck radius, only parts in the burst's own space take
+        its fragments, and those in a space next to it the fragments get into, through that join's plate. The free
+        field alone, through no plates but a part's own, reached shafts and shaft alleys under the armour deck: a
+        battleship under thirty 6" HE hits was left 0.67 of her speed (DamageTests' band 0.85-1).
+      - **Neighbouring spaces:** reached by a fragment drawn through the join (deck, bulkhead, slopes as mild steel)
+        instead of Okun's 50% plate: a destroyer's 3-4 mm bulkheads now let a 4" HE's splinters into the next space,
+        as WDR 51 has 10 lb plating passing a third of them.
+      - **The single pieces:** an AP or common shell's nose slug (at its speed plus its kick, 0.75 calibre) and the
+        base plug (at its speed less its kick, 0.7 calibre; an HE shell's is thrown back into the tail spray) walk on
+        through the ship from the burst like a shell, by Thompson for their mass and width, a plate as hard as 0.6 of
+        it is to a whole shell [EST], striking parts and spaces and holing the plating near the waterline their own
+        width across (`SlugCalibres`, `PlugCalibres`, `PieceQuality`, `PieceMinMs`).
+    - **The matchup** reads the same fragments: a burst in the upperworks reaches the vitals by
+      exp(−deck / the shell's splinter plate), the armour its best 10% beat 5 m off (`Fragments.SplinterMm`), in place
+      of the fixed 25 mm (`MatchupSplinterMm` gone).
+    - **Open question 2, settled by the bench:** THOR for every piece of the sprays, heavy ones too (against a blunt
+      Thompson walk it gets through 0.6-0.85 of the plate at 0.05-20 kg, the gap closing with mass: within the
+      uncertainty, and the sourced form); Thompson for the two single pieces, which are calibre-sized.
+    - **Bench `shipgen frag`:** WDR 51's 6" HC 3,066 ft/s (−4%); Boise's largest piece 3.7 kg (2.4 kg recovered);
+      Okun's 8" HE: the 1% column +0/+3/+8% at 4/10/20 m, the median +6% at 4 m and +29%/+52% at 10/20 m (the note's
+      own model has the same: Okun's medians fall faster than the drag law), the 10% column −35% near the burst (as
+      the note); the knee 5" and 6" HE 1-4% through 25 lb, 32-39% through 10 lb, 14"/16" HC and AP 24-30% through
+      25 lb, 1-2% through 1.5" (13 §4.3 within ±2 points); cable cuts 0.85× the note's (the band holds 0.85 of the
+      spray, the note's counted all).
+    - **Benches, before and after** (2,000 hits each): every outcome identical (the walk is unchanged). Parts:
+      V25 under Lion's 4" HE power 88 → 90%, crippled 9 → 10%; Iron Duke under Seydlitz's 28 cm power 98 → 99%,
+      crew a hit 1.8 → 1.5, magazines set off by the hit 0.85 → 0.55%; Lion under Derfflinger's 30.5 cm magazines
+      0.45 → 0.15%; the battleship under thirty 6" HE hits speed 91 → 90%, power 75 → 69%, directors 0.6 → 0.3 of 1.
+      Matchup: lion v seydlitz 1.063 → 1.267, arethusa:4 v iron_duke 1.295 → 1.173 (the splinter plate). Squadrons'
+      30 minutes: hits 175 → 200, Princess Royal no longer lost to her magazine, hash 972F94C3DFA06E70 → B788B53E9CFE8A60.
+      Cost a hit: V25 −8%, Iron Duke −14% (the old radius loop ran over every part), the battleship under HE +10%.
+    - **Goldens** gain `filler.body`, the materials' `fragments` and version 5 (ShipDesign.Version 26); 372 of 372.
 - **E2 Holed but broken.**
   - The broken shell's pieces through the hole: E1's field at about 0.15×, no full burst (16 §4.3: a weak burst at the
     plate).
@@ -1316,7 +1375,8 @@ None blocks a step; each is settled by its step's bench.
 
 1. **The filler's in-plate curve** (P3): 12's r², here u⁻⁴, against the Jutland sample and Baden. P3: ρ¹ instead moves
    Lion on Seydlitz's 1 in 5.6 only to 1 in 6.2; the gap to Jutland's 1 in 13 is elsewhere.
-2. **THOR above 53 g** (E1): the heavy AP and black-powder pieces.
+2. **THOR above 53 g** (E1): the heavy AP and black-powder pieces. Settled at E1: THOR for every spray piece,
+   Thompson for the nose slug and base plug.
 3. **The casing shares and steel multipliers** (S1, E1) are [EST]: navweaps' cross-sections of the 16″ Mk 8 and Mk 13
    and the 6″ Mk 34 would pin them.
 4. **The spall onsets** (E3): no naval measurement exists; 0.80-0.92 is defensible for each class.
@@ -1354,7 +1414,7 @@ None blocks a step; each is settled by its step's bench.
 | P6 | — | — | under water (done) | underwater hits |
 | P7 | P0 | gratings, backing | scatter | plates |
 | E0 | — | joints, shock grade (done) | compiled (done) | no |
-| E1 | S1, P0 | — | the burst's pieces, THOR, `frag` bench | fragments |
+| E1 | S1, P0 | `filler.body`, the material's `fragments` (done) | the burst's pieces, THOR, `frag` bench (done) | fragments |
 | E2 | P4, E1 | — | holed-but-broken, flash | damage |
 | E3 | P4, E1 | — | spall | damage behind armour |
 | E4 | E0, P1a | — | turret states, belt leaks, armour shock | jams, leaks, outages |

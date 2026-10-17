@@ -1,5 +1,5 @@
 {
- "version": 4,
+ "version": 5,
  "id": "hessen",
  "name": "Braunschweig-like pre-dreadnought (1905)",
  "type": "BB",
@@ -300,7 +300,8 @@
    "filler": {
     "share": 0.027,
     "explosive": "TNT",
-    "booster": "basic"
+    "booster": "basic",
+    "body": 0.9
    },
    "steel": {
     "size": 1.25,
@@ -342,7 +343,8 @@
    "filler": {
     "share": 0.07,
     "explosive": "TNT",
-    "booster": "basic"
+    "booster": "basic",
+    "body": 0.75
    },
    "steel": {
     "size": 1,
@@ -399,7 +401,8 @@
    "back": {
     "spall_u": 0.85,
     "holed_u": 0.94
-   }
+   },
+   "fragments": "fh"
   },
   "Krupp cemented": {
    "density_t_per_m3": 7.85,
@@ -412,7 +415,8 @@
    "back": {
     "spall_u": 0.85,
     "holed_u": 0.94
-   }
+   },
+   "fragments": "fh"
   },
   "mild steel": {
    "density_t_per_m3": 7.85,
@@ -420,7 +424,8 @@
    "back": {
     "spall_u": 0.9,
     "holed_u": 1
-   }
+   },
+   "fragments": "mild"
   },
   "nickel steel": {
    "density_t_per_m3": 7.85,
@@ -428,7 +433,8 @@
    "back": {
     "spall_u": 0.9,
     "holed_u": 1
-   }
+   },
+   "fragments": "ductile"
   }
  },
  "fittings": {

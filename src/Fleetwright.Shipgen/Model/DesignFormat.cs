@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 4;
+    public const int Current = 5;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -21,7 +21,21 @@ public static class DesignFormat
         (d, _) => MaterialsTable(d),   // 1 → 2: the materials table (docs/battle/shells-armour-damage.md P0)
         (d, _) => NoOutcomeRows(d),    // 2 → 3: the shells' outcome rows gone (P3)
         JointsAndShockGrade,           // 3 → 4: the hull's joints and the fittings' shock grade (E0)
+        (d, _) => FillerBody(d),       // 4 → 5: the filler's share alongside the body (E1)
     ];
+
+    /// <summary>4 → 5: the side spray is thrown by the body's own charge-to-metal ratio (E1; damage/13 §2.1), so each
+    /// ammunition block gives its filler's share alongside the body (filler.body); a block without one takes its kind's
+    /// (ShellTemplates.FillerBodyOf), as the templates have it.</summary>
+    static void FillerBody(JsonObject d)
+    {
+        if (d["ammunition"] is not JsonObject table)
+            return;
+        foreach (var (_, node) in table)
+            if (node is JsonObject a && a["filler"] is JsonObject f && !f.ContainsKey("body") &&
+                a["kind"] is JsonValue k && k.TryGetValue(out string? kind))
+                f["body"] = ShellTemplates.FillerBodyOf(kind);
+    }
 
     /// <summary>3 → 4: the hull's joints (hull.construction.shell and .internals) and the fittings' shock grade
     /// (fittings.shock_grade) are design numbers now (Fittings). A construction's joints come from its name, as the

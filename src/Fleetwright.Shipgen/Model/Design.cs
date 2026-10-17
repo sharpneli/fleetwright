@@ -246,6 +246,9 @@ public sealed record BodyInput
 public sealed record FillerInput
 {
     public double? Share { get; init; }
+    /// <summary>The filler's share alongside the cylindrical body (the rest in the ogive and the base): the body's own
+    /// charge-to-metal ratio throws the side spray (13 §2.5: AP 0.90, common 0.85, HE 0.75 [EST]).</summary>
+    public double? Body { get; init; }
     [JsonConverter(typeof(ExplosiveRefConverter))] public ExplosiveInput? Explosive { get; init; }
     public string? Booster { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
@@ -286,6 +289,10 @@ public sealed record MaterialInput
     public FaceInput? FaceHardened { get; init; }
     public BackInput? Back { get; init; }
     public double? ElongationPct { get; init; }
+    /// <summary>How fragments see it (THOR's constants, docs/battle/shells-armour-damage.md E1): mild (structural steel,
+    /// iron, and wood or cement by their mass), ductile (homogeneous armour), fh (face-hardened) or brittle (compound,
+    /// cast).</summary>
+    public string? Fragments { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
