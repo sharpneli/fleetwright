@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "id": "caroline",
  "name": "Caroline-like C class (1914)",
  "type": "CL",
@@ -314,6 +314,16 @@
    },
    "fire": 0.4,
    "from": 1888
+  }
+ },
+ "materials": {
+  "high-tensile steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.7
+  },
+  "steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.55
   }
  }
 }

@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "id": "revenge",
  "name": "Revenge-like (1916)",
  "type": "BB",
@@ -423,6 +423,20 @@
    },
    "fire": 0.4,
    "from": 1888
+  }
+ },
+ "materials": {
+  "cemented armour": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  },
+  "high-tensile steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.7
+  },
+  "steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.55
   }
  }
 }

@@ -29,6 +29,9 @@ public sealed record Design
     public Dictionary<string, AmmoInput>? Ammunition { get; init; }
     /// <summary>The explosives the fillers name, keyed by name (copied from the catalogue, Explosives.cs).</summary>
     public Dictionary<string, ExplosiveInput>? Explosives { get; init; }
+    /// <summary>The materials the parts name, keyed by name (MaterialTemplates; docs/battle/shells-armour-damage.md P0):
+    /// a name the table doesn't give takes the catalogue's block.</summary>
+    public Dictionary<string, MaterialInput>? Materials { get; init; }
     public TorpedoInput? Torpedoes { get; init; }
     public AaInput? Aa { get; init; }
     public ArmourInput? Armour { get; init; }
@@ -247,6 +250,16 @@ public sealed record ExplosiveInput
     public FullInput? Full { get; init; }
     public double? Fire { get; init; }
     public int? From { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>A material (docs/shipgen/material-templates.md): its density, t/m³ (read from P1c of the shells, armour and
+/// damage plan), and its resistance as a share of the same thickness of the penetration formula's plate (q: Krupp
+/// cemented and STS 1). The fields it doesn't give are the catalogue's block of the same name, else steel's.</summary>
+public sealed record MaterialInput
+{
+    public double? DensityTPerM3 { get; init; }
+    public double? Q { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

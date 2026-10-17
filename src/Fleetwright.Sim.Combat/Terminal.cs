@@ -82,8 +82,8 @@ public struct TerminalResult
 public static class Terminal
 {
     /// <summary>The hit's path through its class (traced from just outside the hit point along the shell's flight) to
-    /// its outcome. quality: each of the class's materials' resistance (<see cref="Qualities"/>).</summary>
-    public static TerminalResult Resolve(ShipClass c, in Hit hit, HitPath path, ReadOnlySpan<double> quality, SimSettings s, ref RandomStream r)
+    /// its outcome.</summary>
+    public static TerminalResult Resolve(ShipClass c, in Hit hit, HitPath path, SimSettings s, ref RandomStream r)
     {
         var shell = hit.Shell;
         var res = new TerminalResult { Outcome = Outcome.PassedThrough, BurstT = double.NaN, StopT = path.Length, Plate = -1 };
@@ -130,7 +130,7 @@ public static class Terminal
             if (!solid && (x.Plate == PlateKind.None || !(x.Mm > 0)))
                 continue;
 
-            double t = x.Mm > 0 ? x.Mm * Quality(quality, x.Material) : 0;
+            double t = x.Mm > 0 ? x.Mm * c.MaterialQ(x.Material) : 0;
             double ob = Obliquity(hit.Direction, x.Normal);
             bool deck = !double.IsNaN(x.Normal.Z) && Math.Abs(x.Normal.Z) > 0.7;
             if (nose)
@@ -244,17 +244,6 @@ public static class Terminal
             return 0;
         double c = Math.Abs(d.X * n.X + d.Y * n.Y + d.Z * n.Z);
         return double.RadiansToDegrees(Math.Acos(Math.Min(c, 1)));
-    }
-
-    static double Quality(ReadOnlySpan<double> quality, int material) => material >= 0 && material < quality.Length ? quality[material] : 1;
-
-    /// <summary>Each of a class's materials' resistance from the settings (by name; unlisted: the settings' other).</summary>
-    public static double[] Qualities(ShipClass c, SimSettings s)
-    {
-        var q = new double[c.MaterialCount];
-        for (int i = 0; i < q.Length; i++)
-            q[i] = s.ArmourQuality.TryGetValue(c.Material(i)!, out double v) ? v : s.ArmourQualityOther;
-        return q;
     }
 
     /// <summary>Whether a cell holds machinery: a boiler or engine room.</summary>

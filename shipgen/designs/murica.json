@@ -1,5 +1,5 @@
 {
-    "version": 1,
+    "version": 2,
     "id": "murica",
     "name": "Liberty Ship",
     "look": {"navy": "generic", "era": "wwii"},
@@ -35,5 +35,6 @@
     "superstructure": {"t_per_m2": 0.32, "material": "steel", "plating_mm": 0, "control_mm": 13},
     "fire_control": {"main": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "computer_t": 0.0}, "secondary": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "computer_t": 0.0}, "aa": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "computer_t": 0.0}, "search_radar_t": 0.0},
  "ammunition": {"US 1941 5in AAC (Explosive D)": {"kind": "he", "mass_k_kg_m3": 12180, "nose_crh": 4, "form_factor": 1.05, "cap": {"kind": "none"}, "windscreen": true, "body": {"break_ob_deg": 0, "break_t_d": 0.2, "quality": 1}, "filler": {"share": 0.13, "explosive": "Explosive D", "booster": "ce"}, "steel": {"size": 1, "speed": 1}, "casing": {"nose": 0.02, "ogive": 0.2, "body": 0.63, "plug": 0.07, "tail": 0.08}, "fuze": {"position": "nose", "delay_s": 0, "start_cal": 0, "oblique": 1, "plates": "single", "scatter": 0, "blind": 0.05, "water_ms": 0.5, "water_fires": 1}, "outcomes": "ww2"}, "US 1941 AP Mk 8 (Explosive D)": {"kind": "ap", "mass_k_kg_m3": 18270, "nose_crh": 9, "form_factor": 1.05, "cap": {"kind": "hard", "share": 0.12}, "windscreen": true, "body": {"break_ob_deg": 45, "break_t_d": 1.2, "quality": 1.1}, "filler": {"share": 0.015, "explosive": "Explosive D", "booster": "ce"}, "steel": {"size": 1.25, "speed": 1}, "casing": {"nose": 0.33, "ogive": 0, "body": 0.55, "plug": 0.08, "tail": 0.04}, "fuze": {"position": "base", "delay_s": 0.033, "start_cal": 0.094, "oblique": 0.25, "plates": "single", "scatter": 0.1, "blind": 0.05, "water_ms": 0.5, "water_fires": 1}, "outcomes": "ww2"}},
- "explosives": {"Explosive D": {"name": "Explosive D", "re": 0.95, "q_det": 3.2, "q_comb": 11.5, "air_m3_kg": 1.87, "eta": 1, "gurney_ms": 2350, "brisance": 0.9, "in_plate": 0.02, "full": {"basic": 0.5, "ce": 0.92}, "fire": 0.2, "from": 1911}}
+ "explosives": {"Explosive D": {"name": "Explosive D", "re": 0.95, "q_det": 3.2, "q_comb": 11.5, "air_m3_kg": 1.87, "eta": 1, "gurney_ms": 2350, "brisance": 0.9, "in_plate": 0.02, "full": {"basic": 0.5, "ce": 0.92}, "fire": 0.2, "from": 1911}},
+ "materials": {"mild steel": {"density_t_per_m3": 7.85, "q": 0.5}, "steel": {"density_t_per_m3": 7.85, "q": 0.55}}
 }

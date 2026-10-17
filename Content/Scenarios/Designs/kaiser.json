@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "id": "kaiser",
  "name": "Kaiser-like (1912)",
  "type": "BB",
@@ -349,6 +349,20 @@
    },
    "fire": 0.25,
    "from": 1902
+  }
+ },
+ "materials": {
+  "Krupp cemented": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  },
+  "high-tensile steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.7
+  },
+  "steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.55
   }
  }
 }

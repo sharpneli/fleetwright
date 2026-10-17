@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "id": "agincourt",
  "name": "Agincourt-like (1914)",
  "type": "BB",
@@ -393,6 +393,20 @@
    },
    "fire": 0.4,
    "from": 1888
+  }
+ },
+ "materials": {
+  "Krupp cemented": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  },
+  "high-tensile steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.7
+  },
+  "steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.55
   }
  }
 }

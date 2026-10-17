@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "id": "deutschland_1906",
  "name": "Deutschland-like pre-dreadnought (1906)",
  "type": "BB",
@@ -385,6 +385,24 @@
    },
    "fire": 0.25,
    "from": 1902
+  }
+ },
+ "materials": {
+  "Harvey nickel steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.8
+  },
+  "Krupp cemented": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  },
+  "mild steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.5
+  },
+  "nickel steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.75
   }
  }
 }

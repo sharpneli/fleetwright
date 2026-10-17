@@ -129,7 +129,7 @@ static class AmmoTemplates
             var ammoNode = JsonNode.Parse(JsonSerializer.Serialize(new Dictionary<string, AmmoInput>(blocks), Info<Dictionary<string, AmmoInput>>()))!;
             var explosivesNode = JsonNode.Parse(JsonSerializer.Serialize(new Dictionary<string, ExplosiveInput>(explosives), Info<Dictionary<string, ExplosiveInput>>()))!;
             string nl = text.Contains("\r\n") ? "\r\n" : "\n";
-            string after = Pretty(text, nl) is { } indent ? Rewrite(text, shells, ammoNode, explosivesNode, indent, nl) : Replace(text, shells, ammoNode, explosivesNode, nl);
+            string after = DesignUpgrade.Pretty(text, nl) is { } indent ? Rewrite(text, shells, ammoNode, explosivesNode, indent, nl) : Replace(text, shells, ammoNode, explosivesNode, nl);
             var errs = ShipDesign.Validate(Design.Parse(after), limits: false);
             if (errs.Count > 0)
                 throw new InvalidOperationException($"{p}: {string.Join("; ", errs)}");
@@ -141,26 +141,6 @@ static class AmmoTemplates
     }
 
     static JsonTypeInfo<T> Info<T>() => (JsonTypeInfo<T>)ShipgenJson.Default.Options.GetTypeInfo(typeof(T));
-
-    static readonly JsonSerializerOptions Compact = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-
-    static string Spaced(JsonNode n) => n.ToJsonString(Compact).Replace(",\"", ", \"").Replace("\":", "\": ").Replace("},{", "}, {");
-
-    /// <summary>The indent of a file written by an indented writer (a scenario's designs), when re-writing it gives it
-    /// back byte for byte; null for the shipped designs' hand-laid lines.</summary>
-    static int? Pretty(string text, string nl)
-    {
-        var node = JsonNode.Parse(text)!;
-        foreach (int indent in new[] { 1, 2 })
-            if (Write(node, indent, nl) == text)
-                return indent;
-        return null;
-    }
-
-    static string Write(JsonNode node, int indent, string nl) => node.ToJsonString(new JsonSerializerOptions
-    {
-        WriteIndented = true, IndentSize = indent, NewLine = nl, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    });
 
     static string Rewrite(string text, List<JsonArray> shells, JsonNode ammo, JsonNode explosives, int indent, string nl)
     {
@@ -179,7 +159,7 @@ static class AmmoTemplates
             }
         node["ammunition"] = ammo;
         node["explosives"] = explosives;
-        return Write(node, indent, nl);
+        return DesignUpgrade.Write(node, indent, nl);
     }
 
     /// <summary>Into the shipped designs' lines: each battery's `shells` value and the `ammunition` line replaced, the
@@ -204,8 +184,8 @@ static class AmmoTemplates
                         reader.Read();
                         int start = (int)reader.TokenStartIndex;
                         reader.Skip();
-                        spans.Add((start, (int)reader.TokenStartIndex + 1, key == "explosives" ? Spaced(explosives)
-                            : hasExplosives ? Spaced(ammo) : Spaced(ammo) + "," + nl + " \"explosives\": " + Spaced(explosives)));
+                        spans.Add((start, (int)reader.TokenStartIndex + 1, key == "explosives" ? DesignUpgrade.Spaced(explosives)
+                            : hasExplosives ? DesignUpgrade.Spaced(ammo) : DesignUpgrade.Spaced(ammo) + "," + nl + " \"explosives\": " + DesignUpgrade.Spaced(explosives)));
                     }
                     break;
                 case JsonTokenType.PropertyName when key is "main" or "secondary" && reader.GetString() == "shells":
@@ -213,7 +193,7 @@ static class AmmoTemplates
                         reader.Read();
                         int start = (int)reader.TokenStartIndex;
                         reader.Skip();
-                        spans.Add((start, (int)reader.TokenStartIndex + 1, Spaced(shells[k++])));
+                        spans.Add((start, (int)reader.TokenStartIndex + 1, DesignUpgrade.Spaced(shells[k++])));
                         break;
                     }
                 case JsonTokenType.StartObject or JsonTokenType.StartArray:

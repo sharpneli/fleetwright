@@ -268,14 +268,6 @@
     { "Name": "ww2", "Burst": 0.75, "InPlate": 0.05, "LowOrder": 0.07, "Dud": 0.08, "Broken": 0.05 },
     { "Name": "ijn_t91", "Burst": 0.70, "InPlate": 0.05, "LowOrder": 0.07, "Dud": 0.13, "Broken": 0.05 }
   ],
-  "ArmourQuality": {
-    "Krupp cemented": 1, "Krupp cemented (KC n/A)": 1, "cemented armour": 1, "Terni cemented": 1, "Vickers cemented": 1,
-    "Witkowitz cemented": 1, "Class A": 1, "Class A armour": 1, "Class B": 1, "STS": 1, "special steel": 0.95,
-    "non-cemented armour": 0.9, "Vickers hardened": 0.9, "Harvey nickel steel": 0.8, "nickel steel": 0.75,
-    "high-tensile steel": 0.7, "compound": 0.6, "steel": 0.55, "mild steel": 0.5, "wrought iron": 0.45,
-    "aluminium alloy": 0.25, "wood": 0.05
-  },
-  "ArmourQualityOther": 0.6,
   "CommonPenShare": 0.6,
   "HePenCalibres": 0.2,
   "PenSpread": 0.1,

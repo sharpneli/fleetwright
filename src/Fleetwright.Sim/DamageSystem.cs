@@ -76,7 +76,6 @@ public sealed class DamageSystem : IWorldSystem
     readonly CombatLog log;
     readonly RandomStream stream;
     readonly HitPath path = new();
-    readonly Dictionary<ShipClass, double[]> qualities = [];
     readonly Dictionary<ShipClass, FloodModel> floods = [];
     readonly double[] propellant = new double[256];
     double[] bearings = new double[16];
@@ -316,12 +315,10 @@ public sealed class DamageSystem : IWorldSystem
         return f;
     }
 
-    /// <summary>A class's materials' qualities, its flooding model and the tracer's room for it, made the first time it's
+    /// <summary>A class's flooding model and the tracer's room for it, made the first time it's
     /// in the world (not at its first hit).</summary>
     internal void Prepare(ShipClass cls)
     {
-        if (!qualities.ContainsKey(cls))
-            qualities[cls] = Terminal.Qualities(cls, settings);
         Flood(cls);
         path.Reserve(cls.Solids.Solids.Length);
         if (bearings.Length < cls.Mounts.Length)
@@ -367,9 +364,8 @@ public sealed class DamageSystem : IWorldSystem
             var p1 = new P3(hit.Point.X + d.X * far, hit.Point.Y + d.Y * far, hit.Point.Z + d.Z * far);
             ShipTracer.Trace(cls, p0, p1, bearings.AsSpan(0, n), HitQuery.WaterOf(cls, k.Attitude), path);
 
-            var q = qualities[cls];
-            t = Terminal.Resolve(cls, hit, path, q, settings, ref rng);
-            e = Effects.Apply(cls, k, hit, path, t, q, settings, propellant[ship.Side], ref rng);
+            t = Terminal.Resolve(cls, hit, path, settings, ref rng);
+            e = Effects.Apply(cls, k, hit, path, t, settings, propellant[ship.Side], ref rng);
         }
 
         var fx = HitEffect.None;

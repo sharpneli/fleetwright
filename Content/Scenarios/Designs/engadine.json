@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "id": "engadine",
  "name": "Engadine-like seaplane carrier (1911)",
  "type": "AV",
@@ -302,6 +302,16 @@
    },
    "fire": 0.25,
    "from": 1902
+  }
+ },
+ "materials": {
+  "mild steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.5
+  },
+  "steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.55
   }
  }
 }

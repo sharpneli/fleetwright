@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "id": "graudenz",
  "name": "Graudenz-like (1914)",
  "type": "CL",
@@ -336,6 +336,16 @@
    },
    "fire": 0.25,
    "from": 1902
+  }
+ },
+ "materials": {
+  "nickel steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.75
+  },
+  "steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.55
   }
  }
 }

@@ -2,187 +2,244 @@
  {
   "name": "steel",
   "group": "structure",
-  "note": "",
-  "value": "steel"
+  "note": "Shipbuilding steel, the plating's default name.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.55
+  }
  },
  {
   "name": "mild steel",
   "group": "structure",
-  "note": "",
-  "value": "mild steel"
+  "note": "Mild (carbon) steel: hull plate, and the splinter decks of the 1890s on.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.5
+  }
+ },
+ {
+  "name": "high-tensile steel",
+  "group": "structure",
+  "note": "HT and Ducol-type manganese steels: strength plating and protective decks.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.7
+  }
  },
  {
   "name": "wrought iron",
   "group": "structure",
-  "note": "",
-  "value": "wrought iron"
+  "note": "The ironclads' plate and hulls (s.g. 7.6-7.9).",
+  "value": {
+   "density_t_per_m3": 7.7,
+   "q": 0.45
+  }
  },
  {
   "name": "wood",
   "group": "structure",
-  "note": "",
-  "value": "wood"
+  "note": "Planking and wooden hulls (oak and teak 0.65-0.75).",
+  "value": {
+   "density_t_per_m3": 0.7,
+   "q": 0.05
+  }
  },
  {
   "name": "aluminium alloy",
   "group": "structure",
-  "note": "",
-  "value": "aluminium alloy"
- },
- {
-  "name": "high-tensile steel",
-  "group": "structure",
-  "note": "",
-  "value": "high-tensile steel"
- },
- {
-  "name": "Krupp cemented",
-  "group": "armour",
-  "note": "",
-  "value": "Krupp cemented"
- },
- {
-  "name": "mild steel",
-  "group": "armour",
-  "note": "",
-  "value": "mild steel"
- },
- {
-  "name": "cemented armour",
-  "group": "armour",
-  "note": "",
-  "value": "cemented armour"
- },
- {
-  "name": "STS",
-  "group": "armour",
-  "note": "",
-  "value": "STS"
- },
- {
-  "name": "Class A",
-  "group": "armour",
-  "note": "",
-  "value": "Class A"
- },
- {
-  "name": "Class B",
-  "group": "armour",
-  "note": "",
-  "value": "Class B"
- },
- {
-  "name": "high-tensile steel",
-  "group": "armour",
-  "note": "",
-  "value": "high-tensile steel"
- },
- {
-  "name": "Harvey nickel steel",
-  "group": "armour",
-  "note": "",
-  "value": "Harvey nickel steel"
- },
- {
-  "name": "Terni cemented",
-  "group": "armour",
-  "note": "",
-  "value": "Terni cemented"
- },
- {
-  "name": "wrought iron",
-  "group": "armour",
-  "note": "",
-  "value": "wrought iron"
- },
- {
-  "name": "Class A armour",
-  "group": "armour",
-  "note": "",
-  "value": "Class A armour"
- },
- {
-  "name": "nickel steel",
-  "group": "armour",
-  "note": "",
-  "value": "nickel steel"
- },
- {
-  "name": "Vickers cemented",
-  "group": "armour",
-  "note": "",
-  "value": "Vickers cemented"
+  "note": "Light alloy deckhouses.",
+  "value": {
+   "density_t_per_m3": 2.7,
+   "q": 0.25
+  }
  },
  {
   "name": "compound",
   "group": "armour",
-  "note": "",
-  "value": "compound"
+  "note": "Steel face welded to a wrought-iron back, about a third and two thirds (1877-1890s).",
+  "value": {
+   "density_t_per_m3": 7.75,
+   "q": 0.6
+  }
  },
  {
-  "name": "Witkowitz cemented",
+  "name": "nickel steel",
   "group": "armour",
-  "note": "",
-  "value": "Witkowitz cemented"
+  "note": "Homogeneous nickel steel (1889 on).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.75
+  }
+ },
+ {
+  "name": "Harvey nickel steel",
+  "group": "armour",
+  "note": "Harveyized: carburized nickel steel, face-hardened (1891 on).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.8
+  }
+ },
+ {
+  "name": "Krupp cemented",
+  "group": "armour",
+  "note": "KC: the face-hardened Ni-Cr plate of 1894 on.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  }
  },
  {
   "name": "Krupp cemented (KC n/A)",
   "group": "armour",
-  "note": "",
-  "value": "Krupp cemented (KC n/A)"
+  "note": "KC neuer Art, the German plate of the 1930s.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  }
  },
  {
-  "name": "steel",
+  "name": "cemented armour",
   "group": "armour",
-  "note": "",
-  "value": "steel"
+  "note": "British cemented, Krupp's process (KC under licence).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  }
  },
  {
-  "name": "Vickers hardened",
+  "name": "Vickers cemented",
   "group": "armour",
-  "note": "",
-  "value": "Vickers hardened"
+  "note": "VC: British face-hardened plate.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  }
+ },
+ {
+  "name": "Terni cemented",
+  "group": "armour",
+  "note": "Italian face-hardened plate.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  }
+ },
+ {
+  "name": "Witkowitz cemented",
+  "group": "armour",
+  "note": "Austro-Hungarian face-hardened plate.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  }
+ },
+ {
+  "name": "Class A",
+  "group": "armour",
+  "note": "US face-hardened plate.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  }
+ },
+ {
+  "name": "Class A armour",
+  "group": "armour",
+  "note": "US face-hardened plate (the older designs' name).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  }
  },
  {
   "name": "non-cemented armour",
   "group": "armour",
-  "note": "",
-  "value": "non-cemented armour"
- },
- {
-  "name": "special steel",
-  "group": "armour",
-  "note": "",
-  "value": "special steel"
- },
- {
-  "name": "special treatment steel",
-  "group": "armour",
-  "note": "",
-  "value": "special treatment steel"
+  "note": "British homogeneous armour (NC).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.9
+  }
  },
  {
   "name": "Krupp non-cemented",
   "group": "armour",
-  "note": "",
-  "value": "Krupp non-cemented"
+  "note": "KNC: Krupp's homogeneous plate. q 0.6: not in the old quality table, so its catch-all (P1b sets it).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.6
+  }
+ },
+ {
+  "name": "Vickers hardened",
+  "group": "armour",
+  "note": "VH: British homogeneous hardened plate.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.9
+  }
+ },
+ {
+  "name": "Class B",
+  "group": "armour",
+  "note": "US homogeneous plate.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  }
+ },
+ {
+  "name": "STS",
+  "group": "armour",
+  "note": "Special treatment steel: the US homogeneous plate of the 1930s on.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  }
+ },
+ {
+  "name": "special treatment steel",
+  "group": "armour",
+  "note": "STS by its long name. q 0.6: not in the old quality table, so its catch-all (P1b sets it).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.6
+  }
+ },
+ {
+  "name": "special steel",
+  "group": "armour",
+  "note": "Homogeneous Ni-Cr deck plate.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.95
+  }
  },
  {
   "name": "Molybdenum steel",
   "group": "armour",
-  "note": "",
-  "value": "Molybdenum steel"
+  "note": "Molybdenum-alloyed homogeneous plate (Japan, Italy). q 0.6: not in the old quality table, so its catch-all (P1b sets it).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.6
+  }
  },
  {
   "name": "Wotan",
   "group": "armour",
-  "note": "",
-  "value": "Wotan"
+  "note": "Wotan weich, Krupp's homogeneous deck plate of the 1930s. q 0.6: not in the old quality table, so its catch-all (P1b sets it).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.6
+  }
  },
  {
   "name": "Wotan hart",
   "group": "armour",
-  "note": "",
-  "value": "Wotan hart"
+  "note": "Wotan hart, the hard homogeneous deck and bulkhead plate. q 0.6: not in the old quality table, so its catch-all (P1b sets it).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.6
+  }
  }
 ]

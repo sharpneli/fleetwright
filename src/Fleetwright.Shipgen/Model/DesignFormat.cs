@@ -11,13 +11,53 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 1;
+    public const int Current = 2;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1.</summary>
     static readonly Action<JsonObject>[] Steps =
     [
         _ => { },   // 0 → 1: versions began; nothing else changed
+        MaterialsTable,   // 1 → 2: the materials table (docs/battle/shells-armour-damage.md P0)
     ];
+
+    /// <summary>1 → 2: a material was a name the game looked up; now it's the design's block (MaterialTemplates).
+    /// Each name the parts give (any "material" or "deck_material", and armour.materials' values) gets the catalogue's
+    /// block in `materials`, where the catalogue knows it and the design doesn't have one. A version 1 design has no
+    /// other "material" keys, so the walk needn't know the parts.</summary>
+    static void MaterialsTable(JsonObject d)
+    {
+        var names = new SortedSet<string>(StringComparer.Ordinal);
+        void Walk(JsonNode? n)
+        {
+            switch (n)
+            {
+                case JsonObject o:
+                    foreach (var (k, v) in o)
+                        if (k is "material" or "deck_material" && v is JsonValue s && s.TryGetValue(out string? name) && name.Length > 0)
+                            names.Add(name);
+                        else
+                            Walk(v);
+                    break;
+                case JsonArray a:
+                    foreach (var v in a)
+                        Walk(v);
+                    break;
+            }
+        }
+        Walk(d);
+        if (d["armour"]?["materials"] is JsonObject parts)
+            foreach (var (_, v) in parts)
+                if (v is JsonValue s && s.TryGetValue(out string? name) && name.Length > 0)
+                    names.Add(name);
+        var table = d["materials"] as JsonObject;
+        foreach (var n in names)
+            if (MaterialTemplates.Get(n) is { } m && table?.ContainsKey(n) != true)
+            {
+                if (table is null)
+                    d["materials"] = table = [];
+                table[n] = JsonSerializer.SerializeToNode(m, ShipgenJson.Default.MaterialInput);
+            }
+    }
 
     static readonly JsonDocumentOptions ReadOptions = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
 

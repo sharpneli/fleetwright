@@ -33,10 +33,12 @@ public static class Templates
     /// ProtectionSchemes.Apply.</summary>
     public static IReadOnlyList<Template<ProtectionSchemeInput>> Protection => protection.Value;
 
-    static readonly Lazy<IReadOnlyList<Template<string>>> materials = new(() => Load("materials.json", ShipgenJson.Default.String));
+    static readonly Lazy<IReadOnlyList<Template<MaterialInput>>> materials = new(() => Load("materials.json", ShipgenJson.Default.MaterialInput));
 
-    /// <summary>Material names: "structure" (hull plating, superstructure) and "armour" (a part's own).</summary>
-    public static IEnumerable<string> MaterialNames(string group) => materials.Value.Where(t => t.Group == group).Select(t => t.Value);
+    /// <summary>Material names (MaterialTemplates' catalogue): "structure" (hull plating, superstructure) and "armour"
+    /// (a part's own: every material, the structural ones too).</summary>
+    public static IEnumerable<string> MaterialNames(string group) =>
+        materials.Value.Where(t => group == "armour" || t.Group == group).Select(t => t.Name);
 
     /// <summary>Where the catalogues are read from (tests point it at the repo's Content folder).</summary>
     public static string Folder { get; set; } = Path.Combine(AppContext.BaseDirectory, "Content", "Templates");

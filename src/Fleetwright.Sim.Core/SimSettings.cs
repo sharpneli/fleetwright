@@ -722,18 +722,6 @@ public sealed record SimSettings
         new() { Name = "ijn_t91", Burst = 0.70, InPlate = 0.05, LowOrder = 0.07, Dud = 0.13, Broken = 0.05 },
     ];
 
-    /// <summary>A plate's resistance as a share of the same thickness of Class A or Krupp cemented armour (the
-    /// penetration fit's plate), by the material's name; a name not listed is <see cref="ArmourQualityOther"/>.</summary>
-    public Dictionary<string, double> ArmourQuality { get; init; } = new()
-    {
-        ["Krupp cemented"] = 1, ["Krupp cemented (KC n/A)"] = 1, ["cemented armour"] = 1, ["Terni cemented"] = 1, ["Vickers cemented"] = 1,
-        ["Witkowitz cemented"] = 1, ["Class A"] = 1, ["Class A armour"] = 1, ["Class B"] = 1, ["STS"] = 1, ["special steel"] = 0.95,
-        ["non-cemented armour"] = 0.9, ["Vickers hardened"] = 0.9, ["Harvey nickel steel"] = 0.8, ["nickel steel"] = 0.75,
-        ["high-tensile steel"] = 0.7, ["compound"] = 0.6, ["steel"] = 0.55, ["mild steel"] = 0.5, ["wrought iron"] = 0.45,
-        ["aluminium alloy"] = 0.25, ["wood"] = 0.05,
-    };
-    public double ArmourQualityOther { get; init; } = 0.6;
-
     /// <summary>Penetration: a common shell's capability as a share of AP's; an HE shell's nose fuze punches this many
     /// calibres (times the square root of the obliquity's cosine) and bursts; each plate's resistance is drawn within
     /// plus or minus this share.</summary>

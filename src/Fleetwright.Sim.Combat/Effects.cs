@@ -59,7 +59,7 @@ public static class Effects
     static readonly double[] FragDist = [5, 20, 50, 100, 1000];
     static readonly double[] FragT50 = [0.080, 0.0213, 0.0158, 0.0113, 0.0006];
 
-    public static EffectsResult Apply(ShipClass c, ShipCondition k, in Hit hit, HitPath path, in TerminalResult t, ReadOnlySpan<double> quality,
+    public static EffectsResult Apply(ShipClass c, ShipCondition k, in Hit hit, HitPath path, in TerminalResult t,
         SimSettings s, double propellant, ref RandomStream r)
     {
         var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
@@ -157,13 +157,13 @@ public static class Effects
         }
 
         if (t.Bursts)
-            Burst(c, k, hit, path, t, quality, s, propellant, w, size, ref res, ref r);
+            Burst(c, k, hit, path, t, s, propellant, w, size, ref res, ref r);
         k.CrewLost += res.CrewLost;
         return res;
     }
 
     /// <summary>A burst at its point along the path, with its force.</summary>
-    static void Burst(ShipClass c, ShipCondition k, in Hit hit, HitPath path, in TerminalResult t, ReadOnlySpan<double> quality, SimSettings s,
+    static void Burst(ShipClass c, ShipCondition k, in Hit hit, HitPath path, in TerminalResult t, SimSettings s,
         double propellant, double w, double size, ref EffectsResult res, ref RandomStream r)
     {
         var shell = hit.Shell;
@@ -210,7 +210,7 @@ public static class Effects
             double d = Distance(c, i, p);
             if (d > rb)
                 continue;
-            double armour = Armour(c, i) * Q(quality, comp.Material);
+            double armour = Armour(c, i) * c.MaterialQ(comp.Material);
             if (armour > 0 && armour >= FragPenMm(shell, d))
                 continue;
             var state = d <= s.DestroyedShare * rw ? PartState.Destroyed : d <= rw ? PartState.Disabled : armour < 1 ? PartState.Damaged : PartState.Ok;
@@ -397,7 +397,6 @@ public static class Effects
         return c.Components[i].ArmourMm;
     }
 
-    static double Q(ReadOnlySpan<double> quality, int material) => material >= 0 && material < quality.Length ? quality[material] : 1;
 
     /// <summary>A deck between two cells, where they meet: its plate, and the armour on it there (each piece of a deck
     /// armoured in several, a magazine box's crown or floor; none over a sloped deck's slopes, which InclinedMm finds).</summary>

@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "id": "flotilla_leader",
  "name": "Faulknor-like flotilla leader (1914)",
  "type": "DD",
@@ -307,6 +307,16 @@
    },
    "fire": 0.4,
    "from": 1888
+  }
+ },
+ "materials": {
+  "mild steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.5
+  },
+  "steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.55
   }
  }
 }

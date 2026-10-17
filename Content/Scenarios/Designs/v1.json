@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "id": "v1",
  "name": "V1-like torpedo boat (1911)",
  "type": "DD",
@@ -307,6 +307,16 @@
    },
    "fire": 0.25,
    "from": 1902
+  }
+ },
+ "materials": {
+  "mild steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.5
+  },
+  "steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.55
   }
  }
 }

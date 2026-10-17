@@ -145,8 +145,11 @@ public static class Program
             navy and year (the outfits' kinds and shares kept); --outfits (S2) gives each battery the default outfit
             instead, main 70% AP / 30% HE, secondary 30 / 70 (common for HE in the families before HE); --dry lists it
         shipgen templates
-            writes the shell and explosive catalogues (ShellTemplates, Explosives) out: Content/Templates/shells.json and
-            explosives.json, docs/shipgen/shell-templates.md and explosive-templates.md
+            writes the shell, explosive and material catalogues (ShellTemplates, Explosives, MaterialTemplates) out:
+            Content/Templates/shells.json, explosives.json and materials.json, docs/shipgen/shell-templates.md,
+            explosive-templates.md and material-templates.md
+        shipgen upgrade DESIGN.json... [--dry]
+            design files rewritten to the current format (DesignFormat), each in its own layout; --dry lists them
         shipgen scenario [SCENARIO.json] [--minutes 60] [--every 5] [--threads N] [--at 10] [--no-land] [--replay]
             a scenario headless at full tilt (default Content/Scenarios/jutland.json): its classes' build time (no
             art), the land and the placing, then game minutes on the sim's work alone: ships on the fine tick and on
@@ -233,6 +236,7 @@ public static class Program
                 "ballistics" => BallisticsBench.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "ammo-templates" => AmmoTemplates.Run(a.Positional, a.Has("dry"), a.Has("outfits")),
                 "templates" => TemplatesWriter.Run(Path.Combine(Root(a), "..")),
+                "upgrade" => DesignUpgrade.Run(a.Positional, a.Has("dry")),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "matchup" => MatchupBench.Run(a.Positional.ElementAtOrDefault(0) ?? "arethusa", a.Positional.ElementAtOrDefault(1) ?? "v25",
                     n => LoadDesign(Resolve(a, n)), a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), D(a, "range", 0),

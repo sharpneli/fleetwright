@@ -28,6 +28,8 @@ public sealed class Report
     public BridgeReport? Bridge { get; init; }
     /// <summary>The batteries' resolved shells (Ammunition.Resolve), those that give them; null when none does.</summary>
     public List<BatteryShells>? Shells { get; init; }
+    /// <summary>Every material the parts name, resolved (MaterialTemplates.Resolve), by name in ordinal order.</summary>
+    public Dictionary<string, MaterialInput>? Materials { get; init; }
     public required OrderedDictionary<string, long> WeightGroupsT { get; init; }
     public required List<WeightReport> Weights { get; init; }
 }

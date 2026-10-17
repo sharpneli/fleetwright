@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "id": "von_der_tann",
  "name": "Von der Tann-like (1910)",
  "type": "BC",
@@ -369,6 +369,20 @@
    },
    "fire": 0.25,
    "from": 1902
+  }
+ },
+ "materials": {
+  "Krupp cemented": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  },
+  "nickel steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.75
+  },
+  "steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.55
   }
  }
 }

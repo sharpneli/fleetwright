@@ -79,7 +79,7 @@ the ship dict, `report.json`, `hitboxes.json` and `sprite.json` are unchanged, k
 ## Design input
 ```json
 {
-  "version": 1,
+  "version": 2,
   "id": "battleship", "name": "Fast Battleship", "type": "BB", "look": {"navy": "generic", "era": "wwii"},
   "hull": {"block_coefficient": 0.59, "plating": {"shell_mm": 0, "material": "steel", "deck_wood_mm": 0}},
   "speed_kn": 33, "range_nm": 15000,
@@ -101,7 +101,7 @@ the ship dict, `report.json`, `hitboxes.json` and `sprite.json` are unchanged, k
   "funnels": null
 }
 ```
-`version` is the file format (`DesignFormat.Current`, written on every save). A file without it is version 0, from before versions. Older files are upgraded as they are read (`DesignFormat`: one step per version, on the raw JSON), and one from a newer Fleetwright loads with a warning, what this build doesn't know ignored. A change that would make an old design read differently (a key renamed or moved, a default changed) bumps the version and adds a step; a new optional key whose default keeps old designs as they were needs none.
+`version` is the file format (`DesignFormat.Current`, written on every save). A file without it is version 0, from before versions. Older files are upgraded as they are read (`DesignFormat`: one step per version, on the raw JSON; version 2 added the `materials` table), and `shipgen upgrade FILES` rewrites files to the current format in their own layout; one one from a newer Fleetwright loads with a warning, what this build doesn't know ignored. A change that would make an old design read differently (a key renamed or moved, a default changed) bumps the version and adds a step; a new optional key whose default keeps old designs as they were needs none.
 
 `armour` holds the belt, turret and torpedo protection (`tds_m`) values, and `decks`: the armour decks, top down. Every design lists them, even an empty list.
 - **Magazines** stand low and inboard (`docs/shipgen/protection-plan.md` H1-H2): their crowns at most `Ordnance.CrownMarginM` (0.4 m) under the design waterline, longer instead of taller (and above it only where no length is left, with a warning), and a wing of stores `armour.magazine_wing_m` wide between them and the side (default 0.1 × the beam, 0 for none; where a TDS or wing bunkers stand there they are the wing). Planing craft keep their ammunition lockers above the water.
@@ -141,7 +141,7 @@ The side armour is the main belt and up to three secondary pieces. Every design 
   - **Full-length upper belt** (Gangut, the early French): `upper_belt.extent` `full`.
 
 `armour.materials` names the armour material per part: `belt`, `upper_belt`, `end_belts`, `bulkheads`, `decks`, `turrets`, `barbettes`, `conning_tower`, `secondary` and, on carriers, `flight_deck`. A deck entry, `upper_belt`, an end belt or a secondary battery may give its own `material`, which wins over the map.
-- **They're plain strings,** passed unchanged to every armour piece in `hitboxes.json` for the game's ballistics, which looks them up. The designer doesn't read them: armour weighs thickness × area × 7.85 t/m³ whatever it's made of, and no material is tied to a period.
+- **Each name picks a block in the design's `materials` table** (keyed by name: `{density_t_per_m3, q}`), else the catalogue's (`material-templates.md`, written by `shipgen templates` from `MaterialTemplates.cs`), else steel's with a warning. `q` is the plate's resistance as a share of the same thickness of the penetration formula's plate (Krupp cemented, STS: 1), read by the game's ballistics; the density is read from P1c of docs/battle/shells-armour-damage.md, until then armour weighs thickness × area × 7.85 t/m³ whatever it's made of. A design copies the blocks its parts name (the hull plating's and superstructure's too); the report's `materials` lists every name the parts give, resolved. The names pass unchanged to every armour piece in `hitboxes.json`. No material is tied to a period.
 - **The designs use names of the time** (`wrought iron` and `compound` suit anything older):
   - `Harvey nickel steel`, `nickel steel`
   - `Krupp cemented`, `Krupp non-cemented`, `Vickers cemented`
@@ -149,7 +149,7 @@ The side armour is the main belt and up to three secondary pieces. Every design 
   - US `Class A` (face-hardened), `Class B` (homogeneous) and `STS`
   - `mild steel` on unarmoured ships
 
-  Any other string works too.
+  Any other string works too: give it a block in `materials`, or it's steel.
 
 `crew` sets how the crew lives (`crew.py`, from `research/crew-space-model.md`).
 - `standard` is the habitability standard as numbers: net areas per head, shared spaces, headroom, water and provisions rates, and the hotel fraction.

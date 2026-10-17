@@ -57,8 +57,7 @@ public sealed class MatchupProfile
         BeamM = m.BeamM;
         HeightM = Math.Max(c.Vertical.Freeboard, 1) * s.MatchupHeightShare;
         SpeedKn = m.MaxSpeedKn;
-        var q = Terminal.Qualities(c, s);
-        (Side, Deck) = (SideArmour(c, q), DeckArmour(c, q));
+        (Side, Deck) = (SideArmour(c), DeckArmour(c));
         (SidePlatingMm, DeckPlatingMm) = (c.Plating.ShellMm, c.Plating.StrengthDeckMm);
         var area = c.Numbers(c.Silhouette.SideAreaM2);
         double whole = Sight.AreaAbove(area, 0);
@@ -127,7 +126,7 @@ public sealed class MatchupProfile
 
     /// <summary>The side between the waterline and the main deck, sampled along its length and up it: the thickest plate
     /// over each point (by its material's quality), shares of the face by thickness.</summary>
-    static (double, double)[] SideArmour(ShipClass c, double[] q)
+    static (double, double)[] SideArmour(ShipClass c)
     {
         const int nx = 48, nz = 8;
         double x0 = -c.Length / 2, wl = c.Vertical.Waterline, top = Math.Max(wl + 0.5, 0);
@@ -141,7 +140,7 @@ public sealed class MatchupProfile
                     if (x >= p.X0 && x <= p.X1 && z >= p.Bottom && z <= p.Top)
                     {
                         // a leaning belt as thick as a level line through it (protection-plan.md H6)
-                        double t = p.ThicknessMm * Quality(q, p.Material) / Math.Cos(double.DegreesToRadians(p.InclineDeg));
+                        double t = p.ThicknessMm * c.MaterialQ(p.Material) / Math.Cos(double.DegreesToRadians(p.InclineDeg));
                         if (p.Kind == StrakeKind.Zone)
                             zone = t;   // in the belt's place over the magazines
                         else
@@ -153,19 +152,19 @@ public sealed class MatchupProfile
                 double inner = 0;
                 foreach (ref readonly var b in c.Bulkheads)
                     if (b.Side == Fleetwright.Sim.Ships.Side.Starboard && b.ArmourMm > 0 && x >= b.X0 && x <= b.X1 && z >= b.ArmourBottom && z <= b.ArmourTop)
-                        inner = Math.Max(inner, b.ArmourMm * Quality(q, b.ArmourMaterial));
+                        inner = Math.Max(inner, b.ArmourMm * c.MaterialQ(b.ArmourMaterial));
                 // and the inclined plates (a deck's slopes, an internal belt: protection-plan.md H6), as thick as a level line
                 // through them
                 foreach (ref readonly var p in c.Inclined)
                     if (x >= p.X0 && x <= p.X1 && z >= p.Z0 && z <= p.Z1 && p.YAt(c.Hull, x, z) > 0)
-                        inner += p.MmAt(z) * Quality(q, p.Material) / Rise(p);
+                        inner += p.MmAt(z) * c.MaterialQ(p.Material) / Rise(p);
                 mm[i * nz + k] = best + inner;
             }
         return Shares(mm);
     }
 
     /// <summary>The deck seen from above, sampled along its length: the armour decks over each point added up.</summary>
-    static (double, double)[] DeckArmour(ShipClass c, double[] q)
+    static (double, double)[] DeckArmour(ShipClass c)
     {
         const int nx = 48;
         double x0 = -c.Length / 2;
@@ -175,14 +174,14 @@ public sealed class MatchupProfile
             double x = x0 + (i + 0.5) * c.Length / nx;
             foreach (var d in c.ArmourDecks)
                 if (x >= d.X0 && x <= d.X1)   // a box's deck by its share of the beam, a sloped deck's flat by its own
-                    mm[i] += d.ThicknessMm * Quality(q, d.Material) * (double.IsNaN(d.W) ? 1 : Math.Min(1, d.W / c.Beam))
+                    mm[i] += d.ThicknessMm * c.MaterialQ(d.Material) * (double.IsNaN(d.W) ? 1 : Math.Min(1, d.W / c.Beam))
                              * (double.IsNaN(d.SlopeReach) ? 1 : Math.Max(0, 1 - 2 * d.SlopeReach / c.Beam));
             // the slopes by theirs, as thick as a line straight down through them
             foreach (var p in c.Inclined)
                 if (x >= p.X0 && x <= p.X1 && p.Kind == InclinedKind.Slope)
                 {
                     double reach = Math.Abs(p.U1 - p.U0), along = Math.Sqrt(reach * reach + (p.Z1 - p.Z0) * (p.Z1 - p.Z0));
-                    mm[i] += p.ThicknessMm * Quality(q, p.Material) * along / reach * Math.Min(1, 2 * reach / c.Beam);
+                    mm[i] += p.ThicknessMm * c.MaterialQ(p.Material) * along / reach * Math.Min(1, 2 * reach / c.Beam);
                 }
         }
         return Shares(mm);
@@ -195,7 +194,6 @@ public sealed class MatchupProfile
         return dz / Math.Sqrt(dz * dz + du * du);
     }
 
-    static double Quality(double[] q, int material) => material >= 0 && material < q.Length ? q[material] : 1;
 
     static (double, double)[] Shares(double[] mm)
     {

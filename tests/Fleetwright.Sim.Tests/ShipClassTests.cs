@@ -83,6 +83,49 @@ public class ShipClassTests
         return p;
     }
 
+    /// <summary>A material's q comes from its block (docs/battle/shells-armour-damage.md P0): the design's over the
+    /// catalogue's, a name in neither steel's with a warning, a plate with none named 1.</summary>
+    [Fact]
+    public void Materials_take_their_blocks()
+    {
+        var path = Path.Combine(Fleet.Shipgen, "designs", "bismarck.json");
+        var d = Design.Load(path);
+        int Index(ShipClass c, string name) => Enumerable.Range(0, c.MaterialCount).Single(i => c.Material(i) == name);
+
+        var given = Fleet.Get("bismarck").Class!;
+        Assert.Equal(1, given.MaterialQ(Index(given, "Krupp cemented (KC n/A)")));
+        Assert.Equal(0.55, given.MaterialQ(Index(given, "steel")));
+        Assert.Equal(1, given.MaterialQ(-1));
+
+        var own = new Dictionary<string, MaterialInput>(d.Materials!) { ["Krupp cemented (KC n/A)"] = new() { Q = 0.8 } };
+        var odd = d with
+        {
+            Materials = own,
+            Superstructure = d.Superstructure! with { Material = "unobtainium" },
+        };
+        var ship = ShipDesign.Build(odd);
+        Assert.Contains(ship.Report.Warnings, w => w.Contains("unobtainium") && w.Contains("steel"));
+        var c = ShipClassCompiler.Compile(ship);
+        Assert.Equal(0.8, c.MaterialQ(Index(c, "Krupp cemented (KC n/A)")));
+        Assert.Equal(7.85, ship.Report.Materials!["Krupp cemented (KC n/A)"].DensityTPerM3);   // the rest from the catalogue
+        Assert.Equal(MaterialTemplates.Steel.Q, c.MaterialQ(Index(c, "unobtainium")));
+    }
+
+    /// <summary>Format 1's names gain the catalogue's blocks as they're read; a block the file gives is kept.</summary>
+    [Fact]
+    public void A_format_1_design_gains_its_materials()
+    {
+        var node = DesignFormat.Upgrade(File.ReadAllText(Path.Combine(Fleet.Shipgen, "designs", "bismarck.json")));
+        node["version"] = 1;
+        node.Remove("materials");
+        node["materials"] = new JsonObject { ["Wotan hart"] = new JsonObject { ["q"] = 0.9 } };
+        var d = Design.Parse(node.ToJsonString());
+        Assert.Equal(DesignFormat.Current, d.Version);
+        Assert.Equal(0.9, d.Materials!["Wotan hart"].Q);
+        Assert.Equal(MaterialTemplates.Get("Krupp cemented (KC n/A)"), d.Materials["Krupp cemented (KC n/A)"]);
+        Assert.Equal(MaterialTemplates.Get("steel"), d.Materials["steel"]);
+    }
+
     [Fact]
     public void Hashes_name_the_design_and_its_layout()
     {

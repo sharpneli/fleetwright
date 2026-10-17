@@ -6,10 +6,11 @@ using System.Text.Json.Nodes;
 
 namespace Fleetwright.Shipgen.Cli;
 
-/// <summary>`shipgen templates`: the shell and explosive catalogues (ShellTemplates, Explosives: their one source)
-/// written out as the game's template assets, `Content/Templates/shells.json` and `explosives.json` (entries {name,
-/// group, note, value}, as tools/designer_templates.py writes the others), and as the docs' pages,
-/// docs/shipgen/shell-templates.md and explosive-templates.md. Never edit those by hand.</summary>
+/// <summary>`shipgen templates`: the shell, explosive and material catalogues (ShellTemplates, Explosives,
+/// MaterialTemplates: their one source) written out as the game's template assets, `Content/Templates/shells.json`,
+/// `explosives.json` and `materials.json` (entries {name, group, note, value}, as tools/designer_templates.py writes the
+/// others), and as the docs' pages, docs/shipgen/shell-templates.md, explosive-templates.md and material-templates.md.
+/// Never edit those by hand.</summary>
 static class TemplatesWriter
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -29,11 +30,47 @@ static class TemplatesWriter
         {
             ["name"] = e.Value.Name, ["group"] = e.Value.From!.Value.ToString(Inv), ["note"] = e.Note, ["value"] = Value(e.Value),
         }).ToArray());
+        var materials = new JsonArray(MaterialTemplates.All.Select(m => (JsonNode)new JsonObject
+        {
+            ["name"] = m.Name, ["group"] = m.Group, ["note"] = m.Note, ["value"] = Value(m.Value),
+        }).ToArray());
         Write(Path.Combine(repo, "Content", "Templates", "shells.json"), shells.ToJsonString(json) + "\n");
         Write(Path.Combine(repo, "Content", "Templates", "explosives.json"), explosives.ToJsonString(json) + "\n");
+        Write(Path.Combine(repo, "Content", "Templates", "materials.json"), materials.ToJsonString(json) + "\n");
         Write(Path.Combine(repo, "docs", "shipgen", "shell-templates.md"), ShellPage());
         Write(Path.Combine(repo, "docs", "shipgen", "explosive-templates.md"), ExplosivePage());
+        Write(Path.Combine(repo, "docs", "shipgen", "material-templates.md"), MaterialPage());
         return 0;
+    }
+
+    static string MaterialPage()
+    {
+        var sb = new StringBuilder();
+        sb.Append("""
+            # Material templates
+
+            Written by `shipgen templates` from `src/Fleetwright.Shipgen/MaterialTemplates.cs`; don't edit by hand. The
+            designer's pickers and the game's catalogue are `Content/Templates/materials.json`, from the same table.
+
+            A part names its material (`armour.materials`, a deck's or battery's `material`, `hull.plating.material`,
+            `superstructure.material`); the name picks the design's block in `materials`, else the catalogue's, else
+            steel's (with a warning). A design copies the blocks its parts name. `q` is the plate's resistance as a share
+            of the same thickness of the penetration formula's plate (Krupp cemented and STS 1): the game's old armour
+            qualities, unchanged by P0 of docs/battle/shells-armour-damage.md; P1b puts the research's in
+            (`research/simulation/armor/00-overview.md` §4.2). The density is armor/03 §7's; the weights read it from P1c
+            (until then every plate weighs as steel, 7.85 t/m³). The structure group is the plating's and
+            superstructure's picker; the armour picker offers every material.
+
+            | Material | Group | q | Density t/m³ |
+            |---|---|---|---|
+
+            """.Replace("\r\n", "\n"));
+        foreach (var m in MaterialTemplates.All)
+            sb.Append(CultureInfo.InvariantCulture, $"| {m.Name} | {m.Group} | {N(m.Value.Q, "0.00")} | {N(m.Value.DensityTPerM3, "0.00")} |\n");
+        sb.Append('\n');
+        foreach (var m in MaterialTemplates.All)
+            sb.Append("- **").Append(m.Name).Append(":** ").Append(m.Note).Append('\n');
+        return sb.ToString();
     }
 
     static void Write(string path, string text)

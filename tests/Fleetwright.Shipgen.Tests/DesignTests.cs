@@ -16,14 +16,13 @@ public class DesignTests
         foreach (var c in GoldenCases.Load(Root))
         {
             var text = File.ReadAllText(c.DesignPath);
-            var given = JsonNode.Parse(text)!.AsObject();
+            var given = DesignFormat.Upgrade(text);   // an older file comes back upgraded
             foreach (var k in new[] { "main", "secondary" })
                 if (given[k] is JsonObject one)
                 {
                     given.Remove(k);
                     given[k] = new JsonArray(one);
                 }
-            given["version"] ??= JsonNode.Parse($"{DesignFormat.Current}");   // an older file comes back upgraded
             var back = JsonNode.Parse(Design.Parse(text).ToJson())!;
             if (!JsonNode.DeepEquals(Normalize(given), Normalize(back)))
                 failures.Add($"{c.Name}:\n  given {given.ToJsonString()}\n  back  {back.ToJsonString()}");
@@ -70,7 +69,7 @@ public class DesignTests
         JsonObject o => new JsonObject(o.OrderBy(kv => kv.Key, StringComparer.Ordinal)
             .Select(kv => KeyValuePair.Create(kv.Key, Normalize(kv.Value)))),
         JsonArray a => new JsonArray(a.Select(Normalize).ToArray()),
-        JsonValue v when v.GetValueKind() == System.Text.Json.JsonValueKind.Number => JsonValue.Create(v.GetValue<double>()),
+        JsonValue v when v.GetValueKind() == System.Text.Json.JsonValueKind.Number => JsonValue.Create(double.Parse(v.ToJsonString(), System.Globalization.CultureInfo.InvariantCulture)),
         _ => n?.DeepClone(),
     };
 }

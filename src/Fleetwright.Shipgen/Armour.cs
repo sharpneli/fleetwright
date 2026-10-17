@@ -356,7 +356,8 @@ public static class Armour
                     p.Mm += d.Mm;
                     (p.X0, p.X1) = (Math.Min(p.X0, p0), Math.Max(p.X1, p1));
                     p.Extent = p.Extent == Extent.Full || ext == Extent.Full ? Extent.Full : p.Extent;
-                    p.Material = dm is null || dm == pm ? pm : pm is null ? dm : $"{pm} + {dm}";
+                    // one plate of the two: the thicker's material (one the design names, so it has a block)
+                    p.Material = dm is null ? pm : pm is null || d.Mm > p.Mm - d.Mm ? dm : pm;
                     if (d.SlopeMm > 0 && dn >= 0)
                         (p.SlopeMm, p.SlopeDeg) = (p.SlopeMm + d.SlopeMm, p.SlopeMm > 0 ? p.SlopeDeg : d.SlopeDeg);
                     continue;

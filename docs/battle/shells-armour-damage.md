@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S done    Updated: 2026-10-16
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S and P0 done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -206,7 +206,7 @@ per-battery `material`, `hull.plating.material`, `superstructure.material`):
 
 | Field | Example (KC n/A) | Used for | Source |
 |---|---|---|---|
-| `density_t_m3` | 7.85 | weight | armor/03 §7 |
+| `density_t_per_m3` | 7.85 | weight | armor/03 §7 |
 | `q` | 1.01 | thickness multiplier, STS = 1 at 8″ | armor/00 §4.2 |
 | `q_scale` | 0.03 | Q(D) = q·(D/8″)^−k above 8″ | armor/00 §4.2 notes |
 | `face_hardened` | `{share: 0.41, min_mm: 100}` | shatter, always decaps, always starts a fuze; homogeneous below min | armor/00 §4.2, 03 §5 |
@@ -563,10 +563,55 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
 
 ## Phase P: how it hits
 
-- **P0 Materials as data (parity).**
+- **P0 Materials as data (parity; done 2026-10-17).**
   - The `materials` table in the design, the `DesignFormat` upgrade, the catalogue's blocks with `q` set to today's
     `ArmourQuality` values, and the compiler's material rows. `ArmourQuality` leaves the settings.
   - Mass still 7.85 in this step. Nothing moves: hashes and golden values hold (the goldens gain the table).
+  - **How (2026-10-17), after the explosives catalogue (S1):**
+    - **The block, `MaterialInput`:** `density_t_per_m3` (machinery.tech's name for it) and `q` only, keyed by name.
+      `q` is read from this step; the density
+      is the true one (armor/03 §7: 7.85 for the steels, wrought iron 7.7, compound 7.75, wood 0.7, aluminium alloy
+      2.7) and is read from P1c on, so P1c doesn't rewrite the designs. Each other field in the Materials table above
+      comes with the step that reads it (P1b `q_scale`, `elongation_pct` and `face_hardened`, P4 and E3 `back`, E1
+      `fragments`, P7 `backing`): a new optional key needs no format step.
+    - **The catalogue, `MaterialTemplates.cs`** (shipgen, like `Explosives.cs`): the 26 names the designs use and
+      `aluminium alloy`, `q` as `ArmourQuality` had it, `group` `structure` (the plating's and the superstructure's
+      picker) or `armour` (the armour picker lists every material: wood armour is silly, not impossible).
+      `shipgen templates` writes `Content/Templates/materials.json` (values now blocks) and
+      `docs/shipgen/material-templates.md`; `tools/designer_templates.py` stops writing materials.json.
+    - **Parity keeps today's oddities**, for P1b to fix: the names `ArmourQuality` didn't list took 0.6, so
+      `special treatment steel`, `Wotan`, `Wotan hart` (Bismarck's decks), `Krupp non-cemented` and `Molybdenum steel`
+      are 0.6 here; a plate with no material named stays 1 (the class's -1).
+    - **Resolution:** a name takes the design's block, else the catalogue's; a name in neither takes the `steel`
+      block with a warning (today's 0.6 catch-all becomes steel's 0.55; no design has one). `report.materials` is the
+      resolved block of every name the design's parts give, sorted. Validation: the blocks' numbers (`q` and density
+      more than 0) and unknown fields.
+    - **Format 2:** `DesignFormat`'s step from 1 adds `materials` with the catalogue's block for each known name the
+      file's parts give (any `material` or `deck_material`, and `armour.materials`' values), unless it has one.
+      `shipgen upgrade FILES` rewrites design files to the current format in their own layout (the shipped designs'
+      lines, the scenarios' indented files): the shipped and scenario designs go to 2, the fuzz cases stay old and
+      take the step when read.
+    - **The sim:** the compiler gives each material row its `q` from `report.materials` (strict: a name the hitboxes
+      carry without a block is a compile error); `ShipClass.MaterialQ` replaces `Terminal.Qualities` and
+      `DamageSystem`'s cache; `ArmourQuality` and `ArmourQualityOther` leave `SimSettings` and settings.json. The
+      structure hash keeps the names only, so it holds.
+    - **Checks:** golden-check after golden-update (report.materials and the inputs' table only, `ShipDesign.Version`
+      19); `shipgen hits` (v25 by lion, iron_duke by seydlitz), the matchup (arethusa:4 v iron_duke) and the
+      squadrons and flotilla identical; the state hash moves only by the design hashes (as S0).
+  - **Done (2026-10-17).** As above, and:
+    - **One change outside the plan:** two armour decks on one deck number merged into one plate named `"A + B"`,
+      a name with no block. The merged plate now takes the thicker one's material (no case had a merge of two
+      materials, so nothing moved).
+    - `shipgen upgrade` took the 72 shipped and 53 scenario designs to format 2; the fuzz cases stay at 0 and take
+      both steps when read. The designer's material pickers read the catalogue (the armour picker gains wood and
+      aluminium alloy); the material knobs still list names, and don't copy a block into the design (the catalogue
+      stands in) until the UI session that lists the design's table.
+    - **Benches before and after:** goldens 326 cases gain the inputs' table, the version and report.materials
+      (golden-update, `ShipDesign.Version` 19), 372/372; `snapshot` of every case identical beyond those. `hits` v25
+      by lion and iron_duke by seydlitz, `matchup` arethusa:4 v iron_duke and lion v seydlitz, `duel`
+      super_dreadnought: identical but for timings. Squadrons (40 min) and flotilla (30 min) identical shot for
+      shot; the state hash moved (squadrons 27C3077B -> 4A00F99D, flotilla A5834BAF -> 23A9E144) only by the design
+      hashes: with that term left out both hash the same before and after (BB76AB02, 39392167).
 - **P1a Thompson and the plate bench** (sim only; the materials' `q` as P0 left them).
   - `Terminal`'s plate step on Thompson's V_L, the residual from V and V_L (the game's rule, P5), and the inverse
     (Cardano, below) for `Matchup.cs` and the bench's readouts.
@@ -874,7 +919,7 @@ None blocks a step; each is settled by its step's bench.
 | S3 | S2 | ammunition weight | — | displacement |
 | S4 | S1 | designer picker (UI session; done) | — | no |
 | S5 | S2 | the loadout applied and resolved | per-ship loadouts: scenarios, dev flag, bench (done) | only for ships given one |
-| P0 | — | materials table, upgrade | material rows | no |
+| P0 | — | materials table, upgrade (done) | material rows (done) | no |
 | P1a | P0 | — | vanilla Thompson, Cardano inverse, pen-check bench | penetration (1–4%) |
 | P1b | P1a | material catalogue | Q(D) | penetration |
 | P1c | P0 | densities | — | weights |

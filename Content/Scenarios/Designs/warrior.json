@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "id": "warrior",
  "name": "Warrior-like (1907)",
  "type": "CA",
@@ -391,6 +391,20 @@
    },
    "fire": 0.4,
    "from": 1888
+  }
+ },
+ "materials": {
+  "Krupp cemented": {
+   "density_t_per_m3": 7.85,
+   "q": 1
+  },
+  "nickel steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.75
+  },
+  "steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.55
   }
  }
 }

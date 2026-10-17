@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "id": "b97",
  "name": "B97-like large torpedo boat (1915)",
  "type": "DD",
@@ -307,6 +307,16 @@
    },
    "fire": 0.25,
    "from": 1902
+  }
+ },
+ "materials": {
+  "mild steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.5
+  },
+  "steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.55
   }
  }
 }

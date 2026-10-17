@@ -6,7 +6,7 @@ public static class ShipDesign
 {
     /// <summary>The generator's version: bumped whenever its output changes on purpose (each `golden-update` commit), so
     /// anything compiled from a build (a ShipClass, a cache entry) knows it's stale.</summary>
-    public const int Version = 18;
+    public const int Version = 19;
 
     /// <summary>Input errors. limits false skips the numeric ranges (--no-limits); structural checks stay.</summary>
     public static List<string> Validate(Design design, bool limits = true)
@@ -370,14 +370,16 @@ public static class ShipDesign
         var groups = new OrderedDictionary<string, long>(StringComparer.Ordinal);
         foreach (var (k, v) in r.Groups.OrderBy(kv => -kv.Value))
             groups[k] = (long)Math.Round(v);
-        var shellWarnings = new List<string>();
-        var shells = Ammunition.Resolve(design, shellWarnings);
+        var dataWarnings = new List<string>();
+        var shells = Ammunition.Resolve(design, dataWarnings);
+        var materials = MaterialTemplates.Report(design, dataWarnings);
         return new Report
         {
             Id = design.Id, Name = design.Name ?? design.Id, Valid = lay.Errors.Count == 0 && r.Errors.Count == 0,
             Errors = [.. lay.Errors, .. r.Errors],
-            Warnings = [.. DesignFormat.Warnings(design), .. lay.Warnings, .. r.Warnings, .. shellWarnings, .. flooded is null ? [] : new[] { flooded }],
+            Warnings = [.. DesignFormat.Warnings(design), .. lay.Warnings, .. r.Warnings, .. dataWarnings, .. flooded is null ? [] : new[] { flooded }],
             Inputs = design, Results = results, Shells = shells.Count > 0 ? shells : null,
+            Materials = materials.Count > 0 ? materials : null,
             Summary = Styles.Get(design).Summary(sized, lay, r),
             Plant = PlantReport(lay, r), Hull = HullReport(design, r), Crew = lay.Crew, FireControl = FireControl.Report(lay, r.Freeboard),
             Bridge = lay.Geo.Bridge != null ? BridgeReport(lay, r.Freeboard) : null, WeightGroupsT = groups,
