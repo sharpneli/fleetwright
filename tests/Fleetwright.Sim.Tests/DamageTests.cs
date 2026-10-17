@@ -49,7 +49,8 @@ public class DamageTests(ITestOutputHelper output)
         var ap = Hits("destroyer", "dreadnought", 0, 10_000, 1000, 1);
         Assert.InRange(ap.Share(Outcome.PassedThrough), 0.7, 1);
         var he = Hits("destroyer", "dreadnought", 0, 10_000, 500, 1, ShellKind.He);
-        Assert.InRange(he.Share(Outcome.BurstInside), 0.95, 1);
+        // bursts, full or low-order: the rest are its fuze's blinds and its filler's duds (P3; user, 2026-10-17)
+        Assert.InRange(he.Share(Outcome.BurstInside) + he.Share(Outcome.LowOrder), 0.9, 1);
     }
 
     [Fact]
@@ -133,13 +134,13 @@ public class DamageTests(ITestOutputHelper output)
         double t = WaterRun.TimeS(500, 12, l);
         Assert.Equal(12, WaterRun.RunInM(500, t, l), 9);
         Assert.True(t > 12.0 / 500);
-        // the reach: decay lengths for a base fuze, none for a nose fuze
-        Assert.Equal(Settings.UnderwaterReachDecays * l, WaterRun.ReachM(shell, 500, Settings), 9);
-        Assert.Equal(0, WaterRun.ReachM(shell with { Fuze = Fuze.Nose }, 500, Settings));
-        // a fuze started on the water cuts the reach to where it fires
-        var on = Settings with { FuzeStartsOnWater = true };
-        Assert.Equal(WaterRun.RunInM(500, shell.FuzeDelayS, l), WaterRun.ReachM(shell, 500, on), 9);
-        Assert.True(double.IsPositiveInfinity(WaterRun.FuzeRunM(shell, 500, Settings)));
+        // the reach, with no fuze started on the water: decay lengths for a base fuze, none for a nose fuze
+        var off = Settings with { FuzeStartsOnWater = false };
+        Assert.Equal(Settings.UnderwaterReachDecays * l, WaterRun.ReachM(shell, 500, off), 9);
+        Assert.Equal(0, WaterRun.ReachM(shell with { Fuze = Fuze.Nose }, 500, off));
+        Assert.True(double.IsPositiveInfinity(WaterRun.FuzeRunM(shell, 500, off)));
+        // a fuze started on the water (on since P3) cuts the reach to where it fires
+        Assert.Equal(WaterRun.RunInM(500, shell.FuzeDelayS, l), WaterRun.ReachM(shell, 500, Settings), 9);
     }
 
     /// <summary>A hit on the dreadnought's side 2 m under its waterline, having run runM under the water first.</summary>

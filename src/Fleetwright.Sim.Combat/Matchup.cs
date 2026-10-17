@@ -611,7 +611,7 @@ public static class Matchup
         double nearSide = Terminal.PenMm(shell, near, fall) * common, nearDeck = Terminal.PenMm(shell, near, 90 - fall) * common;
         // a burst where there's no armour (the upperworks, the ends) reaches the vitals by its splinters through the deck
         double bare = Math.Exp(-t.DeckMeanMm / s.MatchupSplinterMm);
-        double upper = (shell.Fuze == Fuze.Nose || t.SidePlatingMm >= Terminal.FuzeArmMm(shell.CalibreMm, fall, s) ? 1 : s.MatchupPassShare) * bare;
+        double upper = (shell.Fuze == Fuze.Nose || t.SidePlatingMm >= Terminal.FuzeStartMm(shell, fall) ? 1 : s.MatchupPassShare) * bare;
         // the faces as this calibre meets them: between the 8" and the 16" profiles
         double w = Math.Clamp((shell.CalibreMm - MatchupProfile.Eight) / MatchupProfile.Eight, 0, 1);
         double sideIn = Through(shell, t.Side, penSide, nearSide, t.SidePlatingMm, fall, bare, s),
@@ -632,17 +632,19 @@ public static class Matchup
     /// plate is thicker by the body's quality, and one that shatters the shell (a bare nose, by the cap's share at the
     /// angle, or a body past its limits) keeps it out whether it gets through or not; just over the limit
     /// (<paramref name="penNear"/>, what it beats at its speed over the band) a body may break. The cap is taken as on:
-    /// what plating ahead knocks off is the terminal's.</summary>
+    /// what plating ahead knocks off is the terminal's. Its filler may burst in the plate (by ρ, the plate over what it
+    /// beats). Where its fuze bursts it (the delay) isn't the matchup's: a burst inside is a burst inside.</summary>
     static double Through(in ShellTypeRow shell, MatchupFace[] face, double pen, double penNear, double platingMm, double obliquityDeg, double bare,
         SimSettings s)
     {
         double sum = 0, good = Good(shell, s), kept = s.MatchupKeptShare;
+        double inPlate = s.MatchupInPlateShare;
         double bareNose = Terminal.BareShare(shell.Cap, obliquityDeg), breaks = Terminal.NearLimitBreak(obliquityDeg, s);
         foreach (var x in face)
         {
             double f;
             if (x.Mm <= 0)
-                f = (shell.Fuze == Fuze.Nose || platingMm >= Terminal.FuzeArmMm(shell.CalibreMm, obliquityDeg, s) ? 1 : s.MatchupPassShare) * bare;
+                f = (shell.Fuze == Fuze.Nose || platingMm >= Terminal.FuzeStartMm(shell, obliquityDeg) ? 1 : s.MatchupPassShare) * bare;
             else if (shell.Fuze == Fuze.Nose)
                 f = kept;
             else
@@ -653,19 +655,24 @@ public static class Matchup
                 double p = Phi((pen - mm) / (s.MatchupPenSpread * mm));
                 double broke = Math.Max(x.HardRawMm, x.Mm) / shell.CalibreMm >= s.BreakFromTD
                     ? Math.Max(p - Phi((penNear - mm) / (s.MatchupPenSpread * mm)), 0) * breaks : 0;
-                f = (1 - shatter) * ((p - broke) * good + (1 - p + broke) * kept) + shatter * kept;
+                // the filler bursting in the plate, by the plate over what the shell beats (damage/12's ρ, at its mean)
+                double rho = mm / Math.Max(pen, 1e-9), ip = Math.Min(1, shell.FillerInPlate * rho * rho);
+                double whole = ip * inPlate + (1 - ip) * good;
+                f = (1 - shatter) * ((p - broke) * whole + (1 - p + broke) * kept) + shatter * kept;
             }
             sum += x.Share * f;
         }
         return sum;
     }
 
-    /// <summary>What a shell through armour whole does, by its quality's outcome row: a full burst, a burst in the plate or
-    /// a low-order one at their shares, a dud as one kept out.</summary>
+    /// <summary>What a shell through armour whole, its fuze started, does (as the terminal's <c>Start</c>): a blind fuze
+    /// as one kept out; else a full detonation by its explosive's rate with the booster, a low-order burst at its share,
+    /// a dud as one kept out.</summary>
     static double Good(in ShellTypeRow shell, SimSettings s)
     {
-        var o = s.ShellOutcomes[Math.Clamp((int)shell.Quality, 0, s.ShellOutcomes.Length - 1)];
-        return o.Burst + o.InPlate * s.MatchupInPlateShare + o.LowOrder * s.MatchupLowOrderShare + o.Dud * s.MatchupKeptShare;
+        double full = shell.FillerFull, low = (1 - full) * s.LowOrderShare, dud = 1 - full - low;
+        return shell.FuzeBlind * s.MatchupKeptShare
+               + (1 - shell.FuzeBlind) * (full + low * s.MatchupLowOrderShare + dud * s.MatchupKeptShare);
     }
 
     /// <summary>The share of a side's tonnage out of the fight, from the ships expected out of each class (each ship out

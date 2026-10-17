@@ -1,5 +1,5 @@
 {
- "version": 2,
+ "version": 3,
  "id": "engadine",
  "name": "Engadine-like seaplane carrier (1911)",
  "type": "AV",
@@ -238,8 +238,7 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "km1916"
+   }
   },
   "Standard HE (1912)": {
    "kind": "he",
@@ -281,8 +280,7 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "km1916"
+   }
   }
  },
  "explosives": {

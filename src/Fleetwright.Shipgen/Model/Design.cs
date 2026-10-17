@@ -196,8 +196,6 @@ public sealed record AmmoInput
     public SteelInput? Steel { get; init; }
     public CasingInput? Casing { get; init; }
     public FuzeInput? Fuze { get; init; }
-    /// <summary>TRANSITIONAL (S0 to P3): the sim's outcome-table row, rn1916, km1916, rn1918, ww2 or ijn_t91.</summary>
-    public string? Outcomes { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

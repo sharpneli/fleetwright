@@ -1,5 +1,5 @@
 {
- "version": 2,
+ "version": 3,
  "id": "moltke",
  "name": "Moltke-like (1911)",
  "type": "BC",
@@ -305,8 +305,7 @@
     "blind": 0.15,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "km1916"
+   }
   },
   "DE 1911 Spgr Kz (TNT)": {
    "kind": "he",
@@ -348,8 +347,7 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "km1916"
+   }
   }
  },
  "explosives": {

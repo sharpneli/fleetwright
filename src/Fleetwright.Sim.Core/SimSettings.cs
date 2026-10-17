@@ -711,18 +711,15 @@ public sealed record SimSettings
     /// bench calibrating fire control on its own (the duel, the gunnery tests) turns it off.</summary>
     public bool HitsDoDamage { get; init; } = true;
 
-    /// <summary>What a shell that arms on armour it can defeat does, a row for each <c>ShellQuality</c> in order
-    /// (gunfire_ref.py OUTCOME: rn1916, km1916, rn1918, ww2, ijn_t91): the fuze's and the filler's failures. The body's
-    /// are the plates' since P2 (docs/battle/shells-armour-damage.md), so the rows' old broken share went to the full
-    /// burst: what the research leaves the roll is fuze and filler failure (armour-and-damage.md §5).</summary>
-    public ShellOutcomeRow[] ShellOutcomes { get; init; } =
-    [
-        new() { Name = "rn1916", Burst = 0.50, InPlate = 0.35, LowOrder = 0.10, Dud = 0.05 },
-        new() { Name = "km1916", Burst = 0.60, InPlate = 0.15, LowOrder = 0.10, Dud = 0.15 },
-        new() { Name = "rn1918", Burst = 0.60, InPlate = 0.10, LowOrder = 0.20, Dud = 0.10 },
-        new() { Name = "ww2", Burst = 0.80, InPlate = 0.05, LowOrder = 0.07, Dud = 0.08 },
-        new() { Name = "ijn_t91", Burst = 0.75, InPlate = 0.05, LowOrder = 0.07, Dud = 0.13 },
-    ];
+    /// <summary>A filler that doesn't detonate fully (its explosive's rate with the shell's booster) goes low-order with
+    /// this chance, else it's a dud (damage/12 §4 stage 2 [EST]); a low-order burst has <see cref="LowOrderK"/> of the
+    /// blast. The shell's own numbers decide the rest: its fuze's start, delay and blinds, its explosive's bursts in the
+    /// plate (docs/battle/shells-armour-damage.md P3, which replaced the outcome table's rows).</summary>
+    public double LowOrderShare { get; init; } = 0.75;
+
+    /// <summary>A two-plate fuze adds up the thin plates it meets within this many calibres of the last (in quick
+    /// succession: a superstructure's decks and walls) [EST].</summary>
+    public double FuzeSumCalibres { get; init; } = 10;
 
     /// <summary>The shell's state on the plates (docs/battle/shells-armour-damage.md P2; armor/00 §5.3, 02 §3.1, 05
     /// §4g): a face-hardened plate that shatters the shell holds as if ShatterBonus times thicker at normal (Okun's
@@ -746,17 +743,12 @@ public sealed record SimSettings
     public double HePenCalibres { get; init; } = 0.2;
     public double PenSpread { get; init; } = 0.1;
 
-    /// <summary>A base fuze arms on a plate of this many calibres at normal impact (Okun's Mk 21; less at obliquity).</summary>
-    public double FuzeArmCalibres { get; init; } = 0.07;
 
     /// <summary>A shell that can't get through a plate glances off it from this obliquity, surely by this many degrees
     /// more, degrees.</summary>
     public double RicochetFromDeg { get; init; } = 45;
     public double RicochetSpanDeg { get; init; } = 20;
 
-    /// <summary>The fuze's delay distance is the delay times the residual velocity, times a draw between these.</summary>
-    public double DelayLow { get; init; } = 0.7;
-    public double DelayHigh { get; init; } = 1.1;
 
     /// <summary>A shell crossing a machinery space (a boiler or engine room) is armed by what's in it (turbines, gears,
     /// boilers: Johnston) with this chance.</summary>
@@ -774,9 +766,9 @@ public sealed record SimSettings
     /// (<see cref="FuzeStartsOnWater"/>) is what ends an ordinary shell's run sooner.</summary>
     public double UnderwaterReachDecays { get; init; } = 3;
 
-    /// <summary>A base fuze starts on the water, its delay running from there (armor/04 §3.5; scaffolding for the
-    /// shell rework's P6: off until then, when only plates and machinery start it).</summary>
-    public bool FuzeStartsOnWater { get; init; }
+    /// <summary>A base fuze starts on the water, its delay running from there (armor/04 §3.5; P6's scaffold, on since P3
+    /// of docs/battle/shells-armour-damage.md; off, only plates and machinery start it).</summary>
+    public bool FuzeStartsOnWater { get; init; } = true;
 
     /// <summary>The burst's radii, m, times the cube root of its TNT kg: equipment wrecked and most crew hit; light
     /// structure and people injured; a contact burst's hole in plating, times the square root of 6 mm over the plate.</summary>
@@ -787,7 +779,7 @@ public sealed record SimSettings
     /// <summary>A burst's force as a share of one inside: in the plate, outside on it, and low-order.</summary>
     public double BurstInPlateK { get; init; } = 0.4;
     public double BurstOutsideK { get; init; } = 0.15;
-    public double LowOrderK { get; init; } = 0.45;
+    public double LowOrderK { get; init; } = 0.3;
 
     /// <summary>A part within this share of the wreck radius is destroyed, within it disabled; a room is disabled by a
     /// burst inside it whose wreck radius is this share of its length (else damaged, and twice damaged is disabled).</summary>
@@ -1006,9 +998,9 @@ public sealed record SimSettings
     public double MatchupTorpedoK { get; init; } = 48;
     public double MatchupPenSpread { get; init; } = 0.1;
     public double MatchupSplinterMm { get; init; } = 25;
-    /// <summary>A shell through armour does what its quality's outcome row (<see cref="ShellOutcomes"/>) says: a full
-    /// burst all of it, a burst in the plate and a low-order burst these shares, a dud as one kept out (a broken shell
-    /// too, the plate's doing).</summary>
+    /// <summary>A shell through armour does what its fuze and filler give it (<see cref="LowOrderShare"/>): a full burst
+    /// all of it, a burst in the plate and a low-order burst these shares, a blind fuze or a dud as one kept out (a
+    /// broken shell too, the plate's doing).</summary>
     public double MatchupInPlateShare { get; init; } = 0.5;
     public double MatchupLowOrderShare { get; init; } = 0.3;
 
@@ -1089,17 +1081,6 @@ public sealed record GunneryLevel
     public double Ladder0M { get; init; }
     public double SalvoPct { get; init; }
     public double SalvoDeflMil { get; init; }
-}
-
-/// <summary>What shells of a quality do when they arm on armour they can defeat (gunfire_ref.py OUTCOME): burst after
-/// the fuze's delay, burst in the plate, burst low-order, fail to burst, or break up; shares adding up to 1.</summary>
-public sealed record ShellOutcomeRow
-{
-    public string Name { get; init; } = "";
-    public double Burst { get; init; }
-    public double InPlate { get; init; }
-    public double LowOrder { get; init; }
-    public double Dud { get; init; }
 }
 
 /// <summary>How good a side's gun crews are (docs/battle/fighting.md 4.2b: one per side, a scenario's to give).</summary>

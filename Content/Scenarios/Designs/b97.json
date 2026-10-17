@@ -1,5 +1,5 @@
 {
- "version": 2,
+ "version": 3,
  "id": "b97",
  "name": "B97-like large torpedo boat (1915)",
  "type": "DD",
@@ -243,8 +243,7 @@
     "blind": 0.15,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "km1916"
+   }
   },
   "DE 1911 Spgr Kz (TNT)": {
    "kind": "he",
@@ -286,8 +285,7 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "km1916"
+   }
   }
  },
  "explosives": {

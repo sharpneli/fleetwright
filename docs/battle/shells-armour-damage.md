@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, P0, P1a, P1b, P1c and P2 done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, P0, P1a-c, P2, P3 and P6 done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -859,7 +859,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       Harvey, so the belts hold; Tsushima's damage was the upperworks and fires (P3's fuzes, the fire session).
     - **The magazine test** (`DamageTests`) fired Queen Elizabeth's shells at 37° below the horizontal; they now always
       shatter on Dreadnought's belt, so it takes KGV's WWII shell (the test is about the blast's record).
-- **P3 Fuzes per fuze.**
+- **P3 Fuzes per fuze** (done 2026-10-17).
   - Start threshold and obliquity factor per fuze; the two-plate fuzes adding up thin plates in quick succession; face-hardened plate always starts it.
   - Delay scatter per fuze; blinds per fuze.
   - The `ShellOutcomes` rows and the transitional `outcomes` field are gone: what's left lives in the shell's
@@ -873,7 +873,75 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
   - `FuzeStartsOnWater` on (P6's scaffold).
   - Benches: bursts behind the plate (Baden 38 ft), Iowa's bomb deck moving bursts up, South Dakota's pass-throughs.
   - **Revisit MatchupTests' even band** (widened 2 → 2.5 at P2, user 2026-10-17): with the British fuzes and lyddite's
-    in-plate bursts as causes, lion and iron_duke v derfflinger should come back under 2.
+    in-plate bursts as causes, lion and iron_duke v derfflinger should come back under 2. (They didn't: see Done.)
+  - **How (2026-10-17):**
+    - **Shipgen:** the report's shells carry the fuze's numbers (`fuze_start_cal`, `fuze_oblique`, `fuze_plates`,
+      `fuze_scatter`, `fuze_blind`; `FuzeDefaults` 0.07, 0.45, single, 0.25, 0.05 where the block gives none) and the
+      explosive's rates with the shell's booster (`filler_in_plate`, `filler_full`). `outcomes` leaves the block, the
+      templates, the report and `ShellTypeRow` (`ShellQuality` gone). **Design format 3** (`DesignFormat`): the field is
+      dropped, and a block whose fuze gives no `blind` takes its row's dud share; `shipgen upgrade` took the 72 shipped
+      and 53 scenario designs to 3 (`ShipDesign.Version` 23, goldens 326 cases).
+    - **The start** (`Terminal.FuzeStartMm`): `start_cal` calibres at normal on Okun's curve, stretched so that from 61°
+      it's the fuze's `oblique` share (his curve's own is 0.45, the Mk 21's 0.25); the plate's thickness as it is, not
+      as rated (the threshold is areal density against the shell's sectional density: structural steel's 0.70 no
+      longer thins it). Any face-hardened plate starts it. A two-plate fuze adds up the plates' shares of the threshold
+      while each comes within `FuzeSumCalibres` 10 [EST] of the last. The impact starts it even on a plate that then
+      holds: running since an earlier plate, the shell bursts against this one, as before; started on this one, it
+      bursts on its face (`BurstOutside`'s force, by the initiation's). The old 50% and 35% outside bursts of a
+      defeated or glancing shell (the reference's roll) are gone.
+    - **Started** (`Terminal.Start`): blind by the fuze's share (a dud); else the filler's initiation, full by its
+      explosive's rate with the booster, else low-order (`LowOrderShare` 0.75, `LowOrderK` 0.45 → 0.3 of the blast, 12
+      §4) or a dud. The delay is scattered by the fuze's own σ (a normal draw, none under 0), replacing the flat 0.7-1.1
+      draw (`DelayLow`, `DelayHigh` gone). A nose fuze has its blinds and the initiation too.
+    - **In the plate** (`Terminal.InPlateChance`): `in_plate·ρ²`, ρ = (V_L/v)², rolled on each plate the shell gets
+      through whole. Not on a plate that stops it: 12 has ρ > 1 as the failure to penetrate, and extrapolating ρ² past it
+      (tried first) burst nearly every TNT shell stopped by Iron Duke's barbettes in them, her magazine losses to 13.5%.
+    - **The water's fuze on** (`FuzeStartsOnWater`), with its delay scattered and its blinds; P6 is done.
+    - **The matchup:** `Good` from the shell (its blinds, its explosive's full rate, the low-order share), the in-plate
+      share by the face's ρ (its plate over what the shell beats), `FuzeStartMm` for the plating. Where the fuze bursts
+      it isn't the matchup's: a burst-depth term (the vitals reached by 1 − e^(−d/L), d the delay times the speed left,
+      L a share of the beam) was tried and moved lion v derfflinger only 2.85 → 2.5 at any L, so it isn't in.
+    - **Benches:** `shipgen hits` prints the bursts after the delay and how far behind the fuze's start they went off.
+  - **Done (2026-10-17).** As above; the rows, `FuzeArmCalibres`, `DelayLow` and `DelayHigh` are gone from
+    settings.json. Per-hit cost unchanged (iron_duke by seydlitz 348 → 387 µs, lion on seydlitz 680 → 393: noise).
+    - **Benches, before (P2) → after** (`shipgen hits`, 2000 hits, 10 a ship, 30 min after):
+      - **Baden:** a Greenboy (RN 1927 APC, 0.025 s) on Seydlitz at 15 km bursts **7.7 m** behind where its fuze
+        started (6.9 before; Baden measured 11.6 m behind a 25 cm belt); through plate over 9″ and burst 1 in 2.1.
+      - **South Dakota:** Yamato's Type 91 (0.4 s) on Colorado at 20 km: passed through 52.5 → 19.8%, burst beyond 10.4 →
+        42.1%, so 62% of hits go through or burst beyond, both before and after (the record: 15-18 of 26).
+      - **Jutland:** Lion on Seydlitz through plate over 9″ and burst 1 in 9.4 → **1 in 5.6** (record 1 in 13). The
+        rows' flat 35% in the plate is now lyddite's 0.35·ρ², little on plate it clears by a margin; ρ¹ (tried) gives 1
+        in 6.2, so open question 1's exponent isn't the gap. Under water 27.9 → 1.6% of hits (the 0.003 s fuze fires
+        in the water 1.2 m on), water in Seydlitz 268 → 46 t, out of the fight 12 → 6%.
+      - **The Germans:** Seydlitz on Iron Duke at 12 km: defeated 40 → 25%, burst inside 12.9 → 23.1%, low-order 2.9 →
+        10.9%, dud 5.5 → 15% (the Psgr's 15% blinds and TNT with a basic booster, 60% full), under water 24.7 → 8.8%,
+        water 48 → 34 t, magazine 4 → 4.5%, out of the fight 11 → 8%.
+      - **Pairs** (out of the fight after 10 hits): Derfflinger on Lion 8%, Lion on Derfflinger 5%; Derfflinger on Iron
+        Duke 13%, Iron Duke on Derfflinger 6%. In the terminal the German shells are the better per hit, as at Jutland.
+      - **Light targets:** the light cruiser by Iron Duke: in the plate 23.1 → 2.2%, burst inside 29.5 → 56.2%, under
+        water 25 → 1.6%, water 892 → 333 t, out of the fight 53 → 66%. tb_destroyer by the light cruiser's AP: passed
+        through 82 → 70%, burst inside 5 → 20% (the raw plating now starts the 6″ fuze at obliquity), out 11 → 13%.
+        V25 by Lion's 4″ HE: burst inside 99.9 → 90.7%, low-order 2.8%, dud 6.4%, out 34 → 36%.
+      - **1905:** Borodino's 12″ on Mikasa: shattered 70 → 57%, burst inside 1.3 → 7.9%, out 1 → 4%. Yamato on Yamato:
+        burst beyond 11.6 → 44.5%, passed through 39 → 5%, water 2,819 → 2,875 t, out 27%.
+    - **Matchup:** arethusa:4 v iron_duke 1.415 → 1.231 (Iron Duke's hit puts her out 6.2 → 7.4%); lion v seydlitz
+      1.903 → 2.257; lion v derfflinger 2.39 → 2.85, iron_duke v derfflinger 2.32 → 2.79. **The matchup and the terminal
+      now disagree in direction:** the matchup rates the British shells about three times the Germans' per hit (beam-on,
+      no burst depth, no underwater hits), the terminal the Germans higher. MatchupTests' even band widened to 3 on the
+      user's say (2026-10-17), and the refit is its own step (**PM** below).
+    - **Scenarios:** squadrons 40 min Britain lost 2 → 1 (Princess Royal; Lion survives), Germany 0; flotilla moves
+      (hash F1FCB5BF → B025B91C); tsushima --play 2 seeds Russia lost 2 → 4, Japan 3.5 → 2.5 (history: Russia's fleet).
+    - **pen-check:** unchanged (10 of 12; no fuzes in it).
+    - **Tests:** DamageTests' "HE bursts" anchor counts full and low-order bursts, 0.9-1 (user, 2026-10-17: 0.918 full
+      now, the rest the fuze's blinds and the filler's duds); the water-reach and the underwater splash tests take the
+      water's fuze off where they test the run or the splash; the lone torpedo boat's attack test runs with hits doing
+      no damage (since P3 she was often stopped 20 hits in, short of her torpedoes' range: the test is her attack's
+      steps). New: the format 2 → 3 step.
+- **PM The matchup refit to the terminal** (user, 2026-10-17; after P3). The matchup judges a hit beam-on, with a burst
+  inside as good as any other and no hit under the water, so since P3 it rates the WWI British shells about three
+  times the Germans' per hit where the terminal has them worse. Refit its per-hit estimate to `shipgen hits` across
+  the bench pairs: burst depth by the fuze's delay, the underwater hits a delay fuze lets reach the hull, and the
+  target angle's spread (P2's question). Then MatchupTests' even band goes back to 2.
 - **P4 Three limits.** Holed (a hole, the shell broken, fragments only), Navy (the whole shell through) and effective (through,
   whole, fuze working), with a new `Outcome` for holed-but-broken.
   - The holed limit is the material's `back.holed_u` (face-hardened holed 2-12% below the Navy limit, armor/00; 14
@@ -886,7 +954,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
   - The residual is Lambert-Jonas since P1a (it fits the spaced deck: 0.75 against 0.74); with the turn toward the
     normal and Okun's energy factor above 45° added here, its burst distances are checked against Baden and the Hood
     deck series.
-- **P6 Under water** (mostly done; what's left is P3's switch). The shell's speed by the distance it travels in the
+- **P6 Under water** (done; P3 turned the water's fuze on, 2026-10-17). The shell's speed by the distance it travels in the
   water (`e^(−x/L)`), the fuze clock starting at the water, and the Type 91 as the exception that keeps going. This
   replaces `UnderwaterSpeedShare`'s flat 0.4.
   - **Done ahead of the pass (2026-10-16):** the speed by the run (`Sim.Combat/WaterRun.cs`: L 25 calibres pointed,
@@ -1080,7 +1148,8 @@ None open (2026-10-16).
 
 None blocks a step; each is settled by its step's bench.
 
-1. **The filler's in-plate curve** (P3): 12's r², here u⁻⁴, against the Jutland sample and Baden.
+1. **The filler's in-plate curve** (P3): 12's r², here u⁻⁴, against the Jutland sample and Baden. P3: ρ¹ instead moves
+   Lion on Seydlitz's 1 in 5.6 only to 1 in 6.2; the gap to Jutland's 1 in 13 is elsewhere.
 2. **THOR above 53 g** (E1): the heavy AP and black-powder pieces.
 3. **The casing shares and steel multipliers** (S1, E1) are [EST]: navweaps' cross-sections of the 16″ Mk 8 and Mk 13
    and the 6″ Mk 34 would pin them.
@@ -1113,10 +1182,11 @@ None blocks a step; each is settled by its step's bench.
 | P1b | P1a | material catalogue, split names (done) | Q(D) (done) | penetration |
 | P1c | P0 | densities (done) | — | weights |
 | P2 | S2, P1b | shells' cap and body in the report, the face's `shatters` (done) | caps, shatter, break-up (done) | outcomes |
-| P3 | P2 | — | fuzes; rows gone; water fuze on | burst points |
+| P3 | P2 | fuze and filler numbers in the report; `outcomes` gone, format 3 (done) | fuzes; rows gone; water fuze on (done) | burst points |
+| PM | P3 | — | the matchup refit to the terminal | AI judgements |
 | P4 | P2 | — | three limits | outcomes |
 | P5 | P1a | — | angles | ricochets, paths |
-| P6 | — | — | under water (done but P3's switch) | underwater hits |
+| P6 | — | — | under water (done) | underwater hits |
 | P7 | P0 | gratings, backing | scatter | plates |
 | E0 | — | joints, shock grade | compiled | no |
 | E1 | S1, P0 | — | the burst's pieces, THOR, `frag` bench | fragments |

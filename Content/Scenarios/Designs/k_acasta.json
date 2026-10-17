@@ -1,5 +1,5 @@
 {
- "version": 2,
+ "version": 3,
  "id": "k_acasta",
  "name": "Acasta-like K class destroyer (1912)",
  "type": "DD",
@@ -242,8 +242,7 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "rn1916"
+   }
   },
   "RN 1909 APC (lyddite)": {
    "kind": "ap",
@@ -286,8 +285,7 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "rn1916"
+   }
   }
  },
  "explosives": {

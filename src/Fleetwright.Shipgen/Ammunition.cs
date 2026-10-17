@@ -14,12 +14,9 @@ public static class Ammunition
     public static readonly string[] FuzePositions = ["base", "nose"];
     public static readonly string[] Boosters = ["basic", "ce"];
     public static readonly string[] FuzePlates = ["single", "two"];
-    /// <summary>TRANSITIONAL (S0 to P3): the sim's outcome-table rows (gunfire_ref.py OUTCOME), until the fuze's and
-    /// filler's own rates replace them.</summary>
-    public static readonly string[] OutcomeRows = ["rn1916", "km1916", "rn1918", "ww2", "ijn_t91"];
 
     static readonly string[] BlockFields =
-        ["kind", "mass_k_kg_m3", "nose_crh", "form_factor", "cap", "windscreen", "body", "filler", "steel", "casing", "fuze", "outcomes"];
+        ["kind", "mass_k_kg_m3", "nose_crh", "form_factor", "cap", "windscreen", "body", "filler", "steel", "casing", "fuze"];
     static readonly string[] EntryFields = ["ammo", "share", "mass_kg", "muzzle_velocity_ms"];
 
     /// <summary>PLACEHOLDER (until a gun tech exists): a gun's muzzle velocity with its heaviest shell from its length
@@ -167,8 +164,6 @@ public static class Ammunition
             if (!Share(z.Oblique) || !Share(z.Scatter) || !Share(z.Blind) || !Share(z.WaterFires))
                 yield return $"{at}.fuze: oblique, scatter, blind and water_fires are shares, 0 to 1";
         }
-        if (a.Outcomes is null || !OutcomeRows.Contains(a.Outcomes))
-            yield return $"{at}.outcomes = {Style.Quote(a.Outcomes)}: use {string.Join(", ", OutcomeRows)}";
     }
 
     /// <summary>The design with each gun battery stamped with its outfit's mean shell mass, kg (BatteryInput.ShellKg, the
@@ -236,8 +231,11 @@ public static class Ammunition
                 Ammo = name, Kind = a.Kind!, Share = share, MassKg = masses[k], MuzzleVelocityMs = mv ?? MuzzleVelocity(heavyMs, heavyKg, masses[k]),
                 FormFactor = a.FormFactor!.Value, Cap = a.Cap?.Kind ?? "none", CapShare = a.Cap?.Share ?? 0, BreakObDeg = a.Body?.BreakObDeg ?? 90,
                 BreakTD = a.Body?.BreakTD ?? 0, BodyQuality = a.Body?.Quality ?? 1, FillerKg = masses[k] * a.Filler.Share!.Value,
-                Explosive = x.Name ?? "", FillerRe = x.Re ?? 1, Booster = a.Filler.Booster ?? "basic", Fuze = a.Fuze!.Position!,
-                FuzeDelayS = a.Fuze.DelayS ?? 0, Outcomes = a.Outcomes!,
+                Explosive = x.Name ?? "", FillerRe = x.Re ?? 1, Booster = a.Filler.Booster ?? "basic",
+                FillerInPlate = x.InPlate ?? 0, FillerFull = (a.Filler.Booster == "ce" ? x.Full?.Ce : x.Full?.Basic) ?? 1,
+                Fuze = a.Fuze!.Position!, FuzeDelayS = a.Fuze.DelayS ?? 0, FuzeStartCal = a.Fuze.StartCal ?? FuzeDefaults.StartCal,
+                FuzeOblique = a.Fuze.Oblique ?? FuzeDefaults.Oblique, FuzePlates = a.Fuze.Plates ?? "single",
+                FuzeScatter = a.Fuze.Scatter ?? FuzeDefaults.Scatter, FuzeBlind = a.Fuze.Blind ?? FuzeDefaults.Blind,
             });
         }
         return resolved;
@@ -339,8 +337,10 @@ public sealed record BatteryShells(string Battery, int Index, double CalibreMm, 
 
 /// <summary>One shell of a battery's outfit, resolved: its share of the rounds, mass, muzzle velocity, drag, cap (its
 /// kind and share of the mass), body (the obliquity and T/D past which it breaks up on face-hardened plate, 90° and 0
-/// when the block gives none, and its quality on that plate), filler (kg, the explosive, its TNT equivalent and the
-/// booster), fuze and (transitional) outcome row.</summary>
+/// when the block gives none, and its quality on that plate), filler (kg, the explosive, its TNT equivalent, the
+/// booster, and the explosive's rates: bursting in the plate at the limit, and full detonation with this booster) and
+/// fuze (position, delay, the plate that starts it in calibres at normal and its share at high obliquity, single or
+/// two plates, the delay's scatter and the blinds; <see cref="FuzeDefaults"/> where the block gives none).</summary>
 public sealed record ShellReport
 {
     public required string Ammo { get; init; }
@@ -358,7 +358,20 @@ public sealed record ShellReport
     public required string Explosive { get; init; }
     public double FillerRe { get; init; }
     public required string Booster { get; init; }
+    public double FillerInPlate { get; init; }
+    public double FillerFull { get; init; }
     public required string Fuze { get; init; }
     public double FuzeDelayS { get; init; }
-    public required string Outcomes { get; init; }
+    public double FuzeStartCal { get; init; }
+    public double FuzeOblique { get; init; }
+    public required string FuzePlates { get; init; }
+    public double FuzeScatter { get; init; }
+    public double FuzeBlind { get; init; }
+}
+
+/// <summary>A fuze's numbers where its block gives none (armor/00 §6.2-6.3): Okun's single-plate start, 0.07 calibres at
+/// normal and 0.45 of it from 61° (his formula's own), a delay scattered by a quarter (σ 20-30%), 5% blind.</summary>
+public static class FuzeDefaults
+{
+    public const double StartCal = 0.07, Oblique = 0.45, Scatter = 0.25, Blind = 0.05;
 }

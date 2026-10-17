@@ -90,7 +90,9 @@ public sealed class Loadout
         static ShellTypeRow Given(ShellReport s, BatteryRow b) => new()
         {
             CalibreMm = b.CalibreMm, MassKg = s.MassKg, MuzzleVelocityMs = s.MuzzleVelocityMs, FormFactor = s.FormFactor, Kind = Kinds.ShellKindOf(s.Kind),
-            FillerKg = s.FillerKg, FillerRe = s.FillerRe, Fuze = Kinds.FuzeOf(s.Fuze), FuzeDelayS = s.FuzeDelayS, Quality = Kinds.ShellQualityOf(s.Outcomes),
+            FillerKg = s.FillerKg, FillerRe = s.FillerRe, FillerInPlate = s.FillerInPlate, FillerFull = s.FillerFull, Fuze = Kinds.FuzeOf(s.Fuze),
+            FuzeDelayS = s.FuzeDelayS, FuzeStartCal = s.FuzeStartCal, FuzeOblique = s.FuzeOblique, FuzeTwoPlate = s.FuzePlates == "two",
+            FuzeScatter = s.FuzeScatter, FuzeBlind = s.FuzeBlind,
             Cap = Kinds.CapOf(s.Cap), CapShare = s.CapShare, BreakObDeg = s.BreakObDeg, BreakTD = s.BreakTD, BodyQuality = s.BodyQuality,
         };
 

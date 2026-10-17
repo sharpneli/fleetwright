@@ -1,5 +1,5 @@
 {
- "version": 2,
+ "version": 3,
  "id": "hessen",
  "name": "Braunschweig-like pre-dreadnought (1905)",
  "type": "BB",
@@ -321,8 +321,7 @@
     "blind": 0.1,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "km1916"
+   }
   },
   "DE 1902 Sprgr Kz (TNT)": {
    "kind": "he",
@@ -364,8 +363,7 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "km1916"
+   }
   }
  },
  "explosives": {

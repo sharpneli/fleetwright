@@ -77,14 +77,20 @@ public struct TerminalResult
 /// a body past its proof (<see cref="ShatterChance"/>): the plate holds as if <see cref="ShatterBonus"/> thicker, and a
 /// shell that still gets through is broken up. The body's quality divides a face-hardened plate's thickness. Just over a
 /// plate's limit, a body may break getting through (<see cref="NearLimitBreak"/>, most at 45°);</item>
-/// <item><b>a nose fuze</b> bursts on the first plate: just inside it if it's under <see cref="SimSettings.HePenCalibres"/>
+/// <item><b>the filler</b> (P3; damage/12 §4) may burst in a plate the shell gets through, the more likely the nearer the
+/// plate came to holding (<see cref="InPlateChance"/>), whatever the fuze;</item>
+/// <item><b>a nose fuze</b> fires on the first plate: just inside it if it's under <see cref="SimSettings.HePenCalibres"/>
 /// (times √cos ob), outside if not;</item>
-/// <item><b>a base fuze</b> arms on a plate over Okun's threshold (<see cref="SimSettings.FuzeArmCalibres"/> at normal
-/// impact, less at obliquity), or on the machinery of a space it crosses (<see cref="SimSettings.MachineryArmChance"/>).
-/// Armed, the quality row decides: a burst after the delay distance (the delay times the residual velocity), in the
-/// plate, low-order, or a dud. A plate it can't get through stops it: about to burst, it bursts there; not
-/// armed, it's defeated, or glances off past <see cref="SimSettings.RicochetFromDeg"/>, bursting outside or not as the
-/// reference rolls; out of the far side before its delay runs out, it bursts beyond;</item>
+/// <item><b>a base fuze</b> starts on a plate over its own threshold (<see cref="FuzeStartMm"/>; a two-plate fuze adds up
+/// thin plates in quick succession, <see cref="SimSettings.FuzeSumCalibres"/>), on any face-hardened plate, on the
+/// water (<see cref="SimSettings.FuzeStartsOnWater"/>), or on the machinery of a space it crosses
+/// (<see cref="SimSettings.MachineryArmChance"/>), even on a plate that then holds. Started, the fuze may be blind (its
+/// <c>FuzeBlind</c>), and the filler detonates fully by its explosive's rate with the booster, else goes low-order
+/// (<see cref="SimSettings.LowOrderShare"/>) or is a dud (<see cref="Start"/>); it bursts the delay (scattered by the
+/// fuze's own share) times the residual velocity on. A plate it can't get through stops it: running since an earlier
+/// plate, it bursts against this one; started on this one, it bursts on its face; not started, it's defeated, or glances
+/// off past <see cref="SimSettings.RicochetFromDeg"/>. Out of the far side before its delay runs out, it bursts
+/// beyond;</item>
 /// <item><b>under water:</b> a shell that met the sea before the hull strikes at the speed its run there left it
 /// (<see cref="WaterRun"/>, <see cref="Hit.WaterRunM"/>); a fuze started on the water arms it at the hull, with what's
 /// left of its delay (<see cref="SimSettings.FuzeStartsOnWater"/>).</item>
@@ -99,8 +105,10 @@ public static class Terminal
         var shell = hit.Shell;
         var res = new TerminalResult { Outcome = Outcome.PassedThrough, BurstT = double.NaN, StopT = path.Length, Plate = -1 };
         double calMm = shell.CalibreMm, v = hit.SpeedMs;
-        bool nose = shell.Fuze == Fuze.Nose, inside = false, armed = false;
+        bool nose = shell.Fuze == Fuze.Nose, inside = false, started = false;
         double burstT = double.NaN, force = 1;
+        // a two-plate fuze's impulse so far, and where it last took a plate
+        double impulse = 0, impulseT = double.NegativeInfinity;
         var xs = path.Crossings;
 
         // under water first: the shell met the sea before the ship, and ran on through it to the hull
@@ -125,21 +133,18 @@ public static class Terminal
             {
                 case CrossingKind.HullIn or CrossingKind.PartIn:
                     inside = true;
-                    if (waterFuze && !armed)
+                    if (waterFuze && !started)
                     {
-                        // started on the water: armed at the hull, with what's left of its delay
-                        armed = true;
-                        double left = Math.Max(shell.FuzeDelayS - WaterRun.TimeS(hit.SpeedMs, hit.WaterRunM, decayM), 0);
-                        if (Arm(ref res, ref r, s, shell with { FuzeDelayS = left }, x.T, v, i, ref burstT, ref force))
-                            return res;
+                        // started on the water: running at the hull, with what's left of its delay
+                        started = true;
+                        Start(ref res, ref r, shell, s, x.T, v, i, WaterRun.TimeS(hit.SpeedMs, hit.WaterRunM, decayM), ref burstT, ref force);
                     }
                     break;
                 case CrossingKind.WaterIn when inside:
-                    return Gone(ref res, armed, x.T);   // out of the ship into the sea: the shell's gone
-                case CrossingKind.CellIn when !armed && !nose && IsMachinery(c, x.Index) && r.NextDouble() < s.MachineryArmChance:
-                    armed = true;
-                    if (Arm(ref res, ref r, s, shell, x.T, v, i, ref burstT, ref force))
-                        return res;
+                    return Gone(ref res, started, x.T);   // out of the ship into the sea: the shell's gone
+                case CrossingKind.CellIn when !started && !nose && IsMachinery(c, x.Index) && r.NextDouble() < s.MachineryArmChance:
+                    started = true;
+                    Start(ref res, ref r, shell, s, x.T, v, i, 0, ref burstT, ref force);
                     break;
             }
             // a nose fuze fires on anything solid it enters (a funnel, an open mount, a rudder), plated or not
@@ -150,13 +155,7 @@ public static class Terminal
             double t = x.Mm > 0 ? x.Mm * c.MaterialQ(x.Material, x.Mm, calMm) : 0;
             double ob = Obliquity(hit.Direction, x.Normal);
             if (nose)
-            {
-                double punch = s.HePenCalibres * calMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(ob)), 1e-3));
-                res.Plate = i;
-                return t <= punch
-                    ? Burst(ref res, x.T + 0.5, 1, Outcome.BurstInside, BurstKind.Inside)
-                    : Burst(ref res, Math.Max(x.T - 0.3, 0), s.BurstOutsideK, Outcome.BurstOutside, BurstKind.Outside);
-            }
+                return Nose(ref res, ref r, shell, s, x.T, i, t <= s.HePenCalibres * calMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(ob)), 1e-3)));
 
             // the plate as this shell meets it: its resistance drawn, and a common shell's weaker body; on face-hardened
             // plate the body's quality, and the face shattering a bare nose or a body past its limits
@@ -180,22 +179,29 @@ public static class Terminal
             res.Shattered |= shatter;
             if (v < vl)
             {
-                // stopped here: about to burst, it bursts against the plate, this side of it; a dud lies there; never
-                // armed, it's defeated or glances off
-                res.Plate = i;
-                res.StopT = x.T;
+                // stopped here: running since an earlier plate, it bursts against this one (a dud lies there); else it's
+                // defeated or glances off, the impact starting its fuze if the plate's enough, and then it bursts on the
+                // plate's face
+                (res.Plate, res.StopT) = (i, x.T);
                 if (!double.IsNaN(burstT))
                     return Burst(ref res, Math.Max(x.T - 0.3, 0), force, res.Outcome, BurstKind.Inside);
-                if (armed)
+                if (started)
                     return res;
                 bool ric = ob >= s.RicochetFromDeg && r.NextDouble() < Math.Min(1, (ob - s.RicochetFromDeg) / s.RicochetSpanDeg);
-                res.Outcome = ric ? Outcome.Ricochet : Outcome.Defeated;
-                if (r.NextDouble() < (ric ? 0.35 : 0.5))
-                    (res.Burst, res.BurstT, res.Force) = (BurstKind.Outside, Math.Max(x.T - 0.3, 0), s.BurstOutsideK);
+                var held = ric ? Outcome.Ricochet : Outcome.Defeated;
+                if (StartsOn(shell, x.Mm, ob, hard, x.T, ref impulse, ref impulseT, s))
+                {
+                    Start(ref res, ref r, shell, s, x.T, 0, i, 0, ref burstT, ref force);
+                    if (res.Outcome != Outcome.Dud)
+                        (res.Burst, res.BurstT, res.Force) = (BurstKind.Outside, Math.Max(x.T - 0.3, 0), s.BurstOutsideK * force);
+                }
+                res.Outcome = held;
                 return res;
             }
-            // through: shattered, it's in pieces; just over the limit, the body may give way
+            // through: shattered, it's in pieces; just over the limit, the body may give way; whole, the filler, shocked by
+            // the plate, may burst in it, the likelier the nearer the plate came to holding
             bool near = !shatter && v < s.NearLimitBand * vl && td >= s.BreakFromTD && r.NextDouble() < NearLimitBreak(ob, s);
+            bool inPlate = !shatter && !near && InPlate(shell, v, vl, ref r);
             v = Residual(v, vl);
             if (shatter || near)
             {
@@ -203,49 +209,111 @@ public static class Terminal
                 (res.Plate, res.Outcome, res.Burst, res.BurstT, res.StopT) = (i, Outcome.BrokeUp, BurstKind.None, double.NaN, x.T + 1);
                 return res;
             }
-            if (!armed && t >= FuzeArmMm(calMm, ob, s))
+            if (inPlate)
             {
-                armed = true;
-                if (Arm(ref res, ref r, s, shell, x.T, v, i, ref burstT, ref force))
-                    return res;
+                res.Plate = i;
+                return Burst(ref res, x.T + 0.01, s.BurstInPlateK, Outcome.BurstInPlate, BurstKind.InPlate);
+            }
+            if (!started && StartsOn(shell, x.Mm, ob, hard, x.T, ref impulse, ref impulseT, s))
+            {
+                started = true;
+                Start(ref res, ref r, shell, s, x.T, v, i, 0, ref burstT, ref force);
             }
         }
-        return Gone(ref res, armed, path.Length);
+        return Gone(ref res, started, path.Length);
     }
 
-    /// <summary>Armed at T with velocity v: the quality row's roll (the fuze's and the filler's failures; the body's are
-    /// the plates'). A burst in the plate decides now (true); a burst after the delay (or low-order) sets where; a dud
-    /// goes on.</summary>
-    static bool Arm(ref TerminalResult res, ref RandomStream r, SimSettings s, in ShellTypeRow shell, double t, double v, int i, ref double burstT,
-        ref double force)
+    /// <summary>A nose fuze on the first solid thing it meets, the crossing at T: blind, the shell goes on through a plate it
+    /// punches (a dud) or lies against one it doesn't; else the filler (<see cref="Initiate"/>) bursts just inside a plate
+    /// it punches, or outside one it doesn't, or is a dud.</summary>
+    static TerminalResult Nose(ref TerminalResult res, ref RandomStream r, in ShellTypeRow shell, SimSettings s, double t, int i, bool punches)
     {
-        var row = s.ShellOutcomes[Math.Clamp((int)shell.Quality, 0, s.ShellOutcomes.Length - 1)];
-        double x = r.NextDouble();
         res.Plate = i;
-        if (x < row.Burst + row.LowOrder)
+        var (o, force) = r.NextDouble() < shell.FuzeBlind ? (Outcome.Dud, 0.0) : Initiate(shell, s, ref r);
+        if (o == Outcome.Dud)
         {
-            bool low = x >= row.Burst;
-            (force, res.Outcome) = low ? (s.LowOrderK, Outcome.LowOrder) : (1, Outcome.BurstInside);
-            burstT = t + shell.FuzeDelayS * v * r.NextDouble(s.DelayLow, s.DelayHigh);
-            return false;
+            res.Outcome = Outcome.Dud;
+            if (!punches)
+                res.StopT = t;
+            return res;
         }
-        x -= row.Burst + row.LowOrder;
-        if (x < row.InPlate)
+        return punches
+            ? Burst(ref res, t + 0.5, force, o, BurstKind.Inside)
+            : Burst(ref res, Math.Max(t - 0.3, 0), s.BurstOutsideK * force, Outcome.BurstOutside, BurstKind.Outside);
+    }
+
+    /// <summary>A base fuze started at T with velocity v (spentS of its delay already run, on the water): blind (its
+    /// <c>FuzeBlind</c>), a dud; else the filler's initiation (<see cref="Initiate"/>) and, unless that's a dud, where it
+    /// bursts: its delay, scattered by the fuze's own share (σ, a normal draw; none under 0), times v on.</summary>
+    static void Start(ref TerminalResult res, ref RandomStream r, in ShellTypeRow shell, SimSettings s, double t, double v, int i, double spentS,
+        ref double burstT, ref double force)
+    {
+        res.Plate = i;
+        if (r.NextDouble() < shell.FuzeBlind)
         {
-            Burst(ref res, t + 0.01, s.BurstInPlateK, Outcome.BurstInPlate, BurstKind.InPlate);
+            res.Outcome = Outcome.Dud;
+            return;
+        }
+        (res.Outcome, force) = Initiate(shell, s, ref r);
+        if (res.Outcome == Outcome.Dud)
+            return;
+        double delay = shell.FuzeDelayS * Math.Max(1 + shell.FuzeScatter * r.NextGaussian(), 0) - spentS;
+        burstT = t + Math.Max(delay, 0) * v;
+    }
+
+    /// <summary>The filler set off by its fuze (damage/12 §4 stage 2): a full detonation by its explosive's rate with the
+    /// shell's booster (<c>FillerFull</c>; black powder always, its re pricing it), else low-order
+    /// (<see cref="SimSettings.LowOrderShare"/>, <see cref="SimSettings.LowOrderK"/> of the blast) or a dud.</summary>
+    static (Outcome, double) Initiate(in ShellTypeRow shell, SimSettings s, ref RandomStream r)
+    {
+        double x = r.NextDouble();
+        if (x < shell.FillerFull)
+            return (Outcome.BurstInside, 1);
+        return x - shell.FillerFull < (1 - shell.FillerFull) * s.LowOrderShare ? (Outcome.LowOrder, s.LowOrderK) : (Outcome.Dud, 0);
+    }
+
+    /// <summary>Whether a plate mm thick at an obliquity starts a base fuze: any face-hardened plate; else one over its
+    /// threshold (<see cref="FuzeStartMm"/>), or for a two-plate fuze the plates within
+    /// <see cref="SimSettings.FuzeSumCalibres"/> of each other adding up to it (their shares of it, the impulse).</summary>
+    static bool StartsOn(in ShellTypeRow shell, double mm, double obliquityDeg, bool hard, double t, ref double impulse, ref double impulseT,
+        SimSettings s)
+    {
+        if (hard)
             return true;
-        }
-        res.Outcome = Outcome.Dud;
-        return false;
+        double need = FuzeStartMm(shell, obliquityDeg);
+        if (!shell.FuzeTwoPlate)
+            return mm >= need;
+        if (t - impulseT > s.FuzeSumCalibres * shell.CalibreMm / 1000)
+            impulse = 0;
+        (impulse, impulseT) = (impulse + mm / Math.Max(need, 1e-9), t);
+        return impulse >= 1;
+    }
+
+    /// <summary>Whether the filler bursts in a plate the shell meets at v, the plate's limit vl: <see cref="InPlateChance"/>.</summary>
+    static bool InPlate(in ShellTypeRow shell, double v, double vl, ref RandomStream r)
+    {
+        double p = InPlateChance(shell, v, vl);
+        return p >= 1 || p > 1e-6 && r.NextDouble() < p;
+    }
+
+    /// <summary>The chance the filler bursts in a plate the shell gets through (damage/12 §4 stage 1): in_plate·ρ², ρ the
+    /// plate over what the shell beats there (at most 1: past it the plate holds), which the plate step has as (V_L/v)²:
+    /// in_plate at the limit, falling fast below it (open question 1: the exponent against Jutland and Baden).</summary>
+    public static double InPlateChance(in ShellTypeRow shell, double v, double vl)
+    {
+        if (!(shell.FillerInPlate > 0) || !(vl > 0))
+            return 0;
+        double rho = vl * vl / Math.Max(v * v, 1e-9);
+        return Math.Min(1, shell.FillerInPlate * rho * rho);
     }
 
     /// <summary>The walk's end with nothing more in the way: about to burst, beyond the far side; a dud, as it is;
-    /// never armed, through.</summary>
-    static TerminalResult Gone(ref TerminalResult res, bool armed, double t)
+    /// never started, through.</summary>
+    static TerminalResult Gone(ref TerminalResult res, bool started, double t)
     {
         res.StopT = Math.Min(res.StopT, t);
         if (res.Outcome != Outcome.Dud)
-            res.Outcome = armed ? Outcome.BurstBeyond : Outcome.PassedThrough;
+            res.Outcome = started ? Outcome.BurstBeyond : Outcome.PassedThrough;
         return res;
     }
 
@@ -299,11 +367,20 @@ public static class Terminal
 
     static double Cos(double obliquityDeg) => Math.Max(Math.Cos(double.DegreesToRadians(obliquityDeg)), 1e-6);
 
-    /// <summary>Okun's base-fuze arming plate, mm (Mk 21, a single plate): less at obliquity, flat past 61°.</summary>
-    public static double FuzeArmMm(double calibreMm, double obliquityDeg, SimSettings s)
+    /// <summary>The plate that starts a base fuze, mm (armor/00 §6.2): its start_cal calibres at normal, less at obliquity
+    /// on Okun's curve, (1 + cos 2Ob)/2 + 0.4537·sin^5.7019 Ob, flat past 61°, stretched so that from 61° it's the fuze's
+    /// own share (<c>FuzeOblique</c>: Okun's curve gives 0.45 there, the Mk 21 in the 16" Mk 8 0.25, 1.5" at 0° and
+    /// 0.375" at 65°).</summary>
+    public static double FuzeStartMm(in ShellTypeRow shell, double obliquityDeg)
     {
-        double r = double.DegreesToRadians(Math.Min(obliquityDeg, 61));
-        return s.FuzeArmCalibres * calibreMm * ((1 + Math.Cos(2 * r)) / 2 + 0.4537 * Math.Pow(Math.Sin(r), 5.7019));
+        double f = Okun(obliquityDeg), f61 = Okun(61);
+        return shell.FuzeStartCal * shell.CalibreMm * (1 - (1 - f) * (1 - shell.FuzeOblique) / (1 - f61));
+
+        static double Okun(double ob)
+        {
+            double r = double.DegreesToRadians(Math.Min(ob, 61));
+            return (1 + Math.Cos(2 * r)) / 2 + 0.4537 * Math.Pow(Math.Sin(r), 5.7019);
+        }
     }
 
     // ------------------------------------------------------------------ caps, shatter and break-up (P2)

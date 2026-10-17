@@ -11,14 +11,37 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 2;
+    public const int Current = 3;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1.</summary>
     static readonly Action<JsonObject>[] Steps =
     [
         _ => { },   // 0 → 1: versions began; nothing else changed
         MaterialsTable,   // 1 → 2: the materials table (docs/battle/shells-armour-damage.md P0)
+        NoOutcomeRows,    // 2 → 3: the shells' outcome rows gone (P3)
     ];
+
+    /// <summary>2 → 3: an ammunition block named the sim's outcome-table row (`outcomes`, S0's transitional field); its
+    /// fuze's blinds and its explosive's rates replace it (P3). The field goes, and a block whose fuze gives no `blind`
+    /// takes its row's dud share (the rows' last numbers: rn1916 0.05, km1916 0.15, rn1918 0.10, ww2 0.08, ijn_t91 0.13).
+    /// The loadout blocks in a scenario aren't designs; they're read as given.</summary>
+    static void NoOutcomeRows(JsonObject d)
+    {
+        if (d["ammunition"] is not JsonObject table)
+            return;
+        foreach (var (_, node) in table)
+        {
+            if (node is not JsonObject a || a["outcomes"] is not JsonValue row)
+                continue;
+            a.Remove("outcomes");
+            double dud = row.TryGetValue(out string? name) ? name switch
+            {
+                "km1916" => 0.15, "rn1918" => 0.10, "ww2" => 0.08, "ijn_t91" => 0.13, _ => 0.05,
+            } : 0.05;
+            if (a["fuze"] is JsonObject fuze && !fuze.ContainsKey("blind"))
+                fuze["blind"] = dud;
+        }
+    }
 
     /// <summary>1 → 2: a material was a name the game looked up; now it's the design's block (MaterialTemplates).
     /// Each name the parts give (any "material" or "deck_material", and armour.materials' values) gets the catalogue's

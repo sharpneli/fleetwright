@@ -1,5 +1,5 @@
 {
- "version": 2,
+ "version": 3,
  "id": "bellerophon",
  "name": "Bellerophon-like (1909)",
  "type": "BB",
@@ -284,8 +284,7 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "rn1916"
+   }
   },
   "RN 1909 APC (lyddite)": {
    "kind": "ap",
@@ -328,8 +327,7 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "rn1916"
+   }
   },
   "RN 1909 HE (lyddite)": {
    "kind": "he",
@@ -371,8 +369,7 @@
     "blind": 0.05,
     "water_ms": 0.5,
     "water_fires": 1
-   },
-   "outcomes": "rn1916"
+   }
   }
  },
  "explosives": {

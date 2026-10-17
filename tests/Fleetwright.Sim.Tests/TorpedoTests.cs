@@ -197,8 +197,10 @@ public class TorpedoTests(ITestOutputHelper output)
     [Fact]
     public void A_torpedo_boat_told_to_attack_closes_fires_and_turns_away()
     {
-        // ordered to: by her own judgement a lone boat by day doesn't take on a battleship (docs/battle/command.md 5.1g)
-        var w = Pair("destroyer", "super_dreadnought", 12_000, 90, 12, 1, out var ai);
+        // ordered to: by her own judgement a lone boat by day doesn't take on a battleship (docs/battle/command.md 5.1g).
+        // The attack's steps are the test, not whether she lives through the run in: the battleship's hits do nothing
+        // (since P3's fuzes she was often stopped short, 20 hits in, docs/battle/shells-armour-damage.md)
+        var w = Pair("destroyer", "super_dreadnought", 12_000, 90, 12, 1, out var ai, settings: Settings with { HitsDoDamage = false });
         w.Apply(ai!.Orders.Attack(Unit.Ship(2), 1));
         long fired = 0;
         double closest = double.MaxValue;

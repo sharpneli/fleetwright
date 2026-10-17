@@ -43,6 +43,10 @@ public static class GivenHits
         /// shattered on face-hardened plate, bodies broken just over a plate's limit; and the hits that met a plate over 9"
         /// (229 mm), and of those the ones that got through it and burst inside (Jutland's British 1 in 13).</summary>
         public int Decapped, Shattered, BrokeNearLimit, Heavy, HeavyBurst;
+        /// <summary>The bursts inside after a fuze's delay (full or low-order): how many, and how far behind the crossing
+        /// that started the fuze they went off, summed (P3; Baden's 15" burst 11.6 m behind the belt).</summary>
+        public int Delayed;
+        public double DelayedM;
 
         public double Share(Outcome o) => Hits > 0 ? (double)Outcomes[(int)o] / Hits : 0;
     }
@@ -135,6 +139,8 @@ public static class GivenHits
                 double heavyT = HeavyPlateT(w.Damage.LastPath, t.StopT);
                 if (!double.IsNaN(heavyT))
                     (rep.Heavy, rep.HeavyBurst) = (rep.Heavy + 1, rep.HeavyBurst + (t.Burst == BurstKind.Inside && t.BurstT > heavyT ? 1 : 0));
+                if (t.Burst == BurstKind.Inside && t.Outcome is Outcome.BurstInside or Outcome.LowOrder && t.Plate >= 0)
+                    (rep.Delayed, rep.DelayedM) = (rep.Delayed + 1, rep.DelayedM + t.BurstT - w.Damage.LastPath.Crossings[t.Plate].T);
                 if (t.Underwater)
                     (rep.Underwater, rep.UnderwaterRunM, rep.UnderwaterStrikeMs) = (rep.Underwater + 1, rep.UnderwaterRunM + run, rep.UnderwaterStrikeMs + t.StrikeMs);
                 rep.Fires += fx.Fire ? 1 : 0;

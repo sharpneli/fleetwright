@@ -199,7 +199,9 @@ public class ShellSystemTests(ITestOutputHelper output)
     [Fact]
     public void A_hit_under_the_water_splashes_where_it_met_it()
     {
-        var (w, shooter, target) = Make(Settings with { DevFirePatternPct = 0 });
+        // the water's fuze off: this is the shell system's splash, and a 0.003 s fuze started on the water fires before
+        // the hull 5 m on (P3)
+        var (w, shooter, target) = Make(Settings with { DevFirePatternPct = 0, FuzeStartsOnWater = false });
         var cls = w.Ships.Class(Ship(w, shooter).ClassIndex);
         int guns = cls.Batteries[0].Guns;
         var from = Ship(w, shooter).Position;

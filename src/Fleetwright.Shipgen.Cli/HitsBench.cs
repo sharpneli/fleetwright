@@ -83,6 +83,9 @@ static class HitsBench
             "on plate over 9\" {3:0.#}% of hits, of those through it and burst inside {4:0.#}% (1 in {5:0.#})", 100.0 * r.Decapped / r.Hits,
             100.0 * r.Shattered / r.Hits, 100.0 * r.BrokeNearLimit / r.Hits, 100.0 * r.Heavy / r.Hits, 100.0 * r.HeavyBurst / Math.Max(r.Heavy, 1),
             r.HeavyBurst > 0 ? (double)r.Heavy / r.HeavyBurst : double.PositiveInfinity));
+        if (r.Delayed > 0)
+            Console.WriteLine(string.Format(Inv, "  bursts after the delay: {0:0.#}% of hits, {1:0.0} m on average behind where the fuze started", 100.0 * r.Delayed / r.Hits,
+                r.DelayedM / r.Delayed));
         Console.WriteLine(string.Format(Inv, "  a hit: fire {0:0}%, crew {1:0.0}, holes {2:0.000} m², jammed {3:0.#}%, magazine {4:0.##}%", 100.0 * r.Fires / r.Hits,
             r.CrewLost / r.Hits, r.BreachM2 / r.Hits, 100.0 * r.Jams / r.Hits, 100.0 * r.Magazines / r.Hits));
         if (r.Magazines > 0)

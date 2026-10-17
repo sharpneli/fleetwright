@@ -249,20 +249,8 @@ public enum Cap : byte
     BreakAway,
 }
 
-/// <summary>How well a navy's shells of a time behave on armour: a row of the outcome table (duds, bursting in the
-/// plate, low-order), named as in research/simulation/damage-research/gunfire_ref.py OUTCOME. The numbers come with the
-/// terminal model (4.3a), in its settings.</summary>
-public enum ShellQuality : byte
-{
-    Rn1916,
-    Km1916,
-    Rn1918,
-    Ww2,
-    IjnT91,
-}
-
 /// <summary>A kind of shell a gun fires: what its flight (the calibre, mass, muzzle velocity and drag form factor) and
-/// its end (kind, filler, fuze, quality) need. Shared by id across classes, so a gun's trajectory table is built
+/// its end (kind, cap, body, filler, fuze) need. Shared by id across classes, so a gun's trajectory table is built
 /// once.</summary>
 public readonly record struct ShellTypeRow
 {
@@ -277,9 +265,21 @@ public readonly record struct ShellTypeRow
     /// <summary>The filler's explosive's TNT equivalent for the blast: W = FillerKg × FillerRe (black powder 0.55,
     /// picric 1.17, TNT 1; docs/shipgen/explosive-templates.md).</summary>
     public double FillerRe { get; init; }
+    /// <summary>The filler's explosive (docs/battle/shells-armour-damage.md P3; damage/12 §4): the chance it bursts in a
+    /// plate the shell just gets through (more on thicker, less on thinner: <c>Terminal.InPlateChance</c>), and the
+    /// chance it detonates fully with the shell's booster (the rest go low-order or are duds).</summary>
+    public double FillerInPlate { get; init; }
+    public double FillerFull { get; init; }
     public Fuze Fuze { get; init; }
     public double FuzeDelayS { get; init; }
-    public ShellQuality Quality { get; init; }
+    /// <summary>A base fuze: the plate that starts it, calibres at normal, and its share from 61° (Okun's own curve
+    /// between: <c>Terminal.FuzeStartMm</c>); whether thin plates in quick succession add up to start it (the two-plate
+    /// fuzes, German and Japanese); its delay's scatter (σ as a share) and the share that fail (blind).</summary>
+    public double FuzeStartCal { get; init; }
+    public double FuzeOblique { get; init; }
+    public bool FuzeTwoPlate { get; init; }
+    public double FuzeScatter { get; init; }
+    public double FuzeBlind { get; init; }
     /// <summary>Its cap, and the cap's share of the mass (lost with the cap).</summary>
     public Cap Cap { get; init; }
     public double CapShare { get; init; }

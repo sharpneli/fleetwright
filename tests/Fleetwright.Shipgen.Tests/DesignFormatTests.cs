@@ -35,6 +35,25 @@ public class DesignFormatTests
     }
 
     [Fact]
+    public void AVersion2BlockLosesItsOutcomeRowAndKeepsItsDuds()
+    {
+        // version 2: each ammunition block named its outcome row; a block without a fuze blind takes the row's duds
+        var d = System.Text.Json.Nodes.JsonNode.Parse(WithVersion(Bismarck(), "2"))!.AsObject();
+        var blocks = d["ammunition"]!.AsObject().Select(kv => kv.Value!.AsObject()).ToList();
+        foreach (var b in blocks)
+            b["outcomes"] = "km1916";
+        blocks[0]["fuze"]!.AsObject().Remove("blind");
+        var now = Design.Parse(Bismarck());
+        var old = Design.Parse(d.ToJsonString());
+        Assert.Equal(DesignFormat.Current, old.Version);
+        Assert.Empty(ShipDesign.Validate(old));
+        string first = d["ammunition"]!.AsObject().First().Key;
+        Assert.Equal(0.15, old.Ammunition![first].Fuze!.Blind);
+        foreach (var (name, a) in old.Ammunition.Skip(1))
+            Assert.Equal(now.Ammunition![name].Fuze!.Blind, a.Fuze!.Blind);
+    }
+
+    [Fact]
     public void ASavedDesignCarriesTheVersion()
     {
         var back = JsonDocument.Parse(Design.Parse(WithVersion(Bismarck(), null)).ToJson());

@@ -110,24 +110,25 @@ static class TemplatesWriter
             marks numbers no source gives.
 
             Columns: kind; W/D³; nose crh and drag form factor; cap (share); body break-up (obliquity °, T/D) and quality;
-            filler (share, explosive, booster); fuze (position, delay s, start calibres, plates, delay scatter, blinds); steel
-            (fragment size, speed); the transitional outcome row.
+            filler (share, explosive, booster); fuze (position, delay s, start calibres at normal and their share from 61°,
+            plates, delay scatter, blinds); steel (fragment size, speed). What the explosive and booster do (bursting in the
+            plate, full detonation) is the explosive's (`explosive-templates.md`).
 
             """.Replace("\r\n", "\n"));
         foreach (var family in ShellTemplates.All.GroupBy(t => t.Group))
         {
             sb.Append("\n## ").Append(family.Key).Append("\n\n");
-            sb.Append("| Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel | Row |\n");
-            sb.Append("|---|---|---|---|---|---|---|---|---|---|\n");
+            sb.Append("| Template | Kind | W/D³ | crh / i | Cap | Body | Filler | Fuze | Steel |\n");
+            sb.Append("|---|---|---|---|---|---|---|---|---|\n");
             foreach (var t in family)
             {
                 var a = t.Value;
                 string cap = a.Cap?.Kind is null or "none" ? "none" : $"{a.Cap.Kind} {N(a.Cap.Share * 100, "0.#")}%";
                 var z = a.Fuze!;
-                string fuze = z.Position == "nose" ? "nose" : $"base {N(z.DelayS)} s, {N(z.StartCal)} cal, {z.Plates}, ±{N(z.Scatter * 100, "0")}%, {N(z.Blind * 100, "0")}% blind";
+                string fuze = z.Position == "nose" ? "nose" : $"base {N(z.DelayS)} s, {N(z.StartCal)} cal (×{N(z.Oblique)}), {z.Plates}, ±{N(z.Scatter * 100, "0")}%, {N(z.Blind * 100, "0")}% blind";
                 sb.Append(CultureInfo.InvariantCulture, $"| {t.Name}{(t.Light ? " (light)" : "")} | {a.Kind} | {N(a.MassKKgM3 / 27_679.9, "0.00")} | {N(a.NoseCrh, "0.#")} / {N(a.FormFactor, "0.00")} | {cap} | " +
                     $"{N(a.Body?.BreakObDeg, "0")}°, {N(a.Body?.BreakTD, "0.##")}; {N(a.Body?.Quality, "0.00")} | {N(a.Filler!.Share * 100, "0.##")}% {a.Filler.Explosive?.Name}, {a.Filler.Booster} | " +
-                    $"{fuze} | {N(a.Steel?.Size, "0.##")}/{N(a.Steel?.Speed, "0.##")} | {a.Outcomes} |\n");
+                    $"{fuze} | {N(a.Steel?.Size, "0.##")}/{N(a.Steel?.Speed, "0.##")} |\n");
             }
             sb.Append('\n');
             foreach (var t in family)

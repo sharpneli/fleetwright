@@ -10,7 +10,7 @@ public class AmmunitionTests
     static AmmoInput Block(string kind = "ap", double k = 15_000) => new()
     {
         Kind = kind, MassKKgM3 = k, FormFactor = 1.1, Filler = new FillerInput { Share = 0.025, Explosive = new ExplosiveInput { Re = 1 } },
-        Fuze = new FuzeInput { Position = kind == "he" ? "nose" : "base", DelayS = kind == "he" ? 0 : 0.025 }, Outcomes = "rn1918",
+        Fuze = new FuzeInput { Position = kind == "he" ? "nose" : "base", DelayS = kind == "he" ? 0 : 0.025 },
     };
 
     static Design WithMain(params ShellEntryInput[] shells) => Dreadnought with
@@ -40,8 +40,12 @@ public class AmmunitionTests
         Assert.Equal(Ammunition.DefaultMuzzleVelocity(45), ap.MuzzleVelocityMs);
         Assert.Equal(ap.MuzzleVelocityMs * Math.Pow(15.0 / 12, 0.25), he.MuzzleVelocityMs, 9);
         Assert.Equal(0.025 * ap.MassKg, ap.FillerKg, 9);
-        Assert.Equal(("nose", "none", "rn1918"), (he.Fuze, he.Cap, he.Outcomes));
+        Assert.Equal(("nose", "none"), (he.Fuze, he.Cap));
         Assert.Equal(("TNT", 1.0, "basic"), (ap.Explosive, ap.FillerRe, ap.Booster));
+        // the explosive's rates with the booster, and the fuze's numbers where the block gives none (P3)
+        Assert.Equal((0.10, 0.60), (ap.FillerInPlate, ap.FillerFull));
+        Assert.Equal((FuzeDefaults.StartCal, FuzeDefaults.Oblique, "single", FuzeDefaults.Scatter, FuzeDefaults.Blind),
+            (ap.FuzeStartCal, ap.FuzeOblique, ap.FuzePlates, ap.FuzeScatter, ap.FuzeBlind));
 
         // a battery's own shell and the gun's own velocity
         design = WithMain(new ShellEntryInput { Ammo = "heavy AP", Share = 1, MassKg = 390 });
@@ -57,10 +61,9 @@ public class AmmunitionTests
         Assert.Contains(Errors(WithMain(new ShellEntryInput { Ammo = "nothing", Share = 1 })), e => e.Contains("main[0].shells[0].ammo"));
         Assert.Contains(Errors(WithMain(new ShellEntryInput { Ammo = "heavy AP", Share = 0.6 })), e => e.Contains("add up to 0.6"));
         var bad = WithMain(new ShellEntryInput { Ammo = "heavy AP", Share = 1 });
-        bad = bad with { Ammunition = new() { ["heavy AP"] = Block() with { Kind = "shrapnel", Outcomes = null, Fuze = null } } };
+        bad = bad with { Ammunition = new() { ["heavy AP"] = Block() with { Kind = "shrapnel", Fuze = null } } };
         var errs = Errors(bad);
         Assert.Contains(errs, e => e.Contains("ammunition.\"heavy AP\".kind"));
-        Assert.Contains(errs, e => e.Contains("ammunition.\"heavy AP\".outcomes"));
         Assert.Contains(errs, e => e.Contains("ammunition.\"heavy AP\".fuze"));
     }
 
