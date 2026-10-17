@@ -280,8 +280,9 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
 - **Benches before and after,** in the step's commit message and its section here: the step's own benches, plus
   `shipgen hits`, the matchup bench and the squadrons' scenario for any step that moves outcomes.
 - **The matchup mirrors the terminal.** `Matchup.cs` estimates outcomes analytically from the same facts (`PenMm`,
-  `ShellOutcomes`). Every step that changes `Terminal` changes the matchup's estimate in the same commit, so the AI's
-  judgement never reads a different model from the one that fights.
+  the shells' and plates' numbers). Every step that changes `Terminal` changes the matchup's estimate in the same
+  commit, so the AI's judgement never reads a different model from the one that fights. Fitting its estimate's
+  numbers to the terminal's results is the balance pass's (user, 2026-10-17: at the end).
 - **Test bands are the anchors.** A step that moves a `DamageTests` anchor out of its band reports it; the band is
   widened only with the user's say, as P6's outcomes were (user, 2026-10-16: accepted, not tuned, until damage control).
 - **No allocation per hit,** and no new per-hit cost worth measuring (about 200 µs a hit today).
@@ -928,7 +929,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       1.903 → 2.257; lion v derfflinger 2.39 → 2.85, iron_duke v derfflinger 2.32 → 2.79. **The matchup and the terminal
       now disagree in direction:** the matchup rates the British shells about three times the Germans' per hit (beam-on,
       no burst depth, no underwater hits), the terminal the Germans higher. MatchupTests' even band widened to 3 on the
-      user's say (2026-10-17), and the refit is its own step (**PM** below).
+      user's say (2026-10-17); the refit (**PM**) is the balance pass's, at the end.
     - **Scenarios:** squadrons 40 min Britain lost 2 → 1 (Princess Royal; Lion survives), Germany 0; flotilla moves
       (hash F1FCB5BF → B025B91C); tsushima --play 2 seeds Russia lost 2 → 4, Japan 3.5 → 2.5 (history: Russia's fleet).
     - **pen-check:** unchanged (10 of 12; no fuzes in it).
@@ -937,11 +938,6 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       water's fuze off where they test the run or the splash; the lone torpedo boat's attack test runs with hits doing
       no damage (since P3 she was often stopped 20 hits in, short of her torpedoes' range: the test is her attack's
       steps). New: the format 2 → 3 step.
-- **PM The matchup refit to the terminal** (user, 2026-10-17; after P3). The matchup judges a hit beam-on, with a burst
-  inside as good as any other and no hit under the water, so since P3 it rates the WWI British shells about three
-  times the Germans' per hit where the terminal has them worse. Refit its per-hit estimate to `shipgen hits` across
-  the bench pairs: burst depth by the fuze's delay, the underwater hits a delay fuze lets reach the hull, and the
-  target angle's spread (P2's question). Then MatchupTests' even band goes back to 2.
 - **P4 Three limits.** Holed (a hole, the shell broken, fragments only), Navy (the whole shell through) and effective (through,
   whole, fuze working), with a new `Outcome` for holed-but-broken.
   - The holed limit is the material's `back.holed_u` (face-hardened holed 2-12% below the Navy limit, armor/00; 14
@@ -1183,7 +1179,6 @@ None blocks a step; each is settled by its step's bench.
 | P1c | P0 | densities (done) | — | weights |
 | P2 | S2, P1b | shells' cap and body in the report, the face's `shatters` (done) | caps, shatter, break-up (done) | outcomes |
 | P3 | P2 | fuze and filler numbers in the report; `outcomes` gone, format 3 (done) | fuzes; rows gone; water fuze on (done) | burst points |
-| PM | P3 | — | the matchup refit to the terminal | AI judgements |
 | P4 | P2 | — | three limits | outcomes |
 | P5 | P1a | — | angles | ricochets, paths |
 | P6 | — | — | under water (done) | underwater hits |
@@ -1197,6 +1192,26 @@ None blocks a step; each is settled by its step's bench.
 | E6 | E1, E3, E5 | — | casualties, killed and wounded | crew |
 | E7 | E1, E5, P3 | — | near misses (new hit source), shock | near misses |
 | E8 | all | — | tuning | the anchors |
+| PM | all | — | the balance pass: the matchup refit to the terminal, the widened bands | AI judgements, gameplay |
 
 S and P0 are independent, so P0 can come first or between S steps; P1a needs no shells. Everything after P1b needs
 both phases' data. E0 can go any time; E4 and E5 need only S1, P0 and P1a, so they can run alongside P2-P5.
+
+## Last: the balance pass
+
+**Physics first, balance last** (user, 2026-10-17). Every step above is about simulating the physics well: the
+numbers are the research's, sourced or marked, and a result that moves away from the record is reported, not tuned
+back (the rules above). Once the physics is in (phase E with E8's anchors), a pass of its own does what is in effect
+balancing, against the model as it then stands:
+
+- **PM The matchup refit to the terminal** (user, 2026-10-17). The matchup judges a hit beam-on, with a burst inside
+  as good as any other and no hit under the water, so since P3 it rates the WWI British shells about three times the
+  Germans' per hit where the terminal has them worse. Refit its per-hit estimate to `shipgen hits` across the bench
+  pairs: burst depth by the fuze's delay, the underwater hits a delay fuze lets reach the hull, and the target
+  angle's spread (P2's question; a burst-depth term alone was tried at P3 and moved lion v derfflinger only 2.85 →
+  2.5). Then MatchupTests' even band goes back to 2.
+- **The bands widened on the way**, each with the user's say: MatchupTests' even band (2 → 2.5 at P2, → 3 at P3),
+  DamageTests' HE anchor (full and low-order bursts, 0.9-1, P3). Each is set again against the finished model, or kept
+  with its reason.
+- **Gameplay's needs** where the physics leaves a fight unplayable or a choice meaningless (memory: realistic, then
+  tune), kept as named, recorded exceptions. Historical survival rates wait for damage control (the rules above).
