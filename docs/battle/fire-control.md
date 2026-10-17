@@ -1,5 +1,5 @@
 # Plan: fire control (a 4.5 deepening)
-Status: **proposed 2026-10-17, for the user to agree** (questions at the end)    Updated: 2026-10-17
+Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out)    Updated: 2026-10-17
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
 the full ladder of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
@@ -103,6 +103,25 @@ What moves from the settings' level row onto the class and the design (`fire-con
 - **Doctrine** (the side's, `DoctrineField`, as the loadout is the admiral's): the spotting rule, ranging and rapid
   fire, half-salvos, salvos in flight while ranging, dyed shells.
 
+## Decided (the user, 2026-10-17)
+
+1. **Fire control as tech blocks, levels as presets** (F3), as the shells and materials went; the enum survives only as
+   a preset's label.
+2. **Radar later** (F9 moved out): the first game is set in 1890-1925. F3's fits take a radar block when it comes.
+3. **Spotting rules and fire discipline are the side's doctrine** (the admiral's, like the loadout), not the design's.
+4. **Fire discipline changes rates of fire** (F6): "definitely". Fewer shells while ranging, fire for effect at the
+   loading rate once straddling, magazines that last; the matchup's and the scenarios' numbers move, reported.
+5. **The AFCT's turn setting** is a computer option anyone may fit (allow silliness), off in the RN templates by default.
+6. **Masts and tops come from the design** (F4), with template defaults by type and year, costed in topweight and
+   stiffness.
+7. **The order:** F0-F2 (the prediction logic on presets, no shipgen change), then F3-F4 (shipgen), F5-F8, then F10-F12.
+8. **The hit-chance floor is doctrine** (F6 item 7): a battery holds fire by default while its estimated hits per shell
+   are under it; "fire anyway" is an order.
+9. **F10's scope** as written: the estimate (now and what if) and "under effective fire" as facts the AI reads; only F6's
+   floor uses them in this pass, the tactics in the AI's passes.
+10. **Seeing further** (F4): with the masts and tops right, sighting takes the new heights, so taller ships see and are
+    seen further; its anchors re-run on them.
+
 ## The steps
 
 Each is a session or a few, opens with the usual check of the code, ends with something to run and look at, and
@@ -144,11 +163,15 @@ updates this doc and `fighting.md`.
 
 ### F3 Shipgen: fire control as tech blocks
 
-- **The design's `fire_control` reworked:** per battery a fit naming tech blocks (`optics`, `computer`, `mount`,
-  `radar`) from a design-level table, as `ammunition` and `materials` are. The blocks hold `fire-control-designer.md`
+- **The design's `fire_control` reworked:** per battery a fit naming tech blocks (`optics`, `computer`, `mount`)
+  from a design-level table, as `ammunition` and `materials` are. The blocks hold `fire-control-designer.md`
   §2's raw values: optics (δ, rigid base, flex exponent, M_max, stereo, coated, gyro-stabilised, mass per m²), computer
-  (as `ComputerRow`, plus its mass, crew and power), mount (as `MountTechRow`), radar (wavelength, peak power, pulse,
-  noise figure, bearing method, ranging circuit, auto-track, splash, set mass, antenna mass per m²).
+  (as `ComputerRow`, plus its mass, crew and power), mount (as `MountTechRow`). A fit is a list of named blocks, so a
+  `radar` block (wavelength, peak power, pulse, noise figure, bearing method, ranging circuit, auto-track, splash, set
+  mass, antenna mass per m²) slots in with the radar pass without a migration (decision 2).
+- **Today's `radar_t`** stays a weight aloft, as `search_radar_t` is, and stops lifting the level: the WWII designs'
+  fire control comes from their computer and optics blocks until the radar pass (Bismarck's and the other 1940s
+  designs' numbers move, reported).
 - **The catalogue:** `shipgen templates` writes `Content/Templates/fire-control.json` and
   `docs/shipgen/fire-control-templates.md` from the research's tiers (O1-O4, R1-R5, C0-C6, M0-M4) and its named systems
   (Dumaresq and Vickers clock, Dreyer Mk I-V, Argo, AFCT, Type 92, Ford Mk 8, Mk 1A, Mk 86); the presets are named
@@ -163,15 +186,42 @@ updates this doc and `fighting.md`.
 - **Rangefinders where they stood:** in a director, in a turret's hood (seeing only its turret's arc, low and wet), on a
   spotting top or foretop, in after control, on the conning tower; each with base, magnification, kind, mounting and
   armour, a hitbox part the sprite draws. Weights from the designer note §3.4 (instrument `mass_k·B²`, open pedestal 3x,
-  hoods as plate boxes, director boxes, the radar's antenna aloft and its set low). **A director must fit the deck it
+  hoods as plate boxes, director boxes). **A director must fit the deck it
   stands on** (body ≈ B + 0.6 m wide, §7.1): the real limit on long bases.
 - **Masts by kind** (pole, tripod, tower or pagoda, cage, lattice) with a top as a part: the design gives the heights,
   templates the defaults by type and year, within the research's bands (battleship masthead 45-55 m, Dreadnought's top
   ~28-30 m, Bismarck's foretop ~31 m, destroyers 25-30 m). Directors may stand in a top. Topweight counts as t·m
   (the director at 30 m is the cruiser's real cost); the mast's kind is the stiffness `M_vib` reads.
 - **The transmitting station** becomes a room below the armour (crew, power, the computer's mass), so damage can find it.
-- **Sighting gets the real heights:** the masthead placeholder `MastLookoutUnderTopM` and the funnel + 6 m rule go;
-  tops and their instruments are eyes. Sighting reach and the pictures move (reported, hashes moved).
+
+**Seeing further: sighting on the new heights** (the user, 2026-10-17: taller ships see further). The sighting model
+(3.2c, `SightModel`) already works from heights: each eye's horizon (3.86√h km), how much of the target the horizon
+hides, and its silhouette's area above that, masts included. So taller eyes see further and taller ships are seen
+further by the geometry alone, once the parts are right. What this step makes right:
+
+- **The eyes** (`Sight`): a lookout in each top at the top's floor + 1.5 m, as the directors' eyes are, instead of 1 m
+  under a placeholder masthead (`MastLookoutUnderTopM` goes, and the funnel + 6 m rule); a director or rangefinder in a
+  top is an eye at its height; a bare pole mast with no top keeps a masthead lookout only where the design puts one.
+  Tops stand above most of the ship, so their blind sectors shrink to the masts and funnels round them.
+- **The silhouettes:** masts by kind (a pole, a tripod's three legs, a tower's bulk), tops, and the instruments on them
+  enter the side-on and end-on areas above each metre, so a battleship's top shows over the horizon before her funnels,
+  and a tower mast more than a pole. Identification counts masts as today; their kinds become one more cue later.
+- **Who looks:** `Sightings` lets each side's 6 nearest observers look with their 4 highest eyes that bear: tops come
+  first by that rule already. Checked that a ship's best eye isn't crowded out by several eyes at one height.
+- **The reach of the world's checks:** `EncounterRangeM` (50 km) was set to cover the longest masthead-to-masthead
+  sighting with masts at ~24 m. With battleship tops at 40-55 m, top to top is 3.86(√50 + √50) ≈ 55 km, past it. The
+  encounter range (and `SightMaxM`, 60 km) is derived from the tallest eye and the tallest silhouette among the classes
+  at sea, horizon to horizon plus the margin, instead of a fixed number, and the cost of the larger encounters measured
+  on the Jutland (ships kept off rails longer).
+- **Re-calibrated, not just moved:** 3.2c's anchors (the Jutland's battlecruisers ~24-26 km in haze, Denmark Strait
+  ~35 km in clear air) were fitted with eyes ~10-25 m too low. They're run again on the real heights through
+  `sighting_ref.py` beside the model; if the record now comes out long, the haze's extinction or the threshold contrast is
+  re-fitted (a visibility still means "a reference ship made out at it"), never the heights. The picture's fixes and fire
+  control's `Sees` read the same eyes, so the rangefinders in tops see as far as their lookouts.
+- **To look at:** `shipgen weapons` and a new `sight` listing print each class's eyes (kind, height, blind sectors) and
+  its silhouette's top; on the map, the selected ship's horizon ring from its highest eye (dev).
+- **Tests:** taller eyes see further on the same target in clear air, a hull-down battleship is made out by her top before
+  her hull, the anchors within their bands, the encounter range covering the tallest pair, hashes moved and reported.
 
 ### F5 Sensors proper
 
@@ -242,7 +292,7 @@ what's wrong is firing salvos that can't carry anything new. The research's rule
 9. **Independent fire** for quick-firers close in: each gun at its own rate, spotted by its own layer, with whose splash
    it is (F7) as the cost; salvo fire beyond the range the doctrine sets (the pre-dreadnoughts' shift at 5-6 km).
 
-The doctrine picks among these per navy and year as data (the side's, question 3); defaults from the research: the RN
+The doctrine picks among these per navy and year as data (the side's, decision 3); defaults from the research: the RN
 of 1914 single salvos and the 400-200-100 bracket, of 1917 two in flight; the German ladder; the USN ladder with the
 pattern floor and the rocking ladder; the IJN's ladder.
 
@@ -277,12 +327,13 @@ prior, a long latency); fire-control circuits cut put the turrets in local contr
 turret's rangefinder lost leaves that turret in local control without a range. E4's timed outages (gyros, rangefinders
 out of adjustment, power) map onto the new rows.
 
-### F9 Radar and night
+### F9 Radar (moved out: a later pass, decision 2)
 
-Radar as a sensor (§3.6, designer §3.2): its envelope from the set's physical numbers, capped by the 4/3-earth horizon
-and scaled by the target's size to the ¼; range-only sets need an optical bearing, so no solution at night unless the
-target is lit; splash spotting by range or both within its reach; fragility (its own guns' blast, its aerial hit). The
-first cut of the game (1890-1925) has none, so this step could go later; the data's shape is there from F3.
+The first game is set in 1890-1925, so radar waits for the cut that needs it. Kept here as that pass's list: radar as a
+sensor (§3.6, designer §3.2), its envelope from the set's physical numbers, capped by the 4/3-earth horizon and scaled
+by the target's size to the ¼; range-only sets needing an optical bearing, so no solution at night unless the target is
+lit; splash spotting by range or both within its reach; fragility (its own guns' blast, its aerial hit). F3's fits take
+a `radar` block without a migration. Night for optics alone (the target lit or not, the error multiplied) is F5's.
 
 ### F10 What the captain knows: estimated hit chances (scaffolding)
 
@@ -342,26 +393,4 @@ m, your salvo's spread 73 m: adequate", designer §5) with the curve for the shi
 - **Wind and weather in the shells' flight,** and so computed corrections for them: the residual bias stays the
   computer's number.
 - **Choosing the shell by target** (the AI's pass), **coarse fire** (4.9, after all the fine passes).
-
-## Questions for the user
-
-1. **Fire control as tech blocks, levels as presets** (F3), as the shells and materials went? Recommended: yes; the
-   enum survives only as a preset's label.
-2. **Radar in this pass (F9) or later?** The first cut has no radar. Recommended: the data's shape in F3, the model as
-   the plan's last model step, cheap from the reference, so the later cuts don't need a second pass.
-3. **Spotting rules and fire discipline as the side's doctrine** (the admiral's, like the loadout), not the design's?
-   Recommended: doctrine.
-4. **Fire discipline changes rates of fire** (F6): fewer shells while ranging, fire for effect at the loading rate once
-   straddling, magazines that last. It moves the matchup and every scenario's numbers. Wanted?
-5. **The AFCT's turn setting** is unconfirmed in the sources (§14). Recommended: a computer option anyone may fit (allow
-   silliness), off in the RN templates by default.
-6. **Masts and tops from the design** (F4) with template defaults by type and year, costed in topweight and stiffness,
-   rather than a rule from the ship's size? Recommended: from the design.
-7. **Order:** F0-F2 first (the prediction logic on presets, no shipgen change), then F3-F4 (shipgen), F5-F8, then F9-F12.
-   Or shipgen first? (F6 needs only F2's tracker, and its hit-chance floor only a first cut of F10's estimate, so F6
-   could come straight after F2 if the wasted salvos are the most urgent.)
-8. **The hit-chance floor** (F6 item 7, from F10's estimate): should a battery hold fire by default while its
-   estimated hits per shell are under a floor (the secondaries at the edge of their reach go quiet), with "fire anyway"
-   an order? Recommended: yes, the floor in doctrine.
-9. **F10's scope:** the estimate, "now" and "what if", and "under effective fire" as facts the AI reads, with only F6's
-   floor using them in this pass; the tactics that use them in the AI's passes. Recommended: as written.
+- **Radar** (F9, decision 2): the cut after 1925.
