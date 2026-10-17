@@ -341,11 +341,11 @@
  "materials": {
   "nickel steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.75
+   "q": 0.85
   },
   "steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.55
+   "q": 0.7
   }
  }
 }

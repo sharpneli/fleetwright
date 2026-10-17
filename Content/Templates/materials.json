@@ -2,244 +2,350 @@
  {
   "name": "steel",
   "group": "structure",
-  "note": "Shipbuilding steel, the plating's default name.",
-  "value": {
-   "density_t_per_m3": 7.85,
-   "q": 0.55
-  }
- },
- {
-  "name": "mild steel",
-  "group": "structure",
-  "note": "Mild (carbon) steel: hull plate, and the splinter decks of the 1890s on.",
-  "value": {
-   "density_t_per_m3": 7.85,
-   "q": 0.5
-  }
- },
- {
-  "name": "high-tensile steel",
-  "group": "structure",
-  "note": "HT and Ducol-type manganese steels: strength plating and protective decks.",
+  "note": "Shipbuilding (mild) steel, the plating's default name: Okun's backing ladder 0.7 (MS).",
   "value": {
    "density_t_per_m3": 7.85,
    "q": 0.7
   }
  },
  {
-  "name": "wrought iron",
+  "name": "mild steel",
   "group": "structure",
-  "note": "The ironclads' plate and hulls (s.g. 7.6-7.9).",
-  "value": {
-   "density_t_per_m3": 7.7,
-   "q": 0.45
-  }
- },
- {
-  "name": "wood",
-  "group": "structure",
-  "note": "Planking and wooden hulls (oak and teak 0.65-0.75).",
-  "value": {
-   "density_t_per_m3": 0.7,
-   "q": 0.05
-  }
- },
- {
-  "name": "aluminium alloy",
-  "group": "structure",
-  "note": "Light alloy deckhouses.",
-  "value": {
-   "density_t_per_m3": 2.7,
-   "q": 0.25
-  }
- },
- {
-  "name": "compound",
-  "group": "armour",
-  "note": "Steel face welded to a wrought-iron back, about a third and two thirds (1877-1890s).",
-  "value": {
-   "density_t_per_m3": 7.75,
-   "q": 0.6
-  }
- },
- {
-  "name": "nickel steel",
-  "group": "armour",
-  "note": "Homogeneous nickel steel (1889 on).",
+  "note": "Mild steel: hull plate, and the splinter decks of the 1890s on. Okun's ladder 0.7 (MS).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 0.75
+   "q": 0.7
   }
  },
  {
-  "name": "Harvey nickel steel",
-  "group": "armour",
-  "note": "Harveyized: carburized nickel steel, face-hardened (1891 on).",
+  "name": "high-tensile steel",
+  "group": "structure",
+  "note": "HT and Krupp low-nickel structural steel, the laminated decks of 1900-1925: Okun's ladder 0.8 (HT).",
   "value": {
    "density_t_per_m3": 7.85,
    "q": 0.8
   }
  },
  {
-  "name": "Krupp cemented",
+  "name": "wrought iron",
+  "group": "structure",
+  "note": "The ironclads' plate and hulls (s.g. 7.6-7.9). Spezia 1876 ~0.50, Tresidder/Thompson 0.56, Okun 0.6 (WI).",
+  "value": {
+   "density_t_per_m3": 7.7,
+   "q": 0.53
+  }
+ },
+ {
+  "name": "wood",
+  "group": "structure",
+  "note": "Planking and wooden hulls (oak and teak 0.65-0.75). Okun counts teak at 1/100 of its thickness.",
+  "value": {
+   "density_t_per_m3": 0.7,
+   "q": 0.01
+  }
+ },
+ {
+  "name": "aluminium alloy",
+  "group": "structure",
+  "note": "Light alloy deckhouses. [EST] about steel's protection per weight (2.7/7.85); no research row.",
+  "value": {
+   "density_t_per_m3": 2.7,
+   "q": 0.33
+  }
+ },
+ {
+  "name": "compound",
   "group": "armour",
-  "note": "KC: the face-hardened Ni-Cr plate of 1894 on.",
+  "note": "Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP).",
+  "value": {
+   "density_t_per_m3": 7.75,
+   "q": 0.72,
+   "q_scale": 0,
+   "face_hardened": {
+    "share": 0.3,
+    "min_mm": 0
+   }
+  }
+ },
+ {
+  "name": "nickel steel",
+  "group": "armour",
+  "note": "Homogeneous nickel steel (1889-1896). Annapolis > 0.77-0.83, Johnson's limit 0.92 (NIS).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 1
+   "q": 0.85
+  }
+ },
+ {
+  "name": "Harvey nickel steel",
+  "group": "armour",
+  "note": "Harveyized: carburized nickel steel, a thin hard face (1891-1899). NO 1937's limit 0.79 (HRV).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.82,
+   "q_scale": 0,
+   "face_hardened": {
+    "share": 0.08,
+    "min_mm": 81.3
+   }
+  }
+ },
+ {
+  "name": "Krupp cemented",
+  "group": "armour",
+  "note": "KC a/A and its licensees (1894-1918): decremental face-hardened Ni-Cr. Capped trials 0.87-0.97, Okun 0.83 of WWII FH (KCA).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.88,
+   "q_scale": 0.05,
+   "face_hardened": {
+    "share": 0.34,
+    "min_mm": 81.3
+   }
   }
  },
  {
   "name": "Krupp cemented (KC n/A)",
   "group": "armour",
-  "note": "KC neuer Art, the German plate of the 1930s.",
+  "note": "KC neuer Art, the German plate of 1928-1945. NPG 1946-47 graded it 83-113% (KCNA).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 1
+   "q": 1.01,
+   "q_scale": 0.03,
+   "face_hardened": {
+    "share": 0.41,
+    "min_mm": 99.1
+   }
   }
  },
  {
   "name": "cemented armour",
   "group": "armour",
-  "note": "British cemented, Krupp's process (KC under licence).",
+  "note": "British (and licensees') KC of 1900-1932: \"inferior to KC a/A\" (Okun) (BKC).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 1
+   "q": 0.85,
+   "q_scale": 0,
+   "face_hardened": {
+    "share": 0.3,
+    "min_mm": 101.6
+   }
+  }
+ },
+ {
+  "name": "cemented armour (CA)",
+  "group": "armour",
+  "note": "British Cemented Armour of 1933-1945: a thin face on a tough back, slightly better against bigger shells (CA).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.99,
+   "q_scale": -0.05,
+   "face_hardened": {
+    "share": 0.3,
+    "min_mm": 101.6
+   }
   }
  },
  {
   "name": "Vickers cemented",
   "group": "armour",
-  "note": "VC: British face-hardened plate.",
+  "note": "VC, Vickers' KC (Japan's of the Kongo and Nagato era): as British WWI KC (BKC).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 1
+   "q": 0.85,
+   "q_scale": 0,
+   "face_hardened": {
+    "share": 0.3,
+    "min_mm": 101.6
+   }
   }
  },
  {
   "name": "Terni cemented",
   "group": "armour",
-  "note": "Italian face-hardened plate.",
+  "note": "Italian KC before 1918, as British WWI KC (BKC).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 1
+   "q": 0.85,
+   "q_scale": 0,
+   "face_hardened": {
+    "share": 0.3,
+    "min_mm": 101.6
+   }
+  }
+ },
+ {
+  "name": "Terni cemented (1930s)",
+  "group": "armour",
+  "note": "Italian Terni cemented of 1929-1943: the best of the five at 15-18\" in Okun's FACEHARD tables; little test data (TKC).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 1.03,
+   "q_scale": -0.08,
+   "face_hardened": {
+    "share": 0.45,
+    "min_mm": 101.6
+   }
   }
  },
  {
   "name": "Witkowitz cemented",
   "group": "armour",
-  "note": "Austro-Hungarian face-hardened plate.",
+  "note": "Witkowitz KC (Austria-Hungary, 1905-1918): \"~95% of WWII FH\" (Okun) (WKC).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 1
+   "q": 0.97,
+   "q_scale": 0,
+   "face_hardened": {
+    "share": 0.34,
+    "min_mm": 81.3
+   }
   }
  },
  {
-  "name": "Class A",
+  "name": "French cemented (1930s)",
   "group": "armour",
-  "note": "US face-hardened plate.",
+  "note": "French face-hardened plate of 1932-1945: Okun assumed it equal to US; German tests found it inferior [UNCERTAIN] (FRFH).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 1
+   "q": 0.95,
+   "q_scale": 0.05,
+   "face_hardened": {
+    "share": 0.35,
+    "min_mm": 101.6
+   }
   }
  },
  {
   "name": "Class A armour",
   "group": "armour",
-  "note": "US face-hardened plate (the older designs' name).",
+  "note": "US face-hardened plate before the thick chill (Pennsylvania, Colorado: KC-type). [EST] as KC a/A; no research row.",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 1
+   "q": 0.88,
+   "q_scale": 0.05,
+   "face_hardened": {
+    "share": 0.34,
+    "min_mm": 81.3
+   }
   }
  },
  {
-  "name": "non-cemented armour",
+  "name": "Class A",
   "group": "armour",
-  "note": "British homogeneous armour (NC).",
+  "note": "US Class A of 1933-1945, the thick chill: FACEHARD (NL) 1.03 at 8\", 0.92 at 16\"; OS 751 agrees (USA).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 0.9
-  }
- },
- {
-  "name": "Krupp non-cemented",
-  "group": "armour",
-  "note": "KNC: Krupp's homogeneous plate. q 0.6: not in the old quality table, so its catch-all (P1b sets it).",
-  "value": {
-   "density_t_per_m3": 7.85,
-   "q": 0.6
+   "q": 1.03,
+   "q_scale": 0.17,
+   "face_hardened": {
+    "share": 0.55,
+    "min_mm": 127
+   }
   }
  },
  {
   "name": "Vickers hardened",
   "group": "armour",
-  "note": "VH: British homogeneous hardened plate.",
+  "note": "Japanese VH of 1937-1945, only over 11\": FACEHARD NL 0.89-0.90; Shinano's 26\" plate ~0.8 (VH).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 0.9
+   "q": 0.89,
+   "q_scale": 0,
+   "face_hardened": {
+    "share": 0.35,
+    "min_mm": 279.4
+   }
   }
  },
  {
-  "name": "Class B",
+  "name": "Krupp non-cemented",
   "group": "armour",
-  "note": "US homogeneous plate.",
+  "note": "KNC, Krupp-type homogeneous Ni-Cr (1894-1925): Okun 0.95 homogeneous to WWI (KNC).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 1
-  }
- },
- {
-  "name": "STS",
-  "group": "armour",
-  "note": "Special treatment steel: the US homogeneous plate of the 1930s on.",
-  "value": {
-   "density_t_per_m3": 7.85,
-   "q": 1
+   "q": 0.92,
+   "elongation_pct": 22
   }
  },
  {
   "name": "special treatment steel",
   "group": "armour",
-  "note": "STS by its long name. q 0.6: not in the old quality table, so its catch-all (P1b sets it).",
+  "note": "US Class B and STS of 1910-1932 (CB1).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 0.6
+   "q": 0.95,
+   "elongation_pct": 23
   }
  },
  {
-  "name": "special steel",
+  "name": "Class B",
   "group": "armour",
-  "note": "Homogeneous Ni-Cr deck plate.",
+  "note": "US Class B of the 1930s and WWII: the standard (STS).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 0.95
+   "q": 1,
+   "elongation_pct": 25
   }
  },
  {
-  "name": "Molybdenum steel",
+  "name": "STS",
   "group": "armour",
-  "note": "Molybdenum-alloyed homogeneous plate (Japan, Italy). q 0.6: not in the old quality table, so its catch-all (P1b sets it).",
+  "note": "US special treatment steel of 1930-1945, the scale's reference: NPG Class B 91-106% (STS).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 0.6
+   "q": 1,
+   "elongation_pct": 25
   }
  },
  {
-  "name": "Wotan",
+  "name": "non-cemented armour",
   "group": "armour",
-  "note": "Wotan weich, Krupp's homogeneous deck plate of the 1930s. q 0.6: not in the old quality table, so its catch-all (P1b sets it).",
+  "note": "British NCA of 1926-1945 (NCA).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 0.6
+   "q": 1,
+   "elongation_pct": 25
   }
  },
  {
   "name": "Wotan hart",
   "group": "armour",
-  "note": "Wotan hart, the hard homogeneous deck and bulkhead plate. q 0.6: not in the old quality table, so its catch-all (P1b sets it).",
+  "note": "Wotan hart (1925-1945), 18% elongation: 0.85 against a 16\" (WH).",
   "value": {
    "density_t_per_m3": 7.85,
-   "q": 0.6
+   "q": 1,
+   "elongation_pct": 18
+  }
+ },
+ {
+  "name": "Wotan",
+  "group": "armour",
+  "note": "Wotan weich (1925-1945), the softer deck plate (WW).",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.95,
+   "elongation_pct": 22
+  }
+ },
+ {
+  "name": "Molybdenum steel",
+  "group": "armour",
+  "note": "Japanese homogeneous NVNC/CNC (1926-1945): Okun's M79 Q 0.97.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.97,
+   "elongation_pct": 23
+  }
+ },
+ {
+  "name": "special steel",
+  "group": "armour",
+  "note": "French homogeneous deck plate of the 1930s. [EST] as Japanese NVNC; no research row.",
+  "value": {
+   "density_t_per_m3": 7.85,
+   "q": 0.97,
+   "elongation_pct": 23
   }
  }
 ]

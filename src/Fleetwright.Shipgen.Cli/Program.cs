@@ -151,8 +151,9 @@ public static class Program
         shipgen pen-check
             the plate model alone (Thompson's limit and its inverse, the catalogue's q) against the armour research's
             range tables and trials (research/simulation/armor/07-*.csv), no rolls
-        shipgen upgrade DESIGN.json... [--dry]
-            design files rewritten to the current format (DesignFormat), each in its own layout; --dry lists them
+        shipgen upgrade DESIGN.json... [--materials] [--dry]
+            design files rewritten to the current format (DesignFormat), each in its own layout; --materials also sets
+            each design's materials table to the catalogue's blocks (after a catalogue change); --dry lists them
         shipgen scenario [SCENARIO.json] [--minutes 60] [--every 5] [--threads N] [--at 10] [--no-land] [--replay]
             a scenario headless at full tilt (default Content/Scenarios/jutland.json): its classes' build time (no
             art), the land and the placing, then game minutes on the sim's work alone: ships on the fine tick and on
@@ -239,7 +240,7 @@ public static class Program
                 "ballistics" => BallisticsBench.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "ammo-templates" => AmmoTemplates.Run(a.Positional, a.Has("dry"), a.Has("outfits")),
                 "templates" => TemplatesWriter.Run(Path.Combine(Root(a), "..")),
-                "upgrade" => DesignUpgrade.Run(a.Positional, a.Has("dry")),
+                "upgrade" => DesignUpgrade.Run(a.Positional, a.Has("dry"), a.Has("materials")),
                 "pen-check" => PenCheck.Run(Path.Combine(Root(a), "..")),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "matchup" => MatchupBench.Run(a.Positional.ElementAtOrDefault(0) ?? "arethusa", a.Positional.ElementAtOrDefault(1) ?? "v25",
@@ -280,7 +281,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--outfits" or "--summary" or "--rooms" or "--write")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--outfits" or "--summary" or "--rooms" or "--write" or "--materials")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

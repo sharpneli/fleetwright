@@ -428,15 +428,20 @@
  "materials": {
   "cemented armour": {
    "density_t_per_m3": 7.85,
-   "q": 1
+   "q": 0.85,
+   "q_scale": 0,
+   "face_hardened": {
+    "share": 0.3,
+    "min_mm": 101.6
+   }
   },
   "high-tensile steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.7
+   "q": 0.8
   },
   "steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.55
+   "q": 0.7
   }
  }
 }

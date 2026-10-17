@@ -1,56 +1,68 @@
 namespace Fleetwright.Shipgen;
 
-/// <summary>The materials catalogue (docs/battle/shells-armour-damage.md P0): the blocks the parts' material names
-/// stand for, the one source of `Content/Templates/materials.json` and docs/shipgen/material-templates.md (`shipgen
-/// templates` writes both). A design copies the ones its parts name into its `materials`; a name the design doesn't
-/// carry takes the catalogue's, and a name in neither takes steel's, with a warning.
+/// <summary>The materials catalogue (docs/battle/shells-armour-damage.md P0, P1b): the blocks the parts' material
+/// names stand for, the one source of `Content/Templates/materials.json` and docs/shipgen/material-templates.md
+/// (`shipgen templates` writes both). A design copies the ones its parts name into its `materials` (`shipgen upgrade
+/// --materials` refreshes them after a change here); a name the design doesn't carry takes the catalogue's, and a name
+/// in neither takes steel's, with a warning.
 /// <list type="bullet">
-/// <item>q: the game's armour qualities as they were in settings.json (P0 is parity), the names it didn't list at its
-/// 0.6 for the others (marked); P1b puts armor/00 §4.2's reconciled values in;</item>
+/// <item>q, q_scale, the face and the elongation: research/simulation/armor/00-overview.md §4.2, the reconciled table
+/// (armor_pen_ref.py MATERIALS; its id in each note): q against an 8" capped shell on Thompson's scale, WWII STS 1;</item>
 /// <item>density: armor/03 §7 (the steels 7.85, wrought iron 7.7, compound 7.75, oak and teak 0.65-0.75), aluminium
 /// alloy 2.7; the weights read it from P1c.</item>
 /// </list>
-/// Group: "structure" for the hull plating's and superstructure's picker, "armour" for the rest; the armour picker
-/// offers them all.</summary>
+/// A name is a plate, never a period: where the designs used one name for two plates (British WWI KC and WWII CA, the
+/// Terni of 1912 and of 1937), each has its own. Group: "structure" for the hull plating's and superstructure's picker,
+/// "armour" for the rest; the armour picker offers them all.</summary>
 public static class MaterialTemplates
 {
     public sealed record Entry(string Name, string Group, MaterialInput Value, string Note);
 
-    const string Unlisted = "q 0.6: not in the old quality table, so its catch-all (P1b sets it).";
+    const double In = 25.4;
 
-    static Entry M(string name, string group, double density, double q, string note) =>
-        new(name, group, new MaterialInput { DensityTPerM3 = density, Q = q }, note);
+    static Entry M(string name, string group, double density, double q, string note, double? elongation = null) =>
+        new(name, group, new MaterialInput { DensityTPerM3 = density, Q = q, ElongationPct = elongation }, note);
+
+    /// <summary>Face-hardened: q at 8", k past it, the face's share and the thinnest plate made so (inches).</summary>
+    static Entry Fh(string name, double q, double k, double face, double minIn, string note, double density = 7.85) =>
+        new(name, "armour", new MaterialInput
+        {
+            DensityTPerM3 = density, Q = q, QScale = k, FaceHardened = new FaceInput { Share = face, MinMm = Math.Round(minIn * In, 1) },
+        }, note);
 
     /// <summary>The catalogue: the structural materials, then the armour, roughly by its age.</summary>
     public static readonly IReadOnlyList<Entry> All =
     [
-        M("steel", "structure", 7.85, 0.55, "Shipbuilding steel, the plating's default name."),
-        M("mild steel", "structure", 7.85, 0.5, "Mild (carbon) steel: hull plate, and the splinter decks of the 1890s on."),
-        M("high-tensile steel", "structure", 7.85, 0.7, "HT and Ducol-type manganese steels: strength plating and protective decks."),
-        M("wrought iron", "structure", 7.7, 0.45, "The ironclads' plate and hulls (s.g. 7.6-7.9)."),
-        M("wood", "structure", 0.7, 0.05, "Planking and wooden hulls (oak and teak 0.65-0.75)."),
-        M("aluminium alloy", "structure", 2.7, 0.25, "Light alloy deckhouses."),
-        M("compound", "armour", 7.75, 0.6, "Steel face welded to a wrought-iron back, about a third and two thirds (1877-1890s)."),
-        M("nickel steel", "armour", 7.85, 0.75, "Homogeneous nickel steel (1889 on)."),
-        M("Harvey nickel steel", "armour", 7.85, 0.8, "Harveyized: carburized nickel steel, face-hardened (1891 on)."),
-        M("Krupp cemented", "armour", 7.85, 1, "KC: the face-hardened Ni-Cr plate of 1894 on."),
-        M("Krupp cemented (KC n/A)", "armour", 7.85, 1, "KC neuer Art, the German plate of the 1930s."),
-        M("cemented armour", "armour", 7.85, 1, "British cemented, Krupp's process (KC under licence)."),
-        M("Vickers cemented", "armour", 7.85, 1, "VC: British face-hardened plate."),
-        M("Terni cemented", "armour", 7.85, 1, "Italian face-hardened plate."),
-        M("Witkowitz cemented", "armour", 7.85, 1, "Austro-Hungarian face-hardened plate."),
-        M("Class A", "armour", 7.85, 1, "US face-hardened plate."),
-        M("Class A armour", "armour", 7.85, 1, "US face-hardened plate (the older designs' name)."),
-        M("non-cemented armour", "armour", 7.85, 0.9, "British homogeneous armour (NC)."),
-        M("Krupp non-cemented", "armour", 7.85, 0.6, "KNC: Krupp's homogeneous plate. " + Unlisted),
-        M("Vickers hardened", "armour", 7.85, 0.9, "VH: British homogeneous hardened plate."),
-        M("Class B", "armour", 7.85, 1, "US homogeneous plate."),
-        M("STS", "armour", 7.85, 1, "Special treatment steel: the US homogeneous plate of the 1930s on."),
-        M("special treatment steel", "armour", 7.85, 0.6, "STS by its long name. " + Unlisted),
-        M("special steel", "armour", 7.85, 0.95, "Homogeneous Ni-Cr deck plate."),
-        M("Molybdenum steel", "armour", 7.85, 0.6, "Molybdenum-alloyed homogeneous plate (Japan, Italy). " + Unlisted),
-        M("Wotan", "armour", 7.85, 0.6, "Wotan weich, Krupp's homogeneous deck plate of the 1930s. " + Unlisted),
-        M("Wotan hart", "armour", 7.85, 0.6, "Wotan hart, the hard homogeneous deck and bulkhead plate. " + Unlisted),
+        M("steel", "structure", 7.85, 0.70, "Shipbuilding (mild) steel, the plating's default name: Okun's backing ladder 0.7 (MS)."),
+        M("mild steel", "structure", 7.85, 0.70, "Mild steel: hull plate, and the splinter decks of the 1890s on. Okun's ladder 0.7 (MS)."),
+        M("high-tensile steel", "structure", 7.85, 0.80, "HT and Krupp low-nickel structural steel, the laminated decks of 1900-1925: Okun's ladder 0.8 (HT)."),
+        M("wrought iron", "structure", 7.7, 0.53, "The ironclads' plate and hulls (s.g. 7.6-7.9). Spezia 1876 ~0.50, Tresidder/Thompson 0.56, Okun 0.6 (WI)."),
+        M("wood", "structure", 0.7, 0.01, "Planking and wooden hulls (oak and teak 0.65-0.75). Okun counts teak at 1/100 of its thickness."),
+        M("aluminium alloy", "structure", 2.7, 0.33, "Light alloy deckhouses. [EST] about steel's protection per weight (2.7/7.85); no research row."),
+        Fh("compound", 0.72, 0, 0.30, 0, "Steel face welded to a wrought-iron back, a third and two thirds (1877-1891). Annapolis < 0.75-0.80; shatters chilled shot only (CMP).", 7.75),
+        M("nickel steel", "armour", 7.85, 0.85, "Homogeneous nickel steel (1889-1896). Annapolis > 0.77-0.83, Johnson's limit 0.92 (NIS)."),
+        Fh("Harvey nickel steel", 0.82, 0, 0.08, 3.2, "Harveyized: carburized nickel steel, a thin hard face (1891-1899). NO 1937's limit 0.79 (HRV)."),
+        Fh("Krupp cemented", 0.88, 0.05, 0.34, 3.2, "KC a/A and its licensees (1894-1918): decremental face-hardened Ni-Cr. Capped trials 0.87-0.97, Okun 0.83 of WWII FH (KCA)."),
+        Fh("Krupp cemented (KC n/A)", 1.01, 0.03, 0.41, 3.9, "KC neuer Art, the German plate of 1928-1945. NPG 1946-47 graded it 83-113% (KCNA)."),
+        Fh("cemented armour", 0.85, 0, 0.30, 4.0, "British (and licensees') KC of 1900-1932: \"inferior to KC a/A\" (Okun) (BKC)."),
+        Fh("cemented armour (CA)", 0.99, -0.05, 0.30, 4.0, "British Cemented Armour of 1933-1945: a thin face on a tough back, slightly better against bigger shells (CA)."),
+        Fh("Vickers cemented", 0.85, 0, 0.30, 4.0, "VC, Vickers' KC (Japan's of the Kongo and Nagato era): as British WWI KC (BKC)."),
+        Fh("Terni cemented", 0.85, 0, 0.30, 4.0, "Italian KC before 1918, as British WWI KC (BKC)."),
+        Fh("Terni cemented (1930s)", 1.03, -0.08, 0.45, 4.0, "Italian Terni cemented of 1929-1943: the best of the five at 15-18\" in Okun's FACEHARD tables; little test data (TKC)."),
+        Fh("Witkowitz cemented", 0.97, 0, 0.34, 3.2, "Witkowitz KC (Austria-Hungary, 1905-1918): \"~95% of WWII FH\" (Okun) (WKC)."),
+        Fh("French cemented (1930s)", 0.95, 0.05, 0.35, 4.0, "French face-hardened plate of 1932-1945: Okun assumed it equal to US; German tests found it inferior [UNCERTAIN] (FRFH)."),
+        Fh("Class A armour", 0.88, 0.05, 0.34, 3.2, "US face-hardened plate before the thick chill (Pennsylvania, Colorado: KC-type). [EST] as KC a/A; no research row."),
+        Fh("Class A", 1.03, 0.17, 0.55, 5.0, "US Class A of 1933-1945, the thick chill: FACEHARD (NL) 1.03 at 8\", 0.92 at 16\"; OS 751 agrees (USA)."),
+        Fh("Vickers hardened", 0.89, 0, 0.35, 11.0, "Japanese VH of 1937-1945, only over 11\": FACEHARD NL 0.89-0.90; Shinano's 26\" plate ~0.8 (VH)."),
+        M("Krupp non-cemented", "armour", 7.85, 0.92, "KNC, Krupp-type homogeneous Ni-Cr (1894-1925): Okun 0.95 homogeneous to WWI (KNC).", 22),
+        M("special treatment steel", "armour", 7.85, 0.95, "US Class B and STS of 1910-1932 (CB1).", 23),
+        M("Class B", "armour", 7.85, 1.00, "US Class B of the 1930s and WWII: the standard (STS).", 25),
+        M("STS", "armour", 7.85, 1.00, "US special treatment steel of 1930-1945, the scale's reference: NPG Class B 91-106% (STS).", 25),
+        M("non-cemented armour", "armour", 7.85, 1.00, "British NCA of 1926-1945 (NCA).", 25),
+        M("Wotan hart", "armour", 7.85, 1.00, "Wotan hart (1925-1945), 18% elongation: 0.85 against a 16\" (WH).", 18),
+        M("Wotan", "armour", 7.85, 0.95, "Wotan weich (1925-1945), the softer deck plate (WW).", 22),
+        M("Molybdenum steel", "armour", 7.85, 0.97, "Japanese homogeneous NVNC/CNC (1926-1945): Okun's M79 Q 0.97.", 23),
+        M("special steel", "armour", 7.85, 0.97, "French homogeneous deck plate of the 1930s. [EST] as Japanese NVNC; no research row.", 23),
     ];
 
     static readonly Dictionary<string, Entry> byName = All.ToDictionary(e => e.Name, StringComparer.Ordinal);
@@ -73,7 +85,13 @@ public static class MaterialTemplates
         if (given is null && known is null)
             return null;
         var basis = known ?? Steel;
-        return new MaterialInput { DensityTPerM3 = given?.DensityTPerM3 ?? basis.DensityTPerM3, Q = given?.Q ?? basis.Q };
+        var face = given?.FaceHardened is { } f ? new FaceInput { Share = f.Share ?? basis.FaceHardened?.Share, MinMm = f.MinMm ?? basis.FaceHardened?.MinMm }
+            : basis.FaceHardened;
+        return new MaterialInput
+        {
+            DensityTPerM3 = given?.DensityTPerM3 ?? basis.DensityTPerM3, Q = given?.Q ?? basis.Q, QScale = given?.QScale ?? basis.QScale,
+            FaceHardened = face, ElongationPct = given?.ElongationPct ?? basis.ElongationPct,
+        };
     }
 
     /// <summary>Every material name the design's parts give (the plating, the superstructure, the batteries, the armour
@@ -123,7 +141,7 @@ public static class MaterialTemplates
         return table;
     }
 
-    static readonly string[] Fields = ["density_t_per_m3", "q"];
+    static readonly string[] Fields = ["density_t_per_m3", "q", "q_scale", "face_hardened", "elongation_pct"];
 
     public static List<string> Validate(Design design)
     {
@@ -140,9 +158,20 @@ public static class MaterialTemplates
             }
             foreach (var k in x.Extra.KeysOrEmpty())
                 errs.Add($"{at}.{k}: not a material field ({string.Join(", ", Fields)})");
-            foreach (var (k, v) in new[] { ("density_t_per_m3", x.DensityTPerM3), ("q", x.Q) })
+            foreach (var (k, v) in new[] { ("density_t_per_m3", x.DensityTPerM3), ("q", x.Q), ("elongation_pct", x.ElongationPct) })
                 if (v is double d && !(d > 0 && double.IsFinite(d)))
                     errs.Add($"{at}.{k}: a number, more than 0");
+            if (x.QScale is double qs && !double.IsFinite(qs))
+                errs.Add($"{at}.q_scale: a number");
+            if (x.FaceHardened is { } f)
+            {
+                foreach (var k in f.Extra.KeysOrEmpty())
+                    errs.Add($"{at}.face_hardened.{k}: not a face field (share, min_mm)");
+                if (f.Share is < 0 or > 1)
+                    errs.Add($"{at}.face_hardened.share: a share, 0 to 1");
+                if (f.MinMm is double m && !(m >= 0 && double.IsFinite(m)))
+                    errs.Add($"{at}.face_hardened.min_mm: 0 or more");
+            }
         }
         return errs;
     }

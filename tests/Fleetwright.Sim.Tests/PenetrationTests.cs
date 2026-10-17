@@ -1,4 +1,6 @@
+using Fleetwright.Shipgen;
 using Fleetwright.Sim.Combat;
+using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Tests;
 
@@ -73,5 +75,30 @@ public class PenetrationTests
         }
         double ratio = hi / Terminal.LimitMs(stack.Sum(), cal, kg, ob);
         Assert.InRange(ratio, 0.70, 0.80);
+    }
+
+    /// <summary>The catalogue through the material rules gives armor/00 §4.2's table: q at 8" and below, the 16" column
+    /// by Q(D) or the elongation penalty, and no face-hardened advantage on a thin plate.</summary>
+    [Fact]
+    public void Materials_by_calibre_follow_the_research_table()
+    {
+        static double At(string name, double calIn, double tMm = 400) =>
+            MaterialRow.Of(MaterialTemplates.Get(name)!).Against(tMm, calIn * 25.4);
+        (string Name, double Q8, double Q16)[] table =
+        [
+            ("Krupp cemented", 0.88, 0.85), ("cemented armour (CA)", 0.99, 1.03), ("Krupp cemented (KC n/A)", 1.01, 0.99),
+            ("Terni cemented (1930s)", 1.03, 1.09), ("Class A", 1.03, 0.92), ("Vickers hardened", 0.89, 0.89),
+            ("Krupp non-cemented", 0.92, 0.86), ("special treatment steel", 0.95, 0.91), ("STS", 1.00, 1.00),
+            ("Wotan hart", 1.00, 0.85), ("Wotan", 0.95, 0.89), ("nickel steel", 0.85, 0.85), ("wrought iron", 0.53, 0.53),
+        ];
+        foreach (var (name, q8, q16) in table)
+        {
+            Assert.Equal(q8, At(name, 6), 2);
+            Assert.Equal(q8, At(name, 8), 2);
+            Assert.InRange(At(name, 16), q16 - 0.011, q16 + 0.011);   // the table's rounded to 0.01
+        }
+        Assert.Equal(0.9 * 1.03, At("Class A", 6, 100), 9);   // under 5", the thinnest Class A made
+        Assert.Equal(0.9 * 0.88 * Math.Pow(1.5, -0.05), At("Krupp cemented", 12, 90), 9);   // under 0.3 calibres
+        Assert.Equal(0.7, At("steel", 16), 9);   // structural steel: no elongation given, no penalty
     }
 }

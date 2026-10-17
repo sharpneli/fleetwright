@@ -390,19 +390,29 @@
  "materials": {
   "Harvey nickel steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.8
+   "q": 0.82,
+   "q_scale": 0,
+   "face_hardened": {
+    "share": 0.08,
+    "min_mm": 81.3
+   }
   },
   "Krupp cemented": {
    "density_t_per_m3": 7.85,
-   "q": 1
+   "q": 0.88,
+   "q_scale": 0.05,
+   "face_hardened": {
+    "share": 0.34,
+    "min_mm": 81.3
+   }
   },
   "mild steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.5
+   "q": 0.7
   },
   "nickel steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.75
+   "q": 0.85
   }
  }
 }

@@ -49,7 +49,7 @@ public sealed class ShipClass
     internal double[] powerKn = [], powerShp = [];
     internal string[] componentIds = [], turretTypeIds = [], cellIds = [], roomIds = [], bulkheadIds = [], deckIds = [], tierIds = [],
         sectionIds = [], sidePlateIds = [], armourBulkheadIds = [], inclinedIds = [], materials = [];
-    internal double[] materialQ = [];
+    internal MaterialRow[] materialRows = [];
     internal FrozenDictionary<string, int> componentIndex = null!, cellIndex = null!, roomIndex = null!, bulkheadIndex = null!,
         deckIndex = null!, tierIndex = null!, sectionIndex = null!;
 
@@ -197,9 +197,11 @@ public sealed class ShipClass
     /// <summary>A material's name (armour and plating: "Krupp cemented", "STS", "steel"), or null for -1.</summary>
     public string? Material(int i) => i < 0 ? null : materials[i];
     public int MaterialCount => materials.Length;
-    /// <summary>A material's resistance as a share of the same thickness of the formula's plate (its block's q, from
-    /// report.materials); 1 for -1, a plate with no material named.</summary>
-    public double MaterialQ(int i) => i < 0 ? 1 : materialQ[i];
+    /// <summary>A material's numbers (its block's, from report.materials).</summary>
+    public ref readonly MaterialRow MaterialOf(int i) => ref materialRows[i];
+    /// <summary>A plate of a material, tMm thick, as a share of its thickness of the formula's plate against a shell of a
+    /// calibre (<see cref="MaterialRow.Against"/>); 1 for -1, a plate with no material named.</summary>
+    public double MaterialQ(int i, double tMm, double calibreMm) => i < 0 ? 1 : materialRows[i].Against(tMm, calibreMm);
 
     /// <summary>The index of an id, or -1.</summary>
     public int ComponentIndex(string id) => componentIndex.GetValueOrDefault(id, -1);

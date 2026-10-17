@@ -374,15 +374,20 @@
  "materials": {
   "Krupp cemented": {
    "density_t_per_m3": 7.85,
-   "q": 1
+   "q": 0.88,
+   "q_scale": 0.05,
+   "face_hardened": {
+    "share": 0.34,
+    "min_mm": 81.3
+   }
   },
   "nickel steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.75
+   "q": 0.85
   },
   "steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.55
+   "q": 0.7
   }
  }
 }

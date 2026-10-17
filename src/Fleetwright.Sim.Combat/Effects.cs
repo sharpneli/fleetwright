@@ -210,7 +210,7 @@ public static class Effects
             double d = Distance(c, i, p);
             if (d > rb)
                 continue;
-            double armour = Armour(c, i) * c.MaterialQ(comp.Material);
+            double raw = Armour(c, i), armour = raw * c.MaterialQ(comp.Material, raw, 0);   // fragments: q as at 8"
             if (armour > 0 && armour >= FragPenMm(shell, d))
                 continue;
             var state = d <= s.DestroyedShare * rw ? PartState.Destroyed : d <= rw ? PartState.Disabled : armour < 1 ? PartState.Damaged : PartState.Ok;

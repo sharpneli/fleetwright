@@ -307,11 +307,11 @@
  "materials": {
   "mild steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.5
+   "q": 0.7
   },
   "steel": {
    "density_t_per_m3": 7.85,
-   "q": 0.55
+   "q": 0.7
   }
  }
 }

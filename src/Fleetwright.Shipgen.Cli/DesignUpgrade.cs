@@ -8,11 +8,13 @@ namespace Fleetwright.Shipgen.Cli;
 /// <summary>`shipgen upgrade FILE...`: design files rewritten to the current format (DesignFormat.Upgrade, the one
 /// upgrade the game does as it reads), each in its own layout: a file an indented writer made (a scenario's designs)
 /// is written the same way, and the shipped designs' hand-laid lines keep theirs, with only the top-level values the
-/// upgrade changed rewritten and the keys it added on lines of their own at the end. `--dry` lists what it would do.
-/// Every file is validated after; a file already current is left alone.</summary>
+/// upgrade changed rewritten and the keys it added on lines of their own at the end. `--materials` also sets the
+/// design's `materials` to the catalogue's blocks (MaterialTemplates) for the names its parts give, after a change to
+/// the catalogue (a name the catalogue doesn't know keeps the design's block). `--dry` lists what it would do. Every
+/// file is validated after; a file already current is left alone.</summary>
 static class DesignUpgrade
 {
-    public static int Run(IReadOnlyList<string> paths, bool dry)
+    public static int Run(IReadOnlyList<string> paths, bool dry, bool materials = false)
     {
         int written = 0, current = 0;
         foreach (var p in paths)
@@ -20,6 +22,8 @@ static class DesignUpgrade
             string text = File.ReadAllText(p);
             var before = JsonNode.Parse(text, documentOptions: new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })!.AsObject();
             var after = DesignFormat.Upgrade(text);
+            if (materials)
+                Materials(after);
             var changed = after.Where(kv => !JsonNode.DeepEquals(kv.Value, before[kv.Key])).Select(kv => kv.Key).ToList();
             var gone = before.Select(kv => kv.Key).Where(k => !after.ContainsKey(k)).ToList();
             if (changed.Count == 0 && gone.Count == 0)
@@ -42,6 +46,20 @@ static class DesignUpgrade
         }
         Console.WriteLine($"{written} {(dry ? "to write" : "written")}, {current} already current (format {DesignFormat.Current})");
         return 0;
+    }
+
+    /// <summary>The design's materials table as the catalogue has it, for the names its parts give.</summary>
+    static void Materials(JsonObject design)
+    {
+        var d = design.Deserialize(ShipgenJson.Default.Design)!;
+        var table = new JsonObject();
+        foreach (var n in MaterialTemplates.Used(d))
+            if ((MaterialTemplates.Get(n) ?? d.Materials?.GetValueOrDefault(n)) is { } m)
+                table[n] = JsonSerializer.SerializeToNode(m, ShipgenJson.Default.MaterialInput);
+        if (table.Count > 0)
+            design["materials"] = table;
+        else
+            design.Remove("materials");
     }
 
     static readonly JsonSerializerOptions Compact = new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };

@@ -11,5 +11,5 @@
   "aa": {"heavy": 4, "light": 20},
   "superstructure": {"t_per_m2": 0.32, "material": "steel", "plating_mm": 0, "control_mm": 0, "tower_levels": 3},
   "fire_control": {"main": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "computer_t": 0.0}, "secondary": {"directors": 0, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "computer_t": 0.0}, "aa": {"directors": 2, "rangefinder_m": 0.0, "armour_mm": 0, "radar_t": 0.0, "computer_t": 0.2}, "search_radar_t": 1.0},
- "materials": {"mild steel": {"density_t_per_m3": 7.85, "q": 0.5}, "steel": {"density_t_per_m3": 7.85, "q": 0.55}}
+ "materials": {"mild steel": {"density_t_per_m3": 7.85, "q": 0.7}, "steel": {"density_t_per_m3": 7.85, "q": 0.7}}
 }

@@ -93,9 +93,9 @@ public class ShipClassTests
         int Index(ShipClass c, string name) => Enumerable.Range(0, c.MaterialCount).Single(i => c.Material(i) == name);
 
         var given = Fleet.Get("bismarck").Class!;
-        Assert.Equal(1, given.MaterialQ(Index(given, "Krupp cemented (KC n/A)")));
-        Assert.Equal(0.55, given.MaterialQ(Index(given, "steel")));
-        Assert.Equal(1, given.MaterialQ(-1));
+        Assert.Equal(MaterialTemplates.Get("Krupp cemented (KC n/A)")!.Q, given.MaterialOf(Index(given, "Krupp cemented (KC n/A)")).Q);
+        Assert.Equal(MaterialTemplates.Get("steel")!.Q, given.MaterialOf(Index(given, "steel")).Q);
+        Assert.Equal(1, given.MaterialQ(-1, 100, 380));
 
         var own = new Dictionary<string, MaterialInput>(d.Materials!) { ["Krupp cemented (KC n/A)"] = new() { Q = 0.8 } };
         var odd = d with
@@ -106,9 +106,9 @@ public class ShipClassTests
         var ship = ShipDesign.Build(odd);
         Assert.Contains(ship.Report.Warnings, w => w.Contains("unobtainium") && w.Contains("steel"));
         var c = ShipClassCompiler.Compile(ship);
-        Assert.Equal(0.8, c.MaterialQ(Index(c, "Krupp cemented (KC n/A)")));
+        Assert.Equal(0.8, c.MaterialOf(Index(c, "Krupp cemented (KC n/A)")).Q);
         Assert.Equal(7.85, ship.Report.Materials!["Krupp cemented (KC n/A)"].DensityTPerM3);   // the rest from the catalogue
-        Assert.Equal(MaterialTemplates.Steel.Q, c.MaterialQ(Index(c, "unobtainium")));
+        Assert.Equal(MaterialTemplates.Steel.Q, c.MaterialOf(Index(c, "unobtainium")).Q);
     }
 
     /// <summary>Format 1's names gain the catalogue's blocks as they're read; a block the file gives is kept.</summary>

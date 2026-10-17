@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, P0 and P1a done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, P0, P1a and P1b done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -718,11 +718,53 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       309 → 328 t; iron_duke by seydlitz, light_cruiser, tb_destroyer within a few tenths; matchup, duel and flotilla
       identical; squadrons Britain lost 2 → 1 (Princess Royal survives), Germany 0; tsushima --play 2 seeds Russia
       4 → 3.5, Japan 4 → 4.5.
-- **P1b The real Q** (sim only).
+- **P1b The real Q** (done 2026-10-17; it renamed a few designs' materials, so shipgen moved too).
   - `q` from armor/00 §4.2 with Q(D), the ductility penalty and the thin face-hardened rule. WWI KC goes from 1.0 to
     about 0.85–0.88.
   - Structural steels get their own Q instead of the 0.6 catch-all.
   - The plate bench before and after.
+  - **How (2026-10-17):**
+    - **The block gains** `q_scale` (k: Q(D) = q·(D/8″)^−k for face-hardened plate past 8″, held at q below),
+      `face_hardened` `{share, min_mm}` (the face's share of the plate, P2's; under `max(min_mm, 0.3·D)` the plate gets
+      no face-hardened advantage, ×0.9 [INFERRED in 00 §4.2]) and `elongation_pct` (homogeneous plate under 25% loses
+      to shells over 8″ by Okun's M79 penalty, `1 − (1 − √(El/25))·min(D − 8″, 8″)/8″`; absent, none: the pre-1900
+      materials' q comes straight from big-calibre trials). All by the research's table (armor/00 §4.2,
+      `armor_pen_ref.py` MATERIALS), keyed to the catalogue's names.
+    - **One rule, in the sim:** `MaterialRow.Q(tMm, calibreMm)` (Sim.Ships), compiled from each block; the terminal's
+      plate step, the effects' parts and the matchup read it, and `pen-check` compiles the catalogue's blocks through
+      it. Fragments (E1's business) take it at calibre 0, q as at 8″.
+    - **The matchup's profiles** are built at 8″ and 16″ and the face's answer interpolated by the shell's calibre
+      (Q(D) is near linear between; held outside), so the AI reads the same Q(D) the terminal does.
+    - **Names that meant two plates are split** (a material is physics, never a period): "cemented armour" stays WWI
+      British KC (BKC 0.85), and KGV and the generic WWII battleships take "cemented armour (CA)" (0.99, k −0.05);
+      Dunkerque and Richelieu "French cemented (1930s)" (FRFH 0.95, k 0.05); Littorio and Zara "Terni cemented (1930s)"
+      (TKC 1.03, k −0.08), Dante keeping "Terni cemented" (Italian WWI KC, 0.85); the Deutschland of 1933 "Krupp
+      cemented (KC n/A)"; König "Krupp cemented" (it had "cemented armour", a British name). The rest map one to one:
+      Krupp cemented KCA 0.88 k 0.05, KC n/A 1.01 k 0.03, Vickers cemented BKC 0.85, Witkowitz 0.97, Class A (WWII)
+      1.03 k 0.17, "Class A armour" (Pennsylvania, Colorado: US KC-type plate before the thick chill) KCA's [EST],
+      Harvey 0.82 (face 0.08, from 3.2″), compound 0.72, wrought iron 0.53, nickel steel 0.85, Krupp non-cemented 0.92
+      (22%), STS and Class B 1.00 (25%), special treatment steel (the WWI US name) 0.95 (23%), non-cemented armour
+      1.00 (25%), Wotan hart 1.00 (18%), Wotan 0.95 (22%), Molybdenum steel (Yamato's decks: NVNC/CNC) 0.97 (23%),
+      special steel (French homogeneous) 0.97 (23%) [EST], Vickers hardened 0.89 (face 0.35, from 11″), mild steel and
+      steel 0.70 (Okun's ladder), high-tensile steel 0.80, wood 0.01 (Okun's teak), aluminium alloy 0.33 [EST: equal
+      protection per weight, 2.7/7.85].
+    - **The designs' tables follow the catalogue:** `shipgen upgrade --materials` rewrites each design's `materials`
+      to the catalogue's blocks for the names its parts give (after a catalogue change; the designs carry copies).
+  - **Done (2026-10-17).** As above; the 125 shipped and scenario designs' tables refreshed, the eight renamed
+    (kgv, all_forward, all_forward_flush, dunkerque, richelieu, littorio, zara, deutschland; König in the scenarios).
+    Fragments (`Effects`) read q as at 8".
+    - **Benches (Lambert-Jonas P1a → P1b):** goldens 326 cases gain the new blocks and the eight their new names
+      (`ShipDesign.Version` 20; nothing else moved), 372/372. `pen-check` D: 8 of 12 early trials agree (the misses:
+      the two uncapped shells P2's shatter answers; Annapolis's all-steel armour, which the bench maps to the
+      structural "steel" 0.70 against Schneider's 0.78; Baden's conning tower at 30°, V_L 456 m/s against 472, q
+      0.85 where the plate held at ≥ 0.89).
+    - `hits`: yamato by yamato at 25 km ricochets 7.5 → 26.2%, bursts beyond 19.3 → 11.7%, water 328 → 236 t (her
+      "Molybdenum steel" decks were the 0.6 catch-all, now 0.93 against an 18″); iron_duke by seydlitz defeated
+      40.3 → 38.8% (her WWI cemented armour now 0.85, though the plating's steel went 0.55 → 0.70), water 8 → 4 t;
+      light_cruiser and tb_destroyer within a point. `matchup` arethusa:4 v iron_duke 0.577 → 0.543 (Iron Duke's
+      305 mm belt now 259 against an 8″ and less), lion v seydlitz 1.164 → 1.228; duel 5.5 → 5.6%. Squadrons 40 min:
+      Britain 1 → 1 lost (Princess Royal, not Lion), Germany 0 → 1 (Von der Tann); tsushima --play 2 seeds Russia
+      3.5 → 4.5, Japan 4.5 → 3.
 - **P1c Densities** (shipgen only).
   - Mass by the material's density: report the shifts (the ironclads, PT boats, aluminium houses), `golden-update`
     with a `ShipDesign.Version` bump, `mono-check`.
@@ -983,7 +1025,7 @@ None blocks a step; each is settled by its step's bench.
 | S5 | S2 | the loadout applied and resolved | per-ship loadouts: scenarios, dev flag, bench (done) | only for ships given one |
 | P0 | — | materials table, upgrade (done) | material rows (done) | no |
 | P1a | P0 | — | vanilla Thompson, Cardano inverse, Lambert-Jonas, pen-check bench (done) | penetration (−2 to −6% big guns, more for small) |
-| P1b | P1a | material catalogue | Q(D) | penetration |
+| P1b | P1a | material catalogue, split names (done) | Q(D) (done) | penetration |
 | P1c | P0 | densities | — | weights |
 | P2 | S2, P1b | — | caps, shatter, break-up | outcomes |
 | P3 | P2 | — | fuzes; rows gone; water fuze on | burst points |

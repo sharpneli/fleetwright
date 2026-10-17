@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using Fleetwright.Shipgen;
 using Fleetwright.Sim.Combat;
+using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Shipgen.Cli;
 
@@ -156,7 +157,7 @@ static class PenCheck
     /// shells and shatter aren't modelled until P2.</summary>
     static void Early()
     {
-        Header("D. Early trials through the game's V_L with the catalogue's q (P0's values; shatter and caps are P2's)");
+        Header("D. Early trials through the game's V_L with the catalogue's materials (q by calibre and plate; shatter and caps are P2's)");
         Console.WriteLine("| trial | material | q | T/D | V m/s | game V_L | game | actual | q implied |");
         Console.WriteLine("|---|---|---|---|---|---|---|---|---|");
         (string Name, double D, double W, double V, double T, double Ob, string Mat, string Rel)[] rows =
@@ -186,7 +187,7 @@ static class PenCheck
         int agree = 0, judged = 0;
         foreach (var (name, d, w, vf, t, ob, mat, rel) in rows)
         {
-            double q = MaterialTemplates.Get(mat)!.Q!.Value, cal = d * In, kg = w * Lb, v = vf * Fps, mm = t * In;
+            double cal = d * In, kg = w * Lb, v = vf * Fps, mm = t * In, q = MaterialRow.Of(MaterialTemplates.Get(mat)!).Against(mm, cal);
             double vl = Terminal.LimitMs(q * mm, cal, kg, ob), implied = Terminal.PenMm(v, cal, kg, ob) / mm;
             string game = v >= vl ? "through" : "held";
             string actual = rel switch { "<" => "through", ">" => "held", "=" => "limit", _ => "-" };

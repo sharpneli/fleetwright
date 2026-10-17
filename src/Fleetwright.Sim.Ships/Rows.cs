@@ -458,6 +458,39 @@ public readonly record struct Neighbour(int Cell, JoinKind Join, int Through);
 
 public readonly record struct ArmourLayer(double Mm, int Material);
 
+/// <summary>A material as plates of it resist shells (docs/battle/shells-armour-damage.md P1b; armor/00 §4.2): q, the
+/// share of the formula's plate (WWII STS) it's worth against an 8" capped shell; face-hardened plate's calibre scaling
+/// k and its face (share, and the thinnest plate made so, mm); homogeneous plate's elongation, %. Absent: no scaling
+/// (k 0), not face-hardened (FaceMinMm NaN), elongation 25.</summary>
+public readonly record struct MaterialRow(double Q, double QScale, double FaceShare, double FaceMinMm, double ElongationPct)
+{
+    const double EightIn = 8 * 25.4;
+
+    public bool FaceHardened => !double.IsNaN(FaceMinMm);
+
+    public static MaterialRow Of(MaterialInput m) => new(m.Q ?? 1, m.QScale ?? 0, m.FaceHardened?.Share ?? double.NaN,
+        m.FaceHardened is { } f ? f.MinMm ?? 0 : double.NaN, m.ElongationPct ?? 25);
+
+    /// <summary>The plate's worth as a share of its thickness against a shell of a calibre (00 §4.2's rules, all by the
+    /// material's numbers): face-hardened plate q·(D/8")^−k past 8" (held at q below), and no face-hardened advantage
+    /// (×0.9) under max(the thinnest made, 0.3 calibres); homogeneous plate under 25% elongation loses to shells over
+    /// 8" by Okun's M79 penalty, 1 − (1 − √(El/25))·min(D − 8", 8")/8".</summary>
+    public double Against(double tMm, double calibreMm)
+    {
+        double q = Q;
+        if (FaceHardened)
+        {
+            if (calibreMm > EightIn && QScale != 0)
+                q *= Math.Pow(calibreMm / EightIn, -QScale);
+            if (tMm < Math.Max(FaceMinMm, 0.3 * calibreMm))
+                q *= 0.9;
+        }
+        else if (ElongationPct < 25 && calibreMm > EightIn)
+            q *= 1 - (1 - Math.Sqrt(ElongationPct / 25)) * Math.Min((calibreMm - EightIn) / EightIn, 1);
+        return q;
+    }
+}
+
 public readonly record struct RoomRow
 {
     public RoomKind Kind { get; init; }

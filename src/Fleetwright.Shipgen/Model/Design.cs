@@ -254,12 +254,27 @@ public sealed record ExplosiveInput
 }
 
 /// <summary>A material (docs/shipgen/material-templates.md): its density, t/m³ (read from P1c of the shells, armour and
-/// damage plan), and its resistance as a share of the same thickness of the penetration formula's plate (q: Krupp
-/// cemented and STS 1). The fields it doesn't give are the catalogue's block of the same name, else steel's.</summary>
+/// damage plan), and its resistance as a share of the same thickness of the penetration formula's plate (q, against an
+/// 8" capped shell: WWII STS 1); for face-hardened plate the calibre scaling past 8" (q_scale, k: q·(D/8")^−k) and the
+/// face (its share of the plate, and the thinnest plate made so), for homogeneous plate its elongation (under 25%, it
+/// loses to shells over 8": Okun's M79 penalty). The rules are the sim's (MaterialRow). The fields it doesn't give are
+/// the catalogue's block of the same name, else steel's.</summary>
 public sealed record MaterialInput
 {
     public double? DensityTPerM3 { get; init; }
     public double? Q { get; init; }
+    public double? QScale { get; init; }
+    public FaceInput? FaceHardened { get; init; }
+    public double? ElongationPct { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>materials.NAME.face_hardened: the hard face's share of the plate's thickness, and the thinnest plate made
+/// face-hardened, mm (under max(it, 0.3 calibres) the plate has no face-hardened advantage).</summary>
+public sealed record FaceInput
+{
+    public double? Share { get; init; }
+    public double? MinMm { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

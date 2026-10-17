@@ -72,7 +72,7 @@ public static class ShipClassCompiler
             c.points = points.ToArray();
             c.numbers = numbers.ToArray();
             c.materials = materialNames.ToArray();
-            c.materialQ = [.. materialNames.Select(MaterialQ)];
+            c.materialRows = [.. materialNames.Select(MaterialOf)];
             c.componentIds = [.. hb.Components.Select(x => x.Id)];
             c.cellIds = [.. hb.Cells.Select(x => x.Id)];
             c.roomIds = [.. hb.Rooms.Select(x => x.Id)];
@@ -162,9 +162,9 @@ public static class ShipClassCompiler
             return i;
         }
 
-        /// <summary>A material's q from the report's table (every name the parts give, resolved by shipgen).</summary>
-        double MaterialQ(string name) =>
-            ship.Report.Materials?.GetValueOrDefault(name)?.Q is double q && q > 0 ? q
+        /// <summary>A material's row from the report's table (every name the parts give, resolved by shipgen).</summary>
+        MaterialRow MaterialOf(string name) =>
+            ship.Report.Materials?.GetValueOrDefault(name) is { Q: > 0 } m ? MaterialRow.Of(m)
                 : throw new ShipCompileException($"material {name}: not in report.materials, or no q");
 
         P3 Point3(double[]? p) => p switch

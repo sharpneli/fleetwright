@@ -131,7 +131,7 @@ public static class Terminal
             if (!solid && (x.Plate == PlateKind.None || !(x.Mm > 0)))
                 continue;
 
-            double t = x.Mm > 0 ? x.Mm * c.MaterialQ(x.Material) : 0;
+            double t = x.Mm > 0 ? x.Mm * c.MaterialQ(x.Material, x.Mm, calMm) : 0;
             double ob = Obliquity(hit.Direction, x.Normal);
             if (nose)
             {
