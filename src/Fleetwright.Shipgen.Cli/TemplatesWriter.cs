@@ -6,11 +6,11 @@ using System.Text.Json.Nodes;
 
 namespace Fleetwright.Shipgen.Cli;
 
-/// <summary>`shipgen templates`: the shell, explosive and material catalogues (ShellTemplates, Explosives,
-/// MaterialTemplates: their one source) written out as the game's template assets, `Content/Templates/shells.json`,
-/// `explosives.json` and `materials.json` (entries {name, group, note, value}, as tools/designer_templates.py writes the
-/// others), and as the docs' pages, docs/shipgen/shell-templates.md, explosive-templates.md and material-templates.md.
-/// Never edit those by hand.</summary>
+/// <summary>`shipgen templates`: the shell, explosive, material and fittings catalogues (ShellTemplates, Explosives,
+/// MaterialTemplates, Fittings: their one source) written out as the game's template assets, `Content/Templates/shells.json`,
+/// `explosives.json`, `materials.json` and `fittings.json` (entries {name, group, note, value}, as
+/// tools/designer_templates.py writes the others), and as the docs' pages, docs/shipgen/shell-templates.md,
+/// explosive-templates.md, material-templates.md and fittings-templates.md. Never edit those by hand.</summary>
 static class TemplatesWriter
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -36,11 +36,50 @@ static class TemplatesWriter
         }).ToArray());
         Write(Path.Combine(repo, "Content", "Templates", "shells.json"), shells.ToJsonString(json) + "\n");
         Write(Path.Combine(repo, "Content", "Templates", "explosives.json"), explosives.ToJsonString(json) + "\n");
+        var fittings = new JsonArray(Fittings.All.Select(f => (JsonNode)new JsonObject
+        {
+            ["name"] = f.Name, ["group"] = "", ["note"] = f.Note, ["value"] = Value(f.Value),
+        }).ToArray());
         Write(Path.Combine(repo, "Content", "Templates", "materials.json"), materials.ToJsonString(json) + "\n");
+        Write(Path.Combine(repo, "Content", "Templates", "fittings.json"), fittings.ToJsonString(json) + "\n");
         Write(Path.Combine(repo, "docs", "shipgen", "shell-templates.md"), ShellPage());
         Write(Path.Combine(repo, "docs", "shipgen", "explosive-templates.md"), ExplosivePage());
         Write(Path.Combine(repo, "docs", "shipgen", "material-templates.md"), MaterialPage());
+        Write(Path.Combine(repo, "docs", "shipgen", "fittings-templates.md"), FittingsPage());
         return 0;
+    }
+
+    static string FittingsPage()
+    {
+        var sb = new StringBuilder();
+        sb.Append("""
+            # Fittings templates
+
+            Written by `shipgen templates` from `src/Fleetwright.Shipgen/Fittings.cs`; don't edit by hand. The designer's
+            templates are `Content/Templates/fittings.json`, from the same table.
+
+            A design's `fittings` block says how its gear is mounted. Its one number so far is `shock_grade`, G0 to G3
+            (`docs/battle/damage/17_service_network_faults.md` §2.2; decision 10 of docs/battle/shells-armour-damage.md):
+            how hard a shock trips its breakers, lamps and generators, from the hull's shock factor at the device. The
+            armour shock of a hit that didn't get through (E4), the near misses (E7) and later the service networks read it.
+            A device the ship doesn't carry can't fail, so an early ship with few breakers trips little whatever its grade.
+            A design that gives none is G0. The notes say who fitted to each grade; the design carries the grade, not the
+            year (old designs got theirs from their navy and their plant's year when the format moved to 4).
+
+            ```json
+            "fittings": {"shock_grade": "G1"}
+            ```
+
+            | Template | Grade |
+            |---|---|
+
+            """.Replace("\r\n", "\n"));
+        foreach (var f in Fittings.All)
+            sb.Append(Inv, $"| {f.Name} | {f.Grade} |\n");
+        sb.Append('\n');
+        foreach (var f in Fittings.All)
+            sb.Append("- **").Append(f.Name).Append(":** ").Append(f.Note).Append('\n');
+        return sb.ToString();
     }
 
     static string MaterialPage()

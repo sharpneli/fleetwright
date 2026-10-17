@@ -283,6 +283,7 @@ public abstract class Style
             if (v != null)
                 errs.Add($"hull.{k}: the designer works out the hull's size from what it carries; remove it");
         errs.AddRange(HullWeight.Validate(design));
+        errs.AddRange(Fittings.Validate(design));
         errs.AddRange(Topside.Validate(design));
         errs.AddRange(Armour.ArmourErrors(design));
         errs.AddRange(FireControl.Validate(design));

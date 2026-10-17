@@ -1,5 +1,5 @@
 {
- "version": 3,
+ "version": 4,
  "id": "indefatigable",
  "name": "Indefatigable-like (1911)",
  "type": "BC",
@@ -13,7 +13,9 @@
    "name": "Mild steel hull, high-tensile strength deck, riveted",
    "yield_mpa": 290,
    "join_factor": 1.1,
-   "standard": 1
+   "standard": 1,
+   "shell": "riveted",
+   "internals": "riveted"
   },
   "plating": {
    "shell_mm": 0,
@@ -410,5 +412,8 @@
     "holed_u": 1
    }
   }
+ },
+ "fittings": {
+  "shock_grade": "G0"
  }
 }

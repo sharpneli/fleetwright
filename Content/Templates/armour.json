@@ -192,22 +192,6 @@
   }
  },
  {
-  "name": "Terni cemented, high-tensile steel decks",
-  "group": "",
-  "note": "as in littorio, zara",
-  "value": {
-   "barbettes": "Terni cemented",
-   "belt": "Terni cemented",
-   "bulkheads": "Terni cemented",
-   "conning_tower": "Terni cemented",
-   "decks": "high-tensile steel",
-   "end_belts": "Terni cemented",
-   "secondary": "Terni cemented",
-   "turrets": "Terni cemented",
-   "upper_belt": "Terni cemented"
-  }
- },
- {
   "name": "Witkowitz cemented",
   "group": "",
   "note": "as in tegetthoff",
@@ -338,29 +322,13 @@
  {
   "name": "cemented armour, non-cemented armour decks",
   "group": "",
-  "note": "as in all_forward, all_forward_flush",
+  "note": "as in nelson",
   "value": {
    "barbettes": "cemented armour",
    "belt": "cemented armour",
    "bulkheads": "cemented armour",
    "conning_tower": "cemented armour",
    "decks": "non-cemented armour",
-   "end_belts": "cemented armour",
-   "secondary": "non-cemented armour",
-   "turrets": "cemented armour",
-   "upper_belt": "cemented armour"
-  }
- },
- {
-  "name": "cemented armour, special steel decks",
-  "group": "",
-  "note": "as in dunkerque, richelieu",
-  "value": {
-   "barbettes": "cemented armour",
-   "belt": "cemented armour",
-   "bulkheads": "cemented armour",
-   "conning_tower": "cemented armour",
-   "decks": "special steel",
    "end_belts": "cemented armour",
    "secondary": "cemented armour",
    "turrets": "cemented armour",
@@ -416,19 +384,51 @@
   }
  },
  {
-  "name": "Krupp cemented, Wotan decks",
+  "name": "French cemented (1930s), special steel decks",
+  "group": "",
+  "note": "as in dunkerque, richelieu",
+  "value": {
+   "barbettes": "French cemented (1930s)",
+   "belt": "French cemented (1930s)",
+   "bulkheads": "French cemented (1930s)",
+   "conning_tower": "French cemented (1930s)",
+   "decks": "special steel",
+   "end_belts": "French cemented (1930s)",
+   "secondary": "French cemented (1930s)",
+   "turrets": "French cemented (1930s)",
+   "upper_belt": "French cemented (1930s)"
+  }
+ },
+ {
+  "name": "Terni cemented (1930s), high-tensile steel decks",
+  "group": "",
+  "note": "as in littorio, zara",
+  "value": {
+   "barbettes": "Terni cemented (1930s)",
+   "belt": "Terni cemented (1930s)",
+   "bulkheads": "Terni cemented (1930s)",
+   "conning_tower": "Terni cemented (1930s)",
+   "decks": "high-tensile steel",
+   "end_belts": "Terni cemented (1930s)",
+   "secondary": "Terni cemented (1930s)",
+   "turrets": "Terni cemented (1930s)",
+   "upper_belt": "Terni cemented (1930s)"
+  }
+ },
+ {
+  "name": "Krupp cemented (KC n/A), Wotan decks",
   "group": "",
   "note": "as in deutschland",
   "value": {
-   "barbettes": "Krupp cemented",
-   "belt": "Krupp cemented",
-   "bulkheads": "Krupp cemented",
-   "conning_tower": "Krupp cemented",
+   "barbettes": "Krupp cemented (KC n/A)",
+   "belt": "Krupp cemented (KC n/A)",
+   "bulkheads": "Krupp cemented (KC n/A)",
+   "conning_tower": "Krupp cemented (KC n/A)",
    "decks": "Wotan",
-   "end_belts": "Krupp cemented",
-   "secondary": "Krupp cemented",
-   "turrets": "Krupp cemented",
-   "upper_belt": "Krupp cemented"
+   "end_belts": "Krupp cemented (KC n/A)",
+   "secondary": "Krupp cemented (KC n/A)",
+   "turrets": "Krupp cemented (KC n/A)",
+   "upper_belt": "Krupp cemented (KC n/A)"
   }
  },
  {
@@ -445,6 +445,22 @@
    "secondary": "Krupp cemented (KC n/A)",
    "turrets": "Krupp cemented (KC n/A)",
    "upper_belt": "Krupp cemented (KC n/A)"
+  }
+ },
+ {
+  "name": "cemented armour (CA), non-cemented armour decks",
+  "group": "",
+  "note": "as in all_forward, all_forward_flush",
+  "value": {
+   "barbettes": "cemented armour (CA)",
+   "belt": "cemented armour (CA)",
+   "bulkheads": "cemented armour (CA)",
+   "conning_tower": "cemented armour (CA)",
+   "decks": "non-cemented armour",
+   "end_belts": "cemented armour (CA)",
+   "secondary": "non-cemented armour",
+   "turrets": "cemented armour (CA)",
+   "upper_belt": "cemented armour (CA)"
   }
  }
 ]

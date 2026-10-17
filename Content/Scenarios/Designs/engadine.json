@@ -1,5 +1,5 @@
 {
- "version": 3,
+ "version": 4,
  "id": "engadine",
  "name": "Engadine-like seaplane carrier (1911)",
  "type": "AV",
@@ -13,7 +13,9 @@
    "name": "High-tensile steel (D, Ducol, HTS), riveted",
    "yield_mpa": 340,
    "join_factor": 1.08,
-   "standard": 1
+   "standard": 1,
+   "shell": "riveted",
+   "internals": "riveted"
   },
   "plating": {
    "shell_mm": 0,
@@ -319,5 +321,8 @@
     "holed_u": 1
    }
   }
+ },
+ "fittings": {
+  "shock_grade": "G0"
  }
 }

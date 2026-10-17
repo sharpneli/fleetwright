@@ -72,6 +72,27 @@ public enum Extent : byte
     Box,
 }
 
+/// <summary>How a hull's plates are joined (hull.construction.shell and .internals; docs/battle/shells-armour-damage.md
+/// E0): what the blast's boundaries hold (riveted ×0.85), the belt's seep and the seams' leak read.</summary>
+[JsonConverter(typeof(SnakeEnumConverter<Joint>))]
+public enum Joint : byte
+{
+    Riveted,
+    Welded,
+}
+
+/// <summary>How the ship's fittings stand shock (fittings.shock_grade; docs/damage 17 service §2.2): G0 unsecured, G1
+/// secured, G2 shock-tested, G3 post-war grade-A gear. Written as its members' names ("G1"), as the research names
+/// them.</summary>
+[JsonConverter(typeof(JsonStringEnumConverter<ShockGrade>))]
+public enum ShockGrade : byte
+{
+    G0,
+    G1,
+    G2,
+    G3,
+}
+
 /// <summary>An enum's members by their snake_case names, both ways.</summary>
 public static class SnakeEnum<T> where T : struct, Enum
 {

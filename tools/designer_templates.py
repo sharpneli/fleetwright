@@ -65,6 +65,7 @@ SIDE = {
     "STS": 0.85, "special treatment steel": 0.85, "Class B": 0.85, "Vickers hardened": 0.90,
     "Witkowitz cemented": 0.95, "Terni cemented": 0.97, "cemented armour": 1.00, "Krupp cemented": 1.00,
     "Vickers cemented": 1.00, "Class A": 1.00, "Class A armour": 1.00, "Krupp cemented (KC n/A)": 1.05,
+    "French cemented (1930s)": 1.05, "cemented armour (CA)": 1.10, "Terni cemented (1930s)": 1.12,   # P1b's 1930s plates
 }
 DECK = {
     "wrought iron": 0.60, "mild steel": 0.70, "steel": 0.70, "compound": 0.70, "high-tensile steel": 0.80,

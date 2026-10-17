@@ -7,7 +7,9 @@
    "name": "Wrought iron, riveted",
    "yield_mpa": 190,
    "join_factor": 1.12,
-   "standard": 1.0
+   "standard": 1.0,
+   "shell": "riveted",
+   "internals": "riveted"
   }
  },
  {
@@ -18,7 +20,9 @@
    "name": "Mild steel, riveted",
    "yield_mpa": 235,
    "join_factor": 1.1,
-   "standard": 1.0
+   "standard": 1.0,
+   "shell": "riveted",
+   "internals": "riveted"
   }
  },
  {
@@ -29,7 +33,9 @@
    "name": "Mild steel hull, high-tensile strength deck, riveted",
    "yield_mpa": 290,
    "join_factor": 1.1,
-   "standard": 1.0
+   "standard": 1.0,
+   "shell": "riveted",
+   "internals": "riveted"
   }
  },
  {
@@ -40,7 +46,9 @@
    "name": "High-tensile steel (D, Ducol, HTS), riveted",
    "yield_mpa": 340,
    "join_factor": 1.08,
-   "standard": 1.0
+   "standard": 1.0,
+   "shell": "riveted",
+   "internals": "riveted"
   }
  },
  {
@@ -51,7 +59,9 @@
    "name": "High-tensile steel, riveted shell, welded internals",
    "yield_mpa": 350,
    "join_factor": 1.04,
-   "standard": 1.0
+   "standard": 1.0,
+   "shell": "riveted",
+   "internals": "welded"
   }
  },
  {
@@ -62,7 +72,9 @@
    "name": "High-tensile and structural STS, mostly welded",
    "yield_mpa": 420,
    "join_factor": 1.02,
-   "standard": 1.0
+   "standard": 1.0,
+   "shell": "welded",
+   "internals": "welded"
   }
  },
  {
@@ -73,7 +85,9 @@
    "name": "High-tensile steel, all welded",
    "yield_mpa": 350,
    "join_factor": 1.0,
-   "standard": 1.0
+   "standard": 1.0,
+   "shell": "welded",
+   "internals": "welded"
   }
  },
  {
@@ -84,7 +98,9 @@
    "name": "HY-80, all welded",
    "yield_mpa": 420,
    "join_factor": 1.0,
-   "standard": 1.0
+   "standard": 1.0,
+   "shell": "welded",
+   "internals": "welded"
   }
  }
 ]

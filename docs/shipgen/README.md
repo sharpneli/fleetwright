@@ -248,6 +248,16 @@ The design gives no size. The designer works out the hull from what it carries (
 - Beyond 350 m (`hullweight.LONG`, not in the research) a hull bends like 350 m of itself, since no ocean wave is longer, and minimum gauge stops growing. Only absurd designs get there.
 - A hull that needs more strength plating than everything else together warns that it's very long for its depth.
 - Planing craft ignore it and keep the volume law (`hull_k`) until light hulls are researched.
+- **The joints**, `shell` and `internals`: `riveted` or `welded` (welded when absent), how the shell plating and the
+  decks, bulkheads and framing are joined. They weigh nothing (`join_factor` carries that); the damage model reads them
+  (E0 of `docs/battle/shells-armour-damage.md`): riveted boundaries hold a blast ×0.85, a welded skin seeps ×0.6 behind
+  a struck belt, a welded seam leaks ×0.4. The hull templates set both. `report.json`'s `hull` gives them.
+
+`fittings` is how the ship's gear is mounted (`Fittings.cs`). Its one number is `shock_grade`, `G0` unsecured, `G1`
+secured, `G2` shock-tested or `G3` post-war grade A (`docs/battle/damage/17_service_network_faults.md` §2.2): how hard a
+shock trips breakers, lamps and generators. G0 when absent; `fittings-templates.md` says who fitted to each. It weighs
+nothing yet (G2's +1-2% of electrical weight is flagged, not built). Read by a hit's armour shock, near misses and later
+the service networks. `report.json` gives it as `fittings.shock_grade`.
 
 `hull.plating` is the unarmoured hull's plating for the damage model: `shell_mm`, the side shell's least thickness (keel to main deck, raised stretches too), and `material`, a plain string for the game. 0 means the structure's own: minimum gauge at the ends, strength plating amidships where the girder needs it (planing craft: `planing.PLANK_MM`, 25 mm of planking). A thicker shell, a splinter strake such as a cruiser's 25 mm STS over the machinery, is weighed as plain plate over the side, less what side armour covers (`report.json` `hull.shell_plating_t`). It isn't credited in the girder. Every design writes it. `shell_mm` is 0 throughout, since side protection on these ships is modelled as belts and strakes. Destroyer at 19 mm: +157 t of plating, 983 → 1,111 t of hull.
 `deck_wood_mm` is planking laid on the weather deck (teak, 0.7 t/m³; 0 is bare steel): a fire load for the game, as on the wooden-decked ships of 1890–1905 or Essex's flight deck, and weight high up. It lies on the main deck (raised stretches stand over the same area), or on the flight deck on a carrier that has one (`Style.weather_deck`). Battleship at 76 mm: 363 t; fleet carrier: 441 t. Every design writes it: 100 mm on the Victorian ships, about 76 mm on Great War and treaty capital ships, US-style WWII battleships and the Essex-like flight deck, 50–64 mm on cruisers and later European battleships, and 0 on destroyers, merchants, steel-decked carriers and wooden boats.
@@ -409,7 +419,7 @@ The player never enters tonnage or positions. The allowed ranges are `styles.bas
     - volumes: living, provisions, water (and how much of it is in the double bottom), distiller output
     - space: needed against usable
     - the comfort inputs: sleeping area per man against the standard's, headroom against deck height, berth ratio, sickbay beds, tolerance days, endurance against fuel range
-  - `hull`: the structure (`construction` name, `structure_t`, split into `min_gauge_t` and `strength_t`), its plating (`plate_min_mm`, `plate_strength_mm`, and `shell_plating_t`, what `hull.plating.shell_mm` added) and its `girder` amidships: `allowable_stress_mpa`, the moment of inertia it needs (`required_m4`) and what carries it (`plating_m4`, `armour_decks_m4`). For the damage model: the hull breaks when what's left of plating plus armour decks falls well below what's needed. Planing craft give only `structure_t`.
+  - `hull`: the structure (`construction` name, its joints `shell` and `internals`, `structure_t`, split into `min_gauge_t` and `strength_t`), its plating (`plate_min_mm`, `plate_strength_mm`, and `shell_plating_t`, what `hull.plating.shell_mm` added) and its `girder` amidships: `allowable_stress_mpa`, the moment of inertia it needs (`required_m4`) and what carries it (`plating_m4`, `armour_decks_m4`). For the damage model: the hull breaks when what's left of plating plus armour decks falls well below what's needed. Planing craft give only `structure_t`.
   - `plant`: the plant's static numbers for the game (`powerplant.published`), and how it sits in the hull:
     - power: rated and continuous kW, overload headroom, shafts and units
     - fuel: fuel rate and the part-load curve

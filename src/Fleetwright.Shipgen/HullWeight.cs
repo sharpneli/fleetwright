@@ -2,9 +2,11 @@ using System.Text.Json.Serialization;
 
 namespace Fleetwright.Shipgen;
 
-/// <summary>The hull's construction standard: its steel's yield, how much joining adds, and how heavy its plate runs
-/// against the norm.</summary>
-public sealed record Construction(string Name, double YieldMpa, double JoinFactor, double Standard, double RhoTPerM3 = Weight.Steel)
+/// <summary>The hull's construction standard: its steel's yield, how much joining adds, how heavy its plate runs
+/// against the norm, and how its shell and internals are joined (E0 of docs/battle/shells-armour-damage.md: read by the
+/// damage model, not the weights, which join_factor carries).</summary>
+public sealed record Construction(string Name, double YieldMpa, double JoinFactor, double Standard, double RhoTPerM3 = Weight.Steel,
+    Joint Shell = Joint.Welded, Joint Internals = Joint.Welded)
 {
     /// <summary>The hull's plate, t per m² per mm: its plating material's density (hull.plating.material; P1c).</summary>
     public double Rho => RhoTPerM3 / 1000;
@@ -56,7 +58,9 @@ public static class HullWeight
     {
         var c = design.Hull?.Construction;
         return new Construction(c?.Name ?? "High-tensile steel, all welded", c?.YieldMpa ?? 350, c?.JoinFactor ?? 1.00,
-            c?.Standard ?? 1.0, MaterialTemplates.Density(design, design.Hull?.Plating?.Material));
+            c?.Standard ?? 1.0, MaterialTemplates.Density(design, design.Hull?.Plating?.Material),
+            Fittings.TryParseJoint(c?.Shell, out var shell) ? shell : Joint.Welded,
+            Fittings.TryParseJoint(c?.Internals, out var internals) ? internals : Joint.Welded);
     }
 
     /// <summary>hull.plating with its defaults filled in.</summary>

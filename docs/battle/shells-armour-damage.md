@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, P0, P1a-c, P2-P4 and P6 done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass) and E0 done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1133,6 +1133,32 @@ squadrons, and changes `Matchup.cs` with it.
   reported and compiled; the templates set them (hull templates' joints, shock grades by navy and year); `DesignFormat`
   upgrades old designs from their construction's name and their year label, with a warning when it can't tell. Goldens
   gain the keys only.
+  - **Done 2026-10-17.** What it came to:
+    - **The inputs:** `hull.construction.shell` and `.internals`, `riveted` or `welded` (welded when absent, as the
+      default all-welded block), and a design-level `fittings` block with `shock_grade`, `G0`-`G3` as the research
+      writes them (G0 when absent). `Fittings.cs` (shipgen) validates them, holds the grades' catalogue and the
+      upgrade's rules; `Joint` and `ShockGrade` are enums in `Kinds.cs`, which the sim shares.
+    - **Reported and compiled:** `report.hull.shell`/`internals` (every hull, planing craft too) and
+      `report.fittings.shock_grade`; `ShipClass.ShellJoint`, `InternalsJoint` and `ShockGrade`. Nothing reads them
+      yet. The weights don't: `join_factor` still carries what the joints weigh.
+    - **The templates:** the hull templates' blocks name their joints (`hull-templates.md`, `hulls.json`); the four
+      grades are `fittings-templates.md` and `Content/Templates/fittings.json`, from `shipgen templates`, each note
+      saying who fitted to it. No designer row yet (a UI session).
+    - **The upgrade** (format 4): joints from the construction's name ("riveted shell, welded internals" both, else
+      riveted or welded throughout); the grade by look.navy and the plant's year label (machinery.tech's "(1915)"):
+      the RN G1 from a 1940 label, the USN (and the generic look, as S1 took it) G1 from 1942 and G2 from 1943, every
+      navy G3 from 1946, merchants and the rest G0. What it can't tell takes the default with a warning in the
+      report (`Design.UpgradeWarnings`; `shipgen upgrade` prints them). 125 files upgraded (72 shipped, 53
+      scenario), none needing a warning: 98 riveted throughout and 9 riveted shell, welded internals (bismarck, kgv,
+      littorio, richelieu, yamato, the generic destroyer, heavy cruiser, fleet carrier, overloaded), the rest
+      welded; G0 but victory_1944 (G1), the generic battleship (G2) and the nine post-war designs (G3).
+    - **Benches, before and after:** `hits` (v25 by lion, iron_duke by seydlitz), `matchup` (lion v seydlitz) and
+      the squadrons' 30 minutes identical line for line; the state hash moved (BE2C47A3DCD99877 to
+      972F94C3DFA06E70) as the designs' JSON did, as at S0. Goldens: the design gains its keys and version 4, the
+      report `hull.shell`/`internals` and `fittings` (golden-update, ShipDesign.Version 25); 372 of 372.
+    - **On the way:** `tools/designer_templates.py` had no ratings for P1b's split names ("cemented armour (CA)",
+      "Terni cemented (1930s)", "French cemented (1930s)") and stopped; they're in, so `armour.json` now lists the
+      schemes kgv, dunkerque, richelieu, littorio and zara really have.
 - **E1 The burst's pieces** (13).
   - **At compile, per shell type:** the body's own charge-to-metal ratio (80-90% of the filler against 55-65% of the
     metal), the bore and wall that follow from it, then:
@@ -1327,7 +1353,7 @@ None blocks a step; each is settled by its step's bench.
 | P5 | P1a | — | angles | ricochets, paths |
 | P6 | — | — | under water (done) | underwater hits |
 | P7 | P0 | gratings, backing | scatter | plates |
-| E0 | — | joints, shock grade | compiled | no |
+| E0 | — | joints, shock grade (done) | compiled (done) | no |
 | E1 | S1, P0 | — | the burst's pieces, THOR, `frag` bench | fragments |
 | E2 | P4, E1 | — | holed-but-broken, flash | damage |
 | E3 | P4, E1 | — | spall | damage behind armour |

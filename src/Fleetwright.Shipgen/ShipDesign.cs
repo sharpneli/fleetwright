@@ -6,7 +6,7 @@ public static class ShipDesign
 {
     /// <summary>The generator's version: bumped whenever its output changes on purpose (each `golden-update` commit), so
     /// anything compiled from a build (a ShipClass, a cache entry) knows it's stale.</summary>
-    public const int Version = 24;
+    public const int Version = 25;
 
     /// <summary>Input errors. limits false skips the numeric ranges (--no-limits); structural checks stay.</summary>
     public static List<string> Validate(Design design, bool limits = true)
@@ -330,11 +330,12 @@ public static class ShipDesign
     static HullReport HullReport(Design design, Navarch.Result r)
     {
         var h = r.Hull;
+        var c = HullWeight.ConstructionOf(design);
         if (!h.PlateModel)
-            return new HullReport { StructureT = Math.Round(h.T) };
+            return new HullReport { Shell = c.Shell, Internals = c.Internals, StructureT = Math.Round(h.T) };
         return new HullReport
         {
-            Construction = HullWeight.ConstructionOf(design).Name, StructureT = Math.Round(h.T), MinGaugeT = Math.Round(h.MinGaugeT!.Value),
+            Construction = c.Name, Shell = c.Shell, Internals = c.Internals, StructureT = Math.Round(h.T), MinGaugeT = Math.Round(h.MinGaugeT!.Value),
             StrengthT = Math.Round(h.StrengthT!.Value), PlateMinMm = Math.Round(h.TMinMm!.Value, 1), PlateStrengthMm = Math.Round(h.TStrMm!.Value, 1),
             ShellPlatingT = Math.Round(h.ShellT),
             Girder = new Girder(Math.Round(h.StressMpa!.Value, 1), Math.Round(h.IReqM4!.Value, 2), Math.Round(h.IPlatingM4!.Value, 2),
@@ -381,7 +382,7 @@ public static class ShipDesign
             Inputs = design, Results = results, Shells = shells.Count > 0 ? shells : null,
             Materials = materials.Count > 0 ? materials : null,
             Summary = Styles.Get(design).Summary(sized, lay, r),
-            Plant = PlantReport(lay, r), Hull = HullReport(design, r), Crew = lay.Crew, FireControl = FireControl.Report(lay, r.Freeboard),
+            Plant = PlantReport(lay, r), Hull = HullReport(design, r), Fittings = new FittingsReport(Fittings.GradeOf(design)), Crew = lay.Crew, FireControl = FireControl.Report(lay, r.Freeboard),
             Bridge = lay.Geo.Bridge != null ? BridgeReport(lay, r.Freeboard) : null, WeightGroupsT = groups,
             Weights = r.Weights.Select(w => new WeightReport(w.Name, w.Group, Math.Round(w.W, 1), Math.Round(w.X, 2), Math.Round(w.Z!.Value, 2))).ToList(),
         };

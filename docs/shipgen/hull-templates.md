@@ -22,6 +22,8 @@ volume law (`hull_k`) until wooden and light-alloy hulls are researched.
 | `yield_mpa` | Yield stress of the hull-girder steel mix (high-tensile steel in the strength deck and sheer strake, mild steel elsewhere). The allowable stress is yield / 2.1, capped at 185 MPa. It only matters where the hull is strength driven: big, long ships. Small ships are built to minimum plate gauge whatever the steel. |
 | `join_factor` | Multiplies all structure: riveted laps and butt straps (1.08-1.12) against all welded (1.0). |
 | `standard` | Scales the minimum plate gauge: 0.75 a torpedo craft's, 0.85 light, 1.0 naval, 1.25 robust. Light structure saves weight on small ships and leaves thinner plate. The designer's Scantlings knob; picking a template keeps it. |
+| `shell` | How the shell plating is joined, `riveted` or `welded`. The damage model reads it (E0 of `docs/battle/shells-armour-damage.md`): riveted boundaries hold a blast ×0.85, a welded skin seeps ×0.6 behind a struck belt, a welded seam leaks ×0.4. The weights don't: `join_factor` carries what the joints weigh. Welded when absent. |
+| `internals` | The same for the decks, bulkheads and framing inside. |
 
 A continuous armour deck over amidships is part of the hull girder, so it saves strength plating: more the
 thicker it is and the farther it is from the neutral axis (0.45 of the depth above the keel).
@@ -29,47 +31,47 @@ thicker it is and the farther it is from the neutral axis (0.45 of the depth abo
 ## Wrought iron, riveted (up to about 1885)
 
 ```json
-"construction": {"name": "Wrought iron, riveted", "yield_mpa": 190, "join_factor": 1.12, "standard": 1.0}
+"construction": {"name": "Wrought iron, riveted", "yield_mpa": 190, "join_factor": 1.12, "standard": 1.0, "shell": "riveted", "internals": "riveted"}
 ```
 
 ## Mild steel, riveted (1885-1905)
 
 ```json
-"construction": {"name": "Mild steel, riveted", "yield_mpa": 235, "join_factor": 1.1, "standard": 1.0}
+"construction": {"name": "Mild steel, riveted", "yield_mpa": 235, "join_factor": 1.1, "standard": 1.0, "shell": "riveted", "internals": "riveted"}
 ```
 
 ## Mild steel hull, high-tensile strength deck, riveted (1905-1920)
 
 ```json
-"construction": {"name": "Mild steel hull, high-tensile strength deck, riveted", "yield_mpa": 290, "join_factor": 1.1, "standard": 1.0}
+"construction": {"name": "Mild steel hull, high-tensile strength deck, riveted", "yield_mpa": 290, "join_factor": 1.1, "standard": 1.0, "shell": "riveted", "internals": "riveted"}
 ```
 
 ## High-tensile steel (D, Ducol, HTS), riveted (1920-1935: D steel, Ducol, USN HTS)
 
 ```json
-"construction": {"name": "High-tensile steel (D, Ducol, HTS), riveted", "yield_mpa": 340, "join_factor": 1.08, "standard": 1.0}
+"construction": {"name": "High-tensile steel (D, Ducol, HTS), riveted", "yield_mpa": 340, "join_factor": 1.08, "standard": 1.0, "shell": "riveted", "internals": "riveted"}
 ```
 
 ## High-tensile steel, riveted shell, welded internals (1933-1942)
 
 ```json
-"construction": {"name": "High-tensile steel, riveted shell, welded internals", "yield_mpa": 350, "join_factor": 1.04, "standard": 1.0}
+"construction": {"name": "High-tensile steel, riveted shell, welded internals", "yield_mpa": 350, "join_factor": 1.04, "standard": 1.0, "shell": "riveted", "internals": "welded"}
 ```
 
 ## High-tensile and structural STS, mostly welded (1940-1945, USN)
 
 ```json
-"construction": {"name": "High-tensile and structural STS, mostly welded", "yield_mpa": 420, "join_factor": 1.02, "standard": 1.0}
+"construction": {"name": "High-tensile and structural STS, mostly welded", "yield_mpa": 420, "join_factor": 1.02, "standard": 1.0, "shell": "welded", "internals": "welded"}
 ```
 
 ## High-tensile steel, all welded (1943 on)
 
 ```json
-"construction": {"name": "High-tensile steel, all welded", "yield_mpa": 350, "join_factor": 1.0, "standard": 1.0}
+"construction": {"name": "High-tensile steel, all welded", "yield_mpa": 350, "join_factor": 1.0, "standard": 1.0, "shell": "welded", "internals": "welded"}
 ```
 
 ## HY-80, all welded (1955 on)
 
 ```json
-"construction": {"name": "HY-80, all welded", "yield_mpa": 420, "join_factor": 1.0, "standard": 1.0}
+"construction": {"name": "HY-80, all welded", "yield_mpa": 420, "join_factor": 1.0, "standard": 1.0, "shell": "welded", "internals": "welded"}
 ```

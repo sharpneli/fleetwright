@@ -1,33 +1,12 @@
 {
- "version": 3,
+ "version": 4,
  "id": "buyny",
  "name": "Buyny-like destroyer (1902)",
  "type": "DD",
  "speed_kn": 26,
  "range_nm": 1200,
  "funnels": 3,
- "hull": {
-  "block_coefficient": 0.48,
-  "freeboard": 1,
-  "construction": {
-   "name": "Mild steel, riveted",
-   "yield_mpa": 235,
-   "join_factor": 1.1,
-   "standard": 0.85
-  },
-  "plating": {
-   "shell_mm": 0,
-   "material": "mild steel",
-   "deck_wood_mm": 0
-  },
-  "raised": [
-   {
-    "from": "bow",
-    "to": "bridge",
-    "decks": 1
-   }
-  ]
- },
+ "hull": {"block_coefficient": 0.48, "freeboard": 1, "construction": {"name": "Mild steel, riveted", "yield_mpa": 235, "join_factor": 1.1, "standard": 0.85, "shell": "riveted", "internals": "riveted"}, "plating": {"shell_mm": 0, "material": "mild steel", "deck_wood_mm": 0}, "raised": [{"from": "bow", "to": "bridge", "decks": 1}]},
  "main": [
   {
    "calibre_mm": 75,
@@ -203,5 +182,6 @@
  },
  "ammunition": {"RU 1895 AP (pyroxylin)": {"kind": "ap", "mass_k_kg_m3": 11630, "nose_crh": 2, "form_factor": 1.8, "cap": {"kind": "none"}, "windscreen": false, "body": {"break_ob_deg": 15, "break_t_d": 0.5, "quality": 0.95}, "filler": {"share": 0.016, "explosive": "Wet guncotton", "booster": "basic"}, "steel": {"size": 1, "speed": 1}, "casing": {"nose": 0.33, "ogive": 0, "body": 0.55, "plug": 0.08, "tail": 0.04}, "fuze": {"position": "base", "delay_s": 0.01, "start_cal": 0.07, "oblique": 0.45, "plates": "single", "scatter": 0.1, "blind": 0.1, "water_ms": 0.5, "water_fires": 1}}, "RU 1895 HE (pyroxylin)": {"kind": "common", "mass_k_kg_m3": 11630, "nose_crh": 2, "form_factor": 1.8, "cap": {"kind": "none"}, "windscreen": false, "body": {"break_ob_deg": 10, "break_t_d": 0.25, "quality": 0.9}, "filler": {"share": 0.037, "explosive": "Wet guncotton", "booster": "basic"}, "steel": {"size": 1, "speed": 1}, "casing": {"nose": 0.25, "ogive": 0, "body": 0.63, "plug": 0.08, "tail": 0.04}, "fuze": {"position": "base", "delay_s": 0.005, "start_cal": 0.07, "oblique": 0.45, "plates": "single", "scatter": 0.1, "blind": 0.1, "water_ms": 0.5, "water_fires": 1}}},
  "explosives": {"Wet guncotton": {"name": "Wet guncotton", "re": 0.85, "q_det": 3, "q_comb": 7, "air_m3_kg": 1, "eta": 1, "gurney_ms": 2100, "brisance": 0.9, "in_plate": 0.08, "full": {"basic": 0.55, "ce": 0.85}, "fire": 0.2, "from": 1890}},
- "materials": {"mild steel": {"density_t_per_m3": 7.85, "q": 0.7, "back": {"spall_u": 0.9, "holed_u": 1}}, "steel": {"density_t_per_m3": 7.85, "q": 0.7, "back": {"spall_u": 0.9, "holed_u": 1}}}
+ "materials": {"mild steel": {"density_t_per_m3": 7.85, "q": 0.7, "back": {"spall_u": 0.9, "holed_u": 1}}, "steel": {"density_t_per_m3": 7.85, "q": 0.7, "back": {"spall_u": 0.9, "holed_u": 1}}},
+ "fittings": {"shock_grade": "G0"}
 }

@@ -51,6 +51,9 @@ public static class ShipClassCompiler
                 DeckOutline = AddPoints(hb.Hull),
                 Hydrostatics = HydrostaticsOf(hb.Hydrostatics),
                 Motion = Motion(),
+                ShellJoint = r.Hull.Shell,
+                InternalsJoint = r.Hull.Internals,
+                ShockGrade = r.Fittings.ShockGrade,
             };
             c.turretTypes = hb.TurretTypes.Values.Select(TurretTypeOf).ToArray();
             c.turretTypeIds = [.. hb.TurretTypes.Keys];

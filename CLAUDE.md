@@ -170,7 +170,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- scenario Content/
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- scenario Content/Scenarios/tsushima.json --play [--seeds 5]   # played to its end with the AI on every side (docs/battle/command.md 5.0, the commanders 5.1d): the timeline (the commanders' phases and orders too), the result and the AI layers' cost; or a line a seed and the spread
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- duel super_dreadnought [lion] [--range 14630] [--level 3] [--runs 20] [--minutes 15] [--trace] [--damage]   # fire control's bench: one battery on a ship, run after run; hit and straddle %, time to first hit, cost a battery-second (hits do nothing unless --damage)
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- ballistics dreadnought [--research]   # each battery's range table (range, elevation, time of flight, fall, striking velocity); the research's 16"/50 beside its sourced figures
-dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- templates   # the shell, explosive and material catalogues (ShellTemplates.cs, Explosives.cs, MaterialTemplates.cs) out to Content/Templates/shells.json, explosives.json, materials.json and docs/shipgen/*-templates.md
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- templates   # the shell, explosive, material and fittings catalogues (ShellTemplates.cs, Explosives.cs, MaterialTemplates.cs, Fittings.cs) out to Content/Templates/shells.json, explosives.json, materials.json, fittings.json and docs/shipgen/*-templates.md
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- upgrade shipgen/designs/*.json Content/Scenarios/Designs/*.json [--materials] [--dry]   # design files rewritten to the current format (DesignFormat) in their own layout; --materials also refreshes their materials tables from the catalogue
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- weapons dreadnought [--research]   # weapon facts: batteries, fire-control level, guns' working numbers, shells, plating (placeholders beside the research's guns)
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- hits v25 --shooter lion --battery 1 --range 6000 [--kind he] [--n 2000] [--per-ship 10] [--show 3] [--settle 30]   # the damage model alone: hits spread over a design as falling shells see it, through the damage system; outcomes, parts lost, ships' state after K hits and MIN minutes of flooding and fire
@@ -184,7 +184,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- flood destroyer [
 ```
 
 `mono-check` (about 15 s) lists where adding weight gave a lighter ship (reversals) or one step jumped far more than its
-neighbours (lumps); a sizing change shouldn't add to them. `golden-check` must stay at 371 of 371 for any change to `Fleetwright.Shipgen` that isn't a deliberate fix (fixes
+neighbours (lumps); a sizing change shouldn't add to them. `golden-check` must stay at 372 of 372 for any change to `Fleetwright.Shipgen` that isn't a deliberate fix (fixes
 update the goldens on purpose with `golden-update`, one per commit, and bump `ShipDesign.Version`, so compiled ships
 know they're stale). `svg-check` and `sprite-check` do the same for
 `Fleetwright.Shipgen.Render`: a deliberate drawing change rewrites them with `golden-update` too, noted in
@@ -353,7 +353,7 @@ Content/                      # copied into the game's output folder; the bake s
   Fonts/                      #   UI fonts (OFL), game assets
   World/                      #   the land at 1:110M, 1:50M, 1:10M (game assets), from tools/land_bake.py (README.md)
   Sim/settings.json           #   SimSettings: every tuning number of the sim (game asset; strict, every key)
-  Templates/                  #   the designer's template catalogues (game assets); shells, explosives and materials from `shipgen templates`, the rest from tools/designer_templates.py:
+  Templates/                  #   the designer's template catalogues (game assets); shells, explosives, materials and fittings from `shipgen templates`, the rest from tools/designer_templates.py:
                               #   plants, hulls, crew from docs/shipgen/*-templates.md; armour from the designs' maps
   Shaders/Source/             #   GLSL sources
   Shaders/Compiled/           #   SPIR-V binaries (checked in)

@@ -145,9 +145,9 @@ public static class Program
             navy and year (the outfits' kinds and shares kept); --outfits (S2) gives each battery the default outfit
             instead, main 70% AP / 30% HE, secondary 30 / 70 (common for HE in the families before HE); --dry lists it
         shipgen templates
-            writes the shell, explosive and material catalogues (ShellTemplates, Explosives, MaterialTemplates) out:
-            Content/Templates/shells.json, explosives.json and materials.json, docs/shipgen/shell-templates.md,
-            explosive-templates.md and material-templates.md
+            writes the shell, explosive, material and fittings catalogues (ShellTemplates, Explosives, MaterialTemplates,
+            Fittings) out: Content/Templates/shells.json, explosives.json, materials.json and fittings.json,
+            docs/shipgen/shell-templates.md, explosive-templates.md, material-templates.md and fittings-templates.md
         shipgen pen-check
             the plate model alone (Thompson's limit and its inverse, the catalogue's q) against the armour research's
             range tables and trials (research/simulation/armor/07-*.csv), no rolls

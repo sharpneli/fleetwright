@@ -40,6 +40,8 @@ public sealed record Design
     public SuperstructureInput? Superstructure { get; init; }
     public MachineryInput? Machinery { get; init; }
     public CrewInput? Crew { get; init; }
+    /// <summary>How the fittings are mounted: their shock grade (Fittings; docs/battle/shells-armour-damage.md E0).</summary>
+    public FittingsInput? Fittings { get; init; }
     public FireControlInput? FireControl { get; init; }
     public AviationInput? Aviation { get; init; }
     public CargoInput? Cargo { get; init; }
@@ -47,6 +49,10 @@ public sealed record Design
     /// <summary>Colour overrides for the drawing (the renderer's palette keys).</summary>
     public Dictionary<string, Paint>? Palette { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+
+    /// <summary>Not input: what the format's upgrade couldn't tell from an older file and took a default for
+    /// (DesignFormat), for the report's warnings.</summary>
+    [JsonIgnore] public IReadOnlyList<string>? UpgradeWarnings { get; init; }
 
     /// <summary>The style's name: "warship" unless the design says otherwise.</summary>
     [JsonIgnore] public string StyleName => Style ?? "warship";
@@ -61,8 +67,12 @@ public sealed record Design
     [JsonIgnore] public IEnumerable<BatteryInput> MainBatteries => Main ?? [];
 
     /// <summary>A design from its JSON, upgraded from an older format first (DesignFormat).</summary>
-    public static Design Parse(string json) =>
-        DesignFormat.Upgrade(json).Deserialize(ShipgenJson.Default.Design) ?? throw new JsonException("the design is null");
+    public static Design Parse(string json)
+    {
+        var warnings = new List<string>();
+        var d = DesignFormat.Upgrade(json, warnings).Deserialize(ShipgenJson.Default.Design) ?? throw new JsonException("the design is null");
+        return warnings.Count > 0 ? d with { UpgradeWarnings = warnings } : d;
+    }
 
     public static Design Load(string path) => Parse(File.ReadAllText(path));
 
@@ -99,6 +109,18 @@ public sealed record ConstructionInput
     public double? YieldMpa { get; init; }
     public double? JoinFactor { get; init; }
     public double? Standard { get; init; }
+    /// <summary>How the shell plating is joined: riveted or welded (Joint; welded when absent).</summary>
+    public string? Shell { get; init; }
+    /// <summary>How the internals (decks, bulkheads, framing) are joined: riveted or welded (welded when absent).</summary>
+    public string? Internals { get; init; }
+    [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>fittings: how the ship's gear is mounted. Room for the service networks' lock-in, selectivity and LVR.</summary>
+public sealed record FittingsInput
+{
+    /// <summary>G0 unsecured, G1 secured, G2 shock-tested, G3 post-war (ShockGrade; G0 when absent).</summary>
+    public string? ShockGrade { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

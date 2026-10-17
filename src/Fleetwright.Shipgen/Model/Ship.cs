@@ -23,6 +23,8 @@ public sealed class Report
     public required List<string> Summary { get; init; }
     public required PlantReport Plant { get; init; }
     public required HullReport Hull { get; init; }
+    /// <summary>How the fittings are mounted (fittings, with its defaults).</summary>
+    public required FittingsReport Fittings { get; init; }
     public CrewReport? Crew { get; init; }
     public required List<DirectorReport> FireControl { get; init; }
     public BridgeReport? Bridge { get; init; }
@@ -130,6 +132,9 @@ public sealed record PartLoad(string Curve, double[] Loads, double[] Multipliers
 public sealed class HullReport
 {
     public string? Construction { get; init; }
+    /// <summary>How the shell plating and the internals are joined (hull.construction; welded when it doesn't say).</summary>
+    public Joint Shell { get; init; }
+    public Joint Internals { get; init; }
     public double StructureT { get; init; }
     public double? MinGaugeT { get; init; }
     public double? StrengthT { get; init; }
@@ -138,6 +143,9 @@ public sealed class HullReport
     public double? ShellPlatingT { get; init; }
     public Girder? Girder { get; init; }
 }
+
+/// <summary>The fittings as the damage model reads them: their shock grade (Fittings).</summary>
+public sealed record FittingsReport(ShockGrade ShockGrade);
 
 public sealed record Girder(double AllowableStressMpa, double RequiredM4, double PlatingM4, double ArmourDecksM4);
 

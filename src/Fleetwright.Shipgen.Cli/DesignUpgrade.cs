@@ -21,7 +21,10 @@ static class DesignUpgrade
         {
             string text = File.ReadAllText(p);
             var before = JsonNode.Parse(text, documentOptions: new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })!.AsObject();
-            var after = DesignFormat.Upgrade(text);
+            var warnings = new List<string>();
+            var after = DesignFormat.Upgrade(text, warnings);
+            foreach (var w in warnings)
+                Console.WriteLine($"{p}: warning: {w}");
             if (materials)
                 Materials(after);
             var changed = after.Where(kv => !JsonNode.DeepEquals(kv.Value, before[kv.Key])).Select(kv => kv.Key).ToList();

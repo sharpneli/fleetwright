@@ -63,6 +63,12 @@ public sealed class ShipClass
     /// <summary>Whether the main bulkheads have doors below the damage-control deck (the hitboxes' doors_below): the
     /// open-door path for flooding, for damage control to read (protection-plan.md H7).</summary>
     public bool DoorsBelow { get; internal set; }
+    /// <summary>How the hull's shell plating and its internals are joined (docs/battle/shells-armour-damage.md E0): the
+    /// blast's boundaries (riveted ×0.85), the belt's seep and the seams' leak read them.</summary>
+    public Joint ShellJoint { get; internal init; }
+    public Joint InternalsJoint { get; internal init; }
+    /// <summary>How the fittings stand shock (E0): the armour shock, the near misses and the service networks read it.</summary>
+    public ShockGrade ShockGrade { get; internal init; }
     /// <summary>The shipgen it was built by (<see cref="ShipDesign.Version"/>).</summary>
     public int ShipgenVersion { get; internal init; }
 

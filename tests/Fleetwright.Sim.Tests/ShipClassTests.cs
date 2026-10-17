@@ -83,6 +83,19 @@ public class ShipClassTests
         return p;
     }
 
+    /// <summary>The hull's joints and the fittings' grade compile from the report (docs/battle/shells-armour-damage.md E0).</summary>
+    [Fact]
+    public void Joints_and_shock_grade_compile()
+    {
+        var kgv = Fleet.Get("kgv").Class!;
+        Assert.Equal((Joint.Riveted, Joint.Welded, ShockGrade.G0), (kgv.ShellJoint, kgv.InternalsJoint, kgv.ShockGrade));
+        var lion = Fleet.Get("lion").Class!;
+        Assert.Equal((Joint.Riveted, Joint.Riveted), (lion.ShellJoint, lion.InternalsJoint));
+        var battleship = Fleet.Get("battleship").Class!;
+        Assert.Equal((Joint.Welded, Joint.Welded, ShockGrade.G2), (battleship.ShellJoint, battleship.InternalsJoint, battleship.ShockGrade));
+        Assert.Equal(ShockGrade.G3, Fleet.Get("daring").Class!.ShockGrade);
+    }
+
     /// <summary>A material's q comes from its block (docs/battle/shells-armour-damage.md P0): the design's over the
     /// catalogue's, a name in neither steel's with a warning, a plate with none named 1.</summary>
     [Fact]
