@@ -506,7 +506,7 @@ public sealed unsafe partial class DesignerScene : IScene
         var plates = new List<Plate>();
         var barbetteR = new Dictionary<string, double>();
         foreach (var c in hb.Components)
-            if (c.Kind == "barbette" && c.R is { } r)
+            if (c.Kind == ComponentKind.Barbette && c.R is { } r)
                 barbetteR[c.Id] = r;
         if (hb.Armour.Belt is { } b)
             plates.Add(new Plate((float)b.X0, (float)b.X1, (float)b.Bottom, (float)b.Top, b.ThicknessMm,
@@ -523,20 +523,20 @@ public sealed unsafe partial class DesignerScene : IScene
                 continue;
             switch (c.Kind)
             {
-                case "barbette" when c.ArmourMm is { } mm && c.R is { } r:
+                case ComponentKind.Barbette when c.ArmourMm is { } mm && c.R is { } r:
                     plates.Add(new Plate((float)(x - r), (float)(x + r), (float)c.Base, (float)c.Top, mm, ""));
                     break;
-                case "conning_tower" when c.ArmourMm is { } mm && c.R is { } r:
+                case ComponentKind.ConningTower when c.ArmourMm is { } mm && c.R is { } r:
                     plates.Add(new Plate((float)(x - r), (float)(x + r), (float)c.Base, (float)c.Top, mm, Mm(mm)));
                     break;
-                case "main" or "secondary":
+                case ComponentKind.Main or ComponentKind.Secondary:
                     double rr = barbetteR.GetValueOrDefault(c.Id, 2) * 1.15;
-                    if (c.Kind == "main" && c.ArmourMm is { } face)
+                    if (c.Kind == ComponentKind.Main && c.ArmourMm is { } face)
                         plates.Add(new Plate((float)(x - rr), (float)(x + rr), (float)c.Base, (float)c.Top, face, Mm(face)));
                     int barrels = c.Type != null && hb.TurretTypes.TryGetValue(c.Type, out var tt) ? (int)tt.Barrels : 1;
-                    string tag = c.Kind == "main" ? $"{c.Id} {barrels}×{Fmt(c.CalibreMm ?? 0, Quantity.Calibre)}" : c.Id;
+                    string tag = c.Kind == ComponentKind.Main ? $"{c.Id} {barrels}×{Fmt(c.CalibreMm ?? 0, Quantity.Calibre)}" : c.Id;
                     var arcs = (c.ArcsDeg ?? []).Where(a => a.Length == 2).Select(a => ((float)a[0], (float)(a[1] < a[0] ? a[1] + 360 : a[1]))).ToArray();
-                    mounts.Add(new MountMark(tag, (float)x, (float)(c.Y ?? 0), c.Kind == "main", arcs, c.Id, barrels));
+                    mounts.Add(new MountMark(tag, (float)x, (float)(c.Y ?? 0), c.Kind == ComponentKind.Main, arcs, c.Id, barrels));
                     break;
             }
         }

@@ -75,7 +75,7 @@ public sealed unsafe partial class DesignerScene
         if (hb != null)
             foreach (var c in hb.Components)
             {
-                if (c.Kind != "secondary" || c.X is not { } x || SA.ParseId(c.Id) is not var (k, n, side) || k >= secs.Count)
+                if (c.Kind != ComponentKind.Secondary || c.X is not { } x || SA.ParseId(c.Id) is not var (k, n, side) || k >= secs.Count)
                     continue;
                 ids[k].Add(c.Id);
                 placedMounts[k]++;
@@ -162,13 +162,13 @@ public sealed unsafe partial class DesignerScene
             foreach (var c in hb.Components)
                 switch (c.Kind)
                 {
-                    case "superstructure" when c.Points is { Count: > 2 } pts && c.Role != "director":
+                    case ComponentKind.Superstructure when c.Points is { Count: > 2 } pts && c.Role != "director":
                         blocks.Add((pts.Select(q => new Vector2((float)q.X, (float)q.Y)).ToArray(), c.Level ?? 1));
                         break;
-                    case "main" when c.X is { } x:
+                    case ComponentKind.Main when c.X is { } x:
                         mains.Add(new PlanMark((float)x, (float)(c.Y ?? 0), (float)(c.BroadphaseR ?? 4), c.Id, c.Base > 1.5 ? 1 : 0));
                         break;
-                    case "aa" when c.X is { } x:
+                    case ComponentKind.Aa when c.X is { } x:
                         bool heavy = c.Type == "quad40", roof = c.Base > 0.5;
                         aa.Add((new Vector2((float)x, (float)(c.Y ?? 0)), heavy, roof));
                         double wt = weight.GetValueOrDefault(c.Id);
@@ -177,7 +177,7 @@ public sealed unsafe partial class DesignerScene
                         else
                             (aaLight, roofsLight, aaLightT) = (aaLight + 1, roofsLight + (roof ? 1 : 0), aaLightT + wt);
                         break;
-                    case "torpedo" when c.X is { } x:
+                    case ComponentKind.Torpedo when c.X is { } x:
                         tt.Add(new Vector2((float)x, (float)(c.Y ?? 0)));
                         ttMounts++;
                         ttTubes = (int)(c.Torpedoes ?? 0);
@@ -189,7 +189,7 @@ public sealed unsafe partial class DesignerScene
                             ttCentre++;
                         ttT += weight.GetValueOrDefault(c.Id);
                         break;
-                    case "torpedo_tube":
+                    case ComponentKind.TorpedoTube:
                         _ = c.Position == "bow" ? subBow++ : c.Position == "stern" ? subStern++ : subBeam++;
                         break;
                 }

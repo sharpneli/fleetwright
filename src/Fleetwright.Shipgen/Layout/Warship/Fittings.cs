@@ -121,7 +121,7 @@ public sealed partial class Layout
     {
         var (design, lay, B, depth) = (site.Design, site.Lay, site.B, site.Depth);
         var (machPlaced, plantPlaced, magL) = (middle.Mach, middle.Plant, row.MagL);
-        var mainMounts = mounts.Where(m => m.Kind == "main").ToList();
+        var mainMounts = mounts.Where(m => m.Kind == ComponentKind.Main).ToList();
         var block = (machPlaced.Select(p => p.X0).Min(), machPlaced.Select(p => p.X1).Max());
         (double, double) cit = mainMounts.Count > 0
             ? (Math.Min(mainMounts.Select(m => m.X - m.T.R).Min() - 2.0, block.Item1),

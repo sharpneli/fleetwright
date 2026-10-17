@@ -483,7 +483,7 @@ public sealed class CarrierStyle : Style
         {
             var (ttId, tt) = Armament.TorpedoType(tp);
             long n = (tp.Mounts.Value + 1) / 2;
-            Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, n, SponsonSlots(tt.BarrelLen / 2 + 0.3, fdH - 2.5), "T",
+            Armament.SidePairs(lay, mounts, turretTypes, ComponentKind.Torpedo, ttId, tt, n, SponsonSlots(tt.BarrelLen / 2 + 0.3, fdH - 2.5), "T",
                 label: "Torpedo");
         }
         FireControl.Place(lay, design, blocks);
@@ -496,7 +496,7 @@ public sealed class CarrierStyle : Style
             Armament.PlaceAa(lay, aaOut, kind, count, island.Concat(SponsonSlots(rr, fdH - 2.4)).ToList());
         }
         var below = mounts.Where(m => m.Base < fdH - 0.5)
-            .Select(m => (m.Id, m.X, m.Y, m.Base, Reach: m.Kind != "torpedo" ? Armament.BodyReach(m.T) : m.T.BarrelLen / 2 + 0.3))
+            .Select(m => (m.Id, m.X, m.Y, m.Base, Reach: m.Kind != ComponentKind.Torpedo ? Armament.BodyReach(m.T) : m.T.BarrelLen / 2 + 0.3))
             .Concat(aaOut.Select(a => (a.Id, a.X, a.Y, a.Base, Reach: Geometry.AaCfg[a.Type].R)));
         foreach (var (id, x, y, bse, reach) in below)
         {
@@ -599,7 +599,7 @@ public sealed class CarrierStyle : Style
         {
             var (ttId, tt) = Armament.TorpedoType(tp);
             double r = tt.BarrelLen / 2 + 0.3;
-            Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, (tp.Mounts.Value + 1) / 2,
+            Armament.SidePairs(lay, mounts, turretTypes, ComponentKind.Torpedo, ttId, tt, (tp.Mounts.Value + 1) / 2,
                 xs.Select(x => new Slot(x, lay.DeckHalfWidth(x) - r - 0.4, 0.3)), "T", label: "Torpedo");
         }
         FireControl.Place(lay, design, blocks);

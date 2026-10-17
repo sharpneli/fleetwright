@@ -254,7 +254,7 @@ public sealed unsafe partial class DesignerScene
         var mach = rooms.Where(r => r.Kind is RoomKind.EngineRoom or RoomKind.BoilerRoom && r.Cells.Count > 0).ToList();
 
         // the built plates, each traced to its row
-        var mainIds = hb?.Components.Where(c => c.Kind == "main").Select(c => c.Id).ToHashSet() ?? [];
+        var mainIds = hb?.Components.Where(c => c.Kind == ComponentKind.Main).Select(c => c.Id).ToHashSet() ?? [];
         var designDecks = a.Decks ?? [];
         int DeckRow(string name, string ext)
         {
@@ -354,7 +354,7 @@ public sealed unsafe partial class DesignerScene
                     continue;
                 switch (c.Kind)
                 {
-                    case "barbette" when c.R is { } r && c.ArmourMm is { } mm and > 0 && c.Id.EndsWith(" barbette", StringComparison.Ordinal)
+                    case ComponentKind.Barbette when c.R is { } r && c.ArmourMm is { } mm and > 0 && c.Id.EndsWith(" barbette", StringComparison.Ordinal)
                                                       && mainIds.Contains(c.Id[..^9]):
                         barbR[c.Id[..^9]] = r;
                         float deckTop = raised.Any(q => x >= q.X0 && x <= q.X1) ? (float)raised.Where(q => x >= q.X0 && x <= q.X1).Max(q => q.Top) : 0;
@@ -363,13 +363,13 @@ public sealed unsafe partial class DesignerScene
                         plates.Add(new PPlate(new PRef(PK.Barbettes), (float)(x - 0.8 * r), (float)(x + 0.8 * r), (float)c.Base, Math.Min(deckTop, (float)c.Top),
                             mm, "", Inside: true));
                         break;
-                    case "conning_tower" when c.R is { } r && c.ArmourMm is { } mm and > 0:
+                    case ComponentKind.ConningTower when c.R is { } r && c.ArmourMm is { } mm and > 0:
                         plates.Add(new PPlate(new PRef(PK.Ct), (float)(x - r), (float)(x + r), (float)c.Base, (float)c.Top, mm, "CT"));
                         break;
                 }
             }
             foreach (var c in hb.Components)
-                if (c.Kind == "main" && c.X is { } x && c.ArmourMm is { } face and > 0)
+                if (c.Kind == ComponentKind.Main && c.X is { } x && c.ArmourMm is { } face and > 0)
                 {
                     float r = (float)(barbR.GetValueOrDefault(c.Id, 5) * 1.15);
                     plates.Add(new PPlate(new PRef(PK.Main, 0), (float)x - r, (float)x + r, (float)c.Base, (float)c.Top, face, c.Id.Length <= 3 ? c.Id : ""));
@@ -469,7 +469,7 @@ public sealed unsafe partial class DesignerScene
         // the side profile: the deck line (raised over its stretches) over each station's keel
         var profile = new List<Vector2>();
         float zTop = 1.2f + (float)Math.Max(raised.Select(r => r.Top).DefaultIfEmpty(0).Max(),
-            hb?.Components.Where(c => c.Kind is "main" or "conning_tower").Select(c => c.Top).DefaultIfEmpty(0).Max() ?? 0);
+            hb?.Components.Where(c => c.Kind is ComponentKind.Main or ComponentKind.ConningTower).Select(c => c.Top).DefaultIfEmpty(0).Max() ?? 0);
         if (hb != null)
             foreach (var st in hb.HullForm.Stations)
                 profile.Add(new Vector2((float)st.X, (float)st.Z[0]));
@@ -887,7 +887,7 @@ public sealed unsafe partial class DesignerScene
                 Note = "Barbettes follow the turret faces at 0.8 ×, from the armour deck up to the gunhouse.",
             });
         }
-        if (hasBelt && hb?.Components.Any(c => c.Kind == "conning_tower") == true)
+        if (hasBelt && hb?.Components.Any(c => c.Kind == ComponentKind.ConningTower) == true)
         {
             double t = w.GetValueOrDefault("Conning tower");
             rows.Add(new ProtRow

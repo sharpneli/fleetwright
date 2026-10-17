@@ -77,7 +77,7 @@ public sealed partial class Layout
                 yields.Add((fx0 - FpMargin, fx1 + FpMargin, h));
         }
         // the barrel sweeps of the wing and midships turrets on the deck the same way, where they pass under the roof
-        var deckTurrets = mounts.Where(m => m.Kind == "main" && (m.Wing || m.Midships) && m.Base < LevelH)
+        var deckTurrets = mounts.Where(m => m.Kind == ComponentKind.Main && (m.Wing || m.Midships) && m.Base < LevelH)
             .Select(m => m.Id).ToHashSet();
         foreach (var sw in lay.Sweeps.Where(sw => deckTurrets.Contains(sw.Owner) && sw.Axis < LevelH))
             foreach (var (sx0, sy0, sx1, sy1) in sw.Boxes)
@@ -180,7 +180,7 @@ public sealed partial class Layout
                             string mid = $"T{placed / 2 + 1}{(side > 0 ? "S" : "P")}";
                             mounts.Add(new Mount
                             {
-                                Id = mid, Kind = "torpedo", Type = ttId!, T = tt!, X = x, Y = side * y, Base = dz + 0.3, Top = dz + 1.4,
+                                Id = mid, Kind = ComponentKind.Torpedo, Type = ttId!, T = tt!, X = x, Y = side * y, Base = dz + 0.3, Top = dz + 1.4,
                                 Rest = 90 * side,
                             });
                             lay.Occupy(fp, dz, dz + 1.4, mid);
@@ -202,7 +202,7 @@ public sealed partial class Layout
                     if (lay.Free(fp, 0.3) && lay.Clear(fp, dz + 1.4) && lay.DeckHalfWidth(x) > tt!.R + 0.5)
                     {
                         string mid = $"T{placed + 1}";
-                        mounts.Add(new Mount { Id = mid, Kind = "torpedo", Type = ttId!, T = tt, X = x, Base = dz + 0.3, Top = dz + 1.4, Rest = 90 });
+                        mounts.Add(new Mount { Id = mid, Kind = ComponentKind.Torpedo, Type = ttId!, T = tt, X = x, Base = dz + 0.3, Top = dz + 1.4, Rest = 90 });
                         lay.Occupy(fp, dz, dz + 1.4, mid);
                         lay.Weights.Add(new Weight(mid, "armament", Batteries.TorpedoWeight(tt.Barrels), x, ZRel.Deck(dz + 1)));
                         placed++;
@@ -223,7 +223,7 @@ public sealed partial class Layout
                         string mid = $"T{placed + 1}";
                         mounts.Add(new Mount
                         {
-                            Id = mid, Kind = "torpedo", Type = ttId!, T = tt!, X = x, Level = 1, Base = LevelH + 0.3, Top = LevelH + 1.4, Rest = 90,
+                            Id = mid, Kind = ComponentKind.Torpedo, Type = ttId!, T = tt!, X = x, Level = 1, Base = LevelH + 0.3, Top = LevelH + 1.4, Rest = 90,
                         });
                         lay.Occupy(fp, LevelH, LevelH + 1.4, mid);
                         lay.Weights.Add(new Weight(mid, "armament", Batteries.TorpedoWeight(tt!.Barrels), x, ZRel.Deck(LevelH + 1)));

@@ -1,30 +1,5 @@
 namespace Fleetwright.Sim.Ships;
 
-/// <summary>A hitbox component's kind. Main, Secondary and Torpedo are the mounts by battery (the mount table); AA mounts
-/// are their own catalogue, with no turret shape or bearing yet.</summary>
-public enum ComponentKind : byte
-{
-    Main,
-    Secondary,
-    Torpedo,
-    Aa,
-    Barbette,
-    Superstructure,
-    ConningTower,
-    Funnel,
-    Uptake,
-    Casing,
-    Sponson,
-    Mast,
-    Shaft,
-    ShaftAlley,
-    Propeller,
-    Rudder,
-    TorpedoTube,
-    FlightDeck,
-    HangarBay,
-}
-
 /// <summary>A superstructure block's or sponson's role (None for the rest).</summary>
 public enum ComponentRole : byte
 {
@@ -143,30 +118,6 @@ public enum Position : byte
 /// shipgen is noticed here instead of read as something else.</summary>
 static class Kinds
 {
-    public static ComponentKind Component(string s) => s switch
-    {
-        "main" => ComponentKind.Main,
-        "secondary" => ComponentKind.Secondary,
-        "torpedo" => ComponentKind.Torpedo,
-        "aa" => ComponentKind.Aa,
-        "barbette" => ComponentKind.Barbette,
-        "superstructure" => ComponentKind.Superstructure,
-        "conning_tower" => ComponentKind.ConningTower,
-        "funnel" => ComponentKind.Funnel,
-        "uptake" => ComponentKind.Uptake,
-        "casing" => ComponentKind.Casing,
-        "sponson" => ComponentKind.Sponson,
-        "mast" => ComponentKind.Mast,
-        "shaft" => ComponentKind.Shaft,
-        "shaft_alley" => ComponentKind.ShaftAlley,
-        "propeller" => ComponentKind.Propeller,
-        "rudder" => ComponentKind.Rudder,
-        "torpedo_tube" => ComponentKind.TorpedoTube,
-        "flight_deck" => ComponentKind.FlightDeck,
-        "hangar_bay" => ComponentKind.HangarBay,
-        _ => throw Unknown("component kind", s),
-    };
-
     public static ComponentRole Role(string? s) => s switch
     {
         null => ComponentRole.None,

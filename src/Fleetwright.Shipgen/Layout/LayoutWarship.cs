@@ -107,7 +107,7 @@ public sealed partial class Layout
         // the side where a casemate's gun ports are: half a deck below the main deck, or above it in a raised stretch;
         // a housing on the main deck keeps inside the deck's edge
         Planform lowSide = lay.Side(-LevelH / 2), highSide = lay.Side(LevelH / 2), deckEdge = lay.Side(0.0);
-        var barbettes = mounts.Where(m => m.Kind == "main" && m.T.HasBarbette).ToList();
+        var barbettes = mounts.Where(m => m.Kind == ComponentKind.Main && m.T.HasBarbette).ToList();
 
         bool SideOk(Planform side, double x, double rc)
         {
@@ -267,7 +267,7 @@ public sealed partial class Layout
                 foreach (int side in new[] { 1, -1 })
                 {
                     string mid = $"{sec.Prefix}{i + 1}{(side > 0 ? "S" : "P")}";
-                    var m = Armament.AddMount(lay, mounts, "secondary", tId, t, mid, x, side * yo, bse,
+                    var m = Armament.AddMount(lay, mounts, ComponentKind.Secondary, tId, t, mid, x, side * yo, bse,
                         Armament.StowBearing(x, side, Arcs.CasemateHalf(t)), armourMm: arm, depth: depth, top: top,
                         footprintR: Geometry.CasemateShieldR(t));
                     (m.Battery, m.Casemate, m.Material) = (sec.Prefix, true, sec.Sec.Material);

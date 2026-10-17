@@ -124,7 +124,7 @@ public sealed record SpriteShadow(string HeightMap, double HeightStepM, double D
 
 /// <summary>A mount on the sprite: where its turret's pivot goes (metres and pixels), its draw order Z, its bearings and
 /// its roof's height above the waterline.</summary>
-public sealed record SpriteMount(string Id, string Kind, string Type, double[] PosM, double[] Px, double RestDeg, List<double[]> ArcsDeg,
+public sealed record SpriteMount(string Id, ComponentKind Kind, string Type, double[] PosM, double[] Px, double RestDeg, List<double[]> ArcsDeg,
     double[]? TraverseDeg, long Z, double TopM)
 {
     public string? Mount { get; init; }

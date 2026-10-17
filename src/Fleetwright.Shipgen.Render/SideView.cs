@@ -25,7 +25,7 @@ public sealed class SideView
 
     /// <summary>A gun or torpedo mount at its rest bearing: the body's box, the barrels' extent along the ship
     /// (BarrelX0..BarrelX1; none for a type without barrels) and its type.</summary>
-    public sealed record Mount(string Id, string Kind, string Type, double X, double Y, double Rest, Box B, double BarrelX0, double BarrelX1,
+    public sealed record Mount(string Id, ComponentKind Kind, string Type, double X, double Y, double Rest, Box B, double BarrelX0, double BarrelX1,
         bool Casemate);
 
     public sealed record Funnel(string Id, Box B, long Pipes);
@@ -36,7 +36,7 @@ public sealed class SideView
     public sealed record Aa(string Id, string Type, double X, double Y, double R, double Base, double Top, double Dir);
 
     /// <summary>A platform outside the hull's deck: the flight deck or a sponson (Elevator: a deck-edge elevator's).</summary>
-    public sealed record Platform(string Id, string Kind, Box B, bool Elevator);
+    public sealed record Platform(string Id, ComponentKind Kind, Box B, bool Elevator);
 
     /// <summary>A shaft outside the hull, from where it leaves the hull to its propeller: (x, y, z) at either end.</summary>
     public sealed record Shaft(string Id, double X0, double Z0, double X1, double Z1, double Y, double R);
@@ -169,20 +169,20 @@ public sealed class SideView
                 new Box(body.Item1, body.Item2, body.Item3, body.Item4, c.Base, c.Top), bx0, bx1, c.Casemate == true));
         }
 
-        var blocks = comps.Where(c => c.Kind == "superstructure").Select(c => new Block(c.Id, Box.Of(c.Points!, c.Base, c.Top), c.Level ?? 1, c.Role,
+        var blocks = comps.Where(c => c.Kind == ComponentKind.Superstructure).Select(c => new Block(c.Id, Box.Of(c.Points!, c.Base, c.Top), c.Level ?? 1, c.Role,
             c.Role == "director" ? new TopView.Director(c.RangefinderM ?? 0.0, c.Radar ?? false, (long)Math.Round(c.Base / Layout.LevelH)) : null)).ToList();
 
         var dressed = ship.Dressing.Masts.ToDictionary(m => m.Id, StringComparer.Ordinal);
-        var masts = comps.Where(c => c.Kind == "mast").Select(c =>
+        var masts = comps.Where(c => c.Kind == ComponentKind.Mast).Select(c =>
         {
             var d = dressed[c.Id];
             return new Mast(c.Id, c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top, d.Yard, d.Tripod, d.Booms);
         }).ToList();
 
-        var props = comps.Where(c => c.Kind == "propeller").Select(c => new Propeller(c.Id, c.X!.Value, c.Y!.Value, c.Z!.Value, c.DiameterM!.Value / 2))
+        var props = comps.Where(c => c.Kind == ComponentKind.Propeller).Select(c => new Propeller(c.Id, c.X!.Value, c.Y!.Value, c.Z!.Value, c.DiameterM!.Value / 2))
             .ToList();
         var shafts = new List<Shaft>();
-        foreach (var c in comps.Where(c => c.Kind == "shaft" && c.P0 != null && c.P1 != null))
+        foreach (var c in comps.Where(c => c.Kind == ComponentKind.Shaft && c.P0 != null && c.P1 != null))
         {
             // the shaft runs from p0 (forward, in the engine room) to p1 (the propeller): the part outside the hull
             double[] p0 = c.P0!, p1 = c.P1!;
@@ -202,23 +202,23 @@ public sealed class SideView
         {
             Id = ship.Design.Id ?? "", Length = hb.Length, Beam = hb.Beam, Planform = new Hull(new HullSpec(hb.Length, hb.Beam, hb.Bow, hb.Stern)), Hull = outline, KeelLine = keel, HullX0 = hx0, HullX1 = hx1, Keel = vert.Keel,
             Waterline = vert.Waterline, Knuckle = vert.Knuckle, Raised = raised, TurretTypes = hb.TurretTypes, Mounts = mounts,
-            Barbettes = comps.Where(c => c.Kind == "barbette").Select(c => (Box.Round(c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top), c.Mount ?? ""))
+            Barbettes = comps.Where(c => c.Kind == ComponentKind.Barbette).Select(c => (Box.Round(c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top), c.Mount ?? ""))
                 .ToList(),
             Blocks = blocks,
-            Funnels = comps.Where(c => c.Kind == "funnel").Select(c => new Funnel(c.Id, Box.Of(c.Points!, c.Base, c.Top), c.Pipes ?? 1)).ToList(),
+            Funnels = comps.Where(c => c.Kind == ComponentKind.Funnel).Select(c => new Funnel(c.Id, Box.Of(c.Points!, c.Base, c.Top), c.Pipes ?? 1)).ToList(),
             Masts = masts,
-            AaMounts = comps.Where(c => c.Kind == "aa").Select(c => new Aa(c.Id, c.Type!, c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top,
+            AaMounts = comps.Where(c => c.Kind == ComponentKind.Aa).Select(c => new Aa(c.Id, c.Type!, c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top,
                 c.RestDeg ?? 0.0)).ToList(),
-            ConningTower = comps.Where(c => c.Kind == "conning_tower").Select(c => (Box?)Box.Round(c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top))
+            ConningTower = comps.Where(c => c.Kind == ComponentKind.ConningTower).Select(c => (Box?)Box.Round(c.X!.Value, c.Y!.Value, c.R!.Value, c.Base, c.Top))
                 .FirstOrDefault(),
-            Casings = comps.Where(c => c.Kind == "casing" && c.Top > 0).Select(c => Box.Of(c.Points!, c.Base, c.Top)).ToList(),
-            Hangars = comps.Where(c => c.Kind == "hangar_bay").Select(c => Box.Of(c.Points!, c.Base, c.Top)).ToList(),
-            Platforms = comps.Where(c => c.Kind is "flight_deck" or "sponson")
+            Casings = comps.Where(c => c.Kind == ComponentKind.Casing && c.Top > 0).Select(c => Box.Of(c.Points!, c.Base, c.Top)).ToList(),
+            Hangars = comps.Where(c => c.Kind == ComponentKind.HangarBay).Select(c => Box.Of(c.Points!, c.Base, c.Top)).ToList(),
+            Platforms = comps.Where(c => c.Kind is ComponentKind.FlightDeck or ComponentKind.Sponson)
                 .Select(c => new Platform(c.Id, c.Kind, Box.Of(c.Points!, c.Base, c.Top), c.Role == "elevator")).ToList(),
             Shafts = shafts, Propellers = props,
-            Rudders = comps.Where(c => c.Kind == "rudder").Select(c => Box.Of(c.Points!, c.Base, c.Top)).ToList(),
+            Rudders = comps.Where(c => c.Kind == ComponentKind.Rudder).Select(c => Box.Of(c.Points!, c.Base, c.Top)).ToList(),
             // the starboard beam doors, and one bow or stern door where a pair stands side by side
-            TubePorts = comps.Where(c => c.Kind == "torpedo_tube" && c.P1 is { } p && p[1] >= -0.01)
+            TubePorts = comps.Where(c => c.Kind == ComponentKind.TorpedoTube && c.P1 is { } p && p[1] >= -0.01)
                 .Select(c => new TubePort(c.P1![0], c.P1[2], c.R ?? 0.35, c.Position == "beam")).ToList(),
             SideArmour = armour, Dressing = ship.Dressing,
         };

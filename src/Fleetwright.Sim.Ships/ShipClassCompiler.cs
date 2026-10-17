@@ -113,11 +113,11 @@ public static class ShipClassCompiler
         int Section(string? id) => Resolve(section, id, "section");
 
         /// <summary>A component link that must be of a kind.</summary>
-        int Comp(string? id, string kind)
+        int Comp(string? id, ComponentKind kind)
         {
             int i = Comp(id);
             if (i >= 0 && hb.Components[i].Kind != kind)
-                throw new ShipCompileException($"{where}: \"{id}\" is a {hb.Components[i].Kind}, not a {kind}");
+                throw new ShipCompileException($"{where}: \"{id}\" is a {hb.Components[i].Kind.Name()}, not a {kind.Name()}");
             return i;
         }
 
@@ -189,11 +189,11 @@ public static class ShipClassCompiler
             {
                 var x = hb.Components[i];
                 where = $"component \"{x.Id}\"";
-                var kind = Kinds.Component(x.Kind);
+                var kind = x.Kind;
                 var shape = Kinds.Shape(x.Shape);
                 bool mount = kind is ComponentKind.Main or ComponentKind.Secondary or ComponentKind.Torpedo;
                 if (mount != (x.Local != null))
-                    throw new ShipCompileException(mount ? $"{where}: a mount with no turret shape" : $"{where}: a turret shape on a {x.Kind}");
+                    throw new ShipCompileException(mount ? $"{where}: a mount with no turret shape" : $"{where}: a turret shape on a {x.Kind.Name()}");
                 if (x.Mount != null && kind != ComponentKind.Barbette)
                     throw new ShipCompileException($"{where}: a mount link on a {x.Kind}");
                 int detail = -1;
@@ -212,7 +212,7 @@ public static class ShipClassCompiler
                         Rotating = x.Rotating ?? false, Casemate = x.Casemate ?? false, BroadphaseR = Or(x.BroadphaseR), Arcs = AddPairs(x.ArcsDeg),
                         TraverseFromDeg = traverse?[0] ?? double.NaN, TraverseToDeg = traverse?[1] ?? double.NaN, Body = AddPoints(x.Local!.Body),
                         Turret = x.Armour != null, FaceMm = x.Armour?.Face ?? 0, SideMm = x.Armour?.Side ?? 0, RearMm = x.Armour?.Rear ?? 0,
-                        RoofMm = x.Armour?.Roof ?? 0, Magazine = Room(x.Magazine), Barbette = Comp(x.Barbette, "barbette"), Rounds = Int(x.Rounds),
+                        RoofMm = x.Armour?.Roof ?? 0, Magazine = Room(x.Magazine), Barbette = Comp(x.Barbette, ComponentKind.Barbette), Rounds = Int(x.Rounds),
                         ReadyRounds = Int(x.ReadyRounds), ReadyT = Or(x.ReadyT), Torpedoes = Int(x.Torpedoes), WarheadKg = Or(x.WarheadKg),
                     });
                 }
@@ -232,16 +232,16 @@ public static class ShipClassCompiler
                             break;
                         case ComponentKind.Shaft:
                             detail = shafts.Count;
-                            int prop = Comp(x.Propeller, "propeller");
+                            int prop = Comp(x.Propeller, ComponentKind.Propeller);
                             shafts.Add(new ShaftLineRow
                             {
-                                Shaft = i, Propeller = prop, Alley = Comp(x.Alley, "shaft_alley"), EngineRoom = Room(x.EngineRoom),
+                                Shaft = i, Propeller = prop, Alley = Comp(x.Alley, ComponentKind.ShaftAlley), EngineRoom = Room(x.EngineRoom),
                                 Position = Kinds.PositionOf(x.Position), LeavesHullX = Or(x.LeavesHullX), P0 = Point3(x.P0), P1 = Point3(x.P1), R = Or(x.R),
                                 PropellerDiameterM = prop >= 0 ? Or(hb.Components[prop].DiameterM) : double.NaN,
                             });
                             break;
                         case ComponentKind.ShaftAlley or ComponentKind.Propeller:
-                            Comp(x.Shaft, "shaft");
+                            Comp(x.Shaft, ComponentKind.Shaft);
                             break;
                         case ComponentKind.Rudder:
                             detail = rudders.Count;
@@ -269,7 +269,7 @@ public static class ShipClassCompiler
                     throw new ShipCompileException($"{where}: a battery on a {x.Kind} that isn't a director");
                 int smoke = links.Count;
                 foreach (var f in x.Smoke ?? [])
-                    links.Add(Comp(f, "funnel"));
+                    links.Add(Comp(f, ComponentKind.Funnel));
                 rows[i] = new ComponentRow
                 {
                     Kind = kind, Role = role, Shape = shape, Level = Int(x.Level), Bounds = BoundsOf(x, outline, mount), X = x.X ?? double.NaN,
@@ -287,7 +287,7 @@ public static class ShipClassCompiler
                 switch (rows[i].Kind)
                 {
                     case ComponentKind.Uptake:
-                        int f = Comp(x.Funnel, "funnel");
+                        int f = Comp(x.Funnel, ComponentKind.Funnel);
                         if (f < 0)
                             throw new ShipCompileException($"{where}: an uptake with no funnel");
                         var fr = funnels[rows[f].Detail];
@@ -302,7 +302,7 @@ public static class ShipClassCompiler
                             throw new ShipCompileException($"{where}: its mount \"{x.Mount}\" doesn't stand on it");
                         break;
                     case ComponentKind.ShaftAlley or ComponentKind.Propeller:
-                        int s = Comp(x.Shaft, "shaft");
+                        int s = Comp(x.Shaft, ComponentKind.Shaft);
                         if (s < 0)
                             throw new ShipCompileException($"{where}: no shaft");
                         var sr = shafts[rows[s].Detail];
@@ -706,7 +706,7 @@ public static class ShipClassCompiler
             double area = 0;
             int n = 0;
             foreach (var x in hb.Components)
-                if (x.Kind == "rudder")
+                if (x.Kind == ComponentKind.Rudder)
                 {
                     n++;
                     area += x.AreaM2 ?? 0;

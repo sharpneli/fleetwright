@@ -401,9 +401,9 @@ public sealed partial class Layout
         var batteries = new OrderedDictionary<string, List<Mount>>(StringComparer.Ordinal);
         foreach (var m in mounts)
         {
-            if (m.Kind is not ("main" or "secondary"))
+            if (m.Kind is not (ComponentKind.Main or ComponentKind.Secondary))
                 continue;
-            if (groups.Count > 0 && (m.Kind == "secondary" || (m.Wing && !m.Echelon)))
+            if (groups.Count > 0 && (m.Kind == ComponentKind.Secondary || (m.Wing && !m.Echelon)))
             {
                 string bat = m.Battery!;
                 if (!batteries.TryGetValue(bat, out var l))
@@ -726,12 +726,12 @@ public sealed partial class Layout
         return room;
     }
 
-    static readonly Dictionary<string, int> DrawKind = new() { ["main"] = 2, ["secondary"] = 1 };
+    static int DrawKind(ComponentKind k) => k switch { ComponentKind.Main => 2, ComponentKind.Secondary => 1, _ => 0 };
 
     /// <summary>Each mount's z, the draw order: its rank by base height (equal keys share a z).</summary>
     static void DrawOrder(List<Mount> mounts)
     {
-        (double, int) Key(Mount m) => (Math.Round(m.Base, 3), DrawKind.TryGetValue(m.Kind, out var k) ? k : 0);
+        (double, int) Key(Mount m) => (Math.Round(m.Base, 3), DrawKind(m.Kind));
         var keys = mounts.Select(Key).Distinct().ToList();
         keys.Sort();
         var rank = keys.Select((k, i) => (k, i)).ToDictionary(t => t.k, t => (long)t.i);
@@ -750,7 +750,7 @@ public sealed partial class Layout
         if (lay.Topside.Plain)
             return;
         var c = HullWeight.ConstructionOf(design);
-        foreach (var m in lay.Mounts.Where(m => m.Kind is "main" or "secondary" && !m.Casemate))
+        foreach (var m in lay.Mounts.Where(m => m.Kind is ComponentKind.Main or ComponentKind.Secondary && !m.Casemate))
         {
             double reach = Armament.BodyReach(m.T), ay = Math.Abs(m.Y);
             double edge = lay.DeckHalfWidth(m.X);   // the hull deck under it, whatever it stands on

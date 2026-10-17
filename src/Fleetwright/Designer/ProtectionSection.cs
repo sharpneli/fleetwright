@@ -299,7 +299,7 @@ public sealed class ProtectionSection
         // the barbettes the cut passes through, down to their deck
         foreach (var c in hb.Components)
         {
-            if (c.Kind != "barbette" || c.X is not { } cx || c.R is not { } r || c.ArmourMm is not { } mm || mm <= 0 || (c.Y ?? 0) < 0)
+            if (c.Kind != ComponentKind.Barbette || c.X is not { } cx || c.R is not { } r || c.ArmourMm is not { } mm || mm <= 0 || (c.Y ?? 0) < 0)
                 continue;
             double dx = x - cx;
             if (Math.Abs(dx) >= r)

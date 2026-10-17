@@ -123,9 +123,9 @@ public sealed class PlaningStyle : Style
 
         if (Armament.GunGroups(design) is var (gun, fore, aft))
         {
-            Armament.GunLine(lay, mounts, turretTypes, gun, fore.Count, fore.Stepped, false, "main", ["A", "B", "C"], L / 2 - 0.16 * L, -1,
+            Armament.GunLine(lay, mounts, turretTypes, gun, fore.Count, fore.Stepped, false, ComponentKind.Main, ["A", "B", "C"], L / 2 - 0.16 * L, -1,
                 0.0, 0, x => 0.2, armourMm: gun.ArmourMm ?? 0, depth: depth);
-            Armament.GunLine(lay, mounts, turretTypes, gun, aft.Count, aft.Stepped, false, "main", ["Y", "X", "W"], -L / 2 + 1.6, +1,
+            Armament.GunLine(lay, mounts, turretTypes, gun, aft.Count, aft.Stepped, false, ComponentKind.Main, ["Y", "X", "W"], -L / 2 + 1.6, +1,
                 0.0, 180, x => 0.2, armourMm: gun.ArmourMm ?? 0, depth: depth);
         }
 
@@ -137,7 +137,7 @@ public sealed class PlaningStyle : Style
             var sec = secs[0];
             var (tsId, ts) = Armament.GunType(sec);
             double r = Armament.BodyReach(ts);
-            Armament.SidePairs(lay, mounts, turretTypes, "secondary", tsId, ts, sec.MountsPerSide,
+            Armament.SidePairs(lay, mounts, turretTypes, ComponentKind.Secondary, tsId, ts, sec.MountsPerSide,
                 xs2.Select(x => new Slot(x, lay.DeckHalfWidth(x) - r - 0.3, 0.2)), "S", armourMm: sec.ArmourMm!.Value);
         }
         FireControl.Place(lay, design, blocks);

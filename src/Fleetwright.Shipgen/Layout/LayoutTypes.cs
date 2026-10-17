@@ -35,8 +35,8 @@ public sealed record TurretType
 public sealed class Mount
 {
     public required string Id;
-    /// <summary>"main", "secondary" or "torpedo".</summary>
-    public required string Kind;
+    /// <summary>Main, Secondary or Torpedo.</summary>
+    public required ComponentKind Kind;
     public required string Type;
     public required TurretType T;
     public double X, Y;

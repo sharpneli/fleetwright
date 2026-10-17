@@ -202,7 +202,7 @@ public static class Arcs
         }
         if (m.ArcRole == "beam")
             return [Arc(90.0, ArcBeam), Arc(270.0, ArcBeam)];
-        if (m.Kind == "torpedo" && Math.Abs(m.Y) < 0.5)
+        if (m.Kind == ComponentKind.Torpedo && Math.Abs(m.Y) < 0.5)
             return [Arc(90.0, ArcTorpedo), Arc(270.0, ArcTorpedo)];
         if (Math.Abs(Math.Abs(Geometry.Wrap180(m.Rest)) - 90.0) < 1e-6)
             return [Arc(m.Rest, ArcSide)];

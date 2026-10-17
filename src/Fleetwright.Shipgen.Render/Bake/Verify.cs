@@ -79,7 +79,7 @@ public static class Verify
         int W = (int)sp.SizePx[0], H = (int)sp.SizePx[1];
         double ox = sp.OriginPx[0], oy = sp.OriginPx[1];
         var comps = hb.Components;
-        var rows = new List<(string Id, string Kind, double V)>();
+        var rows = new List<(string Id, ComponentKind Kind, double V)>();
         double worst = 1.0;
         foreach (var c in comps.Where(c => c.Local != null))
         {
@@ -121,7 +121,7 @@ public static class Verify
         double fixedWorst = 1.0;
         foreach (var c in comps)
         {
-            if (!(c.Kind == "funnel" || (c.Kind == "superstructure" && c.Base > 0)))
+            if (!(c.Kind == ComponentKind.Funnel || (c.Kind == ComponentKind.Superstructure && c.Base > 0)))
                 continue;
             var m = Mask([c.Points!], S, ox, oy, 0, 0, W, H);
             int n = 0, ok = 0;
@@ -138,7 +138,7 @@ public static class Verify
         // the hull image is the hull seen from above (wider than the deck with tumblehome) plus whatever overhangs it:
         // flight decks, sponsons, deck-edge elevators
         var seen = hb.HullForm.Stations.Count >= 2 ? hb.HullForm.Silhouette(hb.Length) : hb.Hull;
-        var outline = new[] { seen }.Concat(comps.Where(c => c.Kind is "flight_deck" or "sponson").Select(c => c.Points!));
+        var outline = new[] { seen }.Concat(comps.Where(c => c.Kind is ComponentKind.FlightDeck or ComponentKind.Sponson).Select(c => c.Points!));
         var hm = Mask(outline, S, ox, oy, 0, 0, W, H);
         var ha = new bool[W * H];
         for (int i = 0; i < ha.Length; i++)
@@ -263,7 +263,7 @@ public static class Verify
             var barrels = c.Local?.Barrels ?? [];
             double axis = c.Base + 0.55 * (c.Top - c.Base);
             bool Tall(Component o) => !ReferenceEquals(o, c) && o.Top > axis + 1e-6 && o.Base < axis && (o.Points is { Count: > 0 } || o.Local != null);
-            if (c.Kind == "secondary" && c.Rotating != false)
+            if (c.Kind == ComponentKind.Secondary && c.Rotating != false)
             {
                 // stowed barrels lie clear of everything around them at their axis height
                 var hits = new SortedSet<string>(StringComparer.Ordinal);
@@ -278,7 +278,7 @@ public static class Verify
                 if (hits.Count > 0)
                     probs.Add($"{c.Id}: stowed barrels at {rest} hit {string.Join(", ", hits)}");
             }
-            if (c.Kind != "main")
+            if (c.Kind != ComponentKind.Main)
                 continue;
             double R = barrels.SelectMany(b => b).Max(p => p.X);
             var tall = comps.Where(Tall).ToList();

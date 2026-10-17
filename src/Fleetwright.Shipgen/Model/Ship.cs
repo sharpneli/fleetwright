@@ -373,7 +373,7 @@ public sealed record ArmourDeckReport(string Deck, double ThicknessMm, string Ex
 public sealed class Component
 {
     public required string Id { get; init; }
-    public required string Kind { get; init; }
+    public required ComponentKind Kind { get; init; }
     public string? Type { get; init; }
     public string? Role { get; init; }
     /// <summary>A superstructure block's level on what it stands on (1: the lowest).</summary>

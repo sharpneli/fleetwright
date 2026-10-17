@@ -123,7 +123,7 @@ public static class Crew
         double guns = 0.0, torps = 0.0;
         foreach (var m in lay.Mounts)
         {
-            if (m.Kind == "torpedo")
+            if (m.Kind == ComponentKind.Torpedo)
                 torps += TorpedoCrew(m.T);
             else
                 guns += GunCrew(m.T.CalibreMm, m.T.Barrels);
@@ -337,7 +337,7 @@ public static class Crew
 
         var need = new List<((string, string) Key, double V)>();
         foreach (var m in lay.Mounts)
-            need.Add(((m.Kind, m.Id), m.Kind == "torpedo" ? TorpedoCrew(m.T) : GunCrew(m.T.CalibreMm, m.T.Barrels)));
+            need.Add(((m.Kind.Name(), m.Id), m.Kind == ComponentKind.Torpedo ? TorpedoCrew(m.T) : GunCrew(m.T.CalibreMm, m.T.Barrels)));
         foreach (var a in lay.Aa)
         {
             var cfg = Geometry.AaCfg[a.Type];

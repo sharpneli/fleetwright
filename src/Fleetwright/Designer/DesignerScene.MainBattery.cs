@@ -78,7 +78,7 @@ public sealed unsafe partial class DesignerScene
             var weight = ship.Report.Weights.Where(w => w.Name.StartsWith("Turret ", StringComparison.Ordinal))
                 .GroupBy(w => w.Name[7..]).ToDictionary(g => g.Key, g => g.Sum(w => w.T));
             foreach (var c in ship.Hitboxes.Components)
-                if (c.Kind == "main" && c.Type != null && weight.TryGetValue(c.Id, out double t))
+                if (c.Kind == ComponentKind.Main && c.Type != null && weight.TryGetValue(c.Id, out double t))
                 {
                     double n = 0;
                     for (int k = 0; k < mains.Count; k++)

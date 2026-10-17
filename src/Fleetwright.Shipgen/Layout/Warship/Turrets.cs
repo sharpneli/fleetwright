@@ -34,13 +34,13 @@ public sealed partial class Layout
                     bse = Math.Max(bse, dz + 1.2);
                     var probe = new Mount
                     {
-                        Id = "", Kind = "main", Type = g.Tid, T = g.T, X = x, Rest = rest_, Base = bse, Top = bse + g.Th,
+                        Id = "", Kind = ComponentKind.Main, Type = g.Tid, T = g.T, X = x, Rest = rest_, Base = bse, Top = bse + g.Th,
                         ArcRole = flush ? "beam" : null,
                     };
                     bse += RaisedLift(lay, probe);
                     prev = bse;
                     string mid = TurretName(names[gname], i);
-                    var m = Armament.AddMount(lay, mounts, "main", g.Tid, g.T, mid, x, 0.0, bse, rest_, level: level,
+                    var m = Armament.AddMount(lay, mounts, ComponentKind.Main, g.Tid, g.T, mid, x, 0.0, bse, rest_, level: level,
                         armourMm: g.ArmourMm, depth: depth, footprintR: g.Reach, label: "Turret",
                         deck: lay.Raised.Count > 0 ? bse - 1.2 - TierSteps(gs, level) : dz);
                     m.Material = g.Material;
@@ -70,10 +70,10 @@ public sealed partial class Layout
                 double reach = g.Reach;
                 double dz = lay.DeckZ(x, reach);
                 double bse = Math.Max(dz, g.Raised ? LevelH : 0.0) + 1.2;
-                var probe = new Mount { Id = "", Kind = "main", Type = g.Tid, T = g.T, X = x, Y = y, Rest = rest, Base = bse, Top = bse + g.Th };
+                var probe = new Mount { Id = "", Kind = ComponentKind.Main, Type = g.Tid, T = g.T, X = x, Y = y, Rest = rest, Base = bse, Top = bse + g.Th };
                 flags(probe);
                 bse += RaisedLift(lay, probe);
-                var m = Armament.AddMount(lay, mounts, "main", g.Tid, g.T, mid, x, y, bse, rest,
+                var m = Armament.AddMount(lay, mounts, ComponentKind.Main, g.Tid, g.T, mid, x, y, bse, rest,
                     armourMm: g.ArmourMm, depth: depth, footprintR: reach, label: "Turret",
                     deck: lay.Raised.Count > 0 ? Math.Max(0.0, bse - 1.2 - (g.Raised ? LevelH : 0.0)) : dz);
                 m.Material = g.Material;

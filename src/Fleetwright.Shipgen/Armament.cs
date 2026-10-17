@@ -70,11 +70,11 @@ public static class Armament
 
     /// <summary>One mount: footprint, weights and the mount record, for every style. A side mount also claims the space
     /// its barrels take at rest.</summary>
-    public static Mount AddMount(Layout lay, List<Mount> mounts, string kind, string tId, TurretType t, string mid, double x, double y,
+    public static Mount AddMount(Layout lay, List<Mount> mounts, ComponentKind kind, string tId, TurretType t, string mid, double x, double y,
         double bse, double rest, long level = 0, double armourMm = 0.0, double depth = 10.0, double? top = null,
         double? footprintR = null, string label = "Mount", double deck = 0.0, bool sideMount = false)
     {
-        double th = kind != "torpedo" || t.IsFixedTube ? Geometry.TurretHeight(t) : 1.1;
+        double th = kind != ComponentKind.Torpedo || t.IsFixedTube ? Geometry.TurretHeight(t) : 1.1;
         double tp = top ?? bse + th;
         var m = new Mount
         {
@@ -89,7 +89,7 @@ public static class Armament
         }
         else
         {
-            double r = footprintR ?? (kind != "torpedo" ? BodyReach(t) : t.BarrelLen / 2 + 0.3);
+            double r = footprintR ?? (kind != ComponentKind.Torpedo ? BodyReach(t) : t.BarrelLen / 2 + 0.3);
             lay.Occupy(Footprint.Circle(x, y, r), bse, tp, mid);
             if (sideMount)
             {
@@ -99,7 +99,7 @@ public static class Armament
                 lay.Overhangs.Add(fp);
             }
         }
-        if (kind == "torpedo")
+        if (kind == ComponentKind.Torpedo)
         {
             lay.Weights.Add(new Weight(mid, "armament", Batteries.TorpedoWeight(t.Barrels, t.IsFixedTube), x, ZRel.Deck(bse + 0.5)));
             return m;
@@ -115,7 +115,7 @@ public static class Armament
     /// <summary>n mounts in a line from xStart in direction stepDir, each superfiring over the one before it. stepped:
     /// how many step up (all of them when null); flat: none do, all on the deck.</summary>
     public static void GunLine(Layout lay, List<Mount> mounts, OrderedDictionary<string, TurretType> turretTypes, BatteryInput gun, long n,
-        long? stepped, bool flat, string kind, IReadOnlyList<string> names, double xStart, double stepDir, double y, double rest,
+        long? stepped, bool flat, ComponentKind kind, IReadOnlyList<string> names, double xStart, double stepDir, double y, double rest,
         Func<double, double> deckH, bool raiseInner = false, double armourMm = 0.0, double depth = 10.0, string label = "Main",
         IReadOnlyCollection<string>? ignore = null, string? battery = null)
     {
@@ -155,16 +155,16 @@ public static class Armament
     }
 
     /// <summary>perSide mounts on each side from candidate slots, in order of preference.</summary>
-    public static long SidePairs(Layout lay, List<Mount> mounts, OrderedDictionary<string, TurretType> turretTypes, string kind, string tId,
+    public static long SidePairs(Layout lay, List<Mount> mounts, OrderedDictionary<string, TurretType> turretTypes, ComponentKind kind, string tId,
         TurretType t, long perSide, IEnumerable<Slot> cands, string prefix, double? pitch = null, double armourMm = 25.0,
         double depth = 10.0, string label = "Secondary", IReadOnlyCollection<string>? ignore = null)
     {
         if (perSide == 0)
             return 0;
         turretTypes[tId] = t;
-        double reach = kind != "torpedo" ? BodyReach(t) : t.BarrelLen / 2 + 0.3;
+        double reach = kind != ComponentKind.Torpedo ? BodyReach(t) : t.BarrelLen / 2 + 0.3;
         double pt = pitch is double p && p != 0 ? p : 2.1 * reach + 1.0;
-        bool guns = kind != "torpedo";
+        bool guns = kind != ComponentKind.Torpedo;
         double pitchStowed = Geometry.TurretReach(t) + reach + 0.4;
         var placed = new List<double>();
         foreach (var c in cands)
@@ -192,7 +192,7 @@ public static class Armament
                 {
                     var m = AddMount(lay, mounts, kind, tId, t, mid, x, yy, bse, StowBearing(x, side, 90.0), armourMm: armourMm,
                         depth: depth, sideMount: true);
-                    if (kind == "secondary")
+                    if (kind == ComponentKind.Secondary)
                         m.Battery = prefix;
                 }
                 else
@@ -251,14 +251,14 @@ public static class Armament
                 long n = nEnd / endLines.Count + (i < nEnd % endLines.Count ? 1 : 0);
                 if (n == 0)
                     continue;
-                GunLine(lay, mounts, turretTypes, b, n, null, true, "secondary",
+                GunLine(lay, mounts, turretTypes, b, n, null, true, ComponentKind.Secondary,
                     Enumerable.Range(0, (int)n).Select(j => $"{prefix}{made + j + 1}").ToList(), cursor[i], ln.StepDir, ln.Y, ln.Rest,
                     ln.DeckH, armourMm: b.ArmourMm!.Value, depth: depth, label: "Secondary", ignore: ln.Ignore, battery: prefix);
                 cursor[i] += ln.StepDir * (2 * BodyReach(t) + (n - 1) * (2.2 * t.R + 3.0) + 1.0);
                 made += n;
             }
             if (nSide != 0)
-                SidePairs(lay, mounts, turretTypes, "secondary", tId, t, nSide, sideSlots(t), prefix, armourMm: b.ArmourMm!.Value, depth: depth);
+                SidePairs(lay, mounts, turretTypes, ComponentKind.Secondary, tId, t, nSide, sideSlots(t), prefix, armourMm: b.ArmourMm!.Value, depth: depth);
             foreach (var m in mounts.Skip(first))
                 m.Material = b.Material;
         }
@@ -284,7 +284,7 @@ public static class Armament
                 continue;
             placed++;
             foreach (int side in new[] { 1, -1 })
-                AddMount(lay, mounts, "torpedo", tId, t, $"T{placed}{(side > 0 ? "S" : "P")}", x, side * y, bse, side * toeDeg);
+                AddMount(lay, mounts, ComponentKind.Torpedo, tId, t, $"T{placed}{(side > 0 ? "S" : "P")}", x, side * y, bse, side * toeDeg);
         }
         if (placed < want)   // each pair wants a tube's length more of the side, at least
             lay.FailLength(lay.Hull.L + (want - placed) * (t.BarrelLen + 0.5), $"Only {placed} of {want} pairs of torpedo tubes fit along the sides.");

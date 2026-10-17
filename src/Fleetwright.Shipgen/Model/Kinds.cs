@@ -31,6 +31,33 @@ public enum RoomKind : byte
     Hangar,
 }
 
+/// <summary>A hitbox component's kind. Main, Secondary and Torpedo are the mounts by battery (the mount table); AA mounts
+/// are their own catalogue, with no turret shape or bearing yet. The sim keeps these byte values in its tables: add new
+/// kinds at the end.</summary>
+[JsonConverter(typeof(SnakeEnumConverter<ComponentKind>))]
+public enum ComponentKind : byte
+{
+    Main,
+    Secondary,
+    Torpedo,
+    Aa,
+    Barbette,
+    Superstructure,
+    ConningTower,
+    Funnel,
+    Uptake,
+    Casing,
+    Sponson,
+    Mast,
+    Shaft,
+    ShaftAlley,
+    Propeller,
+    Rudder,
+    TorpedoTube,
+    FlightDeck,
+    HangarBay,
+}
+
 /// <summary>An enum's members by their snake_case names, both ways.</summary>
 public static class SnakeEnum<T> where T : struct, Enum
 {

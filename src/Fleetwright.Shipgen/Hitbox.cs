@@ -19,7 +19,7 @@ public static class Hitbox
             var (p0, p1) = (sh.P0, sh.P1);
             yield return new Component
             {
-                Id = sh.Id, Kind = "shaft", Shape = "segment", Position = sh.Position,
+                Id = sh.Id, Kind = ComponentKind.Shaft, Shape = "segment", Position = sh.Position,
                 P0 = [Math.Round(p0.X, 3), Math.Round(p0.Y, 3), Z(p0.Z)], P1 = [Math.Round(p1.X, 3), Math.Round(p1.Y, 3), Z(p1.Z)],
                 R = Propulsion.ShaftR, Points = Rect(p1.X, p0.X, p0.Y, Propulsion.ShaftR), Base = Z(Math.Min(p0.Z, p1.Z) - Propulsion.ShaftR),
                 Top = Z(Math.Max(p0.Z, p1.Z) + Propulsion.ShaftR), LeavesHullX = Math.Round(sh.ExitX, 3), Propeller = sh.Propeller,
@@ -29,7 +29,7 @@ public static class Hitbox
         foreach (var a in tr.Alleys)
             yield return new Component
             {
-                Id = a.Id, Kind = "shaft_alley", Shape = "polygon", Shaft = a.Shaft, Points = Rect(a.X0, a.X1, a.Y, Propulsion.AlleyW / 2),
+                Id = a.Id, Kind = ComponentKind.ShaftAlley, Shape = "polygon", Shaft = a.Shaft, Points = Rect(a.X0, a.X1, a.Y, Propulsion.AlleyW / 2),
                 Base = Z(a.Base), Top = Z(a.Top),
             };
         foreach (var p in tr.Propellers)
@@ -37,7 +37,7 @@ public static class Hitbox
             double r = p.Diameter / 2;
             yield return new Component
             {
-                Id = p.Id, Kind = "propeller", Shape = "disc", X = Math.Round(p.X, 3), Y = Math.Round(p.Y, 3), Z = Z(p.Z),
+                Id = p.Id, Kind = ComponentKind.Propeller, Shape = "disc", X = Math.Round(p.X, 3), Y = Math.Round(p.Y, 3), Z = Z(p.Z),
                 DiameterM = Math.Round(p.Diameter, 2), Position = p.Position, Shaft = p.Shaft, Points = Rect(p.X - 0.25 * r, p.X + 0.25 * r, p.Y, r),
                 Base = Z(p.Z - r), Top = Z(p.Z + r),
             };
@@ -45,7 +45,7 @@ public static class Hitbox
         foreach (var rd in tr.Rudders)
             yield return new Component
             {
-                Id = rd.Id, Kind = "rudder", Shape = "polygon", X = Math.Round(rd.X, 3), Y = Math.Round(rd.Y, 3), AreaM2 = Math.Round(rd.AreaM2, 1),
+                Id = rd.Id, Kind = ComponentKind.Rudder, Shape = "polygon", X = Math.Round(rd.X, 3), Y = Math.Round(rd.Y, 3), AreaM2 = Math.Round(rd.AreaM2, 1),
                 Points = Rect(rd.X0, rd.X1, rd.Y, rd.Thick / 2), Base = Z(rd.Base), Top = Z(rd.Top), Steering = NonEmpty(tr.Steering),
             };
     }
@@ -61,7 +61,7 @@ public static class Hitbox
             var sh = Geometry.TurretShapesOf(t);
             double arm = m.ArmourMm;
             string? Own(string part) => NonEmpty(m.Material) ?? Armour.ArmourMaterial(design, part);
-            string? mat = m.Kind == "main" ? Own("turrets") : m.Kind == "secondary" ? Own("secondary") : null;
+            string? mat = m.Kind == ComponentKind.Main ? Own("turrets") : m.Kind == ComponentKind.Secondary ? Own("secondary") : null;
             var c = new Component
             {
                 Id = m.Id, Kind = m.Kind, Type = m.Type, CalibreMm = t.CalibreMm, CalibreLength = t.CalibreLength, X = Math.Round(m.X, 3),
@@ -71,12 +71,12 @@ public static class Hitbox
                 Local = new TurretLocal(R3(sh.Body), sh.Parts.Select(R3).ToList(), sh.Barrels.Select(R3).ToList()),
                 Magazine = NonEmpty(m.Magazine), Casemate = m.Casemate ? true : null,
             };
-            if (m.Kind is "main" or "secondary")
+            if (m.Kind is ComponentKind.Main or ComponentKind.Secondary)
             {
                 c.Armour = new TurretArmour(arm, (long)Math.Round(TurretSide * arm), (long)Math.Round(TurretRear * arm), (long)Math.Round(TurretRoof * arm));
                 c.Material = NonEmpty(mat);
             }
-            if (m.Kind == "torpedo")
+            if (m.Kind == ComponentKind.Torpedo)
                 (c.Torpedoes, c.WarheadKg) = (t.Barrels, (long)Math.Round(Ordnance.WarheadKg()));
             else
             {
@@ -92,9 +92,9 @@ public static class Hitbox
             c.Barbette = $"{m.Id} barbette";
             yield return new Component
             {
-                Id = c.Barbette, Kind = "barbette", Mount = m.Id, Shape = "circle", X = Math.Round(m.X, 3), Y = Math.Round(m.Y, 3),
+                Id = c.Barbette, Kind = ComponentKind.Barbette, Mount = m.Id, Shape = "circle", X = Math.Round(m.X, 3), Y = Math.Round(m.Y, 3),
                 R = Math.Round(br, 3), Base = inHull ? Math.Min(Math.Round(barbetteZ - D, 2), Math.Round(m.Base, 2)) : Math.Round(m.Base - 1.0, 2),
-                Top = Math.Round(m.Base, 2), ArmourMm = (long)Math.Round(Barbette * arm), Material = NonEmpty(m.Kind == "main" ? Own("barbettes") : mat),
+                Top = Math.Round(m.Base, 2), ArmourMm = (long)Math.Round(Barbette * arm), Material = NonEmpty(m.Kind == ComponentKind.Main ? Own("barbettes") : mat),
             };
         }
     }
@@ -110,7 +110,7 @@ public static class Hitbox
             var smoke = lay.Smoke.GetValueOrDefault(b.Id);
             yield return new Component
             {
-                Id = b.Id, Kind = "superstructure", Role = b.Role, Level = b.Level, Shape = "polygon", Points = R3(Geometry.BlockOutline(b)),
+                Id = b.Id, Kind = ComponentKind.Superstructure, Role = b.Role, Level = b.Level, Shape = "polygon", Points = R3(Geometry.BlockOutline(b)),
                 Rrect = b.Points is { Count: > 0 } ? null
                     : new Rrect(Math.Round(b.X0, 3), Math.Round(b.X1, 3), Math.Round(b.Y - b.W / 2, 3), Math.Round(b.Y + b.W / 2, 3),
                         Math.Round(b.Rf, 3), Math.Round(b.Rb, 3)),
@@ -124,7 +124,7 @@ public static class Hitbox
         if (lay.ConningTower is { } ct)
             yield return new Component
             {
-                Id = "Conning tower", Kind = "conning_tower", Shape = "circle", X = Math.Round(ct.X, 3), Y = Math.Round(ct.Y, 3), R = Math.Round(ct.R, 3),
+                Id = "Conning tower", Kind = ComponentKind.ConningTower, Shape = "circle", X = Math.Round(ct.X, 3), Y = Math.Round(ct.Y, 3), R = Math.Round(ct.R, 3),
                 Base = 0.0, Top = Math.Round(ct.Top, 2), ArmourMm = ag.BeltMm, Material = NonEmpty(Armour.ArmourMaterial(design, "conning_tower")),
             };
         var plan = lay.Geo.Plant;
@@ -133,20 +133,20 @@ public static class Hitbox
             var pts = R3(Geometry.RrectPolygon(f.X - f.L / 2, f.Y - f.W / 2, f.X + f.L / 2, f.Y + f.W / 2, f.W / 2, f.W / 2));
             yield return new Component
             {
-                Id = f.Id, Kind = "funnel", Shape = "polygon", Points = pts, Base = f.Z0 ?? 0.0, Top = Math.Round(lay.FunTop, 2), BoilerRooms = f.Serves ?? [],
+                Id = f.Id, Kind = ComponentKind.Funnel, Shape = "polygon", Points = pts, Base = f.Z0 ?? 0.0, Top = Math.Round(lay.FunTop, 2), BoilerRooms = f.Serves ?? [],
                 Pipes = f.Pipes,
             };
             if (plan != null && f.Serves != null)
                 yield return new Component
                 {
-                    Id = $"{f.Id} uptakes", Kind = "uptake", Funnel = f.Id, Shape = "polygon", Points = pts,
+                    Id = $"{f.Id} uptakes", Kind = ComponentKind.Uptake, Funnel = f.Id, Shape = "polygon", Points = pts,
                     Base = Math.Round(plan.InnerBottom + plan.Space.Unit.H - D, 2), Top = f.Z0 ?? 0.0, BoilerRooms = f.Serves,
                 };
         }
         foreach (var c in lay.Casings)
             yield return new Component
             {
-                Id = c.Id, Kind = "casing", Shape = "polygon", Points = R3(Geometry.RrectPolygon(c.X0, -c.W / 2, c.X1, c.W / 2, 0.5, 0.5)),
+                Id = c.Id, Kind = ComponentKind.Casing, Shape = "polygon", Points = R3(Geometry.RrectPolygon(c.X0, -c.W / 2, c.X1, c.W / 2, 0.5, 0.5)),
                 Base = Math.Round(c.Base, 2), Top = Math.Round(c.Top, 2), ArmourMm = c.ArmourMm, Material = c.ArmourMm != 0 ? NonEmpty(ag.RoofMaterial) : null,
             };
     }
@@ -164,7 +164,7 @@ public static class Hitbox
             bool armoured = dk.Kind == "flight_deck" && fdMm != 0;
             comps.Add(new Component
             {
-                Id = dk.Id, Kind = dk.Kind, Role = dk.Role, Shape = "polygon", Points = R3(dk.Points), Base = Math.Round(dk.Base, 2), Top = Math.Round(dk.Top, 2),
+                Id = dk.Id, Kind = SnakeEnum<ComponentKind>.Parse(dk.Kind), Role = dk.Role, Shape = "polygon", Points = R3(dk.Points), Base = Math.Round(dk.Base, 2), Top = Math.Round(dk.Top, 2),
                 ArmourMm = armoured ? fdMm : null, Material = armoured ? NonEmpty(Armour.ArmourMaterial(design, "flight_deck")) : null,
                 WoodMm = inner.Planked.Contains(dk.Id) ? inner.Plating.DeckWoodMm : null,
             });
@@ -175,7 +175,7 @@ public static class Hitbox
             var (n, w) = Ordnance.ReadyUse(cfg.CalibreMm, cfg.Barrels);
             comps.Add(new Component
             {
-                Id = a.Id, Kind = "aa", Type = a.Type, CalibreMm = cfg.CalibreMm, CalibreLength = cfg.CalibreLength, Shape = "circle",
+                Id = a.Id, Kind = ComponentKind.Aa, Type = a.Type, CalibreMm = cfg.CalibreMm, CalibreLength = cfg.CalibreLength, Shape = "circle",
                 X = Math.Round(a.X, 3), Y = Math.Round(a.Y, 3), R = cfg.R, Base = a.Base, Top = a.Base + 2.0, RestDeg = a.Dir, ReadyRounds = n,
                 ReadyT = Math.Round(w, 2),
             });
@@ -188,20 +188,20 @@ public static class Hitbox
                     bse = dk.Top;
             comps.Add(new Component
             {
-                Id = m.Id!, Kind = "mast", Shape = "circle", X = Math.Round(x, 3), Y = Math.Round(y, 3), R = Mast.PoleR, Base = Math.Round(bse, 2),
+                Id = m.Id!, Kind = ComponentKind.Mast, Shape = "circle", X = Math.Round(x, 3), Y = Math.Round(y, 3), R = Mast.PoleR, Base = Math.Round(bse, 2),
                 Top = Math.Round(m.Top!.Value, 2),
             });
         }
         foreach (var c in lay.Compartments.Where(c => c.Kind == RoomKind.Hangar))
             comps.Add(new Component
             {
-                Id = c.Id, Kind = "hangar_bay", Shape = "polygon", Points = R3(Geometry.RrectPolygon(c.X0, -c.HalfWidth, c.X1, c.HalfWidth, 0.0, 0.0)),
+                Id = c.Id, Kind = ComponentKind.HangarBay, Shape = "polygon", Points = R3(Geometry.RrectPolygon(c.X0, -c.HalfWidth, c.X1, c.HalfWidth, 0.0, 0.0)),
                 Base = Math.Round(c.Base!.Value, 2), Top = Math.Round(c.Top!.Value, 2),
             });
         comps.AddRange(PropulsionComponents(inner.Propulsion, D));
         comps.AddRange(SubmergedTubes.Components(inner.Tubes));
         foreach (var x in comps)
-            if (inner.BattleCrew.TryGetValue((x.Kind, x.Id), out var bc) && bc != 0)
+            if (inner.BattleCrew.TryGetValue((x.Kind.Name(), x.Id), out var bc) && bc != 0)
                 x.BattleCrew = bc;
 
         var armour = new ArmourReport();

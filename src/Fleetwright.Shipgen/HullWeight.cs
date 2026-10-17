@@ -308,7 +308,7 @@ public static class Ordnance
     public static double AmmoM3(TurretType t) => AmmoT(t) / TPerM3;
 
     /// <summary>The ids of the mounts that carry ammunition (guns, not torpedo tubes).</summary>
-    public static List<string> Guns(IEnumerable<Mount> mounts) => mounts.Where(m => m.Kind is "main" or "secondary").Select(m => m.Id).ToList();
+    public static List<string> Guns(IEnumerable<Mount> mounts) => mounts.Where(m => m.Kind is ComponentKind.Main or ComponentKind.Secondary).Select(m => m.Id).ToList();
 
     /// <summary>The magazine volume the mounts' booked ammunition ("Magazine &lt;id&gt;" weights) needs.</summary>
     public static double BookedM3(Layout lay, IEnumerable<string> mids)

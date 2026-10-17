@@ -573,7 +573,7 @@ public static unsafe class Program
                 return Sim.DamageSystem.FloodRooms(ship, room, p.Length > 2 && int.TryParse(p[2], out int n) ? n : int.MaxValue);
             case "jam" when int.TryParse(p[1], out int mount):
                 return Sim.DamageSystem.Jam(ship, mount);
-            case "wreck" when Kind<Sim.Ships.ComponentKind>(p[1]) is { } kind:
+            case "wreck" when Kind<Shipgen.ComponentKind>(p[1]) is { } kind:
                 int nth = p.Length > 2 && int.TryParse(p[2], out int i) ? i : 0;
                 var state = p.Length > 3 && Kind<Sim.Combat.PartState>(p[3]) is { } s ? s : Sim.Combat.PartState.Destroyed;
                 return Sim.DamageSystem.WreckKind(ship, kind, nth, state);

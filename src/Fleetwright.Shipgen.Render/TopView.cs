@@ -8,7 +8,7 @@ public sealed class TopView
 {
     /// <summary>A gun or torpedo mount: its type, pivot, draw order Z (by base height), rest bearing, arcs, and the
     /// roof's height.</summary>
-    public sealed record Mount(string Id, string Kind, string Type, double X, double Y, long Z, double Rest, List<double[]> Arcs,
+    public sealed record Mount(string Id, ComponentKind Kind, string Type, double X, double Y, long Z, double Rest, List<double[]> Arcs,
         double[]? Traverse, double Top, bool Casemate);
 
     public sealed record Barbette(double X, double Y, double R, double Top);
@@ -79,7 +79,7 @@ public sealed class TopView
     /// deck's markings.</summary>
     public required Dressing Dressing;
 
-    static readonly Dictionary<string, int> DrawKind = new(StringComparer.Ordinal) { ["main"] = 2, ["secondary"] = 1 };
+    static int DrawKind(ComponentKind k) => k switch { ComponentKind.Main => 2, ComponentKind.Secondary => 1, _ => 0 };
 
     static (double X0, double X1, double Y0, double Y1) Box(List<Pt> pts) =>
         (pts.Min(p => p.X), pts.Max(p => p.X), pts.Min(p => p.Y), pts.Max(p => p.Y));
@@ -91,13 +91,13 @@ public sealed class TopView
         var comps = hb.Components;
 
         var guns = comps.Where(c => c.Local != null).ToList();
-        (double, int) Key(Component c) => (Math.Round(c.Base, 3), DrawKind.GetValueOrDefault(c.Kind));
+        (double, int) Key(Component c) => (Math.Round(c.Base, 3), DrawKind(c.Kind));
         var keys = guns.Select(Key).Distinct().Order().ToList();
         var mounts = guns.Select(c => new Mount(c.Id, c.Kind, c.Type!, c.X!.Value, c.Y!.Value, keys.IndexOf(Key(c)), c.RestDeg ?? 0.0,
             c.ArcsDeg ?? [], c.TraverseDeg, c.Top, c.Casemate == true)).ToList();
 
         var blocks = new List<Block>();
-        foreach (var c in comps.Where(c => c.Kind == "superstructure"))
+        foreach (var c in comps.Where(c => c.Kind == ComponentKind.Superstructure))
         {
             long level = c.Level ?? 1;
             bool upper = level > 1 || c.Base - Layout.LevelH * (level - 1) > 0.005;
@@ -111,14 +111,14 @@ public sealed class TopView
             }
         }
 
-        var funnels = comps.Where(c => c.Kind == "funnel").Select(c =>
+        var funnels = comps.Where(c => c.Kind == ComponentKind.Funnel).Select(c =>
         {
             var (x0, x1, y0, y1) = Box(c.Points!);
             return new Funnel(c.Id, (x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0, c.Pipes ?? 1, c.Points!, c.Top);
         }).ToList();
 
         var dressed = spec.Masts.ToDictionary(m => m.Id, StringComparer.Ordinal);
-        var masts = comps.Where(c => c.Kind == "mast").Select(c =>
+        var masts = comps.Where(c => c.Kind == ComponentKind.Mast).Select(c =>
         {
             var d = dressed[c.Id];
             return new Mast(c.Id, c.X!.Value, c.Y!.Value, c.R!.Value, c.Top, d.Yard, d.Tripod, d.Booms);
@@ -126,7 +126,7 @@ public sealed class TopView
 
         // an AA mount on a roof drawn in the high pass is drawn there too, over the roof
         bool OnUpper(Component a) => blocks.Any(b => b.Upper && Math.Abs(b.Top - a.Base) < 0.02 && Geometry.PointInPolygon(a.X!.Value, a.Y!.Value, b.Outline));
-        var aa = comps.Where(c => c.Kind == "aa").Select(c => new Aa(c.Id, c.Type!, c.X!.Value, c.Y!.Value, c.RestDeg ?? 0.0, c.R!.Value, c.Top,
+        var aa = comps.Where(c => c.Kind == ComponentKind.Aa).Select(c => new Aa(c.Id, c.Type!, c.X!.Value, c.Y!.Value, c.RestDeg ?? 0.0, c.R!.Value, c.Top,
             OnUpper(c))).ToList();
 
         var hull = new Hull(new HullSpec(hb.Length, hb.Beam, hb.Bow, hb.Stern));
@@ -148,19 +148,19 @@ public sealed class TopView
                 shades.Add(SideAt(k * (1 - f)).Points());
         }
 
-        var platforms = comps.Where(c => c.Kind is "flight_deck" or "sponson")
+        var platforms = comps.Where(c => c.Kind is ComponentKind.FlightDeck or ComponentKind.Sponson)
             .Select(c => (c.Kind, P: new Platform(c.Id, c.Points!, c.Top, c.Role == "elevator"))).ToList();
 
         return new TopView
         {
             Id = ship.Design.Id ?? "", Hull = hull, Deck = SideAt(0.0), SideBands = bands, ShadeBands = shades, KnuckleM = knuckleM, DeckM = deckM, TurretTypes = hb.TurretTypes, Mounts = mounts,
-            Barbettes = comps.Where(c => c.Kind == "barbette").Select(c => new Barbette(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top)).ToList(),
+            Barbettes = comps.Where(c => c.Kind == ComponentKind.Barbette).Select(c => new Barbette(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top)).ToList(),
             Blocks = blocks, Funnels = funnels, Masts = masts, AaMounts = aa, RaisedDecks = raised,
-            ConningTower = comps.Where(c => c.Kind == "conning_tower").Select(c => new Tower(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top))
+            ConningTower = comps.Where(c => c.Kind == ComponentKind.ConningTower).Select(c => new Tower(c.X!.Value, c.Y!.Value, c.R!.Value, c.Top))
                 .FirstOrDefault(),
-            Casings = comps.Where(c => c.Kind == "casing" && c.Top > 0).Select(c => new Casing(c.Id, c.Points!, c.Top)).ToList(),
-            FlightDeck = platforms.Where(p => p.Kind == "flight_deck").Select(p => p.P).FirstOrDefault(),
-            Sponsons = platforms.Where(p => p.Kind == "sponson").Select(p => p.P).ToList(), Dressing = spec,
+            Casings = comps.Where(c => c.Kind == ComponentKind.Casing && c.Top > 0).Select(c => new Casing(c.Id, c.Points!, c.Top)).ToList(),
+            FlightDeck = platforms.Where(p => p.Kind == ComponentKind.FlightDeck).Select(p => p.P).FirstOrDefault(),
+            Sponsons = platforms.Where(p => p.Kind == ComponentKind.Sponson).Select(p => p.P).ToList(), Dressing = spec,
         };
     }
 

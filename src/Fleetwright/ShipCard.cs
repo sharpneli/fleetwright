@@ -47,10 +47,10 @@ public sealed record ShipCard(string Name, string Subtitle, (string Value, strin
 
         var mains = Guns(d.Main, true);
         string main = string.Join(" · ", mains), first = mains.FirstOrDefault() ?? "", sec = string.Join(" · ", Guns(d.Secondary, false));
-        string aa = string.Join(" · ", hb.Components.Where(c => c.Kind == "aa").GroupBy(c => Geometry.AaCfg[c.Type!].CalibreMm)
+        string aa = string.Join(" · ", hb.Components.Where(c => c.Kind == ComponentKind.Aa).GroupBy(c => Geometry.AaCfg[c.Type!].CalibreMm)
             .OrderByDescending(g => g.Key).Select(g => $"{g.Sum(c => Geometry.AaCfg[c.Type!].Barrels)} × {Fmt(g.Key, Quantity.Calibre, u)}"));
-        var tubes = hb.Components.Where(c => c.Kind == "torpedo").ToList();
-        int submerged = hb.Components.Count(c => c.Kind == "torpedo_tube");
+        var tubes = hb.Components.Where(c => c.Kind == ComponentKind.Torpedo).ToList();
+        int submerged = hb.Components.Count(c => c.Kind == ComponentKind.TorpedoTube);
         long allTubes = tubes.Sum(c => c.Torpedoes ?? 0) + submerged;
         string torpedoes = allTubes == 0 ? "" : $"{allTubes} × {Fmt(SubmergedTubes.CalibreMm, Quantity.Calibre, u)} tubes" +
             (submerged == 0 ? "" : submerged == allTubes ? ", submerged" : $", {submerged} submerged");

@@ -53,7 +53,7 @@ public sealed partial class Layout
         var onDeck = mounts.Where(m => m.Base < LevelH && !m.Casemate && !lay.EndMounts.Contains(m))
             .Select(m => (m.X, Y: Math.Abs(m.Y), R: Math.Max(m.T.R, Geometry.TurretReach(m.T, 0.0)))).ToList();
         // (and out of the barrel sweeps of the turrets on the deck that pass under its roof)
-        var deckSwept = mounts.Where(m => m.Kind == "main" && (m.Wing || m.Midships) && m.Base < LevelH).Select(m => m.Id)
+        var deckSwept = mounts.Where(m => m.Kind == ComponentKind.Main && (m.Wing || m.Midships) && m.Base < LevelH).Select(m => m.Id)
             .ToHashSet();
         var sweptBoxes = lay.Sweeps.Where(sw => deckSwept.Contains(sw.Owner) && sw.Axis < LevelH).SelectMany(sw => sw.Boxes)
             .ToList();
@@ -204,7 +204,7 @@ public sealed partial class Layout
             foreach (int side in new[] { 1, -1 })
             {
                 string mid = $"{pre}{i + 1}{(side > 0 ? "S" : "P")}";
-                var m = Armament.AddMount(lay, mounts, "secondary", tsId, ts, mid, sx, side * yS, SecBase(sx),
+                var m = Armament.AddMount(lay, mounts, ComponentKind.Secondary, tsId, ts, mid, sx, side * yS, SecBase(sx),
                     Armament.StowBearing(sx, side, 90.0), armourMm: sec.ArmourMm!.Value, depth: depth, top: SecBase(sx) + ths,
                     footprintR: rsReach, deck: lay.DeckZ(sx, rsReach), sideMount: true);
                 (m.Material, m.Battery) = (sec.Material, pre);

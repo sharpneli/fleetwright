@@ -347,7 +347,7 @@ public sealed class MerchantStyle : Style
         {
             var (ttId, tt) = Armament.TorpedoType(tp);
             double r = tt.BarrelLen / 2 + 0.3;
-            Armament.SidePairs(lay, mounts, turretTypes, "torpedo", ttId, tt, (tp.Mounts.Value + 1) / 2,
+            Armament.SidePairs(lay, mounts, turretTypes, ComponentKind.Torpedo, ttId, tt, (tp.Mounts.Value + 1) / 2,
                 xs.Select(x => new Slot(x, lay.DeckHalfWidth(x) - r - 0.4, DeckH(x) + 0.3)), "T", label: "Torpedo");
         }
         FireControl.Place(lay, design, blocks);

@@ -1,3 +1,4 @@
+using Fleetwright.Shipgen;
 namespace Fleetwright.Sim.Ships;
 
 /// <summary>What an observation post is: a lookout at a masthead, a director (with its rangefinder), the bridge, aft

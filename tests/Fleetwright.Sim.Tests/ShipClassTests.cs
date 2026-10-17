@@ -125,11 +125,12 @@ public class ShipClassTests
         static JsonObject Comp(JsonObject hb, string id) => hb["components"]!.AsArray().Select(c => c!.AsObject()).First(c => (string)c["id"]! == id);
 
         Assert.Contains("two components are called \"A\"", Error(hb => Comp(hb, "Y")["id"] = "A"));
-        Assert.Contains("unknown component kind \"zeppelin\"", Error(hb => Comp(hb, "Foremast")["kind"] = "zeppelin"));
+        // (a component's and a room's kinds are enums: a build can't carry an unknown one, and its JSON won't load)
+        Assert.Contains("unknown component kind \"zeppelin\"",
+            Assert.Throws<JsonException>(() => Mutated("nassau", hb => Comp(hb, "Foremast")["kind"] = "zeppelin")).Message);
         Assert.Contains("no room \"Magazine Z\"", Error(hb => Comp(hb, "A")["magazine"] = "Magazine Z"));
         Assert.Contains("no deck or bulkhead \"Bulkhead 99\"",
             Error(hb => hb["cells"]![5]!["neighbours"]![0]![1] = "Bulkhead 99"));
-        // (a room's kind is an enum: a build can't carry an unknown one, and its JSON won't load)
         Assert.Contains("unknown room kind \"ballroom\"",
             Assert.Throws<JsonException>(() => Mutated("nassau", hb => hb["rooms"]![0]!["kind"] = "ballroom")).Message);
         // a link of the wrong kind: a gun's barbette that is a mast

@@ -623,7 +623,7 @@ public sealed class HitboxMesh
 
         void AddComponent(Component c)
         {
-            string kind = c.Kind;
+            string kind = c.Kind.Name();
             if (c.Local is { } local)
             {
                 double rest = c.RestDeg ?? 0, x = c.X ?? 0, y = c.Y ?? 0;

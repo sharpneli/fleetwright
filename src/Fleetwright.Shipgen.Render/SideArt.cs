@@ -35,7 +35,7 @@ public static class SideArt
         Add(hullDepth, o => Hull(o, c));
         foreach (var h in v.Hangars)   // the hangar's side, up to the flight deck when it stands on it
         {
-            double up = v.Platforms.Where(p => p.Kind == "flight_deck" && p.B.Base >= h.Top && p.B.Base - h.Top < 1.5).Select(p => p.B.Base)
+            double up = v.Platforms.Where(p => p.Kind == ComponentKind.FlightDeck && p.B.Base >= h.Top && p.B.Base - h.Top < 1.5).Select(p => p.B.Base)
                 .DefaultIfEmpty(h.Top).Min();
             var hb = h with { Top = up };
             Add(h.Y1, o =>
@@ -257,7 +257,7 @@ public static class SideArt
     static void HullNumber(List<Node> o, Ctx c)
     {
         var (P, v) = (c.P, c.V);
-        if (P.Shapes.HullNumber != true || v.Platforms.Any(p => p.Kind == "flight_deck"))
+        if (P.Shapes.HullNumber != true || v.Platforms.Any(p => p.Kind == ComponentKind.FlightDeck))
             return;
         string text = HullArt.HullNumber(v.Id, P.Shapes);
         double x = v.HullX1 - 0.13 * v.Length, deck = v.DeckAt(x), fb = deck - v.Waterline;
@@ -784,7 +784,7 @@ public static class SideArt
     static void Platform(List<Node> o, Painter P, SideView.Platform p, SideView v)
     {
         var b = p.B;
-        if (p.Kind == "flight_deck")
+        if (p.Kind == ComponentKind.FlightDeck)
         {
             // pillars carry it where no hangar does, as on an open-ended flight deck
             var g = new Group().Stroke(Painter.Shade(P.C("hull"), 0.8), Math.Max(0.35, P.Sw * 2));

@@ -51,7 +51,7 @@ public sealed partial class Layout
         var riders = PlaceMiddleTurrets(site, mg, middle, mounts);
 
         // ---------------- superstructure, kept out of the guns' sweeps ----------------
-        lay.EndMounts = mounts.Where(m => m.Kind == "main" && !(m.Wing || m.Midships)).ToList();
+        lay.EndMounts = mounts.Where(m => m.Kind == ComponentKind.Main && !(m.Wing || m.Midships)).ToList();
         var ctl = PlaceControl(site, control, row, ends);
         var blocks = ctl.Blocks;
         var funnels = PlaceFunnels(site, row, middle);

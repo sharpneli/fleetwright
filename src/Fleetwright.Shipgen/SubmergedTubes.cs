@@ -227,7 +227,7 @@ public static class SubmergedTubes
             double BeamL(int n) => Ends + Pitch * n + Stow(2 * n);
             // just forward of the foremost trunk (the hull wide there, the room near the fore magazines), then just
             // abaft the aftmost
-            var trunks = lay.Mounts.Where(m => m.T.HasBarbette && m.Kind == "main").Select(m => (m.X, R: Geometry.BarbetteR(m.T))).ToList();
+            var trunks = lay.Mounts.Where(m => m.T.HasBarbette && m.Kind == ComponentKind.Main).Select(m => (m.X, R: Geometry.BarbetteR(m.T))).ToList();
             var cit = lay.Geo.CitadelSpan(L);
             double fore = trunks.Count > 0 ? trunks.Max(t => t.X + t.R) : cit.X1, aftmost = trunks.Count > 0 ? trunks.Min(t => t.X - t.R) : cit.X0;
             if (widest < needHw)
@@ -326,7 +326,7 @@ public static class SubmergedTubes
                 busy.Add((c.X0, c.X1));
         }
         foreach (var m in lay.Mounts)
-            if (m.T.HasBarbette && m.Kind is "main" or "secondary" && !m.Casemate && Math.Abs(m.Y) < lay.Hull.HalfWidth(m.X))
+            if (m.T.HasBarbette && m.Kind is ComponentKind.Main or ComponentKind.Secondary && !m.Casemate && Math.Abs(m.Y) < lay.Hull.HalfWidth(m.X))
             {
                 double r = Geometry.BarbetteR(m.T);
                 busy.Add((m.X - r, m.X + r));
@@ -391,7 +391,7 @@ public static class SubmergedTubes
             var (t, a, b) = (r.Tube, r.P0, r.P1);
             yield return new Component
             {
-                Id = t.Id, Kind = "torpedo_tube", Shape = "segment", Position = t.Kind, Room = t.Room, CalibreMm = CalibreMm,
+                Id = t.Id, Kind = ComponentKind.TorpedoTube, Shape = "segment", Position = t.Kind, Room = t.Room, CalibreMm = CalibreMm,
                 P0 = [Math.Round(a.X, 3), Math.Round(a.Y, 3), Math.Round(a.Z, 2)], P1 = [Math.Round(b.X, 3), Math.Round(b.Y, 3), Math.Round(b.Z, 2)],
                 R = TubeR, Points = Plan(a, b), Base = Math.Round(t.Z - TubeR, 2), Top = Math.Round(t.Z + TubeR, 2),
                 Rotating = false, RestDeg = t.Bearing, ArcsDeg = [[t.Bearing - Arcs.ArcFixed, t.Bearing + Arcs.ArcFixed]],
