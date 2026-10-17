@@ -149,6 +149,7 @@ The ship generator's command line, the port's test harness (`PORTING.md`):
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- golden-check          # every golden case, ~25 s
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- golden-check bismarck fuzz_lim_*
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- golden-update         # after a deliberate output change
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- snapshot --out DIR    # every case's output as plain files: diff -r two of them to prove a refactor byte-identical (the goldens allow 1e-9)
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- design shipgen/designs/bismarck.json --out out --previews
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- validate shipgen/designs/*.json
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- bench bismarck yamato
@@ -260,7 +261,8 @@ src/
     GpuShader.cs              #   SPIR-V loading from a device alone
     GpuUpload.cs              #   static buffer uploads, and DynamicGpuBuffer (refilled within a frame)
   Fleetwright.Shipgen/        # ship design library (ported, see below). No package references.
-    Model/                    #   the typed data: Design (the input), Ship (the output), the JSON context and JsonFile
+    Model/                    #   the typed data: Design (the input), Ship (the output), the JSON context and JsonFile,
+                              #   Kinds (the closed sets as enums: rooms, components, extents; the sim shares them)
     Layout/                   #   layout.py: the Layout object, parts, superstructure levels, the warship layout
                               #   (BuildLayout: its stages, each in Warship/ with its inputs and outputs)
     Styles/                   #   the style hooks and the warship, carrier, merchant and planing styles

@@ -90,3 +90,19 @@ Deck extents, compartment kinds and mount kinds: today strings, where a typo com
 already has enums of its own, and the designer), then enums for the internal model, with JSON that writes the same
 strings, so the output stays byte-identical. The design input (player data) keeps strings checked by validation.
 Scope and where the enums live (Shipgen, so the sim's compiler can share them) are settled after the survey.
+
+**Done 2026-10-17** (user: through the output). `Model/Kinds.cs` holds `RoomKind`, `ComponentKind` and `Extent`, moved
+from the sim (same byte values; `Hangar` added to the rooms for the carrier's hangar bay compartment) and used by the
+layout, the built Ship, the renderer, the designer, the hit viewer and the sim's compiler and damage model. JSON writes
+each member's snake_case name (`SnakeEnumConverter`, no list of strings anywhere), so every output is byte-identical;
+an unknown kind now fails at load. The subdivision's priority and permeability tables are exhaustive switches (a kind
+left out is a compile error: CS8509, with CS8524 off in Shipgen and the sim). What stays strings, on purpose: the
+design input (validated), Crew's per-station tallies (they mix room and component kinds), and the UI's display
+taxonomies (the hit viewer's kinds, the designer's labels) that take `Kind.Name()`.
+
+## Afterwards
+
+Every step byte-identical except item 2's deliberate fixes (the schemes' and the knob's main deck, mono-check's
+levers). Left for later: the "main deck" in the physics (the belt's top, the barbettes' foot, two hitbox fields), the
+thin-deck quirk under French modern, Crew's string keys, and the review's other items as they come up.
+
