@@ -511,7 +511,7 @@ public sealed partial class Layout
                 double a = x1 - (k + 1) * (x1 - x0) / n, b = x1 - k * (x1 - x0) / n;
                 var c = new Compartment
                 {
-                    Id = $"{names[kind]} {count[kind]}", Kind = kind != "bunker" ? $"{kind}_room" : "bunker", X0 = a, X1 = b,
+                    Id = $"{names[kind]} {count[kind]}", Kind = kind != "bunker" ? SnakeEnum<RoomKind>.Parse($"{kind}_room") : RoomKind.Bunker, X0 = a, X1 = b,
                     HalfWidth = plan.WingM != 0 ? plan.Width / 2 : Math.Min(innerHw, plan.Width / 2), Fuel = kind == "bunker" ? fuel : null,
                 };
                 rooms.Add(c);
@@ -530,7 +530,7 @@ public sealed partial class Layout
                 string sd = side > 0 ? "S" : "P";
                 lay.Compartments.Add(new Compartment
                 {
-                    Id = $"Wing bunker {sd}", Kind = "bunker", Fuel = fuel, PerSection = $"Wing bunker {{}} {sd}", X0 = mx0, X1 = mx1,
+                    Id = $"Wing bunker {sd}", Kind = RoomKind.Bunker, Fuel = fuel, PerSection = $"Wing bunker {{}} {sd}", X0 = mx0, X1 = mx1,
                     Y = side * y, HalfWidth = plan.WingM / 2, Base = plan.InnerBottom - depth, Top = 0.0, Tonnes = Math.Round(plan.WingT / 2, 1),
                 });
             }
@@ -718,7 +718,7 @@ public sealed partial class Layout
         var (bse, top) = Ordnance.Span(lay.Geo.Plant!);
         var room = new Compartment
         {
-            Id = name, Kind = "steering", X0 = a, X1 = b, Base = bse, Top = top, HalfWidth = halfWidth ?? Propulsion.Steering.Hw * B,
+            Id = name, Kind = RoomKind.Steering, X0 = a, X1 = b, Base = bse, Top = top, HalfWidth = halfWidth ?? Propulsion.Steering.Hw * B,
         };
         lay.Compartments.Add(room);
         lay.Geo.Steering = (a, b);

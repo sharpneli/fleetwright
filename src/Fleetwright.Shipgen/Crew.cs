@@ -134,7 +134,7 @@ public static class Crew
             guns += GunCrew(cfg.CalibreMm, cfg.Barrels);
         }
         foreach (var c in lay.Compartments)
-            if (c.Kind == "torpedo_room")
+            if (c.Kind == RoomKind.TorpedoRoom)
                 torps += SubmergedTubes.Crew(c.Tubes?.Count ?? 0);
         var deps = new OrderedDictionary<string, long>(StringComparer.Ordinal)
         {
@@ -180,7 +180,7 @@ public static class Crew
     }
 
     // not "handling": the deck over a magazine was always its handling space (Ordnance.TPerM3), shared with the crew
-    static readonly string[] Taken = ["magazine", "boiler_room", "engine_room", "bunker", "hold", "cargo_tank", "fuel_tank", "steering"];
+    static readonly RoomKind[] Taken = [RoomKind.Magazine, RoomKind.BoilerRoom, RoomKind.EngineRoom, RoomKind.Bunker, RoomKind.Hold, RoomKind.CargoTank, RoomKind.FuelTank, RoomKind.Steering];
 
     /// <summary>The ship's volume and what of it is free for the crew, m3; the superstructure's by block.</summary>
     sealed record Space(double HullM3, double TakenM3, double SuperstructureM3, double FreeM3, double UsableM3, double HullUsableM3,
@@ -202,7 +202,7 @@ public static class Crew
         {
             if (!Taken.Contains(c.Kind))
                 continue;
-            double h = c.Top is double top && c.Base is double bse ? top - bse : c.Kind is "hold" or "cargo_tank" ? D - db : low;
+            double h = c.Top is double top && c.Base is double bse ? top - bse : c.Kind is RoomKind.Hold or RoomKind.CargoTank ? D - db : low;
             taken += (c.X1 - c.X0) * 2 * c.HalfWidth * h;
         }
         var cit = lay.Geo.Citadel;
@@ -344,7 +344,7 @@ public static class Crew
             need.Add((("aa", a.Id), GunCrew(cfg.CalibreMm, cfg.Barrels)));
         }
         foreach (var c in lay.Compartments)
-            if (c.Kind == "torpedo_room")
+            if (c.Kind == RoomKind.TorpedoRoom)
                 need.Add((("torpedo_room", c.Id), SubmergedTubes.Crew(c.Tubes?.Count ?? 0)));
         foreach (var ((kind, k), men) in Spread(Dep("weapons"), need))
         {
@@ -359,7 +359,7 @@ public static class Crew
         }
         long rest = deps.Where(kv => !(kv.Key is "weapons" or "engineering")).Sum(kv => kv.Value);
         var rooms = sub.Rooms.Where(r => r.Shared != true).ToList();
-        var mach = rooms.Where(r => r.Kind is "boiler_room" or "engine_room").Select(r => (r.Id, r.VolumeM3)).ToList();
+        var mach = rooms.Where(r => r.Kind is RoomKind.BoilerRoom or RoomKind.EngineRoom).Select(r => (r.Id, r.VolumeM3)).ToList();
         if (mach.Count > 0)
             Put(onRoom, Spread(Dep("engineering"), mach), "machinery");
         else
@@ -397,7 +397,7 @@ public static class Crew
             Put(onComp, [(("superstructure", d.Id), n)], "directors");
             rest -= n;
         }
-        var steer = rooms.Where(r => r.Kind == "steering").Select(r => r.Id).ToList();
+        var steer = rooms.Where(r => r.Kind == RoomKind.Steering).Select(r => r.Id).ToList();
         if (steer.Count > 0)
         {
             long n = Take(SteeringParty, rest);
@@ -407,7 +407,7 @@ public static class Crew
         long air = Take(Dep("air_group"), rest);
         if (air != 0)
         {
-            var bays = lay.Compartments.Where(cc => cc.Kind == "hangar").Select(cc => (("hangar_bay", cc.Id), 1.0)).ToList();
+            var bays = lay.Compartments.Where(cc => cc.Kind == RoomKind.Hangar).Select(cc => (("hangar_bay", cc.Id), 1.0)).ToList();
             if (bays.Count == 0)
                 bays = lay.Decks.Where(dk => dk.Kind == "flight_deck").Select(dk => (("flight_deck", dk.Id), 1.0)).ToList();
             bays = bays.GroupBy(b => b.Item1).Select(g => g.Last()).ToList();
@@ -417,7 +417,7 @@ public static class Crew
                 rest -= air;
             }
         }
-        var free = rooms.Where(r => r.Kind is "accommodation" or "stores").Select(r => (r.Id, r.VolumeM3)).ToList();
+        var free = rooms.Where(r => r.Kind is RoomKind.Accommodation or RoomKind.Stores).Select(r => (r.Id, r.VolumeM3)).ToList();
         if (free.Count > 0)
             Put(onRoom, Spread(rest, free), "repair");
         else if (vol.Count > 0)

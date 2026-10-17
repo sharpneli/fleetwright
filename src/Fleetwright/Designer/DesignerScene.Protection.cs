@@ -135,7 +135,7 @@ public sealed unsafe partial class DesignerScene
     sealed record CutStop(string Id, string Label, float X);
 
     /// <summary>A room on the elevation (magazines, handling rooms, machinery), tinted; its tooltip.</summary>
-    sealed record PRoom(string Kind, string Name, float X0, float X1, float Z0, float Z1, string Tip);
+    sealed record PRoom(RoomKind Kind, string Name, float X0, float X1, float Z0, float Z1, string Tip);
 
     sealed class ProtPane
     {
@@ -248,10 +248,10 @@ public sealed unsafe partial class DesignerScene
 
         // the magazines and machinery as the build placed them
         var rooms = hb?.Rooms ?? [];
-        var magSpans = Merged(rooms.Where(r => r.Kind == "magazine" && r.Cells.Count > 0).Select(r => ((float)r.X0, (float)r.X1)));
+        var magSpans = Merged(rooms.Where(r => r.Kind == RoomKind.Magazine && r.Cells.Count > 0).Select(r => ((float)r.X0, (float)r.X1)));
         var zoneSpans = magSpans.Select(s => (Math.Max(s.X0, X0), Math.Min(s.X1, X1))).Where(s => s.Item2 > s.Item1 + 0.05f).ToList();
         float zoneLen = zoneSpans.Sum(s => s.Item2 - s.Item1);
-        var mach = rooms.Where(r => r.Kind is "engine_room" or "boiler_room" && r.Cells.Count > 0).ToList();
+        var mach = rooms.Where(r => r.Kind is RoomKind.EngineRoom or RoomKind.BoilerRoom && r.Cells.Count > 0).ToList();
 
         // the built plates, each traced to its row
         var mainIds = hb?.Components.Where(c => c.Kind == "main").Select(c => c.Id).ToHashSet() ?? [];
@@ -345,7 +345,7 @@ public sealed unsafe partial class DesignerScene
             }
             // the magazine boxes' sides: a fill between their crown and floor over each room
             if (a.MagazineBox?.SideMm is > 0 && PE.Has(d, Part.Box))
-                foreach (var r in rooms.Where(r => r.Kind == "magazine" && r.Cells.Count > 0))
+                foreach (var r in rooms.Where(r => r.Kind == RoomKind.Magazine && r.Cells.Count > 0))
                     plates.Add(new PPlate(new PRef(PK.Box), (float)r.X0, (float)r.X1, (float)r.Base, (float)r.Top, a.MagazineBox.SideMm.Value, "", Faint: true));
             var barbR = new Dictionary<string, double>(StringComparer.Ordinal);
             foreach (var c in hb.Components)
@@ -483,7 +483,7 @@ public sealed unsafe partial class DesignerScene
         // the rooms on the elevation, the compartments and the run that sinks her
         var proom = new List<PRoom>();
         foreach (var r in rooms)
-            if (r.Cells.Count > 0 && r.Kind is "magazine" or "handling" or "engine_room" or "boiler_room")
+            if (r.Cells.Count > 0 && r.Kind is RoomKind.Magazine or RoomKind.Handling or RoomKind.EngineRoom or RoomKind.BoilerRoom)
                 proom.Add(new PRoom(r.Kind, r.Id, (float)r.X0, (float)r.X1, (float)r.Base, (float)r.Top,
                     $"{r.Id} · {r.X1 - r.X0:0.0} m · {Sx1(r.Base - wl)} to {Sx1(r.Top - wl)} m on the waterline"));
         var comps = new List<(float, string)>();
@@ -512,7 +512,7 @@ public sealed unsafe partial class DesignerScene
             var m = mach.MinBy(r => Math.Abs((r.X0 + r.X1) / 2 - mid))!;
             stops.Add(new CutStop("mach", $"Machinery · {m.Id.ToLowerInvariant()}", (float)(m.X0 + m.X1) / 2));
         }
-        foreach (var r in rooms.Where(r => r.Kind == "magazine" && r.Cells.Count > 0).OrderByDescending(r => r.X0))
+        foreach (var r in rooms.Where(r => r.Kind == RoomKind.Magazine && r.Cells.Count > 0).OrderByDescending(r => r.X0))
         {
             float x = (float)(r.X0 + r.X1) / 2;
             if (stops.Any(q => Math.Abs(q.X - x) < 0.6f))
@@ -743,7 +743,7 @@ public sealed unsafe partial class DesignerScene
         bool bunkers = false;
         if (hb != null && mach.Count > 0)
         {
-            var bunkerRooms = rooms.Where(r => r.Kind == "bunker").Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
+            var bunkerRooms = rooms.Where(r => r.Kind == RoomKind.Bunker).Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
             double m0 = mach.Min(r => r.X0) - 0.5, m1 = mach.Max(r => r.X1) + 0.5;
             bunkers = bunkerRooms.Count > 0 && hb.Cells.Any(c => c.X0 >= m0 && c.X1 <= m1 && bunkerRooms.Contains(c.Room));
         }
@@ -806,7 +806,7 @@ public sealed unsafe partial class DesignerScene
         if (PE.Has(d, Part.Box))
         {
             double t = w.GetValueOrDefault("Magazine boxes");
-            var runs = Merged(rooms.Where(r => r.Kind == "magazine" && r.Cells.Count > 0).Select(r => ((float)r.X0, (float)r.X1)));
+            var runs = Merged(rooms.Where(r => r.Kind == RoomKind.Magazine && r.Cells.Count > 0).Select(r => ((float)r.X0, (float)r.X1)));
             string runText = string.Join(", ", runs.Select(s => $"{Sx1(s.X0)} to {Sx1(s.X1)} m"));
             rows.Add(new ProtRow
             {

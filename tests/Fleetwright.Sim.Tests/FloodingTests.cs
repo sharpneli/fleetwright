@@ -1,3 +1,4 @@
+using Fleetwright.Shipgen;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;

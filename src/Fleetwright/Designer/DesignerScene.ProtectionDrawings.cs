@@ -95,7 +95,7 @@ public sealed unsafe partial class DesignerScene
                 if (pp.Stops[i].Id == stop)
                     return pp.Stops[i].Label;
         foreach (var r in pp.Rooms)
-            if (r.Kind != "handling" && x >= r.X0 && x <= r.X1)
+            if (r.Kind != RoomKind.Handling && x >= r.X0 && x <= r.X1)
                 return r.Name;
         return x > pp.X1 ? "Fore end" : x < pp.X0 ? "Aft end" : "Citadel";
     }
@@ -195,7 +195,7 @@ public sealed unsafe partial class DesignerScene
             foreach (var r in pp.Rooms)
             {
                 var f = ProtectionSection.FillOf(r.Kind);
-                dl.AddRectFilled(new Vector2(m.X(r.X0), m.Z(r.Z1)), new Vector2(m.X(r.X1), m.Z(r.Z0)), T.U32(f with { W = r.Kind == "magazine" ? 0.5f : f.W * 0.9f }));
+                dl.AddRectFilled(new Vector2(m.X(r.X0), m.Z(r.Z1)), new Vector2(m.X(r.X1), m.Z(r.Z0)), T.U32(f with { W = r.Kind == RoomKind.Magazine ? 0.5f : f.W * 0.9f }));
             }
         // deck lanes, dashed, named in the margin
         uint lane = T.U32(new Vector4(0.61f, 0.76f, 0.886f, 0.28f));
@@ -359,7 +359,7 @@ public sealed unsafe partial class DesignerScene
         if (mags > 0)
             foreach (var r in pp.Rooms)
             {
-                if (r.Kind != "magazine")
+                if (r.Kind != RoomKind.Magazine)
                     continue;
                 float x0 = MathF.Max(pp.X0, r.X0), x1 = MathF.Min(pp.X1, r.X1);
                 if (x1 <= x0)
@@ -1003,7 +1003,7 @@ public sealed unsafe partial class DesignerScene
         float lx = pos.X + P(6), ly = pos.Y + size.Y - P(15);
         foreach (var (kind, label) in ProtectionSection.Legend)
         {
-            if (kind == "tds" && !PE.Has(doc.Current, Part.Tds) || kind == "bunker" && !s0.HasCoal && !s1.HasCoal)
+            if (kind == RoomKind.Tds && !PE.Has(doc.Current, Part.Tds) || kind == RoomKind.Bunker && !s0.HasCoal && !s1.HasCoal)
                 continue;
             var f = ProtectionSection.FillOf(kind);
             dl.AddRectFilled(new Vector2(lx, ly + P(2)), new Vector2(lx + P(9), ly + P(10)), T.U32(f with { W = MathF.Max(0.5f, f.W + 0.3f) }));

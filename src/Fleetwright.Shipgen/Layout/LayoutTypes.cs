@@ -151,7 +151,7 @@ public sealed record DeckPlate(string Id, string Kind, List<Pt> Points, double B
 public sealed class Compartment
 {
     public required string Id;
-    public required string Kind;
+    public required RoomKind Kind;
     public double X0, X1, HalfWidth;
     public double? Y, Base, Top;
     /// <summary>A bunker's fuel.</summary>
@@ -190,7 +190,7 @@ public sealed class Compartment
 public sealed record Zone(double X0, double X1, double HalfWidth, List<ZoneRoom> Rooms, bool Own = false, bool Low = true);
 
 /// <summary>A room in a zone: the mounts whose ammunition it holds and/or tonnes of something else at TPerM3.</summary>
-public sealed record ZoneRoom(string Id, List<string>? Mounts = null, double Tonnes = 0, string? Kind = null, double? TPerM3 = null);
+public sealed record ZoneRoom(string Id, List<string>? Mounts = null, double Tonnes = 0, RoomKind? Kind = null, double? TPerM3 = null);
 
 /// <summary>The casing over machinery taller than its space.</summary>
 public sealed record Casing(string Id, double X0, double X1, double W, double Base, double Top, double ArmourMm);

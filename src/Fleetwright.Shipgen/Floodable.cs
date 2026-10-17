@@ -61,7 +61,7 @@ public static class Floodable
             return null;
         var ids = sub.Sections.Skip(w.First).Take(w.Count).Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
         var inRun = sub.Cells.Where(c => ids.Contains(c.Section)).Select(c => c.Room).ToHashSet(StringComparer.Ordinal);
-        var rooms = sub.Rooms.Where(r => inRun.Contains(r.Id) && r.Kind is not ("stores" or "accommodation" or "double_bottom" or "tds"))
+        var rooms = sub.Rooms.Where(r => inRun.Contains(r.Id) && r.Kind is not (RoomKind.Stores or RoomKind.Accommodation or RoomKind.DoubleBottom or RoomKind.Tds))
             .Select(r => r.Id).ToList();
         string what = w.Count == 1 ? $"section {sub.Sections[w.First].Id}" : $"sections {sub.Sections[w.First].Id}-{sub.Sections[w.First + w.Count - 1].Id}";
         string Count(int k) => k < Counts.Length ? Counts[k] : k.ToString(System.Globalization.CultureInfo.InvariantCulture);

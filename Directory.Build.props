@@ -18,6 +18,9 @@
 
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Fleetwright.Shipgen')) Or $(MSBuildProjectName.StartsWith('Fleetwright.Sim'))">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- A switch over an enum with every member named needs no default arm: leaving one out stays an error (CS8509),
+         only the warning for values outside the enum is off. -->
+    <NoWarn>$(NoWarn);CS8524</NoWarn>
   </PropertyGroup>
 
 </Project>

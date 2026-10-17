@@ -129,7 +129,9 @@ public class ShipClassTests
         Assert.Contains("no room \"Magazine Z\"", Error(hb => Comp(hb, "A")["magazine"] = "Magazine Z"));
         Assert.Contains("no deck or bulkhead \"Bulkhead 99\"",
             Error(hb => hb["cells"]![5]!["neighbours"]![0]![1] = "Bulkhead 99"));
-        Assert.Contains("unknown room kind \"ballroom\"", Error(hb => hb["rooms"]![0]!["kind"] = "ballroom"));
+        // (a room's kind is an enum: a build can't carry an unknown one, and its JSON won't load)
+        Assert.Contains("unknown room kind \"ballroom\"",
+            Assert.Throws<JsonException>(() => Mutated("nassau", hb => hb["rooms"]![0]!["kind"] = "ballroom")).Message);
         // a link of the wrong kind: a gun's barbette that is a mast
         Assert.Contains("is a mast, not a barbette", Error(hb => Comp(hb, "A")["barbette"] = "Foremast"));
         // the untouched build compiles

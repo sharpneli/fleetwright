@@ -50,25 +50,6 @@ public enum ComponentShape : byte
     Disc,
 }
 
-public enum RoomKind : byte
-{
-    Stores,
-    Accommodation,
-    DoubleBottom,
-    Magazine,
-    Bunker,
-    BoilerRoom,
-    EngineRoom,
-    Steering,
-    Tds,
-    TorpedoRoom,
-    FuelTank,
-    CargoTank,
-    Hold,
-    /// <summary>Over a mount's own magazine, under its turret: the flash path's first space (protection-plan.md H1).</summary>
-    Handling,
-}
-
 public enum Fuel : byte
 {
     None,
@@ -208,25 +189,6 @@ static class Kinds
         "segment" => ComponentShape.Segment,
         "disc" => ComponentShape.Disc,
         _ => throw Unknown("component shape", s),
-    };
-
-    public static RoomKind Room(string s) => s switch
-    {
-        "stores" => RoomKind.Stores,
-        "accommodation" => RoomKind.Accommodation,
-        "double_bottom" => RoomKind.DoubleBottom,
-        "magazine" => RoomKind.Magazine,
-        "bunker" => RoomKind.Bunker,
-        "boiler_room" => RoomKind.BoilerRoom,
-        "engine_room" => RoomKind.EngineRoom,
-        "steering" => RoomKind.Steering,
-        "tds" => RoomKind.Tds,
-        "torpedo_room" => RoomKind.TorpedoRoom,
-        "fuel_tank" => RoomKind.FuelTank,
-        "cargo_tank" => RoomKind.CargoTank,
-        "hold" => RoomKind.Hold,
-        "handling" => RoomKind.Handling,
-        _ => throw Unknown("room kind", s),
     };
 
     public static Fuel FuelOf(string? s) => s switch

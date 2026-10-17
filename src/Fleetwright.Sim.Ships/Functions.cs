@@ -1,3 +1,4 @@
+using Fleetwright.Shipgen;
 namespace Fleetwright.Sim.Ships;
 
 /// <summary>What a function of the ship is (docs/battle/fighting.md 4.3a, FUNCTIONS): what the damage model asks of its

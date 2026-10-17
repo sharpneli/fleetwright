@@ -30,7 +30,7 @@ public static class Propulsion
 
     static List<(double X0, double X1, string? Id)> EngineRooms(Layout lay)
     {
-        var rooms = lay.Compartments.Where(c => c.Kind == "engine_room").Select(c => (c.X0, c.X1, (string?)c.Id)).ToList();
+        var rooms = lay.Compartments.Where(c => c.Kind == RoomKind.EngineRoom).Select(c => (c.X0, c.X1, (string?)c.Id)).ToList();
         if (rooms.Count == 0 && lay.Geo.Machinery is { } gm)
             rooms = [(gm.X0, gm.X1, null)];
         return rooms.OrderBy(r => -r.Item2).ToList();
@@ -121,7 +121,7 @@ public static class Propulsion
             }
             shafts.Add(sh with { ExitX = exitX, Alley = alley });
         }
-        var steering = lay.Compartments.FirstOrDefault(c => c.Kind == "steering")?.Id;
+        var steering = lay.Compartments.FirstOrDefault(c => c.Kind == RoomKind.Steering)?.Id;
         return new Train(shafts, gr.Propellers, gr.Rudders, alleys, gr.RatedMwPerShaft, steering);
     }
 

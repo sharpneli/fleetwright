@@ -357,7 +357,7 @@ public sealed class CarrierStyle : Style
         var st = Ordnance.Stow(lay, mounts, [
             new Zone(m1, cit.Item2, innerHw, [new ZoneRoom("Aviation magazines", Tonnes: OrdnanceK * airT),
                 new ZoneRoom("Gun magazines", Ordnance.Guns(mounts))]),
-            new Zone(cit.Item1, m0, innerHw, [new ZoneRoom("Aviation fuel", Tonnes: AvgasK * airT, Kind: "fuel_tank", TPerM3: AvgasTPerM3)]),
+            new Zone(cit.Item1, m0, innerHw, [new ZoneRoom("Aviation fuel", Tonnes: AvgasK * airT, Kind: RoomKind.FuelTank, TPerM3: AvgasTPerM3)]),
         ]);
         if (st.TryGetValue("Aviation magazines", out var am))
             lay.Geo.Magazine = ((am.X0 + am.X1) / 2, (am.Base + am.Top) / 2);
@@ -365,7 +365,7 @@ public sealed class CarrierStyle : Style
             lay.Geo.Avgas = ((af.X0 + af.X1) / 2, (af.Base + af.Top) / 2);
         lay.Compartments.Add(new Compartment
         {
-            Id = "Hangar bay", Kind = "hangar", X0 = hx0, X1 = hx1, HalfWidth = hhw, Base = 0.0,
+            Id = "Hangar bay", Kind = RoomKind.Hangar, X0 = hx0, X1 = hx1, HalfWidth = hhw, Base = 0.0,
             Top = av.FlightDeck == "none" ? 2 * Layout.LevelH : HangarH * av.HangarDecks,
         });
         Layout.AddSteering(lay);

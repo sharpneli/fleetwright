@@ -8,16 +8,25 @@ public static class Subdivision
     const double SteelFrame = 0.92;
     const int ZSamples = 6;
     const double SliverM3 = 1.0, SliverFrac = 0.05;
-    static readonly Dictionary<string, int> RoomPriority = new()
+    /// <summary>Which room takes a cell two rooms claim, the higher first.</summary>
+    static int RoomPriority(RoomKind k) => k switch
     {
-        ["magazine"] = 9, ["torpedo_room"] = 8, ["handling"] = 8, ["steering"] = 6, ["boiler_room"] = 7, ["engine_room"] = 7, ["fuel_tank"] = 7, ["bunker"] = 6,
-        ["cargo_tank"] = 5, ["hold"] = 5, ["accommodation"] = 2,
+        RoomKind.Magazine => 9,
+        RoomKind.TorpedoRoom or RoomKind.Handling => 8,
+        RoomKind.BoilerRoom or RoomKind.EngineRoom or RoomKind.FuelTank => 7,
+        RoomKind.Steering or RoomKind.Bunker => 6,
+        RoomKind.CargoTank or RoomKind.Hold => 5,
+        RoomKind.Stores or RoomKind.DoubleBottom or RoomKind.Tds or RoomKind.Hangar => 4,
+        RoomKind.Accommodation => 2,
     };
-    static readonly Dictionary<string, double> Permeability = new()
+
+    /// <summary>The share of a room's volume water can fill.</summary>
+    static double Permeability(RoomKind k) => k switch
     {
-        ["magazine"] = 0.6, ["torpedo_room"] = 0.85, ["handling"] = 0.85, ["steering"] = 0.85, ["boiler_room"] = 0.85, ["engine_room"] = 0.85, ["fuel_tank"] = 0.95,
-        ["bunker"] = 0.95, ["cargo_tank"] = 0.95, ["hold"] = 0.6, ["accommodation"] = 0.95, ["stores"] = 0.6,
-        ["double_bottom"] = 0.95, ["tds"] = 0.95,
+        RoomKind.Magazine or RoomKind.Hold or RoomKind.Stores => 0.6,
+        RoomKind.TorpedoRoom or RoomKind.Handling or RoomKind.Steering or RoomKind.BoilerRoom or RoomKind.EngineRoom => 0.85,
+        RoomKind.FuelTank or RoomKind.Bunker or RoomKind.CargoTank or RoomKind.Accommodation or RoomKind.DoubleBottom or RoomKind.Tds => 0.95,
+        RoomKind.Hangar => 0.9,
     };
     const double CoalPermeability = 0.4;
 
@@ -27,7 +36,7 @@ public static class Subdivision
     sealed record RoomBox(Compartment Src, double X0, double X1, double Y0, double Y1, double Base, double Top)
     {
         public string Id => Src.Id;
-        public string Kind => Src.Kind;
+        public RoomKind Kind => Src.Kind;
     }
 
     static (double Lo, double Hi)[] Box(RoomBox r) => [(r.X0, r.X1), (r.Y0, r.Y1), (r.Base, r.Top)];
@@ -121,7 +130,7 @@ public static class Subdivision
         var at = new SortedDictionary<double, List<double[]>>();
         foreach (var r in rooms)
         {
-            if (r.Kind != "magazine")
+            if (r.Kind != RoomKind.Magazine)
                 continue;
             double z = Math.Round(r.Top, 3);
             if (dks.Any(d => Math.Abs(d.Z - z) < PlatformTol) || z <= dks[0].Z || z >= 0)
@@ -193,7 +202,7 @@ public static class Subdivision
         }
         foreach (var r in rooms)
         {
-            int p = RoomPriority.GetValueOrDefault(r.Kind, 4);
+            int p = RoomPriority(r.Kind);
             cands.Add((r.X0, p, "main"));
             cands.Add((r.X1, p, "main"));
         }
@@ -253,7 +262,7 @@ public static class Subdivision
         var result = new List<(double X0, double X1, double HalfWidth, double Base, double Top)>();
         foreach (var r in sub.Rooms)
         {
-            if (r.Kind != "magazine" || r.Cells.Count == 0)
+            if (r.Kind != RoomKind.Magazine || r.Cells.Count == 0)
                 continue;
             double hw = 0.0;
             foreach (var id in r.Cells)
@@ -282,7 +291,7 @@ public static class Subdivision
         double under = ag.RoofZ is double roofZ ? roofZ - D : 0.0;
         var adecks = ag.Decks.Select(d => (Z: Rz(d.Z), d.X0, d.X1, d.Mm, d.Material)).ToList();
 
-        var rooms = lay.Compartments.Where(c => c.Kind is not ("citadel" or "hangar")).Select(c =>
+        var rooms = lay.Compartments.Where(c => c.Kind != RoomKind.Hangar).Select(c =>
             new RoomBox(c, c.X0, c.X1, (c.Y ?? 0.0) - c.HalfWidth, (c.Y ?? 0.0) + c.HalfWidth, c.Base ?? ib, c.Top ?? under)).ToList();
         Platforms(dks, rooms);
         var tiers = new List<Tier>();
@@ -345,7 +354,7 @@ public static class Subdivision
         double magWing = design.StyleName == "planing" ? 0.0 : Armour.MagazineWingM(design, B);
         if (boxSpec.SideMm > 0 && magWing <= 0)
             magWing = Armour.MagazineWingShare * B;   // the box's sides need a wall to stand on
-        var mags = rooms.Where(r => r.Kind == "magazine").ToList();
+        var mags = rooms.Where(r => r.Kind == RoomKind.Magazine).ToList();
         var magWingCells = new HashSet<Cell>();   // wing cells a magazine may not take
         var crowns = new Dictionary<int, double>();   // by section: the magazines' crown there
         var stairWalls = new HashSet<Bulkhead>();   // a slope's wing walls, tier by tier
@@ -645,9 +654,9 @@ public static class Subdivision
             ((int, double) Key, RoomBox R)? best = null;
             foreach (var r in rooms)
             {
-                if (!Claims(r, c) || r.Kind == "magazine" && magWingCells.Contains(c) || c.TdsM != null && Wing(c.Band))
+                if (!Claims(r, c) || r.Kind == RoomKind.Magazine && magWingCells.Contains(c) || c.TdsM != null && Wing(c.Band))
                     continue;   // a torpedo protection's layers are its own, outboard of the holding bulkhead
-                var key = (RoomPriority.GetValueOrDefault(r.Kind, 4), BoxOverlap(r, c));
+                var key = (RoomPriority(r.Kind), BoxOverlap(r, c));
                 if (best is null || key.CompareTo(best.Value.Key) > 0)
                     best = (key, r);
             }
@@ -709,16 +718,17 @@ public static class Subdivision
         {
             if (owner.ContainsKey(c.Id))
                 continue;
-            string use, name;
+            RoomKind use;
+            string name;
             if (hasBottom && c.Ti == 0)
-                (use, name) = ("double_bottom", "Double bottom");
+                (use, name) = (RoomKind.DoubleBottom, "Double bottom");
             else if (c.TdsM != null && Wing(c.Band))
-                (use, name) = ("tds", "Torpedo protection");
+                (use, name) = (RoomKind.Tds, "Torpedo protection");
             else if ((mergedCells.Contains(c) ? Math.Clamp((wl - c.Base) / (c.Top - c.Base), 0.0, 1.0) : tiers[c.Ti].Submerged) >= 0.5)
-                (use, name) = ("stores", "Stores");
+                (use, name) = (RoomKind.Stores, "Stores");
             else
-                (use, name) = ("accommodation", "Quarters");
-            string rid = $"{name} {c.Section}" + (use == "tds" ? $" {c.Band}" : "");
+                (use, name) = (RoomKind.Accommodation, "Quarters");
+            string rid = $"{name} {c.Section}" + (use == RoomKind.Tds ? $" {c.Band}" : "");
             if (!roomOut.TryGetValue(rid, out var ro))
                 roomOut[rid] = ro = new Room { Id = rid, Kind = use };
             ro.Cells.Add(c.Id);
@@ -727,7 +737,7 @@ public static class Subdivision
 
         // ---------------- crew over the quarters, by volume ----------------
         long nCrew = (lay.Crew?.Complement ?? 0) - (lay.Crew?.QuarteredInSuperstructure ?? 0);
-        var quarters = cells.Where(c => roomOut[owner[c.Id]].Kind == "accommodation").ToList();
+        var quarters = cells.Where(c => roomOut[owner[c.Id]].Kind == RoomKind.Accommodation).ToList();
         double qv = quarters.Sum(c => c.VolumeM3);
         if (nCrew != 0 && qv > 0)
         {
@@ -752,8 +762,8 @@ public static class Subdivision
             var r = roomOut[owner[c.Id]];
             c.Room = r.Id;
             c.Also = also.GetValueOrDefault(c.Id);
-            double p = Permeability.GetValueOrDefault(r.Kind, 0.9);
-            if (r.Kind == "bunker" && (r.Fuel ?? fuel) == "coal")
+            double p = Permeability(r.Kind);
+            if (r.Kind == RoomKind.Bunker && (r.Fuel ?? fuel) == "coal")
                 p = CoalPermeability;
             c.Permeability = p;
         }

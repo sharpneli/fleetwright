@@ -130,7 +130,7 @@ public class ProtectionLayersTests
         {
             var ship = ShipDesign.Build(Load(name));
             var hb = ship.Hitboxes;
-            var stops = hb.Rooms.Where(r => r.Kind is "magazine" or "engine_room" or "boiler_room" && r.Cells.Count > 0)
+            var stops = hb.Rooms.Where(r => r.Kind is RoomKind.Magazine or RoomKind.EngineRoom or RoomKind.BoilerRoom && r.Cells.Count > 0)
                 .Select(r => (r.Kind, X: (r.X0 + r.X1) / 2)).ToList();
             Assert.NotEmpty(stops);
             foreach (var (kind, x) in stops)
@@ -141,7 +141,7 @@ public class ProtectionLayersTests
                 Assert.Contains(s.Cells, c => c.Kind == kind);
                 Assert.All(s.Cells, c => Assert.True(c.Y0 >= 0 && c.Y1 > c.Y0, $"{name} at {x:0.0}: {c.Text}"));
             }
-            var mach = stops.First(s => s.Kind != "magazine").X;
+            var mach = stops.First(s => s.Kind != RoomKind.Magazine).X;
             var at = ProtectionSection.Build(ship, mach, (_, _) => -1);
             switch (name)
             {
@@ -156,7 +156,7 @@ public class ProtectionLayersTests
                     Assert.True(at.Belt is { Inside: true, Lean: > 0 });
                     break;
                 case "kent":   // the magazines boxed
-                    var mag = ProtectionSection.Build(ship, stops.First(s => s.Kind == "magazine").X, (_, _) => -1);
+                    var mag = ProtectionSection.Build(ship, stops.First(s => s.Kind == RoomKind.Magazine).X, (_, _) => -1);
                     Assert.Contains(mag.Armour, p => p.Kind == ProtectionSection.Kind.Box);
                     break;
                 case "destroyer":

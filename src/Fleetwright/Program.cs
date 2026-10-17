@@ -569,7 +569,7 @@ public static unsafe class Program
                 if (at == Sim.HoleAt.X && !double.TryParse(p[1], inv, out x))
                     return null;
                 return Sim.DamageSystem.SideHole(ship, at, x, z, area, p.Length < 5 || p[4] != "p");
-            case "flood" when Kind<Sim.Ships.RoomKind>(p[1]) is { } room:
+            case "flood" when Kind<Shipgen.RoomKind>(p[1]) is { } room:
                 return Sim.DamageSystem.FloodRooms(ship, room, p.Length > 2 && int.TryParse(p[2], out int n) ? n : int.MaxValue);
             case "jam" when int.TryParse(p[1], out int mount):
                 return Sim.DamageSystem.Jam(ship, mount);

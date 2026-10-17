@@ -312,8 +312,8 @@ public static class ShipDesign
         var fp = lay.Geo.FunnelPlan;
         var o = Powerplant.Published(r.Plant, r.PowerShp);
         o.MachineryLengthM = Math.Round(plan?.Segments.Sum(s => s.Len) ?? 0.0, 1);
-        o.BoilerRooms = lay.Compartments.Count(c => c.Kind == "boiler_room");
-        o.EngineRooms = lay.Compartments.Count(c => c.Kind == "engine_room");
+        o.BoilerRooms = lay.Compartments.Count(c => c.Kind == RoomKind.BoilerRoom);
+        o.EngineRooms = lay.Compartments.Count(c => c.Kind == RoomKind.EngineRoom);
         o.Rows = plan?.Space.Rows;
         o.ProtrusionM = Math.Round(plan?.Space.Protrusion ?? 0.0, 2);
         o.SpaceM = new SpaceM(Math.Round(plan?.Width ?? 0.0, 2), Math.Round(plan?.Height ?? 0.0, 2));

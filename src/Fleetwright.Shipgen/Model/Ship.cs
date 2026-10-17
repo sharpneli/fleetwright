@@ -553,7 +553,7 @@ public sealed class Cell
 public sealed record Room
 {
     public required string Id { get; init; }
-    public required string Kind { get; init; }
+    public required RoomKind Kind { get; init; }
     public List<string> Cells { get; set; } = [];
     public string? Fuel { get; init; }
     public double? Tonnes { get; set; }

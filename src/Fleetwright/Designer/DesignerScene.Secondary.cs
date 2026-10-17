@@ -194,7 +194,7 @@ public sealed unsafe partial class DesignerScene
                         break;
                 }
             foreach (var r in hb.Rooms)
-                if (r.Kind == "torpedo_room")
+                if (r.Kind == RoomKind.TorpedoRoom)
                 {
                     subRooms++;
                     subT += weight.GetValueOrDefault(r.Id);

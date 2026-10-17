@@ -24,7 +24,7 @@ static class SubdivisionBench
             if (worst is { } w)
             {
                 var ids = secs.Skip(w.First).Take(w.Count).Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
-                var names = hb.Rooms.Where(r => r.Kind is not ("stores" or "accommodation" or "double_bottom" or "tds") &&
+                var names = hb.Rooms.Where(r => r.Kind is not (RoomKind.Stores or RoomKind.Accommodation or RoomKind.DoubleBottom or RoomKind.Tds) &&
                         r.Cells.Any(cid => hb.Cells.First(c => c.Id == cid) is var c && ids.Contains(c.Section) && c.Room == r.Id))
                     .Select(r => r.Id).ToList();
                 run = string.Format(Inv, "{0} ({1:0.0} m, {2:0} t, margin line {3:0.00} m under){4}", string.Join("+", ids), w.LengthM, w.WaterT, w.ImmersionM,

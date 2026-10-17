@@ -1,3 +1,4 @@
+using Fleetwright.Shipgen;
 using Fleetwright.Map.Splashes;
 using Fleetwright.Sim;
 using Fleetwright.Sim.Combat;

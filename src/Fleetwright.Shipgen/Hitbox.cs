@@ -192,7 +192,7 @@ public static class Hitbox
                 Top = Math.Round(m.Top!.Value, 2),
             });
         }
-        foreach (var c in lay.Compartments.Where(c => c.Kind == "hangar"))
+        foreach (var c in lay.Compartments.Where(c => c.Kind == RoomKind.Hangar))
             comps.Add(new Component
             {
                 Id = c.Id, Kind = "hangar_bay", Shape = "polygon", Points = R3(Geometry.RrectPolygon(c.X0, -c.HalfWidth, c.X1, c.HalfWidth, 0.0, 0.0)),

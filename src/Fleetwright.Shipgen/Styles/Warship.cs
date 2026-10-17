@@ -183,9 +183,9 @@ public sealed class PlaningStyle : Style
 
         double innerHw = 0.8 * B / 2;
         lay.Compartments.AddRange([
-            new Compartment { Id = "Crew space", Kind = "accommodation", X0 = cx1, X1 = L / 2 - 0.08 * L, HalfWidth = innerHw },
-            new Compartment { Id = "Fuel tanks", Kind = "fuel_tank", X0 = m1, X1 = cx0 + 0.05 * L, HalfWidth = innerHw },
-            new Compartment { Id = "Engine room", Kind = "engine_room", X0 = m0, X1 = m1, HalfWidth = innerHw },
+            new Compartment { Id = "Crew space", Kind = RoomKind.Accommodation, X0 = cx1, X1 = L / 2 - 0.08 * L, HalfWidth = innerHw },
+            new Compartment { Id = "Fuel tanks", Kind = RoomKind.FuelTank, X0 = m1, X1 = cx0 + 0.05 * L, HalfWidth = innerHw },
+            new Compartment { Id = "Engine room", Kind = RoomKind.EngineRoom, X0 = m0, X1 = m1, HalfWidth = innerHw },
         ]);
         Layout.AddSteering(lay, -L / 2, m0, 0.6 * B / 2, "Tiller flat");
         var guns = Ordnance.Guns(mounts);

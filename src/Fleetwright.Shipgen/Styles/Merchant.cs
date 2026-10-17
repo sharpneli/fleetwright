@@ -371,7 +371,7 @@ public sealed class MerchantStyle : Style
         for (int i = 0; i < holds.Count; i++)
             lay.Compartments.Add(new Compartment
             {
-                Id = $"{(tanker ? "Tank" : "Hold")} {i + 1}", Kind = tanker ? "cargo_tank" : "hold", X0 = holds[i].X0, X1 = holds[i].X1,
+                Id = $"{(tanker ? "Tank" : "Hold")} {i + 1}", Kind = tanker ? RoomKind.CargoTank : RoomKind.Hold, X0 = holds[i].X0, X1 = holds[i].X1,
                 HalfWidth = innerHw,
             });
         Layout.AddMachineryRooms(lay, Layout.StackMachinery(Layout.PlanSegments(lay.Geo.Plant!), m1), innerHw, depth);

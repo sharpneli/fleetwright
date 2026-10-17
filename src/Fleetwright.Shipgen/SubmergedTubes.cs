@@ -112,7 +112,7 @@ public static class SubmergedTubes
                 return null;
             var c = new Compartment
             {
-                Id = id, Kind = "torpedo_room", X0 = xa, X1 = xa + len, HalfWidth = lay.Hull.HalfWidth(xa + len / 2), Base = bse - D,
+                Id = id, Kind = RoomKind.TorpedoRoom, X0 = xa, X1 = xa + len, HalfWidth = lay.Hull.HalfWidth(xa + len / 2), Base = bse - D,
                 Top = top - D, Tubes = [],
             };
             lay.Compartments.Add(c);
@@ -319,7 +319,7 @@ public static class SubmergedTubes
         var busy = new List<(double, double)>();
         foreach (var c in lay.Compartments)
         {
-            if (c.Kind is "citadel" or "hangar" or "handling")
+            if (c.Kind is RoomKind.Hangar or RoomKind.Handling)
                 continue;   // a handling room is the deck over its magazine, shared (Ordnance.TPerM3): a torpedo room may stand in it
             double cb = c.Base ?? ib, ct = c.Top ?? roof;
             if (cb < top - 0.05 && bse + 0.05 < ct)
@@ -343,10 +343,10 @@ public static class SubmergedTubes
         var runs = new List<TubeRun>(lay.Tubes.Count);
         var rooms = new Dictionary<string, (double X0, double X1)>(StringComparer.Ordinal);
         foreach (var c in lay.Compartments)
-            if (c.Kind == "torpedo_room")
+            if (c.Kind == RoomKind.TorpedoRoom)
                 rooms[c.Id] = (c.X0, c.X1);
         foreach (var r in sub.Rooms)
-            if (r.Kind == "torpedo_room" && r.Cells.Count > 0)
+            if (r.Kind == RoomKind.TorpedoRoom && r.Cells.Count > 0)
                 rooms[r.Id] = (r.X0, r.X1);
         foreach (var t in lay.Tubes)
         {

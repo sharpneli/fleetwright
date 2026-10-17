@@ -407,7 +407,7 @@ public static class ShipClassCompiler
             where = $"room \"{x.Id}\"";
             return new RoomRow
             {
-                Kind = Kinds.Room(x.Kind), Fuel = Kinds.FuelOf(x.Fuel), Tonnes = Or(x.Tonnes), Mount = Comp(x.Mount), Shared = x.Shared ?? false,
+                Kind = x.Kind, Fuel = Kinds.FuelOf(x.Fuel), Tonnes = Or(x.Tonnes), Mount = Comp(x.Mount), Shared = x.Shared ?? false,
                 Crew = Int(x.Crew), BattleCrew = Int(x.BattleCrew), VolumeM3 = x.VolumeM3, X0 = x.X0, X1 = x.X1, Base = x.Base, Top = x.Top,
                 Cells = AddLinks(x.Cells, cell, "cell"), Mounts = AddLinks(x.Mounts, comp, "component"), Tubes = AddLinks(x.Tubes, comp, "component"),
                 Shafts = AddLinks(x.Shafts, comp, "component"), Rudders = AddLinks(x.Rudders, comp, "component"),

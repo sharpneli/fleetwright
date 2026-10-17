@@ -602,7 +602,7 @@ public sealed class HitboxMesh
 
             var rooms = hb.Rooms.ToDictionary(r => r.Id, StringComparer.Ordinal);
             foreach (var c in hb.Cells)
-                AddCell(rooms.TryGetValue(c.Room, out var room) ? room.Kind : "other", c);
+                AddCell(rooms.TryGetValue(c.Room, out var room) ? room.Kind.Name() : "other", c);
 
             AddArmour(wl);
             AddGuides(keel, wl);

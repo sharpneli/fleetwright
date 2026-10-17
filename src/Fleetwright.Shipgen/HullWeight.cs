@@ -361,7 +361,7 @@ public static class Ordnance
                 double l = L * v / vol;
                 var c = new Compartment
                 {
-                    Id = r.Id, Kind = r.Kind ?? "magazine", X0 = x - l, X1 = x, HalfWidth = z.HalfWidth, Base = bse, Top = top,
+                    Id = r.Id, Kind = r.Kind ?? RoomKind.Magazine, X0 = x - l, X1 = x, HalfWidth = z.HalfWidth, Base = bse, Top = top,
                     Tonnes = Math.Round(t, 1),
                 };
                 if (ms.Count == 1 && z.Own)
@@ -377,7 +377,7 @@ public static class Ordnance
                     w.ZRel = ZRel.Deck((bse + top) / 2);
                 }
                 result[r.Id] = (x - l, x, bse, top);
-                if (c.Kind == "magazine")
+                if (c.Kind == RoomKind.Magazine)
                     (lay.Geo.MagazineBoxes ??= []).Add((x - l, x, z.HalfWidth, bse, top));
                 x -= l;
             }
@@ -409,7 +409,7 @@ public static class Ordnance
         var plan = lay.Geo.Plant!;
         double L = lay.Hull.L, h = Math.Max(Height(plan, int.MaxValue), 0.5);
         double fore = L / 2 - Subdivision.Collision * L, aft = -L / 2 + Propulsion.Steering.X1 * L;
-        var busy = taken.Concat(lay.Compartments.Where(c => c.Kind is not ("citadel" or "hangar" or "accommodation")).Select(c => (c.X0, c.X1)))
+        var busy = taken.Concat(lay.Compartments.Where(c => c.Kind is not (RoomKind.Hangar or RoomKind.Accommodation)).Select(c => (c.X0, c.X1)))
             .Where(t => t.Item2 > t.Item1).ToList();
         // each mount's stretch: from the nearest taken end aft of it to the nearest forward of it
         var items = new List<(Mount M, double Need, double Hw, double Lo, double Hi)>();
@@ -491,7 +491,7 @@ public static class Ordnance
                 continue;
             lay.Compartments.Add(new Compartment
             {
-                Id = $"Handling room {m.Id}", Kind = "handling", X0 = mg.X0, X1 = mg.X1, HalfWidth = Math.Min(m.T.R, innerHw), Base = mg.Top, Top = over,
+                Id = $"Handling room {m.Id}", Kind = RoomKind.Handling, X0 = mg.X0, X1 = mg.X1, HalfWidth = Math.Min(m.T.R, innerHw), Base = mg.Top, Top = over,
                 Mount = m.Id,
             });
         }

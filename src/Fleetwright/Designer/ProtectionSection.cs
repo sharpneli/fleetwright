@@ -25,7 +25,7 @@ public sealed class ProtectionSection
 
     public sealed record ArmourPoly(Kind Kind, int Row, double Mm, Vector2[] Pts, Vector2 At, string Text, Label Place, bool Faint = false);
 
-    public readonly record struct CellBox(float Y0, float Y1, float Z0, float Z1, string Kind, string Text, string Tip);
+    public readonly record struct CellBox(float Y0, float Y1, float Z0, float Z1, RoomKind? Kind, string Text, string Tip);
 
     public readonly record struct Wall(float Y, float Z0, float Z1, string Kind, double PlateMm, string Tip);
 
@@ -67,13 +67,14 @@ public sealed class ProtectionSection
 
     // ------------------------------------------------------------------ the build
 
-    static readonly Dictionary<string, (string Name, string Short)> Kinds = new(StringComparer.Ordinal)
+    static (string Name, string Short) KindNames(RoomKind? k) => k switch
     {
-        ["magazine"] = ("magazine", "mag"), ["handling"] = ("handling room", "handling"), ["stores"] = ("stores", "stores"),
-        ["tds"] = ("torpedo protection", "TDS"), ["bunker"] = ("coal", "coal"), ["engine_room"] = ("engine room", "engines"),
-        ["boiler_room"] = ("boiler room", "boilers"), ["double_bottom"] = ("double bottom", ""), ["accommodation"] = ("quarters", ""),
-        ["steering"] = ("steering gear", "steering"), ["torpedo_room"] = ("torpedo room", "torpedoes"), ["fuel_tank"] = ("oil", "oil"),
-        ["cargo_tank"] = ("cargo tank", "cargo"), ["hold"] = ("hold", "hold"),
+        null => ("void", ""),
+        RoomKind.Magazine => ("magazine", "mag"), RoomKind.Handling => ("handling room", "handling"), RoomKind.Stores => ("stores", "stores"),
+        RoomKind.Tds => ("torpedo protection", "TDS"), RoomKind.Bunker => ("coal", "coal"), RoomKind.EngineRoom => ("engine room", "engines"),
+        RoomKind.BoilerRoom => ("boiler room", "boilers"), RoomKind.DoubleBottom => ("double bottom", ""), RoomKind.Accommodation => ("quarters", ""),
+        RoomKind.Steering => ("steering gear", "steering"), RoomKind.TorpedoRoom => ("torpedo room", "torpedoes"), RoomKind.FuelTank => ("oil", "oil"),
+        RoomKind.CargoTank => ("cargo tank", "cargo"), RoomKind.Hold => ("hold", "hold"), RoomKind.Hangar => ("hangar", ""),
     };
 
     static string F1(double v) => v.ToString("0.0", CultureInfo.InvariantCulture);
@@ -114,9 +115,9 @@ public sealed class ProtectionSection
         {
             if (c.X0 > x || c.X1 <= x || c.Y1 <= 0.01)
                 continue;
-            string kind = kindOf.GetValueOrDefault(c.Room, "void");
-            var (name, shortName) = Kinds.GetValueOrDefault(kind, (kind.Replace('_', ' '), ""));
-            string text = kind == "magazine" ? c.Room.Replace("Magazine ", "mag ", StringComparison.Ordinal) : shortName;
+            RoomKind? kind = kindOf.TryGetValue(c.Room, out var k) ? k : null;
+            var (name, shortName) = KindNames(kind);
+            string text = kind == RoomKind.Magazine ? c.Room.Replace("Magazine ", "mag ", StringComparison.Ordinal) : shortName;
             string tip = $"{c.Room} · {name}\n{F1(Math.Max(0, c.Y0))}–{F1(c.Y1)} m out · {Sx1(c.Base - wl)} to {Sx1(c.Top - wl)} m on the WL";
             cells.Add(new CellBox((float)Math.Max(0, c.Y0), (float)c.Y1, (float)c.Base, (float)c.Top, kind, text, tip));
         }
@@ -126,11 +127,11 @@ public sealed class ProtectionSection
             var c = cells[i];
             string extra = c.Kind switch
             {
-                "stores" when cells.Any(m => m.Kind == "magazine" && Math.Abs(m.Y1 - c.Y0) < 0.05 && m.Z0 <= c.Z0 + 0.05 && m.Z1 >= c.Z1 - 0.05)
+                RoomKind.Stores when cells.Any(m => m.Kind == RoomKind.Magazine && Math.Abs(m.Y1 - c.Y0) < 0.05 && m.Z0 <= c.Z0 + 0.05 && m.Z1 >= c.Z1 - 0.05)
                     => "\nThe magazine's wing: stores between it and the side.",
-                "handling" => "\nOver the magazine, under the deck: the flash path's node.",
-                "tds" => (a.TdsLayers ?? 1) > 1 ? $"\nA space of the torpedo protection, one of {a.TdsLayers} layers." : "\nA space of the torpedo protection.",
-                "magazine" => $"\nCrown {F1(wl - c.Z1)} m under the waterline" +
+                RoomKind.Handling => "\nOver the magazine, under the deck: the flash path's node.",
+                RoomKind.Tds => (a.TdsLayers ?? 1) > 1 ? $"\nA space of the torpedo protection, one of {a.TdsLayers} layers." : "\nA space of the torpedo protection.",
+                RoomKind.Magazine => $"\nCrown {F1(wl - c.Z1)} m under the waterline" +
                               (deckZs.Any(z => Math.Abs(z - c.Z1) < 0.05) ? "." : ", a platform deck over it."),
                 _ => "",
             };
@@ -156,7 +157,7 @@ public sealed class ProtectionSection
         var walls = new List<Wall>();
         var armour = new List<ArmourPoly>();
         static float Tm(double mm) => (float)(mm * Stretch / 1000);
-        var mags = cells.Where(c => c.Kind == "magazine").ToList();
+        var mags = cells.Where(c => c.Kind == RoomKind.Magazine).ToList();
         var mb = a.MagazineBox;
         foreach (var w in hb.Bulkheads)
         {
@@ -185,9 +186,9 @@ public sealed class ProtectionSection
             if (ww.Count > 0)
                 wing = (my, mags.Min(m => m.Z0), mags.Max(m => m.Z1));
         }
-        string innerOn = tdsWalls.Count > 0 ? "tds" : cells.Any(c => c.Kind == "bunker") ? "bunkers" : walls.Any(w => w.Kind == "wing") ? "wing" : "";
+        string innerOn = tdsWalls.Count > 0 ? "tds" : cells.Any(c => c.Kind == RoomKind.Bunker) ? "bunkers" : walls.Any(w => w.Kind == "wing") ? "wing" : "";
         (float, float, float)? ownInner = null;
-        if (armour.Any(p => p.Kind == Kind.Inner) && tdsWalls.Count == 0 && mags.Count == 0 && !cells.Any(c => c.Kind == "bunker"))
+        if (armour.Any(p => p.Kind == Kind.Inner) && tdsWalls.Count == 0 && mags.Count == 0 && !cells.Any(c => c.Kind == RoomKind.Bunker))
         {
             var p = armour.First(q => q.Kind == Kind.Inner);
             ownInner = (p.Pts[0].X, p.Pts[0].Y, p.Pts[1].Y);
@@ -313,7 +314,7 @@ public sealed class ProtectionSection
         {
             X = fx, Keel = keel, Top = top, Wl = wl, Ib = ib, Beam = (float)hb.Beam, Side = side.ToArray(), Cells = cells.ToArray(),
             Walls = walls.ToArray(), Decks = decks.ToArray(), Platforms = plats.ToArray(), Armour = armour.ToArray(), Knees = knees.ToArray(),
-            Belt = beltHere, Holding = holding, WingWall = wing, OwnInner = ownInner, InnerOn = innerOn, HasCoal = cells.Any(c => c.Kind == "bunker"),
+            Belt = beltHere, Holding = holding, WingWall = wing, OwnInner = ownInner, InnerOn = innerOn, HasCoal = cells.Any(c => c.Kind == RoomKind.Bunker),
         };
     }
 
@@ -384,19 +385,24 @@ public sealed class ProtectionSection
         public Vector2 Inv(Vector2 px) => new(MathF.Max(0, (px.X - Cx) * Side - Gap / 2) / K, ZTop - (px.Y - Top) / K);
     }
 
-    static readonly Dictionary<string, Vector4> Fill = new(StringComparer.Ordinal)
+    static readonly Vector4 VoidFill = Rgb(0x000000, 0.2f);
+
+    static readonly Dictionary<RoomKind, Vector4> Fill = new()
     {
-        ["magazine"] = Rgb(0xB24E36, 0.62f), ["handling"] = Rgb(0xCC6F43, 0.24f), ["stores"] = Rgb(0xD7C79A, 0.16f), ["tds"] = Rgb(0x4FA3B8, 0.30f),
-        ["bunker"] = Rgb(0x05070A, 0.62f), ["engine_room"] = Rgb(0x6F92B5, 0.34f), ["boiler_room"] = Rgb(0x6F92B5, 0.34f),
-        ["double_bottom"] = Rgb(0x2E4A66, 0), ["accommodation"] = Rgb(0x9CC2E2, 0.04f), ["steering"] = Rgb(0x7F8B95, 0.2f),
-        ["torpedo_room"] = Rgb(0x8E9AA4, 0.22f), ["fuel_tank"] = Rgb(0x5B4A2A, 0.4f), ["void"] = Rgb(0x000000, 0.2f),
+        [RoomKind.Magazine] = Rgb(0xB24E36, 0.62f), [RoomKind.Handling] = Rgb(0xCC6F43, 0.24f), [RoomKind.Stores] = Rgb(0xD7C79A, 0.16f),
+        [RoomKind.Tds] = Rgb(0x4FA3B8, 0.30f), [RoomKind.Bunker] = Rgb(0x05070A, 0.62f), [RoomKind.EngineRoom] = Rgb(0x6F92B5, 0.34f),
+        [RoomKind.BoilerRoom] = Rgb(0x6F92B5, 0.34f), [RoomKind.DoubleBottom] = Rgb(0x2E4A66, 0), [RoomKind.Accommodation] = Rgb(0x9CC2E2, 0.04f),
+        [RoomKind.Steering] = Rgb(0x7F8B95, 0.2f), [RoomKind.TorpedoRoom] = Rgb(0x8E9AA4, 0.22f), [RoomKind.FuelTank] = Rgb(0x5B4A2A, 0.4f),
     };
 
     /// <summary>The legend's swatches: (kind, label).</summary>
-    public static readonly (string Kind, string Label)[] Legend =
-        [("magazine", "magazine"), ("handling", "handling"), ("stores", "stores · wing"), ("tds", "TDS"), ("engine_room", "machinery"), ("bunker", "coal")];
+    public static readonly (RoomKind Kind, string Label)[] Legend =
+    [
+        (RoomKind.Magazine, "magazine"), (RoomKind.Handling, "handling"), (RoomKind.Stores, "stores · wing"), (RoomKind.Tds, "TDS"),
+        (RoomKind.EngineRoom, "machinery"), (RoomKind.Bunker, "coal"),
+    ];
 
-    public static Vector4 FillOf(string kind) => Fill.GetValueOrDefault(kind, Fill["void"]);
+    public static Vector4 FillOf(RoomKind? kind) => kind is { } k && Fill.TryGetValue(k, out var f) ? f : VoidFill;
 
     public static Vector4 Rgb(int rgb, float a) => new(((rgb >> 16) & 255) / 255f, ((rgb >> 8) & 255) / 255f, (rgb & 255) / 255f, a);
 
@@ -481,7 +487,7 @@ public sealed class ProtectionSection
             Vector2 q0 = m.P(c.Y0, za), q1 = m.P(MathF.Max(c.Y0, ya), za), q2 = m.P(MathF.Max(c.Y0, yb), zb), q3 = m.P(c.Y0, zb);
             if (fill.W > 0)
                 dl.AddQuadFilled(q0, q1, q2, q3, T.U32(fill));
-            if (c.Kind is "tds" or "double_bottom" or "bunker")
+            if (c.Kind is RoomKind.Tds or RoomKind.DoubleBottom or RoomKind.Bunker)
                 Hatch(dl, Vector2.Min(Vector2.Min(q0, q1), Vector2.Min(q2, q3)), Vector2.Max(Vector2.Max(q0, q1), Vector2.Max(q2, q3)), c.Kind);
         }
         // its outline, kept inside the hull: the top and floor to the side, the inner wall, the outer one where it stands
@@ -498,14 +504,14 @@ public sealed class ProtectionSection
         var hi = Vector2.Max(a, b);
         if (c.Text.Length > 0 && hi.X - lo.X > DesignerSceneText.Width(small, c.Text) + 4 && hi.Y - lo.Y > small.FontSize)
             DesignerSceneText.Draw(dl, small, (lo + hi) / 2 - new Vector2(DesignerSceneText.Width(small, c.Text) / 2, small.FontSize / 2),
-                c.Kind == "magazine" ? Rgb(0xFFE3D6, 0.9f) : Rgb(0xB9CBDB, 0.9f), c.Text);
+                c.Kind == RoomKind.Magazine ? Rgb(0xFFE3D6, 0.9f) : Rgb(0xB9CBDB, 0.9f), c.Text);
     }
 
-    static void Hatch(ImDrawListPtr dl, Vector2 lo, Vector2 hi, string kind)
+    static void Hatch(ImDrawListPtr dl, Vector2 lo, Vector2 hi, RoomKind? kind)
     {
         dl.PushClipRect(lo, hi, true);
         float h = hi.Y - lo.Y;
-        if (kind == "bunker")
+        if (kind == RoomKind.Bunker)
         {
             for (float y = lo.Y + 1; y < hi.Y; y += 4)
                 for (float x = lo.X + 1; x < hi.X; x += 4)
@@ -513,8 +519,8 @@ public sealed class ProtectionSection
         }
         else
         {
-            uint col = T.U32(kind == "tds" ? Rgb(0x4FA3B8, 0.55f) : new Vector4(0.61f, 0.76f, 0.886f, 0.35f));
-            float step = kind == "tds" ? 4 : 5, dir = kind == "tds" ? -1 : 1;
+            uint col = T.U32(kind == RoomKind.Tds ? Rgb(0x4FA3B8, 0.55f) : new Vector4(0.61f, 0.76f, 0.886f, 0.35f));
+            float step = kind == RoomKind.Tds ? 4 : 5, dir = kind == RoomKind.Tds ? -1 : 1;
             for (float x = lo.X - h; x < hi.X + h; x += step)
                 dl.AddLine(new Vector2(x, hi.Y), new Vector2(x + dir * h, lo.Y), col);
         }
