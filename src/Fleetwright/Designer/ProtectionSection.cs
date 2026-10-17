@@ -83,7 +83,7 @@ public sealed class ProtectionSection
 
     /// <summary>The section at station x of the built ship. <paramref name="deckRow"/> finds the design's armour deck for
     /// a built one (its deck's name and extent; -1 for none).</summary>
-    public static ProtectionSection Build(Ship ship, double x, Func<string, string, int> deckRow)
+    public static ProtectionSection Build(Ship ship, double x, Func<string, Extent, int> deckRow)
     {
         var hb = ship.Hitboxes;
         var d = ship.Design;
@@ -242,12 +242,12 @@ public sealed class ProtectionSection
         {
             if (s.X0 > x || s.X1 < x || s.Kind is "zone" or "box")
                 continue;
-            var kind = s.Kind == "upper" ? Kind.Upper : s.Extent == "fore" ? Kind.EndFore : Kind.EndAft;
+            var kind = s.Kind == "upper" ? Kind.Upper : s.Extent == Extent.Fore ? Kind.EndFore : Kind.EndAft;
             double mm = s.ThicknessMm;
             if (s.Kind == "end" && s.TipMm is { } tip)
             {
                 double f = (x - s.X0) / Math.Max(0.1, s.X1 - s.X0);
-                mm = s.Extent == "fore" ? s.ThicknessMm + (tip - s.ThicknessMm) * f : tip + (s.ThicknessMm - tip) * f;
+                mm = s.Extent == Extent.Fore ? s.ThicknessMm + (tip - s.ThicknessMm) * f : tip + (s.ThicknessMm - tip) * f;
             }
             armour.Add(SidePlate(kind, 0, (float)s.Bottom, (float)s.Top, _ => mm, Hb, (float)((s.Bottom + s.Top) / 2), N0(mm)));
         }
@@ -255,10 +255,10 @@ public sealed class ProtectionSection
         // armour decks: the flat (to the side, or to where the slope starts) and the box decks
         foreach (var k in hb.Armour.Decks ?? [])
         {
-            if (k.X0 > x || k.X1 < x || k.Extent == "steering")
+            if (k.X0 > x || k.X1 < x || k.Extent == Extent.Steering)
                 continue;
             float z = (float)k.Z, t = Tm(k.ThicknessMm);
-            if (k.Extent == "box")
+            if (k.Extent == Extent.Box)
             {
                 float hw = (float)((k.W ?? 0) / 2);
                 armour.Add(new ArmourPoly(Kind.Box, 0, k.ThicknessMm, [new(0, z), new(hw, z), new(hw, z + t), new(0, z + t)], new Vector2(hw * 0.5f, z + t),
@@ -334,14 +334,14 @@ public sealed class ProtectionSection
     }
 
     /// <summary>"Slopes (third deck, fore) 2" → ("Third deck", "fore").</summary>
-    static (string Deck, string Extent) SlopeDeck(string id)
+    static (string Deck, Extent Extent) SlopeDeck(string id)
     {
         int a = id.IndexOf('('), b = id.IndexOf(')');
         if (a < 0 || b < a)
-            return ("", "citadel");
+            return ("", Extent.Citadel);
         var parts = id[(a + 1)..b].Split(", ");
         string deck = parts[0].Length > 0 ? char.ToUpperInvariant(parts[0][0]) + parts[0][1..] : "";
-        return (deck, parts.Length > 1 ? parts[1] : "citadel");
+        return (deck, parts.Length > 1 ? SnakeEnum<Extent>.Parse(parts[1]) : Extent.Citadel);
     }
 
     static string DeckShortName(string id) => id switch

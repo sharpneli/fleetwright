@@ -176,7 +176,7 @@ public sealed unsafe partial class DesignerScene
         public float EndTipFore = float.NaN, EndTipAft = float.NaN, UpX0 = float.NaN, UpX1 = float.NaN, UpTop = float.NaN;
         public Ship? Ship;
         /// <summary>The design's armour deck for a built one, by deck name and extent.</summary>
-        public required Func<string, string, int> DeckRow;
+        public required Func<string, Extent, int> DeckRow;
         public required string[] CutLabels;
     }
 
@@ -256,9 +256,10 @@ public sealed unsafe partial class DesignerScene
         // the built plates, each traced to its row
         var mainIds = hb?.Components.Where(c => c.Kind == ComponentKind.Main).Select(c => c.Id).ToHashSet() ?? [];
         var designDecks = a.Decks ?? [];
-        int DeckRow(string name, string ext)
+        int DeckRow(string name, Extent ext)
         {
-            static bool Covers(string? e, string rep) => (e ?? "citadel") == rep || e == "ends" && rep is "fore" or "aft" || rep == "full" && e == "full";
+            // a design deck's extent (a string, "ends" for both) against a built piece's
+            static bool Covers(string? e, Extent rep) => (e ?? "citadel") == rep.Name() || e == "ends" && rep is Extent.Fore or Extent.Aft;
             for (int i = 0; i < designDecks.Count; i++)
                 if (((designDecks[i].Mm ?? 0) > 0 || (designDecks[i].SlopeMm ?? 0) > 0) && Decks.DeckName(designDecks[i].Deck ?? 0) == name && Covers(designDecks[i].Extent, ext))
                     return i;
@@ -296,13 +297,13 @@ public sealed unsafe partial class DesignerScene
                 var r = s.Kind switch
                 {
                     "upper" => new PRef(PK.Upper), "box" => new PRef(PK.Steering), "zone" => new PRef(PK.BeltZone),
-                    _ => new PRef(s.Extent == "fore" ? PK.EndFore : PK.EndAft),
+                    _ => new PRef(s.Extent == Extent.Fore ? PK.EndFore : PK.EndAft),
                 };
                 if (s.Kind == "end" && s.TipMm is { } tip && Math.Abs(tip - s.ThicknessMm) > 0.5)
                 {
                     // root and tip halves, so the taper shows
                     float m = (float)(s.X0 + s.X1) / 2;
-                    bool fore = s.Extent == "fore";
+                    bool fore = s.Extent == Extent.Fore;
                     plates.Add(new PPlate(r, (float)s.X0, m, (float)s.Bottom, (float)s.Top, fore ? s.ThicknessMm : tip, Mm(fore ? s.ThicknessMm : tip)));
                     plates.Add(new PPlate(r, m, (float)s.X1, (float)s.Bottom, (float)s.Top, fore ? tip : s.ThicknessMm, Mm(fore ? tip : s.ThicknessMm)));
                 }
@@ -381,7 +382,7 @@ public sealed unsafe partial class DesignerScene
                     continue;
                 int a0 = p.Id.IndexOf('('), a1 = p.Id.IndexOf(')');
                 var parts = a0 >= 0 && a1 > a0 ? p.Id[(a0 + 1)..a1].Split(", ") : [""];
-                int row = DeckRow(parts[0].Length > 0 ? char.ToUpperInvariant(parts[0][0]) + parts[0][1..] : "", parts.Length > 1 ? parts[1] : "citadel");
+                int row = DeckRow(parts[0].Length > 0 ? char.ToUpperInvariant(parts[0][0]) + parts[0][1..] : "", parts.Length > 1 ? SnakeEnum<Extent>.Parse(parts[1]) : Extent.Citadel);
                 var r = new PRef(PK.Slope, row);
                 plates.Add(new PPlate(r, (float)p.X0, (float)p.X1, (float)p.Z0, (float)p.Z1, p.ThicknessMm, "", Faint: true));
                 double deg = Math.Atan2(p.Z1 - p.Z0, Math.Max(1e-3, p.U1 - p.U0)) * 180 / Math.PI;
@@ -391,9 +392,9 @@ public sealed unsafe partial class DesignerScene
             foreach (var dk in hb.Armour.Decks ?? [])
             {
                 PRef r;
-                if (dk.Extent == "steering")
+                if (dk.Extent == Extent.Steering)
                     r = new PRef(PK.Steering);
-                else if (dk.Extent == "box")
+                else if (dk.Extent == Extent.Box)
                     r = new PRef(PK.Box);
                 else
                 {
@@ -625,7 +626,7 @@ public sealed unsafe partial class DesignerScene
             var e = a.EndBelts!.Of(end)!;
             string prefix = end == "fore" ? "Fore end belt" : "Aft end belt";
             double t = Sum(n => n.StartsWith(prefix, StringComparison.Ordinal));
-            var s = hb?.Armour.Strakes?.FirstOrDefault(x => x.Kind == "end" && x.Extent == end);
+            var s = hb?.Armour.Strakes?.FirstOrDefault(x => x.Kind == "end" && x.Extent.Name() == end);
             double reach = e.Reach ?? 1;
             rows.Add(new ProtRow
             {
@@ -947,8 +948,8 @@ public sealed unsafe partial class DesignerScene
             reads += $" · armour {N0(armourT)} t, {100 * armourT / Math.Max(1, std):0.0} % of standard";
 
         var upper = hb?.Armour.Strakes?.FirstOrDefault(x => x.Kind == "upper");
-        var tipF = hb?.Armour.Strakes?.FirstOrDefault(x => x.Kind == "end" && x.Extent == "fore");
-        var tipA = hb?.Armour.Strakes?.FirstOrDefault(x => x.Kind == "end" && x.Extent == "aft");
+        var tipF = hb?.Armour.Strakes?.FirstOrDefault(x => x.Kind == "end" && x.Extent == Extent.Fore);
+        var tipA = hb?.Armour.Strakes?.FirstOrDefault(x => x.Kind == "end" && x.Extent == Extent.Aft);
         foreach (var r in rows)
             r.Hover = PlateTip(r);
         float secTop = (float)Math.Max(0, raised.Select(r => r.Top).DefaultIfEmpty(0).Max()) + 1.6f;

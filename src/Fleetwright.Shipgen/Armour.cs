@@ -17,7 +17,7 @@ public sealed class ArmourDeck
 {
     public long Deck;
     public double Mm;
-    public string Extent = "";
+    public Extent Extent;
     public double Z;
     public long Asked;
     public string? Material;
@@ -45,7 +45,7 @@ public sealed record InclinedPlate(string Id, string Kind, double X0, double X1,
 
 /// <summary>A strake of side armour: Kind end, upper or box (the steering gear's); Mm at its root tapering to TipMm at
 /// the hull's end. The main belt, as the subdivision sees it, also has BottomMm below the waterline Wl.</summary>
-public sealed record Strake(string Id, string Kind, string Extent, double Mm, double TipMm, double X0, double X1, double Bottom,
+public sealed record Strake(string Id, string Kind, Extent Extent, double Mm, double TipMm, double X0, double X1, double Bottom,
     double Top, string? Material)
 {
     public double? BottomMm { get; init; }
@@ -96,14 +96,14 @@ public static class Armour
     /// stack (deck 0 and down), the thickest plate, flat or slopes, the higher of equals; -1 for none. A choice, not
     /// physics: the build runs the belt up to it and stops the barbettes' armour on it, the protection schemes put their
     /// slopes on it, the designer's armour deck knob edits it. The one rule: every one of them calls this.</summary>
-    public static int MainDeck<T>(IReadOnlyList<T> decks, Func<T, (long Deck, string Extent, double Plate)> of)
+    public static int MainDeck<T>(IReadOnlyList<T> decks, Func<T, (long Deck, bool Over, double Plate)> of)
     {
         int best = -1;
-        (long Deck, string Extent, double Plate) b = default;
+        (long Deck, bool Over, double Plate) b = default;
         for (int i = 0; i < decks.Count; i++)
         {
             var x = of(decks[i]);
-            if (x.Deck < 0 || x.Extent is not ("citadel" or "full"))
+            if (x.Deck < 0 || !x.Over)
                 continue;
             if (best < 0 || x.Plate > b.Plate || x.Plate == b.Plate && x.Deck < b.Deck)
                 (best, b) = (i, x);
@@ -114,7 +114,7 @@ public static class Armour
     /// <summary>MainDeck among a design's deck entries (an entry's deck 0 and extent citadel when not given, as the build
     /// takes them).</summary>
     public static int MainDeck(IReadOnlyList<ArmourDeckInput> decks) =>
-        MainDeck(decks, d => ((long)(d.Deck ?? 0), d.Extent ?? "citadel", Math.Max(d.Mm ?? 0, d.SlopeMm ?? 0)));
+        MainDeck(decks, d => ((long)(d.Deck ?? 0), (d.Extent ?? "citadel") is "citadel" or "full", Math.Max(d.Mm ?? 0, d.SlopeMm ?? 0)));
 
     public const double TdsMmPerM = 12.0;
     /// <summary>The magazine wing's default width, a share of the beam (protection-plan.md H2) [INFERRED].</summary>
@@ -289,13 +289,13 @@ public static class Armour
     }
 
     /// <summary>An armour extent as [(extent, x0, x1)] pieces.</summary>
-    public static List<(string Ext, double X0, double X1)> ExtentSpans(string extent, double L, double x0, double x1) => extent switch
+    public static List<(Extent Ext, double X0, double X1)> ExtentSpans(string extent, double L, double x0, double x1) => extent switch
     {
-        "citadel" => [("citadel", x0, x1)],
-        "full" => [("full", -L / 2, L / 2)],
-        "fore" => [("fore", x1, L / 2)],
-        "aft" => [("aft", -L / 2, x0)],
-        "ends" => [("fore", x1, L / 2), ("aft", -L / 2, x0)],
+        "citadel" => [(Extent.Citadel, x0, x1)],
+        "full" => [(Extent.Full, -L / 2, L / 2)],
+        "fore" => [(Extent.Fore, x1, L / 2)],
+        "aft" => [(Extent.Aft, -L / 2, x0)],
+        "ends" => [(Extent.Fore, x1, L / 2), (Extent.Aft, -L / 2, x0)],
         _ => throw new ArgumentOutOfRangeException(nameof(extent), extent, "unknown armour extent"),
     };
 
@@ -307,7 +307,7 @@ public static class Armour
         if (s.TipMm != mm && s.X1 - s.X0 > 0)
         {
             double f = (x - s.X0) / (s.X1 - s.X0);
-            if (s.Extent == "aft")
+            if (s.Extent == Extent.Aft)
                 f = 1.0 - f;
             mm += (s.TipMm - mm) * Math.Min(1.0, Math.Max(0.0, f));
         }
@@ -355,7 +355,7 @@ public static class Armour
                         p.MagazinesMm = (p.MagazinesMm ?? p.Mm) + (d.MagazinesMm ?? d.Mm);
                     p.Mm += d.Mm;
                     (p.X0, p.X1) = (Math.Min(p.X0, p0), Math.Max(p.X1, p1));
-                    p.Extent = p.Extent == "full" || ext == "full" ? "full" : p.Extent;
+                    p.Extent = p.Extent == Extent.Full || ext == Extent.Full ? Extent.Full : p.Extent;
                     p.Material = dm is null || dm == pm ? pm : pm is null ? dm : $"{pm} + {dm}";
                     if (d.SlopeMm > 0 && dn >= 0)
                         (p.SlopeMm, p.SlopeDeg) = (p.SlopeMm + d.SlopeMm, p.SlopeMm > 0 ? p.SlopeDeg : d.SlopeDeg);
@@ -363,11 +363,11 @@ public static class Armour
                 }
                 // (a raised deck has no slopes: its side is above the belt)
                 decks.Add(new ArmourDeck { Deck = dn, Mm = d.Mm, Extent = ext, Z = d.Z, Asked = d.Asked, Material = d.Material, X0 = p0, X1 = p1,
-                    MagazinesMm = ext == "citadel" ? d.MagazinesMm : null, SlopeMm = dn >= 0 ? d.SlopeMm : 0.0, SlopeDeg = d.SlopeDeg });
+                    MagazinesMm = ext == Extent.Citadel ? d.MagazinesMm : null, SlopeMm = dn >= 0 ? d.SlopeMm : 0.0, SlopeDeg = d.SlopeDeg });
             }
         }
-        var over = decks.Where(d => d.Extent is "citadel" or "full" && d.Deck >= 0).ToList();
-        int mi = MainDeck(decks, d => (d.Deck, d.Extent, Math.Max(d.Mm, d.SlopeMm)));
+        var over = decks.Where(d => d.Extent is Extent.Citadel or Extent.Full && d.Deck >= 0).ToList();
+        int mi = MainDeck(decks, d => (d.Deck, d.Extent is Extent.Citadel or Extent.Full, Math.Max(d.Mm, d.SlopeMm)));
         var main = mi >= 0 ? decks[mi] : null;
         var roof = over.MinBy(d => d.Z);
         // zones (protection-plan.md H5): a citadel deck and the belt thicker (or thinner) beside the magazines, where the
@@ -392,7 +392,7 @@ public static class Armour
                 continue;
             }
             (d.FootZ, d.Reach) = (bot, (d.Z - bot) / Math.Tan(double.DegreesToRadians(d.SlopeDeg)));
-            string name = $"Slopes ({Decks.DeckNameLower(d.Deck)}{(d.Extent is "fore" or "aft" ? $", {d.Extent}" : "")})";
+            string name = $"Slopes ({Decks.DeckNameLower(d.Deck)}{(d.Extent is Extent.Fore or Extent.Aft ? $", {d.Extent.Name()}" : "")})";
             int same = inclined.Count(p => p.Id == name || p.Id.StartsWith(name + " ", StringComparison.Ordinal));
             inclined.Add(new InclinedPlate(same > 0 ? $"{name} {same + 1}" : name, "slope", d.X0, d.X1, bot, d.Z, 0.0, d.Reach, bot, d.SlopeMm,
                 d.Material));
@@ -409,7 +409,7 @@ public static class Armour
             {
                 double s0 = Math.Max(bx0, m0), s1 = Math.Min(bx1, m1);
                 if (s1 - s0 > 0.05)
-                    strakes.Add(new Strake($"Belt (magazines){(mags.Count > 1 ? $" {++k}" : "")}", "zone", "citadel", bm, bm, s0, s1, bot, top,
+                    strakes.Add(new Strake($"Belt (magazines){(mags.Count > 1 ? $" {++k}" : "")}", "zone", Extent.Citadel, bm, bm, s0, s1, bot, top,
                         ArmourMaterial(design, "belt")) { BottomMm = bm * bb / belt, Wl = T });
             }
         }
@@ -444,11 +444,12 @@ public static class Armour
         var endBhs = new List<ArmourBulkhead>();
         var endPlates = new List<ArmourBulkhead>();
         double bhBot = Math.Max(0.0, bot - 0.4 * h);
-        var tops = new Dictionary<string, double>(StringComparer.Ordinal) { ["citadel"] = belt > 0 ? top : band };
+        var tops = new Dictionary<Extent, double> { [Extent.Citadel] = belt > 0 ? top : band };
         foreach (var end in BeltEnds)
         {
             var e = a.EndBelts?.Of(end) ?? new EndBeltInput();
-            tops[end] = band;
+            var endExt = SnakeEnum<Extent>.Parse(end);
+            tops[endExt] = band;
             double emm = e.Mm ?? 0;
             if (emm <= 0)
                 continue;
@@ -459,13 +460,13 @@ public static class Armour
             else
                 s0 = s1 - (s1 - s0) * reach;
             double mid = (s0 + s1) / 2;
-            var cover = decks.Where(d => d.X0 <= mid && mid <= d.X1 && (d.Extent == end || d.Extent == "full")).ToList();
+            var cover = decks.Where(d => d.X0 <= mid && mid <= d.X1 && (d.Extent == endExt || d.Extent == Extent.Full)).ToList();
             var dk = cover.MaxBy(d => (d.Mm, d.Z));
             double et = Math.Min(D, Math.Max(band, dk?.Z ?? 0.0));
-            tops[end] = et;
+            tops[endExt] = et;
             if (s1 - s0 > 1e-6)
             {
-                strakes.Add(new Strake($"{Capitalize(end)} end belt", "end", end, emm, e.TipMm ?? emm, s0, s1, bot, et,
+                strakes.Add(new Strake($"{Capitalize(end)} end belt", "end", endExt, emm, e.TipMm ?? emm, s0, s1, bot, et,
                     ArmourMaterial(design, "end_belts", e.Material)));
                 if (reach < 1.0 && (e.BulkheadMm ?? 0) > 0)
                     endBhs.Add(new ArmourBulkhead($"{Capitalize(end)} end belt bulkhead", end == "fore" ? s1 : s0, e.BulkheadMm!.Value,
@@ -496,11 +497,11 @@ public static class Armour
                 if (Math.Abs(v.Z - rz).CompareTo(best) < 0)
                     (n, best) = (v.N, Math.Abs(v.Z - rz));
             if (sbDeck > 0)
-                decks.Add(new ArmourDeck { Deck = n, Mm = sbDeck, Extent = "steering", Z = rz, Asked = n, X0 = b0, X1 = b1, W = wbox,
+                decks.Add(new ArmourDeck { Deck = n, Mm = sbDeck, Extent = Extent.Steering, Z = rz, Asked = n, X0 = b0, X1 = b1, W = wbox,
                     Material = ArmourMaterial(design, "decks", sb.DeckMaterial) });
             double floor = Math.Min(Geometry.DoubleBottom(D), rz);
             if (sbMm > 0)
-                strakes.Add(new Strake("Steering gear box", "box", "aft", sbMm, sbMm, b0, b1, floor, rz,
+                strakes.Add(new Strake("Steering gear box", "box", Extent.Aft, sbMm, sbMm, b0, b1, floor, rz,
                     ArmourMaterial(design, "end_belts", sb.Material)));
             if (sbBhd > 0)
                 foreach (var (w, x) in new[] { ("forward", b1), ("aft", b0) })
@@ -514,7 +515,7 @@ public static class Armour
             double ut = stack[(int)Math.Min(Math.Max(to, 0), stack[^1].N)].Z;
             var pieces = ExtentSpans(ub.Extent ?? "citadel", L, x0, x1);
             if (ub.Extent == "full")
-                pieces = [("citadel", x0, x1), ("fore", x1, L / 2), ("aft", -L / 2, x0)];
+                pieces = [(Extent.Citadel, x0, x1), (Extent.Fore, x1, L / 2), (Extent.Aft, -L / 2, x0)];
             foreach (var (ext, s0, s1) in pieces)
             {
                 var parts = to < 0 ? Decks.RaisedPieces(raised, s0, s1, -to) : [(s0, s1, 0L)];
@@ -524,7 +525,7 @@ public static class Armour
                     double top_ = ut + lv * Geometry.DeckPitch;
                     if (top_ > tops[ext] + 0.05 && p1 - p0 > 1e-6)
                     {
-                        string sid = ext == "citadel" ? "Upper belt" : $"Upper belt ({ext})";
+                        string sid = ext == Extent.Citadel ? "Upper belt" : $"Upper belt ({ext.Name()})";
                         strakes.Add(new Strake(sid + (parts.Count > 1 ? $" {k + 1}" : ""), "upper", ext, ub.Mm!.Value, ub.Mm.Value, p0, p1,
                             tops[ext], top_, ArmourMaterial(design, "upper_belt", ub.Material)));
                     }
@@ -537,7 +538,7 @@ public static class Armour
         // (BulkheadLowerShare)
         double bhTop = top, citBot = Math.Min(bhBot, Geometry.DoubleBottom(D)), bhMm = a.BulkheadMm ?? 0.6 * belt;
         foreach (var s in strakes)
-            if (s.Kind == "upper" && s.Extent == "citadel" && (double.IsNaN(bhTop) || s.Top > bhTop))
+            if (s.Kind == "upper" && s.Extent == Extent.Citadel && (double.IsNaN(bhTop) || s.Top > bhTop))
                 bhTop = s.Top;
         return new ArmourLayout
         {
@@ -574,10 +575,10 @@ public static class Armour
             k++;
             double w = 2 * r.HalfWidth;
             if (mb.CrownMm > 0)
-                decks.Add(new ArmourDeck { Deck = -1, Mm = mb.CrownMm, Extent = "box", Z = r.Top + D, X0 = r.X0, X1 = r.X1, W = w,
+                decks.Add(new ArmourDeck { Deck = -1, Mm = mb.CrownMm, Extent = Extent.Box, Z = r.Top + D, X0 = r.X0, X1 = r.X1, W = w,
                     Material = ArmourMaterial(design, "decks") });
             if (mb.FloorMm > 0)
-                decks.Add(new ArmourDeck { Deck = -1, Mm = mb.FloorMm, Extent = "box", Z = r.Base + D, X0 = r.X0, X1 = r.X1, W = w,
+                decks.Add(new ArmourDeck { Deck = -1, Mm = mb.FloorMm, Extent = Extent.Box, Z = r.Base + D, X0 = r.X0, X1 = r.X1, W = w,
                     Material = ArmourMaterial(design, "decks") });
             if (mb.EndMm <= 0)
                 continue;
@@ -717,7 +718,7 @@ public static class Armour
                 Zf(b.Top, b.Bottom)));
         foreach (var s in g.Strakes.Where(s => s.Kind != "zone"))
         {
-            var (a, b) = s.Extent != "aft" ? (s.Mm, s.TipMm) : (s.TipMm, s.Mm);
+            var (a, b) = s.Extent != Extent.Aft ? (s.Mm, s.TipMm) : (s.TipMm, s.Mm);
             double f = a + b > 0 ? (a + 2 * b) / (3 * (a + b)) : 0.5;
             result.Add(new Weight(s.Id, "armour", 2 * (s.X1 - s.X0) * (s.Top - s.Bottom) * Slant(s.Bottom, s.Top) * (a + b) / 2 / 1000 * Weight.Steel,
                 s.X0 + f * (s.X1 - s.X0), Zf(s.Top, s.Bottom)));
@@ -762,12 +763,12 @@ public static class Armour
         double cb = design.BlockCoefficient;
         foreach (var d in g.Decks)
         {
-            string ext = d.Extent;
+            var ext = d.Extent;
             double wide = topside is null ? B : B * topside.MeanRatio(L, d.Z - D);
-            double area = (ext == "full" ? L * Geometry.Cwp(cb) : d.X1 - d.X0) * (d.W is double w && w != 0 ? w : wide) * 0.9;
+            double area = (ext == Extent.Full ? L * Geometry.Cwp(cb) : d.X1 - d.X0) * (d.W is double w && w != 0 ? w : wide) * 0.9;
             string name = $"Deck armour ({Decks.DeckNameLower(d.Deck)}" +
-                          (ext is "fore" or "aft" or "steering" ? $", {ext})" : ")");
-            double xw = ext == "full" ? 0.0 : (d.X0 + d.X1) / 2;
+                          (ext is Extent.Fore or Extent.Aft or Extent.Steering ? $", {ext.Name()})" : ")");
+            double xw = ext == Extent.Full ? 0.0 : (d.X0 + d.X1) / 2;
             // the slopes take the outer Reach each side of the breadth, longer by their angle (protection-plan.md H6)
             double sloped = d.Reach > 0 && wide > 0 ? Math.Min(1.0, 2 * d.Reach / wide) : 0.0;
             result.Add(new Weight(name, "armour", area * (1 - sloped) * d.Mm / 1000 * Weight.Steel, xw, ZRel.Deck(d.Z - D)));

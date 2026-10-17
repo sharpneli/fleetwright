@@ -483,7 +483,7 @@ public static class ShipClassCompiler
                         "zone" => StrakeKind.Zone,
                         _ => throw new ShipCompileException($"unknown strake kind \"{s.Kind}\""),
                     },
-                    Extent = ExtentOf(s.Extent), ThicknessMm = s.ThicknessMm, X0 = s.X0, X1 = s.X1, Bottom = s.Bottom, Top = s.Top,
+                    Extent = s.Extent, ThicknessMm = s.ThicknessMm, X0 = s.X0, X1 = s.X1, Bottom = s.Bottom, Top = s.Top,
                     Material = Material(s.Material), BottomMm = Or(s.BottomMm), TaperFrom = Or(s.TaperFrom), TipMm = Or(s.TipMm),
                     InclineDeg = s.InclineDeg ?? 0,
                 });
@@ -498,7 +498,7 @@ public static class ShipClassCompiler
             c.armourBulkheadIds = [.. bh.Select(x => x.Id)];
             Index(c.armourBulkheadIds, "armour bulkhead");
             c.armourDecks = (a.Decks ?? []).Select(x =>
-                new ArmourDeckRow(Deck(x.Deck), x.ThicknessMm, ExtentOf(x.Extent), x.X0, x.X1, x.Z, x.Main, x.Roof, Material(x.Material), Or(x.W))
+                new ArmourDeckRow(Deck(x.Deck), x.ThicknessMm, x.Extent, x.X0, x.X1, x.Z, x.Main, x.Roof, Material(x.Material), Or(x.W))
                     { SlopeReach = Or(x.SlopeReach), SlopeFoot = Or(x.SlopeFoot) }).ToArray();
             var inc = a.Inclined ?? [];
             c.inclined = [.. inc.Select(x => new InclinedRow
@@ -665,17 +665,6 @@ public static class ShipClassCompiler
 
         /// <summary>The side a point athwartships stands on (+y starboard); none given is the centreline.</summary>
         static Side SideOf(double y) => !(Math.Abs(y) >= CentrelineM) ? Side.Centre : y > 0 ? Side.Starboard : Side.Port;
-
-        static Extent ExtentOf(string s) => s switch
-        {
-            "citadel" => Extent.Citadel,
-            "fore" => Extent.Fore,
-            "aft" => Extent.Aft,
-            "full" => Extent.Full,
-            "steering" => Extent.Steering,
-            "box" => Extent.Box,
-            _ => throw new ShipCompileException($"unknown armour extent \"{s}\""),
-        };
 
         TurretTypeRow TurretTypeOf(Shipgen.TurretType t) => new()
         {

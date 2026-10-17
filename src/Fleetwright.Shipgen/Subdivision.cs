@@ -383,7 +383,7 @@ public static class Subdivision
         var loBase = new Dictionary<string, double>(StringComparer.Ordinal);
         var belts = new List<Strake>();
         if (ag.BeltMm > 0)
-            belts.Add(new Strake("Belt", "belt", "citadel", ag.BeltMm, ag.BeltMm, ag.BeltX0, ag.BeltX1, ag.BeltBottom, ag.BeltTop, ag.BeltMaterial)
+            belts.Add(new Strake("Belt", "belt", Extent.Citadel, ag.BeltMm, ag.BeltMm, ag.BeltX0, ag.BeltX1, ag.BeltBottom, ag.BeltTop, ag.BeltMaterial)
                 { BottomMm = ag.BeltBottomMm, Wl = Rz(ag.Waterline) });
         belts.AddRange(ag.Strakes);
         belts = belts.Select(b => b with { Bottom = Rz(b.Bottom), Top = Rz(b.Top) }).ToList();

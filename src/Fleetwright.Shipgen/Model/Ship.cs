@@ -336,7 +336,7 @@ public sealed record BeltReport(double ThicknessMm, double X0, double X1, double
     public string? Position { get; init; }
 }
 
-public sealed record StrakeReport(string Id, string Kind, string Extent, double ThicknessMm, double X0, double X1, double Bottom, double Top)
+public sealed record StrakeReport(string Id, string Kind, Extent Extent, double ThicknessMm, double X0, double X1, double Bottom, double Top)
 {
     public double? TipMm { get; init; }
     public string? Material { get; init; }
@@ -356,7 +356,7 @@ public sealed record ArmourBulkheadReport(string Id, double X, double ThicknessM
     public double? W { get; init; }
 }
 
-public sealed record ArmourDeckReport(string Deck, double ThicknessMm, string Extent, double X0, double X1, double Z, bool Main, bool Roof,
+public sealed record ArmourDeckReport(string Deck, double ThicknessMm, Extent Extent, double X0, double X1, double Z, bool Main, bool Roof,
     string? Material)
 {
     /// <summary>Narrower than the hull: this wide about the centreline (the steering gear's box, a magazine box).</summary>

@@ -58,6 +58,20 @@ public enum ComponentKind : byte
     HangarBay,
 }
 
+/// <summary>Where along the hull an armour strake or deck runs (the design's "ends" is a fore and an aft piece). The sim
+/// keeps these byte values in its tables: add new extents at the end.</summary>
+[JsonConverter(typeof(SnakeEnumConverter<Extent>))]
+public enum Extent : byte
+{
+    Citadel,
+    Fore,
+    Aft,
+    Full,
+    Steering,
+    /// <summary>A magazine box's crown or floor (protection-plan.md H5).</summary>
+    Box,
+}
+
 /// <summary>An enum's members by their snake_case names, both ways.</summary>
 public static class SnakeEnum<T> where T : struct, Enum
 {

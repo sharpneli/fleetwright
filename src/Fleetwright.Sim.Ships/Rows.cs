@@ -548,17 +548,6 @@ public enum StrakeKind : byte
     Zone,
 }
 
-public enum Extent : byte
-{
-    Citadel,
-    Fore,
-    Aft,
-    Full,
-    Steering,
-    /// <summary>A magazine box's crown or floor (protection-plan.md H5).</summary>
-    Box,
-}
-
 /// <summary>Side armour: the belt or a strake, on the hull's side over X0..X1 and Bottom..Top.</summary>
 public readonly record struct SidePlateRow
 {
