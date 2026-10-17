@@ -641,6 +641,12 @@ public sealed class DamageSystem : IWorldSystem
         long next = (t / settings.FloodMs + 1) * settings.FloodMs;
         while (k.Status == ShipStatus.Afloat && next <= end)
         {
+            // the timed outages and the walking wounded (E6) ending by then over first, as the world's clear event has them
+            if (k.NextClearMs >= 0 && k.NextClearMs <= next && k.Clear(next))
+            {
+                var rc = stream.Derive(0xC1EBu).Derive((ulong)entity).Derive((ulong)next);
+                Recompute(world, slot, k, ref rc);
+            }
             long d = Step(world, slot, k, next);
             if (d < 0)
                 break;

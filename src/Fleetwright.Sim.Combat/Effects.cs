@@ -31,6 +31,10 @@ public struct EffectsResult
     public int Part;
     public int Destroyed, Disabled, Damaged;
     public double CrewLost, BreachM2;
+    /// <summary>E6: the men it killed and wounded (CrewLost: their sum, or a torpedo's rule's men), and whether propellant
+    /// flashed through a crew (a magazine's train, a mount's ready charges).</summary>
+    public int Killed, Wounded;
+    public bool Flash;
     public bool Jammed, Fire, Magazine;
     /// <summary>The magazine set off (a room of the class), when <see cref="Magazine"/>; else -1.</summary>
     public int MagazineRoom;
@@ -87,11 +91,12 @@ public static class Effects
         double calM = shell.CalibreMm / 1000, w = Math.Max(shell.FillerKg * shell.FillerRe, 0), size = Math.Cbrt(w);
         var xs = path.Crossings;
         var water = HitQuery.WaterOf(c, k.Attitude);
-        bool passed = !t.Bursts && t.Outcome is Outcome.PassedThrough or Outcome.Dud or Outcome.BrokeUp or Outcome.Holed or Outcome.BurstBeyond;
+        Casualties.Begin(k);
 
-        // the line of flight: what its body went into before it stopped
-        int cell = -1;
-        double lane = 0, laneCrew = 0;
+        // the line of flight: what its body went into before it stopped; the men in its lane, and the disc each plate it
+        // got through drives ahead of it (E6; 16 §4.3)
+        int cell = -1, inPart = -1;
+        double cellT = 0, partT = 0;
         for (int i = 0; i < xs.Length && xs[i].T < t.StopT; i++)
         {
             ref readonly var x = ref xs[i];
@@ -101,9 +106,15 @@ public static class Effects
                     if (res.Part < 0)
                         res.Part = x.Index;
                     Count(ref res, k, x.Index, k.Worsen(x.Index, Struck(c.Components[x.Index].Kind)) ? Struck(c.Components[x.Index].Kind) : PartState.Ok);
+                    (inPart, partT) = (x.Index, x.T);
+                    break;
+                case CrossingKind.PartOut:
+                    if (x.Index == inPart)
+                        Casualties.Lane(c, k, Casualties.Part(inPart), path.At(partT), x.Point, calM, s);
+                    inPart = x.Index == inPart ? -1 : inPart;
                     break;
                 case CrossingKind.CellIn:
-                    cell = x.Index;
+                    (cell, cellT) = (x.Index, x.T);
                     foreach (int room in c.RoomsIn(x.Index))
                         if (r.NextDouble() < Vital(c, room, s))
                             Count(ref res, k, c.RoomNode(room), k.Worsen(c.RoomNode(room), PartState.Damaged) ? PartState.Damaged : PartState.Ok);
@@ -112,18 +123,20 @@ public static class Effects
                     break;
                 case CrossingKind.CellOut:
                     if (cell >= 0)
-                    {
-                        // the lane through the space, for the people in it
-                        double len = x.T - Entered(xs, i, x.Index);
-                        lane += len;
-                        laneCrew += len * Density(c, cell);
-                    }
+                        Casualties.Lane(c, k, Casualties.Cell(c, cell), path.At(cellT), x.Point, calM, s);
                     cell = -1;
                     break;
             }
+            if (x.Plate != PlateKind.None && x.Mm > 0 && Into(c, xs, i) is int into and >= 0)
+                Casualties.Debris(c, k, into, Debris(c, path, x, shell.CalibreMm, hit.SpeedMs), s);
         }
-        if (passed)
-            res.CrewLost += laneCrew * s.PassLaneM * s.PassCasualtyShare;
+        if (!double.IsInfinity(t.StopT))
+        {
+            if (cell >= 0)
+                Casualties.Lane(c, k, Casualties.Cell(c, cell), path.At(cellT), path.At(t.StopT), calM, s);
+            if (inPart >= 0)
+                Casualties.Lane(c, k, Casualties.Part(inPart), path.At(partT), path.At(t.StopT), calM, s);
+        }
 
         // holes: plating crossed near or under the waterline, behind it the cell the sea comes into
         for (int i = 0; i < xs.Length; i++)
@@ -205,8 +218,44 @@ public static class Effects
             (weak.BurstT, weak.Force, weak.Burst) = (xs[t.Plate].T + 0.1, s.BrokenShare, BurstKind.Inside);
             Burst(c, k, hit, path, weak, s, propellant, w, size, ref res, ref r, broken: true);
         }
-        k.CrewLost += res.CrewLost;
+        // a magazine set off: the flash through its turrets' trains (the ship is lost; drowning isn't a hit's)
+        if (res.Magazine)
+        {
+            Casualties.Train(c, k, res.MagazineRoom, s);
+            res.Flash = true;
+        }
+        Casualties.Draw(c, k, hit.Ms, s, ref res, ref r);
         return res;
+    }
+
+    /// <summary>The debris a plate the shell got through throws behind it (E6; 14 §3.1): about the axis halfway between the
+    /// plate's normal and the shot line, as spall's, at the shell's striking speed (what it had left there isn't kept: an
+    /// upper bound).</summary>
+    static SpallCloud Debris(ShipClass c, HitPath path, in Crossing x, double calibreMm, double v)
+    {
+        var d = path.LegOf(path.Leg(x.T)).Direction;
+        var n = x.Normal;
+        if (n.X * d.X + n.Y * d.Y + n.Z * d.Z < 0)
+            n = new P3(-n.X, -n.Y, -n.Z);
+        double ax = n.X + d.X, ay = n.Y + d.Y, az = n.Z + d.Z, al = Math.Sqrt(ax * ax + ay * ay + az * az);
+        var axis = al > 1e-9 ? new P3(ax / al, ay / al, az / al) : d;
+        var origin = new P3(x.Point.X + 0.05 * axis.X, x.Point.Y + 0.05 * axis.Y, x.Point.Z + 0.05 * axis.Z);
+        ref readonly var mat = ref c.MaterialOf(x.Material);
+        return Combat.Spall.Perforated(origin, axis, calibreMm, mat.SteelMm(x.Mm), v, mat.BigShare);
+    }
+
+    /// <summary>The group a plate's debris flies into (E6): the part a crossing enters through it, else the space or part the
+    /// line enters next, within 2 m; -1 for the open.</summary>
+    static int Into(ShipClass c, ReadOnlySpan<Crossing> xs, int i)
+    {
+        if (xs[i].Kind == CrossingKind.PartIn)
+            return Casualties.Part(xs[i].Index);
+        for (int j = i + 1; j < xs.Length && xs[j].T <= xs[i].T + 2; j++)
+            if (xs[j].Kind == CrossingKind.CellIn)
+                return Casualties.Cell(c, xs[j].Index);
+            else if (xs[j].Kind == CrossingKind.PartIn)
+                return Casualties.Part(xs[j].Index);
+        return -1;
     }
 
     /// <summary>The shock of a heavy hit that held, through the structure (E4; damage/13 §3.4): by the ship's shock grade
@@ -340,15 +389,14 @@ public static class Effects
     }
 
     /// <summary>A burst at its point along the path, with its force. Broken (E2): a shell's pieces through a plate it
-    /// holed, a weak burst of its fragments at the force's share and nothing else: no blast, no crew in its radii (E6's),
-    /// no fire; the part they're in takes them, and an enclosed turret or barbette they're in is a flash source.</summary>
+    /// holed, a weak burst of its fragments at the force's share and nothing else: no blast, no fire; the part they're in takes them, and an enclosed turret or barbette they're in is a flash source.</summary>
     static void Burst(ShipClass c, ShipCondition k, in Hit hit, HitPath path, in TerminalResult t, SimSettings s,
         double propellant, double w, double size, ref EffectsResult res, ref RandomStream r, bool broken = false)
     {
         var shell = hit.Shell;
         var xs = path.Crossings;
         var p = path.At(t.BurstT);
-        double force = t.Force, rw = broken ? 0 : s.WreckRadiusK * size * Math.Sqrt(force), rb = broken ? 0 : s.BlastRadiusK * size * Math.Sqrt(force);
+        double force = t.Force, rw = broken ? 0 : s.WreckRadiusK * size * Math.Sqrt(force);
         double share = broken ? force : 1;   // the fragments' share of a full burst's
         int cell = -1, part = -1;
         foreach (ref readonly var x in xs)
@@ -426,6 +474,9 @@ public static class Effects
             {
                 k.Flags[i] |= PartFlags.Burning;
                 res.Fire = true;
+                // its ready charges flash through its crew (16 §4.6): a gunhouse's as a turret's train, else as a battery's
+                Casualties.Flash(k, Casualties.Part(i), Casualties.Enclosed(c, m), s);
+                res.Flash = true;
             }
         }
 
@@ -503,10 +554,8 @@ public static class Effects
             }
         }
 
-        // the crew within the radii (the old radius until E6's casualties)
-        double rc = broken ? 0 : s.CasualtyRadiusK * size * Math.Sqrt(force);
-        double dens = part >= 0 ? PartDensity(c, part, s) : inHull ? Density(c, cell) : s.DeckCrewPerM2;
-        res.CrewLost += dens * (s.CasualtyWreckShare * Math.PI * rc * rc + s.CasualtyBlastShare * Math.PI * (rb * rb - rc * rc)) * r.NextDouble(0.3, 1.7);
+        // the people its pieces and gas reach (E6)
+        Crew(c, k, path, t, part, cell, p, fdir, frag, share, around, broken ? 0 : w * force, broken, res.Blast, s);
 
         // fire, by what burns where it burst
         double load = part >= 0 ? s.FireLoadSuperstructure : inHull ? (Terminal.IsMachinery(c, cell) ? s.FireLoadMachinery : s.FireLoadHull) : s.FireLoadHull;
@@ -536,6 +585,68 @@ public static class Effects
                     : turret >= 0 ? (true, c.Mounts[turret].Magazine, MagazineVia.Turret)
                     : (true, gasHandling, inHandling ? MagazineVia.Handling : MagazineVia.Gas);
         }
+    }
+
+    /// <summary>The people a burst's pieces and gas reach (E6; damage/16 §4.1, §4.5): the men in the part or space it burst
+    /// in, in the spaces next to it through their decks and bulkheads (and in the space behind the hull's plating a burst
+    /// outside was on), and in the parts its pieces reach (in the hull those in its space, outside it those above the
+    /// deck), each through what's between: a part's own plates and armour (an open or shielded mount's men stand open,
+    /// their cover says how much the shield hides them). A burst on a plate throws half its pieces into it. Its gas on the
+    /// men in every space it filled, or in the part it burst in; in the open, its blast by distance (TNT kg w).</summary>
+    static void Crew(ShipClass c, ShipCondition k, HitPath path, in TerminalResult t, int part, int cell, P3 p, P3 fdir, FragmentBurst? frag,
+        double share, double around, double w, bool broken, in BlastResult bl, SimSettings s)
+    {
+        var xs = path.Crossings;
+        bool inHull = cell >= 0;
+        double v = t.BurstMs, sh = share * (t.Burst is BurstKind.Outside or BurstKind.InPlate ? s.ContactShare : 1);
+        double openW = broken || !(bl.Spaces == 0 || bl.Open) ? 0 : w;
+        if (frag is not null)
+        {
+            if (part >= 0)
+                Casualties.Pieces(c, k, Casualties.Part(part), frag, p, fdir, v, sh, 0, default, openW, s);
+            if (inHull)
+            {
+                var here = c.Cells[cell].Box;
+                Casualties.Pieces(c, k, Casualties.Cell(c, cell), frag, p, fdir, v, sh, around, default, part < 0 ? openW : 0, s);
+                foreach (var n in c.Neighbours(c.Cells[cell].Neighbours))
+                {
+                    var there = c.Cells[n.Cell].Box;
+                    double join = n.Join switch
+                    {
+                        JoinKind.Deck => DeckMild(c, n.Through, here, there),
+                        JoinKind.Bulkhead => c.Bulkheads[n.Through].PlateMm + Fragments.MildMm(c.Bulkheads[n.Through].ArmourMm, FragmentClass.Ductile),
+                        _ => 0,
+                    } + InclinedMild(c, p, Nearest(there, p));
+                    var normal = n.Join == JoinKind.Deck ? new P3(0, 0, 1) : Touch(here, there) ? new P3(0, 1, 0) : new P3(1, 0, 0);
+                    Casualties.Pieces(c, k, Casualties.Cell(c, n.Cell), frag, p, fdir, v, sh, around + join, normal,
+                        n.Join == JoinKind.Open && part < 0 ? openW : 0, s);
+                }
+            }
+            else if (t.Burst == BurstKind.Outside && t.Plate >= 0 && xs[t.Plate].Kind == CrossingKind.HullIn && CellAt(xs, t.Plate, true) is int behind and >= 0)
+            {
+                // on the hull's plating: of the half going into it, those that get through into the space behind
+                ref readonly var x = ref xs[t.Plate];
+                Casualties.Pieces(c, k, Casualties.Cell(c, behind), frag, p, fdir, v, sh, c.MaterialOf(x.Material).FragmentMildMm(x.Mm), x.Normal, 0, s);
+            }
+            var comps = c.Components;
+            var cellBox = inHull ? c.Cells[cell].Box : default;
+            for (int i = 0; i < comps.Length; i++)
+            {
+                ref readonly var comp = ref comps[i];
+                if (i == part || comp.BattleCrew <= 0 || (inHull ? comp.Bounds.Base >= cellBox.Top - 0.05 || !Overlaps(comp.Bounds, cellBox) : comp.Bounds.Top <= 0))
+                    continue;
+                int m = c.MountOf(i);
+                double mild = around + PartMild(c, i, m >= 0 && c.Mounts[m].Component == i && !Casualties.Enclosed(c, m) ? 0 : Armour(c, i));
+                Casualties.Pieces(c, k, Casualties.Part(i), frag, p, fdir, v, sh, mild, default, !inHull && mild <= 0 ? openW : 0, s);
+            }
+        }
+        if (broken || !(bl.FeltMPa > 0))
+            return;
+        if (part >= 0)
+            Casualties.Gas(k, Casualties.Part(part), bl.FeltMPa, s);
+        else if (inHull)
+            for (int i = 0; i < bl.Spaces; i++)
+                Casualties.Gas(k, Casualties.Cell(c, k.BlastRegion[i]), k.BlastFelt[k.BlastRegion[i]], s);
     }
 
     /// <summary>A burst against the plating it came through (within <see cref="NearWallM"/> of it: a nose fuze just
@@ -703,6 +814,9 @@ public static class Effects
         // a gunhouse, a working chamber, a conning tower: the whole cloud inside the part, its contents take it
         int space = cell < 0 && x.Plate is PlateKind.TurretFace or PlateKind.TurretSide or PlateKind.TurretRear or PlateKind.TurretRoof
             or PlateKind.Barbette or PlateKind.PartArmour ? x.Index : -1;
+        // the men in it (E6; 14 §5.1)
+        if (space >= 0 || cell >= 0)
+            Casualties.Spall(c, k, space >= 0 ? Casualties.Part(space) : Casualties.Cell(c, cell), cloud, s);
         if (space >= 0)
         {
             if (res.Part < 0)
@@ -902,15 +1016,6 @@ public static class Effects
         }
     }
 
-    /// <summary>Where a crossing's cell was entered along the path (the CellIn before it), or the path's start.</summary>
-    static double Entered(ReadOnlySpan<Crossing> xs, int i, int cell)
-    {
-        for (int j = i - 1; j >= 0; j--)
-            if (xs[j].Kind == CrossingKind.CellIn && xs[j].Index == cell)
-                return xs[j].T;
-        return 0;
-    }
-
     /// <summary>The cell on the inner side of a hull crossing (or behind a plate): the next cell entered at the same
     /// point going in, or the cell left there going out.</summary>
     static int CellAt(ReadOnlySpan<Crossing> xs, int i, bool inward)
@@ -927,20 +1032,6 @@ public static class Effects
                 if (xs[j].Kind == CrossingKind.CellOut)
                     return xs[j].Index;
         return -1;
-    }
-
-    /// <summary>People per m² of a cell's floor in battle.</summary>
-    static double Density(ShipClass c, int cell)
-    {
-        var b = c.Cells[cell].Box;
-        return c.Cells[cell].BattleCrew / Math.Max((b.X1 - b.X0) * (b.Y1 - b.Y0), 1);
-    }
-
-    static double PartDensity(ShipClass c, int part, SimSettings s)
-    {
-        ref readonly var comp = ref c.Components[part];
-        var b = comp.Bounds;
-        return comp.BattleCrew > 0 ? comp.BattleCrew / Math.Max((b.X1 - b.X0) * (b.Y1 - b.Y0), 1) : s.DeckCrewPerM2;
     }
 
     /// <summary>A part's armour against fragments: a turret's side or roof (the thinner), else its own armour.</summary>

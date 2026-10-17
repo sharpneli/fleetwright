@@ -90,6 +90,22 @@ public static class Spall
         return new SpallCloud(origin, axis, s, mass, big, flake, flake > 0 ? (mass - big) / flake : 0, axialMs);
     }
 
+    /// <summary>What a shell drives out of a plate it gets through (E6; 14 §3.1): the plate's debris behind it, TNO's 0.9
+    /// of the hole's mass (the hole a calibre across), flying in the cloud's geometry with its front at the shell's speed
+    /// v [SRC Verolme, KE perforation]; its flakes and big piece as a stopped plate's (14 §3.2: Wijk's .30 AP through 6-10
+    /// mm left pieces of that size).</summary>
+    public static SpallCloud Perforated(P3 origin, P3 axis, double calibreMm, double tMm, double v, double bigShare)
+    {
+        double d = calibreMm / 1000, t = tMm / 1000, ts = ScabShare * t;
+        double mass = HoleShare * Rho * Math.PI / 4 * d * d * t, big = bigShare * mass;
+        double flake = Rho * ts * (FlakeAspect * ts) * (FlakeAspect * ts);
+        return new SpallCloud(origin, axis, 1, mass, big, flake, flake > 0 ? (mass - big) / flake : 0, v);
+    }
+
+    /// <summary>The share of a perforated plate's hole thrown out behind it (TNO PML 1997-A65: about 0.9; the rest back out
+    /// of the front) [SRC].</summary>
+    public const double HoleShare = 0.9;
+
     /// <summary>Backing behind the plate (14 §4.3: the ironclads' teak, Class A's concrete, the inner skin) catches it: of a
     /// mass per area at least the scab's it takes every flake, twice that the big piece too; less thins the flakes by
     /// the ratio. backingSteelMm is the layers' mass as steel mm.</summary>

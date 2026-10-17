@@ -1540,6 +1540,69 @@ squadrons, and changes `Matchup.cs` with it.
     the killed share is off by more than 0.1; check the shape (share of hits killing nobody, the 99th percentile).
   - **Replaces** `CasualtyWreckShare`, `CasualtyBlastShare`, `PassLaneM`, `PassCasualtyShare` and the U(0.3, 1.7).
   - **Tests:** 16 §5.4.
+  - **Done 2026-10-17.** What it came to:
+    - **Groups** (`Casualties.cs`): a station's battle crew, a part's (by component) or a cell's, less the men already
+      killed or out there (`ShipCondition.Gone`), on a 3×3 grid over its floor at a man's height. Each mechanism adds an
+      independent risk to the group; `Casualties.Draw` rolls each man killed, wounded or untouched at the end of the hit
+      (no factor afterwards).
+    - **The burst's pieces:** E1's sprays counted above the heavier of THOR's limit through the plate between and the 80
+      J line (`FragmentBurst.Stopping`; 16 §4.1's table to within 1%: 5" AAC 1,026 at 5 m, 16" AP 322, 16" HC 1,658);
+      the side ring leaning with the shell per point, the patch's share in it taking the ring's flux (`FragmentBurst.
+      Flux`: the engine's ring in place of 16's coarsened draw). Reach as E1's: the space or part it burst in, the
+      spaces next to it through their decks and bulkheads (all of them: the wreck radius no longer limits people), the
+      parts in its space or, outside the hull, above the deck, and the space behind the hull plating an outside burst
+      was on. An open or shielded mount's men stand open (the shield is in their cover, 0.8 open, 0.6 casemate, 0.45 a
+      gunhouse); a burst on a plate throws half its pieces its way.
+    - **Blast:** E5's felt pressure in every space the gas reached (and a part's own), Bowen's lognormals; in the open
+      killed within 1.3·W^⅓, half hurt to 3.2·W^⅓. `BlastRadiusK` and `CasualtyRadiusK` gone.
+    - **The shell's own way:** the lane kills the men on the floor under it while it's at a man's height (a plunging
+      shell's lane is short: counting its whole length made the old rule's line). **The disc became 14 §3.1's measured
+      debris:** at 1.5 calibres in 10 g pieces, times S, 16's disc stayed lethal across any flat (S·N·A/Ω kept λ in the
+      hundreds to 100 m), and a dud running through five bulkheads killed in five spaces: duds killed 2.0-2.6 a hit
+      (the record 0.3), only 26-28% killing nobody (93%). Now each plate the shell gets through throws TNO's 0.9 of its
+      hole (a calibre across) in the spall cloud's geometry and flakes (`Spall.Perforated`; Wijk's .30 AP pieces are
+      that size), striking people as spall does (14 §5.1's flux, no S, q 0.35), at the striking speed (what the shell
+      had left at each plate isn't kept: an upper bound). A 10 mm wall's flakes no longer stop a man; a 25 mm side's
+      and armour's do. Passed-through hits now kill nobody 90-92% of the time (the record 88%), duds 62-72%.
+    - **Spall** (E3) on the men in the part or space behind; **propellant flash** at a magazine set off (its turrets'
+      trains: gunhouses, barbettes, handling rooms, the magazine) and at a mount's ready charges catching (a gunhouse's
+      as a train, else as a battery); `EffectsResult.Flash`.
+    - **Condition:** `Killed`, `Wounded` (hashed once non-zero), `CrewLost` the men out now; the walking wounded
+      (55%) back at their station after 15-45 min (`ShipCondition.Back`, on the outage clock; a pool of 64). The fire's
+      and the torpedo's rules still add to `CrewLost` unsplit (their own sessions).
+    - **Fit** (16 §5.3; one ship a record group, 1,000 hits, flashes aside; scratch script, error Σ log(x+0.5)²): the
+      surface is flat as 16 said. q 0.04: S 8.7 5.9, 13 4.0, 18 4.1, 25 4.6; q 0.08: S 6 3.7, 8.7 3.3, 13 3.2; q 0.11: S 6
+      3.6. The killed shares were off by more than 0.1 in G4 and G6b at q 0.04, so q was refit: **S 8.7, q 0.08** (16's
+      ship-groups-only fit wanted q 0.08 too; S·q 0.70, in its 0.2-0.8 band; S 13 is under 2% better). Killed / wounded
+      a hit (record): G1 Derfflinger under Lion 1.09 / 2.26 and Lion under Derfflinger 0.73 / 1.52 (1.94 / 3.00); G2a
+      Borodino 1.23 / 2.12 (0.58 / 1.81); G2b Mikasa 1.63 / 3.67 (1.69 / 4.69); G3 KGV under Bismarck 1.41 / 2.47 (1.44 /
+      2.06); G4 Colorado under 6" HE 2.47 / 10.5 (2.03 / 5.62); G5 the heavy cruiser under Deutschland 1.06 / 2.02 (2.34 /
+      3.47); G6a Devonshire under 10.5 cm 0.39 / 1.13 (0.17 / 0.33); G6b Chatham under 15 cm 1.04 / 2.87 (2.00 / 2.37);
+      G7 Fubuki 1.42 / 3.01 (2.21 / 4.54). The old rule's crew a hit on the same: 4.5, 0.6, 5.5, 0.6, 1.4, 3.8, 1.0, 0.3,
+      1.0, 1.1.
+    - **What's left is placement** (16 §5.3: "the stance is the fix, not the constants"): the WWI capital ships and
+      the cruisers kill half the record (their bursts in manned stations are the tail); Colorado wounds twice it (her
+      open mounts' crews); Devonshire and Borodino run high (men behind armour, upper works empty in the record); a
+      destroyer's hits kill nobody 51% of the time (16: 15-30%; its flats were crowded). Shape: capital ships kill nobody
+      on 60-66% of hits (over 40%), the 99th percentile 7-18 with flashes.
+    - **Tests** (`CasualtyTests`, 16 §5.4): the man-stopping pieces against 16's table; 16" AP in a 310 m³ flat 5.8
+      casualties against a 5" AAC in a destroyer's 5.7; 5" AAC on a crowded AA platform 27 killed and 51 wounded
+      (Colorado's 20 / 48); a shot through a 2 m director kills 47% of its crew (lane 0.43, a 10 mm wall's debris
+      0.07: **16 asks 60%**, Saumarez's 11 of 11 and Gneisenau's 6 of 10 that its disc was fitted to; the band is 35%
+      until the director's own fittings break up as pieces, an open item), and nobody in an empty space; a turret's
+      flash 85% or more of its train, a battery's 45-65%; a destroyer's killed share 0.34; Seydlitz under Lion over 15
+      hits 16 killed and 33 wounded flashes aside; parts identical under S 1 and 30; the walking wounded back; no
+      allocation.
+    - **Benches, E5 to E6:** parts and outcomes as before (the people's draws come last in a hit). Destroyers under
+      ten of Lion's 4" HE take 2.4 killed and 5.9 wounded a hit (1.8 crew before), and with fewer men to fight their
+      fires lose 12% to their magazines over 600 ships (9.7% before; tb_destroyer 6.8%, as before; DamageTests' 60-ship
+      sample 17%: the user widened its band 0.15 → 0.2, 2026-10-17). `DamageSystem.
+      Settle` (the tools') now ends timed outages and brings the walking wounded back as it steps, as the world does.
+      Matchup identical. Squadrons' 30 minutes: 122 → 183 hits, no ship lost (Princess Royal, Lion and Queen Mary to
+      their magazines before: the draws moved), hash 81427FD00B6EFAF7 → CA887EF3401EC608.
+    - **Not built:** the posture (16 §4.9: closed up or under cover; fighting.md 4.5's crew session), steam scalds in a
+      boiler room, the nose slug's and base plug's lanes, debris from the parts a shell strikes, the torpedo's and the
+      fire's casualties by men, crew as stations' strength (damage control's). The matchup has no crew term.
 - **E7 Near misses** (15).
   - **A new `Hit` source,** `NearMiss`: a burst point outside the hull, no terminal walk. On a miss, a broadphase of
     R_near = max(15·W^⅓, 7.5·√W) m against the ships' waterplanes; most misses cost that one test.
@@ -1613,7 +1676,8 @@ None blocks a step; each is settled by its step's bench.
 7. **The rupture and deform capacities** (E5, 0.06 and 0.012 MPa/mm): fitted to a handful of cases; the destroyer
    benches may move them within 0.04-0.08.
 8. **S and q** (E6): S's ~9× over the free field is fitted, not shown; the refit on our ships says how much of it is
-   placement.
+   placement. E6: the refit keeps S 8.7 and doubles q (0.08); the surface is flat in S from 8.7 to 13, and the groups
+   it misses miss by placement (crews behind armour, crowded flats and AA), not by S.
 
 ## Done with: the research asked for on 2026-10-16
 
@@ -1647,7 +1711,7 @@ None blocks a step; each is settled by its step's bench.
 | E3 | P4, E1 | the material's `back.big` (done) | spall (done) | damage behind armour |
 | E4 | E0, P1a | — | turret states, belt leaks, armour shock (done) | jams, leaks, outages |
 | E5 | E0, E1 | the explosive's heats in the report (done) | open and confined blast, `burst` bench (done) | wreck reach, openings, leaks |
-| E6 | E1, E3, E5 | — | casualties, killed and wounded | crew |
+| E6 | E1, E3, E5 | — | casualties, killed and wounded (done) | crew |
 | E7 | E1, E5, P3 | — | near misses (new hit source), shock | near misses |
 | E8 | all | — | tuning | the anchors |
 | PM | all | — | the balance pass: the matchup refit to the terminal, the widened bands | AI judgements, gameplay |

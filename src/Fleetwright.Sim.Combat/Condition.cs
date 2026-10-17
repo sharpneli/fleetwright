@@ -142,7 +142,24 @@ public sealed class ShipCondition
     public readonly P3[] LeakAt = new P3[LeakMarks];
     public int Leaks;
 
-    public double CrewLost;
+    /// <summary>The crew (E6 of docs/battle/shells-armour-damage.md): the men out of action now (the killed, the wounded
+    /// out for the action, the walking wounded not back yet; and the men the fire's and the torpedo's rules take, which
+    /// aren't split yet), and the killed and wounded so far.</summary>
+    public double CrewLost, Killed, Wounded;
+    /// <summary>At each station, the men killed or out there now: a part's (by component), then a cell's
+    /// (<see cref="Casualties"/>'s groups).</summary>
+    public int[] Gone = [];
+    /// <summary>The walking wounded on their way back (E6): when, to which station, how many; a pool of
+    /// <see cref="ReturnSlots"/>.</summary>
+    public const int ReturnSlots = 64;
+    public readonly long[] ReturnMs = new long[ReturnSlots];
+    public readonly int[] ReturnGroup = new int[ReturnSlots], ReturnMen = new int[ReturnSlots];
+    public int Returns;
+    /// <summary>Scratch for one hit's risks on its groups of men (<see cref="Casualties"/>): the log of the share left
+    /// unkilled and unhurt by each risk so far, the hit's stamp, the groups it touched.</summary>
+    internal double[] RiskK = [], RiskC = [];
+    internal int[] RiskStamp = [], Touched = [];
+    internal int RiskId, TouchedN;
     public ShipStatus Status;
     /// <summary>How it went down (None while afloat), when it began to and when it's gone under (ms).</summary>
     public LossKind Loss;
@@ -202,9 +219,12 @@ public sealed class ShipCondition
             (JoinStamp, JoinFate, JoinFelt) = (new int[c.NeighbourCount], new byte[c.NeighbourCount], new double[c.NeighbourCount]);
             (FaceStamp, FaceFate, FaceFelt) = (new int[4 * c.Cells.Length], new byte[4 * c.Cells.Length], new double[4 * c.Cells.Length]);
             (FaceArea, FaceMm, FacePoint, FacesReady) = (new double[4 * c.Cells.Length], new double[4 * c.Cells.Length], new P3[4 * c.Cells.Length], false);
+            int groups = c.Components.Length + c.Cells.Length;
+            (Gone, RiskK, RiskC, RiskStamp, Touched) = (new int[groups], new double[groups], new double[groups], new int[groups], new int[groups]);
         }
         else
         {
+            Array.Clear(Gone);
             Array.Clear(JoinOpenM2);
             Array.Clear(BlastStamp);
             Array.Clear(JoinStamp);
@@ -226,7 +246,8 @@ public sealed class ShipCondition
         Array.Fill(DirectorWorks, true);
         Array.Fill(EyeWorks, true);
         Array.Fill(TubeWorks, true);
-        (CrewLost, Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (0, ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
+        (CrewLost, Killed, Wounded, Returns) = (0, 0, 0, 0);
+        (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
         (NextClearMs, ClearAtMs, Leaks) = (-1, -1, 0);
         ClearGen++;
@@ -382,8 +403,45 @@ public sealed class ShipCondition
             next = Math.Min(next, Later(a.StiffUntil, now));
             next = Math.Min(next, Later(a.GunUntil, now));
         }
+        // the walking wounded back at their stations (nothing the ship can do changes with them yet)
+        for (int i = Returns - 1; i >= 0; i--)
+        {
+            if (ReturnMs[i] <= now)
+                Return(i);
+            else
+                next = Math.Min(next, ReturnMs[i]);
+        }
         NextClearMs = next is long.MaxValue ? -1 : next;
         return any;
+    }
+
+    /// <summary>Walking wounded leaving a station, back at it then (E6): one more on the way back; with the pool full the
+    /// soonest due come back now to make room.</summary>
+    public void Back(int group, int men, long at)
+    {
+        if (men <= 0)
+            return;
+        if (Returns == ReturnSlots)
+        {
+            int soonest = 0;
+            for (int i = 1; i < Returns; i++)
+                if (ReturnMs[i] < ReturnMs[soonest])
+                    soonest = i;
+            Return(soonest);
+        }
+        (ReturnMs[Returns], ReturnGroup[Returns], ReturnMen[Returns]) = (at, group, men);
+        Returns++;
+        Due(at);
+    }
+
+    /// <summary>A return's men back at their station, its slot taken by the last.</summary>
+    void Return(int i)
+    {
+        int g = ReturnGroup[i], men = Math.Min(ReturnMen[i], Gone[g]);
+        Gone[g] -= men;
+        CrewLost = Math.Max(CrewLost - men, 0);
+        Returns--;
+        (ReturnMs[i], ReturnGroup[i], ReturnMen[i]) = (ReturnMs[Returns], ReturnGroup[Returns], ReturnMen[Returns]);
     }
 
     /// <summary>A row of outages ended by now (zeroed), the next of the rest's end; whether any ended.</summary>
@@ -465,6 +523,11 @@ public sealed class ShipCondition
     {
         h.Add(Hits);
         h.Add(CrewLost);
+        if (Killed + Wounded > 0)
+        {
+            h.Add(Killed);
+            h.Add(Wounded);
+        }
         h.Add((int)Status | (int)Loss << 8);
         h.Add(PowerCap);
         h.Add(WaterT);

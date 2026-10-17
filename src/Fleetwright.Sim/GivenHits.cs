@@ -54,7 +54,53 @@ public static class GivenHits
         public readonly int[] MagazinesBy = new int[Enum.GetValues<MagazineVia>().Length];
         public int MagazineByFire;
         public double CrewLost, BreachM2;
+        /// <summary>E6: the men killed and wounded, summed; the hits that hurt nobody and that killed nobody; the hits by
+        /// how many they killed (the last bin all of more).</summary>
+        public double Killed, Wounded;
+        public int Unhurt, KilledNone;
+        /// <summary>The hits with a propellant flash (16 §2.2 leaves them out of the ships' groups), their killed and wounded.</summary>
+        public int Flashes;
+        public double FlashKilled, FlashWounded;
+        public readonly int[] KilledBy = new int[401];
         public int[] PartsOut = [];
+
+        /// <summary>The killed a hit at a share of the hits (by count, 0-1) kills at most.</summary>
+        public int KilledAt(double share)
+        {
+            int n = 0, want = (int)Math.Ceiling(share * Hits);
+            for (int i = 0; i < KilledBy.Length; i++)
+                if ((n += KilledBy[i]) >= want)
+                    return i;
+            return KilledBy.Length - 1;
+        }
+
+        /// <summary>16 §2.1's classes of hit by what it did: burst inside (A and B), passed through without bursting (C), a
+        /// dud (D), on armour that held or a burst outside it (E); their hits, killed, wounded and hits killing nobody.</summary>
+        public static readonly string[] HitClasses = ["burst inside", "passed through", "dud", "on armour"];
+        public readonly int[] ClassHits = new int[4], ClassNone = new int[4];
+        public readonly double[] ClassKilled = new double[4], ClassWounded = new double[4];
+
+        public static int ClassOf(Outcome o) => o switch
+        {
+            Outcome.BurstInside or Outcome.BurstInPlate or Outcome.LowOrder or Outcome.BrokeUp or Outcome.Holed => 0,
+            Outcome.PassedThrough or Outcome.BurstBeyond => 1,
+            Outcome.Dud => 2,
+            _ => 3,
+        };
+
+        /// <summary>A hit's killed and wounded tallied, by its outcome's class too.</summary>
+        public void Men(in EffectsResult fx, Outcome o)
+        {
+            int h = ClassOf(o);
+            (ClassHits[h], ClassNone[h], ClassKilled[h], ClassWounded[h]) = (ClassHits[h] + 1, ClassNone[h] + (fx.Killed == 0 ? 1 : 0), ClassKilled[h] + fx.Killed,
+                ClassWounded[h] + fx.Wounded);
+            (Killed, Wounded) = (Killed + fx.Killed, Wounded + fx.Wounded);
+            if (fx.Flash)
+                (Flashes, FlashKilled, FlashWounded) = (Flashes + 1, FlashKilled + fx.Killed, FlashWounded + fx.Wounded);
+            Unhurt += fx.Killed + fx.Wounded == 0 ? 1 : 0;
+            KilledNone += fx.Killed == 0 ? 1 : 0;
+            KilledBy[Math.Min(fx.Killed, KilledBy.Length - 1)]++;
+        }
         public double PowerCap, SpeedShare, MainWorking, MainMounts, DirectorsWorking, Directors;
         public int Crippled, Slowed, SteeringLost, Lost, MainSilenced, Out;
         public readonly int[] LostBy = new int[Enum.GetValues<LossKind>().Length];
@@ -218,6 +264,7 @@ public static class GivenHits
                         (rep.JamCauses[(int)fx.Turret.Cause], rep.JamsForBattle) = (rep.JamCauses[(int)fx.Turret.Cause] + 1, rep.JamsForBattle + (fx.Turret.Ms == NonPen.Battle ? 1 : 0));
                 }
                 rep.CrewLost += fx.CrewLost;
+                rep.Men(fx, t.Outcome);
                 rep.BreachM2 += fx.BreachM2;
                 for (int i = 0; i < before.Length; i++)
                     if (before[i] < PartState.Disabled && k0.State[i] >= PartState.Disabled)

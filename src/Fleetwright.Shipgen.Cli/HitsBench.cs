@@ -61,8 +61,8 @@ static class HitsBench
                 return;
             traced++;
             Console.WriteLine(string.Format(Inv, "hit {0}: {1}, burst {2} at {3:0.00} m (force {4:0.00}), stopped at {5:0.00} m; part {6}; {7} out, {8} damaged; " +
-                "crew {9:0.0}, holes {10:0.000} m²{11}{12}{13}", i, t.Outcome, t.Burst, t.BurstT, t.Force, t.StopT, Node(tc, e.Part), e.Destroyed + e.Disabled,
-                e.Damaged, e.CrewLost, e.BreachM2, e.Fire ? ", fire" : "", e.Jammed ? ", jammed" : "", e.Magazine ? ", MAGAZINE" : ""));
+                "killed {9}, wounded {10}, holes {11:0.000} m²{12}{13}{14}", i, t.Outcome, t.Burst, t.BurstT, t.Force, t.StopT, Node(tc, e.Part), e.Destroyed + e.Disabled,
+                e.Damaged, e.Killed, e.Wounded, e.BreachM2, e.Fire ? ", fire" : "", e.Jammed ? ", jammed" : "", e.Magazine ? ", MAGAZINE" : ""));
             Console.Write(path.Text(tc));
         }, o.SettleMin * 60, FallOut(settingsPath));
         double secs = sw.Elapsed.TotalSeconds;
@@ -92,8 +92,18 @@ static class HitsBench
         if (r.Delayed > 0)
             Console.WriteLine(string.Format(Inv, "  bursts after the delay: {0:0.#}% of hits, {1:0.0} m on average behind where the fuze started", 100.0 * r.Delayed / r.Hits,
                 r.DelayedM / r.Delayed));
-        Console.WriteLine(string.Format(Inv, "  a hit: fire {0:0}%, crew {1:0.0}, holes {2:0.000} m², jammed {3:0.#}%, magazine {4:0.##}%", 100.0 * r.Fires / r.Hits,
-            r.CrewLost / r.Hits, r.BreachM2 / r.Hits, 100.0 * r.Jams / r.Hits, 100.0 * r.Magazines / r.Hits));
+        Console.WriteLine(string.Format(Inv, "  a hit: fire {0:0}%, killed {1:0.00}, wounded {2:0.00}, holes {3:0.000} m², jammed {4:0.#}%, magazine {5:0.##}%",
+            100.0 * r.Fires / r.Hits, r.Killed / r.Hits, r.Wounded / r.Hits, r.BreachM2 / r.Hits, 100.0 * r.Jams / r.Hits, 100.0 * r.Magazines / r.Hits));
+        int nf = Math.Max(r.Hits - r.Flashes, 1);
+        Console.WriteLine(string.Format(Inv, "  flashes aside (16 §2.2's ships): killed {0:0.00} and wounded {1:0.00} a hit; {2} hit(s) with a propellant flash, " +
+            "killing {3:0.0} and wounding {4:0.0} each", (r.Killed - r.FlashKilled) / nf, (r.Wounded - r.FlashWounded) / nf, r.Flashes,
+            r.FlashKilled / Math.Max(r.Flashes, 1), r.FlashWounded / Math.Max(r.Flashes, 1)));
+        Console.WriteLine(string.Format(Inv, "  the men (16 §5.3): killed share {0:0.00}; hurt nobody {1:0}% of hits, killed nobody {2:0}%; killed a hit: median {3}, " +
+            "90th percentile {4}, 99th {5}, most {6}", r.Killed / Math.Max(r.Killed + r.Wounded, 1e-9), 100.0 * r.Unhurt / r.Hits, 100.0 * r.KilledNone / r.Hits,
+            r.KilledAt(0.5), r.KilledAt(0.9), r.KilledAt(0.99), r.KilledAt(1)));
+        Console.WriteLine("    by what the hit did (16 §2.1): " + string.Join("; ", Enumerable.Range(0, 4).Where(i => r.ClassHits[i] > 0).Select(i => string.Format(Inv,
+            "{0} {1:0}% of hits, killed {2:0.00} and wounded {3:0.00} a hit, killed nobody {4:0}%", GivenHits.Report.HitClasses[i], 100.0 * r.ClassHits[i] / r.Hits,
+            r.ClassKilled[i] / r.ClassHits[i], r.ClassWounded[i] / r.ClassHits[i], 100.0 * r.ClassNone[i] / r.ClassHits[i]))));
         if (r.Spalls > 0)
             Console.WriteLine(string.Format(Inv, "  spall off the back of a plate that held: {0:0.#}% of hits", 100.0 * r.Spalls / r.Hits));
         if (r.TurretHeld > 0)

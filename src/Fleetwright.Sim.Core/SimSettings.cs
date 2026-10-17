@@ -782,12 +782,9 @@ public sealed record SimSettings
 
     /// <summary>The burst's radii, m, times the cube root of its TNT kg: equipment wrecked by its shock and fragments, in
     /// the open and in the near zone of a burst inside (docs/battle/shells-armour-damage.md E5; damage/11 §3.3, §5.1: was
-    /// 1.6, an internal number); the crew it hits, until E6 (<see cref="CasualtyRadiusK"/>, the old 1.6); people injured;
-    /// a contact burst's hole in plating, times the square root of 6 mm over the plate (11 §3.1: unbiased against 13
-    /// holes).</summary>
+    /// 1.6, an internal number); a contact burst's hole in plating, times the square root of 6 mm over the plate (11 §3.1:
+    /// unbiased against 13 holes). People are E6's (<see cref="CasualtyS"/>).</summary>
     public double WreckRadiusK { get; init; } = 1.0;
-    public double CasualtyRadiusK { get; init; } = 1.6;
-    public double BlastRadiusK { get; init; } = 3.5;
     public double HoleRadiusK { get; init; } = 0.45;
 
     /// <summary>A burst in a closed space (E5; damage/11 §1.2-§4): the gas pressure P = <see cref="BlastHeatK"/>·η·[Q_d +
@@ -1050,14 +1047,55 @@ public sealed record SimSettings
     public double TurretFlashChance { get; init; } = 0.25;
     public int MagazineLossMs { get; init; } = 60_000;
 
-    /// <summary>Casualties: people per square metre on open decks and in parts with no crew of their own; the share hit
-    /// within the wreck radius and in the blast's ring; a shell passing without bursting hits a lane this wide, m, at
-    /// this share.</summary>
-    public double DeckCrewPerM2 { get; init; } = 0.01;
-    public double CasualtyWreckShare { get; init; } = 0.8;
-    public double CasualtyBlastShare { get; init; } = 0.2;
-    public double PassLaneM { get; init; } = 1;
-    public double PassCasualtyShare { get; init; } = 0.5;
+    /// <summary>Casualties (docs/battle/shells-armour-damage.md E6; damage/16): men, not area. Each group of men in reach
+    /// (a cell's or a part's battle crew, at its points) takes the burst's pieces that still carry
+    /// <see cref="ManStopJ"/> there (E1's sprays, through the plate between) on a man's <see cref="ManAreaM2"/>, times the
+    /// people's flux scale <see cref="CasualtyS"/> (13's free field is 1, and stays 1 for parts: ricochets, debris and
+    /// small pieces inside a steel ship [FIT, 16 §4.2]); a burst on a plate throws <see cref="ContactShare"/> of them its
+    /// way. A share of the men by where they are (<see cref="CoverRoom"/> by room kind, <see cref="CoverPart"/> by
+    /// component kind, <see cref="CoverMount"/> for a gunhouse, a casemate and an open mount) sees the burst; the rest
+    /// take <see cref="ShieldedShare"/> of its flux [EST, 16 §4.1]. P(casualty) = 1 − e^(−λ), P(killed) = 1 − e^(−qλ),
+    /// q <see cref="CasualtyQ"/> [FIT].</summary>
+    public double CasualtyS { get; init; } = 8.7;
+    public double CasualtyQ { get; init; } = 0.08;
+    public double ManStopJ { get; init; } = 80;
+    public double ManAreaM2 { get; init; } = 0.5;
+    public double ContactShare { get; init; } = 0.5;
+    public double ShieldedShare { get; init; } = 0.1;
+    /// <summary>The share of the men who see the burst, by room kind (Stores ... Hangar): flats and stores 0.6, magazines
+    /// and handling rooms 0.45, machinery and the steering gear 0.3 (16 §4.1 [EST]).</summary>
+    public double[] CoverRoom { get; init; } = [0.6, 0.6, 0.6, 0.45, 0.3, 0.3, 0.3, 0.3, 0.6, 0.6, 0.6, 0.6, 0.6, 0.45, 0.6];
+    /// <summary>... by component kind (Main ... HangarBay; a mount's own by <see cref="CoverMount"/>): a station (a bridge,
+    /// a director, the conning tower) 0.7, a barbette's handling crew 0.45, the open (AA, tubes, masts, flight deck) 0.8.</summary>
+    public double[] CoverPart { get; init; } = [0.45, 0.45, 0.8, 0.8, 0.45, 0.7, 0.7, 0.8, 0.8, 0.6, 0.6, 0.8, 0.3, 0.3, 0.3, 0.3, 0.8, 0.8, 0.6];
+    /// <summary>... a mount's: an enclosed gunhouse (breeches, cradles, rammers), a casemate, an open or shielded mount.</summary>
+    public double[] CoverMount { get; init; } = [0.45, 0.6, 0.8];
+    /// <summary>Blast on people (16 §4.5; 11): in a closed space by the pressure its boundaries felt (E5), killed 50% at
+    /// <see cref="BlastKillMPa"/> (Bowen; lognormal σ <see cref="BlastKillSigma"/>), out of action 50% at
+    /// <see cref="BlastHurtMPa"/> (σ <see cref="BlastHurtSigma"/>); in the open killed within <see cref="OpenKillK"/>·W^⅓,
+    /// a share <see cref="OpenHurtShare"/> hurt out to <see cref="OpenHurtK"/>·W^⅓ (W the filler's TNT kg).</summary>
+    public double BlastKillMPa { get; init; } = 0.42;
+    public double BlastKillSigma { get; init; } = 0.174;
+    public double BlastHurtMPa { get; init; } = 0.12;
+    public double BlastHurtSigma { get; init; } = 0.5;
+    public double OpenKillK { get; init; } = 1.3;
+    public double OpenHurtK { get; init; } = 3.2;
+    public double OpenHurtShare { get; init; } = 0.5;
+    /// <summary>The shell's own way (16 §4.3): the men in its lane (a calibre across and <see cref="LaneManM"/> either side,
+    /// at a man's height) are killed; each plate it gets through throws the debris 14 §3.1 measured (TNO: 0.9 of the hole,
+    /// in the spall cloud's geometry and flakes, in place of 16's disc [EST]), striking as spall does. Spall and debris
+    /// strike people by 14 §5.1's flux, no flux scale, q <see cref="DebrisQ"/> (the pieces are heavy: 16's q_sec
+    /// [EST]).</summary>
+    public double LaneManM { get; init; } = 0.25;
+    public double DebrisQ { get; init; } = 0.35;
+    /// <summary>Propellant flash (16 §4.6 [FIT]): the killed and wounded shares of the men it reaches, a turret's train
+    /// (Derfflinger's C, Seydlitz's after turrets) and an open casemate battery (Malaya's).</summary>
+    public double[] FlashTurret { get; init; } = [0.92, 0.06];
+    public double[] FlashBattery { get; init; } = [0.54, 0.32];
+    /// <summary>The wounded (16 §4.8 [EST]): this share out for the action, the rest back at their station after first aid,
+    /// in [min, max] minutes.</summary>
+    public double WoundedOutShare { get; init; } = 0.45;
+    public double[] WoundedBackMin { get; init; } = [15, 45];
 
     /// <summary>Steering lost at the steering gear or the rudder jams the rudder where it is with this chance (a ship
     /// that circles); else it trails amidships, the helm gone.</summary>

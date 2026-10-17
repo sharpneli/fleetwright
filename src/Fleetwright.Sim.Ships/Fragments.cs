@@ -111,6 +111,13 @@ public sealed class Fragments : IEquatable<Fragments>
     internal static double Inch => In;
 }
 
+/// <summary>A burst's pieces that still stop a man at a distance, by spray (<see cref="FragmentBurst.Stopping"/>).</summary>
+public readonly record struct ManStopping(double Side, double Ogive, double Tail);
+
+/// <summary>The man-stopping pieces per m² on a patch (<see cref="FragmentBurst.Flux"/>): the share of it in the side
+/// ring, the flux there and outside it.</summary>
+public readonly record struct ManFlux(double Ring, double InRing, double OutRing);
+
 /// <summary>THOR's classes of plate for fragments (a material's `fragments`).</summary>
 public enum FragmentClass : byte
 {
@@ -232,6 +239,79 @@ public sealed class FragmentBurst
                 break;
         }
         return Math.Exp(Math.Min(x, Math.Log(1e5)));
+    }
+
+    /// <summary>The lightest fragment thrown at v that still carries minJ rM off (E6; damage/16 §4.1: 80 J stops a man):
+    /// ½·m·(v·e^(−R/(L₁m^⅓)))² = J, solved in ln m by Newton from the drag-free root (the left side less the right is
+    /// convex and falling in ln m, so the steps climb to the root from below).</summary>
+    public static double EnergyKg(double rM, double v, double minJ)
+    {
+        if (!(v > 0))
+            return double.PositiveInfinity;
+        double a = Math.Log(2 * minJ) - 2 * Math.Log(v), b = 2 * rM / Fragments.DragL1;
+        double x = a;
+        for (int i = 0; i < 12; i++)
+        {
+            double ex = b * Math.Exp(-x / 3), f = a - x + ex, df = -1 - ex / 3;
+            double dx = -f / df;
+            x += dx;
+            if (Math.Abs(dx) < 1e-4)
+                break;
+        }
+        return Math.Exp(Math.Min(x, Math.Log(1e5)));
+    }
+
+    /// <summary>A burst's pieces that still stop a man rM off through a plate (e^0.906, e in inches of mild steel, 0 for
+    /// none), the shell flying at v (E6; damage/16 §4.1): each spray's Mott count above the heavier of THOR's limit and
+    /// the minJ line (no 1 g floor: the line decides), the ogive's and the tail's scaled to their metal. The nose slug and
+    /// the base plug are single pieces and left out.</summary>
+    public ManStopping Stopping(double rM, double v, double e, double minJ)
+    {
+        if (!(MottN0 > 0))
+            return default;
+        double sideV = Math.Sqrt(SideMs * SideMs + v * v);
+        double side = CountAbove(Math.Max(ThresholdKg(rM, sideV, e), EnergyKg(rM, sideV, minJ)));
+        double ogive = OgiveKg > 0 && BodyKg > 0 ? OgiveKg / BodyKg * Stopped(rM, ConeSpeed(OgiveMs, v, OgiveFromDeg, OgiveToDeg), e, minJ) : 0;
+        double tail = TailKg > 0 && BodyKg > 0 ? TailKg / BodyKg * Stopped(rM, ConeSpeed(TailMs, v, TailFromDeg, TailToDeg), e, minJ) : 0;
+        return new ManStopping(side, ogive, tail);
+    }
+
+    double Stopped(double rM, double speed, double e, double minJ) =>
+        speed > 0 ? CountAbove(Math.Max(ThresholdKg(rM, speed, e), EnergyKg(rM, speed, minJ))) : 0;
+
+    static double ConeSpeed(double kick, double v, double fromDeg, double toDeg)
+    {
+        double mid = double.DegreesToRadians((fromDeg + toDeg) / 2);
+        return Math.Sqrt(Math.Max(kick * kick + v * v + 2 * kick * v * Math.Cos(mid), 0));
+    }
+
+    /// <summary>The man-stopping pieces per m² at a point (E6): the burst at a point, the shell flying along dir at v, its
+    /// pieces counted (<see cref="Stopping"/>), the point a patch halfM across. The side ring leans forward with the
+    /// shell as in <see cref="Hits"/>; the patch's share in it (Ring) takes the ring's flux (InRing), the rest the flux
+    /// outside it (OutRing); the ogive's and the tail's cones add to both by their share of the patch.</summary>
+    public ManFlux Flux(P3 at, P3 dir, double v, P3 point, double halfM, in ManStopping n)
+    {
+        double rx = point.X - at.X, ry = point.Y - at.Y, rz = point.Z - at.Z, r = Math.Max(Math.Sqrt(rx * rx + ry * ry + rz * rz), 0.4);
+        double cosPsi = Math.Clamp((rx * dir.X + ry * dir.Y + rz * dir.Z) / r, -1, 1), psi = Math.Acos(cosPsi);
+        double alpha = Math.Atan(halfM / r), r2 = r * r;
+        double side = Math.Atan2(SideMs, v), band = double.DegreesToRadians(Fragments.BandHalfDeg);
+        double ring = Overlap(psi, alpha, side - band, side + band), bandOmega = Cone(side - band, side + band);
+        double cones = ConeFlux(psi, alpha, n.Ogive, OgiveMs, v, OgiveFromDeg, OgiveToDeg) + ConeFlux(psi, alpha, n.Tail, TailMs, v, TailFromDeg, TailToDeg);
+        return new ManFlux(ring, ((1 - Fragments.OutsideShare) * n.Side / bandOmega + cones) / r2,
+            (Fragments.OutsideShare * n.Side / Math.Max(4 * Math.PI - bandOmega, 1e-6) + cones) / r2);
+    }
+
+    /// <summary>A cone of spray's pieces per steradian on a patch: its count over the cone's solid angle, at the patch's
+    /// share inside it.</summary>
+    static double ConeFlux(double psi, double alpha, double count, double kick, double v, double fromDeg, double toDeg)
+    {
+        if (!(count > 0))
+            return 0;
+        double a0 = Lean(kick, v, fromDeg), a1 = Lean(kick, v, toDeg);
+        if (a0 > a1)
+            (a0, a1) = (a1, a0);
+        double f = Overlap(psi, alpha, a0, a1);
+        return f > 0 ? count * f / Math.Max(Cone(a0, a1), 1e-6) : 0;
     }
 
     /// <summary>Line targets (13 §4.4, §5.3: a cable run, a pipe, a trunk) crossing the side band rM off: the hits on one w m
