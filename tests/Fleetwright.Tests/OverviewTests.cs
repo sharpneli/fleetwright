@@ -19,6 +19,17 @@ public class OverviewTests
         return b;
     }
 
+    /// <summary>The Overview's rows are Shipgen's levers (Levers.Trim, which mono-check sweeps), every one of them labelled.</summary>
+    [Fact]
+    public void The_rows_are_the_levers_mono_check_sweeps()
+    {
+        foreach (var p in Directory.GetFiles(Paths.Shipgen("designs"), "*.json"))
+        {
+            var d = Design.Load(p);
+            Assert.Equal(Levers.Trim(d).Select(t => t.Lever.Id), DesignerScene.RowIds(d));
+        }
+    }
+
     /// <summary>A probe is an ordinary build: the same numbers, a skipped slot stays skipped, an invalid design fails.</summary>
     [Fact]
     public void Probes_are_builds()

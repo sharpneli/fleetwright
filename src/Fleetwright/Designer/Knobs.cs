@@ -16,74 +16,75 @@ public abstract class Knob(string id, string label)
     /// <summary>Whether the knob means anything for the design (turret faces need a main battery). Null: always.</summary>
     public Func<Design, bool>? Applies { get; init; }
 
-    public bool AppliesTo(Design d) => Applies?.Invoke(d) ?? true;
+    public virtual bool AppliesTo(Design d) => Applies?.Invoke(d) ?? true;
 }
 
-/// <summary>A number. Null in the design means Auto: the engine's own choice, shown from <see cref="Auto"/> when
-/// known.</summary>
-public sealed class NumberKnob(string id, string label, Quantity q, double stepMetric, double stepImperial) : Knob(id, label)
+/// <summary>A number: a Shipgen <see cref="NumberLever"/> (reading and writing the design, its bounds, its metric step;
+/// null in the design means Auto, the engine's own choice) with the label and units it is shown in. A knob the Overview
+/// steps wraps the lever Shipgen defines (Levers); the others build theirs here, through the same properties.</summary>
+public sealed class NumberKnob : Knob
 {
-    public Quantity Quantity { get; } = q;
-    public double StepMetric { get; } = stepMetric;
-    public double StepImperial { get; } = stepImperial;
+    public Quantity Quantity { get; }
+    public double StepImperial { get; }
 
-    public required Func<Design, double?> Get { get; init; }
-    public required Func<Design, double?, Design> Set { get; init; }
+    /// <summary>The edit itself.</summary>
+    public NumberLever Lever { get; private set; }
+
+    public NumberKnob(string id, string label, Quantity q, double stepMetric, double stepImperial) : base(id, label)
+    {
+        (Quantity, StepImperial) = (q, stepImperial);
+        Lever = new NumberLever(id, stepMetric) { Integer = q == Quantity.Count };
+    }
+
+    /// <summary>A knob over a lever Shipgen defines.</summary>
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    public NumberKnob(NumberLever lever, string label, Quantity q, double stepImperial) : base(lever.Id, label)
+    {
+        (Quantity, StepImperial, Lever) = (q, stepImperial, lever);
+        if (lever.Integer != (q == Quantity.Count))
+            throw new ArgumentException($"{lever.Id}: a count knob takes an integer lever and only a count knob does");
+    }
+
+    public double StepMetric => Lever.Step;
+
+    public required Func<Design, double?> Get { get => Lever.Get; init => Lever = Lever with { Get = value }; }
+    public required Func<Design, double?, Design> Set { get => Lever.Set; init => Lever = Lever with { Set = value }; }
 
     /// <summary>The value the engine uses when the design leaves it out (the built ship may be null).</summary>
-    public Func<Design, Ship?, double?>? Auto { get; init; }
+    public Func<Design, Ship?, double?>? Auto { get => Lever.Auto; init => Lever = Lever with { Auto = value }; }
 
     /// <summary>Can the knob go back to Auto (null)?</summary>
-    public bool CanAuto { get; init; }
+    public bool CanAuto { get => Lever.CanAuto; init => Lever = Lever with { CanAuto = value }; }
 
     /// <summary>The style limit's JSON path (the engine's sanity bounds), when it has one.</summary>
-    public string[]? LimitPath { get; init; }
+    public string[]? LimitPath { get => Lever.LimitPath; init => Lever = Lever with { LimitPath = value }; }
 
     /// <summary>Bounds when the style gives none, and a floor over the style's (speed: 8 kn).</summary>
-    public double Lo { get; init; }
-    public double Hi { get; init; } = 1e6;
-    public double? Floor { get; init; }
+    public double Lo { get => Lever.Lo; init => Lever = Lever with { Lo = value }; }
+    public double Hi { get => Lever.Hi; init => Lever = Lever with { Hi = value }; }
+    public double? Floor { get => Lever.Floor; init => Lever = Lever with { Floor = value }; }
 
     /// <summary>Bounds from the design itself (a group can't step more turrets than it has; a carrier's tower has a
     /// higher minimum than a warship's).</summary>
-    public Func<Design, double>? HiOf { get; init; }
-    public Func<Design, double>? LoOf { get; init; }
+    public Func<Design, double>? HiOf { get => Lever.HiOf; init => Lever = Lever with { HiOf = value }; }
+    public Func<Design, double>? LoOf { get => Lever.LoOf; init => Lever = Lever with { LoOf = value }; }
 
-    public bool Integer => Quantity == Quantity.Count;
+    public new Func<Design, bool>? Applies { get => Lever.Applies; init => Lever = Lever with { Applies = value }; }
+
+    public override bool AppliesTo(Design d) => Lever.AppliesTo(d);
+
+    public bool Integer => Lever.Integer;
 
     /// <summary>One step in metric, for the units shown.</summary>
     public double Step(UnitSystem u) => u == UnitSystem.Metric ? StepMetric : StepImperial * Units.Factor(Quantity, u);
 
     /// <summary>The value shown: the design's, else Auto's.</summary>
-    public double? Value(Design d, Ship? ship) => Get(d) ?? Auto?.Invoke(d, ship);
+    public double? Value(Design d, Ship? ship) => Lever.Value(d, ship);
 
-    public (double Lo, double Hi) Range(Design d)
-    {
-        double lo = Lo, hi = Hi;
-        if (LimitPath != null)
-            foreach (var l in Styles.Get(d).Limits())
-                if (l.Path.SequenceEqual(LimitPath))
-                    (lo, hi) = (l.Lo, l.Hi);
-        if (Floor is { } f)
-            lo = Math.Max(lo, f);
-        if (LoOf != null)
-            lo = Math.Max(lo, LoOf(d));
-        if (HiOf != null)
-            hi = Math.Min(hi, HiOf(d));
-        return (lo, Math.Max(lo, hi));
-    }
+    public (double Lo, double Hi) Range(Design d) => Lever.Range(d);
 
     /// <summary>The design with the value set, kept inside the range (whole numbers for counts).</summary>
-    public Design Apply(Design d, double? value)
-    {
-        if (value is not { } v)
-            return Set(d, null);
-        var (lo, hi) = Range(d);
-        v = Math.Clamp(v, lo, hi);
-        if (Integer)
-            v = Math.Round(v);
-        return Set(d, Math.Round(v, 3));
-    }
+    public Design Apply(Design d, double? value) => Lever.Apply(d, value);
 }
 
 /// <summary>One of a few named values (null: Auto).</summary>
@@ -154,35 +155,13 @@ public static class Knobs
     static bool HasMain(Design d) => d.Main is { Count: > 0 };
     static bool HasSecondary(Design d) => d.Secondary is { Count: > 0 };
 
-    /// <summary>The main armour deck's entry (Armour.MainDeck), -1 for none.</summary>
-    static int MainDeckIndex(Design d) => Armour.MainDeck(d.Armour?.Decks ?? []);
-
     // ------------------------------------------------------------------ the knobs
 
-    public static readonly NumberKnob Speed = new("speed", "Speed", Quantity.Speed, 0.5, 0.5)
-    {
-        Get = d => d.SpeedKn,
-        Set = (d, v) => d with { SpeedKn = v },
-        LimitPath = ["speed_kn"],
-        Floor = 8,   // slower ships aren't seaworthy in rough weather (the user's rule)
-    };
+    public static readonly NumberKnob Speed = new(Levers.Speed, "Speed", Quantity.Speed, 0.5);
 
-    public static readonly NumberKnob Range = new("range", "Range", Quantity.Range, 500, 500)
-    {
-        Get = d => d.RangeNm,
-        Set = (d, v) => d with { RangeNm = v },
-        Auto = (d, s) => 6000,
-        CanAuto = true,
-        LimitPath = ["range_nm"],
-    };
+    public static readonly NumberKnob Range = new(Levers.Range, "Range", Quantity.Range, 500);
 
-    public static readonly NumberKnob Belt = new("belt", "Belt", Quantity.Armour, 10, 0.5)
-    {
-        Get = d => d.Armour?.BeltMm,
-        Set = (d, v) => Arm(d, a => a with { BeltMm = v }),
-        Auto = (d, s) => 0,
-        LimitPath = ["armour", "belt_mm"],
-    };
+    public static readonly NumberKnob Belt = new(Levers.Belt, "Belt", Quantity.Armour, 0.5);
 
     public static readonly NumberKnob BeltBottom = new("belt_bottom", "Belt, lower edge", Quantity.Armour, 10, 0.5)
     {
@@ -193,39 +172,11 @@ public static class Knobs
         LimitPath = ["armour", "belt_bottom_mm"],
     };
 
-    public static readonly NumberKnob UpperBelt = new("upper_belt", "Upper belt", Quantity.Armour, 10, 0.5)
-    {
-        Get = d => d.Armour?.UpperBelt?.Mm,
-        Set = (d, v) => Arm(d, a => a with { UpperBelt = (a.UpperBelt ?? new UpperBeltInput { ToDeck = 0, Extent = "citadel" }) with { Mm = v } }),
-        Auto = (d, s) => 0,
-        LimitPath = ["armour", "upper_belt", "mm"],
-    };
+    public static readonly NumberKnob UpperBelt = new(Levers.UpperBelt, "Upper belt", Quantity.Armour, 0.5);
 
-    public static readonly NumberKnob ArmourDeck = new("armour_deck", "Armour deck", Quantity.Armour, 5, 0.25)
-    {
-        Get = d => MainDeckIndex(d) is int i and >= 0 ? d.Armour!.Decks![i].Mm : null,
-        Set = (d, v) => Arm(d, a =>
-        {
-            var decks = (a.Decks ?? []).ToList();
-            int i = MainDeckIndex(d);
-            if (i < 0)
-                decks.Insert(0, new ArmourDeckInput { Deck = 1, Mm = v ?? 0, Extent = "citadel" });
-            else
-                decks[i] = decks[i] with { Mm = v ?? 0 };
-            return a with { Decks = decks };
-        }),
-        Auto = (d, s) => 0,
-        Lo = 0,
-        Hi = 2000,
-    };
+    public static readonly NumberKnob ArmourDeck = new(Levers.ArmourDeck, "Armour deck", Quantity.Armour, 0.25);
 
-    public static readonly NumberKnob Bulkheads = new("bulkheads", "Citadel bulkheads", Quantity.Armour, 10, 0.5)
-    {
-        Get = d => d.Armour?.BulkheadMm,
-        Set = (d, v) => Arm(d, a => a with { BulkheadMm = v }),
-        Auto = (d, s) => 0,
-        LimitPath = ["armour", "bulkhead_mm"],
-    };
+    public static readonly NumberKnob Bulkheads = new(Levers.Bulkheads, "Citadel bulkheads", Quantity.Armour, 0.5);
 
     public static readonly NumberKnob Tds = new("tds", "Torpedo protection depth", Quantity.Length, 0.5, 1)
     {
@@ -256,13 +207,7 @@ public static class Knobs
     // armour decks, per entry
     public static readonly string[] DeckExtents = ["citadel", "full", "fore", "aft", "ends"];
 
-    public static NumberKnob DeckMm(int i) => new($"deck{i}_mm", "Thickness", Quantity.Armour, 5, 0.25)
-    {
-        Get = d => d.Armour?.Decks?.ElementAtOrDefault(i)?.Mm,
-        Set = (d, v) => Arm(d, a => a with { Decks = Replace(a.Decks!, i, x => x with { Mm = v ?? 0 }) }),
-        Lo = 0,
-        Hi = 2000,
-    };
+    public static NumberKnob DeckMm(int i) => new(Levers.DeckMm(i), "Thickness", Quantity.Armour, 0.25);
 
     public static NumberKnob DeckLevel(int i) => new($"deck{i}_deck", "On deck", Quantity.Count, 1, 1)
     {
@@ -406,15 +351,7 @@ public static class Knobs
     };
 
     /// <summary>Mounts per side, for a battery given in pairs (warships).</summary>
-    public static NumberKnob SecPerSide(int i) => new($"sec{i}_per_side", "Mounts per side", Quantity.Count, 1, 1)
-    {
-        Get = d => d.Secondary?.ElementAtOrDefault(i)?.PerSide,
-        Set = (d, v) => Sec(d, i, b => b with { PerSide = I(v) }),
-        Auto = (d, s) => 0,
-        LimitPath = ["secondary", "per_side"],
-        Hi = 30,
-        Applies = d => d.Secondary?.ElementAtOrDefault(i) is { Count: null },
-    };
+    public static NumberKnob SecPerSide(int i) => new(Levers.SecPerSide(i), "Mounts per side", Quantity.Count, 1);
 
     /// <summary>All the mounts, for a battery given as a total (merchants, carriers; may be odd).</summary>
     public static NumberKnob SecCount(int i) => new($"sec{i}_count", "Mounts", Quantity.Count, 1, 1)
@@ -452,14 +389,7 @@ public static class Knobs
         Hi = 60,
     };
 
-    public static readonly NumberKnob AaLight = new("aa_light", "Light AA mounts", Quantity.Count, 2, 2)
-    {
-        Get = d => d.Aa?.Light,
-        Set = (d, v) => d with { Aa = (d.Aa ?? new AaInput()) with { Light = I(v) } },
-        Auto = (d, s) => 0,
-        LimitPath = ["aa", "light"],
-        Hi = 120,
-    };
+    public static readonly NumberKnob AaLight = new(Levers.AaLight, "Light AA mounts", Quantity.Count, 2);
 
     public static readonly NumberKnob TorpedoMounts = new("tt_mounts", "Torpedo mounts", Quantity.Count, 1, 1)
     {
@@ -525,15 +455,7 @@ public static class Knobs
     };
 
     // speed and machinery
-    public static readonly NumberKnob Stress = new("stress", "Design rating", Quantity.Ratio, 0.1, 0.1)
-    {
-        Get = d => d.Machinery?.Stress,
-        Set = (d, v) => Mach(d, m => m with { Stress = v }),
-        Auto = (d, s) => s?.Report.Plant.Stress,
-        CanAuto = true,
-        Lo = 0,
-        Hi = 1,
-    };
+    public static readonly NumberKnob Stress = new(Levers.Stress, "Design rating", Quantity.Ratio, 0.1);
 
     public static readonly NumberKnob Shafts = new("shafts", "Shafts", Quantity.Count, 1, 1)
     {
@@ -554,23 +476,9 @@ public static class Knobs
     };
 
     // hull and upperworks
-    public static readonly NumberKnob BlockCoefficient = new("cb", "Hull form, full to fine", Quantity.Ratio, 0.01, 0.01)
-    {
-        Get = d => d.Hull?.BlockCoefficient,
-        Set = (d, v) => Hull(d, h => h with { BlockCoefficient = v }),
-        Auto = (d, s) => Styles.Get(d).DefaultBlockCoefficient,
-        CanAuto = true,
-        LimitPath = ["hull", "block_coefficient"],
-    };
+    public static readonly NumberKnob BlockCoefficient = new(Levers.BlockCoefficient, "Hull form, full to fine", Quantity.Ratio, 0.01);
 
-    public static readonly NumberKnob Freeboard = new("freeboard", "Freeboard (x standard)", Quantity.Ratio, 0.05, 0.05)
-    {
-        Get = d => d.Hull?.Freeboard,
-        Set = (d, v) => Hull(d, h => h with { Freeboard = v }),
-        Auto = (d, s) => 1,
-        CanAuto = true,
-        LimitPath = ["hull", "freeboard"],
-    };
+    public static readonly NumberKnob Freeboard = new(Levers.Freeboard, "Freeboard (x standard)", Quantity.Ratio, 0.05);
 
     /// <summary>The construction standard (hull.construction.standard): the minimum plate gauge, x a naval hull's. Light
     /// scantlings (0.85, a torpedo craft's 0.75) save weight on a small ship and leave thinner plate for splinters and
@@ -623,16 +531,7 @@ public static class Knobs
         _ => null,
     };
 
-    public static readonly NumberKnob TowerLevels = new("tower", "Bridge tower levels", Quantity.Count, 1, 1)
-    {
-        Get = d => d.Superstructure?.TowerLevels,
-        Set = (d, v) => Sup(d, s => s with { TowerLevels = I(v) }),
-        Auto = (d, s) => s?.Report.Bridge?.TowerLevels,
-        CanAuto = true,
-        LimitPath = ["superstructure", "tower_levels"],
-        LoOf = d => Styles.Get(d).MinTowerLevels,
-        Applies = d => Styles.Get(d).MinTowerLevels > 0,
-    };
+    public static readonly NumberKnob TowerLevels = new(Levers.TowerLevels, "Bridge tower levels", Quantity.Count, 1);
 
     public static readonly NumberKnob DeckhouseLevels = new("deckhouse", "Deckhouse levels", Quantity.Count, 1, 1)
     {
@@ -679,15 +578,7 @@ public static class Knobs
     };
 
     // crew
-    public static readonly NumberKnob Endurance = new("endurance", "Stores for", Quantity.Days, 5, 5)
-    {
-        Get = d => d.Crew?.EnduranceDays,
-        Set = (d, v) => Crew(d, c => c with { EnduranceDays = v }),
-        Auto = (d, s) => s?.Report.Crew?.EnduranceDays,
-        CanAuto = true,
-        Lo = 1,
-        Hi = 365,
-    };
+    public static readonly NumberKnob Endurance = new(Levers.Endurance, "Stores for", Quantity.Days, 5);
 
     public static readonly ToggleKnob Distiller = new("distiller", "Distiller")
     {
@@ -1384,107 +1275,16 @@ public static class Knobs
 
     // ------------------------------------------------------------------ the overview's broad strokes
 
-    /// <summary>A knob over every main battery at once: it shows the first battery's value, and a new value moves each
-    /// battery by the same amount (a design with 305 and 234 mm guns steps both by 10 mm).</summary>
-    static NumberKnob AllMain(string id, string label, Quantity q, double stepMetric, double stepImperial, Func<BatteryInput, double?> get,
-        Func<BatteryInput, double?, BatteryInput> set, string[] limit, Func<Design, Ship?, double?>? auto = null) =>
-        new(id, label, q, stepMetric, stepImperial)
-        {
-            Get = d => d.Main is { Count: > 0 } m ? get(m[0]) : null,
-            Set = (d, v) =>
-            {
-                if (d.Main is not { Count: > 0 } m)
-                    return d;
-                if (v is not { } x)
-                    return d with { Main = m.Select(b => set(b, null)).ToList() };
-                double first = get(m[0]) ?? auto?.Invoke(d, null) ?? x;
-                return d with { Main = m.Select((b, i) => set(b, Math.Max(0, Math.Round((i == 0 ? x : (get(b) ?? first) + x - first), 3)))).ToList() };
-            },
-            Auto = auto,
-            LimitPath = limit,
-            Applies = HasMain,
-        };
+    public static readonly NumberKnob MainFaces = new(Levers.MainFaces, "Turret faces", Quantity.Armour, 0.5);
 
-    public static readonly NumberKnob MainFaces = AllMain("main_faces", "Turret faces", Quantity.Armour, 10, 0.5,
-        b => b.ArmourMm, (b, v) => b with { ArmourMm = v }, ["main", "armour_mm"], (d, s) => 0);
+    public static readonly NumberKnob MainCalibres = new(Levers.MainCalibres, "Main calibre", Quantity.Calibre, 0.5);
 
-    public static readonly NumberKnob MainCalibres = AllMain("main_calibres", "Main calibre", Quantity.Calibre, 10, 0.5,
-        b => b.CalibreMm, (b, v) => b with { CalibreMm = v }, ["main", "calibre_mm"]);
-
-    public static readonly NumberKnob MainRoundsAll = AllMain("main_rounds", "Main rounds per gun", Quantity.Count, 10, 10,
-        b => b.RoundsPerGun, (b, v) => b with { RoundsPerGun = v }, ["main", "rounds_per_gun"],
-        (d, s) => d.Main is { Count: > 0 } m && m[0].CalibreMm is { } c ? Math.Round(Batteries.RoundsPerGun(c)) : null);
+    public static readonly NumberKnob MainRoundsAll = new(Levers.MainRoundsAll, "Main rounds per gun", Quantity.Count, 10);
 
     /// <summary>Both end belts at once: shows their mean, and a new value moves each (and its tip, when set) by the same
     /// amount. Only for a design that has end belts: adding them is the Protection tab's.</summary>
-    public static readonly NumberKnob EndBelts = new("end_belts", "End belts, both", Quantity.Armour, 10, 0.5)
-    {
-        Get = d => EndBeltMean(d),
-        Set = (d, v) =>
-        {
-            if (v is not { } x || EndBeltMean(d) is not { } mean)
-                return d;
-            double dv = x - mean;
-            foreach (var end in new[] { "fore", "aft" })
-                if (d.Armour?.EndBelts?.Of(end) is { Mm: > 0 })
-                    d = EndBelt(d, end, b => b with
-                    {
-                        Mm = Math.Max(0, Math.Round(b.Mm!.Value + dv, 3)),
-                        TipMm = b.TipMm is { } t ? Math.Max(0, Math.Round(t + dv, 3)) : null,
-                    });
-            return d;
-        },
-        Applies = d => EndBeltMean(d) != null,
-        Hi = 2000,
-    };
+    public static readonly NumberKnob EndBelts = new(Levers.EndBelts, "End belts, both", Quantity.Armour, 0.5);
 
-    static double? EndBeltMean(Design d)
-    {
-        double sum = 0;
-        int n = 0;
-        foreach (var end in new[] { "fore", "aft" })
-            if (d.Armour?.EndBelts?.Of(end) is { Mm: > 0 } b)
-            {
-                sum += b.Mm!.Value;
-                n++;
-            }
-        return n > 0 ? Math.Round(sum / n, 3) : null;
-    }
-
-    /// <summary>Every armour thickness the design gives, times <paramref name="f"/> to the nearest mm: belt (its lower
-    /// edge, its zone over the magazines), upper belt, end belts (and tips and bulkheads), citadel bulkheads, decks (their
-    /// slopes and magazine zones), flight deck, the steering gear box, the inner bulkhead, the magazine boxes and the main
-    /// turret faces (the barbettes follow the faces). Thicknesses the design leaves to the engine stay so.</summary>
-    public static Design ScaleArmour(Design d, double f)
-    {
-        static double? M(double? mm, double f) => mm is { } x ? Math.Round(x * f) : null;
-        if (d.Armour is { } a)
-            d = d with
-            {
-                Armour = a with
-                {
-                    BeltMm = M(a.BeltMm, f),
-                    BeltBottomMm = M(a.BeltBottomMm, f),
-                    BeltMagazinesMm = M(a.BeltMagazinesMm, f),
-                    BulkheadMm = M(a.BulkheadMm, f),
-                    FlightDeckMm = M(a.FlightDeckMm, f),
-                    Decks = a.Decks?.Select(x => x with { Mm = M(x.Mm, f), SlopeMm = M(x.SlopeMm, f), MagazinesMm = M(x.MagazinesMm, f) }).ToList(),
-                    InnerBulkhead = a.InnerBulkhead is { } ib ? ib with { Mm = M(ib.Mm, f), MagazinesMm = M(ib.MagazinesMm, f) } : null,
-                    MagazineBox = a.MagazineBox is { } mb ? mb with
-                    {
-                        SideMm = M(mb.SideMm, f), CrownMm = M(mb.CrownMm, f), EndMm = M(mb.EndMm, f), FloorMm = M(mb.FloorMm, f),
-                    } : null,
-                    UpperBelt = a.UpperBelt is { } u ? u with { Mm = M(u.Mm, f) } : null,
-                    EndBelts = a.EndBelts is { } eb ? eb with
-                    {
-                        Fore = eb.Fore is { } fo ? fo with { Mm = M(fo.Mm, f), TipMm = M(fo.TipMm, f), BulkheadMm = M(fo.BulkheadMm, f) } : null,
-                        Aft = eb.Aft is { } af ? af with { Mm = M(af.Mm, f), TipMm = M(af.TipMm, f), BulkheadMm = M(af.BulkheadMm, f) } : null,
-                    } : null,
-                    SteeringBox = a.SteeringBox is { } sb ? sb with { Mm = M(sb.Mm, f), DeckMm = M(sb.DeckMm, f), BulkheadMm = M(sb.BulkheadMm, f) } : null,
-                },
-            };
-        if (d.Main is { Count: > 0 } m)
-            d = d with { Main = m.Select(b => b with { ArmourMm = M(b.ArmourMm, f) }).ToList() };
-        return d;
-    }
+    /// <summary>Every armour thickness the design gives, times f (Levers.ScaleArmour).</summary>
+    public static Design ScaleArmour(Design d, double f) => Levers.ScaleArmour(d, f);
 }

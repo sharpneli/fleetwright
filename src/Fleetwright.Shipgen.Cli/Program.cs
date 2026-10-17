@@ -907,7 +907,7 @@ public static class Program
         var names = a.Positional.Count > 0 ? a.Positional : [.. MonoDefault];
         var designs = names.Select(n => (Name: Path.GetFileNameWithoutExtension(n),
             Design: LoadDesign(File.Exists(n) ? n : Path.Combine(root, "designs", n + ".json")))).ToList();
-        var work = designs.SelectMany(d => Monotone.Levers.Select(l => (d.Name, d.Design, Lever: l))).ToList();
+        var work = designs.SelectMany(d => Levers.Trim(d.Design).Select(t => (d.Name, d.Design, t.Lever))).ToList();
         var sweeps = new List<Monotone.Sweep>?[work.Count];
         var sw = Stopwatch.StartNew();
         Parallel.For(0, work.Count, new ParallelOptions { MaxDegreeOfParallelism = a.Int("jobs", Environment.ProcessorCount) },

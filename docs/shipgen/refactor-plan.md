@@ -56,9 +56,15 @@ The single-implementation rule, applied to what the review found:
   putting it on again adds a deck. The old tie-to-the-lower rule hid this from the test while the decks stacked. The
   build still uses the rule physically (the belt runs up to it, the barbettes' armour stops on it, two hitbox
   fields); taking that out is a physics change for later, not this refactor.
-- **The Overview levers**: moved from the exe into Shipgen as the one definition; the designer's Overview and
-  mono-check both read them (the review's suggested order 2). mono-check's output changes only where its old copy
-  differed from the real lever, and that is reported.
+- **The Overview levers**: `Shipgen.Levers` (a `NumberLever`: get, set, Auto, bounds, apply, the step as the
+  Overview's arrows take it) is the one definition; the designer's `NumberKnob` wraps a lever (label, units), and the
+  knobs that aren't Overview levers build theirs through the same properties. `Levers.Trim(d)` is the Overview's row
+  list: the Overview builds its rows from it and mono-check sweeps it, stepped as the arrows step. **Done 2026-10-17.**
+  mono-check's output changed once: it now sweeps each armour deck (no "thickest deck" lever), Cb and the armour
+  scale; aa_heavy is gone (not an Overview row); steps start from Auto values, snap to the grid and stop at the style's
+  limits, as the arrows do. Before: 29 reversals and 12 lumps over 228 sweeps; after: 27 and 16 over 237. The
+  aa_heavy pair is gone; the new lumps are Cb (3, sense 0), endurance stepped from its Auto 1 day to the 5-day grid
+  (2), and an armour deck added where a ship has none (pt_boat, tanker).
 - **Navy and era names** (bug 3): one list. Shipgen can't read the renderer's `looks.jsonc`, so the list moves to
   where both can see it, or validation is handed the names by its caller; worked out when we get there.
 - **Small duplicates**: sea-water density (`Weight.Seawater`, `Flotation.SeaT`) and the sideways helpers the review

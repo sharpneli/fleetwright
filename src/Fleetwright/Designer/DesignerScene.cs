@@ -830,14 +830,7 @@ public sealed unsafe partial class DesignerScene : IScene
 
     /// <summary>Where <paramref name="steps"/> steps from <paramref name="value"/> land on the displayed units' grid (the
     /// overview's probes ask the same, so a probe is exactly the step its click takes).</summary>
-    double StepTarget(NumberKnob k, double? value, int steps)
-    {
-        double step = k.Step(units);
-        double v = value ?? k.Range(doc.Current).Lo;
-        // off the grid (a design's own 305 mm, say), the first step goes to the next grid line that way, not past it
-        double on = steps > 0 ? Math.Floor(v / step + 1e-9) : Math.Ceiling(v / step - 1e-9);
-        return (on + steps) * step;
-    }
+    double StepTarget(NumberKnob k, double? value, int steps) => k.Lever.Target(doc.Current, value, steps, k.Step(units));
 
     void SetValue(NumberKnob k, double? value)
     {

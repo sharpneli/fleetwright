@@ -14,10 +14,14 @@ namespace Fleetwright.Designer;
 /// </summary>
 public sealed unsafe partial class DesignerScene
 {
-    /// <summary>A trim sheet lever: its group, label, what it drives, its knob (null: the all-armour scale), and which
-    /// way it usually moves the weight (+1 more is heavier, -1 more is lighter, 0 either way), so a step that goes the
-    /// other way can be marked.</summary>
-    sealed record Lever(int Group, string Label, string Drives, NumberKnob? Knob, int Sense = 1);
+    /// <summary>A trim sheet lever: its group, label, what it drives, and its knob (null: the all-armour scale). Sense:
+    /// which way it usually moves the weight (the lever's: +1 more is heavier, -1 more is lighter, 0 either way), so a
+    /// step that goes the other way can be marked.</summary>
+    sealed record Lever(int Group, string Label, string Drives, NumberKnob? Knob)
+    {
+        public int Sense => (Knob?.Lever ?? Levers.ArmourScale).Sense;
+        public string Id => (Knob?.Lever ?? Levers.ArmourScale).Id;
+    }
 
     static readonly (string Name, int Tab, string[] Groups)[] OvGroups =
     [
@@ -27,12 +31,13 @@ public sealed unsafe partial class DesignerScene
         ("HULL & CREW", 5, ["hull", "superstructure", "misc"]),
     ];
 
-    /// <summary>The levers; the armour deck row stands for each of the design's armour decks (<see cref="LeversOf"/>).</summary>
+    /// <summary>The rows' labels, by lever; which rows and in what order is Shipgen's (Levers.Trim, <see cref="LeversOf"/>):
+    /// the armour deck row stands for each of the design's armour decks.</summary>
     static readonly Lever[] BaseLevers =
     [
         new(0, "Speed", "power, machinery, fuel; the hull lengthens for speed", Knobs.Speed),
         new(0, "Range", "fuel, bunkers", Knobs.Range),
-        new(0, "Machinery rating", "higher: a lighter plant worked harder, less margin", Knobs.Stress, -1),
+        new(0, "Machinery rating", "higher: a lighter plant worked harder, less margin", Knobs.Stress),
         new(1, "Belt", "immune zone, inner edge", Knobs.Belt),
         new(1, "Upper belt", "the side above the belt", Knobs.UpperBelt),
         new(1, "Armour deck", "immune zone, outer edge; top weight", Knobs.ArmourDeck),
@@ -45,38 +50,45 @@ public sealed unsafe partial class DesignerScene
         new(2, "Secondaries per side", "the first battery: anti-torpedo-boat fire", Knobs.SecPerSide(0)),
         new(2, "Light AA mounts", "air defence", Knobs.AaLight),
         new(3, "Freeboard", "wetness, hull girder, GM", Knobs.Freeboard),
-        new(3, "Hull form, Cb", "full to fine: resistance, length, beam", Knobs.BlockCoefficient, 0),
+        new(3, "Hull form, Cb", "full to fine: resistance, length, beam", Knobs.BlockCoefficient),
         new(3, "Bridge tower", "horizon, top weight", Knobs.TowerLevels),
         new(3, "Stores for", "provisions, fresh water", Knobs.Endurance),
     ];
 
-    /// <summary>The levers for <paramref name="d"/>: one row per armour deck, highest first (the main deck is often a
-    /// thin capping deck over a thicker one below), in place of the single armour deck row. The same array comes back
-    /// while the decks stay the same, so the snapshot and the probes can tell they agree.</summary>
+    /// <summary>The levers for <paramref name="d"/>: Shipgen's (Levers.Trim, which mono-check sweeps too), labelled by
+    /// BaseLevers, and one row per armour deck, highest first, in place of the single armour deck row. The same array
+    /// comes back while the decks stay the same, so the snapshot and the probes can tell they agree.</summary>
     Lever[] LeversOf(Design d)
     {
         var decks = d.Armour?.Decks ?? [];
         string sig = string.Join("|", decks.Select(x => $"{x.Deck}:{x.Extent}"));
-        if (sig == leversSig && (decks.Count > 0 || ReferenceEquals(leversCache, BaseLevers)))
+        if (sig == leversSig)
             return leversCache;
-        var list = new List<Lever>();
-        foreach (var lv in BaseLevers)
-        {
-            if (lv.Knob != Knobs.ArmourDeck || decks.Count == 0)
-            {
-                list.Add(lv);
-                continue;
-            }
-            foreach (int i in Enumerable.Range(0, decks.Count).OrderBy(i => decks[i].Deck ?? 1))
-            {
-                string extent = decks[i].Extent ?? "citadel";
-                string label = DeckName(decks[i].Deck ?? 1) + (extent == "citadel" ? "" : ", " + ExtentName(extent));
-                list.Add(new Lever(1, label, $"armour deck over the {ExtentName(extent)}; top weight", Knobs.DeckMm(i)));
-            }
-        }
-        (leversSig, leversCache) = (sig, list.ToArray());
+        (leversSig, leversCache) = (sig, RowsOf(d));
         return leversCache;
     }
+
+    /// <summary>The rows for d, uncached (<see cref="LeversOf"/>).</summary>
+    static Lever[] RowsOf(Design d)
+    {
+        var decks = d.Armour?.Decks ?? [];
+        var list = new List<Lever>();
+        foreach (var t in Levers.Trim(d))
+        {
+            if (t.Deck < 0)
+            {
+                list.Add(BaseLevers.First(l => l.Id == t.Lever.Id));
+                continue;
+            }
+            string extent = decks[t.Deck].Extent ?? "citadel";
+            string label = DeckName(decks[t.Deck].Deck ?? 1) + (extent == "citadel" ? "" : ", " + ExtentName(extent));
+            list.Add(new Lever(1, label, $"armour deck over the {ExtentName(extent)}; top weight", Knobs.DeckMm(t.Deck)));
+        }
+        return list.ToArray();
+    }
+
+    /// <summary>The ids of the levers behind the rows for d, for the tests.</summary>
+    internal static IEnumerable<string> RowIds(Design d) => RowsOf(d).Select(r => r.Id);
 
     static string DeckName(int deck) => deck switch
     {
@@ -108,7 +120,7 @@ public sealed unsafe partial class DesignerScene
     string[] ovCell = new string[2 * BaseLevers.Length];   // "−129 t", "…" or "—"
     bool[] ovLumpy = new bool[2 * BaseLevers.Length];   // the step goes against the lever's usual sense
     Lever[] leversCache = BaseLevers;
-    string leversSig = "";   // the armour decks leversCache was made for
+    string? leversSig;   // the armour decks leversCache was made for
     int? ovForceTip;   // dev hook: draw this cell's tooltip (2 × lever + 1 for the step up)
 
     int limitPick;   // DesignLimits.Mock; the gameplay layer will hand limits in
@@ -267,10 +279,7 @@ public sealed unsafe partial class DesignerScene
             var scaled = Knobs.ScaleArmour(d, (double)next / pct);
             return scaled.ToJson() == d.ToJson() ? null : scaled;
         }
-        if (!k.AppliesTo(d) || k.Value(d, ship) is not { } v)
-            return null;
-        var stepped = k.Apply(d, StepTarget(k, v, dir));
-        return k.Value(stepped, ship) is { } nv && Math.Abs(nv - v) > 1e-9 ? stepped : null;
+        return k.Lever.Stepped(d, ship, dir, k.Step(units));
     }
 
     /// <summary>Keeps the probes on the design shown while the Overview is open (one batch per design and units: the
