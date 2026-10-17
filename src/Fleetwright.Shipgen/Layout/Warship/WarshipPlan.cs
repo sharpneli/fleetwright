@@ -16,6 +16,8 @@ public sealed partial class Layout
         /// <summary>The main deck's half-width amidships: the beam's, unless the sides lean in above the widest
         /// point.</summary>
         public readonly double DeckHw;
+        /// <summary>The main deck's share of the beam amidships.</summary>
+        public readonly double DeckRatio;
 
         public WarshipSite(Design design, Navarch.Result res)
         {
@@ -28,6 +30,7 @@ public sealed partial class Layout
             Lay.Topside = Topside.Of(design, res.Freeboard);
             (L, B) = (Hull.L, Hull.B);
             DeckHw = Lay.Topside.Plain ? B / 2 : B / 2 * Lay.Topside.Ratio(0.0, 0.0);
+            DeckRatio = DeckHw / (B / 2);
         }
     }
 
