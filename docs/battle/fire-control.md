@@ -71,8 +71,14 @@ pass makes each system do what it could and couldn't do, from the physical fit t
   to a catalogue by `shipgen templates` from the research's tables; a design carries the blocks it uses; the tech tree
   filters them later. **The levels become presets**: named combinations of blocks that reproduce the reference's
   calibrated ladder, so "level 3" is a template, not a type.
-- **Parity first, then change.** Each phase opens by moving the data or the structure without changing a number (hashes
-  and goldens hold), then changes behaviour one step at a time, with the benches' numbers before and after.
+- **History is the yardstick, not today's model** (the user, 2026-10-17). Hit rates are expected to move, against
+  manoeuvring targets a long way: that's the point of the pass. Each step is judged by the historical record below,
+  never by how close it stays to the current implementation or to `fire_control_ref.py`. The reference code is a check
+  on mechanisms (does a rate clock drift on a crossing target, does a straight-line machine lag a circle), not a target
+  for the numbers.
+- **Refactors prove themselves, models don't.** A step that only moves structure or data (F0, F3's format move) shows
+  identical numbers and hashes, so it's known to be a refactor; a step that changes a model reports its numbers before
+  and after against the record, and the "before" is only where the old model stood, never a bound.
 - **One physical model.** Rangefinders, tops and radars are hitbox parts: the sprites draw them from `Ship.Hitboxes`,
   damage hits them, sighting compiles its eyes from them.
 - **Data first, the designer's tab after** (memory: one UI pass after a plan). Steps add data and model; the Fire control
@@ -80,6 +86,35 @@ pass makes each system do what it could and couldn't do, from the physical fit t
 - **Soft real time.** Trackers are fixed-size structs (at most 6 states), stepped in place: no allocation, no interface
   dispatch in the hot path (a tagged struct and a switch). Today's cost is ~10 µs a battery-second; the budget for the
   pass is 2x that.
+
+## The yardstick: the historical record
+
+The estimates every bench and test is held to, from `dispersion-and-hits.md` §5-6, `early-hit-rates.md`,
+`evasion-history.md` and `emergency-eyeball.md`. Counts are poor and often lower bounds, so the bands are wide (×1.5-2)
+and the ordering between cases matters as much as any one figure. **The first game's era (1890-1925) leads**; the later
+cases stay as secondary checks so the later cuts don't start from nothing.
+
+| Case | Conditions | Record | What it checks |
+|---|---|---|---|
+| Santiago 1898 | stadimeters, brown powder smoke, a chase at 1-6 kyd | 1.3% all calibres, 3.5% major calibre | the eyeball and early sights |
+| Yellow Sea 1904, Japanese 12" | 1.5 m Barr & Stroud, main fire ~5.6 km | 4.7% (all calibres both sides ~1.7%) | early rangefinders |
+| Tsushima 1905, Japanese 12" | 1.5 m rangefinders, ≤6.5 kyd, mist | ~9% (6" ~2%) | the same, closer; heavy over light guns |
+| Orion and Thunderer 1912 | 9 kyd, heavy sea; independent against director | 15% against 67%; about even in clear weather | director firing |
+| Dogger Bank 1915 | 17-20 kyd, own smoke (the Germans), chase | British 1.4%, German ~2.5%; Lion's first hit after ~10 salvos | WWI long range, the time to first hit |
+| Jutland 1916 by squadron | haze, smoke, 9-19.5 kyd, both sides manoeuvring | British BCS 1.4%, 5th BS 2.6%, Grand Fleet BS 3.6% (9-12 kyd), 3rd BCS 4.3% (short); German 1st SG 4.0%, battleships 3.0% | the Dreyer era in battle; German above British |
+| Falklands 1914 | long, closing, smoke, a long chase | ~7% (counts uncertain) | a stern chase against cruisers |
+| Practice against battle | USN 1912-18 practice H = 100/[1 + 0.0007(R - 2000)] (~26% at 6 kyd, 19% at 8 kyd); battle 0.1-0.3 of it before 1910, 0.3-0.5 in WWII | | the combat factor |
+| Steady or crippled target | Bismarck's end, 20 → 3 kyd | ~11-12% (Rodney, KGV) | what spotting buys on a target that can't evade |
+| An evading target | Komandorski (salvo chasing, 21-14 kyd), Java Sea | 0.4-0.5%; ~200 salvos within 50 yd of Salt Lake City, 4-5 hits | **manoeuvre: 3-10x fewer hits against an energetic evader at long range** (`evasion-history.md` §5) |
+| WWII optical and radar | USN 1944 study (practice), LRBP 1932-33, North Cape, Washington at night | 32.7 / 10.5 / 2.7% at 10 / 20 / 30 kyd; 4.4% at ~30 kyd; ≥3%; 12-27% at 8.4 kyd | the later cuts |
+| Light guns at fast boats | 5" against a 30-40 kn boat | 0.5-2% a round | small, agile targets |
+| Time to first hit | practice | hits from salvo 2-5 (Tennessee salvo 4, 3 min 42 s at 19 kyd) | fire discipline (F6) |
+
+**What this predicts against today's model** (to be measured in F1, not assumed): every level today has a
+true-course tracker that never loses its rates to own ship's turns, so it's too good against manoeuvring targets and
+in own-ship turns, worst for the plot-and-clock era; and firing at every reload spends shells before the bracket is
+found. Expect hit rates against zigzagging and circling targets to fall well below today's, toward the evasion cases'
+3-10x, and the early levels to fall furthest.
 
 ## The contracts
 
@@ -121,29 +156,39 @@ What moves from the settings' level row onto the class and the design (`fire-con
    floor uses them in this pass, the tactics in the AI's passes.
 10. **Seeing further** (F4): with the masts and tops right, sighting takes the new heights, so taller ships see and are
     seen further; its anchors re-run on them.
+11. **History is the yardstick** (the principles, "The yardstick"): hit rates are judged against the historical
+    record, not against today's model or the reference code; a large departure, above all against manoeuvring targets,
+    is expected and wanted.
 
 ## The steps
 
 Each is a session or a few, opens with the usual check of the code, ends with something to run and look at, and
 updates this doc and `fighting.md`.
 
-### F0 Parity: the fire-control unit behind the old numbers
+### F0 The fire-control unit (a refactor)
 
 - `GunnerySystem` reads a battery's `FcUnit`, `ComputerRow`, `MountTechRow` and instruments, compiled for now from
   today's data through the placeholder (the level row's numbers moved onto the rows). `GunneryLevels` stays only as the
   presets' source.
 - **One target a director:** a director and its computer hold one target; a second battery on another target takes the
   next free control (after control, a top), else local control.
-- **Checked:** `duel` and the scenarios identical, hashes unchanged (except where one-target-a-director bites, reported).
+- **Checked:** `duel` and the scenarios identical, hashes unchanged, which proves the refactor (one target a director is
+  a model change: its effect reported on its own, against the record).
 
 ### F1 The benches first
 
 - `duel` gains target and own policies (steady, zigzag ±amp every period, circle at a rate from a time, chase the last
   splash), weather (visibility, haze, night), `--fit PRESET` and the design's own fit, and prints settle and recovery.
-- `shipgen fc-ladder`, `fc-converge`, `fc-history`: the research's tables 5 (settling, recovery from a 45° turn), 6 (the
-  ladder by weather), 11 and 12 (zigzag and circles) and §11 (the history cases), the same cases run through
-  `fire_control_ref.py` beside them, as 4.2b did.
-- **The baseline:** today's model through all of it, recorded here, so every later step has a before.
+- `shipgen fc-history`: the yardstick's cases as scenarios of their own (the guns, the fit, the range, the weather, the
+  target's behaviour as the record describes it: steady, zigzagging, turning away, chasing salvos), printed beside the
+  record's band. **This is the bench every later step answers to.**
+- `shipgen fc-converge`, `fc-ladder`: the mechanisms alone (the research's tables 5, 6, 11 and 12: settling, recovery
+  from a 45° turn, zigzag and circles), with `fire_control_ref.py` run on the same cases beside them, to check each
+  tracker fails where its machine failed. Its hit rates are not targets.
+- **Where today's model stands:** all of it run once and recorded here against the record, so the size of the
+  departure each step makes is visible. Not a bound.
+- **The kept tests** that pin today's numbers (`GunneryTests`: level 3 at 2.5-8%, the pairs within ×2 of the reference)
+  are rewritten to the yardstick's bands as the steps that change them land.
 
 ### F2 The trackers by computer (the prediction logic)
 
@@ -157,9 +202,13 @@ updates this doc and `fighting.md`.
 - **Manoeuvre detection** (`ca`, `ct`): two large surprises in a row open the filter (the Mk 1A's "target just turned").
 - **The eye-estimate prior** (§5.2): course and speed by eye seed the track, as the synthetic method did; the picture's
   estimate floors it as today.
-- **Anchors:** settled rate error and turn recovery by tracker within the research's bands (Dreyer and plot 2-4 min,
-  AFCT and Mk 8 optical 1-2, auto-track 15-30 s, digital 5-15); the circle's standing error (AFCT ~700 yd, Mk 8 with
-  radar ~300, digital ~20); Pollen beats Dreyer by about 3x in settled rate. No allocation; the cost a battery-second.
+- **Anchors:** turn recovery by tracker within the research's sourced bands (`computing.md` §4, §8: Dreyer and the
+  Japanese plot 2-4 min, AFCT and Mk 8 optical 1-2, auto-track 15-30 s, digital 5-15); the record's own-turn cases (USN
+  1927-28: 20-30° turns at ~25 kyd put the aim ~400 yd off and nothing hit; California 1941: 212 yd of deflection after
+  a 150° turn); against a manoeuvring target the hit rate falls toward the yardstick's evasion cases. As mechanism checks
+  against the reference (not targets): a rate clock drifts on a crossing target and a true-course plot doesn't; a
+  straight-line machine keeps a standing error on a circle and a turn filter doesn't. No allocation; the cost a
+  battery-second.
 
 ### F3 Shipgen: fire control as tech blocks
 
@@ -175,9 +224,9 @@ updates this doc and `fighting.md`.
 - **The catalogue:** `shipgen templates` writes `Content/Templates/fire-control.json` and
   `docs/shipgen/fire-control-templates.md` from the research's tiers (O1-O4, R1-R5, C0-C6, M0-M4) and its named systems
   (Dumaresq and Vickers clock, Dreyer Mk I-V, Argo, AFCT, Type 92, Ford Mk 8, Mk 1A, Mk 86); the presets are named
-  combinations matching `LEVELS`.
-- **`shipgen upgrade`** moves the 71 designs onto blocks that reproduce their level today (parity), then a second commit
-  gives each its navy's and year's real fit where the research has it.
+  combinations standing for the reference's levels, as labels, their numbers whatever the record calibrates (F11).
+- **`shipgen upgrade`** moves the 71 designs onto blocks: first the same fit in the new format (a format move, proved by
+  identical numbers), then a second commit gives each its navy's and year's real fit where the research has it.
 - `DesignerPlaceholders.FireControl` and `RangefinderMagnification` are deleted; `ShipDesign.Version` bumps; goldens
   moved deliberately, one per commit.
 
@@ -370,9 +419,11 @@ only where this plan needs it (F6's floor); the tactics that read it are the AI'
 
 ### F11 Calibration
 
-The whole chain against the record (§11, `dispersion-and-hits.md` §5): Tsushima, Jutland by squadron, Dogger Bank,
-Denmark Strait, the 1932 LRBP, the 1944 study, North Cape, Guadalcanal, Komandorski. Kept tests with wide bands, the
-ladder's order, local control at 60-70% of director fire by day. The record's combat factor (1.5) stays one number;
+The whole chain against the yardstick (`fc-history`), the first game's cases first: Santiago, the Yellow Sea, Tsushima,
+the 1912 trial, Dogger Bank, the Falklands, Jutland by squadron; then the later ones as checks. Kept tests with the
+yardstick's bands: the cases' ordering (Tsushima over the Yellow Sea, the Germans over the British at Jutland, a
+steady target over an evading one by 3-10x at long range), director fire over independent laying, local control at
+60-70% of director fire by day. The record's combat factor (1.5) stays one number;
 tuning for gameplay waits for the balance pass, as the damage plan's did.
 
 ### F12 The designer's Fire control tab
