@@ -24,6 +24,9 @@ public sealed class DesignSession : IDisposable
 
     public string Path => designs[Index];
 
+    /// <summary>The file of design i (<see cref="Names"/>' order).</summary>
+    public string PathOf(int i) => designs[i];
+
     /// <summary>The design now, and the file it came from (null: new or from outside the folder).</summary>
     public Design? Design { get; private set; }
     public string? DesignPath { get; private set; }

@@ -110,6 +110,10 @@ public sealed class DamageSystem : IWorldSystem
     /// <summary>The last hit's own path (tools: it's overwritten by the next hit).</summary>
     public HitPath LastPath => path;
 
+    /// <summary>A trace the terminal walk tells each plate of a shell's hit (tools: the hitbox viewer's shot; not world
+    /// state, null in play).</summary>
+    public TerminalTrace? Trace { get; set; }
+
     // ------------------------------------------------------------------ commands
 
     /// <summary>A side's propellant: how readily its magazines go up, times the settings' chances (1 by default; the
@@ -383,7 +387,7 @@ public sealed class DamageSystem : IWorldSystem
 
             bender.Set(bearings, n, water);
             var lots = lotStream.Derive((ulong)hit.Ship);
-            t = Terminal.Resolve(cls, hit, path, bender, lots, settings, ref rng, k);
+            t = Terminal.Resolve(cls, hit, path, bender, lots, settings, ref rng, k, Trace);
             e = Effects.Apply(cls, k, hit, path, t, settings, propellant[ship.Side], ref rng);
         }
 

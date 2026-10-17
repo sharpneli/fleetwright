@@ -141,22 +141,7 @@ public sealed class HitPath
                 CrossingKind.CellIn or CrossingKind.CellOut => c.CellId(x.Index),
                 _ => "",
             };
-            string plate = x.Plate switch
-            {
-                PlateKind.None => "",
-                PlateKind.SideArmour => c.SidePlateId(x.Index),
-                PlateKind.ArmourDeck => $"armour deck on {c.DeckId(c.ArmourDecks[x.Index].Deck)}",
-                PlateKind.Grating => $"grating in the armour deck on {c.DeckId(c.ArmourDecks[x.Index].Deck)}",
-                PlateKind.ArmourBulkhead => c.ArmourBulkheadId(x.Index),
-                PlateKind.Inclined => c.InclinedId(x.Index),
-                PlateKind.Deck => $"deck {c.DeckId(x.Index)}",
-                PlateKind.Bulkhead => $"bulkhead {c.BulkheadId(x.Index)}",
-                PlateKind.HullSide => "hull side",
-                PlateKind.HullEnd => "hull end",
-                PlateKind.HullDeck => "hull deck",
-                PlateKind.Backing => $"backing of {c.SidePlateId(x.Index)}",
-                _ => x.Plate.ToString(),
-            };
+            string plate = PlateName(c, x);
             if (x.Plate != PlateKind.None)
                 plate += string.Format(inv, " {0:0.#} mm{1}", x.Mm, c.Material(x.Material) is { } m ? " " + m : "");
             sb.AppendLine(string.Format(inv, "  {0,7:0.00} m  {1,-8} {2,-28} {3,-44} ({4:0.00}, {5:0.00}, {6:0.00})", x.T, x.Kind, what, plate, x.Point.X,
@@ -164,6 +149,26 @@ public sealed class HitPath
         }
         return sb.ToString();
     }
+
+    /// <summary>A crossing's plate in words: the belt row, the armour deck it's on, the turret's face, and so on ("" for
+    /// none).</summary>
+    public static string PlateName(ShipClass c, in Crossing x) =>
+        x.Plate switch
+        {
+            PlateKind.None => "",
+            PlateKind.SideArmour => c.SidePlateId(x.Index),
+            PlateKind.ArmourDeck => $"armour deck on {c.DeckId(c.ArmourDecks[x.Index].Deck)}",
+            PlateKind.Grating => $"grating in the armour deck on {c.DeckId(c.ArmourDecks[x.Index].Deck)}",
+            PlateKind.ArmourBulkhead => c.ArmourBulkheadId(x.Index),
+            PlateKind.Inclined => c.InclinedId(x.Index),
+            PlateKind.Deck => $"deck {c.DeckId(x.Index)}",
+            PlateKind.Bulkhead => $"bulkhead {c.BulkheadId(x.Index)}",
+            PlateKind.HullSide => "hull side",
+            PlateKind.HullEnd => "hull end",
+            PlateKind.HullDeck => "hull deck",
+            PlateKind.Backing => $"backing of {c.SidePlateId(x.Index)}",
+            _ => x.Plate.ToString(),
+        };
 
     /// <summary>The point at T along the path (along its legs once it's bent).</summary>
     public P3 At(double t)
@@ -249,6 +254,18 @@ public sealed class HitPath
             else if (x.Kind == CrossingKind.CellOut && x.Index == cell)
                 cell = -1;
         return cell;
+    }
+
+    /// <summary>This path made a copy of another, its legs and crossings (tools keeping a hit's path: it may allocate).</summary>
+    public void CopyFrom(HitPath p)
+    {
+        if (items.Length < p.count)
+            items = new Crossing[p.items.Length];
+        p.items.AsSpan(0, p.count).CopyTo(items);
+        (Start, End, Length, count, Overflowed, legs) = (p.Start, p.End, p.Length, p.count, p.Overflowed, p.legs);
+        p.legT.AsSpan(0, legs).CopyTo(legT);
+        p.legAt.AsSpan(0, legs).CopyTo(legAt);
+        p.legDir.AsSpan(0, legs).CopyTo(legDir);
     }
 
     /// <summary>Empty, for the segment start to end (a query that didn't come near the ship).</summary>

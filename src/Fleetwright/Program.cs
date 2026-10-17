@@ -77,6 +77,10 @@ public static unsafe class Program
             {
                 hitRay = true;
             }
+            else if (arg.StartsWith("-hitshot="))   // the hitbox viewer fires a shell at start: X,Y,Z,RANGE_KM,ASPECT[,BATTERY[,KIND]][,at=S]
+            {
+                HitView.HitboxScene.DevShot = arg.Substring("-hitshot=".Length);
+            }
             else if (arg == "-new")   // the designer starts from the empty hull
             {
                 newDesign = designerFlags = true;

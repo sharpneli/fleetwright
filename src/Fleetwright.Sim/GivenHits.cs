@@ -515,7 +515,7 @@ public static class GivenHits
 
     /// <summary>A shell's flight at a range, in the target's frame from an aspect (degrees off her bow it comes from): its
     /// direction, falling, and its fall and striking speed.</summary>
-    static (P3 Dir, (double Range, double Tof, double FallDeg, double StrikeMs) Fall) Flight(in ShellTypeRow shell, double maxElevationDeg, double rangeM, double aspectDeg)
+    public static (P3 Dir, (double Range, double Tof, double FallDeg, double StrikeMs) Fall) Flight(in ShellTypeRow shell, double maxElevationDeg, double rangeM, double aspectDeg)
     {
         var table = new BallisticTable(BallisticKey.Of(shell, maxElevationDeg));
         double e = table.ElevationFor(rangeM, 10);
@@ -564,7 +564,7 @@ public static class GivenHits
     }
 
     /// <summary>The first crossing into the ship: its hull or a part.</summary>
-    static int First(HitPath path)
+    internal static int First(HitPath path)
     {
         var xs = path.Crossings;
         for (int i = 0; i < xs.Length; i++)

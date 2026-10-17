@@ -134,9 +134,10 @@ public struct TerminalResult
 public static class Terminal
 {
     /// <summary>The hit's path through its class (traced from just outside the hit point along the shell's flight) to
-    /// its outcome; the bender bends the path where the shell turns or glances.</summary>
+    /// its outcome; the bender bends the path where the shell turns or glances. A trace, if given, is told each plate
+    /// and where the fuze started.</summary>
     public static TerminalResult Resolve(ShipClass c, in Hit hit, HitPath path, PathBender bender, in RandomStream lots, SimSettings s,
-        ref RandomStream r, ShipCondition? k = null)
+        ref RandomStream r, ShipCondition? k = null, TerminalTrace? trace = null)
     {
         var shell = hit.Shell;
         var res = new TerminalResult
@@ -160,6 +161,7 @@ public static class Terminal
         res.Underwater = hit.WaterRunM > 0;
         v = WaterRun.Speed(v, hit.WaterRunM, decayM);
         res.StrikeMs = v;
+        trace?.Begin(v);
         bool waterFuze = res.Underwater && WaterRun.FuzeStarts(shell, s);
 
         // the cap: on (a diving shell's cap head comes off on the water), or lost at a plate, with the gap behind it in
@@ -191,6 +193,7 @@ public static class Terminal
                         // started on the water: running at the hull, with what's left of its delay
                         started = true;
                         Start(ref res, ref r, shell, s, x.T, v, i, WaterRun.TimeS(hit.SpeedMs, hit.WaterRunM, decayM), ref burstT, ref force);
+                        trace?.Fuzed(x.T, i, FuzeCause.Water);
                     }
                     break;
                 case CrossingKind.WaterIn when inside:
@@ -198,6 +201,7 @@ public static class Terminal
                 case CrossingKind.CellIn when !started && !nose && IsMachinery(c, x.Index) && r.NextDouble() < s.MachineryArmChance:
                     started = true;
                     Start(ref res, ref r, shell, s, x.T, v, i, 0, ref burstT, ref force);
+                    trace?.Fuzed(x.T, i, FuzeCause.Machinery);
                     break;
             }
             // a nose fuze fires on anything solid it enters (a funnel, an open mount, a rudder), plated or not
@@ -212,6 +216,16 @@ public static class Terminal
                 bool punches = t <= s.HePenCalibres * calMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(ob)), 1e-3));
                 if (!punches && t > 0)
                     (res.PlateMs, res.PlateU) = (v, v / LimitMs(t, calMm, massKg, ob));
+                if (trace != null)
+                {
+                    trace.Add(new PlateStep
+                    {
+                        Crossing = i, T = x.T, Point = x.Point, Mm = x.Mm, EffectiveMm = t, ObliquityDeg = ob, InMs = v,
+                        LimitMs = t > 0 ? LimitMs(t, calMm, massKg, ob) : 0, Quality = 1, OutMs = punches ? v : 0,
+                        Call = punches ? PlateCall.NoseInside : PlateCall.NoseOutside,
+                    });
+                    trace.Fuzed(x.T, i, FuzeCause.Nose);
+                }
                 return Nose(ref res, ref r, shell, s, x.T, i, punches, v);
             }
 
@@ -232,14 +246,20 @@ public static class Terminal
                 te = FaceHardMm(te, shell, ob, shatter, s);
             }
             double vl = LimitMs(te, calMm, massKg, ob) * quality;
+            bool decapped = false;
             if (cap != Cap.None && (hard || Decaps(cap, td, ob, ref r)))
             {
                 // the cap's knocked off, whether the plate holds or not
                 (capOffT, capGapM, cap) = (x.T, CapGapCalibres(cap, ob) * calMm / 1000, Cap.None);
                 massKg *= 1 - shell.CapShare;
-                res.Decapped = true;
+                res.Decapped = decapped = true;
             }
             res.Shattered |= shatter;
+            var step = trace == null ? default : new PlateStep
+            {
+                Crossing = i, T = x.T, Point = x.Point, Mm = x.Mm, EffectiveMm = te, ObliquityDeg = ob, InMs = v, LimitMs = vl, Quality = quality,
+                Decapped = decapped,
+            };
             if (!shatter && Glances(v, te, calMm, massKg, ob, s, quality))
             {
                 // glanced: the plate soaks up its motion across it (a dent), whether it would have got through or not, and
@@ -250,8 +270,14 @@ public static class Terminal
                 {
                     started = true;
                     Start(ref res, ref r, shell, s, x.T, v * Math.Sin(double.DegreesToRadians(ob)), i, 0, ref burstT, ref force);
+                    trace?.Fuzed(x.T, i, FuzeCause.Plate);
                 }
                 v *= Math.Sin(double.DegreesToRadians(ob));
+                if (trace != null)
+                {
+                    (step.Call, step.OutMs) = (PlateCall.Glanced, v);
+                    trace.Add(step);
+                }
                 dir = Skid(dir, x.Normal, s.GlanceLiftDeg);
                 turned = false;
                 bender.Bend(c, path, i + 1, x.T, dir);
@@ -266,6 +292,11 @@ public static class Terminal
                 // if the plate's enough, and then it bursts on the plate's face
                 double u = v / vl;
                 (res.Plate, res.StopT, res.PlateMs, res.PlateU) = (i, x.T, v, u);
+                if (trace != null)
+                {
+                    step.Call = u >= mat.HoledU ? PlateCall.Holed : PlateCall.Stopped;
+                    trace.Add(step);
+                }
                 if (u >= mat.HoledU)
                 {
                     (res.Outcome, res.Burst, res.BurstT, res.StopT, res.BurstMs) = (Outcome.Holed, BurstKind.None, double.NaN, x.T + 0.5, 0);
@@ -280,6 +311,7 @@ public static class Terminal
                 if (StartsOn(shell, mat.SteelMm(x.Mm), ob, hard, x.T, ref impulse, ref impulseT, s))
                 {
                     Start(ref res, ref r, shell, s, x.T, 0, i, 0, ref burstT, ref force);
+                    trace?.Fuzed(x.T, i, FuzeCause.Plate);
                     if (res.Outcome != Outcome.Dud)
                         (res.Burst, res.BurstT, res.Force) = (BurstKind.Outside, Math.Max(x.T - 0.3, 0), s.BurstOutsideK * force);
                 }
@@ -299,6 +331,12 @@ public static class Terminal
                 dir = TurnToward(dir, x.Normal, df);
                 (turned, turnT) = (true, x.T);
                 res.TurnDeg += df;
+                step.TurnDeg = df;
+            }
+            if (trace != null)
+            {
+                (step.Call, step.OutMs) = (shatter ? PlateCall.Shattered : near ? PlateCall.BrokeUp : inPlate ? PlateCall.BurstInPlate : PlateCall.Through, v);
+                trace.Add(step);
             }
             if (shatter || near)
             {
@@ -317,6 +355,7 @@ public static class Terminal
             {
                 started = true;
                 Start(ref res, ref r, shell, s, x.T, v, i, 0, ref burstT, ref force);
+                trace?.Fuzed(x.T, i, FuzeCause.Plate);
             }
         }
         // a turn at the path's last plates: bent there all the same, so the line beyond (a burst out there) is the shell's

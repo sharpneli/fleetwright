@@ -391,6 +391,11 @@ public static class Effects
         }
     }
 
+    /// <summary>A burst's wreck radius, m: parts within it are wrecked or put out of action by distance (cube-root
+    /// scaled by its filler's TNT equivalent, times the root of its force).</summary>
+    public static double WreckRadiusM(in ShellTypeRow shell, double force, SimSettings s) =>
+        s.WreckRadiusK * Math.Cbrt(Math.Max(shell.FillerKg * shell.FillerRe, 0)) * Math.Sqrt(force);
+
     /// <summary>A burst at its point along the path, with its force. Broken (E2): a shell's pieces through a plate it
     /// holed, a weak burst of its fragments at the force's share and nothing else: no blast, no fire; the part they're in takes them, and an enclosed turret or barbette they're in is a flash source.</summary>
     static void Burst(ShipClass c, ShipCondition k, in Hit hit, HitPath path, in TerminalResult t, SimSettings s,
@@ -399,7 +404,7 @@ public static class Effects
         var shell = hit.Shell;
         var xs = path.Crossings;
         var p = path.At(t.BurstT);
-        double force = t.Force, rw = broken ? 0 : s.WreckRadiusK * size * Math.Sqrt(force);
+        double force = t.Force, rw = broken ? 0 : WreckRadiusM(shell, force, s);
         double share = broken ? force : 1;   // the fragments' share of a full burst's
         int cell = -1, part = -1;
         foreach (ref readonly var x in xs)
