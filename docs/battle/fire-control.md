@@ -110,6 +110,13 @@ cases stay as secondary checks so the later cuts don't start from nothing.
 | Light guns at fast boats | 5" against a 30-40 kn boat | 0.5-2% a round | small, agile targets |
 | Time to first hit | practice | hits from salvo 2-5 (Tennessee salvo 4, 3 min 42 s at 19 kyd) | fire discipline (F6) |
 
+**A record holds only where it was made** (the user, 2026-10-17). Each case is matched at its recorded range,
+weather, target and behaviour, and nowhere else: a 1.4% at 16-18 kyd says nothing about 8 kyd. Away from the recorded
+distances the hit rate is whatever the model gives, and that's expected to climb steeply as the range closes (the danger
+space widens, every error shrinks with the range, rangefinding with its square) and fall further out. What's checked
+between and beyond the cases is only the shape: hits rise as the range falls, and the trend follows the USN practice
+fit's form, not its level. The bench runs each case at its own range; a sweep in range is for looking, never a band.
+
 **What this predicts against today's model** (to be measured in F1, not assumed): every level today has a
 true-course tracker that never loses its rates to own ship's turns, so it's too good against manoeuvring targets and
 in own-ship turns, worst for the plot-and-clock era; and firing at every reload spends shells before the bracket is
@@ -180,8 +187,8 @@ updates this doc and `fighting.md`.
 - `duel` gains target and own policies (steady, zigzag ±amp every period, circle at a rate from a time, chase the last
   splash), weather (visibility, haze, night), `--fit PRESET` and the design's own fit, and prints settle and recovery.
 - `shipgen fc-history`: the yardstick's cases as scenarios of their own (the guns, the fit, the range, the weather, the
-  target's behaviour as the record describes it: steady, zigzagging, turning away, chasing salvos), printed beside the
-  record's band. **This is the bench every later step answers to.**
+  target's behaviour as the record describes it: steady, zigzagging, turning away, chasing salvos), each at its recorded
+  range, printed beside the record's band. **This is the bench every later step answers to.**
 - `shipgen fc-converge`, `fc-ladder`: the mechanisms alone (the research's tables 5, 6, 11 and 12: settling, recovery
   from a 45° turn, zigzag and circles), with `fire_control_ref.py` run on the same cases beside them, to check each
   tracker fails where its machine failed. Its hit rates are not targets.
