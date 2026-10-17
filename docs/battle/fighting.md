@@ -1041,6 +1041,9 @@ numbers before and after against the anchors. The list, by link, with where the 
     has it until then);
   - the Earth's turning corrected in the solution by the later computers only, never the Great War's;
   - point-blank laying by sight, and a ladder step scaled to the range.
+
+  Planned in `fire-control.md` (proposed 2026-10-17): fire control as tech blocks in the design, instruments as parts at
+  their real heights, a tracker per kind of computer, fire discipline and spotting by the navy's rules.
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;
   - laying error `√(base² + (τ·ω)²)`;
