@@ -114,6 +114,8 @@ public sealed partial class Layout
     /// some part needs in all; NeedB, the beam some part needs. Short says what more would fix the rest.</summary>
     public double? Deficit;
     public double NeedMid, NeedL, NeedB;
+    /// <summary>The end groups' main turrets. Set by BuildLayout once the main turrets stand; read by the deck
+    /// secondaries, level 1 and the deckhouse levels (LayoutLevels), which keep out of their way.</summary>
     public List<Mount> EndMounts = [];
     public OrderedDictionary<string, List<string>> Smoke = new(StringComparer.Ordinal);
     public CrewReport? Crew;

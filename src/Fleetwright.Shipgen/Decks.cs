@@ -79,31 +79,64 @@ public sealed record BridgePlan(long Level, double Floor, long Need, long Tower,
 public sealed record Windage(double AreaM2, double ZM);
 
 /// <summary>Layout facts: what the layout found that the physics and the later passes need (Layout.Geo). Before a
-/// layout exists navarch gets a bare Geo, so the before-layout defaults live here.</summary>
+/// layout exists navarch gets a bare Geo, so the before-layout defaults live here.
+/// <para>When it is read: each layout pass makes a new Layout and so a new Geo, filled in as the layout goes (each field
+/// below says by what). ShipDesign.Solve hands the last pass's Geo to the next Navarch.Solve, so the weights are solved
+/// on the previous layout's facts; the final full pass solves once more on its own. Two readers see a half-made Geo:
+/// PlanMachinery reads the armour (ArmourGeometry) while only EndHalfWidths is set (the citadel and steering take their
+/// defaults), and Build patches MagazineRooms in after the interior and solves again. "The layouts": every style's
+/// (BuildLayout's stages in Layout/Warship/, CarrierStyle, MerchantStyle, the planing style in Styles/Warship.cs).</para></summary>
 public sealed class Geo
 {
+    /// <summary>How far the whole arrangement moved aft (-) or forward (+) to trim the ship. Set by the layouts (EndsPlan
+    /// for the warship); read by the casemates' centre (PlaceCasemates) and the report (layout_shift_m).</summary>
     public double Shift;
+    /// <summary>The machinery's stretch (boiler and engine rooms, not the magazines). Set by the layouts (MiddlePlaced,
+    /// AddMachineryRooms); read by the armour (a belt over the machinery only), Propulsion, Subdivision and the
+    /// styles.</summary>
     public (double X0, double X1)? Machinery;
+    /// <summary>The machinery's middle, where the plant's and fuel's weights stand (MachineryMid). Set with Machinery
+    /// (and by the warship's plan pass, between the end groups); read by Navarch and Crew through MachineryMid.</summary>
     public double? MachineryX;
+    /// <summary>The plant's rooms and spaces as planned for the hull. Set by PlanMachinery, first thing in every layout;
+    /// read by the layouts (the middle's segments, magazine zones), Subdivision, Crew, HullWeight, Hitbox,
+    /// SubmergedTubes and ShipDesign.</summary>
     public PlantPlan? Plant;
+    /// <summary>How many funnels, over which boiler groups, and how far they may trunk. Set by PlanFunnels; read by the
+    /// warship's middle row and funnel placing, and the report.</summary>
     public FunnelPlan? FunnelPlan;
+    /// <summary>How far the funnels' smoke reaches (Powerplant.SmokeReach): a director in it is fouled. Set by
+    /// PlanFunnels; read by FireControl.</summary>
     public double SmokeReach;
+    /// <summary>The citadel's stretch (CitadelSpan: the middle 0.6 L without it). Set by the layouts (SetCitadel; the
+    /// warship's plan pass sets it from the end groups); read by the armour (ArmourGeometry), Subdivision, Crew and
+    /// SubmergedTubes.</summary>
     public (double X0, double X1)? Citadel;
+    /// <summary>The steering gear's stretch (SteeringSpan: Propulsion's rule without it) and the beam over it. Set by
+    /// AddSteering; read by the armour (the steering box) and Propulsion.</summary>
     public (double X0, double X1)? Steering;
     public double? SteeringBeam;
     /// <summary>The planform's half-width at the stern and the stem: an end belt run to an end with a face there (a
-    /// transom) closes round it.</summary>
+    /// transom) closes round it. Set by the Layout.Hull setter, before anything else; read by the armour.</summary>
     public (double Aft, double Fore)? EndHalfWidths;
+    /// <summary>The raised stretches of hull (the layout's own list, shared). Set by AddRaised; read by Navarch (hull
+    /// structure), the armour (raised decks) and the turrets standing on them.</summary>
     public List<RaisedStretch> Raised = [];
+    /// <summary>What the wind sees from abeam. Set by FinishLayout, the layout's last step; read by Navarch
+    /// (Stability).</summary>
     public Windage? Windage;
+    /// <summary>The bridge's level and what it must see over. Set by the warship's ControlPlan; read by the report.</summary>
     public BridgePlan? Bridge;
+    /// <summary>A merchant's holds. Set and read by MerchantStyle only.</summary>
     public List<(double X0, double X1)>? Holds;
     /// <summary>The magazines as Ordnance.Stow put them (heights above the main deck): the inner bulkhead, the belt's zones
-    /// and the magazine boxes go by them.</summary>
+    /// and the magazine boxes go by them. Set by Stow (AddMagazines and the styles' own stowing), a box at a time; read
+    /// through Magazines, and by Build to tell whether the rooms differ.</summary>
     public List<(double X0, double X1, double HalfWidth, double Base, double Top)>? MagazineBoxes;
     /// <summary>The magazine rooms as the subdivision gave them their cells (Subdivision.MagazineRooms), once a build has
     /// one: a short magazine takes its whole section, so a room can be longer than Stow made it. The zones, the inner
-    /// bulkhead's and the boxes' weights go by these when set (ShipDesign.Build solves once more with them).</summary>
+    /// bulkhead's and the boxes' weights go by these when set (ShipDesign.Build solves once more with them). Set by
+    /// Build only, after the last layout pass; read through Magazines.</summary>
     public List<(double X0, double X1, double HalfWidth, double Base, double Top)>? MagazineRooms;
 
     /// <summary>The magazines as the armour goes by them: the rooms' cells when known, else as Stow put them.</summary>
@@ -111,6 +144,8 @@ public sealed class Geo
 
     /// <summary>The magazines' stretches along the hull.</summary>
     public IEnumerable<(double X0, double X1)> MagazineSpans => Magazines.Select(m => (m.X0, m.X1));
+    /// <summary>A carrier's magazine and aviation fuel, where their weights stand. Set and read by CarrierStyle
+    /// only.</summary>
     public (double X, double Z)? Magazine;
     public (double X, double Z)? Avgas;
 

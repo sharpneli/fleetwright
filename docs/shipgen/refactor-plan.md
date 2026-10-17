@@ -78,6 +78,11 @@ A short note on each `Geo` field (and the `Layout` fields later stages read): wh
 when it can be null. Uses item 1's stage names. Comments only, so byte-identical by construction (the snapshot is run
 anyway).
 
+**Done 2026-10-17**: every `Geo` field says what sets it and what reads it, and the class says when it is read (the
+next solve reads the previous pass's Geo; PlanMachinery reads a half-made one; Build patches MagazineRooms in last).
+`Layout.EndMounts` too. The other `Layout` fields read across stages (Deficit, NeedMid, NeedL, NeedB, Short) already
+say so. Byte-identical.
+
 ## 4. Enums for the small closed sets
 
 Deck extents, compartment kinds and mount kinds: today strings, where a typo compiles and falls through to a default
