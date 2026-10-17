@@ -24,7 +24,7 @@ public enum CombatEvent : byte
 
 /// <summary>What a hit did, as the log tells it.</summary>
 [Flags]
-public enum HitEffect : ushort
+public enum HitEffect : uint
 {
     None = 0,
     Destroyed = 1,
@@ -50,6 +50,10 @@ public enum HitEffect : ushort
     /// <summary>A belt that held leaked into the space behind it (E4), and fouled a boiler or engine room's feed.</summary>
     Leak = 16384,
     Feed = 32768,
+    /// <summary>A plate that held shook what was near it (E4): gear out for a while (power, a director's gyro, a
+    /// rangefinder); the whole ship's power cascading out.</summary>
+    Shock = 65536,
+    Blackout = 131072,
 }
 
 /// <summary>A line of the combat log: when, what, who fired (an entity) with which battery, at whom, and a count or a
@@ -98,7 +102,9 @@ public sealed class CombatLog(int capacity)
             if (e.Kind == CombatEvent.Hit)
             {
                 h.Add(e.Part);
-                h.Add((int)e.Outcome | (int)e.Effect << 8 | (int)e.Source << 24);
+                h.Add((int)e.Outcome | (int)((uint)e.Effect & 0xFFFF) << 8 | (int)e.Source << 24);
+                if ((uint)e.Effect > 0xFFFF)
+                    h.Add((int)((uint)e.Effect >> 16));   // E4's shock and on, beside the first sixteen (so logs before hash as they did)
             }
         }
     }

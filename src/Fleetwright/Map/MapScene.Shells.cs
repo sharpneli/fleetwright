@@ -587,6 +587,7 @@ public sealed partial class MapScene
         (HitEffect.Magazine, "MAGAZINE"), (HitEffect.Broken, "BROKEN IN TWO"), (HitEffect.Steering, "steering"), (HitEffect.Power, "power cut"), (HitEffect.Jammed, "turret jammed"),
         (HitEffect.Stiff, "turret stiff in train"), (HitEffect.GunOut, "a gun out"), (HitEffect.Sights, "sights out"), (HitEffect.Stunned, "crew stunned"),
         (HitEffect.Leak, "belt plate leaking"), (HitEffect.Feed, "feed water fouled"),
+        (HitEffect.Blackout, "POWER LOST SHIP-WIDE"), (HitEffect.Shock, "gear shaken out"),
         (HitEffect.Destroyed, "wrecked"), (HitEffect.Disabled, "put out of action"), (HitEffect.Damaged, "damaged"), (HitEffect.Holed, "holed"),
         (HitEffect.Fire, "fire"),
     ];

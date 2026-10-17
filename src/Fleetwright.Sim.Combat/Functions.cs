@@ -46,10 +46,10 @@ public static class Functions
                     k.MountWorks[f.Index] = v > 0 && !k.Has(c.Mounts[f.Index].Component, PartFlags.Jammed) && k.Guns(f.Index) > 0;
                     break;
                 case FunctionKind.Director:
-                    k.DirectorWorks[f.Index] = v > 0;
+                    k.DirectorWorks[f.Index] = v > 0 && k.DirectorDown[f.Index] == 0;
                     break;
                 case FunctionKind.Eye:
-                    k.EyeWorks[f.Index] = v > 0;
+                    k.EyeWorks[f.Index] = v > 0 && k.EyeDown[f.Index] == 0;
                     break;
                 case FunctionKind.ShaftLine:
                     shafts += v;

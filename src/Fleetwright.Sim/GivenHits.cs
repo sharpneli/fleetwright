@@ -38,6 +38,9 @@ public static class GivenHits
         /// <summary>E4: the hits a belt held (stopped, glanced off, burst on), its leaks by regime
         /// (<see cref="LeakRegime"/>, None: held tight), the feeds they fouled.</summary>
         public int BeltHeld, Feeds;
+        /// <summary>E4: the hits a belt, barbette, turret or conning tower held (the shock's), those whose shock put gear
+        /// out, and the ship-wide blackouts.</summary>
+        public int ShockHeld, Shocks, Blackouts;
         public readonly int[] Leaks = new int[Enum.GetValues<LeakRegime>().Length];
         /// <summary>E3: the hits whose plate threw spall off its back.</summary>
         public int Spalls;
@@ -180,6 +183,11 @@ public static class GivenHits
                 rep.Jams += fx.Jammed ? 1 : 0;
                 rep.Stuns += fx.Stunned ? 1 : 0;
                 int held = t.Glance >= 0 ? t.Glance : t.Outcome is Outcome.Defeated or Outcome.BurstOutside ? t.Plate : -1;
+                var hp = held >= 0 ? w.Damage.LastPath.Crossings[held].Plate : PlateKind.None;
+                bool shaken = hp is PlateKind.SideArmour or PlateKind.Barbette or >= PlateKind.TurretFace and <= PlateKind.TurretRoof ||
+                              hp == PlateKind.PartArmour && target.Components[w.Damage.LastPath.Crossings[held].Index].Kind == ComponentKind.ConningTower;
+                if (shaken)
+                    (rep.ShockHeld, rep.Shocks, rep.Blackouts) = (rep.ShockHeld + 1, rep.Shocks + (fx.Shock ? 1 : 0), rep.Blackouts + (fx.Blackout ? 1 : 0));
                 if (held >= 0 && w.Damage.LastPath.Crossings[held].Plate == PlateKind.SideArmour)
                 {
                     rep.BeltHeld++;

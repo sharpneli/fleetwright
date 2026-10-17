@@ -111,6 +111,9 @@ public sealed class ShipCondition
     public MountHarm[] Mount = [];
     /// <summary>Each node's outage while it's <see cref="PartFlags.Down"/>: until when, world ms.</summary>
     public long[] DownUntil = [];
+    /// <summary>Each director's and eye's outage of its own (E4's shock: a director's gyro, a rangefinder knocked out of
+    /// adjustment), not its part's: until when, world ms (0: none).</summary>
+    public long[] DirectorDown = [], EyeDown = [];
     /// <summary>When the next timed outage ends, world ms (-1: none does; one for the battle never ends), and the
     /// damage system's event for it: its generation and when it's set for.</summary>
     public long NextClearMs = -1, ClearAtMs = -1;
@@ -174,11 +177,15 @@ public sealed class ShipCondition
             TubeWorks = new bool[c.Tubes.Length];
             Mount = new MountHarm[c.Mounts.Length];
             DownUntil = new long[c.NodeCount];
+            DirectorDown = new long[c.Directors.Length];
+            EyeDown = new long[c.Eyes.Length];
         }
         else
         {
             Array.Clear(Mount);
             Array.Clear(DownUntil);
+            Array.Clear(DirectorDown);
+            Array.Clear(EyeDown);
             Array.Clear(State);
             Array.Clear(Flags);
             Array.Clear(WaterM3);
@@ -241,6 +248,17 @@ public sealed class ShipCondition
         long until = Until(now, ms);
         Flags[node] |= PartFlags.Down;
         DownUntil[node] = Math.Max(DownUntil[node], until);
+        Due(until);
+    }
+
+    /// <summary>A director or an eye out of its own for a while, from now for ms (E4's shock): until then, or later if it
+    /// already was.</summary>
+    public void Out(long[] downs, int i, long now, long ms)
+    {
+        if (ms <= 0)
+            return;
+        long until = Until(now, ms);
+        downs[i] = Math.Max(downs[i], until);
         Due(until);
     }
 
@@ -319,6 +337,7 @@ public sealed class ShipCondition
             else
                 next = Math.Min(next, DownUntil[i]);
         }
+        any |= Clear(DirectorDown, now, ref next) | Clear(EyeDown, now, ref next);
         var mounts = Class.Mounts;
         for (int m = 0; m < Mount.Length; m++)
         {
@@ -337,6 +356,22 @@ public sealed class ShipCondition
             next = Math.Min(next, Later(a.GunUntil, now));
         }
         NextClearMs = next is long.MaxValue ? -1 : next;
+        return any;
+    }
+
+    /// <summary>A row of outages ended by now (zeroed), the next of the rest's end; whether any ended.</summary>
+    static bool Clear(long[] downs, long now, ref long next)
+    {
+        bool any = false;
+        for (int i = 0; i < downs.Length; i++)
+        {
+            if (downs[i] == 0)
+                continue;
+            if (downs[i] <= now)
+                (downs[i], any) = (0, true);
+            else
+                next = Math.Min(next, Later(downs[i], now));
+        }
         return any;
     }
 
@@ -418,6 +453,18 @@ public sealed class ShipCondition
             }
         if (Leaks > 0)
             h.Add(Leaks);
+        for (int i = 0; i < DirectorDown.Length; i++)
+            if (DirectorDown[i] != 0)
+            {
+                h.Add(i);
+                h.Add(DirectorDown[i]);
+            }
+        for (int i = 0; i < EyeDown.Length; i++)
+            if (EyeDown[i] != 0)
+            {
+                h.Add(i + 1000);
+                h.Add(EyeDown[i]);
+            }
         for (int m = 0; m < Mount.Length; m++)
         {
             ref readonly var a = ref Mount[m];

@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E3, E4a and E4b done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E4 done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1416,6 +1416,38 @@ squadrons, and changes `Matchup.cs` with it.
       holes a hit +0-20% (Seydlitz 0.023 → 0.028 m², KGV 0.122 → 0.126); the rest within a point. Matchup identical
       (no leak term). Squadrons' 30 minutes: 179 → 165 hits, Lion lost to her magazine again (Moltke's), Princess Royal
       afloat with 57 hits and 1,411 t in her, hash E961380A9651DA91 → 15B436D6D5FAB7C2.
+  - **E4c done 2026-10-17** (the user's further choices: a ship carries breakers only with director fire control;
+    radar waits for the sim to model it). What it came to:
+    - **The shock** (`Effects.Shock`, 13 §3.4): on a belt, barbette, turret or conning tower that held, each row a draw
+      at its grade's rate × min(1.3, (I/4×10⁵)^0.7), one outage length (13's mixes, `NonPen.Minutes`) for all it
+      reaches. Zones by distance from the hit to a part: A the struck part and what's within 12 m, B within 40 m [EST,
+      the note's 10-15 m and 15-40 m], C the ship.
+      - **Power** (only with director fire control, `NonPen.Electrics`: a battery at a director level; Mikasa trips
+        nothing): local in A (G0 0.50, G1 0.25; 90% 10 s-3 min), a section's in B (0.15, 0.06; 1-5 min, 20% to 20),
+        the ship's cascading out (0.02, 0.008; 90% 1-10 min, 10% 30-90). Mounts down (silent, the user's choice) and
+        directors out while it's off.
+      - **A director's gyro** in A or B (0.12, 0.06; 5-60 min), with director fire control.
+      - **A rangefinder** in A out of adjustment (0.20, 0.12; 50% 5-20 min, 30% 2-4 h, 20% the battle).
+      - **Grades:** G0 the note's 1939-42 column, G1 its 1943- one, G2 and G3 half and a quarter of G1 (`ShockGradeK`).
+      - **Not built (no device yet):** the gyrocompass, radar (the user: with radar), phones and FC circuits, cast iron
+        and gauges. The crew stun row is E4a's.
+    - **Own guns:** each main-battery salvo, at the grade's breaker rate per 20 minutes of fire (G0 0.05, G1 0.02) × the
+      mount's reload, a section's power out round the firing mount (South Dakota's ABT). Radar's own-gun failures wait
+      with radar.
+    - **Directors and eyes** have outages of their own (`DirectorDown`, `EyeDown`), not their part's, so a gyro out
+      doesn't blind the bridge on the same block; they end at E4a's `ClearEvent`. `Settle` (the benches' `--settle`)
+      now ends the outages that run out within its window: settled 30 minutes, KGV under Bismarck is as before E4c but
+      for directors 7.1 → 6.9 of 8.
+    - **Log:** `HitEffect` widened to 32 bits (the log's hash unchanged for the first sixteen): "gear shaken out",
+      "POWER LOST SHIP-WIDE".
+    - **Tests** (`NonPenTests`, 13 §5.3 test 6): KGV (G0) under Bismarck, 1,277 armour holds, 0.011 blackouts a hold,
+      0.32 over 35 holds (band 0.2-0.7; 13's 0.3-0.6); cascades under 10 min 0.90; the G2 battleship has gear out on
+      0.15 of its holds against KGV's 0.49; only ships with director fire control trip.
+    - **Benches, E4b to E4c** (2,000 hits, 10 a ship; outcomes identical): armour holds 16-27% of hits, their shock put
+      gear out on 24-48% of them (Iron Duke, G0 but WWI, 31%; KGV 48%), the ship's power 4-6 times in 2,000 hits; the
+      ships after their hits within the noise. Matchup identical (no shock term). Squadrons' 30 minutes: 165 → 177 hits,
+      Princess Royal and Lion both lost to their magazines, hash 15B436D6D5FAB7C2 → B7714059E8209D6F.
+  - **E4 done.** The matchup has no jam, leak or shock term yet: the balance pass's.
 - **E5 Blast** (11). Open question 1.
   - **Open** (outside the hull, a weather deck, an open mount, a space vented by 0.6·V^⅔ or more): wrecked within
     1.0·W^⅓ (was 1.6), people killed by blast within 1.3·W^⅓, injured to 3.5·W^⅓ as now; the contact hole's `R_hole` as
@@ -1555,7 +1587,7 @@ None blocks a step; each is settled by its step's bench.
 | E1 | S1, P0 | `filler.body`, the material's `fragments` (done) | the burst's pieces, THOR, `frag` bench (done) | fragments |
 | E2 | P4, E1 | — | holed-but-broken, flash (done) | damage |
 | E3 | P4, E1 | the material's `back.big` (done) | spall (done) | damage behind armour |
-| E4 | E0, P1a | — | turret states, belt leaks, armour shock | jams, leaks, outages |
+| E4 | E0, P1a | — | turret states, belt leaks, armour shock (done) | jams, leaks, outages |
 | E5 | E0, E1 | — | open and confined blast, `burst` bench | wreck reach, openings, leaks |
 | E6 | E1, E3, E5 | — | casualties, killed and wounded | crew |
 | E7 | E1, E5, P3 | — | near misses (new hit source), shock | near misses |

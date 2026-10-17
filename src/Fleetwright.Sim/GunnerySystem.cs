@@ -681,6 +681,14 @@ public sealed class GunnerySystem : IWorldSystem
         fc.Salvos++;
         fc.Shells += sv.Shells;
         log.Add(new CombatEntry(now, CombatEvent.Fired, fc.Shooter, fc.Battery, fc.Target, sv.Shells));
+        // the main battery's own shock on its breakers (E4; damage/13 §3.4)
+        if (row.Kind == Battery.Main)
+            for (int j = 0; j < mounts.Length; j++)
+                if (firing[j])
+                {
+                    world.Damage.OwnGuns(world, slot, mounts[j], ref r);
+                    break;
+                }
     }
 
     int AllocateSalvo()

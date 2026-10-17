@@ -42,9 +42,11 @@ public struct EffectsResult
     /// <summary>E4: a belt that held leaked (its regime), and fouled a boiler or engine room's supply.</summary>
     public LeakRegime Leak;
     public bool Feed;
+    /// <summary>E4: the shock put gear out for a while; the whole ship's power cascaded out.</summary>
+    public bool Shock, Blackout;
 
     public readonly bool Changed => Destroyed + Disabled + Damaged > 0 || BreachM2 > 0 || Jammed || Fire || Magazine || Broken ||
-        Turret.Blow != TurretBlow.None || Stunned || Feed;
+        Turret.Blow != TurretBlow.None || Stunned || Feed || Shock;
 }
 
 /// <summary>EFFECTS (docs/battle/fighting.md 4.3a): a port of the effects half of research/simulation/damage-research/
@@ -169,6 +171,10 @@ public static class Effects
             }
             else if (x.Plate == PlateKind.SideArmour)
                 Belt(c, k, path, held, impulse, NonPen.Margin(t.PlateU), water, hit.Ms, s, ref res, ref r);
+            // and the shock through the structure, on a belt, a barbette, a turret or a conning tower (13 §3.4)
+            if (x.Plate is PlateKind.SideArmour or PlateKind.Barbette or >= PlateKind.TurretFace and <= PlateKind.TurretRoof ||
+                x.Plate == PlateKind.PartArmour && c.Components[x.Index].Kind == ComponentKind.ConningTower)
+                Shock(c, k, x.Point, x.Plate == PlateKind.SideArmour ? -1 : x.Index, impulse, hit.Ms, s, ref res, ref r);
         }
 
         // E3: behind a plate that held, the spall off its back: a shell it stopped within its band, or a heavy shell
@@ -194,6 +200,79 @@ public static class Effects
         }
         k.CrewLost += res.CrewLost;
         return res;
+    }
+
+    /// <summary>The shock of a heavy hit that held, through the structure (E4; damage/13 §3.4): by the ship's shock grade
+    /// and the impulse, each row a draw, its outage one length for all it reaches. Power (with director fire control
+    /// only): tripped in zone A (the struck part, and what's within <see cref="SimSettings.ShockZoneAM"/> of the hit), a
+    /// section's in B (within <see cref="SimSettings.ShockZoneBM"/>), the whole ship's cascading out; mounts and directors
+    /// are silent while it's off. A director's gyro in A or B; a rangefinder in A out of adjustment. Gear the sim doesn't
+    /// carry yet (the gyrocompass, radar, phones, cast iron) can't fail.</summary>
+    static void Shock(ShipClass c, ShipCondition k, P3 at, int struck, double impulse, long now, SimSettings s, ref EffectsResult res,
+        ref RandomStream r)
+    {
+        double g = NonPen.ShockK(impulse, s) * s.ShockGradeK[(int)c.ShockGrade];
+        int col = c.ShockGrade == ShockGrade.G0 ? 0 : 1;
+        if (NonPen.Electrics(c, s))
+        {
+            if (r.NextDouble() < s.ShockLocalTrip[col] * g)
+                res.Shock |= PowerOut(c, k, at, struck, -1, s.ShockZoneAM, NonPen.Minutes(s.LocalTripMin, ref r), now);
+            if (r.NextDouble() < s.ShockSectionPower[col] * g)
+                res.Shock |= PowerOut(c, k, at, struck, s.ShockZoneAM, s.ShockZoneBM, NonPen.Minutes(s.SectionPowerMin, ref r), now);
+            if (r.NextDouble() < s.ShockCascade[col] * g)
+            {
+                res.Shock |= PowerOut(c, k, at, -1, -1, double.PositiveInfinity, NonPen.Minutes(s.CascadeMin, ref r), now);
+                res.Blackout = true;
+            }
+            if (r.NextDouble() < s.ShockDirectorGyro[col] * g)
+            {
+                long ms = NonPen.Minutes(s.DirectorGyroMin, ref r);
+                for (int d = 0; d < c.Directors.Length; d++)
+                    if (c.Directors[d].Component == struck || Distance(c, c.Directors[d].Component, at) <= s.ShockZoneBM)
+                    {
+                        k.Out(k.DirectorDown, d, now, ms);
+                        res.Shock = true;
+                    }
+            }
+        }
+        if (r.NextDouble() < s.ShockRangefinder[col] * g)
+        {
+            long ms = NonPen.Minutes(s.RangefinderMin, ref r);
+            for (int e = 0; e < c.Eyes.Length; e++)
+                if (c.Eyes[e].RangefinderM > 0 && (c.Eyes[e].Component == struck || Distance(c, c.Eyes[e].Component, at) <= s.ShockZoneAM))
+                {
+                    k.Out(k.EyeDown, e, now, ms);
+                    res.Shock = true;
+                }
+        }
+    }
+
+    /// <summary>The power off for ms (E4's shock) to the mounts and directors from <paramref name="from"/> (exclusive; -1
+    /// takes in the struck part's too) to <paramref name="to"/> metres of a point, and to the struck part's own (its
+    /// mount, a conning tower's directors): mounts down, directors out. Whether it reached any.</summary>
+    public static bool PowerOut(ShipClass c, ShipCondition k, P3 at, int struck, double from, double to, long ms, long now)
+    {
+        bool any = false;
+        for (int m = 0; m < c.Mounts.Length; m++)
+        {
+            ref readonly var mr = ref c.Mounts[m];
+            double d = mr.Component == struck || mr.Barbette == struck ? 0 : Distance(c, mr.Component, at);
+            if (d <= to && (from < 0 || d > from))
+            {
+                k.Down(mr.Component, now, ms);
+                any = true;
+            }
+        }
+        for (int i = 0; i < c.Directors.Length; i++)
+        {
+            double d = c.Directors[i].Component == struck ? 0 : Distance(c, c.Directors[i].Component, at);
+            if (d <= to && (from < 0 || d > from))
+            {
+                k.Out(k.DirectorDown, i, now, ms);
+                any = true;
+            }
+        }
+        return any;
     }
 
     /// <summary>A belt that held still leaks (E4; damage/13 §2, <c>belt_leak</c>): the plate driven in, its bolts pulled,

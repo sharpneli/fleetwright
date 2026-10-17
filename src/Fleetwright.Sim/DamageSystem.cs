@@ -405,6 +405,10 @@ public sealed class DamageSystem : IWorldSystem
             fx |= HitEffect.Leak;
         if (e.Feed)
             fx |= HitEffect.Feed;
+        if (e.Shock)
+            fx |= HitEffect.Shock;
+        if (e.Blackout)
+            fx |= HitEffect.Blackout;
         if (e.Changed && k.Status == ShipStatus.Afloat)
         {
             fx |= Recompute(world, slot, k, ref rng);
@@ -458,6 +462,29 @@ public sealed class DamageSystem : IWorldSystem
         for (int m = 0; m < mounts.Length; m++)
             if (!k.MountWorks[m])
                 ships.Store.Combat.Stop(slot, m, mounts[m], world.Time.Ms);
+    }
+
+    /// <summary>A main-battery salvo's own shock on the ship's breakers (E4; damage/13 §3.4, South Dakota's ABT): with
+    /// director fire control, by its shock grade per 20 minutes of fire (a salvo standing for its mount's reload), a
+    /// section's power out round the firing mount.</summary>
+    internal void OwnGuns(World world, int slot, int mount, ref RandomStream r)
+    {
+        var k = ships.Store.Combat.Condition(slot);
+        var c = k.Class;
+        if (k.Status != ShipStatus.Afloat || !NonPen.Electrics(c, settings))
+            return;
+        double p = settings.OwnGunBreaker[c.ShockGrade == ShockGrade.G0 ? 0 : 1] * settings.ShockGradeK[(int)c.ShockGrade] *
+                   c.Mounts[mount].ReloadS / 1200;
+        if (r.NextDouble() >= p)
+            return;
+        ref readonly var m = ref c.Mounts[mount];
+        var at = new P3(m.X, m.Y, c.Components[m.Component].Bounds.Base);
+        long now = world.Time.Ms;
+        if (!Effects.PowerOut(c, k, at, m.Component, -1, settings.ShockZoneBM, NonPen.Minutes(settings.SectionPowerMin, ref r), now))
+            return;
+        k.Damaged = touched = true;
+        Recompute(world, slot, k, ref r);
+        Remind(world, slot, k);
     }
 
     /// <summary>Its mounts train as stiffly as their hits left them, now (E4).</summary>
@@ -598,7 +625,8 @@ public sealed class DamageSystem : IWorldSystem
     }
 
     /// <summary>A tool's (the hits bench's, the tests'): a ship's flooding and fire run on for a while from now, in steps
-    /// as the world would take them, without the world's clock moving. The ship's status after.</summary>
+    /// as the world would take them, without the world's clock moving, and the timed outages ending by then over. The
+    /// ship's status after.</summary>
     public ShipStatus Settle(World world, int entity, double seconds)
     {
         int slot = ships.Store.SlotOf(entity);
@@ -617,6 +645,12 @@ public sealed class DamageSystem : IWorldSystem
             if (d < 0)
                 break;
             next = (next / d + 1) * d;
+        }
+        // the timed outages that end meanwhile (E4) over too
+        if (k.Status == ShipStatus.Afloat && k.Clear(end))
+        {
+            var rc = stream.Derive(0xC1EBu).Derive((ulong)entity).Derive((ulong)end);
+            Recompute(world, slot, k, ref rc);
         }
         return k.Status;
     }

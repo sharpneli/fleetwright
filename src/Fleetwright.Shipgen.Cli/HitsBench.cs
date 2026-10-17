@@ -108,6 +108,9 @@ static class HitsBench
             Console.WriteLine("    where they held: " + string.Join(", ", Enum.GetValues<TurretSpot>().Select(v => string.Format(Inv, "{0} {1:0}%", v,
                 100.0 * r.TurretSpots[(int)v] / r.TurretHeld))) + string.Format(Inv, "; margin factor {0:0.00} on average", r.TurretMarginK / r.TurretHeld));
         }
+        if (r.ShockHeld > 0)
+            Console.WriteLine(string.Format(Inv, "  armour held (belt, barbette, turret, conning tower) {0:0.#}% of hits; their shock put gear out {1:0.#}% of " +
+                "those, the ship's power {2} time(s)", 100.0 * r.ShockHeld / r.Hits, 100.0 * r.Shocks / r.ShockHeld, r.Blackouts));
         if (r.BeltHeld > 0)
         {
             int leaks = r.BeltHeld - r.Leaks[(int)LeakRegime.None];

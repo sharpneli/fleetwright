@@ -860,6 +860,34 @@ public sealed record SimSettings
     public double FeedCasualtyChance { get; init; } = 0.15;
     public double[] FeedCasualtyMin { get; init; } = [10, 60];
 
+    /// <summary>Shock through the structure from a heavy hit that held on a belt, a barbette, a turret or a conning tower
+    /// (docs/battle/shells-armour-damage.md E4; damage/13 §3.4 [EST]): per hit, times (I / NonPenImpulseRef)^0.7 to at most
+    /// ShockSizeMax, the chances by the ship's shock grade: G0 the first (13's 1939-42 column, gear unsecured), G1 the
+    /// second (its 1943- column, after the securing alterations), G2 and G3 the second times <see cref="ShockGradeK"/>'s.
+    /// Zone A the struck structure and what's within <see cref="ShockZoneAM"/> of the hit, B within
+    /// <see cref="ShockZoneBM"/>, C the ship. Rows: local power tripped (A), a section's power (B), the ship's power
+    /// cascading out (C), a director's gyro (A and B), a rangefinder knocked out of adjustment (A). Power reaches only a
+    /// ship with director fire control (its breakers, FC circuits and gyros; before it, fuses and knife switches): its
+    /// mounts and directors are silent while it's off. How long each lasts: (share, low, high minutes) triples,
+    /// log-uniform, a high of 0 for the rest of the battle.</summary>
+    public double[] ShockLocalTrip { get; init; } = [0.50, 0.25];
+    public double[] ShockSectionPower { get; init; } = [0.15, 0.06];
+    public double[] ShockCascade { get; init; } = [0.02, 0.008];
+    public double[] ShockDirectorGyro { get; init; } = [0.12, 0.06];
+    public double[] ShockRangefinder { get; init; } = [0.20, 0.12];
+    public double[] ShockGradeK { get; init; } = [1, 1, 0.5, 0.25];
+    public double ShockZoneAM { get; init; } = 12;
+    public double ShockZoneBM { get; init; } = 40;
+    public double[] LocalTripMin { get; init; } = [0.9, 0.17, 3, 0.1, 3, 15];
+    public double[] SectionPowerMin { get; init; } = [0.8, 1, 5, 0.2, 5, 20];
+    public double[] CascadeMin { get; init; } = [0.9, 1, 10, 0.1, 30, 90];
+    public double[] DirectorGyroMin { get; init; } = [0.7, 5, 30, 0.3, 30, 60];
+    public double[] RangefinderMin { get; init; } = [0.5, 5, 20, 0.3, 120, 240, 0.2, 0, 0];
+
+    /// <summary>The ship's own main battery shaking its breakers (13 §3.4, South Dakota's ABT): per 20 minutes of fire, by
+    /// grade as the shock's columns, a section's power out round the firing mount (<see cref="SectionPowerMin"/>).</summary>
+    public double[] OwnGunBreaker { get; init; } = [0.05, 0.02];
+
     /// <summary>A burst's single pieces (docs/battle/shells-armour-damage.md E1; damage/13 §2.5), walked on through the
     /// ship from the burst like a shell: an AP or common shell's nose slug, a blunt broken penetrator SlugCalibres of the
     /// calibre across, and the base plug, PlugCalibres across (Ralph Talbot's 8" plugs 5.6" across), both of

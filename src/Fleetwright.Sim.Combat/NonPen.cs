@@ -173,6 +173,29 @@ public static class NonPen
         return ((LeakRegime)(regime + 1), Math.Exp(Math.Log(lo) + (Math.Log(hi) - Math.Log(lo)) * rng.NextDouble()));
     }
 
+    /// <summary>Whether a ship carries breakers for a shock to trip (E4; the user's choice, 2026-10-17): director fire
+    /// control on any battery (its FC circuits, gyros and the power to them). Before it, fuses, knife switches and
+    /// dynamos on their own governors: little to trip.</summary>
+    public static bool Electrics(ShipClass c, SimSettings s)
+    {
+        foreach (ref readonly var b in c.Batteries)
+            if (!b.Local && s.GunneryLevels[Math.Clamp((int)b.Level, 0, s.GunneryLevels.Length - 1)].Director)
+                return true;
+        return false;
+    }
+
+    /// <summary>An outage's length, ms, from (share, low, high minutes) triples: a triple by its share, log-uniform in it,
+    /// a high of 0 the rest of the battle.</summary>
+    public static long Minutes(double[] t, ref RandomStream rng)
+    {
+        double x = rng.NextDouble();
+        int i = 0;
+        for (; i + 3 < t.Length; i += 3)
+            if ((x -= t[i]) < 0)
+                break;
+        return t[i + 2] <= 0 ? Battle : (long)(60_000 * Math.Exp(Math.Log(t[i + 1]) + (Math.Log(t[i + 2]) - Math.Log(t[i + 1])) * rng.NextDouble()));
+    }
+
     /// <summary>The struck structure's crew stunned (damage/13 §3.4, a turret's or a conning tower's): with a chance
     /// scaled by the shock's (I / <see cref="SimSettings.NonPenImpulseRef"/>)^0.7, at most
     /// <see cref="SimSettings.ShockSizeMax"/>; how long, ms (0: not stunned).</summary>
