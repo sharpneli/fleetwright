@@ -65,7 +65,8 @@ leaks, shock) come into phase E (decision 8): they're `Effects`, and they read t
 5. **Thompson is the engine from P1a** (P1a, "The formula"), on Claude's recommendation: the same answers as today's fit
    within 1–4% where tried, cheaper, the basis the material table is rated on, and in the limit velocity V_L that P2–P5's
    rules are written in (holed and effective limits, shatter and break-up near the limit, the ricochet gate, the
-   residual). The plate bench checks it against the trials before the old fit goes.
+   residual). The plate bench checks it against the trials before the old fit goes. **Vanilla** (user,
+   2026-10-17): no deck term and no tuning knob on V_L. Its inverse is closed-form (Cardano).
 6. **The loadout is the admiral's, the armour the designer's** (user, 2026-10-16: "Admiral naturally may want to change
    the ammunition loadouts of their ships even ship by ship basis, whereas they can't just change armor willy nilly").
    The design carries a **default loadout**; each ship may carry another, set outside the design (S5).
@@ -567,11 +568,11 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
     `ArmourQuality` values, and the compiler's material rows. `ArmourQuality` leaves the settings.
   - Mass still 7.85 in this step. Nothing moves: hashes and golden values hold (the goldens gain the table).
 - **P1a Thompson and the plate bench** (sim only; the materials' `q` as P0 left them).
-  - `Terminal`'s plate step on Thompson's V_L, the residual from V and V_L (the game's rule, P5), the deck multiplier
-    below, and the inverse for `Matchup.cs` and the bench's readouts.
+  - `Terminal`'s plate step on Thompson's V_L, the residual from V and V_L (the game's rule, P5), and the inverse
+    (Cardano, below) for `Matchup.cs` and the bench's readouts.
   - **The plate-only bench** (`shipgen pen-check`): the game's `Terminal` plate step against `armor/07-*.csv` (the USN
     16″ table, NPG 1946–47, the Italian obliquity tables, Annapolis, Indian Head, Beardmore, Baden), and both models'
-    decks. No rolls. It reads the CSVs from the repo, as a tool may; nothing the release needs.
+    decks beside Thompson's (for the record; nothing reads them). No rolls. It reads the CSVs from the repo, as a tool may; nothing the release needs.
   - Expect small moves (1–4%, thin decks under small shells 13%).
   - **Why the game has the thickness form today:** no decision was made. The damage research's game shortcut
     (`05-mechanics-and-games.md` §A3: "precompute per gun `pen_belt(range)`, `pen_deck(range)` ... penetrates if pen ×
@@ -586,18 +587,31 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       square root and a few multiplies. Today's fit takes four `Math.Pow` calls.
     - It gives the limit *velocity* of a plate, which is what the plate step wants: compare the shell's speed with
       `V_L`, and the residual follows from both.
-    - The inverse (how thick a plate a shell beats at a range) needs a few Newton steps. Only readouts want it: the
-      matchup's profiles (`Matchup.cs`), `shipgen matchup`, and the designer's immune zone later. A hit never does.
-    - Valid to 75° of obliquity; past it the cosine carries on, and the ricochet gate (P5) takes over from 80°.
+    - **The inverse is closed-form (Cardano, 2026-10-17).** It answers how thick a plate a shell beats at a range.
+      With `u = √T` (inches), V_L is a cubic in u: `a·u³ + b·u = c`, where `a = 6·(Ob² + 2000)/D`,
+      `b = 34600 − 2.7·Ob²` and `c = V·cos Ob·√W / (0.024056·D)`. Both a and b are positive at every angle the
+      formula takes (b down to 19,412 at 75°), so the left side rises with u and there is exactly one real root.
+      With `p = b/a` and `q = c/a` it is `u = 2·√(p/3)·sinh(⅓·asinh((3q/2p)·√(3/p)))`, then `T = u²`. That is
+      Cardano's one-real-root case in its hyperbolic form; the textbook form of two cube roots cancels badly here,
+      because the linear term dominates (the cubic's share is about 0.35·T/D at normal). The cost is one sqrt,
+      asinh and sinh, about the price of one plate step, with no iteration and no bracket. Only readouts want it:
+      the matchup's profiles (`Matchup.cs`), `shipgen matchup`, and the designer's immune zone later. A hit never
+      does. A test round-trips it: `V_L(T(V)) = V` to 1e-9 over calibres, weights, angles and speeds.
+    - Valid to 75° of obliquity. Past it, F takes Ob held at 75° and the 1/cos takes the true angle (as
+      `armor_pen_ref.py` does); both are constant in T, so the inverse still holds. The ricochet gate (P5) takes
+      over from 80°.
     - Either way it's noise: a hit costs about 200 µs in all (fighting.md 4.3a).
     - The plate bench still checks it against the trials before the old fit goes.
     - **Decks hit at 50–90° of obliquity** (fall under 40°, nearly every battleship deck hit at fighting range, and
       cruiser decks under 8″ fire at 15–25 km) are where Thompson and Okun's M79 disagree: M79 has an STS deck holding
       15–20% more there, and 10–16% less on truly plunging hits at 30–50° (`armor_pen_ref.py` §N). Which is right is
       open: Thompson has no scale term, but the Hood 1919 deck trials lean the other way, and the Iowa immune zone is
-      Thompson's own, so it can't decide. So: a settings multiplier on a deck's V_L by obliquity, 1 (pure Thompson) by
-      default; the bench prints both models' decks; the battle anchors (Scharnhorst's boiler room, Jean Bart's decks,
-      cruiser decks) move it if they ask. It shifts the immune zone's far edge by 1–3 km.
+      Thompson's own, so it can't decide.
+    - **Vanilla Thompson, no deck term** (user, 2026-10-17: "I'm fine with dropping the deck term and just live
+      with the consequences. Vanilla Thompson shall be our model"). Decks take the same V_L as any plate. If M79 is
+      right, STS decks in the game are 15–20% easier to get through at 50–90° and 10–16% harder at 30–50°, which
+      moves the immune zone's far edge by 1–3 km. We accept that. The bench still prints M79's decks beside the
+      game's so the gap stays visible, but no knob closes it.
 - **P1b The real Q** (sim only).
   - `q` from armor/00 §4.2 with Q(D), the ductility penalty and the thin face-hardened rule. WWI KC goes from 1.0 to
     about 0.85–0.88.
@@ -791,8 +805,8 @@ squadrons, and changes `Matchup.cs` with it.
   wounded per hit by group, 13's turret-minutes lost per 100 heavy hits (about half to non-penetrations), 15's
   near misses per heavy-HE hit on a destroyer; and the user's: medium HE cooking off a battleship's magazine stays
   rare, not never (about 1.5% of ships under thirty 6″ HE hits; fighting.md 4.5, Magazines), which E2, E3 and E5 all
-  move. The leftover rolls are tuned only within their sourced bands, and the
-  deck multiplier (P1a) only if an anchor asks. The anchors are the damage *done* (holes, parts, crew, outcomes per
+  move. The leftover rolls are tuned only within their sourced bands; penetration itself is vanilla Thompson
+  and isn't tuned (P1a). The anchors are the damage *done* (holes, parts, crew, outcomes per
   hit), not who survived it: losses and sinkings above history are expected until damage control (the rules above).
 
 ## What stays out
@@ -861,7 +875,7 @@ None blocks a step; each is settled by its step's bench.
 | S4 | S1 | designer picker (UI session; done) | — | no |
 | S5 | S2 | the loadout applied and resolved | per-ship loadouts: scenarios, dev flag, bench (done) | only for ships given one |
 | P0 | — | materials table, upgrade | material rows | no |
-| P1a | P0 | — | Thompson, pen-check bench, deck multiplier | penetration (1–4%) |
+| P1a | P0 | — | vanilla Thompson, Cardano inverse, pen-check bench | penetration (1–4%) |
 | P1b | P1a | material catalogue | Q(D) | penetration |
 | P1c | P0 | densities | — | weights |
 | P2 | S2, P1b | — | caps, shatter, break-up | outcomes |
