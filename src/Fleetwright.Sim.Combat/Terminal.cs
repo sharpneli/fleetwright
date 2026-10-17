@@ -62,10 +62,10 @@ public struct TerminalResult
 /// <c>resolve()</c>, walked along the hit's own <see cref="HitPath"/> instead of the reference's zones. Plate by plate,
 /// each at its obliquity:
 /// <list type="bullet">
-/// <item><b>penetration:</b> the reference's Garzke and Dulin fit (normal impact) with its obliquity terms for vertical
-/// and horizontal plate, against the plate's thickness times its material's quality, drawn within
-/// <see cref="SimSettings.PenSpread"/>; a common shell at <see cref="SimSettings.CommonPenShare"/>; the shell slows by
-/// the reference's residual rule, v·√(1 - t/T);</item>
+/// <item><b>penetration:</b> the plate a shell beats at its speed, Thompson's limit velocity inverted
+/// (<see cref="PenMm(in ShellTypeRow, double, double)"/>, the same for belts and decks), against the plate's thickness
+/// times its material's q, drawn within <see cref="SimSettings.PenSpread"/>; a common shell at
+/// <see cref="SimSettings.CommonPenShare"/>; the shell slows by the game's rule, v·√(1 − t/T);</item>
 /// <item><b>a nose fuze</b> bursts on the first plate: just inside it if it's under <see cref="SimSettings.HePenCalibres"/>
 /// (times √cos ob), outside if not;</item>
 /// <item><b>a base fuze</b> arms on a plate over Okun's threshold (<see cref="SimSettings.FuzeArmCalibres"/> at normal
@@ -132,7 +132,6 @@ public static class Terminal
 
             double t = x.Mm > 0 ? x.Mm * c.MaterialQ(x.Material) : 0;
             double ob = Obliquity(hit.Direction, x.Normal);
-            bool deck = !double.IsNaN(x.Normal.Z) && Math.Abs(x.Normal.Z) > 0.7;
             if (nose)
             {
                 double punch = s.HePenCalibres * calMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(ob)), 1e-3));
@@ -142,7 +141,7 @@ public static class Terminal
                     : Burst(ref res, Math.Max(x.T - 0.3, 0), s.BurstOutsideK, Outcome.BurstOutside, BurstKind.Outside);
             }
 
-            double cap = PenMm(shell, v, ob, deck) * (shell.Kind == ShellKind.Common ? s.CommonPenShare : 1);
+            double cap = PenMm(shell, v, ob) * (shell.Kind == ShellKind.Common ? s.CommonPenShare : 1);
             if (t > cap * r.NextDouble(1 - s.PenSpread, 1 + s.PenSpread))
             {
                 // stopped here: about to burst, it bursts against the plate, this side of it; a dud lies there; never
@@ -219,16 +218,41 @@ public static class Terminal
 
     // ------------------------------------------------------------------ the physics
 
-    /// <summary>The reference's capability, mm of Class A-equivalent plate: Garzke and Dulin at normal impact
-    /// (05-mechanics-and-games.md §A3), times 0.967·cos^1.59 for a vertical plate and 0.82·cos^1.125 for a deck
-    /// (fitted to the navweaps 16"/50 Mk 8 tables).</summary>
-    public static double PenMm(in ShellTypeRow shell, double v, double obliquityDeg, bool deck)
+    const double In = 25.4, Lb = 0.45359237, Fps = 0.3048;
+
+    /// <summary>Thompson's limit velocity, m/s (the US Navy ballistic limit, F_STD of 1930-31: armor/01, armor_pen_ref.py
+    /// <c>thompson_vl</c>): the speed at which a shell of a calibre and mass just gets through tMm of the formula's plate
+    /// (STS, q 1) at an obliquity. V_L = 0.024056·D·√(T/W)·F/cos Ob with F = 6·(T/D − 0.45)·(Ob² + 2000) + 40000 (inches,
+    /// pounds, ft/s, Ob in degrees). F is fitted to 75°: past it F takes 75° and the 1/cos the true angle.</summary>
+    public static double LimitMs(double tMm, double calibreMm, double massKg, double obliquityDeg)
     {
-        double w = shell.MassKg / 0.4536, dIn = shell.CalibreMm / 25.4, vf = Math.Max(v, 0) / 0.3048;
-        double normal = 25.4 * 0.0004689 * Math.Pow(w, 0.55) * Math.Pow(dIn, -0.65) * Math.Pow(vf, 1.1);
-        double c = Math.Max(1e-3, Math.Cos(double.DegreesToRadians(obliquityDeg)));
-        return deck ? normal * 0.82 * Math.Pow(c, 1.125) : normal * 0.967 * Math.Pow(c, 1.59);
+        double d = calibreMm / In, t = Math.Max(tMm, 0) / In, w = massKg / Lb, o = Math.Min(obliquityDeg, 75);
+        double f = 6 * (t / d - 0.45) * (o * o + 2000) + 40000;
+        return 0.024056 * d * Math.Sqrt(t / w) * f / Cos(obliquityDeg) * Fps;
     }
+
+    public static double LimitMs(in ShellTypeRow shell, double tMm, double obliquityDeg) =>
+        LimitMs(tMm, shell.CalibreMm, shell.MassKg, obliquityDeg);
+
+    /// <summary>The plate a shell at v m/s just gets through, mm of the formula's plate: <see cref="LimitMs(double,
+    /// double, double, double)"/> inverted in closed form. With u = √T, V_L is the cubic a·u³ + b·u = c, a =
+    /// 6·(Ob² + 2000)/D, b = 34600 − 2.7·Ob², c = V·cos Ob·√W/(0.024056·D); a and b are positive at every Ob F takes, so
+    /// there is one real root, Cardano's in its hyperbolic form u = 2√(p/3)·sinh(⅓·asinh((3q/2p)·√(3/p))), p = b/a, q =
+    /// c/a (the two-cube-root form cancels badly, the linear term dominating). The plate step's capability: one sqrt,
+    /// asinh and sinh, about the old fit's four powers.</summary>
+    public static double PenMm(double v, double calibreMm, double massKg, double obliquityDeg)
+    {
+        double d = calibreMm / In, w = massKg / Lb, o = Math.Min(obliquityDeg, 75);
+        double a = 6 * (o * o + 2000) / d, b = 34600 - 2.7 * o * o;
+        double c = Math.Max(v, 0) / Fps * Cos(obliquityDeg) * Math.Sqrt(w) / (0.024056 * d);
+        double p = b / a, q = c / a;
+        double u = 2 * Math.Sqrt(p / 3) * Math.Sinh(Math.Asinh(1.5 * q / p * Math.Sqrt(3 / p)) / 3);
+        return u * u * In;
+    }
+
+    public static double PenMm(in ShellTypeRow shell, double v, double obliquityDeg) => PenMm(v, shell.CalibreMm, shell.MassKg, obliquityDeg);
+
+    static double Cos(double obliquityDeg) => Math.Max(Math.Cos(double.DegreesToRadians(obliquityDeg)), 1e-6);
 
     /// <summary>Okun's base-fuze arming plate, mm (Mk 21, a single plate): less at obliquity, flat past 61°.</summary>
     public static double FuzeArmMm(double calibreMm, double obliquityDeg, SimSettings s)

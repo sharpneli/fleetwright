@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S and P0 done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, P0 and P1a done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -612,7 +612,7 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       super_dreadnought: identical but for timings. Squadrons (40 min) and flotilla (30 min) identical shot for
       shot; the state hash moved (squadrons 27C3077B -> 4A00F99D, flotilla A5834BAF -> 23A9E144) only by the design
       hashes: with that term left out both hash the same before and after (BB76AB02, 39392167).
-- **P1a Thompson and the plate bench** (sim only; the materials' `q` as P0 left them).
+- **P1a Thompson and the plate bench** (sim only; the materials' `q` as P0 left them; done 2026-10-17).
   - `Terminal`'s plate step on Thompson's V_L, the residual from V and V_L (the game's rule, P5), and the inverse
     (Cardano, below) for `Matchup.cs` and the bench's readouts.
   - **The plate-only bench** (`shipgen pen-check`): the game's `Terminal` plate step against `armor/07-*.csv` (the USN
@@ -639,9 +639,10 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       With `p = b/a` and `q = c/a` it is `u = 2·√(p/3)·sinh(⅓·asinh((3q/2p)·√(3/p)))`, then `T = u²`. That is
       Cardano's one-real-root case in its hyperbolic form; the textbook form of two cube roots cancels badly here,
       because the linear term dominates (the cubic's share is about 0.35·T/D at normal). The cost is one sqrt,
-      asinh and sinh, about the price of one plate step, with no iteration and no bracket. Only readouts want it:
-      the matchup's profiles (`Matchup.cs`), `shipgen matchup`, and the designer's immune zone later. A hit never
-      does. A test round-trips it: `V_L(T(V)) = V` to 1e-9 over calibres, weights, angles and speeds.
+      asinh and sinh, about the price of one plate step, with no iteration and no bracket. The readouts want it
+      (the matchup's profiles in `Matchup.cs`, `shipgen matchup`, the designer's immune zone later), and so does the
+      plate step since it was built: the game's residual rule is in t/T (below, "How"). A test round-trips it:
+      `V_L(T(V)) = V` to 1e-9 over calibres, weights, angles and speeds.
     - Valid to 75° of obliquity. Past it, F takes Ob held at 75° and the 1/cos takes the true angle (as
       `armor_pen_ref.py` does); both are constant in T, so the inverse still holds. The ricochet gate (P5) takes
       over from 80°.
@@ -657,6 +658,53 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       right, STS decks in the game are 15–20% easier to get through at 50–90° and 10–16% harder at 30–50°, which
       moves the immune zone's far edge by 1–3 km. We accept that. The bench still prints M79's decks beside the
       game's so the gap stays visible, but no knob closes it.
+  - **How (2026-10-17):**
+    - **`Terminal`'s physics:** `LimitMs(tMm, calibreMm, massKg, ob)` is Thompson's V_L (inches, pounds and ft/s
+      inside, SI out; F at Ob held to 75°, the 1/cos at the true angle); `PenMm(v, calibreMm, massKg, ob)` is its
+      Cardano inverse; each has an overload taking the shell. The old fit and its `deck` flag go.
+    - **The plate step keeps its form, with Thompson's T:** the capability T = `PenMm(shell, v, ob)` (× `CommonPenShare`
+      for a common shell) against the plate's thickness × q, drawn within `PenSpread` as before; the residual stays
+      the game's rule `v·√(1 − t/T)`.
+    - **Not the residual in u (tried and dropped, 2026-10-17):** written as `v·√(1 − u^−1.1)` (u = V/V_L) the rule is
+      the old one only while T ∝ V^1.1. Under Thompson a thin plate's V_L goes as √T, so that form took 5–7% of a big
+      shell's speed per 20 mm plate, against 2% before and about 1% Lambert-Jonas, about five times the energy
+      Thompson itself gives the plate: Yamato on Yamato's bursts beyond the far side fell 19% → 9%. The t/T form is
+      the one the research's spaced-deck check (0.80 against 0.74 measured, armour-and-damage.md §3.8) was made in, so
+      it stays; the plate step pays one inverse a plate (sqrt, asinh, sinh: about the old fit's four powers).
+    - **The matchup:** its side and deck profiles read `PenMm` (no deck flag). It also gains the common shell's share,
+      which it never had (a mismatch with the terminal, fixed on the way).
+    - **`shipgen pen-check`** (no rolls; reads `research/simulation/armor/07-*.csv`): A, the calibration tables (the
+      USN 16″ table first) belt and deck against `PenMm`; B, NPG 1946–47's measured limits against `LimitMs`; C, the
+      Italian 1942 obliquity ratios; D, the early trials (Annapolis, Indian Head, Meppen, Beardmore, the 1937 problems,
+      Baden) through `LimitMs` with the catalogue's `q` (P0's values: P1b's bench moves them); E, Okun's M79 deck
+      columns (US STS and German Wh) over the game's, by deck obliquity.
+    - **Tests:** the round trip `LimitMs(PenMm(V)) = V` to 1e-9 over calibres, weights, angles (0–89°) and speeds; the
+      USN 16″ table within a few percent.
+  - **Done (2026-10-17).** The bench, `shipgen pen-check`:
+    - A: every USN table (16″/50, 16″/45, 14″/50, 12″/50 Mk 8) belt at 1.00, decks 0.96–0.97 on average (0.68–0.87
+      at the shallowest falls, where the tables' few millimetres are rounded); the tables on British and German
+      cemented plate come out 1.07–1.23 (face-hardened plate holding more than STS at q 1: P1b's Q), the uncapped
+      shells' tables 1.45–1.54 (no shatter until P2).
+    - B: NPG 1946–47's quoted NBLs reproduced to 0.99–1.02 (the port is Thompson); measured grades Class A 95%, KC n/A
+      99%, Class B 98%, Wh 95%.
+    - C: the Italian Palla's T(Ob)/T(0) 0.97/0.89/0.78/0.65 against the table's 0.98/0.91–0.92/0.81–0.82/0.63–0.69 at 10–40°; the
+      SAPBC's table falls far less with obliquity than any formula (0.95 at 40°: its own oddity).
+    - D: the early trials agree in 7 of 12 that went one way; the five misses are uncapped shells held by
+      face-hardened plate (P2's shatter) and the old q of steel and nickel steel (P1b).
+    - E: M79's decks over the game's: US STS 1.16 at 30–40°, 1.09 at 40–50°, 0.88/0.80/0.85 at 50–80°; German Wh
+      1.36/1.31 at 30–50°, 1.02/0.91/0.97 at 50–80° (the vanilla decision's gap, now on record).
+    - **Where the game moved** (old fit → Thompson): big guns' belts −2 to −6% at 0–45°, +10 to 12% at 60°; decks
+      −4 to −9% at 60–78°, a third to a half less on grazing hits past 85° (the old cos^1.125 against Thompson's
+      1/cos); small shells at long range less (the 4″ at 333 m/s −14%, side 100 → 87 mm, deck 15 → 12 mm).
+    - **Benches P0 → P1a:** `hits` iron_duke by seydlitz at 12 km: defeated 34.7 → 40.1%, holes 0.037 → 0.017 m²,
+      water after 30 min 40 → 9 t (the 11″ at 431 m/s loses 6%, so fewer holes in the lower belt); light_cruiser by
+      iron_duke: ricochets 3.9 → 7.8%; tb_destroyer by light_cruiser AP: defeated 1.2 → 5.1%; yamato by yamato at
+      25 km: within a point or two. `matchup` arethusa:4 v iron_duke confidence (11.5 km) 0.617 → 0.577, lion v
+      seydlitz 1.125 → 1.164. `duel` identical. Squadrons 40 min: Britain lost 3 → 2, Germany 0 → 0; flotilla
+      identical; tsushima --play 2 seeds: Russia lost 5.5 → 4, Japan 5 → 4. Per-hit cost unchanged (noise).
+    - The matchup gained the common shell's `CommonPenShare` (it never had it). DamageTests' water-fuze test now
+      runs 1 m of water, not 3: after 3 m the 15″ strikes at 365 m/s, and Thompson's 255 mm (old fit 279) sometimes
+      leaves it on the dreadnought's lower belt, short of the hull the test is about.
 - **P1b The real Q** (sim only).
   - `q` from armor/00 §4.2 with Q(D), the ductility penalty and the thin face-hardened rule. WWI KC goes from 1.0 to
     about 0.85–0.88.
@@ -920,7 +968,7 @@ None blocks a step; each is settled by its step's bench.
 | S4 | S1 | designer picker (UI session; done) | — | no |
 | S5 | S2 | the loadout applied and resolved | per-ship loadouts: scenarios, dev flag, bench (done) | only for ships given one |
 | P0 | — | materials table, upgrade (done) | material rows (done) | no |
-| P1a | P0 | — | vanilla Thompson, Cardano inverse, pen-check bench | penetration (1–4%) |
+| P1a | P0 | — | vanilla Thompson, Cardano inverse, pen-check bench (done) | penetration (−2 to −6% big guns, more for small) |
 | P1b | P1a | material catalogue | Q(D) | penetration |
 | P1c | P0 | densities | — | weights |
 | P2 | S2, P1b | — | caps, shatter, break-up | outcomes |

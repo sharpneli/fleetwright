@@ -177,6 +177,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- hits v25 --shoote
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- scheme belt_and_slope dreadnought [--write]   # a protection scheme (docs/shipgen/protection-templates.md) on designs: displacement before and after; --write rewrites the design's armour
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- subdivision destroyer yamato [shipgen/designs/*.json] [--rooms]   # the main compartments (docs/shipgen/protection-plan.md H7): sections, the longest, how many adjacent ones she floats with flooded, the worst run that sinks her
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- protection v25 destroyer [shipgen/designs/*.json --summary] [--shells 400]   # what stands between the sea and each magazine (docs/shipgen/protection-plan.md H0): crown on the waterline, the layers in from the side and down from above, shells at 5-35° falls (sea first, steel before it, open)
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- pen-check   # the plate model alone (Thompson's limit and its inverse, the materials' q) against research/simulation/armor/07-*.csv: range tables, NPG 1946-47, the Italian obliquity tables, the early trials, Okun's M79 decks; no rolls
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- matchup arethusa:4 iron_duke [--range M] [--share 0.6] [--sight M]   # who can fight whom (command.md 5.1g): profiles, hit and out chances, the engagements, A's confidence; NAME:N:t0 strips torpedoes
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- torpedo super_dreadnought [--shooter v25] [--at mid|bow|stern|SHARE] [--n 200] [--per-ship K] [--settle 60] [--range M --aspect DEG --spread N --runs N]   # torpedoes: the hit alone (outcomes, water, list, lost and how), or with --range the attack (hit %)
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- flood destroyer [--hole mid:-1:0.5,bow:-1:2:p] [--rooms boiler_room:2] [--minutes 120] [--every 600] [--step 1000] [--cells]   # the flooding model alone: reserve buoyancy, TPC, GM; holes or flooded spaces, then water, sinkage, trim, heel, GM until it goes down
@@ -309,8 +310,8 @@ src/
                               #   the range table: falls by elevation x speed x muzzle height), CombatStore (each ship's
                               #   mounts as analytic train/elevation anchors, loading clocks, rounds), FireControl (the
                               #   chain's pure models: reading errors, dispersion, laying a gun with its ship's motion, the
-                              #   spotting ladder), Condition (Hit, each ship's ShipCondition), Terminal (penetration, the
-                              #   fuze, the outcome), Effects (what a hit wrecks, holes, fire, crew), Underwater (a torpedo's
+                              #   spotting ladder), Condition (Hit, each ship's ShipCondition), Terminal (penetration:
+                              #   Thompson's limit and its inverse; the fuze, the outcome), Effects (what a hit wrecks, holes, fire, crew), Underwater (a torpedo's
                               #   explosion at the hull: holes, the TDS, shock, a broken back), TorpedoAim (the intercept,
                               #   the setting), Functions (what the
                               #   ship can still do, from the class's function table), Flooding (FloodModel: the cells as

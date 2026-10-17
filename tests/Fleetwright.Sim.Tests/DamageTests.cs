@@ -180,7 +180,8 @@ public class DamageTests(ITestOutputHelper output)
         w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
         for (int i = 0; i < 40; i++)
         {
-            var t = UnderwaterHit(w, shell, 3);
+            // a metre of water: it still gets through the lower belt (P1a's Thompson stops it there after 3 m, at 365 m/s)
+            var t = UnderwaterHit(w, shell, 1);
             Assert.True(t.Outcome is not (Outcome.PassedThrough or Outcome.Defeated or Outcome.Ricochet), $"{t.Outcome}: armed at the hull");
         }
     }

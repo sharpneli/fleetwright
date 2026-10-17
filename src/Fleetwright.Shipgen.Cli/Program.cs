@@ -148,6 +148,9 @@ public static class Program
             writes the shell, explosive and material catalogues (ShellTemplates, Explosives, MaterialTemplates) out:
             Content/Templates/shells.json, explosives.json and materials.json, docs/shipgen/shell-templates.md,
             explosive-templates.md and material-templates.md
+        shipgen pen-check
+            the plate model alone (Thompson's limit and its inverse, the catalogue's q) against the armour research's
+            range tables and trials (research/simulation/armor/07-*.csv), no rolls
         shipgen upgrade DESIGN.json... [--dry]
             design files rewritten to the current format (DesignFormat), each in its own layout; --dry lists them
         shipgen scenario [SCENARIO.json] [--minutes 60] [--every 5] [--threads N] [--at 10] [--no-land] [--replay]
@@ -237,6 +240,7 @@ public static class Program
                 "ammo-templates" => AmmoTemplates.Run(a.Positional, a.Has("dry"), a.Has("outfits")),
                 "templates" => TemplatesWriter.Run(Path.Combine(Root(a), "..")),
                 "upgrade" => DesignUpgrade.Run(a.Positional, a.Has("dry")),
+                "pen-check" => PenCheck.Run(Path.Combine(Root(a), "..")),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "matchup" => MatchupBench.Run(a.Positional.ElementAtOrDefault(0) ?? "arethusa", a.Positional.ElementAtOrDefault(1) ?? "v25",
                     n => LoadDesign(Resolve(a, n)), a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), D(a, "range", 0),

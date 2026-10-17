@@ -570,7 +570,9 @@ public static class Matchup
         double danger = t.HeightM / Math.Tan(double.DegreesToRadians(Math.Max(fall, 0.1)));
         double side = danger / (danger + t.BeamM);
         var shell = g.Shell;
-        double penSide = Terminal.PenMm(shell, strike, fall, deck: false), penDeck = Terminal.PenMm(shell, strike, 90 - fall, deck: true);
+        // as the terminal has it: a common shell beats the plate its capability's share of an AP's
+        double common = shell.Kind == ShellKind.Common ? s.CommonPenShare : 1;
+        double penSide = Terminal.PenMm(shell, strike, fall) * common, penDeck = Terminal.PenMm(shell, strike, 90 - fall) * common;
         // a burst where there's no armour (the upperworks, the ends) reaches the vitals by its splinters through the deck
         double bare = Math.Exp(-t.DeckMeanMm / s.MatchupSplinterMm);
         double upper = (shell.Fuze == Fuze.Nose || t.SidePlatingMm >= Terminal.FuzeArmMm(shell.CalibreMm, fall, s) ? 1 : s.MatchupPassShare) * bare;

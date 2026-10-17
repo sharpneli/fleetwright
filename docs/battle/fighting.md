@@ -790,8 +790,10 @@ What it settled, beyond the plan:
 
 - **Penetration is the reference's own fit**, Garzke and Dulin with its obliquity terms for side and deck plate,
   fitted to the navweaps tables. The plan named De Marre (`damage-model-research.md` §8.1), but the reference is what
-  4.3a ports and calibrates against. The plate's material scales its thickness (`ArmourQuality` in settings: Krupp
-  cemented and its kin 1, Harvey 0.8, nickel steel 0.75, high-tensile steel 0.7, steel 0.55, wrought iron 0.45). Every
+  4.3a ports and calibrates against. *(Since 2026-10-17, Thompson's F_STD, the same for side and deck: P1a of
+  `shells-armour-damage.md`.)* The plate's material scales its thickness (`ArmourQuality` in settings: Krupp
+  cemented and its kin 1, Harvey 0.8, nickel steel 0.75, high-tensile steel 0.7, steel 0.55, wrought iron 0.45; since
+  P0 the material's `q` in the design's `materials`). Every
   plate on the path counts, the hull's own plating and the decks and bulkheads between cells among them, so fuzes arm
   on what's really there.
 - **A space's vitals are a share of it** (`RoomVital`, by kind of room). A burst inside a space reaches what matters in

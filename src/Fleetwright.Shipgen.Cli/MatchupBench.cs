@@ -83,8 +83,8 @@ static class MatchupBench
                     double hit = Matchup.HitChance(g, t.Profile, r, s), o = Matchup.OutChance(g, t, r, s);
                     var (fall, strike) = g.At(r);
                     Console.WriteLine(string.Format(Inv, "  {0} b{1} on {2}: hits {3:0.0}% (fall {4:0.0}°, {5:0} m/s, pen {6:0}/{7:0} mm side/deck); a hit puts her out {8:0.00}%; {9:0.0000} out a minute a ship",
-                        e.Profile.Class.Name, g.Battery, t.Profile.Class.Name, 100 * hit, fall, strike, Terminal.PenMm(g.Shell, strike, fall, false),
-                        Terminal.PenMm(g.Shell, strike, 90 - fall, true), 100 * o, g.Guns * g.ShellsPerGunMin * hit * o));
+                        e.Profile.Class.Name, g.Battery, t.Profile.Class.Name, 100 * hit, fall, strike, Terminal.PenMm(g.Shell, strike, fall),
+                        Terminal.PenMm(g.Shell, strike, 90 - fall), 100 * o, g.Guns * g.ShellsPerGunMin * hit * o));
                 }
     }
 
