@@ -159,7 +159,7 @@ public static class ProtectionEdits
     {
         var a = Arm(d);
         var decks = DecksOf(d).ToList();
-        int main = ProtectionSchemes.MainDeck(decks);
+        int main = Armour.MainDeck(decks);
         if (main >= 0)
         {
             var m = decks[main];
@@ -184,7 +184,7 @@ public static class ProtectionEdits
     static (ArmourDeckInput? Main, ArmourDeckInput? Lower) LayoutDecks(Design d)
     {
         var decks = DecksOf(d);
-        int main = ProtectionSchemes.MainDeck(decks);
+        int main = Armour.MainDeck(decks);
         var m = main >= 0 ? decks[main] : null;
         var low = m != null ? decks.FirstOrDefault(x => x.Deck == (m.Deck ?? 0) + 1 && (x.Extent ?? "citadel") == "citadel" && x.SlopeMm is > 0) : null;
         return (m, low);

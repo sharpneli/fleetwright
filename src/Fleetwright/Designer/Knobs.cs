@@ -154,15 +154,8 @@ public static class Knobs
     static bool HasMain(Design d) => d.Main is { Count: > 0 };
     static bool HasSecondary(Design d) => d.Secondary is { Count: > 0 };
 
-    /// <summary>The main armour deck's entry: the first over the citadel (or the whole length), else the first.</summary>
-    static int MainDeckIndex(Design d)
-    {
-        var decks = d.Armour?.Decks;
-        if (decks is not { Count: > 0 })
-            return -1;
-        int i = decks.FindIndex(x => x.Extent is null or "citadel" or "full");
-        return i >= 0 ? i : 0;
-    }
+    /// <summary>The main armour deck's entry (Armour.MainDeck), -1 for none.</summary>
+    static int MainDeckIndex(Design d) => Armour.MainDeck(d.Armour?.Decks ?? []);
 
     // ------------------------------------------------------------------ the knobs
 

@@ -70,15 +70,49 @@ public class ProtectionLayersTests
             {
                 var x = PE.ApplyLayout(d, schemes[i]);
                 Assert.Empty(ShipDesign.Validate(x, limits: false).Select(e => $"{name} + {Templates.Protection[i].Name}: {e}"));
-                Assert.Equal(PE.LayoutKey(x), PE.LayoutKey(PE.ApplyLayout(x, schemes[i])));
-                var (k, exact) = PE.LayoutOf(x, schemes);
-                Assert.True(exact, $"{name} + {Templates.Protection[i].Name} reads as {k}");
-                Assert.Equal(PE.LayoutKey(x), PE.LayoutKey(PE.ApplyLayout(x, schemes[k])));
+                // the accepted quirk (docs/shipgen/refactor-plan.md, item 2): a scheme's lower deck thicker than the
+                // ship's own deck is the thickest, so it becomes the main deck: the layout doesn't read back as itself,
+                // and putting it on again adds another deck under it
+                var own = d.Armour?.Decks is { } od && Armour.MainDeck(od) is int mi and >= 0 ? Math.Max(od[mi].Mm ?? 0, od[mi].SlopeMm ?? 0) : 0;
+                bool quirk = schemes[i].LowerDeck is { } low && Math.Max(low.Mm ?? 0, low.SlopeMm ?? 0) > own;
+                if (!quirk)
+                {
+                    var (k, exact) = PE.LayoutOf(x, schemes);
+                    Assert.True(exact, $"{name} + {Templates.Protection[i].Name} reads as {k}");
+                    var again = PE.ApplyLayout(x, schemes[i]);
+                    Assert.Equal(PE.LayoutKey(x), PE.LayoutKey(again));
+                    Assert.Equal(x.Armour!.Decks?.Count, again.Armour!.Decks?.Count);
+                    Assert.Equal(PE.LayoutKey(x), PE.LayoutKey(PE.ApplyLayout(x, schemes[k])));
+                }
                 var plain = PE.Plain(x);
                 Assert.False(PE.HasLayout(plain), $"{name} + {Templates.Protection[i].Name}, plain");
                 Assert.Empty(ShipDesign.Validate(plain, limits: false).Select(e => $"{name} plain: {e}"));
             }
         }
+    }
+
+    [Fact]
+    public void Switching_off_a_lower_deck_layout_leaves_no_deck_behind()
+    {
+        // a main deck as thick as French modern's lower deck: the tie goes to the higher deck (Armour.MainDeck), so the
+        // lower deck is the one taken away, and putting the layout on again adds no second one
+        var d = Load("dreadnought");
+        d = d with { Armour = d.Armour! with { Decks = [new ArmourDeckInput { Deck = 1, Mm = 40, Extent = "citadel" }] } };
+        var french = Templates.Protection.First(t => t.Note == "french_modern").Value;
+        var x = PE.ApplyLayout(d, french);
+        Assert.Equal(2, x.Armour!.Decks!.Count);
+        Assert.Equal(2, PE.ApplyLayout(x, french).Armour!.Decks!.Count);
+        var plain = PE.Plain(x);
+        Assert.Equal([(1, 40.0)], plain.Armour!.Decks!.Select(k => (k.Deck ?? 0, k.Mm ?? 0)));
+    }
+
+    [Fact]
+    public void The_armour_deck_knob_edits_the_thickest_citadel_deck()
+    {
+        // a thin deck over a thick one (Bismarck's 50 mm over 80 mm): the knob, the schemes and the build agree on the 80
+        var d = Load("bismarck");
+        Assert.Equal(80, Knobs.ArmourDeck.Get(d));
+        Assert.Equal(1, Armour.MainDeck(d.Armour!.Decks!));
     }
 
     [Fact]

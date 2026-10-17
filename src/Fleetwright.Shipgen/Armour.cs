@@ -92,6 +92,30 @@ public sealed class ArmourLayout
 /// and the hitboxes), its weights, the materials, and the warnings. Heights above the keel.</summary>
 public static class Armour
 {
+    /// <summary>The deck called the main armour deck: of the decks over the citadel or the whole length on the hull's
+    /// stack (deck 0 and down), the thickest plate, flat or slopes, the higher of equals; -1 for none. A choice, not
+    /// physics: the build runs the belt up to it and stops the barbettes' armour on it, the protection schemes put their
+    /// slopes on it, the designer's armour deck knob edits it. The one rule: every one of them calls this.</summary>
+    public static int MainDeck<T>(IReadOnlyList<T> decks, Func<T, (long Deck, string Extent, double Plate)> of)
+    {
+        int best = -1;
+        (long Deck, string Extent, double Plate) b = default;
+        for (int i = 0; i < decks.Count; i++)
+        {
+            var x = of(decks[i]);
+            if (x.Deck < 0 || x.Extent is not ("citadel" or "full"))
+                continue;
+            if (best < 0 || x.Plate > b.Plate || x.Plate == b.Plate && x.Deck < b.Deck)
+                (best, b) = (i, x);
+        }
+        return best;
+    }
+
+    /// <summary>MainDeck among a design's deck entries (an entry's deck 0 and extent citadel when not given, as the build
+    /// takes them).</summary>
+    public static int MainDeck(IReadOnlyList<ArmourDeckInput> decks) =>
+        MainDeck(decks, d => ((long)(d.Deck ?? 0), d.Extent ?? "citadel", Math.Max(d.Mm ?? 0, d.SlopeMm ?? 0)));
+
     public const double TdsMmPerM = 12.0;
     /// <summary>The magazine wing's default width, a share of the beam (protection-plan.md H2) [INFERRED].</summary>
     public const double MagazineWingShare = 0.1;
@@ -343,7 +367,8 @@ public static class Armour
             }
         }
         var over = decks.Where(d => d.Extent is "citadel" or "full" && d.Deck >= 0).ToList();
-        var main = over.MaxBy(d => (d.Mm, d.Z));
+        int mi = MainDeck(decks, d => (d.Deck, d.Extent, Math.Max(d.Mm, d.SlopeMm)));
+        var main = mi >= 0 ? decks[mi] : null;
         var roof = over.MinBy(d => d.Z);
         // zones (protection-plan.md H5): a citadel deck and the belt thicker (or thinner) beside the magazines, where the
         // last layout pass stowed them

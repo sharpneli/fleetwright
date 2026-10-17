@@ -22,17 +22,7 @@ public static class Monotone
 
     static Design Arm(Design d, Func<ArmourInput, ArmourInput> f) => d with { Armour = f(d.Armour ?? new ArmourInput()) };
 
-    static int MainDeck(Design d)
-    {
-        var decks = d.Armour?.Decks;
-        if (decks is not { Count: > 0 })
-            return -1;
-        int best = 0;
-        for (int i = 1; i < decks.Count; i++)
-            if ((decks[i].Mm ?? 0) > (decks[best].Mm ?? 0))
-                best = i;
-        return best;
-    }
+    static int MainDeck(Design d) => Armour.MainDeck(d.Armour?.Decks ?? []);
 
     static double? EndMean(Design d)
     {
@@ -53,7 +43,7 @@ public static class Monotone
         return d with { Main = d.Main!.Select(b => get(b) is { } x ? set(b, Math.Max(0, x + v - mean)) : b).ToList() };
     }
 
-    /// <summary>The Overview's levers (DesignerScene.Overview BaseLevers), the armour deck as the thickest deck.</summary>
+    /// <summary>The Overview's levers (DesignerScene.Overview BaseLevers), the armour deck as Armour.MainDeck.</summary>
     public static readonly Lever[] Levers =
     [
         new("speed", 0.5, d => d.SpeedKn, (d, v) => d with { SpeedKn = v }, Lo: 8),

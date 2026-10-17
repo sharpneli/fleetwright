@@ -47,11 +47,15 @@ throughout. mono-check and `dotnet test` unchanged.
 
 The single-implementation rule, applied to what the review found:
 
-- **The main armour deck** (bugs 1 and 2): one definition in Shipgen, used by `Armour`, `ProtectionSchemes`, the
-  designer's knobs and mono-check. The build's own rule (`Armour.ArmourGeometry`: thickest, the higher of equals, on
-  the merged decks) is the one kept, so the built ships don't change. The input-side callers then follow it, which
-  changes what the scheme and the knob pick where they disagreed: that is the fix, its own commit, with tests for
-  the stray 40 mm deck (bug 1) and the thin-over-thick case (bug 2).
+- **The main armour deck** (bugs 1 and 2): one rule, `Armour.MainDeck`, used by the build, `ProtectionSchemes`, the
+  designer's knob and mono-check: of the decks over the citadel or the whole length on the hull's stack, the thickest
+  plate (flat or slopes), the higher of equals. The build stays byte-identical (checked). **Done 2026-10-17.**
+  Decided (user, 2026-10-17): no marker on a scheme's deck and no new keys. "Main deck" is a choice, not physics,
+  and should stay out of the model where it can. The accepted quirk: a scheme's lower deck thicker than the ship's own
+  (French modern's 40/40 under Kent's 35 mm) becomes the main deck, so the layout doesn't read back as itself and
+  putting it on again adds a deck. The old tie-to-the-lower rule hid this from the test while the decks stacked. The
+  build still uses the rule physically (the belt runs up to it, the barbettes' armour stops on it, two hitbox
+  fields); taking that out is a physics change for later, not this refactor.
 - **The Overview levers**: moved from the exe into Shipgen as the one definition; the designer's Overview and
   mono-check both read them (the review's suggested order 2). mono-check's output changes only where its old copy
   differed from the real lever, and that is reported.
