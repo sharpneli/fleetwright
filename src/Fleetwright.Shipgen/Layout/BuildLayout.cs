@@ -25,67 +25,29 @@ public sealed partial class Layout
     /// are placed (Deficit, the citadel and the shift range set), for sizing the hull.</summary>
     public static Layout BuildLayout(Design design, Navarch.Result res, double shift = 0.0, double midExtra = 0.0, bool plan = false)
     {
-        double depth = res.Depth;
-        var lay = new Layout(design);
-        var hs = HullSpecOf(design);
-        var hull = new Hull(hs);
-        lay.Hull = hull;
-        lay.Topside = Topside.Of(design, res.Freeboard);
-        double L = hull.L, B = hull.B;
-        // the main deck's half-width amidships: the beam's, unless the sides lean in above the widest point
-        double deckHw = lay.Topside.Plain ? B / 2 : B / 2 * lay.Topside.Ratio(0.0, 0.0);
+        var site = new WarshipSite(design, res);
+        var (lay, hs, hull) = (site.Lay, site.Hs, site.Hull);
+        double depth = site.Depth, L = site.L, B = site.B, deckHw = site.DeckHw;
         double beltMm = design.Armour?.BeltMm ?? 0;
         string deck = design.Deck ?? (L >= 150 ? "wood" : "steel");
 
-        // ---------------- main battery groups ----------------
-        var bats = Batteries.MainBatteries(design).Select((b, k) => (b, k)).Where(t => t.b.Turrets != 0)
-            .Select(t => new Gun(t.b, t.k)).ToList();
-        foreach (var g in bats)
-            if (g.Spec.Wing > 0 && g.Spec.CrossDeck == true && !g.Echelon)
-                lay.Warnings.Add($"main[{g.K}].cross_deck needs \"echelon\": true (an abreast pair blocks each other's " +
-                                 "beam); the wing turrets fire on their own side only.");
-        var (F, nStepF) = EndGroup(bats, "fore");
-        var (A, nStepA) = EndGroup(bats, "aft");
-        var M = bats.SelectMany(g => Enumerable.Repeat(g, g.Spec.Mid ?? 0)).ToList();
-        var WA = bats.Where(g => !g.Echelon).SelectMany(g => Enumerable.Repeat(g, g.Spec.Wing ?? 0)).ToList();
-        var WE = bats.Where(g => g.Echelon).SelectMany(g => Enumerable.Repeat(g, g.Spec.Wing ?? 0)).ToList();
-        int nf = F.Count, na = A.Count, nm = M.Count, nw = WA.Count + WE.Count;
-        bool flushF = nf > Math.Max(nStepF, 1), flushA = na > Math.Max(nStepA, 1);
-        var gRef = nw > 0 ? WA.Concat(WE).First() : null;
-
-        double Wy(Gun g, double y) => g.Reach == gRef!.Reach ? y : y + gRef.Reach - g.Reach;
+        var mg = new MainGroups(design, lay);
+        var (bats, F, A, M, WA, WE, gRef) = (mg.All, mg.F, mg.A, mg.M, mg.WA, mg.WE, mg.WingRef);
+        int nStepF = mg.StepF, nStepA = mg.StepA, nf = mg.Nf, na = mg.Na, nm = mg.Nm, nw = mg.Nw;
+        bool flushF = mg.FlushF, flushA = mg.FlushA;
+        var Wy = mg.Wy;
 
         PlanMachinery(lay, design, res, hull);
         var plant = lay.Geo.Plant!;
-        double lb = Clamp(0.05 * L + 2, 7, 18);
-        double la = AftControl(design) ? 0.045 * L + 2 : 0.0;
+        var control = ControlPlan.Of(site, mg);
+        double lb = control.Lb, la = control.La, hood = control.Hood;
+        long nb = control.Nb, nTower = control.NTower, naLvl = control.NaLvl;
         var raisedIn = design.Hull?.Raised ?? [];
-        double fwdDeck = LevelH * raisedIn.Where(q => RaisedCovers(q, "fore_group")).Select(q => (double)(q.Decks ?? 0)).DefaultIfEmpty(0.0).Max();
-        double aftDeck = LevelH * raisedIn.Where(q => RaisedCovers(q, "aft_group")).Select(q => (double)(q.Decks ?? 0)).DefaultIfEmpty(0.0).Max();
-        int? fwdTier = nf != 0 ? Math.Min(nf, Math.Max(nStepF, 1)) - 1 : null;
-        double? fwdRoof = fwdTier is int ft ? fwdDeck + 1.2 + TierSteps(F, ft) + F[ft].Th : null;
-        long nbNeed = BridgeLevel(fwdRoof);
-        int? aftTier = na != 0 ? Math.Min(na, Math.Max(nStepA, 1)) - 1 : null;
-        long naLvl = BridgeLevel(aftTier is int atr ? aftDeck + 1.2 + TierSteps(A, atr) + A[atr].Th : null);
-        long over = LevelsOverBridge(design);
-        long nTower = TowerLevels(design, nbNeed + over);
-        long nb = Math.Min(nTower, Math.Max(nbNeed, nTower - over));
-        if (nb < nbNeed)
-            lay.Warnings.Add(
-                $"The bridge (level {nb}, its deck {LevelH * (nb - 1):F1} m above the main deck) cannot see over " +
-                $"turret {TurretName("ABC", fwdTier!.Value)}'s roof ({fwdRoof!.Value:F1} m): superstructure.tower_levels " +
-                $"{nbNeed} or more lifts it clear.");
-        lay.Geo.Bridge = new BridgePlan(nb, LevelH * (nb - 1), nbNeed, nTower, fwdRoof);
-        double hood = FireControl.Spec(design, "main").Directors != 0 ? FireControl.HoodH : 0.0;
         var secs = Batteries.SecondaryBatteries(design).Select((b, k) => (Sec: b, Prefix: Batteries.BatteryPrefix(k))).ToList();
         Armament.WarnUnpaired(lay, secs.Select(s => s.Sec));
-        long ntp = design.Torpedoes?.Mounts ?? 0;
-        string? ttId = null;
-        TurretType? tt = null;
-        if (ntp != 0)
-            (ttId, tt) = Geometry.MakeTorpedoType(design.Torpedoes!.Tubes ?? 4);
-        double tSweep = ntp != 0 ? tt!.BarrelLen / 2 + 0.3 : 0.0;
-        bool tEdges = ntp != 0 && deckHw - tt!.R - 0.8 >= tSweep;
+        var torp = TorpedoPlan.Of(design, deckHw);
+        long ntp = torp.Mounts;
+        var (ttId, tt, tSweep, tEdges) = (torp.TypeId, torp.T, torp.Sweep, torp.Edges);
 
         // ---------------- the middle's plan ----------------
         var segs = PlanSegments(plant).Select(s => (Kind: s.Kind, Len: s.Len)).ToList();
