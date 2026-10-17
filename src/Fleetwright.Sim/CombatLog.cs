@@ -47,6 +47,9 @@ public enum HitEffect : ushort
     GunOut = 2048,
     Sights = 4096,
     Stunned = 8192,
+    /// <summary>A belt that held leaked into the space behind it (E4), and fouled a boiler or engine room's feed.</summary>
+    Leak = 16384,
+    Feed = 32768,
 }
 
 /// <summary>A line of the combat log: when, what, who fired (an entity) with which battery, at whom, and a count or a

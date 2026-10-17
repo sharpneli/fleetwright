@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E3 and E4a done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E3, E4a and E4b done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1390,6 +1390,32 @@ squadrons, and changes `Matchup.cs` with it.
       for QE: its 13% of hits on turrets against our 7.5%). Matchup identical (it has no jam term). Squadrons' 30 minutes:
       149 → 179 hits, Lion no longer lost, Princess Royal still (to Lützow now), hash B465811A2B06CD4D →
       E961380A9651DA91. Cost a hit: within the noise.
+  - **E4b done 2026-10-17.** What it came to:
+    - **The leak** (`NonPen.BeltLeak`, 13 §2.3's `belt_leak`): a side plate that held (stopped, or a nose fuze burst on
+      it; a glance skids off with little push and finds no cell behind) leaks by where it was struck against the
+      waterline *now* (`BeltZone`: within 1 m 0.5, higher 0.25, within 1 m of the plate's lower edge 0.8), over the
+      joints' mean share, times size(I)·margin(r) as a turret's; a joint (within 0.2 m of a butt or seam of 5 × 2.5 m
+      plates from the row's corner [EST], about a quarter of hits) ×1.5, a plate a leak loosened before (within 3 m)
+      ×2, a welded shell (E0's `ShellJoint`) ×0.6. The regime (seep, moderate, major, lost) by 13's shares, the worse
+      two shifted by a near thing, a joint or a loosened plate; its opening log-uniform in the regime's band, a hole
+      into the cell behind the plate (the first within 2 m: backing and skin between) like any other. A belt inside the
+      hull leaks only once the space in front of it is holed (the sea's already there).
+    - **Loosened:** each leak marks its plate there (`ShipCondition.Leaked`, a ring of 32); Terminal's plate quality
+      for a side plate within 3 m of a mark is ×0.85 (`LoosenedPlate`): Oslyabya's way.
+    - **The feed:** a leak into a fuel tank or the double bottom fouls the nearest boiler or engine room's supply at
+      0.15, down 10-60 min [EST] (E4a's timed outage). None of the benches' belts has one right behind it (bunkers,
+      accommodation, the torpedo protection): the TDS's oil layers wait for the class to know what its spaces hold.
+    - **Not built:** the regime's damage-control rows and the reopening above 15 kn (damage control's).
+    - **Retired:** `SeamLeakMinMm`, `SeamLeakChance`, `SeamLeakM2`. **Log:** "belt plate leaking", "feed water fouled".
+    - **Tests:** 13 §5.3 test 4 (`NonPenTests`): a 15" APC at r 1.3 at the waterline, a quarter on joints, leaks 0.460
+      (band 0.40-0.55; the note 0.46), major or lost 0.107 (< 0.15); a joint 0.60 and a loosened plate 0.81 against 0.41
+      plain, their leaks worse; welded 0.59 of riveted; and under the game's own hits the leaks loosen their plates.
+      Test 5 (a major leak filling its cell) is the flooding's own; its damage-control half waits.
+    - **Benches, E4a to E4b** (2,000 hits, 10 a ship; outcomes identical): belts hold 12-20% of hits, of those 16-30%
+      leak (most seeps; 13 §2.3 had 0.46 at the waterline for a 15" at r 1.3: these mix upper strakes and far margins);
+      holes a hit +0-20% (Seydlitz 0.023 → 0.028 m², KGV 0.122 → 0.126); the rest within a point. Matchup identical
+      (no leak term). Squadrons' 30 minutes: 179 → 165 hits, Lion lost to her magazine again (Moltke's), Princess Royal
+      afloat with 57 hits and 1,411 t in her, hash E961380A9651DA91 → 15B436D6D5FAB7C2.
 - **E5 Blast** (11). Open question 1.
   - **Open** (outside the hull, a weather deck, an open mount, a space vented by 0.6·V^⅔ or more): wrecked within
     1.0·W^⅓ (was 1.6), people killed by blast within 1.3·W^⅓, injured to 3.5·W^⅓ as now; the contact hole's `R_hole` as

@@ -39,9 +39,12 @@ public struct EffectsResult
     /// stunned (a turret's, a conning tower's).</summary>
     public TurretHarm Turret;
     public bool Stunned;
+    /// <summary>E4: a belt that held leaked (its regime), and fouled a boiler or engine room's supply.</summary>
+    public LeakRegime Leak;
+    public bool Feed;
 
     public readonly bool Changed => Destroyed + Disabled + Damaged > 0 || BreachM2 > 0 || Jammed || Fire || Magazine || Broken ||
-        Turret.Blow != TurretBlow.None || Stunned;
+        Turret.Blow != TurretBlow.None || Stunned || Feed;
 }
 
 /// <summary>EFFECTS (docs/battle/fighting.md 4.3a): a port of the effects half of research/simulation/damage-research/
@@ -50,8 +53,7 @@ public struct EffectsResult
 /// <item><b>the line of flight:</b> what the shell's body went through before it stopped (parts and spaces), and the
 /// people in its lane when it didn't burst;</item>
 /// <item><b>holes:</b> the hull's plating crossed near or under the waterline lets the sea into the cell behind it (a
-/// contact burst's hole, else the shell's own), and a heavy shell defeated by a belt at the waterline may open its
-/// seams: water comes in through them (<see cref="Flooding"/>);</item>
+/// contact burst's hole, else the shell's own; <see cref="Flooding"/>);</item>
 /// <item><b>the burst:</b> parts within the wreck radius (cube-root scaled) wrecked or put out of action by distance,
 /// unless their armour keeps its fragments out, and those its fragments get into damaged (E1 of docs/battle/
 /// shells-armour-damage.md: the shell's own spray, <see cref="Fragments"/>, through each part's armour); the space it
@@ -61,7 +63,8 @@ public struct EffectsResult
 /// reaching a mount's ready ammunition;</item>
 /// <item><b>armour that held</b> (E4 of docs/battle/shells-armour-damage.md; damage/13): a turret or barbette a shell
 /// didn't get through may be jammed in train, stiff, have a gun or its sights out, or its crew stunned, for a time by
-/// cause (<see cref="NonPen"/>); a conning tower's crew stunned;</item>
+/// cause (<see cref="NonPen"/>); a conning tower's crew stunned; a belt leaking into the cell behind it by where it
+/// struck against the waterline now, by regime (<see cref="Belt"/>);</item>
 /// <item><b>magazines:</b> a burst in a magazine, or in a turret or its barbette, may set it off.</item>
 /// </list>
 /// Pure and allocation-free; the draws come from the stream it's given.</summary>
@@ -132,7 +135,7 @@ public static class Effects
         }
 
         // armour that held, or that a shell glanced off (P5): what it shakes (E4), by the impulse it took and how near the
-        // shell came to getting through; a belt's seams at the waterline
+        // shell came to getting through
         int held = t.Glance >= 0 ? t.Glance : t.Outcome is Outcome.Defeated or Outcome.BurstOutside ? t.Plate : -1;
         if (held >= 0)
         {
@@ -164,16 +167,8 @@ public static class Effects
                 k.Down(x.Index, hit.Ms, stun);
                 res.Stunned = stun > 0;
             }
-            else if (x.Plate == PlateKind.SideArmour && shell.CalibreMm >= s.SeamLeakMinMm &&
-                     x.Point.Z <= water.At(x.Point.X, x.Point.Y) + s.HoleOverWaterlineM && r.NextDouble() < s.SeamLeakChance)
-            {
-                int behind = CellAt(xs, held, inward: true);
-                if (behind >= 0)
-                {
-                    k.Hole(behind, s.SeamLeakM2, x.Point);
-                    res.BreachM2 += s.SeamLeakM2;
-                }
-            }
+            else if (x.Plate == PlateKind.SideArmour)
+                Belt(c, k, path, held, impulse, NonPen.Margin(t.PlateU), water, hit.Ms, s, ref res, ref r);
         }
 
         // E3: behind a plate that held, the spall off its back: a shell it stopped within its band, or a heavy shell
@@ -199,6 +194,63 @@ public static class Effects
         }
         k.CrewLost += res.CrewLost;
         return res;
+    }
+
+    /// <summary>A belt that held still leaks (E4; damage/13 §2, <c>belt_leak</c>): the plate driven in, its bolts pulled,
+    /// its skin's rivets sheared, by where it struck against the waterline now, a joint, a leak there before (the plate
+    /// loosened) and a welded skin; the regime's opening into the cell behind it, a hole like any other; into a fuel tank
+    /// or the double bottom, the nearest boiler or engine room's supply fouled for a while. A belt inside the hull leaks
+    /// only with the sea already in front of it (the space before it holed).</summary>
+    static void Belt(ShipClass c, ShipCondition k, HitPath path, int held, double impulse, double margin, in Waterplane water, long now,
+        SimSettings s, ref EffectsResult res, ref RandomStream r)
+    {
+        var xs = path.Crossings;
+        ref readonly var x = ref xs[held];
+        ref readonly var row = ref c.SidePlates[x.Index];
+        int behind = -1, before = -1;
+        for (int j = held + 1; j < xs.Length && xs[j].T <= x.T + s.BeltBehindM; j++)
+            if (xs[j].Kind == CrossingKind.CellIn)
+            {
+                behind = xs[j].Index;
+                break;
+            }
+        for (int j = held - 1; j >= 0; j--)
+            if (xs[j].Kind is CrossingKind.CellIn or CrossingKind.CellOut)
+            {
+                before = xs[j].Kind == CrossingKind.CellIn ? xs[j].Index : -1;
+                break;
+            }
+        if (behind < 0 || before >= 0 && !(k.BreachM2[before] > 0))
+            return;
+        double wl = water.At(x.Point.X, x.Point.Y), dz = x.Point.Z - wl;
+        int zone = dz > s.BeltWaterlineM ? 1 : x.Point.Z - row.Bottom <= s.BeltLowerEdgeM ? 2 : 0;
+        double along = Math.Abs(x.Point.X - row.X0) % s.BeltPlateM[0], up = Math.Max(x.Point.Z - row.Bottom, 0) % s.BeltPlateM[1];
+        bool joint = Math.Min(along, s.BeltPlateM[0] - along) <= s.BeltJointM || Math.Min(up, s.BeltPlateM[1] - up) <= s.BeltJointM;
+        bool repeat = k.Loosened(x.Index, x.Point, s.BeltRepeatM);
+        var (regime, a) = NonPen.BeltLeak((BeltZone)zone, impulse, margin, joint, repeat, c.ShellJoint == Joint.Welded, s, ref r);
+        if (regime == LeakRegime.None)
+            return;
+        k.Hole(behind, a, x.Point);
+        k.Leaked(x.Index, x.Point);
+        res.BreachM2 += a;
+        res.Leak = regime;
+        // feed water or oil behind it: the supply of the nearest boiler or engine room fouled for a while
+        int room = c.Cells[behind].Room;
+        if (room >= 0 && c.Rooms[room].Kind is RoomKind.FuelTank or RoomKind.DoubleBottom && r.NextDouble() < s.FeedCasualtyChance)
+        {
+            int near = -1;
+            double best = double.MaxValue, mid = x.Point.X;
+            for (int i = 0; i < c.Rooms.Length; i++)
+                if (c.Rooms[i].Kind is RoomKind.BoilerRoom or RoomKind.EngineRoom &&
+                    Math.Abs((c.Rooms[i].X0 + c.Rooms[i].X1) / 2 - mid) is double d && d < best)
+                    (near, best) = (i, d);
+            if (near >= 0)
+            {
+                double m0 = s.FeedCasualtyMin[0], m1 = s.FeedCasualtyMin[1];
+                k.Down(c.RoomNode(near), now, (long)(60_000 * Math.Exp(Math.Log(m0) + (Math.Log(m1) - Math.Log(m0)) * r.NextDouble())));
+                res.Feed = true;
+            }
+        }
     }
 
     /// <summary>A burst at its point along the path, with its force. Broken (E2): a shell's pieces through a plate it

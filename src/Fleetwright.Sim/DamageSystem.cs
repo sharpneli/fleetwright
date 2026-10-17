@@ -374,7 +374,7 @@ public sealed class DamageSystem : IWorldSystem
 
             bender.Set(bearings, n, water);
             var lots = lotStream.Derive((ulong)hit.Ship);
-            t = Terminal.Resolve(cls, hit, path, bender, lots, settings, ref rng);
+            t = Terminal.Resolve(cls, hit, path, bender, lots, settings, ref rng, k);
             e = Effects.Apply(cls, k, hit, path, t, settings, propellant[ship.Side], ref rng);
         }
 
@@ -401,6 +401,10 @@ public sealed class DamageSystem : IWorldSystem
             fx |= HitEffect.Jammed;
         if (e.Stunned)
             fx |= HitEffect.Stunned;
+        if (e.Leak != LeakRegime.None)
+            fx |= HitEffect.Leak;
+        if (e.Feed)
+            fx |= HitEffect.Feed;
         if (e.Changed && k.Status == ShipStatus.Afloat)
         {
             fx |= Recompute(world, slot, k, ref rng);

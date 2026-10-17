@@ -818,13 +818,47 @@ public sealed record SimSettings
     public double NeighbourShare { get; init; } = 0.5;
 
     /// <summary>Holes: a shell that passes through plating leaves a hole this many calibres across; plating holed up to
-    /// this far over the waterline lets water in; a heavy shell (this calibre, mm, and up) defeated by a belt at the
-    /// waterline opens its seams with this chance, a leak of this many square metres.</summary>
+    /// this far over the waterline lets water in.</summary>
     public double ShellHoleCalibres { get; init; } = 1.5;
     public double HoleOverWaterlineM { get; init; } = 0.5;
-    public double SeamLeakMinMm { get; init; } = 270;
-    public double SeamLeakChance { get; init; } = 0.4;
-    public double SeamLeakM2 { get; init; } = 0.002;
+
+    /// <summary>A belt that held still leaks (docs/battle/shells-armour-damage.md E4; damage/13 §2, <c>belt_leak</c>): the
+    /// chance by where it struck against the waterline now (within <see cref="BeltWaterlineM"/> of it, higher, or within
+    /// <see cref="BeltLowerEdgeM"/> of the plate's lower edge), over 1 + <see cref="BeltJointShare"/>·(joint − 1), times
+    /// size(I)·margin(r) as a turret's, on a plate joint (within <see cref="BeltJointM"/> of a butt or seam of plates
+    /// <see cref="BeltPlateM"/> long and high from the row's corner [EST]) by <see cref="BeltJointK"/>, near a leak before
+    /// (within <see cref="BeltRepeatM"/>: the plate loosened) by <see cref="BeltRepeatK"/>, behind a welded skin by
+    /// <see cref="WeldedSkinK"/>, at most <see cref="BeltLeakMax"/>. A loosened plate defends at
+    /// <see cref="LoosenedPlate"/> of itself.</summary>
+    public double[] BeltLeakChance { get; init; } = [0.50, 0.25, 0.80];
+    /// <summary>How far behind the plate the cell it leaks into begins, at most (its backing and the skin between) [EST].</summary>
+    public double BeltBehindM { get; init; } = 2;
+    public double BeltWaterlineM { get; init; } = 1;
+    public double BeltLowerEdgeM { get; init; } = 1;
+    public double[] BeltPlateM { get; init; } = [5, 2.5];
+    public double BeltJointM { get; init; } = 0.2;
+    public double BeltJointShare { get; init; } = 0.25;
+    public double BeltJointK { get; init; } = 1.5;
+    public double BeltRepeatM { get; init; } = 3;
+    public double BeltRepeatK { get; init; } = 2;
+    public double WeldedSkinK { get; init; } = 0.6;
+    public double BeltLeakMax { get; init; } = 0.95;
+    public double LoosenedPlate { get; init; } = 0.85;
+
+    /// <summary>A leak's regime (13 §2.3 [FIT]): seep, moderate, major, lost by these shares, the worse two times (0.5 +
+    /// size·margin), by <see cref="LeakJointK"/> on a joint and <see cref="LeakRepeatK"/> near a leak before; its opening
+    /// into the cell behind, m², uniform in log space between each regime's pair. Damage control's rows (caulked, wedged,
+    /// matted) and the reopening at speed wait for damage control.</summary>
+    public double[] LeakRegimeShare { get; init; } = [0.55, 0.30, 0.12, 0.03];
+    public double[] LeakRegimeM2 { get; init; } = [2e-4, 2e-3, 3e-3, 2.5e-2, 0.05, 0.2, 0.5, 2];
+    public double LeakJointK { get; init; } = 1.6;
+    public double LeakRepeatK { get; init; } = 1.5;
+
+    /// <summary>A leak into a fuel tank or the double bottom (feed water, oil) fouls the nearest boiler or engine room's
+    /// supply with this chance, for <see cref="FeedCasualtyMin"/> minutes, log-uniform (13 §2.3: Lion's port engine,
+    /// Malaya's A boiler room [FIT]; the length [EST]).</summary>
+    public double FeedCasualtyChance { get; init; } = 0.15;
+    public double[] FeedCasualtyMin { get; init; } = [10, 60];
 
     /// <summary>A burst's single pieces (docs/battle/shells-armour-damage.md E1; damage/13 §2.5), walked on through the
     /// ship from the burst like a shell: an AP or common shell's nose slug, a blunt broken penetrator SlugCalibres of the

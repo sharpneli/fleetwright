@@ -115,6 +115,12 @@ public sealed class ShipCondition
     /// damage system's event for it: its generation and when it's set for.</summary>
     public long NextClearMs = -1, ClearAtMs = -1;
     public int ClearGen;
+    /// <summary>Where its belt leaked from hits that held (E4): the plate loosened there, a ring of the latest
+    /// <see cref="LeakMarks"/> (the side plate's row and the point, ship frame).</summary>
+    public const int LeakMarks = 32;
+    public readonly int[] LeakRow = new int[LeakMarks];
+    public readonly P3[] LeakAt = new P3[LeakMarks];
+    public int Leaks;
 
     public double CrewLost;
     public ShipStatus Status;
@@ -188,7 +194,7 @@ public sealed class ShipCondition
         Array.Fill(TubeWorks, true);
         (CrewLost, Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (0, ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (WaterT, GmM, StepMs, NextStepMs, HeldCap, LastShooter, LastBattery, LossMs, GoneMs) = (0, c.Hydrostatics.GmT, 0, -1, 1, 0, 0, 0, 0);
-        (NextClearMs, ClearAtMs) = (-1, -1);
+        (NextClearMs, ClearAtMs, Leaks) = (-1, -1, 0);
         ClearGen++;
         Version++;
     }
@@ -267,6 +273,25 @@ public sealed class ShipCondition
                 break;
         }
         Down(row.Component, now, h.StunMs);
+    }
+
+    /// <summary>A leak in a belt's plate at a point (E4): the plate loosened there.</summary>
+    public void Leaked(int row, P3 at)
+    {
+        int i = Leaks++ % LeakMarks;
+        (LeakRow[i], LeakAt[i]) = (row, at);
+    }
+
+    /// <summary>Whether a belt's plate leaked within m of a point before: loosened there (E4).</summary>
+    public bool Loosened(int row, P3 at, double m)
+    {
+        for (int i = 0, n = Math.Min(Leaks, LeakMarks); i < n; i++)
+        {
+            ref readonly var p = ref LeakAt[i];
+            if (LeakRow[i] == row && (p.X - at.X) * (p.X - at.X) + (p.Y - at.Y) * (p.Y - at.Y) + (p.Z - at.Z) * (p.Z - at.Z) <= m * m)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>Whether a mount trains stiffly now (E4).</summary>
@@ -391,6 +416,8 @@ public sealed class ShipCondition
                 if ((Flags[i] & PartFlags.Down) != 0)
                     h.Add(DownUntil[i]);
             }
+        if (Leaks > 0)
+            h.Add(Leaks);
         for (int m = 0; m < Mount.Length; m++)
         {
             ref readonly var a = ref Mount[m];

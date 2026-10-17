@@ -136,7 +136,7 @@ public static class Terminal
     /// <summary>The hit's path through its class (traced from just outside the hit point along the shell's flight) to
     /// its outcome; the bender bends the path where the shell turns or glances.</summary>
     public static TerminalResult Resolve(ShipClass c, in Hit hit, HitPath path, PathBender bender, in RandomStream lots, SimSettings s,
-        ref RandomStream r)
+        ref RandomStream r, ShipCondition? k = null)
     {
         var shell = hit.Shell;
         var res = new TerminalResult
@@ -222,6 +222,8 @@ public static class Terminal
             ref readonly var mat = ref c.MaterialOf(x.Material);
             double td = mat.SteelMm(x.Mm) / calMm;
             double quality = PlateQuality(lots, x.Plate, x.Index, s) * Math.Max(1 + s.PlateShotSigma * r.NextGaussian(), MinQuality);
+            if (x.Plate == PlateKind.SideArmour && k is not null && k.Loosened(x.Index, x.Point, s.BeltRepeatM))
+                quality *= s.LoosenedPlate;   // a belt plate a leak loosened before (E4): its bolts pulled, its backing crushed
             bool hard = mat.FaceHardened, shatter = false;
             if (hard)
             {

@@ -35,6 +35,10 @@ public static class GivenHits
         /// (<see cref="NonPen.MarginK"/>).</summary>
         public readonly int[] TurretSpots = new int[Enum.GetValues<TurretSpot>().Length];
         public double TurretMarginK;
+        /// <summary>E4: the hits a belt held (stopped, glanced off, burst on), its leaks by regime
+        /// (<see cref="LeakRegime"/>, None: held tight), the feeds they fouled.</summary>
+        public int BeltHeld, Feeds;
+        public readonly int[] Leaks = new int[Enum.GetValues<LeakRegime>().Length];
         /// <summary>E3: the hits whose plate threw spall off its back.</summary>
         public int Spalls;
         /// <summary>The hits that set a magazine off, by how (<see cref="MagazineVia"/>); and the ships lost to a magazine
@@ -176,6 +180,12 @@ public static class GivenHits
                 rep.Jams += fx.Jammed ? 1 : 0;
                 rep.Stuns += fx.Stunned ? 1 : 0;
                 int held = t.Glance >= 0 ? t.Glance : t.Outcome is Outcome.Defeated or Outcome.BurstOutside ? t.Plate : -1;
+                if (held >= 0 && w.Damage.LastPath.Crossings[held].Plate == PlateKind.SideArmour)
+                {
+                    rep.BeltHeld++;
+                    rep.Leaks[(int)fx.Leak]++;
+                    rep.Feeds += fx.Feed ? 1 : 0;
+                }
                 if (held >= 0 && w.Damage.LastPath.Crossings[held].Plate is PlateKind.Barbette or >= PlateKind.TurretFace and <= PlateKind.TurretRoof &&
                     target.MountOf(w.Damage.LastPath.Crossings[held].Index) >= 0)
                 {

@@ -108,6 +108,13 @@ static class HitsBench
             Console.WriteLine("    where they held: " + string.Join(", ", Enum.GetValues<TurretSpot>().Select(v => string.Format(Inv, "{0} {1:0}%", v,
                 100.0 * r.TurretSpots[(int)v] / r.TurretHeld))) + string.Format(Inv, "; margin factor {0:0.00} on average", r.TurretMarginK / r.TurretHeld));
         }
+        if (r.BeltHeld > 0)
+        {
+            int leaks = r.BeltHeld - r.Leaks[(int)LeakRegime.None];
+            Console.WriteLine(string.Format(Inv, "  a belt held {0:0.#}% of hits; of those leaked {1:0.#}% (seep {2}, moderate {3}, major {4}, lost {5}), " +
+                "feed fouled {6}", 100.0 * r.BeltHeld / r.Hits, 100.0 * leaks / r.BeltHeld, r.Leaks[(int)LeakRegime.Seep], r.Leaks[(int)LeakRegime.Moderate],
+                r.Leaks[(int)LeakRegime.Major], r.Leaks[(int)LeakRegime.Lost], r.Feeds));
+        }
         if (r.Magazines > 0)
             Console.WriteLine("  magazines set off by: " + string.Join(", ", Enum.GetValues<MagazineVia>().Where(v => r.MagazinesBy[(int)v] > 0)
                 .Select(v => string.Format(Inv, "{0} {1:0.##}%", Via(v), 100.0 * r.MagazinesBy[(int)v] / r.Hits))) + " of hits");

@@ -36,6 +36,26 @@ public enum JamCause : byte
     Ring,
 }
 
+/// <summary>How a belt that held leaks (damage/13 §2.3): rivets, bolts or a hairline seam; a plate dished; a plate
+/// driven in or a joint opened; the plate fallen off.</summary>
+public enum LeakRegime : byte
+{
+    None,
+    Seep,
+    Moderate,
+    Major,
+    Lost,
+}
+
+/// <summary>Where on a belt a hit that held struck, against the waterline now (damage/13 §2.3): within a metre of it,
+/// higher (the upper belt), or at the plate's lower edge.</summary>
+public enum BeltZone : byte
+{
+    Waterline,
+    Upper,
+    LowerEdge,
+}
+
 /// <summary>A turret's outcome: the blow and a jam's cause, how long it lasts (ms; <see cref="NonPen.Battle"/> for the
 /// rest of the battle), and the crew's stun with it (ms, 0 for none).</summary>
 public readonly record struct TurretHarm(TurretBlow Blow, JamCause Cause, long Ms, long StunMs);
@@ -121,6 +141,36 @@ public static class NonPen
             default:
                 return default;
         }
+    }
+
+    /// <summary>Whether a belt that held a shell of an impulse at a margin leaks, and how (damage/13 §2.3,
+    /// <c>belt_leak</c>): the zone's chance over the joints' mean share, times size(I)·margin(r), on a joint by
+    /// <see cref="SimSettings.BeltJointK"/>, a plate a leak loosened before by <see cref="SimSettings.BeltRepeatK"/>, a
+    /// welded skin by <see cref="SimSettings.WeldedSkinK"/>, at most <see cref="SimSettings.BeltLeakMax"/>; then the regime,
+    /// a near thing, a joint or a loosened plate shifting it to the bad end, and its opening, m² (log-uniform).</summary>
+    public static (LeakRegime Regime, double M2) BeltLeak(BeltZone zone, double impulse, double r, bool joint, bool repeat, bool welded,
+        SimSettings s, ref RandomStream rng)
+    {
+        double k = SizeK(impulse, s) * MarginK(r);
+        double p = s.BeltLeakChance[(int)zone] / (1 + s.BeltJointShare * (s.BeltJointK - 1)) * k;
+        if (joint)
+            p *= s.BeltJointK;
+        if (repeat)
+            p *= s.BeltRepeatK;
+        if (welded)
+            p *= s.WeldedSkinK;
+        if (rng.NextDouble() >= Math.Min(p, s.BeltLeakMax))
+            return (LeakRegime.None, 0);
+        double bad = (0.5 + k) * (joint ? s.LeakJointK : 1) * (repeat ? s.LeakRepeatK : 1), sum = 0;
+        for (int g = 0; g < 4; g++)
+            sum += s.LeakRegimeShare[g] * (g >= 2 ? bad : 1);
+        double u = rng.NextDouble() * sum;
+        int regime = 0;
+        for (; regime < 3; regime++)
+            if ((u -= s.LeakRegimeShare[regime] * (regime >= 2 ? bad : 1)) < 0)
+                break;
+        double lo = s.LeakRegimeM2[2 * regime], hi = s.LeakRegimeM2[2 * regime + 1];
+        return ((LeakRegime)(regime + 1), Math.Exp(Math.Log(lo) + (Math.Log(hi) - Math.Log(lo)) * rng.NextDouble()));
     }
 
     /// <summary>The struck structure's crew stunned (damage/13 §3.4, a turret's or a conning tower's): with a chance
