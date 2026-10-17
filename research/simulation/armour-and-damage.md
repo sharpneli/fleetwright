@@ -151,7 +151,7 @@ Each item gives: the damage research's rule, the armour mechanism, what it chang
 
 ### 3.8 Paths through several plates: the residual-velocity rule
 
-- **The game** steps plate by plate (good; this is what the armour research recommends), slowing the shell by `v·√(1 − t/T)`.
+- **The game** steps plate by plate (good; this is what the armour research recommends), slowing the shell by `v·√(1 − t/T)`. *(Since 2026-10-17 Lambert-Jonas on Thompson's V_L: shells-armour-damage.md P1a. Plain, it gives the spaced deck 0.75.)*
 - **Armour** recommends Lambert–Jonas, `√(V² − V_L²)`, with turning toward the plate normal.
 - **[CALC]:** with the game's T ∝ V^1.1, the game's rule slows a shell 15–25% more per plate. For example, at t/T = 0.5 the shell keeps 0.71 of its speed under the game's rule against 0.85 under Lambert–Jonas.
   - On the one spaced-deck datum, 2+1+2″ STS at 68° held like **0.74** of a solid 5″. The game's rule gives **0.80** and Lambert–Jonas gives **0.66**. The armour research's own test found the same under-rating (0.60–0.64) and Okun's 1.4 rule gives 0.78.

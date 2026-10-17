@@ -43,4 +43,35 @@ public class PenetrationTests
                 Assert.InRange(deck / r.Deck, 0.9, 1.1);
         }
     }
+
+    /// <summary>Lambert-Jonas on Thompson's limit: a plate costs the energy that just gets through it, and plates
+    /// stacked hold less than one of their sum (the spaced 2+1+2" STS deck at 68° against a 14": 0.74 of a solid 5"
+    /// measured; armour-and-damage.md §3.8).</summary>
+    [Fact]
+    public void Stacked_plates_hold_less_than_one_of_their_sum()
+    {
+        Assert.Equal(400, Terminal.Residual(500, 300), 9);
+        Assert.Equal(0, Terminal.Residual(300, 300));
+        const double cal = 355.6, kg = 680.4, ob = 68;
+        double[] stack = [50.8, 25.4, 50.8];
+        bool Through(double v)
+        {
+            foreach (double t in stack)
+            {
+                double vl = Terminal.LimitMs(t, cal, kg, ob);
+                if (v < vl)
+                    return false;
+                v = Terminal.Residual(v, vl);
+            }
+            return true;
+        }
+        double lo = 0, hi = 3000;
+        for (int i = 0; i < 60; i++)
+        {
+            double mid = (lo + hi) / 2;
+            (lo, hi) = Through(mid) ? (lo, mid) : (mid, hi);
+        }
+        double ratio = hi / Terminal.LimitMs(stack.Sum(), cal, kg, ob);
+        Assert.InRange(ratio, 0.70, 0.80);
+    }
 }

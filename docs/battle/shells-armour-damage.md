@@ -613,8 +613,8 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       shot; the state hash moved (squadrons 27C3077B -> 4A00F99D, flotilla A5834BAF -> 23A9E144) only by the design
       hashes: with that term left out both hash the same before and after (BB76AB02, 39392167).
 - **P1a Thompson and the plate bench** (sim only; the materials' `q` as P0 left them; done 2026-10-17).
-  - `Terminal`'s plate step on Thompson's V_L, the residual from V and V_L (the game's rule, P5), and the inverse
-    (Cardano, below) for `Matchup.cs` and the bench's readouts.
+  - `Terminal`'s plate step on Thompson's V_L, the residual from V and V_L (Lambert-Jonas since 2026-10-17, "How"
+    below), and the inverse (Cardano, below) for `Matchup.cs` and the bench's readouts.
   - **The plate-only bench** (`shipgen pen-check`): the game's `Terminal` plate step against `armor/07-*.csv` (the USN
     16″ table, NPG 1946–47, the Italian obliquity tables, Annapolis, Indian Head, Beardmore, Baden), and both models'
     decks beside Thompson's (for the record; nothing reads them). No rolls. It reads the CSVs from the repo, as a tool may; nothing the release needs.
@@ -639,9 +639,9 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       With `p = b/a` and `q = c/a` it is `u = 2·√(p/3)·sinh(⅓·asinh((3q/2p)·√(3/p)))`, then `T = u²`. That is
       Cardano's one-real-root case in its hyperbolic form; the textbook form of two cube roots cancels badly here,
       because the linear term dominates (the cubic's share is about 0.35·T/D at normal). The cost is one sqrt,
-      asinh and sinh, about the price of one plate step, with no iteration and no bracket. The readouts want it
-      (the matchup's profiles in `Matchup.cs`, `shipgen matchup`, the designer's immune zone later), and so does the
-      plate step since it was built: the game's residual rule is in t/T (below, "How"). A test round-trips it:
+      asinh and sinh, about the price of one plate step, with no iteration and no bracket. Only readouts want it:
+      the matchup's profiles (`Matchup.cs`), `shipgen matchup`, and the designer's immune zone later. A hit never
+      does (with Lambert-Jonas, "How" below). A test round-trips it:
       `V_L(T(V)) = V` to 1e-9 over calibres, weights, angles and speeds.
     - Valid to 75° of obliquity. Past it, F takes Ob held at 75° and the 1/cos takes the true angle (as
       `armor_pen_ref.py` does); both are constant in T, so the inverse still holds. The ricochet gate (P5) takes
@@ -662,15 +662,24 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
     - **`Terminal`'s physics:** `LimitMs(tMm, calibreMm, massKg, ob)` is Thompson's V_L (inches, pounds and ft/s
       inside, SI out; F at Ob held to 75°, the 1/cos at the true angle); `PenMm(v, calibreMm, massKg, ob)` is its
       Cardano inverse; each has an overload taking the shell. The old fit and its `deck` flag go.
-    - **The plate step keeps its form, with Thompson's T:** the capability T = `PenMm(shell, v, ob)` (× `CommonPenShare`
-      for a common shell) against the plate's thickness × q, drawn within `PenSpread` as before; the residual stays
-      the game's rule `v·√(1 − t/T)`.
+    - **The plate step:** the plate's thickness × q, drawn within `PenSpread` (one draw a plate, as before) and for a
+      common shell over `CommonPenShare` (the old capability × 0.6); `LimitMs` of that; through if V ≥ V_L.
+    - **The residual is Lambert-Jonas** (user, 2026-10-17, on Claude's suggestion: "This is a full rework ... We
+      don't need to maintain coherency to the old across all the individual steps"): `Vr = √(V² − V_L²)`, a = 1, p = 2,
+      the plate costing the energy that just gets through it (`Terminal.Residual`). Thompson's F rises with T/D (and
+      faster at obliquity), so that energy grows faster than the thickness: plates stacked hold less than one of their
+      sum, as spaced and laminated armour did (the user's tank example: 2 × 40 mm resists less than 80 mm), and
+      ultra-thin laminates gain nothing. Under Thompson, 14″ 680 kg, stack limit over the solid plate's (the t/T rule
+      it replaced in brackets): 2+1+2″ STS at 68° **0.75** (0.85; measured 0.74), 2 × 40 mm 0.96 (0.98), 2 × 190 mm
+      0.86 (0.92), 4 × 100 mm 0.79 (0.88), 20 × 20 mm 0.73 (0.85). The research's 0.66 for Lambert-Jonas (§3.8)
+      included Okun's turn toward the normal and his energy factor above 45°: those are P5's. A hit needs V_L only.
+      Not modelled: the plug's mass (a < 1), small for big shells on thinner plates. Shells slow less than under t/T
+      (15″ from 500 m/s through 160 mm: 433 m/s against 397), so bursts land deeper: P5's Baden and Hood check.
     - **Not the residual in u (tried and dropped, 2026-10-17):** written as `v·√(1 − u^−1.1)` (u = V/V_L) the rule is
       the old one only while T ∝ V^1.1. Under Thompson a thin plate's V_L goes as √T, so that form took 5–7% of a big
       shell's speed per 20 mm plate, against 2% before and about 1% Lambert-Jonas, about five times the energy
-      Thompson itself gives the plate: Yamato on Yamato's bursts beyond the far side fell 19% → 9%. The t/T form is
-      the one the research's spaced-deck check (0.80 against 0.74 measured, armour-and-damage.md §3.8) was made in, so
-      it stays; the plate step pays one inverse a plate (sqrt, asinh, sinh: about the old fit's four powers).
+      Thompson itself gives the plate: Yamato on Yamato's bursts beyond the far side fell 19% → 9%. P1a went in with
+      the t/T form (Thompson's T, one inverse a plate), then moved to Lambert-Jonas above the same day.
     - **The matchup:** its side and deck profiles read `PenMm` (no deck flag). It also gains the common shell's share,
       which it never had (a mismatch with the terminal, fixed on the way).
     - **`shipgen pen-check`** (no rolls; reads `research/simulation/armor/07-*.csv`): A, the calibration tables (the
@@ -705,6 +714,10 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
     - The matchup gained the common shell's `CommonPenShare` (it never had it). DamageTests' water-fuze test now
       runs 1 m of water, not 3: after 3 m the 15″ strikes at 365 m/s, and Thompson's 255 mm (old fit 279) sometimes
       leaves it on the dreadnought's lower belt, short of the hull the test is about.
+    - **Lambert-Jonas, benches t/T → L-J:** yamato by yamato bursts beyond 17.4 → 19.3%, ricochets 9.2 → 7.5%, water
+      309 → 328 t; iron_duke by seydlitz, light_cruiser, tb_destroyer within a few tenths; matchup, duel and flotilla
+      identical; squadrons Britain lost 2 → 1 (Princess Royal survives), Germany 0; tsushima --play 2 seeds Russia
+      4 → 3.5, Japan 4 → 4.5.
 - **P1b The real Q** (sim only).
   - `q` from armor/00 §4.2 with Q(D), the ductility penalty and the thin face-hardened rule. WWI KC goes from 1.0 to
     about 0.85–0.88.
@@ -743,8 +756,9 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
   - The ricochet gate at 65–80°, by V/V_L, certain from 80°, none for broken shells.
   - Compound obliquity with heel and barbette curvature.
   - Normalisation toward the plate's normal on the way through.
-  - The residual-velocity rule stays the game's (it fits the spaced deck better); its burst distances are checked
-    against Baden and the Hood deck series.
+  - The residual is Lambert-Jonas since P1a (it fits the spaced deck: 0.75 against 0.74); with the turn toward the
+    normal and Okun's energy factor above 45° added here, its burst distances are checked against Baden and the Hood
+    deck series.
 - **P6 Under water** (mostly done; what's left is P3's switch). The shell's speed by the distance it travels in the
   water (`e^(−x/L)`), the fuze clock starting at the water, and the Type 91 as the exception that keeps going. This
   replaces `UnderwaterSpeedShare`'s flat 0.4.
@@ -968,7 +982,7 @@ None blocks a step; each is settled by its step's bench.
 | S4 | S1 | designer picker (UI session; done) | — | no |
 | S5 | S2 | the loadout applied and resolved | per-ship loadouts: scenarios, dev flag, bench (done) | only for ships given one |
 | P0 | — | materials table, upgrade (done) | material rows (done) | no |
-| P1a | P0 | — | vanilla Thompson, Cardano inverse, pen-check bench (done) | penetration (−2 to −6% big guns, more for small) |
+| P1a | P0 | — | vanilla Thompson, Cardano inverse, Lambert-Jonas, pen-check bench (done) | penetration (−2 to −6% big guns, more for small) |
 | P1b | P1a | material catalogue | Q(D) | penetration |
 | P1c | P0 | densities | — | weights |
 | P2 | S2, P1b | — | caps, shatter, break-up | outcomes |

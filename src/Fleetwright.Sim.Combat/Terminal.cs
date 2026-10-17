@@ -62,10 +62,11 @@ public struct TerminalResult
 /// <c>resolve()</c>, walked along the hit's own <see cref="HitPath"/> instead of the reference's zones. Plate by plate,
 /// each at its obliquity:
 /// <list type="bullet">
-/// <item><b>penetration:</b> the plate a shell beats at its speed, Thompson's limit velocity inverted
-/// (<see cref="PenMm(in ShellTypeRow, double, double)"/>, the same for belts and decks), against the plate's thickness
-/// times its material's q, drawn within <see cref="SimSettings.PenSpread"/>; a common shell at
-/// <see cref="SimSettings.CommonPenShare"/>; the shell slows by the game's rule, v·√(1 − t/T);</item>
+/// <item><b>penetration:</b> Thompson's limit velocity (<see cref="LimitMs(in ShellTypeRow, double, double)"/>, the
+/// same for belts and decks) of the plate's thickness times its material's q, drawn within
+/// <see cref="SimSettings.PenSpread"/>, and for a common shell over <see cref="SimSettings.CommonPenShare"/>: through at
+/// or above it, slowed by Lambert-Jonas, √(v² − V_L²) (<see cref="Residual"/>: the plate costs the energy that just
+/// gets through it);</item>
 /// <item><b>a nose fuze</b> bursts on the first plate: just inside it if it's under <see cref="SimSettings.HePenCalibres"/>
 /// (times √cos ob), outside if not;</item>
 /// <item><b>a base fuze</b> arms on a plate over Okun's threshold (<see cref="SimSettings.FuzeArmCalibres"/> at normal
@@ -141,8 +142,10 @@ public static class Terminal
                     : Burst(ref res, Math.Max(x.T - 0.3, 0), s.BurstOutsideK, Outcome.BurstOutside, BurstKind.Outside);
             }
 
-            double cap = PenMm(shell, v, ob) * (shell.Kind == ShellKind.Common ? s.CommonPenShare : 1);
-            if (t > cap * r.NextDouble(1 - s.PenSpread, 1 + s.PenSpread))
+            // the plate as this shell meets it: its resistance drawn, and a common shell's weaker body
+            double te = t * r.NextDouble(1 - s.PenSpread, 1 + s.PenSpread) / (shell.Kind == ShellKind.Common ? s.CommonPenShare : 1);
+            double vl = LimitMs(shell, te, ob);
+            if (v < vl)
             {
                 // stopped here: about to burst, it bursts against the plate, this side of it; a dud lies there; never
                 // armed, it's defeated or glances off
@@ -158,7 +161,7 @@ public static class Terminal
                     (res.Burst, res.BurstT, res.Force) = (BurstKind.Outside, Math.Max(x.T - 0.3, 0), s.BurstOutsideK);
                 return res;
             }
-            v *= Math.Sqrt(Math.Max(0, 1 - t / cap));
+            v = Residual(v, vl);
             if (!armed && t >= FuzeArmMm(calMm, ob, s))
             {
                 armed = true;
@@ -238,8 +241,8 @@ public static class Terminal
     /// double, double, double)"/> inverted in closed form. With u = √T, V_L is the cubic a·u³ + b·u = c, a =
     /// 6·(Ob² + 2000)/D, b = 34600 − 2.7·Ob², c = V·cos Ob·√W/(0.024056·D); a and b are positive at every Ob F takes, so
     /// there is one real root, Cardano's in its hyperbolic form u = 2√(p/3)·sinh(⅓·asinh((3q/2p)·√(3/p))), p = b/a, q =
-    /// c/a (the two-cube-root form cancels badly, the linear term dominating). The plate step's capability: one sqrt,
-    /// asinh and sinh, about the old fit's four powers.</summary>
+    /// c/a (the two-cube-root form cancels badly, the linear term dominating). For readouts (the matchup, benches); a
+    /// hit never needs it.</summary>
     public static double PenMm(double v, double calibreMm, double massKg, double obliquityDeg)
     {
         double d = calibreMm / In, w = massKg / Lb, o = Math.Min(obliquityDeg, 75);
@@ -251,6 +254,12 @@ public static class Terminal
     }
 
     public static double PenMm(in ShellTypeRow shell, double v, double obliquityDeg) => PenMm(v, shell.CalibreMm, shell.MassKg, obliquityDeg);
+
+    /// <summary>The speed left after a plate of limit vl, Lambert-Jonas with a = 1, p = 2: ½mVr² = ½mV² − ½mV_L², the plate
+    /// costing the energy that just gets through it. Thompson's F rising with T/D makes that energy grow faster than the
+    /// thickness, so plates stacked hold less than one of their sum (2+1+2″ STS at 68° against a 14″: 0.75 of a solid
+    /// 5″, 0.74 measured; armour-and-damage.md §3.8).</summary>
+    public static double Residual(double v, double vl) => v > vl ? Math.Sqrt(v * v - vl * vl) : 0;
 
     static double Cos(double obliquityDeg) => Math.Max(Math.Cos(double.DegreesToRadians(obliquityDeg)), 1e-6);
 
