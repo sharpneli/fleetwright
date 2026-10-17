@@ -329,7 +329,7 @@ public static class NearMiss
     }
 
     /// <summary>The outside faces that can be wet: the sides and the bottom.</summary>
-    static ReadOnlySpan<int> WetFaces => [0, 1, 3];
+    static readonly int[] WetFaces = [0, 1, 3];   // an array: a constant span literal allocates in unoptimised code (RuntimeHelpers.CreateSpan)
 
     /// <summary>The ship's shock factor: the most of any wetted face's at its nearest point (15 §6.4: one number per ship),
     /// that face's space, point and plate.</summary>

@@ -287,7 +287,7 @@ public sealed class MagazineBlast
             if (q.Kind == RoomKind.BoilerRoom && Math.Abs(qx - xc) < steam)
                 (steam, SteamX) = (Math.Abs(qx - xc), qx);
             if (Math.Abs(q.X0 - X1) < 0.6 || Math.Abs(q.X1 - X0) < 0.6)
-                foreach (double side in (ReadOnlySpan<double>)[-1, 1])
+                for (double side = -1; side <= 1; side += 2)
                     ops.Add(new Opening(OpeningKind.Vent, -1, new P3(qx, side * 3, hull.DeckTop(qx) - wl + 4), Unit(0, 0.1 * side, 1), 1.2, 60,
                         t0 + VentS));
         }
