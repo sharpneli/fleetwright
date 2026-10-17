@@ -108,6 +108,11 @@ static class HitsBench
             Console.WriteLine("    where they held: " + string.Join(", ", Enum.GetValues<TurretSpot>().Select(v => string.Format(Inv, "{0} {1:0}%", v,
                 100.0 * r.TurretSpots[(int)v] / r.TurretHeld))) + string.Format(Inv, "; margin factor {0:0.00} on average", r.TurretMarginK / r.TurretHeld));
         }
+        if (r.Confined > 0)
+            Console.WriteLine(string.Format(Inv, "  bursts in a closed space {0:0.#}% of hits: their boundaries felt {1:0.000} MPa on average, the gas reached {2:0.0} " +
+                "spaces; a burst ruptured {3:0.00} boundaries and blew {4:0.00} doors, opened {5:0.00} m² between spaces and {6:0.000} m² to the sea or air",
+                100.0 * r.Confined / r.Hits, r.BlastFelt / r.Confined, (double)r.BlastSpaces / r.Confined, (double)r.BlastRuptured / r.Confined,
+                (double)r.BlastDoors / r.Confined, r.BlastOpenM2 / r.Confined, r.BlastHoleM2 / r.Confined));
         if (r.ShockHeld > 0)
             Console.WriteLine(string.Format(Inv, "  armour held (belt, barbette, turret, conning tower) {0:0.#}% of hits; their shock put gear out {1:0.#}% of " +
                 "those, the ship's power {2} time(s)", 100.0 * r.ShockHeld / r.Hits, 100.0 * r.Shocks / r.ShockHeld, r.Blackouts));
@@ -156,6 +161,8 @@ static class HitsBench
         MagazineVia.Turret => "the turret or barbette",
         MagazineVia.Underwater => "under water",
         MagazineVia.Spall => "spall among its charges",
+        MagazineVia.Gas => "a burst's gas reaching it",
+        MagazineVia.Handling => "a burst in its handling room",
         _ => "-",
     };
 

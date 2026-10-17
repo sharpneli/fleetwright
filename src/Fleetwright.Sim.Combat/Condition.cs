@@ -114,6 +114,23 @@ public sealed class ShipCondition
     /// <summary>Each director's and eye's outage of its own (E4's shock: a director's gyro, a rangefinder knocked out of
     /// adjustment), not its part's: until when, world ms (0: none).</summary>
     public long[] DirectorDown = [], EyeDown = [];
+    /// <summary>Openings between spaces a burst's gas left (E5: ruptured boundaries, blown doors, sprung seams), m², on
+    /// each edge of the cell graph's entry from its lower cell (the Neighbours pool's index): the flooding adds them.</summary>
+    public double[] JoinOpenM2 = [];
+    /// <summary>The last cascade's (E5, <see cref="Blast.Cascade"/>): its number, the spaces it reached (BlastRegion, by
+    /// BlastStamp) and what each felt, MPa; scratch for the boundaries' marks. E6 reads the pressures.</summary>
+    public int BlastId;
+    public int[] BlastRegion = [], BlastStamp = [];
+    /// <summary>What each reached space felt, MPa, and the gas the region held before it joined, m³ (whether the burst's
+    /// hot products got there).</summary>
+    public double[] BlastFelt = [], BlastBefore = [];
+    internal int[] JoinStamp = [], FaceStamp = [];
+    internal byte[] JoinFate = [], FaceFate = [];
+    internal double[] JoinFelt = [], FaceFelt = [];
+    /// <summary>The class's cells' outside faces (E5): area, plate and middle, worked out at the first burst.</summary>
+    internal double[] FaceArea = [], FaceMm = [];
+    internal P3[] FacePoint = [];
+    internal bool FacesReady;
     /// <summary>When the next timed outage ends, world ms (-1: none does; one for the battle never ends), and the
     /// damage system's event for it: its generation and when it's set for.</summary>
     public long NextClearMs = -1, ClearAtMs = -1;
@@ -179,9 +196,19 @@ public sealed class ShipCondition
             DownUntil = new long[c.NodeCount];
             DirectorDown = new long[c.Directors.Length];
             EyeDown = new long[c.Eyes.Length];
+            JoinOpenM2 = new double[c.NeighbourCount];
+            (BlastRegion, BlastStamp, BlastFelt) = (new int[c.Cells.Length], new int[c.Cells.Length], new double[c.Cells.Length]);
+            BlastBefore = new double[c.Cells.Length];
+            (JoinStamp, JoinFate, JoinFelt) = (new int[c.NeighbourCount], new byte[c.NeighbourCount], new double[c.NeighbourCount]);
+            (FaceStamp, FaceFate, FaceFelt) = (new int[4 * c.Cells.Length], new byte[4 * c.Cells.Length], new double[4 * c.Cells.Length]);
+            (FaceArea, FaceMm, FacePoint, FacesReady) = (new double[4 * c.Cells.Length], new double[4 * c.Cells.Length], new P3[4 * c.Cells.Length], false);
         }
         else
         {
+            Array.Clear(JoinOpenM2);
+            Array.Clear(BlastStamp);
+            Array.Clear(JoinStamp);
+            Array.Clear(FaceStamp);
             Array.Clear(Mount);
             Array.Clear(DownUntil);
             Array.Clear(DirectorDown);
@@ -453,6 +480,12 @@ public sealed class ShipCondition
             }
         if (Leaks > 0)
             h.Add(Leaks);
+        for (int i = 0; i < JoinOpenM2.Length; i++)
+            if (JoinOpenM2[i] != 0)
+            {
+                h.Add(i + 2000);
+                h.Add(JoinOpenM2[i]);
+            }
         for (int i = 0; i < DirectorDown.Length; i++)
             if (DirectorDown[i] != 0)
             {

@@ -265,6 +265,13 @@ public readonly record struct ShellTypeRow
     /// <summary>The filler's explosive's TNT equivalent for the blast: W = FillerKg × FillerRe (black powder 0.55,
     /// picric 1.17, TNT 1; docs/shipgen/explosive-templates.md).</summary>
     public double FillerRe { get; init; }
+    /// <summary>The filler's explosive's heats of detonation and full combustion (MJ/kg), the air its products need to
+    /// burn again (m³/kg) and its gas share η: the gas pressure of a burst in a closed space (docs/battle/
+    /// shells-armour-damage.md E5; damage/11 §2).</summary>
+    public double FillerQDet { get; init; }
+    public double FillerQComb { get; init; }
+    public double FillerAirM3Kg { get; init; }
+    public double FillerEta { get; init; }
     /// <summary>The filler's explosive (docs/battle/shells-armour-damage.md P3; damage/12 §4): the chance it bursts in a
     /// plate the shell just gets through (more on thicker, less on thinner: <c>Terminal.InPlateChance</c>), and the
     /// chance it detonates fully with the shell's booster (the rest go low-order or are duds).</summary>

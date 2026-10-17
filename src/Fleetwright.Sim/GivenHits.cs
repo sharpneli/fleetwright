@@ -41,6 +41,11 @@ public static class GivenHits
         /// <summary>E4: the hits a belt, barbette, turret or conning tower held (the shock's), those whose shock put gear
         /// out, and the ship-wide blackouts.</summary>
         public int ShockHeld, Shocks, Blackouts;
+        /// <summary>E5: the bursts whose gas loaded a closed space (not open, not outside), the spaces it reached, the
+        /// boundaries it ruptured and the doors it blew, what the burst space's boundaries felt (MPa) and the openings left
+        /// between spaces and to the sea or air (m²), summed.</summary>
+        public int Confined, BlastSpaces, BlastRuptured, BlastDoors;
+        public double BlastFelt, BlastOpenM2, BlastHoleM2;
         public readonly int[] Leaks = new int[Enum.GetValues<LeakRegime>().Length];
         /// <summary>E3: the hits whose plate threw spall off its back.</summary>
         public int Spalls;
@@ -182,6 +187,13 @@ public static class GivenHits
                 hitMagazine |= fx.Magazine;
                 rep.Jams += fx.Jammed ? 1 : 0;
                 rep.Stuns += fx.Stunned ? 1 : 0;
+                if (fx.Blast.Spaces > 0 && !fx.Blast.Open)
+                {
+                    (rep.Confined, rep.BlastSpaces, rep.BlastRuptured, rep.BlastDoors) =
+                        (rep.Confined + 1, rep.BlastSpaces + fx.Blast.Spaces, rep.BlastRuptured + fx.Blast.Ruptured, rep.BlastDoors + fx.Blast.Doors);
+                    (rep.BlastFelt, rep.BlastOpenM2, rep.BlastHoleM2) =
+                        (rep.BlastFelt + fx.Blast.FeltMPa, rep.BlastOpenM2 + fx.Blast.OpenM2 + fx.Blast.LeakM2, rep.BlastHoleM2 + fx.Blast.HoleM2);
+                }
                 int held = t.Glance >= 0 ? t.Glance : t.Outcome is Outcome.Defeated or Outcome.BurstOutside ? t.Plate : -1;
                 var hp = held >= 0 ? w.Damage.LastPath.Crossings[held].Plate : PlateKind.None;
                 bool shaken = hp is PlateKind.SideArmour or PlateKind.Barbette or >= PlateKind.TurretFace and <= PlateKind.TurretRoof ||

@@ -18,9 +18,10 @@ public enum LossKind : byte
 }
 
 /// <summary>An edge of the cell graph, once (A &lt; B), as water sees it: what joins them, the height its opening
-/// starts at (ship frame: a deck's height for cells one over the other, else the higher floor of two side by side), and
-/// which is above (-1 side by side).</summary>
-public readonly record struct FloodEdge(int A, int B, JoinKind Join, double Z, int Upper);
+/// starts at (ship frame: a deck's height for cells one over the other, else the higher floor of two side by side),
+/// which is above (-1 side by side), and its entry in the class's Neighbours pool (from A: where a burst's openings on it
+/// are kept, <see cref="ShipCondition.JoinOpenM2"/>).</summary>
+public readonly record struct FloodEdge(int A, int B, JoinKind Join, double Z, int Upper, int Pool);
 
 /// <summary>A class's cells as water sees them (docs/battle/fighting.md 4.3b), worked out once per class: each cell's
 /// capacity (its volume times its permeability), the area of its water's surface (the capacity over its height), its
@@ -55,8 +56,9 @@ public sealed class FloodModel
             DeckArea[i] = (b.X1 - b.X0) * (b.Y1 - b.Y0);
             volume += x.VolumeM3;
             Weather[i] = true;
-            foreach (var e in c.Neighbours(x.Neighbours))
+            for (int j = x.Neighbours.Start; j < x.Neighbours.End; j++)
             {
+                ref readonly var e = ref c.Neighbour(j);
                 var o = cells[e.Cell].Box;
                 if (o.Base >= b.Top - 0.05)
                     Weather[i] = false;   // a cell over it
@@ -64,7 +66,7 @@ public sealed class FloodModel
                     continue;
                 int upper = o.Base >= b.Top - 0.05 ? e.Cell : b.Base >= o.Top - 0.05 ? i : -1;
                 double z = upper == e.Cell ? b.Top : upper == i ? o.Top : Math.Max(b.Base, o.Base);
-                edges.Add(new FloodEdge(i, e.Cell, e.Join, z, upper));
+                edges.Add(new FloodEdge(i, e.Cell, e.Join, z, upper, j));
             }
             if (b.X0 <= lcf && b.X1 >= lcf)
                 deck = Math.Max(deck, b.Top);
@@ -204,7 +206,7 @@ public static class Flooding
                 JoinKind.Deck when open < 0 && e.Z > c.Vertical.Waterline => s.FloodSunkDeckM2,   // over the waterline once, under the sea now
                 JoinKind.Deck => s.FloodLeakDeckM2,
                 _ => s.FloodLeakBulkheadM2,
-            };
+            } + k.JoinOpenM2[e.Pool];   // and what a burst's gas opened there (E5)
             double v = cd * area * Math.Sqrt(2 * G * drive) * dt;
             // no more than lies over the opening, than the lower has room for, and than levels them
             double over = f.Full(k, hi) ? w[hi] : Math.Min(Math.Max(f.Level(c, k, hi) - e.Z, 0) * f.Area[hi], w[hi]);

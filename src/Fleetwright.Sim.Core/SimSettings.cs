@@ -780,21 +780,80 @@ public sealed record SimSettings
     /// of docs/battle/shells-armour-damage.md; off, only plates and machinery start it).</summary>
     public bool FuzeStartsOnWater { get; init; } = true;
 
-    /// <summary>The burst's radii, m, times the cube root of its TNT kg: equipment wrecked and most crew hit; light
-    /// structure and people injured; a contact burst's hole in plating, times the square root of 6 mm over the plate.</summary>
-    public double WreckRadiusK { get; init; } = 1.6;
+    /// <summary>The burst's radii, m, times the cube root of its TNT kg: equipment wrecked by its shock and fragments, in
+    /// the open and in the near zone of a burst inside (docs/battle/shells-armour-damage.md E5; damage/11 §3.3, §5.1: was
+    /// 1.6, an internal number); the crew it hits, until E6 (<see cref="CasualtyRadiusK"/>, the old 1.6); people injured;
+    /// a contact burst's hole in plating, times the square root of 6 mm over the plate (11 §3.1: unbiased against 13
+    /// holes).</summary>
+    public double WreckRadiusK { get; init; } = 1.0;
+    public double CasualtyRadiusK { get; init; } = 1.6;
     public double BlastRadiusK { get; init; } = 3.5;
     public double HoleRadiusK { get; init; } = 0.45;
+
+    /// <summary>A burst in a closed space (E5; damage/11 §1.2-§4): the gas pressure P = <see cref="BlastHeatK"/>·η·[Q_d +
+    /// φ·(Q_c − Q_d)]·W/V MPa (W the filler's kg, V the space's gas, φ = 1/(1 + W·air/V) the afterburn its air allows);
+    /// it blows down through the vents A as exp(−<see cref="VentC"/>·<see cref="VentAlpha"/>·A·t/V), measured
+    /// <see cref="BurnStretch"/>× longer, and a panel feels P·min(<see cref="BlastLoadFactor"/>, π·t/<see cref="PanelMs"/>);
+    /// none at all once α·A ≥ <see cref="OpenVentRatio"/>·V^⅔ (open). A boundary deforms from <see cref="DeformMPaMm"/> per
+    /// mm of plate and ruptures at <see cref="RuptureMPaMm"/> (riveted × <see cref="RivetedK"/>); a door goes at
+    /// <see cref="DoorShare"/> of its bulkhead's, at least <see cref="DoorMinMPa"/>, opening <see cref="DoorM2"/>; a
+    /// ruptured boundary opens <see cref="RupturedShare"/> of its area to the flooding (all of it to the gas). In the near
+    /// zone (WreckRadiusK·W^⅓) a boundary is holed <see cref="NearHoleK"/>·W^⅓ across.</summary>
+    public double BlastHeatK { get; init; } = 0.28;
+    public double AtmosphereMPa { get; init; } = 0.101;
+    public double VentC { get; init; } = 725;
+    public double VentAlpha { get; init; } = 0.6;
+    public double BurnStretch { get; init; } = 2;
+    public double PanelMs { get; init; } = 15;
+    public double BlastLoadFactor { get; init; } = 1.3;
+    public double OpenVentRatio { get; init; } = 0.6;
+    public double RuptureMPaMm { get; init; } = 0.06;
+    public double DeformMPaMm { get; init; } = 0.012;
+    public double RivetedK { get; init; } = 0.85;
+    public double DoorShare { get; init; } = 0.5;
+    public double DoorMinMPa { get; init; } = 0.08;
+    public double DoorM2 { get; init; } = 1.2;
+    public double RupturedShare { get; init; } = 0.25;
+    public double NearHoleK { get; init; } = 0.5;
+
+    /// <summary>The flame a burst's gas carries (E5; the user's choice, 2026-10-17): its own hot products, m³ a kg of
+    /// filler at flame temperature [EST: TNT's ~0.75 m³/kg of gas at STP, ×7 at ~2,000 K]. A magazine or handling room
+    /// the gas reaches is a flash source only if the burst was in it, or the products fill the spaces reached before it
+    /// (a 4" HE's don't get past its own space, a bomb's do).</summary>
+    public double HotProductsM3Kg { get; init; } = 5;
+
+    /// <summary>A deformed boundary's seam leak (E5; damage/17 leakage §3.2, <c>leak_ratio</c>): D = felt/deform; none below
+    /// <see cref="LeakWeepD"/>, <see cref="LeakR1"/>·D² cm²/m² to D 1, then log-linear to <see cref="LeakR5"/> at D 5;
+    /// lognormal about it (σ <see cref="LeakSigma"/>), welded × <see cref="LeakWeldedK"/>.</summary>
+    public double LeakWeepD { get; init; } = 0.3;
+    public double LeakR1 { get; init; } = 0.3;
+    public double LeakR5 { get; init; } = 100;
+    public double LeakSigma { get; init; } = 0.8;
+    public double LeakWeldedK { get; init; } = 0.4;
+
+    /// <summary>A space's vents to the outside by its room kind (as RoomKind's list: stores, accommodation, double
+    /// bottom, magazine, bunker, boiler room, engine room, steering, TDS, torpedo room, fuel tank, cargo tank, hold,
+    /// handling, hangar), as a share of V^⅔ [EST until the designer emits them: a boiler room's uptakes, vent trunks];
+    /// a part's by its component kind (as PartVital's), 1 and over open (an open mount, a mast, a funnel); the free
+    /// share of a part's box [EST].</summary>
+    public double[] RoomVentShare { get; init; } = [0.01, 0.02, 0, 0.005, 0.01, 0.15, 0.03, 0.01, 0, 0.02, 0, 0, 0.02, 0.02, 0.1];
+    public double[] PartVentShare { get; init; } = [0.05, 0.1, 1, 1, 0.02, 0.15, 0.05, 1, 1, 0.3, 0.2, 1, 0, 0.01, 1, 1, 1, 1, 0.1];
+    public double PartAirShare { get; init; } = 0.7;
+
+    /// <summary>What a space's or a part's gear takes from the gas, MPa (11 §4.3 [EST]: fittings 0.03, electrical 0.10,
+    /// auxiliary 0.25, machinery 0.6), by room kind and component kind: out of action from it, damaged from
+    /// <see cref="BlastDamagedShare"/> of it.</summary>
+    public double[] RoomBlastMPa { get; init; } = [0.03, 0.03, 0.25, 0.25, 0.6, 0.25, 0.25, 0.25, 0.6, 0.25, 0.6, 0.6, 0.03, 0.25, 0.03];
+    public double[] PartBlastMPa { get; init; } = [0.10, 0.10, 0.25, 0.10, 0.25, 0.03, 0.10, 0.25, 0.25, 0.25, 0.10, 0.25, 0.6, 0.6, 0.6, 0.6, 0.25, 0.03, 0.03];
+    public double BlastDamagedShare { get; init; } = 0.5;
 
     /// <summary>A burst's force as a share of one inside: in the plate, outside on it, and low-order.</summary>
     public double BurstInPlateK { get; init; } = 0.4;
     public double BurstOutsideK { get; init; } = 0.15;
     public double LowOrderK { get; init; } = 0.3;
 
-    /// <summary>A part within this share of the wreck radius is destroyed, within it disabled; a room is disabled by a
-    /// burst inside it whose wreck radius is this share of its length (else damaged, and twice damaged is disabled).</summary>
+    /// <summary>A part within this share of the wreck radius is destroyed, within it disabled.</summary>
     public double DestroyedShare { get; init; } = 0.5;
-    public double RoomDisableShare { get; init; } = 0.4;
 
     /// <summary>A space's vitals as a share of its floor, by its kind (stores, accommodation, double bottom, magazine,
     /// bunker, boiler room, engine room, steering, TDS, torpedo room, fuel tank, cargo tank, hold): a burst inside it

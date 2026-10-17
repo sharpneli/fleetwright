@@ -187,6 +187,12 @@ public sealed class ShipClass
     public ReadOnlySpan<Pt> Points(Slice s) => points.AsSpan(s.Start, s.Count);
     public ReadOnlySpan<double> Numbers(Slice s) => numbers.AsSpan(s.Start, s.Count);
     public ReadOnlySpan<Neighbour> Neighbours(Slice s) => neighbours.AsSpan(s.Start, s.Count);
+
+    /// <summary>The Neighbours pool's length: every edge of the cell graph, from both its cells.</summary>
+    public int NeighbourCount => neighbours.Length;
+
+    /// <summary>One entry of the Neighbours pool, by its index there.</summary>
+    public ref readonly Neighbour Neighbour(int poolIndex) => ref neighbours[poolIndex];
     public ReadOnlySpan<ArmourLayer> ArmourAbove(Slice s) => armourAbove.AsSpan(s.Start, s.Count);
     public ReadOnlySpan<DeckPlate> DeckPlates(Slice s) => deckPlates.AsSpan(s.Start, s.Count);
     public ReadOnlySpan<int> FunctionNodes(Slice s) => functionNodes.AsSpan(s.Start, s.Count);

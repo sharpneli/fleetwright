@@ -150,12 +150,14 @@ public class DamageTests(ITestOutputHelper output)
         // with half an hour of flooding and fire after: crippled more often than sunk (fighting.md 4.3b). Lost up to 8%:
         // the band was widened to 20% for magazines straight behind one plate (docs/battle/shells-armour-damage.md S1)
         // and narrowed again once they went under the waterline behind a wing of stores (user, 2026-10-16,
-        // docs/shipgen/protection-plan.md H2: 2 and 3% lost, the rest of the band the 60-ship sample's noise)
+        // docs/shipgen/protection-plan.md H2: 2 and 3% lost, the rest of the band the 60-ship sample's noise), and widened
+        // to 15% when a burst in a handling room, among the charges passing up, became a flash source (user, 2026-10-17,
+        // docs/battle/shells-armour-damage.md E5: 11.7 and 6.7% lost)
         foreach (string dd in new[] { "destroyer", "tb_destroyer" })
         {
             var r = Hits(dd, "lion", 1, 6_000, 600, 10, settleS: 1800);
             Assert.InRange((double)r.Crippled / r.Ships, 0.5, 1);
-            Assert.InRange((double)r.Lost / r.Ships, 0, 0.08);
+            Assert.InRange((double)r.Lost / r.Ships, 0, 0.15);
             Assert.True(r.Crippled > 3 * r.Lost, "crippled far more often than sunk");
         }
     }

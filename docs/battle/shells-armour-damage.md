@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E4 done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E5 done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1468,6 +1468,64 @@ squadrons, and changes `Matchup.cs` with it.
     only its share of what in a room matters.
   - **Matchup:** a burst's effect by the class's typical space volume. **Bench** `shipgen burst DESIGN SPACE SHELL`:
     11 §4.2's cases on our ships. **Tests:** 11 §5.5. Fumes later.
+  - **The user's choices (2026-10-17):** watertight doors by default on transverse watertight bulkheads between spaces
+    above the waterline (none below), until the designer emits them; crew left to E6 (its formula and its old 1.6·W^⅓
+    radius kept, `CasualtyRadiusK`; the pressures each reached space felt are kept for it); gas reaching a magazine or
+    handling room a flash source, as E2's and E3's; the matchup's volume term in the balance pass.
+  - **Done 2026-10-17.** What it came to:
+    - **The explosive's heats** (S1's catalogue) reach the shell: the report's `filler_q_det`, `filler_q_comb`,
+      `filler_air_m3_kg`, `filler_eta` and the sim's `ShellTypeRow` (goldens gain the keys, ShipDesign.Version 28).
+    - **The gas** (`Blast.cs`, Sim.Combat): 11 §2.1's P = 0.28·η·[Q_d + φ·(Q_c − Q_d)]·W/V, W the filler's own kg
+      times the burst's force (a low-order or in-plate burst gives less), V the space's free volume (its permeability)
+      less its water; the blowdown through its vents and what a panel feels, P·min(1.3, π·t/15 ms), none once
+      α·A ≥ 0.6·V^⅔. Vents by room kind [EST] (a boiler room 0.15·V^⅔ for its uptakes, vent trunks 0.005-0.03) and its
+      holes. Spaces joined open (a room over several cells) are one space.
+    - **The near zone:** the space's boundaries within 1.0·W^⅓ of the burst holed 0.5·W^⅓ in radius (an opening to the
+      flooding). The gas takes tens of ms to fill the next space through such a hole, longer than a panel's period, so
+      the burst space's walls feel its own pressure first and the holed spaces join after the first round, as through a
+      blown door. (The first cut merged them at once: an 8" HC in a destroyer's compartment then felt 0.05 MPa, 11's
+      0.25.)
+    - **The cascade:** 11 §4.1's, over the cell graph. A bulkhead or deck ruptures at 0.06 MPa a mm of its plate and
+      armour (riveted internals ×0.85), a door (the default above) at half its bulkhead's, at least 0.08; the space
+      beyond joins. The outside faces (the side where a space reaches the hull, the weather deck over it, the bottom
+      under the keel's tier; the shell plating and a belt, riveted shell ×0.85) tear open to the sea or air: a vent, and
+      a quarter of the face a hole for the flooding. Round on round until nothing more gives. What held but deformed
+      leaks by damage/17's r(D) (D = felt over 0.012 MPa a mm, lognormal σ 0.8, welded ×0.4): seams between spaces, holes
+      to the sea. The flooding reads each edge's openings (`ShipCondition.JoinOpenM2`, by the flood edge's pool entry)
+      on top of its own leak areas.
+    - **What the gas does:** in every space it reached, the rooms' gear and the parts in them by pressure class [EST, 11
+      §4.3: fittings 0.03, electrical 0.10, auxiliary 0.25, machinery 0.6 MPa; by room kind and component kind], out of
+      action from it, damaged from half; a part behind armour the gas can't burst keeps it out. In the burst space the
+      fragments damage rooms as before, but no longer disable them by the wreck radius against the room's length
+      (`RoomDisableShare` retired): the gas does that. A burst inside a part (a gunhouse, a conning tower, a
+      superstructure block; an open mount, mast or funnel is open) loads the part's own free volume, its walls torn if
+      they can't hold it, the parts with it taking the gas.
+    - **The wreck radius** 1.6 → 1.0·W^⅓ (`WreckRadiusK`), the open burst's and the near zone's. The crew keep 1.6
+      until E6.
+    - **Magazines** (the user's choices): a magazine or handling room the gas reaches is a flash source only while it
+      carries flame: the burst was in it, or its hot products (the filler's kg × 5 m³/kg at flame temperature [EST:
+      TNT's ~0.75 m³/kg at STP ×7]) fill the spaces reached before it, so a 4" HE's gas doesn't get to the next space
+      hot and a bomb's does. The first cut let any gas flash: destroyers under ten 4" HE hits went from 3% to 20% lost,
+      half of it gas at 0.01-0.025 MPa from the next space. A burst in a handling room among the charges passing up
+      rolls TurretFlashChance (`MagazineVia.Handling`; nothing rolled it before): destroyers 11.7% lost (7 of 60),
+      tb_destroyer 6.7%. The user widened DamageTests' destroyer band 0.08 → 0.15 (2026-10-17).
+    - **Not built:** fire's rise with afterburning and opened boundaries (11 §5.4 [EST]), fumes (11 §2.4), the trunks
+      (hoists, uptakes, vent trunks: no such edges in the cell graph yet), the matchup's term (the balance pass).
+    - **Bench** `shipgen burst` (11 §4.2's cases on our ships): a 5" AAC in a destroyer's compartment felt 0.11 MPa
+      (11: 0.09), nothing ruptured or blown; an 8" HC 0.31 (0.25), its bulkheads holed through, 7 spaces; a 14" HC in
+      her engine room 0.22 (0.30), 4 doors (4); a 46 cm Type 0 0.46 (0.44), 14 boundaries and her side and bottom torn;
+      a 250 kg bomb 1.65, 7 ruptured, 4 doors, 18 spaces; a 16" AP in a battleship's engine room 0.03 (0.05), nothing
+      broken; 15" CPC black powder 0.017 against TNT's 0.156 in the same space. A cascade 6-37 µs.
+    - **Tests** (`BlastTests`, 11 §5.5 1-7): the destroyer's 5" breaches nothing, her 8" opens the next spaces past 0.12
+      MPa, a bomb's gas beyond 10 m feels under 0.3 MPa (it goes on through doors, as 11 §6 warns); a 16" AP 0.40 MPa in
+      ~150 m³ and 0.03 in the engine room with nothing ruptured; the open wreck radius 2.6 m; black powder 1/9-1/5.6 of
+      TNT; DDESB's 0.21 MPa within its band; no allocation.
+    - **Benches, E4c to E5** (2,000 hits, 10 a ship): bursts in a closed space are 31-39% of a capital ship's hits,
+      their boundaries feel 0.05-0.10 MPa, the gas reaches 4-9 spaces, ruptures 0.01-0.07 a burst; holes a hit flat
+      (KGV 0.126 → 0.143 m²), magazines unchanged, the ships after their hits within a point. V25 under Lion's 4" HE:
+      79% of hits closed, crippled 77 → 64% (the smaller wreck radius), magazines by a burst in a handling room 0.3% of
+      hits. Matchup identical. Squadrons' 30 minutes: 177 → 122 hits, Princess Royal, Lion and Queen Mary lost to their
+      magazines, hash B7714059E8209D6F → 81427FD00B6EFAF7.
 - **E6 Casualties** (16, decision 8).
   - **Men, not area:** per group (a cell's or part's `battle_crew`, in distance bands), the man-stopping flux
     λ = S·N(r)·g·A·T·band/(4πr²), with N(r) E1's pieces still carrying 80 J; a cover share by room kind (the rest take
@@ -1588,7 +1646,7 @@ None blocks a step; each is settled by its step's bench.
 | E2 | P4, E1 | — | holed-but-broken, flash (done) | damage |
 | E3 | P4, E1 | the material's `back.big` (done) | spall (done) | damage behind armour |
 | E4 | E0, P1a | — | turret states, belt leaks, armour shock (done) | jams, leaks, outages |
-| E5 | E0, E1 | — | open and confined blast, `burst` bench | wreck reach, openings, leaks |
+| E5 | E0, E1 | the explosive's heats in the report (done) | open and confined blast, `burst` bench (done) | wreck reach, openings, leaks |
 | E6 | E1, E3, E5 | — | casualties, killed and wounded | crew |
 | E7 | E1, E5, P3 | — | near misses (new hit source), shock | near misses |
 | E8 | all | — | tuning | the anchors |

@@ -148,6 +148,9 @@ public static class Program
             writes the shell, explosive, material and fittings catalogues (ShellTemplates, Explosives, MaterialTemplates,
             Fittings) out: Content/Templates/shells.json, explosives.json, materials.json and fittings.json,
             docs/shipgen/shell-templates.md, explosive-templates.md, material-templates.md and fittings-templates.md
+        shipgen burst [DESIGN --room KIND[:n] --filler KG --explosive NAME --calibre MM]
+            a burst's gas in a closed space (docs/battle/shells-armour-damage.md E5): the cascade over the cell graph,
+            what ruptured, the doors blown, the spaces reached and what each felt; with no charge, damage/11's cases
         shipgen frag [TEMPLATE --calibre MM]
             a burst's pieces (docs/battle/shells-armour-damage.md E1) by the game's generator against damage/13's anchors
             (Okun's 8" HE table, WDR 51's speed and knee, Boise), or one shell template at a calibre
@@ -245,6 +248,9 @@ public static class Program
                 "templates" => TemplatesWriter.Run(Path.Combine(Root(a), "..")),
                 "upgrade" => DesignUpgrade.Run(a.Positional, a.Has("dry"), a.Has("materials")),
                 "pen-check" => PenCheck.Run(Path.Combine(Root(a), "..")),
+                "burst" => BurstBench.Run(a.Positional.ElementAtOrDefault(0) ?? "destroyer", n => LoadDesign(Resolve(a, n)),
+                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
+                    new BurstBench.Options(a.Get("room"), D(a, "filler", 0), a.Get("explosive") ?? "TNT", D(a, "calibre", 152))),
                 "frag" => FragBench.Run(a.Positional.Count > 0 ? [.. a.Positional, "--calibre", a.Get("calibre") ?? "152"] : []),
                 "weapons" => Weapons.Run(a.Positional, a.Has("research"), n => LoadDesign(File.Exists(n) ? n : Path.Combine(Root(a), "designs", n + ".json"))),
                 "matchup" => MatchupBench.Run(a.Positional.ElementAtOrDefault(0) ?? "arethusa", a.Positional.ElementAtOrDefault(1) ?? "v25",

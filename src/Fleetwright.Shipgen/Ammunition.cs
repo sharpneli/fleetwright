@@ -234,6 +234,7 @@ public static class Ammunition
                 FormFactor = a.FormFactor!.Value, Cap = a.Cap?.Kind ?? "none", CapShare = a.Cap?.Share ?? 0, BreakObDeg = a.Body?.BreakObDeg ?? 90,
                 BreakTD = a.Body?.BreakTD ?? 0, BodyQuality = a.Body?.Quality ?? 1, FillerKg = masses[k] * a.Filler.Share!.Value,
                 Explosive = x.Name ?? "", FillerRe = x.Re ?? 1, Booster = a.Filler.Booster ?? "basic",
+                FillerQDet = x.QDet ?? 4.5, FillerQComb = x.QComb ?? 15, FillerAirM3Kg = x.AirM3Kg ?? 2.66, FillerEta = x.Eta ?? 1,
                 FillerInPlate = x.InPlate ?? 0, FillerFull = (a.Filler.Booster == "ce" ? x.Full?.Ce : x.Full?.Basic) ?? 1,
                 Fuze = a.Fuze!.Position!, FuzeDelayS = a.Fuze.DelayS ?? 0, FuzeStartCal = a.Fuze.StartCal ?? FuzeDefaults.StartCal,
                 FuzeOblique = a.Fuze.Oblique ?? FuzeDefaults.Oblique, FuzePlates = a.Fuze.Plates ?? "single",
@@ -372,6 +373,12 @@ public sealed record ShellReport
     public double FillerKg { get; init; }
     public required string Explosive { get; init; }
     public double FillerRe { get; init; }
+    /// <summary>Its explosive's heats of detonation and of full combustion (MJ/kg), the air its products need to burn
+    /// (m³/kg) and its share of them that's gas (η): the blast in a closed space (damage/11 §2.4; E5).</summary>
+    public double FillerQDet { get; init; }
+    public double FillerQComb { get; init; }
+    public double FillerAirM3Kg { get; init; }
+    public double FillerEta { get; init; }
     public required string Booster { get; init; }
     public double FillerInPlate { get; init; }
     public double FillerFull { get; init; }
