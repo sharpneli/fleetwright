@@ -5,9 +5,10 @@ namespace Fleetwright.Sim.Combat;
 /// <summary>What a ship can still do (docs/battle/fighting.md 4.3a, FUNCTIONS; research/simulation/damage-research/
 /// 06-service-networks.md §4, Model A): one generic pass over the class's function table (<see cref="ShipClass.Functions"/>),
 /// each function worth the least of its needs' health times the best of its alternatives'. From them: which mounts
-/// fire (and aren't jammed), which submerged tubes, directors and eyes work, the power the plant can make (its boiler
-/// rooms' steam and its shaft lines, the less of the two), whether the rudders answer, whether the ship is conned. Run
-/// when the condition changes, not per tick.</summary>
+/// fire (and aren't jammed, nor all their guns out), which submerged tubes, directors and eyes work, the power the
+/// plant can make (its boiler rooms' steam and its shaft lines, the less of the two), whether the rudders answer,
+/// whether the ship is conned. A node down for a while (E4) gives nothing until it's back. Run when the condition
+/// changes, not per tick.</summary>
 public static class Functions
 {
     /// <summary>A function's worth, 0-1: the least health of All, times the best of Any (if it has any), that factor
@@ -42,7 +43,7 @@ public static class Functions
             switch (f.Kind)
             {
                 case FunctionKind.Mount:
-                    k.MountWorks[f.Index] = v > 0 && !k.Has(c.Mounts[f.Index].Component, PartFlags.Jammed);
+                    k.MountWorks[f.Index] = v > 0 && !k.Has(c.Mounts[f.Index].Component, PartFlags.Jammed) && k.Guns(f.Index) > 0;
                     break;
                 case FunctionKind.Director:
                     k.DirectorWorks[f.Index] = v > 0;

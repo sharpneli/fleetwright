@@ -7,12 +7,14 @@ namespace Fleetwright.Sim.Combat;
 /// anchor's time it was at From, moving toward To at the mount's rate, so its bearing at any instant is closed form and
 /// nothing steps it), when its guns are next loaded, and the rounds it has left (all kinds; by kind in
 /// <see cref="CombatStore.LoadRounds"/>). Bearings are degrees clockwise from
-/// ahead, unwrapped inside the mount's traverse (an interval that never wraps: shipgen's <c>traverse_deg</c>).</summary>
+/// ahead, unwrapped inside the mount's traverse (an interval that never wraps: shipgen's <c>traverse_deg</c>). Stiff
+/// (docs/battle/shells-armour-damage.md E4): the share of its training rate a hit that held took (0 none).</summary>
 public struct MountState
 {
     public long TrainMs, ElevMs, LoadedMs;
     public double TrainFrom, TrainTo, ElevFrom, ElevTo;
     public int Rounds;
+    public double Stiff;
 }
 
 /// <summary>A torpedo launcher's state (docs/battle/fighting.md 4.6): the torpedoes in its tubes, the spares it carries
@@ -165,7 +167,10 @@ public sealed class CombatStore
     // ------------------------------------------------------------------ the analytic mount
 
     /// <summary>A mount's bearing at a time, degrees from ahead (unwrapped in its traverse).</summary>
-    public static double BearingAt(in MountState s, in MountRow m, long ms) => Toward(s.TrainFrom, s.TrainTo, m.TrainDegS, s.TrainMs, ms);
+    public static double BearingAt(in MountState s, in MountRow m, long ms) => Toward(s.TrainFrom, s.TrainTo, TrainRate(s, m), s.TrainMs, ms);
+
+    /// <summary>A mount's training rate now, degrees a second: its own, less what stiffness took (E4).</summary>
+    public static double TrainRate(in MountState s, in MountRow m) => m.TrainDegS * (1 - s.Stiff);
 
     public static double ElevationAt(in MountState s, in MountRow m, long ms) => Toward(s.ElevFrom, s.ElevTo, m.ElevateDegS, s.ElevMs, ms);
 
@@ -179,7 +184,7 @@ public sealed class CombatStore
 
     /// <summary>When a mount gets to its ordered train and elevation, ms.</summary>
     public static long LaidBy(in MountState s, in MountRow m) =>
-        Math.Max(s.TrainMs + (long)Math.Ceiling(Math.Abs(s.TrainTo - s.TrainFrom) / m.TrainDegS * 1000),
+        Math.Max(s.TrainMs + (long)Math.Ceiling(Math.Abs(s.TrainTo - s.TrainFrom) / TrainRate(s, m) * 1000),
             s.ElevMs + (long)Math.Ceiling(Math.Abs(s.ElevTo - s.ElevFrom) / m.ElevateDegS * 1000));
 
     /// <summary>Orders a ship's mount to a bearing (degrees from ahead) and an elevation now: re-anchored where it is,
@@ -204,9 +209,20 @@ public sealed class CombatStore
         double b = BearingAt(s, m, ms);
         double to = Into(m, bearingDeg, b);
         (s.TrainMs, s.TrainFrom, s.TrainTo) = (ms, b, to);
-        laidMs = ms + (m.TrainDegS > 0 ? (long)Math.Ceiling(Math.Abs(to - b) / m.TrainDegS * 1000) : 0);
+        laidMs = ms + (m.TrainDegS > 0 ? (long)Math.Ceiling(Math.Abs(to - b) / TrainRate(s, m) * 1000) : 0);
         moved[slot] = Touched = true;
         return Within(m, to, bearingDeg);
+    }
+
+    /// <summary>A mount's stiffness set now (E4: the share of its training rate lost), re-anchored where it is so its
+    /// bearing so far keeps the rate it had.</summary>
+    public void SetStiff(int slot, int mount, in MountRow m, long ms, double stiff)
+    {
+        ref var s = ref mounts[slot]![mount];
+        if (s.Stiff == stiff)
+            return;
+        double b = BearingAt(s, m, ms);
+        (s.TrainMs, s.TrainFrom, s.Stiff) = (ms, b, stiff);
     }
 
     /// <summary>A mount stopped where it is now (out of action, jammed: it trains no more), its train and elevation held
@@ -340,6 +356,8 @@ public sealed class CombatStore
                 h.Add(s.ElevTo);
                 h.Add(s.LoadedMs);
                 h.Add(s.Rounds);
+                if (s.Stiff != 0)
+                    h.Add(s.Stiff);
             }
             foreach (int r in loadRounds[slot].AsSpan())
                 h.Add(r);

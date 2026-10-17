@@ -41,6 +41,12 @@ public enum HitEffect : ushort
     Power = 256,
     /// <summary>Its back broken (an underwater explosion's): it breaks in two.</summary>
     Broken = 512,
+    /// <summary>A turret or barbette that held (docs/battle/shells-armour-damage.md E4): its mount stiff in train, a gun
+    /// out, its sights out; the struck structure's crew stunned (a turret's, a conning tower's).</summary>
+    Stiff = 1024,
+    GunOut = 2048,
+    Sights = 4096,
+    Stunned = 8192,
 }
 
 /// <summary>A line of the combat log: when, what, who fired (an entity) with which battery, at whom, and a count or a

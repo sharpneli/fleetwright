@@ -63,7 +63,7 @@ public enum HoleAt : byte
 public sealed class DamageSystem : IWorldSystem
 {
     public const byte Id = 5;
-    const ushort LossEvent = 1, StepEvent = 2;
+    const ushort LossEvent = 1, StepEvent = 2, ClearEvent = 3;
 
     /// <summary>A magazine set off, for the screens (docs/visuals/magazine-explosions.md X0): when, the ship (an entity)
     /// and her class (a registry id), the magazine (a room of the class; -1 when none is linked to what went up), what
@@ -139,8 +139,9 @@ public sealed class DamageSystem : IWorldSystem
     public static Command FloodRooms(int entity, RoomKind kind, int n = int.MaxValue) =>
         new(Id, (ushort)DamageCommand.FloodRooms, entity, A: (long)kind, B: n);
 
-    /// <summary>The dev's jammed mount (a mount's index in the class): it stops where it is.</summary>
-    public static Command Jam(int entity, int mount) => new(Id, (ushort)DamageCommand.Jam, entity, A: mount);
+    /// <summary>The dev's jammed mount (a mount's index in the class): it stops where it is, for some minutes (E4: debris,
+    /// cleared then) or the battle (0).</summary>
+    public static Command Jam(int entity, int mount, double minutes = 0) => new(Id, (ushort)DamageCommand.Jam, entity, A: mount, X: minutes);
 
     /// <summary>The dev's wreck by kind: the nth part (from 0, in the class's order) of a kind made at least this bad.</summary>
     public static Command WreckKind(int entity, ComponentKind kind, int nth, PartState state = PartState.Destroyed) =>
@@ -252,9 +253,11 @@ public sealed class DamageSystem : IWorldSystem
             case DamageCommand.Jam:
                 if (c.A < 0 || c.A >= cls.Mounts.Length)
                     throw new ArgumentException($"no mount {c.A} on ship {c.Entity}");
-                k.Flags[cls.Mounts[(int)c.A].Component] |= PartFlags.Jammed;
+                k.Strike((int)c.A, c.X > 0 ? new TurretHarm(TurretBlow.Jam, JamCause.Debris, (long)(c.X * 60_000), 0)
+                    : new TurretHarm(TurretBlow.Jam, JamCause.Ring, NonPen.Battle, 0), world.Time.Ms);
                 var rj = stream.Derive(0x3EC5u).Derive((ulong)world.Time.Ms);
                 Recompute(world, slot, k, ref rj);
+                Remind(world, slot, k);
                 break;
             case DamageCommand.WreckKind:
                 for (int i = 0, n = 0; i < cls.Components.Length; i++)
@@ -386,10 +389,23 @@ public sealed class DamageSystem : IWorldSystem
             fx |= HitEffect.Holed;
         if (e.Fire)
             fx |= HitEffect.Fire;
+        fx |= e.Turret.Blow switch
+        {
+            TurretBlow.Jam => HitEffect.Jammed,
+            TurretBlow.Stiff => HitEffect.Stiff,
+            TurretBlow.GunOut => HitEffect.GunOut,
+            TurretBlow.Sights => HitEffect.Sights,
+            _ => HitEffect.None,
+        };
         if (e.Jammed)
             fx |= HitEffect.Jammed;
+        if (e.Stunned)
+            fx |= HitEffect.Stunned;
         if (e.Changed && k.Status == ShipStatus.Afloat)
+        {
             fx |= Recompute(world, slot, k, ref rng);
+            Remind(world, slot, k);
+        }
         bool blew = e.Magazine && k.Status == ShipStatus.Afloat, broke = e.Broken && !blew && k.Status == ShipStatus.Afloat;
         if (blew)
             fx |= HitEffect.Magazine;
@@ -414,6 +430,7 @@ public sealed class DamageSystem : IWorldSystem
         var steering = k.Steering;
         bool steers = Functions.Evaluate(k, settings.DraughtFloor);
         Freeze(world, slot, k);
+        Stiffen(world, slot, k);
         if (!steers && k.Steering == Steering.Free)
         {
             bool jam = rng.NextDouble() < settings.RudderJamChance;
@@ -437,6 +454,27 @@ public sealed class DamageSystem : IWorldSystem
         for (int m = 0; m < mounts.Length; m++)
             if (!k.MountWorks[m])
                 ships.Store.Combat.Stop(slot, m, mounts[m], world.Time.Ms);
+    }
+
+    /// <summary>Its mounts train as stiffly as their hits left them, now (E4).</summary>
+    void Stiffen(World world, int slot, ShipCondition k)
+    {
+        var mounts = k.Class.Mounts;
+        long now = world.Time.Ms;
+        for (int m = 0; m < mounts.Length; m++)
+            ships.Store.Combat.SetStiff(slot, m, mounts[m], now, k.Stiff(m, now) ? 1 - settings.StiffTrain : 0);
+    }
+
+    /// <summary>Its next timed outage's end (E4) has its event: set, or set sooner (the one it replaces is cancelled by
+    /// its generation).</summary>
+    void Remind(World world, int slot, ShipCondition k)
+    {
+        if (k.NextClearMs < 0 || k.NextClearMs == k.ClearAtMs)
+            return;
+        k.ClearAtMs = k.NextClearMs;
+        k.ClearGen++;
+        world.Schedule(new WorldTime(Math.Max(k.NextClearMs, world.Time.Ms)), EventTier.Fine, ships.Store[slot].Entity, Id, ClearEvent,
+            ships.Store[slot].Generation, k.ClearGen);
     }
 
     /// <summary>The store holds the ship to the power it can make, less what its water's weight costs (the power a
@@ -591,6 +629,21 @@ public sealed class DamageSystem : IWorldSystem
             return;
         }
         var k = ships.Store.Combat.Condition(slot);
+        if (e.Code == ClearEvent)
+        {
+            // timed outages over (E4): what the ship can do worked out again, and the next one's end
+            if (e.A != k.ClearGen || k.Status != ShipStatus.Afloat)
+                return;
+            k.ClearAtMs = -1;
+            if (k.Clear(world.Time.Ms))
+            {
+                touched = true;
+                var rc = stream.Derive(0xC1EAu).Derive((ulong)e.Entity).Derive((ulong)world.Time.Ms);
+                Recompute(world, slot, k, ref rc);
+            }
+            Remind(world, slot, k);
+            return;
+        }
         if (e.A != k.StepGen || k.Status != ShipStatus.Afloat)
             return;
         long now = world.Time.Ms, d = Step(world, slot, k, now);

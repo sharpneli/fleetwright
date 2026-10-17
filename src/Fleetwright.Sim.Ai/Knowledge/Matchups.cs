@@ -273,7 +273,7 @@ public sealed class MatchupSide
                 continue;
             bool main = cls.Batteries[mr.Battery].Kind == Battery.Main;
             int barrels = cls.TurretTypes[mr.Type].Barrels;
-            double ok = k.MountWorks[m] ? barrels : 0;
+            double ok = k.MountWorks[m] ? k.Guns(m) : 0;
             double rounds = mr.Rounds > 0 ? mr.Rounds : 0, left = mr.Rounds > 0 ? store.Combat.Mount(slot, m).Rounds : 0;
             if (main)
                 (mainB, mainOk, mainR, mainLeft) = (mainB + barrels, mainOk + ok, mainR + rounds, mainLeft + left);

@@ -72,8 +72,13 @@ public struct TerminalResult
     /// pieces (<see cref="Outcome.Holed"/>, <see cref="Outcome.BrokeUp"/>), its pieces' speed through the hole.</summary>
     public double BurstMs;
 
-    /// <summary>E3: the shell's speed at the plate that stopped it, or that it glanced off: what drives a spall cloud.</summary>
+    /// <summary>E3: the shell's speed at the plate that stopped it, or that it glanced off: what drives a spall cloud. E4:
+    /// also at the plate a nose fuze burst on without holing it.</summary>
     public double PlateMs;
+
+    /// <summary>E4: u = v/V_L at that plate (its limit as this shell met it): how near it came to getting through; NaN
+    /// where no plate held it.</summary>
+    public double PlateU;
 
     /// <summary>E2: a shell that holed a plate in pieces, which go on through the hole (<see cref="Plate"/>).</summary>
     public readonly bool Broken => Outcome is Outcome.Holed or Outcome.BrokeUp && Plate >= 0;
@@ -137,6 +142,7 @@ public static class Terminal
         var res = new TerminalResult
         {
             Outcome = Outcome.PassedThrough, BurstT = double.NaN, StopT = path.Length, Plate = -1, Spall = double.NaN, Glance = -1,
+            PlateU = double.NaN,
         };
         double calMm = shell.CalibreMm, v = hit.SpeedMs;
         bool nose = shell.Fuze == Fuze.Nose, inside = false, started = false;
@@ -202,7 +208,12 @@ public static class Terminal
             double t = x.Mm > 0 ? x.Mm * c.MaterialQ(x.Material, x.Mm, calMm) : 0;
             double ob = Obliquity(dir, x.Normal);
             if (nose)
-                return Nose(ref res, ref r, shell, s, x.T, i, t <= s.HePenCalibres * calMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(ob)), 1e-3)), v);
+            {
+                bool punches = t <= s.HePenCalibres * calMm * Math.Sqrt(Math.Max(Math.Cos(double.DegreesToRadians(ob)), 1e-3));
+                if (!punches && t > 0)
+                    (res.PlateMs, res.PlateU) = (v, v / LimitMs(t, calMm, massKg, ob));
+                return Nose(ref res, ref r, shell, s, x.T, i, punches, v);
+            }
 
             // the plate as this shell meets it: a common shell's weaker body; on face-hardened plate the body's quality,
             // and the face shattering a bare nose or a body past its limits; its limit by the plate's lot on this ship and
@@ -232,7 +243,7 @@ public static class Terminal
                 // glanced: the plate soaks up its motion across it (a dent), whether it would have got through or not, and
                 // it skids off along the plate's face, its fuze started as on a plate that held; the path bends at once,
                 // so nothing behind the plate is crossed
-                (res.Glance, res.PlateMs) = (i, v);
+                (res.Glance, res.PlateMs, res.PlateU) = (i, v, v / vl);
                 if (!started && StartsOn(shell, mat.SteelMm(x.Mm), ob, hard, x.T, ref impulse, ref impulseT, s))
                 {
                     started = true;
@@ -251,8 +262,8 @@ public static class Terminal
                 // else stopped here, its back giving spall in the band below that. Stopped, running since an earlier
                 // plate, it bursts against this one (a dud lies there); else it's defeated, the impact starting its fuze
                 // if the plate's enough, and then it bursts on the plate's face
-                (res.Plate, res.StopT, res.PlateMs) = (i, x.T, v);
                 double u = v / vl;
+                (res.Plate, res.StopT, res.PlateMs, res.PlateU) = (i, x.T, v, u);
                 if (u >= mat.HoledU)
                 {
                     (res.Outcome, res.Burst, res.BurstT, res.StopT, res.BurstMs) = (Outcome.Holed, BurstKind.None, double.NaN, x.T + 0.5, 0);

@@ -35,8 +35,13 @@ public struct EffectsResult
     public bool Broken;
     /// <summary>E3: a plate that held threw spall off its back.</summary>
     public bool Spall;
+    /// <summary>E4: what a turret or barbette that held did to its mount, and whether the struck structure's crew were
+    /// stunned (a turret's, a conning tower's).</summary>
+    public TurretHarm Turret;
+    public bool Stunned;
 
-    public readonly bool Changed => Destroyed + Disabled + Damaged > 0 || BreachM2 > 0 || Jammed || Fire || Magazine || Broken;
+    public readonly bool Changed => Destroyed + Disabled + Damaged > 0 || BreachM2 > 0 || Jammed || Fire || Magazine || Broken ||
+        Turret.Blow != TurretBlow.None || Stunned;
 }
 
 /// <summary>EFFECTS (docs/battle/fighting.md 4.3a): a port of the effects half of research/simulation/damage-research/
@@ -54,8 +59,9 @@ public struct EffectsResult
 /// burst's two single pieces, the nose slug and the base plug, on through the ship (<see cref="Pieces"/>);</item>
 /// <item><b>fire:</b> a chance by the shell's kind, the fire load where it bursts and the burst's size; fragments
 /// reaching a mount's ready ammunition;</item>
-/// <item><b>armour that held:</b> a heavy hit on a turret or barbette that didn't get in may jam the mount (on a conning
-/// tower, blind it);</item>
+/// <item><b>armour that held</b> (E4 of docs/battle/shells-armour-damage.md; damage/13): a turret or barbette a shell
+/// didn't get through may be jammed in train, stiff, have a gun or its sights out, or its crew stunned, for a time by
+/// cause (<see cref="NonPen"/>); a conning tower's crew stunned;</item>
 /// <item><b>magazines:</b> a burst in a magazine, or in a turret or its barbette, may set it off.</item>
 /// </list>
 /// Pure and allocation-free; the draws come from the stream it's given.</summary>
@@ -125,28 +131,38 @@ public static class Effects
             res.BreachM2 += a;
         }
 
-        // armour that held, or that a shell glanced off (P5): a heavy hit's shock on a turret, a barbette, a conning tower; a
-        // belt's seams at the waterline
+        // armour that held, or that a shell glanced off (P5): what it shakes (E4), by the impulse it took and how near the
+        // shell came to getting through; a belt's seams at the waterline
         int held = t.Glance >= 0 ? t.Glance : t.Outcome is Outcome.Defeated or Outcome.BurstOutside ? t.Plate : -1;
         if (held >= 0)
         {
             ref readonly var x = ref xs[held];
-            double jam = shell.CalibreMm >= s.JamHeavyMm ? s.JamChance[0] : shell.CalibreMm >= s.JamMediumMm ? s.JamChance[1] : s.JamChance[2];
+            double impulse = shell.MassKg * t.PlateMs;
             if (x.Plate is PlateKind.TurretFace or PlateKind.TurretSide or PlateKind.TurretRear or PlateKind.TurretRoof or PlateKind.Barbette)
             {
+                // a turret or its barbette: jammed, stiff, a gun out, its sights out, its crew stunned (13 §1.4)
                 int m = c.MountOf(x.Index);
                 res.Part = x.Index;
-                if (m >= 0 && r.NextDouble() < jam)
+                if (m >= 0)
                 {
-                    k.Flags[c.Mounts[m].Component] |= PartFlags.Jammed;
-                    res.Jammed = true;
+                    var spot = NonPen.Spot(x.Plate, x.Point.Z);
+                    // a nose fuze bursting on contact pushes less than a shell stopped whole (13 §1.4's HE row); a base fuze
+                    // that bursts after it stopped has given the plate its whole impulse already
+                    bool contact = t.Burst == BurstKind.Outside && shell.Fuze == Fuze.Nose;
+                    var h = NonPen.Turret(spot, impulse, NonPen.Margin(t.PlateU), contact,
+                        spot <= TurretSpot.BarbetteDeck && x.Mm < s.ThinTurretMm, s, ref r);
+                    k.Strike(m, h, hit.Ms);
+                    (res.Turret, res.Stunned) = (h, h.StunMs > 0);
+                    res.Jammed = h.Blow == TurretBlow.Jam;
                 }
             }
             else if (x.Plate == PlateKind.PartArmour && c.Components[x.Index].Kind == ComponentKind.ConningTower)
             {
+                // a conning tower: its crew stunned (13 §3.4)
                 res.Part = x.Index;
-                if (r.NextDouble() < jam)
-                    Count(ref res, k, x.Index, k.Worsen(x.Index, PartState.Disabled) ? PartState.Disabled : PartState.Ok);
+                long stun = NonPen.Stun(impulse, s.TowerStunChance, s, ref r);
+                k.Down(x.Index, hit.Ms, stun);
+                res.Stunned = stun > 0;
             }
             else if (x.Plate == PlateKind.SideArmour && shell.CalibreMm >= s.SeamLeakMinMm &&
                      x.Point.Z <= water.At(x.Point.X, x.Point.Y) + s.HoleOverWaterlineM && r.NextDouble() < s.SeamLeakChance)

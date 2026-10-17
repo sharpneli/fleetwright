@@ -25,6 +25,16 @@ public static class GivenHits
         public readonly int[] Outcomes = new int[Enum.GetValues<Outcome>().Length];
         public readonly Dictionary<string, int> Struck = [];
         public int Fires, Magazines, Jams;
+        /// <summary>E4: the hits a turret or barbette held (stopped, glanced off, burst on), what they did to its mount (by
+        /// <see cref="TurretBlow"/>), the jams by cause (<see cref="JamCause"/>) and how many lasted the battle; the hits that
+        /// stunned the struck structure's crew.</summary>
+        public int TurretHeld, JamsForBattle, Stuns;
+        public readonly int[] TurretBlows = new int[Enum.GetValues<TurretBlow>().Length];
+        public readonly int[] JamCauses = new int[Enum.GetValues<JamCause>().Length];
+        /// <summary>E4: the turret holds by where they struck (<see cref="TurretSpot"/>), and their margins' factor summed
+        /// (<see cref="NonPen.MarginK"/>).</summary>
+        public readonly int[] TurretSpots = new int[Enum.GetValues<TurretSpot>().Length];
+        public double TurretMarginK;
         /// <summary>E3: the hits whose plate threw spall off its back.</summary>
         public int Spalls;
         /// <summary>The hits that set a magazine off, by how (<see cref="MagazineVia"/>); and the ships lost to a magazine
@@ -164,6 +174,19 @@ public static class GivenHits
                 rep.MagazinesBy[(int)fx.MagazineVia] += fx.Magazine ? 1 : 0;
                 hitMagazine |= fx.Magazine;
                 rep.Jams += fx.Jammed ? 1 : 0;
+                rep.Stuns += fx.Stunned ? 1 : 0;
+                int held = t.Glance >= 0 ? t.Glance : t.Outcome is Outcome.Defeated or Outcome.BurstOutside ? t.Plate : -1;
+                if (held >= 0 && w.Damage.LastPath.Crossings[held].Plate is PlateKind.Barbette or >= PlateKind.TurretFace and <= PlateKind.TurretRoof &&
+                    target.MountOf(w.Damage.LastPath.Crossings[held].Index) >= 0)
+                {
+                    rep.TurretHeld++;
+                    ref readonly var hx = ref w.Damage.LastPath.Crossings[held];
+                    rep.TurretSpots[(int)NonPen.Spot(hx.Plate, hx.Point.Z)]++;
+                    rep.TurretMarginK += NonPen.MarginK(NonPen.Margin(t.PlateU));
+                    rep.TurretBlows[(int)fx.Turret.Blow]++;
+                    if (fx.Turret.Blow == TurretBlow.Jam)
+                        (rep.JamCauses[(int)fx.Turret.Cause], rep.JamsForBattle) = (rep.JamCauses[(int)fx.Turret.Cause] + 1, rep.JamsForBattle + (fx.Turret.Ms == NonPen.Battle ? 1 : 0));
+                }
                 rep.CrewLost += fx.CrewLost;
                 rep.BreachM2 += fx.BreachM2;
                 for (int i = 0; i < before.Length; i++)

@@ -869,11 +869,58 @@ public sealed record SimSettings
     public double FireOutsideShare { get; init; } = 0.4;
     public double ReadyAmmoFireChance { get; init; } = 0.3;
 
-    /// <summary>A hit that doesn't get through a turret or barbette jams its mount (a conning tower: blinds it) with
-    /// these chances by calibre: from <see cref="JamHeavyMm"/>, from <see cref="JamMediumMm"/>, and smaller (08 3.7, R5).</summary>
-    public double JamHeavyMm { get; init; } = 270;
-    public double JamMediumMm { get; init; } = 200;
-    public double[] JamChance { get; init; } = [0.35, 0.05, 0.01];
+    /// <summary>What a turret or barbette that held does (docs/battle/shells-armour-damage.md E4; damage/13 §1.4
+    /// <c>turret_nonpen</c>): by where it struck (rows: exposed barbette near the ring, barbette at or under the deck,
+    /// face, side and rear, roof), the chances of a jam in train, stiff, one gun out, sights out and a stun with nothing
+    /// lasting [FIT], times size(I) = min(<see cref="NonPenSizeMax"/>, (I / <see cref="NonPenImpulseRef"/>)^0.5) and
+    /// margin(r) = clamp(1.3 − 0.3·r, 0.4, 1), r the plate over what the shell beats there (the stun only by half of
+    /// them); a nose-fuzed shell bursting on it by <see cref="TurretBurstK"/>; a barbette under <see cref="ThinTurretMm"/> by
+    /// <see cref="ThinBarbetteK"/> (Savo, Boise).</summary>
+    public double NonPenImpulseRef { get; init; } = 4e5;
+    public double NonPenSizeMax { get; init; } = 1.15;
+    public double[] TurretNonPen { get; init; } =
+    [
+        0.38, 0.06, 0.05, 0.03, 0.10,
+        0.22, 0.10, 0.03, 0.00, 0.05,
+        0.14, 0.04, 0.33, 0.08, 0.15,
+        0.12, 0.04, 0.12, 0.12, 0.08,
+        0.08, 0.02, 0.22, 0.30, 0.15,
+    ];
+    public double[] TurretBurstK { get; init; } = [0.6, 0.8, 0.8, 1.5, 1.2];
+    public double ThinTurretMm { get; init; } = 152;
+    public double ThinBarbetteK { get; init; } = 1.5;
+
+    /// <summary>A jam's cause by where it struck (rows as <see cref="TurretNonPen"/>'s: debris, deck, ring shares), and
+    /// how long each lasts, minutes, log-uniform: debris cleared by the crew, deck or glacis cut free; the ring
+    /// distorted is for the battle (13 §1.3: 44% of jams last it). Stiff trains at <see cref="StiffTrain"/> of its
+    /// rate, for the battle with <see cref="StiffBattleShare"/>, else <see cref="StiffMin"/>; a gun out likewise; a stun
+    /// <see cref="StunS"/> seconds.</summary>
+    public double[] JamCause { get; init; } =
+    [
+        0.45, 0.10, 0.45,
+        0.20, 0.55, 0.25,
+        0.35, 0.05, 0.60,
+        0.50, 0.00, 0.50,
+        0.60, 0.00, 0.40,
+    ];
+    public double[] JamDebrisMin { get; init; } = [3, 40];
+    public double[] JamDeckMin { get; init; } = [60, 600];
+    public double StiffTrain { get; init; } = 0.4;
+    public double StiffBattleShare { get; init; } = 0.5;
+    public double[] StiffMin { get; init; } = [20, 180];
+    public double GunOutBattleShare { get; init; } = 0.5;
+    public double[] GunOutMin { get; init; } = [30, 240];
+    public double[] StunS { get; init; } = [10, 120];
+
+    /// <summary>The crew stunned by a heavy hit that held, with a lasting outcome on a turret (a stun with nothing
+    /// lasting is the table's own), or on a conning tower (13 §3.4 [FIT]), times the shock's (I / NonPenImpulseRef)^0.7 to
+    /// at most <see cref="ShockSizeMax"/>: out <see cref="StunS"/> seconds, and with <see cref="KeyManShare"/> a key man
+    /// out <see cref="KeyManMin"/> minutes [EST: "5+ min"].</summary>
+    public double ShockSizeMax { get; init; } = 1.3;
+    public double TurretStunChance { get; init; } = 0.6;
+    public double TowerStunChance { get; init; } = 0.7;
+    public double KeyManShare { get; init; } = 0.1;
+    public double[] KeyManMin { get; init; } = [5, 30];
 
     /// <summary>A burst in a magazine, or in a turret or its barbette (the handling path to it), sets off the magazine
     /// with these chances, times the side's propellant (1 by default; <c>DamageSystem.SetPropellant</c>). v0: the ship is

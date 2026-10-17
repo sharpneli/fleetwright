@@ -585,6 +585,7 @@ public sealed partial class MapScene
     static readonly (HitEffect, string)[] HitWords =
     [
         (HitEffect.Magazine, "MAGAZINE"), (HitEffect.Broken, "BROKEN IN TWO"), (HitEffect.Steering, "steering"), (HitEffect.Power, "power cut"), (HitEffect.Jammed, "turret jammed"),
+        (HitEffect.Stiff, "turret stiff in train"), (HitEffect.GunOut, "a gun out"), (HitEffect.Sights, "sights out"), (HitEffect.Stunned, "crew stunned"),
         (HitEffect.Destroyed, "wrecked"), (HitEffect.Disabled, "put out of action"), (HitEffect.Damaged, "damaged"), (HitEffect.Holed, "holed"),
         (HitEffect.Fire, "fire"),
     ];

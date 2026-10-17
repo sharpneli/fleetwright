@@ -96,6 +96,18 @@ static class HitsBench
             r.CrewLost / r.Hits, r.BreachM2 / r.Hits, 100.0 * r.Jams / r.Hits, 100.0 * r.Magazines / r.Hits));
         if (r.Spalls > 0)
             Console.WriteLine(string.Format(Inv, "  spall off the back of a plate that held: {0:0.#}% of hits", 100.0 * r.Spalls / r.Hits));
+        if (r.TurretHeld > 0)
+        {
+            int jams = r.TurretBlows[(int)TurretBlow.Jam];
+            Console.WriteLine(string.Format(Inv, "  a turret or barbette held {0:0.#}% of hits; of those jammed {1:0.#}% (debris {2}, deck {3}, ring {4}; " +
+                "{5:0}% for the battle), stiff {6:0.#}%, a gun out {7:0.#}%, sights out {8:0.#}%, stunned only {9:0.#}%; crews stunned {10:0.#}% of hits",
+                100.0 * r.TurretHeld / r.Hits, 100.0 * jams / r.TurretHeld, r.JamCauses[(int)JamCause.Debris], r.JamCauses[(int)JamCause.Deck],
+                r.JamCauses[(int)JamCause.Ring], 100.0 * r.JamsForBattle / Math.Max(jams, 1), 100.0 * r.TurretBlows[(int)TurretBlow.Stiff] / r.TurretHeld,
+                100.0 * r.TurretBlows[(int)TurretBlow.GunOut] / r.TurretHeld, 100.0 * r.TurretBlows[(int)TurretBlow.Sights] / r.TurretHeld,
+                100.0 * r.TurretBlows[(int)TurretBlow.Stun] / r.TurretHeld, 100.0 * r.Stuns / r.Hits));
+            Console.WriteLine("    where they held: " + string.Join(", ", Enum.GetValues<TurretSpot>().Select(v => string.Format(Inv, "{0} {1:0}%", v,
+                100.0 * r.TurretSpots[(int)v] / r.TurretHeld))) + string.Format(Inv, "; margin factor {0:0.00} on average", r.TurretMarginK / r.TurretHeld));
+        }
         if (r.Magazines > 0)
             Console.WriteLine("  magazines set off by: " + string.Join(", ", Enum.GetValues<MagazineVia>().Where(v => r.MagazinesBy[(int)v] > 0)
                 .Select(v => string.Format(Inv, "{0} {1:0.##}%", Via(v), 100.0 * r.MagazinesBy[(int)v] / r.Hits))) + " of hits");

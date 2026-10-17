@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E3 done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E3 and E4a done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1355,6 +1355,41 @@ squadrons, and changes `Matchup.cs` with it.
     era columns fall out of the design. The ship-wide cascade stays rare (0.02 a heavy hit at G0). Own guns: radar and
     breaker events per 20 min of main-battery fire.
   - **Tests:** 13 §5.3. **Log:** 13 §5.2's lines.
+  - **The user's choices (2026-10-17):** three commits (E4a turrets and the timed outages, E4b the belt, E4c shock);
+    shock rates by grade from the era columns (G0 the 1939-42 column, G1 the 1943- one, G2 half of G1, G3 a quarter
+    [EST]); a jammed mount stays silent (not "fires on its held bearing"); a mount that loses power is silent for the
+    outage.
+  - **E4a done 2026-10-17.** What it came to:
+    - **The model** (`NonPen.cs`, Sim.Combat): 13 §1.4's table in settings (`TurretNonPen`, `JamCause`), by where the
+      plate was struck (`NonPen.Spot`: a barbette above the main deck is exposed, at or under it the deck's; a turret's
+      rear counts as its side), times size(I) = min(1.15, (I/4×10⁵)^0.5) with I = m·v at the plate, and margin(r) with
+      r = u^−1.4 (Terminal's new `PlateU`, u = v/V_L at the plate that held, glanced or took a nose fuze's burst; the
+      plate a shell beats going as v^1.4, as the matchup's spall band has it). A barbette under 6" ×1.5. 13 §1.4's
+      "HE row" only for a nose fuze bursting on contact: a base fuze bursting after the plate stopped the shell had
+      given it its whole impulse (the first cut applied it to those too and halved the jams). With a lasting outcome the
+      crew stunned too at 0.6 × (I/I_ref)^0.7; a conning tower's crew at 0.7 (13 §3.4), 10-120 s, or a key man 5-30 min
+      [EST] at 0.1. The old CT rule (blinded for good at `JamChance`) is gone with `JamChance`.
+    - **Timed outages:** the condition keeps each mount's `MountHarm` (jam and its cause until a time, stiff until one,
+      guns out until one, sights) and a node's `Down` flag until `DownUntil` (health 0 meanwhile: the function table does
+      the rest). The damage system's `ClearEvent` fires at the next end, clears what's run out and works the functions
+      again. A jam for the battle (the ring) and sights out never end.
+    - **What they do:** jammed and down mounts don't fire (the user's choice); stiff trains at 0.4 (`MountState.Stiff`,
+      re-anchored when it changes); a gun out fires one barrel fewer (all out: not working); sights out fires only under
+      a director (and isn't the battery's eye at local control). A battery fallen to local control goes back under its
+      director when one works again (it never did: outages were permanent).
+    - **The dev's jam** takes minutes: `-jam=ship:mount:min` (debris, cleared then), else for the battle.
+    - **Log:** "turret stiff in train", "a gun out", "sights out", "crew stunned" beside "turret jammed".
+    - **Tests** (`NonPenTests`, 13 §5.3 1-3): a 15" APC at r 1.3 over the side-on spot mix jams 0.178 (band 0.15-0.25),
+      the exposed barbette 0.347 (0.30-0.45), roofs 0.073 (< 0.12); of the jams 0.444 last the battle (0.35-0.55), 0.254
+      clear inside 15 min (0.20-0.35); an 8" AP at r 1.8 0.057 (< 0.10); a timed jam clears in the world.
+    - **Benches, before and after** (2,000 hits, 10 a ship; outcomes identical): turrets and barbettes hold 3-7% of hits
+      (13 §4 guessed 13%), 38-73% of them on roofs under plunging fire, margin factor 0.6-0.9; of the holds jammed 6-10%,
+      a gun out 4-15%, sights out 3-21% (KGV under Bismarck at 25 km: roofs), stiff 0-4%. Jammed a hit: Iron Duke under
+      Seydlitz 2.9 → 0.6%, Lion under Derfflinger 1 → 0.2%, Seydlitz under Lion 1.6 → 0.5%, KGV under Bismarck 1.7 →
+      0.4%; the rest within a point. The super-dreadnought at 16 km (DamageTests' anchor, 0.5-20%): 0.9% (13 §1.4 had 2.4%
+      for QE: its 13% of hits on turrets against our 7.5%). Matchup identical (it has no jam term). Squadrons' 30 minutes:
+      149 → 179 hits, Lion no longer lost, Princess Royal still (to Lützow now), hash B465811A2B06CD4D →
+      E961380A9651DA91. Cost a hit: within the noise.
 - **E5 Blast** (11). Open question 1.
   - **Open** (outside the hull, a weather deck, an open mount, a space vented by 0.6·V^⅔ or more): wrecked within
     1.0·W^⅓ (was 1.6), people killed by blast within 1.3·W^⅓, injured to 3.5·W^⅓ as now; the contact hole's `R_hole` as

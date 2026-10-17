@@ -387,7 +387,7 @@ public static unsafe class Program
                 if (DevDamage(damage) is { } order)
                     world.Send(order);
                 else
-                    Console.Error.WriteLine($"Bad damage: {damage} (want -hole=ship:mid|bow|stern|x:z:m2[:p], -flood=ship:kind[:n], -jam=ship:mount, " +
+                    Console.Error.WriteLine($"Bad damage: {damage} (want -hole=ship:mid|bow|stern|x:z:m2[:p], -flood=ship:kind[:n], -jam=ship:mount[:min], " +
                                             "-wreck=ship:kind[:nth[:damaged|disabled|destroyed]], -burn=ship:x, -sink=ship:foundered|capsized|magazine[:mount])");
             worldRef = world;
             if (scenarioArg != null)
@@ -549,7 +549,7 @@ public static unsafe class Program
 
     /// <summary>Dev damage, as the damage system's dev commands: -hole=ship:mid|bow|stern|x:z:m2[:p] (a hole in the side, z m
     /// over the waterline, to port with :p), -flood=ship:kind[:n] (n spaces of a kind flooded: boiler_room, engine_room,
-    /// magazine...), -jam=ship:mount (a mount's index), -wreck=ship:kind[:nth[:state]] (the nth part of a component kind:
+    /// magazine...), -jam=ship:mount[:min] (a mount's index; cleared after min minutes, else for the battle), -wreck=ship:kind[:nth[:state]] (the nth part of a component kind:
     /// superstructure, funnel, main...), -burn=ship:x (a fire in the highest space at x), -sink=ship:foundered|capsized|magazine[:mount] (it goes
     /// down now; a magazine's is the one serving that mount, else the fullest).</summary>
     static Sim.Command? DevDamage(string arg)
@@ -572,7 +572,7 @@ public static unsafe class Program
             case "flood" when Kind<Shipgen.RoomKind>(p[1]) is { } room:
                 return Sim.DamageSystem.FloodRooms(ship, room, p.Length > 2 && int.TryParse(p[2], out int n) ? n : int.MaxValue);
             case "jam" when int.TryParse(p[1], out int mount):
-                return Sim.DamageSystem.Jam(ship, mount);
+                return Sim.DamageSystem.Jam(ship, mount, p.Length > 2 && double.TryParse(p[2], inv, out double min) ? min : 0);
             case "wreck" when Kind<Shipgen.ComponentKind>(p[1]) is { } kind:
                 int nth = p.Length > 2 && int.TryParse(p[2], out int i) ? i : 0;
                 var state = p.Length > 3 && Kind<Sim.Combat.PartState>(p[3]) is { } s ? s : Sim.Combat.PartState.Destroyed;

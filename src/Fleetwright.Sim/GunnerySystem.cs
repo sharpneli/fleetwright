@@ -65,6 +65,8 @@ public sealed class GunnerySystem : IWorldSystem
         public int Generation;
         public int Shooter, Battery, Target, Level, Table;
         public bool Local;
+        /// <summary>The level it fires at under its directors (it falls to local control's while they're out).</summary>
+        public int DirectorLevel;
         /// <summary>The bearing (from ahead) and elevation the mounts were last ordered to, degrees; the last solution's
         /// elevation in the plane of fire and time of flight (where the next second's starts).</summary>
         public double OrderBearingDeg, OrderElevationDeg, ElevationDeg, TofS;
@@ -225,6 +227,7 @@ public sealed class GunnerySystem : IWorldSystem
             {
                 Alive = true, Generation = gen, Shooter = shooter, Battery = b, Target = target, StartMs = now,
                 Level = Math.Clamp(lv, 0, settings.GunneryLevels.Length - 1), Local = row.Local, FirstHitMs = -1, FirstStraddleMs = -1,
+                DirectorLevel = Math.Clamp(lv, 0, settings.GunneryLevels.Length - 1),
                 Table = shells.TableOf(store.Combat.Loadout(slot), b), ElevationDeg = double.NaN,
             };
             var lvl = settings.GunneryLevels[fc.Level];
@@ -273,7 +276,7 @@ public sealed class GunnerySystem : IWorldSystem
             {
                 ref readonly var comp = ref cls.Components[cls.Mounts[m].Component];
                 double h = comp.Bounds.Top - cls.Vertical.Waterline;
-                bool w = cond.MountWorks[m];
+                bool w = cond.Lays(m, local: true);   // its layer can't see with its sights gone (E4)
                 if (w && !works || w == works && h > best)
                     (best, works, s.X, s.Y, s.HeightM) = (h, w, cls.Mounts[m].X, cls.Mounts[m].Y, h);
             }
@@ -282,6 +285,8 @@ public sealed class GunnerySystem : IWorldSystem
                 fc.Level = 0;   // its directors gone: each mount for itself, by eye (the level local control fires at)
             fc.Local = true;
         }
+        else if (fc.Local && !row.Local)
+            (fc.Local, fc.Level) = (false, fc.DirectorLevel);   // a director back (E4: a timed outage over): under it again
         fc.SensorCount = n;
         fc.SpotHeightM = 0;
         for (int k = 0; k < n; k++)
@@ -472,8 +477,8 @@ public sealed class GunnerySystem : IWorldSystem
             ref readonly var mr = ref cls.Mounts[mounts[j]];
             bool works = cond.MountWorks[mounts[j]];   // one out of action or jammed stays where it stopped
             bool inTraverse = works && store.Combat.Order(slot, mounts[j], mr, now, bearing, elevation);
-            firing[j] = inTraverse && CombatStore.InArcs(cls, mr, bearing) && store.Combat.Mount(slot, mounts[j]).Rounds > 0 &&
-                        elevation <= mr.MaxElevationDeg;
+            firing[j] = inTraverse && cond.Lays(mounts[j], fc.Local) && CombatStore.InArcs(cls, mr, bearing) &&
+                        store.Combat.Mount(slot, mounts[j]).Rounds > 0 && elevation <= mr.MaxElevationDeg;
             bears |= firing[j];
         }
         fc.State = !laid ? BatteryState.OutOfRange : !bears ? BatteryState.NotBearing : now < fc.OpenMs ? BatteryState.Tracking : BatteryState.Firing;
@@ -569,7 +574,7 @@ public sealed class GunnerySystem : IWorldSystem
             ref readonly var ms = ref store.Combat.Mount(slot, mounts[j]);
             // loaded, with rounds; ordered on the target (not parked at its traverse's end) inside its arcs; and there
             double tol = settings.LayToleranceDeg;
-            firing[j] = ms.LoadedMs <= now && ms.Rounds > 0 && cond.MountWorks[mounts[j]] && fc.OrderElevationDeg <= mr.MaxElevationDeg && CombatStore.InArcs(cls, mr, fc.OrderBearingDeg) &&
+            firing[j] = ms.LoadedMs <= now && ms.Rounds > 0 && cond.Lays(mounts[j], fc.Local) && fc.OrderElevationDeg <= mr.MaxElevationDeg && CombatStore.InArcs(cls, mr, fc.OrderBearingDeg) &&
                         Math.Abs(Wrap(ms.TrainTo - fc.OrderBearingDeg)) <= tol &&
                         Math.Abs(CombatStore.BearingAt(ms, mr, now) - ms.TrainTo) <= tol && Math.Abs(CombatStore.ElevationAt(ms, mr, now) - ms.ElevTo) <= tol;
             // each mount fires the first load of the magazine order it has rounds of
@@ -577,7 +582,7 @@ public sealed class GunnerySystem : IWorldSystem
             firing[j] &= fireLoad[j] >= 0;
             if (firing[j])
             {
-                n += cls.TurretTypes[mr.Type].Barrels;
+                n += cond.Guns(mounts[j]);
                 if (lead < 0)
                     lead = loads.Loads(fc.Battery)[fireLoad[j]].ShellType;
             }
@@ -643,7 +648,7 @@ public sealed class GunnerySystem : IWorldSystem
             if (!firing[j])
                 continue;
             ref readonly var mr = ref cls.Mounts[mounts[j]];
-            int barrels = cls.TurretTypes[mr.Type].Barrels;
+            int barrels = cond.Guns(mounts[j]);   // its guns out don't fire (E4)
             var muzzle = Muzzle(cls, frame, mounts[j]);
             // its own shell, laid with its own table (a mount out of the lead's kind fires its next one in the salvo)
             int type = loads.Loads(fc.Battery)[fireLoad[j]].ShellType, own = type == lead ? tableIndex : shells.TableOf(loads, fc.Battery, type);
