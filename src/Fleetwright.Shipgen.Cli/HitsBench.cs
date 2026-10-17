@@ -19,39 +19,46 @@ static class HitsBench
     public record Options(string? Shooter, int Battery, string? Kind, double RangeM, double AspectDeg, int N, int PerShip, int Seed, int Trace, double SettleMin,
         string? Loadout = null);
 
+    /// <summary>A shooter's battery's shell: the one it fires, or its first of a kind, from its design's loadout or one
+    /// given; and its name.</summary>
+    public static (ShellTypeRow Shell, string Name) ShellOf(ShipClass sc, int battery, string? kind, string? loadout)
+    {
+        if (battery < 0 || battery >= sc.Batteries.Length)
+            throw new ArgumentException($"{sc.Name} has no battery {battery}");
+        // the shooter's loadout: her design's, or one given (docs/battle/shells-armour-damage.md S5)
+        var lo = sc.Loadout;
+        if (loadout != null)
+        {
+            var errors = new List<string>();
+            lo = sc.Load(LoadoutSpec.Parse(loadout), errors) ?? throw new ArgumentException($"--loadout: {string.Join("; ", errors)}");
+        }
+        int type = lo.Fires(battery);
+        if (kind != null)
+        {
+            var want = kind.ToLowerInvariant() switch
+            {
+                "ap" => ShellKind.Ap,
+                "common" or "sap" => ShellKind.Common,
+                "he" => ShellKind.He,
+                _ => throw new ArgumentException($"no shell kind {kind} (ap, common, he)"),
+            };
+            type = -1;
+            foreach (var l in lo.Loads(battery))
+                if (lo.ShellTypes[l.ShellType].Kind == want)
+                    type = l.ShellType;
+            if (type < 0)
+                throw new ArgumentException($"{sc.Name}'s battery {battery} carries no {kind}");
+        }
+        return (lo.ShellTypes[type], lo.ShellTypeId(type));
+    }
+
     public static int Run(string target, Func<string, Design> load, string settingsPath, Options o)
     {
         var settings = SimSettings.Load(settingsPath);
         var tc = ShipClassCompiler.Compile(ShipDesign.Build(load(target)));
         var sc = o.Shooter == null || o.Shooter == target ? tc : ShipClassCompiler.Compile(ShipDesign.Build(load(o.Shooter)));
-        if (o.Battery < 0 || o.Battery >= sc.Batteries.Length)
-            throw new ArgumentException($"{sc.Name} has no battery {o.Battery}");
+        var (shell, shellName) = ShellOf(sc, o.Battery, o.Kind, o.Loadout);
         var b = sc.Batteries[o.Battery];
-        // the shooter's loadout: her design's, or one given (docs/battle/shells-armour-damage.md S5)
-        var lo = sc.Loadout;
-        if (o.Loadout != null)
-        {
-            var errors = new List<string>();
-            lo = sc.Load(LoadoutSpec.Parse(o.Loadout), errors) ?? throw new ArgumentException($"--loadout: {string.Join("; ", errors)}");
-        }
-        int type = lo.Fires(o.Battery);
-        if (o.Kind != null)
-        {
-            var kind = o.Kind.ToLowerInvariant() switch
-            {
-                "ap" => ShellKind.Ap,
-                "common" or "sap" => ShellKind.Common,
-                "he" => ShellKind.He,
-                _ => throw new ArgumentException($"no shell kind {o.Kind} (ap, common, he)"),
-            };
-            type = -1;
-            foreach (var l in lo.Loads(o.Battery))
-                if (lo.ShellTypes[l.ShellType].Kind == kind)
-                    type = l.ShellType;
-            if (type < 0)
-                throw new ArgumentException($"{sc.Name}'s battery {o.Battery} carries no {o.Kind}");
-        }
-        var shell = lo.ShellTypes[type];
         double maxElev = sc.Mounts[sc.Links(b.Mounts)[0]].MaxElevationDeg;
         int traced = 0;
         var sw = Stopwatch.StartNew();
@@ -68,7 +75,7 @@ static class HitsBench
         double secs = sw.Elapsed.TotalSeconds;
 
         Console.WriteLine(string.Format(Inv, "{0} on {1}: {2} ({3:0.#} kg, filler {4:0.##} kg, {5} {6}) at {7:0} m ({8:0.0} kyd) from {9:0}° off the bow",
-            sc.Name, tc.Name, lo.ShellTypeId(type), shell.MassKg, shell.FillerKg, shell.Fuze, shell.Fuze == Fuze.Base ? $"{shell.FuzeDelayS:0.###} s" : "",
+            sc.Name, tc.Name, shellName, shell.MassKg, shell.FillerKg, shell.Fuze, shell.Fuze == Fuze.Base ? $"{shell.FuzeDelayS:0.###} s" : "",
             o.RangeM, o.RangeM / 914.4, o.AspectDeg));
         Console.WriteLine(string.Format(Inv, "  falling at {0:0.0}°, striking at {1:0} m/s: {2} hits on {3} ship(s) in {4:0.00} s ({5:0} µs a hit)", r.FallDeg,
             r.StrikeMs, r.Hits, r.Ships, secs, secs * 1e6 / Math.Max(r.Hits, 1)));

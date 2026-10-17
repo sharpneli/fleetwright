@@ -20,6 +20,9 @@ public enum CombatEvent : byte
     Lost,
     /// <summary>A launcher (Battery) fired Count torpedoes at Target (4.6).</summary>
     Torpedoes,
+    /// <summary>A shell that missed burst close to a ship (Target) and did something to it (docs/battle/
+    /// shells-armour-damage.md E7): as a hit's line, its source <see cref="HitSource.NearMiss"/>.</summary>
+    NearMiss,
 }
 
 /// <summary>What a hit did, as the log tells it.</summary>

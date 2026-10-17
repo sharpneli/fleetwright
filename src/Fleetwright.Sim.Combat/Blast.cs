@@ -273,16 +273,25 @@ public static class Blast
     {
         if (!(d >= s.LeakWeepD) || !(areaM2 > 0))
             return 0;
-        double ratio = d < 1 ? s.LeakR1 * d * d : s.LeakR1 * Math.Pow(s.LeakR5 / s.LeakR1, (Math.Min(d, 5) - 1) / 4);
-        if (joint == Joint.Welded)
-            ratio *= s.LeakWeldedK;
-        ratio *= Math.Exp(s.LeakSigma * r.NextGaussian() - 0.5 * s.LeakSigma * s.LeakSigma);
-        return Math.Min(ratio * 1e-4, s.RupturedShare) * areaM2;
+        return Math.Min(LeakRatio(d, joint, s) * Spread(s, ref r) * 1e-4, s.RupturedShare) * areaM2;
     }
+
+    /// <summary>r(D), cm² a m² of the boundary: 0 below the weep, welded less; the curve itself, without its spread
+    /// (<see cref="Spread"/>).</summary>
+    public static double LeakRatio(double d, Joint joint, SimSettings s)
+    {
+        if (!(d >= s.LeakWeepD))
+            return 0;
+        double ratio = d < 1 ? s.LeakR1 * d * d : s.LeakR1 * Math.Pow(s.LeakR5 / s.LeakR1, (Math.Min(d, 5) - 1) / 4);
+        return joint == Joint.Welded ? ratio * s.LeakWeldedK : ratio;
+    }
+
+    /// <summary>A boundary's draw about the curve: lognormal, σ <see cref="SimSettings.LeakSigma"/>, mean 1.</summary>
+    public static double Spread(SimSettings s, ref RandomStream r) => Math.Exp(s.LeakSigma * r.NextGaussian() - 0.5 * s.LeakSigma * s.LeakSigma);
 
     /// <summary>An opening between two spaces for the flooding, on the edge's one entry the flooding reads (the lower
     /// cell's).</summary>
-    static void Open(ShipClass c, ShipCondition k, int from, int poolIndex, double m2)
+    internal static void Open(ShipClass c, ShipCondition k, int from, int poolIndex, double m2)
     {
         ref readonly var e = ref c.Neighbour(poolIndex);
         if (from < e.Cell)
@@ -309,7 +318,7 @@ public static class Blast
 
     /// <summary>A join's plate, mm of steel: a bulkhead's plate where the two spaces meet (and its armour there), a deck's
     /// plate and its armour over them.</summary>
-    static double JoinMm(ShipClass c, in Neighbour e, in Box a, in Box b)
+    internal static double JoinMm(ShipClass c, in Neighbour e, in Box a, in Box b)
     {
         double z = (Math.Max(a.Base, b.Base) + Math.Min(a.Top, b.Top)) / 2;
         if (e.Join == JoinKind.Bulkhead)
@@ -333,7 +342,7 @@ public static class Blast
     }
 
     /// <summary>The area two spaces share: a deck's in plan, a bulkhead's across the ship or along it.</summary>
-    static double Area(in Box a, in Box b, JoinKind join)
+    internal static double Area(in Box a, in Box b, JoinKind join)
     {
         double ox = Math.Max(Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0), 0), oy = Math.Max(Math.Min(a.Y1, b.Y1) - Math.Max(a.Y0, b.Y0), 0),
             oz = Math.Max(Math.Min(a.Top, b.Top) - Math.Max(a.Base, b.Base), 0);
@@ -358,7 +367,7 @@ public static class Blast
     public static void Prepare(ShipClass c, ShipCondition k) => Outside(c, k, 0, 0, out _, out _);
 
     /// <summary>A space's outside face, from the ship's cache (worked out the first time a burst needs it).</summary>
-    static double Outside(ShipClass c, ShipCondition k, int cell, int face, out double mm, out P3 point)
+    internal static double Outside(ShipClass c, ShipCondition k, int cell, int face, out double mm, out P3 point)
     {
         if (!k.FacesReady)
         {

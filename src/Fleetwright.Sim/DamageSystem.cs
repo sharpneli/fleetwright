@@ -345,8 +345,10 @@ public sealed class DamageSystem : IWorldSystem
         var cls = ship.Handling.Class;
         var k = store.Combat.Condition(slot);
         long now = world.Time.Ms;
+        bool near = hit.Source == HitSource.NearMiss;
         k.Damaged = touched = true;
-        k.Hits++;
+        if (!near)
+            k.Hits++;
         (k.LastShooter, k.LastBattery) = (hit.Shooter, hit.Battery);
 
         Prepare(cls);
@@ -358,6 +360,13 @@ public sealed class DamageSystem : IWorldSystem
             // an underwater explosion against the hull (4.6): no path of its own
             e = Underwater.Apply(cls, k, hit, settings, propellant[ship.Side], ref rng, out var outcome);
             t = new TerminalResult { Outcome = outcome, Plate = -1 };
+        }
+        else if (near)
+        {
+            // a burst in the water outside the hull (E7): no path either
+            e = NearMiss.Apply(cls, k, hit, settings, ref rng);
+            t = new TerminalResult { Outcome = hit.Force < 1 ? Outcome.LowOrder : Outcome.BurstOutside, Burst = BurstKind.Outside, Plate = -1, Glance = -1,
+                Spall = double.NaN, PlateU = double.NaN, BurstMs = hit.SpeedMs };
         }
         else
         {
@@ -420,8 +429,9 @@ public sealed class DamageSystem : IWorldSystem
         if (broke)
             fx |= HitEffect.Broken;
         (LastTerminal, LastEffects, LastEffect) = (t, e, fx);
-        log.Add(new CombatEntry(now, CombatEvent.Hit, hit.Shooter, hit.Battery, hit.Ship, hit.ShellType, e.Part, t.Outcome, fx, hit.Shell.Kind,
-            (float)(hit.Source == HitSource.Torpedo ? hit.Torpedo.CalibreMm : hit.Shell.CalibreMm), hit.Source));
+        if (!near || fx != HitEffect.None || e.Killed + e.Wounded > 0)   // a near miss that did nothing isn't news
+            log.Add(new CombatEntry(now, near ? CombatEvent.NearMiss : CombatEvent.Hit, hit.Shooter, hit.Battery, hit.Ship, hit.ShellType, e.Part, t.Outcome,
+                fx, hit.Shell.Kind, (float)(hit.Source == HitSource.Torpedo ? hit.Torpedo.CalibreMm : hit.Shell.CalibreMm), hit.Source));
         if (blew)
             Blew(world, slot, k, e.MagazineRoom, hit.Source == HitSource.Torpedo ? BlastCause.Torpedo : BlastCause.Shell, hit.Point);
         else if (broke)

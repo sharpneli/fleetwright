@@ -54,6 +54,9 @@ public struct EffectsResult
     public bool Shock, Blackout;
     /// <summary>E5: what its gas did in a closed space (none: it burst outside, in the open, or held).</summary>
     public BlastResult Blast;
+    /// <summary>E7: a near miss's splinters expected through the hull's side, and into the parts above it; its shock factor
+    /// at the hull's nearest wetted point, and the seams and plating its shock opened to the sea (m², in BreachM2).</summary>
+    public double SideThrough, UpperThrough, Nsf, ShockM2;
 
     public readonly bool Changed => Destroyed + Disabled + Damaged > 0 || BreachM2 > 0 || Jammed || Fire || Magazine || Broken ||
         Turret.Blow != TurretBlow.None || Stunned || Feed || Shock ||
@@ -897,9 +900,9 @@ public static class Effects
             (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, c.Mounts[open].Magazine, MagazineVia.Spall);
     }
 
-    static void Harm(ref EffectsResult res, ShipCondition k, int node) => Count(ref res, k, node, k.Harm(node) ? k.State[node] : PartState.Ok);
+    internal static void Harm(ref EffectsResult res, ShipCondition k, int node) => Count(ref res, k, node, k.Harm(node) ? k.State[node] : PartState.Ok);
 
-    static double PartVital(ShipClass c, int i, SimSettings s) => s.PartVital[Math.Min((int)c.Components[i].Kind, s.PartVital.Length - 1)];
+    internal static double PartVital(ShipClass c, int i, SimSettings s) => s.PartVital[Math.Min((int)c.Components[i].Kind, s.PartVital.Length - 1)];
 
     static double PartFragility(ShipClass c, int i, SimSettings s) => s.PartFragilityJ[Math.Min((int)c.Components[i].Kind, s.PartFragilityJ.Length - 1)];
 
@@ -989,7 +992,7 @@ public static class Effects
     /// whose ammunition comes up by hand: the flash chain runs only from the one (07-magazine-explosions.md).</summary>
     static bool Enclosed(ShipClass c, int mount) => c.Mounts[mount].Turret && c.TurretTypes[c.Mounts[mount].Type].Shape == TurretShape.Bb;
 
-    static double Vital(ShipClass c, int room, SimSettings s) => s.RoomVital[Math.Min((int)c.Rooms[room].Kind, s.RoomVital.Length - 1)];
+    internal static double Vital(ShipClass c, int room, SimSettings s) => s.RoomVital[Math.Min((int)c.Rooms[room].Kind, s.RoomVital.Length - 1)];
 
     /// <summary>What a shell passing through a part does to it: a mount, a director, a shaft or a rudder is put out of
     /// action; plating, a funnel or a mast is damaged.</summary>
@@ -1035,7 +1038,7 @@ public static class Effects
     }
 
     /// <summary>A part's armour against fragments: a turret's side or roof (the thinner), else its own armour.</summary>
-    static double Armour(ShipClass c, int i)
+    public static double Armour(ShipClass c, int i)
     {
         int m = c.MountOf(i);
         if (m >= 0 && c.Mounts[m].Component == i && c.Mounts[m].Turret)
@@ -1058,13 +1061,13 @@ public static class Effects
     }
 
     /// <summary>Whether two boxes overlap (by more than a few centimetres each way).</summary>
-    static bool Overlaps(in Box a, in Box b) =>
+    internal static bool Overlaps(in Box a, in Box b) =>
         Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0) > 0.05 && Math.Min(a.Y1, b.Y1) - Math.Max(a.Y0, b.Y0) > 0.05 &&
         Math.Min(a.Top, b.Top) - Math.Max(a.Base, b.Base) > 0.05;
 
     /// <summary>A part's own plates as mild steel against fragments (E1): its armour by its material, and the plating
     /// of a superstructure block, a funnel, an uptake's casing or a mast (the ship's superstructure plating).</summary>
-    static double PartMild(ShipClass c, int i, double armourMm)
+    public static double PartMild(ShipClass c, int i, double armourMm)
     {
         ref readonly var comp = ref c.Components[i];
         double mm = armourMm > 0 ? c.MaterialOf(comp.Material).FragmentMildMm(armourMm) : 0;

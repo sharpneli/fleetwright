@@ -12,6 +12,9 @@ public enum HitSource : byte
     Collision,
     /// <summary>A hit sampled by coarse fire (docs/battle/fighting.md 4.9).</summary>
     Coarse,
+    /// <summary>A shell that missed, bursting in the water close by (docs/battle/shells-armour-damage.md E7): the hit's
+    /// point is the burst's, outside the hull.</summary>
+    NearMiss,
 }
 
 /// <summary>A hit (docs/battle/fighting.md 4.3a; the architecture's "damage takes a hit, not a shell flight"): the ship
@@ -35,6 +38,8 @@ public readonly record struct Hit
     public ShellTypeRow Shell { get; init; }
     /// <summary>A torpedo's hit (<see cref="HitSource.Torpedo"/>): the torpedo, its charge and calibre.</summary>
     public TorpedoRow Torpedo { get; init; }
+    /// <summary>A near miss's burst (<see cref="HitSource.NearMiss"/>): its filler's force, 1 full, under 1 low-order.</summary>
+    public double Force { get; init; }
     /// <summary>The shell's type in the shooter's class (for the log), or -1.</summary>
     public int ShellType { get; init; }
     public int Shooter { get; init; }

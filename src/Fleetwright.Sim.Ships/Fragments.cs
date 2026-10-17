@@ -57,7 +57,8 @@ public sealed class Fragments : IEquatable<Fragments>
     public const double BandHalfDeg = 7.5, OutsideShare = 0.15;
     /// <summary>The fragments counted: 1 g and up (Mott undercounts the fines, which carry little punch; 13 §2.2).</summary>
     public const double MinKg = 0.001;
-    const double Lb = 0.45359237, In = 0.0254, Grains = 15432.358, Fps = 0.3048;
+    const double Lb = 0.45359237, In = 0.0254, Fps = 0.3048;
+    internal const double Grains = 15432.358;
 
     /// <summary>Gurney's cylinder: a body of metal M round charge C throws its pieces at √(2E)·√((C/M)/(1 + C/2M)).</summary>
     public static double Cylinder(double chargeKg, double metalKg, double gurneyMs) =>
@@ -330,10 +331,11 @@ public sealed class FragmentBurst
     /// flying along dir at v there. Each spray flies at its kick plus the shell's motion: the side ring leans forward by
     /// atan(v/V₀), the ogive's and tail's cones the same way. A box takes its presented area's share of the sprays it
     /// overlaps (in the polar angle off the shell's line), its fragments slowed by the air on the way to its nearest
-    /// point; those over the plate's limit get in. The plate is mild steel mildMm thick at normal (<see
+    /// point (and dragM more of it: the water a burst under the sea throws them through, as the air that slows them as
+    /// much; E7); those over the plate's limit get in. The plate is mild steel mildMm thick at normal (<see
     /// cref="Fragments.MildMm"/>), at its obliquity on the box's face square to the fragments, or on the face whose
     /// normal is <paramref name="normal"/> when one is given (a deck's, a bulkhead's). Allocation-free.</summary>
-    public double Hits(P3 at, P3 dir, double v, in Box box, double mildMm, P3 normal = default)
+    public double Hits(P3 at, P3 dir, double v, in Box box, double mildMm, P3 normal = default, double dragM = 0)
     {
         if (SideCount <= 0)
             return 0;
@@ -341,7 +343,7 @@ public sealed class FragmentBurst
         double dx = box.X1 - box.X0, dy = box.Y1 - box.Y0, dz = box.Top - box.Base;
         double rx = cx - at.X, ry = cy - at.Y, rz = cz - at.Z, rc = Math.Sqrt(rx * rx + ry * ry + rz * rz);
         P3 u = rc > 1e-6 ? new P3(rx / rc, ry / rc, rz / rc) : dir;
-        double near = Math.Max(Distance(box, at), 0.3);
+        double near = Math.Max(Distance(box, at), 0.3) + dragM;
         double area = Math.Abs(u.X) * dy * dz + Math.Abs(u.Y) * dx * dz + Math.Abs(u.Z) * dx * dy;
         double omega = Math.Min(area / Math.Max(rc * rc, 0.25), 2 * Math.PI);
         // the plate at its obliquity: on the face given, else the face square to the fragments
@@ -376,6 +378,17 @@ public sealed class FragmentBurst
         if (TailKg > 0 && BodyKg > 0)
             hits += Spray(psi, alpha, omega, near, e, v, TailMs, TailFromDeg, TailToDeg, TailKg / BodyKg);
         return hits;
+    }
+
+    /// <summary>The presented area of a fragment of the side spray that gets through mild steel mm thick at an obliquity rM
+    /// off (the air's, and the water's as air), the shell flying at v, m²: the median of those through (Mott's above the
+    /// lightest that gets through), THOR's shape, (m/660 gr)^⅔ in² (E7: a splinter's hole, 15 §6.3).</summary>
+    public double ThroughAreaM2(double rM, double v, double mildMm, double obliquityDeg)
+    {
+        double sideV = Math.Sqrt(SideMs * SideMs + v * v);
+        double e = mildMm > 0 ? Math.Pow(Fragments.MildMm(mildMm, FragmentClass.Mild, obliquityDeg) / 25.4, Fragments.ThorA) : 0;
+        double m = Math.Max(ThresholdKg(rM, sideV, e), Fragments.MinKg), root = Math.Sqrt(m) + MottK * Math.Log(2);
+        return Math.Pow(root * root * Fragments.Grains / Fragments.ShapeGrIn3, 2.0 / 3) * Fragments.Inch * Fragments.Inch;
     }
 
     /// <summary>A cone of spray's hits on a box: its share of the box's polar extent, the classes scaled to its metal.</summary>

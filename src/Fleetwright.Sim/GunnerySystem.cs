@@ -125,10 +125,12 @@ public sealed class GunnerySystem : IWorldSystem
     readonly ShellSystem shells;
     readonly CombatLog log;
     readonly RandomStream stream;
-    Fc[] fcs = new Fc[16];
-    Sensor[] sensors = new Sensor[16 * MaxSensors];
-    Reading[] pending = new Reading[16 * PendingCap];
-    readonly Stack<int> freeFc = new(64);
+    // the engagements' pool, two a ship the store is made for (a ship's main and secondary batteries engaged at once), so a
+    // fight's new peak doesn't grow it within a step
+    Fc[] fcs;
+    Sensor[] sensors;
+    Reading[] pending;
+    readonly Stack<int> freeFc;
     int highFc;
     Salvo[] salvos;
     readonly Stack<int> freeSalvo;
@@ -145,6 +147,9 @@ public sealed class GunnerySystem : IWorldSystem
         stream = RandomStream.Named(seed, "gunnery");
         salvos = new Salvo[Math.Max(settings.SalvoCapacity, 16)];
         freeSalvo = new Stack<int>(salvos.Length);   // as big as the pool, so freeing never grows it
+        int engagements = Math.Max(16, 2 * settings.ShipCapacity);
+        (fcs, sensors, pending, freeFc) = (new Fc[engagements], new Sensor[engagements * MaxSensors], new Reading[engagements * PendingCap],
+            new Stack<int>(engagements));
         Array.Fill(crews, CrewQuality.Trained);
     }
 

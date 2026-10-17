@@ -432,6 +432,18 @@
   "FlashBattery": [0.54, 0.32],
   "WoundedOutShare": 0.45,
   "WoundedBackMin": [15, 45],
+  "NearMissSplinterK": 15,
+  "NearMissShockK": 7.5,
+  "WaterRicochetDeg": 6.4,
+  "WaterDragL1": 0.3,
+  "NearMissBandM": 1,
+  "SplinterHoleK": 1.3,
+  "ShockWetM": 0.5,
+  "NearShockBands": [0.03, 0.08, 0.2, 0.45, 1.0],
+  "NearShockGradeK": [1, 2, 3, 4],
+  "NearTripMin": [1, 1, 5],
+  "ShockPlateMm": 9,
+  "SternShare": 0.15,
   "RudderJamChance": 0.5,
 
   // fire, flooding, going down (docs/battle/fighting.md 4.3b; damage-model-research.md §3.5, §3.6, §8.4, §8.5)

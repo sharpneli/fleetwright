@@ -351,6 +351,181 @@ public static class GivenHits
         return rep;
     }
 
+    /// <summary>What near misses did (docs/battle/shells-armour-damage.md E7; damage/15 §4-5): the salvos and shells, the
+    /// shells that hit (and of those, under the water), those that burst in the water and those of them within a ship's
+    /// reach (within 10 and 30 m of her waterplane); summed over the near misses, the splinters expected through the side
+    /// and into the parts above it, the waterline holes, the men killed and wounded, the parts harmed (a step worse).</summary>
+    public sealed class NearReport
+    {
+        public int Salvos, Shells, Hits, Underwater, Bursts, Near, Within10, Within30, Parts;
+        public double SideThrough, UpperThrough, HoleM2, Killed, Wounded;
+        public double FallDeg, StrikeMs, DepthM;
+        /// <summary>The shock (15 §3): the near misses by the band their shock factor reached (from 0.03, 0.08, 0.2, 0.45,
+        /// 1.0), their factors summed, those that put gear out and that blacked the ship out, and the seams and plating it
+        /// opened to the sea and between spaces (m²).</summary>
+        public readonly int[] Bands = new int[5];
+        public int Shocks, Blackouts;
+        public double Nsf, ShockM2, SprungM2;
+        /// <summary>Settled after each (<see cref="NearBurst"/>'s settleS): the ships lost, the water they took (t).</summary>
+        public int Lost;
+        public double WaterT;
+
+        public void Add(in EffectsResult fx, SimSettings s)
+        {
+            (SideThrough, UpperThrough, HoleM2, Killed, Wounded) = (SideThrough + fx.SideThrough, UpperThrough + fx.UpperThrough, HoleM2 + fx.BreachM2,
+                Killed + fx.Killed, Wounded + fx.Wounded);
+            Parts += fx.Destroyed + fx.Disabled + fx.Damaged;
+            (Nsf, ShockM2, SprungM2) = (Nsf + fx.Nsf, ShockM2 + fx.ShockM2, SprungM2 + fx.Blast.LeakM2);
+            (Shocks, Blackouts) = (Shocks + (fx.Shock ? 1 : 0), Blackouts + (fx.Blackout ? 1 : 0));
+            for (int i = s.NearShockBands.Length - 1; i >= 0; i--)
+                if (fx.Nsf >= s.NearShockBands[i])
+                {
+                    Bands[i]++;
+                    break;
+                }
+        }
+    }
+
+    /// <summary>Salvos of a shell at a range on a class (15 §5): guns shells each, the target broadside from the aspect
+    /// (degrees off her bow it's fired from), each salvo's mean point of impact off her middle by the fire control's error
+    /// (σ fcRangeM along the line of fire, fcDeflM across), each shell off it by the pattern (σ sigmaRangeM, sigmaDeflM).
+    /// A shell whose line meets the ship within the shell system's reach under the water is a hit (counted, not struck); one
+    /// that misses bursts by <see cref="NearMiss.Burst"/>, and within <see cref="NearMiss.ReachM"/> of her waterplane is a
+    /// near miss through the world's damage system, as the shell system does it. A fresh ship each salvo.</summary>
+    public static NearReport NearSalvos(ShipClass target, ShellTypeRow shell, double maxElevationDeg, double rangeM, double aspectDeg, int guns, int salvos,
+        double sigmaRangeM, double sigmaDeflM, double fcRangeM, double fcDeflM, ulong seed, SimSettings settings)
+    {
+        var (dir, fall) = Flight(shell, maxElevationDeg, rangeM, aspectDeg);
+        var rep = new NearReport { FallDeg = fall.FallDeg, StrikeMs = fall.StrikeMs };
+        double tl = Math.Sqrt(dir.X * dir.X + dir.Y * dir.Y);
+        var along = new P3(dir.X / tl, dir.Y / tl, 0);
+        var right = new P3(-along.Y, along.X, 0);
+        double wl = target.Vertical.Waterline, far = 2 * target.Solids.Radius + 50, reach = WaterRun.ReachM(shell, fall.StrikeMs, settings);
+        double near = NearMiss.ReachM(shell, settings), decay = WaterRun.DecayM(shell, settings);
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), seed, settings);
+        int cls = w.Ships.AddClass(target);
+        var path = new HitPath();
+        var rng = RandomStream.Named(seed, "near salvos");
+        int entity = 0;
+        for (int salvo = 0; salvo < salvos; salvo++)
+        {
+            if (entity != 0)
+                w.Apply(ShipSystem.Drop(entity));
+            w.Apply(ShipSystem.Spawn(cls, 56, 4, 0, 15));
+            entity = w.Ships.NewestEntity;
+            rep.Salvos++;
+            double mr = fcRangeM * rng.NextGaussian(), md = fcDeflM * rng.NextGaussian();
+            for (int g = 0; g < guns; g++)
+            {
+                rep.Shells++;
+                double a = mr + sigmaRangeM * rng.NextGaussian(), c = md + sigmaDeflM * rng.NextGaussian();
+                var water = new P3(along.X * a + right.X * c, along.Y * a + right.Y * c, wl);
+                ShipTracer.Trace(target, Add(water, dir, -far), Add(water, dir, reach + 1), [], Waterplane.Level(target), path);
+                int first = First(path);
+                if (first >= 0 && WaterRun.RunM(path, first) <= reach)
+                {
+                    rep.Hits++;
+                    rep.Underwater += WaterRun.RunM(path, first) > 0 ? 1 : 0;
+                    continue;
+                }
+                var (run, force) = NearMiss.Burst(shell, fall.StrikeMs, fall.FallDeg, settings, ref rng);
+                if (!(force > 0))
+                    continue;
+                rep.Bursts++;
+                var at = Add(water, dir, run);
+                double d = NearMiss.WaterplaneM(target, at.X, at.Y);
+                if (d > near)
+                    continue;
+                (rep.Near, rep.Within10, rep.Within30) = (rep.Near + 1, rep.Within10 + (d <= 10 ? 1 : 0), rep.Within30 + (d <= 30 ? 1 : 0));
+                rep.DepthM += wl - at.Z;
+                w.Damage.Strike(w, new Hit
+                {
+                    Ship = entity, Ms = w.Time.Ms, Point = at, Direction = dir, SpeedMs = WaterRun.Speed(fall.StrikeMs, run, decay), WaterRunM = run,
+                    Source = HitSource.NearMiss, Shell = shell, ShellType = -1, Force = force,
+                });
+                rep.Add(w.Damage.LastEffects, settings);
+            }
+        }
+        return rep;
+    }
+
+    /// <summary>A shell's burst placed in the water off a class (15 §4), n times on a fresh ship: short of her side (toward
+    /// the gun, along its line of fire from the aspect), over her (beyond the far side), or beside her (fired from ahead,
+    /// abreast her middle to starboard), offsetM from her waterline amidships, at the depth its fuze's water time and delay
+    /// take it; or under her (offsetM below her keel's level beneath the turn of her starboard bilge amidships: 15 §3.3's
+    /// White Plains). No failures: a full burst every time. With settleS, her flooding and fire run on after each, and
+    /// whether she went down is counted.</summary>
+    public static NearReport NearBurst(ShipClass target, ShellTypeRow shell, double maxElevationDeg, double rangeM, double aspectDeg, string where,
+        double offsetM, int n, ulong seed, SimSettings settings, double[]? intoParts = null, double settleS = 0)
+    {
+        if (where == "beside")
+            aspectDeg = 0;
+        var (dir, fall) = Flight(shell, maxElevationDeg, rangeM, aspectDeg);
+        double run = WaterRun.RunInM(fall.StrikeMs, shell.FuzeWaterMs / 1000 + (shell.Fuze == Fuze.Base ? shell.FuzeDelayS : 0), WaterRun.DecayM(shell, settings));
+        double depth = run * Math.Sin(double.DegreesToRadians(fall.FallDeg));
+        var rep = new NearReport { FallDeg = fall.FallDeg, StrikeMs = fall.StrikeMs, DepthM = depth };
+        double tl = Math.Sqrt(dir.X * dir.X + dir.Y * dir.Y);
+        var along = new P3(dir.X / tl, dir.Y / tl, 0);
+        double x = target.Hydrostatics.Lcf, wl = target.Vertical.Waterline, hw = target.Hull.HalfWidth(x, wl);
+        // the hull's edge on the line through her middle: short is back along the line of fire from the near edge, over on from the far one
+        double edge = Math.Abs(along.Y) > 1e-6 ? hw / Math.Abs(along.Y) : target.Length / 2;
+        var at = where switch
+        {
+            "short" => new P3(x - along.X * (edge + offsetM), -along.Y * (edge + offsetM), wl - depth),
+            "over" => new P3(x + along.X * (edge + offsetM), along.Y * (edge + offsetM), wl - depth),
+            "beside" => new P3(x, hw + offsetM, wl - depth),
+            "under" => new P3(x, hw, target.Vertical.Keel - offsetM),
+            _ => throw new ArgumentException($"no burst place {where} (short, over, beside, under)"),
+        };
+        if (where == "under")
+            rep.DepthM = wl - at.Z;
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), seed, settings);
+        int cls = w.Ships.AddClass(target);
+        int entity = 0;
+        for (int i = 0; i < n; i++)
+        {
+            if (entity != 0)
+                w.Apply(ShipSystem.Drop(entity));
+            w.Apply(ShipSystem.Spawn(cls, 56, 4, 0, 15));
+            entity = w.Ships.NewestEntity;
+            var hit = new Hit
+            {
+                Ship = entity, Ms = w.Time.Ms, Point = at, Direction = dir, SpeedMs = WaterRun.Speed(fall.StrikeMs, run, WaterRun.DecayM(shell, settings)),
+                WaterRunM = run, Source = HitSource.NearMiss, Shell = shell, ShellType = -1, Force = 1,
+            };
+            rep.Near++;
+            if (intoParts != null)
+            {
+                // the near miss's own effects, the splinters into each part tallied (a tool's look; nothing else steps)
+                var rng = RandomStream.Named(seed, "near burst").Derive((ulong)i);
+                rep.Add(NearMiss.Apply(target, w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(entity)), hit, settings, ref rng, intoParts), settings);
+                continue;
+            }
+            w.Damage.Strike(w, hit);
+            rep.Add(w.Damage.LastEffects, settings);
+            if (settleS > 0)
+            {
+                var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(entity));
+                w.Damage.Settle(w, entity, settleS);
+                (rep.Lost, rep.WaterT) = (rep.Lost + (k.Status != ShipStatus.Afloat ? 1 : 0), rep.WaterT + k.WaterT);
+            }
+        }
+        return rep;
+    }
+
+    /// <summary>A shell's flight at a range, in the target's frame from an aspect (degrees off her bow it comes from): its
+    /// direction, falling, and its fall and striking speed.</summary>
+    static (P3 Dir, (double Range, double Tof, double FallDeg, double StrikeMs) Fall) Flight(in ShellTypeRow shell, double maxElevationDeg, double rangeM, double aspectDeg)
+    {
+        var table = new BallisticTable(BallisticKey.Of(shell, maxElevationDeg));
+        double e = table.ElevationFor(rangeM, 10);
+        if (double.IsNaN(e))
+            throw new ArgumentException($"{rangeM:0} m is beyond the gun's reach");
+        var fall = table.Fall(e, 10);
+        double b = double.DegreesToRadians(aspectDeg), f = double.DegreesToRadians(fall.FallDeg);
+        return (new P3(-Math.Cos(b) * Math.Cos(f), -Math.Sin(b) * Math.Cos(f), -Math.Sin(f)), fall);
+    }
+
     /// <summary>A ship after its hits: its flooding and fire run on for a while, then what it can still do into the
     /// report.</summary>
     static void After(Report rep, ShipClass target, World w, int entity, int slot, double settleS, FallOutRule? fallOut, bool hitMagazine)

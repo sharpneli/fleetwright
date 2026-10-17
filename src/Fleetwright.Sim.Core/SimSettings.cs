@@ -1097,6 +1097,40 @@ public sealed record SimSettings
     public double WoundedOutShare { get; init; } = 0.45;
     public double[] WoundedBackMin { get; init; } = [15, 45];
 
+    /// <summary>Near misses (docs/battle/shells-armour-damage.md E7; damage/15): a shell that misses bursts in the water,
+    /// and the ships whose waterplane lies within max(<see cref="NearMissSplinterK"/>·W^⅓, <see cref="NearMissShockK"/>·√W)
+    /// m of it (W the filler's TNT kg) take a near miss: 15·W^⅓ is where its splinters stop hitting exposed men (15 §6.1),
+    /// 7.5·√W where its shock falls under 0.03. A shell falling flatter than <see cref="WaterRicochetDeg"/> may skip off
+    /// the water (18°/√SG for a steel sphere [SRC], shells alike [EST]): a base fuze then doesn't burst (v0), a nose fuze
+    /// bursts on the graze. Fragments in water slow 1/e every <see cref="WaterDragL1"/>·m^⅓ m (13 §2.3). Splinters through
+    /// the side within <see cref="NearMissBandM"/> of the waterline hole it, each <see cref="SplinterHoleK"/> times the
+    /// fragment's presented area (15 §6.3 [EST]).</summary>
+    public double NearMissSplinterK { get; init; } = 15;
+    public double NearMissShockK { get; init; } = 7.5;
+    public double WaterRicochetDeg { get; init; } = 6.4;
+    public double WaterDragL1 { get; init; } = 0.3;
+    public double NearMissBandM { get; init; } = 1;
+    public double SplinterHoleK { get; init; } = 1.3;
+    /// <summary>A near miss's shock (E7; damage/15 §3, §6.4): the near-miss shock factor NSF = √W/R·(1 + sin a)/2·
+    /// √(1 − e^(−2Δt/θ)) (lb, ft; Cole's θ, the surface's reflection cutting the pulse off) at the nearest wetted point,
+    /// at least <see cref="ShockWetM"/> down [EST]. Its bands (<see cref="NearShockBands"/>, fitted to the British bomb
+    /// near misses of 1939-41 [FIT]): 0.03 fragile gear (breakers trip: a section's power and the directors' gyros, for
+    /// <see cref="NearTripMin"/>), 0.08 machinery mounts and castings (a machinery space's gear damaged; the whole ship's
+    /// breakers), 0.2 the hull's seams (shafts strained), 0.45 plating buckled (shafts and thrusts out of line, the
+    /// machinery again), 1.0 plating split. Each happens with a chance rising across its band from 0 to 1 [EST]. The
+    /// gear's edges are times the ship's shock grade's <see cref="NearShockGradeK"/> (G0 the record's cast-iron fittings,
+    /// G1 shock-hardened: 15 §6.5's ×2 [EST]), the structure's not. The seams leak by r(D) (damage/17 §3.1: D = 5·NSF,
+    /// times <see cref="ShockPlateMm"/> over the plate: the bands are a destroyer's bottom's [EST]), over the shell and
+    /// the transverse bulkheads where D is past the weep; at D 5 the nearest plate is holed as a contact burst's. A burst
+    /// within <see cref="SternShare"/> of the length from the stern shakes the rudders, shafts and propellers there by
+    /// their own NSF, as the structure.</summary>
+    public double ShockWetM { get; init; } = 0.5;
+    public double[] NearShockBands { get; init; } = [0.03, 0.08, 0.2, 0.45, 1.0];
+    public double[] NearShockGradeK { get; init; } = [1, 2, 3, 4];
+    public double[] NearTripMin { get; init; } = [1, 1, 5];
+    public double ShockPlateMm { get; init; } = 9;
+    public double SternShare { get; init; } = 0.15;
+
     /// <summary>Steering lost at the steering gear or the rudder jams the rudder where it is with this chance (a ship
     /// that circles); else it trails amidships, the helm gone.</summary>
     public double RudderJamChance { get; init; } = 0.5;

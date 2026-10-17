@@ -99,6 +99,8 @@ public sealed class ShellSystem : IWorldSystem
     public int InFlight => alive;
     public int Hits { get; private set; }
     public int Misses { get; private set; }
+    /// <summary>The near misses struck: a ship within a missed shell's burst's reach (E7; a tool's count, not state).</summary>
+    public int NearMissCount { get; private set; }
 
     /// <summary>Told of each shell of a gunnery salvo as it comes down (set by the world).</summary>
     internal GunnerySystem? Gunnery { get; set; }
@@ -313,12 +315,72 @@ public sealed class ShellSystem : IWorldSystem
                     log.Add(new CombatEntry(world.Time.Ms, CombatEvent.Hit, s.Shooter, s.Battery, s.Hit, s.ShellType));
             }
             else
+            {
                 Misses++;
+                NearMisses(world, ref s, e.Entity);
+            }
             s.Alive = false;
             alive--;
             free[freeCount++] = e.Entity;
             if (s.Record >= 0)
                 Gunnery?.Landed(world, s.Record, s.End, s.Hit);
+        }
+    }
+
+    /// <summary>A shell that missed bursts in the water (docs/battle/shells-armour-damage.md E7): when a ship's waterplane
+    /// lies within its reach (<see cref="NearMiss.ReachM"/>, from where its run under the water could end), its fuze and
+    /// filler are drawn (the stream "near misses", by salvo and shell), and each ship within the reach of the burst takes
+    /// a near miss there. Most misses cost the one look at the index.</summary>
+    void NearMisses(World world, ref Shell s, int slot)
+    {
+        if (Damage == null || !settings.HitsDoDamage || s.Loadout == null || s.ShellType < 0)
+            return;
+        var shell = s.Loadout.ShellTypes[s.ShellType];
+        double reach = NearMiss.ReachM(shell, settings);
+        if (!(reach > 0))
+            return;
+        Ballistics[s.Table].Position(s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, s.WaterS, out var vel);
+        double v = Math.Max(vel.Length, 1e-9), decay = WaterRun.DecayM(shell, settings);
+        var up = s.WaterPoint.Normalized();
+        double fall = double.RadiansToDegrees(Math.Asin(Math.Clamp(-Vec3d.Dot(vel, up) / v, -1, 1)));
+        // as far as its fuze could carry it under the water (a base fuze's delay at four of its scatters)
+        double longest = WaterRun.RunInM(v, shell.FuzeWaterMs / 1000 + (shell.Fuze == Fuze.Base ? shell.FuzeDelayS * (1 + 4 * shell.FuzeScatter) : 0), decay);
+        var near = index.Near(s.WaterPoint, reach + longest + biggest);
+        if (near.Length == 0)
+            return;
+        if (candidates.Length < near.Length)
+            candidates = new int[Math.Max(near.Length, candidates.Length * 2)];
+        near.CopyTo(candidates);
+        int n = near.Length;
+
+        var rng = world.Stream("near misses").Derive(((ulong)(uint)s.Salvo << 32) | (uint)slot);
+        var (run, force) = NearMiss.Burst(shell, v, fall, settings, ref rng);
+        if (!(force > 0))
+            return;
+        var dir = vel * (1 / v);
+        var at = s.WaterPoint + dir * run;
+        double speed = WaterRun.Speed(v, run, decay);
+        var store = ships.Store;
+        long now = world.Time.Ms;
+        for (int c = 0; c < n; c++)
+        {
+            int ship = candidates[c];
+            int entity = store[ship].Entity;
+            if (entity == s.Shooter)
+                continue;
+            var cls = ships.Class(store[ship].ClassIndex);
+            var frame = ships.FrameAt(ship, now);
+            var attitude = store.Combat.Condition(ship).AttitudeAt(now);
+            var p = HitQuery.ToShip(cls, frame, attitude, at);
+            if (NearMiss.WaterplaneM(cls, p.X, p.Y) > reach)
+                continue;
+            var q = HitQuery.ToShip(cls, frame, attitude, at + dir);
+            NearMissCount++;
+            Damage.Strike(world, new Hit
+            {
+                Ship = entity, Ms = now, Point = p, Direction = new P3(q.X - p.X, q.Y - p.Y, q.Z - p.Z), SpeedMs = speed, WaterRunM = run,
+                Source = HitSource.NearMiss, Shell = shell, ShellType = s.ShellType, Shooter = s.Shooter, Battery = s.Battery, Force = force,
+            });
         }
     }
 

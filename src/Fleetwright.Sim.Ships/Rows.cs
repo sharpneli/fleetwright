@@ -287,6 +287,11 @@ public readonly record struct ShellTypeRow
     public bool FuzeTwoPlate { get; init; }
     public double FuzeScatter { get; init; }
     public double FuzeBlind { get; init; }
+    /// <summary>On the water (docs/battle/shells-armour-damage.md E7; damage/15 §6.2): the fuze's time to fire once the shell
+    /// meets it, ms (a nose fuze's burst depth, v·t·sin fall; a base fuze's on top of its delay), and the share of the
+    /// fuzes that work that fire there.</summary>
+    public double FuzeWaterMs { get; init; }
+    public double FuzeWaterFires { get; init; }
     /// <summary>Its cap, and the cap's share of the mass (lost with the cap).</summary>
     public Cap Cap { get; init; }
     public double CapShare { get; init; }

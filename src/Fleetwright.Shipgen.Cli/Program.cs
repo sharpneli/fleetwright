@@ -148,6 +148,13 @@ public static class Program
             writes the shell, explosive, material and fittings catalogues (ShellTemplates, Explosives, MaterialTemplates,
             Fittings) out: Content/Templates/shells.json, explosives.json, materials.json and fittings.json,
             docs/shipgen/shell-templates.md, explosive-templates.md, material-templates.md and fittings-templates.md
+        shipgen nearmiss TARGET [--shooter DESIGN] [--battery B] [--kind ap|common|he] [--loadout SPEC] [--range M] [--aspect DEG] [--water-ms MS] [--seed S]
+                [--at short:1,7,15;over:7;beside:10;under:5 [--n N] [--settle MIN]] [--salvos N --guns G --sigma-range M --sigma-defl M --fc-range M --fc-defl M]
+            near misses (docs/battle/shells-armour-damage.md E7; damage/15) through the world's damage system: with --at,
+            the shooter's shell bursting in the water short of the target's side, over it, beside it (fired from ahead) or
+            under the turn of her bilge, at each distance, N times (15 §4: splinters through her side and into the parts
+            above it, waterline holes, killed and wounded; 15 §3: the shock factor, its bands, gear out, sprung seams; with
+            --settle her flooding after MIN minutes); else salvos at her with the fire control's error (15 §5)
         shipgen burst [DESIGN --room KIND[:n] --filler KG --explosive NAME --calibre MM]
             a burst's gas in a closed space (docs/battle/shells-armour-damage.md E5): the cascade over the cell graph,
             what ruptured, the doors blown, the spaces reached and what each felt; with no charge, damage/11's cases
@@ -227,6 +234,11 @@ public static class Program
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new HitsBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), D(a, "range", 12_000), D(a, "aspect", 90), a.Int("n", 2000),
                         a.Int("per-ship", 1), a.Int("seed", 1), a.Int("show", 0), D(a, "settle", 30), a.Get("loadout"))),
+                "nearmiss" => NearMissBench.Run(a.Positional.ElementAtOrDefault(0) ?? "destroyer", n => LoadDesign(Resolve(a, n)),
+                    a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
+                    new NearMissBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), a.Get("loadout"), D(a, "range", 15_000), D(a, "aspect", 90),
+                        a.Get("at"), a.Int("n", 200), a.Int("salvos", 2000), a.Int("guns", 0), D(a, "sigma-range", double.NaN), D(a, "sigma-defl", double.NaN),
+                        D(a, "fc-range", 150), D(a, "fc-defl", 40), D(a, "water-ms", double.NaN), a.Int("seed", 1), D(a, "settle", 0))),
                 "scheme" => SchemeCommand.Run(a.Get("catalogue") ?? Path.Combine(Root(a), "..", "Content", "Templates", "protection.json"),
                     a.Positional.ElementAtOrDefault(0) ?? "", [.. a.Positional.Skip(1).Select(n => Resolve(a, n))], a.Has("write")),
                 "subdivision" => SubdivisionBench.Run(a.Positional.Count > 0 ? a.Positional : ["destroyer"], n => LoadDesign(Resolve(a, n)), a.Has("rooms")),

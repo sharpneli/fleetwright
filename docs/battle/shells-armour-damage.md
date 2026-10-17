@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E5 done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, phase P (PM moved to the balance pass), E0-E7 done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -1617,6 +1617,76 @@ squadrons, and changes `Matchup.cs` with it.
   - **Water ricochet** below ~6.4° of fall: a nose fuze bursts on the graze, a base fuze doesn't (v0).
   - **Tests:** 15 §6.7. **Bench:** 15 §5's salvos at a Fletcher; the River Plate DCT (8× under the record: try the fuze
     time and the geometry before the band).
+  - **Done 2026-10-17.** What it came to:
+    - **The source** (`NearMiss.cs`, `HitSource.NearMiss`, `Hit.Force`): at a miss's end the shell system looks for
+      ships within the reach of where its run could end (`ShellSystem.NearMisses`); only then are its fuze and filler
+      drawn (the stream "near misses", by salvo and shell), and each ship whose level waterplane lies within
+      R_near of the burst takes a near miss through `DamageSystem.Strike` (not counted as a hit; logged as
+      `CombatEvent.NearMiss` only when it did something; the map's damage report shows it).
+    - **The burst** (`NearMiss.Burst`): the fuze's water numbers come into the report and the shell row
+      (`FuzeWaterMs`, `FuzeWaterFires`; defaults 0.5 ms and 1, so a nose fuze's 0.95 is its 5% blind). One rule for
+      both fuzes: the burst is `water_ms` (plus a base fuze's delay, scattered) along the run, slowing as P6 has it;
+      a base fuze on a fall under 6.4° skips on unburst. The Ijuin fuze's template (JP 1904 AP, Shimose) gets 0.1 ms
+      (Semenov), and the three designs carrying it.
+    - **Splinters:** E1's field as it is (`FragmentBurst.Hits`, the leaning ring), the water taken in as extra drag:
+      a piece's speed falls as e^(−x/(L·m^⅓)) in air and water alike, so the water on its way is that much more air
+      (L₁/L₁w, 823×). The hull's side toward the burst in patches (the waterline band, a metre under it, then steps a
+      third of the distance), each a slab of the plating and any belt over it; the parts above the side, below the
+      line from the burst over the deck edge hidden. What gets through a patch strikes the space behind (its vitals,
+      the parts wholly inside, its men); through the band it holes it (Poisson, each 1.3× the median piece's
+      presented area). Men at open stations meet the free field (16 §4.2: S is a steel compartment's ricochets and
+      debris; 13's field is 1), men behind a plate keep S.
+    - **Shock** (`NearMiss.Nsf`, 15 §3.1) at the nearest wetted point (0.5 m down at least): the seams of every wetted
+      face and the transverse bulkheads under the sea by r(D) (D = 5·NSF·9 mm over the plate, falling as 1/R from the
+      nearest point, in rings over the patch past the weep; `Blast.LeakRatio`/`Spread`, E5's curve split, its own
+      numbers bit-identical); a contact hole at D 5 less the splinters' holes there; each boiler and engine room by
+      its own NSF (its gear across 0.08-0.2 over the grade, its shafts across 0.2-0.45, it again across 0.45-1.0);
+      with breakers (E4's rule) a section's power across 0.03-0.08 and the whole ship's across 0.08-0.2 for 1-5 min,
+      the directors' gyros at E4's chance across the fragile band; the stern's rudders, shafts and propellers by their
+      own. Each band a chance rising across it [EST]. Grade edges ×1, 2, 3, 4 for G0-G3 (15 §6.5's ×2 for hardened
+      fittings [EST]). New settings: `NearMissSplinterK`, `NearMissShockK`, `WaterRicochetDeg`, `WaterDragL1`,
+      `NearMissBandM`, `SplinterHoleK`, `ShockWetM`, `NearShockBands`, `NearShockGradeK`, `NearTripMin`,
+      `ShockPlateMm`, `SternShare`.
+    - **Bench** `shipgen nearmiss`: bursts placed short, over, beside or under a target (15 §4, §3.3), or salvos with
+      the fire control's error (15 §5), through the world's damage system (`GivenHits.NearBurst`, `NearSalvos`).
+      - Yamato's 46 cm HE short of the WWII destroyer, through the side (15 §4's Fletcher in brackets): 1 m 204 (133),
+        3 m 190 (133), 7 m 94 (130), 15 m 19 (21), 30 m 2.3 (3); waterline holes 1.47 m² at 1 m (1.47), 0.57 at 3 m
+        (0.38), 0.09 at 7 m (0.055), none at 30 m; deckhouses and funnels at 15 m 60 (39). Over at 7 m 3% of the short
+        (15: none: E1 sends 15% of the side spray round the sphere). The fuze's time, 25 m short: 62 through at 0 ms,
+        29 at 0.1, 4.4 at 0.5, none at 2 (15's flat side: 97, 56, 14, 0).
+      - Men: open stations 10-14 hit 7-30 m short (15: 0.3-4.5 on its stand-in's deck-edge band; ours has open AA
+        mounts at the edge), the spaces behind the side 11 at 3 m falling to 0.6 at 30 m (15 counts none inside).
+      - Salvos (FC error 150/40 m, 15's patterns): Yamato HE 0.80 hits, 0.22 near misses within 10 m and 0.83 within 30
+        m a salvo (15: 0.71, 0.79, 1.95). **15's reference overcounts:** its `classify` gives a shell beyond the
+        ship's ends a near miss at its distance along her length alone, however far over or short it fell, about 0.6
+        of its 0.79; shorts alone give 0.2. A hit's near misses: 35 through the side (15 ~55), 2,260 cm² of waterline
+        holes (15 ~1,170, ours with the contact holes of bursts within a metre). Yamato AP: 0.47 near misses a salvo at
+        0.08-0.2 and 0.31 at 0.2 or more (15: 0.65, 0.39), no splinters (10 m down).
+      - White Plains: Yamato's AP 5 and 8 m under the bilge 0.36 and 0.24 (15: 0.44 and 0.33 for this filler); seams
+        ~55 cm² to the sea and machinery and shafts damaged; not lost. The stand-in escort carrier has no guns, so by
+        E4's rule nothing trips: the destroyer trips every time.
+      - The River Plate DCT (15 §2.6): Deutschland's 28 cm HE 20 m short of the C-class cruiser puts 0.6 heavy pieces
+        into her director (15's 0.8), 1.5-1.9 with a 0.1-0 ms fuze: still 3-4× under Achilles' six. Left open (the
+        fuze time, the director's place), the band untouched.
+    - **Tests** (`NearMissTests`): 15 §6.7's 1-8 as above (5" HE at 7 m ≤ 1.5 through, heavy HE short 20-400 and the
+      over under a tenth, holes 0.2-2 m² at 1-3 m and none at 30 m, the fuze time, AP silent, the bomb record's
+      factors within 10% (all within 1%), structural shock from an HE surface burst only within ~3 m, White Plains on
+      the destroyer, the grade, the stern), a world's salvos 30 m short making near misses the same each run, and no
+      allocation. `FlotillaAttackTests` skips a seed whose boats are beaten off as they fire, as it did before the
+      signal (seed 5 now; seed 8 is seen through).
+    - **Found on the way:** the gunnery system's fire-control pool started at 16 and grew within a step at a fight's
+      17th engagement (the squadrons' zero-garbage test caught it once the draws moved); it's sized at two a ship of
+      `ShipCapacity` now. With the reach at 0 the build hashes as before E7 (squadrons CA887EF3401EC608).
+    - **Before and after:** `hits` and the matchup identical (neither has near misses). Squadrons' 30 minutes: 16
+      near misses did something (all put gear out, 6 blacked a ship out, one holed); no ship lost either way; hits taken 183
+      → 75 (the draws: with only the near misses' gear off Lion blows up at 15:55); hash CA887EF3401EC608 →
+      025605B4D4DB91D9; the shell and damage systems' cost a call 22 → 24 µs and 54 → 46 µs. Flotilla: the torpedo
+      boats take near misses (9 holed of 13); hash D281CE4154DD6907 → 7043FE9497A8AB03. Tsushima --play 2 seeds:
+      Russia lost 4.0 → 5.0, Japan 3.5 → 4.0. Goldens gain `fuze_water_ms` and `fuze_water_fires` (ShipDesign.Version
+      29), 372 of 372.
+    - **Not built:** a ricocheting shell carried on (v0 stops it); water on deck, the splash on the rangefinders; radar,
+      sonar and the gyrocompass (the sim doesn't carry them); the seams' fittings (17's session); bombs (§3 is ready for
+      them). The matchup has no near-miss term (the balance pass).
 - **E8 The battle anchors.** With S and P in, the whole chain against the battles: Jutland, Bismarck's ~3 belt holes in
   ~400 hits, South Dakota, Samar, the 1894–1905 battles, the destroyer benches; and the notes' own: 16's killed and
   wounded per hit by group, 13's turret-minutes lost per 100 heavy hits (about half to non-penetrations), 15's
@@ -1671,8 +1741,10 @@ None blocks a step; each is settled by its step's bench.
    and the 6″ Mk 34 would pin them.
 4. **The spall onsets** (E3): no naval measurement exists; 0.80-0.92 is defensible for each class. E3 kept P4's (fh
    0.85, homogeneous 0.90, brittle 0.75).
-5. **The nose fuze's time on water** (E7, 0.5 ms): the most sensitive near-miss number.
-6. **The Type 91's path and delay** (P6, E7).
+5. **The nose fuze's time on water** (E7, 0.5 ms): the most sensitive near-miss number. E7: 25 m short of a destroyer
+   62 pieces through at 0 ms, 4.4 at 0.5; the River Plate DCT wants the quick end (3-4× under the record even at 0).
+6. **The Type 91's path and delay** (P6, E7). E7: its bursts 7-10 m down give 15 §5's shock (0.31 a salvo at 0.2 or
+   more on a destroyer); an upper bound until the path flattens.
 7. **The rupture and deform capacities** (E5, 0.06 and 0.012 MPa/mm): fitted to a handful of cases; the destroyer
    benches may move them within 0.04-0.08.
 8. **S and q** (E6): S's ~9× over the free field is fitted, not shown; the refit on our ships says how much of it is
@@ -1712,7 +1784,7 @@ None blocks a step; each is settled by its step's bench.
 | E4 | E0, P1a | — | turret states, belt leaks, armour shock (done) | jams, leaks, outages |
 | E5 | E0, E1 | the explosive's heats in the report (done) | open and confined blast, `burst` bench (done) | wreck reach, openings, leaks |
 | E6 | E1, E3, E5 | — | casualties, killed and wounded (done) | crew |
-| E7 | E1, E5, P3 | — | near misses (new hit source), shock | near misses |
+| E7 | E1, E5, P3 | the fuze's water numbers in the report (done) | near misses (new hit source), splinters, shock, `nearmiss` bench (done) | near misses |
 | E8 | all | — | tuning | the anchors |
 | PM | all | — | the balance pass: the matchup refit to the terminal, the widened bands | AI judgements, gameplay |
 

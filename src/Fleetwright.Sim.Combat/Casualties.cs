@@ -112,9 +112,9 @@ public static class Casualties
     /// pieces its way (a broken shell's, a burst on a plate's), through mildMm of mild steel (on the face whose normal is
     /// given, else square to them) to the box's middle; with openW (TNT kg) its blast in the open too (killed within
     /// <see cref="SimSettings.OpenKillK"/>·W^⅓, a share hurt out to <see cref="SimSettings.OpenHurtK"/>·W^⅓). Averaged over
-    /// the box's points.</summary>
+    /// the box's points. dragM: the water a near miss's pieces go through first, as the air that slows them as much (E7).</summary>
     public static (double Killed, double Casualty) PiecesRisk(in Box box, double cover, FragmentBurst b, P3 at, P3 dir, double v, double share,
-        double mildMm, P3 normal, double openW, SimSettings s)
+        double mildMm, P3 normal, double openW, SimSettings s, double dragM = 0)
     {
         double mx = (box.X0 + box.X1) / 2 - at.X, my = (box.Y0 + box.Y1) / 2 - at.Y, mz = (box.Base + box.Top) / 2 - at.Z;
         double rc = Math.Max(Math.Sqrt(mx * mx + my * my + mz * mz), 0.4);
@@ -126,7 +126,7 @@ public static class Casualties
             double sec = 1 / Math.Max(cosOb, Math.Cos(double.DegreesToRadians(80)));
             e = Math.Pow(mildMm / 25.4 * Math.Pow(sec, Fragments.ThorG / Fragments.ThorA), Fragments.ThorA);
         }
-        var n = b.Stopping(rc, v, e, s.ManStopJ);
+        var n = b.Stopping(rc + dragM, v, e, s.ManStopJ);
         double sa = s.CasualtyS * share * s.ManAreaM2, all = n.Side + n.Ogive + n.Tail;
         double rk = openW > 0 ? s.OpenKillK * Math.Cbrt(openW) : 0, rh = openW > 0 ? s.OpenHurtK * Math.Cbrt(openW) : 0;
         double near = Math.Max(Effects.BoxDistance(box, at), 0.4);

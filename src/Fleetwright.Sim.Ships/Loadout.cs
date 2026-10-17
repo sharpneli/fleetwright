@@ -93,7 +93,7 @@ public sealed class Loadout
             FillerKg = s.FillerKg, FillerRe = s.FillerRe, FillerQDet = s.FillerQDet, FillerQComb = s.FillerQComb, FillerAirM3Kg = s.FillerAirM3Kg,
             FillerEta = s.FillerEta, FillerInPlate = s.FillerInPlate, FillerFull = s.FillerFull, Fuze = Kinds.FuzeOf(s.Fuze),
             FuzeDelayS = s.FuzeDelayS, FuzeStartCal = s.FuzeStartCal, FuzeOblique = s.FuzeOblique, FuzeTwoPlate = s.FuzePlates == "two",
-            FuzeScatter = s.FuzeScatter, FuzeBlind = s.FuzeBlind,
+            FuzeScatter = s.FuzeScatter, FuzeBlind = s.FuzeBlind, FuzeWaterMs = s.FuzeWaterMs, FuzeWaterFires = s.FuzeWaterFires,
             Cap = Kinds.CapOf(s.Cap), CapShare = s.CapShare, BreakObDeg = s.BreakObDeg, BreakTD = s.BreakTD, BodyQuality = s.BodyQuality,
             Fragments = Fragments.Of(s, b.CalibreMm),
         };

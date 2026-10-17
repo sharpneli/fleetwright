@@ -239,6 +239,7 @@ public static class Ammunition
                 Fuze = a.Fuze!.Position!, FuzeDelayS = a.Fuze.DelayS ?? 0, FuzeStartCal = a.Fuze.StartCal ?? FuzeDefaults.StartCal,
                 FuzeOblique = a.Fuze.Oblique ?? FuzeDefaults.Oblique, FuzePlates = a.Fuze.Plates ?? "single",
                 FuzeScatter = a.Fuze.Scatter ?? FuzeDefaults.Scatter, FuzeBlind = a.Fuze.Blind ?? FuzeDefaults.Blind,
+                FuzeWaterMs = a.Fuze.WaterMs ?? FuzeDefaults.WaterMs, FuzeWaterFires = a.Fuze.WaterFires ?? FuzeDefaults.WaterFires,
                 GurneyMs = x.GurneyMs ?? 2438, Brisance = x.Brisance ?? 1, SteelSize = a.Steel?.Size ?? 1, SteelSpeed = a.Steel?.Speed ?? 1,
                 Casing = Casing(a), FillerBody = a.Filler.Body ?? ShellTemplates.FillerBodyOf(a.Kind!),
             });
@@ -389,6 +390,10 @@ public sealed record ShellReport
     public required string FuzePlates { get; init; }
     public double FuzeScatter { get; init; }
     public double FuzeBlind { get; init; }
+    /// <summary>On the water (E7; damage/15 §6.2): how long the fuze takes to fire once the shell meets it, ms (a nose
+    /// fuze's surface burst depth; a base fuze's on top of its delay), and the share that fire there at all.</summary>
+    public double FuzeWaterMs { get; init; }
+    public double FuzeWaterFires { get; init; }
     public double GurneyMs { get; init; }
     public double Brisance { get; init; }
     public double SteelSize { get; init; }
@@ -402,8 +407,9 @@ public sealed record ShellReport
 public sealed record CasingReport(double Nose, double Ogive, double Body, double Plug, double Tail);
 
 /// <summary>A fuze's numbers where its block gives none (armor/00 §6.2-6.3): Okun's single-plate start, 0.07 calibres at
-/// normal and 0.45 of it from 61° (his formula's own), a delay scattered by a quarter (σ 20-30%), 5% blind.</summary>
+/// normal and 0.45 of it from 61° (his formula's own), a delay scattered by a quarter (σ 20-30%), 5% blind; on the water
+/// (damage/15 §2.3, §6.2 [EST]) a WWII point-detonating fuze's 0.5 ms, and all that work fire.</summary>
 public static class FuzeDefaults
 {
-    public const double StartCal = 0.07, Oblique = 0.45, Scatter = 0.25, Blind = 0.05;
+    public const double StartCal = 0.07, Oblique = 0.45, Scatter = 0.25, Blind = 0.05, WaterMs = 0.5, WaterFires = 1;
 }

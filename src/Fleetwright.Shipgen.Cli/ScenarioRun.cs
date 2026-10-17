@@ -168,6 +168,10 @@ sealed class FightTally(CombatLog log)
 
     readonly SortedDictionary<(int Shooter, int Battery, int Target), Line> lines = [];
     readonly List<CombatEntry> losses = [];
+    /// <summary>The near misses that did something (E7), by target: how many, and of them those that holed her, put gear
+    /// out, blacked her out and harmed a part.</summary>
+    record struct Near(int Count, int Holed, int Shock, int Blackout, int Parts);
+    readonly SortedDictionary<int, Near> near = [];
     long read;
 
     public bool Any => lines.Count > 0;
@@ -197,6 +201,16 @@ sealed class FightTally(CombatLog log)
                 case CombatEvent.Straddle:
                     l.Straddles++;
                     break;
+                case CombatEvent.NearMiss:
+                    // a near miss that did something (E7): what it did, by its target
+                    var nm = near.GetValueOrDefault(e.Target);
+                    nm.Count++;
+                    nm.Holed += (e.Effect & HitEffect.Holed) != 0 ? 1 : 0;
+                    nm.Shock += (e.Effect & HitEffect.Shock) != 0 ? 1 : 0;
+                    nm.Blackout += (e.Effect & HitEffect.Blackout) != 0 ? 1 : 0;
+                    nm.Parts += (e.Effect & (HitEffect.Destroyed | HitEffect.Disabled | HitEffect.Damaged)) != 0 ? 1 : 0;
+                    near[e.Target] = nm;
+                    break;
                 case CombatEvent.Lost:
                     losses.Add(e);
                     break;
@@ -221,6 +235,8 @@ sealed class FightTally(CombatLog log)
             Console.WriteLine($"  {Name(shooter),-16} {gun,-12} on {Name(target),-16} {l.Salvos,4} salvos {l.Shells,5} shells {l.Straddles,4} straddles " +
                               $"{l.Hits,4} hits ({100.0 * l.Hits / Math.Max(l.Shells, 1),4:F1}%)   first {Clock(l.FirstMs)}, hit {Clock(l.FirstHitMs)}");
         }
+        foreach (var (target, n) in near)
+            Console.WriteLine($"  near misses on {Name(target),-16} {n.Count,4}: holed {n.Holed}, gear out {n.Shock}, blacked out {n.Blackout}, parts harmed {n.Parts}");
         foreach (var e in losses)
             Console.WriteLine($"  LOST: {Name(e.Target)} at {new WorldTime(e.Ms).ToString()[11..19]}, " + (LossKind)e.Count switch
             {

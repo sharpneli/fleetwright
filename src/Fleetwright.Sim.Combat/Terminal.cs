@@ -366,7 +366,7 @@ public static class Terminal
     /// <summary>The filler set off by its fuze (damage/12 §4 stage 2): a full detonation by its explosive's rate with the
     /// shell's booster (<c>FillerFull</c>; black powder always, its re pricing it), else low-order
     /// (<see cref="SimSettings.LowOrderShare"/>, <see cref="SimSettings.LowOrderK"/> of the blast) or a dud.</summary>
-    static (Outcome, double) Initiate(in ShellTypeRow shell, SimSettings s, ref RandomStream r)
+    internal static (Outcome, double) Initiate(in ShellTypeRow shell, SimSettings s, ref RandomStream r)
     {
         double x = r.NextDouble();
         if (x < shell.FillerFull)

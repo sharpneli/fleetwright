@@ -45,12 +45,14 @@ public static class ShellTemplates
     /// is mostly in the body, an HE shell's runs up into the ogive.</summary>
     public static double FillerBodyOf(string kind) => kind switch { "ap" => 0.90, "common" => 0.85, _ => 0.75 };
 
-    /// <summary>A fuze: base with a delay, or nose (fires on first contact, so no start plate).</summary>
+    /// <summary>A fuze: base with a delay, or nose (fires on first contact, so no start plate); on the water its time to fire
+    /// (FuzeDefaults' 0.5 ms; damage/15 §2.3).</summary>
     sealed record F(string Position, double DelayS, double StartCal = 0.07, double Oblique = 0.45, string Plates = "single", double Scatter = 0.1,
-        double Blind = 0.05);
+        double Blind = 0.05, double WaterMs = FuzeDefaults.WaterMs);
 
-    static F Base(double delay, double start = 0.07, double oblique = 0.45, string plates = "single", double scatter = 0.1, double blind = 0.05) =>
-        new("base", delay, start, oblique, plates, scatter, blind);
+    static F Base(double delay, double start = 0.07, double oblique = 0.45, string plates = "single", double scatter = 0.1, double blind = 0.05,
+        double waterMs = FuzeDefaults.WaterMs) =>
+        new("base", delay, start, oblique, plates, scatter, blind, waterMs);
 
     static readonly F Nose = new("nose", 0, 0, 1, "single", 0, 0.05);
 
@@ -69,7 +71,7 @@ public static class ShellTemplates
             Fuze = new FuzeInput
             {
                 Position = fuze.Position, DelayS = fuze.DelayS, StartCal = fuze.StartCal, Oblique = fuze.Oblique, Plates = fuze.Plates,
-                Scatter = fuze.Scatter, Blind = fuze.Blind, WaterMs = 0.5, WaterFires = 1.0,
+                Scatter = fuze.Scatter, Blind = fuze.Blind, WaterMs = fuze.WaterMs, WaterFires = FuzeDefaults.WaterFires,
             },
         });
     }
@@ -107,8 +109,8 @@ public static class ShellTemplates
 
         // ---- Japan 1904
         T("JP 1904 AP (Shimose)", "JP 1904", "ap", 0.49, 2, 1.8, "none", 0, false, Uncapped, 0.05, "Shimose", "basic",
-            Base(0, blind: 0.05), "nicr",
-            "12\" 'Furoshiki' 386 kg (W/D³ 0.49), 19.3 kg Shimose, the sensitive Ijuin base fuze: bursts on contact. No 12\" known to pierce over ~6\"."),
+            Base(0, blind: 0.05, waterMs: 0.1), "nicr",
+            "12\" 'Furoshiki' 386 kg (W/D³ 0.49), 19.3 kg Shimose, the sensitive Ijuin base fuze: bursts on contact, on the water too (0.1 ms: Semenov's \"exploded the moment they touched its surface\", damage/15 §2.3). No 12\" known to pierce over ~6\"."),
         T("JP 1904 common (powder)", "JP 1904", "common", 0.49, 2, 1.8, "none", 0, false, Common, 0.10, "Black powder", "basic",
             Base(0), "forged", "12\" common, 39 kg powder (10%): the upper-works fires of Tsushima."),
 

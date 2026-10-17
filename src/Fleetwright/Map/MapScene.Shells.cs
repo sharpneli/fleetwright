@@ -543,7 +543,7 @@ public sealed partial class MapScene
         for (int j = 0, shown = 0; j < log.Count && shown < 12; j++)
         {
             ref readonly var e = ref log.Entries[j];
-            if (e.Target != selected || e.Kind is not (CombatEvent.Hit or CombatEvent.Lost))
+            if (e.Target != selected || e.Kind is not (CombatEvent.Hit or CombatEvent.NearMiss or CombatEvent.Lost))
                 continue;
             shown++;
             string when = new WorldTime(e.Ms).ToUtc().ToString("HH:mm:ss", inv);
@@ -561,7 +561,7 @@ public sealed partial class MapScene
         string part = e.Part < 0 ? "-" : e.Part < target.Components.Length
             ? $"{target.ComponentId(e.Part)}"
             : $"{target.RoomId(e.Part - target.Components.Length)}";
-        string outcome = e.Outcome switch
+        string outcome = e.Kind == CombatEvent.NearMiss ? "near miss" : e.Outcome switch
         {
             Outcome.PassedThrough => "passed through",
             Outcome.BurstInside => "burst inside",
