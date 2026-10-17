@@ -62,7 +62,7 @@ public static class FireControl
         double bse = d.RangefinderM;
         var (l, w) = Size(d);
         double area = 2 * (l + w) * HoodH + l * w;
-        return (area * HoodPlateT, GearT.A + GearT.B * bse, RfTK * Math.Pow(bse, 2), area * d.ArmourMm / 1000.0 * 7.85, d.RadarT,
+        return (area * HoodPlateT, GearT.A + GearT.B * bse, RfTK * Math.Pow(bse, 2), area * d.ArmourMm / 1000.0 * Weight.Steel, d.RadarT,
             d.ComputerT);
     }
 

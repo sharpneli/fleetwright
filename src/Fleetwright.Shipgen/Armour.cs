@@ -270,6 +270,15 @@ public static class Armour
     public static string? ArmourMaterial(Design design, string part, string? own = null) =>
         !string.IsNullOrEmpty(own) ? own : design.Armour?.Materials?.GetValueOrDefault(part);
 
+    /// <summary>A gun mount's armour material: its battery's own, else the scheme's turrets (main; barbettes for a main
+    /// mount's barbette) or secondary; null for other mounts.</summary>
+    public static string? MountMaterial(Design design, ComponentKind kind, string? own, bool barbette = false) => kind switch
+    {
+        ComponentKind.Main => ArmourMaterial(design, barbette ? "barbettes" : "turrets", own),
+        ComponentKind.Secondary => ArmourMaterial(design, "secondary", own),
+        _ => null,
+    };
+
     /// <summary>The design's armour decks (top down), placed on the deck stack.</summary>
     public static List<PlannedArmourDeck> ArmourDecks(Design design, double D, IReadOnlyList<RaisedStretch> raised,
         List<(long N, double Z)>? stack = null)
@@ -668,7 +677,8 @@ public static class Armour
         [.. new[] { ("Forward", g.X1), ("Aft", g.X0) }.Select(t => new ArmourBulkhead($"{t.Item1} bulkhead", t.Item2, g.BulkheadMm, g.BulkheadBottom,
             g.BulkheadTop, null, g.BulkheadMaterial) { LowerMm = g.BulkheadLowerMm, LowerTop = g.BulkheadStep })];
 
-    /// <summary>The armour's weights from its geometry.</summary>
+    /// <summary>The armour's weights from its geometry, each plate by its material's density (P1c; the torpedo protection's
+    /// plain bulkheads by the hull plating's).</summary>
     /// <param name="topside">the side above the widest point: a full-width armour deck is its breadth at its height,
     /// side armour as long as the side it lies on, an armoured bulkhead as wide as the hull up its height (null:
     /// wall-sided).</param>
@@ -681,29 +691,31 @@ public static class Armour
         double Slant(double lo, double hi) => topside?.SlantFactor(B, lo - D, hi - D) ?? 1.0;
         double Across(double x, double lo, double hi) => topside?.BandRatio(x, lo - D, hi - D) ?? 1.0;
         var result = new List<Weight>();
+        double Rho(string? material) => MaterialTemplates.Density(design, material);
         // a belt mm thick (mb at its lower edge, tapering from the waterline down), len long: its weight and height. A
         // leaning belt is longer up its face (protection-plan.md H6): inside the shell by its lean alone, on the side by
         // that or the side's own slant, whichever is more
         double lean = 1 / Math.Cos(double.DegreesToRadians(g.BeltInclineDeg));
         double Lean(double lo, double hi) => g.BeltInternal ? lean : Math.Max(lean, Slant(lo, hi));
-        Weight BeltOf(string name, double len, double x, double mm, double mb)
+        Weight BeltOf(string name, double len, double x, double mm, double mb, string? material)
         {
             double bot = g.BeltBottom, top = g.BeltTop;
             double t0 = Math.Min(top, Math.Max(bot, g.Waterline));
             double aUp = (top - t0) * mm * Lean(t0, top), aLo = (t0 - bot) * (mm + mb) / 2 * Lean(bot, t0);
             double zLo = mb + mm > 0 ? bot + (t0 - bot) * (mb + 2 * mm) / (3 * (mb + mm)) : bot;
             double zc = aUp + aLo > 0 ? ((top + t0) / 2 * aUp + zLo * aLo) / (aUp + aLo) : (top + bot) / 2;
-            return new Weight(name, "armour", 2 * len * (aUp + aLo) / 1000 * Weight.Steel, x, ZRel.Frac(D != 0 ? zc / D : 0.5));
+            return new Weight(name, "armour", 2 * len * (aUp + aLo) / 1000 * Rho(material), x, ZRel.Frac(D != 0 ? zc / D : 0.5));
         }
         if (g.BeltMm > 0)
         {
             double zones = g.Strakes.Where(s => s.Kind == "zone").Sum(s => s.X1 - s.X0);
-            result.Add(BeltOf("Belt armour", Math.Max(0.0, g.BeltX1 - g.BeltX0 - zones), (g.BeltX0 + g.BeltX1) / 2, g.BeltMm, g.BeltBottomMm));
+            result.Add(BeltOf("Belt armour", Math.Max(0.0, g.BeltX1 - g.BeltX0 - zones), (g.BeltX0 + g.BeltX1) / 2, g.BeltMm, g.BeltBottomMm,
+                g.BeltMaterial));
         }
         foreach (var s in g.Strakes.Where(s => s.Kind == "zone"))
-            result.Add(BeltOf(s.Id, s.X1 - s.X0, (s.X0 + s.X1) / 2, s.Mm, s.BottomMm ?? s.Mm));
+            result.Add(BeltOf(s.Id, s.X1 - s.X0, (s.X0 + s.X1) / 2, s.Mm, s.BottomMm ?? s.Mm, s.Material));
         foreach (var p in g.Inclined.Where(p => p.Id == "Lower belt"))
-            result.Add(new Weight(p.Id, "armour", 2 * (p.X1 - p.X0) * (p.Z1 - p.Z0) * lean * (p.Mm + (p.BottomMm ?? p.Mm)) / 2 / 1000 * Weight.Steel, (p.X0 + p.X1) / 2,
+            result.Add(new Weight(p.Id, "armour", 2 * (p.X1 - p.X0) * (p.Z1 - p.Z0) * lean * (p.Mm + (p.BottomMm ?? p.Mm)) / 2 / 1000 * Rho(p.Material), (p.X0 + p.X1) / 2,
                 Zf(p.Z0, p.Z1)));
         if (g.Armoured && g.BulkheadMm > 0)
         {
@@ -712,16 +724,16 @@ public static class Armour
             double up = Part(g.BulkheadStep, g.BulkheadTop, g.BulkheadMm), low = Part(g.BulkheadBottom, g.BulkheadStep, g.BulkheadLowerMm);
             double zc = up + low > 0 ? ((g.BulkheadStep + g.BulkheadTop) / 2 * up + (g.BulkheadBottom + g.BulkheadStep) / 2 * low) / (up + low)
                 : (g.BulkheadTop + g.BulkheadBottom) / 2;
-            result.Add(new Weight("Bulkheads", "armour", 2 * B * (up + low) / 1000 * Weight.Steel, xc, ZRel.Frac(D != 0 ? zc / D : 0.5)));
+            result.Add(new Weight("Bulkheads", "armour", 2 * B * (up + low) / 1000 * Rho(g.BulkheadMaterial), xc, ZRel.Frac(D != 0 ? zc / D : 0.5)));
         }
         foreach (var b in g.EndBulkheads.Concat(g.EndPlates))
-            result.Add(new Weight(b.Id, "armour", (b.W is double w && w != 0 ? w : B * Across(b.X, b.Bottom, b.Top)) * (b.Top - b.Bottom) * b.Mm / 1000 * Weight.Steel, b.X,
+            result.Add(new Weight(b.Id, "armour", (b.W is double w && w != 0 ? w : B * Across(b.X, b.Bottom, b.Top)) * (b.Top - b.Bottom) * b.Mm / 1000 * Rho(b.Material), b.X,
                 Zf(b.Top, b.Bottom)));
         foreach (var s in g.Strakes.Where(s => s.Kind != "zone"))
         {
             var (a, b) = s.Extent != Extent.Aft ? (s.Mm, s.TipMm) : (s.TipMm, s.Mm);
             double f = a + b > 0 ? (a + 2 * b) / (3 * (a + b)) : 0.5;
-            result.Add(new Weight(s.Id, "armour", 2 * (s.X1 - s.X0) * (s.Top - s.Bottom) * Slant(s.Bottom, s.Top) * (a + b) / 2 / 1000 * Weight.Steel,
+            result.Add(new Weight(s.Id, "armour", 2 * (s.X1 - s.X0) * (s.Top - s.Bottom) * Slant(s.Bottom, s.Top) * (a + b) / 2 / 1000 * Rho(s.Material),
                 s.X0 + f * (s.X1 - s.X0), Zf(s.Top, s.Bottom)));
         }
         var box = MagazineBox(design);
@@ -734,7 +746,9 @@ public static class Armour
             {
                 // (an end where two boxes meet is weighed with each: a little over)
                 double len = r.X1 - r.X0, h = r.Top - r.Base, w = 2 * r.HalfWidth;
-                double one = (2 * len * h * box.SideMm + len * w * (box.CrownMm + box.FloorMm) + 2 * w * h * box.EndMm) / 1000 * Weight.Steel;
+                // the sides and ends of the bulkheads' material, the crown and floor of the decks' (as MagazinePlates builds them)
+                double one = (2 * len * h * box.SideMm + 2 * w * h * box.EndMm) / 1000 * Rho(ArmourMaterial(design, "bulkheads"))
+                             + len * w * (box.CrownMm + box.FloorMm) / 1000 * Rho(ArmourMaterial(design, "decks"));
                 (t, mx, mz) = (t + one, mx + one * (r.X0 + r.X1) / 2, mz + one * ((r.Base + r.Top) / 2 + D));
             }
             if (t > 0)
@@ -751,7 +765,7 @@ public static class Armour
                 mag += Math.Max(0.0, Math.Min(g.X1, m1) - Math.Max(g.X0, m0));
             mag = Math.Min(mag, lc);
             double area = 2 * Math.Max(0.0, top - floor);
-            result.Add(new Weight("Inner bulkhead", "armour", area * ((lc - mag) * inMm + mag * inMag) / 1000 * Weight.Steel, xc, Zf(top, floor)));
+            result.Add(new Weight("Inner bulkhead", "armour", area * ((lc - mag) * inMm + mag * inMag) / 1000 * Rho(g.BulkheadMaterial), xc, Zf(top, floor)));
         }
         var (tds, layers, holding, layerMm) = Tds(design);
         if (tds > 0 && lc > 0)
@@ -759,7 +773,8 @@ public static class Armour
             double floor = Geometry.DoubleBottom(D);
             double top = g.RoofZ ?? g.Waterline;
             double mm = holding + (layers - 1) * layerMm;
-            result.Add(new Weight("Torpedo protection", "armour", 2 * lc * Math.Max(0.0, top - floor) * mm / 1000 * Weight.Steel, xc, Zf(top, floor)));
+            result.Add(new Weight("Torpedo protection", "armour", 2 * lc * Math.Max(0.0, top - floor) * mm / 1000 * Rho(design.Hull?.Plating?.Material),
+                xc, Zf(top, floor)));
         }
         double cb = design.BlockCoefficient;
         foreach (var d in g.Decks)
@@ -772,10 +787,10 @@ public static class Armour
             double xw = ext == Extent.Full ? 0.0 : (d.X0 + d.X1) / 2;
             // the slopes take the outer Reach each side of the breadth, longer by their angle (protection-plan.md H6)
             double sloped = d.Reach > 0 && wide > 0 ? Math.Min(1.0, 2 * d.Reach / wide) : 0.0;
-            result.Add(new Weight(name, "armour", area * (1 - sloped) * d.Mm / 1000 * Weight.Steel, xw, ZRel.Deck(d.Z - D)));
+            result.Add(new Weight(name, "armour", area * (1 - sloped) * d.Mm / 1000 * Rho(d.Material), xw, ZRel.Deck(d.Z - D)));
             if (sloped > 0)
                 result.Add(new Weight(name[..^1] + ", slopes)", "armour",
-                    area * sloped / Math.Cos(double.DegreesToRadians(d.SlopeDeg)) * d.SlopeMm / 1000 * Weight.Steel, xw, Zf(d.Z, d.FootZ)));
+                    area * sloped / Math.Cos(double.DegreesToRadians(d.SlopeDeg)) * d.SlopeMm / 1000 * Rho(d.Material), xw, Zf(d.Z, d.FootZ)));
         }
         return result;
     }

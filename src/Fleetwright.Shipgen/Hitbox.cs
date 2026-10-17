@@ -60,8 +60,7 @@ public static class Hitbox
             var t = m.T;
             var sh = Geometry.TurretShapesOf(t);
             double arm = m.ArmourMm;
-            string? Own(string part) => NonEmpty(m.Material) ?? Armour.ArmourMaterial(design, part);
-            string? mat = m.Kind == ComponentKind.Main ? Own("turrets") : m.Kind == ComponentKind.Secondary ? Own("secondary") : null;
+            string? mat = Armour.MountMaterial(design, m.Kind, NonEmpty(m.Material));
             var c = new Component
             {
                 Id = m.Id, Kind = m.Kind, Type = m.Type, CalibreMm = t.CalibreMm, CalibreLength = t.CalibreLength, X = Math.Round(m.X, 3),
@@ -94,7 +93,7 @@ public static class Hitbox
             {
                 Id = c.Barbette, Kind = ComponentKind.Barbette, Mount = m.Id, Shape = "circle", X = Math.Round(m.X, 3), Y = Math.Round(m.Y, 3),
                 R = Math.Round(br, 3), Base = inHull ? Math.Min(Math.Round(barbetteZ - D, 2), Math.Round(m.Base, 2)) : Math.Round(m.Base - 1.0, 2),
-                Top = Math.Round(m.Base, 2), ArmourMm = (long)Math.Round(Barbette * arm), Material = NonEmpty(m.Kind == ComponentKind.Main ? Own("barbettes") : mat),
+                Top = Math.Round(m.Base, 2), ArmourMm = (long)Math.Round(Barbette * arm), Material = NonEmpty(Armour.MountMaterial(design, m.Kind, NonEmpty(m.Material), barbette: true)),
             };
         }
     }

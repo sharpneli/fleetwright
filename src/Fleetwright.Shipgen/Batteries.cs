@@ -38,9 +38,10 @@ public static class Batteries
     /// <summary>Rounds per gun in the magazines for turret type t: the battery's rounds_per_gun, else the curve.</summary>
     public static double GunRounds(TurretType t) => t.RoundsPerGun ?? RoundsPerGun(t.CalibreMm);
 
-    /// <summary>(turret incl. guns+armour, barbette armour, magazine/ammo) for one mount of type t.</summary>
+    /// <summary>(turret incl. guns+armour, barbette armour, magazine/ammo) for one mount of type t; the turret's and the
+    /// barbette's armour of their materials' densities, t/m³ (P1c).</summary>
     public static (double Turret, double Barbette, double Ammo) MountWeights(TurretType t, double armourMm, double depth, double level,
-        double deck = 0.0)
+        double deck = 0.0, double turretRho = Weight.Steel, double barbetteRho = Weight.Steel)
     {
         double cal = t.CalibreMm, cl = t.CalibreLength!.Value, n = t.Barrels, r = t.R;
         double guns = n * GunTubeT(cal, cl);
@@ -48,9 +49,9 @@ public static class Batteries
         double th = 0.42 * r;
         double area = 2 * Math.PI * 0.9 * r * th + 0.85 * Math.PI * r * r;
         double tAvg = TurretTAvg * armourMm / 1000.0;
-        double turret = guns + mech + area * tAvg * Weight.Steel;
+        double turret = guns + mech + area * tAvg * turretRho;
         double bh = 0.45 * depth + deck + level * Geometry.SuperfireStep(th);
-        double barbette = t.HasBarbette ? 2 * Math.PI * Geometry.BarbetteR(t) * bh * (0.8 * armourMm / 1000.0) * Weight.Steel : 0.0;
+        double barbette = t.HasBarbette ? 2 * Math.PI * Geometry.BarbetteR(t) * bh * (0.8 * armourMm / 1000.0) * barbetteRho : 0.0;
         double ammo = n * GunRounds(t) * ShellKg(t) / 1000.0 * AmmoMult;
         return (turret, barbette, ammo);
     }
@@ -85,7 +86,9 @@ public static class Batteries
             var m = mains[k];
             var (_, t) = Geometry.BatteryType(m);
             double n = m.Turrets;
-            var (tw, bw, aw) = MountWeights(t, m.ArmourMm ?? 0, D, 0);
+            var (tw, bw, aw) = MountWeights(t, m.ArmourMm ?? 0, D, 0, 0.0,
+                MaterialTemplates.Density(design, Armour.MountMaterial(design, ComponentKind.Main, m.Material)),
+                MaterialTemplates.Density(design, Armour.MountMaterial(design, ComponentKind.Main, m.Material, barbette: true)));
             string sfx = k != 0 ? $" {k + 1}" : "";
             result.Add(new Weight("Main battery" + sfx, "armament", n * tw, zRel: ZRel.Deck(2)));
             result.Add(new Weight("Main barbettes" + sfx, "armour", n * bw, zRel: ZRel.Frac(0.75)));
@@ -97,7 +100,8 @@ public static class Batteries
             if (n == 0)
                 continue;
             var (_, t) = Geometry.BatteryType(s);
-            var (tw, _, aw) = MountWeights(t, s.ArmourMm!.Value, D, 0);
+            var (tw, _, aw) = MountWeights(t, s.ArmourMm!.Value, D, 0, 0.0,
+                MaterialTemplates.Density(design, Armour.MountMaterial(design, ComponentKind.Secondary, s.Material)));
             result.Add(new Weight("Secondary battery", "armament", n * (tw + aw), zRel: ZRel.Deck(2)));
         }
         if (design.Torpedoes is { Mounts: > 0 } tp)

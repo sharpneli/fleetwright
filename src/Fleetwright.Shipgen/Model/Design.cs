@@ -253,8 +253,7 @@ public sealed record ExplosiveInput
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
-/// <summary>A material (docs/shipgen/material-templates.md): its density, t/m³ (read from P1c of the shells, armour and
-/// damage plan), and its resistance as a share of the same thickness of the penetration formula's plate (q, against an
+/// <summary>A material (docs/shipgen/material-templates.md): its density, t/m³ (what its plates weigh), and its resistance as a share of the same thickness of the penetration formula's plate (q, against an
 /// 8" capped shell: WWII STS 1); for face-hardened plate the calibre scaling past 8" (q_scale, k: q·(D/8")^−k) and the
 /// face (its share of the plate, and the thinnest plate made so), for homogeneous plate its elongation (under 25%, it
 /// loses to shells over 8": Okun's M79 penalty). The rules are the sim's (MaterialRow). The fields it doesn't give are

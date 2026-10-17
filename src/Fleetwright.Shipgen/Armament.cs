@@ -72,7 +72,7 @@ public static class Armament
     /// its barrels take at rest.</summary>
     public static Mount AddMount(Layout lay, List<Mount> mounts, ComponentKind kind, string tId, TurretType t, string mid, double x, double y,
         double bse, double rest, long level = 0, double armourMm = 0.0, double depth = 10.0, double? top = null,
-        double? footprintR = null, string label = "Mount", double deck = 0.0, bool sideMount = false)
+        double? footprintR = null, string label = "Mount", double deck = 0.0, bool sideMount = false, string? material = null)
     {
         double th = kind != ComponentKind.Torpedo || t.IsFixedTube ? Geometry.TurretHeight(t) : 1.1;
         double tp = top ?? bse + th;
@@ -104,7 +104,10 @@ public static class Armament
             lay.Weights.Add(new Weight(mid, "armament", Batteries.TorpedoWeight(t.Barrels, t.IsFixedTube), x, ZRel.Deck(bse + 0.5)));
             return m;
         }
-        var (tw, bw, aw) = Batteries.MountWeights(t, armourMm, depth, level, deck);
+        m.Material = material;
+        var d = lay.Design;
+        var (tw, bw, aw) = Batteries.MountWeights(t, armourMm, depth, level, deck,
+            MaterialTemplates.Density(d, Armour.MountMaterial(d, kind, material)), MaterialTemplates.Density(d, Armour.MountMaterial(d, kind, material, barbette: true)));
         lay.Weights.Add(new Weight($"{label} {mid}", "armament", tw, x, ZRel.Deck((bse + tp) / 2)));
         lay.Weights.Add(new Weight($"Magazine {mid}", "armament", aw, x, ZRel.Frac(0.25)));
         if (bw != 0 && bse > 0.5)
@@ -147,7 +150,7 @@ public static class Armament
                 continue;
             }
             double stow = Geometry.Normalize360(rest + 180);
-            var m = AddMount(lay, mounts, kind, tId, t, mid, x, y, bse, flush ? stow : rest, level, armourMm, depth);
+            var m = AddMount(lay, mounts, kind, tId, t, mid, x, y, bse, flush ? stow : rest, level, armourMm, depth, material: gun.Material);
             m.Battery = battery;
             if (flush)
                 m.ArcRole = "beam";
@@ -157,7 +160,7 @@ public static class Armament
     /// <summary>perSide mounts on each side from candidate slots, in order of preference.</summary>
     public static long SidePairs(Layout lay, List<Mount> mounts, OrderedDictionary<string, TurretType> turretTypes, ComponentKind kind, string tId,
         TurretType t, long perSide, IEnumerable<Slot> cands, string prefix, double? pitch = null, double armourMm = 25.0,
-        double depth = 10.0, string label = "Secondary", IReadOnlyCollection<string>? ignore = null)
+        double depth = 10.0, string label = "Secondary", IReadOnlyCollection<string>? ignore = null, string? material = null)
     {
         if (perSide == 0)
             return 0;
@@ -191,7 +194,7 @@ public static class Armament
                 if (guns)
                 {
                     var m = AddMount(lay, mounts, kind, tId, t, mid, x, yy, bse, StowBearing(x, side, 90.0), armourMm: armourMm,
-                        depth: depth, sideMount: true);
+                        depth: depth, sideMount: true, material: material);
                     if (kind == ComponentKind.Secondary)
                         m.Battery = prefix;
                 }
@@ -258,7 +261,8 @@ public static class Armament
                 made += n;
             }
             if (nSide != 0)
-                SidePairs(lay, mounts, turretTypes, ComponentKind.Secondary, tId, t, nSide, sideSlots(t), prefix, armourMm: b.ArmourMm!.Value, depth: depth);
+                SidePairs(lay, mounts, turretTypes, ComponentKind.Secondary, tId, t, nSide, sideSlots(t), prefix, armourMm: b.ArmourMm!.Value, depth: depth,
+                    material: b.Material);
             foreach (var m in mounts.Skip(first))
                 m.Material = b.Material;
         }

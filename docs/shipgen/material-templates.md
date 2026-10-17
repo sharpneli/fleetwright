@@ -12,7 +12,7 @@ plate (Thompson's scale, WWII STS 1) against an 8" capped shell: `research/simul
 Face-hardened plate is × (D/8")^−k past 8" (held below), with no face-hardened advantage (×0.9) under max(the
 thinnest made, 0.3 calibres). Homogeneous plate under 25% elongation loses to shells over 8" by Okun's M79
 penalty, 1 − (1 − √(El/25))·min(D − 8", 8")/8". Both rules are the sim's (`MaterialRow.Against`). The density
-is armor/03 §7's; the weights read it from P1c (until then every plate weighs as steel, 7.85 t/m³). The
+is armor/03 §7's: every plate is weighed with its own (the hull's structure with its plating's). The
 structure group is the plating's and superstructure's picker; the armour picker offers every material.
 
 | Material | Group | q | q at 16" | k | Face (share, from mm) | Elongation % | Density t/m³ |

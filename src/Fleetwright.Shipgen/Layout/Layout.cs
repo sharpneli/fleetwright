@@ -85,6 +85,10 @@ public sealed partial class Layout
 
     public readonly double SupT;
     public readonly (double Plating, double Control) SupPlate;
+    /// <summary>The superstructure's plate beyond its own gauge, t per m² per mm: its material's density (P1c).</summary>
+    public readonly double SupRho;
+    /// <summary>The design the layout is of.</summary>
+    public readonly Design Design;
     public readonly Construction Construction;
     public readonly double? OwnPlateMmValue;
     public readonly List<Director> Directors = [];
@@ -190,7 +194,9 @@ public sealed partial class Layout
 
     public Layout(Design design, double? supT = null, double? ownPlateMm = null)
     {
+        Design = design;
         var sup = design.Superstructure;
+        SupRho = MaterialTemplates.Density(design, sup?.Material) / 1000;
         SupT = sup?.TPerM2 ?? supT ?? Navarch.SuperstructureTPerM2;
         SupPlate = (sup?.PlatingMm ?? 0.0, sup?.ControlMm ?? 0.0);
         Construction = HullWeight.ConstructionOf(design);

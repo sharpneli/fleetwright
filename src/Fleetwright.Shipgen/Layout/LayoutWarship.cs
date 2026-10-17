@@ -269,7 +269,7 @@ public sealed partial class Layout
                     string mid = $"{sec.Prefix}{i + 1}{(side > 0 ? "S" : "P")}";
                     var m = Armament.AddMount(lay, mounts, ComponentKind.Secondary, tId, t, mid, x, side * yo, bse,
                         Armament.StowBearing(x, side, Arcs.CasemateHalf(t)), armourMm: arm, depth: depth, top: top,
-                        footprintR: Geometry.CasemateShieldR(t));
+                        footprintR: Geometry.CasemateShieldR(t), material: sec.Sec.Material);
                     (m.Battery, m.Casemate, m.Material) = (sec.Prefix, true, sec.Sec.Material);
                 }
             }

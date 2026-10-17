@@ -232,7 +232,8 @@ public sealed class CarrierStyle : Style
             result.Add(new Weight("Flight deck", "hull", fdT, fdx, ZRel.Deck(dp.FdH)));
             double mm = design.Armour?.FlightDeckMm ?? 0;
             if (mm != 0)
-                result.Add(new Weight("Flight deck armour", "armour", dp.FdArea * 0.85 * mm / 1000 * Weight.Steel, fdx, ZRel.Deck(dp.FdH)));
+                result.Add(new Weight("Flight deck armour", "armour", dp.FdArea * 0.85 * mm / 1000
+                    * MaterialTemplates.Density(design, Armour.ArmourMaterial(design, "flight_deck")), fdx, ZRel.Deck(dp.FdH)));
             result.Add(new Weight("Hangar structure", "hull", dp.HangarArea * av.HangarDecks * tun.HangarTPerM2, (hx0 + hx1) / 2,
                 ZRel.Deck(dp.FdH / 2)));
             double nEl = av.Elevators + av.DeckEdgeElevators;

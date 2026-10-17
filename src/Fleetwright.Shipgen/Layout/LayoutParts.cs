@@ -63,7 +63,7 @@ public sealed partial class Layout
         var pts = Geometry.BlockOutline(b);
         int n = pts.Count;
         double perim = Enumerable.Range(0, n).Select(i => double.Hypot(pts[(i - 1 + n) % n].X - pts[i].X, pts[(i - 1 + n) % n].Y - pts[i].Y)).Sum();
-        return HullWeight.ExtraPlateT(perim * (b.TopZ - b.Base), mm, own);
+        return HullWeight.ExtraPlateT(perim * (b.TopZ - b.Base), mm, own, lay.SupRho);
     }
 
     public const double RaisedInset = 0.3;
@@ -470,7 +470,7 @@ public sealed partial class Layout
                              $"{Math.Max(w, 0.0):F1} m across. Use more shafts (smaller units) or less side protection.");
         }
         lay.Geo.Plant = new PlantPlan(p.Tech.Fuel, sp, segs, wingT, wing, end, w, h, db, top, ag.Armoured, ag.RoofMm, tds,
-            Shipgen.Decks.DeckStack(design, D).Select(s => s.Z).ToList(), T - Ordnance.CrownMarginM);
+            Shipgen.Decks.DeckStack(design, D).Select(s => s.Z).ToList(), T - Ordnance.CrownMarginM, MaterialTemplates.Density(design, ag.RoofMaterial));
         return segs.Sum(s => s.Len);
     }
 
@@ -549,7 +549,7 @@ public sealed partial class Layout
                 foreach (var c in lay.Casings)
                 {
                     double area = 2 * ((c.X1 - c.X0) + c.W) * (c.Top - c.Base) + (c.X1 - c.X0) * c.W;
-                    lay.Weights.Add(new Weight(c.Id, "armour", area * plan.DeckMm / 1000 * 7.85, (c.X0 + c.X1) / 2, ZRel.Deck((c.Base + c.Top) / 2)));
+                    lay.Weights.Add(new Weight(c.Id, "armour", area * plan.DeckMm / 1000 * plan.DeckRho, (c.X0 + c.X1) / 2, ZRel.Deck((c.Base + c.Top) / 2)));
                 }
         }
         lay.Geo.Machinery = (mx0, mx1);

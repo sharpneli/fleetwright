@@ -4,7 +4,11 @@ namespace Fleetwright.Shipgen;
 
 /// <summary>The hull's construction standard: its steel's yield, how much joining adds, and how heavy its plate runs
 /// against the norm.</summary>
-public sealed record Construction(string Name, double YieldMpa, double JoinFactor, double Standard);
+public sealed record Construction(string Name, double YieldMpa, double JoinFactor, double Standard, double RhoTPerM3 = Weight.Steel)
+{
+    /// <summary>The hull's plate, t per m² per mm: its plating material's density (hull.plating.material; P1c).</summary>
+    public double Rho => RhoTPerM3 / 1000;
+}
 
 /// <summary>hull.plating with its defaults: shell plate beyond the structure's own, its material, and deck planking.</summary>
 public sealed record PlatingSpec(double ShellMm, string? Material, double DeckWoodMm);
@@ -52,7 +56,7 @@ public static class HullWeight
     {
         var c = design.Hull?.Construction;
         return new Construction(c?.Name ?? "High-tensile steel, all welded", c?.YieldMpa ?? 350, c?.JoinFactor ?? 1.00,
-            c?.Standard ?? 1.0);
+            c?.Standard ?? 1.0, MaterialTemplates.Density(design, design.Hull?.Plating?.Material));
     }
 
     /// <summary>hull.plating with its defaults filled in.</summary>
@@ -65,8 +69,8 @@ public static class HullWeight
     /// <summary>The minimum gauge, mm: the thinnest plate the hull is built of.</summary>
     public static double TMinMm(double L, Construction c) => (TMin.A + TMin.B * Math.Min(L, Long)) * c.Standard;
 
-    /// <summary>Plate thicker than the structure's own, t: plain steel plate over the area.</summary>
-    public static double ExtraPlateT(double areaM2, double mm, double ownMm) => Rho * areaM2 * Math.Max(0.0, mm - ownMm);
+    /// <summary>Plate thicker than the structure's own, t: plate of rho t/m² per mm (steel's unless given) over the area.</summary>
+    public static double ExtraPlateT(double areaM2, double mm, double ownMm, double rho = Rho) => rho * areaM2 * Math.Max(0.0, mm - ownMm);
 
     /// <summary>The plating the game's damage model sees, from the structure h: mm of each kind of plate, unarmoured.
     /// ownMm: the hull's own gauge where the structure has no plate model.</summary>
@@ -89,12 +93,12 @@ public static class HullWeight
 
     /// <summary>What the model weighs per m^2 of strength deck at minimum gauge.</summary>
     public static double DeckTPerM2(double L, Construction c) =>
-        Rho * KS * (TMin.A + TMin.B * Math.Min(L, Long)) * c.Standard * (1 + FFit) * c.JoinFactor;
+        c.Rho * KS * (TMin.A + TMin.B * Math.Min(L, Long)) * c.Standard * (1 + FFit) * c.JoinFactor;
 
     /// <summary>A raised stretch of hull (forecastle, poop) at minimum gauge.</summary>
     public static double RaisedT(double L, Construction c, double deckM2, double sideM2, double endM2, double shellMm = 0.0) =>
         DeckTPerM2(L, c) * (deckM2 + ShellSide * sideM2 + BhdT * endM2)
-        + ExtraPlateT(ShellSide * sideM2, shellMm, TMinMm(L, c)) * c.JoinFactor;
+        + ExtraPlateT(ShellSide * sideM2, shellMm, TMinMm(L, c), c.Rho) * c.JoinFactor;
 
     /// <summary>The hull structure: its weight, what it is made of and its girder.</summary>
     /// <param name="topside">the side above the widest point: the strength deck and the armour decks are its breadth at
@@ -121,12 +125,12 @@ public static class HullWeight
         double iArm = armourDecks.Sum(a => ArmDeckWidth * Breadth(a.Z) * a.Mm / 1000 * Math.Pow(a.Z - NeutralAxis * G, 2));
         double zPerMm = G * (bDeck + G / 3) / 1000;
         double tStr = Math.Max(0.0, iReq - iArm) / (G / 2) / zPerMm;
-        double wMin = Rho * KS * tMin * (aShell + aDeck + aInt * IntDeckT + aBhd * BhdT + aDb);
-        double wStr = Rho * GirderTaper * (aShell + aDeck) * Math.Max(0.0, tStr - tMin);
+        double wMin = c.Rho * KS * tMin * (aShell + aDeck + aInt * IntDeckT + aBhd * BhdT + aDb);
+        double wStr = c.Rho * GirderTaper * (aShell + aDeck) * Math.Max(0.0, tStr - tMin);
         double k = (1 + FFit) * c.JoinFactor;
         double aSide = Math.Max(0.0, 2 * ShellSide * D * L * slant - armouredSideM2);
-        double wShell = (ExtraPlateT((1 - GirderTaper) * aSide, shellMm, tMin)
-                         + ExtraPlateT(GirderTaper * aSide, shellMm, Math.Max(tMin, tStr))) * c.JoinFactor;
+        double wShell = (ExtraPlateT((1 - GirderTaper) * aSide, shellMm, tMin, c.Rho)
+                         + ExtraPlateT(GirderTaper * aSide, shellMm, Math.Max(tMin, tStr), c.Rho)) * c.JoinFactor;
         return new HullStructure((wMin + wStr) * k + wShell, wShell)
         {
             MinGaugeT = wMin * k, StrengthT = wStr * k, TMinMm = tMin, TStrMm = tStr, StressMpa = sig, IReqM4 = iReq,
@@ -188,7 +192,7 @@ public static class HullWeight
     public static HullStructure BoxStructure(Design design, double L, double B, double D, Tuning tun)
     {
         double plank = tun.PlateOwnMm;
-        double shellT = ExtraPlateT(2 * ShellSide * D * L, PlatingOf(design).ShellMm, plank);
+        double shellT = ExtraPlateT(2 * ShellSide * D * L, PlatingOf(design).ShellMm, plank, ConstructionOf(design).Rho);
         return new HullStructure(tun.HullK * Math.Pow(L * B * D, tun.HullExp) + shellT, shellT) { PlateOwnMm = plank };
     }
 

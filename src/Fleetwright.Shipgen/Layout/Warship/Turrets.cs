@@ -41,7 +41,7 @@ public sealed partial class Layout
                     prev = bse;
                     string mid = TurretName(names[gname], i);
                     var m = Armament.AddMount(lay, mounts, ComponentKind.Main, g.Tid, g.T, mid, x, 0.0, bse, rest_, level: level,
-                        armourMm: g.ArmourMm, depth: depth, footprintR: g.Reach, label: "Turret",
+                        armourMm: g.ArmourMm, depth: depth, footprintR: g.Reach, label: "Turret", material: g.Material,
                         deck: lay.Raised.Count > 0 ? bse - 1.2 - TierSteps(gs, level) : dz);
                     m.Material = g.Material;
                     if (flush)
@@ -74,7 +74,7 @@ public sealed partial class Layout
                 flags(probe);
                 bse += RaisedLift(lay, probe);
                 var m = Armament.AddMount(lay, mounts, ComponentKind.Main, g.Tid, g.T, mid, x, y, bse, rest,
-                    armourMm: g.ArmourMm, depth: depth, footprintR: reach, label: "Turret",
+                    armourMm: g.ArmourMm, depth: depth, footprintR: reach, label: "Turret", material: g.Material,
                     deck: lay.Raised.Count > 0 ? Math.Max(0.0, bse - 1.2 - (g.Raised ? LevelH : 0.0)) : dz);
                 m.Material = g.Material;
                 flags(m);

@@ -9,7 +9,7 @@ namespace Fleetwright.Shipgen;
 /// <item>q, q_scale, the face and the elongation: research/simulation/armor/00-overview.md §4.2, the reconciled table
 /// (armor_pen_ref.py MATERIALS; its id in each note): q against an 8" capped shell on Thompson's scale, WWII STS 1;</item>
 /// <item>density: armor/03 §7 (the steels 7.85, wrought iron 7.7, compound 7.75, oak and teak 0.65-0.75), aluminium
-/// alloy 2.7; the weights read it from P1c.</item>
+/// alloy 2.7; every plate is weighed with it (P1c, <see cref="Density"/>).</item>
 /// </list>
 /// A name is a plate, never a period: where the designs used one name for two plates (British WWI KC and WWII CA, the
 /// Terni of 1912 and of 1937), each has its own. Group: "structure" for the hull plating's and superstructure's picker,
@@ -69,6 +69,12 @@ public static class MaterialTemplates
 
     /// <summary>The catalogue's block of a name, or null.</summary>
     public static MaterialInput? Get(string name) => byName.GetValueOrDefault(name)?.Value;
+
+    /// <summary>A material's density, t/m³ (P1c): the design's block's, else the catalogue's, else steel's; steel's for a
+    /// part with no material named. What every plate of armour and structure is weighed with.</summary>
+    public static double Density(Design design, string? name) =>
+        string.IsNullOrEmpty(name) ? Weight.Steel
+            : design.Materials?.GetValueOrDefault(name)?.DensityTPerM3 ?? Get(name)?.DensityTPerM3 ?? Weight.Steel;
 
     /// <summary>What a name nobody knows takes.</summary>
     public static MaterialInput Steel => byName["steel"].Value;

@@ -76,7 +76,8 @@ public sealed partial class Layout
             lay.ConningTower = new ConningTower(ctX, 0.0, ctR, 2 * LevelH);
             double mm = beltMm / 1000;
             double area = 2 * Math.PI * ctR * 2 * LevelH + 0.5 * Math.PI * Math.Pow(ctR, 2);
-            lay.Weights.Add(new Weight("Conning tower", "armour", area * mm * 7.85, lay.ConningTower.X, ZRel.Deck(LevelH)));
+            double rho = MaterialTemplates.Density(site.Design, Armour.ArmourMaterial(site.Design, "conning_tower"));
+            lay.Weights.Add(new Weight("Conning tower", "armour", area * mm * rho, lay.ConningTower.X, ZRel.Deck(LevelH)));
         }
         for (long k = nb + 2; k <= nTower; k++)
         {

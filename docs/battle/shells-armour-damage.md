@@ -1,5 +1,5 @@
 # Plan: shells, armour and damage (a 4.5 deepening)
-Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, P0, P1a and P1b done    Updated: 2026-10-17
+Status: agreed, steps reviewed for implementation; research folded in (decisions 8-10); phase S, P0, P1a, P1b and P1c done    Updated: 2026-10-17
 
 The fine-tune pass for the **Terminal** link of `fighting.md` 4.5 ("penetration proper: material qualities, capped and
 uncapped shells, spaced armour, edge effects; shell quality by navy and year; diving shells and underwater hits;
@@ -765,9 +765,26 @@ before and after when it's done. Today's code for the three phases: `DesignerPla
       305 mm belt now 259 against an 8″ and less), lion v seydlitz 1.164 → 1.228; duel 5.5 → 5.6%. Squadrons 40 min:
       Britain 1 → 1 lost (Princess Royal, not Lion), Germany 0 → 1 (Von der Tann); tsushima --play 2 seeds Russia
       3.5 → 4.5, Japan 4.5 → 3.
-- **P1c Densities** (shipgen only).
+- **P1c Densities** (shipgen only; done 2026-10-17).
   - Mass by the material's density: report the shifts (the ironclads, PT boats, aluminium houses), `golden-update`
     with a `ShipDesign.Version` bump, `mono-check`.
+  - **Done (2026-10-17).** `MaterialTemplates.Density(design, name)` (the design's block, the catalogue's, steel's; steel
+    for a part with no material named) weighs every plate:
+    - armour: the belt, zones, strakes, the lower belt, bulkheads and end plates, decks and slopes, the inner bulkhead
+      (the bulkheads' material), the magazine boxes (sides and ends the bulkheads', crown and floor the decks'), the
+      casings (their roof deck's), the conning tower, the flight deck, turrets and barbettes (`Armour.MountMaterial`,
+      one rule now for the hitboxes' and the weights' mount material: `AddMount` takes the battery's material);
+    - the hull's structure, its raised stretches and extra shell plating by `hull.plating.material`'s density (on
+      `Construction.Rho`), the torpedo protection's plain bulkheads too; the superstructure's extra plating by its
+      `material`'s (`Layout.SupRho`). Directors' hoods have no material: steel.
+    - Not by density: the box-model hulls' structure (planing craft: `hull_k`, a fitted weight) and the
+      superstructure's `t_per_m2` (the design's own knob for a light house), so the wooden PT boats and MTB, with no
+      plating over their planking's own gauge, don't move. No design has aluminium.
+    - **Shifts** (standard displacement): Devastation 9,168 → 8,890 t (−3.0%), Inflexible 18,224 → 17,761 t (−2.5%),
+      Duilio 19,175 → 18,992 t (−1.0%), Brennus 10,974 → 10,882 t (−0.8%): wrought iron 7.7 and compound 7.75, a little
+      more than the density's 1.3–1.9% as the lighter ship sizes down; their fuzz mutants with them. Goldens 16 design,
+      16 SVG and 4 sprite cases (`ShipDesign.Version` 21), 372/372; `svg-check` and `sprite-check` 372/372; `mono-check`
+      27 reversals and 16 lumps, as before. The sim's scenarios don't move (squadrons' hash identical).
 - **P2 Caps, decapping, shatter and break-up as states.**
   - The cap is lost on face-hardened plate or past its threshold, with a gap test before the next face-hardened plate.
   - Shatter of uncapped or decapped shells on face-hardened plate: +30–40% at normal, fading to nothing by 55°.
@@ -1026,7 +1043,7 @@ None blocks a step; each is settled by its step's bench.
 | P0 | — | materials table, upgrade (done) | material rows (done) | no |
 | P1a | P0 | — | vanilla Thompson, Cardano inverse, Lambert-Jonas, pen-check bench (done) | penetration (−2 to −6% big guns, more for small) |
 | P1b | P1a | material catalogue, split names (done) | Q(D) (done) | penetration |
-| P1c | P0 | densities | — | weights |
+| P1c | P0 | densities (done) | — | weights |
 | P2 | S2, P1b | — | caps, shatter, break-up | outcomes |
 | P3 | P2 | — | fuzes; rows gone; water fuze on | burst points |
 | P4 | P2 | — | three limits | outcomes |
