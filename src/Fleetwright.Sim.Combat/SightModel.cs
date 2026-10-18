@@ -60,7 +60,7 @@ public static class SightModel
     /// or in a director without a rangefinder read, the conning tower's slits.</summary>
     public static double Magnification(in EyeRow eye, SimSettings s) => eye.Kind switch
     {
-        EyeKind.Director or EyeKind.Turret when eye.Ranges => eye.Optics.Magnification,
+        EyeKind.Director or EyeKind.Turret or EyeKind.Rangefinder when eye.Ranges => eye.Optics.Magnification,
         EyeKind.ConningTower => s.SightSlitsMagnification,
         _ => s.SightLookoutMagnification,
     };
@@ -121,7 +121,8 @@ public static class SightModel
     public static double BearingSigmaRad(in EyeRow eye) => eye.Kind switch
     {
         EyeKind.Director => 0.0005,
-        EyeKind.Turret => 0.0015,   // fire-control-designer.md §3.1: a turret's 1.5 mil
+        EyeKind.Turret => 0.0015,   // fire-control-designer.md §3.1: a turret's 1.5 mil, elsewhere 1
+        EyeKind.Rangefinder => 0.001,
         EyeKind.ConningTower => 0.005,
         _ => 0.002,
     };

@@ -78,6 +78,7 @@ public sealed partial class Layout
 
         // ---------------- fire control ----------------
         FireControl.Place(lay, design, blocks);
+        FireControl.PlaceRangefinders(lay, design, blocks);
 
         // ---------------- AA ----------------
         var aaOut = PlaceAaMounts(site, middle.MachC, blocks);

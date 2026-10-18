@@ -3,7 +3,7 @@ namespace Fleetwright.Shipgen;
 public sealed partial class Layout
 {
     /// <summary>What a superstructure block is for (add_block's role).</summary>
-    public static readonly string[] BlockRoles = ["deckhouse", "bridge", "aft_control", "director", "island", "hangar", "casemate"];
+    public static readonly string[] BlockRoles = ["deckhouse", "bridge", "aft_control", "director", "island", "hangar", "casemate", "rangefinder"];
 
     public static double Clamp(double v, double lo, double hi) => Math.Max(lo, Math.Min(hi, v));
 

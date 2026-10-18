@@ -62,9 +62,12 @@ public class WeaponFactsTests
             if (row.Local ? row.Fit != FireControlPresets.Local : row.Level != FireControlPresets.LevelOf(row.Fit))
                 p.Add($"battery {b}: its fit and its level ({row.Level}) don't go together");
             // its fire-control units (fire-control.md F0): its directors', each with its director's eyes as instruments
-            if (!c.Links(row.Units).SequenceEqual(c.Links(row.Directors)))
-                p.Add($"battery {b}: units {string.Join(",", c.Links(row.Units).ToArray())} aren't its directors'");
-            foreach (int u in c.Links(row.Units))
+            // its directors' units, then (a main battery's) the control positions' rangefinders (fire-control.md F4b)
+            var units = c.Links(row.Units).ToArray();
+            if (!units.Take(row.Directors.Count).SequenceEqual(c.Links(row.Directors).ToArray())
+                || units.Skip(row.Directors.Count).Any(u => c.FcUnits[u].Director >= 0 || row.Kind != Battery.Main))
+                p.Add($"battery {b}: units {string.Join(",", units)} aren't its directors' and then the positions'");
+            foreach (int u in c.Links(row.Units).ToArray().Take(row.Directors.Count))
             {
                 var unit = c.FcUnits[u];
                 if (unit.Battery != row.Kind || unit.Instruments.Count == 0)

@@ -307,7 +307,11 @@ public class DamageTests(ITestOutputHelper output)
         var mounts = cls.Links(cls.Batteries[0].Mounts);
         int a = mounts[0];
         w.Apply(DamageSystem.Wreck(1, cls.Mounts[a].Component, PartState.Destroyed));
-        w.Apply(DamageSystem.Wreck(1, cls.Directors[cls.Links(cls.Batteries[0].Directors)[0]].Component, PartState.Destroyed));
+        // every control position of the battery: its director and after control's rangefinder (fire-control.md F4b: with
+        // either left, it fights from it)
+        foreach (int u in cls.Links(cls.Batteries[0].Units))
+            w.Apply(DamageSystem.Wreck(1, cls.FcUnits[u].Director >= 0 ? cls.Directors[cls.FcUnits[u].Director].Component
+                : cls.Instruments[cls.Links(cls.FcUnits[u].Instruments)[0]].Component, PartState.Destroyed));
         w.Apply(GunnerySystem.Engage(1, 0, 2));
         w.AdvanceTo(w.Time + 6 * 60_000);
         var slot = w.Ships.Store.SlotOf(1);

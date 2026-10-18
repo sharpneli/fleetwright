@@ -287,7 +287,7 @@ public static class ShipClassCompiler
                     Kind = kind, Role = role, Shape = shape, Level = Int(x.Level), Bounds = BoundsOf(x, outline, mount), X = x.X ?? double.NaN,
                     Y = x.Y ?? double.NaN, Z = x.Z ?? double.NaN, R = Or(x.R), Outline = outline, ArmourMm = x.ArmourMm ?? 0, Material = Material(x.Material),
                     PlateMm = x.PlateMm ?? 0, WoodMm = x.WoodMm ?? 0, Crew = Int(x.Crew), BattleCrew = Int(x.BattleCrew),
-                    Smoke = new Slice(smoke, links.Count - smoke), Detail = detail,
+                    Smoke = new Slice(smoke, links.Count - smoke), Detail = detail, RangefinderM = x.RangefinderM is > 0 ? x.RangefinderM.Value : 0,
                 };
             }
 
@@ -665,11 +665,14 @@ public static class ShipClassCompiler
         /// that stand in it (highest first, as the eyes are), and each battery's units in its directors' order.</summary>
         void FireControlUnits(ShipClass c)
         {
-            if (c.directors.Length > 64)
-                throw new ShipCompileException($"{c.directors.Length} directors: fire control holds its units as 64 bits");
-            var units = new FcUnitRow[c.directors.Length];
+            int positions = 0;
+            foreach (var eye in c.eyes)
+                positions += eye.Kind == EyeKind.Rangefinder ? 1 : 0;
+            if (c.directors.Length + positions > 64)
+                throw new ShipCompileException($"{c.directors.Length + positions} control positions: fire control holds its units as 64 bits");
+            var units = new FcUnitRow[c.directors.Length + positions];
             var instruments = new List<InstrumentRow>();
-            for (int d = 0; d < units.Length; d++)
+            for (int d = 0; d < c.directors.Length; d++)
             {
                 int i0 = links.Count;
                 for (int e = 0; e < c.eyes.Length; e++)
@@ -683,11 +686,26 @@ public static class ShipClassCompiler
                 }
                 units[d] = new FcUnitRow(d, c.directors[d].Battery, new Slice(i0, links.Count - i0));
             }
+            // the control positions' rangefinders, after the directors: the main battery's
+            int u = c.directors.Length;
+            for (int e = 0; e < c.eyes.Length; e++)
+            {
+                ref readonly var eye = ref c.eyes[e];
+                if (eye.Kind != EyeKind.Rangefinder)
+                    continue;
+                int i0 = links.Count;
+                links.Add(instruments.Count);
+                instruments.Add(new InstrumentRow(u, e, eye.Component, eye.X, eye.Y, eye.HeightM, InstrumentKind.Coincidence, eye.RangefinderM));
+                units[u++] = new FcUnitRow(-1, Battery.Main, new Slice(i0, 1));
+            }
             for (int b = 0; b < c.batteries.Length; b++)
             {
                 int u0 = links.Count;
                 foreach (int d in links.GetRange(c.batteries[b].Directors.Start, c.batteries[b].Directors.Count))
                     links.Add(d);   // a unit's index is its director's
+                if (c.batteries[b].Kind == Battery.Main)
+                    for (int p = c.directors.Length; p < units.Length; p++)
+                        links.Add(p);
                 c.batteries[b] = c.batteries[b] with { Units = new Slice(u0, links.Count - u0) };
             }
             (c.fcUnits, c.instruments) = (units, instruments.ToArray());

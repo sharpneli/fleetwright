@@ -12,6 +12,8 @@ public enum ComponentRole : byte
     Island,
     Hangar,
     Elevator,
+    /// <summary>A control position's rangefinder in its hood (after control's, the conning tower's; fire-control.md F4b).</summary>
+    Rangefinder,
 }
 
 /// <summary>How a component's plan is given: a polygon (Points), a circle (X, Y, R), a segment (P0 to P1, radius R), a
@@ -129,6 +131,7 @@ static class Kinds
         "island" => ComponentRole.Island,
         "hangar" => ComponentRole.Hangar,
         "elevator" => ComponentRole.Elevator,
+        "rangefinder" => ComponentRole.Rangefinder,
         _ => throw Unknown("component role", s),
     };
 

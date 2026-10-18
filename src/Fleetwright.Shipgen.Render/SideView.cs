@@ -171,7 +171,7 @@ public sealed class SideView
         }
 
         var blocks = comps.Where(c => c.Kind == ComponentKind.Superstructure).Select(c => new Block(c.Id, Box.Of(c.Points!, c.Base, c.Top), c.Level ?? 1, c.Role,
-            c.Role == "director" ? new TopView.Director(c.RangefinderM ?? 0.0, c.Radar ?? false, (long)Math.Round(c.Base / Layout.LevelH)) : null)).ToList();
+            c.Role is "director" or "rangefinder" ? new TopView.Director(c.RangefinderM ?? 0.0, c.Radar ?? false, (long)Math.Round(c.Base / Layout.LevelH)) : null)).ToList();
 
         var dressed = ship.Dressing.Masts.ToDictionary(m => m.Id, StringComparer.Ordinal);
         var masts = comps.Where(c => c.Kind == ComponentKind.Mast).Select(c =>

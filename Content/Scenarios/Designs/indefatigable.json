@@ -234,7 +234,8 @@
    "radar_t": 0,
    "computer_t": 0
   },
-  "search_radar_t": 0
+  "search_radar_t": 0,
+  "aft_rangefinder_m": 2.7
  },
  "look": {
   "navy": "portsmouth",

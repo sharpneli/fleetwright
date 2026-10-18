@@ -31,8 +31,11 @@ public static class FireControl
     {
         if (design.FireControl is not { } fc)
             return [];
-        var errs = fc.Extra.KeysOrEmpty().Select(k => $"fire_control.{k}: not a battery ({string.Join(", ", BatteryNames)}) or search_radar_t")
-            .ToList();
+        var errs = fc.Extra.KeysOrEmpty().Select(k => $"fire_control.{k}: not a battery ({string.Join(", ", BatteryNames)}), search_radar_t, " +
+            "aft_rangefinder_m or conning_tower_rangefinder_m").ToList();
+        foreach (var (k, v) in new[] { ("aft_rangefinder_m", fc.AftRangefinderM), ("conning_tower_rangefinder_m", fc.ConningTowerRangefinderM) })
+            if (v is double d && !(d >= 0 && double.IsFinite(d)))
+                errs.Add($"fire_control.{k} must be a number, 0 or more");
         foreach (var b in BatteryNames)
         {
             if (fc.Of(b) is not { } d)
@@ -319,6 +322,50 @@ public static class FireControl
             double instrument = massK * b * b / 1000.0, w = b + 0.6, d = 1.6, h = 1.9;
             double hood = (2 * w * h + 2 * d * h + w * d) * 0.006 * Weight.Steel;
             lay.Weights.Add(new Weight($"Rangefinder ({m.Id})", "fire_control", 3 * instrument + hood, m.X, ZRel.Deck(m.Top)));
+        }
+    }
+
+    /// <summary>The control positions' rangefinders (fire-control.md F4b): a hood on after control's highest roof and on the
+    /// conning tower's, each a block of its own (role rangefinder: a director's shape, the hood and the tube's ends, without a
+    /// director's gear), weighed as a turret's (three times the bare instrument, a 6 mm plate box), where it finds room.</summary>
+    public static void PlaceRangefinders(Layout lay, Design design, List<Block> blocks)
+    {
+        void Hood(string id, double baseM, double x, double y, double z0)
+        {
+            double l = 1.6, w = baseM + 0.6;
+            var fp = Footprint.Rect(x - l / 2, y - w / 2, x + l / 2, y + w / 2);
+            if (!lay.FreeAt(fp, z0, z0 + HoodH, 0.2))
+            {
+                lay.Warnings.Add($"{id}: no room on its roof; left off.");
+                return;
+            }
+            var pts = Geometry.DirectorParts(x, y, l, w, baseM).Outline;
+            var b = Layout.AddBlock(lay, blocks, id, x - l / 2, x + l / 2, w, 1, 0.0, 0.0, y: y, z0: z0, kind: "director", tPerM2: 0.0, points: pts,
+                role: "rangefinder");
+            b.Director = new BlockDirector("main", baseM, false, (long)Math.Round(z0 / Layout.LevelH));
+            double massK = FireControlTemplates.FitOf(design.FireControl?.Of("main")).Select(n => FireControlTemplates.Resolve(design, n)?.Optics?.MassKgM2)
+                .FirstOrDefault(k => k is > 0) ?? 27.0;
+            double instrument = massK * baseM * baseM / 1000.0, hd = 1.6, hh = 1.9;
+            double hood = (2 * w * hh + 2 * hd * hh + w * hd) * 0.006 * Weight.Steel;
+            lay.Weights.Add(new Weight(id, "fire_control", 3 * instrument + hood, x, ZRel.Deck(z0 + 0.5 * HoodH)));
+        }
+        if (design.FireControl?.AftRangefinderM is > 0 and var aft)
+        {
+            Block? top = null;
+            foreach (var b in blocks)
+                if (b.Role == "aft_control" && (top is null || b.TopZ > top.TopZ))
+                    top = b;
+            if (top is null)
+                lay.Warnings.Add("Aft rangefinder: no after control to stand on; left off.");
+            else
+                Hood("Aft rangefinder", aft, (top.X0 + top.X1) / 2, top.Y, top.TopZ);
+        }
+        if (design.FireControl?.ConningTowerRangefinderM is > 0 and var ct)
+        {
+            if (lay.ConningTower is not { } c)
+                lay.Warnings.Add("Conning tower rangefinder: no conning tower; left off.");
+            else
+                Hood("Conning tower rangefinder", ct, c.X, c.Y, c.Top);
         }
     }
 

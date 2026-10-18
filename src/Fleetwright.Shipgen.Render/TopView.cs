@@ -113,7 +113,7 @@ public sealed class TopView
         {
             long level = c.Level ?? 1;
             bool upper = level > 1 || c.Base - Layout.LevelH * (level - 1) > 0.005;
-            var dir = c.Role == "director" ? new Director(c.RangefinderM ?? 0.0, c.Radar ?? false, (long)Math.Round(c.Base / Layout.LevelH)) : null;
+            var dir = c.Role is "director" or "rangefinder" ? new Director(c.RangefinderM ?? 0.0, c.Radar ?? false, (long)Math.Round(c.Base / Layout.LevelH)) : null;
             if (c.Rrect is { } rr)
                 blocks.Add(new Block(c.Id, rr.X0, rr.X1, (rr.Y0 + rr.Y1) / 2, rr.Y1 - rr.Y0, rr.Rf, rr.Rb, null, c.Points!, level, upper, c.Top, dir));
             else

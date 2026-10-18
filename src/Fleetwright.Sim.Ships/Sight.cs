@@ -2,7 +2,8 @@ using Fleetwright.Shipgen;
 namespace Fleetwright.Sim.Ships;
 
 /// <summary>What an observation post is: a lookout at a masthead, a director (with its rangefinder), the bridge, aft
-/// control, the conning tower's slits, a lookout in a mast's top, or a rangefinder in a gunhouse's hood.</summary>
+/// control, the conning tower's slits, a lookout in a mast's top, a rangefinder in a gunhouse's hood, or a control
+/// position's rangefinder in its hood (after control's, the conning tower's).</summary>
 public enum EyeKind : byte
 {
     Masthead,
@@ -12,6 +13,7 @@ public enum EyeKind : byte
     ConningTower,
     Top,
     Turret,
+    Rangefinder,
 }
 
 /// <summary>An observation post (docs/battle/plan.md step 3.2a): its component, where it is (ship-local x, y), its eye's
@@ -26,7 +28,7 @@ public readonly record struct EyeRow(EyeKind Kind, int Component, double X, doub
     public bool Sees(double relativeDeg) => (Blind & (1UL << Sight.Sector(relativeDeg))) == 0;
 
     /// <summary>Whether it takes ranges with a rangefinder: a director's or a gunhouse's, of a make that's read.</summary>
-    public bool Ranges => Kind is EyeKind.Director or EyeKind.Turret && RangefinderM > 0 && Optics.Reads;
+    public bool Ranges => Kind is EyeKind.Director or EyeKind.Turret or EyeKind.Rangefinder && RangefinderM > 0 && Optics.Reads;
 }
 
 /// <summary>What a ship shows to an observer (docs/battle/plan.md step 3.2a): its highest point over the waterline at
@@ -109,6 +111,13 @@ public static class Sight
                     eyes.Add(Eye(c, EyeKind.Director, i, (b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, b.Base + EyeOverFloorM - wl, double.IsNaN(rf) ? 0 : rf) with
                     {
                         Optics = x.Detail >= 0 ? OpticsOf(c, c.directors[x.Detail].Battery) : default,
+                    });
+                    break;
+                case ComponentKind.Superstructure when x.Role == ComponentRole.Rangefinder:
+                    var rb = x.Bounds;
+                    eyes.Add(Eye(c, EyeKind.Rangefinder, i, (rb.X0 + rb.X1) / 2, (rb.Y0 + rb.Y1) / 2, rb.Base + EyeOverFloorM - wl, x.RangefinderM) with
+                    {
+                        Optics = OpticsOf(c, Battery.Main),
                     });
                     break;
                 case ComponentKind.Superstructure when x.Role == ComponentRole.Bridge:

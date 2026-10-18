@@ -728,6 +728,10 @@ public sealed record FireControlInput
     public DirectorInput? Secondary { get; init; }
     public DirectorInput? Aa { get; init; }
     public double? SearchRadarT { get; init; }
+    /// <summary>A rangefinder in a hood on after control's top and on the conning tower's roof, their bases, m (0 or none:
+    /// none): control positions for the main battery (fire-control.md F4b).</summary>
+    public double? AftRangefinderM { get; init; }
+    public double? ConningTowerRangefinderM { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 
     public DirectorInput? Of(string battery) => battery switch { "main" => Main, "secondary" => Secondary, _ => Aa };

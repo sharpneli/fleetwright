@@ -53,6 +53,8 @@ public readonly record struct ComponentRow
     /// <summary>The funnels a block's smoke comes from (Links pool: components).</summary>
     public Slice Smoke { get; init; }
     public int Detail { get; init; }
+    /// <summary>The rangefinder in it, its base, m (a director's, a gunhouse's, a control position's hood), else 0.</summary>
+    public double RangefinderM { get; init; }
 }
 
 /// <summary>A gun or torpedo mount: the one table the sprite, the hit test and the state all use (a mount's index is
@@ -368,8 +370,9 @@ public enum InstrumentKind : byte
 public readonly record struct InstrumentRow(int Unit, int Eye, int Component, double X, double Y, double HeightM, InstrumentKind Kind, double BaseM);
 
 /// <summary>A fire-control unit: a control position whose instruments and computer hold one target at a time, and the
-/// kind of battery it serves. One a director for now (tops and after control come with F4), so a unit's index is its
-/// director's; its instruments (Links: instrument indices) highest first.</summary>
+/// kind of battery it serves: a director (its index; a unit's index is its director's), or a control position's
+/// rangefinder with no director (Director -1: the guns lay by their own sights on its ranges; fire-control.md F4b), those
+/// after the directors; its instruments (Links: instrument indices) highest first.</summary>
 public readonly record struct FcUnitRow(int Director, Battery Battery, Slice Instruments);
 
 /// <summary>The instruments' make on a battery's fit: their magnification (0: the instruments can't be read, so a

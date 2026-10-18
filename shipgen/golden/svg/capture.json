@@ -64,7 +64,7 @@
   },
   "courbet": {
    "max_height_m": 38.34,
-   "clutter": 61
+   "clutter": 60
   },
   "dante": {
    "max_height_m": 34.29,
@@ -147,7 +147,7 @@
    "clutter": 29
   },
   "invincible": {
-   "max_height_m": 32.76,
+   "max_height_m": 32.77,
    "clutter": 53
   },
   "karlsruhe": {

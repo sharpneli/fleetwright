@@ -260,7 +260,7 @@ public sealed class GunnerySystem : IWorldSystem
             foreach (int u in cls.Links(row.Units))
             {
                 ref readonly var unit = ref cls.FcUnits[u];
-                if (!cond.DirectorWorks[unit.Director] || n == MaxSensors)
+                if (unit.Director >= 0 && !cond.DirectorWorks[unit.Director] || n == MaxSensors)
                     continue;
                 if (HeldElsewhere(f, u))
                 {
@@ -325,8 +325,17 @@ public sealed class GunnerySystem : IWorldSystem
                 fc.Fit = local;   // a battery under local control (not a bench's preset): its turret's rangefinder now, or none
             fc.Local = true;
         }
-        else if (fc.Local && !row.Local)
-            (fc.Local, fc.Level, fc.Fit) = (false, fc.DirectorLevel, fc.DirectorFit);   // a director back (E4: a timed outage over): under it again
+        else
+        {
+            // under its directors, or only control positions' rangefinders (fire-control.md F4b): then the guns lay by their
+            // own sights on the station's solution, no director firing
+            bool directed = false;
+            foreach (int u in cls.Links(row.Units))
+                directed |= (fc.Units & 1UL << u) != 0 && cls.FcUnits[u].Director >= 0;
+            var fit = directed ? fc.DirectorFit : fc.DirectorFit with { Mount = FireControlPresets.Local.Mount };
+            if (fc.Local || fc.Fit != fit)
+                (fc.Local, fc.Level, fc.Fit) = (false, fc.DirectorLevel, fit);   // a director back (E4: a timed outage over): under it again
+        }
         fc.SensorCount = n;
         fc.SpotHeightM = 0;
         var optics = fc.Fit.Optics;

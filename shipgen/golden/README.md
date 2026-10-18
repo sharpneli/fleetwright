@@ -149,6 +149,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   dreadnought -2.5 %, doom -3.9 %; gangut's 260 kt -5.8 %), with 241 SVG and 49 sprite.json (the rangefinder turrets'
   ids gain `_rf`). The 50 capital ships from the Great War on carry them (2.7 or 4.6 m; later, the director's base).
   ShipDesign.Version 34.
+- 2026-10-18, control positions' rangefinders (docs/battle/fire-control.md F4b), on purpose: the Great War capital ships
+  with after control carry a 2.7 m rangefinder in a hood on its roof (a block of role \`rangefinder\`). 14 design cases change
+  (at most +0.03 % standard), with their SVGs and sprite.json. ShipDesign.Version 35.
 
 ## Layout
 
