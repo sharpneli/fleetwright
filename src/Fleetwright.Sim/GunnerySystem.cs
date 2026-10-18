@@ -281,7 +281,31 @@ public sealed class GunnerySystem : IWorldSystem
             LetGo(f);
         if (n == 0)
         {
-            // local control: the highest working mount's layer, by eye (any mount's, when none works)
+            // local control (fire-control.md F4b): the working mounts' rangefinders, each in its gunhouse's hood and
+            // seeing only through its turret's arcs, highest first (one sensor slot kept); then the highest working
+            // mount's layer, by eye, all round (any mount's, when none works)
+            bool rangefinders = false;
+            while (n < MaxSensors - 1)
+            {
+                int pick = -1;
+                double top = double.MinValue;
+                foreach (int m in cls.Links(row.Mounts))
+                {
+                    int eye = cls.Mounts[m].RangefinderEye;
+                    if (eye < 0 || !cond.Lays(m, local: true) || !cond.EyeWorks[eye] || cls.Eyes[eye].HeightM <= top)
+                        continue;
+                    bool taken = false;
+                    for (int k = 0; k < n && !taken; k++)
+                        taken = sensors[f * MaxSensors + k].Eye == eye;
+                    if (!taken)
+                        (pick, top) = (m, cls.Eyes[eye].HeightM);
+                }
+                if (pick < 0)
+                    break;
+                ref readonly var e = ref cls.Eyes[cls.Mounts[pick].RangefinderEye];
+                sensors[f * MaxSensors + n++] = new Sensor { Eye = cls.Mounts[pick].RangefinderEye, X = e.X, Y = e.Y, HeightM = e.HeightM, BaseM = e.RangefinderM };
+                rangefinders = true;
+            }
             double best = double.MinValue;
             bool works = false;
             var s = new Sensor { Eye = -1 };
@@ -294,8 +318,11 @@ public sealed class GunnerySystem : IWorldSystem
                     (best, works, s.X, s.Y, s.HeightM) = (h, w, cls.Mounts[m].X, cls.Mounts[m].Y, h);
             }
             sensors[f * MaxSensors + n++] = s;
+            var local = rangefinders ? FireControlPresets.Local with { Optics = row.TurretOptics } : FireControlPresets.Local;
             if (!fc.Local)
-                (fc.Level, fc.Fit) = (0, FireControlPresets.Local);   // its directors gone: each mount for itself, by eye
+                (fc.Level, fc.Fit) = (0, local);   // its directors gone: each mount for itself, by its rangefinder or by eye
+            else if (fc.Fit.Computer == FireControlPresets.Local.Computer)
+                fc.Fit = local;   // a battery under local control (not a bench's preset): its turret's rangefinder now, or none
             fc.Local = true;
         }
         else if (fc.Local && !row.Local)

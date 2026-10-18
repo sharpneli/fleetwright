@@ -70,6 +70,7 @@ public static class ShipClassCompiler
             Weapons(c);
             (c.powerKn, c.powerShp) = PowerCurve(c.Motion);
             c.eyes = Sight.Eyes(c);
+            TurretRangefinders(c);
             FireControlUnits(c);
             c.Silhouette = Sight.Silhouette(c, numbers);
 
@@ -224,6 +225,7 @@ public static class ShipClassCompiler
                         Turret = x.Armour != null, FaceMm = x.Armour?.Face ?? 0, SideMm = x.Armour?.Side ?? 0, RearMm = x.Armour?.Rear ?? 0,
                         RoofMm = x.Armour?.Roof ?? 0, Magazine = Room(x.Magazine), Barbette = Comp(x.Barbette, ComponentKind.Barbette), Rounds = Int(x.Rounds),
                         ReadyRounds = Int(x.ReadyRounds), ReadyT = Or(x.ReadyT), Torpedoes = Int(x.Torpedoes), WarheadKg = Or(x.WarheadKg),
+                        RangefinderM = x.RangefinderM is > 0 ? x.RangefinderM.Value : 0, RangefinderEye = -1,
                     });
                 }
                 else
@@ -604,12 +606,12 @@ public static class ShipClassCompiler
                     links.Add(d);
                 int dirs = links.Count - d0;
                 // its fit, the tech blocks the design names (fire-control.md F3); a battery without directors fires under local control
-                var fit = dirs == 0 ? FireControlPresets.Local
-                    : FireControlBlocks.Fit(ship.Design, FireControlTemplates.FitOf(ship.Design.FireControl?.Of(row.Kind == Battery.Main ? "main" : "secondary")));
+                var own = FireControlBlocks.Fit(ship.Design, FireControlTemplates.FitOf(ship.Design.FireControl?.Of(row.Kind == Battery.Main ? "main" : "secondary")));
+                var fit = dirs == 0 ? FireControlPresets.Local : own;
                 batteries[b] = row with
                 {
                     Mounts = new Slice(m0, d0 - m0), Guns = guns, Directors = new Slice(d0, dirs), Level = dirs == 0 ? FireControlLevel.Eyeball : FireControlPresets.LevelOf(fit),
-                    Fit = fit,
+                    Fit = fit, TurretOptics = own.Optics,
                     PatternPct = DesignerPlaceholders.Pattern(row.CalibreMm, era),
                 };
             }
@@ -618,6 +620,45 @@ public static class ShipClassCompiler
             c.Loadout = Loadout.Compile(c, ship.Report.Shells, "", c.DesignHash);
             c.design = ship.Design;
             Launchers(c, era);
+        }
+
+        /// <summary>The gunhouses' rangefinders as eyes (docs/battle/fire-control.md F4b): each a hood 0.3 m over its turret's
+        /// roof, seeing only through its turret's arcs, its make its battery's; the eyes sorted by height again, and each
+        /// mount told its eye.</summary>
+        void TurretRangefinders(ShipClass c)
+        {
+            var add = new List<EyeRow>();
+            for (int m = 0; m < c.mounts.Length; m++)
+            {
+                ref readonly var mt = ref c.mounts[m];
+                if (!(mt.RangefinderM > 0) || mt.Battery < 0)
+                    continue;
+                var arcs = numbers.GetRange(mt.Arcs.Start, mt.Arcs.Count);
+                ulong blind = 0;
+                for (int s = 0; s < Sight.Sectors; s++)
+                {
+                    double a = (s + 0.5) * Sight.SectorDeg;
+                    bool inside = arcs.Count == 0;
+                    for (int i = 0; i + 1 < arcs.Count && !inside; i += 2)
+                    {
+                        double span = arcs[i + 1] - arcs[i];
+                        inside = span >= 360 || ((a - arcs[i]) % 360 + 360) % 360 <= span;
+                    }
+                    if (!inside)
+                        blind |= 1UL << s;
+                }
+                var b = c.components[mt.Component].Bounds;
+                add.Add(new EyeRow(EyeKind.Turret, mt.Component, mt.X, mt.Y, b.Top + 0.3 - c.Vertical.Waterline, mt.RangefinderM, blind,
+                    c.batteries[mt.Battery].TurretOptics));
+            }
+            if (add.Count == 0)
+                return;
+            c.eyes = [.. c.eyes.Concat(add).OrderByDescending(e => e.HeightM).ThenBy(e => e.Component)];
+            for (int e = 0; e < c.eyes.Length; e++)
+                if (c.eyes[e].Kind == EyeKind.Turret)
+                    for (int m = 0; m < c.mounts.Length; m++)
+                        if (c.mounts[m].Component == c.eyes[e].Component)
+                            c.mounts[m] = c.mounts[m] with { RangefinderEye = e };
         }
 
         /// <summary>The fire-control units (docs/battle/fire-control.md F0): one a director, its instruments the eyes

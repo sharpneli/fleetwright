@@ -95,6 +95,10 @@ public readonly record struct MountRow
 
     /// <summary>The gun battery it's in (Batteries), or -1 (torpedo mounts).</summary>
     public int Battery { get; init; }
+    /// <summary>The rangefinder in its gunhouse, its base, m (0 none; fire-control.md F4b), and the eye it ranges through
+    /// (Eyes; -1 none).</summary>
+    public double RangefinderM { get; init; }
+    public int RangefinderEye { get; init; }
     /// <summary>Working the guns (NaN on torpedo mounts): seconds from one round to the next per gun, training and
     /// elevating rates in degrees a second, and the highest elevation, which sets the gun's range. The designer's to
     /// give; placeholders until then (<see cref="DesignerPlaceholders"/>).</summary>
@@ -464,6 +468,9 @@ public readonly record struct BatteryRow
     public FireControlLevel Level { get; init; }
     /// <summary>Its fire control's fit under its directors; local control fires at <see cref="FireControlPresets.Local"/>.</summary>
     public FireControlFit Fit { get; init; }
+    /// <summary>The make of its gunhouses' rangefinders: its fit's optics, directors or not (fire-control.md F4b: a turret
+    /// in local control ranges with its own).</summary>
+    public OpticsRow TurretOptics { get; init; }
 
     /// <summary>The gun's full-salvo pattern, its 100% spread in range as a percentage of the range (fire_control_ref.py
     /// Gun.pattern_pct): the shells' own dispersion, before any fire control. A placeholder until the designer gives it

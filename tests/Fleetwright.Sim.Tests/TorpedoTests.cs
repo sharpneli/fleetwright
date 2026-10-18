@@ -229,9 +229,10 @@ public class TorpedoTests(ITestOutputHelper output)
     {
         var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "flotilla.json"));
         var designs = new[] { Path.Combine(Fleet.Shipgen, "designs") };
-        // the test needs an attack made, and whether the boats get in is chance: seed 5 makes it in about 19 minutes (8
-        // seeds tried 2026-10-16, docs/battle/shells-armour-damage.md S2: 7 of them do; the scenario's own 9 doesn't)
-        const ulong seed = 5;
+        // the test needs an attack made, and whether the boats get in is chance: seed 2 makes it in about 18 minutes (12
+        // seeds tried 2026-10-18 once the battleships' turrets ranged with their own rangefinders in local control,
+        // docs/battle/fire-control.md F4b: 5 of them do, 4 of the first 8 against 7 on 2026-10-16)
+        const ulong seed = 2;
         var w = new World(s.Start, seed, Settings);
         var ai = new AiSystem(w);
         var classes = ScenarioLoader.RequestClasses(s, w.Ships.Registry, designs);

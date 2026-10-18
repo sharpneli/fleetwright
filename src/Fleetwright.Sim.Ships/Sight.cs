@@ -2,7 +2,7 @@ using Fleetwright.Shipgen;
 namespace Fleetwright.Sim.Ships;
 
 /// <summary>What an observation post is: a lookout at a masthead, a director (with its rangefinder), the bridge, aft
-/// control, the conning tower's slits, or a lookout in a mast's top.</summary>
+/// control, the conning tower's slits, a lookout in a mast's top, or a rangefinder in a gunhouse's hood.</summary>
 public enum EyeKind : byte
 {
     Masthead,
@@ -11,6 +11,7 @@ public enum EyeKind : byte
     AftControl,
     ConningTower,
     Top,
+    Turret,
 }
 
 /// <summary>An observation post (docs/battle/plan.md step 3.2a): its component, where it is (ship-local x, y), its eye's
@@ -24,8 +25,8 @@ public readonly record struct EyeRow(EyeKind Kind, int Component, double X, doub
     /// <summary>Whether it can see along a bearing relative to the bow, degrees clockwise.</summary>
     public bool Sees(double relativeDeg) => (Blind & (1UL << Sight.Sector(relativeDeg))) == 0;
 
-    /// <summary>Whether it takes ranges with a rangefinder: a director's, of a make that's read.</summary>
-    public bool Ranges => Kind == EyeKind.Director && RangefinderM > 0 && Optics.Reads;
+    /// <summary>Whether it takes ranges with a rangefinder: a director's or a gunhouse's, of a make that's read.</summary>
+    public bool Ranges => Kind is EyeKind.Director or EyeKind.Turret && RangefinderM > 0 && Optics.Reads;
 }
 
 /// <summary>What a ship shows to an observer (docs/battle/plan.md step 3.2a): its highest point over the waterline at
