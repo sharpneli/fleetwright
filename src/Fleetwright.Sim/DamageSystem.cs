@@ -332,6 +332,7 @@ public sealed class DamageSystem : IWorldSystem
     {
         Flood(cls);
         path.Reserve(cls.Solids.Solids.Length);
+        bender.Reserve(cls.Solids.Solids.Length);
         if (bearings.Length < cls.Mounts.Length)
             bearings = new double[Math.Max(cls.Mounts.Length, bearings.Length * 2)];
     }

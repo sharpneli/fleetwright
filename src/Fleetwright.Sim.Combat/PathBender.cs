@@ -18,6 +18,10 @@ public sealed class PathBender
     /// keeps it as it is until the hit's resolved) and the sea in the ship's frame.</summary>
     public void Set(double[] bearingsDeg, int count, in Waterplane sea) => (bearings, mounts, water) = (bearingsDeg, count, sea);
 
+    /// <summary>Room for a bend through a class with this many solids, made when the class first comes into the world
+    /// (a first glance in the middle of a fight would otherwise grow the leg then).</summary>
+    public void Reserve(int solids) => leg.Reserve(solids);
+
     /// <summary>Bend the path at T, keeping its first <paramref name="keep"/> crossings, onto the unit direction d from the
     /// path's point there: false (the path as it was) when it has all its legs.</summary>
     public bool Bend(ShipClass c, HitPath path, int keep, double t, P3 d)
