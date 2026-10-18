@@ -95,8 +95,8 @@ public static class Program
         shipgen fc-converge [--runs N] [--ref]
             the computers alone (the research's tables 5 and 12): each preset's predicted-position error over a 25 s time of
             flight against a crossing target that turns 45° at 300 s, or circles at 1°/s; --ref runs fire_control_ref.py's beside
-        shipgen fc-ladder [--runs N] [--ref]
-            each preset in the research's ladder (table 6: day, long range, haze, night) and against a manoeuvring target
+        shipgen fc-levels [--runs N] [--ref]
+            each preset in the research's table of levels (table 6: day, long range, haze, night) and against a manoeuvring target
             (table 11: steady, zigzag, circles)
         shipgen fc-history [--runs N] [--case TEXT] [--ref]
             the historical record's cases (fire-control.md, "The yardstick"), each at its recorded range, weather and target
@@ -239,8 +239,8 @@ public static class Program
                     a.Get("watch")?.Split(',').Select(int.Parse).ToArray(),
                     double.Parse(a.Get("speed", "0")!, System.Globalization.CultureInfo.InvariantCulture)),
                 "duel" => DuelCmd(a),
-                "fc-converge" => FcLadder.Converge(Settings(a), a.Int("runs", 30), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
-                "fc-ladder" => FcLadder.Run(Settings(a), a.Int("runs", 20), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
+                "fc-converge" => FcLevels.Converge(Settings(a), a.Int("runs", 30), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
+                "fc-levels" => FcLevels.Run(Settings(a), a.Int("runs", 20), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "fc-history" => FcHistory.Run(Settings(a), a.Int("runs", 12), a.Get("case"), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "hits" => HitsBench.Run(a.Positional.ElementAtOrDefault(0) ?? "dreadnought", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),

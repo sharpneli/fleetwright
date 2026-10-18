@@ -2,7 +2,7 @@
 Status: **agreed with the user 2026-10-17** ("Decided" below; radar moved out); F0 and F1 done 2026-10-18    Updated: 2026-10-18
 
 The fine-tune pass for the **Fire control** link of `fighting.md` 4.5 ("the trackers by era ... the clocks' limits ...
-the full ladder of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
+the full set of levels, radar as a sensor, night ... splash confusion ... the designer emitting levels and sensors,
 rangefinders among them as parts ... the spotting constant tuned ... the Earth's turning ... point-blank laying by sight,
 and a ladder step scaled to the range"). Its research is `research/simulation/fire-control-research.md` (the synthesis,
 with `fire_control_ref.py`), `fire-control-designer.md` (tech values to design to combat numbers, `designer_ref.py`),
@@ -70,7 +70,7 @@ pass makes each system do what it could and couldn't do, from the physical fit t
 - **Templates like the machinery's and the shells'.** A tech block of physical numbers with a name for a label, written
   to a catalogue by `shipgen templates` from the research's tables; a design carries the blocks it uses; the tech tree
   filters them later. **The levels become presets**: named combinations of blocks that reproduce the reference's
-  calibrated ladder, so "level 3" is a template, not a type.
+  calibrated levels, so "level 3" is a template, not a type.
 - **History is the yardstick, not today's model** (the user, 2026-10-17). Hit rates are expected to move, against
   manoeuvring targets a long way: that's the point of the pass. Each step is judged by the historical record below,
   never by how close it stays to the current implementation or to `fire_control_ref.py`. The reference code is a check
@@ -214,7 +214,7 @@ updates this doc and `fighting.md`.
 - `shipgen fc-history`: the yardstick's cases as scenarios of their own (the guns, the fit, the range, the weather, the
   target's behaviour as the record describes it: steady, zigzagging, turning away, chasing salvos), each at its recorded
   range, printed beside the record's band. **This is the bench every later step answers to.**
-- `shipgen fc-converge`, `fc-ladder`: the mechanisms alone (the research's tables 5, 6, 11 and 12: settling, recovery
+- `shipgen fc-converge`, `fc-levels`: the mechanisms alone (the research's tables 5, 6, 11 and 12: settling, recovery
   from a 45° turn, zigzag and circles), with `fire_control_ref.py` run on the same cases beside them, to check each
   tracker fails where its machine failed. Its hit rates are not targets.
 - **Where today's model stands:** all of it run once and recorded here against the record, so the size of the
@@ -234,10 +234,10 @@ updates this doc and `fighting.md`.
     night) or `--at ISO`, `--combat X` (1 for practice) and `--fit design|0-8|NAME` (`--level` kept). A steady duel gives
     the old duel's numbers exactly (3.1%, 48 of 1,560). Its aim error is against the target's course and speed, so it
     understates a circling target's; `fc-converge` takes where the target went.
-  - **`shipgen fc-converge`** (tables 5 and 12), **`fc-ladder`** (tables 6 and 11), **`fc-history`** (the yardstick) with
+  - **`shipgen fc-converge`** (tables 5 and 12), **`fc-levels`** (tables 6 and 11), **`fc-history`** (the yardstick) with
     `--runs N`; `--ref` runs the reference's same table after (`research/simulation/fc_tables.py`, python with numpy).
     About 10, 13 and 18 s.
-  - **Departures from the research's cases:** the ladder's long-range column is at 22 kyd, since Queen Elizabeth's 20°
+  - **Departures from the research's cases:** the levels' table's long-range column is at 22 kyd, since Queen Elizabeth's 20°
     mounts don't reach the reference's 25 kyd (its 15" has 30°); the converge target is a battlecruiser, the only
     25 kn ship of the size; the sim's ship turns as a ship does, the reference's at once. Haze is the visibility only,
     and smoke, splash confusion, the sea and low contrast aren't in the sim yet: each history case names what it misses.
@@ -295,7 +295,7 @@ weather** (1.6x, want 0.7-1.5).
 - **Table 12, a circle at 1°/s:** preset 3 matches the reference (1,022 against 1,103 yd at +120 s); the later presets
   keep a standing error (538-882 yd at +120 s) where the reference's turn and acceleration filters (4t, 7, 8) follow
   it down to 19-117 yd: F2's `ct` and `ca`.
-- **Table 6, the ladder:** day 16 kyd zigzag 0.8, 2.1, 2.7, 3.4, 4.2, 5.6, 6.0, 10.1, 9.9% for presets 0-8 against the
+- **Table 6, the levels:** day 16 kyd zigzag 0.8, 2.1, 2.7, 3.4, 4.2, 5.6, 6.0, 10.1, 9.9% for presets 0-8 against the
   reference's 0.8, 2.9, 4.9, 7.0, 8.7, 12.5, 10.9, 17.0, 23.3%: about half from preset 2 up (the single biased
   rangefinder again); haze 13 kyd in the same order. Night: no solution for every preset in both (the reference's radar
   levels 6-8 do; radar is F9's).

@@ -1035,7 +1035,7 @@ numbers before and after against the anchors. The list, by link, with where the 
   - the trackers by era: the Dreyer's polar drift, the Argo's true course, the AFCT's turn setting;
   - the clocks' limits (the Dreyer's ±1,200 yd/min);
   - rate error growing with target speed;
-  - the full ladder of levels (0 to 8 and L), radar as a sensor, night (no solution without light);
+  - the full set of levels (0 to 8 and L), radar as a sensor, night (no solution without light);
   - splash confusion with several ships on one target, and dyed shells (with whose splash it is, below);
   - the designer emitting levels and sensors (`fire-control-designer.md`), rangefinders among them as parts (director,
     spotting top, turrets), each with its base (decided after 4.2b);
@@ -1048,7 +1048,7 @@ numbers before and after against the anchors. The list, by link, with where the 
   their real heights, a tracker per kind of computer, fire discipline and spotting by the navy's rules. F0 done
   2026-10-18: each battery fires from a fit (optics, computer, mounts) and fire-control units with their instruments;
   a director holds one target. F1 done 2026-10-18: `duel` takes target and own policies, weather, night, practice and a
-  fit; `fc-converge`, `fc-ladder` and `fc-history` (the record, the bench every later step answers to), with the
+  fit; `fc-converge`, `fc-levels` and `fc-history` (the record, the bench every later step answers to), with the
   reference's tables beside them (`--ref`); where today's model stands is recorded in `fire-control.md` F1.
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;

@@ -9,10 +9,10 @@ namespace Fleetwright.Shipgen.Cli;
 /// <summary>The fire-control mechanisms alone (docs/battle/fire-control.md F1), the research's tables on the sim's
 /// presets (fire-control-research.md; fire_control_ref.py's tables 5, 12, 6 and 11): <c>shipgen fc-converge</c>, how
 /// far each computer's prediction is off over a time of flight as it settles and after the target turns or circles,
-/// and <c>shipgen fc-ladder</c>, each preset's hits in the ladder's conditions and against a manoeuvring target. With
+/// and <c>shipgen fc-levels</c>, each preset's hits in the levels' table's conditions (day, long range, haze, night) and against a manoeuvring target. With
 /// <c>--ref</c> the reference's own tables follow. They check that each machine fails where it failed; their hit rates
 /// are not targets (the plan's principles).</summary>
-static class FcLadder
+static class FcLevels
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     const double Tof = 25;
@@ -104,7 +104,7 @@ static class FcLadder
         return [[.. miss.Select(FcBench.Rms)], [.. rate.Select(FcBench.Rms)]];
     }
 
-    static readonly (string Name, Func<FcCase, FcCase> With)[] LadderColumns =
+    static readonly (string Name, Func<FcCase, FcCase> With)[] LevelColumns =
     [
         ("Day 16 kyd, zigzag", c => c with { RangeM = 16 * FcBench.Kyd, Behaviour = Policy.Zigzag(20, 240), VisibilityM = 25_000 }),
         ("Day 22 kyd, steady", c => c with { RangeM = 22 * FcBench.Kyd, VisibilityM = 35_000 }),   // the reference's 25 kyd is past her 20° mounts
@@ -120,7 +120,7 @@ static class FcLadder
         ("circle 1.0°/s", Policy.Circle(1, 240)),
     ];
 
-    /// <summary>Table 6 (the ladder's conditions) and table 11 (target motion against the computer): 8 × 15" on a
+    /// <summary>Table 6 (day, long range, haze, night) and table 11 (target motion against the computer): 8 × 15" on a
     /// battleship at 25 kn abeam on a parallel course, 15 minutes, battle's errors.</summary>
     public static int Run(SimSettings settings, int runs, string? refRoot, Func<string, ShipClass> cls)
     {
@@ -130,19 +130,19 @@ static class FcLadder
 
         var cases = new List<FcCase>();
         for (int l = 0; l < levels; l++)
-            foreach (var (_, with) in LadderColumns)
+            foreach (var (_, with) in LevelColumns)
                 cases.Add(with(Base(l)));
         var res = FcBench.Runs(cases, settings, runs, 1);
-        Console.WriteLine($"Table 6: the ladder: Queen Elizabeth (8 x 15\") on Queen Elizabeth at 24 kn abeam, parallel, 15 min ({runs} runs a cell)");
+        Console.WriteLine($"Table 6: the levels: Queen Elizabeth (8 x 15\") on Queen Elizabeth at 24 kn abeam, parallel, 15 min ({runs} runs a cell)");
         Console.WriteLine("cell = hit % / straddle % / median s to the first hit after the track. Haze is the visibility only (the rangefinders'");
         Console.WriteLine("haze and the smoke's obscuring come with F5); night is a December night's dark, as the sighting model sees it.");
-        Console.WriteLine($"  {"preset",-24}" + string.Concat(LadderColumns.Select(c => $"{c.Name,24}")));
+        Console.WriteLine($"  {"preset",-24}" + string.Concat(LevelColumns.Select(c => $"{c.Name,24}")));
         for (int l = 0; l < levels; l++)
         {
             string row = "";
-            for (int k = 0; k < LadderColumns.Length; k++)
+            for (int k = 0; k < LevelColumns.Length; k++)
             {
-                var st = FcStats.Of(res[l * LadderColumns.Length + k], 15);
+                var st = FcStats.Of(res[l * LevelColumns.Length + k], 15);
                 row += st.Shells == 0 ? $"{"no solution",24}" : $"{$"{st.HitPct.ToString("0.0", Inv)} / {st.StraddlePct:0} / {FcBench.F(st.FirstHitS)}",24}";
             }
             Console.WriteLine($"  {Name(l),-24}{row}");
@@ -172,7 +172,7 @@ static class FcLadder
             .Select(x => string.Format(Inv, "{0} at {1:0.00}°/s", x.c.Name, circling[x.k].Average()))));
         if (refRoot is not null)
         {
-            FcReference.Run(refRoot, "ladder", runs);
+            FcReference.Run(refRoot, "levels", runs);
             FcReference.Run(refRoot, "turning", runs);
         }
         return 0;
