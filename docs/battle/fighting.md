@@ -1073,7 +1073,8 @@ numbers before and after against the anchors. The list, by link, with where the 
   from the computer's own doubt, pyramiding as the crew's error; F6d done 2026-10-18: the rate of fire from its parts
   (ready-use rounds then the hoists, the crew's battle factor, the layers' settle) and independent fire for
   quick-firers (F6 complete); F6e (the hit-chance floor and the magazine's reserve) moved to F10, beside the estimate
-  it reads.
+  it reads. A short-range bug hunt (2026-10-18): the bracket follows the solution it corrects, the layers lay their own
+  line with the computer's lead, point blank laid by sight (F7's, taken in), the trained eye at 12.5%.
 - **Ship motion** (`ship-motion/ship-motion-gunnery-research.md` §7.7, in its order):
   - a roll phase per ship from `RollPeriodS` and the sea, with firing on the roll and a once-a-roll rate;
   - laying error `√(base² + (τ·ω)²)`;

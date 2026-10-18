@@ -168,12 +168,15 @@ public static class FireControl
 
         public readonly double HiAt(long ms, double driftMs) => Hi + driftMs * Math.Max(ms - HiMs, 0) / 1000.0;
 
-        /// <summary>The correction to fire with now: the middle of a closed bracket, a step beyond the bound of an open one,
-        /// none before the first spot.</summary>
+        /// <summary>The correction to fire with now: none while the solution it corrects lies inside the bracket (the spots
+        /// say nothing against it: a computer that took a new range in stands, the bug hunt of 2026-10-18), else the middle
+        /// of a closed bracket or a step beyond the bound of an open one.</summary>
         public readonly double Aim(long ms, double driftMs)
         {
             double lo = LoAt(ms, driftMs), hi = HiAt(ms, driftMs);
-            return Closed ? 0.5 * (lo + hi) : !double.IsInfinity(Lo) ? lo + Step : !double.IsInfinity(Hi) ? hi - Step : 0;
+            if (lo < 0 && hi > 0)
+                return 0;
+            return Closed ? 0.5 * (lo + hi) : !double.IsInfinity(Lo) ? lo + Step : hi - Step;
         }
 
         /// <summary>A spot of a salvo fired with the correction <paramref name="at"/> taken in at a time: a straddle sets
@@ -203,6 +206,9 @@ public static class FireControl
             }
             (Lo, Hi, LoMs, HiMs) = (lo, hi, ms, ms);
         }
+
+        /// <summary>The bracket moved by dr, m (the solution it's a correction to moved the other way).</summary>
+        public void Shift(double dr) => (Lo, Hi) = (Lo + dr, Hi + dr);
 
         /// <summary>The bracket opened round its middle to at least a width (the solution disturbed: own ship turning, the
         /// target seen to turn).</summary>

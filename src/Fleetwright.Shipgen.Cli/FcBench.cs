@@ -318,6 +318,9 @@ sealed record FcStats
     public double StraddleSalvo, ShellsToStraddle, RangingShellPct, RangingIntervalS, EffectIntervalS, ShellsPerHit;
     /// <summary>Rounds a gun a minute from the first salvo to the end, and that against the drill's (60 / the reload), %.</summary>
     public double RoundsPerGunMin, DrillPct;
+    /// <summary>Shells and hits by the range they were fired at, in <see cref="RangeBandsKm"/>.</summary>
+    public int[] BandShells = new int[RangeBandsKm.Length - 1], BandHits = new int[RangeBandsKm.Length - 1];
+    public static readonly double[] RangeBandsKm = [0, 1, 2, 3, 5, 8, 12, 16, 22, double.PositiveInfinity];
     /// <summary>The spotter's calls against the truth: the share of seen spots he called straddles, and of those the share
     /// that were; of the salvos that truly straddled, the share he called so.</summary>
     public double CalledStraddlePct, CalledTruePct, TrueCalledPct;
@@ -363,6 +366,10 @@ sealed record FcStats
                 shellsToStraddle.Add(salvos.Take(straddle + 1).Sum(s => s.Shells));
             }
             rangingShells += t.RangingShells;
+            foreach (var s in salvos)
+                for (int k = 0; k < RangeBandsKm.Length - 1; k++)
+                    if (s.RangeM / 1000 >= RangeBandsKm[k] && s.RangeM / 1000 < RangeBandsKm[k + 1])
+                        (st.BandShells[k], st.BandHits[k]) = (st.BandShells[k] + s.Shells, st.BandHits[k] + s.Hits);
             var fell = salvos.ToDictionary(s => s.FiredMs);
             foreach (var p in r.Spots)
                 if (p.Seen && fell.TryGetValue(p.FiredMs, out var sv))
@@ -445,6 +452,9 @@ sealed record FcStats
             CalledStraddlePct, FcBench.F(CalledTruePct), FcBench.F(TrueCalledPct));
         yield return string.Format(inv, "  the rate: {0} rounds a gun a minute from the first salvo, {1}% of the drill's", FcBench.F(RoundsPerGunMin, "0.00"),
             FcBench.F(DrillPct));
+        var bands = Enumerable.Range(0, BandShells.Length).Where(k => BandShells[k] > 0).Select(k => string.Format(inv, "{0}-{1} km {2:0.0}% ({3})",
+            RangeBandsKm[k], double.IsInfinity(RangeBandsKm[k + 1]) ? "" : RangeBandsKm[k + 1].ToString(inv), 100.0 * BandHits[k] / BandShells[k], BandShells[k]));
+        yield return "  hits by range fired at: " + string.Join(", ", bands);
     }
 }
 

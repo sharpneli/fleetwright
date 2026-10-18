@@ -98,8 +98,16 @@ public sealed class GunnerySystem : IWorldSystem
         /// <summary>Its fire discipline (F6): the phase, the spots' bracket, and the computer's doubt of the range rate
         /// along the line of fire (m/s: the bracket widens at it).</summary>
         public FirePhase Phase;
+        /// <summary>Whether a sensor of it saw the target on its last second (its layers lay their line on her then), and
+        /// whether she's inside its point-blank range (laid by sight at her present range, no ranging), with the present
+        /// range's error by sight its layers will lay at for the next salvo (m).</summary>
+        public bool Sees, PointBlank;
+        public double SightZ;
         public FireControl.Bracket Bracket;
         public double DriftMs;
+        /// <summary>How far the computer's solution has moved in range by its readings since the engagement began, m (the
+        /// bracket moves the other way: <see cref="Rebase"/>).</summary>
+        public double Shift;
         /// <summary>The computer's doubt of the target's position along the line of fire (m), and the range to its aim
         /// (m), for the first step.</summary>
         public double PosSigmaM, RangeM;
@@ -170,6 +178,10 @@ public sealed class GunnerySystem : IWorldSystem
         public double CorrR, CorrD, PatternM, RangeM, SpotSigmaM, Common, SumY, MinX, MaxX, TargetLengthM, SumX, AimErrM, AimErrAcrossM;
         public long FiredMs;
         public FirePhase Phase;
+        /// <summary>Its battery's <see cref="Fc.Shift"/> when it was fired, and whether it was laid point blank (its fall
+        /// says nothing to the bracket: its range was the layers' own).</summary>
+        public double Shift;
+        public bool PointBlank;
         /// <summary>Its ladder's step off the bracket's aim, m (in its correction).</summary>
         public double LadderM;
         public Vec3d U, W;
@@ -629,7 +641,7 @@ public sealed class GunnerySystem : IWorldSystem
             double zr = Math.Max(range + bias + sr * r.NextGaussian(), 100), zb = brg + double.RadiansToDegrees(sb * r.NextGaussian());
             var (z, r11, r12, r22) = Track.Reading(at, zr, zb, sr, sb);
             if (fc.PendCount == PendingCap)
-                PopReading(ref fc, f, target, now);   // the computer's queue is full: the oldest goes in now
+                PopReading(ref fc, f, target, now, ship.Position, ownV);   // the computer's queue is full: the oldest goes in now
             int at2 = f * PendingCap + (fc.PendHead + fc.PendCount++) % PendingCap;
             // the computer takes every instrument's cut from one reference point, the ship's (the tables' parallax
             // correction: a director forward and one aft see the target on bearings tens of mils apart close in)
@@ -643,7 +655,7 @@ public sealed class GunnerySystem : IWorldSystem
 
         // the computer: readings that have come through
         while (fc.PendCount > 0 && pending[f * PendingCap + fc.PendHead].ArriveMs <= now)
-            PopReading(ref fc, f, target, now);
+            PopReading(ref fc, f, target, now, ship.Position, ownV);
         if (!fc.Tracking)
         {
             fc.State = BatteryState.Tracking;   // its first reading still on its way
@@ -653,7 +665,9 @@ public sealed class GunnerySystem : IWorldSystem
         {
             // a sailor looks at her again: a fresh guess at her course and speed
             var rg = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0xE7Fu).Derive((ulong)now);
+            double before = SolutionRangeM(fc, now, ship.Position, ownV);
             fc.Tracker.Rejudge(Guess(computer, target.Position, target.Forward * target.Speed, ref rg));
+            Rebase(ref fc, SolutionRangeM(fc, now, ship.Position, ownV) - before);
             fc.JudgeMs = now + (long)(computer.RejudgeS * 1000);
         }
 
@@ -662,7 +676,8 @@ public sealed class GunnerySystem : IWorldSystem
         var mounts = cls.Links(row.Mounts);
         var table = shells.Ballistics[fc.Table];
         var muzzle = Muzzle(cls, frame, mounts[0]);
-        var aim = Predict(ref fc, table, muzzle, now, ship.Position, ownV);
+        fc.Sees = sees;
+        var aim = Aim(ref fc, f, table, muzzle, now, ship.Position, ownV, target, crew);
         bool laid = FireControl.Solve(table, muzzle, ship.Forward * ship.Speed, aim, out var lay, fc.ElevationDeg);
         double bearing = Mod((laid ? Earth.Heading(muzzle, lay.GunHorizontal) : Earth.Bearing(ship.Position, aim)) - ship.HeadingDeg);
         double elevation = laid ? lay.GunElevationDeg : double.PositiveInfinity;
@@ -700,6 +715,8 @@ public sealed class GunnerySystem : IWorldSystem
         // are (or a half of them, by the discipline)
         var dis = settings.FireDisciplines[disciplines[ship.Side]];
         bool independent = Independent(dis, cls, mounts, fc.RangeM);
+        if (fc.PointBlank && fc.Phase == FirePhase.Ranging)
+            fc.Phase = FirePhase.Effect;   // point blank: no ranging, fire for effect
         bool ranging = fc.Phase == FirePhase.Ranging && !independent, waiting = fc.InFlight > 0 && now < fc.WaitMs;
         if (ranging && dis.LadderStepM > 0 && fc.Rung >= dis.InFlight && !waiting)
             fc.Rung = 0;   // the ladder's falls all spotted: the next group
@@ -763,7 +780,7 @@ public sealed class GunnerySystem : IWorldSystem
 
     /// <summary>The oldest reading into the computer: the first starts the track, from the eye's guess at the target's
     /// course and speed.</summary>
-    void PopReading(ref Fc fc, int f, in ShipState target, long now)
+    void PopReading(ref Fc fc, int f, in ShipState target, long now, Vec3d ownP, Vec3d ownV)
     {
         ref readonly var r = ref pending[f * PendingCap + fc.PendHead];
         var computer = fc.Fit.Computer;
@@ -776,9 +793,33 @@ public sealed class GunnerySystem : IWorldSystem
             fc.JudgeMs = now + (long)(computer.RejudgeS * 1000);
         }
         else
+        {
+            double before = SolutionRangeM(fc, now, ownP, ownV);
             fc.Tracker.Fix(computer, r);
+            Rebase(ref fc, SolutionRangeM(fc, now, ownP, ownV) - before);
+        }
         fc.PendHead = (fc.PendHead + 1) % PendingCap;
         fc.PendCount--;
+    }
+
+    /// <summary>The range the computer's solution puts the target at when a shell fired now would fall, m.</summary>
+    double SolutionRangeM(in Fc fc, long now, Vec3d ownP, Vec3d ownV)
+    {
+        fc.Tracker.At(fc.Fit.Computer, now + (long)(fc.TofS * 1000), now, ownP, ownV, out var p, out _);
+        return Earth.Distance(ownP, p);
+    }
+
+    /// <summary>The computer's solution moved by a reading (or a judgement's new look) by dr in range: the spots' bracket
+    /// and the correction in force move the other way, so they keep saying where the target is (they're corrections to
+    /// the solution: a solution that jumps 900 m on an eye's range would otherwise carry the old corrections with it, and
+    /// put the salvo behind the ship), and the salvos in the air are spotted against what their correction now means.</summary>
+    static void Rebase(ref Fc fc, double dr)
+    {
+        if (!(Math.Abs(dr) > 1e-6))
+            return;
+        fc.Bracket.Shift(-dr);
+        fc.CorrR -= dr;
+        fc.Shift += dr;
     }
 
     /// <summary>The eye's guess at a target's velocity: its speed and course, each off by the computer's prior (1 sigma).</summary>
@@ -787,6 +828,57 @@ public sealed class GunnerySystem : IWorldSystem
         double speed = velocity.Length, course = speed > 1e-6 ? Earth.Heading(position, velocity) : 0;
         double ds = r.NextGaussian() * c.PriorKn * Handling.MsPerKnot, dc = r.NextGaussian() * c.PriorDeg;
         return Earth.Forward(position, course + dc) * Math.Max(speed + ds, 0);
+    }
+
+    /// <summary>Where a battery's guns are laid (the short-range bug hunt, 2026-10-18; fire-control.md F7's point blank
+    /// taken in): the line is the layers' own, laid on the target as they see her now, with the computer's lead over the
+    /// time of flight on it (its estimate of her velocity: speed across is what it gives the sights); the range is the
+    /// computer's, which the spots correct. Point blank, where the danger space of her side covers twice the error of her
+    /// present range by sight (the battery's first instrument, or the layer's eye, with the computer's residual ballistic
+    /// bias: what spotting would take off), the range is that present range,
+    /// laid on the middle of her side, and there's no ranging (fire-control-research/emergency-eyeball.md §6: "a hit is
+    /// essentially guaranteed if the line is right"). A battery that sees nothing lays where its computer says.</summary>
+    Vec3d Aim(ref Fc fc, int f, BallisticTable table, Vec3d muzzle, long now, Vec3d ownP, Vec3d ownV, in ShipState target, in GunneryCrew crew)
+    {
+        var c = Predict(ref fc, table, muzzle, now, ownP, ownV);
+        fc.PointBlank = false;
+        if (!fc.Sees || double.IsNaN(fc.ElevationDeg))
+            return c;
+        fc.Tracker.At(fc.Fit.Computer, now, now, ownP, ownV, out _, out var v);
+        var lead = (target.Position + v * fc.TofS).Normalized() * Earth.Radius;
+        double range = Earth.Distance(ownP, c), present = Earth.Distance(ownP, lead);
+        var tc = target.Handling.Class;
+        double side = Math.Max(tc.Hull.DeckTop(0) - tc.Vertical.Waterline, 1);
+        // her danger space at her present range (not the computer's: a clock run past her closest approach has her short)
+        double h0 = muzzle.Length - Earth.Radius, e = table.ElevationFor(present, h0, 1, fc.ElevationDeg);
+        if (double.IsNaN(e))
+            return c;
+        double fall = table.Fall(e, h0).FallDeg;
+        double danger = side / Math.Tan(double.DegreesToRadians(Math.Max(fall, 0.05)));
+        // the error of laying at her present range unspotted: the sight's, and the computer's residual ballistic bias (the
+        // propellant, the air, the gun's wear; small at short range: a share of the range)
+        var (sigma, bias) = PresentRangeError(fc, f, crew, present);
+        double resid = fc.Fit.Computer.ResidPct / 100 * present;
+        if (danger >= 2 * Math.Sqrt(sigma * sigma + bias * bias + resid * resid))
+            (fc.PointBlank, range) = (true, Math.Max(present + 0.5 * danger + bias + sigma * fc.SightZ, 50));
+        var p = ownP;
+        var fw = Earth.Forward(p, Earth.Bearing(ownP, lead));
+        Earth.Advance(ref p, ref fw, range);
+        return p;
+    }
+
+    /// <summary>The error of a battery's present range by sight (point blank): its first instrument's, or its layer's eye's
+    /// (1 sigma, m), and that instrument's own bias, m.</summary>
+    (double Sigma, double Bias) PresentRangeError(in Fc fc, int f, in GunneryCrew crew, double rangeM)
+    {
+        if (fc.SensorCount == 0)
+            return (settings.EyeRangeShare * rangeM, 0);
+        ref readonly var s = ref sensors[f * MaxSensors];
+        var o = fc.Fit.Optics;
+        if (!Ranges(o, s))
+            return (settings.EyeRangeShare * rangeM * crew.Operator * settings.GunneryCombat, s.Bias * settings.EyeRangeBiasShare * rangeM);
+        double unit = FireControl.RangefinderUnitM(s.BaseM, o, FireControl.Magnification(o, s.Support, s.HeightM), rangeM);
+        return (crew.Operator * settings.GunneryCombat * unit, s.Bias * settings.RangefinderBiasUnits * unit);
     }
 
     /// <summary>Where the track says the target will be when a shell fired now from a muzzle comes down: the time of
@@ -877,8 +969,8 @@ public sealed class GunnerySystem : IWorldSystem
             if (lead < 0)
                 lead = loads.Loads(fc.Battery)[fireLoad[j]].ShellType;
         }
-        if (n == 0)
-            return;
+        if (n == 0 || need < int.MaxValue && n < need)
+            return;   // none, or a ranging salvo short of its guns (one not laid at the instant): the next second times it again
         if (need < int.MaxValue || quota < int.MaxValue)
             fc.Group = next % mounts.Length;
         if (quota < int.MaxValue && !independent)
@@ -895,7 +987,8 @@ public sealed class GunnerySystem : IWorldSystem
         var velocity = ship.Forward * ship.Speed;
         var muzzle0 = Muzzle(cls, frame, mounts[0]);
         double h0 = muzzle0.Length - Earth.Radius;
-        var p = Predict(ref fc, table, muzzle0, now, ship.Position, velocity);
+        var p = Aim(ref fc, f, table, muzzle0, now, ship.Position, velocity, store[tslot], crew);
+        bool pointBlank = fc.PointBlank && phase == FirePhase.Effect;   // the phase as the salvo was thinned (Run: point blank fires for effect)
         var up = p.Normalized();
         var line = p - ship.Position;
         var u = (line - up * Vec3d.Dot(line, up)).Normalized();   // along the line of fire, at the target
@@ -909,14 +1002,14 @@ public sealed class GunnerySystem : IWorldSystem
         // the range correction from the spots' bracket (a ladder's salvo stepped about it), then the salvo's common error
         // (fire_control_ref.py engage(), "fire")
         fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
-        double ladder = phase == FirePhase.Ranging && dis.LadderStepM > 0 ? (fc.Rung - 0.5 * (dis.InFlight - 1)) * dis.LadderStepM : 0;
+        double ladder = phase == FirePhase.Ranging && dis.LadderStepM > 0 && !pointBlank ? (fc.Rung - 0.5 * (dis.InFlight - 1)) * dis.LadderStepM : 0;
         var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive(0x5A1u).Derive((ulong)fc.Salvos);
         double layRad = mount.LayMil * FireControl.Mil * crew.Lay * combat;
         double eEl = mount.DirectorFiring ? r.NextGaussian() * layRad * perRad : 0, eTr = mount.DirectorFiring ? r.NextGaussian() * layRad * range : 0;
         bool turning = Math.Abs(double.RadiansToDegrees(ship.YawRate)) > settings.OwnTurnYawDegS;
         double kickR = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0, kickL = turning ? r.NextGaussian() * computer.OwnTurnKickM : 0;
         double eSr = r.NextGaussian() * combat * computer.SalvoPct / 100 * range, eSd = r.NextGaussian() * combat * mount.SalvoDeflMil * FireControl.Mil * range;
-        double dr = fc.CorrR + ladder + eEl + eSr + fc.BiasR * computer.ResidPct / 100 * range + kickR;
+        double dr = (pointBlank ? 0 : fc.CorrR + ladder) + eEl + eSr + fc.BiasR * computer.ResidPct / 100 * range + kickR;
         double dl = fc.CorrD + eTr + eSd + fc.BiasD * computer.DeflBiasMil * FireControl.Mil * range + kickL;
         var (sr, sd) = FireControl.Dispersion(row.PatternPct, range + dr, n, settings.DispersionDeflectionRatio);
         if (!mount.DirectorFiring)
@@ -938,7 +1031,8 @@ public sealed class GunnerySystem : IWorldSystem
             Alive = true, Generation = sv.Generation + 1, Fc = f, FcGeneration = fc.Generation, Target = fc.Target, CorrR = fc.CorrR + ladder, CorrD = fc.CorrD,
             PatternM = 4 * sr, RangeM = range, SpotSigmaM = spot, Common = 0.5 * spot * r.NextGaussian(), U = u, W = w, MinX = double.MaxValue,
             MaxX = double.MinValue, TargetLengthM = store[tslot].Handling.Class.Silhouette.LengthM, FiredMs = now,
-            AimErrM = Vec3d.Dot(p - truth, u), AimErrAcrossM = Vec3d.Dot(p - truth, w), Phase = phase, LadderM = ladder,
+            AimErrM = Vec3d.Dot(p - truth, u), AimErrAcrossM = Vec3d.Dot(p - truth, w), Phase = phase, LadderM = ladder, Shift = fc.Shift,
+            PointBlank = pointBlank,
         };
         int salvo = shells.NewSalvo();
         for (int j = 0; j < mounts.Length; j++)
@@ -978,6 +1072,7 @@ public sealed class GunnerySystem : IWorldSystem
         }
         fc.Salvos++;
         fc.Shells += sv.Shells;
+        fc.SightZ = r.NextGaussian();   // the next salvo's present range by sight, point blank
         fc.LastSalvoMs = now;
         fc.InFlight++;
         fc.WaitMs = now + (long)(tof * 1000) + settings.SpotDelayMs + settings.RangingWaitMarginMs;
@@ -1090,7 +1185,7 @@ public sealed class GunnerySystem : IWorldSystem
             }
             var sign = sv.Hits > 0 || sv.Over > 0 && sv.Short > 0 ? FireControl.Sign.Straddle : sv.Over > 0 ? FireControl.Sign.Over : FireControl.Sign.Short;
             long now = world.Time.Ms;
-            if (sees)
+            if (sees && !sv.PointBlank)
             {
                 // each spot against the correction its salvo was fired with; a crew may pyramid, putting it on the one in
                 // force (F6: the green most often)
@@ -1098,7 +1193,7 @@ public sealed class GunnerySystem : IWorldSystem
                 var rp = stream.Derive(0x5B09u).Derive((ulong)si).Derive((ulong)sv.Generation);
                 bool pyramid = rp.NextDouble() < settings.GunneryCrews[(int)crews[ship.Side]].Pyramid;
                 double before = fc.CorrR;
-                fc.Bracket.Spot(sign, pyramid ? fc.CorrR + sv.LadderM : sv.CorrR, now, fc.DriftMs, sv.PatternM,
+                fc.Bracket.Spot(sign, pyramid ? fc.CorrR + sv.LadderM : sv.CorrR - (fc.Shift - sv.Shift), now, fc.DriftMs, sv.PatternM,
                     Math.Max(settings.BracketFloorM, settings.BracketFloorPatterns * sv.PatternM));
                 fc.CorrR = fc.Bracket.Aim(now, fc.DriftMs);
                 // the rate spot: two moves the same way, and the range rate takes a share of this one a minute

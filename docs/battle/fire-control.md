@@ -912,6 +912,44 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
 - **F6e (ammunition as a choice): moved to F10** (the user, 2026-10-18: "it suits there"). Its floor reads the
   battery's own estimate of its hits a shell (decision 8), which is F10's `FireEstimate`; a stand-in here would be a
   second implementation of it. F6 is complete without it.
+- **Short range: a bug hunt (2026-10-18).** The user, playing Tsushima, saw Russian cruisers charge the Japanese line
+  and torpedo it, missed again and again at what was nearly point blank, and a gun fire the other way. Benched as a
+  cruiser (Aurora) charging Mikasa, head on, on a diagonal, zigzagging in and crossing close by. What was wrong:
+  - *The bracket was a correction to a solution that moved under it.* A reading that jumped the computer's solution
+    (an eye's range, ±20% once a minute) left the spots' corrections where they were: at 965 m the computer was about
+    right and the correction in force -1,375 m, so the salvo was laid 400 m behind the ship, and the gun swung round and
+    fired the other way. Now each reading's (and each judgement's new look's) move of the solution in range moves the
+    bracket and the correction in force back (`Rebase`), and a salvo in the air is spotted against what its correction
+    means now. And the solution stands while it lies inside the bracket (`Bracket.Aim`): the spots take over only when
+    they say it's wrong, so a computer that takes a good range in isn't held to old corrections.
+  - *The line was the computer's.* A battery laid its present bearing from its track, a reading's latency stale (20 s
+    for the eye): on the diagonal 100-230 m off in deflection at 1.5-2.5 km. The layers laid their own line on the
+    target through their sights, the computer giving the sights the lead (speed across) and the range. Now the line is
+    the target as the layers see her now, with the computer's lead over the time of flight (`Aim`); a battery that sees
+    nothing lays where its computer says.
+  - *Point blank* (F7's item, taken in here): where the danger space of her side (her freeboard over the fall's angle,
+    at her present range) covers twice the error of laying at her present range unspotted (the battery's first
+    instrument or the layer's eye, and the computer's residual ballistic bias), the guns lay at that present range on
+    the middle of her side, fire for effect at once, and their falls don't move the bracket. Mikasa's 12" with the FA
+    are point blank on Aurora to about 3 km, her 6" by eye to about 1 km.
+  - *The eye was untrained.* `EyeRangeShare` was 0.20, the research's untrained number, given to a trained crew (the
+    crews' Operator multiplies it, green ×2): now 0.125 (§3.1: "10-15% practised").
+  - Two small ones on the way: a ranging salvo short of its guns at the instant (one turret off its order by the
+    tolerance) waits for the next second rather than going with half; and the duel prints hits by the range they were
+    fired at.
+  - *Numbers,* Aurora charging a stopped Mikasa at 20 kn (24 runs; hits by the range fired at, before and after):
+    head on, 12" under 1 km 27 to 51%, 6" 30 to 44%; zigzagging in, 12" under 1 km 17 to 60%, 6" 9 to 43%, 6" at 1-2 km 1
+    to 22%; on a diagonal, 12" at 1-2 km 31 to 48%, 6" 3.5 to 19%; crossing at 1.5 km at 22 kn, 12" 12 to 47%, 6" 2.3 to
+    16%. **Left:** the 6" in local control still track with a plain rate clock fed by the eye, which runs a closing rate
+    past the closest approach; the judgement (preset 9) does better crossing (21% against 12.5%) and the same elsewhere,
+    a choice of local control's computer for the user.
+  - *The record* (fc-history `--runs 24`): 8 of 23 in band (12 at F6d). Better laying lifts nearly every case, several
+    just over their bands' tops (the Jutland BCS 3.1%, top 2.8; the Grand Fleet BS 8.3%, 7.2; the German battleships
+    6.1%, 6.0; Denmark Strait 11.6%, 11; Tsushima's 6" 4.8%, 4; the light guns at a fast boat 3.2%, 2), the record's
+    losses being in what's still missing (smoke, the sea, splash confusion: F7 and the ship-motion pass). Squadrons
+    over 20 seeds: Britain's hits 41 to 54, Germany's 60 to 75, losses 0.8 to 1.1 British ships and 0.1 German. Tsushima
+    over 5 seeds: Russia's hits 270 to 465 and losses 4.6 to 5.6 ships, Japan's 454 to 749 and 2.6 to 3.6.
+  - *Cost:* 31 µs a battery-second (27): the line and the point-blank test each second, two predictions a reading.
   - *A bug found on the way* (committed alone): a row of light AA mounts along each beam blinded the directors on
     their deck, so Bismarck's 150 mm never took a reading and never fired; light AA no longer blinds a post (45 classes'
     eyes move, the WWI scenarios' hashes don't).
@@ -932,6 +970,7 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
   §5). The eyeball ship loses the advantage decision 9 gave it.
 - **Point blank:** inside the range where the danger space exceeds the range error (`emergency-eyeball.md` §6: heavy
   guns under ~4-5 km, the 5"/38 under ~2.5-3 km), no ranging: lay by sight on the waterline and fire for effect.
+  **Done early, in F6's short-range bug hunt (2026-10-18)**, with the line by sight at every range.
 - **Anchors:** the 1912 Thunderer-Orion trial (director ~4.5x the hits of independent laying in poor visibility, about
   even in clear weather); optical spotting falling off beyond ~18 kyd; Santiago and Tsushima for the pre-dreadnoughts
   (`early-hit-rates.md`).

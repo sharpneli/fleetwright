@@ -544,8 +544,10 @@ public sealed record SimSettings
     public double RangingPowerStereo { get; init; } = 0.4;
     public double RangingCoatedShare { get; init; } = 0.8;
 
-    /// <summary>A range by eye: its error and its bias as shares of the range, its bearing's error, mil.</summary>
-    public double EyeRangeShare { get; init; } = 0.20;
+    /// <summary>A range by eye: its error and its bias as shares of the range, its bearing's error, mil. The error is a
+    /// trained crew's (the crews' Operator multiplies it: green ×2): fire-control-research.md §3.1, "σ ≈ 20% of range
+    /// untrained, 10-15% practised" (0.20 until 2026-10-18 gave a trained crew the untrained number).</summary>
+    public double EyeRangeShare { get; init; } = 0.125;
     public double EyeRangeBiasShare { get; init; } = 0.10;
     public double EyeBearingMil { get; init; } = 5;
 
